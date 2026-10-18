@@ -338,7 +338,7 @@ TEST_CASE(leaving_with_one_change_warns_and_names_it)
 
     /* From a list the home tag climbs to the tiles and warns nothing. */
     tap(STAY_CX, STRIP_CY);
-    open_category(SET_CAT_ESC);
+    open_category(LIST_CAT);
     tap(home_x(), home_y());
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), -1);
@@ -530,7 +530,8 @@ TEST_CASE(the_warning_covers_the_tiles)
     tap(tile_x(0), tile_y(0));
     CHECK(settings_screen_warning());
     CHECK_EQ(settings_screen_category(), -1);
-    tap(tile_x(3), tile_y(3));           /* OUTPUTS's tile */
+    tap(tile_x(SET_CAT_SETUP_COUNT), tile_y(SET_CAT_SETUP_COUNT));
+                                         /* OUTPUTS's tile */
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
 }

@@ -307,8 +307,10 @@ static void tap_home(void)
 /*
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
- * can reach.  The table's order, row by row: the three categories, then
- * OUTPUTS, PICK A PIN and WI-FI, then UPDATES; two slots stay free.
+ * can reach.  The table's order, row by row: the two categories,
+ * APPLICATION and INTERFACES, and OUTPUTS, then PICK A PIN, WI-FI and
+ * UPDATES; the third row stays free.  ESC / BENCH is no tile: its rows are
+ * MOTOR & ESC > SETTINGS'.
  */
 TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates)
 {
@@ -322,7 +324,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates)
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();
     CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + n);
-    CHECK_EQ(SET_CAT_SETUP_COUNT, 3);
+    CHECK_EQ(SET_CAT_SETUP_COUNT, 2);           /* APPLICATION, INTERFACES */
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
         ui_router_goto(SCREEN_SETUP);
         tap_tile(cat);
@@ -345,7 +347,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates)
 
     /* A tile's edge rows are the tile's; the margin between two is not. */
     gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
-    CHECK(settings_hub_slot(3, &r));
+    CHECK(settings_hub_slot(SET_CAT_SETUP_COUNT, &r));
     ui_router_goto(SCREEN_SETUP);
     tap(r.x + 1, UI_BAND_H + r.y + r.h - 1);
     CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
@@ -1992,7 +1994,7 @@ TEST_CASE(home_under_a_setup_scroll_leaves_the_contact_to_no_screen)
     CHECK_EQ(settings_screen_category(), -1);
 
     const uint32_t d0 = ui_router_dispatched();
-    hub_point(3, &x, &y);
+    hub_point(SET_CAT_SETUP_COUNT, &x, &y);
     glide(0, x, y, 8);                  /* onto OUTPUTS */
     lift(0);
     CHECK_EQ(ui_router_dispatched(), d0);
@@ -2595,7 +2597,7 @@ static uint32_t panel_look(void)
 TEST_CASE(reset_peaks_needs_the_fingers_release_and_disarm_does_not)
 {
     /* Mirrored from motor_screen.c: the right rail's two buttons. */
-    const int rail_x = 676, arm_y = UI_BAND_H + 318, reset_y = UI_BAND_H + 402;
+    const int rail_x = 676, arm_y = UI_BAND_H + 342, reset_y = UI_BAND_H + 402;
     fresh();
     to_overview();
     ui_router_goto(SCREEN_MOTOR);

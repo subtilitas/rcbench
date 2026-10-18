@@ -2016,9 +2016,14 @@ int main(int argc, char **argv)
          * binding. */
         motor_screen_set_throttle_pins(((uint64_t)1u << 0) | ((uint64_t)1u << 1),
                                        true);
+        /* Bound as DSHOT300, entry 4 of the outputs catalogue. */
+        motor_screen_set_throttle_protocol(4u);
         /* The run ends for the held view, so the trace stops where the last
-         * sample left it and the panel says it is holding one. */
-        if (strcmp(view, "motor-held") == 0) {
+         * sample left it and the panel says it is holding one; SETTINGS'
+         * views are of a SAFE bench after a run, but the one ARMED. */
+        if (strcmp(view, "motor-held") == 0
+            || (strncmp(view, "motor-settings", 14) == 0
+                && strcmp(view, "motor-settings-armed") != 0)) {
             motor_screen_set_armed(false);
         }
     }
@@ -2479,7 +2484,7 @@ int main(int argc, char **argv)
      */
     if (id == SCREEN_SETUP && (strcmp(view, "setup-dirty") == 0
                                || strcmp(view, "setup-hub-dirty") == 0)) {
-        settings_set(SET_PACK_CELLS, 4.0f);
+        settings_set(SET_INA228_UOHM, 250.0f);
     }
 
     /*
@@ -2494,13 +2499,15 @@ int main(int argc, char **argv)
             settings_set(SET_PDMINI_EN, 1.0f);
             settings_set(SET_PDMINI_RX, 5.0f);
             settings_set(SET_PDMINI_BAUD, 0.0f);
-            settings_set(SET_PACK_CELLS, 4.0f);
-            settings_set(SET_PACK_MAH, 2200.0f);
-            settings_set(SET_PACK_MOHM, 12.0f);
-            settings_set(SET_MOTOR_POLES, 12.0f);
-            settings_set(SET_MOTOR_KV, 1100.0f);
-            settings_set(SET_OUT_MIN_US, 1100.0f);
-            settings_set(SET_OUT_MAX_US, 1900.0f);
+            /* SETUP's own rows: ESC / BENCH's write when idle on MOTOR &
+             * ESC > SETTINGS and are in no warning but a refused save's. */
+            settings_set(SET_DIM_AFTER, 30.0f);
+            settings_set(SET_KNOB_SCALE, 180.0f);
+            settings_set(SET_INA228_EN, 1.0f);
+            settings_set(SET_INA228_UOHM, 250.0f);
+            settings_set(SET_INA228_MAX_A, 100.0f);
+            settings_set(SET_INA3221_EN, 1.0f);
+            settings_set(SET_TONE_EN, 1.0f);
             settings_set_text(SET_TEXT_DUT_NAME, "X8");
         }
         if (strcmp(view, "setup-leave-armed") == 0) {
@@ -3076,7 +3083,8 @@ int main(int argc, char **argv)
     st.simulated = sim || (id == SCREEN_MOTOR
                            && strcmp(view, "motor-table") != 0
                            && strcmp(view, "motor-refused") != 0
-                           && strcmp(view, "motor-idle") != 0);
+                           && strcmp(view, "motor-idle") != 0
+                           && strncmp(view, "motor-settings", 14) != 0);
     /* An IOmcu that has refused 37 frames: the count in the header
      * strip after the error count. */
     if (strcmp(view, "motor-refused") == 0) {
@@ -3088,7 +3096,9 @@ int main(int argc, char **argv)
     st.mode      = ui_band_mode(st.link_up);
     st.armed     = (id == SCREEN_MOTOR
                     && strcmp(view, "motor-held") != 0
-                    && strcmp(view, "motor-idle") != 0)
+                    && strcmp(view, "motor-idle") != 0
+                    && (strncmp(view, "motor-settings", 14) != 0
+                        || strcmp(view, "motor-settings-armed") == 0))
                    || strcmp(view, "servo-armed") == 0
                    || strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0
@@ -3131,16 +3141,30 @@ int main(int argc, char **argv)
         ui_router_set_alert(TR(ALERT_COPRO_DISARMED));
     }
     if (strcmp(view, "motor-table") == 0) {
-        tap(6 + 93, UI_BAND_H + 11);                    /* TABLE */
+        tap(6 + 93, UI_BAND_H + 45);                    /* TABLE */
+    }
+    /* MOTOR & ESC > SETTINGS: the strip's second tab; the keypad of
+     * Capacity, the second row; ARMED, the pulse rows locked and a save
+     * asked for that waits for a SAFE bench. */
+    if (strncmp(view, "motor-settings", 14) == 0) {
+        tap(9 + 112 + 4 + 56, UI_BAND_H + 6 + 12);      /* SETTINGS */
+        if (strcmp(view, "motor-settings-keypad") == 0) {
+            const gfx_rect_t box = motor_settings_box(1);
+            tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
+        }
+        if (strcmp(view, "motor-settings-armed") == 0) {
+            settings_set(SET_PACK_MAH, 2200.0f);
+            settings_request_save();
+        }
     }
     /* The home tag on SETUP's tiles, held by the warning. */
     if (strncmp(view, "setup-leave", 11) == 0) {
         const gfx_rect_t home = ui_home_tag_rect(ui_router_title(id));
         tap(home.x + home.w / 2, home.y + home.h / 2);
     }
-    /* SETUP opens on its tiles; ESC / BENCH's list is the first tile's. */
-    if (strcmp(view, "setup-esc") == 0 || strcmp(view, "setup-dirty") == 0) {
-        setup_tile(SET_CAT_ESC);
+    /* SETUP opens on its tiles; INTERFACES' list with a value unsaved. */
+    if (strcmp(view, "setup-dirty") == 0) {
+        setup_tile(SET_CAT_IFACE);
     }
     /* SETUP's APPLICATION category: the language, the theme, the knob. */
     if (strcmp(view, "setup-application") == 0) {

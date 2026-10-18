@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP hält die Einstellungen des Panels in drei Kategorien: ESC / PRÜFSTAND, ANWENDUNG und ANSCHLÜSSE. Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
+SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in zwei Kategorien: ANWENDUNG und ANSCHLÜSSE. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
 
 ## Die Kacheln
 
@@ -14,7 +14,6 @@ SETUP hält die Einstellungen des Panels in drei Kategorien: ESC / PRÜFSTAND, A
 
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
-| ESC / PRÜFSTAND | `8 EINSTELLUNGEN` | die Liste von ESC / PRÜFSTAND |
 | ANWENDUNG | `10 EINSTELLUNGEN` | die Liste von ANWENDUNG |
 | ANSCHLÜSSE | `26 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
@@ -22,7 +21,7 @@ SETUP hält die Einstellungen des Panels in drei Kategorien: ESC / PRÜFSTAND, A
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): die Dateien der Karte und ein Upload der Panel-Firmware im Browser, und das Heimnetz |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
 
-Zwei Plätze bleiben frei. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
+Drei Plätze bleiben frei. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
 
 ![Die Kacheln mit einem ungespeicherten Wert](view:setup-hub-dirty)
 
@@ -32,11 +31,11 @@ Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
 |---|---|
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC geöffnet, zurück zu MOTOR & ESC |
 
 ## Einen Wert ändern
 
-![ESC / PRÜFSTAND, alles gespeichert](view:setup-esc)
+![ANSCHLÜSSE, alles gespeichert](view:setup-interfaces)
 
 Die Liste reicht über den Bildschirm und zeigt 6 Zeilen. Darunter trägt eine Leiste den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4 px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
 
@@ -75,7 +74,7 @@ Geschrieben wird im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netztei
 
 ![Ein ungespeicherter Wert, am Home-Tag](view:setup-leave)
 
-Das Home-Tag auf den Kacheln führt zum Menü. Solange die Speichertaste `SPEICHERN` oder `NICHT GESPEICHERT` lautet, öffnet es zuerst eine Warnung. Die Warnung nennt jeden Wert, der vom gespeicherten abweicht, als `Name: gespeichert -> jetzt`, mit Wert und Einheit wie auf der Liste. Gespeichert sind die Werte, die beim Start geladen oder beim letzten gelungenen Speichern geschrieben wurden. Die Warnung nennt auch den Namen des Prüflings (DUT, device under test) und die Werte anderer Bildschirme, etwa SERVO oder ESC STICK: Ein Speichern behält sie alle.
+Das Home-Tag auf den Kacheln führt zum Menü. Solange die Speichertaste `SPEICHERN` oder `NICHT GESPEICHERT` lautet, öffnet es zuerst eine Warnung. Die Warnung nennt jeden Wert, der vom gespeicherten abweicht, als `Name: gespeichert -> jetzt`, mit Wert und Einheit wie auf der Liste. Gespeichert sind die Werte, die beim Start geladen oder beim letzten gelungenen Speichern geschrieben wurden. Die Warnung nennt auch den Namen des Prüflings (DUT, device under test) und die Werte anderer Bildschirme, etwa SERVO, ESC STICK oder MOTOR & ESC: Ein Speichern behält sie alle.
 
 | Taste | Was sie tut |
 |---|---|
@@ -91,22 +90,9 @@ Das Home-Tag auf den Kacheln führt zum Menü. Solange die Speichertaste `SPEICH
 
 ![Zwölf ungespeicherte Werte](view:setup-leave-many)
 
+Eine Änderung unter [MOTOR & ESC, OPTIONEN](motor-settings.md) fordert selbst das Schreiben an, und dieses Schreiben behält auch die ungespeicherten Werte von SETUP.
+
 Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angefordert ist (`BEI STILLSTAND`) und auf dem Weg zu OUTPUTS, PICK A PIN, WI-FI und UPDATES. STOP stoppt den Prüfstand und lässt die Warnung offen. Ein Bildschirm, den das Panel selbst öffnet, etwa der Busfehler-Bildschirm nach einem Verbindungsverlust, schließt die Warnung; die Werte gelten weiter und bleiben ungespeichert.
-
-## ESC / PRÜFSTAND
-
-| Einstellung | Bereich | Vorgabe | Was sie tut |
-|---|---|---|---|
-| Zellen | 1 bis 14 S | 6 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
-| Kapazität | 0 bis 30000 mAh, Schritte von 100 mAh | 5000 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
-| Innenwiderstand | 0 bis 200 mOhm | 18,0 | gespeichert; kein Bildschirm nutzt ihn in diesem Release |
-| Motorpole | 2 bis 42, Schritte von 2 | 14 | die Drehzahl ist eRPM (elektrische Drehzahl) geteilt durch Pole/2 |
-| Nenn-kV | 0 bis 10000 rpm/V, Schritte von 10 | 0 | der kV-Wert auf [MOTOR & ESC](motor.md#kv-rpm-v-und-eff); 0 lässt ihn leer |
-| Leerlaufpuls | 800 bis 1600 us, Schritte von 10 | 1000 | die PWM-Breite (Pulsweitenmodulation) bei 0 % Throttle |
-| Vollpuls | 1400 bis 2400 us, Schritte von 10 | 2000 | die PWM-Breite bei 100 % Throttle |
-| Rampengrenze | 5 bis 300 %/s, Schritte von 5 | 55 | die Throttle-Rampe des Panelmodells, genutzt, solange kein IOmcu antwortet |
-
-Leerlaufpuls und Vollpuls gehen beim Link-Aufbau und bei jeder Änderung an den IOmcu. Der IOmcu fährt keine Throttle-Rampe: Ein gebundener Pin springt auf den Befehl.
 
 ## ANWENDUNG
 
@@ -146,4 +132,4 @@ ANSCHLÜSSE hält die Strommonitore, den Winkelsensor, den Phasenabgriff, den Vi
 - [Anschlüsse](setup-interfaces.md)
 - [Ausgänge](outputs.md) und [Pin-Auswahl](picker.md)
 - [Updates](updates.md)
-- [Netzteil](supply.md) und [Servo-Optionen](servo-settings.md): die Einstellungen, die auf ihren eigenen Bildschirmen stehen.
+- [Netzteil](supply.md), [Servo-Optionen](servo-settings.md) und [Motor-Optionen](motor-settings.md): die Einstellungen, die auf ihren eigenen Bildschirmen stehen.

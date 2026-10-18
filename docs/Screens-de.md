@@ -99,7 +99,7 @@ Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
 
 Solange der Link steht und der IOmcu Link-Frames abgelehnt hat, endet
 der Kasten von VERBINDUNG mit ihrer Zahl, derselben Zeile, die MOTOR & ESC in
-dem Streifen über beiden Spalten zeigt: `Abgelehnte Verbindungsframes: 37`
+der Zeile unter der Leiste von LIVE zeigt: `Abgelehnte Verbindungsframes: 37`
 ([Abgelehnte Frames](Link-de.md#abgelehnte-frames)). Die Zeile folgt der
 Zahl, solange der Kasten offen ist, und verschwindet mit dem Link.
 
@@ -193,30 +193,65 @@ Prüfstand schaltet nicht auf ARMED. Wenn alle Schritte geantwortet haben,
 
 ![Motor und ESC](img/de/motor.png)
 
-Zwei Spalten. Der Plot und das Gas nehmen die linke, die vier Anzeigen und
-die Bedienelemente eine Leiste auf der rechten, damit das Ablesen der Werte
+MOTOR & ESC ist eine Werkbank: oben eine Leiste mit Aufgaben, LIVE und
+OPTIONEN, je 112 x 24 px, und darunter eine Seite. Die Kachel im Menü öffnet
+immer LIVE. Ein Tipp auf einen Reiter wechselt die Aufgabe; ein Wechsel ist
+keine Navigationsebene und lässt die Ansicht von LIVE, GRAFIK oder TABELLE,
+wie sie war.
+
+| Aufgabe | Die linke Spalte, 546 px |
+| --- | --- |
+| LIVE | der Plot oder die Tabelle über dem Gas |
+| OPTIONEN | die 8 ESC-Einstellungen unter AKKU, MOTOR und GASAUSGANG ([Optionen](#motor--esc-optionen)) |
+
+Zwei Spalten. Die Seite nimmt die linke, die vier Anzeigen und die Karte
+STEUERUNG eine Leiste von 236 px auf der rechten, damit das Ablesen der Werte
 und das Bedienen des Gases nicht um denselben Teil des Bildschirms
-konkurrieren. Bei eingeschaltetem Drehknopf bewegt dessen Drehung das Gas
-([der Knopf](#anwendung-der-drehknopf)).
+konkurrieren. Die rechte Leiste ist auf beiden Aufgaben dieselbe, und ARM
+wirkt auf beiden. Bei eingeschaltetem Drehknopf bewegt dessen Drehung auf
+LIVE das Gas ([der Knopf](#anwendung-der-drehknopf)); auf OPTIONEN bewegt
+eine Drehung nichts.
 
-### Das Gas-Panel nennt seine Pins
+Das Home-Tag steigt eine Ebene nach der anderen:
 
-Das Gas-Panel nennt links neben der Prozentzahl die Pins, die das Gas
-treibt: `ZIEL: GP0 GP1`. Es sind die Pins, die als MOTOR PWM oder als
-DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
-SETUP > AUSGÄNGE, die auch die Gas-Rolle des IOmcu liest. Die Liste
-steht in Pin-Reihenfolge und enthält so viele Pins, wie in das Feld von 49
-Zeichen passen; der Rest wird gezählt. Sind GP0 bis GP15 gebunden, steht dort
-`ZIEL: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 GP9 +6`. Zwei Zustände erscheinen
-in der Warnfarbe:
+| Von | Das Home-Tag führt zu |
+| --- | --- |
+| dem Tastenfeld auf OPTIONEN | OPTIONEN; der Wert bleibt unverändert |
+| LIVE oder OPTIONEN | dem Menü; der Prüfstand schaltet auf SAFE |
 
-| Zeile | Bedingung |
-|---|---|
-| `ZIEL: KEIN MOTOR-PIN ZUGEORDNET` | die Bindung ist gelesen und kein Pin ist als Motor gebunden |
-| `ZIEL: ZUORDNUNG NICHT AUSGELESEN` | keine Bindung wurde gelesen: der Link ist unten, die Pages ließen sich nicht lesen, oder für das Board gibt es keine Pin-Belegung |
+### ZIEL nennt das Protokoll und die Pins
 
-Das Gas bewegt sich in beiden Zuständen weiter. ARM schaltet die ganze Bank
-auf ARMED, nicht nur die hier genannten Pins.
+Die Karte STEUERUNG beginnt mit der Zeile ZIEL: der Beschriftung, 64 px, und
+einem Wertefeld von 18 Zeichen, das nennt, was das Gas treibt, das Protokoll
+und dann die Pins, `DSHOT300 GP0 GP1`. Es sind die Pins, die als MOTOR PWM
+oder als DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
+SETUP > AUSGÄNGE, die auch die Gas-Rolle des IOmcu liest. Die Pins stehen in
+Pin-Reihenfolge; die nicht passen, werden gezählt. Sind GP0 bis GP7 als
+DSHOT300 gebunden, steht dort `DSHOT300 GP0 +7`.
+
+| ZIEL lautet | Bedingung |
+| --- | --- |
+| `DSHOT300 GP0 GP1` | ein Protokoll treibt jeden Gas-Pin |
+| `GEMISCHT GP0 GP4` | die Gas-Pins laufen mit zwei oder mehr Protokollen, oder einer davon mit einer Rate, die kein Protokoll von OUTPUTS hat |
+| `GP0 GP1` | jeder Gas-Pin läuft mit einer Rate, die kein Protokoll von OUTPUTS hat |
+| `KEIN MOTOR-PIN` | die Bindung ist gelesen und kein Pin ist als Motor gebunden; Warnfarbe |
+| `PINS NICHT GELESEN` | keine Bindung wurde gelesen: der Link ist unten, die Pages ließen sich nicht lesen, oder für das Board gibt es keine Pin-Belegung; Warnfarbe |
+
+Das Gas bewegt sich in den beiden Warnzuständen weiter. ARM schaltet die
+ganze Bank auf ARMED, nicht nur die hier genannten Pins.
+
+Ein Tipp auf ZIEL öffnet [OUTPUTS](#outputs). Das Verlassen schaltet den
+Prüfstand auf SAFE, wie jeder Weg vom Bildschirm. Das Home-Tag auf OUTPUTS
+führt zurück zu MOTOR & ESC, auf die Aufgabe, auf der ZIEL getippt wurde; ein
+anderer Bildschirm dazwischen macht den nächsten Eintritt zu dem einer
+Kachel, auf LIVE. ZIEL nimmt keinen Tipp an und ist mit dem gesperrten Rand
+gezeichnet, solange eine dieser Bedingungen gilt:
+
+| Bedingung | Grund |
+| --- | --- |
+| ARMED, ein ARM gefragt und nicht beantwortet, oder ein DISARM gefragt und nicht beantwortet | eine Bindung ändert die Pins, die der Prüfstand treibt |
+| ARM gehalten | der Druck gehört ARM |
+| der [Servo-Programmierer](ServoProgrammer-de.md) hält einen Port | ARM ist aus demselben Grund gesperrt |
 ### Der Plot zeigt einen Lauf
 
 ![Motor und ESC, Telemetrie angehalten](img/de/motor-held.png)
@@ -246,15 +281,17 @@ Schalten auf ARMED gelöst -- die Kurve eines Laufs, den ein STOP beendet hat,
 Schalten auf ARMED schreibt eine CSV-Datei, und LOGS stellt sie dar.
 
 
-Der Streifen über beiden Spalten trägt die Abfragerate, die Fehlerzahl des
-Links (CRC-Fehler und Resyncs zusammengezählt; CRC: Cyclic Redundancy Check)
-und drei Temperaturen. ESC und MOT kommen von der Bench-Page. MCU ist der
-eigene Die des Panels, gelesen vom Sensor des ESP32-S3: die Temperatur der
-Displayplatine, nicht die des IOmcu. Solange der Link steht und der
-IOmcu seit dem Einschalten Link-Frames abgelehnt hat, zeigt der
-Streifen nach der Fehlerzahl, wie viele: `Abgelehnte Verbindungsframes: 37`. Ein
-IOmcu älter als Protokoll 4.21 sendet keine Zahl, und der Streifen
-zeigt keine ([Abgelehnte Frames](Link-de.md#abgelehnte-frames)).
+Auf LIVE trägt die Zeile unter der Leiste GRAFIK und TABELLE, die
+Abfragerate, die Fehlerzahl des Links (CRC-Fehler und Resyncs
+zusammengezählt; CRC: Cyclic Redundancy Check) und drei Temperaturen. ESC
+und MOT kommen von der Bench-Page. MCU ist der eigene Die des Panels,
+gelesen vom Sensor des ESP32-S3: die Temperatur der Displayplatine, nicht
+die des IOmcu. Solange der Link steht und der IOmcu seit dem Einschalten
+Link-Frames abgelehnt hat, zeigt die Zeile nach der Fehlerzahl, wie viele:
+`Abgelehnte Verbindungsframes: 37`. Ein IOmcu älter als Protokoll 4.21
+sendet keine Zahl, und die Zeile zeigt keine
+([Abgelehnte Frames](Link-de.md#abgelehnte-frames)). Auf OPTIONEN hält die
+Zeile nur die Temperaturen, über der rechten Leiste.
 
 ![MOTOR & ESC mit 37 abgelehnten Link-Frames](img/de/motor-refused.png)
 
@@ -274,7 +311,7 @@ Bedienelement tut:
 | Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Gas von seinem Wert aus |
 | ARM | schaltet nach seinem Halten von 2 s die Throttle-Ausgänge auf ARMED; gesperrt gezeichnet und ohne Wirkung, solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port hält | schaltet bei einem Tap auf SAFE |
 | SPITZENWERTE ZURÜCKSETZEN | setzt die Spitzen zurück | setzt die Spitzen zurück |
-| GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
+| GRAFIK, TABELLE | wechseln die Ansicht von LIVE | wechseln die Ansicht von LIVE |
 
 In SAFE zeigt die Zeile unter dem Track `ZUERST ARM`. Die Ablehnung reicht
 vom Schalten auf SAFE, bis der Prüfstand ARMED meldet: Auch ein
@@ -463,6 +500,59 @@ dauert, überspringt Fenster, 1 von 17 bei 53 ms, und eine übersteuerte
 Messung bleibt aus den Werten heraus. LOGS
 gruppiert `ina voltage`, `ina current` und `esc current` unter INA228 und
 ESC und die Spalten des Fensters unter INA3221.
+
+### MOTOR & ESC, Optionen
+
+![OPTIONEN](img/de/motor-settings.png)
+
+OPTIONEN hält die 8 Einstellungen der Kategorie ESC / PRÜFSTAND
+(`SET_CAT_ESC`) in der Reihenfolge des Schemas, unter drei Überschriften:
+
+| Überschrift | Einstellungen |
+| --- | --- |
+| AKKU | Zellen, Kapazität, Innenwiderstand |
+| MOTOR | Motorpole, Nenn-kV |
+| GASAUSGANG | Leerlaufpuls, Vollpuls, Rampengrenze |
+
+Eine Zeile ist 34 px hoch: die Beschriftung, die Hilfezeile und der Wert mit
+Einheit in einem Feld von 100 x 28 px. Ein Tipp auf das Feld öffnet das
+Tastenfeld über der linken Spalte und der Leiste, 546 x 423 px, so dass kein
+Reiter die Aufgabe darunter wechselt; die rechte Leiste bleibt erreichbar.
+Das Tastenfeld nennt die Einstellung, ihren Bereich und ihre Einheit. OK
+übernimmt einen Wert im Bereich und legt ihn auf den Schritt der
+Einstellung, 4321 mAh als 4300 mAh; außerhalb des Bereichs bleibt das
+Tastenfeld offen und nennt den Bereich in der Warnfarbe. ABBRECHEN und das
+Home-Tag schließen es, und der Wert bleibt unverändert.
+
+![Das Tastenfeld über OPTIONEN](img/de/motor-settings-keypad.png)
+
+Leerlaufpuls und Vollpuls nehmen nur bei einem Prüfstand in SAFE einen Wert
+an: Der IOmcu übernimmt die Endpunkte, solange er entschärft ist, 300 ms
+nach der letzten Änderung, und das Schalten auf ARMED sendet keine. Solange
+der Prüfstand ARMED ist, ARM gehalten wird oder ein ARM oder ein DISARM auf
+seine Antwort wartet, lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in
+der Warnfarbe, und das Feld nimmt keinen Tipp an; ein offenes Tastenfeld für
+einen von beiden schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE
+verlässt. Das Halten von ARM über 2 s lässt einer Änderung vor dem Druck die
+Zeit, den IOmcu zu erreichen. Die anderen 6 Zeilen nehmen
+jederzeit einen Wert an.
+
+Die Einstellungen sind ein Speicher. Jeder Wert, den OK setzt, gilt sofort
+und fordert das Schreiben an; das Panel schreibt den ganzen Speicher im
+ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne
+Platinenzeichnung, die geladen oder gespeichert wird, dasselbe Schreiben, das
+SPEICHERN in SETUP anfordert ([Werte behalten](#werte-behalten)). Ein
+in SETUP ungespeicherter Wert wird mitgeschrieben, so dass SETUP nichts mehr
+zu warnen hat. Ein abgelehntes Schreiben lässt jeden Wert ungespeichert, und
+die Warnung von SETUP beim Verlassen nennt die ESC-Zeilen mit ihren eigenen.
+Die Zeile unter den Einstellungen nennt den Stand des Speichers:
+
+| Zeile | Stand |
+| --- | --- |
+| `GESPEICHERT` | nichts ist ungeschrieben |
+| `SPEICHERN AUSSTEHEND` | das Schreiben ist angefordert und wartet auf einen ruhenden Prüfstand |
+| `NICHT GESPEICHERT` | das letzte Schreiben wurde abgelehnt |
+| `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT` | Werte sind ungespeichert, und kein Schreiben ist angefordert; die nächste Änderung hier schreibt sie |
 
 ## Servo
 
@@ -2182,14 +2272,16 @@ Namen.
 
 ![Setup](img/de/setup.png)
 
-- Drei Kategorien: ESC / PRÜFSTAND, ANWENDUNG und ANSCHLÜSSE. Jede Kachel
-  nennt die Zahl ihrer Einstellungen. Ein Tippen öffnet die Liste der
-  Kategorie.
+- Zwei Kategorien: ANWENDUNG und ANSCHLÜSSE, die Einstellungen für den
+  ganzen Prüfstand. Jede Kachel nennt die Zahl ihrer Einstellungen. Ein
+  Tippen öffnet die Liste der Kategorie. Die Einstellungen von
+  ESC / PRÜFSTAND stehen unter MOTOR & ESC
+  ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
   ([Pin auswählen](#pin-auswählen)), WI-FI ([WLAN](#wlan)) und UPDATES
   ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn wie seine
   Kachel, und das Band dieser Seite zeigt SETUP.
-- Zwei Plätze sind frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
+- Drei Plätze sind frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
   fasst 9, und der Build scheitert am zehnten.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -2208,7 +2300,7 @@ y 442 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
 Ein Alert verdeckt damit weder eine Taste noch eine Zeile, KATEGORIE
 ZURÜCKSETZEN oder SPEICHERN, auf den Kacheln wie auf einer Liste.
 
-![ESC / PRÜFSTAND](img/de/setup-esc.png)
+![ANWENDUNG](img/de/setup-application.png)
 
 Das Home-Tag führt eine Ebene nach der anderen zurück:
 
@@ -2216,7 +2308,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC geöffnet, zurück zu MOTOR & ESC |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -2230,7 +2322,7 @@ Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht unter
 
 Neun Einstellungen werden gespeichert und angezeigt, und kein Teil der
 Firmware liest sie: Beleuchtung, Einheiten und Dimmen nach unter ANWENDUNG;
-Zellen, Kapazität und Innenwiderstand; Vibration, Optischer Tacho und
+Zellen, Kapazität und Innenwiderstand unter MOTOR & ESC; Vibration, Optischer Tacho und
 Tacho-Pin. Rampengrenze wird nur als Anstieg des simulierten Prüfstands
 gelesen.
 
@@ -2634,8 +2726,10 @@ Sie nennt jeden Wert und jeden Text, der von der gespeicherten Kopie
 abweicht, eine Zeile von 22 px je Änderung, als `Name: gespeichert -> jetzt`.
 Ein Wert steht so da, wie die Liste ihn schreibt, mit Einheit; ein Text, der
 Name des Prüflings (DUT, device under test), so, wie er ist. Werte anderer
-Bildschirme, etwa die Einstellungen von SERVO oder ESC STICK, stehen mit
-darin: Sie gehören zum selben Satz, und dasselbe Speichern behält sie. Die
+Bildschirme, etwa die Einstellungen von SERVO, ESC STICK oder MOTOR & ESC,
+stehen mit darin: Sie gehören zum selben Satz, und dasselbe Speichern behält
+sie. Eine Änderung unter MOTOR & ESC, OPTIONEN fordert dieses Speichern
+selbst an. Die
 Zeilen folgen der Reihenfolge des Schemas, die Texte nach den Werten. Bei
 mehr als 10 Änderungen zeigen sich 9 Zeilen, und die zehnte lautet bei 12
 `und 3 weitere`.
@@ -3067,7 +3161,7 @@ treibt jeden als Motor gebundenen Kanal — MOTOR PWM und die DShot-Einträge �
 und lässt die Servokanäle in Ruhe.
 
 Ein MOTOR-PWM-Kanal sendet 0 % Gas als Leerlaufpuls und 100 % als Vollpuls:
-1000 us und 2000 us ab Werk, einstellbar unter SETUP, ESC / PRÜFSTAND, in Schritten
+1000 us und 2000 us ab Werk, einstellbar unter MOTOR & ESC, OPTIONEN, in Schritten
 von 10 us (Leerlaufpuls 800 bis 1600 us, Vollpuls 1400 bis 2400 us). Die
 beiden Einstellungen gehen an die als Motor gebundenen Kanäle und an keine
 anderen: ein SERVO-PWM-Kanal behält 1000 bis 2000 us oder den Bereich, den der

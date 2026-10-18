@@ -73,7 +73,7 @@ TEST_CASE(a_swipe_that_starts_on_a_key_column_scrolls_and_changes_no_value)
                                 PLUS_X, XP, PLUS_X + BTN_W - 1 };
     int unscrolled = 0, total = 0;
     const int bad = swipe_matrix(cols, 6, &unscrolled, &total);
-    CHECK_EQ(total, 3 * 6 * 7 * 12 * 2);
+    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 6 * 7 * 12 * 2);
     CHECK_EQ(bad, 0);
     CHECK_EQ(unscrolled, 0);
 }
@@ -86,7 +86,7 @@ TEST_CASE(a_swipe_beside_the_key_columns_scrolls_and_changes_no_value)
                                 PLUS_X + BTN_W, 783 };
     int unscrolled = 0, total = 0;
     const int bad = swipe_matrix(cols, 9, &unscrolled, &total);
-    CHECK_EQ(total, 3 * 9 * 7 * 12 * 2);
+    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 9 * 7 * 12 * 2);
     CHECK_EQ(bad, 0);
     CHECK_EQ(unscrolled, 0);
 }
@@ -507,7 +507,7 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
     finger(FEED_LONE, XM, LIST_Y + 60);
     lift(FEED_LONE);
     idle(0.5f);
-    CHECK_EQ(feed_downs, 5);         /* the home tag's tap, the tile's, 3 */
+    CHECK_EQ(feed_downs, 3);         /* the list opened as LIST_CAT: 3 */
     CHECK_EQ(changed(), 0);
 
     /* From the label onto a key in one report, then a swipe. */
@@ -544,11 +544,11 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
  * whose release frame went missing is still opened. */
 TEST_CASE(a_category_takes_the_press_the_tracker_made_for_a_jump)
 {
-    gesture_screen(SET_CAT_ESC);
+    gesture_screen(LIST_CAT);
     feed_tap(FEED_LONE, home_x(), home_y());
     setting_id_t app[64];
     settings_in_category(SET_CAT_APP, app, 64);
-    finger(FEED_LONE, tile_x(SET_CAT_ESC), tile_y(SET_CAT_ESC) + 200);
+    finger(FEED_LONE, tile_x(LIST_CAT), tile_y(LIST_CAT) + 200);
     finger(FEED_LONE, tile_x(SET_CAT_APP), tile_y(SET_CAT_APP));
     lift(FEED_LONE);
     CHECK_EQ(settings_screen_category(), SET_CAT_APP);
@@ -617,19 +617,19 @@ TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
  * RESET CATEGORY act on a release the finger made. */
 TEST_CASE(a_button_carried_into_the_band_is_not_pressed)
 {
-    gesture_screen(SET_CAT_ESC);
-    setting_id_t esc[64];
-    settings_in_category(SET_CAT_ESC, esc, 64);
+    gesture_screen(LIST_CAT);
+    setting_id_t ids[64];
+    settings_in_category(LIST_CAT, ids, 64);
 
-    /* The second category's tile, into the band in one report. */
+    /* The other category's tile, into the band in one report. */
     feed_tap(FEED_LONE, home_x(), home_y());
     finger(FEED_LONE, tile_x(SET_CAT_APP), tile_y(SET_CAT_APP));
     finger(FEED_LONE, tile_x(SET_CAT_APP), UI_BAND_H - 8);
     lift(FEED_LONE);
     CHECK_EQ(settings_screen_category(), -1);
-    feed_tap(FEED_LONE, tile_x(SET_CAT_ESC), tile_y(SET_CAT_ESC));
+    feed_tap(FEED_LONE, tile_x(LIST_CAT), tile_y(LIST_CAT));
     feed_tap(FEED_LONE, XP, row_y(0));
-    CHECK(settings_get(esc[0]) != s_before[esc[0]]);  /* ESC still open */
+    CHECK(settings_get(ids[0]) != s_before[ids[0]]);  /* LIST_CAT open */
     CHECK_EQ(changed(), 1);
 
     /* The tracker's own release, of a jump: RESET CATEGORY pressed, the

@@ -240,11 +240,19 @@ static inline void fresh_hub(void)
     ui_router_goto(SCREEN_SETUP);
 }
 
-/* SETUP on ESC / BENCH's list, opened from its tile. */
+/*
+ * The list the screen tests open: INTERFACES, SETUP's longest, with a
+ * number row of a wide range (INA228 SHUNT, 50 to 20,000 uOhm).  ESC /
+ * BENCH's rows, which these tests opened before, are MOTOR & ESC >
+ * SETTINGS' (test_motor_workbench).
+ */
+#define LIST_CAT SET_CAT_IFACE
+
+/* SETUP on LIST_CAT's list, opened from its tile. */
 static inline void fresh_screen(void)
 {
     fresh_hub();
-    open_category(SET_CAT_ESC);
+    open_category(LIST_CAT);
 }
 
 static inline void tap(int x, int y)
@@ -324,7 +332,7 @@ static inline void gesture_screen(setting_cat_t cat)
     fresh_screen();
     feed_reset();
     feed_tick_per_report(REPORT_S);
-    if (cat != SET_CAT_ESC) {
+    if (cat != LIST_CAT) {
         feed_tap(FEED_LONE, home_x(), home_y());
         feed_tap(FEED_LONE, tile_x((int)cat), tile_y((int)cat));
     }

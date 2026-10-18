@@ -24,6 +24,8 @@ set(SRCS
     splash_screen.c
     overview_screen.c
     motor_screen.c
+    motor_workbench.c
+    motor_settings_page.c
     supply_screen.c
     servo_screen.c
     servo_settings_panel.c

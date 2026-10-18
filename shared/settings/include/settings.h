@@ -23,9 +23,9 @@ extern "C" {
 #endif
 
 typedef enum {
-    SET_CAT_ESC = 0,     /**< pack, motor, telemetry, throttle output */
-    SET_CAT_APP,         /**< theme, brightness, language, units, plot  */
+    SET_CAT_APP = 0,     /**< theme, brightness, language, units, plot  */
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
+    SET_CAT_ESC,         /**< pack, motor, telemetry, throttle output */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
     SET_CAT_STICK,       /**< stick programming: supply and timing    */
@@ -34,11 +34,12 @@ typedef enum {
 } setting_cat_t;
 
 /**
- * The categories SETUP opens from its tiles.  SET_CAT_SUPPLY, SET_CAT_SERVO
- * and SET_CAT_STICK are edited on their own screens, beside what they set,
- * and SET_CAT_UPDATE on the UPDATES screen a SETUP tile opens.
+ * The categories SETUP opens from its tiles, which come first.  SET_CAT_ESC
+ * is edited on MOTOR & ESC > SETTINGS, SET_CAT_SUPPLY, SET_CAT_SERVO and
+ * SET_CAT_STICK on their own screens, beside what they set, and
+ * SET_CAT_UPDATE on the UPDATES screen a SETUP tile opens.
  */
-#define SET_CAT_SETUP_COUNT SET_CAT_SUPPLY
+#define SET_CAT_SETUP_COUNT SET_CAT_ESC
 
 typedef enum {
     SET_TYPE_INT = 0,

@@ -718,6 +718,87 @@ TEST_CASE(without_the_roles_a_pulse_slot_reads_as_the_first_entry)
     CHECK_EQ(back.proto, proto_named("SERVO PWM"));
 }
 
+/* ---------------------------------------- the protocol a role is driven by */
+
+/* The pages for @p n (protocol, GPIO) pairs, as OUTPUTS writes them. */
+static void pages_of(const uint8_t *proto, const uint8_t *gpio, int n,
+                     uint16_t *regs, uint16_t *cc)
+{
+    outbind_t a;
+    init(&a);
+    for (int i = 0; i < n; ++i) {
+        outbind_set_proto(&a, proto[i]);
+        CHECK(outbind_toggle(&a, idx(gpio[i])));
+    }
+    (void)outbind_to_slots(&a, regs);
+    outbind_to_chan_cfg(&a, cc, 1000u, 2000u);
+}
+
+/*
+ * MOTOR & ESC's TARGET row names the protocol the throttle runs on: 0 for
+ * none, the catalogue entry for one, MIXED for two.  A slot no entry
+ * describes is no protocol alone and makes a known one MIXED.
+ */
+TEST_CASE(the_throttles_protocol_is_read_from_the_pages)
+{
+    uint16_t regs[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    const uint8_t servo = proto_named("SERVO PWM");
+    const uint8_t motor = proto_named("MOTOR PWM");
+    const uint8_t d300  = proto_named("DSHOT300");
+    const uint8_t d600b = proto_named("DSHOT600 BIDIR");
+    CHECK(servo && motor && d300 && d600b);
+    CHECK_EQ(OUTBIND_PROTO_MIXED, 0xFF);
+    CHECK(OUTBIND_PROTOS < OUTBIND_PROTO_MIXED);
+
+    /* No pages, and an empty page: none. */
+    outputs_slots_defaults(regs);
+    outputs_chan_cfg_defaults(cc);
+    CHECK_EQ(outbind_role_proto(NULL, cc, OUT_ROLE_THROTTLE), 0);
+    CHECK_EQ(outbind_role_proto(regs, NULL, OUT_ROLE_THROTTLE), 0);
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE), 0);
+
+    /* One pin, then two pins of one protocol. */
+    pages_of((const uint8_t[]){ d300 }, (const uint8_t[]){ 0 }, 1, regs, cc);
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE), d300);
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_SURFACE), 0);
+    pages_of((const uint8_t[]){ d600b, d600b }, (const uint8_t[]){ 0, 1 }, 2,
+             regs, cc);
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE), d600b);
+
+    /* MOTOR PWM by its role beside a servo on the same pulse: the servo is
+     * no throttle. */
+    pages_of((const uint8_t[]){ servo, motor }, (const uint8_t[]){ 0, 4 }, 2,
+             regs, cc);
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE), motor);
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_SURFACE), servo);
+
+    /* Two throttle protocols: MIXED, whichever comes first. */
+    pages_of((const uint8_t[]){ d300, motor }, (const uint8_t[]){ 0, 4 }, 2,
+             regs, cc);
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE),
+             OUTBIND_PROTO_MIXED);
+    pages_of((const uint8_t[]){ motor, d300 }, (const uint8_t[]){ 0, 4 }, 2,
+             regs, cc);
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE),
+             OUTBIND_PROTO_MIXED);
+
+    /* A rate no entry has: alone, no protocol; beside a known one, MIXED. */
+    pages_of((const uint8_t[]){ d300 }, (const uint8_t[]){ 0 }, 1, regs, cc);
+    regs[LINK_OS_RATE_HZ] = 123u;
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE), 0);
+    pages_of((const uint8_t[]){ d300, d300 }, (const uint8_t[]){ 0, 1 }, 2,
+             regs, cc);
+    regs[1u * LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 123u;
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE),
+             OUTBIND_PROTO_MIXED);
+
+    /* A slot whose first channel is off the page reads as a surface, so it
+     * drives no throttle. */
+    pages_of((const uint8_t[]){ d300 }, (const uint8_t[]){ 0 }, 1, regs, cc);
+    regs[LINK_OS_RANGE] = LINK_OS_RANGE_OF(LINK_OUT_CHANNELS, 1);
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE), 0);
+}
+
 TEST_CASE(a_slot_naming_a_channel_off_the_page_does_not_read_past_the_roles)
 {
     /*
@@ -2111,6 +2192,7 @@ int main(void)
     RUN(a_motor_and_a_servo_on_the_same_pulse_read_back_apart);
     RUN(a_mixed_page_keeps_each_slot_on_its_own_entry);
     RUN(without_the_roles_a_pulse_slot_reads_as_the_first_entry);
+    RUN(the_throttles_protocol_is_read_from_the_pages);
     RUN(an_empty_page_reads_back_as_nothing_configured);
     RUN(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed);
     RUN(a_reserved_pin_on_the_page_is_refused_on_the_way_back);

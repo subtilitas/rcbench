@@ -605,9 +605,11 @@ static inline void prog_drive_publish(void)
 
 /* ------------------------------------------------------------ panel_poll.c */
 
-/* The GPIOs of the throttle's slots, and whether a binding was read. */
+/* The GPIOs of the throttle's slots, whether a binding was read, and the
+ * protocol they are bound as (outbind_role_proto()). */
 extern atomic_ullong s_throttle_pins;
 extern atomic_bool   s_throttle_pins_known;
+extern atomic_uint   s_throttle_proto;
 
 /* The OUTPUTS page as the IOmcu holds it; the OUTPUTS screen's write
  * asks for one straight afterwards. */

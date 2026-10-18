@@ -41,7 +41,7 @@
 #define DOWN_X    33
 #define UP_X      519
 #define ARM_X     676
-#define ARM_Y     P(318)
+#define ARM_Y     P(342)
 #define RESET_X   676
 #define RESET_Y   P(402)
 #define HINT_Y    P(390)
@@ -832,7 +832,7 @@ TEST_CASE(arm_reset_peaks_and_the_tabs_work_while_disarmed)
     feed_tap(FEED_LONE, RESET_X, RESET_Y);
     CHECK_EQ(took().kind, MOTOR_CMD_RESET_PEAKS);
     picture(fb_was);
-    feed_tap(FEED_LONE, 6 + 124 / 2 + 31, P(11));       /* TABLE */
+    feed_tap(FEED_LONE, 6 + 124 / 2 + 31, P(45));       /* TABLE */
     CHECK(!picture_unchanged());
     CHECK(arm());
     CHECK(disarm());

@@ -34,6 +34,8 @@ entries:
     ui_watermark (extram_bss)
     supply_screen (extram_bss)
     motor_screen (extram_bss)
+    motor_workbench (extram_bss)
+    motor_settings_page (extram_bss)
     programmer_screen (extram_bss)
     esc_stick_panel (extram_bss)
     kst_panel (extram_bss)

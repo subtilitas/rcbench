@@ -446,7 +446,7 @@ def string_pairs() -> list[tuple[str, str]]:
                   for e, d in zip(en_list, de_list, strict=True)]
 
     header = read(SETTINGS_H)
-    enum = header[header.index("SET_CAT_ESC = 0"):
+    enum = header[header.index("SET_CAT_APP = 0"):
                   header.index("SET_CAT_COUNT")]
     cats = re.findall(r"^\s*(SET_CAT_\w+)", enum, re.M)
     en_cats = [c_strings(s) for s in

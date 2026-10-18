@@ -68,8 +68,8 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
  * it, and the test names say what they aim at.  Screen-local coordinates:
  * the router strips the band before a screen sees an event.
  */
-#define UP_Y     24
-#define UP_H     242
+#define UP_Y     58
+#define UP_H     208
 #define LO_Y     (UP_Y + UP_H + 6)        /* 272 */
 #define TITLE_H  20
 #define BTN_H    36
@@ -77,9 +77,10 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define ROW_Y    (LO_Y + TITLE_H + 2)
 #define CTRL_Y   (ROW_Y + 42)             /* the throttle track */
 #define TRACK_Y  (CTRL_Y + TRACK_H / 2)
-/* ARM and RESET PEAKS live in the control panel on the right rail. */
+/* ARM and RESET PEAKS live in the control panel on the right rail, ARM
+ * under the TARGET row. */
 #define ARM_X    676
-#define ARM_Y    (LO_Y + TITLE_H + 8 + BTN_H / 2)
+#define ARM_Y    (LO_Y + TITLE_H + 6 + 22 + 4 + BTN_H / 2)
 #define RESET_X  676
 #define RESET_Y  (LO_Y + 154 - 6 - BTN_H / 2)
 /* One percentage point at each end of the track. */
@@ -909,7 +910,7 @@ TEST_CASE(a_peak_outlasts_the_reading_that_went)
     CHECK(motor_screen_peak_shown(1));
     CHECK(motor_screen_peak_shown(2));
     scr->render(&cv, 0);                       /* the PLOT pane */
-    tap(6 + 93, 2 + 9);                        /* TABLE */
+    tap(6 + 93, 36 + 9);                       /* TABLE */
     scr->render(&cv, 1);
 
     tap(RESET_X, RESET_Y);
@@ -965,7 +966,7 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     REQUIRE_ALLOC(plot);
     memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
 
-    tap(99, 11);                        /* the TABLE tab */
+    tap(99, 45);                        /* the TABLE tab */
     scr->render(&cv, 0);
 
     int differ = 0;
@@ -980,7 +981,7 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     }
 
     /* And back again lands on what it started as. */
-    tap(37, 11);
+    tap(37, 45);
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
     free(plot);
@@ -1330,14 +1331,14 @@ TEST_CASE(a_cancelled_tab_press_does_not_switch_the_pane)
     REQUIRE_ALLOC(plot);
     memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
 
-    ev(99, 11, TOUCH_EVENT_DOWN, 1);    /* the TABLE tab */
+    ev(99, 45, TOUCH_EVENT_DOWN, 1);    /* the TABLE tab */
     scr->cancel();
-    ev(99, 11, TOUCH_EVENT_UP, 1);      /* a recycled id, lifting there */
+    ev(99, 45, TOUCH_EVENT_UP, 1);      /* a recycled id, lifting there */
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
 
     /* And the row is not stuck: a fresh tap switches as usual. */
-    tap(99, 11);
+    tap(99, 45);
     scr->render(&cv, 0);
     CHECK(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
     free(plot);
@@ -1743,15 +1744,26 @@ TEST_CASE(every_arm_starts_from_zero)
     }
 }
 
-/* ------------------------------------------------------ the target line */
+/* ---------------------------------------------------- the TARGET row */
 
-/* How many pixels of one colour the target line's box holds: the box is the
- * readout's left part, one text row at ROW_Y + 9. */
+/*
+ * The CONTROL card's TARGET row, mirrored from motor_screen_int.h: the
+ * card's width less its 6 px padding at y 298, 22 px high; TARGET's 64 px,
+ * then the value box from x 628 to 788.
+ */
+#define TGT_X0 628
+#define TGT_X1 788
+#define TGT_Y0 298
+#define TGT_Y1 320
+#define TGT_TAP_X 700
+#define TGT_TAP_Y 309
+
+/* How many pixels of one colour the TARGET row's value box holds. */
 static int target_pixels(gfx_color_t colour)
 {
     int n = 0;
-    for (int y = ROW_Y + 9; y < ROW_Y + 25; ++y) {
-        for (int x = 12; x < 420; ++x) {
+    for (int y = TGT_Y0; y < TGT_Y1; ++y) {
+        for (int x = TGT_X0; x < TGT_X1; ++x) {
             n += (fb[y * W + x] == colour) ? 1 : 0;
         }
     }
@@ -1763,60 +1775,92 @@ static void draw_once(void)
     scr->render(&cv, 0);
 }
 
-TEST_CASE(the_throttle_panel_names_the_pins_it_drives)
+/* DSHOT300 is entry 4 of the outputs catalogue, MOTOR PWM entry 2. */
+#define PROTO_MOTOR_PWM 2u
+#define PROTO_DSHOT300  4u
+#define PROTO_DSHOT600_BIDIR 7u
+
+TEST_CASE(the_target_row_names_the_protocol_and_the_pins)
 {
     char line[96];
-    ui_text_set_language(UI_LANG_EN);
-    CHECK(!motor_throttle_target(line, sizeof(line), (1u << 0) | (1u << 1),
-                                 true, 47u));
-    CHECK_STR_EQ(line, "TARGET: GP0 GP1");
-    ui_text_set_language(UI_LANG_DE);
-    CHECK(!motor_throttle_target(line, sizeof(line), (1u << 0) | (1u << 1),
-                                 true, 47u));
-    CHECK_STR_EQ(line, "ZIEL: GP0 GP1");
-    ui_text_set_language(UI_LANG_EN);
-}
-
-TEST_CASE(many_throttle_pins_end_in_a_count_within_the_budget)
-{
-    char line[96];
-    ui_text_set_language(UI_LANG_EN);
-    const uint64_t eight = 0xFFu;
-    CHECK(!motor_throttle_target(line, sizeof(line), eight, true, 20u));
-    CHECK_STR_EQ(line, "TARGET: GP0 GP1 +6");
-    CHECK(strlen(line) <= 20u);
-    /* Exactly fitting: 8 + "GP0 GP1 GP2" = 19. */
-    CHECK(!motor_throttle_target(line, sizeof(line), 7u, true, 19u));
-    CHECK_STR_EQ(line, "TARGET: GP0 GP1 GP2");
-    /* One cell fewer: the third pin gives way to the count. */
-    CHECK(!motor_throttle_target(line, sizeof(line), 7u, true, 18u));
-    CHECK_STR_EQ(line, "TARGET: GP0 GP1 +1");
-    /* GP47 is the highest pin the boards have. */
-    CHECK(!motor_throttle_target(line, sizeof(line), (uint64_t)1u << 47, true,
-                                 47u));
-    CHECK_STR_EQ(line, "TARGET: GP47");
-}
-
-TEST_CASE(the_panel_field_of_49_cells_shows_the_documented_examples)
-{
-    char line[96];
-    ui_text_set_language(UI_LANG_EN);
-    CHECK(!motor_throttle_target(line, sizeof(line), 0xFFFFu, true, 49u));
-    CHECK_STR_EQ(line, "TARGET: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 +7");
-    ui_text_set_language(UI_LANG_DE);
-    CHECK(!motor_throttle_target(line, sizeof(line), 0xFFFFu, true, 49u));
-    CHECK_STR_EQ(line, "ZIEL: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 GP9 +6");
-    ui_text_set_language(UI_LANG_EN);
-}
-
-TEST_CASE(the_throttle_prefix_is_shorter_than_its_49_cell_field)
-{
-    /* The panel's field is 49 cells, the width the documented examples
-     * use. */
-    CHECK_EQ(motor_target_cells(), 49u);
     for (int l = 0; l < 2; ++l) {
         ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
-        CHECK(snprintf(NULL, 0, TR(MO_TARGET), "") < 49);
+        /* A protocol's name is the catalogue's, the same in both. */
+        CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300,
+                                     (1u << 0) | (1u << 1), true, 18u));
+        CHECK_STR_EQ(line, "DSHOT300 GP0 GP1");
+        CHECK(!motor_throttle_target(line, sizeof(line), PROTO_MOTOR_PWM,
+                                     1u << 2, true, 18u));
+        CHECK_STR_EQ(line, "MOTOR PWM GP2");
+        /* No protocol known, or an index past the catalogue: the pins. */
+        CHECK(!motor_throttle_target(line, sizeof(line), 0u, 3u, true, 18u));
+        CHECK_STR_EQ(line, "GP0 GP1");
+        CHECK(!motor_throttle_target(line, sizeof(line), 8u, 3u, true, 18u));
+        CHECK_STR_EQ(line, "GP0 GP1");
+    }
+    /* Several protocols: MIXED, in the language shown. */
+    ui_text_set_language(UI_LANG_EN);
+    CHECK(!motor_throttle_target(line, sizeof(line), MOTOR_PROTO_MIXED,
+                                 (1u << 0) | (1u << 2), true, 18u));
+    CHECK_STR_EQ(line, "MIXED GP0 GP2");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(!motor_throttle_target(line, sizeof(line), MOTOR_PROTO_MIXED,
+                                 (1u << 0) | (1u << 2), true, 18u));
+    CHECK_STR_EQ(line, "GEMISCHT GP0 GP2");
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* The row's value box holds 18 cells: the pins give way to a count. */
+TEST_CASE(many_throttle_pins_end_in_a_count_within_the_box)
+{
+    char line[96];
+    CHECK_EQ(motor_target_cells(), 18u);
+    ui_text_set_language(UI_LANG_EN);
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0xFFu,
+                                 true, 18u));
+    CHECK_STR_EQ(line, "DSHOT300 GP0 +7");
+    CHECK(strlen(line) <= 18u);
+    /* Exactly fitting: "DSHOT300 GP0 GP1 " is 17, and GP2 does not fit. */
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 3u, true,
+                                 16u));
+    CHECK_STR_EQ(line, "DSHOT300 GP0 GP1");
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 3u, true,
+                                 15u));
+    CHECK_STR_EQ(line, "DSHOT300 GP0 +1");
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 3u, true,
+                                 14u));
+    CHECK_STR_EQ(line, "DSHOT300 +2");
+    /* The longest name leaves room for the count alone. */
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT600_BIDIR, 3u,
+                                 true, 18u));
+    CHECK_STR_EQ(line, "DSHOT600 BIDIR +2");
+    /* GP47 is the highest pin the boards have. */
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_MOTOR_PWM,
+                                 (uint64_t)1u << 47, true, 18u));
+    CHECK_STR_EQ(line, "MOTOR PWM GP47");
+    /* A buffer too short cuts the line and ends it. */
+    char tiny[6];
+    (void)motor_throttle_target(tiny, sizeof(tiny), PROTO_DSHOT300, 3u, true,
+                                18u);
+    CHECK_STR_EQ(tiny, "DSHOT");
+    /* No buffer: nothing written, no warning. */
+    CHECK(!motor_throttle_target(NULL, 8u, PROTO_DSHOT300, 3u, true, 18u));
+    CHECK(!motor_throttle_target(line, 0u, PROTO_DSHOT300, 3u, true, 18u));
+}
+
+/* Every text the value box shows fits its 18 cells in both languages. */
+TEST_CASE(the_target_row_texts_fit_the_box)
+{
+    char line[96];
+    for (int l = 0; l < 2; ++l) {
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        CHECK(motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
+        CHECK(strlen(line) <= 18u);
+        CHECK(motor_throttle_target(line, sizeof(line), 0u, 0u, false, 18u));
+        CHECK(strlen(line) <= 18u);
+        CHECK(!motor_throttle_target(line, sizeof(line), MOTOR_PROTO_MIXED,
+                                     0xFFFFu, true, 18u));
+        CHECK(strlen(line) <= 18u);
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -1825,22 +1869,25 @@ TEST_CASE(no_throttle_pin_and_an_unread_binding_are_warnings)
 {
     char line[96];
     ui_text_set_language(UI_LANG_EN);
-    CHECK(motor_throttle_target(line, sizeof(line), 0u, true, 47u));
-    CHECK_STR_EQ(line, "TARGET: NO MOTOR PIN ASSIGNED");
-    CHECK(motor_throttle_target(line, sizeof(line), 0u, false, 47u));
-    CHECK_STR_EQ(line, "TARGET: ASSIGNMENT NOT READ");
+    CHECK(motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0u, true,
+                                18u));
+    CHECK_STR_EQ(line, "NO MOTOR PIN");
+    CHECK(motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0u, false,
+                                18u));
+    CHECK_STR_EQ(line, "PINS NOT READ");
     /* A mask with a binding not read is no pin. */
-    CHECK(motor_throttle_target(line, sizeof(line), 3u, false, 47u));
-    CHECK_STR_EQ(line, "TARGET: ASSIGNMENT NOT READ");
+    CHECK(motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 3u, false,
+                                18u));
+    CHECK_STR_EQ(line, "PINS NOT READ");
     ui_text_set_language(UI_LANG_DE);
-    CHECK(motor_throttle_target(line, sizeof(line), 0u, true, 47u));
-    CHECK_STR_EQ(line, "ZIEL: KEIN MOTOR-PIN ZUGEORDNET");
-    CHECK(motor_throttle_target(line, sizeof(line), 0u, false, 47u));
-    CHECK_STR_EQ(line, "ZIEL: ZUORDNUNG NICHT AUSGELESEN");
+    CHECK(motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
+    CHECK_STR_EQ(line, "KEIN MOTOR-PIN");
+    CHECK(motor_throttle_target(line, sizeof(line), 0u, 0u, false, 18u));
+    CHECK_STR_EQ(line, "PINS NICHT GELESEN");
     ui_text_set_language(UI_LANG_EN);
 }
 
-TEST_CASE(the_target_line_is_drawn_in_the_colour_of_its_state)
+TEST_CASE(the_target_row_is_drawn_in_the_colour_of_its_state)
 {
     const gfx_color_t warn = ui_theme_color(UI_C_WARN);
     const gfx_color_t text = ui_theme_color(UI_C_TEXT);
@@ -1875,32 +1922,42 @@ TEST_CASE(the_target_line_is_drawn_in_the_colour_of_its_state)
     ui_text_set_language(UI_LANG_EN);
 }
 
-TEST_CASE(a_longer_pin_list_changes_the_line_and_a_throttle_move_keeps_it)
-{
-    fresh();
-    motor_screen_set_throttle_pins(1u << 2, true);
-    draw_once();
-    const int one = target_pixels(ui_theme_color(UI_C_TEXT));
-    motor_screen_set_throttle_pins((1u << 2) | (1u << 3) | (1u << 4), true);
-    draw_once();
-    CHECK(target_pixels(ui_theme_color(UI_C_TEXT)) > one);
-    /* The readout clears itself on a throttle move: the line is redrawn. */
-    const int three = target_pixels(ui_theme_color(UI_C_TEXT));
-    motor_screen_set_throttle(10.0f);
-    draw_once();
-    CHECK_EQ(target_pixels(ui_theme_color(UI_C_TEXT)), three);
-}
-
-/* A sum over the target line's box: two different texts differ in it. */
+/* A sum over the TARGET row's value box: two different texts differ. */
 static unsigned long target_hash(void)
 {
     unsigned long h = 1469598103UL;
-    for (int y = ROW_Y + 9; y < ROW_Y + 25; ++y) {
-        for (int x = 12; x < 420; ++x) {
+    for (int y = TGT_Y0; y < TGT_Y1; ++y) {
+        for (int x = TGT_X0; x < TGT_X1; ++x) {
             h = (h * 31UL + (unsigned long)fb[y * W + x]) & 0xffffffffUL;
         }
     }
     return h;
+}
+
+TEST_CASE(a_new_protocol_or_pin_set_redraws_the_row_and_a_throttle_keeps_it)
+{
+    fresh();
+    motor_screen_set_throttle_pins(1u << 2, true);
+    draw_once();
+    const unsigned long bare = target_hash();
+    motor_screen_set_throttle_protocol(PROTO_DSHOT300);
+    draw_once();
+    const unsigned long named = target_hash();
+    CHECK(named != bare);
+    /* The same protocol again moves nothing. */
+    const gfx_color_t mark = (gfx_color_t)~fb[ARM_Y * W + ARM_X];
+    fb[ARM_Y * W + ARM_X] = mark;
+    motor_screen_set_throttle_protocol(PROTO_DSHOT300);
+    draw_once();
+    CHECK_EQ(fb[ARM_Y * W + ARM_X], mark);
+    motor_screen_set_throttle_pins((1u << 2) | (1u << 3), true);
+    draw_once();
+    CHECK(target_hash() != named);
+    /* A throttle move repaints the readout, not the row. */
+    const unsigned long two = target_hash();
+    motor_screen_set_throttle(10.0f);
+    draw_once();
+    CHECK_EQ(target_hash(), two);
 }
 
 TEST_CASE(a_binding_that_reads_with_no_motor_pin_leaves_not_read)
@@ -2005,13 +2062,12 @@ int main(void)
     RUN(a_press_on_the_disarmed_track_is_no_drag_after_the_arm);
     RUN(a_drag_under_way_ends_at_the_disarm);
     RUN(every_arm_starts_from_zero);
-    RUN(the_throttle_panel_names_the_pins_it_drives);
-    RUN(many_throttle_pins_end_in_a_count_within_the_budget);
-    RUN(the_panel_field_of_49_cells_shows_the_documented_examples);
-    RUN(the_throttle_prefix_is_shorter_than_its_49_cell_field);
+    RUN(the_target_row_names_the_protocol_and_the_pins);
+    RUN(many_throttle_pins_end_in_a_count_within_the_box);
+    RUN(the_target_row_texts_fit_the_box);
     RUN(no_throttle_pin_and_an_unread_binding_are_warnings);
-    RUN(the_target_line_is_drawn_in_the_colour_of_its_state);
-    RUN(a_longer_pin_list_changes_the_line_and_a_throttle_move_keeps_it);
+    RUN(the_target_row_is_drawn_in_the_colour_of_its_state);
+    RUN(a_new_protocol_or_pin_set_redraws_the_row_and_a_throttle_keeps_it);
     RUN(a_binding_that_reads_with_no_motor_pin_leaves_not_read);
     RUN(a_changed_pin_set_redraws_the_controls_and_an_unchanged_one_does_not);
     return test_summary("motor");

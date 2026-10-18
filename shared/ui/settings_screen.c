@@ -2,9 +2,9 @@
  * The settings screen: a hub of tiles, and one renderer over the whole
  * schema.
  *
- * SETUP opens on a grid of tiles, the menu's kind: one per category, and
- * one per screen of its own that SETUP reaches (OUTPUTS, PICK A PIN,
- * UPDATES).  A category's tile opens its list across the screen's width.
+ * SETUP opens on a grid of tiles, the menu's kind: one per category it
+ * holds (APPLICATION, INTERFACES), and one per screen of its own that SETUP
+ * reaches (OUTPUTS, PICK A PIN, WI-FI, UPDATES).  A category's tile opens its list across the screen's width.
  * The list walks the rows shared/settings declares and draws each row by
  * its type: a stepper for a number, a toggle for a bool, a choice for an
  * enum.  A new setting is a schema row, and a new tile is a line of
@@ -125,6 +125,8 @@ enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
  * tile names the category and counts its settings; a screen's tile names
  * the screen by its title, English always, as the menu does.  The home tag
  * of a screen a tile opens leads back here (settings_screen_opens()).
+ * The hub holds the bench-wide tools only: ESC / BENCH's rows are MOTOR &
+ * ESC > SETTINGS', beside the throttle they set.
  *
  * Nine fit the grid.  A tenth needs a second page, through ui_tabs in the
  * strip's free columns, which is not built: the build stops at a tenth
@@ -143,7 +145,6 @@ typedef struct {
     { (icon_), -1, (screen_), (line_) }
 
 static const hub_tile_t k_tiles[] = {
-    HUB_CATEGORY(SET_CAT_ESC,   ui_icon_motor),
     HUB_CATEGORY(SET_CAT_APP,   ui_icon_sliders),
     HUB_CATEGORY(SET_CAT_IFACE, ui_icon_chip),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
@@ -542,7 +543,7 @@ static void drop_press(void)
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
-    s.cat = SET_CAT_ESC;
+    s.cat = SET_CAT_APP;
     s.hit_index = -1;
     clamp_scroll();
 }

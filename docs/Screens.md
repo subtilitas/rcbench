@@ -183,28 +183,61 @@ of 1.6 s; a tap skips the hold.
 
 ![Motor and ESC](img/motor.png)
 
-Two columns. The plot and the throttle take the left, the four readouts and
-the controls take a rail on the right, so reading the numbers and working the
-throttle do not compete for the same part of the screen. With the rotary knob
-on, turning it moves the throttle ([the knob](#application-the-rotary-knob)).
+MOTOR & ESC is a workbench: a strip of tasks at the top, LIVE and SETTINGS,
+each 112 x 24 px, and a page under it. The menu's tile always opens LIVE. A
+tap on a tab switches the task; a switch is no navigation level and leaves
+LIVE's view, PLOT or TABLE, as it was.
 
-### The throttle panel names its pins
+| Task | The left column, 546 px |
+| --- | --- |
+| LIVE | the plot or the table over the throttle |
+| SETTINGS | the 8 ESC settings under PACK, MOTOR and THROTTLE OUTPUT ([Settings](#motor--esc-settings)) |
 
-The throttle panel names the pins the throttle drives, left of the percentage:
-`TARGET: GP0 GP1`. They are the pins bound as MOTOR PWM or as a DShot
-protocol, read from the same SETUP > OUTPUTS pages the IOmcu's throttle
-role reads. The list is in pin order and holds as many pins as fit the field
-of 49 characters; the rest are counted. With GP0 to GP15 bound it reads
-`TARGET: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 +7`.
-Two states show in the warning colour:
+Two columns. The page takes the left, the four readouts and the CONTROL card
+take a rail of 236 px on the right, so reading the numbers and working the
+throttle do not compete for the same part of the screen. The rail is the same
+on both tasks, and ARM works on both. With the rotary knob on, turning it
+moves the throttle on LIVE ([the knob](#application-the-rotary-knob)); on
+SETTINGS a turn moves nothing.
 
-| Line | Condition |
-|---|---|
-| `TARGET: NO MOTOR PIN ASSIGNED` | the binding is read and no pin is bound as a motor |
-| `TARGET: ASSIGNMENT NOT READ` | no binding was read: the link is down, the pages did not read, or no pin map exists for the board |
+The home tag climbs one level at a time:
 
-The throttle still moves in either state. ARM switches the whole bank to ARMED, not only
-the pins named here.
+| From | The home tag leads to |
+| --- | --- |
+| the keypad on SETTINGS | SETTINGS; the value is not changed |
+| LIVE or SETTINGS | the menu; the bench switches to SAFE |
+
+### TARGET names the protocol and the pins
+
+The CONTROL card opens with the TARGET row: the label, 64 px, and a value box
+of 18 characters that names what the throttle drives, the protocol and then
+the pins, `DSHOT300 GP0 GP1`. They are the pins bound as MOTOR PWM or as a
+DShot protocol, read from the same SETUP > OUTPUTS pages the IOmcu's throttle
+role reads. The pins are in pin order; those that do not fit are counted.
+With GP0 to GP7 bound as DSHOT300 it reads `DSHOT300 GP0 +7`.
+
+| TARGET reads | Condition |
+| --- | --- |
+| `DSHOT300 GP0 GP1` | one protocol drives every throttle pin |
+| `MIXED GP0 GP4` | the throttle pins run on two or more protocols, or one of them on a rate no OUTPUTS protocol has |
+| `GP0 GP1` | every throttle pin runs on a rate no OUTPUTS protocol has |
+| `NO MOTOR PIN` | the binding is read and no pin is bound as a motor; warning colour |
+| `PINS NOT READ` | no binding was read: the link is down, the pages did not read, or no pin map exists for the board; warning colour |
+
+The throttle still moves in the two warning states. ARM switches the whole
+bank to ARMED, not only the pins named here.
+
+A tap on TARGET opens [OUTPUTS](#outputs). Leaving switches the bench to SAFE,
+as every way off the screen does. The home tag on OUTPUTS returns to MOTOR &
+ESC on the task TARGET was tapped on; any other screen opened in between
+makes the next entry a tile's, on LIVE. TARGET takes no tap, and is drawn
+with the locked edge, while any of these holds:
+
+| Condition | Why |
+| --- | --- |
+| ARMED, an ARM asked and not answered, or a DISARM asked and not answered | a binding changes the pins the bench drives |
+| ARM held | the press is ARM's |
+| the [servo programmer](ServoProgrammer.md) holds a port | ARM is locked for the same reason |
 ### The plot covers one run
 
 ![Motor and ESC, telemetry held](img/motor-held.png)
@@ -229,16 +262,16 @@ Switching to ARMED clears the plot, and a latched stop is cleared by switching t
 of a run a STOP ended does not survive making the bench usable again. One
 switching to ARMED writes one CSV file, and LOGS plots it.
 
-
-The strip above both columns carries the poll rate, the link's error count
-(cyclic redundancy check failures and resyncs added together) and three
-temperatures. ESC and MOT come from the bench page. MCU is the panel's own
-die, read from the ESP32-S3's sensor: it is the display board's temperature,
-not the IOmcu's. While the link is up and the IOmcu has refused
-link frames since its power-up, the strip shows how many after the error
-count: `Rejected link frames: 37`. An IOmcu older than protocol 4.21
-sends no count, and the strip shows none
-([Refused frames](Link.md#refused-frames)).
+On LIVE the line under the strip carries PLOT and TABLE, the poll rate, the
+link's error count (cyclic redundancy check failures and resyncs added
+together) and three temperatures. ESC and MOT come from the bench page. MCU
+is the panel's own die, read from the ESP32-S3's sensor: it is the display
+board's temperature, not the IOmcu's. While the link is up and the IOmcu has
+refused link frames since its power-up, the line shows how many after the
+error count: `Rejected link frames: 37`. An IOmcu older than protocol 4.21
+sends no count, and the line shows none
+([Refused frames](Link.md#refused-frames)). On SETTINGS the line holds the
+temperatures alone, over the rail.
 
 ![MOTOR & ESC with 37 refused link frames](img/motor-refused.png)
 
@@ -256,7 +289,7 @@ The throttle changes only while the bench is ARMED. What each control does:
 | Rotary knob | refused; the turn is not kept | moves the throttle from its value |
 | ARM | switches the throttle outputs to ARMED after its 2 s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | switches to SAFE on a tap |
 | RESET PEAKS | resets the peaks | resets the peaks |
-| PLOT, TABLE | switch the pane | switch the pane |
+| PLOT, TABLE | switch LIVE's view | switch LIVE's view |
 
 While SAFE, the line under the track reads `ARM FIRST`. The refusal runs
 from the switch to SAFE until the bench reports ARMED: a control touched after
@@ -422,6 +455,54 @@ each read: a poll longer than 50 ms skips windows, 1 in 17 at 53 ms, and a
 clipped sample is left out of the figures. LOGS groups `ina voltage`,
 `ina current` and `esc current` under INA228 and ESC, and the window's
 columns under INA3221.
+
+### MOTOR & ESC settings
+
+![SETTINGS](img/motor-settings.png)
+
+SETTINGS holds the 8 settings of the ESC / BENCH category (`SET_CAT_ESC`)
+in schema order, under three headings:
+
+| Heading | Settings |
+| --- | --- |
+| PACK | Cells, Capacity, Internal R |
+| MOTOR | Motor poles, Rated kV |
+| THROTTLE OUTPUT | Idle pulse, Full pulse, Ramp limit |
+
+A row is 34 px: the label, the help line, and the value with its unit in a
+box of 100 x 28 px. A tap on the box opens the keypad over the left column
+and the strip, 546 x 423 px, so no tab switches the task under it; the rail
+stays in reach. The keypad names the setting, its range and its unit. OK
+takes a value inside the range and lands it on the setting's step, 4321 mAh
+as 4300 mAh; outside the range it keeps the keypad open and names the range
+in the warning colour. CANCEL and the home tag close it with the value
+unchanged.
+
+![The keypad over SETTINGS](img/motor-settings-keypad.png)
+
+Idle pulse and Full pulse take a value on a SAFE bench only: the IOmcu takes
+the endpoints while it is disarmed, 300 ms after the last edit, and the
+switch to ARMED sends none. While the bench is ARMED, ARM is held, or an ARM
+or a DISARM waits for its answer, their help line reads `Set on a SAFE bench
+only` in the warning colour and the box takes no tap; a keypad open for one
+closes when ARM is pressed or the bench leaves SAFE. The 2 s hold of ARM
+leaves an edit made before the press the time to reach the IOmcu. The other 6 rows take a value at any time.
+
+The settings are one store. Every value OK sets is in force at once and asks
+for a write; the panel writes the whole store on the first frame with the
+bench SAFE, the supply output off and no board drawing being fetched or
+kept, the same write SETUP's SAVE asks for ([Keeping the
+values](#keeping-the-values)). A value left unsaved on SETUP is written with
+it, so SETUP has nothing left to warn about. A refused write leaves every
+value unsaved, and SETUP's warning on leaving lists the ESC rows with its
+own. The line under the rows names the store's state:
+
+| Line | State |
+| --- | --- |
+| `SAVED` | nothing is unwritten |
+| `SAVE PENDING` | a write is asked and waits for a quiet bench |
+| `NOT SAVED` | the last write was refused |
+| `SETUP CHANGES NOT SAVED` | values are unsaved and no write is asked; the next change here writes them |
 
 ## Servo
 
@@ -1984,13 +2065,15 @@ style. Each tile is 256 x 108 px, its icon centred over its name.
 
 ![Setup](img/setup.png)
 
-- Three categories: ESC / BENCH, APPLICATION and INTERFACES. Each tile
-  names its number of settings. A tap opens the category's list.
+- Two categories: APPLICATION and INTERFACES, the bench-wide settings.
+  Each tile names its number of settings. A tap opens the category's list.
+  The ESC / BENCH settings are on MOTOR & ESC
+  ([MOTOR & ESC settings](#motor--esc-settings)).
 - Four screens of their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
   ([Pick a pin](#pick-a-pin)), WI-FI ([Wi-Fi](#wi-fi)) and UPDATES
   ([Updates](#updates)). The band of each names it as its tile does, and
   the band of this page reads SETUP.
-- Two slots are free. A tenth entry has no slot: the page holds 9, and
+- Three slots are free. A tenth entry has no slot: the page holds 9, and
   the build fails at the tenth.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
@@ -2008,7 +2091,7 @@ and SAVE. The strip ends at panel y 442, 4 px above the alert band
 ([The alert band](#the-alert-band)), so an alert never covers a key, a row,
 RESET CATEGORY or SAVE, on the tiles or on a list.
 
-![ESC / BENCH](img/setup-esc.png)
+![APPLICATION](img/setup-application.png)
 
 The home tag climbs one level at a time:
 
@@ -2016,7 +2099,7 @@ The home tag climbs one level at a time:
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC goes back to MOTOR & ESC |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
@@ -2029,7 +2112,7 @@ default and is described under [Logs](#logs).
 
 Nine settings are stored and shown, and no part of the firmware reads them:
 Backlight, Units and Dim after under APPLICATION; Cells, Capacity and
-Internal R; Vibration, Optical tacho and Tacho pin. Ramp limit is read only
+Internal R on MOTOR & ESC; Vibration, Optical tacho and Tacho pin. Ramp limit is read only
 as the slew of the modelled bench.
 
 ### Keys and the list
@@ -2406,8 +2489,9 @@ card of 784 x 344 px with a 3 px edge in the warning colour, over the strip.
 It lists each value and string that differs from the stored copy, one line
 of 22 px each, as `name: stored -> now`. A value is written as the list
 writes it, with its unit; a string, the DUT (device under test) name, as it
-is. Values set on other screens, such as SERVO's settings or ESC STICK's,
-are listed too: they are in the same set and the same save keeps them. The
+is. Values set on other screens, such as SERVO's settings, ESC STICK's or
+MOTOR & ESC's, are listed too: they are in the same set and the same save
+keeps them. A change on MOTOR & ESC, SETTINGS asks for that save itself. The
 lines follow the schema's order, the strings after the values. With more
 than 10 changes, 9 lines show and the tenth reads `and 3 more` for 12.
 
@@ -2808,7 +2892,7 @@ The MOTOR & ESC throttle drives every channel bound as a motor — MOTOR PWM
 and the DShot entries — and leaves the servo channels alone.
 
 A MOTOR PWM channel sends 0 % throttle as the Idle pulse and 100 % as the
-Full pulse: 1000 us and 2000 us by default, set under SETUP, ESC / BENCH, in
+Full pulse: 1000 us and 2000 us by default, set under MOTOR & ESC, SETTINGS, in
 steps of 10 us (Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us). The
 two settings reach the channels bound as a motor and no others: a SERVO PWM
 channel keeps 1000 to 2000 us, or the range the SERVO screen sends for the

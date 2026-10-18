@@ -6,7 +6,7 @@ order: 62
 
 # Ausgänge
 
-OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md), auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
+OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) und über ZIEL auf [MOTOR & ESC](motor.md#ziel), auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
 
 ## Pins binden
 
@@ -42,7 +42,7 @@ Das Wählen eines Protokolls schreibt nichts. Es bestimmt, welche Pins abgehakt 
 
 ## Leerlaufpuls und Vollpuls
 
-Ein MOTOR-PWM-Kanal sendet 0 % Throttle als Leerlaufpuls und 100 % als Vollpuls, ab Werk 1000 us und 2000 us. Beide stehen unter SETUP, ESC / PRÜFSTAND, in Schritten von 10 us: Leerlaufpuls 800 bis 1600 us, Vollpuls 1400 bis 2400 us. Ein SERVO-PWM-Kanal behält 1000 bis 2000 us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den IOmcu 300 ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.`.
+Ein MOTOR-PWM-Kanal sendet 0 % Throttle als Leerlaufpuls und 100 % als Vollpuls, ab Werk 1000 us und 2000 us. Beide stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md), in Schritten von 10 us: Leerlaufpuls 800 bis 1600 us, Vollpuls 1400 bis 2400 us. Ein SERVO-PWM-Kanal behält 1000 bis 2000 us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den IOmcu 300 ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.`.
 
 Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses Senders als null. Leerlaufpuls auf oder unter diesen Puls setzen und Vollpuls auf oder über den längsten: Für einen Sender, der 985 bis 2012 us sendet, 980 us und 2020 us.
 
@@ -104,5 +104,5 @@ Der IOmcu speichert die Bindung in seinem eigenen Flash und stellt sie beim Star
 ## Verwandte Seiten
 
 - [Pin-Auswahl](picker.md): dieselbe Bindung auf der Platine.
-- [Motor und ESC](motor.md#das-throttle-feld-nennt-seine-pins): die Pins, die der Throttle treibt.
+- [Motor und ESC](motor.md#ziel): die Pins, die der Throttle treibt.
 - [Servo-Optionen](servo-settings.md#die-zeile-ziel): die Pins, die der Servotester treibt.

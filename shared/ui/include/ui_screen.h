@@ -130,9 +130,10 @@ ui_screen_id_t ui_router_current(void);
 
 /**
  * Where the home tag of screen @p id leads when it leaves the screen.  A
- * screen with two openers, WI-FI, returns to the one that last opened it:
- * LOGS or SETUP.  A screen a tile of SETUP opens returns to SETUP, and
- * every other to the menu.  WI-FI not yet opened returns to SETUP.
+ * screen with two openers returns to the one that last opened it: WI-FI to
+ * LOGS or SETUP, OUTPUTS to MOTOR & ESC or SETUP.  A screen a tile of SETUP
+ * opens returns to SETUP, and every other to the menu.  WI-FI or OUTPUTS
+ * not yet opened from an opener returns to SETUP.
  */
 ui_screen_id_t ui_router_parent(ui_screen_id_t id);
 

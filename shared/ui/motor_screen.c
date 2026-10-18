@@ -1,5 +1,13 @@
 /*
- * The motor and ESC (electronic speed controller) bench screen.
+ * The motor and ESC (electronic speed controller) bench screen, a
+ * workbench (ui_workbench.h) with the tasks LIVE and SETTINGS.
+ *
+ * This file is the screen and LIVE's page: the plot or the table, the
+ * throttle, the readouts and the CONTROL card on the right.  The strip and
+ * the CONTROL card's TARGET row are motor_workbench.c's, SETTINGS' page
+ * motor_settings_page.c's; the layout they share is motor_screen_int.h.
+ * The rail on the right, the readouts and the CONTROL card with TARGET,
+ * ARM and RESET PEAKS, is the same on every task.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -25,42 +33,15 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H (480 - UI_BAND_H)   /* the router owns the band */
+/* Last but one: motor_screen_int.h's layout macros have short names, which
+ * no header included after it may meet. */
+#include "motor_screen_int.h"
 
-/* Horizontal bands, not columns: seventeen full-height vertical lines cost
- * about 8,160 cache-line fills on this panel, and the same pixels drawn as
- * horizontal lines cost none. */
-#define PAD       6                    /* the screen's outer margin */
-#define INNER     6                    /* a panel's own padding */
-
-/*
- * Two columns.  The plot and the throttle take the left, the readouts and
- * the controls take a rail on the right, so a glance at the numbers and a
- * hand on the throttle do not compete for the same part of the screen.
- */
-#define COL_GAP   6
-#define LEFT_X    PAD
-#define LEFT_W    546
-#define RIGHT_X   (LEFT_X + LEFT_W + COL_GAP)
-#define RIGHT_W   (W - PAD - RIGHT_X)
-
-/* The strip above both columns: what is driving the outputs, and how hot. */
-#define HDR_Y     2
-#define HDR_H     18
-
-/* Upper row: the plot on the left, the four readouts stacked on the right. */
-#define UP_Y      24
-#define UP_H      242
+/* Inside the upper row's readouts: four stacked on the right. */
 #define HERO_H    ((UP_H - 3 * HERO_GAP) / 4)
 #define HERO_GAP  4
 
-/* Lower row: the throttle on the left, arming and the totals on the right. */
-#define LO_Y      (UP_Y + UP_H + 6)
-#define LO_H      (H - LO_Y - PAD)
-
 /* Inside the telemetry panel: its title strip, the legend, then the plot. */
-#define TITLE_H   20
 #define LEG_Y     (UP_Y + TITLE_H + 4)
 #define LEG_H     30
 #define PLOT_X    (LEFT_X + INNER)
@@ -84,12 +65,6 @@
 #define READOUT_W (LEFT_W - 2 * INNER)
 #define READOUT_H (CTRL_Y - ROW_Y - 4)
 
-/* Inside the control panel. */
-#define BTN_H     36
-#define ARM_Y     (LO_Y + TITLE_H + 8)
-#define TOTALS_Y  (ARM_Y + BTN_H + 10)
-#define RESET_Y   (LO_H + LO_Y - PAD - BTN_H)
-
 /*
  * ARM is a hold, not a press: two seconds from the OK green to the danger
  * red, and the command goes when the fade completes.  A release before then
@@ -105,8 +80,7 @@
 #define ARM_HOLD_S    UI_HOLD_S
 #define ARM_FLASH_FRAMES UI_HOLD_FLASH_FRAMES
 
-/* The tabs move into the header strip: the mockup has no tab row, and the
- * table pane is not worth deleting to match it. */
+/* LIVE's views, PLOT and TABLE, at the left of the line under the strip. */
 #define TAB_Y     HDR_Y
 #define TAB_H     HDR_H
 #define TAB_W     124
@@ -195,6 +169,14 @@ static struct {
      * was read: what the throttle panel names as its target. */
     uint64_t      thr_pins;
     bool          thr_pins_known;
+    /* The protocol they are bound as: an outbind_protos() index, 0 for
+     * none known, MOTOR_PROTO_MIXED for several. */
+    uint8_t       thr_proto;
+    /* The strip's and SETTINGS' page's revisions last painted into each
+     * framebuffer, and whether the TARGET row was drawn locked. */
+    uint32_t      drawn_strip[2];
+    uint32_t      drawn_page[2];
+    bool          target_locked;
     /* Whether each channel's peak is a measurement: a valid live reading
      * has arrived since the run started.  Kept apart from the live flags,
      * which a source that stops answering mid-run clears while the run's
@@ -226,6 +208,10 @@ void motor_invalidate(void)
     s.drawn_plot[1] = UINT32_MAX;
     s.drawn_title[0] = 0xFFu;
     s.drawn_title[1] = 0xFFu;
+    s.drawn_strip[0] = UINT32_MAX;
+    s.drawn_strip[1] = UINT32_MAX;
+    s.drawn_page[0]  = UINT32_MAX;
+    s.drawn_page[1]  = UINT32_MAX;
 }
 
 /* The palette is not a compile-time constant -- it changes with the theme --
@@ -247,18 +233,9 @@ static void reset(void)
     memset(&s, 0, sizeof(s));
     /* Not zero: a zeroed drawn_* must not read as "already drawn revision 0",
      * or the first frame after a reset skips what it is meant to paint. */
-    s.drawn_push[0] = UINT32_MAX;
-    s.drawn_push[1] = UINT32_MAX;
-    s.drawn_ctrl[0] = UINT32_MAX;
-    s.drawn_ctrl[1] = UINT32_MAX;
-    s.drawn_thr[0]  = UINT32_MAX;
-    s.drawn_thr[1]  = UINT32_MAX;
-    s.drawn_arm[0]  = UINT32_MAX;
-    s.drawn_arm[1]  = UINT32_MAX;
-    s.drawn_plot[0] = UINT32_MAX;
-    s.drawn_plot[1] = UINT32_MAX;
-    s.drawn_title[0] = 0xFFu;
-    s.drawn_title[1] = 0xFFu;
+    motor_invalidate();
+    mwb_reset();
+    msp_reset();
     ui_plot_init(&s.plot, k_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
     /* A screen that has just reset has no run behind it and no bench in
@@ -539,43 +516,49 @@ void motor_screen_set_throttle_pins(uint64_t gpio_mask, bool known)
     if (gpio_mask != s.thr_pins || known != s.thr_pins_known) {
         s.thr_pins       = gpio_mask;
         s.thr_pins_known = known;
-        ++s.ctrl_rev;                   /* the panel says it */
-        ++s.thr_rev;
+        ++s.ctrl_rev;                   /* the TARGET row says it */
     }
 }
 
-/* The field ends where the widest reading, 100.0, begins, less 8 px. */
-unsigned motor_target_cells(void)
+void motor_screen_set_throttle_protocol(uint8_t proto)
 {
-    const gfx_seg_style_t seg = ui_seg_hero();
-    const int x0   = LEFT_X + INNER;
-    const int xmax = LEFT_X + LEFT_W - INNER - 20
-                     - gfx_seg_width("100.0", &seg) - 8;
-    return (unsigned)((xmax - x0) / 8);
+    if (proto != s.thr_proto) {
+        s.thr_proto = proto;
+        ++s.ctrl_rev;
+    }
 }
 
-bool motor_throttle_target(char *out, size_t size, uint64_t pins, bool known,
-                           unsigned cells)
+/* Whether the bench is SAFE as this screen sees it: disarmed, and no ARM
+ * or DISARM asked and not yet answered (ui_value_gate.h's OFF). */
+static bool bench_safe(void)
 {
-    if (out == NULL || size == 0u) {
-        return false;
-    }
-    if (!known) {
-        snprintf(out, size, "%s", TR(MO_TARGET_UNREAD));
-        return true;
-    }
-    if (pins == 0u) {
-        snprintf(out, size, "%s", TR(MO_TARGET_NONE));
-        return true;
-    }
-    /* The list gets what the prefix leaves of the field. */
-    const int prefix = snprintf(NULL, 0, TR(MO_TARGET), "");
-    char list[UI_PINLIST_PINS * 5u];
-    ui_pinlist(list, sizeof(list), pins,
-               cells > (unsigned)prefix ? cells - (unsigned)prefix : 0u);
-    snprintf(out, size, TR(MO_TARGET), list);
-    return false;
+    return ui_value_state(&s.gate) == UI_VALUE_OFF && !s.bench_armed;
 }
+
+/* Whether Idle pulse and Full pulse may change: SAFE, and ARM not held.  An
+ * endpoint edit waits ENDPOINTS_SETTLE_MS on the panel before it goes to the
+ * IOmcu, and the switch to ARMED sends no CHAN_CFG; an edit made under a
+ * held ARM could be overtaken by the arm and run on the old range.  With ARM
+ * down the keypad of an endpoint closes, and the 2 s hold leaves an edit
+ * made before it the time to go out. */
+static bool endpoints_free(void)
+{
+    return bench_safe() && s.pressed != 1;
+}
+
+/* The TARGET row takes no press while the bench is not SAFE or ARM is held,
+ * and while the servo programmer holds its port, which locks ARM too: what
+ * the throttle drives changes only on a bench at rest. */
+static bool target_locked(void)
+{
+    return !bench_safe() || s.pressed == 1 || kst_panel_holds_port();
+}
+
+bool motor_screen_target_locked(void) { return target_locked(); }
+
+int motor_screen_task(void) { return (int)mwb_task(); }
+
+int motor_screen_pane(void) { return s.tabs.selected; }
 
 float motor_screen_throttle(void) { return s.slider.value; }
 void motor_screen_set_throttle(float pct)
@@ -611,8 +594,10 @@ void motor_screen_knob(float span_fraction)
      * it may replace as the slider does.  Any other pending command -- an arm
      * that completed in this frame's tick, a disarm, a peak reset -- is not
      * the knob's to overwrite, and its delta is dropped, not held for later.
+     * On SETTINGS the throttle is out of sight, and the knob moves nothing.
      */
     if (span_fraction == 0.0f || s.slider.dragging || s.knob_finger
+        || mwb_task() != UI_WB_LIVE
         || (s.pending.kind != MOTOR_CMD_NONE
             && s.pending.kind != MOTOR_CMD_THROTTLE)) {
         return;
@@ -639,26 +624,80 @@ void motor_screen_knob(float span_fraction)
 
 /* ------------------------------------------------------------------ events */
 
+/*
+ * Another task is shown.  A press on the page that went goes with it: a
+ * drag on the throttle, a step button, PLOT or TABLE half pressed, a value
+ * on SETTINGS.  ARM is on the rail, which stays, and keeps its press.  The
+ * page is repainted whole.
+ */
+static void task_changed(void)
+{
+    end_drag();
+    ui_tabs_cancel(&s.tabs);
+    msp_cancel();
+    if (s.pressed == 3 || s.pressed == 4) {
+        s.pressed    = 0;
+        s.have_press = false;
+    }
+    motor_invalidate();
+    ++s.ctrl_rev;
+    ++s.thr_rev;
+    ++s.arm_rev;
+}
+
+/*
+ * The TARGET row tapped: OUTPUTS, where the throttle's pins are bound.  The
+ * router leaves this screen for it, which switches the bench to SAFE as any
+ * way out does (leave()); the row takes the tap only on a SAFE bench.  The
+ * home tag there comes back here (ui_router_parent()), on the task the row
+ * was tapped on.
+ */
+static void open_outputs(void)
+{
+    ui_router_goto(SCREEN_OUTPUTS);
+    mwb_opened_outputs();
+}
+
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
         return;
+    }
+    /* The strip and the TARGET row first: a press of theirs is theirs. */
+    const mwb_ev_t wb = mwb_event(evt, !msp_modal(), target_locked());
+    if (wb == MWB_TASK) {
+        task_changed();
+        return;
+    }
+    if (wb == MWB_TARGET) {
+        open_outputs();
+        return;
+    }
+    if (wb == MWB_TAKEN) {
+        ++s.ctrl_rev;           /* the TARGET row draws its press */
+        return;
+    }
+    /* SETTINGS' page has the left column; the rail stays this file's. */
+    const bool on_live = mwb_task() == UI_WB_LIVE;
+    if (!on_live) {
+        msp_event(evt, endpoints_free());
     }
     /*
      * Each control bumps its own counter, rather than every touch bumping
      * one.  A drag delivers a move per frame, and repainting the buttons
      * with the throttle is what put the drag over two panel frames.
      */
-    if (ui_tabs_event(&s.tabs, evt)) {
+    if (on_live && ui_tabs_event(&s.tabs, evt)) {
         /* The other pane paints over this one's region, so the record of
          * what was drawn there is void -- not merely the chrome's. */
         motor_invalidate();
     }
     /* Refused while the value is not live: the track takes no press, so a
      * bench armed under a finger resting on it moves nothing until the next
-     * press, and a drag under way ends. */
+     * press, and a drag under way ends.  Out of sight on SETTINGS, it takes
+     * none either. */
     const bool live = value_live();
-    if (!live) {
+    if (!live || !on_live) {
         end_drag();
     } else {
         const bool was_dragging = s.slider.dragging;
@@ -676,8 +715,8 @@ static void event(const touch_event_t *evt)
     if (evt->type == TOUCH_EVENT_DOWN) {
         /* One percentage point, on the press rather than the release: this
          * is a fine adjustment and it should feel immediate. */
-        if (gfx_rect_contains(s.down_rect, x, y)
-            || gfx_rect_contains(s.up_rect, x, y)) {
+        if (on_live && (gfx_rect_contains(s.down_rect, x, y)
+                        || gfx_rect_contains(s.up_rect, x, y))) {
             /* A throttle like any other, and refused like one: nothing
              * is pressed, moved or posted. */
             if (!live) {
@@ -799,6 +838,13 @@ static void tick(float dt_s)
     if (s.arm.flash_left > 0) {
         ++s.arm_rev;   /* keep the frames coming while it flashes */
     }
+    /* The TARGET row follows the bench and the hold: drawn locked, or
+     * taking a press again. */
+    if (target_locked() != s.target_locked) {
+        s.target_locked = target_locked();
+        ++s.ctrl_rev;
+    }
+    msp_tick(endpoints_free());
 }
 
 /* ----------------------------------------------------------------- drawing */
@@ -850,33 +896,36 @@ static void temp_text(char *out, size_t n, const char *label, float v,
 }
 
 /*
- * The strip above both columns: what is driving the outputs on the left of
- * it, and how hot the three things that get hot on the right.  MCU is the
- * panel's own die, not the IOmcu's.
+ * The line under the strip: on LIVE, the poll rate and the link's errors on
+ * the left of it, after PLOT and TABLE; on every task, how hot the three
+ * things that get hot, on the right, over the rail.  MCU is the panel's own
+ * die, not the IOmcu's.
  */
-static void draw_header(gfx_canvas_t *c)
+static void draw_header(gfx_canvas_t *c, bool on_live)
 {
     const ui_bench_status_t *st = ui_router_status();
-    const int x0 = LEFT_X + TAB_W + 10;
+    const int x0 = on_live ? LEFT_X + TAB_W + 10 : RIGHT_X;
     gfx_fill_rect(c, x0, HDR_Y, W - PAD - x0, HDR_H,
                   ui_theme_color(UI_C_BG));
 
     /* The band already carries the output mode, so this strip does not
      * repeat it: what it adds is the poll rate and the link's error count,
      * and while the IOmcu has refused a frame, how many. */
-    char line[64];
-    snprintf(line, sizeof(line), TR(MO_RATE_ERR), (int)SAMPLE_HZ,
-             (unsigned long)st->link_errors);
-    gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-    /* At its widest, a 10-digit count after a 3-digit error count in German,
-     * the label ends at x = 572: left of the temperatures while the panel's
-     * own MCU reads under 100 C. */
-    char refused[48];
-    if (ui_link_refused_label(st, refused, sizeof(refused))) {
-        gfx_text(c, x0 + gfx_text_width(&gfx_font_8x16, line, 1) + 16,
-                 HDR_Y + 1, refused, &gfx_font_8x16,
+    if (on_live) {
+        char line[64];
+        snprintf(line, sizeof(line), TR(MO_RATE_ERR), (int)SAMPLE_HZ,
+                 (unsigned long)st->link_errors);
+        gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
+        /* At its widest, a 10-digit count after a 3-digit error count in
+         * German, the label ends at x = 572: left of the temperatures while
+         * the panel's own MCU reads under 100 C. */
+        char refused[48];
+        if (ui_link_refused_label(st, refused, sizeof(refused))) {
+            gfx_text(c, x0 + gfx_text_width(&gfx_font_8x16, line, 1) + 16,
+                     HDR_Y + 1, refused, &gfx_font_8x16,
+                     ui_theme_color(UI_C_TEXT_DIM), 1);
+        }
     }
 
     /*
@@ -977,11 +1026,13 @@ static void draw_derived(gfx_canvas_t *c)
                 ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_RIGHT);
 }
 
-/* The table's rows, 30 px apart from under its heading rule. */
-#define TABLE_ROW_Y(i) (LEG_Y + 34 + (i) * 30)
-/* The ESC's own figures under the four channels, two rows 26 px apart. */
+/* The table's rows, 26 px apart from under its heading rule. */
+#define TABLE_ROW_Y(i) (LEG_Y + 34 + (i) * 26)
+/* The ESC's own figures under the four channels, two rows 22 px apart. */
 #define ESC_RULE_Y     (TABLE_ROW_Y(S_COUNT) - 8)
-#define ESC_ROW_Y(i)   (ESC_RULE_Y + 8 + (i) * 26)
+#define ESC_ROW_Y(i)   (ESC_RULE_Y + 8 + (i) * 22)
+_Static_assert(ESC_ROW_Y(1) + 16 <= UP_Y + UP_H - INNER,
+               "the ESC's second row ends inside the telemetry panel");
 
 /*
  * What the ESC says beside what the INA228 measures, while the INA228 is
@@ -1205,10 +1256,66 @@ static uint8_t telemetry_tag(void)
     return (uint8_t)((s.plot.filled > 0) ? TAG_HELD : TAG_IDLE);
 }
 
+/*
+ * LIVE's throttle panel: the readout, the step buttons and the track.  A
+ * throttle that moved on its own clears the readout's own box and the
+ * slider's painted region, not the panel: a drag asks for it on every
+ * frame.  The slider's region is what the widget reports rather than its
+ * track, because the thumb and its shadow stand proud of the track.
+ */
+static void draw_throttle(gfx_canvas_t *c, bool ctrl_moved)
+{
+    if (ctrl_moved) {
+        /*
+         * Inside the chamfer, not inside the border.  ui_panel cuts the
+         * bottom-right corner by UI_CHAMFER and draws it once per
+         * framebuffer, so a clear that reached the corner would square it off
+         * for the life of that buffer with nothing to repaint it.
+         */
+        gfx_fill_rect(c, LEFT_X + 1, LO_Y + TITLE_H, LEFT_W - 2,
+                      LO_H - TITLE_H - 1 - UI_CHAMFER,
+                      ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, LEFT_X + 1, LO_Y + LO_H - 1 - UI_CHAMFER,
+                      LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
+                      ui_theme_color(UI_C_PANEL));
+    } else {
+        gfx_fill_rect(c, LEFT_X + INNER, ROW_Y, READOUT_W, READOUT_H,
+                      ui_theme_color(UI_C_PANEL));
+        const gfx_rect_t sl = ui_slider_painted_rect(&s.slider);
+        gfx_fill_rect(c, sl.x, sl.y, sl.w, sl.h, ui_theme_color(UI_C_PANEL));
+    }
+
+    /* The throttle in the numeral face the readings use: it is a reading
+     * too, and the one the operator's hand is on. */
+    char pct[16];
+    snprintf(pct, sizeof(pct), "%.1f", (double)s.slider.value);
+    const gfx_seg_style_t seg = ui_seg_hero();
+    const int pw = gfx_seg_width(pct, &seg);
+    const int px = LEFT_X + LEFT_W - INNER - 20 - pw;
+    /* The unlit segments are a ghost of the lit ones against whatever they
+     * sit on.  That is the panel now, not the screen's background; against
+     * the wrong base they read as a dark block behind the digits. */
+    gfx_seg_text(c, px, ROW_Y, pct, &seg, ui_theme_color(UI_C_ACCENT),
+                 gfx_lerp(ui_theme_color(UI_C_PANEL),
+                          ui_theme_color(UI_C_ACCENT), 34));
+    gfx_text(c, LEFT_X + LEFT_W - INNER - 14, ROW_Y + 14, "%",
+             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    /* Dimmed while the value is not live, as a button that takes no press
+     * is: the track and its step buttons take none. */
+    ui_button(c, s.down_rect, "-1", ui_theme_color(UI_C_PANEL_SUNK),
+              s.pressed == 3, value_live());
+    s.slider.dim = !value_live();
+    ui_slider_render(&s.slider, c);
+    ui_button(c, s.up_rect, "+1", ui_theme_color(UI_C_PANEL_SUNK),
+              s.pressed == 4, value_live());
+}
+
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
     const int buf = buffer_index & 1;
+    const bool on_live = mwb_task() == UI_WB_LIVE;
     bind_colours();
 
     /* Chrome per framebuffer, not per frame; the rest only when its counter
@@ -1218,21 +1325,32 @@ static void render(gfx_canvas_t *c, int buffer_index)
     char tag_buf[48];
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
-        ui_panel(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
-                 tag_text(tag, tag_buf, sizeof(tag_buf)),
-                 ui_theme_color(UI_C_ACCENT));
-        ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
-                 TR(MO_THROTTLE), ui_theme_color(UI_C_ACCENT));
+        if (on_live) {
+            ui_panel(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
+                     tag_text(tag, tag_buf, sizeof(tag_buf)),
+                     ui_theme_color(UI_C_ACCENT));
+            ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
+                     TR(MO_THROTTLE), ui_theme_color(UI_C_ACCENT));
+        }
         ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
                  TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;
         s.drawn_title[buf] = tag;
+        s.drawn_strip[buf] = UINT32_MAX;
+        s.drawn_page[buf]  = UINT32_MAX;
+    }
+
+    /* The strip, unless SETTINGS' keypad covers it. */
+    const bool strip_covered = !on_live && msp_modal();
+    if (!strip_covered && s.drawn_strip[buf] != mwb_revision()) {
+        s.drawn_strip[buf] = mwb_revision();
+        mwb_render_strip(c);
     }
 
     /* Outside the pane branch, so an arm or a disarm repaints the tag on
      * whichever pane is up.  All three strings are the same length, so this
      * redraws the header's tab over itself without a clear. */
-    if (s.drawn_title[buf] != tag) {
+    if (on_live && s.drawn_title[buf] != tag) {
         s.drawn_title[buf] = tag;
         ui_panel_header(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
                         tag_text(tag, tag_buf, sizeof(tag_buf)),
@@ -1241,8 +1359,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     if (s.drawn_ctrl[buf] != s.ctrl_rev
         || s.drawn_push[buf] != s.plot.pushes) {
-        ui_tabs_render(&s.tabs, c);
-        draw_header(c);
+        if (on_live) {
+            ui_tabs_render(&s.tabs, c);
+        }
+        draw_header(c, on_live);
     }
 
     /*
@@ -1263,7 +1383,23 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * than in them.
      */
     const bool data_moved = (s.drawn_push[buf] != s.plot.pushes);
-    if (s.tabs.selected == MOTOR_PANE_PLOT) {
+    if (!on_live) {
+        /* SETTINGS' page, on its own counter: a press, the keypad, the
+         * store's state. */
+        if (s.drawn_page[buf] != msp_revision()) {
+            s.drawn_page[buf] = msp_revision();
+            msp_render(c, endpoints_free());
+            /* The keypad covers the strip's row; with the page shown the
+             * row is cleared and the strip drawn again. */
+            s.drawn_strip[buf] = UINT32_MAX;
+            if (!msp_modal()) {
+                gfx_fill_rect(c, PAGE_X, 3, PAGE_W, PAGE_Y - 3,
+                              ui_theme_color(UI_C_BG));
+                s.drawn_strip[buf] = mwb_revision();
+                mwb_render_strip(c);
+            }
+        }
+    } else if (s.tabs.selected == MOTOR_PANE_PLOT) {
         if (s.drawn_plot[buf] != s.plot.revision) {
             s.drawn_plot[buf] = s.plot.revision;
             /* Cleared first: the legend prints each channel's full scale,
@@ -1295,7 +1431,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
     if (data_moved) {
         s.drawn_push[buf] = s.plot.pushes;
-        draw_derived(c);
+        if (on_live) {
+            draw_derived(c);
+        }
         draw_heroes(c);
         draw_totals(c);
     }
@@ -1324,68 +1462,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
         return;
     }
 
-    /*
-     * A throttle that moved on its own clears the readout's own box and the
-     * slider's painted region, not both panels: a drag asks for it on every
-     * frame.  The slider's region is what the widget reports rather than its
-     * track, because the thumb and its shadow stand proud of the track.
-     */
-    if (ctrl_moved) {
-        /*
-         * Inside the chamfer, not inside the border.  ui_panel cuts the
-         * bottom-right corner by UI_CHAMFER and draws it once per
-         * framebuffer, so a clear that reached the corner would square it off
-         * for the life of that buffer with nothing to repaint it.
-         */
-        gfx_fill_rect(c, LEFT_X + 1, LO_Y + TITLE_H, LEFT_W - 2,
-                      LO_H - TITLE_H - 1 - UI_CHAMFER,
-                      ui_theme_color(UI_C_PANEL));
-        gfx_fill_rect(c, LEFT_X + 1, LO_Y + LO_H - 1 - UI_CHAMFER,
-                      LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
-                      ui_theme_color(UI_C_PANEL));
-    } else {
-        gfx_fill_rect(c, LEFT_X + INNER, ROW_Y, READOUT_W, READOUT_H,
-                      ui_theme_color(UI_C_PANEL));
-        const gfx_rect_t sl = ui_slider_painted_rect(&s.slider);
-        gfx_fill_rect(c, sl.x, sl.y, sl.w, sl.h, ui_theme_color(UI_C_PANEL));
+    if (on_live) {
+        draw_throttle(c, ctrl_moved);
     }
-
-    /* The throttle in the numeral face the readings use: it is a reading
-     * too, and the one the operator's hand is on. */
-    char pct[16];
-    snprintf(pct, sizeof(pct), "%.1f", (double)s.slider.value);
-    const gfx_seg_style_t seg = ui_seg_hero();
-    const int pw = gfx_seg_width(pct, &seg);
-    const int px = LEFT_X + LEFT_W - INNER - 20 - pw;
-
-    /* The pins this throttle drives, left of the numerals. */
-    {
-        char line[96];
-        const bool warn = motor_throttle_target(
-            line, sizeof(line), s.thr_pins, s.thr_pins_known,
-            motor_target_cells());
-        gfx_text(c, LEFT_X + INNER, ROW_Y + 9, line, &gfx_font_8x16,
-                 warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
-                 1);
-    }
-    /* The unlit segments are a ghost of the lit ones against whatever they
-     * sit on.  That is the panel now, not the screen's background; against
-     * the wrong base they read as a dark block behind the digits. */
-    gfx_seg_text(c, px, ROW_Y, pct, &seg, ui_theme_color(UI_C_ACCENT),
-                 gfx_lerp(ui_theme_color(UI_C_PANEL),
-                          ui_theme_color(UI_C_ACCENT), 34));
-    gfx_text(c, LEFT_X + LEFT_W - INNER - 14, ROW_Y + 14, "%",
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
-
-    /* Dimmed while the value is not live, as a button that takes no press
-     * is: the track and its step buttons take none. */
-    ui_button(c, s.down_rect, "-1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 3, value_live());
-    s.slider.dim = !value_live();
-    ui_slider_render(&s.slider, c);
-    ui_button(c, s.up_rect, "+1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 4, value_live());
-
     if (!ctrl_moved && !arm_moved) {
         return;
     }
@@ -1397,10 +1476,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
     /* How the throttle is moved; disarmed, why it is not, in the words
      * SERVO's dial uses. */
-    if (value_live()) {
+    if (on_live && value_live()) {
         gfx_text(c, LEFT_X + INNER, HINT_Y, TR(MO_HINT), &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
-    } else {
+    } else if (on_live) {
         gfx_text(c, LEFT_X + INNER, HINT_Y,
                  ui_servo_str(SERVO_STR_START_NOT_ARMED), &gfx_font_8x16,
                  ui_theme_color(UI_C_WARN), 1);
@@ -1409,6 +1488,13 @@ static void render(gfx_canvas_t *c, int buffer_index)
     ui_button(c, s.reset_rect, TR(MO_RESET_PEAKS),
               ui_theme_color(UI_C_PANEL_SUNK),
               s.pressed == 2, true);
+    /* What the throttle drives, on every task: `protocol pins`, in the
+     * warning colour while no pin is bound or the binding is not read. */
+    char line[32];
+    const bool warn = motor_throttle_target(line, sizeof(line), s.thr_proto,
+                                            s.thr_pins, s.thr_pins_known,
+                                            motor_target_cells());
+    mwb_render_target(c, line, warn, target_locked());
 }
 
 /*
@@ -1438,8 +1524,36 @@ static void leave(void)
      */
     s.pressed    = 0;
     s.have_press = false;
+    /* SETTINGS' keypad closes, what it held typed with it; the task stays
+     * for a way back from OUTPUTS (mwb_enter()). */
+    msp_leave();
+    mwb_cancel();
     ++s.ctrl_rev;
     ++s.arm_rev;
+}
+
+/* A tile opens LIVE; the way back from OUTPUTS, which the TARGET row
+ * opened, the task it was opened from. */
+static void enter(void)
+{
+    mwb_enter();
+    motor_invalidate();
+    ++s.ctrl_rev;
+}
+
+/*
+ * The home tag: over SETTINGS' keypad it closes the keypad, as its CANCEL
+ * does, and the page stays.  The tasks are siblings, not levels: on either
+ * the tag leaves the screen, which switches the bench to SAFE (leave()).
+ */
+static bool back(void)
+{
+    if (!msp_back()) {
+        return false;
+    }
+    motor_invalidate();
+    ++s.ctrl_rev;
+    return true;
 }
 
 /*
@@ -1484,21 +1598,28 @@ static void cancel(void)
     /* And the tab row: a press it kept would take a later contact's release
      * for its own and switch the pane. */
     ui_tabs_cancel(&s.tabs);
+    /* And the strip's, the TARGET row's and SETTINGS' presses, for the
+     * same reason. */
+    mwb_cancel();
+    msp_cancel();
     s.pressed    = 0;
     s.have_press = false;
     ++s.ctrl_rev;
     ++s.arm_rev;
 }
 
+/* The title keeps its 11 characters, the one title over 10 (owner's
+ * decision): its home tag ends at x 226, over the band's chip row. */
 static const ui_screen_t k_screen = {
     .title  = "MOTOR & ESC",
     .reset  = reset,
-    .enter  = NULL,
+    .enter  = enter,
     .leave  = leave,
     .tick   = tick,
     .event  = event,
     .cancel = cancel,
     .render = render,
+    .back   = back,
 };
 
 const ui_screen_t *motor_screen(void) { return &k_screen; }

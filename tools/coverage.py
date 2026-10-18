@@ -77,6 +77,8 @@ TRACKED = [
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
     "shared/ui/motor_screen.c",
+    "shared/ui/motor_workbench.c",
+    "shared/ui/motor_settings_page.c",
     "shared/ui/supply_screen.c",
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_textkey.c",

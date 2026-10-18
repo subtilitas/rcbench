@@ -260,6 +260,29 @@ history is in git.
   more than 8 rows shown get group headings, and a list taller than the
   page pages with `^` and `v`. Back on SERVO with the port held, the
   programmer is open on PROGRAM.
+- MOTOR & ESC is a workbench. The strip holds LIVE and SETTINGS (German
+  `LIVE`, `OPTIONEN`), 112 px a tab; the tile opens LIVE, and LIVE keeps
+  PLOT or TABLE across a switch. LIVE holds the plot or the table and the
+  throttle; PLOT, TABLE, the poll rate and the link's errors sit on a line
+  under the strip. SETTINGS holds the 8 ESC / BENCH settings under PACK,
+  MOTOR and THROTTLE OUTPUT (German `AKKU`, `MOTOR`, `GASAUSGANG`), each
+  set on a keypad. A value is in force at once and asks for a write, which
+  the panel makes when the bench is SAFE and idle; the write takes every
+  unsaved value, SETUP's included. A line under the rows names the store's
+  state: `SAVED`, `SAVE PENDING`, `NOT SAVED` or `SETUP CHANGES NOT SAVED`.
+  Idle pulse and Full pulse take a value only on a SAFE bench with ARM not
+  held, `Set on a SAFE bench only`. Over the keypad the home tag closes it; otherwise it
+  leaves and the bench switches to SAFE. The rotary knob moves the throttle
+  on LIVE only.
+- ESC / BENCH leaves the SETUP hub, which holds APPLICATION, INTERFACES,
+  OUTPUTS, PICK A PIN, WI-FI and UPDATES, with 3 slots free.
+- MOTOR & ESC's TARGET row moves from the throttle panel to the top of the
+  CONTROL card and names the protocol with the pins, `DSHOT300 GP0 GP1`,
+  in a box of 18 characters: `MIXED` for two or more protocols, `NO MOTOR
+  PIN` and `PINS NOT READ` in the warning colour. A tap opens OUTPUTS, and
+  OUTPUTS' home tag returns to MOTOR & ESC on the task it left. The row is
+  locked while the bench is not SAFE, while ARM is held and while the servo
+  programmer holds a port.
 - SUPPLY's voltage and current caps are no longer set on SERVO. TEST and
   DUT show them read-only, `Caps 21.00 V 5.00 A: SUPPLY > SETTINGS`.
 - The limit run's report and box name the output with its protocol,

@@ -413,7 +413,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
 };
 
 static const char *const k_cat_names[SET_CAT_COUNT] = {
-    "ESC / BENCH", "APPLICATION", "INTERFACES", "SUPPLY", "SERVO TEST",
+    "APPLICATION", "INTERFACES", "ESC / BENCH", "SUPPLY", "SERVO TEST",
     "ESC STICK", "UPDATES",
 };
 
