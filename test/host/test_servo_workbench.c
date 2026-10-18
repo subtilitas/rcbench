@@ -16,6 +16,7 @@
 
 #include "kst_panel.h"
 #include "link_pages.h"
+#include "outputs_screen.h"
 #include "prog_registry.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
@@ -29,6 +30,24 @@
 
 #include "servo_bench_rig.h"
 #include "servo_rig.h"
+
+/*
+ * Whether a tap on TARGET opens SETUP > OUTPUTS: one navigation, to
+ * OUTPUTS.  The router is on the menu before and after, so every tap can
+ * open it again; this screen is driven on its own and is not the router's.
+ */
+static bool target_tap_opens(void)
+{
+    if (ui_router_current() != SCREEN_OVERVIEW) {
+        ui_router_goto(SCREEN_OVERVIEW);
+    }
+    const uint32_t n = ui_router_navigations();
+    tap(SV_TARGET_X, SV_TARGET_Y);
+    const bool opened = ui_router_navigations() == n + 1u
+                        && ui_router_current() == SCREEN_OUTPUTS;
+    ui_router_goto(SCREEN_OVERVIEW);
+    return opened;
+}
 
 /* ---------------------------------------------------------------- the strip */
 
@@ -110,9 +129,9 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     CHECK_EQ(servo_screen_run_settings(), 0);
     CHECK(!home_tag());
 
-    /* A list on SETTINGS (TYPE) and the TARGET choice on LIVE: one tag
-     * closes each, nothing is chosen, and the task stays; a tap where the
-     * choice's line was reaches the page under it. */
+    /* A list on SETTINGS (TYPE): one tag closes it, nothing is chosen,
+     * and the task stays.  TARGET on LIVE opens no list on this screen: it
+     * opens OUTPUTS, and the target stays. */
     open_settings();
     tap(TAB_X(PAGE_OUTPUT), TAB_Y);
     tap(ROW_L_X, ROW_Y(0));
@@ -121,9 +140,7 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
     CHECK(!home_tag());
     close_settings();
-    tap(SV_TARGET_X, SV_TARGET_Y);
-    CHECK(home_tag());
-    tap(CH_X(1), CH_Y(1));                              /* PROG PORT's line */
+    CHECK(target_tap_opens());
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
     CHECK(!home_tag());
@@ -189,33 +206,23 @@ static unsigned edge_ink(void)
     return n;
 }
 
-/* Whether a tap on TARGET and one on the choice's second line set PROG
- * PORT; the target goes back to OUTPUTS after, as the bench allows. */
-static bool target_tap_sets(void)
-{
-    const int was = settings_get_int(SET_SERVO_TARGET);
-    tap(SV_TARGET_X, SV_TARGET_Y);
-    tap(CH_X(1), CH_Y(1));
-    const bool set = settings_get_int(SET_SERVO_TARGET) == 1 && was == 0;
-    return set;
-}
-
 /* The row takes no press, and is drawn so, while ARMED, while a sweep and
- * while a run is under way; at rest a tap opens the choice. */
+ * while a run is under way; at rest a tap opens OUTPUTS.  No tap sets the
+ * target here. */
 TEST_CASE(the_target_row_locks_for_each_condition)
 {
     fresh();
     scr->enter();
     CHECK(!servo_screen_target_locked());
     CHECK_EQ(edge_ink(), 0u);
-    CHECK(target_tap_sets());
+    CHECK(target_tap_opens());
     settings_set(SET_SERVO_TARGET, 0.0f);
 
     /* ARMED. */
     fresh_armed();
     CHECK(servo_screen_target_locked());
     CHECK(edge_ink() > 100u);
-    CHECK(!target_tap_sets());
+    CHECK(!target_tap_opens());
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
 
     /* A sweep: locked, and still after its STOP until the bench is SAFE. */
@@ -226,14 +233,14 @@ TEST_CASE(the_target_row_locks_for_each_condition)
     acked(0u, SERVO_SWEEP_FROM_REST, 0u);
     CHECK(servo_screen_sweeping());
     CHECK(servo_screen_target_locked());
-    CHECK(!target_tap_sets());
+    CHECK(!target_tap_opens());
 
     /* An automatic test, from its card. */
     bench_fresh();
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     CHECK(servo_screen_target_locked());
-    CHECK(!target_tap_sets());
+    CHECK(!target_tap_opens());
     servo_screen_cancel_arm();
     servo_screen_set_armed(false);
     bench_frames(200u);
@@ -253,7 +260,118 @@ TEST_CASE(the_target_row_locks_for_each_condition)
     hold_start_on(1, 2.3f);
     CHECK(servo_screen_limit_running());
     CHECK(servo_screen_target_locked());
-    CHECK(!target_tap_sets());
+    CHECK(!target_tap_opens());
+}
+
+/*
+ * Through the router, as the panel runs: a tap on TARGET leaves SERVO for
+ * SETUP > OUTPUTS -- on SERVO PWM with the outputs driven, on the PROG
+ * PORT entry with the port -- and the home tag there comes back
+ * to SERVO on the task the row was tapped on.  A screen between the two
+ * makes the next entry a tile's, which opens LIVE; OUTPUTS from SETUP's
+ * tile opens on the overview and goes back to SETUP.
+ */
+TEST_CASE(the_target_row_opens_outputs_on_what_the_tester_drives)
+{
+    for (int target = 0; target < 2; ++target) {
+        for (int task = 0; task < 2; ++task) {
+            fresh();
+            ui_router_init();
+            ui_router_goto(SCREEN_SERVO);
+            settings_set(SET_SERVO_TARGET, (float)target);
+            servo_screen_set_drive((uint8_t)target, 13u, true);
+            if (task == 1) {
+                open_settings();
+            }
+            tap(SV_TARGET_X, SV_TARGET_Y);
+            CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+            CHECK_EQ(ui_router_parent(SCREEN_OUTPUTS), SCREEN_SERVO);
+            if (target == 1) {
+                CHECK_EQ(outputs_screen_port_shown(), 0);
+                CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+            } else {
+                CHECK_EQ(outputs_screen_port_shown(), -1);
+                CHECK_STR_EQ(
+                    outbind_protos()[outputs_screen_binding()->proto].name,
+                    "SERVO PWM");
+            }
+            /* The tag's way back. */
+            ui_router_goto(ui_router_parent(SCREEN_OUTPUTS));
+            CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+            CHECK_EQ(servo_screen_task(), task == 0 ? (int)UI_WB_LIVE
+                                                    : (int)UI_WB_SETTINGS);
+        }
+    }
+    /* A route elsewhere between the two: LIVE. */
+    fresh();
+    ui_router_init();
+    ui_router_goto(SCREEN_SERVO);
+    open_settings();
+    tap(SV_TARGET_X, SV_TARGET_Y);
+    ui_router_goto(SCREEN_OVERVIEW);
+    ui_router_goto(SCREEN_SERVO);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
+    /* OUTPUTS from SETUP's tile: the overview, back to SETUP. */
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    ui_router_goto(SCREEN_SETUP);
+    ui_router_goto(SCREEN_OUTPUTS);
+    CHECK_EQ(outputs_screen_port_shown(), -1);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    CHECK_EQ(ui_router_parent(SCREEN_OUTPUTS), SCREEN_SETUP);
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    ui_router_goto(SCREEN_OVERVIEW);
+}
+
+/*
+ * TARGET opens OUTPUTS on what the row shows, where the IOmcu sends the
+ * commands now, and not on the TARGET setting: a write still pending, or
+ * PROG PORT asked for with no pin on the port (the IOmcu keeps the
+ * outputs), open on what is driven.  A port without a pin as the drive
+ * opens its entry; a target not known, no link, or a port the list does
+ * not hold open the overview.
+ */
+TEST_CASE(the_target_row_opens_on_the_drive_not_the_setting)
+{
+    enum { PWM = -2, OVERVIEW = -1 };
+    static const struct {
+        int     setting;
+        uint8_t target, gpio;
+        int     opens;            /* a port entry, PWM or OVERVIEW */
+    } k[] = {
+        { 1, 0u, 13u, PWM },                       /* write pending */
+        { 1, 0u, SERVO_SCREEN_NO_PIN, PWM },       /* port without a pin */
+        { 0, 1u, 13u, 0 },                         /* write back pending */
+        { 1, 1u, SERVO_SCREEN_NO_PIN, 0 },         /* the port, no pin */
+        { 1, SERVO_SCREEN_TARGET_UNKNOWN, 13u, OVERVIEW },
+        { 0, SERVO_SCREEN_TARGET_NO_LINK, 13u, OVERVIEW },
+        { 1, 2u, 26u, OVERVIEW },                  /* port 2, one entry */
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        fresh();
+        ui_router_init();
+        ui_router_goto(SCREEN_SERVO);
+        settings_set(SET_SERVO_TARGET, (float)k[i].setting);
+        servo_screen_set_drive(k[i].target, k[i].gpio, true);
+        tap(SV_TARGET_X, SV_TARGET_Y);
+        if (ui_router_current() != SCREEN_OUTPUTS) {
+            T_FAIL("case %u: no OUTPUTS", (unsigned)i);
+        }
+        const int port = outputs_screen_port_shown();
+        const char *name =
+            outbind_protos()[outputs_screen_binding()->proto].name;
+        if (k[i].opens >= 0) {
+            CHECK_EQ(port, k[i].opens);
+        } else if (k[i].opens == PWM) {
+            CHECK_EQ(port, -1);
+            CHECK_STR_EQ(name, "SERVO PWM");
+        } else {
+            CHECK_EQ(port, -1);
+            CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+        }
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), k[i].setting);
+    }
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    ui_router_goto(SCREEN_OVERVIEW);
 }
 
 /* ----------------------------------------------------------- the run cards */
@@ -611,6 +729,8 @@ int main(void)
     RUN(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves);
     RUN(a_tab_switch_drops_a_start_hold);
     RUN(the_target_row_locks_for_each_condition);
+    RUN(the_target_row_opens_outputs_on_what_the_tester_drives);
+    RUN(the_target_row_opens_on_the_drive_not_the_setting);
     RUN(the_run_cards_say_what_their_start_needs);
     RUN(the_supply_caps_show_read_only_with_their_home);
     RUN(the_as5600_lives_on_interfaces);

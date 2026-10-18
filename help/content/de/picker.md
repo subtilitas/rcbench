@@ -58,7 +58,7 @@ PINS, links abwärts, listet die Pins des gewählten Protokolls in Kanalreihenfo
 
 ![GP13 vom Programmierport gehalten](view:picker-prog)
 
-Der Pin des Programmierports, ab Werk GP13 (Pad 17), ist grau, solange kein Protokoll ihn hält, und BELEGT listet ihn zuerst unter `PROG-PORT`.
+Der Pin des Programmierports, ab Werk GP13 (Pad 17), ist grau, solange kein Protokoll ihn hält, und BELEGT listet ihn zuerst unter `PROG-PORT`. Jeder weitere Port, den der IOmcu meldet, hält seinen Pin ebenso, unter demselben Namen gelistet.
 
 ![OFF gewählt: jeder gebundene Pin unter BELEGT](view:picker-off)
 

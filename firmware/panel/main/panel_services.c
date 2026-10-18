@@ -66,6 +66,9 @@ prog_link_t        s_prog_link;
 atomic_uint        s_prog_want_target;
 atomic_bool        s_prog_want_pwm;
 atomic_uint        s_prog_pin = PROG_LINK_NO_PIN;
+atomic_uint        s_prog_ports = PROG_PORTS_NONE;
+_Static_assert(LINK_PG_PORTS_MAX <= 4u,
+               "s_prog_ports packs the count and three more pins in 32 bits");
 atomic_uint        s_drive =
     ((unsigned)PROG_LINK_TARGET_NO_LINK << 8) | PROG_LINK_NO_PIN;
 _Static_assert(PROG_LINK_NO_PIN == SERVO_SCREEN_NO_PIN
@@ -619,6 +622,11 @@ __attribute__((noinline)) void prog_link_service(void)
     }
     servo_link_prog_service();
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
+    unsigned ports = prog_link_count(&s_prog_link);
+    for (uint8_t port = 1; port < LINK_PG_PORTS_MAX; ++port) {
+        ports |= (unsigned)prog_link_pin(&s_prog_link, port) << (8u * port);
+    }
+    atomic_store(&s_prog_ports, ports);
     prog_drive_publish();
     servo_link_surfaces_publish();
 }

@@ -428,6 +428,17 @@ typedef enum {
 outbind_clash_t outbind_pwm_clash(const outbind_t *b, uint8_t index,
                                   uint8_t prog_gpio, uint8_t *with);
 
+/**
+ * outbind_pwm_clash() beside every programming port's pin: @p count pins
+ * from @p ports (NULL or 0 for none), each OUTBIND_NO_GPIO for a port
+ * without one.  The slice rule is checked against each in order, the first
+ * clash named; then the compare rule.  The IOmcu checks a slot against
+ * every port it has (prog_port_slots_check()).
+ */
+outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
+                                        const uint8_t *ports, uint8_t count,
+                                        uint8_t *with);
+
 /* ------------------------------------------------------------- the pages */
 
 /**

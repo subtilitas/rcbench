@@ -74,28 +74,48 @@ before a write is relied on.
 ## The target
 
 The tester of the SERVO screen drives the standard servo outputs or the
-programming port. Two controls set it:
+programming port. Two controls set it, on the PROG PORT entry of
+**SETUP** > **OUTPUTS**:
 
 | Control | Values | Does |
 | --- | --- | --- |
-| TARGET, the row on the right card | **OUTPUTS**, **PROG PORT** | what the sweep, **CENTRE**, **RELEASE**, the hold of a position and the automatic test drive; a tap opens the choice |
-| PORT PWM, on **SETTINGS** > DUT | **ON**, **OFF** | whether the programming port renders the tester's pulse while it is the target |
+| SERVO TESTER | **OUTPUTS**, **PROG PORT** | what the sweep, **CENTRE**, **RELEASE**, the hold of a position and the automatic test drive |
+| PORT PWM | **ON**, **OFF** | whether the programming port renders the tester's pulse while it is the target |
+
+A tap on the TARGET row of the right card opens **OUTPUTS** on the PROG
+PORT entry while the IOmcu drives the port, on SERVO PWM while it drives
+the outputs, and on the overview while the target is not known. The
+home tag there goes back to SERVO on the task the row was tapped on.
+Leaving SERVO switches the bench to SAFE and ends a sweep or a test, as
+every way out of the screen does.
+
+![The PROG PORT entry of OUTPUTS](img/outputs-port.png)
 
 Both are kept with the SERVO settings. The TARGET row names the active
 target with its protocol and pins: `PROG PORT GP13` in the warning colour,
 or `SERVO PWM GP4` for the pins bound as SERVO PWM.
-**TARGET** changes only
+**SERVO TESTER** changes only
 with the bench SAFE, no sweep and no test running, and the port not in
 programming; the panel releases a held position before it asks the
 IOmcu for the other target. **PORT PWM** goes on under the same
 rule. It goes off with the port not in programming, no sweep and no test
-running, with the bench ARMED as with the bench SAFE: **STOP** and **DISARM**
-end a sweep or a test. With **OUTPUTS** as target **PORT PWM** is locked.
+running, with the bench ARMED as with the bench SAFE. With **OUTPUTS** as
+target **PORT PWM** is locked. A locked segment is drawn outlined, without
+the accent, and the line under the two names the reason:
+
+| Line | Condition |
+| --- | --- |
+| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | the programmer has the port |
+| `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED or asked to arm, or a sweep or a test runs |
+| `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | **PORT PWM** with **OUTPUTS** as target |
+
+The TARGET row on the right card takes no tap while the bench is ARMED, a
+sweep or a test runs, or the programmer has the port.
 
 While the programmer has the port neither row changes: from **CONNECT** to
 the port back in PWM after **LEAVE**, during every operation, and for as
-long as the IOmcu reports the port out of PWM. Both rows are drawn
-locked, a reset of the settings leaves the two values, the panel writes
+long as the IOmcu reports the port out of PWM. The TARGET row and both
+segments are drawn locked, a reset of the settings leaves the two values, the panel writes
 nothing to the IOmcu's page of the port, and the tester sends the
 port no command and no release. A release owed to the port goes out once
 the port is back in PWM.
@@ -104,7 +124,7 @@ A port without a pin cannot be the target: a slot of OUTPUTS that holds
 GP13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
-With the standard outputs as target the programmer shows `Use the programming port to program a servo.` and `Set TARGET on the right card to PROG PORT.`, and every control but **CLOSE** is off.
+With the standard outputs as target the programmer shows `Use the programming port to program a servo.` and `Set SERVO TESTER to PROG PORT on SETUP > OUTPUTS.`, and every control but **CLOSE** is off.
 
 ![The standard outputs are the target](img/servo-kst-target.png)
 
@@ -813,8 +833,8 @@ its first **READ ALL** finds it. A backup file on the card stays there.
 
 ## The limit run
 
-The SERVO screen's limit run drives the programmer itself whenever PWM
-TARGET is PROG PORT
+The SERVO screen's limit run drives the programmer itself whenever SERVO
+TESTER is PROG PORT
 ([Servo procedures](Servo.md#programming-the-servos-travel-limits)). Its
 first session reads the servo, with SEARCH ONLY as well: CONNECT with its
 read, LEAVE. With SERVO PULSES at 1000-2000 that session also writes PULSE
@@ -957,7 +977,7 @@ The page is the same with a PD mini answering.
 The state line reads `Leaving programming mode. PWM is still off.` and the
 tester's controls stay off until the port reports PWM. The button reads
 **ABORT** while the wait runs. Then `The port is back in tester mode.` and
-the tester drives the port at once, with **TARGET** on **PROG PORT**
+the tester drives the port at once, with **SERVO TESTER** on **PROG PORT**
 and **PORT PWM** on. The next **CONNECT** starts a new session with its own
 read.
 
@@ -1046,7 +1066,7 @@ line. [The link page](LinkKST.md) lists the codes.
   GP13 ([the signal level](#the-signal-level)).
 - With the simulated supply selected (no PD mini wired) the panel dims the
   same controls, and the servo's supply is whatever feeds it.
-- The rows **TARGET** and **PORT PWM** follow the port's state one
+- The TARGET row and the segments **SERVO TESTER** and **PORT PWM** follow the port's state one
   frame of the screen after the control task does. The control task holds
   the page of the port and the tester's commands from its own reading of
   the port.

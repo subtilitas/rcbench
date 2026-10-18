@@ -65,7 +65,7 @@ The TARGET row at the top of the CONTROL card names what the throttle drives: th
 | `NO MOTOR PIN` | the binding is read and no pin is bound as a motor; warning colour |
 | `PINS NOT READ` | the link is down, the pages did not read, or the board has no pin map; warning colour |
 
-A tap on TARGET opens [Outputs](outputs.md), and the bench switches to SAFE as on every way off the screen. The home tag on OUTPUTS comes back to MOTOR & ESC, on the task TARGET was tapped on.
+A tap on TARGET opens [Outputs](outputs.md) on the protocol the throttle's pins are bound as, or on the overview while they are bound as several or none is known, and the bench switches to SAFE as on every way off the screen. The home tag on OUTPUTS comes back to MOTOR & ESC, on the task TARGET was tapped on.
 
 TARGET takes no tap and is drawn locked:
 

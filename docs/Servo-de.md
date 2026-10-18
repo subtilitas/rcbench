@@ -39,7 +39,7 @@ die untere Seite, dann die obere. Wo, hängt vom Ziel ab:
 
 | ZIEL | Zuerst gelesen | Suche |
 | --- | --- | --- |
-| ein SERVO-PWM-Pin auf AUSGÄNGE | nichts | PULS MITTE bis PULS MIN und PULS MAX |
+| ein SERVO-PWM-Pin auf OUTPUTS | nichts | PULS MITTE bis PULS MIN und PULS MAX |
 | PROG-PORT | eine Lesesitzung des [Programmierers](ServoProgrammer-de.md) | NEUTRAL des Servos bis zu seinem eigenen PULSE LOWER und PULSE UPPER, nie darüber hinaus |
 
 Der Abstand zu diesem Ende ersetzt die 600 µs. Der Strom sind die
@@ -66,7 +66,7 @@ kürzeres Halten startet nichts.
 
 Die Zeile unter der Schaltfläche nennt die ganze Zeit, was der Lauf treibt
 und liest: `AUSGANG PROG-PORT GP13, STROM INA3221 CH1`, oder mit ZIEL
-auf AUSGÄNGE `AUSGANG SERVO PWM GP2, STROM INA3221 CH1`. Während der Lauf
+auf OUTPUTS `AUSGANG SERVO PWM GP2, STROM INA3221 CH1`. Während der Lauf
 geht, zeigt die linke Karte von LIVE sein Feld: die Phase, die Seite und den befohlenen
 Puls, und in der dritten Zeile wieder den Ausgang. Die Zeile ZIEL der
 Ausgangskarte bleibt ebenfalls sichtbar.

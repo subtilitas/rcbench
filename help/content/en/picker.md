@@ -58,7 +58,7 @@ PINS, down the left, lists the selected protocol's pins in channel order with th
 
 ![GP13 held by the programming port](view:picker-prog)
 
-The programming port's pin, GP13 (pad 17) by default, is grey while no protocol holds it, and IN USE lists it first under `PROG PORT`.
+The programming port's pin, GP13 (pad 17) by default, is grey while no protocol holds it, and IN USE lists it first under `PROG PORT`. Each further port the IOmcu reports holds its pin the same way, listed under the same name.
 
 ![OFF selected: every bound pin under IN USE](view:picker-off)
 
