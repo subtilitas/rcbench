@@ -6,7 +6,7 @@ order: 30
 
 # Supply
 
-SUPPLY sets, switches and records a programmable supply: the PD mini, a USB-PD (USB Power Delivery) trigger that the IOmcu drives over a UART (universal asynchronous receiver-transmitter) on two of its pins. It opens from the SUPPLY tile on the [menu](overview.md). The plot and the set points take the left column; the readings, OUTPUT ON and RESET PEAKS take the right.
+SUPPLY sets, switches and records a programmable supply: the PD mini, a USB-PD (USB Power Delivery) trigger that the IOmcu drives over a UART (universal asynchronous receiver-transmitter) on two of its pins. It opens from the SUPPLY tile on the [menu](overview.md). The plot and the set points take the left column; the readings, OUTPUT ON and RESET PEAKS take the right. The home tag climbs one level at a time: over the question it drops the change, as CANCEL does; over a keypad it closes the keypad and keeps the value; over SETTINGS it closes them. From SUPPLY itself it goes to the menu.
 
 ## The supply model
 
@@ -59,7 +59,7 @@ The keypad shows the range in its title row. OK takes a value inside the range, 
 
 ![The question before a change to a live output](view:supply-confirm)
 
-While the output is on, a new set point opens a question that names the change. APPLY gives it to the supply; CANCEL drops it and the slider goes back. A drag asks once, on the release. With the output off nothing is asked. SETTINGS switches the question off for the slider and for the keypad separately.
+While the output is on, a new set point opens a question that names the change. APPLY gives it to the supply; CANCEL drops it and the slider goes back. A drag asks once, on the release; a drag that ends without its finger lifting, such as at the home tag tapped with a second finger, asks nothing, and the slider goes back. With the output off nothing is asked. SETTINGS switches the question off for the slider and for the keypad separately.
 
 ## OUTPUT ON and OFF
 

@@ -6,7 +6,7 @@ order: 62
 
 # Ausgänge
 
-OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) und über ZIEL auf [MOTOR & ESC](motor.md#ziel), auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
+OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) und über ZIEL auf [MOTOR & ESC](motor.md#ziel), auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde; über der offenen Protokollliste schließt es zuerst die Liste, ohne zu wählen. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
 
 ## Pins binden
 

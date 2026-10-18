@@ -22,7 +22,9 @@
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "motor_screen.h"
+#include "out_bind.h"
 #include "overview_screen.h"
+#include "picker_screen.h"
 #include "esc_stick_panel.h"
 #include "servo_screen.h"
 #include "settings.h"
@@ -763,6 +765,107 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
     ui_router_goto(SCREEN_MOTOR);
     ui_router_goto(SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), -1);
+}
+
+/*
+ * What the four tool screens open over themselves, in panel coordinates
+ * (supply_screen.c, wifi_screen.c, outputs_screen.c, picker_screen.c).
+ */
+static void open_supply_settings(void) { tap(746, UI_BAND_H + 11); }
+static void open_supply_keypad(void)   { tap(676, UI_BAND_H + 52); }
+static void open_wifi_list(void)       { tap(196, UI_BAND_H + 180); }
+static void open_wifi_keyboard(void)
+{
+    open_wifi_list();
+    tap(400, UI_BAND_H + 400);                   /* HIDDEN: the name */
+}
+static void open_outputs_list(void)    { tap(149, UI_BAND_H + 71); }
+static void open_picker_list(void)
+{
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
+    picker_screen_set_binding(&b);
+    const gfx_rect_t r = picker_screen_list_face();
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+    CHECK(picker_screen_list_open());
+}
+
+/*
+ * A drag on SUPPLY's voltage track and the home tag under a second finger:
+ * the router releases the drag first, and that release opens no question,
+ * so the tag leaves SUPPLY for the menu, with the question on and off and
+ * the output live and not.
+ */
+TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
+{
+    for (int k = 0; k < 4; ++k) {
+        const bool ask  = (k & 1) != 0;
+        const bool live = (k & 2) != 0;
+        fresh();
+        settings_init();
+        to_overview();
+        settings_set(SET_SUPPLY_CONFIRM_SLIDE, ask ? 1.0f : 0.0f);
+        ui_router_goto(SCREEN_SUPPLY);
+        supply_screen_set_output(live);
+        touch(82, UI_BAND_H + 335, TOUCH_EVENT_DOWN, 1);
+        touch(282, UI_BAND_H + 335, TOUCH_EVENT_MOVE, 1);
+        const gfx_rect_t home = ui_home_tag_rect("SUPPLY");
+        touch(home.x + home.w / 2, home.y + home.h / 2, TOUCH_EVENT_DOWN, 2);
+        touch(home.x + home.w / 2, home.y + home.h / 2, TOUCH_EVENT_UP, 2);
+        if (ui_router_current() != SCREEN_OVERVIEW) {
+            T_FAIL("ask %d live %d: the home tag led to %d", ask, live,
+                   ui_router_current());
+        }
+        touch(282, UI_BAND_H + 335, TOUCH_EVENT_UP, 1);
+        settings_cancel_save();
+    }
+}
+
+/*
+ * SUPPLY, WI-FI, OUTPUTS and PICK A PIN through the router's home tag:
+ * over what the screen opened the tag closes it, one level a tap, and the
+ * screen stays; with nothing open it goes to the screen's parent.
+ */
+TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
+{
+    static const struct {
+        ui_screen_id_t id;
+        ui_screen_id_t from;
+        void         (*open)(void);
+        int            levels;
+    } k_cases[] = {
+        { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_settings, 1 },
+        { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_keypad,   1 },
+        { SCREEN_WIFI,    SCREEN_SETUP,    open_wifi_list,       1 },
+        { SCREEN_WIFI,    SCREEN_SETUP,    open_wifi_keyboard,   2 },
+        { SCREEN_OUTPUTS, SCREEN_SETUP,    open_outputs_list,    1 },
+        { SCREEN_PICKER,  SCREEN_SETUP,    open_picker_list,     1 },
+    };
+    for (size_t k = 0; k < sizeof(k_cases) / sizeof(k_cases[0]); ++k) {
+        fresh();
+        to_overview();
+        if (k_cases[k].id == SCREEN_WIFI) {
+            wifi_from_setup();
+        } else {
+            ui_router_goto(k_cases[k].from);
+            ui_router_goto(k_cases[k].id);
+        }
+        k_cases[k].open();
+        const uint32_t nav = ui_router_navigations();
+        for (int l = 0; l < k_cases[k].levels; ++l) {
+            tap_home();
+            if (ui_router_current() != k_cases[k].id) {
+                T_FAIL("case %d: level %d left the screen", (int)k, l);
+            }
+            CHECK_EQ(ui_router_navigations(), nav);
+        }
+        tap_home();
+        if (ui_router_current() != k_cases[k].from) {
+            T_FAIL("case %d: the home tag led to %d, not %d", (int)k,
+                   ui_router_current(), k_cases[k].from);
+        }
+    }
 }
 
 /* Tiles navigate, and a press that slid off its tile is not a tap on it. */
@@ -3574,6 +3677,8 @@ int main(void)
     RUN(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves);
     RUN(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu);
     RUN(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu);
+    RUN(the_home_tag_closes_what_a_tool_screen_opened_first);
+    RUN(the_home_tag_leaves_supply_under_a_drag);
     RUN(home_under_a_setup_scroll_leaves_the_contact_to_no_screen);
     RUN(a_tile_navigates_and_a_slip_does_not);
     RUN(every_screen_renders_something_and_has_a_title);

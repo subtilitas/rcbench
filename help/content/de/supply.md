@@ -6,7 +6,7 @@ order: 30
 
 # Netzteil
 
-SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der IOmcu über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md). Die Grafik und die Sollwerte belegen die linke Spalte; die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN die rechte.
+SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der IOmcu über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md). Die Grafik und die Sollwerte belegen die linke Spalte; die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN die rechte. Das Home-Tag führt eine Ebene nach der anderen zurück: Über der Rückfrage verwirft es die Änderung, wie ABBRECHEN; über einem Tastenfeld schließt es das Tastenfeld und behält den Wert; über den OPTIONEN schließt es sie. Von SUPPLY selbst führt es zum Menü.
 
 ## Das Netzteilmodell
 
@@ -59,7 +59,7 @@ Das Tastenfeld zeigt den Bereich in seiner Titelzeile. OK übernimmt einen Wert 
 
 ![Die Rückfrage vor einer Änderung an einem eingeschalteten Ausgang](view:supply-confirm)
 
-Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die Änderung nennt. ÜBERNEHMEN gibt ihn dem Netzteil; ABBRECHEN verwirft ihn, und der Schieberegler geht zurück. Ein Ziehen fragt einmal, beim Loslassen. Bei abgeschaltetem Ausgang wird nichts gefragt. OPTIONEN schaltet die Rückfrage für den Schieberegler und das Tastenfeld getrennt ab.
+Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die Änderung nennt. ÜBERNEHMEN gibt ihn dem Netzteil; ABBRECHEN verwirft ihn, und der Schieberegler geht zurück. Ein Ziehen fragt einmal, beim Loslassen; ein Ziehen, das endet, ohne dass sein Finger abhebt, etwa am Home-Tag mit einem zweiten Finger, fragt nichts, und der Schieberegler geht zurück. Bei abgeschaltetem Ausgang wird nichts gefragt. OPTIONEN schaltet die Rückfrage für den Schieberegler und das Tastenfeld getrennt ab.
 
 ## AUSGANG EIN und AUS
 

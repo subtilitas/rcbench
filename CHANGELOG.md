@@ -330,6 +330,18 @@ history is in git.
 
 ### Fixed
 
+- The home tag on SUPPLY, WI-FI, OUTPUTS and PICK A PIN climbs one level a
+  tap, as on MOTOR & ESC, SERVO, SETUP and LOGS. On SUPPLY it drops the
+  change a question holds, as CANCEL does, then closes a keypad with the
+  value unchanged, then SETTINGS. On WI-FI it climbs from a keyboard to the
+  network list, keeping nothing typed, and from the list to the buttons;
+  over the question about an uploaded image it is CANCEL, and a second tap
+  while the image is still there leaves. On OUTPUTS
+  and PICK A PIN it closes the open protocol list, choosing nothing. The
+  first tap left the screen before, and a typed SSID or password went with
+  it. A SUPPLY drag that ends without its finger lifting, at the home tag
+  under a second finger or a contact the touch controller loses, asks no
+  question.
 - A switch to ARMED with the IOmcu connected is refused while the IOmcu
   does not hold the panel's Idle pulse and Full pulse: the CHAN_CFG read
   refused, Idle pulse not below Full pulse, the write refused, or an
