@@ -117,10 +117,10 @@ classic entry. Every failed check has its own code:
 | 5 | `HITEC_RX_ERR_EARLY` | first byte before the accept window |
 | 6 | `HITEC_RX_ERR_LATE` | first byte after it |
 | 7 | `HITEC_RX_ERR_NAK` | classic: `-` and nothing after it |
-| 8 | `HITEC_RX_ERR_LENGTH` | fewer bytes than the reply has; classic: also more |
+| 8 | `HITEC_RX_ERR_LENGTH` | fewer bytes than the reply has; classic and listen: also more |
 | 9 | `HITEC_RX_ERR_FRAMING` | a byte of the reply with a bad stop bit |
 | 10 | `HITEC_RX_ERR_GAP` | a byte of the reply less than 9.5 or more than 15 bit times after the start of the one before |
-| 11 | `HITEC_RX_ERR_ACK` | classic: no `+` where the reply has one; listen: another byte |
+| 11 | `HITEC_RX_ERR_ACK` | classic: no `+` where the reply has one; listen: a first byte other than the one asked for |
 | 12 | `HITEC_RX_ERR_HEADER` | D: not 0x69, or a length byte other than 2 |
 | 13 | `HITEC_RX_ERR_ADDRESS` | D: the answer of another register |
 | 14 | `HITEC_RX_ERR_SUM` | D: the sum does not fit |

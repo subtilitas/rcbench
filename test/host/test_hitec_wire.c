@@ -516,6 +516,11 @@ TEST_CASE(a_listen_is_held_to_its_one_byte)
     CHECK_EQ(r.delay_ns, 230000u);
     CHECK_EQ(r.value, HITEC_C_ACK);
     CHECK_EQ(hitec_listen_decode(&cap, HITEC_C_NAK, &r), HITEC_RX_ERR_ACK);
+    /* A byte after it: not the one byte asked for. */
+    cap_byte(750000u, HITEC_C_ACK);
+    CHECK_EQ(hitec_listen_decode(&cap, HITEC_C_ACK, &r), HITEC_RX_ERR_LENGTH);
+    CHECK_EQ(hitec_listen_decode(&cap, HITEC_C_NAK, &r), HITEC_RX_ERR_ACK);
+    cap.n = 1;
     cap.byte[0].framing = 1;
     CHECK_EQ(hitec_listen_decode(&cap, HITEC_C_ACK, &r),
              HITEC_RX_ERR_FRAMING);

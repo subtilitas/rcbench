@@ -344,8 +344,9 @@ hitec_rx_t hitec_d_decode(const hitec_capture_t *cap, uint8_t addr,
 
 /**
  * Decode a listen for the byte @p want, as the classic entry's `+`: abort,
- * overflow, a byte at all, its stop bit, its value.  delay_ns is the first
- * byte's time from the start of the listen.
+ * overflow, a byte at all, its stop bit, its value, no byte after it.
+ * delay_ns is the first byte's time from the start of the listen.  A
+ * listen for more bytes reads them from the capture.
  */
 hitec_rx_t hitec_listen_decode(const hitec_capture_t *cap, uint8_t want,
                                hitec_reply_t *out);

@@ -413,6 +413,9 @@ hitec_rx_t hitec_listen_decode(const hitec_capture_t *cap, uint8_t want,
     if (cap->byte[0].value != want) {
         return HITEC_RX_ERR_ACK;
     }
+    if (cap->n > 1u) {
+        return HITEC_RX_ERR_LENGTH;
+    }
     return HITEC_RX_OK;
 }
 

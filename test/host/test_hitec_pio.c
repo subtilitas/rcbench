@@ -387,6 +387,9 @@ TEST_CASE(a_listen_answers_the_first_byte_10_bit_times_after_its_start)
         CHECK_EQ(cap.n, 2);
         check_at(cap.byte[0].at_ns, t0);
         check_at(cap.byte[1].at_ns, t1);
+        CHECK_EQ(hitec_listen_decode(&cap, HITEC_C_ACK, &r),
+                 HITEC_RX_ERR_LENGTH);
+        cap.n = 1;                    /* the first byte, as a 1-byte listen */
         CHECK_EQ(hitec_listen_decode(&cap, HITEC_C_ACK, &r), HITEC_RX_OK);
         CHECK_NEAR((double)r.delay_ns, t0, cyc_ns(1) + 20.0);
     }
