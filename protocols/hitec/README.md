@@ -369,7 +369,8 @@ transactions, every refusal of each decoder with its limits at both
 edges, and the clock helpers across the wrap, with frames and reply times
 read off bench captures. `test/host/test_hitec_pio.c` (20 cases) assembles
 `hitec_line.pio` with its own assembler for the instructions the program
-uses, runs the words in a model of the state machine, holds them to
+uses, runs the words in a model of the state machine
+(`test/host/hitec_pio_model.h`), holds them to
 `test/host/fixtures/hitec_line_words.txt` and runs both families through
 it. The pin driver's C file is not in the host build.
 
