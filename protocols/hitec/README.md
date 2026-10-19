@@ -4,8 +4,10 @@ The signal-wire programming protocols of Hitec servos, wire layer only. The
 core holds the frames of both wire families, the transactions a driver
 runs, the reply decoders and the arithmetic of the PIO (programmable
 input/output) pin driver. The pin driver puts the wire on one RP2350 pin.
-There is no session, no register model and no caller in this repository
-yet.
+There is no session and no register model. In this repository the IOmcu's
+HITEC link page (`shared/outputs/hitec_port.c`,
+[The programming port for Hitec servos](../../docs/LinkHitec.md)) runs its
+transactions on a programming port.
 
 | Part | Files | Depends on |
 |---|---|---|
@@ -214,9 +216,9 @@ channels; a failed open claims nothing and leaves the pin as it was.
 
 The IOmcu image of this repository compiles the driver under its `-Werror`
 and holds `hitec_line.pio` to `test/host/fixtures/hitec_line_words.txt`.
-Nothing in the image calls the driver yet, so the linker drops it: the
-image has the same size with and without it (191 128 bytes for
-`rcbench-iomcu.bin` with arm-none-eabi-gcc 14.2).
+The HITEC page and this module take 12 452 bytes of `rcbench-iomcu.bin`
+(203 580 bytes against 191 128 without them, arm-none-eabi-gcc 14.2,
+pico-sdk 2.3.0).
 
 ### Clock
 

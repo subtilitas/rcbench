@@ -152,7 +152,7 @@ static void slots_rerate(void)
  * The programming ports' pins bound as the PROG page holds them: the TARGET
  * port at the SERVO rate while it names one, every other port at
  * PROG_PORT_RATE_HZ (prog_port_port_hz()).  Never the pin the wire driver
- * holds: it is the driver's until the KST port gives it back, and the page
+ * holds: it is the driver's until the KST or HITEC port gives it back, and the page
  * keeps the port's pulse switch and target meanwhile.  The pins the wire
  * driver holds, as a mask of ports.
  */
@@ -160,7 +160,7 @@ static uint8_t ports_bind(void)
 {
     uint8_t pin[LINK_PG_PORTS_MAX];
     uint16_t hz[LINK_PG_PORTS_MAX];
-    const uint8_t wire = kst_port_pin_mask(&s_kst);
+    const uint8_t wire = ports_wire();
     for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
         pin[i] = ((wire & (1u << i)) != 0u) ? (uint8_t)PROG_PORT_NO_PIN
                                             : prog_port_pin(&s_prog, i);
@@ -308,7 +308,7 @@ void prog_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  * and the ones the supply, the sensor bus and the phase tap hold, then
  * reserved against all of them and bound.  A pin the generator cannot bind
  * is refused with the pins as they were.  No pin moves while the bank is
- * armed or asked to arm, or while the KST port is out of PWM.
+ * armed or asked to arm, or while the KST or HITEC page holds a port.
  *
  * The pins are bound, at the rates the write leaves the ports at, before
  * the SERVO page follows a TARGET change: a refused write leaves the SERVO
@@ -327,7 +327,7 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
         &s_prog, off, n, in, &s_outputs,
         supply_page_pins(&s_supply) | sense_page_held(&s_sense)
             | tone_page_pins(&s_tone),
-        bank_armed(s) || kst_port_state(&s_kst) != LINK_KST_PWM, s_now_ms);
+        bank_armed(s) || ports_quiet() != 0u, s_now_ms);
     if (nack != 0u) {
         return nack;
     }

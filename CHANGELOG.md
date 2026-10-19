@@ -16,11 +16,35 @@ history is in git.
   reply decoders with one result code per failed check. `rp2350/` holds the
   pin driver: one PIO program of 29 words for both families, 16 cycles a
   bit from the clock divider, open drain or, for the D series, push-pull,
-  2 DMA channels. Nothing calls it yet; the IOmcu image compiles it and
-  holds its words to the host test's. `test_hitec_wire` and
-  `test_hitec_pio`, 33 cases, run the core and the program in a model of
-  the state machine. No byte has been on a wire.
+  2 DMA channels. The IOmcu image holds its words to the host test's.
+  `test_hitec_wire` and `test_hitec_pio`, 33 cases, run the core and the
+  program in a model of the state machine. No byte has been on a wire.
   ([README](protocols/hitec/README.md))
+- The HITEC link page (0x34), protocol 4.23: raw Hitec transactions on a
+  programming port. OPEN takes the port's pin from PWM after 50 ms and
+  opens the line, classic or D series; SEND, LISTEN, LEVEL and POWER run
+  one transaction each and leave the capture, up to 16 bytes with their
+  start times, and its decoding on the page. Every SEND, and a LISTEN or
+  POWER that answers, needs the write key 0x48A5; every staged
+  transaction needs its CRC-16. POWER switches the PD mini off, holds it
+  off 0 to 10,000 ms and on at 4800 to 6000 mV, and listens from the ON. A
+  stop aborts the transaction, keeps the port with the pin released and
+  refuses transactions until CLEAR. The panel does not use the page.
+  `shared/outputs/hitec_port.c`, `test_hitec_port` and
+  `test_hitec_port_stop`, 39 cases.
+  ([The programming port for Hitec servos](docs/LinkHitec.md))
+- The bench console, IOmcu build option `IOMCU_CONSOLE`, off by default:
+  command lines on the USB serial port read and write every link page
+  through the link's page handlers, without feeding the link's silence
+  watchdog; `hitec` commands stage, check and send HITEC transactions and
+  report the capture. CI builds it and fails when the default image holds
+  a console symbol. `shared/outputs/page_console.c`, `test_page_console`,
+  11 cases. ([The bench console](docs/BenchConsole.md))
+
+### Changed
+
+- The KST page refuses ENTER, and a REBOOT taken in PWM, with BUSY while
+  the HITEC page holds the port.
 
 ## 0.21.0 - 2026-10-18
 

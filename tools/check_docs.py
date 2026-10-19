@@ -368,6 +368,10 @@ ENGLISH_QUOTES = {
     ("Servo-de.md", "OFF"),
     ("EscProfiles-de.md", "none"),
     ("StickProgramming-de.md", "none"),
+    ("LinkHitec-de.md", "RESULT"),
+    ("LinkHitec-de.md", "SUPPLY"),
+    ("LinkHitec-de.md", "RANGE"),
+    ("BenchConsole-de.md", "none"),
 }
 
 # A C string literal, and a run of adjacent ones the compiler joins.

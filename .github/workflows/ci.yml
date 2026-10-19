@@ -648,6 +648,25 @@ jobs:
           fi
           python3 tools/stack_check.py --iomcu firmware/iomcu/build-trace
 
+      # The bench console (docs/BenchConsole.md) is not released either: built
+      # here so it keeps building, with its two stacks checked.  The default
+      # image must hold none of it.
+      - name: The console build compiles, and the released image has no console
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -S firmware/iomcu -B firmware/iomcu/build-console -G Ninja \
+            -DIOMCU_CONSOLE=ON
+          cmake --build firmware/iomcu/build-console -j"$(nproc)"
+          arm-none-eabi-nm firmware/iomcu/build-console/rcbench-iomcu.elf \
+            | grep -q page_console_key
+          if arm-none-eabi-nm firmware/iomcu/build/rcbench-iomcu.elf \
+              | grep -iE 'page_console|console_hw'; then
+            echo "::error::the default image holds console code"
+            exit 1
+          fi
+          python3 tools/stack_check.py --iomcu firmware/iomcu/build-console
+
       - uses: actions/upload-artifact@v7
         with:
           name: iomcu

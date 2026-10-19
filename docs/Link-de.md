@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.22. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.23. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -131,6 +131,11 @@ UPDATE_DATA ein neues IOmcu-Image über den Link an; ein älterer
 IOmcu lehnt beide mit BAD_PAGE ab, und das Panel sagt dann, dass ein
 USB-Laden (Universal Serial Bus) nötig ist
 ([Firmware-Update über den Link](#firmware-update-über-den-link)).
+Ab 4.23 fährt HITEC (0x34) rohe Transaktionen der Hitec-Servoleitung auf
+einem Programmierport, und die KST-Page weist ENTER und ein REBOOT aus PWM
+mit BUSY ab, solange HITEC den Port hält; ein älterer IOmcu weist HITEC
+mit BAD_PAGE ab. Das Panel benutzt HITEC nicht
+([Der Programmierport für Servos von Hitec](LinkHitec-de.md)).
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -661,7 +666,10 @@ von zwei Dingen, nie beides:
   die Standard-Servoports treibt.
 - PROGRAMMING: das Leitungsprotokoll für KST- und Chaservo-Servos, das die
   Servo-Programmier-Page (`KST`, 0x32) fährt, siehe
-  [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md).
+  [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md); oder,
+  seit 4.23, die Hitec-Leitung, die die Hitec-Page (`HITEC`, 0x34) fährt,
+  siehe [Der Programmierport für Servos von Hitec](LinkHitec-de.md). Eine
+  Page hält einen Port zur Zeit.
 
 Die Page hält 4 Ports. Register 0 sagt, wie viele der Build hat; der
 Bring-up-Build hat 1. `shared/outputs/prog_port.c` hält die Regeln.
@@ -767,6 +775,12 @@ die Versorgung, das Verlassen ohne Aus- und Einschalten der Versorgung, die
 Register, und was STOP, ein Schalten auf SAFE, Heartbeat-Verlust und Link-Verlust
 mit einer Session machen.
 
+### Der Programmierport für Servos von Hitec
+
+Die Hitec-Page (`HITEC`, 0x34) hat [eine eigene Seite](LinkHitec-de.md):
+hinein und hinaus, die Transaktionen, POWER, was ein Stopp mit einem Port
+macht, und die Register.
+
 ### Identifier
 
 Ein 29-Bit-Extended-Identifier trägt die ganze Adresse; ein Read ist deshalb
@@ -841,6 +855,7 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x31 | SERVO_WIN | lesen | die letzten 4 vollständigen 50-ms-Fenster von INA3221 CH1, das neueste zuerst (seit 4.11). Register 0: die Nummer des neuesten Fensters modulo 65536. Register 1: Bit 0 ein Fenster hat sich geschlossen, Bit 7 das Bit der Messung der Bewegung für eine Messung am Ende des Bereichs. Register 2 und 3: Zustand und Zähler der Messung von SERVO_SENSE. Dann 4 Einträge zu 6 Registern, Eintrag k ab Register 4 + 6 k für Fensternummer Register 0 - k: mittlerer, höchster und niedrigster Strom (mA, vorzeichenbehaftet), mittlere und niedrigste Busspannung (mV) und Flags (Bit 15 mit dieser Nummer hat sich ein Fenster geschlossen, Bit 8 Strommessungen, Bit 9 Spannungsmessungen, Bit 10 eine Messung am oberen Ende des Bereichs, Bit 11 eine am unteren, Bits 0 bis 7 die Messungen an einem Ende, bei 255 gehalten). Eine Messung am Ende des Bereichs zählt mit dem Ende des Bereichs. Jedes Schreiben wird mit READ_ONLY abgewiesen. [Der Fenster-Ring](#der-fenster-ring) nennt die Regeln. Nichts wird gehalten |
 | 0x32 | `KST` | lesen, schreiben | die Servo-Programmier-Page: das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 28: das Kommando in den Registern 0 bis 3, ein Frame, das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25 und Versorgungsspannung und -strom eines ENTER in 26 und 27. [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md) nennt die Regeln. Nichts wird gehalten |
 | 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 24 Register. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte. [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew und Endpunkte werden im Flash des IOmcu gehalten |
+| 0x34 | `HITEC` | lesen, schreiben | rohe Transaktionen der Hitec-Servoleitung auf einem Programmierport (seit 4.23). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Zahl der Transaktionen, Ergebnis und Abweisung, Anzahl und Flags des Mitschnitts, das Ergebnis des Dekoders, den dekodierten Wert, `VIEW`, die empfangenen Bytes in 8 Registern und in 16 Registern die Startzeiten der Bytes oder den Lauf. Ein Schreiben nimmt 23: das Kommando in den Registern 0 bis 3, ein Frame, die bereitgestellte Transaktion, Dekoder und Sollwerte eines POWER in 4 bis 21 und `VIEW` in 22. [Der Programmierport für Servos von Hitec](LinkHitec-de.md) nennt die Regeln. Nichts wird gehalten |
 | 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des IOmcu selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
 | 0xF1 | UPDATE_DATA | lesen, schreiben | die 64 Byte des aktuellen Blocks, in jedem Register das niederwertige Byte zuerst (seit 4.22; über Majors eingefroren): 32 Register. FINISH nimmt den erwarteten SHA-256 aus Register 0 bis 15. Nichts wird behalten |
 

@@ -316,6 +316,9 @@ static link_kst_refusal_t enter_from_pwm(kst_port_t *p, uint8_t port,
     if (p->armed != 0u) {
         return LINK_KST_REF_BUSY;       /* the bank is armed */
     }
+    if ((p->other & (1u << port)) != 0u) {
+        return LINK_KST_REF_BUSY;       /* the HITEC page holds the port */
+    }
     if (supply_view(p, &v)) {
         if (!supply_range_ok(&v, p->supply_mv, p->supply_ma)) {
             return LINK_KST_REF_SUPPLY_RANGE;
@@ -367,6 +370,9 @@ static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, uint32_t now_ms)
      * not cycled for a port that has none. */
     if (state == LINK_KST_PWM && p->hw.pin(p->hw.ctx, port) > OUT_MAX_PIN) {
         return LINK_KST_REF_NO_PIN;
+    }
+    if (state == LINK_KST_PWM && (p->other & (1u << port)) != 0u) {
+        return LINK_KST_REF_BUSY;       /* the HITEC page holds the port */
     }
     if (!supply_view(p, &v) || !v.asked_on) {
         return LINK_KST_REF_NO_SUPPLY;
@@ -1042,6 +1048,13 @@ void kst_port_bench_armed(kst_port_t *p, bool armed)
 {
     if (p != NULL) {
         p->armed = armed ? 1u : 0u;
+    }
+}
+
+void kst_port_other_mask(kst_port_t *p, uint8_t mask)
+{
+    if (p != NULL) {
+        p->other = mask;
     }
 }
 

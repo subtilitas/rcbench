@@ -11,7 +11,7 @@ set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../shared")
 # The protocol modules are named one by one.  Only a module's core is compiled
 # here; its rp2350/ folder belongs to a pico-sdk build.  openyge is listed
 # for its planned use; no component requires it and the panel does not link it.
-foreach(module dshot kst openyge pdmini phase_tap ppm sbus)
+foreach(module dshot hitec kst openyge pdmini phase_tap ppm sbus)
     list(APPEND EXTRA_COMPONENT_DIRS
          "${CMAKE_CURRENT_LIST_DIR}/../../protocols/${module}")
 endforeach()

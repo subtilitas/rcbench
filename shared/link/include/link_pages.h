@@ -56,6 +56,7 @@ typedef enum {
     LINK_PAGE_SERVO_WIN = 0x31, /**< the servo rail's last CH1 windows, read-only */
     LINK_PAGE_KST       = 0x32, /**< the KST servo programming port          */
     LINK_PAGE_PROG      = 0x33, /**< the programming ports: pin, pulse, target */
+    LINK_PAGE_HITEC     = 0x34, /**< raw Hitec wire transactions on a port   */
     /* Frozen: the same numbers, layout and meaning under every major. */
     LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the IOmcu's own firmware update */
     LINK_PAGE_UPDATE_DATA = 0xF1, /**< and the 64 bytes of the block in hand */
@@ -101,7 +102,9 @@ typedef enum {
  * an older IOmcu for the 8 it has (LINK_ST_COUNT_V420).  From 4.22
  * UPDATE_CTL and UPDATE_DATA take a new IOmcu image over the link;
  * an older IOmcu refuses both with LINK_NACK_BAD_PAGE, which the panel
- * answers by saying a USB (Universal Serial Bus) load is needed.  An
+ * answers by saying a USB (Universal Serial Bus) load is needed.  From
+ * 4.23 HITEC (0x34) runs raw Hitec wire transactions on a programming
+ * port; an older IOmcu refuses it with LINK_NACK_BAD_PAGE.  An
  * IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -114,7 +117,7 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 22u
+#define LINK_PROTOCOL_MINOR 23u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -176,6 +179,10 @@ typedef enum {
  *  refuses both with LINK_NACK_BAD_PAGE; it takes a new image over USB
  *  only. */
 #define LINK_MINOR_UPDATE 22u
+/** The first minor that serves HITEC.  An older minor refuses it with
+ *  LINK_NACK_BAD_PAGE, and its KST page knows no other holder of the
+ *  programming port. */
+#define LINK_MINOR_HITEC 23u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1658,7 +1665,9 @@ typedef enum {
  *  LINK_KS_RESULT. */
 typedef enum {
     LINK_KST_REF_NONE = 0,
-    LINK_KST_REF_BUSY = 1,       /**< an operation runs or the port moves */
+    LINK_KST_REF_BUSY = 1,       /**< an operation runs or the port moves;
+                                      the bank is armed; or (4.23) the HITEC
+                                      page holds the port */
     LINK_KST_REF_PORT = 2,       /**< no such programming port, a command
                                       without LINK_KS_W_CMD_PORT, or not
                                       the port that is held.  3 and 4 are
@@ -1740,6 +1749,246 @@ enum {
     ((uint8_t)(LINK_PG_PORT0 + (unsigned)(port) * LINK_PG_STRIDE + (r)))
 #define LINK_PG_F_BOUND(port)   ((uint16_t)(1u << (unsigned)(port)))
 #define LINK_PG_F_REFUSED(port) ((uint16_t)(0x100u << (unsigned)(port)))
+
+/* ------------------------------------------------------------------- HITEC */
+/*
+ * The HITEC page (0x34, since 4.23): raw transactions of the Hitec servo
+ * wire (protocols/hitec) on a programming port.  The page holds no Hitec
+ * session: the panel, or a bench console, writes one transaction at a
+ * time and reads what came back.  shared/outputs/hitec_port.h holds the
+ * rules.
+ *
+ * A read and a write see different registers.  A read gives the 32
+ * registers LINK_HT_*: 16 fixed ones and 16 that LINK_HT_W_VIEW selects.
+ * A write takes LINK_HT_W_*: the command in registers 0 to 3, one frame
+ * taken whole or not at all, and the staged registers 4 to 21, written in
+ * any windows before the command that names their CRC (cyclic redundancy
+ * check, link_kst_crc()).  Nothing is kept in flash.
+ */
+enum {
+    LINK_HT_STATE  = 0,  /**< bits 0-2 link_hitec_state_t, bits 3-11 the
+                              LINK_HT_F_* flags, bits 12-15 the port */
+    LINK_HT_SEQ    = 1,  /**< the SEQ of the last command taken; 0 at start */
+    LINK_HT_OP     = 2,  /**< bits 12-15 the last operation started
+                              (link_hitec_op_t), bits 0-11 the transactions
+                              started since the port was taken, held at
+                              4095 */
+    LINK_HT_RESULT = 3,  /**< low byte link_hitec_result_t of that
+                              operation, high byte why the last command
+                              taken started nothing
+                              (link_hitec_refusal_t; 0: it started) */
+    LINK_HT_CAP    = 4,  /**< the last capture: bits 0-4 the bytes held,
+                              bits 8-11 LINK_HT_CAP_*, bits 12-13 the
+                              decoder (link_hitec_dec_t) */
+    LINK_HT_DEC    = 5,  /**< low byte the decoder's hitec_rx_t, high byte
+                              the reply's id (D series) */
+    LINK_HT_VALUE  = 6,  /**< the decoded value */
+    LINK_HT_VIEW   = 7,  /**< what registers 16 to 31 show
+                              (link_hitec_view_t) */
+    LINK_HT_BYTES  = 8,  /**< 8 registers: byte 2 k of the capture in the
+                              low byte of register 8 + k, 2 k + 1 in the
+                              high byte; 0 past the bytes held */
+    LINK_HT_DATA   = 16, /**< 16 registers, as LINK_HT_W_VIEW selects */
+    LINK_HT_COUNT  = 32,
+};
+
+/** What registers 16 to 31 show. */
+typedef enum {
+    /** The start bits of bytes 0 to 7, ns from the receiver's start, 32
+     *  bits each, low half first; 0 past the bytes held. */
+    LINK_HITEC_VIEW_TIMES_LO = 0,
+    /** Bytes 8 to 15, the same way. */
+    LINK_HITEC_VIEW_TIMES_HI = 1,
+    /** The run: LINK_HT_I_*. */
+    LINK_HITEC_VIEW_RUN = 2,
+    LINK_HITEC_VIEW_COUNT
+} link_hitec_view_t;
+
+/** Registers 16 and up in LINK_HITEC_VIEW_RUN. */
+enum {
+    LINK_HT_I_DELAY_LO = 16, /**< the decoder's delay_ns, low half */
+    LINK_HT_I_DELAY_HI = 17,
+    LINK_HT_I_LEAD_LO  = 18, /**< the run's lead as the program ran it, ns */
+    LINK_HT_I_LEAD_HI  = 19,
+    LINK_HT_I_T_LO     = 20, /**< start to the capture, us */
+    LINK_HT_I_T_HI     = 21,
+    LINK_HT_I_SPAN_LO  = 22, /**< the longest the run could take, us */
+    LINK_HT_I_SPAN_HI  = 23,
+    LINK_HT_I_BIT_NS   = 24, /**< the bit time of the open line, ns; 0
+                                  while none is open */
+    LINK_HT_I_LINE     = 25, /**< the open line, as LINK_HT_W_LINE */
+    LINK_HT_I_PIN      = 26, /**< the port's pin, 0xFFFF while none */
+    LINK_HT_I_WINDOW_LO = 27, /**< the window the capture asked, us */
+    LINK_HT_I_WINDOW_HI = 28,
+    LINK_HT_I_FRAMING  = 29, /**< bit k: byte k's stop bit was sampled at
+                                  the start level */
+};
+
+/** What a write of the page takes. */
+enum {
+    LINK_HT_W_CMD  = 0,  /**< bits 0-3 link_hitec_op_t, bits 8-11 the
+                              programming port; every other bit 0 */
+    LINK_HT_W_SEQ  = 1,  /**< LINK_HT_SEQ + 1 modulo 65536 */
+    LINK_HT_W_KEY  = 2,  /**< LINK_HITEC_WRITE_KEY for an operation that
+                              puts a byte on the wire, else 0 */
+    LINK_HT_W_CRC  = 3,  /**< link_kst_crc() of the LINK_HT_W_STAGED
+                              registers from LINK_HT_W_LINE, for every
+                              operation but ABORT, CLOSE and CLEAR */
+    LINK_HT_W_LINE = 4,  /**< bit 0 the family (hitec_family_t), bit 4 the
+                              drive (hitec_drive_t): OPEN */
+    LINK_HT_W_NTX  = 5,  /**< low byte the bytes to send, 1 to 8; high
+                              byte the idle bit times between two, 0 to 6:
+                              SEND */
+    LINK_HT_W_TX   = 6,  /**< 4 registers: byte 2 k in the low byte of
+                              register 6 + k, 2 k + 1 in the high byte */
+    LINK_HT_W_LEAD_LO   = 10, /**< SEND: the lead, us, 0 to 4 000 000 */
+    LINK_HT_W_LEAD_HI   = 11,
+    LINK_HT_W_WINDOW_LO = 12, /**< SEND, LISTEN, POWER: the window, us */
+    LINK_HT_W_WINDOW_HI = 13,
+    LINK_HT_W_RX   = 14, /**< low byte the bytes to receive, 0 to 16; bit 8
+                              answer the first byte (LISTEN, POWER) */
+    LINK_HT_W_ANSWER = 15, /**< low byte the answer; bit 8 the level of a
+                                LEVEL */
+    LINK_HT_W_LEVEL_LO = 16, /**< LEVEL: how long, us, 1 to 4 000 000 */
+    LINK_HT_W_LEVEL_HI = 17,
+    LINK_HT_W_DECODE = 18,   /**< bits 0-1 link_hitec_dec_t, bits 8-15 its
+                                  argument: the classic command whose reply
+                                  is expected, the D series register read,
+                                  or the byte a listen wants */
+    LINK_HT_W_SUPPLY_MV = 19, /**< POWER: the supply voltage, mV,
+                                   LINK_HITEC_SUPPLY_MIN_MV to
+                                   LINK_HITEC_SUPPLY_MAX_MV */
+    LINK_HT_W_SUPPLY_MA = 20, /**< POWER: its current limit, mA, 1 to the
+                                   PD mini's 3000 */
+    LINK_HT_W_OFF_MS = 21,    /**< POWER: how long the supply stays off,
+                                   ms, 0 to LINK_HITEC_OFF_MS_MAX */
+    LINK_HT_W_VIEW = 22,      /**< what LINK_HT_DATA shows
+                                   (link_hitec_view_t).  Not staged: in
+                                   force when written */
+    LINK_HT_W_COUNT = 23,
+};
+
+/** Registers of the command, from LINK_HT_W_CMD: one frame. */
+#define LINK_HT_W_CMD_FRAME 4u
+/** The staged registers a command's CRC covers, from LINK_HT_W_LINE. */
+#define LINK_HT_W_STAGED 18u
+
+/** LINK_HT_W_KEY of an operation that puts a byte on the wire: every
+ *  SEND, and a LISTEN or a POWER that answers. */
+#define LINK_HITEC_WRITE_KEY 0x48A5u
+/** The supply voltage a POWER takes: until a session knows the servo
+ *  model, 4800 to 6000 mV. */
+#define LINK_HITEC_SUPPLY_MIN_MV 4800u
+#define LINK_HITEC_SUPPLY_MAX_MV 6000u
+/** The longest off time of a POWER, ms. */
+#define LINK_HITEC_OFF_MS_MAX 10000u
+
+#define LINK_HT_STATE_OF(r) ((uint8_t)((r) & 0x7u))
+#define LINK_HT_PORT_OF(r)  ((uint8_t)(((r) >> 12) & 0xFu))
+#define LINK_HT_OP_OF(r)    ((uint8_t)(((r) >> 12) & 0xFu))
+#define LINK_HT_W_CMD_OF(op, port) \
+    ((uint16_t)((unsigned)(op) | (((unsigned)(port) & 0xFu) << 8)))
+#define LINK_HT_LINE_OF(family, drive) \
+    ((uint16_t)(((unsigned)(family) & 1u) | (((unsigned)(drive) & 1u) << 4)))
+
+/** Where the port is. */
+typedef enum {
+    LINK_HITEC_FREE = 0,     /**< the port's pin is the PWM generator's */
+    LINK_HITEC_STOPPING = 1, /**< PWM renders no pulse; the running one
+                                  ends */
+    LINK_HITEC_OPEN = 2,     /**< the pin is the wire driver's, released */
+    LINK_HITEC_BUSY = 3,     /**< a transaction runs */
+    LINK_HITEC_POWER_OFF = 4, /**< a POWER: the supply is switched off;
+                                   the ON and its listen follow */
+} link_hitec_state_t;
+
+enum {
+    LINK_HT_F_STOPPED = 0x0008u, /**< a stop cut the port; no transaction
+                                      until CLEAR */
+    LINK_HT_F_RAIL    = 0x0010u, /**< a PD mini answers: POWER is taken */
+    LINK_HT_F_CAPTURE = 0x0020u, /**< the page holds a capture */
+    LINK_HT_F_KEY     = 0x0040u, /**< the last transaction put a byte on
+                                      the wire */
+};
+
+/** LINK_HT_CAP bits 8-11, as hitec_capture_t has them. */
+enum {
+    LINK_HT_CAP_FULL     = 0x0100u,
+    LINK_HT_CAP_ANSWERED = 0x0200u,
+    LINK_HT_CAP_OVERFLOW = 0x0400u,
+    LINK_HT_CAP_ABORTED  = 0x0800u,
+};
+
+/** How the page decodes a capture. */
+typedef enum {
+    LINK_HITEC_DEC_NONE = 0,
+    LINK_HITEC_DEC_C = 1,       /**< hitec_c_decode() */
+    LINK_HITEC_DEC_D = 2,       /**< hitec_d_decode() */
+    LINK_HITEC_DEC_LISTEN = 3,  /**< hitec_listen_decode() */
+} link_hitec_dec_t;
+
+/** The operations of a command. */
+typedef enum {
+    LINK_HITEC_OP_NONE = 0,   /**< never written; LINK_HT_OP at start */
+    LINK_HITEC_OP_OPEN = 1,   /**< take the port's pin from PWM and open
+                                   the line on it, released */
+    LINK_HITEC_OP_CLOSE = 2,  /**< cut what runs, give the pin back */
+    LINK_HITEC_OP_SEND = 3,   /**< bytes out, then the receiver; needs the
+                                   key */
+    LINK_HITEC_OP_LISTEN = 4, /**< the receiver; the key with an answer */
+    LINK_HITEC_OP_LEVEL = 5,  /**< hold the line, then release it */
+    LINK_HITEC_OP_ABORT = 6,  /**< cut the running transaction or POWER */
+    LINK_HITEC_OP_POWER = 7,  /**< the supply off, on, and a listen from
+                                   the ON; the key with an answer */
+    LINK_HITEC_OP_CLEAR = 8,  /**< clear LINK_HT_F_STOPPED */
+    LINK_HITEC_OP_COUNT
+} link_hitec_op_t;
+
+/** LINK_HT_RESULT's low byte. */
+typedef enum {
+    LINK_HITEC_RESULT_NONE = 0,    /**< no operation since the start */
+    LINK_HITEC_RESULT_RUNNING = 1, /**< the operation runs */
+    LINK_HITEC_RESULT_DONE = 2,    /**< it ended; a transaction's capture
+                                        is on the page */
+    LINK_HITEC_RESULT_SUPPLY = 3,  /**< POWER: the supply did not read off
+                                        within LINK_HITEC_SUPPLY_MS, or
+                                        refused the ON */
+    LINK_HITEC_RESULT_START = 4,   /**< the driver did not take the
+                                        transaction */
+    LINK_HITEC_RESULT_NO_LINE = 5, /**< OPEN: the driver got no state
+                                        machine, program space or DMA
+                                        channel; the port is free */
+    LINK_HITEC_RESULT_CUT = 6,     /**< an ABORT, a CLOSE or a stop ended
+                                        it; a transaction's capture holds
+                                        the bytes so far, marked aborted */
+} link_hitec_result_t;
+
+/** The time a POWER waits for the supply to read off, ms. */
+#define LINK_HITEC_SUPPLY_MS 3000u
+
+/** Why a command that was taken did nothing: LINK_HT_RESULT's high byte. */
+typedef enum {
+    LINK_HITEC_REF_NONE = 0,
+    LINK_HITEC_REF_BUSY = 1,      /**< an operation runs, or the port is
+                                       being taken */
+    LINK_HITEC_REF_PORT = 2,      /**< no such programming port, or not
+                                       the one held */
+    LINK_HITEC_REF_HELD = 3,      /**< the KST page holds the port */
+    LINK_HITEC_REF_ARMED = 4,     /**< the bank is armed */
+    LINK_HITEC_REF_UNSAFE = 5,    /**< heartbeat not trusted or link
+                                       silent */
+    LINK_HITEC_REF_NOT_OPEN = 6,  /**< the port is not held */
+    LINK_HITEC_REF_NO_KEY = 7,    /**< a byte on the wire without the key */
+    LINK_HITEC_REF_STAGED = 8,    /**< the staged registers do not have the
+                                       CRC the command names */
+    LINK_HITEC_REF_STOPPED = 9,   /**< a stop since: CLEAR first */
+    LINK_HITEC_REF_NO_PIN = 10,   /**< the port has no bound pin */
+    LINK_HITEC_REF_RANGE = 11,    /**< the staged transaction is not one
+                                       the line runs */
+    LINK_HITEC_REF_SUPPLY_RANGE = 12, /**< POWER: a set point or an off
+                                           time out of range */
+    LINK_HITEC_REF_NO_SUPPLY = 13, /**< POWER: no PD mini answers */
+} link_hitec_refusal_t;
 
 /* ----------------------------------------------------------------- control */
 /*

@@ -605,6 +605,55 @@ TEST_CASE(the_arm_latch_can_be_set_without_a_failsafe)
     CHECK(link_dev_arm_latched(NULL));
 }
 
+/*
+ * A request applied by a caller on this end that is not the link (the
+ * bench console) is answered as the link's is, and holds nothing off: the
+ * silence edge comes when it would have come without it, and a silence
+ * already latched stays.
+ */
+TEST_CASE(an_applied_request_does_not_feed_the_watchdog)
+{
+    link_msg_t req = { 0 };
+    link_msg_t reply;
+    uint32_t requests;
+
+    fresh_dev(0);
+    requests = dev.requests;
+
+    req.op = LINK_OP_WRITE;
+    req.page = LINK_PAGE_CONTROL;
+    req.offset = LINK_CT_THROTTLE;
+    req.count = 1;
+    req.regs[0] = 123u;
+    for (uint32_t t = 0; t < LINK_DEV_SILENCE_MS; t += 10) {
+        CHECK(link_dev_apply(&dev, &req, &reply));
+        CHECK(!link_dev_tick(&dev, t));
+    }
+    CHECK_EQ(reply.op, LINK_OP_ACK);
+    CHECK_EQ(reply.regs[0], 123u);
+    CHECK_EQ(g_control[LINK_CT_THROTTLE], 123u);
+    CHECK_EQ(dev.requests, requests);
+    CHECK(link_dev_apply(&dev, &req, &reply));
+    CHECK(link_dev_tick(&dev, LINK_DEV_SILENCE_MS));
+    CHECK(dev.silent);
+    CHECK(link_dev_apply(&dev, &req, &reply));
+    CHECK(dev.silent);
+    CHECK(dev.failsafe);
+    /* Its refusals are the link's. */
+    req.page = 0x7Fu;
+    CHECK(link_dev_apply(&dev, &req, &reply));
+    CHECK_EQ(reply.op, LINK_OP_NACK);
+    CHECK_EQ(reply.regs[0], LINK_NACK_BAD_PAGE);
+    req.page = LINK_PAGE_CONTROL;
+    req.offset = LINK_CT_COUNT - 1u;
+    req.count = 2;
+    CHECK(link_dev_apply(&dev, &req, &reply));
+    CHECK_EQ(reply.regs[0], LINK_NACK_BAD_RANGE);
+    CHECK(!link_dev_apply(NULL, &req, &reply));
+    CHECK(!link_dev_apply(&dev, NULL, &reply));
+    CHECK(!link_dev_apply(&dev, &req, NULL));
+}
+
 int main(void)
 {
     RUN(the_coprocessor_fails_safe_after_two_hundred_milliseconds);
@@ -630,5 +679,6 @@ int main(void)
     RUN(a_start_sets_the_arm_latch_and_not_the_failsafe);
     RUN(the_silence_edge_sets_the_arm_latch_with_the_failsafe);
     RUN(the_arm_latch_can_be_set_without_a_failsafe);
+    RUN(an_applied_request_does_not_feed_the_watchdog);
     return test_summary("link_watchdog");
 }

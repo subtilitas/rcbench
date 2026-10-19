@@ -91,6 +91,16 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
     d->heard           = true;
     ++d->requests;
 
+    return link_dev_apply(d, req, reply);
+}
+
+bool link_dev_apply(const link_dev_t *d, const link_msg_t *req,
+                    link_msg_t *reply)
+{
+    if (d == NULL || req == NULL || reply == NULL) {
+        return false;
+    }
+
     const link_page_t *p = find_page(d, req->page);
     if (p == NULL) {
         refuse(reply, req, LINK_NACK_BAD_PAGE);
