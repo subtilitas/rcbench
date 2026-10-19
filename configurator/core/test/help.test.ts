@@ -59,8 +59,8 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
   assert.match(help('servoprog').en, /programming port, GP13\./);
   // The two states of the bench carry the names of the status band of the panel, SAFE and ARMED, in both
   // languages; no text names them in prose.
-  assert.match(help('logs').en, /while the bench is ARMED, and while it is SAFE with the supply output on\./);
-  assert.match(help('logs').de, /, solange der Prüfstand ARMED ist oder bei SAFE der Ausgang des Netzteils an ist\./);
+  assert.match(help('logs').en, /while the bench is ARMED, and while it is SAFE with the supply output on;/);
+  assert.match(help('logs').de, /, solange der Prüfstand ARMED ist oder bei SAFE der Ausgang des Netzteils an ist;/);
   // A state word in prose, any case but the band's ARMED; the German words of the glossary and their forms.
   const stateEn = /\b(?:un|dis)?armed\b|\bArmed\b|\bdisarm\w*|\bDisarm\w*|\bDISARM\w*/;
   const stateDe = /scharf|schärf|gesichert|entschärf|\bDISARM\w*|NICHT ARMED|\bnach ARM\b/i;
