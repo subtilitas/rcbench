@@ -106,7 +106,7 @@ Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Lau
 | Option | Was sie tut |
 |---|---|
 | NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
-| BERICHT | ein Textbericht, `SERVOnnn.TXT`, neben dem Log jedes Tests |
+| BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange Eigene Logs unter SETUP > SD-KARTE EIN ist |
 | SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
 
 AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Anschlüsse](setup-interfaces.md) geschaltet. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.

@@ -325,8 +325,10 @@ and the report's file name until CLOSE.
 ![Search only](img/servo-limrun-found.png)
 ![The servo's pulses outside PULSE MIN and PULSE MAX](img/servo-limrun-range.png)
 
-The report is a `SERVOnnn.TXT` of its own, with no CSV file beside it, under
-the next free number, written whatever DUT's REPORT says. During a
+The report is a `LIMITnnn.TXT` of its own in `USER/LOGS`, with no CSV file
+beside it, under the next free number of that folder, written whatever DUT's
+REPORT says. With User logs OFF on SETUP > SD CARD no report is written
+([Setup](Screens.md#sd-card-which-logs-are-written)). During a
 run neither the bench log nor the supply log writes a row; the supply
 log's time runs on through the run, as its totals do. From the run's start
 until the card has closed the report it counts as an open log run: Wi-Fi and
@@ -902,15 +904,16 @@ compared by its magnitude and in whole mA: see
 
 ### Files
 
-A run takes the next run number on the card, as a bench in ARMED does, and the
-SD card's own task writes its files: `SERVOnnn.CSV`, one row per reading of
-the run's meter, and with DUT's REPORT on, `SERVOnnn.TXT`. The
-number belongs to one series with the `BENCHnnn.CSV` and `ESCnnn.CSV` runs
-on the card ([Logs](Screens.md#logs)). A run is
+A run takes the next run number of the folder `USER/LOGS`, and the SD card's
+own task writes its files there: `ATESTnnn.CSV`, one row per reading of the
+run's meter, and with DUT's REPORT on, `ATESTnnn.TXT`. The number belongs to
+one series with the limit runs' `LIMITnnn.TXT` in that folder
+([Logs](Screens.md#logs)). With User logs OFF on SETUP > SD CARD, read at
+START TEST, the run writes no file and the result names `USER LOGS OFF`. A run is
 one CSV: the run log of a bench in ARMED writes no row while a run is under
 way. Its time column steps over the run and its rows start again when the
 run ends. A number carried by a
-`SERVOnnn.TXT` alone, its CSV deleted on a computer, is taken all the same,
+`ATESTnnn.TXT` alone, its CSV deleted on a computer, is taken all the same,
 so no report is overwritten, and the log viewer's DELETE on a run removes its
 report with it. A run the card cannot
 take says so on the band and on the result, `NOT RECORDED`. Rows the queue to

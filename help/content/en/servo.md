@@ -113,7 +113,7 @@ START TEST on TEST's AUTOMATIC TEST card steps the servo through the supply volt
 
 ![TEST and its two run cards](view:servo-test)
 
-The card's summary line names the steps and the length of each, `4.8 6.0 V BROWN-OUT, 60 s EACH`. Under START TEST the state line, then the last result and its files, `LAST: PASS SERVO004.CSV + .TXT`.
+The card's summary line names the steps and the length of each, `4.8 6.0 V BROWN-OUT, 60 s EACH`. Under START TEST the state line, then the last result and its files, `LAST: PASS ATEST004.CSV + .TXT`.
 
 ![A test run](view:servo-run)
 
@@ -122,7 +122,7 @@ TEST stays shown as the run starts, and the card's state line reads the step. LI
 ![A result](view:servo-result)
 ![A result read from the INA3221](view:servo-result-ina)
 
-The result stays in LIVE's box until CLOSE, and on the card's LAST line until the next run: PASS, FAIL or ABORTED and why, the longest travel time, the highest holding current, and the files the card took, `SERVOnnn.CSV` and `+ .TXT` for the report.
+The result stays in LIVE's box until CLOSE, and on the card's LAST line until the next run: PASS, FAIL or ABORTED and why, the longest travel time, the highest holding current, and the files the card took, `ATESTnnn.CSV` and `+ .TXT` for the report, in `USER/LOGS`. With User logs OFF on [SETUP](setup.md#sd-card) > SD CARD the line reads `USER LOGS OFF` and no file is written.
 
 ## The limit run
 
@@ -234,7 +234,7 @@ The box on LIVE stays until CLOSE, and the card's LAST line until the next run. 
 ![A programmed servo](view:servo-limrun-pass)
 ![Search only](view:servo-limrun-found)
 
-The report is a `SERVOnnn.TXT` of its own, written whatever REPORT says. It holds where the search ran, the endpoints of both searches, the servo's pulses and the pulse write, LEFT ANGLE and RIGHT ANGLE before and after with the shares, the overset and the final value, the values written, the writes sent and the sessions, the meter, the AS5600 angle at each last free position when it is fitted, and the verdict or the reason. Until the card has closed it, Wi-Fi and an update wait.
+The report is a `LIMITnnn.TXT` of its own in `USER/LOGS`, written whatever REPORT says and not written with User logs OFF. It holds where the search ran, the endpoints of both searches, the servo's pulses and the pulse write, LEFT ANGLE and RIGHT ANGLE before and after with the shares, the overset and the final value, the values written, the writes sent and the sessions, the meter, the AS5600 angle at each last free position when it is fitted, and the verdict or the reason. Until the card has closed it, Wi-Fi and an update wait.
 
 ## Current limitations
 

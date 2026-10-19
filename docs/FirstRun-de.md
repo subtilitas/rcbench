@@ -1008,12 +1008,12 @@ Welle.
    PRÜFLING des Bildschirms SERVO, Servo in Neutralstellung, SENSOR-MITTE
    antippen.
 2. Die Schritte 5 bis 7 von Teil A wiederholen.
-3. Jeden Mitschnitt zusammen mit der `SERVOnnn.CSV` seines Tests von der
-   SD-Karte aufheben.
+3. Jeden Mitschnitt zusammen mit der `ATESTnnn.CSV` seines Tests aus dem
+   Ordner `USER/LOGS` der SD-Karte aufheben.
 4. Am Host, für jedes Paar:
 
    ```bash
-   python3 tools/sense_trace.py mg90s-4v8.log --servo-csv SERVO012.CSV
+   python3 tools/sense_trace.py mg90s-4v8.log --servo-csv ATEST012.CSV
    ```
 
 Das Tool druckt dann zusätzlich je Bewegung die Ankunft abzüglich der

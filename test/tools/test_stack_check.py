@@ -335,3 +335,25 @@ def test_prog_calls_name_every_hook_of_every_page_set():
         for h in hooks:
             want |= fields[h]
         assert set(sc.PROG_CALLS[caller]) == want, caller
+
+
+def test_take_calls_name_every_card_function_the_panel_hands_log_take():
+    """A log_take_io_t callback TAKE_CALLS leaves out is a FatFs chain on
+    the runlog task the graph does not follow: log_take.c calls each field
+    it has, and the panel's io names one function for each."""
+    logfile = sc.ROOT / "shared" / "logfile"
+    header = (logfile / "include" / "log_take.h").read_text(encoding="utf-8")
+    struct = re.search(r"typedef struct \{(.*?)\} log_take_io_t;", header,
+                       re.S)
+    assert struct
+    fields = set(re.findall(r"\(\*(\w+)\)\(", struct.group(1)))
+    source = (logfile / "log_take.c").read_text(encoding="utf-8")
+    assert set(re.findall(r"\bio->(\w+)\(", source)) == fields
+    panel = (sc.PANEL_DIR / "main" / "panel_log.c").read_text(
+        encoding="utf-8")
+    init = re.search(r"log_take_io_t \w+ = \{(.*?)\};", panel, re.S)
+    assert init
+    given = dict(re.findall(r"\.(\w+)\s*=\s*(\w+)", init.group(1)))
+    assert set(given) - {"ctx"} == fields
+    assert set(sc.TAKE_CALLS) == {"log_take"}
+    assert set(sc.TAKE_CALLS["log_take"]) == {given[f] for f in fields}

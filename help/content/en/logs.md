@@ -6,19 +6,27 @@ order: 50
 
 # Logs
 
-LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files in the card's root, shows what the import found in one, and plots up to 4 of its columns. It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
+LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder, shows what the import found in one, and plots up to 4 of its columns. Three tabs at the top left choose the folder: USER (`USER/LOGS`), BENCH (`BENCH/LOGS`) and ROOT (the card's root). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
 
 ## No card
 
 ![LOGS with no card in the slot](view:logs-nocard)
 
-With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` A card without a CSV file in its root reads `No .csv files in the top-level folder.` Runs are written as `BENCHnnn.CSV`, `ESCnnn.CSV` or `SERVOnnn.CSV`, numbered from 001 to 999. RESCAN reads the card again.
+With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV.` or `Runs of firmware 0.21 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF in SETUP > SD CARD.` or `USER LOGS OFF in SETUP > SD CARD.` instead. RESCAN reads the card again.
 
 ## The file list
 
 ![The file list](view:logs)
 
-The header names the card by its volume label; a card without one shows the name the card reports, or `SD CARD`. Each row is one file with its size.
+The header names the card by its volume label and the folder on screen, `UNITEST  BENCH/LOGS`; a card without a label shows the name the card reports, or `SD CARD`. Each row is one file with its size.
+
+| Tab | Folder | Holds |
+|---|---|---|
+| USER | `USER/LOGS` | the AUTOMATIC TEST's and the LIMIT RUN's files |
+| BENCH | `BENCH/LOGS` | the automatic log of each ARMED and supply run |
+| ROOT | the card's root | the runs of firmware 0.21 and older |
+
+LOGS opens on the tab of the file the panel wrote last, and on BENCH after a start until one is written. Back on LOGS with nothing written since, the tab stays as it was left. A tap on a tab reads its folder from the first page.
 
 | Button | What it does |
 |---|---|
@@ -39,23 +47,31 @@ The header names the card by its volume label; a card without one shows the name
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.
 - A card put in while none is mounted is mounted by RESCAN and opens on its first page. A card swapped for another while one is mounted is not mounted again until the panel restarts; what the list shows in that state is not measured.
 - Newest means the highest number in the name. The panel has no clock that survives a power cycle, so every file is dated 1980-01-01.
-- A run being written is not listed.
+- A run being written is not listed. Its number in another folder is.
 - A row takes a tap. A drag of more than 8 px on the rows scrolls the list and selects nothing.
 
 ## What a run writes
 
-One file is one run. Its name says which writer made it:
+One file is one run, in the folder of its kind. Its name says what started it:
 
-| Name | Run |
-|---|---|
-| `SERVOnnn.CSV` | one automatic servo test; its report is `SERVOnnn.TXT` |
-| `SERVOnnn.TXT` | one limit run's report, with no CSV beside it |
-| `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC's ARM or a stick run on its PROGRAM |
-| `BENCHnnn.CSV` | one switch of the surfaces to ARMED, from SERVO, or one switch-on of the SUPPLY output while the bench is SAFE |
+| Folder | Name | Run |
+|---|---|---|
+| `BENCH/LOGS` | `SERVOnnn.CSV` | one switch to ARMED from SERVO |
+| `BENCH/LOGS` | `MOTORnnn.CSV` | one switch to ARMED from MOTOR & ESC's ARM or a stick run on its PROGRAM |
+| `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
+| `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
+| `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
+| root | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | runs of firmware 0.21 and older; in the root, `SERVOnnn` is a servo test |
 
-With an IOmcu older than protocol 4.18, every switch to ARMED covers the throttle outputs too, so a switch to ARMED from SERVO writes `ESCnnn.CSV`.
+The name follows the screen whose ARM armed the bench, also on an IOmcu older than protocol 4.18, which arms the throttle outputs with every switch to ARMED.
 
-The numbers are one series across the three names: a new run takes one above the highest number on the card, whichever name carries it. A gap left by a deleted file is not filled. A card holding a number 999 takes no further run, with lower numbers free or not. A card that holds only `BENCHnnn` files continues above their numbers. Firmware 0.20.0 and older numbers runs above the highest `BENCHnnn` file only. Going back to it on a card written by this firmware can give a run a number that an `ESCnnn` or `SERVOnnn` file already carries. Nothing is overwritten: the two files have different names. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list shows runs newest first by number, across all three names: `ESC043.CSV`, then `SERVO042.CSV`, then `BENCH041.CSV`.
+AUTO LOGS off on [SETUP > SD CARD](setup.md) writes no file to `BENCH/LOGS` and takes no number; USER LOGS off writes none to `USER/LOGS`, and the SERVO screen names `USER LOGS OFF` in place of the file. Both are on after a start from a new panel or an update.
+
+The panel makes each folder the first time it writes there, one level at a time. A file named `BENCH` or `USER` in the root stops that: the band reads `Cannot make folder BENCH/LOGS. Run not recorded.`
+
+Each folder has its own series: a new run takes one above the highest number in its folder, whichever name carries it, the names of firmware 0.21 included. A gap left by a deleted file is not filled. A folder holding a number 999 takes no further run, with lower numbers free or not. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list shows runs newest first by number, across all names: `MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
+
+Firmware 0.21 and older writes to the root and does not read `BENCH/LOGS` or `USER/LOGS`.
 
 A run is committed to the card every 20 rows or 1000 ms, whichever comes first. A power loss mid-run costs under 1.0 s of rows while the card keeps up, up to 84 rows, 4.20 s at 20 Hz, when it has stalled.
 
@@ -64,6 +80,7 @@ The band reports what the card did to a run:
 | Message | Meaning |
 |---|---|
 | `No card. This run is not being recorded.` | nothing is mounted |
+| `Cannot make folder BENCH/LOGS. Run not recorded.` | a level of the folder cannot be made: a file holds its name, or the card takes no new folder |
 | `Cannot read the card. Run not recorded.` | the card does not list |
 | `Card full or not writable. Run not recorded.` | no run file could be created |
 | `Card too slow. Run not recorded.` | every row was dropped |
@@ -72,7 +89,7 @@ The band reports what the card did to a run:
 | `Data could no longer be saved to the card. Recording incomplete.` | the same, said again when the run closes |
 | `The last write to the card failed. Recording incomplete.` | the rows since the last commit are not in the file |
 
-The first four leave no file. The last four leave a file that stops early.
+The first five leave no file. The last four leave a file that stops early.
 
 ## The import view
 

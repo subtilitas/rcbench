@@ -6,19 +6,27 @@ order: 50
 
 # Logs
 
-LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) im Hauptverzeichnis der Karte, zeigt, was der Import in einer davon gefunden hat, und zeichnet bis zu 4 ihrer Spalten. Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md). Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
+LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners, zeigt, was der Import in einer davon gefunden hat, und zeichnet bis zu 4 ihrer Spalten. Drei Tabs oben links wählen den Ordner: USER (`USER/LOGS`), BENCH (`BENCH/LOGS`) und STAMM (das Stammverzeichnis der Karte). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md). Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
 
 ## Keine Karte
 
 ![LOGS ohne Karte im Steckplatz](view:logs-nocard)
 
-Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Eine Karte ohne CSV-Datei im Hauptverzeichnis zeigt `Keine .csv-Dateien im Hauptverzeichnis.` Läufe werden als `BENCHnnn.CSV`, `ESCnnn.CSV` oder `SERVOnnn.CSV` geschrieben, nummeriert von 001 bis 999. AKTUALISIEREN liest die Karte erneut.
+Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV gespeichert.` oder `Läufe von Firmware 0.21 und älter.` Sind AUTO-LOGS oder EIGENE LOGS unter [SETUP > SD-KARTE](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SETUP > SD-KARTE.` oder `EIGENE LOGS AUS unter SETUP > SD-KARTE.` AKTUALISIEREN liest die Karte erneut.
 
 ## Die Dateiliste
 
 ![Die Dateiliste](view:logs)
 
-Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD-KARTE`. Jede Zeile ist eine Datei mit ihrer Größe.
+Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung und den gezeigten Ordner, `UNITEST  BENCH/LOGS`; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD-KARTE`. Jede Zeile ist eine Datei mit ihrer Größe.
+
+| Tab | Ordner | Enthält |
+|---|---|---|
+| USER | `USER/LOGS` | die Dateien des AUTOMATISCHEN TESTS und des ENDLAGENLAUFS |
+| BENCH | `BENCH/LOGS` | das automatische Log jedes ARMED- und Netzteil-Laufs |
+| STAMM | Stammverzeichnis | die Läufe von Firmware 0.21 und älter |
+
+LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und nach einem Start auf BENCH, bis eine geschrieben ist. Ist seit dem letzten Besuch nichts geschrieben worden, bleibt der Tab, wie er verlassen wurde. Ein Tipp auf einen Tab liest seinen Ordner ab der ersten Seite.
 
 | Taste | Was sie tut |
 |---|---|
@@ -39,23 +47,31 @@ Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung; eine Karte ohne Beze
 - Nach LÖSCHEN wird die Seite neu gelesen, und die Rollposition bleibt; nichts ist gewählt, LÖSCHEN und ÖFFNEN sind grau, bis eine Zeile gewählt ist.
 - Wird eine Karte eingesteckt, während keine eingebunden ist, bindet AKTUALISIEREN sie ein; sie öffnet auf ihrer ersten Seite. Eine Karte, die gegen eine andere getauscht wird, während eine eingebunden ist, wird bis zum Neustart des Panels nicht neu eingebunden; was die Liste in diesem Zustand zeigt, ist nicht gemessen.
 - Neueste heißt die höchste Nummer im Namen. Das Panel hat keine Uhr, die das Abschalten übersteht; jede Datei trägt das Datum 1980-01-01.
-- Ein Lauf, der gerade geschrieben wird, steht nicht in der Liste.
+- Ein Lauf, der gerade geschrieben wird, steht nicht in der Liste. Seine Nummer in einem anderen Ordner schon.
 - Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8 px auf den Zeilen scrollt die Liste und wählt nichts.
 
 ## Was ein Lauf schreibt
 
-Eine Datei ist ein Lauf. Ihr Name sagt, welcher Schreiber sie angelegt hat:
+Eine Datei ist ein Lauf, im Ordner seiner Art. Ihr Name sagt, was den Lauf gestartet hat:
 
-| Name | Lauf |
-|---|---|
-| `SERVOnnn.CSV` | ein automatischer Servotest; sein Bericht ist `SERVOnnn.TXT` |
-| `SERVOnnn.TXT` | der Bericht eines Endlagenlaufs, ohne CSV daneben |
-| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
-| `BENCHnnn.CSV` | ein Schalten der Surfaces auf ARMED, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
+| Ordner | Name | Lauf |
+|---|---|---|
+| `BENCH/LOGS` | `SERVOnnn.CSV` | ein Schalten auf ARMED von SERVO |
+| `BENCH/LOGS` | `MOTORnnn.CSV` | ein Schalten auf ARMED von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
+| `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
+| `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
+| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines ENDLAGENLAUFS, ohne CSV daneben |
+| Stammverzeichnis | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | Läufe von Firmware 0.21 und älter; im Stammverzeichnis ist `SERVOnnn` ein Servotest |
 
-An einem IOmcu älter als Protokoll 4.18 umfasst jedes Schalten auf ARMED auch die Throttle-Ausgänge. Ein Schalten auf ARMED von SERVO schreibt dann `ESCnnn.CSV`.
+Der Name folgt dem Bildschirm, dessen ARM den Prüfstand geschaltet hat, auch an einem IOmcu älter als Protokoll 4.18, der mit jedem Schalten auf ARMED die Throttle-Ausgänge mitschaltet.
 
-Die Nummern sind eine Reihe über alle drei Namen: ein neuer Lauf nimmt eins über der höchsten Nummer auf der Karte, gleich unter welchem Namen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Eine Karte mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Eine Karte, die nur `BENCHnnn`-Dateien trägt, zählt über ihren Nummern weiter. Firmware 0.20.0 und älter nummeriert Läufe nur über der höchsten `BENCHnnn`-Datei. Läuft sie wieder auf einer Karte, die diese Firmware beschrieben hat, kann ein Lauf eine Nummer bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird überschrieben: Die beiden Dateien haben verschiedene Namen. Die Liste zeigt die `.TXT`-Berichte nicht, und LÖSCHEN auf einem Lauf entfernt auch seinen Bericht. Die Läufe stehen nach Nummer, der neueste zuerst, über alle drei Namen: `ESC043.CSV`, dann `SERVO042.CSV`, dann `BENCH041.CSV`.
+AUTO-LOGS aus unter [SETUP > SD-KARTE](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; EIGENE LOGS aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `EIGENE LOGS AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
+
+Das Panel legt jeden Ordner an, wenn es zum ersten Mal hineinschreibt, eine Ebene nach der anderen. Eine Datei namens `BENCH` oder `USER` im Stammverzeichnis verhindert das: Das Band zeigt `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.`
+
+Jeder Ordner hat seine eigene Reihe: ein neuer Lauf nimmt eins über der höchsten Nummer in seinem Ordner, gleich unter welchem Namen, die Namen von Firmware 0.21 eingeschlossen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Ein Ordner mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Die Liste zeigt die `.TXT`-Berichte nicht, und LÖSCHEN auf einem Lauf entfernt auch seinen Bericht. Die Läufe stehen nach Nummer, der neueste zuerst, über alle Namen: `MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
+
+Firmware 0.21 und älter schreibt ins Stammverzeichnis und liest `BENCH/LOGS` und `USER/LOGS` nicht.
 
 Ein Lauf wird alle 20 Zeilen oder alle 1000 ms auf die Karte festgeschrieben, je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet unter 1,0 s an Zeilen, solange die Karte mithält, und bis zu 84 Zeilen, 4,20 s bei 20 Hz, wenn sie stockt.
 
@@ -64,6 +80,7 @@ Das Band meldet, was die Karte mit einem Lauf gemacht hat:
 | Meldung | Bedeutung |
 |---|---|
 | `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` | nichts ist eingebunden |
+| `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.` | eine Ebene des Ordners lässt sich nicht anlegen: eine Datei trägt ihren Namen, oder die Karte nimmt keinen neuen Ordner an |
 | `Karte nicht lesbar. Lauf nicht aufgezeichnet.` | die Karte lässt sich nicht auflisten |
 | `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.` | keine Laufdatei ließ sich anlegen |
 | `Karte zu langsam. Lauf nicht aufgezeichnet.` | jede Zeile ging verloren |
@@ -72,7 +89,7 @@ Das Band meldet, was die Karte mit einem Lauf gemacht hat:
 | `Daten konnten nicht mehr auf die Karte geschrieben werden. Aufzeichnung unvollständig.` | dasselbe, beim Schließen des Laufs erneut gemeldet |
 | `Letzter Schreibvorgang auf die Karte fehlgeschlagen. Aufzeichnung unvollständig.` | die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
-Die ersten vier hinterlassen keine Datei. Die letzten vier hinterlassen eine Datei, die zu früh endet.
+Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Datei, die zu früh endet.
 
 ## Die Importansicht
 

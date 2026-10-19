@@ -358,9 +358,11 @@ an dem der Lauf begann, und den Dateinamen des Berichts.
 ![Nur Suche](img/de/servo-limrun-found.png)
 ![Die Pulse des Servos außerhalb von PULS MIN und PULS MAX](img/de/servo-limrun-range.png)
 
-Der Bericht ist eine eigene `SERVOnnn.TXT` ohne CSV-Datei daneben, unter
-der nächsten freien Nummer, geschrieben unabhängig davon, was BERICHT auf
-PRÜFLING sagt. Während eines Laufs schreiben weder das
+Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS` ohne CSV-Datei
+daneben, unter der nächsten freien Nummer dieses Ordners, geschrieben
+unabhängig davon, was BERICHT auf PRÜFLING sagt. Mit Eigene Logs AUS unter
+SETUP > SD-KARTE wird kein Bericht geschrieben
+([Setup](Screens-de.md#sd-karte-welche-logs-geschrieben-werden)). Während eines Laufs schreiben weder das
 Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
 läuft durch den Lauf weiter, wie seine Summen. Vom Start des Laufs, bis die
 Karte den Bericht geschlossen hat, gilt er als offener Log-Lauf: WLAN und ein Update warten
@@ -974,16 +976,18 @@ Strom wird mit seinem Betrag und in ganzen mA verglichen: siehe
 
 ### Dateien
 
-Ein Lauf nimmt die nächste Laufnummer auf der Karte, wie ein Prüfstand
-in ARMED, und die eigene Task der SD-Karte schreibt seine Dateien:
-`SERVOnnn.CSV`, eine Zeile je Messwert des Messgeräts des Laufs, und mit
-BERICHT an (OPTIONEN > PRÜFLING) `SERVOnnn.TXT`. Die Nummer gehört zu einer
-Reihe mit den Läufen `BENCHnnn.CSV` und `ESCnnn.CSV` auf der Karte
-([Logs](Screens-de.md#logs)). Ein Lauf ist eine CSV: das eigene
+Ein Lauf nimmt die nächste Laufnummer des Ordners `USER/LOGS`, und die
+eigene Task der SD-Karte schreibt seine Dateien dorthin: `ATESTnnn.CSV`, eine
+Zeile je Messwert des Messgeräts des Laufs, und mit BERICHT an (OPTIONEN >
+PRÜFLING) `ATESTnnn.TXT`. Die Nummer gehört zu einer Reihe mit den
+`LIMITnnn.TXT` der Endlagenläufe in diesem Ordner
+([Logs](Screens-de.md#logs)). Mit Eigene Logs AUS unter SETUP > SD-KARTE,
+gelesen bei TEST STARTEN, schreibt der Lauf keine Datei, und das Ergebnis
+nennt `EIGENE LOGS AUS`. Ein Lauf ist eine CSV: das eigene
 Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
 läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen
 wieder, wenn der Lauf endet. Eine Nummer, die nur ein
-`SERVOnnn.TXT` trägt, dessen CSV am Computer gelöscht wurde, ist trotzdem
+`ATESTnnn.TXT` trägt, dessen CSV am Computer gelöscht wurde, ist trotzdem
 vergeben, damit kein Bericht überschrieben wird, und LÖSCHEN in der
 Log-Ansicht löscht mit einem Lauf seinen Bericht. Ein Lauf, den die Karte nicht
 annimmt, sagt das in der Leiste und im Ergebnis, `NICHT AUFGEZEICHNET`. Zeilen, für

@@ -40,9 +40,27 @@ history is in git.
   report the capture. CI builds it and fails when the default image holds
   a console symbol. `shared/outputs/page_console.c`, `test_page_console`,
   13 cases. ([The bench console](docs/BenchConsole.md))
+- SETUP > SD CARD, a new category tile: Auto logs and User logs, both ON
+  by default. OFF writes no file and takes no number. With User logs OFF the
+  SERVO screen names `USER LOGS OFF` where a test's files would be.
 
 ### Changed
 
+- Run logs go to two folders of the SD (Secure Digital) card, made one
+  level at a time on the first write: `BENCH/LOGS` holds `SERVOnnn.CSV` (an
+  arm from SERVO), `MOTORnnn.CSV` (an arm from MOTOR & ESC or ESC STICK) and
+  `SUPPLnnn.CSV` (a supply run); `USER/LOGS` holds the AUTOMATIC TEST's
+  `ATESTnnn.CSV` and `.TXT` and the LIMIT RUN's `LIMITnnn.TXT`. The numbers
+  are one series per folder. The name follows the roles the arm asked for.
+  `BENCHnnn`, `ESCnnn` and `SERVOnnn` runs of 0.21 and older stay in the
+  root, nothing moves them, and LOGS lists them on its ROOT tab. A folder
+  that cannot be made says `Cannot make folder BENCH/LOGS. Run not
+  recorded.` Firmware 0.21 and older does not read the two folders.
+- LOGS lists one folder at a time, chosen by three tabs in its header row:
+  USER, BENCH and ROOT (STAMM in German). It opens on the tab of the file
+  written last when one was written since its last visit, BENCH after a
+  start. The header names the card and the folder; an empty folder names
+  what goes there or the switch that is OFF.
 - The release kind and the RELEASES value are named STABLE, not USABLE:
   `tools/release_kind.py` prints `kind=stable`, SETUP > UPDATES shows
   RELEASES: STABLE | TESTING, English and German. A panel set to USABLE

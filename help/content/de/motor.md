@@ -130,7 +130,7 @@ Der Kopf der Grafik zeigt den Nenn-kV-Wert, die gemessene Drehzahl je Volt und E
 
 ## Das Log eines Laufs
 
-Jedes Schalten auf ARMED schreibt eine Datei, `ESCnnn.CSV`, auf die SD-Karte (Secure Digital) des Panels. Bei stehendem Link ist eine Zeile eine beantwortete Abfrage, etwa 19 Zeilen pro Sekunde an einem Prüfstand; andere Prüfstände sind nicht gemessen. Die Datei schließt beim Schalten auf SAFE. [Logs](logs.md) öffnet sie und zeichnet sie.
+Jedes Schalten auf ARMED schreibt eine Datei, `MOTORnnn.CSV`, in `BENCH/LOGS` auf der SD-Karte (Secure Digital) des Panels, solange Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE EIN ist. Bei stehendem Link ist eine Zeile eine beantwortete Abfrage, etwa 19 Zeilen pro Sekunde an einem Prüfstand; andere Prüfstände sind nicht gemessen. Die Datei schließt beim Schalten auf SAFE. [Logs](logs.md) öffnet sie und zeichnet sie.
 
 ## Verwandte Seiten
 
