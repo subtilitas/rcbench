@@ -12,7 +12,9 @@ history is in git.
 it as a pre-release. It adds the HITEC link page and the bench console,
 writes run logs to `BENCH/LOGS` and `USER/LOGS` on the SD (Secure Digital)
 card, keeps the bench's own files under `BENCH`, and names the release
-kind STABLE.
+kind STABLE. Every panel image, the release images included, looks once at
+start-up for a touch injector at I2C (Inter-Integrated Circuit) address
+0x14 ([SECURITY](SECURITY.md) states the limitation).
 
 The panel reads no file of 0.21.0 and older from its old place: ESC
 profiles come from `BENCH/ESC/CONF`, not `/ESC/`; servo files, `KST.TXT`
