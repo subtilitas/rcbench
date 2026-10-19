@@ -262,10 +262,22 @@ TEST_CASE(a_listen_needs_the_key_only_to_answer)
     settle();
     CHECK_EQ(rx_code(), HITEC_RX_OK);
     CHECK(!flag(LINK_HT_F_KEY));
+    /* The key on a listen that answers nothing puts no byte out: the flag
+     * stays clear.  The capture of the last one is gone while it runs. */
+    CHECK(flag(LINK_HT_F_CAPTURE));
+    CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, KEY), 0);
+    CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
+    CHECK_EQ(state(), LINK_HITEC_BUSY);
+    CHECK(!flag(LINK_HT_F_CAPTURE));
+    CHECK_EQ(cap_n(), 0);
+    CHECK(!flag(LINK_HT_F_KEY));
+    settle();
+    CHECK(flag(LINK_HT_F_CAPTURE));
+    CHECK(!flag(LINK_HT_F_KEY));
     stage_listen(5000u, 1u, true, 0x2Bu, LINK_HITEC_DEC_LISTEN, 0xA0u);
     CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, 0), 0);
     CHECK_EQ(refusal(), LINK_HITEC_REF_NO_KEY);
-    CHECK_EQ(g_drv.starts, 1);
+    CHECK_EQ(g_drv.starts, 2);
     CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, KEY), 0);
     CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
     CHECK_EQ(g_drv.x.answer, 1);
@@ -640,6 +652,17 @@ TEST_CASE(a_send_says_while_its_lead_and_bytes_are_out)
     settle();
     stage_listen(1000u, 1u, false, 0u, LINK_HITEC_DEC_NONE, 0u);
     CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, 0), 0);
+    CHECK(!hitec_port_frame_out(&g_port, g_ms));
+    /* One that answers is, for as long as it runs: the answer goes out
+     * when the first byte has come, which the port does not see. */
+    settle();
+    stage_listen(20000u, 1u, true, 0x2Bu, LINK_HITEC_DEC_NONE, 0u);
+    CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, KEY), 0);
+    CHECK_EQ(state(), LINK_HITEC_BUSY);
+    CHECK(hitec_port_frame_out(&g_port, g_ms));
+    run_ms(15u);
+    CHECK(hitec_port_frame_out(&g_port, g_ms));
+    settle();
     CHECK(!hitec_port_frame_out(&g_port, g_ms));
 }
 

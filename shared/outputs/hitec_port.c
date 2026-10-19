@@ -347,6 +347,7 @@ static link_hitec_refusal_t power(hitec_port_t *p, const hitec_xfer_t *x,
     if (!power_range_ok(&v, mv, ma, off_ms)) {
         return LINK_HITEC_REF_SUPPLY_RANGE;
     }
+    p->has_cap = 0;
     p->xfer = *x;
     p->mv = mv;
     p->ma = ma;
@@ -406,9 +407,12 @@ static link_hitec_refusal_t transaction(hitec_port_t *p, link_hitec_op_t op,
     if (op == LINK_HITEC_OP_POWER) {
         return power(p, &x, now_ms);
     }
+    /* The capture on the page is the last transaction's until this one
+     * hands back its own: none while it runs. */
+    p->has_cap = 0;
     op_begin(p, op);
     p->t0_ms = now_ms;
-    start(p, &x, key ? 1u : 0u);
+    start(p, &x, puts_byte_out(op, &x) ? 1u : 0u);
     return LINK_HITEC_REF_NONE;
 }
 
@@ -747,8 +751,15 @@ bool hitec_port_frame_out(const hitec_port_t *p, uint32_t now_ms)
 {
     uint32_t us;
 
-    if (p == NULL || p->state != (uint8_t)LINK_HITEC_BUSY
-        || p->xfer.kind != (uint8_t)HITEC_XFER_SEND) {
+    if (p == NULL || p->state != (uint8_t)LINK_HITEC_BUSY) {
+        return false;
+    }
+    /* An answer goes out when the first byte has come, which the port does
+     * not see: the whole receive counts. */
+    if (p->xfer.answer != 0u) {
+        return true;
+    }
+    if (p->xfer.kind != (uint8_t)HITEC_XFER_SEND) {
         return false;
     }
     us = p->xfer.lead_us

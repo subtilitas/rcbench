@@ -283,7 +283,7 @@ static void cmd_read(page_console_t *c, char **tok, unsigned n)
     if (n < 3u || n > 4u || !parse_max(tok[1], 0xFFu, &page)
         || !parse_max(tok[2], 0xFFu, &off)
         || (n == 4u && !parse_max(tok[3], LINK_MAX_REGS, &cnt)) || cnt == 0u) {
-        say(c, "err usage: r <page> <off> [n 1..%u]", LINK_MAX_REGS);
+        say(c, "err usage: r <page> <off> [n 1..%u]", (unsigned)LINK_MAX_REGS);
         return;
     }
     if (!apply(c, LINK_OP_READ, (uint8_t)page, (uint8_t)off, (uint8_t)cnt,
@@ -311,7 +311,7 @@ static void cmd_write(page_console_t *c, char **tok, unsigned n)
     if (n < 4u || cnt > LINK_MAX_REGS || !parse_max(tok[1], 0xFFu, &page)
         || !parse_max(tok[2], 0xFFu, &off)) {
         say(c, "err usage: w <page> <off> <v> [v ...], 1 to %u values",
-            LINK_MAX_REGS);
+            (unsigned)LINK_MAX_REGS);
         return;
     }
     for (unsigned i = 0; i < cnt; ++i) {
@@ -393,7 +393,7 @@ static void hitec_report(page_console_t *c, const char *what)
     say(c, "hitec %s state=%s port=%u flags=%s seq=%u op=%s count=%u "
         "result=%s refusal=%s", what,
         NAME(k_state, LINK_HT_STATE_OF(r[LINK_HT_STATE])),
-        LINK_HT_PORT_OF(r[LINK_HT_STATE]), flags, r[LINK_HT_SEQ],
+        (unsigned)LINK_HT_PORT_OF(r[LINK_HT_STATE]), flags, r[LINK_HT_SEQ],
         NAME(k_op, LINK_HT_OP_OF(r[LINK_HT_OP])), r[LINK_HT_OP] & 0x0FFFu,
         NAME(k_result, r[LINK_HT_RESULT] & 0xFFu),
         NAME(k_refusal, r[LINK_HT_RESULT] >> 8));
@@ -428,10 +428,11 @@ static void hitec_report(page_console_t *c, const char *what)
 
         say(c, "hitec cap n=%u full=%u answered=%u overflow=%u aborted=%u "
             "dec=%s rx=%s id=0x%02X value=0x%04X delay_ns=%lu t_us=%lu "
-            "window_us=%lu", n, (cap & LINK_HT_CAP_FULL) != 0u,
-            (cap & LINK_HT_CAP_ANSWERED) != 0u,
-            (cap & LINK_HT_CAP_OVERFLOW) != 0u,
-            (cap & LINK_HT_CAP_ABORTED) != 0u, NAME(k_dec, (cap >> 12) & 3u),
+            "window_us=%lu", n, (unsigned)((cap & LINK_HT_CAP_FULL) != 0u),
+            (unsigned)((cap & LINK_HT_CAP_ANSWERED) != 0u),
+            (unsigned)((cap & LINK_HT_CAP_OVERFLOW) != 0u),
+            (unsigned)((cap & LINK_HT_CAP_ABORTED) != 0u),
+            NAME(k_dec, (cap >> 12) & 3u),
             NAME(k_rx, r[LINK_HT_DEC] & 0xFFu), r[LINK_HT_DEC] >> 8,
             r[LINK_HT_VALUE],
             (unsigned long)u32_of(run, RUN_AT(LINK_HT_I_DELAY_LO)),
@@ -496,6 +497,8 @@ static void hitec_command(page_console_t *c, link_hitec_op_t op,
     case LINK_HITEC_FREE:
     case LINK_HITEC_OPEN:
     default:
+        /* Ended in its own frame, and with it whatever was watched. */
+        c->watch = 0;
         hitec_report(c, "done");
         break;
     }
@@ -735,6 +738,24 @@ static void hitec_level(page_console_t *c, uint32_t port, char **tok,
     hitec_command(c, LINK_HITEC_OP_LEVEL, port, false);
 }
 
+/* Whether the open line is of @p family; says why not.  A frame of one
+ * family on a line of the other goes out at the wrong rate and polarity. */
+static bool family_is(page_console_t *c, uint8_t family)
+{
+    uint8_t open;
+
+    if (!open_family(c, &open)) {
+        return false;
+    }
+    if (open != family) {
+        say(c, "err the line is %s; this command needs a %s line",
+            open == (uint8_t)HITEC_CLASSIC ? "classic" : "D series",
+            family == (uint8_t)HITEC_CLASSIC ? "classic" : "D series");
+        return false;
+    }
+    return true;
+}
+
 static void hitec_classic(page_console_t *c, uint32_t port, char **tok,
                           unsigned n)
 {
@@ -748,6 +769,9 @@ static void hitec_classic(page_console_t *c, uint32_t port, char **tok,
         say(c, "err usage: hitec c <port> <cmd> <p1> <p2>");
         return;
     }
+    if (!family_is(c, HITEC_CLASSIC)) {
+        return;
+    }
     hitec_c_xfer((uint8_t)v[0], (uint8_t)v[1], (uint8_t)v[2], &x);
     stage_xfer(c, &x, hitec_c_expect_of((uint8_t)v[0], &e)
                           ? (uint16_t)(LINK_HITEC_DEC_C | (v[0] << 8)) : 0u);
@@ -759,6 +783,11 @@ static void hitec_d(page_console_t *c, uint32_t port, char **tok, unsigned n)
     uint32_t id = 0, addr = 0, value = 0;
     hitec_xfer_t x;
 
+    if (n >= 1u && (strcmp(tok[0], "read") == 0
+                    || strcmp(tok[0], "write") == 0)
+        && !family_is(c, HITEC_D)) {
+        return;
+    }
     if (n == 3u && strcmp(tok[0], "read") == 0
         && parse_max(tok[1], 0xFFu, &id) && parse_max(tok[2], 0xFFu, &addr)) {
         hitec_d_read_xfer((uint8_t)id, (uint8_t)addr, &x);

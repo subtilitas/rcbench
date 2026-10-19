@@ -178,7 +178,7 @@ typedef struct {
     uint8_t  has_pin;
     uint8_t  has_cap;
     uint8_t  stopped;
-    uint8_t  keyed;         /**< the last transaction put a byte out */
+    uint8_t  keyed;         /**< the last transaction puts a byte out */
     uint8_t  cutting;       /**< the driver was told to abort */
     uint8_t  off_seen;      /**< POWER: the supply read off */
 } hitec_port_t;
@@ -228,8 +228,9 @@ void hitec_port_other_mask(hitec_port_t *p, uint8_t mask);
 /** A POWER runs: the SUPPLY page is held (supply_page_hold()). */
 bool hitec_port_supply_hold(const hitec_port_t *p);
 
-/** A SEND's lead or bytes may be on the wire: from its start until the
- *  lead and the bytes have had their time, counted in whole ms. */
+/** A byte may be on the wire: a SEND from its start until the lead and
+ *  the bytes have had their time, counted in whole ms; a LISTEN or a POWER
+ *  that answers, while it runs. */
 bool hitec_port_frame_out(const hitec_port_t *p, uint32_t now_ms);
 
 #ifdef __cplusplus

@@ -47,7 +47,7 @@ Standard-Image ein Symbol der Konsole enthält. `IOMCU_CONSOLE` und
 `SENSE_TRACE` lesen beide die USB-Konsole; CMake weist einen Build mit
 beiden ab.
 
-Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 9.836
+Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 10.324
 Byte größer als das Standard-Image und belegt 3.164 Byte mehr RAM
 (Random-Access Memory), 2.048 davon der Ausgabepuffer. Die tiefste
 Aufrufkette von Kern 0 ist die des Standard-Images: die Konsole hält ihren
@@ -165,6 +165,14 @@ nur, solange die Page einen Mitschnitt hält.
 | `hitec d <port> write <id> <addr> <value>` | ein Schreiben der D-Serie: 88 us Vorlauf, 7 Bytes, nichts empfangen |
 
 `<dec>` ist `none`, `c:<cmd>`, `d:<addr>` oder `l:<byte>`.
+
+`hitec c` braucht eine offene classic-Leitung und `hitec d` eine offene
+Leitung der D-Serie. Auf einer Leitung der anderen Familie schreibt die
+Konsole nichts und sagt es:
+
+```text
+err the line is classic; this command needs a D series line
+```
 
 Eine Session von Hand, classic, Port 0:
 

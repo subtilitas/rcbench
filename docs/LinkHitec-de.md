@@ -97,6 +97,11 @@ bis zum Ende des LISTEN ist die SUPPLY-Page gehalten (Flag-Bit 11): das
 Panel kann die Versorgung ausschalten, aber nicht einschalten und keinen
 Sollwert verschieben.
 
+Ein Ausschalten der SUPPLY-Page wartet auf ein Byte, das auf der Leitung
+sein kann, höchstens 12 ms: Vorlauf und Bytes eines SEND, und ein LISTEN
+oder das LISTEN eines POWER, das antwortet, ganz, weil die Antwort geht,
+sobald das erste Byte gekommen ist.
+
 ## STOP, Schalten auf SAFE, Heartbeat-Verlust und Link-Verlust
 
 Ein Stopp ist der verlorene Heartbeat, der stille Link oder das Schalten der

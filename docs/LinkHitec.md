@@ -91,6 +91,11 @@ the OFF to the end of the LISTEN the SUPPLY page is held (flag bit 11): the
 panel can switch the supply off and cannot switch it on or move a set
 point.
 
+An OFF of the SUPPLY page waits for a byte that may be on the wire, 12 ms
+at most: a SEND's lead and bytes, and the whole of a LISTEN or a POWER's
+LISTEN that answers, since the answer goes out when the first byte has
+come.
+
 ## STOP, a switch to SAFE, heartbeat loss and link loss
 
 A stop is the heartbeat lost, the link silent, or the bank switched to SAFE.

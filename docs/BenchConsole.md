@@ -42,7 +42,7 @@ with it, checks the stacks of both cores, and fails when the default image
 holds a console symbol. `IOMCU_CONSOLE` and `SENSE_TRACE` both read the USB
 console; CMake refuses a build with both.
 
-Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 9,836
+Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 10,324
 bytes larger than the default image and holds 3,164 bytes more RAM
 (random-access memory), 2,048 of them the output buffer. Core 0's deepest
 call chain is the default image's: the console keeps its work space in its
@@ -156,6 +156,13 @@ while the page holds a capture.
 | `hitec d <port> write <id> <addr> <value>` | a D series write: an 88 us lead, 7 bytes, nothing received |
 
 `<dec>` is `none`, `c:<cmd>`, `d:<addr>` or `l:<byte>`.
+
+`hitec c` needs an open classic line and `hitec d` an open D series line.
+On a line of the other family the console writes nothing and says so:
+
+```text
+err the line is classic; this command needs a D series line
+```
 
 A session by hand, classic, port 0:
 

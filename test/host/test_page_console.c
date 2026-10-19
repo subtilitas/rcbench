@@ -31,9 +31,9 @@ static page_console_t g_con;
 static uint32_t g_ms;
 
 /* The driver: open after the take, a transaction ends at the next poll
- * with the set capture. */
+ * with the set capture, or not while it hangs. */
 static struct {
-    bool open, busy;
+    bool open, busy, hang;
     uint8_t family;
     hitec_xfer_t x;
     hitec_capture_t cap;
@@ -150,7 +150,7 @@ static bool drv_start(void *ctx, const hitec_xfer_t *x)
 static bool drv_poll(void *ctx, hitec_capture_t *out)
 {
     (void)ctx;
-    if (!g_drv.busy) {
+    if (!g_drv.busy || g_drv.hang) {
         return false;
     }
     g_drv.busy = false;
@@ -483,6 +483,49 @@ TEST_CASE(hitec_on_a_build_without_the_page_says_so)
     CHECK(has(type("hitec open 0 c"), "nack page=0x34 off=4: BAD_PAGE (1)"));
 }
 
+/* A convenience of one family is refused on a line of the other: its
+ * frame would go out at the wrong rate and polarity. */
+TEST_CASE(the_family_commands_need_a_line_of_their_family)
+{
+    fresh();
+    (void)type("hitec open 0 c");
+    (void)passes(60u);
+    CHECK(has(type("hitec d 0 read 0 0x32"),
+              "err the line is classic; this command needs a D series "
+              "line\n"));
+    CHECK(has(type("hitec d 0 write 0 0x32 1"), "needs a D series line"));
+    CHECK_EQ(g_drv.starts, 0);
+    CHECK_EQ(g_port.refusal, LINK_HITEC_REF_NONE);
+    (void)type("hitec close 0");
+    (void)type("hitec open 0 d");
+    (void)passes(60u);
+    CHECK(has(type("hitec c 0 0x61 0x12 0"),
+              "err the line is D series; this command needs a classic "
+              "line\n"));
+    CHECK_EQ(g_drv.starts, 0);
+    CHECK(has(type("hitec d 0 read 0 0x32"), "hitec SEND port=0 started"));
+    CHECK_EQ(g_drv.starts, 1);
+}
+
+/* A CLOSE while a transaction is watched ends both in its frame: one
+ * report, not a second when the next pass finds the port free. */
+TEST_CASE(a_close_of_a_watched_transaction_reports_once)
+{
+    const char *o;
+
+    fresh();
+    (void)type("hitec open 0 c");
+    (void)passes(60u);
+    g_drv.hang = true;
+    CHECK(has(type("hitec listen 0 window=100000 rx=1"), "started"));
+    CHECK_EQ(hitec_port_state(&g_port), LINK_HITEC_BUSY);
+    CHECK_STR_EQ(passes(3u), "");
+    o = type("hitec close 0");
+    CHECK(has(o, "hitec done state=FREE"));
+    CHECK(strstr(strstr(o, "hitec done") + 1, "hitec done") == NULL);
+    CHECK_STR_EQ(passes(60u), "");
+}
+
 /* The raw example of docs/LinkHitec.md, line by line. */
 TEST_CASE(the_raw_example_of_the_docs_runs)
 {
@@ -542,6 +585,8 @@ int main(void)
     RUN(hitec_commands_stage_name_the_crc_and_carry_the_key);
     RUN(hitec_power_stages_the_supply_and_reports_the_listen);
     RUN(hitec_on_a_build_without_the_page_says_so);
+    RUN(the_family_commands_need_a_line_of_their_family);
+    RUN(a_close_of_a_watched_transaction_reports_once);
     RUN(the_raw_example_of_the_docs_runs);
     RUN(the_console_does_not_hold_the_failsafe_off);
     return test_summary("page_console");
