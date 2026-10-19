@@ -32,7 +32,9 @@ static volatile bool     s_attached;
 void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
                          uint32_t now_ms)
 {
-    touch_merge_attach(&s_merge, now_ms);
+    /* Absent until the probe below says otherwise, and absent for good
+     * when it does: nothing after start-up looks for the injector. */
+    touch_merge_start(&s_merge, false, now_ms);
     s_ok_ms = now_ms;
     if (glass_addr == TOUCH_INJECT_ADDR) {
         /* No controller at 0x5D, and the injector took the glass's place. */
@@ -50,6 +52,7 @@ void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
         ESP_LOGW(TAG, "0x%02x answers, but not as a GT911", TOUCH_INJECT_ADDR);
         return;
     }
+    touch_merge_start(&s_merge, true, now_ms);
     s_attached = true;
     ESP_LOGW(TAG, "touch injector attached at 0x%02x", TOUCH_INJECT_ADDR);
 }

@@ -541,7 +541,7 @@ def screen_tables(elf: Elf) -> tuple:
 
 def in_build_dir(rel: Path) -> bool:
     """Whether @p rel, relative to firmware/panel, lies in a build tree:
-    build/, or a second one such as build-inject/ (docs/Building.md)."""
+    build/, or a second one such as build-noinject/ (docs/Building.md)."""
     return any(p == "build" or p.startswith("build-") for p in rel.parts)
 
 

@@ -16,6 +16,7 @@ Von links: das Home-Tag mit dem Namen des Bildschirms, dann die Chips, dann STOP
 |---|---|
 | VERBINDUNG, KEINE VERBINDUNG | ob der IOmcu auf dem CAN-Bus (Controller Area Network) antwortet |
 | BENCH, SIM | BENCH, solange der IOmcu antwortet und die Bildschirme seine Ausgänge ansteuern; SIM, solange das Panel sein eigenes Modell rechnet |
+| INJECT | an Stelle von BENCH und SIM, solange ein Touch-Injector an der I2C-Adresse 0x14 (Inter-Integrated Circuit) antwortet; das Panel sucht ihn einmal, beim Start |
 | FEHLER 01 bis FEHLER 7F | ein Fehlercode, den der IOmcu meldet; fehlt, solange keiner anliegt |
 | SAFE, ARMED MOTOR, ARMED SERVO, ARMED | was das Schalten auf ARMED treibt |
 | Laufzeituhr | die Dauer des laufenden Laufs ab dem Schalten auf ARMED, in Minuten und Sekunden; bei SAFE hält sie den letzten Lauf |

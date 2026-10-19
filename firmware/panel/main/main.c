@@ -2261,7 +2261,7 @@ void app_main(void)
             .faults      = faults,
             .run_seconds = run_seconds,
 #ifdef RCBENCH_TOUCH_INJECTOR
-            /* A bench build names an attached touch injector where the
+            /* A build with the touch injector names an attached one where the
              * mode goes; LINK still tells BENCH from SIM, and the
              * SIMULATION watermark still covers a simulated bench. */
             .mode        = touch_injector_attached()
