@@ -560,11 +560,13 @@ static int32_t note_size(void *ctx, const char *path)
     char full[NOTE_PATH_MAX];
     take_path(path, NULL, full, sizeof(full));
     struct stat st;
-    if (stat(full, &st) != 0 || S_ISDIR(st.st_mode)
-        || st.st_size > INT32_MAX) {
-        return -1;
+    if (stat(full, &st) != 0) {
+        return (errno == ENOENT) ? FAULT_SIZE_NONE : FAULT_SIZE_UNREAD;
     }
-    return (int32_t)st.st_size;
+    if (S_ISDIR(st.st_mode)) {
+        return FAULT_SIZE_UNREAD;    /* a folder holds the name */
+    }
+    return (st.st_size > INT32_MAX) ? INT32_MAX : (int32_t)st.st_size;
 }
 
 static bool note_remove(void *ctx, const char *path)

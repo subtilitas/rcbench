@@ -10,7 +10,13 @@
  *
  * A file that ends at the cap exactly is kept: the cap is the most bytes the
  * file holds.  A line that does not fit an empty file is refused.  When the
- * rename fails the line is not written, so the file never passes the cap.
+ * rename fails the line is not written, so the file never passes the cap,
+ * and a file whose size does not read takes no line either.
+ *
+ * The old RCBENCH.OLD gives way only once the full file has its name.  It
+ * is first renamed to BENCH/RCBENCH.TMP; a rename of the full file that
+ * fails gives it its name back.  A TMP left by a power cut is RCBENCH.OLD
+ * again when no OLD stands, and is removed when one does.
  *
  * Each line is appended on its own, opened and closed around it, so a
  * line is on the card before the next fault can happen.  BENCH is made the
@@ -34,6 +40,10 @@
 extern "C" {
 #endif
 
+/** size()'s answers that are no size. */
+#define FAULT_SIZE_NONE   (-1)
+#define FAULT_SIZE_UNREAD (-2)
+
 /** The most bytes BENCH/RCBENCH.LOG holds. */
 #define FAULT_LOG_CAP 1048576u     /* 1 MiB */
 
@@ -45,7 +55,9 @@ typedef struct {
     bool (*mounted)(void *ctx);
     /** Make one folder level (card_make_fn). */
     card_dir_t (*make_dir)(void *ctx, const char *level);
-    /** The size of file @p path in bytes; -1 when no file has the name. */
+    /** The size of file @p path in bytes, INT32_MAX for a larger one;
+     *  FAULT_SIZE_NONE when nothing has the name; FAULT_SIZE_UNREAD when the
+     *  size does not read, or a folder has the name. */
     int32_t (*size)(void *ctx, const char *path);
     /** Remove file @p path.  True when no file has the name afterwards. */
     bool (*remove)(void *ctx, const char *path);
@@ -61,7 +73,9 @@ typedef enum {
     FAULT_LOG_ARG,        /**< a NULL, or a line longer than the cap     */
     FAULT_LOG_NO_CARD,    /**< no card is mounted                       */
     FAULT_LOG_NO_FOLDER,  /**< BENCH cannot be made                     */
-    FAULT_LOG_NO_ROOM,    /**< the full file could not be renamed       */
+    FAULT_LOG_NO_ROOM,    /**< the full file could not be renamed, or the
+                               old one not moved aside                   */
+    FAULT_LOG_UNREAD,     /**< the size of a file does not read         */
     FAULT_LOG_WRITE,      /**< the append failed                        */
 } fault_log_t;
 

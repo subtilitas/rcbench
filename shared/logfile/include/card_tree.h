@@ -67,6 +67,9 @@ extern "C" {
 /** The fault log as it was when it reached FAULT_LOG_CAP (fault_log.h). */
 #define CARD_FAULT_OLD   "BENCH/RCBENCH.OLD"
 
+/** RCBENCH.OLD moved aside while the full fault log takes its name. */
+#define CARD_FAULT_TMP   "BENCH/RCBENCH.TMP"
+
 /**
  * Room for a folder path and its terminator: two folders of 8 characters
  * and the "/" between them are 17, and the room is the settings store's

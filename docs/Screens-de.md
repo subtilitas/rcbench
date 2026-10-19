@@ -2996,8 +2996,10 @@ Report, solange der Link unten ist, unabhängig von Auto-Logs unter
 Eine Zeile, die sie darüber brächte, benennt sie in `BENCH/RCBENCH.OLD` um,
 ersetzt die dort liegende und beginnt eine neue `BENCH/RCBENCH.LOG`. Die Karte
 hält höchstens 2 MiB Fehlerprotokoll; bei 208 Bytes je Zeile alle 5 s ist eine
-Datei etwa 7 Stunden Link-Verlust. Scheitert das Umbenennen, wird die Zeile
-nicht geschrieben. Firmware 0.21.0 und älter schrieb `RCBENCH.LOG` ins
+Datei etwa 7 Stunden Link-Verlust. Während des Umbenennens heißt die alte
+`RCBENCH.OLD` `BENCH/RCBENCH.TMP`, und ein gescheitertes Umbenennen gibt ihr
+den Namen zurück. Scheitert das Umbenennen oder lässt sich eine Größe nicht
+lesen, wird die Zeile nicht geschrieben. Firmware 0.21.0 und älter schrieb `RCBENCH.LOG` ins
 Stammverzeichnis; diese Datei bleibt und wird nicht mehr beschrieben:
 
     t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
