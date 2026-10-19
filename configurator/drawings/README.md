@@ -93,7 +93,7 @@ pad kinds.
 
 ```json
 {
- "release": "0.20.0",
+ "release": "0.21.0",
  "files": {
   "estop.svg": {
    "part": "estop", "variant": null, "viewBox": [0, 0, 340, 200], "names": "catalogue",

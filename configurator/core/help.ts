@@ -19,11 +19,11 @@ function t(en: string, de: string): Text {
 export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object.freeze({
   servo: t(
     'Sends a PWM signal to a servo from the SERVO screen: pulse width, trim, travel and reverse, at a frame rate of 50 Hz unless another is set.',
-    'Gibt vom SERVO-Bildschirm ein PWM-Signal an ein Servo aus: Pulsbreite, TRIM, WEG und REVERSE, mit einer Frame Rate von 50 Hz, wenn keine andere eingestellt ist.',
+    'Gibt vom SERVO-Bildschirm ein PWM-Signal an ein Servo aus: Pulsbreite, TRIMMUNG, WEG und UMKEHREN, mit einer Pulsrate von 50 Hz, wenn keine andere eingestellt ist.',
   ),
   servotest: t(
     'Measures the current of the servo at rest, moving and at each end, its travel time from end to end, and the voltage below which it stops moving. The PD mini sets the steps 4.8 V and 6.0 V, with HV SERVO on also 7.4 V and 8.4 V.',
-    'Misst den Strom des Servos in Ruhe, in Bewegung und an jedem Ende, seine Stellzeit von Ende zu Ende und die Spannung, unter der es sich nicht mehr bewegt. Der PD mini stellt die Stufen 4,8 V und 6,0 V, mit HV SERVO an auch 7,4 V und 8,4 V.',
+    'Misst den Strom des Servos in Ruhe, in Bewegung und an jedem Ende, seine Stellzeit von Ende zu Ende und die Spannung, unter der es sich nicht mehr bewegt. Der PD mini stellt die Stufen 4,8 V und 6,0 V, mit HV-SERVO auf EIN auch 7,4 V und 8,4 V.',
   ),
   servocur: t(
     'Reads the current of the servo on channel 1 of the INA3221, 1000 samples per second, over the sensor bus at 400 kHz.',

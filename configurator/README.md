@@ -1,6 +1,6 @@
 # rcbench bench configurator
 
-A static page for release 0.20.0 of rcbench. The visitor ticks what the bench
+A static page for release 0.21.0 of rcbench. The visitor ticks what the bench
 does. The page lists the parts, draws the wiring and prints a pin-to-pin table.
 The functions stand in groups by the bench hardware they need. A part of the
 result beyond the base setup has a remove control.
@@ -271,8 +271,8 @@ limit. An ESC takes signal and GND only, in every variant.
 IOmcu alone. Its tick moves the servo signal from wire 7 (pad 4, GP2,
 a slot of SETUP → OUTPUTS) to wire 64 (pad 17, GP13), the programming port
 of an IOmcu that has stored no other pin for it. The result carries 3
-notes and 1 unknown: SETTINGS → DUT → PWM TARGET is PROG PORT; with the PD
-mini, CONNECT sets the servo supply, 4.8 to 6.0 V or up to 8.4 V with HV
+notes and 1 unknown: SERVO TESTER on the PROG PORT entry of SETUP → OUTPUTS
+is PROG PORT; with the PD mini, CONNECT sets the servo supply, 4.8 to 6.0 V or up to 8.4 V with HV
 SERVO on, and 50 to 3000 mA; without the PD mini the servo takes the supply
 of the servo power variant, and the programming voltage and current limit
 are stored and not applied; the level of the servo's reply on GP13 is not
