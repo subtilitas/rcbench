@@ -12,7 +12,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -69,7 +68,7 @@ esp_log_level_t esp_log_level_get(const char *tag)
     return *level_of(tag);
 }
 
-void fake_log(esp_log_level_t level, const char *tag, const char *fmt, ...)
+void fake_log(esp_log_level_t level, const char *tag, const char *text)
 {
     if (level > *level_of(tag) || g_log_n >= LOG_MAX) {
         return;                         /* not printed */
@@ -77,10 +76,7 @@ void fake_log(esp_log_level_t level, const char *tag, const char *fmt, ...)
     log_line_t *l = &g_log[g_log_n++];
     l->level = level;
     snprintf(l->tag, sizeof(l->tag), "%s", tag);
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(l->text, sizeof(l->text), fmt, ap);
-    va_end(ap);
+    snprintf(l->text, sizeof(l->text), "%s", text);
 }
 
 esp_err_t board_sd_cs(bool on)

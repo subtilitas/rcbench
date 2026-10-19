@@ -156,9 +156,9 @@ void sense_link_alerts(void)
         alert_drop(&s_sense_setup_gen, &s_sense_alert_gen);
     }
     snap_lock();
-    const bool     slot_free = !s_snap.alert_pending;
-    const uint32_t posted    = s_snap.alert_gen;
-    const uint32_t taken     = s_snap.alert_taken;
+    const bool     slot_free = !s_snap.alert.pending;
+    const uint32_t posted    = s_snap.alert.posted;
+    const uint32_t taken     = s_snap.alert.taken;
     snap_unlock();
     if (s_sense_alert_gen != 0u) {
         if ((int32_t)(taken - s_sense_alert_gen) >= 0) {
@@ -337,9 +337,9 @@ static uint32_t s_source_alert_ev;
 static void servo_source_alerts(void)
 {
     snap_lock();
-    const bool     slot_free = !s_snap.alert_pending;
-    const uint32_t posted    = s_snap.alert_gen;
-    const uint32_t taken     = s_snap.alert_taken;
+    const bool     slot_free = !s_snap.alert.pending;
+    const uint32_t posted    = s_snap.alert.posted;
+    const uint32_t taken     = s_snap.alert.taken;
     snap_unlock();
     if (s_source_alert_gen != 0u) {
         if ((int32_t)(taken - s_source_alert_gen) >= 0) {
@@ -472,9 +472,9 @@ void tone_link_alerts(void)
         alert_drop(&s_tone_setup_gen, &s_tone_alert_gen);
     }
     snap_lock();
-    const bool     slot_free = !s_snap.alert_pending;
-    const uint32_t posted    = s_snap.alert_gen;
-    const uint32_t taken     = s_snap.alert_taken;
+    const bool     slot_free = !s_snap.alert.pending;
+    const uint32_t posted    = s_snap.alert.posted;
+    const uint32_t taken     = s_snap.alert.taken;
     snap_unlock();
     if (s_tone_alert_gen != 0u) {
         if ((int32_t)(taken - s_tone_alert_gen) >= 0) {

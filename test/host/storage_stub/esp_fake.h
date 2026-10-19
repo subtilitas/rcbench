@@ -13,6 +13,7 @@
  * SPDX-License-Identifier: MIT
  */
 #pragma once
+#include <stdio.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -39,12 +40,19 @@ typedef enum {
 
 void esp_log_level_set(const char *tag, esp_log_level_t level);
 esp_log_level_t esp_log_level_get(const char *tag);
-void fake_log(esp_log_level_t level, const char *tag, const char *fmt, ...)
-    __attribute__((format(printf, 3, 4)));
-#define ESP_LOGE(tag, ...) fake_log(ESP_LOG_ERROR, tag, __VA_ARGS__)
-#define ESP_LOGW(tag, ...) fake_log(ESP_LOG_WARN, tag, __VA_ARGS__)
-#define ESP_LOGI(tag, ...) fake_log(ESP_LOG_INFO, tag, __VA_ARGS__)
-#define ESP_LOGD(tag, ...) fake_log(ESP_LOG_DEBUG, tag, __VA_ARGS__)
+/* The line is formatted where it is logged: a variadic fake trips the
+ * clang analyzer's va_list check (valist.Uninitialized) in clang-tidy 18. */
+void fake_log(esp_log_level_t level, const char *tag, const char *text);
+#define FAKE_LOG(level, tag, ...)                                     \
+    do {                                                              \
+        char fake_text_[256];                                         \
+        (void)snprintf(fake_text_, sizeof(fake_text_), __VA_ARGS__);  \
+        fake_log((level), (tag), fake_text_);                         \
+    } while (0)
+#define ESP_LOGE(tag, ...) FAKE_LOG(ESP_LOG_ERROR, tag, __VA_ARGS__)
+#define ESP_LOGW(tag, ...) FAKE_LOG(ESP_LOG_WARN, tag, __VA_ARGS__)
+#define ESP_LOGI(tag, ...) FAKE_LOG(ESP_LOG_INFO, tag, __VA_ARGS__)
+#define ESP_LOGD(tag, ...) FAKE_LOG(ESP_LOG_DEBUG, tag, __VA_ARGS__)
 
 /* board.h */
 #define BOARD_SD_PIN_MOSI  11

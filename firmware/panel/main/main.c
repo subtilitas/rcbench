@@ -381,23 +381,15 @@ panel_snap_t s_snap;
 uint32_t control_alert_numbered(const char *text)
 {
     snap_lock();
-    snprintf(s_snap.alert, sizeof(s_snap.alert), "%s", text);
-    s_snap.alert_pending = true;
-    const uint32_t gen = ++s_snap.alert_gen;
+    const uint32_t gen = ui_alert_slot_post(&s_snap.alert, text);
     snap_unlock();
     return gen;
 }
 
 void control_alert_withdraw(uint32_t gen)
 {
-    if (gen == 0u) {
-        return;
-    }
     snap_lock();
-    if (s_snap.alert_pending && s_snap.alert_gen == gen) {
-        s_snap.alert_pending = false;       /* never shown */
-    }
-    s_snap.alert_withdrawn = gen;
+    ui_alert_slot_withdraw(&s_snap.alert, gen);
     snap_unlock();
 }
 
@@ -2269,30 +2261,16 @@ void app_main(void)
         link_refused = s_snap.link_refused;
         mcu_temp_c  = s_snap.mcu_temp_c;
         run_seconds = s_snap.run_seconds;
-        have_alert  = s_snap.alert_pending;
-        const uint32_t alert_gen = s_snap.alert_gen;
-        const uint32_t withdrawn = s_snap.alert_withdrawn;
-        if (have_alert) {
-            snprintf(alert, sizeof(alert), "%s", s_snap.alert);
-            s_snap.alert_pending = false;
-            s_snap.alert_taken   = alert_gen;
-        }
+        have_alert  = ui_alert_slot_take(&s_snap.alert, alert, sizeof(alert));
+        const uint32_t alert_taken = s_snap.alert.taken;
+        const uint32_t withdrawn   = s_snap.alert.withdrawn;
         snap_unlock();
 
-        /* The control task's alert on the band: its number there, and the
-         * band's, so one the control task takes back is cleared only while
-         * the band still shows it. */
-        static uint32_t s_band_ctl;
-        static uint32_t s_band_num;
-        if (have_alert) {
-            ui_router_set_alert(alert);
-            s_band_ctl = alert_gen;
-            s_band_num = ui_router_alert_number();
-        }
-        if (withdrawn != 0u && withdrawn == s_band_ctl) {
-            (void)ui_router_withdraw_alert(s_band_num);
-            s_band_ctl = 0u;
-        }
+        /* The control task's alert on the band, cleared when the control
+         * task takes it back while the band still shows it. */
+        static ui_alert_band_t s_band;
+        (void)ui_alert_band_update(&s_band, have_alert ? alert : NULL,
+                                   alert_taken, withdrawn);
         /* A servo test ends when the link goes. */
         servo_screen_set_link(link_up);
         /* The armed state this frame acted on, read before the touch was
