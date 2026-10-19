@@ -483,3 +483,18 @@ bool supply_link_wiring_moved(supply_link_follow_t *f, unsigned edits,
     f->word  = word;
     return moved;
 }
+
+bool supply_link_wiring_refused(const supply_link_t *s,
+                                supply_wiring_t *held)
+{
+    if (held != NULL) {
+        *held = (supply_wiring_t){ false, -1, -1, 0u };
+        if (s != NULL && s->read_any && s->regs[LINK_SP_ENABLE] != 0u) {
+            held->en   = true;
+            held->tx   = (int8_t)s->regs[LINK_SP_TX_PIN];
+            held->rx   = (int8_t)s->regs[LINK_SP_RX_PIN];
+            held->baud = (uint8_t)s->regs[LINK_SP_BAUD];
+        }
+    }
+    return s != NULL && s->refused;
+}

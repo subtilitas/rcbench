@@ -18,6 +18,7 @@
 #include "link_host.h"
 #include "link_pages.h"
 #include "outputs.h"
+#include "outputs_screen.h"
 #include "panel.h"
 #include "servo_source.h"
 #include "supply.h"
@@ -655,4 +656,10 @@ void supply_link_service(void)
         }
     }
     supply_link_alerts();
+    /* OUTPUTS and PICK A PIN show the pins the page holds, not the
+     * settings', for a refused wiring. */
+    supply_wiring_t held;
+    const bool refused = supply_link_wiring_refused(&s_supply_link, &held);
+    outputs_screen_set_pdmini_refused(refused, held.en ? held.tx : -1,
+                                      held.en ? held.rx : -1);
 }

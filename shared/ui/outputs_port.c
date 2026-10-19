@@ -18,6 +18,7 @@
 
 #include "outputs_screen.h"
 
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -127,6 +128,26 @@ void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
 
 /* ------------------------------------------------- SETUP > INTERFACES */
 
+/* Set by the control task (panel_supply.c), read by the task that draws:
+ * -1 while the settings' wiring stands, else the pins the page holds
+ * instead, each + 1 in a byte, 0 for none. */
+static atomic_int g_pdmini_held = -1;
+
+void outputs_screen_set_pdmini_refused(bool refused, int held_tx,
+                                       int held_rx)
+{
+    const int tx = (held_tx >= 0 && held_tx < 64) ? held_tx + 1 : 0;
+    const int rx = (held_rx >= 0 && held_rx < 64) ? held_rx + 1 : 0;
+    atomic_store(&g_pdmini_held, refused ? (tx | (rx << 8)) : -1);
+}
+
+/* Whether part @p en of the sensor bus is on and the IOmcu has not
+ * refused it. */
+static bool sense_part(setting_id_t en)
+{
+    return settings_get_bool(en) && !settings_screen_unheld(en);
+}
+
 /* GPIO @p v as a mask bit, or 0 for -1 and anything past the mask. */
 static uint64_t pin_bit(int v)
 {
@@ -137,18 +158,23 @@ uint64_t outputs_iface_pins(outputs_iface_t which)
 {
     switch (which) {
     case OUTPUTS_IFACE_SENSE: {
-        const bool on = settings_get_bool(SET_INA228_EN)
-                        || settings_get_bool(SET_INA3221_EN)
-                        || settings_get_bool(SET_ENC_EN);
+        /* A bus the IOmcu refused, its pins row or every part on marked
+         * on SETUP, holds no pin there: the page enables no part. */
+        const bool on = sense_part(SET_INA228_EN)
+                        || sense_part(SET_INA3221_EN)
+                        || sense_part(SET_ENC_EN);
         const int sda = settings_get_int(SET_SENSE_SDA);
-        /* A bus the IOmcu refused, its row marked on SETUP, holds no
-         * pin there. */
         if (!on || sda < 0 || settings_screen_unheld(SET_SENSE_SDA)) {
             return 0u;
         }
         return pin_bit(sda) | pin_bit(settings_get_int(SET_SENSE_SCL));
     }
     case OUTPUTS_IFACE_PDMINI: {
+        /* A wiring the page refused: the pins it holds instead. */
+        const int held = atomic_load(&g_pdmini_held);
+        if (held >= 0) {
+            return pin_bit((held & 0xff) - 1) | pin_bit((held >> 8) - 1);
+        }
         /* The page is written ON only with both pins set and apart
          * (supply_link.c); otherwise it holds neither. */
         const int tx = settings_get_int(SET_PDMINI_TX);

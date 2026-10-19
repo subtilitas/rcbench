@@ -1852,8 +1852,36 @@ TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
         }
         CHECK(red > 0u);
 
-        /* The bus moved to GP14: GP16 binds, GP14 is held. */
+        /* The bus moved to GP14: GP16 binds, GP14 is held.  The frame
+         * drawn before is repainted without a touch on this screen. */
         settings_set(SET_SENSE_SDA, 14.0f);
+        for (int y = 0; y < 432; y += 7) {
+            for (int x = 0; x < 800; x += 13) {
+                c.pixels[(size_t)y * c.stride + (size_t)x] =
+                    GFX_RGB(255, 0, 255);
+            }
+        }
+        scr()->render(&c, 0);
+        bool repainted = true;
+        for (int y = 0; y < 432; y += 7) {
+            for (int x = 0; x < 800; x += 13) {
+                repainted = repainted
+                            && c.pixels[(size_t)y * c.stride + (size_t)x]
+                                   != GFX_RGB(255, 0, 255);
+            }
+        }
+        CHECK(repainted);
+        /* Unchanged, the frame is not drawn again. */
+        c.pixels[0] = GFX_RGB(255, 0, 255);
+        scr()->render(&c, 0);
+        CHECK_EQ(c.pixels[0], GFX_RGB(255, 0, 255));
+        /* The IOmcu refusing the PD mini's wiring repaints it too. */
+        outputs_screen_set_pdmini_refused(true, -1, -1);
+        scr()->render(&c, 0);
+        CHECK(c.pixels[0] != GFX_RGB(255, 0, 255));
+        CHECK_EQ(picker_screen_pin(idx(18u), NULL, 0), PICKER_PIN_FREE);
+        outputs_screen_set_pdmini_refused(false, -1, -1);
+        CHECK_EQ(picker_screen_pin(idx(18u), NULL, 0), PICKER_PIN_HELD);
         CHECK_EQ(picker_screen_pin(idx(14u), who, sizeof(who)),
                  PICKER_PIN_HELD);
         CHECK_STR_EQ(who, TR(OUT_IFACE_SENSE));

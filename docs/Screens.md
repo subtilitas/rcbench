@@ -3206,8 +3206,11 @@ through, with what holds it under its name, and cannot be ticked:
 
 These are the pins the IOmcu reserves from the outputs for those parts: a
 tap pin the IOmcu refuses, an ADC (analogue-to-digital converter) pin from
-GP26 to GP29, holds nothing, and neither does a sensor bus or a phase tap
-whose row SETUP marks as not taken by the IOmcu. The
+GP26 to GP29, holds nothing. Neither does a part the IOmcu has not taken
+as SETUP marks it: a sensor bus whose pins row is marked, or the row of
+every part on it; a phase tap whose row is marked. A PD mini wiring the
+IOmcu refused holds the pins its page keeps instead, none if it holds
+none. The
 cells follow the settings: Sensor SDA at -1 holds nothing, nor does the PD
 mini with either pin at -1, and a row stepped on
 SETUP frees the old pin and holds the new one, with no restart. A binding
@@ -3480,7 +3483,8 @@ A pin SETUP > INTERFACES holds is grey the same way while no protocol holds
 it, a tap on it changes nothing, and IN USE lists it after the programming
 port, under `SENSOR BUS`, `PD MINI` or `PHASE TAP` in red, without a
 channel. Which pins those are, and when, is in the table under
-[Outputs](#outputs).
+[Outputs](#outputs). A row stepped on SETUP, or the IOmcu taking or
+refusing a part, redraws the keys and the table on the next frame.
 
 ![The interfaces' pins held and named under IN USE](img/picker-iface.png)
 

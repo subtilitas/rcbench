@@ -648,7 +648,52 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
         settings_screen_set_unheld(0u, 0u);
         CHECK_EQ(outputs_screen_cell(idx(17u), NULL, 0),
                  OUTPUTS_CELL_RESERVED);
+        /* Every part on refused (the INA3221 alone here): the page
+         * enables none, and the bus holds nothing.  One part of two
+         * refused leaves the bus held for the other. */
+        settings_screen_set_unheld(SENSE_LINK_ROW_I3221, 0u);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_SENSE), 0ull);
+        CHECK_EQ(outputs_screen_cell(idx(16u), NULL, 0), OUTPUTS_CELL_FREE);
+        settings_set(SET_ENC_EN, 1.0f);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_SENSE),
+                 (1ull << 16) | (1ull << 17));
+        settings_screen_set_unheld(SENSE_LINK_ROW_I3221 | SENSE_LINK_ROW_ENC,
+                                   0u);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_SENSE), 0ull);
+        settings_set(SET_INA228_EN, 1.0f);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_SENSE),
+                 (1ull << 16) | (1ull << 17));
+        settings_screen_set_unheld(SENSE_LINK_ROW_I3221 | SENSE_LINK_ROW_ENC
+                                   | SENSE_LINK_ROW_I228, 0u);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_SENSE), 0ull);
+        settings_screen_set_unheld(0u, 0u);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_SENSE),
+                 (1ull << 16) | (1ull << 17));
+        settings_set(SET_INA228_EN, 0.0f);
+        settings_set(SET_ENC_EN, 0.0f);
         settings_set(SET_SENSE_SDA, -1.0f);
+
+        /* A PD mini wiring the page refused: the page holds none, or
+         * the pins it held before, until the refusal ends. */
+        CHECK_EQ(outputs_screen_cell(idx(18u), NULL, 0),
+                 OUTPUTS_CELL_RESERVED);
+        outputs_screen_set_pdmini_refused(true, -1, -1);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI), 0ull);
+        CHECK_EQ(outputs_screen_cell(idx(18u), NULL, 0), OUTPUTS_CELL_FREE);
+        CHECK_EQ(outputs_screen_cell(idx(19u), NULL, 0), OUTPUTS_CELL_FREE);
+        outputs_screen_set_pdmini_refused(true, 20, 21);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI),
+                 (1ull << 20) | (1ull << 21));
+        CHECK_EQ(outputs_screen_cell(idx(20u), l, sizeof(l)),
+                 OUTPUTS_CELL_RESERVED);
+        CHECK_STR_EQ(l, TR(OUT_IFACE_PDMINI));
+        CHECK_EQ(outputs_screen_cell(idx(18u), NULL, 0), OUTPUTS_CELL_FREE);
+        /* Pins past the mask hold nothing. */
+        outputs_screen_set_pdmini_refused(true, 64, 200);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI), 0ull);
+        outputs_screen_set_pdmini_refused(false, 20, 21);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI),
+                 (1ull << 18) | (1ull << 19));
 
         /* Out of range and none have no pins and no name. */
         CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_NONE), 0ull);

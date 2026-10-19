@@ -13,6 +13,7 @@
 #include "board_drawing.h"
 #include "link_pages.h"
 #include "outputs_screen.h"
+#include "outputs_screen_int.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -140,6 +141,8 @@ static struct {
     /* The pin whose tap a PWM clash refused last, or -1: the reason line
      * says why, until another pick or tick. */
     int      refused;
+    /* The pins the interfaces on SETUP held at the last frame. */
+    uint64_t iface;
     bool     chrome_valid[MAX_FBS];
 } s;
 
@@ -1350,6 +1353,13 @@ static bool back(void)
 
 static void render(gfx_canvas_t *c, int buffer_index)
 {
+    /* A row stepped on SETUP, or the IOmcu taking or refusing a part,
+     * moves an interface's pin without a touch here. */
+    const uint64_t iface = outputs_iface_all();
+    if (iface != s.iface) {
+        s.iface = iface;
+        touched();
+    }
     if (buffer_index >= 0 && buffer_index < MAX_FBS
         && s.chrome_valid[buffer_index]) {
         return;

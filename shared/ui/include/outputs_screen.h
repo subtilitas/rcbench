@@ -235,9 +235,11 @@ bool outputs_clash_reason(const outbind_t *b, int index,
  * (supply_page_pins()); Tap pin while the phase tap is on
  * (tone_page_pins()).  Sensor SDA at -1 holds nothing, nor does the PD
  * mini with either pin at -1, nor a tap pin the TONE page refuses (an ADC
- * pin: GP26 to GP29, GP40 to GP47).  A sensor bus or a phase tap the
- * IOmcu refused, its row marked on SETUP (settings_screen_unheld()),
- * holds no pin either.  The pins follow the
+ * pin: GP26 to GP29, GP40 to GP47).  Nor does a part the IOmcu refused:
+ * a sensor bus whose pins row, or every enabled part's row, SETUP marks
+ * (settings_screen_unheld()); a phase tap whose rows it marks; a PD mini
+ * wiring the page refused holds the pins the page keeps instead
+ * (outputs_screen_set_pdmini_refused()).  The pins follow the
  * settings: a row stepped on SETUP frees the old pin and holds the new.
  *
  * OUTPUTS and PICK A PIN show such a pin taken and named, as a
@@ -251,6 +253,16 @@ typedef enum {
     OUTPUTS_IFACE_TAP,      /**< Tap pin: PHASE TAP                      */
     OUTPUTS_IFACE_COUNT
 } outputs_iface_t;
+
+/**
+ * Whether the IOmcu refused the PD mini's wiring the settings ask
+ * (supply_link_wiring_refused()), and the TX and RX pins its page holds
+ * instead, -1 for none.  While refused the PD mini holds those pins here,
+ * not the settings'.  Safe to call from another task than the one that
+ * draws.
+ */
+void outputs_screen_set_pdmini_refused(bool refused, int held_tx,
+                                       int held_rx);
 
 /** The pins function @p which holds now, bit n GPIO n; 0 for none or
  *  OUTPUTS_IFACE_NONE. */

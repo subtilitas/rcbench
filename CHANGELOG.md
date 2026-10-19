@@ -21,8 +21,10 @@ history is in git.
   while the PD mini is on, the tap pin while the phase tap is on. OUTPUTS
   names `SENSOR BUS`, `PD MINI` or `PHASE TAP` under the pin; PICK A PIN
   draws the key grey and lists the pins under those names in IN USE, after
-  the programming port. The pins follow the settings. Both screens listed
-  these pins as free, and the IOmcu refused a binding on them.
+  the programming port. The pins follow the settings and the IOmcu: a part
+  it refused holds none, a PD mini wiring it refused holds the pins its
+  page keeps. Both screens listed these pins as free, and the IOmcu
+  refused a binding on them.
 - A run's settings on SERVO > TEST have CLOSE at the top right, back to the
   run cards, as the home tag goes.
 - With a band chip's help box open, a tap on another chip closes the box

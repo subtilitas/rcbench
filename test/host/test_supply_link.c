@@ -183,9 +183,19 @@ TEST_CASE(refused_wiring_is_not_written_again)
 {
     fresh();
     const supply_wiring_t bad = { true, 3, 9, 1u };   /* 3 is reserved */
+    supply_wiring_t held = { true, 1, 2, 3u };
+    CHECK(!supply_link_wiring_refused(&sl, &held));
+    CHECK(!held.en);
     supply_link_wire(&sl, &bad);
     pump(true);
     CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_WIRING_REFUSED);
+    /* Refused, the page holding nothing: no pins. */
+    CHECK(supply_link_wiring_refused(&sl, &held));
+    CHECK(!held.en);
+    CHECK_EQ(held.tx, -1);
+    CHECK_EQ(held.rx, -1);
+    CHECK(!supply_link_wiring_refused(NULL, &held));
+    CHECK(!held.en);
     const unsigned before = writes;
     pump(true);
     CHECK_EQ(writes, before);
@@ -729,6 +739,13 @@ TEST_CASE(a_wiring_change_refused_on_its_read_is_said)
     CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_WIRING_LIVE);
     CHECK(sl.refused);
     CHECK_EQ(reg(LINK_SP_TX_PIN), 8u);
+    /* Refused: the page keeps the wiring it held, by its last read. */
+    supply_wiring_t held;
+    CHECK(supply_link_wiring_refused(&sl, &held));
+    CHECK(held.en);
+    CHECK_EQ(held.tx, (int8_t)reg(LINK_SP_TX_PIN));
+    CHECK_EQ(held.rx, (int8_t)reg(LINK_SP_RX_PIN));
+    CHECK(supply_link_wiring_refused(&sl, NULL));
     CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED) != 0u);
     const unsigned before = writes;
     pump(true);
@@ -740,6 +757,7 @@ TEST_CASE(a_wiring_change_refused_on_its_read_is_said)
     /* The settings change: written again, and the refusal clears. */
     const supply_wiring_t again = { true, 12, 13, 1u };
     supply_link_wire(&sl, &again);
+    CHECK(!supply_link_wiring_refused(&sl, NULL));
     pump(true);
     CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED, 0u);
     CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_WAIT) != 0u);

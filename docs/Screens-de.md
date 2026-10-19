@@ -3503,9 +3503,12 @@ nicht anhaken:
 
 Das sind die Pins, die der IOmcu für diese Teile von den Ausgängen
 zurückhält: Ein Abgriff-Pin, den der IOmcu ablehnt, ein ADC-Pin
-(Analog-Digital-Wandler) von GP26 bis GP29, hält nichts, ebenso wenig ein
-Sensorbus oder ein Phasenabgriff, dessen Zeile SETUP als vom IOmcu nicht
-übernommen markiert. Die Zellen folgen den Einstellungen: Sensor-SDA auf -1 hält
+(Analog-Digital-Wandler) von GP26 bis GP29, hält nichts. Ebenso wenig ein
+Teil, das der IOmcu nicht übernommen hat, wie SETUP es markiert: ein
+Sensorbus, dessen Pin-Zeile markiert ist oder die Zeile jedes Teils, das
+EIN ist; ein Phasenabgriff, dessen Zeile markiert ist. Eine Verdrahtung
+des PD mini, die der IOmcu abgelehnt hat, hält die Pins, die seine Page
+stattdessen behält, keine, wenn sie keine hält. Die Zellen folgen den Einstellungen: Sensor-SDA auf -1 hält
 nichts, der PD mini mit einem Pin auf -1 auch nicht,
 und eine Zeile, die in SETUP verstellt wird, gibt den alten Pin frei und
 hält den neuen, ohne Neustart. Eine Bindung, die den Pin schon hält,
@@ -3798,7 +3801,9 @@ Ein Pin, den SETUP > ANSCHLÜSSE hält, ist ebenso grau, solange kein
 Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
 nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`
 in Rot, ohne Kanal. Welche Pins das sind und wann, steht in der Tabelle
-unter [Outputs](#outputs).
+unter [Outputs](#outputs). Eine in SETUP verstellte Zeile, oder ein Teil,
+das der IOmcu übernimmt oder ablehnt, zeichnet die Tasten und die Tabelle
+im nächsten Frame neu.
 
 ![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](img/de/picker-iface.png)
 
