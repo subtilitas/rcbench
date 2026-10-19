@@ -198,6 +198,16 @@ atomic_uint s_test_open_txt;
  */
 static char s_card_dir[CARD_DIR_MAX];
 
+/*
+ * Room for a listed file's whole path below s_card_dir:
+ * "/sdcard/USER/LOGS/<name>".  sizeof the mount point takes its "/" after
+ * it, CARD_DIR_MAX the folder and its "/", STORAGE_NAME_MAX the longest
+ * name the listing keeps and the terminator: 96 bytes.  A path cut short
+ * would open or delete nothing, or another file.
+ */
+#define CARD_PATH_MAX (sizeof(STORAGE_MOUNT_POINT) + CARD_DIR_MAX \
+                       + STORAGE_NAME_MAX)
+
 /* Whether @p name in the viewer's folder is a file the logger is still
  * writing, by the marks of that folder (log_marks_busy()). */
 static bool card_busy(const char *name)
@@ -365,7 +375,7 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
         ESP_LOGW(TAG, "%s is still being written", name);
         return false;
     }
-    char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
+    char path[CARD_PATH_MAX];
     storage_path(s_card_dir, name, path, sizeof(path));
     s_card_file = fopen(path, "rb");
     if (s_card_file == NULL) {
@@ -422,7 +432,7 @@ static bool card_remove(const char *name, void *ctx)
         fclose(s_card_file);
         s_card_file = NULL;
     }
-    char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
+    char path[CARD_PATH_MAX];
     storage_path(s_card_dir, name, path, sizeof(path));
     if (remove(path) != 0) {
         ESP_LOGW(TAG, "could not delete %s", path);
