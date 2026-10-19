@@ -1454,7 +1454,7 @@ const wires: Wire[] = [
     signal: t(`servo signal: PWM and programming, ${V33_EN}`, `Servosignal: PWM und Programmierung, ${V33_DE}`),
     note: t(
       'In place of wire 7. The programming port, port 1: the pin of an IOmcu that has stored none. Set SERVO TESTER to PROG PORT on the PROG PORT entry of SETUP → OUTPUTS.',
-      'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines IOmcu, der keinen gespeichert hat. SERVO TESTER auf dem Eintrag PROG PORT von SETUP → OUTPUTS auf PROG PORT stellen.',
+      'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines IOmcu, der keinen gespeichert hat. SERVO-TESTER auf dem Eintrag PROG-PORT von SETUP → OUTPUTS auf PROG-PORT stellen.',
     ),
     when: SERVO_PROG, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'default',
     src: repo(PROG_PORT, 61, '#define PROG_PORT_DEFAULT_PIN 13u'),
@@ -1876,7 +1876,7 @@ const checks: Check[] = [
     id: 'prog-target', kind: 'note',
     text: t(
       'Servo programmer: the servo is on the programming port, GP13 (pad 17), unless another pin is stored for port 1. On the PROG PORT entry of SETUP → OUTPUTS, set SERVO TESTER to PROG PORT: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GP13 leaves the port without a pin.',
-      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG PORT von SETUP → OUTPUTS SERVO TESTER auf PROG PORT stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, CENTRE, RELEASE, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT PWM auf diesem Eintrag auf ON steht; mit PORT PWM OFF sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
+      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT von SETUP → OUTPUTS SERVO-TESTER auf PROG-PORT stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, CENTRE, RELEASE, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf ON steht; mit PORT-PWM OFF sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
     ),
     when: SERVO_PROG, src: repo(PROGRAMMER, 82, '| SERVO TESTER | **OUTPUTS**, **PROG PORT** |'),
   },
