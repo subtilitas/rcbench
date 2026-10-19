@@ -2948,7 +2948,7 @@ Ein Panel, das mit dem Image des IOmcu gebaut ist, bringt es mit und
 bietet es an, wenn der IOmcu einen anderen Build laufen hat. Die
 Prüfung läuft bei jedem Link-up und vergleicht SHA-256-Digests (Secure Hash
 Algorithm), nicht Versionsnummern. Ein anderer Build meldet den Alarm
-`IOmcu nutzt einen anderen Build. Update im Menü verfügbar.`, und
+`IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`, und
 die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der
 Ausgang der Versorgung aus, der Funk des Panels ganz aus und
 keine Installation eines Panel-Images im Gang. Ein START, während eines
