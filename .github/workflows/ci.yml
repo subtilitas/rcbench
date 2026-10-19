@@ -301,6 +301,7 @@ jobs:
         run: |
           git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
                        'testbench/touch-injector/core/*.c' \
+                       'testbench/hitec-harness/core/*.c' \
               | grep -v -e 'gfx_font' -e '/rp2350/' \
                         -e 'test/host/render_screen.c' \
                         -e 'test/host/bench_frame.c' \
@@ -323,8 +324,10 @@ jobs:
             $(git ls-files 'protocols/**/include/*' \
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             -Itestbench/touch-injector/core/include \
+            -Itestbench/hitec-harness/core/include \
             $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' \
                 'testbench/touch-injector/core/*.c' \
+                'testbench/hitec-harness/core/*.c' \
                 | grep -v -e 'gfx_font' -e '/rp2350/') \
             $(git ls-files 'test/host/*.c')
 
@@ -349,8 +352,10 @@ jobs:
                 | sed 's|/[^/]*$||; s|^|-I|' | sort -u) \
             -Ifirmware/iomcu/src -Ifirmware/panel/main \
             -Itestbench/touch-injector/core/include \
+            -Itestbench/hitec-harness/core/include \
             $(git ls-files 'firmware/**/*.c' 'protocols/*/rp2350/*.c' \
                 'testbench/touch-injector/rp2350/*.c' \
+                'testbench/hitec-harness/rp2350/*.c' \
                 | grep -v '^firmware/panel/main/main\.c$')
           cppcheck --error-exitcode=1 --std=c11 --quiet \
             --enable=warning,performance,portability \
@@ -704,3 +709,49 @@ jobs:
           cmake --build build -j"$(nproc)"
           ls -l build/rcbench-touch-injector.uf2
           sha256sum build/rcbench-touch-injector.uf2
+
+  hitec-harness:
+    # A test-bench tool (testbench/hitec-harness), built so it keeps
+    # building.  Its UF2 is not uploaded and no release carries it.
+    name: Hitec harness (pico-sdk 2.3.0)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install the ARM toolchain
+        run: |
+          # Third-party lists this build never installs from; one serving a
+          # stale index fails the whole step.  See the note in the host job.
+          sudo rm -fv /etc/apt/sources.list.d/*google* \
+                      /etc/apt/sources.list.d/*microsoft* || true
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
+            libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev
+
+      # The same key as the IOmcu job: one SDK checkout for both.
+      - name: Cache the pico-sdk
+        id: sdk-cache
+        uses: actions/cache@v6
+        with:
+          path: pico-sdk
+          key: pico-sdk-${{ env.PICO_SDK_TAG }}
+
+      - name: Clone the pico-sdk
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b "$PICO_SDK_TAG" --recursive \
+            --shallow-submodules https://github.com/raspberrypi/pico-sdk.git
+
+      # From its own directory with PICO_SDK_PATH alone, as the README
+      # builds it.
+      - name: Build
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        working-directory: testbench/hitec-harness
+        run: |
+          cmake -S . -B build -G Ninja -DPICO_BOARD=pico2
+          cmake --build build -j"$(nproc)"
+          ls -l build/rcbench-hitec-harness.uf2
+          sha256sum build/rcbench-hitec-harness.uf2

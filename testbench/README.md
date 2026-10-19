@@ -781,6 +781,9 @@ firmware and the decoder agree, and no more than that.
       host/          the scripts the Pi runs: capture, self-test
       decoders/      protocol decoders, and their offline verification
       captures/      run artefacts, not committed; reference/ is
+      touch-injector/  a GT911 emulator on the panel's touch bus (own README)
+      hitec-harness/   protocols/hitec on one RP2350 pin, over USB serial,
+                       with its test plan (own README)
 
 ---
 
