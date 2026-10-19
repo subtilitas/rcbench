@@ -8,6 +8,7 @@
  * iomcu_pages.c  IDENTITY, STATUS, CONTROL, BENCH, CHANNELS, CHAN_CFG,
  *                OUTPUTS, SERVO and PROG, and the glue that binds the outputs
  * iomcu_kst.c    the KST page and the port's hardware
+ * iomcu_hitec.c  the HITEC page and the port's hardware
  * iomcu_sense.c  SUPPLY, SENSE, SERVO_SENSE and SERVO_WIN
  * iomcu_tone.c   the TONE page and the phase tap's capture
  * iomcu_bind.c   BIND, BIND_CFG, BIND_OUT and the board's own pages
@@ -28,6 +29,8 @@
 #include "hardware/gpio.h"
 
 #include "heartbeat.h"
+#include "hitec_line.h"
+#include "hitec_port.h"
 #include "iomcu_pins.h"
 #include "kst_line.h"
 #include "kst_port.h"
@@ -119,6 +122,15 @@ extern prog_port_t   s_prog;
  */
 extern kst_port_t    s_kst;
 extern kst_line_t    s_kst_line;
+/*
+ * The HITEC page: raw transactions of the Hitec wire on a programming port
+ * (shared/outputs/hitec_port.h) and the wire driver the port's pin is
+ * handed to (protocols/hitec/rp2350).  A port is free, the KST page's or
+ * this page's, never two of them.  Not kept: a restart finds the port
+ * free.
+ */
+extern hitec_port_t  s_hitec;
+extern hitec_line_t  s_hitec_line;
 extern link_dev_t    s_dev;
 
 /*
@@ -212,6 +224,10 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 void kst_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 uint8_t kst_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
+/* iomcu_hitec.c */
+void hitec_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+uint8_t hitec_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
 /* iomcu_sense.c */
 void supply_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 uint8_t supply_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
@@ -260,6 +276,14 @@ bool kst_hw_take(void *ctx, uint8_t port, uint8_t pin);
 void kst_hw_give(void *ctx);
 void kst_hw_supply(void *ctx, supply_port_view_t *out);
 bool kst_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma);
+
+/* iomcu_hitec.c: the port's hardware, which main() hands to
+ * hitec_port_init() beside kst_hw_pin() and the supply's two */
+bool hitec_hw_take(void *ctx, uint8_t port, uint8_t pin, uint8_t family,
+                   uint8_t drive);
+void hitec_hw_give(void *ctx);
+void hitec_hw_abort(void *ctx);
+void hitec_hw_run(void *ctx, hitec_port_run_t *out);
 
 /* iomcu_sense.c */
 void capabilities_update(void);
@@ -317,12 +341,43 @@ static inline bool heartbeat_edge(void)
     return true;
 }
 
+/* The programming ports out of PWM: held by the KST page or the HITEC
+ * page, in any state but PWM and free. */
+static inline uint8_t ports_quiet(void)
+{
+    return (uint8_t)(kst_port_quiet_mask(&s_kst)
+                     | hitec_port_quiet_mask(&s_hitec));
+}
+
+/* The programming ports whose pin a wire driver holds. */
+static inline uint8_t ports_wire(void)
+{
+    return (uint8_t)(kst_port_pin_mask(&s_kst)
+                     | hitec_port_pin_mask(&s_hitec));
+}
+
+/* Each wire page told which ports the other holds: neither takes a port
+ * the other has.  Called after a write of either and once a pass. */
+static inline void ports_exclusive(void)
+{
+    kst_port_other_mask(&s_kst, hitec_port_quiet_mask(&s_hitec));
+    hitec_port_other_mask(&s_hitec, kst_port_quiet_mask(&s_kst));
+}
+
+/* A wire page holds the SUPPLY page: the KST port out of PWM, or a HITEC
+ * POWER running. */
+static inline bool ports_hold_supply(void)
+{
+    return kst_port_state(&s_kst) != LINK_KST_PWM
+           || hitec_port_supply_hold(&s_hitec);
+}
+
 /* The ports that render their pulse while the bank drives: bound, switched
- * on, and not out of PWM for the wire protocol or a supply cycle. */
+ * on, and not out of PWM for a wire protocol or a supply cycle. */
 static inline uint8_t ports_pulsing(void)
 {
     return (uint8_t)(prog_port_pwm(&s_prog) & outputs_hw_ports_bound()
-                     & ~kst_port_quiet_mask(&s_kst));
+                     & ~ports_quiet());
 }
 
 /*

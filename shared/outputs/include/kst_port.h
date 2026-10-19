@@ -8,7 +8,9 @@
  * one that does.  The port takes the pin of one
  * programming port (prog_port.h) from the PWM generator, hands it to the
  * wire driver and runs the session of protocols/kst on it.  A port is in
- * PWM or in PROGRAMMING, never both.  A standard servo port is no
+ * PWM or in PROGRAMMING, never both.  A port the HITEC page holds
+ * (hitec_port.h) takes no ENTER and no REBOOT from PWM: both are refused
+ * with LINK_KST_REF_BUSY.  A standard servo port is no
  * programming port: a command that names an output channel is refused.
  *
  * The servo's supply is the PD mini of the SUPPLY page, reached through
@@ -265,6 +267,7 @@ typedef struct {
     uint8_t  view;
     uint8_t  safe;
     uint8_t  armed;       /**< the bank is armed: no ENTER is taken */
+    uint8_t  other;      /**< ports the HITEC page holds */
     uint8_t  has_pin;    /**< the pin is the wire driver's */
     uint8_t  sup;        /**< where the wait for the supply is */
     uint8_t  on_here;    /**< this ENTER switched the supply on */
@@ -316,6 +319,11 @@ bool kst_port_frame_out(const kst_port_t *p);
  *  while it is; the caller arms no output while kst_port_quiet_mask() is
  *  not 0. */
 void kst_port_bench_armed(kst_port_t *p, bool armed);
+
+/** Bit n: the HITEC page holds programming port n
+ *  (hitec_port_quiet_mask()).  An ENTER on it, and a REBOOT taken in PWM,
+ *  are refused with LINK_KST_REF_BUSY. */
+void kst_port_other_mask(kst_port_t *p, uint8_t mask);
 
 /** Bit n: programming port n's pin is the wire driver's, not the PWM
  *  generator's.  The held port from LINK_KST_LOW until it is back in

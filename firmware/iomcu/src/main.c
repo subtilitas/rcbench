@@ -41,6 +41,9 @@
 #if SENSE_TRACE
 #include "sense_trace_hw.h"
 #endif
+#if IOMCU_CONSOLE
+#include "console_hw.h"
+#endif
 
 /* ------------------------------------------------------------- the state */
 
@@ -64,6 +67,8 @@ uint64_t        s_base_reserved;
 prog_port_t     s_prog;
 kst_port_t      s_kst;
 kst_line_t      s_kst_line;
+hitec_port_t    s_hitec;
+hitec_line_t    s_hitec_line;
 link_dev_t      s_dev;
 outputs_t       s_outputs;
 heartbeat_mon_t s_beat;
@@ -111,6 +116,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SERVO_WIN, LINK_SW_COUNT,  servo_win_read, NULL },
     { LINK_PAGE_KST,       LINK_KS_COUNT,  kst_read,       kst_write },
     { LINK_PAGE_PROG,      LINK_PG_REGS,   prog_read,      prog_write },
+    { LINK_PAGE_HITEC,     LINK_HT_COUNT,  hitec_read,     hitec_write },
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
       update_hw_ctl_write },
     { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, update_hw_data_read,
@@ -357,7 +363,7 @@ static bool flash_busy(void)
     return flash_gate_busy(outputs_driving(&s_outputs),
                            s_supply.regs[LINK_SP_OUTPUT] != 0u,
                            s_pd_open && pdmini_may_be_on(&s_pd),
-                           kst_port_state(&s_kst) != LINK_KST_PWM);
+                           ports_quiet() != 0u);
 }
 
 int main(void)
@@ -489,6 +495,20 @@ int main(void)
         .driver     = kst_line_driver(&s_kst_line),
     };
     (void)kst_port_init(&s_kst, &kst_hw);
+    hitec_line_init(&s_hitec_line);
+    const hitec_port_hw_t hitec_hw = {
+        .ctx        = NULL,
+        .ports      = IOMCU_PROG_PORTS,
+        .pin        = kst_hw_pin,
+        .take       = hitec_hw_take,
+        .give       = hitec_hw_give,
+        .abort      = hitec_hw_abort,
+        .run        = hitec_hw_run,
+        .supply     = kst_hw_supply,
+        .supply_set = kst_hw_supply_set,
+        .driver     = hitec_line_driver(&s_hitec_line),
+    };
+    (void)hitec_port_init(&s_hitec, &hitec_hw);
     hw_apply();
     /*
      * The PD mini's wiring, as last written, driven with the output off: a
@@ -572,6 +592,11 @@ int main(void)
      * request can ask. */
     update_hw_init(flash_busy);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
+#if IOMCU_CONSOLE
+    /* The bench console on the same pages, through link_dev_apply(): it
+     * does not feed the link's silence watchdog. */
+    console_hw_init(&s_dev);
+#endif
 
     heartbeat_init();
 
@@ -709,8 +734,7 @@ int main(void)
         /* safety_gate_arm_now() is the rule, host-tested: the gate's arm,
          * held down by a programming port out of PWM and by a firmware
          * update. */
-        const bool arm_now = safety_gate_arm_now(gate.arm,
-                                                 kst_port_quiet_mask(&s_kst),
+        const bool arm_now = safety_gate_arm_now(gate.arm, ports_quiet(),
                                                  update_hw_holds_arm());
         /* Only the roles ARM names: an arm for the throttle leaves the
          * servos and the programming ports without a pulse, and an arm for
@@ -719,20 +743,25 @@ int main(void)
                           arm_now ? outputs_arm_roles_of(gate.roles) : 0u,
                           now);
         kst_port_bench_armed(&s_kst, arm_now);
+        hitec_port_bench_armed(&s_hitec, arm_now);
         /*
          * The KST port: a failsafe edge and a disarm stop its session, and
          * no frame starts while the heartbeat or the link is not trusted.
          * Then the programming ports that render a pulse, from this pass
          * on: none that is out of PWM.
          */
-        kst_port_step(&s_kst, safety_gate_supply_ok(&s_beat, &s_dev),
-                      gate.off || (s_kst_armed && !arm_now), now);
+        const bool port_safe = safety_gate_supply_ok(&s_beat, &s_dev);
+        const bool port_stop = gate.off || (s_kst_armed && !arm_now);
+        kst_port_step(&s_kst, port_safe, port_stop, now);
+        /* The HITEC port the same way: a stop cuts its transaction and
+         * keeps the port with the pin released. */
+        hitec_port_step(&s_hitec, port_safe, port_stop, now);
         s_kst_armed = arm_now;
+        ports_exclusive();
         outputs_hw_ports_drive(ports_pulsing());
         sense_page_ports(&s_sense, ports_pulsing());
         /* And the SUPPLY page told that a port commands the module. */
-        supply_page_hold(&s_supply,
-                         kst_port_state(&s_kst) != LINK_KST_PWM);
+        supply_page_hold(&s_supply, ports_hold_supply());
         /* The edge into driving starts a run on core 1: its peaks and the
          * INA228's totals.  One compare a pass, an order on the edge. */
         const bool driving_now = outputs_driving(&s_outputs);
@@ -767,7 +796,10 @@ int main(void)
          * as an OFF before it steps and can send an ON already queued. */
         /* An OFF of this pass waits for the end of a frame the
          * programming port has on the wire. */
-        supply_page_port_frame(&s_supply, kst_port_frame_out(&s_kst), now);
+        supply_page_port_frame(&s_supply,
+                               kst_port_frame_out(&s_kst)
+                                   || hitec_port_frame_out(&s_hitec, now),
+                               now);
         supply_page_step(&s_supply, safety_gate_supply_ok(&s_beat, &s_dev),
                          s_pd_open ? &s_pd : NULL);
         /* A wiring change whose state read has just shown the module off:
@@ -910,6 +942,10 @@ int main(void)
          * transmit buffer has room for.  Before the clock is read again,
          * as the report is. */
         sense_trace_hw_pass();
+#endif
+#if IOMCU_CONSOLE
+        /* The bench console's lines in and its output out, the same way. */
+        console_hw_pass();
 #endif
 
         /*

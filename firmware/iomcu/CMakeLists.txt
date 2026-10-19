@@ -48,6 +48,9 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/phase_tap" phase_tap)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
+# The Hitec wire's core and pin driver, which the HITEC page runs
+# (src/iomcu_hitec.c); its PIO program is assembled and checked below.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/hitec"   hitec)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
 add_executable(rcbench-iomcu
@@ -55,6 +58,7 @@ add_executable(rcbench-iomcu
     # main.c cut by subject; iomcu.h lists what each holds.
     src/iomcu_pages.c
     src/iomcu_kst.c
+    src/iomcu_hitec.c
     src/iomcu_sense.c
     src/iomcu_tone.c
     src/iomcu_bind.c
@@ -104,6 +108,24 @@ else()
     target_compile_definitions(rcbench-iomcu PRIVATE SENSE_TRACE=0)
 endif()
 
+# A bench build that reads command lines on the USB console and reads and
+# writes link pages through the page handlers the link uses
+# (shared/outputs/page_console.h, docs/BenchConsole.md).  Off in every
+# image that is released: with it off the image holds no console code.
+# The trace build reads the same console, so the two are not built
+# together.
+option(IOMCU_CONSOLE "Read and write link pages from the USB console" OFF)
+if(IOMCU_CONSOLE AND SENSE_TRACE)
+    message(FATAL_ERROR "IOMCU_CONSOLE and SENSE_TRACE both read the USB "
+                        "console: build one of them")
+endif()
+if(IOMCU_CONSOLE)
+    target_sources(rcbench-iomcu PRIVATE src/console_hw.c)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_CONSOLE=1)
+else()
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_CONSOLE=0)
+endif()
+
 # The PIO (programmable input/output) programs belong to the modules under
 # protocols/, each in its rp2350/ folder beside the C that drives it.  They
 # are assembled into headers at build time, so the .pio file is the only copy
@@ -128,6 +150,16 @@ add_custom_command(TARGET rcbench-iomcu PRE_LINK
             -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/kst_line_words.txt
             -DNAME=kst_line
             -DTEST=test_kst_pio
+            -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
+    VERBATIM)
+# The Hitec line program, the same way (test/host/test_hitec_pio.c,
+# fixtures/hitec_line_words.txt).
+add_custom_command(TARGET rcbench-iomcu PRE_LINK
+    COMMAND ${CMAKE_COMMAND}
+            -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/hitec/rp2350/hitec_line.pio.h
+            -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/hitec_line_words.txt
+            -DNAME=hitec_line
+            -DTEST=test_hitec_pio
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
     VERBATIM)
 
@@ -162,6 +194,8 @@ target_link_libraries(rcbench-iomcu
     rcbench_phase_tap_rp2350
     rcbench_kst
     rcbench_kst_rp2350
+    rcbench_hitec
+    rcbench_hitec_rp2350
     rcbench_bench
     rcbench_safety
     rcbench_servo
