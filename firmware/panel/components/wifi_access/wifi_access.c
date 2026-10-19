@@ -1072,6 +1072,11 @@ static void fetch_task(void *arg)
     const fw_version_t want = s.job.want;
     const uint32_t     start_ms = s.job.start_ms;
     unlock();
+    /* No answer yet in this job: none of an earlier one is logged. */
+    s_http.last_status = 0;
+    s_http.last_length = -1;
+    s_http.last_chunked = false;
+    s_http.last_read = 0u;
     fw_upload_init(&s.fup, NULL, 0u, s.slot);
     const wa_run_t run = {
         .http = &k_http,
