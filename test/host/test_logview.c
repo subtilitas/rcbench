@@ -2381,6 +2381,55 @@ TEST_CASE(three_tabs_list_three_folders_and_bench_comes_first)
     draw();
 }
 
+/*
+ * USER and BENCH list the folders SETUP > SD CARD names in force: a new
+ * folder's files, and not the files left in the folder before.  Both
+ * kinds in one folder list the same files.  A folder the check refuses
+ * lists the default, as the logger writes there; lower case is upper.
+ */
+TEST_CASE(the_tabs_follow_the_folders_of_setup)
+{
+    folder_card();
+    fc_put("RUNS", "SERVO012.CSV");
+    fc_put("RUNS", "ATEST013.CSV");
+    settings_set_text(SET_TEXT_LOG_AUTO_DIR, "RUNS");
+    screen()->enter();                          /* LOGS opened again */
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
+    CHECK_STR_EQ(log_viewer_tab_dir(LOG_TAB_BENCH), "RUNS");
+    CHECK_STR_EQ(g_fc.dir, "RUNS");
+    CHECK(listed_now("SERVO012.CSV"));
+    CHECK(!listed_now("MOTOR004.CSV"));         /* left in BENCH/LOGS */
+    char name[LOG_VIEWER_NAME_MAX];
+    top_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "ATEST013.CSV");
+    CHECK_STR_EQ(g_fc.opened_in, "RUNS");
+    tap(TAB_X(0), TAB_Y);
+    CHECK_STR_EQ(g_fc.dir, CARD_USER_LOGS);
+
+    /* Both kinds in one folder: USER lists what BENCH lists. */
+    settings_set_text(SET_TEXT_LOG_USER_DIR, "runs");
+    CHECK_STR_EQ(log_viewer_tab_dir(LOG_TAB_USER), "RUNS");
+    tap(RESCAN_X, FOOT_CY);
+    CHECK_STR_EQ(g_fc.dir, "RUNS");
+    CHECK(listed_now("SERVO012.CSV"));
+    CHECK(listed_now("ATEST013.CSV"));
+
+    /* A folder the check refuses is the default. */
+    settings_set_text(SET_TEXT_LOG_USER_DIR, "A/B/C");
+    CHECK_STR_EQ(log_viewer_tab_dir(LOG_TAB_USER), CARD_USER_LOGS);
+    settings_set_text(SET_TEXT_LOG_AUTO_DIR, "BENCH/KST");
+    CHECK_STR_EQ(log_viewer_tab_dir(LOG_TAB_BENCH), CARD_AUTO_LOGS);
+    CHECK_STR_EQ(log_viewer_tab_dir(LOG_TAB_ROOT), CARD_ROOT);
+    CHECK_STR_EQ(log_viewer_tab_dir(LOG_TAB_COUNT), CARD_ROOT);
+    /* The longest folder fits the header. */
+    settings_set_text(SET_TEXT_LOG_AUTO_DIR, "ABCDEFGH/12345678");
+    tap(TAB_X(1), TAB_Y);
+    CHECK_STR_EQ(g_fc.dir, "ABCDEFGH/12345678");
+    draw();
+    settings_set_text(SET_TEXT_LOG_AUTO_DIR, CARD_AUTO_LOGS);
+    settings_set_text(SET_TEXT_LOG_USER_DIR, CARD_USER_LOGS);
+}
+
 TEST_CASE(delete_on_root_takes_the_report_and_stays_in_its_folder)
 {
     folder_card();
@@ -4068,6 +4117,7 @@ int main(void)
     RUN(the_scroll_bar_jumps_drags_and_stays_on_its_page);
     RUN(the_header_names_the_card_or_says_sd_card);
     RUN(three_tabs_list_three_folders_and_bench_comes_first);
+    RUN(the_tabs_follow_the_folders_of_setup);
     RUN(delete_on_root_takes_the_report_and_stays_in_its_folder);
     RUN(an_open_test_in_user_does_not_hide_the_same_number_in_bench);
     RUN(each_empty_folder_says_what_it_holds_and_what_is_off);

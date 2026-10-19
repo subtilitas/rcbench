@@ -43,6 +43,18 @@ history is in git.
 - SETUP > SD CARD, a new category tile: Auto logs and User logs, both ON
   by default. OFF writes no file and takes no number. With User logs OFF the
   SERVO screen names `USER LOGS OFF` where a test's files would be.
+- SETUP > SD CARD sets the two log folders: Auto log folder (setting
+  `log_auto_dir`, `BENCH/LOGS` by default) and User log folder
+  (`log_user_dir`, `USER/LOGS`). A tap on a folder's row opens the
+  keyboard in its folder mode, where the `.` key types `/`. OK takes 1 or 2
+  folders of 1 to 8 characters of A-Z, 0-9, `_` and `-`, stored in upper
+  case, and refuses a Windows device name and `BENCH/ESC`, `BENCH/KST` and
+  `BENCH/HITEC`; a refused OK keeps the keyboard open and says why. A
+  changed folder takes the next file, numbered from what it holds; the
+  LOGS tabs USER and BENCH list the folders set. `card_folder_check()` in
+  `shared/logfile/card_tree.c`; `test_card_tree`, `test_keypad`,
+  `test_settings`, `test_settings_folders`, `test_log_take` and
+  `test_logview`, 30 cases more.
 
 ### Changed
 

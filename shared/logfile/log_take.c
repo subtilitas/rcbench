@@ -23,6 +23,17 @@ static bool same_dir(const char *a, const char *b)
            == 0;
 }
 
+bool log_series_follow(log_series_set_t *set, char *took, const char *want)
+{
+    if (set == NULL || took == NULL || want == NULL
+        || strlen(want) >= CARD_DIR_MAX || same_dir(took, want)) {
+        return false;
+    }
+    memcpy(took, want, strlen(want) + 1u);
+    log_series_init(set);
+    return true;
+}
+
 log_series_t *log_series_of(log_series_set_t *set, const char *dir)
 {
     if (set == NULL || dir == NULL || strlen(dir) >= CARD_DIR_MAX) {

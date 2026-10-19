@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "card_tree.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -79,6 +80,15 @@ void ui_textkey_open_search(ui_textkey_t *k, gfx_rect_t area,
     }
 }
 
+void ui_textkey_open_folder(ui_textkey_t *k, gfx_rect_t area,
+                            const char *title, const char *text)
+{
+    ui_textkey_open(k, area, title, text, UI_TEXTKEY_MAX);
+    if (k != NULL) {
+        k->folder = true;
+    }
+}
+
 void ui_textkey_open_wifi(ui_textkey_t *k, gfx_rect_t area,
                           const char *title, const char *text, bool secret)
 {
@@ -134,6 +144,9 @@ const char *ui_textkey_key_label(const ui_textkey_t *k, int key)
 {
     if (k != NULL && k->search && key == UI_TK_MARK) {
         return "*";
+    }
+    if (k != NULL && k->folder && key == UI_TK_DOT) {
+        return "/";
     }
     if (k != NULL && k->wifi) {
         if (key == UI_TK_SHOW) {
@@ -236,7 +249,9 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
         return UI_TEXTKEY_NONE;
     }
     if (key < UI_TEXTKEY_CHARS) {
-        add(k, (k->search && key == UI_TK_MARK) ? '*' : k_chars[key]);
+        add(k, (k->search && key == UI_TK_MARK) ? '*'
+               : (k->folder && key == UI_TK_DOT) ? '/'
+                                                  : k_chars[key]);
         return UI_TEXTKEY_NONE;
     }
     if (key == UI_TK_SHOW) {
@@ -258,6 +273,21 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
         if (k->wifi && k->len < (k->secret ? UI_TEXTKEY_PASS_MIN : 1)) {
             k->refused = true;       /* the radio would refuse it */
             return UI_TEXTKEY_NONE;
+        }
+        if (k->folder) {             /* as the card takes it, or not at all */
+            char dir[CARD_DIR_MAX];
+            const card_folder_t r = card_folder_check(k->text, dir,
+                                                       sizeof(dir));
+            if (r != CARD_FOLDER_OK) {
+                k->refused = true;
+                k->why     = (uint8_t)r;
+                return UI_TEXTKEY_NONE;
+            }
+            if (out != NULL && n > 0u) {
+                snprintf(out, n, "%s", dir);
+            }
+            ui_textkey_close(k);
+            return UI_TEXTKEY_OK;
         }
         if (k->search || k->wifi) {  /* as typed: spaces count */
             if (out != NULL && n > 0u) {
@@ -328,6 +358,20 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
     return press(k, key, out, n);
 }
 
+/* Why a folder was refused, in the words of its line. */
+static const char *folder_why(uint8_t why)
+{
+    switch ((card_folder_t)why) {
+    case CARD_FOLDER_LONG:     return TR(TEXTKEY_DIR_LONG);
+    case CARD_FOLDER_DEEP:     return TR(TEXTKEY_DIR_DEEP);
+    case CARD_FOLDER_CHAR:     return TR(TEXTKEY_DIR_CHAR);
+    case CARD_FOLDER_RESERVED: return TR(TEXTKEY_DIR_RESERVED);
+    case CARD_FOLDER_BENCH:    return TR(TEXTKEY_DIR_BENCH);
+    case CARD_FOLDER_EMPTY:
+    default:                   return TR(TEXTKEY_DIR_EMPTY);
+    }
+}
+
 void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
 {
     if (k == NULL || c == NULL || !k->open) {
@@ -341,8 +385,10 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
                              (int16_t)(a.w - 2 * TK_PAD), 18 };
     gfx_text_in(c, hdr, k->title, &gfx_font_8x16, ui_theme_color(UI_C_TEXT),
                 1, GFX_ALIGN_LEFT);
-    char room[40];
-    if (k->refused && k->wifi) {
+    char room[64];
+    if (k->refused && k->folder) {
+        snprintf(room, sizeof(room), "%s", folder_why(k->why));
+    } else if (k->refused && k->wifi) {
         if (k->secret) {
             snprintf(room, sizeof(room), TR(TEXTKEY_SHORT),
                      UI_TEXTKEY_PASS_MIN);

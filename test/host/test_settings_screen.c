@@ -739,7 +739,9 @@ TEST_CASE(interfaces_has_four_headings_above_its_sections)
     for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
         if (c != SET_CAT_IFACE) {
             CHECK_EQ(settings_screen_rows((setting_cat_t)c),
-                     settings_in_category((setting_cat_t)c, ids, 64));
+                     settings_in_category((setting_cat_t)c, ids, 64)
+                         + settings_texts_in_category((setting_cat_t)c,
+                                                      NULL, 0));
         }
     }
 }

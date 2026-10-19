@@ -182,10 +182,16 @@ typedef void (*settings_observer_fn)(setting_id_t id);
  */
 typedef enum {
     SET_TEXT_DUT_NAME = 0,   /**< the device under test, for the report */
+    SET_TEXT_LOG_AUTO_DIR,   /**< AUTO LOG FOLDER: the automatic logs'  */
+    SET_TEXT_LOG_USER_DIR,   /**< USER LOG FOLDER: the tests' files     */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 
 #define SETTINGS_TEXT_MAX 24
+
+/** Called after a string actually changes, as settings_observer_fn is
+ *  for a value: an edit, a discard, a reset and the load at start-up. */
+typedef void (*settings_text_observer_fn)(setting_text_id_t id);
 
 typedef struct {
     bool (*load)(float *values, int count);
@@ -207,6 +213,7 @@ void settings_init(void);
 
 void settings_set_store(const settings_store_t *store);
 void settings_set_observer(settings_observer_fn fn);
+void settings_set_text_observer(settings_text_observer_fn fn);
 
 /** Whether a setting is held: something in use depends on the value as it
  *  is. */
@@ -252,7 +259,8 @@ void settings_adjust(setting_id_t id, int steps);
  */
 bool settings_sense_sda_valid(int gpio);
 
-/** Restore one category, or all of them, to the schema defaults. */
+/** Restore one category, or all of them, to the schema defaults: its
+ *  values and its strings (settings_text_category()). */
 void settings_reset(setting_cat_t cat);
 void settings_reset_all(void);
 
@@ -264,6 +272,13 @@ const char *settings_value_text(setting_id_t id, char *buf, size_t n);
 /** Render @p value as settings_value_text() renders the value of @p id. */
 const char *settings_value_text_of(setting_id_t id, float value, char *buf,
                                    size_t n);
+
+/** The category a string is set in on SETUP, or SET_CAT_COUNT for one
+ *  set elsewhere: the DUT name, on SERVO > SETTINGS. */
+setting_cat_t settings_text_category(setting_text_id_t id);
+/** The strings of @p cat, in id order.  Returns how many there are. */
+int settings_texts_in_category(setting_cat_t cat, setting_text_id_t *out,
+                               int max);
 
 /** A string setting.  Never NULL. */
 const char *settings_text(setting_text_id_t id);

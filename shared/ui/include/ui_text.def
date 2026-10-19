@@ -86,6 +86,14 @@ UI_TEXT(TEXTKEY_COUNT,              0, "%d of %d")
 UI_TEXT(TEXTKEY_NEEDED,            30, "Enter a name.")
 UI_TEXT(TEXTKEY_SHORT,             30, "Enter at least %d characters.")
 UI_TEXT(TEXTKEY_SSID_NEEDED,       30, "Enter a network name.")
+/* A folder the keyboard refused (card_folder_check()), right of its title
+ * on a keyboard as wide as SETUP's list. */
+UI_TEXT(TEXTKEY_DIR_EMPTY,         40, "A folder name is empty")
+UI_TEXT(TEXTKEY_DIR_LONG,          40, "8 characters a folder at most")
+UI_TEXT(TEXTKEY_DIR_DEEP,          40, "2 folders deep at most")
+UI_TEXT(TEXTKEY_DIR_CHAR,          40, "A-Z, 0-9, _ and - only")
+UI_TEXT(TEXTKEY_DIR_RESERVED,      40, "Reserved name")
+UI_TEXT(TEXTKEY_DIR_BENCH,         40, "Folder of the bench's own files")
 UI_TEXT(TK_SHOW,                    0, "SHOW")
 UI_TEXT(TK_HIDE,                    0, "HIDE")
 
@@ -376,6 +384,12 @@ UI_TEXT(SET_LEAVE_ARMED,            0, "DISCARD waits until the bench is SAFE.")
 UI_TEXT(SET_STAY,                   0, "STAY")
 UI_TEXT(SET_DISCARD,                0, "DISCARD")
 UI_TEXT(SET_DUT_NAME,               0, "DUT name")
+/* SETUP > SD CARD's two folders: a row's name, its keyboard's title, and
+ * the row's help. */
+UI_TEXT(SET_AUTO_DIR,               0, "Auto log folder")
+UI_TEXT(SET_AUTO_DIR_HELP,          0, "Folder for automatic logs")
+UI_TEXT(SET_USER_DIR,               0, "User log folder")
+UI_TEXT(SET_USER_DIR_HELP,          0, "Folder for test files")
 
 /* ------------------------------------------------ plots and hero cards */
 UI_TEXT(PLOT_NOW,                   0, "NOW")

@@ -1878,7 +1878,9 @@ Zeilenvorschub sind keine Zeile, ebenso Tabs und Wagenrückläufe (CR).
 Vom Prüfstand aufgezeichnete Läufe werden in zwei Ordner der Karte
 geschrieben, jeder Lauf unter dem Namen dessen, was ihn gestartet hat, und
 einer Nummer von 001 bis 999. Das Panel legt jeden Ordner an, eine Ebene
-nach der anderen, wenn es zum ersten Mal hineinschreibt:
+nach der anderen, wenn es zum ersten Mal hineinschreibt. Die Tabelle nennt
+die vorgegebenen Ordner; Ordner Auto-Logs und Ordner User-Logs unter
+[Setup](#setup) > SD-KARTE stellen andere ein:
 
 | Ordner | Name | Lauf |
 | --- | --- | --- |
@@ -1900,6 +1902,15 @@ ausgeschaltet, beendet es dessen Datei. User-Logs AUS schreibt nichts nach
 `USER/LOGS`; ein Test behält den Zustand, mit dem er gestartet ist. Beide
 stehen ab Werk auf EIN. Das Fehlerprotokoll, `BENCH/RCBENCH.LOG`, wird
 unabhängig von den Schaltern geschrieben.
+
+Ein unter [Setup](#setup) > SD-KARTE geänderter Ordner gilt ab der nächsten
+Datei: Ein schon offener Lauf oder Test endet in dem Ordner, in dem er
+begonnen hat. Der nächste wird nach dem nummeriert, was der neue Ordner
+enthält. Beide Arten dürfen denselben Ordner nennen; seine Nummern sind
+dann eine Reihe über alle fünf Namen. Die Dateien in einem vorher benutzten
+Ordner werden nicht gelistet: Die Tabs USER und BENCH listen die jetzt
+eingestellten Ordner. Die Dateien bleiben auf der Karte, und mit dem alten
+Ordner wieder eingestellt sind sie wieder gelistet.
 
 Firmware 0.21 und älter schrieb jeden Lauf ins Stammverzeichnis der Karte:
 `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` mit seiner `SERVOnnn.TXT` (ein
@@ -1934,8 +1945,8 @@ Nummer, der neueste zuerst, über alle Namen im Ordner: `MOTOR043.CSV`, dann
 ![Der Tab STAMM mit den Läufen einer älteren Firmware](img/de/logs-root.png)
 
 Drei Tabs links in der Kopfzeile wählen den Ordner der Liste: USER
-(`USER/LOGS`), BENCH (`BENCH/LOGS`) und STAMM (das Stammverzeichnis der
-Karte). Ein angetippter Tab listet seinen Ordner ab der ersten Seite. Die
+(Ordner User-Logs, vorgegeben `USER/LOGS`), BENCH (Ordner Auto-Logs,
+vorgegeben `BENCH/LOGS`) und STAMM (das Stammverzeichnis der Karte). Ein angetippter Tab listet seinen Ordner ab der ersten Seite. Die
 Kopfzeile rechts der Tabs nennt die Karte und den Ordner,
 `UNITEST  BENCH/LOGS`, und auf STAMM die Karte allein. Ein leerer Ordner
 sagt, warum, und was hineingehört: `Keine .csv-Dateien in BENCH/LOGS.` und
@@ -2800,14 +2811,16 @@ wie bei den Strommonitoren:
 | `Pin GP22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt. SETUP > ANSCHLÜSSE prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5 s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
 | `Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des IOmcu ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
 
-### SD-KARTE: welche Logs geschrieben werden
+### SD-KARTE: welche Logs geschrieben werden, und wohin
 
 ![SD-KARTE](img/de/setup-card.png)
 
 | Einstellung | Bereich | Vorgabe | Schreibt |
 | --- | --- | --- | --- |
-| Auto-Logs | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in `BENCH/LOGS`: ein Log je ARMED- und Netzteil-Lauf |
-| User-Logs | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT` und `LIMITnnn.TXT` in `USER/LOGS`: den AUTOMATISCHEN TEST und den ENDLAGENLAUF |
+| Auto-Logs | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in Ordner Auto-Logs: ein Log je ARMED- und Netzteil-Lauf |
+| User-Logs | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT` und `LIMITnnn.TXT` in Ordner User-Logs: den AUTOMATISCHEN TEST und den ENDLAGENLAUF |
+| Ordner Auto-Logs | ein Ordner, siehe unten | `BENCH/LOGS` | wohin Auto-Logs schreibt |
+| Ordner User-Logs | ein Ordner, siehe unten | `USER/LOGS` | wohin User-Logs schreibt |
 
 - AUS schreibt keine Datei und nimmt keine Nummer, und keine Kartenmeldung
   dieser Art von Lauf erscheint.
@@ -2823,6 +2836,32 @@ wie bei den Strommonitoren:
 - Das Fehlerprotokoll, `BENCH/RCBENCH.LOG`, wird unabhängig von beiden
   geschrieben.
 - [Logs](#logs) nennt die Namen und die Nummerierung.
+
+Ein Tippen auf die Zeile eines Ordners öffnet die Bildschirmtastatur über
+der Liste, auf dem geltenden Ordner. Die Taste `.` schreibt dort `/`. OK
+übernimmt den Ordner, in Großbuchstaben, als Änderung: SPEICHERN behält
+ihn wie einen Wert, und die Warnung beim Verlassen von SETUP nennt ihn.
+ABBRECHEN und der Home-Tag lassen den Ordner, wie er war. OK auf einem
+Ordner, den die Karte nicht nehmen kann, lässt die Tastatur offen und den
+geltenden Ordner unverändert, und die Zeile rechts vom Titel sagt, warum:
+
+![Die Ordner-Tastatur mit einem abgelehnten Ordner von 9 Zeichen](img/de/setup-folder.png)
+
+| Abgelehnt | Beispiel | Zeile |
+| --- | --- | --- |
+| ein leerer Ordnername: nichts getippt, oder ein `/` am Anfang, am Ende oder doppelt | `/LOGS`, `LOGS/`, `A//B` | `Ein Ordnername ist leer` |
+| ein Ordnername mit mehr als 8 Zeichen | `BENCHLOGS` (`BENCHLOG` wird genommen) | `Höchstens 8 Zeichen je Ordner` |
+| mehr als 2 Ordner | `A/B/C` (`A/B` wird genommen) | `Höchstens 2 Ordner tief` |
+| ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
+| ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
+| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Ordner der Prüfstand-Dateien` |
+
+Jeder Ordnername, den das Panel nimmt, ist ein kurzer 8.3-Name von FAT (File
+Allocation Table), auf jedem Computer derselbe. Der längste Ordner hat 17
+Zeichen, `ABCDEFGH/12345678`. Ein gespeicherter Ordner, den das Panel nicht
+mehr nimmt, etwa einer, den eine andere Firmware geschrieben hat, wird nicht
+beschrieben: Die Logs gehen in den vorgegebenen Ordner ihrer Art, und LOGS
+listet diesen Ordner.
 
 ### Werte behalten
 

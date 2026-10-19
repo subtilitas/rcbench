@@ -75,6 +75,12 @@ static const char *const k_text[TX_COUNT] = {
     [TX_TEXTKEY_NEEDED]         = "Gib einen Namen ein.",
     [TX_TEXTKEY_SHORT]          = "Gib mindestens %d Zeichen ein.",
     [TX_TEXTKEY_SSID_NEEDED]    = "Gib einen Netzwerknamen ein.",
+    [TX_TEXTKEY_DIR_EMPTY]      = "Ein Ordnername ist leer",
+    [TX_TEXTKEY_DIR_LONG]       = "Höchstens 8 Zeichen je Ordner",
+    [TX_TEXTKEY_DIR_DEEP]       = "Höchstens 2 Ordner tief",
+    [TX_TEXTKEY_DIR_CHAR]       = "Nur A-Z, 0-9, _ und -",
+    [TX_TEXTKEY_DIR_RESERVED]   = "Reservierter Name",
+    [TX_TEXTKEY_DIR_BENCH]      = "Ordner der Prüfstand-Dateien",
     [TX_TK_SHOW]                = "ANZEIGEN",
     [TX_TK_HIDE]                = "VERBERGEN",
 
@@ -360,6 +366,10 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SET_STAY]               = "BLEIBEN",
     [TX_SET_DISCARD]            = "VERWERFEN",
     [TX_SET_DUT_NAME]           = "Name des Prüflings",
+    [TX_SET_AUTO_DIR]           = "Ordner Auto-Logs",
+    [TX_SET_AUTO_DIR_HELP]      = "Ordner der automatischen Logs",
+    [TX_SET_USER_DIR]           = "Ordner User-Logs",
+    [TX_SET_USER_DIR_HELP]      = "Ordner der Testdateien",
 
     /* -------------------------------------------- plots and hero cards */
     [TX_PLOT_NOW]               = "JETZT",

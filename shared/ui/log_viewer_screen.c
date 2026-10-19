@@ -386,11 +386,17 @@ void log_viewer_set_io(const log_viewer_io_t *io)
 
 const char *log_viewer_tab_dir(log_viewer_tab_t tab)
 {
+    static char dirs[2][CARD_DIR_MAX];
     switch (tab) {
-    case LOG_TAB_USER:  return CARD_USER_LOGS;
-    case LOG_TAB_BENCH: return CARD_AUTO_LOGS;
+    case LOG_TAB_USER:
+        return card_folder_use(settings_text(SET_TEXT_LOG_USER_DIR),
+                               CARD_USER_LOGS, dirs[0], sizeof(dirs[0]));
+    case LOG_TAB_BENCH:
+        return card_folder_use(settings_text(SET_TEXT_LOG_AUTO_DIR),
+                               CARD_AUTO_LOGS, dirs[1], sizeof(dirs[1]));
     case LOG_TAB_ROOT:
-    default:            return CARD_ROOT;
+    default:
+        return CARD_ROOT;
     }
 }
 

@@ -212,13 +212,10 @@ static char s_card_dir[CARD_DIR_MAX];
  * writing, by the marks of that folder (log_marks_busy()). */
 static bool card_busy(const char *name)
 {
-    const log_marks_t marks = {
-        .run_dir  = CARD_AUTO_LOGS,
-        .run      = atomic_load(&s_log_open_run),
-        .test_dir = CARD_USER_LOGS,
-        .test     = atomic_load(&s_test_open_run),
-        .txt      = atomic_load(&s_test_open_txt),
-    };
+    log_marks_t marks;
+    char run_dir[CARD_DIR_MAX];
+    char test_dir[CARD_DIR_MAX];
+    log_open_marks(&marks, run_dir, test_dir);
     return log_marks_busy(&marks, s_card_dir, name);
 }
 

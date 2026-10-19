@@ -328,7 +328,7 @@ and the report's file name until CLOSE.
 The report is a `LIMITnnn.TXT` of its own in `USER/LOGS`, with no CSV file
 beside it, under the next free number of that folder, written whatever DUT's
 REPORT says. With User logs OFF on SETUP > SD CARD no report is written
-([Setup](Screens.md#sd-card-which-logs-are-written)). During a
+([Setup](Screens.md#sd-card-which-logs-are-written-and-where)). During a
 run neither the bench log nor the supply log writes a row; the supply
 log's time runs on through the run, as its totals do. From the run's start
 until the card has closed the report it counts as an open log run: Wi-Fi and

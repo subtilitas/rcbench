@@ -518,6 +518,74 @@ TEST_CASE(an_open_file_holds_back_its_own_folder_only)
     CHECK(!log_marks_busy(&one, CARD_AUTO_LOGS, NULL));
 }
 
+/*
+ * A folder changed in SETUP while a run is open: the run's file stays in
+ * the folder it was opened in and keeps its mark there; the next run is
+ * numbered from what the new folder holds, and the user's kind, whose
+ * folder did not change, walks its own folder again.
+ */
+TEST_CASE(a_folder_change_mid_run_numbers_the_next_run_in_the_new_folder)
+{
+    fresh();
+    char took_auto[CARD_DIR_MAX] = CARD_AUTO_LOGS;
+    char took_user[CARD_DIR_MAX] = CARD_USER_LOGS;
+    put_file("RUNS", "SERVO010.CSV");
+    put_file("RUNS", "ATEST011.TXT");
+    CHECK(!log_series_follow(&g_set, took_auto, CARD_AUTO_LOGS));
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_SERVO, false, NULL), 1);
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_SERVO, false, NULL), 2);
+    CHECK_EQ(take(CARD_USER_LOGS, LOG_PREFIX_ATEST, false, NULL), 1);
+    /* Run 2 is open in BENCH/LOGS when the folder becomes RUNS. */
+    const log_marks_t open = { CARD_AUTO_LOGS, 2u, CARD_USER_LOGS, 0u, 0u };
+    CHECK(log_marks_busy(&open, CARD_AUTO_LOGS, "SERVO002.CSV"));
+    CHECK(!log_marks_busy(&open, "RUNS", "SERVO002.CSV"));
+    /* The next take of the run's kind follows the folder: a change. */
+    const unsigned walks = g.walks;
+    CHECK(log_series_follow(&g_set, took_auto, "RUNS"));
+    CHECK_STR_EQ(took_auto, "RUNS");
+    CHECK_EQ(take("RUNS", LOG_PREFIX_SERVO, false, NULL), 12);
+    CHECK_STR_EQ(g.created, "RUNS/SERVO012.CSV");
+    CHECK_EQ(g.walks, walks + 1u);
+    CHECK(has("BENCH/LOGS/SERVO002.CSV"));
+    /* The same folder again, in another case, is no change. */
+    CHECK(!log_series_follow(&g_set, took_auto, "runs"));
+    CHECK_EQ(take("RUNS", LOG_PREFIX_MOTOR, false, NULL), 13);
+    CHECK_EQ(g.walks, walks + 1u);
+    /* USER LOG FOLDER did not change: its numbering is walked again and
+     * is what its folder holds. */
+    CHECK(!log_series_follow(&g_set, took_user, CARD_USER_LOGS));
+    CHECK_EQ(take(CARD_USER_LOGS, LOG_PREFIX_ATEST, false, NULL), 2);
+    CHECK_EQ(g.walks, walks + 2u);
+    /* Back to the old folder: numbered from what it holds. */
+    CHECK(log_series_follow(&g_set, took_auto, CARD_AUTO_LOGS));
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_SERVO, false, NULL), 3);
+    /* Both kinds in one folder: one series across the five prefixes. */
+    CHECK(log_series_follow(&g_set, took_user, CARD_AUTO_LOGS));
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_ATEST, false, NULL), 4);
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_SUPPL, false, NULL), 5);
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_LIMIT, true, NULL), 6);
+    /* Wrong arguments change nothing. */
+    CHECK(!log_series_follow(NULL, took_auto, "X"));
+    CHECK(!log_series_follow(&g_set, NULL, "X"));
+    CHECK(!log_series_follow(&g_set, took_auto, NULL));
+    CHECK(!log_series_follow(&g_set, took_auto,
+                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+    CHECK_STR_EQ(took_auto, CARD_AUTO_LOGS);
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_SERVO, false, NULL), 7);
+}
+
+/* The longest folder SETUP takes, two of 8, and the longest name in it
+ * fit the fake's paths and the logger's 64-byte buffers. */
+TEST_CASE(the_longest_folder_takes_a_number)
+{
+    fresh();
+    CHECK_EQ(take("ABCDEFGH/12345678", LOG_PREFIX_SUPPL, false, NULL), 1);
+    CHECK_STR_EQ(g.created, "ABCDEFGH/12345678/SUPPL001.CSV");
+    CHECK(has("ABCDEFGH"));
+    CHECK(has("ABCDEFGH/12345678"));
+    CHECK(strlen("/sdcard/ABCDEFGH/12345678/SUPPL999.CSV") < 64u);
+}
+
 TEST_CASE(every_folder_constant_is_an_8_3_path_that_fits)
 {
     static const char *const k_dirs[] = {
@@ -565,5 +633,7 @@ int main(void)
     RUN(no_card_and_wrong_arguments_take_nothing);
     RUN(an_open_file_holds_back_its_own_folder_only);
     RUN(every_folder_constant_is_an_8_3_path_that_fits);
+    RUN(a_folder_change_mid_run_numbers_the_next_run_in_the_new_folder);
+    RUN(the_longest_folder_takes_a_number);
     return test_summary("log_take");
 }

@@ -16,7 +16,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in drei Kate
 |---|---|---|
 | PANEL | `10 EINSTELLUNGEN` | die Liste von PANEL |
 | ANSCHLÜSSE | `26 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
-| SD-KARTE | `2 EINSTELLUNGEN` | die Liste von SD-KARTE: welche Logs das Panel schreibt |
+| SD-KARTE | `4 EINSTELLUNGEN` | die Liste von SD-KARTE: welche Logs das Panel schreibt, und wohin |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
 | PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): die Dateien der Karte und ein Upload der Panel-Firmware im Browser, und das Heimnetz |
@@ -130,8 +130,10 @@ Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Das Pa
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
-| Auto-Logs | EIN, AUS | EIN | ein Log je ARMED- und Netzteil-Lauf in `BENCH/LOGS`: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
-| User-Logs | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in `USER/LOGS` |
+| Auto-Logs | EIN, AUS | EIN | ein Log je ARMED- und Netzteil-Lauf in Ordner Auto-Logs: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
+| User-Logs | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in Ordner User-Logs |
+| Ordner Auto-Logs | ein Ordner | `BENCH/LOGS` | wohin Auto-Logs schreibt |
+| Ordner User-Logs | ein Ordner | `USER/LOGS` | wohin User-Logs schreibt |
 
 - AUS schreibt keine Datei und nimmt keine Nummer. Keine Kartenmeldung dieser Art von Lauf erscheint.
 - Auto-Logs während eines Laufs ausgeschaltet beendet dessen Datei an dieser Stelle; während eines ARMED- oder Netzteil-Laufs eingeschaltet, beginnt dort eine Datei.
@@ -139,6 +141,21 @@ Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Das Pa
 - BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei User-Logs EIN, ob `ATESTnnn.TXT` geschrieben wird.
 - Das Fehlerprotokoll, `BENCH/RCBENCH.LOG`, wird unabhängig von Auto-Logs geschrieben.
 - [Logs](logs.md#was-ein-lauf-schreibt) listet die Ordner.
+
+Ein Tippen auf die Zeile eines Ordners öffnet die Tastatur auf dem Ordner. Ihre Taste `.` schreibt `/`. OK übernimmt den Ordner in Großbuchstaben; SPEICHERN behält ihn. ABBRECHEN und das Home-Tag lassen den Ordner, wie er war. Ein während eines Laufs geänderter Ordner gilt ab der nächsten Datei; der Lauf endet, wo er begonnen hat, und der nächste wird nach dem nummeriert, was der neue Ordner enthält. Beide Zeilen dürfen denselben Ordner nennen.
+
+![Die Ordner-Tastatur mit einem abgelehnten Ordner](view:setup-folder)
+
+Für einen Ordner, den die Karte nicht nehmen kann, lässt OK die Tastatur offen und den Ordner, wie er war. Die Zeile rechts vom Titel sagt, warum:
+
+| Abgelehnt | Beispiel | Zeile |
+|---|---|---|
+| ein Ordnername leer, oder `/` am Anfang, am Ende oder doppelt | `/LOGS`, `LOGS/`, `A//B` | `Ein Ordnername ist leer` |
+| über 8 Zeichen in einem Ordnernamen | `BENCHLOGS`; `BENCHLOG` wird genommen | `Höchstens 8 Zeichen je Ordner` |
+| über 2 Ordner | `A/B/C`; `A/B` wird genommen | `Höchstens 2 Ordner tief` |
+| ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
+| ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
+| `BENCH/ESC`, `BENCH/KST` oder `BENCH/HITEC`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Ordner der Prüfstand-Dateien` |
 
 ## ANSCHLÜSSE
 

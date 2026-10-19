@@ -68,14 +68,17 @@ typedef enum {
 
 /** The folder BROWSE lists. */
 typedef enum {
-    LOG_TAB_USER = 0,    /**< CARD_USER_LOGS                       */
-    LOG_TAB_BENCH,       /**< CARD_AUTO_LOGS, the tab after a start */
-    LOG_TAB_ROOT,        /**< CARD_ROOT                            */
+    LOG_TAB_USER = 0,    /**< USER LOG FOLDER                       */
+    LOG_TAB_BENCH,       /**< AUTO LOG FOLDER, the tab after a start */
+    LOG_TAB_ROOT,        /**< CARD_ROOT                             */
     LOG_TAB_COUNT
 } log_viewer_tab_t;
 
 /** The folder of @p tab, a path from the card's root ("" the root itself);
- *  "" for a tab outside the three. */
+ *  "" for a tab outside the three.  USER and BENCH list the folders SETUP >
+ *  SD CARD names in force, as the logger writes them (card_folder_use():
+ *  the default folder for one card_folder_check() refuses).  Valid until
+ *  the next call for the same tab. */
 const char *log_viewer_tab_dir(log_viewer_tab_t tab);
 
 typedef struct {
