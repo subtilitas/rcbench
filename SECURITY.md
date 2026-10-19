@@ -68,14 +68,18 @@ a server whose certificate chain checks reaches; the IOmcu image a
 panel image carries comes with it and is offered to the IOmcu, after
 its own 2 s hold, at the next link-up.
 
-The panel's touch bus has a third input. At start-up the panel looks once for
-a device answering at I2C (Inter-Integrated Circuit) address 0x14 as a GT911
-touch controller, beside the glass's controller at 0x5D, in every build that
-has `RCBENCH_TOUCH_INJECTOR` on, the default. A device that answers is read
-on every touch poll and its contacts are merged with the glass's, STOP
-included; a device that does not answer at start-up is not read or probed
-again until the next start. Using it needs a device on the panel's exposed
-PH2.0 I2C connector, which carries the touch bus. A build with
+Current limitation, touch input: every panel image, releases included,
+carries the touch injector (`RCBENCH_TOUCH_INJECTOR`, default ON). At
+start-up the panel looks once for a device answering at I2C
+(Inter-Integrated Circuit) address 0x14 as a GT911 touch controller, beside
+the glass's controller at 0x5D. The trigger is a device on the panel's
+exposed PH2.0 I2C connector, which carries the touch bus, that answers at
+0x14 while the panel starts. The panel then reads it on every touch poll
+and merges its contacts with the glass's, so that device can navigate the
+screens, press STOP and hold ARM for its 2 s, which drives the configured
+outputs without a touch on the glass. If nothing answers at 0x14 at
+start-up, the panel never reads or probes 0x14 again until the next start,
+and a device attached later is ignored. A panel built with
 `RCBENCH_TOUCH_INJECTOR=OFF` never addresses 0x14 as an injector.
 
 Two classes of report apply.
