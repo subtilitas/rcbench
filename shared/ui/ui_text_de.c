@@ -480,7 +480,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_TESTS_HERE]         = "Tests werden als ATESTnnn.CSV gespeichert.",
     [TX_LOG_ROOT_HERE]          = "Läufe von Firmware 0.21 und älter.",
     [TX_LOG_AUTO_OFF]           = "AUTO-LOGS AUS unter SETUP > SD-KARTE.",
-    [TX_LOG_USER_OFF]           = "EIGENE LOGS AUS unter SETUP > SD-KARTE.",
+    [TX_LOG_USER_OFF]           = "USER-LOGS AUS unter SETUP > SD-KARTE.",
     [TX_LOG_TAB_USER]           = "USER",
     [TX_LOG_TAB_BENCH]          = "BENCH",
     [TX_LOG_TAB_ROOT]           = "STAMM",
@@ -870,7 +870,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_DUT_TITLE]           = "PRÜFLING",
     [TX_SV_NOT_RECORDED]        = "NICHT AUFGEZEICHNET",
     [TX_SV_WRITING]             = "SCHREIBEN LÄUFT",
-    [TX_SV_USER_LOGS_OFF]       = "EIGENE LOGS AUS",
+    [TX_SV_USER_LOGS_OFF]       = "USER-LOGS AUS",
     [TX_SV_AUTO_TEST]           = "AUTOMATISCHER TEST",
     [TX_SV_STEP_OF]             = "%s %u VON %u  %.2f V",
     [TX_SV_PHASE_OF]            = "%s %u VON %u",
@@ -1653,7 +1653,7 @@ static const char *const k_label[SETTING_COUNT] = {
     [SET_UPD_REMIND]          = "Erinnerung beim Start",
     [SET_UPD_CHANNEL]         = "Releases",
     [SET_LOG_AUTO]            = "Auto-Logs",
-    [SET_LOG_USER]            = "Eigene Logs",
+    [SET_LOG_USER]            = "User-Logs",
 };
 
 static const char *const k_help[SETTING_COUNT] = {

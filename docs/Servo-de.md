@@ -360,7 +360,7 @@ an dem der Lauf begann, und den Dateinamen des Berichts.
 
 Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS` ohne CSV-Datei
 daneben, unter der nächsten freien Nummer dieses Ordners, geschrieben
-unabhängig davon, was BERICHT auf PRÜFLING sagt. Mit Eigene Logs AUS unter
+unabhängig davon, was BERICHT auf PRÜFLING sagt. Mit User-Logs AUS unter
 SETUP > SD-KARTE wird kein Bericht geschrieben
 ([Setup](Screens-de.md#sd-karte-welche-logs-geschrieben-werden)). Während eines Laufs schreiben weder das
 Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
@@ -981,9 +981,9 @@ eigene Task der SD-Karte schreibt seine Dateien dorthin: `ATESTnnn.CSV`, eine
 Zeile je Messwert des Messgeräts des Laufs, und mit BERICHT an (OPTIONEN >
 PRÜFLING) `ATESTnnn.TXT`. Die Nummer gehört zu einer Reihe mit den
 `LIMITnnn.TXT` der Endlagenläufe in diesem Ordner
-([Logs](Screens-de.md#logs)). Mit Eigene Logs AUS unter SETUP > SD-KARTE,
+([Logs](Screens-de.md#logs)). Mit User-Logs AUS unter SETUP > SD-KARTE,
 gelesen bei TEST STARTEN, schreibt der Lauf keine Datei, und das Ergebnis
-nennt `EIGENE LOGS AUS`. Ein Lauf ist eine CSV: das eigene
+nennt `USER-LOGS AUS`. Ein Lauf ist eine CSV: das eigene
 Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
 läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen
 wieder, wenn der Lauf endet. Eine Nummer, die nur ein

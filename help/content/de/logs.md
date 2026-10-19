@@ -12,7 +12,7 @@ LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die C
 
 ![LOGS ohne Karte im Steckplatz](view:logs-nocard)
 
-Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV gespeichert.` oder `Läufe von Firmware 0.21 und älter.` Sind AUTO-LOGS oder EIGENE LOGS unter [SETUP > SD-KARTE](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SETUP > SD-KARTE.` oder `EIGENE LOGS AUS unter SETUP > SD-KARTE.` AKTUALISIEREN liest die Karte erneut.
+Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV gespeichert.` oder `Läufe von Firmware 0.21 und älter.` Sind AUTO-LOGS oder USER-LOGS unter [SETUP > SD-KARTE](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SETUP > SD-KARTE.` oder `USER-LOGS AUS unter SETUP > SD-KARTE.` AKTUALISIEREN liest die Karte erneut.
 
 ## Die Dateiliste
 
@@ -65,7 +65,7 @@ Eine Datei ist ein Lauf, im Ordner seiner Art. Ihr Name sagt, was den Lauf gesta
 
 Der Name folgt dem Bildschirm, dessen ARM den Prüfstand geschaltet hat, auch an einem IOmcu älter als Protokoll 4.18, der mit jedem Schalten auf ARMED die Throttle-Ausgänge mitschaltet.
 
-AUTO-LOGS aus unter [SETUP > SD-KARTE](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; EIGENE LOGS aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `EIGENE LOGS AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
+AUTO-LOGS aus unter [SETUP > SD-KARTE](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; USER-LOGS aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `USER-LOGS AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
 
 Das Panel legt jeden Ordner an, wenn es zum ersten Mal hineinschreibt, eine Ebene nach der anderen. Eine Datei namens `BENCH` oder `USER` im Stammverzeichnis verhindert das: Das Band zeigt `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.`
 

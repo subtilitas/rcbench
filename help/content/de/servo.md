@@ -122,7 +122,7 @@ TEST bleibt beim Start des Laufs zu sehen, und die Zustandszeile der Karte nennt
 ![Ein Ergebnis](view:servo-result)
 ![Ein Ergebnis, vom INA3221 gemessen](view:servo-result-ina)
 
-Das Ergebnis bleibt bis SCHLIESSEN im Kasten auf LIVE und bis zum nächsten Lauf in der Zeile ZULETZT der Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN und warum, die längste Stellzeit, der höchste Haltestrom und die Dateien, die die Karte aufgenommen hat, `ATESTnnn.CSV` und `+ .TXT` für den Bericht, in `USER/LOGS`. Mit Eigene Logs AUS unter [SETUP](setup.md#sd-karte) > SD-KARTE steht dort `EIGENE LOGS AUS`, und keine Datei wird geschrieben.
+Das Ergebnis bleibt bis SCHLIESSEN im Kasten auf LIVE und bis zum nächsten Lauf in der Zeile ZULETZT der Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN und warum, die längste Stellzeit, der höchste Haltestrom und die Dateien, die die Karte aufgenommen hat, `ATESTnnn.CSV` und `+ .TXT` für den Bericht, in `USER/LOGS`. Mit User-Logs AUS unter [SETUP](setup.md#sd-karte) > SD-KARTE steht dort `USER-LOGS AUS`, und keine Datei wird geschrieben.
 
 ## Der Endlagenlauf
 
@@ -234,7 +234,7 @@ Der Kasten auf LIVE bleibt bis SCHLIESSEN, die Zeile ZULETZT der Karte bis zum n
 ![Ein programmiertes Servo](view:servo-limrun-pass)
 ![Nur Suche](view:servo-limrun-found)
 
-Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS`, geschrieben unabhängig von BERICHT und nicht geschrieben mit Eigene Logs AUS. Er enthält, wo die Suche lief, die Endpunkte beider Suchen, die Pulse des Servos und das Schreiben der Pulse, LEFT ANGLE und RIGHT ANGLE vorher und nachher mit den Anteilen, dem Vorhalt und dem Endwert, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund. Bis die Karte ihn geschlossen hat, warten WLAN und ein Update.
+Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS`, geschrieben unabhängig von BERICHT und nicht geschrieben mit User-Logs AUS. Er enthält, wo die Suche lief, die Endpunkte beider Suchen, die Pulse des Servos und das Schreiben der Pulse, LEFT ANGLE und RIGHT ANGLE vorher und nachher mit den Anteilen, dem Vorhalt und dem Endwert, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund. Bis die Karte ihn geschlossen hat, warten WLAN und ein Update.
 
 ## Aktuelle Einschränkungen
 

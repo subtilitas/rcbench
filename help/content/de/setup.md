@@ -131,12 +131,12 @@ Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Das Pa
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Auto-Logs | EIN, AUS | EIN | ein Log je ARMED- und Netzteil-Lauf in `BENCH/LOGS`: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
-| Eigene Logs | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in `USER/LOGS` |
+| User-Logs | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in `USER/LOGS` |
 
 - AUS schreibt keine Datei und nimmt keine Nummer. Keine Kartenmeldung dieser Art von Lauf erscheint.
 - Auto-Logs während eines Laufs ausgeschaltet beendet dessen Datei an dieser Stelle; während eines ARMED- oder Netzteil-Laufs eingeschaltet, beginnt dort eine Datei.
-- Eigene Logs zählt bei TEST STARTEN und ENDLAGENLAUF STARTEN: Ein Lauf behält, womit er gestartet ist. Ist es aus, nennt der SERVO-Bildschirm `EIGENE LOGS AUS` an der Stelle der Datei.
-- BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei Eigene Logs EIN, ob `ATESTnnn.TXT` geschrieben wird.
+- User-Logs zählt bei TEST STARTEN und ENDLAGENLAUF STARTEN: Ein Lauf behält, womit er gestartet ist. Ist es aus, nennt der SERVO-Bildschirm `USER-LOGS AUS` an der Stelle der Datei.
+- BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei User-Logs EIN, ob `ATESTnnn.TXT` geschrieben wird.
 - Das Fehlerprotokoll, `RCBENCH.LOG`, wird unabhängig von Auto-Logs geschrieben.
 - [Logs](logs.md#was-ein-lauf-schreibt) listet die Ordner.
 

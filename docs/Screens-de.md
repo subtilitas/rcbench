@@ -1197,9 +1197,9 @@ Das Ergebnis bleibt bis SCHLIESSEN im Feld auf LIVE und bis zum nächsten Lauf i
 der Zeile ZULETZT der Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN
 und der Grund, die längste Stellzeit und der höchste Haltestrom, und die
 Dateien, die die Karte in `USER/LOGS` angenommen hat: `ATESTnnn.CSV`, und
-`+ .TXT`, sobald die Karte den Bericht vollständig angenommen hat. Mit Eigene
-Logs AUS unter [Setup](#setup) > SD-KARTE steht dort `EIGENE LOGS AUS`, und
-keine Datei wird geschrieben.
+`+ .TXT`, sobald die Karte den Bericht vollständig angenommen hat. Mit
+User-Logs AUS unter [Setup](#setup) > SD-KARTE steht dort `USER-LOGS AUS`,
+und keine Datei wird geschrieben.
 
 ![Ein Ergebnis](img/de/servo-result.png)
 
@@ -1229,7 +1229,7 @@ Bericht. TEST bleibt beim Start zu sehen. Sein Feld auf der linken Karte von
 LIVE zeigt die geschriebenen Werte
 von 8, die Phase mit Seite und Puls und den Ausgang, den er treibt, mit
 LAUF BEENDEN; nach dem Lauf bis SCHLIESSEN das Urteil, die Werte oder die
-Enden und `LIMITnnn.TXT` (`EIGENE LOGS AUS` mit Eigene Logs AUS). Der Lauf schaltet den Prüfstand für jedes
+Enden und `LIMITnnn.TXT` (`USER-LOGS AUS` mit User-Logs AUS). Der Lauf schaltet den Prüfstand für jedes
 Schreiben selbst auf SAFE und auf ARMED; STOP und SAFE durch den Bediener
 oder einer der Gründe des automatischen Tests beenden ihn mit
 ausgeschaltetem Ausgang.
@@ -1896,7 +1896,7 @@ schreibt trotzdem `SERVOnnn.CSV`.
 
 Zwei Schalter unter [Setup](#setup) > SD-KARTE entscheiden, was geschrieben
 wird. Auto-Logs AUS schreibt nichts nach `BENCH/LOGS`; während eines Laufs
-ausgeschaltet, beendet es dessen Datei. Eigene Logs AUS schreibt nichts nach
+ausgeschaltet, beendet es dessen Datei. User-Logs AUS schreibt nichts nach
 `USER/LOGS`; ein Test behält den Zustand, mit dem er gestartet ist. Beide
 stehen ab Werk auf EIN. Das Fehlerprotokoll, `RCBENCH.LOG` im
 Stammverzeichnis, wird unabhängig von den Schaltern geschrieben.
@@ -2807,18 +2807,18 @@ wie bei den Strommonitoren:
 | Einstellung | Bereich | Vorgabe | Schreibt |
 | --- | --- | --- | --- |
 | Auto-Logs | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in `BENCH/LOGS`: ein Log je ARMED- und Netzteil-Lauf |
-| Eigene Logs | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT` und `LIMITnnn.TXT` in `USER/LOGS`: den AUTOMATISCHEN TEST und den ENDLAGENLAUF |
+| User-Logs | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT` und `LIMITnnn.TXT` in `USER/LOGS`: den AUTOMATISCHEN TEST und den ENDLAGENLAUF |
 
 - AUS schreibt keine Datei und nimmt keine Nummer, und keine Kartenmeldung
   dieser Art von Lauf erscheint.
 - Auto-Logs wird bei jedem Durchlauf der Steuer-Task gelesen: während eines
   Laufs auf AUS geschaltet, beendet es dessen Datei, während eines ARMED-
   oder Netzteil-Laufs auf EIN geschaltet, beginnt es eine.
-- Eigene Logs wird bei TEST STARTEN und ENDLAGENLAUF STARTEN gelesen: Ein
+- User-Logs wird bei TEST STARTEN und ENDLAGENLAUF STARTEN gelesen: Ein
   Test behält den Zustand, mit dem er gestartet ist. Steht es auf AUS,
-  zeigen die Laufkarte und der Kasten auf LIVE `EIGENE LOGS AUS` an der
+  zeigen die Laufkarte und der Kasten auf LIVE `USER-LOGS AUS` an der
   Stelle der Dateinamen.
-- BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei Eigene Logs EIN,
+- BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei User-Logs EIN,
   ob `ATESTnnn.TXT` geschrieben wird.
 - Das Fehlerprotokoll, `RCBENCH.LOG` im Stammverzeichnis, wird unabhängig von
   beiden geschrieben.

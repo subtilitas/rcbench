@@ -524,7 +524,7 @@ TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_third)
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD-KARTE");
     CHECK_STR_EQ(ui_setting_label(SET_LOG_AUTO), "Auto-Logs");
-    CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "Eigene Logs");
+    CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "User-Logs");
     ui_text_set_language(UI_LANG_EN);
     CHECK_STR_EQ(ui_setting_label(SET_LOG_AUTO), "Auto logs");
     CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "User logs");
