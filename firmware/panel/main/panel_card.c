@@ -322,7 +322,7 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
     /*
      * Refused if the logger has that run open, even though card_list() left
      * it out: a name can reach here from a list taken before the run started
-     * -- the screen holds its list until the next RESCAN.
+     * -- the screen holds its list until it is opened again or RESCAN.
      */
     if (card_busy(name)) {
         ESP_LOGW(TAG, "%s is still being written", name);

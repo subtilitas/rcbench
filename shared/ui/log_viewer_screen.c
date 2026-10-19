@@ -2222,9 +2222,16 @@ static void enter(void)
     s.press_btn = -1;
     s.q_down    = false;
     s.bar_drag  = false;
-    if (s.listed == 0) {
-        log_viewer_refresh();
-    }
+    /*
+     * The card is read on every way in, not only the first after a start:
+     * a run recorded while the screen was closed is the one the operator
+     * comes here for, and a list kept from the last visit does not hold it.
+     * The first page, as the empty card says to expect, with the newest run
+     * at its top and chosen.  A view of a file stays where it was left; the
+     * list behind it is the new one.  One walk of the card per way in, the
+     * cost of one page.
+     */
+    log_viewer_refresh();
     log_viewer_invalidate();
 }
 

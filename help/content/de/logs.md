@@ -34,6 +34,7 @@ Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung; eine Karte ohne Beze
 - Die Seiten werden von oben zu je 48 geschnitten. Stehen vor der gezeigten Seite weniger als 48 Einträge, etwa nachdem ein Lauf aufgezeichnet wurde, zeigt VORIGE die erste Seite.
 - Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist, stehen auf Seite 1. VORIGE überspringt dann auf dem Rückweg ab Seite 3 so viele Einträge, wie aufgezeichnet wurden; NÄCHSTE von Seite 1 zeigt sie, und die Zahlen im Reiter zeigen die Verschiebung.
 - Der Rollbalken am rechten Rand, 8,1 mm breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
+- Das Öffnen von LOGS liest die Karte: die erste Seite, ihr neuester Lauf gewählt. Ein Lauf, der aufgezeichnet wurde, während LOGS geschlossen war, steht ohne AKTUALISIEREN in der Liste.
 - Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; enthält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite.
 - Nach LÖSCHEN wird die Seite neu gelesen, und die Rollposition bleibt; nichts ist gewählt, LÖSCHEN und ÖFFNEN sind grau, bis eine Zeile gewählt ist.
 - Wird eine Karte eingesteckt, während keine eingebunden ist, bindet AKTUALISIEREN sie ein; sie öffnet auf ihrer ersten Seite. Eine Karte, die gegen eine andere getauscht wird, während eine eingebunden ist, wird bis zum Neustart des Panels nicht neu eingebunden; was die Liste in diesem Zustand zeigt, ist nicht gemessen.

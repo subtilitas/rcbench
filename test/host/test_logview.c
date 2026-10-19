@@ -2135,6 +2135,117 @@ TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
     check_tab(193, 200, 200);
 }
 
+/* ------------------------------------------------------ the way back in --- */
+
+/* LOGS left for the menu and opened again from it, through the router. */
+static void reopen(void)
+{
+    ui_router_goto(SCREEN_OVERVIEW);
+    ui_router_goto(SCREEN_LOGS);
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+}
+
+/*
+ * A run written while LOGS is closed is on the list the next time it opens,
+ * without RESCAN: the first page, the new run at its top and chosen.  One
+ * listing per way in, whichever page was on screen when it was left.
+ */
+TEST_CASE(a_run_written_while_logs_is_closed_is_listed_on_the_next_open)
+{
+    ui_router_init();
+    runs_card(60);
+    ui_router_goto(SCREEN_LOGS);
+    check_tab(1, 48, 60);
+    next_page();
+    check_tab(49, 60, 60);
+
+    g_card_runs = 61;
+    int calls = g_list_calls;
+    reopen();
+    CHECK_EQ(g_list_calls, calls + 1);
+    check_tab(1, 48, 61);
+    check_top(61);
+
+    /* Nothing new: the same first page, read once more. */
+    calls = g_list_calls;
+    reopen();
+    CHECK_EQ(g_list_calls, calls + 1);
+    check_tab(1, 48, 61);
+    check_top(61);
+
+    /* An empty card that gets its first run. */
+    g_card_runs = 0;
+    g_empty_card = true;
+    calls = g_list_calls;
+    reopen();
+    CHECK_EQ(g_list_calls, calls + 1);
+    g_empty_card = false;
+    g_card_runs = 1;
+    reopen();
+    check_tab(0, 0, 0);
+    check_top(1);
+
+    /* No card when it was left, a card with runs when it opens. */
+    g_no_card = true;
+    reopen();
+    g_no_card = false;
+    g_card_runs = 49;
+    reopen();
+    check_tab(1, 48, 49);
+    check_top(49);
+}
+
+/* After a DELETE, after a card swap and after leaving from a file's view or
+ * from WI-FI, the next way in lists the run written meanwhile. */
+TEST_CASE(the_way_back_in_lists_new_runs_after_delete_swap_and_sub_views)
+{
+    ui_router_init();
+    runs_card(50);
+    ui_router_goto(SCREEN_LOGS);
+
+    /* DELETE of the newest run, chosen on the way in, leaves nothing
+     * chosen; a new run is chosen on the next way in, the deleted number
+     * gone from the list. */
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK(g_run_gone[50]);
+    g_card_runs = 51;
+    reopen();
+    check_tab(1, 48, 50);
+    check_top(51);
+
+    /* Another card in the slot, on page 2 when LOGS was left. */
+    next_page();
+    g_volume = "UNITEST";
+    memset(g_run_gone, 0, sizeof(g_run_gone));
+    g_card_run0 = 300;
+    g_card_runs = 97;
+    reopen();
+    check_tab(1, 48, 97);
+    check_top(396);
+
+    /* Left from a file's import view: the view is kept and the list
+     * behind it is read again. */
+    tap(OPEN_X, FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    g_card_runs = 98;
+    reopen();
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    tap(BACK_X, IM_BTN_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    check_tab(1, 48, 98);
+    check_top(397);
+
+    /* WI-FI opened from LOGS and closed by its home tag, which returns to
+     * LOGS. */
+    ui_router_goto(SCREEN_WIFI);
+    g_card_runs = 99;
+    ui_router_goto(ui_router_parent(SCREEN_WIFI));
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+    check_tab(1, 48, 99);
+    check_top(398);
+}
+
 /* ---------------------------------------------------------- scroll bar --- */
 
 
@@ -3321,16 +3432,18 @@ TEST_CASE(a_second_finger_presses_nothing_on_the_list_views)
 }
 
 /* A press held when the screen is left has no release coming; it holds
- * nothing when the screen is entered again. */
+ * nothing when the screen is entered again.  The way in chooses the newest
+ * run, which OPEN then opens. */
 TEST_CASE(a_press_left_behind_holds_nothing_on_the_way_back_in)
 {
-    at_list();
+    runs_card(3);
     feed_reset();
     feed_to_screen(screen());
     finger(1, OPEN_X, FOOT_CY + UI_BAND_H);
     screen()->enter();
     feed_tap(2, OPEN_X, FOOT_CY + UI_BAND_H);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_STR_EQ(log_viewer_open_name(), "BENCH003.CSV");
 }
 
 /*
@@ -3539,6 +3652,8 @@ int main(void)
     RUN(rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card);
     RUN(prev_reads_the_first_page_from_the_top_whatever_changed_ahead);
     RUN(a_card_swapped_mid_page_opens_on_its_first_page);
+    RUN(a_run_written_while_logs_is_closed_is_listed_on_the_next_open);
+    RUN(the_way_back_in_lists_new_runs_after_delete_swap_and_sub_views);
     RUN(the_scroll_bar_jumps_drags_and_stays_on_its_page);
     RUN(the_header_names_the_card_or_says_sd_card);
     RUN(delete_asks_first_and_deletes_only_the_file_it_named);
