@@ -25,6 +25,7 @@ extern "C" {
 typedef enum {
     SET_CAT_APP = 0,     /**< theme, brightness, language, units, plot  */
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
+    SET_CAT_CARD,        /**< the SD card: which logs are written     */
     SET_CAT_ESC,         /**< pack, motor, telemetry, throttle output */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
@@ -149,6 +150,9 @@ typedef enum {
     /* --- updates --------------------------------------------------------- */
     SET_UPD_REMIND,
     SET_UPD_CHANNEL,
+    /* --- the SD card ----------------------------------------------------- */
+    SET_LOG_AUTO,
+    SET_LOG_USER,
 
     SETTING_COUNT
 } setting_id_t;

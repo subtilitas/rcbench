@@ -14,6 +14,7 @@
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 
+#include "card_tree.h"
 #include "esc_profile.h"
 #include "kst_card.h"
 #include "kst_files.h"
@@ -21,6 +22,7 @@
 #include "kst_prog.h"
 #include "log_name.h"
 #include "log_select.h"
+#include "log_take.h"
 #include "log_viewer_screen.h"
 #include "panel.h"
 #include "storage.h"
@@ -182,19 +184,48 @@ atomic_uint s_log_open_run;
 atomic_uint s_test_open_run;
 
 /*
- * A servo run's report, SERVOnnn.TXT, from its open to its close, as a run
- * number, or 0: the automatic test's after its CSV, and the limit run's,
- * which has no CSV.  An open report is an open run (run_open_now()).
+ * A test's report, ATESTnnn.TXT or LIMITnnn.TXT, from its open to its
+ * close, as a run number, or 0: the automatic test's after its CSV, and the
+ * limit run's, which has no CSV.  An open report is an open run
+ * (run_open_now()).
  */
 atomic_uint s_test_open_txt;
 
-/* Whether @p name is a file the logger is still writing, under any of the
- * writers' prefixes (log_name_busy()). */
+/*
+ * The folder the viewer lists, opens in and deletes from: a path from the
+ * card's root, set by the viewer before each call (log_viewer_io_t.folder).
+ * The task that renders' own.
+ */
+static char s_card_dir[CARD_DIR_MAX];
+
+/* Whether @p name in the viewer's folder is a file the logger is still
+ * writing, by the marks of that folder (log_marks_busy()). */
 static bool card_busy(const char *name)
 {
-    return log_name_busy(name, atomic_load(&s_log_open_run),
-                         atomic_load(&s_test_open_run),
-                         atomic_load(&s_test_open_txt));
+    const log_marks_t marks = {
+        .run_dir  = CARD_AUTO_LOGS,
+        .run      = atomic_load(&s_log_open_run),
+        .test_dir = CARD_USER_LOGS,
+        .test     = atomic_load(&s_test_open_run),
+        .txt      = atomic_load(&s_test_open_txt),
+    };
+    return log_marks_busy(&marks, s_card_dir, name);
+}
+
+static void card_folder(const char *dir, void *ctx)
+{
+    (void)ctx;
+    snprintf(s_card_dir, sizeof(s_card_dir), "%s", (dir != NULL) ? dir : "");
+}
+
+static unsigned card_written(log_viewer_tab_t *tab, void *ctx)
+{
+    (void)ctx;
+    const unsigned n = atomic_load(&s_card_written);
+    if (tab != NULL) {
+        *tab = (log_viewer_tab_t)atomic_load(&s_card_written_tab);
+    }
+    return n;
 }
 
 /*
@@ -279,8 +310,14 @@ static int card_list(log_viewer_file_t *out, int max_entries,
      * included: the page is held and the rest of the card is counted, so a
      * page of a full card costs what the first page of it does.
      */
-    const int total = storage_walk(CARD_DIR, CARD_SUFFIXES, card_take, &pick,
-                                   NULL);
+    const int total = storage_walk(s_card_dir, CARD_SUFFIXES, card_take,
+                                   &pick, NULL);
+    if (total == STORAGE_WALK_NO_DIR) {
+        /* A folder the logger has not made yet: an empty list, with the
+         * empty folder's text, and not a card that is gone. */
+        (void)log_select_page_end(&pick.sel, page);
+        return 0;
+    }
     if (total < 0) {
         /*
          * Mounted, and yet its root will not open: the card it was mounted
@@ -329,7 +366,7 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
         return false;
     }
     char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
-    storage_path(CARD_DIR, name, path, sizeof(path));
+    storage_path(s_card_dir, name, path, sizeof(path));
     s_card_file = fopen(path, "rb");
     if (s_card_file == NULL) {
         /* Listed and then gone, or unreadable.  The viewer says so; there is
@@ -364,9 +401,9 @@ static const char *card_volume(void *ctx)
  * it would pull the directory entry out from under the logger's handle, and
  * the logger would go on writing a run nobody can find.
  *
- * And refused for anything that is not a plain name in the card's root: the
- * viewer only ever lists those, so a separator here is a caller defect and
- * not a path to follow.
+ * And refused for anything that is not a plain name in the viewer's folder:
+ * the viewer only ever lists those, so a separator here is a caller defect
+ * and not a path to follow.
  */
 static bool card_remove(const char *name, void *ctx)
 {
@@ -386,19 +423,21 @@ static bool card_remove(const char *name, void *ctx)
         s_card_file = NULL;
     }
     char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
-    storage_path(CARD_DIR, name, path, sizeof(path));
+    storage_path(s_card_dir, name, path, sizeof(path));
     if (remove(path) != 0) {
         ESP_LOGW(TAG, "could not delete %s", path);
         return false;
     }
     ESP_LOGI(TAG, "deleted %s", path);
-    /* A servo test's report goes with its run: left behind, it would be
-     * the only file carrying the number.  The same prefix as the run's,
-     * so a servo test's BENCHnnn.CSV takes its BENCHnnn.TXT. */
+    /* A test's report goes with its run: left behind, it would be the only
+     * file carrying the number.  The same prefix as the run's, so
+     * ATESTnnn.CSV takes ATESTnnn.TXT, and in the root a servo test's
+     * SERVOnnn.CSV or BENCHnnn.CSV of firmware 0.21 and older takes its
+     * report. */
     char txt[LOG_RUN_NAME_MAX];
     log_name_report_of(txt, sizeof(txt), name);
     if (txt[0] != '\0') {
-        storage_path(CARD_DIR, txt, path, sizeof(path));
+        storage_path(s_card_dir, txt, path, sizeof(path));
         if (remove(path) == 0) {
             ESP_LOGI(TAG, "deleted %s", path);
         }
@@ -412,6 +451,8 @@ const log_viewer_io_t k_card_io = {
     .close  = card_close,
     .volume = card_volume,
     .remove = card_remove,
+    .folder = card_folder,
+    .written = card_written,
     .ctx    = NULL,
 };
 

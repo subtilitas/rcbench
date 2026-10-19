@@ -29,6 +29,9 @@
  *   (log_cadence_bench_run()).  The test writes its own file, one row per
  *   reading of its meter, and the bench log's time column steps over the
  *   test.
+ * - No run at all while AUTO LOGS is off on SETUP > SD CARD
+ *   (log_cadence_wanted()): no row is posted, no number taken, and no
+ *   card alert of a run can follow.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -58,6 +61,39 @@ typedef struct {
     uint32_t sent;      /**< the run's rows the queue took                */
     uint32_t lost;      /**< the run's rows the queue refused             */
 } log_cadence_t;
+
+/*
+ * Which run the log records.  A run is one arming of the bench, or one
+ * switch-on of the supply's output while the bench is not armed; the bench
+ * takes the log.  An armed run is LOG_RUN_MOTOR when MOTOR & ESC or ESC
+ * STICK armed the bench and LOG_RUN_SERVO when SERVO did; the two write the
+ * same rows to MOTORnnn.CSV and SERVOnnn.CSV, the supply run to
+ * SUPPLnnn.CSV (log_name.h).
+ */
+typedef enum {
+    LOG_RUN_NONE = 0,
+    LOG_RUN_SERVO,
+    LOG_RUN_SUPPLY,
+    LOG_RUN_MOTOR,
+} log_run_kind_t;
+
+/** Whether @p kind is a run of the armed bench, whichever screen armed it. */
+static inline bool log_run_armed(log_run_kind_t kind)
+{
+    return kind == LOG_RUN_SERVO || kind == LOG_RUN_MOTOR;
+}
+
+/**
+ * The run the log records now, from the run it records (@p now) and the
+ * bench: LOG_RUN_NONE while @p auto_logs is off, so a run that is under way
+ * ends and none starts.  An armed bench (@p armed) is the run whatever the
+ * supply is doing: @p now while that is an armed run, since an arm's roles
+ * change only through a disarm, and otherwise LOG_RUN_MOTOR or
+ * LOG_RUN_SERVO by @p motor (log_name_armed_prefix() is LOG_PREFIX_MOTOR).
+ * Else LOG_RUN_SUPPLY while @p supply_on.
+ */
+log_run_kind_t log_cadence_wanted(bool auto_logs, bool armed, bool motor,
+                                  bool supply_on, log_run_kind_t now);
 
 /** Once, before the loop: both clocks at @p now_ms, no rows counted. */
 void log_cadence_init(log_cadence_t *c, uint32_t now_ms);

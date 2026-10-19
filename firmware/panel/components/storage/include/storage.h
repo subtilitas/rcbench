@@ -69,6 +69,9 @@ typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
 
 typedef void (*storage_tick_fn)(void);
 
+/** storage_walk()'s answer for a folder that is not there. */
+#define STORAGE_WALK_NO_DIR (-2)
+
 /**
  * Walk a directory, handing every matching entry to @p visit, with its size
  * (0 for a directory).
@@ -97,8 +100,10 @@ typedef void (*storage_tick_fn)(void);
  *                  suffixes and over-long names without reaching @p visit, so
  *                  a root of unrelated files is read with nothing else
  *                  running.  It takes no argument and must be cheap.
- * @return the number of matching entries, or -1 when the directory cannot be
- *         opened or read to its end.
+ * @return the number of matching entries; STORAGE_WALK_NO_DIR (-2) when
+ *         the volume is mounted and has no folder @p dir, or a file holds
+ *         its name; -1 when the directory cannot be opened or read to its
+ *         end, or nothing is mounted.
  */
 int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
                  void *ctx, storage_tick_fn tick);

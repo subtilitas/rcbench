@@ -135,7 +135,7 @@
  *
  * Pure: fed windows, the programmer's results and the clock, it moves
  * nothing itself.  Its report leaves through an outbox
- * (servo_limrun_peek()) as one SERVOnnn.TXT.
+ * (servo_limrun_peek()) as one LIMITnnn.TXT.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -496,7 +496,20 @@ UI_TEXT(LOG_SD_CARD,               60, "SD CARD")
 UI_TEXT(LOG_NO_LOGS,               64, "NO RECORDINGS")
 UI_TEXT(LOG_NO_CARD,               64, "No card. Insert one and tap RESCAN.")
 UI_TEXT(LOG_NO_CSV,                64, "No .csv files in the top-level folder.")
-UI_TEXT(LOG_RUNS_HERE,             64, "Runs are saved as BENCHnnn, ESCnnn or SERVOnnn.CSV.")
+/* The empty list of BENCH or USER: the folder's path from the card's root. */
+UI_TEXT(LOG_NO_CSV_IN,             64, "No .csv files in %s.")
+/* What each tab's folder holds, under an empty list; AUTO and USER LOGS
+ * switched off say where they are switched on. */
+UI_TEXT(LOG_RUNS_HERE,             64, "Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.")
+UI_TEXT(LOG_TESTS_HERE,            64, "Tests are saved as ATESTnnn.CSV.")
+UI_TEXT(LOG_ROOT_HERE,             64, "Runs of firmware 0.21 and older.")
+UI_TEXT(LOG_AUTO_OFF,              64, "AUTO LOGS OFF in SETUP > SD CARD.")
+UI_TEXT(LOG_USER_OFF,              64, "USER LOGS OFF in SETUP > SD CARD.")
+/* The folder tabs: the card's folder names, the same in every language
+ * but the root's. */
+UI_TEXT(LOG_TAB_USER,               0, "USER")
+UI_TEXT(LOG_TAB_BENCH,              0, "BENCH")
+UI_TEXT(LOG_TAB_ROOT,               0, "ROOT")
 UI_TEXT(LOG_N_OF_FILES,            0, "FILES %d TO %d OF %d")
 UI_TEXT(LOG_PREV,                   0, "PREV")
 UI_TEXT(LOG_NEXT,                   0, "NEXT")
@@ -885,6 +898,8 @@ UI_TEXT(SV_CUSTOM,                 28, "CUSTOM")
 UI_TEXT(SV_DUT_TITLE,               0, "DEVICE UNDER TEST")
 UI_TEXT(SV_NOT_RECORDED,           31, "NOT RECORDED")
 UI_TEXT(SV_WRITING,                31, "WRITING")
+/* In place of a test's file with USER LOGS off on SETUP > SD CARD. */
+UI_TEXT(SV_USER_LOGS_OFF,          31, "USER LOGS OFF")
 UI_TEXT(SV_AUTO_TEST,               0, "AUTOMATIC TEST")
 UI_TEXT(SV_STEP_OF,                 0, "%s %u OF %u  %.2f V")
 UI_TEXT(SV_PHASE_OF,               31, "%s %u OF %u")
@@ -1006,6 +1021,9 @@ UI_TEXT(ALERT_TOUCH_LOST_ARMING,   94, "Touch signal lost while switching to ARM
 UI_TEXT(ALERT_NO_CARD_RUN,         94, "No card. This run is not being recorded.")
 UI_TEXT(ALERT_CARD_UNREADABLE,     94, "Cannot read the card. Run not recorded.")
 UI_TEXT(ALERT_CARD_FULL,           94, "Card full or not writable. Run not recorded.")
+/* A level of the log's folder cannot be made: a file holds its name, or
+ * the card takes no new folder.  The folder's path from the root. */
+UI_TEXT(ALERT_CARD_NO_FOLDER,      94, "Cannot make folder %s. Run not recorded.")
 UI_TEXT(ALERT_CARD_ROWS_SHORT,     94, "Data could no longer be saved to the card. Recording incomplete.")
 UI_TEXT(ALERT_CARD_LAST_WRITE,     94, "The last write to the card failed. Recording incomplete.")
 UI_TEXT(ALERT_CARD_SERVO,          94, "Card missing or full. Servo test not recorded.")

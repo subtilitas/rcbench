@@ -1,20 +1,27 @@
 /*
  * The logger: the runlog task, which makes every card call of a run, a
- * servo test and the fault log.  The control task's side, which numbers
+ * servo test and the fault log.  A run is written to CARD_AUTO_LOGS, a test
+ * to CARD_USER_LOGS (card_tree.h), each under its folder's next number
+ * (log_take.h).  The control task's side, which numbers
  * the runs and posts the rows, is in main.c.
  *
  * SPDX-License-Identifier: MIT
  */
+#include <errno.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>        /* mkdir(), stat() */
 #include <unistd.h>          /* fsync(), which is what commits a row to FAT */
 
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+#include "card_tree.h"
 #include "log_name.h"
+#include "log_take.h"
+#include "log_viewer_screen.h"
 #include "log_writer.h"
 #include "panel.h"
 #include "storage.h"
@@ -56,13 +63,6 @@ static const char *TAG = "rcbench";
  */
 #define LOG_QUIET_MS   1000u
 
-/*
- * How many run numbers a failing create is given before the run is called
- * unrecorded.  The scan above starts past every number the card holds, so a
- * refused create is the volume answering and not a name collision.
- */
-#define LOG_OPEN_TRIES 3u
-
 QueueHandle_t s_log_q;    /**< control task -> logger, one row each */
 QueueHandle_t s_note_q;   /**< control task -> logger, one line each */
 
@@ -93,82 +93,158 @@ static FILE        *s_log_file;
  */
 static uint32_t     s_log_run_id;
 /*
- * Where the numbering got to.  One directory read at the first run's start
- * puts it above every number the card already carries; after that it starts
- * from what it handed out last.
+ * Where each folder's numbering got to (log_take.h): one directory read
+ * at the first run a folder takes since the start, or since a take in it
+ * failed, puts it above every number the folder carries; after that it
+ * starts from what it handed out last.  The logger task's own.
  */
-static int          s_log_next = LOG_RUN_FIRST;
-/* Whether s_log_next has been put above what the card already holds.  Once
- * per boot: after that this end has written every number it handed out. */
-static bool         s_log_numbered;
+static log_series_set_t s_series;
 
-/*
- * The highest run number on the card, for the visitor below.
- *
- * This runs on the runlog task, so the directory read costs the card's own
- * latency and nothing else: the control task beats the safety line and
- * hit-tests STOP on its own schedule while this runs.  The walk therefore
- * takes no tick.  What it does cost is the first row of a run, which waits
- * in the queue until the scan finishes; a card holding 400 runs is one
- * directory read, not 400 opens.
- */
-static void log_highest(const storage_entry_t *entry, void *ctx)
+/* The files the logger has created since the start, and the LOGS tab of
+ * the last one, for log_viewer_io_t.written. */
+atomic_uint s_card_written;
+atomic_int  s_card_written_tab = LOG_TAB_BENCH;
+
+/* ------------------------------------------- the card, for log_take() */
+
+/* What a create opens and which open marker it sets. */
+typedef struct {
+    FILE       **fp;
+    atomic_uint *mark;
+    int          tab;          /* log_viewer_tab_t of the folder */
+} take_ctx_t;
+
+static bool take_mounted(void *ctx)
 {
-    int *highest = (int *)ctx;
-    /*
-     * One series across the writers' prefixes, BENCH, ESC and SERVO
-     * (log_name.h): a card holding BENCH041.CSV and SERVO042.CSV takes the
-     * next run as 043 whichever writer it is.  A servo test's report counts
-     * as its run does: a number carried only by a SERVOnnn.TXT whose CSV was
-     * deleted is still taken, so the next run neither truncates that report
-     * nor writes its CSV beside it.
-     *
-     * Directories count.  The viewer skips them because it cannot open one,
-     * but this is about which numbers are taken, and a directory called
-     * BENCH003.CSV takes that number as surely as a file does: fopen refuses
-     * it in both modes, so a run numbered into it would be a run that cannot
-     * be created.  Numbering above it costs a number and nothing else.
-     */
-    const int n = log_name_number(entry->name);
-    if (n > *highest) {
-        *highest = n;
+    (void)ctx;
+    return storage_mounted();
+}
+
+/* "/sdcard/<dir>", or "/sdcard/<dir>/<name>" with a name. */
+static void take_path(const char *dir, const char *name, char *path, size_t n)
+{
+    if (name == NULL) {
+        snprintf(path, n, "%s/%s", STORAGE_MOUNT_POINT, dir);
+    } else {
+        storage_path(dir, name, path, n);
     }
 }
 
-/* What the numbering walk looks at: runs and the reports beside them. */
-#define NUMBERED_SUFFIXES ".csv .txt"
-
 /*
- * Whether @p number is free: none of its LOG_NAME_FORMS (6) names, a CSV or
- * a TXT under any writer's prefix, is on the card.  Six probes, one card
- * transaction each, for the number a run takes; the walk has put that
- * number above every one the card holds, so the first number probed is
- * free on a card nothing else writes to.  @p path is left holding the path
- * of the last name probed.
+ * One level of the folder.  mkdir() answers EEXIST for a folder that is
+ * there and for a file of that name alike, so the answer is the stat()
+ * after it: a folder, made or found, or not.
  */
-static bool log_number_free(int number, char *path, size_t n)
+static bool take_make_dir(void *ctx, const char *dir)
 {
-    for (int form = 0; form < LOG_NAME_FORMS; ++form) {
-        char name[LOG_RUN_NAME_MAX];
-        log_name_form(name, sizeof(name), number, form);
-        storage_path(CARD_DIR, name, path, n);
-        FILE *probe = fopen(path, "r");
-        if (probe != NULL) {
-            fclose(probe);
-            return false;
-        }
+    (void)ctx;
+    char path[64];
+    take_path(dir, NULL, path, sizeof(path));
+    if (mkdir(path, 0775) != 0 && errno != EEXIST) {
+        ESP_LOGW(TAG, "cannot make %s: errno %d", path, errno);
+        return false;
+    }
+    struct stat st;
+    if (stat(path, &st) != 0 || !S_ISDIR(st.st_mode)) {
+        ESP_LOGW(TAG, "%s is not a folder", path);
+        return false;
     }
     return true;
 }
 
-/* @p prefix's file of run @p number, a CSV or with @p txt its report, as a
- * path on the card. */
-static void run_path(log_prefix_t prefix, int number, bool txt, char *path,
-                     size_t n)
+typedef struct {
+    log_take_visit_fn visit;
+    void *ctx;
+} take_walk_t;
+
+static void take_walk_entry(const storage_entry_t *entry, void *ctx)
 {
-    char name[LOG_RUN_NAME_MAX];
-    log_name_build(name, sizeof(name), prefix, number, txt);
-    storage_path(CARD_DIR, name, path, n);
+    const take_walk_t *w = (const take_walk_t *)ctx;
+    w->visit(entry->name, w->ctx);
+}
+
+/*
+ * The folder's runs and the reports beside them, and its folders, which
+ * take a number as a file does.  This runs on the runlog task, so the
+ * directory read costs the card's own latency and nothing else: the
+ * control task beats the safety line and hit-tests STOP on its own
+ * schedule while this runs.  What it costs is the first row of a run,
+ * which waits in the queue until the scan finishes; a folder holding 400
+ * runs is one directory read, not 400 opens.
+ */
+static bool take_walk(void *ctx, const char *dir, log_take_visit_fn visit,
+                      void *visit_ctx)
+{
+    (void)ctx;
+    take_walk_t w = { visit, visit_ctx };
+    return storage_walk(dir, ".csv .txt", take_walk_entry, &w, NULL) >= 0;
+}
+
+/* One card transaction: FAT looks the name up from the folder's start. */
+static bool take_exists(void *ctx, const char *dir, const char *name)
+{
+    (void)ctx;
+    char path[64];
+    take_path(dir, name, path, sizeof(path));
+    struct stat st;
+    return stat(path, &st) == 0;
+}
+
+static bool take_create(void *ctx, const char *dir, const char *name,
+                        int number)
+{
+    const take_ctx_t *t = (const take_ctx_t *)ctx;
+    char path[64];
+    take_path(dir, name, path, sizeof(path));
+    /*
+     * Claimed before the file exists, not after it does.  fopen makes the
+     * directory entry visible, and the task that renders can walk the card
+     * between the two calls: it would find a run with no marker against
+     * it, cache its size and analyse it while the logger is about to start
+     * appending.  Cleared again if the open fails, so a card that refuses
+     * every number leaves no run claimed.
+     */
+    atomic_store(t->mark, (unsigned)number);
+    *t->fp = fopen(path, "w");
+    if (*t->fp == NULL) {
+        atomic_store(t->mark, 0u);
+        return false;
+    }
+    ESP_LOGI(TAG, "logging to %s", path);
+    atomic_store(&s_card_written_tab, t->tab);
+    atomic_fetch_add(&s_card_written, 1u);
+    return true;
+}
+
+/*
+ * Run @p number's file in @p dir under @p prefix, opened into @p fp with
+ * @p mark set: log_take() over the card.
+ */
+static log_take_t take(const char *dir, log_prefix_t prefix, bool report,
+                       FILE **fp, atomic_uint *mark, int tab, int *number)
+{
+    take_ctx_t t = { fp, mark, tab };
+    const log_take_io_t io = {
+        .ctx      = &t,
+        .mounted  = take_mounted,
+        .make_dir = take_make_dir,
+        .walk     = take_walk,
+        .exists   = take_exists,
+        .create   = take_create,
+    };
+    return log_take(&s_series, &io, dir, prefix, report, number);
+}
+
+/* The band's word for a take that wrote no file. */
+static void take_alert(log_take_t r, const char *dir, const char *other)
+{
+    if (r == LOG_TAKE_NO_FOLDER) {
+        char line[96];
+        snprintf(line, sizeof(line), TR(ALERT_CARD_NO_FOLDER), dir);
+        control_alert(line);
+    } else {
+        control_alert(other);
+    }
 }
 
 static log_writer_t s_log;
@@ -199,28 +275,21 @@ static bool file_flush(void *ctx)
     return fflush(f) == 0 && fsync(fileno(f)) == 0;
 }
 
-/*
- * Put s_log_next above every number the card carries, once a boot; see
- * log_open().  False when the card would not list.
- */
-static bool log_numbering(void)
+/* A run kind's name: MOTORnnn, SERVOnnn or SUPPLnnn (log_name.h). */
+static log_prefix_t run_prefix(log_run_kind_t kind)
 {
-    if (s_log_numbered) {
-        return true;
+    switch (kind) {
+    case LOG_RUN_MOTOR:  return LOG_PREFIX_MOTOR;
+    case LOG_RUN_SUPPLY: return LOG_PREFIX_SUPPL;
+    case LOG_RUN_SERVO:
+    default:             return LOG_PREFIX_SERVO;
     }
-    int highest = LOG_RUN_FIRST - 1;
-    if (storage_walk(CARD_DIR, NUMBERED_SUFFIXES, log_highest, &highest,
-                     NULL) < 0) {
-        return false;
-    }
-    s_log_next = log_name_next(highest);
-    s_log_numbered = true;
-    return true;
 }
 
 /*
- * Open the run's file, on the logger task: ESCnnn.CSV for a run of the
- * throttle outputs (@p kind LOG_RUN_ESC), BENCHnnn.CSV for the rest.
+ * Open the run's file in CARD_AUTO_LOGS, on the logger task: MOTORnnn.CSV
+ * for a run armed on MOTOR & ESC or ESC STICK, SERVOnnn.CSV for one armed
+ * on SERVO, SUPPLnnn.CSV for a supply run.
  *
  * Every probe is a card transaction and the loop can make hundreds of them,
  * which is why the scan is here and not on the task that beats the safety
@@ -229,108 +298,45 @@ static bool log_numbering(void)
  */
 static void log_open(uint32_t run, log_run_kind_t kind)
 {
-    const log_prefix_t prefix = log_name_armed_prefix(kind == LOG_RUN_ESC);
     s_log_run_id      = run;
     s_log_file        = NULL;
     s_log_last_row_ms = now_ms();
 
     /*
-     * Said, not swallowed, and said on the panel rather than to a console.
-     *
-     * A card that is not there when the run's first row arrives means this
-     * run is not recorded and nothing tries again until the next run, so it
-     * has to be visible: the panel's console is not reachable on every bench.
-     */
-    if (!storage_mounted()) {
-        ESP_LOGW(TAG, "no card mounted; this run is not recorded");
-        control_alert(TR(ALERT_NO_CARD_RUN));
-        return;
-    }
-    /*
      * Numbered, not timestamped: no clock on this board survives a power
-     * cycle, so every file would carry the FAT (File Allocation Table) epoch,
-     * 1980-01-01.  The number is the
-     * only order the card carries, and the viewer reads it back with
-     * log_run_number() to decide which runs it can still show once a card
-     * holds more of them than the screen does; log_name_build() is the one
-     * place the name is built.
+     * cycle, so every file would carry the FAT (File Allocation Table)
+     * epoch, 1980-01-01.  The number is the only order the card carries,
+     * and the viewer reads it back with log_run_number() to decide which
+     * runs it can still show once a folder holds more of them than the
+     * screen does; log_name_build() is the one place the name is built.
      *
-     * Above every number the card already carries, not in the first gap.
-     * A gap is what deleting an old run on a computer leaves, and a run
-     * written into one is the newest run wearing the oldest number: the
-     * viewer would rank it last and drop it from a full list, hiding the
-     * experiment just recorded.  One directory read settles it, which is
-     * also cheaper than the probes it replaces -- a card holding 400 runs
-     * cost 400 opens before the first free number.
+     * Every way to no file is said, and said on the panel rather than to
+     * a console: the panel's console is not reachable on every bench, and
+     * nothing tries again until the next run.  A card that would not list
+     * is a run not recorded rather than one numbered from 1 into the first
+     * gap, which would rank as the oldest in a full list and hide itself.
+     * A failed take is walked again next time (log_take.h): the operator's
+     * answer to a full folder is to delete a file.
+     *
+     * That rescues the card that stays in the slot.  It cannot rescue the
+     * one taken out to be edited on a computer: storage_mounted() is never
+     * cleared, so a swapped card leaves a stale mount and the walk reads
+     * the volume that is gone.  That is the open item in STATUS.md, and
+     * until it is closed a deletion made off the bench needs the panel
+     * restarted.
      */
-    if (!log_numbering()) {
-        /*
-         * The card would not list.  Falling through would number this run
-         * from 1 and take the first gap, which is the numbering this scan
-         * exists to prevent: the run would be recorded and then rank as the
-         * oldest on the card, and a full list would hide it.  A run the
-         * operator is told is not recorded is better than one that records
-         * itself out of sight.
-         */
-        ESP_LOGW(TAG, "the card would not list; this run is not recorded");
-        control_alert(TR(ALERT_CARD_UNREADABLE));
-        return;
-    }
-    /*
-     * A volume that refuses one free number refuses them all, and each try is
-     * up to seven card transactions on this task: the LOG_NAME_FORMS (6)
-     * probes of log_number_free() and the open.  Walking to LOG_RUN_LAST
-     * would be 999 tries before the operator is told the run is not
-     * recorded.
-     */
-    unsigned refused = 0u;
-    for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
-        char path[64];
-        if (!log_number_free(i, path, sizeof(path))) {
-            continue;
-        }
-        run_path(prefix, i, false, path, sizeof(path));
-        /*
-         * Claimed before the file exists, not after it does.  fopen makes the
-         * directory entry visible, and the task that renders can walk the
-         * card between the two calls: it would find a run with no marker
-         * against it, cache its size and analyse it while the logger is
-         * about to start appending.  Cleared again if the open fails, so a
-         * card that refuses every number leaves no run claimed.
-         */
-        atomic_store(&s_log_open_run, (unsigned)i);
-        s_log_file = fopen(path, "w");
-        if (s_log_file != NULL) {
-            s_log_next = i + 1;
-            ESP_LOGI(TAG, "logging to %s", path);
-        } else {
-            atomic_store(&s_log_open_run, 0u);
-            if (++refused >= LOG_OPEN_TRIES) {
-                break;   /* the volume, not this name */
-            }
-        }
-    }
-    if (s_log_file == NULL) {
-        /*
-         * And the numbering is asked again next time.  It is latched for the
-         * boot so a card holding hundreds of runs is read once, which is
-         * right while runs are being written -- but a run that could not be
-         * opened has written no number, and the operator's answer to a full
-         * card is to delete one.  Without this the scan never runs again and
-         * the deletion changes nothing until the panel restarts.  It costs a
-         * directory read per failed run, and a failed run is already a run
-         * that is not being recorded.
-         *
-         * It rescues the card that stays in the slot.  It cannot rescue the
-         * one taken out to be edited on a computer: storage_mounted() is
-         * never cleared, so a swapped card leaves a stale mount and the
-         * walk reads the volume that is gone.  That is the open
-         * item in STATUS.md, and until it is closed a deletion made off the
-         * bench needs the panel restarted.
-         */
-        s_log_numbered = false;
-        ESP_LOGW(TAG, "no log file could be opened; the run is not recorded");
-        control_alert(TR(ALERT_CARD_FULL));
+    int number = -1;
+    const log_take_t r = take(CARD_AUTO_LOGS, run_prefix(kind), false,
+                              &s_log_file, &s_log_open_run, LOG_TAB_BENCH,
+                              &number);
+    if (r != LOG_TAKE_OK) {
+        s_log_file = NULL;
+        ESP_LOGW(TAG, "no log file (take %d); this run is not recorded",
+                 (int)r);
+        take_alert(r, CARD_AUTO_LOGS,
+                   (r == LOG_TAKE_NO_CARD)      ? TR(ALERT_NO_CARD_RUN)
+                   : (r == LOG_TAKE_UNREADABLE) ? TR(ALERT_CARD_UNREADABLE)
+                                                : TR(ALERT_CARD_FULL));
         return;
     }
     const log_sink_t sink = { .write = file_write, .flush = file_flush,
@@ -384,13 +390,15 @@ static void log_close(void)
 }
 
 /*
- * The automatic servo test's files: its CSV as SERVOnnn.CSV under the next
- * run number, and its report as SERVOnnn.TXT under the same number.  A limit
- * run writes its report alone, as SERVOnnn.TXT under the next number.  The
- * render loop hands the lines over through s_test_q (servo_screen_test_peek())
- * and this task writes them.  The armed bench's own log writes no row while
- * a test runs (log_cadence_bench_run()), so a test is one CSV.  One test
- * file is open at a time: the CSV is closed before the report is opened.
+ * The tests' files, in CARD_USER_LOGS: the AUTOMATIC TEST's CSV as
+ * ATESTnnn.CSV under the folder's next number and its report as
+ * ATESTnnn.TXT under the same number; a limit run's report alone as
+ * LIMITnnn.TXT under the next number.  The render loop hands the lines
+ * over through s_test_q (servo_screen_test_peek()) and this task writes
+ * them; with USER LOGS off the render loop hands over nothing.  The armed
+ * bench's own log writes no row while a test runs (log_cadence_bench_run()),
+ * so a test is one CSV.  One test file is open at a time: the CSV is closed
+ * before the report is opened.
  */
 QueueHandle_t s_test_q;           /**< render loop -> logger */
 /* OPENs the render loop queued, and those this task has answered with a
@@ -413,10 +421,12 @@ static unsigned s_test_lines;    /* since the last commit                 */
 static bool     s_test_failed;
 static bool     s_test_txt_bad;  /* a write or the close of the report failed */
 
-/* SERVOnnn.CSV, or with @p txt SERVOnnn.TXT, as a path on the card. */
+/* ATESTnnn.CSV, or with @p txt ATESTnnn.TXT, as a path on the card. */
 static void test_path(int number, bool txt, char *path, size_t n)
 {
-    run_path(LOG_PREFIX_SERVO, number, txt, path, n);
+    char name[LOG_RUN_NAME_MAX];
+    log_name_build(name, sizeof(name), LOG_PREFIX_ATEST, number, txt);
+    storage_path(CARD_USER_LOGS, name, path, n);
 }
 
 static void test_close(void)
@@ -440,51 +450,29 @@ static void test_close(void)
     }
 }
 
-/* A run's OPEN: the next run number, as log_open() takes one.  With @p txt
- * the run is a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit run): its
- * SERVOnnn.TXT is opened under the number, and no CSV. */
+/* A run's OPEN: the folder's next number, as log_open() takes one.  With
+ * @p txt the run is a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit
+ * run): its LIMITnnn.TXT is opened under the number, and no CSV. */
 static void test_open(bool txt)
 {
     test_close();
     s_test_num    = -1;
-    s_test_txt    = false;
+    s_test_txt    = txt;
     s_test_lines  = 0u;
     s_test_failed = false;
     s_test_txt_bad = false;
     atomic_store(&s_test_report, false);
-    if (storage_mounted() && log_numbering()) {
-        unsigned refused = 0u;
-        for (int i = s_log_next; i <= LOG_RUN_LAST && s_test_fp == NULL; ++i) {
-            char path[64];
-            if (!log_number_free(i, path, sizeof(path))) {
-                continue;
-            }
-            test_path(i, txt, path, sizeof(path));
-            if (txt) {
-                atomic_store(&s_test_open_txt, (unsigned)i);
-            } else {
-                atomic_store(&s_test_open_run, (unsigned)i);
-            }
-            s_test_txt = txt;
-            s_test_fp = fopen(path, "w");
-            if (s_test_fp != NULL) {
-                s_log_next = i + 1;
-                s_test_num = i;
-                ESP_LOGI(TAG, "servo test to %s", path);
-            } else {
-                atomic_store(&s_test_open_run, 0u);
-                atomic_store(&s_test_open_txt, 0u);
-                if (++refused >= LOG_OPEN_TRIES) {
-                    break;
-                }
-            }
-        }
-        if (s_test_fp == NULL) {
-            s_log_numbered = false;   /* asked again next time; see log_open */
-        }
-    }
-    if (s_test_fp == NULL) {
-        control_alert(TR(ALERT_CARD_SERVO));
+    int number = -1;
+    const log_take_t r = take(CARD_USER_LOGS,
+                              txt ? LOG_PREFIX_LIMIT : LOG_PREFIX_ATEST, txt,
+                              &s_test_fp,
+                              txt ? &s_test_open_txt : &s_test_open_run,
+                              LOG_TAB_USER, &number);
+    if (r == LOG_TAKE_OK) {
+        s_test_num = number;
+    } else {
+        s_test_fp = NULL;
+        take_alert(r, CARD_USER_LOGS, TR(ALERT_CARD_SERVO));
     }
     atomic_store(&s_test_file, s_test_num);
     atomic_fetch_add(&s_test_opens_done, 1u);

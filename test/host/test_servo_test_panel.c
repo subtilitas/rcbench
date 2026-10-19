@@ -1094,6 +1094,86 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
     CHECK(!servo_screen_testing());
 }
 
+
+/* Line @p i of the run's box on LIVE's left card: its text at the box's
+ * left edge on the box's own fill, compared across the box. */
+#define TBOX_X 16
+#define TBOX_Y 48
+static bool test_box_reads(int i, const char *text, ui_color_id_t col)
+{
+    close_settings();
+    scr->render(&cv, 0);
+    want_fresh();
+    const int y = TBOX_Y + 8 + 20 * i;
+    const gfx_color_t bg = fb[(size_t)y * W + TBOX_X + 4];
+    gfx_fill_rect(&want_cv, TBOX_X + 2, (int16_t)y, 264, 16, bg);
+    gfx_text(&want_cv, TBOX_X + 10, y, text, &gfx_font_8x16,
+             ui_theme_color(col), 1);
+    return same_in(fb, want_fb, TBOX_X + 2, y, 264, 16);
+}
+
+/*
+ * USER LOGS off on SETUP > SD CARD: a run hands the logger nothing -- no
+ * OPEN, so no number is taken and no card alert can follow -- and the box
+ * names USER LOGS OFF where the files would be, whatever number the last
+ * run's answer still carries.  Switched on again, the next run's files go
+ * out as before, an aborted one's with its ABORTED report.
+ */
+TEST_CASE(user_logs_off_sends_no_file_and_the_box_says_so)
+{
+    bench_fresh();
+    short_runs();
+    settings_set(SET_LOG_USER, 0.0f);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK(!servo_screen_testing());
+    bench_frames(1000u);
+    CHECK_EQ(bench.opens, 0u);
+    CHECK_EQ(bench.opens_txt, 0u);
+    CHECK_EQ(bench.csv, 0u);
+    CHECK_EQ(bench.txt, 0u);
+    CHECK_EQ(bench.ends, 0u);
+    CHECK(test_box_reads(2, TR(SV_USER_LOGS_OFF), UI_C_TEXT_DIM));
+    /* The logger's answer to the run before stays that run's. */
+    servo_screen_test_files(12, true);
+    CHECK(test_box_reads(2, TR(SV_USER_LOGS_OFF), UI_C_TEXT_DIM));
+
+    /* Switched on mid-way changes nothing for the run that started off;
+     * the next run, aborted by STOP, writes its files and says ABORTED. */
+    settings_set(SET_LOG_USER, 1.0f);
+    CHECK(test_box_reads(2, TR(SV_USER_LOGS_OFF), UI_C_TEXT_DIM));
+    servo_screen_set_link(true);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    bench_frames(3000u);
+    servo_screen_cancel_arm();
+    bench_frames(2000u);
+    CHECK(!servo_screen_testing());
+    CHECK_EQ(bench.opens, 1u);
+    CHECK_EQ(bench.ends, 1u);
+    CHECK(strstr(bench.report, "Result:         ABORTED") != NULL);
+    servo_screen_test_files(13, true);
+    char want[48];
+    snprintf(want, sizeof(want), "ATEST013.CSV + .TXT");
+    CHECK(test_box_reads(2, want, UI_C_TEXT_DIM)
+          || test_box_reads(3, want, UI_C_TEXT_DIM));
+
+    /* Off at the start of a run that is then aborted: still nothing. */
+    bench_fresh();
+    settings_set(SET_LOG_USER, 0.0f);
+    servo_screen_set_link(true);
+    hold_start(2.3f);
+    bench_frames(3000u);
+    servo_screen_cancel_arm();
+    bench_frames(2000u);
+    CHECK(!servo_screen_testing());
+    CHECK_EQ(bench.opens, 0u);
+    CHECK_EQ(bench.ends, 0u);
+}
+
 int main(void)
 {
     RUN(start_test_is_a_two_second_hold_on_an_armed_bench);
@@ -1117,5 +1197,6 @@ int main(void)
     RUN(a_stalled_servo_at_the_shipped_limits_ends_the_run);
     RUN(a_stall_at_out_of_reach_is_said_under_start_test);
     RUN(a_runs_start_and_end_are_told_where_they_happen);
+    RUN(user_logs_off_sends_no_file_and_the_box_says_so);
     return test_summary("servo_test_panel");
 }

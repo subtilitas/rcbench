@@ -346,14 +346,15 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
      * CLOSE: the ends belong to the run, not to the target now. */
     CHECK(lim_box_reads(2, "SERVO PWM GP2", UI_C_TEXT_DIM));
     /* And under the output the report's name: until the logger answers,
-     * WRITING; with its number, SERVOnnn.TXT -- the servo writer's prefix,
-     * whatever the arm covers -- and never BENCHnnn.TXT. */
+     * WRITING; with its number, LIMITnnn.TXT -- the limit run's prefix,
+     * whatever the arm covers -- and never SERVOnnn.TXT or BENCHnnn.TXT. */
     CHECK(lim_box_reads(3, TR(SV_WRITING), UI_C_TEXT_DIM));
     servo_screen_test_files(12, true);
-    CHECK(lim_box_reads(3, "SERVO012.TXT", UI_C_TEXT_DIM));
+    CHECK(lim_box_reads(3, "LIMIT012.TXT", UI_C_TEXT_DIM));
+    CHECK(!lim_box_reads(3, "SERVO012.TXT", UI_C_TEXT_DIM));
     CHECK(!lim_box_reads(3, "BENCH012.TXT", UI_C_TEXT_DIM));
     servo_screen_test_files(999, true);
-    CHECK(lim_box_reads(3, "SERVO999.TXT", UI_C_TEXT_DIM));
+    CHECK(lim_box_reads(3, "LIMIT999.TXT", UI_C_TEXT_DIM));
     servo_screen_test_files(-1, false);
     CHECK(lim_box_reads(3, TR(SV_NOT_RECORDED), UI_C_TEXT_DIM));
     servo_screen_test_files(12, true);
@@ -369,7 +370,7 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     lim_page();
     CHECK(lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
     snprintf(want, sizeof(want), TR(SV_CARD_LAST),
-             ui_servo_str(SERVO_STR_L_FOUND), "SERVO012.TXT");
+             ui_servo_str(SERVO_STR_L_FOUND), "LIMIT012.TXT");
     CHECK(lim_line_reads(2, want, UI_C_TEXT_DIM));
 }
 
@@ -510,6 +511,30 @@ TEST_CASE(every_abort_source_ends_a_limit_run_with_the_output_off)
     }
 }
 
+
+/* USER LOGS off: the limit run sends the logger nothing, and the box and
+ * the LIMIT RUN card's LAST line name USER LOGS OFF for its report. */
+TEST_CASE(a_limit_run_with_user_logs_off_writes_no_report)
+{
+    lim_bench();
+    settings_set(SET_LOG_USER, 0.0f);
+    lim_hold(2.3f);
+    CHECK(servo_screen_limit_running());
+    lim_run_out();
+    CHECK_EQ(bench.opens, 0u);
+    CHECK_EQ(bench.opens_txt, 0u);
+    CHECK_EQ(bench.txt, 0u);
+    CHECK_EQ(bench.ends, 0u);
+    CHECK(lim_box_reads(3, TR(SV_USER_LOGS_OFF), UI_C_TEXT_DIM));
+    servo_screen_test_files(12, true);      /* an answer to an older run */
+    CHECK(lim_box_reads(3, TR(SV_USER_LOGS_OFF), UI_C_TEXT_DIM));
+    lim_page();
+    char want[64];
+    snprintf(want, sizeof(want), TR(SV_CARD_LAST),
+             ui_servo_str(SERVO_STR_L_FOUND), TR(SV_USER_LOGS_OFF));
+    CHECK(lim_line_reads(2, want, UI_C_TEXT_DIM));
+}
+
 int main(void)
 {
     RUN(a_limit_run_starts_only_armed_on_the_ina3221);
@@ -519,5 +544,6 @@ int main(void)
     RUN(no_run_starts_while_the_logger_holds_the_last_report);
     RUN(a_pd_mini_heard_first_after_the_start_ends_a_limit_run);
     RUN(every_abort_source_ends_a_limit_run_with_the_output_off);
+    RUN(a_limit_run_with_user_logs_off_writes_no_report);
     return test_summary("servo_limit_panel");
 }

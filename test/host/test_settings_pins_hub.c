@@ -506,6 +506,31 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
     CHECK_EQ(untouched.h, 4);
 }
 
+/*
+ * Seven tiles: PANEL, INTERFACES and SD CARD, then OUTPUTS, PICK A PIN,
+ * WI-FI and UPDATES.  SD CARD's list is AUTO LOGS and USER LOGS, two
+ * toggles, named in both languages.
+ */
+TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_third)
+{
+    fresh_hub();
+    CHECK_EQ(settings_hub_tiles(), 7);
+    CHECK_EQ(SET_CAT_CARD, 2);
+    tap(tile_x(SET_CAT_CARD), tile_y(SET_CAT_CARD));
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK_EQ(settings_screen_category(), SET_CAT_CARD);
+    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 2);
+    CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD CARD");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD-KARTE");
+    CHECK_STR_EQ(ui_setting_label(SET_LOG_AUTO), "Auto-Logs");
+    CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "Eigene Logs");
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(ui_setting_label(SET_LOG_AUTO), "Auto logs");
+    CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "User logs");
+    ui_router_render(&s_c, 0);
+}
+
 TEST_CASE(each_category_tile_opens_its_list_and_the_home_tag_returns)
 {
     for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
@@ -752,6 +777,7 @@ int main(void)
     RUN(a_row_the_coprocessor_does_not_hold_is_marked);
     RUN(the_mark_repaints_the_row_when_it_comes_and_when_it_goes);
     RUN(the_hub_has_nine_slots_and_no_tenth);
+    RUN(the_hub_holds_seven_tiles_and_sd_card_is_the_third);
     RUN(each_category_tile_opens_its_list_and_the_home_tag_returns);
     RUN(a_free_slot_opens_nothing);
     RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);

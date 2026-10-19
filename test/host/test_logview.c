@@ -15,8 +15,10 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "card_tree.h"
 #include "log_name.h"
 #include "log_select.h"
+#include "log_take.h"
 #include "log_viewer_screen.h"
 #include "settings.h"
 #include "ui_screen.h"
@@ -1561,8 +1563,8 @@ TEST_CASE(pages_of_a_card_cover_it_once_in_rank_order_both_ways)
 TEST_CASE(pages_of_mixed_writers_run_newest_first_across_the_names)
 {
     /*
-     * BENCH, ESC and SERVO in turn: 999 runs with and without other files
-     * behind them, and the page boundaries.  Each page holds all three
+     * The 7 writers in turn: 999 runs with and without other files
+     * behind them, and the page boundaries.  Each page holds all seven
      * names and draws them by number, newest at the top; the pages run on
      * by number across the names.
      */
@@ -1579,7 +1581,7 @@ TEST_CASE(pages_of_mixed_writers_run_newest_first_across_the_names)
     pg_card_by(LOG_RUN_LAST, 0, false, LOG_PREFIX_SERVO);
     pg_check();
 
-    /* The first page of the mixed full card: 999 down to 952, all three
+    /* The first page of the mixed full card: 999 down to 952, all seven
      * names in it. */
     static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
     pg_card_by(LOG_RUN_LAST, 0, true, LOG_PREFIX_BENCH);
@@ -1587,10 +1589,14 @@ TEST_CASE(pages_of_mixed_writers_run_newest_first_across_the_names)
     memset(&q, 0, sizeof(q));
     q.dir = LOG_PAGE_FROM;
     CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), LOG_VIEWER_MAX_FILES);
-    CHECK_STR_EQ(set[0].name, "BENCH999.CSV");       /* 999 % 3 == 0 */
-    CHECK_STR_EQ(set[1].name, "SERVO998.CSV");
-    CHECK_STR_EQ(set[2].name, "ESC997.CSV");
-    CHECK_STR_EQ(set[LOG_VIEWER_MAX_FILES - 1].name, "ESC952.CSV");
+    CHECK_STR_EQ(set[0].name, "BENCH999.CSV");       /* 999 % 7 == 5 */
+    CHECK_STR_EQ(set[1].name, "SUPPL998.CSV");
+    CHECK_STR_EQ(set[2].name, "MOTOR997.CSV");
+    CHECK_STR_EQ(set[3].name, "SERVO996.CSV");
+    CHECK_STR_EQ(set[4].name, "LIMIT995.CSV");
+    CHECK_STR_EQ(set[5].name, "ATEST994.CSV");
+    CHECK_STR_EQ(set[6].name, "ESC993.CSV");
+    CHECK_STR_EQ(set[LOG_VIEWER_MAX_FILES - 1].name, "ATEST952.CSV");
 }
 
 /*
@@ -2133,6 +2139,411 @@ TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
     /* The page started at run 72; every run of 500 to 699 ranks ahead of
      * it, so it is past the end and the last page shows. */
     check_tab(193, 200, 200);
+}
+
+
+/* ------------------------------------------------- folders and tabs --- */
+
+/*
+ * A card of folders, as panel_card.c serves it: folder() points the calls
+ * that follow, list() walks that folder's .csv files and leaves out what
+ * the logger still writes there (log_marks_busy()), remove() takes a
+ * run's report with it (log_name_report_of()), written() counts the files
+ * the logger created.
+ */
+#define FC_MAX 24
+
+static struct {
+    struct { char dir[CARD_DIR_MAX]; char name[LOG_RUN_NAME_MAX + 8];
+             bool gone; } e[FC_MAX];
+    int n;
+    char dir[CARD_DIR_MAX];          /* where folder() pointed last  */
+    char opened_in[CARD_DIR_MAX];    /* where the last open() looked */
+    char removed_in[CARD_DIR_MAX];
+    int folder_calls;
+    log_marks_t marks;
+    unsigned written;
+    log_viewer_tab_t written_tab;
+} g_fc;
+
+static void fc_put(const char *dir, const char *name)
+{
+    if (g_fc.n < FC_MAX) {
+        snprintf(g_fc.e[g_fc.n].dir, sizeof(g_fc.e[0].dir), "%s", dir);
+        snprintf(g_fc.e[g_fc.n].name, sizeof(g_fc.e[0].name), "%s", name);
+        g_fc.e[g_fc.n].gone = false;
+        ++g_fc.n;
+    }
+}
+
+static int fc_find(const char *dir, const char *name)
+{
+    for (int i = 0; i < g_fc.n; ++i) {
+        if (!g_fc.e[i].gone && log_name_case_cmp(g_fc.e[i].dir, dir) == 0
+            && log_name_case_cmp(g_fc.e[i].name, name) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void fc_folder(const char *dir, void *ctx)
+{
+    (void)ctx;
+    ++g_fc.folder_calls;
+    snprintf(g_fc.dir, sizeof(g_fc.dir), "%s", dir);
+}
+
+static int fc_list(log_viewer_file_t *out, int max_entries,
+                   log_viewer_page_t *page, void *ctx)
+{
+    (void)ctx;
+    log_select_page_t sel;
+    log_select_page_begin(&sel, out, max_entries, page);
+    int n = 0;
+    for (int i = 0; i < g_fc.n; ++i) {
+        const char *name = g_fc.e[i].name;
+        const size_t len = strlen(name);
+        if (g_fc.e[i].gone || strcmp(g_fc.e[i].dir, g_fc.dir) != 0
+            || len < 4u || log_name_case_cmp(name + len - 4u, ".csv") != 0
+            || log_marks_busy(&g_fc.marks, g_fc.dir, name)) {
+            continue;
+        }
+        log_viewer_file_t f;
+        memset(&f, 0, sizeof(f));
+        snprintf(f.name, sizeof(f.name), "%s", name);
+        f.size = 2048u;
+        log_select_page_offer(&sel, &f);
+        ++n;
+    }
+    (void)log_select_page_end(&sel, page);
+    return n;
+}
+
+static bool fc_open(const char *name, log_source_t *src, void *ctx)
+{
+    (void)ctx;
+    snprintf(g_fc.opened_in, sizeof(g_fc.opened_in), "%s", g_fc.dir);
+    if (fc_find(g_fc.dir, name) < 0) {
+        return false;
+    }
+    log_source_memory(src, &g_ctx, k_en, strlen(k_en));
+    return true;
+}
+
+static bool fc_remove(const char *name, void *ctx)
+{
+    (void)ctx;
+    snprintf(g_fc.removed_in, sizeof(g_fc.removed_in), "%s", g_fc.dir);
+    if (log_marks_busy(&g_fc.marks, g_fc.dir, name)) {
+        return false;
+    }
+    const int i = fc_find(g_fc.dir, name);
+    if (i < 0) {
+        return false;
+    }
+    g_fc.e[i].gone = true;
+    char txt[LOG_RUN_NAME_MAX];
+    log_name_report_of(txt, sizeof(txt), name);
+    const int t = (txt[0] != '\0') ? fc_find(g_fc.dir, txt) : -1;
+    if (t >= 0) {
+        g_fc.e[t].gone = true;
+    }
+    return true;
+}
+
+static unsigned fc_written(log_viewer_tab_t *tab, void *ctx)
+{
+    (void)ctx;
+    *tab = g_fc.written_tab;
+    return g_fc.written;
+}
+
+static const log_viewer_io_t k_fc_io = {
+    .list    = fc_list,
+    .open    = fc_open,
+    .close   = NULL,
+    .volume  = fake_volume,
+    .remove  = fc_remove,
+    .folder  = fc_folder,
+    .written = fc_written,
+    .ctx     = NULL,
+};
+
+/* The tabs' middles, in the header row (BR_TABS in the screen). */
+#define TAB_Y       21
+#define TAB_X(t)    (19 + (t) * 84 + 40)
+
+/* A card in the target layout, behind the folder I/O, LOGS just opened. */
+static void folder_card(void)
+{
+    fresh();
+    memset(&g_fc, 0, sizeof(g_fc));
+    fc_put(CARD_AUTO_LOGS, "MOTOR004.CSV");
+    fc_put(CARD_AUTO_LOGS, "SERVO005.CSV");
+    fc_put(CARD_AUTO_LOGS, "SUPPL003.CSV");
+    fc_put(CARD_USER_LOGS, "ATEST005.CSV");
+    fc_put(CARD_USER_LOGS, "ATEST005.TXT");
+    fc_put(CARD_USER_LOGS, "LIMIT006.TXT");
+    fc_put(CARD_USER_LOGS, "ATEST002.CSV");
+    fc_put(CARD_ROOT, "BENCH041.CSV");          /* firmware 0.21 */
+    fc_put(CARD_ROOT, "SERVO042.CSV");
+    fc_put(CARD_ROOT, "SERVO042.TXT");
+    fc_put(CARD_ROOT, "ESC040.CSV");
+    fc_put(CARD_ROOT, "SWEEP_920KV.CSV");
+    screen()->reset();
+    log_viewer_set_io(&k_fc_io);
+    screen()->enter();
+}
+
+/* Whether the folder the screen last pointed at lists @p name: the list
+ * read again through the I/O, as the screen reads it. */
+static bool listed_now(const char *name)
+{
+    log_viewer_file_t files[LOG_VIEWER_MAX_FILES];
+    log_viewer_page_t q;
+    memset(&q, 0, sizeof(q));
+    q.dir = LOG_PAGE_FROM;
+    const int n = fc_list(files, LOG_VIEWER_MAX_FILES, &q, NULL);
+    for (int i = 0; i < n && i < q.held; ++i) {
+        if (strcmp(files[i].name, name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+static void reopen(void);
+
+/* The top row's name: opened, read, and back to the list. */
+static void top_name(char *out, size_t n)
+{
+    tap(400, BR_ROW_Y(0));
+    tap(400, BR_ROW_Y(0));
+    snprintf(out, n, "%s", log_viewer_open_name());
+    tap(BACK_X, IM_BTN_CY);
+}
+
+TEST_CASE(three_tabs_list_three_folders_and_bench_comes_first)
+{
+    folder_card();
+    char name[LOG_VIEWER_NAME_MAX];
+    /* After a start, BENCH: the automatic logs. */
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
+    CHECK_STR_EQ(g_fc.dir, CARD_AUTO_LOGS);
+    check_tab(0, 0, 0);
+    top_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "SERVO005.CSV");
+    CHECK_STR_EQ(g_fc.opened_in, CARD_AUTO_LOGS);
+
+    /* USER: the tests, newest first; a report is not listed. */
+    tap(TAB_X(0), TAB_Y);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
+    CHECK_STR_EQ(g_fc.dir, CARD_USER_LOGS);
+    top_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "ATEST005.CSV");
+    CHECK_STR_EQ(g_fc.opened_in, CARD_USER_LOGS);
+    CHECK(!listed_now("ATEST005.TXT"));
+    CHECK(!listed_now("LIMIT006.TXT"));
+
+    /* ROOT: 0.21's names, ranked by number across the prefixes; a file
+     * nobody numbered after them. */
+    tap(TAB_X(2), TAB_Y);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
+    CHECK_STR_EQ(g_fc.dir, CARD_ROOT);
+    top_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "SERVO042.CSV");
+    CHECK(listed_now("BENCH041.CSV"));
+    CHECK(listed_now("ESC040.CSV"));
+    CHECK(listed_now("SWEEP_920KV.CSV"));
+
+    /* RESCAN reads the tab on screen; a tap on the tab shown reads
+     * nothing new. */
+    const int calls = g_fc.folder_calls;
+    tap(RESCAN_X, FOOT_CY);
+    CHECK_STR_EQ(g_fc.dir, CARD_ROOT);
+    CHECK(g_fc.folder_calls > calls);
+    tap(TAB_X(2), TAB_Y);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
+
+    /* A slide off the tab is no tap on it. */
+    send(TOUCH_EVENT_DOWN, TAB_X(1), TAB_Y);
+    send(TOUCH_EVENT_UP, TAB_X(1), TAB_Y + 200);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
+    /* A cancelled press leaves the tab as it was. */
+    send(TOUCH_EVENT_DOWN, TAB_X(1), TAB_Y);
+    screen()->cancel();
+    send(TOUCH_EVENT_UP, TAB_X(1), TAB_Y);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
+    tap(TAB_X(1), TAB_Y);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
+    draw();
+}
+
+TEST_CASE(delete_on_root_takes_the_report_and_stays_in_its_folder)
+{
+    folder_card();
+    tap(TAB_X(2), TAB_Y);
+    tap(DELETE_X, FOOT_CY);         /* SERVO042.CSV, the newest, chosen */
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_STR_EQ(g_fc.removed_in, CARD_ROOT);
+    CHECK(fc_find(CARD_ROOT, "SERVO042.CSV") < 0);
+    CHECK(fc_find(CARD_ROOT, "SERVO042.TXT") < 0);
+    CHECK(fc_find(CARD_ROOT, "BENCH041.CSV") >= 0);
+    /* The tab and its folder stay. */
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
+    char name[LOG_VIEWER_NAME_MAX];
+    top_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "BENCH041.CSV");
+
+    /* In USER, a test takes its report and leaves the limit run's. */
+    tap(TAB_X(0), TAB_Y);
+    tap(DELETE_X, FOOT_CY);         /* ATEST005.CSV, chosen */
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_STR_EQ(g_fc.removed_in, CARD_USER_LOGS);
+    CHECK(fc_find(CARD_USER_LOGS, "ATEST005.TXT") < 0);
+    CHECK(fc_find(CARD_USER_LOGS, "LIMIT006.TXT") >= 0);
+}
+
+TEST_CASE(an_open_test_in_user_does_not_hide_the_same_number_in_bench)
+{
+    folder_card();
+    g_fc.marks = (log_marks_t){ .run_dir = CARD_AUTO_LOGS, .run = 0u,
+                                .test_dir = CARD_USER_LOGS, .test = 5u,
+                                .txt = 0u };
+    tap(RESCAN_X, FOOT_CY);
+    char name[LOG_VIEWER_NAME_MAX];
+    top_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "SERVO005.CSV");      /* BENCH 005 is listed */
+    tap(TAB_X(0), TAB_Y);
+    top_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "ATEST002.CSV");      /* USER 005 is held back */
+    /* And the open run in BENCH holds back BENCH 005 alone. */
+    g_fc.marks = (log_marks_t){ .run_dir = CARD_AUTO_LOGS, .run = 5u,
+                                .test_dir = CARD_USER_LOGS, .test = 0u,
+                                .txt = 0u };
+    tap(RESCAN_X, FOOT_CY);
+    top_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "ATEST005.CSV");
+    tap(TAB_X(1), TAB_Y);
+    top_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "MOTOR004.CSV");
+}
+
+/* The empty list's two lines, as drawn: the reason at box.y + 52 and what
+ * the folder holds at box.y + 76. */
+static void empty_lines_drawn(gfx_color_t *out)
+{
+    draw();
+    int k = 0;
+    for (int y = 205; y < 250; ++y) {
+        for (int x = 140; x < 660; ++x) {
+            out[k++] = s_fb[y * W + x];
+        }
+    }
+}
+
+#define EMPTY_PX (45 * 520)
+
+TEST_CASE(each_empty_folder_says_what_it_holds_and_what_is_off)
+{
+    static gfx_color_t a[EMPTY_PX], b[EMPTY_PX], c[EMPTY_PX], d[EMPTY_PX],
+                       e[EMPTY_PX];
+    folder_card();
+    for (int i = 0; i < g_fc.n; ++i) {
+        g_fc.e[i].gone = true;              /* every folder empty */
+    }
+    tap(RESCAN_X, FOOT_CY);
+    empty_lines_drawn(a);                   /* BENCH */
+    tap(TAB_X(0), TAB_Y);
+    empty_lines_drawn(b);                   /* USER */
+    tap(TAB_X(2), TAB_Y);
+    empty_lines_drawn(c);                   /* ROOT */
+    CHECK(memcmp(a, b, sizeof(a)) != 0);
+    CHECK(memcmp(b, c, sizeof(b)) != 0);
+    CHECK(memcmp(a, c, sizeof(a)) != 0);
+
+    /* AUTO LOGS off: BENCH says where to switch it on. */
+    settings_set(SET_LOG_AUTO, 0.0f);
+    tap(TAB_X(1), TAB_Y);
+    empty_lines_drawn(d);
+    CHECK(memcmp(a, d, sizeof(a)) != 0);
+    /* USER LOGS off: USER likewise. */
+    settings_set(SET_LOG_USER, 0.0f);
+    tap(TAB_X(0), TAB_Y);
+    empty_lines_drawn(e);
+    CHECK(memcmp(b, e, sizeof(b)) != 0);
+    CHECK(memcmp(d, e, sizeof(d)) != 0);
+    settings_init();
+
+    /* The words, through the same texts. */
+    char line[96];
+    snprintf(line, sizeof(line), TR(LOG_NO_CSV_IN), CARD_AUTO_LOGS);
+    CHECK_STR_EQ(line, "No .csv files in BENCH/LOGS.");
+}
+
+TEST_CASE(logs_opens_on_the_tab_of_the_file_written_last)
+{
+    ui_router_init();
+    folder_card();
+    ui_router_goto(SCREEN_LOGS);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);       /* nothing written */
+
+    /* A test written: LOGS opens on USER. */
+    g_fc.written = 1u;
+    g_fc.written_tab = LOG_TAB_USER;
+    reopen();
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
+    CHECK_STR_EQ(g_fc.dir, CARD_USER_LOGS);
+
+    /* Nothing written since: the tab the operator chose stays. */
+    tap(TAB_X(2), TAB_Y);
+    reopen();
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
+
+    /* A run written: BENCH. */
+    g_fc.written = 2u;
+    g_fc.written_tab = LOG_TAB_BENCH;
+    reopen();
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
+
+    /* The count wraps: a change is a change. */
+    g_fc.written = 0u;
+    g_fc.written_tab = LOG_TAB_USER;
+    reopen();
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
+
+    /* A tab outside the three is not taken. */
+    g_fc.written = 5u;
+    g_fc.written_tab = LOG_TAB_COUNT;
+    reopen();
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
+    log_viewer_set_tab(LOG_TAB_COUNT);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
+}
+
+TEST_CASE(a_file_opened_in_one_tab_is_read_again_from_its_folder)
+{
+    ui_router_init();
+    folder_card();
+    ui_router_goto(SCREEN_LOGS);
+    tap(TAB_X(0), TAB_Y);
+    tap(400, BR_ROW_Y(0));
+    tap(400, BR_ROW_Y(0));                   /* ATEST005.CSV, imported */
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_STR_EQ(log_viewer_open_name(), "ATEST005.CSV");
+    /* Left with the import on screen; a run is written meanwhile, so LOGS
+     * comes back on BENCH with the import still showing. */
+    g_fc.written = 1u;
+    g_fc.written_tab = LOG_TAB_BENCH;
+    reopen();
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    /* A forced separator reads the file again: from USER/LOGS. */
+    tap(SEP_X, IM_BTN_CY);
+    CHECK_STR_EQ(g_fc.opened_in, CARD_USER_LOGS);
+    CHECK(log_viewer_analysis() != NULL);
 }
 
 /* ------------------------------------------------------ the way back in --- */
@@ -3656,6 +4067,12 @@ int main(void)
     RUN(the_way_back_in_lists_new_runs_after_delete_swap_and_sub_views);
     RUN(the_scroll_bar_jumps_drags_and_stays_on_its_page);
     RUN(the_header_names_the_card_or_says_sd_card);
+    RUN(three_tabs_list_three_folders_and_bench_comes_first);
+    RUN(delete_on_root_takes_the_report_and_stays_in_its_folder);
+    RUN(an_open_test_in_user_does_not_hide_the_same_number_in_bench);
+    RUN(each_empty_folder_says_what_it_holds_and_what_is_off);
+    RUN(logs_opens_on_the_tab_of_the_file_written_last);
+    RUN(a_file_opened_in_one_tab_is_read_again_from_its_folder);
     RUN(delete_asks_first_and_deletes_only_the_file_it_named);
     RUN(cancel_deletes_nothing_and_keeps_the_selection);
     RUN(a_finger_that_slides_off_delete_deletes_nothing);

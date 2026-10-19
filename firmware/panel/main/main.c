@@ -714,9 +714,23 @@ tone_setup_t tone_wanted(void)
     return w;
 }
 
+/*
+ * AUTO LOGS on SETUP > SD CARD, for the control task, which decides whether
+ * a run is recorded (log_follow_runs()).  Written by the settings observer
+ * on app_main.
+ */
+static atomic_bool s_log_auto = true;
+
+static void publish_log_auto(void)
+{
+    atomic_store(&s_log_auto, settings_get_bool(SET_LOG_AUTO));
+}
+
 static void settings_changed(setting_id_t id)
 {
-    if (id == SET_MOTOR_POLES) {
+    if (id == SET_LOG_AUTO) {
+        publish_log_auto();
+    } else if (id == SET_MOTOR_POLES) {
         publish_poles();
     } else if (id == SET_OUT_MIN_US || id == SET_OUT_MAX_US) {
         publish_endpoints();
@@ -1088,6 +1102,7 @@ static bool bring_up(void)
     publish_endpoints();
     publish_pdmini();
     publish_sense();
+    publish_log_auto();
     publish_tone();
     settings_apply_ui();
     /*
@@ -1470,17 +1485,26 @@ static const servo_link_ctx_t k_servo_ctx = {
 /* What the screens asked for, drain_commands(): panel_arm.c. */
 
 /*
- * Which run the log should be recording now; see log_run_kind_t.  The bench
- * comes first: an armed bench is the run whatever the supply is doing, and an
- * ESC run while the arm covers the throttle.
+ * Which run the log should be recording now; see log_run_kind_t.  None
+ * while AUTO LOGS is off: no run is opened, no row posted, no number taken
+ * and no card alert of a run can follow.  Switched off during a run, the
+ * run ends there and its file closes; switched on during an ARMED or a
+ * supply run, a run starts there.
+ *
+ * The bench comes first: an armed bench is the run whatever the supply is
+ * doing.  Its name is the screen that armed it, read off the roles the arm
+ * asked for (log_name_armed_prefix()), and kept for the run: a run's roles
+ * change only through a disarm, which ends it.
  */
 static log_run_kind_t log_run_wanted(void)
 {
-    if (outputs_armed(&s_out)) {
-        return outputs_role_armed(&s_out, OUT_ROLE_THROTTLE) ? LOG_RUN_ESC
-                                                              : LOG_RUN_BENCH;
-    }
-    return s_supply.output ? LOG_RUN_SUPPLY : LOG_RUN_NONE;
+    const uint8_t roles = arming_roles(&s_arm);
+    const log_prefix_t p = log_name_armed_prefix(
+        roles != 0u, (roles & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u,
+        outputs_role_armed(&s_out, OUT_ROLE_THROTTLE));
+    return log_cadence_wanted(atomic_load(&s_log_auto), outputs_armed(&s_out),
+                              p == LOG_PREFIX_MOTOR, s_supply.output,
+                              s_log_kind);
 }
 
 /*

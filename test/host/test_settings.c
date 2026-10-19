@@ -584,6 +584,85 @@ TEST_CASE(brightness_and_contrast_are_clamped_and_monotonic)
     CHECK_EQ(ui_theme_get(), UI_THEME_DARK);
 }
 
+
+/*
+ * AUTO LOGS and USER LOGS on SETUP > SD CARD: both ON by default, kept by
+ * the store under their own keys, and ON after an update from a store that
+ * has never held them.
+ */
+static float s_old[SETTING_COUNT];
+
+static bool old_build_load(float *values, int count)
+{
+    /* An older build's store: every key but the two new ones. */
+    for (int i = 0; i < count && i < SETTING_COUNT; ++i) {
+        if (i != SET_LOG_AUTO && i != SET_LOG_USER) {
+            values[i] = s_old[i];
+        }
+    }
+    return true;
+}
+
+static const settings_store_t s_old_store = { old_build_load, mem_save,
+                                              NULL, NULL };
+
+TEST_CASE(the_card_switches_are_on_kept_and_on_after_an_update)
+{
+    fresh_model();
+    CHECK(settings_get_bool(SET_LOG_AUTO));
+    CHECK(settings_get_bool(SET_LOG_USER));
+    CHECK_STR_EQ(settings_def(SET_LOG_AUTO)->key, "log_auto");
+    CHECK_STR_EQ(settings_def(SET_LOG_USER)->key, "log_user");
+    CHECK_EQ(settings_def(SET_LOG_AUTO)->type, SET_TYPE_BOOL);
+    CHECK_EQ(settings_def(SET_LOG_USER)->type, SET_TYPE_BOOL);
+    CHECK_EQ(settings_def(SET_LOG_AUTO)->cat, SET_CAT_CARD);
+    CHECK_EQ(settings_def(SET_LOG_USER)->cat, SET_CAT_CARD);
+    CHECK_STR_EQ(settings_category_name(SET_CAT_CARD), "SD CARD");
+    setting_id_t ids[8];
+    CHECK_EQ(settings_in_category(SET_CAT_CARD, ids, 8), 2);
+    CHECK_EQ(ids[0], SET_LOG_AUTO);
+    CHECK_EQ(ids[1], SET_LOG_USER);
+    CHECK(SET_CAT_CARD < SET_CAT_SETUP_COUNT);   /* a SETUP tile */
+
+    /* The round trip, each value both ways. */
+    settings_set_store(&s_mem_store);
+    settings_set(SET_LOG_AUTO, 0.0f);
+    settings_save();
+    settings_init();
+    CHECK(!settings_get_bool(SET_LOG_AUTO));
+    CHECK(settings_get_bool(SET_LOG_USER));
+    settings_set(SET_LOG_AUTO, 1.0f);
+    settings_set(SET_LOG_USER, 0.0f);
+    settings_save();
+    settings_init();
+    CHECK(settings_get_bool(SET_LOG_AUTO));
+    CHECK(!settings_get_bool(SET_LOG_USER));
+    /* A toggle cycles; a stray stored word is pulled onto 0 or 1. */
+    settings_adjust(SET_LOG_USER, 1);
+    CHECK(settings_get_bool(SET_LOG_USER));
+    s_saved[SET_LOG_AUTO] = 7.0f;
+    settings_init();
+    CHECK_EQ(settings_get(SET_LOG_AUTO), 1.0f);
+
+    /* An older build's store: both ON, the rest as stored. */
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        s_old[i] = settings_def((setting_id_t)i)->def;
+    }
+    s_old[SET_PACK_CELLS] = 3.0f;
+    settings_set_store(&s_old_store);
+    settings_init();
+    CHECK(settings_get_bool(SET_LOG_AUTO));
+    CHECK(settings_get_bool(SET_LOG_USER));
+    CHECK_EQ(settings_get_int(SET_PACK_CELLS), 3);
+    /* A reset of the category puts them back ON. */
+    settings_set(SET_LOG_AUTO, 0.0f);
+    settings_set(SET_LOG_USER, 0.0f);
+    settings_reset(SET_CAT_CARD);
+    CHECK(settings_get_bool(SET_LOG_AUTO));
+    CHECK(settings_get_bool(SET_LOG_USER));
+    settings_set_store(NULL);
+}
+
 int main(void)
 {
     RUN(defaults_come_from_the_schema);
@@ -606,5 +685,6 @@ int main(void)
     RUN(bad_ids_are_survivable);
     RUN(theme_switch_changes_the_palette);
     RUN(brightness_and_contrast_are_clamped_and_monotonic);
+    RUN(the_card_switches_are_on_kept_and_on_after_an_update);
     return test_summary("settings");
 }

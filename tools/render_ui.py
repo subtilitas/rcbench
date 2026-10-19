@@ -353,6 +353,8 @@ SCREENS = {
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
+    # LOGS' ROOT tab: the runs of firmware 0.21 and older.
+    "logs-root":  ("logs-root.png",  "logs",       "dark"),
     # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
     # across the screen with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),
@@ -360,6 +362,8 @@ SCREENS = {
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
     # PANEL: the language, the theme and the knob.
     "setup-application": ("setup-application.png", "setup", "dark"),
+    # SD CARD: AUTO LOGS and USER LOGS.
+    "setup-card": ("setup-card.png", "setup", "dark"),
     # INTERFACES with both current monitors enabled, at the top of the list
     # and drawn on to the INA3221's rows and the bus's pins.
     "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),

@@ -477,15 +477,17 @@ int servo_screen_limit_phase(void);
 /**
  * The run's next item for the card, without taking it (servo_test_peek()),
  * and taking it once it is on its way.  The application drains these every
- * frame, whichever screen is up.
+ * frame, whichever screen is up.  A run started with USER LOGS off on
+ * SETUP > SD CARD has no item: its items are dropped here.
  */
 servo_test_out_t servo_screen_test_peek(const char **text);
 void servo_screen_test_pop(void);
 
 /**
- * The number of the files the run's items went to -- SERVOnnn.CSV and,
- * with REPORT, SERVOnnn.TXT -- or -1 when the card took none; and whether
- * the card took the .TXT whole.
+ * The number of the files the run's items went to -- ATESTnnn.CSV and,
+ * with REPORT, ATESTnnn.TXT, or a limit run's LIMITnnn.TXT -- or -1 when
+ * the card took none; and whether the card took the .TXT whole.  Ignored
+ * for a run started with USER LOGS off, which sent the logger nothing.
  */
 void servo_screen_test_files(int number, bool report);
 /** Whether the logger still holds an OPEN or an END the outbox gave it,

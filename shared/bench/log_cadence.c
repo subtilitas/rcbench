@@ -79,3 +79,18 @@ uint32_t log_cadence_lost(const log_cadence_t *c)
 {
     return c->lost;
 }
+
+log_run_kind_t log_cadence_wanted(bool auto_logs, bool armed, bool motor,
+                                  bool supply_on, log_run_kind_t now)
+{
+    if (!auto_logs) {
+        return LOG_RUN_NONE;
+    }
+    if (armed) {
+        if (log_run_armed(now)) {
+            return now;
+        }
+        return motor ? LOG_RUN_MOTOR : LOG_RUN_SERVO;
+    }
+    return supply_on ? LOG_RUN_SUPPLY : LOG_RUN_NONE;
+}

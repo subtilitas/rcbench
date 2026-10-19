@@ -376,6 +376,9 @@ void test_begin(void)
     s.test_on_ina  = c.meter.kind == (uint8_t)SERVO_TEST_METER_INA3221;
     s.test_file    = 0;
     s.test_report  = false;
+    /* USER LOGS on SETUP > SD CARD, as it stands at the start: the run
+     * writes its files or none, never half of them. */
+    s.test_off     = !settings_get_bool(SET_LOG_USER);
     s.test_box     = true;
     s.lim_box      = false;
     close_panels();
@@ -402,18 +405,34 @@ void ask_hv_test(void)
 
 bool servo_screen_testing(void) { return servo_test_running(&s.test); }
 
-/* The automatic test's outbox first, then the limit run's: one of the two
- * runs at a time, and each drained before the other starts. */
+/*
+ * The automatic test's outbox first, then the limit run's: one of the two
+ * runs at a time, and each drained before the other starts.  A run started
+ * with USER LOGS off hands the logger nothing: its lines are taken here and
+ * dropped, so no OPEN reaches the logger, no number is taken and no card
+ * alert can follow.
+ */
 servo_test_out_t servo_screen_test_peek(const char **text)
 {
-    servo_test_out_t k = servo_test_peek(&s.test, text);
-    s.peek_lim = false;
-    if (k == SERVO_TEST_OUT_NONE) {
-        k = servo_limrun_peek(&s.lim, text);
-        s.peek_lim = k != SERVO_TEST_OUT_NONE;
+    for (;;) {
+        servo_test_out_t k = servo_test_peek(&s.test, text);
+        bool lim = false;
+        if (k == SERVO_TEST_OUT_NONE) {
+            k = servo_limrun_peek(&s.lim, text);
+            lim = k != SERVO_TEST_OUT_NONE;
+        }
+        if (k != SERVO_TEST_OUT_NONE && (lim ? s.lim_off : s.test_off)) {
+            if (lim) {
+                servo_limrun_pop(&s.lim);
+            } else {
+                servo_test_pop(&s.test);
+            }
+            continue;
+        }
+        s.peek_lim  = lim;
+        s.peek_kind = k;
+        return k;
     }
-    s.peek_kind = k;
-    return k;
 }
 
 void servo_screen_test_pop(void)
@@ -433,6 +452,11 @@ void servo_screen_test_pop(void)
 
 void servo_screen_test_files(int number, bool report)
 {
+    /* The last OPEN's answer, which is not the answer for a run whose
+     * OPEN never went. */
+    if (s.files_lim ? s.lim_off : s.test_off) {
+        return;
+    }
     int *file = s.files_lim ? &s.lim_file : &s.test_file;
     bool *whole = s.files_lim ? &s.lim_report : &s.test_report;
     if (number != *file || report != *whole) {
@@ -452,11 +476,13 @@ void servo_screen_test_logger_busy(bool busy)
 
 /* ----------------------------------------------------------------- drawing */
 
-/* A file's name for the run's number: SERVOnnn.CSV. */
+/* A file's name for the run's number: ATESTnnn.CSV. */
 static void test_file_name(char *b, size_t n)
 {
-    if (s.test_file > 0) {
-        log_name_build(b, n, LOG_PREFIX_SERVO, s.test_file, false);
+    if (s.test_off) {
+        snprintf(b, n, "%s", TR(SV_USER_LOGS_OFF));
+    } else if (s.test_file > 0) {
+        log_name_build(b, n, LOG_PREFIX_ATEST, s.test_file, false);
     } else {
         snprintf(b, n, "%s", (s.test_file < 0) ? TR(SV_NOT_RECORDED)
                                                 : TR(SV_WRITING));
@@ -657,7 +683,8 @@ uint32_t test_signature(void)
     const uint32_t f[] = {
         (uint32_t)t->state, (uint32_t)t->phase, (uint32_t)t->step,
         (uint32_t)t->moves_done, (uint32_t)(s.test_file + 2),
-        s.test_report ? 1u : 0u, (uint32_t)test_blocked(),
+        s.test_report ? 1u : 0u, s.test_off ? 1u : 0u,
+        (uint32_t)test_blocked(),
         (uint32_t)s.test_note,
     };
     uint32_t h = 2166136261u;           /* FNV-1a over the fields */

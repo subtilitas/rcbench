@@ -22,15 +22,21 @@ _Static_assert(sizeof(RUN_SUFFIX) - 1u == SUFFIX_LEN
 
 /* The writers' prefixes, in log_prefix_t order. */
 static const char *const k_prefix[LOG_PREFIX_COUNT] = {
+    [LOG_PREFIX_ATEST] = "ATEST",
+    [LOG_PREFIX_LIMIT] = "LIMIT",
+    [LOG_PREFIX_SERVO] = "SERVO",
+    [LOG_PREFIX_MOTOR] = "MOTOR",
+    [LOG_PREFIX_SUPPL] = "SUPPL",
     [LOG_PREFIX_BENCH] = "BENCH",
     [LOG_PREFIX_ESC]   = "ESC",
-    [LOG_PREFIX_SERVO] = "SERVO",
 };
 
 /* The longest prefix fills the buffer exactly, and is an 8.3 base name: at
  * most 8 characters before the dot. */
 _Static_assert(5 + RUN_DIGITS + SUFFIX_LEN == LOG_RUN_NAME_MAX - 1,
-               "BENCH999.CSV and SERVO999.CSV fill the buffer");
+               "SUPPL999.CSV and ATEST999.CSV fill the buffer");
+_Static_assert(LOG_PREFIX_WRITTEN == 5 && LOG_NAME_FORMS == 10,
+               "five prefixes written, ten names probed");
 _Static_assert(5 + RUN_DIGITS <= 8, "an 8.3 base name");
 
 /*
@@ -84,9 +90,11 @@ void log_name_build(char *out, size_t out_size, log_prefix_t prefix,
              report ? REPORT_SUFFIX : RUN_SUFFIX);
 }
 
-log_prefix_t log_name_armed_prefix(bool throttle_armed)
+log_prefix_t log_name_armed_prefix(bool asked, bool asked_throttle,
+                                   bool throttle_armed)
 {
-    return throttle_armed ? LOG_PREFIX_ESC : LOG_PREFIX_BENCH;
+    const bool motor = asked ? asked_throttle : throttle_armed;
+    return motor ? LOG_PREFIX_MOTOR : LOG_PREFIX_SERVO;
 }
 
 void log_run_name(char *out, size_t out_size, int number)
