@@ -509,7 +509,8 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
 /*
  * Seven tiles: PANEL, INTERFACES and SD CARD, then OUTPUTS, PICK A PIN,
  * WI-FI and UPDATES.  SD CARD's list is AUTO LOGS and USER LOGS, two
- * toggles, named in both languages.
+ * toggles, named in both languages, and the two log folders under them
+ * (test_settings_folders).
  */
 TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_third)
 {
@@ -519,7 +520,9 @@ TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_third)
     tap(tile_x(SET_CAT_CARD), tile_y(SET_CAT_CARD));
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), SET_CAT_CARD);
-    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 2);
+    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 4);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 1), 1);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 2), -1);
     CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD CARD");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD-KARTE");

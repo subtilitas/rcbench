@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "card_tree.h"
 #include "settings_rig.h"
 
 /* ------------------------------------------------------------------ model */
@@ -701,6 +702,135 @@ TEST_CASE(the_card_switches_are_on_kept_and_on_after_an_update)
     settings_set_store(NULL);
 }
 
+/*
+ * AUTO LOG FOLDER and USER LOG FOLDER: two strings of SETUP > SD CARD, kept
+ * with the numbers, their defaults the card's folders, the defaults again
+ * after an update from a store that never held them, and every change told
+ * to the text observer.
+ */
+static int s_text_seen[SETTING_TEXT_COUNT];
+
+static void text_observer(setting_text_id_t id)
+{
+    if (id >= 0 && id < SETTING_TEXT_COUNT) {
+        ++s_text_seen[id];
+    }
+}
+
+static void text_seen_clear(void)
+{
+    memset(s_text_seen, 0, sizeof(s_text_seen));
+}
+
+/* An older build's strings: the DUT name and nothing else. */
+static bool old_build_load_text(char (*texts)[SETTINGS_TEXT_MAX], int count)
+{
+    if (count > SET_TEXT_DUT_NAME) {
+        snprintf(texts[SET_TEXT_DUT_NAME], SETTINGS_TEXT_MAX, "%s", "OLD");
+    }
+    return true;
+}
+
+static const settings_store_t s_old_text_store = {
+    mem_load, mem_save, old_build_load_text, mem_save_text };
+
+TEST_CASE(the_log_folders_are_strings_kept_reset_and_observed)
+{
+    fresh_model();
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_AUTO_DIR), CARD_AUTO_LOGS);
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_USER_DIR), CARD_USER_LOGS);
+    CHECK_STR_EQ(settings_text_key(SET_TEXT_LOG_AUTO_DIR), "log_auto_dir");
+    CHECK_STR_EQ(settings_text_key(SET_TEXT_LOG_USER_DIR), "log_user_dir");
+    /* One NVS namespace holds the numbers and the strings: no key twice. */
+    for (int t = 0; t < SETTING_TEXT_COUNT; ++t) {
+        const char *k = settings_text_key((setting_text_id_t)t);
+        CHECK(k != NULL && strlen(k) <= 15u);
+        for (int u = t + 1; u < SETTING_TEXT_COUNT; ++u) {
+            CHECK(strcmp(k, settings_text_key((setting_text_id_t)u)) != 0);
+        }
+        for (int i = 0; i < SETTING_COUNT; ++i) {
+            if (strcmp(k, settings_def((setting_id_t)i)->key) == 0) {
+                T_FAIL("string key %s is also a number's", k);
+            }
+        }
+    }
+    /* On SETUP > SD CARD, after its two switches; the DUT name is not on
+     * SETUP. */
+    CHECK_EQ(settings_text_category(SET_TEXT_LOG_AUTO_DIR), SET_CAT_CARD);
+    CHECK_EQ(settings_text_category(SET_TEXT_LOG_USER_DIR), SET_CAT_CARD);
+    CHECK_EQ(settings_text_category(SET_TEXT_DUT_NAME), SET_CAT_COUNT);
+    CHECK_EQ(settings_text_category((setting_text_id_t)99), SET_CAT_COUNT);
+    setting_text_id_t t[4];
+    CHECK_EQ(settings_texts_in_category(SET_CAT_CARD, t, 4), 2);
+    CHECK_EQ(t[0], SET_TEXT_LOG_AUTO_DIR);
+    CHECK_EQ(t[1], SET_TEXT_LOG_USER_DIR);
+    CHECK_EQ(settings_texts_in_category(SET_CAT_CARD, NULL, 0), 2);
+    CHECK_EQ(settings_texts_in_category(SET_CAT_CARD, t, 1), 2);
+    CHECK_EQ(settings_texts_in_category(SET_CAT_SERVO, t, 4), 0);
+    CHECK_EQ(settings_texts_in_category(SET_CAT_COUNT, t, 4), 0);
+
+    /* The round trip, and the start-up telling the observer each string. */
+    s_has_text = false;
+    settings_set_store(&s_text_store);
+    settings_set_text_observer(text_observer);
+    text_seen_clear();
+    settings_init();
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        CHECK_EQ(s_text_seen[i], 1);
+    }
+    text_seen_clear();
+    settings_set_text(SET_TEXT_LOG_AUTO_DIR, "RUNS");
+    settings_set_text(SET_TEXT_LOG_USER_DIR, "RUNS");
+    CHECK_EQ(s_text_seen[SET_TEXT_LOG_AUTO_DIR], 1);
+    CHECK_EQ(s_text_seen[SET_TEXT_LOG_USER_DIR], 1);
+    CHECK_EQ(s_text_seen[SET_TEXT_DUT_NAME], 0);
+    /* The same text again is no change and nothing to hear. */
+    settings_set_text(SET_TEXT_LOG_AUTO_DIR, "RUNS");
+    CHECK_EQ(s_text_seen[SET_TEXT_LOG_AUTO_DIR], 1);
+    CHECK(settings_dirty());
+    CHECK(settings_save());
+    settings_init();
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_AUTO_DIR), "RUNS");
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_USER_DIR), "RUNS");
+
+    /* DISCARD puts an unsaved folder back, and the observer hears it. */
+    text_seen_clear();
+    settings_set_text(SET_TEXT_LOG_USER_DIR, "A/B");
+    CHECK_EQ(settings_changes(), 1);
+    CHECK_EQ(settings_discard(), 0);
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_USER_DIR), "RUNS");
+    CHECK_EQ(s_text_seen[SET_TEXT_LOG_USER_DIR], 2);
+    CHECK(!settings_dirty());
+
+    /* A reset of SD CARD puts both folders back and leaves the DUT name;
+     * a reset of another category leaves the folders. */
+    settings_set_text(SET_TEXT_DUT_NAME, "KEEP");
+    settings_reset(SET_CAT_SERVO);
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_AUTO_DIR), "RUNS");
+    text_seen_clear();
+    settings_reset(SET_CAT_CARD);
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_AUTO_DIR), CARD_AUTO_LOGS);
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_USER_DIR), CARD_USER_LOGS);
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "KEEP");
+    CHECK_EQ(s_text_seen[SET_TEXT_LOG_AUTO_DIR], 1);
+    CHECK_EQ(s_text_seen[SET_TEXT_LOG_USER_DIR], 1);
+    CHECK_EQ(s_text_seen[SET_TEXT_DUT_NAME], 0);
+    CHECK(settings_dirty());
+    /* A reset that moves nothing is no edit. */
+    CHECK(settings_save());
+    settings_reset(SET_CAT_CARD);
+    CHECK(!settings_dirty());
+
+    /* An older build's store: the folders at their defaults. */
+    settings_set_store(&s_old_text_store);
+    settings_init();
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "OLD");
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_AUTO_DIR), CARD_AUTO_LOGS);
+    CHECK_STR_EQ(settings_text(SET_TEXT_LOG_USER_DIR), CARD_USER_LOGS);
+    settings_set_text_observer(NULL);
+    settings_set_store(NULL);
+}
+
 int main(void)
 {
     RUN(defaults_come_from_the_schema);
@@ -725,5 +855,6 @@ int main(void)
     RUN(theme_switch_changes_the_palette);
     RUN(brightness_and_contrast_are_clamped_and_monotonic);
     RUN(the_card_switches_are_on_kept_and_on_after_an_update);
+    RUN(the_log_folders_are_strings_kept_reset_and_observed);
     return test_summary("settings");
 }

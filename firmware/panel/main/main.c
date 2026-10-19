@@ -726,6 +726,26 @@ static void publish_log_auto(void)
     atomic_store(&s_log_auto, settings_get_bool(SET_LOG_AUTO));
 }
 
+/*
+ * AUTO LOG FOLDER and USER LOG FOLDER, for the logger: the folder in force
+ * when card_folder_check() takes it, the default folder otherwise, so a
+ * store that holds a folder no longer allowed writes to the default.
+ * Written by the text observer on app_main.
+ */
+static void publish_log_folder(setting_text_id_t id)
+{
+    char dir[CARD_DIR_MAX];
+    if (id == SET_TEXT_LOG_AUTO_DIR) {
+        log_set_folder(LOG_FOLDER_AUTO,
+                       card_folder_use(settings_text(id), CARD_AUTO_LOGS,
+                                       dir, sizeof(dir)));
+    } else if (id == SET_TEXT_LOG_USER_DIR) {
+        log_set_folder(LOG_FOLDER_USER,
+                       card_folder_use(settings_text(id), CARD_USER_LOGS,
+                                       dir, sizeof(dir)));
+    }
+}
+
 static void settings_changed(setting_id_t id)
 {
     if (id == SET_LOG_AUTO) {
@@ -1089,6 +1109,7 @@ static bool bring_up(void)
     /* Installed before the load, so the count the store returns is owed to
      * the IOmcu the same way an edit made later is. */
     settings_set_observer(settings_changed);
+    settings_set_text_observer(publish_log_folder);
     settings_init();
     /* And once unconditionally, whatever settings_init() told the observer:
      * a bench left at the defaults still has to tell the far end what it

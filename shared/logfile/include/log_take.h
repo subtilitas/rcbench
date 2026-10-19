@@ -93,6 +93,17 @@ void log_series_init(log_series_set_t *set);
  */
 log_series_t *log_series_of(log_series_set_t *set, const char *dir);
 
+/**
+ * One kind of file follows its folder setting: @p want is the folder of its
+ * next take, and @p took (CARD_DIR_MAX bytes) the folder of the last one.
+ * A folder other than @p took, case folded, is copied into it and forgets
+ * every folder's numbering in @p set, so the next take of each kind walks
+ * its folder and numbers from what that folder holds.  A file already open
+ * stays in the folder it was opened in.  True when the folder changed;
+ * false for the same folder, a NULL or a @p want that does not fit.
+ */
+bool log_series_follow(log_series_set_t *set, char *took, const char *want);
+
 /** What a take came to. */
 typedef enum {
     LOG_TAKE_OK = 0,

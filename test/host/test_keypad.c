@@ -9,7 +9,9 @@
 
 #include "greatest.h"
 
+#include "card_tree.h"
 #include "ui_keypad.h"
+#include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
 #include "touch_feed.h"
@@ -565,6 +567,174 @@ TEST_CASE(a_password_is_masked_until_shown)
     free(fb);
 }
 
+/* Type @p text on the keyboard, a key a character, "/" by the dot key
+ * of a folder keyboard. */
+static void tk_type(const char *text)
+{
+    char out[4];
+    for (const char *p = text; *p != '\0'; ++p) {
+        const int key = (*p == '/') ? UI_TK_DOT
+                        : (*p == ' ') ? UI_TK_SPACE : tk_key(*p);
+        (void)tk_press(key, out, sizeof(out));
+    }
+}
+
+/*
+ * Opened for a folder: the "." key shows and types "/", OK hands back the
+ * folder as card_folder_check() writes it, and the name keyboard opened
+ * after it types "." again.
+ */
+TEST_CASE(a_folder_keyboard_types_a_slash_and_takes_a_checked_folder)
+{
+    char out[CARD_DIR_MAX] = "unset";
+    ui_textkey_open_folder(&tk, k_area, "Auto log folder", "BENCH/LOGS");
+    CHECK(tk.folder);
+    CHECK(!tk.search && !tk.wifi);
+    CHECK_EQ(tk.max_len, UI_TEXTKEY_MAX);
+    CHECK_STR_EQ(tk.text, "BENCH/LOGS");
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_DOT), "/");
+    CHECK_STR_EQ(ui_textkey_label(UI_TK_DOT), ".");
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_MARK), "_");
+    (void)tk_press(UI_TK_CLR, out, sizeof(out));
+    tk_type("MY_LOG-2/RUNS");
+    CHECK_STR_EQ(tk.text, "MY_LOG-2/RUNS");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "MY_LOG-2/RUNS");
+    CHECK(!tk.open);
+    CHECK(!tk.refused);
+
+    /* The name keyboard after it: "." is a dot. */
+    ui_textkey_open(&tk, k_area, "NAME", "", 23);
+    CHECK(!tk.folder);
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_DOT), ".");
+    (void)tk_press(UI_TK_DOT, out, sizeof(out));
+    CHECK_STR_EQ(tk.text, ".");
+
+    /* A text opened in lower case is handed back in upper case; one
+     * longer than the keyboard takes is cut to its 23 characters. */
+    ui_textkey_open_folder(&tk, k_area, "F", "my/logs");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "MY/LOGS");
+    ui_textkey_open_folder(&tk, k_area, "F", "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    CHECK_EQ(tk.len, UI_TEXTKEY_MAX);
+    tk_type("A");
+    CHECK_EQ(tk.len, UI_TEXTKEY_MAX);
+}
+
+/* A refused OK keeps the keyboard open with what was typed, says why, and
+ * hands nothing back; the next key clears the refusal. */
+TEST_CASE(a_folder_keyboard_refuses_what_the_card_check_refuses)
+{
+    static const struct {
+        const char   *text;
+        card_folder_t why;
+        const char   *line;
+    } cases[] = {
+        { "",           CARD_FOLDER_EMPTY,    "A folder name is empty" },
+        { "/LOGS",      CARD_FOLDER_EMPTY,    "A folder name is empty" },
+        { "LOGS/",      CARD_FOLDER_EMPTY,    "A folder name is empty" },
+        { "A//B",       CARD_FOLDER_EMPTY,    "A folder name is empty" },
+        { "BENCHLOGS",  CARD_FOLDER_LONG,     "8 characters a folder at most" },
+        { "A/B/C",      CARD_FOLDER_DEEP,     "2 folders deep at most" },
+        { "MY LOGS",    CARD_FOLDER_CHAR,     "A-Z, 0-9, _ and - only" },
+        { "LOGS.OLD",   CARD_FOLDER_CHAR,     "A-Z, 0-9, _ and - only" },
+        { "AUX/LOGS",   CARD_FOLDER_RESERVED, "Reserved name" },
+        { "BENCH/KST",  CARD_FOLDER_BENCH,    "Folder of the bench's own files" },
+    };
+    for (size_t i = 0u; i < sizeof(cases) / sizeof(cases[0]); ++i) {
+        char out[CARD_DIR_MAX] = "unset";
+        ui_textkey_open_folder(&tk, k_area, "F", cases[i].text);
+        CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_NONE);
+        CHECK(tk.open);
+        CHECK(tk.refused);
+        CHECK_EQ(tk.why, (uint8_t)cases[i].why);
+        CHECK_STR_EQ(tk.text, cases[i].text);
+        CHECK_STR_EQ(out, "unset");
+    }
+    /* The texts, in both languages. */
+    CHECK_STR_EQ(TR(TEXTKEY_DIR_LONG), "8 characters a folder at most");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(TR(TEXTKEY_DIR_LONG), "Höchstens 8 Zeichen je Ordner");
+    CHECK_STR_EQ(TR(TEXTKEY_DIR_BENCH), "Ordner der Prüfstand-Dateien");
+    ui_text_set_language(UI_LANG_EN);
+    for (size_t i = 0u; i < sizeof(cases) / sizeof(cases[0]); ++i) {
+        const char *want = cases[i].line;
+        const char *got;
+        switch (cases[i].why) {
+        case CARD_FOLDER_LONG:     got = TR(TEXTKEY_DIR_LONG);     break;
+        case CARD_FOLDER_DEEP:     got = TR(TEXTKEY_DIR_DEEP);     break;
+        case CARD_FOLDER_CHAR:     got = TR(TEXTKEY_DIR_CHAR);     break;
+        case CARD_FOLDER_RESERVED: got = TR(TEXTKEY_DIR_RESERVED); break;
+        case CARD_FOLDER_BENCH:    got = TR(TEXTKEY_DIR_BENCH);    break;
+        default:                   got = TR(TEXTKEY_DIR_EMPTY);    break;
+        }
+        CHECK_STR_EQ(got, want);
+    }
+
+    /* At the edges: 9 refused, one DEL and 8 taken; BENCH/KST refused, an
+     * X more taken. */
+    char out[CARD_DIR_MAX] = "unset";
+    ui_textkey_open_folder(&tk, k_area, "F", "BENCHLOGS");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_NONE);
+    (void)tk_press(UI_TK_DEL, out, sizeof(out));
+    CHECK(!tk.refused);
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "BENCHLOG");
+    ui_textkey_open_folder(&tk, k_area, "F", "BENCH/KST");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_NONE);
+    tk_type("X");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "BENCH/KSTX");
+    ui_textkey_open_folder(&tk, k_area, "F", "A/B/C");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_NONE);
+    (void)tk_press(UI_TK_DEL, out, sizeof(out));
+    (void)tk_press(UI_TK_DEL, out, sizeof(out));
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "A/B");
+
+    /* CANCEL hands nothing back. */
+    strcpy(out, "unset");
+    ui_textkey_open_folder(&tk, k_area, "F", "LOGS");
+    tk_type("X");
+    CHECK_EQ(tk_press(UI_TK_CANCEL, out, sizeof(out)), UI_TEXTKEY_CANCELLED);
+    CHECK_STR_EQ(out, "unset");
+    CHECK(!tk.open);
+}
+
+/* A refusal draws its line in the warning colour, and a different line for
+ * a different refusal. */
+TEST_CASE(a_folder_refusal_is_drawn_in_its_own_words)
+{
+    gfx_color_t *fb = calloc((size_t)800 * 480, sizeof(gfx_color_t));
+    gfx_color_t *first = calloc((size_t)800 * 480, sizeof(gfx_color_t));
+    REQUIRE_ALLOC(fb);
+    REQUIRE_ALLOC(first);
+    gfx_canvas_t cv;
+    gfx_canvas_init(&cv, fb, 800, 480, 800);
+    char out[CARD_DIR_MAX];
+    ui_textkey_open_folder(&tk, k_area, "F", "BENCHLOGS");
+    (void)tk_press(UI_TK_OK, out, sizeof(out));
+    ui_textkey_render(&tk, &cv);
+    int warn = 0;
+    for (int i = 0; i < 800 * 480; ++i) {
+        warn += (fb[i] == ui_theme_color(UI_C_WARN)) ? 1 : 0;
+    }
+    CHECK(warn > 0);
+    memcpy(first, fb, (size_t)800 * 480 * sizeof(gfx_color_t));
+    ui_textkey_open_folder(&tk, k_area, "F", "BENCH/KS");
+    tk_type("T");
+    (void)tk_press(UI_TK_OK, out, sizeof(out));
+    CHECK_EQ(tk.why, (uint8_t)CARD_FOLDER_BENCH);
+    memset(fb, 0, (size_t)800 * 480 * sizeof(gfx_color_t));
+    ui_textkey_render(&tk, &cv);
+    /* The title row: the title the same, the line not. */
+    const size_t row0 = (size_t)(k_area.y + 6) * 800u;
+    CHECK(memcmp(first + row0, fb + row0, (size_t)18 * 800u
+                 * sizeof(gfx_color_t)) != 0);
+    free(first);
+    free(fb);
+}
+
 /* The name and search keyboards are what they were: no SHOW, capitals. */
 TEST_CASE(the_name_keyboards_have_no_wifi_keys)
 {
@@ -721,6 +891,9 @@ int main(void)
     RUN(a_password_takes_8_to_63_characters_as_typed);
     RUN(a_network_name_takes_1_to_32_bytes);
     RUN(a_password_is_masked_until_shown);
+    RUN(a_folder_keyboard_types_a_slash_and_takes_a_checked_folder);
+    RUN(a_folder_keyboard_refuses_what_the_card_check_refuses);
+    RUN(a_folder_refusal_is_drawn_in_its_own_words);
     RUN(the_name_keyboards_have_no_wifi_keys);
     RUN(a_keyboard_key_acts_on_its_own_release_only);
     RUN(a_release_the_tracker_makes_for_a_jump_types_nothing);

@@ -1709,7 +1709,9 @@ feed are no row.
 
 Runs recorded by the bench are written to two folders of the card, each run
 under the name of what started it and a number from 001 to 999. The panel
-makes each folder, one level at a time, the first time it writes there:
+makes each folder, one level at a time, the first time it writes there. The
+table names the default folders; Auto log folder and User log folder on
+[Setup](#setup) > SD CARD set others:
 
 | Folder | Name | Run |
 | --- | --- | --- |
@@ -1729,6 +1731,14 @@ OFF writes nothing to `BENCH/LOGS`; switched off during a run, it ends that
 run's file. User logs OFF writes nothing to `USER/LOGS`; a test keeps the
 state it started with. Both are ON by default. The fault log,
 `BENCH/RCBENCH.LOG`, is written whatever the switches say.
+
+A folder changed on [Setup](#setup) > SD CARD takes the next file: a run or
+a test already open finishes in the folder it started in. The next one is
+numbered from what the new folder holds. Both kinds can name one folder;
+its numbers are then one series across all five names. The files left in a
+folder used before are not listed: the USER and BENCH tabs list the folders
+set now. They stay on the card, and setting the folder back lists them
+again.
 
 Firmware 0.21 and older wrote every run to the card's root as
 `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` with its `SERVOnnn.TXT` (a
@@ -1759,7 +1769,8 @@ Runs are listed newest first by number, across all names in the folder:
 ![The ROOT tab with the runs of an older firmware](img/logs-root.png)
 
 Three tabs at the header row's left choose the folder on the list: USER
-(`USER/LOGS`), BENCH (`BENCH/LOGS`) and ROOT (the card's root). A tab
+(User log folder, `USER/LOGS` by default), BENCH (Auto log folder,
+`BENCH/LOGS` by default) and ROOT (the card's root). A tab
 tapped lists its folder from the first page. The header right of the tabs
 names the card and the folder, `UNITEST  BENCH/LOGS`, and the card alone on
 ROOT. An empty folder says why and what goes there:
@@ -2559,14 +2570,16 @@ current monitors:
 | `Phase tap pin GP22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `Phase tap capture overflow. Beeps are incomplete.` | the IOmcu's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
-### SD CARD: which logs are written
+### SD CARD: which logs are written, and where
 
 ![SD CARD](img/setup-card.png)
 
 | Setting | Range | Default | Writes |
 | --- | --- | --- | --- |
-| Auto logs | OFF, ON | ON | `SERVOnnn.CSV`, `MOTORnnn.CSV` and `SUPPLnnn.CSV` in `BENCH/LOGS`: a log of each ARMED and supply run |
-| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, and `LIMITnnn.TXT`, in `USER/LOGS`: the AUTOMATIC TEST and the LIMIT RUN |
+| Auto logs | OFF, ON | ON | `SERVOnnn.CSV`, `MOTORnnn.CSV` and `SUPPLnnn.CSV` in Auto log folder: a log of each ARMED and supply run |
+| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, and `LIMITnnn.TXT`, in User log folder: the AUTOMATIC TEST and the LIMIT RUN |
+| Auto log folder | a folder, see below | `BENCH/LOGS` | where Auto logs writes |
+| User log folder | a folder, see below | `USER/LOGS` | where User logs writes |
 
 - OFF writes no file and takes no number, and no card alert of that kind of
   run shows.
@@ -2580,6 +2593,30 @@ current monitors:
   `ATESTnnn.TXT` is written.
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever the two say.
 - [Logs](#logs) gives the names and the numbering.
+
+A tap on a folder's row opens the on-screen keyboard over the list, on the
+folder in force. The `.` key types `/` there. OK takes the folder, in upper
+case, as an edit: SAVE keeps it, as it keeps a value, and the warning on
+leaving SETUP names it. CANCEL and the home tag leave the folder as it was.
+OK on a folder the card cannot take keeps the keyboard open and the folder
+in force unchanged, and the line right of the title says why:
+
+![The folder keyboard with a folder of 9 characters refused](img/setup-folder.png)
+
+| Refused | Example | Line |
+| --- | --- | --- |
+| an empty folder name: nothing typed, or a `/` at the start, at the end or twice | `/LOGS`, `LOGS/`, `A//B` | `A folder name is empty` |
+| a folder name of more than 8 characters | `BENCHLOGS` (`BENCHLOG` is taken) | `8 characters a folder at most` |
+| more than 2 folders | `A/B/C` (`A/B` is taken) | `2 folders deep at most` |
+| a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
+| a device name of Windows: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
+| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Folder of the bench's own files` |
+
+Every folder name the panel takes is a FAT (File Allocation Table) 8.3 short
+name, the same on every computer. The longest folder is 17 characters,
+`ABCDEFGH/12345678`. A stored folder the panel no longer takes, for example
+one written by another firmware, is not written to: the logs go to the
+default folder of their kind, and LOGS lists that folder.
 
 ### Keeping the values
 

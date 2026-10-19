@@ -16,6 +16,7 @@
 
 #include "settings.h"
 #include "ui_screen.h"
+#include "ui_textkey.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,8 +59,21 @@ int settings_screen_scroll(int *max);
  */
 int settings_screen_row_of(setting_cat_t cat, int index);
 
-/** The rows of @p cat's list: its settings and its headings. */
+/** The list row that shows string @p id of @p cat, after its settings
+ *  (settings_texts_in_category()), or -1 for a string not in @p cat. */
+int settings_screen_text_row(setting_cat_t cat, setting_text_id_t id);
+
+/** The rows of @p cat's list: its settings, its headings and its
+ *  strings. */
 int settings_screen_rows(setting_cat_t cat);
+
+/**
+ * The keyboard a string's row opens, in folder mode for SD CARD's log
+ * folders (ui_textkey.h): open over the list and the strip until OK takes
+ * the text, CANCEL or the home tag drops it, or SETUP is left.  OK sets
+ * the string as an edit; SAVE keeps it.
+ */
+const ui_textkey_t *settings_screen_textkey(void);
 
 /** The category whose list is open, or -1 while the hub's tiles show. */
 int settings_screen_category(void);

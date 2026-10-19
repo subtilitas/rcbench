@@ -16,7 +16,7 @@ SETUP holds the panel's bench-wide settings in three categories: PANEL, INTERFAC
 |---|---|---|
 | PANEL | `10 SETTINGS` | the list of PANEL |
 | INTERFACES | `26 SETTINGS` | the list of INTERFACES |
-| SD CARD | `2 SETTINGS` | the list of SD CARD: which logs the panel writes |
+| SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
@@ -130,8 +130,10 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
-| Auto logs | ON, OFF | ON | a log of each ARMED and supply run in `BENCH/LOGS`: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
-| User logs | ON, OFF | ON | the AUTOMATIC TEST's `ATESTnnn.CSV` and report and the LIMIT RUN's `LIMITnnn.TXT` in `USER/LOGS` |
+| Auto logs | ON, OFF | ON | a log of each ARMED and supply run in Auto log folder: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
+| User logs | ON, OFF | ON | the AUTOMATIC TEST's `ATESTnnn.CSV` and report and the LIMIT RUN's `LIMITnnn.TXT` in User log folder |
+| Auto log folder | a folder | `BENCH/LOGS` | where Auto logs writes |
+| User log folder | a folder | `USER/LOGS` | where User logs writes |
 
 - OFF writes no file and takes no number. No card alert of that kind of run shows.
 - Auto logs switched off during a run ends that run's file there; switched on during an ARMED or supply run, a file starts there.
@@ -139,6 +141,21 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never
 - REPORT on SERVO > OPTIONS > DUT decides, with User logs ON, whether `ATESTnnn.TXT` is written.
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever Auto logs says.
 - [Logs](logs.md#what-a-run-writes) lists the folders.
+
+A tap on a folder's row opens the keyboard on the folder. Its `.` key types `/`. OK takes the folder in upper case; SAVE keeps it. CANCEL and the home tag keep the folder as it was. A folder changed during a run takes the next file; the run finishes where it started, and the next one is numbered from what the new folder holds. Both rows may name one folder.
+
+![The folder keyboard with a folder refused](view:setup-folder)
+
+OK keeps the keyboard open, and the folder as it was, for a folder the card cannot take. The line right of the title says why:
+
+| Refused | Example | Line |
+|---|---|---|
+| a folder name empty, or `/` at the start, at the end or twice | `/LOGS`, `LOGS/`, `A//B` | `A folder name is empty` |
+| over 8 characters in a folder name | `BENCHLOGS`; `BENCHLOG` is taken | `8 characters a folder at most` |
+| over 2 folders | `A/B/C`; `A/B` is taken | `2 folders deep at most` |
+| a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
+| a Windows device name: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
+| `BENCH/ESC`, `BENCH/KST` or `BENCH/HITEC`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Folder of the bench's own files` |
 
 ## INTERFACES
 

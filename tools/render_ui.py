@@ -135,6 +135,7 @@ SOURCES = [
     "shared/logfile/log_reader.c",
     "shared/logfile/log_fields.c",
     "shared/logfile/log_name.c",
+    "shared/logfile/card_tree.c",
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",
@@ -362,8 +363,10 @@ SCREENS = {
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
     # PANEL: the language, the theme and the knob.
     "setup-application": ("setup-application.png", "setup", "dark"),
-    # SD CARD: AUTO LOGS and USER LOGS.
+    # SD CARD: AUTO LOGS and USER LOGS, AUTO LOG FOLDER and USER LOG
+    # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
+    "setup-folder": ("setup-folder.png", "setup", "dark"),
     # INTERFACES with both current monitors enabled, at the top of the list
     # and drawn on to the INA3221's rows and the bus's pins.
     "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
@@ -629,7 +632,8 @@ FIT_ONLY = {
 # Views that open a drop-down, a chip's help bubble or the alert band over
 # the screen: the list, the bubble or the band covers the labels under it by
 # design, so a fill drawn over a string is not a finding there.
-OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol", "overview-alert"} | {
+OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol", "overview-alert",
+                 "setup-folder"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
 # English overflows the layout has for a time: (view, string, finding), word

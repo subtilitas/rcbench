@@ -7,8 +7,10 @@
  * reaches (OUTPUTS, PICK A PIN, WI-FI, UPDATES).  A category's tile opens its list across the screen's width.
  * The list walks the rows shared/settings declares and draws each row by
  * its type: a stepper for a number, a toggle for a bool, a choice for an
- * enum.  A new setting is a schema row, and a new tile is a line of
- * k_tiles; nothing else here changes.
+ * enum.  A category's strings follow its settings, each a row that shows
+ * its text and opens the on-screen keyboard on a tap (SD CARD's two log
+ * folders, in the keyboard's folder mode).  A new setting is a schema row,
+ * and a new tile is a line of k_tiles; nothing else here changes.
  *
  * The home tag that leaves SETUP with settings unsaved and no save asked
  * is held: a warning lists what differs from the stored values and offers
@@ -28,6 +30,7 @@
 #include "tone_link.h"
 #include "ui_icons.h"
 #include "ui_text.h"
+#include "ui_textkey.h"
 #include "ui_widgets.h"
 
 #define SCREEN_W 800
@@ -95,16 +98,18 @@ static const heading_t k_headings[] = {
 };
 
 #define N_HEADINGS ((int)(sizeof(k_headings) / sizeof(k_headings[0])))
-#define MAX_ENTRIES (MAX_ROWS + N_HEADINGS)
+#define MAX_ENTRIES (MAX_ROWS + N_HEADINGS + SETTING_TEXT_COUNT)
 
-/* One row of a list: a setting, or a heading above the next one. */
+/* One row of a list: a setting, a heading above the next one, or a
+ * string. */
 typedef struct {
     setting_id_t id;
     int8_t       heading;    /**< index into k_headings, or -1           */
+    int8_t       text;       /**< a setting_text_id_t, or -1             */
 } entry_t;
 
-/* The list of @p cat in row order, headings included; the number of rows,
- * counted past @p max. */
+/* The list of @p cat in row order, headings included, its strings after
+ * its settings; the number of rows, counted past @p max. */
 static int entries(setting_cat_t cat, entry_t *out, int max)
 {
     setting_id_t ids[MAX_ROWS];
@@ -114,13 +119,21 @@ static int entries(setting_cat_t cat, entry_t *out, int max)
         for (int h = 0; h < N_HEADINGS; ++h) {
             if (k_headings[h].first == ids[i]) {
                 if (out != NULL && rows < max) {
-                    out[rows] = (entry_t){ ids[i], (int8_t)h };
+                    out[rows] = (entry_t){ ids[i], (int8_t)h, -1 };
                 }
                 ++rows;
             }
         }
         if (out != NULL && rows < max) {
-            out[rows] = (entry_t){ ids[i], -1 };
+            out[rows] = (entry_t){ ids[i], -1, -1 };
+        }
+        ++rows;
+    }
+    setting_text_id_t texts[SETTING_TEXT_COUNT];
+    const int nt = settings_texts_in_category(cat, texts, SETTING_TEXT_COUNT);
+    for (int i = 0; i < nt && i < SETTING_TEXT_COUNT; ++i) {
+        if (out != NULL && rows < max) {
+            out[rows] = (entry_t){ (setting_id_t)0, -1, (int8_t)texts[i] };
         }
         ++rows;
     }
@@ -133,7 +146,19 @@ int settings_screen_row_of(setting_cat_t cat, int index)
     const int n = entries(cat, e, MAX_ENTRIES);
     int seen = -1;
     for (int r = 0; r < n && r < MAX_ENTRIES; ++r) {
-        if (e[r].heading < 0 && ++seen == index) {
+        if (e[r].heading < 0 && e[r].text < 0 && ++seen == index) {
+            return r;
+        }
+    }
+    return -1;
+}
+
+int settings_screen_text_row(setting_cat_t cat, setting_text_id_t id)
+{
+    entry_t e[MAX_ENTRIES];
+    const int n = entries(cat, e, MAX_ENTRIES);
+    for (int r = 0; r < n && r < MAX_ENTRIES; ++r) {
+        if (e[r].text >= 0 && e[r].text == (int8_t)id) {
             return r;
         }
     }
@@ -169,7 +194,7 @@ int settings_screen_rows(setting_cat_t cat)
 #define DRAG_SLOP 8
 
 enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
-       HIT_SAVE, HIT_STAY, HIT_DISCARD, HIT_LEAVE_SAVE };
+       HIT_SAVE, HIT_STAY, HIT_DISCARD, HIT_LEAVE_SAVE, HIT_TEXT };
 
 /*
  * The warning that holds a way out: a card over the body down to the
@@ -237,10 +262,21 @@ _Static_assert(STRIP_Y + STRIP_H <= SCREEN_H - UI_ALERT_H,
 _Static_assert(WARN_NOTE_Y + 2 * WARN_NOTE_PITCH <= WARN_Y + WARN_H - 4,
                "the warning's notes end inside its card");
 
-/* The names the warning gives the strings, which have no row on SETUP. */
-static const ui_text_id_t k_text_label[SETTING_TEXT_COUNT] = {
-    [SET_TEXT_DUT_NAME] = TX_SET_DUT_NAME,
+/* The strings' names, for the warning, a row and its keyboard's title,
+ * and the help line of a row; the DUT name has no row on SETUP. */
+static const struct { ui_text_id_t label; ui_text_id_t help; }
+    k_text_ui[SETTING_TEXT_COUNT] = {
+    [SET_TEXT_DUT_NAME]     = { TX_SET_DUT_NAME, TX_COUNT },
+    [SET_TEXT_LOG_AUTO_DIR] = { TX_SET_AUTO_DIR, TX_SET_AUTO_DIR_HELP },
+    [SET_TEXT_LOG_USER_DIR] = { TX_SET_USER_DIR, TX_SET_USER_DIR_HELP },
 };
+
+/*
+ * The keyboard a string's row opens: over the list and the strip, the
+ * warning's card.  Nothing under it presses while it is open; OK and
+ * CANCEL are its own, and the home tag closes it as CANCEL does.
+ */
+#define TK_AREA_H (STRIP_Y + STRIP_H - WARN_Y)
 
 static struct {
     /* The list of cat is open; the hub shows while this is false. */
@@ -284,6 +320,12 @@ static struct {
     ui_screen_id_t warn_to;
     bool     drawn_warn;
     bool     drawn_armed;
+
+    /* The keyboard of string tk_text, and its revision as last drawn. */
+    ui_textkey_t tk;
+    setting_text_id_t tk_text;
+    bool     drawn_tk;
+    uint32_t drawn_tk_rev;
 } s;
 
 /*
@@ -478,7 +520,7 @@ static void change_line(int k, char *line, size_t n)
         if (!settings_text_differs(id) || k-- > 0) {
             continue;
         }
-        snprintf(line, n, "%s: %s -> %s", ui_tr(k_text_label[i]),
+        snprintf(line, n, "%s: %s -> %s", ui_tr(k_text_ui[i].label),
                  settings_stored_text(id), settings_text(id));
         return;
     }
@@ -556,13 +598,14 @@ static int row_at(int x, int y)
     return (idx >= 0 && idx < row_count()) ? idx : -1;
 }
 
-/* The entry of row @p index; a heading's carries heading >= 0. */
+/* The entry of row @p index; a heading's carries heading >= 0, a string's
+ * text >= 0. */
 static entry_t row_entry(int index)
 {
     entry_t e[MAX_ENTRIES];
     const int n = entries(s.cat, e, MAX_ENTRIES);
     if (index < 0 || index >= n || index >= MAX_ENTRIES) {
-        return (entry_t){ (setting_id_t)0, -1 };
+        return (entry_t){ (setting_id_t)0, -1, -1 };
     }
     return e[index];
 }
@@ -570,6 +613,12 @@ static entry_t row_entry(int index)
 static bool row_is_heading(int index)
 {
     return row_entry(index).heading >= 0;
+}
+
+/* The string of row @p index, or -1 for a setting or a heading. */
+static int row_text(int index)
+{
+    return row_entry(index).text;
 }
 
 static setting_id_t row_setting(int index)
@@ -590,8 +639,9 @@ static bool on_key(int kind, int index, int x, int y)
         return false;
     }
     /* A row whose value follows another setting has no keys: a press
-     * there is a press on the list. */
-    if (row_is_heading(index) || settings_derived(row_setting(index))) {
+     * there is a press on the list.  Neither has a string's. */
+    if (row_is_heading(index) || row_text(index) >= 0
+        || settings_derived(row_setting(index))) {
         return false;
     }
     return gfx_rect_contains(row_rect(index), x, y);
@@ -601,7 +651,7 @@ static bool on_key(int kind, int index, int x, int y)
 
 static void step_row(int index, int steps)
 {
-    if (row_is_heading(index)) {
+    if (row_is_heading(index) || row_text(index) >= 0) {
         return;
     }
     setting_id_t id = row_setting(index);
@@ -632,6 +682,7 @@ static void reset(void)
     memset(&s, 0, sizeof(s));
     s.cat = SET_CAT_APP;
     s.hit_index = -1;
+    s.tk.pressed = -1;
     clamp_scroll();
 }
 
@@ -641,6 +692,7 @@ static void enter(void)
      * opened alike.  The list keeps its category and its scroll. */
     s.list = false;
     s.warn = false;
+    ui_textkey_close(&s.tk);
     drop_press();
     clamp_scroll();
     settings_screen_invalidate();
@@ -658,14 +710,21 @@ static void leave(void)
      * they are, unsaved.
      */
     s.warn = false;
+    ui_textkey_close(&s.tk);     /* what was typed is not taken */
     drop_press();
 }
 
 /* The home tag on a list goes back to the tiles; on the tiles it leaves,
- * through hold().  Over the warning it is STAY. */
+ * through hold().  Over the warning it is STAY, over the keyboard
+ * CANCEL. */
 static bool back(void)
 {
     drop_press();
+    if (s.tk.open) {
+        ui_textkey_close(&s.tk);
+        settings_screen_invalidate();
+        return true;
+    }
     if (s.warn) {
         s.warn = false;
         settings_screen_invalidate();
@@ -730,6 +789,20 @@ static void open_tile(int index)
     settings_screen_invalidate();
 }
 
+/* A tap on the row of string @p id: its keyboard, on the text in force.
+ * The log folders take the folder mode (ui_textkey.h). */
+static void open_text(setting_text_id_t id)
+{
+    if (id < 0 || id >= SETTING_TEXT_COUNT) {
+        return;
+    }
+    const gfx_rect_t area = gfx_rect_make(WARN_X, WARN_Y, WARN_W, TK_AREA_H);
+    ui_textkey_open_folder(&s.tk, area, ui_tr(k_text_ui[id].label),
+                           settings_text(id));
+    s.tk_text = id;
+    settings_screen_invalidate();
+}
+
 /* The DOWN of the contact that holds the screen: what it presses. */
 static void press(const touch_event_t *evt, int x, int y)
 {
@@ -779,6 +852,7 @@ static void press(const touch_event_t *evt, int x, int y)
         const bool jump = (evt->flags & TOUCH_FLAG_JUMP) != 0u;
         s.hit_index = row;
         s.hit_kind = jump                          ? HIT_LIST
+                     : row_text(row) >= 0           ? HIT_TEXT
                      : on_key(HIT_MINUS, row, x, y) ? HIT_MINUS
                      : on_key(HIT_PLUS, row, x, y)  ? HIT_PLUS
                                                     : HIT_LIST;
@@ -804,6 +878,11 @@ static void release(int kind, int index, bool repeated, int x, int y)
         if (!repeated && dx <= DRAG_SLOP && dy <= DRAG_SLOP
             && on_key(kind, index, x, y)) {
             step_row(index, (kind == HIT_PLUS) ? 1 : -1);
+        }
+    } else if (kind == HIT_TEXT && s.list && row_at(x, y) == index) {
+        const int text = row_text(index);
+        if (text >= 0) {
+            open_text((setting_text_id_t)text);
         }
     } else if (kind == HIT_TILE && !s.list
                && gfx_rect_contains(tile_rect(index), x, y)) {
@@ -845,10 +924,29 @@ static void release(int kind, int index, bool repeated, int x, int y)
     }
 }
 
+/* An event while the keyboard is open goes to the keyboard alone.  OK
+ * sets the string, as an edit by hand does; SAVE keeps it, as it keeps a
+ * value. */
+static void textkey_event(const touch_event_t *evt)
+{
+    char text[SETTINGS_TEXT_MAX];
+    if (ui_textkey_event(&s.tk, evt, text, sizeof(text)) == UI_TEXTKEY_OK) {
+        settings_set_text(s.tk_text, text);
+    }
+    if (s.tk.revision != s.drawn_tk_rev || s.tk.open != s.drawn_tk) {
+        settings_screen_invalidate();
+    }
+}
+
 static void event(const touch_event_t *evt)
 {
     int x = evt->point.x;
     int y = evt->point.y;
+
+    if (s.tk.open) {
+        textkey_event(evt);
+        return;
+    }
 
     if (evt->type == TOUCH_EVENT_DOWN) {
         /* A DOWN with the id of the press held says that contact has gone
@@ -883,7 +981,7 @@ static void event(const touch_event_t *evt)
         if (moved < 0) { moved = -moved; }
         if (!s.dragging && moved > DRAG_SLOP &&
             (s.hit_kind == HIT_LIST || s.hit_kind == HIT_MINUS ||
-             s.hit_kind == HIT_PLUS)) {
+             s.hit_kind == HIT_PLUS || s.hit_kind == HIT_TEXT)) {
             /* Turned into a scroll: give up the button. */
             s.dragging = true;
             s.hit_kind = HIT_LIST;
@@ -971,10 +1069,55 @@ static void draw_hub(gfx_canvas_t *c)
         }
         char count[40];
         snprintf(count, sizeof(count), TR(SET_COUNT),
-                 settings_in_category((setting_cat_t)t->cat, NULL, 0));
+                 settings_in_category((setting_cat_t)t->cat, NULL, 0)
+                     + settings_texts_in_category((setting_cat_t)t->cat,
+                                                  NULL, 0));
         ui_tile(c, tile_rect(i), HUB_ICON_DY, t->icon,
                 ui_setting_category((setting_cat_t)t->cat), count, down);
     }
+}
+
+/*
+ * A string's row: its name and help on the left, its text on the right in
+ * the value's colour, against the row's right edge where a setting's "+"
+ * is.  No keys: a tap opens the keyboard, and the row's edge takes the
+ * accent while it is pressed.  A text wider than the gap left of it takes
+ * the label face.
+ */
+static void draw_text_row(gfx_canvas_t *c, int index, gfx_rect_t r,
+                          setting_text_id_t id)
+{
+    const bool down = (s.hit_kind == HIT_TEXT && s.hit_index == index);
+    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0, UI_PANEL);
+    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
+                             down ? UI_ACCENT : UI_EDGE);
+
+    const char *label = ui_tr(k_text_ui[id].label);
+    const char *help = (k_text_ui[id].help != TX_COUNT)
+                           ? ui_tr(k_text_ui[id].help) : "";
+    const int right = PLUS_X + BTN_W;
+    int left = r.x + 16 + gfx_text_width(UI_FONT_HEAD, label, 1);
+    const int help_end = r.x + 16 + gfx_text_width(UI_FONT_LABEL, help, 1);
+    left = ((help_end > left) ? help_end : left) + 16;
+
+    const char *value = settings_text(id);
+    const gfx_font_t *vf = UI_FONT_HEAD;
+    int vw = gfx_text_width(vf, value, 1);
+    if (vw > right - left) {
+        vf = UI_FONT_LABEL;
+        vw = gfx_text_width(vf, value, 1);
+    }
+    const int vx = right - vw;
+
+    gfx_rect_t saved = gfx_clip_get(c);
+    gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, vx - 10 - r.x, r.h));
+    gfx_text(c, r.x + 16, r.y + 3, label, UI_FONT_HEAD, UI_TEXT, 1);
+    if (help[0] != '\0') {
+        gfx_text(c, r.x + 16, r.y + 33, help, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+    }
+    c->clip = saved;
+    gfx_text(c, vx, r.y + (ROW_H - gfx_text_height(vf, 1)) / 2, value, vf,
+             UI_ACCENT, 1);
 }
 
 static void draw_row(gfx_canvas_t *c, int index)
@@ -990,6 +1133,10 @@ static void draw_row(gfx_canvas_t *c, int index)
         gfx_text(c, r.x + 16, r.y + ROW_H - gfx_text_height(hf, 1) - 6,
                  ui_tr(k_headings[e.heading].text), hf, UI_ACCENT, 1);
         ui_rule(c, r.x, r.y + ROW_H - 2, r.w, UI_EDGE);
+        return;
+    }
+    if (e.text >= 0) {
+        draw_text_row(c, index, r, (setting_text_id_t)e.text);
         return;
     }
     setting_id_t id = e.id;
@@ -1145,6 +1292,13 @@ static void draw_warning(gfx_canvas_t *c)
 
 static void render(gfx_canvas_t *c, int buffer_index)
 {
+    /* The keyboard moves on its own events: every change bumps its
+     * revision, and a buffer drawn under another one is stale. */
+    if (s.tk.revision != s.drawn_tk_rev || s.tk.open != s.drawn_tk) {
+        settings_screen_invalidate();
+        s.drawn_tk_rev = s.tk.revision;
+        s.drawn_tk = s.tk.open;
+    }
     bool stale = true;
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         stale = !s.chrome_valid[buffer_index] || s.drawn_cat != s.cat
@@ -1165,6 +1319,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         }
         draw_save(c);
     }
+    ui_textkey_render(&s.tk, c);
 
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         s.chrome_valid[buffer_index] = true;
@@ -1185,6 +1340,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 static void cancel(void)
 {
     drop_press();
+    ui_textkey_cancel_press(&s.tk);
     settings_screen_invalidate();
 }
 
@@ -1212,4 +1368,9 @@ int settings_screen_scroll(int *max)
         *max = s.scroll_max;
     }
     return s.scroll;
+}
+
+const ui_textkey_t *settings_screen_textkey(void)
+{
+    return &s.tk;
 }
