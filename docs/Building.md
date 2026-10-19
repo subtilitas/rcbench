@@ -326,7 +326,9 @@ python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=usable prerelease
 `https://github.com/subtilitas/rcbench/releases/latest` names the newest
 usable release. The panel offers a testing release only with RELEASES set
 to TESTING on SETUP > UPDATES; with USABLE, the default, it offers usable
-releases. A testing release also loads by hand: its
+releases ([Screens: Updates](Screens.md#updates)). On both settings it
+offers only a version newer than the one it runs, so a panel on 0.21.0 is
+not offered 0.20.0. A testing release also loads by hand: its
 `rcbench-panel-vX.Y.Z.bin` through the panel's browser page, or its
 archives over USB (Universal Serial Bus), as in
 [First run, §1](FirstRun.md#1-flash-both-boards). The release's

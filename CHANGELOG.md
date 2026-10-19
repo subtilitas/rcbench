@@ -78,7 +78,6 @@ and of the update over CAN is not measured.
   build: a panel on testing release 0.21.0 with USABLE is not offered
   0.20.0. A running build whose version does not parse is offered nothing
   (`The panel's own version is not MAJOR.MINOR.PATCH: no update offered.`).
-
 - The LOG VIEWER reaches every file on the card in pages of 48, newest
   runs first. PREV and NEXT (German `VORIGE` and `NÄCHSTE`) in the header
   row turn the page; they show only on a card of more than 48 files.
