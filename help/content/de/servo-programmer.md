@@ -116,7 +116,7 @@ SCHREIBEN INS SERVO FREIGEBEN ist ab Werk aus. Ein Tipp auf AUS öffnet eine Sei
 n WERTE SCHREIBEN öffnet die Seite zum Schreiben mit den Änderungen, `DEAD BAND: 2.0 -> 1.6 us`. HALTEN ZUM SCHREIBEN startet das Schreiben nach 2 s.
 
 1. Das erste Schreiben einer Sitzung speichert die Werte des Servos in eine neue Datei auf der SD-Karte (Secure Digital).
-2. Das Panel vermerkt das Schreiben in `KST/KST.TXT`, oder ohne Karte im Speicher.
+2. Das Panel vermerkt das Schreiben in `BENCH/KST/CONF/KST.TXT`, oder ohne Karte im Speicher.
 3. Der IOmcu prüft die Werte gegen dieselben Grenzen, plant die Registerschreibvorgänge und führt sie aus.
 4. Jedes geschriebene Register wird zurückgelesen. Ein Schreiben, das nicht übernommen wird, wird rückgängig gemacht.
 
@@ -129,7 +129,7 @@ Ein Wert, der geschrieben und zurückgelesen ist, gilt als wirksam. Ob ein Servo
 
 ![Die Dateien auf der Karte](view:servo-kst-files)
 
-DATEIEN listet die Servodateien im Ordner `KST` der Karte, 5 je Seite, jede mit ihrem Servotyp. Der erste Eintrag speichert die Werte des Servos unter einem neuen Namen, `KST001` und aufwärts, bis 16 Zeichen.
+DATEIEN listet die Servodateien im Ordner `BENCH/KST/CONF` der Karte, 5 je Seite, jede mit ihrem Servotyp. Der erste Eintrag speichert die Werte des Servos unter einem neuen Namen, `KST001` und aufwärts, bis 16 Zeichen.
 
 ![Der Name einer neuen Datei](view:servo-kst-name)
 ![Eine geladene Datei](view:servo-kst-file-loaded)

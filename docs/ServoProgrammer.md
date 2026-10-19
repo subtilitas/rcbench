@@ -508,7 +508,8 @@ starting is not that first write: the lines stay for the next one.
    saved: the servo may be half written, and the record holds its values as
    found.
 2. The panel records the image the servo holds, the image the write is to
-   leave and the port: with a card in `KST/KST.TXT`, without one in memory.
+   leave and the port: with a card in `BENCH/KST/CONF/KST.TXT`, without one in
+   memory.
    The page says which. With a card that takes no file within 3 s the write
    is not sent: `Could not save the file to the card. Nothing was written to the servo.`
 3. The panel sends the target image. The IOmcu checks it against the
@@ -548,10 +549,10 @@ done: `Register 03. 1 write completed.`
 | --- | --- | --- |
 | Of the session | the IOmcu: the first image read after **CONNECT** | **LEAVE**, a power cycle of the servo, a restart of the IOmcu |
 | The session's file | the card: the servo's 32 registers as they stand before the session's first write. None while no card is mounted | the file is removed from the card |
-| Before a write | the panel, in `KST/KST.TXT` or in memory | the write ends verified, or the record is discarded |
+| Before a write | the panel, in `BENCH/KST/CONF/KST.TXT` or in memory | the write ends verified, or the record is discarded |
 
 `KST.TXT` is the record of a write under way: text of at most 400 bytes in
-the card's folder `KST` with the line `RCBENCH KST 2`, the lines
+the card's folder `BENCH/KST/CONF` with the line `RCBENCH KST 2`, the lines
 `journal=`, `target=`, `port=` and `pin=`, and `check=` with the CRC-16
 (cyclic redundancy check) of the bytes before it. `pin=` holds the GPIO
 (general-purpose input/output) the port drove at the write, in two
@@ -573,9 +574,12 @@ panel does not stay on the card.
 
 ## Servo files
 
-A servo file is a text file in the folder `KST` of the panel's SD card with
-the 32 registers of one servo, named `<name>.TXT`. The panel creates the
-folder with the first save. **FILES** opens the list. It is active in programming mode with
+A servo file is a text file in the folder `BENCH/KST/CONF` of the panel's
+SD card with the 32 registers of one servo, named `<name>.TXT`. The panel
+creates the folder with the first save, each missing level of it: `BENCH`,
+`BENCH/KST`, then `BENCH/KST/CONF`. Firmware 0.21.0 and older keeps its
+files and its record in `KST`. The panel does not read that folder: its
+files are moved to `BENCH/KST/CONF` on a computer. **FILES** opens the list. It is active in programming mode with
 a servo read and not in doubt; otherwise the tap answers `Read the servo settings first. Tap READ ALL.` Saving and loading work with the write switch off: a file
 changes the draft on the panel, never the servo.
 
@@ -621,7 +625,7 @@ loaded; a line that names it shows its first 14 characters and `..`.
 | A file has the name | the keyboard stays open under `NAME IN USE. CHOOSE ANOTHER.`; `This file name is already in use. No file was replaced.` |
 | No card | `No card. Nothing saved or written to the servo.` |
 | Card full, or `KST001` to `KST999` all taken at the backup before a write | `Card full. Nothing saved or written to the servo.` |
-| The card is write protected, or `KST` on the card is a file and no folder | `Cannot save: card write-protected, or KST is not a folder.` |
+| The card is write protected, or `BENCH`, `BENCH/KST` or `BENCH/KST/CONF` on the card is a file and no folder | `Cannot save: card write-protected, or BENCH/KST/CONF is not a folder.` |
 | The card fails the write of the file, or does not answer within 5 s | `Card write error. Nothing was written to the servo.` |
 
 ![A name that exists](img/servo-kst-name-exists.png)
@@ -1093,7 +1097,7 @@ line. [The link page](LinkKST.md) lists the codes.
 - The error code the card's file system gives for a write-protected card
   is not known. A code other than read-only file system, access denied
   and operation not permitted shows `Card write error.` in place of
-  `Cannot save: card write-protected, or KST is not a folder.`
+  `Cannot save: card write-protected, or BENCH/KST/CONF is not a folder.`
 - The proposed names end at `KST999`. With that name taken the next free
   number is proposed, and the highest number is then not the latest file.
 - A page behind the first 64 files reads the directory once more per 64
@@ -1116,7 +1120,8 @@ line. [The link page](LinkKST.md) lists the codes.
 - Without a card the record of a write is lost at power off.
 - A mounted card that does not take the record stops every write: a card
   taken out after the mount, a write-protected card, or a card on which
-  `KST/KST.TXT` or `KST/KST.NEW` is a folder. Each attempt ends with `Could not save the file to the card. Nothing was written to the servo.` The panel does not
+  `BENCH/KST/CONF/KST.TXT` or `BENCH/KST/CONF/KST.NEW` is a folder, or a
+  level of `BENCH/KST/CONF` is a file. Each attempt ends with `Could not save the file to the card. Nothing was written to the servo.` The panel does not
   unmount such a card. A panel started without a card holds the record in
   memory and writes.
 - The record of a write that ended is cleared on the card after the write,

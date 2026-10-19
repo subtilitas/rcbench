@@ -230,6 +230,23 @@ partition table: the band says `IOmcu cannot update over CAN. Install
 firmware once via USB.`, and it takes [step 2](#from-the-release-assets).
 The time of the upload and of the update over CAN is not measured.
 
+### The SD card of 0.21.0 and older
+
+The panel keeps its files on the SD (Secure Digital) card in folders under
+`BENCH` and `USER` ([Logs](Screens.md#logs)). It moves nothing a card of
+0.21.0 or older holds, and it does not read these:
+
+| 0.21.0 and older | Read from | On a computer |
+| --- | --- | --- |
+| `/ESC/*.json`, ESC profiles | `/BENCH/ESC/CONF/` | move the files there |
+| `/KST/*.TXT`, servo files and the record `KST.TXT` | `/BENCH/KST/CONF/` | move the files there, `KST.TXT` with them |
+| `/RCBENCH.LOG`, fault log | not read; new lines go to `/BENCH/RCBENCH.LOG` | keep or delete |
+| run logs in the root | listed on the ROOT tab of LOGS | nothing to do |
+
+A record `KST.TXT` left in `/KST` is not seen at start-up: the restore it
+offers for an interrupted servo write needs the file moved first.
+Firmware 0.21.0 and older does not read the `BENCH` folders.
+
 ### From a source tree
 
 ```bash
@@ -1016,7 +1033,7 @@ newest and least proven things are all mine and all only compiler-checked:
 
 The first two are inert on an IOmcu that reports no drawing, which is
 the quickest way to rule them out. The third is inert with no card in the
-slot. With a card it appends a line to `RCBENCH.LOG` whenever a fault is
+slot. With a card it appends a line to `BENCH/RCBENCH.LOG` whenever a fault is
 raised, ARMED or not; the run file is what waits for a switch to ARMED, and for the
 first row after it.
 

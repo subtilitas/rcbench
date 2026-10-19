@@ -37,9 +37,9 @@ ist jedes Zeitfeld null, bis eine Aufnahme am Prüfstand es misst.
 | Ablage | Pfad | Gelesen |
 | --- | --- | --- |
 | Eingebaut | `shared/esc/profiles/*.json`, in das Panel-Image übersetzt | immer |
-| SD-Karte | `/ESC/*.json` | einmal, beim Start |
+| SD-Karte | `/BENCH/ESC/CONF/*.json` | einmal, beim Start |
 
-Eine Datei auf der Karte heißt wie ihre id: `/ESC/hobbywing-flyfun-8item.json`
+Eine Datei auf der Karte heißt wie ihre id: `/BENCH/ESC/CONF/hobbywing-flyfun-8item.json`
 enthält `"id": "hobbywing-flyfun-8item"`. Groß- und Kleinschreibung dürfen
 abweichen; alles andere wird abgelehnt. Eine Datei mit der id eines
 eingebauten Profils ersetzt dieses Profil. Eine Datei mit neuer id fügt ein
@@ -48,7 +48,7 @@ Profil hinter den eingebauten an. Eine Datei, die ihren Hersteller über
 Profile und die von der Karte, wird abgelehnt. Dateinamen ab 64 Zeichen werden nicht
 gelesen. Die
 Karte hält höchstens 32 Profile; das Panel liest die Namen der ersten 64
-`.json`-Dateien in `/ESC/`. Eine abgelehnte Datei wird auf der Konsole mit
+`.json`-Dateien in `/BENCH/ESC/CONF/`. Eine abgelehnte Datei wird auf der Konsole mit
 Grund genannt, zum Beispiel:
 
 ```
@@ -186,8 +186,13 @@ einem Zeitpunkt gebeten werden kann.
 
 ## Ein Profil hinzufügen oder korrigieren
 
-An einem Prüfstand: die Datei nach `/ESC/` auf die Karte kopieren und das
-Panel neu starten.
+An einem Prüfstand: die Datei nach `/BENCH/ESC/CONF/` auf die Karte kopieren
+und das Panel neu starten. Der Ordner wird am Computer angelegt; das Panel
+liest ihn nur.
+
+Firmware 0.21.0 und älter liest `/ESC/`. Das Panel liest diesen Ordner
+nicht: Seine Dateien wirken wieder, sobald sie am Computer nach
+`/BENCH/ESC/CONF/` verschoben sind.
 
 Im Repository: die Datei unter `shared/esc/profiles/` ändern oder anlegen,
 dann die C-Datei neu erzeugen und prüfen:

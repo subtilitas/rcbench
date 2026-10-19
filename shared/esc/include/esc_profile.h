@@ -7,7 +7,8 @@
  * gesture and one menu.  The profiles of record are the JSON files in
  * shared/esc/profiles/, described in docs/EscProfiles.md.
  * tools/gen_esc_profiles.py compiles them into esc_profiles_gen.c, so every
- * panel carries them without a card.  A file in /ESC/ on the SD card is
+ * panel carries them without a card.  A file in BENCH/ESC/CONF on the SD
+ * card (CARD_ESC_CONF, card_tree.h) is
  * parsed by esc_profile_parse() and replaces the built-in profile of the
  * same id, or adds one when the id is new.
  *

@@ -1,8 +1,9 @@
 /*
  * Servo configuration files on the card: names, saving, listing, loading.
  *
- * The files live in the directory KST_STORE_DIR of the card, apart from the
- * run logs and reports in its root.  A file is "<base name>.TXT".  The base
+ * The files live in the folder KST_STORE_DIR of the card, BENCH/KST/CONF
+ * (card_tree.h), apart from the run logs.  The folder KST of firmware 0.21
+ * and older is not read.  A file is "<base name>.TXT".  The base
  * name is a person's choice; kst_store_preset() proposes "KST001" to
  * "KST999".  This layer adds the extension and holds every name to what the
  * card's file system and a desktop computer both take.
@@ -31,12 +32,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "card_tree.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** The directory of the card that holds the files. */
-#define KST_STORE_DIR "KST"
+/** The folder of the card that holds the files, made level by level on
+ *  the first save. */
+#define KST_STORE_DIR CARD_KST_CONF
 
 /** The extension of every file, added by this layer. */
 #define KST_STORE_EXT ".TXT"

@@ -137,7 +137,7 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never
 - Auto logs switched off during a run ends that run's file there; switched on during an ARMED or supply run, a file starts there.
 - User logs counts at START TEST and START LIMIT RUN: a run keeps what it started with. With it off, the SERVO screen names `USER LOGS OFF` where the file would be.
 - REPORT on SERVO > OPTIONS > DUT decides, with User logs ON, whether `ATESTnnn.TXT` is written.
-- The fault log, `RCBENCH.LOG`, is written whatever Auto logs says.
+- The fault log, `BENCH/RCBENCH.LOG`, is written whatever Auto logs says.
 - [Logs](logs.md#what-a-run-writes) lists the folders.
 
 ## INTERFACES

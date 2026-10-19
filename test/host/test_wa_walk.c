@@ -239,6 +239,48 @@ TEST_CASE(a_card_pulled_part_way_ends_the_walk_with_an_error)
     fake_free(&fs);
 }
 
+TEST_CASE(the_bench_tree_is_walked_folder_by_folder)
+{
+    /* The panel's folders three deep, an empty one among them, beside the
+     * root files and folders of firmware 0.21 and older. */
+    fake_fs_t fs;
+    fake_init(&fs);
+    fake_bench_tree(&fs);
+    CHECK_EQ(walk_log(&fs, NULL), WA_WALK_END);
+    CHECK_STR_EQ(g_log,
+                 "D \n"
+                 "F BENCH041.CSV 18422\n"
+                 "F SERVO040.TXT 1890\n"
+                 "F RCBENCH.LOG 2080\n"
+                 "D ESC\n"
+                 "F ESC/hobbywing-flyfun-8item.json 3104\n"
+                 "D KST\n"
+                 "F KST/KST001.TXT 1310\n"
+                 "D BENCH\n"
+                 "F BENCH/RCBENCH.LOG 6240\n"
+                 "F BENCH/RCBENCH.OLD 1048576\n"
+                 "D BENCH/LOGS\n"
+                 "F BENCH/LOGS/SERVO001.CSV 4410\n"
+                 "F BENCH/LOGS/MOTOR002.CSV 9120\n"
+                 "F BENCH/LOGS/SUPPL003.CSV 2205\n"
+                 "D BENCH/ESC\n"
+                 "D BENCH/ESC/CONF\n"
+                 "F BENCH/ESC/CONF/hobbywing-flyfun-8item.json 3104\n"
+                 "D BENCH/KST\n"
+                 "D BENCH/KST/CONF\n"
+                 "F BENCH/KST/CONF/KST.TXT 396\n"
+                 "F BENCH/KST/CONF/Wing left.TXT 1310\n"
+                 "D BENCH/HITEC\n"
+                 "D BENCH/HITEC/CONF\n"
+                 "D USER\n"
+                 "D USER/LOGS\n"
+                 "F USER/LOGS/ATEST001.CSV 15104\n"
+                 "F USER/LOGS/ATEST001.TXT 2240\n"
+                 "F USER/LOGS/LIMIT002.TXT 1940\n");
+    CHECK_EQ(fs.dirs_open_max, 1);
+    fake_free(&fs);
+}
+
 int main(void)
 {
     RUN(an_empty_card_is_the_root_alone);
@@ -248,5 +290,6 @@ int main(void)
     RUN(paths_over_384_bytes_and_folders_past_16_deep_are_counted);
     RUN(many_files_are_all_listed_in_the_same_memory);
     RUN(a_card_pulled_part_way_ends_the_walk_with_an_error);
+    RUN(the_bench_tree_is_walked_folder_by_folder);
     return test_summary("wa_walk");
 }

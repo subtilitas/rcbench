@@ -337,23 +337,66 @@ def test_prog_calls_name_every_hook_of_every_page_set():
         assert set(sc.PROG_CALLS[caller]) == want, caller
 
 
-def test_take_calls_name_every_card_function_the_panel_hands_log_take():
-    """A log_take_io_t callback TAKE_CALLS leaves out is a FatFs chain on
-    the runlog task the graph does not follow: log_take.c calls each field
-    it has, and the panel's io names one function for each."""
-    logfile = sc.ROOT / "shared" / "logfile"
-    header = (logfile / "include" / "log_take.h").read_text(encoding="utf-8")
-    struct = re.search(r"typedef struct \{(.*?)\} log_take_io_t;", header,
-                       re.S)
-    assert struct
-    fields = set(re.findall(r"\(\*(\w+)\)\(", struct.group(1)))
-    source = (logfile / "log_take.c").read_text(encoding="utf-8")
-    assert set(re.findall(r"\bio->(\w+)\(", source)) == fields
-    panel = (sc.PANEL_DIR / "main" / "panel_log.c").read_text(
-        encoding="utf-8")
-    init = re.search(r"log_take_io_t \w+ = \{(.*?)\};", panel, re.S)
-    assert init
-    given = dict(re.findall(r"\.(\w+)\s*=\s*(\w+)", init.group(1)))
+LOGFILE = sc.ROOT / "shared" / "logfile"
+PANEL_MAIN = sc.PANEL_DIR / "main"
+
+
+def io_given(path, struct):
+    """{field: function} of the one `struct` initialised in @p path."""
+    text = path.read_text(encoding="utf-8")
+    inits = re.findall(struct + r" \w+ = \{(.*?)\};", text, re.S)
+    assert len(inits) == 1, (path, struct)
+    return dict(re.findall(r"\.(\w+)\s*=\s*(\w+)", inits[0]))
+
+
+def io_table_holds(table, header, struct, source, panel):
+    """A table of callbacks names, over its callers, the panel function of
+    every field of @p struct that @p source calls, and every caller is a
+    function of @p source.  A field left out is a FatFs chain on the runlog
+    task the graph does not follow."""
+    text = (LOGFILE / "include" / header).read_text(encoding="utf-8")
+    body = re.search(r"typedef struct \{(.*?)\} " + struct + ";", text,
+                     re.S)
+    assert body
+    fields = set(re.findall(r"\(\*(\w+)\)\(", body.group(1)))
+    src = (LOGFILE / source).read_text(encoding="utf-8")
+    called = set(re.findall(r"\bio->(\w+)\(", src))
+    assert called <= fields
+    given = io_given(PANEL_MAIN / panel, struct)
     assert set(given) - {"ctx"} == fields
-    assert set(sc.TAKE_CALLS) == {"log_take"}
-    assert set(sc.TAKE_CALLS["log_take"]) == {given[f] for f in fields}
+    named = set().union(*(set(v) for v in table.values()))
+    assert {given[f] for f in called} <= named
+    for caller in table:
+        assert re.search(r"\b" + caller + r"\(", src), caller
+    return named - {given[f] for f in called}
+
+
+def test_take_calls_name_every_card_function_the_panel_hands_log_take():
+    rest = io_table_holds(sc.TAKE_CALLS, "log_take.h", "log_take_io_t",
+                          "log_take.c", "panel_log.c")
+    assert rest == set()
+
+
+def test_fault_calls_name_every_card_function_of_the_fault_log():
+    rest = io_table_holds(sc.FAULT_CALLS, "fault_log.h", "fault_log_io_t",
+                          "fault_log.c", "panel_log.c")
+    assert rest == set()
+
+
+def test_kst_calls_name_every_card_function_of_the_servo_files():
+    rest = io_table_holds(sc.KST_CALLS, "kst_store.h", "kst_store_io_t",
+                          "kst_store.c", "kst_files.c")
+    assert rest == set()
+
+
+def test_card_calls_name_every_folder_maker_handed_to_card_make_dirs():
+    """Every function a caller hands card_make_dirs(), in shared/ and in the
+    panel, and no other."""
+    handed = set()
+    for path in [*LOGFILE.glob("*.c"), *PANEL_MAIN.glob("*.c")]:
+        text = path.read_text(encoding="utf-8")
+        handed |= set(re.findall(
+            r"\bcard_make_dirs\((?!const )[^,()]+,\s*(\w+)\s*,", text))
+    assert handed
+    assert set(sc.CARD_CALLS) == {"card_make_dirs"}
+    assert set(sc.CARD_CALLS["card_make_dirs"]) == handed

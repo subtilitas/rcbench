@@ -223,16 +223,39 @@ PROG_CALLS = {
     "prog_ps_pin": ("kst_panel_pin", "esc_stick_ps_pin"),
 }
 
-# The log_take_io_t callbacks shared/logfile/log_take.c calls: the card
-# functions of firmware/panel/main/panel_log.c, on the runlog task.  A run's
-# file is opened through them, so the chain from log_take() into FatFs
-# (mkdir, stat, the directory walk and fopen) is followed by name.
-# log_take() is the one caller in the ELF: its helpers that make the calls
-# are inlined.  The same checks as PORT_CALLS; test/tools/test_stack_check.py
-# holds the table to log_take.c and to the panel's log_take_io_t.
+# The card callbacks of shared/logfile, on the runlog task: the files of a
+# run, of the fault log and of the servo programmer are opened through
+# them, so each chain into FatFs (mkdir, stat, the directory walk, fopen,
+# rename) is followed by name.  The same checks as PORT_CALLS;
+# test/tools/test_stack_check.py holds each table to its source and to the
+# functions the panel hands over.
+#
+# log_take_io_t (log_take.c): log_take() makes 4 of the calls, its helpers
+# inlined; take_level() hands a folder level to make_dir().
 TAKE_CALLS = {
-    "log_take": ("take_mounted", "take_make_dir", "take_walk", "take_exists",
-                 "take_create"),
+    "log_take": ("take_mounted", "take_walk", "take_exists", "take_create"),
+    "take_level": ("take_make_dir",),
+}
+
+# card_make_fn (card_tree.c): every function a caller hands
+# card_make_dirs().
+CARD_CALLS = {
+    "card_make_dirs": ("take_level", "fault_level", "panel_card_make_dir"),
+}
+
+# fault_log_io_t (fault_log.c), the fault log of panel_log.c.
+FAULT_CALLS = {
+    "fault_log_note": ("note_mounted", "note_size", "note_remove",
+                       "note_rename", "note_append"),
+    "fault_level": ("panel_card_make_dir",),
+}
+
+# kst_store_io_t (kst_store.c), the servo files of kst_files.c.
+KST_CALLS = {
+    "kst_store_preset": ("io_mounted", "io_walk"),
+    "kst_store_save": ("io_mounted", "io_walk", "io_create"),
+    "kst_store_list_after": ("io_mounted", "io_walk"),
+    "kst_store_load": ("io_mounted", "io_size", "io_read"),
 }
 
 # The fw_boot_ops_t callbacks shared/fwupdate calls: the panel's start
@@ -715,7 +738,12 @@ def main() -> int:
                                 SERVO_CALLS),
                                ("PROG_CALLS", "shared/ui", PROG_CALLS),
                                ("TAKE_CALLS", "shared/logfile",
-                                TAKE_CALLS)):
+                                TAKE_CALLS),
+                               ("CARD_CALLS", "shared/logfile",
+                                CARD_CALLS),
+                               ("FAULT_CALLS", "shared/logfile",
+                                FAULT_CALLS),
+                               ("KST_CALLS", "shared/logfile", KST_CALLS)):
         for caller, callbacks in calls.items():
             addrs = by_name.get(caller, [])
             if len(addrs) != 1:

@@ -116,7 +116,7 @@ ENABLE WRITE TO SERVO is off by default. A tap on OFF opens a page that names th
 WRITE n VALUES opens the write page with the changes, `DEAD BAND: 2.0 -> 1.6 us`. HOLD TO WRITE starts the write after 2 s.
 
 1. The first write of a session saves the servo's values to a new file on the SD (Secure Digital) card.
-2. The panel records the write in `KST/KST.TXT`, or in memory without a card.
+2. The panel records the write in `BENCH/KST/CONF/KST.TXT`, or in memory without a card.
 3. The IOmcu checks the values against the same limits, plans the register writes and runs them.
 4. Every register written is read back. A write that does not take is undone.
 
@@ -129,7 +129,7 @@ A value written and read back counts as in effect. Whether a servo acts on it be
 
 ![The files on the card](view:servo-kst-files)
 
-FILES lists the servo files in the card's folder `KST`, 5 a page, each with its servo type. The first entry saves the servo's values under a new name, `KST001` and upwards, up to 16 characters.
+FILES lists the servo files in the card's folder `BENCH/KST/CONF`, 5 a page, each with its servo type. The first entry saves the servo's values under a new name, `KST001` and upwards, up to 16 characters.
 
 ![The name of a new file](view:servo-kst-name)
 ![A file loaded](view:servo-kst-file-loaded)

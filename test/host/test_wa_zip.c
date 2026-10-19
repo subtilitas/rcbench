@@ -429,12 +429,30 @@ TEST_CASE(too_few_crc_slots_are_refused_before_a_byte)
     fake_free(&fs);
 }
 
+TEST_CASE(the_bench_tree_keeps_its_folders_in_the_archive)
+{
+    /* check_wa_zip.py holds bench_tree.zip to its manifest: every path,
+     * BENCH/KST/CONF/Wing left.TXT and the empty BENCH/HITEC/CONF with
+     * them. */
+    fake_fs_t fs;
+    fake_init(&fs);
+    fake_bench_tree(&fs);
+    const wa_fs_t w = fake_wa(&fs);
+    wa_zip_plan_t plan;
+    CHECK_EQ(wa_zip_plan(&w, &plan), WA_ZIP_OK);
+    CHECK_EQ(plan.files, (uint64_t)FAKE_TREE_FILES);
+    const uint64_t a = write_zip(&fs, "bench_tree", 4096u);
+    CHECK_EQ(write_zip(&fs, "bench_tree_7", 7u), a);
+    fake_free(&fs);
+}
+
 int main(void)
 {
     setup_dir();
     RUN(crc32_and_dos_times_are_as_zip_takes_them);
     RUN(an_empty_card_is_an_empty_archive);
     RUN(nested_folders_utf8_spaces_and_empty_files_are_kept);
+    RUN(the_bench_tree_keeps_its_folders_in_the_archive);
     RUN(the_length_is_known_before_a_byte_is_read);
     RUN(entries_at_the_16_bit_count_switch_to_zip64);
     RUN(sizes_at_the_32_bit_limit_switch_to_zip64);

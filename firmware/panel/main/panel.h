@@ -24,6 +24,7 @@
 #include "arming.h"
 #include "bench_state.h"
 #include "bind_link.h"
+#include "card_tree.h"
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
 #include "endpoints_link.h"
@@ -301,6 +302,10 @@ extern atomic_uint s_test_open_txt;
  * the last one (log_viewer_tab_t): stored by the logger, the tab first. */
 extern atomic_uint s_card_written;
 extern atomic_int  s_card_written_tab;
+
+/* One level of a folder of the card (card_make_fn, card_tree.h): the
+ * logs', the fault log's and the servo files' folders are made with it. */
+card_dir_t panel_card_make_dir(void *ctx, const char *level);
 
 /* The programmer's record, KST.TXT: filled by the render loop, written by
  * the logger. */

@@ -413,10 +413,50 @@ TEST_CASE(every_upload_answer_has_its_own_text_in_both_languages)
     memset(&g_p, 0, sizeof(g_p));
 }
 
+TEST_CASE(the_bench_tree_lists_every_file_under_its_folder)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    fake_bench_tree(&fs);
+    const wa_fs_t w = fake_wa(&fs);
+    begin(-1);
+    wa_page_main(&g_o, &k_en, &w);
+    CHECK(wa_out_flush(&g_o));
+    static char found[FAKE_TREE_FILES + 4][WA_PATH_MAX + 1u];
+    CHECK_EQ(links(g_p.buf, found, FAKE_TREE_FILES + 4), FAKE_TREE_FILES);
+    const char *want[] = {
+        "RCBENCH.LOG", "KST/KST001.TXT", "BENCH/RCBENCH.LOG",
+        "BENCH/RCBENCH.OLD", "BENCH/LOGS/MOTOR002.CSV",
+        "BENCH/ESC/CONF/hobbywing-flyfun-8item.json",
+        "BENCH/KST/CONF/KST.TXT", "BENCH/KST/CONF/Wing left.TXT",
+        "USER/LOGS/ATEST001.TXT", "USER/LOGS/LIMIT002.TXT",
+    };
+    for (size_t i = 0u; i < sizeof(want) / sizeof(want[0]); ++i) {
+        bool seen = false;
+        for (int j = 0; j < FAKE_TREE_FILES; ++j) {
+            seen = seen || strcmp(found[j], want[i]) == 0;
+        }
+        CHECK(seen);
+    }
+    /* Each folder of the tree is a heading, in walk order. */
+    const char *h_bench = strstr(g_p.buf, "<h3>/BENCH</h3>");
+    const char *h_kst = strstr(g_p.buf, "<h3>/BENCH/KST/CONF</h3>");
+    const char *h_user = strstr(g_p.buf, "<h3>/USER/LOGS</h3>");
+    CHECK(h_bench != NULL && h_kst != NULL && h_user != NULL);
+    CHECK(h_bench < h_kst && h_kst < h_user);
+    char line[96];
+    snprintf(line, sizeof(line), "%d files, %u bytes.", FAKE_TREE_FILES,
+             FAKE_TREE_BYTES);
+    CHECK(strstr(g_p.buf, line) != NULL);
+    CHECK_EQ(fs.dirs_open, 0);
+    fake_free(&fs);
+}
+
 int main(void)
 {
     RUN(the_code_form_asks_for_the_code_and_shows_nothing_else);
     RUN(every_file_is_listed_with_a_link_back_to_it);
+    RUN(the_bench_tree_lists_every_file_under_its_folder);
     RUN(without_a_card_the_page_says_so_and_still_takes_an_upload);
     RUN(an_empty_card_and_names_left_out_are_said);
     RUN(a_long_listing_streams_and_stops_when_the_browser_goes);

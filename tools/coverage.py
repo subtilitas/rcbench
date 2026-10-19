@@ -114,6 +114,8 @@ TRACKED = [
     "shared/logfile/log_fields.c",
     "shared/logfile/log_name.c",
     "shared/logfile/log_take.c",
+    "shared/logfile/card_tree.c",
+    "shared/logfile/fault_log.c",
     "shared/safety/heartbeat.c",
     "shared/safety/arming.c",
     "shared/safety/safety_gate.c",

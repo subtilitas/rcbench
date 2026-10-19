@@ -461,8 +461,9 @@ place of the `c` of `checksum`, and `#` in place of the line end before it.
 
 Where the files are kept is the caller's choice. In this repository
 `shared/logfile/kst_store.c` names, saves, lists and loads them on the
-panel's card. It keeps the base name `KST`, in any case, free: `KST.TXT`
-in the directory is the caller's record of a write under way. That name is
+panel's card, in the folder `BENCH/KST/CONF`. It keeps the base name `KST`,
+in any case, free: `KST.TXT` in that folder is the caller's record of a
+write under way. That name is
 refused for a save and a load, and the file is left out of the list.
 
 ## What is measured and what is not
