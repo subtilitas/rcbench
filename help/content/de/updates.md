@@ -14,7 +14,7 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 |---|---|
 | NACH UPDATES SUCHEN | fragt GitHub einmal; dieselbe Taste heißt ABBRECHEN, solange die Suche läuft |
 | ERINNERUNG BEIM START: EIN / AUS | schaltet die Suche beim Start und ihre Erinnerung; gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk an |
-| RELEASES: USABLE / TESTING | legt fest, welche Releases eine Suche anbietet, siehe [Die Suche](#die-suche); gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk USABLE; ein Wechsel blendet das letzte Ergebnis aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
+| RELEASES: STABLE / TESTING | legt fest, welche Releases eine Suche anbietet, siehe [Die Suche](#die-suche); gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk STABLE; ein Wechsel blendet das letzte Ergebnis aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
 | 2 s HALTEN: LADEN & INSTALLIEREN | erscheint, sobald eine Suche ein neueres Release gefunden hat; lädt, prüft und installiert es |
 | 2 s HALTEN: IOMCU AKTUALISIEREN | startet das [IOmcu-Update](coproc_update.md) aus dem Image, das dieses Panel mitbringt, auch nachdem seine Frage abgelehnt wurde |
 
@@ -32,20 +32,20 @@ Der Download braucht außerdem, dass keine Platinenzeichnung geladen oder gespei
 
 ![Eine laufende Suche](view:updates-checking)
 
-Eine ungerade Minor-Nummer ist ein Test-Release, auf GitHub als Pre-Release veröffentlicht (0.21.x). Eine gerade Minor-Nummer ist ein nutzbares Release (0.22.x).
+Eine ungerade Minor-Nummer ist ein Testing-Release, auf GitHub als Pre-Release veröffentlicht (0.21.x). Eine gerade Minor-Nummer ist ein Stable-Release (0.22.x).
 
 Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über Transport Layer Security) und liest den Tag des neuesten Release aus der Antwort. Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen höchstens 30 s. Die Karte zeigt den Schritt und die verbleibenden Sekunden.
 
 | RELEASES | Anfrage | Was gelesen wird |
 |---|---|---|
-| USABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | der Tag aus dem `Location`-Header der Antwort; das Latest-Release von GitHub ist nie ein Pre-Release |
-| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` jedes der 10 nach Datum neuesten Releases, Test oder nutzbar, aus der JSON-Antwort (JavaScript Object Notation); genommen wird die höchste Version unter denen, die kein Entwurf sind, gleich in welcher Reihenfolge; gelesen in Stücken von 4096 Bytes, höchstens 262 144 Bytes, und nicht gespeichert; ein ungültiges Release lehnt die ganze Antwort ab |
+| STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | der Tag aus dem `Location`-Header der Antwort; das Latest-Release von GitHub ist nie ein Pre-Release |
+| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` jedes der 10 nach Datum neuesten Releases, Testing oder Stable, aus der JSON-Antwort (JavaScript Object Notation); genommen wird die höchste Version unter denen, die kein Entwurf sind, gleich in welcher Reihenfolge; gelesen in Stücken von 4096 Bytes, höchstens 262 144 Bytes, und nicht gespeichert; ein ungültiges Release lehnt die ganze Antwort ab |
 
-In beiden Einstellungen wird nur ein Release angeboten, das neuer als der laufende Build ist. Einem Panel mit Test-Release 0.21.0 und USABLE wird das nutzbare Release 0.20.0 nicht angeboten.
+In beiden Einstellungen wird nur ein Release angeboten, das neuer als der laufende Build ist. Einem Panel mit Testing-Release 0.21.0 und STABLE wird das Stable-Release 0.20.0 nicht angeboten.
 
 ![Ein neueres Release](view:updates-newer)
 ![Aktuell](view:updates-current)
-![Ein Test-Release, gefunden mit TESTING](view:updates-testing)
+![Ein Testing-Release, gefunden mit TESTING](view:updates-testing)
 
 | Karte | Bedeutung |
 |---|---|

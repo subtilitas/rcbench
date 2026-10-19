@@ -755,18 +755,18 @@ TEST_CASE(a_job_needs_a_network_and_an_open_gate)
     wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
     CHECK_EQ(f.phase, WA_PH_IDLE);
     CHECK(!wa_fetch_busy(&f));
-    CHECK_EQ(wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_USABLE, false, WA_WHY_NONE, 0u),
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, false, WA_WHY_NONE, 0u),
              WA_GOT_NO_NET);
     CHECK(!f.owe_off);           /* the radio never came on */
-    CHECK_EQ(wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_USABLE, true, WA_WHY_ARMED, 0u),
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, true, WA_WHY_ARMED, 0u),
              WA_GOT_BLOCKED);
     CHECK_EQ(f.why, WA_WHY_ARMED);
-    CHECK_EQ(wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_USABLE, true, WA_WHY_NONE, 0u),
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, true, WA_WHY_NONE, 0u),
              WA_GOT_NONE);
     CHECK_EQ(f.phase, WA_PH_JOINING);
     /* A second start while one runs changes nothing. */
     const uint32_t gen = f.gen;
-    CHECK_EQ(wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_USABLE, true, WA_WHY_NONE,
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true, WA_WHY_NONE,
                             5u), WA_GOT_BLOCKED);
     CHECK_EQ(f.gen, gen);
     CHECK_EQ(f.job, WA_JOB_CHECK);
@@ -787,7 +787,7 @@ TEST_CASE(a_join_hands_the_job_to_the_runner_once)
 {
     wa_fetch_t f;
     wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
-    (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_USABLE, true, WA_WHY_NONE, 0u);
+    (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, true, WA_WHY_NONE, 0u);
     const wa_t jn = joining();
     wa_fetch_tick(&f, 100u, WA_WHY_NONE, &jn);
     CHECK(!wa_fetch_take_run(&f));
@@ -806,7 +806,7 @@ TEST_CASE(a_join_hands_the_job_to_the_runner_once)
     CHECK(wa_fetch_take_off(&f));
     CHECK(!wa_fetch_take_off(&f));
     /* A download starts with SHA256SUMS. */
-    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_USABLE, true, WA_WHY_NONE, 400u);
+    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true, WA_WHY_NONE, 400u);
     CHECK_EQ(f.found.minor, 20u);
     wa_fetch_tick(&f, 500u, WA_WHY_NONE, &w);
     CHECK_EQ(f.phase, WA_PH_SUMS);
@@ -816,7 +816,7 @@ static void check_budget_across_the_wrap(uint32_t t0)
 {
     wa_fetch_t f;
     wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
-    (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_USABLE, true, WA_WHY_NONE, t0);
+    (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, true, WA_WHY_NONE, t0);
     const wa_t w = joined();
     wa_fetch_tick(&f, t0 + 1u, WA_WHY_NONE, &w);
     CHECK(wa_fetch_busy(&f));
@@ -842,7 +842,7 @@ static void download_budgets_across_the_wrap(uint32_t t0)
     wa_fetch_t f;
     wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
     /* Still joining at WA_FETCH_JOIN_MS: over. */
-    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_USABLE, true, WA_WHY_NONE, t0);
+    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true, WA_WHY_NONE, t0);
     const wa_t jn = joining();
     wa_fetch_tick(&f, t0 + WA_FETCH_JOIN_MS - 1u, WA_WHY_NONE, &jn);
     CHECK(wa_fetch_busy(&f));
@@ -850,7 +850,7 @@ static void download_budgets_across_the_wrap(uint32_t t0)
     CHECK_EQ(f.got, WA_GOT_TIMEOUT);
     CHECK_EQ(f.budget_ms, WA_FETCH_JOIN_MS);
     /* Joined in time: WA_FETCH_DOWNLOAD_MS from the start. */
-    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_USABLE, true, WA_WHY_NONE, t0);
+    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true, WA_WHY_NONE, t0);
     const wa_t w = joined();
     wa_fetch_tick(&f, t0 + 1000u, WA_WHY_NONE, &w);
     CHECK_EQ(f.phase, WA_PH_SUMS);
@@ -861,12 +861,12 @@ static void download_budgets_across_the_wrap(uint32_t t0)
     CHECK_EQ(f.budget_ms, WA_FETCH_DOWNLOAD_MS);
     /* The runner's own time-out names the same budget, and a job that
      * ended otherwise names none. */
-    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_USABLE, true, WA_WHY_NONE, t0);
+    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true, WA_WHY_NONE, t0);
     wa_fetch_tick(&f, t0 + 1000u, WA_WHY_NONE, &w);
     const wa_fetch_res_t to = { .got = WA_GOT_TIMEOUT };
     wa_fetch_on_end(&f, f.gen, &to);
     CHECK_EQ(f.budget_ms, WA_FETCH_DOWNLOAD_MS);
-    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_USABLE, true, WA_WHY_NONE, t0);
+    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true, WA_WHY_NONE, t0);
     wa_fetch_abort(&f, WA_WHY_CANCEL);
     CHECK_EQ(f.budget_ms, 0u);
 }
@@ -887,7 +887,7 @@ TEST_CASE(an_abort_ends_the_job_at_each_phase)
         for (size_t i = 0; i < sizeof(whys) / sizeof(whys[0]); ++i) {
             wa_fetch_t f;
             wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
-            (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_USABLE, true,
+            (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true,
                                  WA_WHY_NONE, 0u);
             const wa_t w = (phases[p] == WA_PH_JOINING) ? joining()
                                                         : joined();
@@ -927,7 +927,7 @@ TEST_CASE(the_session_going_off_ends_the_job_with_its_reason)
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
         wa_fetch_t f;
         wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
-        (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_USABLE, true, WA_WHY_NONE, 0u);
+        (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, true, WA_WHY_NONE, 0u);
         wa_t w = joining();
         w.state = WA_ST_OFF;
         w.off = cases[i].off;
@@ -942,7 +942,7 @@ TEST_CASE(the_session_going_off_ends_the_job_with_its_reason)
     /* WI-FI took the radio: another mode. */
     wa_fetch_t f;
     wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
-    (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_USABLE, true, WA_WHY_NONE, 0u);
+    (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, true, WA_WHY_NONE, 0u);
     wa_t w = joined();
     w.mode = WA_MODE_AP;
     wa_fetch_tick(&f, 10u, WA_WHY_NONE, &w);
@@ -954,10 +954,10 @@ TEST_CASE(a_report_for_an_earlier_job_is_dropped)
 {
     wa_fetch_t f;
     wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
-    (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_USABLE, true, WA_WHY_NONE, 0u);
+    (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, true, WA_WHY_NONE, 0u);
     const uint32_t old = f.gen;
     wa_fetch_abort(&f, WA_WHY_CANCEL);
-    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_USABLE, true, WA_WHY_NONE, 10u);
+    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true, WA_WHY_NONE, 10u);
     const wa_t w = joined();
     wa_fetch_tick(&f, 20u, WA_WHY_NONE, &w);
     const wa_fetch_res_t r = { .got = WA_GOT_CURRENT };
@@ -970,7 +970,7 @@ TEST_CASE(a_report_for_an_earlier_job_is_dropped)
     CHECK_EQ(f.total, 2u);
     /* While joining no runner exists: a report then is dropped too. */
     wa_fetch_abort(&f, WA_WHY_CANCEL);
-    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_USABLE, true, WA_WHY_NONE, 30u);
+    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true, WA_WHY_NONE, 30u);
     wa_fetch_on_phase(&f, f.gen, WA_PH_IMAGE);
     CHECK_EQ(f.phase, WA_PH_JOINING);
     /* An abort with nothing running changes nothing. */

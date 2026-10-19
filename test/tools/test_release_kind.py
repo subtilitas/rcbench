@@ -1,5 +1,5 @@
 """release_kind.py: an odd minor number is a testing release, published as
-a pre-release; an even one is a usable release, marked latest.
+a pre-release; an even one is a stable release, marked latest.
 
 SPDX-License-Identifier: MIT
 """
@@ -22,14 +22,14 @@ def run(*args):
 @pytest.mark.parametrize("tag, kind", [
     ("v0.21.0", "testing"),
     ("v0.21.7", "testing"),
-    ("v0.22.0", "usable"),
-    ("v0.22.3", "usable"),
+    ("v0.22.0", "stable"),
+    ("v0.22.3", "stable"),
     ("v1.3.0", "testing"),
-    ("v1.0.0", "usable"),
-    ("v0.0.0", "usable"),
+    ("v1.0.0", "stable"),
+    ("v0.0.0", "stable"),
     ("v0.1.0", "testing"),
     ("v0.65535.0", "testing"),
-    ("v65535.65534.65535", "usable"),
+    ("v65535.65534.65535", "stable"),
 ])
 def test_the_minor_number_names_the_kind(tag, kind):
     testing = kind == "testing"
@@ -85,15 +85,15 @@ def test_the_command_prints_the_lines_for_github_output():
     assert result.stdout == "kind=testing\nprerelease=true\nlatest=false\n"
     result = run("v0.22.0")
     assert result.returncode == 0
-    assert result.stdout == "kind=usable\nprerelease=false\nlatest=true\n"
+    assert result.stdout == "kind=stable\nprerelease=false\nlatest=true\n"
 
 
 def test_no_tag_is_exit_2():
     assert run().returncode == 2
 
 
-def test_an_older_usable_tag_is_not_marked_latest():
-    """A late build of an older usable tag leaves releases/latest alone."""
+def test_an_older_stable_tag_is_not_marked_latest():
+    """A late build of an older stable tag leaves releases/latest alone."""
     assert rk.is_latest("v0.22.0", ["v0.20.0", "v0.18.0"])
     assert rk.is_latest("v0.22.0", ["v0.22.0"])          # a retry
     assert not rk.is_latest("v0.22.0", ["v0.24.0"])
@@ -102,7 +102,7 @@ def test_an_older_usable_tag_is_not_marked_latest():
     assert rk.is_latest("v0.22.3", ["v0.22.2", "v0.20.9"])
     assert rk.is_latest("v1.0.0", ["v0.98.0"])
     assert rk.outputs("v0.22.0", ["v0.24.0"]) == [
-        "kind=usable", "prerelease=false", "latest=false"]
+        "kind=stable", "prerelease=false", "latest=false"]
 
 
 def test_every_full_release_counts_and_malformed_tags_do_not():
@@ -119,8 +119,8 @@ def test_every_full_release_counts_and_malformed_tags_do_not():
 def test_the_command_compares_with_the_published_tags():
     result = run("v0.22.0", "v0.20.0", "v0.24.0")
     assert result.returncode == 0
-    assert result.stdout == "kind=usable\nprerelease=false\nlatest=false\n"
+    assert result.stdout == "kind=stable\nprerelease=false\nlatest=false\n"
     result = run("v0.24.0", "v0.20.0", "v0.22.0", "bogus")
-    assert result.stdout == "kind=usable\nprerelease=false\nlatest=true\n"
+    assert result.stdout == "kind=stable\nprerelease=false\nlatest=true\n"
     # The tag itself out of form fails, published tags or not.
     assert run("v0.22", "v0.20.0").returncode == 1

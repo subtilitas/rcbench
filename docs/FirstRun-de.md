@@ -67,9 +67,9 @@ WLAN](Screens-de.md#wlan)) oder lädt es von GitHub
 ([Bildschirme: Updates](Screens-de.md#updates)), und der IOmcu bekommt
 sein Image vom Panel über CAN.
 
-0.21.0 ist ein Test-Release ([Bauen: Releases](Building-de.md#releases)).
+0.21.0 ist ein Testing-Release ([Bauen: Releases](Building-de.md#releases)).
 CHECK FOR UPDATES eines Panels mit 0.20.0 liest `releases/latest`, das das
-neueste nutzbare Release nennt, und bietet 0.21.0 nicht an; das Panel
+neueste Stable-Release nennt, und bietet 0.21.0 nicht an; das Panel
 nimmt es als Upload auf seiner Browser-Seite ([Ab 0.20.0](#ab-0200)).
 
 ### Aus den Release-Assets

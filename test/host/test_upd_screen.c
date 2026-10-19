@@ -296,7 +296,7 @@ TEST_CASE(the_reminder_switch_flips_the_setting_and_asks_for_the_save)
 TEST_CASE(the_releases_switch_flips_the_channel_and_asks_for_the_save)
 {
     fresh();
-    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);    /* USABLE */
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);    /* STABLE */
     tap(upd(), BTN_X, CHAN_Y);
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);    /* TESTING */
     CHECK(settings_save_asked());
