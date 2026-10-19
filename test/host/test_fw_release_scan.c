@@ -10,7 +10,7 @@
  * JSON (JavaScript Object Notation) is out of form, a single release of
  * it included.  And
  * an offer of a release that is not newer than the running one: equal,
- * older, a usable one older than a running testing one, a running version
+ * older, a stable one older than a running testing one, a running version
  * that did not parse.  Each bound is tested on both sides, and every answer
  * is fed whole, a byte at a time and in pieces.
  *
@@ -515,8 +515,8 @@ TEST_CASE(only_a_newer_release_is_offered)
     CHECK(!offered(0, 9, 0, 0, 10, 0));
     CHECK(offered(0, 9, 10, 0, 9, 9));
     CHECK(offered(10, 0, 0, 9, 0, 0));
-    /* Testing (odd minor) and usable (even minor) mixed: a panel on a
-     * testing release is offered no older usable one, and a newer of
+    /* Testing (odd minor) and stable (even minor) mixed: a panel on a
+     * testing release is offered no older stable one, and a newer of
      * either kind. */
     CHECK(!offered(0, 20, 0, 0, 21, 0));
     CHECK(!offered(0, 20, 3, 0, 21, 0));

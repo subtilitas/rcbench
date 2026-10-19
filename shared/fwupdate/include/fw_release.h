@@ -5,14 +5,14 @@
  * protocol, over TLS, transport layer security).  Which release is the
  * newest, by one of two requests, after SETUP > UPDATES' RELEASES:
  *
- *   USABLE   a GET of FW_REL_LATEST_URL, answered with a redirect whose
+ *   STABLE   a GET of FW_REL_LATEST_URL, answered with a redirect whose
  *            Location names the tag (".../releases/tag/v0.20.0"); only that
  *            header is read, no body.  GitHub's latest release is never a
- *            pre-release, so this names a usable release only.
+ *            pre-release, so this names a stable release only.
  *   TESTING  a GET of FW_REL_API_URL, GitHub's REST (representational
  *            state transfer) API, answered with a JSON (JavaScript Object
  *            Notation) array of the FW_REL_API_RELEASES newest releases by
- *            date, testing or usable.  fw_release_scan_feed() reads each
+ *            date, testing or stable.  fw_release_scan_feed() reads each
  *            one's "tag_name" and "draft", a byte at a time, without
  *            keeping the answer, and names the highest version among those
  *            that are no draft: GitHub's order is by date, not by version.
@@ -70,7 +70,7 @@ extern "C" {
 #define FW_REL_TAG_PREFIX  "https://github.com/" FW_REL_REPO "/releases/tag/"
 #define FW_REL_DL_PREFIX   "https://github.com/" FW_REL_REPO "/releases/download/"
 #define FW_REL_SUMS_NAME   "SHA256SUMS"
-/** The newest release, testing or usable: GitHub's REST API. */
+/** The newest release, testing or stable: GitHub's REST API. */
 #define FW_REL_API_URL     "https://api.github.com/repos/" FW_REL_REPO \
                            "/releases?per_page=10"
 /** The headers the API request carries besides the User-Agent. */

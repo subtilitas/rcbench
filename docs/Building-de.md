@@ -265,7 +265,7 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/pinmap_check.py` | prüft die vorläufige Pinbelegung des IO-Boards, `hardware/docs/ioboard-pinmap-draft.json`, gegen die Pinfunktionen in `io_bank0.h` des pico-sdk; braucht einen Checkout des pico-sdk |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | erzeugen die eingecheckten Tabellen der Platinenzeichnungen und der ESC-Profile aus ihren JSON-Quellen (die Platinenzeichnung aus `configurator/drawings/panel.json` des Konfigurators); `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
-| `tools/release_kind.py` | liest einen Release-Tag und gibt seine Art aus, `testing` für eine ungerade Minor-Nummer und `usable` für eine gerade, mit den Flags `prerelease` und `latest`, nach denen `release.yml` veröffentlicht; mit den Tags der vollen Releases auf GitHub dahinter ist `latest` `false` für einen nutzbaren Tag, der älter als einer davon ist; Exit-Code 1 bei einem Tag außerhalb der Form ([Releases](#releases)) |
+| `tools/release_kind.py` | liest einen Release-Tag und gibt seine Art aus, `testing` für eine ungerade Minor-Nummer und `stable` für eine gerade, mit den Flags `prerelease` und `latest`, nach denen `release.yml` veröffentlicht; mit den Tags der vollen Releases auf GitHub dahinter ist `latest` `false` für einen stabilen Tag, der älter als einer davon ist; Exit-Code 1 bei einem Tag außerhalb der Form ([Releases](#releases)) |
 | `tools/patch_rgb_driver.py` | läuft im Configure-Schritt des Panels: schreibt eine Kopie des RGB-Panel-Treibers von ESP-IDF (`components/esp_lcd/rgb/esp_lcd_panel_rgb.c`) ins Build-Verzeichnis, in der jeder Neustart der Ausgabe der saubere Start des Bootens ist, und lässt den Build fehlschlagen, wenn einer seiner 3 Patches nicht genau einmal im Treiber passt ([Constraints](../STATUS.md#constraints)) |
 | `test/tools/` | pytest-Fälle für die Werkzeuge oben: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler |
@@ -325,33 +325,33 @@ Minor-Nummer nennt seine Art:
 
 | Minor-Nummer | Art | Auf GitHub | Beispiele |
 | --- | --- | --- | --- |
-| ungerade | Test-Release | Pre-Release, nie als Latest markiert | 0.21.0, 0.21.3, 0.23.0, 1.3.0 |
-| gerade | nutzbares Release | volles Release, als Latest markiert, außer ein neueres volles Release existiert | 0.22.0, 0.22.3, 1.4.0 |
+| ungerade | Testing-Release | Pre-Release, nie als Latest markiert | 0.21.0, 0.21.3, 0.23.0, 1.3.0 |
+| gerade | Stable-Release | volles Release, als Latest markiert, außer ein neueres volles Release existiert | 0.22.0, 0.22.3, 1.4.0 |
 
 Die Patch-Nummer trägt Korrekturen in beiden Arten: 0.21.1 korrigiert das
-Test-Release 0.21.0, 0.22.1 das nutzbare Release 0.22.0.
+Testing-Release 0.21.0, 0.22.1 das Stable-Release 0.22.0.
 
 `release.yml` liest die Art mit `tools/release_kind.py`, bevor es auf CI
 (Continuous Integration) wartet. Ein Tag außerhalb der Form lässt den Job
 fehlschlagen, und nichts wird gebaut. Beim Veröffentlichen läuft das
 Werkzeug noch einmal, mit den Tags der vollen Releases, die GitHub dann
-hält; über alle Tags läuft ein Veröffentlichen zur Zeit. Ein nutzbares
+hält; über alle Tags läuft ein Veröffentlichen zur Zeit. Ein Stable-
 Release, das älter als ein veröffentlichtes ist, wird nicht als Latest
 markiert:
 
 ```bash
 python3 tools/release_kind.py v0.21.0   # kind=testing prerelease=true latest=false
-python3 tools/release_kind.py v0.22.0   # kind=usable prerelease=false latest=true
-python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=usable prerelease=false latest=false
+python3 tools/release_kind.py v0.22.0   # kind=stable prerelease=false latest=true
+python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=stable prerelease=false latest=false
 ```
 
 `https://github.com/subtilitas/rcbench/releases/latest` nennt das neueste
-nutzbare Release. Das Panel bietet ein Test-Release nur an, wenn RELEASES
-auf SETUP > UPDATES auf TESTING steht; mit USABLE, dem Standard, bietet es
-nutzbare Releases an ([Bildschirme: Updates](Screens-de.md#updates)). In
+Stable-Release. Das Panel bietet ein Testing-Release nur an, wenn RELEASES
+auf SETUP > UPDATES auf TESTING steht; mit STABLE, dem Standard, bietet es
+Stable-Releases an ([Bildschirme: Updates](Screens-de.md#updates)). In
 beiden Stellungen bietet es nur eine Version an, die neuer ist als die, die
 es hat; ein Panel mit 0.21.0 bekommt 0.20.0 nicht angeboten. Ein
-Test-Release lässt sich auch von Hand laden: seine
+Testing-Release lässt sich auch von Hand laden: seine
 `rcbench-panel-vX.Y.Z.bin` über die Browser-Seite des Panels, oder seine
 Archive über USB (Universal Serial Bus), wie in
 [Erster Lauf, §1](FirstRun-de.md#1-beide-platinen-flashen). Das

@@ -13,10 +13,10 @@ name: Release
 # The minor number of the tag names the kind of release
 # (tools/release_kind.py): an odd minor number is a testing release,
 # published as a pre-release and never marked latest; an even minor number
-# is a usable release, published as a full release and marked latest
+# is a stable release, published as a full release and marked latest
 # unless a newer full release exists.  Publish jobs run one at a time.
 # github.com/.../releases/latest, which the panel's update check reads by
-# default, names the newest usable release.
+# default, names the newest stable release.
 #
 # The configurator-data job runs beside the others and gates nothing: it
 # shows a release tag newer than the configurator data as a warning.
@@ -116,9 +116,9 @@ jobs:
             tools/release_kind.py
           sparse-checkout-cone-mode: false
 
-      # Testing or usable, from the tag's minor number.  A tag out of form
+      # Testing or stable, from the tag's minor number.  A tag out of form
       # fails here, before the wait for CI and before anything is built.
-      # Whether a usable release becomes the latest is decided at the
+      # Whether a stable release becomes the latest is decided at the
       # publish, against the releases GitHub holds then.
       - name: Release kind
         id: kind
@@ -388,7 +388,7 @@ jobs:
           assets=(dist/*.zip dist/*.bin dist/SHA256SUMS)
 
           # A testing release is a pre-release and never the latest; a
-          # usable release is a full release.  The draft carries the
+          # stable release is a full release.  The draft carries the
           # pre-release mark; the latest mark goes with the publish, since
           # a draft cannot be the latest.
           case "$PRERELEASE" in
@@ -415,7 +415,7 @@ jobs:
           check_tag
 
           # The latest mark, against the full releases published now: a
-          # usable release older than one of them is not marked latest, so
+          # stable release older than one of them is not marked latest, so
           # releases/latest never moves back.  The concurrency group of this
           # job holds every other publish off until this one ends.
           set -o pipefail

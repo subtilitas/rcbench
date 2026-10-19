@@ -47,7 +47,7 @@ enum {
     HIT_NONE = 0,
     HIT_CHECK,          /* CHECK FOR UPDATES, or CANCEL while one runs */
     HIT_REMIND,
-    HIT_CHANNEL,        /* RELEASES: USABLE | TESTING */
+    HIT_CHANNEL,        /* RELEASES: STABLE | TESTING */
     HIT_DOWNLOAD,
     HIT_IGNORE,
     HIT_NEVER,
@@ -678,7 +678,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     ui_button(c, btn(1), on ? TR(UPD_REMIND_ON) : TR(UPD_REMIND_OFF),
               UI_PANEL_HI, s.have_press && s.hit == HIT_REMIND, true);
     ui_button(c, btn(2),
-              testing_set() ? TR(UPD_CHAN_TESTING) : TR(UPD_CHAN_USABLE),
+              testing_set() ? TR(UPD_CHAN_TESTING) : TR(UPD_CHAN_STABLE),
               UI_PANEL_HI, s.have_press && s.hit == HIT_CHANNEL, true);
     if (have_newer()) {
         ui_button(c, btn(DL_ROW), TR(UPD_HOLD_DL), hold_fill(&s.hold), false,

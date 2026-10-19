@@ -43,6 +43,11 @@ history is in git.
 
 ### Changed
 
+- The release kind and the RELEASES value are named STABLE, not USABLE:
+  `tools/release_kind.py` prints `kind=stable`, SETUP > UPDATES shows
+  RELEASES: STABLE | TESTING, English and German. A panel set to USABLE
+  keeps its setting, now shown as STABLE (setting `upd_channel` and its
+  stored value 0 are unchanged).
 - The KST page refuses ENTER, and a REBOOT taken in PWM, with BUSY while
   the HITEC page holds the port.
 - The bench configurator describes release 0.21.0. Every repository source
