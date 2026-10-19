@@ -870,6 +870,13 @@ typedef struct {
     size_t loc_n;
     bool   loc_cut;
     bool   loc_seen;
+    bool   chunked;     /* Transfer-Encoding: chunked                    */
+    /* The last answer's head and body bytes read, for the console at the
+     * job's end: kept past h_close(). */
+    int      last_status;
+    int64_t  last_length;
+    bool     last_chunked;
+    uint32_t last_read;
 } http_ctx_t;
 
 static http_ctx_t s_http;
@@ -877,9 +884,17 @@ static http_ctx_t s_http;
 static esp_err_t on_http(esp_http_client_event_t *e)
 {
     http_ctx_t *h = e->user_data;
-    if (e->event_id != HTTP_EVENT_ON_HEADER || h == NULL || h->loc == NULL
-        || e->header_key == NULL || e->header_value == NULL
-        || strcasecmp(e->header_key, "Location") != 0) {
+    if (e->event_id != HTTP_EVENT_ON_HEADER || h == NULL
+        || e->header_key == NULL || e->header_value == NULL) {
+        return ESP_OK;
+    }
+    /* The client's own test, exactly "chunked": anything else is read as
+     * an answer without a length. */
+    if (strcasecmp(e->header_key, "Transfer-Encoding") == 0) {
+        h->chunked = strcasecmp(e->header_value, "chunked") == 0;
+        return ESP_OK;
+    }
+    if (h->loc == NULL || strcasecmp(e->header_key, "Location") != 0) {
         return ESP_OK;
     }
     if (h->loc_seen) {
@@ -920,6 +935,11 @@ static bool h_open(void *ctx, const char *url, uint32_t timeout_ms,
     h->loc_n = 0u;
     h->loc_cut = false;
     h->loc_seen = false;
+    h->chunked = false;
+    h->last_status = 0;
+    h->last_length = -1;
+    h->last_chunked = false;
+    h->last_read = 0u;
     const esp_http_client_config_t cfg = {
         .url = url,
         .method = HTTP_METHOD_GET,
@@ -956,10 +976,12 @@ static bool h_open(void *ctx, const char *url, uint32_t timeout_ms,
     }
     head->status = esp_http_client_get_status_code(h->c);
     head->length = esp_http_client_get_content_length(h->c);
-    /* The client calls every answer without a length chunked: only one
-     * with a length and the chunked coding both is told as chunked. */
-    head->chunked = (head->length > 0)
-                    && esp_http_client_is_chunked_response(h->c);
+    /* The header itself: esp_http_client_is_chunked_response() calls every
+     * answer without a length chunked (esp_http_client_fetch_headers()). */
+    head->chunked = h->chunked;
+    h->last_status = head->status;
+    h->last_length = head->length;
+    h->last_chunked = head->chunked;
     head->loc_n = h->loc_n;
     head->loc_cut = h->loc_cut;
     return true;
@@ -982,8 +1004,14 @@ static int32_t h_read(void *ctx, uint8_t *dst, uint32_t n,
         (void)esp_http_client_set_timeout_ms(
             h->c, (int)((left < FETCH_SLICE_MS) ? left : FETCH_SLICE_MS));
         const int got = esp_http_client_read(h->c, (char *)dst, (int)n);
+        if (got == 0 && h->chunked
+            && !esp_http_client_is_complete_data_received(h->c)) {
+            return -1;           /* closed before the last chunk */
+        }
         if (got >= 0) {
-            return got;          /* 0: the server closed: short */
+            /* 0: the end; with a Content-Length the server closed: short */
+            h->last_read += (uint32_t)got;
+            return got;
         }
         if (got != -ESP_ERR_HTTP_EAGAIN) {
             return -1;
@@ -1094,8 +1122,16 @@ static void fetch_task(void *arg)
         heap_caps_free(s.fup.buf);
     }
     memset(&s.fup, 0, sizeof(s.fup));
+    /* The last answer's head, for a result the screen names only by its
+     * kind: no address, no header value but these. */
     ESP_LOGI(TAG, "GitHub: job %lu ended: %d", (unsigned long)gen,
              (int)res.got);
+    ESP_LOGI(TAG, "GitHub: job %lu last answer: HTTP %d, Content-Length "
+             "%lld, chunked %d, body %lu B read, rel %d (%s)",
+             (unsigned long)gen, s_http.last_status,
+             (long long)s_http.last_length, (int)s_http.last_chunked,
+             (unsigned long)s_http.last_read, (int)res.rel,
+             fw_rel_err_str(res.rel));
     atomic_store(&s.fetch_alive, false);
     poke();
     vTaskDelete(NULL);

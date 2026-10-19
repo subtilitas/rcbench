@@ -7,7 +7,9 @@
  * of the channel, and an API (application programming interface) answer
  * acted on that should not be -- over its size, out of form, without a
  * tag, the first release by date taken over the highest -- or one read on
- * past its 10th release, past the budget or past an abort.  GitHub's request limit, 403 and 429, ends
+ * past its 10th release, past the budget or past an abort; and an answer
+ * in chunks without a Content-Length, as GitHub sends one its cache does
+ * not hold, refused instead of read.  GitHub's request limit, 403 and 429, ends
  * as its own result and asks nothing more.  The HTTP (hypertext transfer
  * protocol) client is scripted; the clock is the test's.
  *
@@ -335,8 +337,12 @@ TEST_CASE(the_answers_size_is_announced_and_within_its_bound)
     REQUIRE_ALLOC(body);
     const struct { int64_t len; bool chunked; wa_got_t got;
                    fw_rel_err_t rel; } cases[] = {
+        /* Neither a length nor chunks: read to the close, refused. */
         { -1, false, WA_GOT_UNEXPECTED, FW_REL_NO_LENGTH },
-        { (int64_t)n, true, WA_GOT_UNEXPECTED, FW_REL_NO_LENGTH },
+        /* Chunked, with or without a length: read in chunks. */
+        { -1, true, WA_GOT_NEWER, FW_REL_OK },
+        { (int64_t)n, true, WA_GOT_NEWER, FW_REL_OK },
+        { 1, true, WA_GOT_NEWER, FW_REL_OK },
         { 0, false, WA_GOT_UNEXPECTED, FW_REL_EMPTY },
         { (int64_t)FW_REL_API_MAX + 1, false, WA_GOT_UNEXPECTED,
           FW_REL_TOO_BIG },
@@ -358,6 +364,164 @@ TEST_CASE(the_answers_size_is_announced_and_within_its_bound)
         }
     }
     free(body);
+}
+
+/* The answer as GitHub sends it when its cache does not hold the request:
+ * Transfer-Encoding: chunked, no Content-Length. */
+static void chunked_answer(const char *body, uint32_t n)
+{
+    g.a = (answer_t){ .status = 200, .length = -1, .chunked = true,
+                      .body = body, .body_n = n };
+    g.have = true;
+}
+
+TEST_CASE(a_chunked_answer_is_read_to_its_releases_end)
+{
+    /* The start-up check's failure: a 200 in chunks ended UNEXPECTED,
+     * NO_LENGTH, without a byte read. */
+    uint32_t n;
+    char *body = api_body("v0.21.1", 9000u, &n);
+    REQUIRE_ALLOC(body);
+    fresh(0u);
+    chunked_answer(body, n);
+    wa_run_t r = run_for(WA_CH_TESTING, V(0, 21, 0), true, 0u);
+    r.io_cap = 512u;
+    wa_fetch_res_t out;
+    wa_run_check(&r, &out);
+    CHECK_EQ(out.got, WA_GOT_NEWER);
+    CHECK_EQ(out.rel, FW_REL_OK);
+    CHECK_EQ(out.found.minor, 21u);
+    CHECK_EQ(out.found.patch, 1u);
+    CHECK_EQ(g.sent, n);
+    CHECK_EQ(g.opens, 1u);
+    CHECK_EQ(g.closes, 1u);
+    /* The same answer on a panel that runs it: CURRENT. */
+    fresh(0u);
+    chunked_answer(body, n);
+    CHECK_EQ(check(WA_CH_TESTING, V(0, 21, 1), true).got, WA_GOT_CURRENT);
+    /* With a Content-Length the same bytes give the same result. */
+    fresh(0u);
+    api_answer(body, n);
+    CHECK_EQ(check(WA_CH_TESTING, V(0, 21, 0), true).got, WA_GOT_NEWER);
+    free(body);
+
+    /* 10 releases and an 11th of 40000 bytes: in chunks too, the read
+     * stops at the piece that closes the 10th. */
+    static char ten[60000];
+    uint32_t k = (uint32_t)sprintf(ten, "[");
+    for (unsigned i = 0; i < 10u; ++i) {
+        k += (uint32_t)sprintf(ten + k, "%s{\"tag_name\":\"v0.%u.0\"}",
+                               (i == 0u) ? "" : ",", 30u - i);
+    }
+    k += (uint32_t)sprintf(ten + k, ",{\"tag_name\":\"v9.0.0\",\"b\":\"");
+    memset(ten + k, 'b', 40000u);
+    k += 40000u;
+    k += (uint32_t)sprintf(ten + k, "\"}]");
+    fresh(0u);
+    chunked_answer(ten, k);
+    r.io_cap = 64u;
+    wa_run_check(&r, &out);
+    CHECK_EQ(out.got, WA_GOT_NEWER);
+    CHECK_EQ(out.found.minor, 30u);
+    CHECK(g.sent < 400u);
+    CHECK_EQ(g.closes, 1u);
+}
+
+TEST_CASE(a_chunked_answer_is_held_to_the_scan_bound)
+{
+    /* Exactly FW_REL_SCAN_MAX bytes, the array's ']' the last: taken. */
+    char *big = malloc(FW_REL_SCAN_MAX + 64u);
+    REQUIRE_ALLOC(big);
+    static const char tail[] = "\",\"tag_name\":\"v0.21.0\"}]";
+    uint32_t n = (uint32_t)sprintf(big, "[{\"body\":\"");
+    const uint32_t pad = FW_REL_SCAN_MAX - n - (uint32_t)(sizeof(tail) - 1u);
+    memset(big + n, 'b', pad);
+    n += pad;
+    n += (uint32_t)sprintf(big + n, "%s", tail);
+    CHECK_EQ(n, FW_REL_SCAN_MAX);
+    fresh(0u);
+    chunked_answer(big, n);
+    wa_fetch_res_t out = check(WA_CH_TESTING, V(0, 20, 0), true);
+    CHECK_EQ(out.got, WA_GOT_NEWER);
+    CHECK_EQ(g.sent, FW_REL_SCAN_MAX);
+    /* One byte of padding more: the scan's bound passes before the
+     * releases end, and nothing past it is read. */
+    memmove(big + 12u, big + 11u, n - 11u);
+    big[11] = 'b';
+    fresh(0u);
+    chunked_answer(big, n + 1u);
+    out = check(WA_CH_TESTING, V(0, 20, 0), true);
+    CHECK_EQ(out.got, WA_GOT_UNEXPECTED);
+    CHECK_EQ(out.rel, FW_REL_SCAN_LONG);
+    CHECK_EQ(g.sent, FW_REL_SCAN_MAX);
+    CHECK_EQ(g.closes, 1u);
+    free(big);
+}
+
+TEST_CASE(a_chunked_answer_that_is_empty_cut_or_overruns)
+{
+    static const char body[] = "[{\"a\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\","
+                               "\"tag_name\":\"v0.21.0\"}]";
+    const uint32_t n = (uint32_t)strlen(body);
+    /* No byte before the last chunk: empty. */
+    fresh(0u);
+    chunked_answer(body, 0u);
+    wa_fetch_res_t out = check(WA_CH_TESTING, V(0, 20, 0), true);
+    CHECK_EQ(out.got, WA_GOT_UNEXPECTED);
+    CHECK_EQ(out.rel, FW_REL_EMPTY);
+    CHECK_EQ(g.reads, 1u);
+    CHECK_EQ(g.closes, 1u);
+    /* The last chunk before the tag ends: no tag. */
+    fresh(0u);
+    chunked_answer(body, 20u);
+    out = check(WA_CH_TESTING, V(0, 20, 0), true);
+    CHECK_EQ(out.got, WA_GOT_UNEXPECTED);
+    CHECK_EQ(out.rel, FW_REL_TAG_NONE);
+    /* One byte: no tag either. */
+    fresh(0u);
+    chunked_answer(body, 1u);
+    out = check(WA_CH_TESTING, V(0, 20, 0), true);
+    CHECK_EQ(out.rel, FW_REL_TAG_NONE);
+    /* Closed before the last chunk: the platform's read fails. */
+    fresh(0u);
+    chunked_answer(body, n);
+    g.a.read_breaks = true;
+    wa_run_t r = run_for(WA_CH_TESTING, V(0, 20, 0), true, 0u);
+    r.io_cap = 8u;
+    wa_run_check(&r, &out);
+    CHECK_EQ(out.got, WA_GOT_CONNECT);
+    CHECK_EQ(g.closes, 1u);
+    /* More than asked for: 9 bytes for a piece of 8. */
+    fresh(0u);
+    chunked_answer(body, n);
+    g.a.overrun = true;
+    wa_run_check(&r, &out);
+    CHECK_EQ(out.got, WA_GOT_UNEXPECTED);
+    CHECK_EQ(out.rel, FW_REL_OVERRUN);
+    /* Pieces of 4 bytes, 2 s each, from 25 s on: the budget ends it. */
+    fresh(25000u);
+    chunked_answer(body, n);
+    g.a.read_ms = 2000u;
+    r.io_cap = 4u;
+    wa_run_check(&r, &out);
+    CHECK_EQ(out.got, WA_GOT_TIMEOUT);
+    CHECK(g.reads <= 3u);
+    /* An abort after the first piece. */
+    fresh(0u);
+    chunked_answer(body, n);
+    g.stop_after_reads = 1u;
+    r.io_cap = 8u;
+    wa_run_check(&r, &out);
+    CHECK_EQ(out.got, WA_GOT_ABORTED);
+    CHECK_EQ(g.reads, 1u);
+    /* STABLE reads no body: chunks change nothing there. */
+    fresh(0u);
+    latest_answer("v0.22.0");
+    g.a.chunked = true;
+    g.a.length = -1;
+    out = check(WA_CH_STABLE, V(0, 20, 0), true);
+    CHECK_EQ(out.got, WA_GOT_NEWER);
+    CHECK_EQ(g.reads, 0u);
 }
 
 TEST_CASE(a_tag_out_of_form_has_its_own_reason)
@@ -591,6 +755,9 @@ int main(void)
     RUN(only_a_newer_release_is_offered_on_either_channel);
     RUN(the_request_limit_is_its_own_result);
     RUN(the_answers_size_is_announced_and_within_its_bound);
+    RUN(a_chunked_answer_is_read_to_its_releases_end);
+    RUN(a_chunked_answer_is_held_to_the_scan_bound);
+    RUN(a_chunked_answer_that_is_empty_cut_or_overruns);
     RUN(a_tag_out_of_form_has_its_own_reason);
     RUN(a_body_that_breaks_off_lies_or_overruns);
     RUN(the_api_check_holds_its_budget_across_the_wrap);

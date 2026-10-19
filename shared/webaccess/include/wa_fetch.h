@@ -12,8 +12,8 @@
  *             GitHub's API headers, whose answer's 10 newest releases by
  *             date name it, the highest version among them that is no
  *             draft (fw_release_scan_feed()), read up to the 10th
- *             release's end and no further; 403 and 429, GitHub's request
- *             limit, end as LIMIT.
+ *             release's end and no further, with a Content-Length or in
+ *             chunks; 403 and 429, GitHub's request limit, end as LIMIT.
  *             Either way a release is NEWER only when
  *             fw_release_offered() says so.  Join, address and request
  *             take WA_FETCH_CHECK_MS at most, together.
@@ -228,11 +228,17 @@ void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r);
 
 /* ---------------------------------------------------------- the runner */
 
-/** A response's head, as the client read it. */
+/**
+ * A response's head, as the client read it.  @c chunked is the header
+ * Transfer-Encoding: chunked, not a guess from a missing length: GitHub's
+ * API answers a request its cache does not hold in chunks, without a
+ * Content-Length (its Cache-Control is max-age=60), and the same request
+ * from its cache with one.
+ */
 typedef struct {
     int     status;     /**< HTTP status; 0 none                        */
     int64_t length;     /**< Content-Length; -1 none                    */
-    bool    chunked;
+    bool    chunked;    /**< Transfer-Encoding: chunked                 */
     size_t  loc_n;      /**< Location bytes kept; 0 none                */
     bool    loc_cut;    /**< the Location was longer than the buffer    */
 } wa_http_head_t;
@@ -250,7 +256,8 @@ typedef struct {
                     bool api, wa_http_head_t *head, char *loc,
                     size_t loc_cap);
     /** Up to @p n body bytes: more than 0 read, 0 the end, below 0 broke
-     *  off or nothing in @p timeout_ms. */
+     *  off or nothing in @p timeout_ms.  On a chunked body 0 is its last
+     *  chunk only: a body closed before it is below 0. */
     int32_t (*read)(void *ctx, uint8_t *dst, uint32_t n,
                     uint32_t timeout_ms);
     void    (*close)(void *ctx);

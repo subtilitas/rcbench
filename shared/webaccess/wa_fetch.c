@@ -396,7 +396,8 @@ static void found(const wa_run_t *r, wa_fetch_res_t *out, fw_version_t v)
 /*
  * TESTING: the API's answer, read a piece at a time into the scan until it
  * ends.  The bytes after the 10th release are not read: the connection
- * closes.
+ * closes.  A chunked answer has no length to hold it to: it is read until
+ * the scan ends, its last chunk, or FW_REL_SCAN_MAX bytes.
  */
 static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
 {
@@ -420,14 +421,18 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
         res(out, WA_GOT_REFUSED, FW_REL_STATUS);
         return;
     }
-    const fw_rel_err_t le = fw_release_length(head.length, head.chunked,
-                                              FW_REL_API_MAX);
-    if (le != FW_REL_OK) {
-        h->close(h->ctx);
-        res(out, WA_GOT_UNEXPECTED, le);
-        return;
+    const bool chunked = head.chunked;
+    uint32_t total = FW_REL_SCAN_MAX;    /* chunked: the most read */
+    if (!chunked) {
+        const fw_rel_err_t le = fw_release_length(head.length, false,
+                                                  FW_REL_API_MAX);
+        if (le != FW_REL_OK) {
+            h->close(h->ctx);
+            res(out, WA_GOT_UNEXPECTED, le);
+            return;
+        }
+        total = (uint32_t)head.length;
     }
-    const uint32_t total = (uint32_t)head.length;
     fw_rel_scan_t scan;
     fw_release_scan_init(&scan);
     uint32_t done = 0u;
@@ -452,9 +457,13 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
             failed(r, out, WA_GOT_CONNECT, FW_REL_OK);
             return;
         }
+        if (got == 0 && chunked && done > 0u) {
+            break;                       /* its last chunk */
+        }
         if (got == 0) {
             h->close(h->ctx);
-            res(out, WA_GOT_UNEXPECTED, FW_REL_SHORT);
+            res(out, WA_GOT_UNEXPECTED, chunked ? FW_REL_EMPTY
+                                                : FW_REL_SHORT);
             return;
         }
         if ((uint32_t)got > want) {
@@ -466,6 +475,11 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
         ended = fw_release_scan_feed(&scan, r->io, (size_t)got);
     }
     h->close(h->ctx);
+    if (!ended && chunked && done >= total) {
+        /* FW_REL_SCAN_MAX bytes in chunks without the releases' end. */
+        res(out, WA_GOT_UNEXPECTED, FW_REL_SCAN_LONG);
+        return;
+    }
     fw_version_t v;
     const fw_rel_err_t e = fw_release_scan_end(&scan, &v);
     if (e != FW_REL_OK) {

@@ -2956,9 +2956,12 @@ equal and PATCH is higher.
 | `The version text has an invalid format.` | The tag fails the rule above. |
 
 The API's answer under `TESTING` is read as strictly. It needs status 200
-and a `Content-Length` from 1 to 262,144 bytes, not chunked; the 10 newest
-releases on 2026-10-18, v0.12.0 to v0.20.0, were 108,198 bytes, the largest
-one 13,734. Of each release, only its own `tag_name` and `draft` count: a
+and either a `Content-Length` from 1 to 262,144 bytes or the chunked
+coding (`Transfer-Encoding: chunked`) with its releases ending within
+262,144 bytes. GitHub sends the chunked form when its cache does not hold
+the request (`Cache-Control: max-age=60`) and the `Content-Length` form
+from its cache. The 10 newest releases on 2026-10-18, v0.12.0 to v0.20.0,
+were 108,198 bytes, the largest one 13,734. Of each release, only its own `tag_name` and `draft` count: a
 key in a nested object or inside a string is passed over. A release with
 `draft` true is passed over. A release out of form refuses the whole
 answer, a draft's included, and nothing is offered: the second line says
@@ -2966,15 +2969,15 @@ why. An 11th release and anything after the 10th is not read.
 
 | Second line | Meaning |
 | --- | --- |
-| `The response does not specify a size.` | No `Content-Length`, or a chunked answer. |
-| `The response is empty.` | A `Content-Length` of 0. |
+| `The response does not specify a size.` | Neither a `Content-Length` nor the chunked coding. |
+| `The response is empty.` | A `Content-Length` of 0, or a chunked answer without a byte. |
 | `The download is too large for the panel.` | A `Content-Length` over 262,144 bytes. |
 | `Received less data than expected.` | The answer ended before its `Content-Length`. |
 | `Received more data than expected.` | A read returned more bytes than asked for. |
 | `The answer names no tag_name.` | A release has no `tag_name`, there is no release but drafts, or the answer ended before its array or its 10th release did. |
 | `The tag_name is too long.` | A `tag_name` over 18 bytes. |
 | `The answer is not in the expected JSON form.` | Not an array of objects; a `tag_name` that is not a plain string (an escape, a control character, a number); a `draft` other than `true` or `false`; either key twice in a release; a control character in another string; a bracket closed by the other kind; nesting deeper than 32 levels. |
-| `The releases do not end within 262144 bytes.` | The scan's own bound of 262,144 bytes, which an answer within its `Content-Length` bound does not pass. |
+| `The releases do not end within 262144 bytes.` | The scan's own bound of 262,144 bytes: a chunked answer whose array or 10th release does not end within it. An answer within its `Content-Length` bound does not pass it. |
 | `The version text has an invalid format.` | A tag fails the rule above. |
 
 ### The IOmcu

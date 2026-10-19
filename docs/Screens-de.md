@@ -3238,8 +3238,11 @@ beide gleich und PATCH größer.
 | `Der Versionstext hat ein ungültiges Format.` | Der Tag verletzt die Regel oben. |
 
 Die Antwort der API unter `TESTING` wird ebenso streng gelesen. Sie braucht
-Status 200 und eine `Content-Length` von 1 bis 262 144 Bytes, nicht
-chunked; die 10 neuesten Releases am 2026-10-18, v0.12.0 bis v0.20.0, waren
+Status 200 und entweder eine `Content-Length` von 1 bis 262 144 Bytes oder
+die Chunked-Kodierung (`Transfer-Encoding: chunked`), deren Releases
+innerhalb von 262 144 Bytes enden. GitHub sendet die Chunked-Form, wenn
+sein Cache die Anfrage nicht hält (`Cache-Control: max-age=60`), und die
+Form mit `Content-Length` aus seinem Cache. Die 10 neuesten Releases am 2026-10-18, v0.12.0 bis v0.20.0, waren
 108 198 Bytes, das größte 13 734. Von jedem Release zählen nur sein eigener
 `tag_name` und `draft`: ein Schlüssel in einem verschachtelten Objekt oder
 in einem String wird übergangen. Ein Release mit `draft` true wird
@@ -3249,15 +3252,15 @@ Release und alles nach dem 10. liest das Panel nicht.
 
 | Zweite Zeile | Bedeutung |
 | --- | --- |
-| `Die Antwort enthält keine Größenangabe.` | Keine `Content-Length`, oder eine Antwort mit Chunked-Kodierung. |
-| `Die Antwort ist leer.` | Eine `Content-Length` von 0. |
+| `Die Antwort enthält keine Größenangabe.` | Weder eine `Content-Length` noch die Chunked-Kodierung. |
+| `Die Antwort ist leer.` | Eine `Content-Length` von 0, oder eine Antwort mit Chunked-Kodierung ohne ein Byte. |
 | `Der Download ist zu groß für das Panel.` | Eine `Content-Length` über 262 144 Bytes. |
 | `Weniger Daten als angekündigt empfangen.` | Die Antwort endete vor ihrer `Content-Length`. |
 | `Mehr Daten als angekündigt empfangen.` | Ein Lesen lieferte mehr Bytes als verlangt. |
 | `Die Antwort nennt keinen tag_name.` | Ein Release hat keinen `tag_name`, es gibt nur Entwürfe, oder die Antwort endete vor ihrem Array oder ihrem 10. Release. |
 | `Der tag_name ist zu lang.` | Ein `tag_name` über 18 Bytes. |
 | `Die Antwort hat nicht die erwartete JSON-Form.` | Kein Array von Objekten; ein `tag_name`, der kein einfacher String ist (ein Escape, ein Steuerzeichen, eine Zahl); ein `draft` anders als `true` oder `false`; ein Schlüssel zweimal in einem Release; ein Steuerzeichen in einem anderen String; eine Klammer, die die andere Art schließt; Verschachtelung tiefer als 32 Ebenen. |
-| `Die Releases enden nicht innerhalb von 262144 Bytes.` | Die eigene Grenze des Scans von 262 144 Bytes, die eine Antwort innerhalb ihrer `Content-Length`-Grenze nicht überschreitet. |
+| `Die Releases enden nicht innerhalb von 262144 Bytes.` | Die eigene Grenze des Scans von 262 144 Bytes: eine Antwort mit Chunked-Kodierung, deren Array oder 10. Release nicht innerhalb davon endet. Eine Antwort innerhalb ihrer `Content-Length`-Grenze überschreitet sie nicht. |
 | `Der Versionstext hat ein ungültiges Format.` | Ein Tag verletzt die Regel oben. |
 
 ### Der IOmcu
