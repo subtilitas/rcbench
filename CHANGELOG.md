@@ -46,6 +46,25 @@ history is in git.
 
 ### Changed
 
+- The bench's own files live under `BENCH` on the SD card. ESC profiles
+  are read from `BENCH/ESC/CONF`, the servo programmer's files and its
+  write record `KST.TXT` are in `BENCH/KST/CONF`, and the fault log is
+  `BENCH/RCBENCH.LOG`. A save makes each missing folder level. The panel
+  reads no folder of 0.21.0 and older and moves nothing: the files of
+  `/ESC/` and `/KST/` work again once they are moved to the new folders on a
+  computer ([First run](docs/FirstRun.md#the-sd-card-of-0210-and-older)).
+  The texts `These numbers are also saved in BENCH/RCBENCH.LOG on the
+  card.` and `Cannot save: card write-protected, or BENCH/KST/CONF is not a
+  folder.` name the new places.
+- The fault log is held to 1 MiB (1,048,576 bytes). A line that would pass
+  that renames the file to `BENCH/RCBENCH.OLD`, replacing the one there:
+  at most 2 MiB of fault log on the card. It is written whatever SETUP >
+  SD CARD says. `shared/logfile/fault_log.c`, `test_fault_log`, 9 cases;
+  `shared/logfile/card_tree.c`, `test_card_tree`, 7 cases.
+- The runlog task's stack is 5,632 bytes, 1,024 more:
+  `tools/stack_check.py` follows the card callbacks of the fault log, the
+  servo files and the folder maker (`CARD_CALLS`, `FAULT_CALLS`,
+  `KST_CALLS`), and a servo save with its folder levels needs 3,744 bytes.
 - Run logs go to two folders of the SD (Secure Digital) card, made one
   level at a time on the first write: `BENCH/LOGS` holds `SERVOnnn.CSV` (an
   arm from SERVO), `MOTORnnn.CSV` (an arm from MOTOR & ESC or ESC STICK) and

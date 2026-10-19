@@ -249,6 +249,24 @@ kann nicht über CAN aktualisiert werden. Firmware einmal über USB
 installieren.`, und er bekommt [Schritt 2](#aus-den-release-assets). Die
 Dauer des Uploads und des Updates über CAN ist nicht gemessen.
 
+### Die SD-Karte von 0.21.0 und älter
+
+Das Panel hält seine Dateien auf der SD-Karte (Secure Digital) in Ordnern
+unter `BENCH` und `USER` ([Logs](Screens-de.md#logs)). Es verschiebt nichts,
+was eine Karte von 0.21.0 oder älter hält, und liest dies nicht:
+
+| 0.21.0 und älter | Gelesen aus | Am Computer |
+| --- | --- | --- |
+| `/ESC/*.json`, ESC-Profile | `/BENCH/ESC/CONF/` | die Dateien dorthin verschieben |
+| `/KST/*.TXT`, Servodateien und der Vermerk `KST.TXT` | `/BENCH/KST/CONF/` | die Dateien dorthin verschieben, `KST.TXT` mit |
+| `/RCBENCH.LOG`, Fehlerprotokoll | nicht gelesen; neue Zeilen gehen nach `/BENCH/RCBENCH.LOG` | behalten oder löschen |
+| Lauf-Logs im Stammverzeichnis | gelistet im Tab STAMM von LOGS | nichts zu tun |
+
+Ein Vermerk `KST.TXT`, der in `/KST` liegt, wird beim Start nicht gesehen:
+Die Wiederherstellung, die er für ein unterbrochenes Servo-Schreiben
+anbietet, braucht die verschobene Datei. Firmware 0.21.0 und älter liest die
+Ordner unter `BENCH` nicht.
+
 ### Aus einem Quellbaum
 
 ```bash
@@ -1097,7 +1115,7 @@ neuesten und am wenigsten bewährten Dinge nur vom Compiler geprüft:
 Die ersten beiden sind bei einem IOmcu, der keine Zeichnung meldet, wirkungslos —
 das ist der schnellste Weg, sie auszuschließen. Die dritte ist ohne Karte im
 Schacht wirkungslos. Mit Karte hängt sie bei jedem Fehler eine Zeile an
-`RCBENCH.LOG`, ob ARMED oder nicht; die Lauf-Datei wartet auf das Schalten auf
+`BENCH/RCBENCH.LOG`, ob ARMED oder nicht; die Lauf-Datei wartet auf das Schalten auf
 ARMED und auf die erste Zeile danach.
 
 ---

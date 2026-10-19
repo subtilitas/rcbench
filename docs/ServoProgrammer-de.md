@@ -554,8 +554,8 @@ erste Schreiben: die Zeilen bleiben für das nächste.
    gespeichert: das Servo kann halb geschrieben sein, und der Vermerk hält
    seine Werte, wie sie vorgefunden wurden.
 2. Das Panel vermerkt das Abbild, das das Servo hält, das Abbild, das das
-   Schreiben hinterlassen soll, und den Port: mit Karte in `KST/KST.TXT`,
-   ohne im RAM (Arbeitsspeicher). Die Seite sagt, welches. Mit einer Karte,
+   Schreiben hinterlassen soll, und den Port: mit Karte in
+   `BENCH/KST/CONF/KST.TXT`, ohne im RAM (Arbeitsspeicher). Die Seite sagt, welches. Mit einer Karte,
    die binnen 3 s keine Datei annimmt, wird das Schreiben nicht gesendet:
    `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.`
 3. Das Panel sendet das Zielabbild. Der IOmcu prüft es gegen dieselben
@@ -596,10 +596,10 @@ Zahl der erfolgten Schreibvorgänge: `Register 03. 1 Schreibvorgang abgeschlosse
 | --- | --- | --- |
 | Der Sitzung | dem IOmcu: das erste nach **VERBINDEN** gelesene Abbild | **VERLASSEN**, ein Aus- und Einschalten des Servos, ein Neustart des IOmcu |
 | Die Datei der Sitzung | der Karte: die 32 Register des Servos, wie sie vor dem ersten Schreiben der Sitzung stehen. Keine, solange keine Karte eingehängt ist | die Datei wird von der Karte entfernt |
-| Vor einem Schreiben | dem Panel, in `KST/KST.TXT` oder im RAM | das Schreiben endet geprüft, oder der Vermerk wird verworfen |
+| Vor einem Schreiben | dem Panel, in `BENCH/KST/CONF/KST.TXT` oder im RAM | das Schreiben endet geprüft, oder der Vermerk wird verworfen |
 
 `KST.TXT` ist der Vermerk eines laufenden Schreibens: Text von höchstens
-400 Bytes im Ordner `KST` der Karte mit der Zeile `RCBENCH KST 2`, den
+400 Bytes im Ordner `BENCH/KST/CONF` der Karte mit der Zeile `RCBENCH KST 2`, den
 Zeilen `journal=`, `target=`, `port=` und `pin=` und `check=` mit der
 CRC-16 (zyklische Redundanzprüfung) der Bytes davor. `pin=` hält den GPIO
 (General-Purpose Input/Output), den der Port beim Schreiben trieb, in zwei
@@ -623,9 +623,12 @@ ein auf dem Panel verworfener Vermerk nicht auf der Karte bleibt.
 
 ## Servodateien
 
-Eine Servodatei ist eine Textdatei im Ordner `KST` der SD-Karte des Panels
-mit den 32 Registern eines Servos, benannt `<name>.TXT`. Das Panel legt den
-Ordner mit dem ersten Speichern an. **DATEIEN** öffnet die Liste. Die Zeile
+Eine Servodatei ist eine Textdatei im Ordner `BENCH/KST/CONF` der SD-Karte
+des Panels mit den 32 Registern eines Servos, benannt `<name>.TXT`. Das Panel
+legt den Ordner mit dem ersten Speichern an, jede fehlende Ebene davon:
+`BENCH`, `BENCH/KST`, dann `BENCH/KST/CONF`. Firmware 0.21.0 und älter hält
+ihre Dateien und ihren Vermerk in `KST`. Das Panel liest diesen Ordner nicht:
+Seine Dateien werden am Computer nach `BENCH/KST/CONF` verschoben. **DATEIEN** öffnet die Liste. Die Zeile
 ist im Programmiermodus aktiv, wenn ein Servo gelesen und nicht unklar ist;
 sonst antwortet der Tipp mit `Lies zuerst das Servo aus. Tippe auf ALLES AUSLESEN.`
 Speichern und Laden arbeiten bei ausgeschaltetem Schreibschalter: eine
@@ -676,7 +679,7 @@ geladen; eine Zeile, die sie nennt, zeigt ihre ersten 14 Zeichen und `..`.
 | Eine Datei hat den Namen | die Tastatur bleibt offen unter `NAME VERGEBEN. ANDEREN WÄHLEN.`; `Dieser Dateiname ist bereits vergeben. Keine Datei wurde ersetzt.` |
 | Keine Karte | `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
 | Karte voll, oder `KST001` bis `KST999` sind beim Backup vor einem Schreiben alle vergeben | `Karte voll. Nichts gespeichert oder ins Servo geschrieben.` |
-| Die Karte ist schreibgeschützt, oder `KST` auf der Karte ist eine Datei und kein Ordner | `Speichern nicht möglich: Karte schreibgeschützt oder KST kein Ordner.` |
+| Die Karte ist schreibgeschützt, oder `BENCH`, `BENCH/KST` oder `BENCH/KST/CONF` auf der Karte ist eine Datei und kein Ordner | `Speichern nicht möglich: Karte schreibgeschützt oder BENCH/KST/CONF kein Ordner.` |
 | Die Karte bricht das Schreiben der Datei ab oder antwortet nicht binnen 5 s | `Schreibfehler auf der Karte. Keine Werte ins Servo geschrieben.` |
 
 ![Ein vergebener Name](img/de/servo-kst-name-exists.png)
@@ -1208,7 +1211,7 @@ Codes.
   schreibgeschützten Karte liefert, ist nicht bekannt. Ein anderer Code
   als schreibgeschütztes Dateisystem, Zugriff verweigert und Operation
   nicht erlaubt zeigt `Schreibfehler auf der Karte.` statt
-  `Speichern nicht möglich: Karte schreibgeschützt oder KST kein Ordner.`
+  `Speichern nicht möglich: Karte schreibgeschützt oder BENCH/KST/CONF kein Ordner.`
 - Die Vorgabenamen enden bei `KST999`. Ist dieser Name vergeben, wird die
   nächste freie Nummer vorgeschlagen, und die höchste Nummer ist dann nicht
   die neueste Datei.
@@ -1235,8 +1238,9 @@ Codes.
 - Ohne Karte geht der Vermerk eines Schreibens beim Ausschalten verloren.
 - Eine eingehängte Karte, die den Vermerk nicht annimmt, verhindert jedes
   Schreiben: eine nach dem Einhängen gezogene Karte, eine schreibgeschützte
-  Karte oder eine Karte, auf der `KST/KST.TXT` oder `KST/KST.NEW` ein
-  Ordner ist. Jeder Versuch endet mit `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.` Das Panel hängt eine solche Karte nicht aus. Ein ohne
+  Karte oder eine Karte, auf der `BENCH/KST/CONF/KST.TXT` oder
+  `BENCH/KST/CONF/KST.NEW` ein Ordner ist oder eine Ebene von
+  `BENCH/KST/CONF` eine Datei. Jeder Versuch endet mit `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.` Das Panel hängt eine solche Karte nicht aus. Ein ohne
   Karte gestartetes Panel hält den Vermerk im Speicher und schreibt.
 - Der Vermerk eines beendeten Schreibens wird auf der Karte nach dem
   Schreiben gelöscht, durch ein eigenes Schreiben der Datei, das alle 5 s

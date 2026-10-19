@@ -33,12 +33,12 @@ static const char *TAG = "rcbench";
 
 /*
  * Every ESC (electronic speed controller) profile is compiled in.  A file
- * in /ESC/ on the card replaces the built-in profile with the same id, or
+ * in BENCH/ESC/CONF on the card (CARD_ESC_CONF) replaces the built-in profile with the same id, or
  * adds one with a new id: a corrected default or an ESC the build does not
  * know needs a file copied to the card, not a firmware release.  Read once,
  * at start-up; a card changed later is read at the next start.
  */
-#define ESC_CARD_DIR "ESC"
+#define ESC_CARD_DIR CARD_ESC_CONF
 /* Names are collected first and read after the walk, so no file is open
  * while the directory is.  Twice the registry's room: a card with more files
  * than that is refused past the first ones, and the log says how many. */
@@ -74,7 +74,7 @@ void esc_profiles_load(void)
     static esc_card_t c;
     memset(&c, 0, sizeof(c));
     if (storage_walk(ESC_CARD_DIR, ".json", esc_card_take, &c, NULL) < 0) {
-        return;                         /* no /ESC/: nothing to add */
+        return;                         /* no folder: nothing to add */
     }
     /* One byte past the limit, so a file that fills it is seen to be
      * larger rather than parsed cut off. */
@@ -467,7 +467,7 @@ const log_viewer_io_t k_card_io = {
 };
 
 /*
- * The programmer's record, KST.TXT in the card's directory KST beside the
+ * The programmer's record, KST.TXT in the folder BENCH/KST/CONF beside the
  * servo files (kst_store.h keeps the name free): a write under way with the
  * servo's values before it (kst_prog.h).  The render loop fills
  * s_kst_file and counts s_kst_file_sent up; this task writes it, says in
@@ -584,10 +584,10 @@ void kst_record_load(bool late)
 }
 
 /*
- * A servo file request (kst_prog.h): list, load or save in the directory
- * KST.  The render loop fills s_kst_card_req and counts s_kst_card_sent
- * up; this task runs it on the card, leaves the answer in s_kst_card_done
- * and counts s_kst_card_answered up.  One request at a time: the render
+ * A servo file request (kst_prog.h): list, load or save in the folder
+ * BENCH/KST/CONF.  The render loop fills s_kst_card_req and counts
+ * s_kst_card_sent up; this task runs it on the card, leaves the answer in
+ * s_kst_card_done and counts s_kst_card_answered up.  One request at a time: the render
  * loop takes the next from the model only while the two counts are equal,
  * and reads the answer only after they are equal again.
  */

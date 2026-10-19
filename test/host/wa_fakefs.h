@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "card_tree.h"
 #include "wa_walk.h"
 
 typedef struct {
@@ -267,6 +268,56 @@ static inline wa_fs_t fake_wa(fake_fs_t *fs)
     wa_fs_t w = { fake_opendir, fake_readdir, fake_closedir, fake_open,
                   fake_read, fake_close, fs };
     return w;
+}
+
+/*
+ * A card as the panel leaves it (card_tree.h): the bench's folders under
+ * BENCH, the user's under USER, and in the root the files of firmware 0.21
+ * and older, its ESC and KST folders included.  BENCH/HITEC/CONF is empty.
+ * 16 files in 13 folders, the root counted, and 1,121,451 bytes.
+ */
+#define FAKE_TREE_FILES 16
+#define FAKE_TREE_BYTES 1121451u
+
+static inline void fake_bench_tree(fake_fs_t *fs)
+{
+    static const struct {
+        const char *path;
+        bool        dir;
+        uint64_t    size;
+    } k[] = {
+        { "BENCH041.CSV", false, 18422u },
+        { "SERVO040.TXT", false, 1890u },
+        { "RCBENCH.LOG", false, 2080u },
+        { "ESC", true, 0u },
+        { "ESC/hobbywing-flyfun-8item.json", false, 3104u },
+        { "KST", true, 0u },
+        { "KST/KST001.TXT", false, 1310u },
+        { CARD_BENCH, true, 0u },
+        { CARD_FAULT_LOG, false, 6240u },
+        { CARD_FAULT_OLD, false, 1048576u },
+        { CARD_AUTO_LOGS, true, 0u },
+        { CARD_AUTO_LOGS "/SERVO001.CSV", false, 4410u },
+        { CARD_AUTO_LOGS "/MOTOR002.CSV", false, 9120u },
+        { CARD_AUTO_LOGS "/SUPPL003.CSV", false, 2205u },
+        { "BENCH/ESC", true, 0u },
+        { CARD_ESC_CONF, true, 0u },
+        { CARD_ESC_CONF "/hobbywing-flyfun-8item.json", false, 3104u },
+        { "BENCH/KST", true, 0u },
+        { CARD_KST_CONF, true, 0u },
+        { CARD_KST_CONF "/KST.TXT", false, 396u },
+        { CARD_KST_CONF "/Wing left.TXT", false, 1310u },
+        { "BENCH/HITEC", true, 0u },
+        { CARD_HITEC_CONF, true, 0u },
+        { CARD_USER, true, 0u },
+        { CARD_USER_LOGS, true, 0u },
+        { CARD_USER_LOGS "/ATEST001.CSV", false, 15104u },
+        { CARD_USER_LOGS "/ATEST001.TXT", false, 2240u },
+        { CARD_USER_LOGS "/LIMIT002.TXT", false, 1940u },
+    };
+    for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
+        fake_add(fs, k[i].path, k[i].dir, k[i].size, 315532800);
+    }
 }
 
 #endif /* RCBENCH_WA_FAKEFS_H */

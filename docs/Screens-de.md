@@ -1898,8 +1898,8 @@ Zwei Schalter unter [Setup](#setup) > SD-KARTE entscheiden, was geschrieben
 wird. Auto-Logs AUS schreibt nichts nach `BENCH/LOGS`; während eines Laufs
 ausgeschaltet, beendet es dessen Datei. User-Logs AUS schreibt nichts nach
 `USER/LOGS`; ein Test behält den Zustand, mit dem er gestartet ist. Beide
-stehen ab Werk auf EIN. Das Fehlerprotokoll, `RCBENCH.LOG` im
-Stammverzeichnis, wird unabhängig von den Schaltern geschrieben.
+stehen ab Werk auf EIN. Das Fehlerprotokoll, `BENCH/RCBENCH.LOG`, wird
+unabhängig von den Schaltern geschrieben.
 
 Firmware 0.21 und älter schrieb jeden Lauf ins Stammverzeichnis der Karte:
 `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` mit seiner `SERVOnnn.TXT` (ein
@@ -2820,8 +2820,8 @@ wie bei den Strommonitoren:
   Stelle der Dateinamen.
 - BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei User-Logs EIN,
   ob `ATESTnnn.TXT` geschrieben wird.
-- Das Fehlerprotokoll, `RCBENCH.LOG` im Stammverzeichnis, wird unabhängig von
-  beiden geschrieben.
+- Das Fehlerprotokoll, `BENCH/RCBENCH.LOG`, wird unabhängig von beiden
+  geschrieben.
 - [Logs](#logs) nennt die Namen und die Nummerierung.
 
 ### Werte behalten
@@ -2990,8 +2990,20 @@ Prüfstand, an dem sich etwas dreht, darf keine Diagnose die Stopptaste
 verdecken. In ARMED sagt das Alert-Band, dass der Link weg ist, und der
 Bildschirm wartet auf das Schalten auf SAFE.
 
-Dieselben Zahlen gehen in `RCBENCH.LOG` auf der SD-Karte, eine Zeile je
-Report, solange der Link unten ist:
+Dieselben Zahlen gehen in `BENCH/RCBENCH.LOG` auf der SD-Karte, eine Zeile je
+Report, solange der Link unten ist, unabhängig von Auto-Logs unter
+[Setup](#setup) > SD-KARTE. Die Datei hält höchstens 1 MiB (1.048.576 Bytes):
+Eine Zeile, die sie darüber brächte, benennt sie in `BENCH/RCBENCH.OLD` um,
+ersetzt die dort liegende und beginnt eine neue `BENCH/RCBENCH.LOG`. Die Karte
+hält höchstens 2 MiB Fehlerprotokoll; bei 208 Bytes je Zeile alle 5 s ist eine
+Datei etwa 7 Stunden Link-Verlust. Während des Umbenennens heißt die alte
+`RCBENCH.OLD` `BENCH/RCBENCH.TMP`, und ein gescheitertes Umbenennen gibt ihr
+den Namen zurück. Eine `RCBENCH.TMP`, die bei einer Zeile noch auf der Karte
+liegt, von einem Stromausfall oder einem Löschen, das die Karte abgelehnt hat,
+wird zuerst gelöscht oder in `RCBENCH.OLD` umbenannt, wenn keine dort liegt.
+Scheitert ein Umbenennen oder dieses Löschen oder lässt sich eine Größe nicht
+lesen, wird die Zeile nicht geschrieben. Firmware 0.21.0 und älter schrieb `RCBENCH.LOG` ins
+Stammverzeichnis; diese Datei bleibt und wird nicht mehr beschrieben:
 
     t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
 

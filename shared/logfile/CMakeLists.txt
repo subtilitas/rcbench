@@ -11,7 +11,8 @@
 # power cycle, so the number in MOTORnnn.CSV, ATESTnnn.CSV and the rest is
 # the only age on the card; the logger writes that name and the viewer reads
 # it back, both through log_name.c.  log_take.c takes a run's number in its
-# folder, card_tree.h names the folders.
+# folder, card_tree.h names the folders and card_tree.c makes them, and
+# fault_log.c keeps the fault log under its 1 MiB cap.
 set(SRCS
     log_numbers.c
     log_csv.c
@@ -19,6 +20,8 @@ set(SRCS
     log_fields.c
     log_name.c
     log_take.c
+    card_tree.c
+    fault_log.c
     kst_store.c
 )
 

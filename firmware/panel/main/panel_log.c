@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <errno.h>
+#include <stdint.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
@@ -19,6 +20,7 @@
 #include "freertos/queue.h"
 
 #include "card_tree.h"
+#include "fault_log.h"
 #include "log_name.h"
 #include "log_take.h"
 #include "log_viewer_screen.h"
@@ -131,25 +133,33 @@ static void take_path(const char *dir, const char *name, char *path, size_t n)
 }
 
 /*
- * One level of the folder.  mkdir() answers EEXIST for a folder that is
- * there and for a file of that name alike, so the answer is the stat()
- * after it: a folder, made or found, or not.
+ * One level of a folder of the card (card_make_fn), for every writer of the
+ * panel: the logs, the fault log and the servo files.  mkdir() answers
+ * EEXIST for a folder that is there and for a file of that name alike, so
+ * the answer is the stat() after it: a folder, made or found, or a file.
  */
-static bool take_make_dir(void *ctx, const char *dir)
+card_dir_t panel_card_make_dir(void *ctx, const char *level)
 {
     (void)ctx;
-    char path[64];
-    take_path(dir, NULL, path, sizeof(path));
-    if (mkdir(path, 0775) != 0 && errno != EEXIST) {
-        ESP_LOGW(TAG, "cannot make %s: errno %d", path, errno);
-        return false;
-    }
+    char path[sizeof(STORAGE_MOUNT_POINT) + CARD_DIR_MAX];
+    take_path(level, NULL, path, sizeof(path));
+    const int err = (mkdir(path, 0775) == 0) ? 0 : errno;
     struct stat st;
-    if (stat(path, &st) != 0 || !S_ISDIR(st.st_mode)) {
-        ESP_LOGW(TAG, "%s is not a folder", path);
-        return false;
+    if (stat(path, &st) == 0) {
+        if (S_ISDIR(st.st_mode)) {
+            return CARD_DIR_OK;
+        }
+        ESP_LOGW(TAG, "%s is a file, not a folder", path);
+        return CARD_DIR_FILE;
     }
-    return true;
+    ESP_LOGW(TAG, "cannot make %s: errno %d", path, err);
+    return (err == EROFS || err == EACCES || err == EPERM) ? CARD_DIR_DENIED
+                                                           : CARD_DIR_FAILED;
+}
+
+static bool take_make_dir(void *ctx, const char *dir)
+{
+    return panel_card_make_dir(ctx, dir) == CARD_DIR_OK;
 }
 
 typedef struct {
@@ -533,20 +543,88 @@ static void test_write(const test_line_t *l)
     }
 }
 
-/* One line appended to the fault log, opened and closed around it so that
- * each line is on the card before the next fault can happen. */
+/* -------------------------------------------- the fault log (fault_log.h) */
+
+static bool note_mounted(void *ctx)
+{
+    (void)ctx;
+    return storage_mounted();
+}
+
+/* "/sdcard/BENCH/RCBENCH.LOG" and the like: a path from the root. */
+#define NOTE_PATH_MAX (sizeof(STORAGE_MOUNT_POINT) + CARD_DIR_MAX)
+
+static int32_t note_size(void *ctx, const char *path)
+{
+    (void)ctx;
+    char full[NOTE_PATH_MAX];
+    take_path(path, NULL, full, sizeof(full));
+    struct stat st;
+    if (stat(full, &st) != 0) {
+        return (errno == ENOENT) ? FAULT_SIZE_NONE : FAULT_SIZE_UNREAD;
+    }
+    if (S_ISDIR(st.st_mode)) {
+        return FAULT_SIZE_UNREAD;    /* a folder holds the name */
+    }
+    return (st.st_size > INT32_MAX) ? INT32_MAX : (int32_t)st.st_size;
+}
+
+static bool note_remove(void *ctx, const char *path)
+{
+    (void)ctx;
+    char full[NOTE_PATH_MAX];
+    take_path(path, NULL, full, sizeof(full));
+    return unlink(full) == 0 || errno == ENOENT;
+}
+
+static bool note_rename(void *ctx, const char *from, const char *to)
+{
+    (void)ctx;
+    char a[NOTE_PATH_MAX];
+    char b[NOTE_PATH_MAX];
+    take_path(from, NULL, a, sizeof(a));
+    take_path(to, NULL, b, sizeof(b));
+    return rename(a, b) == 0;
+}
+
+/* Opened and closed around the line, so that each line is on the card
+ * before the next fault can happen. */
+static bool note_append(void *ctx, const char *path, const char *line)
+{
+    (void)ctx;
+    char full[NOTE_PATH_MAX];
+    take_path(path, NULL, full, sizeof(full));
+    FILE *f = fopen(full, "a");
+    if (f == NULL) {
+        return false;
+    }
+    bool ok = fputs(line, f) >= 0;
+    ok = (fputc('\n', f) != EOF) && ok;
+    ok = (fclose(f) == 0) && ok;
+    return ok;
+}
+
+/* One line to BENCH/RCBENCH.LOG, whatever AUTO LOGS says. */
 static void log_note(const char *line)
 {
-    if (!storage_mounted()) {
-        return;
+    static const fault_log_io_t io = {
+        .ctx      = NULL,
+        .mounted  = note_mounted,
+        .make_dir = panel_card_make_dir,
+        .size     = note_size,
+        .remove   = note_remove,
+        .rename   = note_rename,
+        .append   = note_append,
+    };
+    bool rotated = false;
+    const fault_log_t r = fault_log_note(&io, line, &rotated);
+    if (rotated) {
+        ESP_LOGI(TAG, "%s full at %u bytes, now %s", CARD_FAULT_LOG,
+                 (unsigned)FAULT_LOG_CAP, CARD_FAULT_OLD);
     }
-    FILE *f = fopen(STORAGE_MOUNT_POINT "/RCBENCH.LOG", "a");
-    if (f == NULL) {
-        return;
+    if (r != FAULT_LOG_OK && r != FAULT_LOG_NO_CARD) {
+        ESP_LOGW(TAG, "fault log line not written (%d)", (int)r);
     }
-    fputs(line, f);
-    fputc('\n', f);
-    fclose(f);
 }
 
 /*

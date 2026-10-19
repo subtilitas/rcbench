@@ -46,7 +46,7 @@ The same screen opens when a link that was up has been gone for 4 s. The heading
 
 The screen never opens while the bench is ARMED: it has no STOP. While ARMED the alert band says the link is gone, and the screen waits for the switch to SAFE.
 
-The same numbers go to `RCBENCH.LOG` on the SD (Secure Digital) card, one line per report while the link is down.
+The same numbers go to `BENCH/RCBENCH.LOG` on the SD (Secure Digital) card, one line per report while the link is down. The file holds at most 1 MiB (1,048,576 bytes): a line that would take it past that renames it to `BENCH/RCBENCH.OLD`, replacing the one there, and starts a new `BENCH/RCBENCH.LOG`. The lines are written whatever Auto logs on [SETUP](setup.md#sd-card) > SD CARD says.
 
 ## Leaving the screen
 

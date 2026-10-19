@@ -62,22 +62,13 @@ static void take_highest(const char *name, void *ctx)
     }
 }
 
-/* Each level of @p dir made, the shortest first. */
-static bool make_levels(const log_take_io_t *io, const char *dir)
+/* One level of the folder, through the caller's make_dir().  A
+ * card_make_fn, so its context stays a plain pointer. */
+// cppcheck-suppress constParameterCallback
+static card_dir_t take_level(void *ctx, const char *level)
 {
-    char part[CARD_DIR_MAX];
-    const size_t len = strlen(dir);
-    for (size_t i = 1u; i <= len; ++i) {
-        if (dir[i] != '/' && dir[i] != '\0') {
-            continue;
-        }
-        memcpy(part, dir, i);
-        part[i] = '\0';
-        if (!io->make_dir(io->ctx, part)) {
-            return false;
-        }
-    }
-    return true;
+    const log_take_io_t *io = (const log_take_io_t *)ctx;
+    return io->make_dir(io->ctx, level) ? CARD_DIR_OK : CARD_DIR_FAILED;
 }
 
 /* None of number @p n's LOG_NAME_FORMS names is in @p dir. */
@@ -110,7 +101,7 @@ log_take_t log_take(log_series_set_t *set, const log_take_io_t *io,
     if (!io->mounted(io->ctx)) {
         return LOG_TAKE_NO_CARD;
     }
-    if (!make_levels(io, dir)) {
+    if (card_make_dirs(dir, take_level, (void *)io) != CARD_DIR_OK) {
         return LOG_TAKE_NO_FOLDER;
     }
     log_series_t *sr = log_series_of(set, dir);

@@ -12,6 +12,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "card_tree.h"
+#include "panel.h"
 #include "storage.h"
 
 /* The mount point, the directory, a name of the store and its separators. */
@@ -43,16 +45,19 @@ static int dir_state(void)
     return errno == ENOENT ? 0 : -1;
 }
 
+/* The folder made, each level that is missing (card_make_dirs()), or the
+ * answer of the first level that cannot be. */
+static card_dir_t make_dir(void)
+{
+    if (dir_state() > 0) {
+        return CARD_DIR_OK;     /* the common case: one stat() */
+    }
+    return card_make_dirs(KST_STORE_DIR, panel_card_make_dir, NULL);
+}
+
 bool kst_files_dir(void)
 {
-    char path[PATH_MAX_LEN];
-    const int state = dir_state();
-
-    if (state != 0) {
-        return state > 0;
-    }
-    dir_path(path, sizeof(path));
-    return mkdir(path, 0775) == 0 || dir_state() > 0;
+    return make_dir() == CARD_DIR_OK;
 }
 
 /* Whether a failed call says that the card takes no file: it is write
@@ -60,26 +65,6 @@ bool kst_files_dir(void)
 static bool denied(int err)
 {
     return err == EROFS || err == EACCES || err == EPERM;
-}
-
-/* The answer to a create the directory was not there for: a file has its
- * name, or the card refuses to make it. */
-static kst_store_io_result_t no_dir_result(void)
-{
-    char path[PATH_MAX_LEN];
-    struct stat st;
-
-    dir_path(path, sizeof(path));
-    if (stat(path, &st) == 0) {
-        return S_ISDIR(st.st_mode) ? KST_STORE_IO_ERROR : KST_STORE_IO_DENIED;
-    }
-    if (errno != ENOENT) {
-        return KST_STORE_IO_ERROR;
-    }
-    if (mkdir(path, 0775) == 0) {
-        return KST_STORE_IO_ERROR;
-    }
-    return denied(errno) ? KST_STORE_IO_DENIED : KST_STORE_IO_ERROR;
 }
 
 static bool io_mounted(void *ctx)
@@ -155,8 +140,13 @@ static kst_store_io_result_t io_create(void *ctx, const char *name,
     int fd;
 
     (void)ctx;
-    if (!kst_files_dir()) {
-        return no_dir_result();
+    const card_dir_t made = make_dir();
+    if (made != CARD_DIR_OK) {
+        /* A file holding a level's name, or a card that takes no folder,
+         * is a card that takes no file until it is seen to. */
+        return (made == CARD_DIR_FILE || made == CARD_DIR_DENIED)
+                   ? KST_STORE_IO_DENIED
+                   : KST_STORE_IO_ERROR;
     }
     kst_files_path(name, path, sizeof(path));
     fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0664);

@@ -46,7 +46,7 @@ Derselbe Bildschirm öffnet, wenn ein Link, der stand, seit 4 s weg ist. Die Üb
 
 Bei ARMED öffnet der Bildschirm nie: Er hat kein STOP. Bei ARMED meldet das Alert-Band, dass der Link weg ist, und der Bildschirm wartet auf das Schalten auf SAFE.
 
-Dieselben Zahlen gehen nach `RCBENCH.LOG` auf der SD-Karte (Secure Digital), eine Zeile je Bericht, solange der Link weg ist.
+Dieselben Zahlen gehen nach `BENCH/RCBENCH.LOG` auf der SD-Karte (Secure Digital), eine Zeile je Bericht, solange der Link weg ist. Die Datei hält höchstens 1 MiB (1.048.576 Bytes): Eine Zeile, die sie darüber brächte, benennt sie in `BENCH/RCBENCH.OLD` um, ersetzt die dort liegende und beginnt eine neue `BENCH/RCBENCH.LOG`. Die Zeilen werden unabhängig von Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE geschrieben.
 
 ## Den Bildschirm verlassen
 

@@ -1727,8 +1727,8 @@ every arm; a switch to ARMED from SERVO still writes `SERVOnnn.CSV`.
 Two switches on [Setup](#setup) > SD CARD decide what is written. Auto logs
 OFF writes nothing to `BENCH/LOGS`; switched off during a run, it ends that
 run's file. User logs OFF writes nothing to `USER/LOGS`; a test keeps the
-state it started with. Both are ON by default. The fault log, `RCBENCH.LOG`
-in the root, is written whatever the switches say.
+state it started with. Both are ON by default. The fault log,
+`BENCH/RCBENCH.LOG`, is written whatever the switches say.
 
 Firmware 0.21 and older wrote every run to the card's root as
 `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` with its `SERVOnnn.TXT` (a
@@ -2578,7 +2578,7 @@ current monitors:
   `USER LOGS OFF` where the files would be named.
 - REPORT on SERVO > OPTIONS > DUT decides, with User logs ON, whether
   `ATESTnnn.TXT` is written.
-- The fault log, `RCBENCH.LOG` in the root, is written whatever the two say.
+- The fault log, `BENCH/RCBENCH.LOG`, is written whatever the two say.
 - [Logs](#logs) gives the names and the numbering.
 
 ### Keeping the values
@@ -2724,8 +2724,18 @@ that took over on every blip is a screen operators learn to dismiss.
 spinning must not have its stop button covered by a diagnosis. While ARMED, the
 alert band says the link is gone and the screen waits for the switch to SAFE.
 
-The same numbers go to `RCBENCH.LOG` on the SD card, one line per report while
-the link is down:
+The same numbers go to `BENCH/RCBENCH.LOG` on the SD card, one line per report
+while the link is down, whatever Auto logs on [Setup](#setup) > SD CARD says.
+The file holds at most 1 MiB (1,048,576 bytes): a line that would take it past
+that renames it to `BENCH/RCBENCH.OLD`, replacing the one there, and starts a
+new `BENCH/RCBENCH.LOG`. The card holds at most 2 MiB of fault log; at 208
+bytes a line every 5 s, one file is about 7 hours of link loss. During the
+rename the old `RCBENCH.OLD` is named `BENCH/RCBENCH.TMP`, and a rename that
+fails gives it its name back. A `RCBENCH.TMP` still on the card at a line, left
+by a power cut or a removal the card refused, is removed first, or named
+`RCBENCH.OLD` when none stands. When a rename or that removal fails, or a size
+does not read, the line is not written. Firmware 0.21.0 and older wrote
+`RCBENCH.LOG` in the root; that file stays and is not written again:
 
     t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
 

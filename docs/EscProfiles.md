@@ -36,9 +36,9 @@ bench recording measures it.
 | Store | Path | Read |
 | --- | --- | --- |
 | Built in | `shared/esc/profiles/*.json`, compiled into the panel image | always |
-| SD card | `/ESC/*.json` | once, at start-up |
+| SD card | `/BENCH/ESC/CONF/*.json` | once, at start-up |
 
-A card file is named after its id: `/ESC/hobbywing-flyfun-8item.json` holds
+A card file is named after its id: `/BENCH/ESC/CONF/hobbywing-flyfun-8item.json` holds
 `"id": "hobbywing-flyfun-8item"`. Upper and lower case may differ; anything
 else is refused. A card file with the id of a built-in profile replaces that
 profile. A card file with a new id adds a profile after the built-in ones.
@@ -46,7 +46,7 @@ File names of 64 characters or more are not read. A card file that would
 take its maker past 512 models (`ESC_MAKER_MODELS_MAX`), counted across
 the maker's profiles built in and from the card, is refused. The card holds at most 32
 profiles; the panel reads the names of the first 64 `.json` files in
-`/ESC/`. A refused file is named on the console with its reason, for example:
+`/BENCH/ESC/CONF/`. A refused file is named on the console with its reason, for example:
 
 ```
 ESC profiles: MYESC.JSON refused: items[2].values: not 1-255 entries
@@ -181,7 +181,12 @@ be asked for at a moment.
 
 ## Adding or correcting a profile
 
-On one bench: copy the file to `/ESC/` on the card and restart the panel.
+On one bench: copy the file to `/BENCH/ESC/CONF/` on the card and restart
+the panel. The folder is made on a computer; the panel only reads it.
+
+Firmware 0.21.0 and older read `/ESC/`. The panel does not read that
+folder: its files work again once they are moved to `/BENCH/ESC/CONF/` on a
+computer.
 
 In the repository: edit or add the file under `shared/esc/profiles/`, then
 regenerate the C file and check it:
