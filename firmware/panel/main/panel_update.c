@@ -770,10 +770,10 @@ static wa_why_t upd_check_gate(bool armed)
                          atomic_load(&s_fw_installing));
 }
 
-static bool upd_found_newer(const wa_fetch_t *f)
+/* SETUP > UPDATES' RELEASES, now: 1 is TESTING. */
+static wa_channel_t upd_channel(void)
 {
-    return f->job == WA_JOB_CHECK && f->phase == WA_PH_ENDED
-           && f->got == WA_GOT_NEWER;
+    return (wa_channel_t)(settings_get_int(SET_UPD_CHANNEL) == 1);
 }
 
 /* @p unsafe: ARMED, an arm waiting, or the supply's output on or coming. */
@@ -790,7 +790,7 @@ static upd_feed_t upd_feed_now(bool armed, bool unsafe, const cu_snap_t *cs,
         .coproc     = cs->offered || cs->active || atomic_load(&s_cu_busy),
         .unsafe     = unsafe,
         .newer      = s_upd_boot_gen != 0u && f->gen == s_upd_boot_gen
-                      && upd_found_newer(f),
+                      && wa_fetch_offers(f, upd_channel()),
     };
 }
 
@@ -850,29 +850,31 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
     wifi_access_fetch_get(&f);
     const unsigned req = upd_screen_take();
     const fw_version_t none = { 0u, 0u, 0u };
+    const wa_channel_t ch = upd_channel();
 
     /* The start-up check, once, at a moment the bench allows it. */
     const upd_feed_t feed = upd_feed_now(armed, unsafe, cs, &f, v.have_net);
     if (upd_startup_due(&s_upd, &feed)
-        && wifi_access_fetch_start(WA_JOB_CHECK, none, upd_check_gate(armed))
+        && wifi_access_fetch_start(WA_JOB_CHECK, none, ch,
+                                   upd_check_gate(armed))
            == WA_GOT_NONE) {
         wifi_access_fetch_get(&f);
         s_upd_boot_gen = f.gen;
         ESP_LOGI(TAG, "GitHub: start-up check");
     }
     if ((req & UPD_REQ_CHECK) != 0u && !wa_fetch_busy(&f)) {
-        (void)wifi_access_fetch_start(WA_JOB_CHECK, none,
+        (void)wifi_access_fetch_start(WA_JOB_CHECK, none, ch,
                                       upd_check_gate(armed));
         wifi_access_fetch_get(&f);
     }
     if ((req & UPD_REQ_DOWNLOAD) != 0u && !wa_fetch_busy(&f) && !s_upd_dl
-        && upd_found_newer(&f)) {
+        && wa_fetch_offers(&f, ch)) {
         /* Before the gate is read: see s_fw_installing. */
         atomic_store(&s_fw_installing, true);
         s_upd_dl = true;
         s_update_back = (ui_router_current() == SCREEN_UPDATES)
                             ? SCREEN_UPDATES : SCREEN_OVERVIEW;
-        (void)wifi_access_fetch_start(WA_JOB_DOWNLOAD, f.found,
+        (void)wifi_access_fetch_start(WA_JOB_DOWNLOAD, f.found, ch,
                                       why_of_fw_gate(fw_gate_now(armed)));
         (void)update_screen_take_cancel();
         ui_router_goto(SCREEN_UPDATE);
@@ -910,17 +912,20 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
             v.dl_block = UPD_WHY_INSTALL;
         }
     }
-    v.job = (upd_job_t)f.job;
-    v.phase = (upd_phase_t)f.phase;
-    v.got = (upd_got_t)f.got;
-    v.why = (upd_why_t)f.why;
-    v.join = (wifi_join_t)f.join;
-    v.rel = (upd_rel_t)f.rel;
-    v.status = f.status;
-    v.budget_s = f.budget_ms / 1000u;
-    if (f.job == WA_JOB_DOWNLOAD || f.got == WA_GOT_NEWER
-        || f.got == WA_GOT_CURRENT) {
-        upd_ver_text(f.found, v.found, sizeof(v.found));
+    /* A check on the other channel than RELEASES now shows as none. */
+    if (!wa_fetch_stale(&f, ch)) {
+        v.job = (upd_job_t)f.job;
+        v.phase = (upd_phase_t)f.phase;
+        v.got = (upd_got_t)f.got;
+        v.why = (upd_why_t)f.why;
+        v.join = (wifi_join_t)f.join;
+        v.rel = (upd_rel_t)f.rel;
+        v.status = f.status;
+        v.budget_s = f.budget_ms / 1000u;
+        if (f.job == WA_JOB_DOWNLOAD || f.got == WA_GOT_NEWER
+            || f.got == WA_GOT_CURRENT || f.got == WA_GOT_UNVERSIONED) {
+            upd_ver_text(f.found, v.found, sizeof(v.found));
+        }
     }
     const uint32_t left_ms = wa_fetch_left(&f, now_ms());
     v.left_s = (left_ms + 999u) / 1000u;

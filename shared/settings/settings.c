@@ -42,6 +42,7 @@ static const char *const k_ina3221_ch[] = { "CH1", "CH1+2+3" };
 static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
 static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
 static const char *const k_servo_target[] = { "OUTPUTS", "PROG PORT" };
+static const char *const k_upd_channel[] = { "USABLE", "TESTING" };
 /* The PD mini's own UART Baudrate setting, 0 to 6, in its order. */
 static const char *const k_pdmini_baud[] = {
     "9600", "19200", "38400", "57600", "115200", "230400", "460800", "AUTO",
@@ -410,6 +411,15 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_UPD_REMIND] = {
         "upd_remind", "Reminder at start", "Ask GitHub for a newer release at panel start", "",
         SET_CAT_UPDATE, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    /*
+     * Which releases a check offers.  USABLE: GitHub's latest release,
+     * which is never a pre-release; a testing release (odd minor number) is
+     * published as one.  TESTING: the newest release, testing or usable.
+     * Either way only a release newer than the running build.
+     */
+    [SET_UPD_CHANNEL] = {
+        "upd_channel", "Releases", "USABLE offers usable releases only, TESTING also testing ones", "",
+        SET_CAT_UPDATE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_upd_channel) },
 };
 
 static const char *const k_cat_names[SET_CAT_COUNT] = {

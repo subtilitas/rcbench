@@ -33,9 +33,9 @@
 /* Mirrored from upd_screen.c, in the body's coordinates: REMINDER AT
  * START and HOLD 2 s: UPDATE IOMCU. */
 #define BTN_X    196
-#define REMIND_Y 112
+#define REMIND_Y 96
 #define UPD_CU_X 196
-#define UPD_CU_Y 384
+#define UPD_CU_Y 392
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)

@@ -73,6 +73,7 @@ docs/Servo.md | none | F23: the optional automatic test page is not split now
 docs/Servo-de.md | none | F23: the optional automatic test page is not split now
 docs/ServoProgrammer.md | none | one page, left whole by the plan
 docs/ServoProgrammer-de.md | none | one page, left whole by the plan
+docs/FirstRun.md | none | one page, left whole by the plan
 docs/FirstRun-de.md | none | one page, left whole by the plan
 hardware/docs/Research.md | none | the research record, left whole by the plan (F21)
 

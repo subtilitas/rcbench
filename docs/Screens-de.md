@@ -2948,7 +2948,7 @@ Ein Panel, das mit dem Image des IOmcu gebaut ist, bringt es mit und
 bietet es an, wenn der IOmcu einen anderen Build laufen hat. Die
 Prüfung läuft bei jedem Link-up und vergleicht SHA-256-Digests (Secure Hash
 Algorithm), nicht Versionsnummern. Ein anderer Build meldet den Alarm
-`IOmcu nutzt einen anderen Build. Update im Menü verfügbar.`, und
+`IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`, und
 die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der
 Ausgang der Versorgung aus, der Funk des Panels ganz aus und
 keine Installation eines Panel-Images im Gang. Ein START, während eines
@@ -3025,6 +3025,7 @@ pro Start des Panels.
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
 | `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
+| `RELEASES: USABLE` / `TESTING` | Legt fest, welche Releases eine Suche anbietet ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `USABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
 | `2 s HALTEN: LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
 | `2 s HALTEN: IOMCU AKTUALISIEREN` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 
@@ -3045,13 +3046,30 @@ Platinenzeichnung geladen oder gespeichert wird.
 
 ### Die Suche
 
+Die Nummer eines Release nennt seine Art. Eine ungerade Minor-Nummer ist ein
+Test-Release, auf GitHub als Pre-Release veröffentlicht (0.21.x). Eine
+gerade Minor-Nummer ist ein nutzbares Release (0.22.x).
+
 Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP
-über Transport Layer Security) an
-`https://github.com/subtilitas/rcbench/releases/latest` und liest den
-`Location`-Header der Antwort, der den Tag des neuesten Release nennt
-(`.../releases/tag/v0.20.0`). Den Body der Antwort liest es nicht. Danach
-geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen höchstens
-30 s.
+über Transport Layer Security) und liest den Tag des neuesten Release aus
+der Antwort. RELEASES legt die Anfrage fest:
+
+| RELEASES | Anfrage | Was gelesen wird |
+| --- | --- | --- |
+| `USABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | Der `Location`-Header des Redirects, der den Tag nennt (`.../releases/tag/v0.20.0`). Den Body liest das Panel nicht. Das Latest-Release von GitHub ist nie ein Pre-Release. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Test oder nutzbar. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
+
+Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen
+höchstens 30 s. In beiden Einstellungen wird nur ein Release angeboten, das
+neuer als der laufende Build ist: einem Panel mit Test-Release 0.21.0 und
+`USABLE` wird das nutzbare Release 0.20.0 nicht angeboten.
+
+Aktuelle Einschränkungen von `TESTING`: GitHub beantwortet ohne Konto 60
+API-Anfragen pro Stunde und öffentlicher IP-Adresse (Internet Protocol), und
+die Geräte hinter einer Adresse teilen sie sich. Jede Suche ist eine
+Anfrage, und das Panel wiederholt keine. Ein Release, das nach Datum älter
+als die 10 neuesten ist, sieht das Panel nicht, wie hoch seine Version auch
+ist.
 
 ![Eine laufende Suche](img/de/updates-checking.png)
 
@@ -3061,6 +3079,7 @@ Karte bis zur nächsten Suche:
 
 ![Ein neueres Release](img/de/updates-newer.png)
 ![Aktuell](img/de/updates-current.png)
+![Ein Test-Release, gefunden mit RELEASES auf TESTING](img/de/updates-testing.png)
 
 | Karte | Bedeutung |
 | --- | --- |
@@ -3069,8 +3088,10 @@ Karte bis zur nächsten Suche:
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf WI-FI. |
 | `Keine Antwort innerhalb von 30 s.` | Die 30 s sind abgelaufen. |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
-| `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine andere Antwort als ein Redirect. |
-| `Unerwartete Antwort von GitHub.` | Der `Location`-Header fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabelle unten). |
+| `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine andere Antwort als ein Redirect (`USABLE`) oder als 200 (`TESTING`). |
+| `GitHub-Anfragelimit erreicht: HTTP 403.` und `GitHub erlaubt 60 API-Anfragen pro Stunde und Adresse.` | `TESTING`: GitHub antwortete mit 403 oder 429, seinem Limit für Anfragen ohne Konto. |
+| `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` und `Neuestes Release auf GitHub: 0.21.0.` | Die Version des laufenden Builds ist nicht lesbar. Kein Release wird angeboten. |
+| `Unerwartete Antwort von GitHub.` | Der `Location`-Header (`USABLE`) oder die Antwort der API (`TESTING`) fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabellen unten). |
 | `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang ein.`, `...: Aufzeichnungslauf gestartet.`, `...: STOP.` | Die Suche endete deshalb. |
 | `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` | WI-FI wurde geöffnet. |
 | `Abgebrochen: IOmcu-Update gestartet.` | Das Update des IOmcu begann. |
@@ -3092,6 +3113,29 @@ beide gleich und PATCH größer.
 | `Ein Byte liegt außerhalb von druckbarem ASCII.` | Ein Leerzeichen, ein Steuerzeichen oder ein Byte über 126. |
 | `Die Adresse steht an einer unerwarteten Stelle.` | Nicht `https://github.com/subtilitas/rcbench/releases/tag/...`. |
 | `Der Versionstext hat ein ungültiges Format.` | Der Tag verletzt die Regel oben. |
+
+Die Antwort der API unter `TESTING` wird ebenso streng gelesen. Sie braucht
+Status 200 und eine `Content-Length` von 1 bis 262 144 Bytes, nicht
+chunked; die 10 neuesten Releases am 2026-10-18, v0.12.0 bis v0.20.0, waren
+108 198 Bytes, das größte 13 734. Von jedem Release zählen nur sein eigener
+`tag_name` und `draft`: ein Schlüssel in einem verschachtelten Objekt oder
+in einem String wird übergangen. Ein Release mit `draft` true wird
+übergangen. Ein ungültiges Release, auch ein Entwurf, lehnt die ganze
+Antwort ab, und nichts wird angeboten: die zweite Zeile sagt, warum. Ein 11.
+Release und alles nach dem 10. liest das Panel nicht.
+
+| Zweite Zeile | Bedeutung |
+| --- | --- |
+| `Die Antwort enthält keine Größenangabe.` | Keine `Content-Length`, oder eine Antwort mit Chunked-Kodierung. |
+| `Die Antwort ist leer.` | Eine `Content-Length` von 0. |
+| `Der Download ist zu groß für das Panel.` | Eine `Content-Length` über 262 144 Bytes. |
+| `Weniger Daten als angekündigt empfangen.` | Die Antwort endete vor ihrer `Content-Length`. |
+| `Mehr Daten als angekündigt empfangen.` | Ein Lesen lieferte mehr Bytes als verlangt. |
+| `Die Antwort nennt keinen tag_name.` | Ein Release hat keinen `tag_name`, es gibt nur Entwürfe, oder die Antwort endete vor ihrem Array oder ihrem 10. Release. |
+| `Der tag_name ist zu lang.` | Ein `tag_name` über 18 Bytes. |
+| `Die Antwort hat nicht die erwartete JSON-Form.` | Kein Array von Objekten; ein `tag_name`, der kein einfacher String ist (ein Escape, ein Steuerzeichen, eine Zahl); ein `draft` anders als `true` oder `false`; ein Schlüssel zweimal in einem Release; ein Steuerzeichen in einem anderen String; eine Klammer, die die andere Art schließt; Verschachtelung tiefer als 32 Ebenen. |
+| `Die Releases enden nicht innerhalb von 262144 Bytes.` | Die eigene Grenze des Scans von 262 144 Bytes, die eine Antwort innerhalb ihrer `Content-Length`-Grenze nicht überschreitet. |
+| `Der Versionstext hat ein ungültiges Format.` | Ein Tag verletzt die Regel oben. |
 
 ### Der IOmcu
 

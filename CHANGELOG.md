@@ -21,6 +21,79 @@ history is in git.
   `test_hitec_pio`, 33 cases, run the core and the program in a model of
   the state machine. No byte has been on a wire.
   ([README](protocols/hitec/README.md))
+
+## 0.21.0 - 2026-10-18
+
+0.21.0 is a testing release: its minor number, 21, is odd, and GitHub lists
+it as a pre-release.
+
+A bench on 0.20.0 loads the panel over Wi-Fi or over USB (Universal Serial
+Bus), and the IOmcu over CAN (Controller Area Network) from the image the
+new panel carries. CHECK FOR UPDATES on a 0.20.0 panel does not find
+0.21.0: it reads `releases/latest`, which names the newest usable release,
+v0.20.0. The upload on the panel's browser page takes it, around three
+faults of 0.20.0. The script of its English page does not parse, and the
+browser sends the form without the file; the German page takes the
+upload. JOIN HOME NETWORK can end with `Join failed: password refused.` on
+a correct password; ACCESS POINT joins no network. A panel with Rotary
+knob ON saved blanks at the knob's first poll after each start, takes CAN
+off the link and can hold the touch controller in reset, so it loads over
+USB. The steps are in [First run, §1](docs/FirstRun.md#from-0200):
+
+1. `sha256sum -c SHA256SUMS` prints `OK` for each of the three files.
+2. SETUP > APPLICATION, Language `DEUTSCH`, not saved; a panel in German
+   skips this. The restart in step 4 starts 0.21.0 in the language saved.
+3. With the bench SAFE, the supply output off and no log run open:
+   LOGS > WLAN > ACCESS POINT. Join the network the screen names with its
+   password, open `http://192.168.4.1/` and enter the access code.
+4. Upload `rcbench-panel-v0.21.0.bin`. On the panel, hold `2 s HALTEN:
+   INSTALL`. The panel writes the slot it does not run from, restarts and
+   keeps 0.21.0 once the display and touch are up. Its settings in NVS
+   (non-volatile storage) and its board drawing stay.
+5. At link-up the panel finds another build on the IOmcu by SHA-256 (Secure
+   Hash Algorithm) and raises `IOmcu runs a different build. Update it
+   under SETUP > UPDATES.`. Hold START 2 s on the question on the menu, or
+   `HOLD 2 s: UPDATE IOMCU` on SETUP > UPDATES, with the bench SAFE, the
+   supply output off and the Wi-Fi radio off. The band then says `IOmcu
+   updated to 0.21.0.`.
+
+A panel with Rotary knob ON saved, or a bench without a phone or computer
+on Wi-Fi, takes `rcbench-panel-v0.21.0.zip` over USB as for 0.19.0, and
+step 5 follows. The parts, `write_flash @flash_args`, keep the settings,
+Rotary knob ON included, which 0.21.0 reads from an MT6701 at 0x06;
+`rcbench-panel-merged.bin` at 0x0 erases them. A bench on 0.19.0 loads the
+panel over USB and the IOmcu over CAN; a new bench and a bench on 0.18.0
+or older load both boards over USB. The link protocol stays 4.22, so both
+boards link before and after the IOmcu's update. The time of the upload
+and of the update over CAN is not measured.
+
+### Added
+
+- SETUP > UPDATES has RELEASES: USABLE | TESTING (the same words in
+  German, setting `upd_channel`, USABLE by default), kept with SAVE on
+  SETUP. USABLE keeps the check on
+  `https://github.com/subtilitas/rcbench/releases/latest`, which never names
+  a pre-release. TESTING asks
+  `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10`
+  with `Accept: application/vnd.github+json` and
+  `X-GitHub-Api-Version: 2022-11-28`, reads `tag_name` and `draft` of the
+  10 newest releases by date, testing or usable, and takes the highest
+  version among those that are no draft, by a scan that keeps nothing but
+  the tag under way and the highest. The answer needs status 200 and a
+  `Content-Length` from 1 to 262144 bytes; the 10 newest releases on
+  2026-10-18 were 108198 bytes. A `tag_name` that is missing, over 18
+  bytes, not a plain JSON (JavaScript Object Notation) string, or not `v`
+  and MAJOR.MINOR.PATCH in any of the 10 releases refuses the whole answer,
+  each with its own second line under `Unexpected answer from GitHub.` A 403 or 429
+  answer is `GitHub's request limit is reached: HTTP 403.`, with no retry.
+  The same 30 s budget for the join, the address and the request applies.
+  The start-up check and its reminder follow RELEASES. A switch of RELEASES
+  hides the last check's result, so a release found on the other setting is
+  not offered.
+- On both settings a check offers only a release newer than the running
+  build: a panel on testing release 0.21.0 with USABLE is not offered
+  0.20.0. A running build whose version does not parse is offered nothing
+  (`The panel's own version is not MAJOR.MINOR.PATCH: no update offered.`).
 - The LOG VIEWER reaches every file on the card in pages of 48, newest
   runs first. PREV and NEXT (German `VORIGE` and `NÄCHSTE`) in the header
   row turn the page; they show only on a card of more than 48 files.
@@ -113,7 +186,6 @@ history is in git.
   the heartbeat returns with the bench SAFE; it reads the product ID once
   every 1000 ms and re-attaches the injector on the first answer, with no
   contacts down. Release images are built without the option.
-
 - The home tag that leaves SETUP for the menu with values unsaved opens a
   warning, `UNSAVED CHANGES`. It lists each value that differs from the
   stored one as `name: stored -> now`, 9 lines and `and N more` past 10
@@ -141,6 +213,23 @@ history is in git.
   the panel compares the IOmcu's build with its own again, and after
   an update of an IOmcu of another protocol major ends, its next
   answer to the 1 s identity probe starts that comparison.
+- Releases come in two kinds by the tag's minor number. An odd minor
+  number is a testing release (0.21.x, 0.23.x), published as a GitHub
+  pre-release and never marked latest; an even minor number is a usable
+  release (0.22.x, 0.24.x), published as a full release and marked latest.
+  The patch number carries fixes in either kind. `tools/release_kind.py`
+  reads the tag in the form the panel's update check reads and prints
+  `kind`, `prerelease` and `latest`; it exits 1 on a tag out of form.
+  `release.yml` runs it before it waits for CI, which fails a tag out of
+  form before anything is built, and again at the publish with the tags
+  of the full releases GitHub holds then: a usable tag older than one of
+  them is not marked latest, so `releases/latest` never moves back.
+  Publish jobs run one at a time across tags.
+  [Building](docs/Building.md#releases) states the rule.
+- First run §1 names what a bench loads by the release it runs, and gives
+  the load of a 0.20.0 bench in five steps: the panel over Wi-Fi through
+  the German browser page, or over USB for a panel with Rotary knob ON
+  saved, and the IOmcu's update over CAN that follows.
 
 ### Changed
 
@@ -501,7 +590,6 @@ history is in git.
   HTTP 403.`) and the progress bar ends on every answer and on a broken
   connection. `test/host/check_wa_page.py` hands every script of both pages
   to `node --check`; the CI host job runs it.
-
 - The start-up check of 0.20.0 can end with `Join failed: password
   refused.` on a correct password, and JOIN HOME NETWORK pressed after it
   joins. One auth-class drop of the station ended a join: ESP-IDF reports

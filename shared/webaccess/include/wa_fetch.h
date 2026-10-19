@@ -6,9 +6,17 @@
  * length:
  *
  *   CHECK     join, then one HTTPS (HTTP over TLS, transport layer
- *             security) GET of FW_REL_LATEST_URL; the redirect's Location
- *             names the newest release (fw_release_parse_tag()).  Join,
- *             address and request take WA_FETCH_CHECK_MS at most, together.
+ *             security) GET for the newest release of the job's channel.
+ *             USABLE: FW_REL_LATEST_URL, whose redirect's Location names
+ *             it (fw_release_parse_tag()).  TESTING: FW_REL_API_URL with
+ *             GitHub's API headers, whose answer's 10 newest releases by
+ *             date name it, the highest version among them that is no
+ *             draft (fw_release_scan_feed()), read up to the 10th
+ *             release's end and no further; 403 and 429, GitHub's request
+ *             limit, end as LIMIT.
+ *             Either way a release is NEWER only when
+ *             fw_release_offered() says so.  Join, address and request
+ *             take WA_FETCH_CHECK_MS at most, together.
  *   DOWNLOAD  join within WA_FETCH_JOIN_MS, then SHA256SUMS and the panel
  *             image of one release, each through at most FW_REL_HOPS_MAX
  *             redirects to the hosts fw_release.h allows, the image into
@@ -63,6 +71,12 @@ typedef enum {
     WA_JOB_DOWNLOAD,
 } wa_job_t;
 
+/** Which releases a CHECK looks at: SETUP > UPDATES' RELEASES. */
+typedef enum {
+    WA_CH_USABLE = 0,  /**< GitHub's latest release: never a pre-release */
+    WA_CH_TESTING,     /**< the newest release, testing or usable        */
+} wa_channel_t;
+
 typedef enum {
     WA_PH_IDLE = 0,    /**< no job since the start                      */
     WA_PH_JOINING,     /**< the radio joins and takes an address        */
@@ -93,6 +107,10 @@ typedef enum {
     WA_GOT_HASH,       /**< the image's SHA-256 is not SHA256SUMS'      */
     WA_GOT_IMAGE,      /**< the image checks refused it; see img        */
     WA_GOT_MEMORY,     /**< no memory for the image                     */
+    WA_GOT_LIMIT,      /**< CHECK on TESTING: 403 or 429, GitHub's limit
+                            of requests without an account; see status  */
+    WA_GOT_UNVERSIONED,/**< CHECK: the running version did not parse, so
+                            nothing is offered; wa_fetch_t.found        */
 } wa_got_t;
 
 /** Why a job did not start, or was ended from outside. */
@@ -113,18 +131,19 @@ typedef enum {
 
 typedef struct {
     wa_job_t      job;
+    wa_channel_t  channel;  /**< CHECK: the releases it looked at         */
     wa_phase_t    phase;
     wa_got_t      got;
     wa_why_t      why;      /**< BLOCKED, ABORTED                         */
     wa_join_err_t join;     /**< JOIN                                     */
     fw_rel_err_t  rel;      /**< UNEXPECTED, SUMS, and IMAGE by length    */
     fw_err_t      img;      /**< IMAGE                                    */
-    int           status;   /**< REFUSED: the HTTP status                 */
+    int           status;   /**< REFUSED, LIMIT: the HTTP status          */
     uint32_t      gen;      /**< jobs started                             */
     uint32_t      start_ms;
     fw_version_t  running;
-    fw_version_t  found;    /**< NEWER, CURRENT; the release a DOWNLOAD
-                                 fetches                                  */
+    fw_version_t  found;    /**< NEWER, CURRENT, UNVERSIONED; the release
+                                 a DOWNLOAD fetches                       */
     uint32_t      done;     /**< IMAGE: bytes received                    */
     uint32_t      total;    /**< IMAGE: bytes announced                   */
     uint32_t      budget_ms;/**< TIMEOUT: the budget that ran out         */
@@ -141,12 +160,27 @@ wa_why_t wa_fetch_gate(bool armed, bool supply, bool run, bool coproc,
 
 /**
  * Start @p job at @p now_ms for release @p want (DOWNLOAD; ignored by
- * CHECK).  WA_GOT_NONE and JOINING: the platform starts the radio in
- * WA_MODE_FETCH.  Otherwise the job has ended at once: NO_NET without
- * @p have_net, BLOCKED for @p gate or for a job already running (why).
+ * CHECK) on channel @p ch (CHECK; kept by DOWNLOAD too).  WA_GOT_NONE and
+ * JOINING: the platform starts the radio in WA_MODE_FETCH.  Otherwise the
+ * job has ended at once: NO_NET without @p have_net, BLOCKED for @p gate or
+ * for a job already running (why).
  */
 wa_got_t wa_fetch_start(wa_fetch_t *f, wa_job_t job, fw_version_t want,
-                        bool have_net, wa_why_t gate, uint32_t now_ms);
+                        wa_channel_t ch, bool have_net, wa_why_t gate,
+                        uint32_t now_ms);
+
+/**
+ * Whether the last job is a CHECK that found a release to offer on channel
+ * @p now: ended NEWER, and run on @p now.  A check on the other channel
+ * offers nothing: RELEASES changed after it.
+ */
+bool wa_fetch_offers(const wa_fetch_t *f, wa_channel_t now);
+
+/**
+ * Whether the last job is a CHECK that ended on another channel than
+ * @p now: its result is not shown, as if no check had run.
+ */
+bool wa_fetch_stale(const wa_fetch_t *f, wa_channel_t now);
 
 /** Whether a job runs: joining to checking. */
 bool wa_fetch_busy(const wa_fetch_t *f);
@@ -206,13 +240,15 @@ typedef struct {
 /** The HTTP client: one request at a time, the platform's. */
 typedef struct {
     /**
-     * GET @p url, waiting @p timeout_ms at most for each step; the head in
-     * @p head, the Location's bytes (not terminated) in @p loc of
-     * @p loc_cap.  No redirect is followed.  False: no connection, or no
-     * head in time.
+     * GET @p url, waiting @p timeout_ms at most for each step; with @p api
+     * also the headers Accept: FW_REL_API_ACCEPT and X-GitHub-Api-Version:
+     * FW_REL_API_VERSION.  The head in @p head, the Location's bytes (not
+     * terminated) in @p loc of @p loc_cap.  No redirect is followed.
+     * False: no connection, or no head in time.
      */
     bool    (*open)(void *ctx, const char *url, uint32_t timeout_ms,
-                    wa_http_head_t *head, char *loc, size_t loc_cap);
+                    bool api, wa_http_head_t *head, char *loc,
+                    size_t loc_cap);
     /** Up to @p n body bytes: more than 0 read, 0 the end, below 0 broke
      *  off or nothing in @p timeout_ms. */
     int32_t (*read)(void *ctx, uint8_t *dst, uint32_t n,
@@ -238,6 +274,8 @@ typedef struct {
     uint32_t  budget_ms;     /**< from start_ms                           */
     uint32_t  slot;          /**< the largest image taken, in bytes       */
     fw_version_t running;
+    bool      running_ok;    /**< running parsed from the build's version */
+    wa_channel_t channel;    /**< CHECK                                   */
 
     /* Scratch the platform owns, in PSRAM on the panel. */
     char     *url;           /**< FW_REL_URL_MAX + 1 bytes                */
@@ -248,7 +286,7 @@ typedef struct {
     fw_upload_t *up;         /**< DOWNLOAD: the image, staged on success  */
 } wa_run_t;
 
-/** CHECK, from the join on.  NEWER, CURRENT, or why not. */
+/** CHECK, from the join on.  NEWER, CURRENT, UNVERSIONED, or why not. */
 void wa_run_check(const wa_run_t *r, wa_fetch_res_t *out);
 
 /**
