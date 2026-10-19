@@ -13,7 +13,7 @@
  *   /USER/
  *     LOGS/                    user-started tests: ATESTnnn, LIMITnnn
  *                              (USER LOG FOLDER, the default)
- *   /                          run logs of firmware 0.21 and older
+ *   /                          run logs of firmware 0.21.0 and older
  *
  * Every folder name is upper case, 1 to 8 characters of A-Z, 0-9, "_" and
  * "-", without an extension: a FAT (File Allocation Table) 8.3 short name,

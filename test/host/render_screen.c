@@ -214,7 +214,7 @@ typedef struct {
 } log_fake_t;
 
 /* The card's folders, as LOGS' tabs list them: BENCH/LOGS, USER/LOGS and
- * the root, where firmware 0.21 and older wrote every run. */
+ * the root, where firmware 0.21.0 and older wrote every run. */
 static const log_fake_t k_bench[] = {
     { "MOTOR014.CSV", 41210 },
     { "SERVO013.CSV", 18422 },

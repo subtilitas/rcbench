@@ -242,7 +242,7 @@ TEST_CASE(a_card_pulled_part_way_ends_the_walk_with_an_error)
 TEST_CASE(the_bench_tree_is_walked_folder_by_folder)
 {
     /* The panel's folders three deep, an empty one among them, beside the
-     * root files and folders of firmware 0.21 and older. */
+     * root files and folders of firmware 0.21.0 and older. */
     fake_fs_t fs;
     fake_init(&fs);
     fake_bench_tree(&fs);

@@ -6,6 +6,44 @@ history is in git.
 
 ## Unreleased
 
+## 0.21.1 - 2026-10-19
+
+0.21.1 is a testing release: its minor number, 21, is odd, and GitHub lists
+it as a pre-release. It adds the HITEC link page and the bench console,
+writes run logs to `BENCH/LOGS` and `USER/LOGS` on the SD (Secure Digital)
+card, keeps the bench's own files under `BENCH`, and names the release
+kind STABLE.
+
+The panel reads no file of 0.21.0 and older from its old place: ESC
+profiles come from `BENCH/ESC/CONF`, not `/ESC/`; servo files, `KST.TXT`
+and `KST.NEW` from `BENCH/KST/CONF`, not `/KST/`; the fault log is
+`BENCH/RCBENCH.LOG`, and `/RCBENCH.LOG` is not read. The files are moved by
+hand on a computer. Run logs in the card's root stay readable on the ROOT
+tab of LOGS.
+
+A panel on 0.21.0 is offered 0.21.1 with RELEASES: TESTING on SETUP >
+UPDATES only. Its other value reads USABLE on 0.21.0 and STABLE from 0.21.1
+on; it reads `releases/latest`, which names v0.20.0. The steps are in
+[First run, §1](docs/FirstRun.md#from-0210):
+
+1. With the panel off, on a computer: the files of `/ESC/` to
+   `/BENCH/ESC/CONF/`, the files of `/KST/` to `/BENCH/KST/CONF/`.
+2. SETUP > UPDATES, `RELEASES: TESTING`, `CHECK FOR UPDATES`, with a home
+   network kept, the bench SAFE, the supply output off and no log run open.
+3. Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel restarts and keeps 0.21.1
+   once the display and touch are up.
+4. At link-up the panel offers the IOmcu's update over CAN (Controller Area
+   Network). Hold START 2 s on the question on the menu, or `HOLD 2 s:
+   UPDATE IOMCU` on SETUP > UPDATES. The band then says `IOmcu updated to
+   0.21.1.`.
+
+A bench without a home network takes the upload on the panel's browser
+page. A bench on 0.20.0 loads as for 0.21.0, with the files of 0.21.1
+([From 0.20.0](docs/FirstRun.md#from-0200)). The link protocol is 4.23;
+0.19.0, 0.20.0 and 0.21.0 run 4.22, the same major, so both boards link
+before and after the IOmcu's update. The time of the download and of the
+update over CAN is not measured.
+
 ### Added
 
 - `protocols/hitec/`: the signal-wire layer for programming Hitec servos,
@@ -55,6 +93,10 @@ history is in git.
   `shared/logfile/card_tree.c`; `test_card_tree`, `test_keypad`,
   `test_settings`, `test_settings_folders`, `test_log_take` and
   `test_logview`, 30 cases more.
+- First run §1 gives the load of a 0.21.0 bench in four steps: the files
+  moved on the card, the download with RELEASES: TESTING, the install, and
+  the IOmcu's update over CAN that follows. The table of the SD card of
+  0.21.0 and older names `KST.NEW` beside `KST.TXT`.
 
 ### Changed
 
@@ -83,10 +125,10 @@ history is in git.
   `SUPPLnnn.CSV` (a supply run); `USER/LOGS` holds the AUTOMATIC TEST's
   `ATESTnnn.CSV` and `.TXT` and the LIMIT RUN's `LIMITnnn.TXT`. The numbers
   are one series per folder. The name follows the roles the arm asked for.
-  `BENCHnnn`, `ESCnnn` and `SERVOnnn` runs of 0.21 and older stay in the
+  `BENCHnnn`, `ESCnnn` and `SERVOnnn` runs of 0.21.0 and older stay in the
   root, nothing moves them, and LOGS lists them on its ROOT tab. A folder
   that cannot be made says `Cannot make folder BENCH/LOGS. Run not
-  recorded.` Firmware 0.21 and older does not read the two folders.
+  recorded.` Firmware 0.21.0 and older does not read the two folders.
 - LOGS lists one folder at a time, chosen by three tabs in its header row:
   USER, BENCH and ROOT (STAMM in German). It opens on the tab of the file
   written last when one was written since its last visit, BENCH after a
@@ -99,6 +141,16 @@ history is in git.
   stored value 0 are unchanged).
 - The KST page refuses ENTER, and a REBOOT taken in PWM, with BUSY while
   the HITEC page holds the port.
+- The bench configurator describes release 0.21.1 and moves to a release in
+  the release pull request, with `rcbench_version.h`. Every repository source
+  of its data is a file and line at the tag `v0.21.1`: 83 sources, 9 of them
+  on the line the text moved to, in `docs/FirstRun.md`, `docs/Servo.md` and
+  `STATUS.md`. Until the tag exists, the data check reads the sources at
+  `HEAD` when the header there names the release of
+  `configurator/package.json`, and `--strict` passes; once the tag exists,
+  it reads them at the tag. A release tag older than the data is no
+  warning, a newer one is. `gitTree()` in `configurator/core/tools/check.ts`;
+  one test case in `configurator/core/test/catalogue.test.ts`.
 - The bench configurator describes release 0.21.0. Every repository source
   of its data is a file and line at the tag `v0.21.0`: 83 sources, 53 of
   them on the line the text moved to, in `shared/outputs/out_bind.c`,

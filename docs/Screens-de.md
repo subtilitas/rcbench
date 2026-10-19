@@ -1912,7 +1912,7 @@ Ordner werden nicht gelistet: Die Tabs USER und BENCH listen die jetzt
 eingestellten Ordner. Die Dateien bleiben auf der Karte, und mit dem alten
 Ordner wieder eingestellt sind sie wieder gelistet.
 
-Firmware 0.21 und älter schrieb jeden Lauf ins Stammverzeichnis der Karte:
+Firmware 0.21.0 und älter schrieb jeden Lauf ins Stammverzeichnis der Karte:
 `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` mit seiner `SERVOnnn.TXT` (ein
 Servotest) und `SERVOnnn.TXT` allein (ein Endlagenlauf). Diese Dateien
 bleiben, wo sie sind, und bleiben lesbar: Nichts verschiebt sie, und der Tab

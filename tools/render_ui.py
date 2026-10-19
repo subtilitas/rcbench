@@ -354,7 +354,7 @@ SCREENS = {
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
-    # LOGS' ROOT tab: the runs of firmware 0.21 and older.
+    # LOGS' ROOT tab: the runs of firmware 0.21.0 and older.
     "logs-root":  ("logs-root.png",  "logs",       "dark"),
     # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
     # across the screen with a value unsaved.

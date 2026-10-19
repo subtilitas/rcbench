@@ -43,14 +43,15 @@ than burning a track.
 
 ## 1. Flash both boards
 
-What a bench loads, and how, for 0.21.0 depends on the release it runs:
+What a bench loads, and how, for 0.21.1 depends on the release it runs:
 
 | Bench runs | IOmcu | Panel |
 | --- | --- | --- |
 | nothing (a new bench), or 0.18.0 and older | over USB (Universal Serial Bus), [step 2](#from-the-release-assets) | over USB, [step 3](#from-the-release-assets) |
 | 0.19.0 | over CAN (Controller Area Network) from the panel ([From 0.19.0](#from-0190)) | over USB, [step 3](#from-the-release-assets) |
 | 0.20.0 | over CAN from the panel ([From 0.20.0](#from-0200)) | over Wi-Fi through the German browser page; over USB with Rotary knob ON saved |
-| 0.21.0 and later | over CAN from the panel | over Wi-Fi |
+| 0.21.0 | over CAN from the panel ([From 0.21.0](#from-0210)) | over Wi-Fi: CHECK FOR UPDATES with RELEASES: TESTING, or the upload on the browser page |
+| 0.21.1 and later | over CAN from the panel | over Wi-Fi |
 
 The USB load of a new bench, or of one on 0.18.0 and older, puts the
 IOmcu's partition table and the panel's two application slots in
@@ -63,10 +64,12 @@ Wi-Fi](Screens.md#wi-fi)) or downloads it from GitHub
 ([Screens: Updates](Screens.md#updates)), and the IOmcu takes its
 image over CAN from the panel.
 
-0.21.0 is a testing release ([Building: Releases](Building.md#releases)).
-A 0.20.0 panel's CHECK FOR UPDATES reads `releases/latest`, which names the
-newest stable release, and does not offer 0.21.0; the panel takes it as an
-upload on its browser page ([From 0.20.0](#from-0200)).
+0.21.1 is a testing release ([Building: Releases](Building.md#releases)).
+CHECK FOR UPDATES with `RELEASES: STABLE` reads `releases/latest`, which
+names the newest stable release, v0.20.0, and does not offer 0.21.1. A
+0.20.0 panel has no RELEASES setting and takes 0.21.1 as an upload on its
+browser page ([From 0.20.0](#from-0200)). A 0.21.0 panel finds it with
+`RELEASES: TESTING` ([From 0.21.0](#from-0210)).
 
 ### From the release assets
 
@@ -130,12 +133,13 @@ without the partition table shows `IOmcu cannot update over CAN. Install firmwar
 
 A bench on 0.19.0 loads the panel over USB, and only the panel. The
 IOmcu carries the partition table from the USB load of 0.19.0 and
-takes 0.21.0 over CAN from the image the new panel carries. The link
-protocol stays 4.22, so the two boards link before and after the update.
+takes 0.21.1 over CAN from the image the new panel carries. The link
+protocol of 0.21.1 is 4.23 and that of 0.19.0 is 4.22; the major, 4, is
+the same, so the two boards link before and after the update.
 
 1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
    of the three files.
-2. **Panel.** Flash `rcbench-panel-v0.21.0.zip` as in
+2. **Panel.** Flash `rcbench-panel-v0.21.1.zip` as in
    [step 3](#from-the-release-assets) above: `write_flash @flash_args` to
    keep the settings, or `rcbench-panel-merged.bin` at 0x0, from
    `esptool.py` or the browser flasher, to start from the default settings.
@@ -144,10 +148,10 @@ protocol stays 4.22, so the two boards link before and after the update.
    another build, and the band says `IOmcu runs a different build. Update it under SETUP > UPDATES.`.
 4. **IOmcu.** The question opens on the menu while the bench is SAFE,
    the supply's output is off and the panel's Wi-Fi radio is off. It names
-   0.19.0 on the IOmcu and 0.21.0 in the panel. Hold START for 2 s.
+   0.19.0 on the IOmcu and 0.21.1 in the panel. Hold START for 2 s.
    The progress fills the screen ([Screens: IOmcu
    update](Screens.md#iomcu-update)), and back on the menu the band
-   says `IOmcu updated to 0.21.0.`.
+   says `IOmcu updated to 0.21.1.`.
 
 | What | Parts (`@flash_args`) | Merged image at 0x0 |
 | --- | --- | --- |
@@ -185,18 +189,18 @@ panel carries. Three faults of 0.20.0 shape the path:
 1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
    of the three files.
 2. **Language.** SETUP > APPLICATION, Language `DEUTSCH`. It is in force
-   at once; leave it unsaved, and the restart in step 4 starts 0.21.0 in
+   at once; leave it unsaved, and the restart in step 4 starts 0.21.1 in
    the language saved. A panel in German skips this step.
 3. **Wi-Fi.** With the bench SAFE, the supply output off and no log run
    open: LOGS > WLAN > ACCESS POINT. On a phone or a computer, join the
    network the screen names, `rcbench-` and 4 hex digits, with the
    8-character password it shows. Open `http://192.168.4.1/` and enter the
    access code the screen shows.
-4. **Panel.** Under `Panel-Firmware`, choose `rcbench-panel-v0.21.0.bin`
+4. **Panel.** Under `Panel-Firmware`, choose `rcbench-panel-v0.21.1.bin`
    and press `Hochladen`. The panel checks the whole image and asks `PANEL-FIRMWARE
    INSTALLIEREN?` with both versions. Hold `2 s HALTEN: INSTALL`. The panel
    switches the radio off, writes the slot it does not run from, checks it
-   and restarts into it. 0.21.0 starts on trial and is kept once the
+   and restarts into it. 0.21.1 starts on trial and is kept once the
    display and touch are up; a start that does not get there goes back to
    0.20.0.
 5. **IOmcu.** At link-up the panel compares the IOmcu's running image with
@@ -204,15 +208,15 @@ panel carries. Three faults of 0.20.0 shape the path:
    build, and the band says `IOmcu runs a different build. Update it under
    SETUP > UPDATES.`. The question opens on the menu while the bench is
    SAFE, the supply's output is off and the panel's Wi-Fi radio is off. It
-   names 0.20.0 on the IOmcu and 0.21.0 in the panel. Hold START for 2 s,
+   names 0.20.0 on the IOmcu and 0.21.1 in the panel. Hold START for 2 s,
    or after CANCEL `HOLD 2 s: UPDATE IOMCU` on SETUP > UPDATES. The
    progress fills the screen ([Screens: IOmcu update](Screens.md#iomcu-update)),
-   and the band then says `IOmcu updated to 0.21.0.`.
+   and the band then says `IOmcu updated to 0.21.1.`.
 
 A panel with Rotary knob ON saved, or a bench without a phone or a
-computer on Wi-Fi, flashes `rcbench-panel-v0.21.0.zip` over USB as in
+computer on Wi-Fi, flashes `rcbench-panel-v0.21.1.zip` over USB as in
 [step 3](#from-the-release-assets) above, and step 5 follows. The parts,
-`write_flash @flash_args`, keep the settings with Rotary knob ON: 0.21.0
+`write_flash @flash_args`, keep the settings with Rotary knob ON: 0.21.1
 reads the knob as an MT6701 at 0x06 and puts no device at 0x36. The merged
 image at 0x0 erases the settings, and the knob starts OFF.
 
@@ -222,13 +226,58 @@ image at 0x0 erases the settings, and the knob starts OFF.
 | Panel's stored board drawing, `boardart` at 0x7E0000 | kept: the install writes the application slot only | kept | kept |
 | IOmcu bindings, the supply's wiring, the current monitors' set-up | kept: the update writes the slot the IOmcu does not run from | kept | kept |
 
-The link protocol stays 4.22, so the two boards link before and after the
-IOmcu's update. CANCEL on the question leaves the IOmcu on 0.20.0; the
-panel asks again after its next start, and SETUP > UPDATES starts the
-update meanwhile. An IOmcu that missed the USB load of 0.19.0 has no
+The link protocol of 0.21.1 is 4.23 and that of 0.20.0 is 4.22; the major,
+4, is the same, so the two boards link before and after the IOmcu's update.
+CANCEL on the question leaves the IOmcu on 0.20.0; the panel asks again
+after its next start, and SETUP > UPDATES starts the update meanwhile. An IOmcu that missed the USB load of 0.19.0 has no
 partition table: the band says `IOmcu cannot update over CAN. Install
 firmware once via USB.`, and it takes [step 2](#from-the-release-assets).
 The time of the upload and of the update over CAN is not measured.
+
+### From 0.21.0
+
+A bench on 0.21.0 loads the panel over Wi-Fi and the IOmcu over CAN from
+the image the new panel carries. 0.21.1 reads its own files from new
+folders on the SD (Secure Digital) card and moves none there
+([below](#the-sd-card-of-0210-and-older)).
+
+1. **SD card.** With the panel off, take out the card. On a computer, move
+   the ESC profiles from `/ESC/` to `/BENCH/ESC/CONF/`, and the servo files
+   with `KST.TXT` and `KST.NEW` from `/KST/` to `/BENCH/KST/CONF/`. Create
+   each missing folder. Put the card back.
+2. **Check.** With a home network kept, the bench SAFE, the supply output
+   off and no log run open: SETUP > UPDATES, `RELEASES: TESTING`, then
+   `CHECK FOR UPDATES`. The card says `Version 0.21.1 is available.`. The
+   other value, `RELEASES: USABLE` on 0.21.0 and `RELEASES: STABLE` from
+   0.21.1 on, reads `releases/latest`, which names v0.20.0, and offers
+   nothing.
+3. **Panel.** Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel downloads and
+   checks the image, writes the slot it does not run from and restarts into
+   it. 0.21.1 starts on trial and is kept once the display and touch are
+   up; a start that does not get there goes back to 0.21.0.
+4. **IOmcu.** At link-up the band says `IOmcu runs a different build.
+   Update it under SETUP > UPDATES.`. The question opens on the menu while
+   the bench is SAFE, the supply's output is off and the panel's Wi-Fi
+   radio is off. It names 0.21.0 on the IOmcu and 0.21.1 in the panel.
+   Hold START for 2 s, or after CANCEL `HOLD 2 s: UPDATE IOMCU` on SETUP >
+   UPDATES. The band then says `IOmcu updated to 0.21.1.`.
+
+`RELEASES` is in force at once; SAVE on SETUP keeps it. A bench without a
+home network takes the upload on the panel's browser page, in either
+language: SETUP > WI-FI > ACCESS POINT, join the network the screen names,
+open `http://192.168.4.1/`, enter the access code, choose
+`rcbench-panel-v0.21.1.bin` under `Panel firmware` and press `Upload`, then
+hold `HOLD 2 s: INSTALL` on the panel. Step 4 above follows. A bench
+without a phone or a computer on Wi-Fi flashes `rcbench-panel-v0.21.1.zip`
+over USB as in [step 3](#from-the-release-assets) above, and step 4
+follows.
+
+The install keeps the panel's settings, its Wi-Fi settings and its board
+drawing; the IOmcu's update keeps its bindings, the supply's wiring and
+the current monitors' set-up. The link protocol of 0.21.1 is 4.23 and
+that of 0.21.0 is 4.22; the major, 4, is the same, so the two boards link
+before and after the IOmcu's update. The time of the download and of the
+update over CAN is not measured.
 
 ### The SD card of 0.21.0 and older
 
@@ -239,12 +288,13 @@ The panel keeps its files on the SD (Secure Digital) card in folders under
 | 0.21.0 and older | Read from | On a computer |
 | --- | --- | --- |
 | `/ESC/*.json`, ESC profiles | `/BENCH/ESC/CONF/` | move the files there |
-| `/KST/*.TXT`, servo files and the record `KST.TXT` | `/BENCH/KST/CONF/` | move the files there, `KST.TXT` with them |
+| `/KST/*.TXT`, servo files, the record `KST.TXT` and its new text `KST.NEW` | `/BENCH/KST/CONF/` | move the files there, `KST.TXT` and `KST.NEW` with them |
 | `/RCBENCH.LOG`, fault log | not read; new lines go to `/BENCH/RCBENCH.LOG` | keep or delete |
 | run logs in the root | listed on the ROOT tab of LOGS | nothing to do |
 
-A record `KST.TXT` left in `/KST` is not seen at start-up: the restore it
-offers for an interrupted servo write needs the file moved first.
+A record `KST.TXT` or `KST.NEW` left in `/KST` is not seen at start-up:
+the restore it offers for an interrupted servo write needs the file moved
+first.
 Firmware 0.21.0 and older does not read the `BENCH` folders.
 
 ### From a source tree

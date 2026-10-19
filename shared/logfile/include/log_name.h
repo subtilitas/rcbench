@@ -17,7 +17,7 @@
  * throttle, SERVO for the surfaces.  An arm with no roles recorded is a
  * MOTOR run while the throttle outputs are armed and a SERVO run otherwise.
  *
- * Firmware 0.21 and older wrote every run to the card's root as BENCHnnn,
+ * Firmware 0.21.0 and older wrote every run to the card's root as BENCHnnn,
  * ESCnnn and SERVOnnn (a servo test, with SERVOnnn.TXT, or a limit run's
  * SERVOnnn.TXT alone).  Those names stay readable: their numbers rank, a
  * deleted BENCHnnn.CSV or SERVOnnn.CSV takes its report, and a folder that
@@ -76,11 +76,11 @@ typedef enum {
     LOG_PREFIX_ATEST = 0,   /**< "ATEST": the AUTOMATIC TEST               */
     LOG_PREFIX_LIMIT,       /**< "LIMIT": a LIMIT RUN's report             */
     LOG_PREFIX_SERVO,       /**< "SERVO": ARMED on SERVO; in the root, a
-                                 servo test of firmware 0.21 and older     */
+                                 servo test of firmware 0.21.0 and older     */
     LOG_PREFIX_MOTOR,       /**< "MOTOR": ARMED on MOTOR & ESC or ESC STICK */
     LOG_PREFIX_SUPPL,       /**< "SUPPL": the SUPPLY output on while SAFE  */
-    LOG_PREFIX_BENCH,       /**< "BENCH": firmware 0.21 and older          */
-    LOG_PREFIX_ESC,         /**< "ESC": firmware 0.21 and older            */
+    LOG_PREFIX_BENCH,       /**< "BENCH": firmware 0.21.0 and older          */
+    LOG_PREFIX_ESC,         /**< "ESC": firmware 0.21.0 and older            */
     LOG_PREFIX_COUNT
 } log_prefix_t;
 
@@ -120,7 +120,7 @@ log_prefix_t log_name_armed_prefix(bool asked, bool asked_throttle,
                                    bool throttle_armed);
 
 /** log_name_build() for LOG_PREFIX_BENCH: "BENCH001.CSV" to "BENCH999.CSV",
- *  the name firmware 0.21 and older gave a run in the root. */
+ *  the name firmware 0.21.0 and older gave a run in the root. */
 void log_run_name(char *out, size_t out_size, int number);
 
 /**
@@ -137,7 +137,7 @@ int log_run_number(const char *name);
 
 /**
  * A run's report beside its log: "ATEST001.TXT", and "SERVO001.TXT" or
- * "BENCH001.TXT" in the root of a card written by firmware 0.21 or older.
+ * "BENCH001.TXT" in the root of a card written by firmware 0.21.0 or older.
  * log_report_number() reads any prefix, with the same rules for the number and the case as
  * log_run_number(); log_report_name() is log_name_build() for
  * LOG_PREFIX_BENCH with the report suffix.  A number belongs to a run while
