@@ -42,6 +42,18 @@ bool wa_fetch_busy(const wa_fetch_t *f)
     return f->phase != WA_PH_IDLE && f->phase != WA_PH_ENDED;
 }
 
+bool wa_fetch_stale(const wa_fetch_t *f, wa_channel_t now)
+{
+    return f->job == WA_JOB_CHECK && f->phase == WA_PH_ENDED
+           && f->channel != now;
+}
+
+bool wa_fetch_offers(const wa_fetch_t *f, wa_channel_t now)
+{
+    return f->job == WA_JOB_CHECK && f->phase == WA_PH_ENDED
+           && f->got == WA_GOT_NEWER && !wa_fetch_stale(f, now);
+}
+
 static uint32_t budget(const wa_fetch_t *f)
 {
     if (f->job == WA_JOB_CHECK) {
@@ -64,7 +76,8 @@ static void end(wa_fetch_t *f, wa_got_t got, wa_why_t why)
 }
 
 wa_got_t wa_fetch_start(wa_fetch_t *f, wa_job_t job, fw_version_t want,
-                        bool have_net, wa_why_t gate, uint32_t now_ms)
+                        wa_channel_t ch, bool have_net, wa_why_t gate,
+                        uint32_t now_ms)
 {
     if (wa_fetch_busy(f)) {
         /* The running job stays as it is; nothing about it changes. */
@@ -76,6 +89,7 @@ wa_got_t wa_fetch_start(wa_fetch_t *f, wa_job_t job, fw_version_t want,
     f->running = running;
     f->gen = gen;
     f->job = job;
+    f->channel = (ch == WA_CH_TESTING) ? WA_CH_TESTING : WA_CH_USABLE;
     f->start_ms = now_ms;
     f->found = (job == WA_JOB_DOWNLOAD) ? want : (fw_version_t){ 0, 0, 0 };
     if (!have_net) {
@@ -206,7 +220,8 @@ void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r)
     f->rel = r->rel;
     f->img = r->img;
     f->status = r->status;
-    if (r->got == WA_GOT_NEWER || r->got == WA_GOT_CURRENT) {
+    if (r->got == WA_GOT_NEWER || r->got == WA_GOT_CURRENT
+        || r->got == WA_GOT_UNVERSIONED) {
         f->found = r->found;
     }
     end(f, r->got, r->why);
@@ -283,7 +298,7 @@ static bool fetch(const wa_run_t *r, const sink_t *k, wa_fetch_res_t *out)
             return false;
         }
         wa_http_head_t head = { .status = 0, .length = -1 };
-        if (!h->open(h->ctx, r->url, op_ms(left), &head, r->loc,
+        if (!h->open(h->ctx, r->url, op_ms(left), false, &head, r->loc,
                      FW_REL_URL_MAX)) {
             h->close(h->ctx);
             failed(r, out, WA_GOT_CONNECT, FW_REL_OK);
@@ -365,6 +380,101 @@ static bool fetch(const wa_run_t *r, const sink_t *k, wa_fetch_res_t *out)
     }
 }
 
+/* The release a check found, offered or not. */
+static void found(const wa_run_t *r, wa_fetch_res_t *out, fw_version_t v)
+{
+    out->found = v;
+    if (!r->running_ok) {
+        res(out, WA_GOT_UNVERSIONED, FW_REL_OK);
+    } else {
+        res(out, fw_release_offered(v, r->running, true) ? WA_GOT_NEWER
+                                                         : WA_GOT_CURRENT,
+            FW_REL_OK);
+    }
+}
+
+/*
+ * TESTING: the API's answer, read a piece at a time into the scan until it
+ * ends.  The bytes after the 10th release are not read: the connection
+ * closes.
+ */
+static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
+{
+    const wa_http_t *h = r->http;
+    wa_http_head_t head = { .status = 0, .length = -1 };
+    if (!h->open(h->ctx, FW_REL_API_URL, op_ms(left), true, &head, r->loc,
+                 FW_REL_URL_MAX)) {
+        h->close(h->ctx);
+        failed(r, out, WA_GOT_CONNECT, FW_REL_OK);
+        return;
+    }
+    if (head.status == 403 || head.status == 429) {
+        h->close(h->ctx);
+        out->status = head.status;
+        res(out, WA_GOT_LIMIT, FW_REL_STATUS);
+        return;
+    }
+    if (head.status != 200) {
+        h->close(h->ctx);
+        out->status = head.status;
+        res(out, WA_GOT_REFUSED, FW_REL_STATUS);
+        return;
+    }
+    const fw_rel_err_t le = fw_release_length(head.length, head.chunked,
+                                              FW_REL_API_MAX);
+    if (le != FW_REL_OK) {
+        h->close(h->ctx);
+        res(out, WA_GOT_UNEXPECTED, le);
+        return;
+    }
+    const uint32_t total = (uint32_t)head.length;
+    fw_rel_scan_t scan;
+    fw_release_scan_init(&scan);
+    uint32_t done = 0u;
+    bool ended = false;
+    while (!ended && done < total) {
+        if (r->stopped(r->ctx)) {
+            h->close(h->ctx);
+            res(out, WA_GOT_ABORTED, FW_REL_OK);
+            return;
+        }
+        const uint32_t now_left = run_left(r);
+        if (now_left == 0u) {
+            h->close(h->ctx);
+            res(out, WA_GOT_TIMEOUT, FW_REL_OK);
+            return;
+        }
+        const uint32_t want = (total - done < r->io_cap) ? total - done
+                                                         : r->io_cap;
+        const int32_t got = h->read(h->ctx, r->io, want, op_ms(now_left));
+        if (got < 0) {
+            h->close(h->ctx);
+            failed(r, out, WA_GOT_CONNECT, FW_REL_OK);
+            return;
+        }
+        if (got == 0) {
+            h->close(h->ctx);
+            res(out, WA_GOT_UNEXPECTED, FW_REL_SHORT);
+            return;
+        }
+        if ((uint32_t)got > want) {
+            h->close(h->ctx);
+            res(out, WA_GOT_UNEXPECTED, FW_REL_OVERRUN);
+            return;
+        }
+        done += (uint32_t)got;
+        ended = fw_release_scan_feed(&scan, r->io, (size_t)got);
+    }
+    h->close(h->ctx);
+    fw_version_t v;
+    const fw_rel_err_t e = fw_release_scan_end(&scan, &v);
+    if (e != FW_REL_OK) {
+        res(out, WA_GOT_UNEXPECTED, e);
+        return;
+    }
+    found(r, out, v);
+}
+
 void wa_run_check(const wa_run_t *r, wa_fetch_res_t *out)
 {
     memset(out, 0, sizeof(*out));
@@ -379,9 +489,13 @@ void wa_run_check(const wa_run_t *r, wa_fetch_res_t *out)
         res(out, WA_GOT_TIMEOUT, FW_REL_OK);
         return;
     }
+    if (r->channel == WA_CH_TESTING) {
+        check_api(r, left, out);
+        return;
+    }
     wa_http_head_t head = { .status = 0, .length = -1 };
-    const bool open = h->open(h->ctx, FW_REL_LATEST_URL, op_ms(left), &head,
-                              r->loc, FW_REL_URL_MAX);
+    const bool open = h->open(h->ctx, FW_REL_LATEST_URL, op_ms(left), false,
+                              &head, r->loc, FW_REL_URL_MAX);
     /* Only the head is read: the body of a redirect is not wanted. */
     h->close(h->ctx);
     if (!open) {
@@ -402,10 +516,7 @@ void wa_run_check(const wa_run_t *r, wa_fetch_res_t *out)
         res(out, WA_GOT_UNEXPECTED, e);
         return;
     }
-    out->found = v;
-    res(out, (fw_version_cmp(v, r->running) > 0) ? WA_GOT_NEWER
-                                                 : WA_GOT_CURRENT,
-        FW_REL_OK);
+    found(r, out, v);
 }
 
 /* SHA256SUMS into r->sums. */

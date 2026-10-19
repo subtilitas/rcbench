@@ -4,8 +4,11 @@
  * UPDATES (SCREEN_UPDATES, from SETUP): CHECK FOR UPDATES asks GitHub once
  * which release is the newest, over the home network the panel keeps; the
  * answer stays on the screen.  REMINDER AT START switches the start-up
- * check on and off (SET_UPD_REMIND).  When a newer release was found, HOLD
- * 2 s: DOWNLOAD & INSTALL fetches and installs it.
+ * check on and off (SET_UPD_REMIND).  RELEASES switches between USABLE and
+ * TESTING (SET_UPD_CHANNEL): which releases a check looks at; the
+ * application drops a result found on the other channel from the view.
+ * When a newer release was found, HOLD 2 s: DOWNLOAD & INSTALL fetches and
+ * installs it.
  *
  * Its IOmcu section, under the buttons: the version the IOmcu
  * runs, the version of the image this panel carries, and HOLD 2 s: UPDATE
@@ -87,6 +90,8 @@ typedef enum {
     UPD_GOT_HASH,
     UPD_GOT_IMAGE,
     UPD_GOT_MEMORY,
+    UPD_GOT_LIMIT,
+    UPD_GOT_UNVERSIONED,
 } upd_got_t;
 
 /** wa_why_t */
@@ -123,6 +128,10 @@ typedef enum {
     UPD_REL_SUMS_BAD,
     UPD_REL_SUMS_NONE,
     UPD_REL_SUMS_TWICE,
+    UPD_REL_TAG_NONE,
+    UPD_REL_TAG_LONG,
+    UPD_REL_TAG_FORM,
+    UPD_REL_SCAN_LONG,
 } upd_rel_t;
 
 typedef struct {
@@ -141,9 +150,10 @@ typedef struct {
     upd_why_t   why;           /**< BLOCKED, ABORTED                       */
     wifi_join_t join;          /**< JOIN                                   */
     upd_rel_t   rel;           /**< UNEXPECTED, SUMS                       */
-    int         status;        /**< REFUSED, and SUMS by status            */
+    int         status;        /**< REFUSED, LIMIT, and SUMS by status     */
     uint32_t    budget_s;      /**< TIMEOUT: the budget that ran out       */
-    char        found[WIFI_VER_MAX + 1];   /**< NEWER, CURRENT; DOWNLOAD's */
+    char        found[WIFI_VER_MAX + 1];   /**< NEWER, CURRENT, UNVERSIONED;
+                                                DOWNLOAD's                 */
     uint32_t    left_s;        /**< while busy                             */
     uint32_t    done;          /**< IMAGE: bytes received of total         */
     uint32_t    total;

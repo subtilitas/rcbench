@@ -96,6 +96,7 @@ static struct {
     struct {
         uint32_t     gen;         /* the job's, wa_fetch_t.gen          */
         wa_job_t     job;
+        wa_channel_t channel;     /* CHECK's                            */
         fw_version_t want;
         uint32_t     start_ms;
     } job;                        /* what the fetch task runs           */
@@ -104,6 +105,7 @@ static struct {
     char            name[WA_NAME_MAX];
     uint32_t        slot;
     fw_image_info_t running;
+    bool            running_ok;   /* running.version parsed            */
     TaskHandle_t    worker;
 
     /* The worker's. */
@@ -909,7 +911,7 @@ static void h_close(void *ctx)
 }
 
 static bool h_open(void *ctx, const char *url, uint32_t timeout_ms,
-                   wa_http_head_t *head, char *loc, size_t loc_cap)
+                   bool api, wa_http_head_t *head, char *loc, size_t loc_cap)
 {
     http_ctx_t *h = ctx;
     h_close(h);
@@ -934,6 +936,16 @@ static bool h_open(void *ctx, const char *url, uint32_t timeout_ms,
     };
     h->c = esp_http_client_init(&cfg);
     if (h->c == NULL) {
+        return false;
+    }
+    /* GitHub's REST API asks for both: the media type of its answer, and
+     * the version of the API it is written in, so its form stays put. */
+    if (api
+        && (esp_http_client_set_header(h->c, "Accept", FW_REL_API_ACCEPT)
+                != ESP_OK
+            || esp_http_client_set_header(h->c, "X-GitHub-Api-Version",
+                                          FW_REL_API_VERSION)
+                   != ESP_OK)) {
         return false;
     }
     if (esp_http_client_open(h->c, 0) != ESP_OK) {
@@ -1028,6 +1040,7 @@ static void fetch_task(void *arg)
     lock();
     const uint32_t     gen = s.job.gen;
     const wa_job_t     job = s.job.job;
+    const wa_channel_t channel = s.job.channel;
     const fw_version_t want = s.job.want;
     const uint32_t     start_ms = s.job.start_ms;
     unlock();
@@ -1044,6 +1057,8 @@ static void fetch_task(void *arg)
                                            : WA_FETCH_DOWNLOAD_MS,
         .slot = s.slot,
         .running = s.running.version,
+        .running_ok = s.running_ok,
+        .channel = channel,
         .url = b->url,
         .loc = b->loc,
         .io = b->fio,
@@ -1439,6 +1454,10 @@ esp_err_t wifi_access_init(uint32_t slot, const fw_image_info_t *running)
     }
     s.slot = slot;
     s.running = *running;
+    s.running_ok = fw_version_parse(running->version_text,
+                                    strnlen(running->version_text,
+                                            sizeof(running->version_text)),
+                                    NULL);
     wa_init(&s.w);
     wa_conf_load(&k_store, &s.conf);
     wa_pending_init(&s.pend);
@@ -1617,7 +1636,7 @@ void wifi_access_release(void)
 }
 
 wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
-                                 wa_why_t gate)
+                                 wa_channel_t ch, wa_why_t gate)
 {
     bool no_worker = false;
     if (s.worker == NULL && gate == WA_WHY_NONE
@@ -1635,8 +1654,8 @@ wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
             || (wa_radio(&s.w) && s.w.mode != WA_MODE_FETCH))) {
         g = WA_WHY_BUSY;
     }
-    const wa_got_t r = wa_fetch_start(&s.f, job, want, s.conf.have_net, g,
-                                      ms());
+    const wa_got_t r = wa_fetch_start(&s.f, job, want, ch, s.conf.have_net,
+                                      g, ms());
     if (r == WA_GOT_NONE) {
         if (job == WA_JOB_DOWNLOAD && s.up.state != FW_UP_RECEIVING) {
             /* What the page left: the download takes its place. */
@@ -1673,6 +1692,7 @@ void wifi_access_fetch_tick(wa_why_t abort)
     if (run) {
         s.job.gen = s.f.gen;
         s.job.job = s.f.job;
+        s.job.channel = s.f.channel;
         s.job.want = s.f.found;
         s.job.start_ms = s.f.start_ms;
         atomic_store(&s.fetch_stop, false);

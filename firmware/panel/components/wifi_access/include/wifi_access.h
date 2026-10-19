@@ -114,8 +114,9 @@ bool wifi_access_take(const uint8_t **img, uint32_t *bytes,
 void wifi_access_release(void);
 
 /**
- * Start @p job (wa_fetch_start()) for release @p want (DOWNLOAD only)
- * unless @p gate says why not.  WA_GOT_NONE: the radio comes up in
+ * Start @p job (wa_fetch_start()) for release @p want (DOWNLOAD only) on
+ * channel @p ch (CHECK: which releases it looks at) unless @p gate says
+ * why not.  WA_GOT_NONE: the radio comes up in
  * WA_MODE_FETCH and the job runs; otherwise it has ended at once.  A
  * DOWNLOAD drops an image the page left staged first; while one is taken,
  * or the last job's task has not ended yet, it is BLOCKED for BUSY.
@@ -123,7 +124,7 @@ void wifi_access_release(void);
  * while WI-FI is open.
  */
 wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
-                                 wa_why_t gate);
+                                 wa_channel_t ch, wa_why_t gate);
 
 /**
  * Once a frame, after wifi_access_tick(): @p abort as wa_fetch_tick()

@@ -17,22 +17,24 @@
 /* The area below the band: 800 x 432 px.  UPDATES lays out as FILES &
  * UPDATE does: the buttons on the left, what is kept and what last happened
  * on the right, each text broken into lines of the card's 44 cells, 20 px
- * apart. */
+ * apart.  Four rows of buttons, 48 px tall and 8 px apart: CHECK, the
+ * reminder, RELEASES, and the download's hold. */
 #define BX      16
 #define BW      360
-#define BH      56
-#define BPITCH  68
+#define BH      48
+#define BPITCH  56
 #define RX      400
 #define RW      384
+#define DL_ROW  3
 
-/* The IOmcu section, in the left column under the third button's
- * row: its heading, the two versions, up to two lines of state, and the
- * hold in the sixth row, which ends 20 px above the body's foot. */
-#define CU_HEAD_Y  228
-#define CU_RUN_Y   252
-#define CU_CAR_Y   272
-#define CU_LINE_Y  300
-#define CU_ROW     5
+/* The IOmcu section, in the left column under the fourth button's row:
+ * its heading, the two versions, up to two lines of state, and the hold,
+ * whose foot is the card's, 16 px above the body's. */
+#define CU_HEAD_Y  248
+#define CU_RUN_Y   272
+#define CU_CAR_Y   292
+#define CU_LINE_Y  320
+#define CU_BTN     gfx_rect_make(BX, 368, BW, BH)
 
 /* The reminder: a box with the title in its header, two taps side by side,
  * the hold under them. */
@@ -45,6 +47,7 @@ enum {
     HIT_NONE = 0,
     HIT_CHECK,          /* CHECK FOR UPDATES, or CANCEL while one runs */
     HIT_REMIND,
+    HIT_CHANNEL,        /* RELEASES: USABLE | TESTING */
     HIT_DOWNLOAD,
     HIT_IGNORE,
     HIT_NEVER,
@@ -208,6 +211,10 @@ static const char *rel_text(const upd_view_t *v)
     case UPD_REL_SUMS_BAD:   return TR(UPD_REL_SUMS_BAD);
     case UPD_REL_SUMS_NONE:  return TR(UPD_REL_SUMS_NONE);
     case UPD_REL_SUMS_TWICE: return TR(UPD_REL_SUMS_TWICE);
+    case UPD_REL_TAG_NONE:   return TR(UPD_REL_TAG_NONE);
+    case UPD_REL_TAG_LONG:   return TR(UPD_REL_TAG_LONG);
+    case UPD_REL_TAG_FORM:   return TR(UPD_REL_TAG_FORM);
+    case UPD_REL_SCAN_LONG:  return TR(UPD_REL_SCAN_LONG);
     case UPD_REL_OK:
     case UPD_REL_STATUS:
     default:                 return "";
@@ -366,6 +373,14 @@ void upd_result_text(const upd_view_t *v, char *out, size_t n, char *second,
     case UPD_GOT_MEMORY:
         snprintf(out, n, "%s", TR(UPD_FAIL_MEMORY));
         break;
+    case UPD_GOT_LIMIT:
+        snprintf(out, n, TR(UPD_FAIL_LIMIT), v->status);
+        snprintf(second, n2, "%s", TR(UPD_LIMIT_2));
+        break;
+    case UPD_GOT_UNVERSIONED:
+        snprintf(out, n, "%s", TR(UPD_UNVERSIONED));
+        snprintf(second, n2, TR(UPD_LATEST), v->found);
+        break;
     case UPD_GOT_NONE:
     default:
         break;
@@ -417,6 +432,8 @@ static gfx_rect_t btn(int row)
     return gfx_rect_make(BX, 16 + row * BPITCH, BW, BH);
 }
 
+static bool testing_set(void) { return settings_get_int(SET_UPD_CHANNEL) == 1; }
+
 static int hit_at(int x, int y)
 {
     if (gfx_rect_contains(btn(0), x, y)
@@ -426,10 +443,13 @@ static int hit_at(int x, int y)
     if (gfx_rect_contains(btn(1), x, y)) {
         return HIT_REMIND;
     }
-    if (download_allowed() && gfx_rect_contains(btn(2), x, y)) {
+    if (gfx_rect_contains(btn(2), x, y)) {
+        return HIT_CHANNEL;
+    }
+    if (download_allowed() && gfx_rect_contains(btn(DL_ROW), x, y)) {
         return HIT_DOWNLOAD;
     }
-    if (coproc_allowed() && gfx_rect_contains(btn(CU_ROW), x, y)) {
+    if (coproc_allowed() && gfx_rect_contains(CU_BTN, x, y)) {
         return HIT_COPROC;
     }
     return HIT_NONE;
@@ -446,6 +466,10 @@ static void act(int hit)
          * kept when the application finds the bench idle. */
         settings_set(SET_UPD_REMIND,
                      settings_get_bool(SET_UPD_REMIND) ? 0.0f : 1.0f);
+        settings_request_save();
+        break;
+    case HIT_CHANNEL:
+        settings_set(SET_UPD_CHANNEL, testing_set() ? 0.0f : 1.0f);
         settings_request_save();
         break;
     default:
@@ -490,9 +514,9 @@ static void event(const touch_event_t *evt)
     }
     if (evt->type == TOUCH_EVENT_MOVE) {
         /* Sliding off the hold abandons it, as on every held control. */
-        if ((s.hit == HIT_DOWNLOAD && !gfx_rect_contains(btn(2), x, y)
+        if ((s.hit == HIT_DOWNLOAD && !gfx_rect_contains(btn(DL_ROW), x, y)
              && ui_hold_leave(&s.hold))
-            || (s.hit == HIT_COPROC && !gfx_rect_contains(btn(CU_ROW), x, y)
+            || (s.hit == HIT_COPROC && !gfx_rect_contains(CU_BTN, x, y)
                 && ui_hold_leave(&s.cu_hold))) {
             s.hit = HIT_NONE;
             s.have_press = false;
@@ -634,8 +658,7 @@ static void render_coproc(gfx_canvas_t *c)
 
     const gfx_color_t fill = coproc_allowed() ? hold_fill(&s.cu_hold)
                                               : UI_PANEL_HI;
-    ui_button(c, btn(CU_ROW), TR(UPD_CU_HOLD), fill, false,
-              coproc_allowed());
+    ui_button(c, CU_BTN, TR(UPD_CU_HOLD), fill, false, coproc_allowed());
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)
@@ -654,8 +677,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
     const bool on = settings_get_bool(SET_UPD_REMIND);
     ui_button(c, btn(1), on ? TR(UPD_REMIND_ON) : TR(UPD_REMIND_OFF),
               UI_PANEL_HI, s.have_press && s.hit == HIT_REMIND, true);
+    ui_button(c, btn(2),
+              testing_set() ? TR(UPD_CHAN_TESTING) : TR(UPD_CHAN_USABLE),
+              UI_PANEL_HI, s.have_press && s.hit == HIT_CHANNEL, true);
     if (have_newer()) {
-        ui_button(c, btn(2), TR(UPD_HOLD_DL), hold_fill(&s.hold), false,
+        ui_button(c, btn(DL_ROW), TR(UPD_HOLD_DL), hold_fill(&s.hold), false,
                   download_allowed());
     }
     render_coproc(c);
@@ -700,15 +726,19 @@ static void render(gfx_canvas_t *c, int buffer_index)
         }
     }
 
-    /* What the reminder does, at the card's foot: its last line ends 18 px
-     * above the card's bottom edge. */
-    const int foot = ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 18), 20,
-                                  TR(UPD_ABOUT_1), UI_FONT_LABEL, UI_TEXT)
-                     + ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 18), 20,
-                                    TR(UPD_ABOUT_2), UI_FONT_LABEL, UI_TEXT);
-    y = para(c, x, 16 + 400 - 16 - 20 * foot, w, TR(UPD_ABOUT_1),
-             UI_TEXT_DIM);
-    (void)para(c, x, y, w, TR(UPD_ABOUT_2), UI_TEXT_DIM);
+    /* What the reminder and RELEASES do, at the card's foot: its last line
+     * ends 18 px above the card's bottom edge. */
+    static const ui_text_id_t k_about[] = { TX_UPD_ABOUT_1, TX_UPD_ABOUT_2,
+                                            TX_UPD_ABOUT_3 };
+    int foot = 0;
+    for (size_t i = 0; i < sizeof(k_about) / sizeof(k_about[0]); ++i) {
+        foot += ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 18), 20,
+                             ui_tr(k_about[i]), UI_FONT_LABEL, UI_TEXT);
+    }
+    y = 16 + 400 - 16 - 20 * foot;
+    for (size_t i = 0; i < sizeof(k_about) / sizeof(k_about[0]); ++i) {
+        y = para(c, x, y, w, ui_tr(k_about[i]), UI_TEXT_DIM);
+    }
 
     if (s.hold.flash_left > 0 || s.cu_hold.flash_left > 0) {
         ui_hold_flash_step(&s.hold);
