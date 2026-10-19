@@ -65,6 +65,14 @@ history is in git.
   and AUS, TRIMMUNG, WEG and UMKEHREN, ZENTRIEREN and FREIGEBEN, VERBINDEN,
   HV-SERVO, ANSCHLÜSSE for INTERFACES, and Pulsrate for the frame rate.
 
+### Fixed
+
+- LOGS reads the card each time it opens, from the menu or back from
+  WI-FI: the first page, its newest run selected. A run recorded while LOGS
+  was closed is on the list without RESCAN. A file's import or plot view
+  left open stays open, with the list behind it read again. The card was
+  read on the first opening after a start only.
+
 ## 0.21.0 - 2026-10-18
 
 0.21.0 is a testing release: its minor number, 21, is odd, and GitHub lists

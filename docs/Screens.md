@@ -1766,6 +1766,11 @@ panel's 0.194 mm pixels. Its thumb is the rows on screen against the rows on
 the page, and it scrolls within the page. A tap on the track brings the
 thumb's middle to the finger; a finger on the thumb drags it.
 
+LOGS reads the card each time it opens, from the menu or back from WI-FI:
+the first page, its newest run selected, so a run recorded while LOGS was
+closed is on the list without RESCAN. A file's import or plot view left open
+stays open; the list behind it is the one just read.
+
 RESCAN reads the page on screen again. On the first page it reads from the
 top, so a run recorded since shows. On another page it reads from that page's
 first entry, also when that file has been deleted since. When the card holds

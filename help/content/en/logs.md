@@ -34,6 +34,7 @@ The header names the card by its volume label; a card without one shows the name
 - Pages are cut from the top, 48 at a time. With fewer than 48 entries ahead of the page on screen, for example after a run was recorded, PREV shows the first page.
 - Runs recorded while a later page is open are on page 1. PREV back from page 3 or later then passes over as many entries as were recorded; NEXT from page 1 shows them, and the tab numbers show the shift.
 - The scroll bar at the right edge, 8.1 mm wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
+- Opening LOGS reads the card: the first page, its newest run selected. A run recorded while LOGS was closed is listed without RESCAN.
 - On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.
 - A card put in while none is mounted is mounted by RESCAN and opens on its first page. A card swapped for another while one is mounted is not mounted again until the panel restarts; what the list shows in that state is not measured.

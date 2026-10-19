@@ -1943,6 +1943,12 @@ Pixelabstand. Die Länge des Griffs entspricht dem Anteil der sichtbaren Zeilen
 an der Seite, und er rollt innerhalb der Seite. Ein Tippen auf die Bahn bringt
 die Mitte des Griffs unter den Finger; ein Finger auf dem Griff zieht ihn.
 
+LOGS liest die Karte bei jedem Öffnen, aus dem Menü oder zurück aus WLAN:
+die erste Seite, ihr neuester Lauf gewählt. Ein Lauf, der aufgezeichnet wurde,
+während LOGS geschlossen war, steht so ohne `AKTUALISIEREN` in der Liste.
+Eine offen gelassene Import- oder Diagrammansicht einer Datei bleibt offen;
+die Liste dahinter ist die gerade gelesene.
+
 `AKTUALISIEREN` liest die gezeigte Seite erneut. Auf der ersten Seite liest es
 von oben, sodass ein inzwischen aufgezeichneter Lauf erscheint. Auf einer
 anderen Seite liest es ab dem ersten Eintrag dieser Seite, auch wenn diese
