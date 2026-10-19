@@ -222,7 +222,8 @@ enum {
      *  edit on SETUP writes; said again when a bit changes -- a weak
      *  magnet that goes missing, a missing one that comes back weak, a
      *  weak one that reads strong -- when the field read right in between,
-     *  after the encoder was said not to answer, and after a link-up. */
+     *  after the encoder was said not to answer, after a set-up that
+     *  switches it off, and after a link-up. */
     SENSE_LINK_EV_ENC_MAGNET    = 0x10000,
 };
 

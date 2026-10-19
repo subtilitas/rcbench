@@ -2522,7 +2522,8 @@ stay as they were said, also across the set-ups an edit of another row of
 INTERFACES writes. It is said again when one of the bits changes -- a weak
 magnet that goes missing, a missing one that comes back weak, a weak one
 that reads strong -- when the field read right in between, when the sensor
-was said not to answer, and after a link-up. The angle stops when MD
+was said not to answer, after the sensor was switched off, and after a
+link-up. The angle stops when MD
 clears and returns when it is set again. The sensor's
 DIR pin sets the direction its count rises in; the panel takes the count to
 rise with the servo's pulse width.

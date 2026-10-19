@@ -2771,7 +2771,8 @@ hinweg, die eine Änderung einer anderen Zeile von ANSCHLÜSSE schreibt. Sie
 wird noch einmal gesagt, wenn sich eines der Bits ändert -- ein schwacher
 Magnet, der verschwindet, ein fehlender, der schwach zurückkommt, ein
 schwacher, der stark liest --, wenn das Feld dazwischen stimmte, wenn der
-Sensor als nicht antwortend gemeldet wurde, und nach einem Link-Aufbau. Der
+Sensor als nicht antwortend gemeldet wurde, nachdem der Sensor ausgeschaltet
+war, und nach einem Link-Aufbau. Der
 Winkel hört auf, wenn MD erlischt, und kommt wieder, wenn es gesetzt ist. Der DIR-Pin
 des Sensors bestimmt die Richtung, in der sein Zählerstand steigt; das Panel
 nimmt an, dass er mit der Pulsbreite des Servos steigt.

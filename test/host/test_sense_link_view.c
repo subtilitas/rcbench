@@ -776,6 +776,31 @@ TEST_CASE(a_weak_magnet_is_said_again_after_the_encoder_was_lost)
     CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
 }
 
+/* With the encoder the only part, switching it off stops every read, so
+ * the off is seen at the set-up: switched on again, a weak magnet is
+ * said again. */
+TEST_CASE(a_weak_magnet_is_said_again_after_the_encoder_was_switched_off)
+{
+    enc_wanted(9u);
+    const uint16_t weak = ENC_OK | LINK_SN_ENC_ML;
+    far_enc(weak, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    sense_setup_t w = setup_default();
+    w.as5600 = false;
+    want(&w);
+    polls(40);
+    CHECK_EQ(sl.held[LINK_SN_ENABLE], 0u);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    w.as5600 = true;
+    want(&w);
+    polls(14);
+    CHECK((sl.held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) != 0u);
+    far_enc(weak, 5u, 2u, 1u);
+    polls(6);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+}
+
 /* A magnet event raised and not yet shown when the set-up changes is
  * dropped with the reads of that set-up; the next read under the new one
  * says it, so it is never lost. */
@@ -964,6 +989,7 @@ int main(void)
     RUN(a_weak_magnet_that_goes_missing_is_said_again);
     RUN(a_weak_magnet_is_not_said_again_for_an_edit_of_another_row);
     RUN(a_weak_magnet_is_said_again_after_the_encoder_was_lost);
+    RUN(a_weak_magnet_is_said_again_after_the_encoder_was_switched_off);
     RUN(a_magnet_event_not_yet_shown_is_said_under_the_next_set_up);
     RUN(a_magnet_is_judged_only_from_a_read_angle);
     RUN(a_magnet_event_waiting_survives_a_current_monitor_answering);

@@ -116,6 +116,7 @@ test/host/test_wa_fetch.c | none | F14: one source, wa_fetch.c
 test/host/test_bench.c | none | crossed 1,000 after the plan with row 3's cases, not weighed by the plan
 test/host/test_sense_link.c | none | F14: one source, sense_link.c; crossed 1,000 after the plan, not weighed by the plan
 test/host/test_supply_link.c | none | F14: one source, supply_link.c; crossed 1,000 after the plan, not weighed by the plan
+test/host/test_sense_link_view.c | none | F14: one source, sense_link.c, beside test_sense_link.c; crossed 1,000 after the plan, not weighed by the plan
 
 # Tests the plan's rows cut that stay over 1,000.
 test/host/test_servo.c | none | row 9 (F8): 144 cases stay over two rig headers

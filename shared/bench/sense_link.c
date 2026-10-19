@@ -411,6 +411,12 @@ static void new_setup(sense_link_t *s, uint32_t now_ms)
     if ((s->events & (uint32_t)SENSE_LINK_EV_ENC_MAGNET) != 0u) {
         s->enc_magnet_told = false;
     }
+    /* An encoder switched off is said again when it is switched on: no
+     * read runs with every part off, so judge_enc() would not see it. */
+    if ((s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) == 0u) {
+        s->enc_magnet_told = false;
+        s->enc_magnet      = 0u;
+    }
     /* An event a read raised and the band has not shown yet is about the
      * set-up that was: shown now, it would name this one's address, ID or
      * shunt.  What describes the set-up asked -- unset pins, one address,

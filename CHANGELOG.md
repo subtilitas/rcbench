@@ -30,7 +30,7 @@ history is in git.
   magnet status bits stay the same; an edit of another INTERFACES row no
   longer says it again. It is said again when a bit changes (weak to strong
   included), after the field read right, after the sensor was reported not
-  answering, and after a link-up.
+  answering, after the sensor was switched off, and after a link-up.
 - Sensor bus pins with nothing wired to them (no part, no pull-up) no
   longer raise `Sensor bus blocked: SDA low.`: the IOmcu tests a line that
   is low at idle on its own pad pull-up for up to 50 µs, and a line that
