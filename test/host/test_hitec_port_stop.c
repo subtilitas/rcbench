@@ -377,6 +377,9 @@ TEST_CASE(a_stop_in_the_listen_of_a_power_cuts_it)
     CHECK(flag(LINK_HT_F_STOPPED));
     CHECK_EQ(rx_code(), HITEC_RX_ERR_ABORTED);
     CHECK(!hitec_port_supply_hold(&g_port));
+    /* A disarm alone: the supply is as the SUPPLY page has it, on. */
+    CHECK(g_hw.v.asked_on);
+    CHECK_EQ(g_hw.offs, 1);
 }
 
 static void hang_at(uint32_t t0)

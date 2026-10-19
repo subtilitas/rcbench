@@ -98,7 +98,10 @@ On a stop:
 
 - a running transaction is aborted: the pad is released at once and the
   capture holds the bytes so far, marked aborted (result 6, `CUT`);
-- a POWER ends where it is, with the supply off;
+- a POWER in its off time ends there, and the supply stays off; a POWER
+  whose listen runs is cut as a transaction, and the supply is as the
+  SUPPLY page has it: off after a lost heartbeat or a silent link, on after
+  a switch to SAFE alone;
 - the port stays held with the pin a released input, as a KST port stays in
   PROGRAMMING;
 - a port still in STOPPING is free again;

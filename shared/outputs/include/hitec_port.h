@@ -51,8 +51,10 @@
  * it is.  ABORT cuts what runs and keeps the port.
  *
  * A stop is the heartbeat lost, the link silent or the bank disarmed.  On a
- * stop the running transaction is aborted (the pad released at once) and a
- * POWER ends where it is, with the supply off.  The port stays held with
+ * stop the running transaction is aborted (the pad released at once); a
+ * POWER in its off time ends there with the supply off, and one whose
+ * listen runs is cut as a transaction, the supply as the SUPPLY page has
+ * it.  The port stays held with
  * the pin an input; a port still in STOPPING is free again.  The flag
  * LINK_HT_F_STOPPED is set, and SEND, LISTEN, LEVEL and POWER are refused
  * with LINK_HITEC_REF_STOPPED until CLEAR, which is taken while the

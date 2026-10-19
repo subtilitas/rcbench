@@ -105,7 +105,10 @@ Bank auf SAFE. Bei einem Stopp:
 - wird eine laufende Transaktion abgebrochen: das Pad wird sofort
   losgelassen, und der Mitschnitt hält die Bytes bis dahin, als abgebrochen
   markiert (Ergebnis 6, `CUT`);
-- endet ein POWER, wo es ist, mit ausgeschalteter Versorgung;
+- endet ein POWER in seiner Auszeit dort, und die Versorgung bleibt aus;
+  ein POWER, dessen LISTEN läuft, wird wie eine Transaktion abgeschnitten,
+  und die Versorgung ist, wie die SUPPLY-Page sie hat: aus nach verlorenem
+  Heartbeat oder stillem Link, an nach einem Schalten auf SAFE allein;
 - bleibt der Port mit dem Pin als losgelassenem Eingang gehalten, so wie ein
   KST-Port in PROGRAMMING bleibt;
 - ist ein Port, der noch in STOPPING steht, wieder frei;

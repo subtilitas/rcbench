@@ -28,12 +28,18 @@ static void push(page_console_t *c, const char *s, size_t n)
 
 /* One line; the LF is added. */
 static void say(page_console_t *c, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
+static void say(page_console_t *c, const char *fmt, ...)
 {
     char *buf = c->fmt;
     va_list ap;
     int n;
 
     va_start(ap, fmt);
+    /* The analyser cannot follow va_start through this wrapper and reports the
+     * list as uninitialised; it is initialised on the line above. */
+    /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
     n = vsnprintf(buf, sizeof(c->fmt) - 1u, fmt, ap);
     va_end(ap);
     if (n < 0) {
