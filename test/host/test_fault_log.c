@@ -34,6 +34,7 @@ typedef struct {
     bool        protect;          /* write-protected                    */
     bool        rename_fails;
     bool        append_fails;
+    bool        remove_fails;
     fake_file_t log;
     fake_file_t old;
     fake_file_t tmp;
@@ -98,6 +99,9 @@ static bool fake_remove(void *ctx, const char *path)
     (void)ctx;
     fake_file_t *f = file(path);
     ++g.removes;
+    if (g.remove_fails) {
+        return false;
+    }
     if (f != NULL) {
         memset(f, 0, sizeof(*f));
     }
@@ -345,12 +349,36 @@ TEST_CASE(a_tmp_left_by_a_power_cut_is_cleared_first)
     g.log.there = true;
     g.log.size = 10;
     CHECK_EQ(fault_log_note(&k_io, "a line", NULL), FAULT_LOG_OK);
-    CHECK(g.tmp.there);              /* no rotation: the TMP waits */
+    CHECK(!g.tmp.there);             /* gone before the line */
+    CHECK_STR_EQ(g.old.last, "kept");
+    CHECK_STR_EQ(g.log.last, "a line");
+}
+
+TEST_CASE(a_tmp_the_card_does_not_remove_stops_the_lines_until_it_goes)
+{
+    /* The rotation goes through, the old OLD does not go: the line is not
+     * written, and no line is until the TMP is gone, so the card never
+     * holds more than the OLD and the TMP. */
+    reset();
+    g.old.there = true;
+    g.old.size = (int64_t)FAULT_LOG_CAP;
+    g.log.there = true;
     g.log.size = (int64_t)FAULT_LOG_CAP;
     snprintf(g.log.last, sizeof(g.log.last), "%s", "full");
-    CHECK_EQ(fault_log_note(&k_io, "after", NULL), FAULT_LOG_OK);
-    CHECK(!g.tmp.there);
+    g.remove_fails = true;
+    CHECK_EQ(fault_log_note(&k_io, "one", NULL), FAULT_LOG_NO_ROOM);
     CHECK_STR_EQ(g.old.last, "full");
+    CHECK(g.tmp.there);
+    CHECK(!g.log.there);
+    CHECK_EQ(fault_log_note(&k_io, "two", NULL), FAULT_LOG_NO_ROOM);
+    CHECK_EQ(g.appends, 0);
+    CHECK(g.old.size + g.tmp.size <= 2 * (int64_t)FAULT_LOG_CAP);
+    /* The card takes the removal again: the next line clears it first. */
+    g.remove_fails = false;
+    CHECK_EQ(fault_log_note(&k_io, "three", NULL), FAULT_LOG_OK);
+    CHECK(!g.tmp.there);
+    CHECK_STR_EQ(g.log.last, "three");
+    CHECK_EQ(g.log.size, 6);
 }
 
 TEST_CASE(a_size_that_does_not_read_takes_no_line)
@@ -369,6 +397,17 @@ TEST_CASE(a_size_that_does_not_read_takes_no_line)
     CHECK_EQ(fault_log_note(&k_io, g_line, NULL), FAULT_LOG_UNREAD);
     CHECK_EQ(g.renames, 0);
     CHECK_EQ(g.appends, 0);
+    /* A TMP whose size, or whose OLD's size, does not read: no line. */
+    reset();
+    g.tmp.there = true;
+    g.tmp.unread = true;
+    CHECK_EQ(fault_log_note(&k_io, g_line, NULL), FAULT_LOG_UNREAD);
+    g.tmp.unread = false;
+    g.old.there = true;
+    g.old.unread = true;
+    CHECK_EQ(fault_log_note(&k_io, g_line, NULL), FAULT_LOG_UNREAD);
+    CHECK_EQ(g.appends, 0);
+    CHECK_EQ(g.removes, 0);
     /* A file larger than INT32_MAX reads as INT32_MAX: past the cap. */
     reset();
     g.log.there = true;
@@ -392,6 +431,7 @@ int main(void)
     RUN(a_line_as_long_as_the_cap_fits_only_an_empty_file);
     RUN(a_failed_rename_of_the_full_file_keeps_the_old_one);
     RUN(a_tmp_left_by_a_power_cut_is_cleared_first);
+    RUN(a_tmp_the_card_does_not_remove_stops_the_lines_until_it_goes);
     RUN(a_size_that_does_not_read_takes_no_line);
     return test_summary("fault_log");
 }

@@ -15,8 +15,10 @@
  *
  * The old RCBENCH.OLD gives way only once the full file has its name.  It
  * is first renamed to BENCH/RCBENCH.TMP; a rename of the full file that
- * fails gives it its name back.  A TMP left by a power cut is RCBENCH.OLD
- * again when no OLD stands, and is removed when one does.
+ * fails gives it its name back.  A TMP that stands at a line, left by a
+ * power cut or by a removal the card refused, is RCBENCH.OLD again when no
+ * OLD stands and is removed when one does; until it is gone no line is
+ * written.
  *
  * Each line is appended on its own, opened and closed around it, so a
  * line is on the card before the next fault can happen.  BENCH is made the

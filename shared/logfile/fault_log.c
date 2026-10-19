@@ -18,28 +18,45 @@ static card_dir_t fault_level(void *ctx, const char *dir)
 }
 
 /*
- * The full file renamed to RCBENCH.OLD.  FAT renames onto no file, so the
- * old OLD is moved to RCBENCH.TMP first and removed only after the rename
- * has gone through; a rename that fails gives it its name back.
+ * A RCBENCH.TMP still standing: left by a power cut during a rotation, or
+ * by a removal the card refused.  With an OLD beside it the TMP is the
+ * older of the two and goes; without one it is the OLD and takes the name.
+ * Until it is gone no line is written, so the card holds at most the OLD
+ * and the TMP, 2 MiB.
+ */
+static fault_log_t clear_tmp(const fault_log_io_t *io)
+{
+    const int32_t tmp = io->size(io->ctx, CARD_FAULT_TMP);
+    if (tmp < FAULT_SIZE_NONE) {
+        return FAULT_LOG_UNREAD;
+    }
+    if (tmp == FAULT_SIZE_NONE) {
+        return FAULT_LOG_OK;
+    }
+    const int32_t old = io->size(io->ctx, CARD_FAULT_OLD);
+    if (old < FAULT_SIZE_NONE) {
+        return FAULT_LOG_UNREAD;
+    }
+    const bool cleared =
+        (old >= 0) ? io->remove(io->ctx, CARD_FAULT_TMP)
+                   : io->rename(io->ctx, CARD_FAULT_TMP, CARD_FAULT_OLD);
+    return cleared ? FAULT_LOG_OK : FAULT_LOG_NO_ROOM;
+}
+
+/*
+ * The full file renamed to RCBENCH.OLD, with no TMP standing.  FAT renames
+ * onto no file, so the old OLD is moved to RCBENCH.TMP first and removed
+ * only after the rename has gone through; a rename that fails gives it its
+ * name back.  A TMP the card does not remove fails the rotation after the
+ * fact: the line waits for clear_tmp().
  */
 static fault_log_t rotate(const fault_log_io_t *io)
 {
-    /* A TMP a power cut left: the OLD of its rotation, or one older. */
-    const int32_t tmp = io->size(io->ctx, CARD_FAULT_TMP);
     const int32_t old = io->size(io->ctx, CARD_FAULT_OLD);
-    if (tmp < FAULT_SIZE_NONE || old < FAULT_SIZE_NONE) {
+    if (old < FAULT_SIZE_NONE) {
         return FAULT_LOG_UNREAD;
     }
-    if (tmp >= 0) {
-        const bool cleared =
-            (old >= 0) ? io->remove(io->ctx, CARD_FAULT_TMP)
-                       : io->rename(io->ctx, CARD_FAULT_TMP, CARD_FAULT_OLD);
-        if (!cleared) {
-            return FAULT_LOG_NO_ROOM;
-        }
-    }
-    /* An OLD stands now: the one there, or the TMP given its name. */
-    const bool aside = (tmp >= 0) || (old >= 0);
+    const bool aside = old >= 0;
     if (aside && !io->rename(io->ctx, CARD_FAULT_OLD, CARD_FAULT_TMP)) {
         return FAULT_LOG_NO_ROOM;
     }
@@ -49,8 +66,8 @@ static fault_log_t rotate(const fault_log_io_t *io)
         }
         return FAULT_LOG_NO_ROOM;
     }
-    if (aside) {
-        (void)io->remove(io->ctx, CARD_FAULT_TMP);
+    if (aside && !io->remove(io->ctx, CARD_FAULT_TMP)) {
+        return FAULT_LOG_NO_ROOM;
     }
     return FAULT_LOG_OK;
 }
@@ -75,6 +92,10 @@ fault_log_t fault_log_note(const fault_log_io_t *io, const char *line,
     }
     if (card_make_dirs(CARD_BENCH, fault_level, (void *)io) != CARD_DIR_OK) {
         return FAULT_LOG_NO_FOLDER;
+    }
+    const fault_log_t cleared = clear_tmp(io);
+    if (cleared != FAULT_LOG_OK) {
+        return cleared;
     }
     const int32_t size = io->size(io->ctx, CARD_FAULT_LOG);
     if (size < FAULT_SIZE_NONE) {

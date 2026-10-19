@@ -2998,7 +2998,10 @@ ersetzt die dort liegende und beginnt eine neue `BENCH/RCBENCH.LOG`. Die Karte
 hält höchstens 2 MiB Fehlerprotokoll; bei 208 Bytes je Zeile alle 5 s ist eine
 Datei etwa 7 Stunden Link-Verlust. Während des Umbenennens heißt die alte
 `RCBENCH.OLD` `BENCH/RCBENCH.TMP`, und ein gescheitertes Umbenennen gibt ihr
-den Namen zurück. Scheitert das Umbenennen oder lässt sich eine Größe nicht
+den Namen zurück. Eine `RCBENCH.TMP`, die bei einer Zeile noch auf der Karte
+liegt, von einem Stromausfall oder einem Löschen, das die Karte abgelehnt hat,
+wird zuerst gelöscht oder in `RCBENCH.OLD` umbenannt, wenn keine dort liegt.
+Scheitert ein Umbenennen oder dieses Löschen oder lässt sich eine Größe nicht
 lesen, wird die Zeile nicht geschrieben. Firmware 0.21.0 und älter schrieb `RCBENCH.LOG` ins
 Stammverzeichnis; diese Datei bleibt und wird nicht mehr beschrieben:
 

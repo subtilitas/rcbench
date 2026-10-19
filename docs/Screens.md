@@ -2731,8 +2731,10 @@ that renames it to `BENCH/RCBENCH.OLD`, replacing the one there, and starts a
 new `BENCH/RCBENCH.LOG`. The card holds at most 2 MiB of fault log; at 208
 bytes a line every 5 s, one file is about 7 hours of link loss. During the
 rename the old `RCBENCH.OLD` is named `BENCH/RCBENCH.TMP`, and a rename that
-fails gives it its name back. When the rename fails, or a size does not
-read, the line is not written. Firmware 0.21.0 and older wrote
+fails gives it its name back. A `RCBENCH.TMP` still on the card at a line, left
+by a power cut or a removal the card refused, is removed first, or named
+`RCBENCH.OLD` when none stands. When a rename or that removal fails, or a size
+does not read, the line is not written. Firmware 0.21.0 and older wrote
 `RCBENCH.LOG` in the root; that file stays and is not written again:
 
     t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
