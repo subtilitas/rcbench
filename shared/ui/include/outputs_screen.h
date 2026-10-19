@@ -230,9 +230,11 @@ bool outputs_clash_reason(const outbind_t *b, int index,
  * the sensor bus, the PD mini's UART and the phase tap.  A pin is held
  * while the IOmcu reserves it from the outputs for that function: Sensor
  * SDA and the SCL after it while the INA228, the INA3221 or the AS5600 is
- * on (sense_page_pins()); PD mini TX and RX while the PD mini is on
+ * on (sense_page_pins()); PD mini TX and RX while the PD mini is on with
+ * both set and apart, as the panel writes its page ON
  * (supply_page_pins()); Tap pin while the phase tap is on
- * (tone_page_pins()).  A pin at -1 holds nothing.  The pins follow the
+ * (tone_page_pins()).  Sensor SDA at -1 holds nothing, nor does the PD
+ * mini with either pin at -1.  The pins follow the
  * settings: a row stepped on SETUP frees the old pin and holds the new.
  *
  * OUTPUTS and PICK A PIN show such a pin taken and named, as a

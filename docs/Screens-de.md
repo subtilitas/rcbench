@@ -3498,11 +3498,12 @@ nicht anhaken:
 | Unter dem Namen | Pins | Solange |
 |---|---|---|
 | `SENSORBUS` | Sensor-SDA und das Sensor-SCL danach, ab Werk GP16 und GP17 | INA228, INA3221 oder AS5600 EIN ist |
-| `PD MINI` | PD mini TX und PD mini RX | PD mini EIN ist |
+| `PD MINI` | PD mini TX und PD mini RX | PD mini EIN ist, beide Pins gesetzt, auf zwei Pins |
 | `PHASENABGRIFF` | Abgriff-Pin, ab Werk GP22 | Phasenabgriff EIN ist |
 
 Das sind die Pins, die der IOmcu für diese Teile von den Ausgängen
-zurückhält. Die Zellen folgen den Einstellungen: Ein Pin auf -1 hält nichts,
+zurückhält. Die Zellen folgen den Einstellungen: Sensor-SDA auf -1 hält
+nichts, der PD mini mit einem Pin auf -1 auch nicht,
 und eine Zeile, die in SETUP verstellt wird, gibt den alten Pin frei und
 hält den neuen, ohne Neustart. Eine Bindung, die den Pin schon hält,
 behält ihn, wie gegenüber dem Programmierport; der IOmcu lehnt dem Teil dann

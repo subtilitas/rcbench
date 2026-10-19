@@ -538,12 +538,16 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
             tap_pin(gp);
         }
         CHECK_EQ(s_applied, was);
-        /* A pin at -1 holds nothing. */
+        /* A pin at -1, or both on one pin: the panel writes the page OFF,
+         * and neither pin is held. */
         settings_set(SET_PDMINI_TX, -1.0f);
         CHECK_EQ(outputs_screen_cell(idx(19u), NULL, 0), OUTPUTS_CELL_FREE);
-        CHECK_EQ(outputs_screen_cell(idx(18u), NULL, 0),
-                 OUTPUTS_CELL_RESERVED);
+        CHECK_EQ(outputs_screen_cell(idx(18u), NULL, 0), OUTPUTS_CELL_FREE);
+        settings_set(SET_PDMINI_TX, 18.0f);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI), 0ull);
         settings_set(SET_PDMINI_TX, 19.0f);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI),
+                 (1ull << 18) | (1ull << 19));
 
         /* The phase tap on its default GP22. */
         settings_set(SET_TONE_EN, 1.0f);

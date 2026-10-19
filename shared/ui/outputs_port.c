@@ -145,12 +145,17 @@ uint64_t outputs_iface_pins(outputs_iface_t which)
         }
         return pin_bit(sda) | pin_bit(settings_get_int(SET_SENSE_SCL));
     }
-    case OUTPUTS_IFACE_PDMINI:
-        if (!settings_get_bool(SET_PDMINI_EN)) {
+    case OUTPUTS_IFACE_PDMINI: {
+        /* The page is written ON only with both pins set and apart
+         * (supply_link.c); otherwise it holds neither. */
+        const int tx = settings_get_int(SET_PDMINI_TX);
+        const int rx = settings_get_int(SET_PDMINI_RX);
+        if (!settings_get_bool(SET_PDMINI_EN) || tx < 0 || rx < 0
+            || tx == rx) {
             return 0u;
         }
-        return pin_bit(settings_get_int(SET_PDMINI_TX))
-               | pin_bit(settings_get_int(SET_PDMINI_RX));
+        return pin_bit(tx) | pin_bit(rx);
+    }
     case OUTPUTS_IFACE_TAP:
         return settings_get_bool(SET_TONE_EN)
                    ? pin_bit(settings_get_int(SET_TONE_PIN)) : 0u;

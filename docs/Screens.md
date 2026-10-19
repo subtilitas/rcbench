@@ -3201,11 +3201,12 @@ through, with what holds it under its name, and cannot be ticked:
 | Under the name | Pins | While |
 |---|---|---|
 | `SENSOR BUS` | Sensor SDA and the Sensor SCL after it, GP16 and GP17 by default | INA228, INA3221 or AS5600 is ON |
-| `PD MINI` | PD mini TX and PD mini RX | PD mini is ON |
+| `PD MINI` | PD mini TX and PD mini RX | PD mini is ON with both pins set, on two pins |
 | `PHASE TAP` | Tap pin, GP22 by default | Phase tap is ON |
 
 These are the pins the IOmcu reserves from the outputs for those parts. The
-cells follow the settings: a pin at -1 holds nothing, and a row stepped on
+cells follow the settings: Sensor SDA at -1 holds nothing, nor does the PD
+mini with either pin at -1, and a row stepped on
 SETUP frees the old pin and holds the new one, with no restart. A binding
 that already holds the pin keeps it, as against the programming port; the
 IOmcu then refuses the part its pin, and SETUP marks the row.
