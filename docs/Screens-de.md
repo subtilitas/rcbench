@@ -3502,7 +3502,10 @@ nicht anhaken:
 | `PHASENABGRIFF` | Abgriff-Pin, ab Werk GP22 | Phasenabgriff EIN ist |
 
 Das sind die Pins, die der IOmcu für diese Teile von den Ausgängen
-zurückhält. Die Zellen folgen den Einstellungen: Sensor-SDA auf -1 hält
+zurückhält: Ein Abgriff-Pin, den der IOmcu ablehnt, ein ADC-Pin
+(Analog-Digital-Wandler) von GP26 bis GP29, hält nichts, ebenso wenig ein
+Sensorbus oder ein Phasenabgriff, dessen Zeile SETUP als vom IOmcu nicht
+übernommen markiert. Die Zellen folgen den Einstellungen: Sensor-SDA auf -1 hält
 nichts, der PD mini mit einem Pin auf -1 auch nicht,
 und eine Zeile, die in SETUP verstellt wird, gibt den alten Pin frei und
 hält den neuen, ohne Neustart. Eine Bindung, die den Pin schon hält,

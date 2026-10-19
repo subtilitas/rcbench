@@ -3204,7 +3204,10 @@ through, with what holds it under its name, and cannot be ticked:
 | `PD MINI` | PD mini TX and PD mini RX | PD mini is ON with both pins set, on two pins |
 | `PHASE TAP` | Tap pin, GP22 by default | Phase tap is ON |
 
-These are the pins the IOmcu reserves from the outputs for those parts. The
+These are the pins the IOmcu reserves from the outputs for those parts: a
+tap pin the IOmcu refuses, an ADC (analogue-to-digital converter) pin from
+GP26 to GP29, holds nothing, and neither does a sensor bus or a phase tap
+whose row SETUP marks as not taken by the IOmcu. The
 cells follow the settings: Sensor SDA at -1 holds nothing, nor does the PD
 mini with either pin at -1, and a row stepped on
 SETUP frees the old pin and holds the new one, with no restart. A binding
