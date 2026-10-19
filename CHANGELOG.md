@@ -64,7 +64,7 @@ history is in git.
   finds none reads and probes 0x14 no more until the next start; touch is
   the glass alone and the band never shows INJECT. The INJECT bubble no
   longer opens with `This is a test-bench build, not a release version.`
-  The default image is 3,808 bytes larger, holds 112 bytes less internal
+  The default image is 3,824 bytes larger, holds 112 bytes less internal
   RAM, and CI builds the option OFF as the extra build.
 - The bench's own files live under `BENCH` on the SD card. ESC profiles
   are read from `BENCH/ESC/CONF`, the servo programmer's files and its
