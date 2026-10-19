@@ -43,7 +43,7 @@
  * outside the board's own through panel_i2c_add_device(), and probes one
  * through panel_i2c_probe() (firmware/panel/main/panel_i2c_dev.h); both
  * refuse an address here.
- * The test-bench build's touch injector is not such a device: it speaks the
+ * The touch injector is not such a device: it speaks the
  * GT911's protocol at the GT911's second address, 0x14, through the touch
  * component (testbench/touch-injector).
  *

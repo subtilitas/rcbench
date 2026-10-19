@@ -3,9 +3,12 @@
 The touch injector is a Waveshare RP2350-Zero on the panel's touch bus.
 It emulates a GT911 touch controller at I2C (Inter-Integrated Circuit)
 address 0x14 and presses where a USB (Universal Serial Bus) serial command
-tells it to. A panel image built with `RCBENCH_TOUCH_INJECTOR=ON` polls 0x14
-beside the glass's controller and merges both. Release images do not have
-that option and never read 0x14 a second time.
+tells it to. A panel image polls 0x14
+beside the glass's controller and merges both when 0x14 answers at
+start-up; `RCBENCH_TOUCH_INJECTOR` defaults to ON, and a panel built with
+`-D RCBENCH_TOUCH_INJECTOR=OFF` never reads 0x14 as an injector. A panel
+that finds nothing at 0x14 at start-up does not look again until its next
+start.
 
 It is a test-bench tool. No release carries its UF2 (USB Flashing Format)
 image.
@@ -85,12 +88,13 @@ their pulls off, the I2C block is not attached, and nothing on the bus is
 acknowledged. It leaves LISTEN only on `confirm scl=GP5` after a `wiring`
 check that read `ok`. ACTIVE answers at 0x14 until the next reset.
 
-A panel image built with `RCBENCH_TOUCH_INJECTOR=ON` that has the injector
-attached detaches it after 1000 ms without an answer from 0x14. Its injected
+A panel that found the injector at start-up detaches it after 1000 ms
+without an answer from 0x14. Its injected
 contacts are released, `INJECT` leaves the mode chip, and the glass alone
 decides whether touch is alive. The panel then reads the product ID at 0x14
 once every 1000 ms; the first answer re-attaches the injector with no
-contacts down. An injector reset therefore needs no panel restart: after
+contacts down. An injector reset therefore needs no panel restart, provided the panel found
+the injector at start-up: after
 `wiring` and `confirm` the panel re-attaches it within about 1 s.
 
 The watchdog resets the chip when the main loop stalls for 200 ms. A reset
@@ -185,9 +189,10 @@ reaches is not measured; the verdict line reports it as `rate=`.
 4. `wiring` returns `wiring ok scl=GP5 sda=GP4 ...`. Any other verdict: fix
    the wiring first; the LED is yellow for `swapped`, `low` and `noise`.
 5. `confirm scl=GP5`. The LED goes dim green once the panel reads 0x14.
-6. Reset the panel. A panel image built with `RCBENCH_TOUCH_INJECTOR=ON`
+6. Reset the panel. The panel looks once, at start-up; it
    finds 0x14 at start and shows `INJECT` in the status band's mode chip.
-   After an injector reset, repeat steps 3 to 5 only: the panel detached the
+   After an injector reset, repeat steps 3 to 5 only: the panel (which found
+   the injector at start-up) detached the
    silent injector after 1000 ms and re-attaches it within about 1 s of
    `confirm`, and `INJECT` shows again.
 7. `tap 83 370` presses the SETUP tile. The reply is

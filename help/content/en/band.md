@@ -16,6 +16,7 @@ From the left: the home tag with the screen's name, then the chips, then STOP at
 |---|---|
 | LINK, NO LINK | whether the IOmcu answers on the CAN (Controller Area Network) bus |
 | BENCH, SIM | BENCH while the IOmcu answers and the screens drive its outputs; SIM while the panel runs its own model |
+| INJECT | in place of BENCH and SIM while a touch injector answers at I2C (Inter-Integrated Circuit) address 0x14; a panel looks for one once, at start-up |
 | FAULT 01 to FAULT 7F | a fault code the IOmcu reports; absent while there is none |
 | SAFE, ARMED MOTOR, ARMED SERVO, ARMED | what the switch to ARMED drives |
 | run clock | the length of the current run from the switch to ARMED, minutes and seconds; it holds the last run at SAFE |

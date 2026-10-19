@@ -705,8 +705,95 @@ TEST_CASE(a_flapping_injector_holds_the_heartbeat_no_longer)
                      - ARMING_TOUCH_DEAD_MS + 10u);
 }
 
+/* ---------------------------------------- the start-up-only look */
+
+/* Nothing answered at start-up: whatever the bus does afterwards, the
+ * injector is never read, probed or counted, and touch is the glass alone. */
+TEST_CASE(nothing_at_start_means_no_probe_ever_later)
+{
+    touch_merge_t m;
+    touch_merge_start(&m, false, 0);
+    CHECK(!touch_merge_attached(&m));
+    uint32_t probes = 0, reads = 0;
+    for (uint32_t t = 0; t <= 60000u; t += 10u) {
+        /* The glass reports, fails and goes quiet: none of it touches the
+         * injector's state.  0x14 answers throughout. */
+        touch_point_t g = pt(1, 100, 100);
+        touch_merge_glass(&m, &g, (t / 1000u) % 3u == 0u ? 0 : 1);
+        (void)touch_merge_expire(&m, t);
+        if (touch_merge_probe_due(&m, t)) {
+            ++probes;
+        }
+        if (touch_merge_probe(&m, true, t)) {
+            ++probes;
+        }
+        if (touch_merge_inject_due(&m, t)) {
+            ++reads;
+        }
+        CHECK(!touch_merge_inject(&m, &g, 1, true, t));
+        CHECK(!touch_merge_inject_failed(&m, t));
+        CHECK(!touch_merge_attached(&m));
+        CHECK_EQ(panel_age(&m, 7, t), 7);
+    }
+    CHECK_EQ(probes, 0);
+    CHECK_EQ(reads, 0);
+    /* The merged frame is the glass's alone. */
+    touch_point_t out[TOUCH_MAX_POINTS];
+    touch_point_t g = pt(2, 5, 6);
+    touch_merge_glass(&m, &g, 1);
+    CHECK_EQ(touch_merge_frame(&m, out, TOUCH_MAX_POINTS), 1);
+    CHECK_EQ(out[0].id, 2);
+}
+
+/* Not found at start, found 10 s later: ignored until a restart, which
+ * starts the merge again. */
+TEST_CASE(an_injector_appearing_after_start_is_ignored_until_restart)
+{
+    touch_merge_t m;
+    touch_merge_start(&m, false, 0);
+    for (uint32_t t = 0; t < 10000u; t += 10u) {
+        inj_poll(&m, t, false);
+    }
+    for (uint32_t t = 10000u; t < 30000u; t += 10u) {
+        inj_poll(&m, t, true);           /* it answers now */
+        CHECK(!touch_merge_attached(&m));
+        CHECK(m.detached);
+        CHECK_EQ(panel_age(&m, 3, t), 3);
+    }
+    touch_merge_start(&m, true, 30000u);  /* the next start finds it */
+    CHECK(touch_merge_attached(&m));
+    CHECK(!touch_merge_expire(&m, 30999u));
+    CHECK(touch_merge_expire(&m, 31000u));
+}
+
+/* An injector that answered at start-up keeps today's behaviour: detached
+ * after 1000 ms silent, probed once a second, back on the first answer. */
+TEST_CASE(present_at_start_detaches_and_reattaches_as_before)
+{
+    touch_merge_t m;
+    touch_merge_start(&m, true, 0);
+    CHECK(touch_merge_attached(&m));
+    uint32_t t = 0;
+    for (; t < 1000u; t += 10u) {
+        inj_poll(&m, t, false);
+    }
+    inj_poll(&m, 1000u, false);
+    CHECK(!touch_merge_attached(&m));
+    CHECK(!touch_merge_probe_due(&m, 1999u));
+    CHECK(touch_merge_probe_due(&m, 2000u));
+    CHECK(!touch_merge_probe(&m, false, 2000u));
+    CHECK(touch_merge_probe_due(&m, 3000u));
+    CHECK(touch_merge_probe(&m, true, 3000u));
+    CHECK(touch_merge_attached(&m));
+    /* Silent once more: detached 1000 ms after the re-attach. */
+    CHECK(!touch_merge_expire(&m, 3999u));
+    CHECK(touch_merge_expire(&m, 4000u));
+}
+
 TEST_CASE(null_detach_calls_are_harmless)
 {
+    touch_merge_start(NULL, true, 0);
+    touch_merge_start(NULL, false, 0);
     touch_merge_attach(NULL, 0);
     CHECK(!touch_merge_attached(NULL));
     CHECK(!touch_merge_expire(NULL, 5000));
@@ -742,6 +829,9 @@ int main(void)
     RUN(no_injected_press_survives_a_detach_and_reattach);
     RUN(a_detached_injector_gives_the_heartbeat_back);
     RUN(a_flapping_injector_holds_the_heartbeat_no_longer);
+    RUN(nothing_at_start_means_no_probe_ever_later);
+    RUN(an_injector_appearing_after_start_is_ignored_until_restart);
+    RUN(present_at_start_detaches_and_reattaches_as_before);
     RUN(null_detach_calls_are_harmless);
     return test_summary("touch_merge");
 }

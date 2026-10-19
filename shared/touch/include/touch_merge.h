@@ -1,8 +1,9 @@
 /*
  * Two touch controllers, one contact set: the glass's GT911 at 0x5D and a
  * touch injector at 0x14 (testbench/touch-injector), merged into the frame
- * the tracker sees.  Pure C; the panel compiles the I/O around it only in a
- * build with RCBENCH_TOUCH_INJECTOR, and the host suite tests it.
+ * the tracker sees.  Pure C; the panel compiles the I/O around it in a
+ * build with RCBENCH_TOUCH_INJECTOR (the default), and the host suite tests
+ * it.
  *
  * Rules:
  *
@@ -27,6 +28,10 @@
  *     the glass alone decides how old touch is.  By then touch has read as
  *     dead and the bench has disarmed; nothing arms again without a new
  *     arm.
+ *   - The injector is looked for once, at start-up (touch_merge_start()).
+ *     One that does not answer then is absent until the next start: it is
+ *     never read, probed or counted, whatever the bus does later, and the
+ *     glass is the only touch.
  *   - A detached injector is probed once every TOUCH_MERGE_PROBE_MS.  The
  *     first probe it answers re-attaches it with no contacts and an age
  *     of 0 (touch_merge_probe()).  Its age stays under
@@ -71,6 +76,7 @@ typedef struct {
     uint8_t       fails;        /**< failed injector reads in a row      */
     uint32_t      last_try_ms;  /**< when the injector was last asked    */
     bool          detached;     /**< silent for TOUCH_MERGE_DETACH_MS    */
+    bool          absent;       /**< not found at start-up; never probed */
     uint32_t      ok_ms;        /**< the last good read or probe         */
 } touch_merge_t;
 
@@ -78,6 +84,14 @@ void touch_merge_reset(touch_merge_t *m);
 
 /** Reset, with the injector attached and answering at @p now_ms. */
 void touch_merge_attach(touch_merge_t *m, uint32_t now_ms);
+
+/**
+ * The start-up look for the injector, at @p now_ms: @p answered is true when
+ * 0x14 answered as a GT911.  An answer is touch_merge_attach().  No answer
+ * makes the injector absent until the next start: nothing in this header
+ * attaches, reads or probes it, and touch_merge_attached() stays false.
+ */
+void touch_merge_start(touch_merge_t *m, bool answered, uint32_t now_ms);
 
 /** Whether the injector is attached: false once detached, until a probe. */
 bool touch_merge_attached(const touch_merge_t *m);
@@ -91,7 +105,8 @@ bool touch_merge_expire(touch_merge_t *m, uint32_t now_ms);
 
 /**
  * Whether a detached injector is due to be probed at @p now_ms:
- * TOUCH_MERGE_PROBE_MS after the detach and after every probe.
+ * TOUCH_MERGE_PROBE_MS after the detach and after every probe.  Never for
+ * an absent one.
  */
 bool touch_merge_probe_due(const touch_merge_t *m, uint32_t now_ms);
 

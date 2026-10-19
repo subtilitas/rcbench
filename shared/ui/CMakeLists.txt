@@ -56,8 +56,8 @@ set(SRCS
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
                            REQUIRES gfx touch bench logfile settings sbus link outputs servo can esc)
-    # INJECT's mode name and bubble text, in the touch injector's bench build
-    # only (idf.py -D RCBENCH_TOUCH_INJECTOR=ON build).  PUBLIC, as the
+    # INJECT's mode name and bubble text, in a build with the touch injector
+    # (the default; idf.py -D RCBENCH_TOUCH_INJECTOR=OFF drops them).  PUBLIC, as the
     # include path is: the define changes ui_text.def's IDs, and every file
     # that includes ui_text.h has to see the same set.
     if(RCBENCH_TOUCH_INJECTOR)

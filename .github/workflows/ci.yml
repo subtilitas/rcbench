@@ -518,36 +518,43 @@ jobs:
         run: python3 tools/ram_budget.py firmware/panel/build
              ${{ matrix.idf == 'v5.4' && '--check-doc' || '' }}
 
-      # The test-bench build that reads a touch injector at 0x14 beside the
-      # glass (testbench/touch-injector).  Built so it keeps building; not
-      # uploaded.  The released image must hold none of it.
-      - name: The injector build compiles, and the released image has none
+      # The default build reads a touch injector at 0x14 beside the glass
+      # (testbench/touch-injector).  The image must hold its code, INJECT's
+      # mode name and one literal of INJECT's bubble text
+      # (shared/ui/include/ui_text.def).
+      - name: The default image holds the touch injector
+        run: |
+          for s in touch_inject_attach ui_band_mode_inject \
+              "the injector at I2C address 0x14"; do
+            if ! grep -aqF "$s" firmware/panel/build/rcbench-panel.elf; then
+              echo "::error::the default image lacks touch injector code: $s"
+              exit 1
+            fi
+          done
+
+      # The build without it, so the option keeps building: the image
+      # must hold none of that code.  Not uploaded.
+      - name: The build without the injector compiles
         if: matrix.idf == 'v5.4'
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: ${{ matrix.idf }}
           target: esp32s3
           path: 'firmware/panel'
-          command: idf.py -B build-inject -D RCBENCH_TOUCH_INJECTOR=ON build
+          command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF build
 
-      - name: The injector code is in the injector build only
+      - name: The injector code is not in the build without it
         if: matrix.idf == 'v5.4'
         run: |
-          # The injector's code, INJECT's mode name and one literal of its
-          # bubble text (shared/ui/include/ui_text.def).
-          for s in touch_inject_attach ui_band_mode_inject \
-              "the injector at I2C address 0x14"; do
-            grep -aqF "$s" firmware/panel/build-inject/rcbench-panel.elf
-          done
           if grep -aqF -e touch_inject_ -e touch_merge_ \
               -e ui_band_mode_inject \
               -e "the injector at I2C address 0x14" \
-              firmware/panel/build/rcbench-panel.elf; then
-            echo "::error::the released image holds touch injector code"
+              firmware/panel/build-noinject/rcbench-panel.elf; then
+            echo "::error::the build without the injector holds its code"
             exit 1
           fi
-          python3 tools/stack_check.py firmware/panel/build-inject
-          python3 tools/ram_budget.py firmware/panel/build-inject
+          python3 tools/stack_check.py firmware/panel/build-noinject
+          python3 tools/ram_budget.py firmware/panel/build-noinject
 
       - uses: actions/upload-artifact@v7
         with:

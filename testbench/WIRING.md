@@ -387,10 +387,11 @@ names a line held low, and `noise` means no verdict. Only after `ok`:
 
     confirm scl=GP5  ->  ok confirm
 
-The injector then answers at 0x14. A panel image built with
-`RCBENCH_TOUCH_INJECTOR=ON` finds it at its next start: pulse its RESET, and
-the status band's MODE chip reads `INJECT`. After an injector reset the
-panel needs no RESET: it detached the silent injector after 1000 ms and
+The injector then answers at 0x14. A panel image
+finds it at its next start (a panel looks at start-up only): pulse its
+RESET, and the status band's MODE chip reads `INJECT`. After an injector
+reset the panel needs no RESET if it found the injector at start-up: it
+detached the silent injector after 1000 ms and
 re-attaches it within about 1 s of `confirm`. Capture one again: the decode now
 shows 0x14 polled after every read of 0x5D.
 
