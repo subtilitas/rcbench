@@ -261,7 +261,7 @@ TEST_CASE(the_number_is_above_the_highest_and_a_gap_is_not_filled)
     put("BENCH/LOGS", true);
     put_file(CARD_AUTO_LOGS, "SUPPL001.CSV");
     put_file(CARD_AUTO_LOGS, "MOTOR005.CSV");    /* 2 to 4 deleted */
-    put_file(CARD_AUTO_LOGS, "bench003.txt");    /* 0.21's name, copied */
+    put_file(CARD_AUTO_LOGS, "bench003.txt");    /* 0.21.0's name, copied */
     put_file(CARD_AUTO_LOGS, "SWEEP_920KV.CSV"); /* takes no number */
     CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_SERVO, false, NULL), 6);
     CHECK_STR_EQ(g.created, "BENCH/LOGS/SERVO006.CSV");
@@ -485,7 +485,7 @@ TEST_CASE(an_open_file_holds_back_its_own_folder_only)
         .test_dir = CARD_USER_LOGS, .test = 5u, .txt = 0u,
     };
     /* USER/LOGS/ATEST005.CSV open does not hide BENCH/LOGS/SERVO005.CSV,
-     * nor 0.21's SERVO005.CSV in the root. */
+     * nor 0.21.0's SERVO005.CSV in the root. */
     CHECK(log_marks_busy(&m, CARD_USER_LOGS, "ATEST005.CSV"));
     CHECK(!log_marks_busy(&m, CARD_AUTO_LOGS, "SERVO005.CSV"));
     CHECK(!log_marks_busy(&m, CARD_ROOT, "SERVO005.CSV"));

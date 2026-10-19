@@ -515,7 +515,7 @@ UI_TEXT(LOG_NO_CSV_IN,             64, "No .csv files in %s.")
  * switched off say where they are switched on. */
 UI_TEXT(LOG_RUNS_HERE,             64, "Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.")
 UI_TEXT(LOG_TESTS_HERE,            64, "Tests are saved as ATESTnnn.CSV.")
-UI_TEXT(LOG_ROOT_HERE,             64, "Runs of firmware 0.21 and older.")
+UI_TEXT(LOG_ROOT_HERE,             64, "Runs of firmware 0.21.0 and older.")
 UI_TEXT(LOG_AUTO_OFF,              64, "AUTO LOGS OFF in SETUP > SD CARD.")
 UI_TEXT(LOG_USER_OFF,              64, "USER LOGS OFF in SETUP > SD CARD.")
 /* The folder tabs: the card's folder names, the same in every language

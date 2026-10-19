@@ -439,7 +439,7 @@ static bool card_remove(const char *name, void *ctx)
     /* A test's report goes with its run: left behind, it would be the only
      * file carrying the number.  The same prefix as the run's, so
      * ATESTnnn.CSV takes ATESTnnn.TXT, and in the root a servo test's
-     * SERVOnnn.CSV or BENCHnnn.CSV of firmware 0.21 and older takes its
+     * SERVOnnn.CSV or BENCHnnn.CSV of firmware 0.21.0 and older takes its
      * report. */
     char txt[LOG_RUN_NAME_MAX];
     log_name_report_of(txt, sizeof(txt), name);

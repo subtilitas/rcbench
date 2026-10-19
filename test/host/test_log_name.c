@@ -2,7 +2,7 @@
  * Run log names by writer: ATESTnnn for the AUTOMATIC TEST, LIMITnnn for a
  * LIMIT RUN's report, SERVOnnn and MOTORnnn for an ARMED run by the screen
  * that armed it, SUPPLnnn for a supply run; BENCHnnn and ESCnnn of
- * firmware 0.21 and older read back; one number series across all 7 in a
+ * firmware 0.21.0 and older read back; one number series across all 7 in a
  * folder.
  *
  * The panel's logger (firmware/panel/main/panel_log.c) and its card side
@@ -317,7 +317,7 @@ TEST_CASE(the_next_number_is_one_above_the_highest_of_any_prefix)
 
 TEST_CASE(a_folder_of_older_bench_files_continues_their_numbering)
 {
-    /* A folder that holds 0.21's names, copied there on a computer. */
+    /* A folder that holds 0.21.0's names, copied there on a computer. */
     card_clear();
     card_put("BENCH001.CSV");
     card_put("BENCH002.CSV");

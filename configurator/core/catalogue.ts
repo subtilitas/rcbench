@@ -1154,14 +1154,14 @@ const wires: Wire[] = [
       'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GP16 oder GP17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 564, '| SDA | GP16 (pad 21) |'),
+    src: repo('docs/FirstRun.md', 631, '| SDA | GP16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 565, '| SCL | GP17 (pad 22) |'),
+    src: repo('docs/FirstRun.md', 632, '| SCL | GP17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -1540,7 +1540,7 @@ const functions: Fn[] = [
     id: 'profiles', group: 'bench',
     name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
     // No statement of a run of the list on a panel.
-    needs: [], src: repo('STATUS.md', 132, '72 families, 451 models, from 153 manuals'),
+    needs: [], src: repo('STATUS.md', 133, '72 families, 451 models, from 153 manuals'),
   },
   {
     id: 'wifi', group: 'bench',
@@ -1563,7 +1563,7 @@ const functions: Fn[] = [
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
     // The test reads the current of the PD mini (docs/Servo.md, line 437).
-    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 437, 'the current of the supply that feeds the servo: the PD mini'),
+    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 439, 'the current of the supply that feeds the servo: the PD mini'),
   },
   {
     id: 'servocur', group: 'servo',
@@ -1573,7 +1573,7 @@ const functions: Fn[] = [
   {
     id: 'angle', group: 'servo',
     name: t('Angle of the servo horn', 'Winkel des Ruderhorns'),
-    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 126, 'Output encoder (AS5600)'),
+    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 127, 'Output encoder (AS5600)'),
   },
   {
     id: 'servoprog', group: 'servo',
@@ -1601,12 +1601,12 @@ const functions: Fn[] = [
     // The bench powers the ESC from the PD mini and counts the beeps from the
     // supply current (docs/StickProgramming.md, line 6).
     needs: ['pdmini'], drives: 'esc', forces: { escPower: 'pd' },
-    src: repo('STATUS.md', 133, 'ESC STICK on MOTOR & ESC > PROGRAM runs 24 of the 72 profiles'),
+    src: repo('STATUS.md', 134, 'ESC STICK on MOTOR & ESC > PROGRAM runs 24 of the 72 profiles'),
   },
   {
     id: 'tap', group: 'esc',
     name: t('Read the beeps of the ESC (phase tap)', 'ESC-Pieptöne lesen (Phasenabgriff)'),
-    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 127, 'Phase tap (ESC tones)'),
+    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 128, 'Phase tap (ESC tones)'),
   },
   {
     id: 'supply', group: 'bench',
@@ -1753,7 +1753,7 @@ const checks: Check[] = [
       'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
       'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
     ),
-    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 566, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 633, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
@@ -2165,7 +2165,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 624, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
+    src: repo('STATUS.md', 656, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
   },
 ];
 

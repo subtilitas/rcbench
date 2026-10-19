@@ -4,8 +4,8 @@ The core of the rcbench bench configurator: one data file, one resolver and the
 checks on both. It has no runtime dependency and no build step. Node.js 24 runs
 the TypeScript files directly.
 
-The data describes release 0.21.0. Every record carries a source: a file and
-line at the tag `v0.21.0`, a section of the build guide, a photo taken for
+The data describes release 0.21.1. Every record carries a source: a file and
+line at the tag `v0.21.1`, a section of the build guide, a photo taken for
 the build guide, or a dated statement of the project owner. A fact that no source confirms is marked as unknown in the
 data and is not asserted.
 
@@ -181,8 +181,9 @@ its parts stay or leave, and in `objectsOut` the test objects that leave.
 Run from `configurator/core` with Node.js 24.
 
 ```sh
-npm run check                 # static checks; the tree at v0.21.0 is read when git and the tag are present
+npm run check                 # static checks; the tree at v0.21.1 is read when git and the tag are present
 npm run check -- --strict     # as above; fails when git or the tag is absent
+CONFIGURATOR_BEFORE_TAG=1 npm run check -- --strict   # before the tag: reads HEAD when its header names 0.21.1
 npm run check -- --wires      # prints the wire table as Markdown
 npm test                      # the test suite
 npm run coverage              # runs the suite and writes the figure into this file
@@ -193,8 +194,10 @@ Exit codes of `check`: 0 no error, 1 at least one error, 2 unknown argument.
 A warning does not change the exit code. Exit codes of `coverage`: 0 figure
 current or written, 1 drift or a failing suite, 2 unknown argument.
 
-`--strict` needs the tag `v0.21.0` in the clone. A shallow clone without tags
-fails it.
+`--strict` needs the tag `v0.21.1` in the clone. A shallow clone without tags
+fails it. With `CONFIGURATOR_BEFORE_TAG=1` and no tag, a `HEAD` whose
+firmware header names 0.21.1 is read in place of the tag; the variable is
+for a clone that holds every tag, as the Configurator workflow's does.
 
 The type check needs the TypeScript compiler and the Node.js type
 declarations. Neither is a dependency of this folder:
@@ -292,19 +295,24 @@ run of white space read as one space. The texts are the export `ANCHOR_TEXTS`;
 they are not part of `CATALOGUE`. Build guide sections, photos and owner
 statements are checked by id, number and date only.
 
-A release tag newer than `v0.21.0` is a warning. `tools/check-annotate.sh`
+A release tag newer than `v0.21.1` is a warning. `tools/check-annotate.sh`
 runs the check and shows each warning as an annotation and in the summary of
 the run. The Configurator workflow runs it and fails on an error. The Release
 workflow runs it with `--warn-only` on every tag push: an error is a warning
 there as well, and no release waits for the check.
 
-The data moves to a release in the first pull request after the tag of that
-release: the anchors are read at the tag, so the tag exists first. That pull
-request changes `RELEASE_TAG` in `tools/check.ts`, `TAG` and `release` in
-`catalogue.ts`, the `tag` type in `../contract.ts`, `RELEASE` in
-`../src/i18n.ts`, `release` in `../drawings/anchors.json` and `version` in
-`../package.json`, and sets each anchor to the line that holds its text at
-the new tag.
+The data moves to a release in the release pull request, with the firmware
+header `shared/link/include/rcbench_version.h`. That pull request changes
+`version` in `../package.json` and `../package-lock.json`, from which
+`../release.ts` derives the release and its tag, `release` in
+`../drawings/anchors.json`, and the release numbers of the configurator's
+README files, and sets each anchor to the line that holds its text in its
+own tree. Until the tag exists, the check reads the anchors at `HEAD` when
+`CONFIGURATOR_BEFORE_TAG` is 1 and the header there names the release of
+`package.json`; the Configurator workflow sets the variable on its clone,
+which holds every tag. Once the tag exists, the check reads the anchors at
+the tag. Without git, or without the tag and without the variable or with a
+header at `HEAD` that names another release, `--strict` fails.
 
 The 7 pin rules:
 
@@ -417,7 +425,7 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 
 ## Unknown in the data
 
-- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.21.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
+- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.21.1` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
 - Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
@@ -430,5 +438,5 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 - DC jack of the Osoyoo breakout board: no reverse-polarity protection. A centre-negative plug puts the reverse voltage through the switch OFF/ON on the input of the XL1509 converter. The SI2302 (Q3) protects the VIN terminal and H4 only.
 - DC jack of the Osoyoo breakout board, plug size: the product page names the socket DC005-2.1. The 2.1 mm pin follows from that name. The 5.5 mm outer diameter is the usual size of that socket family; no vendor source states it.
 - SI2302 (Q3) of the Osoyoo breakout board above 12 V: its gate sits at PWRIN through R7 with no clamp and its source at GND (schematic REV 1.0), so its gate-source voltage is the input voltage at every input. The datasheet linked on the product page rates the gate-source voltage at ±12 V (absolute maximum). Above 12 V Q3 is outside that rating; the print of 16 V and the vendor limit of 18 V are above it. The data keeps the range at 7 to 12 V.
-- ESC STICK programming: `docs/StickProgramming.md` at `v0.21.0` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
+- ESC STICK programming: `docs/StickProgramming.md` at `v0.21.1` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
 - 9 check entries of kind `unknown` state each open point in the text of a setup.

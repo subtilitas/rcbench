@@ -12,7 +12,7 @@ LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separat
 
 ![LOGS with no card in the slot](view:logs-nocard)
 
-With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV.` or `Runs of firmware 0.21 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF in SETUP > SD CARD.` or `USER LOGS OFF in SETUP > SD CARD.` instead. RESCAN reads the card again.
+With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF in SETUP > SD CARD.` or `USER LOGS OFF in SETUP > SD CARD.` instead. RESCAN reads the card again.
 
 ## The file list
 
@@ -24,7 +24,7 @@ The header names the card by its volume label and the folder on screen, `UNITEST
 |---|---|---|
 | USER | User log folder, `USER/LOGS` by default | the AUTOMATIC TEST's and the LIMIT RUN's files |
 | BENCH | Auto log folder, `BENCH/LOGS` by default | the automatic log of each ARMED and supply run |
-| ROOT | the card's root | the runs of firmware 0.21 and older |
+| ROOT | the card's root | the runs of firmware 0.21.0 and older |
 
 LOGS opens on the tab of the file the panel wrote last, and on BENCH after a start until one is written. Back on LOGS with nothing written since, the tab stays as it was left. A tap on a tab reads its folder from the first page.
 
@@ -61,7 +61,7 @@ One file is one run, in the folder of its kind. Its name says what started it:
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
 | `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
 | `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
-| root | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | runs of firmware 0.21 and older; in the root, `SERVOnnn` is a servo test |
+| root | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | runs of firmware 0.21.0 and older; in the root, `SERVOnnn` is a servo test |
 
 The name follows the screen whose ARM armed the bench, also on an IOmcu older than protocol 4.18, which arms the throttle outputs with every switch to ARMED.
 
@@ -71,9 +71,9 @@ Auto log folder and User log folder on [SETUP > SD CARD](setup.md#sd-card) set o
 
 The panel makes each folder the first time it writes there, one level at a time. A file named `BENCH` or `USER` in the root stops that: the band reads `Cannot make folder BENCH/LOGS. Run not recorded.`
 
-Each folder has its own series: a new run takes one above the highest number in its folder, whichever name carries it, the names of firmware 0.21 included. A gap left by a deleted file is not filled. A folder holding a number 999 takes no further run, with lower numbers free or not. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list shows runs newest first by number, across all names: `MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
+Each folder has its own series: a new run takes one above the highest number in its folder, whichever name carries it, the names of firmware 0.21.0 included. A gap left by a deleted file is not filled. A folder holding a number 999 takes no further run, with lower numbers free or not. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list shows runs newest first by number, across all names: `MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
 
-Firmware 0.21 and older writes to the root and does not read `BENCH/LOGS` or `USER/LOGS`.
+Firmware 0.21.0 and older writes to the root and does not read `BENCH/LOGS` or `USER/LOGS`.
 
 A run is committed to the card every 20 rows or 1000 ms, whichever comes first. A power loss mid-run costs under 1.0 s of rows while the card keeps up, up to 84 rows, 4.20 s at 20 Hz, when it has stalled.
 

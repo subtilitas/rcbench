@@ -1740,7 +1740,7 @@ folder used before are not listed: the USER and BENCH tabs list the folders
 set now. They stay on the card, and setting the folder back lists them
 again.
 
-Firmware 0.21 and older wrote every run to the card's root as
+Firmware 0.21.0 and older wrote every run to the card's root as
 `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` with its `SERVOnnn.TXT` (a
 servo test) and `SERVOnnn.TXT` alone (a limit run). Those files stay where
 they are and stay readable: nothing moves them, and the ROOT tab lists them.

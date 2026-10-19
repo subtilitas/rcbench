@@ -11,7 +11,7 @@
  *           one behind a confirmation that names it.  Three tabs choose the
  *           folder: USER (USER/LOGS, the tests a user starts), BENCH
  *           (BENCH/LOGS, the automatic logs) and ROOT (the card's root,
- *           where firmware 0.21 and older wrote every run)
+ *           where firmware 0.21.0 and older wrote every run)
  *   IMPORT  what the CSV (comma-separated values) reader detected, and the
  *           controls to override it
  *   PLOT    the traces, on one time base with a scale each

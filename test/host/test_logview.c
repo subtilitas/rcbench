@@ -2286,7 +2286,7 @@ static void folder_card(void)
     fc_put(CARD_USER_LOGS, "ATEST005.TXT");
     fc_put(CARD_USER_LOGS, "LIMIT006.TXT");
     fc_put(CARD_USER_LOGS, "ATEST002.CSV");
-    fc_put(CARD_ROOT, "BENCH041.CSV");          /* firmware 0.21 */
+    fc_put(CARD_ROOT, "BENCH041.CSV");          /* firmware 0.21.0 */
     fc_put(CARD_ROOT, "SERVO042.CSV");
     fc_put(CARD_ROOT, "SERVO042.TXT");
     fc_put(CARD_ROOT, "ESC040.CSV");
@@ -2347,7 +2347,7 @@ TEST_CASE(three_tabs_list_three_folders_and_bench_comes_first)
     CHECK(!listed_now("ATEST005.TXT"));
     CHECK(!listed_now("LIMIT006.TXT"));
 
-    /* ROOT: 0.21's names, ranked by number across the prefixes; a file
+    /* ROOT: 0.21.0's names, ranked by number across the prefixes; a file
      * nobody numbered after them. */
     tap(TAB_X(2), TAB_Y);
     CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);

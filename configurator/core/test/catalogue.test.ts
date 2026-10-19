@@ -2,8 +2,10 @@
 // reports a broken copy of the data.
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -834,42 +836,42 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
   );
 
   // A line that is present and holds another row: no text is named for it.
-  moved.functions[SERVO]!.src = at(563);
-  reports(checkSrc(moved, tree).findings, 'function.servo', /FirstRun\.md:563 names no text of 4 characters or more/);
-  reports(checkSrc(moved, null).findings, 'function.servo', /FirstRun\.md:563 names no text/);
+  moved.functions[SERVO]!.src = at(630);
+  reports(checkSrc(moved, tree).findings, 'function.servo', /FirstRun\.md:630 names no text of 4 characters or more/);
+  reports(checkSrc(moved, null).findings, 'function.servo', /FirstRun\.md:630 names no text/);
   reports(checkAll(moved, tree, true).findings, 'function.servo', /names no text/);
 
   // A named text that the line does not hold.
-  const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 563, has: '| SDA | GP16 (pad 21) |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:563 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.21\.0/);
+  const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 630, has: '| SDA | GP16 (pad 21) |' }];
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:630 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.21\.1/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
 
   // Every text named for the line is compared.
   const rows = fakeTree(CATALOGUE, (files) => {
-    lines(files, 'docs/FirstRun.md')[562] = '|  INA3221 power |   3V3 (pad 36), GND |';
+    lines(files, 'docs/FirstRun.md')[629] = '|  INA3221 power |   3V3 (pad 36), GND |';
   });
-  const power = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 563, has: '| INA3221 power | 3V3' }];
+  const power = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 630, has: '| INA3221 power | 3V3' }];
   assert.deepEqual(checkSrc(moved, rows, power).findings, []);
   reports(checkSrc(moved, rows, [...power, ...wrong]).findings, 'function.servo', /does not hold "\| SDA/);
 
   // A text under the shortest length names nothing.
   assert.equal(ANCHOR_TEXT_MIN, 4);
-  const short = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 563, has: ' |  I ' }];
+  const short = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 630, has: ' |  I ' }];
   reports(checkSrc(moved, rows, short).findings, 'function.servo', /names no text/);
-  const none = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 563 } as { path: string; line: number; has: string }];
+  const none = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 630 } as { path: string; line: number; has: string }];
   reports(checkSrc(moved, rows, none).findings, 'function.servo', /names no text/);
 
   // A row of the data moved off its line in the tree.
   const shifted = fakeTree(CATALOGUE, (files) => {
     const doc = lines(files, 'docs/FirstRun.md');
-    doc.splice(562, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
+    doc.splice(629, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'wire.26', /FirstRun\.md:564 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
-  reports(found, 'wire.27', /FirstRun\.md:565 does not hold/);
-  reports(found, 'check.ina3221-pullups', /FirstRun\.md:566 does not hold/);
+  reports(found, 'wire.26', /FirstRun\.md:631 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
+  reports(found, 'wire.27', /FirstRun\.md:632 does not hold/);
+  reports(found, 'check.ina3221-pullups', /FirstRun\.md:633 does not hold/);
 });
 
 test('src: every repository anchor of the data names a text of its own', () => {
@@ -880,14 +882,14 @@ test('src: every repository anchor of the data names a text of its own', () => {
     assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
     assert.ok(Object.isFrozen(text));
   }
-  // The sensor bus rows of docs/FirstRun.md at the tag: 564 SDA, 565 SCL,
-  // 566 the pull-ups.
+  // The sensor bus rows of docs/FirstRun.md at the tag: 631 SDA, 632 SCL,
+  // 633 the pull-ups.
   const sda = CATALOGUE.wires.find((w) => w.n === 26)?.src;
   const scl = CATALOGUE.wires.find((w) => w.n === 27)?.src;
-  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 564, tag: TAG });
-  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 565, tag: TAG });
+  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 631, tag: TAG });
+  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 632, tag: TAG });
   const pullups = CATALOGUE.checks.find((k) => k.id === 'ina3221-pullups')?.src;
-  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 566, tag: TAG });
+  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 633, tag: TAG });
   // The AS5600 board's OUT and GPO have no repository source at the tag:
   // docs/Building.md describes the panel's knob, an MT6701, since 0.21.0.
   const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
@@ -1088,6 +1090,78 @@ test('tree: a newer release tag is a warning, not an error', () => {
     { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.22.0` },
   ]);
   assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: null }), []);
+  // The release pull request before its tag: the newest tag is older than the data.
+  assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: 'v0.0.1' }), []);
+  assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: TAG }), []);
+});
+
+test('tree: read at the tag, or at HEAD before the tag when the header names the release', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'cfg-tree-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const git = (...args: string[]): void => {
+    execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args], {
+      stdio: ['ignore', 'ignore', 'ignore'],
+    });
+  };
+  const header = (v: string): string => {
+    const [a, b, c] = v.split('.');
+    return `#define RCBENCH_VERSION_MAJOR ${a}\n#define RCBENCH_VERSION_MINOR ${b}\n#define RCBENCH_VERSION_PATCH ${c}\n`;
+  };
+  const commit = (v: string, note: string): void => {
+    mkdirSync(join(dir, 'shared/link/include'), { recursive: true });
+    writeFileSync(join(dir, 'shared/link/include/rcbench_version.h'), header(v));
+    writeFileSync(join(dir, 'note.txt'), note);
+    git('add', '-A');
+    git('commit', '-q', '-m', note);
+  };
+  try {
+    git('init', '-q');
+  } catch {
+    t.skip('git is absent');
+    return;
+  }
+
+  // No commit yet: no header at HEAD, no tag.
+  assert.equal(gitTree(dir, 'v9.8.7', '9.8.7', true), null);
+
+  // The release pull request: header and data name 9.8.7, the tag is not made.
+  commit('9.8.7', 'release pr');
+  writeFileSync(join(dir, 'note.txt'), 'uncommitted');
+  // Without the explicit before-tag mode a clone without the tag reads nothing:
+  // a clone that lacks a published tag does not fall back to HEAD.
+  assert.equal(gitTree(dir, 'v9.8.7', '9.8.7', false), null);
+  const head = gitTree(dir, 'v9.8.7', '9.8.7', true);
+  assert.ok(head !== null);
+  assert.equal(head.ref, 'HEAD');
+  assert.equal(head.read('note.txt'), 'release pr');
+  assert.equal(head.read('absent.txt'), null);
+  assert.equal(head.newestTag, null);
+
+  // A header of another release, at either side of the data's: no tree.
+  assert.equal(gitTree(dir, 'v9.8.6', '9.8.6', true), null);
+  assert.equal(gitTree(dir, 'v9.8.8', '9.8.8', true), null);
+
+  // The tag exists: the files are read at the tag, not at a later HEAD.
+  git('tag', 'v9.8.7');
+  commit('9.9.0', 'after the tag');
+  const tagged = gitTree(dir, 'v9.8.7', '9.8.7', true);
+  assert.ok(tagged !== null);
+  assert.deepEqual(gitTree(dir, 'v9.8.7', '9.8.7', false)?.ref, 'v9.8.7');
+  assert.equal(tagged.ref, 'v9.8.7');
+  assert.equal(tagged.read('note.txt'), 'release pr');
+  assert.equal(tagged.newestTag, 'v9.8.7');
+
+  // The next release pull request before its tag: HEAD, and the older tag is the newest.
+  const next = gitTree(dir, 'v9.9.0', '9.9.0', true);
+  assert.ok(next !== null);
+  assert.equal(next.ref, 'HEAD');
+  assert.equal(next.read('note.txt'), 'after the tag');
+  assert.equal(next.newestTag, 'v9.8.7');
+
+  // Not a repository: no tree.
+  const bare = mkdtempSync(join(tmpdir(), 'cfg-none-'));
+  t.after(() => rmSync(bare, { recursive: true, force: true }));
+  assert.equal(gitTree(bare, 'v9.8.7', '9.8.7', true), null);
 });
 
 // --- invariant 6 ------------------------------------------------------------
