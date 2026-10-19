@@ -60,7 +60,7 @@ test('a header one release ahead with no tag is a warning that names the order',
   const f = checkHeader('0.17.0', hdr('0.18.0'), () => false);
   assert.equal(f.length, 1);
   assert.equal(f[0]!.level, 'warn');
-  assert.match(f[0]!.msg, /firmware header is 0\.18\.0, the configurator data describes 0\.17\.0: bump configurator\/package\.json after the tag v0\.18\.0 exists/);
+  assert.match(f[0]!.msg, /firmware header is 0\.18\.0, the configurator data describes 0\.17\.0: move configurator\/package\.json to 0\.18\.0 in the release pull request, before the tag v0\.18\.0 exists/);
 });
 
 test('a header ahead whose tag exists is an error', () => {

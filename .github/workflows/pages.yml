@@ -96,8 +96,10 @@ jobs:
       - name: Test suite
         run: npm test
 
-      # --strict fails when git or the release tag is absent, so the anchors
-      # are always read.
+      # --strict fails when git is absent, or when the release tag is absent
+      # and the firmware header at HEAD names another release, so the
+      # anchors are always read: at the tag, or at HEAD in the release pull
+      # request before the tag exists.
       # A warning does not fail the step. Each one becomes an annotation of
       # the run and a line of its summary: a release tag newer than the data
       # is a warning. The step ends with the exit code of the check, so a

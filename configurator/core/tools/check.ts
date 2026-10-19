@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import type {
   Catalogue, Cond, OptionKey, Options, Pad, PinDefault, Src, Wire,
 } from '../../contract.ts';
-import { TAG } from '../../release.ts';
+import { TAG, VERSION } from '../../release.ts';
 import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import type { AnchorText } from '../catalogue.ts';
 import { ROW_ID, brought, buyRows } from '../buy.ts';
@@ -24,7 +24,7 @@ import { FUNCTION_HELP } from '../help.ts';
 import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, resolve } from '../resolve.ts';
 import { PICTURE_DIR, checkPictures, pictureFolder } from './pictures.ts';
 import type { PictureFolder } from './pictures.ts';
-import { checkReleaseSources } from './release-sources.ts';
+import { checkReleaseSources, compareVersions, headerVersion } from './release-sources.ts';
 
 export type Finding = { level: 'error' | 'warn'; id: string; msg: string };
 
@@ -33,6 +33,8 @@ export type Tree = {
   read: (path: string) => string | null;
   /** The newest release tag of the repository, or null when it has none. */
   newestTag: string | null;
+  /** The commit the files are read at: the release tag, or `HEAD` before the tag exists. */
+  ref?: string;
 };
 
 export const RELEASE_TAG = TAG;
@@ -824,7 +826,7 @@ const SETTING_OF: Partial<Record<PinDefault['signal'], string>> = {
 export function checkTree(c: Catalogue, tree: Tree): Finding[] {
   const out: Finding[] = [];
 
-  if (tree.newestTag !== null && tree.newestTag !== `v${c.release}`) {
+  if (tree.newestTag !== null && compareVersions(tree.newestTag.slice(1), c.release) > 0) {
     out.push(warn('release', `the data describes ${c.release}; the newest release tag is ${tree.newestTag}`));
   }
 
@@ -1016,7 +1018,7 @@ export function checkAll(
   if (tree !== null) {
     findings.push(...guarded('tree', () => checkTree(c, tree)));
   } else if (strict) {
-    findings.push(err('repository', `git or the tag ${RELEASE_TAG} is absent; ${repoAnchors} repository anchors are not checked`));
+    findings.push(err('repository', `git or the tag ${RELEASE_TAG} is absent, and ${HEADER_PATH} at HEAD does not name ${VERSION}; ${repoAnchors} repository anchors are not checked`));
   }
   return { findings, repoAnchors, repoChecked };
 }
@@ -1054,8 +1056,17 @@ export function wireTable(c: Catalogue): string {
   return `${rows.join('\n')}\n`;
 }
 
-/** The repository that holds this file, read at the release tag. Null when git or the tag is absent. */
-export function gitTree(dir: string): Tree | null {
+/** The firmware release header, relative to the repository root. */
+const HEADER_PATH = 'shared/link/include/rcbench_version.h';
+
+/**
+ * The repository that holds `dir`, read at the release tag. Before the tag
+ * exists, the release pull request moves the firmware header and the data
+ * together: when the header at `HEAD` names the release `version`, the files
+ * are read at `HEAD`, the commit the tag is made on. Null when git is absent,
+ * or when the tag is absent and the header at `HEAD` names another release.
+ */
+export function gitTree(dir: string, tag: string = RELEASE_TAG, version: string = VERSION): Tree | null {
   const git = (args: string[]): string | null => {
     try {
       return execFileSync('git', ['-C', dir, ...args], {
@@ -1067,15 +1078,21 @@ export function gitTree(dir: string): Tree | null {
       return null;
     }
   };
-  if (git(['rev-parse', '--quiet', '--verify', `refs/tags/${RELEASE_TAG}^{commit}`]) === null) return null;
+  let ref = tag;
+  if (git(['rev-parse', '--quiet', '--verify', `refs/tags/${tag}^{commit}`]) === null) {
+    const header = git(['show', `HEAD:${HEADER_PATH}`]);
+    if (header === null || headerVersion(header) !== version) return null;
+    ref = 'HEAD';
+  }
   const cache = new Map<string, string | null>();
   const tags = git(['tag', '--list', 'v[0-9]*', '--sort=-v:refname']);
   return {
     read: (path) => {
-      if (!cache.has(path)) cache.set(path, git(['show', `${RELEASE_TAG}:${path}`]));
+      if (!cache.has(path)) cache.set(path, git(['show', `${ref}:${path}`]));
       return cache.get(path) ?? null;
     },
-    newestTag: tags?.split('\n').find((tag) => /^v[0-9]+\.[0-9]+\.[0-9]+$/.test(tag)) ?? null,
+    newestTag: tags?.split('\n').find((t) => /^v[0-9]+\.[0-9]+\.[0-9]+$/.test(t)) ?? null,
+    ref,
   };
 }
 
@@ -1107,7 +1124,9 @@ function main(argv: string[]): number {
   );
   process.stdout.write(`check: ${folder.names.length} files in the picture folder\n`);
   if (tree === null) {
-    process.stdout.write(`check: skipped ${report.repoAnchors} repository anchors; git or the tag ${RELEASE_TAG} is absent\n`);
+    process.stdout.write(`check: skipped ${report.repoAnchors} repository anchors; git or the tag ${RELEASE_TAG} is absent, and ${HEADER_PATH} at HEAD does not name ${VERSION}\n`);
+  } else if (tree.ref === 'HEAD') {
+    process.stdout.write(`check: ${report.repoChecked} repository anchors read at HEAD; the tag ${RELEASE_TAG} is absent and ${HEADER_PATH} names ${VERSION}\n`);
   } else {
     process.stdout.write(`check: ${report.repoChecked} repository anchors read at ${RELEASE_TAG}\n`);
   }

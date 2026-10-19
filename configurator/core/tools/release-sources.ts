@@ -4,13 +4,14 @@
 //   - the firmware header shared/link/include/rcbench_version.h, whose
 //     MAJOR, MINOR and PATCH define the firmware release;
 //   - the release numbers that the Markdown files of the configurator state
-//     in prose ("release 0.21.0", "the tag `v0.21.0`").
+//     in prose ("release 0.21.1", "the tag `v0.21.1`").
 //
-// The release pull request moves the header to the new version before the tag
-// exists; package.json moves after the tag exists, because the data check
-// reads the files at that tag. A header one release ahead of package.json,
-// with no tag for the header version yet, is therefore a warning. The
-// functions return findings; main() in check.ts prints them.
+// The release pull request moves the header and package.json to the new
+// version together, before the tag exists; until the tag exists the data
+// check reads the files at HEAD (gitTree() in check.ts). A header one release
+// ahead of package.json with no tag for the header version yet is a warning:
+// the release pull request has not moved package.json yet. The functions
+// return findings; main() in check.ts prints them.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -72,7 +73,7 @@ export function headerVersion(header: string): string | null {
   return parts.some((p) => p === null) ? null : parts.join('.');
 }
 
-const FIX = 'change configurator/package.json ("version") to the release of shared/link/include/rcbench_version.h (RCBENCH_VERSION_MAJOR, _MINOR, _PATCH) once its tag exists';
+const FIX = 'change configurator/package.json ("version") to the release of shared/link/include/rcbench_version.h (RCBENCH_VERSION_MAJOR, _MINOR, _PATCH)';
 
 /**
  * The release of package.json against the firmware header. `header` is the
@@ -81,7 +82,7 @@ const FIX = 'change configurator/package.json ("version") to the release of shar
  *
  * - equal: no finding;
  * - header ahead, tag of the header version absent: warning, the release PR
- *   moved the header and the tag is not made yet;
+ *   moved the header and not yet package.json;
  * - header ahead, tag present: error, the configurator is behind a published
  *   release;
  * - package.json ahead of the header: error.
@@ -98,7 +99,7 @@ export function checkHeader(version: string, header: string | null, tagExists: (
   if (tagExists(`v${fw}`)) {
     return [err('release-source', `the tag v${fw} exists, configurator/package.json is ${version}; ${FIX}`)];
   }
-  return [warn('release-source', `the firmware header is ${fw}, the configurator data describes ${version}: bump configurator/package.json after the tag v${fw} exists`)];
+  return [warn('release-source', `the firmware header is ${fw}, the configurator data describes ${version}: move configurator/package.json to ${fw} in the release pull request, before the tag v${fw} exists`)];
 }
 
 /** One "version" field of package-lock.json must equal the release. */
