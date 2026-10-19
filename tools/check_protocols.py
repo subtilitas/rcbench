@@ -387,6 +387,15 @@ ASSERTED = {
             "LINK_KST_RESULT_SUPPLY > KST_SES_ERR_NO_PLAN",
         ),
     },
+    "hitec": {
+        "shared/outputs/hitec_port.c": (
+            "LINK_HT_BYTES + HITEC_RX_MAX / 2 == LINK_HT_DATA",
+            "HITEC_RX_MAX == 16 && HITEC_TX_MAX == 8",
+        ),
+        "shared/outputs/page_console.c": (
+            "sizeof(k_rx) / sizeof(k_rx[0]) == (size_t)HITEC_RX_ERR_SUM + 1u",
+        ),
+    },
     "ppm": {
         "firmware/iomcu/src/outputs_hw.c": (
             "OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS",

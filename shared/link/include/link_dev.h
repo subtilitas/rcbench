@@ -98,6 +98,18 @@ void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
 bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
                        link_msg_t *reply, uint32_t now_ms);
 
+/**
+ * What link_dev_dispatch() answers, without touching the silence watchdog:
+ * the same page lookup, range check, read, write and refusals.  For a
+ * caller on this end that is not the link, such as the bench console
+ * (page_console.h): a request from there proves nothing about the panel,
+ * so it must not hold the failsafe off.
+ *
+ * False only on a null argument.
+ */
+bool link_dev_apply(const link_dev_t *d, const link_msg_t *req,
+                    link_msg_t *reply);
+
 
 /**
  * Advance the silence watchdog.  Returns true on the edge where failsafe

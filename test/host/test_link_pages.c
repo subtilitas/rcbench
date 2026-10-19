@@ -994,6 +994,37 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
 }
 
 /*
+ * Protocol 4.23 adds the HITEC page after PROG and moves nothing: a read of
+ * 32 registers, a write of 23, the command in the first 4 and the staged
+ * registers after them, as on KST.
+ */
+TEST_CASE(hitec_extends_the_map_without_moving_it)
+{
+    CHECK_EQ(LINK_MINOR_HITEC, 23u);
+    CHECK(LINK_MINOR_HITEC > LINK_MINOR_UPDATE);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, LINK_MINOR_HITEC);
+    CHECK_EQ(LINK_PAGE_PROG, 0x33);
+    CHECK_EQ(LINK_PAGE_HITEC, 0x34);
+    CHECK_EQ(LINK_HT_COUNT, 32);
+    CHECK_EQ(LINK_HT_W_COUNT, 23);
+    CHECK_EQ(LINK_HT_W_CMD_FRAME, 4u);
+    CHECK_EQ(LINK_HT_W_LINE, 4);
+    CHECK_EQ(LINK_HT_W_STAGED, 18u);
+    CHECK_EQ(LINK_HT_W_VIEW, 22);
+    CHECK_EQ(LINK_HT_BYTES, 8);
+    CHECK_EQ(LINK_HT_DATA, 16);
+    CHECK_EQ(LINK_HT_I_FRAMING, 29);
+    CHECK_EQ(LINK_HITEC_OP_COUNT, 9);
+    CHECK_EQ(LINK_HITEC_REF_NO_SUPPLY, 13);
+    CHECK_EQ(LINK_HITEC_RESULT_CUT, 6);
+    CHECK_EQ(LINK_HITEC_SUPPLY_MIN_MV, 4800u);
+    CHECK_EQ(LINK_HITEC_SUPPLY_MAX_MV, 6000u);
+    CHECK(LINK_HITEC_WRITE_KEY != LINK_KST_WRITE_KEY);
+    CHECK_EQ(LINK_HT_W_CMD_OF(LINK_HITEC_OP_SEND, 2u), 0x0203u);
+    CHECK_EQ(LINK_HT_LINE_OF(1u, 1u), 0x0011u);
+}
+
+/*
  * Protocol 4.13 adds the PROG page after KST and moves nothing: three
  * registers for the bank of ports and five for each of four ports, the
  * model's maximum whatever the build has.  SUPPLY and SERVO_SENSE each
@@ -1571,7 +1602,7 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 22u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 23u);
     CHECK_EQ(LINK_MINOR_UPDATE, 22u);
     CHECK(LINK_MINOR_UPDATE > LINK_MINOR_REFUSED);
 
@@ -1646,6 +1677,7 @@ int main(void)
     RUN(an_older_coprocessor_has_no_servo_win_page_and_says_so);
     RUN(kst_extends_the_map_without_moving_it);
     RUN(prog_extends_the_map_without_moving_it);
+    RUN(hitec_extends_the_map_without_moving_it);
     RUN(the_kst_staged_check_tells_a_change_a_swap_and_a_length);
     RUN(a_4_11_coprocessor_has_no_kst_page_and_says_so);
     RUN(the_sense_pages_are_served_and_refuse_whole);

@@ -247,7 +247,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,700 | 528 | 1,612 |
+| core 0 | `main` | 4,096 | 1,748 | 528 | 1,564 |
 | core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -293,9 +293,9 @@ in it is not measured. The heartbeat gap that switches every output off is
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 133 such calls
+  handler, which the tool reads out of the link's page table: 156 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
-  13.2.1; ARM GNU 14.2 gives 142);
+  13.2.1; ARM GNU 14.2 gives 165);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
   `strstr()` calls it for a needle of 255 characters or more, and the two
   needles in the firmware are 3 and 5 characters. The tool fails on a

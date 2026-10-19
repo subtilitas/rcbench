@@ -6,16 +6,45 @@ history is in git.
 
 ## Unreleased
 
-### Fixed
+### Added
 
-- LOGS reads the card each time it opens, from the menu or back from
-  WI-FI: the first page, its newest run selected. A run recorded while LOGS
-  was closed is on the list without RESCAN. A file's import or plot view
-  left open stays open, with the list behind it read again. The card was
-  read on the first opening after a start only.
+- `protocols/hitec/`: the signal-wire layer for programming Hitec servos,
+  both wire families. Classic (HS-5xxx, HS-7xxx: 19 200 bit/s, normal
+  polarity, 4-byte commands that sum to 0) and D series (115 200 bit/s,
+  inverted, `96`/`69` frames with a byte sum): frame builders, transactions
+  to send, listen with an answer to the first byte, or hold a level, and
+  reply decoders with one result code per failed check. `rp2350/` holds the
+  pin driver: one PIO program of 29 words for both families, 16 cycles a
+  bit from the clock divider, open drain or, for the D series, push-pull,
+  2 DMA channels. The IOmcu image holds its words to the host test's.
+  `test_hitec_wire` and `test_hitec_pio`, 33 cases, run the core and the
+  program in a model of the state machine. No byte has been on a wire.
+  ([README](protocols/hitec/README.md))
+- The HITEC link page (0x34), protocol 4.23: raw Hitec transactions on a
+  programming port. OPEN takes the port's pin from PWM after 50 ms and
+  opens the line, classic or D series; SEND, LISTEN, LEVEL and POWER run
+  one transaction each and leave the capture, up to 16 bytes with their
+  start times, and its decoding on the page. Every SEND, and a LISTEN or
+  POWER that answers, needs the write key 0x48A5; every staged
+  transaction needs its CRC-16. POWER switches the PD mini off, holds it
+  off 0 to 10,000 ms and on at 4800 to 6000 mV, and listens from the ON. A
+  stop aborts the transaction, keeps the port with the pin released and
+  refuses transactions until CLEAR. The panel does not use the page.
+  `shared/outputs/hitec_port.c`, `test_hitec_port` and
+  `test_hitec_port_stop`, 39 cases.
+  ([The programming port for Hitec servos](docs/LinkHitec.md))
+- The bench console, IOmcu build option `IOMCU_CONSOLE`, off by default:
+  command lines on the USB serial port read and write every link page
+  through the link's page handlers, without feeding the link's silence
+  watchdog; `hitec` commands stage, check and send HITEC transactions and
+  report the capture. CI builds it and fails when the default image holds
+  a console symbol. `shared/outputs/page_console.c`, `test_page_console`,
+  13 cases. ([The bench console](docs/BenchConsole.md))
 
 ### Changed
 
+- The KST page refuses ENTER, and a REBOOT taken in PWM, with BUSY while
+  the HITEC page holds the port.
 - The bench configurator describes release 0.21.0. Every repository source
   of its data is a file and line at the tag `v0.21.0`: 83 sources, 53 of
   them on the line the text moved to, in `shared/outputs/out_bind.c`,
@@ -35,6 +64,14 @@ history is in git.
   panel's words: SERVO-TESTER, PROG-PORT and PORT-PWM with the hyphen, EIN
   and AUS, TRIMMUNG, WEG and UMKEHREN, ZENTRIEREN and FREIGEBEN, VERBINDEN,
   HV-SERVO, ANSCHLÜSSE for INTERFACES, and Pulsrate for the frame rate.
+
+### Fixed
+
+- LOGS reads the card each time it opens, from the menu or back from
+  WI-FI: the first page, its newest run selected. A run recorded while LOGS
+  was closed is on the list without RESCAN. A file's import or plot view
+  left open stays open, with the list behind it read again. The card was
+  read on the first opening after a start only.
 
 ## 0.21.0 - 2026-10-18
 

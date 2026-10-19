@@ -266,7 +266,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 700 | 528 | 1 612 |
+| Kern 0 | `main` | 4 096 | 1 748 | 528 | 1 564 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
@@ -316,8 +316,8 @@ Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 133 solche Aufrufe sind von `main` aus erreichbar, im Image,
-  das CI baut (arm-none-eabi-gcc 13.2.1; ARM GNU 14.2 ergibt 142);
+  Links liest: 156 solche Aufrufe sind von `main` aus erreichbar, im Image,
+  das CI baut (arm-none-eabi-gcc 13.2.1; ARM GNU 14.2 ergibt 165);
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und
   die beiden Suchmuster der Firmware sind 3 und 5 Zeichen lang. Das Werkzeug

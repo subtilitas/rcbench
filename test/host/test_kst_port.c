@@ -2281,6 +2281,44 @@ TEST_CASE(enter_is_refused_while_the_bench_is_armed)
     conduct();
 }
 
+/* A port the HITEC page holds takes no ENTER; the other port does. */
+TEST_CASE(enter_is_refused_on_a_port_the_hitec_page_holds)
+{
+    fresh_at(0u, SUPPLY_ON);
+    kst_port_other_mask(&g_port, (uint8_t)(1u << CH));
+    CHECK_EQ(cmd(LINK_KST_OP_ENTER, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(g_hw.takes, 0);
+    CHECK_EQ(g_hw.sets, 0);
+    CHECK_EQ(kst_port_quiet_mask(&g_port), 0);
+    /* The other port is free. */
+    CHECK_EQ(cmd(LINK_KST_OP_ENTER, OTHER, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(kst_port_quiet_mask(&g_port), 1u << OTHER);
+    CHECK_EQ(cmd(LINK_KST_OP_ABORT, OTHER, 0, 0), 0);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    /* Given back: the port enters. */
+    kst_port_other_mask(&g_port, 0u);
+    enter();
+    conduct();
+}
+
+/* Nor a REBOOT from PWM: the supply is not cycled under a Hitec line. */
+TEST_CASE(a_reboot_from_pwm_is_refused_on_a_port_the_hitec_page_holds)
+{
+    fresh_at(0u, SUPPLY_ON);
+    kst_port_other_mask(&g_port, (uint8_t)(1u << CH));
+    CHECK_EQ(cmd(LINK_KST_OP_REBOOT, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(g_hw.sets, 0);
+    kst_port_other_mask(&g_port, 0u);
+    CHECK_EQ(cmd(LINK_KST_OP_REBOOT, CH, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    CHECK_EQ(state(), LINK_KST_RAIL_OFF);
+}
+
 /* The port says while a frame is out, and only then: the supply's OFF
  * waits on it. */
 TEST_CASE(the_port_says_while_a_frame_is_out)
@@ -4130,6 +4168,8 @@ int main(void)
     RUN(enter_takes_the_lower_voltage_and_the_lower_current_limit);
     RUN(enter_is_refused_for_a_supply_that_is_on_under_the_floor);
     RUN(enter_is_refused_while_the_bench_is_armed);
+    RUN(enter_is_refused_on_a_port_the_hitec_page_holds);
+    RUN(a_reboot_from_pwm_is_refused_on_a_port_the_hitec_page_holds);
     RUN(the_port_says_while_a_frame_is_out);
     RUN(enter_is_refused_for_a_supply_outside_the_range);
     RUN(a_port_without_a_pd_mini_enters_as_it_did_and_asks_for_the_word);

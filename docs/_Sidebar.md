@@ -21,6 +21,8 @@ Reference
 
 - [The link](Link.md)
 - [The programming port for KST and Chaservo servos](LinkKST.md)
+- [The programming port for Hitec servos](LinkHitec.md)
+- [The bench console](BenchConsole.md)
 - [DShot and the output drivers](DShot.md)
 - [The OpenYGE protocol](OpenYGE.md)
 - [ESC programming profiles](EscProfiles.md)
@@ -48,6 +50,8 @@ Referenz
 
 - [Der Link](Link-de.md)
 - [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md)
+- [Der Programmierport für Servos von Hitec](LinkHitec-de.md)
+- [Die Prüfstandskonsole](BenchConsole-de.md)
 - [DShot und die Output-Treiber](DShot-de.md)
 - [Das OpenYGE-Protokoll](OpenYGE-de.md)
 - [ESC-Programmierprofile](EscProfiles-de.md)
