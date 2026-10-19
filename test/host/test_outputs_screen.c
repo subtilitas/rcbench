@@ -20,6 +20,9 @@
 #include "outputs_screen.h"
 #include "servo_screen.h"
 #include "settings.h"
+#include "settings_screen.h"
+#include "sense_link.h"
+#include "tone_link.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "touch_feed.h"
@@ -622,6 +625,30 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
                  OUTPUTS_CELL_RESERVED);
         CHECK_STR_EQ(l, TR(OUT_IFACE_TAP));
         CHECK_EQ(outputs_screen_cell(idx(22u), NULL, 0), OUTPUTS_CELL_FREE);
+
+        /* A tap pin the TONE page refuses, an ADC pin, holds nothing;
+         * nor does a bus or a tap the IOmcu refused, until it holds it
+         * again. */
+        settings_set(SET_TONE_PIN, 26.0f);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_TAP), 0ull);
+        CHECK_EQ(outputs_screen_cell(idx(26u), NULL, 0), OUTPUTS_CELL_FREE);
+        settings_set(SET_TONE_PIN, 21.0f);
+        CHECK_EQ(outputs_screen_cell(idx(21u), NULL, 0),
+                 OUTPUTS_CELL_RESERVED);
+        settings_screen_set_unheld(0u, TONE_LINK_ROWS_TAP);
+        CHECK_EQ(outputs_screen_cell(idx(21u), NULL, 0), OUTPUTS_CELL_FREE);
+        settings_screen_set_unheld(0u, 0u);
+        CHECK_EQ(outputs_screen_cell(idx(21u), NULL, 0),
+                 OUTPUTS_CELL_RESERVED);
+        settings_set(SET_SENSE_SDA, 16.0f);
+        CHECK_EQ(outputs_screen_cell(idx(17u), NULL, 0),
+                 OUTPUTS_CELL_RESERVED);
+        settings_screen_set_unheld(SENSE_LINK_ROW_PINS, 0u);
+        CHECK_EQ(outputs_screen_cell(idx(17u), NULL, 0), OUTPUTS_CELL_FREE);
+        settings_screen_set_unheld(0u, 0u);
+        CHECK_EQ(outputs_screen_cell(idx(17u), NULL, 0),
+                 OUTPUTS_CELL_RESERVED);
+        settings_set(SET_SENSE_SDA, -1.0f);
 
         /* Out of range and none have no pins and no name. */
         CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_NONE), 0ull);

@@ -234,7 +234,10 @@ bool outputs_clash_reason(const outbind_t *b, int index,
  * both set and apart, as the panel writes its page ON
  * (supply_page_pins()); Tap pin while the phase tap is on
  * (tone_page_pins()).  Sensor SDA at -1 holds nothing, nor does the PD
- * mini with either pin at -1.  The pins follow the
+ * mini with either pin at -1, nor a tap pin the TONE page refuses (an ADC
+ * pin: GP26 to GP29, GP40 to GP47).  A sensor bus or a phase tap the
+ * IOmcu refused, its row marked on SETUP (settings_screen_unheld()),
+ * holds no pin either.  The pins follow the
  * settings: a row stepped on SETUP frees the old pin and holds the new.
  *
  * OUTPUTS and PICK A PIN show such a pin taken and named, as a

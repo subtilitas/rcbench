@@ -24,6 +24,7 @@
 #include "link_pages.h"
 #include "servo_screen.h"
 #include "settings.h"
+#include "settings_screen.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -140,7 +141,9 @@ uint64_t outputs_iface_pins(outputs_iface_t which)
                         || settings_get_bool(SET_INA3221_EN)
                         || settings_get_bool(SET_ENC_EN);
         const int sda = settings_get_int(SET_SENSE_SDA);
-        if (!on || sda < 0) {
+        /* A bus the IOmcu refused, its row marked on SETUP, holds no
+         * pin there. */
+        if (!on || sda < 0 || settings_screen_unheld(SET_SENSE_SDA)) {
             return 0u;
         }
         return pin_bit(sda) | pin_bit(settings_get_int(SET_SENSE_SCL));
@@ -156,9 +159,19 @@ uint64_t outputs_iface_pins(outputs_iface_t which)
         }
         return pin_bit(tx) | pin_bit(rx);
     }
-    case OUTPUTS_IFACE_TAP:
-        return settings_get_bool(SET_TONE_EN)
-                   ? pin_bit(settings_get_int(SET_TONE_PIN)) : 0u;
+    case OUTPUTS_IFACE_TAP: {
+        /* The TONE page refuses an ADC pin -- GP26 to GP29 of the
+         * RP2350A, GP40 to GP47 of the RP2354B (tone_page.c) -- and a tap
+         * the IOmcu refused for any reason, its rows marked on SETUP, holds
+         * no pin there. */
+        const int pin = settings_get_int(SET_TONE_PIN);
+        const bool adc = (pin >= 26 && pin <= 29) || (pin >= 40 && pin <= 47);
+        if (!settings_get_bool(SET_TONE_EN) || adc
+            || settings_screen_unheld(SET_TONE_PIN)) {
+            return 0u;
+        }
+        return pin_bit(pin);
+    }
     case OUTPUTS_IFACE_NONE:
     case OUTPUTS_IFACE_COUNT:
     default:
