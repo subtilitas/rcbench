@@ -524,11 +524,10 @@ const parts: Part[] = [
     slot: { column: 'R', order: 15 },
     pins: [
       pin('VCC', same('VCC'), guide('stage-4')),
-      pin('OUT', same('OUT'), repo('docs/Building.md', 124, '| OUT | not connected')),
+      pin('OUT', same('OUT'), guide('stage-4')),
       pin('GND', same('GND'), guide('stage-4')),
-      // docs/Building.md names this pin PGO and ties it to GND. The print on
-      // the board is not confirmed.
-      pin('GPO', same('GPO'), repo('docs/Building.md', 123, '| PGO | GND |'), false),
+      // Tied to GND (wire 54). The print on the board is not confirmed.
+      pin('GPO', same('GPO'), guide('stage-4'), false),
       pin('SDA', same('SDA'), guide('stage-4')),
       pin('SCL', same('SCL'), guide('stage-4')),
       pin('DIR', same('DIR'), guide('stage-4')),
@@ -834,16 +833,16 @@ const BREAKOUT_LABELS: Record<number, string> = {
 };
 
 const PAD_ROWS: Array<[number, string, number | null, number]> = [
-  [1, 'GP0', 0, 33], [2, 'GP1', 1, 34], [3, 'GND', null, 86], [4, 'GP2', 2, 35],
-  [5, 'GP3', 3, 36], [6, 'GP4', 4, 37], [7, 'GP5', 5, 38], [8, 'GND', null, 87],
-  [9, 'GP6', 6, 39], [10, 'GP7', 7, 40], [11, 'GP8', 8, 41], [12, 'GP9', 9, 42],
-  [13, 'GND', null, 88], [14, 'GP10', 10, 43], [15, 'GP11', 11, 44], [16, 'GP12', 12, 45],
-  [17, 'GP13', 13, 46], [18, 'GND', null, 89], [19, 'GP14', 14, 47], [20, 'GP15', 15, 48],
-  [21, 'GP16', 16, 49], [22, 'GP17', 17, 50], [23, 'GND', null, 90], [24, 'GP18', 18, 51],
-  [25, 'GP19', 19, 52], [26, 'GP20', 20, 53], [27, 'GP21', 21, 54], [28, 'GND', null, 91],
-  [29, 'GP22', 22, 55], [30, 'RUN', null, 92], [31, 'GP26', 26, 56], [32, 'GP27', 27, 57],
-  [33, 'GND', null, 93], [34, 'GP28', 28, 58], [35, 'VREF', null, 94], [36, '3V3', null, 95],
-  [37, '3V3_EN', null, 96], [38, 'GND', null, 97], [39, 'VSYS', null, 98], [40, 'VBUS', null, 99],
+  [1, 'GP0', 0, 34], [2, 'GP1', 1, 35], [3, 'GND', null, 87], [4, 'GP2', 2, 36],
+  [5, 'GP3', 3, 37], [6, 'GP4', 4, 38], [7, 'GP5', 5, 39], [8, 'GND', null, 88],
+  [9, 'GP6', 6, 40], [10, 'GP7', 7, 41], [11, 'GP8', 8, 42], [12, 'GP9', 9, 43],
+  [13, 'GND', null, 89], [14, 'GP10', 10, 44], [15, 'GP11', 11, 45], [16, 'GP12', 12, 46],
+  [17, 'GP13', 13, 47], [18, 'GND', null, 90], [19, 'GP14', 14, 48], [20, 'GP15', 15, 49],
+  [21, 'GP16', 16, 50], [22, 'GP17', 17, 51], [23, 'GND', null, 91], [24, 'GP18', 18, 52],
+  [25, 'GP19', 19, 53], [26, 'GP20', 20, 54], [27, 'GP21', 21, 55], [28, 'GND', null, 92],
+  [29, 'GP22', 22, 56], [30, 'RUN', null, 93], [31, 'GP26', 26, 57], [32, 'GP27', 27, 58],
+  [33, 'GND', null, 94], [34, 'GP28', 28, 59], [35, 'VREF', null, 95], [36, '3V3', null, 96],
+  [37, '3V3_EN', null, 97], [38, 'GND', null, 98], [39, 'VSYS', null, 99], [40, 'VBUS', null, 100],
 ];
 
 const pads: Pad[] = PAD_ROWS.map(([n, name, gpio, line]): Pad => {
@@ -1155,14 +1154,14 @@ const wires: Wire[] = [
       'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GP16 oder GP17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 498, '| SDA | GP16 (pad 21) |'),
+    src: repo('docs/FirstRun.md', 564, '| SDA | GP16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 499, '| SCL | GP17 (pad 22) |'),
+    src: repo('docs/FirstRun.md', 565, '| SCL | GP17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -1350,7 +1349,7 @@ const wires: Wire[] = [
       'Unter 30 cm. Kein Ausgang auf GP22, solange der Abgriff eingeschaltet ist.',
     ),
     when: { has: 'tap' }, stage: 5, route: { kind: 'R', lane: 4 }, pin: 'default',
-    src: repo(SETTINGS, 191, 'GP22 is pad 29'),
+    src: repo(SETTINGS, 192, 'GP22 is pad 29'),
   },
   {
     n: 53, kind: 'component', a: 'pad.29', b: 'pad.28', net: 'tap', netB: 'gnd', cls: 'phase',
@@ -1368,10 +1367,10 @@ const wires: Wire[] = [
     net: 'gnd', cls: 'gnd',
     signal: t('GPO strap', 'GPO-Brücke'),
     note: t(
-      'docs/Building.md names the pin PGO. No wire to the IOmcu.',
-      'docs/Building.md nennt den Pin PGO. Kein Draht zum IOmcu.',
+      'No wire to the IOmcu.',
+      'Kein Draht zum IOmcu.',
     ),
-    when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 123, '| PGO | GND |'),
+    when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: guide('stage-4'),
   },
   {
     n: 55, kind: 'wire', a: 'pad.36', b: 'ina228.V3', net: '3v3', cls: 'logic',
@@ -1454,8 +1453,8 @@ const wires: Wire[] = [
     n: 64, kind: 'wire', a: 'pad.17', b: 'servo.SIG', net: 'servo_sig', cls: 'out',
     signal: t(`servo signal: PWM and programming, ${V33_EN}`, `Servosignal: PWM und Programmierung, ${V33_DE}`),
     note: t(
-      'In place of wire 7. The programming port, port 1: the pin of an IOmcu that has stored none. Set SETTINGS → DUT → PWM TARGET to PROG PORT.',
-      'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines IOmcu, der keinen gespeichert hat. SETTINGS → DUT → PWM TARGET auf PROG PORT stellen.',
+      'In place of wire 7. The programming port, port 1: the pin of an IOmcu that has stored none. Set SERVO TESTER to PROG PORT on the PROG PORT entry of SETUP → OUTPUTS.',
+      'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines IOmcu, der keinen gespeichert hat. SERVO TESTER auf dem Eintrag PROG PORT von SETUP → OUTPUTS auf PROG PORT stellen.',
     ),
     when: SERVO_PROG, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'default',
     src: repo(PROG_PORT, 61, '#define PROG_PORT_DEFAULT_PIN 13u'),
@@ -1488,7 +1487,7 @@ const functions: Fn[] = [
   {
     id: 'link', group: 'bench',
     name: t('CAN link at 1 Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1 Mbit/s und Echo-Selbsttest bei jedem Start'),
-    needs: [], src: repo('STATUS.md', 114, 'CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test'),
+    needs: [], src: repo('STATUS.md', 114, 'CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test'),
   },
   {
     id: 'interlock', group: 'bench',
@@ -1519,7 +1518,7 @@ const functions: Fn[] = [
       'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Frame Rate als 50 Hz',
     ),
     needs: [],
-    src: repo('STATUS.md', 107, 'a sweep (square, sine or triangle, run by the coprocessor)'),
+    src: repo('STATUS.md', 107, 'a sweep (square, sine or triangle, run by the IOmcu)'),
   },
   {
     id: 'ppm', group: 'bench',
@@ -1541,7 +1540,7 @@ const functions: Fn[] = [
     id: 'profiles', group: 'bench',
     name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
     // No statement of a run of the list on a panel.
-    needs: [], src: repo('STATUS.md', 131, '72 families, 451 models, from 153 manuals'),
+    needs: [], src: repo('STATUS.md', 132, '72 families, 451 models, from 153 manuals'),
   },
   {
     id: 'wifi', group: 'bench',
@@ -1553,7 +1552,7 @@ const functions: Fn[] = [
   {
     id: 'canupdate', group: 'bench',
     name: t('IOmcu firmware update over CAN from the panel', 'Firmware-Update des IOmcu über CAN vom Panel'),
-    needs: [], src: repo('STATUS.md', 118, 'Coprocessor firmware update over CAN'),
+    needs: [], src: repo('STATUS.md', 118, 'IOmcu firmware update over CAN'),
   },
   {
     id: 'servo', group: 'servo',
@@ -1564,7 +1563,7 @@ const functions: Fn[] = [
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
     // The test reads the current of the PD mini (docs/Servo.md, line 97).
-    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 97, 'the current of the supply that feeds the servo: the PD mini'),
+    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 437, 'the current of the supply that feeds the servo: the PD mini'),
   },
   {
     id: 'servocur', group: 'servo',
@@ -1581,10 +1580,10 @@ const functions: Fn[] = [
     name: t('Program a KST or Chaservo servo', 'KST- oder Chaservo-Servo programmieren'),
     // The panel and the IOmcu suffice. The servo is on the programming
     // port. Its supply is the PD mini, where one is there, and CONNECT sets
-    // it; else the supply the variant "Servo power" names. The SERVO screen's
-    // PWM TARGET is PROG PORT, so the other servo functions drive the same pin.
+    // it; else the supply the variant "Servo power" names. SERVO TESTER on
+    // SETUP > OUTPUTS is PROG PORT, so the other servo functions drive the same pin.
     needs: [], drives: 'servo', forces: { servoPort: 'prog' },
-    src: repo(PROGRAMMER, 38, "The servo is on the coprocessor's programming port, port 1: GP13, pad 17"),
+    src: repo(PROGRAMMER, 42, "The servo is on the IOmcu's programming port, port 1: GP13, pad 17"),
   },
   {
     id: 'esc', group: 'esc',
@@ -1602,7 +1601,7 @@ const functions: Fn[] = [
     // The bench powers the ESC from the PD mini and counts the beeps from the
     // supply current (docs/StickProgramming.md, line 6).
     needs: ['pdmini'], drives: 'esc', forces: { escPower: 'pd' },
-    src: repo('STATUS.md', 132, 'the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles'),
+    src: repo('STATUS.md', 133, 'ESC STICK on MOTOR & ESC > PROGRAM runs 24 of the 72 profiles'),
   },
   {
     id: 'tap', group: 'esc',
@@ -1612,7 +1611,7 @@ const functions: Fn[] = [
   {
     id: 'supply', group: 'bench',
     name: t('Supply set from the bench, 1 to 20 V', 'Versorgung vom Prüfstand gestellt, 1 bis 20 V'),
-    needs: ['pdmini'], src: repo('STATUS.md', 109, 'the coprocessor runs it on a PIO UART on the pins the SUPPLY page'),
+    needs: ['pdmini'], src: repo('STATUS.md', 109, 'the IOmcu runs it on a PIO UART on the pins the SUPPLY page'),
   },
   {
     id: 'logs', group: 'bench',
@@ -1710,10 +1709,10 @@ const checks: Check[] = [
   {
     id: 'same-release', kind: 'note',
     text: t(
-      'Both boards run the same release. With different protocol versions the panel shows "protocol mismatch -- will not switch to ARMED".',
-      'Beide Platinen laufen mit demselben Release. Bei verschiedenen Protokollversionen zeigt das Panel "protocol mismatch -- will not switch to ARMED".',
+      'Both boards run the same release. With different protocol versions the panel shows "Protocol versions do not match. ARMED is blocked."',
+      'Beide Platinen laufen mit demselben Release. Bei verschiedenen Protokollversionen zeigt das Panel „Protokollversionen passen nicht zusammen. ARMED ist gesperrt.“',
     ),
-    when: null, src: repo('docs/Link.md', 79, 'protocol mismatch -- will not switch to ARMED'),
+    when: null, src: repo('docs/Link.md', 79, 'Protocol versions do not match. ARMED is blocked.'),
   },
   {
     id: 'servo-pin', kind: 'note',
@@ -1721,7 +1720,7 @@ const checks: Check[] = [
       'GP2 for the servo is a proposal of this page. The example of the build guide is GP0. GP0 and GP16 share a compare register, and GP16 carries the sensor bus. Whether the firmware refuses that pair: not stated.',
       'GP2 für das Servo ist ein Vorschlag dieser Seite. Das Beispiel der Bauanleitung ist GP0. GP0 und GP16 teilen sich ein Vergleichsregister, und GP16 trägt den Sensorbus. Ob die Firmware dieses Paar ablehnt: nicht angegeben.',
     ),
-    when: SERVO_OUTPUTS, src: repo('docs/DShot.md', 133, 'Six of those pairs are both free on the header the coprocessor offers: GP0 and'),
+    when: SERVO_OUTPUTS, src: repo('docs/DShot.md', 133, 'Six of those pairs are both free on the header the IOmcu offers: GP0 and'),
   },
   {
     id: 'pd-pins', kind: 'note',
@@ -1754,7 +1753,7 @@ const checks: Check[] = [
       'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
       'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
     ),
-    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 500, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 566, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
@@ -1795,10 +1794,10 @@ const checks: Check[] = [
   {
     id: 'as5600-board', kind: 'unknown',
     text: t(
-      'AS5600 board: pull-ups on the board are not known. The print of the pin GPO, named PGO in Building.md, is not confirmed. It is tied to GND.',
-      'AS5600-Platine: Die Pull-ups auf der Platine sind nicht bekannt. Der Aufdruck des Pins GPO, in Building.md PGO genannt, ist nicht bestätigt. Er liegt an GND.',
+      'AS5600 board: pull-ups on the board are not known. The print of the pin GPO is not confirmed. It is tied to GND.',
+      'AS5600-Platine: Die Pull-ups auf der Platine sind nicht bekannt. Der Aufdruck des Pins GPO ist nicht bestätigt. Er liegt an GND.',
     ),
-    when: { has: 'as5600' }, src: repo('docs/Building.md', 123, '| PGO | GND |'),
+    when: { has: 'as5600' }, src: guide('stage-4'),
   },
   {
     id: 'tap-ground', kind: 'measure',
@@ -1876,10 +1875,10 @@ const checks: Check[] = [
   {
     id: 'prog-target', kind: 'note',
     text: t(
-      'Servo programmer: the servo is on the programming port, GP13 (pad 17), unless another pin is stored for port 1. Set SETTINGS → DUT → PWM TARGET to PROG PORT: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when SETTINGS → DUT → PORT PWM is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GP13 leaves the port without a pin.',
-      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. SETTINGS → DUT → PWM TARGET auf PROG PORT stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, CENTRE, RELEASE, das Halten und der automatische Test treiben dann denselben Pin, wenn SETTINGS → DUT → PORT PWM auf ON steht; mit PORT PWM OFF sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
+      'Servo programmer: the servo is on the programming port, GP13 (pad 17), unless another pin is stored for port 1. On the PROG PORT entry of SETUP → OUTPUTS, set SERVO TESTER to PROG PORT: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GP13 leaves the port without a pin.',
+      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG PORT von SETUP → OUTPUTS SERVO TESTER auf PROG PORT stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, CENTRE, RELEASE, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT PWM auf diesem Eintrag auf ON steht; mit PORT PWM OFF sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
     ),
-    when: SERVO_PROG, src: repo(PROGRAMMER, 41, "The SERVO screen's **PWM TARGET** is **PROG PORT**"),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 82, '| SERVO TESTER | **OUTPUTS**, **PROG PORT** |'),
   },
   {
     id: 'prog-supply-pd', kind: 'note',
@@ -1888,7 +1887,7 @@ const checks: Check[] = [
       'Servo-Programmierer mit dem PD mini: CONNECT schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV SERVO, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; CONNECT erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
     ),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
-    src: repo(PROGRAMMER, 182, '4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on'),
+    src: repo(PROGRAMMER, 205, '4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on'),
   },
   {
     id: 'prog-supply-own', kind: 'note',
@@ -1897,7 +1896,7 @@ const checks: Check[] = [
       'Servo-Programmierer ohne den PD mini: Programmierspannung und Stromgrenze werden gespeichert und nicht angewendet. Das Servo läuft an der Versorgung der Variante „Servoversorgung“. STOP schaltet keine Versorgung.',
     ),
     when: { all: [SERVO_PROG, { not: { has: 'pdmini' } }] },
-    src: repo(PROGRAMMER, 246, 'Without a PD mini the voltage and the current limit are stored and not'),
+    src: repo(PROGRAMMER, 269, 'Without a PD mini the voltage and the current limit are stored and not'),
   },
   {
     id: 'prog-level', kind: 'unknown',
@@ -1905,7 +1904,7 @@ const checks: Check[] = [
       "High level of the servo's reply on GP13: not measured, at most 5 V and typically 3.3 V. GP13 is rated 5.5 V with the IOmcu powered and 3.63 V without. Power the IOmcu before the servo's supply.",
       'Pegel der Antwort des Servos an GP13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GP13 verträgt 5,5 V bei versorgtem IOmcu und 3,63 V ohne Versorgung. Den IOmcu vor der Versorgung des Servos einschalten.',
     ),
-    when: SERVO_PROG, src: repo(PROGRAMMER, 162, 'The level is not measured. GP13 is rated 5.5 V while the'),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 185, 'The level is not measured. GP13 is rated 5.5 V while the'),
   },
   {
     id: 'servo-bench-supply', kind: 'note',
@@ -2166,7 +2165,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 571, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
+    src: repo('STATUS.md', 624, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
   },
 ];
 
@@ -2183,15 +2182,15 @@ const pinDefaults: PinDefault[] = [
     signal: 'sda', gpio: 16, pad: 21, choice: 'default', role: 'bus',
     // settings_sense_sda_valid(): −1 and the SDA pins whose pair is free.
     allowed: [-1, 0, 4, 6, 14, 16, 18, 20, 26],
-    src: repo(SETTINGS, 161, '"sns_sda", "Sensor SDA"'),
+    src: repo(SETTINGS, 162, '"sns_sda", "Sensor SDA"'),
   },
   {
     signal: 'scl', gpio: 17, pad: 22, choice: 'default', role: 'bus',
     // SCL follows SDA: the GPIO after it.
     allowed: [-1, 1, 5, 7, 15, 17, 19, 21, 27],
-    src: repo(SETTINGS, 164, '"sns_scl", "Sensor SCL"'),
+    src: repo(SETTINGS, 165, '"sns_scl", "Sensor SCL"'),
   },
-  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 191, '"tone_pin", "Tap pin"') },
+  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 192, '"tone_pin", "Tap pin"') },
   { signal: 'esc', gpio: 5, pad: 7, choice: 'example', role: 'output', allowed: 'catalogue', src: guide('wires') },
   { signal: 'servo', gpio: 2, pad: 4, choice: 'proposal', role: 'output', allowed: 'catalogue', src: PAGE },
   { signal: 'prog', gpio: 13, pad: 17, choice: 'default', role: 'output', allowed: 'catalogue', src: repo(PROG_PORT, 61, '#define PROG_PORT_DEFAULT_PIN 13u') },

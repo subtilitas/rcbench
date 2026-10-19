@@ -6,6 +6,26 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- The bench configurator describes release 0.21.0. Every repository source
+  of its data is a file and line at the tag `v0.21.0`: 83 sources, 53 of
+  them on the line the text moved to, in `shared/outputs/out_bind.c`,
+  `shared/settings/settings.c`, `STATUS.md`, `docs/FirstRun.md`,
+  `docs/Servo.md` and `docs/ServoProgrammer.md`. 9 sources name the text
+  as the tag words it, IOmcu for coprocessor, ESC STICK on MOTOR & ESC >
+  PROGRAM, the alert `Protocol versions do not match. ARMED is blocked.`
+  and SERVO TESTER on SETUP > OUTPUTS. The AS5600 board's OUT and GPO,
+  the GPO strap and the board's check name build guide stage 4: the rows of
+  `docs/Building.md` they cited describe the panel's knob, an MT6701 since
+  0.21.0, and are gone.
+- The configurator's notes name the panel as 0.21.0 shows it: the
+  protocol alert `Protocol versions do not match. ARMED is blocked.`
+  (German `Protokollversionen passen nicht zusammen. ARMED ist gesperrt.`),
+  SERVO TESTER and PORT PWM on the PROG PORT entry of SETUP > OUTPUTS in
+  place of SETTINGS > DUT > PWM TARGET, and the German servo controls
+  TRIMMUNG, WEG and UMKEHREN.
+
 ## 0.21.0 - 2026-10-18
 
 0.21.0 is a testing release: its minor number, 21, is odd, and GitHub lists

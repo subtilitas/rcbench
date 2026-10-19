@@ -168,6 +168,6 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
   const de = read('shared/ui/ui_text_de.c');
   const label = (key: string): string => new RegExp(`\\[${key}\\]\\s*=\\s*"([^"]+)"`).exec(de)![1]!;
   const controls = ['TX_SV_ROW_TRIM', 'TX_SV_ROW_TRAVEL', 'TX_SV_ROW_REVERSE'].map(label);
-  assert.deepEqual(controls, ['TRIM', 'WEG', 'REVERSE']);
+  assert.deepEqual(controls, ['TRIMMUNG', 'WEG', 'UMKEHREN']);
   assert.match(help('servo').de, new RegExp(`Pulsbreite, ${controls[0]}, ${controls[1]} und ${controls[2]},`));
 });
