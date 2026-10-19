@@ -31,8 +31,11 @@
  *              printable ASCII (American Standard Code for Information
  *              Interchange) only, at most FW_REL_URL_MAX bytes, at most
  *              FW_REL_HOPS_MAX of them in one fetch
- *   length     a Content-Length, not chunked, 1 byte to the cap
- *   API answer status 200, 1 to FW_REL_API_MAX bytes; an array of
+ *   length     SHA256SUMS and the image: a Content-Length, not chunked,
+ *              1 byte to the cap
+ *   API answer status 200; a Content-Length of 1 to FW_REL_API_MAX bytes,
+ *              or chunked (Transfer-Encoding: chunked) and its releases
+ *              read within FW_REL_SCAN_MAX bytes; an array of
  *              objects, the first FW_REL_API_RELEASES of them read, each
  *              with exactly one "tag_name", a JSON string of at most
  *              FW_REL_TAG_MAX bytes without escapes or control bytes, "v"
@@ -112,8 +115,10 @@ typedef enum {
     FW_REL_STATUS,      /**< an HTTP status this step does not take       */
     FW_REL_HOPS,        /**< more than FW_REL_HOPS_MAX redirects          */
     FW_REL_HOST,        /**< a redirect to a host not in FW_REL_HOSTS     */
-    FW_REL_NO_LENGTH,   /**< no Content-Length, or a chunked body         */
-    FW_REL_EMPTY,       /**< a Content-Length of 0                        */
+    FW_REL_NO_LENGTH,   /**< no Content-Length, or a chunked body where
+                             one is needed                               */
+    FW_REL_EMPTY,       /**< a Content-Length of 0, or an empty chunked
+                             API answer                                  */
     FW_REL_TOO_BIG,     /**< a Content-Length over the cap               */
     FW_REL_SHORT,       /**< the body ended before its Content-Length    */
     FW_REL_OVERRUN,     /**< more body bytes than asked for              */

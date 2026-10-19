@@ -6,6 +6,16 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- The update check with RELEASES: TESTING reads GitHub's API answer in
+  chunks (`Transfer-Encoding: chunked`, no `Content-Length`), the form
+  GitHub sends when its cache does not hold the request. The check ended
+  with "Unexpected answer from GitHub." and "The response does not
+  specify a size." whenever the answer came in that form, the start-up
+  check included. The console prints each GitHub job's last answer: HTTP
+  status, `Content-Length`, chunked, body bytes read and the reason code.
+
 ## 0.21.1 - 2026-10-19
 
 0.21.1 is a testing release: its minor number, 21, is odd, and GitHub lists
