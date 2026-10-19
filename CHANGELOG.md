@@ -23,8 +23,10 @@ history is in git.
   protocol alert `Protocol versions do not match. ARMED is blocked.`
   (German `Protokollversionen passen nicht zusammen. ARMED ist gesperrt.`),
   SERVO TESTER and PORT PWM on the PROG PORT entry of SETUP > OUTPUTS in
-  place of SETTINGS > DUT > PWM TARGET, and the German servo controls
-  TRIMMUNG, WEG and UMKEHREN.
+  place of SETTINGS > DUT > PWM TARGET. The German texts take the German
+  panel's words: SERVO-TESTER, PROG-PORT and PORT-PWM with the hyphen, EIN
+  and AUS, TRIMMUNG, WEG and UMKEHREN, ZENTRIEREN and FREIGEBEN, VERBINDEN,
+  HV-SERVO, ANSCHLÜSSE for INTERFACES, and Pulsrate for the frame rate.
 
 ## 0.21.0 - 2026-10-18
 

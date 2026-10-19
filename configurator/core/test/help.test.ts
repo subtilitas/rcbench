@@ -78,10 +78,10 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
     assert.doesNotMatch(text.de, stateDe, text.de);
   }
   // German: one word per English term, as the glossary of docs/Language-de.md and the German docs name it: Log,
-  // Netzteil, Piepton, Ruderhorn, Lastwiderstand, and Frame Rate stays English.
+  // Netzteil, Piepton, Ruderhorn, Lastwiderstand, and Pulsrate for the frame rate, as the German panel shows it.
   const names = CATALOGUE.functions.filter((fn) => TICKED.includes(fn.id)).map((fn) => fn.name.de);
   for (const text of [...Object.values(FUNCTION_HELP).map((x) => x!.de), ...parts.map((x) => x.de), ...names]) {
-    assert.doesNotMatch(text, /Protokoll|Ausgang der Versorgung|Töne|Servohorn|Widerstandslast|Frame-Rate/, text);
+    assert.doesNotMatch(text, /Protokoll|Ausgang der Versorgung|Töne|Servohorn|Widerstandslast|Frame[- ]Rate/, text);
   }
   assert.doesNotMatch(help('esc').de, /Leistung/);
   // The emergency stop breaks no power line, and the IOmcu switches the PD mini off.

@@ -1204,9 +1204,9 @@ test('a catalogue with a missing table gives findings, not an exception', () => 
   assert.ok(report.findings.some((f) => f.level === 'error' && /check stopped/.test(f.msg)));
 });
 
-test('the German catalogue texts use the glossary words, not Servohorn, Frame-Rate or Töne for beeps', () => {
+test('the German catalogue texts use the glossary words, not Servohorn, Frame Rate or Töne for beeps', () => {
   const source = readFileSync(fileURLToPath(new URL('../catalogue.ts', import.meta.url)), 'utf8');
-  assert.doesNotMatch(source, /Servohorn|Frame-Rate|\bTöne\b/);
+  assert.doesNotMatch(source, /Servohorn|Frame[- ]Rate|\bTöne\b/);
   assert.match(source, /Ruderhorns/);
   assert.match(source, /Pieptöne/);
 });

@@ -1515,7 +1515,7 @@ const functions: Fn[] = [
     id: 'sweep', group: 'bench',
     name: t(
       'Servo signal: sweep (square, sine, triangle) and frame rates other than 50 Hz',
-      'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Frame Rate als 50 Hz',
+      'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Pulsrate als 50 Hz',
     ),
     needs: [],
     src: repo('STATUS.md', 107, 'a sweep (square, sine or triangle, run by the IOmcu)'),
@@ -1726,7 +1726,7 @@ const checks: Check[] = [
     id: 'pd-pins', kind: 'note',
     text: t(
       'GP7 (PD mini TX) and GP6 (PD mini RX) come from an owner statement of 2026-10-11. The firmware default is −1, not wired. Set both under SETUP → INTERFACES.',
-      'GP7 (PD mini TX) und GP6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → INTERFACES einstellen.',
+      'GP7 (PD mini TX) und GP6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → ANSCHLÜSSE einstellen.',
     ),
     when: { has: 'pdmini' }, src: OWNER,
   },
@@ -1876,7 +1876,7 @@ const checks: Check[] = [
     id: 'prog-target', kind: 'note',
     text: t(
       'Servo programmer: the servo is on the programming port, GP13 (pad 17), unless another pin is stored for port 1. On the PROG PORT entry of SETUP → OUTPUTS, set SERVO TESTER to PROG PORT: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GP13 leaves the port without a pin.',
-      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT von SETUP → OUTPUTS SERVO-TESTER auf PROG-PORT stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, CENTRE, RELEASE, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf ON steht; mit PORT-PWM OFF sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
+      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT von SETUP → OUTPUTS SERVO-TESTER auf PROG-PORT stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, ZENTRIEREN, FREIGEBEN, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf EIN steht; mit PORT-PWM AUS sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
     ),
     when: SERVO_PROG, src: repo(PROGRAMMER, 82, '| SERVO TESTER | **OUTPUTS**, **PROG PORT** |'),
   },
@@ -1884,7 +1884,7 @@ const checks: Check[] = [
     id: 'prog-supply-pd', kind: 'note',
     text: t(
       'Servo programmer with the PD mini: CONNECT switches an output that is off on at the programming voltage, 4.8 to 6.0 V in steps of 0.1 V, up to 8.4 V with HV SERVO on, and at the current limit, 50 to 3000 mA. The defaults are 5.0 V and 1000 mA. An output that is already on runs at the lower of its voltage and the programming voltage and at the lower of the two current limits; CONNECT raises neither. An output that is on under 4.8 V is not programmed until it is raised. STOP switches the supply off.',
-      'Servo-Programmierer mit dem PD mini: CONNECT schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV SERVO, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; CONNECT erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
+      'Servo-Programmierer mit dem PD mini: VERBINDEN schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV-SERVO auf EIN, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; VERBINDEN erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
     ),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
     src: repo(PROGRAMMER, 205, '4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on'),
