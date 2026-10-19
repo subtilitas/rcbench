@@ -74,9 +74,9 @@ touch controller, beside the glass's controller at 0x5D, in every build that
 has `RCBENCH_TOUCH_INJECTOR` on, the default. A device that answers is read
 on every touch poll and its contacts are merged with the glass's, STOP
 included; a device that does not answer at start-up is not read or probed
-again until the next start. Using it needs access to the panel's internal
-touch wiring. A build with `RCBENCH_TOUCH_INJECTOR=OFF` never addresses
-0x14 as an injector.
+again until the next start. Using it needs a device on the panel's exposed
+PH2.0 I2C connector, which carries the touch bus. A build with
+`RCBENCH_TOUCH_INJECTOR=OFF` never addresses 0x14 as an injector.
 
 Two classes of report apply.
 
