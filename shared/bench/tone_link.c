@@ -753,3 +753,17 @@ unsigned tone_link_f_max(const tone_link_t *t)
 {
     return (t != NULL) ? t->want[LINK_TN_F_MAX_HZ] : 0u;
 }
+
+bool tone_link_held_pin(const tone_link_t *t, int *pin)
+{
+    const bool known = t != NULL && t->up && (!t->page || t->known);
+    const bool refused = known && t->have_status
+                         && (t->status[ST(LINK_TN_FLAGS)]
+                             & LINK_TN_PIN_REFUSED) != 0u;
+    const bool on = known && t->page && !refused
+                    && (t->held[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u;
+    if (pin != NULL) {
+        *pin = on ? (int)t->held[LINK_TN_PIN] : -1;
+    }
+    return known;
+}

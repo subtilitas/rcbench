@@ -128,17 +128,27 @@ void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
 
 /* ------------------------------------------------- SETUP > INTERFACES */
 
-/* Set by the control task (panel_supply.c), read by the task that draws:
- * -1 while the settings' wiring stands, else the pins the page holds
- * instead, each + 1 in a byte, 0 for none. */
-static atomic_int g_pdmini_held = -1;
+/* Set by the control task (panel_poll.c), read by the task that draws:
+ * 0 while what the page holds is not known, else bit 0 set and each pin
+ * + 1 in bits 8 to 15 and 16 to 23, 0 for none. */
+static atomic_int g_held[OUTPUTS_IFACE_COUNT];
 
-void outputs_screen_set_pdmini_refused(bool refused, int held_tx,
-                                       int held_rx)
+/* Pin @p v + 1 in a byte, 0 for none and anything past the mask. */
+static int held_byte(int v)
 {
-    const int tx = (held_tx >= 0 && held_tx < 64) ? held_tx + 1 : 0;
-    const int rx = (held_rx >= 0 && held_rx < 64) ? held_rx + 1 : 0;
-    atomic_store(&g_pdmini_held, refused ? (tx | (rx << 8)) : -1);
+    return (v >= 0 && v < 64) ? v + 1 : 0;
+}
+
+void outputs_screen_set_iface_held(outputs_iface_t which, bool known,
+                                   int pin_a, int pin_b)
+{
+    if (which <= OUTPUTS_IFACE_NONE || which >= OUTPUTS_IFACE_COUNT) {
+        return;
+    }
+    atomic_store(&g_held[which],
+                 known ? (1 | (held_byte(pin_a) << 8)
+                          | (held_byte(pin_b) << 16))
+                       : 0);
 }
 
 /* Whether part @p en of the sensor bus is on and the IOmcu has not
@@ -156,6 +166,14 @@ static uint64_t pin_bit(int v)
 
 uint64_t outputs_iface_pins(outputs_iface_t which)
 {
+    if (which > OUTPUTS_IFACE_NONE && which < OUTPUTS_IFACE_COUNT) {
+        const int held = atomic_load(&g_held[which]);
+        if (held != 0) {
+            return pin_bit(((held >> 8) & 0xff) - 1)
+                   | pin_bit(((held >> 16) & 0xff) - 1);
+        }
+    }
+    /* Not read yet: as the settings stand. */
     switch (which) {
     case OUTPUTS_IFACE_SENSE: {
         /* A bus the IOmcu refused, its pins row or every part on marked
@@ -170,11 +188,6 @@ uint64_t outputs_iface_pins(outputs_iface_t which)
         return pin_bit(sda) | pin_bit(settings_get_int(SET_SENSE_SCL));
     }
     case OUTPUTS_IFACE_PDMINI: {
-        /* A wiring the page refused: the pins it holds instead. */
-        const int held = atomic_load(&g_pdmini_held);
-        if (held >= 0) {
-            return pin_bit((held & 0xff) - 1) | pin_bit((held >> 8) - 1);
-        }
         /* The page is written ON only with both pins set and apart
          * (supply_link.c); otherwise it holds neither. */
         const int tx = settings_get_int(SET_PDMINI_TX);
@@ -231,15 +244,12 @@ const char *outputs_iface_name(outputs_iface_t which)
     }
 }
 
-/* All of them, for the screens' repaint: a row stepped on SETUP moves a
- * pin without a touch here. */
-uint64_t outputs_iface_all(void)
+void outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT])
 {
-    uint64_t m = 0u;
+    pins[OUTPUTS_IFACE_NONE] = 0u;
     for (int f = OUTPUTS_IFACE_SENSE; f < OUTPUTS_IFACE_COUNT; ++f) {
-        m |= outputs_iface_pins((outputs_iface_t)f);
+        pins[f] = outputs_iface_pins((outputs_iface_t)f);
     }
-    return m;
 }
 
 bool outputs_port_holds(uint8_t gpio)

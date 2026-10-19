@@ -130,6 +130,60 @@ TEST_CASE(a_row_is_unheld_from_its_edit_to_the_acknowledgement)
     CHECK_EQ(sense_link_unheld(NULL), 0u);
 }
 
+/*
+ * The pins the page holds, for OUTPUTS and PICK A PIN: not known before a
+ * read; none with no part on; the pair once a part is on; the old pair
+ * while a move onto pins the page refuses stands; none from an IOmcu with
+ * no SENSE page; not known once the link is lost.
+ */
+TEST_CASE(the_held_pins_are_the_pages_by_its_last_read)
+{
+    int sda = 0;
+    int scl = 0;
+    fresh(9u);
+    CHECK(!sense_link_held_pins(&sl, &sda, &scl));
+    CHECK_EQ(sda, -1);
+    CHECK_EQ(scl, -1);
+    polls(2);
+    CHECK(sense_link_held_pins(&sl, &sda, &scl));
+    CHECK_EQ(sda, -1);                          /* no part on */
+    sense_setup_t w = setup_default();
+    w.i3221 = true;
+    want(&w);
+    polls(14);
+    CHECK(sense_link_held_pins(&sl, &sda, &scl));
+    CHECK_EQ(sda, 16);
+    CHECK_EQ(scl, 17);
+
+    /* Moved onto GP2 and GP3, GP3 reserved: refused, GP16 and GP17
+     * stay the page's. */
+    w.sda = 2;
+    w.scl = 3;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_unheld(&sl) & SENSE_LINK_ROW_PINS,
+             SENSE_LINK_ROW_PINS);
+    CHECK(sense_link_held_pins(&sl, &sda, &scl));
+    CHECK_EQ(sda, 16);
+    CHECK_EQ(scl, 17);
+    CHECK(sense_link_held_pins(&sl, NULL, NULL));
+
+    sense_link_lost(&sl);
+    CHECK(!sense_link_held_pins(&sl, &sda, &scl));
+    CHECK_EQ(sda, -1);
+    CHECK(!sense_link_held_pins(NULL, &sda, &scl));
+
+    /* A 4.6 IOmcu has no SENSE page: it holds none. */
+    fresh(6u);
+    w.sda = 16;
+    w.scl = 17;
+    want(&w);
+    polls(14);
+    CHECK(sense_link_held_pins(&sl, &sda, &scl));
+    CHECK_EQ(sda, -1);
+    CHECK_EQ(scl, -1);
+}
+
 /* A write waits for an idle bank, and the row with it. */
 TEST_CASE(a_row_stays_unheld_while_the_bank_drives)
 {
@@ -857,6 +911,7 @@ TEST_CASE(an_angle_is_fresh_for_its_time_across_the_tick_wrap)
 
 int main(void)
 {
+    RUN(the_held_pins_are_the_pages_by_its_last_read);
     RUN(the_encoder_is_enabled_only_on_a_4_9_coprocessor);
     RUN(the_encoder_and_the_parts_enable_in_any_order);
     RUN(the_encoders_angle_is_handed_over_while_the_read_is_fresh);

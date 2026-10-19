@@ -1875,12 +1875,23 @@ TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
         c.pixels[0] = GFX_RGB(255, 0, 255);
         scr()->render(&c, 0);
         CHECK_EQ(c.pixels[0], GFX_RGB(255, 0, 255));
-        /* The IOmcu refusing the PD mini's wiring repaints it too. */
-        outputs_screen_set_pdmini_refused(true, -1, -1);
+        /* A page read that frees the PD mini's pins repaints it too. */
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, true, -1, -1);
         scr()->render(&c, 0);
         CHECK(c.pixels[0] != GFX_RGB(255, 0, 255));
         CHECK_EQ(picker_screen_pin(idx(18u), NULL, 0), PICKER_PIN_FREE);
-        outputs_screen_set_pdmini_refused(false, -1, -1);
+        /* So does one that moves a pin's owner and no pin: the PD mini
+         * read on GP14 and GP15, where the sensor bus is set. */
+        c.pixels[0] = GFX_RGB(255, 0, 255);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_SENSE, true, -1, -1);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, true, 14, 15);
+        CHECK_EQ(picker_screen_pin(idx(14u), who, sizeof(who)),
+                 PICKER_PIN_HELD);
+        CHECK_STR_EQ(who, TR(OUT_IFACE_PDMINI));
+        scr()->render(&c, 0);
+        CHECK(c.pixels[0] != GFX_RGB(255, 0, 255));
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_SENSE, false, -1, -1);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, false, -1, -1);
         CHECK_EQ(picker_screen_pin(idx(18u), NULL, 0), PICKER_PIN_HELD);
         CHECK_EQ(picker_screen_pin(idx(14u), who, sizeof(who)),
                  PICKER_PIN_HELD);

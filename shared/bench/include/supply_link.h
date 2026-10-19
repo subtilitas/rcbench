@@ -256,14 +256,13 @@ bool supply_link_wiring_moved(supply_link_follow_t *f, unsigned edits,
                               unsigned word);
 
 /**
- * Whether the page refused the wiring the settings ask: from the refusal
- * until the settings ask another wiring (supply_link_wire()) or the link
- * is lost.  The IOmcu then holds none of its pins.  @p held (may be NULL)
- * gets the wiring the page holds by its last read instead: en false for
- * none, or no read yet.
+ * The PD mini's pins the page holds by its last read, as the IOmcu
+ * reserves them (supply_page_pins()): TX and RX while ENABLE is on, -1
+ * and -1 while it is off.  False, both -1, before the first read since
+ * the link came up; a refused wiring leaves the page's old one, and that
+ * is what is read.  @p tx and @p rx may be NULL.
  */
-bool supply_link_wiring_refused(const supply_link_t *s,
-                                supply_wiring_t *held);
+bool supply_link_held_pins(const supply_link_t *s, int *tx, int *rx);
 
 #ifdef __cplusplus
 }

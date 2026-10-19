@@ -3204,18 +3204,21 @@ through, with what holds it under its name, and cannot be ticked:
 | `PD MINI` | PD mini TX and PD mini RX | PD mini is ON with both pins set, on two pins |
 | `PHASE TAP` | Tap pin, GP22 by default | Phase tap is ON |
 
-These are the pins the IOmcu reserves from the outputs for those parts: a
-tap pin the IOmcu refuses, an ADC (analogue-to-digital converter) pin from
-GP26 to GP29, holds nothing. Neither does a part the IOmcu has not taken
-as SETUP marks it: a sensor bus whose pins row is marked, or the row of
-every part on it; a phase tap whose row is marked. A PD mini wiring the
-IOmcu refused holds the pins its page keeps instead, none if it holds
-none. The
-cells follow the settings: Sensor SDA at -1 holds nothing, nor does the PD
-mini with either pin at -1, and a row stepped on
-SETUP frees the old pin and holds the new one, with no restart. A binding
-that already holds the pin keeps it, as against the programming port; the
-IOmcu then refuses the part its pin, and SETUP marks the row.
+These are the pins the IOmcu reserves from the outputs for those parts.
+While the IOmcu answers, each part's cells show the pins its page holds
+by that page's last read or acknowledged write. A move onto pins the
+IOmcu refuses leaves the old pins taken and the asked pins free. A part
+the IOmcu refused holds nothing: a tap on an ADC (analogue-to-digital
+converter) pin from GP26 to GP29, a tap whose pin the IOmcu reports
+refused, a sensor bus no part of which the page enables, any part on an
+IOmcu without its page. With no IOmcu answering, or before the first read
+of a page, the cells follow the settings: Sensor SDA at -1 holds nothing,
+nor does the PD mini with either pin at -1, nor a tap on an ADC pin, nor
+a part whose row SETUP marks as not taken. A row stepped on SETUP frees
+the old pin and holds the new one once the page holds it, with no
+restart. A binding that already holds the pin keeps it, as against the
+programming port; the IOmcu then refuses the part its pin, and SETUP
+marks the row.
 
 ![The sensor bus, the PD mini and the phase tap on their pins](img/outputs-iface.png)
 

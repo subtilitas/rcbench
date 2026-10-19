@@ -226,9 +226,12 @@ bool outputs_clash_reason(const outbind_t *b, int index,
                           size_t cap);
 
 /**
- * What SETUP > INTERFACES has on the IOmcu's pins, as its settings stand:
- * the sensor bus, the PD mini's UART and the phase tap.  A pin is held
- * while the IOmcu reserves it from the outputs for that function: Sensor
+ * What SETUP > INTERFACES has on the IOmcu's pins: the sensor bus, the PD
+ * mini's UART and the phase tap.  While the IOmcu answers and its page
+ * has been read, a function holds the pins that page holds by its last
+ * read (outputs_screen_set_iface_held()): a refused relocation keeps the
+ * old pins, a refused part holds none.  Otherwise, as the settings stand,
+ * a pin is held while the IOmcu would reserve it for that function: Sensor
  * SDA and the SCL after it while the INA228, the INA3221 or the AS5600 is
  * on (sense_page_pins()); PD mini TX and RX while the PD mini is on with
  * both set and apart, as the panel writes its page ON
@@ -238,9 +241,9 @@ bool outputs_clash_reason(const outbind_t *b, int index,
  * pin: GP26 to GP29, GP40 to GP47).  Nor does a part the IOmcu refused:
  * a sensor bus whose pins row, or every enabled part's row, SETUP marks
  * (settings_screen_unheld()); a phase tap whose rows it marks; a PD mini
- * wiring the page refused holds the pins the page keeps instead
- * (outputs_screen_set_pdmini_refused()).  The pins follow the
- * settings: a row stepped on SETUP frees the old pin and holds the new.
+ * (outputs_screen_set_iface_held() says what the PD mini's page holds).
+ * The pins follow the settings: a row stepped on SETUP frees the old pin
+ * and holds the new, once the page holds it.
  *
  * OUTPUTS and PICK A PIN show such a pin taken and named, as a
  * programming port's pin is, and take no tick on it; a protocol that holds
@@ -255,14 +258,16 @@ typedef enum {
 } outputs_iface_t;
 
 /**
- * Whether the IOmcu refused the PD mini's wiring the settings ask
- * (supply_link_wiring_refused()), and the TX and RX pins its page holds
- * instead, -1 for none.  While refused the PD mini holds those pins here,
- * not the settings'.  Safe to call from another task than the one that
- * draws.
+ * What the IOmcu's page for function @p which holds by its last read:
+ * @p known false while that is not known (no link, no read yet), and
+ * the function then holds its pins as the settings stand; else the pins
+ * @p pin_a and @p pin_b, -1 for none (SDA and SCL, TX and RX, the tap
+ * pin and -1).  A pin past GP63 holds nothing.  OUTPUTS_IFACE_NONE and
+ * past the last are ignored.  Safe to call from another task than the
+ * one that draws.
  */
-void outputs_screen_set_pdmini_refused(bool refused, int held_tx,
-                                       int held_rx);
+void outputs_screen_set_iface_held(outputs_iface_t which, bool known,
+                                   int pin_a, int pin_b);
 
 /** The pins function @p which holds now, bit n GPIO n; 0 for none or
  *  OUTPUTS_IFACE_NONE. */

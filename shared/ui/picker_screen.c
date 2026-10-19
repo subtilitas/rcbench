@@ -141,8 +141,8 @@ static struct {
     /* The pin whose tap a PWM clash refused last, or -1: the reason line
      * says why, until another pick or tick. */
     int      refused;
-    /* The pins the interfaces on SETUP held at the last frame. */
-    uint64_t iface;
+    /* Each interface's pins at the last frame. */
+    uint64_t iface[OUTPUTS_IFACE_COUNT];
     bool     chrome_valid[MAX_FBS];
 } s;
 
@@ -1355,9 +1355,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
 {
     /* A row stepped on SETUP, or the IOmcu taking or refusing a part,
      * moves an interface's pin without a touch here. */
-    const uint64_t iface = outputs_iface_all();
-    if (iface != s.iface) {
-        s.iface = iface;
+    uint64_t iface[OUTPUTS_IFACE_COUNT];
+    outputs_iface_read(iface);
+    if (memcmp(iface, s.iface, sizeof(iface)) != 0) {
+        memcpy(s.iface, iface, sizeof(iface));
         touched();
     }
     if (buffer_index >= 0 && buffer_index < MAX_FBS

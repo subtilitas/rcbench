@@ -673,15 +673,16 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
         settings_set(SET_ENC_EN, 0.0f);
         settings_set(SET_SENSE_SDA, -1.0f);
 
-        /* A PD mini wiring the page refused: the page holds none, or
-         * the pins it held before, until the refusal ends. */
+        /* Read from the IOmcu, a page's pins stand over the settings: a
+         * PD mini wiring the page refused holds none, or the pins the page
+         * kept; unknown again, the settings' pins. */
         CHECK_EQ(outputs_screen_cell(idx(18u), NULL, 0),
                  OUTPUTS_CELL_RESERVED);
-        outputs_screen_set_pdmini_refused(true, -1, -1);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, true, -1, -1);
         CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI), 0ull);
         CHECK_EQ(outputs_screen_cell(idx(18u), NULL, 0), OUTPUTS_CELL_FREE);
         CHECK_EQ(outputs_screen_cell(idx(19u), NULL, 0), OUTPUTS_CELL_FREE);
-        outputs_screen_set_pdmini_refused(true, 20, 21);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, true, 20, 21);
         CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI),
                  (1ull << 20) | (1ull << 21));
         CHECK_EQ(outputs_screen_cell(idx(20u), l, sizeof(l)),
@@ -689,11 +690,60 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
         CHECK_STR_EQ(l, TR(OUT_IFACE_PDMINI));
         CHECK_EQ(outputs_screen_cell(idx(18u), NULL, 0), OUTPUTS_CELL_FREE);
         /* Pins past the mask hold nothing. */
-        outputs_screen_set_pdmini_refused(true, 64, 200);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, true, 64, 200);
         CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI), 0ull);
-        outputs_screen_set_pdmini_refused(false, 20, 21);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, false, 20, 21);
         CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_PDMINI),
                  (1ull << 18) | (1ull << 19));
+        /* A sensor bus moved onto busy pins and refused: the page keeps
+         * the old pair, which stays taken, the asked pair free. */
+        settings_set(SET_INA228_EN, 1.0f);
+        settings_set(SET_SENSE_SDA, 14.0f);
+        settings_screen_set_unheld(SENSE_LINK_ROW_PINS, 0u);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_SENSE, true, 16, 17);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_SENSE),
+                 (1ull << 16) | (1ull << 17));
+        CHECK_EQ(outputs_screen_cell(idx(14u), NULL, 0), OUTPUTS_CELL_FREE);
+        CHECK_EQ(outputs_screen_cell(idx(16u), l, sizeof(l)),
+                 OUTPUTS_CELL_RESERVED);
+        CHECK_STR_EQ(l, TR(OUT_IFACE_SENSE));
+        settings_screen_set_unheld(0u, 0u);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_SENSE, false, 16, 17);
+        settings_set(SET_INA228_EN, 0.0f);
+        settings_set(SET_SENSE_SDA, -1.0f);
+        /* A tap relocation refused: the old pin stays the tap's. */
+        settings_set(SET_TONE_PIN, 21.0f);
+        settings_screen_set_unheld(0u, TONE_LINK_ROWS_TAP);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_TAP, true, 22, -1);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_TAP), 1ull << 22);
+        CHECK_EQ(outputs_screen_cell(idx(21u), NULL, 0), OUTPUTS_CELL_FREE);
+        settings_screen_set_unheld(0u, 0u);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_TAP, false, -1, -1);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_TAP), 1ull << 21);
+        /* A page read that moves a pin's owner and no pin repaints the
+         * frame: the PD mini read on GP16 and GP17, where the sensor bus
+         * is set. */
+        settings_set(SET_INA228_EN, 1.0f);
+        settings_set(SET_SENSE_SDA, 16.0f);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, true, -1, -1);
+        scr()->render(&c, 0);
+        c.pixels[0] = GFX_RGB(255, 0, 255);
+        scr()->render(&c, 0);
+        CHECK_EQ(c.pixels[0], GFX_RGB(255, 0, 255));
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_SENSE, true, -1, -1);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, true, 16, 17);
+        CHECK_EQ(outputs_iface_at(16u), OUTPUTS_IFACE_PDMINI);
+        scr()->render(&c, 0);
+        CHECK(c.pixels[0] != GFX_RGB(255, 0, 255));
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_SENSE, false, -1, -1);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, false, -1, -1);
+        settings_set(SET_INA228_EN, 0.0f);
+        settings_set(SET_SENSE_SDA, -1.0f);
+        /* No function, or past the last, takes nothing. */
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_NONE, true, 1, 2);
+        outputs_screen_set_iface_held(OUTPUTS_IFACE_COUNT, true, 1, 2);
+        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_NONE), 0ull);
+        CHECK_EQ(outputs_iface_at(1u), OUTPUTS_IFACE_NONE);
 
         /* Out of range and none have no pins and no name. */
         CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_NONE), 0ull);

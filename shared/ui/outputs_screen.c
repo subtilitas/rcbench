@@ -85,7 +85,7 @@ static struct {
     outputs_apply_fn apply;
 
     /* The pins SETUP > INTERFACES held at the last frame. */
-    uint64_t  iface;
+    uint64_t  iface[OUTPUTS_IFACE_COUNT];
 
     bool      chrome_valid[MAX_FBS];
     uint32_t  drawn_gen;
@@ -924,9 +924,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
 {
     /* A row stepped on SETUP moves an interface's pin without a touch
      * here. */
-    const uint64_t iface = outputs_iface_all();
-    if (iface != s.iface) {
-        s.iface = iface;
+    uint64_t iface[OUTPUTS_IFACE_COUNT];
+    outputs_iface_read(iface);
+    if (memcmp(iface, s.iface, sizeof(iface)) != 0) {
+        memcpy(s.iface, iface, sizeof(iface));
         touched();
     }
     bool stale = true;

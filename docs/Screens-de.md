@@ -3502,18 +3502,22 @@ nicht anhaken:
 | `PHASENABGRIFF` | Abgriff-Pin, ab Werk GP22 | Phasenabgriff EIN ist |
 
 Das sind die Pins, die der IOmcu für diese Teile von den Ausgängen
-zurückhält: Ein Abgriff-Pin, den der IOmcu ablehnt, ein ADC-Pin
-(Analog-Digital-Wandler) von GP26 bis GP29, hält nichts. Ebenso wenig ein
-Teil, das der IOmcu nicht übernommen hat, wie SETUP es markiert: ein
-Sensorbus, dessen Pin-Zeile markiert ist oder die Zeile jedes Teils, das
-EIN ist; ein Phasenabgriff, dessen Zeile markiert ist. Eine Verdrahtung
-des PD mini, die der IOmcu abgelehnt hat, hält die Pins, die seine Page
-stattdessen behält, keine, wenn sie keine hält. Die Zellen folgen den Einstellungen: Sensor-SDA auf -1 hält
-nichts, der PD mini mit einem Pin auf -1 auch nicht,
-und eine Zeile, die in SETUP verstellt wird, gibt den alten Pin frei und
-hält den neuen, ohne Neustart. Eine Bindung, die den Pin schon hält,
-behält ihn, wie gegenüber dem Programmierport; der IOmcu lehnt dem Teil dann
-seinen Pin ab, und SETUP markiert die Zeile.
+zurückhält. Solange der IOmcu antwortet, zeigen die Zellen eines Teils
+die Pins, die seine Page nach ihrem letzten Lesen oder bestätigten
+Schreiben hält. Eine Verlegung auf Pins, die der IOmcu ablehnt, lässt die alten
+Pins belegt und die verlangten frei. Ein Teil, das der IOmcu abgelehnt
+hat, hält nichts: ein Abgriff auf einem ADC-Pin (Analog-Digital-Wandler)
+von GP26 bis GP29, ein Abgriff, dessen Pin der IOmcu als abgelehnt
+meldet, ein Sensorbus, von dem die Page kein Teil einschaltet, jedes Teil
+an einem IOmcu ohne seine Page. Antwortet kein IOmcu, oder vor dem ersten
+Lesen einer Page, folgen die Zellen den Einstellungen: Sensor-SDA auf -1
+hält nichts, der PD mini mit einem Pin auf -1 auch nicht, ein Abgriff auf
+einem ADC-Pin auch nicht, ebenso wenig ein Teil, dessen Zeile SETUP als
+nicht übernommen markiert. Eine Zeile, die in SETUP verstellt wird, gibt
+den alten Pin frei und hält den neuen, sobald die Page ihn hält, ohne
+Neustart. Eine Bindung, die den Pin schon hält, behält ihn, wie gegenüber
+dem Programmierport; der IOmcu lehnt dem Teil dann seinen Pin ab, und
+SETUP markiert die Zeile.
 
 ![Sensorbus, PD mini und Phasenabgriff auf ihren Pins](img/de/outputs-iface.png)
 
