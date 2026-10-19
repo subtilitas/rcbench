@@ -21,6 +21,9 @@
 #include "sdmmc_cmd.h"
 
 static const char *TAG = "storage";
+/* The tag of ESP-IDF's FAT-on-SD mount (components/fatfs/vfs/
+ * vfs_fat_sdmmc.c). */
+#define STORAGE_IDF_MOUNT_TAG "vfs_fat_sdmmc"
 
 static struct {
     sdmmc_card_t *card;
@@ -72,20 +75,27 @@ esp_err_t storage_init(void)
     }
     s.status[0] = '\0';
 
-    spi_bus_config_t bus = {
-        .mosi_io_num = BOARD_SD_PIN_MOSI,
-        .miso_io_num = BOARD_SD_PIN_MISO,
-        .sclk_io_num = BOARD_SD_PIN_CLK,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = 4096,
-    };
-    esp_err_t err = spi_bus_initialize(BOARD_SD_SPI_HOST, &bus, SPI_DMA_CH_AUTO);
-    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
-        snprintf(s.status, sizeof(s.status), "SPI %s", esp_err_to_name(err));
-        return err;
+    /* The bus once: a retry after "no card" finds it up, and ESP-IDF logs
+     * a second initialisation as an error before it returns
+     * ESP_ERR_INVALID_STATE. */
+    esp_err_t err = ESP_OK;
+    if (!s.bus_up) {
+        spi_bus_config_t bus = {
+            .mosi_io_num = BOARD_SD_PIN_MOSI,
+            .miso_io_num = BOARD_SD_PIN_MISO,
+            .sclk_io_num = BOARD_SD_PIN_CLK,
+            .quadwp_io_num = -1,
+            .quadhd_io_num = -1,
+            .max_transfer_sz = 4096,
+        };
+        err = spi_bus_initialize(BOARD_SD_SPI_HOST, &bus, SPI_DMA_CH_AUTO);
+        if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+            snprintf(s.status, sizeof(s.status), "SPI %s",
+                     esp_err_to_name(err));
+            return err;
+        }
+        s.bus_up = true;
     }
-    s.bus_up = true;
 
     /* Chip select is on the expander, and this is a read-modify-write: the
      * vendor demo's raw 0x0A to address 0x38 would also clear EXIO2 and take
@@ -112,13 +122,23 @@ esp_err_t storage_init(void)
         .allocation_unit_size = 16 * 1024,
     };
 
+    /*
+     * ESP-IDF's mount logs every failure of its own at E level, "no card"
+     * among them ("sdmmc_card_init failed (0x107)").  An empty slot is not
+     * a fault: its tag is quiet for the call, and the outcome is logged
+     * here, once per attempt.
+     */
+    const esp_log_level_t was = esp_log_level_get(STORAGE_IDF_MOUNT_TAG);
+    esp_log_level_set(STORAGE_IDF_MOUNT_TAG, ESP_LOG_NONE);
     err = esp_vfs_fat_sdspi_mount(STORAGE_MOUNT_POINT, &host, &slot, &mount,
                                   &s.card);
+    esp_log_level_set(STORAGE_IDF_MOUNT_TAG, was);
     if (err != ESP_OK) {
         board_sd_cs(false);
         if (err == ESP_ERR_TIMEOUT || err == ESP_ERR_NOT_FOUND ||
             err == ESP_ERR_INVALID_RESPONSE) {
             snprintf(s.status, sizeof(s.status), "no card");
+            ESP_LOGI(TAG, "no card (%s)", esp_err_to_name(err));
             return ESP_ERR_NOT_FOUND;
         }
         snprintf(s.status, sizeof(s.status), "%s", esp_err_to_name(err));

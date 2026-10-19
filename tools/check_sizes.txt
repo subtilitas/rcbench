@@ -48,6 +48,7 @@ protocols/kst/kst_file.c | none | stays in protocols/kst (owner answer)
 shared/settings/settings.c | none | F19: 21 lines over; 3 check_docs.py paths, and a move edits Research.md
 firmware/panel/components/wifi_access/wifi_access.c | none | one state struct used 275 times; macros read by path
 shared/outputs/out_bind.c | none | row 18 cuts out_board.c out right after the next release (F12)
+shared/bench/sense_link.c | none | one link client; crossed 1,000 after the plan with the set-up alerts that leave the band, not weighed by the plan
 
 # Tools left whole.
 tools/check_docs.py | none | one tool
@@ -113,6 +114,9 @@ test/host/test_servo_arm.c | none | F14: keeps its own fixture; taking servo_rig
 test/host/test_wa_session.c | none | F14: one source, wa_session.c
 test/host/test_wa_fetch.c | none | F14: one source, wa_fetch.c
 test/host/test_bench.c | none | crossed 1,000 after the plan with row 3's cases, not weighed by the plan
+test/host/test_sense_link.c | none | F14: one source, sense_link.c; crossed 1,000 after the plan, not weighed by the plan
+test/host/test_supply_link.c | none | F14: one source, supply_link.c; crossed 1,000 after the plan, not weighed by the plan
+test/host/test_sense_link_view.c | none | F14: one source, sense_link.c, beside test_sense_link.c; crossed 1,000 after the plan, not weighed by the plan
 
 # Tests the plan's rows cut that stay over 1,000.
 test/host/test_servo.c | none | row 9 (F8): 144 cases stay over two rig headers

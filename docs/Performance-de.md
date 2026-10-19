@@ -204,7 +204,7 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 088 | 2 080 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 104 | 2 064 |
 | `control` | `control_task` | 6 144 | 4 384 | 736 |
 | `runlog` | `log_task` | 5 632 | 3 744 | 864 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 328 | 720 |
@@ -381,15 +381,15 @@ Kartenübertragung, solange das WLAN läuft.
 
 | Posten | Was es ist | Bytes |
 | --- | --- | ---: |
-| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 128 168 |
-| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 297 816 |
+| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 128 208 |
+| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 297 776 |
 | `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 106 056 |
-| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 191 760 |
+| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 191 720 |
 | `AP` | WLAN-HOTSPOT: das WLAN, der Server der Seite und seine Task | 98 724 |
 | `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
 | `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
 | `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |
-| `left` | übriger Heap mit dem größten Modus | 88 600 |
+| `left` | übriger Heap mit dem größten Modus | 88 560 |
 
 Gelesen aus dem Build mit ESP-IDF v5.4. CI führt das Werkzeug auf diesem
 Build mit `--check-doc` aus; das schlägt fehl, wenn die Tabelle von ihm

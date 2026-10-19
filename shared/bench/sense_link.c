@@ -21,7 +21,10 @@ void sense_link_init(sense_link_t *s)
 }
 
 /* Everything read under one set-up, forgotten when another is taken or the
- * link goes: what was said about it is news again under the next. */
+ * link goes: what was said about it is news again under the next.  Not
+ * the magnet: its bits are the part's and the shaft's, not the set-up's,
+ * and a weak magnet said once is not said again for an edit of another
+ * row (judge_enc()). */
 static void forget_reads(sense_link_t *s)
 {
     s->have_status  = false;
@@ -35,8 +38,6 @@ static void forget_reads(sense_link_t *s)
     s->online_seen[0] = s->online_seen[1] = false;
     s->enc_silent_told = false;
     s->enc_online_seen = false;
-    s->enc_magnet_told = false;
-    s->enc_magnet      = 0u;
     /* The ring's cursor goes too, and the windows not yet taken: they are
      * of a set-up or a link that is gone. */
     s->asked_win   = false;
@@ -73,6 +74,10 @@ void sense_link_lost(sense_link_t *s)
                             | SENSE_LINK_EV_SAME_ADDR);
     s->clip_pending = 0u;
     forget_reads(s);
+    /* Another IOmcu may answer next, or the same one restarted: its
+     * magnet is news. */
+    s->enc_magnet_told = false;
+    s->enc_magnet      = 0u;
 }
 
 void sense_link_came_up(sense_link_t *s, uint16_t minor, uint32_t now_ms)
@@ -401,6 +406,17 @@ static void new_setup(sense_link_t *s, uint32_t now_ms)
 {
     s->setup_ms = now_ms;
     forget_reads(s);
+    /* A magnet event dropped below before the band showed it was never
+     * said: the next read says it, if the magnet still reads so. */
+    if ((s->events & (uint32_t)SENSE_LINK_EV_ENC_MAGNET) != 0u) {
+        s->enc_magnet_told = false;
+    }
+    /* An encoder switched off is said again when it is switched on: no
+     * read runs with every part off, so judge_enc() would not see it. */
+    if ((s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) == 0u) {
+        s->enc_magnet_told = false;
+        s->enc_magnet      = 0u;
+    }
     /* An event a read raised and the band has not shown yet is about the
      * set-up that was: shown now, it would name this one's address, ID or
      * shunt.  What describes the set-up asked -- unset pins, one address,
@@ -478,7 +494,10 @@ static const uint32_t k_wrong_ev[2] = { SENSE_LINK_EV_I228_WRONG,
                                         SENSE_LINK_EV_I3221_WRONG };
 
 /* The encoder's part of a SENSE read: not answering, once until it does,
- * and a magnet that is missing, weak or strong, once until it is right. */
+ * and a magnet that is missing, weak or strong, once while its bits stay
+ * as they were said -- across set-ups, as an edit of another row on SETUP
+ * is one.  A part said not to answer has its magnet said again when it
+ * answers. */
 static void judge_enc(sense_link_t *s, uint32_t now_ms, bool waited)
 {
     (void)now_ms;
@@ -490,11 +509,13 @@ static void judge_enc(sense_link_t *s, uint32_t now_ms, bool waited)
     }
     const uint16_t f = s->status[ST(LINK_SN_AS5600_FLAGS)];
     if ((f & LINK_SN_ENC_ONLINE) == 0u) {
-        s->enc_magnet_told = false;
+        /* Not online for a while after a set-up is taken, until the
+         * IOmcu has found the part again: that keeps what was said. */
         if (!s->enc_silent_told && (s->enc_online_seen || waited)) {
             s->events |= SENSE_LINK_EV_ENC_SILENT;
             s->enc_silent_told = true;
             s->enc_online_seen = false;
+            s->enc_magnet_told = false;
         }
         return;
     }
@@ -516,12 +537,13 @@ static void judge_enc(sense_link_t *s, uint32_t now_ms, bool waited)
         s->enc_magnet = bits;
         return;
     }
-    /* Said once, and again when MD changes under it: a weak magnet that
-     * goes missing takes the angle away, and one that comes back weak
-     * gives it back. */
-    const bool md_moved = ((bits ^ s->enc_magnet) & LINK_SN_ENC_MD) != 0u;
+    /* Said once, and again when a bit changes under it: a weak magnet
+     * that goes missing takes the angle away, one that comes back weak
+     * gives it back, and one that turns from weak to strong is said as
+     * strong. */
+    const bool moved = bits != s->enc_magnet;
     s->enc_magnet = bits;
-    if (!s->enc_magnet_told || md_moved) {
+    if (!s->enc_magnet_told || moved) {
         s->events |= SENSE_LINK_EV_ENC_MAGNET;
         s->enc_magnet_told = true;
     }
@@ -814,6 +836,38 @@ uint32_t sense_link_events(sense_link_t *s)
     return e;
 }
 
+bool sense_link_event_stands(const sense_link_t *s, uint32_t ev)
+{
+    if (s == NULL) {
+        return false;
+    }
+    /* What the page holds is known: an IOmcu with the page answers and
+     * the page has been read since it came up. */
+    const bool known = s->up && s->page && s->known && s->want_set;
+    switch (ev) {
+    case SENSE_LINK_EV_PINS_UNSET:
+        return (s->want_i228 || s->want_i3221 || s->want_enc)
+               && (s->want_sda < 0 || s->want_scl < 0);
+    case SENSE_LINK_EV_SAME_ADDR:
+        return s->want_i228 && s->want_i3221
+               && s->want[LINK_SN_I228_ADDR] == s->want[LINK_SN_I3221_ADDR];
+    case SENSE_LINK_EV_BUS_REFUSED: {
+        if (!known || s->refused_bus) {
+            return true;
+        }
+        uint16_t bus[FRAME_N];
+        bus_frame(s, bus);
+        return memcmp(bus, &s->held[BUS_AT], sizeof(bus)) != 0;
+    }
+    case SENSE_LINK_EV_I228_REFUSED:
+        return !known || s->refused_i228 || frame_differs(s, I228_AT);
+    case SENSE_LINK_EV_I3221_REFUSED:
+        return !known || s->refused_i3221 || frame_differs(s, I3221_AT);
+    default:
+        return true;
+    }
+}
+
 uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms)
 {
     /* Most pressing first: what stops the monitors being read at all, then
@@ -836,6 +890,14 @@ uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms)
     }
     for (size_t i = 0u; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
         if ((s->events & k_order[i]) == 0u) {
+            continue;
+        }
+        if ((k_order[i] & SENSE_LINK_EV_SETUP) != 0u
+            && !sense_link_event_stands(s, k_order[i])) {
+            /* Put back from a band that never showed it, and over since:
+             * the page holds what is asked, or the settings no longer ask
+             * it. */
+            s->events &= ~k_order[i];
             continue;
         }
         s->event_given = true;

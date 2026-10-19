@@ -31,6 +31,40 @@ history is in git.
 - With a band chip's help box open, a tap on another chip closes the box
   and opens that chip's box in one tap. It took two taps.
 
+- An alert about a SETUP > INTERFACES set-up leaves the band once its cause
+  is over, before its 30 s: a value the IOmcu rejected, once the IOmcu holds
+  the value it is stepped back to (at once when that is the value it still
+  holds), and unset sensor pins or both monitors on one address with the
+  edit that puts them right. This covers the current monitors, the phase
+  tap (Tap gap 2 ms at 400 Hz and back to 3 ms), the PD mini pins (RX on
+  the sensor bus's SCL and back) and the PD mini wiring held for a module
+  read. On MOTOR & ESC, a rejected pole count or pulse range and an
+  inverted Idle pulse and Full pulse leave the band once a later value is
+  taken. A rejected alert that never reached the band and is over by its
+  next turn is not shown.
+- The AS5600 weak, strong or no-magnet alert is said once while the
+  magnet status bits stay the same; an edit of another INTERFACES row no
+  longer says it again. It is said again when a bit changes (weak to strong
+  included), after the field read right, after the sensor was reported not
+  answering, after the sensor was switched off, and after a link-up.
+- Sensor bus pins with nothing wired to them (no part, no pull-up) no
+  longer raise `Sensor bus blocked: SDA low.`: the IOmcu tests a line that
+  is low at idle on its own pad pull-up for up to 50 µs, and a line that
+  rises is held by nothing. The monitors then read as not answering.
+  Sensor SDA steps 16 to 14 because GP15 is an SCL pin (an I2C block's SDA
+  is an even GPIO and its SCL the next one).
+- INA228 address and INA3221 address stop at the ends of their range
+  (0x40 to 0x4F, 0x40 to 0x43) and have `-` and `+` keys; minus at 0x40
+  wrapped to 0x43.
+- An SD card mount tried again with no card sets the SPI bus up once and
+  logs `no card` at I level once per try. It logged two E lines each try:
+  `spi_bus_initialize(802): SPI bus already initialized.` and
+  `sdmmc_card_init failed (0x107).`.
+- The link report's `nack` column is documented: it counts each NACK the
+  IOmcu answers, one per set-up value rejected from SETUP among them, and a
+  NACK is an answer, not a link fault
+  ([Bring-up](docs/Bringup.md#link-report)).
+
 ### Removed
 
 - Backlight on SETUP > PANEL. The board switches the backlight only on or

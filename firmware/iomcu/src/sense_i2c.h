@@ -23,15 +23,27 @@
  * The modules carry pull-ups (the DAOKAI INA3221 10 kOhm to VS) and the
  * build guide adds 2.2 kOhm to 3V3 at the IOmcu.
  *
+ * One use of the pad's pull-up stays: telling a line held low from one
+ * nothing holds.  Pins with nothing wired to them -- no part, no pull-up
+ * -- read low.  A line low at idle gets the pad's pull-up for up to
+ * SENSE_I2C_PROBE_US; one that rises on it is held by nothing, and the
+ * pull-ups go off again either way.
+ *
  * What a transaction comes to (sense_err_t):
  *
  *   SENSE_BUS_LOW   SDA or SCL low with the bus idle, before anything is
- *                   sent; or a failed transaction after which a line stays
- *                   low for SENSE_I2C_IDLE_US: a part holding the bus.
+ *                   sent, or a failed transaction after which a line stays
+ *                   low for SENSE_I2C_IDLE_US, and still low on the pad's
+ *                   pull-up after SENSE_I2C_PROBE_US: a part holding the
+ *                   bus.
  *   SENSE_TIMEOUT   not finished in SENSE_I2C_TIMEOUT_US, measured from
  *                   its start: SCL held low by a part.
  *   SENSE_NACK      the address or a byte not acknowledged, the lines back
- *                   high: the bus works and nothing answers there.
+ *                   high: the bus works and nothing answers there.  Also
+ *                   lines low at idle that rise on the pad's pull-up: a
+ *                   bus without pull-ups, with nothing sent, and no
+ *                   recovery owed (sense_bus.h); the parts read as not
+ *                   answering.
  *
  * After any failure the block is reset and set up again, so the next
  * transaction starts from a known state; the pins keep their function.
@@ -54,6 +66,11 @@
 #define SENSE_I2C_TIMEOUT_US    1000u
 /** How long the lines may take to come back high after a STOP. */
 #define SENSE_I2C_IDLE_US         10u
+/** How long a line low at idle has to rise on the pad's own pull-up, 32 to
+ *  86 kOhm by the RP2350 datasheet's pad table: 50 us is 13 time constants
+ *  at 86 kOhm on 45 pF of pin, lead and probe, and a line a part holds low
+ *  never rises.  The pin capacitance of a bench lead is not measured. */
+#define SENSE_I2C_PROBE_US        50u
 /** Half a clock of the bus clear: 100 kHz. */
 #define SENSE_I2C_CLEAR_HALF_US    5u
 /** How long SCL may be held low by a part during the bus clear, each

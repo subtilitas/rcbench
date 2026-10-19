@@ -186,6 +186,17 @@ void supply_link_written(supply_link_t *s, int result);
  *  wiring, or the wiring was refused. */
 bool supply_link_settled(const supply_link_t *s);
 
+/**
+ * Whether what @p ev, one SUPPLY_LINK_EV_* bit, says still holds now.  A
+ * refused wiring -- SUPPLY_LINK_EV_WIRING_REFUSED or _WIRING_LIVE --
+ * until a read shows the page holding the wiring the settings ask: pins
+ * stepped back to ones the page takes end it with the first read that
+ * shows them held.  With no IOmcu
+ * answering it stands.  True for every other event.  The caller takes back
+ * an alert it showed for a refused wiring once this is false.
+ */
+bool supply_link_event_stands(const supply_link_t *s, uint16_t ev);
+
 /** Whether a read of the page is due at @p now_ms. */
 bool supply_link_read_due(const supply_link_t *s, uint32_t now_ms);
 

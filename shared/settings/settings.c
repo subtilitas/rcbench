@@ -812,10 +812,35 @@ void settings_set(setting_id_t id, float value)
     }
 }
 
+bool settings_cycles(setting_id_t id)
+{
+    const setting_def_t *d = settings_def(id);
+    if (d == NULL || (d->type != SET_TYPE_BOOL && d->type != SET_TYPE_ENUM)) {
+        return false;
+    }
+    /* The monitors' addresses are numbers in a list: they stop at its
+     * ends, as a number does at its range's. */
+    return id != SET_INA228_ADDR && id != SET_INA3221_ADDR;
+}
+
 void settings_adjust(setting_id_t id, int steps)
 {
     const setting_def_t *d = settings_def(id);
     if (!d || steps == 0 || settings_derived(id) || settings_held(id)) {
+        return;
+    }
+    if (d->type == SET_TYPE_ENUM && !settings_cycles(id)) {
+        const int last = (d->option_count ? d->option_count : 1) - 1;
+        const int cur  = (int)lrintf(s.values[id]);
+        /* In 64 bits: a step count near INT_MAX does not overflow. */
+        int64_t next = (int64_t)cur + (int64_t)steps;
+        if (next < 0) {
+            next = 0;
+        }
+        if (next > (int64_t)last) {
+            next = (int64_t)last;
+        }
+        settings_set(id, (float)next);
         return;
     }
     if (d->type == SET_TYPE_BOOL || d->type == SET_TYPE_ENUM) {

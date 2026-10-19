@@ -748,10 +748,131 @@ TEST_CASE(a_weak_magnet_that_goes_missing_is_said_again)
     CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
     CHECK(sense_link_enc_magnet(&sl) & LINK_SN_ENC_MD);
     /* Weak to strong with the magnet detected throughout: the angle is
-     * there before and after, and nothing more is said. */
+     * there before and after, and the magnet is said again, as strong. */
     far_enc(ENC_OK | LINK_SN_ENC_MH, 5u, 5u, 1u);
     polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    CHECK(sense_link_enc_magnet(&sl) & LINK_SN_ENC_MH);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), 0u);           /* once */
+}
+
+/* The bench's walk: a weak magnet, said once, and then edits of other rows
+ * on SETUP -- the INA228's shunt, the INA3221 on, the sensor bus moved to
+ * GP14 and back -- each a set-up the page takes and starts its reads
+ * again under, the encoder offline until the IOmcu has found it again.
+ * The magnet bits the same throughout: not said again. */
+TEST_CASE(a_weak_magnet_is_not_said_again_for_an_edit_of_another_row)
+{
+    enc_wanted(9u);
+    const uint16_t weak = ENC_OK | LINK_SN_ENC_ML;
+    far_enc(weak, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    sense_setup_t w = setup_default();
+    w.as5600 = true;
+    for (int edit = 0; edit < 4; ++edit) {
+        switch (edit) {
+        case 0:  w.i228_uohm = 250u; break;
+        case 1:  w.i3221 = true;     break;
+        case 2:  w.sda = 14; w.scl = 15; break;
+        default: w.sda = 16; w.scl = 17; break;
+        }
+        const uint32_t reads_before = sense_link_reads(&sl);
+        want(&w);
+        polls(14);                      /* rested, written, read offline */
+        CHECK(sense_link_reads(&sl) != reads_before);
+        CHECK_EQ(pg.sense[LINK_SN_AS5600_FLAGS], 0u);
+        far_enc(weak, 5u, (uint16_t)(2u + (unsigned)edit), 1u);
+        polls(6);
+        CHECK_EQ(sense_link_events(&sl), 0u);
+    }
+    /* The bits change: said again. */
+    far_enc(ENC_OK | LINK_SN_ENC_MH, 5u, 9u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    /* Right, then weak again: said again. */
+    far_enc(ENC_OK, 5u, 10u, 1u);
+    polls(4);
     CHECK_EQ(sense_link_events(&sl), 0u);
+    far_enc(weak, 5u, 11u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+}
+
+/* An encoder said not to answer -- past the grace after a set-up -- has
+ * its magnet said again when it answers; a link that comes up again too. */
+TEST_CASE(a_weak_magnet_is_said_again_after_the_encoder_was_lost)
+{
+    enc_wanted(9u);
+    const uint16_t weak = ENC_OK | LINK_SN_ENC_ML;
+    far_enc(weak, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    /* Offline, briefly: under the grace after a set-up nothing is said. */
+    sense_setup_t w = setup_default();
+    w.as5600 = true;
+    w.i228_uohm = 250u;
+    want(&w);
+    polls(14);
+    polls((int)(SENSE_LINK_GRACE_MS / 50u) - 14);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    /* Past it: not answering, said; back weak: the magnet said again. */
+    polls(16);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_SILENT);
+    far_enc(weak, 5u, 2u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    /* A new link: news again. */
+    sense_link_lost(&sl);
+    sense_link_came_up(&sl, 9u, now);
+    polls(6);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+}
+
+/* With the encoder the only part, switching it off stops every read, so
+ * the off is seen at the set-up: switched on again, a weak magnet is
+ * said again. */
+TEST_CASE(a_weak_magnet_is_said_again_after_the_encoder_was_switched_off)
+{
+    enc_wanted(9u);
+    const uint16_t weak = ENC_OK | LINK_SN_ENC_ML;
+    far_enc(weak, 5u, 1u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+    sense_setup_t w = setup_default();
+    w.as5600 = false;
+    want(&w);
+    polls(40);
+    CHECK_EQ(sl.held[LINK_SN_ENABLE], 0u);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+    w.as5600 = true;
+    want(&w);
+    polls(14);
+    CHECK((sl.held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) != 0u);
+    far_enc(weak, 5u, 2u, 1u);
+    polls(6);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
+}
+
+/* A magnet event raised and not yet shown when the set-up changes is
+ * dropped with the reads of that set-up; the next read under the new one
+ * says it, so it is never lost. */
+TEST_CASE(a_magnet_event_not_yet_shown_is_said_under_the_next_set_up)
+{
+    enc_wanted(9u);
+    const uint16_t weak = ENC_OK | LINK_SN_ENC_ML;
+    far_enc(weak, 5u, 1u, 1u);
+    polls(4);                           /* raised, not taken */
+    sense_setup_t w = setup_default();
+    w.as5600 = true;
+    w.i228_uohm = 250u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_events(&sl), 0u);      /* dropped, read offline */
+    far_enc(weak, 5u, 2u, 1u);
+    polls(4);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_ENC_MAGNET);
 }
 
 TEST_CASE(a_magnet_is_judged_only_from_a_read_angle)
@@ -921,6 +1042,10 @@ int main(void)
     RUN(an_angle_read_without_a_magnet_is_not_handed_out);
     RUN(no_magnet_is_the_reason_only_while_the_part_says_so);
     RUN(a_weak_magnet_that_goes_missing_is_said_again);
+    RUN(a_weak_magnet_is_not_said_again_for_an_edit_of_another_row);
+    RUN(a_weak_magnet_is_said_again_after_the_encoder_was_lost);
+    RUN(a_weak_magnet_is_said_again_after_the_encoder_was_switched_off);
+    RUN(a_magnet_event_not_yet_shown_is_said_under_the_next_set_up);
     RUN(a_magnet_is_judged_only_from_a_read_angle);
     RUN(a_magnet_event_waiting_survives_a_current_monitor_answering);
     RUN(a_magnet_event_waiting_goes_when_the_encoder_is_switched_off);

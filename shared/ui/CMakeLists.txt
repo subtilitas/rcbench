@@ -19,6 +19,7 @@ set(SRCS
     ui_textkey.c
     ui_pinlist.c
     ui_router.c
+    ui_alert_slot.c
     ui_text.c
     ui_text_de.c
     splash_screen.c

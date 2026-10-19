@@ -152,6 +152,19 @@ pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
 | `answers arrive too late` | eine Antwort langsamer als der Poll-Timeout, oder eine hängende Gegenseite |
 | `works, and not every time` | grenzwertiges Timing, oder eine Pollperiode enger als die Umlaufzeit |
 
+`nack` in der Panel-Zeile zählt Anfragen, die der IOmcu mit einem NACK
+(Negative Acknowledge) beantwortet hat. Ein NACK ist eine Antwort: der Link
+arbeitet, und die Page behielt, was sie hielt ([Frames](Link-de.md#frames)).
+Eine Einstellung aus SETUP ANSCHLÜSSE, die eine Page ablehnt, zählt je
+einmal: ein Schreiben je abgelehntem Wert, das erst wieder geschrieben wird,
+wenn sich der Wert ändert. Wer auf SETUP durch Zeilen schaltet, zählt also
+ein NACK für jeden Wert, den der IOmcu ablehnt -- Abgriff-Pause 2 ms mit
+Tiefster Ton 400 Hz, oder PD mini RX auf dem SCL des Sensorbusses --, und
+keines für die Werte, die er übernimmt. Ein Pin, der abgelehnt wurde, weil
+etwas anderes ihn hält, wird alle 5 s erneut angeboten und zählt jedes Mal
+einmal. `timeouts`, `stale` und `crc` sind die Spalten, die einen Linkfehler
+zählen.
+
 Die Spalten `crc` und `resync` der IOmcu-Zeile tragen den Empfangs- und
 den Sendefehlerzähler des XL2515 (Statusregister `LINK_ST_CRC_ERRORS` und
 `LINK_ST_RESYNCS`). Die letzte Zahl der Zeile ist die der CAN-Frames, die der

@@ -657,6 +657,23 @@ void ui_router_set_alert(const char *text)
     s.alert_fresh = true;
     s.alert_age_s = 0.0f;
     ++s.alert_gen;
+    if (s.alert_gen == 0u) {
+        s.alert_gen = 1u;           /* 0 is "none" to ui_router_alert_number() */
+    }
+}
+
+uint32_t ui_router_alert_number(void)
+{
+    return s.has_alert ? s.alert_gen : 0u;
+}
+
+bool ui_router_withdraw_alert(uint32_t number)
+{
+    if (number == 0u || !s.has_alert || s.alert_gen != number) {
+        return false;
+    }
+    clear_alert();
+    return true;
 }
 
 void ui_router_hold_alert(const char *text)

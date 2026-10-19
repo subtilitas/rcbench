@@ -1195,12 +1195,11 @@ static void draw_row(gfx_canvas_t *c, int index)
     bool minus_down = (s.hit_kind == HIT_MINUS && s.hit_index == index);
     bool plus_down  = (s.hit_kind == HIT_PLUS  && s.hit_index == index);
     int by = r.y + (ROW_H - BTN_H) / 2;
+    const bool cycles = settings_cycles(id);
     ui_button(c, gfx_rect_make(MINUS_X, by, BTN_W, BTN_H),
-              (d->type == SET_TYPE_BOOL || d->type == SET_TYPE_ENUM) ? "<" : "-",
-              UI_EDGE_HI, minus_down, true);
+              cycles ? "<" : "-", UI_EDGE_HI, minus_down, true);
     ui_button(c, gfx_rect_make(PLUS_X, by, BTN_W, BTN_H),
-              (d->type == SET_TYPE_BOOL || d->type == SET_TYPE_ENUM) ? ">" : "+",
-              UI_EDGE_HI, plus_down, true);
+              cycles ? ">" : "+", UI_EDGE_HI, plus_down, true);
 }
 
 static void draw_list(gfx_canvas_t *c)
