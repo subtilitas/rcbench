@@ -593,9 +593,11 @@ Sharing the glass's address does not work: two devices both acknowledge and
 their open-drain pulls combine, so what the panel reads is neither. The glass
 answers at 0x5D and the injector at 0x14, so nothing on the bus collides.
 
-**The panel reads both.** A panel image built with
-`idf.py -D RCBENCH_TOUCH_INJECTOR=ON build` probes 0x14 once at start-up,
-after it has found the glass. When 0x14 answers as a GT911, the touch task
+**The panel reads both.** A panel image
+(`RCBENCH_TOUCH_INJECTOR` defaults to ON) probes 0x14 once at start-up,
+after it has found the glass. When 0x14 does not answer, the injector is off
+until the next start: 0x14 is not read or probed again, the band never shows
+INJECT, and touch is the glass alone. When 0x14 answers as a GT911, the touch task
 reads it every poll after the glass and merges the two
 (`shared/touch/touch_merge.c`):
 
@@ -618,9 +620,10 @@ reads it every poll after the glass and merges the two
   answer re-attaches it, with no contacts down and its age counted again
   from that answer.
 
-A release image is built without the option. It compiles none of this and
-never addresses 0x14 a second time; CI (continuous integration) checks that
-its ELF holds no injector symbol.
+A panel built with `-D RCBENCH_TOUCH_INJECTOR=OFF` compiles none of this
+and never addresses 0x14 as an injector; CI (continuous integration) builds
+it and checks that its ELF holds no injector symbol, and that the default
+image holds them.
 
 **And the panel says so.** While an injector is attached the status band's
 MODE chip reads `INJECT` in place of BENCH or SIM. LINK still tells a bench
@@ -816,4 +819,4 @@ firmware and the decoder agree, and no more than that.
 - **Relays across BOOT and RESET**, closed by the RP2350.
 - **A camera on the display**, on a fixed mount, calibrated from the splash.
 - **The touch injector answers at 0x14**, beside the real controller at 0x5D,
-  and a panel built with `RCBENCH_TOUCH_INJECTOR` reads and merges both.
+  and a panel build reads and merges both (`RCBENCH_TOUCH_INJECTOR`, default ON).

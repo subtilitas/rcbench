@@ -37,6 +37,22 @@ void touch_merge_attach(touch_merge_t *m, uint32_t now_ms)
     m->last_try_ms = now_ms;
 }
 
+void touch_merge_start(touch_merge_t *m, bool answered, uint32_t now_ms)
+{
+    if (m == NULL) {
+        return;
+    }
+    if (answered) {
+        touch_merge_attach(m, now_ms);
+        return;
+    }
+    /* Detached, so every read and age path refuses it; absent, so the probe
+     * path does too. */
+    touch_merge_reset(m);
+    m->detached = true;
+    m->absent = true;
+}
+
 bool touch_merge_attached(const touch_merge_t *m)
 {
     return m != NULL && !m->detached;
@@ -59,13 +75,13 @@ bool touch_merge_expire(touch_merge_t *m, uint32_t now_ms)
 
 bool touch_merge_probe_due(const touch_merge_t *m, uint32_t now_ms)
 {
-    return m != NULL && m->detached
+    return m != NULL && m->detached && !m->absent
            && (uint32_t)(now_ms - m->last_try_ms) >= TOUCH_MERGE_PROBE_MS;
 }
 
 bool touch_merge_probe(touch_merge_t *m, bool answered, uint32_t now_ms)
 {
-    if (m == NULL || !m->detached) {
+    if (m == NULL || !m->detached || m->absent) {
         return false;
     }
     m->last_try_ms = now_ms;

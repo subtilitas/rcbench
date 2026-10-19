@@ -55,12 +55,11 @@ UI_TEXT(BH_LINK_UP,                 0, "The IOmcu is responding on the CAN bus. 
 UI_TEXT(BH_NO_LINK,                 0, "No IOmcu is responding. The panel tries once a second. The screens show simulated data, and the IOmcu outputs stay off. Check the IOmcu's power supply and CAN cable. A different major protocol version also causes NO LINK. Install firmware from the same release on both boards.")
 UI_TEXT(BH_MODE_BENCH,              0, "The IOmcu is responding. The screens control its outputs and show its data. If it stops responding, the mode changes to SIM.")
 UI_TEXT(BH_MODE_SIM,                0, "No IOmcu is responding. The panel simulates the values; they are not measurements. ARM does not activate any output. When an IOmcu responds, the mode changes to BENCH and any simulated ARMED state resets to SAFE.")
-/* INJECT's two paragraphs: in a build with RCBENCH_TOUCH_INJECTOR only, so
- * the released image holds neither.  The host suite and render_ui.py build
- * with it.  The define rides with this header's include path (shared/ui's
+/* INJECT's two paragraphs: in a build with RCBENCH_TOUCH_INJECTOR (the
+ * default; OFF drops them).  The host suite and render_ui.py build with it.  The define rides with this header's include path (shared/ui's
  * CMakeLists.txt), so every file that sees the IDs sees the same set. */
 #ifdef RCBENCH_TOUCH_INJECTOR
-UI_TEXT(BH_MODE_INJECT,             0, "This is a test-bench build, not a release version. Touch input also comes from the injector at I2C address 0x14. It is combined with input from the panel touchscreen, which still works. LINK shows whether an IOmcu responds. The older of the two sources determines the touch age. A contact on the touchscreen counts as detected touch. Without a controller at 0x5D, the status always shows INJECT. If the injector was absent at startup, a restart is needed.")
+UI_TEXT(BH_MODE_INJECT,             0, "Touch input also comes from the injector at I2C address 0x14. It is combined with input from the panel touchscreen, which still works. LINK shows whether an IOmcu responds. The older of the two sources determines the touch age. A contact on the touchscreen counts as detected touch. Without a controller at 0x5D, the status always shows INJECT. If the injector was absent at startup, a restart is needed.")
 UI_TEXT(BH_MODE_INJECT_LOST,        0, "With a controller at 0x5D, injector contacts are released after 3 failed reads in a row. If the touchscreen has no contact, touch is marked silent 200 ms after the injector's last reply. After another 500 ms, the bench switches to SAFE and blocks ARM. After 1000 ms of silence, the injector is detached. The touchscreen alone then sets the touch age, ARM is available again, and the status shows BENCH or SIM. The injector is checked every 1000 ms and reconnected when it replies.")
 #endif
 UI_TEXT(BH_SAFE,                    0, "Motor and servo outputs send no pulses. To activate them, hold ARM for 2 s on MOTOR & ESC or SERVO. The PD mini output on SUPPLY is switched separately. STOP turns it off too.")

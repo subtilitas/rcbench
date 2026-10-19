@@ -31,8 +31,8 @@ const char *ui_band_mode(bool link_up);
 /**
  * INJECT: the mode a panel built with RCBENCH_TOUCH_INJECTOR names in place
  * of BENCH and SIM while a touch injector (testbench/touch-injector) is
- * attached.  A mode name, so English in every language.  The released image
- * has neither this nor INJECT's bubble text.
+ * attached.  A mode name, so English in every language.  A build with
+ * RCBENCH_TOUCH_INJECTOR=OFF has neither this nor INJECT's bubble text.
  */
 const char *ui_band_mode_inject(void);
 #endif

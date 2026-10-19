@@ -32,5 +32,12 @@ set(PROJECT_VER "${_rcbench_MAJOR}.${_rcbench_MINOR}.${_rcbench_PATCH}")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
              "${CMAKE_CURRENT_LIST_DIR}/../../shared/link/include/rcbench_version.h")
 
+# The touch injector's end of the panel (testbench/touch-injector): the read
+# of an I2C device at 0x14 beside the GT911, and INJECT on the band.  Default
+# ON; the one place the default lives, read by components gt911 and ui.
+#   idf.py -D RCBENCH_TOUCH_INJECTOR=OFF build
+# builds a panel that never addresses 0x14 and holds none of that code.
+option(RCBENCH_TOUCH_INJECTOR "Read a touch injector at I2C 0x14" ON)
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(rcbench-panel)

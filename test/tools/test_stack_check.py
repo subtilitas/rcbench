@@ -66,7 +66,7 @@ def test_both_pages_carry_the_task_table_and_the_count():
 
 @pytest.mark.parametrize("rel, inside", [
     ("build/esp-idf/x.c", True),
-    ("build-inject/esp-idf/mbedtls/library/error.c", True),
+    ("build-noinject/esp-idf/mbedtls/library/error.c", True),
     ("main/main.c", False),
     ("components/gt911/touch_inject.c", False),
     ("components/builder/x.c", False),

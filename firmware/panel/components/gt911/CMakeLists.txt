@@ -6,10 +6,11 @@
 # release state machine are pure C in shared/touch, where the host suite
 # tests them.
 #
-# A bench build reads a touch injector at 0x14 beside the glass
-# (testbench/touch-injector):
-#   idf.py -D RCBENCH_TOUCH_INJECTOR=ON build
-# A build without the option compiles none of it and never addresses 0x14.
+# Every build reads a touch injector at 0x14 beside the glass
+# (testbench/touch-injector).  The option RCBENCH_TOUCH_INJECTOR defaults to
+# ON in firmware/panel/CMakeLists.txt;
+#   idf.py -D RCBENCH_TOUCH_INJECTOR=OFF build
+# compiles none of it and never addresses 0x14.
 set(srcs "gt911.c" "touch.c")
 if(RCBENCH_TOUCH_INJECTOR)
     list(APPEND srcs "touch_inject.c")

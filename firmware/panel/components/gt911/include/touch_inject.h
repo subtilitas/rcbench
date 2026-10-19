@@ -1,17 +1,21 @@
 /*
  * The touch injector's side of the touch task, in a build with
- * RCBENCH_TOUCH_INJECTOR only (idf.py -D RCBENCH_TOUCH_INJECTOR=ON build).
+ * RCBENCH_TOUCH_INJECTOR, the default (idf.py -D RCBENCH_TOUCH_INJECTOR=OFF
+ * build leaves it out).
  *
  * The injector (testbench/touch-injector) answers as a GT911 at 0x14 on the
- * touch bus.  touch_init() asks for it once, before the touch task starts;
- * one that first answers later is not seen until the next start.  While it
- * is attached, the touch task reads it after the glass on every poll and
+ * touch bus.  touch_init() asks for it once, before the touch task starts.
+ * One that does not answer then is off until the next start: 0x14 is not
+ * read or probed again, and touch is the glass alone, as in a build without
+ * the injector.  One that first answers later is not seen until the next
+ * start.  While an injector that answered at start-up is
+ * attached, the touch task reads it after the glass on every poll and
  * merges the two contact sets (touch_merge.h), and touch_age_ms() is the
  * older of the two ages.  One silent for TOUCH_MERGE_DETACH_MS (1000 ms) is
  * detached: its age no longer counts, and the touch task reads its product
  * ID once every TOUCH_MERGE_PROBE_MS (1000 ms) until it answers, which
- * re-attaches it.  A release build compiles none of this; it addresses
- * 0x14 only as the glass's alternate address, when nothing answers at 0x5D.
+ * re-attaches it.  A build with RCBENCH_TOUCH_INJECTOR=OFF compiles none of
+ * this; it addresses 0x14 only as the glass's alternate address, when nothing answers at 0x5D.
  *
  * SPDX-License-Identifier: MIT
  */

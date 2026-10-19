@@ -100,6 +100,14 @@ update over CAN is not measured.
 
 ### Changed
 
+- Every panel build, release images included, looks once at start-up for a
+  touch injector at I2C 0x14: `RCBENCH_TOUCH_INJECTOR` defaults to ON, and
+  `-D RCBENCH_TOUCH_INJECTOR=OFF` builds a panel without it. A panel that
+  finds none reads and probes 0x14 no more until the next start; touch is
+  the glass alone and the band never shows INJECT. The INJECT bubble no
+  longer opens with `This is a test-bench build, not a release version.`
+  The default image is 3,824 bytes larger, holds 112 bytes less internal
+  RAM, and CI builds the option OFF as the extra build.
 - The bench's own files live under `BENCH` on the SD card. ESC profiles
   are read from `BENCH/ESC/CONF`, the servo programmer's files and its
   write record `KST.TXT` are in `BENCH/KST/CONF`, and the fault log is
