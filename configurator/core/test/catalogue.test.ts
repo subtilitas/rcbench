@@ -1122,12 +1122,15 @@ test('tree: read at the tag, or at HEAD before the tag when the header names the
   }
 
   // No commit yet: no header at HEAD, no tag.
-  assert.equal(gitTree(dir, 'v9.8.7', '9.8.7'), null);
+  assert.equal(gitTree(dir, 'v9.8.7', '9.8.7', true), null);
 
   // The release pull request: header and data name 9.8.7, the tag is not made.
   commit('9.8.7', 'release pr');
   writeFileSync(join(dir, 'note.txt'), 'uncommitted');
-  const head = gitTree(dir, 'v9.8.7', '9.8.7');
+  // Without the explicit before-tag mode a clone without the tag reads nothing:
+  // a clone that lacks a published tag does not fall back to HEAD.
+  assert.equal(gitTree(dir, 'v9.8.7', '9.8.7', false), null);
+  const head = gitTree(dir, 'v9.8.7', '9.8.7', true);
   assert.ok(head !== null);
   assert.equal(head.ref, 'HEAD');
   assert.equal(head.read('note.txt'), 'release pr');
@@ -1135,20 +1138,21 @@ test('tree: read at the tag, or at HEAD before the tag when the header names the
   assert.equal(head.newestTag, null);
 
   // A header of another release, at either side of the data's: no tree.
-  assert.equal(gitTree(dir, 'v9.8.6', '9.8.6'), null);
-  assert.equal(gitTree(dir, 'v9.8.8', '9.8.8'), null);
+  assert.equal(gitTree(dir, 'v9.8.6', '9.8.6', true), null);
+  assert.equal(gitTree(dir, 'v9.8.8', '9.8.8', true), null);
 
   // The tag exists: the files are read at the tag, not at a later HEAD.
   git('tag', 'v9.8.7');
   commit('9.9.0', 'after the tag');
-  const tagged = gitTree(dir, 'v9.8.7', '9.8.7');
+  const tagged = gitTree(dir, 'v9.8.7', '9.8.7', true);
   assert.ok(tagged !== null);
+  assert.deepEqual(gitTree(dir, 'v9.8.7', '9.8.7', false)?.ref, 'v9.8.7');
   assert.equal(tagged.ref, 'v9.8.7');
   assert.equal(tagged.read('note.txt'), 'release pr');
   assert.equal(tagged.newestTag, 'v9.8.7');
 
   // The next release pull request before its tag: HEAD, and the older tag is the newest.
-  const next = gitTree(dir, 'v9.9.0', '9.9.0');
+  const next = gitTree(dir, 'v9.9.0', '9.9.0', true);
   assert.ok(next !== null);
   assert.equal(next.ref, 'HEAD');
   assert.equal(next.read('note.txt'), 'after the tag');
@@ -1157,7 +1161,7 @@ test('tree: read at the tag, or at HEAD before the tag when the header names the
   // Not a repository: no tree.
   const bare = mkdtempSync(join(tmpdir(), 'cfg-none-'));
   t.after(() => rmSync(bare, { recursive: true, force: true }));
-  assert.equal(gitTree(bare, 'v9.8.7', '9.8.7'), null);
+  assert.equal(gitTree(bare, 'v9.8.7', '9.8.7', true), null);
 });
 
 // --- invariant 6 ------------------------------------------------------------

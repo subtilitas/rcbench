@@ -181,8 +181,9 @@ its parts stay or leave, and in `objectsOut` the test objects that leave.
 Run from `configurator/core` with Node.js 24.
 
 ```sh
-npm run check                 # static checks; the tree at v0.21.1 is read when git and the tag are present, else at HEAD when its header names 0.21.1
-npm run check -- --strict     # as above; fails when git is absent, or the tag is absent and the header at HEAD names another release
+npm run check                 # static checks; the tree at v0.21.1 is read when git and the tag are present
+npm run check -- --strict     # as above; fails when git or the tag is absent
+CONFIGURATOR_BEFORE_TAG=1 npm run check -- --strict   # before the tag: reads HEAD when its header names 0.21.1
 npm run check -- --wires      # prints the wire table as Markdown
 npm test                      # the test suite
 npm run coverage              # runs the suite and writes the figure into this file
@@ -193,9 +194,10 @@ Exit codes of `check`: 0 no error, 1 at least one error, 2 unknown argument.
 A warning does not change the exit code. Exit codes of `coverage`: 0 figure
 current or written, 1 drift or a failing suite, 2 unknown argument.
 
-`--strict` needs the tag `v0.21.1` in the clone, or, before the tag exists,
-a `HEAD` whose firmware header names 0.21.1. A shallow clone without tags
-fails it once the tag exists.
+`--strict` needs the tag `v0.21.1` in the clone. A shallow clone without tags
+fails it. With `CONFIGURATOR_BEFORE_TAG=1` and no tag, a `HEAD` whose
+firmware header names 0.21.1 is read in place of the tag; the variable is
+for a clone that holds every tag, as the Configurator workflow's does.
 
 The type check needs the TypeScript compiler and the Node.js type
 declarations. Neither is a dependency of this folder:
@@ -306,9 +308,11 @@ header `shared/link/include/rcbench_version.h`. That pull request changes
 `../drawings/anchors.json`, and the release numbers of the configurator's
 README files, and sets each anchor to the line that holds its text in its
 own tree. Until the tag exists, the check reads the anchors at `HEAD` when
-the header there names the release of `package.json`; once the tag exists,
-it reads them at the tag. Without git, or without the tag and with a header
-at `HEAD` that names another release, `--strict` fails.
+`CONFIGURATOR_BEFORE_TAG` is 1 and the header there names the release of
+`package.json`; the Configurator workflow sets the variable on its clone,
+which holds every tag. Once the tag exists, the check reads the anchors at
+the tag. Without git, or without the tag and without the variable or with a
+header at `HEAD` that names another release, `--strict` fails.
 
 The 7 pin rules:
 

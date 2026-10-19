@@ -66,6 +66,12 @@ jobs:
     defaults:
       run:
         working-directory: configurator/core
+    # The clone below holds every tag, so a release tag absent here is not
+    # made yet: the release pull request, and its push to main before the
+    # tag. Then the check and the tests read the sources at HEAD when its
+    # firmware header names the release of package.json.
+    env:
+      CONFIGURATOR_BEFORE_TAG: '1'
     steps:
       # The data file anchors every fact to a file and line at a release tag.
       # The check reads those files from git, so the clone holds the full
@@ -99,7 +105,7 @@ jobs:
       # --strict fails when git is absent, or when the release tag is absent
       # and the firmware header at HEAD names another release, so the
       # anchors are always read: at the tag, or at HEAD in the release pull
-      # request before the tag exists.
+      # request before the tag exists (CONFIGURATOR_BEFORE_TAG above).
       # A warning does not fail the step. Each one becomes an annotation of
       # the run and a line of its summary: a release tag newer than the data
       # is a warning. The step ends with the exit code of the check, so a

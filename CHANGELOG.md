@@ -156,9 +156,11 @@ update over CAN is not measured.
   of its data is a file and line at the tag `v0.21.1`: 83 sources, 9 of them
   on the line the text moved to, in `docs/FirstRun.md`, `docs/Servo.md` and
   `STATUS.md`. Until the tag exists, the data check reads the sources at
-  `HEAD` when the header there names the release of
-  `configurator/package.json`, and `--strict` passes; once the tag exists,
-  it reads them at the tag. A release tag older than the data is no
+  `HEAD` when `CONFIGURATOR_BEFORE_TAG` is 1 and the header there names the
+  release of `configurator/package.json`, and `--strict` passes; the
+  Configurator workflow sets the variable on its clone, which holds every
+  tag. Once the tag exists, it reads them at the tag. A clone without the
+  tag and without the variable fails `--strict`. A release tag older than the data is no
   warning, a newer one is. `gitTree()` in `configurator/core/tools/check.ts`;
   one test case in `configurator/core/test/catalogue.test.ts`.
 - The bench configurator describes release 0.21.0. Every repository source

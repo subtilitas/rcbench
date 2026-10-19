@@ -1018,7 +1018,7 @@ export function checkAll(
   if (tree !== null) {
     findings.push(...guarded('tree', () => checkTree(c, tree)));
   } else if (strict) {
-    findings.push(err('repository', `git or the tag ${RELEASE_TAG} is absent, and ${HEADER_PATH} at HEAD does not name ${VERSION}; ${repoAnchors} repository anchors are not checked`));
+    findings.push(err('repository', `git or the tag ${RELEASE_TAG} is absent, and ${BEFORE_TAG_ENV}=1 with ${HEADER_PATH} at HEAD naming ${VERSION} does not hold; ${repoAnchors} repository anchors are not checked`));
   }
   return { findings, repoAnchors, repoChecked };
 }
@@ -1060,13 +1060,25 @@ export function wireTable(c: Catalogue): string {
 const HEADER_PATH = 'shared/link/include/rcbench_version.h';
 
 /**
+ * The environment variable that allows the files to be read at `HEAD` before
+ * the release tag exists. The Configurator workflow sets it to 1 on a clone
+ * with every tag. Unset, a clone without the tag reads no tree, so a clone
+ * that lacks a published tag fails `--strict` rather than reading `HEAD`.
+ */
+export const BEFORE_TAG_ENV = 'CONFIGURATOR_BEFORE_TAG';
+
+/**
  * The repository that holds `dir`, read at the release tag. Before the tag
  * exists, the release pull request moves the firmware header and the data
- * together: when the header at `HEAD` names the release `version`, the files
- * are read at `HEAD`, the commit the tag is made on. Null when git is absent,
- * or when the tag is absent and the header at `HEAD` names another release.
+ * together: with `beforeTag`, when the header at `HEAD` names the release
+ * `version`, the files are read at `HEAD`, the commit the tag is made on.
+ * Null when git is absent, or when the tag is absent and either `beforeTag`
+ * is false or the header at `HEAD` names another release.
  */
-export function gitTree(dir: string, tag: string = RELEASE_TAG, version: string = VERSION): Tree | null {
+export function gitTree(
+  dir: string, tag: string = RELEASE_TAG, version: string = VERSION,
+  beforeTag: boolean = process.env[BEFORE_TAG_ENV] === '1',
+): Tree | null {
   const git = (args: string[]): string | null => {
     try {
       return execFileSync('git', ['-C', dir, ...args], {
@@ -1080,6 +1092,7 @@ export function gitTree(dir: string, tag: string = RELEASE_TAG, version: string 
   };
   let ref = tag;
   if (git(['rev-parse', '--quiet', '--verify', `refs/tags/${tag}^{commit}`]) === null) {
+    if (!beforeTag) return null;
     const header = git(['show', `HEAD:${HEADER_PATH}`]);
     if (header === null || headerVersion(header) !== version) return null;
     ref = 'HEAD';
@@ -1124,7 +1137,7 @@ function main(argv: string[]): number {
   );
   process.stdout.write(`check: ${folder.names.length} files in the picture folder\n`);
   if (tree === null) {
-    process.stdout.write(`check: skipped ${report.repoAnchors} repository anchors; git or the tag ${RELEASE_TAG} is absent, and ${HEADER_PATH} at HEAD does not name ${VERSION}\n`);
+    process.stdout.write(`check: skipped ${report.repoAnchors} repository anchors; git or the tag ${RELEASE_TAG} is absent, and ${BEFORE_TAG_ENV}=1 with ${HEADER_PATH} at HEAD naming ${VERSION} does not hold\n`);
   } else if (tree.ref === 'HEAD') {
     process.stdout.write(`check: ${report.repoChecked} repository anchors read at HEAD; the tag ${RELEASE_TAG} is absent and ${HEADER_PATH} names ${VERSION}\n`);
   } else {
