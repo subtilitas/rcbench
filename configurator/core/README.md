@@ -97,8 +97,9 @@ and the hash holds no token for it: the function `servoprog` forces `prog`.
 With `outputs` the servo signal is wire 7, from pad 4 (GP2), a slot of
 SETUP → OUTPUTS. With `prog` it is wire 64, from pad 17 (GP13), the
 programming port of the IOmcu (`PROG_PORT_DEFAULT_PIN` in
-`shared/outputs/include/prog_port.h`), and SETTINGS → DUT → PWM TARGET is
-PROG PORT, so the other servo functions drive the same pin. The servo
+`shared/outputs/include/prog_port.h`), and SERVO TESTER on the PROG PORT
+entry of SETUP → OUTPUTS is PROG PORT, so the other servo functions drive
+the same pin. The servo
 programmer needs the panel and the IOmcu alone. With the PD mini, the
 PD mini feeds the servo and CONNECT sets its voltage, 4.8 to 6.0 V or up to
 8.4 V with HV SERVO on, and its current limit, 50 to 3000 mA. Without it the servo takes the supply that

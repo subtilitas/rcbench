@@ -1562,7 +1562,7 @@ const functions: Fn[] = [
   {
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
-    // The test reads the current of the PD mini (docs/Servo.md, line 97).
+    // The test reads the current of the PD mini (docs/Servo.md, line 437).
     needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 437, 'the current of the supply that feeds the servo: the PD mini'),
   },
   {
