@@ -1629,14 +1629,20 @@ is powered.
 The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
 on SETUP under INTERFACES. TX and RX are IOmcu GPIO numbers: TX goes to
 the module's DM, RX comes from its DP. The IOmcu refuses a pin that is
-reserved, bound to an output or the other pin. Once the module has
+reserved, bound to an output, held by the sensor bus or the phase tap, or
+the other pin, and the band says `PD mini pins rejected. Check SETUP >
+INTERFACES.`: RX on GP17 is refused while Sensor SDA is GP16, as Sensor SCL
+is then GP17. The alert leaves the band once a read shows the page holding
+the wiring asked: at once when the pin is stepped back to the one the page
+still holds. Once the module has
 answered, a change waits for a state read of the module sent after it, at
 most about 1.2 s, and is taken only if that read shows the output off: the
 module can switch itself on between two state reads, by its button
 or its AUTO OUT setting, and new pins would leave it no OFF path. A read
 that shows the output on, or fails, refuses the change, and the band says
 `PD mini wiring rejected. Its output may still be on.`. A refused change is not
-written again until the wiring changes in SETUP. PD mini baud is the module's
+written again until the wiring changes in SETUP; this alert too leaves the
+band once a read shows the page holding the wiring asked. PD mini baud is the module's
 own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 115200, 230400 or 460800 baud, or AUTO. AUTO, the default, lets the
 IOmcu find it: it tries each of the 7 rates, one a second. The
@@ -2248,7 +2254,10 @@ as the slew of the modelled bench.
 
 A row's `-` and `+` keys (`<` and `>` on a switch or a choice) change its
 value by one step. A changed value is in force at once; SAVE decides whether
-it survives a restart ([Keeping the values](#keeping-the-values)).
+it survives a restart ([Keeping the values](#keeping-the-values)). A number
+stops at the ends of its range, and so do INA228 address and INA3221
+address, which have `-` and `+` keys: 0x40 to 0x4F and 0x40 to 0x43. A
+switch or a choice wraps round from its last value to its first.
 
 - **Tap.** A key steps once when the finger lifts. The lift counts when the
   finger is the one that pressed the key, is inside the key, and is no more
@@ -2432,7 +2441,7 @@ both said. In order:
 | `Sensor pins GP16/GP17 rejected. Check SETUP > INTERFACES.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30 s or until tapped, once per edit |
 | `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
 | `INA3221 settings rejected. Check SETUP > INTERFACES.` | the INA3221 stays off |
-| `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the IOmcu found SDA held low and clocks it free |
+| `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the IOmcu found SDA or SCL held low and clocks the bus free. A line that reads low with nothing holding it -- pins with no part and no pull-up wired to them -- is not this: it rises within 50 µs on the IOmcu's own pad pull-up (32 to 86 kΩ), and the monitors read as not answering |
 | `INA228 is not responding at 0x45.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `A device responds at 0x44.` is added when the IOmcu's address scan found something where the part could be |
 | `0x40 reports 1408h, not an INA3221. Device not used.` | something answers at the part's address with another identity |
 | `INA228 current at its range limit. Reading shows only the limit.` | the INA228 read the end of its range in the last 50 ms window or since the switch to ARMED |
@@ -2447,6 +2456,17 @@ board holds one, are offered again every 5 s without another alert, so
 freeing the pin on OUTPUTS or SUPPLY lets the bus open. A monitor
 that stops answering does not switch the bench to SAFE: nothing trips on the
 monitors' readings.
+
+An alert about the set-up leaves the band as soon as its cause is over,
+before its 30 s are up: `Sensor SDA or SCL not set.` and `INA228 and
+INA3221 both use 0x40.` with the edit that puts the setting right, and a
+refusal once the IOmcu holds the frame as asked -- at once when the value
+is stepped back to the one the page still holds, otherwise when the write
+of the new value is taken, 500 ms after the last edit and with the bench
+SAFE (`sense_link_event_stands()`). An alert that was replaced before a
+frame showed it, and whose cause is over by its next turn, is not shown.
+What a read said -- not responding, another identity, a limit, a blocked
+bus -- stays for its 30 s or until tapped.
 
 #### A row the IOmcu does not hold
 
@@ -2497,10 +2517,13 @@ once and one at a time like the monitors':
 | `AS5600: magnetic field too weak. Move the magnet closer.` | STATUS MD and ML are set. The angle is used; the sensor's datasheet specifies its noise for 30 to 90 mT only |
 | `AS5600: magnetic field too strong. Move the magnet farther away.` | STATUS MD and MH are set. The angle is used, as with ML |
 
-A magnet message is said once until the field reads right again, and again
-when a magnet that read weak or strong goes missing or a missing one comes
-back weak or strong: the angle stops with the first and returns with the
-second. The sensor's
+A magnet message is said once while the sensor's STATUS bits MD, ML and MH
+stay as they were said, also across the set-ups an edit of another row of
+INTERFACES writes. It is said again when one of the bits changes -- a weak
+magnet that goes missing, a missing one that comes back weak, a weak one
+that reads strong -- when the field read right in between, when the sensor
+was said not to answer, and after a link-up. The angle stops when MD
+clears and returns when it is set again. The sensor's
 DIR pin sets the direction its count rises in; the panel takes the count to
 rise with the servo's pulse width.
 
@@ -2569,6 +2592,17 @@ current monitors:
 | `Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.` | the IOmcu refused the second frame; not written again until a value changes |
 | `Phase tap pin GP22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `Phase tap capture overflow. Beeps are incomplete.` | the IOmcu's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
+
+The three alerts about the set-up -- the first frame rejected, the second
+frame rejected, the pin in use -- leave the band as soon as the cause is
+over, before their 30 s are up (`tone_link_event_stands()`): a refused frame
+once the IOmcu holds it as asked, at once when the value is stepped back to
+the one the page still holds, otherwise when the write of the new value is
+taken 500 ms after the last edit; a pin in use once a status read shows the
+pin taken, or once the tap is switched off and the page holds it off. Tap gap
+2 ms with Tap lowest tone at 400 Hz is refused by design: the gap has to be
+at least one period of the lowest tone, 2.5 ms at 400 Hz
+(`tone_init()`, `protocols/phase_tap/tone.c`).
 
 ### SD CARD: which logs are written, and where
 

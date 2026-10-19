@@ -143,6 +143,12 @@ enum {
     TONE_LINK_EV_OVERRUN      = 0x10,
 };
 
+/** The events about the set-up asked, which tone_link_event_stands()
+ *  judges. */
+#define TONE_LINK_EV_SETUP ((uint16_t)(TONE_LINK_EV_PIN_REFUSED           \
+                                       | TONE_LINK_EV_SETUP_REFUSED       \
+                                       | TONE_LINK_EV_PIN_BUSY))
+
 /** The exchange tone_link_next() asks for. */
 typedef enum {
     TONE_LINK_OP_NONE = 0,
@@ -300,6 +306,22 @@ void tone_link_done(tone_link_t *t, int result, const uint16_t *regs,
  * TONE_LINK_EVENT_GAP_MS at @p now_ms.
  */
 uint16_t tone_link_event(tone_link_t *t, uint32_t now_ms);
+
+/**
+ * Whether what @p ev, one TONE_LINK_EV_* bit, says still holds now.  A
+ * refused frame -- TONE_LINK_EV_PIN_REFUSED for the first,
+ * TONE_LINK_EV_SETUP_REFUSED for the second -- until the page is known to
+ * hold that frame as asked: not refused, and written and taken.  A value
+ * stepped back on SETUP ends it once the IOmcu takes the frame, after
+ * TONE_LINK_SETTLE_MS and a poll.  TONE_LINK_EV_PIN_BUSY until the tap is
+ * off as asked and held, or a status read under the first frame as asked
+ * shows its pin taken (FLAGS bit 1 clear).  With no IOmcu answering they
+ * stand.  True for every other event.
+ *
+ * The caller takes back an alert it showed for such an event once this
+ * is false; tone_link_event() drops one waiting that is over.
+ */
+bool tone_link_event_stands(const tone_link_t *t, uint16_t ev);
 
 /** Put back an event tone_link_event() handed out that never reached the
  *  band, so it is handed out again after the gap.  An event about an

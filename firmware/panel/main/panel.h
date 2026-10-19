@@ -168,6 +168,9 @@ typedef struct {
      * frame took it was never shown.  See sense_link_alerts(). */
     uint32_t      alert_gen;
     uint32_t      alert_taken;
+    /* The number of an alert the control task took back: its cause is over
+     * (control_alert_withdraw()).  0 none. */
+    uint32_t      alert_withdrawn;
     /* The phase tap as the control task last read it, for the stick run's
      * page. */
     tone_readout_t tone;
@@ -194,6 +197,12 @@ static inline void snap_unlock(void) { xSemaphoreGive(s_snap_lock); }
 /* Called from the control task, which must not touch the router.  The
  * slot holds one alert; a later one replaces it.  Returns its number. */
 uint32_t control_alert_numbered(const char *text);
+
+/* Take back alert number @p gen, whose cause is over: one not yet taken
+ * by a frame is dropped, and one a frame shows is cleared from the band if
+ * it is still showing (ui_router_withdraw_alert()).  Another alert posted
+ * or showing since is left alone.  Control task only. */
+void control_alert_withdraw(uint32_t gen);
 
 /* The same, for the callers that do not follow it.  Inlined where it is
  * called, as the compiler chose before the numbering: a frame of its own

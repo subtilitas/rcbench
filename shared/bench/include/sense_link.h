@@ -217,12 +217,22 @@ enum {
      *  answers there that is not an AS5600. */
     SENSE_LINK_EV_ENC_SILENT    = 0x8000,
     /** The encoder answers and its magnet is missing, too weak or too
-     *  strong; see sense_link_enc_magnet().  Said once until the field
-     *  reads right, and again when a magnet that was weak or strong goes
-     *  missing or a missing one comes back weak or strong: the first takes
-     *  the angle away and the second gives it back. */
+     *  strong; see sense_link_enc_magnet().  Said once while the magnet
+     *  bits (MD, ML, MH) stay as they were said, across the set-ups an
+     *  edit on SETUP writes; said again when a bit changes -- a weak
+     *  magnet that goes missing, a missing one that comes back weak, a
+     *  weak one that reads strong -- when the field read right in between,
+     *  after the encoder was said not to answer, and after a link-up. */
     SENSE_LINK_EV_ENC_MAGNET    = 0x10000,
 };
+
+/** The events about the set-up asked, which sense_link_event_stands()
+ *  judges: what ends them is an edit on SETUP and a write the page takes. */
+#define SENSE_LINK_EV_SETUP ((uint32_t)(SENSE_LINK_EV_PINS_UNSET        \
+                                        | SENSE_LINK_EV_SAME_ADDR       \
+                                        | SENSE_LINK_EV_BUS_REFUSED     \
+                                        | SENSE_LINK_EV_I228_REFUSED    \
+                                        | SENSE_LINK_EV_I3221_REFUSED))
 
 /** The exchange sense_link_next() asks for. */
 typedef enum {
@@ -429,6 +439,22 @@ uint32_t sense_link_events(sense_link_t *s);
  * at @p now_ms.
  */
 uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms);
+
+/**
+ * Whether what @p ev, one SENSE_LINK_EV_* bit, says still holds now.  For
+ * the events about the set-up asked: SENSE_LINK_EV_PINS_UNSET and
+ * SENSE_LINK_EV_SAME_ADDR while the settings ask it; a refusal --
+ * SENSE_LINK_EV_BUS_REFUSED, _I228_REFUSED, _I3221_REFUSED -- until the
+ * page is known to hold the frame as asked: not refused, and written and
+ * taken.  A refused value stepped back on SETUP ends it once the IOmcu
+ * takes the frame; the rest and the write take SENSE_LINK_SETTLE_MS and a
+ * poll.  With no IOmcu answering a refusal stands.  True for every other
+ * event: what a read raised ends with the band's own time.
+ *
+ * The caller takes back an alert it showed for such an event once this
+ * is false; sense_link_event() drops one waiting that is over.
+ */
+bool sense_link_event_stands(const sense_link_t *s, uint32_t ev);
 
 /**
  * Put back an event sense_link_event() handed out that never reached the

@@ -242,10 +242,18 @@ bool  settings_get_bool(setting_id_t id);
 /** Clamped to the schema; enums wrap. Fires the observer when it changes.
  *  A derived setting and a held one are left as they are. */
 void settings_set(setting_id_t id, float value);
-/** Step by @p steps increments. Booleans and enums cycle.  Sensor SDA
- *  steps from one value settings_sense_sda_valid() takes to the next and
- *  stops at the first and the last. */
+/** Step by @p steps increments.  A number stops at its range's ends.
+ *  Booleans and enums cycle (settings_cycles()), except the INA228 and
+ *  INA3221 addresses, which stop at the first and the last of their list.
+ *  Sensor SDA steps from one value settings_sense_sda_valid() takes to the
+ *  next and stops at the first and the last. */
 void settings_adjust(setting_id_t id, int steps);
+
+/** Whether settings_adjust() wraps @p id round from one end to the other:
+ *  a switch or a choice, drawn with < and > keys.  False for a number and
+ *  for the monitors' addresses, which stop at their ends and are drawn
+ *  with - and + keys; false for an id out of range. */
+bool settings_cycles(setting_id_t id);
 
 /**
  * Whether Sensor SDA takes @p gpio: -1, the bus's pins not set, or an

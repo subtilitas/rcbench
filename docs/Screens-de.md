@@ -1790,8 +1790,13 @@ und am Prüfstand wird nichts versorgt.
 Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
 Baud -- steht in SETUP unter ANSCHLÜSSE. TX und RX sind GPIO-Nummern des
 IOmcu: TX geht zum DM des Moduls, RX kommt von seinem DP. Der
-IOmcu weist einen Pin ab, der reserviert, an einen Ausgang gebunden
-oder der andere Pin ist. Hat das Modul einmal geantwortet, wartet eine
+IOmcu weist einen Pin ab, der reserviert, an einen Ausgang gebunden,
+vom Sensorbus oder vom Phasenabgriff gehalten oder der andere Pin ist, und
+das Band sagt `PD-mini-Pins abgelehnt. SETUP > ANSCHLÜSSE prüfen.`: RX auf
+GP17 wird abgewiesen, solange Sensor-SDA GP16 ist, denn Sensor-SCL ist dann
+GP17. Der Alert verlässt das Band, sobald eine Lesung die Page mit der
+verlangten Verdrahtung zeigt: sofort, wenn der Pin auf den zurückgestellt
+wird, den die Page noch hält. Hat das Modul einmal geantwortet, wartet eine
 Änderung auf eine danach gesendete Zustandslesung des Moduls, höchstens etwa
 1,2 s, und wird nur übernommen, wenn diese den Ausgang aus zeigt: das Modul
 kann sich zwischen zwei Zustandslesungen selbst einschalten, über seinen
@@ -1800,7 +1805,8 @@ zum OFF. Zeigt die Lesung den Ausgang an oder schlägt sie fehl, wird die
 Änderung abgewiesen, und das Band sagt
 `PD-mini-Anschlüsse abgelehnt. Sein Ausgang kann noch eingeschaltet sein.`. Eine
 abgewiesene Änderung wird erst wieder geschrieben, wenn sich die Verdrahtung
-in SETUP ändert. PD mini Baud ist die eigene UART-Baudrate-
+in SETUP ändert; auch dieser Alert verlässt das Band, sobald eine Lesung die
+Page mit der verlangten Verdrahtung zeigt. PD mini Baud ist die eigene UART-Baudrate-
 Einstellung des Moduls: 9600, 19200 (ab Werk), 38400, 57600, 115200, 230400
 oder 460800 Baud, oder AUTO. AUTO, die Vorgabe, lässt den IOmcu sie
 finden: er versucht jede der 7 Raten, eine pro Sekunde. Die Kopfzeile von
@@ -2474,7 +2480,10 @@ gelesen.
 Die Tasten `-` und `+` einer Zeile (`<` und `>` bei einem Schalter oder einer
 Auswahl) ändern ihren Wert um einen Schritt. Ein geänderter Wert gilt sofort;
 SPEICHERN entscheidet, ob er einen Neustart übersteht
-([Werte behalten](#werte-behalten)).
+([Werte behalten](#werte-behalten)). Eine Zahl bleibt an den Enden ihres
+Bereichs stehen, ebenso INA228 Adresse und INA3221 Adresse, die Tasten `-`
+und `+` haben: 0x40 bis 0x4F und 0x40 bis 0x43. Ein Schalter oder eine
+Auswahl springt vom letzten Wert auf den ersten.
 
 - **Tippen.** Eine Taste stellt einmal, wenn der Finger abhebt. Das Abheben
   zählt, wenn es der Finger ist, der die Taste gedrückt hat, wenn er
@@ -2675,7 +2684,7 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | `Sensor-Pins GP16/GP17 abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30 s lang gezeigt oder bis zum Antippen, einmal je Änderung |
 | `INA228-Shunt oder Höchststrom abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84 mV, oder der Messbereich, den er ergibt, übersteigt 2000 A; der INA228 bleibt aus |
 | `INA3221-Einstellungen abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der INA3221 bleibt aus |
-| `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der IOmcu fand SDA auf low gehalten und taktet ihn frei |
+| `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der IOmcu fand SDA oder SCL auf low gehalten und taktet den Bus frei. Eine Leitung, die low liest, ohne dass etwas sie hält -- Pins ohne angeschlossenes Bauteil und ohne Pull-up --, ist das nicht: sie steigt innerhalb von 50 µs am eigenen Pad-Pull-up des IOmcu (32 bis 86 kΩ), und die Monitore gelten als nicht antwortend |
 | `INA228 antwortet nicht unter 0x45.` | eingeschaltet, und 2,5 s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `Ein Gerät antwortet unter 0x44.` wird angefügt, wenn der Adress-Scan des IOmcu dort etwas gefunden hat, wo das Bauteil sein könnte |
 | `0x40 meldet 1408h, kein INA3221. Gerät wird nicht verwendet.` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
 | `INA228-Strom am Messbereichsende. Anzeige zeigt nur den Grenzwert.` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Schalten auf ARMED das Ende seines Bereichs gelesen |
@@ -2690,6 +2699,19 @@ weil ein Ausgang, der PD mini oder die Platine einen davon hält, werden alle
 5 s ohne weiteren Alert erneut angeboten; einen Pin unter OUTPUTS oder
 NETZTEIL freizugeben öffnet den Bus also. Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand
 nicht auf SAFE: auf den Messwerten der Monitore löst nichts aus.
+
+Ein Alert über die Einstellung verlässt das Band, sobald seine Ursache
+vorbei ist, vor Ablauf seiner 30 s: `SDA oder SCL der Sensoren nicht
+festgelegt.` und `INA228 und INA3221 nutzen beide 0x40.` mit der Änderung,
+die die Einstellung richtigstellt, und eine Ablehnung, sobald der IOmcu den
+Frame wie verlangt hält -- sofort, wenn der Wert auf den zurückgestellt
+wird, den die Page noch hält, sonst wenn das Schreiben des neuen Werts
+übernommen ist, 500 ms nach der letzten Änderung und bei einem Prüfstand in
+SAFE (`sense_link_event_stands()`). Ein Alert, der ersetzt wurde, bevor ein
+Frame ihn zeigte, und dessen Ursache bei seinem nächsten Zug vorbei ist,
+wird nicht gezeigt. Was eine Lesung gesagt hat -- antwortet nicht, andere
+Kennung, Bereichsgrenze, blockierter Bus --, bleibt seine 30 s oder bis
+zum Antippen.
 
 #### Eine Zeile, die der IOmcu nicht hält
 
@@ -2743,10 +2765,14 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 | `AS5600: Magnetfeld zu schwach. Magnet näher heranbringen.` | STATUS MD und ML sind gesetzt. Der Winkel wird verwendet; das Datenblatt des Sensors spezifiziert sein Rauschen nur für 30 bis 90 mT |
 | `AS5600: Magnetfeld zu stark. Abstand zum Magneten vergrößern.` | STATUS MD und MH sind gesetzt. Der Winkel wird verwendet, wie bei ML |
 
-Eine Magnetmeldung wird einmal gesagt, bis das Feld wieder stimmt, und noch
-einmal, wenn ein als schwach oder stark gelesener Magnet verschwindet oder ein
-fehlender schwach oder stark zurückkommt: mit dem ersten hört der Winkel auf,
-mit dem zweiten kommt er wieder. Der DIR-Pin
+Eine Magnetmeldung wird einmal gesagt, solange die STATUS-Bits MD, ML und MH
+des Sensors bleiben, wie sie gesagt wurden, auch über die Konfigurationen
+hinweg, die eine Änderung einer anderen Zeile von ANSCHLÜSSE schreibt. Sie
+wird noch einmal gesagt, wenn sich eines der Bits ändert -- ein schwacher
+Magnet, der verschwindet, ein fehlender, der schwach zurückkommt, ein
+schwacher, der stark liest --, wenn das Feld dazwischen stimmte, wenn der
+Sensor als nicht antwortend gemeldet wurde, und nach einem Link-Aufbau. Der
+Winkel hört auf, wenn MD erlischt, und kommt wieder, wenn es gesetzt ist. Der DIR-Pin
 des Sensors bestimmt die Richtung, in der sein Zählerstand steigt; das Panel
 nimmt an, dass er mit der Pulsbreite des Servos steigt.
 
@@ -2810,6 +2836,18 @@ wie bei den Strommonitoren:
 | `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
 | `Pin GP22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt. SETUP > ANSCHLÜSSE prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5 s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
 | `Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des IOmcu ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
+
+Die drei Alerts über die Einstellung -- erster Frame abgelehnt, zweiter
+Frame abgelehnt, Pin belegt -- verlassen das Band, sobald die Ursache vorbei
+ist, vor Ablauf ihrer 30 s (`tone_link_event_stands()`): ein abgelehnter
+Frame, sobald der IOmcu ihn wie verlangt hält, sofort, wenn der Wert auf den
+zurückgestellt wird, den die Page noch hält, sonst wenn das Schreiben des
+neuen Werts 500 ms nach der letzten Änderung übernommen ist; ein belegter
+Pin, sobald ein Statuslesen den Pin als genommen zeigt oder der Abgriff
+ausgeschaltet ist und die Page ihn aus hält. Abgriff-Pause 2 ms mit Tiefster
+Ton 400 Hz wird gewollt abgelehnt: die Pause muss mindestens eine Periode
+des tiefsten Tons lang sein, 2,5 ms bei 400 Hz (`tone_init()`,
+`protocols/phase_tap/tone.c`).
 
 ### SD-KARTE: welche Logs geschrieben werden, und wohin
 

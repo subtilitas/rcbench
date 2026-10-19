@@ -513,12 +513,25 @@ void supply_pump(void)
     snap_unlock();
 }
 
+/* The last alert posted for a refused wiring, kept until the page holds
+ * the wiring asked (supply_link_event_stands()): its number (0 none) and
+ * its event.  Control task only. */
+static uint32_t s_wire_alert_gen;
+static uint16_t s_wire_alert_ev;
+
 /*
  * What the SUPPLY page said that the operator is told, and an ON it refused
- * or let go switched off here too.
+ * or let go switched off here too.  An alert for a refused wiring is taken
+ * back once the page holds the wiring asked: pins stepped back to ones it
+ * takes.
  */
 static void supply_link_alerts(void)
 {
+    if (s_wire_alert_gen != 0u
+        && !supply_link_event_stands(&s_supply_link, s_wire_alert_ev)) {
+        control_alert_withdraw(s_wire_alert_gen);
+        s_wire_alert_gen = 0u;
+    }
     const uint16_t ev = supply_link_events(&s_supply_link);
     if ((ev & (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST
                | SUPPLY_LINK_EV_TRIPPED)) != 0u) {
@@ -543,10 +556,13 @@ static void supply_link_alerts(void)
         control_alert(line);
     }
     if ((ev & SUPPLY_LINK_EV_WIRING_REFUSED) != 0u) {
-        control_alert(TR(ALERT_PDMINI_PINS));
+        s_wire_alert_gen = control_alert_numbered(TR(ALERT_PDMINI_PINS));
+        s_wire_alert_ev  = SUPPLY_LINK_EV_WIRING_REFUSED;
     }
     if ((ev & SUPPLY_LINK_EV_WIRING_LIVE) != 0u) {
-        control_alert(TR(ALERT_PDMINI_WIRING_LIVE));
+        s_wire_alert_gen = control_alert_numbered(
+            TR(ALERT_PDMINI_WIRING_LIVE));
+        s_wire_alert_ev  = SUPPLY_LINK_EV_WIRING_LIVE;
     }
     if ((ev & SUPPLY_LINK_EV_STUCK) != 0u) {
         control_alert(TR(ALERT_PDMINI_SWITCH));

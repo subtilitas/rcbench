@@ -197,6 +197,12 @@ it, and the acknowledgement carries what it stored.
 | the write is refused | ended, `The IOmcu rejected the pulse range.` | `The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.` |
 | the write is acknowledged and a throttle channel stored another pair | ended | `The IOmcu holds another pulse range. Change Idle pulse or Full pulse.` |
 
+The alert of a refused or an inverted pair leaves the band when a later
+payment finds the page holding the pair asked, or a write of it is
+acknowledged, before its 30 s are up. The same holds for `The IOmcu
+rejected the pole count.`: it leaves the band when a later pole count is
+taken.
+
 The panel asks before CLEAR, after the servo release and the frame rate,
 and writes nothing, CLEAR included; the bench stays SAFE with the outputs at
 rest. It asks again after an acknowledged CLEAR, for an edit that arrived

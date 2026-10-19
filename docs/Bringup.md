@@ -144,6 +144,17 @@ panel prints a diagnosis:
 | `answers arrive too late` | a reply slower than the poll timeout, or a stalled far end |
 | `works, and not every time` | marginal timing, or a poll period tighter than the round trip |
 
+`nack` in the panel line counts requests the IOmcu answered with a NACK
+(negative acknowledge). A NACK is an answer: the link works, and the page
+kept what it held ([Frames](Link.md#frames)). A set-up from SETUP
+INTERFACES that a page refuses is one each: one write per refused value,
+not written again until the value changes, so stepping through rows on SETUP
+counts one NACK for each value the IOmcu refuses -- Tap gap 2 ms with Tap
+lowest tone at 400 Hz, or PD mini RX on the sensor bus's SCL -- and none for
+the values it takes. A pin refused because something else holds it is
+offered again every 5 s and counts one each time. `timeouts`, `stale` and
+`crc` are the columns that count a link fault.
+
 The `crc` and `resync` columns of the IOmcu line carry the XL2515's
 receive and transmit error counters (status registers `LINK_ST_CRC_ERRORS` and
 `LINK_ST_RESYNCS`). `refused` is the count of CAN frames the IOmcu

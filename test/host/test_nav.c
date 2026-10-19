@@ -1215,6 +1215,57 @@ TEST_CASE(an_alert_clears_after_30_s_and_a_new_one_starts_again)
     CHECK(ui_router_alert() == NULL);
 }
 
+/* An alert whose cause is over goes from the band when its number is
+ * taken back -- and only while it is the alert showing: one cleared by
+ * time or a tap, or replaced by another, is not touched, nor is a held
+ * one. */
+TEST_CASE(an_alert_is_withdrawn_only_while_it_still_shows)
+{
+    fresh();
+    to_overview();
+    CHECK_EQ(ui_router_alert_number(), 0u);
+    CHECK(!ui_router_withdraw_alert(0u));
+    ui_router_set_alert("PD mini pins rejected. Check SETUP > INTERFACES.");
+    const uint32_t first = ui_router_alert_number();
+    CHECK(first != 0u);
+    CHECK(ui_router_withdraw_alert(first));
+    CHECK(ui_router_alert() == NULL);
+    CHECK_EQ(ui_router_alert_number(), 0u);
+    CHECK(!ui_router_withdraw_alert(first));        /* once */
+
+    /* The same text set again is a new alert with a new number. */
+    ui_router_set_alert("PD mini pins rejected. Check SETUP > INTERFACES.");
+    const uint32_t second = ui_router_alert_number();
+    CHECK(second != first);
+    CHECK(!ui_router_withdraw_alert(first));
+    CHECK(ui_router_alert() != NULL);
+
+    /* Replaced: the newer one stays. */
+    ui_router_set_alert("IOmcu disarmed");
+    CHECK(!ui_router_withdraw_alert(second));
+    CHECK_STR_EQ(ui_router_alert(), "IOmcu disarmed");
+
+    /* Cleared by its time, or by a tap, before it is taken back. */
+    const uint32_t third = ui_router_alert_number();
+    expire_alert();
+    CHECK_EQ(ui_router_alert_number(), 0u);
+    CHECK(!ui_router_withdraw_alert(third));
+    ui_router_set_alert("IOmcu disarmed");
+    const uint32_t fourth = ui_router_alert_number();
+    tap(400, H - 10);
+    CHECK(ui_router_alert() == NULL);
+    CHECK(!ui_router_withdraw_alert(fourth));
+
+    /* A held alert is not one to take back, and shows again beneath. */
+    ui_router_hold_alert("touch did not answer -- the bench will not arm");
+    ui_router_set_alert("Phase tap split, gap or periods rejected.");
+    CHECK(ui_router_withdraw_alert(ui_router_alert_number()));
+    CHECK_STR_EQ(ui_router_alert(),
+                 "touch did not answer -- the bench will not arm");
+    CHECK_EQ(ui_router_alert_number(), 0u);
+    ui_router_hold_alert(NULL);
+}
+
 /* The frame's interval was measured before the alert was set: a stall that
  * long must not clear the alert before it is drawn. */
 TEST_CASE(the_frame_an_alert_arrives_in_does_not_count)
@@ -3708,6 +3759,7 @@ int main(void)
     RUN(a_two_row_alert_fits_two_rows_of_the_band);
     RUN(an_alert_clears_after_30_s_and_a_new_one_starts_again);
     RUN(the_frame_an_alert_arrives_in_does_not_count);
+    RUN(an_alert_is_withdrawn_only_while_it_still_shows);
     RUN(a_second_contact_cannot_take_the_alert);
     RUN(a_held_alert_returns_after_a_passing_one);
     RUN(a_tap_on_the_alert_clears_it_and_reaches_no_screen);

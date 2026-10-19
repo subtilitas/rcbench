@@ -17,6 +17,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "gfx.h"
 #include "touch_types.h"
@@ -307,6 +308,22 @@ bool ui_router_take_stop(void);
  * screen.  Setting an alert again, even the same text, restarts its time.
  */
 void ui_router_set_alert(const char *text);
+
+/**
+ * The number of the alert ui_router_set_alert() shows now, 0 while none
+ * does.  Every call that sets one gives it the next number, so a caller
+ * that noted the number can tell whether its alert still shows: not once
+ * time or a tap cleared it or another replaced it.
+ */
+uint32_t ui_router_alert_number(void);
+
+/**
+ * Clear the alert ui_router_set_alert() shows if it is still number
+ * @p number (ui_router_alert_number()): for an alert whose cause is over
+ * before its time is.  Another alert, a held one and a number of 0 are
+ * left as they are.  True when it cleared one.
+ */
+bool ui_router_withdraw_alert(uint32_t number);
 
 /**
  * An alert that neither time nor a tap clears, or NULL to clear it: for a

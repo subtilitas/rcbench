@@ -211,7 +211,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 175 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 177 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_touch_merge`, `test_inj_line_id`, `test_inj_emu`,
 `test_nav`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
@@ -226,7 +226,7 @@ The host suite is 175 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_link_view`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fault_log`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_port`, `test_hitec_port_stop`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fault_log`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_port`, `test_hitec_port_stop`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_mdns`, `test_sense_i2c` and `test_storage`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -236,7 +236,11 @@ before the 32-bit millisecond count wraps at 2^32 ms, and a failure names
 the start it happened at. `test_outputs_hw` builds the IOmcu's output
 layer, `firmware/iomcu/src/outputs_hw.c`, over fake pin drivers and the two
 pico-sdk clocks in `test/host/pico_stub/pico/stdlib.h`, and holds the age of
-an ESC's last reading across that wrap. `test/host/guard_canvas.h`
+an ESC's last reading across that wrap. `test_sense_i2c` builds the
+IOmcu's sensor bus wire, `firmware/iomcu/src/sense_i2c.c`, over a modelled
+pair of pads in `test/host/sense_i2c_stub/`, and `test_storage` the panel's
+SD card mount, `firmware/panel/components/storage/storage.c`, over the
+ESP-IDF calls in `test/host/storage_stub/`. `test/host/guard_canvas.h`
 puts 8 guard pixels above, below and beside a canvas, so a pixel written
 off the canvas fails the plain build and not only the sanitizer one.
 `test_fuzz_engines` runs 600 random servo tests and 2400 random stick
@@ -344,7 +348,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_target_row.c` | 85 | 84 | 98.8% |
 | `shared/ui/prog_registry.c` | 388 | 385 | 99.2% |
 | `shared/ui/ui_text.c` | 93 | 92 | 98.9% |
-| `shared/ui/ui_router.c` | 337 | 331 | 98.2% |
+| `shared/ui/ui_router.c` | 346 | 339 | 98.0% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
 | `shared/ui/overview_screen.c` | 95 | 93 | 97.9% |
 | `shared/ui/motor_screen.c` | 765 | 747 | 97.7% |
@@ -369,7 +373,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/esc_stick_panel.c` | 2010 | 1909 | 95.0% |
 | `shared/ui/log_viewer_screen.c` | 1270 | 1201 | 94.6% |
 | `shared/ui/log_select.c` | 73 | 72 | 98.6% |
-| `shared/ui/settings_screen.c` | 635 | 626 | 98.6% |
+| `shared/ui/settings_screen.c` | 634 | 625 | 98.6% |
 | `shared/ui/outputs_screen.c` | 467 | 463 | 99.1% |
 | `shared/ui/outputs_port.c` | 225 | 222 | 98.7% |
 | `shared/ui/picker_screen.c` | 657 | 649 | 98.8% |
@@ -378,7 +382,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/wifi_screen.c` | 608 | 591 | 97.2% |
 | `shared/ui/coproc_update_screen.c` | 264 | 263 | 99.6% |
 | `shared/ui/upd_screen.c` | 595 | 570 | 95.8% |
-| `shared/settings/settings.c` | 315 | 308 | 97.8% |
+| `shared/settings/settings.c` | 330 | 323 | 97.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
 | `shared/logfile/log_csv.c` | 468 | 444 | 94.9% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
@@ -476,11 +480,11 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/pdmini/pdmini.c` | 292 | 288 | 98.6% |
 | `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
 | `protocols/pdmini/pdmini_jobs.c` | 254 | 252 | 99.2% |
-| `shared/bench/supply_link.c` | 295 | 285 | 96.6% |
-| `shared/bench/sense_link.c` | 587 | 563 | 95.9% |
+| `shared/bench/supply_link.c` | 303 | 293 | 96.7% |
+| `shared/bench/sense_link.c` | 615 | 593 | 96.4% |
 | `shared/bench/sense_link_view.c` | 192 | 188 | 97.9% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
-| `shared/bench/tone_link.c` | 420 | 415 | 98.8% |
+| `shared/bench/tone_link.c` | 441 | 436 | 98.9% |
 | `shared/bench/endpoints_link.c` | 80 | 80 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
@@ -511,7 +515,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **48399** | **47243** | **97.6%** |
+| **total** | **48479** | **47324** | **97.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

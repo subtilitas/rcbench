@@ -572,6 +572,34 @@ void tone_link_done(tone_link_t *t, int result, const uint16_t *regs,
     }
 }
 
+bool tone_link_event_stands(const tone_link_t *t, uint16_t ev)
+{
+    if (t == NULL) {
+        return false;
+    }
+    /* What the page holds is known: an IOmcu with the page answers and
+     * the page has been read since it came up. */
+    if (!t->up || !t->page || !t->known || !t->want_set) {
+        return true;
+    }
+    switch (ev) {
+    case TONE_LINK_EV_PIN_REFUSED:
+        return t->refused0 || frame0_differs(t);
+    case TONE_LINK_EV_SETUP_REFUSED:
+        return t->refused1 || frame1_differs(t);
+    case TONE_LINK_EV_PIN_BUSY:
+        /* Over with the tap off as asked and held, or a status read under
+         * the tap held as asked that shows its pin taken. */
+        if (t->want[LINK_TN_ENABLE] == 0u) {
+            return (t->held[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u;
+        }
+        return t->refused0 || frame0_differs(t) || !t->have_status
+               || (t->status[ST(LINK_TN_FLAGS)] & LINK_TN_PIN_REFUSED) != 0u;
+    default:
+        return true;
+    }
+}
+
 uint16_t tone_link_event(tone_link_t *t, uint32_t now_ms)
 {
     /* Most pressing first: what stops the tap being read at all, then what
@@ -588,6 +616,13 @@ uint16_t tone_link_event(tone_link_t *t, uint32_t now_ms)
     }
     for (size_t i = 0u; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
         if ((t->events & k_order[i]) != 0u) {
+            if ((k_order[i] & TONE_LINK_EV_SETUP) != 0u
+                && !tone_link_event_stands(t, k_order[i])) {
+                /* Put back from a band that never showed it, and over
+                 * since. */
+                t->events &= (uint16_t)~k_order[i];
+                continue;
+            }
             t->event_given = true;
             t->event_ms    = now_ms;
             t->events &= (uint16_t)~k_order[i];

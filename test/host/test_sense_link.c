@@ -323,6 +323,154 @@ TEST_CASE(pins_the_page_refuses_are_said_and_leave_the_parts_off)
     CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I228);
 }
 
+/* A refused frame's event stands while the value is asked, through the
+ * rest and the write of a value stepped back, and is over once the page
+ * holds the frame as asked. */
+TEST_CASE(a_part_refusal_stands_until_the_page_takes_the_frame)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i228_uohm = 20000u;
+    w.i228_max_da = 3000u;                  /* 6 V across the shunt */
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_I228_REFUSED);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
+    polls(40);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
+    /* Stepped to a range the shunt can read, 8.0 A for 160 mV: owed,
+     * resting, then written. */
+    w.i228_max_da = 80u;
+    want(&w);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
+    polls(9);                               /* 450 ms of the rest */
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
+    polls(2);
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I228);
+    CHECK_EQ(pg.sense[LINK_SN_I228_MAX_DA], 80u);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
+    CHECK_EQ(sense_link_unheld(&sl), 0u);
+    /* Stepped back to the values the page still holds: over at once. */
+    w.i228_max_da = 3000u;
+    want(&w);
+    polls(14);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
+    w.i228_max_da = 80u;
+    want(&w);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
+    /* Not while the bank drives: the write waits, the refusal stands. */
+    w.i3221 = true;
+    w.i3221_dmohm = 50u;
+    want(&w);
+    idle = false;
+    polls(20);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I3221_REFUSED));
+    idle = true;
+    polls(14);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_I3221_REFUSED));
+    /* With no IOmcu answering, a refusal stands. */
+    sense_link_lost(&sl);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_BUS_REFUSED));
+    CHECK(!sense_link_event_stands(NULL, SENSE_LINK_EV_I228_REFUSED));
+}
+
+TEST_CASE(a_pin_refusal_is_over_once_the_page_holds_the_pins_asked)
+{
+    fresh(7u);
+    polls(2);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.sda = 2;                              /* GP3, the heartbeat, is SCL */
+    w.scl = 3;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_BUS_REFUSED);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_BUS_REFUSED));
+    /* Back to GP16: over once the bus frame is taken. */
+    w.sda = 16;
+    w.scl = 17;
+    want(&w);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_BUS_REFUSED));
+    polls(14);
+    CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 16u);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_BUS_REFUSED));
+    /* A frame the page refuses when it lets go of nothing: stands. */
+    w.sda = 5;
+    w.scl = 6;
+    want(&w);
+    polls(14);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_BUS_REFUSED));
+}
+
+TEST_CASE(unset_pins_and_one_address_are_over_with_the_edit)
+{
+    fresh(9u);
+    sense_setup_t w = setup_default();
+    w.as5600 = true;
+    w.sda = -1;
+    want(&w);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_PINS_UNSET));
+    w.sda = 16;
+    want(&w);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_PINS_UNSET));
+    /* Unset pins with nothing enabled ask nothing. */
+    w.as5600 = false;
+    w.sda = -1;
+    want(&w);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_PINS_UNSET));
+
+    w.sda = 16;
+    w.i228 = true;
+    w.i3221 = true;
+    w.i228_addr = 0x40u;
+    want(&w);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_SAME_ADDR));
+    w.i228_addr = 0x45u;
+    want(&w);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_SAME_ADDR));
+    /* One part off: two addresses alike are no clash. */
+    w.i228_addr = 0x40u;
+    w.i3221 = false;
+    want(&w);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_SAME_ADDR));
+    /* Events not about the set-up are left to the band. */
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_STUCK));
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_ENC_MAGNET));
+}
+
+/* A refusal handed out, put back by a band another alert took first, and
+ * over before its next turn: not handed out again. */
+TEST_CASE(a_refusal_put_back_and_over_is_not_handed_out)
+{
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i228_uohm = 20000u;
+    w.i228_max_da = 3000u;
+    want(&w);
+    polls(14);
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_I228_REFUSED);
+    w.i228_uohm = 200u;
+    w.i228_max_da = 2048u;
+    want(&w);
+    polls(14);
+    sense_link_event_back(&sl, SENSE_LINK_EV_I228_REFUSED);
+    CHECK_EQ(sense_link_event(&sl, now + SENSE_LINK_EVENT_GAP_MS), 0u);
+    /* Put back while it stands: handed out again. */
+    w.i228_uohm = 20000u;
+    w.i228_max_da = 3000u;
+    want(&w);
+    polls(14);
+    const uint32_t t = now + SENSE_LINK_EVENT_GAP_MS;
+    CHECK_EQ(sense_link_event(&sl, t), SENSE_LINK_EV_I228_REFUSED);
+    sense_link_event_back(&sl, SENSE_LINK_EV_I228_REFUSED);
+    CHECK_EQ(sense_link_event(&sl, t + SENSE_LINK_EVENT_GAP_MS),
+             SENSE_LINK_EV_I228_REFUSED);
+}
+
 TEST_CASE(one_address_for_both_monitors_keeps_the_encoder_enabled)
 {
     fresh(9u);
@@ -862,6 +1010,10 @@ int main(void)
     RUN(two_parts_swap_addresses_without_meeting);
     RUN(a_refused_frame_is_not_written_again_and_its_part_stays_off);
     RUN(pins_the_page_refuses_are_said_and_leave_the_parts_off);
+    RUN(a_part_refusal_stands_until_the_page_takes_the_frame);
+    RUN(a_pin_refusal_is_over_once_the_page_holds_the_pins_asked);
+    RUN(unset_pins_and_one_address_are_over_with_the_edit);
+    RUN(a_refusal_put_back_and_over_is_not_handed_out);
     RUN(one_address_for_both_monitors_keeps_the_encoder_enabled);
     RUN(unset_pins_and_one_address_are_not_written_enabled);
     RUN(a_waiting_refusal_goes_with_the_value_it_refused);

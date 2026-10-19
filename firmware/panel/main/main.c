@@ -388,6 +388,19 @@ uint32_t control_alert_numbered(const char *text)
     return gen;
 }
 
+void control_alert_withdraw(uint32_t gen)
+{
+    if (gen == 0u) {
+        return;
+    }
+    snap_lock();
+    if (s_snap.alert_pending && s_snap.alert_gen == gen) {
+        s_snap.alert_pending = false;       /* never shown */
+    }
+    s_snap.alert_withdrawn = gen;
+    snap_unlock();
+}
+
 /*
  * The safety loop's own state, at file scope because control_pump() services
  * it from inside a link exchange as well as from the top of the control task.
@@ -2257,15 +2270,28 @@ void app_main(void)
         mcu_temp_c  = s_snap.mcu_temp_c;
         run_seconds = s_snap.run_seconds;
         have_alert  = s_snap.alert_pending;
+        const uint32_t alert_gen = s_snap.alert_gen;
+        const uint32_t withdrawn = s_snap.alert_withdrawn;
         if (have_alert) {
             snprintf(alert, sizeof(alert), "%s", s_snap.alert);
             s_snap.alert_pending = false;
-            s_snap.alert_taken   = s_snap.alert_gen;
+            s_snap.alert_taken   = alert_gen;
         }
         snap_unlock();
 
+        /* The control task's alert on the band: its number there, and the
+         * band's, so one the control task takes back is cleared only while
+         * the band still shows it. */
+        static uint32_t s_band_ctl;
+        static uint32_t s_band_num;
         if (have_alert) {
             ui_router_set_alert(alert);
+            s_band_ctl = alert_gen;
+            s_band_num = ui_router_alert_number();
+        }
+        if (withdrawn != 0u && withdrawn == s_band_ctl) {
+            (void)ui_router_withdraw_alert(s_band_num);
+            s_band_ctl = 0u;
         }
         /* A servo test ends when the link goes. */
         servo_screen_set_link(link_up);
