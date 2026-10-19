@@ -69,11 +69,11 @@ function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = (
     settings[line - 1] = `        "key", "Name", "Help", "GPIO",`;
     settings[line] = `        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, ${def}, NULL, 0 },`;
   };
-  entry(161, 'SET_SENSE_SDA', 16);
-  entry(164, 'SET_SENSE_SCL', 17);
-  entry(191, 'SET_TONE_PIN', 22);
-  entry(226, 'SET_PDMINI_TX', -1);
-  entry(229, 'SET_PDMINI_RX', -1);
+  entry(162, 'SET_SENSE_SDA', 16);
+  entry(165, 'SET_SENSE_SCL', 17);
+  entry(192, 'SET_TONE_PIN', 22);
+  entry(227, 'SET_PDMINI_TX', -1);
+  entry(230, 'SET_PDMINI_RX', -1);
 
   const iomcu = filler();
   iomcu[41] = '#define IOMCU_HEARTBEAT_PIN  3';
@@ -830,47 +830,46 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
   const tree = fakeTree(CATALOGUE);
   const moved = copy();
   const at = (line: number): Catalogue['functions'][number]['src'] => (
-    { kind: 'repo', path: 'docs/Building.md', line, tag: TAG }
+    { kind: 'repo', path: 'docs/FirstRun.md', line, tag: TAG }
   );
 
   // A line that is present and holds another row: no text is named for it.
-  moved.functions[SERVO]!.src = at(122);
-  reports(checkSrc(moved, tree).findings, 'function.servo', /Building\.md:122 names no text of 4 characters or more/);
-  reports(checkSrc(moved, null).findings, 'function.servo', /Building\.md:122 names no text/);
+  moved.functions[SERVO]!.src = at(563);
+  reports(checkSrc(moved, tree).findings, 'function.servo', /FirstRun\.md:563 names no text of 4 characters or more/);
+  reports(checkSrc(moved, null).findings, 'function.servo', /FirstRun\.md:563 names no text/);
   reports(checkAll(moved, tree, true).findings, 'function.servo', /names no text/);
 
   // A named text that the line does not hold.
-  const wrong = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 122, has: '| PGO | GND |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /Building\.md:122 does not hold "\| PGO \| GND \|" at v0\.20\.0/);
+  const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 563, has: '| SDA | GP16 (pad 21) |' }];
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:563 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.21\.0/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
 
   // Every text named for the line is compared.
   const rows = fakeTree(CATALOGUE, (files) => {
-    lines(files, 'docs/Building.md')[121] = '|  DIR |   GND or VCC, never open |';
+    lines(files, 'docs/FirstRun.md')[562] = '|  INA3221 power |   3V3 (pad 36), GND |';
   });
-  const dir = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 122, has: '| DIR | GND or VCC' }];
-  assert.deepEqual(checkSrc(moved, rows, dir).findings, []);
-  reports(checkSrc(moved, rows, [...dir, ...wrong]).findings, 'function.servo', /does not hold "\| PGO/);
+  const power = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 563, has: '| INA3221 power | 3V3' }];
+  assert.deepEqual(checkSrc(moved, rows, power).findings, []);
+  reports(checkSrc(moved, rows, [...power, ...wrong]).findings, 'function.servo', /does not hold "\| SDA/);
 
   // A text under the shortest length names nothing.
   assert.equal(ANCHOR_TEXT_MIN, 4);
-  const short = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 122, has: ' |  D ' }];
+  const short = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 563, has: ' |  I ' }];
   reports(checkSrc(moved, rows, short).findings, 'function.servo', /names no text/);
-  const none = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 122 } as { path: string; line: number; has: string }];
+  const none = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 563 } as { path: string; line: number; has: string }];
   reports(checkSrc(moved, rows, none).findings, 'function.servo', /names no text/);
 
   // A row of the data moved off its line in the tree.
   const shifted = fakeTree(CATALOGUE, (files) => {
-    const doc = lines(files, 'docs/Building.md');
-    doc.splice(121, 0, '| DIR | GND or VCC, never open |');
+    const doc = lines(files, 'docs/FirstRun.md');
+    doc.splice(562, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'part.as5600.GPO', /Building\.md:123 does not hold "\| PGO \| GND \|"/);
-  reports(found, 'part.as5600.OUT', /Building\.md:124 does not hold/);
-  reports(found, 'wire.54', /Building\.md:123 does not hold/);
-  reports(found, 'check.as5600-board', /Building\.md:123 does not hold/);
+  reports(found, 'wire.26', /FirstRun\.md:564 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
+  reports(found, 'wire.27', /FirstRun\.md:565 does not hold/);
+  reports(found, 'check.ina3221-pullups', /FirstRun\.md:566 does not hold/);
 });
 
 test('src: every repository anchor of the data names a text of its own', () => {
@@ -881,18 +880,21 @@ test('src: every repository anchor of the data names a text of its own', () => {
     assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
     assert.ok(Object.isFrozen(text));
   }
-  // The AS5600 rows of docs/Building.md at the tag: 122 DIR, 123 PGO, 124 OUT.
+  // The sensor bus rows of docs/FirstRun.md at the tag: 564 SDA, 565 SCL,
+  // 566 the pull-ups.
+  const sda = CATALOGUE.wires.find((w) => w.n === 26)?.src;
+  const scl = CATALOGUE.wires.find((w) => w.n === 27)?.src;
+  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 564, tag: TAG });
+  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 565, tag: TAG });
+  const pullups = CATALOGUE.checks.find((k) => k.id === 'ina3221-pullups')?.src;
+  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 566, tag: TAG });
+  // The AS5600 board's OUT and GPO have no repository source at the tag:
+  // docs/Building.md describes the panel's knob, an MT6701, since 0.21.0.
   const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
-  const line = (pin: string): number | null => {
-    const src = as5600?.pins.find((p) => p.id === pin)?.src;
-    return src?.kind === 'repo' ? src.line : null;
-  };
-  assert.equal(line('GPO'), 123);
-  assert.equal(line('OUT'), 124);
-  const strap = CATALOGUE.wires.find((w) => w.n === 54)?.src;
-  assert.deepEqual(strap, { kind: 'repo', path: 'docs/Building.md', line: 123, tag: TAG });
-  const board = CATALOGUE.checks.find((k) => k.id === 'as5600-board')?.src;
-  assert.deepEqual(board, strap);
+  for (const pin of ['OUT', 'GPO']) {
+    assert.deepEqual(as5600?.pins.find((p) => p.id === pin)?.src, { kind: 'guide', section: 'stage-4' });
+  }
+  assert.ok(!ANCHOR_TEXTS.some((x) => x.path === 'docs/Building.md'));
 });
 
 test('src: guide, photo and page rules', () => {
@@ -995,41 +997,41 @@ test('tree: a data file that is stale against the firmware tables is reported', 
 
   // The firmware reserves GP5, the ESC signal pin of the data.
   const reservedNow = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[37] = '    { 5, 7, true, "tacho" },';
+    lines(files, OUT_BIND)[38] = '    { 5, 7, true, "tacho" },';
   });
   reports(checkTree(CATALOGUE, reservedNow), 'pad.7', /reserves GP5/);
 
   // The firmware frees a pad the data marks reserved.
   const freed = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[40] = '    { 8, 11, false, NULL },';
+    lines(files, OUT_BIND)[41] = '    { 8, 11, false, NULL },';
   });
   reports(checkTree(CATALOGUE, freed), 'pad.11', /does not reserve GP8/);
 
   // A pad carries another GPIO.
   const moved = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[32] = '    { 23, 1, false, NULL },';
+    lines(files, OUT_BIND)[33] = '    { 23, 1, false, NULL },';
   });
   reports(checkTree(CATALOGUE, moved), 'pad.1', /GP0 in the data and GP23/);
 
   // A row moves by one line: the anchor of the data is stale.
   const shifted = fakeTree(CATALOGUE, (files) => {
     const text = lines(files, OUT_BIND);
-    text[59] = text[32]!;
-    text[32] = '/* text */';
+    text[60] = text[33]!;
+    text[33] = '/* text */';
   });
   reports(checkTree(CATALOGUE, shifted), 'pad.1', /not the row of this pad/);
 
   // A row is gone.
   const gone = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[57] = '/* text */';
+    lines(files, OUT_BIND)[58] = '/* text */';
   });
   reports(checkTree(CATALOGUE, gone), 'pad.34', /no GPIO on this pad/);
   reports(checkTree(CATALOGUE, gone), 'pads', /lists 39 pads/);
 
   // A ground pad is a power pad, and a named pad has another name.
   const power = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[85] = '    { 3, LINK_PAD_POWER, 50 },';
-    lines(files, OUT_BIND)[98] = '    { 40, LINK_PAD_POWER, 50 },   /* VUSB */';
+    lines(files, OUT_BIND)[86] = '    { 3, LINK_PAD_POWER, 50 },';
+    lines(files, OUT_BIND)[99] = '    { 40, LINK_PAD_POWER, 50 },   /* VUSB */';
   });
   reports(checkTree(CATALOGUE, power), 'pad.3', /ground/);
   reports(checkTree(CATALOGUE, power), 'pad.40', /VBUS in the data and VUSB/);
@@ -1049,18 +1051,18 @@ test('tree: a data file that is stale against the firmware tables is reported', 
 
 test('tree: stale pin defaults are reported', () => {
   const sda = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[161] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+    lines(files, SETTINGS)[162] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, sda), 'pin.sda', /GP16 in the data and 18/);
 
   // The firmware has a default for a pin the data calls a proposal.
   const pd = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[226] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
+    lines(files, SETTINGS)[227] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, pd), 'pin.pd_tx', /proposal in the data/);
 
   const renamed = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[189] = '    [SET_TAP_PIN] = {';
+    lines(files, SETTINGS)[190] = '    [SET_TAP_PIN] = {';
   });
   reports(checkTree(CATALOGUE, renamed), 'pin.tap', /no SET_TONE_PIN/);
 
@@ -1080,10 +1082,10 @@ test('tree: stale pin defaults are reported', () => {
 });
 
 test('tree: a newer release tag is a warning, not an error', () => {
-  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.21.0' };
+  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.22.0' };
   const findings = checkTree(CATALOGUE, tree);
   assert.deepEqual(findings, [
-    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.21.0` },
+    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.22.0` },
   ]);
   assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: null }), []);
 });
@@ -1111,8 +1113,8 @@ test('counts: a missing safety note, stage or pad is reported', () => {
   reports(checkCounts(gpio), 'pads', /GP1 is on two pads/);
 
   const release = copy();
-  release.release = '0.21.0';
-  reports(checkCounts(release), 'release', /0\.21\.0/);
+  release.release = '0.22.0';
+  reports(checkCounts(release), 'release', /0\.22\.0/);
   release.release = 'next';
   reports(checkCounts(release), 'release', /version number/);
 
@@ -1202,9 +1204,9 @@ test('a catalogue with a missing table gives findings, not an exception', () => 
   assert.ok(report.findings.some((f) => f.level === 'error' && /check stopped/.test(f.msg)));
 });
 
-test('the German catalogue texts use the glossary words, not Servohorn, Frame-Rate or Töne for beeps', () => {
+test('the German catalogue texts use the glossary words, not Servohorn, Frame Rate or Töne for beeps', () => {
   const source = readFileSync(fileURLToPath(new URL('../catalogue.ts', import.meta.url)), 'utf8');
-  assert.doesNotMatch(source, /Servohorn|Frame-Rate|\bTöne\b/);
+  assert.doesNotMatch(source, /Servohorn|Frame[- ]Rate|\bTöne\b/);
   assert.match(source, /Ruderhorns/);
   assert.match(source, /Pieptöne/);
 });

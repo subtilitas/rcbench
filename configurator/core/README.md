@@ -4,8 +4,8 @@ The core of the rcbench bench configurator: one data file, one resolver and the
 checks on both. It has no runtime dependency and no build step. Node.js 24 runs
 the TypeScript files directly.
 
-The data describes release 0.20.0. Every record carries a source: a file and
-line at the tag `v0.20.0`, a section of the build guide, a photo taken for
+The data describes release 0.21.0. Every record carries a source: a file and
+line at the tag `v0.21.0`, a section of the build guide, a photo taken for
 the build guide, or a dated statement of the project owner. A fact that no source confirms is marked as unknown in the
 data and is not asserted.
 
@@ -97,8 +97,9 @@ and the hash holds no token for it: the function `servoprog` forces `prog`.
 With `outputs` the servo signal is wire 7, from pad 4 (GP2), a slot of
 SETUP → OUTPUTS. With `prog` it is wire 64, from pad 17 (GP13), the
 programming port of the IOmcu (`PROG_PORT_DEFAULT_PIN` in
-`shared/outputs/include/prog_port.h`), and SETTINGS → DUT → PWM TARGET is
-PROG PORT, so the other servo functions drive the same pin. The servo
+`shared/outputs/include/prog_port.h`), and SERVO TESTER on the PROG PORT
+entry of SETUP → OUTPUTS is PROG PORT, so the other servo functions drive
+the same pin. The servo
 programmer needs the panel and the IOmcu alone. With the PD mini, the
 PD mini feeds the servo and CONNECT sets its voltage, 4.8 to 6.0 V or up to
 8.4 V with HV SERVO on, and its current limit, 50 to 3000 mA. Without it the servo takes the supply that
@@ -180,7 +181,7 @@ its parts stay or leave, and in `objectsOut` the test objects that leave.
 Run from `configurator/core` with Node.js 24.
 
 ```sh
-npm run check                 # static checks; the tree at v0.20.0 is read when git and the tag are present
+npm run check                 # static checks; the tree at v0.21.0 is read when git and the tag are present
 npm run check -- --strict     # as above; fails when git or the tag is absent
 npm run check -- --wires      # prints the wire table as Markdown
 npm test                      # the test suite
@@ -192,7 +193,7 @@ Exit codes of `check`: 0 no error, 1 at least one error, 2 unknown argument.
 A warning does not change the exit code. Exit codes of `coverage`: 0 figure
 current or written, 1 drift or a failing suite, 2 unknown argument.
 
-`--strict` needs the tag `v0.20.0` in the clone. A shallow clone without tags
+`--strict` needs the tag `v0.21.0` in the clone. A shallow clone without tags
 fails it.
 
 The type check needs the TypeScript compiler and the Node.js type
@@ -291,7 +292,7 @@ run of white space read as one space. The texts are the export `ANCHOR_TEXTS`;
 they are not part of `CATALOGUE`. Build guide sections, photos and owner
 statements are checked by id, number and date only.
 
-A release tag newer than `v0.20.0` is a warning. `tools/check-annotate.sh`
+A release tag newer than `v0.21.0` is a warning. `tools/check-annotate.sh`
 runs the check and shows each warning as an annotation and in the summary of
 the run. The Configurator workflow runs it and fails on an error. The Release
 workflow runs it with `--warn-only` on every tag push: an error is a warning
@@ -416,7 +417,7 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 
 ## Unknown in the data
 
-- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.20.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
+- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.21.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
 - Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
@@ -429,5 +430,5 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 - DC jack of the Osoyoo breakout board: no reverse-polarity protection. A centre-negative plug puts the reverse voltage through the switch OFF/ON on the input of the XL1509 converter. The SI2302 (Q3) protects the VIN terminal and H4 only.
 - DC jack of the Osoyoo breakout board, plug size: the product page names the socket DC005-2.1. The 2.1 mm pin follows from that name. The 5.5 mm outer diameter is the usual size of that socket family; no vendor source states it.
 - SI2302 (Q3) of the Osoyoo breakout board above 12 V: its gate sits at PWRIN through R7 with no clamp and its source at GND (schematic REV 1.0), so its gate-source voltage is the input voltage at every input. The datasheet linked on the product page rates the gate-source voltage at ±12 V (absolute maximum). Above 12 V Q3 is outside that rating; the print of 16 V and the vendor limit of 18 V are above it. The data keeps the range at 7 to 12 V.
-- ESC STICK programming: `docs/StickProgramming.md` at `v0.20.0` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
+- ESC STICK programming: `docs/StickProgramming.md` at `v0.21.0` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
 - 9 check entries of kind `unknown` state each open point in the text of a setup.

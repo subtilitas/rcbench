@@ -78,10 +78,10 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
     assert.doesNotMatch(text.de, stateDe, text.de);
   }
   // German: one word per English term, as the glossary of docs/Language-de.md and the German docs name it: Log,
-  // Netzteil, Piepton, Ruderhorn, Lastwiderstand, and Frame Rate stays English.
+  // Netzteil, Piepton, Ruderhorn, Lastwiderstand, and Pulsrate for the frame rate, as the German panel shows it.
   const names = CATALOGUE.functions.filter((fn) => TICKED.includes(fn.id)).map((fn) => fn.name.de);
   for (const text of [...Object.values(FUNCTION_HELP).map((x) => x!.de), ...parts.map((x) => x.de), ...names]) {
-    assert.doesNotMatch(text, /Protokoll|Ausgang der Versorgung|Töne|Servohorn|Widerstandslast|Frame-Rate/, text);
+    assert.doesNotMatch(text, /Protokoll|Ausgang der Versorgung|Töne|Servohorn|Widerstandslast|Frame[- ]Rate/, text);
   }
   assert.doesNotMatch(help('esc').de, /Leistung/);
   // The emergency stop breaks no power line, and the IOmcu switches the PD mini off.
@@ -168,6 +168,6 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
   const de = read('shared/ui/ui_text_de.c');
   const label = (key: string): string => new RegExp(`\\[${key}\\]\\s*=\\s*"([^"]+)"`).exec(de)![1]!;
   const controls = ['TX_SV_ROW_TRIM', 'TX_SV_ROW_TRAVEL', 'TX_SV_ROW_REVERSE'].map(label);
-  assert.deepEqual(controls, ['TRIM', 'WEG', 'REVERSE']);
+  assert.deepEqual(controls, ['TRIMMUNG', 'WEG', 'UMKEHREN']);
   assert.match(help('servo').de, new RegExp(`Pulsbreite, ${controls[0]}, ${controls[1]} und ${controls[2]},`));
 });
