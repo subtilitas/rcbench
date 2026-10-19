@@ -4,7 +4,7 @@
  * UPDATES (SCREEN_UPDATES, from SETUP): CHECK FOR UPDATES asks GitHub once
  * which release is the newest, over the home network the panel keeps; the
  * answer stays on the screen.  REMINDER AT START switches the start-up
- * check on and off (SET_UPD_REMIND).  RELEASES switches between USABLE and
+ * check on and off (SET_UPD_REMIND).  RELEASES switches between STABLE and
  * TESTING (SET_UPD_CHANNEL): which releases a check looks at; the
  * application drops a result found on the other channel from the view.
  * When a newer release was found, HOLD 2 s: DOWNLOAD & INSTALL fetches and

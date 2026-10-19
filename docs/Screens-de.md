@@ -3031,7 +3031,7 @@ pro Start des Panels.
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
 | `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
-| `RELEASES: USABLE` / `TESTING` | Legt fest, welche Releases eine Suche anbietet ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `USABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
+| `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche anbietet ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
 | `2 s HALTEN: LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
 | `2 s HALTEN: IOMCU AKTUALISIEREN` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 
@@ -3053,8 +3053,8 @@ Platinenzeichnung geladen oder gespeichert wird.
 ### Die Suche
 
 Die Nummer eines Release nennt seine Art. Eine ungerade Minor-Nummer ist ein
-Test-Release, auf GitHub als Pre-Release veröffentlicht (0.21.x). Eine
-gerade Minor-Nummer ist ein nutzbares Release (0.22.x).
+Testing-Release, auf GitHub als Pre-Release veröffentlicht (0.21.x). Eine
+gerade Minor-Nummer ist ein Stable-Release (0.22.x).
 
 Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP
 über Transport Layer Security) und liest den Tag des neuesten Release aus
@@ -3062,13 +3062,13 @@ der Antwort. RELEASES legt die Anfrage fest:
 
 | RELEASES | Anfrage | Was gelesen wird |
 | --- | --- | --- |
-| `USABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | Der `Location`-Header des Redirects, der den Tag nennt (`.../releases/tag/v0.20.0`). Den Body liest das Panel nicht. Das Latest-Release von GitHub ist nie ein Pre-Release. |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Test oder nutzbar. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
+| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | Der `Location`-Header des Redirects, der den Tag nennt (`.../releases/tag/v0.20.0`). Den Body liest das Panel nicht. Das Latest-Release von GitHub ist nie ein Pre-Release. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
 
 Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen
 höchstens 30 s. In beiden Einstellungen wird nur ein Release angeboten, das
-neuer als der laufende Build ist: einem Panel mit Test-Release 0.21.0 und
-`USABLE` wird das nutzbare Release 0.20.0 nicht angeboten.
+neuer als der laufende Build ist: einem Panel mit Testing-Release 0.21.0 und
+`STABLE` wird das Stable-Release 0.20.0 nicht angeboten.
 
 Aktuelle Einschränkungen von `TESTING`: GitHub beantwortet ohne Konto 60
 API-Anfragen pro Stunde und öffentlicher IP-Adresse (Internet Protocol), und
@@ -3085,7 +3085,7 @@ Karte bis zur nächsten Suche:
 
 ![Ein neueres Release](img/de/updates-newer.png)
 ![Aktuell](img/de/updates-current.png)
-![Ein Test-Release, gefunden mit RELEASES auf TESTING](img/de/updates-testing.png)
+![Ein Testing-Release, gefunden mit RELEASES auf TESTING](img/de/updates-testing.png)
 
 | Karte | Bedeutung |
 | --- | --- |
@@ -3094,10 +3094,10 @@ Karte bis zur nächsten Suche:
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf WI-FI. |
 | `Keine Antwort innerhalb von 30 s.` | Die 30 s sind abgelaufen. |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
-| `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine andere Antwort als ein Redirect (`USABLE`) oder als 200 (`TESTING`). |
+| `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine andere Antwort als ein Redirect (`STABLE`) oder als 200 (`TESTING`). |
 | `GitHub-Anfragelimit erreicht: HTTP 403.` und `GitHub erlaubt 60 API-Anfragen pro Stunde und Adresse.` | `TESTING`: GitHub antwortete mit 403 oder 429, seinem Limit für Anfragen ohne Konto. |
 | `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` und `Neuestes Release auf GitHub: 0.21.0.` | Die Version des laufenden Builds ist nicht lesbar. Kein Release wird angeboten. |
-| `Unerwartete Antwort von GitHub.` | Der `Location`-Header (`USABLE`) oder die Antwort der API (`TESTING`) fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabellen unten). |
+| `Unerwartete Antwort von GitHub.` | Der `Location`-Header (`STABLE`) oder die Antwort der API (`TESTING`) fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabellen unten). |
 | `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang ein.`, `...: Aufzeichnungslauf gestartet.`, `...: STOP.` | Die Suche endete deshalb. |
 | `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` | WI-FI wurde geöffnet. |
 | `Abgebrochen: IOmcu-Update gestartet.` | Das Update des IOmcu begann. |

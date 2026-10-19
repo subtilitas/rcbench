@@ -1458,7 +1458,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UPD_CHECK]              = "NACH UPDATES SUCHEN",
     [TX_UPD_REMIND_ON]          = "ERINNERUNG BEIM START: EIN",
     [TX_UPD_REMIND_OFF]         = "ERINNERUNG BEIM START: AUS",
-    [TX_UPD_CHAN_USABLE]        = "RELEASES: USABLE",
+    [TX_UPD_CHAN_STABLE]        = "RELEASES: STABLE",
     [TX_UPD_CHAN_TESTING]       = "RELEASES: TESTING",
     [TX_UPD_HOLD_DL]            = "2 s HALTEN: LADEN & INSTALLIEREN",
     [TX_UPD_KEEP_NET]           = "Speichere ein Netzwerk unter SETUP > WI-FI.",
@@ -1479,7 +1479,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UPD_CU_INSTALL]         = "Wartet: Die Installation der Panel-Firmware läuft.",
     [TX_UPD_ABOUT_1]            = "Mit Erinnerung prüft das Panel beim Start auf GitHub.",
     [TX_UPD_ABOUT_2]            = "WLAN bleibt dabei höchstens 30 s eingeschaltet.",
-    [TX_UPD_ABOUT_3]            = "TESTING bietet auch Test-Releases an: ungerade Minor-Nummern.",
+    [TX_UPD_ABOUT_3]            = "TESTING bietet auch Testing-Releases an: ungerade Minor-Nummern.",
     [TX_UPD_ASKING]             = "GitHub wird geprüft.",
     [TX_UPD_LEFT]               = "noch %u s",
     [TX_UPD_NEWER]              = "Version %s ist verfügbar.",
@@ -1736,7 +1736,7 @@ static const char *const k_help[SETTING_COUNT] = {
     [SET_STICK_THRESHOLD]     = "Über dem Ruhestrom: ein Piepton",
     [SET_STICK_HYST]          = "Unter der Schwelle minus diesem Wert: Stille",
     [SET_UPD_REMIND]          = "Beim Start des Panels GitHub nach einem neueren Release fragen",
-    [SET_UPD_CHANNEL]         = "USABLE bietet nur nutzbare Releases an, TESTING auch Test-Releases",
+    [SET_UPD_CHANNEL]         = "STABLE bietet nur Stable-Releases an, TESTING auch Testing-Releases",
 };
 
 static const char *const k_theme[]  = { "DUNKEL", "HELL" };

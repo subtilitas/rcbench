@@ -14,7 +14,7 @@ UPDATES asks GitHub which panel firmware release is the newest and installs it. 
 |---|---|
 | CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs |
 | REMINDER AT START: ON / OFF | switches the check at start and its reminder; kept with SAVE on [Setup](setup.md#keeping-the-values); on by default |
-| RELEASES: USABLE / TESTING | sets which releases a check offers, see [The check](#the-check); kept with SAVE on [Setup](setup.md#keeping-the-values); USABLE by default; a switch hides the last result, and a release found on the other setting is not offered |
+| RELEASES: STABLE / TESTING | sets which releases a check offers, see [The check](#the-check); kept with SAVE on [Setup](setup.md#keeping-the-values); STABLE by default; a switch hides the last result, and a release found on the other setting is not offered |
 | HOLD 2 s: DOWNLOAD & INSTALL | shown once a check found a newer release; downloads, checks and installs it |
 | HOLD 2 s: UPDATE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
 
@@ -32,16 +32,16 @@ The download also needs no board drawing being fetched or kept.
 
 ![A check under way](view:updates-checking)
 
-An odd minor number is a testing release, published on GitHub as a pre-release (0.21.x). An even minor number is a usable release (0.22.x).
+An odd minor number is a testing release, published on GitHub as a pre-release (0.21.x). An even minor number is a stable release (0.22.x).
 
 The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Security) request and reads the newest release's tag from the answer. Then the radio goes off. The join, the address and the request take 30 s at most, together. The card shows the step and the seconds left.
 
 | RELEASES | Request | What is read |
 |---|---|---|
-| USABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | the tag from the `Location` header of the answer; GitHub's latest release is never a pre-release |
-| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` of each of the 10 newest releases by date, testing or usable, from the JSON (JavaScript Object Notation) answer; the highest version among those that are no draft is taken, whatever their order; read in pieces of 4096 bytes, 262,144 bytes at most, and not stored; one release out of form refuses the whole answer |
+| STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | the tag from the `Location` header of the answer; GitHub's latest release is never a pre-release |
+| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` of each of the 10 newest releases by date, testing or stable, from the JSON (JavaScript Object Notation) answer; the highest version among those that are no draft is taken, whatever their order; read in pieces of 4096 bytes, 262,144 bytes at most, and not stored; one release out of form refuses the whole answer |
 
-On both settings only a release newer than the running build is offered. A panel on testing release 0.21.0 with USABLE is not offered usable release 0.20.0.
+On both settings only a release newer than the running build is offered. A panel on testing release 0.21.0 with STABLE is not offered stable release 0.20.0.
 
 ![A newer release](view:updates-newer)
 ![Up to date](view:updates-current)

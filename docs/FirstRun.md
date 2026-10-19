@@ -65,7 +65,7 @@ image over CAN from the panel.
 
 0.21.0 is a testing release ([Building: Releases](Building.md#releases)).
 A 0.20.0 panel's CHECK FOR UPDATES reads `releases/latest`, which names the
-newest usable release, and does not offer 0.21.0; the panel takes it as an
+newest stable release, and does not offer 0.21.0; the panel takes it as an
 upload on its browser page ([From 0.20.0](#from-0200)).
 
 ### From the release assets

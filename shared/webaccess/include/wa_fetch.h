@@ -7,7 +7,7 @@
  *
  *   CHECK     join, then one HTTPS (HTTP over TLS, transport layer
  *             security) GET for the newest release of the job's channel.
- *             USABLE: FW_REL_LATEST_URL, whose redirect's Location names
+ *             STABLE: FW_REL_LATEST_URL, whose redirect's Location names
  *             it (fw_release_parse_tag()).  TESTING: FW_REL_API_URL with
  *             GitHub's API headers, whose answer's 10 newest releases by
  *             date name it, the highest version among them that is no
@@ -73,8 +73,8 @@ typedef enum {
 
 /** Which releases a CHECK looks at: SETUP > UPDATES' RELEASES. */
 typedef enum {
-    WA_CH_USABLE = 0,  /**< GitHub's latest release: never a pre-release */
-    WA_CH_TESTING,     /**< the newest release, testing or usable        */
+    WA_CH_STABLE = 0,  /**< GitHub's latest release: never a pre-release */
+    WA_CH_TESTING,     /**< the newest release, testing or stable        */
 } wa_channel_t;
 
 typedef enum {

@@ -2763,7 +2763,7 @@ asks the same question once per start of the panel.
 | --- | --- |
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
-| `RELEASES: USABLE` / `TESTING` | Sets which releases a check offers ([The check](#the-check)). Kept with SAVE on SETUP. `USABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
+| `RELEASES: STABLE` / `TESTING` | Sets which releases a check offers ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
 | `HOLD 2 s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
 | `HOLD 2 s: UPDATE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 
@@ -2785,7 +2785,7 @@ kept.
 
 Releases are numbered by kind. An odd minor number is a testing release,
 published on GitHub as a pre-release (0.21.x). An even minor number is a
-usable release (0.22.x).
+stable release (0.22.x).
 
 The panel joins the home network, sends one HTTPS (HTTP over transport layer
 security) request and reads the newest release's tag from the answer.
@@ -2793,13 +2793,13 @@ RELEASES sets the request:
 
 | RELEASES | Request | What is read |
 | --- | --- | --- |
-| `USABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or usable. The highest version among those that are no draft is the newest release, whatever their order. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
+| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
 
 Then the radio goes off. The join, the address and the request take 30 s at
 most, together. On either setting only a release newer than the running
-build is offered: a panel on testing release 0.21.0 with `USABLE` is not
-offered usable release 0.20.0.
+build is offered: a panel on testing release 0.21.0 with `STABLE` is not
+offered stable release 0.20.0.
 
 Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
 each public IP (Internet Protocol) address without an account, and the
@@ -2824,10 +2824,10 @@ check:
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
 | `No response within 30 s.` | The 30 s ran out. |
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
-| `GitHub rejected the request: HTTP 404.` | An answer other than a redirect (`USABLE`) or other than 200 (`TESTING`). |
+| `GitHub rejected the request: HTTP 404.` | An answer other than a redirect (`STABLE`) or other than 200 (`TESTING`). |
 | `GitHub's request limit is reached: HTTP 403.` and `GitHub allows 60 API requests an hour per address.` | `TESTING`: GitHub answered 403 or 429, its limit for requests without an account. |
 | `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` and `Latest release on GitHub: 0.21.0.` | The running build's version does not parse. No release is offered. |
-| `Unexpected answer from GitHub.` | The `Location` (`USABLE`) or the API's answer (`TESTING`) is missing or out of form; a second line says which (tables below). |
+| `Unexpected answer from GitHub.` | The `Location` (`STABLE`) or the API's answer (`TESTING`) is missing or out of form; a second line says which (tables below). |
 | `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
 | `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. |
 | `Stopped: the IOmcu update has started.` | The IOmcu's update began. |

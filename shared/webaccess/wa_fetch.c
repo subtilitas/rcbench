@@ -89,7 +89,7 @@ wa_got_t wa_fetch_start(wa_fetch_t *f, wa_job_t job, fw_version_t want,
     f->running = running;
     f->gen = gen;
     f->job = job;
-    f->channel = (ch == WA_CH_TESTING) ? WA_CH_TESTING : WA_CH_USABLE;
+    f->channel = (ch == WA_CH_TESTING) ? WA_CH_TESTING : WA_CH_STABLE;
     f->start_ms = now_ms;
     f->found = (job == WA_JOB_DOWNLOAD) ? want : (fw_version_t){ 0, 0, 0 };
     if (!have_net) {

@@ -280,6 +280,44 @@ TEST_CASE(store_round_trips_and_coerces_stale_values)
 }
 
 /*
+ * The RELEASES setting is stored as the option's index under the key
+ * "upd_channel".  Index 0 was named USABLE and is named STABLE; a panel
+ * that saved it keeps its setting.
+ */
+
+TEST_CASE(a_stored_usable_releases_setting_loads_as_stable)
+{
+    fresh_model();
+    char buf[32];
+
+    CHECK_STR_EQ(settings_def(SET_UPD_CHANNEL)->key, "upd_channel");
+    CHECK_EQ(settings_def(SET_UPD_CHANNEL)->option_count, 2);
+
+    /* Index 0 and 1 stored by a build that named them USABLE and TESTING. */
+    for (int stored = 0; stored <= 1; ++stored) {
+        fresh_model();
+        settings_set_store(&s_mem_store);
+        settings_set(SET_UPD_REMIND, 1);
+        settings_save();
+        s_saved[SET_UPD_CHANNEL] = (float)stored;
+        settings_init();
+        CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), stored);
+        CHECK_STR_EQ(settings_value_text(SET_UPD_CHANNEL, buf, sizeof(buf)),
+                     stored == 0 ? "STABLE" : "TESTING");
+        settings_set_store(NULL);
+    }
+
+    /* An index out of range falls back to the default, STABLE. */
+    fresh_model();
+    settings_set_store(&s_mem_store);
+    settings_save();
+    s_saved[SET_UPD_CHANNEL] = 7.0f;
+    settings_init();
+    CHECK_STR_EQ(settings_value_text(SET_UPD_CHANNEL, buf, sizeof(buf)), "STABLE");
+    settings_set_store(NULL);
+}
+
+/*
  * A load tells the observer every setting, its defaults included: the
  * panel's copies for the control task -- the current monitors' set-up
  * among them -- are filled from that sweep, and a value left at its
@@ -596,6 +634,7 @@ int main(void)
     RUN(categories_partition_every_setting);
     RUN(value_text_renders_every_type);
     RUN(store_round_trips_and_coerces_stale_values);
+    RUN(a_stored_usable_releases_setting_loads_as_stable);
     RUN(a_load_tells_the_observer_every_setting_at_its_default);
     RUN(the_phase_tap_settings_are_the_tone_pages);
     RUN(observer_fires_only_on_real_changes);

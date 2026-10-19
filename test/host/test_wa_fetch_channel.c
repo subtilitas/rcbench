@@ -1,8 +1,8 @@
 /*
  * The release a check offers, on each of RELEASES' two channels.
  *
- * The failures under test: a testing release offered with USABLE set, an
- * older usable release offered to a panel on a testing one, an offer to a
+ * The failures under test: a testing release offered with STABLE set, an
+ * older stable release offered to a panel on a testing one, an offer to a
  * panel whose own version did not parse, an offer that outlives a change
  * of the channel, and an API (application programming interface) answer
  * acted on that should not be -- over its size, out of form, without a
@@ -228,11 +228,11 @@ TEST_CASE(testing_asks_the_api_with_its_headers_and_stops_at_the_10th)
     CHECK_EQ(g.last_timeout, WA_FETCH_OP_MS);
 }
 
-TEST_CASE(usable_keeps_the_latest_redirect)
+TEST_CASE(stable_keeps_the_latest_redirect)
 {
     fresh(0u);
     latest_answer("v0.22.0");
-    const wa_fetch_res_t out = check(WA_CH_USABLE, V(0, 20, 0), true);
+    const wa_fetch_res_t out = check(WA_CH_STABLE, V(0, 20, 0), true);
     CHECK_EQ(out.got, WA_GOT_NEWER);
     CHECK_EQ(out.found.minor, 22u);
     CHECK_STR_EQ(g.url, FW_REL_LATEST_URL);
@@ -258,7 +258,7 @@ static wa_got_t offer(wa_channel_t ch, const char *tag, fw_version_t running,
 
 TEST_CASE(only_a_newer_release_is_offered_on_either_channel)
 {
-    const wa_channel_t chs[] = { WA_CH_USABLE, WA_CH_TESTING };
+    const wa_channel_t chs[] = { WA_CH_STABLE, WA_CH_TESTING };
     for (size_t i = 0; i < 2u; ++i) {
         const wa_channel_t ch = chs[i];
         /* Equal, older, newer. */
@@ -275,11 +275,11 @@ TEST_CASE(only_a_newer_release_is_offered_on_either_channel)
         CHECK_EQ(offer(ch, "v9.0.0", V(0, 0, 0), false),
                  WA_GOT_UNVERSIONED);
     }
-    /* A panel on testing 0.21.0, USABLE set: GitHub's latest usable
+    /* A panel on testing 0.21.0, STABLE set: GitHub's latest stable
      * release is 0.20.0 and is not offered. */
-    CHECK_EQ(offer(WA_CH_USABLE, "v0.20.0", V(0, 21, 0), true),
+    CHECK_EQ(offer(WA_CH_STABLE, "v0.20.0", V(0, 21, 0), true),
              WA_GOT_CURRENT);
-    CHECK_EQ(offer(WA_CH_USABLE, "v0.22.0", V(0, 21, 0), true),
+    CHECK_EQ(offer(WA_CH_STABLE, "v0.22.0", V(0, 21, 0), true),
              WA_GOT_NEWER);
     /* TESTING set: the newest of either kind, if newer. */
     CHECK_EQ(offer(WA_CH_TESTING, "v0.21.0", V(0, 20, 0), true),
@@ -292,7 +292,7 @@ TEST_CASE(only_a_newer_release_is_offered_on_either_channel)
              WA_GOT_NEWER);
     fresh(0u);
     latest_answer("v0.20.0");
-    const wa_fetch_res_t u = check(WA_CH_USABLE, V(0, 0, 0), false);
+    const wa_fetch_res_t u = check(WA_CH_STABLE, V(0, 0, 0), false);
     CHECK_EQ(u.got, WA_GOT_UNVERSIONED);
     CHECK_EQ(u.found.minor, 20u);
 }
@@ -546,12 +546,12 @@ TEST_CASE(an_offer_holds_only_for_the_channel_it_was_found_on)
     CHECK_EQ(f.channel, WA_CH_TESTING);
     CHECK(wa_fetch_offers(&f, WA_CH_TESTING));
     CHECK(!wa_fetch_stale(&f, WA_CH_TESTING));
-    /* RELEASES set back to USABLE: the testing release is not offered,
+    /* RELEASES set back to STABLE: the testing release is not offered,
      * and the check's result is not shown. */
-    CHECK(!wa_fetch_offers(&f, WA_CH_USABLE));
-    CHECK(wa_fetch_stale(&f, WA_CH_USABLE));
-    f = ended_check(WA_CH_USABLE, WA_GOT_NEWER);
-    CHECK(wa_fetch_offers(&f, WA_CH_USABLE));
+    CHECK(!wa_fetch_offers(&f, WA_CH_STABLE));
+    CHECK(wa_fetch_stale(&f, WA_CH_STABLE));
+    f = ended_check(WA_CH_STABLE, WA_GOT_NEWER);
+    CHECK(wa_fetch_offers(&f, WA_CH_STABLE));
     CHECK(!wa_fetch_offers(&f, WA_CH_TESTING));
     /* Results without an offer. */
     const wa_got_t none[] = { WA_GOT_CURRENT, WA_GOT_UNVERSIONED,
@@ -559,7 +559,7 @@ TEST_CASE(an_offer_holds_only_for_the_channel_it_was_found_on)
     for (size_t i = 0; i < sizeof(none) / sizeof(none[0]); ++i) {
         f = ended_check(WA_CH_TESTING, none[i]);
         CHECK(!wa_fetch_offers(&f, WA_CH_TESTING));
-        CHECK(wa_fetch_stale(&f, WA_CH_USABLE));
+        CHECK(wa_fetch_stale(&f, WA_CH_STABLE));
     }
     /* What the result keeps. */
     f = ended_check(WA_CH_TESTING, WA_GOT_UNVERSIONED);
@@ -569,25 +569,25 @@ TEST_CASE(an_offer_holds_only_for_the_channel_it_was_found_on)
     /* A check under way, a download, and nothing run are never stale. */
     wa_fetch_init(&f, V(0, 20, 0));
     CHECK(!wa_fetch_stale(&f, WA_CH_TESTING));
-    CHECK(!wa_fetch_offers(&f, WA_CH_USABLE));
+    CHECK(!wa_fetch_offers(&f, WA_CH_STABLE));
     (void)wa_fetch_start(&f, WA_JOB_CHECK, V(0, 0, 0), WA_CH_TESTING, true,
                          WA_WHY_NONE, 0u);
-    CHECK(!wa_fetch_stale(&f, WA_CH_USABLE));
+    CHECK(!wa_fetch_stale(&f, WA_CH_STABLE));
     wa_fetch_abort(&f, WA_WHY_CANCEL);
     (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V(0, 21, 0), WA_CH_TESTING,
                          true, WA_WHY_NONE, 0u);
     wa_fetch_abort(&f, WA_WHY_CANCEL);
-    CHECK(!wa_fetch_stale(&f, WA_CH_USABLE));
-    /* A channel out of range is USABLE. */
+    CHECK(!wa_fetch_stale(&f, WA_CH_STABLE));
+    /* A channel out of range is STABLE. */
     (void)wa_fetch_start(&f, WA_JOB_CHECK, V(0, 0, 0), (wa_channel_t)7,
                          true, WA_WHY_NONE, 0u);
-    CHECK_EQ(f.channel, WA_CH_USABLE);
+    CHECK_EQ(f.channel, WA_CH_STABLE);
 }
 
 int main(void)
 {
     RUN(testing_asks_the_api_with_its_headers_and_stops_at_the_10th);
-    RUN(usable_keeps_the_latest_redirect);
+    RUN(stable_keeps_the_latest_redirect);
     RUN(only_a_newer_release_is_offered_on_either_channel);
     RUN(the_request_limit_is_its_own_result);
     RUN(the_answers_size_is_announced_and_within_its_bound);
