@@ -1796,14 +1796,26 @@ static void pose_upd(const char *view)
         v.net[0] = '\0';
         v.got = UPD_GOT_NO_NET;
         settings_set(SET_UPD_REMIND, 0.0f);
+    } else if (strcmp(view, "updates-limit") == 0) {
+        v.got = UPD_GOT_LIMIT;
+        v.status = 403;
+        settings_set(SET_UPD_CHANNEL, 1.0f);
+    } else if (strcmp(view, "updates-unversioned") == 0) {
+        v.got = UPD_GOT_UNVERSIONED;
+        strcpy(v.found, EX_NEWER);
     } else if (strcmp(view, "updates-blocked") == 0) {
         v.phase = UPD_PH_IDLE;
         v.block = UPD_WHY_ARMED;
         v.dl_block = UPD_WHY_ARMED;
     } else {
-        /* updates-newer, upd-remind, upd-remind-blocked */
+        /* updates-newer, updates-testing, upd-remind, upd-remind-blocked:
+         * EX_NEWER has an odd minor number, a testing release, which
+         * updates-testing finds with RELEASES on TESTING. */
         v.got = UPD_GOT_NEWER;
         strcpy(v.found, EX_NEWER);
+        if (strcmp(view, "updates-testing") == 0) {
+            settings_set(SET_UPD_CHANNEL, 1.0f);
+        }
         if (strcmp(view, "upd-remind-blocked") == 0) {
             v.dl_block = UPD_WHY_DRAWING;
         }

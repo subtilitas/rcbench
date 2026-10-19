@@ -25,9 +25,10 @@
 
 /* Mirrored from upd_screen.c, in the body's coordinates. */
 #define BTN_X     196
-#define CHECK_Y   44
-#define REMIND_Y  112
-#define DL_Y      180
+#define CHECK_Y   40
+#define REMIND_Y  96
+#define CHAN_Y    152
+#define DL_Y      208
 #define R_IGNORE_X 244
 #define R_NEVER_X  556
 #define R_ROW_Y    276
@@ -170,6 +171,8 @@ TEST_CASE(the_enums_mirror_the_fetch_and_the_release_parser)
     CHECK_EQ((int)UPD_GOT_HASH, (int)WA_GOT_HASH);
     CHECK_EQ((int)UPD_GOT_IMAGE, (int)WA_GOT_IMAGE);
     CHECK_EQ((int)UPD_GOT_MEMORY, (int)WA_GOT_MEMORY);
+    CHECK_EQ((int)UPD_GOT_LIMIT, (int)WA_GOT_LIMIT);
+    CHECK_EQ((int)UPD_GOT_UNVERSIONED, (int)WA_GOT_UNVERSIONED);
 
     CHECK_EQ((int)UPD_WHY_NONE, (int)WA_WHY_NONE);
     CHECK_EQ((int)UPD_WHY_ARMED, (int)WA_WHY_ARMED);
@@ -200,7 +203,11 @@ TEST_CASE(the_enums_mirror_the_fetch_and_the_release_parser)
     CHECK_EQ((int)UPD_REL_SUMS_BAD, (int)FW_REL_SUMS_BAD);
     CHECK_EQ((int)UPD_REL_SUMS_NONE, (int)FW_REL_SUMS_NONE);
     CHECK_EQ((int)UPD_REL_SUMS_TWICE, (int)FW_REL_SUMS_TWICE);
-    CHECK_EQ((int)UPD_REL_SUMS_TWICE + 1, (int)FW_REL_COUNT);
+    CHECK_EQ((int)UPD_REL_TAG_NONE, (int)FW_REL_TAG_NONE);
+    CHECK_EQ((int)UPD_REL_TAG_LONG, (int)FW_REL_TAG_LONG);
+    CHECK_EQ((int)UPD_REL_TAG_FORM, (int)FW_REL_TAG_FORM);
+    CHECK_EQ((int)UPD_REL_SCAN_LONG, (int)FW_REL_SCAN_LONG);
+    CHECK_EQ((int)UPD_REL_SCAN_LONG + 1, (int)FW_REL_COUNT);
 }
 
 /* -------------------------------------------------------------- UPDATES */
@@ -284,6 +291,26 @@ TEST_CASE(the_reminder_switch_flips_the_setting_and_asks_for_the_save)
     push();
     tap(upd(), BTN_X, REMIND_Y);
     CHECK(!settings_get_bool(SET_UPD_REMIND));
+}
+
+TEST_CASE(the_releases_switch_flips_the_channel_and_asks_for_the_save)
+{
+    fresh();
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);    /* USABLE */
+    tap(upd(), BTN_X, CHAN_Y);
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);    /* TESTING */
+    CHECK(settings_save_asked());
+    CHECK(settings_save_tick(true));
+    tap(upd(), BTN_X, CHAN_Y);
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);
+    CHECK(settings_save_tick(true));
+    /* Without a home network, and during a check, too. */
+    g_v.have_net = false;
+    g_v.phase = UPD_PH_ASKING;
+    push();
+    tap(upd(), BTN_X, CHAN_Y);
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);
+    CHECK_EQ(upd_screen_take(), 0u);
 }
 
 TEST_CASE(the_download_hold_is_there_only_for_a_newer_release)
@@ -373,8 +400,8 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
         ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
         base_view();
         g_v.phase = UPD_PH_ENDED;
-        for (int got = UPD_GOT_NEWER; got <= UPD_GOT_MEMORY; ++got) {
-            for (int rel = 0; rel <= UPD_REL_SUMS_TWICE; ++rel) {
+        for (int got = UPD_GOT_NEWER; got <= UPD_GOT_UNVERSIONED; ++got) {
+            for (int rel = 0; rel <= UPD_REL_SCAN_LONG; ++rel) {
                 for (int why = 0; why <= UPD_WHY_DRAWING; ++why) {
                     for (int job = 0; job < 2; ++job) {
                         g_v.got = (upd_got_t)got;
@@ -428,6 +455,19 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
     g_v.job = UPD_JOB_DOWNLOAD;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
     CHECK_STR_EQ(b, "The firmware file specifies a different version.");
+    /* TESTING's own results. */
+    g_v.job = UPD_JOB_CHECK;
+    g_v.got = UPD_GOT_LIMIT;
+    g_v.status = 429;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "GitHub's request limit is reached: HTTP 429.");
+    CHECK_STR_EQ(b, "GitHub allows 60 API requests an hour per address.");
+    g_v.got = UPD_GOT_UNVERSIONED;
+    snprintf(g_v.found, sizeof(g_v.found), "%s", "0.21.0");
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "The panel's own version is not MAJOR.MINOR.PATCH: "
+                    "no update offered.");
+    CHECK_STR_EQ(b, "Latest release on GitHub: 0.21.0.");
 }
 
 TEST_CASE(a_running_job_says_its_step_and_the_time_left)
@@ -796,7 +836,8 @@ TEST_CASE(every_view_renders_inside_its_canvas)
     guard_canvas_t g;
     for (int lang = 0; lang < 2; ++lang) {
         ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
-        for (int got = UPD_GOT_NONE; got <= UPD_GOT_MEMORY; ++got) {
+        for (int got = UPD_GOT_NONE; got <= UPD_GOT_UNVERSIONED; ++got) {
+            settings_set(SET_UPD_CHANNEL, (float)(got % 2));
             for (int net = 0; net < 3; ++net) {
                 base_view();
                 g_v.have_net = (net != 0);
@@ -902,7 +943,9 @@ TEST_CASE(every_card_text_takes_two_lines_at_most)
         TX_UPD_REL_HOPS, TX_UPD_REL_HOST, TX_UPD_REL_NO_LENGTH,
         TX_UPD_REL_EMPTY, TX_UPD_REL_TOO_BIG, TX_UPD_REL_SHORT,
         TX_UPD_REL_OVERRUN, TX_UPD_REL_SUMS_BAD, TX_UPD_REL_SUMS_NONE,
-        TX_UPD_REL_SUMS_TWICE, TX_UPD_DL_SUMS, TX_UPD_DL_CHECKING,
+        TX_UPD_REL_SUMS_TWICE, TX_UPD_REL_TAG_NONE, TX_UPD_REL_TAG_LONG,
+        TX_UPD_REL_TAG_FORM, TX_UPD_REL_SCAN_LONG, TX_UPD_DL_SUMS,
+        TX_UPD_DL_CHECKING,
     };
     const gfx_rect_t line = gfx_rect_make(416, 0, 352, 18);
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -927,6 +970,7 @@ int main(void)
     RUN(check_is_grey_without_a_network_wifi_or_the_gate);
     RUN(a_running_check_turns_the_button_into_cancel);
     RUN(the_reminder_switch_flips_the_setting_and_asks_for_the_save);
+    RUN(the_releases_switch_flips_the_channel_and_asks_for_the_save);
     RUN(the_download_hold_is_there_only_for_a_newer_release);
     RUN(the_download_hold_ends_unfired_when_the_gate_closes_under_it);
     RUN(every_result_has_a_text_in_both_languages);
