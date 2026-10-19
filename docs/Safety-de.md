@@ -212,6 +212,12 @@ bevor er es quittiert, und die Quittung trägt, was er gespeichert hat.
 | das Schreiben wird abgelehnt | beendet, `Der IOmcu hat den Pulsbereich abgelehnt.` | `Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder OUTPUTS ändern.` |
 | das Schreiben wird quittiert, und ein Gaskanal hat ein anderes Paar gespeichert | beendet | `Der IOmcu hält einen anderen Pulsbereich. Leerlaufpuls oder Vollpuls ändern.` |
 
+Der Alert eines abgelehnten oder vertauschten Paars verlässt das Band vor
+Ablauf seiner 30 s, sobald eine spätere Zahlung die Page mit dem
+verlangten Paar findet oder ein Schreiben davon quittiert wird. Dasselbe gilt
+für `Der IOmcu hat die Polzahl abgelehnt.`: er verlässt das Band, sobald
+eine spätere Polzahl übernommen wird.
+
 Das Panel fragt vor dem CLEAR, nach dem Freigeben des Servos und der
 Pulsrate, und schreibt nichts, auch kein CLEAR; der Prüfstand bleibt SAFE mit
 den Ausgängen in Ruhe. Es fragt nach einem quittierten CLEAR erneut, für

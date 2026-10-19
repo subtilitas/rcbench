@@ -33,13 +33,15 @@ The IOmcu reads a TI INA228 in the ESC's power path and a TI INA3221 on the serv
 | Sensor SCL | SDA + 1, or -1 | 17 | follows Sensor SDA; the row has no keys |
 
 - The bus runs at 400 kHz; that is not a setting.
+- The two addresses stop at the ends of their range: `-` at 0x40 and `+` at 0x4F or 0x43 change nothing.
+- Pins with nothing wired to them read as the monitors not answering, not as a blocked bus.
 - The IOmcu takes a change only while the bench is SAFE.
 - With the INA228 enabled and answering, the MOTOR & ESC tile loses its SIMULATED mark and [MOTOR & ESC](motor.md#table) reads its voltage and current.
 - With the INA3221 on with CH1, [SERVO](servo.md#the-servo-rail-s-meter) reads the servo rail's current from it.
 - A reading at the top of the range is shown as clipped, never as a value: 163.8 mV across the INA3221's shunt.
 - A monitor that stops answering does not switch the bench to SAFE: nothing trips on the monitors' readings.
 
-The band names what goes wrong, one message at a time, at most one every 5 s. For example: `Sensor SDA or SCL not set. Check SETUP > INTERFACES.`, `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.`, `INA228 is not responding at 0x45.`, `INA3221 CH1 clipped at 1.64 A. Reading shows only the limit.`.
+The band names what goes wrong, one message at a time, at most one every 5 s. For example: `Sensor SDA or SCL not set. Check SETUP > INTERFACES.`, `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.`, `INA228 is not responding at 0x45.`, `INA3221 CH1 clipped at 1.64 A. Reading shows only the limit.`. A message about the set-up -- pins not set, one address, a value rejected -- leaves the band as soon as the setting is right again and the IOmcu holds it.
 
 ## A row the IOmcu does not hold
 
@@ -60,7 +62,7 @@ No row is marked while no IOmcu answers. AS5600 centre is the panel's own value 
 | AS5600 | ON, OFF | OFF | an AS5600 magnetic angle sensor on the servo's output shaft, at its fixed address 0x36 on the sensor bus |
 | AS5600 centre | 0 to 4095 | 0 | the count with the servo at neutral; 4096 counts a turn, 0.0879 deg a count |
 
-The encoder needs an IOmcu of protocol 4.9 or later. ENC CENTRE on the [servo settings](servo-settings.md#dut) sets the centre from the live reading. The band says when the sensor sees no magnet, `AS5600 detects no magnet. Check the magnet on the servo horn shaft.`, or when the magnet is too weak or too strong.
+The encoder needs an IOmcu of protocol 4.9 or later. ENC CENTRE on the [servo settings](servo-settings.md#dut) sets the centre from the live reading. The band says when the sensor sees no magnet, `AS5600 detects no magnet. Check the magnet on the servo horn shaft.`, or when the magnet is too weak or too strong. A magnet message is said once while the sensor's magnet status stays the same: an edit of another row does not repeat it. Switched off and on again, the sensor says it again.
 
 ## The phase tap
 
@@ -78,7 +80,7 @@ The phase tap hears an ESC's beeps on one motor phase. One IOmcu GPIO reads the 
 | Tap gap | 1 to 100 ms | 3 | the silence that ends a beep |
 | Tap min periods | 1 to 64 | 3 | the tone periods that make a beep |
 
-The IOmcu refuses an ADC (analog-to-digital converter) pin, a pin bound to an output, and a pin the sensor bus or the PD mini holds. The run page of [ESC STICK](motor-stick.md) shows the beeps.
+The IOmcu refuses an ADC (analog-to-digital converter) pin, a pin bound to an output, and a pin the sensor bus or the PD mini holds. Tap gap has to be at least one period of Tap lowest tone: 3 ms at the default 400 Hz, whose period is 2.5 ms. A rejected value's message leaves the band once the value is set back to one the IOmcu takes. The run page of [ESC STICK](motor-stick.md) shows the beeps.
 
 ## Vibration and the optical tacho
 
@@ -99,7 +101,7 @@ These three are stored. No screen or IOmcu reads them in this release.
 | PD mini RX | -1 to 47 | -1 | the IOmcu GPIO from the module's DP |
 | PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | the module's UART (universal asynchronous receiver-transmitter) rate; AUTO tries each of the 7 rates, one a second |
 
-The IOmcu refuses a pin that is reserved, bound to an output or the other pin. A change to the pins, the baud rate or the enable switch switches the supply output off.
+The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GP17 is refused while Sensor SCL is GP17. The message leaves the band once the pin is set back to one the IOmcu takes. A change to the pins, the baud rate or the enable switch switches the supply output off.
 
 ## Related pages
 

@@ -754,6 +754,157 @@ TEST_CASE(a_refused_second_frame_is_its_own_event)
     CHECK(tone_link_settled(&tl));
 }
 
+/* The bench's walk: Tap gap stepped from 3 ms to 2 ms with the lowest tone
+ * at 400 Hz, whose period is 2.5 ms, and back.  The page refuses 2 ms, as
+ * it must; the refusal stands while 2 ms is asked and is over the moment
+ * 3 ms is asked again, as the page still holds it.  One write, one NACK. */
+TEST_CASE(a_gap_refused_and_stepped_back_is_over_at_once)
+{
+    fresh(LINK_MINOR_TONE_BUSY);
+    tap_on();
+    const unsigned before = writes;
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    w.gap_ms = 2u;
+    want(&w);
+    polls(20);
+    CHECK_EQ(writes, before + 1u);
+    CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_SETUP_REFUSED);
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
+    CHECK_EQ(tone_link_unheld(&tl), TONE_LINK_ROWS_BEEP);
+    polls(100);
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
+    /* 3 ms again: the page holds it, nothing is written. */
+    w.gap_ms = 3u;
+    want(&w);
+    CHECK(!tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
+    CHECK_EQ(tone_link_unheld(&tl), 0u);
+    polls(20);
+    CHECK_EQ(writes, before + 1u);
+    CHECK(!tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
+    /* The first frame's event is not judged by the second's rows. */
+    CHECK(!tone_link_event_stands(&tl, TONE_LINK_EV_PIN_REFUSED));
+}
+
+/* A refused value stepped to another value the page takes: the refusal
+ * stands through the rest and the write, and is over once the page has
+ * taken the frame.  Stepped to another the page refuses: it stands. */
+TEST_CASE(a_refusal_stands_until_the_page_takes_the_frame)
+{
+    fresh(LINK_MINOR_TONE_BUSY);
+    tap_on();
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    w.gap_ms = 1u;
+    want(&w);
+    polls(20);
+    CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_SETUP_REFUSED);
+    w.gap_ms = 2u;                          /* refused too */
+    want(&w);
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
+    polls(20);
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
+    w.gap_ms = 4u;                          /* taken, after the rest */
+    want(&w);
+    polls(9);                               /* 450 ms: still resting */
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
+    polls(2);
+    CHECK_EQ(fk.cfg[LINK_TN_GAP_MS], 4u);
+    CHECK(!tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
+    /* With no IOmcu answering, a refusal stands. */
+    tone_link_lost(&tl);
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
+    CHECK(!tone_link_event_stands(NULL, TONE_LINK_EV_SETUP_REFUSED));
+    /* Events that are not about the set-up are left to the band. */
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_OVERRUN));
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_NO_PAGE));
+}
+
+/* A pin something else holds: refused, offered again every 5 s, and over
+ * once the page takes it -- the pin freed, or another pin asked. */
+TEST_CASE(a_pin_refusal_is_over_once_a_pin_is_taken)
+{
+    fresh(LINK_MINOR_TONE_BUSY);
+    fk.bad_pin = 22;
+    polls(2);
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    polls(20);
+    CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_REFUSED);
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_PIN_REFUSED));
+    /* Between two offers, refused or not: it stands. */
+    for (int k = 0; k < 220; ++k) {
+        poll_once();
+        CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_PIN_REFUSED));
+    }
+    w.pin = 21u;
+    want(&w);
+    CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_PIN_REFUSED));
+    polls(12);
+    CHECK_EQ(fk.cfg[LINK_TN_PIN], 21u);
+    CHECK(!tone_link_event_stands(&tl, TONE_LINK_EV_PIN_REFUSED));
+}
+
+/* A saved tap that met a busy pin at boot: said from FLAGS, and over when
+ * a status read shows the pin taken, or when the tap is switched off and
+ * the page holds it off. */
+TEST_CASE(a_busy_pin_from_boot_is_over_when_the_pin_is_taken_or_the_tap_off)
+{
+    for (int off = 0; off < 2; ++off) {
+        fresh(LINK_MINOR_TONE_BUSY);
+        fk.bad_pin = LINK_TN_DEFAULT_PIN;
+        fk.cfg[LINK_TN_ENABLE] = LINK_TN_EN_TAP;
+        fk.flags = LINK_TN_PIN_REFUSED;
+        tone_setup_t w = setup_default();
+        w.enable = true;
+        want(&w);
+        polls(20);
+        CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_BUSY);
+        CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_PIN_BUSY));
+        if (off != 0) {
+            w.enable = false;
+            want(&w);
+            CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_PIN_BUSY));
+            polls(12);
+            CHECK_EQ(fk.cfg[LINK_TN_ENABLE], 0u);
+        } else {
+            fk.bad_pin = -1;
+            polls(120);
+            CHECK_EQ(fk.flags & LINK_TN_PIN_REFUSED, 0u);
+            polls(2);
+        }
+        CHECK(!tone_link_event_stands(&tl, TONE_LINK_EV_PIN_BUSY));
+    }
+}
+
+/* A refusal handed out, put back by a band another alert took first, and
+ * over before its next turn: it is not handed out again. */
+TEST_CASE(a_refusal_put_back_and_over_is_not_handed_out)
+{
+    fresh(LINK_MINOR_TONE_BUSY);
+    tap_on();
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    w.gap_ms = 2u;
+    want(&w);
+    polls(20);
+    CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_SETUP_REFUSED);
+    w.gap_ms = 3u;
+    want(&w);
+    tone_link_event_back(&tl, TONE_LINK_EV_SETUP_REFUSED);
+    CHECK_EQ(tone_link_event(&tl, now + TONE_LINK_EVENT_GAP_MS), 0u);
+    /* One that still stands is handed out again. */
+    w.gap_ms = 2u;
+    want(&w);
+    polls(20);
+    const uint32_t t = now + TONE_LINK_EVENT_GAP_MS;
+    CHECK_EQ(tone_link_event(&tl, t), TONE_LINK_EV_SETUP_REFUSED);
+    tone_link_event_back(&tl, TONE_LINK_EV_SETUP_REFUSED);
+    CHECK_EQ(tone_link_event(&tl, t + TONE_LINK_EVENT_GAP_MS),
+             TONE_LINK_EV_SETUP_REFUSED);
+}
+
 /* A pin something else holds: BAD_VALUE from a 4.8 page, BUSY from a 4.17
  * one; either way offered again every 5 s until it is free. */
 static void a_held_pin_goes_through_once_free(uint16_t m)
@@ -1951,6 +2102,11 @@ int main(void)
     RUN(an_older_pages_other_refusal_is_not_offered_again);
     RUN(a_frame_is_unheld_until_the_page_takes_it);
     RUN(a_refused_second_frame_is_its_own_event);
+    RUN(a_gap_refused_and_stepped_back_is_over_at_once);
+    RUN(a_refusal_stands_until_the_page_takes_the_frame);
+    RUN(a_pin_refusal_is_over_once_a_pin_is_taken);
+    RUN(a_busy_pin_from_boot_is_over_when_the_pin_is_taken_or_the_tap_off);
+    RUN(a_refusal_put_back_and_over_is_not_handed_out);
     RUN(a_pin_held_by_something_else_goes_through_once_it_is_free);
     RUN(a_saved_tap_refused_at_boot_is_offered_again_until_the_pin_is_free);
     RUN(a_saved_tap_on_a_board_pin_is_offered_once_by_a_4_17_page);

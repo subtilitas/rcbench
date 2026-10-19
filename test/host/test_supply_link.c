@@ -209,6 +209,85 @@ TEST_CASE(refused_wiring_is_not_written_again)
     CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
 }
 
+/* The bench's walk: the PD mini on TX GP19 and RX GP18, the sensor bus on
+ * GP16 and GP17.  RX stepped to 17, which the sensor bus holds: refused,
+ * once, and the refusal stands; RX back to 18: the page holds the wiring
+ * asked once a read shows it, and the refusal is over.  One refused write
+ * in all. */
+TEST_CASE(a_refused_pin_stepped_back_is_over_once_the_page_holds_it)
+{
+    fresh();
+    outputs_reserve_pins(&o, ((uint64_t)1u << 3) | ((uint64_t)1u << 16)
+                                 | ((uint64_t)1u << 17));
+    const supply_wiring_t bench = { true, 19, 18, SUPPLY_LINK_BAUD_AUTO };
+    supply_link_wire(&sl, &bench);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_RX_PIN), 18u);
+    CHECK(!supply_link_event_stands(&sl, SUPPLY_LINK_EV_WIRING_REFUSED));
+    drv.answered    = true;                 /* the module has answered */
+    drv.state_known = true;
+    unsigned nacks = 0u;
+    const supply_wiring_t rx17 = { true, 19, 17, SUPPLY_LINK_BAUD_AUTO };
+    supply_link_wire(&sl, &rx17);
+    for (int k = 0; k < 8; ++k) {
+        uint8_t off = 0u;
+        uint8_t n = 0u;
+        uint16_t regs[LINK_SP_FLAGS];
+        if (supply_link_next(&sl, &off, &n, regs) == SUPPLY_LINK_W_NONE) {
+            far_step_and_read(true);
+            continue;
+        }
+        const uint8_t nack = supply_page_write(&pg, off, n, regs, &o, true);
+        nacks += (nack != 0u) ? 1u : 0u;
+        supply_link_written(&sl, nack == 0u ? SUPPLY_LINK_ACK : (int)nack);
+    }
+    CHECK_EQ(nacks, 1u);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_WIRING_REFUSED);
+    CHECK(supply_link_event_stands(&sl, SUPPLY_LINK_EV_WIRING_REFUSED));
+    CHECK_EQ(reg(LINK_SP_RX_PIN), 18u);     /* the page kept its wiring */
+    /* Back to 18: the page holds it still, so the refusal is over at once
+     * and nothing is written. */
+    supply_link_wire(&sl, &bench);
+    CHECK(!supply_link_event_stands(&sl, SUPPLY_LINK_EV_WIRING_REFUSED));
+    const unsigned before = writes;
+    pump(true);
+    CHECK_EQ(writes, before);
+    CHECK(!supply_link_event_stands(&sl, SUPPLY_LINK_EV_WIRING_REFUSED));
+    CHECK(!supply_link_event_stands(&sl, SUPPLY_LINK_EV_WIRING_LIVE));
+    CHECK_EQ(supply_link_events(&sl), 0u);
+    /* Other events are left to the band; a lost link leaves it standing. */
+    CHECK(supply_link_event_stands(&sl, SUPPLY_LINK_EV_ON_REFUSED));
+    supply_link_lost(&sl);
+    CHECK(supply_link_event_stands(&sl, SUPPLY_LINK_EV_WIRING_REFUSED));
+    CHECK(!supply_link_event_stands(NULL, SUPPLY_LINK_EV_WIRING_REFUSED));
+}
+
+/* A wiring change refused on its state read, for an output that may be on:
+ * the refusal stands until other pins are written and held. */
+TEST_CASE(a_wiring_refused_on_its_read_stands_until_new_pins_are_held)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    pump(true);
+    drv.answered    = true;
+    drv.state_known = true;
+    const supply_wiring_t moved = { true, 10, 11, 1u };
+    supply_link_wire(&sl, &moved);
+    pump(true);
+    drv.check = (uint8_t)PDMINI_CHECK_NOT_OFF;
+    pump(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_WIRING_LIVE);
+    CHECK(supply_link_event_stands(&sl, SUPPLY_LINK_EV_WIRING_LIVE));
+    const supply_wiring_t again = { true, 12, 13, 1u };
+    supply_link_wire(&sl, &again);
+    pump(true);                             /* written, held for a read */
+    CHECK(supply_link_event_stands(&sl, SUPPLY_LINK_EV_WIRING_LIVE));
+    drv.check = (uint8_t)PDMINI_CHECK_OFF;
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 12u);
+    CHECK(!supply_link_event_stands(&sl, SUPPLY_LINK_EV_WIRING_LIVE));
+}
+
 /* Disabled, or both pins on one, is written as disabled; an ON to it is
  * refused here. */
 TEST_CASE(an_unwired_supply_refuses_an_on)
@@ -931,6 +1010,8 @@ int main(void)
     RUN(an_off_then_the_wiring_then_the_command);
     RUN(the_wiring_waits_for_the_output_to_be_off);
     RUN(refused_wiring_is_not_written_again);
+    RUN(a_refused_pin_stepped_back_is_over_once_the_page_holds_it);
+    RUN(a_wiring_refused_on_its_read_stands_until_new_pins_are_held);
     RUN(an_unwired_supply_refuses_an_on);
     RUN(an_on_without_a_heartbeat_is_refused);
     RUN(an_on_the_far_end_let_go_is_lost);

@@ -32,6 +32,7 @@
 #include "settings_screen.h"
 #include "splash_screen.h"
 #include "supply_screen.h"
+#include "ui_alert_slot.h"
 #include "ui_band.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -1213,6 +1214,168 @@ TEST_CASE(an_alert_clears_after_30_s_and_a_new_one_starts_again)
     CHECK(ui_router_alert() != NULL);
     ui_router_tick(1.0f);
     CHECK(ui_router_alert() == NULL);
+}
+
+/* An alert whose cause is over goes from the band when its number is
+ * taken back -- and only while it is the alert showing: one cleared by
+ * time or a tap, or replaced by another, is not touched, nor is a held
+ * one. */
+/* One frame of the render loop over the control task's slot (main.c). */
+static bool slot_frame(ui_alert_slot_t *slot, ui_alert_band_t *band)
+{
+    char text[UI_ALERT_MAX];
+    const bool have = ui_alert_slot_take(slot, text, sizeof(text));
+    return ui_alert_band_update(band, have ? text : NULL, slot->taken,
+                                slot->withdrawn);
+}
+
+TEST_CASE(two_causes_over_in_one_frame_clear_the_alert_shown)
+{
+    fresh();
+    to_overview();
+    /* The order of the two withdrawals does not matter: the shown alert's
+     * is kept whichever comes last. */
+    for (unsigned order = 0u; order < 2u; ++order) {
+        ui_alert_slot_t slot = {0};
+        ui_alert_band_t band = {0};
+        const uint32_t sense = ui_alert_slot_post(&slot,
+            "INA228 and INA3221 both use 0x40.");
+        CHECK(!slot_frame(&slot, &band));
+        const uint32_t poles = ui_alert_slot_post(&slot,
+            "Pole count rejected by the IOmcu.");
+        CHECK(!slot_frame(&slot, &band));
+        CHECK_STR_EQ(ui_router_alert(), "Pole count rejected by the IOmcu.");
+        if (order == 0u) {
+            ui_alert_slot_withdraw(&slot, poles);
+            ui_alert_slot_withdraw(&slot, sense);
+        } else {
+            ui_alert_slot_withdraw(&slot, sense);
+            ui_alert_slot_withdraw(&slot, poles);
+        }
+        CHECK(slot_frame(&slot, &band));
+        CHECK(ui_router_alert() == NULL);
+        CHECK(!slot_frame(&slot, &band));               /* once */
+    }
+}
+
+TEST_CASE(a_slot_alert_taken_back_before_a_frame_never_shows)
+{
+    fresh();
+    to_overview();
+    ui_alert_slot_t slot = {0};
+    ui_alert_band_t band = {0};
+    const uint32_t n = ui_alert_slot_post(&slot,
+        "PD mini pins rejected. Check SETUP > INTERFACES.");
+    ui_alert_slot_withdraw(&slot, n);
+    CHECK(!slot.pending);
+    CHECK(!slot_frame(&slot, &band));
+    CHECK(ui_router_alert() == NULL);
+    CHECK_EQ(slot.withdrawn, 0u);
+
+    /* 0 is no alert, and takes nothing back. */
+    const uint32_t m = ui_alert_slot_post(&slot, "IOmcu disarmed");
+    ui_alert_slot_withdraw(&slot, 0u);
+    CHECK(slot.pending);
+    CHECK(!slot_frame(&slot, &band));
+    CHECK_STR_EQ(ui_router_alert(), "IOmcu disarmed");
+    CHECK_EQ(slot.taken, m);
+}
+
+TEST_CASE(a_slot_alert_replaced_in_the_band_is_left_there)
+{
+    fresh();
+    to_overview();
+    ui_alert_slot_t slot = {0};
+    ui_alert_band_t band = {0};
+    const uint32_t n = ui_alert_slot_post(&slot,
+        "Phase tap split, gap or periods rejected.");
+    CHECK(!slot_frame(&slot, &band));
+    /* Another caller's alert replaces it in the band. */
+    ui_router_set_alert("touch stopped answering");
+    ui_alert_slot_withdraw(&slot, n);
+    CHECK(!slot_frame(&slot, &band));
+    CHECK_STR_EQ(ui_router_alert(), "touch stopped answering");
+
+    /* An older alert of the slot taken back leaves the newer one. */
+    const uint32_t old = ui_alert_slot_post(&slot, "IOmcu disarmed");
+    CHECK(!slot_frame(&slot, &band));
+    (void)ui_alert_slot_post(&slot, "Pole count rejected by the IOmcu.");
+    CHECK(!slot_frame(&slot, &band));
+    ui_alert_slot_withdraw(&slot, old);
+    CHECK(!slot_frame(&slot, &band));
+    CHECK_STR_EQ(ui_router_alert(), "Pole count rejected by the IOmcu.");
+
+    /* A new alert taken in the frame the old one is taken back shows. */
+    const uint32_t shown = slot.taken;
+    (void)ui_alert_slot_post(&slot, "IOmcu disarmed");
+    ui_alert_slot_withdraw(&slot, shown);
+    CHECK(!slot_frame(&slot, &band));
+    CHECK_STR_EQ(ui_router_alert(), "IOmcu disarmed");
+}
+
+TEST_CASE(a_slot_number_is_never_0)
+{
+    ui_alert_slot_t slot = {0};
+    slot.posted = UINT32_MAX;
+    CHECK_EQ(ui_alert_slot_post(&slot, "a"), 1u);
+    CHECK_EQ(ui_alert_slot_post(&slot, "b"), 2u);
+    /* Text past the slot is cut, terminated. */
+    char longer[UI_ALERT_MAX + 16];
+    memset(longer, 'x', sizeof(longer) - 1u);
+    longer[sizeof(longer) - 1u] = '\0';
+    (void)ui_alert_slot_post(&slot, longer);
+    char out[8];
+    CHECK(ui_alert_slot_take(&slot, out, sizeof(out)));
+    CHECK_EQ(strlen(out), sizeof(out) - 1u);
+    CHECK_EQ(strlen(slot.text), (size_t)UI_ALERT_MAX - 1u);
+    CHECK(!ui_alert_slot_take(&slot, out, sizeof(out)));
+}
+
+TEST_CASE(an_alert_is_withdrawn_only_while_it_still_shows)
+{
+    fresh();
+    to_overview();
+    CHECK_EQ(ui_router_alert_number(), 0u);
+    CHECK(!ui_router_withdraw_alert(0u));
+    ui_router_set_alert("PD mini pins rejected. Check SETUP > INTERFACES.");
+    const uint32_t first = ui_router_alert_number();
+    CHECK(first != 0u);
+    CHECK(ui_router_withdraw_alert(first));
+    CHECK(ui_router_alert() == NULL);
+    CHECK_EQ(ui_router_alert_number(), 0u);
+    CHECK(!ui_router_withdraw_alert(first));        /* once */
+
+    /* The same text set again is a new alert with a new number. */
+    ui_router_set_alert("PD mini pins rejected. Check SETUP > INTERFACES.");
+    const uint32_t second = ui_router_alert_number();
+    CHECK(second != first);
+    CHECK(!ui_router_withdraw_alert(first));
+    CHECK(ui_router_alert() != NULL);
+
+    /* Replaced: the newer one stays. */
+    ui_router_set_alert("IOmcu disarmed");
+    CHECK(!ui_router_withdraw_alert(second));
+    CHECK_STR_EQ(ui_router_alert(), "IOmcu disarmed");
+
+    /* Cleared by its time, or by a tap, before it is taken back. */
+    const uint32_t third = ui_router_alert_number();
+    expire_alert();
+    CHECK_EQ(ui_router_alert_number(), 0u);
+    CHECK(!ui_router_withdraw_alert(third));
+    ui_router_set_alert("IOmcu disarmed");
+    const uint32_t fourth = ui_router_alert_number();
+    tap(400, H - 10);
+    CHECK(ui_router_alert() == NULL);
+    CHECK(!ui_router_withdraw_alert(fourth));
+
+    /* A held alert is not one to take back, and shows again beneath. */
+    ui_router_hold_alert("touch did not answer -- the bench will not arm");
+    ui_router_set_alert("Phase tap split, gap or periods rejected.");
+    CHECK(ui_router_withdraw_alert(ui_router_alert_number()));
+    CHECK_STR_EQ(ui_router_alert(),
+                 "touch did not answer -- the bench will not arm");
+    CHECK_EQ(ui_router_alert_number(), 0u);
+    ui_router_hold_alert(NULL);
 }
 
 /* The frame's interval was measured before the alert was set: a stall that
@@ -3708,6 +3871,11 @@ int main(void)
     RUN(a_two_row_alert_fits_two_rows_of_the_band);
     RUN(an_alert_clears_after_30_s_and_a_new_one_starts_again);
     RUN(the_frame_an_alert_arrives_in_does_not_count);
+    RUN(an_alert_is_withdrawn_only_while_it_still_shows);
+    RUN(two_causes_over_in_one_frame_clear_the_alert_shown);
+    RUN(a_slot_alert_taken_back_before_a_frame_never_shows);
+    RUN(a_slot_alert_replaced_in_the_band_is_left_there);
+    RUN(a_slot_number_is_never_0);
     RUN(a_second_contact_cannot_take_the_alert);
     RUN(a_held_alert_returns_after_a_passing_one);
     RUN(a_tap_on_the_alert_clears_it_and_reaches_no_screen);

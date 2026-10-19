@@ -189,6 +189,57 @@ TEST_CASE(enums_and_booleans_cycle)
     CHECK(settings_get_bool(SET_BACKLIGHT));
 }
 
+/* The bench's walk: INA3221 address minus at 0x40 went to 0x43.  The
+ * monitors' addresses are numbers in a list and stop at its ends, both
+ * ways, by single steps, held steps and steps past the whole list; the
+ * observer hears nothing at an end. */
+static unsigned g_addr_heard;
+static void addr_heard(setting_id_t id)
+{
+    (void)id;
+    ++g_addr_heard;
+}
+
+TEST_CASE(the_monitor_addresses_stop_at_their_ends)
+{
+    static const setting_id_t k_ids[] = { SET_INA228_ADDR, SET_INA3221_ADDR };
+    for (size_t k = 0u; k < sizeof(k_ids) / sizeof(k_ids[0]); ++k) {
+        fresh_model();
+        const setting_id_t id = k_ids[k];
+        const setting_def_t *d = settings_def(id);
+        const int last = d->option_count - 1;
+        CHECK(!settings_cycles(id));
+        settings_set(id, 0.0f);
+        settings_set_observer(addr_heard);
+        g_addr_heard = 0u;
+        settings_adjust(id, -1);            /* 0x40 minus */
+        CHECK_EQ(settings_get_int(id), 0);
+        settings_adjust(id, -1000);
+        CHECK_EQ(settings_get_int(id), 0);
+        CHECK_EQ(g_addr_heard, 0u);
+        settings_adjust(id, 1);
+        CHECK_EQ(settings_get_int(id), 1);
+        settings_adjust(id, 1000);          /* past the end */
+        CHECK_EQ(settings_get_int(id), last);
+        settings_adjust(id, 1);             /* the last plus */
+        CHECK_EQ(settings_get_int(id), last);
+        settings_adjust(id, 2147483647);
+        CHECK_EQ(settings_get_int(id), last);
+        settings_adjust(id, -2147483647 - 1);
+        CHECK_EQ(settings_get_int(id), 0);
+        CHECK_EQ(g_addr_heard, 3u);         /* 0->1, 1->last, last->0 */
+        settings_set_observer(NULL);
+    }
+    /* A switch and a choice still go round, and say so. */
+    CHECK(settings_cycles(SET_LANGUAGE));
+    CHECK(settings_cycles(SET_BACKLIGHT));
+    CHECK(settings_cycles(SET_INA3221_CH));
+    CHECK(!settings_cycles(SET_OUT_MIN_US));
+    CHECK(!settings_cycles(SET_SENSE_SDA));
+    CHECK(!settings_cycles((setting_id_t)SETTING_COUNT));
+    CHECK(!settings_cycles((setting_id_t)-1));
+}
+
 TEST_CASE(steps_follow_the_schema)
 {
     fresh_model();
@@ -839,6 +890,7 @@ int main(void)
     RUN(a_string_setting_is_kept_cut_and_saved_with_the_numbers);
     RUN(values_are_clamped_to_the_schema);
     RUN(enums_and_booleans_cycle);
+    RUN(the_monitor_addresses_stop_at_their_ends);
     RUN(steps_follow_the_schema);
     RUN(categories_partition_every_setting);
     RUN(value_text_renders_every_type);

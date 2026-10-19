@@ -82,10 +82,36 @@ void sense_i2c_close(void)
     s_open = false;
 }
 
+/*
+ * Lines that stay low at idle, told apart: held by a part, or held by
+ * nothing on a bus without pull-ups -- pins nothing is wired to.  The
+ * pads' own pull-ups are switched on for at most SENSE_I2C_PROBE_US: a
+ * line nothing holds rises on them, and one a part drives low does not.
+ * They go off again either way.  SENSE_NACK for lines that rose: nothing
+ * answers there, and no recovery is owed.  SENSE_BUS_LOW otherwise.
+ */
+static sense_err_t idle_low(void)
+{
+    gpio_pull_up(s_sda);
+    gpio_pull_up(s_scl);
+    const bool rose = lines_rise(SENSE_I2C_PROBE_US);
+    gpio_disable_pulls(s_sda);
+    gpio_disable_pulls(s_scl);
+    return rose ? SENSE_NACK : SENSE_BUS_LOW;
+}
+
+/* Both lines high within SENSE_I2C_IDLE_US, as a transaction needs them:
+ * SENSE_OK, or what idle_low() makes of them. */
+static sense_err_t lines_idle(void)
+{
+    return lines_rise(SENSE_I2C_IDLE_US) ? SENSE_OK : idle_low();
+}
+
 /* A pico-sdk result as the bus sees it: @p want bytes was success.  The
  * SDK reports a NACK of the address, an arbitration lost and any other
  * abort as one PICO_ERROR_GENERIC, so the lines tell them apart: back high
- * is a NACK on a working bus, held low is a part holding it. */
+ * is a NACK on a working bus, held low is a part holding it, and low with
+ * nothing holding them is a NACK on a bus without pull-ups. */
 static sense_err_t classify(int rc, size_t want)
 {
     if (rc == (int)want) {
@@ -97,7 +123,8 @@ static sense_err_t classify(int rc, size_t want)
     if (rc >= 0) {
         return SENSE_NACK;        /* a data byte not acknowledged */
     }
-    return lines_rise(SENSE_I2C_IDLE_US) ? SENSE_NACK : SENSE_BUS_LOW;
+    const sense_err_t e = lines_idle();
+    return (e == SENSE_OK) ? SENSE_NACK : e;
 }
 
 /* The end of every transaction: a failed one leaves the block reset. */
@@ -118,8 +145,9 @@ sense_err_t sense_i2c_read(void *ctx, uint8_t addr, uint8_t reg,
         return SENSE_BAD_ARG;
     }
     const uint32_t irq = save_and_disable_interrupts();
-    if (!lines_rise(SENSE_I2C_IDLE_US)) {
-        return done(SENSE_BUS_LOW, irq);
+    const sense_err_t idle = lines_idle();
+    if (idle != SENSE_OK) {
+        return done(idle, irq);
     }
     const absolute_time_t until = make_timeout_time_us(SENSE_I2C_TIMEOUT_US);
     /* The pointer without a STOP, then the bytes after a repeated START. */
@@ -145,8 +173,9 @@ sense_err_t sense_i2c_write(void *ctx, uint8_t addr, uint8_t reg,
         frame[1u + i] = buf[i];
     }
     const uint32_t irq = save_and_disable_interrupts();
-    if (!lines_rise(SENSE_I2C_IDLE_US)) {
-        return done(SENSE_BUS_LOW, irq);
+    const sense_err_t idle = lines_idle();
+    if (idle != SENSE_OK) {
+        return done(idle, irq);
     }
     const absolute_time_t until = make_timeout_time_us(SENSE_I2C_TIMEOUT_US);
     const sense_err_t e = classify(
@@ -161,8 +190,9 @@ sense_err_t sense_i2c_ask(uint8_t addr)
         return SENSE_BAD_ARG;
     }
     const uint32_t irq = save_and_disable_interrupts();
-    if (!lines_rise(SENSE_I2C_IDLE_US)) {
-        return done(SENSE_BUS_LOW, irq);
+    const sense_err_t idle = lines_idle();
+    if (idle != SENSE_OK) {
+        return done(idle, irq);
     }
     uint8_t b;
     const absolute_time_t until = make_timeout_time_us(SENSE_I2C_TIMEOUT_US);

@@ -32,8 +32,9 @@ order: there is no random choice.  Above --max-mutants (60) the tool takes
 every k-th mutant of the sorted list.
 
 The working tree is never written.  The tool copies shared/, protocols/,
-test/host, firmware/iomcu, testbench/touch-injector/core and
-tools/gen_esc_profiles.py into a temporary directory,
+test/host, firmware/iomcu, firmware/panel/components/storage,
+testbench/touch-injector/core and tools/gen_esc_profiles.py into a
+temporary directory,
 builds there, and removes the directory on every way out: the end of the
 run, an error, Ctrl-C and SIGTERM.
 
@@ -70,10 +71,12 @@ from dataclasses import asdict, dataclass
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
 # What the host build reads: the code under test, the suite, the
-# IOmcu's pin header and PIO program, which two tests read, the touch
-# injector's core, which the host build compiles and tests, and the
+# IOmcu's pin header, PIO program and sources, which tests read or
+# compile, the panel's storage component, which test_storage compiles, the
+# touch injector's core, which the host build compiles and tests, and the
 # profile generator, which the esc_parity test holds the card reader to.
 COPIED = ("shared", "protocols", "test/host", "firmware/iomcu",
+          "firmware/panel/components/storage",
           "testbench/touch-injector/core", "tools/gen_esc_profiles.py")
 # Where a mutant is made, and the folder under it where none is: a pin
 # driver is compiled by the IOmcu build only.

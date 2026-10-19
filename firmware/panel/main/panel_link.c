@@ -288,6 +288,10 @@ static bool control_write_poles(link_msg_t *reply)
  *
  * Returns whether the far end holds the current count.
  */
+/* The pole count's refusal posted, kept until a count is taken: its
+ * number in the alert slot, 0 none.  Control task only. */
+static uint32_t s_poles_alert_gen;
+
 bool poles_service(void)
 {
     /*
@@ -306,12 +310,15 @@ bool poles_service(void)
     memset(&pr, 0, sizeof(pr));
     if (!control_write_poles(&pr)) {
         if (pr.op == LINK_OP_NACK) {
-            control_alert(TR(ALERT_POLES));
+            s_poles_alert_gen = control_alert_numbered(TR(ALERT_POLES));
             return false;
         }
         atomic_store(&s_poles_owed, true);
         return false;
     }
+    /* A count taken: a refusal still on the band is over. */
+    control_alert_withdraw(s_poles_alert_gen);
+    s_poles_alert_gen = 0u;
     return true;
 }
 
@@ -326,6 +333,11 @@ bool poles_service(void)
  *
  * Returns how it went; the alerts for a refusal are said here.
  */
+/* The pulse range's refusal or order alert posted, kept until a pair is
+ * taken or found held: its number in the alert slot, 0 none.  Control task
+ * only. */
+static uint32_t s_pulse_alert_gen;
+
 static endpoints_outcome_t endpoints_pay(uint16_t lo, uint16_t hi)
 {
     link_msg_t ccr;
@@ -343,7 +355,7 @@ static endpoints_outcome_t endpoints_pay(uint16_t lo, uint16_t hi)
         /* Idle pulse and Full pulse overlap in their ranges (800 to 1600 and
          * 1400 to 2400 us), so the pair can be inverted while it is being
          * edited.  Said, and the far end keeps the last pair it took. */
-        control_alert(TR(ALERT_PULSE_ORDER));
+        s_pulse_alert_gen = control_alert_numbered(TR(ALERT_PULSE_ORDER));
         return ENDPOINTS_ORDER;
     }
     if (memcmp(cfg, ccr.regs, sizeof(cfg)) == 0) {
@@ -355,7 +367,7 @@ static endpoints_outcome_t endpoints_pay(uint16_t lo, uint16_t hi)
         return ENDPOINTS_NO_ANSWER;
     }
     if (reply.op != LINK_OP_ACK) {
-        control_alert(TR(ALERT_PULSE_REFUSED));
+        s_pulse_alert_gen = control_alert_numbered(TR(ALERT_PULSE_REFUSED));
         return ENDPOINTS_WRITE_REFUSED;
     }
     /* The acknowledgement carries what the far end stored. */
@@ -394,9 +406,15 @@ void endpoints_service(bool far_disarmed)
         != ENDPOINTS_PAY) {
         return;
     }
-    endpoints_paid(&s_endpoints,
-                   endpoints_pay(endpoints_min(&s_endpoints),
-                                 endpoints_max(&s_endpoints)));
+    const endpoints_outcome_t out = endpoints_pay(endpoints_min(&s_endpoints),
+                                                  endpoints_max(&s_endpoints));
+    if (out == ENDPOINTS_TAKEN || out == ENDPOINTS_HELD) {
+        /* The pair asked is the far end's: a refusal or an inverted pair
+         * still on the band is over. */
+        control_alert_withdraw(s_pulse_alert_gen);
+        s_pulse_alert_gen = 0u;
+    }
+    endpoints_paid(&s_endpoints, out);
 }
 
 /*

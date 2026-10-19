@@ -74,6 +74,7 @@ TRACKED = [
     "shared/ui/prog_registry.c",
     "shared/ui/ui_text.c",
     "shared/ui/ui_router.c",
+    "shared/ui/ui_alert_slot.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
     "shared/ui/motor_screen.c",

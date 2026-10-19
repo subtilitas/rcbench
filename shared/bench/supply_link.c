@@ -270,6 +270,19 @@ bool supply_link_settled(const supply_link_t *s)
            && (s->refused || (s->wired && same_wiring(&s->page, &w)));
 }
 
+bool supply_link_event_stands(const supply_link_t *s, uint16_t ev)
+{
+    if (s == NULL) {
+        return false;
+    }
+    if (ev != SUPPLY_LINK_EV_WIRING_REFUSED
+        && ev != SUPPLY_LINK_EV_WIRING_LIVE) {
+        return true;
+    }
+    const supply_wiring_t w = as_written(&s->want);
+    return s->refused || !s->wired || !same_wiring(&s->page, &w);
+}
+
 bool supply_link_read_due(const supply_link_t *s, uint32_t now_ms)
 {
     return s != NULL

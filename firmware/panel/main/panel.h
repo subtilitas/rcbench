@@ -56,6 +56,7 @@
 #include "tone_link.h"
 #include "touch_loss.h"
 #include "touch_types.h"
+#include "ui_alert_slot.h"
 #include "ui_screen.h"
 
 /* ------------------------------------------------------------------ main.c */
@@ -161,13 +162,10 @@ typedef struct {
     uint32_t      link_errors;
     uint32_t      link_refused; /**< ui_bench_status_t's link_refused */
     uint32_t      run_seconds;
-    char          alert[ALERT_MAX];
-    bool          alert_pending;
-    /* Every alert posted is numbered, and the render side records the
-     * number of the one it took: an alert posted and replaced before a
-     * frame took it was never shown.  See sense_link_alerts(). */
-    uint32_t      alert_gen;
-    uint32_t      alert_taken;
+    /* The control task's alert, numbered: an alert posted and replaced
+     * before a frame took it was never shown (sense_link_alerts()), and one
+     * whose cause is over is taken back (control_alert_withdraw()). */
+    ui_alert_slot_t alert;
     /* The phase tap as the control task last read it, for the stick run's
      * page. */
     tone_readout_t tone;
@@ -195,6 +193,13 @@ static inline void snap_unlock(void) { xSemaphoreGive(s_snap_lock); }
  * slot holds one alert; a later one replaces it.  Returns its number. */
 uint32_t control_alert_numbered(const char *text);
 
+/* Take back alert number @p gen, whose cause is over: one not yet taken
+ * by a frame is dropped, and the last one a frame took is cleared from the
+ * band if it is still showing (ui_router_withdraw_alert()).  An older
+ * alert is left alone, so withdrawals of several causes in one frame do
+ * not hide each other (ui_alert_slot.h).  Control task only. */
+void control_alert_withdraw(uint32_t gen);
+
 /* The same, for the callers that do not follow it.  Inlined where it is
  * called, as the compiler chose before the numbering: a frame of its own
  * puts 32 bytes on the control task's deepest chain (drv_lost() through
@@ -204,9 +209,13 @@ __attribute__((always_inline)) static inline void
 control_alert(const char *text)
 {
     snap_lock();
-    snprintf(s_snap.alert, sizeof(s_snap.alert), "%s", text);
-    s_snap.alert_pending = true;
-    ++s_snap.alert_gen;
+    snprintf(s_snap.alert.text, sizeof(s_snap.alert.text), "%s", text);
+    s_snap.alert.pending = true;
+    /* ui_alert_slot_post(), written out for the same reason. */
+    ++s_snap.alert.posted;
+    if (s_snap.alert.posted == 0u) {
+        s_snap.alert.posted = 1u;
+    }
     snap_unlock();
 }
 
