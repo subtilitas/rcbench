@@ -36,6 +36,7 @@
 #include "link_port.h"
 #include "link_update_host.h"
 #include "log_cadence.h"
+#include "log_take.h"
 #include "log_viewer_screen.h"
 #include "motor_screen.h"
 #include "out_bind.h"
@@ -294,7 +295,8 @@ void esc_profiles_load(void);
 extern const log_viewer_io_t k_card_io;
 
 /* The runs the logger has open, held back from the viewer: the automatic
- * log's in CARD_AUTO_LOGS, a test's CSV and report in CARD_USER_LOGS. */
+ * log's in AUTO LOG FOLDER, a test's CSV and report in USER LOG FOLDER,
+ * each in the folder it was opened in (log_open_marks()). */
 extern atomic_uint s_log_open_run;
 extern atomic_uint s_test_open_run;
 extern atomic_uint s_test_open_txt;
@@ -331,7 +333,26 @@ void kst_card_serve(void);
  * while the bench is not armed; log_run_kind_t and the rule of which run
  * the log records are in log_cadence.h.  One run is one file, and a file
  * holds one kind of row, so its header names every column it has.  All
- * runs are written to CARD_AUTO_LOGS, none while AUTO LOGS is off. */
+ * runs are written to AUTO LOG FOLDER, none while AUTO LOGS is off. */
+
+/* The two folders SETUP > SD CARD names, AUTO LOG FOLDER and USER LOG
+ * FOLDER. */
+typedef enum {
+    LOG_FOLDER_AUTO = 0,
+    LOG_FOLDER_USER,
+    LOG_FOLDERS
+} log_folder_t;
+
+/* The folder the next file of @p kind is written to: one card_folder_check()
+ * takes (card_folder_use()).  Called by the text observer on app_main;
+ * the logger reads it at each take, so a file open stays where it is and
+ * the next one is numbered in the new folder. */
+void log_set_folder(log_folder_t kind, const char *dir);
+
+/* The open markers and the folder each was opened in, read as one, for the
+ * viewer's card_busy(): @p run_dir and @p test_dir take CARD_DIR_MAX bytes
+ * and @p marks points into them. */
+void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir);
 
 /*
  * One sample on its way to the card, filled by the control task.

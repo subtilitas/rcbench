@@ -445,10 +445,17 @@ static const char *const k_cat_names[SET_CAT_COUNT] = {
     [SET_CAT_UPDATE] = "UPDATES",
 };
 
-/* The string settings' keys and defaults; NVS keys, 15 characters or fewer. */
-static const struct { const char *key; const char *def; }
-    k_text_defs[SETTING_TEXT_COUNT] = {
-    [SET_TEXT_DUT_NAME] = { "srv_dut", "SERVO" },
+/* The string settings' keys, defaults and categories; NVS keys, 15
+ * characters or fewer.  The log folders' defaults are CARD_AUTO_LOGS and
+ * CARD_USER_LOGS (card_tree.h), which test_settings holds them to. */
+static const struct {
+    const char   *key;
+    const char   *def;
+    setting_cat_t cat;
+} k_text_defs[SETTING_TEXT_COUNT] = {
+    [SET_TEXT_DUT_NAME]     = { "srv_dut", "SERVO", SET_CAT_COUNT },
+    [SET_TEXT_LOG_AUTO_DIR] = { "log_auto_dir", "BENCH/LOGS", SET_CAT_CARD },
+    [SET_TEXT_LOG_USER_DIR] = { "log_user_dir", "USER/LOGS", SET_CAT_CARD },
 };
 
 static struct {
@@ -470,6 +477,7 @@ static struct {
     bool     save_failed;  /* the last attempt did not reach the medium */
     const settings_store_t *store;
     settings_observer_fn observer;
+    settings_text_observer_fn text_observer;
     settings_hold_fn hold;
 } s;
 
@@ -645,6 +653,22 @@ static void notify_changed(int id, float before)
     }
 }
 
+/* String @p i set to @p text, cut to SETTINGS_TEXT_MAX - 1 characters; the
+ * text observer hears it when it moved.  Whether it moved. */
+static bool text_to(int i, const char *text)
+{
+    char next[SETTINGS_TEXT_MAX];
+    snprintf(next, sizeof(next), "%s", text);
+    if (strcmp(next, s.texts[i]) == 0) {
+        return false;
+    }
+    memcpy(s.texts[i], next, sizeof(next));
+    if (s.text_observer) {
+        s.text_observer((setting_text_id_t)i);
+    }
+    return true;
+}
+
 void settings_reset(setting_cat_t cat)
 {
     /*
@@ -660,6 +684,11 @@ void settings_reset(setting_cat_t cat)
             s.values[i] = k_defs[i].def;
             moved = moved || (s.values[i] != before);
             notify_changed(i, before);
+        }
+    }
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        if (k_text_defs[i].cat == cat && text_to(i, k_text_defs[i].def)) {
+            moved = true;
         }
     }
     if (moved) {
@@ -682,8 +711,7 @@ static void defaults(bool held)
         notify_changed(i, before);
     }
     for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
-        if (strcmp(s.texts[i], k_text_defs[i].def) != 0) {
-            snprintf(s.texts[i], SETTINGS_TEXT_MAX, "%s", k_text_defs[i].def);
+        if (text_to(i, k_text_defs[i].def)) {
             moved = true;
         }
     }
@@ -705,6 +733,11 @@ void settings_set_store(const settings_store_t *store)
 void settings_set_observer(settings_observer_fn fn)
 {
     s.observer = fn;
+}
+
+void settings_set_text_observer(settings_text_observer_fn fn)
+{
+    s.text_observer = fn;
 }
 
 void settings_init(void)
@@ -737,6 +770,11 @@ void settings_init(void)
     if (s.observer) {
         for (int i = 0; i < SETTING_COUNT; ++i) {
             s.observer((setting_id_t)i);
+        }
+    }
+    if (s.text_observer) {
+        for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+            s.text_observer((setting_text_id_t)i);
         }
     }
 }
@@ -927,12 +965,31 @@ void settings_set_text(setting_text_id_t id, const char *text)
     if (id < 0 || id >= SETTING_TEXT_COUNT || text == NULL) {
         return;
     }
-    char next[SETTINGS_TEXT_MAX];
-    snprintf(next, sizeof(next), "%s", text);
-    if (strcmp(next, s.texts[id]) != 0) {
-        memcpy(s.texts[id], next, sizeof(next));
+    if (text_to((int)id, text)) {
         mark_dirty();
     }
+}
+
+setting_cat_t settings_text_category(setting_text_id_t id)
+{
+    return (id >= 0 && id < SETTING_TEXT_COUNT) ? k_text_defs[id].cat
+                                                : SET_CAT_COUNT;
+}
+
+int settings_texts_in_category(setting_cat_t cat, setting_text_id_t *out,
+                               int max)
+{
+    int n = 0;
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        if (k_text_defs[i].cat != cat || cat == SET_CAT_COUNT) {
+            continue;
+        }
+        if (out != NULL && n < max) {
+            out[n] = (setting_text_id_t)i;
+        }
+        ++n;
+    }
+    return n;
 }
 
 bool settings_save_failed(void)
@@ -1025,13 +1082,14 @@ int settings_discard(void)
             settings_set((setting_id_t)i, s.stored[i]);
         }
     }
-    /* A string has no observer: settings_set_text() is the copy and the
-     * dirty flag, and so is this. */
+    /* The strings the same way: the text observer hears each one put
+     * back. */
     bool texts = false;
     for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
         if (settings_text_differs((setting_text_id_t)i)) {
-            memcpy(s.texts[i], s.stored_texts[i], SETTINGS_TEXT_MAX);
-            texts = true;
+            char was[SETTINGS_TEXT_MAX];
+            memcpy(was, s.stored_texts[i], sizeof(was));
+            texts = text_to(i, was) || texts;
         }
     }
     if (texts) {

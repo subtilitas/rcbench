@@ -4,6 +4,7 @@
  *
  *   /BENCH/                    what the bench writes or reads for itself
  *     LOGS/                    automatic logs: SERVOnnn, MOTORnnn, SUPPLnnn
+ *                              (AUTO LOG FOLDER, the default)
  *     ESC/CONF/                ESC (electronic speed controller) profiles
  *     KST/CONF/                KST and Chaservo servo files
  *     HITEC/CONF/              Hitec servo files
@@ -11,12 +12,17 @@
  *     RCBENCH.OLD              the fault log before the last 1 MiB
  *   /USER/
  *     LOGS/                    user-started tests: ATESTnnn, LIMITnnn
+ *                              (USER LOG FOLDER, the default)
  *   /                          run logs of firmware 0.21 and older
  *
  * Every folder name is upper case, 1 to 8 characters of A-Z, 0-9, "_" and
  * "-", without an extension: a FAT (File Allocation Table) 8.3 short name,
  * the same on every computer.  A path is relative to the card's root, its
  * folders separated by "/", with no "/" at either end; "" is the root.
+ *
+ * The two log folders are settings (SETUP > SD CARD): any folder
+ * card_folder_check() takes, the defaults CARD_AUTO_LOGS and
+ * CARD_USER_LOGS.  The other places are fixed.
  *
  * The panel reads and writes these places only.  Folders of firmware 0.21
  * and older, /ESC and /KST, and its /RCBENCH.LOG are neither read nor
@@ -33,6 +39,8 @@
 
 #pragma once
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -43,13 +51,15 @@ extern "C" {
 /** The bench's own folder. */
 #define CARD_BENCH       "BENCH"
 
-/** The automatic logs: a log of each ARMED run and each supply run. */
+/** The automatic logs: a log of each ARMED run and each supply run; the
+ *  default of AUTO LOG FOLDER. */
 #define CARD_AUTO_LOGS   "BENCH/LOGS"
 
 /** The user's folder. */
 #define CARD_USER        "USER"
 
-/** The files of the tests a user starts: AUTOMATIC TEST and LIMIT RUN. */
+/** The files of the tests a user starts: AUTOMATIC TEST and LIMIT RUN; the
+ *  default of USER LOG FOLDER. */
 #define CARD_USER_LOGS   "USER/LOGS"
 
 /** ESC profile overrides, <id>.json. */
@@ -97,6 +107,46 @@ typedef card_dir_t (*card_make_fn)(void *ctx, const char *level);
  * the result.  CARD_ROOT makes nothing and is CARD_DIR_OK.
  */
 card_dir_t card_make_dirs(const char *dir, card_make_fn make, void *ctx);
+
+/** The longest folder name a log folder takes, and how deep it goes. */
+#define CARD_FOLDER_NAME_MAX  8
+#define CARD_FOLDER_DEPTH_MAX 2
+
+/** What card_folder_check() says of a log folder. */
+typedef enum {
+    CARD_FOLDER_OK = 0,
+    CARD_FOLDER_ARG,       /**< a NULL, or an @p out shorter than the path */
+    CARD_FOLDER_EMPTY,     /**< "", or a leading, trailing or double "/"   */
+    CARD_FOLDER_LONG,      /**< a folder over CARD_FOLDER_NAME_MAX         */
+    CARD_FOLDER_DEEP,      /**< more than CARD_FOLDER_DEPTH_MAX folders    */
+    CARD_FOLDER_CHAR,      /**< a character outside A-Z, 0-9, "_" and "-"  */
+    CARD_FOLDER_RESERVED,  /**< a device name: CON, PRN, AUX, NUL, COM1 to
+                                COM9, LPT1 to LPT9                         */
+    CARD_FOLDER_BENCH,     /**< the bench's own: BENCH/ESC, BENCH/KST,
+                                BENCH/HITEC and below                      */
+} card_folder_t;
+
+/**
+ * Whether @p in names a folder the logs can be written to: 1 or 2 folders
+ * separated by "/", each 1 to 8 characters of A-Z, 0-9, "_" and "-", lower
+ * case taken as upper case.  A device name is refused in either place, and
+ * so is a folder the bench keeps its own files in.  Both log folders may
+ * be one folder.  The first fault from the left is the answer.
+ *
+ * On CARD_FOLDER_OK, @p out (when not NULL) takes the path in upper case;
+ * at most 17 characters and the terminator.  Otherwise @p out is left as
+ * it was.
+ */
+card_folder_t card_folder_check(const char *in, char *out, size_t n);
+
+/**
+ * The folder a log is written to: @p text in upper case when
+ * card_folder_check() takes it, @p fallback otherwise.  Written into
+ * @p out, CARD_DIR_MAX bytes or more, and returned.  A stored folder that
+ * no longer passes the check is never written to.
+ */
+const char *card_folder_use(const char *text, const char *fallback,
+                            char *out, size_t n);
 
 #ifdef __cplusplus
 }

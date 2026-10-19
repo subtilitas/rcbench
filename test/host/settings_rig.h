@@ -166,6 +166,7 @@ static inline void fresh_model(void)
     s_observed = 0;
     settings_set_store(NULL);
     settings_set_observer(NULL);
+    settings_set_text_observer(NULL);
     settings_init();
 }
 

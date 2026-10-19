@@ -1,8 +1,9 @@
 /*
  * The logger: the runlog task, which makes every card call of a run, a
- * servo test and the fault log.  A run is written to CARD_AUTO_LOGS, a test
- * to CARD_USER_LOGS (card_tree.h), each under its folder's next number
- * (log_take.h).  The control task's side, which numbers
+ * servo test and the fault log.  A run is written to AUTO LOG FOLDER, a
+ * test to USER LOG FOLDER (SETUP > SD CARD; CARD_AUTO_LOGS and
+ * CARD_USER_LOGS by default, card_tree.h), each under its folder's next
+ * number (log_take.h).  The control task's side, which numbers
  * the runs and posts the rows, is in main.c.
  *
  * SPDX-License-Identifier: MIT
@@ -101,6 +102,61 @@ static uint32_t     s_log_run_id;
  * starts from what it handed out last.  The logger task's own.
  */
 static log_series_set_t s_series;
+
+/*
+ * The log folders.  s_dir_want is what SETUP > SD CARD names, written by
+ * the text observer on app_main (log_set_folder()); s_dir_open is the
+ * folder of each kind's open file, written by this task as it takes one
+ * and read by the task that renders with the markers (log_open_marks()).
+ * Both under s_dir_mux: a folder is 24 bytes, not one word.  A folder of
+ * a kind changes only while that kind has no file open: a run is closed
+ * before the next is opened, and a test's CSV and report share one take.
+ */
+static portMUX_TYPE s_dir_mux = portMUX_INITIALIZER_UNLOCKED;
+static char s_dir_want[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
+                                                      CARD_USER_LOGS };
+static char s_dir_open[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
+                                                      CARD_USER_LOGS };
+/* The folders this task took last; a change forgets every folder's
+ * numbering, so the next take walks its folder.  The logger task's own. */
+static char s_dir_took[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
+                                                      CARD_USER_LOGS };
+
+void log_set_folder(log_folder_t kind, const char *dir)
+{
+    if (kind < 0 || kind >= LOG_FOLDERS || dir == NULL) {
+        return;
+    }
+    taskENTER_CRITICAL(&s_dir_mux);
+    snprintf(s_dir_want[kind], CARD_DIR_MAX, "%s", dir);
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
+/* The folder of @p kind's next file, into @p dir (CARD_DIR_MAX), marked as
+ * the folder its file is opened in.  The logger task's. */
+static void folder_take(log_folder_t kind, char *dir)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    memcpy(dir, s_dir_want[kind], CARD_DIR_MAX);
+    memcpy(s_dir_open[kind], dir, CARD_DIR_MAX);
+    taskEXIT_CRITICAL(&s_dir_mux);
+    if (log_series_follow(&s_series, s_dir_took[kind], dir)) {
+        ESP_LOGI(TAG, "log folder %d: %s", (int)kind, dir);
+    }
+}
+
+void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    memcpy(run_dir, s_dir_open[LOG_FOLDER_AUTO], CARD_DIR_MAX);
+    memcpy(test_dir, s_dir_open[LOG_FOLDER_USER], CARD_DIR_MAX);
+    marks->run  = atomic_load(&s_log_open_run);
+    marks->test = atomic_load(&s_test_open_run);
+    marks->txt  = atomic_load(&s_test_open_txt);
+    taskEXIT_CRITICAL(&s_dir_mux);
+    marks->run_dir  = run_dir;
+    marks->test_dir = test_dir;
+}
 
 /* The files the logger has created since the start, and the LOGS tab of
  * the last one, for log_viewer_io_t.written. */
@@ -297,7 +353,7 @@ static log_prefix_t run_prefix(log_run_kind_t kind)
 }
 
 /*
- * Open the run's file in CARD_AUTO_LOGS, on the logger task: MOTORnnn.CSV
+ * Open the run's file in AUTO LOG FOLDER, on the logger task: MOTORnnn.CSV
  * for a run armed on MOTOR & ESC or ESC STICK, SERVOnnn.CSV for one armed
  * on SERVO, SUPPLnnn.CSV for a supply run.
  *
@@ -336,14 +392,16 @@ static void log_open(uint32_t run, log_run_kind_t kind)
      * restarted.
      */
     int number = -1;
-    const log_take_t r = take(CARD_AUTO_LOGS, run_prefix(kind), false,
+    char dir[CARD_DIR_MAX];
+    folder_take(LOG_FOLDER_AUTO, dir);
+    const log_take_t r = take(dir, run_prefix(kind), false,
                               &s_log_file, &s_log_open_run, LOG_TAB_BENCH,
                               &number);
     if (r != LOG_TAKE_OK) {
         s_log_file = NULL;
         ESP_LOGW(TAG, "no log file (take %d); this run is not recorded",
                  (int)r);
-        take_alert(r, CARD_AUTO_LOGS,
+        take_alert(r, dir,
                    (r == LOG_TAKE_NO_CARD)      ? TR(ALERT_NO_CARD_RUN)
                    : (r == LOG_TAKE_UNREADABLE) ? TR(ALERT_CARD_UNREADABLE)
                                                 : TR(ALERT_CARD_FULL));
@@ -400,7 +458,7 @@ static void log_close(void)
 }
 
 /*
- * The tests' files, in CARD_USER_LOGS: the AUTOMATIC TEST's CSV as
+ * The tests' files, in USER LOG FOLDER: the AUTOMATIC TEST's CSV as
  * ATESTnnn.CSV under the folder's next number and its report as
  * ATESTnnn.TXT under the same number; a limit run's report alone as
  * LIMITnnn.TXT under the next number.  The render loop hands the lines
@@ -430,13 +488,14 @@ static bool     s_test_txt;      /* s_test_fp is the report               */
 static unsigned s_test_lines;    /* since the last commit                 */
 static bool     s_test_failed;
 static bool     s_test_txt_bad;  /* a write or the close of the report failed */
+static char     s_test_dir[CARD_DIR_MAX];   /* the folder of the run's files */
 
 /* ATESTnnn.CSV, or with @p txt ATESTnnn.TXT, as a path on the card. */
 static void test_path(int number, bool txt, char *path, size_t n)
 {
     char name[LOG_RUN_NAME_MAX];
     log_name_build(name, sizeof(name), LOG_PREFIX_ATEST, number, txt);
-    storage_path(CARD_USER_LOGS, name, path, n);
+    storage_path(s_test_dir, name, path, n);
 }
 
 static void test_close(void)
@@ -473,7 +532,8 @@ static void test_open(bool txt)
     s_test_txt_bad = false;
     atomic_store(&s_test_report, false);
     int number = -1;
-    const log_take_t r = take(CARD_USER_LOGS,
+    folder_take(LOG_FOLDER_USER, s_test_dir);
+    const log_take_t r = take(s_test_dir,
                               txt ? LOG_PREFIX_LIMIT : LOG_PREFIX_ATEST, txt,
                               &s_test_fp,
                               txt ? &s_test_open_txt : &s_test_open_run,
@@ -482,7 +542,7 @@ static void test_open(bool txt)
         s_test_num = number;
     } else {
         s_test_fp = NULL;
-        take_alert(r, CARD_USER_LOGS, TR(ALERT_CARD_SERVO));
+        take_alert(r, s_test_dir, TR(ALERT_CARD_SERVO));
     }
     atomic_store(&s_test_file, s_test_num);
     atomic_fetch_add(&s_test_opens_done, 1u);

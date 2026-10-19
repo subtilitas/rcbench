@@ -98,7 +98,7 @@ is taken in a gap ahead of the save that needs it.
 | Interface language | built and tested on the host: English and German, chosen by SETUP's Language and applied on the next frame without a restart. Every translated string is an ID in `shared/ui/include/ui_text.def`, German is `shared/ui/ui_text_de.c`, and a missing entry shows the English. The servo test's TXT report is in the language its run started in; its CSV stays English. `render_ui.py --fit` draws every view in both languages and fails on a German string that overflows; `test_text` holds the rest. [Reference](docs/Language.md) |
 | Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/`. The home tag that leaves SETUP with values unsaved opens a warning listing each change against the stored copy, with SAVE, DISCARD (refused while ARMED) and STAY; no route the panel takes by itself is held (`test_settings`) |
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
-| Logger | built: a run is written while ARMED, or while the supply's output is on with the bench SAFE, in the format the viewer reads. The log of a bench in ARMED has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the switch to ARMED; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the IOmcu's pages. A file goes to one of two folders and is named by what started it: `BENCH/LOGS` holds `SERVOnnn` for an arm from SERVO, `MOTORnnn` for an arm from MOTOR & ESC or ESC STICK and `SUPPLnnn` for a supply run; `USER/LOGS` holds `ATESTnnn` for the automatic test and `LIMITnnn` for the limit run; the `BENCHnnn`, `ESCnnn` and `SERVOnnn` runs of firmware 0.21 and older stay in the root and stay readable. Each folder is made one level at a time on its first write, and its numbers are one series across every name in it, read by one walk and probed name by name before each take (`shared/logfile/log_name.c`, `shared/logfile/log_take.c`, host-tested in `test_log_name` and `test_log_take`). SETUP > SD CARD switches each folder's writing off (Auto logs, User logs; `test_log_cadence`, `test_servo_test_panel`, `test_servo_limit_panel`). The bench's own files are under `BENCH` too: the fault log `BENCH/RCBENCH.LOG`, written whatever SETUP > SD CARD says and held to 1 MiB with the full file kept as `BENCH/RCBENCH.OLD` (`shared/logfile/fault_log.c`, `test_fault_log`), the ESC profiles read from `BENCH/ESC/CONF` and the servo files and the write record in `BENCH/KST/CONF`; each folder is made one level at a time (`shared/logfile/card_tree.c`, `test_card_tree`). The folders `ESC` and `KST` and the root's `RCBENCH.LOG` of 0.21.0 and older are not read. An automatic servo test's CSV and report take the next number of `USER/LOGS`, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full. A row the cut stops part way through has no line feed; the reader leaves it out and reports it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in `test_logwriter` |
+| Logger | built: a run is written while ARMED, or while the supply's output is on with the bench SAFE, in the format the viewer reads. The log of a bench in ARMED has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the switch to ARMED; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the IOmcu's pages. A file goes to one of two folders and is named by what started it: `BENCH/LOGS` holds `SERVOnnn` for an arm from SERVO, `MOTORnnn` for an arm from MOTOR & ESC or ESC STICK and `SUPPLnnn` for a supply run; `USER/LOGS` holds `ATESTnnn` for the automatic test and `LIMITnnn` for the limit run; the `BENCHnnn`, `ESCnnn` and `SERVOnnn` runs of firmware 0.21 and older stay in the root and stay readable. Each folder is made one level at a time on its first write, and its numbers are one series across every name in it, read by one walk and probed name by name before each take (`shared/logfile/log_name.c`, `shared/logfile/log_take.c`, host-tested in `test_log_name` and `test_log_take`). SETUP > SD CARD switches each folder's writing off (Auto logs, User logs; `test_log_cadence`, `test_servo_test_panel`, `test_servo_limit_panel`) and sets each folder (Auto log folder, User log folder: 1 or 2 folders of up to 8 characters, `card_folder_check()` in `shared/logfile/card_tree.c`; `test_card_tree`, `test_keypad`, `test_settings_folders`); a changed folder takes the next file and numbers from what it holds (`log_series_follow()`, `test_log_take`), and LOGS lists the folders set (`test_logview`). The logger's copy of the folders and the open markers' folders, under a spinlock in `panel_log.c`, are not host-tested. The bench's own files are under `BENCH` too: the fault log `BENCH/RCBENCH.LOG`, written whatever SETUP > SD CARD says and held to 1 MiB with the full file kept as `BENCH/RCBENCH.OLD` (`shared/logfile/fault_log.c`, `test_fault_log`), the ESC profiles read from `BENCH/ESC/CONF` and the servo files and the write record in `BENCH/KST/CONF`; each folder is made one level at a time (`shared/logfile/card_tree.c`, `test_card_tree`). The folders `ESC` and `KST` and the root's `RCBENCH.LOG` of 0.21.0 and older are not read. An automatic servo test's CSV and report take the next number of `USER/LOGS`, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full. A row the cut stops part way through has no line feed; the reader leaves it out and reports it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in `test_logwriter` |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
 | Panel firmware update and card files over Wi-Fi | built and host-tested (`shared/fwupdate/`, `shared/webaccess/`, `test_wifi_screen`); the panel side is `firmware/panel/components/wifi_access/` and `fw_ota/`. A panel install and the IOmcu's update exclude each other (`fw_gate()`, `fw_coproc_may_start()`, `test_fw_install`): the install waits while the IOmcu's update or BUY runs, and the IOmcu's question opens and its START is taken only with the radio wholly off and no install under way. Not run on a panel: the transfer rate, the range, the time of an erase and a write, what the glass shows during an erase and the free internal heap with the radio and the display up are not measured. [Wi-Fi](docs/Screens.md#wi-fi), [migration](docs/FirstRun.md#1-flash-both-boards) |
 | Release check, reminder and download from GitHub | built and host-tested: the strict reading of the release tag, the redirects and `SHA256SUMS` (`shared/fwupdate/fw_release.c`, `test_fw_release`), the scan of GitHub's API answer for the highest of its 10 newest releases and the rule that offers only a newer release (`test_fw_release_scan`), the check and the download with their budgets, aborts and a scripted HTTP client (`shared/webaccess/wa_fetch.c`, `test_wa_fetch`), RELEASES' two channels and GitHub's request limit (`test_wa_fetch_channel`), and UPDATES, the reminder and the download's screen (`shared/ui/upd_screen.c`, `test_upd_screen`). The panel side is `wifi_access_fetch_*()` over esp_http_client in `firmware/panel/components/wifi_access/`. Not run on a panel or against GitHub: the API request of RELEASES on TESTING, the TLS (transport layer security) handshakes, the durations of the check and the download, and the free internal heap while a TLS connection runs are not measured. [Updates](docs/Screens.md#updates) |
@@ -211,7 +211,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 174 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 175 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_touch_merge`, `test_inj_line_id`, `test_inj_emu`,
 `test_nav`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
@@ -219,7 +219,7 @@ The host suite is 174 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_servo_test_panel`, `test_servo_limit_panel`, `test_servo_workbench`, `test_servo_arm`,
 `test_analyser`, `test_prog_models`, `test_esc_stick_panel`, `test_balance`, `test_battery`,
 `test_settings`, `test_settings_screen`, `test_settings_gesture`,
-`test_settings_pins_hub`, `test_settings_leave`, `test_log_numbers`, `test_log_reader`, `test_log_csv`, `test_link_crc`, `test_link_pages`,
+`test_settings_pins_hub`, `test_settings_leave`, `test_settings_folders`, `test_log_numbers`, `test_log_reader`, `test_log_csv`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
@@ -307,8 +307,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 426 committed screenshots to the current
-render, 213 in English and the same 213 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 428 committed screenshots to the current
+render, 214 in English and the same 214 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed); `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
@@ -353,7 +353,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
 | `shared/ui/supply_screen.c` | 1149 | 1126 | 98.0% |
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
-| `shared/ui/ui_textkey.c` | 236 | 229 | 97.0% |
+| `shared/ui/ui_textkey.c` | 266 | 254 | 95.5% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
 | `shared/ui/servo_screen.c` | 1864 | 1821 | 97.7% |
 | `shared/ui/servo_settings_panel.c` | 819 | 797 | 97.3% |
@@ -367,9 +367,9 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/prog_models.c` | 8 | 8 | 100.0% |
 | `shared/ui/esc_stick_pages.c` | 109 | 100 | 91.7% |
 | `shared/ui/esc_stick_panel.c` | 2010 | 1909 | 95.0% |
-| `shared/ui/log_viewer_screen.c` | 1268 | 1199 | 94.6% |
+| `shared/ui/log_viewer_screen.c` | 1270 | 1201 | 94.6% |
 | `shared/ui/log_select.c` | 73 | 72 | 98.6% |
-| `shared/ui/settings_screen.c` | 553 | 546 | 98.7% |
+| `shared/ui/settings_screen.c` | 635 | 626 | 98.6% |
 | `shared/ui/outputs_screen.c` | 467 | 463 | 99.1% |
 | `shared/ui/outputs_port.c` | 225 | 222 | 98.7% |
 | `shared/ui/picker_screen.c` | 657 | 649 | 98.8% |
@@ -378,14 +378,14 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/wifi_screen.c` | 608 | 591 | 97.2% |
 | `shared/ui/coproc_update_screen.c` | 264 | 263 | 99.6% |
 | `shared/ui/upd_screen.c` | 595 | 570 | 95.8% |
-| `shared/settings/settings.c` | 290 | 283 | 97.6% |
+| `shared/settings/settings.c` | 315 | 308 | 97.8% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
 | `shared/logfile/log_csv.c` | 468 | 444 | 94.9% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/logfile/log_name.c` | 106 | 106 | 100.0% |
-| `shared/logfile/log_take.c` | 82 | 81 | 98.8% |
-| `shared/logfile/card_tree.c` | 15 | 15 | 100.0% |
+| `shared/logfile/log_take.c` | 89 | 88 | 98.9% |
+| `shared/logfile/card_tree.c` | 76 | 76 | 100.0% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
 | `shared/safety/arming.c` | 220 | 214 | 97.3% |
@@ -511,7 +511,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **48175** | **47026** | **97.6%** |
+| **total** | **48382** | **47226** | **97.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -546,7 +546,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control task has no test of its own | touch, STOP, the ARMED state, the outputs, the link and the heartbeat run in a task on the core that does not draw. Nothing exercises it deliberately: its files, `main.c`, `panel_link.c`, `panel_poll.c`, `panel_services.c`, `panel_supply.c`, `panel_arm.c`, `panel_art.c` and `panel_update.c` (the IOmcu's update), are not in the host suite. The `runlog` task beside it (`panel_log.c`), which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss stop and the wait for the far end's word on the heartbeat included | a session with both boards: press ARM, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill. A refill that finishes late shows stale lines in that frame; a refill interrupt held off for more than 512 us restarts the scan cleanly (`rgb_panel_rcbench.h`) at the first VBlank (vertical blanking interval) interrupt after it runs again, which can be mid-frame. The control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves. A write that holds it off for more than 512 us makes the driver restart the scan with the clean start of boot (`rgb_panel_rcbench.h`) at the first VBlank interrupt after the write ends, which can be mid-frame, so the picture is in place from the first whole frame after; the console logs `display: scan restarted` each time. How long a save holds the interrupt off is not measured | a photo of the home screen after a settings save and after a board drawing's keep, with the console's restart lines beside it. Beyond that nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming's beep timing | the engine, ESC STICK on MOTOR & ESC > PROGRAM and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 213 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 214 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
 
 ## Constraints
 

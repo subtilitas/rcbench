@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners, zeigt, was der Import in einer davon gefunden hat, und zeichnet bis zu 4 ihrer Spalten. Drei Tabs oben links wählen den Ordner: USER (`USER/LOGS`), BENCH (`BENCH/LOGS`) und STAMM (das Stammverzeichnis der Karte). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md). Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
+LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners, zeigt, was der Import in einer davon gefunden hat, und zeichnet bis zu 4 ihrer Spalten. Drei Tabs oben links wählen den Ordner: USER (Ordner User-Logs, vorgegeben `USER/LOGS`), BENCH (Ordner Auto-Logs, vorgegeben `BENCH/LOGS`) und STAMM (das Stammverzeichnis der Karte). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md). Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
 
 ## Keine Karte
 
@@ -22,8 +22,8 @@ Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung und den gezeigten Ord
 
 | Tab | Ordner | Enthält |
 |---|---|---|
-| USER | `USER/LOGS` | die Dateien des AUTOMATISCHEN TESTS und des ENDLAGENLAUFS |
-| BENCH | `BENCH/LOGS` | das automatische Log jedes ARMED- und Netzteil-Laufs |
+| USER | Ordner User-Logs, vorgegeben `USER/LOGS` | die Dateien des AUTOMATISCHEN TESTS und des ENDLAGENLAUFS |
+| BENCH | Ordner Auto-Logs, vorgegeben `BENCH/LOGS` | das automatische Log jedes ARMED- und Netzteil-Laufs |
 | STAMM | Stammverzeichnis | die Läufe von Firmware 0.21 und älter |
 
 LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und nach einem Start auf BENCH, bis eine geschrieben ist. Ist seit dem letzten Besuch nichts geschrieben worden, bleibt der Tab, wie er verlassen wurde. Ein Tipp auf einen Tab liest seinen Ordner ab der ersten Seite.
@@ -66,6 +66,8 @@ Eine Datei ist ein Lauf, im Ordner seiner Art. Ihr Name sagt, was den Lauf gesta
 Der Name folgt dem Bildschirm, dessen ARM den Prüfstand geschaltet hat, auch an einem IOmcu älter als Protokoll 4.18, der mit jedem Schalten auf ARMED die Throttle-Ausgänge mitschaltet.
 
 AUTO-LOGS aus unter [SETUP > SD-KARTE](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; USER-LOGS aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `USER-LOGS AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
+
+Ordner Auto-Logs und Ordner User-Logs unter [SETUP > SD-KARTE](setup.md#sd-karte) stellen andere Ordner ein. Ein geänderter Ordner gilt ab der nächsten Datei, nummeriert nach dem, was dieser Ordner enthält. Dateien in einem vorher benutzten Ordner werden erst wieder gelistet, wenn der Ordner zurückgestellt ist.
 
 Das Panel legt jeden Ordner an, wenn es zum ersten Mal hineinschreibt, eine Ebene nach der anderen. Eine Datei namens `BENCH` oder `USER` im Stammverzeichnis verhindert das: Das Band zeigt `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.`
 

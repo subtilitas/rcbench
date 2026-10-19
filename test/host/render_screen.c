@@ -3245,9 +3245,28 @@ int main(int argc, char **argv)
     if (strcmp(view, "setup-application") == 0) {
         setup_tile(SET_CAT_APP);
     }
-    /* SETUP's SD CARD: AUTO LOGS and USER LOGS. */
+    /* SETUP's SD CARD: AUTO LOGS and USER LOGS, and the two folders. */
     if (strcmp(view, "setup-card") == 0) {
         setup_tile(SET_CAT_CARD);
+    }
+    /* The keyboard of AUTO LOG FOLDER in folder mode, "/" on the dot key,
+     * after an OK on BENCH/LOGS-2026, a folder of 9 characters: the
+     * refusal's line. */
+    if (strcmp(view, "setup-folder") == 0) {
+        setup_tile(SET_CAT_CARD);
+        const int row = settings_screen_text_row(SET_CAT_CARD,
+                                                 SET_TEXT_LOG_AUTO_DIR);
+        tap(400, UI_BAND_H + 6 + row * 58 + 27);
+        static const char chars[] = "1234567890QWERTYUIOPASDFGHJKL-ZXCVBNM_.";
+        const ui_textkey_t *k = settings_screen_textkey();
+        ktap(ui_textkey_key_rect(k, UI_TK_DEL));
+        ktap(ui_textkey_key_rect(k, UI_TK_DEL));
+        ktap(ui_textkey_key_rect(k, UI_TK_DEL));
+        ktap(ui_textkey_key_rect(k, UI_TK_DEL));
+        for (const char *p = "LOGS-2026"; *p != '\0'; ++p) {
+            ktap(ui_textkey_key_rect(k, (int)(strchr(chars, *p) - chars)));
+        }
+        ktap(ui_textkey_key_rect(k, UI_TK_OK));
     }
     /*
      * SETUP's INTERFACES, the current monitors' rows at the top, and the

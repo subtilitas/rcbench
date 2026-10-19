@@ -124,6 +124,7 @@ SOURCES = [
     "shared/logfile/log_reader.c",
     "shared/logfile/log_fields.c",
     "shared/logfile/log_name.c",
+    "shared/logfile/card_tree.c",
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",

@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder, shows what the import found in one, and plots up to 4 of its columns. Three tabs at the top left choose the folder: USER (`USER/LOGS`), BENCH (`BENCH/LOGS`) and ROOT (the card's root). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
+LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder, shows what the import found in one, and plots up to 4 of its columns. Three tabs at the top left choose the folder: USER (User log folder, `USER/LOGS` by default), BENCH (Auto log folder, `BENCH/LOGS` by default) and ROOT (the card's root). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
 
 ## No card
 
@@ -22,8 +22,8 @@ The header names the card by its volume label and the folder on screen, `UNITEST
 
 | Tab | Folder | Holds |
 |---|---|---|
-| USER | `USER/LOGS` | the AUTOMATIC TEST's and the LIMIT RUN's files |
-| BENCH | `BENCH/LOGS` | the automatic log of each ARMED and supply run |
+| USER | User log folder, `USER/LOGS` by default | the AUTOMATIC TEST's and the LIMIT RUN's files |
+| BENCH | Auto log folder, `BENCH/LOGS` by default | the automatic log of each ARMED and supply run |
 | ROOT | the card's root | the runs of firmware 0.21 and older |
 
 LOGS opens on the tab of the file the panel wrote last, and on BENCH after a start until one is written. Back on LOGS with nothing written since, the tab stays as it was left. A tap on a tab reads its folder from the first page.
@@ -66,6 +66,8 @@ One file is one run, in the folder of its kind. Its name says what started it:
 The name follows the screen whose ARM armed the bench, also on an IOmcu older than protocol 4.18, which arms the throttle outputs with every switch to ARMED.
 
 AUTO LOGS off on [SETUP > SD CARD](setup.md) writes no file to `BENCH/LOGS` and takes no number; USER LOGS off writes none to `USER/LOGS`, and the SERVO screen names `USER LOGS OFF` in place of the file. Both are on after a start from a new panel or an update.
+
+Auto log folder and User log folder on [SETUP > SD CARD](setup.md#sd-card) set other folders. A changed folder takes the next file, numbered from what that folder holds. Files left in a folder used before are not listed until the folder is set back.
 
 The panel makes each folder the first time it writes there, one level at a time. A file named `BENCH` or `USER` in the root stops that: the band reads `Cannot make folder BENCH/LOGS. Run not recorded.`
 

@@ -2,7 +2,8 @@
  * Making a folder of the card one level at a time, card_make_dirs(), over a
  * card held in memory: every level made in order, a level that is there
  * already, a file holding a level's name, a card that takes no folder, and
- * the paths of the bench's folders.
+ * the paths of the bench's folders.  And the log folders a user can set,
+ * card_folder_check(): every refusal at both edges of its limit.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -173,6 +174,198 @@ TEST_CASE(the_bench_files_are_under_bench)
     CHECK(strlen("/sdcard/" CARD_KST_CONF "/KST.NEW") < 64u);
 }
 
+/* ------------------------------------------------- the log folders */
+
+/* What card_folder_check() says of @p in, with out filled on OK. */
+static card_folder_t check(const char *in, char *out)
+{
+    strcpy(out, "UNTOUCHED");
+    return card_folder_check(in, out, CARD_DIR_MAX);
+}
+
+TEST_CASE(the_defaults_are_taken)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_EQ(check(CARD_AUTO_LOGS, out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "BENCH/LOGS");
+    CHECK_EQ(check(CARD_USER_LOGS, out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "USER/LOGS");
+    /* One folder, and the bench's own top folder. */
+    CHECK_EQ(check("LOGS", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "LOGS");
+    CHECK_EQ(check("BENCH", out), CARD_FOLDER_OK);
+    CHECK_EQ(check("A", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "A");
+}
+
+TEST_CASE(an_empty_folder_is_refused_wherever_it_is)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_EQ(check("", out), CARD_FOLDER_EMPTY);
+    CHECK_STR_EQ(out, "UNTOUCHED");
+    CHECK_EQ(check("/", out), CARD_FOLDER_EMPTY);
+    CHECK_EQ(check("/LOGS", out), CARD_FOLDER_EMPTY);
+    CHECK_EQ(check("LOGS/", out), CARD_FOLDER_EMPTY);
+    CHECK_EQ(check("A//B", out), CARD_FOLDER_EMPTY);
+    CHECK_EQ(check("//", out), CARD_FOLDER_EMPTY);
+    CHECK_STR_EQ(out, "UNTOUCHED");
+}
+
+TEST_CASE(a_folder_takes_8_characters_and_not_9)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_EQ(check("BENCHLOG", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "BENCHLOG");
+    CHECK_EQ(check("BENCHLOGS", out), CARD_FOLDER_LONG);
+    CHECK_STR_EQ(out, "UNTOUCHED");
+    /* In the second place too, and at the longest path: 8, "/", 8. */
+    CHECK_EQ(check("ABCDEFGH/12345678", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "ABCDEFGH/12345678");
+    CHECK_EQ(strlen(out), 17u);
+    CHECK_EQ(check("ABCDEFGH/123456789", out), CARD_FOLDER_LONG);
+    CHECK_EQ(check("ABCDEFGHI/1", out), CARD_FOLDER_LONG);
+    /* The keyboard's whole 23 characters, in one folder and in two. */
+    CHECK_EQ(check("ABCDEFGHIJKLMNOPQRSTUVW", out), CARD_FOLDER_LONG);
+    CHECK_EQ(check("ABCDEFGH/ABCDEFGHIJKLMN", out), CARD_FOLDER_LONG);
+    CHECK_EQ(check("ABCDEFG/ABCDEFG/ABCDEFG", out), CARD_FOLDER_DEEP);
+    CHECK_STR_EQ(out, "UNTOUCHED");
+}
+
+TEST_CASE(a_path_goes_2_folders_deep_and_not_3)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_EQ(check("A/B", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "A/B");
+    CHECK_EQ(check("A/B/C", out), CARD_FOLDER_DEEP);
+    CHECK_EQ(check("A/B/", out), CARD_FOLDER_DEEP);
+    CHECK_STR_EQ(out, "UNTOUCHED");
+}
+
+TEST_CASE(a_character_outside_the_set_is_refused)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_EQ(check("MY LOGS", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check(" LOGS", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("LOGS ", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("LOGS.OLD", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check(".", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("..", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("A\\B", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("LOG*", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("A/\xc3\x9c", out), CARD_FOLDER_CHAR);
+    CHECK_STR_EQ(out, "UNTOUCHED");
+    /* Every character of the set, at both ends of its ranges. */
+    CHECK_EQ(check("AZ09_-/Z_-9A0", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "AZ09_-/Z_-9A0");
+    CHECK_EQ(check("@", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("[", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("`", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("{", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check(":", out), CARD_FOLDER_CHAR);
+}
+
+TEST_CASE(lower_case_is_taken_as_upper_case)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_EQ(check("bench/logs", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "BENCH/LOGS");
+    CHECK_EQ(check("My_Log-2", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "MY_LOG-2");
+    CHECK_EQ(check("aux", out), CARD_FOLDER_RESERVED);
+    CHECK_EQ(check("bench/kst", out), CARD_FOLDER_BENCH);
+}
+
+TEST_CASE(every_device_name_is_refused_in_either_place)
+{
+    static const char *const devices[] = {
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+        "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8",
+        "LPT9",
+    };
+    char out[CARD_DIR_MAX];
+    char in[CARD_DIR_MAX];
+    for (size_t i = 0u; i < sizeof(devices) / sizeof(devices[0]); ++i) {
+        CHECK_EQ(check(devices[i], out), CARD_FOLDER_RESERVED);
+        snprintf(in, sizeof(in), "%s/LOGS", devices[i]);
+        CHECK_EQ(check(in, out), CARD_FOLDER_RESERVED);
+        snprintf(in, sizeof(in), "LOGS/%s", devices[i]);
+        CHECK_EQ(check(in, out), CARD_FOLDER_RESERVED);
+    }
+    CHECK_STR_EQ(out, "UNTOUCHED");
+    /* A name that starts like one is a name. */
+    static const char *const names[] = {
+        "COM0", "LPT0", "COM10", "CONS", "AUXL", "NULL", "PRN1", "CO",
+        "COM", "LPT", "AU", "XAUX",
+    };
+    for (size_t i = 0u; i < sizeof(names) / sizeof(names[0]); ++i) {
+        CHECK_EQ(check(names[i], out), CARD_FOLDER_OK);
+        CHECK_STR_EQ(out, names[i]);
+    }
+}
+
+TEST_CASE(the_benchs_own_folders_are_refused)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_EQ(check("BENCH/ESC", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("BENCH/KST", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("BENCH/HITEC", out), CARD_FOLDER_BENCH);
+    CHECK_STR_EQ(out, "UNTOUCHED");
+    /* Below them is 3 deep, refused before the bench is asked. */
+    CHECK_EQ(check("BENCH/KST/CONF", out), CARD_FOLDER_DEEP);
+    /* A name that starts like one is another folder. */
+    CHECK_EQ(check("BENCH/KSTX", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "BENCH/KSTX");
+    CHECK_EQ(check("BENCH/ES", out), CARD_FOLDER_OK);
+    CHECK_EQ(check("BENCH/HITECS", out), CARD_FOLDER_OK);
+    CHECK_EQ(check("BENCHX/KST", out), CARD_FOLDER_OK);
+    CHECK_EQ(check("KST", out), CARD_FOLDER_OK);
+    CHECK_EQ(check("USER/KST", out), CARD_FOLDER_OK);
+}
+
+TEST_CASE(the_first_fault_from_the_left_answers)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_EQ(check("A B/C/D", out), CARD_FOLDER_CHAR);
+    CHECK_EQ(check("ABCDEFGHI/A B", out), CARD_FOLDER_LONG);
+    CHECK_EQ(check("AUX/A B", out), CARD_FOLDER_RESERVED);
+    CHECK_EQ(check("A/B/C D", out), CARD_FOLDER_DEEP);
+    CHECK_EQ(check("/A B", out), CARD_FOLDER_EMPTY);
+}
+
+TEST_CASE(a_short_out_and_null_arguments_are_refused)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_EQ(card_folder_check(NULL, out, sizeof(out)), CARD_FOLDER_ARG);
+    /* No out: only the answer. */
+    CHECK_EQ(card_folder_check("LOGS", NULL, 0u), CARD_FOLDER_OK);
+    CHECK_EQ(card_folder_check("AUX", NULL, 0u), CARD_FOLDER_RESERVED);
+    /* "LOGS" and its terminator are 5 bytes: 4 is too short. */
+    strcpy(out, "UNTOUCHED");
+    CHECK_EQ(card_folder_check("LOGS", out, 4u), CARD_FOLDER_ARG);
+    CHECK_STR_EQ(out, "UNTOUCHED");
+    CHECK_EQ(card_folder_check("LOGS", out, 5u), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "LOGS");
+}
+
+TEST_CASE(a_refused_folder_falls_back)
+{
+    char out[CARD_DIR_MAX];
+    CHECK_STR_EQ(card_folder_use("my/logs", CARD_AUTO_LOGS, out, sizeof(out)),
+                 "MY/LOGS");
+    CHECK_STR_EQ(card_folder_use("A/B/C", CARD_AUTO_LOGS, out, sizeof(out)),
+                 CARD_AUTO_LOGS);
+    CHECK_STR_EQ(card_folder_use("", CARD_USER_LOGS, out, sizeof(out)),
+                 CARD_USER_LOGS);
+    CHECK_STR_EQ(card_folder_use(NULL, CARD_USER_LOGS, out, sizeof(out)),
+                 CARD_USER_LOGS);
+    CHECK_STR_EQ(card_folder_use("BENCH/KST", CARD_USER_LOGS, out,
+                                 sizeof(out)), CARD_USER_LOGS);
+    CHECK(card_folder_use("LOGS", CARD_USER_LOGS, NULL, 0u)
+          == (const char *)CARD_USER_LOGS);
+}
+
 int main(void)
 {
     RUN(each_level_is_made_shortest_first);
@@ -182,5 +375,16 @@ int main(void)
     RUN(the_root_makes_nothing_and_bad_arguments_make_nothing);
     RUN(a_full_card_fails_where_it_fills);
     RUN(the_bench_files_are_under_bench);
+    RUN(the_defaults_are_taken);
+    RUN(an_empty_folder_is_refused_wherever_it_is);
+    RUN(a_folder_takes_8_characters_and_not_9);
+    RUN(a_path_goes_2_folders_deep_and_not_3);
+    RUN(a_character_outside_the_set_is_refused);
+    RUN(lower_case_is_taken_as_upper_case);
+    RUN(every_device_name_is_refused_in_either_place);
+    RUN(the_benchs_own_folders_are_refused);
+    RUN(the_first_fault_from_the_left_answers);
+    RUN(a_short_out_and_null_arguments_are_refused);
+    RUN(a_refused_folder_falls_back);
     return test_summary("card_tree");
 }
