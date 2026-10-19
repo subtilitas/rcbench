@@ -43,6 +43,7 @@
 #include "gfx.h"
 #include "link_pages.h"
 #include "out_bind.h"
+#include "outputs_screen.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -162,35 +163,49 @@ bool picker_screen_row(uint8_t k, picker_row_t *out);
 
 /**
  * A line of the IN USE table, right of the board: the programming ports'
- * pins first, under one PROG PORT name, then each other protocol's pins
- * under its name, groups in the order their first pin falls.
+ * pins first, under one PROG PORT name, then the pins SETUP > INTERFACES
+ * holds, each function's under its name (outputs_iface_name()), then each
+ * other protocol's pins under its name, groups in the order their first
+ * pin falls.
  *
- * Every line is drawn.  The rows are 20 px for a name and 28 px for a pin,
- * with the GPIO in the head face; when that runs past the table's foot, as
- * with OFF selected, the port listed and 8 pins over 6 protocols, every pin
- * row is 20 px with the GPIO in the label face, and 16 px where 20 px
- * still runs past it, as with 4 ports beside that binding.  At 16 px the
- * most lines PICKER_USE_MAX allows -- 8 names and 12 pins -- are 352 px of
- * the 360 the table has under its heading.
+ * The rows are 20 px for a name and 28 px for a pin, with the GPIO in the
+ * head face; when that runs past the table's foot, as with OFF selected,
+ * the port listed and 8 pins over 6 protocols, every pin row is 20 px with
+ * the GPIO in the label face, and 16 px where 20 px still runs past it, as
+ * with 4 ports beside that binding (7 names and 12 pins, 332 px of the 360
+ * the table has under its heading).  Where 16 px pin rows still run past
+ * it, the names are 16 px too.  Where even that runs past it -- 4 ports, 6
+ * protocols and every interface on -- the table holds the lines that fit
+ * and ends in a PICKER_USE_MORE line, "+N", N the lines left out.
  */
 typedef enum {
-    PICKER_USE_NAME = 0,  /**< a protocol's name, or PROG PORT              */
+    PICKER_USE_NAME = 0,  /**< a protocol's name, PROG PORT or a function
+                               of SETUP > INTERFACES                         */
     PICKER_USE_PIN,       /**< a pin of the group named above it            */
+    PICKER_USE_MORE,      /**< "+N": gpio holds N, the lines left out       */
 } picker_use_kind_t;
 
 /** The group of the programming port's lines, in picker_use_t.proto. */
 #define PICKER_USE_PROG 0xFFu
+/** The group of an interface's lines, outputs_iface_t @p f. */
+#define PICKER_USE_IFACE(f) (0xF0u + (unsigned)(f))
+/** Whether group @p g is an interface's, and which. */
+#define PICKER_USE_IS_IFACE(g) ((g) > 0xF0u && (g) < 0xF0u + OUTPUTS_IFACE_COUNT)
 
-/** The most lines the table can have: the PROG PORT name and a pin for
- *  each port, a name for each protocol but OFF, and a pin for each slot.
- *  No binding reaches it: PPM's one pin takes all 8 channels, so at most 6
- *  protocols share the slots, and 4 ports beside them make 19 lines. */
+/** Pins SETUP > INTERFACES can hold: SDA and SCL, TX and RX, the tap. */
+#define PICKER_USE_IFACE_PINS 5u
+
+/** The most lines the table can list: the PROG PORT name and a pin for
+ *  each port, a name and the pins for each interface, a name for each
+ *  protocol but OFF, and a pin for each slot. */
 #define PICKER_USE_MAX                                                   \
-    (1u + LINK_PG_PORTS_MAX + (OUTBIND_PROTOS - 1u) + LINK_OUT_SLOTS)
+    (1u + LINK_PG_PORTS_MAX + (OUTPUTS_IFACE_COUNT - 1u)                 \
+     + PICKER_USE_IFACE_PINS + (OUTBIND_PROTOS - 1u) + LINK_OUT_SLOTS)
 
 typedef struct {
     picker_use_kind_t kind;
-    uint8_t    proto;    /**< the group: a protocol, or PICKER_USE_PROG     */
+    uint8_t    proto;    /**< the group: a protocol, PICKER_USE_PROG or
+                              PICKER_USE_IFACE()                          */
     uint8_t    gpio;     /**< PICKER_USE_PIN: the pin's GPIO                */
     int8_t     channel;  /**< PICKER_USE_PIN: its channel, -1 for the port  */
     bool       compact;  /**< drawn in the 20 or 16 px pin rows             */

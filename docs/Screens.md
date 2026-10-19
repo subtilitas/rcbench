@@ -80,8 +80,12 @@ STOP, and none reaches the alert band.
   run clock appears and moves the chips.
 - A box whose chip goes closes: FAULT when the faults clear, the run clock
   when it goes.
-- Any tap closes it and does nothing else. A tile, a button, another chip or
-  the alert band under the finger is not pressed.
+- A tap on another chip closes the box and opens that chip's box, in one
+  tap. A press on the other chip that slides off it before it lifts closes
+  the box and opens nothing.
+- Any other tap closes it and does nothing else: on the box's own chip, on
+  the band beside the chips, on the home tag or on the screen. A tile, a
+  button or the alert band under the finger is not pressed.
 - STOP is the exception: a press on STOP closes the box and stops at once,
   as with no box.
 - Leaving the screen closes it.
@@ -1181,8 +1185,9 @@ describes it.
 SETTINGS in the strip shows the servo's settings in the page area, on three
 pages under their own tabs: OUTPUT, SWEEP and DUT (German `AUSGANG`,
 `SWEEP`, `PRÜFLING`). Each run's own settings open from its card's
-SETTINGS on TEST, as a list in the page area one level down; the home tag
-or another task closes them. The output card stays where it is and works. A
+SETTINGS on TEST, as a list in the page area one level down. CLOSE at the
+top right of the list, in the line of the run's name, or the home tag goes
+back to the cards. Another task hides the list, and TEST shows it again. The output card stays where it is and works. A
 value opens the keypad, a list opens a list, a switch flips on the tap, and
 the name opens a keyboard.
 
@@ -1771,7 +1776,10 @@ Runs are listed newest first by number, across all names in the folder:
 Three tabs at the header row's left choose the folder on the list: USER
 (User log folder, `USER/LOGS` by default), BENCH (Auto log folder,
 `BENCH/LOGS` by default) and ROOT (the card's root). A tab
-tapped lists its folder from the first page. The header right of the tabs
+tapped lists its folder from the first page. With no card the tabs switch
+all the same: the tab tapped is drawn selected, the box reads
+`No card. Insert one and tap RESCAN.` with that tab's line under it, and
+the tap looks for a card again, as RESCAN does. The header right of the tabs
 names the card and the folder, `UNITEST  BENCH/LOGS`, and the card alone on
 ROOT. An empty folder says why and what goes there:
 `No .csv files in BENCH/LOGS.` and the names it takes, or with its switch OFF
@@ -2239,8 +2247,8 @@ English and why: [Interface language](Language.md). One finger pans, in the
 same category, sets whether one finger pans the zoomed log plot; it is off by
 default and is described under [Logs](#logs).
 
-Nine settings are stored and shown, and no part of the firmware reads them:
-Backlight, Units and Dim after under PANEL; Cells, Capacity and
+Eight settings are stored and shown, and no part of the firmware reads them:
+Units and Dim after under PANEL; Cells, Capacity and
 Internal R on MOTOR & ESC; Vibration, Optical tacho and Tacho pin. Ramp limit is read only
 as the slew of the modelled bench.
 
@@ -3187,6 +3195,23 @@ A stored binding that holds that pin keeps it: the port then has no pin, and
 the programmer's CONNECT ends with the line for a port without a pin
 ([the port](ServoProgrammer.md#the-port)).
 
+A pin SETUP > INTERFACES holds is shown the same way, red and struck
+through, with what holds it under its name, and cannot be ticked:
+
+| Under the name | Pins | While |
+|---|---|---|
+| `SENSOR BUS` | Sensor SDA and the Sensor SCL after it, GP16 and GP17 by default | INA228, INA3221 or AS5600 is ON |
+| `PD MINI` | PD mini TX and PD mini RX | PD mini is ON |
+| `PHASE TAP` | Tap pin, GP22 by default | Phase tap is ON |
+
+These are the pins the IOmcu reserves from the outputs for those parts. The
+cells follow the settings: a pin at -1 holds nothing, and a row stepped on
+SETUP frees the old pin and holds the new one, with no restart. A binding
+that already holds the pin keeps it, as against the programming port; the
+IOmcu then refuses the part its pin, and SETUP marks the row.
+
+![The sensor bus, the PD mini and the phase tap on their pins](img/outputs-iface.png)
+
 ### The PROG PORT entry
 
 The protocol list ends in one PROG PORT entry per programming port the
@@ -3447,12 +3472,23 @@ nothing and puts the Outputs screen's line under the count:
 
 ![GP13 held by the programming port](img/picker-prog.png)
 
+A pin SETUP > INTERFACES holds is grey the same way while no protocol holds
+it, a tap on it changes nothing, and IN USE lists it after the programming
+port, under `SENSOR BUS`, `PD MINI` or `PHASE TAP` in red, without a
+channel. Which pins those are, and when, is in the table under
+[Outputs](#outputs).
+
+![The interfaces' pins held and named under IN USE](img/picker-iface.png)
+
 IN USE lists every pin it holds. A protocol's name takes a 20 px line and a
 pin a 28 px line. When those run past the foot of the table, every pin line
-is 20 px with the GPIO in the smaller face. The tallest table is OFF
-selected, the programming port listed and the 8 slots over the 6 protocols
-that take one channel a pin: 16 lines, 320 px of the 360 px under the
-heading.
+is 20 px with the GPIO in the smaller face, then 16 px, then the names 16 px
+too. The tallest table of protocols is OFF selected, the programming port
+listed and the 8 slots over the 6 protocols that take one channel a pin: 16
+lines, 320 px of the 360 px under the heading. With 4 programming ports and
+every interface on beside that binding, 27 lines do not fit at 16 px: the
+table holds the lines that fit, the ports and the interfaces first, and ends
+in `+N`, N the lines left out.
 
 ![The tallest IN USE table](img/picker-off.png)
 

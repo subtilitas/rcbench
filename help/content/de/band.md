@@ -47,7 +47,7 @@ STOP wirkt auf jedem Bildschirm mit Band. Es schaltet den Prüfstand auf SAFE, s
 ![Der Kasten unter dem Chip VERBINDUNG](view:band-link)
 ![Der Kasten unter dem Chip SAFE](view:band-safe)
 
-Ein Tipp auf einen Chip öffnet einen Kasten unter dem Band. Er sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun ist. Der Kasten ist 520 px breit und öffnet 4 px unter dem Band. Jeder Tipp schließt ihn und tut sonst nichts. Das Verlassen des Bildschirms schließt ihn ebenfalls. Der Text folgt dem Zustand, solange der Kasten offen ist.
+Ein Tipp auf einen Chip öffnet einen Kasten unter dem Band. Er sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun ist. Der Kasten ist 520 px breit und öffnet 4 px unter dem Band. Ein Tipp auf einen anderen Chip schließt ihn und öffnet den Kasten dieses Chips. Jeder andere Tipp schließt ihn und tut sonst nichts. Das Verlassen des Bildschirms schließt ihn ebenfalls. Der Text folgt dem Zustand, solange der Kasten offen ist.
 
 ![Der Kasten unter ARMED MOTOR](view:band-armed)
 

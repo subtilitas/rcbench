@@ -124,6 +124,80 @@ void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
     }
 }
 
+/* ------------------------------------------------- SETUP > INTERFACES */
+
+/* GPIO @p v as a mask bit, or 0 for -1 and anything past the mask. */
+static uint64_t pin_bit(int v)
+{
+    return (v >= 0 && v < 64) ? ((uint64_t)1u << (unsigned)v) : 0u;
+}
+
+uint64_t outputs_iface_pins(outputs_iface_t which)
+{
+    switch (which) {
+    case OUTPUTS_IFACE_SENSE: {
+        const bool on = settings_get_bool(SET_INA228_EN)
+                        || settings_get_bool(SET_INA3221_EN)
+                        || settings_get_bool(SET_ENC_EN);
+        const int sda = settings_get_int(SET_SENSE_SDA);
+        if (!on || sda < 0) {
+            return 0u;
+        }
+        return pin_bit(sda) | pin_bit(settings_get_int(SET_SENSE_SCL));
+    }
+    case OUTPUTS_IFACE_PDMINI:
+        if (!settings_get_bool(SET_PDMINI_EN)) {
+            return 0u;
+        }
+        return pin_bit(settings_get_int(SET_PDMINI_TX))
+               | pin_bit(settings_get_int(SET_PDMINI_RX));
+    case OUTPUTS_IFACE_TAP:
+        return settings_get_bool(SET_TONE_EN)
+                   ? pin_bit(settings_get_int(SET_TONE_PIN)) : 0u;
+    case OUTPUTS_IFACE_NONE:
+    case OUTPUTS_IFACE_COUNT:
+    default:
+        return 0u;
+    }
+}
+
+outputs_iface_t outputs_iface_at(uint8_t gpio)
+{
+    const uint64_t bit = pin_bit(gpio);
+    if (bit == 0u) {
+        return OUTPUTS_IFACE_NONE;
+    }
+    for (int f = OUTPUTS_IFACE_SENSE; f < OUTPUTS_IFACE_COUNT; ++f) {
+        if ((outputs_iface_pins((outputs_iface_t)f) & bit) != 0u) {
+            return (outputs_iface_t)f;
+        }
+    }
+    return OUTPUTS_IFACE_NONE;
+}
+
+const char *outputs_iface_name(outputs_iface_t which)
+{
+    switch (which) {
+    case OUTPUTS_IFACE_SENSE:  return TR(OUT_IFACE_SENSE);
+    case OUTPUTS_IFACE_PDMINI: return TR(OUT_IFACE_PDMINI);
+    case OUTPUTS_IFACE_TAP:    return TR(OUT_IFACE_TAP);
+    case OUTPUTS_IFACE_NONE:
+    case OUTPUTS_IFACE_COUNT:
+    default:                   return "";
+    }
+}
+
+/* All of them, for the screens' repaint: a row stepped on SETUP moves a
+ * pin without a touch here. */
+uint64_t outputs_iface_all(void)
+{
+    uint64_t m = 0u;
+    for (int f = OUTPUTS_IFACE_SENSE; f < OUTPUTS_IFACE_COUNT; ++f) {
+        m |= outputs_iface_pins((outputs_iface_t)f);
+    }
+    return m;
+}
+
 bool outputs_port_holds(uint8_t gpio)
 {
     for (uint8_t n = 0; n < outputs_screen_port_entries(); ++n) {

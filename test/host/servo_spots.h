@@ -12,7 +12,8 @@
  *   - SETTINGS' own page tabs OUTPUT, SWEEP, DUT from x 16, 104 px each,
  *     y 46 to 72, and their rows from y 82, 40 px apart;
  *   - TEST's two run cards from y 46 and 224, each with SETTINGS top right
- *     and its START 56 px down; a run's settings' rows from y 68;
+ *     and its START 56 px down; a run's settings' rows from y 68, its
+ *     CLOSE x 376 to 484, y 41 to 65;
  *   - the TARGET row's value box on the right card, x 578 to 782,
  *     y 326 to 348.
  *
@@ -34,6 +35,8 @@
 
 #define SV_RUN_SET_X       420
 #define SV_RUN_SET_Y(k)    (65 + 178 * (k))
+#define SV_RUN_CLOSE_X     420
+#define SV_RUN_CLOSE_Y     52
 #define SV_START_X         146
 #define SV_START_Y(k)      (120 + 178 * (k))
 #define SV_LIST_ROW_Y(r)   (84 + 40 * (r))

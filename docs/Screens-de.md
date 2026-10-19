@@ -88,9 +88,13 @@ Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
   Chip, wenn die Laufzeituhr erscheint und die Chips verschiebt.
 - Ein Kasten, dessen Chip verschwindet, schließt sich: FEHLER, wenn die
   Fehler gelöscht sind, die Laufzeituhr, wenn sie verschwindet.
-- Jeder Tipp schließt ihn und tut sonst nichts. Eine Kachel, eine
-  Schaltfläche, ein anderer Chip oder das Alert-Band unter dem Finger wird
-  nicht gedrückt.
+- Ein Tipp auf einen anderen Chip schließt den Kasten und öffnet den Kasten
+  dieses Chips, mit einem Tipp. Ein Druck auf den anderen Chip, der vor dem
+  Loslassen vom Chip rutscht, schließt den Kasten und öffnet nichts.
+- Jeder andere Tipp schließt ihn und tut sonst nichts: auf den Chip des
+  Kastens, auf das Band neben den Chips, auf das Home-Tag oder auf den
+  Bildschirm. Eine Kachel, eine Schaltfläche oder das Alert-Band unter dem
+  Finger wird nicht gedrückt.
 - STOP ist die Ausnahme: Ein Druck auf STOP schließt den Kasten und stoppt
   sofort, wie ohne Kasten.
 - Das Verlassen des Bildschirms schließt ihn.
@@ -1299,8 +1303,10 @@ beschreibt ihn.
 OPTIONEN in der Leiste zeigt die Einstellungen des Servos im Seitenbereich,
 auf drei Seiten unter eigenen Reitern: AUSGANG, SWEEP und PRÜFLING. Die
 Einstellungen jedes Laufs öffnen sich mit OPTIONEN auf seiner Karte auf
-TEST, als Liste im Seitenbereich eine Ebene tiefer; das Home-Tag oder eine
-andere Aufgabe schließt sie. Die Ausgangskarte bleibt, wo sie ist, und
+TEST, als Liste im Seitenbereich eine Ebene tiefer. SCHLIESSEN oben rechts
+in der Liste, in der Zeile mit dem Namen des Laufs, oder das Home-Tag führt
+zurück zu den Karten. Eine andere Aufgabe blendet die Liste aus, und TEST
+zeigt sie wieder. Die Ausgangskarte bleibt, wo sie ist, und
 funktioniert. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
 Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
@@ -1946,7 +1952,11 @@ Nummer, der neueste zuerst, über alle Namen im Ordner: `MOTOR043.CSV`, dann
 
 Drei Tabs links in der Kopfzeile wählen den Ordner der Liste: USER
 (Ordner User-Logs, vorgegeben `USER/LOGS`), BENCH (Ordner Auto-Logs,
-vorgegeben `BENCH/LOGS`) und STAMM (das Stammverzeichnis der Karte). Ein angetippter Tab listet seinen Ordner ab der ersten Seite. Die
+vorgegeben `BENCH/LOGS`) und STAMM (das Stammverzeichnis der Karte). Ein angetippter Tab listet seinen Ordner ab der ersten Seite. Ohne Karte
+wechseln die Tabs ebenso: Der angetippte Tab ist gewählt gezeichnet, der
+Kasten zeigt `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`
+mit der Zeile dieses Tabs darunter, und der Tipp sucht erneut nach einer
+Karte, wie AKTUALISIEREN. Die
 Kopfzeile rechts der Tabs nennt die Karte und den Ordner,
 `UNITEST  BENCH/LOGS`, und auf STAMM die Karte allein. Ein leerer Ordner
 sagt, warum, und was hineingehört: `Keine .csv-Dateien in BENCH/LOGS.` und
@@ -2463,8 +2473,8 @@ schiebt, in derselben Kategorie, legt fest, ob ein Finger die vergrößerte
 Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht unter
 [Logs](#logs) beschrieben.
 
-Neun Einstellungen werden gespeichert und angezeigt, und kein Teil der
-Firmware liest sie: Beleuchtung, Einheiten und Dimmen nach unter PANEL;
+Acht Einstellungen werden gespeichert und angezeigt, und kein Teil der
+Firmware liest sie: Einheiten und Dimmen nach unter PANEL;
 Zellen, Kapazität und Innenwiderstand unter MOTOR & ESC; Vibration, Optischer Tacho und
 Tacho-Pin. Rampengrenze wird nur als Anstieg des simulierten Prüfstands
 gelesen.
@@ -3481,6 +3491,25 @@ Eine gespeicherte Bindung, die diesen Pin hält, behält ihn: der Port hat
 dann keinen Pin, und VERBINDEN im Programmierer endet mit der Zeile für
 einen Port ohne Pin ([der Port](ServoProgrammer-de.md#der-port)).
 
+Ein Pin, den SETUP > ANSCHLÜSSE hält, wird ebenso gezeigt, rot und
+durchgestrichen, mit dem, was ihn hält, unter seinem Namen, und lässt sich
+nicht anhaken:
+
+| Unter dem Namen | Pins | Solange |
+|---|---|---|
+| `SENSORBUS` | Sensor-SDA und das Sensor-SCL danach, ab Werk GP16 und GP17 | INA228, INA3221 oder AS5600 EIN ist |
+| `PD MINI` | PD mini TX und PD mini RX | PD mini EIN ist |
+| `PHASENABGRIFF` | Abgriff-Pin, ab Werk GP22 | Phasenabgriff EIN ist |
+
+Das sind die Pins, die der IOmcu für diese Teile von den Ausgängen
+zurückhält. Die Zellen folgen den Einstellungen: Ein Pin auf -1 hält nichts,
+und eine Zeile, die in SETUP verstellt wird, gibt den alten Pin frei und
+hält den neuen, ohne Neustart. Eine Bindung, die den Pin schon hält,
+behält ihn, wie gegenüber dem Programmierport; der IOmcu lehnt dem Teil dann
+seinen Pin ab, und SETUP markiert die Zeile.
+
+![Sensorbus, PD mini und Phasenabgriff auf ihren Pins](img/de/outputs-iface.png)
+
 ### Der Eintrag PROG-PORT
 
 Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport,
@@ -3761,12 +3790,24 @@ Outputs-Bildschirms unter die Zählung: `GP28: TEILT PWM-SLICE MIT PROG-PORT GP1
 
 ![GP13 beim Programmierport](img/de/picker-prog.png)
 
+Ein Pin, den SETUP > ANSCHLÜSSE hält, ist ebenso grau, solange kein
+Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
+nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`
+in Rot, ohne Kanal. Welche Pins das sind und wann, steht in der Tabelle
+unter [Outputs](#outputs).
+
+![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](img/de/picker-iface.png)
+
 BELEGT führt jeden Pin, den es hält. Der Name eines Protokolls nimmt eine
 Zeile von 20 px, ein Pin eine von 28 px. Reichen diese über den Fuß der
 Tabelle hinaus, ist jede Pin-Zeile 20 px hoch, mit dem GPIO in der kleineren
-Schrift. Die höchste Tabelle ergibt sich mit OFF gewählt, dem Programmierport
-aufgeführt und den 8 Slots auf den 6 Protokollen, die einen Kanal je Pin
-nehmen: 16 Zeilen, 320 px der 360 px unter der Überschrift.
+Schrift, dann 16 px, dann auch die Namen 16 px. Die höchste Tabelle aus
+Protokollen ergibt sich mit OFF gewählt, dem Programmierport aufgeführt und
+den 8 Slots auf den 6 Protokollen, die einen Kanal je Pin nehmen: 16 Zeilen,
+320 px der 360 px unter der Überschrift. Mit 4 Programmierports und allen
+Anschlüssen EIN neben dieser Bindung passen 27 Zeilen auch mit 16 px nicht:
+Die Tabelle hält die Zeilen, die passen, die Ports und die Anschlüsse zuerst,
+und endet in `+N`, N die ausgelassenen Zeilen.
 
 ![Die höchste BELEGT-Tabelle](img/de/picker-off.png)
 

@@ -2382,6 +2382,42 @@ TEST_CASE(three_tabs_list_three_folders_and_bench_comes_first)
 }
 
 /*
+ * With no card the tabs switch as with one: each tap selects its tab, the
+ * tab is drawn selected and the others not, the page names that tab's
+ * folder, and the empty page says there is no card.  The card is asked
+ * again with each tab, so a card put in is found as RESCAN finds it.
+ */
+TEST_CASE(the_tabs_switch_with_no_card)
+{
+    fresh();
+    g_no_card = true;
+    log_viewer_refresh();
+    for (int round = 0; round < 2; ++round) {
+        for (int t = 0; t < (int)LOG_TAB_COUNT; ++t) {
+            const int calls = g_list_calls;
+            tap(TAB_X(t), TAB_Y);
+            CHECK_EQ(log_viewer_tab(), (log_viewer_tab_t)t);
+            CHECK_EQ(g_list_calls, calls + 1);
+            CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+            draw();
+            /* The selected tab's fill against the other two's, 6 px in
+             * from each tab's left edge. */
+            const gfx_color_t on = gfx_pixel_get(&s_c, 19 + t * 84 + 6, TAB_Y);
+            for (int o = 0; o < (int)LOG_TAB_COUNT; ++o) {
+                if (o != t) {
+                    CHECK(gfx_pixel_get(&s_c, 19 + o * 84 + 6, TAB_Y) != on);
+                }
+            }
+        }
+    }
+    /* A card put in: the next tab lists it. */
+    g_no_card = false;
+    tap(TAB_X(1), TAB_Y);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
+    draw();
+}
+
+/*
  * USER and BENCH list the folders SETUP > SD CARD names in force: a new
  * folder's files, and not the files left in the folder before.  Both
  * kinds in one folder list the same files.  A folder the check refuses
@@ -4117,6 +4153,7 @@ int main(void)
     RUN(the_scroll_bar_jumps_drags_and_stays_on_its_page);
     RUN(the_header_names_the_card_or_says_sd_card);
     RUN(three_tabs_list_three_folders_and_bench_comes_first);
+    RUN(the_tabs_switch_with_no_card);
     RUN(the_tabs_follow_the_folders_of_setup);
     RUN(delete_on_root_takes_the_report_and_stays_in_its_folder);
     RUN(an_open_test_in_user_does_not_hide_the_same_number_in_bench);

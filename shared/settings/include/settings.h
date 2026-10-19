@@ -64,7 +64,6 @@ typedef enum {
     SET_THEME,
     SET_BRIGHTNESS,
     SET_CONTRAST,
-    SET_BACKLIGHT,
     SET_LANGUAGE,
     SET_UNITS,
     SET_DIM_AFTER,

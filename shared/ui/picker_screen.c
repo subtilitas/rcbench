@@ -105,13 +105,14 @@
 #define USE_PIN_H_C 20
 #define USE_PIN_H_D 16      /* where 20 px rows still pass the foot */
 
-/* The most lines fit at the densest rows: every name and every pin. */
+/* With no interface on, every line fits at the 16 px pin rows: every port,
+ * every protocol's name and every slot's pin. */
 _Static_assert(USE_TOP
                    + (1 + (int)OUTBIND_PROTOS - 1) * USE_NAME_H
                    + ((int)LINK_PG_PORTS_MAX + (int)LINK_OUT_SLOTS)
                          * USE_PIN_H_D
                    <= USE_FOOT,
-               "the IN USE table holds PICKER_USE_MAX lines");
+               "the IN USE table holds a binding beside 4 ports");
 
 #define IVORY GFX_RGB(236, 235, 228)
 #define EBONY GFX_RGB(22, 23, 28)
@@ -612,6 +613,19 @@ static bool prog_taken(uint8_t index)
     return false;
 }
 
+/* What SETUP > INTERFACES holds pin @p index for, or OUTPUTS_IFACE_NONE:
+ * no protocol and no port holds it, and the IOmcu does not reserve it.  A
+ * pin a protocol holds is that protocol's, as against a port. */
+static outputs_iface_t iface_taken(uint8_t index)
+{
+    if (index >= outbind_pin_count(s.bind.board)
+        || outbind_pins(s.bind.board)[index].reserved
+        || outbind_group_of(&s.bind, index) != 0u || prog_taken(index)) {
+        return OUTPUTS_IFACE_NONE;
+    }
+    return outputs_iface_at(outbind_pins(s.bind.board)[index].gpio);
+}
+
 uint8_t picker_screen_prog_listed(void)
 {
     const uint8_t n = outbind_pin_count(s.bind.board);
@@ -645,6 +659,13 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
     if (prog_taken(index)) {
         if (holder != NULL && cap != 0u) {
             snprintf(holder, cap, "%s", TR(OUT_PROG_PORT));
+        }
+        return PICKER_PIN_HELD;
+    }
+    const outputs_iface_t iface = iface_taken(index);
+    if (iface != OUTPUTS_IFACE_NONE) {
+        if (holder != NULL && cap != 0u) {
+            snprintf(holder, cap, "%s", outputs_iface_name(iface));
         }
         return PICKER_PIN_HELD;
     }
@@ -975,10 +996,11 @@ static uint8_t use_add(picker_use_t *t, uint8_t n, picker_use_kind_t kind,
 
 /*
  * The IN USE table: the programming port's pin first, because a pin the port
- * drives is the one a lead must not go on without knowing; then the pins
- * other protocols hold, groups in the order their first pin falls, so the
- * channels count down the page rather than jumping about with the protocol
- * numbering.  Returns the number of lines.
+ * drives is the one a lead must not go on without knowing; then what SETUP
+ * > INTERFACES holds, for the same reason; then the pins other protocols
+ * hold, groups in the order their first pin falls, so the channels count
+ * down the page rather than jumping about with the protocol numbering.
+ * Returns the number of lines.
  */
 static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
 {
@@ -999,6 +1021,20 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
             }
         }
     }
+    /* Each interface's pins under its name, in the board's order. */
+    for (int f = OUTPUTS_IFACE_SENSE; f < OUTPUTS_IFACE_COUNT; ++f) {
+        bool named = false;
+        for (uint8_t i = 0; i < n; ++i) {
+            if (iface_taken(i) != (outputs_iface_t)f) { continue; }
+            if (!named) {
+                k = use_add(t, k, PICKER_USE_NAME,
+                            (uint8_t)PICKER_USE_IFACE(f), pins[i].gpio, -1);
+                named = true;
+            }
+            k = use_add(t, k, PICKER_USE_PIN, (uint8_t)PICKER_USE_IFACE(f),
+                        pins[i].gpio, -1);
+        }
+    }
     uint32_t listed = 0u;
     for (uint8_t first = 0; first < n; ++first) {
         const uint8_t g = outbind_group_of(&s.bind, first);
@@ -1013,19 +1049,44 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
     }
 
     /* 28 px pin rows while they reach no further than the foot, then 20,
-     * then 16. */
+     * then 16; then the names 16 px too. */
     int names = 0, pins_n = 0;
     for (uint8_t i = 0; i < k; ++i) {
         if (t[i].kind == PICKER_USE_PIN) { ++pins_n; } else { ++names; }
     }
-    const int room = USE_FOOT - USE_TOP - names * USE_NAME_H;
-    const bool compact = pins_n * USE_PIN_H > room;
+    const int room = USE_FOOT - USE_TOP;
+    const bool compact = pins_n * USE_PIN_H > room - names * USE_NAME_H;
     const int pin_h = !compact ? USE_PIN_H
-                      : (pins_n * USE_PIN_H_C > room) ? USE_PIN_H_D
-                                                      : USE_PIN_H_C;
+                      : (pins_n * USE_PIN_H_C <= room - names * USE_NAME_H)
+                          ? USE_PIN_H_C : USE_PIN_H_D;
+    const int name_h = (names * USE_NAME_H + pins_n * pin_h <= room)
+                           ? USE_NAME_H : USE_PIN_H_D;
+    /*
+     * Still past the foot: the lines that fit, the last of them a "+N"
+     * line with the number of lines left out.  Only a binding beside 4
+     * ports and every interface reaches it (PICKER_USE_MAX).
+     */
+    if (names * name_h + pins_n * pin_h > room) {
+        int y = 0;
+        uint8_t fit = 0;
+        while (fit < k
+               && y + ((t[fit].kind == PICKER_USE_PIN) ? pin_h : name_h)
+                      + USE_PIN_H_D <= room) {
+            y += (t[fit].kind == PICKER_USE_PIN) ? pin_h : name_h;
+            ++fit;
+        }
+        const uint8_t left = (uint8_t)(k - fit);
+        t[fit].kind    = PICKER_USE_MORE;
+        t[fit].proto   = 0u;
+        t[fit].gpio    = left;
+        t[fit].channel = -1;
+        k = (uint8_t)(fit + 1u);
+    }
     int y = USE_TOP;
     for (uint8_t i = 0; i < k; ++i) {
-        const int h = (t[i].kind == PICKER_USE_NAME) ? USE_NAME_H : pin_h;
+        const int h = (t[i].kind == PICKER_USE_PIN)    ? pin_h
+                      : (t[i].kind == PICKER_USE_MORE) ? USE_PIN_H_D
+                                                       : name_h;
         t[i].compact = compact;
         t[i].rect = gfx_rect_make(USE_X, y, USE_W, h);
         y += h;
@@ -1062,12 +1123,24 @@ static void draw_theirs(gfx_canvas_t *c)
     char row[24];
     for (uint8_t i = 0; i < lines; ++i) {
         const gfx_rect_t r = t[i].rect;
+        if (t[i].kind == PICKER_USE_MORE) {
+            snprintf(row, sizeof(row), "+%u", (unsigned)t[i].gpio);
+            gfx_text(c, r.x + 4, r.y, row, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+            continue;
+        }
         if (t[i].kind == PICKER_USE_NAME) {
+            /* PROG PORT and the interfaces in red, as a pin no protocol
+             * may take; a protocol in teal.  A 16 px name row holds the
+             * label face's 16 px from its top. */
             const bool port = (t[i].proto == PICKER_USE_PROG);
-            const char *name = port ? TR(OUT_PROG_PORT)
-                                    : outbind_protos()[t[i].proto].name;
-            gfx_text(c, r.x, r.y + 2, name, UI_FONT_LABEL,
-                     port ? UI_DANGER : UI_TEAL, 1);
+            const bool iface = PICKER_USE_IS_IFACE(t[i].proto);
+            const char *name =
+                port ? TR(OUT_PROG_PORT)
+                : iface ? outputs_iface_name(
+                              (outputs_iface_t)(t[i].proto - 0xF0u))
+                        : outbind_protos()[t[i].proto].name;
+            gfx_text(c, r.x, r.y + ((r.h > 16) ? 2 : 0), name, UI_FONT_LABEL,
+                     (port || iface) ? UI_DANGER : UI_TEAL, 1);
             continue;
         }
         /* The port has no channel, so no CH. */

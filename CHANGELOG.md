@@ -15,6 +15,25 @@ history is in git.
   specify a size." whenever the answer came in that form, the start-up
   check included. The console prints each GitHub job's last answer: HTTP
   status, `Content-Length`, chunked, body bytes read and the reason code.
+- OUTPUTS and PICK A PIN show the pins SETUP > INTERFACES holds as taken
+  and take no tick on them: Sensor SDA and SCL (GP16 and GP17 by default)
+  while the INA228, the INA3221 or the AS5600 is on, PD mini TX and RX
+  while the PD mini is on, the tap pin while the phase tap is on. OUTPUTS
+  names `SENSOR BUS`, `PD MINI` or `PHASE TAP` under the pin; PICK A PIN
+  draws the key grey and lists the pins under those names in IN USE, after
+  the programming port. The pins follow the settings. Both screens listed
+  these pins as free, and the IOmcu refused a binding on them.
+- A run's settings on SERVO > TEST have CLOSE at the top right, back to the
+  run cards, as the home tag goes.
+- With a band chip's help box open, a tap on another chip closes the box
+  and opens that chip's box in one tap. It took two taps.
+
+### Removed
+
+- Backlight on SETUP > PANEL. The board switches the backlight only on or
+  off, and no part of the firmware applied the setting. The backlight is on
+  while the panel runs. A panel that stored the row keeps the old `backlight`
+  key in its settings storage; no setting reads or writes it.
 
 ## 0.21.1 - 2026-10-19
 

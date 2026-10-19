@@ -1755,6 +1755,215 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
     CHECK(picker_screen_in_use(2u, NULL));
 }
 
+/* Every interface on: the sensor bus on Sensor SDA @p sda, the PD mini on
+ * TX 19 and RX 18, the phase tap on GP22. */
+static void interfaces_on(int sda)
+{
+    settings_set(SET_INA228_EN, 1.0f);
+    settings_set(SET_SENSE_SDA, (float)sda);
+    settings_set(SET_PDMINI_EN, 1.0f);
+    settings_set(SET_PDMINI_TX, 19.0f);
+    settings_set(SET_PDMINI_RX, 18.0f);
+    settings_set(SET_TONE_EN, 1.0f);
+}
+
+/*
+ * What SETUP > INTERFACES holds is a held key that takes no tap, and IN
+ * USE names it after the programming port: each function's name, then its
+ * pins.  The pins follow the settings: the bus moved frees its old pins,
+ * which then bind.
+ */
+TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
+{
+    char who[32];
+    picker_use_t line;
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        settings_set_store(NULL);
+        settings_init();
+        picker_screen_set_prog_ports(0u, NULL);
+        fresh();
+        CHECK_EQ(picker_screen_pin(idx(16u), NULL, 0), PICKER_PIN_FREE);
+        CHECK(!picker_screen_in_use(0u, NULL));
+
+        interfaces_on(16);
+        static const struct { uint8_t gp; ui_text_id_t name; } held[5] = {
+            { 16u, TX_OUT_IFACE_SENSE }, { 17u, TX_OUT_IFACE_SENSE },
+            { 18u, TX_OUT_IFACE_PDMINI }, { 19u, TX_OUT_IFACE_PDMINI },
+            { 22u, TX_OUT_IFACE_TAP },
+        };
+        for (int i = 0; i < 5; ++i) {
+            CHECK_EQ(picker_screen_pin(idx(held[i].gp), who, sizeof(who)),
+                     PICKER_PIN_HELD);
+            CHECK_STR_EQ(who, ui_tr(held[i].name));
+            gfx_rect_t r;
+            CHECK(picker_screen_button_rect(idx(held[i].gp), &r));
+            tap_rect(r);
+        }
+        CHECK_EQ(s_applied, 0);
+        CHECK_EQ(outbind_chosen(picker_screen_binding()), 0);
+        CHECK_STR_EQ(reason(), "");
+
+        /* IN USE: SENSOR BUS GP16 GP17, PD MINI GP18 GP19, PHASE TAP GP22. */
+        static const struct { picker_use_kind_t kind; unsigned group;
+                              uint8_t gp; } want[8] = {
+            { PICKER_USE_NAME, PICKER_USE_IFACE(OUTPUTS_IFACE_SENSE), 16u },
+            { PICKER_USE_PIN,  PICKER_USE_IFACE(OUTPUTS_IFACE_SENSE), 16u },
+            { PICKER_USE_PIN,  PICKER_USE_IFACE(OUTPUTS_IFACE_SENSE), 17u },
+            { PICKER_USE_NAME, PICKER_USE_IFACE(OUTPUTS_IFACE_PDMINI), 18u },
+            { PICKER_USE_PIN,  PICKER_USE_IFACE(OUTPUTS_IFACE_PDMINI), 18u },
+            { PICKER_USE_PIN,  PICKER_USE_IFACE(OUTPUTS_IFACE_PDMINI), 19u },
+            { PICKER_USE_NAME, PICKER_USE_IFACE(OUTPUTS_IFACE_TAP), 22u },
+            { PICKER_USE_PIN,  PICKER_USE_IFACE(OUTPUTS_IFACE_TAP), 22u },
+        };
+        for (uint8_t k = 0; k < 8u; ++k) {
+            CHECK(picker_screen_in_use(k, &line));
+            CHECK_EQ(line.kind, want[k].kind);
+            CHECK_EQ(line.proto, want[k].group);
+            CHECK_EQ(line.gpio, want[k].gp);
+            CHECK_EQ(line.channel, -1);
+            CHECK(!line.compact);
+        }
+        CHECK(!picker_screen_in_use(8u, NULL));
+
+        /* After the programming port's lines. */
+        picker_screen_set_prog_ports(1u, (const uint8_t[]){ 13u });
+        CHECK(picker_screen_in_use(0u, &line));
+        CHECK_EQ(line.proto, PICKER_USE_PROG);
+        CHECK(picker_screen_in_use(2u, &line));
+        CHECK_EQ(line.kind, PICKER_USE_NAME);
+        CHECK_EQ(line.proto, PICKER_USE_IFACE(OUTPUTS_IFACE_SENSE));
+        picker_screen_set_prog_ports(0u, NULL);
+
+        /* Drawn, the names in the table in red. */
+        static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+        guard_canvas_t g;
+        gfx_canvas_t c;
+        guard_canvas_init(&g, &c, px, 800, 432);
+        scr()->render(&c, 0);
+        CHECK_EQ(guard_canvas_touched(&g), 0u);
+        CHECK(picker_screen_in_use(0u, &line));
+        unsigned red = 0;
+        for (int y = line.rect.y; y < line.rect.y + line.rect.h; ++y) {
+            for (int x = line.rect.x; x < line.rect.x + line.rect.w; ++x) {
+                red += (c.pixels[(size_t)y * c.stride + (size_t)x]
+                        == UI_DANGER) ? 1u : 0u;
+            }
+        }
+        CHECK(red > 0u);
+
+        /* The bus moved to GP14: GP16 binds, GP14 is held. */
+        settings_set(SET_SENSE_SDA, 14.0f);
+        CHECK_EQ(picker_screen_pin(idx(14u), who, sizeof(who)),
+                 PICKER_PIN_HELD);
+        CHECK_STR_EQ(who, TR(OUT_IFACE_SENSE));
+        CHECK_EQ(picker_screen_pin(idx(16u), NULL, 0), PICKER_PIN_FREE);
+        gfx_rect_t r16;
+        CHECK(picker_screen_button_rect(idx(16u), &r16));
+        tap_rect(r16);
+        CHECK_EQ(s_applied, 1);
+        CHECK_EQ(picker_screen_pin(idx(16u), NULL, 0), PICKER_PIN_TICKED);
+        /* Set back onto GP16: the protocol keeps it, GP17 is held. */
+        settings_set(SET_SENSE_SDA, 16.0f);
+        CHECK_EQ(picker_screen_pin(idx(16u), NULL, 0), PICKER_PIN_TICKED);
+        CHECK_EQ(picker_screen_pin(idx(17u), NULL, 0), PICKER_PIN_HELD);
+        /* Every function off: nothing held, the table empty again. */
+        settings_set(SET_INA228_EN, 0.0f);
+        settings_set(SET_PDMINI_EN, 0.0f);
+        settings_set(SET_TONE_EN, 0.0f);
+        CHECK_EQ(picker_screen_pin(idx(17u), NULL, 0), PICKER_PIN_FREE);
+        CHECK_EQ(picker_screen_pin(idx(22u), NULL, 0), PICKER_PIN_FREE);
+        CHECK(!picker_screen_in_use(0u, NULL));
+    }
+    settings_init();
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/*
+ * The fullest table: 4 ports, 8 slots over 6 protocols and every
+ * interface on lists 27 lines, more than the 360 px under the heading hold
+ * at 16 px.  The lines that fit are listed, inside the table and clear of
+ * each other, and the last says how many are left out; the ports and the
+ * interfaces come first.
+ */
+TEST_CASE(the_fullest_in_use_table_ends_in_a_count_of_the_lines_left_out)
+{
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static const uint8_t four[LINK_PG_PORTS_MAX] = { 13u, 26u, 27u, 28u };
+    static const struct { const char *proto; uint8_t gp[2]; unsigned n; }
+    spread[6] = {
+        { "SERVO PWM",      { 0, 1 }, 2u },
+        { "MOTOR PWM",      { 2, 4 }, 2u },
+        { "DSHOT300",       { 5, 0 }, 1u },
+        { "DSHOT600",       { 6, 0 }, 1u },
+        { "DSHOT300 BIDIR", { 7, 0 }, 1u },
+        { "DSHOT600 BIDIR", { 14, 0 }, 1u },
+    };
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        settings_set_store(NULL);
+        settings_init();
+        fresh();
+        picker_screen_set_prog_ports(4u, four);
+        for (unsigned k = 0; k < 6u; ++k) {
+            bind_more(spread[k].proto, spread[k].gp, spread[k].n, "OFF");
+        }
+        interfaces_on(16);
+
+        picker_use_t line[PICKER_USE_MAX + 1u];
+        uint8_t lines = 0;
+        while (lines <= PICKER_USE_MAX
+               && picker_screen_in_use(lines, &line[lines])) {
+            ++lines;
+        }
+        if (lines < 2u) {
+            T_FAIL("the table lists %u lines", lines);
+            return;
+        }
+        const picker_use_t *last = &line[lines - 1u];
+        CHECK_EQ(last->kind, PICKER_USE_MORE);
+        /* 5 port lines, 8 interface lines, 14 protocol lines. */
+        CHECK_EQ((unsigned)(lines - 1u) + last->gpio, 27u);
+        CHECK(lines <= PICKER_USE_MAX);
+        /* The ports and the interfaces whole. */
+        CHECK(lines - 1u >= 13u);
+        CHECK_EQ(line[5].proto, PICKER_USE_IFACE(OUTPUTS_IFACE_SENSE));
+        CHECK_EQ(line[12].proto, PICKER_USE_IFACE(OUTPUTS_IFACE_TAP));
+
+        const gfx_rect_t area = picker_screen_area(PICKER_AREA_IN_USE);
+        for (uint8_t k = 0; k < lines; ++k) {
+            const gfx_rect_t r = line[k].rect;
+            CHECK_EQ(r.h, 16);
+            if (r.x < area.x || r.y < area.y || r.x + r.w > area.x + area.w
+                || r.y + r.h > area.y + area.h) {
+                T_FAIL("line %u at %d,%d %dx%d is outside the table", k,
+                       r.x, r.y, r.w, r.h);
+            }
+            for (uint8_t o = (uint8_t)(k + 1u); o < lines; ++o) {
+                if (overlap(r, line[o].rect)) {
+                    T_FAIL("lines %u and %u overlap", k, o);
+                }
+            }
+        }
+        guard_canvas_t g;
+        gfx_canvas_t c;
+        guard_canvas_init(&g, &c, px, 800, 432);
+        scr()->render(&c, 0);
+        CHECK_EQ(guard_canvas_touched(&g), 0u);
+        unsigned ink = 0;
+        for (int y = last->rect.y; y < last->rect.y + last->rect.h; ++y) {
+            for (int x = last->rect.x; x < last->rect.x + last->rect.w; ++x) {
+                ink += (c.pixels[(size_t)y * c.stride + (size_t)x] != UI_BG)
+                           ? 1u : 0u;
+            }
+        }
+        CHECK(ink > 0u);
+        picker_screen_set_prog_ports(0u, NULL);
+    }
+    settings_init();
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* The PINS table: one line a pin of the protocol selected, in catalogue
  * order, with the channel the page gives it and the pad printed on the
  * board beside it. */
@@ -1955,6 +2164,8 @@ int main(void)
     RUN(a_board_that_answers_during_a_visit_keeps_the_picker_on_off);
     RUN(off_draws_no_pins_table_and_no_pressed_key);
     RUN(the_in_use_table_lists_every_pin_of_the_fullest_binding);
+    RUN(an_interface_pin_is_held_named_in_use_and_takes_no_tap);
+    RUN(the_fullest_in_use_table_ends_in_a_count_of_the_lines_left_out);
     RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);
     RUN(a_button_binds_the_pad_it_is_wired_to);
     RUN(every_button_binds_its_own_pin_and_no_other);

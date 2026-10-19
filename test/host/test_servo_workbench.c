@@ -115,6 +115,34 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
         CHECK(!home_tag());
     }
 
+    /* CLOSE on a run's settings climbs to TEST, as the tag does; a press
+     * that slides off it closes nothing; the TEST tab opens the cards
+     * again after it, and the card's SETTINGS opens the page again. */
+    for (int k = 0; k < 2; ++k) {
+        open_run_settings(k);
+        CHECK_EQ(servo_screen_run_settings(), k + 1);
+        tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
+        CHECK_EQ(servo_screen_run_settings(), 0);
+        CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+        open_test();
+        CHECK_EQ(servo_screen_run_settings(), 0);
+        open_run_settings(k);
+        CHECK_EQ(servo_screen_run_settings(), k + 1);
+        ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y, TOUCH_EVENT_DOWN, 1);
+        ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_MOVE, 1);
+        ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_UP, 1);
+        CHECK_EQ(servo_screen_run_settings(), k + 1);
+        /* A second tap on the card's SETTINGS spot stays on the page. */
+        tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
+        CHECK_EQ(servo_screen_run_settings(), k + 1);
+        CHECK(home_tag());
+        CHECK_EQ(servo_screen_run_settings(), 0);
+    }
+    /* On SETTINGS' pages the spot is no CLOSE. */
+    open_settings();
+    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
+
     /* IDLE CURRENT's keypad over the list: the tag closes the keypad, the
      * keypad's keys do nothing after it, and the list stays; the next tag
      * climbs to TEST. */
