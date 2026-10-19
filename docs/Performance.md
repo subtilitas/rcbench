@@ -50,8 +50,8 @@ balance-sim        2,424      303 KiB      8.0      39.0
 settings-sim        2,405      301 KiB      7.9      39.0
 battery-sim        2,435      304 KiB      8.0      39.0
 analyser-chrome       38,002     4750 KiB    124.7       7.8
-logs-chrome       16,308     2038 KiB     53.5      13.0
-settings-chrome       18,483     2310 KiB     60.7      13.0
+logs-chrome       16,687     2086 KiB     54.8      13.0
+settings-chrome       19,582     2448 KiB     64.3      13.0
 settings-list-chrome       23,416     2927 KiB     76.9      13.0
 battery-chrome       36,614     4577 KiB    120.2       7.8
 balance-chrome       40,453     5057 KiB    132.8       6.5
@@ -191,7 +191,7 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,072 | 2,096 |
 | `control` | `control_task` | 6,144 | 4,384 | 736 |
-| `runlog` | `log_task` | 4,608 | 3,408 | 176 |
+| `runlog` | `log_task` | 4,608 | 3,472 | 112 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,328 | 720 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,360 | 736 |
@@ -217,11 +217,12 @@ bound for that reason:
 - calls through a function pointer, except the router's calls into a screen,
   which the tool reads out of every screen's table, and the link port's
   callbacks, the drawing store's flash callbacks, the start check's after
-  an update, the SERVO screen link's callbacks into the panel and the
-  hooks of the sessions SERVO > PROGRAM and MOTOR & ESC > PROGRAM open,
+  an update, the SERVO screen link's callbacks into the panel, the
+  hooks of the sessions SERVO > PROGRAM and MOTOR & ESC > PROGRAM open
+  and the card functions a run's file is opened through,
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
-  `PROG_CALLS`): 221 such
+  `PROG_CALLS`, `TAKE_CALLS`): 226 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -344,15 +345,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,392 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,592 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,496 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,488 |
 | `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 105,032 |
-| `before` | heap left with the panel up and the radio off | 193,560 |
+| `before` | heap left with the panel up and the radio off | 193,456 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 90,400 |
+| `left` | heap left with the largest mode up | 90,296 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every
@@ -387,14 +388,14 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
-163,336 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+163,456 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
 
 | Object | Component | .bss (bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35,400 |
+| `log_viewer_screen` | ui | 35,520 |
 | `servo_screen` | ui | 29,509 |
 | `ui_watermark` | ui | 20,504 |
 | `supply_screen` | ui | 20,508 |

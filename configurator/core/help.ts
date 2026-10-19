@@ -58,8 +58,8 @@ export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object
     'Der PD mini liefert einen am Panel eingestellten Ausgang: 1 bis 20 V, 0,05 bis 3 A (Herstellerangaben, nicht gemessen), die Spannung mindestens 0,7 V unter der Eingangsspannung des Moduls. Der Prüfstand liest das Modul alle 102 bis 106 ms.',
   ),
   logs: t(
-    'Writes a log of each run to the microSD card: while the bench is ARMED, and while it is SAFE with the supply output on. The log viewer of the panel reads these files.',
-    'Schreibt ein Log jedes Laufs auf die microSD-Karte, solange der Prüfstand ARMED ist oder bei SAFE der Ausgang des Netzteils an ist. Der Log-Viewer des Panels liest diese Dateien.',
+    'Writes a log of each run to the microSD card: to BENCH/LOGS while the bench is ARMED, and while it is SAFE with the supply output on; the automatic servo test and the limit run to USER/LOGS. The SD CARD tile in SETUP switches each folder off. The log viewer of the panel reads these files.',
+    'Schreibt ein Log jedes Laufs auf die microSD-Karte: nach BENCH/LOGS, solange der Prüfstand ARMED ist oder bei SAFE der Ausgang des Netzteils an ist; den automatischen Servotest und den Endlagenlauf nach USER/LOGS. Die Kachel SD-KARTE in SETUP schaltet jeden Ordner ab. Der Log-Viewer des Panels liest diese Dateien.',
   ),
   estop: t(
     'A latching button in the heartbeat wire. Pressed, its NC contact opens the wire; after 150 ms without a heartbeat edge the IOmcu switches the bench to SAFE: its outputs and the output of the PD mini go off. The button breaks no power line: an ESC battery or a servo supply of your own stays connected.',

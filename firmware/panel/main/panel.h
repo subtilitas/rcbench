@@ -287,17 +287,20 @@ extern atomic_bool   s_enc_held;
 
 /* ------------------------------------------------------------ panel_card.c */
 
-#define CARD_DIR      ""          /* the root of the mount point */
-
 /* Read once at start-up, from bring_up(). */
 void esc_profiles_load(void);
 /* The log viewer's way to the card. */
 extern const log_viewer_io_t k_card_io;
 
-/* The runs the logger has open, held back from the viewer. */
+/* The runs the logger has open, held back from the viewer: the automatic
+ * log's in CARD_AUTO_LOGS, a test's CSV and report in CARD_USER_LOGS. */
 extern atomic_uint s_log_open_run;
 extern atomic_uint s_test_open_run;
 extern atomic_uint s_test_open_txt;
+/* The files the logger has created since the start, and the LOGS tab of
+ * the last one (log_viewer_tab_t): stored by the logger, the tab first. */
+extern atomic_uint s_card_written;
+extern atomic_int  s_card_written_tab;
 
 /* The programmer's record, KST.TXT: filled by the render loop, written by
  * the logger. */
@@ -319,31 +322,11 @@ void kst_card_serve(void);
 
 /* ------------------------------------------------------------- panel_log.c */
 
-/*
- * A run is one arming of the bench, or one switch-on of the supply's output
- * while the bench is not armed.  The bench takes the log: arming during a
- * supply run ends that run, and a supply output still on at the disarm starts
- * a run of its own.  One run is one file, and a file holds one kind of row,
- * so its header names every column it has.
- *
- * An armed run is LOG_RUN_ESC while the arm covers the throttle outputs (the
- * MOTOR and ESC STICK screens) and LOG_RUN_BENCH while it covers the
- * surfaces alone.  The two write the same rows and differ in the file's
- * name, ESCnnn.CSV against BENCHnnn.CSV (log_name.h); the supply run is a
- * BENCHnnn.CSV too.
- */
-typedef enum {
-    LOG_RUN_NONE = 0,
-    LOG_RUN_BENCH,
-    LOG_RUN_SUPPLY,
-    LOG_RUN_ESC,
-} log_run_kind_t;
-
-/* Whether @p kind is a run of the armed bench, whichever outputs it covers. */
-static inline bool log_run_armed(log_run_kind_t kind)
-{
-    return kind == LOG_RUN_BENCH || kind == LOG_RUN_ESC;
-}
+/* A run is one arming of the bench, or one switch-on of the supply's output
+ * while the bench is not armed; log_run_kind_t and the rule of which run
+ * the log records are in log_cadence.h.  One run is one file, and a file
+ * holds one kind of row, so its header names every column it has.  All
+ * runs are written to CARD_AUTO_LOGS, none while AUTO LOGS is off. */
 
 /*
  * One sample on its way to the card, filled by the control task.
@@ -357,7 +340,7 @@ typedef struct {
     uint32_t       run;
     float          t_s;
     log_run_kind_t kind;     /**< which of the two below: SUPPLY's or the
-                                  bench's, for BENCH and ESC */
+                                  bench's, for SERVO and MOTOR */
     union {
         bench_state_t  bench;
         supply_state_t supply;

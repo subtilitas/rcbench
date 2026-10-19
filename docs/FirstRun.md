@@ -934,11 +934,12 @@ answer whether an arrival is the horn's.
 1. SETUP → INTERFACES: `AS5600` ON, with the bank SAFE. On the SERVO
    screen's SETTINGS > DUT, with the servo at its neutral, tap ENC CENTRE.
 2. Repeat part A's steps 5 to 7.
-3. Keep each log together with its test's `SERVOnnn.CSV` from the SD card.
+3. Keep each log together with its test's `ATESTnnn.CSV` from the SD card's
+   `USER/LOGS` folder.
 4. On the host, for each pair:
 
    ```bash
-   python3 tools/sense_trace.py mg90s-4v8.log --servo-csv SERVO012.CSV
+   python3 tools/sense_trace.py mg90s-4v8.log --servo-csv ATEST012.CSV
    ```
 
 The tool then also prints, per move, the arrival less the encoder's

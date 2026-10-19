@@ -23,6 +23,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "card_tree.h"
 #include "log_name.h"
 #include "log_select.h"
 #include "log_viewer_screen.h"
@@ -207,15 +208,38 @@ static void make_log_csv(void)
     }
 }
 
-static const struct {
+typedef struct {
     const char *name;
     uint32_t size;
-} k_card[] = {
-    { "BENCH_2026-08-22_1.CSV", 18422 },
-    { "BENCH_2026-08-22_2.CSV", 9210 },
+} log_fake_t;
+
+/* The card's folders, as LOGS' tabs list them: BENCH/LOGS, USER/LOGS and
+ * the root, where firmware 0.21 and older wrote every run. */
+static const log_fake_t k_bench[] = {
+    { "MOTOR014.CSV", 41210 },
+    { "SERVO013.CSV", 18422 },
+    { "SUPPL012.CSV", 9210 },
+    { "MOTOR011.CSV", 39100 },
+};
+static const log_fake_t k_user[] = {
+    { "ATEST005.CSV", 15104 },
+    { "ATEST004.CSV", 14980 },
+};
+static const log_fake_t k_card[] = {
+    { "BENCH041.CSV", 18422 },
+    { "ESC040.CSV", 9210 },
     { "SWEEP_1200KV.CSV", 15104 },
     { "SWEEP_920KV.CSV", 4096 },
 };
+
+/* The folder LOGS pointed the calls at last. */
+static char g_fake_dir[CARD_DIR_MAX] = CARD_AUTO_LOGS;
+
+static void fake_folder(const char *dir, void *ctx)
+{
+    (void)ctx;
+    snprintf(g_fake_dir, sizeof(g_fake_dir), "%s", dir);
+}
 
 /* logs-pages: a full card, every run and one file the bench did not
  * write, so the tab carries the widest count it can: "FILES 145 TO 192 OF
@@ -248,9 +272,18 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
         log_select_page_offer(&sel, &f);
         ++n;
     } else {
-        for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]); ++i, ++n) {
-            snprintf(f.name, sizeof(f.name), "%s", k_card[i].name);
-            f.size = k_card[i].size;
+        const log_fake_t *set = k_card;
+        size_t count = sizeof(k_card) / sizeof(k_card[0]);
+        if (strcmp(g_fake_dir, CARD_AUTO_LOGS) == 0) {
+            set = k_bench;
+            count = sizeof(k_bench) / sizeof(k_bench[0]);
+        } else if (strcmp(g_fake_dir, CARD_USER_LOGS) == 0) {
+            set = k_user;
+            count = sizeof(k_user) / sizeof(k_user[0]);
+        }
+        for (size_t i = 0; i < count; ++i, ++n) {
+            snprintf(f.name, sizeof(f.name), "%s", set[i].name);
+            f.size = set[i].size;
             log_select_page_offer(&sel, &f);
         }
     }
@@ -308,6 +341,7 @@ static const log_viewer_io_t k_io = {
     .close = NULL,
     .volume = fake_volume,
     .remove = fake_remove,
+    .folder = fake_folder,
     .ctx = NULL,
 };
 
@@ -3211,6 +3245,10 @@ int main(int argc, char **argv)
     if (strcmp(view, "setup-application") == 0) {
         setup_tile(SET_CAT_APP);
     }
+    /* SETUP's SD CARD: AUTO LOGS and USER LOGS. */
+    if (strcmp(view, "setup-card") == 0) {
+        setup_tile(SET_CAT_CARD);
+    }
     /*
      * SETUP's INTERFACES, the current monitors' rows at the top, and the
      * same list drawn on by four rows to the INA3221's and the bus's pins.
@@ -3277,11 +3315,15 @@ int main(int argc, char **argv)
                 tap(BR_NEXT_CX, UI_BAND_H + BR_PG_CY_LOCAL);   /* NEXT */
             }
         } else if (strcmp(view, "logs-delete") == 0) {
-            tap(400, UI_BAND_H + 44 + 30 + 22);   /* select */
+            /* The newest run is chosen as the list opens. */
             tap(BR_DELETE_CX, UI_BAND_H + BR_FOOT_Y_LOCAL + 21);   /* DELETE */
+        } else if (strcmp(view, "logs-root") == 0) {
+            /* ROOT, the third tab at the header row's left. */
+            tap(19 + 2 * 84 + 40, UI_BAND_H + BR_PG_CY_LOCAL);
         } else if (strcmp(view, "logs") != 0) {
-            tap(400, UI_BAND_H + 44 + 30 + 22);   /* select */
-            tap(400, UI_BAND_H + 44 + 30 + 22);   /* open   */
+            /* The newest run is chosen as the list opens: one tap opens
+             * it. */
+            tap(400, UI_BAND_H + 44 + 30 + 22);   /* open */
         }
         if (strcmp(view, "logs-plot") == 0) {
             tap(690, UI_BAND_H + IM_BTN_Y_LOCAL + 23);   /* PLOT */

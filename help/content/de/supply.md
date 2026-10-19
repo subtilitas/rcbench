@@ -116,7 +116,7 @@ Mit dem PD mini als Netzteil bieten die OPTIONEN zusätzlich PD MINI ZURÜCKSETZ
 
 Ein Lauf ist ein Einschalten des Ausgangs. Die Grafik leert sich, wenn der Ausgang einschaltet, und hält den Lauf, wenn er ausgeht. Die mAh und Wh unter AUSGANG EIN zählen den Lauf. SPITZENWERTE ZURÜCKSETZEN startet die niedrigsten und höchsten Werte neu ab dem aktuellen Messwert.
 
-Jeder Lauf wird in eine eigene `BENCHnnn.CSV` auf der SD-Karte (Secure Digital) geschrieben, eine Zeile alle 50 ms, mit Sollwert, Spannung, Grenze, Strom, Leistung, Modus, Ladung, Energie und Quelle, `measured` oder `model`. [Logs](logs.md) öffnet sie.
+Jeder Lauf wird in eine eigene `SUPPLnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital) geschrieben, solange Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE EIN ist, eine Zeile alle 50 ms, mit Sollwert, Spannung, Grenze, Strom, Leistung, Modus, Ladung, Energie und Quelle, `measured` oder `model`. [Logs](logs.md) öffnet sie.
 
 ## Verwandte Seiten
 

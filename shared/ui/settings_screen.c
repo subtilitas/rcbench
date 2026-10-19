@@ -3,7 +3,7 @@
  * schema.
  *
  * SETUP opens on a grid of tiles, the menu's kind: one per category it
- * holds (PANEL, INTERFACES), and one per screen of its own that SETUP
+ * holds (PANEL, INTERFACES, SD CARD), and one per screen of its own that SETUP
  * reaches (OUTPUTS, PICK A PIN, WI-FI, UPDATES).  A category's tile opens its list across the screen's width.
  * The list walks the rows shared/settings declares and draws each row by
  * its type: a stepper for a number, a toggle for a bool, a choice for an
@@ -216,6 +216,7 @@ typedef struct {
 static const hub_tile_t k_tiles[] = {
     HUB_CATEGORY(SET_CAT_APP,   ui_icon_sliders),
     HUB_CATEGORY(SET_CAT_IFACE, ui_icon_chip),
+    HUB_CATEGORY(SET_CAT_CARD,  ui_icon_chart),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
     HUB_SCREEN(SCREEN_PICKER,  TX_SET_HUB_PICKER,  ui_icon_board),
     HUB_SCREEN(SCREEN_WIFI,    TX_SET_HUB_WIFI,    ui_icon_wifi),

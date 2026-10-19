@@ -420,11 +420,29 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_UPD_CHANNEL] = {
         "upd_channel", "Releases", "STABLE offers stable releases only, TESTING also testing ones", "",
         SET_CAT_UPDATE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_upd_channel) },
+    /*
+     * Which logs reach the card (card_tree.h).  AUTO LOGS: a log of each
+     * ARMED run and each switch-on of the SUPPLY output, in BENCH/LOGS.
+     * USER LOGS: the AUTOMATIC TEST's CSV and report and the LIMIT RUN's
+     * report, in USER/LOGS.  Off, nothing is written and no number taken.
+     */
+    [SET_LOG_AUTO] = {
+        "log_auto", "Auto logs", "A log of each ARMED and supply run", "",
+        SET_CAT_CARD, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    [SET_LOG_USER] = {
+        "log_user", "User logs", "AUTOMATIC TEST, LIMIT RUN", "",
+        SET_CAT_CARD, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
 };
 
 static const char *const k_cat_names[SET_CAT_COUNT] = {
-    "PANEL", "INTERFACES", "ESC / BENCH", "SUPPLY", "SERVO TEST",
-    "ESC STICK", "UPDATES",
+    [SET_CAT_APP]    = "PANEL",
+    [SET_CAT_IFACE]  = "INTERFACES",
+    [SET_CAT_CARD]   = "SD CARD",
+    [SET_CAT_ESC]    = "ESC / BENCH",
+    [SET_CAT_SUPPLY] = "SUPPLY",
+    [SET_CAT_SERVO]  = "SERVO TEST",
+    [SET_CAT_STICK]  = "ESC STICK",
+    [SET_CAT_UPDATE] = "UPDATES",
 };
 
 /* The string settings' keys and defaults; NVS keys, 15 characters or fewer. */

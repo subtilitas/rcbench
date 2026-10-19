@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's bench-wide settings in two categories: PANEL and INTERFACES. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
+SETUP holds the panel's bench-wide settings in three categories: PANEL, INTERFACES and SD CARD. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
 
 ## The tiles
 
@@ -16,12 +16,13 @@ SETUP holds the panel's bench-wide settings in two categories: PANEL and INTERFA
 |---|---|---|
 | PANEL | `10 SETTINGS` | the list of PANEL |
 | INTERFACES | `26 SETTINGS` | the list of INTERFACES |
+| SD CARD | `2 SETTINGS` | the list of SD CARD: which logs the panel writes |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 
-Three slots stay free. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
+Two slots stay free. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
 
 ![The tiles with a value unsaved](view:setup-hub-dirty)
 
@@ -122,6 +123,22 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 - The sensor is read every 10 ms. A step over 90 deg between two readings is dropped.
 
 The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never addresses 0x14, 0x20 to 0x27, 0x30 to 0x3F or 0x5D for it, where the board's CH422G I/O expander and GT911 touch controller answer, nor 0x00 to 0x03 or 0x78 to 0x7F, which the I2C specification reserves. With no sensor fitted, Rotary knob ON probes 0x06 every 100 ms. The host tests show that this changes nothing else; on the panel it is not measured. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
+
+## SD CARD
+
+![SD CARD](view:setup-card)
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| Auto logs | ON, OFF | ON | a log of each ARMED and supply run in `BENCH/LOGS`: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
+| User logs | ON, OFF | ON | the AUTOMATIC TEST's `ATESTnnn.CSV` and report and the LIMIT RUN's `LIMITnnn.TXT` in `USER/LOGS` |
+
+- OFF writes no file and takes no number. No card alert of that kind of run shows.
+- Auto logs switched off during a run ends that run's file there; switched on during an ARMED or supply run, a file starts there.
+- User logs counts at START TEST and START LIMIT RUN: a run keeps what it started with. With it off, the SERVO screen names `USER LOGS OFF` where the file would be.
+- REPORT on SERVO > OPTIONS > DUT decides, with User logs ON, whether `ATESTnnn.TXT` is written.
+- The fault log, `RCBENCH.LOG`, is written whatever Auto logs says.
+- [Logs](logs.md#what-a-run-writes) lists the folders.
 
 ## INTERFACES
 

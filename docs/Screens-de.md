@@ -1147,7 +1147,7 @@ Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.m
 beschreibt das Verfahren und die Dateien. Die Karte trägt den Namen des
 Laufs und seine OPTIONEN, eine Zusammenfassung (`4.8 6.0 V BROWN-OUT, JE
 60 s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN, die Zustandszeile, das
-letzte Ergebnis mit seinen Dateien (`ZULETZT: BESTANDEN SERVO004.CSV +
+letzte Ergebnis mit seinen Dateien (`ZULETZT: BESTANDEN ATEST004.CSV +
 .TXT`) und den Hinweis zu BLOCKIERT AB. TEST STARTEN braucht einen Prüfstand
 in ARMED und ein Netzteil, das antwortet; die Zustandszeile sagt ZUERST ARM,
 KEINE STUFE GEWÄHLT, NETZTEIL ANTWORTET NICHT, BEREICH ZU KLEIN (die Enden aus BEREICH
@@ -1196,8 +1196,10 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 Das Ergebnis bleibt bis SCHLIESSEN im Feld auf LIVE und bis zum nächsten Lauf in
 der Zeile ZULETZT der Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN
 und der Grund, die längste Stellzeit und der höchste Haltestrom, und die
-Dateien, die die Karte angenommen hat: `SERVOnnn.CSV`, und `+ .TXT`, sobald
-die Karte den Bericht vollständig angenommen hat.
+Dateien, die die Karte in `USER/LOGS` angenommen hat: `ATESTnnn.CSV`, und
+`+ .TXT`, sobald die Karte den Bericht vollständig angenommen hat. Mit
+User-Logs AUS unter [Setup](#setup) > SD-KARTE steht dort `USER-LOGS AUS`,
+und keine Datei wird geschrieben.
 
 ![Ein Ergebnis](img/de/servo-result.png)
 
@@ -1227,7 +1229,7 @@ Bericht. TEST bleibt beim Start zu sehen. Sein Feld auf der linken Karte von
 LIVE zeigt die geschriebenen Werte
 von 8, die Phase mit Seite und Puls und den Ausgang, den er treibt, mit
 LAUF BEENDEN; nach dem Lauf bis SCHLIESSEN das Urteil, die Werte oder die
-Enden und `SERVOnnn.TXT`. Der Lauf schaltet den Prüfstand für jedes
+Enden und `LIMITnnn.TXT` (`USER-LOGS AUS` mit User-Logs AUS). Der Lauf schaltet den Prüfstand für jedes
 Schreiben selbst auf SAFE und auf ARMED; STOP und SAFE durch den Bediener
 oder einer der Gründe des automatischen Tests beenden ihn mit
 ausgeschaltetem Ausgang.
@@ -1761,8 +1763,9 @@ Schalter zählen den Lauf aus den angezeigten Messwerten, jeder Schritt auf 1 s
 begrenzt. SPITZENWERTE ZURÜCKSETZEN beginnt die niedrigsten und höchsten Werte neu ab dem
 aktuellen Messwert.
 
-Ein Lauf wird in eine eigene `BENCHnnn.CSV` geschrieben, eine Zeile alle
-50 ms:
+Ein Lauf wird in eine eigene `SUPPLnnn.CSV` in `BENCH/LOGS` geschrieben,
+eine Zeile alle 50 ms, solange Auto-Logs unter [Setup](#setup) > SD-KARTE
+auf EIN steht:
 
 ```
 time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
@@ -1870,44 +1873,80 @@ kann jedes Feld enthalten und eine gekürzte Zahl, `95` von `9554`, deshalb
 fehlt sie in den Zeilen, den Kennwerten und im Plot. ZEILEN steht dann in
 der Warnfarbe, und die Importansicht meldet `LETZTE ZEILE UNVOLLSTÄNDIG. ÜBERSPRUNGEN.`. Eine Datei eines anderen Programms, die ohne Zeilenvorschub endet,
 verliert ihre letzte Zeile genauso. Leerzeichen nach dem letzten
-Zeilenvorschub sind keine Zeile, ebenso Tabs und Wagenrückläufe (CR). Vom
-Prüfstand aufgezeichnete Läufe werden im Wurzelverzeichnis der Karte unter
-dem Namen des Schreibers und einer Nummer von 001 bis 999 abgelegt:
+Zeilenvorschub sind keine Zeile, ebenso Tabs und Wagenrückläufe (CR).
 
-| Name | Lauf |
-| --- | --- |
-| `SERVOnnn.CSV` | ein automatischer Servotest; sein Bericht ist `SERVOnnn.TXT` |
-| `SERVOnnn.TXT` | der Bericht eines Endlagenlaufs, ohne CSV daneben |
-| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
-| `BENCHnnn.CSV` | ein Schalten der Surfaces auf ARMED, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
+Vom Prüfstand aufgezeichnete Läufe werden in zwei Ordner der Karte
+geschrieben, jeder Lauf unter dem Namen dessen, was ihn gestartet hat, und
+einer Nummer von 001 bis 999. Das Panel legt jeden Ordner an, eine Ebene
+nach der anderen, wenn es zum ersten Mal hineinschreibt:
 
-An einem IOmcu älter als Protokoll 4.18 umfasst jedes Schalten auf
-ARMED auch die Throttle-Ausgänge. Ein Schalten auf ARMED von SERVO schreibt
-dann `ESCnnn.CSV`.
+| Ordner | Name | Lauf |
+| --- | --- | --- |
+| `BENCH/LOGS` | `SERVOnnn.CSV` | ein Schalten auf ARMED von SERVO |
+| `BENCH/LOGS` | `MOTORnnn.CSV` | ein Schalten auf ARMED von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
+| `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
+| `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
+| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines ENDLAGENLAUFS, ohne CSV daneben |
 
-Die Nummern sind eine Reihe über alle drei Namen: der nächste Lauf nimmt
-eins über der höchsten Nummer auf der Karte, gleich unter welchem Namen, auf
-`BENCH041.CSV` und `SERVO042.CSV` folgt also `ESC043.CSV` oder
-`BENCH043.CSV`. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht
-gefüllt. Eine Karte mit einer Nummer 999 unter irgendeinem Namen nimmt keinen
-weiteren Lauf an, auch wenn niedrigere Nummern frei sind: das Band meldet
-`Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.`, für einen
-Servotest `Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.` Eine Karte, die
-nur `BENCHnnn`-Dateien trägt, auch die eines Servotests, wird genauso
-gelistet, und der nächste Lauf zählt über ihren Nummern weiter. Eine Nummer,
-die eine CSV- oder TXT-Datei trägt, ist vergeben. Firmware 0.20.0 und älter
-nummeriert Läufe nur über der höchsten `BENCHnnn`-Datei. Läuft sie wieder auf
-einer Karte, die diese Firmware beschrieben hat, kann ein Lauf eine Nummer
-bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird
-überschrieben: Die beiden Dateien haben verschiedene Namen, und die Liste
-ordnet sie nach dem Namen. Sie zeigt die CSV-Dateien und nicht die
-Berichte, und LÖSCHEN auf einem Lauf löscht den Bericht mit demselben Namen
-und derselben Nummer mit. Die Läufe stehen nach Nummer, der neueste zuerst,
-über alle drei Namen: `ESC043.CSV`, dann `SERVO042.CSV`, dann
-`BENCH041.CSV`.
+Der Name folgt dem Bildschirm, der den Prüfstand geschaltet hat: Ein ARM,
+das die Throttle-Ausgänge verlangt, schreibt `MOTORnnn`, eines, das die
+Surfaces verlangt, `SERVOnnn`. Ein IOmcu älter als Protokoll 4.18 schaltet
+mit jedem ARM die Throttle-Ausgänge mit; ein Schalten auf ARMED von SERVO
+schreibt trotzdem `SERVOnnn.CSV`.
 
-Die Liste zeigt die Karte in Seiten zu 48 Einträgen, und eine Karte fasst bis
-zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe nach
+Zwei Schalter unter [Setup](#setup) > SD-KARTE entscheiden, was geschrieben
+wird. Auto-Logs AUS schreibt nichts nach `BENCH/LOGS`; während eines Laufs
+ausgeschaltet, beendet es dessen Datei. User-Logs AUS schreibt nichts nach
+`USER/LOGS`; ein Test behält den Zustand, mit dem er gestartet ist. Beide
+stehen ab Werk auf EIN. Das Fehlerprotokoll, `RCBENCH.LOG` im
+Stammverzeichnis, wird unabhängig von den Schaltern geschrieben.
+
+Firmware 0.21 und älter schrieb jeden Lauf ins Stammverzeichnis der Karte:
+`BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` mit seiner `SERVOnnn.TXT` (ein
+Servotest) und `SERVOnnn.TXT` allein (ein Endlagenlauf). Diese Dateien
+bleiben, wo sie sind, und bleiben lesbar: Nichts verschiebt sie, und der Tab
+STAMM listet sie.
+
+Die Nummern sind eine Reihe je Ordner, über alle Namen darin: Der nächste
+Lauf nimmt eins über der höchsten Nummer im Ordner, gleich unter welchem
+Namen, in `BENCH/LOGS` folgt auf `SUPPL041.CSV` und `SERVO042.CSV` also
+`MOTOR043.CSV` oder `SUPPL043.CSV`. Eine Nummer, die eine CSV- oder
+TXT-Datei trägt, ist vergeben, ebenso eine im Namen eines Ordners. Das Panel
+liest einen Ordner einmal, wenn es nach einem Start zum ersten Mal
+hineinschreibt, und merkt sich die Nummer danach; bevor es eine Nummer
+nimmt, prüft es die 10 Namen, die diese Nummer tragen kann (5 Namen, CSV und
+TXT), sodass eine inzwischen geschriebene Datei übersprungen und nicht
+überschrieben wird. Eine Lücke, die eine gelöschte Datei hinterlässt, wird
+nicht gefüllt. Ein Ordner mit einer Nummer 999 unter irgendeinem Namen nimmt
+keinen weiteren Lauf an, auch wenn niedrigere Nummern frei sind: Das Band
+meldet `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.`, für
+einen Test `Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.` Ein
+Ordner, der sich nicht anlegen lässt, weil eine Datei seinen Namen trägt
+oder die Karte schreibgeschützt oder voll ist, meldet
+`Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.` Nach einem
+gescheiterten Lauf liest das Panel den Ordner beim nächsten Mal neu, sodass
+eine inzwischen gelöschte Datei ihre Nummer freigibt. Die Liste zeigt die
+CSV-Dateien und nicht die Berichte, und LÖSCHEN auf einem Lauf löscht den
+Bericht mit demselben Namen und derselben Nummer mit. Die Läufe stehen nach
+Nummer, der neueste zuerst, über alle Namen im Ordner: `MOTOR043.CSV`, dann
+`SERVO042.CSV`, dann `SUPPL041.CSV`.
+
+![Der Tab STAMM mit den Läufen einer älteren Firmware](img/de/logs-root.png)
+
+Drei Tabs links in der Kopfzeile wählen den Ordner der Liste: USER
+(`USER/LOGS`), BENCH (`BENCH/LOGS`) und STAMM (das Stammverzeichnis der
+Karte). Ein angetippter Tab listet seinen Ordner ab der ersten Seite. Die
+Kopfzeile rechts der Tabs nennt die Karte und den Ordner,
+`UNITEST  BENCH/LOGS`, und auf STAMM die Karte allein. Ein leerer Ordner
+sagt, warum, und was hineingehört: `Keine .csv-Dateien in BENCH/LOGS.` und
+die Namen, die er aufnimmt, oder mit seinem Schalter auf AUS
+`AUTO-LOGS AUS unter SETUP > SD-KARTE.`. Unter der Rückfrage zu LÖSCHEN sind
+die Tabs ausgeblendet. Eine Datei, die von einem Tab aus geöffnet wurde,
+bleibt die Datei dieses Tabs: Ihre Importansicht und ihr Plot lesen sie aus
+diesem Ordner, gleich welcher Tab inzwischen gewählt ist.
+
+Die Liste zeigt den Ordner in Seiten zu 48 Einträgen, und ein Ordner fasst
+bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe nach
 Nummer, die höchste zuerst, dann die Dateien, die der Prüfstand nicht
 geschrieben hat, nach Namen. Die Zeilen einer Seite stehen in derselben
 Reihenfolge, der neueste Lauf oben. Was neu heißt, steht in der Nummer im
@@ -1916,7 +1955,7 @@ deshalb trägt jede Datei auf der Karte das Datum 1980-01-01.
 
 ![Eine volle Karte mit 999 Läufen und einer anderen Datei auf ihrer vierten Seite](img/de/logs-pages.png)
 
-Mit mehr als 48 Dateien auf der Karte stehen `VORIGE` und `NÄCHSTE` in der
+Mit mehr als 48 Dateien im Ordner stehen `VORIGE` und `NÄCHSTE` in der
 Kopfzeile, und der Reiter nennt den Teil der Karte, den die Seite zeigt,
 `DATEIEN 145 BIS 192 VON 1000`, statt `DATEIEN`. `VORIGE` ist auf der ersten
 Seite grau, `NÄCHSTE` auf der letzten. Die Seiten werden von oben zu je 48
@@ -1926,7 +1965,7 @@ Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist,
 stehen auf Seite 1. `VORIGE` überspringt dann auf dem Rückweg ab Seite 3 so
 viele Einträge, wie aufgezeichnet wurden; `NÄCHSTE` von Seite 1 zeigt sie,
 und die Zahlen im Reiter zeigen die Verschiebung. Jede
-Seite liest das Wurzelverzeichnis der Karte einmal: der Durchlauf behält die
+Seite liest den Ordner des Tabs einmal: der Durchlauf behält die
 48 Einträge dieser Seite und zählt den Rest, sodass das Panel eine Seite im
 Speicher hält, unabhängig davon, wie viele Dateien die Karte enthält. Das
 Lesen läuft auf der Task, die den Bildschirm zeichnet und Berührungen
@@ -1944,15 +1983,18 @@ an der Seite, und er rollt innerhalb der Seite. Ein Tippen auf die Bahn bringt
 die Mitte des Griffs unter den Finger; ein Finger auf dem Griff zieht ihn.
 
 LOGS liest die Karte bei jedem Öffnen, aus dem Menü oder zurück aus WLAN:
-die erste Seite, ihr neuester Lauf gewählt. Ein Lauf, der aufgezeichnet wurde,
-während LOGS geschlossen war, steht so ohne `AKTUALISIEREN` in der Liste.
+die erste Seite des Ordners des Tabs, ihr neuester Lauf gewählt. Ein Lauf,
+der aufgezeichnet wurde, während LOGS geschlossen war, steht so ohne
+`AKTUALISIEREN` in der Liste. Hat das Panel seit dem letzten Öffnen von LOGS
+eine Datei geschrieben, öffnet LOGS auf dem Tab dieser Datei; sonst bleibt
+der Tab, wie er verlassen wurde, nach einem Neustart BENCH.
 Eine offen gelassene Import- oder Diagrammansicht einer Datei bleibt offen;
 die Liste dahinter ist die gerade gelesene.
 
 `AKTUALISIEREN` liest die gezeigte Seite erneut. Auf der ersten Seite liest es
 von oben, sodass ein inzwischen aufgezeichneter Lauf erscheint. Auf einer
 anderen Seite liest es ab dem ersten Eintrag dieser Seite, auch wenn diese
-Datei inzwischen gelöscht ist. Enthält die Karte inzwischen weniger Einträge,
+Datei inzwischen gelöscht ist. Enthält der Ordner inzwischen weniger Einträge,
 zeigt `AKTUALISIEREN` die letzte Seite. Jedes Lesen wählt den neuesten Lauf
 der Seite aus, die oberste Zeile, sodass `ÖFFNEN` den gerade aufgezeichneten
 Lauf öffnet. Eine Seite ohne nummerierten Lauf wählt nichts aus. `LÖSCHEN`
@@ -2362,8 +2404,8 @@ Namen.
 
 ![Setup](img/de/setup.png)
 
-- Zwei Kategorien: PANEL und ANSCHLÜSSE, die Einstellungen für den
-  ganzen Prüfstand. Jede Kachel nennt die Zahl ihrer Einstellungen. Ein
+- Drei Kategorien: PANEL, ANSCHLÜSSE und SD-KARTE, die Einstellungen für
+  den ganzen Prüfstand. Jede Kachel nennt die Zahl ihrer Einstellungen. Ein
   Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
@@ -2371,7 +2413,7 @@ Namen.
   ([Pin auswählen](#pin-auswählen)), WI-FI ([WLAN](#wlan)) und UPDATES
   ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn wie seine
   Kachel, und das Band dieser Seite zeigt SETUP.
-- Drei Plätze sind frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
+- Zwei Plätze sind frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
   fasst 9, und der Build scheitert am zehnten.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -2757,6 +2799,30 @@ wie bei den Strommonitoren:
 | `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
 | `Pin GP22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt. SETUP > ANSCHLÜSSE prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5 s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
 | `Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des IOmcu ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
+
+### SD-KARTE: welche Logs geschrieben werden
+
+![SD-KARTE](img/de/setup-card.png)
+
+| Einstellung | Bereich | Vorgabe | Schreibt |
+| --- | --- | --- | --- |
+| Auto-Logs | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in `BENCH/LOGS`: ein Log je ARMED- und Netzteil-Lauf |
+| User-Logs | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT` und `LIMITnnn.TXT` in `USER/LOGS`: den AUTOMATISCHEN TEST und den ENDLAGENLAUF |
+
+- AUS schreibt keine Datei und nimmt keine Nummer, und keine Kartenmeldung
+  dieser Art von Lauf erscheint.
+- Auto-Logs wird bei jedem Durchlauf der Steuer-Task gelesen: während eines
+  Laufs auf AUS geschaltet, beendet es dessen Datei, während eines ARMED-
+  oder Netzteil-Laufs auf EIN geschaltet, beginnt es eine.
+- User-Logs wird bei TEST STARTEN und ENDLAGENLAUF STARTEN gelesen: Ein
+  Test behält den Zustand, mit dem er gestartet ist. Steht es auf AUS,
+  zeigen die Laufkarte und der Kasten auf LIVE `USER-LOGS AUS` an der
+  Stelle der Dateinamen.
+- BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei User-Logs EIN,
+  ob `ATESTnnn.TXT` geschrieben wird.
+- Das Fehlerprotokoll, `RCBENCH.LOG` im Stammverzeichnis, wird unabhängig von
+  beiden geschrieben.
+- [Logs](#logs) nennt die Namen und die Nummerierung.
 
 ### Werte behalten
 

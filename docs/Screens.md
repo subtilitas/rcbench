@@ -1046,7 +1046,7 @@ moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
 files. The card holds the run's name and its SETTINGS, a summary line
 (`4.8 6.0 V BROWN-OUT, 60 s EACH`, or `..., 20 MOVEMENTS EACH`), START
 TEST, the state line, the last result with its files
-(`LAST: PASS SERVO004.CSV + .TXT`) and the STALL AT note. START TEST needs
+(`LAST: PASS ATEST004.CSV + .TXT`) and the STALL AT note. START TEST needs
 the bench in ARMED and a supply that answers; the state line says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
 SMALL (the ends RANGE and TRAVEL give land on PULSE CENTRE), A STEP IS
 OUTSIDE THE CAPS (a chosen step above the voltage cap in force, checked
@@ -1087,8 +1087,9 @@ left as they are.
 
 The result stays in LIVE's box until CLOSE, and on the card's LAST line
 until the next run: PASS, FAIL or ABORTED and why, the longest travel time and the highest holding current, and the files
-the card took: `SERVOnnn.CSV`, and `+ .TXT` once the card has taken the
-report whole.
+the card took in `USER/LOGS`: `ATESTnnn.CSV`, and `+ .TXT` once the card has
+taken the report whole. With User logs OFF on [Setup](#setup) > SD CARD the
+line reads `USER LOGS OFF` and no file is written.
 
 ![A result](img/servo-result.png)
 
@@ -1114,7 +1115,7 @@ it cannot start or what it does now, then the last result and its report.
 TEST stays shown as the run starts. Its box on LIVE's left card shows the
 values written of 8, the phase with the side and the pulse, and the output
 it drives, with STOP RUN; after the run, the verdict, the values or the
-ends, and `SERVOnnn.TXT` until CLOSE. The run switches the bench to SAFE and
+ends, and `LIMITnnn.TXT` until CLOSE (`USER LOGS OFF` with User logs OFF). The run switches the bench to SAFE and
 to ARMED itself for each write; the operator's STOP, SAFE or any of the
 automatic test's reasons end it with the output off.
 
@@ -1604,7 +1605,8 @@ and holds the run after it goes off. The mAh and Wh under the switch count the
 run from the readings shown, each step capped at 1 s. RESET PEAKS starts the
 lowest and highest values again from the current reading.
 
-A run is recorded to a `BENCHnnn.CSV` of its own, one row every 50 ms:
+A run is recorded to a `SUPPLnnn.CSV` of its own in `BENCH/LOGS`, one row
+every 50 ms, while Auto logs on [Setup](#setup) > SD CARD is ON:
 
 ```
 time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
@@ -1703,39 +1705,71 @@ is left out of the rows, the figures and the plot. ROWS then shows in the
 warning colour and the import view says `INCOMPLETE LAST ROW. SKIPPED.`. A
 file from another program that ends without a line feed loses its last row
 the same way. Spaces, tabs and carriage returns (CR) after the last line
-feed are no row. Runs recorded by the bench are written to the card's root
-directory under the name of the writer and a number from 001 to 999:
+feed are no row.
 
-| Name | Run |
-| --- | --- |
-| `SERVOnnn.CSV` | one automatic servo test; its report is `SERVOnnn.TXT` |
-| `SERVOnnn.TXT` | one limit run's report, with no CSV beside it |
-| `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC's ARM or a stick run on its PROGRAM |
-| `BENCHnnn.CSV` | one switch of the surfaces to ARMED, from SERVO, or one switch-on of the SUPPLY output while the bench is SAFE |
+Runs recorded by the bench are written to two folders of the card, each run
+under the name of what started it and a number from 001 to 999. The panel
+makes each folder, one level at a time, the first time it writes there:
 
-With an IOmcu older than protocol 4.18, every switch to ARMED covers the
-throttle outputs too, so a switch to ARMED from SERVO writes `ESCnnn.CSV`.
+| Folder | Name | Run |
+| --- | --- | --- |
+| `BENCH/LOGS` | `SERVOnnn.CSV` | one switch to ARMED from SERVO |
+| `BENCH/LOGS` | `MOTORnnn.CSV` | one switch to ARMED from MOTOR & ESC's ARM or a stick run on its PROGRAM |
+| `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
+| `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
+| `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
 
-The numbers are one series across the three names: the next run takes one
-above the highest number on the card, whichever name carries it, so
-`BENCH041.CSV` and `SERVO042.CSV` are followed by `ESC043.CSV` or
-`BENCH043.CSV`. A gap left by a deleted file is not filled. A card holding a
-number 999 under any name takes no further run, even with lower numbers
-free: the band reads `Card full or not writable. Run not recorded.`, or for
-a servo test `Card missing or full. Servo test not recorded.` A card that
-holds only `BENCHnnn` files, a servo test's among them, lists the same way,
-and the next run continues above their numbers. A number carried by a CSV or
-a TXT file is taken. Firmware 0.20.0 and older numbers runs above the
-highest `BENCHnnn` file only. Going back to it on a card written by this
-firmware can give a run a number that an `ESCnnn` or `SERVOnnn` file already
-carries. Nothing is overwritten: the two files have different names, and the
-list ranks them by name. The list shows the CSV files and not the reports,
-and DELETE on a run removes the report with the same name and number too.
-Runs are listed newest first by number, across all three names:
-`ESC043.CSV`, then `SERVO042.CSV`, then `BENCH041.CSV`.
+The name follows the screen that armed the bench: an arm that asks for the
+throttle outputs writes `MOTORnnn`, an arm that asks for the surfaces writes
+`SERVOnnn`. An IOmcu older than protocol 4.18 arms the throttle outputs with
+every arm; a switch to ARMED from SERVO still writes `SERVOnnn.CSV`.
 
-The list shows the card a page of 48 entries at a time, and a card holds up
-to 999 runs. Pages run newest run first: runs by number, highest first, then
+Two switches on [Setup](#setup) > SD CARD decide what is written. Auto logs
+OFF writes nothing to `BENCH/LOGS`; switched off during a run, it ends that
+run's file. User logs OFF writes nothing to `USER/LOGS`; a test keeps the
+state it started with. Both are ON by default. The fault log, `RCBENCH.LOG`
+in the root, is written whatever the switches say.
+
+Firmware 0.21 and older wrote every run to the card's root as
+`BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` with its `SERVOnnn.TXT` (a
+servo test) and `SERVOnnn.TXT` alone (a limit run). Those files stay where
+they are and stay readable: nothing moves them, and the ROOT tab lists them.
+
+The numbers are one series per folder, across every name in it: the next
+run takes one above the highest number the folder holds, whichever name
+carries it, so in `BENCH/LOGS` `SUPPL041.CSV` and `SERVO042.CSV` are
+followed by `MOTOR043.CSV` or `SUPPL043.CSV`. A number carried by a CSV or a
+TXT file is taken, and so is one carried by a folder's name. The panel walks
+a folder once, the first time it writes there after a start, and remembers
+the number after that; before it takes a number it checks the 10 names that
+number can carry (5 names, CSV and TXT), so a file written in between is
+stepped over and not overwritten. A gap left by a deleted file is not
+filled. A folder holding a number 999 under any name takes no further run,
+even with lower numbers free: the band reads
+`Card full or not writable. Run not recorded.`, or for a test
+`Card missing or full. Servo test not recorded.` A folder that cannot be
+made, because a file holds its name or the card is write-protected or full,
+reads `Cannot make folder BENCH/LOGS. Run not recorded.` A failed run makes
+the panel walk the folder again next time, so a file deleted in between
+frees its number. The list shows the CSV files and not the reports, and
+DELETE on a run removes the report with the same name and number too.
+Runs are listed newest first by number, across all names in the folder:
+`MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
+
+![The ROOT tab with the runs of an older firmware](img/logs-root.png)
+
+Three tabs at the header row's left choose the folder on the list: USER
+(`USER/LOGS`), BENCH (`BENCH/LOGS`) and ROOT (the card's root). A tab
+tapped lists its folder from the first page. The header right of the tabs
+names the card and the folder, `UNITEST  BENCH/LOGS`, and the card alone on
+ROOT. An empty folder says why and what goes there:
+`No .csv files in BENCH/LOGS.` and the names it takes, or with its switch OFF
+`AUTO LOGS OFF in SETUP > SD CARD.`. Under the DELETE question the tabs are
+hidden. A file opened from one tab stays that tab's file: its import view
+and plot read it from that folder whichever tab is chosen since.
+
+The list shows the folder a page of 48 entries at a time, and a folder holds
+up to 999 runs. Pages run newest run first: runs by number, highest first, then
 the files the bench did not write, by name. The rows of a page run the same
 way, the newest run at the top. The number in the name is what newest means:
 the panel has no clock that survives a power cycle, so every file on the card
@@ -1743,7 +1777,7 @@ is dated 1980-01-01.
 
 ![A full card of 999 runs and one other file on its fourth page](img/logs-pages.png)
 
-With more than 48 files on the card, PREV and NEXT show in the header row and
+With more than 48 files in the folder, PREV and NEXT show in the header row and
 the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`, instead
 of `FILES`. PREV is grey on the first page and NEXT on the last. Pages are cut
 from the top, 48 at a time: when fewer than 48 entries stand ahead of the page
@@ -1751,7 +1785,7 @@ on screen, for example after a run was recorded, PREV reads the first page
 from the top. Runs recorded while a later page is open are on page 1. PREV
 back from page 3 or later then passes over as many entries as were recorded;
 NEXT from page 1 shows them, and the tab numbers show the shift. Each page is one
-read of the card's root directory: the walk keeps the 48 entries of that page
+read of the tab's folder: the walk keeps the 48 entries of that page
 and counts the rest, so the panel holds one page in memory whatever the card
 holds. The read runs on the task that draws the screen and handles touch. For
 999 runs the selection takes about 2 ms on a desktop computer (x86-64,
@@ -1767,13 +1801,15 @@ the page, and it scrolls within the page. A tap on the track brings the
 thumb's middle to the finger; a finger on the thumb drags it.
 
 LOGS reads the card each time it opens, from the menu or back from WI-FI:
-the first page, its newest run selected, so a run recorded while LOGS was
-closed is on the list without RESCAN. A file's import or plot view left open
+the first page of the tab's folder, its newest run selected, so a run
+recorded while LOGS was closed is on the list without RESCAN. When the panel
+has written a file since LOGS was last open, LOGS opens on that file's tab;
+otherwise the tab stays as it was left, and BENCH after a restart. A file's import or plot view left open
 stays open; the list behind it is the one just read.
 
 RESCAN reads the page on screen again. On the first page it reads from the
 top, so a run recorded since shows. On another page it reads from that page's
-first entry, also when that file has been deleted since. When the card holds
+first entry, also when that file has been deleted since. When the folder holds
 fewer entries than that place, RESCAN shows the last page. Every read selects
 the page's newest run, the top row, so OPEN opens the run just recorded. A
 page with no numbered run selects nothing. DELETE reads the page again the
@@ -2146,7 +2182,7 @@ style. Each tile is 256 x 108 px, its icon centred over its name.
 
 ![Setup](img/setup.png)
 
-- Two categories: PANEL and INTERFACES, the bench-wide settings.
+- Three categories: PANEL, INTERFACES and SD CARD, the bench-wide settings.
   Each tile names its number of settings. A tap opens the category's list.
   The settings of the pack, the motor and the throttle output are on
   MOTOR & ESC > SETTINGS
@@ -2155,7 +2191,7 @@ style. Each tile is 256 x 108 px, its icon centred over its name.
   ([Pick a pin](#pick-a-pin)), WI-FI ([Wi-Fi](#wi-fi)) and UPDATES
   ([Updates](#updates)). The band of each names it as its tile does, and
   the band of this page reads SETUP.
-- Three slots are free. A tenth entry has no slot: the page holds 9, and
+- Two slots are free. A tenth entry has no slot: the page holds 9, and
   the build fails at the tenth.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
@@ -2522,6 +2558,28 @@ current monitors:
 | `Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.` | the IOmcu refused the second frame; not written again until a value changes |
 | `Phase tap pin GP22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `Phase tap capture overflow. Beeps are incomplete.` | the IOmcu's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
+
+### SD CARD: which logs are written
+
+![SD CARD](img/setup-card.png)
+
+| Setting | Range | Default | Writes |
+| --- | --- | --- | --- |
+| Auto logs | OFF, ON | ON | `SERVOnnn.CSV`, `MOTORnnn.CSV` and `SUPPLnnn.CSV` in `BENCH/LOGS`: a log of each ARMED and supply run |
+| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, and `LIMITnnn.TXT`, in `USER/LOGS`: the AUTOMATIC TEST and the LIMIT RUN |
+
+- OFF writes no file and takes no number, and no card alert of that kind of
+  run shows.
+- Auto logs is read on every pass of the control task: switched OFF during
+  a run it ends that run's file, switched ON during an ARMED or supply run
+  it starts one.
+- User logs is read at START TEST and START LIMIT RUN: a test keeps the
+  state it started with. With it OFF, the run card and LIVE's box read
+  `USER LOGS OFF` where the files would be named.
+- REPORT on SERVO > OPTIONS > DUT decides, with User logs ON, whether
+  `ATESTnnn.TXT` is written.
+- The fault log, `RCBENCH.LOG` in the root, is written whatever the two say.
+- [Logs](#logs) gives the names and the numbering.
 
 ### Keeping the values
 

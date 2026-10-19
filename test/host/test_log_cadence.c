@@ -684,6 +684,135 @@ TEST_CASE(a_queue_one_short_of_full_loses_nothing)
     CHECK_NEAR(t, 65.0 * 0.053, 1e-4);
 }
 
+
+/* ------------------------------------------------- which run, AUTO LOGS */
+
+TEST_CASE(the_run_is_named_by_the_screen_and_none_runs_with_auto_logs_off)
+{
+    /* ARMED: MOTOR or SERVO by the screen, whatever the supply does. */
+    CHECK_EQ(log_cadence_wanted(true, true, true, true, LOG_RUN_NONE),
+             LOG_RUN_MOTOR);
+    CHECK_EQ(log_cadence_wanted(true, true, false, false, LOG_RUN_NONE),
+             LOG_RUN_SERVO);
+    /* The bench takes the log from a supply run. */
+    CHECK_EQ(log_cadence_wanted(true, true, false, true, LOG_RUN_SUPPLY),
+             LOG_RUN_SERVO);
+    /* A run keeps its name while it is armed. */
+    CHECK_EQ(log_cadence_wanted(true, true, true, false, LOG_RUN_SERVO),
+             LOG_RUN_SERVO);
+    CHECK_EQ(log_cadence_wanted(true, true, false, false, LOG_RUN_MOTOR),
+             LOG_RUN_MOTOR);
+    /* SAFE: the supply's run, or none. */
+    CHECK_EQ(log_cadence_wanted(true, false, true, true, LOG_RUN_MOTOR),
+             LOG_RUN_SUPPLY);
+    CHECK_EQ(log_cadence_wanted(true, false, false, false, LOG_RUN_SUPPLY),
+             LOG_RUN_NONE);
+    /* AUTO LOGS off: none, whatever runs. */
+    for (int k = 0; k < 16; ++k) {
+        for (int now = LOG_RUN_NONE; now <= LOG_RUN_MOTOR; ++now) {
+            if (log_cadence_wanted(false, (k & 1) != 0, (k & 2) != 0,
+                                   (k & 4) != 0, (log_run_kind_t)now)
+                != LOG_RUN_NONE) {
+                T_FAIL("a run with AUTO LOGS off: case %d from %d", k, now);
+            }
+        }
+    }
+    CHECK(log_run_armed(LOG_RUN_SERVO));
+    CHECK(log_run_armed(LOG_RUN_MOTOR));
+    CHECK(!log_run_armed(LOG_RUN_SUPPLY));
+    CHECK(!log_run_armed(LOG_RUN_NONE));
+}
+
+/*
+ * main.c's log_follow_runs() and the poll's row, over a bench armed for
+ * @p passes passes of 50 ms whose logger queue takes nothing: how many
+ * runs start, and the alert their ends give -- ALERT_CARD_SLOW for a run
+ * none of whose rows got through, ALERT_CARD_GAPS for one that lost some.
+ */
+typedef struct {
+    int starts;
+    int slow;
+    int gaps;
+    log_run_kind_t kind;
+} follow_t;
+
+static void follow(follow_t *f, log_cadence_t *c, bool auto_logs, bool armed,
+                   bool motor, uint32_t now)
+{
+    const log_run_kind_t want = log_cadence_wanted(auto_logs, armed, motor,
+                                                   false, f->kind);
+    if (want == f->kind) {
+        return;
+    }
+    if (f->kind != LOG_RUN_NONE) {
+        if (log_cadence_lost(c) > 0u && log_cadence_sent(c) == 0u) {
+            ++f->slow;
+        } else if (log_cadence_lost(c) > 0u) {
+            ++f->gaps;
+        }
+    }
+    f->kind = want;
+    if (want != LOG_RUN_NONE) {
+        log_cadence_run_start(c, now);
+        ++f->starts;
+    }
+}
+
+static follow_t armed_run(bool auto_logs, int passes, bool queue_takes)
+{
+    follow_t f = { 0, 0, 0, LOG_RUN_NONE };
+    log_cadence_t c;
+    log_cadence_init(&c, 0u);
+    uint32_t now = 0u;
+    for (int i = 0; i < passes; ++i) {
+        now += 50u;
+        follow(&f, &c, auto_logs, true, true, now);
+        float t = 0.0f;
+        if (log_cadence_row(&c, now, true,
+                            log_cadence_bench_run(log_run_armed(f.kind), false),
+                            &t)) {
+            log_cadence_posted(&c, queue_takes);
+        }
+    }
+    follow(&f, &c, auto_logs, false, true, now + 50u);   /* the disarm */
+    return f;
+}
+
+TEST_CASE(auto_logs_off_starts_no_run_and_gives_no_card_alert)
+{
+    /* On, against a queue that takes nothing: one MOTOR run, and the card
+     * is called too slow at its end. */
+    follow_t f = armed_run(true, 200, false);
+    CHECK_EQ(f.starts, 1);
+    CHECK_EQ(f.slow, 1);
+    /* Off: no run, no row offered, no alert, whatever the queue does. */
+    f = armed_run(false, 200, false);
+    CHECK_EQ(f.starts, 0);
+    CHECK_EQ(f.slow, 0);
+    CHECK_EQ(f.gaps, 0);
+    CHECK_EQ(f.kind, LOG_RUN_NONE);
+    f = armed_run(false, 1, true);
+    CHECK_EQ(f.starts, 0);
+}
+
+TEST_CASE(auto_logs_switched_mid_run_ends_it_and_starts_the_next)
+{
+    follow_t f = { 0, 0, 0, LOG_RUN_NONE };
+    log_cadence_t c;
+    log_cadence_init(&c, 0u);
+    follow(&f, &c, true, true, false, 50u);           /* SERVO armed */
+    CHECK_EQ(f.kind, LOG_RUN_SERVO);
+    CHECK_EQ(f.starts, 1);
+    follow(&f, &c, false, true, false, 100u);         /* switched off */
+    CHECK_EQ(f.kind, LOG_RUN_NONE);
+    follow(&f, &c, false, true, false, 150u);
+    CHECK_EQ(f.starts, 1);
+    follow(&f, &c, true, true, false, 200u);          /* on, still armed */
+    CHECK_EQ(f.kind, LOG_RUN_SERVO);
+    CHECK_EQ(f.starts, 2);
+    CHECK_EQ(f.slow + f.gaps, 0);                     /* no row was lost */
+}
+
 int main(void)
 {
     RUN(the_constants_are_the_sample_rate_and_the_totals_cap);
@@ -708,5 +837,8 @@ int main(void)
     RUN(a_stall_shows_as_a_step_of_its_length);
     RUN(a_full_queue_is_counted_and_the_time_goes_on);
     RUN(a_queue_one_short_of_full_loses_nothing);
+    RUN(the_run_is_named_by_the_screen_and_none_runs_with_auto_logs_off);
+    RUN(auto_logs_off_starts_no_run_and_gives_no_card_alert);
+    RUN(auto_logs_switched_mid_run_ends_it_and_starts_the_next);
     return test_summary("log_cadence");
 }

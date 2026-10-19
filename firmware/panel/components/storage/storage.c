@@ -285,7 +285,10 @@ int storage_walk(const char *dir, const char *suffixes,
     FRESULT fr = f_opendir(&w->dir, path);
     if (fr != FR_OK) {
         free(w);
-        return -1;
+        /* A folder not made yet is an empty list to the caller, not a
+         * volume that is gone. */
+        return (fr == FR_NO_PATH || fr == FR_NO_FILE) ? STORAGE_WALK_NO_DIR
+                                                      : -1;
     }
 
     /*

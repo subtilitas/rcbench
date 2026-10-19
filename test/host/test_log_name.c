@@ -1,16 +1,19 @@
 /*
- * Run log names by writer: SERVOnnn for the servo test and the limit run,
- * ESCnnn for an armed run of the throttle, BENCHnnn for the rest, and one
- * number series across the three.
+ * Run log names by writer: ATESTnnn for the AUTOMATIC TEST, LIMITnnn for a
+ * LIMIT RUN's report, SERVOnnn and MOTORnnn for an ARMED run by the screen
+ * that armed it, SUPPLnnn for a supply run; BENCHnnn and ESCnnn of
+ * firmware 0.21 and older read back; one number series across all 7 in a
+ * folder.
  *
  * The panel's logger (firmware/panel/main/panel_log.c) and its card side
- * (panel_card.c) are firmware and not in this suite.  What they decide is
- * here: the walk folds log_name_number() over the card, log_name_next() is
- * the first number tried, each of log_name_form()'s names is probed before a
- * number is taken, log_name_busy() keeps an open file out of the viewer's
- * list and log_name_report_of() names the report a delete takes with its
- * run.  card_take() and take_number() below are those loops, written over a
- * card held in memory.
+ * (panel_card.c) are firmware and not in this suite; log_take.c's loop over
+ * a folder is test_log_take's.  What the names decide is here: the walk
+ * folds log_name_number() over a folder, log_name_next() is the first
+ * number tried, each of log_name_form()'s names is probed before a number
+ * is taken, log_name_busy() keeps an open file out of the viewer's list and
+ * log_name_report_of() names the report a delete takes with its run.
+ * card_next() and take_number() below are those loops, written over one
+ * folder held in memory.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -19,6 +22,7 @@
 
 #include "greatest.h"
 
+#include "arming.h"
 #include "log_name.h"
 #include "log_select.h"
 #include "outputs.h"
@@ -71,7 +75,8 @@ static int card_next(void)
     return log_name_next(highest);
 }
 
-/* log_number_free(): none of the number's six names is on the card. */
+/* number_free() in log_take.c: none of the number's ten names is on the
+ * card. */
 static bool number_free(int number)
 {
     for (int form = 0; form < LOG_NAME_FORMS; ++form) {
@@ -85,8 +90,8 @@ static bool number_free(int number)
 }
 
 /*
- * log_open() and test_open(): from @p next up to LOG_RUN_LAST, the first
- * free number, or -1 when there is none -- the card is full.
+ * log_take(): from @p next up to LOG_RUN_LAST, the first free number, or -1
+ * when there is none -- the folder is full.
  */
 static int take_number(int next)
 {
@@ -127,10 +132,15 @@ TEST_CASE(every_writer_names_its_runs_and_reads_the_number_back)
         const char  *last;
         const char  *report;
     } k[] = {
+        { LOG_PREFIX_ATEST, "ATEST001.CSV", "ATEST999.CSV", "ATEST007.TXT" },
+        { LOG_PREFIX_LIMIT, "LIMIT001.CSV", "LIMIT999.CSV", "LIMIT007.TXT" },
+        { LOG_PREFIX_SERVO, "SERVO001.CSV", "SERVO999.CSV", "SERVO007.TXT" },
+        { LOG_PREFIX_MOTOR, "MOTOR001.CSV", "MOTOR999.CSV", "MOTOR007.TXT" },
+        { LOG_PREFIX_SUPPL, "SUPPL001.CSV", "SUPPL999.CSV", "SUPPL007.TXT" },
         { LOG_PREFIX_BENCH, "BENCH001.CSV", "BENCH999.CSV", "BENCH007.TXT" },
         { LOG_PREFIX_ESC,   "ESC001.CSV",   "ESC999.CSV",   "ESC007.TXT"   },
-        { LOG_PREFIX_SERVO, "SERVO001.CSV", "SERVO999.CSV", "SERVO007.TXT" },
     };
+    CHECK_EQ((int)(sizeof(k) / sizeof(k[0])), (int)LOG_PREFIX_COUNT);
     for (size_t w = 0u; w < sizeof(k) / sizeof(k[0]); ++w) {
         char name[LOG_RUN_NAME_MAX];
         log_name_build(name, sizeof(name), k[w].p, LOG_RUN_FIRST, false);
@@ -173,8 +183,13 @@ TEST_CASE(every_writer_names_its_runs_and_reads_the_number_back)
     CHECK_EQ(log_run_number("servo042.csv"), 42);
     CHECK_EQ(log_run_number("Esc042.Csv"), 42);
     CHECK_EQ(log_report_number("servo999.txt"), 999);
+    CHECK_EQ(log_run_number("motor042.csv"), 42);
+    CHECK_EQ(log_report_number("Atest042.Txt"), 42);
+    CHECK_EQ(log_report_number("limit001.txt"), 1);
     log_name_report_of(b, sizeof(b), "esc042.csv");
     CHECK_STR_EQ(b, "ESC042.TXT");
+    log_name_report_of(b, sizeof(b), "atest042.csv");
+    CHECK_STR_EQ(b, "ATEST042.TXT");
 }
 
 TEST_CASE(a_name_that_only_looks_like_a_run_is_not_one)
@@ -186,6 +201,11 @@ TEST_CASE(a_name_that_only_looks_like_a_run_is_not_one)
         "SERVO001.LOG",   "SERVO001",       "SERVO",        "ESC",
         "BENCH000.TXT",   "BENCH12.CSV",    "SWEEP_920KV.CSV", "RCBENCH.LOG",
         "KST.TXT",        "",
+        /* The new writers at their edges: four digits, number 0, two
+         * digits, a sixth letter. */
+        "SUPPL1000.CSV",  "ATEST000.CSV",   "LIMIT01.TXT",  "MOTORS01.CSV",
+        "MOTOR1000.TXT",  "SUPPL00.CSV",    "ATEST.CSV",    "LIMIT",
+        "XATEST001.CSV",  "ATEST001.CSVX",  "SUPP001.CSV",  "MOTOR-01.CSV",
     };
     char rep[LOG_RUN_NAME_MAX];
     for (size_t i = 0u; i < sizeof(k_not) / sizeof(k_not[0]); ++i) {
@@ -208,6 +228,11 @@ TEST_CASE(a_name_that_cannot_be_written_is_not_written_as_a_near_miss)
     log_name_build(name, sizeof(name), LOG_PREFIX_ESC, LOG_RUN_LAST + 1,
                    true);
     CHECK_STR_EQ(name, "");
+    log_name_build(name, sizeof(name), LOG_PREFIX_SUPPL, LOG_RUN_LAST + 1,
+                   false);
+    CHECK_STR_EQ(name, "");
+    log_name_build(name, sizeof(name), LOG_PREFIX_ATEST, 0, false);
+    CHECK_STR_EQ(name, "");
     log_name_build(name, sizeof(name), LOG_PREFIX_COUNT, 1, false);
     CHECK_STR_EQ(name, "");
     log_name_build(name, sizeof(name), (log_prefix_t)-1, 1, false);
@@ -218,14 +243,21 @@ TEST_CASE(a_name_that_cannot_be_written_is_not_written_as_a_near_miss)
     char small[LOG_RUN_NAME_MAX - 1];
     log_name_build(small, sizeof(small), LOG_PREFIX_ESC, 1, false);
     CHECK_STR_EQ(small, "");
+    log_name_build(small, sizeof(small), LOG_PREFIX_SUPPL, 999, false);
+    CHECK_STR_EQ(small, "");
+    /* SUPPL999.CSV, the longest, fills the buffer exactly. */
+    log_name_build(name, sizeof(name), LOG_PREFIX_SUPPL, 999, false);
+    CHECK_STR_EQ(name, "SUPPL999.CSV");
+    CHECK_EQ((int)strlen(name), LOG_RUN_NAME_MAX - 1);
     log_name_build(NULL, sizeof(name), LOG_PREFIX_SERVO, 1, false);
     log_name_build(name, 0u, LOG_PREFIX_SERVO, 1, false);
 }
 
-TEST_CASE(a_number_is_carried_by_six_names_and_each_takes_it)
+TEST_CASE(a_number_is_carried_by_ten_names_and_each_takes_it)
 {
     char seen[LOG_NAME_FORMS][LOG_RUN_NAME_MAX];
-    CHECK_EQ(LOG_NAME_FORMS, 6);
+    CHECK_EQ(LOG_NAME_FORMS, 10);
+    CHECK_EQ(LOG_PREFIX_WRITTEN, 5);
     for (int f = 0; f < LOG_NAME_FORMS; ++f) {
         log_name_form(seen[f], sizeof(seen[f]), 512, f);
         CHECK_EQ(log_name_number(seen[f]), 512);
@@ -235,7 +267,8 @@ TEST_CASE(a_number_is_carried_by_six_names_and_each_takes_it)
             }
         }
     }
-    /* Each writer appears with both suffixes, once each. */
+    /* Each writer this firmware has appears with both suffixes, once
+     * each; BENCH and ESC, which it never writes, do not. */
     for (int p = 0; p < (int)LOG_PREFIX_COUNT; ++p) {
         for (int r = 0; r < 2; ++r) {
             char want[LOG_RUN_NAME_MAX];
@@ -244,7 +277,7 @@ TEST_CASE(a_number_is_carried_by_six_names_and_each_takes_it)
             for (int f = 0; f < LOG_NAME_FORMS; ++f) {
                 hits += (strcmp(seen[f], want) == 0) ? 1 : 0;
             }
-            if (hits != 1) {
+            if (hits != ((p < LOG_PREFIX_WRITTEN) ? 1 : 0)) {
                 T_FAIL("\"%s\" is among the forms %d times", want, hits);
             }
         }
@@ -282,31 +315,37 @@ TEST_CASE(the_next_number_is_one_above_the_highest_of_any_prefix)
     CHECK_EQ(card_next(), 101);
 }
 
-TEST_CASE(a_card_of_older_bench_files_continues_their_numbering)
+TEST_CASE(a_folder_of_older_bench_files_continues_their_numbering)
 {
+    /* A folder that holds 0.21's names, copied there on a computer. */
     card_clear();
     card_put("BENCH001.CSV");
     card_put("BENCH002.CSV");
     card_put("BENCH002.TXT");       /* a servo test from older firmware */
+    card_put("ESC016.CSV");
     card_put("BENCH017.CSV");
     char name[LOG_RUN_NAME_MAX];
-    CHECK_EQ(write_run(LOG_PREFIX_SERVO, true, name, sizeof(name)), 18);
-    CHECK_STR_EQ(name, "SERVO018.CSV");
-    CHECK(card_has("SERVO018.TXT"));
-    CHECK_EQ(write_run(LOG_PREFIX_ESC, false, name, sizeof(name)), 19);
-    CHECK_STR_EQ(name, "ESC019.CSV");
-    CHECK_EQ(write_run(LOG_PREFIX_BENCH, false, name, sizeof(name)), 20);
-    CHECK_STR_EQ(name, "BENCH020.CSV");
+    CHECK_EQ(write_run(LOG_PREFIX_ATEST, true, name, sizeof(name)), 18);
+    CHECK_STR_EQ(name, "ATEST018.CSV");
+    CHECK(card_has("ATEST018.TXT"));
+    CHECK_EQ(write_run(LOG_PREFIX_MOTOR, false, name, sizeof(name)), 19);
+    CHECK_STR_EQ(name, "MOTOR019.CSV");
+    CHECK_EQ(write_run(LOG_PREFIX_SUPPL, false, name, sizeof(name)), 20);
+    CHECK_STR_EQ(name, "SUPPL020.CSV");
+    CHECK_EQ(write_run(LOG_PREFIX_SERVO, false, name, sizeof(name)), 21);
+    CHECK_STR_EQ(name, "SERVO021.CSV");
+    CHECK_EQ(write_run(LOG_PREFIX_LIMIT, false, name, sizeof(name)), 22);
+    CHECK_STR_EQ(name, "LIMIT022.CSV");
 }
 
 TEST_CASE(a_gap_is_not_filled)
 {
     card_clear();
-    card_put("BENCH001.CSV");
-    card_put("ESC005.CSV");         /* 2 to 4 deleted on a computer */
+    card_put("SUPPL001.CSV");
+    card_put("MOTOR005.CSV");       /* 2 to 4 deleted on a computer */
     char name[LOG_RUN_NAME_MAX];
-    CHECK_EQ(write_run(LOG_PREFIX_BENCH, false, name, sizeof(name)), 6);
-    CHECK_STR_EQ(name, "BENCH006.CSV");
+    CHECK_EQ(write_run(LOG_PREFIX_SUPPL, false, name, sizeof(name)), 6);
+    CHECK_STR_EQ(name, "SUPPL006.CSV");
 }
 
 TEST_CASE(foreign_files_take_no_number)
@@ -330,12 +369,17 @@ TEST_CASE(a_number_written_since_the_walk_is_stepped_over_whatever_its_prefix)
      * one carrying 8 as a report alone, appear before the open: neither is
      * overwritten and the run takes 9. */
     card_clear();
-    card_put("BENCH006.CSV");
+    card_put("MOTOR006.CSV");
     const int next = card_next();
     CHECK_EQ(next, 7);
-    card_put("ESC007.CSV");
-    card_put("SERVO008.TXT");
+    card_put("SUPPL007.CSV");
+    card_put("LIMIT008.TXT");
     CHECK_EQ(take_number(next), 9);
+    /* And every written writer's report as well as its run. */
+    card_put("ATEST009.TXT");
+    card_put("servo010.txt");
+    card_put("MOTOR011.TXT");
+    CHECK_EQ(take_number(next), 12);
 }
 
 TEST_CASE(numbers_998_and_999_are_taken_and_then_the_card_is_full)
@@ -349,13 +393,13 @@ TEST_CASE(numbers_998_and_999_are_taken_and_then_the_card_is_full)
     CHECK(log_name_next(5000) > LOG_RUN_LAST);
 
     card_clear();
-    card_put("ESC997.CSV");
+    card_put("MOTOR997.CSV");
     char name[LOG_RUN_NAME_MAX];
-    CHECK_EQ(write_run(LOG_PREFIX_SERVO, true, name, sizeof(name)), 998);
-    CHECK_STR_EQ(name, "SERVO998.CSV");
-    CHECK_EQ(write_run(LOG_PREFIX_BENCH, false, name, sizeof(name)), 999);
-    CHECK_STR_EQ(name, "BENCH999.CSV");
-    CHECK_EQ(write_run(LOG_PREFIX_ESC, false, name, sizeof(name)), -1);
+    CHECK_EQ(write_run(LOG_PREFIX_ATEST, true, name, sizeof(name)), 998);
+    CHECK_STR_EQ(name, "ATEST998.CSV");
+    CHECK_EQ(write_run(LOG_PREFIX_SUPPL, false, name, sizeof(name)), 999);
+    CHECK_STR_EQ(name, "SUPPL999.CSV");
+    CHECK_EQ(write_run(LOG_PREFIX_MOTOR, false, name, sizeof(name)), -1);
     CHECK_STR_EQ(name, "");
 
     /* Full at 999 whichever writer holds it, with the lower numbers free:
@@ -363,7 +407,9 @@ TEST_CASE(numbers_998_and_999_are_taken_and_then_the_card_is_full)
      * number. */
     static const char *const k_last[] = { "BENCH999.CSV", "ESC999.CSV",
                                           "SERVO999.CSV", "SERVO999.TXT",
-                                          "bench999.txt" };
+                                          "bench999.txt", "ATEST999.TXT",
+                                          "LIMIT999.TXT", "MOTOR999.CSV",
+                                          "suppl999.csv" };
     for (size_t i = 0u; i < sizeof(k_last) / sizeof(k_last[0]); ++i) {
         card_clear();
         card_put("BENCH001.CSV");
@@ -379,13 +425,13 @@ TEST_CASE(a_card_of_999_mixed_runs_is_full)
     card_clear();
     char name[LOG_RUN_NAME_MAX];
     for (int i = LOG_RUN_FIRST; i <= LOG_RUN_LAST; ++i) {
-        const log_prefix_t p = (log_prefix_t)(i % (int)LOG_PREFIX_COUNT);
-        if (write_run(p, p == LOG_PREFIX_SERVO, name, sizeof(name)) != i) {
+        const log_prefix_t p = (log_prefix_t)(i % LOG_PREFIX_WRITTEN);
+        if (write_run(p, p == LOG_PREFIX_ATEST, name, sizeof(name)) != i) {
             T_FAIL("run %d was numbered %d", i, log_run_number(name));
             break;
         }
     }
-    CHECK_EQ(write_run(LOG_PREFIX_BENCH, false, name, sizeof(name)), -1);
+    CHECK_EQ(write_run(LOG_PREFIX_SUPPL, false, name, sizeof(name)), -1);
 }
 
 /* ------------------------------------------------------------ writers */
@@ -393,21 +439,21 @@ TEST_CASE(a_card_of_999_mixed_runs_is_full)
 TEST_CASE(a_servo_test_writes_its_csv_and_its_report_under_one_number)
 {
     card_clear();
-    card_put("BENCH010.CSV");
+    card_put("ATEST010.CSV");
     char csv[LOG_RUN_NAME_MAX];
-    CHECK_EQ(write_run(LOG_PREFIX_SERVO, true, csv, sizeof(csv)), 11);
-    CHECK_STR_EQ(csv, "SERVO011.CSV");
+    CHECK_EQ(write_run(LOG_PREFIX_ATEST, true, csv, sizeof(csv)), 11);
+    CHECK_STR_EQ(csv, "ATEST011.CSV");
     char txt[LOG_RUN_NAME_MAX];
     log_name_report_of(txt, sizeof(txt), csv);
-    CHECK_STR_EQ(txt, "SERVO011.TXT");
+    CHECK_STR_EQ(txt, "ATEST011.TXT");
     CHECK(card_has(txt));
     /* The pair is one number: the next run is above it. */
     CHECK_EQ(card_next(), 12);
 
     /* A limit run: its report alone, the next number. */
     CHECK_EQ(take_number(card_next()), 12);
-    log_name_build(txt, sizeof(txt), LOG_PREFIX_SERVO, 12, true);
-    CHECK_STR_EQ(txt, "SERVO012.TXT");
+    log_name_build(txt, sizeof(txt), LOG_PREFIX_LIMIT, 12, true);
+    CHECK_STR_EQ(txt, "LIMIT012.TXT");
     card_put(txt);
     CHECK_EQ(card_next(), 13);
 }
@@ -421,6 +467,10 @@ TEST_CASE(a_deleted_run_takes_its_own_writers_report)
     CHECK_STR_EQ(txt, "BENCH007.TXT");
     log_name_report_of(txt, sizeof(txt), "esc003.csv");
     CHECK_STR_EQ(txt, "ESC003.TXT");
+    log_name_report_of(txt, sizeof(txt), "ATEST011.CSV");
+    CHECK_STR_EQ(txt, "ATEST011.TXT");
+    log_name_report_of(txt, sizeof(txt), "motor004.csv");  /* none written */
+    CHECK_STR_EQ(txt, "MOTOR004.TXT");
     /* Not a run log: no report goes with it. */
     snprintf(txt, sizeof(txt), "x");
     log_name_report_of(txt, sizeof(txt), "SERVO011.TXT");
@@ -435,40 +485,60 @@ TEST_CASE(a_deleted_run_takes_its_own_writers_report)
 }
 
 /*
- * main.c's log_run_wanted() calls a run ESC while the bank is armed for
- * the throttle, and panel_log.c's log_open() names it by
- * log_name_armed_prefix().  The same two calls, on a real bank.
+ * main.c's log_run_wanted() names an ARMED run by log_name_armed_prefix()
+ * from the roles the arm asked for, arming_roles(): MOTOR & ESC and ESC
+ * STICK ask for the throttle (panel_arm.c), SERVO for the surfaces
+ * (servo_ctx_arm_surfaces()).  The same calls, on a real policy and bank.
  */
-static void armed_name(const outputs_t *o, char *out, size_t n, int number)
+static void armed_name(const arming_t *a, const outputs_t *o, char *out,
+                       size_t n, int number)
 {
-    const log_prefix_t p =
-        log_name_armed_prefix(outputs_role_armed(o, OUT_ROLE_THROTTLE));
+    const uint8_t roles = arming_roles(a);
+    const log_prefix_t p = log_name_armed_prefix(
+        roles != 0u, (roles & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u,
+        outputs_role_armed(o, OUT_ROLE_THROTTLE));
     log_name_build(out, n, p, number, false);
 }
 
-TEST_CASE(an_armed_run_of_the_throttle_is_an_esc_run)
+TEST_CASE(an_armed_run_is_named_by_the_screen_that_armed_it)
 {
+    arming_t a;
+    arming_init(&a, 0u, 0u);
     outputs_t o;
     outputs_init(&o, 0u);
     char name[LOG_RUN_NAME_MAX];
 
-    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), 0u);  /* MOTOR */
-    CHECK(outputs_armed(&o));
-    armed_name(&o, name, sizeof(name), 3);
-    CHECK_STR_EQ(name, "ESC003.CSV");
-
+    /* Nothing asked yet: the throttle rule. */
+    CHECK_EQ(arming_roles(&a), 0u);
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), 0u);
+    armed_name(&a, &o, name, sizeof(name), 1);
+    CHECK_STR_EQ(name, "MOTOR001.CSV");
     outputs_arm(&o, false, 0u);
-    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_SURFACE), 0u);   /* SERVO */
-    armed_name(&o, name, sizeof(name), 4);
-    CHECK_STR_EQ(name, "BENCH004.CSV");
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_SURFACE), 0u);
+    armed_name(&a, &o, name, sizeof(name), 2);
+    CHECK_STR_EQ(name, "SERVO002.CSV");
+    outputs_arm(&o, false, 0u);
 
-    /* Both roles: the arm drives an ESC, so it is an ESC run. */
+    /* MOTOR & ESC's ARM. */
+    arming_request_arm_roles(&a, 0u, OUT_ROLE_BIT(OUT_ROLE_THROTTLE));
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), 0u);
+    armed_name(&a, &o, name, sizeof(name), 3);
+    CHECK_STR_EQ(name, "MOTOR003.CSV");
+    outputs_arm(&o, false, 0u);
+
+    /* SERVO's ARM, on an IOmcu older than protocol 4.18 that arms every
+     * output whatever the roles: still a SERVO run. */
+    arming_request_arm_roles(&a, 0u, OUT_ROLE_BIT(OUT_ROLE_SURFACE));
     outputs_arm_roles(&o, OUT_ROLES_ALL, 0u);
-    armed_name(&o, name, sizeof(name), 5);
-    CHECK_STR_EQ(name, "ESC005.CSV");
+    armed_name(&a, &o, name, sizeof(name), 4);
+    CHECK_STR_EQ(name, "SERVO004.CSV");
 
-    CHECK_EQ(log_name_armed_prefix(true), LOG_PREFIX_ESC);
-    CHECK_EQ(log_name_armed_prefix(false), LOG_PREFIX_BENCH);
+    CHECK_EQ(log_name_armed_prefix(true, true, false), LOG_PREFIX_MOTOR);
+    CHECK_EQ(log_name_armed_prefix(true, false, true), LOG_PREFIX_SERVO);
+    CHECK_EQ(log_name_armed_prefix(false, true, true), LOG_PREFIX_MOTOR);
+    CHECK_EQ(log_name_armed_prefix(false, false, true), LOG_PREFIX_MOTOR);
+    CHECK_EQ(log_name_armed_prefix(false, false, false), LOG_PREFIX_SERVO);
+    CHECK_EQ(log_name_armed_prefix(false, true, false), LOG_PREFIX_SERVO);
 }
 
 /* ------------------------------------------------------------ readers */
@@ -489,6 +559,22 @@ TEST_CASE(the_newest_run_ranks_first_across_prefixes)
     CHECK(log_name_rank("SERVO007.CSV", "BENCH007.CSV") > 0);
     CHECK(log_name_rank("ESC007.CSV", "SERVO007.CSV") < 0);
     CHECK_EQ(log_name_rank("SERVO007.CSV", "servo007.csv"), 0);
+    /* All 7 writers in one order: the number first, the name on a tie. */
+    static const char *const k_order[] = {
+        "SUPPL300.CSV", "MOTOR299.CSV", "LIMIT298.CSV", "ATEST297.CSV",
+        "BENCH296.CSV", "ESC295.CSV",   "SERVO294.CSV", "ATEST100.CSV",
+        "BENCH100.CSV", "ESC100.CSV",   "LIMIT100.CSV", "MOTOR100.CSV",
+        "SERVO100.CSV", "SUPPL100.CSV", "LIMIT100.TXT", "SWEEP.CSV",
+    };
+    const int n = (int)(sizeof(k_order) / sizeof(k_order[0]));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            const int r = log_name_rank(k_order[i], k_order[j]);
+            if ((i < j && r >= 0) || (i > j && r <= 0) || (i == j && r != 0)) {
+                T_FAIL("%s against %s ranks %d", k_order[i], k_order[j], r);
+            }
+        }
+    }
 }
 
 TEST_CASE(a_full_list_keeps_the_newest_runs_of_every_writer)
@@ -705,9 +791,9 @@ int main(void)
     RUN(every_writer_names_its_runs_and_reads_the_number_back);
     RUN(a_name_that_only_looks_like_a_run_is_not_one);
     RUN(a_name_that_cannot_be_written_is_not_written_as_a_near_miss);
-    RUN(a_number_is_carried_by_six_names_and_each_takes_it);
+    RUN(a_number_is_carried_by_ten_names_and_each_takes_it);
     RUN(the_next_number_is_one_above_the_highest_of_any_prefix);
-    RUN(a_card_of_older_bench_files_continues_their_numbering);
+    RUN(a_folder_of_older_bench_files_continues_their_numbering);
     RUN(a_gap_is_not_filled);
     RUN(foreign_files_take_no_number);
     RUN(a_number_written_since_the_walk_is_stepped_over_whatever_its_prefix);
@@ -715,7 +801,7 @@ int main(void)
     RUN(a_card_of_999_mixed_runs_is_full);
     RUN(a_servo_test_writes_its_csv_and_its_report_under_one_number);
     RUN(a_deleted_run_takes_its_own_writers_report);
-    RUN(an_armed_run_of_the_throttle_is_an_esc_run);
+    RUN(an_armed_run_is_named_by_the_screen_that_armed_it);
     RUN(the_newest_run_ranks_first_across_prefixes);
     RUN(a_full_list_keeps_the_newest_runs_of_every_writer);
     RUN(the_file_being_written_is_not_listed_whatever_its_prefix);

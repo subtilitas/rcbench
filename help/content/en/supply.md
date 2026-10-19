@@ -116,7 +116,7 @@ With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It switches 
 
 A run is one switch-on of the output. The plot clears when the output comes on and holds the run after it goes off. The mAh and Wh under OUTPUT ON count the run. RESET PEAKS starts the lowest and highest values again from the current reading.
 
-Each run is written to its own `BENCHnnn.CSV` on the SD (Secure Digital) card, one row every 50 ms, with the set point, voltage, limit, current, power, mode, charge, energy and source, `measured` or `model`. [Logs](logs.md) opens it.
+Each run is written to its own `SUPPLnnn.CSV` in `BENCH/LOGS` on the SD (Secure Digital) card, while Auto logs on [SETUP](setup.md#sd-card) > SD CARD is ON, one row every 50 ms, with the set point, voltage, limit, current, power, mode, charge, energy and source, `measured` or `model`. [Logs](logs.md) opens it.
 
 ## Related pages
 

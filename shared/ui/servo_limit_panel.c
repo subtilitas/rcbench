@@ -400,6 +400,7 @@ void lim_begin(void)
     s.lim_seen   = true;
     s.lim_file   = 0;
     s.lim_report = false;
+    s.lim_off    = !settings_get_bool(SET_LOG_USER);   /* USER LOGS */
     s.lim_box    = true;
     s.test_box   = false;
     close_panels();
@@ -418,7 +419,7 @@ uint32_t lim_signature(void)
     const uint32_t f[] = {
         (uint32_t)r->state, (uint32_t)r->phase, (uint32_t)r->side,
         (uint32_t)r->cmd_us, (uint32_t)r->writes, (uint32_t)(s.lim_file + 2),
-        s.lim_report ? 1u : 0u, (uint32_t)(uintptr_t)lim_blocked(),
+        s.lim_report ? 1u : 0u, s.lim_off ? 1u : 0u, (uint32_t)(uintptr_t)lim_blocked(),
         (uint32_t)(uintptr_t)lim_prog_why(), (uint32_t)(uintptr_t)s.lim_note,
     };
     uint32_t h = 2166136261u;
@@ -449,8 +450,10 @@ void lim_tick(void)
 /* The limit run's report, as the box and the LIMIT RUN card name it. */
 static void lim_file_name(char *b, size_t n)
 {
-    if (s.lim_file > 0) {
-        log_name_build(b, n, LOG_PREFIX_SERVO, s.lim_file, true);
+    if (s.lim_off) {
+        snprintf(b, n, "%s", TR(SV_USER_LOGS_OFF));
+    } else if (s.lim_file > 0) {
+        log_name_build(b, n, LOG_PREFIX_LIMIT, s.lim_file, true);
     } else {
         snprintf(b, n, "%s", (s.lim_file < 0) ? TR(SV_NOT_RECORDED)
                                                : TR(SV_WRITING));

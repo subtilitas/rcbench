@@ -57,7 +57,7 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Motor & ESC > Programmieren | [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle; Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und VESC-Firmware und für Hitec-Servos | Aufgabe gebaut. Profile eingebaut und aus `/ESC/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon aus ESC STICK aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels. Die Parametertabellen sind Daten: kein Protokoll auf einer Leitung, keine Zeile in einer Liste von PROGRAMMIEREN |
 | Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Sensoren nicht bestückt |
 | Akku | Zellenspreizung und Bewertung | Bildschirm gebaut; Zellenmonitor nicht bestückt |
-| Logs | CSV (Comma-Separated Values) von der Karte durchsehen, importieren und plotten; Läufe werden in ARMED oder bei eingeschaltetem Netzteil-Ausgang aufgezeichnet | gebaut |
+| Logs | CSV (Comma-Separated Values) von der Karte durchsehen, importieren und plotten; Läufe werden in ARMED oder bei eingeschaltetem Netzteil-Ausgang nach `BENCH/LOGS` aufgezeichnet, Tests nach `USER/LOGS`, beides abschaltbar unter SETUP > SD-KARTE | gebaut |
 | Setup | Einstellungen in beiden Themes, gespeichert im NVS | gebaut |
 
 ## Bauen
@@ -104,7 +104,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,6 %**, 46 774 von 47 925 Zeilen in 181 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,6 %**, 46 960 von 48 109 Zeilen in 182 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).

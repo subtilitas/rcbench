@@ -15,6 +15,9 @@
  * file and its size, and only its own DELETE, pressed and released on that
  * button, calls the I/O's remove().
  *
+ * The browse view lists one folder at a time, chosen by three tabs in its
+ * header row: USER, BENCH and ROOT (log_viewer_tab_t).
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -25,9 +28,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "card_tree.h"
 #include "log_name.h"
 #include "settings.h"
 #include "ui_screen.h"
+#include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
@@ -80,6 +85,15 @@
 /* PREV and NEXT, over DELETE and OPEN in the header row. */
 #define BR_PG_Y   2
 #define BR_PG_H   38
+/*
+ * USER, BENCH and ROOT at the header row's left, 80 px a tab: ui_tabs draws
+ * its trough 3 px round the tabs, so the trough is the header row, 2 to
+ * 40 px, as PREV and NEXT are.  The card's name and the folder follow from
+ * BR_HEAD_X to PREV: 248 px, 31 cells of the 8 px face, an 11-character
+ * volume label, 2 spaces and a 17-character folder.
+ */
+#define BR_TABS   gfx_rect_make(19, BR_PG_Y + 3, 3 * 80 + 2 * 4, BR_PG_H - 6)
+#define BR_HEAD_X 280
 #define BR_PREV   gfx_rect_make(536, BR_PG_Y, 120, BR_PG_H)
 #define BR_NEXT   gfx_rect_make(664, BR_PG_Y, 120, BR_PG_H)
 
@@ -143,6 +157,9 @@ _Static_assert(30 + BR_ROWS * BR_ROW_H <= FOOT_Y - FOOT_GAP - BR_LIST_Y,
                "the file list's rows fit its panel");
 _Static_assert(BR_PG_Y + BR_PG_H + 4 <= BR_LIST_Y,
                "PREV and NEXT end above the list");
+_Static_assert(19 + 3 * 80 + 2 * 4 + 3 + 8 <= BR_HEAD_X,
+               "the tabs end before the header's text");
+_Static_assert(BR_HEAD_X + 31 * 8 <= 536, "the header's text ends at PREV");
 _Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,
                "the scroll bar's thumb is 32 px or more on a full page");
 _Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - 36,
@@ -159,6 +176,15 @@ static const ui_color_id_t k_series_color[LOG_MAX_SERIES] = {
 static struct {
     view_t view;
     log_viewer_io_t io;
+
+    /* The folder the browse view lists, and its three tabs. */
+    log_viewer_tab_t tab;
+    ui_tabs_t tabs;
+    /* The tab of the file s.name names: the plot and the import read it
+     * again from there whatever the tabs show since. */
+    log_viewer_tab_t open_tab;
+    /* The logger's count of files created, as this screen last saw it. */
+    unsigned written_seen;
 
     log_viewer_file_t files[LOG_VIEWER_MAX_FILES];
     int n_files;  /* rows on the page, never above LOG_VIEWER_MAX_FILES */
@@ -358,6 +384,29 @@ void log_viewer_set_io(const log_viewer_io_t *io)
     log_viewer_invalidate();
 }
 
+const char *log_viewer_tab_dir(log_viewer_tab_t tab)
+{
+    switch (tab) {
+    case LOG_TAB_USER:  return CARD_USER_LOGS;
+    case LOG_TAB_BENCH: return CARD_AUTO_LOGS;
+    case LOG_TAB_ROOT:
+    default:            return CARD_ROOT;
+    }
+}
+
+log_viewer_tab_t log_viewer_tab(void)
+{
+    return s.tab;
+}
+
+/* Point the I/O at @p tab's folder, for the call that follows. */
+static void point(log_viewer_tab_t tab)
+{
+    if (s.io.folder != NULL) {
+        s.io.folder(log_viewer_tab_dir(tab), s.io.ctx);
+    }
+}
+
 /* The card's name as the I/O reports it now, or "". */
 static const char *volume_now(void)
 {
@@ -391,6 +440,7 @@ static int list_once(log_page_dir_t dir, const char *key, int cap)
     memset(&q, 0, sizeof(q));
     q.dir = dir;
     snprintf(q.key, sizeof(q.key), "%s", (key != NULL) ? key : "");
+    point(s.tab);
     const int n = s.io.list(s.files, cap, &q, s.io.ctx);
     if (n < 0) {
         return n;
@@ -637,6 +687,7 @@ static void run_analysis(void)
     }
 
     log_source_t src;
+    point(s.open_tab);
     if (!s.io.open(s.name, &src, s.io.ctx)) {
         set_message(TR(LOG_CANNOT_OPEN), s.name);
         return;
@@ -831,6 +882,7 @@ static void load_data(void)
     }
 
     log_source_t src;
+    point(s.open_tab);
     if (!s.io.open(s.name, &src, s.io.ctx)) {
         set_message(TR(LOG_CANNOT_OPEN), s.name);
         return;
@@ -869,6 +921,7 @@ static void open_selected(void)
         return;
     }
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
+    s.open_tab = s.tab;
     s.delim_index = -1;
     s.conv = LOG_CONV_AUTO;
     run_analysis();
@@ -969,13 +1022,44 @@ static void render_bar(gfx_canvas_t *c)
                           col);
 }
 
+/* The empty list's two lines: why it is empty, and what the folder holds
+ * when it does not. */
+static void empty_lines(char *why, size_t n, const char **hint)
+{
+    if (s.listed == -1) {
+        snprintf(why, n, "%s", TR(LOG_NO_CARD));
+    } else if (s.tab == LOG_TAB_ROOT) {
+        snprintf(why, n, "%s", TR(LOG_NO_CSV));
+    } else {
+        snprintf(why, n, TR(LOG_NO_CSV_IN), log_viewer_tab_dir(s.tab));
+    }
+    switch (s.tab) {
+    case LOG_TAB_USER:
+        *hint = settings_get_bool(SET_LOG_USER) ? TR(LOG_TESTS_HERE)
+                                                : TR(LOG_USER_OFF);
+        break;
+    case LOG_TAB_BENCH:
+        *hint = settings_get_bool(SET_LOG_AUTO) ? TR(LOG_RUNS_HERE)
+                                                : TR(LOG_AUTO_OFF);
+        break;
+    case LOG_TAB_ROOT:
+    default:
+        *hint = TR(LOG_ROOT_HERE);
+        break;
+    }
+}
+
 static void render_browse(gfx_canvas_t *c)
 {
+    /* The card's name and the folder on screen: "UNITEST  BENCH/LOGS",
+     * and the name alone for the root. */
     const char *vol = volume_now();
-    char head[64];
-    snprintf(head, sizeof(head), "%s", (vol[0] != '\0') ? vol
-                                                         : TR(LOG_SD_CARD));
-    gfx_text(c, 300, 12, head, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    const char *dir = log_viewer_tab_dir(s.tab);
+    char head[LOG_VIEWER_NAME_MAX + CARD_DIR_MAX + 4];
+    snprintf(head, sizeof(head), "%s%s%s",
+             (vol[0] != '\0') ? vol : TR(LOG_SD_CARD),
+             (dir[0] != '\0') ? "  " : "", dir);
+    gfx_text(c, BR_HEAD_X, 12, head, UI_FONT_LABEL, UI_TEXT_DIM, 1);
 
     /*
      * The question replaces the list and the footer rather than sitting on
@@ -986,15 +1070,18 @@ static void render_browse(gfx_canvas_t *c)
         render_question(c);
         return;
     }
+    /* Not under the question: its only answers are CANCEL and DELETE. */
+    ui_tabs_render(&s.tabs, c);
 
     if (s.listed != 1 || s.n_files == 0) {
         gfx_rect_t box = gfx_rect_make(120, 160, 560, 160);
         ui_panel(c, box, TR(LOG_NO_LOGS), UI_WARN);
-        const char *why = (s.listed == -1) ? TR(LOG_NO_CARD) : TR(LOG_NO_CSV);
+        char why[96];
+        const char *hint = "";
+        empty_lines(why, sizeof(why), &hint);
         gfx_text(c, box.x + 24, box.y + 52, why, UI_FONT_LABEL, UI_TEXT, 1);
-        gfx_text(c, box.x + 24, box.y + 76,
-                 TR(LOG_RUNS_HERE),
-                 UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+        gfx_text(c, box.x + 24, box.y + 76, hint, UI_FONT_LABEL,
+                 UI_TEXT_FAINT, 1);
     } else {
         /*
          * The tab names the page's place in the card when the volume holds
@@ -1579,6 +1666,7 @@ static void delete_doomed(void)
     snprintf(name, sizeof(name), "%s", s.doomed);
     s.doomed[0] = '\0';
 
+    point(s.tab);
     if (s.io.remove == NULL || !s.io.remove(name, s.io.ctx)) {
         /* The list stays as it was, selection included: the file is still
          * there as far as anybody knows, and RESCAN says otherwise if not. */
@@ -1586,7 +1674,7 @@ static void delete_doomed(void)
         return;
     }
     /* What the import and plot views hold was read from that file. */
-    if (strcmp(s.name, name) == 0) {
+    if (strcmp(s.name, name) == 0 && s.open_tab == s.tab) {
         drop_data();
         s.have_analysis = false;
         s.name[0] = '\0';
@@ -1658,6 +1746,20 @@ static void browse_event(const touch_event_t *e)
     if (s.doomed[0] != '\0') {
         question_event(e);
         return;
+    }
+
+    /* A tab tapped lists its folder from the first page. */
+    if (ui_tabs_event(&s.tabs, e)) {
+        s.tap_have  = false;
+        s.pressing  = false;
+        s.press_btn = -1;
+        s.bar_drag  = false;
+        log_viewer_set_tab((log_viewer_tab_t)s.tabs.selected);
+        return;
+    }
+    if (e->type == TOUCH_EVENT_DOWN && s.tabs.pressed >= 0) {
+        log_viewer_invalidate();
+        return;     /* the tab's own press */
     }
 
     /* PREV and NEXT are buttons only while they show. */
@@ -2195,7 +2297,26 @@ static void cancel(void)
     s.pinch     = false;
     s.panning   = false;
     s.bar_drag  = false;
+    ui_tabs_cancel(&s.tabs);
     log_viewer_invalidate();
+}
+
+/* The tabs' labels, in log_viewer_tab_t order. */
+static const ui_text_id_t k_tab_text[LOG_TAB_COUNT] = {
+    [LOG_TAB_USER]  = TX_LOG_TAB_USER,
+    [LOG_TAB_BENCH] = TX_LOG_TAB_BENCH,
+    [LOG_TAB_ROOT]  = TX_LOG_TAB_ROOT,
+};
+
+void log_viewer_set_tab(log_viewer_tab_t tab)
+{
+    if ((unsigned)tab >= (unsigned)LOG_TAB_COUNT) {
+        return;
+    }
+    s.tab = tab;
+    s.tabs.selected = (int)tab;
+    s.message[0] = '\0';
+    read_page(LOG_PAGE_FROM, "");
 }
 
 static void reset(void)
@@ -2204,6 +2325,10 @@ static void reset(void)
     drop_data();
     memset(&s, 0, sizeof(s));
     s.io = io;
+    ui_tabs_init_text(&s.tabs, k_tab_text, LOG_TAB_COUNT, BR_TABS);
+    s.tab = LOG_TAB_BENCH;
+    s.tabs.selected = (int)LOG_TAB_BENCH;
+    s.open_tab = LOG_TAB_BENCH;
     s.sel = -1;
     s.cursor = -1;
     s.press_btn = -1;
@@ -2222,6 +2347,24 @@ static void enter(void)
     s.press_btn = -1;
     s.q_down    = false;
     s.bar_drag  = false;
+    ui_tabs_cancel(&s.tabs);
+    /*
+     * The tab of the file the logger created last, when it has created one
+     * since the screen last looked: the run just recorded is what the
+     * operator comes here for.  Otherwise the tab stays as it was left,
+     * BENCH after a start.
+     */
+    if (s.io.written != NULL) {
+        log_viewer_tab_t tab = s.tab;
+        const unsigned n = s.io.written(&tab, s.io.ctx);
+        if (n != s.written_seen) {
+            s.written_seen = n;
+            if ((unsigned)tab < (unsigned)LOG_TAB_COUNT) {
+                s.tab = tab;
+                s.tabs.selected = (int)tab;
+            }
+        }
+    }
     /*
      * The card is read on every way in, not only the first after a start:
      * a run recorded while the screen was closed is the one the operator

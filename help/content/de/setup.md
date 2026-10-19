@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in zwei Kategorien: PANEL und ANSCHLÜSSE. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
+SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in drei Kategorien: PANEL, ANSCHLÜSSE und SD-KARTE. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
 
 ## Die Kacheln
 
@@ -16,12 +16,13 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in zwei Kate
 |---|---|---|
 | PANEL | `10 EINSTELLUNGEN` | die Liste von PANEL |
 | ANSCHLÜSSE | `26 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
+| SD-KARTE | `2 EINSTELLUNGEN` | die Liste von SD-KARTE: welche Logs das Panel schreibt |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
 | PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): die Dateien der Karte und ein Upload der Panel-Firmware im Browser, und das Heimnetz |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
 
-Drei Plätze bleiben frei. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
+Zwei Plätze bleiben frei. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
 
 ![Die Kacheln mit einem ungespeicherten Wert](view:setup-hub-dirty)
 
@@ -122,6 +123,22 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 - Der Sensor wird alle 10 ms gelesen. Ein Sprung über 90 deg zwischen zwei Messwerten wird verworfen.
 
 Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Das Panel spricht für ihn nie 0x14, 0x20 bis 0x27, 0x30 bis 0x3F oder 0x5D an, wo der I/O-Expander CH422G und der Touch-Controller GT911 der Platine antworten, und auch nicht 0x00 bis 0x03 oder 0x78 bis 0x7F, die die I2C-Spezifikation reserviert. Ohne Sensor prüft `Drehknopf` EIN alle 100 ms mit einer Adressprobe, ob 0x06 antwortet. Die Host-Tests zeigen, dass das sonst nichts ändert; am Panel ist es nicht gemessen. Verdrahtung: [Bauen](https://github.com/subtilitas/rcbench/blob/main/docs/Building-de.md#verdrahtung-des-drehknopfs).
+
+## SD-KARTE
+
+![SD-KARTE](view:setup-card)
+
+| Einstellung | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|
+| Auto-Logs | EIN, AUS | EIN | ein Log je ARMED- und Netzteil-Lauf in `BENCH/LOGS`: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
+| User-Logs | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in `USER/LOGS` |
+
+- AUS schreibt keine Datei und nimmt keine Nummer. Keine Kartenmeldung dieser Art von Lauf erscheint.
+- Auto-Logs während eines Laufs ausgeschaltet beendet dessen Datei an dieser Stelle; während eines ARMED- oder Netzteil-Laufs eingeschaltet, beginnt dort eine Datei.
+- User-Logs zählt bei TEST STARTEN und ENDLAGENLAUF STARTEN: Ein Lauf behält, womit er gestartet ist. Ist es aus, nennt der SERVO-Bildschirm `USER-LOGS AUS` an der Stelle der Datei.
+- BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei User-Logs EIN, ob `ATESTnnn.TXT` geschrieben wird.
+- Das Fehlerprotokoll, `RCBENCH.LOG`, wird unabhängig von Auto-Logs geschrieben.
+- [Logs](logs.md#was-ein-lauf-schreibt) listet die Ordner.
 
 ## ANSCHLÜSSE
 

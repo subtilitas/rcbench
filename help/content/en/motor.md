@@ -130,7 +130,7 @@ The header of the plot shows the rated kV, the measured rpm per volt and EFF, th
 
 ## The log of a run
 
-One switch to ARMED writes one file, `ESCnnn.CSV`, on the panel's SD (Secure Digital) card. With the link up a row is one answered poll, about 19 rows per second on one bench; other benches are not measured. The file closes at the switch to SAFE. [Logs](logs.md) opens and plots it.
+One switch to ARMED writes one file, `MOTORnnn.CSV`, in `BENCH/LOGS` on the panel's SD (Secure Digital) card, while Auto logs on [SETUP](setup.md#sd-card) > SD CARD is ON. With the link up a row is one answered poll, about 19 rows per second on one bench; other benches are not measured. The file closes at the switch to SAFE. [Logs](logs.md) opens and plots it.
 
 ## Related pages
 

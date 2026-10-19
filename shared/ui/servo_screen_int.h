@@ -531,12 +531,12 @@ typedef struct {
     uint32_t  now_ms;        /**< the panel's clock, servo_screen_clock() */
     bool      have_now;
     bool      link_up;
-    bool      enc_held;      /**< the IOmcu holds the encoder on,
-                                  servo_screen_set_enc_held()           */
+    bool      enc_held;      /**< IOmcu holds the encoder on (set_enc_held) */
     int       test_note;     /**< servo_str_t the engine refused a START
                                   with, 0 none; test_blocked() is live  */
     int       test_file;     /**< its files' number; 0 not yet, -1 none */
     bool      test_report;   /**< the card took its .TXT whole          */
+    bool      test_off;      /**< USER LOGS off at its start: no file  */
     int       test_blocked_seen; /**< test_blocked() at the last tick   */
     bool      test_online_seen;  /**< the supply answering, likewise    */
     bool      test_box;      /**< the left card shows the run          */
@@ -564,8 +564,7 @@ typedef struct {
      */
     servo_limrun_t lim;
     bool      lim_prog;      /**< LIMIT RUN: SEARCH+PROG, for the session */
-    bool      lim_pulses;    /**< SERVO PULSES at 1000-2000, for the
-                                  session                                */
+    bool      lim_pulses;    /**< SERVO PULSES at 1000-2000, session */
     ui_hold_t lim_hold;
     bool      lim_down;
     bool      lim_box;       /**< the left card shows the limit run     */
@@ -577,6 +576,7 @@ typedef struct {
     bool      lim_end_due;
     int       lim_file;      /**< its report's number; 0 not yet, -1 none */
     bool      lim_report;    /**< the card took the report whole       */
+    bool      lim_off;       /**< USER LOGS was off at its start        */
     const char *lim_note;    /**< why the last START was refused, or NULL */
     uint32_t  lim_changes;   /**< the meter's change count at the start */
     uint32_t  lim_sig;

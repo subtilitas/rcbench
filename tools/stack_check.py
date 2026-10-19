@@ -223,6 +223,18 @@ PROG_CALLS = {
     "prog_ps_pin": ("kst_panel_pin", "esc_stick_ps_pin"),
 }
 
+# The log_take_io_t callbacks shared/logfile/log_take.c calls: the card
+# functions of firmware/panel/main/panel_log.c, on the runlog task.  A run's
+# file is opened through them, so the chain from log_take() into FatFs
+# (mkdir, stat, the directory walk and fopen) is followed by name.
+# log_take() is the one caller in the ELF: its helpers that make the calls
+# are inlined.  The same checks as PORT_CALLS; test/tools/test_stack_check.py
+# holds the table to log_take.c and to the panel's log_take_io_t.
+TAKE_CALLS = {
+    "log_take": ("take_mounted", "take_make_dir", "take_walk", "take_exists",
+                 "take_create"),
+}
+
 # The fw_boot_ops_t callbacks shared/fwupdate calls: the panel's start
 # check after an update, in components/fw_ota, which writes otadata on the
 # main task.  The same checks as PORT_CALLS.
@@ -701,7 +713,9 @@ def main() -> int:
                                 BOOT_CALLS),
                                ("SERVO_CALLS", "shared/outputs",
                                 SERVO_CALLS),
-                               ("PROG_CALLS", "shared/ui", PROG_CALLS)):
+                               ("PROG_CALLS", "shared/ui", PROG_CALLS),
+                               ("TAKE_CALLS", "shared/logfile",
+                                TAKE_CALLS)):
         for caller, callbacks in calls.items():
             addrs = by_name.get(caller, [])
             if len(addrs) != 1:

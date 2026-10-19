@@ -139,7 +139,7 @@ the tool builds it with cmake into build-trace/.
 
 Usage:
     python3 tools/sense_trace.py console.log
-    python3 tools/sense_trace.py console.log --servo-csv SERVO003.CSV
+    python3 tools/sense_trace.py console.log --servo-csv ATEST003.CSV
     python3 tools/sense_trace.py console.log --out traces --floor 0.004
     python3 tools/sense_trace.py console.log --loaded-channel 2
 

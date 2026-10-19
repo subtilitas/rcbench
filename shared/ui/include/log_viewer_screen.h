@@ -7,8 +7,11 @@
  *
  * Three views, in the order they are used:
  *
- *   BROWSE  the files on the card, and DELETE for the selected one behind a
- *           confirmation that names it
+ *   BROWSE  the files of one folder of the card, and DELETE for the selected
+ *           one behind a confirmation that names it.  Three tabs choose the
+ *           folder: USER (USER/LOGS, the tests a user starts), BENCH
+ *           (BENCH/LOGS, the automatic logs) and ROOT (the card's root,
+ *           where firmware 0.21 and older wrote every run)
  *   IMPORT  what the CSV (comma-separated values) reader detected, and the
  *           controls to override it
  *   PLOT    the traces, on one time base with a scale each
@@ -63,6 +66,18 @@ typedef enum {
     LOG_PAGE_BEFORE
 } log_page_dir_t;
 
+/** The folder BROWSE lists. */
+typedef enum {
+    LOG_TAB_USER = 0,    /**< CARD_USER_LOGS                       */
+    LOG_TAB_BENCH,       /**< CARD_AUTO_LOGS, the tab after a start */
+    LOG_TAB_ROOT,        /**< CARD_ROOT                            */
+    LOG_TAB_COUNT
+} log_viewer_tab_t;
+
+/** The folder of @p tab, a path from the card's root ("" the root itself);
+ *  "" for a tab outside the three. */
+const char *log_viewer_tab_dir(log_viewer_tab_t tab);
+
 typedef struct {
     log_page_dir_t dir;              /**< in */
     /** in: "" for FROM and AFTER is the first entry of all */
@@ -103,6 +118,20 @@ typedef struct {
      * panel.
      */
     bool (*remove)(const char *name, void *ctx);
+    /**
+     * Point the list(), open() and remove() that follow at folder @p dir of
+     * the volume, a path from its root ("" the root itself;
+     * log_viewer_tab_dir()).  The screen calls it before each of them.
+     * May be NULL: a volume of one folder, which every tab lists.
+     */
+    void (*folder)(const char *dir, void *ctx);
+    /**
+     * How many files the logger has created since the panel started, and
+     * in @p tab the tab of the last one.  May be NULL: no file is written.
+     * LOGS opens on that tab when the count has moved since it last
+     * looked, so the run just recorded is on screen.
+     */
+    unsigned (*written)(log_viewer_tab_t *tab, void *ctx);
     void *ctx;
 } log_viewer_io_t;
 
@@ -116,6 +145,15 @@ void log_viewer_set_io(const log_viewer_io_t *io);
 
 /** Which of the three views is showing. */
 log_viewer_view_t log_viewer_view(void);
+
+/** The tab BROWSE shows. */
+log_viewer_tab_t log_viewer_tab(void);
+
+/**
+ * Show @p tab and read its folder from the first page, as a tap on the tab
+ * does.  A tab outside the three is ignored.
+ */
+void log_viewer_set_tab(log_viewer_tab_t tab);
 
 /** The file currently open, or "" -- the overview header shows this. */
 const char *log_viewer_open_name(void);
