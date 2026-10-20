@@ -38,7 +38,7 @@ static void sk64g_in(void)
     storage_deinit();
     g_bus_up = false;
     CHECK_EQ(storage_init(), ESP_OK);
-    CHECK_STR_EQ(storage_card_name(), "SK64G");
+    CHECK_STR_EQ(name_now(), "SK64G");
     g_log_n = 0u;
     g_mounts = 0u;
     g_unmounts = 0u;
@@ -76,7 +76,7 @@ TEST_CASE(a_card_pulled_while_mounted_is_found_gone_on_the_next_check)
     pull();
     CHECK_EQ(storage_check(), CARD_STATE_NONE);
     CHECK(!storage_mounted());
-    CHECK_STR_EQ(storage_card_name(), "");
+    CHECK_STR_EQ(name_now(), "");
     CHECK_STR_EQ(storage_status(), "no card");
     CHECK_EQ(g_unmounts, 1u);
     CHECK(!g_cs);
@@ -125,7 +125,7 @@ TEST_CASE(a_swap_to_a_card_with_no_fat_volume_says_so)
     for (unsigned k = 1u; k <= 2u; ++k) {          /* RESCAN, twice */
         CHECK_EQ(storage_check(), CARD_STATE_NO_FAT);
         CHECK(!storage_mounted());
-        CHECK_STR_EQ(storage_card_name(), "");
+        CHECK_STR_EQ(name_now(), "");
         CHECK_STR_EQ(storage_status(), "no FAT volume");
     }
     CHECK_EQ(g_unmounts, 1u);
@@ -150,7 +150,7 @@ TEST_CASE(a_swap_to_a_fat32_or_exfat_card_mounts_it_by_its_own_name)
         swap_to(FR_OK, k[i].type, k[i].label);
         CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
         CHECK(storage_mounted());
-        CHECK_STR_EQ(storage_card_name(), k[i].label);
+        CHECK_STR_EQ(name_now(), k[i].label);
         CHECK_STR_EQ(last_line()->text, k[i].line);
         CHECK_EQ(g_unmounts, 1u);
         CHECK_EQ(g_mounts, 1u);
@@ -174,7 +174,7 @@ TEST_CASE(a_card_put_into_the_empty_slot_is_mounted_by_the_next_check)
     CHECK_EQ(storage_check(), CARD_STATE_NONE);
     g_card = true;
     CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
-    CHECK_STR_EQ(storage_card_name(), "UNITEST");
+    CHECK_STR_EQ(name_now(), "UNITEST");
     CHECK_EQ(g_unmounts, 0u);
     CHECK_EQ(g_bus_inits, 1u);
     CHECK_EQ(lines_at(ESP_LOG_ERROR), 0u);
@@ -192,7 +192,7 @@ TEST_CASE(a_card_pulled_during_a_run_is_let_go_at_the_close)
     CHECK_EQ(storage_check(), CARD_STATE_NONE);
     CHECK_EQ(g_unmounts, 0u);
     CHECK(!storage_mounted());
-    CHECK_STR_EQ(storage_card_name(), "");
+    CHECK_STR_EQ(name_now(), "");
     /* No new hold, no walk, no stat on the volume that is gone. */
     CHECK(!storage_hold());
     CHECK(storage_fopen(HOST_FILE, "r") == NULL);
@@ -210,7 +210,7 @@ TEST_CASE(a_card_pulled_during_a_run_is_let_go_at_the_close)
     CHECK(!g_cs);
     swap_to(FR_OK, FS_FAT32, "BENCH2");
     CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
-    CHECK_STR_EQ(storage_card_name(), "BENCH2");
+    CHECK_STR_EQ(name_now(), "BENCH2");
     CHECK_EQ(lines_at(ESP_LOG_ERROR), 0u);
     CHECK(!g_lock_taken);
     CHECK_EQ(g_lock_misuse, 0u);
@@ -254,7 +254,7 @@ TEST_CASE(a_walk_on_a_swapped_card_mounts_the_new_one_and_says_so)
     CHECK_EQ(storage_walk("BIG", NULL, see, &v, NULL), STORAGE_WALK_REMOUNTED);
     CHECK_EQ(g_unmounts, 1u);
     CHECK_EQ(g_mounts, 1u);
-    CHECK_STR_EQ(storage_card_name(), "BENCH2");
+    CHECK_STR_EQ(name_now(), "BENCH2");
     CHECK_EQ(walk_big(&v), (unsigned)VOL_N);
     /* Pulled: the walk lets it go and the empty slot is -1, no card. */
     pull();
@@ -329,7 +329,7 @@ TEST_CASE(a_card_pulled_part_way_through_the_first_walk_is_gone)
     g_pull_after = 1;
     g_label = "BENCH2";                 /* the card in the slot after it */
     CHECK_EQ(storage_walk("BIG", NULL, see, &v, NULL), STORAGE_WALK_REMOUNTED);
-    CHECK_STR_EQ(storage_card_name(), "BENCH2");
+    CHECK_STR_EQ(name_now(), "BENCH2");
     CHECK(!g_lock_taken);
 }
 
@@ -385,6 +385,27 @@ TEST_CASE(a_check_before_the_first_mount_and_after_the_end_is_safe)
     CHECK_EQ(g_lock_misuse, 0u);
 }
 
+TEST_CASE(the_name_is_a_copy_that_fits_its_buffer)
+{
+    sk64g_in();
+    char name[4];
+    memset(name, 'x', sizeof(name));
+    storage_card_name(name, sizeof(name));
+    CHECK_STR_EQ(name, "SK6");                  /* cut, and terminated */
+    storage_card_name(NULL, 8u);                /* nothing to write */
+    storage_card_name(name, 0u);
+    CHECK_STR_EQ(name, "SK6");
+    /* A mount counts up once per mount that worked. */
+    const unsigned n = storage_mount_count();
+    swap_to(FR_OK, FS_FAT32, "BENCH2");
+    CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
+    CHECK_EQ(storage_mount_count(), n + 1u);
+    pull();
+    CHECK_EQ(storage_check(), CARD_STATE_NONE);
+    CHECK_EQ(storage_mount_count(), n + 1u);
+    CHECK_STR_EQ(name_now(), "");
+}
+
 int main(void)
 {
     RUN(a_card_pulled_while_mounted_is_found_gone_on_the_next_check);
@@ -398,6 +419,7 @@ int main(void)
     RUN(a_read_error_that_is_not_a_removal_keeps_the_card);
     RUN(a_card_pulled_part_way_through_the_first_walk_is_gone);
     RUN(a_look_that_cannot_ask_keeps_the_card);
+    RUN(the_name_is_a_copy_that_fits_its_buffer);
     RUN(a_stat_that_finds_the_card_gone_lets_it_go_without_a_mount);
     RUN(a_check_before_the_first_mount_and_after_the_end_is_safe);
     return test_summary("storage_swap");

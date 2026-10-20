@@ -521,3 +521,11 @@ unsigned lines_at(esp_log_level_t level)
     }
     return n;
 }
+
+const char *name_now(void)
+{
+    static char name[STORAGE_NAME_MAX];
+    memset(name, 'x', sizeof(name));        /* every byte written over */
+    storage_card_name(name, sizeof(name));
+    return name;
+}

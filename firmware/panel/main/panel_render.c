@@ -51,10 +51,20 @@ void kst_ui_service(void)
      * opening of the programmer or a tap on one of its actions
      * (storage_check()).  A card put in, or found in place of one taken
      * out or swapped, is mounted here. */
-    const unsigned mounts = storage_mount_count();
+    /* The mount whose record the model has: the start's, read before
+     * the render loop runs (kst_record_load(false)), then each one read
+     * here.  A card mounted by LOGS or a run's start since is read at the
+     * next look as well. */
+    static bool     loaded_known;
+    static unsigned loaded_mount;
+    if (!loaded_known) {
+        loaded_known = true;
+        loaded_mount = storage_mount_count();
+    }
     if (!file_out && kst_panel_card_look()
         && storage_check() == CARD_STATE_MOUNTED
-        && storage_mount_count() != mounts) {
+        && storage_mount_count() != loaded_mount) {
+        loaded_mount = storage_mount_count();
         /* And its record is read before a command or a file goes out: a
          * write interrupted before this start stands as at the start. */
         kst_record_load(true);

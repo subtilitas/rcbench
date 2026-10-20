@@ -233,7 +233,7 @@ bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  235 such
+  237 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -356,15 +356,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 128,264 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 297,720 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 128,336 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 297,648 |
 | `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 107,248 |
-| `before` | heap left with the panel up and the radio off | 190,472 |
+| `before` | heap left with the panel up and the radio off | 190,400 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 87,312 |
+| `left` | heap left with the largest mode up | 87,240 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every
@@ -399,14 +399,14 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
-163,904 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+163,920 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
 
 | Object | Component | .bss (bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35,968 |
+| `log_viewer_screen` | ui | 35,984 |
 | `servo_screen` | ui | 29,509 |
 | `ui_watermark` | ui | 20,504 |
 | `supply_screen` | ui | 20,508 |

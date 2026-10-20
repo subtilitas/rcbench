@@ -47,7 +47,7 @@ TEST_CASE(a_card_put_in_later_mounts_on_the_bus_already_up)
     g_card = true;
     CHECK_EQ(storage_init(), ESP_OK);
     CHECK(storage_mounted());
-    CHECK_STR_EQ(storage_card_name(), "UNITEST");
+    CHECK_STR_EQ(name_now(), "UNITEST");
     CHECK_EQ(g_bus_inits, 1u);
     CHECK_EQ(lines_at(ESP_LOG_ERROR), 0u);
     /* Mounted: another call does nothing. */
@@ -242,7 +242,7 @@ TEST_CASE(a_card_with_no_fat_volume_is_said_so)
     CHECK(!storage_mounted());
     CHECK_EQ(storage_card_state(), CARD_STATE_NO_FAT);
     CHECK_STR_EQ(storage_status(), "no FAT volume");
-    CHECK_STR_EQ(storage_card_name(), "");
+    CHECK_STR_EQ(name_now(), "");
     /* One W line from storage.c that names it, and no E line at all. */
     CHECK_EQ(lines_at(ESP_LOG_ERROR), 0u);
     CHECK_EQ(lines_at(ESP_LOG_WARN), 1u);
@@ -293,7 +293,7 @@ TEST_CASE(a_card_with_no_fat_volume_replaced_by_a_fat_one_mounts)
     CHECK(storage_mounted());
     CHECK_EQ(storage_card_state(), CARD_STATE_MOUNTED);
     CHECK_STR_EQ(storage_status(), "");
-    CHECK_STR_EQ(storage_card_name(), "UNITEST");
+    CHECK_STR_EQ(name_now(), "UNITEST");
     CHECK_EQ(g_dev_adds, 1u);
     CHECK_EQ(g_bus_inits, 1u);
     /* Unmounted: nothing known of the slot. */

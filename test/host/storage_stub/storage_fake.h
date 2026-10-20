@@ -92,6 +92,8 @@ const log_line_t *last_line(void);
 /* What mktime() makes of VOL_FDATE and VOL_FTIME, in the same zone. */
 int64_t vol_mtime(void);
 unsigned lines_at(esp_log_level_t level);
+/* storage_card_name() as the panel copies it. */
+const char *name_now(void);
 
 typedef struct {
     storage_entry_t got[8];

@@ -129,11 +129,13 @@ uint64_t storage_total_bytes(void);
 uint64_t storage_free_bytes(void);
 
 /**
- * The card's name: its volume label, or the product name in its CID (card
- * identification register) when it has no label.  Read once per mount.
- * "" when nothing is mounted.
+ * The card's name, into @p out of @p n bytes (40 hold every name): its
+ * volume label, or the product name in its CID (card identification
+ * register) when it has no label.  Read once per mount.  "" when nothing
+ * is mounted.  A copy, so that a mount on another task cannot change it
+ * under the caller.
  */
-const char *storage_card_name(void);
+void storage_card_name(char *out, size_t n);
 
 /**
  * What went wrong, in a few words for the console and the start-up line:

@@ -158,6 +158,10 @@ typedef int BaseType_t;
 #define portMAX_DELAY ((TickType_t)0xffffffffu)
 #define pdTRUE 1
 #define pdFALSE 0
+typedef int portMUX_TYPE;
+#define portMUX_INITIALIZER_UNLOCKED 0
+#define taskENTER_CRITICAL(mux) ((void)(mux))
+#define taskEXIT_CRITICAL(mux) ((void)(mux))
 typedef struct { int taken; } StaticSemaphore_t;
 typedef StaticSemaphore_t *SemaphoreHandle_t;
 SemaphoreHandle_t xSemaphoreCreateMutex(void);

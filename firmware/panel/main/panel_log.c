@@ -105,6 +105,10 @@ static uint32_t     s_log_run_id;
  * starts from what it handed out last.  The logger task's own.
  */
 static log_series_set_t s_series;
+/* The mount s_series numbers the folders of (storage_mount_count()):
+ * another mount is another card, or the same card edited elsewhere, and
+ * every folder is walked again.  The logger task's own. */
+static unsigned s_series_mount;
 
 /*
  * The log folders.  s_dir_want is what SETUP > SD CARD names, written by
@@ -302,6 +306,10 @@ static log_take_t take(const char *dir, log_prefix_t prefix, bool report,
      */
     (void)storage_check();
     take_ctx_t t = { fp, mark, tab, storage_hold() };
+    if (storage_mount_count() != s_series_mount) {
+        s_series_mount = storage_mount_count();
+        log_series_init(&s_series);
+    }
     const log_take_io_t io = {
         .ctx      = &t,
         .mounted  = take_mounted,

@@ -415,13 +415,22 @@ static void card_close(void *ctx)
 static const char *card_volume(void *ctx)
 {
     (void)ctx;
-    return storage_card_name();
+    /* The task that renders' own copy, taken each time it asks. */
+    static char name[STORAGE_NAME_MAX];
+    storage_card_name(name, sizeof(name));
+    return name;
 }
 
 static card_state_t card_state(void *ctx)
 {
     (void)ctx;
     return storage_card_state();
+}
+
+static unsigned card_mounts(void *ctx)
+{
+    (void)ctx;
+    return storage_mount_count();
 }
 
 /*
@@ -490,6 +499,7 @@ const log_viewer_io_t k_card_io = {
     .folder = card_folder,
     .written = card_written,
     .card   = card_state,
+    .mounts = card_mounts,
     .ctx    = NULL,
 };
 

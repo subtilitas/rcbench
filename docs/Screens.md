@@ -1878,10 +1878,10 @@ next RESCAN, the next opening of LOGS, the next page and the next OPEN,
 with no restart ([The SD card's format](#the-sd-cards-format)). The header,
 the list and the empty list's words are then the card's in the slot: a new
 card opens on its first page, an empty slot says `No card. Insert one and
-tap RESCAN.`. The viewer reads from the first page whenever the name in the
-header changes, and on the panel that name changes only with a new mount.
-Two cards with the same label, or two unlabelled cards of one model, carry
-the same name.
+tap RESCAN.`. The viewer reads from the first page after every new mount,
+also of a card with the same label as the one before: two cards with the
+same label, or two unlabelled cards of one model, carry the same name in
+the header and are still told apart.
 
 In the plot, two fingers zoom: spreading them zooms in, pinching zooms out,
 and moving both together pans. The view stays where the fingers leave it, and

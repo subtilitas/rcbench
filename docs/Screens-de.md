@@ -2071,11 +2071,11 @@ nächste Seite und das nächste `ÖFFNEN`, ohne Neustart
 ([Das Format der SD-Karte](#das-format-der-sd-karte)). Kopfzeile, Liste und
 der Text der leeren Liste gehören dann zur Karte im Steckplatz: Eine neue
 Karte öffnet auf ihrer ersten Seite, ein leerer Steckplatz sagt `Keine Karte.
-Setze eine Karte ein und tippe auf AKTUALISIEREN.` Der Betrachter liest von
-der ersten Seite, sobald sich der Name in der Kopfzeile ändert, und auf dem
-Panel ändert sich dieser Name nur mit einem neuen Einbinden. Zwei Karten mit
-derselben Bezeichnung oder zwei Karten eines Modells ohne Bezeichnung tragen
-denselben Namen.
+Setze eine Karte ein und tippe auf AKTUALISIEREN.` Der Betrachter liest nach jedem neuen
+Einbinden von der ersten Seite, auch bei einer Karte mit derselben
+Bezeichnung wie die vorige: Zwei Karten mit derselben Bezeichnung oder zwei
+Karten eines Modells ohne Bezeichnung tragen in der Kopfzeile denselben
+Namen und werden trotzdem unterschieden.
 
 In der Grafik zoomen zwei Finger: Auseinanderziehen vergrößert,
 Zusammenziehen verkleinert, beide zusammen bewegt verschiebt den Ausschnitt.

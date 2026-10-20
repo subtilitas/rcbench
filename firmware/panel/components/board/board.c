@@ -79,6 +79,8 @@ esp_err_t board_init(void)
                         TAG, "ch422g mode");
 
     s_board.exio_lock = xSemaphoreCreateMutex();
+    ESP_RETURN_ON_FALSE(s_board.exio_lock != NULL, ESP_ERR_NO_MEM, TAG,
+                        "expander lock");
     s_board.exio = BOARD_EXIO_DEFAULT;
     ESP_RETURN_ON_ERROR(ch422g_write(s_board.ch422g_io, s_board.exio), TAG,
                         "ch422g default state");

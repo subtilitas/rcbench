@@ -680,13 +680,22 @@ static esp_err_t h_file(httpd_req_t *r)
     }
     char full[sizeof(STORAGE_MOUNT_POINT) + WA_PATH_MAX + 2u];
     storage_stat_t st;
-    if (!storage_mounted() || card_path(full, sizeof(full), path) == 0u
+    /* One volume from the size to the last byte: held across the stat and
+     * the open, so a card swapped between them is not read under the old
+     * card's size. */
+    if (!storage_hold()) {
+        req_end();
+        return refused(r, "404 Not Found");
+    }
+    if (card_path(full, sizeof(full), path) == 0u
         || storage_stat(full, &st) != ESP_OK || st.is_dir) {
+        storage_release();
         req_end();
         return refused(r, "404 Not Found");
     }
     wa_send_t *snd = &b->snd;
     if (!wa_send_begin(snd, &k_card, path, st.size)) {
+        storage_release();
         req_end();
         return refused(r, "404 Not Found");
     }
@@ -698,6 +707,7 @@ static esp_err_t h_file(httpd_req_t *r)
         res = wa_send_run(snd, b->io, sizeof(b->io), &k);
     }
     wa_send_end(snd);
+    storage_release();
     req_end();
     /* Cut short, the browser has fewer bytes than announced: failed. */
     const esp_log_level_t lv = (res == WA_SEND_DONE) ? ESP_LOG_INFO
@@ -723,7 +733,10 @@ static esp_err_t h_zip(httpd_req_t *r)
     wa_zip_plan_t plan;
     uint32_t *crc = NULL;
     esp_err_t res = ESP_FAIL;
-    if (z == NULL || wa_zip_plan(&k_card, &plan) != WA_ZIP_OK) {
+    /* One volume from the plan's sizes to the last file: held across the
+     * whole archive, as h_file() holds one file. */
+    const bool held = storage_hold();
+    if (z == NULL || !held || wa_zip_plan(&k_card, &plan) != WA_ZIP_OK) {
         res = refused(r, (z == NULL) ? "503 Service Unavailable"
                                      : "404 Not Found");
     } else {
@@ -761,6 +774,9 @@ static esp_err_t h_zip(httpd_req_t *r)
     }
     heap_caps_free(crc);
     heap_caps_free(z);
+    if (held) {
+        storage_release();
+    }
     req_end();
     return res;
 }

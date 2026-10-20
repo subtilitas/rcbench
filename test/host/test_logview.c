@@ -92,6 +92,8 @@ static const char *g_volume = "BENCH01";
  * look does on the panel: its name, its runs; NULL for none. */
 static const char *g_swap_volume;
 static int g_swap_runs;
+/* The mount number the io reports; a swap counts it up. */
+static unsigned g_mounts;
 
 /*
  * A card holding more runs than the list has room for, or 0 for the fixture
@@ -166,6 +168,7 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
     (void)ctx;
     ++g_list_calls;
     if (g_swap_volume != NULL) {
+        ++g_mounts;
         g_volume = g_swap_volume;
         g_card_runs = g_swap_runs;
         g_swap_volume = NULL;
@@ -270,6 +273,12 @@ static card_state_t fake_card(void *ctx)
     return g_card_state;
 }
 
+static unsigned fake_mounts(void *ctx)
+{
+    (void)ctx;
+    return g_mounts;
+}
+
 static const log_viewer_io_t k_io = {
     .list = fake_list,
     .open = fake_open,
@@ -277,6 +286,7 @@ static const log_viewer_io_t k_io = {
     .volume = fake_volume,
     .remove = fake_remove,
     .card = fake_card,
+    .mounts = fake_mounts,
     .ctx = NULL,
 };
 
@@ -310,6 +320,7 @@ static void reset_screen(void)
     memset(&g_last_page, 0, sizeof(g_last_page));
     g_volume = "BENCH01";
     g_swap_volume = NULL;
+    g_mounts = 0u;
     memset(g_removed, 0, sizeof(g_removed));
     g_remove_calls = 0;
     g_removed_name[0] = '\0';
@@ -2319,6 +2330,18 @@ TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
     /* And PREV and NEXT go on from there. */
     next_page();
     check_tab(49, 96, 120);
+
+    /* Swapped for a card of the same label: the mount number tells them
+     * apart, at the RESCAN's own list and at the next one. */
+    g_swap_volume = "SK64G";
+    g_swap_runs = 150;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(1, 48, 150);
+    next_page();
+    ++g_mounts;                        /* mounted by another event */
+    g_card_runs = 130;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(1, 48, 130);
 }
 
 

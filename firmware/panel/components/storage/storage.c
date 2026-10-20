@@ -115,9 +115,20 @@ static void publish(void)
  * sector read; a card without a label is read to the directory's end, 16
  * entries per sector, about 125 sectors for 999 runs and their reports.
  */
+/* The name's writes and copies, a few bytes each: the render loop copies
+ * it every frame while another task's mount can write it. */
+static portMUX_TYPE s_name_mux = portMUX_INITIALIZER_UNLOCKED;
+
+static void name_set(const char *name)
+{
+    taskENTER_CRITICAL(&s_name_mux);
+    snprintf(s.name, sizeof(s.name), "%s", name);
+    taskEXIT_CRITICAL(&s_name_mux);
+}
+
 static void read_name(void)
 {
-    snprintf(s.name, sizeof(s.name), "%s", s.card->cid.name);
+    name_set(s.card->cid.name);
     if (s.drive[0] == '\0') {
         return;
     }
@@ -131,7 +142,7 @@ static void read_name(void)
     }
     label[sizeof(label) - 1u] = '\0';
     if (label[0] != '\0') {
-        snprintf(s.name, sizeof(s.name), "%s", label);
+        name_set(label);
     }
 }
 
@@ -577,9 +588,14 @@ bool storage_mounted(void)
     return atomic_load(&s.usable);
 }
 
-const char *storage_card_name(void)
+void storage_card_name(char *out, size_t n)
 {
-    return atomic_load(&s.usable) ? s.name : "";
+    if (out == NULL || n == 0u) {
+        return;
+    }
+    taskENTER_CRITICAL(&s_name_mux);
+    snprintf(out, n, "%s", atomic_load(&s.usable) ? s.name : "");
+    taskEXIT_CRITICAL(&s_name_mux);
 }
 
 const char *storage_status(void)
