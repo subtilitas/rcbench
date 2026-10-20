@@ -2473,9 +2473,12 @@ static const log_viewer_io_t k_fc_io = {
     .ctx     = NULL,
 };
 
-/* The tabs' middles, in the header row (BR_TABS in the screen). */
+/* The tabs' middles, in the header row (BR_TABS in the screen).  The row
+ * runs ROOT, USER, BENCH: the position of a tab id is one more than the id,
+ * modulo 3 (USER 0, BENCH 1, ROOT 2). */
 #define TAB_Y       21
-#define TAB_X(t)    (19 + (t) * 84 + 40)
+#define TAB_POS(t)  (((t) + 1) % 3)
+#define TAB_X(t)    (19 + TAB_POS(t) * 84 + 40)
 
 /* A card in the target layout, behind the folder I/O, LOGS just opened. */
 static void folder_card(void)
@@ -2584,6 +2587,87 @@ TEST_CASE(three_tabs_list_three_folders_and_bench_comes_first)
     draw();
 }
 
+/* The tabs stand ROOT, USER, BENCH from the left: a tap at each position
+ * chooses that folder, and the tab ids and their folders are as they were. */
+TEST_CASE(the_tabs_stand_root_user_bench_from_the_left)
+{
+    folder_card();
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
+    /* The selected tab is the right-most one, BENCH, at a start. */
+    draw();
+    const gfx_color_t on = gfx_pixel_get(&s_c, 19 + 2 * 84 + 6, TAB_Y);
+    CHECK(gfx_pixel_get(&s_c, 19 + 0 * 84 + 6, TAB_Y) != on);
+    CHECK(gfx_pixel_get(&s_c, 19 + 1 * 84 + 6, TAB_Y) != on);
+
+    tap(19 + 0 * 84 + 40, TAB_Y);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
+    CHECK_STR_EQ(g_fc.dir, CARD_ROOT);
+    tap(19 + 1 * 84 + 40, TAB_Y);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
+    CHECK_STR_EQ(g_fc.dir, CARD_USER_LOGS);
+    tap(19 + 2 * 84 + 40, TAB_Y);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
+    CHECK_STR_EQ(g_fc.dir, CARD_AUTO_LOGS);
+
+    /* Ids unchanged, and an id set from outside draws its own position. */
+    CHECK_EQ((int)LOG_TAB_USER, 0);
+    CHECK_EQ((int)LOG_TAB_BENCH, 1);
+    CHECK_EQ((int)LOG_TAB_ROOT, 2);
+    log_viewer_set_tab(LOG_TAB_ROOT);
+    draw();
+    const gfx_color_t on_root = gfx_pixel_get(&s_c, 19 + 6, TAB_Y);
+    CHECK(gfx_pixel_get(&s_c, 19 + 84 + 6, TAB_Y) != on_root);
+    CHECK(gfx_pixel_get(&s_c, 19 + 2 * 84 + 6, TAB_Y) != on_root);
+}
+
+/* The right-most column of the header row (y 2 to 40, right of the tabs)
+ * that differs between a card named @p a and one named @p b, or -1. */
+static int name_edge(const char *a, const char *b, int runs)
+{
+    static gfx_color_t *first;
+    if (first == NULL) {
+        first = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(first);
+    }
+    runs_card(runs);
+    g_volume = a;
+    log_viewer_refresh();
+    draw();
+    memcpy(first, s_fb, (size_t)W * H * sizeof(gfx_color_t));
+    runs_card(runs);
+    g_volume = b;
+    log_viewer_refresh();
+    draw();
+    int edge = -1;
+    for (int y = 2; y < 40; ++y) {
+        for (int x = 270; x < W; ++x) {
+            if (first[y * W + x] != s_fb[y * W + x]) {
+                edge = (x > edge) ? x : edge;
+            }
+        }
+    }
+    return edge;
+}
+
+TEST_CASE(the_card_name_ends_the_header_row_and_stops_short_of_prev)
+{
+    /* The last letter differs: the difference is the name's right end.
+     * Without PREV and NEXT it ends at the list's right edge, 784 px. */
+    int edge = name_edge("UNITEST", "UNITESX", 3);
+    CHECK(edge >= 784 - 8 && edge < 784);
+    /* Exactly one page: still no PREV and NEXT. */
+    edge = name_edge("UNITEST", "UNITESX", LOG_VIEWER_MAX_FILES);
+    CHECK(edge >= 784 - 8 && edge < 784);
+    /* With PREV and NEXT showing (more than 48 runs) it ends 8 px short
+     * of PREV, which starts at 536 px. */
+    edge = name_edge("UNITEST", "UNITESX", 150);
+    CHECK(edge >= 528 - 8 && edge < 528);
+    /* The longest label, 11 characters, and the longest folder share the
+     * 248 px to PREV: the name's left end stays right of the folder's. */
+    edge = name_edge("ABCDEFGHIJK", "ABCDEFGHIJX", 150);
+    CHECK(edge >= 528 - 8 && edge < 528);
+}
+
 /*
  * With no card the tabs switch as with one: each tap selects its tab, the
  * tab is drawn selected and the others not, the page names that tab's
@@ -2605,10 +2689,12 @@ TEST_CASE(the_tabs_switch_with_no_card)
             draw();
             /* The selected tab's fill against the other two's, 6 px in
              * from each tab's left edge. */
-            const gfx_color_t on = gfx_pixel_get(&s_c, 19 + t * 84 + 6, TAB_Y);
+            const gfx_color_t on = gfx_pixel_get(&s_c, 19 + TAB_POS(t) * 84 + 6,
+                                                 TAB_Y);
             for (int o = 0; o < (int)LOG_TAB_COUNT; ++o) {
                 if (o != t) {
-                    CHECK(gfx_pixel_get(&s_c, 19 + o * 84 + 6, TAB_Y) != on);
+                    CHECK(gfx_pixel_get(&s_c, 19 + TAB_POS(o) * 84 + 6,
+                                        TAB_Y) != on);
                 }
             }
         }
@@ -4359,6 +4445,8 @@ int main(void)
     RUN(the_scroll_bar_jumps_drags_and_stays_on_its_page);
     RUN(the_header_names_the_card_or_says_sd_card);
     RUN(three_tabs_list_three_folders_and_bench_comes_first);
+    RUN(the_tabs_stand_root_user_bench_from_the_left);
+    RUN(the_card_name_ends_the_header_row_and_stops_short_of_prev);
     RUN(the_tabs_switch_with_no_card);
     RUN(the_tabs_follow_the_folders_of_setup);
     RUN(delete_on_root_takes_the_report_and_stays_in_its_folder);
