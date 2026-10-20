@@ -154,6 +154,7 @@ static void pre_take(hitec_line_t *l)
     l->pre_ctrl = io_bank0_hw->io[pin].ctrl;
     l->pre_pad = pads_bank0_hw->io[pin];
     l->pre_held = 1;
+    l->pre_stall = 0;
     /* pio_gpio_init() writes the whole control register: the function, no
      * override, so the sampler reads the pad as it is. */
     pio_gpio_init(pio, pin);
@@ -183,9 +184,19 @@ static uint32_t pre_words_in(const hitec_line_t *l)
     return n > l->pre.words ? l->pre.words : n;
 }
 
+/* Whether the sampler's receive FIFO has run full since its start. */
+static bool pre_rx_stalled(const hitec_line_t *l)
+{
+    const PIO pio = (PIO)l->pre_pio;
+
+    return ((pio->fdebug >> (PIO_FDEBUG_RXSTALL_LSB + l->pre_sm)) & 1u) != 0u;
+}
+
 /* The sampler stopped with the pad released and the pin's two registers
- * back as they were.  True when the receive FIFO ran full: samples went
- * missing. */
+ * back as they were.  True when samples went missing: the receive FIFO
+ * ran full while the channel still had words to take.  Once the channel
+ * has every word, the state machine runs on until this stops it and fills
+ * the FIFO in 8 words, 278 us at 150 MHz; that stall loses nothing. */
 static bool pre_give(hitec_line_t *l)
 {
     const PIO pio = (PIO)l->pre_pio;
@@ -197,7 +208,8 @@ static bool pre_give(hitec_line_t *l)
     }
     pio_sm_set_enabled(pio, sm, false);
     pio_sm_exec(pio, sm, pio_encode_set(pio_pindirs, 0));
-    stalled = ((pio->fdebug >> (PIO_FDEBUG_RXSTALL_LSB + sm)) & 1u) != 0u;
+    stalled = l->pre_stall != 0u
+              || (dma_channel_is_busy((uint)l->dma_pre) && pre_rx_stalled(l));
     /* The channel takes what is still in the FIFO; its write address
      * counts it. */
     for (unsigned i = 0; i < RX_SETTLE_SPINS
@@ -243,6 +255,12 @@ static bool pre_poll(hitec_line_t *l, hitec_capture_t *out)
     } else if (l->pre.phase == (uint8_t)HITEC_PRE_SAMPLE) {
         const bool all_in = !dma_channel_is_busy((uint)l->dma_pre);
         const uint32_t n = pre_words_in(l);
+
+        /* A stall seen while the channel still takes words is a loss; one
+         * after its last word is not (pre_give()). */
+        if (!all_in && pre_rx_stalled(l)) {
+            l->pre_stall = 1;
+        }
 
         if (hitec_pre_step(&l->pre, &l->pre_timing, l->samples, n, all_in)) {
             if (pre_give(l)) {

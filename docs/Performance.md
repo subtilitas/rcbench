@@ -304,7 +304,7 @@ in it is not measured. The heartbeat gap that switches every output off is
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 156 such calls
+  handler, which the tool reads out of the link's page table: 159 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
   13.2.1; ARM GNU 14.2 gives 165);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.

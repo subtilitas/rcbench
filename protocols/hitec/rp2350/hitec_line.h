@@ -113,6 +113,7 @@ typedef struct {
     uint8_t  rx_mode;   /**< hitec_rx_mode_t of the open line */
     uint8_t  pre_on;    /**< the running transaction is the sampler's */
     uint8_t  pre_held;  /**< the sampler has the pad */
+    uint8_t  pre_stall; /**< the sampler stalled before its last word */
     int8_t   dma_pre;
     void    *pre_pio;
     uint32_t pre_sm;
