@@ -128,6 +128,10 @@ static void start(hitec_port_t *p, const hitec_xfer_t *x, uint8_t keyed)
 
     p->xfer = *x;
     p->supply_on = supply_view(p, &v) && v.asked_on ? 1u : 0u;
+    /* POWER's listen starts in the pass of the ON: the output reads off
+     * until the PD mini reports it on.  Any other transaction starts on a
+     * supply that is on already. */
+    p->read_on = p->op != (uint8_t)LINK_HITEC_OP_POWER || !v.off ? 1u : 0u;
     memset(&p->info, 0, sizeof(p->info));
     p->start_us = p->hw.driver.now_us(p->hw.driver.ctx);
     if (!p->hw.driver.start(p->hw.driver.ctx, x)) {
@@ -648,11 +652,16 @@ static void step_busy(hitec_port_t *p, uint32_t now_ms)
         return;
     }
     /* The sampler precharges the line every 1.1 us: not into a servo
-     * whose supply went off under it, asked off or read off (the PD
-     * mini's protection leaves OUTPUT asked on). */
-    if (p->rx_line == (uint8_t)LINK_HITEC_RX_PRECHARGE && p->supply_on != 0u
-        && (!supply_view(p, &v) || !v.asked_on || v.off)) {
-        cut(p);
+     * whose supply went off under it, asked off, or read off after it
+     * read on (the PD mini's protection leaves OUTPUT asked on). */
+    if (p->rx_line == (uint8_t)LINK_HITEC_RX_PRECHARGE && p->supply_on != 0u) {
+        if (!supply_view(p, &v) || !v.asked_on) {
+            cut(p);
+        } else if (!v.off) {
+            p->read_on = 1;
+        } else if (p->read_on != 0u) {
+            cut(p);
+        }
     }
     if ((uint32_t)(now_ms - p->t0_ms) >= HITEC_PORT_BUSY_MS) {
         cut(p);

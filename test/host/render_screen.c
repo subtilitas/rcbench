@@ -3307,7 +3307,8 @@ int main(int argc, char **argv)
         || strcmp(view, "setup-unheld") == 0
         || strcmp(view, "setup-tap") == 0
         || strcmp(view, "setup-prog") == 0
-        || strcmp(view, "setup-prog-noline") == 0) {
+        || strcmp(view, "setup-prog-noline") == 0
+        || strcmp(view, "setup-prog-pre") == 0) {
         setup_tile(SET_CAT_IFACE);
         if (strcmp(view, "setup-unheld") == 0) {
             /* The pins refused: their two rows, and the INA3221 the page
@@ -3330,11 +3331,14 @@ int main(int argc, char **argv)
             drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
         } else if (strncmp(view, "setup-prog", 10) == 0) {
             /* The list's end: PROG PORT and Hitec D receive at PRECHARGE,
-             * marked as an IOmcu older than 4.24 (or 4.23) leaves it. */
+             * marked as an IOmcu older than 4.24 (or 4.23) leaves it, or
+             * held, with PRECHARGE's own help line. */
             settings_set(SET_HITEC_RX, 1.0f);
             settings_screen_set_hitec_rx(
                 strcmp(view, "setup-prog") == 0 ? HITEC_RX_LINK_OLD
-                                                : HITEC_RX_LINK_NO_LINE);
+                : strcmp(view, "setup-prog-pre") == 0
+                    ? HITEC_RX_LINK_HELD
+                    : HITEC_RX_LINK_NO_LINE);
             for (int k = 0; k < 6; ++k) {
                 drag(300, UI_BAND_H + 340,
                      UI_BAND_H + 340 - (5 * 58 + 8));

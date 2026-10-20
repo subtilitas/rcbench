@@ -2,7 +2,7 @@
  * The HITEC page's receive mode (shared/outputs/hitec_port.c, protocol
  * 4.24): write register 23, what an OPEN takes from it, the transactions a
  * PRECHARGE line refuses, and the supply going off under a PRECHARGE
- * receive.  The driver is the rig's model (hitec_port_rig.h); the sampler
+ * receive, POWER's ramp included.  The driver is the rig's model (hitec_port_rig.h); the sampler
  * itself is test_hitec_pre.c's.
  *
  * SPDX-License-Identifier: MIT
@@ -278,6 +278,149 @@ TEST_CASE(the_supply_off_leaves_a_pull_up_receive_and_an_unpowered_start)
     CHECK_EQ(rx_code(), HITEC_RX_OK);
 }
 
+/* POWER on a PRECHARGE line: the supply off, 100 ms off, on at MV and MA,
+ * and a 20 ms listen for one byte from the ON.  Returns in the pass after
+ * the ON with the listen running, the output still read off and the PD
+ * mini's read the test's from here. */
+static void power_listen_precharge(uint32_t boot_ns)
+{
+    fresh();
+    CHECK_EQ(rx_mode_write(LINK_HITEC_RX_PRECHARGE), 0);
+    open_line(HITEC_D, HITEC_DRIVE_PUSH_PULL);
+    g_drv.boot_ns = boot_ns;
+    stage_listen(20000u, 1u, false, 0u, LINK_HITEC_DEC_NONE, 0u);
+    SST(LINK_HT_W_SUPPLY_MV) = MV;
+    SST(LINK_HT_W_SUPPLY_MA) = MA;
+    SST(LINK_HT_W_OFF_MS) = 100u;
+    CHECK_EQ(cmd(LINK_HITEC_OP_POWER, CH, KEY), 0);
+    CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
+    for (unsigned i = 0; i < 5000u && g_hw.ons == 0u; ++i) {
+        tick();
+    }
+    CHECK_EQ(g_hw.ons, 1);
+    CHECK_EQ(state(), LINK_HITEC_BUSY);
+    g_hw.follow = false;
+    CHECK(g_hw.v.asked_on);
+    CHECK(g_hw.v.off);
+}
+
+static void read_on(bool on)
+{
+    g_hw.v.on = on;
+    g_hw.v.off = !on;
+}
+
+TEST_CASE(a_power_listen_rides_the_ramp_that_reads_off_then_on)
+{
+    power_listen_precharge(15000000u);
+    /* The ramp: 3 passes read off, then on. */
+    run_ms(3u);
+    CHECK_EQ(g_drv.aborts, 0);
+    CHECK_EQ(state(), LINK_HITEC_BUSY);
+    read_on(true);
+    settle();
+    CHECK_EQ(g_drv.aborts, 0);
+    CHECK_EQ(result(), LINK_HITEC_RESULT_DONE);
+    CHECK_EQ(LINK_HT_OP_OF(reg(LINK_HT_OP)), LINK_HITEC_OP_POWER);
+    CHECK_EQ(reg(LINK_HT_CAP) & LINK_HT_CAP_ABORTED, 0u);
+    CHECK_EQ(cap_n(), 1u);
+    CHECK_EQ(cap_byte(0), 0x5A);
+    /* A read neither on nor off (LIVE, not ON) counts as on as well. */
+    power_listen_precharge(15000000u);
+    run_ms(2u);
+    g_hw.v.off = false;
+    tick();
+    g_hw.v.off = true;
+    tick();
+    CHECK_EQ(g_drv.aborts, 1);
+}
+
+TEST_CASE(a_power_listen_is_cut_when_the_output_reads_off_after_on)
+{
+    /* The PD mini's protection: OUTPUT stays asked on. */
+    power_listen_precharge(15000000u);
+    run_ms(2u);
+    read_on(true);
+    run_ms(3u);
+    CHECK_EQ(g_drv.aborts, 0);
+    read_on(false);
+    tick();
+    CHECK_EQ(g_drv.aborts, 1);
+    CHECK(g_hw.v.asked_on);
+    tick();
+    CHECK_EQ(state(), LINK_HITEC_OPEN);
+    CHECK_EQ(result(), LINK_HITEC_RESULT_CUT);
+    CHECK((reg(LINK_HT_CAP) & LINK_HT_CAP_ABORTED) != 0u);
+    CHECK_EQ(cap_n(), 0u);
+    run_ms(5u);
+    CHECK_EQ(g_drv.aborts, 1);
+}
+
+TEST_CASE(a_power_listen_is_cut_when_the_output_is_asked_off)
+{
+    /* In the ramp, before it read on. */
+    power_listen_precharge(15000000u);
+    run_ms(2u);
+    (void)hw_supply_set(NULL, false, 0u, 0u);
+    tick();
+    CHECK_EQ(g_drv.aborts, 1);
+    tick();
+    CHECK_EQ(result(), LINK_HITEC_RESULT_CUT);
+    /* After it read on. */
+    power_listen_precharge(15000000u);
+    run_ms(2u);
+    read_on(true);
+    run_ms(2u);
+    (void)hw_supply_set(NULL, false, 0u, 0u);
+    tick();
+    CHECK_EQ(g_drv.aborts, 1);
+    tick();
+    CHECK_EQ(result(), LINK_HITEC_RESULT_CUT);
+    /* A PD mini that stops answering in the ramp. */
+    power_listen_precharge(15000000u);
+    run_ms(2u);
+    g_hw.v.online = false;
+    tick();
+    CHECK_EQ(g_drv.aborts, 1);
+}
+
+TEST_CASE(a_power_listen_whose_output_never_reads_on_runs_its_window)
+{
+    /* The output reads off for the whole 20 ms window: no cut, the
+     * capture as heard, DONE. */
+    power_listen_precharge(30000000u);
+    settle();
+    CHECK_EQ(g_drv.aborts, 0);
+    CHECK_EQ(result(), LINK_HITEC_RESULT_DONE);
+    CHECK_EQ(reg(LINK_HT_CAP) & LINK_HT_CAP_ABORTED, 0u);
+    CHECK_EQ(cap_n(), 0u);
+    CHECK(g_hw.v.off);
+    /* The same with the boot byte in the window. */
+    power_listen_precharge(15000000u);
+    settle();
+    CHECK_EQ(g_drv.aborts, 0);
+    CHECK_EQ(result(), LINK_HITEC_RESULT_DONE);
+    CHECK_EQ(cap_n(), 1u);
+}
+
+TEST_CASE(a_listen_on_an_output_read_off_is_cut_at_once)
+{
+    /* Not POWER: the supply is on before the start, so off at the start
+     * is off. */
+    fresh();
+    CHECK_EQ(rx_mode_write(LINK_HITEC_RX_PRECHARGE), 0);
+    open_line(HITEC_D, HITEC_DRIVE_PUSH_PULL);
+    g_hw.follow = false;
+    read_on(false);
+    stage_listen(20000u, 1u, false, 0u, LINK_HITEC_DEC_NONE, 0u);
+    CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, 0), 0);
+    CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
+    tick();
+    CHECK_EQ(g_drv.aborts, 1);
+    tick();
+    CHECK_EQ(result(), LINK_HITEC_RESULT_CUT);
+}
+
 TEST_CASE(a_stop_close_and_abort_cut_a_precharge_receive_as_any_other)
 {
     hitec_xfer_t x;
@@ -333,6 +476,11 @@ int main(void)
     RUN(a_pull_up_line_takes_what_a_precharge_line_refuses);
     RUN(the_supply_off_cuts_a_precharge_receive);
     RUN(the_supply_off_leaves_a_pull_up_receive_and_an_unpowered_start);
+    RUN(a_power_listen_rides_the_ramp_that_reads_off_then_on);
+    RUN(a_power_listen_is_cut_when_the_output_reads_off_after_on);
+    RUN(a_power_listen_is_cut_when_the_output_is_asked_off);
+    RUN(a_power_listen_whose_output_never_reads_on_runs_its_window);
+    RUN(a_listen_on_an_output_read_off_is_cut_at_once);
     RUN(a_stop_close_and_abort_cut_a_precharge_receive_as_any_other);
     return test_summary("hitec_port_rx");
 }

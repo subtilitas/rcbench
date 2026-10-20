@@ -31,6 +31,21 @@ history is in git.
 - The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
   receive mode before the OPEN, and the report names it (`rx=pu|pre`).
 
+### Fixed
+
+- A POWER on a PRECHARGE line answers: its LISTEN starts in the pass of the
+  ON, while the PD mini's output still reads off, and is cut only when the
+  output reads off after it read on, when the supply is asked off, or when
+  the PD mini stops answering. It was cut in the first pass, 2.4 ms into
+  the window. A LISTEN whose output reads off for its whole window, 30 ms
+  at most, ends `DONE` with what it heard.
+- SETUP > INTERFACES > Hitec D receive at PRECHARGE reads `PRECHARGE: no
+  pull-up on the signal wire` (German `PRECHARGE: kein Pull-up an der
+  Signalleitung`); PULL-UP keeps `PULL-UP needs 2.2 kOhm on the signal
+  wire`. A mark's line goes before both.
+- The D series answer delay through PRECHARGE is given as measured: 5.93
+  to 6.52 ms over 153 reads (D485HW, 2026-10-20).
+
 ## 0.21.2 - 2026-10-20
 
 0.21.2 is a testing release: its minor number, 21, is odd, and GitHub lists
