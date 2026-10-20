@@ -837,10 +837,10 @@ TEST_CASE(the_order_carries_the_page)
     CHECK_EQ(c.parts.ina228_addr, 0x44u);
     CHECK_EQ(c.parts.ina228_shunt_uohm, 250u);
     CHECK_EQ(c.parts.ina228_max_ma, 150000u);
-    CHECK(c.parts.ina3221_en);
-    CHECK_EQ(c.parts.ina3221_addr, 0x40u);
-    CHECK_EQ(c.parts.ina3221_shunt_uohm, 100000u);
-    CHECK_EQ(c.parts.ina3221_channels, 5u);
+    CHECK(c.parts.i3221.fitted == 1u && c.parts.i3221.fast == 0u);
+    CHECK_EQ(c.parts.i3221.shunt_uohm[0], 100000u);
+    CHECK_EQ(c.parts.i3221.shunt_uohm[1], 0u);
+    CHECK_EQ(c.parts.i3221.shunt_uohm[2], 100000u);
     CHECK_EQ(c.cap_gen, pg.cap_gen);
     CHECK(c.cap_on);
     CHECK_EQ(c.cap.rise_ua, SENSE_CAP_RISE_AUTO);
@@ -875,23 +875,23 @@ static sense_snap_t snapshot(void)
     s.held = BIT(16) | BIT(17);
     s.present = 0x0021u;
     s.i228 = SENSE_PART_ONLINE;
-    s.i3221 = SENSE_PART_ONLINE;
+    s.i3221[0] = SENSE_PART_ONLINE;
     s.i228_maker = 0x5449u;
     s.i228_device = 0x2281u;
-    s.i3221_maker = 0x5449u;
-    s.i3221_die = 0x3220u;
+    s.i3221_maker[0] = 0x5449u;
+    s.i3221_die[0] = 0x3220u;
     s.errors = 12u;
     s.have_temp = true;
     s.temp_mdegc = 25450;
     s.have_diag = true;
     s.diag = 0x0001u;
     s.have_win = true;
-    s.win[SENSE_SRC_CH1] = (sense_window_t){ .number = 77u, .n_i = 50u,
+    s.win[SENSE_CH(0, 1)] = (sense_window_t){ .number = 77u, .n_i = 50u,
         .n_v = 3u, .i_mean_ua = 120499, .i_min_ua = 100000,
         .i_max_ua = 950500, .v_mean_uv = 5999500, .v_min_uv = 5800000 };
-    s.win[SENSE_SRC_CH2] = (sense_window_t){ .number = 77u, .n_i = 2u,
+    s.win[SENSE_CH(0, 2)] = (sense_window_t){ .number = 77u, .n_i = 2u,
         .clip_hi = true, .i_mean_ua = -1500, .i_max_ua = -1499 };
-    s.win[SENSE_SRC_CH3] = (sense_window_t){ .number = 77u };
+    s.win[SENSE_CH(0, 3)] = (sense_window_t){ .number = 77u };
     s.win[SENSE_SRC_INA228] = (sense_window_t){ .number = 77u, .n_i = 25u,
         .n_v = 25u, .i_mean_ua = 12000000, .v_mean_uv = 16800000 };
     s.run.have_v = true;
@@ -961,8 +961,8 @@ TEST_CASE(a_snapshot_fills_the_read_only_registers)
     CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
     CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
     s.cap_clipped = false;
-    s.win[SENSE_SRC_CH1].number = 78u;
-    s.win[SENSE_SRC_CH2].clip_hi = false;
+    s.win[SENSE_CH(0, 1)].number = 78u;
+    s.win[SENSE_CH(0, 2)].clip_hi = false;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
     CHECK_EQ(sreg(LINK_SS_CAP_SAMPLES), 0u);
@@ -1002,9 +1002,9 @@ TEST_CASE(the_flags_and_the_ranges_follow_the_snapshot)
     sense_snap_t s = snapshot();
     s.stuck = true;
     s.i228 = SENSE_PART_OFFLINE;           /* stopped answering */
-    s.i3221 = SENSE_PART_WRONG_ID;
-    s.i3221_maker = 0x1408u;
-    s.i3221_die = 0u;
+    s.i3221[0] = SENSE_PART_WRONG_ID;
+    s.i3221_maker[0] = 0x1408u;
+    s.i3221_die[0] = 0u;
     s.have_temp = false;
     s.have_diag = false;
     sense_page_publish(&pg, &s, 3u);
@@ -1027,10 +1027,10 @@ TEST_CASE(the_flags_and_the_ranges_follow_the_snapshot)
     /* Held to the registers. */
     s = snapshot();
     s.temp_mdegc = -40050;
-    s.win[SENSE_SRC_CH1].i_mean_ua = 40000000;
-    s.win[SENSE_SRC_CH1].i_max_ua = -40000000;
-    s.win[SENSE_SRC_CH1].v_mean_uv = 70000000;
-    s.win[SENSE_SRC_CH1].v_min_uv = -8000;
+    s.win[SENSE_CH(0, 1)].i_mean_ua = 40000000;
+    s.win[SENSE_CH(0, 1)].i_max_ua = -40000000;
+    s.win[SENSE_CH(0, 1)].v_mean_uv = 70000000;
+    s.win[SENSE_CH(0, 1)].v_min_uv = -8000;
     s.cap_move_t = 70000u;
     s.cap_samples = 70000u;
     s.run.charge_uc = INT64_MAX / 2;
@@ -1258,10 +1258,10 @@ TEST_CASE(the_capabilities_follow_the_set_up)
     CHECK_EQ(bus(2u, 16u, 17u, 400u, 0u), 0u);
     CHECK_EQ(sense_page_caps(&pg), (uint16_t)LINK_CAP_SERVO_SENSE);
     sense_snap_t s = snapshot();
-    s.i3221 = SENSE_PART_ABSENT;
+    s.i3221[0] = SENSE_PART_ABSENT;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(sense_page_caps(&pg), (uint16_t)LINK_CAP_SERVO_SENSE);
-    s.i3221 = SENSE_PART_ONLINE;                /* and the INA228 online */
+    s.i3221[0] = SENSE_PART_ONLINE;                /* and the INA228 online */
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(sense_page_caps(&pg), (uint16_t)LINK_CAP_SERVO_SENSE);
     CHECK_EQ(bus(3u, 16u, 17u, 400u, 0u), 0u);
@@ -1287,14 +1287,14 @@ TEST_CASE(the_encoder_is_bit_2_of_the_bus_frame)
     memset(&c, 0, sizeof(c));
     sense_page_cmd(&pg, &c);
     CHECK(c.parts.as5600_en);
-    CHECK(!c.parts.ina228_en && !c.parts.ina3221_en);
+    CHECK(!c.parts.ina228_en && c.parts.i3221.fitted == 0u);
     CHECK_EQ(c.sda, 16u);
     CHECK_EQ(c.scl, 17u);
     /* With the INA3221, and with both parts. */
     CHECK_EQ(bus(6u, 16u, 17u, 400u, 0u), 0u);
     CHECK_EQ(bus(7u, 16u, 17u, 400u, 0u), 0u);
     sense_page_cmd(&pg, &c);
-    CHECK(c.parts.as5600_en && c.parts.ina228_en && c.parts.ina3221_en);
+    CHECK(c.parts.as5600_en && c.parts.ina228_en && c.parts.i3221.fitted != 0u);
     /* Off again: the pins are let go. */
     CHECK_EQ(bus(0u, 16u, 17u, 400u, 0u), 0u);
     CHECK_EQ(sense_page_pins(&pg), 0u);
@@ -1463,26 +1463,26 @@ TEST_CASE(resets_are_counted_in_register_31)
     s.i228_resets = 1u;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(reg(LINK_SN_RESETS), 0x0001u);
-    s.i3221_resets = 1u;
+    s.i3221_resets[0] = 1u;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(reg(LINK_SN_RESETS), 0x0101u);
     s.i228_resets = 255u;
-    s.i3221_resets = 254u;
+    s.i3221_resets[0] = 254u;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(reg(LINK_SN_RESETS), 0xFEFFu);
     CHECK_EQ(LINK_SN_RESETS_I228(reg(LINK_SN_RESETS)), 255u);
     CHECK_EQ(LINK_SN_RESETS_I3221(reg(LINK_SN_RESETS)), 254u);
     s.i228_resets = 0u;                          /* 255 and one more */
-    s.i3221_resets = 255u;
+    s.i3221_resets[0] = 255u;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(reg(LINK_SN_RESETS), 0xFF00u);
-    s.i3221_resets = 0u;
+    s.i3221_resets[0] = 0u;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(reg(LINK_SN_RESETS), 0u);
 
     /* A new set-up: the count is the new one's. */
     s.i228_resets = 3u;
-    s.i3221_resets = 2u;
+    s.i3221_resets[0] = 2u;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(reg(LINK_SN_RESETS), 0x0203u);
     outputs_arm(&o, false, 0u);
@@ -1636,10 +1636,10 @@ TEST_CASE(a_snapshot_fills_servo_win)
              (uint16_t)(LINK_SW_E_CLOSED | LINK_SW_E_CURRENT));
 
     /* The window number across 65535 to 0. */
-    s.win[SENSE_SRC_CH1].number = 65535u;
+    s.win[SENSE_CH(0, 1)].number = 65535u;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(wreg(LINK_SW_WINDOW), 65535u);
-    s.win[SENSE_SRC_CH1].number = 0u;
+    s.win[SENSE_CH(0, 1)].number = 0u;
     sense_page_publish(&pg, &s, 3u);
     CHECK_EQ(wreg(LINK_SW_WINDOW), 0u);
     CHECK_EQ(wreg(LINK_SW_FLAGS), LINK_SW_HAVE);    /* 0 is a number */

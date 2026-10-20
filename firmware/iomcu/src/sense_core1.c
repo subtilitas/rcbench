@@ -30,8 +30,9 @@ static volatile uint32_t s_shared_seq;
 
 /* --- core 1's own ------------------------------------------------------- */
 
-/* Static rather than on core 1's 2 kB stack: the service holds the
- * schedule with its windows and its CH1 history, 1,200 bytes. */
+/* Static rather than on core 1's stack: the service holds the schedule
+ * with 13 sources' windows and FAST's history, 2,352 bytes (arm-none-eabi,
+ * this build). */
 static sense_svc_t  s_svc;
 static sense_cmd_t  s_cmd;
 static sense_snap_t s_snap;

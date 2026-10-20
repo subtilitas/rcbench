@@ -90,7 +90,7 @@ TEST_CASE(a_changed_set_up_ends_a_trace)
     run(1000u);
     /* Another shunt: the codes after it are not the header's. */
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     i3221->shunt_ohm = 0.05;
     run(5u);
     CHECK(!sense_trace_active(&tr));
@@ -110,7 +110,7 @@ TEST_CASE(a_changed_set_up_ends_a_trace)
     CHECK_EQ(seen.code[seen.n_s - 1u], 150);
     /* The bus closed: the same. */
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_en = false;
+    cmd.parts.i3221.fitted = 0u;
     run(5u);
     CHECK(!sense_trace_active(&tr));
     parse();
@@ -163,7 +163,7 @@ TEST_CASE(a_part_offline_and_a_reset_are_said_in_the_trace)
 TEST_CASE(a_trace_with_no_bus_has_a_header_and_ends_on_time)
 {
     rig();
-    cmd.parts.ina3221_en = false;
+    cmd.parts.i3221.fitted = 0u;
     run(200u);
     CHECK(!svc.open);
     sense_trace_key(&tr, 't', g_us);

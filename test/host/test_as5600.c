@@ -304,10 +304,7 @@ static void rig(bool with_ina)
     memset(&cfg, 0, sizeof(cfg));
     cfg.as5600_en = true;
     if (with_ina) {
-        cfg.ina3221_en = true;
-        cfg.ina3221_addr = 0x40u;
-        cfg.ina3221_shunt_uohm = 100000u;
-        cfg.ina3221_channels = 1u;
+        sense_i3221_one(&cfg.i3221, true, 0x40u, 100000u, 1u);
     }
     g_us = 10000000u;
     sense_sched_init(&s, &io, &cfg);
@@ -417,13 +414,14 @@ TEST_CASE(the_encoder_moves_no_other_reads_rate)
 {
     rig(true);
     tick();
-    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
+    CHECK_EQ(ina3221_state(&s.i3221[0]), SENSE_PART_ONLINE);
     memset(i3221->reads, 0, sizeof(i3221->reads));
     memset(enc->reads, 0, sizeof(enc->reads));
     ticks(1000u);
     CHECK_EQ(i3221->reads[INA3221_SHUNT1], 1000u);
-    CHECK_EQ(i3221->reads[INA3221_BUS1], 50u);
-    /* Mask/Enable and the Configuration read-back share a slot. */
+    /* One channel's voltage every 12 even ticks: 41 or 42 a second. */
+    CHECK(i3221->reads[INA3221_BUS1] >= 41u && i3221->reads[INA3221_BUS1] <= 42u);
+    /* Mask/Enable and the Configuration read-back, a slot each. */
     CHECK_EQ(i3221->reads[INA3221_MASK_ENABLE], 25u);
     CHECK_EQ(i3221->reads[INA3221_CONFIG], 25u);
     CHECK_EQ(enc->reads[AS5600_REG_RAW_ANGLE], 500u);
@@ -733,7 +731,7 @@ TEST_CASE(the_encoder_alone_opens_the_bus_and_reaches_the_snapshot)
     CHECK(snap.enc_samples >= 25u);
     CHECK(snap.enc_still_ms >= 50u);
     CHECK_EQ(snap.i228, SENSE_PART_UNSET);
-    CHECK_EQ(snap.i3221, SENSE_PART_UNSET);
+    CHECK_EQ(snap.i3221[0], SENSE_PART_UNSET);
     /* Held: the pins of the bus, as for any part. */
     CHECK_EQ(snap.held, ((uint64_t)1u << 16) | ((uint64_t)1u << 17));
 }
@@ -742,10 +740,8 @@ TEST_CASE(a_set_up_without_the_encoder_leaves_its_snapshot_empty)
 {
     svc_rig();
     cmd.parts.as5600_en = false;
-    cmd.parts.ina3221_en = true;
-    cmd.parts.ina3221_addr = 0x40u;
-    cmd.parts.ina3221_shunt_uohm = 100000u;
-    cmd.parts.ina3221_channels = 1u;
+    sense_i3221_one(&cmd.parts.i3221, true, 0x40u, 100000u,
+                    1u);
     (void)fake_add(&fb, FAKE_INA3221, 0x40u, 0.1);
     svc_steps(30u);
     CHECK(snap.open);

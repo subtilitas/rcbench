@@ -1,5 +1,5 @@
 /*
- * Core 1's side of the trace of CH1's 1 ms samples: each tick's records
+ * Core 1's side of the trace of the FAST channel's 1 ms samples: each tick's records
  * into the ring, and the count of those it dropped.  See sense_trace.h.
  *
  * SPDX-License-Identifier: MIT
@@ -105,24 +105,38 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
         /* No bus: the next schedule starts afresh. */
         p->have = false;
         p->win  = 0u;
+        p->ticks = 0u;
         p->n_v  = 0u;
         p->n_hi = 0u;
         p->n_lo = 0u;
         publish(tr, 0u, 0u, tick_t);
         return;
     }
-    const bool online = ina3221_state(&s->i3221) == SENSE_PART_ONLINE;
-    publish(tr, (uint32_t)s->i3221.config | (online ? 1u << 16 : 0u)
-                    | ((uint32_t)s->i3221_resets << 24),
-            s->i3221.shunt_uohm, tick_t);
+    /* FAST's part: its Configuration, whether it is online and its resets,
+     * and FAST's shunt; all 0 with no FAST channel. */
+    const ina3221_t *d = sense_sched_fast_part(s);
+    const uint8_t f = s->cfg.i3221.fast;
+    uint32_t cfg = 0u;
+    uint32_t shunt = 0u;
+    if (d != NULL) {
+        const unsigned a = f / INA3221_CHANNELS;
+        const bool online = ina3221_state(d) == SENSE_PART_ONLINE;
+        cfg = (uint32_t)d->config | (online ? 1u << 16 : 0u)
+              | ((uint32_t)s->i3221_resets[a] << 24);
+        shunt = d->shunt_uohm[f % INA3221_CHANNELS];
+    }
+    publish(tr, cfg, shunt, tick_t);
 
-    /* CH1's sample of this tick, when there is one: the schedule keeps it
+    /* FAST's sample of this tick, when there is one: the schedule keeps it
      * newest in its history.  A set-up empties the history, so the head
      * alone does not tell a new sample from the last one. */
     /* What the window being filled gained in this tick.  A window that
-     * closed, or was emptied, counts from nothing. */
-    const sense_acc_t *a = &s->acc[SENSE_SRC_CH1];
-    const bool same = s->win == p->win && a->n_v >= p->n_v
+     * closed, or was emptied, counts from nothing, and so does one of a
+     * new schedule: its window 0 is another than the last one's. */
+    static const sense_acc_t k_none;
+    const sense_acc_t *a = (d != NULL) ? &s->acc[f] : &k_none;
+    const bool same = s->win == p->win && s->ticks >= p->ticks
+                      && a->n_v >= p->n_v
                       && a->n_hi >= p->n_hi && a->n_lo >= p->n_lo;
     const uint16_t base_n   = same ? p->n_v : 0u;
     const int64_t  base_sum = same ? p->v_sum : 0;
@@ -140,15 +154,15 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
                         && s->ring_at == p->win
                         && s->ring[0].n_clip > p->n_hi + p->n_lo;
     bool kept = false;
-    if (s->ch1_n == 0u) {
+    if (s->hist_n == 0u) {
         p->have = false;
     } else {
-        const unsigned newest = (s->ch1_head + SENSE_CH1_HISTORY - 1u)
-                                % SENSE_CH1_HISTORY;
-        const sense_ch1_t *c = &s->ch1[newest];
-        if (!p->have || s->ch1_head != p->head || c->t != p->t) {
+        const unsigned newest = (s->hist_head + SENSE_FAST_HISTORY - 1u)
+                                % SENSE_FAST_HISTORY;
+        const sense_fast_t *c = &s->hist[newest];
+        if (!p->have || s->hist_head != p->head || c->t != p->t) {
             p->have = true;
-            p->head = s->ch1_head;
+            p->head = s->hist_head;
             p->t    = c->t;
             if (closed && kind == SENSE_TRACE_CURRENT) {
                 kind = (c->ua > 0) ? SENSE_TRACE_CLIP_HI
@@ -169,7 +183,7 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
         }
     }
 
-    /* CH1's bus voltage of this tick.  Kept only behind the current
+    /* FAST's bus voltage of this tick.  Kept only behind the current
      * sample of its tick: a voltage line belongs to the sample line
      * before it. */
     if (kept && a->n_v == base_n + 1u) {
@@ -179,6 +193,7 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
                    (int32_t)(a->v_sum - base_sum) / 1000);
     }
     p->win   = s->win;
+    p->ticks = s->ticks;
     p->n_v   = a->n_v;
     p->n_hi  = a->n_hi;
     p->n_lo  = a->n_lo;
