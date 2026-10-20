@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "hitec_rx_link.h"
+#include "link_pages.h"
 #include "sense_link.h"
 #include "sensors_rows.h"
 #include "settings.h"
@@ -281,6 +282,32 @@ void settings_screen_set_hitec_rx(uint8_t mark)
         s_hitec_rx_mark = mark;
         settings_screen_invalidate();
     }
+}
+
+const char *settings_screen_help(setting_id_t id)
+{
+    const bool hitec = id == SET_HITEC_RX;
+
+    if ((id == SET_PDMINI_TX || id == SET_PDMINI_RX)
+        && settings_pdmini_same_pin()) {
+        return TR(SET_PD_SAME_PIN);
+    }
+    if (!settings_screen_unheld(id)) {
+        return hitec && settings_get_int(SET_HITEC_RX)
+                            == (int)LINK_HITEC_RX_PRECHARGE
+                   ? TR(SET_HITEC_RX_PRE)
+                   : ui_setting_help(id);
+    }
+    if (settings_sensors_row(id)) {
+        return sensors_rows_why(id);
+    }
+    if (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_OLD) {
+        return TR(SET_HITEC_RX_OLD);
+    }
+    if (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_NO_LINE) {
+        return TR(SET_HITEC_RX_NO_LINE);
+    }
+    return TR(SET_UNHELD);
 }
 
 bool settings_screen_unheld(setting_id_t id)
@@ -1098,16 +1125,7 @@ static void draw_row(gfx_canvas_t *c, int index)
     gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, MINUS_X - 10 - r.x, r.h));
     gfx_text(c, r.x + 16, r.y + 3, ui_setting_label(id), UI_FONT_HEAD,
              UI_TEXT, 1);
-    const bool hitec = id == SET_HITEC_RX;
-    const char *help =
-        same_pin ? TR(SET_PD_SAME_PIN)
-        : !unheld ? ui_setting_help(id)
-        : settings_sensors_row(id) ? sensors_rows_why(id)
-        : (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_OLD)
-            ? TR(SET_HITEC_RX_OLD)
-        : (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_NO_LINE)
-            ? TR(SET_HITEC_RX_NO_LINE)
-            : TR(SET_UNHELD);
+    const char *help = settings_screen_help(id);
     if (help[0] != '\0') {
         gfx_text(c, r.x + 16, r.y + 33, help, UI_FONT_LABEL,
                  unheld ? UI_WARN : UI_TEXT_FAINT, 1);

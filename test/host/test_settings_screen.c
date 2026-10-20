@@ -827,6 +827,42 @@ TEST_CASE(the_hitec_receive_row_is_marked_as_the_iomcu_holds_it)
     CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
 }
 
+/* Hitec D receive's help line follows the value, in both languages; a
+ * mark's line goes before it. */
+TEST_CASE(the_hitec_receive_help_follows_the_value)
+{
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        fresh_hub();
+        ui_text_set_language((ui_lang_t)lang);
+        settings_screen_set_hitec_rx(HITEC_RX_LINK_HELD);
+        CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
+        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX),
+                  ui_setting_help(SET_HITEC_RX));
+        settings_adjust(SET_HITEC_RX, 1);
+        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX), TR(SET_HITEC_RX_PRE));
+        CHECK(strcmp(TR(SET_HITEC_RX_PRE), ui_setting_help(SET_HITEC_RX))
+              != 0);
+        /* The marks, at PRECHARGE as SETUP shows them. */
+        settings_screen_set_hitec_rx(HITEC_RX_LINK_OLD);
+        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX), TR(SET_HITEC_RX_OLD));
+        settings_screen_set_hitec_rx(HITEC_RX_LINK_NO_LINE);
+        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX),
+                  TR(SET_HITEC_RX_NO_LINE));
+        settings_screen_set_hitec_rx(HITEC_RX_LINK_PENDING);
+        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX), TR(SET_UNHELD));
+        settings_screen_set_hitec_rx(HITEC_RX_LINK_HELD);
+        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX), TR(SET_HITEC_RX_PRE));
+        /* Back to PULL-UP: the setting's help again; another row keeps
+         * its own. */
+        settings_adjust(SET_HITEC_RX, 1);
+        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX),
+                  ui_setting_help(SET_HITEC_RX));
+        CHECK_STR_EQ(settings_screen_help(SET_PDMINI_BAUD),
+                  ui_setting_help(SET_PDMINI_BAUD));
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* The heading shows its text in the accent colour in both languages, and
  * its row has no key. */
 TEST_CASE(a_heading_shows_its_text_and_has_no_keys)
@@ -862,6 +898,7 @@ int main(void)
 {
     RUN(interfaces_has_five_headings_above_its_sections);
     RUN(the_hitec_receive_row_is_marked_as_the_iomcu_holds_it);
+    RUN(the_hitec_receive_help_follows_the_value);
     RUN(a_heading_shows_its_text_and_has_no_keys);
     RUN(a_held_setting_is_left_by_every_call_that_changes_one);
     RUN(setup_changes_no_held_setting);

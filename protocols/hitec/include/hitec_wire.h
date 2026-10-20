@@ -214,7 +214,8 @@ void hitec_c_xfer(uint8_t cmd, uint8_t p1, uint8_t p2, hitec_xfer_t *out);
  *  start. */
 #define HITEC_D_SETTLE_BITS 1u
 /** The answer's first start bit, from the end of the request's last stop
- *  bit.  Measured 5.9 to 6.5 ms with the HFP-30; 15.2 ms is reported with
+ *  bit.  Measured 5.9 to 6.5 ms with the HFP-30, and 5.93 to 6.52 ms over
+ *  153 reads by PRECHARGE (D485HW, 2026-10-20); 15.2 ms is reported with
  *  another programmer.  Accepted 2 ms to 20 ms. */
 #define HITEC_D_ANSWER_MIN_NS  2000000u
 #define HITEC_D_ANSWER_MAX_NS 20000000u

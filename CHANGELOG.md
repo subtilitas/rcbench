@@ -75,6 +75,18 @@ history is in git.
 
 ### Fixed
 
+- A POWER on a PRECHARGE line answers: its LISTEN starts in the pass of the
+  ON, while the PD mini's output still reads off, and is cut only when the
+  output reads off after it read on, when the supply is asked off, or when
+  the PD mini stops answering. It was cut in the first pass, 2.4 ms into
+  the window. A LISTEN whose output reads off for its whole window, 30 ms
+  at most, ends `DONE` with what it heard.
+- SETUP > INTERFACES > Hitec D receive at PRECHARGE reads `PRECHARGE: no
+  pull-up on the signal wire` (German `PRECHARGE: kein Pull-up an der
+  Signalleitung`); PULL-UP keeps `PULL-UP needs 2.2 kOhm on the signal
+  wire`. A mark's line goes before both.
+- The D series answer delay through PRECHARGE is given as measured: 5.93
+  to 6.52 ms over 153 reads (D485HW, 2026-10-20).
 - Downloads from the Wi-Fi page on a home network run without Wi-Fi power
   save and with a TCP (transmission control protocol) send buffer of
   11,520 bytes instead of 5,760. On 0.21.2 a station measured 15,900 and

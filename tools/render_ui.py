@@ -567,8 +567,10 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
-    # INTERFACES' last rows as setup-prog, the IOmcu older than 4.23.
+    # INTERFACES' last rows as setup-prog, the IOmcu older than 4.23, and
+    # PRECHARGE held, with its own help line.
     "setup-prog-noline": (None, "setup", "dark"),
+    "setup-prog-pre": (None, "setup", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
     # SERVO > PROGRAM with a table of 12 rows: SEARCH, the page keys, two
     # group headings and a row dimmed with its reason.
