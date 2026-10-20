@@ -65,6 +65,7 @@ void publish_sense(void)
         .i3221_ch    = m.one_ch,
         .i3221_parts = m.parts,
         .i3221_unwatched = m.fast == LINK_SM_FAST_NONE || fast_out,
+        .i3221_fast_off_ch1 = m.fast != LINK_SM_FAST_NONE && m.fast % 3u != 0u,
     };
     sense_map_want_t mw;
     memcpy(mw.regs, m.regs, sizeof(mw.regs));
@@ -162,12 +163,14 @@ void sense_map_came_up(uint16_t minor)
     sense_map_link_want(&s_sense_map, &w, now_ms());
     sense_map_link_came_up(&s_sense_map, minor, now_ms());
     sense_link_set_map(&s_sense_link, sense_map_link_page(&s_sense_map));
+    sense_link_set_map_held(&s_sense_link, false);
 }
 
 void sense_map_lost(void)
 {
     sense_map_link_lost(&s_sense_map);
     sense_link_set_map(&s_sense_link, false);
+    sense_link_set_map_held(&s_sense_link, false);
     atomic_store(&s_sense_parts, 0u);
 }
 
@@ -210,6 +213,7 @@ void sense_map_service(bool idle)
         }
     }
     sense_link_set_map(&s_sense_link, sense_map_link_page(&s_sense_map));
+    sense_link_set_map_held(&s_sense_link, sense_map_link_held(&s_sense_map));
     if (sense_map_link_take_reread(&s_sense_map)) {
         sense_link_reread(&s_sense_link);
     }

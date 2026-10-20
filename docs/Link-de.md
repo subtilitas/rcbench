@@ -596,9 +596,9 @@ IOmcu älter als 4.25 --, ist das Messgerät, solange alles Folgende gilt:
 
 | # | Bedingung |
 | ---: | --- |
-| 1 | SETUP SENSOREN hat einen bestückten Baustein mit einem Kanal, der das Ziel des Servotesters misst; ohne SENSE_MAP (ein IOmcu älter als 4.25) ist CH1 dieses Bausteins an |
+| 1 | SETUP SENSOREN hat einen bestückten Baustein mit einem Kanal, der das Ziel des Servotesters misst; ohne SENSE_MAP (ein IOmcu älter als 4.25) ist dieser Kanal CH1 des Bausteins |
 | 2 | die Protokoll-Minor des IOmcu ist 11 oder mehr |
-| 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen |
+| 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen; mit SENSE_MAP sind sein Enable-Bit des INA3221 und die Register 8 bis 11 die der Zuordnung, und die Register 0 bis 25 von SENSE_MAP sind die verlangte Zuordnung: seit dem Link-Aufbau gelesen, nicht abgelehnt, kein Schreiben offen |
 | 4 | das letzte Lesen von SENSE ist jünger als 200 ms, und in seinen `FLAGS` sind die Bits 4 und 5 des INA3221 gesetzt und Bit 9 gelöscht |
 | 5 | das neueste Fenster von SERVO_WIN hält Strommessungen, und seine Nummer hat sich vor weniger als 200 ms bewegt |
 | 6 | das Byte des INA3221 in `RESETS` hat sich seit dem Poll davor nicht bewegt |

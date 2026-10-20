@@ -150,14 +150,15 @@ void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out)
     out->page   = s->page;
     out->wanted = s->want_set && s->want_i3221 && !s->want_unwatched
                   && (s->map
-                      || (s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u);
+                      || ((s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u
+                          && !s->want_off_ch1));
     uint16_t regs[FRAME_N];
     out->held = out->wanted && s->known
                 && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
                 && (s->map
                     || (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u)
                 && !s->refused_bus && !s->refused_i228 && !s->refused_i3221
-                && held_as_asked(s)
+                && held_as_asked(s) && (!s->map || s->map_held)
                 && sense_link_write_owed(s, regs) == SENSE_LINK_OP_NONE;
     out->setups    = s->setups;
     out->status    = s->have_status;
@@ -401,6 +402,13 @@ void sense_link_set_map(sense_link_t *s, bool map)
 {
     if (s != NULL) {
         s->map = map;
+    }
+}
+
+void sense_link_set_map_held(sense_link_t *s, bool held)
+{
+    if (s != NULL) {
+        s->map_held = held;
     }
 }
 

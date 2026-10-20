@@ -183,6 +183,10 @@ void sense_map_link_done(sense_map_link_t *s, int result,
  *  refused. */
 bool sense_map_link_page(const sense_map_link_t *s);
 
+/** Whether the page holds the map asked: read since link-up, not
+ *  refused, and nothing owed.  False on an IOmcu older than 4.25. */
+bool sense_map_link_held(const sense_map_link_t *s);
+
 /** Whether a write was taken since the last call: SENSE's set-up is to be
  *  read again.  Cleared. */
 bool sense_map_link_take_reread(sense_map_link_t *s);

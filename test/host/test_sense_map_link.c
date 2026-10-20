@@ -331,6 +331,72 @@ TEST_CASE(a_part_on_the_ina228s_address_is_left_out)
     CHECK_EQ(fm[LINK_SM_FAST], 0u);
 }
 
+/* The map is held once the page holds it: not before the read, not while
+ * an edit waits or after a refusal, and never on an older IOmcu. */
+TEST_CASE(the_map_is_held_once_the_page_holds_it)
+{
+    map_fresh(24u, 0x01u);
+    map_polls(20);
+    CHECK(!sense_map_link_held(&ml));
+    CHECK(!sense_map_link_held(NULL));
+    map_fresh(25u, 0x01u);
+    CHECK(!sense_map_link_held(&ml));
+    map_polls(20);
+    CHECK(sense_map_link_held(&ml));
+    sense_map_want_t w = map_of(0x01u);
+    w.regs[LINK_SM_SHUNT(0)] = 500u;
+    sense_map_link_want(&ml, &w, now);
+    CHECK(!sense_map_link_held(&ml));
+    map_polls(20);
+    CHECK(sense_map_link_held(&ml));
+    fm_drives = true;
+    w.regs[LINK_SM_SHUNT(0)] = 600u;
+    sense_map_link_want(&ml, &w, now);
+    map_polls(20);
+    CHECK(!sense_map_link_held(&ml));
+    fm_drives = false;
+}
+
+/* A part with every channel off says so on an older IOmcu too, the mirror
+ * part as well: its one-part frame reads nothing. */
+TEST_CASE(a_dark_part_says_so_on_an_older_iomcu)
+{
+    map_fresh(24u, 0x01u);
+    sense_map_want_t w = map_of(0x03u);
+    for (unsigned c = 0u; c < 3u; ++c) {
+        w.regs[LINK_SM_SHUNT(c)] = 0u;
+    }
+    w.regs[LINK_SM_FAST] = LINK_SM_FAST_NONE;
+    w.dark = 0x01u;
+    sense_map_link_want(&ml, &w, now);
+    map_polls(20);
+    CHECK_EQ(sense_map_link_part(&ml, &sl, 0u, 0u, now), SENS_PART_DARK);
+    CHECK_EQ(sense_map_link_part(&ml, &sl, 1u, 0u, now), SENS_PART_OLD);
+}
+
+/* A part event queued and not taken goes with the reads it came from: a
+ * later one names its own part alone. */
+TEST_CASE(a_queued_part_event_goes_with_its_reads)
+{
+    map_fresh(25u, 0x0Du);
+    map_polls(4);
+    fm[LINK_SM_FLAGS] = (uint16_t)(LINK_SM_IN_FORCE | LINK_SM_ID_WRONG(3));
+    fm[LINK_SM_ID(3)] = 0x2260u;
+    map_polls(12);
+    sense_map_link_lost(&ml);
+    sense_map_link_came_up(&ml, 25u, now);
+    fm[LINK_SM_FLAGS] = (uint16_t)(LINK_SM_IN_FORCE | LINK_SM_ID_WRONG(2)
+                                   | LINK_SM_ONLINE(3));
+    fm[LINK_SM_ID(2)] = 0x1234u;
+    map_polls(12);
+    uint8_t part = 9u;
+    uint16_t id = 0u;
+    CHECK_EQ(sense_map_link_event(&ml, &part, &id), SENSE_MAP_LINK_EV_WRONG);
+    CHECK_EQ(part, 2u);
+    CHECK_EQ(id, 0x1234u);
+    CHECK_EQ(sense_map_link_event(&ml, &part, &id), 0u);
+}
+
 /* No sensor bus: SENSE clears its pins, so the map enables no part and
  * names no FAST; each fitted part says why, and the map comes back whole
  * with the bus. */
@@ -565,6 +631,13 @@ TEST_CASE(the_meter_follows_fast_with_the_map_and_ch1_without)
     want(&w);
     sense_link_meter(&sl, &m);
     CHECK(m.wanted);
+    /* FAST on CH2: an older IOmcu reads CH1 at 1 kHz, not the watcher. */
+    w.i3221_fast_off_ch1 = true;
+    want(&w);
+    sense_link_meter(&sl, &m);
+    CHECK(!m.wanted);
+    CHECK(!sense_link_win_on(&sl));
+    w.i3221_fast_off_ch1 = false;
     w.i3221_unwatched = true;
     want(&w);
     sense_link_meter(&sl, &m);
@@ -600,6 +673,10 @@ TEST_CASE(the_meter_is_held_beside_a_part_the_ina228_takes_out)
     sense_link_meter_t m;
     sense_link_meter(&sl, &m);
     CHECK(m.wanted);
+    /* Held only once SENSE_MAP holds the map asked. */
+    CHECK(!m.held);
+    sense_link_set_map_held(&sl, true);
+    sense_link_meter(&sl, &m);
     CHECK(m.held);
     /* What the panel does ask still counts: other pins are not held. */
     idle = false;
@@ -624,6 +701,9 @@ int main(void)
     RUN(a_dark_part_is_said_and_no_map_is_written);
     RUN(a_part_on_the_ina228s_address_is_left_out);
     RUN(no_sensor_bus_takes_every_part_out);
+    RUN(the_map_is_held_once_the_page_holds_it);
+    RUN(a_dark_part_says_so_on_an_older_iomcu);
+    RUN(a_queued_part_event_goes_with_its_reads);
     RUN(an_unanswered_exchange_is_asked_again);
     RUN(a_part_not_answering_or_answering_wrong_is_said_once);
     RUN(a_silent_part_that_answers_before_the_band_is_not_said);

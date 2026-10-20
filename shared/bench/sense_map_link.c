@@ -38,6 +38,8 @@ static void forget_reads(sense_map_link_t *s, uint32_t now_ms)
     memset(s->silent_told, 0, sizeof(s->silent_told));
     memset(s->online_seen, 0, sizeof(s->online_seen));
     s->events &= (uint8_t)~(SENSE_MAP_LINK_EV_SILENT | SENSE_MAP_LINK_EV_WRONG);
+    s->ev_parts[2] = 0u;                      /* SILENT's and WRONG's parts */
+    s->ev_parts[3] = 0u;
 }
 
 void sense_map_link_lost(sense_map_link_t *s)
@@ -293,6 +295,12 @@ bool sense_map_link_page(const sense_map_link_t *s)
     return s != NULL && s->up && s->page;
 }
 
+bool sense_map_link_held(const sense_map_link_t *s)
+{
+    return sense_map_link_page(s) && s->known && s->want_set && !s->refused
+           && memcmp(s->want, s->held, sizeof(s->want)) == 0;
+}
+
 bool sense_map_link_take_reread(sense_map_link_t *s)
 {
     if (s == NULL || !s->reread) {
@@ -402,11 +410,11 @@ sens_part_t sense_map_link_part(const sense_map_link_t *s,
     if ((s->want[LINK_SM_ENABLE] & bit) == 0u || !s->up) {
         return SENS_PART_UNKNOWN;
     }
-    if (!s->page) {
-        return (a == mirror) ? old_part(sl, now_ms) : SENS_PART_OLD;
-    }
     if ((s->dark & bit) != 0u) {
         return SENS_PART_DARK;
+    }
+    if (!s->page) {
+        return (a == mirror) ? old_part(sl, now_ms) : SENS_PART_OLD;
     }
     if (s->refused) {
         return SENS_PART_REFUSED;

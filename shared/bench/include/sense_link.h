@@ -186,6 +186,9 @@ typedef struct {
     /** No fitted channel watches the servo tester's target (SENSORS'
      *  FAST is none): the INA3221 is not the servo rail's meter. */
     bool     i3221_unwatched;
+    /** FAST is CH2 or CH3 of its part: an IOmcu older than 4.25 reads CH1
+     *  at 1 kHz, which then is not the servo rail's meter. */
+    bool     i3221_fast_off_ch1;
 } sense_setup_t;
 
 /** Things the caller tells the operator about, each once. */
@@ -322,6 +325,9 @@ typedef struct {
      *  ENABLE bit 1 and registers 8 to 11 mirror the map and are never
      *  written. */
     bool     map;
+    /** With the map in force: SENSE_MAP holds the map asked, so FAST and
+     *  its shunt are the ones SETUP names (sense_link_set_map_held()). */
+    bool     map_held;
 
     /* What is asked, as the page is to hold it. */
     bool     want_set;
@@ -330,6 +336,7 @@ typedef struct {
     int8_t   want_sda, want_scl;      /**< as asked, -1 unset         */
     uint8_t  want_parts;              /**< sense_setup_t.i3221_parts  */
     bool     want_unwatched;          /**< and .i3221_unwatched       */
+    bool     want_off_ch1;            /**< and .i3221_fast_off_ch1    */
     uint16_t want[LINK_SN_CONFIG_COUNT];
     uint32_t want_ms;         /**< when it last changed                */
 
@@ -518,6 +525,10 @@ uint16_t sense_link_unheld(const sense_link_t *s);
  * kept as read and never written, and refuse nothing.
  */
 void sense_link_set_map(sense_link_t *s, bool map);
+
+/** Whether SENSE_MAP holds the map SETUP asks (sense_map_link_held()):
+ *  with the map in force the meter is held only then. */
+void sense_link_set_map_held(sense_link_t *s, bool held);
 
 /** Read SENSE's set-up again, and the identity after it: a SENSE_MAP write
  *  was taken, and the mirror registers moved with it. */

@@ -168,7 +168,8 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
                        || s->want_enc != w->as5600
                        || s->want_sda != w->sda || s->want_scl != w->scl
                        || s->want_parts != w->i3221_parts
-                       || s->want_unwatched != w->i3221_unwatched;
+                       || s->want_unwatched != w->i3221_unwatched
+                       || s->want_off_ch1 != w->i3221_fast_off_ch1;
     if (!moved) {
         return;
     }
@@ -213,6 +214,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
     s->want_scl   = w->scl;
     s->want_parts = w->i3221_parts;
     s->want_unwatched = w->i3221_unwatched;
+    s->want_off_ch1   = w->i3221_fast_off_ch1;
     memcpy(s->want, next, sizeof(next));
     /* A new set-up is a new question: what was refused is asked again. */
     s->refused_bus   = false;
@@ -317,7 +319,8 @@ bool sense_link_win_on(const sense_link_t *s)
     return s != NULL && s->win_page && s->known
            && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
            && (s->map ? !s->want_unwatched
-                      : (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u);
+                      : (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u
+                            && !s->want_off_ch1);
 }
 
 /* The registers a SENSE status read takes: to the page's last when it has
