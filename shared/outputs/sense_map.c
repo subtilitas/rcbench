@@ -323,7 +323,13 @@ void sense_map_publish(sense_page_t *p, const sense_snap_t *s)
         r[LINK_SX_WINDOW] = s->win[0].number;
         r[LINK_SX_FLAGS] |= LINK_SX_HAVE;
         for (unsigned k = 0; k < LINK_SX_PER_PAGE; ++k) {
-            const sense_window_t *w = &s->win[page * LINK_SX_PER_PAGE + k];
+            const unsigned c = page * LINK_SX_PER_PAGE + k;
+            /* A part not online reads 0, also for the samples it gave
+             * before it went offline in the window. */
+            if ((online & LINK_SM_ONLINE(c / INA3221_CHANNELS)) == 0u) {
+                continue;
+            }
+            const sense_window_t *w = &s->win[c];
             r[LINK_SX_E(k, LINK_SX_E_MEAN_MA)] =
                 reg_i16(div_round(w->i_mean_ua, 1000));
             r[LINK_SX_E(k, LINK_SX_E_MAX_MA)] =
