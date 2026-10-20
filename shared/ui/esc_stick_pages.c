@@ -241,6 +241,12 @@ static uint8_t esc_stick_ps_pin(void)
     return PROG_REG_NO_PIN;
 }
 
+/* A run's ABORT, which stops a motor (esc_stick_panel_safe_at()). */
+static bool esc_stick_ps_safe_at(int x, int y)
+{
+    return pg.stage != STAGE_CLOSED && esc_stick_panel_safe_at(x, y);
+}
+
 const prog_page_set_t esc_stick_pages = {
     .init          = esc_stick_ps_init,
     .entry         = esc_stick_ps_entry,
@@ -259,4 +265,5 @@ const prog_page_set_t esc_stick_pages = {
     .leave         = esc_stick_ps_leave,
     .cancel        = esc_stick_ps_cancel,
     .pin           = esc_stick_ps_pin,
+    .safe_at       = esc_stick_ps_safe_at,
 };

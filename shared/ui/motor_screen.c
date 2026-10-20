@@ -705,6 +705,22 @@ static void open_outputs(void)
     mwb_opened_outputs();
 }
 
+/*
+ * The controls whose press stops what the bench drives, where event() hands
+ * a DOWN at (x, y) to them now: a session's own (a stick run's ABORT), or
+ * DISARM on the rail while the button reads DISARM.  The router hands a
+ * press on one through the alert band and the band's help bubble
+ * (ui_screen_t's safe_at); ARM is none.
+ */
+static bool safe_at(int x, int y)
+{
+    const prog_page_set_t *ps = mpp_shown();
+    if (ps != NULL) {
+        return prog_ps_safe_at(ps, x, y);
+    }
+    return s.gate.armed && gfx_rect_contains(s.arm_rect, x, y);
+}
+
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -1754,6 +1770,7 @@ static const ui_screen_t k_screen = {
     .cancel = cancel,
     .render = render,
     .back   = back,
+    .safe_at = safe_at,
 };
 
 const ui_screen_t *motor_screen(void) { return &k_screen; }

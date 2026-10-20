@@ -80,6 +80,10 @@ bool kst_panel_holds_port(void);
  *  PROG_REG_NO_PIN. */
 uint8_t kst_panel_pin(void);
 
+/** None of the session's controls stops what the bench drives: it works
+ *  on a SAFE bench only (prog_page_set_t's safe_at).  Always false. */
+bool kst_panel_safe_at(int x, int y);
+
 /** The session's hooks for its row on SERVO > PROGRAM. */
 extern const prog_page_set_t kst_panel_pages;
 

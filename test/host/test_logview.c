@@ -110,6 +110,11 @@ static log_viewer_page_t g_last_page;
  * the file it selected. */
 static int g_dir_index = -1;
 static log_mem_ctx_t g_ctx;
+/* A size the fixture card lists for one entry in place of its own, and the
+ * entry, or -1 for none: an exFAT card holds files of 4 GiB and more. */
+static int g_big_index = -1;
+static uint64_t g_big_size;
+static int g_open_calls;        /* how often open() was asked */
 
 /* What DELETE has done to the fixture card: which entries are gone, how many
  * times remove() was asked, the last name it was asked for, and whether it
@@ -185,7 +190,9 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
             continue;
         }
         snprintf(out[n].name, sizeof(out[n].name), "%s", k_card[i].name);
-        out[n].size = sizes[i % (sizeof(sizes) / sizeof(sizes[0]))];
+        out[n].size = ((int)i == g_big_index)
+                          ? g_big_size
+                          : sizes[i % (sizeof(sizes) / sizeof(sizes[0]))];
         out[n].is_dir = ((int)i == g_dir_index);
         ++n;
     }
@@ -200,6 +207,7 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
 static bool fake_open(const char *name, log_source_t *src, void *ctx)
 {
     (void)ctx;
+    ++g_open_calls;
     for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]); ++i) {
         if (strcmp(name, k_card[i].name) == 0 && !g_removed[i]) {
             if (k_card[i].text == NULL) {
@@ -242,12 +250,24 @@ static bool fake_remove(const char *name, void *ctx)
     return false;
 }
 
+/* What the slot holds while g_no_card: asked after a list that failed. */
+static card_state_t g_card_state;
+static unsigned g_card_asks;
+
+static card_state_t fake_card(void *ctx)
+{
+    (void)ctx;
+    ++g_card_asks;
+    return g_card_state;
+}
+
 static const log_viewer_io_t k_io = {
     .list = fake_list,
     .open = fake_open,
     .close = NULL,
     .volume = fake_volume,
     .remove = fake_remove,
+    .card = fake_card,
     .ctx = NULL,
 };
 
@@ -271,6 +291,8 @@ static void reset_screen(void)
     settings_init();
     ui_theme_set(UI_THEME_DARK);
     g_no_card = false;
+    g_card_state = CARD_STATE_NONE;
+    g_card_asks = 0u;
     g_empty_card = false;
     g_card_runs = 0;
     g_card_others = 0;
@@ -290,6 +312,9 @@ static void reset_screen(void)
 static void fresh(void)
 {
     g_dir_index = -1;
+    g_big_index = -1;
+    g_big_size = 0u;
+    g_open_calls = 0;
     g_long[0] = '\0';
     if (s_fb == NULL) {
         s_fb = calloc((size_t)W * H, sizeof(gfx_color_t));
@@ -602,6 +627,60 @@ TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
 }
 
 /*
+ * A card in the slot that does not mount says which: not formatted as FAT32
+ * or exFAT, or unreadable, each in its own words, and neither as no card.  The slot is
+ * asked after the list that found no volume, and only then.
+ */
+TEST_CASE(a_card_that_does_not_mount_says_which)
+{
+    static const card_state_t k_state[] = {
+        CARD_STATE_NONE, CARD_STATE_NO_FAT, CARD_STATE_UNREADABLE,
+    };
+    enum { N = (int)(sizeof(k_state) / sizeof(k_state[0])) };
+    for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
+        gfx_color_t *band[N];
+        for (int k = 0; k < N; ++k) {
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            g_no_card = true;
+            g_card_state = k_state[k];
+            log_viewer_refresh();
+            CHECK(g_card_asks >= 1u);
+            CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+            screen()->render(&s_c, 0);
+            band[k] = calloc((size_t)W * 21, sizeof(gfx_color_t));
+            CHECK(band[k] != NULL);
+            memcpy(band[k], &s_fb[205 * W], (size_t)W * 21 * sizeof(gfx_color_t));
+        }
+        /* Each pair differs over the reason's line. */
+        for (int a = 0; a < N; ++a) {
+            for (int b = a + 1; b < N; ++b) {
+                CHECK(memcmp(band[a], band[b],
+                             (size_t)W * 21 * sizeof(gfx_color_t)) != 0);
+            }
+        }
+        for (int k = 0; k < N; ++k) {
+            free(band[k]);
+        }
+        ui_text_set_language(UI_LANG_EN);
+    }
+    /* A card that lists is not asked about. */
+    fresh();
+    g_card_state = CARD_STATE_NO_FAT;
+    log_viewer_refresh();
+    CHECK_EQ(g_card_asks, 0u);
+    /* An io without the question reads as no card. */
+    log_viewer_io_t io = k_io;
+    io.card = NULL;
+    fresh();
+    log_viewer_set_io(&io);
+    g_no_card = true;
+    log_viewer_refresh();
+    screen()->render(&s_c, 0);
+    log_viewer_set_io(&k_io);
+}
+
+/*
  * A cancel abandons the press in progress.  Every view here acts on the
  * release, and a press left standing after a lost event would let a later
  * contact's release open the file that was selected.
@@ -808,6 +887,81 @@ TEST_CASE(a_directory_row_cannot_be_opened_as_a_log)
     open_file(0);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
     CHECK(log_viewer_analysis() != NULL);
+}
+
+/*
+ * OPEN reads through stdio, whose seek takes a 32-bit long on the panel: a
+ * file of 2 GiB and more is listed with its size and refused at OPEN with
+ * a message, never opened, so no part of it passes for the whole run.
+ */
+TEST_CASE(a_file_of_2_gib_or_more_is_listed_and_refused_at_open)
+{
+    static const uint64_t k_refused[] = {
+        LOG_VIEWER_OPEN_MAX + 1u,           /* 2^31 */
+        0xFFFFFFFFull,                      /* 2^32 - 1, FAT32's largest */
+        0x100000000ull,                     /* 2^32 */
+        0x200000000ull,                     /* 2^33 */
+    };
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        for (size_t i = 0; i < sizeof(k_refused) / sizeof(k_refused[0]);
+             ++i) {
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            g_big_index = 0;
+            g_big_size = k_refused[i];
+            log_viewer_refresh();
+            open_file(0);
+            draw();
+            CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+            CHECK(log_viewer_analysis() == NULL);
+            CHECK_EQ(g_open_calls, 0);
+            char want[96];
+            snprintf(want, sizeof(want), ui_tr(TX_LOG_TOO_BIG),
+                     k_card[0].name);
+            CHECK_STR_EQ(log_viewer_message(), want);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+
+    /* One byte less opens. */
+    fresh();
+    g_big_index = 0;
+    g_big_size = LOG_VIEWER_OPEN_MAX;
+    log_viewer_refresh();
+    open_file(0);
+    CHECK_EQ(g_open_calls, 1);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK(log_viewer_analysis() != NULL);
+}
+
+TEST_CASE(a_size_is_written_in_its_unit_up_to_an_sdxc_card)
+{
+    static const struct {
+        uint64_t bytes;
+        const char *text;
+    } k[] = {
+        { 0u,                    "0 B" },
+        { 1023u,                 "1023 B" },
+        { 1024u,                 "1 kB" },
+        { 1024u * 1024u - 1u,    "1023 kB" },
+        { 1024u * 1024u,         "1.0 MB" },
+        { 0x3FFFFFFFull,         "1024.0 MB" },
+        { 0x40000000ull,         "1.00 GB" },
+        { 0x7FFFFFFFull,         "2.00 GB" },
+        { 0xFFFFFFFFull,         "4.00 GB" },
+        { 0x100000000ull,        "4.00 GB" },
+        { 0x200000000ull,        "8.00 GB" },
+        { 0x20000000000ull,      "2048.00 GB" },  /* 2 TiB, SDXC's top */
+    };
+    char out[16];
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        log_viewer_size_text(out, sizeof(out), k[i].bytes);
+        CHECK_STR_EQ(out, k[i].text);
+    }
+    /* The largest size there is is cut at the buffer, and terminated. */
+    memset(out, 'x', sizeof(out));
+    log_viewer_size_text(out, sizeof(out), UINT64_MAX);
+    CHECK(memchr(out, '\0', sizeof(out)) != NULL);
 }
 
 TEST_CASE(a_column_of_prose_is_not_plottable)
@@ -1152,7 +1306,7 @@ TEST_CASE(a_card_of_999_runs_offers_the_newest_that_fit)
         log_viewer_file_t f;
         memset(&f, 0, sizeof(f));
         log_run_name(f.name, sizeof(f.name), i);
-        f.size = (uint32_t)i;
+        f.size = ((uint64_t)i << 32) | (uint64_t)i;   /* past 4 GiB */
         held = log_select_keep(set, held, LOG_VIEWER_MAX_FILES, &f);
     }
     CHECK_EQ(held, LOG_VIEWER_MAX_FILES);
@@ -1168,7 +1322,8 @@ TEST_CASE(a_card_of_999_runs_offers_the_newest_that_fit)
         }
     }
     /* The whole entry travels with the name it was kept by. */
-    CHECK_EQ(set[0].size, (uint32_t)LOG_RUN_LAST);
+    CHECK(set[0].size
+          == (((uint64_t)LOG_RUN_LAST << 32) | (uint64_t)LOG_RUN_LAST));
 }
 
 /*
@@ -4009,7 +4164,7 @@ TEST_CASE(every_warning_and_file_message_takes_two_lines_at_most)
     };
     static const ui_text_id_t k_file[] = {
         TX_LOG_CANNOT_OPEN, TX_LOG_IS_FOLDER, TX_LOG_CANNOT_DELETE,
-        TX_LOG_DELETED,
+        TX_LOG_DELETED, TX_LOG_TOO_BIG,
     };
     const gfx_rect_t warn = gfx_rect_make(32, 0, 268, 18);
     const gfx_rect_t foot = gfx_rect_make(272, 0, 248, 18);
@@ -4113,6 +4268,7 @@ int main(void)
     RUN(a_two_row_file_still_draws_a_trace);
     RUN(no_card_says_so_and_stays_put);
     RUN(an_empty_card_is_not_the_same_as_no_card);
+    RUN(a_card_that_does_not_mount_says_which);
     RUN(a_second_tap_opens_the_file_and_analyses_it);
     RUN(a_cancelled_press_opens_nothing);
     RUN(a_german_file_is_read_as_german);
@@ -4120,6 +4276,8 @@ int main(void)
     RUN(tapping_a_column_toggles_it_and_the_time_axis_is_not_offered);
     RUN(an_override_does_not_discard_the_column_selection);
     RUN(a_directory_row_cannot_be_opened_as_a_log);
+    RUN(a_file_of_2_gib_or_more_is_listed_and_refused_at_open);
+    RUN(a_size_is_written_in_its_unit_up_to_an_sdxc_card);
     RUN(a_column_of_prose_is_not_plottable);
     RUN(forcing_the_separator_and_the_convention_re_runs_the_analysis);
     RUN(the_cursor_follows_the_touch_and_stays_in_range);

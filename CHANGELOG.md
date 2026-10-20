@@ -31,15 +31,96 @@ history is in git.
 - The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
   receive mode before the OPEN, and the report names it (`rx=pu|pre`).
 
+## 0.21.2 - 2026-10-20
+
+0.21.2 is a testing release: its minor number, 21, is odd, and GitHub lists
+it as a pre-release. It mounts SD (Secure Digital) cards formatted exFAT
+(extended File Allocation Table) beside FAT12, FAT16 and FAT32, and carries
+file sizes in 64 bits. It fixes defects of 0.21.1: DISARM, OUTPUT OFF and a
+run's STOP or ABORT act on the first press while the alert band covers them
+or a help box is open; a card with no FAT volume reads `not FAT32/exFAT` and
+a card that does not mount `unreadable`, not `no card`; the update check on
+RELEASES: TESTING reads GitHub's chunked answer, the start-up check
+included; OUTPUTS and PICK A PIN show the pins SETUP > INTERFACES holds as
+taken; a set-up alert leaves the band once its cause is over; PD mini TX and
+RX never share a pin; Backlight leaves SETUP > PANEL.
+
+A panel on 0.21.0 or 0.21.1 is offered 0.21.2 with RELEASES: TESTING on
+SETUP > UPDATES only; RELEASES: STABLE reads `releases/latest`, which names
+v0.20.0. The steps from 0.21.1 are in
+[First run, §1](docs/FirstRun.md#from-0211):
+
+1. SETUP > UPDATES, `RELEASES: TESTING`, `CHECK FOR UPDATES`, with a home
+   network kept, the bench SAFE, the supply output off and no log run open.
+   0.21.0 and 0.21.1 read only an answer that states its size: a card that
+   says `Unexpected answer from GitHub.` gets the cached answer, which
+   does, with `CHECK FOR UPDATES` pressed again at once
+   ([the check on 0.21.0 and 0.21.1](docs/FirstRun.md#the-check-on-0210-and-0211)).
+2. Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel restarts and keeps 0.21.2
+   once the display and touch are up.
+3. At link-up the panel offers the IOmcu's update over CAN (Controller Area
+   Network). Hold START 2 s on the question on the menu, or `HOLD 2 s:
+   UPDATE IOMCU` on SETUP > UPDATES. The band then says `IOmcu updated to
+   0.21.2.`. The test of unwired sensor pins runs on the IOmcu and comes
+   with this step.
+
+The SD card stays as 0.21.1 left it; a card of 0.21.0 and older moves as
+[From 0.21.0](docs/FirstRun.md#from-0210) states. The card holds a FAT32,
+FAT16, FAT12 or exFAT volume; 0.21.1 does not read exFAT. 0.21.2 does not
+read NTFS (New Technology File System), a card with a GPT (GUID partition
+table) or a volume over 2 TiB, and formats no card ([The SD card's
+format](docs/Screens.md#the-sd-cards-format)). A set-up stored with PD mini
+TX and RX on one GPIO (general-purpose input/output) loads as stored, and
+the PD mini stays off until one row moves. A bench without a home network
+takes the upload on the panel's browser page. 0.21.1 and 0.21.2 run link
+protocol 4.23; 0.21.0 runs 4.22, the same major, so both boards link before
+and after the IOmcu's update. The time of the download and of the update
+over CAN is not measured.
+
+### Added
+
+- The panel mounts SD cards formatted exFAT, the format SDXC cards of 64 GB
+  to 2 TB come in, beside FAT12, FAT16 and FAT32. The build takes ESP-IDF's
+  fatfs component with `FF_FS_EXFAT` 1 (`firmware/panel/fatfs_exfat.cmake`);
+  ESP-IDF v5.4 and v5.5 have no Kconfig option for it. The application image
+  grows by 9,184 bytes. The serial log names the format at mount: `storage:
+  SK64G mounted, exFAT, 61002 MB`.
+- File sizes are 64-bit from the card to the screen: LOGS lists a file of
+  4 GiB and more with its size (`8.00 GB`), and WI-FI lists and downloads
+  it whole. OPEN refuses a file of 2 GiB and more with `<name> is 2 GB or
+  larger. Not opened.`; the reader's seek reaches 2 GiB less 1 byte. GPT
+  cards and volumes over 2 TiB do not mount (`FF_LBA64` stays 0).
+
 ### Fixed
 
-- The update check with RELEASES: TESTING reads GitHub's API answer in
-  chunks (`Transfer-Encoding: chunked`, no `Content-Length`), the form
-  GitHub sends when its cache does not hold the request. The check ended
-  with "Unexpected answer from GitHub." and "The response does not
-  specify a size." whenever the answer came in that form, the start-up
-  check included. The console prints each GitHub job's last answer: HTTP
-  status, `Content-Length`, chunked, body bytes read and the reason code.
+- WI-FI lists and downloads a FAT32 file of 2 GiB to 4 GiB less 1 byte with
+  its size, and the fault log and the servo files read such a file's size
+  right. Each took the size from stat(), whose 32-bit `st_size` gave a
+  negative number. LOGS refuses such a file at OPEN instead of reading it
+  through a seek that does not reach its end.
+- A card in the panel's SD slot that holds no FAT volume -- NTFS, a GPT or
+  no format -- reads `Card is neither FAT32 nor exFAT. Format it on a
+  computer.` on LOGS, `not FAT32/exFAT` on the splash, and its own line in
+  the run and servo test alerts and the servo programmer's card notes. A
+  card that does not mount for another reason reads `Cannot read the card.`.
+  Both read `No card` before. The console line names the FatFs result: `W
+  storage: card holds no FAT volume (FatFs 13): format it FAT32 or exFAT`. A
+  card that starts and does not mount is started once more to ask FatFs why.
+- A press on a control that stops what the bench drives acts on the first
+  press while the alert band covers it or a chip's help box is open:
+  DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN. The
+  press clears the band or closes the box. The alert band covers the lower
+  22 px of SERVO's DISARM (panel y 446 to 467); a DISARM tap there only
+  cleared the alert, and the bench stayed ARMED until a second tap. A press
+  on ARM or OUTPUT ON under the band or the box still starts no hold.
+- The update check with RELEASES: TESTING reads GitHub's API (application
+  programming interface) answer in chunks (`Transfer-Encoding: chunked`, no
+  `Content-Length`), the form GitHub sends when its cache does not hold the
+  request. The check ended with "Unexpected answer from GitHub." and "The
+  response does not specify a size." whenever the answer came in that form,
+  the start-up check included. The console prints each GitHub job's last
+  answer: HTTP (Hypertext Transfer Protocol) status, `Content-Length`,
+  chunked, body bytes read and the reason code.
 - OUTPUTS and PICK A PIN show the pins SETUP > INTERFACES holds as taken
   and take no tick on them: Sensor SDA and SCL (GP16 and GP17 by default)
   while the INA228, the INA3221 or the AS5600 is on, PD mini TX and RX
@@ -51,11 +132,10 @@ history is in git.
   refused part holds none. With no IOmcu answering they follow the
   settings. Both screens listed these pins as free, and the IOmcu refused
   a binding on them.
-- A run's settings on SERVO > TEST have CLOSE at the top right, back to the
-  run cards, as the home tag goes.
+- The settings of AUTOMATIC TEST and LIMIT RUN on SERVO > TEST have CLOSE at
+  the top right; it goes back to the run cards, as the home tag does.
 - With a band chip's help box open, a tap on another chip closes the box
   and opens that chip's box in one tap. It took two taps.
-
 - An alert about a SETUP > INTERFACES set-up leaves the band once its cause
   is over, before its 30 s: a value the IOmcu rejected, once the IOmcu holds
   the value it is stepped back to (at once when that is the value it still
@@ -72,22 +152,22 @@ history is in git.
   longer says it again. It is said again when a bit changes (weak to strong
   included), after the field read right, after the sensor was reported not
   answering, after the sensor was switched off, and after a link-up.
-- Sensor bus pins with nothing wired to them (no part, no pull-up) no
-  longer raise `Sensor bus blocked: SDA low.`: the IOmcu tests a line that
-  is low at idle on its own pad pull-up for up to 50 µs, and a line that
-  rises is held by nothing. The monitors then read as not answering.
-  Sensor SDA steps 16 to 14 because GP15 is an SCL pin (an I2C block's SDA
-  is an even GPIO and its SCL the next one).
+- Sensor bus pins with nothing wired to them (no part, no pull-up) no longer
+  raise `Sensor bus blocked: SDA low.`: the IOmcu tests a line that is low
+  at idle on its own pad pull-up for up to 50 µs, and a line that rises is
+  held by nothing. The monitors then read as not answering. Sensor SDA steps
+  16 to 14 because GP15 is an SCL pin (an I2C (Inter-Integrated Circuit)
+  block's SDA is an even GPIO and its SCL the next one).
 - INA228 address and INA3221 address stop at the ends of their range
   (0x40 to 0x4F, 0x40 to 0x43) and have `-` and `+` keys; minus at 0x40
   wrapped to 0x43.
-- An SD card mount tried again with no card sets the SPI bus up once and
-  logs `no card` at I level once per try. It logged two E lines each try:
-  `spi_bus_initialize(802): SPI bus already initialized.` and
-  `sdmmc_card_init failed (0x107).`.
-- The link report's `nack` column is documented: it counts each NACK the
-  IOmcu answers, one per set-up value rejected from SETUP among them, and a
-  NACK is an answer, not a link fault
+- An SD card mount tried again with no card sets the SPI (Serial Peripheral
+  Interface) bus up once and logs `no card` at I (info) level once per try.
+  It logged two E (error) lines each try: `spi_bus_initialize(802): SPI bus
+  already initialized.` and `sdmmc_card_init failed (0x107).`.
+- The link report's `nack` column is documented: it counts each NACK
+  (negative acknowledgement) the IOmcu answers, one per set-up value
+  rejected from SETUP among them, and a NACK is an answer, not a link fault
   ([Bring-up](docs/Bringup.md#link-report)).
 - PD mini TX and PD mini RX on SETUP > INTERFACES step over the GPIO the
   other row holds, so the rows never set both to one pin: with RX on GP18,
@@ -98,19 +178,21 @@ history is in git.
   stays off.`. The rows took one pin for both, and the panel switched the
   supply off for it with the header still naming the pins.
 - The bench console build (`IOMCU_CONSOLE`) sends a line longer than the
-  free room of the USB transmit buffer in pieces, and its rest first. With
-  the SDK's 64-byte buffer a line of 65 bytes or more never left, and no
-  reply came after it. A pass never waits for the host. The IOmcu's own
-  `rcbench-iomcu:` lines go through the console's output in this build, so
-  none lands inside a reply, and the transmit buffer is 1,024 bytes.
+  free room of the USB (Universal Serial Bus) transmit buffer in pieces, and
+  its rest first. With the SDK's (software development kit) 64-byte buffer a
+  line of 65 bytes or more never left, and no reply came after it. A pass
+  never waits for the host. The IOmcu's own `rcbench-iomcu:` lines go
+  through the console's output in this build, so none lands inside a reply,
+  and the transmit buffer is 1,024 bytes.
 - docs/BenchConsole.md gives a D series read 117.2 us of lead, not 88 us:
-  88 us is asked, and the 13 bit times that pad the PIO stream to a word
-  make it longer; a write gets 89.0 us. `lead_ns` in `hitec line` runs from
-  the lead's first edge to the release of the line, the lead and every bit
-  time: 559,886 ns for a read, as the bench reports.
-- The Hitec D series wiring names the tested pull-up: 2.2 kOhm from the
-  signal wire to the servo supply, with which a D485HW answers every read.
-  With the RP2350 pad's pull-up alone it answers none.
+  88 us is asked, and the 13 bit times that pad the PIO (programmable
+  input/output) stream to a word make it longer; a write gets 89.0 us.
+  `lead_ns` in `hitec line` runs from the lead's first edge to the release
+  of the line, the lead and every bit time: 559,886 ns for a read, as the
+  bench reports.
+- The Hitec D series wiring names the tested pull-up: 2.2 kΩ from the signal
+  wire to the servo supply, with which a D485HW answers every read. With the
+  RP2350 pad's pull-up alone it answers none.
 
 ### Removed
 

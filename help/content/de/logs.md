@@ -14,6 +14,12 @@ LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die C
 
 Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-LOGS oder USER-LOGS unter [SETUP > SD-KARTE](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SETUP > SD-KARTE.` oder `USER-LOGS AUS unter SETUP > SD-KARTE.` AKTUALISIEREN liest die Karte erneut. Ohne Karte wechseln die Tabs wie mit Karte, und jeder Tipp auf einen Tab sucht erneut nach einer Karte.
 
+## Eine Karte, die sich nicht einbinden lässt
+
+![LOGS mit einer Karte ohne FAT-Volume](view:logs-nofat)
+
+Eine Karte im Steckplatz mit NTFS (New Technology File System), einer GPT (GUID-Partitionstabelle) oder ohne Format zeigt `Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` Eine Karte, die sich aus anderem Grund nicht einbinden lässt, zeigt `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` [Kartenformate](#kartenformate) sagt, was mountet und wie eine Karte formatiert wird. Formatieren löscht die Karte. AKTUALISIEREN bindet die wieder eingesetzte Karte ein.
+
 ## Die Dateiliste
 
 ![Die Dateiliste](view:logs)
@@ -130,6 +136,14 @@ Die Zeilen stehen gleichmäßig nach Zeilennummer. Die Beschriftungen unter der 
 ![Die Rückfrage von LÖSCHEN](view:logs-delete)
 
 LÖSCHEN öffnet eine Rückfrage, die die Datei und ihre Größe nennt. Nur ihr eigenes LÖSCHEN, auf dieser Taste gedrückt und losgelassen, entfernt die Datei. ABBRECHEN oder das Verlassen des Bildschirms löscht nichts. Der Lauf, den der Logger offen hat, wird abgelehnt.
+
+## Kartenformate
+
+Das Panel liest Karten mit FAT12, FAT16, FAT32 oder exFAT (extended File Allocation Table): die ganze Karte oder die erste der 4 Partitionen eines MBR (Master Boot Record), die eines davon trägt. SDHC-Karten (4 GB bis 32 GB) kommen mit FAT32, SDXC-Karten (64 GB bis 2 TB) mit exFAT; beide mounten so, wie sie kommen.
+
+- Nicht unterstützt: GPT-Partitionierung (GUID Partition Table; GUID: Globally Unique Identifier), Volumes über 2 TiB, NTFS, ext4, HFS+ und APFS. Eine solche Karte mountet nicht. Das Panel formatiert nie eine Karte.
+- Zum Formatieren dient der SD Memory Card Formatter der SD Association, oder am Rechner FAT32 oder exFAT auf einem MBR (unter macOS: Schema `Master Boot Record`).
+- Eine Datei ab 4 GiB auf einer exFAT-Karte steht mit ihrer Größe in der Liste, zum Beispiel `8.00 GB`. OPEN liest Dateien bis 2 GiB weniger 1 Byte; eine größere bleibt in der Liste, und OPEN meldet `BENCH001.CSV ist 2 GB oder größer. Nicht geöffnet.` [WLAN](wifi.md) lädt sie herunter.
 
 ## Verwandte Seiten
 

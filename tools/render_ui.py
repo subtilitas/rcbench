@@ -319,6 +319,8 @@ SCREENS = {
     "logs":       ("logs.png",       "logs",       "dark"),
     # No card mounted.
     "logs-nocard": ("logs-nocard.png", "logs", "dark"),
+    # A card in the slot with no FAT volume: exFAT, NTFS or unformatted.
+    "logs-nofat": ("logs-nofat.png", "logs", "dark"),
     # A card of 121 files, more than a page: the second page, PREV and NEXT
     # in the header row.
     "logs-pages": ("logs-pages.png", "logs", "dark"),

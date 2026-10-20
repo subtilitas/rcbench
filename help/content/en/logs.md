@@ -14,6 +14,12 @@ LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separat
 
 With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF in SETUP > SD CARD.` or `USER LOGS OFF in SETUP > SD CARD.` instead. RESCAN reads the card again. With no card the tabs switch as with one, and each tap on a tab looks for a card again.
 
+## A card that does not mount
+
+![LOGS with a card that holds no FAT volume](view:logs-nofat)
+
+A card in the slot that holds NTFS (New Technology File System), a GPT (GUID partition table) or no format reads `Card is neither FAT32 nor exFAT. Format it on a computer.` A card that does not mount for another reason reads `Cannot read the card. Check it on a computer, then tap RESCAN.` [Card formats](#card-formats) says what mounts and how to format a card. Formatting erases the card. RESCAN mounts the card put back.
+
 ## The file list
 
 ![The file list](view:logs)
@@ -130,6 +136,14 @@ The rows are spaced evenly by row number. The labels under the plot are the file
 ![The DELETE question](view:logs-delete)
 
 DELETE opens a question that names the file and its size. Only its own DELETE, pressed and released on that button, removes the file. CANCEL, or leaving the screen, deletes nothing. The run the logger has open is refused.
+
+## Card formats
+
+The panel reads cards formatted FAT12, FAT16, FAT32 or exFAT (extended File Allocation Table): the whole card, or the first of the 4 partitions of an MBR (master boot record) that holds one of them. SDHC cards (4 GB to 32 GB) come as FAT32, SDXC cards (64 GB to 2 TB) as exFAT; both mount as they come.
+
+- Not supported: GPT (GUID Partition Table; GUID: globally unique identifier) partitioning, volumes over 2 TiB, NTFS, ext4, HFS+ and APFS. Such a card does not mount. The panel never formats a card.
+- To format a card, use the SD Association's SD Memory Card Formatter, or on a computer FAT32 or exFAT on an MBR (on macOS: Scheme `Master Boot Record`).
+- A file of 4 GiB and more on an exFAT card is listed with its size, for example `8.00 GB`. OPEN reads files up to 2 GiB less 1 byte; a larger one stays on the list and OPEN says `BENCH001.CSV is 2 GB or larger. Not opened.` [Wi-Fi](wifi.md) downloads it.
 
 ## Related pages
 

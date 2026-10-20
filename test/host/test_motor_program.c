@@ -230,6 +230,27 @@ TEST_CASE(a_row_press_that_slides_off_or_is_cancelled_opens_nothing)
 /* ---------------------------------------------------------- the session */
 
 /*
+ * What MOTOR & ESC names to the router as a press that stops the bench is
+ * the session's while one is shown: DISARM on the rail on an armed bench
+ * without one, and nothing at DISARM's place under ESC STICK, whose own
+ * ABORT is named while a run is under way (test_esc_stick_panel.c).
+ */
+TEST_CASE(the_session_answers_for_what_stops_the_bench)
+{
+    fresh();
+    const ui_screen_t *scr = motor_screen();
+    motor_screen_set_armed(true);
+    CHECK(scr->safe_at(ARM_X, ARM_Y - UI_BAND_H));
+    motor_screen_set_armed(false);
+    CHECK(!scr->safe_at(ARM_X, ARM_Y - UI_BAND_H));
+    open_session();
+    CHECK(motor_screen_session_shown());
+    motor_screen_set_armed(true);
+    CHECK(!scr->safe_at(ARM_X, ARM_Y - UI_BAND_H));
+    motor_screen_set_armed(false);
+}
+
+/*
  * The session is full width: the tabs and the output card are gone, the
  * output strip is in the strip row, and no press reaches a tab or ARM.
  */
@@ -536,6 +557,7 @@ TEST_CASE(a_second_finger_on_the_list_does_not_take_the_row)
 int main(void)
 {
     RUN(program_lists_the_stick_menu_and_no_modelled_protocol);
+    RUN(the_session_answers_for_what_stops_the_bench);
     RUN(a_row_press_that_slides_off_or_is_cancelled_opens_nothing);
     RUN(a_full_width_session_shows_the_strip_not_the_card);
     RUN(the_strip_reads_the_target_the_supply_and_the_bench);

@@ -32,6 +32,7 @@
 #include "log_name.h"
 #include "settings.h"
 #include "ui_screen.h"
+#include "ui_card_text.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
@@ -191,6 +192,7 @@ static struct {
     int n_card;   /* what the volume holds; above n_files when paged */
     int first;    /* entries ahead of the page, in log_name_rank() order */
     int listed;   /* -1 no volume, 0 not read, 1 read     */
+    card_state_t card;  /* what the slot holds while listed is -1     */
     int sel;      /* highlighted file                     */
     int scroll;
     /* The card's name when the page was read: another name on RESCAN is
@@ -212,7 +214,7 @@ static struct {
      * delete the file it named, whatever happens to the list behind it.
      */
     char doomed[LOG_VIEWER_NAME_MAX];
-    uint32_t doomed_size;
+    uint64_t doomed_size;
     /* The one contact whose press on the question counts: the panel reports
      * up to five, and a second finger lifting off DELETE did not press it. */
     bool q_down;
@@ -368,6 +370,11 @@ int log_viewer_cursor(void)
     return s.have_data ? s.cursor : -1;
 }
 
+const char *log_viewer_message(void)
+{
+    return s.message;
+}
+
 void log_viewer_invalidate(void)
 {
     memset(s.valid, 0, sizeof(s.valid));
@@ -511,6 +518,7 @@ static void read_page(log_page_dir_t dir, const char *key)
     snprintf(s.volume, sizeof(s.volume), "%s", volume_now());
     if (s.io.list == NULL) {
         s.listed = -1;
+        s.card = CARD_STATE_NONE;
         log_viewer_invalidate();
         return;
     }
@@ -528,6 +536,8 @@ static void read_page(log_page_dir_t dir, const char *key)
         s.n_card = 0;
         s.first = 0;
         s.listed = -1;
+        /* After the list: it is what tries the mount again. */
+        s.card = (s.io.card != NULL) ? s.io.card(s.io.ctx) : CARD_STATE_NONE;
         log_viewer_invalidate();
         return;
     }
@@ -926,6 +936,12 @@ static void open_selected(void)
         set_message(TR(LOG_IS_FOLDER), s.files[s.sel].name);
         return;
     }
+    if (s.files[s.sel].size > LOG_VIEWER_OPEN_MAX) {
+        /* Past what the reader's seek reaches.  Said, not read in part:
+         * an import of the first 2 GiB would look like the whole run. */
+        set_message(TR(LOG_TOO_BIG), s.files[s.sel].name);
+        return;
+    }
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
     s.delim_index = -1;
@@ -936,9 +952,11 @@ static void open_selected(void)
 
 /* -------------------------------------------------------------- browse --- */
 
-static void fmt_size(char *out, size_t n, uint32_t bytes)
+void log_viewer_size_text(char *out, size_t n, uint64_t bytes)
 {
-    if (bytes >= 1024u * 1024u) {
+    if (bytes >= 1024ull * 1024u * 1024u) {
+        snprintf(out, n, "%.2f GB", (double)bytes / (1024.0 * 1024.0 * 1024.0));
+    } else if (bytes >= 1024ull * 1024u) {
         snprintf(out, n, "%.1f MB", (double)bytes / (1024.0 * 1024.0));
     } else if (bytes >= 1024u) {
         snprintf(out, n, "%u kB", (unsigned)(bytes / 1024u));
@@ -962,7 +980,7 @@ static void render_question(gfx_canvas_t *c)
 
     char size[16];
     char line[LOG_VIEWER_NAME_MAX + 24];
-    fmt_size(size, sizeof(size), s.doomed_size);
+    log_viewer_size_text(size, sizeof(size), s.doomed_size);
     snprintf(line, sizeof(line), "%s   %s", s.doomed, size);
     gfx_text_in(c, gfx_rect_make(box.x + 24, box.y + 44, box.w - 48, 20), line,
                 UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
@@ -1033,7 +1051,7 @@ static void render_bar(gfx_canvas_t *c)
 static void empty_lines(char *why, size_t n, const char **hint)
 {
     if (s.listed == -1) {
-        snprintf(why, n, "%s", TR(LOG_NO_CARD));
+        snprintf(why, n, "%s", ui_card_text(s.card, UI_CARD_AT_LOGS));
     } else if (s.tab == LOG_TAB_ROOT) {
         snprintf(why, n, "%s", TR(LOG_NO_CSV));
     } else {
@@ -1119,7 +1137,7 @@ static void render_browse(gfx_canvas_t *c)
                      on ? UI_TEXT : UI_TEXT_DIM, 1);
 
             char size[16];
-            fmt_size(size, sizeof(size), s.files[i].size);
+            log_viewer_size_text(size, sizeof(size), s.files[i].size);
             gfx_rect_t sz = gfx_rect_make(row.x + row.w - 132, row.y, 120, row.h);
             gfx_text_in(c, sz, s.files[i].is_dir ? TR(LOG_DIR) : size,
                         UI_FONT_LABEL,

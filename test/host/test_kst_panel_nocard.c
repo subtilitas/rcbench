@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "kst_panel_rig.h"
+#include "ui_card_text.h"
 
 /* ------------------------------------------------------------- with no card */
 
@@ -655,6 +656,94 @@ TEST_CASE(more_holds_verify_discard_and_release_pairing)
     CHECK_EQ(g_rig.sim.n_bad_writes, 0);
 }
 
+/*
+ * A card in the slot that does not mount -- not formatted as FAT32 or
+ * exFAT, or unreadable -- is named on every line that says "No card" for an
+ * empty slot: the write page's first line, the SERVO tab's note, FILES'
+ * message.
+ * What the programmer does is the same as with no card.
+ */
+TEST_CASE(a_card_that_does_not_mount_is_named_where_no_card_is_said)
+{
+    static const struct {
+        card_state_t state;
+        ui_text_id_t no_file, no_backup, write, files;
+    } k_case[] = {
+        { CARD_STATE_NO_FAT, TX_KP_NO_FILE_1_NO_FAT, TX_KP_NO_BACKUP_NO_FAT,
+          TX_KP_WRITE_NO_FAT, TX_KP_M_CARD_NO_FAT },
+        { CARD_STATE_UNREADABLE, TX_KP_NO_FILE_1_UNREADABLE,
+          TX_KP_NO_BACKUP_UNREADABLE, TX_KP_WRITE_UNREADABLE,
+          TX_KP_M_CARD_UNREADABLE },
+    };
+    for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
+        for (size_t c = 0; c < sizeof(k_case) / sizeof(k_case[0]); ++c) {
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            connected();
+            g_rig.card_state = (uint8_t)k_case[c].state;
+            card_out();
+            enable();
+            edits();
+            tap(val(PG_SERVO, 4, 0));
+            CHECK_EQ(kst_panel_editor(), 3);
+            CHECK(warns(ui_tr(k_case[c].no_file)));
+            CHECK(!warns(TR(KP_NO_FILE_1)));
+            CHECK(warns(TR(KP_NO_FILE_2)) && warns(TR(KP_NO_FILE_3)));
+            show();
+            hold(2.1f);
+            settle();
+            CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+            CHECK(kst_prog_no_file(M));
+            CHECK_EQ(g_rig.fc.saves, 0);
+            /* The SERVO tab's note, drawn. */
+            tap(kst_panel_tab_rect(PG_SERVO));
+            show();
+            CHECK(ui_card_text_id(k_case[c].state, UI_CARD_AT_KP_NO_BACKUP)
+                  == k_case[c].no_backup);
+
+            /* A write after the backup file was saved: only the record of
+             * the write stays in memory. */
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            connected();
+            enable();
+            edits();
+            tap(val(PG_SERVO, 4, 0));
+            hold(2.1f);
+            settle();
+            CHECK_EQ(g_rig.fc.saves, 1);
+            g_rig.card_state = (uint8_t)k_case[c].state;
+            card_out();
+            edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
+            if (!kst_prog_write_enabled(M)) {
+                enable();
+            }
+            tap(val(PG_SERVO, 4, 0));
+            CHECK_EQ(kst_panel_editor(), 3);
+            CHECK(warns(ui_tr(k_case[c].write)));
+            CHECK(!warns(TR(KP_WRITE_NO_CARD)));
+
+            /* FILES: the message names the card. */
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            connected();
+            g_rig.card_state = (uint8_t)k_case[c].state;
+            card_out();
+            tap(val(PG_SERVO, 1, 1));
+            CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
+            CHECK_STR_EQ(said(), ui_tr(k_case[c].files));
+            ui_text_set_language(UI_LANG_EN);
+        }
+    }
+    /* An empty slot keeps its words. */
+    fresh();
+    connected();
+    card_out();
+    tap(val(PG_SERVO, 1, 1));
+    CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
+    CHECK_STR_EQ(said(), TR(KP_M_CARD_NONE));
+}
+
 int main(void)
 {
     RUN(a_first_write_with_no_card_is_sent_after_its_page_says_so);
@@ -671,5 +760,6 @@ int main(void)
     RUN(the_backup_of_the_session_is_not_offered_for_another_servo);
     RUN(a_file_that_is_not_readable_is_said_and_not_used);
     RUN(more_holds_verify_discard_and_release_pairing);
+    RUN(a_card_that_does_not_mount_is_named_where_no_card_is_said);
     return test_summary("kst_panel_nocard");
 }

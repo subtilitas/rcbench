@@ -24,6 +24,7 @@
 #include "settings_screen.h"
 #include "splash_screen.h"
 #include "ui_band.h"
+#include "ui_card_text.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 
@@ -648,6 +649,51 @@ TEST_CASE(the_refused_frames_label_shows_only_a_count_above_zero)
     CHECK(!ui_link_refused_label(&st, out, 0u));
 }
 
+/*
+ * The card slot's words (ui_card_text.h): at every place, no card, a card
+ * not formatted as FAT32 or exFAT and an unreadable card are three
+ * different texts in each language; a mounted slot, and a state or place
+ * out of range, take the no-card text.  The no-FAT texts name FAT32 and
+ * exFAT in every language, and the no-card texts are the ones each place
+ * said before.
+ */
+TEST_CASE(the_card_slot_has_three_words_at_every_place)
+{
+    static const ui_text_id_t k_none[UI_CARD_AT_COUNT] = {
+        TX_LOG_NO_CARD, TX_SPLASH_NO_CARD, TX_ALERT_NO_CARD_RUN,
+        TX_ALERT_CARD_SERVO, TX_KP_WRITE_NO_CARD, TX_KP_NO_FILE_1,
+        TX_KP_NO_BACKUP_FILE, TX_KP_M_CARD_NONE,
+    };
+    for (int at = 0; at < (int)UI_CARD_AT_COUNT; ++at) {
+        const ui_card_at_t w = (ui_card_at_t)at;
+        const ui_text_id_t none = ui_card_text_id(CARD_STATE_NONE, w);
+        const ui_text_id_t fat = ui_card_text_id(CARD_STATE_NO_FAT, w);
+        const ui_text_id_t bad = ui_card_text_id(CARD_STATE_UNREADABLE, w);
+        CHECK_EQ(none, k_none[at]);
+        CHECK_EQ(ui_card_text_id(CARD_STATE_MOUNTED, w), none);
+        CHECK_EQ(ui_card_text_id((card_state_t)99, w), none);
+        CHECK(none != fat && fat != bad && none != bad);
+        for (int l = UI_LANG_EN; l <= UI_LANG_DE; ++l) {
+            const char *n = ui_tr_in((ui_lang_t)l, none);
+            const char *f = ui_tr_in((ui_lang_t)l, fat);
+            const char *b = ui_tr_in((ui_lang_t)l, bad);
+            CHECK(strcmp(n, f) != 0 && strcmp(f, b) != 0
+                  && strcmp(n, b) != 0);
+            CHECK(strstr(f, "FAT32") != NULL);
+            CHECK(strstr(f, "exFAT") != NULL);
+            CHECK(strchr(f, '%') == NULL && strchr(b, '%') == NULL);
+        }
+    }
+    CHECK_EQ(ui_card_text_id(CARD_STATE_NO_FAT, UI_CARD_AT_COUNT),
+             TX_LOG_NO_CARD);
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(ui_card_text(CARD_STATE_NO_FAT, UI_CARD_AT_SPLASH),
+                 "nicht FAT32/exFAT");
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(ui_card_text(CARD_STATE_UNREADABLE, UI_CARD_AT_SPLASH),
+                 "unreadable");
+}
+
 int main(void)
 {
     RUN(the_format_check_sees_what_is_read);
@@ -668,5 +714,6 @@ int main(void)
     RUN(every_bus_verdict_has_a_heading);
     RUN(a_makers_row_names_the_product);
     RUN(the_refused_frames_label_shows_only_a_count_above_zero);
+    RUN(the_card_slot_has_three_words_at_every_place);
     return test_summary("text");
 }

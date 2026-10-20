@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "card_state.h"
 #include "log_csv.h"
 #include "ui_screen.h"
 
@@ -40,9 +41,18 @@ extern "C" {
 #define LOG_VIEWER_MAX_FILES 48
 #define LOG_VIEWER_NAME_MAX  64
 
+/*
+ * The largest file OPEN reads: 2 GiB less 1 byte.  The panel reads a file
+ * through stdio, whose fseek() and ftell() take a long of 32 bits.  A
+ * larger file, which an exFAT (extended File Allocation Table) card or a
+ * FAT32 one up to 4 GiB less 1 byte holds, is listed with its size and
+ * refused at OPEN with TX_LOG_TOO_BIG.
+ */
+#define LOG_VIEWER_OPEN_MAX 0x7FFFFFFFull
+
 typedef struct {
     char name[LOG_VIEWER_NAME_MAX];
-    uint32_t size;
+    uint64_t size;      /* bytes; 64-bit, as exFAT's */
     bool is_dir;
 } log_viewer_file_t;
 
@@ -135,6 +145,12 @@ typedef struct {
      * looked, so the run just recorded is on screen.
      */
     unsigned (*written)(log_viewer_tab_t *tab, void *ctx);
+    /**
+     * What the slot holds, asked after a list() that found no volume: the
+     * empty list then says no card, a card neither FAT32 nor exFAT, or a
+     * card that cannot be read.  May be NULL: no card.
+     */
+    card_state_t (*card)(void *ctx);
     void *ctx;
 } log_viewer_io_t;
 
@@ -186,6 +202,16 @@ gfx_color_t log_viewer_series_color(int k);
 
 /** The sample the cursor is on, or -1 with nothing plotted. */
 int log_viewer_cursor(void);
+
+/**
+ * A file's size as the list and the DELETE question write it into @p out
+ * (@p n bytes): "300 B", "4 kB", "3.0 MB" from 1 MiB, "8.00 GB" from 1 GiB.
+ * The units are binary: 1 kB is 1024 bytes, 1 GB 1024^3.
+ */
+void log_viewer_size_text(char *out, size_t n, uint64_t bytes);
+
+/** The browse view's footer message, "" for none. */
+const char *log_viewer_message(void);
 
 /**
  * The range of a numeric column as the import view writes it into @p out

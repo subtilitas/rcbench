@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include "esp_crt_bundle.h"
@@ -295,17 +294,19 @@ static int card_readdir(void *ctx, void *dir, wa_dirent_t *out)
         d->path[d->len] = '/';
         memcpy(d->path + d->len + 1u, e->d_name, nl);
         d->path[d->len + 1u + nl] = '\0';
-        struct stat st;
-        const int r = stat(d->path, &st);
+        /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads
+         * an exFAT file of 4 GiB and more as a small one. */
+        storage_stat_t st;
+        const esp_err_t r = storage_stat(d->path, &st);
         d->path[d->len] = '\0';
-        if (r != 0) {
+        if (r != ESP_OK) {
             return -1;
         }
         memset(out, 0, sizeof(*out));
         memcpy(out->name, e->d_name, nl);
-        out->dir = S_ISDIR(st.st_mode);
-        out->size = out->dir ? 0u : (uint64_t)st.st_size;
-        out->mtime = (int64_t)st.st_mtime;
+        out->dir = st.is_dir;
+        out->size = st.size;
+        out->mtime = st.mtime;
         return 1;
     }
 }
@@ -676,18 +677,18 @@ static esp_err_t h_file(httpd_req_t *r)
         return refused(r, "400 Bad Request");
     }
     char full[sizeof(STORAGE_MOUNT_POINT) + WA_PATH_MAX + 2u];
-    struct stat st;
+    storage_stat_t st;
     if (!storage_mounted() || card_path(full, sizeof(full), path) == 0u
-        || stat(full, &st) != 0 || !S_ISREG(st.st_mode)) {
+        || storage_stat(full, &st) != ESP_OK || st.is_dir) {
         req_end();
         return refused(r, "404 Not Found");
     }
     wa_send_t *snd = &b->snd;
-    if (!wa_send_begin(snd, &k_card, path, (uint64_t)st.st_size)) {
+    if (!wa_send_begin(snd, &k_card, path, st.size)) {
         req_end();
         return refused(r, "404 Not Found");
     }
-    bool ok = raw_head(r, (uint64_t)st.st_size, wa_basename(path));
+    bool ok = raw_head(r, st.size, wa_basename(path));
     while (ok) {
         const int32_t got = wa_send_next(snd, b->io, sizeof(b->io));
         if (got == 0) {

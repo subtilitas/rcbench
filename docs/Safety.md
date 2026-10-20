@@ -339,7 +339,12 @@ reads the state and shows the alert, is not in the coverage figure.
   decides it. A screen is handed a move or a release only for a contact whose
   press it was handed. A contact that comes down on the status band (the top
   48 px) or on the alert band is the router's until it lifts, wherever it
-  travels. A contact that was down when the screen changed or when touch
+  travels. The exception is a press on a control that stops what the bench
+  drives -- DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST, STOP RUN --
+  which the screen names to the router (`safe_at` in ui_screen.h): under the
+  alert band or with a chip's help box open it is the screen's, and the band
+  or the box closes. ARM is never named, so a press on ARM under either
+  starts no hold. A contact that was down when the screen changed or when touch
   events were lost is nobody's until it lifts and comes down again. A contact
   the screen owns that reaches the status band is released for the screen at
   the last point the screen was handed, and is the router's from there: a

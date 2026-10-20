@@ -28,6 +28,7 @@
 #include "log_writer.h"
 #include "panel.h"
 #include "storage.h"
+#include "ui_card_text.h"
 #include "ui_text.h"
 
 static const char *TAG = "rcbench";
@@ -402,7 +403,8 @@ static void log_open(uint32_t run, log_run_kind_t kind)
         ESP_LOGW(TAG, "no log file (take %d); this run is not recorded",
                  (int)r);
         take_alert(r, dir,
-                   (r == LOG_TAKE_NO_CARD)      ? TR(ALERT_NO_CARD_RUN)
+                   (r == LOG_TAKE_NO_CARD)
+                       ? ui_card_text(storage_card_state(), UI_CARD_AT_RUN)
                    : (r == LOG_TAKE_UNREADABLE) ? TR(ALERT_CARD_UNREADABLE)
                                                 : TR(ALERT_CARD_FULL));
         return;
@@ -542,7 +544,11 @@ static void test_open(bool txt)
         s_test_num = number;
     } else {
         s_test_fp = NULL;
-        take_alert(r, s_test_dir, TR(ALERT_CARD_SERVO));
+        /* "Card missing or full" for every other way to no file. */
+        take_alert(r, s_test_dir,
+                   (r == LOG_TAKE_NO_CARD)
+                       ? ui_card_text(storage_card_state(), UI_CARD_AT_TEST)
+                       : TR(ALERT_CARD_SERVO));
     }
     atomic_store(&s_test_file, s_test_num);
     atomic_fetch_add(&s_test_opens_done, 1u);
@@ -619,14 +625,19 @@ static int32_t note_size(void *ctx, const char *path)
     (void)ctx;
     char full[NOTE_PATH_MAX];
     take_path(path, NULL, full, sizeof(full));
-    struct stat st;
-    if (stat(full, &st) != 0) {
-        return (errno == ENOENT) ? FAULT_SIZE_NONE : FAULT_SIZE_UNREAD;
+    /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads a
+     * file of 4 GiB and more as a small one, which the cap would let grow. */
+    storage_stat_t st;
+    const esp_err_t err = storage_stat(full, &st);
+    if (err != ESP_OK) {
+        return (err == ESP_ERR_NOT_FOUND) ? FAULT_SIZE_NONE
+                                          : FAULT_SIZE_UNREAD;
     }
-    if (S_ISDIR(st.st_mode)) {
+    if (st.is_dir) {
         return FAULT_SIZE_UNREAD;    /* a folder holds the name */
     }
-    return (st.st_size > INT32_MAX) ? INT32_MAX : (int32_t)st.st_size;
+    /* INT32_MAX for a larger file, as fault_log.h's size() asks. */
+    return (st.size > (uint64_t)INT32_MAX) ? INT32_MAX : (int32_t)st.size;
 }
 
 static bool note_remove(void *ctx, const char *path)

@@ -152,6 +152,7 @@ SCREEN_CALLS = {
     "router_hand": ("event",),
     "router_back": ("back", "hold"),
     "ui_router_cancel_gestures": ("cancel",),
+    "router_safe_at": ("safe_at",),
     "ui_router_render": ("render",),
 }
 
@@ -221,6 +222,7 @@ PROG_CALLS = {
     "prog_ps_leave": ("kst_panel_leave", "esc_stick_ps_leave"),
     "prog_ps_cancel": ("kst_panel_cancel", "esc_stick_ps_cancel"),
     "prog_ps_pin": ("kst_panel_pin", "esc_stick_ps_pin"),
+    "prog_ps_safe_at": ("kst_panel_safe_at", "esc_stick_ps_safe_at"),
 }
 
 # The card callbacks of shared/logfile, on the runlog task: the files of a
