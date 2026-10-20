@@ -222,7 +222,7 @@ void servo_sense_read(void *ctx, uint8_t off, uint8_t n,
  * SENSE_MAP: judged by the page against the bank and the pins SENSE's would
  * be, then, when it moved, the bus set up again as a SENSE write does it
  * and the map saved.  A change of WATCH alone is saved and leaves core 1 as
- * it is.
+ * it is; IDENTITY's capabilities follow any change taken.
  */
 void sense_map_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
@@ -247,11 +247,12 @@ uint8_t sense_map_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
     }
     if (s_sense.cfg_gen != gen) {
         reserve_held();
-        capabilities_update();
         sense_order();
     }
     if (s_sense.cfg_gen != gen || !was_set
         || memcmp(was, s_sense.map, sizeof(was)) != 0) {
+        /* A WATCH alone moves IDENTITY's SERVO_SENSE bit as well. */
+        capabilities_update();
         save_outputs(&s_state);
     }
     return 0u;

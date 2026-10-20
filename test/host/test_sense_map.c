@@ -420,6 +420,12 @@ TEST_CASE(every_channels_window_is_published_on_two_pages)
     s.win[1].clip_hi = true;
     s.win[9].clip_lo = true;
     s.win[11].i_mean_ua = -2000;
+    /* 0x42 gave samples early in the window and went offline before it
+     * closed: its channels read 0 all the same. */
+    s.win[7].n_i = 3u;
+    s.win[7].i_mean_ua = 70000;
+    s.win[7].i_max_ua = 90000;
+    s.win[7].clip_hi = true;
     sense_page_publish(&pg, &s, 0u);
     CHECK_EQ(mreg(LINK_SM_FLAGS),
              (uint16_t)(LINK_SM_ONLINE(0u) | LINK_SM_ONLINE(1u)
@@ -445,9 +451,10 @@ TEST_CASE(every_channels_window_is_published_on_two_pages)
              (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE
                         | LINK_SX_E_CLIP_HI));
     CHECK_EQ(a[LINK_SX_E(5u, LINK_SX_E_MEAN_MA)], 60u);
-    /* Channel 6, 0x42's CH1: not online, 0 throughout. */
+    /* Channels 6 to 8, 0x42's: not online, 0 throughout. */
     for (unsigned r = 0; r < LINK_SX_E_STRIDE; ++r) {
         CHECK_EQ(b[LINK_SX_E(0u, r)], 0u);
+        CHECK_EQ(b[LINK_SX_E(1u, r)], 0u);
         CHECK_EQ(b[LINK_SX_E(2u, r)], 0u);
     }
     CHECK_EQ(b[LINK_SX_E(3u, LINK_SX_E_FLAGS)],
