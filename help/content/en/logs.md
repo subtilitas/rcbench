@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder, shows what the import found in one, and plots up to 4 of its columns. Three tabs at the top left choose the folder: USER (User log folder, `USER/LOGS` by default), BENCH (Auto log folder, `BENCH/LOGS` by default) and ROOT (the card's root). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
+LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder, shows what the import found in one, and plots up to 4 of its columns. Three tabs at the top left choose the folder, in this order: ROOT (the card's root), USER (User log folder, `USER/LOGS` by default) and BENCH (Auto log folder, `BENCH/LOGS` by default). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
 
 ## No card
 
@@ -24,13 +24,13 @@ A card in the slot that holds NTFS (New Technology File System), a GPT (GUID par
 
 ![The file list](view:logs)
 
-The header names the card by its volume label and the folder on screen, `UNITEST  BENCH/LOGS`; a card without a label shows the name the card reports, or `SD CARD`. Each row is one file with its size.
+The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and names the card by its volume label, `UNITEST`, at the right end of the row; a card without a label shows the name the card reports, or `SD CARD`. Each row is one file with its size.
 
 | Tab | Folder | Holds |
 |---|---|---|
+| ROOT | the card's root | the runs of firmware 0.21.0 and older |
 | USER | User log folder, `USER/LOGS` by default | the AUTOMATIC TEST's and the LIMIT RUN's files |
 | BENCH | Auto log folder, `BENCH/LOGS` by default | the automatic log of each ARMED and supply run |
-| ROOT | the card's root | the runs of firmware 0.21.0 and older |
 
 LOGS opens on the tab of the file the panel wrote last, and on BENCH after a start until one is written. Back on LOGS with nothing written since, the tab stays as it was left. A tap on a tab reads its folder from the first page.
 
