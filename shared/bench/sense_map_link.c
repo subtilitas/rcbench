@@ -53,6 +53,7 @@ void sense_map_link_lost(sense_map_link_t *s)
     s->refused = false;
     s->reread  = false;
     s->pending = SENSE_MAP_LINK_OP_NONE;
+    s->told    = false;
     forget_reads(s, 0u);
     /* What the IOmcu that went said is about a page nobody reads now; a
      * dark part is the settings' and stands. */
@@ -310,10 +311,11 @@ bool sense_map_link_take_reread(sense_map_link_t *s)
     return true;
 }
 
-uint8_t sense_map_link_event(sense_map_link_t *s, uint8_t *part,
-                             uint16_t *id)
+uint8_t sense_map_link_event(sense_map_link_t *s, uint32_t now_ms,
+                             uint8_t *part, uint16_t *id)
 {
-    if (s == NULL) {
+    if (s == NULL || (s->told && (uint32_t)(now_ms - s->told_ms)
+                                     < SENSE_MAP_LINK_EVENT_GAP_MS)) {
         return 0u;
     }
     for (unsigned i = 0u; i < 4u; ++i) {
@@ -344,20 +346,39 @@ uint8_t sense_map_link_event(sense_map_link_t *s, uint8_t *part,
         if (id != NULL) {
             *id = (a < LINK_SM_PARTS) ? s->ids[a] : 0u;
         }
+        s->told    = true;
+        s->told_ms = now_ms;
         return k_ev[i];
     }
     return 0u;
 }
 
+bool sense_map_link_event_stands(const sense_map_link_t *s, uint8_t ev,
+                                 uint8_t part)
+{
+    if (s == NULL || part >= LINK_SM_PARTS) {
+        return false;
+    }
+    const uint8_t bit = (uint8_t)(1u << part);
+    switch (ev) {
+    case SENSE_MAP_LINK_EV_REFUSED:
+        return s->up && s->refused;
+    case SENSE_MAP_LINK_EV_DARK:
+        /* A dark map is the settings' and holds whatever answers. */
+        return (s->dark & bit) != 0u;
+    case SENSE_MAP_LINK_EV_SILENT:
+    case SENSE_MAP_LINK_EV_WRONG:
+        /* About the IOmcu that answered; a link gone since took it. */
+        return s->up && (s->want[LINK_SM_ENABLE] & bit) != 0u;
+    default:
+        return false;
+    }
+}
+
 void sense_map_link_event_back(sense_map_link_t *s, uint8_t ev,
                                uint8_t part)
 {
-    if (s == NULL || ev == 0u || part >= LINK_SM_PARTS) {
-        return;
-    }
-    /* A dark map is the settings' and holds whatever answers; the rest is
-     * about the IOmcu that answered, and a link gone since took it. */
-    if (!s->up && ev != SENSE_MAP_LINK_EV_DARK) {
+    if (!sense_map_link_event_stands(s, ev, part)) {
         return;
     }
     uint8_t parts = 0u;
@@ -375,19 +396,20 @@ static sens_part_t old_part(const sense_link_t *sl, uint32_t now_ms)
     if (sl == NULL || !sl->up || !sl->page || !sl->known) {
         return SENS_PART_UNKNOWN;
     }
-    const uint16_t f = sense_link_flags(sl);
-    if ((f & LINK_SN_I3221_ONLINE) != 0u) {
-        return SENS_PART_ONLINE;
-    }
-    if ((f & LINK_SN_I3221_ID_WRONG) != 0u) {
-        return SENS_PART_WRONG;
-    }
+    /* A frame not written yet first: the flags are the old frame's. */
     const uint16_t rows = (uint16_t)(SENSE_LINK_ROW_I3221
                                      | SENSE_LINK_ROW_I3221_ADDR
                                      | SENSE_LINK_ROW_I3221_SHUNT
                                      | SENSE_LINK_ROW_I3221_CH);
     if ((sense_link_unheld(sl) & rows) != 0u) {
         return sl->refused_i3221 ? SENS_PART_REFUSED : SENS_PART_PENDING;
+    }
+    const uint16_t f = sense_link_flags(sl);
+    if ((f & LINK_SN_I3221_ONLINE) != 0u) {
+        return SENS_PART_ONLINE;
+    }
+    if ((f & LINK_SN_I3221_ID_WRONG) != 0u) {
+        return SENS_PART_WRONG;
     }
     return ((uint32_t)(now_ms - sl->setup_ms) >= SENSE_LINK_GRACE_MS)
                ? SENS_PART_SILENT : SENS_PART_SEARCHING;

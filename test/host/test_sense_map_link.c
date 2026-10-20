@@ -108,6 +108,15 @@ static void map_poll(void)
     now += 50u;
 }
 
+/* The next event, on a clock of its own a gap on from the last call: the
+ * gap is tested on its own (each_event_has_the_band_for_its_gap). */
+static uint32_t ev_clock;
+static uint8_t take_event(uint8_t *part, uint16_t *id)
+{
+    ev_clock += SENSE_MAP_LINK_EVENT_GAP_MS;
+    return sense_map_link_event(&ml, ev_clock, part, id);
+}
+
 static void map_polls(int n)
 {
     for (int i = 0; i < n; ++i) {
@@ -256,15 +265,15 @@ TEST_CASE(a_refused_map_is_said_once_and_asked_again_after_an_edit)
     CHECK_EQ(w0, 1u);
     uint8_t part = 9u;
     uint16_t id = 1u;
-    CHECK_EQ(sense_map_link_event(&ml, &part, &id), SENSE_MAP_LINK_EV_REFUSED);
+    CHECK_EQ(take_event(&part, &id), SENSE_MAP_LINK_EV_REFUSED);
     CHECK_EQ(part, 0u);
-    CHECK_EQ(sense_map_link_event(&ml, &part, &id), 0u);
+    CHECK_EQ(take_event(&part, &id), 0u);
     CHECK_EQ(sense_map_link_part(&ml, &sl, 0u, 0u, now), SENS_PART_REFUSED);
     map_polls(40);
     CHECK_EQ(fm_writes, w0);
     /* Put back unseen: handed out again. */
     sense_map_link_event_back(&ml, SENSE_MAP_LINK_EV_REFUSED, 0u);
-    CHECK_EQ(sense_map_link_event(&ml, NULL, NULL), SENSE_MAP_LINK_EV_REFUSED);
+    CHECK_EQ(take_event(NULL, NULL), SENSE_MAP_LINK_EV_REFUSED);
     /* The same map again is no edit. */
     sense_map_want_t w = map_of(0x01u);
     sense_map_link_want(&ml, &w, now);
@@ -290,7 +299,7 @@ TEST_CASE(a_dark_part_is_said_and_no_map_is_written)
     w.dark = 0x04u | 0x02u;                     /* 0x41 is not fitted */
     sense_map_link_want(&ml, &w, now);
     uint8_t part = 0u;
-    CHECK_EQ(sense_map_link_event(&ml, &part, NULL), SENSE_MAP_LINK_EV_DARK);
+    CHECK_EQ(take_event(&part, NULL), SENSE_MAP_LINK_EV_DARK);
     CHECK_EQ(part, 2u);
     CHECK_EQ(ml.dark, 0x04u);
     map_polls(40);
@@ -298,7 +307,7 @@ TEST_CASE(a_dark_part_is_said_and_no_map_is_written)
     CHECK_EQ(sense_map_link_part(&ml, &sl, 2u, 0u, now), SENS_PART_DARK);
     /* Said once per edit: the same map says nothing more. */
     sense_map_link_want(&ml, &w, now);
-    CHECK_EQ(sense_map_link_event(&ml, NULL, NULL), 0u);
+    CHECK_EQ(take_event(NULL, NULL), 0u);
     /* A channel on again: written. */
     w.regs[LINK_SM_SHUNT(8)] = 50u;
     w.dark = 0x02u;
@@ -391,10 +400,98 @@ TEST_CASE(a_queued_part_event_goes_with_its_reads)
     map_polls(12);
     uint8_t part = 9u;
     uint16_t id = 0u;
-    CHECK_EQ(sense_map_link_event(&ml, &part, &id), SENSE_MAP_LINK_EV_WRONG);
+    CHECK_EQ(take_event(&part, &id), SENSE_MAP_LINK_EV_WRONG);
     CHECK_EQ(part, 2u);
     CHECK_EQ(id, 0x1234u);
-    CHECK_EQ(sense_map_link_event(&ml, &part, &id), 0u);
+    CHECK_EQ(take_event(&part, &id), 0u);
+}
+
+/* An older IOmcu's part with an edit not written yet says so, not the
+ * old frame's ONLINE: the flags are about the shunt it held. */
+TEST_CASE(an_older_iomcus_part_waits_for_its_frame_before_online)
+{
+    map_fresh(24u, 0x01u);
+    sense_setup_t w = setup_default();
+    w.i3221 = true;
+    w.i3221_addr = 0x40u;
+    w.i3221_dmohm = 1000u;
+    w.i3221_ch = 0x01u;
+    want(&w);
+    polls(40);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I3221_ONLINE);
+    polls(20);
+    CHECK_EQ(sense_map_link_part(&ml, &sl, 0u, 0u, now), SENS_PART_ONLINE);
+    idle = false;
+    w.i3221_dmohm = 500u;
+    want(&w);
+    polls(20);
+    CHECK_EQ(sense_map_link_part(&ml, &sl, 0u, 0u, now), SENS_PART_PENDING);
+    idle = true;
+    polls(40);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I3221_ONLINE);
+    polls(20);
+    CHECK_EQ(sense_map_link_part(&ml, &sl, 0u, 0u, now), SENS_PART_ONLINE);
+}
+
+/* Two parts not answering in one read: each has the band for the gap
+ * before the next is handed out. */
+TEST_CASE(each_event_has_the_band_for_its_gap)
+{
+    map_fresh(25u, 0x0Du);
+    map_polls(4);
+    fm[LINK_SM_FLAGS] = (uint16_t)(LINK_SM_IN_FORCE | LINK_SM_ID_WRONG(2)
+                                   | LINK_SM_ID_WRONG(3));
+    map_polls(12);
+    uint8_t part = 9u;
+    const uint32_t t = ev_clock + SENSE_MAP_LINK_EVENT_GAP_MS;
+    CHECK_EQ(sense_map_link_event(&ml, t, &part, NULL), SENSE_MAP_LINK_EV_WRONG);
+    CHECK_EQ(part, 2u);
+    CHECK_EQ(sense_map_link_event(&ml, t + SENSE_MAP_LINK_EVENT_GAP_MS - 1u,
+                                  &part, NULL), 0u);
+    CHECK_EQ(sense_map_link_event(&ml, t + SENSE_MAP_LINK_EVENT_GAP_MS,
+                                  &part, NULL), SENSE_MAP_LINK_EV_WRONG);
+    CHECK_EQ(part, 3u);
+    ev_clock = t + SENSE_MAP_LINK_EVENT_GAP_MS;
+    CHECK_EQ(sense_map_link_event(NULL, 0u, NULL, NULL), 0u);
+}
+
+/* An event stands while its cause does: a refusal until the next map, a
+ * dark part until a shunt is on, a part's reads while it is fitted and
+ * the link answers.  One that no longer stands is not put back. */
+TEST_CASE(an_event_stands_while_its_cause_does)
+{
+    map_fresh(25u, 0x01u);
+    fm_drives = true;
+    map_polls(4);
+    CHECK(sense_map_link_event_stands(&ml, SENSE_MAP_LINK_EV_REFUSED, 0u));
+    CHECK_EQ(take_event(NULL, NULL), SENSE_MAP_LINK_EV_REFUSED);
+    fm_drives = false;
+    sense_map_want_t w = map_of(0x03u);
+    for (unsigned c = 3u; c < 6u; ++c) {
+        w.regs[LINK_SM_SHUNT(c)] = 0u;
+    }
+    w.dark = 0x02u;
+    sense_map_link_want(&ml, &w, now);
+    CHECK(!sense_map_link_event_stands(&ml, SENSE_MAP_LINK_EV_REFUSED, 0u));
+    sense_map_link_event_back(&ml, SENSE_MAP_LINK_EV_REFUSED, 0u);
+    CHECK(sense_map_link_event_stands(&ml, SENSE_MAP_LINK_EV_DARK, 1u));
+    CHECK(!sense_map_link_event_stands(&ml, SENSE_MAP_LINK_EV_DARK, 0u));
+    CHECK_EQ(take_event(NULL, NULL), SENSE_MAP_LINK_EV_DARK);
+    CHECK_EQ(take_event(NULL, NULL), 0u);
+    /* The shunt back on: the dark alert no longer stands. */
+    w.regs[LINK_SM_SHUNT(3)] = 1000u;
+    w.dark = 0u;
+    sense_map_link_want(&ml, &w, now);
+    CHECK(!sense_map_link_event_stands(&ml, SENSE_MAP_LINK_EV_DARK, 1u));
+    sense_map_link_event_back(&ml, SENSE_MAP_LINK_EV_DARK, 1u);
+    CHECK_EQ(take_event(NULL, NULL), 0u);
+    CHECK(sense_map_link_event_stands(&ml, SENSE_MAP_LINK_EV_SILENT, 1u));
+    CHECK(!sense_map_link_event_stands(&ml, SENSE_MAP_LINK_EV_SILENT, 2u));
+    CHECK(!sense_map_link_event_stands(&ml, 0x80u, 0u));
+    CHECK(!sense_map_link_event_stands(&ml, SENSE_MAP_LINK_EV_WRONG, 4u));
+    CHECK(!sense_map_link_event_stands(NULL, SENSE_MAP_LINK_EV_WRONG, 0u));
+    sense_map_link_lost(&ml);
+    CHECK(!sense_map_link_event_stands(&ml, SENSE_MAP_LINK_EV_SILENT, 1u));
 }
 
 /* No sensor bus: SENSE clears its pins, so the map enables no part and
@@ -419,7 +516,7 @@ TEST_CASE(no_sensor_bus_takes_every_part_out)
     /* A dark part without a bus is not written either way: no event. */
     uint8_t part = 0u;
     uint16_t id = 0u;
-    CHECK_EQ(sense_map_link_event(&ml, &part, &id), 0u);
+    CHECK_EQ(take_event(&part, &id), 0u);
     w.nobus = false;
     sense_map_link_want(&ml, &w, now);
     map_polls(20);
@@ -465,16 +562,16 @@ TEST_CASE(a_part_not_answering_or_answering_wrong_is_said_once)
     map_polls(12);
     uint8_t part = 0u;
     uint16_t id = 0u;
-    CHECK_EQ(sense_map_link_event(&ml, &part, &id), SENSE_MAP_LINK_EV_WRONG);
+    CHECK_EQ(take_event(&part, &id), SENSE_MAP_LINK_EV_WRONG);
     CHECK_EQ(part, 3u);
     CHECK_EQ(id, 0x2260u);
     CHECK_EQ(sense_map_link_part(&ml, &sl, 3u, 0u, now), SENS_PART_WRONG);
-    CHECK_EQ(sense_map_link_event(&ml, NULL, NULL), 0u);
+    CHECK_EQ(take_event(NULL, NULL), 0u);
     /* After SENSE_LINK_GRACE_MS: 0x41 and 0x40 not online.  0x41 said. */
     map_polls(50);
-    CHECK_EQ(sense_map_link_event(&ml, &part, NULL), SENSE_MAP_LINK_EV_SILENT);
+    CHECK_EQ(take_event(&part, NULL), SENSE_MAP_LINK_EV_SILENT);
     CHECK_EQ(part, 1u);
-    CHECK_EQ(sense_map_link_event(&ml, NULL, NULL), 0u);
+    CHECK_EQ(take_event(NULL, NULL), 0u);
     CHECK_EQ(sense_map_link_part(&ml, &sl, 1u, 0u, now), SENS_PART_SILENT);
     CHECK_EQ(sense_map_link_part(&ml, &sl, 0u, 0u, now), SENS_PART_SILENT);
     /* Online: the state says so, and stopping again is said again. */
@@ -483,12 +580,12 @@ TEST_CASE(a_part_not_answering_or_answering_wrong_is_said_once)
     map_polls(12);
     CHECK_EQ(sense_map_link_part(&ml, &sl, 1u, 0u, now), SENS_PART_ONLINE);
     CHECK_EQ(sense_map_link_part(&ml, &sl, 3u, 0u, now), SENS_PART_ONLINE);
-    CHECK_EQ(sense_map_link_event(&ml, NULL, NULL), 0u);
+    CHECK_EQ(take_event(NULL, NULL), 0u);
     fm[LINK_SM_FLAGS] = (uint16_t)(LINK_SM_IN_FORCE | LINK_SM_ONLINE(3));
     map_polls(12);
-    CHECK_EQ(sense_map_link_event(&ml, &part, NULL), SENSE_MAP_LINK_EV_SILENT);
+    CHECK_EQ(take_event(&part, NULL), SENSE_MAP_LINK_EV_SILENT);
     CHECK_EQ(part, 1u);
-    CHECK_EQ(sense_map_link_event(&ml, NULL, NULL), 0u);
+    CHECK_EQ(take_event(NULL, NULL), 0u);
     /* The status word: 4 bits a part. */
     const uint16_t word = sense_map_link_status(&ml, &sl, 0u, now);
     CHECK_EQ(SENS_PART_OF(word, 1u), SENS_PART_SILENT);
@@ -503,11 +600,11 @@ TEST_CASE(a_silent_part_that_answers_before_the_band_is_not_said)
     map_polls(60);                              /* past the grace */
     fm[LINK_SM_FLAGS] = (uint16_t)(LINK_SM_IN_FORCE | LINK_SM_ONLINE(1));
     map_polls(12);
-    CHECK_EQ(sense_map_link_event(&ml, NULL, NULL), 0u);
+    CHECK_EQ(take_event(NULL, NULL), 0u);
     /* A link lost drops what it said; one put back after is not kept. */
     sense_map_link_lost(&ml);
     sense_map_link_event_back(&ml, SENSE_MAP_LINK_EV_SILENT, 1u);
-    CHECK_EQ(sense_map_link_event(&ml, NULL, NULL), 0u);
+    CHECK_EQ(take_event(NULL, NULL), 0u);
     CHECK_EQ(sense_map_link_status(&ml, &sl, 0u, now), 0u);
 }
 
@@ -701,6 +798,9 @@ int main(void)
     RUN(a_dark_part_is_said_and_no_map_is_written);
     RUN(a_part_on_the_ina228s_address_is_left_out);
     RUN(no_sensor_bus_takes_every_part_out);
+    RUN(each_event_has_the_band_for_its_gap);
+    RUN(an_older_iomcus_part_waits_for_its_frame_before_online);
+    RUN(an_event_stands_while_its_cause_does);
     RUN(the_map_is_held_once_the_page_holds_it);
     RUN(a_dark_part_says_so_on_an_older_iomcu);
     RUN(a_queued_part_event_goes_with_its_reads);

@@ -62,6 +62,8 @@ extern "C" {
 #define SENSE_MAP_LINK_SETTLE_MS SENSE_LINK_SETTLE_MS
 /** The page's IDs and FLAGS are read this often while a part is fitted. */
 #define SENSE_MAP_LINK_READ_MS 500u
+/** An event handed out has the alert band this long before the next. */
+#define SENSE_MAP_LINK_EVENT_GAP_MS SENSE_LINK_EVENT_GAP_MS
 
 #define SENSE_MAP_LINK_ACK       SENSE_LINK_ACK
 #define SENSE_MAP_LINK_NO_ANSWER SENSE_LINK_NO_ANSWER
@@ -153,6 +155,8 @@ typedef struct {
     bool     online_seen[LINK_SM_PARTS];
     uint8_t  ev_parts[4];     /**< per event bit, the parts it names        */
     uint8_t  events;
+    bool     told;            /**< an event was handed out at told_ms       */
+    uint32_t told_ms;
 } sense_map_link_t;
 
 void sense_map_link_init(sense_map_link_t *s);
@@ -192,14 +196,22 @@ bool sense_map_link_held(const sense_map_link_t *s);
 bool sense_map_link_take_reread(sense_map_link_t *s);
 
 /** The events since the last call, SENSE_MAP_LINK_EV_*, the lowest bit
- *  first, one at a time; 0 for none.  @p part is the lowest part it names,
- *  0 to 3 (0 for REFUSED), with its ID for WRONG in @p id.  SILENT and
- *  WRONG are handed out a part at a time. */
-uint8_t sense_map_link_event(sense_map_link_t *s, uint8_t *part,
-                             uint16_t *id);
+ *  first, one at a time; 0 for none, and 0 while the last one handed out
+ *  is younger than SENSE_MAP_LINK_EVENT_GAP_MS at @p now_ms.  @p part is
+ *  the lowest part it names, 0 to 3 (0 for REFUSED), with its ID for WRONG
+ *  in @p id.  SILENT and WRONG are handed out a part at a time. */
+uint8_t sense_map_link_event(sense_map_link_t *s, uint32_t now_ms,
+                             uint8_t *part, uint16_t *id);
+
+/** Whether the cause of event @p ev for part @p part still holds: the map
+ *  refused, the part dark, or, for SILENT and WRONG, the part fitted on a
+ *  link that answers. */
+bool sense_map_link_event_stands(const sense_map_link_t *s, uint8_t ev,
+                                 uint8_t part);
 
 /** Put back an event sense_map_link_event() handed out that never reached
- *  the band, with the part it named.  Not once the link has gone. */
+ *  the band, with the part it named.  Not once its cause is over
+ *  (sense_map_link_event_stands()). */
 void sense_map_link_event_back(sense_map_link_t *s, uint8_t ev,
                                uint8_t part);
 

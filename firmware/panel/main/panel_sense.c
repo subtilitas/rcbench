@@ -98,14 +98,30 @@ atomic_uint s_sense_parts;
 static uint32_t s_map_alert_gen;
 static uint8_t  s_map_alert_ev;
 static uint8_t  s_map_alert_part;
+/* The last REFUSED or DARK alert posted, withdrawn once its cause is over
+ * (sense_map_link_event_stands()).  Control task only. */
+static uint32_t s_map_setup_gen;
+static uint8_t  s_map_setup_ev;
+static uint8_t  s_map_setup_part;
 
 /*
  * What the SENSE_MAP page said that the operator is told, one event at a
- * time into a free alert slot and followed until a frame has taken it, as
- * sense_link_alerts() does for SENSE.
+ * time into a free alert slot, the next no sooner than
+ * SENSE_MAP_LINK_EVENT_GAP_MS later, and followed until a frame has taken
+ * it, as sense_link_alerts() does for SENSE.  A refused or dark map's
+ * alert goes once the map no longer has that cause.
  */
 static void map_alerts(void)
 {
+    if (s_map_setup_gen != 0u
+        && !sense_map_link_event_stands(&s_sense_map, s_map_setup_ev,
+                                        s_map_setup_part)) {
+        control_alert_withdraw(s_map_setup_gen);
+        if (s_map_alert_gen == s_map_setup_gen) {
+            s_map_alert_gen = 0u;
+        }
+        s_map_setup_gen = 0u;
+    }
     snap_lock();
     const bool     slot_free = !s_snap.alert.pending;
     const uint32_t posted    = s_snap.alert.posted;
@@ -127,7 +143,8 @@ static void map_alerts(void)
     }
     uint8_t  part = 0u;
     uint16_t id = 0u;
-    const uint8_t ev = sense_map_link_event(&s_sense_map, &part, &id);
+    const uint8_t ev = sense_map_link_event(&s_sense_map, now_ms(), &part,
+                                            &id);
     if (ev == 0u) {
         return;
     }
@@ -152,6 +169,11 @@ static void map_alerts(void)
         break;
     }
     s_map_alert_gen = control_alert_numbered(line);
+    if (ev == SENSE_MAP_LINK_EV_REFUSED || ev == SENSE_MAP_LINK_EV_DARK) {
+        s_map_setup_gen  = s_map_alert_gen;
+        s_map_setup_ev   = ev;
+        s_map_setup_part = part;
+    }
 }
 
 void sense_map_came_up(uint16_t minor)
