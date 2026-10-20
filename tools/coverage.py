@@ -226,6 +226,8 @@ TRACKED = [
     "shared/sense/ina3221.c",
     "shared/sense/as5600.c",
     "shared/sense/sense_sched.c",
+    "shared/sense/sense_sched_cap.c",
+    "shared/sense/sense_i3221_cfg.c",
     "shared/sense/sense_svc.c",
     "shared/sense/sense_trace_feed.c",
     "shared/sense/sense_trace.c",

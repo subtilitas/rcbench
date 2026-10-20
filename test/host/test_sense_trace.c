@@ -57,7 +57,7 @@ TEST_CASE(the_console_command_gives_ten_seconds)
     CHECK_EQ(seen.ms0, t0 / 10u);
     CHECK_EQ(seen.len, SENSE_TRACE_KEY_MS);
     CHECK_EQ(seen.shunt, I3221_UOHM);
-    CHECK_EQ(seen.cfg, svc.sched.i3221.config);
+    CHECK_EQ(seen.cfg, svc.sched.i3221[0].config);
     CHECK_EQ(seen.on, 1u);
     CHECK_EQ(seen.rst, 0u);
     CHECK_EQ(seen.mark_t[0], t0);
@@ -78,7 +78,7 @@ TEST_CASE(the_console_command_gives_ten_seconds)
     CHECK_EQ(seen.z_id, 1u);
     CHECK_EQ(seen.z_s, seen.n_s);
     CHECK_EQ(seen.z_v, seen.n_v);
-    CHECK(seen.n_v >= 500u && seen.n_v <= 504u);
+    CHECK(seen.n_v >= 416u && seen.n_v <= 420u);   /* every 24 ms */
     CHECK_EQ(seen.z_l, 0u);
     CHECK_EQ(seen.z_m, 1u);
     CHECK_EQ(seen.z_ml, 0u);
@@ -89,7 +89,7 @@ TEST_CASE(the_console_command_gives_ten_seconds)
              "$T v=3 n=1 trig=key t=%lu ms=%lu len=10000\r\n"
              "$H dt_us=1000 shunt_uohm=100000 cfg=0x%04X on=1 rst=0\r\n",
              (unsigned long)t0, (unsigned long)(t0 / 10u),
-             (unsigned)svc.sched.i3221.config);
+             (unsigned)svc.sched.i3221[0].config);
     CHECK(strncmp(g_log, want, strlen(want)) == 0);
     /* Idle again: the newest records are kept for the next one. */
     run(200u);

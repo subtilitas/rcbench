@@ -72,6 +72,7 @@ bool            s_supply_attach;
 sense_page_t    s_sense;
 tone_page_t     s_tone;
 sense_snap_t    s_sense_snap;
+sense_cmd_t     s_sense_cmd;
 uint16_t        s_run_gen;
 bool            s_edge_set;
 uint16_t        s_edge_gen;
@@ -651,8 +652,7 @@ int main(void)
      * page.
      */
     {
-        sense_cmd_t first;
-        sense_build(&first);
+        sense_build(&s_sense_cmd);
 #if SENSE_TRACE
         /* The trace's ring, before core 1 can write to it. */
         sense_trace_hw_init();
@@ -666,7 +666,7 @@ int main(void)
          * STATUS page says so in LINK_FAULT_STORE_OFF, which the panel's
          * band shows as a fault; the console repeats it every 3 s.
          */
-        if (sense_core1_start(&first)) {
+        if (sense_core1_start(&s_sense_cmd)) {
             out_store_core1_parkable();   /* windows park core 1 from now */
         } else {
             out_store_off();

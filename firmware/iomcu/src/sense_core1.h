@@ -11,8 +11,8 @@
  *
  * The hand-over is two structs, one each way, each copied whole under one
  * hardware-sync spin lock with interrupts off on the core that holds it.
- * The lock covers a memcpy and nothing else: the order is 64 bytes, the
- * snapshot 232 (arm-none-eabi, this build), so a core waits for the other
+ * The lock covers a memcpy and nothing else: the order is 112 bytes, the
+ * snapshot 648 (arm-none-eabi, this build), so a core waits for the other
  * at most one copy.
  * Neither core holds the lock across anything that can block.  Core 0
  * checks a counter before it takes the lock, so a pass with nothing new

@@ -96,10 +96,8 @@ static inline void rig_size(uint32_t size)
     cmd.cfg_gen = 1u;
     cmd.sda = 16u;
     cmd.scl = 17u;
-    cmd.parts.ina3221_en = true;
-    cmd.parts.ina3221_addr = I3221_ADDR;
-    cmd.parts.ina3221_shunt_uohm = I3221_UOHM;
-    cmd.parts.ina3221_channels = 1u;
+    sense_i3221_one(&cmd.parts.i3221, true, I3221_ADDR, I3221_UOHM,
+                    1u);
     CHECK(sense_trace_init(&tr, g_ring, size));
     g_len = 0u;
     g_log[0] = '\0';
@@ -336,7 +334,7 @@ static inline void fill(unsigned n)
     while (fed < n) {
         sense_svc_step(&svc, &cmd, &snap);
         /* The voltage's read is left out: samples only. */
-        svc.sched.acc[SENSE_SRC_CH1].n_v = 0u;
+        svc.sched.acc[SENSE_CH(0, 1)].n_v = 0u;
         tr.src.n_v = 0u;
         sense_trace_feed(&tr, &svc.sched, g_us);
         g_us += 1000u;

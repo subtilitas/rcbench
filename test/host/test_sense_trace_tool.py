@@ -128,7 +128,7 @@ def the_fixtures_are_what_the_generator_writes() -> None:
     # About 8 bytes a sample, line end included.
     samples = sum(1 for line in raw.split(b"\r\n")
                   if is_sample(line.decode("ascii")))
-    check(samples == 561 + 8881, f"{samples} sample lines")
+    check(samples == 562 + 8881, f"{samples} sample lines")
     check(len(raw) / samples < 8.7, "more than 8.7 bytes a sample")
 
 
@@ -141,10 +141,10 @@ def the_report_on_the_fixture() -> None:
     out = r.stdout
     check("2 trace(s), 2 other line(s)" in out, "two traces, two others")
     check("4 travel time(s), 4 paired with a move" in out, "the pairing")
-    check("trace 1: trigger key at tick 20400 ms, 561 samples over "
-          "560.0 ms, 28 voltages, 0 records missing" in out, "trace 1")
+    check("trace 1: trigger key at tick 20400 ms, 562 samples over "
+          "561.0 ms, 23 voltages, 0 records missing" in out, "trace 1")
     check("trace 2: trigger cmd at tick 22020 ms, 8881 samples over "
-          "8880.0 ms, 444 voltages, 0 records missing" in out, "trace 2")
+          "8880.0 ms, 370 voltages, 0 records missing" in out, "trace 2")
     check("ended by the console" in out and "ended by its time" in out,
           "how each ended")
     check(out.count("counts match the end line") == 2, "the counts")
@@ -152,7 +152,7 @@ def the_report_on_the_fixture() -> None:
     check("shunt 0.1 Ohm, Configuration 0x4007, part online, reset count 0"
           in out, "the set-up")
     # The model's noise is 0.02 A peak to peak: 0.0104 A from the mean.
-    check("noise of the whole trace, 561 samples:" in out, "noise, trace 1")
+    check("noise of the whole trace, 562 samples:" in out, "noise, trace 1")
     check("filter 1: mean 0.1204 A, standard deviation 0.0058 A, largest "
           "distance from the mean 0.0104 A" in out, "its figures")
     check("move 1 at 0.0 ms, channel 0 to 1800 us: before 0.119 A, holding "
@@ -181,14 +181,14 @@ def the_report_on_the_fixture() -> None:
     two = (out_dir / "sense-trace-sim-trace-2.csv").read_text().splitlines()
     check(one[0] == "time (ms);current (A);bus voltage (V);clipped",
           "the header")
-    check(len(one) == 1 + 561 and len(two) == 1 + 8881, "a row a sample")
-    check(one[1] == "-61.0;0.1148;;0", f"the first row: {one[1]}")
+    check(len(one) == 1 + 562 and len(two) == 1 + 8881, "a row a sample")
+    check(one[1] == "-62.0;0.1244;;0", f"the first row: {one[1]}")
     check(all(row.endswith(";0") for row in one[1:] + two[1:]),
           "no clipped sample in the fixture")
-    check(sum(1 for row in one[1:] if row.split(";")[2]) == 28,
-          "28 voltages in trace 1")
-    check(sum(1 for row in two[1:] if row.split(";")[2]) == 444,
-          "444 voltages in trace 2")
+    check(sum(1 for row in one[1:] if row.split(";")[2]) == 23,
+          "23 voltages in trace 1")
+    check(sum(1 for row in two[1:] if row.split(";")[2]) == 370,
+          "370 voltages in trace 2")
     volts = [float(row.split(";")[2]) for row in two[1:]
              if row.split(";")[2]]
     # 6.0 V less 0.4 V an ampere: 5.952 V holding, 5.62 V moving.
@@ -230,7 +230,7 @@ def a_missing_line_does_not_match_the_end_line() -> None:
                       "\n".join(lines[:at] + lines[at + 1:]) + "\n")),
              "--no-csv")
     check(r.returncode == 1, f"exit {r.returncode}")
-    check("PROBLEM: 560 sample line(s) read, the end line counts 561"
+    check("PROBLEM: 561 sample line(s) read, the end line counts 562"
           in r.stdout, "the sample count")
     # A sample line the terminal lost inside the second trace's first
     # move: nobody knows where, so no move of that trace is replayed.
@@ -247,7 +247,7 @@ def a_missing_line_does_not_match_the_end_line() -> None:
                      if k not in (volt, mark)) + "\n"
     r = tool(str(work("short2.log", text)), "--no-csv")
     check(r.returncode == 1, f"exit {r.returncode}")
-    check("PROBLEM: 27 voltage line(s) read, the end line counts 28"
+    check("PROBLEM: 22 voltage line(s) read, the end line counts 23"
           in r.stdout, "the voltage count")
     check("PROBLEM: 3 trigger line(s) read, the end line counts 4"
           in r.stdout, "the trigger count")
@@ -271,16 +271,16 @@ def dropped_records_are_counted_against_the_end_line() -> None:
     at = next(k for k, line in enumerate(lines) if line == "10,302")
     end = next(k for k, line in enumerate(lines) if line.startswith("$Z"))
     gap = lines[:at] + ["$L n=3", "40," + lines[at + 3].split(",")[1]]
-    body = gap + lines[at + 4:end] + ["$Z n=1 s=558 v=28 l=3 m=1 ml=0 e=k"]
+    body = gap + lines[at + 4:end] + ["$Z n=1 s=559 v=23 l=3 m=1 ml=0 e=k"]
     r = tool(str(work("lost.log", "\n".join(body + lines[end + 1:]) + "\n")))
     check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[:600]}")
-    check("558 samples over 560.0 ms, 28 voltages, 3 records missing"
+    check("559 samples over 561.0 ms, 23 voltages, 3 records missing"
           in r.stdout, "the gap keeps its time")
     rows = (ARGS.work / "lost-trace-1.csv").read_text().splitlines()
-    check(rows[1].startswith("-61.0;") and rows[2].startswith("-57.0;"),
-          f"4 ms across the gap: {rows[1]} {rows[2]}")
+    check(rows[2].startswith("-61.0;") and rows[3].startswith("-57.0;"),
+          f"4 ms across the gap: {rows[2]} {rows[3]}")
     # The end line counting another number of them is a problem.
-    body[-1] = "$Z n=1 s=558 v=28 l=2 m=1 ml=0 e=k"
+    body[-1] = "$Z n=1 s=559 v=23 l=2 m=1 ml=0 e=k"
     r = tool(str(work("lost2.log", "\n".join(body) + "\n")), "--no-csv")
     check(r.returncode == 1, f"exit {r.returncode}")
     check("PROBLEM: the $L lines count 3 missing record(s), the end line 2"

@@ -123,10 +123,8 @@ static void rig(void)
     cmd.parts.ina228_addr = I228_ADDR;
     cmd.parts.ina228_shunt_uohm = 200u;
     cmd.parts.ina228_max_ma = 204800u;
-    cmd.parts.ina3221_en = true;
-    cmd.parts.ina3221_addr = I3221_ADDR;
-    cmd.parts.ina3221_shunt_uohm = 100000u;
-    cmd.parts.ina3221_channels = 1u;
+    sense_i3221_one(&cmd.parts.i3221, true, I3221_ADDR, 100000u,
+                    1u);
     cmd.cap.rise_ua = SENSE_CAP_RISE_AUTO;
     cmd.cap.hold_ua = 120000;
     cmd.cap.move_ua = 30000;
@@ -161,11 +159,11 @@ TEST_CASE(a_set_up_opens_the_bus_and_reads_both_parts)
     CHECK_EQ(snap.cfg_gen, 1u);
     CHECK_EQ(snap.held, ((uint64_t)1u << 16) | ((uint64_t)1u << 17));
     CHECK_EQ(snap.i228, SENSE_PART_ONLINE);
-    CHECK_EQ(snap.i3221, SENSE_PART_ONLINE);
+    CHECK_EQ(snap.i3221[0], SENSE_PART_ONLINE);
     CHECK_EQ(snap.i228_maker, 0x5449u);
     CHECK_EQ(snap.i228_device, 0x2281u);
-    CHECK_EQ(snap.i3221_maker, 0x5449u);
-    CHECK_EQ(snap.i3221_die, 0x3220u);
+    CHECK_EQ(snap.i3221_maker[0], 0x5449u);
+    CHECK_EQ(snap.i3221_die[0], 0x3220u);
     /* The online parts are not asked; the rest of 0x40 to 0x4F is. */
     CHECK_EQ(g_asks, 14u);
     CHECK_EQ(g_asked & (BIT(I228_ADDR) | BIT(I3221_ADDR)), 0u);
@@ -178,8 +176,8 @@ TEST_CASE(a_set_up_opens_the_bus_and_reads_both_parts)
     CHECK_EQ(g_opens, 1u);
     CHECK_EQ(g_asks, 14u);               /* nothing missing: no rescan */
     CHECK(snap.have_win);
-    CHECK_EQ(snap.win[SENSE_SRC_CH1].i_mean_ua, 120000);
-    CHECK_EQ(snap.win[SENSE_SRC_CH1].v_mean_uv, 6000000);
+    CHECK_EQ(snap.win[SENSE_CH(0, 1)].i_mean_ua, 120000);
+    CHECK_EQ(snap.win[SENSE_CH(0, 1)].v_mean_uv, 6000000);
     CHECK_NEAR((double)snap.win[SENSE_SRC_INA228].i_mean_ua, 12e6, 400.0);
     CHECK_NEAR((double)snap.win[SENSE_SRC_INA228].v_mean_uv, 16.8e6, 200.0);
     CHECK(snap.have_temp);
@@ -208,7 +206,7 @@ TEST_CASE(a_new_set_up_closes_the_bus_and_opens_it_again)
 
     cmd.cfg_gen = 3u;
     cmd.parts.ina228_en = false;
-    cmd.parts.ina3221_en = false;
+    cmd.parts.i3221.fitted = 0u;
     step();
     CHECK_EQ(g_closes, 2u);
     CHECK_EQ(g_opens, 2u);
@@ -326,7 +324,7 @@ TEST_CASE(an_arm_with_nothing_to_read_ends_lost)
     rig();
     i3221->present = false;
     steps(5u);
-    CHECK(snap.i3221 != SENSE_PART_ONLINE);
+    CHECK(snap.i3221[0] != SENSE_PART_ONLINE);
     cmd.cap_gen = 1u;
     cmd.cap_on = true;
     step();
@@ -342,7 +340,7 @@ TEST_CASE(an_arm_with_nothing_to_read_ends_lost)
     i3221->present = true;
     g_us += (uint64_t)SENSE_RETRY_MS * 1000u;
     step();
-    CHECK_EQ(snap.i3221, SENSE_PART_ONLINE);
+    CHECK_EQ(snap.i3221[0], SENSE_PART_ONLINE);
     cmd.cap_gen = 2u;
     cmd.edge_set = false;
     steps(60u);
@@ -380,7 +378,7 @@ TEST_CASE(a_new_set_up_ends_a_lost_arm)
         cmd.cap_on = false;
         if (how == 0u) {
             cmd.parts.ina228_en = false;     /* the bus closes */
-            cmd.parts.ina3221_en = false;
+            cmd.parts.i3221.fitted = 0u;
         } else if (how == 1u) {
             g_open_ok = false;               /* the bus does not open */
         }
@@ -463,7 +461,7 @@ TEST_CASE(a_line_held_under_the_scan_starts_the_recovery)
     i3221->present = false;
     step();
     CHECK(snap.i228 != SENSE_PART_ONLINE);
-    CHECK(snap.i3221 != SENSE_PART_ONLINE);
+    CHECK(snap.i3221[0] != SENSE_PART_ONLINE);
     CHECK(!snap.stuck);
     const uint16_t errors = snap.errors;     /* the two probes' NACKs */
     counts_zero();
@@ -555,7 +553,7 @@ TEST_CASE(the_snapshot_carries_the_ring_and_the_reset_counts)
         CHECK(!snap.ring[k].closed);
     }
     CHECK_EQ(snap.i228_resets, 0u);
-    CHECK_EQ(snap.i3221_resets, 0u);
+    CHECK_EQ(snap.i3221_resets[0], 0u);
     /* Window n draws 0.1 A times n + 1; the step at 50 ms closes the
      * first. */
     for (unsigned n = 0; n < 6u; ++n) {
@@ -564,26 +562,26 @@ TEST_CASE(the_snapshot_carries_the_ring_and_the_reset_counts)
     }
     step();
     CHECK(snap.have_win);
-    CHECK_EQ(snap.win[SENSE_SRC_CH1].number, 5u);
+    CHECK_EQ(snap.win[SENSE_CH(0, 1)].number, 5u);
     for (unsigned k = 0; k < SENSE_WIN_RING; ++k) {
         CHECK(snap.ring[k].closed);
         CHECK_EQ(snap.ring[k].n_i, 50u);
         CHECK_EQ(snap.ring[k].i_mean_ua, 100000 * (int32_t)(6u - k));
     }
-    CHECK_EQ(snap.ring[0].i_mean_ua, snap.win[SENSE_SRC_CH1].i_mean_ua);
+    CHECK_EQ(snap.ring[0].i_mean_ua, snap.win[SENSE_CH(0, 1)].i_mean_ua);
 
     /* The INA3221 resets itself: offline within a rotation, counted,
      * rescanned and still present, and online again a second on. */
     fake_reset3221(i3221);
     steps(SENSE_ROTATION * 2u);
-    CHECK_EQ(snap.i3221, SENSE_PART_OFFLINE);
-    CHECK_EQ(snap.i3221_resets, 1u);
+    CHECK_EQ(snap.i3221[0], SENSE_PART_OFFLINE);
+    CHECK_EQ(snap.i3221_resets[0], 1u);
     CHECK_EQ(snap.i228_resets, 0u);
     CHECK_EQ(snap.i228, SENSE_PART_ONLINE);
     CHECK((snap.present & BIT(I3221_ADDR)) != 0u);
     steps(1000u);
-    CHECK_EQ(snap.i3221, SENSE_PART_ONLINE);
-    CHECK_EQ(snap.i3221_resets, 1u);
+    CHECK_EQ(snap.i3221[0], SENSE_PART_ONLINE);
+    CHECK_EQ(snap.i3221_resets[0], 1u);
     fake_reset228(i228);
     steps(SENSE_ROTATION * 2u);
     CHECK_EQ(snap.i228, SENSE_PART_OFFLINE);
@@ -598,15 +596,15 @@ TEST_CASE(the_snapshot_carries_the_ring_and_the_reset_counts)
         CHECK(!snap.ring[k].closed);
     }
     CHECK_EQ(snap.i228_resets, 0u);
-    CHECK_EQ(snap.i3221_resets, 0u);
+    CHECK_EQ(snap.i3221_resets[0], 0u);
     /* A closed bus reads nothing. */
     cmd.cfg_gen = 3u;
     cmd.parts.ina228_en = false;
-    cmd.parts.ina3221_en = false;
+    cmd.parts.i3221.fitted = 0u;
     steps(60u);
     CHECK(!snap.open);
     CHECK(!snap.ring[0].closed);
-    CHECK_EQ(snap.i3221_resets, 0u);
+    CHECK_EQ(snap.i3221_resets[0], 0u);
 }
 
 /* A capture under way when the INA3221 is found reset ends lost, through
@@ -622,17 +620,17 @@ TEST_CASE(a_reset_under_a_capture_reports_it_lost)
     const uint16_t seq = snap.cap_seq;
     fake_reset3221(i3221);
     steps(SENSE_ROTATION * 2u);
-    CHECK_EQ(snap.i3221, SENSE_PART_OFFLINE);
+    CHECK_EQ(snap.i3221[0], SENSE_PART_OFFLINE);
     CHECK_EQ(snap.cap_state, SENSE_CAP_LOST);
     CHECK_EQ(snap.cap_seq, (uint16_t)(seq + 1u));
-    CHECK_EQ(snap.i3221_resets, 1u);
+    CHECK_EQ(snap.i3221_resets[0], 1u);
 }
 
 TEST_CASE(a_service_starts_closed)
 {
     rig();
     cmd.parts.ina228_en = false;
-    cmd.parts.ina3221_en = false;
+    cmd.parts.i3221.fitted = 0u;
     cmd.cfg_gen = 0u;
     step();
     CHECK(svc.started);

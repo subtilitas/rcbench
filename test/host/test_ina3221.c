@@ -488,7 +488,7 @@ TEST_CASE(a_shunt_of_100_uohm_is_taken_and_99_is_not)
     CHECK_EQ(ina3221_init(&d, &bus, 0x43u, INA3221_SHUNT_MIN_UOHM,
                           INA3221_CONFIG_BENCH_CH1),
              INA3221_SETUP_OK);
-    CHECK_EQ(d.shunt_uohm, INA3221_SHUNT_MIN_UOHM);
+    CHECK_EQ(d.shunt_uohm[0], INA3221_SHUNT_MIN_UOHM);
     CHECK_EQ(ina3221_init(&d, &bus, 0x43u, INA3221_SHUNT_MIN_UOHM - 1u,
                           INA3221_CONFIG_BENCH_CH1),
              INA3221_SETUP_NO_SHUNT);

@@ -1,14 +1,14 @@
 sense-trace-sim.log: 2 trace(s), 2 other line(s)
 sense-trace-sim.csv: 4 travel time(s), 4 paired with a move
-trace 1: trigger key at tick 20400 ms, 561 samples over 560.0 ms, 28 voltages, 0 records missing
+trace 1: trigger key at tick 20400 ms, 562 samples over 561.0 ms, 23 voltages, 0 records missing
   shunt 0.1 Ohm, Configuration 0x4007, part online, reset count 0
   ended by the console
   counts match the end line
-  noise of the whole trace, 561 samples:
+  noise of the whole trace, 562 samples:
     filter 1: mean 0.1204 A, standard deviation 0.0058 A, largest distance from the mean 0.0104 A
     filter 4: mean 0.1204 A, standard deviation 0.0029 A, largest distance from the mean 0.0093 A
     filter 8: mean 0.1203 A, standard deviation 0.0020 A, largest distance from the mean 0.0061 A
-trace 2: trigger cmd at tick 22020 ms, 8881 samples over 8880.0 ms, 444 voltages, 0 records missing
+trace 2: trigger cmd at tick 22020 ms, 8881 samples over 8880.0 ms, 370 voltages, 0 records missing
   shunt 0.1 Ohm, Configuration 0x4007, part online, reset count 0
   ended by its time
   counts match the end line

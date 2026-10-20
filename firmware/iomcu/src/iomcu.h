@@ -94,6 +94,7 @@ extern tone_page_t   s_tone;
  * (sense_page_held()): a bus moved or closed keeps its old pins from the
  * outputs until core 1 has let them go, about 1 ms. */
 extern sense_snap_t  s_sense_snap;
+extern sense_cmd_t   s_sense_cmd;    /* core 1's order as last built */
 /* Moves on each edge of the bank into driving: core 1 starts the run's
  * peaks and the INA228's totals on it. */
 extern uint16_t      s_run_gen;
@@ -405,12 +406,13 @@ static inline void sense_build(sense_cmd_t *cmd)
 }
 
 /* Sent whenever something in it changes; core 1 takes it at its next
- * tick.  A copy under a lock, about a microsecond. */
+ * tick.  A copy under a lock, about a microsecond.  The order, 112 bytes
+ * with the 12 channels' shunts, is built in s_sense_cmd rather than on
+ * core 0's 4 kB stack: core 0 alone builds it, from its main loop. */
 static inline void sense_order(void)
 {
-    sense_cmd_t cmd;
-    sense_build(&cmd);
-    sense_core1_order(&cmd);
+    sense_build(&s_sense_cmd);
+    sense_core1_order(&s_sense_cmd);
 }
 
 /*

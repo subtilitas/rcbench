@@ -4,33 +4,33 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "sense_sched.h"
+#include "sense_sched_int.h"
 
 #include <string.h>
 
-/* What a rotation item reads. */
+/* What a rotation item reads.  An INA3221 item names its part. */
 typedef enum {
-    ROT_CH2_I = 0,
-    ROT_CH3_I,
-    ROT_CH1_V,
-    ROT_CH2_V,
-    ROT_CH3_V,
+    ROT_NONE = 0,
     ROT_TEMP,
     ROT_DIAG,
     ROT_ENERGY,
     ROT_CHARGE,
-    ROT_FLAGS,
-    ROT_ADC,        /* the INA228's ADC_CONFIG read back      */
-    ROT_CONFIG,     /* the INA3221's Configuration read back  */
+    ROT_ADC,        /* the INA228's ADC_CONFIG read back          */
+    ROT_FLAGS0,     /* part a's Mask/Enable: ROT_FLAGS0 + a       */
+    ROT_CONFIG0 = ROT_FLAGS0 + SENSE_I3221_PARTS,
+                    /* part a's Configuration read back: + a      */
 } rot_t;
 
-/* The two parts take turns.  Two passes of 10 slots: the second reads the
- * set-up registers back where the first reads DIETEMP and Mask/Enable. */
+/* The INA228's eight slots where they always were; each INA3221's
+ * Mask/Enable and Configuration 20 ms apart, part 0's in the slots one
+ * part had before; four slots empty. */
 static const uint8_t k_rotation[SENSE_ROTATION] = {
-    ROT_CH2_I, ROT_TEMP,   ROT_CH3_I, ROT_DIAG,   ROT_CH1_V,
-    ROT_ENERGY, ROT_CH2_V, ROT_CHARGE, ROT_CH3_V, ROT_FLAGS,
-    ROT_CH2_I, ROT_ADC,    ROT_CH3_I, ROT_DIAG,   ROT_CH1_V,
-    ROT_ENERGY, ROT_CH2_V, ROT_CHARGE, ROT_CH3_V, ROT_CONFIG,
+    ROT_FLAGS0 + 1,  ROT_TEMP,   ROT_NONE,         ROT_DIAG,
+    ROT_FLAGS0 + 2,  ROT_ENERGY, ROT_FLAGS0 + 3,   ROT_CHARGE,
+    ROT_NONE,        ROT_FLAGS0,
+    ROT_CONFIG0 + 1, ROT_ADC,    ROT_NONE,         ROT_DIAG,
+    ROT_CONFIG0 + 2, ROT_ENERGY, ROT_CONFIG0 + 3,  ROT_CHARGE,
+    ROT_NONE,        ROT_CONFIG0,
 };
 
 static void acc_clear(sense_acc_t *a)
@@ -88,9 +88,10 @@ static void acc_close(const sense_acc_t *a, uint64_t number, sense_window_t *w)
     }
 }
 
-/* CH1's window into a ring entry: every sample counted, a clipped one as
- * the end of the range it read. */
-static void ring_close(const sense_sched_t *s, const sense_acc_t *a,
+/* FAST's window into a ring entry: every sample counted, a clipped one as
+ * the end of the range it read.  @p top and @p bottom are the ends of
+ * FAST's range. */
+static void ring_close(int32_t top, int32_t bottom, const sense_acc_t *a,
                        sense_ring_win_t *e)
 {
     memset(e, 0, sizeof(*e));
@@ -101,19 +102,19 @@ static void ring_close(const sense_sched_t *s, const sense_acc_t *a,
     e->clip_hi = a->clip_hi;
     e->clip_lo = a->clip_lo;
     if (e->n_i > 0u) {
-        const int64_t sum = a->i_sum + (int64_t)a->n_hi * s->ch_top_ua
-                            + (int64_t)a->n_lo * s->ch_bottom_ua;
+        const int64_t sum = a->i_sum + (int64_t)a->n_hi * top
+                            + (int64_t)a->n_lo * bottom;
         e->i_mean_ua = (int32_t)(sum / (int64_t)e->n_i);
         /* The ends lie outside every sample with a value. */
         if (a->n_hi > 0u) {
-            e->i_max_ua = s->ch_top_ua;
+            e->i_max_ua = top;
         } else {
-            e->i_max_ua = (a->n_i > 0u) ? a->i_max : s->ch_bottom_ua;
+            e->i_max_ua = (a->n_i > 0u) ? a->i_max : bottom;
         }
         if (a->n_lo > 0u) {
-            e->i_min_ua = s->ch_bottom_ua;
+            e->i_min_ua = bottom;
         } else {
-            e->i_min_ua = (a->n_i > 0u) ? a->i_min : s->ch_top_ua;
+            e->i_min_ua = (a->n_i > 0u) ? a->i_min : top;
         }
     }
     if (a->n_v > 0u) {
@@ -122,9 +123,9 @@ static void ring_close(const sense_sched_t *s, const sense_acc_t *a,
     }
 }
 
-/* Window @p number has closed with CH1's @p a: the ring moves on by as
- * many places as numbers have passed, and the places of skipped numbers
- * read not closed. */
+/* Window @p number has closed with FAST's @p a, empty with no FAST: the
+ * ring moves on by as many places as numbers have passed, and the places
+ * of skipped numbers read not closed. */
 static void ring_push(sense_sched_t *s, uint64_t number, const sense_acc_t *a)
 {
     const uint64_t step = s->have_last ? number - s->ring_at : SENSE_WIN_RING;
@@ -135,8 +136,53 @@ static void ring_push(sense_sched_t *s, uint64_t number, const sense_acc_t *a)
             memset(&s->ring[k], 0, sizeof(s->ring[k]));
         }
     }
-    ring_close(s, a, &s->ring[0]);
+    const uint8_t f = s->cfg.i3221.fast;
+    if (f == SENSE_FAST_NONE) {
+        sense_acc_t none;
+        memset(&none, 0, sizeof(none));
+        ring_close(0, 0, &none, &s->ring[0]);
+    } else {
+        ring_close(s->ch_top_ua[f], s->ch_bottom_ua[f], a, &s->ring[0]);
+    }
     s->ring_at = number;
+}
+
+/* Part @p a's set-up from the map: its channels with a shunt. */
+static void init_part(sense_sched_t *s, unsigned a)
+{
+    const sense_i3221_cfg_t *m = &s->cfg.i3221;
+    uint8_t on = 0u;
+    for (unsigned ch = 1u; ch <= INA3221_CHANNELS; ++ch) {
+        if (m->shunt_uohm[SENSE_CH(a, ch)] != 0u) {
+            on |= (uint8_t)(1u << (ch - 1u));
+        }
+    }
+    s->i3221_setup[a] = ina3221_init_shunts(
+        &s->i3221[a], &s->bus, (uint8_t)(INA3221_ADDR_MIN + a),
+        &m->shunt_uohm[SENSE_CH(a, 1u)],
+        ina3221_config(on, 0u, 0u, 0u, INA3221_MODE_CONT));
+    if (s->i3221_setup[a] != INA3221_SETUP_OK) {
+        return;
+    }
+    for (unsigned ch = 1u; ch <= INA3221_CHANNELS; ++ch) {
+        const unsigned c = SENSE_CH(a, ch);
+        const uint32_t r = s->i3221[a].shunt_uohm[ch - 1u];
+        if (r == 0u) {
+            continue;
+        }
+        /* The step below the top code: a clip is at least this. */
+        s->ch_clip_ua[c]   = ina3221_current_ua(r, 4094).value;
+        s->ch_top_ua[c]    = ina3221_end_ua(r, SENSE_CLIP_HIGH);
+        s->ch_bottom_ua[c] = ina3221_end_ua(r, SENSE_CLIP_LOW);
+    }
+}
+
+/* Whether channel @p c is read: its part set up and the channel on. */
+static bool ch_read(const sense_sched_t *s, unsigned c)
+{
+    const unsigned a = c / INA3221_CHANNELS;
+    return c < SENSE_CHANNELS && s->i3221[a].part.state != SENSE_PART_UNSET
+           && s->i3221[a].shunt_uohm[c % INA3221_CHANNELS] != 0u;
 }
 
 void sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
@@ -155,26 +201,26 @@ void sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
     if (cfg->as5600_en) {
         as5600_init(&s->enc.dev, &s->bus);
     }
-    if (cfg->ina3221_en) {
-        s->i3221_setup = ina3221_init(
-            &s->i3221, &s->bus, cfg->ina3221_addr, cfg->ina3221_shunt_uohm,
-            ina3221_config(cfg->ina3221_channels, 0u, 0u, 0u,
-                           INA3221_MODE_CONT));
-        if (s->i3221_setup == INA3221_SETUP_OK) {
-            /* The step below the top code: a clip is at least this. */
-            s->ch_clip_ua = ina3221_current_ua(cfg->ina3221_shunt_uohm,
-                                               4094).value;
-            s->ch_top_ua    = ina3221_end_ua(cfg->ina3221_shunt_uohm,
-                                             SENSE_CLIP_HIGH);
-            s->ch_bottom_ua = ina3221_end_ua(cfg->ina3221_shunt_uohm,
-                                             SENSE_CLIP_LOW);
+    for (unsigned a = 0; a < SENSE_I3221_PARTS; ++a) {
+        if ((cfg->i3221.fitted & (1u << a)) != 0u) {
+            init_part(s, a);
+        }
+    }
+    /* FAST on a channel that is not read is none. */
+    if (cfg->i3221.fast >= SENSE_CHANNELS || !ch_read(s, cfg->i3221.fast)) {
+        s->cfg.i3221.fast = SENSE_FAST_NONE;
+    }
+    for (unsigned c = 0; c < SENSE_CHANNELS; ++c) {
+        if (c != s->cfg.i3221.fast && ch_read(s, c)) {
+            s->others[s->n_others++] = (uint8_t)c;
         }
     }
 }
 
-void sense_sched_fast_pair(sense_sched_t *s, bool on)
+const ina3221_t *sense_sched_fast_part(const sense_sched_t *s)
 {
-    s->fast_pair = on;
+    const uint8_t f = s->cfg.i3221.fast;
+    return (f == SENSE_FAST_NONE) ? NULL : &s->i3221[f / INA3221_CHANNELS];
 }
 
 void sense_sched_arm(sense_sched_t *s)
@@ -183,10 +229,10 @@ void sense_sched_arm(sense_sched_t *s)
     s->run.clear_owed = true;
 }
 
-bool sense_sched_window(const sense_sched_t *s, sense_src_t src,
+bool sense_sched_window(const sense_sched_t *s, unsigned src,
                         sense_window_t *out)
 {
-    if (!s->have_last || (unsigned)src >= SENSE_SRC_COUNT) {
+    if (!s->have_last || src >= SENSE_SRC_COUNT) {
         return false;
     }
     *out = s->last[src];
@@ -202,209 +248,6 @@ bool sense_sched_ring(const sense_sched_t *s, unsigned back,
     }
     *out = s->ring[back];
     return out->closed;
-}
-
-/* ------------------------------------------------------------ capture */
-
-static bool ch_enabled(const sense_sched_t *s, uint8_t ch)
-{
-    return (ina3221_channels(s->i3221.config) & (1u << (ch - 1u))) != 0u;
-}
-
-static bool cap_under_way(const sense_cap_t *c)
-{
-    return c->state == SENSE_CAP_ARMED || c->state == SENSE_CAP_WAITING
-           || c->state == SENSE_CAP_MOVING;
-}
-
-bool sense_sched_cap_arm(sense_sched_t *s, const sense_cap_arm_t *levels)
-{
-    if (ina3221_state(&s->i3221) != SENSE_PART_ONLINE || !ch_enabled(s, 1u)) {
-        return false;
-    }
-    const uint16_t seq = s->cap.seq;
-    memset(&s->cap, 0, sizeof(s->cap));
-    s->cap.seq   = seq;
-    s->cap.arm   = *levels;
-    s->cap.arm_t = (uint32_t)(s->io.now_us(s->io.ctx) / 100u);
-    s->cap.state = SENSE_CAP_ARMED;
-    return true;
-}
-
-static float ua_to_a(int32_t ua)
-{
-    return (float)ua * 1e-6f;
-}
-
-static int32_t a_to_ua(float a)
-{
-    const float ua = a * 1e6f;
-    return (int32_t)((ua >= 0.0f) ? ua + 0.5f : ua - 0.5f);
-}
-
-void sense_sched_cap_edge(sense_sched_t *s, uint64_t edge_us)
-{
-    sense_cap_t *c = &s->cap;
-    if (c->state != SENSE_CAP_ARMED) {
-        return;
-    }
-    c->edge_t = (uint32_t)(edge_us / 100u);
-    /* CH1's level is taken at the first sample past the edge; until then
-     * the move judges nothing that reads it (servo_move_sample()). */
-    c->rise_owed = (c->arm.rise_ua == SENSE_CAP_RISE_AUTO);
-    const servo_move_cfg_t mc = {
-        .cmd_t    = c->edge_t,
-        .window_t = servo_move_window_ms(SENSE_CAP_LAG_MS) * SENSE_CAP_T_PER_MS,
-        .rise_a   = c->rise_owed ? 0.0f : ua_to_a(c->arm.rise_ua),
-        .ref_a    = ua_to_a(c->arm.hold_ua),
-        .move_a   = ua_to_a(c->arm.move_ua),
-        .band_a   = ua_to_a(c->arm.band_ua),
-        .settle_n = (uint8_t)SENSE_CAP_SETTLE_N,
-        .filter_n = (uint8_t)SENSE_CAP_FILTER_N,
-    };
-    servo_move_begin(&c->mv, &mc);
-    /* The samples taken while armed, oldest first: the filter starts
-     * full, and one sample alone does not start a move. */
-    const unsigned first = (c->pre_head + SENSE_CAP_FILTER_N - c->pre_n)
-                           % SENSE_CAP_FILTER_N;
-    for (unsigned k = 0; k < c->pre_n; ++k) {
-        const sense_cap_pre_t *p = &c->pre[(first + k) % SENSE_CAP_FILTER_N];
-        servo_move_prime(&c->mv, p->a, (servo_move_clip_t)p->clip);
-    }
-    c->state = SENSE_CAP_WAITING;
-}
-
-void sense_sched_cap_disarm(sense_sched_t *s)
-{
-    s->cap.state = SENSE_CAP_IDLE;
-}
-
-/* The capture ends as @p state, with what the move measured. */
-static void cap_end(sense_cap_t *c, sense_cap_state_t state)
-{
-    const servo_move_t *m = &c->mv;
-    c->state = state;
-    ++c->seq;
-    if (state == SENSE_CAP_LOST) {
-        return;
-    }
-    c->move_t   = servo_move_moved(m) ? m->moved_t - m->cfg.cmd_t : 0u;
-    c->arrive_t = servo_move_arrived(m) ? m->end_t - m->cfg.cmd_t : 0u;
-    c->samples  = m->n;
-    c->mean_ua  = (m->n > 0u) ? a_to_ua(m->sum / (float)m->n) : 0;
-    c->peak_ua  = a_to_ua(m->peak);
-    c->clipped  = m->clipped;
-}
-
-/* A clipped CH1 sample at the end of the range it is at or past, as the
- * capture's filter takes it; a sample with a value as it is. */
-static int32_t ch1_ua(const sense_sched_t *s, const sense_value_t *v)
-{
-    if (v->clip == SENSE_CLIP_HIGH) {
-        return s->ch_clip_ua;
-    }
-    if (v->clip == SENSE_CLIP_LOW) {
-        return -s->ch_clip_ua;
-    }
-    return v->value;
-}
-
-/* A CH1 sample into the history the level before a command is taken
- * from. */
-static void ch1_keep(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
-{
-    s->ch1[s->ch1_head].t  = at_t;
-    s->ch1[s->ch1_head].ua = ch1_ua(s, v);
-    s->ch1_head = (uint8_t)((s->ch1_head + 1u) % SENSE_CH1_HISTORY);
-    if (s->ch1_n < SENSE_CH1_HISTORY) {
-        ++s->ch1_n;
-    }
-}
-
-/* The level before the command: the mean of the CH1 samples stamped in
- * the SENSE_WINDOW_MS before the edge.  False with none. */
-static bool take_rise(sense_sched_t *s)
-{
-    sense_cap_t *c = &s->cap;
-    const uint32_t span = SENSE_WINDOW_MS * SENSE_CAP_T_PER_MS;
-    int64_t sum = 0;
-    uint32_t n = 0u;
-    for (unsigned k = 0; k < s->ch1_n; ++k) {
-        const uint32_t before = c->edge_t - s->ch1[k].t;
-        if ((int32_t)before > 0 && before <= span) {
-            sum += s->ch1[k].ua;
-            ++n;
-        }
-    }
-    if (n == 0u) {
-        return false;
-    }
-    c->arm.rise_ua    = (int32_t)(sum / (int64_t)n);
-    c->mv.cfg.rise_a  = ua_to_a(c->arm.rise_ua);
-    c->rise_owed      = false;
-    return true;
-}
-
-/* A CH1 sample, or none, and the clock: both at @p at_t. */
-static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
-{
-    sense_cap_t *c = &s->cap;
-    if (!cap_under_way(c)) {
-        return;
-    }
-    if (ina3221_state(&s->i3221) != SENSE_PART_ONLINE) {
-        cap_end(c, SENSE_CAP_LOST);
-        return;
-    }
-    servo_move_clip_t clip = SERVO_MOVE_CLIP_NONE;
-    float a = 0.0f;
-    if (v != NULL) {
-        a = ua_to_a(ch1_ua(s, v));
-        if (v->clip == SENSE_CLIP_HIGH) {
-            clip = SERVO_MOVE_CLIP_HIGH;
-        } else if (v->clip == SENSE_CLIP_LOW) {
-            clip = SERVO_MOVE_CLIP_LOW;
-        }
-    }
-    if (c->state == SENSE_CAP_ARMED) {
-        /* No edge in all this time: nothing renders the frame it waits
-         * for, and it is not left armed for ever. */
-        if ((int32_t)(at_t - c->arm_t)
-            >= (int32_t)(SENSE_CAP_EDGE_WAIT_MS * SENSE_CAP_T_PER_MS)) {
-            cap_end(c, SENSE_CAP_LOST);
-            return;
-        }
-        if (v != NULL) {
-            c->pre[c->pre_head].a    = a;
-            c->pre[c->pre_head].clip = (int8_t)clip;
-            c->pre_head = (uint8_t)((c->pre_head + 1u) % SENSE_CAP_FILTER_N);
-            if (c->pre_n < SENSE_CAP_FILTER_N) {
-                ++c->pre_n;
-            }
-        }
-        return;
-    }
-    /* The first sample at or past the edge is the first that can be
-     * judged against the level before the command, so the level is taken
-     * now, from the samples before the edge. */
-    if (c->rise_owed && v != NULL && (int32_t)(at_t - c->edge_t) >= 0
-        && !take_rise(s)) {
-        cap_end(c, SENSE_CAP_LOST);
-        return;
-    }
-    /* A sample at or past the deadline is the move late or unseen, never
-     * its arrival (servo_move_sample()); without one, the clock ends it. */
-    if (v != NULL) {
-        servo_move_sample(&c->mv, at_t, a, clip);
-    }
-    switch (servo_move_tick(&c->mv, at_t)) {
-    case SERVO_MOVE_MOVING:  c->state = SENSE_CAP_MOVING;        break;
-    case SERVO_MOVE_ARRIVED: cap_end(c, SENSE_CAP_ARRIVED);      break;
-    case SERVO_MOVE_SETTLED: cap_end(c, SENSE_CAP_SETTLED);      break;
-    case SERVO_MOVE_LATE:    cap_end(c, SENSE_CAP_LATE);         break;
-    case SERVO_MOVE_UNSEEN:  cap_end(c, SENSE_CAP_UNSEEN);       break;
-    default:                                                     break;
-    }
 }
 
 /* -------------------------------------------------------------- reads */
@@ -431,30 +274,58 @@ static uint64_t stamp(sense_sched_t *s)
     return us;
 }
 
-/* INA3221 channel @p ch's current into its window; true with a sample.
- * @p at_us, when given, is when the read was done, sample or not. */
-static bool read_ch_current(sense_sched_t *s, uint8_t ch, sense_value_t *v,
+/* Channel @p c's current into its window; true with a sample.  @p at_us,
+ * when given, is when the read was done, sample or not. */
+static bool read_ch_current(sense_sched_t *s, unsigned c, sense_value_t *v,
                             uint64_t *at_us)
 {
-    const bool ok = ch_enabled(s, ch)
-                    && ina3221_read_current(&s->i3221, ch, v) == SENSE_OK;
+    ina3221_t *d = &s->i3221[c / INA3221_CHANNELS];
+    const bool ok = ch_read(s, c)
+                    && ina3221_read_current(d,
+                                            (uint8_t)(c % INA3221_CHANNELS + 1u),
+                                            v) == SENSE_OK;
     const uint64_t us = stamp(s);
     if (at_us != NULL) {
         *at_us = us;
     }
     if (ok) {
-        acc_current(&s->acc[SENSE_SRC_CH1 + ch - 1u], *v);
+        acc_current(&s->acc[c], *v);
     }
     return ok;
 }
 
-static void read_ch_bus(sense_sched_t *s, uint8_t ch)
+static void read_ch_bus(sense_sched_t *s, unsigned c)
 {
     int32_t mv = 0;
-    if (ch_enabled(s, ch) && ina3221_read_bus(&s->i3221, ch, &mv) == SENSE_OK) {
+    if (ch_read(s, c)
+        && ina3221_read_bus(&s->i3221[c / INA3221_CHANNELS],
+                            (uint8_t)(c % INA3221_CHANNELS + 1u),
+                            &mv) == SENSE_OK) {
         (void)stamp(s);
-        acc_voltage(&s->acc[SENSE_SRC_CH1 + ch - 1u], mv * 1000);
+        acc_voltage(&s->acc[c], mv * 1000);
     }
+}
+
+/* The next channel beside FAST, in turn. */
+static void read_other(sense_sched_t *s)
+{
+    if (s->n_others == 0u) {
+        return;
+    }
+    const unsigned c = s->others[s->other_at];
+    s->other_at = (uint8_t)((s->other_at + 1u) % s->n_others);
+    sense_value_t v = { 0, SENSE_CLIP_NONE };
+    (void)read_ch_current(s, c, &v, NULL);
+}
+
+/* The next channel's bus voltage: every channel in turn, one that is not
+ * read leaving its turn empty, so each is read every SENSE_CHANNELS even
+ * ticks. */
+static void read_volt(sense_sched_t *s)
+{
+    const unsigned c = s->volt_at;
+    s->volt_at = (uint8_t)((s->volt_at + 1u) % SENSE_CHANNELS);
+    read_ch_bus(s, c);
 }
 
 static void read_i228_current(sense_sched_t *s)
@@ -531,39 +402,45 @@ static void verify_i228(sense_sched_t *s)
     s->run.totals_ok = false;
 }
 
-/* The INA3221's Configuration read back.  A part found reset is offline
- * from here, which ends a capture as lost (cap_step()); the windows being
- * filled from it at the time the read-back was done are emptied. */
-static void verify_i3221(sense_sched_t *s)
+/* Part @p a's Configuration read back.  A part found reset is offline
+ * from here, which ends a capture on it as lost (sense_cap_step()); the
+ * windows being filled from it at the time the read-back was done are
+ * emptied. */
+static void verify_i3221(sense_sched_t *s, unsigned a)
 {
     bool lost = false;
-    (void)ina3221_verify(&s->i3221, &lost);
+    (void)ina3221_verify(&s->i3221[a], &lost);
     if (!lost) {
         return;
     }
     (void)stamp(s);
-    ++s->i3221_resets;
-    for (unsigned k = SENSE_SRC_CH1; k <= SENSE_SRC_CH3; ++k) {
-        acc_clear(&s->acc[k]);
+    ++s->i3221_resets[a];
+    for (unsigned ch = 1u; ch <= INA3221_CHANNELS; ++ch) {
+        acc_clear(&s->acc[SENSE_CH(a, ch)]);
+    }
+}
+
+static void read_flags(sense_sched_t *s, unsigned a)
+{
+    if (ina3221_read_flags(&s->i3221[a], &s->flags[a]) == SENSE_OK) {
+        s->have_flags |= (uint8_t)(1u << a);
     }
 }
 
 /* The next rotation item. */
 static void read_rotation(sense_sched_t *s)
 {
-    const rot_t item = (rot_t)k_rotation[s->rot % SENSE_ROTATION];
+    const unsigned item = k_rotation[s->rot % SENSE_ROTATION];
     ++s->rot;
-    switch (item) {
-    case ROT_CH2_I:
-    case ROT_CH3_I:
-        if (!s->fast_pair) {
-            sense_value_t v = { 0, SENSE_CLIP_NONE };
-            (void)read_ch_current(s, (item == ROT_CH2_I) ? 2u : 3u, &v, NULL);
-        }
-        break;
-    case ROT_CH1_V: read_ch_bus(s, 1u); break;
-    case ROT_CH2_V: read_ch_bus(s, 2u); break;
-    case ROT_CH3_V: read_ch_bus(s, 3u); break;
+    if (item >= ROT_CONFIG0) {
+        verify_i3221(s, item - ROT_CONFIG0);
+        return;
+    }
+    if (item >= ROT_FLAGS0) {
+        read_flags(s, item - ROT_FLAGS0);
+        return;
+    }
+    switch ((rot_t)item) {
     case ROT_TEMP:
         s->have_temp = i228_ok(s, ina228_read_dietemp(&s->i228, &s->temp_mdegc))
                        || s->have_temp;
@@ -578,11 +455,10 @@ static void read_rotation(sense_sched_t *s)
     case ROT_CHARGE:
         (void)i228_ok(s, ina228_read_charge(&s->i228, &s->run.charge_uc));
         break;
-    case ROT_ADC:    verify_i228(s);  break;
-    case ROT_CONFIG: verify_i3221(s); break;
+    case ROT_ADC:
+        verify_i228(s);
+        break;
     default:
-        s->have_flags = ina3221_read_flags(&s->i3221, &s->flags) == SENSE_OK
-                        || s->have_flags;
         break;
     }
 }
@@ -694,7 +570,8 @@ static void roll_windows(sense_sched_t *s, uint64_t now_ms)
     if (win == s->win) {
         return;
     }
-    ring_push(s, s->win, &s->acc[SENSE_SRC_CH1]);
+    const uint8_t f = s->cfg.i3221.fast;
+    ring_push(s, s->win, &s->acc[(f == SENSE_FAST_NONE) ? 0u : f]);
     for (unsigned k = 0; k < SENSE_SRC_COUNT; ++k) {
         acc_close(&s->acc[k], s->win, &s->last[k]);
         acc_clear(&s->acc[k]);
@@ -736,28 +613,43 @@ void sense_sched_tick(sense_sched_t *s)
         }
         sense_bus_recovered(&s->bus, now_ms32);
     }
-    (void)ina3221_step(&s->i3221, now_ms32);
+    /* One INA3221 probe a tick at most: 455 µs of bus each. */
+    bool probed = false;
+    for (unsigned a = 0; a < SENSE_I3221_PARTS; ++a) {
+        ina3221_t *d = &s->i3221[a];
+        if (d->part.state == SENSE_PART_UNSET) {
+            continue;
+        }
+        if (sense_part_probe_due(&d->part, now_ms32)) {
+            if (probed) {
+                continue;
+            }
+            probed = true;
+        }
+        (void)ina3221_step(d, now_ms32);
+    }
     (void)ina228_step(&s->i228, now_ms32);
     if (s->cfg.as5600_en) {
         (void)as5600_step(&s->enc.dev, now_ms32);
     }
     totals(s);
 
-    /* CH1, the pair, the INA228, and every second tick the rotation.  Each
-     * read is stamped when it is done and goes into the window of that
-     * time: a recovery, a probe, the clear or the reads before it can
-     * take the clock past a window's end. */
+    /* FAST, one channel beside it, the INA228, and every second tick a
+     * voltage and the rotation.  Each read is stamped when it is done and
+     * goes into the window of that time: a recovery, a probe, the clear or
+     * the reads before it can take the clock past a window's end. */
     const uint32_t tick = s->ticks++;
-    sense_value_t ch1 = { 0, SENSE_CLIP_NONE };
-    uint64_t ch1_us = 0u;
-    const bool have_ch1 = read_ch_current(s, 1u, &ch1, &ch1_us);
-    if (s->fast_pair) {
-        sense_value_t v = { 0, SENSE_CLIP_NONE };
-        (void)read_ch_current(s, 2u, &v, NULL);
-        (void)read_ch_current(s, 3u, &v, NULL);
+    const uint8_t f = s->cfg.i3221.fast;
+    sense_value_t fv = { 0, SENSE_CLIP_NONE };
+    uint64_t fast_us = 0u;
+    bool have_fast = false;
+    if (f != SENSE_FAST_NONE) {
+        have_fast = read_ch_current(s, f, &fv, &fast_us);
     }
+    read_other(s);
     read_i228(s, tick);
     if ((tick & 1u) == 0u) {
+        read_volt(s);
         read_rotation(s);
     } else if (s->cfg.as5600_en) {
         read_enc(s);
@@ -769,12 +661,8 @@ void sense_sched_tick(sense_sched_t *s)
         s->have_temp = false;
         s->have_diag = false;
     }
-    /* The capture on CH1's own time, whatever came after it; then the
-     * sample into the history, so the level before a command is taken
-     * from samples before it. */
-    const uint32_t ch1_t = (uint32_t)(ch1_us / 100u);
-    cap_step(s, have_ch1 ? &ch1 : NULL, ch1_t);
-    if (have_ch1) {
-        ch1_keep(s, &ch1, ch1_t);
+    if (f != SENSE_FAST_NONE) {
+        sense_cap_step(s, have_fast ? &fv : NULL,
+                       (uint32_t)(fast_us / 100u));
     }
 }
