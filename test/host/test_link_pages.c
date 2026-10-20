@@ -1034,7 +1034,7 @@ TEST_CASE(the_hitec_receive_mode_is_a_register_after_view)
 {
     CHECK_EQ(LINK_MINOR_HITEC_RX, 24u);
     CHECK_EQ(LINK_MINOR_HITEC_RX, LINK_MINOR_HITEC + 1u);
-    CHECK_EQ(LINK_PROTOCOL_MINOR, LINK_MINOR_HITEC_RX);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_HITEC_RX);
     CHECK_EQ(LINK_HT_W_VIEW, 22);
     CHECK_EQ(LINK_HT_W_RX_MODE, 23);
     CHECK_EQ(LINK_HT_W_COUNT, 24);
@@ -1049,6 +1049,34 @@ TEST_CASE(the_hitec_receive_mode_is_a_register_after_view)
                                     | 0xF000u),
              0u);
     CHECK_EQ(LINK_HT_LINE_PRECHARGE & LINK_HT_LINE_OF(1u, 1u), 0u);
+}
+
+/*
+ * Protocol 4.26 appends a FUNC register per port to PROG, registers 24 to
+ * 27, and moves nothing: a 4.25 or older IOmcu has 24 registers.  FLAGS
+ * takes a parked bit per port from bits that read 0 before.
+ */
+TEST_CASE(prog_func_is_a_frame_after_the_ports)
+{
+    CHECK_EQ(LINK_MINOR_PROG_FUNC, 26u);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_PROG_FUNC);
+    CHECK_EQ(LINK_PG_FUNC0, LINK_PG_REGS_V424);
+    CHECK_EQ(LINK_PG_FUNC(0u), 24u);
+    CHECK_EQ(LINK_PG_FUNC(3u), 27u);
+    CHECK_EQ(LINK_PG_REGS, 28);
+    CHECK_EQ(LINK_PG_FN_SERVO_PWM, 0);
+    CHECK_EQ(LINK_PG_FN_NONE, 1);
+    CHECK_EQ(LINK_PG_FN_COUNT, 2);
+    uint16_t seen = 0;
+    for (unsigned port = 0; port < LINK_PG_PORTS_MAX; port++) {
+        CHECK_EQ(seen & LINK_PG_F_BOUND(port), 0u);
+        seen |= LINK_PG_F_BOUND(port);
+        CHECK_EQ(seen & LINK_PG_F_PARKED(port), 0u);
+        seen |= LINK_PG_F_PARKED(port);
+        CHECK_EQ(seen & LINK_PG_F_REFUSED(port), 0u);
+        seen |= LINK_PG_F_REFUSED(port);
+    }
+    CHECK_EQ(seen, 0x0FFFu);
 }
 
 /*
@@ -1070,8 +1098,9 @@ TEST_CASE(prog_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_PG_PORT0, 4);
     CHECK_EQ(LINK_PG_STRIDE, 5);
     CHECK_EQ(LINK_PG_PORTS_MAX, 4u);
-    CHECK_EQ(LINK_PG_REGS, LINK_PG_PORT0 + LINK_PG_PORTS_MAX * LINK_PG_STRIDE);
-    CHECK_EQ(LINK_PG_REGS, 24);
+    CHECK_EQ(LINK_PG_REGS_V424,
+             LINK_PG_PORT0 + LINK_PG_PORTS_MAX * LINK_PG_STRIDE);
+    CHECK_EQ(LINK_PG_REGS_V424, 24);
     CHECK(LINK_PG_REGS <= LINK_MAX_REGS);
     CHECK_EQ(LINK_PG_REG(0u, LINK_PG_PIN), 4u);
     CHECK_EQ(LINK_PG_REG(3u, LINK_PG_MAX_US), 23u);
@@ -1629,7 +1658,7 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 24u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 26u);
     CHECK_EQ(LINK_MINOR_UPDATE, 22u);
     CHECK(LINK_MINOR_UPDATE > LINK_MINOR_REFUSED);
 
@@ -1704,6 +1733,7 @@ int main(void)
     RUN(an_older_coprocessor_has_no_servo_win_page_and_says_so);
     RUN(kst_extends_the_map_without_moving_it);
     RUN(prog_extends_the_map_without_moving_it);
+    RUN(prog_func_is_a_frame_after_the_ports);
     RUN(hitec_extends_the_map_without_moving_it);
     RUN(the_hitec_receive_mode_is_a_register_after_view);
     RUN(the_kst_staged_check_tells_a_change_a_swap_and_a_length);

@@ -1769,6 +1769,9 @@ void app_main(void)
     picker_screen_set_apply(outputs_apply);
     picker_screen_set_select(outputs_screen_select);
     picker_screen_set_drawing_source(drawing_for_picker);
+    /* A port's PIN or FUNC asked on either screen goes to the control
+     * task, which writes it on a bench at rest. */
+    prog_ports_init_screens();
     /* The supply screen shows the panel's model, and the range a PPS
      * (Programmable Power Supply) source offers; see supply.h. */
     const supply_caps_t supply_caps = SUPPLY_CAPS_PPS_DEFAULT;
@@ -2040,22 +2043,7 @@ void app_main(void)
                          (unsigned)settings_get_int(SET_SERVO_TARGET));
             atomic_store(&s_prog_want_pwm,
                          settings_get_bool(SET_SERVO_PORT_PWM));
-            const uint8_t prog_pin = (uint8_t)atomic_load(&s_prog_pin);
-            outputs_screen_set_prog_pin(prog_pin);
-            {
-                const unsigned ports = atomic_load(&s_prog_ports);
-                uint8_t pins[LINK_PG_PORTS_MAX];
-                pins[0] = prog_pin;
-                for (unsigned n = 1; n < LINK_PG_PORTS_MAX; ++n) {
-                    pins[n] = (uint8_t)(ports >> (8u * n));
-                }
-                const uint8_t count = (uint8_t)(ports & 0xFFu);
-                outputs_screen_set_prog_ports(count, pins);
-                /* While the count is not known the picker holds port 0's
-                 * pin, as the PIN register reads it. */
-                picker_screen_set_prog_ports(
-                    (count == OUTPUTS_PORTS_UNKNOWN) ? 1u : count, pins);
-            }
+            prog_ports_to_screens();
             motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
                                            atomic_load(&s_throttle_pins_known));
             motor_screen_set_throttle_protocol(

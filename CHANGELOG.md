@@ -30,6 +30,33 @@ history is in git.
   4.23 it says `IOmcu older than 4.23: no Hitec line.`
 - The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
   receive mode before the OPEN, and the report names it (`rx=pu|pre`).
+- Four programming ports on the IOmcu, PROG PORT 1 to PROG PORT 4. Each
+  has a FUNCTION: SERVO PWM, a pulse from the PWM generator, or NONE, the
+  pin held as an input with its pull-down. Port 1 defaults to SERVO PWM,
+  ports 2 to 4 to NONE with no pin, so a bench that sets nothing on ports
+  2 to 4 runs as with one port. PIN and FUNCTION are kept in the IOmcu's
+  flash; the panel writes them only when the operator sets them, on the
+  PROG PORT entry of SETUP > OUTPUTS or in PICK A PIN, and only on a bench
+  in SAFE with no test, sweep or servo programmer running.
+- SETUP > OUTPUTS: one PROG PORT entry per port with PIN (opens PICK A
+  PIN on that port), FUNCTION, WATCHED BY (no current channel yet), SERVO
+  TESTER and PORT PWM. PICK A PIN lists the programming ports and rejects
+  a SERVO PWM pin that shares a PWM slice with an output.
+- The servo tester's target is OUTPUTS or PORT 1 to PORT 4 (SETUP > SERVO
+  > SERVO TESTER). A stored PROG PORT reads as PORT 1. The TARGET row names
+  the port: `PROG PORT 2 GP14`.
+- Link protocol 4.26: PROG page registers 24 to 27 (`FUNC`) and `FLAGS`
+  bits 4 to 7 (port parked). The functions are kept in the spare word of
+  the version 7 outputs record; an older image writes the word back as 0,
+  and the ports return to their default functions after a downgrade and
+  upgrade. With an IOmcu older than 4.26 every port is SERVO PWM and
+  OUTPUTS says `IOMCU OLDER THAN 4.26: SERVO PWM ONLY`.
+
+### Fixed
+
+- SERVO > TARGET reads the set programming port in SAFE within 500 ms after
+  a programming session gives the port back and after an IOmcu restart,
+  without waiting for the next ARM.
 
 ## 0.21.2 - 2026-10-20
 

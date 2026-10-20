@@ -14,6 +14,8 @@
 #include "link_pages.h"
 #include "outputs_screen.h"
 #include "outputs_screen_int.h"
+#include "picker_port.h"
+#include "port_view.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -143,8 +145,16 @@ static struct {
     int      refused;
     /* Each interface's pins at the last frame. */
     uint64_t iface[OUTPUTS_IFACE_COUNT];
+    /* The PROG PORT picked, -1 for a protocol (picker_port.c), and the
+     * ports' view drawn. */
+    int      port;
+    uint32_t view_rev;
     bool     chrome_valid[MAX_FBS];
 } s;
+
+/* The port the next entry opens on, -1 for OFF: picker_screen_open_on_port(),
+ * once. */
+static int g_open_port = -1;
 
 /* The GPIOs the IOmcu's programming ports are bound to, PICKER_NO_PIN
  * for none.  Kept out of `s` so a reset of the screen does not forget
@@ -202,6 +212,13 @@ void picker_screen_follow(uint8_t proto, bool editable)
     const bool unread = !editable;
     if (proto < OUTBIND_PROTOS && proto != s.bind.proto) {
         outbind_set_proto(&s.bind, proto);
+        touched();
+    }
+    /* And a port picked there, or none. */
+    const int port = outputs_screen_port_shown();
+    if (port != s.port) {
+        s.port = port;
+        s.refused = -1;
         touched();
     }
     if (unread != s.unread) {
@@ -581,16 +598,29 @@ gfx_rect_t picker_screen_list_face(void)
     return gfx_rect_make(HEAD_X, HEAD_Y, FACE_W, FACE_H);
 }
 
+/* The list's rows: the protocols, then one PROG PORT entry a port, as on
+ * OUTPUTS, each POP_ROW tall or less where they would run past the
+ * screen. */
+static int pop_rows(void)
+{
+    return (int)OUTBIND_PROTOS + (int)outputs_screen_port_entries();
+}
+
+static int pop_row_h(void)
+{
+    const int fit = (SCREEN_H - HEAD_Y - 16) / pop_rows();
+    return (fit < POP_ROW) ? fit : POP_ROW;
+}
+
 static gfx_rect_t pop_rect(void)
 {
-    return gfx_rect_make(HEAD_X, HEAD_Y, POP_W,
-                         (int)(OUTBIND_PROTOS * POP_ROW) + 8);
+    return gfx_rect_make(HEAD_X, HEAD_Y, POP_W, pop_rows() * pop_row_h() + 8);
 }
 
 gfx_rect_t picker_screen_list_row(uint8_t proto)
 {
-    return gfx_rect_make(HEAD_X + 4, HEAD_Y + 4 + (int)proto * POP_ROW,
-                         POP_W - 8, POP_ROW);
+    return gfx_rect_make(HEAD_X + 4, HEAD_Y + 4 + (int)proto * pop_row_h(),
+                         POP_W - 8, pop_row_h());
 }
 
 bool picker_screen_list_open(void) { return s.open; }
@@ -659,6 +689,11 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
         }
         return PICKER_PIN_RESERVED;
     }
+    if (s.port >= 0) {
+        return picker_port_pin(&s.bind, index, (uint8_t)s.port,
+                               s.unread || (bd != NULL && bd->fixed), holder,
+                               cap);
+    }
     if (prog_taken(index)) {
         if (holder != NULL && cap != 0u) {
             snprintf(holder, cap, "%s", TR(OUT_PROG_PORT));
@@ -723,6 +758,23 @@ bool picker_screen_row(uint8_t k, picker_row_t *out)
 {
     const uint8_t proto = proto_shown();
     const uint8_t n = outbind_pin_count(s.bind.board);
+    if (s.port >= 0) {
+        /* A port's one pin, with no channel. */
+        for (uint8_t i = 0; i < n && k == 0u; ++i) {
+            if (picker_screen_pin(i, NULL, 0) != PICKER_PIN_TICKED) {
+                continue;
+            }
+            if (out != NULL) {
+                const outbind_pin_t *pin = &outbind_pins(s.bind.board)[i];
+                out->index   = i;
+                out->gpio    = pin->gpio;
+                out->channel = -1;
+                out->pad     = pin->pad;
+            }
+            return true;
+        }
+        return false;
+    }
     if (proto == 0u) {
         return false;
     }
@@ -747,6 +799,10 @@ void picker_screen_count(char *buf, size_t cap)
     if (buf == NULL || cap == 0u) {
         return;
     }
+    if (s.port >= 0) {
+        picker_port_count((uint8_t)s.port, buf, cap);
+        return;
+    }
     /* Slots used by every protocol, not by this one: they share the eight,
      * so this protocol's own count says nothing about what is left. */
     snprintf(buf, cap, TR(PK_SLOTS_OF),
@@ -764,6 +820,10 @@ bool picker_screen_reason(char *buf, size_t cap)
         /* Why no button acts: the binding drawn is the last one read. */
         snprintf(buf, cap, "%s", TR(PK_NOT_READ));
         return true;
+    }
+    if (s.port >= 0) {
+        return picker_port_reason(&s.bind, (uint8_t)s.port, s.refused, buf,
+                                  cap);
     }
     return outputs_reason_of(&s.bind, buf, cap)
            || outputs_clash_reason(&s.bind, s.refused, g_prog_pins,
@@ -931,10 +991,14 @@ static void draw_buttons(gfx_canvas_t *c)
 /* Above the PINS table: the protocol list's face, the count, the reason. */
 static void draw_head(gfx_canvas_t *c)
 {
-    ui_choice_face(c, picker_screen_list_face(),
-                   outbind_protos()[proto_shown()].name,
-                   s.hit_kind == HIT_FACE, s.open);
     char buf[96];
+    if (s.port >= 0) {
+        outputs_port_name((uint8_t)s.port, buf, sizeof(buf));
+    } else {
+        snprintf(buf, sizeof(buf), "%s", outbind_protos()[proto_shown()].name);
+    }
+    ui_choice_face(c, picker_screen_list_face(), buf, s.hit_kind == HIT_FACE,
+                   s.open);
     picker_screen_count(buf, sizeof(buf));
     gfx_text(c, HEAD_X, COUNT_Y, buf, UI_FONT_LABEL, UI_TEXT_DIM, 1);
     if (picker_screen_reason(buf, sizeof(buf))) {
@@ -949,7 +1013,7 @@ static void draw_mine(gfx_canvas_t *c)
 {
     /* OFF holds no pin, so a table of its pins says nothing, as the count
      * on the Outputs screen. */
-    if (outbind_protos()[proto_shown()].max_pins == 0u) {
+    if (outbind_protos()[proto_shown()].max_pins == 0u && s.port < 0) {
         return;
     }
     const int tx = PINS_X;
@@ -969,8 +1033,10 @@ static void draw_mine(gfx_canvas_t *c)
     uint8_t k = 0;
     for (; ty < SCREEN_H - 24 && picker_screen_row(k, &row); ++k) {
         char buf[8];
-        snprintf(buf, sizeof(buf), "CH%d", row.channel);
-        gfx_text(c, tx, ty, buf, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+        if (row.channel >= 0) {
+            snprintf(buf, sizeof(buf), "CH%d", row.channel);
+            gfx_text(c, tx, ty, buf, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+        }
         snprintf(buf, sizeof(buf), "GP%u", (unsigned)row.gpio);
         gfx_text(c, tx + 40, ty - 6, buf, UI_FONT_HEAD, UI_ACCENT, 1);
         snprintf(buf, sizeof(buf), "%u", (unsigned)row.pad);
@@ -1005,6 +1071,15 @@ static uint8_t use_add(picker_use_t *t, uint8_t n, picker_use_kind_t kind,
  * down the page rather than jumping about with the protocol numbering.
  * Returns the number of lines.
  */
+/* Whether pin @p index is the port picked's own: listed under PINS, not
+ * IN USE, as a protocol's own pins are. */
+static bool own_port_pin(uint8_t index)
+{
+    return s.port >= 0
+           && port_view_get()->pin[s.port]
+                  == outbind_pins(s.bind.board)[index].gpio;
+}
+
 static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
 {
     const uint8_t proto = proto_shown();
@@ -1018,7 +1093,7 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
     if (prog != PICKER_NO_PIN) {
         k = use_add(t, k, PICKER_USE_NAME, PICKER_USE_PROG, prog, -1);
         for (uint8_t i = 0; i < n; ++i) {
-            if (prog_taken(i)) {
+            if (prog_taken(i) && !own_port_pin(i)) {
                 k = use_add(t, k, PICKER_USE_PIN, PICKER_USE_PROG,
                             pins[i].gpio, -1);
             }
@@ -1173,8 +1248,15 @@ static void draw_list(gfx_canvas_t *c)
     const outbind_proto_t *p = outbind_protos();
     for (uint8_t i = 0; i < OUTBIND_PROTOS; ++i) {
         ui_choice_row(c, picker_screen_list_row(i), p[i].name,
-                      i == proto_shown(),
+                      s.port < 0 && i == proto_shown(),
                       s.hit_kind == HIT_ROW && s.hit == (int)i);
+    }
+    for (int n = 0; n < (int)outputs_screen_port_entries(); ++n) {
+        const int i = (int)OUTBIND_PROTOS + n;
+        char name[24];
+        outputs_port_name((uint8_t)n, name, sizeof(name));
+        ui_choice_row(c, picker_screen_list_row((uint8_t)i), name,
+                      s.port == n, s.hit_kind == HIT_ROW && s.hit == i);
     }
 }
 
@@ -1199,10 +1281,28 @@ static void pick(uint8_t proto)
 {
     outbind_set_proto(&s.bind, proto);
     s.refused = -1;
+    s.port = -1;
     if (s.select != NULL) {
         s.select(proto);
     }
 }
+
+/* A port picked: its pin is the one a tap sets.  The outputs screen
+ * shows the same entry. */
+static void pick_port(uint8_t port)
+{
+    if (port >= outputs_screen_port_entries()) {
+        return;
+    }
+    outbind_set_proto(&s.bind, 0u);
+    s.refused = -1;
+    outputs_screen_select_port(port);
+    s.port = outputs_screen_port_shown();
+}
+
+void picker_screen_open_on_port(uint8_t port) { g_open_port = (int)port; }
+
+int picker_screen_port_shown(void) { return s.port; }
 
 static void event(const touch_event_t *evt)
 {
@@ -1215,7 +1315,7 @@ static void event(const touch_event_t *evt)
         s.hit_kind = HIT_NONE;
         s.hit = -1;
         if (s.open) {
-            for (uint8_t i = 0; i < OUTBIND_PROTOS; ++i) {
+            for (uint8_t i = 0; i < (uint8_t)pop_rows(); ++i) {
                 if (gfx_rect_contains(picker_screen_list_row(i), x, y)) {
                     s.hit_kind = HIT_ROW;
                     s.hit = (int)i;
@@ -1240,7 +1340,8 @@ static void event(const touch_event_t *evt)
         /* A binding that is not confirmed takes no press on a key, and
          * neither does OFF, which binds none, as on the Outputs screen.
          * OFF's keys are grey, and a grey key draws no pressed face. */
-        const bool off = outbind_protos()[proto_shown()].max_pins == 0u;
+        const bool off = outbind_protos()[proto_shown()].max_pins == 0u
+                         && s.port < 0;
         const int b = (s.unread || off) ? -1 : button_under(x, y);
         if (b >= 0) {
             s.hit_kind = HIT_BUTTON;
@@ -1271,7 +1372,11 @@ static void event(const touch_event_t *evt)
     if (kind == HIT_ROW) {
         if (gfx_rect_contains(picker_screen_list_row((uint8_t)was), x, y)) {
             s.open = false;
-            pick((uint8_t)was);
+            if (was < (int)OUTBIND_PROTOS) {
+                pick((uint8_t)was);
+            } else {
+                pick_port((uint8_t)(was - (int)OUTBIND_PROTOS));
+            }
         }
         return;
     }
@@ -1281,6 +1386,14 @@ static void event(const touch_event_t *evt)
     /* Only a button that is offered acts.  A refused one is not silent: the
      * reason is printed under the protocol list. */
     const picker_pin_t st = picker_screen_pin((uint8_t)was, NULL, 0);
+    if (s.port >= 0) {
+        s.refused = (st == PICKER_PIN_HELD
+                     && picker_port_clashes(&s.bind, (uint8_t)was,
+                                            (uint8_t)s.port))
+                        ? was : -1;
+        (void)picker_port_tap(&s.bind, (uint8_t)was, (uint8_t)s.port, st);
+        return;
+    }
     if (st != PICKER_PIN_FREE && st != PICKER_PIN_TICKED) {
         if (st == PICKER_PIN_HELD
             && outbind_pwm_clash_ports(&s.bind, (uint8_t)was, g_prog_pins,
@@ -1304,6 +1417,7 @@ static void reset(void)
     outbind_init(&s.bind);
     s.hit = -1;
     s.refused = -1;
+    s.port = -1;
     touched();
 }
 
@@ -1321,8 +1435,14 @@ static void enter(void)
     s.refused = -1;
     s.open = false;
     outbind_set_proto(&s.bind, 0u);
+    s.port = -1;
     if (s.select != NULL) {
         s.select(0u);
+    }
+    /* Or on the port the OUTPUTS entry's PIN button named. */
+    if (g_open_port >= 0) {
+        pick_port((uint8_t)g_open_port);
+        g_open_port = -1;
     }
     /* Asked on the way in, so a drawing that arrived since the last visit
      * is the one shown, and one for a board that has been swapped is not. */
@@ -1359,6 +1479,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
     outputs_iface_read(iface);
     if (memcmp(iface, s.iface, sizeof(iface)) != 0) {
         memcpy(s.iface, iface, sizeof(iface));
+        touched();
+    }
+    /* And the IOmcu taking or refusing a port's pin or function. */
+    if (port_view_revision() != s.view_rev) {
+        s.view_rev = port_view_revision();
         touched();
     }
     if (buffer_index >= 0 && buffer_index < MAX_FBS

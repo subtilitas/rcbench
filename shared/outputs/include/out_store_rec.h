@@ -15,7 +15,12 @@
  *      (protocol 4.7).
  *   6  and the phase tap's set-up, TONE's registers 0 to 6 (protocol 4.8).
  *   7  and the programming ports' pin, slew and endpoints, 4 registers for
- *      each of the PROG page's 4 ports (protocol 4.13).
+ *      each of the PROG page's 4 ports (protocol 4.13).  From protocol
+ *      4.26 the word before them, spare until then, holds each port's
+ *      function (prog_func) with no version change: an older image reads
+ *      the word as spare and writes 0 back, and 0 is every port's default
+ *      function (port 0 SERVO PWM, the others NONE).  A board taken to an
+ *      older image and back loses its ports' functions and keeps their pins.
  *
  * Each version appends to the one before, so a record's configuration is
  * the version before's with fields after it.  A save always writes the
@@ -54,14 +59,18 @@ typedef struct {
     uint16_t supply[LINK_SP_OUTPUT];
     uint16_t sense[LINK_SN_CONFIG_COUNT];
     uint16_t tone[LINK_TN_CONFIG_COUNT];
-    uint16_t spare;   /**< 0; makes the set a whole number of 32-bit words */
+    /** Each port's function (protocol 4.26): bits 4n to 4n + 3 hold 1 +
+     *  port n's FUNC, 0 none stored (prog_port_kept_func()).  0 in a
+     *  record of version 6, of an image older than 4.26, or written by
+     *  one.  Makes the set a whole number of 32-bit words. */
+    uint16_t prog_func;
     uint16_t prog[LINK_PG_PORTS_MAX * 4u]; /**< prog_port_kept() */
 } out_store_t;
 
 /**
  * How many bytes of configuration a record of @p version carries, from the
  * start of an out_store_t: 128 for version 3, 136 for 4, 160 for 5, 176 for
- * 6 (two of them spare), 208 for 7.  0 for a version this build does not
+ * 6 (two of them the word prog_func), 208 for 7.  0 for a version this build does not
  * read.
  */
 size_t out_store_cfg_size(uint16_t version);

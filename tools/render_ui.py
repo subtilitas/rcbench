@@ -106,7 +106,10 @@ SOURCES = [
     "shared/ui/esc_stick_panel.c",
     "shared/ui/outputs_screen.c",
     "shared/ui/outputs_port.c",
+    "shared/ui/outputs_port_entry.c",
+    "shared/ui/port_view.c",
     "shared/ui/picker_screen.c",
+    "shared/ui/picker_port.c",
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",
     "shared/ui/coproc_update_screen.c",
@@ -404,6 +407,9 @@ SCREENS = {
     # The PROG PORT entry, as SERVO's TARGET row opens it with the port as
     # the tester's target: GP13 lit, SERVO TESTER and PORT PWM.
     "outputs-port": ("outputs-port.png", "outputs", "dark"),
+    # PROG PORT 2, function NONE on GP14, its FUNCTION ask waiting for a
+    # bench at rest.
+    "outputs-port2": ("outputs-port2.png", "outputs", "dark"),
     # The overview with SETUP > INTERFACES wired: GP16 and GP17 the sensor
     # bus's, GP18 and GP19 the PD mini's, GP22 the phase tap's.
     "outputs-iface": ("outputs-iface.png", "outputs", "dark"),
@@ -411,6 +417,9 @@ SCREENS = {
     "picker-drawn": ("picker-drawn.png", "picker", "dark"),
     # GP13 is the programming port's: held, and named under IN USE.
     "picker-prog": ("picker-prog.png", "picker", "dark"),
+    # PROG PORT 3 picked, a SERVO PWM port without a pin: GP13 port 1's,
+    # GP14 port 2's, the slice of each PWM output held.
+    "picker-port": ("picker-port.png", "picker", "dark"),
     # Eight of eight slots: every free key grey, and the reason why.
     "picker-full": ("picker-full.png", "picker", "dark"),
     # The protocol list open over the board.

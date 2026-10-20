@@ -107,13 +107,13 @@ extern uint64_t      s_edge_us;
 extern uint64_t      s_base_reserved;
 /*
  * The PROG page: the programming ports, outputs of their own kind with
- * their own pins (shared/outputs/prog_port.h).  Pin, slew and endpoints are
- * kept; the pulse's switch and the tester's target are not.
+ * their own pins (shared/outputs/prog_port.h).  Pin, slew, endpoints and
+ * function are kept; the pulse's switch and the tester's target are not.
  */
 extern prog_port_t   s_prog;
 /* The programming ports this build has; the model holds
  * LINK_PG_PORTS_MAX. */
-#define IOMCU_PROG_PORTS 1u
+#define IOMCU_PROG_PORTS 4u
 /*
  * The KST page: the wire protocol for KST and Chaservo servos on a
  * programming port (shared/outputs/kst_port.h) and the wire driver the

@@ -108,7 +108,10 @@ typedef enum {
  * HITEC takes the receive mode of a D series line in write register 23
  * (LINK_HT_W_RX_MODE); a 4.23 IOmcu refuses that write with
  * LINK_NACK_READ_ONLY and receives with the pull-up, which the panel says
- * on SETUP when the mode asked is PRECHARGE.  An
+ * on SETUP when the mode asked is PRECHARGE.  From 4.26 PROG has 28
+ * registers: registers 24 to 27 are each port's FUNC, the function its
+ * pin carries while no wire page holds it; the panel reads the 24 an
+ * older IOmcu has and offers a port SERVO PWM only.  An
  * IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -121,7 +124,7 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 24u
+#define LINK_PROTOCOL_MINOR 26u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -191,6 +194,11 @@ typedef enum {
  *  refuses the write with LINK_NACK_READ_ONLY and receives with the
  *  pull-up. */
 #define LINK_MINOR_HITEC_RX 24u
+/** The first minor whose PROG page has a FUNC register per port
+ *  (LINK_PG_FUNC0, LINK_PG_REGS 28) and the parked flag in FLAGS.  An
+ *  older minor's page has LINK_PG_REGS_V424 registers, refuses a longer
+ *  read with LINK_NACK_BAD_RANGE and runs every port's pin as SERVO PWM. */
+#define LINK_MINOR_PROG_FUNC 26u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1719,27 +1727,35 @@ typedef enum {
 /*
  * The PROG page (0x33, since 4.13): the programming ports.  A programming
  * port is an output of its own kind with its own pin.  It is no slot of the
- * OUTPUTS page and no channel of the CHANNELS page.  It renders a servo
- * pulse from the PWM (pulse-width modulation) generator, switched by its
- * bit in LINK_PG_PWM, or carries the programming protocol of the KST page,
- * never both.  shared/outputs/prog_port.h holds the rules.
+ * OUTPUTS page and no channel of the CHANNELS page.  While no wire page
+ * (KST, HITEC) holds it, its pin carries the port's function, FUNC (from
+ * 4.26; SERVO PWM on an older IOmcu): a servo pulse from the PWM
+ * (pulse-width modulation) generator, switched by its bit in LINK_PG_PWM,
+ * or nothing, the pin parked as an input with its pull-down.  A wire page
+ * that holds the port has the pin, never both.  shared/outputs/prog_port.h
+ * holds the rules.
  *
  * Registers 0 to 3 are the page's own; LINK_PG_STRIDE registers per port
- * follow from LINK_PG_PORT0.  PIN, SLEW, MIN_US and MAX_US are kept in
- * flash; PWM, TARGET and CMD are not.
+ * follow from LINK_PG_PORT0, then one FUNC register per port from
+ * LINK_PG_FUNC0.  PIN, SLEW, MIN_US, MAX_US and FUNC are kept in flash;
+ * PWM, TARGET and CMD are not.
  */
 enum {
     LINK_PG_COUNT  = 0,  /**< read only: the ports this build has */
     LINK_PG_FLAGS  = 1,  /**< read only: bit n, port n's pin is bound to
-                              the PWM generator; bit 8 + n, port n's pin
-                              is refused */
+                              the PWM generator; bit 4 + n (from 4.26),
+                              port n's pin is parked (FUNC NONE); bit
+                              8 + n, port n's pin is refused */
     LINK_PG_PWM    = 2,  /**< bit n: port n renders its pulse while the
                               bank is armed */
     LINK_PG_TARGET = 3,  /**< what the SERVO page's rate, sweep and hold
                               command: 0 the standard servo ports, 1 + n
                               port n; a change sets the SERVO rate to 0 */
     LINK_PG_PORT0  = 4,
-    LINK_PG_REGS   = 24,
+    LINK_PG_REGS_V424 = 24, /**< the page of an IOmcu older than 4.26 */
+    LINK_PG_FUNC0  = 24, /**< from 4.26: port n's FUNC is LINK_PG_FUNC0 + n,
+                              a link_pg_func_t */
+    LINK_PG_REGS   = 28,
 };
 enum {
     LINK_PG_PIN    = 0,  /**< per port: the IOmcu GPIO, or
@@ -1750,12 +1766,23 @@ enum {
     LINK_PG_MAX_US = 4,  /**< as LINK_CC_MAX_US */
     LINK_PG_STRIDE = 5,
 };
+/** A port's function: what its pin carries while no wire page holds it.
+ *  Values 2 to 4 are DSHOT150, DSHOT300 and DSHOT600, which this protocol
+ *  minor refuses with LINK_NACK_BAD_VALUE. */
+typedef enum {
+    LINK_PG_FN_SERVO_PWM = 0, /**< the servo pulse; a PWM pin only */
+    LINK_PG_FN_NONE      = 1, /**< no driver: an input with its pull-down;
+                                   any free header pin */
+    LINK_PG_FN_COUNT     = 2,
+} link_pg_func_t;
 /** Ports the page has room for. */
 #define LINK_PG_PORTS_MAX 4u
 #define LINK_PG_PIN_NONE  0xFFFFu
 #define LINK_PG_REG(port, r) \
     ((uint8_t)(LINK_PG_PORT0 + (unsigned)(port) * LINK_PG_STRIDE + (r)))
+#define LINK_PG_FUNC(port) ((uint8_t)(LINK_PG_FUNC0 + (unsigned)(port)))
 #define LINK_PG_F_BOUND(port)   ((uint16_t)(1u << (unsigned)(port)))
+#define LINK_PG_F_PARKED(port)  ((uint16_t)(0x10u << (unsigned)(port)))
 #define LINK_PG_F_REFUSED(port) ((uint16_t)(0x100u << (unsigned)(port)))
 
 /* ------------------------------------------------------------------- HITEC */

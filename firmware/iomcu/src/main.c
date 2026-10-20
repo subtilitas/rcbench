@@ -573,7 +573,8 @@ int main(void)
      * or the phase tap holds is theirs, and the port is without one, with
      * the PROG page's refused flag set until another pin is written.  A
      * board that has stored no port (a record older than version 7, or
-     * none) has port 0 on PROG_PORT_DEFAULT_PIN.
+     * none) has port 0 on PROG_PORT_DEFAULT_PIN; a port's function is the
+     * record's (4.26), else port 0 SERVO PWM and the others NONE.
      */
     uint16_t prog_kept[PROG_PORT_KEPT_COUNT];
     if (have_saved) {
@@ -581,9 +582,10 @@ int main(void)
     } else {
         prog_port_defaults(prog_kept, PROG_PORT_DEFAULT_PIN);
     }
-    prog_port_restore(&s_prog, prog_kept, &s_outputs,
-                      supply_page_pins(&s_supply) | sense_page_held(&s_sense)
-                          | tone_page_pins(&s_tone));
+    prog_port_restore_fn(&s_prog, prog_kept,
+                         have_saved ? saved.prog_func : 0u, &s_outputs,
+                         supply_page_pins(&s_supply) | sense_page_held(&s_sense)
+                             | tone_page_pins(&s_tone));
     reserve_held();
     ports_apply();
 #if IOMCU_SENSE_BRINGUP

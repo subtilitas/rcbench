@@ -176,14 +176,25 @@ void outputs_screen_open_on(uint8_t proto);
 void outputs_screen_open_on_port(uint8_t port);
 
 /**
- * Why the PROG PORT entry's segments take no press, as the screen draws it
- * under them, or an empty string and false when they take one or the
- * entry shown has none: the servo programmer holds the port, the bench is
- * ARMED or a test or sweep runs, or PORT PWM with OUTPUTS as the tester's
- * target.  outputs_screen_reason() returns the same while an entry is
- * shown.
+ * The amber line of the PROG PORT entry shown, as the screen draws it
+ * under the segments, or an empty string and false with none or no entry
+ * shown.  In this order: the servo programmer holds the port; the last
+ * ask for this port's PIN or FUNCTION waits, was refused or was lost
+ * (port_view_ask_line()); the ports are not read yet; the bench is ARMED
+ * or a test or sweep runs; the tester drives another port; the port's
+ * function is not SERVO PWM; the IOmcu is older than 4.26; the tester
+ * drives this port; PORT PWM without this port as the tester's target.
+ * outputs_screen_reason() returns the same while an entry is shown.
  */
 bool outputs_screen_port_reason(char *buf, size_t cap);
+
+/**
+ * What watches port @p port's current, as its entry names it: an INA3221
+ * channel ("INA3221 0x40 CH1", at most 23 characters), or NULL or "" for
+ * none.  The sensor map sets it; until then every entry says no channel
+ * watches it.
+ */
+void outputs_screen_set_port_watch(uint8_t port, const char *label);
 
 /**
  * The line under the protocol that says why no pin can be ticked, or why the

@@ -88,8 +88,9 @@ void save_outputs(const iomcu_state_t *s)
     memcpy(cfg.sense, &s_sense.sense[LINK_SN_ENABLE], sizeof(cfg.sense));
     /* And the phase tap's. */
     memcpy(cfg.tone, s_tone.cfg, sizeof(cfg.tone));
-    /* And where the programming ports are. */
+    /* And where the programming ports are, and what each carries. */
     prog_port_kept(&s_prog, cfg.prog);
+    cfg.prog_func = prog_port_kept_func(&s_prog);
     out_store_save(&cfg, s_now_ms);
 }
 
@@ -166,7 +167,8 @@ static uint8_t ports_bind(void)
                                             : prog_port_pin(&s_prog, i);
         hz[i] = prog_port_port_hz(&s_prog, i);
     }
-    outputs_hw_ports(pin, hz, (uint8_t)PROG_PORT_CHANNEL0);
+    outputs_hw_ports(pin, hz, prog_port_parked(&s_prog),
+                     (uint8_t)PROG_PORT_CHANNEL0);
     return wire;
 }
 
@@ -306,9 +308,10 @@ void prog_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 /*
  * The PROG page.  A pin is judged against the slots, the board's own pins
  * and the ones the supply, the sensor bus and the phase tap hold, then
- * reserved against all of them and bound.  A pin the generator cannot bind
- * is refused with the pins as they were.  No pin moves while the bank is
- * armed or asked to arm, or while the KST or HITEC page holds a port.
+ * reserved against all of them and bound, or parked for a NONE port.  A
+ * pin its function cannot hold is refused with the pins and functions as
+ * they were.  No pin and no function changes while the bank is armed or
+ * asked to arm, or while the KST or HITEC page holds a port.
  *
  * The pins are bound, at the rates the write leaves the ports at, before
  * the SERVO page follows a TARGET change: a refused write leaves the SERVO
@@ -320,9 +323,10 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
     const iomcu_state_t *s = (const iomcu_state_t *)ctx;
     sense_sync();
     const prog_port_t was = s_prog;
-    uint16_t kept_was[PROG_PORT_KEPT_COUNT];
-    uint16_t kept_now[PROG_PORT_KEPT_COUNT];
+    uint16_t kept_was[PROG_PORT_KEPT_COUNT + 1u];
+    uint16_t kept_now[PROG_PORT_KEPT_COUNT + 1u];
     prog_port_kept(&s_prog, kept_was);
+    kept_was[PROG_PORT_KEPT_COUNT] = prog_port_kept_func(&s_prog);
     const uint8_t nack = prog_port_write(
         &s_prog, off, n, in, &s_outputs,
         supply_page_pins(&s_supply) | sense_page_held(&s_sense)
@@ -333,12 +337,14 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
     }
     reserve_held();
     (void)ports_bind();
-    /* Every port that holds a pin has it on the generator, or the write is
-     * undone: the pins, the reservation and the silicon as before. */
+    /* Every port that holds a pin has it held by its function -- bound to
+     * the generator, or parked -- or the write is undone: the pins, the
+     * functions, the reservation and the silicon as before. */
     for (uint8_t i = 0; i < prog_port_count(&s_prog); ++i) {
         if (prog_port_pin(&s_prog, i) != PROG_PORT_NO_PIN
             && (outputs_hw_ports_bound() & (1u << i)) == 0u
-            && prog_port_pin(&was, i) != prog_port_pin(&s_prog, i)) {
+            && (prog_port_pin(&was, i) != prog_port_pin(&s_prog, i)
+                || prog_port_func(&was, i) != prog_port_func(&s_prog, i))) {
             prog_port_revert(&s_prog, &was, &s_outputs);
             reserve_held();
             ports_apply();
@@ -347,6 +353,7 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
     }
     ports_apply();
     prog_port_kept(&s_prog, kept_now);
+    kept_now[PROG_PORT_KEPT_COUNT] = prog_port_kept_func(&s_prog);
     if (memcmp(kept_was, kept_now, sizeof(kept_was)) != 0) {
         save_outputs(&s_state);
     }

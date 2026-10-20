@@ -29,6 +29,15 @@
  * TARGET change returns it to 0.  prog_link_rate() says what the reads and
  * writes since it was last asked mean for the rate the panel last wrote.
  *
+ * A port's PIN and, from protocol 4.26, its FUNC are the IOmcu's, kept in
+ * its flash with the outputs' binding: the panel writes one only when the
+ * operator asks (prog_link_ask()), never from a stored setting.  An ask
+ * waits for a bench at rest as a TARGET change does; a port that is the
+ * TARGET is first let go (TARGET 0, its pulse off first), and the target
+ * wanted comes back after the write.  An IOmcu older than 4.26 has 24
+ * registers and no FUNC: every port reads SERVO PWM and a FUNC ask is
+ * refused before anything is sent.
+ *
  * Pure logic, no I/O.  Nothing here has run on hardware.
  *
  * SPDX-License-Identifier: MIT
@@ -67,6 +76,24 @@ typedef enum {
 /** prog_link_t's seen while no TARGET is known. */
 #define PROG_LINK_SEEN_NONE 0xFFu
 
+/** What a prog_link_ask() asks: a port's PIN or its FUNC. */
+typedef enum {
+    PROG_LINK_ASK_PIN = 0,
+    PROG_LINK_ASK_FUNC,
+} prog_link_ask_kind_t;
+
+/** Where the last prog_link_ask() stands. */
+typedef enum {
+    PROG_LINK_ASK_IDLE = 0,    /**< none asked since the link came up    */
+    PROG_LINK_ASK_WAITING,     /**< asked, not written yet: the page not
+                                    known, the programmer holds a port,
+                                    or the bench is not at rest          */
+    PROG_LINK_ASK_DONE,        /**< written and acknowledged            */
+    PROG_LINK_ASK_REFUSED,     /**< written, not acknowledged: refused
+                                    or unanswered                        */
+    PROG_LINK_ASK_LOST,        /**< the link went down before the write  */
+} prog_link_ask_state_t;
+
 typedef struct {
     bool     up;                   /**< an IOmcu answers              */
     bool     page;                 /**< the IOmcu has the page       */
@@ -82,6 +109,13 @@ typedef struct {
     uint8_t  want_target;          /**< 0, or 1 + n for port n             */
     bool     want_pwm;
     bool     held;                 /**< the programmer has a port          */
+    bool     func;                 /**< from 4.26: FUNC and 28 registers  */
+    uint8_t  ask_state;            /**< a prog_link_ask_state_t            */
+    uint8_t  ask_port;
+    uint8_t  ask_kind;             /**< a prog_link_ask_kind_t             */
+    uint16_t ask_value;            /**< the register value to write        */
+    bool     reread;               /**< an ask was written: nothing more
+                                        until the page is read again      */
 } prog_link_t;
 
 /** One register to write. */
@@ -116,12 +150,36 @@ void prog_link_want(prog_link_t *p, uint8_t target, bool pwm);
 void prog_link_hold(prog_link_t *p, bool held);
 bool prog_link_held(const prog_link_t *p);
 
+/** The registers a read of the page asks for: LINK_PG_REGS from 4.26,
+ *  LINK_PG_REGS_V424 before. */
+uint8_t prog_link_regs(const prog_link_t *p);
+
+/** Whether the IOmcu takes a FUNC: protocol 4.26 or later. */
+bool prog_link_has_func(const prog_link_t *p);
+
+/**
+ * Ask for port @p port's PIN (@p value a GPIO, or LINK_PG_PIN_NONE) or
+ * FUNC (a link_pg_func_t) to be written.  True when taken: the page is
+ * there, the port is one it has, and for FUNC the IOmcu has the register
+ * and @p value is SERVO PWM or NONE.  A later ask replaces one still
+ * waiting.  prog_link_next() writes it on a bench at rest.
+ */
+bool prog_link_ask(prog_link_t *p, uint8_t port, prog_link_ask_kind_t kind,
+                   uint16_t value);
+
+/** Where the last ask stands, and what it was (@p port, @p kind, @p value
+ *  may be NULL). */
+prog_link_ask_state_t prog_link_ask_state(const prog_link_t *p,
+                                          uint8_t *port, uint8_t *kind,
+                                          uint16_t *value);
+
 /** Whether the page is to be read now: it is unknown, or
  *  PROG_LINK_POLL_MS have passed. */
 bool prog_link_read_due(const prog_link_t *p, uint32_t now_ms);
 
-/** The page as read, LINK_PG_REGS registers, or NULL for a read that was
- *  not answered: the page is unknown then. */
+/** The page as read, prog_link_regs() registers, or NULL for a read that
+ *  was not answered: the page is unknown then.  Below 4.26 every port's
+ *  FUNC is taken as SERVO PWM. */
 void prog_link_read(prog_link_t *p, const uint16_t *regs, uint32_t now_ms);
 
 /** The page is unknown until it is read again. */
@@ -131,7 +189,9 @@ void prog_link_stale(prog_link_t *p);
  * The write that is due, into @p w.  @p quiet says the bank is disarmed and
  * no surface holds a position this panel wrote.  False for none: no page,
  * the page unknown, nothing differs, or what differs waits for @p quiet.
- * The pulse is switched off before the target changes and on after.
+ * The pulse is switched off before the target changes and on after.  An
+ * ask (prog_link_ask()) is written on a bench at rest once its port is
+ * neither the target nor pulsing, before the pulse goes back on.
  */
 bool prog_link_next(const prog_link_t *p, bool quiet, prog_link_write_t *w);
 
@@ -149,8 +209,9 @@ uint8_t prog_link_pulse_on(const prog_link_t *p, const prog_link_write_t *w);
 void prog_link_written(prog_link_t *p, const prog_link_write_t *w, bool ack);
 
 /** The target the screen can have: what is wanted, or 0 when the page has
- *  no such port or the port has no bound pin -- the IOmcu refuses
- *  such a target.  0 while the page is unknown or absent. */
+ *  no such port, the port has no pin bound to the PWM generator -- the
+ *  IOmcu refuses such a target -- or an ask for that port waits.  0
+ *  while the page is unknown or absent. */
 uint8_t prog_link_wanted(const prog_link_t *p);
 
 /** Whether prog_link_target() is the IOmcu's: there is no page, or
@@ -206,6 +267,17 @@ uint8_t prog_link_count(const prog_link_t *p);
 /** The GPIO port @p port is bound to, or PROG_LINK_NO_PIN: no page, no
  *  read, no such port, no pin, or a pin the IOmcu refused. */
 uint8_t prog_link_pin(const prog_link_t *p, uint8_t port);
+
+/** A port as the page holds it, for the OUTPUTS entry and PICK A PIN. */
+typedef struct {
+    uint8_t pin;        /**< the PIN register, PROG_LINK_NO_PIN for none  */
+    uint8_t func;       /**< a link_pg_func_t                              */
+    bool    refused;    /**< the IOmcu does not hold the pin (FLAGS)      */
+} prog_link_port_t;
+
+/** Port @p port as the page holds it into @p out.  False, and @p out
+ *  untouched, with no page, no read or no such port. */
+bool prog_link_port(const prog_link_t *p, uint8_t port, prog_link_port_t *out);
 
 /** What the tester drives: the target, and with a port its pin and pulse. */
 typedef struct {

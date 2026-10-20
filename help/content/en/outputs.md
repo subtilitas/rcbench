@@ -75,21 +75,34 @@ A stored binding that holds GP13 keeps it: the programming port then has no pin,
 
 ![The PROG PORT entry](view:outputs-port)
 
-The protocol list ends in one PROG PORT entry per programming port the IOmcu reports: 1 on the bring-up build, at most 4, and one for port 1 while the count is not known. An IOmcu older than protocol 4.13 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Its entry shows:
+The protocol list ends in one PROG PORT entry per programming port the IOmcu reports: 4 from protocol 4.26, 1 on an older build, and one for port 1 while the count is not known. An IOmcu older than protocol 4.13 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Every entry has the same rows:
 
-- every pin as the overview names it, the port's pin lit. No pin takes a tick; the port's pin is read-only.
-- `PIN GP13`, or `NO PIN KNOWN` in the warning colour.
-- `CARRIES SERVO PWM AND KST/CHASERVO PROGRAMMING`: the IOmcu renders no MOTOR PWM and no DShot on the port.
-- SERVO TESTER, OUTPUTS or PROG PORT: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port.
-- PORT PWM, ON or OFF: the port's pulse while it is the tester's target.
-
-| Line under the two | Condition |
+| Row | Shows and does |
 |---|---|
-| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | the [servo programmer](servo-programmer.md) has the port |
-| `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED, or a sweep or a test runs; PORT PWM still goes off |
-| `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM with OUTPUTS as the tester's target |
+| PIN | `PIN GP13`, `SET A PIN`, `PIN GP14 REFUSED` or `NO PIN KNOWN`; a tap opens [PICK A PIN](picker.md) on the port, where a tap on a pin sets it |
+| FUNCTION | SERVO PWM or NONE: what the pin carries while no programming session holds it. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin |
+| WATCHED BY | the current channel that watches the port; `WATCHED BY NO CURRENT CHANNEL` until a sensor map names one |
+| SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port |
+| PORT PWM | ON or OFF: the pulse of the port that is the tester's target |
 
-Picking the entry writes nothing to the IOmcu, and LAST WRITE is not shown on it. The two settings are kept on the panel and reach the IOmcu on a bench at rest. With more than one port the entries read `PROG PORT 1` to `PROG PORT 4`; the tester drives port 1 only.
+The IOmcu keeps each port's pin and function in its flash, with the outputs' binding: they belong to the board. Port 1 starts as SERVO PWM on GP13, ports 2 to 4 as NONE with no pin. A FUNCTION tap and a pin tapped in PICK A PIN are asks: the panel writes them on a bench at rest and the amber line says how they stand.
+
+![PROG PORT 2 with its ask waiting](view:outputs-port2)
+
+| Line under the rows | Condition |
+|---|---|
+| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | the [servo programmer](servo-programmer.md) has a port |
+| `WAITS FOR SAFE, NO TEST, SWEEP OR SERVO PROGRAMMER` | an ask for this port waits for a bench at rest |
+| `THE IOMCU REFUSED IT` | the IOmcu refused the last ask, or did not answer it |
+| `LINK LOST BEFORE THE WRITE` | the link went down before the ask was written |
+| `PORTS NOT READ YET` | the IOmcu's ports not read since the link came up |
+| `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED, or a sweep or a test runs; PORT PWM still goes off |
+| `SERVO TESTER DRIVES PROG PORT 3` | the tester drives another port |
+| `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE |
+| `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
+| `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
+
+Picking the entry writes nothing to the IOmcu, and LAST WRITE is not shown on it. The tester's two settings are kept on the panel and reach the IOmcu on a bench at rest. With more than one port the entries read `PROG PORT 1` to `PROG PORT 4`.
 
 ## The overview: OFF
 

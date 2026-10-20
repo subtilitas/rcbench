@@ -47,8 +47,9 @@ bool outputs_port_event(const touch_event_t *evt);
 void outputs_port_tick(void);
 
 /* Bumped by every change of what the entry draws; the screen repaints on
- * a change of it as on one of its own. */
+ * a change of it as on one of its own.  outputs_port_touched() bumps it. */
 uint32_t outputs_port_revision(void);
+void outputs_port_touched(void);
 
 /* The entry's left column, under the dropdown @p dd drawn @p pressed and
  * @p open. */

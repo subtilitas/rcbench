@@ -1271,6 +1271,20 @@ bool servo_link_binding_known(void)
 
 void servo_link_prog_service(void)
 {
+    /* A sweep state not known since the link came up is settled on a
+     * disarmed bench with a stop, when a target change waits on it: an
+     * IOmcu that restarted, or one whose TARGET a programming session
+     * took back, gets the tester's port again in SAFE and not only with
+     * the first command after the next ARM. */
+    if (s_servo_sweep_unknown && !sl_armed() && !s_servo_sweeping
+        && !s_servo_holding && prog_link_pending(s_ctx->prog)) {
+        link_msg_t reply = { 0 };
+        const uint16_t stop = 0u;
+        if (write_regs(LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u, &stop, &reply)
+            && reply.op == LINK_OP_ACK) {
+            s_servo_sweep_unknown = false;
+        }
+    }
     const bool rest = !sl_armed() && !s_servo_sweeping
                       && !s_servo_holding && !s_servo_sweep_unknown;
     if (rest && prog_link_pending(s_ctx->prog)) {
