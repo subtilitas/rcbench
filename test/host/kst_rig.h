@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "card_state.h"
 #include "kst_fake_card.h"
 #include "kst_link.h"
 #include "kst_panel.h"
@@ -63,6 +64,7 @@ typedef struct {
 
     /* The card. */
     bool card, card_fails, card_silent;
+    uint8_t card_state;        /* card_state_t while card is false */
     char file[KST_PROG_FILE_MAX];
     size_t file_len;
     unsigned file_writes;
@@ -218,6 +220,7 @@ static inline void rig_feed_now(kst_prog_feed_t *f)
     f->outcome = g_rig.outcome;
     f->stopped = g_rig.stopped;
     f->card = g_rig.card;
+    f->card_state = g_rig.card ? (uint8_t)CARD_STATE_MOUNTED : g_rig.card_state;
     f->target = g_rig.target;
     for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
         f->port_pin[i] = rig_hw_pin(NULL, i);

@@ -690,6 +690,7 @@ __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     f->stopped     = arming_stopped(&s_arm);
     f->armed       = outputs_armed(&s_out);
     f->card        = storage_mounted();
+    f->card_state  = (uint8_t)storage_card_state();
     f->target      = prog_link_target(&s_prog_link);
     /* The pin of each programming port, for the journal of a write. */
     f->port_pin_known = 0u;

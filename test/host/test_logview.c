@@ -242,12 +242,24 @@ static bool fake_remove(const char *name, void *ctx)
     return false;
 }
 
+/* What the slot holds while g_no_card: asked after a list that failed. */
+static card_state_t g_card_state;
+static unsigned g_card_asks;
+
+static card_state_t fake_card(void *ctx)
+{
+    (void)ctx;
+    ++g_card_asks;
+    return g_card_state;
+}
+
 static const log_viewer_io_t k_io = {
     .list = fake_list,
     .open = fake_open,
     .close = NULL,
     .volume = fake_volume,
     .remove = fake_remove,
+    .card = fake_card,
     .ctx = NULL,
 };
 
@@ -271,6 +283,8 @@ static void reset_screen(void)
     settings_init();
     ui_theme_set(UI_THEME_DARK);
     g_no_card = false;
+    g_card_state = CARD_STATE_NONE;
+    g_card_asks = 0u;
     g_empty_card = false;
     g_card_runs = 0;
     g_card_others = 0;
@@ -599,6 +613,60 @@ TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
     }
     CHECK(differing > 0);
     free(no_card);
+}
+
+/*
+ * A card in the slot that does not mount says which: not formatted as FAT32,
+ * or unreadable, each in its own words, and neither as no card.  The slot is
+ * asked after the list that found no volume, and only then.
+ */
+TEST_CASE(a_card_that_does_not_mount_says_which)
+{
+    static const card_state_t k_state[] = {
+        CARD_STATE_NONE, CARD_STATE_NO_FAT, CARD_STATE_UNREADABLE,
+    };
+    enum { N = (int)(sizeof(k_state) / sizeof(k_state[0])) };
+    for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
+        gfx_color_t *band[N];
+        for (int k = 0; k < N; ++k) {
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            g_no_card = true;
+            g_card_state = k_state[k];
+            log_viewer_refresh();
+            CHECK(g_card_asks >= 1u);
+            CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+            screen()->render(&s_c, 0);
+            band[k] = calloc((size_t)W * 21, sizeof(gfx_color_t));
+            CHECK(band[k] != NULL);
+            memcpy(band[k], &s_fb[205 * W], (size_t)W * 21 * sizeof(gfx_color_t));
+        }
+        /* Each pair differs over the reason's line. */
+        for (int a = 0; a < N; ++a) {
+            for (int b = a + 1; b < N; ++b) {
+                CHECK(memcmp(band[a], band[b],
+                             (size_t)W * 21 * sizeof(gfx_color_t)) != 0);
+            }
+        }
+        for (int k = 0; k < N; ++k) {
+            free(band[k]);
+        }
+        ui_text_set_language(UI_LANG_EN);
+    }
+    /* A card that lists is not asked about. */
+    fresh();
+    g_card_state = CARD_STATE_NO_FAT;
+    log_viewer_refresh();
+    CHECK_EQ(g_card_asks, 0u);
+    /* An io without the question reads as no card. */
+    log_viewer_io_t io = k_io;
+    io.card = NULL;
+    fresh();
+    log_viewer_set_io(&io);
+    g_no_card = true;
+    log_viewer_refresh();
+    screen()->render(&s_c, 0);
+    log_viewer_set_io(&k_io);
 }
 
 /*
@@ -4113,6 +4181,7 @@ int main(void)
     RUN(a_two_row_file_still_draws_a_trace);
     RUN(no_card_says_so_and_stays_put);
     RUN(an_empty_card_is_not_the_same_as_no_card);
+    RUN(a_card_that_does_not_mount_says_which);
     RUN(a_second_tap_opens_the_file_and_analyses_it);
     RUN(a_cancelled_press_opens_nothing);
     RUN(a_german_file_is_read_as_german);

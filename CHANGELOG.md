@@ -8,6 +8,15 @@ history is in git.
 
 ### Fixed
 
+- A card in the panel's SD (Secure Digital) slot that holds no FAT (file
+  allocation table) volume -- exFAT, NTFS, a GPT or no format -- reads
+  `Card not formatted as FAT32. Format it on a computer.` on LOGS, `not
+  FAT32` on the splash, and its own line in the run and servo test alerts
+  and the servo programmer's card notes. A card that does not mount for
+  another reason reads `Cannot read the card.`. Both read `No card` before.
+  The console line names the FatFs result:
+  `W storage: card holds no FAT volume (FatFs 13): format it FAT32`. A card
+  that starts and does not mount is started once more to ask FatFs why.
 - The update check with RELEASES: TESTING reads GitHub's API answer in
   chunks (`Transfer-Encoding: chunked`, no `Content-Length`), the form
   GitHub sends when its cache does not hold the request. The check ended

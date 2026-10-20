@@ -210,7 +210,8 @@ trägt die Firmware-Version des Panels selbst, die Zeile des IOmcu die
 Protokollversion und die Firmware-Version, die dieser IOmcu gemeldet
 hat — zwei Platinen können dasselbe Protokoll sprechen und verschiedene
 Builds sein, und hier zeigt sich das. Eine fehlende Karte ist
-eine Warnung. Ein Touch-Controller, der nicht antwortet, oder ein IOmcu
+eine Warnung. Die Zeile SD-Karte zeigt `keine Karte`, `nicht FAT32` (FAT:
+File Allocation Table) oder `nicht lesbar` ([Das Format der SD-Karte](#das-format-der-sd-karte)). Ein Touch-Controller, der nicht antwortet, oder ein IOmcu
 mit einer anderen Major-Version des Protokolls ist ein Fehler, und der
 Prüfstand schaltet nicht auf ARMED. Wenn alle Schritte geantwortet haben,
 übergibt der Splash nach 1,6 s an das Menü; ein Tippen überspringt das Warten.
@@ -1949,7 +1950,10 @@ TXT), sodass eine inzwischen geschriebene Datei übersprungen und nicht
 nicht gefüllt. Ein Ordner mit einer Nummer 999 unter irgendeinem Namen nimmt
 keinen weiteren Lauf an, auch wenn niedrigere Nummern frei sind: Das Band
 meldet `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.`, für
-einen Test `Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.` Ein
+einen Test `Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.` Eine
+Karte im Steckplatz, die sich nicht mounten lässt, meldet für einen Test
+`Karte nicht als FAT32 formatiert. Servotest nicht aufgezeichnet.` oder
+`Karte nicht lesbar. Servotest nicht aufgezeichnet.` Ein
 Ordner, der sich nicht anlegen lässt, weil eine Datei seinen Namen trägt
 oder die Karte schreibgeschützt oder voll ist, meldet
 `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.` Nach einem
@@ -1968,7 +1972,11 @@ vorgegeben `BENCH/LOGS`) und STAMM (das Stammverzeichnis der Karte). Ein angetip
 wechseln die Tabs ebenso: Der angetippte Tab ist gewählt gezeichnet, der
 Kasten zeigt `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`
 mit der Zeile dieses Tabs darunter, und der Tipp sucht erneut nach einer
-Karte, wie AKTUALISIEREN. Die
+Karte, wie AKTUALISIEREN. Eine Karte im Steckplatz, die sich nicht mounten
+lässt, meldet stattdessen
+`Karte nicht als FAT32 formatiert. Am Computer formatieren.` oder
+`Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.`
+([Das Format der SD-Karte](#das-format-der-sd-karte)). Die
 Kopfzeile rechts der Tabs nennt die Karte und den Ordner,
 `UNITEST  BENCH/LOGS`, und auf STAMM die Karte allein. Ein leerer Ordner
 sagt, warum, und was hineingehört: `Keine .csv-Dateien in BENCH/LOGS.` und
@@ -2114,13 +2122,14 @@ einer eigenen Task. Eine SD-Karte (Secure Digital) darf sich für einen Schreibv
 250 ms Zeit nehmen, und die Task, die die Sicherheitsleitung schlägt, hat eine
 Obergrenze von 150 ms.
 
-Acht Meldungen sagen, was die Karte mit einem Lauf gemacht hat. Jede
+Neun Meldungen sagen, was die Karte mit einem Lauf gemacht hat. Jede
 erscheint im Band:
 
 | Meldung | Was passiert ist |
 |---|---|
 | `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` | nichts ist gemountet, der Lauf wurde nie geöffnet |
-| `Karte nicht lesbar. Lauf nicht aufgezeichnet.` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar |
+| `Karte nicht als FAT32 formatiert. Lauf nicht aufgezeichnet.` | die Karte im Steckplatz trägt kein FAT-Volume, nichts ist gemountet ([Das Format der SD-Karte](#das-format-der-sd-karte)) |
+| `Karte nicht lesbar. Lauf nicht aufgezeichnet.` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar, oder die Karte im Steckplatz lässt sich nicht mounten |
 | `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.` | es ließ sich keine Laufnummer anlegen |
 | `Karte zu langsam. Lauf nicht aufgezeichnet.` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
 | `Die Karte war zu langsam. In der Aufzeichnung fehlen Daten.` | einzelne Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
@@ -2128,13 +2137,54 @@ erscheint im Band:
 | `Daten konnten nicht mehr auf die Karte geschrieben werden. Aufzeichnung unvollständig.` | derselbe Fehler, beim Schließen des Laufs noch einmal gemeldet |
 | `Letzter Schreibvorgang auf die Karte fehlgeschlagen. Aufzeichnung unvollständig.` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
-Bei den ersten vier gibt es keine Datei zu suchen. Bei den letzten vier gibt
+Bei den ersten fünf gibt es keine Datei zu suchen. Bei den letzten vier gibt
 es eine, und sie hört zu früh auf.
 
 Ein Lauf, der gerade geschrieben wird, erscheint nicht in LOGS. Die Länge einer
 Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ein
 noch offener Lauf stünde also mit seiner zuletzt festgeschriebenen Länge in der
 Liste und läse sich wie ein fertiger.
+
+### Das Format der SD-Karte
+
+Das Panel liest Volumes mit FAT32, FAT16 und FAT12. exFAT (extended FAT) und
+NTFS (New Technology File System) liest es nicht, und es formatiert nie eine
+Karte. FatFs, der Dateisystem-Code von ESP-IDF v5.4, sucht das Volume in
+Sektor 0 und in den 4 primären Partitionen eines MBR (Master Boot Record);
+eine Karte mit GPT (GUID-Partitionstabelle) wird nicht gelesen. SD-Karten
+über 32 GB (SDXC) sind ab Werk mit exFAT formatiert und müssen zuerst mit
+FAT32 formatiert werden.
+
+So wird eine Karte mit FAT32 formatiert:
+
+- Bis 32 GB: der SD Card Formatter der SD Association oder der
+  Formatierbefehl des Computers mit dem Dateisystem FAT32.
+- Über 32 GB: ein Werkzeug, das für diese Größe FAT32 anbietet. Der SD Card
+  Formatter schreibt auf diese Karten exFAT, und der Formatierdialog von
+  Windows bietet über 32 GB nur exFAT und NTFS an. Unter Linux, für die
+  erste Partition der Karte unter `/dev/sdX1`:
+  `sudo mkfs.vfat -F 32 /dev/sdX1`.
+
+Formatieren löscht die Karte. Das Panel sucht eine Karte beim Start, bei
+AKTUALISIEREN, beim Öffnen von LOGS, bei einem Tipp auf einen Tab von LOGS,
+solange keine gemountet ist, und bei den Tipps des Servo-Programmierers, die
+[Servo-Programmierer](ServoProgrammer-de.md) nennt. Was im Steckplatz
+steckt, steht an jeder Stelle, die eine Karte braucht:
+
+| Steckplatz | [Splash](#splash), Zeile SD-Karte | LOGS | Lauf im Band |
+|---|---|---|---|
+| leer | `keine Karte` | `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` | `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` |
+| eine Karte ohne FAT-Volume: exFAT, NTFS, GPT oder nicht formatiert | `nicht FAT32` | `Karte nicht als FAT32 formatiert. Am Computer formatieren.` | `Karte nicht als FAT32 formatiert. Lauf nicht aufgezeichnet.` |
+| eine Karte, die sich aus anderem Grund nicht mounten lässt: ein Lesefehler, eine Karte, die ihren Start nicht abschließt | `nicht lesbar` | `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` | `Karte nicht lesbar. Lauf nicht aufgezeichnet.` |
+
+Die Konsolenzeile des Panels sagt, welcher Fall vorliegt, mit dem Code
+dahinter: `I storage: no card (ESP_ERR_TIMEOUT)`,
+`W storage: card holds no FAT volume (FatFs 13): format it FAT32`, oder
+`W storage: mount failed: FatFs <n>` und `W storage: mount failed: <Name des
+ESP-IDF-Fehlers>`. Eine Karte, die startet und sich nicht mounten lässt,
+wird ein zweites Mal gestartet, um FatFs nach dem Grund zu fragen. Dieser
+Blick fügt jedem gescheiterten Versuch einen Kartenstart hinzu, seine Dauer
+ist nicht gemessen, und einer Karte, die sich mounten lässt, nichts.
 
 ## WLAN
 

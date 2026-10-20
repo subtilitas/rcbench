@@ -447,6 +447,10 @@ typedef struct {
     bool stopped;              /**< STOP is latched: no heartbeat */
     bool armed;                /**< the panel's outputs are armed */
     bool card;                 /**< a card takes the file */
+    uint8_t card_state;        /**< card_state_t of the panel's slot, for
+                                    what the screen says without a card:
+                                    0 no card, 2 no FAT volume, 3
+                                    unreadable */
     uint8_t target;            /**< what the SERVO screen's tester drives
                                     as the IOmcu reads it: 0 the
                                     standard servo ports, 1 + n
