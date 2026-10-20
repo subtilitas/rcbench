@@ -280,7 +280,7 @@ bool kst_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma);
 /* iomcu_hitec.c: the port's hardware, which main() hands to
  * hitec_port_init() beside kst_hw_pin() and the supply's two */
 bool hitec_hw_take(void *ctx, uint8_t port, uint8_t pin, uint8_t family,
-                   uint8_t drive);
+                   uint8_t drive, uint8_t rx);
 void hitec_hw_give(void *ctx);
 void hitec_hw_abort(void *ctx);
 void hitec_hw_run(void *ctx, hitec_port_run_t *out);

@@ -391,6 +391,8 @@ ASSERTED = {
         "shared/outputs/hitec_port.c": (
             "LINK_HT_BYTES + HITEC_RX_MAX / 2 == LINK_HT_DATA",
             "HITEC_RX_MAX == 16 && HITEC_TX_MAX == 8",
+            "(int)LINK_HITEC_RX_PULL_UP == (int)HITEC_RX_PULL_UP "
+            "&& (int)LINK_HITEC_RX_PRECHARGE == (int)HITEC_RX_PRECHARGE",
         ),
         "shared/outputs/page_console.c": (
             "sizeof(k_rx) / sizeof(k_rx[0]) == (size_t)HITEC_RX_ERR_SUM + 1u",

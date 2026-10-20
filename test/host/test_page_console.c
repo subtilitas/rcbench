@@ -16,6 +16,7 @@
 #include "greatest.h"
 
 #include "hitec_port.h"
+#include "hitec_pre.h"
 #include "hitec_wire.h"
 #include "link_dev.h"
 #include "page_console.h"
@@ -36,6 +37,7 @@ static uint32_t g_ms;
 static struct {
     bool open, busy, hang;
     uint8_t family;
+    uint8_t rx;
     hitec_xfer_t x;
     hitec_capture_t cap;
     unsigned starts;
@@ -95,7 +97,7 @@ static uint8_t hw_pin(void *ctx, uint8_t port)
 }
 
 static bool hw_take(void *ctx, uint8_t port, uint8_t pin, uint8_t family,
-                    uint8_t drive)
+                    uint8_t drive, uint8_t rx)
 {
     (void)ctx;
     (void)port;
@@ -103,6 +105,7 @@ static bool hw_take(void *ctx, uint8_t port, uint8_t pin, uint8_t family,
     (void)drive;
     g_drv.open = true;
     g_drv.family = family;
+    g_drv.rx = rx;
     return true;
 }
 
@@ -700,6 +703,55 @@ TEST_CASE(the_family_commands_need_a_line_of_their_family)
     CHECK_EQ(g_drv.starts, 1);
 }
 
+/* pu and pre write the receive mode before the OPEN, the OPEN takes it,
+ * and the report names it; without either the page's mode stays. */
+TEST_CASE(hitec_open_writes_the_receive_mode_of_a_d_series_line)
+{
+    const char *o;
+
+    fresh();
+    o = type("hitec open 0 d pp pre");
+    CHECK(has(o, "hitec OPEN port=0 started\n"));
+    CHECK_EQ(g_port.rx_mode, LINK_HITEC_RX_PRECHARGE);
+    o = passes(60u);
+    CHECK_EQ(g_drv.rx, HITEC_RX_PRECHARGE);
+    CHECK(has(o, "flags=RAIL,PRECHARGE "));
+    CHECK(has(o, "hitec line pin=13 line=0x11 rx=pre "));
+    (void)type("hitec close 0");
+    /* No option: the mode the page holds. */
+    (void)type("hitec open 0 d");
+    (void)passes(60u);
+    CHECK_EQ(g_drv.rx, HITEC_RX_PRECHARGE);
+    (void)type("hitec close 0");
+    /* pu, with and without the drive. */
+    (void)type("hitec open 0 d pu");
+    o = passes(60u);
+    CHECK_EQ(g_port.rx_mode, LINK_HITEC_RX_PULL_UP);
+    CHECK_EQ(g_drv.rx, HITEC_RX_PULL_UP);
+    CHECK(has(o, "hitec line pin=13 line=0x01 rx=pu "));
+    (void)type("hitec close 0");
+    (void)type("hitec open 0 d od pre");
+    (void)passes(60u);
+    CHECK_EQ(g_drv.rx, HITEC_RX_PRECHARGE);
+    (void)type("hitec close 0");
+    /* Classic takes neither; the order is drive, then mode; one of each. */
+    CHECK(has(type("hitec open 0 c pre"),
+              "err pu and pre are for the D series only\n"));
+    CHECK(has(type("hitec open 0 c od pu"),
+              "err pu and pre are for the D series only\n"));
+    CHECK(has(type("hitec open 0 d pre pp"), "err usage: hitec open"));
+    CHECK(has(type("hitec open 0 d pre pu"), "err usage: hitec open"));
+    CHECK(has(type("hitec open 0 d pp od"), "err usage: hitec open"));
+    CHECK(has(type("hitec open 0 d pp pre x"), "err usage: hitec open"));
+    CHECK_EQ(g_port.rx_mode, LINK_HITEC_RX_PRECHARGE);
+    CHECK_EQ(hitec_port_state(&g_port), LINK_HITEC_FREE);
+    /* Classic with the page at PRECHARGE opens as classic always does. */
+    (void)type("hitec open 0 c");
+    o = passes(60u);
+    CHECK_EQ(g_drv.rx, HITEC_RX_PULL_UP);
+    CHECK(has(o, "rx=pu "));
+}
+
 /* A CLOSE while a transaction is watched ends both in its frame: one
  * report, not a second when the next pass finds the port free. */
 TEST_CASE(a_close_of_a_watched_transaction_reports_once)
@@ -783,6 +835,7 @@ int main(void)
     RUN(hitec_power_stages_the_supply_and_reports_the_listen);
     RUN(hitec_on_a_build_without_the_page_says_so);
     RUN(the_family_commands_need_a_line_of_their_family);
+    RUN(hitec_open_writes_the_receive_mode_of_a_d_series_line);
     RUN(a_close_of_a_watched_transaction_reports_once);
     RUN(the_raw_example_of_the_docs_runs);
     RUN(the_console_does_not_hold_the_failsafe_off);

@@ -2449,13 +2449,13 @@ across a third of its travel from -travel to +travel.
 
 ### INTERFACES: the current monitors
 
-INTERFACES lists its 26 settings in four sections. A heading above the first
+INTERFACES lists its 27 settings in five sections. A heading above the first
 row of each names it: I2C BUS (the two current monitors, Sensor SDA and
 SCL, and the AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical
-tacho) and SUPPLY (the PD mini). A heading is a row of its own, 54 px high
+tacho), SUPPLY (the PD mini) and PROG PORT (Hitec D receive). A heading is a row of its own, 54 px high
 at the list's 58 px pitch, in the accent colour over a rule, with no keys
 and no value: a tap or a drag on it changes nothing, and a drag scrolls the
-list. The list is 30 rows long.
+list. The list is 32 rows long.
 
 ![INTERFACES, the current monitors](img/setup-interfaces.png)
 
@@ -2701,6 +2701,38 @@ pin taken, or once the tap is switched off and the page holds it off. Tap gap
 2 ms with Tap lowest tone at 400 Hz is refused by design: the gap has to be
 at least one period of the lowest tone, 2.5 ms at 400 Hz
 (`tone_init()`, `protocols/phase_tap/tone.c`).
+
+### INTERFACES: the programming port
+
+The last row of INTERFACES, under PROG PORT, says how the IOmcu receives
+the answer of a Hitec D series servo on its programming port, GP13 by
+default ([Receive mode](LinkHitec.md#receive-mode)):
+
+| Setting | Values | Default | |
+| --- | --- | --- | --- |
+| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: a 2.2 kOhm resistor from the signal wire to the servo supply lifts the line, and the IOmcu reads it released. PRECHARGE: no resistor; the IOmcu drives the pad high for 100.0 ns every 1086.7 ns and samples it 113.3 ns after it lets go |
+
+It is kept in NVS like the other rows; a missing or unreadable stored value
+is PULL-UP. The panel writes it to the HITEC page at every link-up and
+after every change, armed or not; the IOmcu takes it at its next OPEN of a
+D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore
+it. The panel sends no Hitec transaction itself: the setting reaches the
+lines the bench console opens ([The bench console](BenchConsole.md)).
+
+The row is marked as the rows of
+[A row the IOmcu does not hold](#a-row-the-iomcu-does-not-hold) are, with its
+own help line:
+
+| The help line reads | While |
+| --- | --- |
+| `Not accepted by the IOmcu.` | the value is not acknowledged yet, or the IOmcu refused it |
+| `IOmcu older than 4.24: receives with PULL-UP.` | PRECHARGE is set and the IOmcu speaks protocol 4.23: it has no register for the mode |
+| `IOmcu older than 4.23: no Hitec line.` | PRECHARGE is set and the IOmcu speaks protocol 4.22 or older: it has no HITEC page |
+
+No mark shows while no IOmcu answers, and none for PULL-UP on an older
+IOmcu.
+
+![INTERFACES, Hitec D receive at PRECHARGE on an IOmcu older than 4.24](img/setup-prog.png)
 
 ### SD CARD: which logs are written, and where
 

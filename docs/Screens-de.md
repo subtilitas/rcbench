@@ -2692,14 +2692,15 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
 
 ### ANSCHLÜSSE: die Strommonitore
 
-ANSCHLÜSSE listet seine 26 Einstellungen in vier Abschnitten. Eine
+ANSCHLÜSSE listet seine 27 Einstellungen in fünf Abschnitten. Eine
 Überschrift über der ersten Zeile jedes Abschnitts benennt ihn: I2C-BUS (die
 beiden Strommonitore, Sensor SDA und SCL und der AS5600), PHASENABGRIFF,
-BALANCE-SENSOREN (Vibration und Optischer Tacho) und NETZTEIL (der PD mini).
+BALANCE-SENSOREN (Vibration und Optischer Tacho), NETZTEIL (der PD mini) und
+PROG-PORT (Hitec-D-Empfang).
 Eine Überschrift ist eine eigene Zeile, 54 px hoch bei 58 px Zeilenabstand
 der Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert:
 ein Tippen darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die
-Liste ist 30 Zeilen lang.
+Liste ist 32 Zeilen lang.
 
 ![ANSCHLÜSSE, die Strommonitore](img/de/setup-interfaces.png)
 
@@ -2955,6 +2956,40 @@ ausgeschaltet ist und die Page ihn aus hält. Abgriff-Pause 2 ms mit Tiefster
 Ton 400 Hz wird gewollt abgelehnt: die Pause muss mindestens eine Periode
 des tiefsten Tons lang sein, 2,5 ms bei 400 Hz (`tone_init()`,
 `protocols/phase_tap/tone.c`).
+
+### ANSCHLÜSSE: der Programmierport
+
+Die letzte Zeile von ANSCHLÜSSE, unter PROG-PORT, sagt, wie der IOmcu die
+Antwort eines Hitec-Servos der D-Serie an seinem Programmierport empfängt,
+GP13 als Voreinstellung ([Empfangsmodus](LinkHitec-de.md#empfangsmodus)):
+
+| Einstellung | Werte | Voreinstellung | |
+| --- | --- | --- | --- |
+| Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: ein Widerstand von 2,2 kOhm von der Signalleitung zur Servoversorgung hebt die Leitung, und der IOmcu liest sie losgelassen. PRECHARGE: kein Widerstand; der IOmcu treibt das Pad alle 1086,7 ns für 100,0 ns auf High und tastet es 113,3 ns nach dem Loslassen ab |
+
+Sie wird wie die übrigen Zeilen im NVS gehalten; ein fehlender oder
+unlesbarer gespeicherter Wert ist PULL-UP. Das Panel schreibt sie bei jedem
+Link-Aufbau und nach jeder Änderung auf die HITEC-Page, ARMED oder nicht;
+der IOmcu nimmt sie beim nächsten OPEN einer Leitung der D-Serie.
+classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen sie.
+Das Panel sendet selbst keine Hitec-Transaktion: die Einstellung erreicht
+die Leitungen, die die Prüfstandskonsole öffnet
+([Die Prüfstandskonsole](BenchConsole-de.md)).
+
+Die Zeile wird markiert wie die Zeilen unter
+[Eine Zeile, die der IOmcu nicht hält](#eine-zeile-die-der-iomcu-nicht-hält),
+mit eigener Hilfezeile:
+
+| Die Hilfezeile lautet | Solange |
+| --- | --- |
+| `Vom IOmcu nicht übernommen.` | der Wert noch nicht bestätigt ist oder der IOmcu ihn abgewiesen hat |
+| `IOmcu älter als 4.24: empfängt mit PULL-UP.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.23 spricht: er hat kein Register für den Modus |
+| `IOmcu älter als 4.23: keine Hitec-Leitung.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.22 oder älter spricht: er hat keine HITEC-Seite |
+
+Keine Markierung, solange kein IOmcu antwortet, und keine für PULL-UP an
+einem älteren IOmcu.
+
+![ANSCHLÜSSE, Hitec-D-Empfang auf PRECHARGE an einem IOmcu älter als 4.24](img/de/setup-prog.png)
 
 ### SD-KARTE: welche Logs geschrieben werden, und wohin
 

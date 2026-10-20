@@ -6,7 +6,7 @@ order: 61
 
 # Interfaces
 
-INTERFACES, the second category on [SETUP](setup.md), wires the parts the IOmcu reads: two current monitors and an output encoder on one I2C (Inter-Integrated Circuit) bus, the phase tap, and the PD mini supply. Its 26 settings stand in four sections under the headings I2C BUS, PHASE TAP, BALANCE SENSORS and SUPPLY; a heading is a row of its own with no keys. The settings are kept and saved like every other setting on SETUP. The panel writes each set-up to the IOmcu 500 ms after the last edit, and only what differs from what the IOmcu holds.
+INTERFACES, the second category on [SETUP](setup.md), wires the parts the IOmcu reads: two current monitors and an output encoder on one I2C (Inter-Integrated Circuit) bus, the phase tap, the PD mini supply, and how the programming port receives a Hitec D series servo. Its 27 settings stand in five sections under the headings I2C BUS, PHASE TAP, BALANCE SENSORS, SUPPLY and PROG PORT; a heading is a row of its own with no keys. The settings are kept and saved like every other setting on SETUP. The panel writes each set-up to the IOmcu 500 ms after the last edit, and only what differs from what the IOmcu holds.
 
 ## The current monitors
 
@@ -102,6 +102,14 @@ These three are stored. No screen or IOmcu reads them in this release.
 | PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | the module's UART (universal asynchronous receiver-transmitter) rate; AUTO tries each of the 7 rates, one a second |
 
 The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other row holds: with RX on GP18, TX steps from GP19 to GP17. At either end of the range the key then does nothing: with RX on GP47, TX stops at GP46. A set-up stored with both rows on one GPIO loads as stored; the PD mini stays off, the SUPPLY header says `PD MINI NO PINS`, and both rows say `TX and RX on one pin. The PD mini stays off.` until one of them is stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GP17 is refused while Sensor SCL is GP17. The message leaves the band once the pin is set back to one the IOmcu takes. A change to the pins, the baud rate or the enable switch switches the supply output off.
+
+## The programming port
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | how the IOmcu receives a Hitec D series servo's answer on the programming port. PULL-UP: a 2.2 kOhm resistor from the signal wire to the servo supply. PRECHARGE: no resistor; the IOmcu drives the pad high for 100 ns every 1.09 us and samples it 113 ns later |
+
+The IOmcu takes the value at its next OPEN of a D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore it. An IOmcu of protocol 4.23 receives with PULL-UP; with PRECHARGE set the row then reads `IOmcu older than 4.24: receives with PULL-UP.` An IOmcu older than 4.23 has no Hitec line; with PRECHARGE set the row reads `IOmcu older than 4.23: no Hitec line.`
 
 ## Related pages
 

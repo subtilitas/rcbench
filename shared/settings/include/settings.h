@@ -97,6 +97,8 @@ typedef enum {
     SET_PDMINI_TX,
     SET_PDMINI_RX,
     SET_PDMINI_BAUD,
+    /* --- the programming port ------------------------------------------ */
+    SET_HITEC_RX,
     /* --- the programmable supply --------------------------------------- */
     SET_SUPPLY_V_MAX,
     SET_SUPPLY_I_MAX,
