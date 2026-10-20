@@ -550,6 +550,7 @@ char        s_kst_file[KST_PROG_FILE_MAX];
 static char        s_kst_path[64];
 static char        s_kst_path_new[64];
 size_t      s_kst_file_len;
+unsigned    s_kst_file_mount;
 atomic_uint s_kst_file_sent;
 atomic_uint s_kst_file_done;
 atomic_bool s_kst_file_ok;
@@ -561,7 +562,7 @@ void kst_record_write(void)
         return;
     }
     bool ok = false;
-    const bool held = storage_hold();
+    const bool held = storage_hold_mount(s_kst_file_mount);
     if (held && kst_files_dir()) {
         kst_files_path(KST_FILE_NAME, s_kst_path, sizeof(s_kst_path));
         kst_files_path(KST_FILE_NEW, s_kst_path_new, sizeof(s_kst_path_new));

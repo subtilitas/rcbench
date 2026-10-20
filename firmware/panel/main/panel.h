@@ -323,6 +323,9 @@ card_dir_t panel_card_make_dir(void *ctx, const char *level);
  * the logger. */
 extern char        s_kst_file[KST_PROG_FILE_MAX];
 extern size_t      s_kst_file_len;
+/* The mount whose record the model holds (storage_mount_count()): the
+ * record is written to that volume or not at all. */
+extern unsigned    s_kst_file_mount;
 extern atomic_uint s_kst_file_sent;
 extern atomic_uint s_kst_file_done;
 extern atomic_bool s_kst_file_ok;

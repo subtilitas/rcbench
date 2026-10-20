@@ -105,6 +105,9 @@ void kst_ui_service(void)
     const size_t len = kst_panel_file_take(s_kst_file, sizeof(s_kst_file));
     if (len != 0u) {
         s_kst_file_len = len;
+        /* The card the model's record came from: a card mounted in its
+         * place keeps its own record until the next look reads it. */
+        s_kst_file_mount = loaded_mount;
         atomic_fetch_add(&s_kst_file_sent, 1u);
         file_out = true;
     }
