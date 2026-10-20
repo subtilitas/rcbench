@@ -655,11 +655,12 @@ static void step_busy(hitec_port_t *p, uint32_t now_ms)
      * whose supply went off under it, asked off, or read off after it
      * read on (the PD mini's protection leaves OUTPUT asked on). */
     if (p->rx_line == (uint8_t)LINK_HITEC_RX_PRECHARGE && p->supply_on != 0u) {
-        if (!supply_view(p, &v) || !v.asked_on) {
-            cut(p);
-        } else if (!v.off) {
+        const bool gone = !supply_view(p, &v) || !v.asked_on;
+
+        if (!gone && !v.off) {
             p->read_on = 1;
-        } else if (p->read_on != 0u) {
+        }
+        if (gone || (v.off && p->read_on != 0u)) {
             cut(p);
         }
     }
