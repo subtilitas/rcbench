@@ -88,6 +88,11 @@ STOP, and none reaches the alert band.
   button or the alert band under the finger is not pressed.
 - STOP is the exception: a press on STOP closes the box and stops at once,
   as with no box.
+- So is a control that stops what the bench drives: DISARM, OUTPUT OFF, a
+  stick run's ABORT, STOP TEST and STOP RUN, and START TEST or START LIMIT
+  RUN while their run is under way. A press on one closes the box and acts,
+  as with no box. ARM and OUTPUT ON are not among them: a press there closes
+  the box and starts no hold.
 - Leaving the screen closes it.
 - A finger dragging on the screen when a second finger opens a box is
   released as at the band's edge.
@@ -135,6 +140,15 @@ bottom of the screen, ARM included, while it shows.
   nor a second finger's on the band; only the first finger's lift clears.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
+- A control under the band that stops what the bench drives acts on the
+  first press, and the press clears the band: DISARM, OUTPUT OFF, a stick
+  run's ABORT, STOP TEST and STOP RUN. The band covers the lower 22 px of
+  SERVO's DISARM (panel y 446 to 467), the lower 26 px of a stick run's
+  ABORT (y 446 to 471) and the lower 8 px of its ABORT on a manual step
+  (y 446 to 453). ARM and OUTPUT ON under the band are not pressed: the tap
+  clears the band and starts no hold.
+- An alert that arrives while a finger is already down on a control leaves
+  that press to the control: its release acts as with no alert.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays
   until restart and has no `x`: no touch is there to tap with. A later alert
   shows over it; once that one clears, it shows again.

@@ -1272,6 +1272,14 @@ static void task_changed(void)
     supply_invalidate();
 }
 
+/* OUTPUT OFF, the one control here whose press stops what the bench
+ * drives: the router hands a press on it through the alert band and the
+ * band's help bubble (ui_screen_t's safe_at).  OUTPUT ON is none. */
+static bool safe_at(int x, int y)
+{
+    return s.on && gfx_rect_contains(s.out_rect, x, y);
+}
+
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -2158,6 +2166,7 @@ static const ui_screen_t k_screen = {
     .cancel = cancel,
     .render = render,
     .back   = back,
+    .safe_at = safe_at,
 };
 
 const ui_screen_t *supply_screen(void) { return &k_screen; }

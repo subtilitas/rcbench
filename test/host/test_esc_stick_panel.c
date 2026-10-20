@@ -3391,6 +3391,58 @@ TEST_CASE(abort_acts_on_the_press)
     }
 }
 
+/*
+ * The session names ABORT to its host while a run is under way, so the
+ * router hands a press on it through the alert band, which covers ABORT's
+ * lower 26 px (panel y 446 to 471).  Nothing before the run: the warning's
+ * HOLD TO RUN and CANCEL are no stop.  On a manual step it is the prompt's
+ * ABORT, and the foot row's place is not.  After the run, OK is not.
+ */
+TEST_CASE(abort_is_named_to_the_host_while_a_run_is_under_way)
+{
+    const prog_page_set_t *ps = &esc_stick_pages;
+    at_warning();
+    CHECK(!ps->safe_at(HOLD_X, HOLD_Y));
+    CHECK(!ps->safe_at(CANCEL_X, HOLD_Y));
+    CHECK(!ps->safe_at(WRITE_X, BTN_CY));
+    hold_for(2.25f);
+    static rig_t r;
+    rig_start(&r);
+    for (int i = 0; i < 12000; ++i) {
+        rig_step(&r);
+    }
+    CHECK(esc_stick_running(esc_stick_panel_stick()));
+    CHECK(ps->safe_at(WRITE_X, BTN_CY));
+    CHECK(ps->safe_at(WRITE_X, UI_ALERT_Y - UI_BAND_H));
+    CHECK(!ps->safe_at(BACK_X, BACK_Y));
+    tap(WRITE_X, BTN_CY);                    /* ABORT */
+    rig_run(&r, 1000u);
+    CHECK(!esc_stick_running(esc_stick_panel_stick()));
+    CHECK(!ps->safe_at(WRITE_X, BTN_CY));    /* OK */
+
+    fresh();
+    descend_to_jazz();
+    tap(CANCEL_X, HOLD_Y);
+    for (int i = 0; i < 3; ++i) {
+        tap(STEP_UP_X, STEP_CY(0));
+    }
+    supply_reads_off();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    rig_start(&r);
+    const esc_stick_t *run = esc_stick_panel_stick();
+    for (uint32_t i = 0; i < 60000u && !run->hand_menu; ++i) {
+        rig_step(&r);
+    }
+    CHECK(run->hand_menu);
+    CHECK(ps->safe_at(CANCEL_X, HOLD_Y));
+    CHECK(!ps->safe_at(HOLD_X, HOLD_Y));     /* DONE */
+    CHECK(!ps->safe_at(WRITE_X, BTN_CY));
+    tap(CANCEL_X, HOLD_Y);
+    rig_run(&r, 1000u);
+    CHECK(!ps->safe_at(CANCEL_X, HOLD_Y));
+}
+
 /* On a manual step: ABORT on the press, DONE on a tap. */
 TEST_CASE(a_manual_step_takes_done_as_a_tap_and_abort_on_the_press)
 {
@@ -3842,6 +3894,7 @@ int main(void)
     RUN(a_second_finger_presses_nothing_on_the_programmer);
     RUN(a_press_whose_control_changes_under_it_is_no_tap);
     RUN(abort_acts_on_the_press);
+    RUN(abort_is_named_to_the_host_while_a_run_is_under_way);
     RUN(a_manual_step_takes_done_as_a_tap_and_abort_on_the_press);
     RUN(hold_to_run_keeps_its_two_seconds);
     RUN(a_stick_control_released_for_the_finger_is_not_pressed);

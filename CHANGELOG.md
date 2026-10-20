@@ -17,6 +17,13 @@ history is in git.
   The console line names the FatFs result:
   `W storage: card holds no FAT volume (FatFs 13): format it FAT32`. A card
   that starts and does not mount is started once more to ask FatFs why.
+- A press on a control that stops what the bench drives acts on the first
+  press while the alert band covers it or a chip's help box is open:
+  DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN. The
+  press clears the band or closes the box. The alert band covers the lower
+  22 px of SERVO's DISARM (panel y 446 to 467); a DISARM tap there only
+  cleared the alert, and the bench stayed ARMED until a second tap. A press
+  on ARM or OUTPUT ON under the band or the box still starts no hold.
 - The update check with RELEASES: TESTING reads GitHub's API answer in
   chunks (`Transfer-Encoding: chunked`, no `Content-Length`), the form
   GitHub sends when its cache does not hold the request. The check ended

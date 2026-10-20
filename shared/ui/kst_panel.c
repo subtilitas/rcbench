@@ -2152,6 +2152,15 @@ void kst_panel_back(void)
     kst_panel_close();
 }
 
+bool kst_panel_safe_at(int x, int y)
+{
+    /* Programming and an armed bench are exclusive, and ABORT here ends
+     * the wire's session, not a drive. */
+    (void)x;
+    (void)y;
+    return false;
+}
+
 uint8_t kst_panel_pin(void)
 {
     const uint8_t port = port_no();
@@ -3654,4 +3663,5 @@ const prog_page_set_t kst_panel_pages = {
     .leave         = kst_panel_leave,
     .cancel        = kst_panel_cancel,
     .pin           = kst_panel_pin,
+    .safe_at       = kst_panel_safe_at,
 };
