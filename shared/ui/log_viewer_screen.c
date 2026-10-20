@@ -32,6 +32,7 @@
 #include "log_name.h"
 #include "settings.h"
 #include "ui_screen.h"
+#include "ui_card_text.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
@@ -191,6 +192,7 @@ static struct {
     int n_card;   /* what the volume holds; above n_files when paged */
     int first;    /* entries ahead of the page, in log_name_rank() order */
     int listed;   /* -1 no volume, 0 not read, 1 read     */
+    card_state_t card;  /* what the slot holds while listed is -1     */
     int sel;      /* highlighted file                     */
     int scroll;
     /* The card's name when the page was read: another name on RESCAN is
@@ -511,6 +513,7 @@ static void read_page(log_page_dir_t dir, const char *key)
     snprintf(s.volume, sizeof(s.volume), "%s", volume_now());
     if (s.io.list == NULL) {
         s.listed = -1;
+        s.card = CARD_STATE_NONE;
         log_viewer_invalidate();
         return;
     }
@@ -528,6 +531,8 @@ static void read_page(log_page_dir_t dir, const char *key)
         s.n_card = 0;
         s.first = 0;
         s.listed = -1;
+        /* After the list: it is what tries the mount again. */
+        s.card = (s.io.card != NULL) ? s.io.card(s.io.ctx) : CARD_STATE_NONE;
         log_viewer_invalidate();
         return;
     }
@@ -1033,7 +1038,7 @@ static void render_bar(gfx_canvas_t *c)
 static void empty_lines(char *why, size_t n, const char **hint)
 {
     if (s.listed == -1) {
-        snprintf(why, n, "%s", TR(LOG_NO_CARD));
+        snprintf(why, n, "%s", ui_card_text(s.card, UI_CARD_AT_LOGS));
     } else if (s.tab == LOG_TAB_ROOT) {
         snprintf(why, n, "%s", TR(LOG_NO_CSV));
     } else {

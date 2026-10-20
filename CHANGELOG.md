@@ -9,11 +9,14 @@ history is in git.
 ## 0.21.2 - 2026-10-20
 
 0.21.2 is a testing release: its minor number, 21, is odd, and GitHub lists
-it as a pre-release. It fixes defects of 0.21.1: the update check on
-RELEASES: TESTING reads GitHub's chunked answer, the start-up check
-included; OUTPUTS and PICK A PIN show the pins SETUP > INTERFACES holds as
-taken; a set-up alert leaves the band once its cause is over; PD mini TX and
-RX never share a pin; Backlight leaves SETUP > PANEL.
+it as a pre-release. It fixes defects of 0.21.1: DISARM, OUTPUT OFF and a
+run's STOP or ABORT act on the first press while the alert band covers them
+or a help box is open; a card with no FAT (file allocation table) volume
+reads `not FAT32` and a card that does not mount `unreadable`, not `no
+card`; the update check on RELEASES: TESTING reads GitHub's chunked answer,
+the start-up check included; OUTPUTS and PICK A PIN show the pins SETUP >
+INTERFACES holds as taken; a set-up alert leaves the band once its cause is
+over; PD mini TX and RX never share a pin; Backlight leaves SETUP > PANEL.
 
 A panel on 0.21.0 or 0.21.1 is offered 0.21.2 with RELEASES: TESTING on
 SETUP > UPDATES only; RELEASES: STABLE reads `releases/latest`, which names
@@ -35,7 +38,11 @@ v0.20.0. The steps from 0.21.1 are in
    with this step.
 
 The SD (Secure Digital) card stays as 0.21.1 left it; a card of 0.21.0 and
-older moves as [From 0.21.0](docs/FirstRun.md#from-0210) states. A set-up
+older moves as [From 0.21.0](docs/FirstRun.md#from-0210) states. The card
+holds a FAT32, FAT16 or FAT12 volume: 0.21.2 does not read exFAT (extended
+FAT), NTFS (New Technology File System) or a card with a GPT (GUID
+partition table), and formats no card
+([The SD card's format](docs/Screens.md#the-sd-cards-format)). A set-up
 stored with PD mini TX and RX on one GPIO (general-purpose input/output)
 loads as stored, and the PD mini stays off until one row moves. A bench
 without a home network takes the upload on the panel's browser page. 0.21.1
@@ -45,6 +52,21 @@ and of the update over CAN is not measured.
 
 ### Fixed
 
+- A card in the panel's SD slot that holds no FAT volume -- exFAT, NTFS, a
+  GPT or no format -- reads `Card not formatted as FAT32. Format it on a
+  computer.` on LOGS, `not FAT32` on the splash, and its own line in the run
+  and servo test alerts and the servo programmer's card notes. A card that
+  does not mount for another reason reads `Cannot read the card.`. Both read
+  `No card` before. The console line names the FatFs result: `W storage:
+  card holds no FAT volume (FatFs 13): format it FAT32`. A card that starts
+  and does not mount is started once more to ask FatFs why.
+- A press on a control that stops what the bench drives acts on the first
+  press while the alert band covers it or a chip's help box is open:
+  DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN. The
+  press clears the band or closes the box. The alert band covers the lower
+  22 px of SERVO's DISARM (panel y 446 to 467); a DISARM tap there only
+  cleared the alert, and the bench stayed ARMED until a second tap. A press
+  on ARM or OUTPUT ON under the band or the box still starts no hold.
 - The update check with RELEASES: TESTING reads GitHub's API (application
   programming interface) answer in chunks (`Transfer-Encoding: chunked`, no
   `Content-Length`), the form GitHub sends when its cache does not hold the

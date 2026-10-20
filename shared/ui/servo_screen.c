@@ -1953,6 +1953,49 @@ static bool arm_locked(void)
            && !s.gate.armed;
 }
 
+/*
+ * The controls whose press stops what the bench drives, where event_body()
+ * hands a DOWN at (x, y) to them now: DISARM while the button reads DISARM,
+ * OUTPUT OFF while the supply's output is on, STOP RUN and STOP TEST in
+ * LIVE's result box, and START TEST and START LIMIT RUN on TEST while their
+ * run is under way (a tap there stops it).
+ * The router hands a press on one of them through the alert band and the
+ * band's help bubble (ui_screen_t's safe_at); everything else under those
+ * stays theirs, ARM included.  The order of the checks is event_body()'s.
+ */
+static bool safe_at(int x, int y)
+{
+    if (s.gate.armed && gfx_rect_contains(s.arm_btn, x, y)) {
+        return true;
+    }
+    if (supply_screen_output_on() && gfx_rect_contains(s.out_btn, x, y)) {
+        return true;
+    }
+    if (prog_shown_set() != NULL || modal_open()) {
+        return false;
+    }
+    if (live_shown() && gfx_rect_contains(test_btn_rect(), x, y)) {
+        if (s.lim_box) {
+            return servo_limrun_running(&s.lim);
+        }
+        return s.test_box && servo_test_running(&s.test);
+    }
+    if (wb_task() == UI_WB_TEST && !s.ov_have && rows_page() < 0
+        && gfx_rect_contains(page_area(), x, y)) {
+        for (int k = 0; k < 2; ++k) {
+            if (gfx_rect_contains(run_set_rect(k), x, y)) {
+                return false;
+            }
+        }
+        if (gfx_rect_contains(test_start_rect(), x, y)) {
+            return servo_test_running(&s.test);
+        }
+        return gfx_rect_contains(lim_start_rect(), x, y)
+               && servo_limrun_running(&s.lim);
+    }
+    return false;
+}
+
 /* ------------------------------------------------------------------ events */
 
 /* Whether a touch is close enough to the horn's sweep to mean the horn. */
@@ -3567,6 +3610,7 @@ static const ui_screen_t k_screen = {
     .cancel = cancel,
     .render = render,
     .back   = back,
+    .safe_at = safe_at,
 };
 
 const ui_screen_t *servo_screen(void) { return &k_screen; }

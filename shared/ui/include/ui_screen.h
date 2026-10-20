@@ -101,6 +101,17 @@ typedef struct {
      * takes leave at once.  SETUP holds it while settings are unsaved.
      */
     bool (*hold)(ui_screen_id_t to);
+    /**
+     * Whether a press coming down at (@p x, @p y), in the screen's own
+     * coordinates, lands on a control that stops what the bench drives and
+     * acts on it now: DISARM on an armed bench, a run's ABORT or STOP.  The
+     * answer follows what the control shows, so ARM on a disarmed bench is
+     * none.  The router hands such a press to the screen even where the
+     * alert band or the band's help bubble covers it, and closes what
+     * covered it; every other press there stays the router's.  NULL: the
+     * screen has no such control.
+     */
+    bool (*safe_at)(int x, int y);
 } ui_screen_t;
 
 /** The band the router owns, in panel coordinates. */
@@ -109,7 +120,9 @@ typedef struct {
 /**
  * The alert band the router draws across the bottom of the 480 px panel
  * while an alert shows: its height, and its top in panel coordinates.  It
- * takes the touches under it, so a screen puts nothing that acts there.
+ * takes the touches under it, so a screen puts nothing that acts there --
+ * except a control that stops what the bench drives, whose press the router
+ * hands through (ui_screen_t's safe_at).
  */
 #define UI_ALERT_H 34
 #define UI_ALERT_Y (480 - UI_ALERT_H)
@@ -164,7 +177,9 @@ void ui_router_tick(float dt_s);
  * contact whose DOWN it was handed, and is handed a MOVE or an UP of no
  * other: a contact that came down on the band or on the alert strip, or
  * that was down when the screen changed or gestures were cancelled, reaches
- * no screen.  A contact the screen owns that reaches the band (y below
+ * no screen.  One exception: a contact that comes down on a control the
+ * screen's safe_at names is the screen's, under the alert strip or with
+ * the help bubble open, and the strip or the bubble closes.  A contact the screen owns that reaches the band (y below
  * UI_BAND_H) is released for the screen with an UP at the last point the
  * screen was handed, flagged TOUCH_FLAG_NO_TAP, and is the router's from
  * then on.  A flagged UP ends a press or a drag and activates no control.
@@ -305,7 +320,9 @@ bool ui_router_take_stop(void);
  * has stopped answering.  At the bottom, it covers controls rather than
  * readings.  The band clears after UI_ALERT_SHOW_S of ui_router_tick(), or
  * when a tap lands on it and lifts there; a tap on the band reaches no
- * screen.  Setting an alert again, even the same text, restarts its time.
+ * screen.  A press on a control under it that stops what the bench drives
+ * -- DISARM, ABORT, STOP TEST -- reaches the screen as if the band were not
+ * there, and clears the band (ui_screen_t's safe_at).  Setting an alert again, even the same text, restarts its time.
  */
 void ui_router_set_alert(const char *text);
 

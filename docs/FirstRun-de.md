@@ -77,6 +77,13 @@ auf seiner Browser-Seite ([Ab 0.20.0](#ab-0200)). Ein Panel mit 0.21.0
 oder 0.21.1 findet es mit `RELEASES: TESTING` ([Ab 0.21.0](#ab-0210),
 [Ab 0.21.1](#ab-0211)).
 
+Die SD-Karte (Secure Digital) trägt ein FAT32-Volume; FAT16 und FAT12
+werden auch gelesen. 0.21.2 liest kein exFAT (Extended FAT), kein NTFS (New
+Technology File System) und keine Karte mit GPT (GUID-Partitionstabelle),
+und das Panel formatiert keine Karte. Karten über 32 GB werden mit exFAT
+verkauft und vorher am Computer als FAT32 formatiert ([Bildschirme: Das
+Format der SD-Karte](Screens-de.md#das-format-der-sd-karte)).
+
 ### Aus den Release-Assets
 
 | Asset | Enthält | Für |
@@ -349,6 +356,9 @@ Was eine Einrichtung von 0.21.1 auf 0.21.2 vorfindet:
 | Beleuchtung auf SETUP > PANEL | keine Zeile; die Hintergrundbeleuchtung ist an, solange das Panel läuft; der gespeicherte Schlüssel `backlight` bleibt im Einstellungsspeicher und wird nicht gelesen |
 | Sensor SDA und SCL ohne Verdrahtung: `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | die Monitore gelten als nicht antwortend; die Prüfung läuft auf dem IOmcu und kommt mit Schritt 3 |
 | INA228-Adresse und INA3221-Adresse springen an ihren Enden um | bleiben bei 0x40 und 0x4F (INA228), 0x40 und 0x43 (INA3221) stehen |
+| eine Karte ohne FAT-Volume (exFAT, NTFS, GPT, nicht formatiert): `keine Karte` auf dem Splash, `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` auf LOGS | `nicht FAT32` auf dem Splash, `Karte nicht als FAT32 formatiert. Am Computer formatieren.` auf LOGS, `Karte nicht als FAT32 formatiert. Lauf nicht aufgezeichnet.` beim Start eines Laufs; die Karte am Computer als FAT32 formatieren ([Bildschirme: Das Format der SD-Karte](Screens-de.md#das-format-der-sd-karte)) |
+| eine Karte, die aus anderem Grund nicht eingebunden wird: `keine Karte` | `nicht lesbar` auf dem Splash, `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` auf LOGS |
+| ein Tipp auf DISARM, AUSGANG AUS, ABBRECHEN, TEST BEENDEN oder LAUF BEENDEN, während das Alert-Band ihn verdeckt oder der Hilfe-Kasten eines Chips offen ist: räumt nur das Band oder schließt nur den Kasten; das Alert-Band verdeckt die unteren 22 px von DISARM auf SERVO | wirkt beim ersten Druck und räumt das Band oder schließt den Kasten; ARM und AUSGANG EIN unter dem Band oder dem Kasten starten weiterhin kein Halten |
 
 ### Die Prüfung auf 0.21.0 und 0.21.1
 

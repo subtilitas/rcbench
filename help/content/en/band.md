@@ -47,7 +47,7 @@ STOP works on every screen that has the band. It switches the bench to SAFE, swi
 ![The box under the LINK chip](view:band-link)
 ![The box under the SAFE chip](view:band-safe)
 
-A tap on a chip opens a box under the band. It says what the chip's state means for the bench and what to do. The box is 520 px wide and opens 4 px under the band. A tap on another chip closes it and opens that chip's box. Any other tap closes it and does nothing else. Leaving the screen closes it too. The text follows the state while the box is open.
+A tap on a chip opens a box under the band. It says what the chip's state means for the bench and what to do. The box is 520 px wide and opens 4 px under the band. A tap on another chip closes it and opens that chip's box. Any other tap closes it and does nothing else, except on DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST or STOP RUN: those act on the same press, as with no box. Leaving the screen closes it too. The text follows the state while the box is open.
 
 ![The box under ARMED MOTOR](view:band-armed)
 
@@ -81,6 +81,7 @@ A fault the open screen does not show appears in a red band, 34 px high, across 
 
 - It clears 30 s after it arrived. A new alert starts the 30 s again.
 - A tap on the band, marked `x` at its right end, clears it earlier. The screen beneath receives neither that tap nor a second finger on the band.
+- DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN act on the first press even where the band covers them, and the press clears the band. On SERVO the band covers the lower 22 px of DISARM. ARM and OUTPUT ON under the band are not pressed.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays until restart and has no `x`.
 
 ## Touch near the band

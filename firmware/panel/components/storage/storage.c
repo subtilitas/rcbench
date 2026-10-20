@@ -12,6 +12,7 @@
 #include "board.h"
 /* ff.h first: diskio_sdmmc.h uses its BYTE without including it. */
 #include "ff.h"
+#include "diskio_impl.h"
 #include "diskio_sdmmc.h"
 #include "driver/sdspi_host.h"
 #include "driver/spi_common.h"
@@ -35,6 +36,7 @@ static struct {
     /* The FatFs drive of the mounted card, "0:", for f_readdir(). */
     char drive[8];
     char status[48];
+    card_state_t state;
 } s;
 
 /*
@@ -68,6 +70,86 @@ static void read_name(void)
     }
 }
 
+/*
+ * What FatFs says of the card esp_vfs_fat_sdspi_mount() just gave up on.
+ *
+ * That mount answers ESP_FAIL for every FatFs refusal alike, and only after
+ * the card has started (its own start-up errors come back as they are): no
+ * FAT volume on the card, a read error and an internal error are one code
+ * to its caller.  So the card is started again here, the way the mount
+ * starts it, and handed to FatFs alone, without the VFS (virtual file
+ * system) path: f_mount()'s own answer, e.g. FR_NO_FILESYSTEM (13) for a
+ * card that holds exFAT, NTFS or nothing.  The volume is let go before
+ * returning; a mount is still storage_init()'s alone.
+ *
+ * Only on that failure, so a card that mounts costs nothing more.  The
+ * work area is on the heap for the call: FATFS holds a sector, 4096 bytes
+ * with the panel's CONFIG_FATFS_SECTOR_4096.
+ *
+ * @return f_mount()'s FRESULT, or -1 with @p why set when FatFs could not
+ *         be asked: no device, a card that no longer starts, no memory.
+ */
+static int probe_fatfs(const sdmmc_host_t *host_in,
+                       const sdspi_device_config_t *slot, esp_err_t *why)
+{
+    sdmmc_host_t host = *host_in;
+    sdspi_dev_handle_t dev = -1;
+    esp_err_t err = sdspi_host_init_device(slot, &dev);
+    if (err != ESP_OK) {
+        *why = err;
+        return -1;
+    }
+    host.slot = dev;
+    int fr = -1;
+    BYTE pdrv = 0xffu;
+    sdmmc_card_t *card = calloc(1, sizeof(*card));
+    FATFS *fs = calloc(1, sizeof(*fs));
+    if (card == NULL || fs == NULL) {
+        err = ESP_ERR_NO_MEM;
+    } else if ((err = sdmmc_card_init(&host, card)) == ESP_OK
+               && (err = ff_diskio_get_drive(&pdrv)) == ESP_OK) {
+        ff_diskio_register_sdmmc(pdrv, card);
+        const char drv[3] = { (char)('0' + pdrv), ':', '\0' };
+        fr = (int)f_mount(fs, drv, 1);
+        (void)f_mount(NULL, drv, 0);
+        ff_diskio_unregister(pdrv);
+    }
+    (void)sdspi_host_remove_device(dev);
+    free(fs);
+    free(card);
+    *why = err;
+    return fr;
+}
+
+/* A mount that failed after the card started: which kind of card it is,
+ * said once in the log and kept for the screens. */
+static void mount_failed(esp_err_t err, const sdmmc_host_t *host,
+                         const sdspi_device_config_t *slot)
+{
+    s.state = CARD_STATE_UNREADABLE;
+    if (err != ESP_FAIL) {
+        /* The card's start-up or the mount's memory, by ESP-IDF's name. */
+        snprintf(s.status, sizeof(s.status), "%s", esp_err_to_name(err));
+        ESP_LOGW(TAG, "mount failed: %s", esp_err_to_name(err));
+        return;
+    }
+    esp_err_t why = ESP_OK;
+    const int fr = probe_fatfs(host, slot, &why);
+    if (fr == (int)FR_NO_FILESYSTEM) {
+        s.state = CARD_STATE_NO_FAT;
+        snprintf(s.status, sizeof(s.status), "no FAT volume");
+        ESP_LOGW(TAG, "card holds no FAT volume (FatFs %d): format it FAT32",
+                 fr);
+    } else if (fr >= 0) {
+        snprintf(s.status, sizeof(s.status), "FatFs %d", fr);
+        ESP_LOGW(TAG, "mount failed: FatFs %d", fr);
+    } else {
+        snprintf(s.status, sizeof(s.status), "%s", esp_err_to_name(err));
+        ESP_LOGW(TAG, "mount failed: %s, card check: %s",
+                 esp_err_to_name(err), esp_err_to_name(why));
+    }
+}
+
 esp_err_t storage_init(void)
 {
     if (s.mounted) {
@@ -90,8 +172,10 @@ esp_err_t storage_init(void)
         };
         err = spi_bus_initialize(BOARD_SD_SPI_HOST, &bus, SPI_DMA_CH_AUTO);
         if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+            s.state = CARD_STATE_UNREADABLE;
             snprintf(s.status, sizeof(s.status), "SPI %s",
                      esp_err_to_name(err));
+            ESP_LOGW(TAG, "card bus failed: %s", s.status);
             return err;
         }
         s.bus_up = true;
@@ -102,7 +186,9 @@ esp_err_t storage_init(void)
      * the backlight down with it. */
     err = board_sd_cs(true);
     if (err != ESP_OK) {
+        s.state = CARD_STATE_UNREADABLE;
         snprintf(s.status, sizeof(s.status), "CS %s", esp_err_to_name(err));
+        ESP_LOGW(TAG, "card bus failed: %s", s.status);
         return err;
     }
 
@@ -134,19 +220,22 @@ esp_err_t storage_init(void)
                                   &s.card);
     esp_log_level_set(STORAGE_IDF_MOUNT_TAG, was);
     if (err != ESP_OK) {
-        board_sd_cs(false);
         if (err == ESP_ERR_TIMEOUT || err == ESP_ERR_NOT_FOUND ||
             err == ESP_ERR_INVALID_RESPONSE) {
+            board_sd_cs(false);
+            s.state = CARD_STATE_NONE;
             snprintf(s.status, sizeof(s.status), "no card");
             ESP_LOGI(TAG, "no card (%s)", esp_err_to_name(err));
             return ESP_ERR_NOT_FOUND;
         }
-        snprintf(s.status, sizeof(s.status), "%s", esp_err_to_name(err));
-        ESP_LOGW(TAG, "mount failed: %s", esp_err_to_name(err));
+        /* With chip select still held: the check starts the card again. */
+        mount_failed(err, &host, &slot);
+        board_sd_cs(false);
         return err;
     }
 
     s.mounted = true;
+    s.state = CARD_STATE_MOUNTED;
     s.drive[0] = '\0';
     const BYTE pdrv = ff_diskio_get_pdrv_card(s.card);
     if (pdrv != 0xffu) {
@@ -171,6 +260,9 @@ void storage_deinit(void)
         spi_bus_free(BOARD_SD_SPI_HOST);
         s.bus_up = false;
     }
+    /* Nothing is known of the slot until the next storage_init(). */
+    s.state = CARD_STATE_NONE;
+    s.status[0] = '\0';
 }
 
 bool storage_mounted(void)
@@ -186,6 +278,11 @@ const char *storage_card_name(void)
 const char *storage_status(void)
 {
     return s.status;
+}
+
+card_state_t storage_card_state(void)
+{
+    return s.mounted ? CARD_STATE_MOUNTED : s.state;
 }
 
 static bool fat_usage(uint64_t *total, uint64_t *freebytes)

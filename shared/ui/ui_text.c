@@ -10,6 +10,7 @@
  */
 
 #include "ui_text.h"
+#include "ui_card_text.h"
 
 #include <math.h>
 #include <stdatomic.h>
@@ -225,4 +226,46 @@ const char *const *ui_servo_table(void)
 const char *ui_servo_str(servo_str_t id)
 {
     return servo_str_in(ui_servo_table(), id);
+}
+
+/* ------------------------------------------------- the card slot's words */
+
+/* By place, then NONE, NO_FAT, UNREADABLE. */
+static const ui_text_id_t k_card_text[UI_CARD_AT_COUNT][3] = {
+    [UI_CARD_AT_LOGS]   = { TX_LOG_NO_CARD, TX_LOG_CARD_NO_FAT,
+                            TX_LOG_CARD_UNREADABLE },
+    [UI_CARD_AT_SPLASH] = { TX_SPLASH_NO_CARD, TX_SPLASH_CARD_NO_FAT,
+                            TX_SPLASH_CARD_UNREADABLE },
+    [UI_CARD_AT_RUN]    = { TX_ALERT_NO_CARD_RUN, TX_ALERT_CARD_NO_FAT_RUN,
+                            TX_ALERT_CARD_UNREADABLE },
+    [UI_CARD_AT_TEST]   = { TX_ALERT_CARD_SERVO, TX_ALERT_CARD_SERVO_NO_FAT,
+                            TX_ALERT_CARD_SERVO_UNREADABLE },
+    [UI_CARD_AT_KP_WRITE] = { TX_KP_WRITE_NO_CARD, TX_KP_WRITE_NO_FAT,
+                              TX_KP_WRITE_UNREADABLE },
+    [UI_CARD_AT_KP_NO_FILE] = { TX_KP_NO_FILE_1, TX_KP_NO_FILE_1_NO_FAT,
+                                TX_KP_NO_FILE_1_UNREADABLE },
+    [UI_CARD_AT_KP_NO_BACKUP] = { TX_KP_NO_BACKUP_FILE, TX_KP_NO_BACKUP_NO_FAT,
+                                  TX_KP_NO_BACKUP_UNREADABLE },
+    [UI_CARD_AT_KP_MSG] = { TX_KP_M_CARD_NONE, TX_KP_M_CARD_NO_FAT,
+                            TX_KP_M_CARD_UNREADABLE },
+};
+
+ui_text_id_t ui_card_text_id(card_state_t state, ui_card_at_t at)
+{
+    if ((unsigned)at >= (unsigned)UI_CARD_AT_COUNT) {
+        return TX_LOG_NO_CARD;
+    }
+    const unsigned place = (unsigned)at;
+    switch (state) {
+    case CARD_STATE_NO_FAT:     return k_card_text[place][1];
+    case CARD_STATE_UNREADABLE: return k_card_text[place][2];
+    case CARD_STATE_NONE:
+    case CARD_STATE_MOUNTED:
+    default:                    return k_card_text[place][0];
+    }
+}
+
+const char *ui_card_text(card_state_t state, ui_card_at_t at)
+{
+    return ui_tr(ui_card_text_id(state, at));
 }

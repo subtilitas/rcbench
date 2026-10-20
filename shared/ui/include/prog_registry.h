@@ -148,6 +148,10 @@ typedef struct {
     void       (*cancel)(void);
     /** The GPIO the session's port drives, or PROG_REG_NO_PIN. */
     uint8_t    (*pin)(void);
+    /** A press coming down at (x, y), in the host screen's coordinates,
+     *  lands on a control of the session that stops what the bench drives
+     *  and acts on it now; see ui_screen_t's safe_at. */
+    bool       (*safe_at)(int x, int y);
 } prog_page_set_t;
 
 typedef struct {
@@ -231,6 +235,7 @@ gfx_rect_t prog_ps_hold_rect(const prog_page_set_t *ps);
 void prog_ps_leave(const prog_page_set_t *ps);
 void prog_ps_cancel(const prog_page_set_t *ps);
 uint8_t prog_ps_pin(const prog_page_set_t *ps);
+bool prog_ps_safe_at(const prog_page_set_t *ps, int x, int y);
 
 /* ------------------------------------------------------- a row's state */
 

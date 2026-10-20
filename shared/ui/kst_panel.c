@@ -18,6 +18,7 @@
 #include "link_pages.h"
 #include "settings.h"
 #include "supply_screen.h"
+#include "ui_card_text.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -404,6 +405,24 @@ static struct {
         unsigned writes;        /* writes of the run that ended well */
     } run;
 } k;
+
+/* What the panel's slot holds, as the feed last said: no card, a card not
+ * formatted as FAT32, or one that cannot be read. */
+static card_state_t card_state(void)
+{
+    return k.prog.fed ? (card_state_t)k.prog.f.card_state : CARD_STATE_NONE;
+}
+
+/* The words of @p at for the slot as it is. */
+static ui_text_id_t card_text_id(ui_card_at_t at)
+{
+    return ui_card_text_id(card_state(), at);
+}
+
+static const char *card_tr(ui_card_at_t at)
+{
+    return ui_tr(card_text_id(at));
+}
 
 enum { RUN_OP_NONE = 0, RUN_OP_CONNECT, RUN_OP_WRITE, RUN_OP_LEAVE };
 
@@ -918,7 +937,9 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         }
         return n;
     }
-    if (id < FIXED_COUNT) {
+    if (id == KST_PROG_MSG_CARD_NONE) {
+        first = (int16_t)card_text_id(UI_CARD_AT_KP_MSG);
+    } else if (id < FIXED_COUNT) {
         first = k_fixed[id][0];
         second = k_fixed[id][1];
     } else if (id >= KST_PROG_MSG_SES && id - KST_PROG_MSG_SES < SES_COUNT) {
@@ -1267,7 +1288,7 @@ static bool warn_no_file(void)
         return false;
     }
     k.warn.no_file = true;
-    warn_text(KST_PROG_WARN, TR(KP_NO_FILE_1));
+    warn_text(KST_PROG_WARN, card_tr(UI_CARD_AT_KP_NO_FILE));
     warn_text(KST_PROG_WARN, TR(KP_NO_FILE_2));
     warn_text(KST_PROG_WARN, TR(KP_NO_FILE_3));
     return true;
@@ -1277,15 +1298,16 @@ static bool warn_no_file(void)
 static int card_rows(void)
 {
     if (no_card()) {
-        return kst_panel_text_rows(TR(KP_NO_FILE_1))
+        return kst_panel_text_rows(card_tr(UI_CARD_AT_KP_NO_FILE))
              + kst_panel_text_rows(TR(KP_NO_FILE_2))
              + kst_panel_text_rows(TR(KP_NO_FILE_3));
     }
     if (kst_prog_save_first(&k.prog)) {
         return kst_panel_text_rows(TR(KP_WRITE_BACKUP));
     }
-    return kst_panel_text_rows(k.prog.f.card ? TR(KP_WRITE_CARD)
-                                             : TR(KP_WRITE_NO_CARD));
+    return kst_panel_text_rows(k.prog.f.card
+                                   ? TR(KP_WRITE_CARD)
+                                   : card_tr(UI_CARD_AT_KP_WRITE));
 }
 
 static void warn_card(void)
@@ -1296,8 +1318,9 @@ static void warn_card(void)
     if (kst_prog_save_first(&k.prog)) {
         warn_text(KST_PROG_INFO, TR(KP_WRITE_BACKUP));
     } else {
-        warn_text(KST_PROG_INFO, k.prog.f.card ? TR(KP_WRITE_CARD)
-                                               : TR(KP_WRITE_NO_CARD));
+        warn_text(KST_PROG_INFO, k.prog.f.card
+                                     ? TR(KP_WRITE_CARD)
+                                     : card_tr(UI_CARD_AT_KP_WRITE));
     }
 }
 
@@ -2127,6 +2150,15 @@ void kst_panel_back(void)
         return;
     }
     kst_panel_close();
+}
+
+bool kst_panel_safe_at(int x, int y)
+{
+    /* Programming and an armed bench are exclusive, and ABORT here ends
+     * the wire's session, not a drive. */
+    (void)x;
+    (void)y;
+    return false;
 }
 
 uint8_t kst_panel_pin(void)
@@ -3073,7 +3105,7 @@ static int page_notes(note_t *n)
                      shown(kst_prog_backup_name(p)));
             i = note(n, i, 4, buf[1], faint);
         } else if (kst_prog_no_file(p)) {
-            i = note(n, i, 4, TR(KP_NO_BACKUP_FILE),
+            i = note(n, i, 4, card_tr(UI_CARD_AT_KP_NO_BACKUP),
                      ui_theme_color(UI_C_WARN));
         }
         break;
@@ -3631,4 +3663,5 @@ const prog_page_set_t kst_panel_pages = {
     .leave         = kst_panel_leave,
     .cancel        = kst_panel_cancel,
     .pin           = kst_panel_pin,
+    .safe_at       = kst_panel_safe_at,
 };

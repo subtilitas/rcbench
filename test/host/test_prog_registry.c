@@ -70,6 +70,7 @@ static void a_render(gfx_canvas_t *c) { (void)c; }
 static uint32_t a_rev(void) { return 0u; }
 static gfx_rect_t a_rect(void) { return (gfx_rect_t){ 0, 0, 0, 0 }; }
 static uint8_t a_pin(void) { return fa.pin; }
+static bool a_safe(int x, int y) { (void)x; (void)y; return false; }
 
 static bool b_holds(void) { return fb_.holds; }
 static uint8_t b_pin(void) { return fb_.pin; }
@@ -77,15 +78,18 @@ static uint8_t b_pin(void) { return fb_.pin; }
 static const prog_page_set_t k_set_a = {
     a_init, a_none, a_open, a_is_open, a_back, a_holds, a_armed, a_tick,
     a_press, a_event, a_render, a_rev, a_rev, a_rect, a_none, a_none, a_pin,
+    a_safe,
 };
 static const prog_page_set_t k_set_b = {
     a_init, a_none, a_open, a_is_open, a_back, b_holds, a_armed, a_tick,
     a_press, a_event, a_render, a_rev, a_rev, a_rect, a_none, a_none, b_pin,
+    a_safe,
 };
 /* A set with a hook missing. */
 static const prog_page_set_t k_set_holed = {
     a_init, a_none, a_open, a_is_open, a_back, a_holds, a_armed, a_tick,
     a_press, a_event, a_render, a_rev, a_rev, a_rect, a_none, a_none, NULL,
+    a_safe,
 };
 
 static void fakes_fresh(void)

@@ -1509,6 +1509,21 @@ bool esc_stick_panel_back(void)
     return true;
 }
 
+bool esc_stick_panel_safe_at(int px, int py)
+{
+    const stick_t *t = &s.st;
+    /* esc_stick_panel_down()'s order: the steps' pop-up and the warning
+     * cover the page, the list has no run, and a run takes ABORT. */
+    if (t->hand_open || t->warn || pg.stage == STAGE_LIST
+        || !esc_stick_running(&t->run)) {
+        return false;
+    }
+    if (esc_stick_hand(&t->run) != NULL) {
+        return gfx_rect_contains(t->cancel_btn, px, py);
+    }
+    return gfx_rect_contains(pg.write_btn, px, py);
+}
+
 bool esc_stick_panel_down(const touch_event_t *evt)
 {
     stick_t *t = &s.st;
