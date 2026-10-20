@@ -256,8 +256,8 @@ files from new folders on the SD (Secure Digital) card and moves none there
    each missing folder. Put the card back.
 2. **Check.** With a home network kept, the bench SAFE, the supply output
    off and no log run open: SETUP > UPDATES, `RELEASES: TESTING`, then
-   `CHECK FOR UPDATES`. The card says `Version 0.21.2 is available.`. A
-   card that says `Unexpected answer from GitHub.` met the fault of 0.21.0
+   `CHECK FOR UPDATES`. The panel says `Version 0.21.2 is available.`. A
+   panel that says `Unexpected answer from GitHub.` met the fault of 0.21.0
    and 0.21.1 [below](#the-check-on-0210-and-0211): press `CHECK FOR
    UPDATES` again at once. The other value, `RELEASES: USABLE` on 0.21.0
    and `RELEASES: STABLE` from 0.21.1 on, reads `releases/latest`, which
@@ -298,8 +298,8 @@ the image the new panel carries. 0.21.2 reads the SD card's folders as
 
 1. **Check.** With a home network kept, the bench SAFE, the supply output
    off and no log run open: SETUP > UPDATES, `RELEASES: TESTING`, then
-   `CHECK FOR UPDATES`. The card says `Version 0.21.2 is available.`. A
-   card that says `Unexpected answer from GitHub.` met the fault of 0.21.1
+   `CHECK FOR UPDATES`. The panel says `Version 0.21.2 is available.`. A
+   panel that says `Unexpected answer from GitHub.` met the fault of 0.21.1
    [below](#the-check-on-0210-and-0211): press `CHECK FOR UPDATES` again
    at once. `RELEASES: STABLE` reads `releases/latest`, which names
    v0.20.0, and offers nothing.

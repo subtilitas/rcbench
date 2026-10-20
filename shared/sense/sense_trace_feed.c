@@ -132,10 +132,13 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
      * alone does not tell a new sample from the last one. */
     /* What the window being filled gained in this tick.  A window that
      * closed, or was emptied, counts from nothing, and so does one of a
-     * new schedule: its window 0 is another than the last one's. */
+     * new schedule: its window 0 is another than the last one's.  The
+     * feed runs once after each tick, so a schedule's count has moved on
+     * since the last call; one that stands or runs back is a new
+     * schedule's, also when it reached the old count again. */
     static const sense_acc_t k_none;
     const sense_acc_t *a = (d != NULL) ? &s->acc[f] : &k_none;
-    const bool same = s->win == p->win && s->ticks >= p->ticks
+    const bool same = s->win == p->win && s->ticks > p->ticks
                       && a->n_v >= p->n_v
                       && a->n_hi >= p->n_hi && a->n_lo >= p->n_lo;
     const uint16_t base_n   = same ? p->n_v : 0u;
