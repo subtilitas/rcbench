@@ -3,12 +3,12 @@
  */
 
 #include "storage.h"
+#include "storage_priv.h"
 
-#include <ctype.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "board.h"
 /* ff.h first: diskio_sdmmc.h uses its BYTE without including it. */
@@ -20,25 +20,91 @@
 #include "esp_check.h"
 #include "esp_log.h"
 #include "esp_vfs_fat.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "sdmmc_cmd.h"
 
 static const char *TAG = "storage";
 /* The tag of ESP-IDF's FAT-on-SD mount (components/fatfs/vfs/
  * vfs_fat_sdmmc.c). */
 #define STORAGE_IDF_MOUNT_TAG "vfs_fat_sdmmc"
+/* The tags of ESP-IDF's FAT-on-SD disk I/O (components/fatfs/diskio/
+ * diskio_sdmmc.c) and SD commands (components/sdmmc/sdmmc_cmd.c): a card
+ * looked at and found gone logs at E level under both. */
+#define STORAGE_IDF_DISKIO_TAG "diskio_sdmmc"
+#define STORAGE_IDF_CMD_TAG    "sdmmc_cmd"
 
+/*
+ * Who touches the card, and when it may be unmounted.
+ *
+ * Three tasks reach the card: app_main, which renders (LOGS, the servo
+ * programmer's record, the start-up), the runlog task (every write) and
+ * the Wi-Fi access's HTTP server (downloads).  Each of them may mount or
+ * unmount it; s.lock makes those one at a time and keeps them apart from
+ * storage_hold().
+ *
+ * A volume is unmounted only while nothing holds it.  A hold is taken for
+ * every open file and folder and around every path call (mkdir, stat,
+ * unlink, rename, a walk): an unmount frees the FatFs work area and the
+ * VFS (virtual file system) slot under a call in flight, and a file left
+ * open across a remount keeps a descriptor number the next volume hands
+ * out again.  A card found gone while held is marked lost: no new hold is
+ * given, its holders' calls fail, and the last release unmounts it.
+ *
+ * mounted and lost are s.lock's; usable and state are read without it,
+ * so that the control task and every frame can ask without waiting.
+ */
 static struct {
     sdmmc_card_t *card;
     bool bus_up;
     bool mounted;
+    /* Found gone while held: unmounted at the last release. */
+    bool lost;
+    /* Mounted, and nothing read from it since: a removal-shaped failure on
+     * it is the card's own, not a card taken out. */
+    bool fresh;
+    unsigned holds;
+    SemaphoreHandle_t lock;
+    atomic_bool usable;                 /* mounted && !lost */
+    atomic_int state_now;               /* card_state_t while not usable */
     /* The volume label, or the CID's product name without one: 11 FAT
      * label characters take up to 33 bytes in UTF-8. */
     char name[40];
     /* The FatFs drive of the mounted card, "0:", for f_readdir(). */
     char drive[8];
     char status[48];
-    card_state_t state;
 } s;
+
+/* The lock, made at the first storage_init() or storage_check(): the
+ * splash's, on app_main, before any task that reaches the card exists. */
+static bool lock_ready(void)
+{
+    if (s.lock == NULL) {
+        s.lock = xSemaphoreCreateMutex();
+    }
+    return s.lock != NULL;
+}
+
+static void lock(void)
+{
+    (void)xSemaphoreTake(s.lock, portMAX_DELAY);
+}
+
+static void unlock(void)
+{
+    (void)xSemaphoreGive(s.lock);
+}
+
+static void set_state(card_state_t state)
+{
+    atomic_store(&s.state_now, (int)state);
+}
+
+/* What the readers without the lock see: usable last, after the name. */
+static void publish(void)
+{
+    atomic_store(&s.usable, s.mounted && !s.lost);
+}
 
 /*
  * The card's name: its volume label, e.g. "UNITEST", or the product name in
@@ -73,7 +139,7 @@ static void read_name(void)
 
 /*
  * The mounted volume's format, for the mount's log line: FAT12, FAT16,
- * FAT32 or exFAT.  After storage_total_bytes(), whose f_getfree() counts a
+ * FAT32 or exFAT.  After the mount's fat_usage(), whose f_getfree() counts a
  * FAT32 volume's free clusters once per mount when the volume does not say;
  * this call then reads the count FatFs keeps.
  */
@@ -150,7 +216,7 @@ static int probe_fatfs(const sdmmc_host_t *host_in,
 static void mount_failed(esp_err_t err, const sdmmc_host_t *host,
                          const sdspi_device_config_t *slot)
 {
-    s.state = CARD_STATE_UNREADABLE;
+    set_state(CARD_STATE_UNREADABLE);
     if (err != ESP_FAIL) {
         /* The card's start-up or the mount's memory, by ESP-IDF's name. */
         snprintf(s.status, sizeof(s.status), "%s", esp_err_to_name(err));
@@ -160,7 +226,7 @@ static void mount_failed(esp_err_t err, const sdmmc_host_t *host,
     esp_err_t why = ESP_OK;
     const int fr = probe_fatfs(host, slot, &why);
     if (fr == (int)FR_NO_FILESYSTEM) {
-        s.state = CARD_STATE_NO_FAT;
+        set_state(CARD_STATE_NO_FAT);
         snprintf(s.status, sizeof(s.status), "no FAT volume");
         ESP_LOGW(TAG, "card holds no FAT volume (FatFs %d): "
                       "format it FAT32 or exFAT", fr);
@@ -174,11 +240,21 @@ static void mount_failed(esp_err_t err, const sdmmc_host_t *host,
     }
 }
 
-esp_err_t storage_init(void)
+static bool fat_usage(uint64_t *total, uint64_t *freebytes)
 {
-    if (s.mounted) {
-        return ESP_OK;
+    uint64_t t = 0;
+    uint64_t f = 0;
+    if (esp_vfs_fat_info(STORAGE_MOUNT_POINT, &t, &f) != ESP_OK) {
+        return false;
     }
+    *total = t;
+    *freebytes = f;
+    return true;
+}
+
+/* A mount of whatever the slot holds, under s.lock, with nothing mounted. */
+static esp_err_t mount_locked(void)
+{
     s.status[0] = '\0';
 
     /* The bus once: a retry after "no card" finds it up, and ESP-IDF logs
@@ -196,7 +272,7 @@ esp_err_t storage_init(void)
         };
         err = spi_bus_initialize(BOARD_SD_SPI_HOST, &bus, SPI_DMA_CH_AUTO);
         if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
-            s.state = CARD_STATE_UNREADABLE;
+            set_state(CARD_STATE_UNREADABLE);
             snprintf(s.status, sizeof(s.status), "SPI %s",
                      esp_err_to_name(err));
             ESP_LOGW(TAG, "card bus failed: %s", s.status);
@@ -210,7 +286,7 @@ esp_err_t storage_init(void)
      * the backlight down with it. */
     err = board_sd_cs(true);
     if (err != ESP_OK) {
-        s.state = CARD_STATE_UNREADABLE;
+        set_state(CARD_STATE_UNREADABLE);
         snprintf(s.status, sizeof(s.status), "CS %s", esp_err_to_name(err));
         ESP_LOGW(TAG, "card bus failed: %s", s.status);
         return err;
@@ -247,7 +323,7 @@ esp_err_t storage_init(void)
         if (err == ESP_ERR_TIMEOUT || err == ESP_ERR_NOT_FOUND ||
             err == ESP_ERR_INVALID_RESPONSE) {
             board_sd_cs(false);
-            s.state = CARD_STATE_NONE;
+            set_state(CARD_STATE_NONE);
             snprintf(s.status, sizeof(s.status), "no card");
             ESP_LOGI(TAG, "no card (%s)", esp_err_to_name(err));
             return ESP_ERR_NOT_FOUND;
@@ -259,44 +335,231 @@ esp_err_t storage_init(void)
     }
 
     s.mounted = true;
-    s.state = CARD_STATE_MOUNTED;
+    s.lost = false;
+    s.fresh = true;
+    set_state(CARD_STATE_MOUNTED);
     s.drive[0] = '\0';
     const BYTE pdrv = ff_diskio_get_pdrv_card(s.card);
     if (pdrv != 0xffu) {
         snprintf(s.drive, sizeof(s.drive), "%u:", (unsigned)pdrv);
     }
     read_name();
-    const unsigned long long mb = storage_total_bytes() / (1024ULL * 1024ULL);
+    uint64_t total = 0;
+    uint64_t freebytes = 0;
+    (void)fat_usage(&total, &freebytes);
+    const unsigned long long mb = total / (1024ULL * 1024ULL);
     ESP_LOGI(TAG, "%s mounted, %s, %llu MB", s.name, volume_format(), mb);
+    /* The name is written: now the readers without the lock may see it. */
+    publish();
     return ESP_OK;
+}
+
+/*
+ * Let the volume go, under s.lock, with nothing holding it.  No card
+ * traffic: f_mount(NULL) forgets the volume without writing, and the
+ * device is taken off the bus that stays up for the next mount.
+ */
+static void unmount_locked(void)
+{
+    if (!s.mounted) {
+        return;
+    }
+    atomic_store(&s.usable, false);
+    (void)esp_vfs_fat_sdcard_unmount(STORAGE_MOUNT_POINT, s.card);
+    s.card = NULL;
+    s.mounted = false;
+    s.lost = false;
+    s.fresh = false;
+    s.drive[0] = '\0';
+    board_sd_cs(false);
+}
+
+/*
+ * The card the volume was mounted from is not the one answering: taken
+ * out, swapped, or a card that fails reads after it mounted.  Under
+ * s.lock.  @p fr is what FatFs said; @p how the call that found it.
+ * Unmounted at once when nothing holds it, at the last release otherwise.
+ */
+static void lose_locked(int fr, const char *how)
+{
+    if (!s.mounted) {
+        return;
+    }
+    if (!s.lost) {
+        ESP_LOGI(TAG, "card gone (%s: FatFs %d)", how, fr);
+    }
+    s.lost = true;
+    publish();
+    set_state(CARD_STATE_NONE);
+    snprintf(s.status, sizeof(s.status), "no card");
+    if (s.holds == 0u) {
+        unmount_locked();
+    }
+}
+
+/*
+ * Whether the mounted card still answers: one SEND_STATUS (CMD13) through
+ * FatFs, under its volume lock, so it does not cut into a read or a write
+ * another task has under way.
+ *
+ * FatFs asks the disk's status at the start of every call, and ESP-IDF's
+ * SD status only sends CMD13 while its check is on; it is on for this call
+ * alone.  f_getfree() answers from the count FatFs keeps once the mount
+ * counted it, so a card that answers costs that one command.  A card that
+ * does not answer makes FatFs drop the volume (FR_NOT_READY), and every
+ * file and folder still open on it fails from then on without card
+ * traffic.  ESP-IDF says that at E level, "Check status failed (0x107)";
+ * a card looked for and gone is not a fault, so those tags are quiet for
+ * the call.
+ */
+static int probe_locked(void)
+{
+    if (s.drive[0] < '0' || s.drive[0] > '9') {
+        return (int)FR_OK;          /* no drive number: nothing to ask */
+    }
+    const BYTE pdrv = (BYTE)(s.drive[0] - '0');
+    const esp_log_level_t was_disk = esp_log_level_get(STORAGE_IDF_DISKIO_TAG);
+    const esp_log_level_t was_cmd = esp_log_level_get(STORAGE_IDF_CMD_TAG);
+    esp_log_level_set(STORAGE_IDF_DISKIO_TAG, ESP_LOG_NONE);
+    esp_log_level_set(STORAGE_IDF_CMD_TAG, ESP_LOG_NONE);
+    ff_sdmmc_set_disk_status_check(pdrv, true);
+    DWORD free_clusters = 0u;
+    FATFS *fs = NULL;
+    const FRESULT fr = f_getfree(s.drive, &free_clusters, &fs);
+    ff_sdmmc_set_disk_status_check(pdrv, false);
+    esp_log_level_set(STORAGE_IDF_CMD_TAG, was_cmd);
+    esp_log_level_set(STORAGE_IDF_DISKIO_TAG, was_disk);
+    return (int)fr;
+}
+
+/* FatFs's answers that say the card stopped answering rather than that a
+ * name or the volume's contents are wrong. */
+static bool removal_shaped(int fr)
+{
+    return fr == (int)FR_DISK_ERR || fr == (int)FR_NOT_READY
+           || fr == (int)FR_INVALID_OBJECT;
+}
+
+esp_err_t storage_init(void)
+{
+    if (!lock_ready()) {
+        return ESP_ERR_NO_MEM;
+    }
+    lock();
+    if (s.mounted && s.lost && s.holds == 0u) {
+        unmount_locked();
+    }
+    esp_err_t err = ESP_OK;
+    if (s.mounted) {
+        err = s.lost ? ESP_ERR_INVALID_STATE : ESP_OK;
+    } else {
+        err = mount_locked();
+    }
+    unlock();
+    return err;
+}
+
+card_state_t storage_check(void)
+{
+    if (!lock_ready()) {
+        return CARD_STATE_NONE;
+    }
+    lock();
+    if (s.mounted && !s.lost) {
+        const int fr = probe_locked();
+        if (fr != (int)FR_OK) {
+            lose_locked(fr, "check");
+        }
+    }
+    if (s.mounted && s.lost && s.holds == 0u) {
+        unmount_locked();
+    }
+    if (!s.mounted) {
+        (void)mount_locked();
+    }
+    unlock();
+    return storage_card_state();
+}
+
+bool storage_hold(void)
+{
+    if (s.lock == NULL) {
+        return false;
+    }
+    lock();
+    const bool ok = s.mounted && !s.lost;
+    if (ok) {
+        ++s.holds;
+    }
+    unlock();
+    return ok;
+}
+
+void storage_release(void)
+{
+    if (s.lock == NULL) {
+        return;
+    }
+    lock();
+    if (s.holds > 0u) {
+        --s.holds;
+    }
+    if (s.holds == 0u && s.mounted && s.lost) {
+        unmount_locked();
+    }
+    unlock();
+}
+
+FILE *storage_fopen(const char *path, const char *mode)
+{
+    if (path == NULL || mode == NULL || !storage_hold()) {
+        return NULL;
+    }
+    FILE *f = fopen(path, mode);
+    if (f == NULL) {
+        storage_release();
+    }
+    return f;
+}
+
+int storage_fclose(FILE *f)
+{
+    if (f == NULL) {
+        return EOF;
+    }
+    const int r = fclose(f);
+    storage_release();
+    return r;
 }
 
 void storage_deinit(void)
 {
-    if (s.mounted) {
-        esp_vfs_fat_sdcard_unmount(STORAGE_MOUNT_POINT, s.card);
-        s.card = NULL;
-        s.mounted = false;
-        s.drive[0] = '\0';
-        board_sd_cs(false);
+    if (s.lock != NULL) {
+        lock();
     }
+    /* The end: nothing may still be open, so no hold is waited for. */
+    s.holds = 0u;
+    unmount_locked();
     if (s.bus_up) {
         spi_bus_free(BOARD_SD_SPI_HOST);
         s.bus_up = false;
     }
     /* Nothing is known of the slot until the next storage_init(). */
-    s.state = CARD_STATE_NONE;
+    set_state(CARD_STATE_NONE);
     s.status[0] = '\0';
+    if (s.lock != NULL) {
+        unlock();
+    }
 }
 
 bool storage_mounted(void)
 {
-    return s.mounted;
+    return atomic_load(&s.usable);
 }
 
 const char *storage_card_name(void)
 {
-    return s.mounted ? s.name : "";
+    return atomic_load(&s.usable) ? s.name : "";
 }
 
 const char *storage_status(void)
@@ -306,252 +569,91 @@ const char *storage_status(void)
 
 card_state_t storage_card_state(void)
 {
-    return s.mounted ? CARD_STATE_MOUNTED : s.state;
-}
-
-static bool fat_usage(uint64_t *total, uint64_t *freebytes)
-{
-    if (!s.mounted) {
-        return false;
-    }
-    uint64_t t = 0;
-    uint64_t f = 0;
-    if (esp_vfs_fat_info(STORAGE_MOUNT_POINT, &t, &f) != ESP_OK) {
-        return false;
-    }
-    *total = t;
-    *freebytes = f;
-    return true;
+    return atomic_load(&s.usable) ? CARD_STATE_MOUNTED
+                                  : (card_state_t)atomic_load(&s.state_now);
 }
 
 uint64_t storage_total_bytes(void)
 {
     uint64_t t = 0;
     uint64_t f = 0;
-    return fat_usage(&t, &f) ? t : 0;
+    if (!storage_hold()) {
+        return 0;
+    }
+    const bool ok = fat_usage(&t, &f);
+    storage_release();
+    return ok ? t : 0;
 }
 
 uint64_t storage_free_bytes(void)
 {
     uint64_t t = 0;
     uint64_t f = 0;
-    return fat_usage(&t, &f) ? f : 0;
+    if (!storage_hold()) {
+        return 0;
+    }
+    const bool ok = fat_usage(&t, &f);
+    storage_release();
+    return ok ? f : 0;
 }
 
-void storage_path(const char *dir, const char *name, char *out, size_t out_size)
+/*
+ * A read of the mounted card failed with @p fr.  Under s.lock, with the
+ * caller's hold given back.  A failure that does not say the card stopped
+ * answering leaves the volume as it is.  One that does, on a volume read
+ * from since its mount, is a card taken out or swapped (lose_locked()).
+ * On a volume nothing has been read from since its mount it is the card's
+ * own: unreadable, and not mounted again by this call, so a card that
+ * fails every read costs one mount per caller's try and not a loop.
+ *
+ * @return whether the volume was let go and may be mounted again now.
+ */
+static bool read_failed_locked(int fr, const char *how)
 {
-    if (out == NULL || out_size == 0u) {
-        return;
+    if (!s.mounted || s.lost || !removal_shaped(fr)) {
+        return false;
     }
-    if (dir == NULL || dir[0] == '\0' || strcmp(dir, "/") == 0) {
-        snprintf(out, out_size, "%s/%s", STORAGE_MOUNT_POINT, name);
-    } else {
-        snprintf(out, out_size, "%s/%s/%s", STORAGE_MOUNT_POINT, dir, name);
+    if (!s.fresh) {
+        lose_locked(fr, how);
+        return !s.mounted;
     }
-}
-
-/* Case-insensitive suffix test against a space-separated list. */
-static bool suffix_matches(const char *name, const char *suffixes)
-{
-    if (suffixes == NULL || suffixes[0] == '\0') {
-        return true;
-    }
-    size_t n = strlen(name);
-    const char *p = suffixes;
-    while (*p != '\0') {
-        while (*p == ' ') {
-            ++p;
-        }
-        const char *end = p;
-        while (*end != '\0' && *end != ' ') {
-            ++end;
-        }
-        size_t len = (size_t)(end - p);
-        if (len > 0u && len <= n) {
-            const char *tail = name + (n - len);
-            size_t i = 0;
-            while (i < len && tolower((unsigned char)tail[i]) == p[i]) {
-                ++i;
-            }
-            if (i == len) {
-                return true;
-            }
-        }
-        p = end;
+    ESP_LOGW(TAG, "card mounted and does not read (%s: FatFs %d)", how, fr);
+    s.lost = true;
+    publish();
+    set_state(CARD_STATE_UNREADABLE);
+    snprintf(s.status, sizeof(s.status), "FatFs %d", fr);
+    if (s.holds == 0u) {
+        unmount_locked();
+        /* unmount_locked() leaves the slot's state: unreadable stays. */
     }
     return false;
 }
 
-/* What one walk reads into: on the heap, because the walk runs on the task
- * that renders as well as on the run logger's, and a FILINFO with its long
- * name buffer is 280 bytes or more. */
-typedef struct {
-    FF_DIR dir;
-    FILINFO info;
-} walk_buf_t;
-
-/* exFAT is on (firmware/panel/fatfs_exfat.cmake): a build that lost it
- * stops here rather than run without it.  A file's size then is FatFs's
- * 64-bit FSIZE_t, and goes into storage_entry_t and storage_stat_t as it
- * is. */
-#if !defined(FF_FS_EXFAT) || FF_FS_EXFAT != 1
-#error "FatFs without exFAT: see firmware/panel/fatfs_exfat.cmake"
-#endif
-_Static_assert(sizeof(FSIZE_t) <= sizeof(((storage_entry_t *)0)->size),
-               "storage_entry_t.size holds every FatFs size");
-_Static_assert(sizeof(FSIZE_t) <= sizeof(((storage_stat_t *)0)->size),
-               "storage_stat_t.size holds every FatFs size");
-
-int storage_walk(const char *dir, const char *suffixes,
-                 storage_visit_fn visit, void *ctx, storage_tick_fn tick)
+/* The end of a hold a read was made under, under s.lock: @p fr what the
+ * read found, FR_OK for one that worked. */
+static void read_done_locked(int fr)
 {
-    if (!s.mounted || s.drive[0] == '\0') {
-        return -1;
+    if (fr == (int)FR_OK) {
+        s.fresh = false;
     }
-
-    /*
-     * FatFs's own directory read, by drive number, rather than opendir() and
-     * readdir() through the VFS (virtual file system): f_readdir() fills the
-     * entry's size and attributes in the same pass, and readdir() drops
-     * them.  A size taken afterwards is an f_stat(), which looks the name up
-     * from the directory's first entry, one 512-byte sector per 16 entries:
-     * 48 sizes on a root of 999 runs were about 2900 sector reads.
-     */
-    char path[STORAGE_NAME_MAX * 2];
-    if (dir == NULL || dir[0] == '\0' || strcmp(dir, "/") == 0) {
-        snprintf(path, sizeof(path), "%s/", s.drive);
-    } else {
-        snprintf(path, sizeof(path), "%s/%s", s.drive, dir);
+    if (s.holds > 0u) {
+        --s.holds;
     }
-
-    walk_buf_t *w = malloc(sizeof(*w));
-    if (w == NULL) {
-        ESP_LOGW(TAG, "no memory to list %s", path);
-        return -1;
-    }
-    FRESULT fr = f_opendir(&w->dir, path);
-    if (fr != FR_OK) {
-        free(w);
-        /* A folder not made yet is an empty list to the caller, not a
-         * volume that is gone. */
-        return (fr == FR_NO_PATH || fr == FR_NO_FILE) ? STORAGE_WALK_NO_DIR
-                                                      : -1;
-    }
-
-    /*
-     * The end of the directory and a read that failed are two answers: a
-     * card pulled part way through a listing is a failure, and reporting it
-     * as the end would tell the operator their logs had vanished rather than
-     * that the card had.
-     */
-    int matched = 0;
-    for (;;) {
-        fr = f_readdir(&w->dir, &w->info);
-        if (fr != FR_OK || w->info.fname[0] == '\0') {
-            break;
-        }
-        const FILINFO *e = &w->info;
-        /* Per entry read, before any filter.  What the filters reject never
-         * reaches the visitor, and a root of unrelated files is the case that
-         * takes longest with nothing else running. */
-        if (tick != NULL) {
-            tick();
-        }
-        if (e->fname[0] == '.') {
-            continue; /* the metadata files a Mac leaves behind */
-        }
-        const bool is_dir = (e->fattrib & AM_DIR) != 0;
-        if (!is_dir && !suffix_matches(e->fname, suffixes)) {
-            continue;
-        }
-        size_t len = strlen(e->fname);
-        if (len >= STORAGE_NAME_MAX) {
-            /* A name that does not fit cannot be reopened, so a truncated
-             * version is not shown. */
-            ESP_LOGW(TAG, "skipping over-long name (%u chars)", (unsigned)len);
-            continue;
-        }
-
-        storage_entry_t cur;
-        memcpy(cur.name, e->fname, len + 1u);
-        cur.is_dir = is_dir;
-        cur.size = is_dir ? 0u : (uint64_t)e->fsize;
-        ++matched;
-        if (visit != NULL) {
-            visit(&cur, ctx);
-        }
-    }
-    (void)f_closedir(&w->dir);
-    free(w);
-    if (fr != FR_OK) {
-        ESP_LOGW(TAG, "listing %s stopped: FatFs %d", path, (int)fr);
-        return -1;              /* no volume, not an empty one */
-    }
-
-    return matched;
 }
 
-/* FAT's date and time stamp as local time, the way ESP-IDF's stat() reads
- * it (components/fatfs/vfs/vfs_fat.c, update_stat_struct()): the date's
- * bits 15..9 are years from 1980, 8..5 the month, 4..0 the day; the time's
- * 15..11 the hour, 10..5 the minute, 4..0 seconds in steps of 2. */
-static int64_t fat_mtime(WORD fdate, WORD ftime)
+const char *storage_drive(void)
 {
-    struct tm tm = {
-        .tm_mday = (int)(fdate & 0x1fu),
-        .tm_mon = (int)((fdate >> 5) & 0x0fu) - 1,
-        .tm_year = (int)(fdate >> 9) + 80,
-        .tm_sec = (int)(ftime & 0x1fu) * 2,
-        .tm_min = (int)((ftime >> 5) & 0x3fu),
-        .tm_hour = (int)((ftime >> 11) & 0x1fu),
-        .tm_isdst = -1,
-    };
-    return (int64_t)mktime(&tm);
+    return s.drive;
 }
 
-esp_err_t storage_stat(const char *path, storage_stat_t *out)
+bool storage_read_end(int fr, const char *how, bool may_mount)
 {
-    if (path == NULL || out == NULL) {
-        return ESP_ERR_INVALID_STATE;
+    lock();
+    read_done_locked(fr);
+    bool mounted_again = false;
+    if (read_failed_locked(fr, how) && may_mount) {
+        mounted_again = (mount_locked() == ESP_OK);
     }
-    const size_t mp = sizeof(STORAGE_MOUNT_POINT) - 1u;
-    if (!s.mounted || s.drive[0] == '\0'
-        || strncmp(path, STORAGE_MOUNT_POINT, mp) != 0
-        || (path[mp] != '\0' && path[mp] != '/')) {
-        return ESP_ERR_INVALID_STATE;
-    }
-    const char *rel = path + mp;            /* "" or "/..." */
-    if (rel[0] == '\0' || strcmp(rel, "/") == 0) {
-        /* f_stat() does not take a volume's root; it is a folder. */
-        memset(out, 0, sizeof(*out));
-        out->is_dir = true;
-        return ESP_OK;
-    }
-
-    /* On the heap, as the walk's: a FILINFO with its long name buffer is
-     * 280 bytes or more, and the run logger's task calls this. */
-    const size_t need = strlen(s.drive) + strlen(rel) + 1u;
-    typedef struct {
-        FILINFO info;
-        char path[];
-    } stat_buf_t;
-    stat_buf_t *b = malloc(sizeof(*b) + need);
-    if (b == NULL) {
-        return ESP_ERR_NO_MEM;
-    }
-    snprintf(b->path, need, "%s%s", s.drive, rel);
-    const FRESULT fr = f_stat(b->path, &b->info);
-    esp_err_t err = ESP_OK;
-    if (fr == FR_OK) {
-        out->is_dir = (b->info.fattrib & AM_DIR) != 0;
-        out->size = out->is_dir ? 0u : (uint64_t)b->info.fsize;
-        out->mtime = fat_mtime(b->info.fdate, b->info.ftime);
-    } else if (fr == FR_NO_FILE || fr == FR_NO_PATH) {
-        err = ESP_ERR_NOT_FOUND;
-    } else {
-        ESP_LOGW(TAG, "stat %s: FatFs %d", b->path, (int)fr);
-        err = ESP_FAIL;
-    }
-    free(b);
-    return err;
+    unlock();
+    return mounted_again;
 }

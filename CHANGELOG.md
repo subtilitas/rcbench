@@ -31,6 +31,25 @@ history is in git.
 - The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
   receive mode before the OPEN, and the report names it (`rx=pu|pre`).
 
+### Fixed
+
+- A card put in, taken out or swapped while the panel runs is found by the
+  next RESCAN, opening of LOGS, page or OPEN of LOGS, run start or servo
+  test start, with no restart. A mounted card is asked with one SEND_STATUS
+  (CMD13) command at those events and not once a frame; one that does not
+  answer is unmounted and the slot mounted again, so the volume label, the
+  list, the run alerts and the card state are the card's in the slot. A
+  card swapped for one with no FAT volume said `No card.` on LOGS and kept
+  the old label; it says `Card is neither FAT32 nor exFAT. Format it on a
+  computer.`. The look logs no E line. A card taken out during a run closes
+  the run's file at the first failed write and the run goes on unrecorded
+  under `Data can no longer be saved to the card. Recording stopped here.`;
+  the next ARM names the slot's state now. A card that mounts and fails its
+  first read is unreadable and is mounted once per look. The volume is
+  unmounted only with no file or folder open on it from LOGS, the run log or
+  the Wi-Fi access. The `runlog` task's stack is 6,656 bytes (5,632), for
+  the mount it makes.
+
 ## 0.21.2 - 2026-10-20
 
 0.21.2 is a testing release: its minor number, 21, is odd, and GitHub lists

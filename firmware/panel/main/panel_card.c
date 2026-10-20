@@ -64,12 +64,21 @@ static void esc_card_take(const storage_entry_t *entry, void *ctx)
     }
 }
 
+static void esc_profiles_read(void);
+
 void esc_profiles_load(void)
 {
     esc_profiles_clear_overrides();
-    if (!storage_mounted()) {
+    /* Held across the walk and the reads (storage_hold()). */
+    if (!storage_hold()) {
         return;
     }
+    esc_profiles_read();
+    storage_release();
+}
+
+static void esc_profiles_read(void)
+{
     /* 4 KiB of names: static, off the start-up task's stack. */
     static esc_card_t c;
     memset(&c, 0, sizeof(c));
@@ -288,16 +297,22 @@ static int card_list(log_viewer_file_t *out, int max_entries,
                      log_viewer_page_t *page, void *ctx)
 {
     (void)ctx;
-    /*
-     * A card put in after the panel booted is mounted here, on the way past.
-     * The only other storage_init() runs in the splash sequence, so without
-     * this the RESCAN button that the empty screen tells the operator to
-     * press could never find a card and a reboot would be the only way in.
-     * Mounting when something is already mounted returns at once.
-     */
-    if (!storage_mounted()) {
-        (void)storage_init();
+    /* The viewer closes what it reads before it lists; a file left open
+     * here would hold the volume and keep a swapped card from being let
+     * go. */
+    if (s_card_file != NULL) {
+        (void)storage_fclose(s_card_file);
+        s_card_file = NULL;
     }
+    /*
+     * The card in the slot now, on the way past: LOGS opening, RESCAN and
+     * every page are events that look (storage_check()).  A card put in
+     * after the start, or one swapped for another, is mounted here, and
+     * one taken out is let go, so the header, the list and the empty
+     * screen's words are the card's in the slot.  One status command to a
+     * card that answers; no look between those events.
+     */
+    (void)storage_check();
     /*
      * No card is -1 and an empty card is 0, and the viewer says different
      * things about them.  storage_walk() cannot open the root of a volume
@@ -309,16 +324,22 @@ static int card_list(log_viewer_file_t *out, int max_entries,
         return -1;
     }
     card_pick_t pick;
-    pick.files = 0;
-    log_select_page_begin(&pick.sel, out, max_entries, page);
     /*
      * No tick: this runs on the task that renders, which has no safety line
      * to hold and nothing to pump.  One walk per page, PREV and NEXT
      * included: the page is held and the rest of the card is counted, so a
-     * page of a full card costs what the first page of it does.
+     * page of a full card costs what the first page of it does.  A walk
+     * that found the card gone and mounted the one in the slot is walked
+     * once more, from nothing: what it handed over was the old card's.
      */
-    const int total = storage_walk(s_card_dir, CARD_SUFFIXES, card_take,
-                                   &pick, NULL);
+    int total = STORAGE_WALK_REMOUNTED;
+    for (int walks = 0; walks < 2 && total == STORAGE_WALK_REMOUNTED;
+         ++walks) {
+        pick.files = 0;
+        log_select_page_begin(&pick.sel, out, max_entries, page);
+        total = storage_walk(s_card_dir, CARD_SUFFIXES, card_take, &pick,
+                             NULL);
+    }
     if (total == STORAGE_WALK_NO_DIR) {
         /* A folder the logger has not made yet: an empty list, with the
          * empty folder's text, and not a card that is gone. */
@@ -326,18 +347,8 @@ static int card_list(log_viewer_file_t *out, int max_entries,
         return 0;
     }
     if (total < 0) {
-        /*
-         * Mounted, and yet its root will not open: the card it was mounted
-         * from has been taken out or swapped.  Nothing clears that flag, so
-         * the mount stays stale and a replacement card is not found until
-         * the panel restarts.
-         *
-         * Not unmounted from here.  This runs on the task that renders, and
-         * the runlog task writes the run log on the same volume: unmounting
-         * under an open handle frees the SPI bus beneath a write from another
-         * task.  Putting that right means one task owning the card's
-         * lifetime, which is a change of its own; see STATUS.md.
-         */
+        /* No volume, a card gone or one that does not read: the slot's
+         * state says which (storage_card_state()). */
         return -1;
     }
     /* Held in rank order while the card is read and drawn in it: the newest
@@ -360,7 +371,7 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
     /* Whatever was open is closed first.  A viewer that opened a second log
      * without closing the first would leak the handle, and there are few. */
     if (s_card_file != NULL) {
-        fclose(s_card_file);
+        (void)storage_fclose(s_card_file);
         s_card_file = NULL;
     }
     /*
@@ -372,9 +383,16 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
         ESP_LOGW(TAG, "%s is still being written", name);
         return false;
     }
+    /* An open is an event that looks: a card swapped since the list is
+     * found here, quietly, rather than by a read of the volume that is
+     * gone. */
+    if (storage_check() != CARD_STATE_MOUNTED) {
+        return false;
+    }
     char path[CARD_PATH_MAX];
     storage_path(s_card_dir, name, path, sizeof(path));
-    s_card_file = fopen(path, "rb");
+    /* Held while the viewer reads it, until card_close(). */
+    s_card_file = storage_fopen(path, "rb");
     if (s_card_file == NULL) {
         /* Listed and then gone, or unreadable.  The viewer says so; there is
          * nothing here to retry. */
@@ -389,7 +407,7 @@ static void card_close(void *ctx)
 {
     (void)ctx;
     if (s_card_file != NULL) {
-        fclose(s_card_file);
+        (void)storage_fclose(s_card_file);
         s_card_file = NULL;
     }
 }
@@ -432,12 +450,16 @@ static bool card_remove(const char *name, void *ctx)
     /* The viewer closes what it reads before it lists again, so nothing is
      * open here; closed anyway, because FAT will not delete an open file. */
     if (s_card_file != NULL) {
-        fclose(s_card_file);
+        (void)storage_fclose(s_card_file);
         s_card_file = NULL;
+    }
+    if (!storage_hold()) {
+        return false;
     }
     char path[CARD_PATH_MAX];
     storage_path(s_card_dir, name, path, sizeof(path));
     if (remove(path) != 0) {
+        storage_release();
         ESP_LOGW(TAG, "could not delete %s", path);
         return false;
     }
@@ -455,6 +477,7 @@ static bool card_remove(const char *name, void *ctx)
             ESP_LOGI(TAG, "deleted %s", path);
         }
     }
+    storage_release();
     return true;
 }
 
@@ -502,7 +525,8 @@ void kst_record_write(void)
         return;
     }
     bool ok = false;
-    if (storage_mounted() && kst_files_dir()) {
+    const bool held = storage_hold();
+    if (held && kst_files_dir()) {
         kst_files_path(KST_FILE_NAME, s_kst_path, sizeof(s_kst_path));
         kst_files_path(KST_FILE_NEW, s_kst_path_new, sizeof(s_kst_path_new));
         FILE *f = fopen(s_kst_path_new, "w");
@@ -516,6 +540,9 @@ void kst_record_write(void)
             (void)unlink(s_kst_path);   /* fails where there is none */
             ok = rename(s_kst_path_new, s_kst_path) == 0;
         }
+    }
+    if (held) {
+        storage_release();
     }
     atomic_store(&s_kst_file_ok, ok);
     atomic_store(&s_kst_file_done, sent);
@@ -553,11 +580,20 @@ static bool kst_record_use(bool late, size_t len)
  * record; a KST.TXT that does not read or does not parse is said on the
  * programmer's page and not used.
  */
+static void kst_record_load_held(bool late);
+
 void kst_record_load(bool late)
 {
-    if (!storage_mounted()) {
+    /* Held across the reads, the removal and the rename. */
+    if (!storage_hold()) {
         return;
     }
+    kst_record_load_held(late);
+    storage_release();
+}
+
+static void kst_record_load_held(bool late)
+{
     size_t len = 0;
     kst_files_path(KST_FILE_NAME, s_kst_path, sizeof(s_kst_path));
     kst_files_path(KST_FILE_NEW, s_kst_path_new, sizeof(s_kst_path_new));
@@ -606,6 +642,12 @@ void kst_card_serve(void)
     if (sent == atomic_load(&s_kst_card_answered)) {
         return;
     }
+    /* Held across the request's card calls; kst_files.c's mounted() then
+     * reads as storage_mounted() does. */
+    const bool held = storage_hold();
     kst_card_run(kst_files_io(), &s_kst_card_req, &s_kst_card_done);
+    if (held) {
+        storage_release();
+    }
     atomic_store(&s_kst_card_answered, sent);
 }

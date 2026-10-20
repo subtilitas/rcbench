@@ -9,6 +9,7 @@
 #include "esp_check.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 
 static const char *TAG = "board";
@@ -21,11 +22,16 @@ typedef struct {
     i2c_master_dev_handle_t ch422g_oc;
     i2c_master_dev_handle_t ch422g_rd;
     uint8_t exio;
+    /* The shadow, its modify and the write, one caller at a time. */
+    SemaphoreHandle_t exio_lock;
 } board_state_t;
 
 static board_state_t s_board;
 
 #define I2C_TIMEOUT_MS 100
+/* How long a write of the expander waits for one under way: two of its
+ * transactions. */
+#define EXIO_LOCK_WAIT_MS (2 * I2C_TIMEOUT_MS)
 
 static esp_err_t add_dev(uint16_t addr, i2c_master_dev_handle_t *out)
 {
@@ -72,6 +78,7 @@ esp_err_t board_init(void)
     ESP_RETURN_ON_ERROR(ch422g_write(s_board.ch422g_set, BOARD_CH422G_SET_IO_OE),
                         TAG, "ch422g mode");
 
+    s_board.exio_lock = xSemaphoreCreateMutex();
     s_board.exio = BOARD_EXIO_DEFAULT;
     ESP_RETURN_ON_ERROR(ch422g_write(s_board.ch422g_io, s_board.exio), TAG,
                         "ch422g default state");
@@ -87,34 +94,47 @@ i2c_master_bus_handle_t board_i2c_bus(void)
     return s_board.bus;
 }
 
-esp_err_t board_exio_write(uint8_t mask)
+/* The write and the shadow, with the lock taken by the caller. */
+static esp_err_t exio_write_locked(uint8_t mask)
 {
-    ESP_RETURN_ON_FALSE(s_board.ch422g_io, ESP_ERR_INVALID_STATE, TAG,
-                        "board_init() first");
     ESP_RETURN_ON_ERROR(ch422g_write(s_board.ch422g_io, mask), TAG, "exio write");
     s_board.exio = mask;
     return ESP_OK;
 }
 
+static bool exio_lock(void)
+{
+    return xSemaphoreTake(s_board.exio_lock, pdMS_TO_TICKS(EXIO_LOCK_WAIT_MS))
+           == pdTRUE;
+}
+
+esp_err_t board_exio_write(uint8_t mask)
+{
+    ESP_RETURN_ON_FALSE(s_board.ch422g_io && s_board.exio_lock,
+                        ESP_ERR_INVALID_STATE, TAG, "board_init() first");
+    if (!exio_lock()) {
+        return ESP_ERR_TIMEOUT;
+    }
+    const esp_err_t err = exio_write_locked(mask);
+    (void)xSemaphoreGive(s_board.exio_lock);
+    return err;
+}
+
 /*
  * One bit of the expander, read-modify-write against the shadow.
  *
- * Not locked, because every caller is on app_main.  During bring-up that is
+ * Locked: the shadow read, the modify and the I2C transaction together,
+ * under exio_lock.  During bring-up every caller is on app_main:
  * board_backlight() from display_init(), board_touch_reset_sequence() from
  * the touch bring-up, board_sd_cs() from storage_init(), and
- * board_select_can() from can_twai_start().  storage_deinit() has no caller
- * yet; it is the unmount for the SD card remount.
+ * board_select_can() from can_twai_start().
  *
- * One of them also runs long after bring-up: the log viewer's card_list()
- * calls storage_init() from the render loop when a card is put in after boot,
- * and that reaches board_sd_cs().  Rendering is on app_main, not a task of
- * its own, so the shadow still has one writer -- but "before the control task
- * is created" stopped being the reason, and the reason is what a later caller
- * would be checked against.
- *
- * No task this firmware creates touches the expander.  One that did would
- * need this to take a lock, and would need it before the first call rather
- * than after a lost update.
+ * One of them also runs long after bring-up, and from more than one task:
+ * board_sd_cs() from the SD card's mount and unmount, which the render loop
+ * (LOGS, the servo programmer), the runlog task (a run's start, the last
+ * close of a card taken out) and the Wi-Fi access's HTTP server (the last
+ * close of a card taken out) reach.  The storage component makes its own
+ * calls one at a time; this lock keeps them apart from any other bit's.
  *
  * The bit that makes this worth stating is BOARD_EXIO_USB_SEL, which drives
  * the FSUSB42UMX between native USB and the CAN transceiver.  A lost update
@@ -122,25 +142,31 @@ esp_err_t board_exio_write(uint8_t mask)
  * error anywhere -- NO LINK against a controller reporting a healthy bus,
  * until the panel is switched off.
  *
- * So: a caller added on the control task, the artwork keeper or any task
- * added later needs a mutex around the shadow read, the modify and the I2C
- * transaction together.  Its wait has to be bounded well under HEARTBEAT_MAX_GAP_MS
- * (150 ms), the ceiling the safety line is watched against -- a lock timeout
- * longer than that trades a fault nobody has had for a failsafe everybody
- * gets.  I2C_TIMEOUT_MS is 100 ms, so one transaction already spends most of
- * that budget and a second waiter cannot be made safe by waiting longer.
+ * The wait for the lock is EXIO_LOCK_WAIT_MS (200 ms), and the call answers
+ * ESP_ERR_TIMEOUT after it.  The control task makes no call here, and must
+ * not: its ceiling is HEARTBEAT_MAX_GAP_MS (150 ms), the safety line is
+ * watched against it, and I2C_TIMEOUT_MS is 100 ms, so one transaction
+ * already spends most of that budget and a second waiter cannot be made
+ * safe by waiting longer.
  */
 esp_err_t board_exio_set(int exio, bool level)
 {
     ESP_RETURN_ON_FALSE(exio >= 0 && exio <= 7, ESP_ERR_INVALID_ARG, TAG,
                         "exio %d out of range", exio);
+    ESP_RETURN_ON_FALSE(s_board.ch422g_io && s_board.exio_lock,
+                        ESP_ERR_INVALID_STATE, TAG, "board_init() first");
+    if (!exio_lock()) {
+        return ESP_ERR_TIMEOUT;
+    }
     uint8_t mask = s_board.exio;
     if (level) {
         mask |= (uint8_t)(1u << exio);
     } else {
         mask &= (uint8_t)~(1u << exio);
     }
-    return board_exio_write(mask);
+    const esp_err_t err = exio_write_locked(mask);
+    (void)xSemaphoreGive(s_board.exio_lock);
+    return err;
 }
 
 uint8_t board_exio_state(void)

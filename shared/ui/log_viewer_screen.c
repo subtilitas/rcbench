@@ -523,6 +523,16 @@ static void read_page(log_page_dir_t dir, const char *key)
         return;
     }
     int n = list_once(dir, k, LOG_VIEWER_MAX_FILES);
+    /* The list looks at the slot and can mount another card: a page cut
+     * from a key read on the old one is read again from the new one's
+     * top. */
+    if (strcmp(s.volume, volume_now()) != 0) {
+        snprintf(s.volume, sizeof(s.volume), "%s", volume_now());
+        if (n >= 0 && (dir != LOG_PAGE_FROM || k[0] != '\0')) {
+            dir = LOG_PAGE_FROM;
+            n = list_once(LOG_PAGE_FROM, "", LOG_VIEWER_MAX_FILES);
+        }
+    }
     if (n > 0 && dir == LOG_PAGE_BEFORE && s.first < LOG_VIEWER_MAX_FILES
         && (s.first > 0 || s.n_files < LOG_VIEWER_MAX_FILES)
         && s.n_files < n) {

@@ -88,6 +88,10 @@ static bool g_no_card;
 static bool g_empty_card;
 /* The card's name in the header; another name is another card. */
 static const char *g_volume = "BENCH01";
+/* A card the next listing finds in the slot and mounts, as card_list()'s
+ * look does on the panel: its name, its runs; NULL for none. */
+static const char *g_swap_volume;
+static int g_swap_runs;
 
 /*
  * A card holding more runs than the list has room for, or 0 for the fixture
@@ -161,6 +165,11 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
 {
     (void)ctx;
     ++g_list_calls;
+    if (g_swap_volume != NULL) {
+        g_volume = g_swap_volume;
+        g_card_runs = g_swap_runs;
+        g_swap_volume = NULL;
+    }
     if (page != NULL) {
         g_last_page = *page;
     }
@@ -300,6 +309,7 @@ static void reset_screen(void)
     memset(g_run_gone, 0, sizeof(g_run_gone));
     memset(&g_last_page, 0, sizeof(g_last_page));
     g_volume = "BENCH01";
+    g_swap_volume = NULL;
     memset(g_removed, 0, sizeof(g_removed));
     g_remove_calls = 0;
     g_removed_name[0] = '\0';
@@ -2294,6 +2304,21 @@ TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
     /* The page started at run 72; every run of 500 to 699 ranks ahead of
      * it, so it is past the end and the last page shows. */
     check_tab(193, 200, 200);
+
+    /* Swapped with no tap between, found by the RESCAN's own look: the
+     * header named the old card until the list mounted the new one, and
+     * the new one opens on its first page. */
+    runs_card(150);
+    next_page();
+    check_tab(49, 96, 150);
+    g_swap_volume = "SK64G";
+    g_swap_runs = 120;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(1, 48, 120);
+    check_newest(120);
+    /* And PREV and NEXT go on from there. */
+    next_page();
+    check_tab(49, 96, 120);
 }
 
 

@@ -11,7 +11,12 @@
  * mount logs "failed to mount card (<FRESULT>)" at W level and answers
  * ESP_FAIL (vfs_fat_sdmmc.c:126).  The second look storage.c takes at such
  * a card -- a device on the bus, the card started, FatFs's f_mount() on
- * a drive of diskio_impl.h -- answers as the card in the slot would.
+ * a drive of diskio_impl.h -- answers as the card in the slot would.  A
+ * mounted card taken out or swapped fails every read with FR_DISK_ERR and
+ * an E line under "diskio_sdmmc" (diskio_sdmmc.c:58), and f_getfree() with
+ * the disk status check on answers FR_NOT_READY after an E line "Check
+ * status failed (0x107)" under the same tag (diskio_sdmmc.c:26).  The
+ * FreeRTOS mutex of freertos/semphr.h is a flag the suite reads.
  * Every header of this directory includes this one.
  *
  * SPDX-License-Identifier: MIT
@@ -100,7 +105,9 @@ typedef uint32_t DWORD;
 typedef uint64_t FSIZE_t;
 typedef enum {
     FR_OK = 0, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH,
-    FR_INVALID_NAME, FR_NO_FILESYSTEM = 13,
+    FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_INVALID_OBJECT,
+    FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM,
+    FR_MKFS_ABORTED, FR_TIMEOUT,
 } FRESULT;
 typedef struct { int pos; } FF_DIR;
 typedef struct {
@@ -125,6 +132,7 @@ FRESULT f_getfree(const char *path, DWORD *nclst, FATFS **fatfs);
 FRESULT f_getlabel(const char *path, char *label, uint32_t *vsn);
 BYTE ff_diskio_get_pdrv_card(const sdmmc_card_t *card);
 void ff_diskio_register_sdmmc(unsigned char pdrv, sdmmc_card_t *card);
+void ff_sdmmc_set_disk_status_check(BYTE pdrv, bool enable);
 /* diskio_impl.h */
 esp_err_t ff_diskio_get_drive(BYTE *out_pdrv);
 void fake_diskio_unregister(BYTE pdrv);
@@ -142,3 +150,16 @@ esp_err_t esp_vfs_fat_sdspi_mount(const char *base, const sdmmc_host_t *host,
                                   sdmmc_card_t **out);
 esp_err_t esp_vfs_fat_sdcard_unmount(const char *base, sdmmc_card_t *card);
 esp_err_t esp_vfs_fat_info(const char *base, uint64_t *total, uint64_t *free);
+
+/* freertos/FreeRTOS.h, freertos/semphr.h: a mutex that records a second
+ * take by its holder (a deadlock on the panel) and a give without a take. */
+typedef uint32_t TickType_t;
+typedef int BaseType_t;
+#define portMAX_DELAY ((TickType_t)0xffffffffu)
+#define pdTRUE 1
+#define pdFALSE 0
+typedef struct { int taken; } StaticSemaphore_t;
+typedef StaticSemaphore_t *SemaphoreHandle_t;
+SemaphoreHandle_t xSemaphoreCreateMutex(void);
+BaseType_t xSemaphoreTake(SemaphoreHandle_t sem, TickType_t wait);
+BaseType_t xSemaphoreGive(SemaphoreHandle_t sem);

@@ -1253,7 +1253,7 @@ Codes.
   Schreiben: eine nach dem Einhängen gezogene Karte, eine schreibgeschützte
   Karte oder eine Karte, auf der `BENCH/KST/CONF/KST.TXT` oder
   `BENCH/KST/CONF/KST.NEW` ein Ordner ist oder eine Ebene von
-  `BENCH/KST/CONF` eine Datei. Jeder Versuch endet mit `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.` Das Panel hängt eine solche Karte nicht aus. Ein ohne
+  `BENCH/KST/CONF` eine Datei. Jeder Versuch endet mit `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.` Das Panel hält eine solche Karte eingehängt, außer einer entnommenen, die der nächste Blick auf den Steckplatz freigibt ([Bildschirme](Screens-de.md#das-format-der-sd-karte)). Ein ohne
   Karte gestartetes Panel hält den Vermerk im Speicher und schreibt.
 - Der Vermerk eines beendeten Schreibens wird auf der Karte nach dem
   Schreiben gelöscht, durch ein eigenes Schreiben der Datei, das alle 5 s

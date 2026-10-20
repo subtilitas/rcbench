@@ -1836,11 +1836,11 @@ void app_main(void)
      * able to delay the safety line, so it runs in the gaps the control task
      * leaves rather than beside it on the core the renderer uses.  Its
      * stack holds one line of a servo test, SERVO_TEST_LINE_MAX bytes, and
-     * the deepest card chain tools/stack_check.py follows: a servo file
-     * saved into BENCH/KST/CONF, each missing folder level made on the way
-     * (docs/Performance.md).
+     * the deepest card chain tools/stack_check.py follows: the card mounted
+     * again under a servo file's walk, as a run's start mounts it
+     * (storage_check(), docs/Performance.md).
      */
-    ESP_ERROR_CHECK(xTaskCreatePinnedToCore(log_task, "runlog", 5632,
+    ESP_ERROR_CHECK(xTaskCreatePinnedToCore(log_task, "runlog", 6656,
                                             NULL, 3, NULL, 1) == pdPASS
                     ? ESP_OK : ESP_ERR_NO_MEM);
 

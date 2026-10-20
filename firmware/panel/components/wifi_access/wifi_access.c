@@ -254,20 +254,27 @@ static size_t card_path(char *out, size_t cap, const char *rel)
     return (n < 0 || (size_t)n >= cap) ? 0u : (size_t)n;
 }
 
+/*
+ * Every folder and file open here holds the volume (storage_hold()) until
+ * its close, so a card swapped while a download runs is let go after the
+ * download's last close and never under a read.
+ */
 static void *card_opendir(void *ctx, const char *path)
 {
     (void)ctx;
-    if (!storage_mounted()) {
+    if (!storage_hold()) {
         return NULL;
     }
     card_dir_t *d = heap_caps_malloc(sizeof(*d), MALLOC_CAP_SPIRAM);
     if (d == NULL) {
+        storage_release();
         return NULL;
     }
     d->len = card_path(d->path, sizeof(d->path), path);
     d->d = (d->len > 0u) ? opendir(d->path) : NULL;
     if (d->d == NULL) {
         heap_caps_free(d);
+        storage_release();
         return NULL;
     }
     return d;
@@ -317,17 +324,22 @@ static void card_closedir(void *ctx, void *dir)
     card_dir_t *d = dir;
     (void)closedir(d->d);
     heap_caps_free(d);
+    storage_release();
 }
 
 static void *card_open(void *ctx, const char *path)
 {
     (void)ctx;
     char full[sizeof(STORAGE_MOUNT_POINT) + WA_PATH_MAX + 2u];
-    if (!storage_mounted() || card_path(full, sizeof(full), path) == 0u) {
+    if (card_path(full, sizeof(full), path) == 0u || !storage_hold()) {
         return NULL;
     }
     const int fd = open(full, O_RDONLY);
-    return (fd < 0) ? NULL : (void *)(intptr_t)(fd + 1);
+    if (fd < 0) {
+        storage_release();
+        return NULL;
+    }
+    return (void *)(intptr_t)(fd + 1);
 }
 
 static int32_t card_read(void *ctx, void *file, uint8_t *dst, uint32_t len)
@@ -341,6 +353,7 @@ static void card_close(void *ctx, void *file)
 {
     (void)ctx;
     (void)close((int)(intptr_t)file - 1);
+    storage_release();
 }
 
 static const wa_fs_t k_card = {

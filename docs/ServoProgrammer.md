@@ -1133,8 +1133,9 @@ line. [The link page](LinkKST.md) lists the codes.
 - A mounted card that does not take the record stops every write: a card
   taken out after the mount, a write-protected card, or a card on which
   `BENCH/KST/CONF/KST.TXT` or `BENCH/KST/CONF/KST.NEW` is a folder, or a
-  level of `BENCH/KST/CONF` is a file. Each attempt ends with `Could not save the file to the card. Nothing was written to the servo.` The panel does not
-  unmount such a card. A panel started without a card holds the record in
+  level of `BENCH/KST/CONF` is a file. Each attempt ends with `Could not save the file to the card. Nothing was written to the servo.` The panel keeps such a
+  card mounted, except a card taken out, which the next look at the slot
+  lets go ([Screens](Screens.md#the-sd-cards-format)). A panel started without a card holds the record in
   memory and writes.
 - The record of a write that ended is cleared on the card after the write,
   by a file write of its own that is repeated every 5 s until the card
