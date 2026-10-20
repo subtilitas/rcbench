@@ -26,30 +26,70 @@ static void push(page_console_t *c, const char *s, size_t n)
     }
 }
 
-/* One line; the LF is added. */
+/* One line; the LF is added, and a LF the text ends with is not doubled.
+ * At most PAGE_CONSOLE_OUT_LINE bytes with the LF: a longer text is cut. */
+static void vsay(page_console_t *c, const char *fmt, va_list ap)
+    __attribute__((format(printf, 2, 0)));
+
+static void vsay(page_console_t *c, const char *fmt, va_list ap)
+{
+    char *buf = c->fmt;
+    int n;
+
+    /* The analyser cannot follow va_start through the wrappers and reports
+     * the list as uninitialised; every caller initialises it. */
+    /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
+    n = vsnprintf(buf, sizeof(c->fmt), fmt, ap);
+    if (n < 0) {
+        return;
+    }
+    if ((size_t)n > sizeof(c->fmt) - 1u) {
+        n = (int)(sizeof(c->fmt) - 1u);
+    } else if (n > 0 && buf[n - 1] == '\n') {
+        n--;
+    }
+    buf[n] = '\n';
+    push(c, buf, (size_t)n + 1u);
+}
+
 static void say(page_console_t *c, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
 
 static void say(page_console_t *c, const char *fmt, ...)
 {
-    char *buf = c->fmt;
     va_list ap;
-    int n;
 
     va_start(ap, fmt);
-    /* The analyser cannot follow va_start through this wrapper and reports the
-     * list as uninitialised; it is initialised on the line above. */
-    /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
-    n = vsnprintf(buf, sizeof(c->fmt) - 1u, fmt, ap);
+    vsay(c, fmt, ap);
     va_end(ap);
-    if (n < 0) {
+}
+
+void page_console_vsay(page_console_t *c, const char *fmt, va_list ap)
+{
+    if (c == NULL || fmt == NULL) {
         return;
     }
-    if ((size_t)n > sizeof(c->fmt) - 2u) {
-        n = (int)(sizeof(c->fmt) - 2u);
+    vsay(c, fmt, ap);
+}
+
+void page_console_say(page_console_t *c, const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    page_console_vsay(c, fmt, ap);
+    va_end(ap);
+}
+
+/* @p n bytes from the head to @p buf. */
+static size_t take_out(page_console_t *c, char *buf, size_t n)
+{
+    for (size_t i = 0; i < n; ++i) {
+        buf[i] = c->out[(c->head + i) % PAGE_CONSOLE_OUT_MAX];
     }
-    buf[n] = '\n';
-    push(c, buf, (size_t)n + 1u);
+    c->head = (uint16_t)((c->head + n) % PAGE_CONSOLE_OUT_MAX);
+    c->used = (uint16_t)(c->used - n);
+    return n;
 }
 
 size_t page_console_take(page_console_t *c, char *buf, size_t room)
@@ -60,25 +100,35 @@ size_t page_console_take(page_console_t *c, char *buf, size_t room)
     if (c == NULL || buf == NULL) {
         return 0;
     }
+    /* At the tail, which is always the end of a whole line: push() takes a
+     * line whole or not at all. */
     if (c->dropped != 0u && c->used + 48u <= PAGE_CONSOLE_OUT_MAX) {
         const uint32_t lost = c->dropped;
 
         c->dropped = 0;
         say(c, "err output full, %lu bytes dropped", (unsigned long)lost);
     }
-    /* The bytes of the whole lines that fit. */
+    /* The bytes up to the last LF that fits. */
     while (n < c->used && n < room) {
         if (c->out[(c->head + n) % PAGE_CONSOLE_OUT_MAX] == '\n') {
             whole = n + 1u;
         }
         n++;
     }
-    for (size_t i = 0; i < whole; ++i) {
-        buf[i] = c->out[(c->head + i) % PAGE_CONSOLE_OUT_MAX];
+    return take_out(c, buf, whole);
+}
+
+size_t page_console_take_part(page_console_t *c, char *buf, size_t room)
+{
+    /* Whole lines where they fit, and the room filled with the first part
+     * of the next line: the first @p room bytes. */
+    const size_t n = page_console_take(c, buf, room);
+
+    if (c == NULL || buf == NULL || n >= room) {
+        return n;
     }
-    c->head = (uint16_t)((c->head + whole) % PAGE_CONSOLE_OUT_MAX);
-    c->used = (uint16_t)(c->used - whole);
-    return whole;
+    room -= n;
+    return n + take_out(c, buf + n, c->used < room ? c->used : room);
 }
 
 /* --- names ----------------------------------------------------------------- */
