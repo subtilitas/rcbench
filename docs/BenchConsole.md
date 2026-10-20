@@ -42,7 +42,7 @@ with it, checks the stacks of both cores, and fails when the default image
 holds a console symbol. `IOMCU_CONSOLE` and `SENSE_TRACE` both read the USB
 console; CMake refuses a build with both.
 
-Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 11,028
+Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 10,860
 bytes larger than the default image and holds 4,124 bytes more RAM
 (random-access memory): 2,048 of them the output buffer, 960 the USB
 transmit buffer of 1,024 bytes in place of the SDK's 64. Core 0's deepest
