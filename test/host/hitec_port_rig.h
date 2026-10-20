@@ -59,7 +59,9 @@ static struct {
     uint16_t dreg[256];
     bool     boot_pending;  /* switched on: the boot byte comes */
     uint8_t  boot_byte;
+    uint32_t boot_ns;       /* from the ON to the boot byte */
     uint8_t  listen_n;      /* bytes a listen hears without a power-up */
+    uint32_t listen_gap_ns; /* idle between two of them */
 } g_drv;
 
 static struct {
@@ -109,7 +111,7 @@ static inline void servo_answers(const hitec_xfer_t *x)
     g_drv.n_reply = 0;
     if (x->kind == HITEC_XFER_LISTEN) {
         if (g_drv.boot_pending) {
-            reply_bytes(&g_drv.boot_byte, 1u, 30000000u);
+            reply_bytes(&g_drv.boot_byte, 1u, g_drv.boot_ns);
             g_drv.boot_pending = false;
         } else if (g_drv.listen_n > 0u) {
             uint8_t b[HITEC_RX_MAX];
@@ -118,6 +120,9 @@ static inline void servo_answers(const hitec_xfer_t *x)
                 b[i] = (uint8_t)(0xA0u + i);
             }
             reply_bytes(b, g_drv.listen_n, 1000000u);
+            for (unsigned i = 1; i < g_drv.listen_n; ++i) {
+                g_drv.reply[i].at_ns += i * g_drv.listen_gap_ns;
+            }
         }
         return;
     }
@@ -176,6 +181,30 @@ static inline bool drv_start(void *ctx, const hitec_xfer_t *x)
     }
     g_drv.t_rx = g_drv.us + tx_us;
     servo_answers(x);
+    /* The window counts the waiting for a start bit only, none inside a
+     * byte or the answer to the first: a byte whose start comes after that
+     * much waiting is not heard, nor any after it. */
+    if (x->window_us != 0u) {
+        const uint32_t frame_ns = hitec_bits_ns(g_drv.family, 10u);
+        uint64_t wait_ns = 0;
+        uint8_t heard = 0;
+
+        for (unsigned i = 0; i < g_drv.n_reply; ++i) {
+            const uint32_t from_ns =
+                i == 0u ? 0u
+                        : g_drv.reply[i - 1u].at_ns + frame_ns
+                              + (i == 1u && x->answer != 0u ? frame_ns : 0u);
+
+            if (g_drv.reply[i].at_ns > from_ns) {
+                wait_ns += g_drv.reply[i].at_ns - from_ns;
+            }
+            if (wait_ns > (uint64_t)x->window_us * 1000u) {
+                break;
+            }
+            heard++;
+        }
+        g_drv.n_reply = heard;
+    }
     if (g_drv.n_reply > x->max_rx) {
         g_drv.n_reply = x->max_rx;
     }
@@ -312,8 +341,8 @@ static inline bool hw_supply_set(void *ctx, bool on, uint16_t mv,
     g_hw.v.asked_on = true;
     g_hw.v.set_mv = mv;
     g_hw.v.set_ma = ma;
+    /* The read lags: off stays as last read until the PD mini reports. */
     g_hw.v.on = false;
-    g_hw.v.off = false;
     g_hw.moving = true;
     g_hw.asked_ms = g_ms;
     g_drv.boot_pending = true;
@@ -328,6 +357,7 @@ static inline void fresh_at(uint32_t t0, supply_kind_t supply)
     memset(&g_hw, 0, sizeof(g_hw));
     g_drv.start_ok = true;
     g_drv.boot_byte = 0x5Au;
+    g_drv.boot_ns = 30000000u;
     for (unsigned i = 0; i < 256u; ++i) {
         g_drv.eeprom[i] = (uint8_t)(i ^ 0x3Cu);
         g_drv.dreg[i] = (uint16_t)(0x1200u + i);

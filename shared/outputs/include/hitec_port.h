@@ -81,7 +81,12 @@
  * LISTEN or POWER that answers and a receive window above
  * HITEC_PRE_WINDOW_MAX_US are refused with LINK_HITEC_REF_RANGE.  A
  * PRECHARGE transaction started with the supply asked on is cut when the
- * supply is no longer asked on or the PD mini stops answering.
+ * supply is no longer asked on, the PD mini stops answering, or the output
+ * reads off after it read on.  A SEND, LISTEN or LEVEL counts as read on
+ * from its start.  POWER's listen starts in the pass of the ON and counts
+ * from the first pass the output does not read off; one whose output never
+ * leaves off runs to the end of its window (HITEC_PRE_WINDOW_MAX_US at
+ * most) and ends LINK_HITEC_RESULT_DONE with what it heard.
  *
  * Nothing here is kept over a restart of the IOmcu: after one the port is
  * free and the register reads PULL-UP.
@@ -197,6 +202,8 @@ typedef struct {
     uint8_t  rx_line;       /**< the receive mode of the line, from its
                                  OPEN */
     uint8_t  supply_on;     /**< the supply was asked on at the start */
+    uint8_t  read_on;       /**< the output read on (not off) since the
+                                 start; set at the start but for POWER */
 } hitec_port_t;
 
 /** Prepare a free port.  False when @p hw names no port or lacks a

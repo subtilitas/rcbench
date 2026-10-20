@@ -99,9 +99,15 @@ Auf einer PRECHARGE-Leitung:
   zurückgeschrieben, wie sie waren.
 - Ein Empfang, der bei eingeschalteter Versorgung startete, wird im
   Durchlauf abgeschnitten (Ergebnis 6, `CUT`), der die Versorgung
-  ausgeschaltet, ihren Ausgang als aus gelesen (der Schutz des PD mini
-  lässt OUTPUT eingeschaltet) oder keinen antwortenden PD mini findet.
-  Einer, der bei ausgeschalteter Versorgung oder ohne PD mini startete,
+  ausgeschaltet, keinen antwortenden PD mini oder ihren Ausgang als aus
+  gelesen findet, nachdem er ihn als an gelesen hatte (der Schutz des PD
+  mini lässt OUTPUT eingeschaltet). Ein SEND oder LISTEN gilt ab seinem
+  Start als an gelesen. Das LISTEN eines POWER startet im Durchlauf des
+  ON, während der Ausgang noch als aus gelesen wird; es gilt ab dem ersten
+  Durchlauf als an gelesen, der den Ausgang nicht als aus liest. Eines,
+  dessen Ausgang das ganze Fenster lang, höchstens 30.000 us, als aus
+  gelesen wird, läuft bis zu seinem Ende, mit Ergebnis 2. Ein
+  Empfang, der bei ausgeschalteter Versorgung oder ohne PD mini startete,
   läuft bis zu seinem Ende.
 
 Bit 7 von `STATE` liest das Register; Register 25 von `VIEW` 2, Bit 8, sagt,

@@ -2748,6 +2748,10 @@ D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore
 it. The panel sends no Hitec transaction itself: the setting reaches the
 lines the bench console opens ([The bench console](BenchConsole.md)).
 
+Unmarked, the help line follows the value: `PULL-UP needs 2.2 kOhm on the
+signal wire` at PULL-UP, `PRECHARGE: no pull-up on the signal wire` at
+PRECHARGE.
+
 The row is marked as the rows of
 [A row the IOmcu does not hold](#a-row-the-iomcu-does-not-hold) are, with its
 own help line:
