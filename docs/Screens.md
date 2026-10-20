@@ -1276,8 +1276,11 @@ GP13` in the warning colour, the port's number and the GPIO the IOmcu
 reports for it. The tester's commands then do not reach the SERVO PWM
 outputs; while the bank is ARMED they hold their rest pulse, the centre
 between their endpoints. A port target without a usable pin (none, refused
-at start, or a port the IOmcu does not have) reads `PROG PORT 1`, also in
-the warning colour: the commands go to the port all the same. With PORT PWM
+at start, FUNCTION NONE, or a port the IOmcu does not have) reads `PROG
+PORT 1`, also in the warning colour. The IOmcu then keeps the standard
+outputs as its target, and the tester sends them no command but a
+release, and SWEEP is greyed, until the port has a SERVO PWM pin or
+SERVO TESTER is OUTPUTS. With PORT PWM
 off the port renders no pulse, and the row reads `PORT 1 GP13 PWM OFF`, 19
 characters with a two-digit pin, or `PROG PORT 1 PWM OFF`. Two states name
 no target, both in the warning colour, and the tester sends no command in

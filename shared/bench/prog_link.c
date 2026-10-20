@@ -99,9 +99,18 @@ bool prog_link_held(const prog_link_t *p)
     return p != NULL && p->held;
 }
 
+bool prog_link_no_drive(const prog_link_t *p)
+{
+    return p != NULL && p->page && p->known && p->want_target != 0u
+           && prog_link_wanted(p) == 0u;
+}
+
 bool prog_link_command(const prog_link_t *p, bool release)
 {
     if (!prog_link_ready(p)) {
+        return false;
+    }
+    if (!release && prog_link_no_drive(p)) {
         return false;
     }
     if (prog_link_held(p) && prog_link_target(p) != 0u) {
@@ -423,7 +432,12 @@ prog_link_drive_t prog_link_drive(const prog_link_t *p)
         d.target = PROG_LINK_TARGET_UNKNOWN;
     } else {
         d.target = prog_link_target(p);
-        if (d.target != 0u) {
+        if (d.target == 0u && prog_link_no_drive(p)) {
+            /* The port the screen wants, which cannot be driven: named,
+             * with no pin, and nothing goes to the standard outputs. */
+            d.target = p->want_target;
+            d.pwm    = p->want_pwm;
+        } else if (d.target != 0u) {
             d.pin = prog_link_pin(p, (uint8_t)(d.target - 1u));
             d.pwm = prog_link_pwm(p);
         }

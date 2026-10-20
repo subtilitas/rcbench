@@ -28,6 +28,7 @@
 #include "ui_widgets.h"
 
 #include "outputs_screen_int.h"
+#include "port_view.h"
 
 /* The GPIO the IOmcu's programming port 1 is bound to, or none. */
 static uint8_t g_prog_gpio = OUTPUTS_NO_PIN;
@@ -274,13 +275,25 @@ void outputs_port_open(void)
 
 /* -------------------------------------------------------- the clashes */
 
+const uint8_t *outputs_pwm_pins(const uint8_t *pins)
+{
+    static uint8_t pwm[LINK_PG_PORTS_MAX];
+    for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        /* A function not known counts as SERVO PWM: the stricter rule. */
+        pwm[n] = (pins != NULL
+                  && port_view_func(n) != (uint8_t)LINK_PG_FN_NONE)
+                     ? pins[n] : OUTBIND_NO_GPIO;
+    }
+    return pwm;
+}
+
 const uint8_t *outputs_port_pins(void)
 {
-    static uint8_t pins[LINK_PG_PORTS_MAX];
+    uint8_t pins[LINK_PG_PORTS_MAX];
     for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
         pins[n] = outputs_screen_port_pin(n);
     }
-    return pins;
+    return outputs_pwm_pins(pins);
 }
 
 bool outputs_clash_label(const outbind_t *b, uint8_t index,

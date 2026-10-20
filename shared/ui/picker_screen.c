@@ -721,11 +721,13 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
     /* Free and offered, and the PWM generator cannot take it beside what it carries:
      * held by the pin it clashes with.  outbind_pwm_clash_ports() takes the
      * ports' pins as the IOmcu reads them, PICKER_NO_PIN being no pin. */
-    if (outbind_pwm_clash_ports(&s.bind, index, g_prog_pins,
+    if (outbind_pwm_clash_ports(&s.bind, index,
+                                outputs_pwm_pins(g_prog_pins),
                                 LINK_PG_PORTS_MAX, NULL)
         != OUTBIND_CLASH_NONE) {
         if (holder != NULL) {
-            (void)outputs_clash_label(&s.bind, index, g_prog_pins,
+            (void)outputs_clash_label(&s.bind, index,
+                                      outputs_pwm_pins(g_prog_pins),
                                       LINK_PG_PORTS_MAX, holder, cap);
         }
         return PICKER_PIN_HELD;
@@ -812,7 +814,8 @@ bool picker_screen_reason(char *buf, size_t cap)
                                   cap);
     }
     return outputs_reason_of(&s.bind, buf, cap)
-           || outputs_clash_reason(&s.bind, s.refused, g_prog_pins,
+           || outputs_clash_reason(&s.bind, s.refused,
+                                   outputs_pwm_pins(g_prog_pins),
                                    LINK_PG_PORTS_MAX, buf, cap);
 }
 
@@ -1374,7 +1377,8 @@ static void event(const touch_event_t *evt)
     }
     if (st != PICKER_PIN_FREE && st != PICKER_PIN_TICKED) {
         if (st == PICKER_PIN_HELD
-            && outbind_pwm_clash_ports(&s.bind, (uint8_t)was, g_prog_pins,
+            && outbind_pwm_clash_ports(&s.bind, (uint8_t)was,
+                                       outputs_pwm_pins(g_prog_pins),
                                        LINK_PG_PORTS_MAX, NULL)
                    != OUTBIND_CLASH_NONE) {
             s.refused = was;

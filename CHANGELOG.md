@@ -44,7 +44,9 @@ history is in git.
   a SERVO PWM pin that shares a PWM slice with an output.
 - The servo tester's target is OUTPUTS or PORT 1 to PORT 4 (SETUP > SERVO
   > SERVO TESTER). A stored PROG PORT reads as PORT 1. The TARGET row names
-  the port: `PROG PORT 2 GP14`.
+  the port: `PROG PORT 2 GP14`. A port without a SERVO PWM pin, or one the
+  IOmcu does not have, reads `PROG PORT 2` in the warning colour, and the
+  tester then sends the standard outputs no command but a release.
 - Link protocol 4.26: PROG page registers 24 to 27 (`FUNC`) and `FLAGS`
   bits 4 to 7 (port parked). The functions are kept in the spare word of
   the version 7 outputs record; an older image writes the word back as 0,

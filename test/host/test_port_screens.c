@@ -18,7 +18,8 @@
  * not for a NONE port, the reason lines, every state drawn inside the
  * canvas; the port rules at their edges: no binding, an index past the
  * catalogue, a locked free pin, an interface's pin, each reason line,
- * a function not known, PICK A PIN opened on a port OUTPUTS lacks.
+ * a function not known, PICK A PIN opened on a port OUTPUTS lacks; a
+ * NONE port's pin holding no PWM slice for an output on either screen.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -566,6 +567,33 @@ TEST_CASE(the_port_rules_hold_at_their_edges)
     outputs_port_draw(NULL, picker_screen_list_face(), false, false);
 }
 
+TEST_CASE(a_none_ports_pin_holds_no_pwm_slice_for_the_outputs)
+{
+    char label[32];
+
+    fresh();
+    /* SERVO PWM being edited on both screens.  Port 2 is NONE on GP14:
+     * GP15 shares its slice and is free, and GP14 itself stays taken. */
+    outputs_screen_select(1u);
+    picker_screen_follow(1u, true);
+    const uint8_t gp15 = outbind_index_of(BOARD, 15u);
+    CHECK(outputs_screen_cell(gp15, NULL, 0) != OUTPUTS_CELL_HELD);
+    CHECK_EQ(pin_of(15u, NULL, 0), PICKER_PIN_FREE);
+    CHECK(pin_of(14u, NULL, 0) != PICKER_PIN_FREE);
+    /* Port 2 as SERVO PWM: GP15 is held again. */
+    port_view_t v = *port_view_get();
+    v.func[1] = (uint8_t)LINK_PG_FN_SERVO_PWM;
+    port_view_set(&v);
+    CHECK_EQ(outputs_screen_cell(gp15, label, sizeof(label)),
+             OUTPUTS_CELL_HELD);
+    CHECK_STR_EQ(label, "SLICE OF GP14");
+    CHECK_EQ(pin_of(15u, NULL, 0), PICKER_PIN_HELD);
+    /* And a function not known counts as SERVO PWM. */
+    v.func[1] = PORT_VIEW_FN_UNKNOWN;
+    port_view_set(&v);
+    CHECK_EQ(pin_of(15u, NULL, 0), PICKER_PIN_HELD);
+}
+
 int main(void)
 {
     RUN(the_view_is_not_known_until_read_and_takes_no_ask_then);
@@ -579,5 +607,6 @@ int main(void)
     RUN(a_servo_pwm_port_is_refused_the_pwm_rules_and_a_none_port_not);
     RUN(a_port_picked_before_the_read_or_on_an_unread_binding_is_locked);
     RUN(the_port_rules_hold_at_their_edges);
+    RUN(a_none_ports_pin_holds_no_pwm_slice_for_the_outputs);
     return test_summary("port_screens");
 }

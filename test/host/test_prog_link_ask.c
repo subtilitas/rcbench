@@ -11,7 +11,8 @@
  * waiting; the link lost, or coming up again, with an ask waiting; the
  * page re-read after a written ask; an older IOmcu read as 24 registers
  * with every port SERVO PWM; a port as the page holds it, and not known
- * before the first read.
+ * before the first read; a wanted port that cannot be driven (NONE, past
+ * the count) stopping every command but a release.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -334,6 +335,49 @@ TEST_CASE(a_port_is_unknown_before_the_first_read_then_as_the_page_holds_it)
     CHECK_EQ(prog_link_wanted(&g_p), 0u);
 }
 
+TEST_CASE(a_port_that_cannot_be_driven_stops_the_tester)
+{
+    prog_link_drive_t d;
+
+    /* Before the read, and with an IOmcu without the page: not this. */
+    prog_link_init(&g_p);
+    prog_link_want(&g_p, 2u, true);
+    CHECK(!prog_link_no_drive(&g_p));
+    CHECK(!prog_link_no_drive(NULL));
+    prog_link_came_up(&g_p, LINK_MINOR_PROG - 1u);
+    prog_link_want(&g_p, 2u, true);
+    CHECK(!prog_link_no_drive(&g_p));
+    CHECK(prog_link_command(&g_p, false));
+    /* PORT 2, NONE without a pin: the IOmcu keeps the standard outputs,
+     * the tester sends nothing but a release, and the drive names the
+     * port without a pin. */
+    fresh();
+    prog_link_want(&g_p, 2u, true);
+    CHECK_EQ(prog_link_wanted(&g_p), 0u);
+    CHECK(prog_link_no_drive(&g_p));
+    CHECK(!prog_link_command(&g_p, false));
+    CHECK(prog_link_command(&g_p, true));
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 2u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    CHECK(d.pwm);
+    /* PORT 4 on a build with 2 ports, the same. */
+    g_page[LINK_PG_COUNT] = 2u;
+    prog_link_read(&g_p, g_page, 1u);
+    prog_link_want(&g_p, 4u, false);
+    CHECK(prog_link_no_drive(&g_p));
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 4u);
+    CHECK(!d.pwm);
+    /* OUTPUTS, and PORT 1 bound on GP13: driven. */
+    prog_link_want(&g_p, 0u, false);
+    CHECK(!prog_link_no_drive(&g_p));
+    CHECK(prog_link_command(&g_p, false));
+    CHECK_EQ(prog_link_drive(&g_p).target, 0u);
+    prog_link_want(&g_p, 1u, true);
+    CHECK(!prog_link_no_drive(&g_p));
+}
+
 int main(void)
 {
     RUN(an_ask_is_refused_where_nothing_could_take_it);
@@ -345,5 +389,6 @@ int main(void)
     RUN(an_ask_waiting_is_lost_with_the_link);
     RUN(an_older_iomcu_is_read_as_24_registers_all_servo_pwm);
     RUN(a_port_is_unknown_before_the_first_read_then_as_the_page_holds_it);
+    RUN(a_port_that_cannot_be_driven_stops_the_tester);
     return test_summary("prog_link_ask");
 }

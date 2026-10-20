@@ -77,4 +77,9 @@ void outputs_port_forget_open(void);
 
 /* Every programming port's pin, LINK_PG_PORTS_MAX of them, OUTPUTS_NO_PIN
  * past the entries: what outbind_pwm_clash_ports() checks a pin beside. */
+/* The ports' pins that hold a PWM slice, for the slice and compare
+ * rules: @p pins (LINK_PG_PORTS_MAX of them) with a NONE port's pin taken
+ * out, as the IOmcu's prog_port_slots_check() does.  A NONE port's pin
+ * stays taken as a pin.  One static copy, UI task only. */
+const uint8_t *outputs_pwm_pins(const uint8_t *pins);
 const uint8_t *outputs_port_pins(void);

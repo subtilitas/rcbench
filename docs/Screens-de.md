@@ -1398,8 +1398,11 @@ GP40 lauten `SERVO PWM GP40 GP41 +6`. Die Zeile ist in der Warnfarbe, Name und W
 für ihn meldet. Die Befehle des Testers erreichen dann die SERVO-PWM-Ausgänge nicht;
 bei einer Bank in ARMED halten diese ihren Ruhepuls, die Mitte zwischen
 ihren Endpunkten. Ein Port als Ziel ohne nutzbaren Pin (keiner, beim Start
-abgelehnt, oder ein Port, den der IOmcu nicht hat) lautet `PROG-PORT 1`,
-ebenfalls in der Warnfarbe: die Befehle gehen trotzdem an den Port. Mit
+abgelehnt, FUNKTION KEINE, oder ein Port, den der IOmcu nicht hat) lautet
+`PROG-PORT 1`, ebenfalls in der Warnfarbe. Der IOmcu behält dann die
+Standardausgänge als Ziel, und der Tester sendet ihnen keinen Befehl außer
+einer Freigabe, und SWEEP ist ausgegraut, bis der Port einen SERVO-PWM-Pin
+hat oder SERVO-TESTER auf OUTPUTS steht. Mit
 PORT-PWM aus gibt der Port keinen Puls aus, und die Zeile lautet `PORT 1
 GP13 PWM AUS`, 19 Zeichen mit einem zweistelligen Pin, oder `PROG-PORT 1
 PWM AUS`. Zwei

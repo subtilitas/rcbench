@@ -179,8 +179,9 @@ static uint8_t s_servo_written;
 void servo_link_surfaces_publish(void)
 {
     atomic_store(&s_servo_surfaces,
-                 prog_link_target(s_ctx->prog) != 0u
-                 || (s_servo_known && s_servo_channels != 0u));
+                 !prog_link_no_drive(s_ctx->prog)
+                 && (prog_link_target(s_ctx->prog) != 0u
+                     || (s_servo_known && s_servo_channels != 0u)));
 }
 
 /*

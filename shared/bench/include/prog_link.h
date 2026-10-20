@@ -235,7 +235,8 @@ bool prog_link_settled(const prog_link_t *p);
  * before the page is read (prog_link_ready()); not to a port while the
  * programmer has one, a release neither -- it stays owed; and a command
  * that is not a release only once the target is the one wanted
- * (prog_link_settled()).
+ * (prog_link_settled()) and the screen wants one that can be driven
+ * (prog_link_no_drive()).
  */
 bool prog_link_command(const prog_link_t *p, bool release);
 
@@ -290,6 +291,17 @@ typedef struct {
 } prog_link_drive_t;
 
 /**
+ * Whether the screen wants a port the page cannot make the target: one the
+ * IOmcu does not have, one without a pin the PWM generator holds (none,
+ * refused, or FUNCTION NONE), or one an ask waits on.  prog_link_wanted()
+ * is then 0, so the IOmcu's target is the standard outputs; the tester
+ * drives nothing in their place (prog_link_command() takes no command but
+ * a release).  False before the page is read and with an IOmcu without
+ * the page, whose target is the standard outputs.
+ */
+bool prog_link_no_drive(const prog_link_t *p);
+
+/**
  * Where the tester's commands go now, for the SERVO screen's TARGET row.
  *
  * PROG_LINK_TARGET_NO_LINK with no IOmcu answering (before the first
@@ -311,7 +323,9 @@ typedef struct {
  * port the page does not have); pwm is prog_link_pwm(), false with target
  * 0.  A port target without a pin stays a port target: the commands still
  * go to the port and do not reach the SERVO PWM outputs, which an armed
- * bank holds at their rest, the centre between their endpoints.
+ * bank holds at their rest, the centre between their endpoints.  With
+ * prog_link_no_drive() and target 0 the target is the port the screen
+ * wants, with no pin and pwm as wanted: the tester sends no command.
  */
 prog_link_drive_t prog_link_drive(const prog_link_t *p);
 
