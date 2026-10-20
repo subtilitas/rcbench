@@ -1,14 +1,16 @@
 /*
  * A trace of INA3221 CH1's 1 ms samples as text lines, for a debug build
  * of the IOmcu (its SENSE_TRACE build option).  No released image
- * links this file.
+ * links this file.  CH1 here is the schedule's FAST channel
+ * (sense_sched.h), CH1 of the one part on a bench set up through SENSE;
+ * with no FAST channel nothing is traced but the set-up.
  *
  * Two sides, one on each core, with a ring of records between them:
  *
  *   Core 1  sense_trace_feed(), once per 1 ms tick after the schedule has
  *           run.  It reads the schedule's memory and nothing else: no bus
  *           transaction, no clock.  CH1's newest sample comes out of the
- *           schedule's own history (sense_sched_t.ch1), CH1's newest bus
+ *           schedule's own history (sense_sched_t.hist), CH1's newest bus
  *           voltage and whether the sample was clipped out of the window
  *           being filled.  A voltage is kept
  *           only with the current sample of its tick, so each voltage
@@ -263,6 +265,8 @@ typedef struct {
     uint8_t  head;        /**< the history's head at it                    */
     uint32_t t;           /**< its time                                    */
     uint64_t win;         /**< the window the voltage count is of          */
+    uint32_t gen;         /**< the schedule's set-up number at the last
+                               call: another one is a new schedule       */
     uint16_t n_v;         /**< CH1 voltages in it at the last call         */
     uint16_t n_hi, n_lo;  /**< and CH1 samples clipped at each end         */
     int64_t  v_sum;       /**< and their sum, µV                           */

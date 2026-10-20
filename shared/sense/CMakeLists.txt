@@ -14,7 +14,8 @@
 # CH1's 1 ms samples into text lines for a debug build of the IOmcu
 # (its SENSE_TRACE option).  The panel does not compile them; an IOmcu
 # image built without the option does not link them.
-set(SRCS sense_bus.c ina228.c ina3221.c as5600.c sense_sched.c sense_svc.c)
+set(SRCS sense_bus.c ina228.c ina3221.c as5600.c sense_sched.c sense_sched_cap.c
+         sense_i3221_cfg.c sense_svc.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES servo)

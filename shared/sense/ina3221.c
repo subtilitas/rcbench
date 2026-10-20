@@ -112,20 +112,43 @@ int32_t ina3221_bus_mv(int32_t code)
 ina3221_setup_err_t ina3221_init(ina3221_t *d, sense_bus_t *bus, uint8_t addr,
                                  uint32_t shunt_uohm, uint16_t config)
 {
+    const uint32_t each[INA3221_CHANNELS] = { shunt_uohm, shunt_uohm,
+                                              shunt_uohm };
+    const ina3221_setup_err_t e = ina3221_init_shunts(d, bus, addr, each,
+                                                      config);
+    /* One shunt for all three: too small is said first, as the one
+     * value of the set-up that is wrong whatever the channels. */
+    if (e == INA3221_SETUP_NO_CHANNEL && shunt_uohm < INA3221_SHUNT_MIN_UOHM) {
+        return INA3221_SETUP_NO_SHUNT;
+    }
+    return e;
+}
+
+ina3221_setup_err_t ina3221_init_shunts(ina3221_t *d, sense_bus_t *bus,
+                                        uint8_t addr,
+                                        const uint32_t *shunt_uohm,
+                                        uint16_t config)
+{
     memset(d, 0, sizeof *d);
     d->part.bus  = bus;
     d->part.addr = addr;
     if (addr < INA3221_ADDR_MIN || addr > INA3221_ADDR_MAX) {
         return INA3221_SETUP_BAD_ADDR;
     }
-    if (shunt_uohm < INA3221_SHUNT_MIN_UOHM) {
-        return INA3221_SETUP_NO_SHUNT;
+    const uint8_t on = ina3221_channels(config);
+    for (unsigned k = 0; k < INA3221_CHANNELS; ++k) {
+        if ((on & (1u << k)) != 0u
+            && shunt_uohm[k] < INA3221_SHUNT_MIN_UOHM) {
+            return INA3221_SETUP_NO_SHUNT;
+        }
     }
-    if (ina3221_channels(config) == 0u) {
+    if (on == 0u) {
         return INA3221_SETUP_NO_CHANNEL;
     }
     sense_part_init(&d->part, bus, addr);
-    d->shunt_uohm = shunt_uohm;
+    for (unsigned k = 0; k < INA3221_CHANNELS; ++k) {
+        d->shunt_uohm[k] = ((on & (1u << k)) != 0u) ? shunt_uohm[k] : 0u;
+    }
     d->config     = (uint16_t)(config & (uint16_t)~INA3221_CONFIG_RST);
     return INA3221_SETUP_OK;
 }
@@ -203,7 +226,8 @@ sense_err_t ina3221_read_current(ina3221_t *d, uint8_t ch, sense_value_t *ua)
     uint16_t raw = 0u;
     const sense_err_t e = read_reg(d, reg, &raw);
     if (e == SENSE_OK) {
-        *ua = ina3221_current_ua(d->shunt_uohm, ina3221_code13(raw));
+        *ua = ina3221_current_ua(d->shunt_uohm[ch - 1u],
+                                 ina3221_code13(raw));
     }
     return e;
 }

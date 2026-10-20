@@ -1172,7 +1172,7 @@ static void far_window(uint16_t number, uint16_t n_i, int32_t ma,
     e->n_v = n_v;
     e->i_mean_ua = e->i_min_ua = e->i_max_ua = ma * 1000;
     e->v_mean_uv = e->v_min_uv = mv * 1000;
-    sense_window_t *win = &chain.snap.win[SENSE_SRC_CH1];
+    sense_window_t *win = &chain.snap.win[SENSE_CH(0, 1)];
     memset(win, 0, sizeof(*win));
     win->number = number;
     win->n_i = n_i;
@@ -1210,7 +1210,7 @@ TEST_CASE(a_window_without_voltage_samples_has_an_empty_voltage_cell)
     chain_far_late(50u);
     (void)chain_poll();                 /* the last one it closed itself */
     (void)log_pass(&w, &cad, &bench, true, false);
-    const uint16_t n0 = (uint16_t)(chain.snap.win[SENSE_SRC_CH1].number + 1u);
+    const uint16_t n0 = (uint16_t)(chain.snap.win[SENSE_CH(0, 1)].number + 1u);
     static const struct { uint16_t n_i; int32_t ma; uint16_t n_v; int32_t mv; }
     k_win[] = {
         { 12u, 412, 0u, 0 },        /* current and no voltage       */
