@@ -734,8 +734,15 @@ TEST_CASE(the_stream_pads_its_front_to_a_word_and_refuses_what_it_cannot_run)
     CHECK_EQ(w[2], 80u);
     CHECK_EQ(w[0] >> 2, 6u);
     CHECK_NEAR((double)run.lead_ns, cyc_ns(2u * 6u + 8u + 80u * 16u), 1.0);
+    /* lead_ns, the lead's first edge to the release: the lead and every
+     * bit time.  705,283 ns, as docs/BenchConsole.md gives it. */
+    CHECK_EQ(run.lead_ns, 705283u);
     hitec_d_read_xfer(0x00, 0x0C, &x);
     CHECK_EQ(hitec_pio_tx(&clk, HITEC_DRIVE_OPEN_DRAIN, &x, w, &run), 7u);
+    /* A read: 117.2 us of lead, 50 bit times of bytes and 1 released, the
+     * 559,886 ns the station's console reported and the docs give. */
+    CHECK_NEAR((double)run.lead_ns, cyc_ns(8u + 64u * 16u), 1.0);
+    CHECK_EQ(run.lead_ns, 559886u);
     CHECK_EQ(run.max_rx, 8u);
     /* Listen: no bit times, the answer word behind the counts. */
     CHECK(hitec_listen_xfer(HITEC_D, 1000u, 1, true, 0x96, &x));

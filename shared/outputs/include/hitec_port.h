@@ -108,7 +108,8 @@ extern "C" {
 
 /** What the driver says about the line and the running transaction. */
 typedef struct {
-    uint32_t lead_ns;   /**< the run's lead as the program runs it */
+    uint32_t lead_ns;   /**< the lead's first edge to the release: the
+                             lead and every bit time sent */
     uint32_t span_us;   /**< the longest the run can take */
     uint32_t bit_ns;    /**< the bit time of the open line */
 } hitec_port_run_t;

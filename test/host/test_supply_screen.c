@@ -2521,6 +2521,17 @@ TEST_CASE(the_header_names_the_pd_minis_uart_pins)
     supply_screen_set_pins(12, -1);
     supply_screen_header_text(line, sizeof(line));
     CHECK_STR_EQ(line, "PD MINI NO PINS   ONLINE 460800");
+    /* One GPIO for both, a stored set-up the page is written disabled
+     * with: no pins either, at both ends of the range. */
+    supply_screen_set_pins(18, 18);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI NO PINS   ONLINE 460800");
+    supply_screen_set_pins(0, 0);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI NO PINS   ONLINE 460800");
+    supply_screen_set_pins(47, 47);
+    supply_screen_header_text(line, sizeof(line));
+    CHECK_STR_EQ(line, "PD MINI NO PINS   ONLINE 460800");
 
     /* Not answering, and the German text, the longest header there is. */
     supply_screen_set_pins(12, 13);

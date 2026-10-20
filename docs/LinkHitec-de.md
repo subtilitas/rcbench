@@ -34,6 +34,12 @@ OPEN nimmt den Port:
    darauf als losgelassenen Eingang: classic mit dem Pull-down des Pads, die
    D-Serie mit seinem Pull-up und invertiertem Eingang. Die internen Pulls
    haben 50 bis 80 kOhm; die D-Serie braucht einen Pull-up auf der Platine.
+   Getestet mit einem D485HW: mit dem Pull-up des Pads allein bleibt die
+   Leitung unter 1,4 V und der Servo beantwortet kein Lesen; mit 2,2 kOhm
+   von der Signalleitung zur Servoversorgung beantwortet er jedes Lesen. Die
+   Spannungen auf der Leitung, und ob der High-Pegel des Servos in der
+   Belastbarkeit des Pins bleibt, sind nicht gemessen
+   ([Electrical](../protocols/hitec/README.md#electrical)).
 3. OPEN. Ein Treiber, der keine PIO-State-Machine (PIO: Programmable
    Input/Output), keine 29 Worte Programmspeicher oder keine 2 DMA-Kanäle
    (Direct Memory Access) bekommt, lässt den Port mit Ergebnis 5 (`NO_LINE`)
@@ -149,7 +155,7 @@ Ein Lesen gibt diese Register:
 | Register | Liest |
 | ---: | --- |
 | 16, 17 | die Verzögerung des Dekoders, ns |
-| 18, 19 | der Vorlauf, wie das PIO-Programm ihn gefahren hat, ns |
+| 18, 19 | von der ersten Flanke des Vorlaufs bis zum Loslassen der Leitung, ns: der Vorlauf, wie das PIO-Programm ihn gefahren hat, und jede gesendete Bitzeit; ein Lesen der D-Serie 559.886 |
 | 20, 21 | vom Start bis zum Mitschnitt, us |
 | 22, 23 | die längste Zeit, die die Transaktion dauern konnte, us |
 | 24 | die Bitzeit der offenen Leitung, ns; 0, solange keine offen ist |

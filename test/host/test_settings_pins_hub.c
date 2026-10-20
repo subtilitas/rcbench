@@ -1,5 +1,5 @@
 /*
- * The sensor bus pins and the hub of tiles.
+ * The sensor bus pins, the PD mini's pins and the hub of tiles.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -469,6 +469,197 @@ TEST_CASE(the_mark_repaints_the_row_when_it_comes_and_when_it_goes)
 }
 
 
+/* ------------------------------------------------------ the PD mini's pins */
+
+/* Where one step of @p dir from @p from lands with @p other on the other
+ * row: the next GPIO, over the other's, and nowhere past -1 and GP47. */
+static int pd_step_want(int from, int other, int dir)
+{
+    int next = from + dir;
+    if (other >= 0 && next == other) {
+        next += dir;
+    }
+    return (next < -1 || next > 47) ? from : next;
+}
+
+/* Every pair, both rows, both directions: a step never puts TX and RX on
+ * one GPIO, and goes no further than over the other's. */
+TEST_CASE(pd_mini_tx_and_rx_step_over_the_pin_the_other_holds)
+{
+    fresh_model();
+    CHECK_EQ((int)settings_def(SET_PDMINI_TX)->min, -1);
+    CHECK_EQ((int)settings_def(SET_PDMINI_TX)->max, 47);
+    CHECK_EQ((int)settings_def(SET_PDMINI_RX)->max, 47);
+    for (int row = 0; row < 2; ++row) {
+        const setting_id_t id = row ? SET_PDMINI_RX : SET_PDMINI_TX;
+        const setting_id_t oid = row ? SET_PDMINI_TX : SET_PDMINI_RX;
+        for (int other = -1; other <= 47; ++other) {
+            for (int from = -1; from <= 47; ++from) {
+                if (from >= 0 && from == other) {
+                    continue;
+                }
+                for (int dir = -1; dir <= 1; dir += 2) {
+                    settings_set(oid, (float)other);
+                    settings_set(id, (float)from);
+                    settings_adjust(id, dir);
+                    const int got = settings_get_int(id);
+                    if (got != pd_step_want(from, other, dir)
+                        || settings_pdmini_same_pin()) {
+                        T_FAIL("%s %d, other %d, step %d: %d",
+                               settings_def(id)->key, from, other, dir, got);
+                    }
+                    CHECK_EQ(settings_get_int(oid), other);
+                }
+            }
+        }
+    }
+    /* The station's case: RX GP18, TX GP19 stepped down lands on GP17. */
+    settings_set(SET_PDMINI_RX, 18.0f);
+    settings_set(SET_PDMINI_TX, 19.0f);
+    settings_adjust(SET_PDMINI_TX, -1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 17);
+    settings_adjust(SET_PDMINI_TX, 1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 19);
+    /* Steps in one call go over it too, and stop at the ends. */
+    settings_set(SET_PDMINI_TX, 16.0f);
+    settings_adjust(SET_PDMINI_TX, 3);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 20);
+    settings_adjust(SET_PDMINI_TX, -3);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 16);
+    settings_adjust(SET_PDMINI_TX, 1000);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 47);
+    settings_adjust(SET_PDMINI_TX, -1000);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
+    /* GP47 held by RX: TX stops at GP46; GP0 held: down from GP1 is -1. */
+    settings_set(SET_PDMINI_RX, 47.0f);
+    settings_adjust(SET_PDMINI_TX, 1000);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 46);
+    settings_set(SET_PDMINI_RX, 0.0f);
+    settings_set(SET_PDMINI_TX, 1.0f);
+    settings_adjust(SET_PDMINI_TX, -1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
+    settings_adjust(SET_PDMINI_TX, 1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 1);
+    /* -1 on both is the module not wired, not one pin. */
+    settings_set(SET_PDMINI_TX, -1.0f);
+    settings_set(SET_PDMINI_RX, 0.0f);
+    settings_adjust(SET_PDMINI_RX, -1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_RX), -1);
+    CHECK(!settings_pdmini_same_pin());
+}
+
+/* A set-up stored with both on one GPIO loads as stored: the PD mini is
+ * written disabled (supply_link.c) and the two rows say so.  One step of
+ * either row takes it apart. */
+static void load_pd(float en, float tx, float rx)
+{
+    fresh_model();
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        s_saved[i] = nvs_round_trip(settings_def((setting_id_t)i)->def);
+    }
+    s_saved[SET_PDMINI_EN] = nvs_round_trip(en);
+    s_saved[SET_PDMINI_TX] = nvs_round_trip(tx);
+    s_saved[SET_PDMINI_RX] = nvs_round_trip(rx);
+    s_has_saved = true;
+    settings_set_store(&s_mem_store);
+    settings_init();
+}
+
+TEST_CASE(a_stored_pd_mini_on_one_pin_loads_and_is_named)
+{
+    static const struct { int tx, rx; bool same; } k[] = {
+        { 18, 18, true }, { 0, 0, true }, { 47, 47, true },
+        { 19, 18, false }, { -1, -1, false }, { -1, 18, false },
+    };
+    for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
+        load_pd(1.0f, (float)k[i].tx, (float)k[i].rx);
+        CHECK_EQ(settings_get_int(SET_PDMINI_TX), k[i].tx);
+        CHECK_EQ(settings_get_int(SET_PDMINI_RX), k[i].rx);
+        CHECK(!settings_dirty());
+        if (settings_pdmini_same_pin() != k[i].same) {
+            T_FAIL("stored %d/%d: same %d", k[i].tx, k[i].rx,
+                   (int)settings_pdmini_same_pin());
+        }
+    }
+    /* Switched off it is the same wiring, and still named. */
+    load_pd(0.0f, 18.0f, 18.0f);
+    CHECK(settings_pdmini_same_pin());
+    /* A step either way on either row: apart. */
+    load_pd(1.0f, 18.0f, 18.0f);
+    settings_adjust(SET_PDMINI_TX, 1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 19);
+    CHECK(!settings_pdmini_same_pin());
+    load_pd(1.0f, 18.0f, 18.0f);
+    settings_adjust(SET_PDMINI_RX, -1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_RX), 17);
+    CHECK(!settings_pdmini_same_pin());
+    load_pd(1.0f, 47.0f, 47.0f);
+    settings_adjust(SET_PDMINI_TX, 1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 47);   /* at the end */
+    settings_adjust(SET_PDMINI_TX, -1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 46);
+}
+
+/* The mark on SETUP: both PD mini rows and nothing else, gone with it. */
+TEST_CASE(pd_mini_rows_on_one_pin_are_marked_and_nothing_else)
+{
+    static gfx_color_t apart[W * H];
+    static gfx_color_t same[W * H];
+    int max = 0;
+
+    gesture_screen(SET_CAT_IFACE);
+    for (int i = 0; i < 12; ++i) {
+        swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + 40, 4);
+    }
+    CHECK_EQ(settings_screen_scroll(&max), max);
+    const int y_tx = scrolled_y(SET_PDMINI_TX);
+    const int y_rx = scrolled_y(SET_PDMINI_RX);
+    CHECK(y_tx - ROW_H / 2 >= LIST_Y);
+    CHECK(y_rx + ROW_H / 2 <= LIST_Y + LIST_H);
+
+    settings_set(SET_PDMINI_TX, 18.0f);
+    settings_set(SET_PDMINI_RX, 19.0f);
+    settings_screen_invalidate();
+    ui_router_tick(0.05f);
+    ui_router_render(&s_c, 0);
+    memcpy(apart, s_fb, sizeof(apart));
+
+    settings_set(SET_PDMINI_RX, 18.0f);
+    settings_screen_invalidate();
+    ui_router_tick(0.05f);
+    ui_router_render(&s_c, 0);
+    memcpy(same, s_fb, sizeof(same));
+    int in_tx = 0, in_rx = 0, outside = 0;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            if (apart[y * W + x] == same[y * W + x]) {
+                continue;
+            }
+            if (x >= LIST_X && y >= y_tx - ROW_H / 2 && y < y_tx + ROW_H / 2) {
+                ++in_tx;
+            } else if (x >= LIST_X && y >= y_rx - ROW_H / 2
+                       && y < y_rx + ROW_H / 2) {
+                ++in_rx;
+            } else {
+                ++outside;
+            }
+        }
+    }
+    CHECK(in_tx > 200);
+    CHECK(in_rx > 200);
+    CHECK_EQ(outside, 0);
+
+    /* A step on TX's "+" takes them apart, and the mark with them. */
+    feed_tap(FEED_LONE, XP, y_tx);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 19);
+    settings_set(SET_PDMINI_TX, 18.0f);
+    settings_set(SET_PDMINI_RX, 19.0f);
+    settings_screen_invalidate();
+    ui_router_tick(0.05f);
+    ui_router_render(&s_c, 0);
+    CHECK(memcmp(apart, s_fb, sizeof(apart)) == 0);
+}
+
 /* ------------------------------------------------------------------- hub */
 
 /*
@@ -779,6 +970,9 @@ int main(void)
     RUN(a_tap_on_sensor_scls_row_changes_nothing);
     RUN(a_row_the_coprocessor_does_not_hold_is_marked);
     RUN(the_mark_repaints_the_row_when_it_comes_and_when_it_goes);
+    RUN(pd_mini_tx_and_rx_step_over_the_pin_the_other_holds);
+    RUN(a_stored_pd_mini_on_one_pin_loads_and_is_named);
+    RUN(pd_mini_rows_on_one_pin_are_marked_and_nothing_else);
     RUN(the_hub_has_nine_slots_and_no_tenth);
     RUN(the_hub_holds_seven_tiles_and_sd_card_is_the_third);
     RUN(each_category_tile_opens_its_list_and_the_home_tag_returns);

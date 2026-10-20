@@ -361,6 +361,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SET_NOT_SAVED]          = "NICHT GESPEICHERT",
     [TX_SET_SAVE]               = "SPEICHERN",
     [TX_SET_UNHELD]             = "Vom IOmcu nicht übernommen.",
+    [TX_SET_PD_SAME_PIN]        = "TX und RX auf einem Pin. Der PD mini bleibt aus.",
     [TX_SET_LEAVE_TITLE]        = "UNGESPEICHERTE ÄNDERUNGEN",
     [TX_SET_LEAVE_WHY]          = "Deine Änderungen sind aktiv, aber noch nicht gespeichert. Tippe auf SPEICHERN, sonst gehen sie beim Neustart verloren.",
     [TX_SET_LEAVE_MORE]         = "und %d weitere",

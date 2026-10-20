@@ -596,6 +596,24 @@ bool settings_sense_sda_valid(int gpio)
            && (outbind_reserved_mask(OUTBIND_BOARD_PICO_HEADER) & pair) == 0u;
 }
 
+bool settings_pdmini_same_pin(void)
+{
+    const int tx = (int)lrintf(s.values[SET_PDMINI_TX]);
+    return tx >= 0 && tx == (int)lrintf(s.values[SET_PDMINI_RX]);
+}
+
+/* Whether the pin row @p id takes @p pin as a step: Sensor SDA a pin the
+ * bus can have, PD mini TX and RX any pin but the one the other holds. */
+static bool pin_takes(setting_id_t id, int pin)
+{
+    if (id == SET_PDMINI_TX || id == SET_PDMINI_RX) {
+        const setting_id_t other =
+            (id == SET_PDMINI_TX) ? SET_PDMINI_RX : SET_PDMINI_TX;
+        return pin < 0 || pin != (int)lrintf(s.values[other]);
+    }
+    return settings_sense_sda_valid(pin);
+}
+
 static float coerce(const setting_def_t *d, float v)
 {
     if (d == &k_defs[SET_SENSE_SDA]) {
@@ -852,15 +870,15 @@ void settings_adjust(setting_id_t id, int steps)
         settings_set(id, (float)next);
         return;
     }
-    if (id == SET_SENSE_SDA) {
-        /* From one pin the bus can have to the next, and no further than
-         * the first and the last. */
+    if (id == SET_SENSE_SDA || id == SET_PDMINI_TX || id == SET_PDMINI_RX) {
+        /* From one pin the row takes to the next, and no further than the
+         * first and the last. */
         int pin = (int)lrintf(s.values[id]);
         const int dir = (steps > 0) ? 1 : -1;
         for (int left = (steps > 0) ? steps : -steps; left > 0; --left) {
             int next = pin + dir;
             while (next >= (int)d->min && next <= (int)d->max
-                   && !settings_sense_sda_valid(next)) {
+                   && !pin_takes(id, next)) {
                 next += dir;
             }
             if (next < (int)d->min || next > (int)d->max) {

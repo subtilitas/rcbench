@@ -31,7 +31,12 @@ OPEN takes the port:
 2. The PWM generator gives up the pin. The wire driver opens the line on it
    as a released input: classic with the pad's pull-down, the D series with
    its pull-up and the input inverted. The internal pulls are 50 to 80 kOhm;
-   the D series needs a pull-up on the board.
+   the D series needs a pull-up on the board. Tested with a D485HW: with
+   the pad's pull-up alone the line stays below 1.4 V and the servo answers
+   no read; with 2.2 kOhm from the signal wire to the servo supply it
+   answers every read. The line voltages, and whether the servo's high
+   level stays within the pin's rating, are not measured
+   ([Electrical](../protocols/hitec/README.md#electrical)).
 3. OPEN. A driver that gets no PIO (programmable input/output) state machine,
    no 29 words of program space or no 2 DMA (direct memory access) channels
    leaves the port free with result 5 (`NO_LINE`).
@@ -142,7 +147,7 @@ A read gives these registers:
 | Register | Reads |
 | ---: | --- |
 | 16, 17 | the decoder's delay, ns |
-| 18, 19 | the lead as the PIO program ran it, ns |
+| 18, 19 | from the lead's first edge to the release of the line, ns: the lead as the PIO program ran it and every bit time sent; a D series read 559,886 |
 | 20, 21 | from the start to the capture, us |
 | 22, 23 | the longest the transaction could take, us |
 | 24 | the bit time of the open line, ns; 0 while none is open |

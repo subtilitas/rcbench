@@ -47,9 +47,10 @@ Standard-Image ein Symbol der Konsole enthält. `IOMCU_CONSOLE` und
 `SENSE_TRACE` lesen beide die USB-Konsole; CMake weist einen Build mit
 beiden ab.
 
-Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 10.324
-Byte größer als das Standard-Image und belegt 3.164 Byte mehr RAM
-(Random-Access Memory), 2.048 davon der Ausgabepuffer. Die tiefste
+Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 11.028
+Byte größer als das Standard-Image und belegt 4.124 Byte mehr RAM
+(Random-Access Memory): 2.048 davon der Ausgabepuffer, 960 der USB-Sendepuffer
+von 1.024 Byte statt der 64 des SDK. Die tiefste
 Aufrufkette von Kern 0 ist die des Standard-Images: die Konsole hält ihren
 Arbeitsspeicher in ihrem eigenen Zustand, nicht auf dem Stack.
 
@@ -149,6 +150,23 @@ Abweisungen aus
 Ergebnisse der Dekoder aus `hitec_rx_t`. `hitec cap` und `hitec byte` kommen
 nur, solange die Page einen Mitschnitt hält.
 
+`lead_ns` reicht von der ersten Flanke des Vorlaufs bis zum Loslassen der
+Leitung: der Vorlauf und jede gesendete Bitzeit. Der Vorlauf ist der
+verlangte oder länger: das PIO-Programm (Programmable Input/Output) sendet
+ganze Wörter von 16 Bitzeiten, und die Bitzeiten, die den Anfang des Stroms
+auf ein Wort auffüllen, zählen zum Vorlauf. Ein Lesen der D-Serie ergibt
+`lead_ns=559886`, bei einer Bitzeit von 8,68 us:
+
+| Teil | Bitzeiten | Zeit |
+| --- | ---: | ---: |
+| Vorlauf: 8 Takte und die 13 Bitzeiten Auffüllung (88 us verlangt) | 13,5 | 117,2 us |
+| 5 Bytes zu 10 Bit | 50 | 434,0 us |
+| 1 losgelassene Bitzeit, bevor der Empfänger startet | 1 | 8,7 us |
+| `lead_ns` | 64,5 | 559,9 us |
+
+Ein Schreiben der D-Serie ergibt `lead_ns=705283`: 89,0 us Vorlauf, 70
+Bitzeiten Bytes und 1 losgelassene Bitzeit.
+
 | Kommando | Tut |
 | --- | --- |
 | `hitec [state]` | die Page, dekodiert, mit dem Mitschnitt |
@@ -161,10 +179,17 @@ nur, solange die Page einen Mitschnitt hält.
 | `hitec level <port> 0\|1 <us>` | LEVEL |
 | `hitec power <port> mv=<mV> ma=<mA> off=<ms> window=<us> rx=<n> [answer=<byte>] [dec=<dec>]` | POWER: die Versorgung aus, aus gehalten, an mit 4800 bis 6000 mV, und das LISTEN ab dem Einschalten |
 | `hitec c <port> <cmd> <p1> <p2>` | ein classic-Kommando mit seinem Summenbyte, 1 Ruhebit zwischen den Bytes, einem Fenster von 1500 us für 2 Bytes und dem classic-Dekoder, wenn das Modul das Kommando kennt |
-| `hitec d <port> read <id> <addr>` | ein Lesen der D-Serie: 88 us Vorlauf, 5 Bytes, ein Fenster von 25.000 us für 8 Bytes und der Dekoder der D-Serie |
-| `hitec d <port> write <id> <addr> <value>` | ein Schreiben der D-Serie: 88 us Vorlauf, 7 Bytes, nichts empfangen |
+| `hitec d <port> read <id> <addr>` | ein Lesen der D-Serie: 88 us Vorlauf verlangt, 117,2 us low getrieben, 5 Bytes, ein Fenster von 25.000 us für 8 Bytes und der Dekoder der D-Serie |
+| `hitec d <port> write <id> <addr> <value>` | ein Schreiben der D-Serie: 88 us Vorlauf verlangt, 89,0 us low getrieben, 7 Bytes, nichts empfangen |
 
 `<dec>` ist `none`, `c:<cmd>`, `d:<addr>` oder `l:<byte>`.
+
+Eine Leitung der D-Serie braucht einen Pull-up auf der Platine. Getestet mit
+einem D485HW: 2,2 kOhm von der Signalleitung zur Servoversorgung, und jedes
+Lesen wird beantwortet; mit dem Pull-up des Pads allein beantwortet der
+Servo keines (`rx=SILENT`).
+[Der Programmierport für Servos von Hitec](LinkHitec-de.md#hinein-und-hinaus)
+nennt, was offen ist.
 
 `hitec c` braucht eine offene classic-Leitung und `hitec d` eine offene
 Leitung der D-Serie. Auf einer Leitung der anderen Familie schreibt die
@@ -196,6 +221,14 @@ Transaktion so.
   getippte Zeile wartet im USB-Puffer.
 - Der Ausgabepuffer hält 2.048 Byte. Ein Bericht über 16 empfangene Bytes
   belegt etwa 1.100.
+- Ein Durchlauf gibt dem USB-Port so viele Bytes, wie sein Sendepuffer frei
+  hat, höchstens 400, und wartet nie auf den Host. Eine längere Zeile geht
+  in Stücken über mehrere Durchläufe hinaus; ihr Rest zuerst. Jede Zeile bis
+  zur längsten, 200 Byte mit ihrem LF, geht auch mit dem 64-Byte-Puffer des
+  SDK hinaus.
+- Die eigenen Zeilen des IOmcu, `rcbench-iomcu: ...` alle 3 s und nach einem
+  Flash-Schreiben, laufen in diesem Build durch dieselbe Ausgabe: sie kommen
+  nach der Zeile davor, nie mitten in ihr, und enden nur mit LF.
 - `shared/outputs/page_console.c` hält die Regeln, und
   `test/host/test_page_console.c` testet sie gegen ein Modell des Treibers
   der HITEC-Page.
