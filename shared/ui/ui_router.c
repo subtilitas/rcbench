@@ -459,9 +459,10 @@ static int owned_find(uint8_t id)
  *
  * A chip of the band opens its help bubble on a tap: a DOWN on it and a
  * release on the same chip.  While a bubble is open, a DOWN anywhere but on
- * STOP closes it and does nothing else: its contact is the router's to its
- * release.  A DOWN on STOP closes it as well and presses STOP, as with no
- * bubble.
+ * STOP or another chip closes it and does nothing else: its contact is the
+ * router's to its release.  A DOWN on another chip closes it and presses
+ * that chip, so one tap moves the bubble to it.  A DOWN on STOP closes it
+ * as well and presses STOP, as with no bubble.
  */
 void ui_router_event(const touch_event_t *evt)
 {
@@ -484,10 +485,13 @@ void ui_router_event(const touch_event_t *evt)
             ui_band_chip_at(&s.status, evt->point.x, evt->point.y);
 
         if (evt->type == TOUCH_EVENT_DOWN && !in_stop
-            && s.help != UI_BAND_CHIP_NONE) {
+            && s.help != UI_BAND_CHIP_NONE
+            && (chip == UI_BAND_CHIP_NONE || chip == s.help)) {
             /* The tap that closes the bubble.  A contact this id named
              * before is over, as at any DOWN, and this one reaches no
-             * screen: the screen never owned it. */
+             * screen: the screen never owned it.  A DOWN on another chip
+             * is that chip's press, below: the bubble closes with it and
+             * the release opens that chip's bubble. */
             s.help = UI_BAND_CHIP_NONE;
             const int was = owned_find(id);
             if (was >= 0) {

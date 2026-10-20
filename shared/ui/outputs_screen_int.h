@@ -59,6 +59,11 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
  * PROG PORT n where the list holds several. */
 void outputs_port_name(uint8_t port, char *buf, size_t cap);
 
+/* Each function's pins now (outputs_iface_pins()), for the screens'
+ * repaint: a row stepped on SETUP, or a page read, moves a pin or its
+ * owner without a touch on the screen. */
+void outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT]);
+
 /* Whether a programming port the list shows holds GPIO @p gpio. */
 bool outputs_port_holds(uint8_t gpio);
 

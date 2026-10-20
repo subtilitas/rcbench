@@ -23,6 +23,7 @@
 #include "link_pages.h"
 #include "out_bind.h"
 #include "outputs.h"
+#include "outputs_screen.h"
 #include "outputs_pages.h"
 #include "panel.h"
 #include "prog_link.h"
@@ -39,6 +40,29 @@ static const char *TAG = "rcbench";
 
 /* LINK_ST_FAULTS from the IOmcu's last status poll, shown in the band. */
 static uint16_t s_dev_faults;
+
+/*
+ * What the sensor bus, the PD mini and the phase tap hold on the IOmcu's
+ * pins by their pages' last reads, for OUTPUTS and PICK A PIN: a refused
+ * part or relocation leaves the pins the page keeps.  With the link down
+ * none is known, and the screens follow the settings.  An IOmcu without
+ * the SUPPLY page holds no PD mini pin.
+ */
+static void iface_pins_publish(bool up)
+{
+    int a = -1;
+    int b = -1;
+    bool known = up && sense_link_held_pins(&s_sense_link, &a, &b);
+    outputs_screen_set_iface_held(OUTPUTS_IFACE_SENSE, known, a, b);
+    a = -1;
+    b = -1;
+    known = up && (!s_supply_page
+                   || supply_link_held_pins(&s_supply_link, &a, &b));
+    outputs_screen_set_iface_held(OUTPUTS_IFACE_PDMINI, known, a, b);
+    a = -1;
+    known = up && tone_link_held_pin(&s_tone_link, &a);
+    outputs_screen_set_iface_held(OUTPUTS_IFACE_TAP, known, a, -1);
+}
 
 /*
  * The bench page, and the control page in the same pass.
@@ -107,6 +131,7 @@ static bool poll_bench(bench_state_t *bench)
                            bench);
         /* And the phase tap's: an input, taken armed or not. */
         tone_link_service();
+        iface_pins_publish(true);
         /* And the servo programmer's: the IOmcu decides what it
          * starts, armed or not. */
         kst_link_service();
@@ -632,6 +657,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             servo_link_surfaces_publish();
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
+            iface_pins_publish(false);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
             bench->servo_new = false;
             /* And the binding: what the screens show is the last one read,

@@ -261,7 +261,8 @@ TEST_CASE(a_missing_entry_shows_the_english)
     CHECK_STR_EQ(ui_setting_value(SET_INA3221_CH, buf, sizeof(buf)), "CH1");
     CHECK_STR_EQ(ui_setting_option(SET_THEME, 1), "HELL");
     CHECK_STR_EQ(ui_setting_value(SET_THEME, buf, sizeof(buf)), "DUNKEL");
-    CHECK_STR_EQ(ui_setting_value(SET_BACKLIGHT, buf, sizeof(buf)), "EIN");
+    settings_set(SET_PLOT_PAN, 1);
+    CHECK_STR_EQ(ui_setting_value(SET_PLOT_PAN, buf, sizeof(buf)), "EIN");
     CHECK_STR_EQ(ui_setting_value(SET_PACK_CELLS, buf, sizeof(buf)), "6");
     CHECK_STR_EQ(ui_setting_label(SETTING_COUNT), "");
     CHECK_STR_EQ(ui_setting_help(SETTING_COUNT), "");

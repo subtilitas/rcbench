@@ -86,14 +86,11 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "theme", "Theme", "", "",
         SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_theme) },
     [SET_BRIGHTNESS] = {
-        "brightness", "Brightness", "Scales the palette; see Backlight", "%",
+        "brightness", "Brightness", "Scales the palette", "%",
         SET_CAT_APP, SET_TYPE_INT, 20, 100, 5, 100, NULL, 0 },
     [SET_CONTRAST] = {
         "contrast", "Contrast", "Pushes colours away from mid grey", "%",
         SET_CAT_APP, SET_TYPE_INT, 60, 140, 5, 100, NULL, 0 },
-    [SET_BACKLIGHT] = {
-        "backlight", "Backlight", "This board wires it as on/off only", "",
-        SET_CAT_APP, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     [SET_LANGUAGE] = {
         "language", "Language", "", "",
         SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_language) },

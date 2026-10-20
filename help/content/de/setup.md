@@ -14,7 +14,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in drei Kate
 
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
-| PANEL | `10 EINSTELLUNGEN` | die Liste von PANEL |
+| PANEL | `9 EINSTELLUNGEN` | die Liste von PANEL |
 | ANSCHLÜSSE | `26 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
 | SD-KARTE | `4 EINSTELLUNGEN` | die Liste von SD-KARTE: welche Logs das Panel schreibt, und wohin |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
@@ -104,13 +104,14 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Design | DUNKEL, HELL | DUNKEL | das Farbschema, ab dem nächsten Frame |
 | Helligkeit | 20 bis 100 %, Schritte von 5 | 100 | skaliert die Palette |
 | Kontrast | 60 bis 140 %, Schritte von 5 | 100 | drückt Farben weg vom Mittelgrau |
-| Beleuchtung | EIN, AUS | EIN | gespeichert; kein Bildschirm nutzt sie in diesem Release; die Platine verdrahtet die Hintergrundbeleuchtung nur als ein oder aus |
 | Sprache | ENGLISH, DEUTSCH | ENGLISH | die Sprache der Oberfläche, ab dem nächsten Frame, ohne Neustart |
 | Einheiten | METRISCH, IMPERIAL | METRISCH | gespeichert; kein Bildschirm nutzt sie in diesem Release |
 | Dimmen nach | 0 bis 60 min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
 | Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
 | Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 am I2C-Anschluss (Inter-Integrated Circuit) des Panels dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
 | Knopf-Skala | 90 bis 720 deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
+
+Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
 
 ![SETUP im hellen Design](view:setup-light)
 

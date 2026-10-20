@@ -222,6 +222,11 @@ UI_TEXT(OUT_ALL_SLOTS,             27, "ALL %u SLOTS IN USE")
 UI_TEXT(OUT_NEEDS_CHANNEL,         27, "NEEDS %u CHANNEL, %u FREE")
 UI_TEXT(OUT_NEEDS_CHANNELS,        27, "NEEDS %u CHANNELS, %u FREE")
 UI_TEXT(OUT_PROG_PORT,              14, "PROG PORT")
+/* What SETUP > INTERFACES holds a pin for (outputs_iface_name()): a
+ * taken pin's cell on OUTPUTS and a name in PICK A PIN's IN USE table. */
+UI_TEXT(OUT_IFACE_SENSE,            14, "SENSOR BUS")
+UI_TEXT(OUT_IFACE_PDMINI,           14, "PD MINI")
+UI_TEXT(OUT_IFACE_TAP,              14, "PHASE TAP")
 /* A PROG PORT entry of the list, its pin and what it carries, and on
  * port 1 the SERVO TESTER and PORT PWM segments with why they are locked:
  * lines of the left column, 33 cells each, two where they need them. */

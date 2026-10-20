@@ -2721,6 +2721,20 @@ int main(int argc, char **argv)
         }
     }
 
+    if ((id == SCREEN_OUTPUTS && strcmp(view, "outputs-iface") == 0)
+        || (id == SCREEN_PICKER && strcmp(view, "picker-iface") == 0)) {
+        /* SETUP > INTERFACES as the bench is wired: the INA228 and the
+         * INA3221 on the sensor bus at GP16 and GP17, the PD mini on RX
+         * GP18 and TX GP19, the phase tap on GP22. */
+        settings_set(SET_INA228_EN, 1.0f);
+        settings_set(SET_INA3221_EN, 1.0f);
+        settings_set(SET_SENSE_SDA, 16.0f);
+        settings_set(SET_PDMINI_EN, 1.0f);
+        settings_set(SET_PDMINI_RX, 18.0f);
+        settings_set(SET_PDMINI_TX, 19.0f);
+        settings_set(SET_TONE_EN, 1.0f);
+    }
+
     if (id == SCREEN_OUTPUTS) {
         /* Four servo leads on the first four free pins: the state an
          * operator reaches in four taps, and the one worth a picture. */
@@ -2786,7 +2800,8 @@ int main(int argc, char **argv)
             ui_router_goto(SCREEN_OUTPUTS);
         }
         if (strcmp(view, "outputs-off") != 0
-            && strcmp(view, "outputs-port") != 0) {
+            && strcmp(view, "outputs-port") != 0
+            && strcmp(view, "outputs-iface") != 0) {
             /* Every visit opens on the overview, OFF; the views of a
              * protocol being edited pick it, as the operator does. */
             outputs_screen_select(b.proto);
@@ -2895,7 +2910,8 @@ int main(int argc, char **argv)
         }
         picker_screen_set_binding(&b);
         if (strcmp(view, "picker-prog") == 0
-            || strcmp(view, "picker-off") == 0) {
+            || strcmp(view, "picker-off") == 0
+            || strcmp(view, "picker-iface") == 0) {
             /* The IOmcu's programming port on GP13: drawn held, and
              * named first under IN USE. */
             picker_screen_set_prog_pin(13u);

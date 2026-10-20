@@ -496,3 +496,16 @@ bool supply_link_wiring_moved(supply_link_follow_t *f, unsigned edits,
     f->word  = word;
     return moved;
 }
+
+bool supply_link_held_pins(const supply_link_t *s, int *tx, int *rx)
+{
+    const bool known = s != NULL && s->read_any;
+    const bool on = known && s->regs[LINK_SP_ENABLE] != 0u;
+    if (tx != NULL) {
+        *tx = on ? (int)s->regs[LINK_SP_TX_PIN] : -1;
+    }
+    if (rx != NULL) {
+        *rx = on ? (int)s->regs[LINK_SP_RX_PIN] : -1;
+    }
+    return known;
+}

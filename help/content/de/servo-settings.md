@@ -6,7 +6,7 @@ order: 21
 
 # Servo-Optionen
 
-OPTIONEN, der dritte Reiter der Leiste von [SERVO](servo.md), zeigt die Optionen des Servos im Seitenbereich auf drei Seiten: AUSGANG, SWEEP und PRÜFLING. Die Optionen jedes Laufs öffnen sich von seiner Karte auf TEST: OPTIONEN auf der Karte zeigt sie als Liste eine Ebene tiefer, und das Home-Tag führt zurück zu den Karten. Die Ausgangskarte rechts bleibt an ihrem Platz und wirkt. Ein Wert öffnet das Tastenfeld, eine Liste öffnet eine Liste, ein Schalter schaltet beim Tipp um, und NAME öffnet eine Tastatur.
+OPTIONEN, der dritte Reiter der Leiste von [SERVO](servo.md), zeigt die Optionen des Servos im Seitenbereich auf drei Seiten: AUSGANG, SWEEP und PRÜFLING. Die Optionen jedes Laufs öffnen sich von seiner Karte auf TEST: OPTIONEN auf der Karte zeigt sie als Liste eine Ebene tiefer, und SCHLIESSEN oben rechts in der Liste oder das Home-Tag führt zurück zu den Karten. Die Ausgangskarte rechts bleibt an ihrem Platz und wirkt. Ein Wert öffnet das Tastenfeld, eine Liste öffnet eine Liste, ein Schalter schaltet beim Tipp um, und NAME öffnet eine Tastatur.
 
 ## AUSGANG
 

@@ -14,7 +14,7 @@ SETUP holds the panel's bench-wide settings in three categories: PANEL, INTERFAC
 
 | Tile | Second line | What it opens |
 |---|---|---|
-| PANEL | `10 SETTINGS` | the list of PANEL |
+| PANEL | `9 SETTINGS` | the list of PANEL |
 | INTERFACES | `26 SETTINGS` | the list of INTERFACES |
 | SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
@@ -104,13 +104,14 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Theme | DARK, LIGHT | DARK | the colour theme, from the next frame |
 | Brightness | 20 to 100 %, steps of 5 | 100 | scales the palette |
 | Contrast | 60 to 140 %, steps of 5 | 100 | pushes colours away from mid grey |
-| Backlight | ON, OFF | ON | stored; no screen uses it in this release; the board wires the backlight as on or off only |
 | Language | ENGLISH, DEUTSCH | ENGLISH | the interface language, from the next frame, without a restart |
 | Units | METRIC, IMPERIAL | METRIC | stored; no screen uses it in this release |
 | Dim after | 0 to 60 min, steps of 5 | 0 | stored; no screen uses it in this release |
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
 | Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on the panel's I2C (Inter-Integrated Circuit) terminal turns the throttle on MOTOR & ESC or the horn on SERVO |
 | Knob scale | 90 to 720 deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
+
+The backlight is on while the panel runs. No setting switches it.
 
 ![SETUP in the light theme](view:setup-light)
 

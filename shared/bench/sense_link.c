@@ -1023,3 +1023,19 @@ uint32_t sense_link_win_lost(const sense_link_t *s)
 {
     return (s != NULL) ? s->win_lost : 0u;
 }
+
+bool sense_link_held_pins(const sense_link_t *s, int *sda, int *scl)
+{
+    const bool known = s != NULL && s->up && (!s->page || s->known);
+    const bool on = known && s->page
+                    && (s->held[LINK_SN_ENABLE]
+                        & (LINK_SN_EN_I228 | LINK_SN_EN_I3221
+                           | LINK_SN_EN_AS5600)) != 0u;
+    if (sda != NULL) {
+        *sda = on ? (int)s->held[LINK_SN_SDA_PIN] : -1;
+    }
+    if (scl != NULL) {
+        *scl = on ? (int)s->held[LINK_SN_SCL_PIN] : -1;
+    }
+    return known;
+}

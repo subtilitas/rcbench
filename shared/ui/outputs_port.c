@@ -18,12 +18,14 @@
 
 #include "outputs_screen.h"
 
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "link_pages.h"
 #include "servo_screen.h"
 #include "settings.h"
+#include "settings_screen.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -121,6 +123,132 @@ void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
     }
     if (moved) {
         touched();
+    }
+}
+
+/* ------------------------------------------------- SETUP > INTERFACES */
+
+/* Set by the control task (panel_poll.c), read by the task that draws:
+ * 0 while what the page holds is not known, else bit 0 set and each pin
+ * + 1 in bits 8 to 15 and 16 to 23, 0 for none. */
+static atomic_int g_held[OUTPUTS_IFACE_COUNT];
+
+/* Pin @p v + 1 in a byte, 0 for none and anything past the mask. */
+static int held_byte(int v)
+{
+    return (v >= 0 && v < 64) ? v + 1 : 0;
+}
+
+void outputs_screen_set_iface_held(outputs_iface_t which, bool known,
+                                   int pin_a, int pin_b)
+{
+    if (which <= OUTPUTS_IFACE_NONE || which >= OUTPUTS_IFACE_COUNT) {
+        return;
+    }
+    atomic_store(&g_held[which],
+                 known ? (1 | (held_byte(pin_a) << 8)
+                          | (held_byte(pin_b) << 16))
+                       : 0);
+}
+
+/* Whether part @p en of the sensor bus is on and the IOmcu has not
+ * refused it. */
+static bool sense_part(setting_id_t en)
+{
+    return settings_get_bool(en) && !settings_screen_unheld(en);
+}
+
+/* GPIO @p v as a mask bit, or 0 for -1 and anything past the mask. */
+static uint64_t pin_bit(int v)
+{
+    return (v >= 0 && v < 64) ? ((uint64_t)1u << (unsigned)v) : 0u;
+}
+
+uint64_t outputs_iface_pins(outputs_iface_t which)
+{
+    if (which > OUTPUTS_IFACE_NONE && which < OUTPUTS_IFACE_COUNT) {
+        const int held = atomic_load(&g_held[which]);
+        if (held != 0) {
+            return pin_bit(((held >> 8) & 0xff) - 1)
+                   | pin_bit(((held >> 16) & 0xff) - 1);
+        }
+    }
+    /* Not read yet: as the settings stand. */
+    switch (which) {
+    case OUTPUTS_IFACE_SENSE: {
+        /* A bus the IOmcu refused, its pins row or every part on marked
+         * on SETUP, holds no pin there: the page enables no part. */
+        const bool on = sense_part(SET_INA228_EN)
+                        || sense_part(SET_INA3221_EN)
+                        || sense_part(SET_ENC_EN);
+        const int sda = settings_get_int(SET_SENSE_SDA);
+        if (!on || sda < 0 || settings_screen_unheld(SET_SENSE_SDA)) {
+            return 0u;
+        }
+        return pin_bit(sda) | pin_bit(settings_get_int(SET_SENSE_SCL));
+    }
+    case OUTPUTS_IFACE_PDMINI: {
+        /* The page is written ON only with both pins set and apart
+         * (supply_link.c); otherwise it holds neither. */
+        const int tx = settings_get_int(SET_PDMINI_TX);
+        const int rx = settings_get_int(SET_PDMINI_RX);
+        if (!settings_get_bool(SET_PDMINI_EN) || tx < 0 || rx < 0
+            || tx == rx) {
+            return 0u;
+        }
+        return pin_bit(tx) | pin_bit(rx);
+    }
+    case OUTPUTS_IFACE_TAP: {
+        /* The TONE page refuses an ADC pin -- GP26 to GP29 of the
+         * RP2350A, GP40 to GP47 of the RP2354B (tone_page.c) -- and a tap
+         * the IOmcu refused for any reason, its rows marked on SETUP, holds
+         * no pin there. */
+        const int pin = settings_get_int(SET_TONE_PIN);
+        const bool adc = (pin >= 26 && pin <= 29) || (pin >= 40 && pin <= 47);
+        if (!settings_get_bool(SET_TONE_EN) || adc
+            || settings_screen_unheld(SET_TONE_PIN)) {
+            return 0u;
+        }
+        return pin_bit(pin);
+    }
+    case OUTPUTS_IFACE_NONE:
+    case OUTPUTS_IFACE_COUNT:
+    default:
+        return 0u;
+    }
+}
+
+outputs_iface_t outputs_iface_at(uint8_t gpio)
+{
+    const uint64_t bit = pin_bit(gpio);
+    if (bit == 0u) {
+        return OUTPUTS_IFACE_NONE;
+    }
+    for (int f = OUTPUTS_IFACE_SENSE; f < OUTPUTS_IFACE_COUNT; ++f) {
+        if ((outputs_iface_pins((outputs_iface_t)f) & bit) != 0u) {
+            return (outputs_iface_t)f;
+        }
+    }
+    return OUTPUTS_IFACE_NONE;
+}
+
+const char *outputs_iface_name(outputs_iface_t which)
+{
+    switch (which) {
+    case OUTPUTS_IFACE_SENSE:  return TR(OUT_IFACE_SENSE);
+    case OUTPUTS_IFACE_PDMINI: return TR(OUT_IFACE_PDMINI);
+    case OUTPUTS_IFACE_TAP:    return TR(OUT_IFACE_TAP);
+    case OUTPUTS_IFACE_NONE:
+    case OUTPUTS_IFACE_COUNT:
+    default:                   return "";
+    }
+}
+
+void outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT])
+{
+    pins[OUTPUTS_IFACE_NONE] = 0u;
+    for (int f = OUTPUTS_IFACE_SENSE; f < OUTPUTS_IFACE_COUNT; ++f) {
+        pins[f] = outputs_iface_pins((outputs_iface_t)f);
     }
 }
 

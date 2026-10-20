@@ -555,6 +555,11 @@ void ov_down(const touch_event_t *evt)
         return;
     }
     const int page = rows_page();
+    /* A run's settings: CLOSE, back to TEST's cards. */
+    if (page >= PG_COUNT && gfx_rect_contains(run_close_rect(), x, y)) {
+        ov_take(evt, OP_RUN_CLOSE, -1);
+        return;
+    }
     for (int i = 0; i < ROW_COUNT; ++i) {
         if (k_rows[i].page != page || row_hidden(&k_rows[i])) {
             continue;
@@ -774,6 +779,15 @@ void ov_rest(const touch_event_t *evt)
             lim_end_now(SERVO_TEST_AB_OPERATOR);
         }
         ++s.test_rev;
+        break;
+    case OP_RUN_CLOSE:
+        /* A run's settings' CLOSE: up to TEST's cards, as the home tag
+         * climbs from here. */
+        if (gfx_rect_contains(run_close_rect(), x, y)
+            && wb_task() == UI_WB_TEST && s.run_list != RL_NONE) {
+            s.run_list = RL_NONE;
+            servo_invalidate();
+        }
         break;
     case OP_RUN_SET:
         /* A run card's SETTINGS: that run's settings, one level down. */
@@ -1001,6 +1015,9 @@ void draw_rows_page(gfx_canvas_t *c)
         gfx_text(c, OV_X + 10, CARD_Y + 8,
                  (page == PG_AUTO) ? TR(SV_AUTO_TEST) : TR(SV_ROW_LIM_MODE),
                  &gfx_font_8x16, ui_theme_color(UI_C_ACCENT), 1);
+        ui_button(c, run_close_rect(), TR(SUP_CLOSE),
+                  ui_theme_color(UI_C_PANEL_HI),
+                  s.ov_have && s.ov_pressed == OP_RUN_CLOSE, true);
     }
     for (int i = 0; i < ROW_COUNT; ++i) {
         const ov_row_t *r = &k_rows[i];

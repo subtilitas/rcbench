@@ -60,6 +60,10 @@ PINS, down the left, lists the selected protocol's pins in channel order with th
 
 The programming port's pin, GP13 (pad 17) by default, is grey while no protocol holds it, and IN USE lists it first under `PROG PORT`. Each further port the IOmcu reports holds its pin the same way, listed under the same name.
 
+![The interfaces' pins held and named under IN USE](view:picker-iface)
+
+A pin [SETUP > INTERFACES](setup-interfaces.md) holds is grey the same way, and IN USE lists it after the programming port under `SENSOR BUS`, `PD MINI` or `PHASE TAP`. A table with more lines than fit ends in `+N`, N the lines left out.
+
 ![OFF selected: every bound pin under IN USE](view:picker-off)
 
 ## The board drawing

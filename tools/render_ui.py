@@ -399,6 +399,9 @@ SCREENS = {
     # The PROG PORT entry, as SERVO's TARGET row opens it with the port as
     # the tester's target: GP13 lit, SERVO TESTER and PORT PWM.
     "outputs-port": ("outputs-port.png", "outputs", "dark"),
+    # The overview with SETUP > INTERFACES wired: GP16 and GP17 the sensor
+    # bus's, GP18 and GP19 the PD mini's, GP22 the phase tap's.
+    "outputs-iface": ("outputs-iface.png", "outputs", "dark"),
     "picker": ("picker.png", "picker", "dark"),
     "picker-drawn": ("picker-drawn.png", "picker", "dark"),
     # GP13 is the programming port's: held, and named under IN USE.
@@ -410,6 +413,9 @@ SCREENS = {
     # OFF picked, GP13 the programming port's, 8 pins over 6 protocols:
     # the tallest IN USE table, in its 20 px rows.
     "picker-off": ("picker-off.png", "picker", "dark"),
+    # The same interfaces on PICK A PIN: held, and named under IN USE after
+    # the programming port.
+    "picker-iface": ("picker-iface.png", "picker", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),
     "supply": ("supply.png", "supply", "dark"),
     "supply-settings": ("supply-settings.png", "supply", "dark"),

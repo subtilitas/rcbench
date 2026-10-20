@@ -6,7 +6,7 @@ order: 21
 
 # Servo settings
 
-SETTINGS, the third tab of [SERVO](servo.md)'s strip, shows the servo's settings in the page area on three pages: OUTPUT, SWEEP and DUT (device under test). Each run's own settings open from its card on TEST: the card's SETTINGS shows them as a list one level down, and the home tag goes back to the cards. The output card on the right stays in place and works. A value opens the keypad, a list opens a list, a switch flips on the tap, and NAME opens a keyboard.
+SETTINGS, the third tab of [SERVO](servo.md)'s strip, shows the servo's settings in the page area on three pages: OUTPUT, SWEEP and DUT (device under test). Each run's own settings open from its card on TEST: the card's SETTINGS shows them as a list one level down, and CLOSE at the list's top right or the home tag goes back to the cards. The output card on the right stays in place and works. A value opens the keypad, a list opens a list, a switch flips on the tap, and NAME opens a keyboard.
 
 ## OUTPUT
 

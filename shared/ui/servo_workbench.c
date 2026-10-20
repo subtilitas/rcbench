@@ -9,7 +9,8 @@
  * the run whose settings are open, PROGRAM its list's page and search --
  * and a tab switch is no navigation level.  A run card's SETTINGS opens
  * that run's settings in the page area, one level down: the home tag
- * climbs from there back to TEST (wb_back()), and from TEST to the menu.
+ * (wb_back()) and the page's CLOSE climb from there back to TEST, and the
+ * home tag from TEST to the menu.
  * A live row on PROGRAM opens its session over the left column, one level
  * down: the home tag and the session's CLOSE climb back to the list, and
  * a session whose port is in programming asks for LEAVE first.
