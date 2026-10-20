@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "ina3221.h"
 #include "link_msg.h"
 #include "link_pages.h"
 #include "sense_page_int.h"
@@ -84,7 +85,10 @@ void sense_limit_judge(sense_page_t *p, const sense_snap_t *s)
     p->lim_win  = number;
     for (unsigned c = 0; c < LINK_SM_CHANNELS; ++c) {
         const uint16_t lim = p->limit[LINK_SL_LIMIT_0 + c];
-        if (lim == 0u) {
+        /* A part not online at the window's close is judged on nothing,
+         * as SENSE_WIN shows it 0. */
+        if (lim == 0u
+            || s->i3221[c / INA3221_CHANNELS] != SENSE_PART_ONLINE) {
             continue;
         }
         const sense_window_t *w = &s->win[c];

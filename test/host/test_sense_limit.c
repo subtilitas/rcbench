@@ -7,7 +7,7 @@
  * window's highest current at limit - 1, limit and limit + 1 mA and across
  * the rounding to mA; a clipped sample against a range top below, at and
  * above the limit, the bottom end, a negative current, a channel off and
- * no limit; each window judged once, again after a set-up; OVER sticky
+ * no limit, a part offline at the window's close; each window judged once, again after a set-up; OVER sticky
  * until a read covers it, the peek and a read off the page leaving it;
  * OVER_COUNT wrapping at 65536; the derived map's shunt; what is kept and
  * its restore at boot.
@@ -61,6 +61,9 @@ static sense_snap_t snapshot(uint16_t number)
     s.cfg_gen = pg.cfg_gen;
     s.open = true;
     s.have_win = true;
+    for (unsigned a = 0; a < SENSE_I3221_PARTS; ++a) {
+        s.i3221[a] = SENSE_PART_ONLINE;
+    }
     for (unsigned c = 0; c < SENSE_SRC_COUNT; ++c) {
         s.win[c].number = number;
         s.win[c].n_i = 5u;
@@ -176,6 +179,13 @@ TEST_CASE(a_window_is_over_above_its_limit_and_not_at_it)
     sense_page_publish(&pg, &s, 0u);
     CHECK_EQ(take_over(), 0x0FFFu);
     CHECK_EQ(peek(LINK_SL_OVER_COUNT), 2u + 12u);
+    /* A part offline at the window's close: its samples from before are
+     * not judged, as SENSE_WIN shows them 0. */
+    s.win[0].number = 22u;
+    s.i3221[1] = SENSE_PART_OFFLINE;
+    s.i3221[3] = SENSE_PART_WRONG_ID;
+    sense_page_publish(&pg, &s, 0u);
+    CHECK_EQ(take_over(), 0x1C7u);
 }
 
 TEST_CASE(a_clipped_sample_is_over_when_the_range_top_is)
