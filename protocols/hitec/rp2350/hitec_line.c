@@ -534,15 +534,21 @@ void hitec_line_abort(hitec_line_t *line)
     }
     if (line->pre_on != 0u) {
         /* The request on the line: it stops where it is.  The sampler: it
-         * stops, and the words it wrote are decoded. */
+         * stops, and the words it wrote are decoded; a stall it had is
+         * kept as the capture's overflow beside the abort. */
+        bool lost = false;
+
         if (line->pre.phase == (uint8_t)HITEC_PRE_TX) {
             pio_sm_set_enabled(line_pio(line), line->sm, false);
             line_restart(line);
         } else if (line->pre_held != 0u) {
-            (void)pre_give(line);
+            lost = pre_give(line);
         }
         hitec_pre_abort(&line->pre, &line->pre_timing, line->samples,
                         line->dma_pre >= 0 ? pre_words_in(line) : 0u);
+        if (lost) {
+            hitec_pre_lost(&line->pre);
+        }
         line->aborted = 1;
         return;
     }

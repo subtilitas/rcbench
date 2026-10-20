@@ -93,7 +93,8 @@ On a PRECHARGE line:
   stops with the pad released, and the pin's control and pad registers
   are written back as they were.
 - A receive started with the supply asked on is cut (result 6, `CUT`) at
-  the pass that finds the supply asked off or no PD mini answering. One
+  the pass that finds the supply asked off, its output read off (the PD
+  mini's protection leaves OUTPUT asked on), or no PD mini answering. One
   started with the supply off, or with no PD mini, runs to its end.
 
 `STATE` bit 7 reads the register; register 25 of `VIEW` 2, bit 8, says the

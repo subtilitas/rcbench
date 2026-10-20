@@ -99,9 +99,10 @@ Auf einer PRECHARGE-Leitung:
   zurückgeschrieben, wie sie waren.
 - Ein Empfang, der bei eingeschalteter Versorgung startete, wird im
   Durchlauf abgeschnitten (Ergebnis 6, `CUT`), der die Versorgung
-  ausgeschaltet oder keinen antwortenden PD mini findet. Einer, der bei
-  ausgeschalteter Versorgung oder ohne PD mini startete, läuft bis zu
-  seinem Ende.
+  ausgeschaltet, ihren Ausgang als aus gelesen (der Schutz des PD mini
+  lässt OUTPUT eingeschaltet) oder keinen antwortenden PD mini findet.
+  Einer, der bei ausgeschalteter Versorgung oder ohne PD mini startete,
+  läuft bis zu seinem Ende.
 
 Bit 7 von `STATE` liest das Register; Register 25 von `VIEW` 2, Bit 8, sagt,
 dass die offene Leitung per PRECHARGE empfängt. Ein IOmcu mit 4.23 weist

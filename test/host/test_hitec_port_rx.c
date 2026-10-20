@@ -225,6 +225,26 @@ TEST_CASE(the_supply_off_cuts_a_precharge_receive)
     g_hw.v.online = false;
     tick();
     CHECK_EQ(g_drv.aborts, 1);
+
+    /* The output read off with OUTPUT still asked on (the PD mini's
+     * protection) cuts it too. */
+    fresh();
+    CHECK_EQ(rx_mode_write(LINK_HITEC_RX_PRECHARGE), 0);
+    open_line(HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    {
+        hitec_xfer_t x;
+
+        hitec_d_read_xfer(0x00u, 0x32u, &x);
+        stage_send(&x, LINK_HITEC_DEC_D, 0x32u);
+    }
+    CHECK_EQ(cmd(LINK_HITEC_OP_SEND, CH, KEY), 0);
+    run_ms(2u);
+    CHECK_EQ(g_drv.aborts, 0);
+    g_hw.v.on = false;
+    g_hw.v.off = true;
+    tick();
+    CHECK_EQ(g_drv.aborts, 1);
+    CHECK(g_hw.v.asked_on);
 }
 
 TEST_CASE(the_supply_off_leaves_a_pull_up_receive_and_an_unpowered_start)

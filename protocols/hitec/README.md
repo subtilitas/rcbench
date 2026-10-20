@@ -318,7 +318,8 @@ word, at `hitec_line_abort()` and at `hitec_line_close()` the sampler
 stops, its pad direction released, and the two registers are written back.
 A sampler whose receive FIFO ran full while its DMA channel still had
 words to take, or one that runs 1 ms past its last word, ends with the
-capture marked overflowed. The FIFO running full after the last word, when
+capture marked overflowed; an abort that finds it so marks the capture
+aborted and overflowed. The FIFO running full after the last word, when
 a poll comes more than 278 us late, loses no sample. An open fails with its own code for a pin the chip does not
 have, an unknown family or drive, push-pull for classic, a clock the open
 refuses, no free state machine or program space, and fewer than 2 free DMA

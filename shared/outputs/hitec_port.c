@@ -648,9 +648,10 @@ static void step_busy(hitec_port_t *p, uint32_t now_ms)
         return;
     }
     /* The sampler precharges the line every 1.1 us: not into a servo
-     * whose supply went off under it. */
+     * whose supply went off under it, asked off or read off (the PD
+     * mini's protection leaves OUTPUT asked on). */
     if (p->rx_line == (uint8_t)LINK_HITEC_RX_PRECHARGE && p->supply_on != 0u
-        && (!supply_view(p, &v) || !v.asked_on)) {
+        && (!supply_view(p, &v) || !v.asked_on || v.off)) {
         cut(p);
     }
     if ((uint32_t)(now_ms - p->t0_ms) >= HITEC_PORT_BUSY_MS) {

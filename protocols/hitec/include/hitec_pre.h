@@ -280,7 +280,8 @@ void hitec_pre_abort(hitec_pre_run_t *r, const hitec_pre_timing_t *t,
                      const uint32_t *words, uint32_t n_words);
 
 /** Samples went missing (the sampler stalled) or the sampler ran past its
- *  time: the capture is marked overflowed.  The run is done. */
+ *  time: the capture is marked overflowed.  The run is done.  After
+ *  hitec_pre_abort() it marks the aborted capture overflowed as well. */
 void hitec_pre_lost(hitec_pre_run_t *r);
 
 /**

@@ -661,13 +661,23 @@ TEST_CASE(an_abort_in_every_phase_keeps_the_whole_bytes)
     CHECK_EQ(cap.aborted, 1u);
     CHECK_EQ(cap.full, 1u);   /* the 8th ended the decoder before the cut */
 
-    /* Done: an abort and a loss change nothing. */
+    /* Done: an abort changes nothing. */
     {
         const hitec_pre_run_t before = r;
 
         hitec_pre_abort(&r, &T, words, 0u);
         CHECK(memcmp(&before, &r, sizeof(r)) == 0);
     }
+    /* An abort that found the sampler stalled: aborted and overflowed,
+     * the whole bytes kept. */
+    CHECK_EQ(hitec_pre_begin(&r, &T, &x), HITEC_PRE_PLAN_SEND);
+    hitec_pre_tx_done(&r);
+    hitec_pre_abort(&r, &T, words, mid_byte);
+    hitec_pre_lost(&r);
+    hitec_pre_capture(&r, &T, 0, &cap);
+    CHECK_EQ(cap.aborted, 1u);
+    CHECK_EQ(cap.overflow, 1u);
+    CHECK_EQ(cap.n, 3u);
     /* A sampler that stalled or ran past its time. */
     CHECK_EQ(hitec_pre_begin(&r, &T, &x), HITEC_PRE_PLAN_SEND);
     hitec_pre_tx_done(&r);
