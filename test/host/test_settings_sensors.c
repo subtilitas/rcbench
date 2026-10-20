@@ -356,6 +356,30 @@ TEST_CASE(nothing_fitted_maps_nothing_and_a_frame_the_page_takes)
     CHECK_EQ(settings_sensors_meter_dmohm(), 0u);
 }
 
+/* An older IOmcu's frame carries one shunt for every channel it reads: a
+ * channel on another shunt is left out of it, an OFF one as well. */
+TEST_CASE(the_one_part_frame_reads_the_channels_on_its_shunt)
+{
+    fresh_model();
+    settings_set(SET_INA_FIT(1), 1.0f);
+    settings_set(SET_INA_SH(3), 100.0f);
+    settings_set(SET_INA_SH(4), 20.0f);
+    settings_set(SET_INA_SH(5), 100.0f);
+    settings_sensors_map_t m;
+    settings_sensors_map(&m);
+    CHECK(m.one_on);
+    CHECK_EQ(m.one_addr, 0x41u);
+    CHECK_EQ(m.one_dmohm, 1000u);
+    CHECK_EQ(m.one_ch, 0x05u);
+    /* CH1 OFF: the first shunt not OFF is the frame's. */
+    settings_set(SET_INA_SH(3), 0.0f);
+    settings_sensors_map(&m);
+    CHECK_EQ(m.one_dmohm, 200u);
+    CHECK_EQ(m.one_ch, 0x02u);
+    /* The map itself keeps every channel's own shunt. */
+    CHECK_EQ(m.regs[LINK_SM_SHUNT(5)], 1000u);
+}
+
 /*
  * FAST is the lowest channel with a shunt on a fitted part watching the
  * tester's target: an output for OUTPUTS, port n for PORT n.  The mirror
@@ -416,7 +440,8 @@ TEST_CASE(a_fitted_part_with_every_channel_off_is_dark)
     CHECK_EQ(m.dark, 0x08u);
     CHECK_EQ(m.parts, 0x09u);
     CHECK_EQ(m.fast, 0u);
-    /* The one-part frame: CH1 off, CH2 on 50 mOhm, CH3 on 100. */
+    /* The one-part frame: CH1 off, CH2 on 50 mOhm, CH3 on 100 -- a
+     * shunt the frame does not carry, so CH2 alone. */
     settings_set(SET_INA_SH(0), 0.0f);
     settings_set(SET_INA_SH(1), 50.0f);
     settings_sensors_map(&m);
@@ -424,7 +449,7 @@ TEST_CASE(a_fitted_part_with_every_channel_off_is_dark)
     CHECK_EQ(m.mirror, 0u);
     CHECK(m.one_on);
     CHECK_EQ(m.one_dmohm, 500u);
-    CHECK_EQ(m.one_ch, 0x06u);
+    CHECK_EQ(m.one_ch, 0x02u);
     CHECK_EQ(settings_sensors_meter_dmohm(), 500u);
     /* The mirror part dark: no part to read on an older IOmcu. */
     settings_set(SET_INA_SH(1), 0.0f);
@@ -493,7 +518,34 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
     CHECK(sensors_rows_unheld(SET_INA_W(0)));
     CHECK(settings_screen_unheld(SET_INA_W(0)));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(0)), "Not accepted by the IOmcu.");
+    sensors_rows_set_status((uint16_t)SENS_PART_NO_BUS);
+    CHECK(sensors_rows_unheld(SET_INA_SH(2)));
+    CHECK_STR_EQ(sensors_rows_why(SET_INA_SH(2)),
+                 "Sensor SDA or SCL unset. Set both on INTERFACES.");
     sensors_rows_set_status(0u);
+}
+
+/* A FITTED edit or a reset shortens SENSORS' list under a scrolled view:
+ * the next frame draws it from a scroll the shorter list has. */
+TEST_CASE(the_scroll_follows_a_list_that_shortens)
+{
+    fresh_hub();
+    for (int a = 0; a < SET_INA_PARTS; ++a) {
+        settings_set(SET_INA_FIT(a), 1.0f);
+    }
+    open_category(SET_CAT_SENSORS);
+    ui_router_render(&s_c, 0);
+    int max = 0;
+    (void)settings_screen_scroll(&max);
+    CHECK(max > 0);
+    for (int k = 0; k < 40 && settings_screen_scroll(NULL) < max; ++k) {
+        swipe(XL, LIST_Y + LIST_H - 20, XL, LIST_Y + 20, 4);
+    }
+    CHECK_EQ(settings_screen_scroll(NULL), max);
+    settings_reset(SET_CAT_SENSORS);
+    ui_router_render(&s_c, 0);
+    CHECK_EQ(settings_screen_scroll(&max), 0);
+    CHECK_EQ(max, 0);
 }
 
 /* Every state has its words and its colour: ONLINE the ok colour, the
@@ -511,6 +563,7 @@ TEST_CASE(every_part_state_has_its_words_and_colour)
         { SENS_PART_DARK,      "EVERY CHANNEL OFF",         UI_C_WARN },
         { SENS_PART_SAME_ADDR, "INA228 ON THIS ADDRESS",    UI_C_WARN },
         { SENS_PART_OLD,       "IOmcu OLDER THAN 4.25: NOT READ", UI_C_WARN },
+        { SENS_PART_NO_BUS,    "SENSOR SDA OR SCL UNSET",   UI_C_WARN },
     };
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
         sensors_rows_set_status((uint16_t)((unsigned)k[i].st << 8));
@@ -543,10 +596,12 @@ int main(void)
     RUN(ch1_watches_the_port_the_tester_drove);
     RUN(a_stored_sensors_key_wins_over_its_seed);
     RUN(nothing_fitted_maps_nothing_and_a_frame_the_page_takes);
+    RUN(the_one_part_frame_reads_the_channels_on_its_shunt);
     RUN(fast_is_the_lowest_channel_watching_the_target);
     RUN(a_fitted_part_with_every_channel_off_is_dark);
     RUN(sensors_lists_a_fitted_parts_rows_under_its_heading);
     RUN(a_part_the_iomcu_does_not_read_marks_its_rows);
     RUN(every_part_state_has_its_words_and_colour);
+    RUN(the_scroll_follows_a_list_that_shortens);
     return test_summary("settings_sensors");
 }

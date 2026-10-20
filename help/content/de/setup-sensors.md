@@ -43,6 +43,7 @@ Rechts in der Überschrift eines Bausteins steht, was er tut:
 | `ALLE KANÄLE AUS` | alle drei Shunts stehen auf AUS; nichts wird geschrieben |
 | `INA228 AUF DIESER ADRESSE` | der INA228 ist auf dieser Adresse eingeschaltet; keiner wird gelesen |
 | `IOmcu ÄLTER ALS 4.25: NICHT GELESEN` | ein älterer IOmcu liest nur einen Baustein |
+| `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | ANSCHLÜSSE legt keinen Sensorbus fest; nichts wird gelesen |
 
 ![Ein IOmcu älter als 4.25](view:setup-sensors-old)
 

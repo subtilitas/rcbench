@@ -35,7 +35,7 @@ history is in git.
   `0x40 CH1 watches` (NONE, OUT 1 to OUT 8, PORT 1 to PORT 4, SUPPLY) and
   `0x40 CH1 shunt` (OFF, 5.0 to 1000.0 mOhm). A fitted part's heading shows
   its state: `ONLINE`, `NOT ANSWERING`, `IOmcu OLDER THAN 4.25: NOT READ`
-  and seven more. The panel writes the map to SENSE_MAP (link protocol
+  and eight more. The panel writes the map to SENSE_MAP (link protocol
   4.25) in one write of 26 registers; an IOmcu older than 4.25 gets SENSE's
   one-part frame. The channel read at 1 kHz is the lowest one on a fitted
   part that watches the servo tester's target.

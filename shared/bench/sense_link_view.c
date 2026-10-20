@@ -121,6 +121,23 @@ bool sense_link_take_window(sense_link_t *s, bench_state_t *b)
     return true;
 }
 
+/* Whether the page holds what the panel asks of it.  With the map in
+ * force the INA3221's enable bit and frame are the map's mirror, which the
+ * panel does not ask: they are left out. */
+static bool held_as_asked(const sense_link_t *s)
+{
+    uint16_t want[LINK_SN_CONFIG_COUNT];
+    memcpy(want, s->want, sizeof(want));
+    if (s->map) {
+        want[LINK_SN_ENABLE] =
+            (uint16_t)((want[LINK_SN_ENABLE] & ~LINK_SN_EN_I3221)
+                       | (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221));
+        memcpy(&want[I3221_AT], &s->held[I3221_AT],
+               FRAME_N * sizeof(uint16_t));
+    }
+    return memcmp(want, s->held, sizeof(want)) == 0;
+}
+
 void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out)
 {
     if (out == NULL) {
@@ -140,7 +157,7 @@ void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out)
                 && (s->map
                     || (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u)
                 && !s->refused_bus && !s->refused_i228 && !s->refused_i3221
-                && memcmp(s->want, s->held, sizeof(s->held)) == 0
+                && held_as_asked(s)
                 && sense_link_write_owed(s, regs) == SENSE_LINK_OP_NONE;
     out->setups    = s->setups;
     out->status    = s->have_status;

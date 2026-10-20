@@ -43,6 +43,7 @@ The right of a part's heading says what the part is doing:
 | `EVERY CHANNEL OFF` | all three shunts are OFF; nothing is written |
 | `INA228 ON THIS ADDRESS` | the INA228 is on at this address; neither is read |
 | `IOmcu OLDER THAN 4.25: NOT READ` | an older IOmcu reads one part only |
+| `SENSOR SDA OR SCL UNSET` | INTERFACES sets no sensor bus; nothing is read |
 
 ![An IOmcu older than 4.25](view:setup-sensors-old)
 

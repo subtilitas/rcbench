@@ -24,7 +24,9 @@
  * part whose three shunts are 0 (SENSE_MAP_LINK_EV_DARK), which the page
  * refuses, and none for a part fitted on the INA228's address while the
  * INA228 is on: that part is left out of ENABLE, as SENSE leaves both
- * monitors off, and SENSE_LINK_EV_SAME_ADDR says it.
+ * monitors off, and SENSE_LINK_EV_SAME_ADDR says it.  With the sensor
+ * bus's SDA or SCL unset every part is left out, and FAST with them: SENSE
+ * then clears its pins and enables nothing (SENSE_LINK_EV_PINS_UNSET).
  *
  * While a part is fitted the page's ID and FLAGS registers are read every
  * SENSE_MAP_LINK_READ_MS.  A fitted part that is not online
@@ -91,6 +93,7 @@ typedef enum {
     SENS_PART_SAME_ADDR,    /**< the INA228 is on at its address           */
     SENS_PART_OLD,          /**< an IOmcu older than 4.25 reads one part
                                  only, and not this one                    */
+    SENS_PART_NO_BUS,       /**< the sensor bus's SDA or SCL is unset      */
     SENS_PART_COUNT
 } sens_part_t;
 
@@ -100,6 +103,9 @@ typedef struct {
     uint8_t  dark;                /**< fitted parts with every shunt 0      */
     /** The INA228's address while it is on, 0 while it is off. */
     uint8_t  i228_addr;
+    /** The sensor bus's SDA or SCL is unset: no part is enabled, as SENSE
+     *  enables no monitor then. */
+    bool     nobus;
 } sense_map_want_t;
 
 typedef enum {
@@ -126,6 +132,8 @@ typedef struct {
     uint16_t want[LINK_SM_KEPT];  /**< as it is to be written               */
     uint8_t  dark;
     uint8_t  clash;           /**< parts left out for the INA228's address  */
+    uint8_t  fitted;          /**< parts fitted, enabled or not             */
+    bool     nobus;           /**< every part left out: no sensor bus       */
     uint32_t want_ms;
 
     uint16_t held[LINK_SM_KEPT];

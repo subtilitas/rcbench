@@ -331,6 +331,36 @@ TEST_CASE(a_part_on_the_ina228s_address_is_left_out)
     CHECK_EQ(fm[LINK_SM_FAST], 0u);
 }
 
+/* No sensor bus: SENSE clears its pins, so the map enables no part and
+ * names no FAST; each fitted part says why, and the map comes back whole
+ * with the bus. */
+TEST_CASE(no_sensor_bus_takes_every_part_out)
+{
+    map_fresh(25u, 0x01u);
+    map_polls(4);
+    sense_map_want_t w = map_of(0x05u);
+    sense_map_link_want(&ml, &w, now);
+    map_polls(20);
+    CHECK_EQ(fm[LINK_SM_ENABLE], 0x05u);
+    w.nobus = true;
+    sense_map_link_want(&ml, &w, now);
+    map_polls(20);
+    CHECK_EQ(fm[LINK_SM_ENABLE], 0u);
+    CHECK_EQ(fm[LINK_SM_FAST], LINK_SM_FAST_NONE);
+    CHECK_EQ(sense_map_link_part(&ml, &sl, 0u, 0u, now), SENS_PART_NO_BUS);
+    CHECK_EQ(sense_map_link_part(&ml, &sl, 2u, 0u, now), SENS_PART_NO_BUS);
+    CHECK_EQ(sense_map_link_part(&ml, &sl, 1u, 0u, now), SENS_PART_UNKNOWN);
+    /* A dark part without a bus is not written either way: no event. */
+    uint8_t part = 0u;
+    uint16_t id = 0u;
+    CHECK_EQ(sense_map_link_event(&ml, &part, &id), 0u);
+    w.nobus = false;
+    sense_map_link_want(&ml, &w, now);
+    map_polls(20);
+    CHECK_EQ(fm[LINK_SM_ENABLE], 0x05u);
+    CHECK_EQ(fm[LINK_SM_FAST], 0u);
+}
+
 TEST_CASE(an_unanswered_exchange_is_asked_again)
 {
     map_fresh(25u, 0x01u);
@@ -541,6 +571,48 @@ TEST_CASE(the_meter_follows_fast_with_the_map_and_ch1_without)
     CHECK(!m.wanted);
 }
 
+/* With the map in force the INA3221's enable bit and frame are the map's:
+ * the INA228 on another fitted part's address takes SENSE's bit 1 out of
+ * the panel's ask, and the meter on the mirror part is held all the same. */
+TEST_CASE(the_meter_is_held_beside_a_part_the_ina228_takes_out)
+{
+    fresh(25u);
+    sense_link_set_map(&sl, true);
+    pg.sense[LINK_SN_ENABLE] = LINK_SN_EN_I3221;
+    pg.sense[LINK_SN_SDA_PIN] = 16u;
+    pg.sense[LINK_SN_SCL_PIN] = 17u;
+    pg.sense[LINK_SN_KHZ] = LINK_SN_KHZ_BUS;
+    pg.sense[LINK_SN_I3221_ADDR] = 0x42u;
+    pg.sense[LINK_SN_I3221_SHUNT_DMOHM] = 500u;
+    pg.sense[LINK_SN_I3221_CHANNELS] = 0x07u;
+    sense_setup_t w = setup_default();
+    w.i3221 = true;
+    w.i3221_addr = 0x42u;
+    w.i3221_dmohm = 1000u;
+    w.i3221_ch = 0x01u;
+    w.i3221_parts = 0x05u;
+    w.i228 = true;
+    w.i228_addr = 0x40u;
+    want(&w);
+    polls(20);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_SAME_ADDR));
+    CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I3221);
+    sense_link_meter_t m;
+    sense_link_meter(&sl, &m);
+    CHECK(m.wanted);
+    CHECK(m.held);
+    /* What the panel does ask still counts: other pins are not held. */
+    idle = false;
+    pg.sense[LINK_SN_SDA_PIN] = 18u;
+    sense_link_reread(&sl);
+    polls(4);
+    sense_link_meter(&sl, &m);
+    CHECK(m.wanted);
+    CHECK(!m.held);
+    idle = true;
+    sense_link_set_map(NULL, true);
+}
+
 int main(void)
 {
     RUN(nothing_goes_to_an_iomcu_older_than_4_25);
@@ -551,6 +623,7 @@ int main(void)
     RUN(a_refused_map_is_said_once_and_asked_again_after_an_edit);
     RUN(a_dark_part_is_said_and_no_map_is_written);
     RUN(a_part_on_the_ina228s_address_is_left_out);
+    RUN(no_sensor_bus_takes_every_part_out);
     RUN(an_unanswered_exchange_is_asked_again);
     RUN(a_part_not_answering_or_answering_wrong_is_said_once);
     RUN(a_silent_part_that_answers_before_the_band_is_not_said);
@@ -558,5 +631,6 @@ int main(void)
     RUN(the_ina228_on_any_fitted_parts_address_is_one_address);
     RUN(a_reread_reads_the_setup_and_the_identity_again);
     RUN(the_meter_follows_fast_with_the_map_and_ch1_without);
+    RUN(the_meter_is_held_beside_a_part_the_ina228_takes_out);
     return test_summary("sense_map_link");
 }

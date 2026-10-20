@@ -41,29 +41,36 @@ void publish_sense(void)
 {
     settings_sensors_map_t m;
     settings_sensors_map(&m);
+    const bool    i228 = settings_get_bool(SET_INA228_EN);
+    /* The address options run up from 0x40 in steps of one. */
+    const uint8_t i228_addr = (uint8_t)(LINK_SN_I228_ADDR_MIN
+                              + (unsigned)settings_get_int(SET_INA228_ADDR));
+    /* FAST's part on the INA228's address is left out of the map
+     * (sense_map_link.h): no channel is read at 1 kHz then. */
+    const bool fast_out = i228 && m.fast != LINK_SM_FAST_NONE
+                          && i228_addr == LINK_SN_I3221_ADDR_MIN + m.fast / 3u;
     const sense_setup_t w = {
-        .i228  = settings_get_bool(SET_INA228_EN),
+        .i228  = i228,
         /* An IOmcu older than 4.25 reads one INA3221: the mirror part
          * (settings_sensors.h). */
         .i3221 = m.one_on,
         .as5600 = settings_get_bool(SET_ENC_EN),
         .sda   = (int8_t)settings_get_int(SET_SENSE_SDA),
         .scl   = (int8_t)settings_get_int(SET_SENSE_SCL),
-        /* The address options run up from 0x40 in steps of one. */
-        .i228_addr   = (uint8_t)(LINK_SN_I228_ADDR_MIN
-                                 + (unsigned)settings_get_int(SET_INA228_ADDR)),
+        .i228_addr   = i228_addr,
         .i228_uohm   = (uint16_t)settings_get_int(SET_INA228_UOHM),
         .i228_max_da = (uint16_t)lrintf(settings_get(SET_INA228_MAX_A) * 10.0f),
         .i3221_addr  = m.one_addr,
         .i3221_dmohm = m.one_dmohm,
         .i3221_ch    = m.one_ch,
         .i3221_parts = m.parts,
-        .i3221_unwatched = m.fast == LINK_SM_FAST_NONE,
+        .i3221_unwatched = m.fast == LINK_SM_FAST_NONE || fast_out,
     };
     sense_map_want_t mw;
     memcpy(mw.regs, m.regs, sizeof(mw.regs));
     mw.dark      = m.dark;
     mw.i228_addr = w.i228 ? w.i228_addr : 0u;
+    mw.nobus     = w.sda < 0 || w.scl < 0;
     taskENTER_CRITICAL(&s_sense_mux);
     s_sense_want = w;
     s_map_want   = mw;

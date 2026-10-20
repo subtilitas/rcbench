@@ -1157,6 +1157,9 @@ static void draw_list(gfx_canvas_t *c)
      * cleanly at the pane edge instead of drawing over the strip. */
     gfx_rect_t saved = gfx_clip_get(c);
     gfx_clip_set(c, gfx_rect_make(LIST_X, LIST_Y, LIST_W, LIST_H));
+    /* SENSORS' list changes length with a FITTED edit or a reset: the
+     * scroll follows before a row is placed. */
+    clamp_scroll();
     int n = row_count();
     for (int i = 0; i < n; ++i) {
         draw_row(c, i);

@@ -2905,9 +2905,11 @@ Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 | `ALLE KANÄLE AUS` | alle drei Shunts des Bausteins stehen auf AUS: keine Zuordnung wird geschrieben |
 | `INA228 AUF DIESER ADRESSE` | der INA228 ist auf der Adresse des Bausteins eingeschaltet: der Baustein bleibt aus der Zuordnung und der INA228 aus |
 | `IOmcu ÄLTER ALS 4.25: NICHT GELESEN` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
+| `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | ANSCHLÜSSE hat keinen Pin für SDA oder SCL des Sensorbusses: kein Baustein ist eingeschaltet |
 
 Die Zeilen eines abgelehnten Bausteins, eines mit allen Kanälen aus, eines
-auf der Adresse des INA228 oder eines, den ein älterer IOmcu nicht liest,
+auf der Adresse des INA228, eines ohne Sensorbus oder eines, den ein
+älterer IOmcu nicht liest,
 sind markiert wie eine Zeile, die der IOmcu nicht hält: Rand und Wert in
 der Warnfarbe und eine Zeile statt der Hilfe. Bei einem IOmcu älter als
 4.25 lautet sie `IOmcu älter als 4.25: ein INA3221, CH1 mit 1 kHz.`:
@@ -2937,7 +2939,8 @@ einer je Millisekunde: 90,9 Hz je Kanal bei elf ([Link](Link-de.md)).
 Ein IOmcu älter als 4.25 hat kein SENSE_MAP und liest einen INA3221 über
 SENSE: den Baustein des Kanals, der mit 1 kHz gelesen wird, sonst den
 niedrigsten bestückten, mit seinem CH1-Shunt (oder dem ersten, der nicht AUS
-ist) und seinen Kanälen, die nicht AUS sind.
+ist) und den Kanälen auf diesem Shunt. SENSE trägt einen Shunt für alle
+Kanäle, die er liest; ein Kanal auf einem anderen Shunt wird nicht gelesen.
 
 Mit der Zuordnung in Kraft spiegeln Adresse, Shunt und Kanäle des INA3221
 auf SENSE sie im IOmcu, und das Panel schreibt sie nie.

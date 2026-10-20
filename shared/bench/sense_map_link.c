@@ -88,6 +88,13 @@ void sense_map_link_want(sense_map_link_t *s, const sense_map_want_t *w,
     uint16_t next[LINK_SM_KEPT];
     memcpy(next, w->regs, sizeof(next));
     next[LINK_SM_ENABLE] &= (uint16_t)LINK_SM_FIT_ALL;
+    const uint8_t fitted = (uint8_t)next[LINK_SM_ENABLE];
+    if (w->nobus) {
+        /* No bus: SENSE clears its pins, so no part may stay enabled on
+         * the ones the page held. */
+        next[LINK_SM_ENABLE] = 0u;
+        next[LINK_SM_FAST]   = (uint16_t)LINK_SM_FAST_NONE;
+    }
     /* A part on the INA228's address while it is on: left out, as SENSE
      * leaves both off, with FAST if it was there. */
     uint8_t clash = 0u;
@@ -106,7 +113,8 @@ void sense_map_link_want(sense_map_link_t *s, const sense_map_want_t *w,
     }
     const uint8_t dark = (uint8_t)(w->dark & next[LINK_SM_ENABLE]);
     const bool moved = !s->want_set || memcmp(next, s->want, sizeof(next)) != 0
-                       || dark != s->dark || clash != s->clash;
+                       || dark != s->dark || clash != s->clash
+                       || fitted != s->fitted || w->nobus != s->nobus;
     if (!moved) {
         return;
     }
@@ -119,6 +127,8 @@ void sense_map_link_want(sense_map_link_t *s, const sense_map_want_t *w,
     memcpy(s->want, next, sizeof(next));
     s->clash   = clash;
     s->dark    = dark;
+    s->fitted  = fitted;
+    s->nobus   = w->nobus;
     /* A new map is a new question: what was refused is asked again. */
     s->refused = false;
     s->events &= (uint8_t)~(SENSE_MAP_LINK_EV_REFUSED | SENSE_MAP_LINK_EV_DARK);
@@ -383,6 +393,9 @@ sens_part_t sense_map_link_part(const sense_map_link_t *s,
         return SENS_PART_UNKNOWN;
     }
     const uint8_t bit = (uint8_t)(1u << a);
+    if (s->nobus && (s->fitted & bit) != 0u) {
+        return SENS_PART_NO_BUS;
+    }
     if ((s->clash & bit) != 0u) {
         return SENS_PART_SAME_ADDR;
     }

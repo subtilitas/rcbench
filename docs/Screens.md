@@ -2643,9 +2643,10 @@ The heading of a part shows on its right what the part is doing:
 | `EVERY CHANNEL OFF` | all three shunts of the part are OFF: no map is written |
 | `INA228 ON THIS ADDRESS` | the INA228 is on at the part's address: the part is left out of the map and the INA228 off |
 | `IOmcu OLDER THAN 4.25: NOT READ` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
+| `SENSOR SDA OR SCL UNSET` | INTERFACES has no pin for the sensor bus's SDA or SCL: no part is enabled |
 
 The rows of a part refused, with every channel off, on the INA228's
-address or not read by an older IOmcu are marked as a row the IOmcu does
+address, without a sensor bus or not read by an older IOmcu are marked as a row the IOmcu does
 not hold: edge and value in the warning colour, and a line in place of the
 help. On an IOmcu older than 4.25 that line reads `IOmcu older than 4.25:
 one INA3221, CH1 at 1 kHz.`:
@@ -2671,8 +2672,9 @@ eleven ([Link](Link.md)).
 
 An IOmcu older than 4.25 has no SENSE_MAP and reads one INA3221 from
 SENSE: the part of the channel read at 1 kHz, else the lowest fitted part,
-with its CH1 shunt (or its first one that is not OFF) and its channels that
-are not OFF.
+with its CH1 shunt (or its first one that is not OFF) and the channels on
+that shunt. SENSE carries one shunt for every channel it reads, so a channel
+on another shunt is not read.
 
 With the map in force, SENSE's INA3221 address, shunt and channels mirror
 it on the IOmcu and the panel never writes them.

@@ -266,7 +266,8 @@ void settings_sensors_map(settings_sensors_map_t *m)
         }
     }
     /* The one-part frame: the mirror part with a channel on, else values
-     * the page takes. */
+     * the page takes.  The frame carries one shunt for every channel it
+     * reads, so it reads the channels on the first nonzero shunt only. */
     m->one_addr  = (uint8_t)LINK_SN_I3221_ADDR_MIN;
     m->one_dmohm = 1000u;
     m->one_ch    = 0x01u;
@@ -275,9 +276,9 @@ void settings_sensors_map(settings_sensors_map_t *m)
         uint8_t  ch = 0u;
         for (int k = 0; k < 3; ++k) {
             const uint16_t d = m->regs[LINK_SM_SHUNT(3 * m->mirror + k)];
-            if (d != 0u) {
+            dmohm = (dmohm == 0u) ? d : dmohm;
+            if (d != 0u && d == dmohm) {
                 ch |= (uint8_t)(1u << k);
-                dmohm = (dmohm == 0u) ? d : dmohm;
             }
         }
         if (ch != 0u) {

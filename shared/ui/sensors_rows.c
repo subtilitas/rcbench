@@ -75,6 +75,7 @@ const char *sensors_rows_state(int a)
         [SENS_PART_DARK]      = TX_SENS_ST_DARK,
         [SENS_PART_SAME_ADDR] = TX_SENS_ST_SAME_ADDR,
         [SENS_PART_OLD]       = TX_SENS_ST_OLD,
+        [SENS_PART_NO_BUS]    = TX_SENS_ST_NO_BUS,
     };
     const sens_part_t st = sensors_rows_status(a);
     return ui_tr(((unsigned)st < (unsigned)SENS_PART_COUNT)
@@ -105,6 +106,7 @@ bool sensors_rows_unheld(setting_id_t id)
     case SENS_PART_DARK:
     case SENS_PART_SAME_ADDR:
     case SENS_PART_OLD:
+    case SENS_PART_NO_BUS:
         return true;
     default:
         return false;
@@ -117,6 +119,7 @@ const char *sensors_rows_why(setting_id_t id)
     case SENS_PART_OLD:       return TR(SET_SENS_OLD);
     case SENS_PART_DARK:      return TR(SET_SENS_DARK);
     case SENS_PART_SAME_ADDR: return TR(SET_SENS_SAME_ADDR);
+    case SENS_PART_NO_BUS:    return TR(SET_SENS_NO_BUS);
     default:                  return TR(SET_UNHELD);
     }
 }

@@ -108,8 +108,9 @@ typedef struct {
      *  than 4.25 it is the one part read. */
     uint8_t  mirror;
     /** SENSE registers 8 to 10 for an IOmcu older than 4.25: the mirror
-     *  part, its CH1 shunt or its first one not 0, and its channels with a
-     *  shunt.  one_on false: no part to read; the frame then holds 0x40,
+     *  part, its CH1 shunt or its first one not 0, and its channels on
+     *  that shunt -- the frame has one shunt for every channel it reads,
+     *  so a channel on another shunt is not read.  one_on false: no part to read; the frame then holds 0x40,
      *  100.0 mOhm and CH1, values the page takes. */
     bool     one_on;
     uint8_t  one_addr;
