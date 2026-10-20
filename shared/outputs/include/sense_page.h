@@ -90,6 +90,11 @@ typedef struct {
                              false: it is SENSE's one part             */
     uint16_t xwin[2][LINK_SX_COUNT]; /**< SENSE_WIN_A and SENSE_WIN_B as
                              published                                   */
+    uint16_t limit[LINK_SL_COUNT]; /**< SENSE_LIMIT (protocol 4.27); see
+                             sense_limit.h                               */
+    bool     lim_have;  /**< lim_win is a window judged under the set-up
+                             in force                                    */
+    uint16_t lim_win;   /**< the number of the last window judged        */
 } sense_page_t;
 
 void sense_page_init(sense_page_t *p);

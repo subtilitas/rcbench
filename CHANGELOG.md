@@ -47,8 +47,16 @@ history is in git.
   sector that holds the last of them is kept until then. An IOmcu image
   older than this build reads no version 8 record and starts as from an
   empty store.
+- Link protocol 4.27: SENSE_LIMIT (0x36) holds a current limit of 1 to
+  32767 mA (0 none) for each of SENSE_MAP's 12 channels, kept in the store
+  record. Each 50 ms window above its channel's limit -- its highest
+  current, or a sample at the top of a range above the limit -- sets the
+  channel's bit in OVER, which a read of the register clears, and counts
+  in OVER_COUNT. An alert only: nothing stops or switches to SAFE. The
+  panel writes no limit yet.
 - The IOmcu console prints a third sensor line, `sense map`: the parts
-  fitted, FAST, the map's flags and each channel's mean current in mA.
+  fitted, FAST, the map's flags, each channel's mean current in mA, and
+  SENSE_LIMIT's OVER and OVER_COUNT.
 
 ### Changed
 

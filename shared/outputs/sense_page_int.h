@@ -63,6 +63,14 @@ bool sense_map_on_addr(const uint16_t *map, uint16_t addr);
  *  programming port: the map in force's LINK_CAP_SERVO_SENSE. */
 bool sense_map_watches(const sense_page_t *p);
 
+/** Channel @p c's shunt in 0.1 mOhm, in the map in force or the derived
+ *  one; 0 for a channel off. */
+uint16_t sense_map_shunt(const sense_page_t *p, unsigned c);
+
+/** Each channel's newest window in @p s against its SENSE_LIMIT limit,
+ *  once a window: OVER and OVER_COUNT. */
+void sense_limit_judge(sense_page_t *p, const sense_snap_t *s);
+
 /** The map's kept registers as the schedule's INA3221 set-up. */
 void sense_map_cfg(const uint16_t *map, sense_i3221_cfg_t *out);
 

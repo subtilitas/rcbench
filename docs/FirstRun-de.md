@@ -766,7 +766,7 @@ IOmcu drei Zeilen:
 ```
 rcbench-iomcu: sense flags 0x0133 present 0x0021 ids 0x2281 0x3220 errors 0 | bench 1680 cV 1200 cA 33 mAh 6 dWh flags 0x63 | temp 254 dC
 rcbench-iomcu: sense window 4711 CH1 120 mA 6000 mV ch_flags 0x01 | capture state 0 seq 0 move 0 arrive 0
-rcbench-iomcu: sense map fit 0x1 fast 0 flags 0x0201 | mA 120 0 0 0 0 0 0 0 0 0 0 0
+rcbench-iomcu: sense map fit 0x1 fast 0 flags 0x0201 | mA 120 0 0 0 0 0 0 0 0 0 0 0 | over 0x000 count 0
 ```
 
 `flags` sind die FLAGS der SENSE-Page: 0x0001 INA228 online, 0x0002 seine
@@ -778,8 +778,9 @@ BENCH-Page: Schritte von 10 mV und 10 mA, Ladung in mAh, Energie in 0,1 Wh,
 und ihre Flags (0x01 Spannung, 0x02 Strom, 0x20 die des INA228, 0x40 die
 Zähler des INA228).
 Die dritte Zeile ist die INA3221-Map, SENSE_MAP: die bestückten Bauteile,
-der FAST-Kanal, ihre Flags (0x0200 aus SENSE abgeleitet) und der mittlere
-Strom jedes Kanals
+der FAST-Kanal, ihre Flags (0x0200 aus SENSE abgeleitet), der mittlere
+Strom jedes Kanals und die Kanäle über ihrer Stromgrenze (SENSE_LIMIT) mit
+ihrer Zahl
 ([Die INA3221-Map und ihre Fenster](LinkSensors-de.md#auf-der-konsole)).
 
 ### 8.1 Die Bauteile antworten

@@ -83,7 +83,7 @@ static uint8_t map_all(uint16_t fit, uint16_t fast)
 TEST_CASE(the_pages_are_where_protocol_4_25_puts_them)
 {
     CHECK_EQ(LINK_MINOR_SENSE_MAP, 25u);
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 25u);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_SENSE_MAP);
     CHECK_EQ(LINK_PAGE_SENSE_MAP, 0x35);
     CHECK_EQ(LINK_PAGE_SENSE_WIN_A, 0x37);
     CHECK_EQ(LINK_PAGE_SENSE_WIN_B, 0x38);

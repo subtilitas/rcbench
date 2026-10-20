@@ -207,6 +207,7 @@ void sense_page_forget(sense_page_t *p)
     memset(&p->map[LINK_SM_KEPT], 0,
            (size_t)(LINK_SM_COUNT - LINK_SM_KEPT) * sizeof(uint16_t));
     memset(p->xwin, 0, sizeof(p->xwin));
+    p->lim_have = false;
 }
 
 uint8_t sense_cfg_check(const sense_page_t *p, const uint16_t *next,
@@ -774,6 +775,7 @@ void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
     publish_channels(p->servo, s, a);
     publish_ring(p->win, s, a);
     sense_map_publish(p, s);
+    sense_limit_judge(p, s);
     if (s->cap_gen == p->cap_gen) {
         publish_capture(p->servo, s);
     }

@@ -6,13 +6,15 @@ Diese Seite ist ein Abschnitt von [Der Link](Link-de.md), der die Verkabelung, d
 Frame-Format, die Page Map und die übrigen Pages enthält. I2C steht für
 Inter-Integrated Circuit.
 
-SENSE_MAP (0x35), SENSE_WIN_A (0x37) und SENSE_WIN_B (0x38) sind neu in 4.25.
+SENSE_MAP (0x35), SENSE_WIN_A (0x37) und SENSE_WIN_B (0x38) sind neu in 4.25,
+SENSE_LIMIT (0x36) in 4.27.
 SENSE_MAP richtet bis zu 4 Strommonitore TI INA3221 auf dem Sensorbus ein,
 den SENSE öffnet, an 0x40 bis 0x43: welche Bauteile bestückt sind, einen
 Shunt für jeden ihrer 12 Kanäle, was jeder Kanal misst, und den FAST-Kanal.
 Die beiden Fenster-Pages tragen das letzte 50-ms-Fenster jedes Kanals.
-`shared/outputs/sense_map.c` hält die Regeln; `test_sense_map` testet sie auf
-dem Host.
+SENSE_LIMIT hält eine Stromgrenze für jeden Kanal und markiert die Fenster
+darüber. `shared/outputs/sense_map.c` und `sense_limit.c` halten die Regeln;
+`test_sense_map` und `test_sense_limit` testen sie auf dem Host.
 
 Kanal c ist Kanal ch von Bauteil a für c = 3 a + ch - 1, also 0 bis 11:
 Kanal 0 ist CH1 des Bauteils an 0x40, Kanal 11 ist CH3 des Bauteils an 0x43.
@@ -120,17 +122,56 @@ Bauteils mit 25 Hz. Der längste Tick hält 742,5 µs Buszeit. 4 Bauteile mit
 Busses; ein Bauteil mit 3 Kanälen und der INA228 43,4 %. Höchstens ein
 Bauteil wird je Tick abgefragt.
 
+## SENSE_LIMIT
+
+Eine Stromgrenze für jeden Kanal, und die Kanäle, deren Fenster sie
+überschritten hat. Nur ein Alarm: eine überschrittene Grenze stoppt nichts,
+schaltet nichts auf SAFE und treibt nichts.
+
+| Register | Name | Bedeutung |
+| ---: | --- | --- |
+| 0 bis 11 | `LIMIT_MA[c]` | die Grenze von Kanal c in mA, 1 bis 32767; 0 = keine |
+| 12 | `OVER` | nur lesbar: Bit c, ein Fenster von Kanal c lag seit dem letzten Lesen dieses Registers über seiner Grenze |
+| 13 | `OVER_COUNT` | nur lesbar: Kanal-Fenster über der Grenze, modulo 65536, seit dem Start des IOmcu |
+| 14, 15 | reserviert | lesen 0 |
+
+Die Register 0 bis 11 hält der IOmcu im Flash. Ein Schreiben liegt in ihnen:
+eines, das Register 12 erreicht, wird mit READ_ONLY abgewiesen, ein Wert über
+32767 mit BAD_VALUE, und ein abgewiesenes Schreiben speichert keines seiner
+Register. Ein Schreiben wird in jedem Zustand der Bank angenommen.
+
+Jedes vollständige 50-ms-Fenster, das Core 0 von Core 1 übernimmt, wird
+einmal geprüft, Kanal für Kanal. Ein Fenster liegt über der Grenze, wenn sein
+höchster Strom, in mA wie SENSE_WIN ihn zeigt, über der Grenze liegt: bei
+einer Grenze von 100 mA liegen 100 mA nicht darüber und 101 mA schon. Ein
+Fenster liegt auch darüber, wenn eines seiner Samples das obere
+Bereichsende gelesen hat und dieses Ende über der Grenze liegt: 1638 mA an
+0,1 Ω, 163,8 mV über dem Shunt. Ein negativer Strom liegt nie darüber. Ein
+abgeschalteter Kanal oder einer eines Bauteils, das nicht online ist, hat
+keine Samples und liegt nie darüber. Core 0 übernimmt den Snapshot von Core 1
+mindestens alle 20 ms (das 50-Hz-Sample von BENCH) und sieht so jedes
+50-ms-Fenster, solange seine Hauptschleife läuft; ein Fenster, das er
+verpasst, wird nicht geprüft.
+
+`OVER` hält seine Bits, bis ein Lesen Register 12 abdeckt: dieses Lesen gibt
+sie zurück und löscht sie. Eine auf dem Link verlorene Antwort verliert diese
+Bits; `OVER_COUNT` zählt sie trotzdem. Eine neue Konfiguration lässt `OVER`
+und `OVER_COUNT` stehen. Die Konsolenzeile liest beide, ohne zu löschen.
+
 ## Im Flash gehalten
 
-Der IOmcu hält die Register 0 bis 25 und ob die Map in Kraft ist in seinem
-Speicher-Record, Version 8. Ein Record der Version 8 ist 308 Bytes groß und
+Der IOmcu hält die Register 0 bis 25 von SENSE_MAP, ob die Map in Kraft
+ist, und die Register 0 bis 11 von SENSE_LIMIT in seinem Speicher-Record,
+Version 8. Ein Record der Version 8 ist 308 Bytes groß und
 füllt einen Slot aus zwei Flash-Pages zu 256 Bytes: 8 Slots je Sektor zu
 4096 Bytes, 16 im Speicher. Ein Speichern programmiert beide Pages in einem
 Fenster. Ein in einer der beiden Pages abgebrochenes Programmieren liest als
 kein Record: die Zahl der 0-Bits des Records und seine CRC-16 decken beide
 Pages ab.
 
-Beim Booten kommt die Map nach der Konfiguration von SENSE zurück, durch die
+Beim Booten kommen die Grenzen durch die Prüfungen eines Schreibens an
+SENSE_LIMIT zurück; ein gehaltener Wert über 32767 lässt jede Grenze auf 0.
+Die Map kommt nach der Konfiguration von SENSE zurück, durch die
 Prüfungen des Schreibens, und nur, wenn die Konfiguration von SENSE
 angenommen wurde. Eine gehaltene Map, die dort abgewiesen wird, kommt nicht
 zurück, und die Map liest abgeleitet.
@@ -145,12 +186,13 @@ Version 8 und startet wie mit einem leeren Speicher.
 
 ## Ältere Gegenstellen
 
-| Panel | IOmcu | SENSE_MAP, SENSE_WIN_A und SENSE_WIN_B |
+| Panel | IOmcu | SENSE_MAP, SENSE_WIN_A, SENSE_WIN_B und SENSE_LIMIT |
 | --- | --- | --- |
-| 4.25 | 4.25 | bedient. Das Panel dieses Builds liest und schreibt keine der drei Pages und richtet den einen INA3221 von SENSE ein, so dass die Map abgeleitet bleibt |
-| 4.25 | 4.24 oder älter | der IOmcu beantwortet jede der drei Pages mit BAD_PAGE |
-| 4.24 oder älter | 4.25, Map abgeleitet | das Panel liest und schreibt die drei Pages nie. SENSE läuft wie zuvor |
-| 4.24 oder älter | 4.25, Map in Kraft | Bit 1 von ENABLE und die Register 8 bis 10 von SENSE lesen das Spiegelbauteil. Ein Schreiben an SENSE, das sie ändert, wird mit BAD_VALUE abgewiesen, so dass dieses Panel die INA3221-Konfiguration nicht ändern kann. Der INA228, der Encoder und die Pins bleiben seine |
+| 4.25 oder neuer | 4.27 oder neuer | bedient. Das Panel dieses Builds liest und schreibt keine der vier Pages und richtet den einen INA3221 von SENSE ein, so dass die Map abgeleitet bleibt und keine Grenze gesetzt ist |
+| 4.25 oder neuer | 4.25 oder 4.26 | die Map- und die Fenster-Pages werden bedient; der IOmcu beantwortet SENSE_LIMIT mit BAD_PAGE und prüft keine Grenze |
+| 4.25 oder neuer | 4.24 oder älter | der IOmcu beantwortet jede der vier Pages mit BAD_PAGE |
+| 4.24 oder älter | 4.25 oder neuer, Map abgeleitet | das Panel liest und schreibt die vier Pages nie. SENSE läuft wie zuvor. Gehaltene Grenzen werden geprüft, und `OVER` hält seine Bits, bis etwas es liest |
+| 4.24 oder älter | 4.25 oder neuer, Map in Kraft | Bit 1 von ENABLE und die Register 8 bis 10 von SENSE lesen das Spiegelbauteil. Ein Schreiben an SENSE, das sie ändert, wird mit BAD_VALUE abgewiesen, so dass dieses Panel die INA3221-Konfiguration nicht ändern kann. Der INA228, der Encoder und die Pins bleiben seine |
 
 ## Auf der Konsole
 
@@ -159,8 +201,9 @@ ein Bauteil auf SENSE freigegeben ist, nach den beiden `sense`-Zeilen
 ([Erster Lauf auf der Hardware](FirstRun-de.md#8-strommonitore-ina228-ina3221)):
 
 ```
-rcbench-iomcu: sense map fit 0x3 fast 0 flags 0x0103 | mA 120 4 0 310 0 0 0 0 0 0 0 0
+rcbench-iomcu: sense map fit 0x3 fast 0 flags 0x0103 | mA 120 4 0 310 0 0 0 0 0 0 0 0 | over 0x008 count 3
 ```
 
 `fit` ist `ENABLE`, `fast` ist `FAST` (255 für keinen), `flags` ist
-`FLAGS`, und die 12 Werte sind `MEAN_MA` jedes Kanals ab Kanal 0.
+`FLAGS`, die 12 Werte sind `MEAN_MA` jedes Kanals ab Kanal 0, und `over` und
+`count` sind `OVER` und `OVER_COUNT` von SENSE_LIMIT.
