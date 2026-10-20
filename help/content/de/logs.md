@@ -14,6 +14,12 @@ LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die C
 
 Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-LOGS oder USER-LOGS unter [SETUP > SD-KARTE](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SETUP > SD-KARTE.` oder `USER-LOGS AUS unter SETUP > SD-KARTE.` AKTUALISIEREN liest die Karte erneut. Ohne Karte wechseln die Tabs wie mit Karte, und jeder Tipp auf einen Tab sucht erneut nach einer Karte.
 
+## Eine Karte, die sich nicht einbinden lässt
+
+![LOGS mit einer Karte ohne FAT-Volume](view:logs-nofat)
+
+Eine Karte im Steckplatz mit NTFS (New Technology File System), einer GPT (GUID-Partitionstabelle) oder ohne Format zeigt `Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` Eine Karte, die sich aus anderem Grund nicht einbinden lässt, zeigt `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` [Kartenformate](#kartenformate) sagt, was mountet und wie eine Karte formatiert wird. Formatieren löscht die Karte. AKTUALISIEREN bindet die wieder eingesetzte Karte ein.
+
 ## Die Dateiliste
 
 ![Die Dateiliste](view:logs)

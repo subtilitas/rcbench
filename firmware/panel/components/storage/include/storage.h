@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "card_state.h"
 #include "esp_err.h"
 
 #ifdef __cplusplus
@@ -52,12 +53,19 @@ typedef struct {
 /**
  * Bring up SPI2 and mount the card at /sdcard.
  *
+ * Never formats.  A card that starts and does not mount is looked at once
+ * more, so storage_card_state() can tell a card with no FAT (File
+ * Allocation Table) volume from one that fails another way.
+ *
  * @return ESP_ERR_NOT_FOUND when no card answers, which is a normal state:
- *         the bench runs without a card.
+ *         the bench runs without a card.  ESP_FAIL for a card FatFs does not
+ *         mount, ESP-IDF's code for a card that does not start or a bus
+ *         that does not come up.
  */
 esp_err_t storage_init(void);
 
-/** Unmount and free the bus.  Safe to call when nothing was mounted. */
+/** Unmount and free the bus.  Safe to call when nothing was mounted.
+ *  Clears storage_status() and storage_card_state(). */
 void storage_deinit(void);
 
 bool storage_mounted(void);
@@ -73,8 +81,19 @@ uint64_t storage_free_bytes(void);
  */
 const char *storage_card_name(void);
 
-/** What went wrong, for the splash line.  "" when all is well. */
+/**
+ * What went wrong, in a few words for the console and the start-up line:
+ * "no card", "no FAT volume", "FatFs <n>", "SPI <error>", "CS <error>" or
+ * ESP-IDF's error name.  "" when all is well.  At most 47 characters.
+ */
 const char *storage_status(void);
+
+/**
+ * What the slot holds as the last storage_init() found it, or
+ * CARD_STATE_MOUNTED while a volume is mounted.  CARD_STATE_NONE before the
+ * first try and after storage_deinit().
+ */
+card_state_t storage_card_state(void);
 
 /** Called once per matching entry, in the order the volume holds them. */
 typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);

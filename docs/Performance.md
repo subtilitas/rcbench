@@ -232,7 +232,7 @@ bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  230 such
+  231 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -470,13 +470,13 @@ without it:
 
 | Item | Without exFAT | With exFAT | Where |
 | --- | ---: | ---: | --- |
-| application image | 1,962,960 | 1,972,080 | flash, `ota_0` holds 4,063,232 |
+| application image | 1,966,096 | 1,975,312 | flash, `ota_0` holds 4,063,232 |
 | internal RAM the image holds (`static` above) | 128,208 | 128,208 | internal |
 | the mount's context: `FATFS`, 4 open files (`FIL`) and ESP-IDF's VFS (virtual file system) state | 25,376 | 25,560 | heap, PSRAM first |
 | the long name working buffer, held for one FatFs call | 512 | 1,120 | heap, PSRAM first |
 | one directory walk's buffer (`storage_walk()`) | 328 | 368 | heap, internal |
 | `FILINFO`, one entry as FatFs reads it, in `storage_stat()`'s buffer beside the path, for one call | 280 | 288 | heap, internal |
-| `log_viewer_screen`'s .bss: 48 list rows with 64-bit sizes | 35,568 | 35,968 | PSRAM |
+| `log_viewer_screen`'s .bss: 48 list rows with 64-bit sizes | 35,576 | 35,968 | PSRAM |
 
 All figures are bytes. The heap rows are `sizeof()` values read with GDB
 from the two builds; the heap at run time is not measured. The stack

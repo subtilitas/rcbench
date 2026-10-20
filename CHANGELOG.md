@@ -13,7 +13,7 @@ history is in git.
   FAT16 and FAT32. The build takes ESP-IDF's fatfs component with
   `FF_FS_EXFAT` 1 (`firmware/panel/fatfs_exfat.cmake`); ESP-IDF v5.4 and
   v5.5 have no Kconfig option for it. The application image grows by
-  9,120 bytes. The serial log names the format at mount:
+  9,216 bytes. The serial log names the format at mount:
   `storage: SK64G mounted, exFAT, 61002 MB`.
 - File sizes are 64-bit from the card to the screen: LOGS lists a file of
   4 GiB and more with its size (`8.00 GB`), and WI-FI lists and downloads
@@ -21,6 +21,14 @@ history is in git.
   `<name> is 2 GB or larger. Not opened.`; the reader's seek reaches
   2 GiB less 1 byte. GPT (GUID Partition Table) cards and volumes over
   2 TiB do not mount (`FF_LBA64` stays 0).
+
+### Changed
+
+- A card that holds no FAT volume reads `Card is neither FAT32 nor
+  exFAT. Format it on a computer.` on LOGS and `not FAT32/exFAT` on the
+  splash, and the run, servo test and servo programmer lines name exFAT
+  beside FAT32 the same way. The console line reads
+  `W storage: card holds no FAT volume (FatFs 13): format it FAT32 or exFAT`.
 
 ### Fixed
 
@@ -30,6 +38,22 @@ history is in git.
   negative number. LOGS refuses such a file at OPEN instead of reading it
   through a seek that does not reach its end.
 
+- A card in the panel's SD (Secure Digital) slot that holds no FAT (file
+  allocation table) volume -- exFAT, NTFS, a GPT or no format -- reads
+  `Card not formatted as FAT32. Format it on a computer.` on LOGS, `not
+  FAT32` on the splash, and its own line in the run and servo test alerts
+  and the servo programmer's card notes. A card that does not mount for
+  another reason reads `Cannot read the card.`. Both read `No card` before.
+  The console line names the FatFs result:
+  `W storage: card holds no FAT volume (FatFs 13): format it FAT32`. A card
+  that starts and does not mount is started once more to ask FatFs why.
+- A press on a control that stops what the bench drives acts on the first
+  press while the alert band covers it or a chip's help box is open:
+  DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN. The
+  press clears the band or closes the box. The alert band covers the lower
+  22 px of SERVO's DISARM (panel y 446 to 467); a DISARM tap there only
+  cleared the alert, and the bench stayed ARMED until a second tap. A press
+  on ARM or OUTPUT ON under the band or the box still starts no hold.
 - The update check with RELEASES: TESTING reads GitHub's API answer in
   chunks (`Transfer-Encoding: chunked`, no `Content-Length`), the form
   GitHub sends when its cache does not hold the request. The check ended

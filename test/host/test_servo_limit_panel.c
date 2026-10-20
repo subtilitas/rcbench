@@ -297,6 +297,27 @@ TEST_CASE(programming_is_not_offered_off_the_programming_port)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* What the screen names to the router as a press that stops the limit
+ * run: STOP RUN in the box over the dial, and START LIMIT RUN's place on
+ * TEST while the run is under way.  Not START TEST, and nothing once the
+ * run has ended. */
+TEST_CASE(stop_run_is_named_to_the_router_while_the_run_is_under_way)
+{
+    lim_bench();
+    lim_hold(2.3f);
+    CHECK(servo_screen_limit_running());
+    close_settings();
+    CHECK(scr->safe_at(80, 156));                 /* STOP RUN */
+    lim_page();
+    CHECK(scr->safe_at(START_X, LIM_START_Y));
+    CHECK(!scr->safe_at(START_X, START_Y));
+    tap(START_X, LIM_START_Y);
+    CHECK(!servo_screen_limit_running());
+    CHECK(!scr->safe_at(START_X, LIM_START_Y));
+    close_settings();
+    CHECK(!scr->safe_at(80, 156));                /* CLOSE */
+}
+
 /* SEARCH ONLY on the INA3221: both ends found, the servo let go, nothing
  * else asked of the bench, and LIMITnnn.TXT opened alone with the limit
  * report: both endpoints inside the servo's stops, nothing written. */
@@ -540,6 +561,7 @@ int main(void)
     RUN(a_limit_run_starts_only_armed_on_the_ina3221);
     RUN(a_limit_run_needs_a_powered_rail_and_a_bound_output);
     RUN(programming_is_not_offered_off_the_programming_port);
+    RUN(stop_run_is_named_to_the_router_while_the_run_is_under_way);
     RUN(a_search_only_limit_run_finds_both_ends_and_reports_them);
     RUN(no_run_starts_while_the_logger_holds_the_last_report);
     RUN(a_pd_mini_heard_first_after_the_start_ends_a_limit_run);

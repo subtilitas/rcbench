@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "card_state.h"
 #include "log_csv.h"
 #include "ui_screen.h"
 
@@ -144,6 +145,12 @@ typedef struct {
      * looked, so the run just recorded is on screen.
      */
     unsigned (*written)(log_viewer_tab_t *tab, void *ctx);
+    /**
+     * What the slot holds, asked after a list() that found no volume: the
+     * empty list then says no card, a card neither FAT32 nor exFAT, or a
+     * card that cannot be read.  May be NULL: no card.
+     */
+    card_state_t (*card)(void *ctx);
     void *ctx;
 } log_viewer_io_t;
 

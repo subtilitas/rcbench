@@ -335,6 +335,19 @@ static const log_viewer_io_t k_io_nocard = {
     .ctx = NULL,
 };
 
+/* logs-nofat: a card in the slot with no FAT volume on it. */
+static card_state_t nofat_card(void *ctx)
+{
+    (void)ctx;
+    return CARD_STATE_NO_FAT;
+}
+
+static const log_viewer_io_t k_io_nofat = {
+    .list = nocard_list,
+    .card = nofat_card,
+    .ctx = NULL,
+};
+
 static const log_viewer_io_t k_io = {
     .list = fake_list,
     .open = fake_open,
@@ -3330,9 +3343,12 @@ int main(int argc, char **argv)
          * in panel coordinates; the router removes the band before the
          * screen sees them. */
         make_log_csv();
-        /* logs-nocard: a lister that finds no volume. */
-        log_viewer_set_io(strcmp(view, "logs-nocard") == 0 ? &k_io_nocard
-                                                            : &k_io);
+        /* logs-nocard: a lister that finds no volume; logs-nofat: and a
+         * card in the slot that holds no FAT volume. */
+        const bool nocard = strcmp(view, "logs-nocard") == 0;
+        const bool nofat = strcmp(view, "logs-nofat") == 0;
+        log_viewer_set_io(nocard ? &k_io_nocard
+                          : nofat ? &k_io_nofat : &k_io);
         /* logs-pages: a full card, on its fourth page. */
         g_pages_card = (strcmp(view, "logs-pages") == 0);
         log_viewer_refresh();
@@ -3343,7 +3359,7 @@ int main(int argc, char **argv)
          * ui_router_event takes panel coordinates and strips it on the way
          * in.
          */
-        if (strcmp(view, "logs-nocard") == 0) {
+        if (nocard || nofat) {
             /* The browser as it opens: nothing to select. */
         } else if (strcmp(view, "logs-pages") == 0) {
             for (int p = 0; p < PAGES_NEXT; ++p) {

@@ -755,6 +755,19 @@ wiederherstellbar.
 | **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
 | Eine Karte, die nach dem Start des Panels eingesteckt wird | das Panel versucht, eine Karte einzubinden, wenn der Programmierer öffnet und bei jedem Tippen auf **VERBINDEN**, **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN INS SERVO FREIGEBEN** oder die Schreibzeile, solange keine eingebunden ist. Das Tippen, das die Karte findet, liest noch keine Karte; das nächste hat sie, und eine offene Schreibseite wechselt zur Seite mit der Datei |
 
+Eine Karte im Steckplatz, die sich nicht mounten lässt, zählt als keine
+Karte: Das Schreiben, das Zurückspielen und das Lösen der Paarung laufen wie
+oben, und **FILES** wird abgewiesen. Ihre Zeilen nennen an Stelle von
+`Keine Karte`, was das Panel gefunden hat
+([Das Format der SD-Karte](Screens-de.md#das-format-der-sd-karte)):
+
+| Wo | Karte ist weder FAT32 noch exFAT (FAT: File Allocation Table; exFAT: extended FAT): NTFS (New Technology File System), eine GPT (GUID-Partitionstabelle) oder nicht formatiert | Karte nicht lesbar |
+| --- | --- | --- |
+| Die Schreibseite | `Karte ist weder FAT32 noch exFAT. Es wird keine Backup-Datei gespeichert.` | `Karte nicht lesbar. Es wird keine Backup-Datei gespeichert.` |
+| Die Schreibseite, Backup-Datei gespeichert | `Karte ist weder FAT32 noch exFAT. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` | `Karte nicht lesbar. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` |
+| Der Tab SERVO | `Karte ist weder FAT32 noch exFAT, keine Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` | `Karte nicht lesbar, keine Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` |
+| **FILES** | `Karte ist weder FAT32 noch exFAT. Nichts gespeichert oder ins Servo geschrieben.` | `Karte nicht lesbar. Nichts gespeichert oder ins Servo geschrieben.` |
+
 ### Laden
 
 Ein Tipp auf eine Datei lädt sie. Ihre änderbaren Felder werden der

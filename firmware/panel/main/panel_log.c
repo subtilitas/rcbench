@@ -28,6 +28,7 @@
 #include "log_writer.h"
 #include "panel.h"
 #include "storage.h"
+#include "ui_card_text.h"
 #include "ui_text.h"
 
 static const char *TAG = "rcbench";
@@ -402,7 +403,8 @@ static void log_open(uint32_t run, log_run_kind_t kind)
         ESP_LOGW(TAG, "no log file (take %d); this run is not recorded",
                  (int)r);
         take_alert(r, dir,
-                   (r == LOG_TAKE_NO_CARD)      ? TR(ALERT_NO_CARD_RUN)
+                   (r == LOG_TAKE_NO_CARD)
+                       ? ui_card_text(storage_card_state(), UI_CARD_AT_RUN)
                    : (r == LOG_TAKE_UNREADABLE) ? TR(ALERT_CARD_UNREADABLE)
                                                 : TR(ALERT_CARD_FULL));
         return;
@@ -542,7 +544,11 @@ static void test_open(bool txt)
         s_test_num = number;
     } else {
         s_test_fp = NULL;
-        take_alert(r, s_test_dir, TR(ALERT_CARD_SERVO));
+        /* "Card missing or full" for every other way to no file. */
+        take_alert(r, s_test_dir,
+                   (r == LOG_TAKE_NO_CARD)
+                       ? ui_card_text(storage_card_state(), UI_CARD_AT_TEST)
+                       : TR(ALERT_CARD_SERVO));
     }
     atomic_store(&s_test_file, s_test_num);
     atomic_fetch_add(&s_test_opens_done, 1u);

@@ -97,6 +97,12 @@ Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
   Finger wird nicht gedrückt.
 - STOP ist die Ausnahme: Ein Druck auf STOP schließt den Kasten und stoppt
   sofort, wie ohne Kasten.
+- Ebenso ein Bedienelement, das anhält, was der Prüfstand treibt: DISARM,
+  AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN,
+  und START TEST oder START LIMIT-LAUF, solange ihr Lauf läuft. Ein Druck
+  darauf schließt den Kasten und wirkt, wie ohne Kasten. ARM und AUSGANG EIN
+  gehören nicht dazu: Ein Druck dort schließt den Kasten und startet kein
+  Halten.
 - Das Verlassen des Bildschirms schließt ihn.
 - Ein Finger, der auf dem Bildschirm zieht, während ein zweiter Finger einen
   Kasten öffnet, wird wie an der Kante des Bands losgelassen.
@@ -146,6 +152,17 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
   Loslassen des ersten Fingers löscht.
 - Ein Alert, der kommt, während ein Finger auf dem Band liegt, wird durch
   dieses Loslassen nicht gelöscht.
+- Ein Bedienelement unter dem Band, das anhält, was der Prüfstand treibt, wirkt
+  beim ersten Druck, und der Druck löscht das Band: DISARM, AUSGANG AUS,
+  ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN. Das Band
+  verdeckt die unteren 22 px von DISARM auf SERVO (Panel-y 446 bis 467), die
+  unteren 26 px von ABBRECHEN eines Stick-Laufs (y 446 bis 471) und die
+  unteren 8 px von ABBRECHEN bei einem Handschritt (y 446 bis 453). ARM und
+  AUSGANG EIN unter dem Band werden nicht gedrückt: Der Tipp löscht das Band
+  und startet kein Halten.
+- Ein Alert, der kommt, während ein Finger schon auf einem Bedienelement
+  liegt, lässt diesen Druck dem Bedienelement: Sein Loslassen wirkt wie ohne
+  Alert.
 - "Touchscreen antwortet nicht. ARMED ist gesperrt." beim Start
   bleibt bis zum Neustart und hat kein `x`: es gibt keinen Touch, mit dem man tippen könnte.
   Ein späterer Alert erscheint darüber; ist er gelöscht, steht wieder dieser.
@@ -210,7 +227,8 @@ trägt die Firmware-Version des Panels selbst, die Zeile des IOmcu die
 Protokollversion und die Firmware-Version, die dieser IOmcu gemeldet
 hat — zwei Platinen können dasselbe Protokoll sprechen und verschiedene
 Builds sein, und hier zeigt sich das. Eine fehlende Karte ist
-eine Warnung. Ein Touch-Controller, der nicht antwortet, oder ein IOmcu
+eine Warnung. Die Zeile SD-Karte zeigt `keine Karte`, `nicht FAT32/exFAT` (FAT:
+File Allocation Table) oder `nicht lesbar` ([Das Format der SD-Karte](#das-format-der-sd-karte)). Ein Touch-Controller, der nicht antwortet, oder ein IOmcu
 mit einer anderen Major-Version des Protokolls ist ein Fehler, und der
 Prüfstand schaltet nicht auf ARMED. Wenn alle Schritte geantwortet haben,
 übergibt der Splash nach 1,6 s an das Menü; ein Tippen überspringt das Warten.
@@ -1949,7 +1967,10 @@ TXT), sodass eine inzwischen geschriebene Datei übersprungen und nicht
 nicht gefüllt. Ein Ordner mit einer Nummer 999 unter irgendeinem Namen nimmt
 keinen weiteren Lauf an, auch wenn niedrigere Nummern frei sind: Das Band
 meldet `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.`, für
-einen Test `Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.` Ein
+einen Test `Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.` Eine
+Karte im Steckplatz, die sich nicht mounten lässt, meldet für einen Test
+`Karte ist weder FAT32 noch exFAT. Servotest nicht aufgezeichnet.` oder
+`Karte nicht lesbar. Servotest nicht aufgezeichnet.` Ein
 Ordner, der sich nicht anlegen lässt, weil eine Datei seinen Namen trägt
 oder die Karte schreibgeschützt oder voll ist, meldet
 `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.` Nach einem
@@ -1968,7 +1989,11 @@ vorgegeben `BENCH/LOGS`) und STAMM (das Stammverzeichnis der Karte). Ein angetip
 wechseln die Tabs ebenso: Der angetippte Tab ist gewählt gezeichnet, der
 Kasten zeigt `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`
 mit der Zeile dieses Tabs darunter, und der Tipp sucht erneut nach einer
-Karte, wie AKTUALISIEREN. Die
+Karte, wie AKTUALISIEREN. Eine Karte im Steckplatz, die sich nicht mounten
+lässt, meldet stattdessen
+`Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` oder
+`Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.`
+([Das Format der SD-Karte](#das-format-der-sd-karte)). Die
 Kopfzeile rechts der Tabs nennt die Karte und den Ordner,
 `UNITEST  BENCH/LOGS`, und auf STAMM die Karte allein. Ein leerer Ordner
 sagt, warum, und was hineingehört: `Keine .csv-Dateien in BENCH/LOGS.` und
@@ -2114,13 +2139,14 @@ einer eigenen Task. Eine SD-Karte (Secure Digital) darf sich für einen Schreibv
 250 ms Zeit nehmen, und die Task, die die Sicherheitsleitung schlägt, hat eine
 Obergrenze von 150 ms.
 
-Acht Meldungen sagen, was die Karte mit einem Lauf gemacht hat. Jede
+Neun Meldungen sagen, was die Karte mit einem Lauf gemacht hat. Jede
 erscheint im Band:
 
 | Meldung | Was passiert ist |
 |---|---|
 | `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` | nichts ist gemountet, der Lauf wurde nie geöffnet |
-| `Karte nicht lesbar. Lauf nicht aufgezeichnet.` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar |
+| `Karte ist weder FAT32 noch exFAT. Lauf nicht aufgezeichnet.` | die Karte im Steckplatz trägt kein FAT-Volume, nichts ist gemountet ([Das Format der SD-Karte](#das-format-der-sd-karte)) |
+| `Karte nicht lesbar. Lauf nicht aufgezeichnet.` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar, oder die Karte im Steckplatz lässt sich nicht mounten |
 | `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.` | es ließ sich keine Laufnummer anlegen |
 | `Karte zu langsam. Lauf nicht aufgezeichnet.` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
 | `Die Karte war zu langsam. In der Aufzeichnung fehlen Daten.` | einzelne Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
@@ -2128,7 +2154,7 @@ erscheint im Band:
 | `Daten konnten nicht mehr auf die Karte geschrieben werden. Aufzeichnung unvollständig.` | derselbe Fehler, beim Schließen des Laufs noch einmal gemeldet |
 | `Letzter Schreibvorgang auf die Karte fehlgeschlagen. Aufzeichnung unvollständig.` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
-Bei den ersten vier gibt es keine Datei zu suchen. Bei den letzten vier gibt
+Bei den ersten fünf gibt es keine Datei zu suchen. Bei den letzten vier gibt
 es eine, und sie hört zu früh auf.
 
 Ein Lauf, der gerade geschrieben wird, erscheint nicht in LOGS. Die Länge einer
@@ -2136,13 +2162,13 @@ Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ei
 noch offener Lauf stünde also mit seiner zuletzt festgeschriebenen Länge in der
 Liste und läse sich wie ein fertiger.
 
-### Kartenformate
+### Das Format der SD-Karte
 
 Das Panel mountet eine Karte, die mit FAT12, FAT16, FAT32 oder exFAT
 (extended File Allocation Table) formatiert ist. Das Volume ist entweder die
-ganze Karte oder die erste der 4 Partitionen eines MBR (Master Boot Record),
-die eines dieser Formate trägt. Lange Dateinamen bis 255 Zeichen werden
-gelesen und geschrieben.
+ganze Karte oder die erste der 4 primären Partitionen eines MBR (Master Boot
+Record), die eines dieser Formate trägt. Lange Dateinamen bis 255 Zeichen
+werden gelesen und geschrieben.
 
 | Karte | Größe | Format ab Werk | Am Panel |
 | --- | --- | --- | --- |
@@ -2156,23 +2182,40 @@ Nicht unterstützt:
 - eine Karte mit GPT-Partitionierung (GUID Partition Table; GUID: Globally
   Unique Identifier) statt MBR;
 - ein Volume über 2 TiB;
-- NTFS, ext4, HFS+ und APFS.
+- NTFS (New Technology File System), ext4, HFS+ und APFS.
 
-Eine solche Karte mountet nicht. Das Panel
-formatiert nie eine Karte.
+Eine solche Karte mountet nicht. Das Panel formatiert nie eine Karte.
 
 Zum Formatieren für den Prüfstand dient der SD Memory Card Formatter der SD
 Association: Er schreibt bis 32 GB FAT32 und ab 64 GB exFAT, auf einen MBR.
 Unter Windows tut der Formatieren-Dialog mit FAT32 oder exFAT dasselbe.
 Unter macOS das Festplattendienstprogramm mit Löschen, Schema
-`Master Boot Record` und Format `MS-DOS (FAT)` oder `ExFAT`. Unter Linux
-eine Partitionstabelle `dos` und `mkfs.vfat -F 32` oder `mkfs.exfat`.
+`Master Boot Record` und Format `MS-DOS (FAT)` oder `ExFAT`. Unter Linux,
+für die erste Partition der Karte unter `/dev/sdX1` auf einer
+Partitionstabelle `dos`: `sudo mkfs.vfat -F 32 /dev/sdX1` oder
+`sudo mkfs.exfat /dev/sdX1`.
 
-Das serielle Log des Panels nennt das Format, wenn die Karte mountet:
+Formatieren löscht die Karte. Das Panel sucht eine Karte beim Start, bei
+AKTUALISIEREN, beim Öffnen von LOGS, bei einem Tipp auf einen Tab von LOGS,
+solange keine gemountet ist, und bei den Tipps des Servo-Programmierers, die
+[Servo-Programmierer](ServoProgrammer-de.md) nennt. Was im Steckplatz
+steckt, steht an jeder Stelle, die eine Karte braucht:
 
-```text
-I (…) storage: SK64G mounted, exFAT, 61002 MB
-```
+| Steckplatz | [Splash](#splash), Zeile SD-Karte | LOGS | Lauf im Band |
+|---|---|---|---|
+| leer | `keine Karte` | `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` | `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` |
+| eine Karte ohne FAT- oder exFAT-Volume: NTFS, GPT oder nicht formatiert | `nicht FAT32/exFAT` | `Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` | `Karte ist weder FAT32 noch exFAT. Lauf nicht aufgezeichnet.` |
+| eine Karte, die sich aus anderem Grund nicht mounten lässt: ein Lesefehler, eine Karte, die ihren Start nicht abschließt | `nicht lesbar` | `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` | `Karte nicht lesbar. Lauf nicht aufgezeichnet.` |
+
+Die Konsolenzeile des Panels sagt, welcher Fall vorliegt, mit dem Code
+dahinter: `I storage: SK64G mounted, exFAT, 61002 MB` mit dem Format einer
+Karte, die mountet, `I storage: no card (ESP_ERR_TIMEOUT)`,
+`W storage: card holds no FAT volume (FatFs 13): format it FAT32 or exFAT`
+oder `W storage: mount failed: FatFs <n>` und `W storage: mount failed:
+<Name des ESP-IDF-Fehlers>`. Eine Karte, die startet und sich nicht mounten
+lässt, wird ein zweites Mal gestartet, um FatFs nach dem Grund zu fragen.
+Dieser Blick fügt jedem gescheiterten Versuch einen Kartenstart hinzu, seine
+Dauer ist nicht gemessen, und einer Karte, die sich mounten lässt, nichts.
 
 Die Größe einer Datei wird mit 64 Bit gelesen, eine Datei ab 4 GiB auf
 einer exFAT-Karte steht also mit ihrer Größe in der Liste, `8.00 GB`. OPEN

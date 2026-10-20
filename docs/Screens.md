@@ -88,6 +88,11 @@ STOP, and none reaches the alert band.
   button or the alert band under the finger is not pressed.
 - STOP is the exception: a press on STOP closes the box and stops at once,
   as with no box.
+- So is a control that stops what the bench drives: DISARM, OUTPUT OFF, a
+  stick run's ABORT, STOP TEST and STOP RUN, and START TEST or START LIMIT
+  RUN while their run is under way. A press on one closes the box and acts,
+  as with no box. ARM and OUTPUT ON are not among them: a press there closes
+  the box and starts no hold.
 - Leaving the screen closes it.
 - A finger dragging on the screen when a second finger opens a box is
   released as at the band's edge.
@@ -135,6 +140,15 @@ bottom of the screen, ARM included, while it shows.
   nor a second finger's on the band; only the first finger's lift clears.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
+- A control under the band that stops what the bench drives acts on the
+  first press, and the press clears the band: DISARM, OUTPUT OFF, a stick
+  run's ABORT, STOP TEST and STOP RUN. The band covers the lower 22 px of
+  SERVO's DISARM (panel y 446 to 467), the lower 26 px of a stick run's
+  ABORT (y 446 to 471) and the lower 8 px of its ABORT on a manual step
+  (y 446 to 453). ARM and OUTPUT ON under the band are not pressed: the tap
+  clears the band and starts no hold.
+- An alert that arrives while a finger is already down on a control leaves
+  that press to the control: its release acts as with no alert.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays
   until restart and has no `x`: no touch is there to tap with. A later alert
   shows over it; once that one clears, it shows again.
@@ -196,7 +210,10 @@ firmware version, and the IOmcu line carries the protocol version and
 the firmware version that the IOmcu reported -- two boards can speak
 the same protocol and be different builds, and this is where that shows.
 
-A missing card or an unusable NVS (non-volatile storage) is a warning. A
+A missing card or an unusable NVS (non-volatile storage) is a warning. The
+SD card line reads `no card`, `not FAT32/exFAT` (FAT: file allocation table) or
+`unreadable`
+([The SD card's format](#the-sd-cards-format)). A
 touch controller that does not answer, or an IOmcu with a different
 protocol major version, is a failure and the bench does not switch to ARMED.
 
@@ -1773,7 +1790,9 @@ stepped over and not overwritten. A gap left by a deleted file is not
 filled. A folder holding a number 999 under any name takes no further run,
 even with lower numbers free: the band reads
 `Card full or not writable. Run not recorded.`, or for a test
-`Card missing or full. Servo test not recorded.` A folder that cannot be
+`Card missing or full. Servo test not recorded.` A card in the slot that
+does not mount reads `Card is neither FAT32 nor exFAT. Servo test not recorded.`
+or `Cannot read the card. Servo test not recorded.` for a test. A folder that cannot be
 made, because a file holds its name or the card is write-protected or full,
 reads `Cannot make folder BENCH/LOGS. Run not recorded.` A failed run makes
 the panel walk the folder again next time, so a file deleted in between
@@ -1790,7 +1809,10 @@ Three tabs at the header row's left choose the folder on the list: USER
 tapped lists its folder from the first page. With no card the tabs switch
 all the same: the tab tapped is drawn selected, the box reads
 `No card. Insert one and tap RESCAN.` with that tab's line under it, and
-the tap looks for a card again, as RESCAN does. The header right of the tabs
+the tap looks for a card again, as RESCAN does. A card in the slot that does
+not mount reads `Card is neither FAT32 nor exFAT. Format it on a computer.` or
+`Cannot read the card. Check it on a computer, then tap RESCAN.` instead
+([The SD card's format](#the-sd-cards-format)). The header right of the tabs
 names the card and the folder, `UNITEST  BENCH/LOGS`, and the card alone on
 ROOT. An empty folder says why and what goes there:
 `No .csv files in BENCH/LOGS.` and the names it takes, or with its switch OFF
@@ -1911,12 +1933,13 @@ through has no line feed and is left out on reading (see [Logs](#logs)). The car
 Digital) card is allowed 250 ms to finish a write, and the task that beats the
 safety line has a ceiling of 150 ms.
 
-Eight messages say what a card did to a run. Each appears on the band:
+Nine messages say what a card did to a run. Each appears on the band:
 
 | Message | What happened |
 |---|---|
 | `No card. This run is not being recorded.` | nothing is mounted, so the run was never opened |
-| `Cannot read the card. Run not recorded.` | the card would not list, so a run number could not be chosen |
+| `Card is neither FAT32 nor exFAT. Run not recorded.` | the card in the slot holds no FAT volume, so nothing is mounted ([The SD card's format](#the-sd-cards-format)) |
+| `Cannot read the card. Run not recorded.` | the card would not list, so a run number could not be chosen, or the card in the slot does not mount |
 | `Card full or not writable. Run not recorded.` | no run number could be created |
 | `Card too slow. Run not recorded.` | every row was dropped, so there is no file for this run at all |
 | `The card was too slow. Some data is missing from the recording.` | some rows were dropped; the file's time column shows where |
@@ -1924,19 +1947,20 @@ Eight messages say what a card did to a run. Each appears on the band:
 | `Data could no longer be saved to the card. Recording incomplete.` | the same failure, said again when the run closes |
 | `The last write to the card failed. Recording incomplete.` | the close failed, so the rows since the last commit are not in the file |
 
-The first four mean there is no file to look for. The last four mean there is
+The first five mean there is no file to look for. The last four mean there is
 one and it stops early.
 
 A run being written is not offered in LOGS. A file's length lives in its
 directory entry and is written when the file is closed, so a run still open
 would list at its last committed length and read as a finished one.
 
-### Card formats
+### The SD card's format
 
 The panel mounts a card formatted FAT12, FAT16, FAT32 or exFAT (extended
 File Allocation Table). The volume is either the whole card or the first of
-the 4 partitions of an MBR (master boot record) that holds one of these
-formats. Long file names of up to 255 characters are read and written.
+the 4 primary partitions of an MBR (master boot record) that holds one of
+these formats. Long file names of up to 255 characters are read and
+written.
 
 | Card | Size | Format out of the box | On the panel |
 | --- | --- | --- | --- |
@@ -1950,23 +1974,38 @@ Not supported:
 - a card partitioned GPT (GUID Partition Table; GUID: globally unique
   identifier) instead of MBR;
 - a volume over 2 TiB;
-- NTFS, ext4, HFS+ and APFS.
+- NTFS (New Technology File System), ext4, HFS+ and APFS.
 
-A card in one of these does not mount. The panel
-never formats a card.
+A card in one of these does not mount. The panel never formats a card.
 
 To format a card for the bench, use the SD Association's SD Memory Card
 Formatter: it writes FAT32 up to 32 GB and exFAT from 64 GB, on an MBR. On
 Windows, the format dialog's FAT32 or exFAT does the same. On macOS, Disk
 Utility's Erase with Scheme `Master Boot Record` and Format `MS-DOS (FAT)`
-or `ExFAT`. On Linux, a `dos` partition table and `mkfs.vfat -F 32` or
-`mkfs.exfat`.
+or `ExFAT`. On Linux, for the card's first partition at `/dev/sdX1` on a
+`dos` partition table: `sudo mkfs.vfat -F 32 /dev/sdX1` or
+`sudo mkfs.exfat /dev/sdX1`.
 
-The panel's serial log names the format when the card mounts:
+Formatting erases the card. The panel looks for a card at start-up, at
+RESCAN, when LOGS opens, at a tab tap on LOGS while none is mounted, and on
+the servo programmer's taps listed in
+[Servo programmer](ServoProgrammer.md). What the slot holds is said in each
+place that needs a card:
 
-```text
-I (…) storage: SK64G mounted, exFAT, 61002 MB
-```
+| Slot | [Splash](#splash), SD card line | LOGS | Run on the band |
+|---|---|---|---|
+| empty | `no card` | `No card. Insert one and tap RESCAN.` | `No card. This run is not being recorded.` |
+| a card with no FAT or exFAT volume: NTFS, GPT or not formatted | `not FAT32/exFAT` | `Card is neither FAT32 nor exFAT. Format it on a computer.` | `Card is neither FAT32 nor exFAT. Run not recorded.` |
+| a card that does not mount for another reason: a read error, a card that does not finish its start-up | `unreadable` | `Cannot read the card. Check it on a computer, then tap RESCAN.` | `Cannot read the card. Run not recorded.` |
+
+The panel's console line says which with the code behind it:
+`I storage: SK64G mounted, exFAT, 61002 MB` with the format of a card that
+mounts, `I storage: no card (ESP_ERR_TIMEOUT)`,
+`W storage: card holds no FAT volume (FatFs 13): format it FAT32 or exFAT`,
+or `W storage: mount failed: FatFs <n>` and `W storage: mount failed:
+<ESP-IDF error name>`. A card that starts and does not mount is started a
+second time to ask FatFs why. That look adds one card start-up to each
+failed try, its time not measured, and nothing to a card that mounts.
 
 A file's size is read 64-bit, so a file of 4 GiB and more on an exFAT card
 lists with its size, `8.00 GB`. OPEN reads files up to 2 GiB less 1 byte:

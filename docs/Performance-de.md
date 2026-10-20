@@ -247,7 +247,7 @@ Untergrenze:
   Servodateien geschrieben werden, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  230
+  231
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
@@ -499,13 +499,13 @@ Stand ohne:
 
 | Posten | Ohne exFAT | Mit exFAT | Wo |
 | --- | ---: | ---: | --- |
-| Anwendungs-Image | 1 962 960 | 1 972 080 | Flash, `ota_0` fasst 4 063 232 |
+| Anwendungs-Image | 1 966 096 | 1 975 312 | Flash, `ota_0` fasst 4 063 232 |
 | interner RAM, den das Image belegt (`static` oben) | 128 208 | 128 208 | intern |
 | der Kontext des Mounts: `FATFS`, 4 offene Dateien (`FIL`) und der Zustand des VFS (Virtual File System) von ESP-IDF | 25 376 | 25 560 | Heap, zuerst PSRAM |
 | der Arbeitspuffer für lange Namen, für einen FatFs-Aufruf belegt | 512 | 1 120 | Heap, zuerst PSRAM |
 | der Puffer eines Verzeichnisdurchlaufs (`storage_walk()`) | 328 | 368 | Heap, intern |
 | `FILINFO`, ein Eintrag, wie FatFs ihn liest, im Puffer von `storage_stat()` neben dem Pfad, für einen Aufruf | 280 | 288 | Heap, intern |
-| .bss von `log_viewer_screen`: 48 Listenzeilen mit 64-Bit-Größen | 35 568 | 35 968 | PSRAM |
+| .bss von `log_viewer_screen`: 48 Listenzeilen mit 64-Bit-Größen | 35 576 | 35 968 | PSRAM |
 
 Alle Werte sind Bytes. Die Heap-Zeilen sind `sizeof()`-Werte, mit GDB aus
 den beiden Builds gelesen; der Heap zur Laufzeit ist nicht gemessen. Die

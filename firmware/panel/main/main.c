@@ -139,6 +139,7 @@ void publish_throttle_ramp(void)
 #include "wifi_access.h"
 #include "wifi_screen.h"
 #include "ui_screen.h"
+#include "ui_card_text.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 
@@ -1211,12 +1212,14 @@ static bool bring_up(void)
     /* Before anything can ask for a profile; with no card, the built-in
      * ones alone. */
     esc_profiles_load();
-    /* The component's "no card" in the language showing; its other words
-     * are ESP-IDF's error names, which stay as they are. */
+    /* No card, not FAT32 or unreadable, in the language showing; the
+     * console line of storage_init() has the code behind it. */
     splash_screen_set(SPLASH_STEP_STORAGE,
                       storage_mounted() ? SPLASH_OK : SPLASH_WARN,
-                      (strcmp(storage_status(), "no card") == 0)
-                          ? TR(SPLASH_NO_CARD) : storage_status());
+                      storage_mounted()
+                          ? storage_status()
+                          : ui_card_text(storage_card_state(),
+                                         UI_CARD_AT_SPLASH));
     pump();
 
     /* Loaded above, before the panel started scanning. */
