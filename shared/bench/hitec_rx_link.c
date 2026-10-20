@@ -91,9 +91,11 @@ hitec_rx_link_mark_t hitec_rx_link_mark(const hitec_rx_link_t *l)
         return HITEC_RX_LINK_HELD;
     }
     if (!knows_register(l)) {
-        return l->want == (uint8_t)LINK_HITEC_RX_PRECHARGE
-                   ? HITEC_RX_LINK_OLD
-                   : HITEC_RX_LINK_HELD;
+        if (l->want != (uint8_t)LINK_HITEC_RX_PRECHARGE) {
+            return HITEC_RX_LINK_HELD;
+        }
+        return l->minor >= LINK_MINOR_HITEC ? HITEC_RX_LINK_OLD
+                                            : HITEC_RX_LINK_NO_LINE;
     }
     if (l->refused != 0u) {
         return HITEC_RX_LINK_REFUSED;

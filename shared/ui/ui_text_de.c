@@ -363,6 +363,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SET_SAVE]               = "SPEICHERN",
     [TX_SET_UNHELD]             = "Vom IOmcu nicht übernommen.",
     [TX_SET_HITEC_RX_OLD]       = "IOmcu älter als 4.24: empfängt mit PULL-UP.",
+    [TX_SET_HITEC_RX_NO_LINE]   = "IOmcu älter als 4.23: keine Hitec-Leitung.",
     [TX_SET_PD_SAME_PIN]        = "TX und RX auf einem Pin. Der PD mini bleibt aus.",
     [TX_SET_LEAVE_TITLE]        = "UNGESPEICHERTE ÄNDERUNGEN",
     [TX_SET_LEAVE_WHY]          = "Deine Änderungen sind aktiv, aber noch nicht gespeichert. Tippe auf SPEICHERN, sonst gehen sie beim Neustart verloren.",

@@ -751,6 +751,13 @@ static void publish_log_folder(setting_text_id_t id)
     }
 }
 
+/* Hitec D receive to the control task (s_hitec_rx_want), at the load and
+ * at every edit, so the first write after a link-up is the kept mode. */
+static void publish_hitec_rx(void)
+{
+    atomic_store(&s_hitec_rx_want, (unsigned)settings_get_int(SET_HITEC_RX));
+}
+
 static void settings_changed(setting_id_t id)
 {
     if (id == SET_LOG_AUTO) {
@@ -762,6 +769,8 @@ static void settings_changed(setting_id_t id)
     } else if (id == SET_PDMINI_EN || id == SET_PDMINI_TX
                || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD) {
         publish_pdmini();
+    } else if (id == SET_HITEC_RX) {
+        publish_hitec_rx();
     } else {
         switch (id) {
         case SET_INA228_EN:  case SET_INA228_ADDR:  case SET_INA228_UOHM:
@@ -1130,6 +1139,7 @@ static bool bring_up(void)
     publish_sense();
     publish_log_auto();
     publish_tone();
+    publish_hitec_rx();
     settings_apply_ui();
     /*
      * The panel's Wi-Fi reads its kept home network now, while the panel is
@@ -2053,10 +2063,8 @@ void app_main(void)
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),
                 (uint8_t)atomic_load(&s_tone_unheld));
-            /* Hitec D receive to the control task, and what the IOmcu
-             * holds of it back to SETUP's row. */
-            atomic_store(&s_hitec_rx_want,
-                         (unsigned)settings_get_int(SET_HITEC_RX));
+            /* What the IOmcu holds of Hitec D receive, back to SETUP's
+             * row. */
             settings_screen_set_hitec_rx(
                 (uint8_t)atomic_load(&s_hitec_rx_mark));
             if (servo_link_take_sweep_refused()) {

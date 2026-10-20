@@ -26,7 +26,8 @@ history is in git.
 - Link protocol 4.24: HITEC write register 23 (`RX_MODE`), `STATE` bit 7
   and `VIEW` 2 register 25 bit 8. A 4.23 IOmcu refuses the register and
   receives with the pull-up; SETUP then says `IOmcu older than 4.24:
-  receives with PULL-UP.` with PRECHARGE set.
+  receives with PULL-UP.` with PRECHARGE set. With an IOmcu older than
+  4.23 it says `IOmcu older than 4.23: no Hitec line.`
 - The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
   receive mode before the OPEN, and the report names it (`rx=pu|pre`).
 

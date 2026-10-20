@@ -2893,7 +2893,8 @@ mit eigener Hilfezeile:
 | Die Hilfezeile lautet | Solange |
 | --- | --- |
 | `Vom IOmcu nicht übernommen.` | der Wert noch nicht bestätigt ist oder der IOmcu ihn abgewiesen hat |
-| `IOmcu älter als 4.24: empfängt mit PULL-UP.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.23 oder älter spricht: er hat kein Register für den Modus |
+| `IOmcu älter als 4.24: empfängt mit PULL-UP.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.23 spricht: er hat kein Register für den Modus |
+| `IOmcu älter als 4.23: keine Hitec-Leitung.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.22 oder älter spricht: er hat keine HITEC-Seite |
 
 Keine Markierung, solange kein IOmcu antwortet, und keine für PULL-UP an
 einem älteren IOmcu.

@@ -1175,12 +1175,15 @@ static void draw_row(gfx_canvas_t *c, int index)
     gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, MINUS_X - 10 - r.x, r.h));
     gfx_text(c, r.x + 16, r.y + 3, ui_setting_label(id), UI_FONT_HEAD,
              UI_TEXT, 1);
-    const char *help = same_pin ? TR(SET_PD_SAME_PIN)
-                       : !unheld ? ui_setting_help(id)
-                       : (id == SET_HITEC_RX
-                          && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_OLD)
-                           ? TR(SET_HITEC_RX_OLD)
-                           : TR(SET_UNHELD);
+    const bool hitec = id == SET_HITEC_RX;
+    const char *help =
+        same_pin ? TR(SET_PD_SAME_PIN)
+        : !unheld ? ui_setting_help(id)
+        : (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_OLD)
+            ? TR(SET_HITEC_RX_OLD)
+        : (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_NO_LINE)
+            ? TR(SET_HITEC_RX_NO_LINE)
+            : TR(SET_UNHELD);
     if (help[0] != '\0') {
         gfx_text(c, r.x + 16, r.y + 33, help, UI_FONT_LABEL,
                  unheld ? UI_WARN : UI_TEXT_FAINT, 1);

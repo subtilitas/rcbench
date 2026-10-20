@@ -807,7 +807,7 @@ TEST_CASE(the_hitec_receive_row_is_marked_as_the_iomcu_holds_it)
     settings_screen_set_unheld(0xFFFFu, 0xFFu);
     CHECK(!settings_screen_unheld(SET_HITEC_RX));
     settings_screen_set_unheld(0u, 0u);
-    for (int m = HITEC_RX_LINK_PENDING; m <= HITEC_RX_LINK_OLD; ++m) {
+    for (int m = HITEC_RX_LINK_PENDING; m <= HITEC_RX_LINK_NO_LINE; ++m) {
         settings_screen_set_hitec_rx((uint8_t)m);
         CHECK(settings_screen_unheld(SET_HITEC_RX));
         CHECK(!settings_screen_unheld(SET_PDMINI_BAUD));

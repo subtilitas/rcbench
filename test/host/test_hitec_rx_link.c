@@ -131,9 +131,19 @@ TEST_CASE(an_iomcu_before_4_24_is_sent_nothing_and_said_to_use_the_pull_up)
     CHECK_EQ(hitec_rx_link_mark(&L), HITEC_RX_LINK_OLD);
     hitec_rx_link_want(&L, LINK_HITEC_RX_PULL_UP);
     CHECK_EQ(hitec_rx_link_mark(&L), HITEC_RX_LINK_HELD);
-    /* Before the HITEC page and before anything: the same. */
+    /* Before the HITEC page: no Hitec line at all, at its last minor and
+     * at 0; with PULL-UP asked nothing to say. */
     hitec_rx_link_want(&L, LINK_HITEC_RX_PRECHARGE);
+    hitec_rx_link_came_up(&L, LINK_MINOR_HITEC - 1u);
+    CHECK(!hitec_rx_link_next(&L, 1u, &v));
+    CHECK_EQ(hitec_rx_link_mark(&L), HITEC_RX_LINK_NO_LINE);
     hitec_rx_link_came_up(&L, 0u);
+    CHECK_EQ(hitec_rx_link_mark(&L), HITEC_RX_LINK_NO_LINE);
+    hitec_rx_link_want(&L, LINK_HITEC_RX_PULL_UP);
+    CHECK_EQ(hitec_rx_link_mark(&L), HITEC_RX_LINK_HELD);
+    /* 4.23 itself has the line and receives with the pull-up. */
+    hitec_rx_link_want(&L, LINK_HITEC_RX_PRECHARGE);
+    hitec_rx_link_came_up(&L, LINK_MINOR_HITEC);
     CHECK_EQ(hitec_rx_link_mark(&L), HITEC_RX_LINK_OLD);
     /* The IOmcu updated to 4.24: the mode goes out. */
     hitec_rx_link_came_up(&L, LINK_MINOR_HITEC_RX);

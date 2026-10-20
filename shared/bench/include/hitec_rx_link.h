@@ -14,7 +14,8 @@
  * An IOmcu older than 4.24 is sent nothing: it refuses the register with
  * LINK_NACK_READ_ONLY and receives with the pull-up.  With PRECHARGE asked
  * the row says so (HITEC_RX_LINK_OLD); with PULL-UP asked there is nothing
- * to say.  An IOmcu older than 4.23 has no HITEC page and no Hitec line.
+ * to say.  An IOmcu older than 4.23 has no HITEC page and no Hitec line;
+ * with PRECHARGE asked the row says that instead (HITEC_RX_LINK_NO_LINE).
  *
  * Pure logic: the caller makes the exchange and reports how it went.
  *
@@ -47,9 +48,12 @@ typedef enum {
     HITEC_RX_LINK_PENDING,
     /** The IOmcu refused it. */
     HITEC_RX_LINK_REFUSED,
-    /** An IOmcu older than 4.24 with PRECHARGE asked: it receives with
-     *  the pull-up. */
+    /** An IOmcu of 4.23 with PRECHARGE asked: it receives with the
+     *  pull-up. */
     HITEC_RX_LINK_OLD,
+    /** An IOmcu older than 4.23 with PRECHARGE asked: it has no Hitec
+     *  line. */
+    HITEC_RX_LINK_NO_LINE,
 } hitec_rx_link_mark_t;
 
 typedef struct {

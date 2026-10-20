@@ -2642,7 +2642,8 @@ own help line:
 | The help line reads | While |
 | --- | --- |
 | `Not accepted by the IOmcu.` | the value is not acknowledged yet, or the IOmcu refused it |
-| `IOmcu older than 4.24: receives with PULL-UP.` | PRECHARGE is set and the IOmcu speaks protocol 4.23 or older: it has no register for the mode |
+| `IOmcu older than 4.24: receives with PULL-UP.` | PRECHARGE is set and the IOmcu speaks protocol 4.23: it has no register for the mode |
+| `IOmcu older than 4.23: no Hitec line.` | PRECHARGE is set and the IOmcu speaks protocol 4.22 or older: it has no HITEC page |
 
 No mark shows while no IOmcu answers, and none for PULL-UP on an older
 IOmcu.
