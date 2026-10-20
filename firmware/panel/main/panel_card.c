@@ -400,6 +400,12 @@ static const char *card_volume(void *ctx)
     return storage_card_name();
 }
 
+static card_state_t card_state(void *ctx)
+{
+    (void)ctx;
+    return storage_card_state();
+}
+
 /*
  * Delete a run the operator confirmed on the screen.
  *
@@ -460,6 +466,7 @@ const log_viewer_io_t k_card_io = {
     .remove = card_remove,
     .folder = card_folder,
     .written = card_written,
+    .card   = card_state,
     .ctx    = NULL,
 };
 

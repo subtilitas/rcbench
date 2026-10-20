@@ -247,7 +247,7 @@ Untergrenze:
   Servodateien geschrieben werden, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  230
+  231
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
@@ -425,14 +425,14 @@ Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
 Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 20
-Objekten, 163 504 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
+Objekten, 163 512 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
 wpa_supplicant, 13 742 Bytes.
 
 | Objekt | Komponente | .bss (Bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35 568 |
+| `log_viewer_screen` | ui | 35 576 |
 | `servo_screen` | ui | 29 509 |
 | `ui_watermark` | ui | 20 504 |
 | `supply_screen` | ui | 20 508 |

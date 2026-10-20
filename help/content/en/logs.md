@@ -14,6 +14,12 @@ LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separat
 
 With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF in SETUP > SD CARD.` or `USER LOGS OFF in SETUP > SD CARD.` instead. RESCAN reads the card again. With no card the tabs switch as with one, and each tap on a tab looks for a card again.
 
+## A card that does not mount
+
+![LOGS with a card that holds no FAT volume](view:logs-nofat)
+
+The panel reads FAT32, FAT16 and FAT12 (FAT: file allocation table) cards, and never formats one. A card in the slot that holds exFAT (extended FAT), NTFS (New Technology File System), a GPT (GUID partition table) or no format reads `Card not formatted as FAT32. Format it on a computer.` SD cards above 32 GB are sold as exFAT. A card that does not mount for another reason reads `Cannot read the card. Check it on a computer, then tap RESCAN.` Format a card up to 32 GB with the SD Card Formatter of the SD Association or the computer's format command set to FAT32; above 32 GB, with a tool that offers FAT32 for that size, for example `sudo mkfs.vfat -F 32 /dev/sdX1` on Linux. Formatting erases the card. RESCAN mounts the card put back.
+
 ## The file list
 
 ![The file list](view:logs)

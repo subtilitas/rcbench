@@ -232,7 +232,7 @@ bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  230 such
+  231 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -398,14 +398,14 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
-163,504 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+163,512 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
 
 | Object | Component | .bss (bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35,568 |
+| `log_viewer_screen` | ui | 35,576 |
 | `servo_screen` | ui | 29,509 |
 | `ui_watermark` | ui | 20,504 |
 | `supply_screen` | ui | 20,508 |

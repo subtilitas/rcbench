@@ -694,6 +694,18 @@ servo held before the write are then not recoverable from the bench.
 | **FILES**, save and load without a card | refused: `No card. Nothing saved or written to the servo.` |
 | A card put in after the panel started | the panel tries to mount a card when the programmer opens and at each tap on **CONNECT**, **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row while none is mounted. The tap that finds the card still reads no card; the next one has it, and an open write page changes to the page with the file |
 
+A card in the slot that does not mount counts as no card: the write, the
+restore and the pairing release go as above, and **FILES** is refused. Its
+lines name what the panel found in place of `No card`
+([The SD card's format](Screens.md#the-sd-cards-format)):
+
+| Where | Card not formatted as FAT32 (FAT: file allocation table): exFAT (extended FAT), NTFS (New Technology File System), a GPT (GUID partition table) or not formatted | Card that cannot be read |
+| --- | --- | --- |
+| The write page | `Card not formatted as FAT32. No backup file will be saved.` | `Cannot read the card. No backup file will be saved.` |
+| The write page, backup file saved | `Card not formatted as FAT32. The previous settings are kept in RAM only.` | `Cannot read the card. The previous settings are kept in RAM only.` |
+| The SERVO tab | `Card not formatted as FAT32, no backup file. Restore is available only within this session.` | `Cannot read the card, no backup file. Restore is available only within this session.` |
+| **FILES** | `Card not formatted as FAT32. Nothing saved or written to the servo.` | `Cannot read the card. Nothing saved or written to the servo.` |
+
 ### Loading
 
 A tap on a file loads it. Its editable fields become the draft, exactly as
