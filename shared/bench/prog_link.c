@@ -300,13 +300,10 @@ bool prog_link_next(const prog_link_t *p, bool quiet, prog_link_write_t *w)
     /* A port an ask waits on is let go first: its pulse is off above, and
      * no port is the target while its pin or function changes. */
     const bool ask = p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING;
-    if (p->regs[LINK_PG_TARGET] != prog_link_wanted(p)
-        || (ask && p->regs[LINK_PG_TARGET] == p->ask_port + 1u)) {
+    if (p->regs[LINK_PG_TARGET] != prog_link_wanted(p)) {
+        /* prog_link_wanted() is 0 for a port an ask waits on. */
         w->off   = (uint8_t)LINK_PG_TARGET;
         w->value = prog_link_wanted(p);
-        if (ask && w->value == p->ask_port + 1u) {
-            w->value = 0u;
-        }
         return true;
     }
     if (ask && (p->regs[LINK_PG_PWM] & (1u << p->ask_port)) == 0u) {

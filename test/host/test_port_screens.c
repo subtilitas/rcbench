@@ -16,7 +16,9 @@
  * and an interface's pin held, the slice of a PWM output and the compare
  * register of another SERVO PWM port refused for a SERVO PWM port and
  * not for a NONE port, the reason lines, every state drawn inside the
- * canvas.
+ * canvas; the port rules at their edges: no binding, an index past the
+ * catalogue, a locked free pin, an interface's pin, each reason line,
+ * a function not known, PICK A PIN opened on a port OUTPUTS lacks.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,6 +29,8 @@
 
 #include "link_pages.h"
 #include "outputs_screen.h"
+#include "outputs_screen_int.h"
+#include "picker_port.h"
 #include "picker_screen.h"
 #include "port_view.h"
 #include "servo_screen.h"
@@ -495,6 +499,73 @@ TEST_CASE(a_port_picked_before_the_read_or_on_an_unread_binding_is_locked)
     CHECK_EQ(g_ask.n, 0);
 }
 
+TEST_CASE(the_port_rules_hold_at_their_edges)
+{
+    char holder[32];
+    char buf[96];
+    outbind_t b;
+
+    fresh();
+    outbind_init(&b);
+    outbind_set_board(&b, BOARD);
+    const uint8_t n = outbind_pin_count(BOARD);
+    const uint8_t gp20 = outbind_index_of(BOARD, 20u);
+    /* No binding, or an index past the catalogue: no pin, no tap. */
+    CHECK_EQ(picker_port_pin(NULL, gp20, 0u, false, NULL, 0), PICKER_PIN_NONE);
+    CHECK_EQ(picker_port_pin(&b, n, 0u, false, holder, sizeof(holder)),
+             PICKER_PIN_NONE);
+    CHECK_STR_EQ(holder, "");
+    CHECK(!picker_port_tap(NULL, gp20, 0u, PICKER_PIN_FREE));
+    CHECK(!picker_port_tap(&b, n, 0u, PICKER_PIN_FREE));
+    CHECK(!picker_port_tap(&b, gp20, 0u, PICKER_PIN_HELD));
+    CHECK(!picker_port_clashes(NULL, gp20, 0u));
+    CHECK(!picker_port_clashes(&b, n, 0u));
+    CHECK_EQ(g_ask.n, 0);
+    /* A free pin while the bench locks the port. */
+    CHECK_EQ(picker_port_pin(&b, gp20, 2u, true, NULL, 0), PICKER_PIN_LOCKED);
+    /* An interface's pin is held under its name. */
+    outputs_screen_set_iface_held(OUTPUTS_IFACE_SENSE, true, 20, 21);
+    CHECK_EQ(picker_port_pin(&b, gp20, 2u, false, holder, sizeof(holder)),
+             PICKER_PIN_HELD);
+    CHECK_STR_EQ(holder, outputs_iface_name(OUTPUTS_IFACE_SENSE));
+    outputs_screen_set_iface_held(OUTPUTS_IFACE_SENSE, true, -1, -1);
+    /* The reason line: no buffer, no refused pin, one past the
+     * catalogue, one that breaks no rule, and the compare register. */
+    CHECK(!picker_port_reason(&b, 2u, -1, NULL, 0));
+    CHECK(!picker_port_reason(&b, 2u, -1, buf, sizeof(buf)));
+    CHECK(!picker_port_reason(NULL, 2u, 0, buf, sizeof(buf)));
+    CHECK(!picker_port_reason(&b, 2u, (int)n, buf, sizeof(buf)));
+    CHECK(!picker_port_reason(&b, 2u, (int)gp20, buf, sizeof(buf)));
+    port_view_t v = *port_view_get();
+    v.pin[0] = 12u;
+    port_view_set(&v);
+    CHECK(picker_port_reason(&b, 2u, (int)outbind_index_of(BOARD, 28u), buf,
+                             sizeof(buf)));
+    CHECK_STR_EQ(buf, "GP28: SAME PWM CHANNEL AS GP12");
+    picker_port_count(2u, NULL, 0);
+    /* A port not known counts "?". */
+    view_unknown();
+    picker_port_count(2u, buf, sizeof(buf));
+    CHECK_STR_EQ(buf, "FUNCTION: ?");
+    /* No row past the port's one pin, nor one with no pin. */
+    view_four(true);
+    picker_row_t row;
+    CHECK(picker_port_row(&b, 0u, NULL) == false);
+    CHECK(!picker_port_row(&b, 1u, &row));
+    CHECK(!picker_port_own_pin(&b, gp20, -1));
+    CHECK(!picker_port_own_pin(&b, gp20, 4));
+    /* PICK A PIN opened on a port OUTPUTS does not have: on the protocols. */
+    picker_screen_open_on_port(9u);
+    picker_screen()->enter();
+    CHECK_EQ(picker_screen_port_shown(), -1);
+    /* The entry's guards: no buffer, no port shown, no canvas. */
+    outputs_port_name(0u, NULL, 0);
+    outputs_screen()->reset();
+    CHECK(!outputs_screen_port_reason(NULL, 0));
+    CHECK(!outputs_screen_port_reason(buf, sizeof(buf)));
+    outputs_port_draw(NULL, picker_screen_list_face(), false, false);
+}
+
 int main(void)
 {
     RUN(the_view_is_not_known_until_read_and_takes_no_ask_then);
@@ -507,5 +578,6 @@ int main(void)
     RUN(a_port_picked_ticks_its_pin_and_asks_for_another);
     RUN(a_servo_pwm_port_is_refused_the_pwm_rules_and_a_none_port_not);
     RUN(a_port_picked_before_the_read_or_on_an_unread_binding_is_locked);
+    RUN(the_port_rules_hold_at_their_edges);
     return test_summary("port_screens");
 }
