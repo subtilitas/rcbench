@@ -48,7 +48,6 @@ protocols/kst/kst_file.c | none | stays in protocols/kst (owner answer)
 shared/settings/settings.c | none | F19: 21 lines over; 3 check_docs.py paths, and a move edits Research.md
 firmware/panel/components/wifi_access/wifi_access.c | none | one state struct used 275 times; macros read by path
 shared/outputs/out_bind.c | none | row 18 cuts out_board.c out right after the next release (F12)
-shared/bench/sense_link.c | none | one link client; crossed 1,000 after the plan with the set-up alerts that leave the band, not weighed by the plan
 shared/outputs/page_console.c | none | one console; crossed 1,000 after the plan with the Hitec receive mode, not weighed by the plan; its HITEC section, about 540 lines, can go to its own file later
 
 # Tools left whole.

@@ -2,7 +2,8 @@
  * The panel's half of the SENSE, SERVO_SENSE and SERVO_WIN link pages:
  * what the last reads hold, handed to the screens, the log and the band --
  * the servo windows, the meter, the ESC figures and totals, the encoder and
- * the parts' addresses and identities.  The state machine that decides what
+ * the parts' addresses and identities -- and the rows of SETUP the page
+ * does not hold.  The state machine that decides what
  * is read and written is in sense_link.c.  See sense_link.h.
  *
  * SPDX-License-Identifier: MIT
@@ -130,12 +131,14 @@ void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out)
         return;
     }
     out->page   = s->page;
-    out->wanted = s->want_set && s->want_i3221
-                  && (s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u;
+    out->wanted = s->want_set && s->want_i3221 && !s->want_unwatched
+                  && (s->map
+                      || (s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u);
     uint16_t regs[FRAME_N];
     out->held = out->wanted && s->known
                 && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
-                && (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u
+                && (s->map
+                    || (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u)
                 && !s->refused_bus && !s->refused_i228 && !s->refused_i3221
                 && memcmp(s->want, s->held, sizeof(s->held)) == 0
                 && sense_link_write_owed(s, regs) == SENSE_LINK_OP_NONE;
@@ -325,4 +328,111 @@ int sense_link_sda(const sense_link_t *s)
 int sense_link_scl(const sense_link_t *s)
 {
     return (s != NULL) ? (int)s->want_scl : -1;
+}
+
+/* ------------------------------------------- the set-up and the ring */
+
+uint16_t sense_link_unheld(const sense_link_t *s)
+{
+    if (s == NULL || !s->up || !s->want_set) {
+        return 0u;
+    }
+    /* The parts as SETUP has them, against ENABLE as the page holds it. */
+    const uint16_t asked = (uint16_t)(
+        (s->want_i228 ? SENSE_LINK_ROW_I228 : 0u)
+        | (s->want_i3221 ? SENSE_LINK_ROW_I3221 : 0u)
+        | (s->want_enc ? SENSE_LINK_ROW_ENC : 0u));
+    if (!s->page) {
+        return asked;
+    }
+    if (!s->known) {
+        return 0u;
+    }
+    const uint16_t en = s->held[LINK_SN_ENABLE];
+    const uint16_t on = (uint16_t)(
+        (((en & LINK_SN_EN_I228) != 0u) ? SENSE_LINK_ROW_I228 : 0u)
+        | (((en & LINK_SN_EN_I3221) != 0u) ? SENSE_LINK_ROW_I3221 : 0u)
+        | (((en & LINK_SN_EN_AS5600) != 0u) ? SENSE_LINK_ROW_ENC : 0u));
+    uint16_t rows = (uint16_t)(asked ^ on);
+    if (s->want[LINK_SN_SDA_PIN] != s->held[LINK_SN_SDA_PIN]
+        || s->want[LINK_SN_SCL_PIN] != s->held[LINK_SN_SCL_PIN]) {
+        rows |= SENSE_LINK_ROW_PINS;
+    }
+    static const struct { uint8_t reg; uint16_t row; } k_rows[] = {
+        { LINK_SN_I228_ADDR,         SENSE_LINK_ROW_I228_ADDR },
+        { LINK_SN_I228_SHUNT_UOHM,   SENSE_LINK_ROW_I228_SHUNT },
+        { LINK_SN_I228_MAX_DA,       SENSE_LINK_ROW_I228_MAX },
+        { LINK_SN_I3221_ADDR,        SENSE_LINK_ROW_I3221_ADDR },
+        { LINK_SN_I3221_SHUNT_DMOHM, SENSE_LINK_ROW_I3221_SHUNT },
+        { LINK_SN_I3221_CHANNELS,    SENSE_LINK_ROW_I3221_CH },
+    };
+    for (size_t i = 0u; i < sizeof(k_rows) / sizeof(k_rows[0]); ++i) {
+        if (s->want[k_rows[i].reg] != s->held[k_rows[i].reg]) {
+            rows |= k_rows[i].row;
+        }
+    }
+    if (s->map) {
+        /* The INA3221's rows are SENSORS', which SENSE_MAP marks. */
+        rows &= (uint16_t)~(SENSE_LINK_ROW_I3221 | SENSE_LINK_ROW_I3221_ADDR
+                            | SENSE_LINK_ROW_I3221_SHUNT
+                            | SENSE_LINK_ROW_I3221_CH);
+    }
+    return rows;
+}
+
+void sense_link_set_map(sense_link_t *s, bool map)
+{
+    if (s != NULL) {
+        s->map = map;
+    }
+}
+
+void sense_link_reread(sense_link_t *s)
+{
+    if (s != NULL && s->page) {
+        s->known     = false;
+        s->caps_owed = true;
+    }
+}
+
+bool sense_link_take_caps(sense_link_t *s, uint16_t *caps)
+{
+    if (s == NULL || caps == NULL || !s->caps_new) {
+        return false;
+    }
+    *caps = s->caps;
+    s->caps_new = false;
+    return true;
+}
+
+bool sense_link_take_win(sense_link_t *s, sense_link_win_t *out)
+{
+    if (s == NULL || out == NULL || s->winq_n == 0u) {
+        return false;
+    }
+    *out = s->winq[0];
+    --s->winq_n;
+    memmove(&s->winq[0], &s->winq[1], s->winq_n * sizeof(s->winq[0]));
+    return true;
+}
+
+uint32_t sense_link_win_lost(const sense_link_t *s)
+{
+    return (s != NULL) ? s->win_lost : 0u;
+}
+
+bool sense_link_held_pins(const sense_link_t *s, int *sda, int *scl)
+{
+    const bool known = s != NULL && s->up && (!s->page || s->known);
+    const bool on = known && s->page
+                    && (s->held[LINK_SN_ENABLE]
+                        & (LINK_SN_EN_I228 | LINK_SN_EN_I3221
+                           | LINK_SN_EN_AS5600)) != 0u;
+    if (sda != NULL) {
+        *sda = on ? (int)s->held[LINK_SN_SDA_PIN] : -1;
+    }
+    if (scl != NULL) {
+        *scl = on ? (int)s->held[LINK_SN_SCL_PIN] : -1;
+    }
+    return known;
 }

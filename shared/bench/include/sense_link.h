@@ -180,6 +180,12 @@ typedef struct {
     uint8_t  i3221_addr;      /**< 0x40 to 0x43                         */
     uint16_t i3221_dmohm;     /**< shunt, 0.1 mOhm                      */
     uint8_t  i3221_ch;        /**< bits 0..2 for CH1 to CH3             */
+    /** Bit a: the INA3221 at 0x40 + a is fitted (SETUP > SENSORS); the
+     *  INA228 on any of them is one address.  0: i3221_addr alone. */
+    uint8_t  i3221_parts;
+    /** No fitted channel watches the servo tester's target (SENSORS'
+     *  FAST is none): the INA3221 is not the servo rail's meter. */
+    bool     i3221_unwatched;
 } sense_setup_t;
 
 /** Things the caller tells the operator about, each once. */
@@ -287,7 +293,9 @@ typedef struct {
  *  last exchange. */
 typedef struct {
     bool     page;        /**< the IOmcu has SENSE                  */
-    bool     wanted;      /**< SETUP has the INA3221 on with CH1          */
+    /** SETUP has the INA3221 on and a channel watching the tester's
+     *  target: with the map in force, FAST; without it, CH1. */
+    bool     wanted;
     /** SENSE's registers 0 to 11 are the set-up asked, with the INA3221
      *  enabled on CH1: no write owed and no frame refused. */
     bool     held;
@@ -310,12 +318,18 @@ typedef struct {
     bool     page;            /**< the IOmcu has SENSE (4.7)     */
     bool     enc_page;        /**< and the encoder (4.9)               */
     bool     win_page;        /**< and SERVO_WIN and RESETS (4.11)     */
+    /** The INA3221 parts go by SENSE_MAP (4.25, sense_map_link.h): SENSE's
+     *  ENABLE bit 1 and registers 8 to 11 mirror the map and are never
+     *  written. */
+    bool     map;
 
     /* What is asked, as the page is to hold it. */
     bool     want_set;
     bool     want_i228, want_i3221;   /**< enabled on SETUP, as asked */
     bool     want_enc;                /**< the encoder, likewise       */
     int8_t   want_sda, want_scl;      /**< as asked, -1 unset         */
+    uint8_t  want_parts;              /**< sense_setup_t.i3221_parts  */
+    bool     want_unwatched;          /**< and .i3221_unwatched       */
     uint16_t want[LINK_SN_CONFIG_COUNT];
     uint32_t want_ms;         /**< when it last changed                */
 
@@ -497,6 +511,17 @@ enum {
  * and the parts that are on are named.
  */
 uint16_t sense_link_unheld(const sense_link_t *s);
+
+/**
+ * Whether the INA3221 parts go by SENSE_MAP (sense_map_link_page()): then
+ * ENABLE bit 1 and the INA3221's frame are the IOmcu's mirror of the map,
+ * kept as read and never written, and refuse nothing.
+ */
+void sense_link_set_map(sense_link_t *s, bool map);
+
+/** Read SENSE's set-up again, and the identity after it: a SENSE_MAP write
+ *  was taken, and the mirror registers moved with it. */
+void sense_link_reread(sense_link_t *s);
 
 /** The capability bits an identity read since the last call brought, into
  *  @p caps; false if none did. */

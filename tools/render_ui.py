@@ -129,7 +129,10 @@ SOURCES = [
     "shared/ui/log_viewer_screen.c",
     "shared/ui/log_select.c",
     "shared/ui/settings_screen.c",
+    "shared/ui/settings_rows.c",
+    "shared/ui/sensors_rows.c",
     "shared/settings/settings.c",
+    "shared/settings/settings_sensors.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
     "shared/logfile/log_reader.c",
@@ -369,12 +372,14 @@ SCREENS = {
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
     "setup-folder": ("setup-folder.png", "setup", "dark"),
-    # INTERFACES with both current monitors enabled, at the top of the list
-    # and drawn on to the INA3221's rows and the bus's pins.
+    # INTERFACES with the INA228 enabled, at the top of the list.
     "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
+    # SENSORS: 0x40 and 0x41 fitted, at the top with 0x40 online; and at
+    # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
-    # The same rows with the pins the IOmcu has not taken: the mark on
-    # Sensor SDA and Sensor SCL, and on the INA3221 that is off for them.
+    "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
+    # INTERFACES drawn on to the bus's pins, which the IOmcu has not taken:
+    # the mark on Sensor SDA and Sensor SCL.
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
     # The same list past them, to the phase tap's rows, the tap enabled.
     "setup-tap": ("setup-tap.png", "setup", "dark"),

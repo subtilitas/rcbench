@@ -358,7 +358,9 @@ TEST_CASE(a_tap_on_sensor_scls_row_changes_nothing)
 }
 
 /* The mark: each row of the sensor bus and the phase tap follows its own
- * bit, and no other row follows any. */
+ * bit, and no other row follows any.  The INA3221's bits mark nothing:
+ * its rows are SENSORS', which the parts' states mark
+ * (test_settings_sensors.c). */
 TEST_CASE(a_row_the_coprocessor_does_not_hold_is_marked)
 {
     static const struct { setting_id_t id; uint16_t sense; uint8_t tone; }
@@ -367,10 +369,6 @@ TEST_CASE(a_row_the_coprocessor_does_not_hold_is_marked)
         { SET_INA228_ADDR,  SENSE_LINK_ROW_I228_ADDR, 0u },
         { SET_INA228_UOHM,  SENSE_LINK_ROW_I228_SHUNT, 0u },
         { SET_INA228_MAX_A, SENSE_LINK_ROW_I228_MAX, 0u },
-        { SET_INA3221_EN,   SENSE_LINK_ROW_I3221, 0u },
-        { SET_INA3221_ADDR, SENSE_LINK_ROW_I3221_ADDR, 0u },
-        { SET_INA3221_MOHM, SENSE_LINK_ROW_I3221_SHUNT, 0u },
-        { SET_INA3221_CH,   SENSE_LINK_ROW_I3221_CH, 0u },
         { SET_SENSE_SDA,    SENSE_LINK_ROW_PINS, 0u },
         { SET_SENSE_SCL,    SENSE_LINK_ROW_PINS, 0u },
         { SET_ENC_EN,       SENSE_LINK_ROW_ENC, 0u },
@@ -408,14 +406,16 @@ TEST_CASE(a_row_the_coprocessor_does_not_hold_is_marked)
         }
     }
     settings_screen_set_unheld(0u, 0u);
-    /* Every bit of both links names a row. */
+    /* Every bit of both links names a row, but the INA3221's four. */
     uint16_t sense_all = 0u;
     uint8_t  tone_all = 0u;
     for (size_t i = 0u; i < n; ++i) {
         sense_all |= k[i].sense;
         tone_all  |= k[i].tone;
     }
-    CHECK_EQ(sense_all, 0x03FFu);
+    CHECK_EQ(sense_all | SENSE_LINK_ROW_I3221 | SENSE_LINK_ROW_I3221_ADDR
+                 | SENSE_LINK_ROW_I3221_SHUNT | SENSE_LINK_ROW_I3221_CH,
+             0x03FFu);
     CHECK_EQ(tone_all, TONE_LINK_ROWS_TAP | TONE_LINK_ROWS_BEEP);
 }
 
@@ -698,15 +698,16 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
 }
 
 /*
- * Seven tiles: PANEL, INTERFACES and SD CARD, then OUTPUTS, PICK A PIN,
- * WI-FI and UPDATES.  SD CARD's list is AUTO LOGS and USER LOGS, two
+ * Eight tiles: PANEL, INTERFACES, SD CARD and SENSORS, then OUTPUTS, PICK
+ * A PIN, WI-FI and UPDATES.  SD CARD's list is AUTO LOGS and USER LOGS, two
  * toggles, named in both languages, and the two log folders under them
  * (test_settings_folders).
  */
-TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_third)
+TEST_CASE(the_hub_holds_eight_tiles_and_sd_card_is_the_third)
 {
     fresh_hub();
-    CHECK_EQ(settings_hub_tiles(), 7);
+    CHECK_EQ(settings_hub_tiles(), 8);
+    CHECK_EQ(SET_CAT_SENSORS, 3);
     CHECK_EQ(SET_CAT_CARD, 2);
     tap(tile_x(SET_CAT_CARD), tile_y(SET_CAT_CARD));
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
@@ -974,7 +975,7 @@ int main(void)
     RUN(a_stored_pd_mini_on_one_pin_loads_and_is_named);
     RUN(pd_mini_rows_on_one_pin_are_marked_and_nothing_else);
     RUN(the_hub_has_nine_slots_and_no_tenth);
-    RUN(the_hub_holds_seven_tiles_and_sd_card_is_the_third);
+    RUN(the_hub_holds_eight_tiles_and_sd_card_is_the_third);
     RUN(each_category_tile_opens_its_list_and_the_home_tag_returns);
     RUN(a_free_slot_opens_nothing);
     RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);

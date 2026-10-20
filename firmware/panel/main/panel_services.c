@@ -419,6 +419,8 @@ void hitec_rx_service(void)
 
 void sense_link_service(bool idle, bench_state_t *bench)
 {
+    /* SENSE_MAP first: SENSE's mirror registers follow the map it holds. */
+    sense_map_service(idle);
     const sense_setup_t w = sense_wanted();
     sense_link_want(&s_sense_link, &w, now_ms());
     for (int k = 0; k < 6; ++k) {

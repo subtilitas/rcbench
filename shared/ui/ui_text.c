@@ -197,7 +197,9 @@ const char *ui_setting_value_of(setting_id_t id, float value, char *buf,
     if (d == NULL || buf == NULL || n == 0u) {
         return settings_value_text_of(id, value, buf, n);
     }
-    if (d->type == SET_TYPE_BOOL) {
+    if (d->type == SET_TYPE_BOOL
+        || (d->off_below > 0.0f && value == 0.0f)) {
+        /* A switch, and a number whose 0 is off: a SENSORS shunt. */
         snprintf(buf, n, "%s", ui_on_off(value != 0.0f));
         return buf;
     }

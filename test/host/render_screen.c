@@ -34,6 +34,8 @@
 #include "coproc_update_screen.h"
 #include "sense_link.h"
 #include "settings.h"
+#include "sensors_rows.h"
+#include "settings_sensors.h"
 #include "settings_screen.h"
 #include "hitec_rx_link.h"
 #include "balance_screen.h"
@@ -160,9 +162,9 @@ static bool lang_load(float *values, int count)
         values[SET_ENC_EN]     = 1.0f;
         values[SET_ENC_CENTRE] = 3000.0f;
     }
-    if (s_monitors_on && (int)SET_INA3221_EN < count) {
+    if (s_monitors_on && (int)SET_INA_FIT(0) < count) {
         values[SET_INA228_EN]  = 1.0f;
-        values[SET_INA3221_EN] = 1.0f;
+        values[SET_INA_FIT(0)] = 1.0f;
     }
     return true;
 }
@@ -988,7 +990,7 @@ static void servo_run_view(bool to_the_end, bool ina)
     if (ina) {
         /* The INA3221 on in SETUP and the rail's meter: the run reads its
          * windows, one every 50 ms. */
-        settings_set(SET_INA3221_EN, 1.0f);
+        settings_set(SET_INA_FIT(0), 1.0f);
         servo_screen_source(SERVO_SOURCE_INA3221, 2u);
     }
     uint16_t win_number = 0u;
@@ -1239,8 +1241,10 @@ static void limrun_view(const char *view)
     s_lr.armed = true;
     s_lr.out = true;
     settings_set_text(SET_TEXT_DUT_NAME, "DS3218 #2");
-    settings_set(SET_INA3221_EN, 1.0f);
+    settings_set(SET_INA_FIT(0), 1.0f);
     if (s_lr.prog) {
+        /* 0x40 CH1 on the programming port, as a 0.21 bench seeds it. */
+        settings_set(SET_INA_W(0), (float)SENS_W_PORT_1);
         settings_set(SET_SERVO_TARGET, 1.0f);
         servo_screen_set_drive(1u, 13u, true);
     }
@@ -2017,7 +2021,7 @@ int main(int argc, char **argv)
     s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
                                                        : UI_LANG_EN;
     s_monitors_on = strcmp(view, "setup-interfaces") == 0
-                    || strcmp(view, "setup-sensors") == 0
+                    || strncmp(view, "setup-sensors", 13) == 0
                     || strcmp(view, "setup-unheld") == 0;
     s_tap_on = strcmp(view, "setup-tap") == 0;
     s_enc_on = strcmp(view, "servo-encoder") == 0;
@@ -2579,7 +2583,7 @@ int main(int argc, char **argv)
             settings_set(SET_INA228_EN, 1.0f);
             settings_set(SET_INA228_UOHM, 250.0f);
             settings_set(SET_INA228_MAX_A, 100.0f);
-            settings_set(SET_INA3221_EN, 1.0f);
+            settings_set(SET_INA_FIT(0), 1.0f);
             settings_set(SET_TONE_EN, 1.0f);
             settings_set_text(SET_TEXT_DUT_NAME, "X8");
         }
@@ -2741,7 +2745,7 @@ int main(int argc, char **argv)
          * INA3221 on the sensor bus at GP16 and GP17, the PD mini on RX
          * GP18 and TX GP19, the phase tap on GP22. */
         settings_set(SET_INA228_EN, 1.0f);
-        settings_set(SET_INA3221_EN, 1.0f);
+        settings_set(SET_INA_FIT(0), 1.0f);
         settings_set(SET_SENSE_SDA, 16.0f);
         settings_set(SET_PDMINI_EN, 1.0f);
         settings_set(SET_PDMINI_RX, 18.0f);
@@ -3303,29 +3307,22 @@ int main(int argc, char **argv)
      * same list drawn on by four rows to the INA3221's and the bus's pins.
      */
     if (strcmp(view, "setup-interfaces") == 0
-        || strcmp(view, "setup-sensors") == 0
         || strcmp(view, "setup-unheld") == 0
         || strcmp(view, "setup-tap") == 0
         || strcmp(view, "setup-prog") == 0
         || strcmp(view, "setup-prog-noline") == 0) {
         setup_tile(SET_CAT_IFACE);
         if (strcmp(view, "setup-unheld") == 0) {
-            /* The pins refused: their two rows, and the INA3221 the page
-             * leaves off for them. */
-            settings_screen_set_unheld(
-                SENSE_LINK_ROW_PINS | SENSE_LINK_ROW_I3221, 0u);
-        }
-        if (strcmp(view, "setup-sensors") == 0
-            || strcmp(view, "setup-unheld") == 0) {
+            /* The pins refused: their two rows. */
+            settings_screen_set_unheld(SENSE_LINK_ROW_PINS, 0u);
             /* Five rows of 58 px, the I2C BUS heading and the four of the
              * INA228, and the 8 px the finger travels before the screen
              * takes it for a scroll. */
             drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
         } else if (strcmp(view, "setup-tap") == 0) {
-            /* Past the 13 rows above the PHASE TAP heading (the I2C BUS
-             * section and its heading): three drags, as one longer than
-             * the list is high leaves the screen. */
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+            /* Past the 9 rows above the PHASE TAP heading (the I2C BUS
+             * section and its heading): two drags, as one longer than the
+             * list is high leaves the screen. */
             drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
             drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
         } else if (strncmp(view, "setup-prog", 10) == 0) {
@@ -3339,6 +3336,29 @@ int main(int argc, char **argv)
                 drag(300, UI_BAND_H + 340,
                      UI_BAND_H + 340 - (5 * 58 + 8));
             }
+        }
+    }
+
+    /*
+     * SETUP > SENSORS: 0x40 and 0x41 fitted, 0x41's CH2 watching PORT 1
+     * and its CH3 off.  At the top, 0x40 online; and scrolled to 0x41's
+     * rows, an IOmcu older than 4.25 reading 0x40 alone.
+     */
+    if (strncmp(view, "setup-sensors", 13) == 0) {
+        settings_set(SET_INA_FIT(1), 1.0f);
+        settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
+        settings_set(SET_INA_SH(5), 0.0f);
+        setup_tile(SET_CAT_SENSORS);
+        if (strcmp(view, "setup-sensors-old") == 0) {
+            sensors_rows_set_status((uint16_t)(SENS_PART_ONLINE
+                                               | (SENS_PART_OLD << 4)));
+            /* The 12 rows above 0x41's heading: three drags. */
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+        } else {
+            sensors_rows_set_status((uint16_t)(SENS_PART_ONLINE
+                                               | (SENS_PART_SILENT << 4)));
         }
     }
 

@@ -140,17 +140,18 @@ TEST_CASE(every_list_at_its_end_shows_its_last_row_whole)
 }
 
 /* What a tester's panel showed: INA3221 shunt 99.9 mOhm and Sensor SDA 15
- * after the INTERFACES list was scrolled twice from its bottom row. */
+ * after the INTERFACES list was scrolled twice from its bottom row.  The
+ * INA3221's rows are SENSORS' now; the INA228's shunt stands in. */
 TEST_CASE(two_scrolls_from_the_bottom_row_leave_the_shunt_and_the_pins)
 {
     gesture_screen(SET_CAT_IFACE);
-    CHECK_EQ(row_of(SET_INA3221_MOHM), 6);
-    CHECK_EQ(row_of(SET_SENSE_SDA), 8);
+    CHECK_EQ(row_of(SET_INA228_UOHM), 2);
+    CHECK_EQ(row_of(SET_SENSE_SDA), 4);
     swipe(XM, LIST_Y + LIST_H - 8, XM, LIST_Y + LIST_H - 132, 4);
     CHECK_EQ(settings_screen_scroll(NULL), 116);
     swipe(XM, LIST_Y + LIST_H - 8, XM, LIST_Y + LIST_H - 132, 4);
     CHECK_EQ(settings_screen_scroll(NULL), 232);
-    CHECK_NEAR(settings_get(SET_INA3221_MOHM), 100.0f, 1e-4);
+    CHECK_EQ(settings_get_int(SET_INA228_UOHM), 200);
     CHECK_EQ(settings_get_int(SET_SENSE_SDA), 16);
     CHECK_EQ(changed(), 0);
 }

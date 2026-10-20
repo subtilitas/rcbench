@@ -537,12 +537,13 @@ one poll, the row of the window that closed in between has no CH2 and CH3
 figures.
 
 **The servo rail's meter.** `shared/bench/servo_source.c` decides once per
-poll which meter measures the servo rail. The INA3221's CH1 is the meter
-while all of these hold:
+poll which meter measures the servo rail. The INA3221 channel that watches
+the servo tester's target -- CH1 on an IOmcu older than 4.25 -- is the
+meter while all of these hold:
 
 | # | Condition |
 | ---: | --- |
-| 1 | SETUP INTERFACES has the INA3221 on with CH1 among its channels |
+| 1 | SETUP SENSORS has a fitted part with a channel that watches the servo tester's target; without SENSE_MAP (an IOmcu older than 4.25) that part's CH1 is on |
 | 2 | the IOmcu's protocol minor is 11 or more |
 | 3 | SENSE's registers 0 to 11 are the set-up asked: no write owed, no frame refused |
 | 4 | the last SENSE read is less than 200 ms old, and its `FLAGS` have the INA3221's bits 4 and 5 set and bit 9 clear |

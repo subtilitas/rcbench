@@ -687,10 +687,10 @@ are open and the address floats between 0x40 and 0x41), two
 a servo, and the ESC and motor or a resistive load on a current-limited
 supply.
 
-**Set it up on the panel.** SETUP → INTERFACES: `INA228` and `INA3221` ON.
-The other sensor settings default to the modules above: INA228
-at 0x45 with 200 µΩ, INA3221 at 0x40 with 0.1 Ω, SDA on GP16 and SCL on
-GP17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
+**Set it up on the panel.** SETUP → INTERFACES: `INA228` ON; SETUP →
+SENSORS: `0x40 fitted` ON. The other sensor settings default to the modules
+above: INA228 at 0x45 with 200 µΩ, the INA3221 at 0x40 with 0.1 Ω on each
+channel and CH1 watching OUT 1, SDA on GP16 and SCL on GP17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
 parts at the page's defaults while no set-up is stored in flash:
 
 ```bash
@@ -944,8 +944,8 @@ pressed, with no Enter.
 2. Flash `firmware/iomcu/build-trace/rcbench-iomcu.uf2`: hold BOOTSEL,
    plug the module into the PC, copy the file to its drive.
 3. Open the port in PuTTY with logging on. Within 3 s it prints a line
-   starting `rcbench-iomcu:`. On the panel, SETUP → INTERFACES: `INA3221`
-   ON.
+   starting `rcbench-iomcu:`. On the panel, SETUP → SENSORS: `0x40
+   fitted` ON.
 4. Noise, no servo: with no servo connected and the supply's output on at
    6.00 V, press `t`. 10 s later the console prints a line starting `$Z`.
    Close PuTTY; this log is `noise.log`.

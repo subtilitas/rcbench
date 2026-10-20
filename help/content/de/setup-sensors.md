@@ -1,0 +1,57 @@
+---
+screen: none
+title: Sensoren
+order: 62
+---
+
+# Sensoren
+
+SENSOREN, die vierte Kategorie auf [SETUP](setup.md), stellt bis zu vier TI INA3221 ein, Dreikanal-Strommonitore am Sensorbus auf 0x40 bis 0x43, und sagt für jeden Kanal, was er misst. Der INA228 und die Pins des Busses bleiben unter [Anschlüsse](setup-interfaces.md). Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert.
+
+## Die Bausteine
+
+![Zwei Bausteine bestückt, 0x40 online](view:setup-sensors)
+
+| Einstellung | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|
+| 0x40 bestückt bis 0x43 bestückt | EIN, AUS | AUS | ein INA3221 an dieser Adresse; das DAOKAI-Modul nimmt 0x40 mit A0 nach GND gebrückt |
+
+Jeder bestückte Baustein hat eine Überschrift, `INA3221 0x40` bis `INA3221 0x43`, und zwei Zeilen für jeden seiner drei Kanäle. Ein nicht bestückter Baustein zeigt keine Zeilen.
+
+| Einstellung | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|
+| 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis PORT 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, sonst KEINE | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
+| 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0 mOhm, Schritte von 0,1 mOhm | 100,0 | AUS: der Kanal wird nicht gelesen; 100 mOhm misst bis 1,64 A |
+
+- `+` auf einem Shunt bei AUS gibt 5,0 mOhm, `-` bei 5,0 mOhm gibt AUS.
+- Der Kanal, der jede Millisekunde gelesen wird und dessen Strom der Bildschirm [SERVO](servo.md#das-messgerät-der-servoschiene) und der Servotest nutzen, ist der niedrigste Kanal mit Shunt an einem bestückten Baustein, der das Ziel des Servotesters misst: einen Ausgang, solange das Ziel OUTPUTS ist, PORT n, solange es Programmierport n ist.
+- Das Panel schreibt die Einstellung 500 ms nach der letzten Änderung, nur bei einem Prüfstand in SAFE.
+
+## Was ein Baustein tut
+
+Rechts in der Überschrift eines Bausteins steht, was er tut:
+
+| Zustand | Bedeutung |
+|---|---|
+| `ONLINE` | der IOmcu liest den Baustein |
+| `SUCHT DEN BAUSTEIN` | die Einstellung ist angenommen; die ersten 2,5 s |
+| `ANTWORTET NICHT` | an der Adresse antwortet nichts |
+| `ANDERE ID ANTWORTET` | dort antwortet etwas anderes |
+| `NOCH NICHT GESCHRIEBEN` | eine Änderung wartet auf ihr Schreiben |
+| `NOCH NICHT GELESEN` | noch antwortet kein IOmcu |
+| `VOM IOmcu NICHT ÜBERNOMMEN` | der IOmcu hat die Einstellung abgelehnt |
+| `ALLE KANÄLE AUS` | alle drei Shunts stehen auf AUS; nichts wird geschrieben |
+| `INA228 AUF DIESER ADRESSE` | der INA228 ist auf dieser Adresse eingeschaltet; keiner wird gelesen |
+| `IOmcu ÄLTER ALS 4.25: NICHT GELESEN` | ein älterer IOmcu liest nur einen Baustein |
+
+![Ein IOmcu älter als 4.25](view:setup-sensors-old)
+
+Die Zeilen eines Bausteins, den der IOmcu nicht liest, stehen in der Warnfarbe, mit dem Grund statt der Hilfezeile. Ein IOmcu älter als 4.25 liest einen INA3221: den Baustein des Kanals, der das Ziel des Servotesters misst, sonst den niedrigsten bestückten.
+
+Ein Panel, das von 0.21 aktualisiert wurde, nimmt seine erste Einstellung von dem einen INA3221, den es hatte: der Baustein an der alten Adresse bestückt, sein CH1 auf dem alten Shunt und misst AUSGANG 1, oder PORT 1, wenn das Ziel des Servotesters der Programmierport war. Das nächste SPEICHERN behält sie.
+
+## Verwandte Seiten
+
+- [Setup](setup.md)
+- [Anschlüsse](setup-interfaces.md)
+- [Servo](servo.md)

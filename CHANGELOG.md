@@ -30,6 +30,30 @@ history is in git.
   4.23 it says `IOmcu older than 4.23: no Hitec line.`
 - The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
   receive mode before the OPEN, and the report names it (`rx=pu|pre`).
+- SETUP > SENSORS (German `SENSOREN`), the eighth tile: up to four INA3221
+  current monitors at 0x40 to 0x43. Per part `0x40 fitted`; per channel
+  `0x40 CH1 watches` (NONE, OUT 1 to OUT 8, PORT 1 to PORT 4, SUPPLY) and
+  `0x40 CH1 shunt` (OFF, 5.0 to 1000.0 mOhm). A fitted part's heading shows
+  its state: `ONLINE`, `NOT ANSWERING`, `IOmcu OLDER THAN 4.25: NOT READ`
+  and seven more. The panel writes the map to SENSE_MAP (link protocol
+  4.25) in one write of 26 registers; an IOmcu older than 4.25 gets SENSE's
+  one-part frame. The channel read at 1 kHz is the lowest one on a fitted
+  part that watches the servo tester's target.
+- The band says `INA3221 0x41 has every channel off. Check SETUP >
+  SENSORS.` for a fitted part with all three shunts OFF; no map is written
+  then.
+
+### Changed
+
+- The four INA3221 rows leave SETUP > INTERFACES (23 settings now). A panel
+  updated from 0.21 seeds SENSORS from them at start-up: the part at the old
+  address fitted when the INA3221 was ON, its CH1 on the old shunt, CH2 and
+  CH3 on it with CH1+2+3 and OFF with CH1, and CH1 watching PORT 1 when the
+  servo tester's target was the programming port, OUT 1 otherwise. The old
+  keys stay stored and unchanged for one release, for a panel taken back to
+  0.21.
+- `INA3221 settings rejected. Check SETUP > SENSORS.` names SENSORS in
+  place of INTERFACES.
 
 ## 0.21.2 - 2026-10-20
 

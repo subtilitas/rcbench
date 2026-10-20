@@ -732,9 +732,10 @@ Widerstände 2,2 kΩ, ein Multimeter, ein Oszilloskop oder Logikanalysator mit
 I2C-Dekodierung, ein Servo, und der ESC mit Motor oder eine ohmsche Last an
 einem Netzteil mit Strombegrenzung.
 
-**Am Panel einrichten.** SETUP → ANSCHLÜSSE: `INA228` und `INA3221` auf ON.
-Die übrigen Sensoreinstellungen passen in der Vorgabe zu den Modulen oben: INA228
-auf 0x45 mit 200 µΩ, INA3221 auf 0x40 mit 0,1 Ω, SDA an GP16 und SCL an
+**Am Panel einrichten.** SETUP → ANSCHLÜSSE: `INA228` auf ON; SETUP →
+SENSOREN: `0x40 bestückt` auf ON. Die übrigen Sensoreinstellungen passen in
+der Vorgabe zu den Modulen oben: INA228 auf 0x45 mit 200 µΩ, der INA3221 auf
+0x40 mit 0,1 Ω je Kanal und CH1, der AUSGANG 1 misst, SDA an GP16 und SCL an
 GP17. Ohne Panel gibt die Build-Option `IOMCU_SENSE_BRINGUP=ON` beide
 Bauteile mit den Vorgaben der Page frei, solange im Flash keine
 Konfiguration liegt:
@@ -1011,8 +1012,8 @@ wird nachgespielt. Eine Taste wird beim Drücken gesendet, ohne Enter.
 2. `firmware/iomcu/build-trace/rcbench-iomcu.uf2` flashen: BOOTSEL halten,
    das Modul an den PC stecken, die Datei auf sein Laufwerk kopieren.
 3. Den Port in PuTTY mit Mitschnitt öffnen. Innerhalb von 3 s kommt eine
-   Zeile, die mit `rcbench-iomcu:` beginnt. Am Panel SETUP → ANSCHLÜSSE:
-   `INA3221` auf ON.
+   Zeile, die mit `rcbench-iomcu:` beginnt. Am Panel SETUP → SENSOREN:
+   `0x40 bestückt` auf ON.
 4. Rauschen ohne Servo: kein Servo angeschlossen, der Ausgang des Netzteils
    an bei 6,00 V, `t` drücken. 10 s später druckt die Konsole eine Zeile,
    die mit `$Z` beginnt. PuTTY schließen; dieser Mitschnitt ist

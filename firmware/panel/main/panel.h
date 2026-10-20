@@ -45,6 +45,7 @@
 #include "prog_link.h"
 #include "safety_gate.h"
 #include "sense_link.h"
+#include "sense_map_link.h"
 #include "servo_link.h"
 #include "servo_page.h"
 #include "servo_screen.h"
@@ -278,8 +279,10 @@ static inline supply_wiring_t pdmini_wiring(void)
     return wiring_of(atomic_load(&s_pdmini_wiring));
 }
 
-/* What SETUP INTERFACES left for the current monitors and the phase tap,
- * read by the control task. */
+/* What SETUP INTERFACES and SETUP > SENSORS left for the current monitors
+ * and the phase tap, read by the control task; panel_sense.c publishes the
+ * monitors' from the settings observer. */
+void            publish_sense(void);
 sense_setup_t   sense_wanted(void);
 tone_setup_t    tone_wanted(void);
 
@@ -607,6 +610,17 @@ extern atomic_uint     s_hitec_rx_mark;
 void kst_port_look(void);
 void sense_link_alerts(void);
 void sense_link_service(bool idle, bench_state_t *bench);
+
+/* ----------------------------------------------------------- panel_sense.c */
+
+/* The SENSE_MAP page (4.25) and the INA3221 parts' states for SETUP >
+ * SENSORS (sense_map_link_status()'s word).  Control task only, but
+ * s_sense_parts, which app_main reads. */
+extern sense_map_link_t s_sense_map;
+extern atomic_uint      s_sense_parts;
+void sense_map_came_up(uint16_t minor);
+void sense_map_lost(void);
+void sense_map_service(bool idle);
 void tone_link_alerts(void);
 void tone_link_service(void);
 void kst_commands(void);

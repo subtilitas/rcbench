@@ -6,13 +6,13 @@ order: 61
 
 # Interfaces
 
-INTERFACES, the second category on [SETUP](setup.md), wires the parts the IOmcu reads: two current monitors and an output encoder on one I2C (Inter-Integrated Circuit) bus, the phase tap, the PD mini supply, and how the programming port receives a Hitec D series servo. Its 27 settings stand in five sections under the headings I2C BUS, PHASE TAP, BALANCE SENSORS, SUPPLY and PROG PORT; a heading is a row of its own with no keys. The settings are kept and saved like every other setting on SETUP. The panel writes each set-up to the IOmcu 500 ms after the last edit, and only what differs from what the IOmcu holds.
+INTERFACES, the second category on [SETUP](setup.md), wires the parts the IOmcu reads: the INA228 current monitor and an output encoder on one I2C (Inter-Integrated Circuit) bus, the phase tap, the PD mini supply, and how the programming port receives a Hitec D series servo. Its 23 settings stand in five sections under the headings I2C BUS, PHASE TAP, BALANCE SENSORS, SUPPLY and PROG PORT; a heading is a row of its own with no keys. The settings are kept and saved like every other setting on SETUP. The panel writes each set-up to the IOmcu 500 ms after the last edit, and only what differs from what the IOmcu holds.
 
 ## The current monitors
 
 ![The INA228 rows](view:setup-interfaces)
 
-The IOmcu reads a TI INA228 in the ESC's power path and a TI INA3221 on the servo rail.
+The IOmcu reads a TI INA228 in the ESC's power path, set up here, and up to four TI INA3221 on the same bus, set up on [Sensors](setup-sensors.md).
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -20,24 +20,17 @@ The IOmcu reads a TI INA228 in the ESC's power path and a TI INA3221 on the serv
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped |
 | INA228 shunt | 50 to 20000 uOhm | 200 | the shunt it measures across |
 | INA228 max current | 1.0 to 300.0 A, 0.1 A steps | 204.8 | the current the range is set for |
-| INA3221 | ON, OFF | OFF | the servo rail's three-channel monitor |
-| INA3221 address | 0x40 to 0x43 | 0x40 | the DAOKAI module with A0 bridged to GND |
-| INA3221 shunt | 5.0 to 1000.0 mOhm, 0.1 mOhm steps | 100.0 | per channel; 100 mOhm reads to 1.64 A |
-| INA3221 channels | CH1, CH1+2+3 | CH1 | CH1 for the servo test; CH2 and CH3 for a pair |
-
-![The INA3221 rows and the bus's pins](view:setup-sensors)
-
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Sensor SDA | -1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | the IOmcu GPIO (general-purpose input/output) for SDA; -1 sets no bus |
 | Sensor SCL | SDA + 1, or -1 | 17 | follows Sensor SDA; the row has no keys |
 
 - The bus runs at 400 kHz; that is not a setting.
-- The two addresses stop at the ends of their range: `-` at 0x40 and `+` at 0x4F or 0x43 change nothing.
+- The address stops at the ends of its range: `-` at 0x40 and `+` at 0x4F change nothing.
 - Pins with nothing wired to them read as the monitors not answering, not as a blocked bus.
 - The IOmcu takes a change only while the bench is SAFE.
 - With the INA228 enabled and answering, the MOTOR & ESC tile loses its SIMULATED mark and [MOTOR & ESC](motor.md#table) reads its voltage and current.
-- With the INA3221 on with CH1, [SERVO](servo.md#the-servo-rail-s-meter) reads the servo rail's current from it.
+- With an INA3221 channel watching the servo tester's target on [Sensors](setup-sensors.md), [SERVO](servo.md#the-servo-rail-s-meter) reads the servo rail's current from it.
 - A reading at the top of the range is shown as clipped, never as a value: 163.8 mV across the INA3221's shunt.
 - A monitor that stops answering does not switch the bench to SAFE: nothing trips on the monitors' readings.
 
@@ -51,7 +44,7 @@ A row whose value is not the one the IOmcu holds has its edge and value in the w
 
 - after an edit, until the write is taken: 500 ms after the last edit, for the current monitors only once the bench is SAFE;
 - on a value the IOmcu refused, until it is changed to one it takes;
-- on a part switched ON that the IOmcu holds off: Sensor SDA at -1, both monitors on one address, or an IOmcu too old for the part.
+- on a part switched ON that the IOmcu holds off: Sensor SDA at -1, the INA228 on the address of a fitted INA3221, or an IOmcu too old for the part.
 
 No row is marked while no IOmcu answers. AS5600 centre is the panel's own value and is never marked.
 
