@@ -58,6 +58,13 @@ history is in git.
   a programming session gives the port back and after an IOmcu restart,
   without waiting for the next ARM.
 
+### Changed
+
+- LOGS lists its tabs in the order ROOT (German STAMM), USER, BENCH, and
+  shows the card's name right-aligned at the end of the header row, with
+  the folder after the tabs. The tab ids, the remembered tab and the
+  folders are as before.
+
 ### Fixed
 
 - Downloads from the Wi-Fi page on a home network run without Wi-Fi power
@@ -92,7 +99,7 @@ v0.20.0. The steps from 0.21.1 are in
 
 1. SETUP > UPDATES, `RELEASES: TESTING`, `CHECK FOR UPDATES`, with a home
    network kept, the bench SAFE, the supply output off and no log run open.
-   0.21.0 and 0.21.1 read only an answer that states its size: a card that
+   0.21.0 and 0.21.1 read only an answer that states its size: a panel that
    says `Unexpected answer from GitHub.` gets the cached answer, which
    does, with `CHECK FOR UPDATES` pressed again at once
    ([the check on 0.21.0 and 0.21.1](docs/FirstRun.md#the-check-on-0210-and-0211)).

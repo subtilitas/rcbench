@@ -1808,9 +1808,9 @@ Runs are listed newest first by number, across all names in the folder:
 
 ![The ROOT tab with the runs of an older firmware](img/logs-root.png)
 
-Three tabs at the header row's left choose the folder on the list: USER
-(User log folder, `USER/LOGS` by default), BENCH (Auto log folder,
-`BENCH/LOGS` by default) and ROOT (the card's root). A tab
+Three tabs at the header row's left choose the folder on the list, in this
+order: ROOT (the card's root), USER (User log folder, `USER/LOGS` by
+default) and BENCH (Auto log folder, `BENCH/LOGS` by default). A tab
 tapped lists its folder from the first page. With no card the tabs switch
 all the same: the tab tapped is drawn selected, the box reads
 `No card. Insert one and tap RESCAN.` with that tab's line under it, and
@@ -1818,8 +1818,9 @@ the tap looks for a card again, as RESCAN does. A card in the slot that does
 not mount reads `Card is neither FAT32 nor exFAT. Format it on a computer.` or
 `Cannot read the card. Check it on a computer, then tap RESCAN.` instead
 ([The SD card's format](#the-sd-cards-format)). The header right of the tabs
-names the card and the folder, `UNITEST  BENCH/LOGS`, and the card alone on
-ROOT. An empty folder says why and what goes there:
+shows the folder, `BENCH/LOGS`, and nothing on ROOT. The card's name,
+`UNITEST`, ends the row, right-aligned: at the right edge of the list, and
+left of PREV when PREV and NEXT show. An empty folder says why and what goes there:
 `No .csv files in BENCH/LOGS.` and the names it takes, or with its switch OFF
 `AUTO LOGS OFF in SETUP > SD CARD.`. Under the DELETE question the tabs are
 hidden. A file opened from one tab stays that tab's file: its import view
@@ -2206,7 +2207,16 @@ the whole image before it asks anything: the ESP image header for the
 ESP32-S3, the application's project name `rcbench-panel`, a version of the
 form MAJOR.MINOR.PATCH and the appended SHA-256 (secure hash algorithm, 256
 bits). A second upload while one waits is refused until CANCEL on the panel.
-The screen shows the bytes received while an upload runs.
+The screen shows the bytes received while an upload runs. The upload
+writes no flash: the panel keeps the file in PSRAM (pseudo-static
+random-access memory) until PANEL UPDATE writes it.
+The panel writes the image to flash only after the hold on PANEL UPDATE
+([Installing: PANEL UPDATE](#installing-panel-update)). While it writes, the
+display goes fully dark at each flash erase and comes back after it, about
+every 0.5 s (reported on 0.20.0; 0.21.x not measured, the write path is the
+same code). This is expected: the RGB (red, green, blue) panel cannot scan
+while the main flash is busy (`CONFIG_LCD_RGB_ISR_IRAM_SAFE=n` in
+`firmware/panel/sdkconfig.defaults`).
 
 **Files on the card.** Every file, folder by folder, with its name, its size
 in bytes and its modification time as the card has it. Each name downloads
@@ -2262,9 +2272,9 @@ and withholds the heartbeat on purpose, so the IOmcu holds its outputs
 in failsafe as it does at any restart of the panel. PANEL UPDATE takes the
 whole screen, with no band and no STOP: nothing can be switched to ARMED
 behind it. It writes the slot that is not running in pieces of 64 KiB and
-shows the bytes and the percentage. The picture can be disturbed while the
-flash is erased, and is in place again from the first whole frame after
-each erase.
+shows the bytes and the percentage. The display goes fully dark at each
+flash erase, about every 0.5 s (reported on 0.20.0; 0.21.x not measured),
+and is in place again from the first whole frame after each erase.
 Then the slot is read back and checked, it becomes the one that starts, and
 the panel restarts.
 
@@ -2292,8 +2302,8 @@ Current limitations:
 
 - A power cut during the trial start loses that line; the panel still goes
   back to the build before.
-- How long the erase and the write take is not measured, and neither is
-  what the glass shows during an erase.
+- How long the erase and the write take is not measured. The dark display
+  at each erase is reported on 0.20.0 and not measured on 0.21.x.
 
 Before the first update over Wi-Fi, the panel needs one flash over USB to
 reach the layout with two application slots: [First run, §1](FirstRun.md#1-flash-both-boards).
