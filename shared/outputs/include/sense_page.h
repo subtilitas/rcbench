@@ -83,6 +83,13 @@ typedef struct {
                              (sense_page_ports()); 0 until told           */
     uint64_t held;      /**< the pins core 1 still holds, as of its last
                              snapshot, whatever set-up it was under      */
+    uint16_t map[LINK_SM_COUNT]; /**< SENSE_MAP (protocol 4.25): 0 to 25
+                             as written, while map_set; 26 to 30 as
+                             published; see sense_map.h               */
+    bool     map_set;   /**< the map has been written and is in force;
+                             false: it is SENSE's one part             */
+    uint16_t xwin[2][LINK_SX_COUNT]; /**< SENSE_WIN_A and SENSE_WIN_B as
+                             published                                   */
 } sense_page_t;
 
 void sense_page_init(sense_page_t *p);
@@ -236,10 +243,12 @@ void sense_page_bench(sense_page_t *p, const sense_snap_t *s,
 /**
  * The capability bits the set-up makes true: LINK_CAP_PACK_SENSE while
  * the INA228 is enabled, LINK_CAP_SERVO_SENSE while the INA3221 is --
- * fitted as configured, not online now.  They change only with a SENSE
- * write taken, because a panel reads the identity page at link-up and
- * again after it writes SENSE, not on every poll; whether a part answers
- * is FLAGS' and BENCH bit 5's, which it polls.
+ * fitted as configured, not online now -- or, with SENSE_MAP in force,
+ * while a channel it reads watches an output channel or a programming
+ * port (sense_map.h).  They change only with a SENSE or SENSE_MAP write
+ * taken, because a panel reads the identity page at link-up and again
+ * after such a write, not on every poll; whether a part answers is FLAGS'
+ * and BENCH bit 5's, which it polls.
  */
 uint16_t sense_page_caps(const sense_page_t *p);
 

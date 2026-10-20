@@ -1034,7 +1034,7 @@ TEST_CASE(the_hitec_receive_mode_is_a_register_after_view)
 {
     CHECK_EQ(LINK_MINOR_HITEC_RX, 24u);
     CHECK_EQ(LINK_MINOR_HITEC_RX, LINK_MINOR_HITEC + 1u);
-    CHECK_EQ(LINK_PROTOCOL_MINOR, LINK_MINOR_HITEC_RX);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_HITEC_RX);
     CHECK_EQ(LINK_HT_W_VIEW, 22);
     CHECK_EQ(LINK_HT_W_RX_MODE, 23);
     CHECK_EQ(LINK_HT_W_COUNT, 24);
@@ -1629,7 +1629,7 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 24u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 25u);
     CHECK_EQ(LINK_MINOR_UPDATE, 22u);
     CHECK(LINK_MINOR_UPDATE > LINK_MINOR_REFUSED);
 

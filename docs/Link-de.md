@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.24. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.25. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -138,7 +138,12 @@ mit BAD_PAGE ab. Ab 4.24 nimmt HITEC den Empfangsmodus einer Leitung der
 D-Serie im Schreibregister 23; das Panel schreibt den Hitec-D-Empfang aus
 SETUP dorthin, und ein IOmcu mit 4.23 weist das Register mit READ_ONLY ab
 und empfängt mit dem Pull-up. Das Panel sendet keine Hitec-Transaktion
-([Der Programmierport für Servos von Hitec](LinkHitec-de.md)).
+([Der Programmierport für Servos von Hitec](LinkHitec-de.md)). Ab 4.25
+richtet SENSE_MAP (0x35) bis zu 4 INA3221 mit einem Shunt und einem
+Beobachtungsziel je Kanal ein, und SENSE_WIN_A und SENSE_WIN_B (0x37, 0x38)
+tragen das letzte Fenster jedes Kanals; ein älterer IOmcu weist die drei mit
+BAD_PAGE ab, und das Panel dieses Builds schreibt keine davon
+([Die INA3221-Map und ihre Fenster](LinkSensors-de.md)).
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -197,7 +202,7 @@ Die Page hat kein Capability-Bit. Ein Panel, das die Minor liest, weiß, dass
 die Page existiert; FLAGS sagt, ob der Tap läuft.
 
 Der IOmcu dieses Builds bedient die Page und hält die Register 0 bis 6
-im Flash (Speicher-Record Version 7, die Register des Taps ab Version 6; ein
+im Flash (Speicher-Record Version 8, die Register des Taps ab Version 6; ein
 Record der Version 3 bis 5 liest mit
 ausgeschaltetem Tap auf seinen Standardwerten). Core 0 besitzt die
 PIO-State-Machine (PIO: Programmable Input/Output) und ihren DMA-Kanal (DMA:
@@ -785,6 +790,14 @@ Die Hitec-Page (`HITEC`, 0x34) hat [eine eigene Seite](LinkHitec-de.md):
 hinein und hinaus, die Transaktionen, POWER, was ein Stopp mit einem Port
 macht, und die Register.
 
+### Die INA3221-Map und ihre Fenster
+
+SENSE_MAP (0x35), SENSE_WIN_A (0x37) und SENSE_WIN_B (0x38) haben
+[eine eigene Seite](LinkSensors-de.md): bis zu 4 INA3221 und ihre 12 Kanäle,
+der FAST-Kanal, dem SERVO_WIN und eine Messung auf SERVO_SENSE folgen, wie
+SENSE eine geltende Map spiegelt, das Fenster jedes Kanals, und der
+Flash-Record über zwei Pages.
+
 ### Identifier
 
 Ein 29-Bit-Extended-Identifier trägt die ganze Adresse; ein Read ist deshalb
@@ -866,6 +879,9 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5 s.
 | 0x32 | `KST` | lesen, schreiben | die Servo-Programmier-Page: das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 28: das Kommando in den Registern 0 bis 3, ein Frame, das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25 und Versorgungsspannung und -strom eines ENTER in 26 und 27. [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md) nennt die Regeln. Nichts wird gehalten |
 | 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 24 Register. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte. [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew und Endpunkte werden im Flash des IOmcu gehalten |
 | 0x34 | `HITEC` | lesen, schreiben | rohe Transaktionen der Hitec-Servoleitung auf einem Programmierport (seit 4.23). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Zahl der Transaktionen, Ergebnis und Abweisung, Anzahl und Flags des Mitschnitts, das Ergebnis des Dekoders, den dekodierten Wert, `VIEW`, die empfangenen Bytes in 8 Registern und in 16 Registern die Startzeiten der Bytes oder den Lauf. Ein Schreiben nimmt 24: das Kommando in den Registern 0 bis 3, ein Frame, die bereitgestellte Transaktion, Dekoder und Sollwerte eines POWER in 4 bis 21, `VIEW` in 22 und den Empfangsmodus einer Leitung der D-Serie in 23 (seit 4.24). [Der Programmierport für Servos von Hitec](LinkHitec-de.md) nennt die Regeln. Nichts wird gehalten |
+| 0x35 | SENSE_MAP | lesen, schreiben | bis zu 4 INA3221 an 0x40 bis 0x43 auf dem Bus von SENSE (seit 4.25). Register 0 die bestückten Bauteile, Bit a für 0x40 + a; 1 `FAST`, der Kanal, der jede 1 ms gelesen wird (0 bis 11, 0xFF keiner); 2 bis 13 der Shunt jedes Kanals in 0,1 mΩ (0 aus, 50 bis 10000); 14 bis 25 was jeder Kanal misst (0 nichts, 0x01 bis 0x08 ein Ausgangskanal, 0x10 bis 0x13 ein Programmierport, 0x20 die Versorgung); nur lesbar: 26 bis 29 die Die-ID jedes Bauteils, 30 Flags, 31 reserviert. Die Register 0 bis 25 hält der IOmcu im Flash. Solange die Map in Kraft ist, spiegeln Bit 1 von ENABLE und die Register 8 bis 10 von SENSE sie. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md) nennt die Regeln |
+| 0x37 | SENSE_WIN_A | lesen | das letzte 50-ms-Fenster der Kanäle 0 bis 5 (seit 4.25): die Fensternummer, Flags, und 5 Register je Kanal: mittlerer und höchster Strom (mA, mit Vorzeichen), mittlere und niedrigste Busspannung (mV), Flags. Jedes Schreiben wird mit READ_ONLY abgewiesen. Nichts wird gehalten |
+| 0x38 | SENSE_WIN_B | lesen | das der Kanäle 6 bis 11, wie SENSE_WIN_A (seit 4.25) |
 | 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des IOmcu selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
 | 0xF1 | UPDATE_DATA | lesen, schreiben | die 64 Byte des aktuellen Blocks, in jedem Register das niederwertige Byte zuerst (seit 4.22; über Majors eingefroren): 32 Register. FINISH nimmt den erwarteten SHA-256 aus Register 0 bis 15. Nichts wird behalten |
 

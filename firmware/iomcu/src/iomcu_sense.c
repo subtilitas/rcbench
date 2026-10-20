@@ -10,6 +10,7 @@
 #include "iomcu.h"
 
 #include "pd_uart.h"
+#include "sense_map.h"
 
 /* ------------------------------------------------------------- core 1 */
 
@@ -215,6 +216,60 @@ void servo_sense_read(void *ctx, uint8_t off, uint8_t n,
     (void)ctx;
     sense_sync();
     sense_servo_read(&s_sense, off, n, out);
+}
+
+/*
+ * SENSE_MAP: judged by the page against the bank and the pins SENSE's would
+ * be, then, when it moved, the bus set up again as a SENSE write does it
+ * and the map saved.  A change of WATCH alone is saved and leaves core 1 as
+ * it is.
+ */
+void sense_map_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    sense_sync();
+    sense_map_read(&s_sense, off, n, out);
+}
+
+uint8_t sense_map_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
+{
+    (void)ctx;
+    sense_sync();
+    const uint16_t gen = s_sense.cfg_gen;
+    const bool was_set = s_sense.map_set;
+    uint16_t was[LINK_SM_KEPT];
+    memcpy(was, s_sense.map, sizeof(was));
+    const uint8_t nack = sense_map_write(&s_sense, off, n, in, &s_outputs,
+                                         supply_page_pins(&s_supply)
+                                         | tone_page_pins(&s_tone));
+    if (nack != 0u) {
+        return nack;
+    }
+    if (s_sense.cfg_gen != gen) {
+        reserve_held();
+        capabilities_update();
+        sense_order();
+    }
+    if (s_sense.cfg_gen != gen || !was_set
+        || memcmp(was, s_sense.map, sizeof(was)) != 0) {
+        save_outputs(&s_state);
+    }
+    return 0u;
+}
+
+/* SENSE_WIN_A and SENSE_WIN_B: every channel's last window.  Read only. */
+void sense_win_a_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    sense_sync();
+    sense_xwin_read(&s_sense, 0u, off, n, out);
+}
+
+void sense_win_b_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    sense_sync();
+    sense_xwin_read(&s_sense, 1u, off, n, out);
 }
 
 /* CH1's last four windows.  Read only: the page has no write handler. */
