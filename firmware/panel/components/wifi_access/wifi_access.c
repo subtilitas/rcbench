@@ -46,6 +46,7 @@
 #include "wa_mdns.h"
 #include "wa_page.h"
 #include "wa_send.h"
+#include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
 #include "wa_zip.h"
@@ -621,28 +622,16 @@ static esp_err_t h_update(httpd_req_t *r)
     return answer_upload(r, e, &info, same, false);
 }
 
-/* Raw bytes on the socket: a response whose length is known up front. */
-static bool raw_send(httpd_req_t *r, const void *data, size_t n)
+/* Raw bytes, at most IO_CHUNK, of a response of known length (wifi_sock.h). */
+static wa_send_res_t raw_send(httpd_req_t *r, const void *data, size_t n)
 {
-    const char *p = data;
-    while (n > 0u) {
-        if (atomic_load(&s.abort)) {
-            return false;
-        }
-        const int sent = httpd_send(r, p, n);
-        if (sent == HTTPD_SOCK_ERR_TIMEOUT) {
-            continue;
-        }
-        if (sent <= 0) {
-            return false;
-        }
-        p += sent;
-        n -= (size_t)sent;
-    }
-    return true;
+    wifi_sock_t c = { httpd_req_to_sockfd(r), &s.abort };
+    const wa_sink_t k = wifi_sock_sink(&c);
+    return wa_sink_all(&k, data, (uint32_t)n);
 }
 
-static bool raw_head(httpd_req_t *r, uint64_t length, const char *name)
+static wa_send_res_t raw_head(httpd_req_t *r, uint64_t length,
+                              const char *name)
 {
     char *disp = b->disp;
     if (wa_disposition(disp, sizeof(b->disp), name) == 0u) {
@@ -655,8 +644,8 @@ static bool raw_head(httpd_req_t *r, uint64_t length, const char *name)
                            "Content-Disposition: %s\r\n"
                            "Cache-Control: no-store\r\n\r\n",
                            (unsigned long long)length, disp);
-    return n > 0 && (size_t)n < sizeof(b->head)
-           && raw_send(r, b->head, (size_t)n);
+    return (n > 0 && (size_t)n < sizeof(b->head))
+           ? raw_send(r, b->head, (size_t)n) : WA_SEND_GONE;
 }
 
 static esp_err_t h_file(httpd_req_t *r)
@@ -688,19 +677,24 @@ static esp_err_t h_file(httpd_req_t *r)
         req_end();
         return refused(r, "404 Not Found");
     }
-    bool ok = raw_head(r, st.size, wa_basename(path));
-    while (ok) {
-        const int32_t got = wa_send_next(snd, b->io, sizeof(b->io));
-        if (got == 0) {
-            break;
-        }
-        ok = (got > 0) && raw_send(r, b->io, (size_t)got);
+    const uint32_t t0 = ms();
+    wa_send_res_t res = raw_head(r, st.size, wa_basename(path));
+    if (res == WA_SEND_DONE) {
+        wifi_sock_t c = { httpd_req_to_sockfd(r), &s.abort };
+        const wa_sink_t k = wifi_sock_sink(&c);
+        res = wa_send_run(snd, b->io, sizeof(b->io), &k);
     }
     wa_send_end(snd);
     req_end();
-    /* A response cut short closes the connection: the browser sees fewer
-     * bytes than announced and reports the download as failed. */
-    return ok ? ESP_OK : ESP_FAIL;
+    /* Cut short, the browser has fewer bytes than announced: failed. */
+    const esp_log_level_t lv = (res == WA_SEND_DONE) ? ESP_LOG_INFO
+                                                     : ESP_LOG_WARN;
+    ESP_LOG_LEVEL_LOCAL(lv, TAG, "file: %s, %llu of %llu B read in %lu ms",
+                        wa_send_res_name(res), (unsigned long long)snd->sent,
+                        (unsigned long long)st.size,
+                        (unsigned long)(ms() - t0));
+    return (res == WA_SEND_DONE) ? ESP_OK
+                                 : wifi_sock_drop(httpd_req_to_sockfd(r));
 }
 
 static esp_err_t h_zip(httpd_req_t *r)
@@ -731,13 +725,14 @@ static esp_err_t h_zip(httpd_req_t *r)
         } else {
             char zname[WA_NAME_MAX + 8u];
             snprintf(zname, sizeof(zname), "%s.zip", s.name);
-            bool ok = raw_head(r, plan.bytes, zname);
+            bool ok = raw_head(r, plan.bytes, zname) == WA_SEND_DONE;
             while (ok) {
                 const int32_t got = wa_zip_next(z, b->io, sizeof(b->io));
                 if (got == 0) {
                     break;
                 }
-                ok = (got > 0) && raw_send(r, b->io, (size_t)got);
+                ok = (got > 0)
+                     && raw_send(r, b->io, (size_t)got) == WA_SEND_DONE;
                 if (ok) {
                     lock();               /* a long download is traffic */
                     wa_request_begin(&s.w, ms());
@@ -748,7 +743,7 @@ static esp_err_t h_zip(httpd_req_t *r)
             if (!ok) {
                 wa_zip_end_early(z);
             }
-            res = ok ? ESP_OK : ESP_FAIL;
+            res = ok ? ESP_OK : wifi_sock_drop(httpd_req_to_sockfd(r));
         }
     }
     heap_caps_free(crc);
@@ -1329,7 +1324,7 @@ static void radio_down(void)
      * under way ends when the radio goes, after the grace. */
     (void)fetch_wait(FETCH_GRACE_MS);
     if (s.httpd != NULL) {
-        /* Waits for a request under way, which ends at its next piece. */
+        /* Waits for a request under way, which ends within a slice. */
         (void)httpd_stop(s.httpd);
         s.httpd = NULL;
     }
@@ -1394,6 +1389,11 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
         }
     } else {
         e = esp_wifi_set_mode(WIFI_MODE_STA);
+        /* No power save: with the default, the access point holds TCP's
+         * acks to each DTIM beacon (docs/Performance.md, Wi-Fi downloads). */
+        if (e == ESP_OK && esp_wifi_set_ps(WIFI_PS_NONE) != ESP_OK) {
+            ESP_LOGW(TAG, "esp_wifi_set_ps failed");
+        }
         if (e == ESP_OK
             && (mode == WA_MODE_JOIN || mode == WA_MODE_FETCH)) {
             memcpy(cfg.sta.ssid, c->ssid, strnlen(c->ssid, sizeof(cfg.sta.ssid)));

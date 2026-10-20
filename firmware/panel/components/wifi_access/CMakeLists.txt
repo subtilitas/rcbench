@@ -6,7 +6,7 @@
 # holds; this is the ESP-IDF (Espressif Internet-of-Things Development
 # Framework) end of them.
 idf_component_register(
-    SRCS "wifi_access.c"
+    SRCS "wifi_access.c" "wifi_sock.c"
     INCLUDE_DIRS include
     REQUIRES webaccess fwupdate storage esp_wifi esp_netif esp_event
              esp_http_server esp_http_client esp-tls mbedtls esp_timer

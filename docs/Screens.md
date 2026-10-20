@@ -2218,10 +2218,14 @@ file over 4 GiB − 1 B, an archive over 4 GiB − 1 B and more than 65,535
 entries use ZIP64. Nothing is held in memory or written to the card to make
 it: it is sent as it is read.
 
-The transfer rate is not measured. A download of S bytes at a rate of R
+The transfer rate is not measured; [Performance](Performance.md#wi-fi-downloads)
+gives what bounds it, an expected 300,000 to 1,000,000 B/s on a home
+network, and the steps to measure it. A download of S bytes at a rate of R
 bytes per second takes S / R seconds: at 1,000,000 B/s, a 50,000,000-byte
-card takes 50 s. A card pulled during a download ends the download short;
-the browser reports it as failed, and the panel runs on.
+card takes 50 s. The page answers one request at a time, so a request made
+during a download waits for its end. A card pulled during a download ends
+the download short, and so does a browser that takes nothing for 30 s; the
+browser reports it as failed, and the panel runs on.
 
 ### Installing: PANEL UPDATE
 
