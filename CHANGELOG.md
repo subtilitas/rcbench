@@ -58,6 +58,19 @@ history is in git.
   a programming session gives the port back and after an IOmcu restart,
   without waiting for the next ARM.
 
+### Fixed
+
+- Downloads from the Wi-Fi page on a home network run without Wi-Fi power
+  save and with a TCP (transmission control protocol) send buffer of
+  11,520 bytes instead of 5,760. On 0.21.2 a station measured 15,900 and
+  about 64,000 B/s; the expected rate is 300,000 to 1,000,000 B/s, not
+  measured ([Performance](docs/Performance.md#wi-fi-downloads)).
+- A download whose receiver closes, fails or takes nothing for 30 s ends
+  at once and resets its connection, and the page answers the next
+  request. A receiver that stopped reading held the page's server, and
+  with it every other request, until the connection timed out: about
+  7.5 min for one that kept its connection open.
+
 ## 0.21.2 - 2026-10-20
 
 0.21.2 is a testing release: its minor number, 21, is odd, and GitHub lists
