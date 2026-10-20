@@ -165,10 +165,10 @@ void sense_map_lost(void)
 }
 
 /*
- * The SENSE_MAP page, from sense_link_service() before SENSE's own
- * exchanges: the map SENSORS asks for written while @p idle, IDs and
- * FLAGS read, SENSE read again after a write was taken, and the parts'
- * states published for SETUP.  An IOmcu older than 4.25 is sent nothing.
+ * The SENSE_MAP page, from the poll just before sense_link_service():
+ * the map SENSORS asks for written while @p idle, IDs and FLAGS read,
+ * SENSE read again after a write was taken, and the parts' states
+ * published for SETUP.  An IOmcu older than 4.25 is sent nothing.
  */
 void sense_map_service(bool idle)
 {

@@ -111,10 +111,25 @@ typedef enum {
     /* --- the programming port ------------------------------------------ */
     SET_HITEC_RX,
     /* --- the INA3221 parts, on SETUP > SENSORS (settings_sensors.h) ----- */
-    SET_INA_FIT_0,                       /**< the part at 0x40 is fitted  */
-    SET_INA_FIT_LAST = SET_INA_FIT_0 + SET_INA_PARTS - 1,
-    SET_INA_CH_0,                        /**< channel 0's first row        */
-    SET_INA_CH_LAST = SET_INA_CH_0 + SET_INA_CHANNELS * SET_INA_CH_ROWS - 1,
+    /* Part a's FITTED, then channel by channel (part a's CHn) WATCHES and
+     * SHUNT, SET_INA_W_<a><n> for part a's CHn: settings_sensors.h names
+     * them by channel number. */
+    SET_INA_FIT_0, SET_INA_FIT_1, SET_INA_FIT_2, SET_INA_FIT_3,
+    SET_INA_W_01, SET_INA_SH_01,
+    SET_INA_W_02, SET_INA_SH_02,
+    SET_INA_W_03, SET_INA_SH_03,
+    SET_INA_W_11, SET_INA_SH_11,
+    SET_INA_W_12, SET_INA_SH_12,
+    SET_INA_W_13, SET_INA_SH_13,
+    SET_INA_W_21, SET_INA_SH_21,
+    SET_INA_W_22, SET_INA_SH_22,
+    SET_INA_W_23, SET_INA_SH_23,
+    SET_INA_W_31, SET_INA_SH_31,
+    SET_INA_W_32, SET_INA_SH_32,
+    SET_INA_W_33, SET_INA_SH_33,
+    SET_INA_FIT_LAST = SET_INA_FIT_3,
+    SET_INA_CH_0     = SET_INA_W_01,       /**< channel 0's first row     */
+    SET_INA_CH_LAST  = SET_INA_SH_33,
     /* --- the programmable supply --------------------------------------- */
     SET_SUPPLY_V_MAX,
     SET_SUPPLY_I_MAX,

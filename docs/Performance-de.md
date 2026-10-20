@@ -52,7 +52,7 @@ settings-sim        2,405      301 KiB      7.9      39.0
 battery-sim        2,435      304 KiB      8.0      39.0
 analyser-chrome       38,002     4750 KiB    124.7       7.8
 logs-chrome       16,687     2086 KiB     54.8      13.0
-settings-chrome       19,582     2448 KiB     64.3      13.0
+settings-chrome       20,718     2590 KiB     68.0      13.0
 settings-list-chrome       23,416     2927 KiB     76.9      13.0
 battery-chrome       36,614     4577 KiB    120.2       7.8
 balance-chrome       40,453     5057 KiB    132.8       6.5
@@ -381,15 +381,15 @@ Kartenübertragung, solange das WLAN läuft.
 
 | Posten | Was es ist | Bytes |
 | --- | --- | ---: |
-| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 128 232 |
-| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 297 752 |
+| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 128 704 |
+| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 297 280 |
 | `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 106 056 |
-| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 191 696 |
+| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 191 224 |
 | `AP` | WLAN-HOTSPOT: das WLAN, der Server der Seite und seine Task | 98 724 |
 | `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
 | `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
 | `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |
-| `left` | übriger Heap mit dem größten Modus | 88 536 |
+| `left` | übriger Heap mit dem größten Modus | 88 064 |
 
 Gelesen aus dem Build mit ESP-IDF v5.4. CI führt das Werkzeug auf diesem
 Build mit `--check-doc` aus; das schlägt fehl, wenn die Tabelle von ihm

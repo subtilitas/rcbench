@@ -126,7 +126,9 @@ static bool poll_bench(bench_state_t *bench)
         supply_link_service();
         /* And the current monitors': a set-up only with ARM written 0 and
          * acknowledged and the bank disarmed here, as the page refuses one
-         * while the bank drives. */
+         * while the bank drives.  SENSE_MAP first: SENSE's mirror
+         * registers follow the map it holds. */
+        sense_map_service(written && !armed && !outputs_armed(&s_out));
         sense_link_service(written && !armed && !outputs_armed(&s_out),
                            bench);
         /* And the phase tap's: an input, taken armed or not. */

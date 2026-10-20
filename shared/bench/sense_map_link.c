@@ -342,9 +342,13 @@ void sense_map_link_event_back(sense_map_link_t *s, uint8_t ev,
     if (!s->up && ev != SENSE_MAP_LINK_EV_DARK) {
         return;
     }
-    raise(s, ev, (ev == SENSE_MAP_LINK_EV_REFUSED) ? 0u
-                 : (ev == SENSE_MAP_LINK_EV_DARK) ? s->dark
-                                                  : (uint8_t)(1u << part));
+    uint8_t parts = 0u;
+    if (ev == SENSE_MAP_LINK_EV_DARK) {
+        parts = s->dark;
+    } else if (ev != SENSE_MAP_LINK_EV_REFUSED) {
+        parts = (uint8_t)(1u << part);
+    }
+    raise(s, ev, parts);
 }
 
 /* An IOmcu older than 4.25: the mirror part as SENSE reads it. */

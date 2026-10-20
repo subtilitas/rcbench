@@ -387,8 +387,13 @@ TEST_CASE(a_row_the_coprocessor_does_not_hold_is_marked)
     }
     /* Every bit there is, one at a time. */
     for (unsigned bit = 0u; bit < 24u; ++bit) {
-        const uint16_t sense = (bit < 16u) ? (uint16_t)(1u << bit) : 0u;
-        const uint8_t  tone  = (bit < 16u) ? 0u : (uint8_t)(1u << (bit - 16u));
+        uint16_t sense = 0u;
+        uint8_t  tone  = 0u;
+        if (bit < 16u) {
+            sense = (uint16_t)(1u << bit);
+        } else {
+            tone = (uint8_t)(1u << (bit - 16u));
+        }
         settings_screen_set_unheld(sense, tone);
         for (int id = 0; id < SETTING_COUNT; ++id) {
             bool want = false;

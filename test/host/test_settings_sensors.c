@@ -496,6 +496,41 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
     sensors_rows_set_status(0u);
 }
 
+/* Every state has its words and its colour: ONLINE the ok colour, the
+ * three that wait dim, the rest the warning colour. */
+TEST_CASE(every_part_state_has_its_words_and_colour)
+{
+    static const struct { sens_part_t st; const char *en; int color; } k[] = {
+        { SENS_PART_UNKNOWN,   "NOT READ YET",              UI_C_TEXT_DIM },
+        { SENS_PART_PENDING,   "NOT WRITTEN YET",           UI_C_TEXT_DIM },
+        { SENS_PART_SEARCHING, "LOOKING FOR THE PART",      UI_C_TEXT_DIM },
+        { SENS_PART_ONLINE,    "ONLINE",                    UI_C_OK },
+        { SENS_PART_SILENT,    "NOT ANSWERING",             UI_C_WARN },
+        { SENS_PART_WRONG,     "ANOTHER ID ANSWERS",        UI_C_WARN },
+        { SENS_PART_REFUSED,   "NOT ACCEPTED BY THE IOmcu", UI_C_WARN },
+        { SENS_PART_DARK,      "EVERY CHANNEL OFF",         UI_C_WARN },
+        { SENS_PART_SAME_ADDR, "INA228 ON THIS ADDRESS",    UI_C_WARN },
+        { SENS_PART_OLD,       "IOmcu OLDER THAN 4.25: NOT READ", UI_C_WARN },
+    };
+    for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
+        sensors_rows_set_status((uint16_t)((unsigned)k[i].st << 8));
+        CHECK_EQ(sensors_rows_status(2), k[i].st);
+        CHECK_STR_EQ(sensors_rows_state(2), k[i].en);
+        CHECK_EQ(sensors_rows_state_color(2),
+                 ui_theme_color((ui_color_id_t)k[i].color));
+    }
+    /* A word past the states the build knows reads as not read yet. */
+    sensors_rows_set_status((uint16_t)(0x0Fu << 4));
+    CHECK_STR_EQ(sensors_rows_state(1), "NOT READ YET");
+    ui_text_set_language(UI_LANG_DE);
+    sensors_rows_set_status((uint16_t)SENS_PART_SILENT);
+    CHECK_STR_EQ(sensors_rows_state(0), "ANTWORTET NICHT");
+    char buf[24];
+    CHECK_STR_EQ(sensors_rows_title(3, buf, sizeof(buf)), "INA3221 0x43");
+    ui_text_set_language(UI_LANG_EN);
+    sensors_rows_set_status(0u);
+}
+
 int main(void)
 {
     RUN(the_monitor_addresses_stop_at_their_ends);
@@ -512,5 +547,6 @@ int main(void)
     RUN(a_fitted_part_with_every_channel_off_is_dark);
     RUN(sensors_lists_a_fitted_parts_rows_under_its_heading);
     RUN(a_part_the_iomcu_does_not_read_marks_its_rows);
+    RUN(every_part_state_has_its_words_and_colour);
     return test_summary("settings_sensors");
 }

@@ -69,17 +69,17 @@ static const setting_def_t k_rows[N_ROWS] = {
 static const char *const k_old_addr[] = { "0x40", "0x41", "0x42", "0x43" };
 static const char *const k_old_ch[]   = { "CH1", "CH1+2+3" };
 
-static const setting_def_t k_kept[] = {
-    [SET_INA3221_EN - SET_INA3221_EN] = {
+static const setting_def_t k_kept[4] = {
+    {                                   /* SET_INA3221_EN */
         "ina3221_en", "INA3221", "Three-channel servo rail monitor", "",
         SET_CAT_COUNT, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0, 0.0f },
-    [SET_INA3221_ADDR - SET_INA3221_EN] = {
+    {                                   /* SET_INA3221_ADDR */
         "ina3221_adr", "INA3221 address", "DAOKAI module: A0 to GND for 0x40", "",
         SET_CAT_COUNT, SET_TYPE_ENUM, 0, 0, 1, 0, k_old_addr, 4, 0.0f },
-    [SET_INA3221_MOHM - SET_INA3221_EN] = {
+    {                                   /* SET_INA3221_MOHM */
         "ina3221_mohm", "INA3221 shunt", "Per channel; 100 reads to 1.64 A", "mOhm",
         SET_CAT_COUNT, SET_TYPE_FLOAT, 5.0f, 1000.0f, 0.1f, 100.0f, NULL, 0, 0.0f },
-    [SET_INA3221_CH - SET_INA3221_EN] = {
+    {                                   /* SET_INA3221_CH */
         "ina3221_ch", "INA3221 channels", "CH1 the servo test, CH2+3 a pair", "",
         SET_CAT_COUNT, SET_TYPE_ENUM, 0, 0, 1, 0, k_old_ch, 2, 0.0f },
 };
@@ -87,6 +87,9 @@ static const setting_def_t k_kept[] = {
 _Static_assert(SET_INA3221_CH - SET_INA3221_EN == 3,
                "the four kept keys are in a row");
 _Static_assert(SET_INA_CH_ROWS == 2, "a channel's rows: WATCHES, SHUNT");
+_Static_assert(SET_INA_W(5) == SET_INA_W_13 && SET_INA_SH(6) == SET_INA_SH_21
+               && SET_INA_SH(11) == SET_INA_SH_33,
+               "the rows' numbers are the enum's names");
 _Static_assert(N_ROWS == SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS,
                "every SENSORS row has its schema row");
 
@@ -191,7 +194,9 @@ uint8_t settings_sensors_fitted(void)
 {
     uint8_t parts = 0u;
     for (int a = 0; a < SET_INA_PARTS; ++a) {
-        parts |= settings_get_bool(SET_INA_FIT(a)) ? (uint8_t)(1u << a) : 0u;
+        if (settings_get_bool(SET_INA_FIT(a))) {
+            parts = (uint8_t)(parts | (1u << a));
+        }
     }
     return parts;
 }
