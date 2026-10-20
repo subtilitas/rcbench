@@ -683,6 +683,59 @@ TEST_CASE(an_older_pages_other_refusal_is_not_offered_again)
     }
 }
 
+/*
+ * The pin the page holds, for OUTPUTS and PICK A PIN: not known before a
+ * read; none with the tap off; the pin once it is on; the old pin while a
+ * move onto a busy pin is refused; none while the status says the pin
+ * refused, or from an IOmcu with no TONE page; not known once the link is
+ * lost.
+ */
+TEST_CASE(the_held_pin_is_the_pages_by_its_last_read)
+{
+    int pin = 0;
+    fresh(TONE_LINK_MINOR);
+    CHECK(!tone_link_held_pin(&tl, &pin));
+    CHECK_EQ(pin, -1);
+    polls(2);
+    CHECK(tone_link_held_pin(&tl, &pin));
+    CHECK_EQ(pin, -1);                          /* the tap off */
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    polls(20);
+    CHECK(tone_link_held_pin(&tl, &pin));
+    CHECK_EQ(pin, 22);
+
+    /* Moved onto a busy GP21: refused, GP22 stays the page's. */
+    fk.bad_pin = 21;
+    w.pin = 21u;
+    want(&w);
+    polls(20);
+    CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_REFUSED);
+    CHECK(tone_link_held_pin(&tl, &pin));
+    CHECK_EQ(pin, 22);
+    CHECK(tone_link_held_pin(&tl, NULL));
+
+    /* The status says the pin refused: the page holds none. */
+    fk.flags = LINK_TN_PIN_REFUSED;
+    polls(2);
+    CHECK(tone_link_held_pin(&tl, &pin));
+    CHECK_EQ(pin, -1);
+
+    tone_link_lost(&tl);
+    CHECK(!tone_link_held_pin(&tl, &pin));
+    CHECK_EQ(pin, -1);
+    CHECK(!tone_link_held_pin(NULL, &pin));
+
+    /* An IOmcu older than TONE holds none. */
+    fresh((uint16_t)(TONE_LINK_MINOR - 1u));
+    w.pin = 22u;
+    want(&w);
+    polls(20);
+    CHECK(tone_link_held_pin(&tl, &pin));
+    CHECK_EQ(pin, -1);
+}
+
 /* The frames the page does not hold, for SETUP's marks: from the edit to
  * the acknowledgement, for as long as a frame is refused, and none while
  * nothing answers. */
@@ -2100,6 +2153,7 @@ int main(void)
     RUN(a_bad_value_from_a_4_17_page_is_not_offered_again);
     RUN(an_older_pages_bad_value_is_offered_again_at_the_retry_pace);
     RUN(an_older_pages_other_refusal_is_not_offered_again);
+    RUN(the_held_pin_is_the_pages_by_its_last_read);
     RUN(a_frame_is_unheld_until_the_page_takes_it);
     RUN(a_refused_second_frame_is_its_own_event);
     RUN(a_gap_refused_and_stepped_back_is_over_at_once);

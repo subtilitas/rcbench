@@ -642,6 +642,15 @@ uint16_t sense_link_i3221_dmohm(const sense_link_t *s);
 int sense_link_sda(const sense_link_t *s);
 int sense_link_scl(const sense_link_t *s);
 
+/**
+ * The sensor bus's pins the page holds by its last read or write, as the
+ * IOmcu reserves them (sense_page_pins()): SDA and SCL while ENABLE has a
+ * part on, -1 and -1 while it has none or the IOmcu has no SENSE page.
+ * False, both -1, while that is not known: no link, or no read yet.
+ * @p sda and @p scl may be NULL.
+ */
+bool sense_link_held_pins(const sense_link_t *s, int *sda, int *scl);
+
 #ifdef __cplusplus
 }
 #endif

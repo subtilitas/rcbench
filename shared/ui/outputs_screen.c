@@ -84,6 +84,9 @@ static struct {
 
     outputs_apply_fn apply;
 
+    /* The pins SETUP > INTERFACES held at the last frame. */
+    uint64_t  iface[OUTPUTS_IFACE_COUNT];
+
     bool      chrome_valid[MAX_FBS];
     uint32_t  drawn_gen;
     uint32_t  gen;          /* bumped by anything that changes the picture */
@@ -106,6 +109,20 @@ static bool prog_taken(uint8_t index)
         return false;
     }
     return outputs_port_holds(outbind_pins(s.bind.board)[index].gpio);
+}
+
+/* What SETUP > INTERFACES holds pin @p index for, or OUTPUTS_IFACE_NONE:
+ * no protocol and no port holds it, and the IOmcu does not reserve it.  A
+ * pin a protocol holds is that protocol's, as against a port: the IOmcu
+ * refused the interface its pin then, and SETUP says so. */
+static outputs_iface_t iface_taken(uint8_t index)
+{
+    if (index >= outbind_pin_count(s.bind.board)
+        || outbind_pins(s.bind.board)[index].reserved
+        || outbind_group_of(&s.bind, index) != 0u || prog_taken(index)) {
+        return OUTPUTS_IFACE_NONE;
+    }
+    return outputs_iface_at(outbind_pins(s.bind.board)[index].gpio);
 }
 
 /* The pin of the PROG PORT entry shown, or OUTPUTS_NO_PIN. */
@@ -515,6 +532,7 @@ static void event(const touch_event_t *evt)
             s.refused = index;
             touched();
         } else if (outputs_screen_editable() && !prog_taken((uint8_t)index)
+                   && iface_taken((uint8_t)index) == OUTPUTS_IFACE_NONE
                    && outbind_toggle(&s.bind, (uint8_t)index)) {
             s.refused = -1;
             changed();
@@ -707,6 +725,13 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
         }
         return OUTPUTS_CELL_RESERVED;
     }
+    const outputs_iface_t iface = iface_taken(index);
+    if (iface != OUTPUTS_IFACE_NONE) {
+        if (label != NULL) {
+            snprintf(label, cap, "%s", outputs_iface_name(iface));
+        }
+        return OUTPUTS_CELL_RESERVED;
+    }
     if (held != 0u && held != proto) {
         if (label != NULL) {
             snprintf(label, cap, "%s", outbind_protos()[held].name);
@@ -819,7 +844,8 @@ static void draw_cell(gfx_canvas_t *c, int i)
                           && pin->gpio == shown_port_pin()
                           && prog_taken((uint8_t)i);
     const bool reserved = pin->reserved
-                          || (prog_taken((uint8_t)i) && !port_lit);
+                          || (prog_taken((uint8_t)i) && !port_lit)
+                          || iface_taken((uint8_t)i) != OUTPUTS_IFACE_NONE;
     const bool can = live && !reserved && !clashes((uint8_t)i)
                      && outbind_can_add(&s.bind, (uint8_t)i);
     const bool lit = (live && on) || port_lit;
@@ -896,6 +922,14 @@ static void draw_popup(gfx_canvas_t *c)
 
 static void render(gfx_canvas_t *c, int buffer_index)
 {
+    /* A row stepped on SETUP moves an interface's pin without a touch
+     * here. */
+    uint64_t iface[OUTPUTS_IFACE_COUNT];
+    outputs_iface_read(iface);
+    if (memcmp(iface, s.iface, sizeof(iface)) != 0) {
+        memcpy(s.iface, iface, sizeof(iface));
+        touched();
+    }
     bool stale = true;
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         stale = !s.chrome_valid[buffer_index]

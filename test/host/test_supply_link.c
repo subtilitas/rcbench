@@ -183,9 +183,22 @@ TEST_CASE(refused_wiring_is_not_written_again)
 {
     fresh();
     const supply_wiring_t bad = { true, 3, 9, 1u };   /* 3 is reserved */
+    int tx = 0;
+    int rx = 0;
+    /* No read yet: not known. */
+    CHECK(!supply_link_held_pins(&sl, &tx, &rx));
+    CHECK_EQ(tx, -1);
+    CHECK_EQ(rx, -1);
     supply_link_wire(&sl, &bad);
     pump(true);
     CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_WIRING_REFUSED);
+    /* Refused, the page holding nothing: known, no pins. */
+    CHECK(supply_link_held_pins(&sl, &tx, &rx));
+    CHECK_EQ(tx, -1);
+    CHECK_EQ(rx, -1);
+    CHECK(!supply_link_held_pins(NULL, &tx, &rx));
+    CHECK_EQ(tx, -1);
+    CHECK(supply_link_held_pins(&sl, NULL, NULL));
     const unsigned before = writes;
     pump(true);
     CHECK_EQ(writes, before);
@@ -808,6 +821,13 @@ TEST_CASE(a_wiring_change_refused_on_its_read_is_said)
     CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_WIRING_LIVE);
     CHECK(sl.refused);
     CHECK_EQ(reg(LINK_SP_TX_PIN), 8u);
+    /* Refused: the page keeps the wiring it held, by its last read. */
+    int tx = -1;
+    int rx = -1;
+    CHECK(supply_link_held_pins(&sl, &tx, &rx));
+    CHECK_EQ(tx, 8);
+    CHECK_EQ(rx, (int)reg(LINK_SP_RX_PIN));
+    CHECK(rx >= 0);
     CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED) != 0u);
     const unsigned before = writes;
     pump(true);
@@ -822,6 +842,10 @@ TEST_CASE(a_wiring_change_refused_on_its_read_is_said)
     pump(true);
     CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED, 0u);
     CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_WAIT) != 0u);
+    /* The link lost: nothing on the page is known. */
+    supply_link_lost(&sl);
+    CHECK(!supply_link_held_pins(&sl, &tx, &rx));
+    CHECK_EQ(tx, -1);
 }
 
 /* The far end switched the output off for a sagging input: the ON is over

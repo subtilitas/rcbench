@@ -100,6 +100,54 @@ TEST_CASE(changing_the_theme_from_the_screen_takes_effect)
     CHECK_EQ(ui_theme_color(UI_C_BG), before);
 }
 
+/*
+ * Design stepped to LIGHT and back to DARK is no change: the first frame
+ * after the step back shows SAVED, in every framebuffer the panel draws
+ * into in turn, as after any other row stepped back.  Brightness the same,
+ * for comparison.
+ */
+TEST_CASE(a_theme_stepped_back_shows_saved_on_the_next_frame)
+{
+    static const setting_id_t ids_to_step[2] = { SET_THEME, SET_BRIGHTNESS };
+    for (int k = 0; k < 2; ++k) {
+        fresh_screen();
+        open_category(SET_CAT_APP);
+        setting_id_t ids[64];
+        const int n = settings_in_category(SET_CAT_APP, ids, 64);
+        int row = -1;
+        for (int i = 0; i < n; ++i) {
+            if (ids[i] == ids_to_step[k]) { row = i; }
+        }
+        CHECK(row >= 0);
+        CHECK(!settings_dirty());
+        const unsigned clean = save_face();
+
+        /* Brightness is at its top: down and up again; the theme cycles. */
+        const int first = (k == 0) ? PLUS_X : MINUS_X;
+        const int back  = (k == 0) ? MINUS_X : PLUS_X;
+        tap(first + BTN_W / 2, row_y(row));
+        CHECK(settings_dirty());
+        CHECK(save_face() != clean);
+        for (int b = 0; b < 3; ++b) {
+            ui_router_render(&s_c, b);
+        }
+        tap(back + BTN_W / 2, row_y(row));
+        CHECK(!settings_dirty());
+        CHECK_EQ(save_face(), clean);
+        /* The panel draws into its buffers in turn: each shows SAVED. */
+        for (int b = 1; b < 3; ++b) {
+            ui_router_render(&s_c, b);
+            unsigned long sum = 0;
+            for (int y = SAVE_Y + 6; y < SAVE_Y + SAVE_H - 6; ++y) {
+                for (int x = SAVE_X + 6; x < SAVE_X + 200; ++x) {
+                    sum += (unsigned long)s_fb[y * W + x];
+                }
+            }
+            CHECK_EQ((unsigned)(sum & 0xffffffffUL), clean);
+        }
+    }
+}
+
 TEST_CASE(a_drag_scrolls_instead_of_pressing)
 {
     fresh_screen();
@@ -788,6 +836,7 @@ int main(void)
     RUN(plus_and_minus_change_the_setting_under_them);
     RUN(a_setup_key_notifies_once_per_press);
     RUN(changing_the_theme_from_the_screen_takes_effect);
+    RUN(a_theme_stepped_back_shows_saved_on_the_next_frame);
     RUN(a_drag_scrolls_instead_of_pressing);
     RUN(holding_a_key_repeats_with_acceleration);
     RUN(reset_button_restores_the_open_category);

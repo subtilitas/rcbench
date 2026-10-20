@@ -372,6 +372,15 @@ unsigned tone_link_pin(const tone_link_t *t);
 unsigned tone_link_f_min(const tone_link_t *t);
 unsigned tone_link_f_max(const tone_link_t *t);
 
+/**
+ * The tap's pin the page holds by its last read or write, as the IOmcu
+ * reserves it (tone_page_pins()): the pin while ENABLE has the tap on and
+ * the last status read does not say the pin refused, -1 otherwise and
+ * while the IOmcu has no TONE page.  False, -1, while that is not known:
+ * no link, or no read yet.  @p pin may be NULL.
+ */
+bool tone_link_held_pin(const tone_link_t *t, int *pin);
+
 #ifdef __cplusplus
 }
 #endif

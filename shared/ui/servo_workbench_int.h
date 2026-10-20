@@ -148,6 +148,17 @@ static inline gfx_rect_t run_set_rect(int k)
                          (int16_t)(RUN_CARD_Y(k) + 6), 108, 26 };
 }
 
+/* CLOSE on a run's settings, top right in the line of the run's name,
+ * its right edge on the right column's values: back to TEST, as the home
+ * tag goes.  3 px clear of the card's edge above and of the first row
+ * below, and above the lower half of the card's SETTINGS, so a second tap
+ * there closes nothing. */
+static inline gfx_rect_t run_close_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(RUN_CARD_X + RUN_CARD_W - 108),
+                         (int16_t)(CARD_Y + 3), 108, 24 };
+}
+
 /* START TEST, on the AUTOMATIC TEST card. */
 static inline gfx_rect_t test_start_rect(void)
 {

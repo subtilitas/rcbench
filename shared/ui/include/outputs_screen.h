@@ -226,6 +226,62 @@ bool outputs_clash_reason(const outbind_t *b, int index,
                           size_t cap);
 
 /**
+ * What SETUP > INTERFACES has on the IOmcu's pins: the sensor bus, the PD
+ * mini's UART and the phase tap.  While the IOmcu answers and its page
+ * has been read, a function holds the pins that page holds by its last
+ * read (outputs_screen_set_iface_held()): a refused relocation keeps the
+ * old pins, a refused part holds none.  Otherwise, as the settings stand,
+ * a pin is held while the IOmcu would reserve it for that function: Sensor
+ * SDA and the SCL after it while the INA228, the INA3221 or the AS5600 is
+ * on (sense_page_pins()); PD mini TX and RX while the PD mini is on with
+ * both set and apart, as the panel writes its page ON
+ * (supply_page_pins()); Tap pin while the phase tap is on
+ * (tone_page_pins()).  Sensor SDA at -1 holds nothing, nor does the PD
+ * mini with either pin at -1, nor a tap pin the TONE page refuses (an ADC
+ * pin: GP26 to GP29, GP40 to GP47).  Nor does a part the IOmcu refused:
+ * a sensor bus whose pins row, or every enabled part's row, SETUP marks
+ * (settings_screen_unheld()); a phase tap whose rows it marks; a PD mini
+ * (outputs_screen_set_iface_held() says what the PD mini's page holds).
+ * The pins follow the settings: a row stepped on SETUP frees the old pin
+ * and holds the new, once the page holds it.
+ *
+ * OUTPUTS and PICK A PIN show such a pin taken and named, as a
+ * programming port's pin is, and take no tick on it; a protocol that holds
+ * it already keeps it, as against a port.
+ */
+typedef enum {
+    OUTPUTS_IFACE_NONE = 0,
+    OUTPUTS_IFACE_SENSE,    /**< Sensor SDA and SCL: SENSOR BUS          */
+    OUTPUTS_IFACE_PDMINI,   /**< PD mini TX and RX: PD MINI              */
+    OUTPUTS_IFACE_TAP,      /**< Tap pin: PHASE TAP                      */
+    OUTPUTS_IFACE_COUNT
+} outputs_iface_t;
+
+/**
+ * What the IOmcu's page for function @p which holds by its last read:
+ * @p known false while that is not known (no link, no read yet), and
+ * the function then holds its pins as the settings stand; else the pins
+ * @p pin_a and @p pin_b, -1 for none (SDA and SCL, TX and RX, the tap
+ * pin and -1).  A pin past GP63 holds nothing.  OUTPUTS_IFACE_NONE and
+ * past the last are ignored.  Safe to call from another task than the
+ * one that draws.
+ */
+void outputs_screen_set_iface_held(outputs_iface_t which, bool known,
+                                   int pin_a, int pin_b);
+
+/** The pins function @p which holds now, bit n GPIO n; 0 for none or
+ *  OUTPUTS_IFACE_NONE. */
+uint64_t outputs_iface_pins(outputs_iface_t which);
+
+/** The function that holds GPIO @p gpio now, or OUTPUTS_IFACE_NONE.  Two
+ *  set to one pin: the first in the order of outputs_iface_t. */
+outputs_iface_t outputs_iface_at(uint8_t gpio);
+
+/** The name a taken pin's cell and PICK A PIN's IN USE table give
+ *  function @p which, in the language in force; "" for none. */
+const char *outputs_iface_name(outputs_iface_t which);
+
+/**
  * @p text in lines of @p font no wider than @p box, from its top down by
  * @p pitch, broken after the last space that fits or inside a word where
  * none does, left-aligned or with @p centre centred in the box.  At most

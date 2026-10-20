@@ -60,6 +60,10 @@ PINS, links abwärts, listet die Pins des gewählten Protokolls in Kanalreihenfo
 
 Der Pin des Programmierports, ab Werk GP13 (Pad 17), ist grau, solange kein Protokoll ihn hält, und BELEGT listet ihn zuerst unter `PROG-PORT`. Jeder weitere Port, den der IOmcu meldet, hält seinen Pin ebenso, unter demselben Namen gelistet.
 
+![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](view:picker-iface)
+
+Ein Pin, den [SETUP > ANSCHLÜSSE](setup-interfaces.md) hält, ist ebenso grau, und BELEGT listet ihn nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Eine Tabelle mit mehr Zeilen, als passen, endet in `+N`, N die ausgelassenen Zeilen.
+
 ![OFF gewählt: jeder gebundene Pin unter BELEGT](view:picker-off)
 
 ## Die Platinenzeichnung

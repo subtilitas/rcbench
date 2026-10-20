@@ -56,6 +56,7 @@ Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses 
 | ausgegraut, der Name des anderen Protokolls | von einem anderen Protokoll gehalten | tut nichts |
 | rot, durchgestrichen | reserviert: GP3 trägt den Sicherheits-Heartbeat, GP8 bis GP12 den CAN-Controller (Controller Area Network) | tut nichts |
 | `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GP13 | tut nichts |
+| rot, `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF` | ein Pin, den [SETUP > ANSCHLÜSSE](setup-interfaces.md) hält: Sensor-SDA und -SCL, solange INA228, INA3221 oder AS5600 EIN ist; PD mini TX und RX, solange der PD mini EIN ist und beide Pins gesetzt sind; der Abgriff-Pin, solange der Phasenabgriff EIN ist. Die Zelle folgt diesen Einstellungen | tut nichts |
 | ausgegraut, `SLICE VON GP13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin eines Programmierports, jedes Ports, den der IOmcu meldet; GP28 und GP13 sind Slice 6 | tut nichts; `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` unter der Zahl |
 | ausgegraut, `KANAL VON GP0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22) | tut nichts; `GP16: GLEICHER PWM-KANAL WIE GP0` unter der Zahl |
 | frei, `PAD 7` | nicht gebunden | bindet ihn |
@@ -65,6 +66,8 @@ Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses 
 Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber unter der Zahl: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 PLÄTZE BELEGT` oder `SERVO PWM BELEGT 8 PINS`.
 
 ![GP13 vom Programmierport gehalten](view:outputs-prog)
+
+![Sensorbus, PD mini und Phasenabgriff auf ihren Pins](view:outputs-iface)
 
 Eine gespeicherte Bindung, die GP13 hält, behält ihn: Der Programmierport hat dann keinen Pin, und der [Servo-Programmierer](servo-programmer.md) sagt das bei VERBINDEN.
 

@@ -3267,10 +3267,10 @@ TEST_CASE(a_tap_closes_the_bubble_and_does_nothing_else)
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
     CHECK_EQ(ui_router_dispatched(), sent);
 
-    /* A tap on another chip closes and opens nothing. */
+    /* A tap on the open bubble's own chip closes it and opens nothing. */
     tap_chip(&k_all_chips, UI_BAND_CHIP_LINK);
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_LINK);
-    tap_chip(&k_all_chips, UI_BAND_CHIP_FAULT);
+    tap_chip(&k_all_chips, UI_BAND_CHIP_LINK);
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
 
     /* The alert stays, and so does the home tag's screen. */
@@ -3294,6 +3294,65 @@ TEST_CASE(a_tap_closes_the_bubble_and_does_nothing_else)
     touch(320, 310, TOUCH_EVENT_MOVE, 3);
     touch(320, 310, TOUCH_EVENT_UP, 3);
     CHECK_EQ(ui_router_dispatched(), before);
+    CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
+}
+
+/* With a bubble open, one tap on another chip closes it and opens that
+ * chip's: the DOWN closes, the release on the same chip opens.  A DOWN on
+ * the other chip that slides off it, or a gesture cancelled under it,
+ * leaves no bubble open.  Every chip to every other one. */
+TEST_CASE(a_tap_on_another_chip_moves_the_bubble_to_it)
+{
+    for (int from = UI_BAND_CHIP_LINK; from < UI_BAND_CHIP_COUNT; ++from) {
+        for (int to = UI_BAND_CHIP_LINK; to < UI_BAND_CHIP_COUNT; ++to) {
+            if (to == from) {
+                continue;
+            }
+            open_on_overview(&k_all_chips, (ui_band_chip_t)from);
+            REQUIRE(ui_router_help() == (ui_band_chip_t)from);
+            const uint32_t sent = ui_router_dispatched();
+            gfx_rect_t r;
+            REQUIRE(ui_band_chip_rect(&k_all_chips, (ui_band_chip_t)to, &r));
+            touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
+            /* Closed at the DOWN, as any other closing tap. */
+            CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
+            touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 1);
+            CHECK_EQ(ui_router_help(), (ui_band_chip_t)to);
+            /* Nothing reached the screen. */
+            CHECK_EQ(ui_router_dispatched(), sent);
+            CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+        }
+    }
+
+    /* The DOWN on another chip and a release beside the band: closed,
+     * nothing opened. */
+    open_on_overview(&k_all_chips, UI_BAND_CHIP_LINK);
+    gfx_rect_t m;
+    REQUIRE(ui_band_chip_rect(&k_all_chips, UI_BAND_CHIP_MODE, &m));
+    touch(m.x + 4, m.y + m.h / 2, TOUCH_EVENT_DOWN, 1);
+    touch(m.x + 4, UI_BAND_H + 120, TOUCH_EVENT_MOVE, 1);
+    touch(m.x + 4, UI_BAND_H + 120, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
+
+    /* A gesture cancelled between the DOWN and the UP. */
+    open_on_overview(&k_all_chips, UI_BAND_CHIP_LINK);
+    touch(m.x + 4, m.y + m.h / 2, TOUCH_EVENT_DOWN, 1);
+    ui_router_cancel_gestures();
+    touch(m.x + 4, m.y + m.h / 2, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
+
+    /* Then a tap on the new bubble's chip closes it, and one on the band
+     * beside the chips too. */
+    open_on_overview(&k_all_chips, UI_BAND_CHIP_LINK);
+    tap_chip(&k_all_chips, UI_BAND_CHIP_MODE);
+    CHECK_EQ(ui_router_help(), UI_BAND_CHIP_MODE);
+    tap_chip(&k_all_chips, UI_BAND_CHIP_MODE);
+    CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
+    tap_chip(&k_all_chips, UI_BAND_CHIP_MODE);
+    REQUIRE(ui_router_help() == UI_BAND_CHIP_MODE);
+    gfx_rect_t l;
+    REQUIRE(ui_band_chip_rect(&k_all_chips, UI_BAND_CHIP_LINK, &l));
+    tap(l.x - 20, 20);
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
 }
 
@@ -3934,6 +3993,7 @@ int main(void)
     RUN(a_tap_on_each_chip_opens_its_bubble);
     RUN(a_slide_off_a_chip_opens_nothing);
     RUN(a_tap_closes_the_bubble_and_does_nothing_else);
+    RUN(a_tap_on_another_chip_moves_the_bubble_to_it);
     RUN(stop_works_through_an_open_bubble);
     RUN(the_bubble_never_covers_stop_and_fits_in_both_languages);
     RUN(the_widest_chip_row_clears_the_home_tag);

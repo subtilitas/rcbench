@@ -106,6 +106,93 @@ TEST_CASE(nvs_keys_are_unique_and_short_enough)
     }
 }
 
+/*
+ * Keys an earlier build stored and this schema no longer has.  A panel
+ * that held one keeps it in NVS: the firmware's store reads and writes
+ * the schema's keys only (settings_nvs.c), so the old key is never read,
+ * never written and never erased.  No setting may take one of these keys
+ * again, or it would load the old setting's value.
+ */
+static const char *const k_retired_keys[] = {
+    "backlight",        /* PANEL's Backlight, dropped after 0.21.1 */
+};
+
+/* NVS as the firmware's store addresses it: one value per key, in
+ * milli-units, read through settings_def(i)->key and nothing else. */
+static const struct { const char *key; int32_t milli; }
+k_nvs_with_retired[] = {
+    { "backlight",  0 },        /* the dropped row, stored OFF */
+    { "brightness", 40000 },
+    { "theme",      1000 },
+    { "pack_cells", 4000 },
+};
+
+static int s_nvs_found;
+static bool keyed_load(float *values, int count)
+{
+    s_nvs_found = 0;
+    for (int i = 0; i < count; ++i) {
+        const setting_def_t *d = settings_def((setting_id_t)i);
+        if (d == NULL || d->key == NULL) {
+            continue;
+        }
+        for (size_t k = 0; k < sizeof(k_nvs_with_retired)
+                                   / sizeof(k_nvs_with_retired[0]); ++k) {
+            if (strcmp(d->key, k_nvs_with_retired[k].key) == 0) {
+                values[i] = (float)k_nvs_with_retired[k].milli / 1000.0f;
+                ++s_nvs_found;
+            }
+        }
+    }
+    return s_nvs_found > 0;
+}
+static const settings_store_t s_keyed_store = { keyed_load, mem_save, NULL,
+                                                NULL };
+
+TEST_CASE(a_store_holding_a_retired_key_loads_and_ignores_it)
+{
+    for (size_t k = 0; k < sizeof(k_retired_keys) / sizeof(*k_retired_keys);
+         ++k) {
+        for (int i = 0; i < SETTING_COUNT; ++i) {
+            CHECK(strcmp(settings_def((setting_id_t)i)->key, k_retired_keys[k])
+                  != 0);
+        }
+    }
+
+    /* What a panel with nothing stored starts on. */
+    fresh_model();
+    static float plain[SETTING_COUNT];
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        plain[i] = settings_get((setting_id_t)i);
+    }
+    settings_set_store(&s_keyed_store);
+    settings_init();
+    /* Three of the four keys are the schema's; the retired one is read by
+     * no setting and moves nothing. */
+    CHECK_EQ(s_nvs_found, 3);
+    CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 40);
+    CHECK_EQ(settings_get_int(SET_THEME), 1);
+    CHECK_EQ(settings_get_int(SET_PACK_CELLS), 4);
+    CHECK(!settings_dirty());
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        const setting_id_t id = (setting_id_t)i;
+        if (id == SET_BRIGHTNESS || id == SET_THEME || id == SET_PACK_CELLS) {
+            continue;
+        }
+        /* Within 1e-5: coercion to the step can move a float's last bits. */
+        if (fabsf(settings_get(id) - plain[i])
+            > 1e-5f * fmaxf(1.0f, fabsf(plain[i]))) {
+            T_FAIL("setting %s moved", settings_def(id)->key);
+        }
+    }
+    /* A save writes the schema's keys: the store is handed SETTING_COUNT
+     * values, none of them the retired one's. */
+    settings_set(SET_BRIGHTNESS, 50);
+    CHECK(settings_save());
+    CHECK_EQ(s_saved[SET_BRIGHTNESS], 50.0f);
+    settings_set_store(NULL);
+}
+
 TEST_CASE(a_string_setting_is_kept_cut_and_saved_with_the_numbers)
 {
     s_has_saved = false;
@@ -182,11 +269,11 @@ TEST_CASE(enums_and_booleans_cycle)
     settings_adjust(SET_LANGUAGE, -1);
     CHECK_EQ(settings_get_int(SET_LANGUAGE), d->option_count - 1);
 
-    CHECK(settings_get_bool(SET_BACKLIGHT));
-    settings_adjust(SET_BACKLIGHT, 1);
-    CHECK(!settings_get_bool(SET_BACKLIGHT));
-    settings_adjust(SET_BACKLIGHT, 1);
-    CHECK(settings_get_bool(SET_BACKLIGHT));
+    CHECK(!settings_get_bool(SET_PLOT_PAN));
+    settings_adjust(SET_PLOT_PAN, 1);
+    CHECK(settings_get_bool(SET_PLOT_PAN));
+    settings_adjust(SET_PLOT_PAN, 1);
+    CHECK(!settings_get_bool(SET_PLOT_PAN));
 }
 
 /* The bench's walk: INA3221 address minus at 0x40 went to 0x43.  The
@@ -232,7 +319,7 @@ TEST_CASE(the_monitor_addresses_stop_at_their_ends)
     }
     /* A switch and a choice still go round, and say so. */
     CHECK(settings_cycles(SET_LANGUAGE));
-    CHECK(settings_cycles(SET_BACKLIGHT));
+    CHECK(settings_cycles(SET_INA228_EN));
     CHECK(settings_cycles(SET_INA3221_CH));
     CHECK(!settings_cycles(SET_OUT_MIN_US));
     CHECK(!settings_cycles(SET_SENSE_SDA));
@@ -282,10 +369,10 @@ TEST_CASE(value_text_renders_every_type)
     fresh_model();
     char buf[32];
 
-    settings_set(SET_BACKLIGHT, 1);
-    CHECK_STR_EQ(settings_value_text(SET_BACKLIGHT, buf, sizeof(buf)), "ON");
-    settings_set(SET_BACKLIGHT, 0);
-    CHECK_STR_EQ(settings_value_text(SET_BACKLIGHT, buf, sizeof(buf)), "OFF");
+    settings_set(SET_PLOT_PAN, 1);
+    CHECK_STR_EQ(settings_value_text(SET_PLOT_PAN, buf, sizeof(buf)), "ON");
+    settings_set(SET_PLOT_PAN, 0);
+    CHECK_STR_EQ(settings_value_text(SET_PLOT_PAN, buf, sizeof(buf)), "OFF");
 
     settings_set(SET_LANGUAGE, 0);
     CHECK_STR_EQ(settings_value_text(SET_LANGUAGE, buf, sizeof(buf)),
@@ -585,7 +672,7 @@ TEST_CASE(reset_restores_one_category_only)
 
     /* A reset that does not notify leaves the hardware on the old value while
      * the screen shows the new one; the observer is the only path a setting
-     * has to the outputs and the backlight. */
+     * has to the outputs and the palette. */
     settings_set_observer(observer);
     s_observed = 0;
 
@@ -887,6 +974,7 @@ int main(void)
     RUN(defaults_come_from_the_schema);
     RUN(every_schema_row_is_internally_consistent);
     RUN(nvs_keys_are_unique_and_short_enough);
+    RUN(a_store_holding_a_retired_key_loads_and_ignores_it);
     RUN(a_string_setting_is_kept_cut_and_saved_with_the_numbers);
     RUN(values_are_clamped_to_the_schema);
     RUN(enums_and_booleans_cycle);

@@ -47,7 +47,7 @@ STOP works on every screen that has the band. It switches the bench to SAFE, swi
 ![The box under the LINK chip](view:band-link)
 ![The box under the SAFE chip](view:band-safe)
 
-A tap on a chip opens a box under the band. It says what the chip's state means for the bench and what to do. The box is 520 px wide and opens 4 px under the band. Any tap closes it and does nothing else. Leaving the screen closes it too. The text follows the state while the box is open.
+A tap on a chip opens a box under the band. It says what the chip's state means for the bench and what to do. The box is 520 px wide and opens 4 px under the band. A tap on another chip closes it and opens that chip's box. Any other tap closes it and does nothing else. Leaving the screen closes it too. The text follows the state while the box is open.
 
 ![The box under ARMED MOTOR](view:band-armed)
 
