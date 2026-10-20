@@ -1995,15 +1995,15 @@ A look at a mounted card is one SEND_STATUS (CMD13) command. A card that
 does not answer it has been taken out or swapped: the panel lets its volume
 go and mounts what the slot holds now. A file open on that card, such as
 the run being written or a Wi-Fi download, is closed first; until the last
-one is, the slot reads as no card. A card that mounts and then fails its
-first read reads as unreadable, and the panel mounts it once per look, not
-in a loop. What the slot holds is said in each place that needs a card:
+one is, the slot reads as no card. A read that fails is followed by the same
+command: a card that answers it and fails its reads reads as unreadable,
+and the panel mounts it once per look, not in a loop. What the slot holds is said in each place that needs a card:
 
 | Slot | [Splash](#splash), SD card line | LOGS | Run on the band |
 |---|---|---|---|
 | empty | `no card` | `No card. Insert one and tap RESCAN.` | `No card. This run is not being recorded.` |
 | a card with no FAT or exFAT volume: NTFS, GPT or not formatted | `not FAT32/exFAT` | `Card is neither FAT32 nor exFAT. Format it on a computer.` | `Card is neither FAT32 nor exFAT. Run not recorded.` |
-| a card that does not mount for another reason, or mounts and fails its first read: a read error, a card that does not finish its start-up | `unreadable` | `Cannot read the card. Check it on a computer, then tap RESCAN.` | `Cannot read the card. Run not recorded.` |
+| a card that does not mount for another reason, or answers and fails a read: a read error, a card that does not finish its start-up | `unreadable` | `Cannot read the card. Check it on a computer, then tap RESCAN.` | `Cannot read the card. Run not recorded.` |
 
 The panel's console line says which with the code behind it:
 `I storage: SK64G mounted, exFAT, 61002 MB` with the format of a card that
@@ -2012,9 +2012,8 @@ mounts, `I storage: no card (ESP_ERR_TIMEOUT)`,
 or `W storage: mount failed: FatFs <n>` and `W storage: mount failed:
 <ESP-IDF error name>`. A card taken out or swapped is
 `I storage: card gone (check: FatFs 3)`, with no E line from ESP-IDF, and
-the next line says what the slot holds now. A card that mounts and fails
-its first read is `W storage: card mounted and does not read (walk: FatFs
-1)`. A card taken out during a run is found by the write that fails, and
+the next line says what the slot holds now. A card that answers and fails a
+read is `W storage: card answers and does not read (walk: FatFs 1)`. A card taken out during a run is found by the write that fails, and
 ESP-IDF logs that write's E lines (`sdmmc_cmd`, `diskio_sdmmc`) before the
 `I storage: card gone` line. A card that starts and does not mount is started a
 second time to ask FatFs why. That look adds one card start-up to each

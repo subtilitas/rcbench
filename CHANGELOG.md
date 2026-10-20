@@ -44,8 +44,8 @@ history is in git.
   computer.`. The look logs no E line. A card taken out during a run closes
   the run's file at the first failed write and the run goes on unrecorded
   under `Data can no longer be saved to the card. Recording stopped here.`;
-  the next ARM names the slot's state now. A card that mounts and fails its
-  first read is unreadable and is mounted once per look. The volume is
+  the next ARM names the slot's state now. A card that answers SEND_STATUS and
+  fails a read is unreadable and is mounted once per look. The volume is
   unmounted only with no file or folder open on it from LOGS, the run log or
   the Wi-Fi access. The `runlog` task's stack is 6,656 bytes (5,632), for
   the mount it makes.

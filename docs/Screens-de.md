@@ -2206,16 +2206,17 @@ Frame. Der Blick auf eine gemountete Karte ist ein Befehl SEND_STATUS
 getauscht: Das Panel gibt ihr Volume frei und mountet, was jetzt im
 Steckplatz steckt. Eine auf dieser Karte offene Datei, etwa der Lauf, der
 gerade geschrieben wird, oder ein WLAN-Download, wird zuerst geschlossen;
-bis die letzte geschlossen ist, gilt der Steckplatz als leer. Eine Karte,
-die sich mounten lässt und ihr erstes Lesen nicht schafft, gilt als nicht
-lesbar, und das Panel mountet sie einmal je Blick, nicht in einer Schleife.
+bis die letzte geschlossen ist, gilt der Steckplatz als leer. Auf ein
+fehlgeschlagenes Lesen folgt derselbe Befehl: Eine Karte, die darauf
+antwortet und ihr Lesen nicht schafft, gilt als nicht lesbar, und das Panel
+mountet sie einmal je Blick, nicht in einer Schleife.
 Was im Steckplatz steckt, steht an jeder Stelle, die eine Karte braucht:
 
 | Steckplatz | [Splash](#splash), Zeile SD-Karte | LOGS | Lauf im Band |
 |---|---|---|---|
 | leer | `keine Karte` | `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` | `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` |
 | eine Karte ohne FAT- oder exFAT-Volume: NTFS, GPT oder nicht formatiert | `nicht FAT32/exFAT` | `Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` | `Karte ist weder FAT32 noch exFAT. Lauf nicht aufgezeichnet.` |
-| eine Karte, die sich aus anderem Grund nicht mounten lässt oder nach dem Mounten ihr erstes Lesen nicht schafft: ein Lesefehler, eine Karte, die ihren Start nicht abschließt | `nicht lesbar` | `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` | `Karte nicht lesbar. Lauf nicht aufgezeichnet.` |
+| eine Karte, die sich aus anderem Grund nicht mounten lässt oder antwortet und ein Lesen nicht schafft: ein Lesefehler, eine Karte, die ihren Start nicht abschließt | `nicht lesbar` | `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` | `Karte nicht lesbar. Lauf nicht aufgezeichnet.` |
 
 Die Konsolenzeile des Panels sagt, welcher Fall vorliegt, mit dem Code
 dahinter: `I storage: SK64G mounted, exFAT, 61002 MB` mit dem Format einer
@@ -2224,9 +2225,9 @@ Karte, die mountet, `I storage: no card (ESP_ERR_TIMEOUT)`,
 oder `W storage: mount failed: FatFs <n>` und `W storage: mount failed:
 <Name des ESP-IDF-Fehlers>`. Eine entnommene oder getauschte Karte ist
 `I storage: card gone (check: FatFs 3)`, ohne E-Zeile von ESP-IDF, und die
-nächste Zeile sagt, was jetzt im Steckplatz steckt. Eine Karte, die sich
-mounten lässt und ihr erstes Lesen nicht schafft, ist `W storage: card
-mounted and does not read (walk: FatFs 1)`. Eine während eines Laufs
+nächste Zeile sagt, was jetzt im Steckplatz steckt. Eine Karte, die antwortet
+und ein Lesen nicht schafft, ist `W storage: card answers and does not
+read (walk: FatFs 1)`. Eine während eines Laufs
 entnommene Karte findet der Schreibvorgang, der fehlschlägt, und ESP-IDF
 schreibt dessen E-Zeilen (`sdmmc_cmd`, `diskio_sdmmc`) vor die Zeile
 `I storage: card gone`. Eine Karte, die startet und sich nicht mounten

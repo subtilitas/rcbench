@@ -59,6 +59,10 @@ extern unsigned   g_status_asks;            /* CMD13s FatFs sent */
 extern bool       g_status_check;           /* the disk status check on */
 extern unsigned   g_lock_misuse;            /* a second take, a lone give */
 extern bool       g_lock_taken;
+extern FRESULT    g_probe_answer;           /* a live card's CMD13 look */
+/* Entries a walk reads before the mounted card stops answering, -1:
+ * none.  What the slot then holds is g_card's. */
+extern int        g_pull_after;
 
 /* One folder of the volume, "BIG", as FatFs reads it. */
 #define VOL_DIR "0:/BIG"

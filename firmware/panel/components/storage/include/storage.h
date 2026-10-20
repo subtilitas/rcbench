@@ -119,6 +119,11 @@ void storage_deinit(void);
 /** A volume is mounted and its card was not found gone.  Lock-free. */
 bool storage_mounted(void);
 
+/** The mounts that worked since the start: another number after a
+ *  storage_check() is another volume, the same card's or a new one's.
+ *  Lock-free. */
+unsigned storage_mount_count(void);
+
 /** Card size and free space in bytes; 0 when nothing is mounted. */
 uint64_t storage_total_bytes(void);
 uint64_t storage_free_bytes(void);
@@ -141,7 +146,7 @@ const char *storage_status(void);
  * What the slot holds as the last mount or look found it, or
  * CARD_STATE_MOUNTED while a volume is mounted.  CARD_STATE_NONE before the
  * first try, after storage_deinit() and for a card found gone.
- * CARD_STATE_UNREADABLE for a card that mounted and failed its first read.
+ * CARD_STATE_UNREADABLE for a card that mounted, answers and fails a read.
  * Lock-free: the control task and every frame may ask.
  */
 card_state_t storage_card_state(void);
@@ -187,11 +192,12 @@ typedef void (*storage_tick_fn)(void);
  *                  a root of unrelated files is read with nothing else
  *                  running.  It takes no argument and must be cheap.
  * A read that fails the way a card taken out does (FatFs FR_DISK_ERR,
- * FR_NOT_READY or FR_INVALID_OBJECT) is a card gone: the volume is let go,
- * and with nothing else holding it the slot is mounted again once.  On a
- * volume nothing was read from since its mount the failure is the card's
- * own: CARD_STATE_UNREADABLE, and no second mount.  Any other failure
- * leaves the volume mounted.
+ * FR_NOT_READY or FR_INVALID_OBJECT) is followed by one SEND_STATUS
+ * (CMD13).  A card that does not answer is gone: the volume is let go,
+ * and with nothing else holding it the slot is mounted again once.  A card
+ * that answers fails its reads on its own: CARD_STATE_UNREADABLE, the
+ * volume let go, and no second mount.  Any other failure leaves the volume
+ * mounted.
  *
  * @return the number of matching entries; STORAGE_WALK_NO_DIR (-2) when
  *         the volume is mounted and has no folder @p dir, or a file holds

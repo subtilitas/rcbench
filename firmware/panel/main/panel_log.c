@@ -631,11 +631,14 @@ static void test_write(const test_line_t *l)
         bad = fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0 || bad;
     }
     if (bad) {
+        /* One look, at the run's first failure and not per line: a card
+         * gone has its file closed now, as log_drop() closes a run's, and
+         * a full one keeps it to the END, which says the files are
+         * incomplete. */
+        const bool first = !s_test_failed;
         s_test_failed  = true;
         s_test_txt_bad = s_test_txt_bad || s_test_txt;
-        /* A card gone: the file closed now, as log_drop() closes a run's;
-         * the END says the files are incomplete. */
-        if (storage_check() != CARD_STATE_MOUNTED) {
+        if (first && storage_check() != CARD_STATE_MOUNTED) {
             test_close();
         }
     }

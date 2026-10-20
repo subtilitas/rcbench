@@ -60,13 +60,11 @@ static struct {
     bool mounted;
     /* Found gone while held: unmounted at the last release. */
     bool lost;
-    /* Mounted, and nothing read from it since: a removal-shaped failure on
-     * it is the card's own, not a card taken out. */
-    bool fresh;
     unsigned holds;
     SemaphoreHandle_t lock;
     atomic_bool usable;                 /* mounted && !lost */
     atomic_int state_now;               /* card_state_t while not usable */
+    atomic_uint mounts;                 /* mounts that worked */
     /* The volume label, or the CID's product name without one: 11 FAT
      * label characters take up to 33 bytes in UTF-8. */
     char name[40];
@@ -336,7 +334,6 @@ static esp_err_t mount_locked(void)
 
     s.mounted = true;
     s.lost = false;
-    s.fresh = true;
     set_state(CARD_STATE_MOUNTED);
     s.drive[0] = '\0';
     const BYTE pdrv = ff_diskio_get_pdrv_card(s.card);
@@ -350,6 +347,7 @@ static esp_err_t mount_locked(void)
     const unsigned long long mb = total / (1024ULL * 1024ULL);
     ESP_LOGI(TAG, "%s mounted, %s, %llu MB", s.name, volume_format(), mb);
     /* The name is written: now the readers without the lock may see it. */
+    atomic_fetch_add(&s.mounts, 1u);
     publish();
     return ESP_OK;
 }
@@ -364,21 +362,40 @@ static void unmount_locked(void)
     if (!s.mounted) {
         return;
     }
+    /* The state first, then the flag that lets the readers without the
+     * lock read it: never "not usable" beside "mounted". */
+    if (atomic_load(&s.state_now) == (int)CARD_STATE_MOUNTED) {
+        set_state(CARD_STATE_NONE);
+    }
     atomic_store(&s.usable, false);
     (void)esp_vfs_fat_sdcard_unmount(STORAGE_MOUNT_POINT, s.card);
     s.card = NULL;
     s.mounted = false;
     s.lost = false;
-    s.fresh = false;
     s.drive[0] = '\0';
     board_sd_cs(false);
 }
 
 /*
- * The card the volume was mounted from is not the one answering: taken
- * out, swapped, or a card that fails reads after it mounted.  Under
- * s.lock.  @p fr is what FatFs said; @p how the call that found it.
- * Unmounted at once when nothing holds it, at the last release otherwise.
+ * The mounted volume is not to be used again: its card is gone
+ * (CARD_STATE_NONE) or fails its reads (CARD_STATE_UNREADABLE).  Under
+ * s.lock.  The state is stored before the flag the readers without the
+ * lock go by.  Unmounted at once when nothing holds it, at the last
+ * release otherwise.
+ */
+static void drop_locked(card_state_t state)
+{
+    set_state(state);
+    s.lost = true;
+    publish();
+    if (s.holds == 0u) {
+        unmount_locked();
+    }
+}
+
+/*
+ * The card the volume was mounted from does not answer: taken out or
+ * swapped.  @p fr is what FatFs said; @p how the call that found it.
  */
 static void lose_locked(int fr, const char *how)
 {
@@ -388,13 +405,8 @@ static void lose_locked(int fr, const char *how)
     if (!s.lost) {
         ESP_LOGI(TAG, "card gone (%s: FatFs %d)", how, fr);
     }
-    s.lost = true;
-    publish();
-    set_state(CARD_STATE_NONE);
     snprintf(s.status, sizeof(s.status), "no card");
-    if (s.holds == 0u) {
-        unmount_locked();
-    }
+    drop_locked(CARD_STATE_NONE);
 }
 
 /*
@@ -466,8 +478,11 @@ card_state_t storage_check(void)
     }
     lock();
     if (s.mounted && !s.lost) {
+        /* Only an answer that says the card stopped answering: a volume
+         * lock another task holds past FatFs's wait (FR_TIMEOUT) is not a
+         * card taken out. */
         const int fr = probe_locked();
-        if (fr != (int)FR_OK) {
+        if (removal_shaped(fr)) {
             lose_locked(fr, "check");
         }
     }
@@ -552,6 +567,11 @@ void storage_deinit(void)
     }
 }
 
+unsigned storage_mount_count(void)
+{
+    return atomic_load(&s.mounts);
+}
+
 bool storage_mounted(void)
 {
     return atomic_load(&s.usable);
@@ -600,45 +620,34 @@ uint64_t storage_free_bytes(void)
 /*
  * A read of the mounted card failed with @p fr.  Under s.lock, with the
  * caller's hold given back.  A failure that does not say the card stopped
- * answering leaves the volume as it is.  One that does, on a volume read
- * from since its mount, is a card taken out or swapped (lose_locked()).
- * On a volume nothing has been read from since its mount it is the card's
- * own: unreadable, and not mounted again by this call, so a card that
- * fails every read costs one mount per caller's try and not a loop.
+ * answering leaves the volume as it is.  One that does is asked about
+ * (probe_locked()): a card that does not answer is taken out or swapped
+ * (lose_locked()).  One that answers fails its reads on its own: it is
+ * unreadable and let go, and not mounted again by this call, so a card
+ * that fails every read costs one mount per look and not a loop.  An
+ * answer that says neither, such as FatFs's volume lock not taken in
+ * time, leaves the volume as it is.
  *
- * @return whether the volume was let go and may be mounted again now.
+ * @return whether the volume was let go for a card gone and may be
+ *         mounted again now.
  */
 static bool read_failed_locked(int fr, const char *how)
 {
     if (!s.mounted || s.lost || !removal_shaped(fr)) {
         return false;
     }
-    if (!s.fresh) {
-        lose_locked(fr, how);
+    const int asked = probe_locked();
+    if (removal_shaped(asked)) {
+        lose_locked(asked, how);
         return !s.mounted;
     }
-    ESP_LOGW(TAG, "card mounted and does not read (%s: FatFs %d)", how, fr);
-    s.lost = true;
-    publish();
-    set_state(CARD_STATE_UNREADABLE);
+    if (asked != (int)FR_OK) {
+        return false;
+    }
+    ESP_LOGW(TAG, "card answers and does not read (%s: FatFs %d)", how, fr);
     snprintf(s.status, sizeof(s.status), "FatFs %d", fr);
-    if (s.holds == 0u) {
-        unmount_locked();
-        /* unmount_locked() leaves the slot's state: unreadable stays. */
-    }
+    drop_locked(CARD_STATE_UNREADABLE);
     return false;
-}
-
-/* The end of a hold a read was made under, under s.lock: @p fr what the
- * read found, FR_OK for one that worked. */
-static void read_done_locked(int fr)
-{
-    if (fr == (int)FR_OK) {
-        s.fresh = false;
-    }
-    if (s.holds > 0u) {
-        --s.holds;
-    }
 }
 
 const char *storage_drive(void)
@@ -649,7 +658,9 @@ const char *storage_drive(void)
 bool storage_read_end(int fr, const char *how, bool may_mount)
 {
     lock();
-    read_done_locked(fr);
+    if (s.holds > 0u) {
+        --s.holds;
+    }
     bool mounted_again = false;
     if (read_failed_locked(fr, how) && may_mount) {
         mounted_again = (mount_locked() == ESP_OK);

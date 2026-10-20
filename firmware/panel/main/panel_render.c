@@ -47,12 +47,14 @@ void kst_ui_service(void)
     snap_unlock();
     kst_panel_feed(&feed);
 
-    /* A card put in after the boot, or found in place of one taken out,
-     * is mounted here, on the task RESCAN mounts one on: once for an
-     * opening of the programmer or a tap on one of its actions while none
-     * is mounted (storage_check()). */
-    if (!file_out && !storage_mounted() && kst_panel_card_look()) {
-        (void)storage_check();
+    /* The card in the slot now, on the task RESCAN looks on: once for an
+     * opening of the programmer or a tap on one of its actions
+     * (storage_check()).  A card put in, or found in place of one taken
+     * out or swapped, is mounted here. */
+    const unsigned mounts = storage_mount_count();
+    if (!file_out && kst_panel_card_look()
+        && storage_check() == CARD_STATE_MOUNTED
+        && storage_mount_count() != mounts) {
         /* And its record is read before a command or a file goes out: a
          * write interrupted before this start stands as at the start. */
         kst_record_load(true);

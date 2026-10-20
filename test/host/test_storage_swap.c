@@ -7,9 +7,11 @@
  * finds the card in the slot now with no restart.  A mounted card that no
  * longer answers is let go and the slot mounted again, with no E line from
  * anyone; a card held open is let go at its last release, and no new hold
- * is given meanwhile; a walk that finds the card gone mounts the slot once
- * more and says so; a read error on a card that answers is not taken for a
- * removal, and costs one mount, not a loop.  The lock is free after every
+ * is given meanwhile; a walk that finds the card gone, also part way
+ * through the first walk after a mount, mounts the slot once more and says
+ * so; a read error on a card that answers is not taken for a removal, and
+ * costs one mount per look, not a loop; a look that cannot ask keeps the
+ * card.  The lock is free after every
  * call.
  *
  * SPDX-License-Identifier: MIT
@@ -280,32 +282,77 @@ TEST_CASE(a_read_error_that_is_not_a_removal_keeps_the_card)
         CHECK_EQ(g_mounts, 0u);
     }
 
-    /* A card that answers and fails its reads as a pulled one does: one
-     * mount again, then unreadable, and no third. */
+    /* A card that answers and fails its reads as a pulled one does:
+     * unreadable and let go, with no mount again, and one mount per
+     * RESCAN after that, not a loop. */
     sk64g_in();
     seen_t v;
-    CHECK_EQ(walk_big(&v), (unsigned)VOL_N);
     g_read_fail = FR_DISK_ERR;
     CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);   /* it answers */
-    CHECK_EQ(storage_walk("BIG", NULL, see, &v, NULL), STORAGE_WALK_REMOUNTED);
-    CHECK_EQ(g_mounts, 1u);
     CHECK_EQ((int)walk_big(&v), -1);
-    CHECK_EQ(g_mounts, 1u);
-    CHECK_EQ(g_unmounts, 2u);
+    CHECK_EQ(g_mounts, 0u);
+    CHECK_EQ(g_unmounts, 1u);
     CHECK(!storage_mounted());
     CHECK_EQ(storage_card_state(), CARD_STATE_UNREADABLE);
     CHECK_STR_EQ(storage_status(), "FatFs 1");
-    /* RESCAN: one mount, one failed read, unreadable again. */
+    CHECK(strstr(last_line()->text, "card answers and does not read") != NULL);
     CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
     CHECK_EQ((int)walk_big(&v), -1);
-    CHECK_EQ(g_mounts, 2u);
+    CHECK_EQ(g_mounts, 1u);
+    CHECK_EQ(g_unmounts, 2u);
     CHECK_EQ(storage_card_state(), CARD_STATE_UNREADABLE);
     /* Read whole again: kept. */
     g_read_fail = FR_OK;
     CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
     CHECK_EQ(walk_big(&v), (unsigned)VOL_N);
+    CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
+    CHECK_EQ(g_mounts, 2u);
     CHECK(!g_lock_taken);
     CHECK_EQ(g_lock_misuse, 0u);
+}
+
+TEST_CASE(a_card_pulled_part_way_through_the_first_walk_is_gone)
+{
+    /* The first walk after the mount reads two entries, then the card is
+     * taken out: gone, not unreadable, and the empty slot is looked at. */
+    sk64g_in();
+    g_pull_after = 2;
+    g_card = false;
+    seen_t v;
+    CHECK_EQ((int)walk_big(&v), -1);
+    CHECK_EQ(v.n, 2u);
+    CHECK_EQ(storage_card_state(), CARD_STATE_NONE);
+    CHECK_STR_EQ(storage_status(), "no card");
+    CHECK_EQ(g_unmounts, 1u);
+    /* Swapped part way: the walk mounts the new card and says so. */
+    sk64g_in();
+    g_pull_after = 1;
+    g_label = "BENCH2";                 /* the card in the slot after it */
+    CHECK_EQ(storage_walk("BIG", NULL, see, &v, NULL), STORAGE_WALK_REMOUNTED);
+    CHECK_STR_EQ(storage_card_name(), "BENCH2");
+    CHECK(!g_lock_taken);
+}
+
+TEST_CASE(a_look_that_cannot_ask_keeps_the_card)
+{
+    /* FatFs's volume lock held past its wait by another task: no answer
+     * either way, and the card stays mounted. */
+    sk64g_in();
+    g_probe_answer = FR_TIMEOUT;
+    CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
+    CHECK(storage_mounted());
+    CHECK_EQ(g_unmounts, 0u);
+    /* Nor does a read that fails while the look cannot ask let it go. */
+    g_read_fail = FR_DISK_ERR;
+    seen_t v;
+    CHECK_EQ((int)walk_big(&v), -1);
+    CHECK(storage_mounted());
+    CHECK_EQ(g_unmounts, 0u);
+    /* The answer back: the read error is the card's. */
+    g_probe_answer = FR_OK;
+    CHECK_EQ((int)walk_big(&v), -1);
+    CHECK_EQ(storage_card_state(), CARD_STATE_UNREADABLE);
+    CHECK(!g_lock_taken);
 }
 
 TEST_CASE(a_stat_that_finds_the_card_gone_lets_it_go_without_a_mount)
@@ -349,6 +396,8 @@ int main(void)
     RUN(holds_are_counted_and_the_last_release_lets_go);
     RUN(a_walk_on_a_swapped_card_mounts_the_new_one_and_says_so);
     RUN(a_read_error_that_is_not_a_removal_keeps_the_card);
+    RUN(a_card_pulled_part_way_through_the_first_walk_is_gone);
+    RUN(a_look_that_cannot_ask_keeps_the_card);
     RUN(a_stat_that_finds_the_card_gone_lets_it_go_without_a_mount);
     RUN(a_check_before_the_first_mount_and_after_the_end_is_safe);
     return test_summary("storage_swap");

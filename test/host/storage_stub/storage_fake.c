@@ -47,6 +47,8 @@ unsigned   g_status_asks;
 bool       g_status_check;
 unsigned   g_lock_misuse;
 bool       g_lock_taken;
+FRESULT    g_probe_answer;
+int        g_pull_after;
 
 const vol_entry_t k_vol[4] = {
     { "EDGE1.CSV", 0xFFFFFFFFull,  false },  /* FAT32's largest file */
@@ -347,6 +349,9 @@ FRESULT f_getfree(const char *path, DWORD *nclst, FATFS **fatfs)
             ESP_LOGE("diskio_sdmmc", "Check status failed (0x107)");
             return FR_NOT_READY;
         }
+        if (g_probe_answer != FR_OK) {
+            return g_probe_answer;
+        }
     }
     return g_getfree;
 }
@@ -373,6 +378,10 @@ static void vol_fill(FILINFO *fno, const vol_entry_t *e)
 
 FRESULT f_readdir(FF_DIR *dp, FILINFO *fno)
 {
+    if (g_pull_after >= 0 && dp->pos >= g_pull_after) {
+        g_live = false;                 /* gone part way through */
+        g_pull_after = -1;
+    }
     const FRESULT fr = card_read();
     if (fr != FR_OK) {
         return fr;
@@ -457,6 +466,8 @@ void slot_empty(void)
     g_status_asks = 0u;
     g_status_check = false;
     g_lock_misuse = 0u;
+    g_probe_answer = FR_OK;
+    g_pull_after = -1;
 }
 
 /* The second look let go of all it took, and chip select with it. */
