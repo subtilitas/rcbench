@@ -532,6 +532,16 @@ jobs:
             fi
           done
 
+      # FatFs with exFAT (firmware/panel/fatfs_exfat.cmake): ff.c's
+      # check_fs() compares a boot sector with "EXFAT   " only when
+      # FF_FS_EXFAT is 1, and the string is in no image without it.
+      - name: The image mounts exFAT
+        run: |
+          if ! grep -aqF 'EXFAT   ' firmware/panel/build/rcbench-panel.elf; then
+            echo "::error::the panel image is built without exFAT"
+            exit 1
+          fi
+
       # The build without it, so the option keeps building: the image
       # must hold none of that code.  Not uploaded.
       - name: The build without the injector compiles

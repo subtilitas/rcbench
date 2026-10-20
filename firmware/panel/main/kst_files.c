@@ -98,18 +98,20 @@ static bool io_walk(void *ctx, kst_store_visit_fn visit, void *visit_ctx)
     return storage_walk(KST_STORE_DIR, ".txt", walk_entry, &w, NULL) >= 0;
 }
 
+/* storage_stat() rather than stat(): stat()'s 32-bit st_size reads a file
+ * of 4 GiB and more as a small one. */
 static int32_t io_size(void *ctx, const char *name)
 {
     char path[PATH_MAX_LEN];
-    struct stat st;
+    storage_stat_t st;
 
     (void)ctx;
     kst_files_path(name, path, sizeof(path));
-    if (stat(path, &st) != 0 || S_ISDIR(st.st_mode)
-        || st.st_size > INT32_MAX) {
+    if (storage_stat(path, &st) != ESP_OK || st.is_dir
+        || st.size > (uint64_t)INT32_MAX) {
         return -1;
     }
-    return (int32_t)st.st_size;
+    return (int32_t)st.size;
 }
 
 static int32_t io_read(void *ctx, const char *name, char *buf, size_t cap)

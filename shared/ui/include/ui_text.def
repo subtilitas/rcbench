@@ -498,6 +498,8 @@ UI_TEXT(SUP_NOT_ON_YET,            60, "Output has not been switched on yet.")
 UI_TEXT(LOG_NO_SOURCE,             36, "No file source available.")
 UI_TEXT(LOG_CANNOT_OPEN,           28, "Cannot open %s.")
 UI_TEXT(LOG_IS_FOLDER,             26, "%s is a folder.")
+/* OPEN on a file over LOG_VIEWER_OPEN_MAX, 2 GiB less 1 byte. */
+UI_TEXT(LOG_TOO_BIG,               44, "%s is 2 GB or larger. Not opened.")
 UI_TEXT(LOG_CANNOT_DELETE,         28, "Cannot delete %s.")
 UI_TEXT(LOG_DELETED,               26, "%s deleted.")
 UI_TEXT(LOG_ERR_OK,                64, "ok")

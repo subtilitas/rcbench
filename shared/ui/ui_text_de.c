@@ -470,6 +470,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_NO_SOURCE]          = "Keine Dateiquelle verfügbar.",
     [TX_LOG_CANNOT_OPEN]        = "%s lässt sich nicht öffnen.",
     [TX_LOG_IS_FOLDER]          = "%s ist ein Ordner.",
+    [TX_LOG_TOO_BIG]            = "%s ist 2 GB oder größer. Nicht geöffnet.",
     [TX_LOG_CANNOT_DELETE]      = "%s lässt sich nicht löschen.",
     [TX_LOG_DELETED]            = "%s gelöscht.",
     [TX_LOG_ERR_OK]             = "ok",

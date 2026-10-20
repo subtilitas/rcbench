@@ -212,7 +212,7 @@ static struct {
      * delete the file it named, whatever happens to the list behind it.
      */
     char doomed[LOG_VIEWER_NAME_MAX];
-    uint32_t doomed_size;
+    uint64_t doomed_size;
     /* The one contact whose press on the question counts: the panel reports
      * up to five, and a second finger lifting off DELETE did not press it. */
     bool q_down;
@@ -366,6 +366,11 @@ void log_viewer_range_text(char *out, size_t n, double lo, double hi,
 int log_viewer_cursor(void)
 {
     return s.have_data ? s.cursor : -1;
+}
+
+const char *log_viewer_message(void)
+{
+    return s.message;
 }
 
 void log_viewer_invalidate(void)
@@ -926,6 +931,12 @@ static void open_selected(void)
         set_message(TR(LOG_IS_FOLDER), s.files[s.sel].name);
         return;
     }
+    if (s.files[s.sel].size > LOG_VIEWER_OPEN_MAX) {
+        /* Past what the reader's seek reaches.  Said, not read in part:
+         * an import of the first 2 GiB would look like the whole run. */
+        set_message(TR(LOG_TOO_BIG), s.files[s.sel].name);
+        return;
+    }
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
     s.delim_index = -1;
@@ -936,9 +947,11 @@ static void open_selected(void)
 
 /* -------------------------------------------------------------- browse --- */
 
-static void fmt_size(char *out, size_t n, uint32_t bytes)
+void log_viewer_size_text(char *out, size_t n, uint64_t bytes)
 {
-    if (bytes >= 1024u * 1024u) {
+    if (bytes >= 1024ull * 1024u * 1024u) {
+        snprintf(out, n, "%.2f GB", (double)bytes / (1024.0 * 1024.0 * 1024.0));
+    } else if (bytes >= 1024ull * 1024u) {
         snprintf(out, n, "%.1f MB", (double)bytes / (1024.0 * 1024.0));
     } else if (bytes >= 1024u) {
         snprintf(out, n, "%u kB", (unsigned)(bytes / 1024u));
@@ -962,7 +975,7 @@ static void render_question(gfx_canvas_t *c)
 
     char size[16];
     char line[LOG_VIEWER_NAME_MAX + 24];
-    fmt_size(size, sizeof(size), s.doomed_size);
+    log_viewer_size_text(size, sizeof(size), s.doomed_size);
     snprintf(line, sizeof(line), "%s   %s", s.doomed, size);
     gfx_text_in(c, gfx_rect_make(box.x + 24, box.y + 44, box.w - 48, 20), line,
                 UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
@@ -1119,7 +1132,7 @@ static void render_browse(gfx_canvas_t *c)
                      on ? UI_TEXT : UI_TEXT_DIM, 1);
 
             char size[16];
-            fmt_size(size, sizeof(size), s.files[i].size);
+            log_viewer_size_text(size, sizeof(size), s.files[i].size);
             gfx_rect_t sz = gfx_rect_make(row.x + row.w - 132, row.y, 120, row.h);
             gfx_text_in(c, sz, s.files[i].is_dir ? TR(LOG_DIR) : size,
                         UI_FONT_LABEL,

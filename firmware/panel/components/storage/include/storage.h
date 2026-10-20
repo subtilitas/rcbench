@@ -31,11 +31,23 @@ extern "C" {
 #define STORAGE_MOUNT_POINT "/sdcard"
 #define STORAGE_NAME_MAX 64
 
+/*
+ * A file's size is 64-bit: an exFAT (extended File Allocation Table) volume
+ * holds files of 4 GiB and more.  FAT12, FAT16 and FAT32 stop at
+ * 4 GiB less 1 byte.
+ */
 typedef struct {
     char name[STORAGE_NAME_MAX];
-    uint32_t size;
+    uint64_t size;
     bool is_dir;
 } storage_entry_t;
+
+/** What storage_stat() reads of one name. */
+typedef struct {
+    uint64_t size;      /**< bytes; 0 for a folder */
+    bool is_dir;
+    int64_t mtime;      /**< local time as mktime() reads FAT's stamp */
+} storage_stat_t;
 
 /**
  * Bring up SPI2 and mount the card at /sdcard.
@@ -107,6 +119,22 @@ typedef void (*storage_tick_fn)(void);
  */
 int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
                  void *ctx, storage_tick_fn tick);
+
+/**
+ * The size, kind and time of one file or folder, by its full path under
+ * STORAGE_MOUNT_POINT, e.g. "/sdcard/BENCH/RCBENCH.LOG".
+ *
+ * FatFs's own f_stat(), for its 64-bit size.  stat() through the VFS
+ * (virtual file system) puts the size in st_size, an off_t of 32 bits on
+ * the panel: a file of 4 GiB and more comes back as its size less a
+ * multiple of 4 GiB, and one of 2 GiB and more as a negative number.
+ *
+ * @return ESP_OK; ESP_ERR_NOT_FOUND when the volume has no such name;
+ *         ESP_ERR_INVALID_STATE when nothing is mounted or @p path is not
+ *         under the mount point; ESP_ERR_NO_MEM; ESP_FAIL when the card
+ *         does not read.
+ */
+esp_err_t storage_stat(const char *path, storage_stat_t *out);
 
 /** Full path for a name inside @p dir, ready for fopen(). */
 void storage_path(const char *dir, const char *name, char *out, size_t out_size);
