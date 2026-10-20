@@ -337,8 +337,8 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
         || f[3] == 0u || f[3] > MA_MAX) {
         return LINK_NACK_BAD_VALUE;
     }
-    /* CH1 only: the schedule samples CH1 fast enough to time a move, and
-     * CH2 and CH3 at 50 Hz. */
+    /* CH1 only: the schedule samples CH1, its FAST channel, every 1 ms,
+     * fast enough to time a move, and the others in turn. */
     if (ch != LINK_SS_CAP_CH) {
         return LINK_NACK_BAD_VALUE;
     }
@@ -487,11 +487,12 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd)
     cmd->parts.ina228_addr        = (uint8_t)c[LINK_SN_I228_ADDR];
     cmd->parts.ina228_shunt_uohm  = c[LINK_SN_I228_SHUNT_UOHM];
     cmd->parts.ina228_max_ma      = (uint32_t)c[LINK_SN_I228_MAX_DA] * 100u;
-    cmd->parts.ina3221_en         = (en & LINK_SN_EN_I3221) != 0u;
-    cmd->parts.ina3221_addr       = (uint8_t)c[LINK_SN_I3221_ADDR];
-    cmd->parts.ina3221_shunt_uohm =
-        (uint32_t)c[LINK_SN_I3221_SHUNT_DMOHM] * 100u;
-    cmd->parts.ina3221_channels   = (uint8_t)c[LINK_SN_I3221_CHANNELS];
+    /* SENSE's one INA3221: the part at its address, each channel it
+     * reads on its shunt, FAST its CH1. */
+    sense_i3221_one(&cmd->parts.i3221, (en & LINK_SN_EN_I3221) != 0u,
+                    (uint8_t)c[LINK_SN_I3221_ADDR],
+                    (uint32_t)c[LINK_SN_I3221_SHUNT_DMOHM] * 100u,
+                    (uint8_t)c[LINK_SN_I3221_CHANNELS]);
     cmd->parts.as5600_en          = (en & LINK_SN_EN_AS5600) != 0u;
     const uint16_t *v = p->servo;
     cmd->cap_gen      = p->cap_gen;
@@ -535,6 +536,16 @@ static void reg_32(uint16_t *r, uint32_t v)
     r[1] = (uint16_t)(v >> 16);
 }
 
+/* The INA3221 SENSE names, 0 to 3: the part whose channels, identity and
+ * resets the SENSE and SERVO_SENSE registers show. */
+static unsigned mirror_part(const sense_page_t *p)
+{
+    const uint16_t addr = p->sense[LINK_SN_I3221_ADDR];
+    /* values_ok() keeps it in range; part 0 for anything else. */
+    return (addr >= INA3221_ADDR_MIN && addr <= INA3221_ADDR_MAX)
+               ? (unsigned)(addr - INA3221_ADDR_MIN) : 0u;
+}
+
 static bool clipped(const sense_window_t *w)
 {
     return w->clip_hi || w->clip_lo;
@@ -556,7 +567,7 @@ static uint16_t part_flags(sense_state_t st, bool id_ok, uint16_t online,
     return f;
 }
 
-static uint16_t sense_flags(const sense_snap_t *s)
+static uint16_t sense_flags(const sense_snap_t *s, unsigned a)
 {
     uint16_t f = 0u;
     if (s->open) {
@@ -568,7 +579,8 @@ static uint16_t sense_flags(const sense_snap_t *s)
     f |= part_flags(s->i228, ina228_identity_ok(s->i228_maker, s->i228_device),
                     LINK_SN_I228_ONLINE, LINK_SN_I228_ID_OK,
                     LINK_SN_I228_ID_WRONG);
-    f |= part_flags(s->i3221, ina3221_identity_ok(s->i3221_maker, s->i3221_die),
+    f |= part_flags(s->i3221[a],
+                    ina3221_identity_ok(s->i3221_maker[a], s->i3221_die[a]),
                     LINK_SN_I3221_ONLINE, LINK_SN_I3221_ID_OK,
                     LINK_SN_I3221_ID_WRONG);
     if ((s->have_win && clipped(&s->win[SENSE_SRC_INA228]))
@@ -586,12 +598,12 @@ static bool totals_ok(const sense_snap_t *s, uint16_t run_gen)
 }
 
 static void publish_sense(uint16_t *r, const sense_snap_t *s,
-                          uint16_t run_gen)
+                          uint16_t run_gen, unsigned a)
 {
-    r[LINK_SN_FLAGS]    = sense_flags(s);
+    r[LINK_SN_FLAGS]    = sense_flags(s, a);
     r[LINK_SN_PRESENT]  = s->present;
     r[LINK_SN_I228_ID]  = s->i228_device;
-    r[LINK_SN_I3221_ID] = s->i3221_die;
+    r[LINK_SN_I3221_ID] = s->i3221_die[a];
     r[LINK_SN_ERRORS]   = s->errors;
     r[LINK_SN_I228_TEMP_DC] =
         s->have_temp ? reg_i16(div_round(s->temp_mdegc, 100)) : 0u;
@@ -612,11 +624,11 @@ static void publish_sense(uint16_t *r, const sense_snap_t *s,
     }
     reg_32(&r[LINK_SN_I228_CHARGE_LO], charge);
     reg_32(&r[LINK_SN_I228_ENERGY_LO], energy);
-    r[LINK_SN_RESETS] = (uint16_t)(((unsigned)s->i3221_resets << 8)
+    r[LINK_SN_RESETS] = (uint16_t)(((unsigned)s->i3221_resets[a] << 8)
                                    | s->i228_resets);
 }
 
-static void publish_channels(uint16_t *r, const sense_snap_t *s)
+static void publish_channels(uint16_t *r, const sense_snap_t *s, unsigned a)
 {
     uint16_t flags = (uint16_t)(r[LINK_SS_CH_FLAGS] & LINK_SS_CAP_CLIPPED);
     for (unsigned ch = 1u; ch <= LINK_SS_CHANNELS; ++ch) {
@@ -624,7 +636,7 @@ static void publish_channels(uint16_t *r, const sense_snap_t *s)
         sense_window_t w;
         memset(&w, 0, sizeof(w));
         if (s->have_win) {
-            w = s->win[SENSE_SRC_CH1 + ch - 1u];
+            w = s->win[SENSE_CH(a, ch)];
         }
         c[LINK_SS_CH_MEAN_MA] = reg_i16(div_round(w.i_mean_ua, 1000));
         c[LINK_SS_CH_MAX_MA]  = reg_i16(div_round(w.i_max_ua, 1000));
@@ -637,19 +649,20 @@ static void publish_channels(uint16_t *r, const sense_snap_t *s)
             flags |= LINK_SS_CH_CLIPPED(ch);
         }
     }
-    r[LINK_SS_WINDOW]   = s->have_win ? s->win[SENSE_SRC_CH1].number : 0u;
+    /* Every window closes with the same number. */
+    r[LINK_SS_WINDOW]   = s->have_win ? s->win[SENSE_CH(a, 1u)].number : 0u;
     r[LINK_SS_CH_FLAGS] = flags;
 }
 
-/* CH1's ring into SERVO_WIN: the newest window's number, then each entry.
+/* FAST's ring into SERVO_WIN: the newest window's number, then each entry.
  * The capture's registers are filled at the read (sense_win_read()). */
-static void publish_ring(uint16_t *r, const sense_snap_t *s)
+static void publish_ring(uint16_t *r, const sense_snap_t *s, unsigned a)
 {
     memset(r, 0, (size_t)LINK_SW_COUNT * sizeof(uint16_t));
     if (!s->have_win) {
         return;
     }
-    r[LINK_SW_WINDOW] = s->win[SENSE_SRC_CH1].number;
+    r[LINK_SW_WINDOW] = s->win[SENSE_CH(a, 1u)].number;
     r[LINK_SW_FLAGS]  = (uint16_t)LINK_SW_HAVE;
     for (unsigned k = 0; k < LINK_SW_RING; ++k) {
         const sense_ring_win_t *w = &s->ring[k];
@@ -741,10 +754,11 @@ void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
     if (s->cfg_gen != p->cfg_gen) {
         return;
     }
-    publish_sense(p->sense, s, run_gen);
+    const unsigned a = mirror_part(p);
+    publish_sense(p->sense, s, run_gen, a);
     publish_enc(p->sense, s);
-    publish_channels(p->servo, s);
-    publish_ring(p->win, s);
+    publish_channels(p->servo, s, a);
+    publish_ring(p->win, s, a);
     if (s->cap_gen == p->cap_gen) {
         publish_capture(p->servo, s);
     }

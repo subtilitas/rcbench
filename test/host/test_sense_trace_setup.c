@@ -46,7 +46,7 @@ TEST_CASE(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in)
     CHECK((int32_t)(cmd_t - last_t) > 10000);
     run(300u);
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     const uint32_t seen_at = (uint32_t)(g_us / 100u);
     tick();
     const sense_trace_rec_t *r = newest_of(SENSE_TRACE_SHUNT);
@@ -76,7 +76,7 @@ TEST_CASE(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in)
     i3221->present = false;
     run(2000u);
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     tick();
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 3u, 1700u);
     run(200u);
@@ -91,7 +91,7 @@ TEST_CASE(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in)
      * the time of the tick that found it closed. */
     rig();
     run(200u);
-    cmd.parts.ina3221_en = false;
+    cmd.parts.i3221.fitted = 0u;
     ++cmd.cfg_gen;
     for (unsigned k = 0u; k < 50u && svc.open; ++k) {
         tick();
@@ -117,7 +117,7 @@ TEST_CASE(a_set_up_record_that_found_no_room_keeps_its_time_or_the_rings)
     stall(20u);
     CHECK_EQ(sense_trace_held(&tr), 8u);
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     i3221->shunt_ohm = 0.05;
     uint32_t first_t = 0u;
     for (unsigned k = 0u; k < 50u && !tr.src.shunt_owed; ++k) {
@@ -201,7 +201,7 @@ TEST_CASE(a_changed_set_up_under_a_backlog_ends_the_trace_where_it_changed)
     /* 300 ms wait in the ring; then another shunt, and 100 ms more. */
     stall(300u);
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     i3221->shunt_ohm = 0.05;
     stall(100u);
     for (unsigned k = 0; k < 300u && sense_trace_active(&tr); ++k) {
@@ -267,7 +267,7 @@ TEST_CASE(a_command_after_a_changed_set_up_is_the_next_traces)
      * before the command. */
     stall(200u);
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     i3221->shunt_ohm = 0.05;
     stall(50u);
     const uint32_t t1 = (uint32_t)(g_us / 100u);
@@ -303,7 +303,7 @@ static void behind_at_a_change(unsigned before, unsigned after)
     run(100u);
     stall(before);
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     i3221->shunt_ohm = 0.05;
     stall(after);
 }
@@ -525,7 +525,7 @@ TEST_CASE(a_set_up_record_with_no_room_is_written_when_there_is_room)
     CHECK_EQ(sense_trace_held(&tr), 8u);
     /* The ring is full when the set-up changes. */
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     i3221->shunt_ohm = 0.05;
     stall(5u);
     CHECK(tr.src.shunt_owed);
@@ -560,7 +560,7 @@ TEST_CASE(a_sample_dropped_while_a_set_up_record_waits_counts_after_it)
     stall(20u);
     CHECK_EQ(sense_trace_held(&tr), 8u);
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     i3221->shunt_ohm = 0.05;
     for (unsigned k = 0u; k < 50u && !tr.src.shunt_owed; ++k) {
         tick();
@@ -625,7 +625,7 @@ TEST_CASE(idle_keeps_no_record_from_before_a_set_up)
     run(500u);
     CHECK_EQ(sense_trace_held(&tr), SENSE_TRACE_PRE);
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     i3221->shunt_ohm = 0.05;
     run(10u);
     /* 10 samples of the new set-up, and the voltage read with them. */

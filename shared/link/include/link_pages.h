@@ -771,7 +771,7 @@ typedef enum {
  *     register 4 + 6 k, is window number WINDOW - k.  Mean, highest and
  *     lowest current in mA, signed; mean and lowest bus voltage in mV, at
  *     the load side of the shunt; and the entry's flags.  The schedule
- *     reads CH1's current every 1 ms and its bus voltage every 20 ms: a
+ *     reads CH1's current every 1 ms and its bus voltage every 24 ms: a
  *     window holds up to 50 current samples and 2 or 3 voltage samples.
  *
  *     An entry's flags: bit 15 (LINK_SW_E_CLOSED) a window closed with

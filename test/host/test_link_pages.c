@@ -833,7 +833,7 @@ TEST_CASE(servo_win_is_served_read_only)
     sense_snap_t snap;
     memset(&snap, 0, sizeof(snap));
     snap.have_win = true;
-    snap.win[SENSE_SRC_CH1].number = 41u;
+    snap.win[SENSE_CH(0, 1)].number = 41u;
     snap.ring[0] = (sense_ring_win_t){ .closed = true, .n_i = 50u,
         .n_clip = 2u, .clip_hi = true, .i_mean_ua = 345000,
         .i_min_ua = -2000, .i_max_ua = 1638000 };

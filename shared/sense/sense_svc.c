@@ -21,7 +21,7 @@ static uint64_t now_us(const sense_svc_t *v)
 
 static bool any_part(const sense_sched_cfg_t *c)
 {
-    return c->ina228_en || c->ina3221_en || c->as5600_en;
+    return c->ina228_en || c->i3221.fitted != 0u || c->as5600_en;
 }
 
 /* The set-up: the bus closed, and opened again with a fresh schedule on
@@ -53,6 +53,7 @@ static void set_up(sense_svc_t *v, const sense_cmd_t *cmd)
     v->sda  = cmd->sda;
     v->scl  = cmd->scl;
     sense_sched_init(&v->sched, &v->io.sched, &cmd->parts);
+    v->sched.gen = ++v->setups;
     v->scan_due = true;
 }
 
@@ -65,7 +66,7 @@ static void capture(sense_svc_t *v, const sense_cmd_t *cmd)
         if (!cmd->cap_on) {
             sense_sched_cap_disarm(&v->sched);
         } else if (!sense_sched_cap_arm(&v->sched, &cmd->cap)) {
-            /* Ended before it began: the INA3221 is not reading CH1. */
+            /* Ended before it began: no FAST channel is being read. */
             sense_sched_cap_disarm(&v->sched);
             v->refused = true;
             ++v->refusals;
@@ -80,9 +81,16 @@ static void capture(sense_svc_t *v, const sense_cmd_t *cmd)
 /* An enabled part that is not online, whose address a scan may find. */
 static bool part_missing(const sense_sched_t *s)
 {
-    return (s->cfg.ina228_en && ina228_state(&s->i228) != SENSE_PART_ONLINE)
-           || (s->cfg.ina3221_en
-               && ina3221_state(&s->i3221) != SENSE_PART_ONLINE);
+    if (s->cfg.ina228_en && ina228_state(&s->i228) != SENSE_PART_ONLINE) {
+        return true;
+    }
+    for (unsigned a = 0; a < SENSE_I3221_PARTS; ++a) {
+        if ((s->cfg.i3221.fitted & (1u << a)) != 0u
+            && ina3221_state(&s->i3221[a]) != SENSE_PART_ONLINE) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static bool capture_under_way(const sense_sched_t *s)
@@ -104,9 +112,11 @@ static uint16_t online_bit(sense_state_t st, uint8_t addr)
 
 static uint16_t online_mask(const sense_sched_t *s)
 {
-    return (uint16_t)(online_bit(ina228_state(&s->i228), s->i228.part.addr)
-                      | online_bit(ina3221_state(&s->i3221),
-                                   s->i3221.part.addr));
+    uint16_t m = online_bit(ina228_state(&s->i228), s->i228.part.addr);
+    for (unsigned a = 0; a < SENSE_I3221_PARTS; ++a) {
+        m |= online_bit(ina3221_state(&s->i3221[a]), s->i3221[a].part.addr);
+    }
+    return m;
 }
 
 static void scan(sense_svc_t *v, uint64_t now)
@@ -170,6 +180,7 @@ static void snap_capture(const sense_svc_t *v, sense_snap_t *out)
 static void snap(const sense_svc_t *v, sense_snap_t *out)
 {
     memset(out, 0, sizeof(*out));
+    out->fast    = SENSE_FAST_NONE;
     out->cfg_gen = v->cfg_gen;
     out->run_gen = v->run_gen;
     out->cap_gen = v->cap_gen;
@@ -184,11 +195,15 @@ static void snap(const sense_svc_t *v, sense_snap_t *out)
     out->errors      = s->bus.errors;
     out->present     = (uint16_t)(v->present | online_mask(s));
     out->i228        = ina228_state(&s->i228);
-    out->i3221       = ina3221_state(&s->i3221);
     out->i228_maker  = s->i228.part.id_maker;
     out->i228_device = s->i228.part.id_device;
-    out->i3221_maker = s->i3221.part.id_maker;
-    out->i3221_die   = s->i3221.part.id_device;
+    for (unsigned a = 0; a < SENSE_I3221_PARTS; ++a) {
+        out->i3221[a]       = ina3221_state(&s->i3221[a]);
+        out->i3221_maker[a] = s->i3221[a].part.id_maker;
+        out->i3221_die[a]   = s->i3221[a].part.id_device;
+        out->i3221_resets[a] = s->i3221_resets[a];
+    }
+    out->fast        = s->cfg.i3221.fast;
     out->have_temp   = s->have_temp;
     out->temp_mdegc  = s->temp_mdegc;
     out->have_diag   = s->have_diag;
@@ -197,7 +212,6 @@ static void snap(const sense_svc_t *v, sense_snap_t *out)
     memcpy(out->win, s->last, sizeof(out->win));
     memcpy(out->ring, s->ring, sizeof(out->ring));
     out->i228_resets  = s->i228_resets;
-    out->i3221_resets = s->i3221_resets;
     out->run         = s->run;
     out->enc         = as5600_state(&s->enc.dev);
     if (s->cfg.as5600_en) {
