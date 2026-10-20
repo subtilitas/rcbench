@@ -209,6 +209,20 @@ CONFIG_ESP_WIFI_ENTERPRISE_SUPPORT=n
 # lwIP's task on core 0, with the radio and the UI (user interface).  Core 1
 # runs the control task, which owns STOP and the heartbeat.
 CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
+# A TCP (transmission control protocol) connection's send buffer: 8
+# segments of 1440 bytes, 11,520 bytes, where ESP-IDF's default is 4.  A
+# download moves at most one send buffer per round trip.  With 4 segments
+# in flight, a lost segment other than the first draws fewer than the 3
+# duplicate acknowledgements a fast retransmit needs and waits out the
+# retransmission time-out instead: 1,500 ms at the start
+# (CONFIG_LWIP_TCP_RTO_TIME), longer with each further loss.  8 stay within the Wi-Fi
+# driver's 16 static TX (transmit) buffers.  The bytes queued and not yet
+# acknowledged are taken from the heap, PSRAM first
+# (CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP).
+CONFIG_LWIP_TCP_SND_BUF_DEFAULT=11520
+# SO_LINGER, so a download that fails resets its connection
+# (wifi_sock.c, wifi_sock_drop()) and frees what it had queued at once.
+CONFIG_LWIP_SO_LINGER=y
 # A phone browser's request headers run past the default 512 bytes, and a
 # card path of WA_PATH_MAX (384) bytes is up to 1152 bytes percent-encoded.
 CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
