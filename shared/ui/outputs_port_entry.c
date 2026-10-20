@@ -240,14 +240,15 @@ bool outputs_screen_port_reason(char *buf, size_t cap)
         snprintf(buf, cap, "%s", TR(OUT_PORT_NOT_READ));
     } else if (servo_screen_tester_target_locked()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_LOCKED));
-    } else if (target() > 0 && target() != p.port + 1) {
+    } else if (target() > 0
+               && (target() != p.port + 1
+                   || (fn_pwm() && port_view_get()->has_func))) {
+        /* Another port, or this one when neither reason below holds. */
         snprintf(buf, cap, TR(OUT_PORT_TESTER_ON), (unsigned)target());
     } else if (!fn_pwm()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_TESTER_PWM));
     } else if (!port_view_get()->has_func) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_FN_OLD));
-    } else if (target() == p.port + 1) {
-        snprintf(buf, cap, TR(OUT_PORT_TESTER_ON), (unsigned)target());
     } else if (pwm_locked()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_PWM_NEEDS));
     }

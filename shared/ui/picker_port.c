@@ -190,3 +190,28 @@ void picker_port_count(uint8_t port, char *buf, size_t cap)
                                                           : "?";
     snprintf(buf, cap, TR(PK_PORT_FN), name);
 }
+
+bool picker_port_row(const outbind_t *b, uint8_t k, picker_row_t *out)
+{
+    const uint8_t n = outbind_pin_count(b->board);
+    for (uint8_t i = 0; i < n && k == 0u; ++i) {
+        if (picker_screen_pin(i, NULL, 0) != PICKER_PIN_TICKED) {
+            continue;
+        }
+        if (out != NULL) {
+            const outbind_pin_t *pin = &outbind_pins(b->board)[i];
+            out->index   = i;
+            out->gpio    = pin->gpio;
+            out->channel = -1;
+            out->pad     = pin->pad;
+        }
+        return true;
+    }
+    return false;
+}
+
+bool picker_port_own_pin(const outbind_t *b, uint8_t index, int port)
+{
+    return port >= 0 && port < (int)LINK_PG_PORTS_MAX
+           && port_view_get()->pin[port] == outbind_pins(b->board)[index].gpio;
+}

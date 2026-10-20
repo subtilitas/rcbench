@@ -759,21 +759,7 @@ bool picker_screen_row(uint8_t k, picker_row_t *out)
     const uint8_t proto = proto_shown();
     const uint8_t n = outbind_pin_count(s.bind.board);
     if (s.port >= 0) {
-        /* A port's one pin, with no channel. */
-        for (uint8_t i = 0; i < n && k == 0u; ++i) {
-            if (picker_screen_pin(i, NULL, 0) != PICKER_PIN_TICKED) {
-                continue;
-            }
-            if (out != NULL) {
-                const outbind_pin_t *pin = &outbind_pins(s.bind.board)[i];
-                out->index   = i;
-                out->gpio    = pin->gpio;
-                out->channel = -1;
-                out->pad     = pin->pad;
-            }
-            return true;
-        }
-        return false;
+        return picker_port_row(&s.bind, k, out);
     }
     if (proto == 0u) {
         return false;
@@ -1071,15 +1057,6 @@ static uint8_t use_add(picker_use_t *t, uint8_t n, picker_use_kind_t kind,
  * down the page rather than jumping about with the protocol numbering.
  * Returns the number of lines.
  */
-/* Whether pin @p index is the port picked's own: listed under PINS, not
- * IN USE, as a protocol's own pins are. */
-static bool own_port_pin(uint8_t index)
-{
-    return s.port >= 0
-           && port_view_get()->pin[s.port]
-                  == outbind_pins(s.bind.board)[index].gpio;
-}
-
 static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
 {
     const uint8_t proto = proto_shown();
@@ -1093,7 +1070,8 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
     if (prog != PICKER_NO_PIN) {
         k = use_add(t, k, PICKER_USE_NAME, PICKER_USE_PROG, prog, -1);
         for (uint8_t i = 0; i < n; ++i) {
-            if (prog_taken(i) && !own_port_pin(i)) {
+            if (prog_taken(i)
+                && !picker_port_own_pin(&s.bind, i, s.port)) {
                 k = use_add(t, k, PICKER_USE_PIN, PICKER_USE_PROG,
                             pins[i].gpio, -1);
             }

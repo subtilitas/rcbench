@@ -120,7 +120,7 @@ TEST_CASE(an_ask_is_refused_where_nothing_could_take_it)
 
 TEST_CASE(an_ask_on_a_free_port_is_written_at_once_at_rest)
 {
-    uint8_t log[10];
+    uint8_t log[10] = { 0 };
 
     fresh();
     CHECK(prog_link_ask(&g_p, 1u, PROG_LINK_ASK_PIN, 14u));
@@ -161,7 +161,7 @@ TEST_CASE(an_ask_on_a_free_port_is_written_at_once_at_rest)
 
 TEST_CASE(the_target_port_is_let_go_for_the_write_and_comes_back)
 {
-    uint8_t log[10];
+    uint8_t log[10] = { 0 };
 
     fresh();
     prog_link_want(&g_p, 1u, true);
@@ -185,7 +185,7 @@ TEST_CASE(the_target_port_is_let_go_for_the_write_and_comes_back)
 
 TEST_CASE(an_ask_waits_for_a_bench_at_rest_and_a_free_port)
 {
-    uint8_t log[10];
+    uint8_t log[10] = { 0 };
 
     fresh();
     prog_link_want(&g_p, 1u, true);
@@ -216,7 +216,7 @@ TEST_CASE(an_ask_waits_for_a_bench_at_rest_and_a_free_port)
 
 TEST_CASE(a_refused_ask_says_so_and_makes_the_page_unknown)
 {
-    uint8_t log[10];
+    uint8_t log[10] = { 0 };
 
     fresh();
     g_refuse = 1u << LINK_PG_REG(2u, LINK_PG_PIN);
@@ -232,7 +232,7 @@ TEST_CASE(a_refused_ask_says_so_and_makes_the_page_unknown)
 
 TEST_CASE(a_later_ask_replaces_one_waiting)
 {
-    uint8_t log[10];
+    uint8_t log[10] = { 0 };
 
     fresh();
     CHECK(prog_link_ask(&g_p, 1u, PROG_LINK_ASK_PIN, 14u));
@@ -264,7 +264,7 @@ TEST_CASE(an_ask_waiting_is_lost_with_the_link)
 
 TEST_CASE(an_older_iomcu_is_read_as_24_registers_all_servo_pwm)
 {
-    uint8_t log[10];
+    uint8_t log[10] = { 0 };
 
     prog_link_init(&g_p);
     CHECK_EQ(prog_link_regs(&g_p), LINK_PG_REGS_V424);

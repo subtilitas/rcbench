@@ -44,5 +44,13 @@ bool picker_port_clashes(const outbind_t *b, uint8_t index, uint8_t port);
 bool picker_port_reason(const outbind_t *b, uint8_t port, int refused,
                         char *buf, size_t cap);
 
+/** Row @p k of the PINS table with a port picked: the port's one pin, the
+ *  TICKED button, with no channel (-1).  False past it. */
+bool picker_port_row(const outbind_t *b, uint8_t k, picker_row_t *out);
+
+/** Whether catalogue entry @p index is the pin of port @p port (-1 for
+ *  none picked): listed under PINS, not IN USE. */
+bool picker_port_own_pin(const outbind_t *b, uint8_t index, int port);
+
 /** The count line's text with port @p port picked: its function. */
 void picker_port_count(uint8_t port, char *buf, size_t cap);
