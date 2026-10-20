@@ -1154,14 +1154,14 @@ const wires: Wire[] = [
       'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GP16 oder GP17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 631, '| SDA | GP16 (pad 21) |'),
+    src: repo('docs/FirstRun.md', 705, '| SDA | GP16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 632, '| SCL | GP17 (pad 22) |'),
+    src: repo('docs/FirstRun.md', 706, '| SCL | GP17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -1349,7 +1349,7 @@ const wires: Wire[] = [
       'Unter 30 cm. Kein Ausgang auf GP22, solange der Abgriff eingeschaltet ist.',
     ),
     when: { has: 'tap' }, stage: 5, route: { kind: 'R', lane: 4 }, pin: 'default',
-    src: repo(SETTINGS, 192, 'GP22 is pad 29'),
+    src: repo(SETTINGS, 189, 'GP22 is pad 29'),
   },
   {
     n: 53, kind: 'component', a: 'pad.29', b: 'pad.28', net: 'tap', netB: 'gnd', cls: 'phase',
@@ -1562,7 +1562,7 @@ const functions: Fn[] = [
   {
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
-    // The test reads the current of the PD mini (docs/Servo.md, line 437).
+    // The test reads the current of the PD mini (docs/Servo.md, line 439).
     needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 439, 'the current of the supply that feeds the servo: the PD mini'),
   },
   {
@@ -1753,7 +1753,7 @@ const checks: Check[] = [
       'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
       'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
     ),
-    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 633, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 707, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
@@ -2165,7 +2165,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 656, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
+    src: repo('STATUS.md', 661, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
   },
 ];
 
@@ -2182,15 +2182,15 @@ const pinDefaults: PinDefault[] = [
     signal: 'sda', gpio: 16, pad: 21, choice: 'default', role: 'bus',
     // settings_sense_sda_valid(): −1 and the SDA pins whose pair is free.
     allowed: [-1, 0, 4, 6, 14, 16, 18, 20, 26],
-    src: repo(SETTINGS, 162, '"sns_sda", "Sensor SDA"'),
+    src: repo(SETTINGS, 159, '"sns_sda", "Sensor SDA"'),
   },
   {
     signal: 'scl', gpio: 17, pad: 22, choice: 'default', role: 'bus',
     // SCL follows SDA: the GPIO after it.
     allowed: [-1, 1, 5, 7, 15, 17, 19, 21, 27],
-    src: repo(SETTINGS, 165, '"sns_scl", "Sensor SCL"'),
+    src: repo(SETTINGS, 162, '"sns_scl", "Sensor SCL"'),
   },
-  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 192, '"tone_pin", "Tap pin"') },
+  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 189, '"tone_pin", "Tap pin"') },
   { signal: 'esc', gpio: 5, pad: 7, choice: 'example', role: 'output', allowed: 'catalogue', src: guide('wires') },
   { signal: 'servo', gpio: 2, pad: 4, choice: 'proposal', role: 'output', allowed: 'catalogue', src: PAGE },
   { signal: 'prog', gpio: 13, pad: 17, choice: 'default', role: 'output', allowed: 'catalogue', src: repo(PROG_PORT, 61, '#define PROG_PORT_DEFAULT_PIN 13u') },
