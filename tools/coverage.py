@@ -104,6 +104,7 @@ TRACKED = [
     "shared/ui/outputs_port.c",
     "shared/ui/outputs_port_entry.c",
     "shared/ui/port_view.c",
+    "shared/ui/port_mail.c",
     "shared/ui/picker_screen.c",
     "shared/ui/picker_port.c",
     "shared/ui/board_drawing.c",
