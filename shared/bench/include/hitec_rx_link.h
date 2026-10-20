@@ -78,7 +78,7 @@ void hitec_rx_link_lost(hitec_rx_link_t *l);
 /** Whether to write the page's register 23 at @p now_ms, and with what.
  *  False while nothing is owed, no IOmcu answers, it is older than 4.24,
  *  or an unanswered write is younger than HITEC_RX_LINK_RETRY_MS. */
-bool hitec_rx_link_next(hitec_rx_link_t *l, uint32_t now_ms,
+bool hitec_rx_link_next(const hitec_rx_link_t *l, uint32_t now_ms,
                         uint16_t *value);
 
 /** How the write hitec_rx_link_next() gave went: HITEC_RX_LINK_ACK, a

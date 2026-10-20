@@ -57,7 +57,7 @@ static bool knows_register(const hitec_rx_link_t *l)
     return l->minor >= LINK_MINOR_HITEC_RX;
 }
 
-bool hitec_rx_link_next(hitec_rx_link_t *l, uint32_t now_ms,
+bool hitec_rx_link_next(const hitec_rx_link_t *l, uint32_t now_ms,
                         uint16_t *value)
 {
     if (l == NULL || value == NULL || l->up == 0u || l->owed == 0u
