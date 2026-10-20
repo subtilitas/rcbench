@@ -438,6 +438,18 @@ TEST_CASE(the_window_counts_the_waiting_only)
     CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, 0), 0);
     settle();
     CHECK_EQ(cap_n(), 0u);
+    /* The answer to the first byte is not waiting either: the second byte
+     * starts one frame after the answer's end, 1,000 us of waiting in. */
+    g_drv.listen_n = 2u;
+    g_drv.listen_gap_ns = hitec_bits_ns(HITEC_D, 10u);
+    stage_listen(1010u, 2u, true, 0x2Bu, LINK_HITEC_DEC_NONE, 0u);
+    CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, KEY), 0);
+    settle();
+    CHECK_EQ(cap_n(), 2u);
+    stage_listen(990u, 2u, true, 0x2Bu, LINK_HITEC_DEC_NONE, 0u);
+    CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, KEY), 0);
+    settle();
+    CHECK_EQ(cap_n(), 0u);
 }
 
 TEST_CASE(a_stop_close_and_abort_cut_a_precharge_receive_as_any_other)

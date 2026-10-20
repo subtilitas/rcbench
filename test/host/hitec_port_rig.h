@@ -61,6 +61,7 @@ static struct {
     uint8_t  boot_byte;
     uint32_t boot_ns;       /* from the ON to the boot byte */
     uint8_t  listen_n;      /* bytes a listen hears without a power-up */
+    uint32_t listen_gap_ns; /* idle between two of them */
 } g_drv;
 
 static struct {
@@ -119,6 +120,9 @@ static inline void servo_answers(const hitec_xfer_t *x)
                 b[i] = (uint8_t)(0xA0u + i);
             }
             reply_bytes(b, g_drv.listen_n, 1000000u);
+            for (unsigned i = 1; i < g_drv.listen_n; ++i) {
+                g_drv.reply[i].at_ns += i * g_drv.listen_gap_ns;
+            }
         }
         return;
     }
@@ -178,8 +182,8 @@ static inline bool drv_start(void *ctx, const hitec_xfer_t *x)
     g_drv.t_rx = g_drv.us + tx_us;
     servo_answers(x);
     /* The window counts the waiting for a start bit only, none inside a
-     * byte: a byte whose start comes after that much waiting is not
-     * heard, nor any after it. */
+     * byte or the answer to the first: a byte whose start comes after that
+     * much waiting is not heard, nor any after it. */
     if (x->window_us != 0u) {
         const uint32_t frame_ns = hitec_bits_ns(g_drv.family, 10u);
         uint64_t wait_ns = 0;
@@ -187,7 +191,9 @@ static inline bool drv_start(void *ctx, const hitec_xfer_t *x)
 
         for (unsigned i = 0; i < g_drv.n_reply; ++i) {
             const uint32_t from_ns =
-                i == 0u ? 0u : g_drv.reply[i - 1u].at_ns + frame_ns;
+                i == 0u ? 0u
+                        : g_drv.reply[i - 1u].at_ns + frame_ns
+                              + (i == 1u && x->answer != 0u ? frame_ns : 0u);
 
             if (g_drv.reply[i].at_ns > from_ns) {
                 wait_ns += g_drv.reply[i].at_ns - from_ns;
