@@ -8,7 +8,8 @@
  * exactly 0, 1 and many records, the dropped ones counted, named where
  * they are missing and never waited for; a line for each gap in a trace;
  * a mark kind that is no trigger; a count of dropped records that
- * saturates.
+ * saturates; a schedule replaced at the tick count of the one before
+ * starts afresh.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -191,6 +192,7 @@ static void poke(uint16_t n_v, int64_t v_sum)
     sc->hist_head = (uint8_t)((sc->hist_head + 1u) % SENSE_FAST_HISTORY);
     sc->acc[SENSE_CH(0, 1)].n_v   = n_v;
     sc->acc[SENSE_CH(0, 1)].v_sum = v_sum;
+    ++sc->ticks;
     sense_trace_feed(&tr, sc, g_us);
     g_us += 1000u;
 }
@@ -241,6 +243,41 @@ TEST_CASE(a_voltage_is_told_from_the_one_before_by_window_and_count)
     poke(1u, 4600000);
     CHECK_EQ(held_data(), held + 7u);
     CHECK_EQ(rec(held + 6u)->v, 4600);
+}
+
+TEST_CASE(a_schedule_replaced_at_the_same_tick_count_starts_afresh)
+{
+    /* One tick, a set-up, one tick: both schedules have run one tick and
+     * clipped once.  The second clip is the new schedule's own. */
+    rig();
+    i3221->amps[0] = 5.0;
+    tick();
+    CHECK_EQ(svc.sched.ticks, 1u);
+    ++cmd.cfg_gen;
+    tick();
+    CHECK_EQ(svc.sched.ticks, 1u);
+    CHECK_EQ(held_of(SENSE_TRACE_CLIP_HI),
+             i3221->reads[INA3221_SHUNT1]);
+    CHECK_EQ(held_of(SENSE_TRACE_CURRENT), 0u);
+    /* A voltage, then a new schedule whose first tick brings its count
+     * back to the old one with one voltage of its own: that voltage is
+     * traced, not taken for the old one. */
+    sense_sched_t *sc = &svc.sched;
+    sc->acc[SENSE_CH(0, 1)].n_v   = 0u;
+    sc->acc[SENSE_CH(0, 1)].v_sum = 0;
+    sense_trace_feed(&tr, sc, g_us);
+    poke(1u, 4900000);
+    CHECK_EQ(rec(held_data() - 1u)->meta >> 24, SENSE_TRACE_BUS);
+    CHECK_EQ(rec(held_data() - 1u)->v, 4900);
+    const unsigned held = held_data();
+    sc->ticks -= 1u;
+    poke(1u, 4800000);
+    CHECK_EQ(held_data(), held + 2u);
+    if (held_data() != held + 2u) {
+        return;
+    }
+    CHECK_EQ(rec(held + 1u)->meta >> 24, SENSE_TRACE_BUS);
+    CHECK_EQ(rec(held + 1u)->v, 4800);
 }
 
 TEST_CASE(a_voltage_with_no_current_sample_of_its_tick_is_left_out)
@@ -390,6 +427,7 @@ int main(void)
     RUN(a_voltage_is_taken_from_a_window_a_reset_emptied);
     RUN(a_set_up_that_leaves_the_history_at_the_same_place);
     RUN(a_voltage_is_told_from_the_one_before_by_window_and_count);
+    RUN(a_schedule_replaced_at_the_same_tick_count_starts_afresh);
     RUN(a_voltage_with_no_current_sample_of_its_tick_is_left_out);
     RUN(a_ring_full_by_exactly_0_1_and_many_records);
     RUN(the_dropped_records_are_named_where_they_are_missing);
