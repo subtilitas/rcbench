@@ -3387,8 +3387,8 @@ int main(int argc, char **argv)
             /* The newest run is chosen as the list opens. */
             tap(BR_DELETE_CX, UI_BAND_H + BR_FOOT_Y_LOCAL + 21);   /* DELETE */
         } else if (strcmp(view, "logs-root") == 0) {
-            /* ROOT, the third tab at the header row's left. */
-            tap(19 + 2 * 84 + 40, UI_BAND_H + BR_PG_CY_LOCAL);
+            /* ROOT, the first tab at the header row's left. */
+            tap(19 + 40, UI_BAND_H + BR_PG_CY_LOCAL);
         } else if (strcmp(view, "logs") != 0) {
             /* The newest run is chosen as the list opens: one tap opens
              * it. */
