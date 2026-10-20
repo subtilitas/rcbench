@@ -46,6 +46,7 @@
 #include "wa_mdns.h"
 #include "wa_page.h"
 #include "wa_send.h"
+#include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
 #include "wa_zip.h"
@@ -621,106 +622,11 @@ static esp_err_t h_update(httpd_req_t *r)
     return answer_upload(r, e, &info, same, false);
 }
 
-/*
- * Raw bytes on the socket: a response whose length is known up front.
- *
- * The page's server has no TLS (transport layer security) and no send of
- * its own, so its socket is written directly, without waiting
- * (MSG_DONTWAIT), and a full send buffer is waited out in slices of
- * WA_SEND_SLICE_MS.  Each slice looks at the radio going off and at the
- * receiver: a receiver that closed ends the send at its next slice, not at
- * the next retransmission, and one that takes nothing for WA_SEND_QUIET_MS
- * ends it too (wa_send.h).
- */
-static int32_t sock_put(void *ctx, const uint8_t *p, uint32_t n)
-{
-    const int fd = (int)(intptr_t)ctx;
-    const ssize_t sent = send(fd, p, n, MSG_DONTWAIT);
-    if (sent >= 0) {
-        return (int32_t)sent;
-    }
-    return (errno == EAGAIN || errno == EWOULDBLOCK) ? 0 : -1;
-}
-
-static wa_wait_t sock_wait(void *ctx, uint32_t wait_ms)
-{
-    const int fd = (int)(intptr_t)ctx;
-    fd_set rd, wr;
-    FD_ZERO(&rd);
-    FD_ZERO(&wr);
-    FD_SET(fd, &rd);
-    FD_SET(fd, &wr);
-    struct timeval tv = {
-        .tv_sec = (time_t)(wait_ms / 1000u),
-        .tv_usec = (suseconds_t)((wait_ms % 1000u) * 1000u),
-    };
-    int n = select(fd + 1, &rd, &wr, NULL, &tv);
-    if (n <= 0) {
-        return (n == 0) ? WA_WAIT_IDLE : WA_WAIT_GONE;
-    }
-    if (FD_ISSET(fd, &rd)) {
-        /* A close reads as 0 bytes, a reset as an error. */
-        uint8_t c;
-        const ssize_t got = recv(fd, &c, 1, MSG_PEEK | MSG_DONTWAIT);
-        if (got == 0 || (got < 0 && errno != EAGAIN && errno != EWOULDBLOCK)) {
-            return WA_WAIT_GONE;
-        }
-        if (got > 0 && !FD_ISSET(fd, &wr)) {
-            /* Bytes from the receiver, a request sent ahead, stay for the
-             * server; the slice waits for room alone, so they do not make
-             * every wait return at once. */
-            FD_ZERO(&wr);
-            FD_SET(fd, &wr);
-            tv.tv_sec = (time_t)(wait_ms / 1000u);
-            tv.tv_usec = (suseconds_t)((wait_ms % 1000u) * 1000u);
-            n = select(fd + 1, NULL, &wr, NULL, &tv);
-            if (n <= 0) {
-                return (n == 0) ? WA_WAIT_IDLE : WA_WAIT_GONE;
-            }
-        }
-    }
-    return WA_WAIT_READY;
-}
-
-static bool sock_stop(void *ctx)
-{
-    (void)ctx;
-    return atomic_load(&s.abort);
-}
-
-static uint32_t sock_now(void *ctx)
-{
-    (void)ctx;
-    return ms();
-}
-
-static wa_sink_t sock_sink(httpd_req_t *r)
-{
-    const wa_sink_t k = {
-        sock_put, sock_wait, sock_stop, sock_now,
-        (void *)(intptr_t)httpd_req_to_sockfd(r),
-    };
-    return k;
-}
-
-/*
- * A send that failed: the connection is reset when the server closes it,
- * not closed in order.  An orderly close keeps the unsent bytes queued and
- * retransmits them to a receiver that is gone for up to 12 tries
- * (CONFIG_LWIP_TCP_MAXRTX); a reset frees them and the connection at once.
- */
-static esp_err_t sock_drop(httpd_req_t *r)
-{
-    const struct linger l = { .l_onoff = 1, .l_linger = 0 };
-    (void)setsockopt(httpd_req_to_sockfd(r), SOL_SOCKET, SO_LINGER,
-                     &l, sizeof(l));
-    return ESP_FAIL;
-}
-
-/* @p n is a header or a piece: at most IO_CHUNK bytes. */
+/* Raw bytes, at most IO_CHUNK, of a response of known length (wifi_sock.h). */
 static wa_send_res_t raw_send(httpd_req_t *r, const void *data, size_t n)
 {
-    const wa_sink_t k = sock_sink(r);
+    wifi_sock_t c = { httpd_req_to_sockfd(r), &s.abort };
+    const wa_sink_t k = wifi_sock_sink(&c);
     return wa_sink_all(&k, data, (uint32_t)n);
 }
 
@@ -738,10 +644,8 @@ static wa_send_res_t raw_head(httpd_req_t *r, uint64_t length,
                            "Content-Disposition: %s\r\n"
                            "Cache-Control: no-store\r\n\r\n",
                            (unsigned long long)length, disp);
-    if (n <= 0 || (size_t)n >= sizeof(b->head)) {
-        return WA_SEND_GONE;
-    }
-    return raw_send(r, b->head, (size_t)n);
+    return (n > 0 && (size_t)n < sizeof(b->head))
+           ? raw_send(r, b->head, (size_t)n) : WA_SEND_GONE;
 }
 
 static esp_err_t h_file(httpd_req_t *r)
@@ -776,24 +680,21 @@ static esp_err_t h_file(httpd_req_t *r)
     const uint32_t t0 = ms();
     wa_send_res_t res = raw_head(r, st.size, wa_basename(path));
     if (res == WA_SEND_DONE) {
-        const wa_sink_t k = sock_sink(r);
+        wifi_sock_t c = { httpd_req_to_sockfd(r), &s.abort };
+        const wa_sink_t k = wifi_sock_sink(&c);
         res = wa_send_run(snd, b->io, sizeof(b->io), &k);
     }
     wa_send_end(snd);
     req_end();
-    const uint32_t took = ms() - t0;
-    if (res == WA_SEND_DONE) {
-        ESP_LOGI(TAG, "file sent: %llu B in %lu ms",
-                 (unsigned long long)st.size, (unsigned long)took);
-        return ESP_OK;
-    }
-    ESP_LOGW(TAG, "file ended: %s, %llu of %llu B read, %lu ms",
-             wa_send_res_name(res), (unsigned long long)snd->sent,
-             (unsigned long long)st.size, (unsigned long)took);
-    /* A response cut short resets the connection: the browser sees fewer
-     * bytes than announced and reports the download as failed, and the
-     * server is free for the next request. */
-    return sock_drop(r);
+    /* Cut short, the browser has fewer bytes than announced: failed. */
+    const esp_log_level_t lv = (res == WA_SEND_DONE) ? ESP_LOG_INFO
+                                                     : ESP_LOG_WARN;
+    ESP_LOG_LEVEL_LOCAL(lv, TAG, "file: %s, %llu of %llu B read in %lu ms",
+                        wa_send_res_name(res), (unsigned long long)snd->sent,
+                        (unsigned long long)st.size,
+                        (unsigned long)(ms() - t0));
+    return (res == WA_SEND_DONE) ? ESP_OK
+                                 : wifi_sock_drop(httpd_req_to_sockfd(r));
 }
 
 static esp_err_t h_zip(httpd_req_t *r)
@@ -841,9 +742,8 @@ static esp_err_t h_zip(httpd_req_t *r)
             }
             if (!ok) {
                 wa_zip_end_early(z);
-                ESP_LOGW(TAG, "ZIP file ended part way");
             }
-            res = ok ? ESP_OK : sock_drop(r);
+            res = ok ? ESP_OK : wifi_sock_drop(httpd_req_to_sockfd(r));
         }
     }
     heap_caps_free(crc);
@@ -1424,8 +1324,7 @@ static void radio_down(void)
      * under way ends when the radio goes, after the grace. */
     (void)fetch_wait(FETCH_GRACE_MS);
     if (s.httpd != NULL) {
-        /* Waits for a request under way, which ends within
-         * WA_SEND_SLICE_MS of the abort (wa_send.h). */
+        /* Waits for a request under way, which ends within a slice. */
         (void)httpd_stop(s.httpd);
         s.httpd = NULL;
     }
@@ -1490,21 +1389,10 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
         }
     } else {
         e = esp_wifi_set_mode(WIFI_MODE_STA);
-        if (e == ESP_OK) {
-            /*
-             * No power save on a home network.  ESP-IDF's default,
-             * WIFI_PS_MIN_MODEM, sleeps the radio between DTIM (delivery
-             * traffic indication message) beacons, and the access point
-             * holds what arrives for the panel, TCP's acknowledgements
-             * among it, until the next one: every send buffer's worth of a
-             * download then waits about a beacon period of 100 to 300 ms.
-             * The radio runs only while it is asked for, so the current
-             * this costs is spent only then.
-             */
-            const esp_err_t ps = esp_wifi_set_ps(WIFI_PS_NONE);
-            if (ps != ESP_OK) {
-                ESP_LOGW(TAG, "esp_wifi_set_ps: %s", esp_err_to_name(ps));
-            }
+        /* No power save: with the default, the access point holds TCP's
+         * acks to each DTIM beacon (docs/Performance.md, Wi-Fi downloads). */
+        if (e == ESP_OK && esp_wifi_set_ps(WIFI_PS_NONE) != ESP_OK) {
+            ESP_LOGW(TAG, "esp_wifi_set_ps failed");
         }
         if (e == ESP_OK
             && (mode == WA_MODE_JOIN || mode == WA_MODE_FETCH)) {

@@ -221,7 +221,7 @@ CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
 # (CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP).
 CONFIG_LWIP_TCP_SND_BUF_DEFAULT=11520
 # SO_LINGER, so a download that fails resets its connection
-# (wifi_access.c, sock_drop()) and frees what it had queued at once.
+# (wifi_sock.c, wifi_sock_drop()) and frees what it had queued at once.
 CONFIG_LWIP_SO_LINGER=y
 # A phone browser's request headers run past the default 512 bytes, and a
 # card path of WA_PATH_MAX (384) bytes is up to 1152 bytes percent-encoded.

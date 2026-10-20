@@ -501,8 +501,8 @@ once (`CONFIG_LWIP_SO_LINGER`); the server takes the next request. The
 console logs each file:
 
 ```text
-I (…) wifi: file sent: 16777216 B in <n> ms
-W (…) wifi: file ended: receiver gone, <n> of 16777216 B read, <n> ms
+I (…) wifi: file: sent, 16777216 of 16777216 B read in <n> ms
+W (…) wifi: file: receiver gone, <n> of 16777216 B read in <n> ms
 ```
 
 The other endings read `nothing taken for 30 s`, `radio going off` and
@@ -524,16 +524,16 @@ Linux, `iw`:
 4. The rate, 3 times:
    `curl -s -o /dev/null --max-time 600 -w '%{http_code} %{size_download} B %{time_total} s %{speed_download} B/s\n' http://<panel>/card/RATE16M.BIN`.
    Each run answers `200 16777216 B`, and the console logs
-   `file sent: 16777216 B in <n> ms`.
+   `file: sent, 16777216 of 16777216 B read in <n> ms`.
 5. A download broken off part way, and the next request:
    `curl -s -o /dev/null --max-time 5 http://<panel>/card/RATE16M.BIN; curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
-   The second answers `200`; the console logs `file ended: receiver gone`.
+   The second answers `200`; the console logs `file: receiver gone`.
 6. A receiver that stops reading: a connection that asks for the file and
    then reads nothing,
    `python3 -c 'import socket,time; s=socket.create_connection(("<panel>",80)); s.sendall(b"GET /card/RATE16M.BIN HTTP/1.1\r\nHost: p\r\n\r\n"); time.sleep(60)' &`,
    then after 35 s
    `curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
-   The console logs `file ended: nothing taken for 30 s`; the request
+   The console logs `file: nothing taken for 30 s`; the request
    answers `200`.
 
 ## The SD card's file system
