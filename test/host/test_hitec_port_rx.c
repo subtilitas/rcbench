@@ -421,6 +421,25 @@ TEST_CASE(a_listen_on_an_output_read_off_is_cut_at_once)
     CHECK_EQ(result(), LINK_HITEC_RESULT_CUT);
 }
 
+/* The rig's window, as the driver's: waiting for a start bit only.  Three
+ * bytes back to back from 1 ms: a 1,100 us window hears all three, the
+ * last starting 1,174 us in; a 990 us window hears none. */
+TEST_CASE(the_window_counts_the_waiting_only)
+{
+    fresh();
+    open_line(HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    g_drv.listen_n = 3u;
+    stage_listen(1100u, 3u, false, 0u, LINK_HITEC_DEC_NONE, 0u);
+    CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, 0), 0);
+    settle();
+    CHECK_EQ(cap_n(), 3u);
+    CHECK_EQ(cap_byte(2), 0xA2);
+    stage_listen(990u, 3u, false, 0u, LINK_HITEC_DEC_NONE, 0u);
+    CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, 0), 0);
+    settle();
+    CHECK_EQ(cap_n(), 0u);
+}
+
 TEST_CASE(a_stop_close_and_abort_cut_a_precharge_receive_as_any_other)
 {
     hitec_xfer_t x;
@@ -481,6 +500,7 @@ int main(void)
     RUN(a_power_listen_is_cut_when_the_output_is_asked_off);
     RUN(a_power_listen_whose_output_never_reads_on_runs_its_window);
     RUN(a_listen_on_an_output_read_off_is_cut_at_once);
+    RUN(the_window_counts_the_waiting_only);
     RUN(a_stop_close_and_abort_cut_a_precharge_receive_as_any_other);
     return test_summary("hitec_port_rx");
 }

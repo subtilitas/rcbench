@@ -177,10 +177,27 @@ static inline bool drv_start(void *ctx, const hitec_xfer_t *x)
     }
     g_drv.t_rx = g_drv.us + tx_us;
     servo_answers(x);
-    /* What comes after the window is not heard. */
-    while (x->window_us != 0u && g_drv.n_reply > 0u
-           && g_drv.reply[g_drv.n_reply - 1u].at_ns / 1000u > x->window_us) {
-        g_drv.n_reply--;
+    /* The window counts the waiting for a start bit only, none inside a
+     * byte: a byte whose start comes after that much waiting is not
+     * heard, nor any after it. */
+    if (x->window_us != 0u) {
+        const uint32_t frame_ns = hitec_bits_ns(g_drv.family, 10u);
+        uint64_t wait_ns = 0;
+        uint8_t heard = 0;
+
+        for (unsigned i = 0; i < g_drv.n_reply; ++i) {
+            const uint32_t from_ns =
+                i == 0u ? 0u : g_drv.reply[i - 1u].at_ns + frame_ns;
+
+            if (g_drv.reply[i].at_ns > from_ns) {
+                wait_ns += g_drv.reply[i].at_ns - from_ns;
+            }
+            if (wait_ns > (uint64_t)x->window_us * 1000u) {
+                break;
+            }
+            heard++;
+        }
+        g_drv.n_reply = heard;
     }
     if (g_drv.n_reply > x->max_rx) {
         g_drv.n_reply = x->max_rx;
