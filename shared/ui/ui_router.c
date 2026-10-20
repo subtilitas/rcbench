@@ -370,6 +370,22 @@ static __attribute__((noinline)) void router_hand(touch_event_t evt)
 }
 
 /*
+ * Whether @p evt, in panel coordinates, comes down on a control of the
+ * screen on top that stops what the bench drives (ui_screen_t's safe_at).
+ * The one call into a screen's safe_at(): not inlined, so
+ * tools/stack_check.py finds it by name.
+ */
+static __attribute__((noinline)) bool router_safe_at(const touch_event_t *evt)
+{
+    if (evt->type != TOUCH_EVENT_DOWN || evt->point.y < UI_BAND_H) {
+        return false;
+    }
+    const ui_screen_t *scr = screen_for(s.current);
+    return scr != NULL && scr->safe_at != NULL
+           && scr->safe_at(evt->point.x, evt->point.y - UI_BAND_H);
+}
+
+/*
  * Release every contact the screen owns at the last point it was handed,
  * flagged TOUCH_FLAG_NO_TAP, as at the band's edge: the release ends a press
  * or a drag and activates nothing.  The contacts are the router's from then
@@ -463,6 +479,13 @@ static int owned_find(uint8_t id)
  * router's to its release.  A DOWN on another chip closes it and presses
  * that chip, so one tap moves the bubble to it.  A DOWN on STOP closes it
  * as well and presses STOP, as with no bubble.
+ *
+ * A press that stops what the bench drives is never the router's to keep.
+ * A DOWN on a control the screen's safe_at() names -- DISARM on an armed
+ * bench, a run's ABORT or STOP -- closes the bubble or the alert that
+ * covers it and is the screen's, as if neither were there.  ARM is no such
+ * control: a press on ARM under the alert band closes the alert and starts
+ * no hold.
  */
 void ui_router_event(const touch_event_t *evt)
 {
@@ -471,6 +494,9 @@ void ui_router_event(const touch_event_t *evt)
     }
     const uint8_t id   = evt->point.id;
     const bool    band = has_band(s.current);
+    /* Only where the band is: no alert or bubble covers a screen without
+     * one. */
+    const bool    safe = band && router_safe_at(evt);
 
     if (band) {
         const gfx_rect_t stop = ui_band_stop_rect();
@@ -497,7 +523,11 @@ void ui_router_event(const touch_event_t *evt)
             if (was >= 0) {
                 s.owned[was].live = false;
             }
-            return;
+            /* Except a press on DISARM or a run's STOP: the bubble closes
+             * and the press is the screen's, below. */
+            if (!safe) {
+                return;
+            }
         }
         if (evt->type == TOUCH_EVENT_DOWN
             && (in_stop || in_home || chip != UI_BAND_CHIP_NONE)) {
@@ -507,6 +537,12 @@ void ui_router_event(const touch_event_t *evt)
             s.on_stop    = in_stop;
             s.on_chip    = (in_stop || in_home) ? UI_BAND_CHIP_NONE : chip;
             return;   /* consumed before the screen sees it */
+        }
+        if (safe && s.band_press && evt->point.id == s.band_id) {
+            /* A DOWN is a new contact: a band press of this id whose
+             * release went missing is over, and DISARM or a run's STOP is
+             * not swallowed as its rest. */
+            s.band_press = false;
         }
         if (s.band_press && evt->point.id == s.band_id) {
             if (evt->type == TOUCH_EVENT_UP) {
@@ -534,6 +570,14 @@ void ui_router_event(const touch_event_t *evt)
     }
 
     const uint8_t bit = (uint8_t)(1u << (id & 7u));
+    if (safe) {
+        /* A new contact on DISARM or a run's STOP: an earlier one of this
+         * id on the alert band is over, as at any DOWN. */
+        s.alert_ids[id >> 3] &= (uint8_t)~bit;
+        if (s.alert_press && id == s.alert_id) {
+            s.alert_press = false;
+        }
+    }
     if ((s.alert_ids[id >> 3] & bit) != 0u) {
         /* Asked before the band takes anything: a contact that came down on
          * the alert strip and lifts on the band ends its press here too. */
@@ -577,7 +621,12 @@ void ui_router_event(const touch_event_t *evt)
         local.point.y = s.owned[slot].y;
         s.owned[slot].live = false;
     } else if (evt->type == TOUCH_EVENT_DOWN) {
-        if (s.has_alert && band && in_alert(evt)) {
+        if (safe && s.has_alert && in_alert(evt)) {
+            /* The alert covers DISARM or a run's STOP: the press is the
+             * control's, and the alert goes with it.  Asking first would
+             * make a stop take two presses. */
+            clear_alert();
+        } else if (s.has_alert && band && in_alert(evt)) {
             s.alert_ids[id >> 3] |= bit;
             if (!s.alert_press) {
                 s.alert_press     = true;

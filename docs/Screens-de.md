@@ -97,6 +97,12 @@ Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
   Finger wird nicht gedrückt.
 - STOP ist die Ausnahme: Ein Druck auf STOP schließt den Kasten und stoppt
   sofort, wie ohne Kasten.
+- Ebenso ein Bedienelement, das anhält, was der Prüfstand treibt: DISARM,
+  AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN,
+  und START TEST oder START LIMIT-LAUF, solange ihr Lauf läuft. Ein Druck
+  darauf schließt den Kasten und wirkt, wie ohne Kasten. ARM und AUSGANG EIN
+  gehören nicht dazu: Ein Druck dort schließt den Kasten und startet kein
+  Halten.
 - Das Verlassen des Bildschirms schließt ihn.
 - Ein Finger, der auf dem Bildschirm zieht, während ein zweiter Finger einen
   Kasten öffnet, wird wie an der Kante des Bands losgelassen.
@@ -146,6 +152,17 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
   Loslassen des ersten Fingers löscht.
 - Ein Alert, der kommt, während ein Finger auf dem Band liegt, wird durch
   dieses Loslassen nicht gelöscht.
+- Ein Bedienelement unter dem Band, das anhält, was der Prüfstand treibt, wirkt
+  beim ersten Druck, und der Druck löscht das Band: DISARM, AUSGANG AUS,
+  ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN. Das Band
+  verdeckt die unteren 22 px von DISARM auf SERVO (Panel-y 446 bis 467), die
+  unteren 26 px von ABBRECHEN eines Stick-Laufs (y 446 bis 471) und die
+  unteren 8 px von ABBRECHEN bei einem Handschritt (y 446 bis 453). ARM und
+  AUSGANG EIN unter dem Band werden nicht gedrückt: Der Tipp löscht das Band
+  und startet kein Halten.
+- Ein Alert, der kommt, während ein Finger schon auf einem Bedienelement
+  liegt, lässt diesen Druck dem Bedienelement: Sein Loslassen wirkt wie ohne
+  Alert.
 - "Touchscreen antwortet nicht. ARMED ist gesperrt." beim Start
   bleibt bis zum Neustart und hat kein `x`: es gibt keinen Touch, mit dem man tippen könnte.
   Ein späterer Alert erscheint darüber; ist er gelöscht, steht wieder dieser.
