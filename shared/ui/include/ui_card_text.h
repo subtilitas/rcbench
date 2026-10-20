@@ -1,7 +1,7 @@
 /*
  * What a screen says of the SD (Secure Digital) card slot when no volume is
  * mounted, by what the slot holds (card_state.h) and where it is said: no
- * card, a card not formatted as FAT32, or a card that cannot be read.
+ * card, a card neither FAT32 nor exFAT, or a card that cannot be read.
  *
  * One table for every place, so each of them tells the three apart the
  * same way.  Implemented in ui_text.c.

@@ -227,7 +227,7 @@ trägt die Firmware-Version des Panels selbst, die Zeile des IOmcu die
 Protokollversion und die Firmware-Version, die dieser IOmcu gemeldet
 hat — zwei Platinen können dasselbe Protokoll sprechen und verschiedene
 Builds sein, und hier zeigt sich das. Eine fehlende Karte ist
-eine Warnung. Die Zeile SD-Karte zeigt `keine Karte`, `nicht FAT32` (FAT:
+eine Warnung. Die Zeile SD-Karte zeigt `keine Karte`, `nicht FAT32/exFAT` (FAT:
 File Allocation Table) oder `nicht lesbar` ([Das Format der SD-Karte](#das-format-der-sd-karte)). Ein Touch-Controller, der nicht antwortet, oder ein IOmcu
 mit einer anderen Major-Version des Protokolls ist ein Fehler, und der
 Prüfstand schaltet nicht auf ARMED. Wenn alle Schritte geantwortet haben,
@@ -1969,7 +1969,7 @@ keinen weiteren Lauf an, auch wenn niedrigere Nummern frei sind: Das Band
 meldet `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.`, für
 einen Test `Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.` Eine
 Karte im Steckplatz, die sich nicht mounten lässt, meldet für einen Test
-`Karte nicht als FAT32 formatiert. Servotest nicht aufgezeichnet.` oder
+`Karte ist weder FAT32 noch exFAT. Servotest nicht aufgezeichnet.` oder
 `Karte nicht lesbar. Servotest nicht aufgezeichnet.` Ein
 Ordner, der sich nicht anlegen lässt, weil eine Datei seinen Namen trägt
 oder die Karte schreibgeschützt oder voll ist, meldet
@@ -1991,7 +1991,7 @@ Kasten zeigt `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`
 mit der Zeile dieses Tabs darunter, und der Tipp sucht erneut nach einer
 Karte, wie AKTUALISIEREN. Eine Karte im Steckplatz, die sich nicht mounten
 lässt, meldet stattdessen
-`Karte nicht als FAT32 formatiert. Am Computer formatieren.` oder
+`Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` oder
 `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.`
 ([Das Format der SD-Karte](#das-format-der-sd-karte)). Die
 Kopfzeile rechts der Tabs nennt die Karte und den Ordner,
@@ -2145,7 +2145,7 @@ erscheint im Band:
 | Meldung | Was passiert ist |
 |---|---|
 | `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` | nichts ist gemountet, der Lauf wurde nie geöffnet |
-| `Karte nicht als FAT32 formatiert. Lauf nicht aufgezeichnet.` | die Karte im Steckplatz trägt kein FAT-Volume, nichts ist gemountet ([Das Format der SD-Karte](#das-format-der-sd-karte)) |
+| `Karte ist weder FAT32 noch exFAT. Lauf nicht aufgezeichnet.` | die Karte im Steckplatz trägt kein FAT-Volume, nichts ist gemountet ([Das Format der SD-Karte](#das-format-der-sd-karte)) |
 | `Karte nicht lesbar. Lauf nicht aufgezeichnet.` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar, oder die Karte im Steckplatz lässt sich nicht mounten |
 | `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.` | es ließ sich keine Laufnummer anlegen |
 | `Karte zu langsam. Lauf nicht aufgezeichnet.` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
@@ -2164,23 +2164,36 @@ Liste und läse sich wie ein fertiger.
 
 ### Das Format der SD-Karte
 
-Das Panel liest Volumes mit FAT32, FAT16 und FAT12. exFAT (extended FAT) und
-NTFS (New Technology File System) liest es nicht, und es formatiert nie eine
-Karte. FatFs, der Dateisystem-Code von ESP-IDF v5.4, sucht das Volume in
-Sektor 0 und in den 4 primären Partitionen eines MBR (Master Boot Record);
-eine Karte mit GPT (GUID-Partitionstabelle) wird nicht gelesen. SD-Karten
-über 32 GB (SDXC) sind ab Werk mit exFAT formatiert und müssen zuerst mit
-FAT32 formatiert werden.
+Das Panel mountet eine Karte, die mit FAT12, FAT16, FAT32 oder exFAT
+(extended File Allocation Table) formatiert ist. Das Volume ist entweder die
+ganze Karte oder die erste der 4 primären Partitionen eines MBR (Master Boot
+Record), die eines dieser Formate trägt. Lange Dateinamen bis 255 Zeichen
+werden gelesen und geschrieben.
 
-So wird eine Karte mit FAT32 formatiert:
+| Karte | Größe | Format ab Werk | Am Panel |
+| --- | --- | --- | --- |
+| SDSC (SD Standard Capacity) | bis 2 GB | FAT12 oder FAT16 | mountet |
+| SDHC (SD High Capacity) | 4 GB bis 32 GB | FAT32 | mountet |
+| SDXC (SD eXtended Capacity) | 64 GB bis 2 TB | exFAT | mountet |
+| SDUC (SD Ultra Capacity) | über 2 TB | exFAT | mountet nicht |
 
-- Bis 32 GB: der SD Card Formatter der SD Association oder der
-  Formatierbefehl des Computers mit dem Dateisystem FAT32.
-- Über 32 GB: ein Werkzeug, das für diese Größe FAT32 anbietet. Der SD Card
-  Formatter schreibt auf diese Karten exFAT, und der Formatierdialog von
-  Windows bietet über 32 GB nur exFAT und NTFS an. Unter Linux, für die
-  erste Partition der Karte unter `/dev/sdX1`:
-  `sudo mkfs.vfat -F 32 /dev/sdX1`.
+Nicht unterstützt:
+
+- eine Karte mit GPT-Partitionierung (GUID Partition Table; GUID: Globally
+  Unique Identifier) statt MBR;
+- ein Volume über 2 TiB;
+- NTFS (New Technology File System), ext4, HFS+ und APFS.
+
+Eine solche Karte mountet nicht. Das Panel formatiert nie eine Karte.
+
+Zum Formatieren für den Prüfstand dient der SD Memory Card Formatter der SD
+Association: Er schreibt bis 32 GB FAT32 und ab 64 GB exFAT, auf einen MBR.
+Unter Windows tut der Formatieren-Dialog mit FAT32 oder exFAT dasselbe.
+Unter macOS das Festplattendienstprogramm mit Löschen, Schema
+`Master Boot Record` und Format `MS-DOS (FAT)` oder `ExFAT`. Unter Linux,
+für die erste Partition der Karte unter `/dev/sdX1` auf einer
+Partitionstabelle `dos`: `sudo mkfs.vfat -F 32 /dev/sdX1` oder
+`sudo mkfs.exfat /dev/sdX1`.
 
 Formatieren löscht die Karte. Das Panel sucht eine Karte beim Start, bei
 AKTUALISIEREN, beim Öffnen von LOGS, bei einem Tipp auf einen Tab von LOGS,
@@ -2191,17 +2204,27 @@ steckt, steht an jeder Stelle, die eine Karte braucht:
 | Steckplatz | [Splash](#splash), Zeile SD-Karte | LOGS | Lauf im Band |
 |---|---|---|---|
 | leer | `keine Karte` | `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` | `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` |
-| eine Karte ohne FAT-Volume: exFAT, NTFS, GPT oder nicht formatiert | `nicht FAT32` | `Karte nicht als FAT32 formatiert. Am Computer formatieren.` | `Karte nicht als FAT32 formatiert. Lauf nicht aufgezeichnet.` |
+| eine Karte ohne FAT- oder exFAT-Volume: NTFS, GPT oder nicht formatiert | `nicht FAT32/exFAT` | `Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` | `Karte ist weder FAT32 noch exFAT. Lauf nicht aufgezeichnet.` |
 | eine Karte, die sich aus anderem Grund nicht mounten lässt: ein Lesefehler, eine Karte, die ihren Start nicht abschließt | `nicht lesbar` | `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` | `Karte nicht lesbar. Lauf nicht aufgezeichnet.` |
 
 Die Konsolenzeile des Panels sagt, welcher Fall vorliegt, mit dem Code
-dahinter: `I storage: no card (ESP_ERR_TIMEOUT)`,
-`W storage: card holds no FAT volume (FatFs 13): format it FAT32`, oder
-`W storage: mount failed: FatFs <n>` und `W storage: mount failed: <Name des
-ESP-IDF-Fehlers>`. Eine Karte, die startet und sich nicht mounten lässt,
-wird ein zweites Mal gestartet, um FatFs nach dem Grund zu fragen. Dieser
-Blick fügt jedem gescheiterten Versuch einen Kartenstart hinzu, seine Dauer
-ist nicht gemessen, und einer Karte, die sich mounten lässt, nichts.
+dahinter: `I storage: SK64G mounted, exFAT, 61002 MB` mit dem Format einer
+Karte, die mountet, `I storage: no card (ESP_ERR_TIMEOUT)`,
+`W storage: card holds no FAT volume (FatFs 13): format it FAT32 or exFAT`
+oder `W storage: mount failed: FatFs <n>` und `W storage: mount failed:
+<Name des ESP-IDF-Fehlers>`. Eine Karte, die startet und sich nicht mounten
+lässt, wird ein zweites Mal gestartet, um FatFs nach dem Grund zu fragen.
+Dieser Blick fügt jedem gescheiterten Versuch einen Kartenstart hinzu, seine
+Dauer ist nicht gemessen, und einer Karte, die sich mounten lässt, nichts.
+
+Die Größe einer Datei wird mit 64 Bit gelesen, eine Datei ab 4 GiB auf
+einer exFAT-Karte steht also mit ihrer Größe in der Liste, `8.00 GB`. OPEN
+liest Dateien bis 2 GiB weniger 1 Byte: Eine größere, auch eine FAT32-Datei
+von 2 GiB bis 4 GiB weniger 1 Byte, bleibt in der Liste, und OPEN meldet
+`BENCH001.CSV ist 2 GB oder größer. Nicht geöffnet.` Die Größen in der
+Liste sind binär: 1 kB sind 1024 Bytes, 1 MB 1024 kB und 1 GB 1024 MB.
+[WLAN](#wlan) listet und lädt eine Datei jeder Größe herunter, die die Karte
+trägt.
 
 ## WLAN
 

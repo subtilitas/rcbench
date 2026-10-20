@@ -625,14 +625,19 @@ static int32_t note_size(void *ctx, const char *path)
     (void)ctx;
     char full[NOTE_PATH_MAX];
     take_path(path, NULL, full, sizeof(full));
-    struct stat st;
-    if (stat(full, &st) != 0) {
-        return (errno == ENOENT) ? FAULT_SIZE_NONE : FAULT_SIZE_UNREAD;
+    /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads a
+     * file of 4 GiB and more as a small one, which the cap would let grow. */
+    storage_stat_t st;
+    const esp_err_t err = storage_stat(full, &st);
+    if (err != ESP_OK) {
+        return (err == ESP_ERR_NOT_FOUND) ? FAULT_SIZE_NONE
+                                          : FAULT_SIZE_UNREAD;
     }
-    if (S_ISDIR(st.st_mode)) {
+    if (st.is_dir) {
         return FAULT_SIZE_UNREAD;    /* a folder holds the name */
     }
-    return (st.st_size > INT32_MAX) ? INT32_MAX : (int32_t)st.st_size;
+    /* INT32_MAX for a larger file, as fault_log.h's size() asks. */
+    return (st.size > (uint64_t)INT32_MAX) ? INT32_MAX : (int32_t)st.size;
 }
 
 static bool note_remove(void *ctx, const char *path)

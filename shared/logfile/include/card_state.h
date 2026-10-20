@@ -17,8 +17,9 @@ typedef enum {
     CARD_STATE_NONE = 0,
     /** A volume is mounted. */
     CARD_STATE_MOUNTED = 1,
-    /** A card answers, and FatFs finds no FAT12, FAT16 or FAT32 volume on
-     *  it (FR_NO_FILESYSTEM, 13): exFAT, NTFS or no format at all. */
+    /** A card answers, and FatFs finds no FAT12, FAT16, FAT32 or exFAT
+     *  volume on it (FR_NO_FILESYSTEM, 13): NTFS, a GPT or no format at
+     *  all. */
     CARD_STATE_NO_FAT = 2,
     /** A card answers, or the slot's bus did not come up, and the volume
      *  does not mount for another reason: a read error, a card that does

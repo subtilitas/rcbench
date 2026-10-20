@@ -6,7 +6,37 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The panel mounts SD cards formatted exFAT (extended File Allocation
+  Table), the format SDXC cards of 64 GB to 2 TB come in, beside FAT12,
+  FAT16 and FAT32. The build takes ESP-IDF's fatfs component with
+  `FF_FS_EXFAT` 1 (`firmware/panel/fatfs_exfat.cmake`); ESP-IDF v5.4 and
+  v5.5 have no Kconfig option for it. The application image grows by
+  9,184 bytes. The serial log names the format at mount:
+  `storage: SK64G mounted, exFAT, 61002 MB`.
+- File sizes are 64-bit from the card to the screen: LOGS lists a file of
+  4 GiB and more with its size (`8.00 GB`), and WI-FI lists and downloads
+  it whole. OPEN refuses a file of 2 GiB and more with
+  `<name> is 2 GB or larger. Not opened.`; the reader's seek reaches
+  2 GiB less 1 byte. GPT (GUID Partition Table) cards and volumes over
+  2 TiB do not mount (`FF_LBA64` stays 0).
+
+### Changed
+
+- A card that holds no FAT volume reads `Card is neither FAT32 nor
+  exFAT. Format it on a computer.` on LOGS and `not FAT32/exFAT` on the
+  splash, and the run, servo test and servo programmer lines name exFAT
+  beside FAT32 the same way. The console line reads
+  `W storage: card holds no FAT volume (FatFs 13): format it FAT32 or exFAT`.
+
 ### Fixed
+
+- WI-FI lists and downloads a FAT32 file of 2 GiB to 4 GiB less 1 byte with
+  its size, and the fault log and the servo files read such a file's size
+  right. Each took the size from stat(), whose 32-bit `st_size` gave a
+  negative number. LOGS refuses such a file at OPEN instead of reading it
+  through a seek that does not reach its end.
 
 - A card in the panel's SD (Secure Digital) slot that holds no FAT (file
   allocation table) volume -- exFAT, NTFS, a GPT or no format -- reads

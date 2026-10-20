@@ -91,21 +91,37 @@ esp_err_t sdmmc_card_init(const sdmmc_host_t *host, sdmmc_card_t *card);
 #define SDSPI_DEVICE_CONFIG_DEFAULT() \
     ((sdspi_device_config_t){ .host_id = 1, .gpio_cs = 34 })
 
-/* ff.h, diskio_sdmmc.h */
+/* ff.h, diskio_sdmmc.h, as the panel builds FatFs: exFAT on
+ * (firmware/panel/fatfs_exfat.cmake), so FSIZE_t is 64-bit. */
+#define FF_FS_EXFAT 1
 typedef unsigned char BYTE;
-typedef uint32_t FSIZE_t;
+typedef uint16_t WORD;
+typedef uint32_t DWORD;
+typedef uint64_t FSIZE_t;
 typedef enum {
     FR_OK = 0, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH,
-    FR_NO_FILESYSTEM = 13,
+    FR_INVALID_NAME, FR_NO_FILESYSTEM = 13,
 } FRESULT;
-typedef struct { BYTE win[4096]; } FATFS;
+typedef struct { int pos; } FF_DIR;
+typedef struct {
+    FSIZE_t fsize;
+    WORD fdate;
+    WORD ftime;
+    BYTE fattrib;
+    char fname[256];
+} FILINFO;
+typedef struct { BYTE fs_type; BYTE win[4096]; } FATFS;
+#define FS_FAT12 1
+#define FS_FAT16 2
+#define FS_FAT32 3
+#define FS_EXFAT 4
 FRESULT f_mount(FATFS *fs, const char *path, BYTE opt);
-typedef struct { int unused; } FF_DIR;
-typedef struct { char fname[256]; BYTE fattrib; FSIZE_t fsize; } FILINFO;
 #define AM_DIR 0x10
 FRESULT f_opendir(FF_DIR *dp, const char *path);
 FRESULT f_readdir(FF_DIR *dp, FILINFO *fno);
 FRESULT f_closedir(FF_DIR *dp);
+FRESULT f_stat(const char *path, FILINFO *fno);
+FRESULT f_getfree(const char *path, DWORD *nclst, FATFS **fatfs);
 FRESULT f_getlabel(const char *path, char *label, uint32_t *vsn);
 BYTE ff_diskio_get_pdrv_card(const sdmmc_card_t *card);
 void ff_diskio_register_sdmmc(unsigned char pdrv, sdmmc_card_t *card);

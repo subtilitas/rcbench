@@ -588,7 +588,8 @@ TEST_CASE(a_full_list_keeps_the_newest_runs_of_every_writer)
         memset(&f, 0, sizeof(f));
         log_name_build(f.name, sizeof(f.name),
                        (log_prefix_t)(i % (int)LOG_PREFIX_COUNT), i, false);
-        f.size = (uint32_t)i;
+        /* Over 4 GiB, as an exFAT card holds: the size travels whole. */
+        f.size = ((uint64_t)i << 32) | (uint64_t)i;
         held = log_select_keep(set, held, LOG_VIEWER_MAX_FILES, &f);
     }
     CHECK_EQ(held, LOG_VIEWER_MAX_FILES);
@@ -597,7 +598,7 @@ TEST_CASE(a_full_list_keeps_the_newest_runs_of_every_writer)
     for (int r = 0; r < held; ++r) {
         const int n = log_run_number(set[r].name);
         CHECK(n > LOG_RUN_LAST - LOG_VIEWER_MAX_FILES);
-        CHECK_EQ(set[r].size, (uint32_t)n);
+        CHECK(set[r].size == (((uint64_t)n << 32) | (uint64_t)n));
         if (n > 0) {
             kept[n] = true;
         }

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "board.h"
 /* ff.h first: diskio_sdmmc.h uses its BYTE without including it. */
@@ -71,6 +72,29 @@ static void read_name(void)
 }
 
 /*
+ * The mounted volume's format, for the mount's log line: FAT12, FAT16,
+ * FAT32 or exFAT.  After storage_total_bytes(), whose f_getfree() counts a
+ * FAT32 volume's free clusters once per mount when the volume does not say;
+ * this call then reads the count FatFs keeps.
+ */
+static const char *volume_format(void)
+{
+    DWORD free_clusters = 0u;
+    FATFS *fs = NULL;
+    if (s.drive[0] == '\0'
+        || f_getfree(s.drive, &free_clusters, &fs) != FR_OK || fs == NULL) {
+        return "format unread";
+    }
+    switch (fs->fs_type) {
+    case FS_FAT12: return "FAT12";
+    case FS_FAT16: return "FAT16";
+    case FS_FAT32: return "FAT32";
+    case FS_EXFAT: return "exFAT";
+    default:       return "format unread";
+    }
+}
+
+/*
  * What FatFs says of the card esp_vfs_fat_sdspi_mount() just gave up on.
  *
  * That mount answers ESP_FAIL for every FatFs refusal alike, and only after
@@ -79,7 +103,7 @@ static void read_name(void)
  * to its caller.  So the card is started again here, the way the mount
  * starts it, and handed to FatFs alone, without the VFS (virtual file
  * system) path: f_mount()'s own answer, e.g. FR_NO_FILESYSTEM (13) for a
- * card that holds exFAT, NTFS or nothing.  The volume is let go before
+ * card that holds NTFS, a GPT or nothing.  The volume is let go before
  * returning; a mount is still storage_init()'s alone.
  *
  * Only on that failure, so a card that mounts costs nothing more.  The
@@ -138,8 +162,8 @@ static void mount_failed(esp_err_t err, const sdmmc_host_t *host,
     if (fr == (int)FR_NO_FILESYSTEM) {
         s.state = CARD_STATE_NO_FAT;
         snprintf(s.status, sizeof(s.status), "no FAT volume");
-        ESP_LOGW(TAG, "card holds no FAT volume (FatFs %d): format it FAT32",
-                 fr);
+        ESP_LOGW(TAG, "card holds no FAT volume (FatFs %d): "
+                      "format it FAT32 or exFAT", fr);
     } else if (fr >= 0) {
         snprintf(s.status, sizeof(s.status), "FatFs %d", fr);
         ESP_LOGW(TAG, "mount failed: FatFs %d", fr);
@@ -242,8 +266,8 @@ esp_err_t storage_init(void)
         snprintf(s.drive, sizeof(s.drive), "%u:", (unsigned)pdrv);
     }
     read_name();
-    ESP_LOGI(TAG, "%s mounted, %llu MB", s.name,
-             (unsigned long long)(storage_total_bytes() / (1024ULL * 1024ULL)));
+    const unsigned long long mb = storage_total_bytes() / (1024ULL * 1024ULL);
+    ESP_LOGI(TAG, "%s mounted, %s, %llu MB", s.name, volume_format(), mb);
     return ESP_OK;
 }
 
@@ -366,11 +390,17 @@ typedef struct {
     FILINFO info;
 } walk_buf_t;
 
-/* A file's size goes into a 32-bit field as it is.  FatFs sizes are 32-bit
- * while exFAT is off (FF_FS_EXFAT 0 in ESP-IDF v5.4's ffconf.h); turning it
- * on stops the build here rather than cutting sizes over 4 GiB. */
-_Static_assert(sizeof(FSIZE_t) <= sizeof(uint32_t),
-               "storage_entry_t.size holds a 32-bit FatFs size only");
+/* exFAT is on (firmware/panel/fatfs_exfat.cmake): a build that lost it
+ * stops here rather than run without it.  A file's size then is FatFs's
+ * 64-bit FSIZE_t, and goes into storage_entry_t and storage_stat_t as it
+ * is. */
+#if !defined(FF_FS_EXFAT) || FF_FS_EXFAT != 1
+#error "FatFs without exFAT: see firmware/panel/fatfs_exfat.cmake"
+#endif
+_Static_assert(sizeof(FSIZE_t) <= sizeof(((storage_entry_t *)0)->size),
+               "storage_entry_t.size holds every FatFs size");
+_Static_assert(sizeof(FSIZE_t) <= sizeof(((storage_stat_t *)0)->size),
+               "storage_stat_t.size holds every FatFs size");
 
 int storage_walk(const char *dir, const char *suffixes,
                  storage_visit_fn visit, void *ctx, storage_tick_fn tick)
@@ -445,7 +475,7 @@ int storage_walk(const char *dir, const char *suffixes,
         storage_entry_t cur;
         memcpy(cur.name, e->fname, len + 1u);
         cur.is_dir = is_dir;
-        cur.size = is_dir ? 0u : (uint32_t)e->fsize;
+        cur.size = is_dir ? 0u : (uint64_t)e->fsize;
         ++matched;
         if (visit != NULL) {
             visit(&cur, ctx);
@@ -459,4 +489,69 @@ int storage_walk(const char *dir, const char *suffixes,
     }
 
     return matched;
+}
+
+/* FAT's date and time stamp as local time, the way ESP-IDF's stat() reads
+ * it (components/fatfs/vfs/vfs_fat.c, update_stat_struct()): the date's
+ * bits 15..9 are years from 1980, 8..5 the month, 4..0 the day; the time's
+ * 15..11 the hour, 10..5 the minute, 4..0 seconds in steps of 2. */
+static int64_t fat_mtime(WORD fdate, WORD ftime)
+{
+    struct tm tm = {
+        .tm_mday = (int)(fdate & 0x1fu),
+        .tm_mon = (int)((fdate >> 5) & 0x0fu) - 1,
+        .tm_year = (int)(fdate >> 9) + 80,
+        .tm_sec = (int)(ftime & 0x1fu) * 2,
+        .tm_min = (int)((ftime >> 5) & 0x3fu),
+        .tm_hour = (int)((ftime >> 11) & 0x1fu),
+        .tm_isdst = -1,
+    };
+    return (int64_t)mktime(&tm);
+}
+
+esp_err_t storage_stat(const char *path, storage_stat_t *out)
+{
+    if (path == NULL || out == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    const size_t mp = sizeof(STORAGE_MOUNT_POINT) - 1u;
+    if (!s.mounted || s.drive[0] == '\0'
+        || strncmp(path, STORAGE_MOUNT_POINT, mp) != 0
+        || (path[mp] != '\0' && path[mp] != '/')) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    const char *rel = path + mp;            /* "" or "/..." */
+    if (rel[0] == '\0' || strcmp(rel, "/") == 0) {
+        /* f_stat() does not take a volume's root; it is a folder. */
+        memset(out, 0, sizeof(*out));
+        out->is_dir = true;
+        return ESP_OK;
+    }
+
+    /* On the heap, as the walk's: a FILINFO with its long name buffer is
+     * 280 bytes or more, and the run logger's task calls this. */
+    const size_t need = strlen(s.drive) + strlen(rel) + 1u;
+    typedef struct {
+        FILINFO info;
+        char path[];
+    } stat_buf_t;
+    stat_buf_t *b = malloc(sizeof(*b) + need);
+    if (b == NULL) {
+        return ESP_ERR_NO_MEM;
+    }
+    snprintf(b->path, need, "%s%s", s.drive, rel);
+    const FRESULT fr = f_stat(b->path, &b->info);
+    esp_err_t err = ESP_OK;
+    if (fr == FR_OK) {
+        out->is_dir = (b->info.fattrib & AM_DIR) != 0;
+        out->size = out->is_dir ? 0u : (uint64_t)b->info.fsize;
+        out->mtime = fat_mtime(b->info.fdate, b->info.ftime);
+    } else if (fr == FR_NO_FILE || fr == FR_NO_PATH) {
+        err = ESP_ERR_NOT_FOUND;
+    } else {
+        ESP_LOGW(TAG, "stat %s: FatFs %d", b->path, (int)fr);
+        err = ESP_FAIL;
+    }
+    free(b);
+    return err;
 }
