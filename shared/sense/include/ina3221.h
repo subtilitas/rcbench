@@ -146,7 +146,8 @@ typedef enum {
 
 typedef struct {
     sense_part_t part;
-    uint32_t     shunt_uohm;   /**< one value for all three channels    */
+    uint32_t     shunt_uohm[INA3221_CHANNELS]; /**< CH1 to CH3; 0 for a
+                                    channel the configuration leaves off */
     uint16_t     config;       /**< the Configuration register as written */
 } ina3221_t;
 
@@ -156,6 +157,15 @@ typedef struct {
  *  sent to it. */
 ina3221_setup_err_t ina3221_init(ina3221_t *d, sense_bus_t *bus, uint8_t addr,
                                  uint32_t shunt_uohm, uint16_t config);
+
+/** The same with a shunt for each channel, @p shunt_uohm[0] CH1's.  Each
+ *  channel the configuration enables needs one of at least
+ *  INA3221_SHUNT_MIN_UOHM (INA3221_SETUP_NO_SHUNT otherwise); a channel it
+ *  leaves off keeps 0 whatever is given. */
+ina3221_setup_err_t ina3221_init_shunts(ina3221_t *d, sense_bus_t *bus,
+                                        uint8_t addr,
+                                        const uint32_t *shunt_uohm,
+                                        uint16_t config);
 
 /** Every tick: probes the part when it is due -- at the first call, and
  *  SENSE_RETRY_MS after it was found absent, wrong, refused or offline.
