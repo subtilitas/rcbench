@@ -2461,11 +2461,16 @@ und den Zeiten der Karte. Eine Datei über 4 GiB − 1 B, ein Archiv über
 Speicher gehalten oder auf die Karte geschrieben: Es wird gesendet, wie es
 gelesen wird.
 
-Die Übertragungsrate ist nicht gemessen. Ein Download von S Bytes bei einer
+Die Übertragungsrate ist nicht gemessen; [Performance](Performance-de.md#wlan-downloads)
+nennt, was sie begrenzt, erwartete 300 000 bis 1 000 000 B/s in einem
+Heimnetz und die Schritte, sie zu messen. Ein Download von S Bytes bei einer
 Rate von R Bytes pro Sekunde dauert S / R Sekunden: bei 1 000 000 B/s
-braucht eine Karte mit 50 000 000 Bytes 50 s. Eine Karte, die während eines
-Downloads gezogen wird, beendet den Download zu kurz; der Browser meldet ihn
-als fehlgeschlagen, und das Panel läuft weiter.
+braucht eine Karte mit 50 000 000 Bytes 50 s. Die Seite beantwortet eine
+Anfrage nach der anderen, also wartet eine Anfrage während eines Downloads
+auf dessen Ende. Eine Karte, die während eines Downloads gezogen wird,
+beendet den Download zu kurz, ebenso ein Browser, der 30 s lang nichts
+annimmt; der Browser meldet ihn als fehlgeschlagen, und das Panel läuft
+weiter.
 
 ### Installieren: PANEL UPDATE
 

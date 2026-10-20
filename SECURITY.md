@@ -10,7 +10,8 @@ output off and no log run open.
 The first is the panel's Wi-Fi page: an HTTP (hypertext transfer protocol)
 server that lists and sends the card's files and takes a panel firmware
 image. It runs only while the WI-FI screen is open, and goes off
-after 10 min without a request. It runs as a WPA2 (Wi-Fi Protected Access 2)
+after 10 min without a request. It answers one request at a time; a
+download the receiver takes nothing of for 30 s ends. It runs as a WPA2 (Wi-Fi Protected Access 2)
 access point for 1 client or joins a WPA2 or WPA3 home network. An
 8-character access code, new at every start of the radio, guards the page
 unless the operator switches it off on the panel; 16 wrong codes switch the
