@@ -47,9 +47,12 @@
  *
  * Replies, one line each: `data`, `ack`, `nack`, `err`, `page`, `hitec`.
  *
- * The output is a buffer of PAGE_CONSOLE_OUT_MAX bytes taken in whole
- * lines; what does not fit is dropped and counted, and a line says how
- * many bytes were lost.
+ * The output is a buffer of PAGE_CONSOLE_OUT_MAX bytes of whole lines;
+ * what does not fit is dropped and counted, and a line says how many bytes
+ * were lost.  It is taken in whole lines, or with page_console_take_part()
+ * as a stream that cuts a line where the caller's room ends.  Lines from
+ * outside the console (page_console_say()) go into the same buffer, so
+ * they leave in the order they were said and never inside another line.
  *
  * Pure logic with no hardware: the caller feeds characters and takes the
  * output.
@@ -59,6 +62,7 @@
 #ifndef RCBENCH_PAGE_CONSOLE_H
 #define RCBENCH_PAGE_CONSOLE_H
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -105,8 +109,33 @@ void page_console_key(page_console_t *c, int ch);
 /** Once a pass: the report of a HITEC operation that has ended. */
 void page_console_poll(page_console_t *c);
 
-/** Whole lines of output, at most @p room bytes; the bytes copied. */
+/**
+ * One line of output from outside the console, formatted as printf()
+ * formats: the LF is added, and one the text ends with is not doubled.  At
+ * most PAGE_CONSOLE_OUT_LINE bytes with the LF; a longer text is cut.
+ */
+void page_console_say(page_console_t *c, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
+/** page_console_say() with a va_list. */
+void page_console_vsay(page_console_t *c, const char *fmt, va_list ap)
+    __attribute__((format(printf, 2, 0)));
+
+/**
+ * Whole lines of output, at most @p room bytes; the bytes copied.  A line
+ * longer than @p room does not leave: a caller whose room can be smaller
+ * than PAGE_CONSOLE_OUT_LINE takes with page_console_take_part().
+ */
 size_t page_console_take(page_console_t *c, char *buf, size_t room);
+
+/**
+ * The first @p room bytes of output, a line cut where the room ends: a line
+ * longer than @p room leaves in pieces, and the rest of it comes first in
+ * the next take.  Any @p room from 1 byte on moves the output.  A caller
+ * that takes in parts keeps to this function: page_console_take() leaves a
+ * part-taken line where it is until the rest of it fits.
+ */
+size_t page_console_take_part(page_console_t *c, char *buf, size_t room);
 
 #ifdef __cplusplus
 }

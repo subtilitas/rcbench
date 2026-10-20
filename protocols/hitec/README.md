@@ -16,7 +16,8 @@ transactions on a programming port.
 
 The wire timings below are measured on an HS-5645MG, an HS-7955TG and a
 D485HW with the HPP-21 Plus and HFP-30 programmers, at a 1.4 V threshold.
-No byte of this code has been on a wire.
+On a wire this code has run D series reads on a D485HW, answered with the
+pull-up under [Line levels](#line-levels); nothing else of it has.
 
 ## Constraints
 
@@ -82,8 +83,8 @@ count against the window. Windows, leads and levels are 4 s or shorter.
 | Builder | Bytes | Gap | Lead | Window | Bytes received |
 |---|---|---|---|---|---|
 | `hitec_c_xfer()` | 4 | 1 bit time: 572.9 us start to start | none | 1.5 ms | 2 |
-| `hitec_d_read_xfer()` | 5 | 0 | 88 us driven low | 25 ms | 8: the answer and the byte 0x00 |
-| `hitec_d_write_xfer()` | 7 | 0 | 88 us driven low | none | none |
+| `hitec_d_read_xfer()` | 5 | 0 | 88 us driven low, at least (RP2350: 117.2 us) | 25 ms | 8: the answer and the byte 0x00 |
+| `hitec_d_write_xfer()` | 7 | 0 | 88 us driven low, at least (RP2350: 89.0 us) | none | none |
 | `hitec_listen_xfer()` | none | | | as given | as given |
 | `hitec_level_xfer()` | none | | | | |
 
@@ -256,7 +257,10 @@ measured.
 | After close | an input, pull-down on, no override | an input, pull-up on, no override |
 
 The internal pulls are 50 to 80 kOhm. The D series needs a pull-up on the
-board. The HFP-30 holds the line low after a write until its next request
+board. Tested with a D485HW: with the pad's pull-up alone the line stays
+below the 1.4 V threshold and the servo answers no read; with 2.2 kOhm
+from the signal wire to the servo supply it answers every read. The line
+voltages are not measured. The HFP-30 holds the line low after a write until its next request
 and releases it after a read; this driver releases it after every
 transaction.
 
@@ -321,7 +325,13 @@ the 1.4 V crossing is known.
   reference circuit that is 1.57 V, below the 2.0 V an RP2350 input needs
   for a high at IOVDD 3.3 V. 1.95 kOhm or less gives 2.0 V; whether the
   servo still pulls such a line low is not known. The pull-up for a 3.3 V
-  pin is not established. Push-pull drives the high level of a sent bit to
+  pin is not established.
+- D series, tested with a D485HW: 2.2 kOhm from the signal wire to the
+  servo supply, and every read is answered. The line voltages are not
+  measured. Against the 3 kOhm pull-down reported for the servo the
+  divider puts 58 % of the servo supply on the line (computed): whether
+  that stays within the pin's rating in the table above, also with the
+  IOmcu unpowered, is not known. Push-pull drives the high level of a sent bit to
   3.3 V, 1.1 mA into 3 kOhm; the servo's high bits still come from the
   pull-up.
 - Which side drives each level of a D series answer is not measured.
@@ -349,8 +359,8 @@ D485HW's trailing byte.
 Not measured:
 
 - Whether a servo accepts this driver's timing: the answer at 520.8 to
-  527.3 us, a D read's lead of 117.2 us, the classic pacing of 572.9 us,
-  the push-pull stop bit of 15/16 of a bit.
+  527.3 us, a D read's lead of 117.2 us on a servo other than the D485HW,
+  the classic pacing of 572.9 us, the push-pull stop bit of 15/16 of a bit.
 - Bit time tolerances of the servos.
 - `0x63`, the `-` reply and a D series ID other than 0.
 - What sets the D series line level between transactions: the bench shows

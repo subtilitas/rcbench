@@ -5,7 +5,8 @@
  * raw read and write, the refusals as the link gives them, the parsing of
  * numbers and lines, the hitec conveniences down to the registers they
  * stage, the report when a transaction ends, the output taken in whole
- * lines, and a console that does not hold the link's failsafe off.
+ * lines or a long line in pieces with lines said from outside after it,
+ * and a console that does not hold the link's failsafe off.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -346,6 +347,198 @@ TEST_CASE(output_goes_out_in_whole_lines_and_overflow_is_counted)
     }
 }
 
+/* A text of @p len bytes with its LF, the LF left to page_console_say():
+ * a tag, then letters.  @p buf holds at least @p len bytes. */
+static void line_of(char *buf, size_t len, char tag)
+{
+    for (size_t i = 0; i + 1u < len; ++i) {
+        buf[i] = (char)('a' + (i % 26u));
+    }
+    buf[0] = tag;
+    buf[len - 1u] = '\0';
+}
+
+static char g_want[8192];
+static size_t g_want_n;
+
+/* Said through page_console_say(), and expected in the stream. */
+static void say_and_expect(const char *text)
+{
+    page_console_say(&g_con, "%s", text);
+    const size_t n = strlen(text);
+    memcpy(g_want + g_want_n, text, n);
+    g_want_n += n;
+    if (n == 0u || text[n - 1u] != '\n') {
+        g_want[g_want_n++] = '\n';
+    }
+}
+
+/* Passes of a transmit buffer with @p room free each: what they took,
+ * appended to g_out from @p at.  Each take within its room, and a pass
+ * with output waiting and room free moves it. */
+static size_t drain(size_t at, size_t room, unsigned *passes_taken)
+{
+    unsigned k = 0;
+
+    while (g_con.used > 0u && k < 1000u) {
+        const uint16_t before = g_con.used;
+        const size_t n = page_console_take_part(&g_con, g_out + at, room);
+        CHECK(n <= room);
+        CHECK(n > 0u || room == 0u);
+        /* Less by what was taken, unless the note of a loss went in. */
+        CHECK(g_con.used == before - n || g_con.dropped == 0u);
+        at += n;
+        k++;
+        if (room == 0u) {
+            break;
+        }
+    }
+    if (passes_taken != NULL) {
+        *passes_taken = k;
+    }
+    return at;
+}
+
+/* The IOmcu console build hands the console the free bytes of a 64-byte
+ * USB transmit buffer: a line of more than 64 bytes with its LF has no
+ * whole-line take there, and took the console's output down with it. */
+TEST_CASE(a_line_longer_than_the_room_leaves_in_pieces)
+{
+    static const size_t lens[] = { 63u, 64u, 65u, 87u, PAGE_CONSOLE_OUT_LINE };
+    char text[PAGE_CONSOLE_OUT_LINE + 64u];
+    size_t at;
+    unsigned passes_taken = 0;
+
+    fresh();
+    g_want_n = 0;
+    for (size_t i = 0; i < sizeof(lens) / sizeof(lens[0]); ++i) {
+        line_of(text, lens[i], (char)('A' + i));
+        say_and_expect(text);
+    }
+    /* Whole lines only: the lines of 63 and 64 bytes, then nothing. */
+    CHECK_EQ(page_console_take(&g_con, g_out, 64u), 63);
+    CHECK_EQ(page_console_take(&g_con, g_out + 63, 64u), 64);
+    CHECK_EQ(page_console_take(&g_con, g_out + 127, 64u), 0);
+    /* In parts: 64 bytes a pass, lines cut where the room ends. */
+    at = drain(127u, 64u, &passes_taken);
+    CHECK_EQ(at, 63u + 64u + 65u + 87u + PAGE_CONSOLE_OUT_LINE);
+    CHECK_EQ(at, g_want_n);
+    CHECK(memcmp(g_out, g_want, at) == 0);
+    /* 352 bytes after the first two lines: 6 passes of 64. */
+    CHECK_EQ(passes_taken, 6);
+    CHECK_EQ(g_con.dropped, 0);
+    CHECK_EQ(page_console_take_part(&g_con, g_out, 64u), 0);
+}
+
+/* Status lines said between the passes that carry a long line out come
+ * after it whole, never inside it; console replies keep their place. */
+TEST_CASE(status_lines_said_meanwhile_leave_after_the_line_in_pieces)
+{
+    static const size_t rooms[] = { 64u, 1u, 17u, 0u, 63u, 64u, 5u };
+    char text[PAGE_CONSOLE_OUT_LINE + 64u];
+    char status[48];
+    size_t at = 0;
+    unsigned said = 0;
+
+    fresh();
+    g_want_n = 0;
+    line_of(text, 87u, 'L');
+    say_and_expect(text);
+    for (const char *p = "r 0x11 0 4\n"; *p != '\0'; ++p) {
+        page_console_key(&g_con, *p);
+    }
+    {
+        const char *reply = "data page=0x11 off=0 n=4: 0x1111 0x2222 0x3333 "
+                            "0x4444\n";
+        memcpy(g_want + g_want_n, reply, strlen(reply));
+        g_want_n += strlen(reply);
+    }
+    line_of(text, PAGE_CONSOLE_OUT_LINE, 'M');
+    say_and_expect(text);
+    /* Passes of changing room, a status line said every second pass. */
+    for (unsigned pass = 0; pass < 200u && (g_con.used > 0u || said < 8u);
+         ++pass) {
+        const size_t room = rooms[pass % (sizeof(rooms) / sizeof(rooms[0]))];
+        const size_t n = page_console_take_part(&g_con, g_out + at, room);
+
+        CHECK(n <= room);
+        at += n;
+        if ((pass % 2u) == 1u && said < 8u) {
+            /* With its own LF, as the IOmcu's printf texts have it. */
+            (void)snprintf(status, sizeof(status),
+                           "rcbench-iomcu: status %u\n", said++);
+            say_and_expect(status);
+        }
+    }
+    CHECK_EQ(g_con.used, 0);
+    CHECK_EQ(at, g_want_n);
+    CHECK(memcmp(g_out, g_want, at) == 0);
+    CHECK_EQ(g_con.dropped, 0);
+}
+
+/* The text of a line said from outside: the LF added once, a longer text
+ * cut to PAGE_CONSOLE_OUT_LINE with its LF, and the guards. */
+TEST_CASE(a_said_line_gets_one_lf_and_is_cut_at_the_longest)
+{
+    char text[PAGE_CONSOLE_OUT_LINE + 64u];
+
+    fresh();
+    page_console_say(&g_con, "%s", "");
+    page_console_say(&g_con, "plain");
+    page_console_say(&g_con, "ends %d\n", 7);
+    CHECK_EQ(page_console_take(&g_con, g_out, sizeof(g_out)), 14);
+    CHECK(memcmp(g_out, "\nplain\nends 7\n", 14u) == 0);
+    /* 199 characters and the LF fit; 200 and more are cut to that. */
+    line_of(text, PAGE_CONSOLE_OUT_LINE, 'X');
+    page_console_say(&g_con, "%s", text);
+    CHECK_EQ(page_console_take(&g_con, g_out, sizeof(g_out)),
+             PAGE_CONSOLE_OUT_LINE);
+    line_of(text, PAGE_CONSOLE_OUT_LINE + 1u, 'Y');
+    page_console_say(&g_con, "%s", text);
+    line_of(text, sizeof(text), 'Z');
+    page_console_say(&g_con, "%s\n", text);
+    CHECK_EQ(page_console_take(&g_con, g_out, sizeof(g_out)),
+             2u * PAGE_CONSOLE_OUT_LINE);
+    CHECK_EQ(g_out[PAGE_CONSOLE_OUT_LINE - 1u], '\n');
+    CHECK_EQ(g_out[PAGE_CONSOLE_OUT_LINE - 2u],
+             (char)('a' + (PAGE_CONSOLE_OUT_LINE - 2u) % 26u));
+    CHECK_EQ(g_out[PAGE_CONSOLE_OUT_LINE], 'Z');
+    CHECK_EQ(g_out[2u * PAGE_CONSOLE_OUT_LINE - 1u], '\n');
+    page_console_say(NULL, "x");
+    page_console_say(&g_con, NULL);
+    CHECK_EQ(g_con.used, 0);
+    CHECK_EQ(page_console_take_part(NULL, g_out, 64u), 0);
+    CHECK_EQ(page_console_take_part(&g_con, NULL, 64u), 0);
+}
+
+/* A buffer that overflows while a line is out in part: the rest of that
+ * line first, then the note of the loss on a line of its own. */
+TEST_CASE(an_overflow_during_a_line_in_pieces_is_noted_after_it)
+{
+    char text[PAGE_CONSOLE_OUT_LINE];
+    size_t at;
+    const char *note;
+
+    fresh();
+    line_of(text, 87u, 'P');
+    page_console_say(&g_con, "%s", text);
+    CHECK_EQ(page_console_take_part(&g_con, g_out, 10u), 10);
+    line_of(text, 100u, 'Q');
+    for (unsigned i = 0; i < 40u; ++i) {
+        page_console_say(&g_con, "%s", text);
+    }
+    CHECK(g_con.dropped > 0u);
+    at = drain(10u, 64u, NULL);
+    g_out[at] = '\0';
+    CHECK(memcmp(g_out, "Pbcdefghij", 10u) == 0);
+    CHECK_EQ(g_out[86], '\n');
+    CHECK_EQ(g_out[87], 'Q');
+    note = strstr(g_out, "err output full, ");
+    CHECK(note != NULL);
+    CHECK_EQ(note[-1], '\n');
+    CHECK_EQ(g_out[at - 1u], '\n');
+}
+
 TEST_CASE(hitec_open_and_a_classic_command_report_the_reply)
 {
     const char *o;
@@ -581,6 +774,10 @@ int main(void)
     RUN(a_write_echoes_what_was_stored);
     RUN(a_line_is_edited_and_an_overlong_one_refused);
     RUN(output_goes_out_in_whole_lines_and_overflow_is_counted);
+    RUN(a_line_longer_than_the_room_leaves_in_pieces);
+    RUN(status_lines_said_meanwhile_leave_after_the_line_in_pieces);
+    RUN(a_said_line_gets_one_lf_and_is_cut_at_the_longest);
+    RUN(an_overflow_during_a_line_in_pieces_is_noted_after_it);
     RUN(hitec_open_and_a_classic_command_report_the_reply);
     RUN(hitec_commands_stage_name_the_crc_and_carry_the_key);
     RUN(hitec_power_stages_the_supply_and_reports_the_listen);

@@ -42,9 +42,10 @@ with it, checks the stacks of both cores, and fails when the default image
 holds a console symbol. `IOMCU_CONSOLE` and `SENSE_TRACE` both read the USB
 console; CMake refuses a build with both.
 
-Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 10,324
-bytes larger than the default image and holds 3,164 bytes more RAM
-(random-access memory), 2,048 of them the output buffer. Core 0's deepest
+Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 10,860
+bytes larger than the default image and holds 4,124 bytes more RAM
+(random-access memory): 2,048 of them the output buffer, 960 the USB
+transmit buffer of 1,024 bytes in place of the SDK's 64. Core 0's deepest
 call chain is the default image's: the console keeps its work space in its
 own state, not on the stack.
 
@@ -140,6 +141,22 @@ The names are the page's: the states, operations, results and refusals of
 decoder results of `hitec_rx_t`. `hitec cap` and `hitec byte` come only
 while the page holds a capture.
 
+`lead_ns` runs from the lead's first edge to the release of the line: the
+lead and every bit time sent. The lead is the one asked, or longer: the PIO
+(programmable input/output) program sends whole words of 16 bit times, and
+the bit times that pad the front of the stream to a word count as lead. A D
+series read gives `lead_ns=559886`, at a bit time of 8.68 us:
+
+| Part | Bit times | Time |
+| --- | ---: | ---: |
+| Lead: 8 cycles and the 13 bit times of padding (88 us asked) | 13.5 | 117.2 us |
+| 5 bytes of 10 bits | 50 | 434.0 us |
+| 1 released bit time before the receiver starts | 1 | 8.7 us |
+| `lead_ns` | 64.5 | 559.9 us |
+
+A D series write gives `lead_ns=705283`: 89.0 us of lead, 70 bit times of
+bytes and 1 released bit time.
+
 | Command | Does |
 | --- | --- |
 | `hitec [state]` | the page, decoded, with the capture |
@@ -152,10 +169,16 @@ while the page holds a capture.
 | `hitec level <port> 0\|1 <us>` | LEVEL |
 | `hitec power <port> mv=<mV> ma=<mA> off=<ms> window=<us> rx=<n> [answer=<byte>] [dec=<dec>]` | POWER: the supply off, held off, on at 4800 to 6000 mV, and the LISTEN from the ON |
 | `hitec c <port> <cmd> <p1> <p2>` | a classic command with its sum byte, 1 idle bit between bytes, a window of 1500 us for 2 bytes, and the classic decoder when the command is one the module knows |
-| `hitec d <port> read <id> <addr>` | a D series read: an 88 us lead, 5 bytes, a window of 25,000 us for 8 bytes, and the D series decoder |
-| `hitec d <port> write <id> <addr> <value>` | a D series write: an 88 us lead, 7 bytes, nothing received |
+| `hitec d <port> read <id> <addr>` | a D series read: 88 us of lead asked, driven low for 117.2 us, 5 bytes, a window of 25,000 us for 8 bytes, and the D series decoder |
+| `hitec d <port> write <id> <addr> <value>` | a D series write: 88 us of lead asked, driven low for 89.0 us, 7 bytes, nothing received |
 
 `<dec>` is `none`, `c:<cmd>`, `d:<addr>` or `l:<byte>`.
+
+A D series line needs a pull-up on the board. Tested with a D485HW:
+2.2 kOhm from the signal wire to the servo supply, and every read is
+answered; with the pad's pull-up alone the servo answers none
+(`rx=SILENT`). [The programming port for Hitec servos](LinkHitec.md#the-way-in-and-out)
+has the unknowns.
 
 `hitec c` needs an open classic line and `hitec d` an open D series line.
 On a line of the other family the console writes nothing and says so:
@@ -186,6 +209,14 @@ that way.
   waits in the USB buffer.
 - The output buffer holds 2,048 bytes. A report of 16 received bytes takes
   about 1,100.
+- A pass hands the USB port as many bytes as its transmit buffer has free,
+  at most 400, and never waits for the host. A line longer than that leaves
+  in pieces over several passes; its rest goes first. Any line up to the
+  longest, 200 bytes with its LF, leaves with the SDK's 64-byte buffer as
+  well.
+- The IOmcu's own lines, `rcbench-iomcu: ...` every 3 s and after a flash
+  write, go through the same output in this build: they come after the
+  line before them, never inside it, and end with LF alone.
 - `shared/outputs/page_console.c` holds the rules and
   `test/host/test_page_console.c` tests them against a model of the HITEC
   page's driver.

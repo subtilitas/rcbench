@@ -64,6 +64,28 @@ history is in git.
   IOmcu answers, one per set-up value rejected from SETUP among them, and a
   NACK is an answer, not a link fault
   ([Bring-up](docs/Bringup.md#link-report)).
+- PD mini TX and PD mini RX on SETUP > INTERFACES step over the GPIO the
+  other row holds, so the rows never set both to one pin: with RX on GP18,
+  TX steps from GP19 to GP17. At the end of the range the key does nothing
+  (TX stops at GP46 with RX on GP47). A set-up stored with both on one
+  GPIO loads as stored: the PD mini stays off, the SUPPLY header says
+  `PD MINI NO PINS`, and both rows say `TX and RX on one pin. The PD mini
+  stays off.`. The rows took one pin for both, and the panel switched the
+  supply off for it with the header still naming the pins.
+- The bench console build (`IOMCU_CONSOLE`) sends a line longer than the
+  free room of the USB transmit buffer in pieces, and its rest first. With
+  the SDK's 64-byte buffer a line of 65 bytes or more never left, and no
+  reply came after it. A pass never waits for the host. The IOmcu's own
+  `rcbench-iomcu:` lines go through the console's output in this build, so
+  none lands inside a reply, and the transmit buffer is 1,024 bytes.
+- docs/BenchConsole.md gives a D series read 117.2 us of lead, not 88 us:
+  88 us is asked, and the 13 bit times that pad the PIO stream to a word
+  make it longer; a write gets 89.0 us. `lead_ns` in `hitec line` runs from
+  the lead's first edge to the release of the line, the lead and every bit
+  time: 559,886 ns for a read, as the bench reports.
+- The Hitec D series wiring names the tested pull-up: 2.2 kOhm from the
+  signal wire to the servo supply, with which a D485HW answers every read.
+  With the RP2350 pad's pull-up alone it answers none.
 
 ### Removed
 

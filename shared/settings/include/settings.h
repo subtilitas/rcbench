@@ -245,7 +245,10 @@ void settings_set(setting_id_t id, float value);
  *  Booleans and enums cycle (settings_cycles()), except the INA228 and
  *  INA3221 addresses, which stop at the first and the last of their list.
  *  Sensor SDA steps from one value settings_sense_sda_valid() takes to the
- *  next and stops at the first and the last. */
+ *  next and stops at the first and the last.  PD mini TX and PD mini RX
+ *  step over the GPIO the other holds, so a step never sets them to one
+ *  pin; with that GPIO at the end of the range the step stays where it
+ *  is.  -1, not wired, is a step for both. */
 void settings_adjust(setting_id_t id, int steps);
 
 /** Whether settings_adjust() wraps @p id round from one end to the other:
@@ -265,6 +268,14 @@ bool settings_cycles(setting_id_t id);
  * the page refuses it and SETUP marks the row.
  */
 bool settings_sense_sda_valid(int gpio);
+
+/**
+ * Whether PD mini TX and PD mini RX hold one GPIO, 0 or above.  The steps
+ * never set that; a stored set-up can hold it.  The panel writes such a
+ * wiring to the SUPPLY page disabled (supply_link.c), so the PD mini
+ * stays off, and SETUP marks both rows.
+ */
+bool settings_pdmini_same_pin(void);
 
 /** Restore one category, or all of them, to the schema defaults: its
  *  values and its strings (settings_text_category()). */
