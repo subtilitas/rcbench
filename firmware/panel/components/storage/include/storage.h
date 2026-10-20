@@ -98,6 +98,11 @@ card_state_t storage_check(void);
  */
 bool storage_hold(void);
 
+/** storage_hold() of the volume of mount @p mount (storage_mount_count())
+ *  only: false once another volume is mounted, so a name read from one
+ *  card is not opened or deleted on the next. */
+bool storage_hold_mount(unsigned mount);
+
 /** The end of a storage_hold() that answered true.  The last release of a
  *  volume whose card was found gone lets the volume go. */
 void storage_release(void);

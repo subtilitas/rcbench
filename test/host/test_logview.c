@@ -273,6 +273,24 @@ static card_state_t fake_card(void *ctx)
     return g_card_state;
 }
 
+/* A card another task mounts after the listing read the old one: its
+ * name and runs, NULL for none. */
+static const char *g_swap_late_volume;
+static int g_swap_late_runs;
+
+static int fake_list_late(log_viewer_file_t *out, int max_entries,
+                          log_viewer_page_t *page, void *ctx)
+{
+    const int n = fake_list(out, max_entries, page, ctx);
+    if (g_swap_late_volume != NULL) {
+        ++g_mounts;
+        g_volume = g_swap_late_volume;
+        g_card_runs = g_swap_late_runs;
+        g_swap_late_volume = NULL;
+    }
+    return n;
+}
+
 static unsigned fake_mounts(void *ctx)
 {
     (void)ctx;
@@ -280,7 +298,7 @@ static unsigned fake_mounts(void *ctx)
 }
 
 static const log_viewer_io_t k_io = {
-    .list = fake_list,
+    .list = fake_list_late,
     .open = fake_open,
     .close = NULL,
     .volume = fake_volume,
@@ -320,6 +338,7 @@ static void reset_screen(void)
     memset(&g_last_page, 0, sizeof(g_last_page));
     g_volume = "BENCH01";
     g_swap_volume = NULL;
+    g_swap_late_volume = NULL;
     g_mounts = 0u;
     memset(g_removed, 0, sizeof(g_removed));
     g_remove_calls = 0;
@@ -2342,6 +2361,16 @@ TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
     g_card_runs = 130;
     tap(RESCAN_X, FOOT_CY);
     check_tab(1, 48, 130);
+
+    /* Mounted by another task after the top page was read from the old
+     * card: the page is read again, from the new card's top. */
+    g_swap_late_volume = "SK64G";
+    g_swap_late_runs = 110;
+    const int calls = g_list_calls;
+    tap(RESCAN_X, FOOT_CY);
+    CHECK_EQ(g_list_calls, calls + 2);
+    check_tab(1, 48, 110);
+    check_newest(110);
 }
 
 

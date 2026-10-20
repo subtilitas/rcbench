@@ -2074,7 +2074,10 @@ nächste Seite und das nächste `ÖFFNEN`, ohne Neustart
 ([Das Format der SD-Karte](#das-format-der-sd-karte)). Kopfzeile, Liste und
 der Text der leeren Liste gehören dann zur Karte im Steckplatz: Eine neue
 Karte öffnet auf ihrer ersten Seite, ein leerer Steckplatz sagt `Keine Karte.
-Setze eine Karte ein und tippe auf AKTUALISIEREN.` Der Betrachter liest nach jedem neuen
+Setze eine Karte ein und tippe auf AKTUALISIEREN.` `ÖFFNEN` und `LÖSCHEN`
+wirken nur auf der Karte, von der die Seite gelesen wurde: Auf einer Seite
+einer inzwischen getauschten Karte werden sie abgewiesen und lassen die neue
+Karte unberührt. Der Betrachter liest nach jedem neuen
 Einbinden von der ersten Seite, auch bei einer Karte mit derselben
 Bezeichnung wie die vorige: Zwei Karten mit derselben Bezeichnung oder zwei
 Karten eines Modells ohne Bezeichnung tragen in der Kopfzeile denselben

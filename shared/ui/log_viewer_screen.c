@@ -543,13 +543,13 @@ static void read_page(log_page_dir_t dir, const char *key)
         return;
     }
     int n = list_once(dir, k, LOG_VIEWER_MAX_FILES);
-    /* The list looks at the slot and can mount another card: a page cut
-     * from a key read on the old one is read again from the new one's
-     * top. */
+    /* The list looks at the slot, and it or another task can mount
+     * another card: what was read may be the old one's, so the new one's
+     * top is read again. */
     if (volume_changed()) {
         snprintf(s.volume, sizeof(s.volume), "%s", volume_now());
         s.mounts = mounts_now();
-        if (n >= 0 && (dir != LOG_PAGE_FROM || k[0] != '\0')) {
+        if (n >= 0) {
             dir = LOG_PAGE_FROM;
             n = list_once(LOG_PAGE_FROM, "", LOG_VIEWER_MAX_FILES);
         }

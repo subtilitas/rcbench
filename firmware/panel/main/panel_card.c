@@ -208,6 +208,14 @@ atomic_uint s_test_open_txt;
 static char s_card_dir[CARD_DIR_MAX];
 
 /*
+ * The mount the viewer's page was read from (storage_mount_count()).  A
+ * name on that page is opened or deleted on that volume only
+ * (storage_hold_mount()): after a swap the same name on the next card is
+ * another file.  The task that renders' own.
+ */
+static unsigned s_card_mount;
+
+/*
  * Room for a listed file's whole path below s_card_dir:
  * "/sdcard/USER/LOGS/<name>".  sizeof the mount point takes its "/" after
  * it, CARD_DIR_MAX the folder and its "/", STORAGE_NAME_MAX the longest
@@ -337,8 +345,16 @@ static int card_list(log_viewer_file_t *out, int max_entries,
          ++walks) {
         pick.files = 0;
         log_select_page_begin(&pick.sel, out, max_entries, page);
+        /* The walk holds its volume, so one mount number on both sides of
+         * it is the mount it read; another task's mount in between is a
+         * walk of the old card, and walked again. */
+        s_card_mount = storage_mount_count();
         total = storage_walk(s_card_dir, CARD_SUFFIXES, card_take, &pick,
                              NULL);
+        if (total != STORAGE_WALK_REMOUNTED
+            && storage_mount_count() != s_card_mount) {
+            total = STORAGE_WALK_REMOUNTED;
+        }
     }
     if (total == STORAGE_WALK_NO_DIR) {
         /* A folder the logger has not made yet: an empty list, with the
@@ -389,11 +405,16 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
     if (storage_check() != CARD_STATE_MOUNTED) {
         return false;
     }
+    /* Held while the viewer reads it, until card_close(): the volume the
+     * page was read from, or none. */
+    if (!storage_hold_mount(s_card_mount)) {
+        return false;
+    }
     char path[CARD_PATH_MAX];
     storage_path(s_card_dir, name, path, sizeof(path));
-    /* Held while the viewer reads it, until card_close(). */
-    s_card_file = storage_fopen(path, "rb");
+    s_card_file = fopen(path, "rb");
     if (s_card_file == NULL) {
+        storage_release();
         /* Listed and then gone, or unreadable.  The viewer says so; there is
          * nothing here to retry. */
         ESP_LOGW(TAG, "could not open %s", path);
@@ -462,7 +483,12 @@ static bool card_remove(const char *name, void *ctx)
         (void)storage_fclose(s_card_file);
         s_card_file = NULL;
     }
-    if (!storage_hold()) {
+    /* The volume the page and its question were read from, or nothing: a
+     * card swapped since holds other files under the same names.  Looked
+     * at first, so a swap not found yet is found here. */
+    (void)storage_check();
+    if (!storage_hold_mount(s_card_mount)) {
+        ESP_LOGW(TAG, "%s is on a card no longer mounted", name);
         return false;
     }
     char path[CARD_PATH_MAX];
@@ -652,10 +678,10 @@ void kst_card_serve(void)
     if (sent == atomic_load(&s_kst_card_answered)) {
         return;
     }
-    /* Held across the request's card calls; kst_files.c's mounted() then
-     * reads as storage_mounted() does. */
+    /* Held across the request's card calls; without the hold the request
+     * finds no card, whatever another task mounts meanwhile. */
     const bool held = storage_hold();
-    kst_card_run(kst_files_io(), &s_kst_card_req, &s_kst_card_done);
+    kst_card_run(kst_files_io(held), &s_kst_card_req, &s_kst_card_done);
     if (held) {
         storage_release();
     }

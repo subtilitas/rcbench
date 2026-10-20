@@ -521,6 +521,21 @@ bool storage_hold(void)
     return ok;
 }
 
+bool storage_hold_mount(unsigned mount)
+{
+    if (s.lock == NULL) {
+        return false;
+    }
+    lock();
+    const bool ok = s.mounted && !s.lost
+                    && atomic_load(&s.mounts) == mount;
+    if (ok) {
+        ++s.holds;
+    }
+    unlock();
+    return ok;
+}
+
 void storage_release(void)
 {
     if (s.lock == NULL) {

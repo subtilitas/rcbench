@@ -406,6 +406,33 @@ TEST_CASE(the_name_is_a_copy_that_fits_its_buffer)
     CHECK_STR_EQ(name_now(), "");
 }
 
+TEST_CASE(a_name_from_one_mount_is_not_held_on_the_next)
+{
+    /* LOGS read its page from SK64G; a run's start then mounted BENCH2 in
+     * its place.  OPEN and DELETE hold by the page's mount: refused on the
+     * new card, given on the card the page came from. */
+    sk64g_in();
+    const unsigned page = storage_mount_count();
+    CHECK(storage_hold_mount(page));
+    storage_release();
+    swap_to(FR_OK, FS_FAT32, "BENCH2");
+    CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
+    CHECK(!storage_hold_mount(page));
+    CHECK(storage_hold_mount(page + 1u));
+    storage_release();
+    /* Gone while held by the page's mount: no further hold. */
+    CHECK(storage_hold_mount(page + 1u));
+    pull();
+    CHECK_EQ(storage_check(), CARD_STATE_NONE);
+    CHECK(!storage_hold_mount(page + 1u));
+    storage_release();
+    CHECK_EQ(g_unmounts, 2u);
+    /* Nothing mounted: no hold for any number. */
+    CHECK(!storage_hold_mount(page + 1u));
+    CHECK(!g_lock_taken);
+    CHECK_EQ(g_lock_misuse, 0u);
+}
+
 int main(void)
 {
     RUN(a_card_pulled_while_mounted_is_found_gone_on_the_next_check);
@@ -420,6 +447,7 @@ int main(void)
     RUN(a_card_pulled_part_way_through_the_first_walk_is_gone);
     RUN(a_look_that_cannot_ask_keeps_the_card);
     RUN(the_name_is_a_copy_that_fits_its_buffer);
+    RUN(a_name_from_one_mount_is_not_held_on_the_next);
     RUN(a_stat_that_finds_the_card_gone_lets_it_go_without_a_mount);
     RUN(a_check_before_the_first_mount_and_after_the_end_is_safe);
     return test_summary("storage_swap");
