@@ -1159,10 +1159,12 @@ static void draw_row(gfx_canvas_t *c, int index)
         return;
     }
 
-    /* A value the IOmcu does not hold: the row's edge, its value
-     * and one line in place of its help, in the colour of a write that
-     * waits. */
-    const bool unheld = settings_screen_unheld(id);
+    /* A value the IOmcu does not hold, or PD mini TX and RX on one pin:
+     * the row's edge, its value and one line in place of its help, in the
+     * colour of a write that waits. */
+    const bool same_pin = (id == SET_PDMINI_TX || id == SET_PDMINI_RX)
+                          && settings_pdmini_same_pin();
+    const bool unheld = settings_screen_unheld(id) || same_pin;
     gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0, UI_PANEL);
     gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
                              unheld ? UI_WARN : UI_EDGE);
@@ -1173,7 +1175,8 @@ static void draw_row(gfx_canvas_t *c, int index)
     gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, MINUS_X - 10 - r.x, r.h));
     gfx_text(c, r.x + 16, r.y + 3, ui_setting_label(id), UI_FONT_HEAD,
              UI_TEXT, 1);
-    const char *help = !unheld ? ui_setting_help(id)
+    const char *help = same_pin ? TR(SET_PD_SAME_PIN)
+                       : !unheld ? ui_setting_help(id)
                        : (id == SET_HITEC_RX
                           && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_OLD)
                            ? TR(SET_HITEC_RX_OLD)

@@ -121,7 +121,13 @@ if(IOMCU_CONSOLE AND SENSE_TRACE)
 endif()
 if(IOMCU_CONSOLE)
     target_sources(rcbench-iomcu PRIVATE src/console_hw.c)
-    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_CONSOLE=1)
+    # The USB serial transmit buffer: 1024 bytes in place of the SDK's 64
+    # at full speed, 960 bytes more RAM, so one pass hands over up to the
+    # 400 bytes console_hw.c takes at a time.  The console does not depend
+    # on it: with 64 bytes a longer line leaves in pieces over several
+    # passes.
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_CONSOLE=1
+                               CFG_TUD_CDC_TX_BUFSIZE=1024)
 else()
     target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_CONSOLE=0)
 endif()

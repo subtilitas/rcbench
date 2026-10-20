@@ -29,7 +29,7 @@ Ist der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet, rechnet das Panel ein Mod
 
 ![Der PD mini eingeschaltet, kein IOmcu liest ihn: ANTWORTET NICHT](view:supply-offline)
 
-Ist der PD mini eingeschaltet, nennt der Kopf das Modul und die Pins des IOmcu, die es tragen, zum Beispiel `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und PD mini RX. Ist einer der Pins nicht gesetzt, lautet er `PD MINI OHNE PINS`. Das Panel liest die SUPPLY-Seite des IOmcu alle 100 ms.
+Ist der PD mini eingeschaltet, nennt der Kopf das Modul und die Pins des IOmcu, die es tragen, zum Beispiel `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und PD mini RX. Ist einer der Pins nicht gesetzt oder liegen beide auf einem GPIO, lautet er `PD MINI OHNE PINS`. Das Panel liest die SUPPLY-Seite des IOmcu alle 100 ms.
 
 | Kopf | Bedeutung |
 |---|---|

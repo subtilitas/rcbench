@@ -1816,7 +1816,7 @@ typedef enum {
 enum {
     LINK_HT_I_DELAY_LO = 16, /**< the decoder's delay_ns, low half */
     LINK_HT_I_DELAY_HI = 17,
-    LINK_HT_I_LEAD_LO  = 18, /**< the run's lead as the program ran it, ns */
+    LINK_HT_I_LEAD_LO  = 18, /**< lead's first edge to the release, ns */
     LINK_HT_I_LEAD_HI  = 19,
     LINK_HT_I_T_LO     = 20, /**< start to the capture, us */
     LINK_HT_I_T_HI     = 21,

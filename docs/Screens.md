@@ -1373,8 +1373,8 @@ input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100 ms. With
 the PD mini enabled on SETUP under INTERFACES, the header names the module
 and the IOmcu's UART pins that carry it, `PD MINI TX GP12 RX GP13`,
-from the PD mini TX and PD mini RX settings. With either pin not set the
-header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
+from the PD mini TX and PD mini RX settings. With either pin not set, or
+both on one GPIO, the header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
 says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
 
 SUPPLY is a workbench: a strip of tasks at the top, LIVE and SETTINGS
@@ -1633,7 +1633,12 @@ is powered.
 
 The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
 on SETUP under INTERFACES. TX and RX are IOmcu GPIO numbers: TX goes to
-the module's DM, RX comes from its DP. The IOmcu refuses a pin that is
+the module's DM, RX comes from its DP. Their `-` and `+` keys step over the
+GPIO the other row holds, and at the end of the range do nothing: with RX on
+GP47, TX stops at GP46. A set-up stored with both on one GPIO loads as
+stored: the panel writes the page disabled, the PD mini stays off, and both
+rows say `TX and RX on one pin. The PD mini stays off.` until one is
+stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is
 reserved, bound to an output, held by the sensor bus or the phase tap, or
 the other pin, and the band says `PD mini pins rejected. Check SETUP >
 INTERFACES.`: RX on GP17 is refused while Sensor SDA is GP16, as Sensor SCL

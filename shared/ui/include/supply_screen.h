@@ -105,7 +105,8 @@ void supply_screen_set_baud(uint32_t baud);
 /**
  * The PD mini's UART pins, IOmcu GPIO numbers, named in the header
  * ("PD MINI TX GP12 RX GP13").  A negative pin is not set; with either pin
- * not set the header says "PD MINI NO PINS".  Not shown for the model.
+ * not set, or both on one GPIO, the header says "PD MINI NO PINS": the
+ * page holds no pins then.  Not shown for the model.
  */
 void supply_screen_set_pins(int tx, int rx);
 

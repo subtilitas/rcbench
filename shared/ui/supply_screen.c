@@ -619,8 +619,11 @@ void supply_screen_set_baud(uint32_t baud)
 
 void supply_screen_set_pins(int tx, int rx)
 {
-    const int t1 = (tx < 0) ? 0 : tx + 1;
-    const int r1 = (rx < 0) ? 0 : rx + 1;
+    /* One pin for both is a wiring the page is written disabled with
+     * (supply_link.c): no pins, as the header says. */
+    const bool none = tx < 0 || rx < 0 || tx == rx;
+    const int t1 = none ? 0 : tx + 1;
+    const int r1 = none ? 0 : rx + 1;
     if (s.tx1 != t1 || s.rx1 != r1) {
         s.tx1 = t1;
         s.rx1 = r1;

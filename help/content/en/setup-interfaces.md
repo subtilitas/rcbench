@@ -101,7 +101,7 @@ These three are stored. No screen or IOmcu reads them in this release.
 | PD mini RX | -1 to 47 | -1 | the IOmcu GPIO from the module's DP |
 | PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | the module's UART (universal asynchronous receiver-transmitter) rate; AUTO tries each of the 7 rates, one a second |
 
-The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GP17 is refused while Sensor SCL is GP17. The message leaves the band once the pin is set back to one the IOmcu takes. A change to the pins, the baud rate or the enable switch switches the supply output off.
+The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other row holds: with RX on GP18, TX steps from GP19 to GP17. At either end of the range the key then does nothing: with RX on GP47, TX stops at GP46. A set-up stored with both rows on one GPIO loads as stored; the PD mini stays off, the SUPPLY header says `PD MINI NO PINS`, and both rows say `TX and RX on one pin. The PD mini stays off.` until one of them is stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GP17 is refused while Sensor SCL is GP17. The message leaves the band once the pin is set back to one the IOmcu takes. A change to the pins, the baud rate or the enable switch switches the supply output off.
 
 ## The programming port
 

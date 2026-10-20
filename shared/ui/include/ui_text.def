@@ -383,6 +383,9 @@ UI_TEXT(SET_NOT_SAVED,             26, "NOT SAVED")
 UI_TEXT(SET_SAVE,                   0, "SAVE")
 UI_TEXT(SET_UNHELD,                 0, "Not accepted by the IOmcu.")
 UI_TEXT(SET_HITEC_RX_OLD,           0, "IOmcu older than 4.24: receives with PULL-UP.")
+/* In place of the help of PD mini TX and PD mini RX while both hold one
+ * GPIO, a stored set-up: SETUP's help line, 65 cells of the label face. */
+UI_TEXT(SET_PD_SAME_PIN,           65, "TX and RX on one pin. The PD mini stays off.")
 UI_TEXT(SET_LEAVE_TITLE,            0, "UNSAVED CHANGES")
 UI_TEXT(SET_LEAVE_WHY,              0, "Your changes are active, but not saved. Tap SAVE to keep them after a restart.")
 UI_TEXT(SET_LEAVE_MORE,             0, "and %d more")

@@ -1504,8 +1504,8 @@ Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 4.3). Das Panel schreibt die Page und liest sie alle 100 ms. Ist der PD mini
 in SETUP unter ANSCHLÜSSE eingeschaltet, nennt die Kopfzeile das Modul und die UART-Pins des IOmcu, an denen
 es hängt: `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und
-PD mini RX. Ist einer der beiden Pins nicht gesetzt, steht `PD MINI OHNE PINS`
-in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
+PD mini RX. Ist einer der beiden Pins nicht gesetzt oder liegen beide auf
+einem GPIO, steht `PD MINI OHNE PINS` in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
 Netzteils: die Kopfzeile sagt SIMULIERTES NETZTEIL, und die Kachel im Menü trägt
 SIMULIERT.
 
@@ -1795,7 +1795,13 @@ und am Prüfstand wird nichts versorgt.
 
 Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
 Baud -- steht in SETUP unter ANSCHLÜSSE. TX und RX sind GPIO-Nummern des
-IOmcu: TX geht zum DM des Moduls, RX kommt von seinem DP. Der
+IOmcu: TX geht zum DM des Moduls, RX kommt von seinem DP. Ihre Tasten `-`
+und `+` springen über den GPIO, den die andere Zeile hält, und tun am Ende
+des Bereichs nichts: mit RX auf GP47 bleibt TX auf GP46. Eine gespeicherte
+Einstellung mit beiden auf einem GPIO wird so geladen: das Panel schreibt die
+Page abgeschaltet, der PD mini bleibt aus, und beide Zeilen sagen `TX und RX
+auf einem Pin. Der PD mini bleibt aus.`, bis eine verstellt wird. Der
+Schalter PD mini schaltet das Modul ab. Der
 IOmcu weist einen Pin ab, der reserviert, an einen Ausgang gebunden,
 vom Sensorbus oder vom Phasenabgriff gehalten oder der andere Pin ist, und
 das Band sagt `PD-mini-Pins abgelehnt. SETUP > ANSCHLÜSSE prüfen.`: RX auf
