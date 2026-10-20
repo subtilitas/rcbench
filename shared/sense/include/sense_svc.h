@@ -21,8 +21,8 @@
  *   Run      run_gen moved: sense_sched_arm(), the run's peaks and totals
  *            start again.
  *   Capture  cap_gen moved: armed with the command's levels, or disarmed.
- *            An arm the schedule refuses -- the INA3221 not online, CH1
- *            not read, or no bus open -- ends at once as lost and counts
+ *            An arm the schedule refuses -- no FAST channel, its INA3221
+ *            not online, or no bus open -- ends at once as lost and counts
  *            as a capture ended.  The count runs on across set-ups.
  *   Edge     edge_set for this cap_gen, once: sense_sched_cap_edge().
  *   Tick     sense_sched_tick().
@@ -47,8 +47,8 @@
  *   Snapshot every field from the schedule, with the generations the
  *            step has taken, so core 0 can tell a reading of the set-up,
  *            run and capture in force from one that came before them.
- *            CH1's window ring and the two reset counts are the
- *            schedule's, and start again with a set-up.
+ *            FAST's window ring and the reset counts are the schedule's,
+ *            and start again with a set-up.
  *
  * Pure C, no SDK (software development kit).  Host-tested in
  * test_sense_svc.
@@ -94,19 +94,22 @@ typedef struct {
     uint64_t held;               /**< the pins the bus holds, a pin mask   */
     uint16_t errors;             /**< transactions failed, modulo 65536    */
     uint16_t present;            /**< bit n: 0x40 + n answered             */
-    sense_state_t i228, i3221;
+    sense_state_t i228;
+    sense_state_t i3221[SENSE_I3221_PARTS];  /**< UNSET when not fitted */
     uint16_t i228_maker, i228_device;     /**< the last identity read    */
-    uint16_t i3221_maker, i3221_die;
+    uint16_t i3221_maker[SENSE_I3221_PARTS], i3221_die[SENSE_I3221_PARTS];
+    uint8_t  fast;               /**< the FAST channel in force, or
+                                      SENSE_FAST_NONE                    */
     bool     have_temp, have_diag;
     int32_t  temp_mdegc;         /**< the INA228's die                      */
     uint16_t diag;               /**< its DIAG_ALRT as last read            */
     bool     have_win;           /**< a window has closed                   */
     sense_window_t win[SENSE_SRC_COUNT];
-    /** CH1's last windows, newest first: entry k is the window numbered k
-     *  before win[SENSE_SRC_CH1].number. */
+    /** FAST's last windows, newest first: entry k is the window numbered k
+     *  before the number of win[]. */
     sense_ring_win_t ring[SENSE_WIN_RING];
     uint8_t  i228_resets;        /**< found reset under this set-up, mod 256 */
-    uint8_t  i3221_resets;
+    uint8_t  i3221_resets[SENSE_I3221_PARTS];
     sense_run_t run;
     sense_cap_state_t cap_state;
     uint16_t cap_seq;            /**< captures ended, modulo 65536          */
@@ -154,6 +157,8 @@ typedef struct {
     bool     scan_due;
     uint64_t scan_at_us;         /**< the next scan while a part is missing */
     uint16_t present;
+    uint32_t setups;             /**< schedules set up, modulo 2^32: each
+                                      one's sched.gen                     */
     sense_sched_t sched;
 } sense_svc_t;
 

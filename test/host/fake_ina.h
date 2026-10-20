@@ -77,7 +77,7 @@ typedef struct {
 } fake_part_t;
 
 typedef struct {
-    fake_part_t part[4];
+    fake_part_t part[8];         /* 4 INA3221, the INA228, the AS5600 */
     size_t      n;
     sense_err_t fail_with;       /* the next fail_count transactions fail */
     unsigned    fail_count;

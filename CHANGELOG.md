@@ -33,6 +33,17 @@ history is in git.
 
 ### Changed
 
+- The IOmcu's sensor schedule reads up to 4 INA3221 at 0x40 to 0x43, 12
+  channels, each with its own shunt. One channel, FAST, is read every 1 ms
+  and carries the window ring and the move capture; the other channels
+  are read in turn beside it, one a tick (500 Hz each for CH2 and CH3 of
+  one part, 90.9 Hz each with 11); each bus voltage every 24 ms; each
+  part's Mask/Enable and Configuration at 25 Hz. SENSE's one INA3221 is
+  the part at its address with CH1 as FAST, so a bench set up today reads
+  CH1 as before. The longest tick is 742.5 us of bus time at 400 kHz;
+  4 parts, 12 channels, the INA228 and the AS5600 take 60.8 % of the bus.
+  At most one INA3221 is probed a tick. The schedule's pair option (CH2
+  and CH3 at 1000 Hz), which no link register switched on, is removed.
 - LOGS lists its tabs in the order ROOT (German STAMM), USER, BENCH, and
   shows the card's name right-aligned at the end of the header row, with
   the folder after the tabs. The tab ids, the remembered tab and the
