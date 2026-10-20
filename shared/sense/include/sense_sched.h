@@ -412,6 +412,9 @@ typedef struct {
     uint8_t  n_others, other_at;
     uint8_t  volt_at;        /**< the channel whose voltage is next       */
     uint32_t ticks;
+    uint32_t gen;            /**< which set-up this schedule is: 0 from
+                                  sense_sched_init(), numbered by its
+                                  caller (sense_svc counts them)          */
     uint32_t rot;            /**< rotation items read                     */
     bool     started;
     uint64_t t0_ms;          /**< the first tick                          */
