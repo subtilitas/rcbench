@@ -407,7 +407,7 @@ static struct {
 } k;
 
 /* What the panel's slot holds, as the feed last said: no card, a card not
- * formatted as FAT32, or one that cannot be read. */
+ * formatted as FAT32 or exFAT, or one that cannot be read. */
 static card_state_t card_state(void)
 {
     return k.prog.fed ? (card_state_t)k.prog.f.card_state : CARD_STATE_NONE;

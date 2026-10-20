@@ -657,9 +657,10 @@ TEST_CASE(more_holds_verify_discard_and_release_pairing)
 }
 
 /*
- * A card in the slot that does not mount -- not formatted as FAT32, or
- * unreadable -- is named on every line that says "No card" for an empty
- * slot: the write page's first line, the SERVO tab's note, FILES' message.
+ * A card in the slot that does not mount -- not formatted as FAT32 or
+ * exFAT, or unreadable -- is named on every line that says "No card" for an
+ * empty slot: the write page's first line, the SERVO tab's note, FILES'
+ * message.
  * What the programmer does is the same as with no card.
  */
 TEST_CASE(a_card_that_does_not_mount_is_named_where_no_card_is_said)

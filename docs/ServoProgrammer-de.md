@@ -761,12 +761,12 @@ oben, und **FILES** wird abgewiesen. Ihre Zeilen nennen an Stelle von
 `Keine Karte`, was das Panel gefunden hat
 ([Das Format der SD-Karte](Screens-de.md#das-format-der-sd-karte)):
 
-| Wo | Karte nicht als FAT32 formatiert (FAT: File Allocation Table): exFAT (extended FAT), NTFS (New Technology File System), eine GPT (GUID-Partitionstabelle) oder nicht formatiert | Karte nicht lesbar |
+| Wo | Karte ist weder FAT32 noch exFAT (FAT: File Allocation Table; exFAT: extended FAT): NTFS (New Technology File System), eine GPT (GUID-Partitionstabelle) oder nicht formatiert | Karte nicht lesbar |
 | --- | --- | --- |
-| Die Schreibseite | `Karte nicht als FAT32 formatiert. Es wird keine Backup-Datei gespeichert.` | `Karte nicht lesbar. Es wird keine Backup-Datei gespeichert.` |
-| Die Schreibseite, Backup-Datei gespeichert | `Karte nicht als FAT32 formatiert. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` | `Karte nicht lesbar. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` |
-| Der Tab SERVO | `Karte nicht als FAT32 formatiert, keine Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` | `Karte nicht lesbar, keine Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` |
-| **FILES** | `Karte nicht als FAT32 formatiert. Nichts gespeichert oder ins Servo geschrieben.` | `Karte nicht lesbar. Nichts gespeichert oder ins Servo geschrieben.` |
+| Die Schreibseite | `Karte ist weder FAT32 noch exFAT. Es wird keine Backup-Datei gespeichert.` | `Karte nicht lesbar. Es wird keine Backup-Datei gespeichert.` |
+| Die Schreibseite, Backup-Datei gespeichert | `Karte ist weder FAT32 noch exFAT. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` | `Karte nicht lesbar. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` |
+| Der Tab SERVO | `Karte ist weder FAT32 noch exFAT, keine Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` | `Karte nicht lesbar, keine Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` |
+| **FILES** | `Karte ist weder FAT32 noch exFAT. Nichts gespeichert oder ins Servo geschrieben.` | `Karte nicht lesbar. Nichts gespeichert oder ins Servo geschrieben.` |
 
 ### Laden
 

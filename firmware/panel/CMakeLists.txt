@@ -39,5 +39,9 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
 # builds a panel that never addresses 0x14 and holds none of that code.
 option(RCBENCH_TOUCH_INJECTOR "Read a touch injector at I2C 0x14" ON)
 
+# ESP-IDF's fatfs component with exFAT on, in place of its own; the reason
+# and the mechanism are in the file.
+include("${CMAKE_CURRENT_LIST_DIR}/fatfs_exfat.cmake")
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(rcbench-panel)

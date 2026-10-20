@@ -699,12 +699,12 @@ restore and the pairing release go as above, and **FILES** is refused. Its
 lines name what the panel found in place of `No card`
 ([The SD card's format](Screens.md#the-sd-cards-format)):
 
-| Where | Card not formatted as FAT32 (FAT: file allocation table): exFAT (extended FAT), NTFS (New Technology File System), a GPT (GUID partition table) or not formatted | Card that cannot be read |
+| Where | Card is neither FAT32 nor exFAT (FAT: file allocation table; exFAT: extended FAT): NTFS (New Technology File System), a GPT (GUID partition table) or not formatted | Card that cannot be read |
 | --- | --- | --- |
-| The write page | `Card not formatted as FAT32. No backup file will be saved.` | `Cannot read the card. No backup file will be saved.` |
-| The write page, backup file saved | `Card not formatted as FAT32. The previous settings are kept in RAM only.` | `Cannot read the card. The previous settings are kept in RAM only.` |
-| The SERVO tab | `Card not formatted as FAT32, no backup file. Restore is available only within this session.` | `Cannot read the card, no backup file. Restore is available only within this session.` |
-| **FILES** | `Card not formatted as FAT32. Nothing saved or written to the servo.` | `Cannot read the card. Nothing saved or written to the servo.` |
+| The write page | `Card is neither FAT32 nor exFAT. No backup file will be saved.` | `Cannot read the card. No backup file will be saved.` |
+| The write page, backup file saved | `Card is neither FAT32 nor exFAT. The previous settings are kept in RAM only.` | `Cannot read the card. The previous settings are kept in RAM only.` |
+| The SERVO tab | `Card is neither FAT32 nor exFAT, no backup file. Restore is available only within this session.` | `Cannot read the card, no backup file. Restore is available only within this session.` |
+| **FILES** | `Card is neither FAT32 nor exFAT. Nothing saved or written to the servo.` | `Cannot read the card. Nothing saved or written to the servo.` |
 
 ### Loading
 

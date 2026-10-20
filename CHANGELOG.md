@@ -9,14 +9,16 @@ history is in git.
 ## 0.21.2 - 2026-10-20
 
 0.21.2 is a testing release: its minor number, 21, is odd, and GitHub lists
-it as a pre-release. It fixes defects of 0.21.1: DISARM, OUTPUT OFF and a
+it as a pre-release. It mounts SD (Secure Digital) cards formatted exFAT
+(extended File Allocation Table) beside FAT12, FAT16 and FAT32, and carries
+file sizes in 64 bits. It fixes defects of 0.21.1: DISARM, OUTPUT OFF and a
 run's STOP or ABORT act on the first press while the alert band covers them
-or a help box is open; a card with no FAT (file allocation table) volume
-reads `not FAT32` and a card that does not mount `unreadable`, not `no
-card`; the update check on RELEASES: TESTING reads GitHub's chunked answer,
-the start-up check included; OUTPUTS and PICK A PIN show the pins SETUP >
-INTERFACES holds as taken; a set-up alert leaves the band once its cause is
-over; PD mini TX and RX never share a pin; Backlight leaves SETUP > PANEL.
+or a help box is open; a card with no FAT volume reads `not FAT32/exFAT` and
+a card that does not mount `unreadable`, not `no card`; the update check on
+RELEASES: TESTING reads GitHub's chunked answer, the start-up check
+included; OUTPUTS and PICK A PIN show the pins SETUP > INTERFACES holds as
+taken; a set-up alert leaves the band once its cause is over; PD mini TX and
+RX never share a pin; Backlight leaves SETUP > PANEL.
 
 A panel on 0.21.0 or 0.21.1 is offered 0.21.2 with RELEASES: TESTING on
 SETUP > UPDATES only; RELEASES: STABLE reads `releases/latest`, which names
@@ -37,29 +39,48 @@ v0.20.0. The steps from 0.21.1 are in
    0.21.2.`. The test of unwired sensor pins runs on the IOmcu and comes
    with this step.
 
-The SD (Secure Digital) card stays as 0.21.1 left it; a card of 0.21.0 and
-older moves as [From 0.21.0](docs/FirstRun.md#from-0210) states. The card
-holds a FAT32, FAT16 or FAT12 volume: 0.21.2 does not read exFAT (extended
-FAT), NTFS (New Technology File System) or a card with a GPT (GUID
-partition table), and formats no card
-([The SD card's format](docs/Screens.md#the-sd-cards-format)). A set-up
-stored with PD mini TX and RX on one GPIO (general-purpose input/output)
-loads as stored, and the PD mini stays off until one row moves. A bench
-without a home network takes the upload on the panel's browser page. 0.21.1
-and 0.21.2 run link protocol 4.23; 0.21.0 runs 4.22, the same major, so both
-boards link before and after the IOmcu's update. The time of the download
-and of the update over CAN is not measured.
+The SD card stays as 0.21.1 left it; a card of 0.21.0 and older moves as
+[From 0.21.0](docs/FirstRun.md#from-0210) states. The card holds a FAT32,
+FAT16, FAT12 or exFAT volume; 0.21.1 does not read exFAT. 0.21.2 does not
+read NTFS (New Technology File System), a card with a GPT (GUID partition
+table) or a volume over 2 TiB, and formats no card ([The SD card's
+format](docs/Screens.md#the-sd-cards-format)). A set-up stored with PD mini
+TX and RX on one GPIO (general-purpose input/output) loads as stored, and
+the PD mini stays off until one row moves. A bench without a home network
+takes the upload on the panel's browser page. 0.21.1 and 0.21.2 run link
+protocol 4.23; 0.21.0 runs 4.22, the same major, so both boards link before
+and after the IOmcu's update. The time of the download and of the update
+over CAN is not measured.
+
+### Added
+
+- The panel mounts SD cards formatted exFAT, the format SDXC cards of 64 GB
+  to 2 TB come in, beside FAT12, FAT16 and FAT32. The build takes ESP-IDF's
+  fatfs component with `FF_FS_EXFAT` 1 (`firmware/panel/fatfs_exfat.cmake`);
+  ESP-IDF v5.4 and v5.5 have no Kconfig option for it. The application image
+  grows by 9,184 bytes. The serial log names the format at mount: `storage:
+  SK64G mounted, exFAT, 61002 MB`.
+- File sizes are 64-bit from the card to the screen: LOGS lists a file of
+  4 GiB and more with its size (`8.00 GB`), and WI-FI lists and downloads
+  it whole. OPEN refuses a file of 2 GiB and more with `<name> is 2 GB or
+  larger. Not opened.`; the reader's seek reaches 2 GiB less 1 byte. GPT
+  cards and volumes over 2 TiB do not mount (`FF_LBA64` stays 0).
 
 ### Fixed
 
-- A card in the panel's SD slot that holds no FAT volume -- exFAT, NTFS, a
-  GPT or no format -- reads `Card not formatted as FAT32. Format it on a
-  computer.` on LOGS, `not FAT32` on the splash, and its own line in the run
-  and servo test alerts and the servo programmer's card notes. A card that
-  does not mount for another reason reads `Cannot read the card.`. Both read
-  `No card` before. The console line names the FatFs result: `W storage:
-  card holds no FAT volume (FatFs 13): format it FAT32`. A card that starts
-  and does not mount is started once more to ask FatFs why.
+- WI-FI lists and downloads a FAT32 file of 2 GiB to 4 GiB less 1 byte with
+  its size, and the fault log and the servo files read such a file's size
+  right. Each took the size from stat(), whose 32-bit `st_size` gave a
+  negative number. LOGS refuses such a file at OPEN instead of reading it
+  through a seek that does not reach its end.
+- A card in the panel's SD slot that holds no FAT volume -- NTFS, a GPT or
+  no format -- reads `Card is neither FAT32 nor exFAT. Format it on a
+  computer.` on LOGS, `not FAT32/exFAT` on the splash, and its own line in
+  the run and servo test alerts and the servo programmer's card notes. A
+  card that does not mount for another reason reads `Cannot read the card.`.
+  Both read `No card` before. The console line names the FatFs result: `W
+  storage: card holds no FAT volume (FatFs 13): format it FAT32 or exFAT`. A
+  card that starts and does not mount is started once more to ask FatFs why.
 - A press on a control that stops what the bench drives acts on the first
   press while the alert band covers it or a chip's help box is open:
   DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN. The

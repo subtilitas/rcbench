@@ -651,10 +651,11 @@ TEST_CASE(the_refused_frames_label_shows_only_a_count_above_zero)
 
 /*
  * The card slot's words (ui_card_text.h): at every place, no card, a card
- * not formatted as FAT32 and an unreadable card are three different texts
- * in each language; a mounted slot, and a state or place out of range, take
- * the no-card text.  The FAT32 texts name FAT32 in every language, and the
- * no-card texts are the ones each place said before.
+ * not formatted as FAT32 or exFAT and an unreadable card are three
+ * different texts in each language; a mounted slot, and a state or place
+ * out of range, take the no-card text.  The no-FAT texts name FAT32 and
+ * exFAT in every language, and the no-card texts are the ones each place
+ * said before.
  */
 TEST_CASE(the_card_slot_has_three_words_at_every_place)
 {
@@ -679,6 +680,7 @@ TEST_CASE(the_card_slot_has_three_words_at_every_place)
             CHECK(strcmp(n, f) != 0 && strcmp(f, b) != 0
                   && strcmp(n, b) != 0);
             CHECK(strstr(f, "FAT32") != NULL);
+            CHECK(strstr(f, "exFAT") != NULL);
             CHECK(strchr(f, '%') == NULL && strchr(b, '%') == NULL);
         }
     }
@@ -686,7 +688,7 @@ TEST_CASE(the_card_slot_has_three_words_at_every_place)
              TX_LOG_NO_CARD);
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(ui_card_text(CARD_STATE_NO_FAT, UI_CARD_AT_SPLASH),
-                 "nicht FAT32");
+                 "nicht FAT32/exFAT");
     ui_text_set_language(UI_LANG_EN);
     CHECK_STR_EQ(ui_card_text(CARD_STATE_UNREADABLE, UI_CARD_AT_SPLASH),
                  "unreadable");

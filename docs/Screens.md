@@ -211,7 +211,7 @@ the firmware version that the IOmcu reported -- two boards can speak
 the same protocol and be different builds, and this is where that shows.
 
 A missing card or an unusable NVS (non-volatile storage) is a warning. The
-SD card line reads `no card`, `not FAT32` (FAT: file allocation table) or
+SD card line reads `no card`, `not FAT32/exFAT` (FAT: file allocation table) or
 `unreadable`
 ([The SD card's format](#the-sd-cards-format)). A
 touch controller that does not answer, or an IOmcu with a different
@@ -1791,7 +1791,7 @@ filled. A folder holding a number 999 under any name takes no further run,
 even with lower numbers free: the band reads
 `Card full or not writable. Run not recorded.`, or for a test
 `Card missing or full. Servo test not recorded.` A card in the slot that
-does not mount reads `Card not formatted as FAT32. Servo test not recorded.`
+does not mount reads `Card is neither FAT32 nor exFAT. Servo test not recorded.`
 or `Cannot read the card. Servo test not recorded.` for a test. A folder that cannot be
 made, because a file holds its name or the card is write-protected or full,
 reads `Cannot make folder BENCH/LOGS. Run not recorded.` A failed run makes
@@ -1810,7 +1810,7 @@ tapped lists its folder from the first page. With no card the tabs switch
 all the same: the tab tapped is drawn selected, the box reads
 `No card. Insert one and tap RESCAN.` with that tab's line under it, and
 the tap looks for a card again, as RESCAN does. A card in the slot that does
-not mount reads `Card not formatted as FAT32. Format it on a computer.` or
+not mount reads `Card is neither FAT32 nor exFAT. Format it on a computer.` or
 `Cannot read the card. Check it on a computer, then tap RESCAN.` instead
 ([The SD card's format](#the-sd-cards-format)). The header right of the tabs
 names the card and the folder, `UNITEST  BENCH/LOGS`, and the card alone on
@@ -1938,7 +1938,7 @@ Nine messages say what a card did to a run. Each appears on the band:
 | Message | What happened |
 |---|---|
 | `No card. This run is not being recorded.` | nothing is mounted, so the run was never opened |
-| `Card not formatted as FAT32. Run not recorded.` | the card in the slot holds no FAT volume, so nothing is mounted ([The SD card's format](#the-sd-cards-format)) |
+| `Card is neither FAT32 nor exFAT. Run not recorded.` | the card in the slot holds no FAT volume, so nothing is mounted ([The SD card's format](#the-sd-cards-format)) |
 | `Cannot read the card. Run not recorded.` | the card would not list, so a run number could not be chosen, or the card in the slot does not mount |
 | `Card full or not writable. Run not recorded.` | no run number could be created |
 | `Card too slow. Run not recorded.` | every row was dropped, so there is no file for this run at all |
@@ -1956,21 +1956,35 @@ would list at its last committed length and read as a finished one.
 
 ### The SD card's format
 
-The panel reads FAT32, FAT16 and FAT12 volumes. It does not read exFAT
-(extended FAT) or NTFS (New Technology File System), and it never formats a
-card. FatFs, the file system code of ESP-IDF v5.4, looks for the volume in
-sector 0 and in the 4 primary partitions of an MBR (master boot record); a
-card with a GPT (GUID partition table) is not read. SD cards above 32 GB
-(SDXC) are sold formatted as exFAT and need formatting as FAT32 first.
+The panel mounts a card formatted FAT12, FAT16, FAT32 or exFAT (extended
+File Allocation Table). The volume is either the whole card or the first of
+the 4 primary partitions of an MBR (master boot record) that holds one of
+these formats. Long file names of up to 255 characters are read and
+written.
 
-To format a card as FAT32:
+| Card | Size | Format out of the box | On the panel |
+| --- | --- | --- | --- |
+| SDSC (SD Standard Capacity) | up to 2 GB | FAT12 or FAT16 | mounts |
+| SDHC (SD High Capacity) | 4 GB to 32 GB | FAT32 | mounts |
+| SDXC (SD eXtended Capacity) | 64 GB to 2 TB | exFAT | mounts |
+| SDUC (SD Ultra Capacity) | over 2 TB | exFAT | does not mount |
 
-- Up to 32 GB: the SD Card Formatter of the SD Association, or the
-  computer's own format command with the file system FAT32.
-- Above 32 GB: a tool that offers FAT32 for that size. The SD Card
-  Formatter writes exFAT on these cards, and the Windows format dialog
-  offers only exFAT and NTFS above 32 GB. On Linux, for the card's first
-  partition at `/dev/sdX1`: `sudo mkfs.vfat -F 32 /dev/sdX1`.
+Not supported:
+
+- a card partitioned GPT (GUID Partition Table; GUID: globally unique
+  identifier) instead of MBR;
+- a volume over 2 TiB;
+- NTFS (New Technology File System), ext4, HFS+ and APFS.
+
+A card in one of these does not mount. The panel never formats a card.
+
+To format a card for the bench, use the SD Association's SD Memory Card
+Formatter: it writes FAT32 up to 32 GB and exFAT from 64 GB, on an MBR. On
+Windows, the format dialog's FAT32 or exFAT does the same. On macOS, Disk
+Utility's Erase with Scheme `Master Boot Record` and Format `MS-DOS (FAT)`
+or `ExFAT`. On Linux, for the card's first partition at `/dev/sdX1` on a
+`dos` partition table: `sudo mkfs.vfat -F 32 /dev/sdX1` or
+`sudo mkfs.exfat /dev/sdX1`.
 
 Formatting erases the card. The panel looks for a card at start-up, at
 RESCAN, when LOGS opens, at a tab tap on LOGS while none is mounted, and on
@@ -1981,16 +1995,25 @@ place that needs a card:
 | Slot | [Splash](#splash), SD card line | LOGS | Run on the band |
 |---|---|---|---|
 | empty | `no card` | `No card. Insert one and tap RESCAN.` | `No card. This run is not being recorded.` |
-| a card with no FAT volume: exFAT, NTFS, GPT or not formatted | `not FAT32` | `Card not formatted as FAT32. Format it on a computer.` | `Card not formatted as FAT32. Run not recorded.` |
+| a card with no FAT or exFAT volume: NTFS, GPT or not formatted | `not FAT32/exFAT` | `Card is neither FAT32 nor exFAT. Format it on a computer.` | `Card is neither FAT32 nor exFAT. Run not recorded.` |
 | a card that does not mount for another reason: a read error, a card that does not finish its start-up | `unreadable` | `Cannot read the card. Check it on a computer, then tap RESCAN.` | `Cannot read the card. Run not recorded.` |
 
 The panel's console line says which with the code behind it:
-`I storage: no card (ESP_ERR_TIMEOUT)`,
-`W storage: card holds no FAT volume (FatFs 13): format it FAT32`, or
-`W storage: mount failed: FatFs <n>` and `W storage: mount failed: <ESP-IDF
-error name>`. A card that starts and does not mount is started a second time
-to ask FatFs why. That look adds one card start-up to each failed try, its
-time not measured, and nothing to a card that mounts.
+`I storage: SK64G mounted, exFAT, 61002 MB` with the format of a card that
+mounts, `I storage: no card (ESP_ERR_TIMEOUT)`,
+`W storage: card holds no FAT volume (FatFs 13): format it FAT32 or exFAT`,
+or `W storage: mount failed: FatFs <n>` and `W storage: mount failed:
+<ESP-IDF error name>`. A card that starts and does not mount is started a
+second time to ask FatFs why. That look adds one card start-up to each
+failed try, its time not measured, and nothing to a card that mounts.
+
+A file's size is read 64-bit, so a file of 4 GiB and more on an exFAT card
+lists with its size, `8.00 GB`. OPEN reads files up to 2 GiB less 1 byte:
+a larger one, also a FAT32 file of 2 GiB to 4 GiB less 1 byte, stays on the
+list and OPEN says `BENCH001.CSV is 2 GB or larger. Not opened.` The sizes
+on the list are binary: 1 kB is 1,024 bytes, 1 MB 1,024 kB and 1 GB
+1,024 MB. [WI-FI](#wi-fi) lists and downloads a file of any size the card
+holds.
 
 ## Wi-Fi
 

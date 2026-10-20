@@ -18,7 +18,7 @@ Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine 
 
 ![LOGS mit einer Karte ohne FAT-Volume](view:logs-nofat)
 
-Das Panel liest Karten mit FAT32, FAT16 und FAT12 (FAT: File Allocation Table) und formatiert nie eine. Eine Karte im Steckplatz mit exFAT (extended FAT), NTFS (New Technology File System), einer GPT (GUID-Partitionstabelle) oder ohne Format zeigt `Karte nicht als FAT32 formatiert. Am Computer formatieren.` SD-Karten über 32 GB werden mit exFAT verkauft. Eine Karte, die sich aus anderem Grund nicht einbinden lässt, zeigt `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` Eine Karte bis 32 GB mit dem SD Card Formatter der SD Association oder dem Formatierbefehl des Computers mit FAT32 formatieren; über 32 GB mit einem Werkzeug, das für diese Größe FAT32 anbietet, zum Beispiel `sudo mkfs.vfat -F 32 /dev/sdX1` unter Linux. Formatieren löscht die Karte. AKTUALISIEREN bindet die wieder eingesetzte Karte ein.
+Eine Karte im Steckplatz mit NTFS (New Technology File System), einer GPT (GUID-Partitionstabelle) oder ohne Format zeigt `Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` Eine Karte, die sich aus anderem Grund nicht einbinden lässt, zeigt `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` [Kartenformate](#kartenformate) sagt, was mountet und wie eine Karte formatiert wird. Formatieren löscht die Karte. AKTUALISIEREN bindet die wieder eingesetzte Karte ein.
 
 ## Die Dateiliste
 
@@ -136,6 +136,14 @@ Die Zeilen stehen gleichmäßig nach Zeilennummer. Die Beschriftungen unter der 
 ![Die Rückfrage von LÖSCHEN](view:logs-delete)
 
 LÖSCHEN öffnet eine Rückfrage, die die Datei und ihre Größe nennt. Nur ihr eigenes LÖSCHEN, auf dieser Taste gedrückt und losgelassen, entfernt die Datei. ABBRECHEN oder das Verlassen des Bildschirms löscht nichts. Der Lauf, den der Logger offen hat, wird abgelehnt.
+
+## Kartenformate
+
+Das Panel liest Karten mit FAT12, FAT16, FAT32 oder exFAT (extended File Allocation Table): die ganze Karte oder die erste der 4 Partitionen eines MBR (Master Boot Record), die eines davon trägt. SDHC-Karten (4 GB bis 32 GB) kommen mit FAT32, SDXC-Karten (64 GB bis 2 TB) mit exFAT; beide mounten so, wie sie kommen.
+
+- Nicht unterstützt: GPT-Partitionierung (GUID Partition Table; GUID: Globally Unique Identifier), Volumes über 2 TiB, NTFS, ext4, HFS+ und APFS. Eine solche Karte mountet nicht. Das Panel formatiert nie eine Karte.
+- Zum Formatieren dient der SD Memory Card Formatter der SD Association, oder am Rechner FAT32 oder exFAT auf einem MBR (unter macOS: Schema `Master Boot Record`).
+- Eine Datei ab 4 GiB auf einer exFAT-Karte steht mit ihrer Größe in der Liste, zum Beispiel `8.00 GB`. OPEN liest Dateien bis 2 GiB weniger 1 Byte; eine größere bleibt in der Liste, und OPEN meldet `BENCH001.CSV ist 2 GB oder größer. Nicht geöffnet.` [WLAN](wifi.md) lädt sie herunter.
 
 ## Verwandte Seiten
 

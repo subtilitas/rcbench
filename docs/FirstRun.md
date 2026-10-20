@@ -73,11 +73,11 @@ browser page ([From 0.20.0](#from-0200)). A 0.21.0 or 0.21.1 panel finds
 it with `RELEASES: TESTING` ([From 0.21.0](#from-0210),
 [From 0.21.1](#from-0211)).
 
-The SD (Secure Digital) card holds a FAT32 volume; FAT16 and FAT12 are read
-too. 0.21.2 does not read exFAT (extended FAT), NTFS (New Technology File
-System) or a card with a GPT (GUID partition table), and the panel formats
-no card. Cards above 32 GB are sold formatted as exFAT and are formatted as
-FAT32 on a computer first ([Screens: The SD card's
+The SD (Secure Digital) card holds a FAT32, FAT16, FAT12 or exFAT
+(extended FAT) volume, so a card of up to 2 TB mounts in the format it is
+sold in. 0.21.1 and older do not read exFAT. 0.21.2 does not read NTFS (New
+Technology File System), a card with a GPT (GUID partition table) or a
+volume over 2 TiB, and the panel formats no card ([Screens: The SD card's
 format](Screens.md#the-sd-cards-format)).
 
 ### From the release assets
@@ -331,7 +331,8 @@ What a 0.21.1 set-up meets on 0.21.2:
 | Backlight on SETUP > PANEL | no row; the backlight is on while the panel runs; the stored `backlight` key stays in the settings storage and is not read |
 | Sensor SDA and SCL with nothing wired to them: `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the monitors read as not answering; the test runs on the IOmcu and comes with step 3 |
 | INA228 address and INA3221 address wrap at their ends | stop at 0x40 and 0x4F (INA228), 0x40 and 0x43 (INA3221) |
-| a card with no FAT volume (exFAT, NTFS, GPT, not formatted): `no card` on the splash, `No card. Insert one and tap RESCAN.` on LOGS | `not FAT32` on the splash, `Card not formatted as FAT32. Format it on a computer.` on LOGS, `Card not formatted as FAT32. Run not recorded.` at a run's start; format the card FAT32 on a computer ([Screens: The SD card's format](Screens.md#the-sd-cards-format)) |
+| an exFAT card, the format of SDXC cards of 64 GB to 2 TB: `no card` on the splash, `No card. Insert one and tap RESCAN.` on LOGS | mounts and lists; files of 4 GiB and more list with their size |
+| a card with no FAT or exFAT volume (NTFS, GPT, not formatted): `no card` on the splash, `No card. Insert one and tap RESCAN.` on LOGS | `not FAT32/exFAT` on the splash, `Card is neither FAT32 nor exFAT. Format it on a computer.` on LOGS, `Card is neither FAT32 nor exFAT. Run not recorded.` at a run's start; format the card FAT32 or exFAT on a computer ([Screens: The SD card's format](Screens.md#the-sd-cards-format)) |
 | a card that does not mount for another reason: `no card` | `unreadable` on the splash, `Cannot read the card. Check it on a computer, then tap RESCAN.` on LOGS |
 | a tap on DISARM, OUTPUT OFF, ABORT, STOP TEST or STOP RUN while the alert band covers it or a chip's help box is open: clears the band or closes the box only; the alert band covers the lower 22 px of SERVO's DISARM | acts on the first press and clears the band or closes the box; ARM and OUTPUT ON under the band or the box still start no hold |
 
