@@ -380,7 +380,13 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   entscheidet ihn. Eine Seite bekommt ein Move oder ein Release nur für einen
   Kontakt, dessen Druck sie bekommen hat. Ein Kontakt, der auf dem Statusband
   (den oberen 48 px) oder auf dem Alert-Band aufsetzt, gehört dem Router, bis
-  er abhebt, wohin er auch wandert. Ein Kontakt, der beim Bildschirmwechsel
+  er abhebt, wohin er auch wandert. Die Ausnahme ist ein Druck auf ein
+  Bedienelement, das anhält, was der Prüfstand treibt -- DISARM, AUSGANG AUS,
+  ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN --, das die Seite
+  dem Router nennt (`safe_at` in ui_screen.h): Unter dem Alert-Band oder bei
+  offenem Hilfe-Kasten eines Chips gehört er der Seite, und Band oder Kasten
+  schließen sich. ARM wird nie genannt, also startet ein Druck auf ARM unter
+  beiden kein Halten. Ein Kontakt, der beim Bildschirmwechsel
   oder beim Verlust von Touch-Events auf dem Glas lag, gehört niemandem, bis
   er abhebt und neu aufsetzt. Ein Kontakt der Seite, der das Statusband
   erreicht, wird für die Seite an der letzten Stelle losgelassen, die sie

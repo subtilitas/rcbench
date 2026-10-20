@@ -84,6 +84,30 @@ TEST_CASE(a_run_stops_on_a_release_the_tracker_makes_for_a_jump)
     lift(FEED_LONE);
 }
 
+/*
+ * What the screen names to the router as a press that stops a run: START
+ * TEST's place on TEST while its run is under way (a tap there is STOP),
+ * and STOP TEST in LIVE's result box.  Not START LIMIT RUN, whose run is
+ * not under way, and nothing once the run has ended.
+ */
+TEST_CASE(stop_test_is_named_to_the_router_while_a_run_is_under_way)
+{
+    bench_fresh();
+    CHECK(!scr->safe_at(START_X, START_Y));
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    CHECK(scr->safe_at(START_X, START_Y));
+    CHECK(!scr->safe_at(START_X, LIM_START_Y));
+    close_settings();                             /* LIVE: the result box */
+    CHECK(servo_screen_testing());
+    CHECK(scr->safe_at(80, 156));                 /* STOP TEST */
+    tap(80, 156);
+    CHECK(!servo_screen_testing());
+    CHECK(!scr->safe_at(80, 156));                /* CLOSE */
+    open_test();
+    CHECK(!scr->safe_at(START_X, START_Y));
+}
+
 /* Opening the programmer from PROGRAM's list ends a run: a run left
  * going would step the rail and the position of the port that CONNECT
  * takes out of PWM.  The tab alone ends nothing. */
@@ -1178,6 +1202,7 @@ int main(void)
 {
     RUN(start_test_is_a_two_second_hold_on_an_armed_bench);
     RUN(a_run_stops_on_a_release_the_tracker_makes_for_a_jump);
+    RUN(stop_test_is_named_to_the_router_while_a_run_is_under_way);
     RUN(program_ends_a_run);
     RUN(a_run_through_the_screen_ends_and_restores_the_set_points);
     RUN(a_run_above_6_v_starts_through_the_hv_hold);

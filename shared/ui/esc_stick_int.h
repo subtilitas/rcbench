@@ -319,6 +319,10 @@ void esc_stick_panel_cancel(void);
 /* A DOWN on the session's pages, in the walk of hit(). */
 bool esc_stick_panel_down(const touch_event_t *evt);
 
+/** A DOWN at (x, y) lands on the ABORT of a run under way, which
+ *  esc_stick_panel_down() acts on at the press. */
+bool esc_stick_panel_safe_at(int px, int py);
+
 /* The home tag in the session: true when it closed what covers the page,
  * ended a run or climbed a level, as BACK does; from the makers it closes
  * the session (STAGE_CLOSED). */

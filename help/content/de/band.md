@@ -47,7 +47,7 @@ STOP wirkt auf jedem Bildschirm mit Band. Es schaltet den Prüfstand auf SAFE, s
 ![Der Kasten unter dem Chip VERBINDUNG](view:band-link)
 ![Der Kasten unter dem Chip SAFE](view:band-safe)
 
-Ein Tipp auf einen Chip öffnet einen Kasten unter dem Band. Er sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun ist. Der Kasten ist 520 px breit und öffnet 4 px unter dem Band. Ein Tipp auf einen anderen Chip schließt ihn und öffnet den Kasten dieses Chips. Jeder andere Tipp schließt ihn und tut sonst nichts. Das Verlassen des Bildschirms schließt ihn ebenfalls. Der Text folgt dem Zustand, solange der Kasten offen ist.
+Ein Tipp auf einen Chip öffnet einen Kasten unter dem Band. Er sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun ist. Der Kasten ist 520 px breit und öffnet 4 px unter dem Band. Ein Tipp auf einen anderen Chip schließt ihn und öffnet den Kasten dieses Chips. Jeder andere Tipp schließt ihn und tut sonst nichts, außer auf DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN oder LAUF BEENDEN: Diese wirken mit demselben Druck, wie ohne Kasten. Das Verlassen des Bildschirms schließt ihn ebenfalls. Der Text folgt dem Zustand, solange der Kasten offen ist.
 
 ![Der Kasten unter ARMED MOTOR](view:band-armed)
 
@@ -81,6 +81,7 @@ Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten B
 
 - Es verschwindet 30 s nach seinem Eintreffen. Ein neuer Alert startet die 30 s neu.
 - Ein Tipp auf das Band, rechts mit einem `x` markiert, löscht es früher. Der Bildschirm darunter bekommt weder diesen Tipp noch einen zweiten Finger auf dem Band.
+- DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN wirken beim ersten Druck, auch wo das Band sie verdeckt, und der Druck löscht das Band. Auf SERVO verdeckt das Band die unteren 22 px von DISARM. ARM und AUSGANG EIN unter dem Band werden nicht gedrückt.
 - "Touchscreen antwortet nicht. ARMED ist gesperrt.", beim Start gezeigt, bleibt bis zum Neustart und hat kein `x`.
 
 ## Berührungen nahe am Band

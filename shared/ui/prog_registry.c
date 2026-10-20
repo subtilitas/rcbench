@@ -71,7 +71,7 @@ static bool hooks_filled(const prog_page_set_t *p)
            && p->has_press != NULL && p->event != NULL && p->render != NULL
            && p->revision != NULL && p->hold_revision != NULL
            && p->hold_rect != NULL && p->leave != NULL && p->cancel != NULL
-           && p->pin != NULL;
+           && p->pin != NULL && p->safe_at != NULL;
 }
 
 static bool filled(ui_text_id_t id)
@@ -256,6 +256,11 @@ PROG_ONE_CALL void prog_ps_cancel(const prog_page_set_t *ps)
 PROG_ONE_CALL uint8_t prog_ps_pin(const prog_page_set_t *ps)
 {
     return ps->pin();
+}
+
+PROG_ONE_CALL bool prog_ps_safe_at(const prog_page_set_t *ps, int x, int y)
+{
+    return ps->safe_at(x, y);
 }
 
 /* ------------------------------------------------------- a row's state */
