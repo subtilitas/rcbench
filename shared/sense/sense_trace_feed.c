@@ -105,7 +105,7 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
         /* No bus: the next schedule starts afresh. */
         p->have = false;
         p->win  = 0u;
-        p->ticks = 0u;
+        p->gen  = 0u;
         p->n_v  = 0u;
         p->n_hi = 0u;
         p->n_lo = 0u;
@@ -133,12 +133,11 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
     /* What the window being filled gained in this tick.  A window that
      * closed, or was emptied, counts from nothing, and so does one of a
      * new schedule: its window 0 is another than the last one's.  The
-     * feed runs once after each tick, so a schedule's count has moved on
-     * since the last call; one that stands or runs back is a new
-     * schedule's, also when it reached the old count again. */
+     * set-up number tells the schedules apart, whatever their tick counts
+     * and however long one has run. */
     static const sense_acc_t k_none;
     const sense_acc_t *a = (d != NULL) ? &s->acc[f] : &k_none;
-    const bool same = s->win == p->win && s->ticks > p->ticks
+    const bool same = s->gen == p->gen && s->win == p->win
                       && a->n_v >= p->n_v
                       && a->n_hi >= p->n_hi && a->n_lo >= p->n_lo;
     const uint16_t base_n   = same ? p->n_v : 0u;
@@ -196,7 +195,7 @@ static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
                    (int32_t)(a->v_sum - base_sum) / 1000);
     }
     p->win   = s->win;
-    p->ticks = s->ticks;
+    p->gen   = s->gen;
     p->n_v   = a->n_v;
     p->n_hi  = a->n_hi;
     p->n_lo  = a->n_lo;

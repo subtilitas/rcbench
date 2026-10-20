@@ -265,8 +265,8 @@ typedef struct {
     uint8_t  head;        /**< the history's head at it                    */
     uint32_t t;           /**< its time                                    */
     uint64_t win;         /**< the window the voltage count is of          */
-    uint32_t ticks;       /**< the schedule's tick count at the last call:
-                               one that has not moved on is a new schedule */
+    uint32_t gen;         /**< the schedule's set-up number at the last
+                               call: another one is a new schedule       */
     uint16_t n_v;         /**< CH1 voltages in it at the last call         */
     uint16_t n_hi, n_lo;  /**< and CH1 samples clipped at each end         */
     int64_t  v_sum;       /**< and their sum, µV                           */

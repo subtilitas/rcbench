@@ -53,6 +53,7 @@ static void set_up(sense_svc_t *v, const sense_cmd_t *cmd)
     v->sda  = cmd->sda;
     v->scl  = cmd->scl;
     sense_sched_init(&v->sched, &v->io.sched, &cmd->parts);
+    v->sched.gen = ++v->setups;
     v->scan_due = true;
 }
 

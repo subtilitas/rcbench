@@ -157,6 +157,8 @@ typedef struct {
     bool     scan_due;
     uint64_t scan_at_us;         /**< the next scan while a part is missing */
     uint16_t present;
+    uint32_t setups;             /**< schedules set up, modulo 2^32: each
+                                      one's sched.gen                     */
     sense_sched_t sched;
 } sense_svc_t;
 
