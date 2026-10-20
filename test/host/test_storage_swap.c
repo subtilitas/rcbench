@@ -23,6 +23,7 @@
 #include "greatest.h"
 
 #include "storage_fake.h"
+#include "storage_priv.h"
 
 /* --------------------------------------------------------------- helpers */
 
@@ -433,6 +434,26 @@ TEST_CASE(a_name_from_one_mount_is_not_held_on_the_next)
     CHECK_EQ(g_lock_misuse, 0u);
 }
 
+TEST_CASE(a_read_that_ends_the_last_hold_of_a_gone_card_lets_it_go)
+{
+    /* A walk under way on one task; another task's look finds the card
+     * gone and cannot let it go under the walk.  The walk's end does. */
+    sk64g_in();
+    CHECK(storage_hold());                      /* the walk's hold */
+    pull();
+    CHECK_EQ(storage_check(), CARD_STATE_NONE);
+    CHECK_EQ(g_unmounts, 0u);
+    CHECK(!storage_read_end(FR_OK, "walk", true));
+    CHECK_EQ(g_unmounts, 1u);
+    CHECK(!g_cs);
+    /* And the next look finds what the slot holds. */
+    swap_to(FR_OK, FS_EXFAT, "BENCH3");
+    CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
+    CHECK_STR_EQ(name_now(), "BENCH3");
+    CHECK(!g_lock_taken);
+    CHECK_EQ(g_lock_misuse, 0u);
+}
+
 int main(void)
 {
     RUN(a_card_pulled_while_mounted_is_found_gone_on_the_next_check);
@@ -448,6 +469,7 @@ int main(void)
     RUN(a_look_that_cannot_ask_keeps_the_card);
     RUN(the_name_is_a_copy_that_fits_its_buffer);
     RUN(a_name_from_one_mount_is_not_held_on_the_next);
+    RUN(a_read_that_ends_the_last_hold_of_a_gone_card_lets_it_go);
     RUN(a_stat_that_finds_the_card_gone_lets_it_go_without_a_mount);
     RUN(a_check_before_the_first_mount_and_after_the_end_is_safe);
     return test_summary("storage_swap");

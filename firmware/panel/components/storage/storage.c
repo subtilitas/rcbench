@@ -696,6 +696,11 @@ bool storage_read_end(int fr, const char *how, bool may_mount)
     if (read_failed_locked(fr, how) && may_mount) {
         mounted_again = (mount_locked() == ESP_OK);
     }
+    /* The last hold of a volume another task found gone, as
+     * storage_release() lets it go. */
+    if (s.holds == 0u && s.mounted && s.lost) {
+        unmount_locked();
+    }
     unlock();
     return mounted_again;
 }

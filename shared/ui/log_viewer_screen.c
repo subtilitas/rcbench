@@ -205,6 +205,7 @@ static struct {
      * another card, and it opens on its first page. */
     char volume[LOG_VIEWER_NAME_MAX];
     unsigned mounts;    /* the io's mount number when the page was read */
+    unsigned open_mounts;   /* and when the open file's page was read */
 
     /* A finger on the scroll bar: the thumb follows it, held where it took
      * the thumb, grab px below the thumb's top. */
@@ -703,6 +704,14 @@ static const char *delim_text(char delimiter)
     }
 }
 
+/* The open file again: from the mount its page was read from, or not at
+ * all, so a list read since from another card lends it no file. */
+static bool open_name(log_source_t *src)
+{
+    return s.open_mounts == s.mounts && s.mounts == mounts_now()
+           && s.io.open(s.name, src, s.io.ctx);
+}
+
 static void run_analysis(void)
 {
     /*
@@ -734,7 +743,7 @@ static void run_analysis(void)
 
     log_source_t src;
     point(s.open_tab);
-    if (!s.io.open(s.name, &src, s.io.ctx)) {
+    if (!open_name(&src)) {
         set_message(TR(LOG_CANNOT_OPEN), s.name);
         return;
     }
@@ -929,7 +938,7 @@ static void load_data(void)
 
     log_source_t src;
     point(s.open_tab);
-    if (!s.io.open(s.name, &src, s.io.ctx)) {
+    if (!open_name(&src)) {
         set_message(TR(LOG_CANNOT_OPEN), s.name);
         return;
     }
@@ -974,6 +983,7 @@ static void open_selected(void)
     }
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
+    s.open_mounts = s.mounts;
     s.delim_index = -1;
     s.conv = LOG_CONV_AUTO;
     run_analysis();

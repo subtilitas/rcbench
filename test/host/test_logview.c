@@ -479,6 +479,37 @@ TEST_CASE(every_view_draws_something)
     CHECK(gfx_pixel_get(&s_c, 400, 240) != 0);
 }
 
+/*
+ * A file open in IMPORT while LOGS is left and the card swapped for one of
+ * the same label and names: the way back in reads the new card's list
+ * behind the view, and PLOT does not read the new card's file of that
+ * name as the open one.
+ */
+TEST_CASE(an_open_file_is_not_read_from_the_card_swapped_behind_it)
+{
+    fresh();
+    log_viewer_refresh();
+    open_file(0);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    const int opens = g_open_calls;
+    g_swap_volume = "BENCH01";
+    g_swap_runs = 0;
+    screen()->enter();
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    tap(PLOT_X, IM_BTN_CY);
+    CHECK_EQ(g_open_calls, opens);
+    CHECK(log_viewer_view() != LOG_VIEW_PLOT);
+    char want[96];
+    snprintf(want, sizeof(want), ui_tr(TX_LOG_CANNOT_OPEN), k_card[0].name);
+    CHECK_STR_EQ(log_viewer_message(), want);
+    /* Opened again from the new list, it is the new card's file. */
+    tap(BACK_X, IM_BTN_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    open_file(0);
+    CHECK_EQ(g_open_calls, opens + 1);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+}
+
 TEST_CASE(a_file_that_vanished_between_listing_and_opening)
 {
     /* The card is removable, so "it was there a moment ago" is a real state
@@ -4423,6 +4454,7 @@ int main(void)
 {
     RUN(the_home_tag_climbs_as_each_views_way_back);
     RUN(every_view_draws_something);
+    RUN(an_open_file_is_not_read_from_the_card_swapped_behind_it);
     RUN(a_file_that_vanished_between_listing_and_opening);
     RUN(with_no_io_at_all_the_screen_still_works);
     RUN(a_file_that_proves_both_conventions_is_flagged);

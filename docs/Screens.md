@@ -1879,9 +1879,10 @@ next RESCAN, the next opening of LOGS, the next page and the next OPEN,
 with no restart ([The SD card's format](#the-sd-cards-format)). The header,
 the list and the empty list's words are then the card's in the slot: a new
 card opens on its first page, an empty slot says `No card. Insert one and
-tap RESCAN.`. OPEN and DELETE act on the card the page was read from only:
-on a page of a card swapped since, they are refused and leave the new card
-as it is. The viewer reads from the first page after every new mount,
+tap RESCAN.`. OPEN and DELETE act on the card the page was read from only,
+and a file left open in the import or plot view is read again from its own
+card only. After a swap they are refused: a file reads `Cannot open
+<name>.`, nothing is deleted, and the new card stays as it is. The viewer reads from the first page after every new mount,
 also of a card with the same label as the one before: two cards with the
 same label, or two unlabelled cards of one model, carry the same name in
 the header and are still told apart.
