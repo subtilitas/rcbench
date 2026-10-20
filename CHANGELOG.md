@@ -13,7 +13,7 @@ history is in git.
   FAT16 and FAT32. The build takes ESP-IDF's fatfs component with
   `FF_FS_EXFAT` 1 (`firmware/panel/fatfs_exfat.cmake`); ESP-IDF v5.4 and
   v5.5 have no Kconfig option for it. The application image grows by
-  9,216 bytes. The serial log names the format at mount:
+  9,184 bytes. The serial log names the format at mount:
   `storage: SK64G mounted, exFAT, 61002 MB`.
 - File sizes are 64-bit from the card to the screen: LOGS lists a file of
   4 GiB and more with its size (`8.00 GB`), and WI-FI lists and downloads

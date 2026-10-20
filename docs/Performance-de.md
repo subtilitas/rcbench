@@ -499,7 +499,7 @@ Stand ohne:
 
 | Posten | Ohne exFAT | Mit exFAT | Wo |
 | --- | ---: | ---: | --- |
-| Anwendungs-Image | 1 966 096 | 1 975 312 | Flash, `ota_0` fasst 4 063 232 |
+| Anwendungs-Image | 1 967 360 | 1 976 544 | Flash, `ota_0` fasst 4 063 232 |
 | interner RAM, den das Image belegt (`static` oben) | 128 208 | 128 208 | intern |
 | der Kontext des Mounts: `FATFS`, 4 offene Dateien (`FIL`) und der Zustand des VFS (Virtual File System) von ESP-IDF | 25 376 | 25 560 | Heap, zuerst PSRAM |
 | der Arbeitspuffer für lange Namen, für einen FatFs-Aufruf belegt | 512 | 1 120 | Heap, zuerst PSRAM |

@@ -470,7 +470,7 @@ without it:
 
 | Item | Without exFAT | With exFAT | Where |
 | --- | ---: | ---: | --- |
-| application image | 1,966,096 | 1,975,312 | flash, `ota_0` holds 4,063,232 |
+| application image | 1,967,360 | 1,976,544 | flash, `ota_0` holds 4,063,232 |
 | internal RAM the image holds (`static` above) | 128,208 | 128,208 | internal |
 | the mount's context: `FATFS`, 4 open files (`FIL`) and ESP-IDF's VFS (virtual file system) state | 25,376 | 25,560 | heap, PSRAM first |
 | the long name working buffer, held for one FatFs call | 512 | 1,120 | heap, PSRAM first |
