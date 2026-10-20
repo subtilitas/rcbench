@@ -28,18 +28,16 @@ static void push(page_console_t *c, const char *s, size_t n)
 
 /* One line; the LF is added, and a LF the text ends with is not doubled.
  * At most PAGE_CONSOLE_OUT_LINE bytes with the LF: a longer text is cut. */
-static void vsay(page_console_t *c, const char *fmt, va_list ap)
-    __attribute__((format(printf, 2, 0)));
-
-static void vsay(page_console_t *c, const char *fmt, va_list ap)
+void page_console_vsay(page_console_t *c, const char *fmt, va_list ap)
 {
+    if (c == NULL || fmt == NULL) {
+        return;
+    }
     char *buf = c->fmt;
-    int n;
-
     /* The analyser cannot follow va_start through the wrappers and reports
      * the list as uninitialised; every caller initialises it. */
     /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
-    n = vsnprintf(buf, sizeof(c->fmt), fmt, ap);
+    int n = vsnprintf(buf, sizeof(c->fmt), fmt, ap);
     if (n < 0) {
         return;
     }
@@ -52,26 +50,6 @@ static void vsay(page_console_t *c, const char *fmt, va_list ap)
     push(c, buf, (size_t)n + 1u);
 }
 
-static void say(page_console_t *c, const char *fmt, ...)
-    __attribute__((format(printf, 2, 3)));
-
-static void say(page_console_t *c, const char *fmt, ...)
-{
-    va_list ap;
-
-    va_start(ap, fmt);
-    vsay(c, fmt, ap);
-    va_end(ap);
-}
-
-void page_console_vsay(page_console_t *c, const char *fmt, va_list ap)
-{
-    if (c == NULL || fmt == NULL) {
-        return;
-    }
-    vsay(c, fmt, ap);
-}
-
 void page_console_say(page_console_t *c, const char *fmt, ...)
 {
     va_list ap;
@@ -80,6 +58,9 @@ void page_console_say(page_console_t *c, const char *fmt, ...)
     page_console_vsay(c, fmt, ap);
     va_end(ap);
 }
+
+/* The console's own lines. */
+#define say page_console_say
 
 /* @p n bytes from the head to @p buf. */
 static size_t take_out(page_console_t *c, char *buf, size_t n)
