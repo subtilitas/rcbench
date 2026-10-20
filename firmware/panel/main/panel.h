@@ -332,6 +332,9 @@ void kst_record_load(bool late);
 /* A servo file request: taken from the model by the render loop, run on
  * the card by the logger. */
 extern kst_prog_card_req_t  s_kst_card_req;
+/* The mount the request was taken under (storage_mount_count()): it is
+ * run on that volume or finds no card. */
+extern unsigned             s_kst_card_mount;
 extern kst_prog_card_done_t s_kst_card_done;
 extern atomic_uint          s_kst_card_sent;
 extern atomic_uint          s_kst_card_answered;

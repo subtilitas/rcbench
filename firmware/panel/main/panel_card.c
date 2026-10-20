@@ -668,6 +668,7 @@ static void kst_record_load_held(bool late)
  * and reads the answer only after they are equal again.
  */
 kst_prog_card_req_t  s_kst_card_req;
+unsigned             s_kst_card_mount;
 kst_prog_card_done_t s_kst_card_done;
 atomic_uint          s_kst_card_sent;
 atomic_uint          s_kst_card_answered;
@@ -678,9 +679,10 @@ void kst_card_serve(void)
     if (sent == atomic_load(&s_kst_card_answered)) {
         return;
     }
-    /* Held across the request's card calls; without the hold the request
-     * finds no card, whatever another task mounts meanwhile. */
-    const bool held = storage_hold();
+    /* Held across the request's card calls, on the volume it was taken
+     * under: a card mounted in its place since holds other files under
+     * the same names, and the request finds no card. */
+    const bool held = storage_hold_mount(s_kst_card_mount);
     kst_card_run(kst_files_io(held), &s_kst_card_req, &s_kst_card_done);
     if (held) {
         storage_release();

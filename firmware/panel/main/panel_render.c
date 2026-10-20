@@ -89,6 +89,8 @@ void kst_ui_service(void)
         kst_panel_card_done(&s_kst_card_done);
     }
     if (!card_out && kst_panel_card_take(&s_kst_card_req)) {
+        /* Before the count, which hands the request and this over. */
+        s_kst_card_mount = storage_mount_count();
         atomic_fetch_add(&s_kst_card_sent, 1u);
         card_out = true;
     }
