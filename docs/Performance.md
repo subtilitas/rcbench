@@ -398,14 +398,14 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
-163,504 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+163,904 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
 
 | Object | Component | .bss (bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35,568 |
+| `log_viewer_screen` | ui | 35,968 |
 | `servo_screen` | ui | 29,509 |
 | `ui_watermark` | ui | 20,504 |
 | `supply_screen` | ui | 20,508 |
@@ -454,3 +454,42 @@ The screens' state is read through the same 64 KB data cache as the
 framebuffers. `tools/frame_cost.py` models the frames it renders through
 that cache with every read and write, these objects' included. The frame rate on a
 panel with them in PSRAM is not measured.
+
+## The SD card's file system
+
+The panel reads FAT12, FAT16, FAT32 and exFAT (extended File Allocation
+Table) through FatFs, the file system library in ESP-IDF. ESP-IDF v5.4 and
+v5.5 build FatFs without exFAT, and no Kconfig option turns it on. The
+panel build takes a copy of ESP-IDF's `fatfs` component with
+`FF_FS_EXFAT` set to 1 (`firmware/panel/fatfs_exfat.cmake`). Long file
+names stay as `sdkconfig.defaults` sets them: on, 255 characters, the
+working buffer on the heap.
+
+What exFAT costs, read from the ESP-IDF v5.4 build against the same tree
+without it:
+
+| Item | Without exFAT | With exFAT | Where |
+| --- | ---: | ---: | --- |
+| application image | 1,962,960 | 1,972,080 | flash, `ota_0` holds 4,063,232 |
+| internal RAM the image holds (`static` above) | 128,208 | 128,208 | internal |
+| the mount's context: `FATFS`, 4 open files (`FIL`) and ESP-IDF's VFS (virtual file system) state | 25,376 | 25,560 | heap, PSRAM first |
+| the long name working buffer, held for one FatFs call | 512 | 1,120 | heap, PSRAM first |
+| one directory walk's buffer (`storage_walk()`) | 328 | 368 | heap, internal |
+| `FILINFO`, one entry as FatFs reads it, in `storage_stat()`'s buffer beside the path, for one call | 280 | 288 | heap, internal |
+| `log_viewer_screen`'s .bss: 48 list rows with 64-bit sizes | 35,568 | 35,968 | PSRAM |
+
+All figures are bytes. The heap rows are `sizeof()` values read with GDB
+from the two builds; the heap at run time is not measured. The stack
+depths of the table under [Stacks](#stacks) are the same in both builds:
+FatFs puts its long name buffer on the heap, not on the calling task's
+stack.
+
+A file's size is 64-bit from FatFs to the screen. stat() through the VFS
+gives a size in `st_size`, an `off_t` of 32 bits on the panel, so every
+size the panel uses comes from FatFs's `f_stat()` or `f_readdir()`
+instead.
+
+`FF_LBA64` (64-bit sector numbers) stays 0. It is needed for a card
+partitioned GPT (GUID Partition Table; GUID: globally unique identifier) and for a volume over 2 TiB. With
+it the image grows by a further 4,768 bytes, `FATFS` from 4,160 to 4,184
+bytes and `FIL` from 4,176 to 4,192 bytes.

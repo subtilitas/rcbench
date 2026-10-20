@@ -131,6 +131,14 @@ The rows are spaced evenly by row number. The labels under the plot are the file
 
 DELETE opens a question that names the file and its size. Only its own DELETE, pressed and released on that button, removes the file. CANCEL, or leaving the screen, deletes nothing. The run the logger has open is refused.
 
+## Card formats
+
+The panel reads cards formatted FAT12, FAT16, FAT32 or exFAT (extended File Allocation Table): the whole card, or the first of the 4 partitions of an MBR (master boot record) that holds one of them. SDHC cards (4 GB to 32 GB) come as FAT32, SDXC cards (64 GB to 2 TB) as exFAT; both mount as they come.
+
+- Not supported: GPT (GUID Partition Table; GUID: globally unique identifier) partitioning, volumes over 2 TiB, NTFS, ext4, HFS+ and APFS. Such a card does not mount. The panel never formats a card.
+- To format a card, use the SD Association's SD Memory Card Formatter, or on a computer FAT32 or exFAT on an MBR (on macOS: Scheme `Master Boot Record`).
+- A file of 4 GiB and more on an exFAT card is listed with its size, for example `8.00 GB`. OPEN reads files up to 2 GiB less 1 byte; a larger one stays on the list and OPEN says `BENCH001.CSV is 2 GB or larger. Not opened.` [Wi-Fi](wifi.md) downloads it.
+
 ## Related pages
 
 - [Wi-Fi](wifi.md): download the card's files in a browser.

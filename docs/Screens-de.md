@@ -2136,6 +2136,53 @@ Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ei
 noch offener Lauf stünde also mit seiner zuletzt festgeschriebenen Länge in der
 Liste und läse sich wie ein fertiger.
 
+### Kartenformate
+
+Das Panel mountet eine Karte, die mit FAT12, FAT16, FAT32 oder exFAT
+(extended File Allocation Table) formatiert ist. Das Volume ist entweder die
+ganze Karte oder die erste der 4 Partitionen eines MBR (Master Boot Record),
+die eines dieser Formate trägt. Lange Dateinamen bis 255 Zeichen werden
+gelesen und geschrieben.
+
+| Karte | Größe | Format ab Werk | Am Panel |
+| --- | --- | --- | --- |
+| SDSC (SD Standard Capacity) | bis 2 GB | FAT12 oder FAT16 | mountet |
+| SDHC (SD High Capacity) | 4 GB bis 32 GB | FAT32 | mountet |
+| SDXC (SD eXtended Capacity) | 64 GB bis 2 TB | exFAT | mountet |
+| SDUC (SD Ultra Capacity) | über 2 TB | exFAT | mountet nicht |
+
+Nicht unterstützt:
+
+- eine Karte mit GPT-Partitionierung (GUID Partition Table; GUID: Globally
+  Unique Identifier) statt MBR;
+- ein Volume über 2 TiB;
+- NTFS, ext4, HFS+ und APFS.
+
+Eine solche Karte mountet nicht. Das Panel
+formatiert nie eine Karte.
+
+Zum Formatieren für den Prüfstand dient der SD Memory Card Formatter der SD
+Association: Er schreibt bis 32 GB FAT32 und ab 64 GB exFAT, auf einen MBR.
+Unter Windows tut der Formatieren-Dialog mit FAT32 oder exFAT dasselbe.
+Unter macOS das Festplattendienstprogramm mit Löschen, Schema
+`Master Boot Record` und Format `MS-DOS (FAT)` oder `ExFAT`. Unter Linux
+eine Partitionstabelle `dos` und `mkfs.vfat -F 32` oder `mkfs.exfat`.
+
+Das serielle Log des Panels nennt das Format, wenn die Karte mountet:
+
+```text
+I (…) storage: SK64G mounted, exFAT, 61002 MB
+```
+
+Die Größe einer Datei wird mit 64 Bit gelesen, eine Datei ab 4 GiB auf
+einer exFAT-Karte steht also mit ihrer Größe in der Liste, `8.00 GB`. OPEN
+liest Dateien bis 2 GiB weniger 1 Byte: Eine größere, auch eine FAT32-Datei
+von 2 GiB bis 4 GiB weniger 1 Byte, bleibt in der Liste, und OPEN meldet
+`BENCH001.CSV ist 2 GB oder größer. Nicht geöffnet.` Die Größen in der
+Liste sind binär: 1 kB sind 1024 Bytes, 1 MB 1024 kB und 1 GB 1024 MB.
+[WLAN](#wlan) listet und lädt eine Datei jeder Größe herunter, die die Karte
+trägt.
+
 ## WLAN
 
 ![WI-FI, kein Heimnetz gespeichert](img/de/wifi.png)

@@ -131,6 +131,14 @@ Die Zeilen stehen gleichmäßig nach Zeilennummer. Die Beschriftungen unter der 
 
 LÖSCHEN öffnet eine Rückfrage, die die Datei und ihre Größe nennt. Nur ihr eigenes LÖSCHEN, auf dieser Taste gedrückt und losgelassen, entfernt die Datei. ABBRECHEN oder das Verlassen des Bildschirms löscht nichts. Der Lauf, den der Logger offen hat, wird abgelehnt.
 
+## Kartenformate
+
+Das Panel liest Karten mit FAT12, FAT16, FAT32 oder exFAT (extended File Allocation Table): die ganze Karte oder die erste der 4 Partitionen eines MBR (Master Boot Record), die eines davon trägt. SDHC-Karten (4 GB bis 32 GB) kommen mit FAT32, SDXC-Karten (64 GB bis 2 TB) mit exFAT; beide mounten so, wie sie kommen.
+
+- Nicht unterstützt: GPT-Partitionierung (GUID Partition Table; GUID: Globally Unique Identifier), Volumes über 2 TiB, NTFS, ext4, HFS+ und APFS. Eine solche Karte mountet nicht. Das Panel formatiert nie eine Karte.
+- Zum Formatieren dient der SD Memory Card Formatter der SD Association, oder am Rechner FAT32 oder exFAT auf einem MBR (unter macOS: Schema `Master Boot Record`).
+- Eine Datei ab 4 GiB auf einer exFAT-Karte steht mit ihrer Größe in der Liste, zum Beispiel `8.00 GB`. OPEN liest Dateien bis 2 GiB weniger 1 Byte; eine größere bleibt in der Liste, und OPEN meldet `BENCH001.CSV ist 2 GB oder größer. Nicht geöffnet.` [WLAN](wifi.md) lädt sie herunter.
+
 ## Verwandte Seiten
 
 - [WLAN](wifi.md): die Dateien der Karte im Browser herunterladen.

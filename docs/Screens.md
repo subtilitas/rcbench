@@ -1931,6 +1931,51 @@ A run being written is not offered in LOGS. A file's length lives in its
 directory entry and is written when the file is closed, so a run still open
 would list at its last committed length and read as a finished one.
 
+### Card formats
+
+The panel mounts a card formatted FAT12, FAT16, FAT32 or exFAT (extended
+File Allocation Table). The volume is either the whole card or the first of
+the 4 partitions of an MBR (master boot record) that holds one of these
+formats. Long file names of up to 255 characters are read and written.
+
+| Card | Size | Format out of the box | On the panel |
+| --- | --- | --- | --- |
+| SDSC (SD Standard Capacity) | up to 2 GB | FAT12 or FAT16 | mounts |
+| SDHC (SD High Capacity) | 4 GB to 32 GB | FAT32 | mounts |
+| SDXC (SD eXtended Capacity) | 64 GB to 2 TB | exFAT | mounts |
+| SDUC (SD Ultra Capacity) | over 2 TB | exFAT | does not mount |
+
+Not supported:
+
+- a card partitioned GPT (GUID Partition Table; GUID: globally unique
+  identifier) instead of MBR;
+- a volume over 2 TiB;
+- NTFS, ext4, HFS+ and APFS.
+
+A card in one of these does not mount. The panel
+never formats a card.
+
+To format a card for the bench, use the SD Association's SD Memory Card
+Formatter: it writes FAT32 up to 32 GB and exFAT from 64 GB, on an MBR. On
+Windows, the format dialog's FAT32 or exFAT does the same. On macOS, Disk
+Utility's Erase with Scheme `Master Boot Record` and Format `MS-DOS (FAT)`
+or `ExFAT`. On Linux, a `dos` partition table and `mkfs.vfat -F 32` or
+`mkfs.exfat`.
+
+The panel's serial log names the format when the card mounts:
+
+```text
+I (…) storage: SK64G mounted, exFAT, 61002 MB
+```
+
+A file's size is read 64-bit, so a file of 4 GiB and more on an exFAT card
+lists with its size, `8.00 GB`. OPEN reads files up to 2 GiB less 1 byte:
+a larger one, also a FAT32 file of 2 GiB to 4 GiB less 1 byte, stays on the
+list and OPEN says `BENCH001.CSV is 2 GB or larger. Not opened.` The sizes
+on the list are binary: 1 kB is 1,024 bytes, 1 MB 1,024 kB and 1 GB
+1,024 MB. [WI-FI](#wi-fi) lists and downloads a file of any size the card
+holds.
+
 ## Wi-Fi
 
 ![WI-FI, no home network kept](img/wifi.png)
