@@ -94,7 +94,8 @@ TEST_CASE(the_pages_are_where_protocol_4_25_puts_them)
     CHECK_EQ(LINK_SM_KEPT, 26);
     CHECK_EQ(LINK_SM_ID(3u), 29u);
     CHECK_EQ(LINK_SM_FLAGS, 30);
-    CHECK(LINK_SM_COUNT <= LINK_MAX_REGS && LINK_SX_COUNT <= LINK_MAX_REGS);
+    CHECK_EQ(LINK_SM_COUNT, LINK_MAX_REGS);
+    CHECK_EQ(LINK_SX_COUNT, LINK_MAX_REGS);
     CHECK_EQ(LINK_SX_E(5u, LINK_SX_E_FLAGS), 31u);
     CHECK_EQ(LINK_SM_WATCH_PORT(3u), 0x13u);
 }
@@ -196,7 +197,7 @@ TEST_CASE(each_value_is_taken_at_its_limits_and_refused_past_them)
     CHECK_EQ(mwrite(LINK_SM_SHUNT(10u), 2000u), 0u);
     CHECK_EQ(mwrite(LINK_SM_WATCH(10u), LINK_SM_WATCH_PORT(2u)), 0u);
     /* A fitted part with no channel. */
-    uint16_t z[3] = { 0u, 0u, 0u };
+    const uint16_t z[3] = { 0u, 0u, 0u };
     CHECK_EQ(sense_map_write(&pg, (uint8_t)LINK_SM_SHUNT(3u), 3u, z, &o, 0u),
              LINK_NACK_BAD_VALUE);
     CHECK_EQ(mreg(LINK_SM_SHUNT(3u)), 1000u);    /* nothing of it taken */
@@ -237,7 +238,7 @@ TEST_CASE(a_map_in_force_owns_senses_ina3221_bit_and_frame)
     CHECK_EQ(sreg(LINK_SN_I3221_SHUNT_DMOHM), 1000u);
     CHECK_EQ(sreg(LINK_SN_I3221_CHANNELS), 0x07u);
     /* FAST's part, with its CH1 off: the first shunt that is not 0. */
-    uint16_t m[3] = { 0u, 1500u, 2500u };
+    const uint16_t m[3] = { 0u, 1500u, 2500u };
     CHECK_EQ(sense_map_write(&pg, (uint8_t)LINK_SM_SHUNT(9u), 3u, m, &o, 0u),
              0u);
     CHECK_EQ(mwrite(LINK_SM_FAST, 11u), 0u);
@@ -257,7 +258,7 @@ TEST_CASE(a_map_in_force_owns_senses_ina3221_bit_and_frame)
     en = (uint16_t)(sreg(LINK_SN_ENABLE) | LINK_SN_EN_AS5600);
     CHECK_EQ(sense_page_write(&pg, LINK_SN_ENABLE, 1u, &en, &o, 0u), 0u);
     /* Nothing fitted: the bit clears, the frame stays as it was. */
-    uint16_t none[2] = { 0u, LINK_SM_FAST_NONE };
+    const uint16_t none[2] = { 0u, LINK_SM_FAST_NONE };
     CHECK_EQ(sense_map_write(&pg, 0u, 2u, none, &o, 0u), 0u);
     CHECK_EQ(sreg(LINK_SN_ENABLE) & LINK_SN_EN_I3221, 0u);
     CHECK_EQ(sreg(LINK_SN_I3221_ADDR), 0x43u);

@@ -40,7 +40,7 @@ _Static_assert(sizeof(((out_store_t *)0)->prog)
 
 _Static_assert(offsetof(out_store_t, sense_map)
                == offsetof(out_store_t, prog)
-                  + LINK_PG_PORTS_MAX * 4u * sizeof(uint16_t),
+                  + (size_t)LINK_PG_PORTS_MAX * 4u * sizeof(uint16_t),
                "the configuration has no padding before the map");
 _Static_assert(sizeof(out_store_t) % 4u == 0u,
                "the configuration is a whole number of 32-bit words");
