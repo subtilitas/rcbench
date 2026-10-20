@@ -28,6 +28,7 @@
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
 #include "endpoints_link.h"
+#include "hitec_rx_link.h"
 #include "kst_link.h"
 #include "kst_prog.h"
 #include "link_bringup.h"
@@ -596,6 +597,12 @@ extern kst_prog_gate_t s_kst_gate;
 /* The SENSE and TONE set-ups that are not held at the far end. */
 extern atomic_uint s_sense_unheld;
 extern atomic_uint s_tone_unheld;
+/* Hitec D receive (HITEC, 4.24): the module, the mode SETUP asks
+ * (link_hitec_rx_t, from the render loop) and what its row says
+ * (hitec_rx_link_mark_t, to the render loop). */
+extern hitec_rx_link_t s_hitec_rx_link;
+extern atomic_uint     s_hitec_rx_want;
+extern atomic_uint     s_hitec_rx_mark;
 
 void kst_port_look(void);
 void sense_link_alerts(void);
@@ -605,6 +612,7 @@ void tone_link_service(void);
 void kst_commands(void);
 void kst_link_service(void);
 void prog_link_service(void);
+void hitec_rx_service(void);
 void kst_publish(kst_prog_feed_t *f);
 
 /* Where the tester's commands go, into s_drive for the SERVO screen: from

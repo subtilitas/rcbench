@@ -9,7 +9,8 @@ input/output) number. PWM is pulse-width modulation.
 Hitec is a name or trademark of its owner. It is used here only to say which
 servos the page works with.
 
-The Hitec page (`HITEC`, 0x34) is new in 4.23. It runs raw transactions of
+The Hitec page (`HITEC`, 0x34) is new in 4.23; write register 23, the
+receive mode of a D series line, is new in 4.24. The page runs raw transactions of
 the Hitec servo wire of [`protocols/hitec`](../protocols/hitec/README.md) on
 one port of [PROG](Link.md#the-programming-ports): classic (HS-5xxx,
 HS-7xxx, 19,200 bit/s) or D series (115,200 bit/s). The page holds no Hitec
@@ -31,15 +32,19 @@ OPEN takes the port:
 2. The PWM generator gives up the pin. The wire driver opens the line on it
    as a released input: classic with the pad's pull-down, the D series with
    its pull-up and the input inverted. The internal pulls are 50 to 80 kOhm;
-   the D series needs a pull-up on the board. Tested with a D485HW: with
-   the pad's pull-up alone the line stays below 1.4 V and the servo answers
-   no read; with 2.2 kOhm from the signal wire to the servo supply it
-   answers every read. The line voltages, and whether the servo's high
-   level stays within the pin's rating, are not measured
+   the D series receives with a pull-up on the board, or by PRECHARGE
+   ([Receive mode](#receive-mode)). Tested with a D485HW: with the pad's
+   pull-up alone the line stays below 1.4 V and the servo answers no read;
+   with 2.2 kOhm from the signal wire to the servo supply it answers every
+   read. The line voltages, and whether the servo's high level stays within
+   the pin's rating, are not measured
    ([Electrical](../protocols/hitec/README.md#electrical)).
 3. OPEN. A driver that gets no PIO (programmable input/output) state machine,
    no 29 words of program space or no 2 DMA (direct memory access) channels
-   leaves the port free with result 5 (`NO_LINE`).
+   leaves the port free with result 5 (`NO_LINE`). PRECHARGE needs a second
+   state machine, 7 words of program space in another PIO block at 150 MHz,
+   and a third DMA channel; without them the port stays free with
+   `NO_LINE` as well.
 
 In OPEN a command starts one transaction (BUSY). The port is in OPEN again
 when the driver hands back the capture. The driver ends a transaction itself
@@ -49,6 +54,56 @@ when the driver hands back the capture. The driver ends a transaction itself
 CLOSE gives the port back from any state but free: a running transaction is
 cut, the line closed and the pin the generator's. The supply is left as it
 is. ABORT cuts what runs and keeps the port.
+
+## Receive mode
+
+Write register 23 (`RX_MODE`) says how a D series line receives the
+servo's answer, from the next OPEN on. The OPEN takes the value the
+register holds when the OPEN is written; a change while a line is open
+waits for the next OPEN. An OPEN of a classic line ignores the register:
+a classic servo drives its high level itself, through about 1 kOhm, and
+answers with neither a pull-up nor a precharge on an open-drain port
+(measured on an HS-7955TG, an HS-5955TG and an HS-5645MG at a 5.0 V
+supply; the line voltages are not measured).
+
+| Value | Name | How the answer is received |
+| ---: | --- | --- |
+| 0 | `PULL-UP` | the line released; a 2.2 kOhm pull-up from the signal wire to the servo supply lifts it. The default, and the value after an IOmcu restart |
+| 1 | `PRECHARGE` | no pull-up. Every 1086.7 ns the IOmcu drives the pad high for 100.0 ns, releases it, and samples it 113.3 ns after the release |
+
+On a PRECHARGE line:
+
+- A SEND with a receive window goes out with no receiver. The first pass
+  of the IOmcu's main loop that finds the request ended hands the pad to a
+  second state machine: 2 mA drive, slow slew, the input not inverted, the
+  pad's pull-up as it was. A DMA channel writes the samples to memory, and
+  each pass decodes the samples written since the last one as inverted
+  8N1 (`protocols/hitec/include/hitec_pre.h`).
+- A LISTEN, and the LISTEN of a POWER, sample from their start.
+- The capture is the one a PULL-UP line gives: the same registers, the
+  same decoders, the same result codes. A byte's time carries the
+  sampler's start, read off the IOmcu's microsecond timer, so it holds
+  to 1 us; a start bit's edge lies within half a sample, 543 ns, of the
+  time given.
+- Refused with `RANGE`: a LISTEN or a POWER that answers, and a receive
+  window above 30,000 us.
+- A SEND with no window (a D series write) and a LEVEL run as on a
+  PULL-UP line: no sampler.
+- At the end of the receive, an ABORT, a CLOSE and a stop, the sampler
+  stops with the pad released, and the pin's control and pad registers
+  are written back as they were.
+- A receive started with the supply asked on is cut (result 6, `CUT`) at
+  the pass that finds the supply asked off, its output read off (the PD
+  mini's protection leaves OUTPUT asked on), or no PD mini answering. One
+  started with the supply off, or with no PD mini, runs to its end.
+
+`STATE` bit 7 reads the register; register 25 of `VIEW` 2, bit 8, says the
+open line receives by PRECHARGE. An IOmcu speaking 4.23 refuses a write
+that reaches register 23 with READ_ONLY and receives with the pull-up; the
+panel then marks the setting on SETUP
+([INTERFACES: the programming port](Screens.md#interfaces-the-programming-port)).
+What is measured and what is not:
+[`protocols/hitec`](../protocols/hitec/README.md#receive-by-precharge-and-sample).
 
 ## Transactions
 
@@ -131,7 +186,7 @@ A read gives these registers:
 
 | Register | Name | Reads |
 | ---: | --- | --- |
-| 0 | `STATE` | bits 0 to 2 the state: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 a PD mini answers. Bit 5 the page holds a capture. Bit 6 the last transaction put a byte on the wire. Bits 12 to 15 the port |
+| 0 | `STATE` | bits 0 to 2 the state: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 a PD mini answers. Bit 5 the page holds a capture. Bit 6 the last transaction put a byte on the wire. Bit 7 `RX_MODE` is PRECHARGE (4.24). Bits 12 to 15 the port |
 | 1 | `SEQ` | the `SEQ` of the last command taken; 0 at start |
 | 2 | `OP` | bits 12 to 15 the last operation started, bits 0 to 11 the transactions started since OPEN, held at 4095 |
 | 3 | `RESULT` | low byte the result of that operation: 0 none, 1 running, 2 done, 3 `SUPPLY`, 4 `START`, 5 `NO_LINE`, 6 `CUT`. High byte why the last command taken started nothing, 0 when it started |
@@ -151,7 +206,7 @@ A read gives these registers:
 | 20, 21 | from the start to the capture, us |
 | 22, 23 | the longest the transaction could take, us |
 | 24 | the bit time of the open line, ns; 0 while none is open |
-| 25 | the line: bit 0 the family (0 classic, 1 D series), bit 4 the drive (0 open drain, 1 push-pull) |
+| 25 | the line: bit 0 the family (0 classic, 1 D series), bit 4 the drive (0 open drain, 1 push-pull), bit 8 it receives by PRECHARGE (4.24) |
 | 26 | the port's pin; 0xFFFF while the driver holds none |
 | 27, 28 | the window the capture asked, us |
 | 29 | bit k: byte k's stop bit was sampled at the start level |
@@ -177,15 +232,17 @@ A write sees other registers:
 | 20 | `SUPPLY_MA` | POWER: 50 to 3000 mA |
 | 21 | `OFF_MS` | POWER: 0 to 10,000 ms |
 | 22 | `VIEW` | 0 to 2. In force when written, not covered by the check |
+| 23 | `RX_MODE` | 0 PULL-UP, 1 PRECHARGE: how a D series line receives, from the next OPEN on (4.24). Not covered by the check; 0 after a restart |
 
 The check is the link's CRC-16 (cyclic redundancy check), seeded 0xFFFF,
 over each register's low byte and then its high byte (`link_kst_crc()`), as
 on the KST page.
 
 Registers 0 to 3 are the command: one frame, written as exactly those 4
-registers and taken whole or not at all. Registers 4 to 22 are written in
-any windows before the command. A write that reaches register 23 or higher
-is refused with READ_ONLY, a `VIEW` above 2 with BAD_VALUE.
+registers and taken whole or not at all. Registers 4 to 23 are written in
+any windows before the command. A write that reaches register 24 or higher
+is refused with READ_ONLY, a `VIEW` above 2 or an `RX_MODE` above 1 with
+BAD_VALUE, and the window changes nothing.
 
 A frame with a `SEQ` other than the page's plus 1, an operation 0 or above
 8, a bit set outside the operation and the port, or a `KEY` that is neither
@@ -208,7 +265,7 @@ transaction:
 | 9 | `STOPPED` | a stop since; CLEAR first |
 | 5 | `UNSAFE` | heartbeat not trusted or link silent |
 | 8 | `STAGED` | registers 4 to 21 do not have the check `CRC` names |
-| 11 | `RANGE` | the staged transaction is not one the line runs, the decoder does not fit the family, or a reserved bit is set |
+| 11 | `RANGE` | the staged transaction is not one the line runs, the decoder does not fit the family, or a reserved bit is set; on a PRECHARGE line also a LISTEN or POWER that answers, or a receive window above 30,000 us |
 | 13 | `NO_SUPPLY` | POWER without a PD mini that answers |
 | 12 | `SUPPLY_RANGE` | POWER: a set point or the off time out of range |
 | 3 | `HELD` | OPEN: the KST page holds the port |

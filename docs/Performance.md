@@ -304,7 +304,7 @@ in it is not measured. The heartbeat gap that switches every output off is
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 156 such calls
+  handler, which the tool reads out of the link's page table: 159 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
   13.2.1; ARM GNU 14.2 gives 165);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
@@ -355,15 +355,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 128,208 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 297,776 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 128,232 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 297,752 |
 | `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 106,056 |
-| `before` | heap left with the panel up and the radio off | 191,720 |
+| `before` | heap left with the panel up and the radio off | 191,696 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 88,560 |
+| `left` | heap left with the largest mode up | 88,536 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every

@@ -378,6 +378,9 @@ SCREENS = {
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
     # The same list past them, to the phase tap's rows, the tap enabled.
     "setup-tap": ("setup-tap.png", "setup", "dark"),
+    # The list's end: Hitec D receive at PRECHARGE under PROG PORT, marked
+    # as an IOmcu older than protocol 4.24 leaves it.
+    "setup-prog": ("setup-prog.png", "setup", "dark"),
     # The warning on leaving SETUP unsaved: one change, and twelve, of
     # which nine fit beside the count of the rest.
     "setup-leave": ("setup-leave.png", "setup", "dark"),
@@ -559,6 +562,8 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # INTERFACES' last rows as setup-prog, the IOmcu older than 4.23.
+    "setup-prog-noline": (None, "setup", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
     # SERVO > PROGRAM with a table of 12 rows: SEARCH, the page keys, two
     # group headings and a row dimmed with its reason.

@@ -6,6 +6,31 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- Hitec D series servos answer with no pull-up on the signal wire: SETUP >
+  INTERFACES > Hitec D receive (PROG PORT, German `Hitec-D-Empfang`)
+  chooses PULL-UP, the default, or PRECHARGE. With PRECHARGE the IOmcu
+  drives the programming port's pad high for 100.0 ns every 1086.7 ns at
+  2 mA and slow slew, samples it 113.3 ns after the release, and decodes
+  the samples into the capture the PULL-UP receiver gives. The sampler is a
+  second PIO state machine with its own DMA channel; the decode runs a few
+  words per main-loop pass, in integer arithmetic. A LISTEN that answers
+  and a window above 30,000 us are refused on such a line; writes and LEVEL
+  run as before. A stop, CLOSE, ABORT, link loss, heartbeat loss and the
+  supply switched off end the sampling with the pad released and its
+  registers restored. The window was measured on one D485HW: every read
+  passed with the sample 40 to 187 ns after the release and a precharge of
+  6.7 to 200 ns, and none from 267 ns. Classic servos need neither and
+  ignore the setting.
+- Link protocol 4.24: HITEC write register 23 (`RX_MODE`), `STATE` bit 7
+  and `VIEW` 2 register 25 bit 8. A 4.23 IOmcu refuses the register and
+  receives with the pull-up; SETUP then says `IOmcu older than 4.24:
+  receives with PULL-UP.` with PRECHARGE set. With an IOmcu older than
+  4.23 it says `IOmcu older than 4.23: no Hitec line.`
+- The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
+  receive mode before the OPEN, and the report names it (`rx=pu|pre`).
+
 ### Fixed
 
 - Downloads from the Wi-Fi page on a home network run without Wi-Fi power

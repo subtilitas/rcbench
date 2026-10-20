@@ -82,13 +82,13 @@ as the USB host takes it. What does not fit is dropped, and a line
 
 ```text
 > r 0x00 0 2
-data page=0x00 off=0 n=2: 0x0004 0x0017
+data page=0x00 off=0 n=2: 0x0004 0x0018
 > w 0x2A 4 1 5000 1000
 nack page=0x2A off=4: NOT_ARMED (5)
 ```
 
 Lines typed are shown here after `> `; the console prints no prompt. The
-first line reads the protocol version, 4.23. The second is SUPPLY's ON at
+first line reads the protocol version, 4.24. The second is SUPPLY's ON at
 5000 mV and 1000 mA, refused because no panel sends a heartbeat. With a
 panel running, the same line is taken:
 
@@ -131,7 +131,7 @@ report at once. The report's lines, the last one for each byte received:
 
 ```text
 hitec done state=<state> port=<n> flags=<flags> seq=<n> op=<op> count=<n> result=<result> refusal=<refusal>
-hitec line pin=<pin> line=<line> bit_ns=<ns> lead_ns=<ns> span_us=<us>
+hitec line pin=<pin> line=<line> rx=<pu|pre> bit_ns=<ns> lead_ns=<ns> span_us=<us>
 hitec cap n=<n> full=<0|1> answered=<0|1> overflow=<0|1> aborted=<0|1> dec=<dec> rx=<rx> id=<id> value=<value> delay_ns=<ns> t_us=<us> window_us=<us>
 hitec byte <k> <value> at_ns=<ns> framing=<0|1>
 ```
@@ -160,7 +160,7 @@ bytes and 1 released bit time.
 | Command | Does |
 | --- | --- |
 | `hitec [state]` | the page, decoded, with the capture |
-| `hitec open <port> c\|d [od\|pp]` | OPEN: classic or D series, open drain (the default) or push-pull |
+| `hitec open <port> c\|d [od\|pp] [pu\|pre]` | OPEN: classic or D series, open drain (the default) or push-pull. For the D series `pu` or `pre` first writes the receive mode, PULL-UP or PRECHARGE (register 23, [Receive mode](LinkHitec.md#receive-mode)); without either the OPEN takes the mode the page holds. Classic refuses both: a classic servo needs neither |
 | `hitec close <port>` | CLOSE |
 | `hitec abort <port>` | ABORT |
 | `hitec clear <port>` | CLEAR, after a stop |
@@ -198,6 +198,20 @@ hitec done state=OPEN port=0 ...
 > hitec power 0 mv=5000 ma=1000 off=1000 window=2000000 rx=1 dec=l:0x2B
 > hitec close 0
 ```
+
+A D series read on port 0 with no pull-up on the signal wire:
+
+```text
+> hitec open 0 d pp pre
+hitec OPEN port=0 started
+hitec done state=OPEN port=0 flags=RAIL,PRECHARGE ...
+hitec line pin=13 line=0x11 rx=pre ...
+> hitec d 0 read 0 0x32
+```
+
+`pre` and `pu` write the same register the panel writes from SETUP >
+INTERFACES > Hitec D receive. The panel writes it again at its next edit
+of that row and at every link-up.
 
 A raw `w` of the HITEC page gets no report and no key; the
 [worked example](LinkHitec.md#a-transaction-by-hand) writes one transaction

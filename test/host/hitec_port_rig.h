@@ -66,7 +66,7 @@ static struct {
     uint8_t  pin[LINK_PG_PORTS_MAX];
     bool     take_ok;
     unsigned takes, gives;
-    uint8_t  take_port, take_pin, take_family, take_drive;
+    uint8_t  take_port, take_pin, take_family, take_drive, take_rx;
     supply_port_view_t v;
     bool     set_ok;
     bool     follow;
@@ -240,10 +240,11 @@ static inline uint8_t hw_pin(void *ctx, uint8_t port)
 }
 
 static inline bool hw_take(void *ctx, uint8_t port, uint8_t pin,
-                           uint8_t family, uint8_t drive)
+                           uint8_t family, uint8_t drive, uint8_t rx)
 {
     (void)ctx;
     g_hw.takes++;
+    g_hw.take_rx = rx;
     g_hw.take_port = port;
     g_hw.take_pin = pin;
     g_hw.take_family = family;

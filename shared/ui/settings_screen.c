@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "hitec_rx_link.h"
 #include "sense_link.h"
 #include "settings.h"
 #include "tone_link.h"
@@ -81,7 +82,7 @@
 
 /*
  * Section headings.  A list over 8 rows groups its settings under
- * headings: INTERFACES' 26 rows fall into four sections.  A heading is a
+ * headings: INTERFACES' 27 rows fall into five sections.  A heading is a
  * row of the list's own pitch, ROW_PITCH px, with no keys, drawn above the
  * setting that opens its section; it does not count as a setting.
  */
@@ -95,6 +96,7 @@ static const heading_t k_headings[] = {
     { SET_TONE_EN,   TX_SET_HD_TAP },       /* the phase tap                */
     { SET_VIBE_EN,   TX_SET_HD_BALANCE },   /* vibration, optical tacho     */
     { SET_PDMINI_EN, TX_SET_HD_SUPPLY },    /* the PD mini                  */
+    { SET_HITEC_RX,  TX_SET_HD_PROG },      /* the programming port         */
 };
 
 #define N_HEADINGS ((int)(sizeof(k_headings) / sizeof(k_headings[0])))
@@ -335,6 +337,7 @@ static struct {
  */
 static uint16_t s_sense_unheld;
 static uint8_t  s_tone_unheld;
+static uint8_t  s_hitec_rx_mark;   /* hitec_rx_link_mark_t */
 
 void settings_screen_invalidate(void)
 {
@@ -361,8 +364,19 @@ void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows)
     }
 }
 
+void settings_screen_set_hitec_rx(uint8_t mark)
+{
+    if (mark != s_hitec_rx_mark) {
+        s_hitec_rx_mark = mark;
+        settings_screen_invalidate();
+    }
+}
+
 bool settings_screen_unheld(setting_id_t id)
 {
+    if (id == SET_HITEC_RX) {
+        return s_hitec_rx_mark != (uint8_t)HITEC_RX_LINK_HELD;
+    }
     uint16_t sense = 0u;
     uint8_t  tone  = 0u;
     switch (id) {
@@ -1161,9 +1175,15 @@ static void draw_row(gfx_canvas_t *c, int index)
     gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, MINUS_X - 10 - r.x, r.h));
     gfx_text(c, r.x + 16, r.y + 3, ui_setting_label(id), UI_FONT_HEAD,
              UI_TEXT, 1);
-    const char *help = same_pin ? TR(SET_PD_SAME_PIN)
-                       : unheld ? TR(SET_UNHELD)
-                                : ui_setting_help(id);
+    const bool hitec = id == SET_HITEC_RX;
+    const char *help =
+        same_pin ? TR(SET_PD_SAME_PIN)
+        : !unheld ? ui_setting_help(id)
+        : (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_OLD)
+            ? TR(SET_HITEC_RX_OLD)
+        : (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_NO_LINE)
+            ? TR(SET_HITEC_RX_NO_LINE)
+            : TR(SET_UNHELD);
     if (help[0] != '\0') {
         gfx_text(c, r.x + 16, r.y + 33, help, UI_FONT_LABEL,
                  unheld ? UI_WARN : UI_TEXT_FAINT, 1);

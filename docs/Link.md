@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.23. The
+IOmcu transmits only in answer to a request. Protocol version 4.24. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -123,7 +123,10 @@ older IOmcu refuses both with BAD_PAGE, and the panel then says a USB
 4.23 HITEC (0x34) runs raw transactions of the Hitec servo wire on a
 programming port, and the KST page refuses ENTER and a REBOOT from PWM with
 BUSY while HITEC holds the port; an older IOmcu refuses HITEC with
-BAD_PAGE. The panel does not use HITEC
+BAD_PAGE. From 4.24 HITEC takes the receive mode of a D series line in
+write register 23; the panel writes SETUP's Hitec D receive there, and a
+4.23 IOmcu refuses the register with READ_ONLY and receives with the
+pull-up. The panel sends no Hitec transaction
 ([The programming port for Hitec servos](LinkHitec.md)). The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
@@ -791,7 +794,7 @@ per 5 s offer.
 | 0x31 | SERVO_WIN | read | the last 4 complete 50 ms windows of INA3221 CH1, newest first (since 4.11). Register 0: the newest window's number modulo 65536. Register 1: bit 0 a window has closed, bit 7 the capture's clipped bit. Registers 2 and 3: SERVO_SENSE's capture state and count. Then 4 entries of 6 registers, entry k from register 4 + 6 k for window number register 0 - k: mean, highest and lowest current (mA, signed), mean and lowest bus voltage (mV), and flags (bit 15 a window closed with this number, bit 8 current samples, bit 9 voltage samples, bit 10 a sample at the top of the range, bit 11 one at the bottom, bits 0 to 7 the samples at an end, held at 255). A clipped sample counts at the end of the range. Every write is refused with READ_ONLY. [The window ring](#the-window-ring) has the rules. Nothing is kept |
 | 0x32 | `KST` | read, write | the servo programming page: the programming protocol for KST and Chaservo servos on a programming port (since 4.12; a port and the supply since 4.13). A read gives 32 registers: state, flags and port, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. A write takes 28: the command in registers 0 to 3, one frame, the staged image, unlock set and start check in 4 to 25, and the supply voltage and current of an ENTER in 26 and 27. [The programming port for KST and Chaservo servos](LinkKST.md) has the rules. Nothing is kept |
 | 0x33 | PROG | read, write | the programming ports (since 4.13): 24 registers. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints. [The programming ports](#the-programming-ports) has the rules. Pin, slew and endpoints are kept in the IOmcu's flash |
-| 0x34 | `HITEC` | read, write | raw transactions of the Hitec servo wire on a programming port (since 4.23). A read gives 32 registers: state, flags and port, `SEQ`, operation and transaction count, result and refusal, the capture's count and flags, the decoder's result, the decoded value, `VIEW`, the received bytes in 8 registers, and in 16 registers the bytes' start times or the run. A write takes 23: the command in registers 0 to 3, one frame, the staged transaction, decoder and POWER set points in 4 to 21, and `VIEW` in 22. [The programming port for Hitec servos](LinkHitec.md) has the rules. Nothing is kept |
+| 0x34 | `HITEC` | read, write | raw transactions of the Hitec servo wire on a programming port (since 4.23). A read gives 32 registers: state, flags and port, `SEQ`, operation and transaction count, result and refusal, the capture's count and flags, the decoder's result, the decoded value, `VIEW`, the received bytes in 8 registers, and in 16 registers the bytes' start times or the run. A write takes 24: the command in registers 0 to 3, one frame, the staged transaction, decoder and POWER set points in 4 to 21, `VIEW` in 22, and the receive mode of a D series line in 23 (since 4.24). [The programming port for Hitec servos](LinkHitec.md) has the rules. Nothing is kept |
 | 0xF0 | UPDATE_CTL | read, write | the IOmcu's own firmware update (since 4.22; frozen across majors): 32 registers. Version, state, error, slot, slot sectors, next block, image size, then the command in register 8 with up to 3 arguments, and a SHA-256 digest in registers 16 to 31. A write that is not a command is refused with READ_ONLY. [Firmware update over the link](#firmware-update-over-the-link) has the rules. Nothing is kept |
 | 0xF1 | UPDATE_DATA | read, write | the 64 bytes of the block in hand, low byte first in each register (since 4.22; frozen across majors): 32 registers. FINISH takes the expected SHA-256 from registers 0 to 15. Nothing is kept |
 

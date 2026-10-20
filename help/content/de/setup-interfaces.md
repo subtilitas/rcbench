@@ -6,7 +6,7 @@ order: 61
 
 # Anschlüsse
 
-ANSCHLÜSSE, die zweite Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: zwei Strommonitore und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff und das Netzteil PD mini. Ihre 26 Einstellungen stehen in vier Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN und NETZTEIL; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500 ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
+ANSCHLÜSSE, die zweite Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: zwei Strommonitore und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff, das Netzteil PD mini und wie der Programmierport ein Hitec-Servo der D-Serie empfängt. Ihre 27 Einstellungen stehen in fünf Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN, NETZTEIL und PROG-PORT; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500 ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
 
 ## Die Strommonitore
 
@@ -102,6 +102,14 @@ Diese drei werden gespeichert. Kein Bildschirm und kein IOmcu liest sie in diese
 | PD mini Baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | die UART-Rate (Universal Asynchronous Receiver-Transmitter) des Moduls; AUTO probiert jede der 7 Raten, eine pro Sekunde |
 
 Die Tasten `-` und `+` von PD mini TX und PD mini RX springen über den GPIO, den die andere Zeile hält: mit RX auf GP18 geht TX von GP19 auf GP17. Am Ende des Bereichs tut die Taste dann nichts: mit RX auf GP47 bleibt TX auf GP46. Eine gespeicherte Einstellung mit beiden Zeilen auf einem GPIO wird so geladen; der PD mini bleibt aus, die SUPPLY-Kopfzeile sagt `PD MINI OHNE PINS`, und beide Zeilen sagen `TX und RX auf einem Pin. Der PD mini bleibt aus.`, bis eine von ihnen verstellt wird. Der Schalter PD mini schaltet das Modul ab. Der IOmcu lehnt einen Pin ab, der reserviert, an einen Ausgang gebunden, vom Sensorbus oder vom Phasenabgriff gehalten oder der andere Pin ist: RX auf GP17 wird abgelehnt, solange Sensor-SCL GP17 ist. Die Meldung verlässt das Band, sobald der Pin auf einen zurückgestellt ist, den der IOmcu nimmt. Eine Änderung an den Pins, der Baudrate oder dem Einschalter schaltet den Netzteilausgang ab.
+
+## Der Programmierport
+
+| Einstellung | Bereich | Voreinstellung | Was sie tut |
+|---|---|---|---|
+| Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | wie der IOmcu die Antwort eines Hitec-Servos der D-Serie am Programmierport empfängt. PULL-UP: ein Widerstand von 2,2 kOhm von der Signalleitung zur Servoversorgung. PRECHARGE: kein Widerstand; der IOmcu treibt das Pad alle 1,09 us für 100 ns auf High und tastet es 113 ns später ab |
+
+Der IOmcu nimmt den Wert beim nächsten OPEN einer Leitung der D-Serie. classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen ihn. Ein IOmcu mit Protokoll 4.23 empfängt mit PULL-UP; mit PRECHARGE lautet die Zeile dann `IOmcu älter als 4.24: empfängt mit PULL-UP.` Ein IOmcu älter als 4.23 hat keine Hitec-Leitung; mit PRECHARGE lautet die Zeile `IOmcu älter als 4.23: keine Hitec-Leitung.`
 
 ## Verwandte Seiten
 
