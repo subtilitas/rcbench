@@ -484,6 +484,92 @@ mit jedem Lesen und Schreiben über diesen Cache nach, das dieser Objekte
 eingeschlossen. Die Frame Rate auf einem Panel mit ihnen im PSRAM ist nicht
 gemessen.
 
+## WLAN-Downloads
+
+Eine Kartendatei oder die ZIP-Datei geht über eine TCP-Verbindung
+(Transmission Control Protocol) vom Panel zum Browser. Der Server der
+Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage, die während
+eines Downloads kommt, wartet auf dessen Ende. Die Rate eines Downloads ist
+nicht gemessen. Was sie begrenzt:
+
+| Glied | Einstellung | Grenze |
+| --- | --- | --- |
+| Power Save | keiner, solange das Panel einem Heimnetz beigetreten ist (`esp_wifi_set_ps(WIFI_PS_NONE)`); ein Access Point schläft nicht | keine |
+| Sendepuffer | 11 520 Bytes, 8 Segmente zu 1 440 Bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11 520 Bytes pro Umlauf: 1 152 000 B/s bei 10 ms Umlaufzeit, 576 000 B/s bei 20 ms |
+| Karte | SPI (Serial Peripheral Interface) mit 20 MHz, 2 500 000 B/s auf der Leitung; jedes Stück von 4 096 Bytes als 8 einzelne Sektoren zu 512 Bytes gelesen | nicht gemessen |
+| Prozessor | die Task des Servers mit Priorität 1 auf Kern 0, neben der UI-Schleife (User Interface) mit Priorität 1; die SPI-Übertragungen der Karte warten durch Abfragen (Polling) | nicht gemessen |
+
+Der Power Save, den ESP-IDF vorgibt, `WIFI_PS_MIN_MODEM`, weckt das Funkteil
+nur zu jedem DTIM-Beacon (Delivery Traffic Indication Message). Bis dahin
+hält der Access Point die Frames für das Panel zurück, die Bestätigungen
+von TCP darunter, also wartet jeder Sendepuffer bis zu einer DTIM-Periode:
+102,4 ms beim üblichen Beacon-Intervall und einer DTIM-Periode von 1,
+307,2 ms bei einer DTIM-Periode von 3. Mit dem Sendepuffer von 5 760 Bytes,
+den ESP-IDF vorgibt, sind das 18 750 bis 56 250 B/s. Ohne Power Save
+braucht das Funkteil mehr Strom, solange es läuft; wie viel mehr am Panel,
+ist nicht gemessen.
+
+Der Stückpuffer der Seite liegt im PSRAM, in den der Treiber der SD-Karte
+(Secure Digital) nicht per DMA (Direct Memory Access) liest: ESP-IDF liest
+ein solches Stück Sektor für Sektor über einen eigenen Puffer von
+512 Bytes. Die erwartete Rate, aus den Grenzen oben, ist 300 000 bis
+1 000 000 B/s in einem Heimnetz mit einer Umlaufzeit unter 20 ms. Während
+ein Download läuft, nimmt die Task des Servers der UI-Schleife
+Prozessorzeit; die Bildrate während eines Downloads ist nicht gemessen.
+
+Ein Download endet vorzeitig, und die Verbindung wird zurückgesetzt (Reset),
+wenn
+
+- der Empfänger die Verbindung schließt: erkannt innerhalb von 250 ms
+  (`WA_SEND_SLICE_MS`, `shared/webaccess/include/wa_send.h`);
+- die Verbindung fehlschlägt;
+- der Empfänger 30 s lang nichts annimmt (`WA_SEND_QUIET_MS`);
+- das WLAN ausgeht: innerhalb von 250 ms;
+- das Lesen der Karte fehlschlägt oder die Datei nicht die angekündigte
+  Größe hat.
+
+Der Browser hat dann weniger Bytes als angekündigt und meldet den Download
+als fehlgeschlagen. Der Reset gibt die Bytes, die noch für die Verbindung
+anstehen, sofort frei (`CONFIG_LWIP_SO_LINGER`); der Server nimmt die
+nächste Anfrage an. Die Konsole protokolliert jede Datei:
+
+```text
+I (…) wifi: file: sent, 16777216 of 16777216 B read in <n> ms
+W (…) wifi: file: receiver gone, <n> of 16777216 B read in <n> ms
+```
+
+Die anderen Enden lauten `nothing taken for 30 s`, `radio going off` und
+`card read failed`.
+
+### Einen Download messen
+
+Auf einem Rechner im selben Heimnetz wie das Panel, mit `curl` und, unter
+Linux, `iw`:
+
+1. Eine Datei von 16 777 216 Bytes ins Wurzelverzeichnis der Karte
+   kopieren: `head -c 16777216 /dev/urandom > RATE16M.BIN`.
+2. Am Panel WI-FI öffnen, dem Heimnetz beitreten und den Zugangscode
+   ausschalten. `<panel>` unten ist die Adresse, die WI-FI zeigt.
+3. Die eigene Verbindung des Rechners notieren und seinen Power Save
+   ausschalten: `iw dev wlan0 link`, `iw dev wlan0 get power_save`,
+   `sudo iw dev wlan0 set power_save off`. Die Umlaufzeit notieren:
+   `ping -c 20 <panel>`.
+4. Die Rate, 3-mal:
+   `curl -s -o /dev/null --max-time 600 -w '%{http_code} %{size_download} B %{time_total} s %{speed_download} B/s\n' http://<panel>/card/RATE16M.BIN`.
+   Jeder Lauf antwortet `200 16777216 B`, und die Konsole protokolliert
+   `file: sent, 16777216 of 16777216 B read in <n> ms`.
+5. Ein Download, der mittendrin abbricht, und die nächste Anfrage:
+   `curl -s -o /dev/null --max-time 5 http://<panel>/card/RATE16M.BIN; curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
+   Die zweite antwortet `200`; die Konsole protokolliert
+   `file: receiver gone`.
+6. Ein Empfänger, der nicht mehr liest: eine Verbindung, die die Datei
+   anfragt und dann nichts liest,
+   `python3 -c 'import socket,time; s=socket.create_connection(("<panel>",80)); s.sendall(b"GET /card/RATE16M.BIN HTTP/1.1\r\nHost: p\r\n\r\n"); time.sleep(60)' &`,
+   dann nach 35 s
+   `curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
+   Die Konsole protokolliert `file: nothing taken for 30 s`; die
+   Anfrage antwortet `200`.
+
 ## Das Dateisystem der SD-Karte
 
 Das Panel liest FAT12, FAT16, FAT32 und exFAT (extended File Allocation

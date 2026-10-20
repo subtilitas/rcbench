@@ -16,7 +16,8 @@
  * button, calls the I/O's remove().
  *
  * The browse view lists one folder at a time, chosen by three tabs in its
- * header row: USER, BENCH and ROOT (log_viewer_tab_t).
+ * header row: ROOT, USER and BENCH, in that order (log_viewer_tab_t holds
+ * the ids; the tabs' order on screen is k_tab_at).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -87,14 +88,18 @@
 #define BR_PG_Y   2
 #define BR_PG_H   38
 /*
- * USER, BENCH and ROOT at the header row's left, 80 px a tab: ui_tabs draws
+ * ROOT, USER and BENCH at the header row's left, 80 px a tab: ui_tabs draws
  * its trough 3 px round the tabs, so the trough is the header row, 2 to
- * 40 px, as PREV and NEXT are.  The card's name and the folder follow from
- * BR_HEAD_X to PREV: 248 px, 31 cells of the 8 px face, an 11-character
- * volume label, 2 spaces and a 17-character folder.
+ * 40 px, as PREV and NEXT are.  The folder follows from BR_HEAD_X and the
+ * card's name ends the row, right-aligned: at BR_HEAD_END with PREV and NEXT
+ * showing, at the list panel's right edge without them.  The two share
+ * BR_HEAD_X to BR_HEAD_END, 248 px, 31 cells of the 8 px face: an
+ * 11-character volume label, 2 spaces and a 17-character folder.
  */
 #define BR_TABS   gfx_rect_make(19, BR_PG_Y + 3, 3 * 80 + 2 * 4, BR_PG_H - 6)
 #define BR_HEAD_X 280
+#define BR_HEAD_END (536 - 8)
+#define BR_HEAD_FAR (16 + 768)
 #define BR_PREV   gfx_rect_make(536, BR_PG_Y, 120, BR_PG_H)
 #define BR_NEXT   gfx_rect_make(664, BR_PG_Y, 120, BR_PG_H)
 
@@ -160,7 +165,8 @@ _Static_assert(BR_PG_Y + BR_PG_H + 4 <= BR_LIST_Y,
                "PREV and NEXT end above the list");
 _Static_assert(19 + 3 * 80 + 2 * 4 + 3 + 8 <= BR_HEAD_X,
                "the tabs end before the header's text");
-_Static_assert(BR_HEAD_X + 31 * 8 <= 536, "the header's text ends at PREV");
+_Static_assert(BR_HEAD_X + 31 * 8 <= BR_HEAD_END + 8,
+               "the header's text ends at PREV");
 _Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,
                "the scroll bar's thumb is 32 px or more on a full page");
 _Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - 36,
@@ -1046,6 +1052,27 @@ static void render_bar(gfx_canvas_t *c)
                           col);
 }
 
+/* The tabs as the header row shows them, left to right: the id of each. */
+static const log_viewer_tab_t k_tab_at[LOG_TAB_COUNT] = {
+    LOG_TAB_ROOT, LOG_TAB_USER, LOG_TAB_BENCH,
+};
+
+/* The tabs' labels, in that order. */
+static const ui_text_id_t k_tab_text[LOG_TAB_COUNT] = {
+    TX_LOG_TAB_ROOT, TX_LOG_TAB_USER, TX_LOG_TAB_BENCH,
+};
+
+/* The position in the header row of the tab with id @p tab. */
+static int tab_pos(log_viewer_tab_t tab)
+{
+    for (int i = 0; i < (int)LOG_TAB_COUNT; ++i) {
+        if (k_tab_at[i] == tab) {
+            return i;
+        }
+    }
+    return 0;
+}
+
 /* The empty list's two lines: why it is empty, and what the folder holds
  * when it does not. */
 static void empty_lines(char *why, size_t n, const char **hint)
@@ -1075,15 +1102,17 @@ static void empty_lines(char *why, size_t n, const char **hint)
 
 static void render_browse(gfx_canvas_t *c)
 {
-    /* The card's name and the folder on screen: "UNITEST  BENCH/LOGS",
-     * and the name alone for the root. */
+    /* The folder on screen after the tabs, "BENCH/LOGS" (nothing for the
+     * root), and the card's name at the row's right end, "UNITEST". */
     const char *vol = volume_now();
     const char *dir = log_viewer_tab_dir(s.tab);
-    char head[LOG_VIEWER_NAME_MAX + CARD_DIR_MAX + 4];
-    snprintf(head, sizeof(head), "%s%s%s",
-             (vol[0] != '\0') ? vol : TR(LOG_SD_CARD),
-             (dir[0] != '\0') ? "  " : "", dir);
-    gfx_text(c, BR_HEAD_X, 12, head, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    const char *name = (vol[0] != '\0') ? vol : TR(LOG_SD_CARD);
+    const int end = paged() ? BR_HEAD_END : BR_HEAD_FAR;
+    const int dir_w = gfx_text_width(UI_FONT_LABEL, dir, 1);
+    gfx_text(c, BR_HEAD_X, 12, dir, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    const int name_x = BR_HEAD_X + dir_w + 16;
+    gfx_text_in(c, gfx_rect_make(name_x, 2, end - name_x, BR_PG_H), name,
+                UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_RIGHT);
 
     /*
      * The question replaces the list and the footer rather than sitting on
@@ -1778,7 +1807,7 @@ static void browse_event(const touch_event_t *e)
         s.pressing  = false;
         s.press_btn = -1;
         s.bar_drag  = false;
-        log_viewer_set_tab((log_viewer_tab_t)s.tabs.selected);
+        log_viewer_set_tab(k_tab_at[s.tabs.selected]);
         return;
     }
     if (e->type == TOUCH_EVENT_DOWN && s.tabs.pressed >= 0) {
@@ -2325,20 +2354,13 @@ static void cancel(void)
     log_viewer_invalidate();
 }
 
-/* The tabs' labels, in log_viewer_tab_t order. */
-static const ui_text_id_t k_tab_text[LOG_TAB_COUNT] = {
-    [LOG_TAB_USER]  = TX_LOG_TAB_USER,
-    [LOG_TAB_BENCH] = TX_LOG_TAB_BENCH,
-    [LOG_TAB_ROOT]  = TX_LOG_TAB_ROOT,
-};
-
 void log_viewer_set_tab(log_viewer_tab_t tab)
 {
     if ((unsigned)tab >= (unsigned)LOG_TAB_COUNT) {
         return;
     }
     s.tab = tab;
-    s.tabs.selected = (int)tab;
+    s.tabs.selected = tab_pos(tab);
     s.message[0] = '\0';
     read_page(LOG_PAGE_FROM, "");
 }
@@ -2351,7 +2373,7 @@ static void reset(void)
     s.io = io;
     ui_tabs_init_text(&s.tabs, k_tab_text, LOG_TAB_COUNT, BR_TABS);
     s.tab = LOG_TAB_BENCH;
-    s.tabs.selected = (int)LOG_TAB_BENCH;
+    s.tabs.selected = tab_pos(LOG_TAB_BENCH);
     s.open_tab = LOG_TAB_BENCH;
     s.sel = -1;
     s.cursor = -1;
@@ -2385,7 +2407,7 @@ static void enter(void)
             s.written_seen = n;
             if ((unsigned)tab < (unsigned)LOG_TAB_COUNT) {
                 s.tab = tab;
-                s.tabs.selected = (int)tab;
+                s.tabs.selected = tab_pos(tab);
             }
         }
     }

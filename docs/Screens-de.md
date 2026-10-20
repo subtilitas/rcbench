@@ -1983,9 +1983,10 @@ Nummer, der neueste zuerst, über alle Namen im Ordner: `MOTOR043.CSV`, dann
 
 ![Der Tab STAMM mit den Läufen einer älteren Firmware](img/de/logs-root.png)
 
-Drei Tabs links in der Kopfzeile wählen den Ordner der Liste: USER
-(Ordner User-Logs, vorgegeben `USER/LOGS`), BENCH (Ordner Auto-Logs,
-vorgegeben `BENCH/LOGS`) und STAMM (das Stammverzeichnis der Karte). Ein angetippter Tab listet seinen Ordner ab der ersten Seite. Ohne Karte
+Drei Tabs links in der Kopfzeile wählen den Ordner der Liste, in dieser
+Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner
+User-Logs, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Logs, vorgegeben
+`BENCH/LOGS`). Ein angetippter Tab listet seinen Ordner ab der ersten Seite. Ohne Karte
 wechseln die Tabs ebenso: Der angetippte Tab ist gewählt gezeichnet, der
 Kasten zeigt `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`
 mit der Zeile dieses Tabs darunter, und der Tipp sucht erneut nach einer
@@ -1994,8 +1995,10 @@ lässt, meldet stattdessen
 `Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` oder
 `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.`
 ([Das Format der SD-Karte](#das-format-der-sd-karte)). Die
-Kopfzeile rechts der Tabs nennt die Karte und den Ordner,
-`UNITEST  BENCH/LOGS`, und auf STAMM die Karte allein. Ein leerer Ordner
+Kopfzeile rechts der Tabs zeigt den Ordner, `BENCH/LOGS`, und auf STAMM
+nichts. Der Name der Karte, `UNITEST`, schließt die Zeile rechtsbündig ab:
+am rechten Rand der Liste, und links von VORIGE, wenn VORIGE und NÄCHSTE
+sichtbar sind. Ein leerer Ordner
 sagt, warum, und was hineingehört: `Keine .csv-Dateien in BENCH/LOGS.` und
 die Namen, die er aufnimmt, oder mit seinem Schalter auf AUS
 `AUTO-LOGS AUS unter SETUP > SD-KARTE.`. Unter der Rückfrage zu LÖSCHEN sind
@@ -2424,7 +2427,16 @@ den ESP-Image-Header für den ESP32-S3, den Projektnamen `rcbench-panel`
 der Anwendung, eine Version der Form MAJOR.MINOR.PATCH und den angehängten
 SHA-256 (Secure Hash Algorithm, 256 Bit). Ein zweiter Upload, während einer
 wartet, wird abgewiesen, bis ABBRECHEN am Panel. Während ein Upload läuft,
-zeigt der Bildschirm die empfangenen Bytes.
+zeigt der Bildschirm die empfangenen Bytes. Der Upload schreibt keinen
+Flash: Das Panel hält die Datei im PSRAM (Pseudo-Static Random-Access
+Memory), bis PANEL UPDATE sie schreibt. Das Panel
+schreibt das Image erst nach dem Halten auf PANEL UPDATE in den Flash
+([Installieren: PANEL UPDATE](#installieren-panel-update)). Während es
+schreibt, wird die Anzeige bei jedem Flash-Löschen ganz dunkel und kommt
+danach zurück, etwa alle 0,5 s (gemeldet auf 0.20.0; 0.21.x nicht gemessen,
+der Schreibweg ist derselbe Code). Das ist erwartet: Das RGB-Panel (Rot,
+Grün, Blau) kann nicht abtasten, solange der Haupt-Flash beschäftigt ist
+(`CONFIG_LCD_RGB_ISR_IRAM_SAFE=n` in `firmware/panel/sdkconfig.defaults`).
 
 **Dateien auf der Karte.** Jede Datei, Ordner für Ordner, mit Namen, Größe
 in Bytes und Änderungszeit, wie die Karte sie hat. Jeder Name lädt seine
@@ -2443,11 +2455,16 @@ und den Zeiten der Karte. Eine Datei über 4 GiB − 1 B, ein Archiv über
 Speicher gehalten oder auf die Karte geschrieben: Es wird gesendet, wie es
 gelesen wird.
 
-Die Übertragungsrate ist nicht gemessen. Ein Download von S Bytes bei einer
+Die Übertragungsrate ist nicht gemessen; [Performance](Performance-de.md#wlan-downloads)
+nennt, was sie begrenzt, erwartete 300 000 bis 1 000 000 B/s in einem
+Heimnetz und die Schritte, sie zu messen. Ein Download von S Bytes bei einer
 Rate von R Bytes pro Sekunde dauert S / R Sekunden: bei 1 000 000 B/s
-braucht eine Karte mit 50 000 000 Bytes 50 s. Eine Karte, die während eines
-Downloads gezogen wird, beendet den Download zu kurz; der Browser meldet ihn
-als fehlgeschlagen, und das Panel läuft weiter.
+braucht eine Karte mit 50 000 000 Bytes 50 s. Die Seite beantwortet eine
+Anfrage nach der anderen, also wartet eine Anfrage während eines Downloads
+auf dessen Ende. Eine Karte, die während eines Downloads gezogen wird,
+beendet den Download zu kurz, ebenso ein Browser, der 30 s lang nichts
+annimmt; der Browser meldet ihn als fehlgeschlagen, und das Panel läuft
+weiter.
 
 ### Installieren: PANEL UPDATE
 
@@ -2480,9 +2497,10 @@ Abfragen und hält den Heartbeat absichtlich zurück, sodass der IOmcu
 seine Ausgänge im Failsafe hält, wie bei jedem Neustart des Panels.
 PANEL UPDATE nimmt den ganzen Bildschirm, ohne Band und ohne STOP: Nichts
 kann dahinter auf ARMED geschaltet werden. Es schreibt den Slot, der nicht
-läuft, in Stücken von 64 KiB und zeigt die Bytes und den Prozentwert. Das
-Bild kann gestört sein, während der Flash gelöscht wird, und sitzt ab dem
-ersten ganzen Bild nach jedem Löschen wieder an seinem Platz. Dann wird der Slot
+läuft, in Stücken von 64 KiB und zeigt die Bytes und den Prozentwert. Die
+Anzeige wird bei jedem Flash-Löschen ganz dunkel, etwa alle 0,5 s (gemeldet
+auf 0.20.0; 0.21.x nicht gemessen), und sitzt ab dem ersten ganzen Bild nach
+jedem Löschen wieder an ihrem Platz. Dann wird der Slot
 zurückgelesen und geprüft, er wird der Slot, der startet, und das Panel
 startet neu.
 
@@ -2512,8 +2530,9 @@ Aktuelle Einschränkungen:
 
 - Ein Stromausfall während des Versuchsstarts verliert diese Zeile; das
   Panel geht trotzdem zum Build davor zurück.
-- Wie lange Löschen und Schreiben dauern, ist nicht gemessen, ebenso wenig,
-  was das Glas während eines Löschens zeigt.
+- Wie lange Löschen und Schreiben dauern, ist nicht gemessen. Die dunkle
+  Anzeige bei jedem Löschen ist auf 0.20.0 gemeldet und auf 0.21.x nicht
+  gemessen.
 
 Vor dem ersten Update über WLAN braucht das Panel einmal einen Flash über
 USB, um das Layout mit zwei Anwendungs-Slots zu bekommen:

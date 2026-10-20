@@ -455,6 +455,87 @@ framebuffers. `tools/frame_cost.py` models the frames it renders through
 that cache with every read and write, these objects' included. The frame rate on a
 panel with them in PSRAM is not measured.
 
+## Wi-Fi downloads
+
+A card file or the ZIP file goes from the panel to the browser over one TCP
+(transmission control protocol) connection. The page's server answers one
+request at a time: a request that arrives during a download waits for its
+end. The rate of a download is not measured. What bounds it:
+
+| Link | Setting | Bound |
+| --- | --- | --- |
+| power save | none while joined to a home network (`esp_wifi_set_ps(WIFI_PS_NONE)`); an access point does not sleep | none |
+| send buffer | 11,520 bytes, 8 segments of 1,440 bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11,520 bytes per round trip: 1,152,000 B/s at a 10 ms round trip, 576,000 B/s at 20 ms |
+| card | SPI (serial peripheral interface) at 20 MHz, 2,500,000 B/s on the wire; each 4,096-byte piece read as 8 single 512-byte sectors | not measured |
+| processor | the server's task at priority 1 on core 0, beside the UI (user interface) loop at priority 1; the card's SPI transfers wait by polling | not measured |
+
+ESP-IDF's default power save, `WIFI_PS_MIN_MODEM`, wakes the radio for
+each DTIM (delivery traffic indication message) beacon only. The access
+point holds the frames for the panel until then, TCP's acknowledgements
+among them, so each send buffer waits up to one DTIM period: 102.4 ms at
+the common beacon interval and a DTIM period of 1, 307.2 ms at a DTIM
+period of 3. With ESP-IDF's default send buffer of 5,760 bytes, that is
+18,750 to 56,250 B/s. Without power save the radio draws more current
+while it runs; how much more on the panel is not measured.
+
+The page's piece buffer is in PSRAM, which the SD (Secure Digital) card
+driver does not read into by DMA (direct memory access): ESP-IDF reads
+such a piece one sector at a time through a 512-byte buffer of its own.
+The expected rate, from the bounds above, is 300,000 to 1,000,000 B/s on a
+home network with a round trip under 20 ms. While a download runs, the
+server's task takes processor time from the UI loop; the frame rate
+during a download is not measured.
+
+A download ends early, and the connection is reset, when
+
+- the receiver closes the connection: seen within 250 ms
+  (`WA_SEND_SLICE_MS`, `shared/webaccess/include/wa_send.h`);
+- the connection fails;
+- the receiver takes nothing for 30 s (`WA_SEND_QUIET_MS`);
+- the radio goes off: within 250 ms;
+- the card read fails, or the file is not the size the response announced.
+
+The browser then has fewer bytes than announced and reports the download
+as failed. The reset frees the bytes still queued for the connection at
+once (`CONFIG_LWIP_SO_LINGER`); the server takes the next request. The
+console logs each file:
+
+```text
+I (…) wifi: file: sent, 16777216 of 16777216 B read in <n> ms
+W (…) wifi: file: receiver gone, <n> of 16777216 B read in <n> ms
+```
+
+The other endings read `nothing taken for 30 s`, `radio going off` and
+`card read failed`.
+
+### Measuring a download
+
+On a computer on the same home network as the panel, with `curl` and, on
+Linux, `iw`:
+
+1. Copy a file of 16,777,216 bytes to the card's root:
+   `head -c 16777216 /dev/urandom > RATE16M.BIN`.
+2. Open WI-FI on the panel, join the home network and switch the access
+   code off. `<panel>` below is the address WI-FI shows.
+3. Note the computer's own link and switch its power save off:
+   `iw dev wlan0 link`, `iw dev wlan0 get power_save`,
+   `sudo iw dev wlan0 set power_save off`. Note the round trip:
+   `ping -c 20 <panel>`.
+4. The rate, 3 times:
+   `curl -s -o /dev/null --max-time 600 -w '%{http_code} %{size_download} B %{time_total} s %{speed_download} B/s\n' http://<panel>/card/RATE16M.BIN`.
+   Each run answers `200 16777216 B`, and the console logs
+   `file: sent, 16777216 of 16777216 B read in <n> ms`.
+5. A download broken off part way, and the next request:
+   `curl -s -o /dev/null --max-time 5 http://<panel>/card/RATE16M.BIN; curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
+   The second answers `200`; the console logs `file: receiver gone`.
+6. A receiver that stops reading: a connection that asks for the file and
+   then reads nothing,
+   `python3 -c 'import socket,time; s=socket.create_connection(("<panel>",80)); s.sendall(b"GET /card/RATE16M.BIN HTTP/1.1\r\nHost: p\r\n\r\n"); time.sleep(60)' &`,
+   then after 35 s
+   `curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
+   The console logs `file: nothing taken for 30 s`; the request
+   answers `200`.
+
 ## The SD card's file system
 
 The panel reads FAT12, FAT16, FAT32 and exFAT (extended File Allocation

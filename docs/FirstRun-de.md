@@ -278,8 +278,8 @@ eigenen Dateien aus neuen Ordnern der SD-Karte (Secure Digital) und verschiebt k
    einsetzen.
 2. **Prüfen.** Mit gespeichertem Heimnetz, der Bench SAFE, dem Ausgang der
    Versorgung aus und keinem offenen Log-Lauf: SETUP > UPDATES,
-   `RELEASES: TESTING`, dann `NACH UPDATES SUCHEN`. Die Karte meldet
-   `Version 0.21.2 ist verfügbar.`. Eine Karte, die `Unerwartete Antwort
+   `RELEASES: TESTING`, dann `NACH UPDATES SUCHEN`. Das Panel meldet
+   `Version 0.21.2 ist verfügbar.`. Ein Panel, das `Unerwartete Antwort
    von GitHub.` meldet, ist auf den Fehler von 0.21.0 und 0.21.1 getroffen
    ([unten](#die-prüfung-auf-0210-und-0211)): `NACH UPDATES SUCHEN` sofort
    noch einmal drücken. Der andere Wert, `RELEASES: USABLE` auf 0.21.0 und
@@ -322,8 +322,8 @@ SD-Karte wie 0.21.1; auf der Karte wird nichts verschoben.
 
 1. **Prüfen.** Mit gespeichertem Heimnetz, der Bench SAFE, dem Ausgang der
    Versorgung aus und keinem offenen Log-Lauf: SETUP > UPDATES,
-   `RELEASES: TESTING`, dann `NACH UPDATES SUCHEN`. Die Karte meldet
-   `Version 0.21.2 ist verfügbar.`. Eine Karte, die `Unerwartete Antwort
+   `RELEASES: TESTING`, dann `NACH UPDATES SUCHEN`. Das Panel meldet
+   `Version 0.21.2 ist verfügbar.`. Ein Panel, das `Unerwartete Antwort
    von GitHub.` meldet, ist auf den Fehler von 0.21.1 getroffen
    ([unten](#die-prüfung-auf-0210-und-0211)): `NACH UPDATES SUCHEN` sofort
    noch einmal drücken. `RELEASES: STABLE` liest `releases/latest`, das

@@ -55,6 +55,26 @@ history is in git.
 - `INA3221 settings rejected. Check SETUP > SENSORS.` names SENSORS in
   place of INTERFACES.
 
+### Changed
+
+- LOGS lists its tabs in the order ROOT (German STAMM), USER, BENCH, and
+  shows the card's name right-aligned at the end of the header row, with
+  the folder after the tabs. The tab ids, the remembered tab and the
+  folders are as before.
+
+### Fixed
+
+- Downloads from the Wi-Fi page on a home network run without Wi-Fi power
+  save and with a TCP (transmission control protocol) send buffer of
+  11,520 bytes instead of 5,760. On 0.21.2 a station measured 15,900 and
+  about 64,000 B/s; the expected rate is 300,000 to 1,000,000 B/s, not
+  measured ([Performance](docs/Performance.md#wi-fi-downloads)).
+- A download whose receiver closes, fails or takes nothing for 30 s ends
+  at once and resets its connection, and the page answers the next
+  request. A receiver that stopped reading held the page's server, and
+  with it every other request, until the connection timed out: about
+  7.5 min for one that kept its connection open.
+
 ## 0.21.2 - 2026-10-20
 
 0.21.2 is a testing release: its minor number, 21, is odd, and GitHub lists
@@ -76,7 +96,7 @@ v0.20.0. The steps from 0.21.1 are in
 
 1. SETUP > UPDATES, `RELEASES: TESTING`, `CHECK FOR UPDATES`, with a home
    network kept, the bench SAFE, the supply output off and no log run open.
-   0.21.0 and 0.21.1 read only an answer that states its size: a card that
+   0.21.0 and 0.21.1 read only an answer that states its size: a panel that
    says `Unexpected answer from GitHub.` gets the cached answer, which
    does, with `CHECK FOR UPDATES` pressed again at once
    ([the check on 0.21.0 and 0.21.1](docs/FirstRun.md#the-check-on-0210-and-0211)).
