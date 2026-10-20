@@ -386,6 +386,37 @@ static void servo_source_alerts(void)
 atomic_uint s_sense_unheld;
 atomic_uint s_tone_unheld;
 
+hitec_rx_link_t s_hitec_rx_link;
+atomic_uint     s_hitec_rx_want;
+atomic_uint     s_hitec_rx_mark;
+
+/*
+ * Hitec D receive to the HITEC page's register 23 (hitec_rx_link.h): one
+ * write a poll while it is owed, armed or not, since the IOmcu takes it at
+ * its next OPEN and nothing that runs changes.  From poll_bench(); an
+ * IOmcu older than 4.24 is sent nothing.
+ */
+void hitec_rx_service(void)
+{
+    uint16_t v = 0u;
+
+    hitec_rx_link_want(&s_hitec_rx_link,
+                       (uint8_t)atomic_load(&s_hitec_rx_want));
+    if (hitec_rx_link_next(&s_hitec_rx_link, now_ms(), &v)) {
+        link_msg_t reply = { 0 };
+        const bool answered = write_regs(&s_host, LINK_PAGE_HITEC,
+                                         LINK_HT_W_RX_MODE, 1, &v, &reply);
+        int result = HITEC_RX_LINK_NO_ANSWER;
+        if (answered) {
+            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
+                                                : HITEC_RX_LINK_ACK;
+        }
+        hitec_rx_link_done(&s_hitec_rx_link, result, now_ms());
+    }
+    atomic_store(&s_hitec_rx_mark,
+                 (unsigned)hitec_rx_link_mark(&s_hitec_rx_link));
+}
+
 void sense_link_service(bool idle, bench_state_t *bench)
 {
     const sense_setup_t w = sense_wanted();

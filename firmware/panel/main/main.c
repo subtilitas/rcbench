@@ -2053,6 +2053,12 @@ void app_main(void)
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),
                 (uint8_t)atomic_load(&s_tone_unheld));
+            /* Hitec D receive to the control task, and what the IOmcu
+             * holds of it back to SETUP's row. */
+            atomic_store(&s_hitec_rx_want,
+                         (unsigned)settings_get_int(SET_HITEC_RX));
+            settings_screen_set_hitec_rx(
+                (uint8_t)atomic_load(&s_hitec_rx_mark));
             if (servo_link_take_sweep_refused()) {
                 servo_screen_sweep_refused();
             }

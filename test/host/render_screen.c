@@ -35,6 +35,7 @@
 #include "sense_link.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "hitec_rx_link.h"
 #include "balance_screen.h"
 #include "battery_screen.h"
 #include "analyser_screen.h"
@@ -3291,7 +3292,8 @@ int main(int argc, char **argv)
     if (strcmp(view, "setup-interfaces") == 0
         || strcmp(view, "setup-sensors") == 0
         || strcmp(view, "setup-unheld") == 0
-        || strcmp(view, "setup-tap") == 0) {
+        || strcmp(view, "setup-tap") == 0
+        || strcmp(view, "setup-prog") == 0) {
         setup_tile(SET_CAT_IFACE);
         if (strcmp(view, "setup-unheld") == 0) {
             /* The pins refused: their two rows, and the INA3221 the page
@@ -3312,6 +3314,15 @@ int main(int argc, char **argv)
             drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
             drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
             drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
+        } else if (strcmp(view, "setup-prog") == 0) {
+            /* The list's end: PROG PORT and Hitec D receive at PRECHARGE,
+             * marked as an IOmcu older than 4.24 leaves it. */
+            settings_set(SET_HITEC_RX, 1.0f);
+            settings_screen_set_hitec_rx(HITEC_RX_LINK_OLD);
+            for (int k = 0; k < 6; ++k) {
+                drag(300, UI_BAND_H + 340,
+                     UI_BAND_H + 340 - (5 * 58 + 8));
+            }
         }
     }
 

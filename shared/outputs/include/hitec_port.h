@@ -73,8 +73,18 @@
  * that is taken is acknowledged, and what became of it is on the page:
  * LINK_HT_RESULT's high byte says why it started nothing, or 0.
  *
+ * Receive mode (4.24).  Write register 23 (LINK_HT_W_RX_MODE) says how a
+ * D series line receives from the next OPEN on: PULL-UP, released for the
+ * answer with a pull-up on the board, or PRECHARGE, the IOmcu's sampler
+ * (protocols/hitec/include/hitec_pre.h).  The OPEN takes the register's
+ * value with the family; a classic OPEN ignores it.  On a PRECHARGE line a
+ * LISTEN or POWER that answers and a receive window above
+ * HITEC_PRE_WINDOW_MAX_US are refused with LINK_HITEC_REF_RANGE.  A
+ * PRECHARGE transaction started with the supply asked on is cut when the
+ * supply is no longer asked on or the PD mini stops answering.
+ *
  * Nothing here is kept over a restart of the IOmcu: after one the port is
- * free.
+ * free and the register reads PULL-UP.
  *
  * Pure logic: the pin, the driver and the supply are behind
  * hitec_port_hw_t.
@@ -122,10 +132,11 @@ typedef struct {
      *  OUT_MAX_PIN while it has none. */
     uint8_t (*pin)(void *ctx, uint8_t port);
     /** Take @p pin of @p port from the generator and open the wire driver
-     *  on it for @p family and @p drive, released.  False when the driver
-     *  gets no resources; give() returns the pin. */
+     *  on it for @p family, @p drive and the receive mode @p rx
+     *  (hitec_rx_mode_t; PULL-UP for classic), released.  False when the
+     *  driver gets no resources; give() returns the pin. */
     bool (*take)(void *ctx, uint8_t port, uint8_t pin, uint8_t family,
-                 uint8_t drive);
+                 uint8_t drive, uint8_t rx);
     /** Close the wire driver and give the pin back to the generator. */
     void (*give)(void *ctx);
     /** Cut the running transaction: the next poll() hands back what came,
@@ -181,6 +192,10 @@ typedef struct {
     uint8_t  keyed;         /**< the last transaction puts a byte out */
     uint8_t  cutting;       /**< the driver was told to abort */
     uint8_t  off_seen;      /**< POWER: the supply read off */
+    uint8_t  rx_mode;       /**< LINK_HT_W_RX_MODE as written */
+    uint8_t  rx_line;       /**< the receive mode of the line, from its
+                                 OPEN */
+    uint8_t  supply_on;     /**< the supply was asked on at the start */
 } hitec_port_t;
 
 /** Prepare a free port.  False when @p hw names no port or lacks a
@@ -191,8 +206,9 @@ bool hitec_port_init(hitec_port_t *p, const hitec_port_hw_t *hw);
 /**
  * A write of the page: 0, or the LINK_NACK_* reason with nothing changed.
  * A window that starts in registers 0 to 3 is a command and has to be
- * exactly those 4.  Registers 4 to 22 are taken in any windows; 23 and up
- * are LINK_NACK_READ_ONLY.  A VIEW above the last is LINK_NACK_BAD_VALUE.
+ * exactly those 4.  Registers 4 to 23 are taken in any windows; 24 and up
+ * are LINK_NACK_READ_ONLY.  A VIEW or an RX_MODE above the last is
+ * LINK_NACK_BAD_VALUE.
  */
 uint8_t hitec_port_write(hitec_port_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, uint32_t now_ms);

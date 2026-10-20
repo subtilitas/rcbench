@@ -18,14 +18,15 @@
 
 /* The port's pin from the generator to the wire driver.  The port says it
  * holds the pin, so ports_apply() releases it and leaves it unbound; the
- * open leaves the pad a released input with the family's pull. */
+ * open leaves the pad a released input with the family's pull.  PRECHARGE
+ * claims the sampler as well (hitec_line.h). */
 bool hitec_hw_take(void *ctx, uint8_t port, uint8_t pin, uint8_t family,
-                   uint8_t drive)
+                   uint8_t drive, uint8_t rx)
 {
     (void)ctx;
     (void)port;
     ports_apply();
-    return hitec_line_open(&s_hitec_line, pin, family, drive)
+    return hitec_line_open_rx(&s_hitec_line, pin, family, drive, rx)
            == HITEC_LINE_OK;
 }
 

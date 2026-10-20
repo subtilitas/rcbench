@@ -6,6 +6,8 @@
  */
 #include "settings_rig.h"
 
+#include "hitec_rx_link.h"
+
 /* ---------------------------------------------------------------- screen */
 
 TEST_CASE(screen_switches_category_and_renders)
@@ -763,18 +765,19 @@ TEST_CASE(setup_changes_no_held_setting)
 
 /* ------------------------------------------------------------ headings */
 
-/* INTERFACES carries four headings, each above the first row of its
+/* INTERFACES carries five headings, each above the first row of its
  * section; no other list has one. */
-TEST_CASE(interfaces_has_four_headings_above_its_sections)
+TEST_CASE(interfaces_has_five_headings_above_its_sections)
 {
     fresh_hub();
     setting_id_t ids[64];
     const int n = settings_in_category(SET_CAT_IFACE, ids, 64);
-    CHECK_EQ(settings_screen_rows(SET_CAT_IFACE), n + 4);
-    static const setting_id_t first[4] = { SET_INA228_EN, SET_TONE_EN,
-                                           SET_VIBE_EN, SET_PDMINI_EN };
+    CHECK_EQ(settings_screen_rows(SET_CAT_IFACE), n + 5);
+    static const setting_id_t first[5] = { SET_INA228_EN, SET_TONE_EN,
+                                           SET_VIBE_EN, SET_PDMINI_EN,
+                                           SET_HITEC_RX };
     int prev = -1;
-    for (int h = 0; h < 4; ++h) {
+    for (int h = 0; h < 5; ++h) {
         const int row = settings_screen_row_of(SET_CAT_IFACE,
                                                row_of(first[h]));
         /* The heading stands on the row above, the section's first. */
@@ -782,6 +785,8 @@ TEST_CASE(interfaces_has_four_headings_above_its_sections)
         CHECK_EQ(row, row_of(first[h]) + h + 1);
         prev = row;
     }
+    /* Hitec D receive is the last row, alone under PROG PORT. */
+    CHECK_EQ(row_of(SET_HITEC_RX), n - 1);
     CHECK_EQ(settings_screen_row_of(SET_CAT_IFACE, 0), 1);
     CHECK_EQ(settings_screen_row_of(SET_CAT_IFACE, n), -1);
     for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
@@ -792,6 +797,31 @@ TEST_CASE(interfaces_has_four_headings_above_its_sections)
                                                       NULL, 0));
         }
     }
+}
+
+/* Hitec D receive is marked while the IOmcu does not hold it, and not by
+ * the sensor or tap marks; HELD clears it. */
+TEST_CASE(the_hitec_receive_row_is_marked_as_the_iomcu_holds_it)
+{
+    fresh_hub();
+    settings_screen_set_unheld(0xFFFFu, 0xFFu);
+    CHECK(!settings_screen_unheld(SET_HITEC_RX));
+    settings_screen_set_unheld(0u, 0u);
+    for (int m = HITEC_RX_LINK_PENDING; m <= HITEC_RX_LINK_OLD; ++m) {
+        settings_screen_set_hitec_rx((uint8_t)m);
+        CHECK(settings_screen_unheld(SET_HITEC_RX));
+        CHECK(!settings_screen_unheld(SET_PDMINI_BAUD));
+    }
+    settings_screen_set_hitec_rx(HITEC_RX_LINK_HELD);
+    CHECK(!settings_screen_unheld(SET_HITEC_RX));
+    /* Default PULL-UP; a switch that wraps round. */
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
+    CHECK_EQ(settings_def(SET_HITEC_RX)->option_count, 2);
+    CHECK(settings_cycles(SET_HITEC_RX));
+    settings_adjust(SET_HITEC_RX, 1);
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 1);
+    settings_adjust(SET_HITEC_RX, 1);
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
 }
 
 /* The heading shows its text in the accent colour in both languages, and
@@ -827,7 +857,8 @@ TEST_CASE(a_heading_shows_its_text_and_has_no_keys)
 
 int main(void)
 {
-    RUN(interfaces_has_four_headings_above_its_sections);
+    RUN(interfaces_has_five_headings_above_its_sections);
+    RUN(the_hitec_receive_row_is_marked_as_the_iomcu_holds_it);
     RUN(a_heading_shows_its_text_and_has_no_keys);
     RUN(a_held_setting_is_left_by_every_call_that_changes_one);
     RUN(setup_changes_no_held_setting);

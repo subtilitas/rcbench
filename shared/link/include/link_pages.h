@@ -104,7 +104,11 @@ typedef enum {
  * an older IOmcu refuses both with LINK_NACK_BAD_PAGE, which the panel
  * answers by saying a USB (Universal Serial Bus) load is needed.  From
  * 4.23 HITEC (0x34) runs raw Hitec wire transactions on a programming
- * port; an older IOmcu refuses it with LINK_NACK_BAD_PAGE.  An
+ * port; an older IOmcu refuses it with LINK_NACK_BAD_PAGE.  From 4.24
+ * HITEC takes the receive mode of a D series line in write register 23
+ * (LINK_HT_W_RX_MODE); a 4.23 IOmcu refuses that write with
+ * LINK_NACK_READ_ONLY and receives with the pull-up, which the panel says
+ * on SETUP when the mode asked is PRECHARGE.  An
  * IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -117,7 +121,7 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 23u
+#define LINK_PROTOCOL_MINOR 24u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -183,6 +187,10 @@ typedef enum {
  *  LINK_NACK_BAD_PAGE, and its KST page knows no other holder of the
  *  programming port. */
 #define LINK_MINOR_HITEC 23u
+/** The first minor whose HITEC page takes LINK_HT_W_RX_MODE.  Minor 23
+ *  refuses the write with LINK_NACK_READ_ONLY and receives with the
+ *  pull-up. */
+#define LINK_MINOR_HITEC_RX 24u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1816,7 +1824,8 @@ enum {
     LINK_HT_I_SPAN_HI  = 23,
     LINK_HT_I_BIT_NS   = 24, /**< the bit time of the open line, ns; 0
                                   while none is open */
-    LINK_HT_I_LINE     = 25, /**< the open line, as LINK_HT_W_LINE */
+    LINK_HT_I_LINE     = 25, /**< the open line, as LINK_HT_W_LINE, and
+                                  LINK_HT_LINE_PRECHARGE */
     LINK_HT_I_PIN      = 26, /**< the port's pin, 0xFFFF while none */
     LINK_HT_I_WINDOW_LO = 27, /**< the window the capture asked, us */
     LINK_HT_I_WINDOW_HI = 28,
@@ -1865,8 +1874,26 @@ enum {
     LINK_HT_W_VIEW = 22,      /**< what LINK_HT_DATA shows
                                    (link_hitec_view_t).  Not staged: in
                                    force when written */
-    LINK_HT_W_COUNT = 23,
+    LINK_HT_W_RX_MODE = 23,   /**< (4.24) how a D series line receives
+                                   (link_hitec_rx_t), for every OPEN from
+                                   the next on; a classic OPEN ignores it.
+                                   Not staged; LINK_HITEC_RX_PULL_UP at
+                                   start */
+    LINK_HT_W_COUNT = 24,
 };
+
+/** LINK_HT_W_RX_MODE. */
+typedef enum {
+    /** Released for the answer; a pull-up on the board lifts the line. */
+    LINK_HITEC_RX_PULL_UP = 0,
+    /** No pull-up: the IOmcu precharges the line and samples it
+     *  (protocols/hitec/include/hitec_pre.h). */
+    LINK_HITEC_RX_PRECHARGE = 1,
+    LINK_HITEC_RX_COUNT
+} link_hitec_rx_t;
+
+/** LINK_HT_I_LINE: the open line receives by PRECHARGE. */
+#define LINK_HT_LINE_PRECHARGE 0x0100u
 
 /** Registers of the command, from LINK_HT_W_CMD: one frame. */
 #define LINK_HT_W_CMD_FRAME 4u
@@ -1909,6 +1936,8 @@ enum {
     LINK_HT_F_CAPTURE = 0x0020u, /**< the page holds a capture */
     LINK_HT_F_KEY     = 0x0040u, /**< the last transaction put a byte on
                                       the wire */
+    LINK_HT_F_PRECHARGE = 0x0080u, /**< (4.24) LINK_HT_W_RX_MODE holds
+                                        LINK_HITEC_RX_PRECHARGE */
 };
 
 /** LINK_HT_CAP bits 8-11, as hitec_capture_t has them. */

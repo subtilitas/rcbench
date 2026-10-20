@@ -7,9 +7,16 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "hitec_pre.h"
+
 _Static_assert(LINK_HT_W_LINE + LINK_HT_W_STAGED == LINK_HT_W_VIEW,
                "staged registers");
-_Static_assert(LINK_HT_W_VIEW + 1 == LINK_HT_W_COUNT, "the view register");
+_Static_assert(LINK_HT_W_VIEW + 1 == LINK_HT_W_RX_MODE
+               && LINK_HT_W_RX_MODE + 1 == LINK_HT_W_COUNT,
+               "the view and the receive mode");
+_Static_assert((int)LINK_HITEC_RX_PULL_UP == (int)HITEC_RX_PULL_UP
+               && (int)LINK_HITEC_RX_PRECHARGE == (int)HITEC_RX_PRECHARGE,
+               "the receive mode crosses to the driver unchanged");
 _Static_assert(LINK_HT_BYTES + HITEC_RX_MAX / 2 == LINK_HT_DATA,
                "the bytes on the page");
 _Static_assert(LINK_HT_DATA + 16 == LINK_HT_COUNT
@@ -117,7 +124,10 @@ static void cut(hitec_port_t *p)
 /* Start @p x on the line: BUSY, or OPEN with LINK_HITEC_RESULT_START. */
 static void start(hitec_port_t *p, const hitec_xfer_t *x, uint8_t keyed)
 {
+    supply_port_view_t v;
+
     p->xfer = *x;
+    p->supply_on = supply_view(p, &v) && v.asked_on ? 1u : 0u;
     memset(&p->info, 0, sizeof(p->info));
     p->start_us = p->hw.driver.now_us(p->hw.driver.ctx);
     if (!p->hw.driver.start(p->hw.driver.ctx, x)) {
@@ -282,6 +292,8 @@ static link_hitec_refusal_t open_port(hitec_port_t *p, uint8_t port,
     p->pin = pin;
     p->family = family;
     p->drive = drive;
+    p->rx_line = family == (uint8_t)HITEC_D ? p->rx_mode
+                                       : (uint8_t)LINK_HITEC_RX_PULL_UP;
     p->count = 0;
     p->has_cap = 0;
     p->keyed = 0;
@@ -402,6 +414,13 @@ static link_hitec_refusal_t transaction(hitec_port_t *p, link_hitec_op_t op,
     if (puts_byte_out(op, &x) && !key) {
         return LINK_HITEC_REF_NO_KEY;
     }
+    /* What the sampler does not run: an answer, a window past its
+     * buffer. */
+    if (p->rx_line == (uint8_t)LINK_HITEC_RX_PRECHARGE
+        && op != LINK_HITEC_OP_LEVEL && x.window_us != 0u
+        && (x.answer != 0u || x.window_us > HITEC_PRE_WINDOW_MAX_US)) {
+        return LINK_HITEC_REF_RANGE;
+    }
     p->dec = (uint8_t)(ST(p, LINK_HT_W_DECODE) & 0x3u);
     p->dec_arg = (uint8_t)(ST(p, LINK_HT_W_DECODE) >> 8);
     if (op == LINK_HITEC_OP_POWER) {
@@ -490,8 +509,12 @@ uint8_t hitec_port_write(hitec_port_t *p, uint8_t off, uint8_t n,
     if ((unsigned)off + n > LINK_HT_W_COUNT) {
         return LINK_NACK_READ_ONLY;
     }
-    if ((unsigned)off + n > LINK_HT_W_VIEW
+    if ((unsigned)off <= LINK_HT_W_VIEW && (unsigned)off + n > LINK_HT_W_VIEW
         && in[LINK_HT_W_VIEW - off] >= (uint16_t)LINK_HITEC_VIEW_COUNT) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    if ((unsigned)off + n > LINK_HT_W_RX_MODE
+        && in[LINK_HT_W_RX_MODE - off] >= (uint16_t)LINK_HITEC_RX_COUNT) {
         return LINK_NACK_BAD_VALUE;
     }
     for (unsigned i = 0; i < n; ++i) {
@@ -499,7 +522,9 @@ uint8_t hitec_port_write(hitec_port_t *p, uint8_t off, uint8_t n,
 
         if (at == LINK_HT_W_VIEW) {
             p->view = (uint8_t)in[i];
-        } else {
+        } else if (at == LINK_HT_W_RX_MODE) {
+            p->rx_mode = (uint8_t)in[i];
+        } else if (at - LINK_HT_W_LINE < LINK_HT_W_STAGED) {
             p->staged[at - LINK_HT_W_LINE] = in[i];
         }
     }
@@ -523,6 +548,8 @@ static uint16_t state_reg(const hitec_port_t *p)
     r |= supply_view(p, &v) ? LINK_HT_F_RAIL : 0u;
     r |= p->has_cap != 0u ? LINK_HT_F_CAPTURE : 0u;
     r |= p->keyed != 0u ? LINK_HT_F_KEY : 0u;
+    r |= p->rx_mode == (uint8_t)LINK_HITEC_RX_PRECHARGE ? LINK_HT_F_PRECHARGE
+                                                        : 0u;
     return r;
 }
 
@@ -559,7 +586,11 @@ static void data_regs(const hitec_port_t *p, uint16_t *all)
         put32(&all[LINK_HT_I_SPAN_LO], p->info.span_us);
         all[LINK_HT_I_BIT_NS] =
             p->has_pin != 0u ? (uint16_t)(p->info.bit_ns & 0xFFFFu) : 0u;
-        all[LINK_HT_I_LINE] = LINK_HT_LINE_OF(p->family, p->drive);
+        all[LINK_HT_I_LINE] =
+            (uint16_t)(LINK_HT_LINE_OF(p->family, p->drive)
+                       | (p->rx_line == (uint8_t)LINK_HITEC_RX_PRECHARGE
+                              ? LINK_HT_LINE_PRECHARGE
+                              : 0u));
         all[LINK_HT_I_PIN] = p->has_pin != 0u ? p->pin : (uint16_t)0xFFFFu;
         put32(&all[LINK_HT_I_WINDOW_LO], p->xfer.window_us);
         break;
@@ -610,9 +641,17 @@ void hitec_port_read(const hitec_port_t *p, uint8_t off, uint8_t n,
 
 static void step_busy(hitec_port_t *p, uint32_t now_ms)
 {
+    supply_port_view_t v;
+
     if (p->hw.driver.poll(p->hw.driver.ctx, &p->cap)) {
         finish(p);
         return;
+    }
+    /* The sampler precharges the line every 1.1 us: not into a servo
+     * whose supply went off under it. */
+    if (p->rx_line == (uint8_t)LINK_HITEC_RX_PRECHARGE && p->supply_on != 0u
+        && (!supply_view(p, &v) || !v.asked_on)) {
+        cut(p);
     }
     if ((uint32_t)(now_ms - p->t0_ms) >= HITEC_PORT_BUSY_MS) {
         cut(p);
@@ -666,7 +705,7 @@ void hitec_port_step(hitec_port_t *p, bool safe, bool stop, uint32_t now_ms)
         if ((uint32_t)(now_ms - p->t0_ms) >= HITEC_PORT_STOP_MS) {
             p->has_pin = 1;
             if (!p->hw.take(p->hw.ctx, p->port, p->pin, p->family,
-                            p->drive)) {
+                            p->drive, p->rx_line)) {
                 go_free(p);
                 p->result = (uint8_t)LINK_HITEC_RESULT_NO_LINE;
             } else {

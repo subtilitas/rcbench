@@ -138,6 +138,8 @@ static bool poll_bench(bench_state_t *bench)
         /* And the programming ports': the SERVO screen's target and the
          * port's pulse switch. */
         prog_link_service();
+        /* And how a Hitec D series line receives. */
+        hitec_rx_service();
         if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
              * The IOmcu is in failsafe, has lost the heartbeat or
@@ -455,6 +457,10 @@ static void link_came_up(const link_msg_t *reply)
     /* And the programming ports' (4.13): not known until it is read. */
     prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     prog_drive_publish();
+    /* And the Hitec receive mode (4.24): owed again, an IOmcu that
+     * started again holds PULL-UP. */
+    hitec_rx_link_came_up(&s_hitec_rx_link,
+                          reply->regs[LINK_ID_PROTOCOL_MINOR]);
 
     /*
      * A board this build ships no catalogue for describes its own pins, so an
@@ -657,6 +663,9 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             servo_link_surfaces_publish();
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
+            hitec_rx_link_lost(&s_hitec_rx_link);
+            atomic_store(&s_hitec_rx_mark,
+                         (unsigned)hitec_rx_link_mark(&s_hitec_rx_link));
             iface_pins_publish(false);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
             bench->servo_new = false;

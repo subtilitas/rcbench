@@ -24,8 +24,13 @@
  *   r <page> <off> [n]            read n registers (1 to 32, default 1)
  *   w <page> <off> <v> [v ...]    write up to 32 registers
  *   hitec [state]                 the HITEC page, decoded
- *   hitec open <port> c|d [od|pp] OPEN: classic or D series, open drain
- *                                 (default) or push-pull
+ *   hitec open <port> c|d [od|pp] [pu|pre]
+ *                                 OPEN: classic or D series, open drain
+ *                                 (default) or push-pull; for the D series
+ *                                 pu or pre writes the receive mode,
+ *                                 PULL-UP or PRECHARGE, first (register
+ *                                 23), and without either the mode stays
+ *                                 as the page holds it
  *   hitec close|abort|clear <port>
  *   hitec send <port> [lead=<us>] [gap=<bits>] [window=<us>] [rx=<n>]
  *                     [dec=<dec>] <byte> [<byte> ...]

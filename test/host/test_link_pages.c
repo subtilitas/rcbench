@@ -1002,11 +1002,11 @@ TEST_CASE(hitec_extends_the_map_without_moving_it)
 {
     CHECK_EQ(LINK_MINOR_HITEC, 23u);
     CHECK(LINK_MINOR_HITEC > LINK_MINOR_UPDATE);
-    CHECK_EQ(LINK_PROTOCOL_MINOR, LINK_MINOR_HITEC);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_HITEC);
     CHECK_EQ(LINK_PAGE_PROG, 0x33);
     CHECK_EQ(LINK_PAGE_HITEC, 0x34);
     CHECK_EQ(LINK_HT_COUNT, 32);
-    CHECK_EQ(LINK_HT_W_COUNT, 23);
+    CHECK(LINK_HT_W_COUNT >= 23);
     CHECK_EQ(LINK_HT_W_CMD_FRAME, 4u);
     CHECK_EQ(LINK_HT_W_LINE, 4);
     CHECK_EQ(LINK_HT_W_STAGED, 18u);
@@ -1022,6 +1022,33 @@ TEST_CASE(hitec_extends_the_map_without_moving_it)
     CHECK(LINK_HITEC_WRITE_KEY != LINK_KST_WRITE_KEY);
     CHECK_EQ(LINK_HT_W_CMD_OF(LINK_HITEC_OP_SEND, 2u), 0x0203u);
     CHECK_EQ(LINK_HT_LINE_OF(1u, 1u), 0x0011u);
+}
+
+/*
+ * Protocol 4.24 adds write register 23 to HITEC, the receive mode of a
+ * D series line, after VIEW, and moves nothing: a 4.23 IOmcu refuses a
+ * write that reaches it, and reads no further register.  The flag and the
+ * line bit take bits that read 0 under 4.23.
+ */
+TEST_CASE(the_hitec_receive_mode_is_a_register_after_view)
+{
+    CHECK_EQ(LINK_MINOR_HITEC_RX, 24u);
+    CHECK_EQ(LINK_MINOR_HITEC_RX, LINK_MINOR_HITEC + 1u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, LINK_MINOR_HITEC_RX);
+    CHECK_EQ(LINK_HT_W_VIEW, 22);
+    CHECK_EQ(LINK_HT_W_RX_MODE, 23);
+    CHECK_EQ(LINK_HT_W_COUNT, 24);
+    CHECK((int)LINK_HT_W_COUNT <= (int)LINK_HT_COUNT);
+    CHECK_EQ(LINK_HITEC_RX_PULL_UP, 0);
+    CHECK_EQ(LINK_HITEC_RX_PRECHARGE, 1);
+    CHECK_EQ(LINK_HITEC_RX_COUNT, 2);
+    CHECK_EQ(LINK_HT_F_PRECHARGE, 0x0080u);
+    /* Clear of the state, the flags before it and the port. */
+    CHECK_EQ(LINK_HT_F_PRECHARGE & (0x7u | LINK_HT_F_STOPPED | LINK_HT_F_RAIL
+                                    | LINK_HT_F_CAPTURE | LINK_HT_F_KEY
+                                    | 0xF000u),
+             0u);
+    CHECK_EQ(LINK_HT_LINE_PRECHARGE & LINK_HT_LINE_OF(1u, 1u), 0u);
 }
 
 /*
@@ -1602,7 +1629,7 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 23u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 24u);
     CHECK_EQ(LINK_MINOR_UPDATE, 22u);
     CHECK(LINK_MINOR_UPDATE > LINK_MINOR_REFUSED);
 
@@ -1678,6 +1705,7 @@ int main(void)
     RUN(kst_extends_the_map_without_moving_it);
     RUN(prog_extends_the_map_without_moving_it);
     RUN(hitec_extends_the_map_without_moving_it);
+    RUN(the_hitec_receive_mode_is_a_register_after_view);
     RUN(the_kst_staged_check_tells_a_change_a_swap_and_a_length);
     RUN(a_4_11_coprocessor_has_no_kst_page_and_says_so);
     RUN(the_sense_pages_are_served_and_refuse_whole);

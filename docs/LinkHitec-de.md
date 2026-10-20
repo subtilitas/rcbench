@@ -10,7 +10,8 @@ Pulsweitenmodulation.
 Hitec ist ein Name oder eine Marke seines Inhabers. Er steht hier nur, um zu
 sagen, mit welchen Servos die Page arbeitet.
 
-Die Hitec-Page (`HITEC`, 0x34) ist neu in 4.23. Sie fährt rohe Transaktionen
+Die Hitec-Page (`HITEC`, 0x34) ist neu in 4.23; das Schreibregister 23, der
+Empfangsmodus einer Leitung der D-Serie, ist neu in 4.24. Die Page fährt rohe Transaktionen
 der Hitec-Servoleitung aus [`protocols/hitec`](../protocols/hitec/README.md)
 auf einem Port von [PROG](Link-de.md#die-programmierports): classic (HS-5xxx,
 HS-7xxx, 19.200 bit/s) oder D-Serie (115.200 bit/s). Die Page hält keine
@@ -33,11 +34,14 @@ OPEN nimmt den Port:
 2. Der PWM-Generator gibt den Pin ab. Der Leitungstreiber öffnet die Leitung
    darauf als losgelassenen Eingang: classic mit dem Pull-down des Pads, die
    D-Serie mit seinem Pull-up und invertiertem Eingang. Die internen Pulls
-   haben 50 bis 80 kOhm; die D-Serie braucht einen Pull-up auf der Platine.
+   haben 50 bis 80 kOhm; die D-Serie empfängt mit einem Pull-up auf der
+   Platine oder per PRECHARGE ([Empfangsmodus](#empfangsmodus)).
 3. OPEN. Ein Treiber, der keine PIO-State-Machine (PIO: Programmable
    Input/Output), keine 29 Worte Programmspeicher oder keine 2 DMA-Kanäle
    (Direct Memory Access) bekommt, lässt den Port mit Ergebnis 5 (`NO_LINE`)
-   frei.
+   frei. PRECHARGE braucht eine zweite State-Machine, bei 150 MHz 7 Worte
+   Programmspeicher in einem anderen PIO-Block und einen dritten DMA-Kanal;
+   ohne sie bleibt der Port ebenfalls mit `NO_LINE` frei.
 
 In OPEN startet ein Kommando eine Transaktion (BUSY). Der Port steht wieder
 in OPEN, wenn der Treiber den Mitschnitt zurückgibt. Der Treiber beendet eine
@@ -48,6 +52,58 @@ CLOSE gibt den Port aus jedem Zustand außer frei zurück: eine laufende
 Transaktion wird abgeschnitten, die Leitung geschlossen und der Pin gehört
 dem Generator. Die Versorgung bleibt, wie sie ist. ABORT schneidet ab, was
 läuft, und behält den Port.
+
+## Empfangsmodus
+
+Das Schreibregister 23 (`RX_MODE`) sagt, wie eine Leitung der D-Serie die
+Antwort des Servos empfängt, ab dem nächsten OPEN. Das OPEN nimmt den Wert,
+den das Register hält, wenn das OPEN geschrieben wird; eine Änderung bei
+offener Leitung wartet auf das nächste OPEN. Ein OPEN einer classic-Leitung
+übergeht das Register: ein classic-Servo treibt seinen High-Pegel selbst,
+über etwa 1 kOhm, und antwortet an einem Open-Drain-Port ohne Pull-up und
+ohne Precharge (gemessen an einem HS-7955TG, einem HS-5955TG und einem
+HS-5645MG bei 5,0 V Versorgung; die Leitungsspannungen sind nicht gemessen).
+
+| Wert | Name | Wie die Antwort empfangen wird |
+| ---: | --- | --- |
+| 0 | `PULL-UP` | die Leitung losgelassen; ein Pull-up von 2,2 kOhm von der Signalleitung zur Servoversorgung hebt sie. Die Voreinstellung und der Wert nach einem Neustart des IOmcu |
+| 1 | `PRECHARGE` | kein Pull-up. Alle 1086,7 ns treibt der IOmcu das Pad 100,0 ns auf High, lässt es los und tastet es 113,3 ns nach dem Loslassen ab |
+
+Auf einer PRECHARGE-Leitung:
+
+- Ein SEND mit Empfangsfenster geht ohne Empfänger hinaus. Der erste
+  Durchlauf der Hauptschleife des IOmcu, der die Anfrage beendet findet,
+  gibt das Pad an eine zweite State-Machine: 2 mA Treiberstärke, langsame
+  Flanke, Eingang nicht invertiert, der Pull-up des Pads wie zuvor. Ein
+  DMA-Kanal schreibt die Abtastungen in den Speicher, und jeder Durchlauf
+  dekodiert die seit dem letzten geschriebenen als invertiertes 8N1
+  (`protocols/hitec/include/hitec_pre.h`).
+- Ein LISTEN und das LISTEN eines POWER tasten ab ihrem Start ab.
+- Der Mitschnitt ist der einer PULL-UP-Leitung: dieselben Register,
+  dieselben Dekoder, dieselben Ergebniscodes. Die Zeit eines Bytes trägt
+  den Start des Abtasters, abgelesen am Mikrosekunden-Timer des IOmcu,
+  stimmt also auf 1 us; die Flanke eines Startbits liegt höchstens eine
+  halbe Abtastung, 543 ns, neben der angegebenen Zeit.
+- Mit `RANGE` abgewiesen: ein LISTEN oder POWER, das antwortet, und ein
+  Empfangsfenster über 30.000 us.
+- Ein SEND ohne Fenster (ein Schreiben der D-Serie) und ein LEVEL laufen wie
+  auf einer PULL-UP-Leitung: ohne Abtaster.
+- Am Ende des Empfangs, bei ABORT, CLOSE und einem Stopp hält der Abtaster
+  mit losgelassenem Pad an, und Steuer- und Pad-Register des Pins werden
+  zurückgeschrieben, wie sie waren.
+- Ein Empfang, der bei eingeschalteter Versorgung startete, wird im
+  Durchlauf abgeschnitten (Ergebnis 6, `CUT`), der die Versorgung
+  ausgeschaltet oder keinen antwortenden PD mini findet. Einer, der bei
+  ausgeschalteter Versorgung oder ohne PD mini startete, läuft bis zu
+  seinem Ende.
+
+Bit 7 von `STATE` liest das Register; Register 25 von `VIEW` 2, Bit 8, sagt,
+dass die offene Leitung per PRECHARGE empfängt. Ein IOmcu mit 4.23 weist
+ein Schreiben, das Register 23 erreicht, mit READ_ONLY ab und empfängt mit
+dem Pull-up; das Panel markiert dann die Einstellung unter SETUP
+([ANSCHLÜSSE: der Programmierport](Screens-de.md#anschlüsse-der-programmierport)).
+Was gemessen ist und was nicht:
+[`protocols/hitec`](../protocols/hitec/README.md#receive-by-precharge-and-sample).
 
 ## Transaktionen
 
@@ -133,7 +189,7 @@ Ein Lesen gibt diese Register:
 
 | Register | Name | Liest |
 | ---: | --- | --- |
-| 0 | `STATE` | Bits 0 bis 2 der Zustand: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 ein PD mini antwortet. Bit 5 die Page hält einen Mitschnitt. Bit 6 die letzte Transaktion hat ein Byte auf die Leitung gelegt. Bits 12 bis 15 der Port |
+| 0 | `STATE` | Bits 0 bis 2 der Zustand: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 ein PD mini antwortet. Bit 5 die Page hält einen Mitschnitt. Bit 6 die letzte Transaktion hat ein Byte auf die Leitung gelegt. Bit 7 `RX_MODE` ist PRECHARGE (4.24). Bits 12 bis 15 der Port |
 | 1 | `SEQ` | die `SEQ` des letzten angenommenen Kommandos; 0 beim Start |
 | 2 | `OP` | Bits 12 bis 15 die letzte gestartete Operation, Bits 0 bis 11 die seit OPEN gestarteten Transaktionen, bei 4095 gehalten |
 | 3 | `RESULT` | niederwertiges Byte das Ergebnis dieser Operation: 0 keins, 1 läuft, 2 fertig, 3 `SUPPLY`, 4 `START`, 5 `NO_LINE`, 6 `CUT`. Höherwertiges Byte, warum das letzte angenommene Kommando nichts gestartet hat, 0 wenn es gestartet hat |
@@ -153,7 +209,7 @@ Ein Lesen gibt diese Register:
 | 20, 21 | vom Start bis zum Mitschnitt, us |
 | 22, 23 | die längste Zeit, die die Transaktion dauern konnte, us |
 | 24 | die Bitzeit der offenen Leitung, ns; 0, solange keine offen ist |
-| 25 | die Leitung: Bit 0 die Familie (0 classic, 1 D-Serie), Bit 4 der Treiber (0 Open Drain, 1 Push-Pull) |
+| 25 | die Leitung: Bit 0 die Familie (0 classic, 1 D-Serie), Bit 4 der Treiber (0 Open Drain, 1 Push-Pull), Bit 8 sie empfängt per PRECHARGE (4.24) |
 | 26 | der Pin des Ports; 0xFFFF, solange der Treiber keinen hält |
 | 27, 28 | das Fenster, das der Mitschnitt verlangt hat, us |
 | 29 | Bit k: das Stoppbit von Byte k wurde auf dem Startpegel abgetastet |
@@ -179,16 +235,17 @@ Ein Schreiben sieht andere Register:
 | 20 | `SUPPLY_MA` | POWER: 50 bis 3000 mA |
 | 21 | `OFF_MS` | POWER: 0 bis 10.000 ms |
 | 22 | `VIEW` | 0 bis 2. Gilt, sobald geschrieben, und fällt nicht unter die Prüfsumme |
+| 23 | `RX_MODE` | 0 PULL-UP, 1 PRECHARGE: wie eine Leitung der D-Serie empfängt, ab dem nächsten OPEN (4.24). Fällt nicht unter die Prüfsumme; 0 nach einem Neustart |
 
 Die Prüfsumme ist die CRC-16 des Links (Cyclic Redundancy Check), mit
 0xFFFF begonnen, über das niederwertige und dann das höherwertige Byte jedes
 Registers (`link_kst_crc()`), wie auf der KST-Page.
 
 Register 0 bis 3 sind das Kommando: ein Frame, geschrieben als genau diese 4
-Register und ganz oder gar nicht angenommen. Register 4 bis 22 werden vor dem
-Kommando in beliebigen Fenstern geschrieben. Ein Schreiben, das Register 23
-oder höher erreicht, wird mit READ_ONLY abgewiesen, ein `VIEW` über 2 mit
-BAD_VALUE.
+Register und ganz oder gar nicht angenommen. Register 4 bis 23 werden vor dem
+Kommando in beliebigen Fenstern geschrieben. Ein Schreiben, das Register 24
+oder höher erreicht, wird mit READ_ONLY abgewiesen, ein `VIEW` über 2 oder
+ein `RX_MODE` über 1 mit BAD_VALUE, und das Fenster ändert nichts.
 
 Ein Frame mit einer anderen `SEQ` als der der Page plus 1, einer Operation 0
 oder über 8, einem gesetzten Bit außerhalb von Operation und Port oder einem
@@ -212,7 +269,7 @@ dieser Reihenfolge für eine Transaktion:
 | 9 | `STOPPED` | seither ein Stopp; erst CLEAR |
 | 5 | `UNSAFE` | dem Heartbeat wird nicht vertraut, oder der Link ist still |
 | 8 | `STAGED` | Register 4 bis 21 haben nicht die Prüfsumme, die `CRC` nennt |
-| 11 | `RANGE` | die bereitgestellte Transaktion ist keine, die die Leitung fährt, der Dekoder passt nicht zur Familie, oder ein reserviertes Bit ist gesetzt |
+| 11 | `RANGE` | die bereitgestellte Transaktion ist keine, die die Leitung fährt, der Dekoder passt nicht zur Familie, oder ein reserviertes Bit ist gesetzt; auf einer PRECHARGE-Leitung auch ein LISTEN oder POWER, das antwortet, oder ein Empfangsfenster über 30.000 us |
 | 13 | `NO_SUPPLY` | POWER ohne einen PD mini, der antwortet |
 | 12 | `SUPPLY_RANGE` | POWER: ein Sollwert oder die Auszeit außerhalb des Bereichs |
 | 3 | `HELD` | OPEN: die KST-Page hält den Port |

@@ -589,7 +589,7 @@ TEST_CASE(frames_and_windows_that_are_no_command_are_nacked)
     /* Registers past VIEW are read only; a view past the last refused. */
     CHECK_EQ(hitec_port_write(&g_port, LINK_HT_W_COUNT, 1, in, g_ms),
              LINK_NACK_READ_ONLY);
-    CHECK_EQ(hitec_port_write(&g_port, LINK_HT_W_VIEW, 2, in, g_ms),
+    CHECK_EQ(hitec_port_write(&g_port, LINK_HT_W_VIEW, 3, in, g_ms),
              LINK_NACK_READ_ONLY);
     in[0] = LINK_HITEC_VIEW_COUNT;
     CHECK_EQ(hitec_port_write(&g_port, LINK_HT_W_VIEW, 1, in, g_ms),

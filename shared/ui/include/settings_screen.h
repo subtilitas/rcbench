@@ -42,7 +42,16 @@ void settings_screen_invalidate(void);
  */
 void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows);
 
-/** Whether the row of @p id is marked by settings_screen_set_unheld(). */
+/**
+ * What the IOmcu holds of Hitec D receive (SET_HITEC_RX), a
+ * hitec_rx_link_mark_t: HITEC_RX_LINK_HELD draws the row plain, the others
+ * mark it as an unheld row; HITEC_RX_LINK_OLD says in its help line that
+ * the IOmcu receives with PULL-UP.
+ */
+void settings_screen_set_hitec_rx(uint8_t mark);
+
+/** Whether the row of @p id is marked by settings_screen_set_unheld() or
+ *  settings_screen_set_hitec_rx(). */
 bool settings_screen_unheld(setting_id_t id);
 
 /**

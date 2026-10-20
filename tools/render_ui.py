@@ -376,6 +376,9 @@ SCREENS = {
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
     # The same list past them, to the phase tap's rows, the tap enabled.
     "setup-tap": ("setup-tap.png", "setup", "dark"),
+    # The list's end: Hitec D receive at PRECHARGE under PROG PORT, marked
+    # as an IOmcu older than protocol 4.24 leaves it.
+    "setup-prog": ("setup-prog.png", "setup", "dark"),
     # The warning on leaving SETUP unsaved: one change, and twelve, of
     # which nine fit beside the count of the rest.
     "setup-leave": ("setup-leave.png", "setup", "dark"),

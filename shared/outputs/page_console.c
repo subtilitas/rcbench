@@ -358,6 +358,7 @@ static void say_flags(char *buf, size_t size, uint16_t st)
     static const struct { uint16_t bit; const char *name; } k[] = {
         { LINK_HT_F_STOPPED, "STOPPED" }, { LINK_HT_F_RAIL, "RAIL" },
         { LINK_HT_F_CAPTURE, "CAPTURE" }, { LINK_HT_F_KEY, "KEY" },
+        { LINK_HT_F_PRECHARGE, "PRECHARGE" },
     };
     size_t at = 0;
 
@@ -413,8 +414,11 @@ static void hitec_report(page_console_t *c, const char *what)
         }
     }
 #define RUN_AT(reg) ((reg) - LINK_HT_DATA)
-    say(c, "hitec line pin=%u line=0x%02X bit_ns=%u lead_ns=%lu span_us=%lu",
-        run[RUN_AT(LINK_HT_I_PIN)], run[RUN_AT(LINK_HT_I_LINE)],
+    say(c, "hitec line pin=%u line=0x%02X rx=%s bit_ns=%u lead_ns=%lu "
+        "span_us=%lu",
+        run[RUN_AT(LINK_HT_I_PIN)], run[RUN_AT(LINK_HT_I_LINE)] & 0xFFu,
+        (run[RUN_AT(LINK_HT_I_LINE)] & LINK_HT_LINE_PRECHARGE) != 0u ? "pre"
+                                                                     : "pu",
         run[RUN_AT(LINK_HT_I_BIT_NS)],
         (unsigned long)u32_of(run, RUN_AT(LINK_HT_I_LEAD_LO)),
         (unsigned long)u32_of(run, RUN_AT(LINK_HT_I_SPAN_LO)));
@@ -622,17 +626,41 @@ static void hitec_open(page_console_t *c, uint32_t port, char **tok,
                        unsigned n)
 {
     uint8_t family, drive = HITEC_DRIVE_OPEN_DRAIN;
+    bool has_drive = false;
+    int rx = -1;
 
-    if (n < 1u || n > 2u || (strcmp(tok[0], "c") != 0
-                             && strcmp(tok[0], "d") != 0)
-        || (n == 2u && strcmp(tok[1], "od") != 0
-            && strcmp(tok[1], "pp") != 0)) {
-        say(c, "err usage: hitec open <port> c|d [od|pp]");
+    if (n < 1u || n > 3u || (strcmp(tok[0], "c") != 0
+                             && strcmp(tok[0], "d") != 0)) {
+        say(c, "err usage: hitec open <port> c|d [od|pp] [pu|pre]");
         return;
     }
+    for (unsigned i = 1; i < n; ++i) {
+        if (!has_drive && rx < 0
+            && (strcmp(tok[i], "od") == 0 || strcmp(tok[i], "pp") == 0)) {
+            has_drive = true;
+            drive = tok[i][0] == 'p' ? (uint8_t)HITEC_DRIVE_PUSH_PULL
+                                     : (uint8_t)HITEC_DRIVE_OPEN_DRAIN;
+        } else if (rx < 0 && strcmp(tok[i], "pu") == 0) {
+            rx = (int)LINK_HITEC_RX_PULL_UP;
+        } else if (rx < 0 && strcmp(tok[i], "pre") == 0) {
+            rx = (int)LINK_HITEC_RX_PRECHARGE;
+        } else {
+            say(c, "err usage: hitec open <port> c|d [od|pp] [pu|pre]");
+            return;
+        }
+    }
     family = tok[0][0] == 'c' ? (uint8_t)HITEC_CLASSIC : (uint8_t)HITEC_D;
-    if (n == 2u && tok[1][0] == 'p') {
-        drive = HITEC_DRIVE_PUSH_PULL;
+    /* A classic servo drives its high level itself: no receive mode. */
+    if (family == (uint8_t)HITEC_CLASSIC && rx >= 0) {
+        say(c, "err pu and pre are for the D series only");
+        return;
+    }
+    if (rx >= 0) {
+        const uint16_t v = (uint16_t)rx;
+
+        if (!write_regs(c, LINK_PAGE_HITEC, LINK_HT_W_RX_MODE, 1, &v)) {
+            return;
+        }
     }
     memset(c->staged, 0, sizeof(c->staged));
     HST(c, LINK_HT_W_LINE) = LINK_HT_LINE_OF(family, drive);
@@ -852,7 +880,7 @@ static void cmd_hitec(page_console_t *c, char **tok, unsigned n)
 static void cmd_help(page_console_t *c)
 {
     say(c, "help | pages | r <page> <off> [n] | w <page> <off> <v>...");
-    say(c, "hitec [state] | hitec open <port> c|d [od|pp] | "
+    say(c, "hitec [state] | hitec open <port> c|d [od|pp] [pu|pre] | "
         "hitec close|abort|clear <port>");
     say(c, "hitec send <port> [lead=] [gap=] [window=] [rx=] [dec=] "
         "<byte>...");

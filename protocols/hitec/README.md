@@ -11,7 +11,7 @@ transactions on a programming port.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `hitec_wire.c`, `hitec_pio.c`, 2 headers under `include/` | C11 standard headers |
+| Core | `hitec_wire.c`, `hitec_pio.c`, `hitec_pre.c`, 3 headers under `include/` | C11 standard headers |
 | RP2350 pin driver | `rp2350/hitec_line.pio`, `rp2350/hitec_line.c`, `rp2350/hitec_line.h` | the core; pico-sdk `hardware_pio`, `hardware_dma`, `hardware_gpio`, `hardware_clocks`, `hardware_timer` |
 
 The wire timings below are measured on an HS-5645MG, an HS-7955TG and a
@@ -22,7 +22,8 @@ No byte of this code has been on a wire.
 
 - Plain C11. Every header has `extern "C"` guards and compiles by itself as
   C11 and as C++17 (`tools/check_protocols.py`).
-  `test/host/hitec_headers.cpp` calls both parts from C++11 and links
+  `test/host/hitec_headers.cpp` calls both parts, the precharge receiver
+  included, from C++11 and links
   against the C library.
 - Includes `<stdint.h>`, `<stdbool.h>`, `<stddef.h>` and `<string.h>` and
   no other file outside this folder.
@@ -31,7 +32,8 @@ No byte of this code has been on a wire.
 - A transaction (`hitec_xfer_t`) is 28 bytes, a capture
   (`hitec_capture_t`) 140 bytes, a clock 16 bytes and a run 20 bytes, with
   arm-none-eabi-gcc 14.2 (`-mcpu=cortex-m33 -mthumb -Os`) and with gcc on
-  x86-64. A line (`hitec_line_t`) is 172 bytes with arm-none-eabi-gcc 14.2.
+  x86-64. A line (`hitec_line_t`) is 4,100 bytes with arm-none-eabi-gcc
+  14.2, 3,712 of them the precharge sampler's sample buffer.
 - Non-blocking: `start()` and `poll()` return at once. Nothing waits.
 
 ## Wire
@@ -192,6 +194,96 @@ A receiver that samples once in the middle of each bit takes a sender
 whose bit time is 4.4 % shorter to 4.9 % longer than its own: the stop bit
 sample at 9.44 to 9.56 bit times has to fall inside the sender's tenth bit.
 
+## Receive by precharge and sample
+
+`hitec_pre.h` receives a D series answer with no pull-up on the wire
+(receive mode PRECHARGE). The D series servo pulls the line low and leaves
+it released for a high level, so a released line with no pull-up reads
+low throughout. The master makes the high level itself, one sample at a
+time: a second state machine drives the pad high (the precharge),
+releases it, waits and samples it. A servo that pulls low has pulled the
+line down when the sample is taken; one that leaves it released leaves it
+high. The samples go to memory 32 to a word; the decoder reads them as
+inverted 8N1 into the `hitec_capture_t` the PULL-UP receiver gives, so
+`hitec_d_decode()` takes it unchanged.
+
+Measured on one D485HW, IOmcu at 150 MHz, no pull-up on the signal wire,
+servo supply 5.0 V from the PD mini, register 0x32 read 5 times per
+setting:
+
+| Sample after the release | Precharge | Reads that pass |
+| --- | --- | --- |
+| 40 to 187 ns (6 to 28 cycles) | 6.7 to 200 ns (1 to 30 cycles) | 5 of 5 at each setting |
+| 213 ns (32 cycles) | 13.3 ns or longer | 5 of 5 |
+| 213 ns (32 cycles) | 6.7 ns (1 cycle) | fail |
+| 267 ns and later | any | 0 of 5 |
+| any | none | 0 of 5, every sample low |
+
+With a 20 ns precharge and the sample 80 ns after the release, 133 of 133
+reads of 19 registers passed with a 10 ms window and 30 of 30 with a
+25 ms window, equal to the HFP-30's reads of the same registers. The
+answer started 5.2 to 5.9 ms into the window.
+
+The module takes the middle of that window:
+
+| Quantity | At 150 MHz | Rule |
+| --- | --- | --- |
+| Sample period | 163 cycles, 1086.7 ns, 7.99 samples a bit | the system clock cycles nearest to 1/8 of 8.68 us |
+| Precharge | 15 cycles, 100.0 ns | 100 ns rounded to cycles |
+| Sample after the release | 17 cycles, 113.3 ns | 113 ns rounded to cycles |
+| Program | 7 words: `set pindirs, 1 [14]`, `set pindirs, 0 [16]`, `in pins, 1 [31]`, 4 `nop` | `hitec_pre_program()` |
+| Window | up to 30,000 us | `HITEC_PRE_WINDOW_MAX_US` |
+| Buffer | 928 words, 3,712 bytes: 30 ms and 16 bytes at every clock taken | `HITEC_PRE_WORDS` |
+
+`hitec_pre_timing()` computes the counts from the system clock at the open.
+It takes 48 to 250 MHz and refuses a clock whose rounded precharge or wait
+falls outside the measured window; only 150 MHz is measured.
+
+The decoder:
+
+- waits for the rest level (low), then for a start bit (the first high
+  sample after a low one; a stop bit read low counts as that low sample);
+- samples the middle of each bit, floor((j + 1/2) x samples a bit) samples
+  after the start bit's first high sample, 3 to 75 at 150 MHz; a start bit
+  whose middle reads low is a glitch, and the wait goes on;
+- counts every waiting sample against the window and none inside a byte,
+  as the PULL-UP receiver does;
+- ends at the bytes asked for, at the window's end, or at the end of the
+  samples; a byte whose samples are not all in waits for the next call;
+- decodes the servo's bit time 4 % short to 4 % long (host-tested; the
+  servo's own bit time is not measured);
+- gives a start bit's time as the middle between its first high sample
+  and the one before, within half a sample, 543 ns.
+
+Integer arithmetic only. On the host (x86-64, gcc -Os) one call over a
+whole 30 ms window with 16 bytes takes 3.4 us; with every sample a start
+candidate (a line toggling every sample), 155 us. The RP2350 pin driver
+decodes in each poll only the words written since the last one, about 29
+words a millisecond. The time on the RP2350 is not measured.
+
+`hitec_pre_begin()` plans a transaction: a SEND with a window goes out on
+the line's own state machine with no receiver (`hitec_pre_tx_xfer()`),
+then the sampler takes the pad; a LISTEN samples from its start; a SEND
+with no window (a write) and a LEVEL run as with PULL-UP; a LISTEN that
+answers, a window above 30,000 us and a classic transaction are refused.
+`hitec_pre_abort()` keeps the whole bytes in any phase.
+
+Classic servos need neither a pull-up nor a precharge: an HS-7955TG, an
+HS-5955TG and an HS-5645MG enter serial mode and answer every read on an
+open-drain port with neither, at a 5.0 V supply. The servo drives the high
+level itself, through about 1 kOhm, and its answer starts inside the
+master's stop bit. The line voltages are not measured. The pin driver
+refuses PRECHARGE for classic.
+
+Not measured: the current through the pad during a precharge while the
+servo pulls the line low (2 mA drive, 100 ns of every 1086.7 ns); a long
+run at the values this module chose (100 ns and 113.3 ns lie inside the
+passing window; the 133 reads ran at 20 ns and 80 ns); reads with the bank
+armed (the HITEC page refuses OPEN
+while it is); writes through a PRECHARGE line (a write has no window and
+takes no sampler); windows of 30 ms; any servo other than the one
+D485HW; any clock but 150 MHz.
+
 ## RP2350 pin driver
 
 `rp2350/hitec_line.c` implements `hitec_driver_t` on one pin. Its header
@@ -202,14 +294,29 @@ reference circuit, or push-pull.
 
 | Resource | Use |
 |---|---|
-| PIO state machines | 1 per open line, in a PIO block that reaches the pin |
-| PIO program space | 29 of 32 words per open line: every line loads its own copy, so a block holds 1 line and the RP2350's 3 blocks hold up to 3 |
-| DMA (direct memory access) channels | 2 per open line: the words of a transaction and the received bytes |
+| PIO state machines | 1 per open line, in a PIO block that reaches the pin; PRECHARGE 1 more, the sampler |
+| PIO program space | 29 of 32 words per open line: every line loads its own copy, so a block holds 1 line and the RP2350's 3 blocks hold up to 3. PRECHARGE: the sampler's 7 words (at 150 MHz) in a block with room for them, another block than the line's |
+| DMA (direct memory access) channels | 2 per open line: the words of a transaction and the received bytes; PRECHARGE 1 more, the samples |
 | Interrupts, PIO interrupt flags | none |
 | Memory | 1 `hitec_line_t` per line, held by the caller; no static state |
 
 `hitec_line_open()` claims the resources and `hitec_line_close()` gives all
-of them back. An open fails with its own code for a pin the chip does not
+of them back. `hitec_line_open_rx()` takes the receive mode as well;
+`hitec_line_open()` is PULL-UP. With PRECHARGE the open claims the
+sampler's state machine, program and DMA channel after the line's own, and
+on a failure gives back everything it claimed before touching the pin.
+
+PRECHARGE on the pin: the first `poll()` that finds a SEND's request
+ended (the state machine idle with no word left) keeps the pin's IO_BANK0
+control register and its pad register, puts the pin in the sampler's PIO
+block with no input override, 2 mA drive and slow slew, and starts the
+sampler and its DMA channel; the pad's pull-up stays as it was. Each
+`poll()` reads the channel's write address and decodes the words written
+since the last one (`hitec_pre_step()`). At the decoder's end, at the last
+word, at `hitec_line_abort()` and at `hitec_line_close()` the sampler
+stops, its pad direction released, and the two registers are written back.
+A sampler whose receive FIFO ran full, or one that runs 1 ms past its last
+word, ends with the capture marked overflowed. An open fails with its own code for a pin the chip does not
 have, an unknown family or drive, push-pull for classic, a clock the open
 refuses, no free state machine or program space, and fewer than 2 free DMA
 channels; a failed open claims nothing and leaves the pin as it was.
@@ -253,6 +360,7 @@ measured.
 | A bit 0 | driven low | released (open drain), driven high (push-pull) |
 | A bit 1 | released | driven low |
 | Receive, end of the window, abort, restart | released | released |
+| PRECHARGE receive | | driven high 100.0 ns of every 1086.7 ns at 2 mA, slow slew, else released |
 | After close | an input, pull-down on, no override | an input, pull-up on, no override |
 
 The internal pulls are 50 to 80 kOhm. The D series needs a pull-up on the
@@ -374,7 +482,14 @@ notice is in the repository's
 
 ## Tests
 
-`test/host/test_hitec_wire.c` (11 cases) runs the core: the sums, the
+`test/host/test_hitec_pre.c` (18 cases) runs the precharge receiver's
+core: the counts at 150 MHz and at every clock from 48 to 250 MHz, the
+sampler's program stepped instruction by instruction, a 7-byte answer at
+7.99 samples a bit and the servo 4 % fast and slow, a start bit on the
+first sample and on the window's last, a byte across the window's end, a
+framing error, no answer, a line stuck high, a glitch, the 30 ms window, a
+sampler that stops short, words fed one at a time, and an abort in every
+phase. `test/host/test_hitec_wire.c` (11 cases) runs the core: the sums, the
 transactions, every refusal of each decoder with its limits at both
 edges, and the clock helpers across the wrap, with frames and reply times
 read off bench captures. `test/host/test_hitec_pio.c` (22 cases) assembles

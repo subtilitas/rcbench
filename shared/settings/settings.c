@@ -43,6 +43,9 @@ static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
 static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
 static const char *const k_servo_target[] = { "OUTPUTS", "PROG PORT" };
 static const char *const k_upd_channel[] = { "STABLE", "TESTING" };
+/* How a Hitec D series line on the programming port receives, in
+ * link_hitec_rx_t's order. */
+static const char *const k_hitec_rx[] = { "PULL-UP", "PRECHARGE" };
 /* The PD mini's own UART Baudrate setting, 0 to 6, in its order. */
 static const char *const k_pdmini_baud[] = {
     "9600", "19200", "38400", "57600", "115200", "230400", "460800", "AUTO",
@@ -229,6 +232,16 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_PDMINI_BAUD] = {
         "pdm_baud", "PD mini baud", "The module's UART Baudrate; AUTO finds it", "",
         SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 7, ENUM_OPTS(k_pdmini_baud) },
+    /*
+     * How the IOmcu receives a Hitec D series answer on its programming
+     * port (the HITEC page's register 23, link_hitec_rx_t): PULL-UP, the
+     * line released with a 2.2 kOhm pull-up on the signal wire, or
+     * PRECHARGE, with none.  The IOmcu takes it at its next OPEN of a
+     * D series line; classic servos need neither.
+     */
+    [SET_HITEC_RX] = {
+        "hitec_rx", "Hitec D receive", "PULL-UP needs 2.2 kOhm on the signal wire", "",
+        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_hitec_rx) },
 
     /*
      * The supply's.  The ranges are a USB-PD PPS (Programmable Power Supply)
