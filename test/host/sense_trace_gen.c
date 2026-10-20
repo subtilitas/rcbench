@@ -125,10 +125,8 @@ int main(int argc, char **argv)
     cmd.cfg_gen = 1u;
     cmd.sda = 16u;
     cmd.scl = 17u;
-    cmd.parts.ina3221_en = true;
-    cmd.parts.ina3221_addr = 0x40u;
-    cmd.parts.ina3221_shunt_uohm = 100000u;
-    cmd.parts.ina3221_channels = 1u;
+    sense_i3221_one(&cmd.parts.i3221, true, 0x40u, 100000u,
+                    1u);
     (void)sense_trace_init(&tr, ring, RING);
 
     servo_sim_cfg_t sc;

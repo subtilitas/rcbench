@@ -48,9 +48,10 @@ TEST_CASE(every_ch1_sample_and_voltage_is_taken_once)
         tick();
     }
     CHECK_EQ(i3221->reads[INA3221_SHUNT1], 1000u);
-    CHECK_EQ(i3221->reads[INA3221_BUS1], 50u);
+    /* A voltage every 24 ms: 41 or 42 in the second, each traced. */
+    CHECK(i3221->reads[INA3221_BUS1] >= 41u && i3221->reads[INA3221_BUS1] <= 42u);
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), 1000u);
-    CHECK_EQ(held_of(SENSE_TRACE_BUS), 50u);
+    CHECK_EQ(held_of(SENSE_TRACE_BUS), i3221->reads[INA3221_BUS1]);
     /* Each sample 1 ms after the one before, at the value read. */
     unsigned n = 0u;
     for (unsigned k = 0u; k < held_data(); ++k) {
@@ -118,7 +119,7 @@ TEST_CASE(a_set_up_and_a_closed_bus_lose_and_repeat_nothing)
     /* No part enabled: the bus closes and nothing is fed. */
     const unsigned held = held_data();
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_en = false;
+    cmd.parts.i3221.fitted = 0u;
     for (unsigned k = 0; k < 20u; ++k) {
         tick();
     }
@@ -128,7 +129,7 @@ TEST_CASE(a_set_up_and_a_closed_bus_lose_and_repeat_nothing)
     CHECK_EQ(tr.src.shunt, 0u);
     /* And open again: every read once more. */
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_en = true;
+    cmd.parts.i3221.fitted = 1u;
     for (unsigned k = 0; k < 130u; ++k) {
         tick();
     }
@@ -153,7 +154,7 @@ TEST_CASE(a_voltage_is_taken_from_a_window_a_reset_emptied)
     for (unsigned k = 0; k < 2000u; ++k) {
         tick();
     }
-    CHECK_EQ(svc.sched.i3221_resets, 1u);
+    CHECK_EQ(svc.sched.i3221_resets[0], 1u);
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
     CHECK_EQ(held_of(SENSE_TRACE_BUS), i3221->reads[INA3221_BUS1]);
     for (unsigned k = 0u; k < held_data(); ++k) {
@@ -172,10 +173,10 @@ TEST_CASE(a_set_up_that_leaves_the_history_at_the_same_place)
     for (unsigned k = 0; k < 51u; ++k) {
         tick();
     }
-    CHECK_EQ(svc.sched.ch1_head, 1u);
+    CHECK_EQ(svc.sched.hist_head, 1u);
     ++cmd.cfg_gen;
     tick();
-    CHECK_EQ(svc.sched.ch1_head, 1u);
+    CHECK_EQ(svc.sched.hist_head, 1u);
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), 52u);
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
 }
@@ -185,11 +186,11 @@ TEST_CASE(a_set_up_that_leaves_the_history_at_the_same_place)
 static void poke(uint16_t n_v, int64_t v_sum)
 {
     sense_sched_t *sc = &svc.sched;
-    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
-    sc->ch1[sc->ch1_head].ua = 120000;
-    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
-    sc->acc[SENSE_SRC_CH1].n_v   = n_v;
-    sc->acc[SENSE_SRC_CH1].v_sum = v_sum;
+    sc->hist[sc->hist_head].t  = (uint32_t)(g_us / 100u);
+    sc->hist[sc->hist_head].ua = 120000;
+    sc->hist_head = (uint8_t)((sc->hist_head + 1u) % SENSE_FAST_HISTORY);
+    sc->acc[SENSE_CH(0, 1)].n_v   = n_v;
+    sc->acc[SENSE_CH(0, 1)].v_sum = v_sum;
     sense_trace_feed(&tr, sc, g_us);
     g_us += 1000u;
 }
@@ -202,14 +203,14 @@ TEST_CASE(a_voltage_is_told_from_the_one_before_by_window_and_count)
     for (unsigned k = 0; k < 10u; ++k) {
         tick();
     }
-    CHECK_EQ(svc.sched.acc[SENSE_SRC_CH1].n_v, 1u);
+    CHECK_EQ(svc.sched.acc[SENSE_CH(0, 1)].n_v, 1u);
     ++cmd.cfg_gen;
     i3221->volts[0] = 5.0;
     for (unsigned k = 0; k < 10u; ++k) {
         tick();
     }
     CHECK_EQ(svc.sched.win, 0u);
-    CHECK_EQ(svc.sched.acc[SENSE_SRC_CH1].n_v, 1u);
+    CHECK_EQ(svc.sched.acc[SENSE_CH(0, 1)].n_v, 1u);
     CHECK_EQ(i3221->reads[INA3221_BUS1], 2u);
     CHECK_EQ(held_of(SENSE_TRACE_BUS), 2u);
     int32_t mv[2] = { 0, 0 };
@@ -251,13 +252,13 @@ TEST_CASE(a_voltage_with_no_current_sample_of_its_tick_is_left_out)
     /* CH1's current read failed in a tick whose bus voltage read went
      * through: no sample line the voltage could stand behind. */
     const unsigned held = held_data();
-    svc.sched.acc[SENSE_SRC_CH1].n_v  += 1u;
-    svc.sched.acc[SENSE_SRC_CH1].v_sum += 5900000;
+    svc.sched.acc[SENSE_CH(0, 1)].n_v  += 1u;
+    svc.sched.acc[SENSE_CH(0, 1)].v_sum += 5900000;
     sense_trace_feed(&tr, &svc.sched, g_us);
     CHECK_EQ(held_data(), held);
     /* The voltage after it is its own, not the two together. */
-    poke((uint16_t)(svc.sched.acc[SENSE_SRC_CH1].n_v + 1u),
-         svc.sched.acc[SENSE_SRC_CH1].v_sum + 5800000);
+    poke((uint16_t)(svc.sched.acc[SENSE_CH(0, 1)].n_v + 1u),
+         svc.sched.acc[SENSE_CH(0, 1)].v_sum + 5800000);
     CHECK_EQ(held_data(), held + 2u);
     CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CURRENT);
     CHECK_EQ(rec(held + 1u)->v, 5800);
@@ -268,8 +269,8 @@ TEST_CASE(a_voltage_with_no_current_sample_of_its_tick_is_left_out)
     }
     CHECK_EQ(sense_trace_held(&tr), 8u);
     const uint32_t lost = tr.src.lost;
-    poke((uint16_t)(svc.sched.acc[SENSE_SRC_CH1].n_v + 1u),
-         svc.sched.acc[SENSE_SRC_CH1].v_sum + 5800000);
+    poke((uint16_t)(svc.sched.acc[SENSE_CH(0, 1)].n_v + 1u),
+         svc.sched.acc[SENSE_CH(0, 1)].v_sum + 5800000);
     CHECK_EQ(tr.src.lost, lost + 1u);
 }
 

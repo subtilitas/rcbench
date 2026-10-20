@@ -258,7 +258,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,748 | 528 | 1,564 |
+| core 0 | `main` | 4,096 | 1,724 | 528 | 1,588 |
 | core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -266,10 +266,10 @@ Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
 or the count of calls through a register below, differs from that build. Core 1's row is not held: its chain moves with the
 compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
 runner's packaged one. The frames named below are those of a build with
-ARM GNU 14.2, which gives 1,692 bytes for core 0.
+ARM GNU 14.2, which gives 1,716 bytes for core 0.
 
 Core 0's deepest chain is a request that binds an output and fails in the
-pico-sdk: `main` (448 bytes), `can_service` (344), `link_dev_dispatch`,
+pico-sdk: `main` (472 bytes), `can_service` (344), `link_dev_dispatch`,
 `slots_write`, `slots_take`, `ports_apply`, `slots_rerate`,
 `outputs_hw_apply_only`, `out_dshot_bind`, the
 pico-sdk's claim of a PIO (programmable input/output) state machine, and
@@ -277,12 +277,12 @@ pico-sdk's claim of a PIO (programmable input/output) state machine, and
 the USB stack's worker, `low_priority_worker_irq`, at 420 bytes; its chain
 ends in `panic()` as well.
 
-A write command to the programming port for KST and Chaservo servos reaches 1,288 bytes: `main`
-(448), `can_service` (344), `link_dev_dispatch` (32), `kst_write` (24),
+A write command to the programming port for KST and Chaservo servos reaches 1,312 bytes: `main`
+(472), `can_service` (344), `link_dev_dispatch` (32), `kst_write` (24),
 `kst_port_write` (88), `kst_session_edit` (40) and the start of a planner
 job, 312 bytes from `kst_plan_edit_begin` down: `kst_plan_edit_begin`
 (40), the limit check `kst_limits_edit` (248), `load` (16) and
-`kst_field_get` (8). A pass that plans reaches 1,008 bytes: `main`,
+`kst_field_get` (8). A pass that plans reaches 1,032 bytes: `main`,
 `kst_port_step` (48), `step_programming` (40), `kst_session_step` (264) and one slice of the
 planner, 208 bytes from `kst_plan_step` down. The planner does not
 recurse. The planner's job, the plan and the staged image are held in the

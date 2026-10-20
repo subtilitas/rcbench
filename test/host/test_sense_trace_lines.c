@@ -42,7 +42,7 @@ TEST_CASE(every_line_at_its_longest_fits)
     i3221->amps[0] = -5.0;
     g_us = (uint64_t)4294964295u * 1000u;
     run(100u);
-    svc.sched.i3221.shunt_uohm = UINT32_MAX;
+    svc.sched.i3221[0].shunt_uohm[0] = UINT32_MAX;
     run(5u);
     tr.out.id = 65534u;
     const uint32_t t = (uint32_t)(g_us / 100u);
@@ -141,16 +141,16 @@ TEST_CASE(a_clipped_sample_whose_window_closed_in_its_tick_is_clipped)
      * count in the ring's newest window, and the window being filled is
      * empty. */
     sense_sched_t *sc = &svc.sched;
-    const uint16_t before = (uint16_t)(sc->acc[SENSE_SRC_CH1].n_hi
-                                       + sc->acc[SENSE_SRC_CH1].n_lo);
+    const uint16_t before = (uint16_t)(sc->acc[SENSE_CH(0, 1)].n_hi
+                                       + sc->acc[SENSE_CH(0, 1)].n_lo);
     unsigned held = held_data();
     sc->ring_at = sc->win;
     sc->ring[0].n_clip = (uint16_t)(before + 1u);
     sc->win += 1u;
-    memset(&sc->acc[SENSE_SRC_CH1], 0, sizeof(sc->acc[SENSE_SRC_CH1]));
-    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
-    sc->ch1[sc->ch1_head].ua = sc->ch_clip_ua;
-    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    memset(&sc->acc[SENSE_CH(0, 1)], 0, sizeof(sc->acc[SENSE_CH(0, 1)]));
+    sc->hist[sc->hist_head].t  = (uint32_t)(g_us / 100u);
+    sc->hist[sc->hist_head].ua = sc->ch_clip_ua[0];
+    sc->hist_head = (uint8_t)((sc->hist_head + 1u) % SENSE_FAST_HISTORY);
     sense_trace_feed(&tr, sc, g_us);
     CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CLIP_HI);
     /* The same at the bottom of the range. */
@@ -159,9 +159,9 @@ TEST_CASE(a_clipped_sample_whose_window_closed_in_its_tick_is_clipped)
     sc->ring_at = sc->win;
     sc->ring[0].n_clip = 1u;
     sc->win += 1u;
-    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
-    sc->ch1[sc->ch1_head].ua = -sc->ch_clip_ua;
-    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    sc->hist[sc->hist_head].t  = (uint32_t)(g_us / 100u);
+    sc->hist[sc->hist_head].ua = -sc->ch_clip_ua[0];
+    sc->hist_head = (uint8_t)((sc->hist_head + 1u) % SENSE_FAST_HISTORY);
     sense_trace_feed(&tr, sc, g_us);
     CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CLIP_LO);
     /* A window that closed with no more clips than were seen: a value. */
@@ -170,9 +170,9 @@ TEST_CASE(a_clipped_sample_whose_window_closed_in_its_tick_is_clipped)
     sc->ring_at = sc->win;
     sc->ring[0].n_clip = 0u;
     sc->win += 1u;
-    sc->ch1[sc->ch1_head].t  = (uint32_t)(g_us / 100u);
-    sc->ch1[sc->ch1_head].ua = sc->ch_clip_ua;
-    sc->ch1_head = (uint8_t)((sc->ch1_head + 1u) % SENSE_CH1_HISTORY);
+    sc->hist[sc->hist_head].t  = (uint32_t)(g_us / 100u);
+    sc->hist[sc->hist_head].ua = sc->ch_clip_ua[0];
+    sc->hist_head = (uint8_t)((sc->hist_head + 1u) % SENSE_FAST_HISTORY);
     sense_trace_feed(&tr, sc, g_us);
     CHECK_EQ(rec(held)->meta >> 24, SENSE_TRACE_CURRENT);
 }
@@ -527,7 +527,7 @@ TEST_CASE(records_dropped_in_a_traces_first_tick_are_said_once)
     CHECK_EQ(tr.src.lost, 0u);
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_KEY, g_us + 500u, 0u, 0u);
     sense_svc_step(&svc, &cmd, &snap);
-    svc.sched.acc[SENSE_SRC_CH1].n_v = 0u;
+    svc.sched.acc[SENSE_CH(0, 1)].n_v = 0u;
     tr.src.n_v = 0u;
     sense_trace_feed(&tr, &svc.sched, g_us);
     g_us += 1000u;
@@ -642,7 +642,7 @@ TEST_CASE(a_set_up_record_that_found_no_room_before_the_end_is_counted_there)
     /* The set-up changes with the ring full: its record waits on core 1,
      * counted with each tick it finds no room in. */
     ++cmd.cfg_gen;
-    cmd.parts.ina3221_shunt_uohm = 50000u;
+    cmd.parts.i3221.shunt_uohm[0] = 50000u;
     i3221->shunt_ohm = 0.05;
     for (unsigned k = 0u; k < 50u && !tr.src.shunt_owed; ++k) {
         tick();
@@ -715,11 +715,17 @@ TEST_CASE(records_dropped_in_a_trace_that_is_dropped_are_said_where_they_are_mis
         parse();
         CHECK_EQ(seen.n_bad, 0u);
         CHECK_EQ(seen.n_t, 1u);
-        CHECK_EQ(seen.n_l, 1u);
-        CHECK_EQ(seen.lost, lost);
-        CHECK_EQ(seen.z_l, lost);
+        /* The count of the dropped trace, before the trigger; the
+         * 8-record ring may drop more after it, each said where it is. */
+        char want[24];
+        snprintf(want, sizeof(want), "$L n=%lu\r\n", (unsigned long)lost);
+        const char *first_l = strstr(g_log, "$L n=");
+        CHECK(first_l != NULL && strncmp(first_l, want, strlen(want)) == 0);
+        CHECK(seen.n_l >= 1u);
+        CHECK(seen.lost >= lost);
+        CHECK_EQ(seen.z_l, seen.lost);
         CHECK_EQ(seen.z_s, seen.n_s);
-        CHECK(strstr(g_log, "$L n=") < strstr(g_log, "$K t="));
+        CHECK(first_l < strstr(g_log, "$K t="));
         CHECK_EQ(tr.out.drops_seen, tr.src.dropped);
         CHECK_EQ(tr.out.ahead, 0u);
     }
