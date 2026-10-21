@@ -126,12 +126,21 @@ void motor_screen_set_throttle_protocol(uint8_t proto);
  * The TARGET row's value, `protocol pins` ("DSHOT300 GP0 GP1"), in at most
  * @p cells characters: the protocol's catalogue name for @p proto, MIXED for
  * MOTOR_PROTO_MIXED, the pins alone for a protocol not known, and as many
- * pins as fit, then "+N" (ui_target_text()).  Returns true when the value is
- * a warning (the binding is not read, or no pin is bound as a motor), which
- * the row draws in the warning colour.
+ * pins as fit, then "+N" (ui_target_text()).  The DShot programming ports
+ * the throttle reaches (motor_dshot_ports()) follow the pins as PORT n; a
+ * port alone is `DSHOT300 PROG PORT 2 GP14` where that fits and
+ * `DSHOT300 PORT 2` where it does not, and slots and ports of different
+ * rates read MIXED.  Returns true when the value is a warning (the binding
+ * is not read, or neither a pin nor a port is bound as a motor), which the
+ * row draws in the warning colour.
  */
 bool motor_throttle_target(char *out, size_t size, uint8_t proto,
                            uint64_t pins, bool known, unsigned cells);
+
+/** The programming ports the bench throttle drives, bit n for port n: FUNC
+ *  DSHOT150 to DSHOT600 and a pin the IOmcu holds, as port_view.h last
+ *  read them. */
+uint8_t motor_dshot_ports(void);
 
 /** The TARGET row's value box in 8-pixel cells (ui_target_row_cells()). */
 unsigned motor_target_cells(void);

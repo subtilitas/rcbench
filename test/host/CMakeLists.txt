@@ -161,6 +161,8 @@ foreach(suite outputs_hw outputs_hw_ports)
         "${IOMCU_SRC}"
         "${PROTOCOLS}/dshot/rp2350"
         "${PROTOCOLS}/ppm/rp2350")
+    # As the IOmcu build sets it: slots and programming ports.
+    target_compile_definitions(test_${suite} PRIVATE OUT_DSHOT_MAX_PINS=12u)
 endforeach()
 # The IOmcu's sensor bus wire, built from its firmware source over a
 # modelled pair of pads (sense_i2c_stub/), so test_sense_i2c holds what a

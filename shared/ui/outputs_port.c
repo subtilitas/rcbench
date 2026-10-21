@@ -296,10 +296,10 @@ const uint8_t *outputs_pwm_pins(const uint8_t *pins)
 {
     static uint8_t pwm[LINK_PG_PORTS_MAX];
     for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
-        /* A function not known counts as SERVO PWM: the stricter rule. */
-        pwm[n] = (pins != NULL
-                  && port_view_func(n) != (uint8_t)LINK_PG_FN_NONE)
-                     ? pins[n] : OUTBIND_NO_GPIO;
+        /* A function not known counts as SERVO PWM: the stricter rule.
+         * NONE and DShot pins are under no PWM rule. */
+        pwm[n] = (pins != NULL && port_view_pwm(n)) ? pins[n]
+                                                    : OUTBIND_NO_GPIO;
     }
     return pwm;
 }

@@ -24,9 +24,7 @@ typedef enum {
 
 static bool port_pwm(uint8_t port)
 {
-    /* Not known reads as SERVO PWM: the stricter rule. */
-    const uint8_t fn = port_view_func(port);
-    return fn != (uint8_t)LINK_PG_FN_NONE;
+    return port_view_pwm(port);
 }
 
 /* Whether port @p n holds the pin its PIN register names: one the IOmcu
@@ -190,12 +188,8 @@ void picker_port_count(uint8_t port, char *buf, size_t cap)
     if (buf == NULL || cap == 0u) {
         return;
     }
-    const uint8_t fn = port_view_func(port);
-    const char *name = (fn == (uint8_t)LINK_PG_FN_SERVO_PWM)
-                           ? TR(OUT_PORT_FN_PWM)
-                       : (fn == (uint8_t)LINK_PG_FN_NONE) ? TR(OUT_PORT_FN_NONE)
-                                                          : "?";
-    snprintf(buf, cap, TR(PK_PORT_FN), name);
+    snprintf(buf, cap, TR(PK_PORT_FN),
+             port_view_fn_name(port_view_func(port)));
 }
 
 bool picker_port_row(const outbind_t *b, uint8_t k, picker_row_t *out)

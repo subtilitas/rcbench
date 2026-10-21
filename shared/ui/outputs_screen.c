@@ -410,7 +410,7 @@ static void leave(void)
 static bool back(void)
 {
     if (!s.open) {
-        return false;
+        return outputs_port_back();   /* the entry's FUNCTION list */
     }
     s.open = false;
     s.hit_kind = HIT_NONE;

@@ -276,19 +276,37 @@ SETUP > OUTPUTS, die auch die Gas-Rolle des IOmcu liest. Die Pins stehen in
 Pin-Reihenfolge; die nicht passen, werden gezählt. Sind GP0 bis GP7 als
 DSHOT300 gebunden, steht dort `DSHOT300 GP0 +7`.
 
+Ein Programmierport, dessen
+FUNKTION DSHOT150, DSHOT300 oder DSHOT600 ist und dessen Pin der IOmcu hält,
+folgt den Pins als `PORT n` und zählt mit ihnen. Ein Port allein wird
+vollständig genannt, wo das passt, `DSHOT300 PROG-PORT 2 GP14` (25 Zeichen,
+im Streifen der Seite PROGRAMMIEREN), und `DSHOT300 PORT 2` in den 18 der
+Karte.
+
 | ZIEL lautet | Bedingung |
 | --- | --- |
 | `DSHOT300 GP0 GP1` | ein Protokoll treibt jeden Gas-Pin |
 | `GEMISCHT GP0 GP4` | die Gas-Pins laufen mit zwei oder mehr Protokollen, oder einer davon mit einer Rate, die kein Protokoll von OUTPUTS hat |
 | `GP0 GP1` | jeder Gas-Pin läuft mit einer Rate, die kein Protokoll von OUTPUTS hat |
-| `KEIN MOTOR-PIN` | die Bindung ist gelesen und kein Pin ist als Motor gebunden; Warnfarbe |
+| `KEIN MOTOR-PIN` | die Bindung ist gelesen und weder ein Pin noch ein Programmierport ist als Motor gebunden; Warnfarbe |
 | `PINS NICHT GELESEN` | keine Bindung wurde gelesen: der Link ist unten, die Pages ließen sich nicht lesen, oder für das Board gibt es keine Pin-Belegung; Warnfarbe |
+
+Mit DShot-Programmierports:
+
+| ZIEL lautet | Bedingung |
+| --- | --- |
+| `DSHOT300 PORT 2` | ein DSHOT300-Programmierport treibt das Gas, und kein Pin ist als Motor gebunden |
+| `DSHOT300 GP0 +1` | GP0 als DSHOT300 gebunden und ein DSHOT300-Port: der Port passt nicht in 18 Zeichen |
+| `GEMISCHT GP0 PORT 2` | die Pins und die Ports laufen mit verschiedenen Raten, oder die Pins mit einer Rate, die kein Protokoll des Katalogs hat |
+
+![ZIEL nennt PROG-PORT 2 als DSHOT300](img/de/motor-port.png)
 
 Das Gas bewegt sich in den beiden Warnzuständen weiter. ARM schaltet die
 ganze Bank auf ARMED, nicht nur die hier genannten Pins.
 
 Ein Tipp auf ZIEL öffnet [OUTPUTS](#outputs) auf dem Protokoll, an das die
-Gas-Pins gebunden sind, auf der Übersicht, solange sie an mehrere gebunden
+Gas-Pins gebunden sind, auf dem Eintrag PROG-PORT eines DShot-Ports, der
+das Gas allein treibt, auf der Übersicht, solange sie an mehrere gebunden
 sind oder keines bekannt ist. Das Verlassen schaltet den
 Prüfstand auf SAFE, wie jeder Weg vom Bildschirm. Das Home-Tag auf OUTPUTS
 führt zurück zu MOTOR & ESC, auf die Aufgabe, auf der ZIEL getippt wurde; ein
@@ -3784,7 +3802,7 @@ einer Zeile ZIEL aus öffnet er auf dem, was diese Werkbank treibt:
 | Geöffnet von | Öffnet auf |
 | --- | --- |
 | der Kachel OUTPUTS auf SETUP | der Übersicht, OFF |
-| der Zeile ZIEL von MOTOR & ESC | dem Protokoll, an das die Gas-Pins gebunden sind; der Übersicht, solange sie an mehrere gebunden sind (`GEMISCHT`) oder keines bekannt ist |
+| der Zeile ZIEL von MOTOR & ESC | dem Protokoll, an das die Gas-Pins gebunden sind; dem Eintrag PROG-PORT eines DShot-Ports ohne Pin daneben; der Übersicht, solange sie an mehrere gebunden sind (`GEMISCHT`), zwei Ports das Gas treiben oder keines bekannt ist |
 | der Zeile ZIEL von SERVO | dem, was die Zeile zeigt: dem Eintrag PROG-PORT, solange der IOmcu den Port treibt, SERVO PWM, solange er die Ausgänge treibt, der Übersicht, solange das Ziel nicht bekannt ist |
 
 ![Outputs](img/de/outputs.png)
@@ -3907,7 +3925,7 @@ Zeilen:
 | Zeile | Was sie zeigt und tut |
 | --- | --- |
 | PIN | eine Taste: `PIN GP13`, `PIN WÄHLEN` für einen Port ohne Pin, `PIN GP14 ABGELEHNT` für einen Pin, den der IOmcu nicht hält, `KEIN PIN BEKANNT` vor dem ersten Lesen. Ein Tippen öffnet [PICK A PIN](#pin-auswählen) auf diesem Port |
-| FUNKTION | SERVO PWM \| KEINE: was der Pin trägt, solange keine Programmiersitzung ihn hält. Ein Tippen erbittet beim IOmcu die andere |
+| FUNKTION | ein Auswahlfeld mit dem, was der Pin trägt, solange keine Programmiersitzung ihn hält. Ein Tippen öffnet die Liste über den Zeilen darunter: SERVO PWM, KEINE, und bei einem IOmcu ab Protokoll 4.28 DSHOT150, DSHOT300 und DSHOT600. Ein Tippen auf einen Eintrag erbittet ihn beim IOmcu und schließt die Liste; ein Druck neben die Liste schließt sie und erreicht nichts darunter. Das Feld ist vertieft und matt gezeichnet und nimmt kein Tippen an, solange die Zeile gesperrt ist |
 | ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSOREN überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`: der niedrigste Kanal mit Shunt auf einem bestückten Baustein; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS \| PORT n: das Ziel des Testers ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
 | PORT-PWM | EIN \| AUS: der Puls des Ports, der das Ziel des Testers ist |
@@ -3919,6 +3937,7 @@ eigenen Pin des Ports hervorgehoben; kein Pin nimmt dort einen Haken an.
 | --- | --- | --- |
 | SERVO PWM | der Servopuls aus dem PWM-Generator, solange die Bank für die Servos ARMED ist und PORT-PWM auf dem Port des Testers EIN ist; sonst low | ein PWM-Pin, auf keinem Slice eines PWM-Ausgangs und auf keinem Compare-Register eines anderen SERVO-PWM-Ports |
 | KEINE | ein Eingang mit seinem Pull-down; kein Puls | jeder freie Pin der Stiftleiste |
+| DSHOT150, DSHOT300, DSHOT600 | einfaches DShot mit 150, 300 oder 600 kbit/s, ein Frame alle 1 ms, solange die Bank für das Gas ARMED ist; sonst kein Frame. MOTOR & ESC treibt ihn ([ZIEL](#ziel-nennt-das-protokoll-und-die-pins)) | jeder freie Pin der Stiftleiste, den ein PIO-Block erreicht; keine Slice-Regel |
 
 Port 1 beginnt als SERVO PWM auf GP13, die Ports 2 bis 4 als KEINE ohne
 Pin. Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash mit der
@@ -3934,6 +3953,8 @@ wieder genommen.
 
 ![Der Eintrag PROG-PORT](img/de/outputs-port.png)
 
+![PROG-PORT 2 als DSHOT300, die Liste FUNKTION offen](img/de/outputs-port-dshot.png)
+
 Die gelbe Zeile unter den Zeilen nennt den ersten Grund, der zutrifft:
 
 | Zeile | Wann |
@@ -3943,7 +3964,7 @@ Die gelbe Zeile unter den Zeilen nennt den ersten Grund, der zutrifft:
 | `PORTS NOCH NICHT GELESEN` | die Seite seit dem Linkaufbau nicht gelesen: FUNKTION nimmt kein Tippen an |
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | ARMED, oder ein Test oder Sweep läuft |
 | `SERVO-TESTER STEUERT PROG-PORT n` | der Tester steuert einen anderen Port, Port n |
-| `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE: der Tester nimmt ihn nicht als Ziel |
+| `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE oder DShot: der Tester nimmt ihn nicht als Ziel |
 | `IOMCU ÄLTER ALS 4.26: NUR SERVO PWM` | der IOmcu hat keine FUNKTION: jeder Port ist SERVO PWM, und die Zeile nimmt kein Tippen an |
 | `SERVO-TESTER STEUERT PROG-PORT n` | der Tester steuert diesen Port, Port n: FUNKTION nimmt kein Tippen an |
 | `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM auf einem Port, der nicht das Ziel des Testers ist |
@@ -3963,7 +3984,7 @@ Pin, mit dem er kollidiert.
 
 | Zelle | Zeile nach einem Tippen darauf | Regel |
 | --- | --- | --- |
-| `SLICE VON GP13` | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin eines SERVO-PWM-Programmierports, solange der Port ihn hält, geprüft gegen jeden Port, den der IOmcu meldet; GP13 und GP28 sind Slice 6. Der Pin eines Ports mit KEINE steht unter keiner Slice-Regel |
+| `SLICE VON GP13` | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin eines SERVO-PWM-Programmierports, solange der Port ihn hält, geprüft gegen jeden Port, den der IOmcu meldet; GP13 und GP28 sind Slice 6. Der Pin eines Ports mit KEINE oder DShot steht unter keiner Slice-Regel |
 | `KANAL VON GP0` | `GP16: GLEICHER PWM-KANAL WIE GP0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22 |
 
 Die Zeile steht in Bernstein unter dem Protokoll bis zur nächsten Auswahl,
