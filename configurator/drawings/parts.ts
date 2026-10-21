@@ -199,10 +199,13 @@ function coproOsoyoo(d: Dwg): void {
 }
 
 // ---------------------------------------------------------------- panel
-// The back of the 7-inch ESP32-P4 board from Waveshare, after the assembly
-// drawing on page 2 of its schematic, turned by 180 degrees so that the CAN
-// header H11 is on the right edge. Not to scale. No photo of the board is
-// in the picture folder.
+/**
+ * Draws the back of the 7-inch ESP32-P4 board from Waveshare, after the
+ * assembly drawing on page 2 of its schematic, turned by 180 degrees so that
+ * the CAN header H11 is on the right edge. Not to scale. No photo of the
+ * board is in the picture folder.
+ * @param d The drawing to add the shapes and the pins CANG, CANH, CANL and HB to.
+ */
 function panel(d: Dwg): void {
   d.add(d.board(24, 40, 320, 210, 'blue', 6));
   d.add(d.hole(40, 56, 4.5, '#70777e'), d.hole(328, 56, 4.5, '#70777e'), d.hole(40, 234, 4.5, '#70777e'), d.hole(328, 234, 4.5, '#70777e'));

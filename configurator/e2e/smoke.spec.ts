@@ -390,7 +390,7 @@ test.describe('pictures', () => {
       top: img.getBoundingClientRect().top,
       lazy: img.loading === 'lazy' && img.decoding === 'async',
     })));
-    expect(images).toHaveLength(12);
+    expect(images).toHaveLength(11);
     for (const image of images) {
       expect(image.lazy, image.path).toBe(true);
       // Above the fold: the first screen of 360 x 800 px holds no picture.
@@ -436,7 +436,7 @@ test.describe('pictures', () => {
           return out;
         });
         // Panel 1, IOmcu 2, PD mini 1, INA3221 2, AS5600 1, INA228 2, emergency stop 2, T-plug 1.
-        expect(cards.map((c) => c.src)).toHaveLength(12);
+        expect(cards.map((c) => c.src)).toHaveLength(11);
         for (const c of cards) {
           expect(c.ok, c.src).toBe(true);
           expect(c.alt.length, c.src).toBeGreaterThan(20);

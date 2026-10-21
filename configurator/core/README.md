@@ -409,6 +409,17 @@ reachable, English and German for every text, no word of the list in
 `catalogue-osoyoo.test.ts` checks the facts, texts and sources of the Osoyoo strip data and the
 reader of the coverage report.
 
+`panel.test.ts` holds the panel part to
+`firmware/panel/components/board/include/board_pins.h` of the working tree,
+not of the tag: that pin map is newer than the tag the data names. The
+heartbeat pin is `PANEL_HEARTBEAT_PIN`, a GPIO of the free headers P1 and P3
+and none of the ESP32-C6 (GPIO6, GPIO14 to GPIO19, GPIO54). While the define
+carries the word "placeholder", the pin `HB` is unconfirmed and the check
+entry `panel-heartbeat-pin` names it as not decided; without the word, the
+pin must be confirmed and the entry gone. The knob pins
+`BOARD_KNOB_PIN_SDA` and `BOARD_KNOB_PIN_SCL` are held to the entry `knob`
+of the list "not in a release" in the same way.
+
 ## Coverage
 
 Line coverage of the resolver, the groups and the motor simulator, measured by `node --test --experimental-test-coverage`.

@@ -93,7 +93,7 @@ const XL1509_DATASHEET = doc(
 const P4_SCHEMATIC = doc(
   'Waveshare schematic ESP32-P4-WIFI6-Touch-LCD-7B, 2 pages, file dated 2025-09-25',
   'https://files.waveshare.com/wiki/ESP32-P4-WIFI6-Touch-LCD-7B/ESP32-P4-WIFI6-Touch-LCD-7B.pdf',
-  'page 1: CAN header H11 (pins 1 Core_5V, 2 GND, 3 CANH, 4 CANL), header P3 (pin 6 GPIO28, pin 11 GND), jumper H5; page 2: prints CAN L H GND 5V and NC 120R',
+  'page 1: headers H11 and P3, jumper H5; page 2: prints',
 );
 
 /** A statement of the project owner, by its date. */
@@ -1702,8 +1702,8 @@ const checks: Check[] = [
   {
     id: 'panel-terminals', kind: 'note',
     text: t(
-      'Panel: the 4-pin CAN header H11 has the print CAN with L, H, GND and 5V. CAN H, CAN L and GND take wires 1 to 3. The pin 5V is the 5 V rail of the board and takes no wire: the panel runs from its USB-C charger. The heartbeat is the pin IO28 of the 12-pin header P3, print 3V3, GND, IO2 to IO5, IO28 to IO31, IO34, IO36. The jumper H5 beside the print CAN sits on 120R: the 120 Ω termination. The slide switch at the print ON OFF sits on ON.',
-      'Panel: Die 4-polige CAN-Buchse H11 trägt den Aufdruck CAN mit L, H, GND und 5V. CAN H, CAN L und GND bekommen die Drähte 1 bis 3. Der Pin 5V ist die 5-V-Schiene der Platine und bekommt keinen Draht: Das Panel läuft an seinem USB-C-Ladegerät. Der Heartbeat ist der Pin IO28 der 12-poligen Buchse P3, Aufdruck 3V3, GND, IO2 bis IO5, IO28 bis IO31, IO34, IO36. Der Jumper H5 neben dem Aufdruck CAN steckt auf 120R: der 120-Ω-Abschluss. Der Schiebeschalter am Aufdruck ON OFF steht auf ON.',
+      'Panel: the 4-pin CAN header H11 has the print CAN with L, H, GND and 5V. CAN H, CAN L and GND take wires 1 to 3. The pin 5V is the 5 V rail of the board and takes no wire: the panel runs from its USB-C charger. The heartbeat is the pin IO28 of the 12-pin header P3. The jumper H5 beside the print CAN sits on 120R: the 120 Ω termination. The slide switch at the print ON OFF sits on ON.',
+      'Panel: Die 4-polige CAN-Buchse H11 trägt den Aufdruck CAN mit L, H, GND und 5V. CAN H, CAN L und GND bekommen die Drähte 1 bis 3. Der Pin 5V ist die 5-V-Schiene der Platine und bekommt keinen Draht: Das Panel läuft an seinem USB-C-Ladegerät. Der Heartbeat ist der Pin IO28 der 12-poligen Buchse P3. Der Jumper H5 neben dem Aufdruck CAN steckt auf 120R: der 120-Ω-Abschluss. Der Schiebeschalter am Aufdruck ON OFF steht auf ON.',
     ),
     when: null, src: P4_SCHEMATIC,
   },
