@@ -1,5 +1,8 @@
-/*
- * The INA228.  See ina228.h; tables and equations are TI SLYS021A's.
+/**
+ * @file
+ * @brief The INA228.
+ *
+ * See ina228.h; tables and equations are TI SLYS021A's.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -8,11 +11,18 @@
 
 #include <string.h>
 
-/* Ends of a 20-bit two's complement register. */
+/**
+ * @brief Ends of a 20-bit two's complement register.
+ */
 #define CODE20_MAX   524287
+/**
+ * @brief Ends of the 20-bit code range.
+ */
 #define CODE20_MIN (-524288)
 
-/* Full-scale shunt voltages as max mA × µΩ, which is nV (Table 8-1). */
+/**
+ * @brief Full-scale shunt voltages as max mA × µΩ, which is nV (Table 8-1).
+ */
 #define FS_NARROW_NV  40960000u    /* ±40.96 mV, ADCRANGE 1  */
 #define FS_WIDE_NV   163840000u    /* ±163.84 mV, ADCRANGE 0 */
 
@@ -29,7 +39,12 @@ uint16_t ina228_adc_config(uint8_t mode, uint8_t vbusct, uint8_t vshct,
                     | (avg & 7u));
 }
 
-/** Conversion time of a VBUSCT, VSHCT or VTCT code, µs (Table 7-6). */
+/**
+ * @brief Conversion time of a VBUSCT, VSHCT or VTCT code, µs (Table 7-6).
+ *
+ * @param code The conversion time code.
+ * @return The typical conversion time, in µs.
+ */
 static uint32_t ina228_ct_us(uint8_t code)
 {
     static const uint16_t k_us[8] = { 50, 84, 150, 280, 540, 1052, 2074, 4120 };
@@ -66,7 +81,7 @@ bool ina228_identity_ok(uint16_t maker, uint16_t device)
     return maker == INA228_MAKER_ID && (device >> 4) == INA228_DIE_ID;
 }
 
-/* ------------------------------------------------------- calibration */
+/** @brief calibration */
 
 ina228_setup_err_t ina228_calibrate(uint32_t shunt_uohm, uint32_t max_ma,
                                     ina228_cal_t *out)
@@ -100,20 +115,32 @@ ina228_setup_err_t ina228_calibrate(uint32_t shunt_uohm, uint32_t max_ma,
     return INA228_SETUP_OK;
 }
 
-/* R × 4 at ADCRANGE 1: the denominator every quantity scaled by
- * CURRENT_LSB = SHUNT_CAL / (13107.2 × R[µΩ] × (4 at ADCRANGE 1)) shares. */
+/**
+ * @brief R × 4 at ADCRANGE 1: the denominator every quantity scaled by
+ * CURRENT_LSB = SHUNT_CAL / (13107.2 × R[µΩ] × (4 at ADCRANGE 1)) shares.
+ *
+ * @param cal The calibration.
+ * @return The shunt resistance times 4 at ADCRANGE 1, in µΩ.
+ */
 static uint64_t r_k(const ina228_cal_t *cal)
 {
     return (uint64_t)cal->shunt_uohm * (cal->adcrange != 0u ? 4u : 1u);
 }
 
-/* ------------------------------------------------------------ decoding */
+/** @brief decoding */
 
 int32_t ina228_code20(uint32_t raw24)
 {
     return sense_sext32(raw24 >> 4, 20u);
 }
 
+/**
+ * @brief Classify a 20-bit code: at either end of its range it is a clip.
+ *
+ * @param code The 20-bit code, -524288 to 524287.
+ * @return SENSE_CLIP_HIGH at 524287 or above, SENSE_CLIP_LOW at -524288 or
+ *       below, else SENSE_CLIP_NONE.
+ */
 static sense_clip_t clip20(int32_t code)
 {
     if (code >= CODE20_MAX) {
@@ -181,7 +208,7 @@ int64_t ina228_charge_uc(const ina228_cal_t *cal, uint64_t raw40)
     return sense_muldiv(q * cal->shunt_cal, 78125u, 1024u * r_k(cal));
 }
 
-/* -------------------------------------------------------------- driver */
+/** @brief driver */
 
 ina228_setup_err_t ina228_init(ina228_t *d, sense_bus_t *bus, uint8_t addr,
                                uint32_t shunt_uohm, uint32_t max_ma,
@@ -203,6 +230,14 @@ ina228_setup_err_t ina228_init(ina228_t *d, sense_bus_t *bus, uint8_t addr,
     return INA228_SETUP_OK;
 }
 
+/**
+ * @brief Read a 16-bit register.
+ *
+ * @param d The driver.
+ * @param reg Register address.
+ * @param v Receives the value.
+ * @return true when the read succeeded.
+ */
 static bool read16(ina228_t *d, uint8_t reg, uint16_t *v)
 {
     uint8_t b[2];
@@ -213,11 +248,26 @@ static bool read16(ina228_t *d, uint8_t reg, uint16_t *v)
     return true;
 }
 
+/**
+ * @brief Write a 16-bit register.
+ *
+ * @param d The driver.
+ * @param reg Register address.
+ * @param v The value to write.
+ * @return true when the write succeeded.
+ */
 static bool write16(ina228_t *d, uint8_t reg, uint16_t v)
 {
     return sense_bus_write16(d->part.bus, d->part.addr, reg, v) == SENSE_OK;
 }
 
+/**
+ * @brief Probe the part: identity, then the set-up written and read back.
+ *
+ * @param d The driver.
+ * @return SENSE_PART_ABSENT, SENSE_PART_WRONG_ID, SENSE_PART_REFUSED or
+ *       SENSE_PART_ONLINE.
+ */
 static sense_state_t probe(ina228_t *d)
 {
     if (!read16(d, INA228_MANUFACTURER, &d->part.id_maker)
@@ -264,6 +314,14 @@ sense_state_t ina228_state(const ina228_t *d)
     return d->part.state;
 }
 
+/**
+ * @brief Read a 24-bit register value, 3 bytes.
+ *
+ * @param d The driver.
+ * @param reg Register address.
+ * @param raw Receives the value.
+ * @return SENSE_OK, or the bus error.
+ */
 static sense_err_t read24(ina228_t *d, uint8_t reg, uint32_t *raw)
 {
     uint8_t b[3];
@@ -274,6 +332,14 @@ static sense_err_t read24(ina228_t *d, uint8_t reg, uint32_t *raw)
     return e;
 }
 
+/**
+ * @brief Read a 40-bit register value, 5 bytes.
+ *
+ * @param d The driver.
+ * @param reg Register address.
+ * @param raw Receives the value.
+ * @return SENSE_OK, or the bus error.
+ */
 static sense_err_t read40(ina228_t *d, uint8_t reg, uint64_t *raw)
 {
     uint8_t b[5];
@@ -284,6 +350,14 @@ static sense_err_t read40(ina228_t *d, uint8_t reg, uint64_t *raw)
     return e;
 }
 
+/**
+ * @brief Read a 16-bit register value, 2 bytes.
+ *
+ * @param d The driver.
+ * @param reg Register address.
+ * @param raw Receives the value.
+ * @return SENSE_OK, or the bus error.
+ */
 static sense_err_t read_reg16(ina228_t *d, uint8_t reg, uint16_t *raw)
 {
     uint8_t b[2];

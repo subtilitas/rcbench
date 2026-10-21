@@ -1,5 +1,8 @@
-/*
- * The sensor bus's sampling schedule.  See sense_sched.h.
+/**
+ * @file
+ * @brief The sensor bus's sampling schedule.
+ *
+ * See sense_sched.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -8,7 +11,11 @@
 
 #include <string.h>
 
-/* What a rotation item reads.  An INA3221 item names its part. */
+/**
+ * @brief What a rotation item reads.
+ *
+ * An INA3221 item names its part.
+ */
 typedef enum {
     ROT_NONE = 0,
     ROT_TEMP,
@@ -21,9 +28,11 @@ typedef enum {
                     /* part a's Configuration read back: + a      */
 } rot_t;
 
-/* The INA228's eight slots where they always were; each INA3221's
- * Mask/Enable and Configuration 20 ms apart, part 0's in the slots one
- * part had before; four slots empty. */
+/**
+ * @brief The INA228's eight slots where they always were; each INA3221's
+ * Mask/Enable and Configuration 20 ms apart, part 0's in the slots one part had
+ * before; four slots empty.
+ */
 static const uint8_t k_rotation[SENSE_ROTATION] = {
     ROT_FLAGS0 + 1,  ROT_TEMP,   ROT_NONE,         ROT_DIAG,
     ROT_FLAGS0 + 2,  ROT_ENERGY, ROT_FLAGS0 + 3,   ROT_CHARGE,
@@ -33,11 +42,22 @@ static const uint8_t k_rotation[SENSE_ROTATION] = {
     ROT_NONE,        ROT_CONFIG0,
 };
 
+/**
+ * @brief Clear a window accumulator.
+ *
+ * @param a The accumulator.
+ */
 static void acc_clear(sense_acc_t *a)
 {
     memset(a, 0, sizeof(*a));
 }
 
+/**
+ * @brief Add one current sample to a window accumulator.
+ *
+ * @param a The accumulator.
+ * @param v The sample.
+ */
 static void acc_current(sense_acc_t *a, sense_value_t v)
 {
     if (v.clip == SENSE_CLIP_HIGH) {
@@ -60,6 +80,12 @@ static void acc_current(sense_acc_t *a, sense_value_t v)
     ++a->n_i;
 }
 
+/**
+ * @brief Add one bus voltage sample to a window accumulator.
+ *
+ * @param a The accumulator.
+ * @param uv Voltage, in µV.
+ */
 static void acc_voltage(sense_acc_t *a, int32_t uv)
 {
     if (a->n_v == 0u || uv < a->v_min) {
@@ -69,6 +95,13 @@ static void acc_voltage(sense_acc_t *a, int32_t uv)
     ++a->n_v;
 }
 
+/**
+ * @brief Close a window: write its totals from an accumulator.
+ *
+ * @param a The accumulator.
+ * @param number Number of the window.
+ * @param w Receives the window.
+ */
 static void acc_close(const sense_acc_t *a, uint64_t number, sense_window_t *w)
 {
     memset(w, 0, sizeof(*w));
@@ -88,9 +121,17 @@ static void acc_close(const sense_acc_t *a, uint64_t number, sense_window_t *w)
     }
 }
 
-/* FAST's window into a ring entry: every sample counted, a clipped one as
- * the end of the range it read.  @p top and @p bottom are the ends of
- * FAST's range. */
+/**
+ * @brief FAST's window into a ring entry: every sample counted, a clipped one
+ * as the end of the range it read.
+ *
+ * @p top and @p bottom are the ends of FAST's range.
+ *
+ * @param top The current at the top code, in µA.
+ * @param bottom The current at the bottom code, in µA.
+ * @param a The accumulator.
+ * @param e Receives the ring entry.
+ */
 static void ring_close(int32_t top, int32_t bottom, const sense_acc_t *a,
                        sense_ring_win_t *e)
 {
@@ -123,9 +164,15 @@ static void ring_close(int32_t top, int32_t bottom, const sense_acc_t *a,
     }
 }
 
-/* Window @p number has closed with FAST's @p a, empty with no FAST: the
- * ring moves on by as many places as numbers have passed, and the places
- * of skipped numbers read not closed. */
+/**
+ * @brief Window @p number has closed with FAST's @p a, empty with no FAST: the
+ * ring moves on by as many places as numbers have passed, and the places of
+ * skipped numbers read not closed.
+ *
+ * @param s The schedule.
+ * @param number Number of the window.
+ * @param a FAST's accumulator, or the empty one with no FAST.
+ */
 static void ring_push(sense_sched_t *s, uint64_t number, const sense_acc_t *a)
 {
     const uint64_t step = s->have_last ? number - s->ring_at : SENSE_WIN_RING;
@@ -147,7 +194,12 @@ static void ring_push(sense_sched_t *s, uint64_t number, const sense_acc_t *a)
     s->ring_at = number;
 }
 
-/* Part @p a's set-up from the map: its channels with a shunt. */
+/**
+ * @brief Part @p a's set-up from the map: its channels with a shunt.
+ *
+ * @param s The schedule.
+ * @param a Part index, 0 to 3.
+ */
 static void init_part(sense_sched_t *s, unsigned a)
 {
     const sense_i3221_cfg_t *m = &s->cfg.i3221;
@@ -177,7 +229,13 @@ static void init_part(sense_sched_t *s, unsigned a)
     }
 }
 
-/* Whether channel @p c is read: its part set up and the channel on. */
+/**
+ * @brief Whether channel @p c is read: its part set up and the channel on.
+ *
+ * @param s The schedule.
+ * @param c Channel index, 0 to 11.
+ * @return true when the channel is read.
+ */
 static bool ch_read(const sense_sched_t *s, unsigned c)
 {
     const unsigned a = c / INA3221_CHANNELS;
@@ -250,10 +308,16 @@ bool sense_sched_ring(const sense_sched_t *s, unsigned back,
     return out->closed;
 }
 
-/* -------------------------------------------------------------- reads */
+/** @brief reads */
 
-/* An INA228 transaction's result: the first failure after the clear ends
- * the run's totals. */
+/**
+ * @brief An INA228 transaction's result: the first failure after the clear ends
+ * the run's totals.
+ *
+ * @param s The schedule.
+ * @param e The result of the transaction.
+ * @return true when the transaction succeeded.
+ */
 static bool i228_ok(sense_sched_t *s, sense_err_t e)
 {
     if (e != SENSE_OK) {
@@ -263,10 +327,21 @@ static bool i228_ok(sense_sched_t *s, sense_err_t e)
     return true;
 }
 
+/**
+ * @brief Close the windows whose time has passed.
+ *
+ * @param s The schedule.
+ * @param now_ms The current time, in ms.
+ */
 static void roll_windows(sense_sched_t *s, uint64_t now_ms);
 
-/* A read is done: its time, µs, with the windows rolled to it, so what it
- * read goes into the window it was read in. */
+/**
+ * @brief A read is done: its time, µs, with the windows rolled to it, so what
+ * it read goes into the window it was read in.
+ *
+ * @param s The schedule.
+ * @return The time of the read, in µs.
+ */
 static uint64_t stamp(sense_sched_t *s)
 {
     const uint64_t us = s->io.now_us(s->io.ctx);
@@ -274,8 +349,17 @@ static uint64_t stamp(sense_sched_t *s)
     return us;
 }
 
-/* Channel @p c's current into its window; true with a sample.  @p at_us,
- * when given, is when the read was done, sample or not. */
+/**
+ * @brief Channel @p c's current into its window; true with a sample.
+ *
+ * @p at_us, when given, is when the read was done, sample or not.
+ *
+ * @param s The schedule.
+ * @param c Channel index, 0 to 11.
+ * @param v Receives the current.
+ * @param at_us Receives the time of the read, in µs; may be NULL.
+ * @return true with a sample.
+ */
 static bool read_ch_current(sense_sched_t *s, unsigned c, sense_value_t *v,
                             uint64_t *at_us)
 {
@@ -294,6 +378,12 @@ static bool read_ch_current(sense_sched_t *s, unsigned c, sense_value_t *v,
     return ok;
 }
 
+/**
+ * @brief Read channel c's bus voltage into its window.
+ *
+ * @param s The schedule.
+ * @param c Channel index, 0 to 11.
+ */
 static void read_ch_bus(sense_sched_t *s, unsigned c)
 {
     int32_t mv = 0;
@@ -306,7 +396,11 @@ static void read_ch_bus(sense_sched_t *s, unsigned c)
     }
 }
 
-/* The next channel beside FAST, in turn. */
+/**
+ * @brief The next channel beside FAST, in turn.
+ *
+ * @param s The schedule.
+ */
 static void read_other(sense_sched_t *s)
 {
     if (s->n_others == 0u) {
@@ -318,9 +412,12 @@ static void read_other(sense_sched_t *s)
     (void)read_ch_current(s, c, &v, NULL);
 }
 
-/* The next channel's bus voltage: every channel in turn, one that is not
- * read leaving its turn empty, so each is read every SENSE_CHANNELS even
- * ticks. */
+/**
+ * @brief The next channel's bus voltage: every channel in turn, one that is not
+ * read leaving its turn empty, so each is read every SENSE_CHANNELS even ticks.
+ *
+ * @param s The schedule.
+ */
 static void read_volt(sense_sched_t *s)
 {
     const unsigned c = s->volt_at;
@@ -328,6 +425,11 @@ static void read_volt(sense_sched_t *s)
     read_ch_bus(s, c);
 }
 
+/**
+ * @brief Read the INA228's current into its window and the run's peaks.
+ *
+ * @param s The schedule.
+ */
 static void read_i228_current(sense_sched_t *s)
 {
     sense_value_t v = { 0, SENSE_CLIP_NONE };
@@ -354,6 +456,11 @@ static void read_i228_current(sense_sched_t *s)
     }
 }
 
+/**
+ * @brief Read the INA228's bus voltage into its window and the run's minimum.
+ *
+ * @param s The schedule.
+ */
 static void read_i228_vbus(sense_sched_t *s)
 {
     int32_t uv = 0;
@@ -373,7 +480,12 @@ static void read_i228_vbus(sense_sched_t *s)
     }
 }
 
-/* The INA228's slot @p n: CURRENT on even ones, VBUS on odd ones. */
+/**
+ * @brief The INA228's slot @p n: CURRENT on even ones, VBUS on odd ones.
+ *
+ * @param s The schedule.
+ * @param n The slot number.
+ */
 static void read_i228(sense_sched_t *s, uint32_t n)
 {
     if ((n & 1u) == 0u) {
@@ -383,11 +495,17 @@ static void read_i228(sense_sched_t *s, uint32_t n)
     }
 }
 
-/* The INA228's ADC_CONFIG read back.  A part found reset is offline from
- * here.  The read-back is stamped as any read: the windows are rolled to
- * the time it was done, and the one being filled then is emptied -- it
- * holds samples at the reset range.  The voltage of the last slot pairs
- * with no current, and the totals are no longer the run's. */
+/**
+ * @brief The INA228's ADC_CONFIG read back.
+ *
+ * A part found reset is offline from here.  The read-back is stamped as any
+ * read: the windows are rolled to the time it was done, and the one being
+ * filled then is emptied -- it holds samples at the reset range.  The voltage
+ * of the last slot pairs with no current, and the totals are no longer the
+ * run's.
+ *
+ * @param s The schedule.
+ */
 static void verify_i228(sense_sched_t *s)
 {
     bool lost = false;
@@ -402,10 +520,16 @@ static void verify_i228(sense_sched_t *s)
     s->run.totals_ok = false;
 }
 
-/* Part @p a's Configuration read back.  A part found reset is offline
- * from here, which ends a capture on it as lost (sense_cap_step()); the
- * windows being filled from it at the time the read-back was done are
- * emptied. */
+/**
+ * @brief Part @p a's Configuration read back.
+ *
+ * A part found reset is offline from here, which ends a capture on it as lost
+ * (sense_cap_step()); the windows being filled from it at the time the
+ * read-back was done are emptied.
+ *
+ * @param s The schedule.
+ * @param a Part index, 0 to 3.
+ */
 static void verify_i3221(sense_sched_t *s, unsigned a)
 {
     bool lost = false;
@@ -420,6 +544,12 @@ static void verify_i3221(sense_sched_t *s, unsigned a)
     }
 }
 
+/**
+ * @brief Read part a's Mask/Enable flags; kept when the read succeeds.
+ *
+ * @param s The schedule.
+ * @param a Part index, 0 to 3.
+ */
 static void read_flags(sense_sched_t *s, unsigned a)
 {
     if (ina3221_read_flags(&s->i3221[a], &s->flags[a]) == SENSE_OK) {
@@ -427,7 +557,11 @@ static void read_flags(sense_sched_t *s, unsigned a)
     }
 }
 
-/* The next rotation item. */
+/**
+ * @brief The next rotation item.
+ *
+ * @param s The schedule.
+ */
 static void read_rotation(sense_sched_t *s)
 {
     const unsigned item = k_rotation[s->rot % SENSE_ROTATION];
@@ -463,7 +597,7 @@ static void read_rotation(sense_sched_t *s)
     }
 }
 
-/* ------------------------------------------------------------ encoder */
+/** @brief encoder */
 
 uint16_t sense_sched_enc_still_ms(const sense_sched_t *s)
 {
@@ -475,8 +609,14 @@ uint16_t sense_sched_enc_still_ms(const sense_sched_t *s)
     return (d > 65535u) ? 65535u : (uint16_t)d;
 }
 
-/* An angle sample at @p at_ms: the anchor moves when the angle has left
- * its tolerance. */
+/**
+ * @brief An angle sample at @p at_ms: the anchor moves when the angle has left
+ * its tolerance.
+ *
+ * @param e The encoder state.
+ * @param raw The angle, 0 to 4095 counts.
+ * @param at_ms The time of the sample, in ms.
+ */
 static void enc_anchor(sense_enc_t *e, uint16_t raw, uint64_t at_ms)
 {
     int d = as5600_delta(raw, e->anchor);
@@ -490,10 +630,16 @@ static void enc_anchor(sense_enc_t *e, uint16_t raw, uint64_t at_ms)
     }
 }
 
-/* The encoder's slot: STATUS and RAW ANGLE, and every SENSE_ENC_MAG_EVERY-th
- * time the field's AGC and MAGNITUDE as well, in place of STATUS.  The angle
- * is read in every slot, 500 Hz.  Each register is a transaction of its own
- * (as5600.h). */
+/**
+ * @brief The encoder's slot: STATUS and RAW ANGLE, and every
+ * SENSE_ENC_MAG_EVERY-th time the field's AGC and MAGNITUDE as well, in place
+ * of STATUS.
+ *
+ * The angle is read in every slot, 500 Hz.  Each register is a transaction of
+ * its own (as5600.h).
+ *
+ * @param s The schedule.
+ */
 static void read_enc(sense_sched_t *s)
 {
     sense_enc_t *e = &s->enc;
@@ -556,9 +702,16 @@ static void read_enc(sense_sched_t *s)
     }
 }
 
-/* The windows: the one being filled closes when the clock passes its
- * end, and the next one starts empty.  In 64 bits, so the numbering runs
- * on past the 32-bit millisecond count's wrap at 49.7 days. */
+/**
+ * @brief The windows: the one being filled closes when the clock passes its
+ * end, and the next one starts empty.
+ *
+ * In 64 bits, so the numbering runs on past the 32-bit millisecond count's wrap
+ * at 49.7 days.
+ *
+ * @param s The schedule.
+ * @param now_ms The current time, in ms.
+ */
 static void roll_windows(sense_sched_t *s, uint64_t now_ms)
 {
     if (!s->started) {
@@ -588,7 +741,11 @@ static void roll_windows(sense_sched_t *s, uint64_t now_ms)
     s->win       = win;
 }
 
-/* The totals: cleared once the arm owes it. */
+/**
+ * @brief The totals: cleared once the arm owes it.
+ *
+ * @param s The schedule.
+ */
 static void totals(sense_sched_t *s)
 {
     sense_run_t *r = &s->run;

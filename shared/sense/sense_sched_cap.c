@@ -1,6 +1,9 @@
-/*
- * The schedule's move capture on the FAST channel, and FAST's history the
- * level before a command is taken from.  See sense_sched.h.
+/**
+ * @file
+ * @brief The schedule's move capture on the FAST channel, and FAST's history
+ * the level before a command is taken from.
+ *
+ * See sense_sched.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,11 +33,23 @@ bool sense_sched_cap_arm(sense_sched_t *s, const sense_cap_arm_t *levels)
     return true;
 }
 
+/**
+ * @brief Convert µA to A.
+ *
+ * @param ua Current in µA.
+ * @return Current in A.
+ */
 static float ua_to_a(int32_t ua)
 {
     return (float)ua * 1e-6f;
 }
 
+/**
+ * @brief Convert A to µA, rounded half away from zero.
+ *
+ * @param a Current in A.
+ * @return Current in µA.
+ */
 static int32_t a_to_ua(float a)
 {
     const float ua = a * 1e6f;
@@ -78,7 +93,12 @@ void sense_sched_cap_disarm(sense_sched_t *s)
     s->cap.state = SENSE_CAP_IDLE;
 }
 
-/* The capture ends as @p state, with what the move measured. */
+/**
+ * @brief The capture ends as @p state, with what the move measured.
+ *
+ * @param c The capture.
+ * @param state The state the capture ends in.
+ */
 static void cap_end(sense_cap_t *c, sense_cap_state_t state)
 {
     const servo_move_t *m = &c->mv;
@@ -95,9 +115,16 @@ static void cap_end(sense_cap_t *c, sense_cap_state_t state)
     c->clipped  = m->clipped;
 }
 
-/* A clipped FAST sample at the end of the range it is at or past, as the
- * capture's filter takes it; a sample with a value as it is.  Only called
- * with a FAST channel. */
+/**
+ * @brief A clipped FAST sample at the end of the range it is at or past, as the
+ * capture's filter takes it; a sample with a value as it is.
+ *
+ * Only called with a FAST channel.
+ *
+ * @param s The schedule.
+ * @param v The FAST sample.
+ * @return The current in µA.
+ */
 static int32_t fast_ua(const sense_sched_t *s, const sense_value_t *v)
 {
     const int32_t clip = s->ch_clip_ua[s->cfg.i3221.fast];
@@ -110,8 +137,14 @@ static int32_t fast_ua(const sense_sched_t *s, const sense_value_t *v)
     return v->value;
 }
 
-/* A FAST sample into the history the level before a command is taken
- * from. */
+/**
+ * @brief A FAST sample into the history the level before a command is taken
+ * from.
+ *
+ * @param s The schedule.
+ * @param v The FAST sample.
+ * @param at_t Time of the sample, in 0.1 ms.
+ */
 static void fast_keep(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
 {
     s->hist[s->hist_head].t  = at_t;
@@ -122,8 +155,16 @@ static void fast_keep(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
     }
 }
 
-/* The level before the command: the mean of the FAST samples stamped in
- * the SENSE_WINDOW_MS before the edge.  False with none. */
+/**
+ * @brief The level before the command: the mean of the FAST samples stamped in
+ * the SENSE_WINDOW_MS before the edge.
+ *
+ * False with none.
+ *
+ * @param s The schedule.
+ * @return true when at least one sample lies in the window before the edge;
+ *       false otherwise.
+ */
 static bool take_rise(sense_sched_t *s)
 {
     sense_cap_t *c = &s->cap;
@@ -146,7 +187,13 @@ static bool take_rise(sense_sched_t *s)
     return true;
 }
 
-/* A FAST sample, or none, and the clock: both at @p at_t. */
+/**
+ * @brief A FAST sample, or none, and the clock: both at @p at_t.
+ *
+ * @param s The schedule.
+ * @param v FAST's sample, or NULL when there is none.
+ * @param at_t Time of the step, in 0.1 ms.
+ */
 static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
 {
     sense_cap_t *c = &s->cap;

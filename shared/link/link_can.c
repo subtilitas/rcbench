@@ -1,5 +1,6 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "link_can.h"
@@ -8,6 +9,12 @@
 
 #include "link_pages.h"
 
+/**
+ * @brief Test whether an op is one the protocol defines.
+ *
+ * @param op The op to test.
+ * @return true for READ, WRITE, DATA, ACK and NACK.
+ */
 static bool op_is_known(uint8_t op)
 {
     switch (op) {
@@ -22,9 +29,15 @@ static bool op_is_known(uint8_t op)
     }
 }
 
-/* A READ says how many registers it wants and carries none of them; every
- * other op carries the registers it is about.  A property of the protocol,
- * not of the transport. */
+/**
+ * @brief A READ says how many registers it wants and carries none of them;
+ * every other op carries the registers it is about.
+ *
+ * A property of the protocol, not of the transport.
+ *
+ * @param op The op to test.
+ * @return false for READ, true for the other ops.
+ */
 static bool op_carries_payload(uint8_t op)
 {
     return op != (uint8_t)LINK_OP_READ;
