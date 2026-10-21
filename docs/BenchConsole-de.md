@@ -159,8 +159,9 @@ hitec now state=OPEN port=0 flags=RAIL ...
 
 `flags=PRECHARGE` und `rx=` sagen zweierlei. `PRECHARGE` in `flags` ist
 Register 23, der Empfangsmodus, den das nächste OPEN einer Leitung der
-D-Serie nimmt. `rx=` in der Zeile `hitec line` ist der Modus der Leitung,
-die jetzt offen ist. Sie weichen ab, wenn Register 23 geschrieben wird,
+D-Serie nimmt. `rx=` in der Zeile `hitec line` ist der Modus, den das letzte
+OPEN nahm: der der offenen Leitung, solange eine offen ist, und nach CLOSE
+behalten. Sie weichen ab, wenn Register 23 geschrieben wird,
 während eine Leitung offen ist: die offene Leitung behält ihren Modus bis
 CLOSE. Das Panel schreibt Register 23 bei jedem Link-Aufbau und bei jeder
 Änderung von SETUP > ANSCHLÜSSE > Hitec-D-Empfang, gespeichert oder nicht:
@@ -200,9 +201,12 @@ Bitzeiten Bytes und 1 losgelassene Bitzeit.
 
 `<dec>` ist `none`, `c:<cmd>`, `d:<addr>` oder `l:<byte>`.
 
-Eine Option von `send`, `listen` oder `power`, die fehlt, ist 0: kein
-Vorlauf, keine Lücke, kein Fenster, kein empfangenes Byte, kein Dekoder.
-`send` fügt keinen Vorlauf und kein Summenbyte hinzu. Die rohe Form von
+Eine Option von `send`, `listen` oder `power`, die fehlt, ist 0: keine
+Lücke, kein Fenster, kein empfangenes Byte, kein Dekoder. `answer` ist die
+Ausnahme: fehlt es, wird nichts beantwortet; `answer=0` antwortet 0x00. Ein
+fehlendes `lead=` lässt die Auffüllung der PIO-Wörter vorn stehen: ein SEND
+der D-Serie mit 5 Bytes wird mit und ohne `lead=88` 117,2 us low getrieben.
+`send` fügt kein Summenbyte hinzu. Die rohe Form von
 `hitec d 0 read 0 0x32`:
 
 ```text
@@ -210,9 +214,8 @@ Vorlauf, keine Lücke, kein Fenster, kein empfangenes Byte, kein Dekoder.
 ```
 
 Das letzte Byte ist das untere Byte der Summe aller Bytes nach dem Header
-0x96: 0x00 + 0x32 + 0x00 = 0x32. Derselbe Frame mit dem Header in der
-Summe, 0xC8, ohne Vorlauf gesendet, bekam von einem D485HW keine Antwort.
-Woran der Servo ihn abweist, ist nicht gemessen.
+0x96: 0x00 + 0x32 + 0x00 = 0x32. Derselbe Frame mit dem Summenbyte 0xC8,
+das den Header mitzählt, bekam von einem D485HW keine Antwort.
 
 Eine Leitung der D-Serie braucht einen Pull-up auf der Platine. Getestet mit
 einem D485HW: 2,2 kOhm von der Signalleitung zur Servoversorgung, und jedes

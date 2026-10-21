@@ -76,8 +76,10 @@ history is in git.
   while a line is open, as the panel does at every edit of SETUP >
   INTERFACES > Hitec D receive, saved or not. It also says that `hitec`
   and `hitec state` print the report with `now`, that an option of
-  `send`, `listen` or `power` left out is 0, and gives the raw `send` of a
-  D series read with its sum byte.
+  `send`, `listen` or `power` left out is 0 (`answer` left out answers
+  nothing), that a 5-byte D series SEND has its 117.2 us lead with or
+  without `lead=`, and gives the raw `send` of a D series read with its sum
+  byte.
 - A POWER on a PRECHARGE line answers: its LISTEN starts in the pass of the
   ON, while the PD mini's output still reads off, and is cut only when the
   output reads off after it read on, when the supply is asked off, or when

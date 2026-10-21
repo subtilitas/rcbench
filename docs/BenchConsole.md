@@ -150,9 +150,10 @@ hitec now state=OPEN port=0 flags=RAIL ...
 
 `flags=PRECHARGE` and `rx=` say two things. `PRECHARGE` in `flags` is
 register 23, the receive mode the next OPEN of a D series line takes.
-`rx=` on the `hitec line` line is the mode of the line open now. They
-differ after register 23 is written while a line is open: the open line
-keeps its mode until CLOSE. The panel writes register 23 at every link-up
+`rx=` on the `hitec line` line is the mode the last OPEN took: the open
+line's while a line is open, and kept after CLOSE. They differ after
+register 23 is written while a line is open: the open line keeps its mode
+until CLOSE. The panel writes register 23 at every link-up
 and at every edit of SETUP > INTERFACES > Hitec D receive, saved or not:
 every value set on SETUP is in force at once.
 
@@ -189,8 +190,11 @@ bytes and 1 released bit time.
 
 `<dec>` is `none`, `c:<cmd>`, `d:<addr>` or `l:<byte>`.
 
-An option of `send`, `listen` or `power` left out is 0: no lead, no gap,
-no window, no byte received, no decoder. `send` adds no lead and no sum
+An option of `send`, `listen` or `power` left out is 0: no gap, no
+window, no byte received, no decoder. `answer` is the exception: left out,
+nothing is answered; `answer=0` answers 0x00. A `lead=` left out still
+leaves the front padding of the PIO words: a 5-byte D series SEND is
+driven low for 117.2 us with or without `lead=88`. `send` adds no sum
 byte. The raw form of `hitec d 0 read 0 0x32`:
 
 ```text
@@ -198,9 +202,8 @@ byte. The raw form of `hitec d 0 read 0 0x32`:
 ```
 
 The last byte is the low byte of the sum of every byte after the header
-0x96: 0x00 + 0x32 + 0x00 = 0x32. The same frame with the header in the
-sum, 0xC8, sent with no lead got no answer from a D485HW. Which of the two
-the servo refuses is not measured.
+0x96: 0x00 + 0x32 + 0x00 = 0x32. The same frame with the sum byte 0xC8,
+which counts the header, got no answer from a D485HW.
 
 A D series line needs a pull-up on the board. Tested with a D485HW:
 2.2 kOhm from the signal wire to the servo supply, and every read is
