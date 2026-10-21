@@ -139,8 +139,6 @@ uint32_t esc_stick_read_max_ms(const esc_stick_timing_t *t);
 
 /* ------------------------------------------------------- what can run */
 
-/* ------------------------------------------------------- what can run */
-
 /**
  * @brief Menu kind the engine runs for a profile.
  */
@@ -354,8 +352,6 @@ bool esc_stick_check(const esc_profile_t *p, const esc_stick_change_t *ch,
 
 /* ---------------------------------------------------------- the beeps */
 
-/* ---------------------------------------------------------- the beeps */
-
 /**
  * @brief Event the beep detector reports for one reading.
  */
@@ -451,8 +447,6 @@ esc_det_event_t esc_det_reading(esc_det_t *d, uint32_t t_ms, int32_t ma,
  * @return The idle floor, mA.
  */
 int32_t esc_det_floor_ma(const esc_det_t *d);
-
-/* ------------------------------------------------------------ the run */
 
 /* ------------------------------------------------------------ the run */
 

@@ -207,13 +207,11 @@ typedef struct {
     esc_manual_when_t when;
     const char       *action;
     uint32_t          hold_ms;  /**< at_power_up: held this long after the
-                                     /**
-                                      * @brief supply comes on; 0: not stated
-                                      *        The same step in German, shown
-                                      *        when the interface is; "" or NULL
-                                      *        where the profile gives none, and
-                                      *        the English is shown.
-                                      */
+                                     supply comes on; 0: not stated       */
+    /**
+     * @brief The same step in German, shown when the interface is; "" or NULL
+     *        where the profile gives none, and the English is shown.
+     */
     const char       *action_de;
     /**
      * @brief The step starts the menu: the ESC answers it and sounds its series
@@ -246,17 +244,23 @@ typedef struct {
     uint32_t           entry_hold_ms;      /**< 0: not known             */
     esc_throttle_t     select_throttle;
     uint32_t           select_within_ms;   /**< 0: not known             */
-    /** In a two-stage menu, the move that stores the value sounded, after
-     *  select_throttle picked the item; ESC_THR_NONE in a one-stage menu,
-     *  where the select move stores it. */
+    /**
+     * @brief In a two-stage menu, the move that stores the value sounded, after
+     *        select_throttle picked the item; ESC_THR_NONE in a one-stage menu,
+     *        where the select move stores it.
+     */
     esc_throttle_t     value_select_throttle;
     uint32_t           value_select_within_ms; /**< 0: not known         */
     esc_throttle_t     skip_throttle;
-    /** Where the stick rests while the menu sounds; ESC_THR_NONE where the
-     *  entry left it. */
+    /**
+     * @brief Where the stick rests while the menu sounds; ESC_THR_NONE where
+     *        the entry left it.
+     */
     esc_throttle_t     listen_throttle;
-    /** The move that stores a selection once the ESC has answered it;
-     *  ESC_THR_NONE where the selection itself stores. */
+    /**
+     * @brief The move that stores a selection once the ESC has answered it;
+     *        ESC_THR_NONE where the selection itself stores.
+     */
     esc_throttle_t     store_throttle;
     uint8_t            long_equals_short;  /**< 0 unless short_long      */
     uint32_t           beep_ms;            /**< 0: not known             */
@@ -272,8 +276,10 @@ typedef struct {
     const esc_model_t *models;
     uint8_t            item_count;
     const esc_item_t  *items;
-    /** The operator's steps at the ESC, in the order they are due; 0
-     *  entries on every profile that is not assisted. */
+    /**
+     * @brief The operator's steps at the ESC, in the order they are due; 0
+     *        entries on every profile that is not assisted.
+     */
     uint8_t            manual_count;
     const esc_manual_t *manual;
 } esc_profile_t;

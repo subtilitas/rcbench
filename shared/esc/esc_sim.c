@@ -463,12 +463,9 @@ unsigned esc_sim_store_moves(const esc_profile_t *p, uint8_t item,
     if (p->store_throttle != ESC_THR_NONE && n < cap) {
         out[n++] = p->store_throttle;
     }
-    /**
-     * @brief The first item and value of these numbers: conditional items may
-     *        share both on different models, and the ESC has one of them.
-     *
-     * Its moves, no more than @p cap holds.
-     */
+    /* The first item and value of these numbers: conditional items may
+     * share both on different models, and the ESC has one of them.  Its
+     * moves, no more than @p cap holds. */
     for (unsigned i = 0; i < p->item_count; ++i) {
         if (p->items[i].number != item) {
             continue;

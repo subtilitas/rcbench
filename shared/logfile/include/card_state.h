@@ -15,19 +15,26 @@
 
 /** @brief Mount state of the SD card. */
 typedef enum {
-    /** No card answers in the slot, or no mount was tried yet.  Zero, so
-     *  a zeroed feed reads as no card. */
+    /**
+     * @brief No card answers in the slot, or no mount was tried yet.
+     *
+     * Zero, so a zeroed feed reads as no card.
+     */
     CARD_STATE_NONE = 0,
     /**
      * @brief A volume is mounted.
      */
     CARD_STATE_MOUNTED = 1,
-    /** A card answers, and FatFs finds no FAT12, FAT16, FAT32 or exFAT
-     *  volume on it (FR_NO_FILESYSTEM, 13): NTFS, a GPT or no format at
-     *  all. */
+    /**
+     * @brief A card answers, and FatFs finds no FAT12, FAT16, FAT32 or exFAT
+     *        volume on it (FR_NO_FILESYSTEM, 13): NTFS, a GPT or no format at
+     *        all.
+     */
     CARD_STATE_NO_FAT = 2,
-    /** A card answers, or the slot's bus did not come up, and the volume
-     *  does not mount for another reason: a read error, a card that does
-     *  not finish its start-up, no memory for the mount. */
+    /**
+     * @brief A card answers, or the slot's bus did not come up, and the volume
+     *        does not mount for another reason: a read error, a card that does
+     *        not finish its start-up, no memory for the mount.
+     */
     CARD_STATE_UNREADABLE = 3,
 } card_state_t;
