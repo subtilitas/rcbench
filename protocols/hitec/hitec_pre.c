@@ -2,8 +2,7 @@
  * @file
  * @brief Receive a D series answer by precharge and sample.
  *
- * See
- * include/hitec_pre.h.
+ * See include/hitec_pre.h.
  *
  * SPDX-License-Identifier: MIT
  */

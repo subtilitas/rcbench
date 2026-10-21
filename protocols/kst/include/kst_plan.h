@@ -70,7 +70,8 @@ extern "C" {
 
 /**
  * @brief 31 writable registers and 1 extra write in each of the 2 searched
- *  groups. */
+ *        groups.
+ */
 #define KST_PLAN_MAX_STEPS 33u
 
 /** @brief Kind of a plan. */
@@ -95,15 +96,14 @@ typedef enum {
 /** @brief No cap: a job runs until the planner has its verdict. */
 #define KST_PLAN_NO_CAP 0xFFFFFFFFu
 /**
- * @brief The most units one piece of work takes.
- *
- * kst_plan_step() ends a call after the piece that brings its count to the
- * budget, so a call takes less than its budget plus this.
+ * @brief The most units one piece of work takes.  kst_plan_step() ends a call
+ *        after the piece that brings its count to the budget, so a call takes
+ *        less than its budget plus this.
  */
 #define KST_PLAN_PIECE_UNITS 10u
 /**
  * @brief Units per kst_plan_step() call of a caller that must not block: a call
- * takes 100 to 109 units.
+ *        takes 100 to 109 units.
  *
  * Cost on a Cortex-M33 at 150 MHz, computed in an emulator from the
  * instructions a call executes, with ARM GNU 14.2 at -O3; not measured on
@@ -119,12 +119,12 @@ typedef enum {
  * @brief The cap of such a caller: at most 2,161 calls of KST_PLAN_SLICE_UNITS.
  *
  * The costliest request found takes 120,136 units: a restore that ends
- * unchecked.  The cap is 1.8 times that.  The costliest edit found takes
- * 118,776 units and ends with KST_PLAN_ERR_NO_PATH.  Found by 336 searches that
- * start from the 12 slowest of 10,800,000 random requests, change 1 to 3
- * register bytes at a time and keep the dearer request; 78 of them end at
- * 120,136 units and none above.  A bound over every request is not proven: the
- * cap is what holds one.
+ * unchecked.  The cap is 1.8 times that.  The costliest edit found takes 118,776 units and
+ * ends with KST_PLAN_ERR_NO_PATH.  Found by 336 searches that start from
+ * the 12 slowest of 10,800,000 random requests, change 1 to 3 register
+ * bytes at a time and keep the dearer request; 78 of them end at 120,136
+ * units and none above.  A bound over every request is not proven: the cap is
+ * what holds one.
  */
 #define KST_PLAN_WORK_CAP 216000u
 
@@ -188,13 +188,13 @@ typedef struct {
 } kst_plan_job_t;
 
 /**
- * @brief Check an edit from @p start to @p target and prepare @p job to plan
- *        it into @p out.
+ * @brief Check an edit from @p start to @p target and prepare @p job to plan it
+ *        into @p out.
  *
  * KST_PLAN_BUSY: the job is ready for kst_plan_step().  Every other result is
  * final and is what kst_plan_edit() returns for the same request before it
- * searches: KST_PLAN_ERR_ARG, _R00, _PAIRING, _RULES.  The call checks at most
- * 4 images; its cost does not grow with the request.
+ * searches: KST_PLAN_ERR_ARG, _R00, _PAIRING, _RULES. The call checks at most 4
+ * images; its cost does not grow with the request.
  *
  * @p start and @p target are copied before @p out is cleared: either may
  * lie in @p out.  The same holds for kst_plan_restore_begin(),
@@ -221,7 +221,7 @@ kst_plan_result_t kst_plan_edit_begin(kst_plan_job_t *job,
 
 /**
  * @brief The same for kst_plan_restore(): KST_PLAN_BUSY, or KST_PLAN_ERR_ARG or
- *  KST_PLAN_ERR_R00 at once.
+ *        KST_PLAN_ERR_R00 at once.
  *
  * @param job      Job to prepare.
  * @param current  Image the servo holds.
@@ -258,7 +258,8 @@ kst_plan_result_t kst_plan_restore_begin(kst_plan_job_t *job,
  */
 kst_plan_result_t kst_plan_step(kst_plan_job_t *job, uint32_t budget);
 
-/** @brief Units the job has taken so far.
+/**
+ * @brief Units the job has taken so far.
  *
  * @param job  Job to read.
  * @return Units taken so far.
@@ -306,9 +307,9 @@ kst_plan_result_t kst_plan_restore(const kst_image_t *current,
 /**
  * @brief Plan the write of 0x00 to register 0x1D.
  *
- * 0x00 is the only value the
- * vendor's card does not refuse in any tested case.  The effect inside the
- * servo is not known.  A card identifier is never written.
+ * 0x00 is the only value the vendor's card does not refuse in any tested case.
+ * The effect inside the servo is not known.  A card identifier is never
+ * written.
  *
  * @param current  Image the servo holds.
  * @param out      Receives the plan.

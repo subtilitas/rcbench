@@ -1,8 +1,8 @@
 /**
  * @file
  * @brief PPM (pulse-position modulation) out: one pin, several channels, driven
- *            by a PIO (programmable input/output) state machine fed by a pair of DMA
- *            (direct memory access) channels that restart each other.
+ *        by a PIO (programmable input/output) state machine fed by a pair of
+ *        DMA (direct memory access) channels that restart each other.
  *
  * The processor is not in the timing path at all.  One DMA channel plays the
  * frame into the state machine and chains to a second, whose only transfer
@@ -33,8 +33,8 @@ extern "C" {
 /**
  * @brief Pins that can be bound at one time.
  *
- * A project that needs another
- *  number defines it for the whole build. */
+ * A project that needs another number defines it for the whole build.
+ */
 #ifndef OUT_PPM_MAX_PINS
 #define OUT_PPM_MAX_PINS 8u
 #endif

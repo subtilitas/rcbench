@@ -66,7 +66,7 @@ static uint32_t diff_mask(const kst_image_t *a, const kst_image_t *b)
     return mask;
 }
 
-/* --- one transaction ------------------------------------------------------ */
+/* --- one transaction -------------------------------------------------------- */
 
 /**
  * @brief Set up the frame of one transaction: a read, a write or a sync.
@@ -203,7 +203,7 @@ static bool replied(const kst_session_t *s)
     return s->last_reply.result == KST_RX_OK;
 }
 
-/* --- read all ------------------------------------------------------------- */
+/* --- read all ---------------------------------------------------------------- */
 
 /**
  * @brief Start a read of all registers and reset its pass state.
@@ -263,8 +263,8 @@ static uint32_t tally(kst_session_t *s)
 /**
  * @brief Takes the read that ended and starts the next.
  *
- * True when the passes are
- * over; read_result and read hold the outcome. */
+ * True when the passes are over; read_result and read hold the outcome.
+ */
 static bool read_advance(kst_session_t *s)
 {
     if (replied(s)) {
@@ -296,12 +296,14 @@ static bool read_advance(kst_session_t *s)
     return false;
 }
 
-/* --- operations ----------------------------------------------------------- */
+/* --- operations -------------------------------------------------------------- */
 
 /**
  * @brief The servo was without power: the servo on the port may be another one.
- * The backup and the record of the writes go; the next full read is the
- * new backup. */
+ *
+ * The backup and the record of the writes go; the next full read is the new
+ * backup.
+ */
 static void forget_servo(kst_session_t *s)
 {
     s->has_backup = 0;
@@ -344,7 +346,8 @@ static void finish_in_doubt(kst_session_t *s, kst_ses_t result)
 
 /**
  * @brief The first full read after a write that ended with the servo not read:
- * what differs from the image held is what the write may have changed. */
+ *        what differs from the image held is what the write may have changed.
+ */
 static void saw_servo(kst_session_t *s)
 {
     if (s->unseen != 0u) {
@@ -521,8 +524,9 @@ static bool read_back_matches(const kst_session_t *s, uint8_t value)
 /**
  * @brief One slice of the planning job.
  *
- * The plan it ends with is the one the
- * session runs: nothing outside the planner writes s->plan in between. */
+ * The plan it ends with is the one the session runs: nothing outside the
+ * planner writes s->plan in between.
+ */
 static void plan_advance(kst_session_t *s)
 {
     kst_plan_result_t r;
@@ -682,8 +686,8 @@ static void write_advance(kst_session_t *s)
 
 /**
  * @brief False when the call did a slice of planning: kst_session_step()
- *              returns
- * after it. */
+ *        returns after it.
+ */
 static bool advance(kst_session_t *s)
 {
     if (s->fault != 0u) {
@@ -735,7 +739,7 @@ kst_ses_t kst_session_step(kst_session_t *s)
     return (kst_ses_t)s->result;
 }
 
-/* --- starting an operation ------------------------------------------------ */
+/* --- starting an operation --------------------------------------------------- */
 
 bool kst_session_init(kst_session_t *s, const kst_driver_t *driver)
 {
@@ -847,15 +851,16 @@ kst_ses_t kst_session_verify(kst_session_t *s, const kst_image_t *expected)
 /**
  * @brief A plan as kst_plan.h builds one.
  *
- * The planner is run again on the plan's
- * start, target and unlock set, and the plan has to be the one it gives:
- * the same writes in the same order, the same settled marks and the same
- * unchecked mark.  A plan changed after it was built, in its order or in
- * the mark that asks for a confirmation, is not that plan.
+ * The planner is run again on the plan's start, target and unlock set, and the
+ * plan has to be the one it gives: the same writes in the same order, the same
+ * settled marks and the same unchecked mark.  A plan changed after it was
+ * built, in its order or in the mark that asks for a confirmation, is not that
+ * plan.
  *
  * The planner builds into @p built, which is the session's own plan: no
  * operation runs, so nothing reads it, and a second plan of 208 bytes is
- * not on the stack.  @p plan does not overlap it. */
+ * not on the stack.  @p plan does not overlap it.
+ */
 static bool plan_is_sound(const kst_plan_t *plan, kst_plan_t *built)
 {
     kst_plan_result_t r;
@@ -958,10 +963,11 @@ kst_ses_t kst_session_write(kst_session_t *s, const kst_plan_t *plan,
 }
 
 /**
- * @brief The checks of an operation that plans its own writes.
+ * @brief The checks of an operation that plans its own writes; KST_SES_OK lets
+ *        it plan.
  *
- * KST_SES_OK lets it plan.  @p restore: the way back, which a lock and a
- * failed fingerprint do not refuse.
+ * @p restore: the way back, which a lock and a failed fingerprint do not
+ * refuse.
  */
 static kst_ses_t plan_gate(kst_session_t *s, bool restore, bool no_target)
 {
@@ -991,7 +997,8 @@ static kst_ses_t plan_gate(kst_session_t *s, bool restore, bool no_target)
 
 /**
  * @brief The job is begun with @p r: the planning starts, or the request is
- * refused with the planner's reason. */
+ *        refused with the planner's reason.
+ */
 static kst_ses_t plan_started(kst_session_t *s, kst_plan_result_t r,
                               bool confirm_unchecked)
 {

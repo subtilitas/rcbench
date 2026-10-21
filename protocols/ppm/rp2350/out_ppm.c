@@ -1,7 +1,9 @@
 /**
  * @file
  * @brief PPM out: a PIO state machine and a self-restarting pair of DMA
- *            channels. See out_ppm.h.
+ *        channels.
+ *
+ * See out_ppm.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,10 +22,8 @@
 /**
  * @brief The program renders a run of N microseconds as a one-cycle `out` and
  *        N-1 cycles of loop, so the count in the FIFO (first in first out) is
- *        two less than the duration.
- *
- * ppm_frame() refuses a run shorter than the mark, and the mark is 300 us, so
- * this cannot go negative.
+ *        two less than the duration.  ppm_frame() refuses a run shorter than
+ *        the mark, and the mark is 300 us, so this cannot go negative.
  */
 #define RUN_TO_COUNT(us)  ((uint32_t)(us) - 2u)
 
@@ -59,7 +59,9 @@ typedef struct {
 } ppm_out_t;
 
 /**
- * @brief One per pin that can be bound.  DMA channels run out before these do.
+ * @brief One per pin that can be bound.
+ *
+ * DMA channels run out before these do.
  */
 static ppm_out_t s_out[OUT_PPM_MAX_PINS];
 
