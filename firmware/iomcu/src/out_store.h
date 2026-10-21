@@ -15,18 +15,18 @@
  *
  * What a write costs.  The flash cannot be read while it is written and this
  * core executes from it, so a write runs with interrupts off and this end
- * answers nothing for its length.  On the bring-up module an erase and program
- * together measured 19,178 us: a CAN (Controller Area Network) frame at 1
- * Mbit/s is about 130 us and the XL2515 holds two of them, so a request
+ * answers nothing for its length.  On the bring-up module an erase and
+ * program together measured 19,178 us: a CAN (Controller Area Network) frame
+ * at 1 Mbit/s is about 130 us and the XL2515 holds two of them, so a request
  * arriving in that window is lost with nothing wrong on the wire.  That
  * measurement is the two operations inside one window; neither half of it was
- * timed on its own.  It is 1 sample on the bring-up module, with the flash part
- * not yet identified; the window is to be argued again against the part's
- * datasheet maximum once the part is known.  A lost request costs the panel
- * LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches
- * this end's LINK_DEV_SILENCE_MS (200 ms) failsafe.  One lost frame is enough
- * for that, which is what makes the length of these windows a safety number
- * rather than a performance one.
+ * timed on its own.  It is 1 sample on the bring-up module, with the flash
+ * part not yet identified; the window is to be argued again against the
+ * part's datasheet maximum once the part is known.  A lost request costs
+ * the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's
+ * LINK_DEV_SILENCE_MS (200 ms) failsafe.  One lost frame is enough for that,
+ * which is what makes the length of these windows a safety number rather than
+ * a performance one.
  *
  * What this store does about it:
  *
@@ -47,14 +47,14 @@
  *   Both wait for a gap in the traffic; see OUT_STORE_QUIET_MS.
  *
  * The window is not eliminated.  A page program is not measured on this part:
- * the erase covers 4,096 bytes and the program 512, and on serial NOR (not-or)
- * flash a page program takes one to two orders of magnitude less than an erase,
- * which puts the two pages somewhere between 400 and 4,000 us against the 260
- * us of frames the controller holds.  out_store_last_program_us() is what will
- * settle it. Removing the loss rather than shrinking it needs the receive
- * buffers emptied during the window, which means reading the controller over
- * SPI (Serial Peripheral Interface) from a routine held in RAM while the flash
- * is busy; that is not written.
+ * the erase covers 4,096 bytes and the program 512, and on serial NOR
+ * (not-or) flash a page program takes one to two orders of magnitude less
+ * than an erase, which puts the two pages somewhere between 400 and
+ * 4,000 us against the 260 us of frames the controller holds.  out_store_last_program_us() is what will settle it.
+ * Removing the loss rather than shrinking it needs the receive buffers
+ * emptied during the window, which means reading the controller over SPI
+ * (Serial Peripheral Interface) from a routine held in RAM while the flash is
+ * busy; that is not written.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -161,13 +161,13 @@ void out_store_core1_parkable(void);
  * @brief Switch the store's writing off for this boot: core 1 was launched
  * and did not register for the flash lock-out.
  *
- * A direct window would fault core 1 executing from flash, and
- * flash_safe_execute() would refuse, or in a build with
- * PICO_FLASH_ASSERT_ON_UNSAFE and asserts on, stop the core. Afterwards no
- * erase or program runs and flash_safe_execute() is never called:
- * out_store_save() takes nothing, so nothing waits for a save that cannot
- * come, out_store_tick() is idle and out_store_reclaim() false. What was
- * loaded stays readable.  Nothing switches it on again.
+ * A direct window would fault
+ * core 1 executing from flash, and flash_safe_execute() would refuse, or in
+ * a build with PICO_FLASH_ASSERT_ON_UNSAFE and asserts on, stop the core.
+ * Afterwards no erase or program runs and flash_safe_execute() is never
+ * called: out_store_save() takes nothing, so nothing waits for a save that
+ * cannot come, out_store_tick() is idle and out_store_reclaim() false.
+ * What was loaded stays readable.  Nothing switches it on again.
  */
 void out_store_off(void);
 
@@ -200,8 +200,6 @@ bool out_store_is_off(void);
 
 /**
  * @brief What a pass of out_store_tick() did.
- *
- * What a pass of out_store_tick() did.
  */
 typedef enum {
     OUT_STORE_IDLE = 0,   /**< nothing to do, or not yet the moment for it */

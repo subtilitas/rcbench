@@ -49,17 +49,18 @@
  * @brief How long core 0 waits at launch for core 1 to register for the
  * flash lock-out.
  *
- * It takes microseconds; the bound only keeps a core 1 that never starts
- * from stopping core 0.
+ * It takes microseconds; the bound only keeps a core 1 that
+ *  never starts from stopping core 0.
  */
 #define SENSE_CORE1_START_MS 100u
 
 /**
  * @brief Launch core 1 with @p first as its first order.
  *
- * Returns whether core 1 registered for the flash lock-out within
- * SENSE_CORE1_START_MS.  False means no flash window may open this boot:
- * flash_safe_execute() would refuse it, or assert where asserts are on.
+ * Returns whether core 1
+ * registered for the flash lock-out within SENSE_CORE1_START_MS.  False
+ * means no flash window may open this boot: flash_safe_execute() would
+ * refuse it, or assert where asserts are on.
  *
  * @param first  The first order for core 1.
  * @return True when core 1 registered for the flash lock-out within

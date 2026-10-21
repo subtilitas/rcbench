@@ -2,9 +2,9 @@
  * @file
  * @brief Core 1's half of the phase tap, and the hand-over to core 0.
  *
- * Each tick of core 1's loop (sense_core1.c) runs one pass of the tone service
- * (protocols/phase_tap/include/tone_svc.h) on the capture ring (tone_cap.h):
- * the words written since the last pass into the detector, and the beeps it
+ * Each tick of core 1's loop (sense_core1.c) runs one pass of the tone
+ * service (protocols/phase_tap/include/tone_svc.h) on the capture ring (tone_cap.h): the
+ * words written since the last pass into the detector, and the beeps it
  * finished and a status back to core 0.
  *
  * The hand-over.  The order, core 0 to core 1, and the status, core 1 to
@@ -47,7 +47,8 @@ void tone_core1_init(void);
 /**
  * @brief A new order for core 1, taken at its next tick.
  *
- * @p t0_us is the microsecond timer when the capture's counter began.
+ * @p t0_us is the
+ *  microsecond timer when the capture's counter began.
  *
  * @param cmd  The order to post.
  * @param t0_us  The microsecond timer when the capture's counter began.
@@ -58,11 +59,11 @@ void tone_core1_order(const tone_cmd_t *cmd, uint64_t t0_us);
  * @brief Core 0: wait until core 1 has finished a pass under the latest
  * order.
  *
- * Bounded by TONE_CORE1_WAIT_US; returns at once when core 1 has not taken
- * an order yet (at boot: the first it takes is the latest).  False when the
- * bound passed without the acknowledgement: core 1 may still be in a pass
- * that reads the capture (a long pass, or parked for a flash write), and
- * nothing may be taken down.
+ * Bounded by TONE_CORE1_WAIT_US; returns at once when core 1 has not
+ *  taken an order yet (at boot: the first it takes is the latest).  False
+ *  when the bound passed without the acknowledgement: core 1 may still be
+ *  in a pass that reads the capture (a long pass, or parked for a flash
+ *  write), and nothing may be taken down.
  *
  * @return True when core 1 acknowledged the order or has not taken one. False
  *         when the bound passed without the acknowledgement.

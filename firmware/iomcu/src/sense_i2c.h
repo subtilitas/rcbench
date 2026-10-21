@@ -68,8 +68,8 @@
 /**
  * @brief One transaction's limit.
  *
- * The longest, a 5-byte read with its pointer write, is 75 bit times, 188 us
- * at 400 kHz.
+ * The longest, a 5-byte read with its pointer
+ *  write, is 75 bit times, 188 us at 400 kHz.
  */
 #define SENSE_I2C_TIMEOUT_US    1000u
 /**

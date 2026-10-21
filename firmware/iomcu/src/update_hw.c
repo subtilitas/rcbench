@@ -2,7 +2,8 @@
  * @file
  * @brief The firmware update on this board.
  *
- * See update_hw.h and the update section of link_pages.h.
+ * See update_hw.h and the update
+ * section of link_pages.h.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -14,7 +14,8 @@
 /**
  * @brief @p pin as an input with its pull-down.
  *
- * False for a pin the chip does not have.
+ * False for a pin the chip does
+ *  not have.
  *
  * @param pin  GPIO number of the pin to hold.
  * @return True when the pin was held. False when the chip does not have the

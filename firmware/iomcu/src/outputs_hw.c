@@ -60,8 +60,8 @@ static slot_state_t s_state[OUT_MAX_SLOTS];
  * @brief The programming ports: pins of their own on the same generator,
  * each rendered from one channel of the bank.
  *
- * `as` is the port as a slot of one PWM channel, so the rendering and the
- * capture's edge are the slots' code.
+ * `as` is the port as a slot of one
+ * PWM channel, so the rendering and the capture's edge are the slots' code.
  */
 typedef struct {
     bool         bound;    /* the pin is held: bound, or parked */
@@ -594,10 +594,10 @@ bool outputs_hw_edge(uint64_t *us)
 /**
  * @brief A PWM slot's pulse for this pass.
  *
- * On the watched channel, the first pulse other than the last one rendered
- * -- a changed command, not a disarm -- is written stamped: the start of the
- * frame that first carries it is the capture's edge.  Once: the watch ends
- * with it, stamped or not.
+ * On the watched channel, the first
+ * pulse other than the last one rendered -- a changed command, not a
+ * disarm -- is written stamped: the start of the frame that first carries
+ * it is the capture's edge.  Once: the watch ends with it, stamped or not.
  *
  * @param st  The render state of the slot or port.
  * @param s  The slot or port, bound as PWM.
@@ -624,8 +624,8 @@ static void service_pwm(slot_state_t *st, const out_slot_t *s, uint16_t pulse)
  * @brief Whether the bank is armed for the role of a channel of @p s, the
  * slot as this layer bound it.
  *
- * The shadow rather than the bank's slot: the shadow is what the pin is
- * doing.
+ * The shadow rather than the bank's slot: the shadow is
+ * what the pin is doing.
  *
  * @param o  The output bank.
  * @param s  The slot, from s_shadow.

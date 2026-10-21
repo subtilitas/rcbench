@@ -4,8 +4,8 @@
  * CONTROL, BENCH, CHANNELS, CHAN_CFG, OUTPUTS, SERVO and PROG, and the glue
  * that makes the silicon agree with the bank.
  *
- * The rules are in shared/outputs and shared/safety; see iomcu.h for the
- * other files.
+ * The rules are in
+ * shared/outputs and shared/safety; see iomcu.h for the other files.
  *
  * SPDX-License-Identifier: MIT
  */

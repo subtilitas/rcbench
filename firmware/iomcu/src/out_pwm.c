@@ -22,9 +22,10 @@
 /**
  * @brief One microsecond per count (OUT_PWM_TICK_HZ).
  *
- * The frame period then fits the sixteen-bit counter down to 16 Hz, past the
- * 40 Hz floor the driver table sets, and a microsecond is the resolution
- * every pulse in this firmware is expressed in.
+ * The frame period then fits
+ * the sixteen-bit counter down to 16 Hz, past the 40 Hz floor the driver
+ * table sets, and a microsecond is the resolution every pulse in this
+ * firmware is expressed in.
  */
 #define TICK_HZ  OUT_PWM_TICK_HZ
 

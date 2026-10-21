@@ -93,10 +93,10 @@ _Static_assert(STORE_V7_BYTES == FLASH_PAGE_SIZE
  * @brief Two flash pages hold a version 8 record, and a save programs both
  * in one window.
  *
- * The record's layout, its checksum and its zero count are out_store_rec.c's
- * (host-tested); the checksum is the link's, because a half-written record
- * and a corrupt frame are the same problem and there is no reason for two
- * answers to it.
+ * The record's layout, its checksum and its zero count are
+ * out_store_rec.c's (host-tested); the checksum is the link's, because a
+ * half-written record and a corrupt frame are the same problem and there is
+ * no reason for two answers to it.
  *
  * The checksum is not what says the record is whole, though, and a power cut
  * can leave one that is not.  Two ways, and they are opposites:
@@ -225,14 +225,14 @@ static void survey(out_store_rec_t *recs, uint8_t n, uint32_t bytes,
 /**
  * @brief One erase or one program, run inside a flash window.
  *
- * One erase or one program: interrupts off on this core, and core 1 either not
- * launched yet or parked in RAM by the multicore lock-out (flash_window()), for
- * the whole operation.  The flash cannot be read while it is being written, and
+ * One erase or one program: interrupts off on this core, and core 1 either
+ * not launched yet or parked in RAM by the multicore lock-out
+ * (flash_window()), for the whole operation.  The flash cannot be read while it is being written, and
  * both cores execute from it.  That is also why none of this runs while the
- * bank is driving -- the caller's loop takes nothing off the CAN controller and
- * steps no output for the length of the window, so a disarm or a command in
- * flight waits for it.  Core 1 reads no sensor for it either, and the bank is
- * idle, so no run loses a reading.
+ * bank is driving -- the caller's loop takes nothing off the CAN controller
+ * and steps no output for the length of the window, so a disarm or a
+ * command in flight waits for it.  Core 1 reads no sensor for it either,
+ * and the bank is idle, so no run loses a reading.
  *
  * Both timestamps are inside the window, because the window is what is being
  * measured: taken either side of it they would also count the lock-out and
@@ -347,8 +347,9 @@ static bool refusing(void)
 /**
  * @brief True when the operation ran.
  *
- * flash_safe_execute() answers a timeout on the way in (nothing ran) and on
- * the way out (it ran) with the same code, so the operation says for itself.
+ * flash_safe_execute() answers a timeout on
+ * the way in (nothing ran) and on the way out (it ran) with the same code,
+ * so the operation says for itself.
  *
  * @param op  The operation. Its done field is set.
  * @return True when the operation ran.

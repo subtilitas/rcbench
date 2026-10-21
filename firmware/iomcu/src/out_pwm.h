@@ -58,9 +58,9 @@ void out_pwm_release(uint8_t pin);
 /**
  * @brief Emit @p pulse_us on every frame.
  *
- * Zero stops the pin edging altogether, which is what the bank means by not
- * driving -- a servo held at a pulse it was not commanded is worse than one
- * that is let go.
+ * Zero stops the pin edging altogether,
+ * which is what the bank means by not driving -- a servo held at a pulse it
+ * was not commanded is worse than one that is let go.
  *
  * @param pin  GPIO number of a bound pin. A pin that is not bound is ignored.
  * @param pulse_us  Pulse width in microseconds. A value above the frame's

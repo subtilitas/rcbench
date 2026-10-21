@@ -51,10 +51,11 @@
 /**
  * @brief This file's report lines.
  *
- * The bench console build sends them through the console's output: none
- * lands inside a console line that leaves in pieces, and none waits for the
- * host.  Every other build prints them, and printf() waits for the host for
- * up to 500 ms (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
+ * The bench console build sends them through
+ * the console's output: none lands inside a console line that leaves in
+ * pieces, and none waits for the host.  Every other build prints them,
+ * and printf() waits for the host for up to 500 ms
+ * (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
  */
 #if IOMCU_CONSOLE
 #define IOMCU_SAY console_hw_say
@@ -296,8 +297,8 @@ static void outputs_off(void)
  * @brief Whether flash may not be written now: flash_gate_busy(),
  * host-tested, with this end's four inputs.
  *
- * A function of its own because update_hw_init() takes one.  The PD mini is
- * asked only while it is open.
+ * A function of its own because
+ * update_hw_init() takes one.  The PD mini is asked only while it is open.
  *
  * @return True while a flash write must wait.
  */
@@ -358,15 +359,15 @@ int main(void)
     servo_page_init(&s_servo);
 
     /*
-     * Then what was saved, over the defaults.  This configures the outputs; it
-     * does not drive them.  Every driver is gated by outputs_driving(), which
-     * is the bank's armed flag, and this end sets that flag only while the ARM
-     * register is set, the link is out of failsafe, the heartbeat is trusted
-     * and the arm latch is clear.  The latch is set from start-up until a CLEAR
-     * arrives, so a restored binding claims its pins and holds them at idle
-     * until somebody arms.  The channels are not restored: a command is not a
-     * configuration, and a bench that came back holding the last throttle it
-     * was given is exactly what must not happen.
+     * Then what was saved, over the defaults.  This configures the outputs;
+     * it does not drive them.  Every driver is gated by outputs_driving(),
+     * which is the bank's armed flag, and this end sets that flag only while
+     * the ARM register is set, the link is out of failsafe, the heartbeat is
+     * trusted and the arm latch is clear.  The latch is set from start-up
+     * until a CLEAR arrives, so a restored binding claims its pins and
+     * holds them at idle until somebody arms.  The channels are not restored: a command is
+     * not a configuration, and a bench that came back holding the last
+     * throttle it was given is exactly what must not happen.
      */
     static out_store_t saved;            /* 288 bytes, off main()'s frame */
     const bool have_saved = out_store_load(&saved);
@@ -388,13 +389,12 @@ int main(void)
     /*
      * The pins this build will not hand out, whatever the host asks for: the
      * safety line, the CAN (Controller Area Network) controller's four SPI
-     * (Serial Peripheral Interface) pins and its interrupt, the pins the module
-     * uses and does not break out (GP23, GP24, GP25, GP29), and every number
-     * above the last GPIO (general-purpose input/output) the module has,
-     * whatever board the SDK is built for.  The pin arrives from the panel over
-     * the OUTPUTS page, so it is whatever an operator typed, and an output
-     * bound to the heartbeat input is an interlock that stops working with
-     * nothing to show for it.
+     * (Serial Peripheral Interface) pins and its interrupt, the pins the
+     * module uses and does not break out (GP23, GP24, GP25, GP29), and every
+     * number above the last GPIO (general-purpose input/output) the module
+     * has, whatever board the SDK is built for.  The pin arrives from the panel over the OUTPUTS page, so it is whatever an
+     * operator typed, and an output bound to the heartbeat input is an
+     * interlock that stops working with nothing to show for it.
      *
      * The union of what shared/outputs greys out on the panel and what this
      * file assigns, so the two disagreeing costs a pin rather than the safety
@@ -816,9 +816,9 @@ int main(void)
          *
          * Writing flash stops this core with interrupts off -- an erase and a
          * program together measured 19,178 us on the bring-up module -- and
-         * what that costs is CAN frames: the controller holds two, about 130 us
-         * each, and this loop collects none of them while the window is open.
-         * A frame lost there can be the CONTROL write that disarms, and this
+         * what that costs is CAN frames: the controller holds two, about
+         * 130 us each, and this loop collects none of them while the window is
+         * open.  A frame lost there can be the CONTROL write that disarms, and this
          * loop steps no output while the window is open either, so the save
          * waits for a disarm: out_store_tick() is gated on outputs_driving(),
          * which is the bank's armed flag.

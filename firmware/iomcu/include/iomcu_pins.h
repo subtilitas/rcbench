@@ -40,8 +40,9 @@
  * @brief The safety heartbeat from the panel's J8, by a direct wire: no
  * board carries the retriggerable monostable (docs/Safety.md).
  *
- * An input here: the IOmcu gates its own outputs from it and checks the
- * period in firmware, because noise can fake a heartbeat.
+ * An input here: the
+ * IOmcu gates its own outputs from it and checks the period in
+ * firmware, because noise can fake a heartbeat.
  */
 #define IOMCU_HEARTBEAT_PIN  3
 
@@ -73,8 +74,8 @@
 /**
  * @brief The bit rate both ends must agree on.
  *
- * 1 Mbit/s is what the 16 MHz crystal reaches exactly; docs/Link.md has the
- * bus budget at that rate.
+ * 1 Mbit/s is what the 16 MHz crystal
+ * reaches exactly; docs/Link.md has the bus budget at that rate.
  */
 #define IOMCU_CAN_BITRATE    1000000u
 

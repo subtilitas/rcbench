@@ -108,24 +108,24 @@ extern bool          s_supply_attach;
  * @brief The SENSE and SERVO_SENSE pages: the current monitors' set-up,
  * kept, and the pins it holds.
  *
- * Core 1 reads the parts (sense_core1.h); this core gives it its orders and
- * publishes what it hands back.
+ * Core 1 reads the parts (sense_core1.h); this core
+ * gives it its orders and publishes what it hands back.
  */
 extern sense_page_t  s_sense;
 /**
  * @brief The TONE page: the phase tap's set-up, kept, and the beeps core 1
  * hears on it.
  *
- * Core 0 owns the PIO state machine and the DMA ring (tone_cap.c in
- * protocols/phase_tap/rp2350); core 1 reads and detects (tone_core1.c).
+ * Core 0 owns the PIO state machine and the DMA ring (tone_cap.c
+ * in protocols/phase_tap/rp2350); core 1 reads and detects (tone_core1.c).
  */
 extern tone_page_t   s_tone;
 /**
  * @brief Core 1's last snapshot.
  *
- * The pins it said it still holds are the page's (sense_page_held()): a bus
- * moved or closed keeps its old pins from the outputs until core 1 has let
- * them go, about 1 ms.
+ * The pins it said it still holds are the page's
+ * (sense_page_held()): a bus moved or closed keeps its old pins from the
+ * outputs until core 1 has let them go, about 1 ms.
  */
 extern sense_snap_t  s_sense_snap;
 extern sense_cmd_t   s_sense_cmd;    /* core 1's order as last built */
@@ -150,8 +150,8 @@ extern uint64_t      s_base_reserved;
  * @brief The PROG page: the programming ports, outputs of their own kind
  * with their own pins (shared/outputs/prog_port.h).
  *
- * Pin, slew, endpoints and function are kept; the pulse's switch and the
- * tester's target are not.
+ * Pin, slew, endpoints and
+ * function are kept; the pulse's switch and the tester's target are not.
  */
 extern prog_port_t   s_prog;
 /**
@@ -164,8 +164,8 @@ extern prog_port_t   s_prog;
  * programming port (shared/outputs/kst_port.h) and the wire driver the
  * port's pin is handed to (protocols/kst/rp2350).
  *
- * Not kept: a restart finds the port in PWM (pulse-width modulation) with no
- * session.
+ * Not kept: a restart
+ * finds the port in PWM (pulse-width modulation) with no session.
  */
 extern kst_port_t    s_kst;
 extern kst_line_t    s_kst_line;
@@ -174,8 +174,9 @@ extern kst_line_t    s_kst_line;
  * port (shared/outputs/hitec_port.h) and the wire driver the port's pin is
  * handed to (protocols/hitec/rp2350).
  *
- * A port is free, the KST page's or this page's, never two of them.  Not
- * kept: a restart finds the port free.
+ * A port is free, the KST page's or
+ * this page's, never two of them.  Not kept: a restart finds the port
+ * free.
  */
 extern hitec_port_t  s_hitec;
 extern hitec_line_t  s_hitec_line;
@@ -200,8 +201,8 @@ extern outputs_t s_outputs;
 /**
  * @brief The panel's safety line, as judged in firmware.
  *
- * The control page consults it before it arms; see heartbeat_init() in
- * iomcu_can.c.
+ * The control page consults
+ * it before it arms; see heartbeat_init() in iomcu_can.c.
  */
 extern heartbeat_mon_t s_beat;
 
@@ -214,9 +215,10 @@ extern uint32_t s_frames;
  * @brief CAN frames received and refused since power-up, published on the
  * STATUS page (LINK_ST_REFUSED_LO and _HI).
  *
- * Counted in two places, both shared code: a receive buffer with no frame
- * the link carries in it (mcp2515_recv_next()) and a frame link_can_decode()
- * refuses (link_can_decode_counted()).  Wraps at 2^32.
+ * Counted in two places, both shared
+ * code: a receive buffer with no frame the link carries in it
+ * (mcp2515_recv_next()) and a frame link_can_decode() refuses
+ * (link_can_decode_counted()).  Wraps at 2^32.
  */
 extern uint32_t s_refused;
 
@@ -809,12 +811,15 @@ void kst_hw_supply(void *ctx, supply_port_view_t *out);
 /**
  * @brief Sets the supply of the KST port.
  *
+ * No ON while the supply's wiring is not in flash, as the SUPPLY page
+ * refuses one: a restart in the run could not switch the module off.
+ *
  * @param ctx  Unused.
  * @param on  True to switch the supply on.
- * @param mv  Supply voltage.
- * @param ma  Supply current limit.
- * @return False when the switch was refused, otherwise the result of
- *         supply_page_port_set().
+ * @param mv  Set voltage in millivolts, for ON.
+ * @param ma  Set current in milliamps, for ON.
+ * @return False for an ON while the wiring is not saved; otherwise what
+ *         supply_page_port_set() returns.
  */
 bool kst_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma);
 
@@ -934,8 +939,8 @@ void can_report(uint32_t now);
 /**
  * @brief STATUS's state and fault registers.
  *
- * The state and the link and heartbeat bits are the gate's
- * (safety_gate_status()); the arm latch is on neither.
+ * The state and the link and heartbeat
+ * bits are the gate's (safety_gate_status()); the arm latch is on neither.
  *
  * @param s  The state whose STATUS registers are updated.
  */
