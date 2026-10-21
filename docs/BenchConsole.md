@@ -141,6 +141,21 @@ The names are the page's: the states, operations, results and refusals of
 decoder results of `hitec_rx_t`. `hitec cap` and `hitec byte` come only
 while the page holds a capture.
 
+`hitec` and `hitec state` print the same report with `now` in place of
+`done`:
+
+```text
+hitec now state=OPEN port=0 flags=RAIL ...
+```
+
+`flags=PRECHARGE` and `rx=` say two things. `PRECHARGE` in `flags` is
+register 23, the receive mode the next OPEN of a D series line takes.
+`rx=` on the `hitec line` line is the mode of the line open now. They
+differ after register 23 is written while a line is open: the open line
+keeps its mode until CLOSE. The panel writes register 23 at every link-up
+and at every edit of SETUP > INTERFACES > Hitec D receive, saved or not:
+every value set on SETUP is in force at once.
+
 `lead_ns` runs from the lead's first edge to the release of the line: the
 lead and every bit time sent. The lead is the one asked, or longer: the PIO
 (programmable input/output) program sends whole words of 16 bit times, and
@@ -173,6 +188,19 @@ bytes and 1 released bit time.
 | `hitec d <port> write <id> <addr> <value>` | a D series write: 88 us of lead asked, driven low for 89.0 us, 7 bytes, nothing received |
 
 `<dec>` is `none`, `c:<cmd>`, `d:<addr>` or `l:<byte>`.
+
+An option of `send`, `listen` or `power` left out is 0: no lead, no gap,
+no window, no byte received, no decoder. `send` adds no lead and no sum
+byte. The raw form of `hitec d 0 read 0 0x32`:
+
+```text
+> hitec send 0 lead=88 window=25000 rx=8 dec=d:0x32 0x96 0x00 0x32 0x00 0x32
+```
+
+The last byte is the low byte of the sum of every byte after the header
+0x96: 0x00 + 0x32 + 0x00 = 0x32. The same frame with the header in the
+sum, 0xC8, sent with no lead got no answer from a D485HW. Which of the two
+the servo refuses is not measured.
 
 A D series line needs a pull-up on the board. Tested with a D485HW:
 2.2 kOhm from the signal wire to the servo supply, and every read is
