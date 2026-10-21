@@ -473,13 +473,13 @@ test.describe('pictures', () => {
     await page.setViewportSize(SIZES[0]);
     await open(page, '');
     const link = page.locator('.parts li.pic a').first();
-    await expect(link).toHaveAttribute('href', 'pictures/01-panel-back.webp');
-    const response = await page.request.get(new URL('pictures/01-panel-back.webp', page.url()).href);
+    await expect(link).toHaveAttribute('href', 'pictures/08-rp2350-can-b.webp');
+    const response = await page.request.get(new URL('pictures/08-rp2350-can-b.webp', page.url()).href);
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toBe('image/webp');
     await link.focus();
     await page.keyboard.press('Enter');
-    await page.waitForURL('**/rcbench/pictures/01-panel-back.webp');
+    await page.waitForURL('**/rcbench/pictures/08-rp2350-can-b.webp');
   });
 });
 

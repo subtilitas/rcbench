@@ -21,7 +21,7 @@ const URL = 'https://example.invalid/#v=1';
 const ids = (lines: { part: { id: string } }[]): string[] => lines.map((l) => l.part.id);
 
 test('searchQuery: maker and ordering name each in quotes', () => {
-  assert.equal(searchQuery('Waveshare', 'ESP32-S3-Touch-LCD-7'), '"Waveshare" "ESP32-S3-Touch-LCD-7"');
+  assert.equal(searchQuery('Waveshare', 'ESP32-P4-WIFI6-Touch-LCD-7B'), '"Waveshare" "ESP32-P4-WIFI6-Touch-LCD-7B"');
 });
 
 test('searchQuery: a spec without a maker is split at ", ", each term in quotes; a double quote leaves a term', () => {
