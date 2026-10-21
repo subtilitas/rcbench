@@ -109,11 +109,11 @@ CONFIG_FATFS_USE_LABEL=y
 # not who built it.
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 #
-# The ESP32-P4's second-stage bootloader sits at 0x2000, and the partition
-# table at 0x8000 leaves it 24,576 bytes.  With rollback and the INFO log
-# level it is 24,896 bytes; at WARN it fits.  The table stays at 0x8000 so
-# nvs, phy_init and otadata keep their offsets.
-CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
+# The ESP32-P4's second-stage bootloader sits at 0x2000.  The partition
+# table at 0xC000 leaves it 40,960 bytes; with rollback and the INFO log
+# level it is 24,896 bytes.
+CONFIG_PARTITION_TABLE_OFFSET=0xC000
+CONFIG_BOOTLOADER_LOG_LEVEL_INFO=y
 
 # Network -------------------------------------------------------------------
 #
