@@ -1,5 +1,6 @@
-/*
- * The string tables and the lookup.  See include/ui_text.h.
+/**
+ * @file
+ * @brief The string tables and the lookup.  See include/ui_text.h.
  *
  * A lookup is two loads and a test: the language's entry, else the
  * English.  The language is an atomic int, read once per string, so the
@@ -52,36 +53,45 @@ static const char *const k_names[TX_COUNT] = {
  */
 #define DE(en, de) (de)
 
+/** @brief The screens' strings in German, by TX_ ID; NULL shows the
+ *  English. */
 static const char *const k_de_text[TX_COUNT] = {
 #define UI_TEXT(id, cells, en, de) [TX_##id] = DE(en, de),
 #include "ui_text.def"
 };
 
+/** @brief The settings' labels in German, by setting ID. */
 static const char *const k_de_label[SETTING_COUNT] = {
 #define UI_SETTING_LABEL(id, en, de) [id] = DE(en, de),
 #include "ui_text.def"
 };
 
+/** @brief The settings' help lines in German, by setting ID. */
 static const char *const k_de_help[SETTING_COUNT] = {
 #define UI_SETTING_HELP(id, en, de) [id] = DE(en, de),
 #include "ui_text.def"
 };
 
+/** @brief The settings categories' names in German. */
 static const char *const k_de_category[SET_CAT_COUNT] = {
 #define UI_SETTING_CATEGORY(id, en, de) [id] = DE(en, de),
 #include "ui_text.def"
 };
 
+/** @brief One array k_de_opts_<name> per option list, in German. */
 #define UI_OPTIONS(name) static const char *const k_de_opts_##name[] = {
 #define UI_OPTION(en, de) DE(en, de),
 #define UI_OPTIONS_END(name) };
 #include "ui_text.def"
 
+/** @brief The German option lists, in the order of the table, which is
+ *  the order settings_option_list() counts. */
 static const char *const *const k_de_options[] = {
 #define UI_OPTIONS(name) k_de_opts_##name,
 #include "ui_text.def"
 };
 
+/** @brief The servo test's words in German, by SERVO_STR_ ID. */
 static const char *const k_de_servo[SERVO_STR_COUNT] = {
 #define UI_SERVO_TEXT(id, en, de) [id] = DE(en, de),
 #include "ui_text.def"
@@ -89,6 +99,7 @@ static const char *const k_de_servo[SERVO_STR_COUNT] = {
 
 #undef DE
 
+/** @brief The German tables, as ui_text.h declares them. */
 const ui_language_t ui_lang_de = {
     .text          = k_de_text,
     .setting_label = k_de_label,

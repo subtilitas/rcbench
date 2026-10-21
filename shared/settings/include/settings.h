@@ -1,5 +1,7 @@
-/*
- * Device settings: a typed schema, a value per entry, and a persistence seam.
+/**
+ * @file
+ * @brief Device settings: a typed schema, a value per entry, and a persistence
+ *        seam.
  *
  * The schema carries range, step and unit, so the settings screen is generic
  * -- it renders whatever the table says rather than hard-coding a control per

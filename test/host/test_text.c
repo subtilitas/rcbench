@@ -153,14 +153,25 @@ TEST_CASE(every_translation_converts_what_the_english_does)
 /**
  * @brief Whether every code point of a string has a glyph of its own in a
  *        face: the block first..last or one of the extra letters (gfx.h).
+ * A byte that starts no valid sequence decodes as '?' and draws as one;
+ * it is refused here, as the text it stands in has no glyph.
  * @param f The face.
  * @param s The string, UTF-8.
- * @return True when the face holds every code point of @p s.
+ * @return True when the face holds every code point of @p s and @p s is
+ *         valid UTF-8.
  */
 static bool in_face(const gfx_font_t *f, const char *s)
 {
     const char *p = s;
-    for (uint32_t c = gfx_utf8_next(&p); c != 0u; c = gfx_utf8_next(&p)) {
+    for (;;) {
+        const char *at = p;
+        const uint32_t c = gfx_utf8_next(&p);
+        if (c == 0u) {
+            break;
+        }
+        if (c == (uint32_t)'?' && *at != '?') {
+            return false;
+        }
         bool held = c >= f->first && c <= f->last;
         for (int k = 0; !held && k < f->extra_count; ++k) {
             held = f->extra[k] == c;
@@ -241,11 +252,30 @@ TEST_CASE(every_drawn_string_has_its_glyphs)
     }
     ui_text_set_language(UI_LANG_EN);
     /* The check sees what is outside: a euro sign, and a byte that starts
-     * no sequence, which decodes as '?' and so is held. */
+     * no sequence, which decodes as '?' and is refused; a '?' of the text
+     * is held. */
     CHECK(!in_face(&gfx_font_8x16, "5 \xe2\x82\xac"));
+    CHECK(!in_face(&gfx_font_8x16, "A\x80" "B"));
+    CHECK(!in_face(&gfx_font_8x16, "GR\xc3" "E"));
+    CHECK(in_face(&gfx_font_8x16, "OK?"));
     CHECK(in_face(&gfx_font_8x16, "GR\xc3\x96\xc3\x9f" "E"));
     CHECK(in_face(&gfx_font_16x28, ""));
     CHECK(!in_text_faces("\xc3\xa9"));
+}
+
+/** @brief Every SERVO_STR_ ID has English: an ID without its
+ *  UI_SERVO_TEXT entry reads as "" in every language.  Three are "" by
+ *  design: the phase and abort names of nothing, and a start that is OK. */
+TEST_CASE(every_servo_word_has_its_english)
+{
+    for (int i = 0; i < SERVO_STR_COUNT; ++i) {
+        const bool blank = i == SERVO_STR_PHASE_NONE ||
+                           i == SERVO_STR_AB_NONE || i == SERVO_STR_START_OK;
+        const char *s = servo_str((servo_str_t)i);
+        if ((s[0] == '\0') != blank) {
+            T_FAIL("SERVO_STR %d: \"%s\"", i, s);
+        }
+    }
 }
 
 /* Every language, English included: a string no screenshot shows is held
@@ -801,6 +831,7 @@ int main(void)
     RUN(every_translation_converts_what_the_english_does);
     RUN(every_string_fits_its_declared_field);
     RUN(every_drawn_string_has_its_glyphs);
+    RUN(every_servo_word_has_its_english);
     RUN(the_servo_device_line_names_a_series_and_no_model);
     RUN(alerts_and_details_fit_their_buffers);
     RUN(translated_settings_fit_where_they_are_drawn);

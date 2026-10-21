@@ -1,6 +1,7 @@
-/*
- * The automatic servo test's words: the CSV header, the phase and abort
- * names, and the line formats of the TXT report (servo_report.c).
+/**
+ * @file
+ * @brief The automatic servo test's words: the CSV header, the phase and abort
+ *        names, and the line formats of the TXT report (servo_report.c).
  *
  * Every string the run writes or the SERVO screen shows about it is an
  * entry of ui_text.def (shared/text), with its English and its German;
@@ -23,6 +24,21 @@ static const char *const k_str[SERVO_STR_COUNT] = {
 #define UI_SERVO_TEXT(id, en, de) [id] = (en),
 #include "ui_text.def"
 };
+
+/** @brief The count of UI_SERVO_TEXT entries in ui_text.def. */
+enum {
+    k_str_entries = 0
+/* A term of the sum, not an expression of its own. */
+/* NOLINTNEXTLINE(bugprone-macro-parentheses) */
+#define UI_SERVO_TEXT(id, en, de) + 1
+#include "ui_text.def"
+};
+
+/* An ID without an entry would read as "" with no error.  A duplicate
+ * entry fails the host suite's and the IOmcu's builds (-Wextra turns on
+ * -Woverride-init). */
+_Static_assert((int)k_str_entries == (int)SERVO_STR_COUNT,
+               "every SERVO_STR_ ID has one UI_SERVO_TEXT entry");
 
 const char *servo_str_in(const char *const *table, servo_str_t id)
 {

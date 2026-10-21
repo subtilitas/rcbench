@@ -1,5 +1,7 @@
-/*
- * The settings, as a schema the screen draws rather than a screen per setting.
+/**
+ * @file
+ * @brief The settings, as a schema the screen draws rather than a screen per
+ *        setting.
  *
  * Every setting is one row in a table -- its type, its range, its step, its
  * default -- and the settings screen renders whatever the table says, so

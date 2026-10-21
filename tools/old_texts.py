@@ -38,8 +38,9 @@ class ConvertError(TableError):
 
 SEPARATOR = re.compile(r"/\*\s*-{3,}|-{3,}\s*\*/")
 
-# Comments of the per-file form about an entry that no longer exists: the
-# German table's note on TX_SV_LAST, removed with that ID.
+# Comments of the per-file form about an entry the table does not have: the
+# German table's note on TX_SV_LAST, an ID absent from ui_text.def.  The
+# conversion leaves them out.
 STALE = ("The verdict and not the file",)
 
 
@@ -226,17 +227,18 @@ def option_arrays(src: str) -> list[re.Match]:
 
 
 class Texts:
-    """Everything the per-file form holds, read from one tree.
-
-    Args:
-        read: Gives a file's text by its path from the repository root.
-
-    Raises:
-        ConvertError: A file is not in the shape the tool reads, or the
-            English and the German disagree on which texts there are.
-    """
+    """Everything the per-file form holds, read from one tree."""
 
     def __init__(self, read):
+        """Reads the tree.
+
+        Args:
+            read: Gives a file's text by its path from the repository root.
+
+        Raises:
+            ConvertError: A file is not in the shape the tool reads, or the
+                English and the German disagree on which texts there are.
+        """
         self.read = read
         self.tx_items: list[tuple] = []     # the old def, in order
         self.tx_de: dict[str, tuple] = {}

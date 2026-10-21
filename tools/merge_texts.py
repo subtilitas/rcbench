@@ -367,11 +367,33 @@ static const char *const k_en[P_COUNT] = {
 #include "ui_text.def"
 };
 
-/** @brief The page's texts in German. */
+#ifndef WA_PAGE_DE
+/**
+ * @brief The German entry of text @p id as the table gives it.
+ *
+ * test_wa_page_de defines it before it includes this file, to blank one
+ * entry.
+ */
+#define WA_PAGE_DE(id, de) (de)
+#endif
+
+/** @brief The page's texts in German; NULL where the table has no German. */
 static const char *const k_de[P_COUNT] = {
-#define UI_WEB_TEXT(id, en, de) [id] = (de),
+#define UI_WEB_TEXT(id, en, de) [id] = WA_PAGE_DE(id, de),
 #include "ui_text.def"
 };
+
+/**
+ * @brief One text of the page in the page's language.
+ *
+ * @param de German page.
+ * @param t  The text.
+ * @return The German entry, or the English where the German is NULL.
+ */
+static const char *pt(bool de, p_text_t t)
+{
+    return (de && k_de[t] != NULL) ? k_de[t] : k_en[t];
+}
 """
 
 
@@ -511,7 +533,7 @@ def convert_servo(src: str) -> str:
 
 
 def convert_web(src: str) -> str:
-    """Converts wa_page.c: its enum and tables read the one table.
+    """Converts wa_page.c: its enum, tables and pt() read the one table.
 
     Args:
         src: wa_page.c in the per-file form.
@@ -523,7 +545,8 @@ def convert_web(src: str) -> str:
         ConvertError: The tables are not where expected.
     """
     m = re.search(r"/\* The page's texts, English and German\. \*/\n"
-                  r".*?k_de\[P_COUNT\] = \{.*?\n\};\n", src, re.S)
+                  r".*?k_de\[P_COUNT\] = \{.*?\n\};\n"
+                  r"(?:\nstatic const char \*pt\(.*?\n\}\n)?", src, re.S)
     if m is None:
         raise ConvertError("wa_page.c: the tables are not where expected")
     return src[:m.start()] + WEB_TABLES + src[m.end():]
@@ -594,8 +617,11 @@ def git(*args: str) -> None:
     subprocess.run(["git", *args], cwd=REPO, check=True)
 
 
-def cmd_convert() -> int:
+def cmd_convert(done: list[str]) -> int:
     """Converts the working tree in place.
+
+    Args:
+        done: Gets the path of each file written or deleted, in order.
 
     Returns:
         The exit status, 0.
@@ -607,15 +633,17 @@ def cmd_convert() -> int:
     for path, text in files.items():
         (REPO / path).parent.mkdir(parents=True, exist_ok=True)
         (REPO / path).write_text(text, encoding="utf-8")
+        done.append(path)
     for path in DELETED:
         if (REPO / path).exists():
             (REPO / path).unlink()
+            done.append(path)
     print(f"wrote {NEW_DEF} ({files[NEW_DEF].count(chr(10))} lines) and "
           f"{len(files) - 1} C files; deleted {len(DELETED)} tables")
     return 0
 
 
-def cmd_merge(base: str, theirs: str) -> int:
+def cmd_merge(base: str, theirs: str, done: list[str]) -> int:
     """Carries a branch's text changes into the one table during a merge.
 
     Converts BASE and THEIRS, merges THEIRS' converted changes since BASE
@@ -625,12 +653,14 @@ def cmd_merge(base: str, theirs: str) -> int:
     Args:
         base: The merge base.
         theirs: The branch being merged, in the per-file form.
+        done: Gets the path of each file written or removed, in order.
 
     Returns:
         0 when every file merged, 1 when one is left with conflict markers.
 
     Raises:
         TableError: A side is not in the shape the tool reads.
+        subprocess.CalledProcessError: git add or git rm fails.
     """
     ours = read_rev("HEAD")
     before = convert(read_rev(base))
@@ -652,6 +682,7 @@ def cmd_merge(base: str, theirs: str) -> int:
             if run.returncode < 0 or run.returncode > 127:
                 raise ConvertError(f"git merge-file failed on {path}")
             (REPO / path).write_text(run.stdout, encoding="utf-8")
+            done.append(path)
             conflicts += run.returncode
             state = f"{run.returncode} conflicts" if run.returncode \
                 else "merged"
@@ -662,6 +693,7 @@ def cmd_merge(base: str, theirs: str) -> int:
         git("rm", "-q", "-f", "--ignore-unmatch", path)
         if (REPO / path).exists():
             (REPO / path).unlink()
+        done.append(path)
     return 1 if conflicts else 0
 
 
@@ -673,7 +705,8 @@ def main(argv: list[str] | None = None) -> int:
 
     Returns:
         The exit status: 0, 1 for conflicts left by merge, 2 for a tree
-        the tool cannot read.
+        the tool cannot read or a git command that fails.  On 2 the files
+        already written or removed are listed on stderr.
     """
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -683,12 +716,18 @@ def main(argv: list[str] | None = None) -> int:
     m.add_argument("base")
     m.add_argument("theirs")
     args = ap.parse_args(argv)
+    done: list[str] = []
     try:
         if args.cmd == "convert":
-            return cmd_convert()
-        return cmd_merge(args.base, args.theirs)
-    except TableError as e:
+            return cmd_convert(done)
+        return cmd_merge(args.base, args.theirs, done)
+    except (TableError, subprocess.CalledProcessError) as e:
         print(f"merge_texts.py: {e}", file=sys.stderr)
+        if done:
+            print("merge_texts.py: already written or removed: "
+                  + ", ".join(done), file=sys.stderr)
+        else:
+            print("merge_texts.py: no file written", file=sys.stderr)
         return 2
 
 

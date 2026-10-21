@@ -21,8 +21,11 @@ needs_cc = pytest.mark.skipif(not HAVE_CC, reason="no C compiler on PATH")
 
 
 def test_a_compiler_exists_when_CI_is_set():
-    """The cases marked needs_cc skip without one; in CI that is a failure,
-    not a pass."""
+    """Fails in CI without a C compiler.
+
+    The cases marked needs_cc skip without one; in CI that is a failure,
+    not a pass.
+    """
     if os.environ.get("CI") and not HAVE_CC:
         pytest.fail("CI is set and no C compiler is on PATH")
 
@@ -342,6 +345,32 @@ def test_the_table_defines_and_undefines_every_macro():
 
 
 @needs_cc
+def test_only_screen_texts_stand_under_a_condition_in_the_table():
+    """Checks the repository's table: entries under #if are UI_TEXT only.
+
+    settings_option_list() finds an option list by its position among all
+    lists, and ui_text.c builds its German lists in the same order.  A
+    settings, option, servo or page entry under a condition shifts those
+    positions in a reader that does not see the define.
+    """
+    root = os.path.join(os.path.dirname(__file__), "..", "..")
+    path = os.path.join(root, mt.NEW_DEF)
+    depth = 0
+    wrong = []
+    with open(path, encoding="utf-8") as f:
+        for number, line in enumerate(f, 1):
+            word = line.split("(", 1)[0].split()
+            if line.startswith(("#if", "#ifdef", "#ifndef")):
+                depth += 1
+            elif line.startswith("#endif"):
+                depth -= 1
+            elif depth > 0 and word and word[0].startswith("UI_") \
+                    and not line.startswith("#") and word[0] != "UI_TEXT":
+                wrong.append(f"{mt.NEW_DEF}:{number}: {word[0]}")
+    assert depth == 0
+    assert wrong == []
+
+
 def test_german_without_english_is_refused():
     """German for an ID with no English stops the conversion."""
     tree = edited(mt.OLD_DE, '    [TX_ON]', '    [TX_GONE] = "WEG",\n'
@@ -432,7 +461,8 @@ def test_a_branch_in_the_old_form_merges_into_the_table(tmp_path,
     write(tmp_path, theirs)
     git(tmp_path, "commit", "-q", "-am", "theirs")
 
-    # Ours: the conversion, then an edit of our own to the table.
+    # Ours: the converted tree, with the cell count of NEW changed in the
+    # table.
     git(tmp_path, "checkout", "-q", "main")
     assert mt.main(["convert"]) == 0
     ours_def = tmp_path / mt.NEW_DEF
@@ -455,3 +485,53 @@ def test_a_branch_in_the_old_form_merges_into_the_table(tmp_path,
     unmerged = {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
     status = git(tmp_path, "status", "--porcelain").splitlines()
     assert not [ln for ln in status if ln[:2] in unmerged], status
+
+
+def converted_repo(root):
+    """Makes a repository: the per-file form, then its conversion.
+
+    Args:
+        root: The directory.
+
+    Returns:
+        The revision of the per-file form.
+    """
+    git(root, "init", "-q", "-b", "main")
+    git(root, "config", "user.name", "t")
+    git(root, "config", "user.email", "t@t")
+    write(root, OLD)
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "base")
+    base = git(root, "rev-parse", "HEAD")
+    assert mt.main(["convert"]) == 0
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "ours")
+    return base
+
+
+@needs_cc
+def test_a_failing_git_command_names_the_files_already_written(
+        tmp_path, monkeypatch, capsys):
+    """A git command failing part way is exit 2, naming the files written."""
+    monkeypatch.setattr(mt, "REPO", tmp_path)
+    base = converted_repo(tmp_path)
+
+    def refuse(*args):
+        raise subprocess.CalledProcessError(128, ["git", *args])
+
+    monkeypatch.setattr(mt, "git", refuse)
+    capsys.readouterr()
+    assert mt.main(["merge", base, base]) == 2
+    err = capsys.readouterr().err
+    assert "already written or removed: " + mt.WRITTEN[0] in err
+
+
+@needs_cc
+def test_an_unreadable_side_writes_nothing(tmp_path, monkeypatch, capsys):
+    """A revision git cannot show stops the merge before any write."""
+    monkeypatch.setattr(mt, "REPO", tmp_path)
+    converted_repo(tmp_path)
+    before = git(tmp_path, "status", "--porcelain")
+    assert mt.main(["merge", "no-such-rev", "HEAD"]) == 2
+    assert "no file written" in capsys.readouterr().err
+    assert git(tmp_path, "status", "--porcelain") == before

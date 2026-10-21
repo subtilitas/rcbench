@@ -243,7 +243,12 @@ wandelt dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 
 Die Tabelle bleibt eine Datei und steht in `tools/check_sizes.txt`. Eine
 Datei, die sie liest, definiert die Makros, die sie braucht, und bindet sie
-ein; die Tabelle definiert die übrigen leer und hebt am Ende alle auf.
+ein; die Tabelle definiert die übrigen leer und hebt am Ende alle auf. Nur
+Einträge `UI_TEXT` stehen unter einer Bedingung, `#ifdef
+RCBENCH_TOUCH_INJECTOR`, und das Define kommt mit dem Include-Pfad von
+`shared/text`, sodass jede Datei, die die Tabelle liest, dieselben Einträge
+sieht; `test/tools/test_merge_texts.py` schlägt bei jedem anderen Eintrag
+unter einer Bedingung fehl.
 
 | Datei | Liest |
 | --- | --- |
@@ -255,9 +260,12 @@ ein; die Tabelle definiert die übrigen leer und hebt am Ende alle auf.
 
 Die fünf Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E) und die 7
 deutschen Buchstaben Ä Ö Ü ä ö ü ß. Jeder andere Codepoint erscheint als
-`?`. `every_drawn_string_has_its_glyphs` in `test_text` hält jeden Text der
-Tabelle, den das Panel zeichnet, in jeder Sprache an diese Menge. Die
-WLAN-Seite zeichnet der Browser; für sie gilt das nicht.
+`?`, ebenso ein Byte, das keine gültige UTF-8-Folge beginnt.
+`every_drawn_string_has_its_glyphs` in `test_text` hält jeden Text der
+Tabelle, den das Panel zeichnet, in jeder Sprache an diese Menge und an
+gültiges UTF-8. Die WLAN-Seite zeichnet der Browser; für sie gilt das
+nicht. Ein deutscher Eintrag `NULL` zeigt auch dort sein Englisch
+(`test_wa_page_de`).
 
 ## Einen Text hinzufügen
 
@@ -274,8 +282,11 @@ WLAN-Seite zeichnet der Browser; für sie gilt das nicht.
    `python3 tools/check_formats.py` und `python3 tools/check_docs.py`
    ausführen. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
    einem deutschen Format, das andere Argumente wandelt als sein Englisch,
-   bei einem Text, der breiter ist als seine angegebenen Zellen, und bei
-   einem Buchstaben, den die Fonts nicht enthalten.
+   bei einem Text, der breiter ist als seine angegebenen Zellen, bei einem
+   Buchstaben, den die Fonts nicht enthalten, bei einem Byte, das kein
+   gültiges UTF-8 ist, und bei einer ID `SERVO_STR_`, deren Englisch leer
+   ist, wo es das nicht sein soll. `servo_str.c` baut nicht, wenn die Zahl
+   der Einträge `UI_SERVO_TEXT` von `SERVO_STR_COUNT` abweicht.
 
 Ein Branch, der die Texte noch in der Form mit mehreren Dateien hat
 (Englisch in `shared/ui/include/ui_text.def` und im Schema der
@@ -354,7 +365,7 @@ Einträge mit ID und 64 Optionen, 10 davon mit leerem Englisch.
 
 1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
    ergänzen und den Parameter in jedem Makro, das eine Spalte liest: 7
-   leere Vorgaben am Kopf der Tabelle und 19 Zeilen `#define` in 7 Dateien
+   leere Vorgaben am Kopf der Tabelle und 20 Zeilen `#define` in 7 Dateien
    (`ui_text.h`, `ui_text.c`, `settings.c`, `settings_text.c`,
    `settings_opts.h`, `servo_str.c`, `wa_page.c`). `NULL` zeigt das
    Englische.

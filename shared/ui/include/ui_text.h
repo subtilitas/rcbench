@@ -1,5 +1,6 @@
-/*
- * The interface's words, one table per language.
+/**
+ * @file
+ * @brief The interface's words, one table per language.
  *
  * Every string a screen shows in the operator's language has an ID in
  * ui_text.def (shared/text/include), which holds its English and its German

@@ -1,7 +1,8 @@
-/*
- * SETUP > SENSORS: the INA3221 parts' rows of the schema, their migration
- * from the one INA3221 of 0.21, and the map they make.  See
- * settings_sensors.h.
+/**
+ * @file
+ * @brief SETUP > SENSORS: the INA3221 parts' rows of the schema, their
+ *        migration from the one INA3221 of 0.21, and the map they make.  See
+ *        settings_sensors.h.
  *
  * SPDX-License-Identifier: MIT
  */

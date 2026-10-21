@@ -235,7 +235,11 @@ same arguments in the same order as its English.
 
 The table stays one file, listed in `tools/check_sizes.txt`. A file that
 reads it defines the macros it needs and includes it; the table defines the
-others as empty and undefines all of them at its end.
+others as empty and undefines all of them at its end. Only `UI_TEXT`
+entries stand under a condition, `#ifdef RCBENCH_TOUCH_INJECTOR`, and the
+define comes with the include path of `shared/text`, so every file that
+reads the table sees the same entries; `test/tools/test_merge_texts.py`
+fails on any other entry under a condition.
 
 | File | Reads |
 | --- | --- |
@@ -246,10 +250,12 @@ others as empty and undefines all of them at its end.
 | `shared/webaccess/wa_page.c` | the Wi-Fi page's English and German |
 
 The five text faces hold printable ASCII (0x20 to 0x7E) and the 7 German
-letters Ä Ö Ü ä ö ü ß. Any other code point draws as `?`.
+letters Ä Ö Ü ä ö ü ß. Any other code point draws as `?`, and so does a
+byte that starts no valid UTF-8 sequence.
 `every_drawn_string_has_its_glyphs` in `test_text` holds every string of
-the table the panel draws, in every language, to that set. The Wi-Fi page is
-drawn by the browser and is not held to it.
+the table the panel draws, in every language, to that set and to valid
+UTF-8. The Wi-Fi page is drawn by the browser and is not held to it; a
+`NULL` German entry shows its English there as well (`test_wa_page_de`).
 
 ## Adding a text
 
@@ -265,7 +271,10 @@ drawn by the browser and is not held to it.
    `python3 tools/check_formats.py` and `python3 tools/check_docs.py`.
    `test_text` fails on an entry without German, on a German format that
    converts other arguments than its English, on a string wider than its
-   declared cells and on a letter the fonts lack.
+   declared cells, on a letter the fonts lack, on a byte that is not valid
+   UTF-8 and on a `SERVO_STR_` ID whose English is empty where it is not
+   meant to be. `servo_str.c` does not build when the count of
+   `UI_SERVO_TEXT` entries differs from `SERVO_STR_COUNT`.
 
 A branch that still holds the per-file form of the texts (English in
 `shared/ui/include/ui_text.def` and in the settings schema, German in
@@ -336,7 +345,7 @@ with an ID and 64 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and
    the parameter to every macro that reads a column: 7 empty defaults at the
-   head of the table and 19 `#define` lines in 7 files (`ui_text.h`,
+   head of the table and 20 `#define` lines in 7 files (`ui_text.h`,
    `ui_text.c`, `settings.c`, `settings_text.c`, `settings_opts.h`,
    `servo_str.c`, `wa_page.c`). `NULL` shows the English.
 2. Add `UI_LANG_xx` to `ui_lang_t` in `shared/ui/include/ui_text.h`, and the

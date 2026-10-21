@@ -1,5 +1,7 @@
-/*
- * The Wi-Fi page. See wa_page.h.
+/**
+ * @file
+ * @brief The Wi-Fi page: the code form, the card listing and the upload
+ *        answers in English and German. See wa_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,15 +25,32 @@ static const char *const k_en[P_COUNT] = {
 #include "ui_text.def"
 };
 
-/** @brief The page's texts in German. */
+#ifndef WA_PAGE_DE
+/**
+ * @brief The German entry of text @p id as the table gives it.
+ *
+ * test_wa_page_de defines it before it includes this file, to blank one
+ * entry.
+ */
+#define WA_PAGE_DE(id, de) (de)
+#endif
+
+/** @brief The page's texts in German; NULL where the table has no German. */
 static const char *const k_de[P_COUNT] = {
-#define UI_WEB_TEXT(id, en, de) [id] = (de),
+#define UI_WEB_TEXT(id, en, de) [id] = WA_PAGE_DE(id, de),
 #include "ui_text.def"
 };
 
+/**
+ * @brief One text of the page in the page's language.
+ *
+ * @param de German page.
+ * @param t  The text.
+ * @return The German entry, or the English where the German is NULL.
+ */
 static const char *pt(bool de, p_text_t t)
 {
-    return de ? k_de[t] : k_en[t];
+    return (de && k_de[t] != NULL) ? k_de[t] : k_en[t];
 }
 
 static void head(wa_out_t *o, const wa_page_info_t *pi)
