@@ -39,12 +39,14 @@ before a write is relied on.
 
   ![An IOmcu without the port](img/servo-kst-nopage.png)
 
-- The servo is on the IOmcu's programming port, port 1: GP13, pad 17
-  of the bring-up module, unless another pin is stored for it. The port is
-  no output channel and no slot of OUTPUTS.
-- The SERVO screen's **TARGET** is **PROG PORT**
-  ([the target](#the-target)). With the standard outputs as target the
-  programmer is locked.
+- The servo is on one of the IOmcu's programming ports, PROG PORT 1 to 4,
+  with FUNCTION SERVO PWM and a pin: port 1 is GP13, pad 17 of the
+  bring-up module, unless another pin is stored for it; ports 2 to 4 have
+  the pin set on their PROG PORT entry. A port is no output channel and no
+  slot of OUTPUTS.
+- **SERVO TESTER** names that port: PORT 1, PORT 2, PORT 3 or PORT 4
+  ([the target](#the-target)). With OUTPUTS, the standard outputs as
+  target, the programmer is locked.
 - One servo at a time.
 - The port is in PWM (pulse-width modulation) or in programming, never both.
   While the port is in programming, the tester sends no pulse to it, and
@@ -999,7 +1001,7 @@ The page is the same with a PD mini answering.
 The state line reads `Leaving programming mode. PWM is still off.` and the
 tester's controls stay off until the port reports PWM. The button reads
 **ABORT** while the wait runs. Then `The port is back in tester mode.` and
-the tester drives the port at once, with **SERVO TESTER** on **PROG PORT**
+the tester drives the port at once, with **SERVO TESTER** on that port
 and **PORT PWM** on. The next **CONNECT** starts a new session with its own
 read.
 

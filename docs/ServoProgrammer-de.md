@@ -42,12 +42,14 @@ bevor man sich auf ein Schreiben verlässt.
 
   ![Ein IOmcu ohne den Port](img/de/servo-kst-nopage.png)
 
-- Das Servo hängt am Programmierport des IOmcu, Port 1: GP13, Pad 17
-  des Bring-up-Moduls, solange kein anderer Pin dafür gespeichert ist. Der
-  Port ist kein Ausgangskanal und kein Slot von OUTPUTS.
-- **ZIEL** des SERVO-Bildschirms steht auf **PROG-PORT**
-  ([das Ziel](#das-ziel)). Mit den Standardausgängen als Ziel ist der
-  Programmierer gesperrt.
+- Das Servo hängt an einem Programmierport des IOmcu, PROG-PORT 1 bis 4,
+  mit FUNKTION SERVO PWM und einem Pin: Port 1 ist GP13, Pad 17 des
+  Bring-up-Moduls, solange kein anderer Pin dafür gespeichert ist; die
+  Ports 2 bis 4 haben den Pin, der auf ihrem Eintrag PROG-PORT gesetzt ist.
+  Ein Port ist kein Ausgangskanal und kein Slot von OUTPUTS.
+- **SERVO-TESTER** nennt diesen Port: PORT 1, PORT 2, PORT 3 oder PORT 4
+  ([das Ziel](#das-ziel)). Mit OUTPUTS, den Standardausgängen als Ziel,
+  ist der Programmierer gesperrt.
 - Ein Servo zur Zeit.
 - Der Port ist in PWM (Pulsweitenmodulation) oder im Programmieren, nie in
   beidem. Solange der Port im Programmieren ist, sendet der Tester keinen
@@ -1101,7 +1103,7 @@ Die Zustandszeile zeigt
 Bedienelemente des Testers bleiben aus, bis der Port PWM meldet. Die Taste
 heißt **ABBRECHEN**, solange das Warten läuft. Danach steht
 `Der Port ist wieder im Testermodus.`, und der Tester treibt den Port sofort,
-mit **SERVO-TESTER** auf **PROG-PORT** und **PORT-PWM** ein. Das nächste
+mit **SERVO-TESTER** auf diesem Port und **PORT-PWM** ein. Das nächste
 **VERBINDEN** beginnt eine neue Sitzung mit eigenem Lesen.
 
 ### Das Warten vor PWM
