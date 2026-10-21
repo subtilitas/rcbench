@@ -6,6 +6,26 @@
 integration)](https://github.com/subtilitas/rcbench/actions/workflows/ci.yml/badge.svg)](https://github.com/subtilitas/rcbench/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/subtilitas/rcbench/branch/main/graph/badge.svg)](https://codecov.io/gh/subtilitas/rcbench)
 
+## Display change: ESP32-P4 panel from 0.23.0
+
+The panel moves from the 7-inch ESP32-S3 display board from Waveshare
+(ESP32-S3-Touch-LCD-7, 800 x 480 pixels) to the 7-inch ESP32-P4 display
+board from Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, 1024 x 600 pixels, MIPI
+DSI (Display Serial Interface), ESP32-C6 for Wi-Fi).
+
+- 0.22.0 is the last release for the ESP32-S3 panel. Support for it ends
+  with 0.22. An ESP32-S3 panel is offered 0.22.x patch releases only.
+- 0.23.0 is the first release for the ESP32-P4 panel, a testing release.
+  Its user interface is laid out for 1024 x 600; it is not the 800 x 480
+  layout scaled up.
+- The ESP32-P4 board needs chip revision 3.2 (ESP-IDF v5.5.5).
+- The IOmcu, the IO board and the CAN link stay as they are.
+- The heartbeat pin and the rotary knob pins on the ESP32-P4 board are not
+  fixed yet.
+- The ESP32-P4 work is on the branch
+  [`p4/redesign`](https://github.com/subtilitas/rcbench/tree/p4/redesign)
+  until 0.22.0 is tagged.
+
 A motor, ESC (electronic speed controller) and servo test bench on two
 processors: an ESP32-S3 touch panel (user interface, settings, SD card) and an
 RP2350 IOmcu (IO microcontroller: measurement, outputs, and every
