@@ -85,6 +85,12 @@ SOURCES = [
     # what the views drive it with: the link module, the IOmcu's
     # port and the core.
     "shared/ui/kst_panel.c",
+    "shared/ui/kst_panel_text.c",
+    "shared/ui/kst_panel_warn.c",
+    "shared/ui/kst_panel_edit.c",
+    "shared/ui/kst_panel_touch.c",
+    "shared/ui/kst_panel_run.c",
+    "shared/ui/kst_panel_draw.c",
     "shared/bench/kst_prog.c",
     "shared/bench/kst_prog_card.c",
     "shared/bench/kst_prog_file.c",

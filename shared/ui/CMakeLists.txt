@@ -39,6 +39,12 @@ set(SRCS
     servo_limit_panel.c
     servo_workbench.c
     kst_panel.c
+    kst_panel_text.c
+    kst_panel_warn.c
+    kst_panel_edit.c
+    kst_panel_touch.c
+    kst_panel_run.c
+    kst_panel_draw.c
     analyser_screen.c
     balance_screen.c
     battery_screen.c
