@@ -18,6 +18,7 @@
 #include "link_pages.h"
 #include "outputs_pages.h"
 #include "outputs_screen.h"
+#include "port_view.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -2099,10 +2100,15 @@ TEST_CASE(every_two_line_string_of_the_column_breaks_into_two)
         { TX_OUT_COMPARE_WHY, 266, false }, { TX_OUT_HOLD_UNBIND, 250, false },
         { TX_OUT_WRITTEN, 266, true },      { TX_OUT_REFUSED, 266, true },
         { TX_OUT_NOT_WRITTEN, 266, true },  { TX_OUT_NO_LINK, 266, true },
-        { TX_OUT_PORT_CARRIES, 266, false }, { TX_OUT_PORT_HELD, 266, false },
-        { TX_OUT_PORT_LOCKED, 266, false },
+        { TX_OUT_PORT_HELD, 266, false },   { TX_OUT_PORT_LOCKED, 266, false },
         { TX_OUT_PORT_PWM_NEEDS, 266, false },
-        { TX_OUT_PORT_TESTER_ONE, 266, false },
+        { TX_OUT_PORT_NOT_READ, 266, false },
+        { TX_OUT_PORT_FN_OLD, 266, false },
+        { TX_OUT_PORT_ASK_WAIT, 266, false },
+        { TX_OUT_PORT_ASK_REFUSED, 266, false },
+        { TX_OUT_PORT_ASK_LOST, 266, false },
+        { TX_OUT_PORT_TESTER_PWM, 266, false },
+        { TX_OUT_PORT_TESTER_ON, 266, false },
     };
     for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
         for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -2124,16 +2130,31 @@ TEST_CASE(every_two_line_string_of_the_column_breaks_into_two)
 
 /* ------------------------------------------------------ the PROG PORT entry */
 
-/* SERVO TESTER (y 204 to 240) and PORT PWM (y 274 to 310), two segments of
- * 128 px 4 px apart from x 19, under their labels. */
+/* SERVO TESTER (y 262 to 298) and PORT PWM (y 326 to 362), two segments
+ * of 128 px 4 px apart from x 19, under their labels
+ * (outputs_port_entry.c). */
 #define SEG_X(i)      (19 + 64 + (i) * 132)
-#define SEG_TESTER_Y  (204 + 18)
-#define SEG_PWM_Y     (274 + 18)
+#define SEG_TESTER_Y  (262 + 18)
+#define SEG_PWM_Y     (326 + 18)
 
+/* The ports as the screens see them: port 1 SERVO PWM on @p pin0, the
+ * others NONE on GP26, none and GP27, from an IOmcu with FUNC. */
 static void ports(uint8_t count, uint8_t pin0)
 {
     const uint8_t pins[4] = { pin0, 26u, OUTPUTS_NO_PIN, 27u };
     outputs_screen_set_prog_ports(count, pins);
+    port_view_t v;
+    port_view_unknown(&v);
+    if (count != OUTPUTS_PORTS_UNKNOWN) {
+        v.count    = count;
+        v.has_func = true;
+        for (unsigned n = 0; n < 4u; ++n) {
+            v.pin[n]  = pins[n];
+            v.func[n] = (n == 0u) ? (uint8_t)LINK_PG_FN_SERVO_PWM
+                                  : (uint8_t)LINK_PG_FN_NONE;
+        }
+    }
+    port_view_set(&v);
 }
 
 /* The list's rows as the screen sizes them: 46 px, or less where the
@@ -2165,6 +2186,9 @@ static void fresh_port(void)
 /* The panel's start for the other cases: the count not known, no pin. */
 static void ports_back(void)
 {
+    port_view_t v;
+    port_view_unknown(&v);
+    port_view_set(&v);
     outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, NULL);
     outputs_screen_set_prog_pin(OUTPUTS_NO_PIN);
     settings_set_hold(NULL);
@@ -2372,7 +2396,8 @@ TEST_CASE(the_next_entry_opens_on_the_entry_asked_for_once)
  * they take none: PORT PWM with OUTPUTS as the tester's target, the bench
  * ARMED, the programmer holding the port.  A press that slides off its
  * segment, is cancelled, or is locked under it sets nothing.  Port 2's
- * entry has neither.  A change from outside repaints the column.
+ * entry, a NONE port, takes neither.  A change from outside repaints the
+ * column.
  */
 TEST_CASE(the_port_segments_set_the_tester_and_say_why_they_are_locked)
 {
@@ -2392,10 +2417,11 @@ TEST_CASE(the_port_segments_set_the_tester_and_say_why_they_are_locked)
     tap(SEG_X(1), SEG_PWM_Y);
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
 
-    tap(SEG_X(1), SEG_TESTER_Y);                 /* PROG PORT */
+    tap(SEG_X(1), SEG_TESTER_Y);                 /* PORT 1 */
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
-    CHECK(!outputs_screen_port_reason(why, sizeof(why)));
-    CHECK_STR_EQ(why, "");
+    /* Why FUNCTION takes no press now. */
+    CHECK(outputs_screen_port_reason(why, sizeof(why)));
+    CHECK_STR_EQ(why, "SERVO TESTER DRIVES PROG PORT 1");
     tap(SEG_X(1), SEG_PWM_Y);                    /* OFF */
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
     tap(SEG_X(0), SEG_PWM_Y);                    /* ON */
@@ -2460,11 +2486,12 @@ TEST_CASE(the_port_segments_set_the_tester_and_say_why_they_are_locked)
     scr()->render(&c, 0);
     CHECK(guard_canvas_sum(&g) != before);
 
-    /* Port 2's entry: neither segment, no reason; taps there set
-     * nothing. */
+    /* Port 2's entry, a NONE port: the tester takes no PORT 2 and PORT
+     * PWM is port 1's business; taps there set nothing. */
     ports(2u, 13u);
     choose_port(1);
-    CHECK(!outputs_screen_port_reason(why, sizeof(why)));
+    CHECK(outputs_screen_port_reason(why, sizeof(why)));
+    CHECK_STR_EQ(why, TR(OUT_PORT_TESTER_PWM));
     tap(SEG_X(1), SEG_TESTER_Y);
     tap(SEG_X(0), SEG_PWM_Y);
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);

@@ -132,10 +132,13 @@ SENSE_MAP (0x35) sets up to 4 INA3221 with a shunt and a watch target per
 channel, and SENSE_WIN_A and SENSE_WIN_B (0x37, 0x38) carry every channel's
 last window; an older IOmcu refuses the three with BAD_PAGE, and this
 build's panel writes none of them
-([The INA3221 map and windows](LinkSensors.md)). From 4.27 SENSE_LIMIT
-(0x36) holds a current limit per channel and flags each channel whose
-window passed it, an alert only; an older IOmcu refuses it with BAD_PAGE,
-and this build's panel writes no limit. The
+([The INA3221 map and windows](LinkSensors.md)). From 4.26 PROG
+has 28 registers: registers 24 to 27 are each port's FUNC, and the build
+has 4 ports; the panel reads 24 registers of an older IOmcu and offers its
+ports SERVO PWM only ([The programming ports](#the-programming-ports)). From
+4.27 SENSE_LIMIT (0x36) holds a current limit per channel and flags each
+channel whose window passed it, an alert only; an older IOmcu refuses it
+with BAD_PAGE, and this build's panel writes no limit. The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -612,11 +615,12 @@ page, under `test_sense_page` and `test_link_pages`.
 
 PROG (0x33) is new in 4.13. No page and no register moves. A programming
 port is an output of its own kind: it has its own pin, is no slot of OUTPUTS
-and holds no channel of CHANNELS. Its pin does one of two things, never
-both:
+and holds no channel of CHANNELS. Its pin carries one of these, never two:
 
-- PWM (pulse-width modulation): a servo pulse from the PWM generator that
-  drives the standard servo ports.
+- SERVO PWM (pulse-width modulation): a servo pulse from the PWM generator
+  that drives the standard servo ports. The port's function `FUNC` 0.
+- NONE (since 4.26): no driver. The pin is held for the port as an input
+  with its pull-down and renders nothing. `FUNC` 1.
 - PROGRAMMING: the wire protocol for KST and Chaservo servos, which the
   servo programming page (`KST`, 0x32) runs, see
   [The programming port for KST and Chaservo servos](LinkKST.md); or, since
@@ -624,13 +628,13 @@ both:
   [The programming port for Hitec servos](LinkHitec.md). One page holds a
   port at a time.
 
-The page holds 4 ports. Register 0 says how many the build has; the bring-up
-build has 1. `shared/outputs/prog_port.c` holds the rules.
+The page holds 4 ports. Register 0 says how many the build has: 4 from
+4.26, 1 before. `shared/outputs/prog_port.c` holds the rules.
 
 | Register | Name | Access | Holds |
 | ---: | --- | --- | --- |
 | 0 | `COUNT` | read | the ports of this build, 0 to 4 |
-| 1 | `FLAGS` | read | bit n: the PWM generator has port n's pin. Bit 8 + n: port n's stored pin was taken at start and the port does not hold it |
+| 1 | `FLAGS` | read | bit n: the PWM generator has port n's pin (SERVO PWM). Bit 4 + n (since 4.26): port n's pin is parked (NONE). Bit 8 + n: port n names a pin it does not hold: the stored pin was taken at start, or the silicon refused it |
 | 2 | `PWM` | read, write | bit n: port n renders its pulse while the bank is ARMED for the surfaces. Not kept |
 | 3 | `TARGET` | read, write | what SERVO's frame rate, sweep and hold drive: 0 the standard servo ports, n + 1 port n. A change sets SERVO's frame rate to 0 (since 4.19). Not kept |
 | 4 + 5 n | `PIN` | read, write | port n's IOmcu GPIO (general-purpose input/output), or 0xFFFF for none. Kept |
@@ -638,6 +642,7 @@ build has 1. `shared/outputs/prog_port.c` holds the rules.
 | 6 + 5 n | `SLEW` | read, write | as CHAN_CFG's slew: 0 to 3000, a higher value refused with BAD_VALUE, nothing stored (since 4.16). Kept; a kept slew above 3000 starts as 3000 |
 | 7 + 5 n | `MIN_US` | read, write | the pulse at command 0, 400 to 2500 µs, default 1000; while the port's `PWM` bit is set, at most the frame of the port's rate minus 1 µs (since 4.16). Kept |
 | 8 + 5 n | `MAX_US` | read, write | the pulse at command 1000, 400 to 2500 µs, default 2000; while the port's `PWM` bit is set, at most the frame of the port's rate minus 1 µs (since 4.16). Kept |
+| 24 + n | `FUNC` | read, write | since 4.26: port n's function, 0 SERVO PWM, 1 NONE; any other value refused with BAD_VALUE (2 to 4 are reserved for DSHOT150, DSHOT300 and DSHOT600). Default 0 for port 0, 1 for the others. Kept |
 
 A port's pulse is a channel of the output bank: port n is bank channel
 9 + n, above the 8 channels of CHANNELS and the bench throttle's channel 8.
@@ -668,9 +673,13 @@ The servo tester reaches a port three ways:
   pulse stops ends a capture that has not finished.
 
 Pins. A port's pin is never a slot's pin. A write of `PIN` is refused with
-BAD_VALUE for a pin that is reserved, past GP47, a slot's, held by SUPPLY,
-SENSE or TONE, another port's, or one that shares a PWM slice or a compare
-register with a PWM slot's pin; a write of OUTPUTS or BIND that
+BAD_VALUE for a pin that is reserved, past GP63, a slot's, held by SUPPLY,
+SENSE or TONE or another port's. For a SERVO PWM port it is also refused
+for a pin past GP47 (no PWM slice), one that shares a PWM slice or a
+compare register with a PWM slot's pin, and one on the compare register of
+another SERVO PWM port; a NONE port's pin is under none of the PWM rules.
+A pin the chip does not have is refused when the IOmcu cannot park it, and
+the write is undone; a write of OUTPUTS or BIND that
 puts a slot on a port's pin or beside it in the silicon is refused the same
 way, and so is a SUPPLY, SENSE or TONE write that takes it. Channels. A
 slot's channel range never reaches the ports' bank channels 9 to 12: a write
@@ -681,11 +690,12 @@ divider and one wrap register, so both pins run at one rate. A port whose
 pin shares its slice with another held port's pin takes a SERVO rate of 0
 or 50 Hz only, any other is refused with BAD_VALUE; and while the `TARGET`
 port runs at a rate other than 50 Hz, a `PIN` write that moves another port
-onto its slice is refused with BAD_VALUE (both since 4.19). A `PIN` is not changed while
-the bank is ARMED, while the port's `PWM` bit is set, while it is the
-`TARGET` or while the servo programming page has the port out of PWM. `PWM`
-and `TARGET` name only ports
-whose pin the generator has. A write that reaches a register of a port the
+onto its slice is refused with BAD_VALUE (both since 4.19). Neither `PIN`
+nor `FUNC` changes while the bank is ARMED, while the port's `PWM` bit is
+set, while it is the `TARGET` (before or after the frame) or while a wire
+page (KST, HITEC) holds a port; a `PIN` is judged under the `FUNC` the frame
+leaves. `PWM` and `TARGET` name only SERVO PWM ports whose pin the
+generator has, and no port whose `PIN` or `FUNC` the same frame changes. A write that reaches a register of a port the
 build does not have is refused with BAD_VALUE, a write of register 0 or 1
 with READ_ONLY. A refused write changes nothing, SERVO's frame rate and sweep
 included.
@@ -698,12 +708,36 @@ another pin or to 0xFFFF. A stored pin that a slot, SUPPLY, SENSE or TONE
 holds at start stays theirs: the port holds no pin and bit 8 + n of `FLAGS`
 is set until another `PIN` is written.
 
+The functions are kept in one word of the store record, the word before
+the ports' registers that was spare until 4.26 (`prog_func`): bits 4n to
+4n + 3 hold 1 + port n's `FUNC`, 0 none stored. A record without one reads
+as port 0 SERVO PWM and the others NONE. The word has no version of its
+own: version 7 and version 8 records carry it at the same place.
+
+| Image the board goes down to | What it does with the word | Back on 4.26 or later |
+| --- | --- | --- |
+| 4.25 | reads it as spare and writes it back as 0 | the ports keep their pins and are at the default functions; a kept pin a SERVO PWM port cannot hold (past GP47) is dropped |
+| older than 4.25 | reads no version 8 record and starts with an empty store | every port is at its default pin and function |
+
+The panel writes `PIN` and `FUNC` only when the operator asks, on OUTPUTS'
+PROG PORT entry or in PICK A PIN ([Screens](Screens.md#the-prog-port-entry)),
+never from a stored setting: the ports are the board's, as the outputs'
+binding is. An ask waits for a bench at rest. A port that is the
+`TARGET` is let go first (its `PWM` bit off, `TARGET` 0), and the target
+the screen wants is written back after the page is read again.
 | Panel | IOmcu | PROG (0x33) |
 | --- | --- | --- |
 | 4.13 | 4.13 | served |
 | 4.13 | 4.12 or older | the IOmcu answers a request to 0x33 with BAD_PAGE; the panel reads the minor at link-up and sends nothing there below 13 |
 | 4.12 or older | 4.13 | the panel never reads or writes 0x33: no port renders a pulse, and port 0 holds GP13 |
+| 4.26 | 4.13 to 4.25 | the panel reads 24 registers and takes every port as SERVO PWM; it asks no `FUNC` and says `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` |
+| 4.13 to 4.25 | 4.26 | the panel reads 24 registers and never writes `FUNC`; a port it sets as the target must be SERVO PWM, or the IOmcu refuses the `TARGET` |
 
+`test_prog_port_fn` runs the functions: the two values taken and 2, 3,
+4, 15 and 65535 refused, a NONE port's pin under the pin rules and none of
+the PWM rules, a function change under every lock, SERVO PWM refused on a
+pin the generator cannot take, the parked flag, the kept word and a record
+an older image wrote back. `test_prog_link_ask` runs the panel's asks.
 `test_prog_port` runs the page: every pin refusal in both directions, the
 endpoints at 399, 400, 2500 and 2501 µs, the slew at 3000 and 3001 and a kept
 slew of 3001 and 65535, a pin move under a bank in ARMED, a
@@ -811,7 +845,7 @@ per 5 s offer.
 | 0x30 | BIND | read, write | register 0 `COMMIT` (since 4.10): a write of the CRC-16 of the 64 prepared registers puts both prepared pages in force or neither; refused with BAD_VALUE for another value and for a page its own rules refuse. Reads the CRC of what is prepared |
 | 0x31 | SERVO_WIN | read | the last 4 complete 50 ms windows of INA3221 CH1, newest first (since 4.11). Register 0: the newest window's number modulo 65536. Register 1: bit 0 a window has closed, bit 7 the capture's clipped bit. Registers 2 and 3: SERVO_SENSE's capture state and count. Then 4 entries of 6 registers, entry k from register 4 + 6 k for window number register 0 - k: mean, highest and lowest current (mA, signed), mean and lowest bus voltage (mV), and flags (bit 15 a window closed with this number, bit 8 current samples, bit 9 voltage samples, bit 10 a sample at the top of the range, bit 11 one at the bottom, bits 0 to 7 the samples at an end, held at 255). A clipped sample counts at the end of the range. Every write is refused with READ_ONLY. [The window ring](#the-window-ring) has the rules. Nothing is kept |
 | 0x32 | `KST` | read, write | the servo programming page: the programming protocol for KST and Chaservo servos on a programming port (since 4.12; a port and the supply since 4.13). A read gives 32 registers: state, flags and port, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. A write takes 28: the command in registers 0 to 3, one frame, the staged image, unlock set and start check in 4 to 25, and the supply voltage and current of an ENTER in 26 and 27. [The programming port for KST and Chaservo servos](LinkKST.md) has the rules. Nothing is kept |
-| 0x33 | PROG | read, write | the programming ports (since 4.13): 24 registers. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints. [The programming ports](#the-programming-ports) has the rules. Pin, slew and endpoints are kept in the IOmcu's flash |
+| 0x33 | PROG | read, write | the programming ports (since 4.13): 28 registers, 24 before 4.26. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints, then each port's FUNC in 24 to 27 (since 4.26). [The programming ports](#the-programming-ports) has the rules. Pin, slew, endpoints and FUNC are kept in the IOmcu's flash |
 | 0x34 | `HITEC` | read, write | raw transactions of the Hitec servo wire on a programming port (since 4.23). A read gives 32 registers: state, flags and port, `SEQ`, operation and transaction count, result and refusal, the capture's count and flags, the decoder's result, the decoded value, `VIEW`, the received bytes in 8 registers, and in 16 registers the bytes' start times or the run. A write takes 24: the command in registers 0 to 3, one frame, the staged transaction, decoder and POWER set points in 4 to 21, `VIEW` in 22, and the receive mode of a D series line in 23 (since 4.24). [The programming port for Hitec servos](LinkHitec.md) has the rules. Nothing is kept |
 | 0x35 | SENSE_MAP | read, write | up to 4 INA3221 at 0x40 to 0x43 on SENSE's bus (since 4.25). Register 0 the parts fitted, bit a for 0x40 + a; 1 `FAST`, the channel read every 1 ms (0 to 11, 0xFF none); 2 to 13 each channel's shunt in 0.1 mΩ (0 off, 50 to 10000); 14 to 25 what each channel measures (0 none, 0x01 to 0x08 an output channel, 0x10 to 0x13 a programming port, 0x20 the supply); read only: 26 to 29 each part's die ID, 30 flags, 31 reserved. Registers 0 to 25 are kept in the IOmcu's flash. While the map is in force SENSE's ENABLE bit 1 and registers 8 to 10 mirror it. [The INA3221 map and windows](LinkSensors.md) has the rules |
 | 0x36 | SENSE_LIMIT | read, write | a current limit per channel of SENSE_MAP (since 4.27), an alert only. Registers 0 to 11 each channel's limit in mA (0 none, 1 to 32767), kept in the IOmcu's flash; read only: 12 `OVER`, bit c a window of channel c above its limit since the last read of the register, which clears it; 13 `OVER_COUNT`, channel windows over, modulo 65536; 14 and 15 reserved. 16 registers. [The INA3221 map and windows](LinkSensors.md#sense_limit) has the rules |

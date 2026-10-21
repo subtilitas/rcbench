@@ -206,7 +206,7 @@ abzüglich 1024 Bytes überschreitet.
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 104 | 2 064 |
 | `control` | `control_task` | 6 144 | 4 384 | 736 |
-| `runlog` | `log_task` | 5 632 | 3 744 | 864 |
+| `runlog` | `log_task` | 6 656 | 4 464 | 1 168 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 328 | 720 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 680 | 1 392 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 5 120 | 3 360 | 736 |
@@ -222,13 +222,15 @@ Security) und jedes Lesen darunter aus: esp_http_client erreicht seinen
 Transport über einen Funktionszeiger. Sein Stack ist der des Servers der
 Seite, der nie neben ihm läuft; die Tiefe des Handshakes ist nicht gemessen.
 
-Die tiefste Kette von `runlog` speichert eine Servodatei: `kst_store_save()`,
-das Anlegen in `kst_files.c` und eine Ordnerebene von `BENCH/KST/CONF`, über
-`card_make_dirs()` angelegt. `CARD_CALLS` nennt jede Funktion, die ein
-Aufrufer `card_make_dirs()` übergibt, und das Werkzeug zählt jede davon unter
-jedem Aufruf, sodass dieser Schritt mit seinem tiefsten Ziel zählt: 64 Bytes
-über der Kette, die ein Speichern nimmt. Die Kette braucht 3 744 Bytes; der
-Stack von 5 632 Bytes lässt 864 über der Marge von 1 024 Bytes.
+Die tiefste Kette von `runlog` bindet die SD-Karte ein: eine in
+`BENCH/KST/CONF` gelistete Servodatei (`kst_store_preset()`), das Lesen des
+Ordners mit `storage_walk()` und das erneute Einbinden einer Karte, die
+nicht mehr antwortet (`storage_read_end()`, `esp_vfs_fat_sdspi_mount()`).
+Das Werkzeug folgt jedem Aufruf, den das Einbinden machen kann, darunter
+`f_mkfs()`, das ein Einbinden ohne Formatieren nie erreicht. Der Start
+eines Laufs bindet die Karte ebenfalls auf diesem Task ein
+(`storage_check()`). Die Kette braucht 4 464 Bytes; der Stack von 6 656
+Bytes lässt 1 168 über der Marge von 1 024 Bytes.
 
 Gemessen mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb
 der Frames auf: 320 für den gesicherten Zustand von FPU (Floating-Point Unit)
@@ -247,7 +249,7 @@ Untergrenze:
   Servodateien geschrieben werden, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  231
+  240
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
@@ -276,7 +278,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 524 | 528 | 1 788 |
+| Kern 0 | `main` | 4 096 | 1 492 | 528 | 1 820 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
@@ -381,15 +383,15 @@ Kartenübertragung, solange das WLAN läuft.
 
 | Posten | Was es ist | Bytes |
 | --- | --- | ---: |
-| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 128 232 |
-| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 297 752 |
-| `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 106 056 |
-| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 191 696 |
+| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 128 664 |
+| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 297 320 |
+| `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 107 248 |
+| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 190 072 |
 | `AP` | WLAN-HOTSPOT: das WLAN, der Server der Seite und seine Task | 98 724 |
 | `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
 | `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
 | `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |
-| `left` | übriger Heap mit dem größten Modus | 88 536 |
+| `left` | übriger Heap mit dem größten Modus | 86 912 |
 
 Gelesen aus dem Build mit ESP-IDF v5.4. CI führt das Werkzeug auf diesem
 Build mit `--check-doc` aus; das schlägt fehl, wenn die Tabelle von ihm
@@ -425,14 +427,14 @@ Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
 Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 20
-Objekten, 163 904 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
+Objekten, 163 920 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
 wpa_supplicant, 13 742 Bytes.
 
 | Objekt | Komponente | .bss (Bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35 968 |
+| `log_viewer_screen` | ui | 35 984 |
 | `servo_screen` | ui | 29 509 |
 | `ui_watermark` | ui | 20 504 |
 | `supply_screen` | ui | 20 508 |

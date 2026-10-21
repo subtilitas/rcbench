@@ -73,13 +73,14 @@ before a write is relied on.
 
 ## The target
 
-The tester of the SERVO screen drives the standard servo outputs or the
-programming port. Two controls set it, on the PROG PORT entry of
-**SETUP** > **OUTPUTS**:
+The tester of the SERVO screen drives the standard servo outputs or one
+programming port: **SERVO TESTER** holds OUTPUTS, PORT 1, PORT 2, PORT 3
+or PORT 4. Two controls set it, on each PROG
+PORT entry of **SETUP** > **OUTPUTS**:
 
 | Control | Values | Does |
 | --- | --- | --- |
-| SERVO TESTER | **OUTPUTS**, **PROG PORT** | what the sweep, **CENTRE**, **RELEASE**, the hold of a position and the automatic test drive |
+| SERVO TESTER | **OUTPUTS**, **PORT n** (the entry's port) | what the sweep, **CENTRE**, **RELEASE**, the hold of a position and the automatic test drive |
 | PORT PWM | **ON**, **OFF** | whether the programming port renders the tester's pulse while it is the target |
 
 A tap on the TARGET row of the right card opens **OUTPUTS** on the PROG
@@ -91,9 +92,13 @@ every way out of the screen does.
 
 ![The PROG PORT entry of OUTPUTS](img/outputs-port.png)
 
-Both are kept with the SERVO settings. The TARGET row names the active
-target with its protocol and pins: `PROG PORT GP13` in the warning colour,
-or `SERVO PWM GP4` for the pins bound as SERVO PWM.
+Both are kept with the SERVO settings, SERVO TESTER as OUTPUTS, PORT 1,
+PORT 2, PORT 3 or PORT 4. The TARGET row names the active
+target with its protocol and pins: `PROG PORT 1 GP13` in the warning
+colour, or `SERVO PWM GP4` for the pins bound as SERVO PWM. A port whose
+FUNCTION is NONE is no target: its entry locks **PORT n** and says
+`THE SERVO TESTER NEEDS FUNCTION SERVO PWM`. A stored value 1, the
+PROG PORT of a single-port panel, reads as PORT 1.
 **SERVO TESTER** changes only
 with the bench SAFE, no sweep and no test running, and the port not in
 programming; the panel releases a held position before it asks the
@@ -107,7 +112,8 @@ the accent, and the line under the two names the reason:
 | --- | --- |
 | `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | the programmer has the port |
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED or asked to arm, or a sweep or a test runs |
-| `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | **PORT PWM** with **OUTPUTS** as target |
+| `SERVO TESTER DRIVES PROG PORT 3` | another port's entry: the tester drives port 3 |
+| `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | **PORT PWM** on an entry whose port is not the target |
 
 The TARGET row on the right card takes no tap while the bench is ARMED, a
 sweep or a test runs, or the programmer has the port.
@@ -692,7 +698,7 @@ servo held before the write are then not recoverable from the bench.
 | The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2 s sends the write |
 | The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |
 | **FILES**, save and load without a card | refused: `No card. Nothing saved or written to the servo.` |
-| A card put in after the panel started | the panel tries to mount a card when the programmer opens and at each tap on **CONNECT**, **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row while none is mounted. The tap that finds the card still reads no card; the next one has it, and an open write page changes to the page with the file |
+| A card put in, taken out or swapped after the panel started | the panel looks at the slot when the programmer opens and at each tap on **CONNECT**, **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row: a card put in or swapped is mounted, and one taken out is let go. The look at a mounted card is one SEND_STATUS (CMD13) command. A file request (list, load, save) runs on the card it was asked of; with another card mounted in its place by then, it finds no card. The record of a write goes to the card whose record the programmer read last, never to one mounted in its place before the next look reads that card's record. The tap that finds a new card still reads the card state from before; the next one has it, and an open write page changes to the page with the file |
 
 A card in the slot that does not mount counts as no card: the write, the
 restore and the pairing release go as above, and **FILES** is refused. Its
@@ -870,7 +876,7 @@ operator's: its first write saves its own backup file, as every session's
 first write does. The run holds that read in the panel's memory
 until the next run's first write or a start of the panel, and RESTORE offers it as
 `Settings before the limit run.`. While the run holds the port, the screen's
-TARGET row and the run's box name it: `PROG PORT GP13`.
+TARGET row and the run's box name it: `PROG PORT 1 GP13`.
 
 A run aborted inside a session leaves the port in programming mode with
 the values last written. LEAVE gives it back to PWM; CONNECT and READ ALL
@@ -1133,8 +1139,9 @@ line. [The link page](LinkKST.md) lists the codes.
 - A mounted card that does not take the record stops every write: a card
   taken out after the mount, a write-protected card, or a card on which
   `BENCH/KST/CONF/KST.TXT` or `BENCH/KST/CONF/KST.NEW` is a folder, or a
-  level of `BENCH/KST/CONF` is a file. Each attempt ends with `Could not save the file to the card. Nothing was written to the servo.` The panel does not
-  unmount such a card. A panel started without a card holds the record in
+  level of `BENCH/KST/CONF` is a file. Each attempt ends with `Could not save the file to the card. Nothing was written to the servo.` The panel keeps such a
+  card mounted, except a card taken out, which the next look at the slot
+  lets go ([Screens](Screens.md#the-sd-cards-format)). A panel started without a card holds the record in
   memory and writes.
 - The record of a write that ended is cleared on the card after the write,
   by a file write of its own that is repeated every 5 s until the card

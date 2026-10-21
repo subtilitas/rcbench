@@ -75,21 +75,34 @@ Eine gespeicherte Bindung, die GP13 hält, behält ihn: Der Programmierport hat 
 
 ![Der Eintrag PROG-PORT](view:outputs-port)
 
-Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport, den der IOmcu meldet: 1 beim Bring-up-Build, höchstens 4, und einer für Port 1, solange die Anzahl nicht bekannt ist. Ein IOmcu älter als Protokoll 4.13 hat keinen Programmierport und keinen Eintrag. Ein Programmierport ist ein Ausgang eigener Art, kein Protokoll und kein Slot. Sein Eintrag zeigt:
+Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport, den der IOmcu meldet: 4 ab Protokoll 4.26, 1 bei einem älteren Build, und einer für Port 1, solange die Anzahl nicht bekannt ist. Ein IOmcu älter als Protokoll 4.13 hat keinen Programmierport und keinen Eintrag. Ein Programmierport ist ein Ausgang eigener Art, kein Protokoll und kein Slot. Jeder Eintrag hat dieselben Zeilen:
 
-- jeden Pin, wie die Übersicht ihn benennt, den Pin des Ports hervorgehoben. Kein Pin nimmt einen Haken an; der Pin des Ports ist nur lesbar.
-- `PIN GP13`, oder `KEIN PIN BEKANNT` in der Warnfarbe.
-- `TRÄGT SERVO PWM UND KST/CHASERVO-PROGRAMMIERUNG`: der IOmcu gibt auf dem Port kein MOTOR PWM und kein DShot aus.
-- SERVO-TESTER, OUTPUTS oder PROG-PORT: was der Tester von [SERVO](servo.md) treibt. Die Zeile ZIEL von SERVO öffnet OUTPUTS hier, solange der IOmcu den Port treibt.
-- PORT-PWM, EIN oder AUS: der Puls des Ports, solange er das Ziel des Testers ist.
-
-| Zeile unter den beiden | Bedingung |
+| Zeile | Zeigt und tut |
 |---|---|
-| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | der [Servo-Programmierer](servo-programmer.md) hat den Port |
-| `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED, oder ein Sweep oder ein Test läuft; PORT-PWM geht trotzdem aus |
-| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM mit OUTPUTS als Ziel des Testers |
+| PIN | `PIN GP13`, `PIN WÄHLEN`, `PIN GP14 ABGELEHNT` oder `KEIN PIN BEKANNT`; ein Tipp öffnet [PICK A PIN](picker.md) auf dem Port, wo ein Tipp auf einen Pin ihn setzt |
+| FUNKTION | SERVO PWM oder KEINE: was der Pin trägt, solange keine Programmiersitzung ihn hält. SERVO PWM ist der Servopuls auf einem PWM-Pin; KEINE lässt den Pin einen Eingang mit seinem Pull-down, auf jedem freien Pin |
+| ÜBERWACHT VON | der Stromkanal, der den Port überwacht; `VON KEINEM STROMKANAL ÜBERWACHT`, bis eine Sensorzuordnung einen nennt |
+| SERVO-TESTER | OUTPUTS oder PORT n: was der Tester von [SERVO](servo.md) treibt. Die Zeile ZIEL von SERVO öffnet OUTPUTS hier, solange der IOmcu den Port treibt |
+| PORT-PWM | EIN oder AUS: der Puls des Ports, der das Ziel des Testers ist |
 
-Das Wählen des Eintrags schreibt nichts an den IOmcu, und LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt. Die zwei Einstellungen hält das Panel, und sie erreichen den IOmcu bei einem Prüfstand in Ruhe. Bei mehr als einem Port heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`; der Tester treibt nur Port 1.
+Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung der Ausgänge: sie gehören zur Platine. Port 1 beginnt als SERVO PWM auf GP13, die Ports 2 bis 4 als KEINE ohne Pin. Ein Tipp auf FUNKTION und ein in PICK A PIN getippter Pin sind Bitten: das Panel schreibt sie bei einem Prüfstand in Ruhe, und die gelbe Zeile sagt, wie sie stehen.
+
+![PROG-PORT 2, die Bitte wartet](view:outputs-port2)
+
+| Zeile unter den Zeilen | Bedingung |
+|---|---|
+| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | der [Servo-Programmierer](servo-programmer.md) hat einen Port |
+| `WARTET AUF SAFE, KEINEN TEST, SWEEP ODER SERVO-PROGRAMMIERER` | eine Bitte für diesen Port wartet auf einen Prüfstand in Ruhe |
+| `DER IOMCU HAT ES ABGELEHNT` | der IOmcu hat die letzte Bitte abgelehnt oder nicht beantwortet |
+| `VERBINDUNG VOR DEM SCHREIBEN VERLOREN` | die Verbindung brach ab, bevor die Bitte geschrieben war |
+| `PORTS NOCH NICHT GELESEN` | die Ports des IOmcu seit dem Linkaufbau nicht gelesen |
+| `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED, oder ein Sweep oder ein Test läuft; PORT-PWM geht trotzdem aus |
+| `SERVO-TESTER STEUERT PROG-PORT 3` | der Tester steuert einen anderen Port |
+| `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE |
+| `IOMCU ÄLTER ALS 4.26: NUR SERVO PWM` | der IOmcu hat keine FUNKTION |
+| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM auf einem Port, der nicht das Ziel des Testers ist |
+
+Das Wählen des Eintrags schreibt nichts an den IOmcu, und LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt. Die zwei Einstellungen des Testers hält das Panel, und sie erreichen den IOmcu bei einem Prüfstand in Ruhe. Bei mehr als einem Port heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`.
 
 ## Die Übersicht: OFF
 

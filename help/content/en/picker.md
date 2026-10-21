@@ -60,6 +60,12 @@ PINS, down the left, lists the selected protocol's pins in channel order with th
 
 The programming port's pin, GP13 (pad 17) by default, is grey while no protocol holds it, and IN USE lists it first under `PROG PORT`. Each further port the IOmcu reports holds its pin the same way, listed under the same name.
 
+## A programming port's pin
+
+![PROG PORT 3 picked](view:picker-port)
+
+The protocol list ends in the PROG PORT entries, as on [Outputs](outputs.md), whose PIN button opens this screen on its port. With a port picked a tap sets that port's pin: a free key asks the IOmcu for that pin, the port's own accented key asks for none. Another port's pin, a protocol's and an interface's stay grey. A SERVO PWM port is refused a pin on the PWM slice of a bound PWM output, `GP5: SHARES PWM SLICE WITH OUTPUT GP4`, and one on the compare register of another SERVO PWM port, `GP28: SAME PWM CHANNEL AS GP12`. A NONE port takes any free key. The count line names the port's function, `FUNCTION: SERVO PWM`. The ask waits for a bench at rest; the amber line says how it stands, as on Outputs. Before the IOmcu's ports are read every key is grey under `PORTS NOT READ YET`.
+
 ![The interfaces' pins held and named under IN USE](view:picker-iface)
 
 A pin [SETUP > INTERFACES](setup-interfaces.md) holds is grey the same way, and IN USE lists it after the programming port under `SENSOR BUS`, `PD MINI` or `PHASE TAP`. A table with more lines than fit ends in `+N`, N the lines left out.

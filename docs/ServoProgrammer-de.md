@@ -82,13 +82,14 @@ bevor man sich auf ein Schreiben verlässt.
 
 ## Das Ziel
 
-Der Tester des SERVO-Bildschirms treibt die Standard-Servoausgänge oder den
-Programmierport. Zwei Bedienelemente stellen es, auf dem Eintrag PROG-PORT
-von **SETUP** > **OUTPUTS**:
+Der Tester des SERVO-Bildschirms treibt die Standard-Servoausgänge oder
+einen Programmierport: **SERVO-TESTER** hält OUTPUTS, PORT 1, PORT 2,
+PORT 3 oder PORT 4. Zwei Bedienelemente stellen es,
+auf jedem Eintrag PROG-PORT von **SETUP** > **OUTPUTS**:
 
 | Bedienelement | Werte | Wirkung |
 | --- | --- | --- |
-| SERVO-TESTER | **OUTPUTS**, **PROG-PORT** | was der Sweep, **ZENTRIEREN**, **FREIGEBEN**, das Halten einer Stellung und der automatische Test treiben |
+| SERVO-TESTER | **OUTPUTS**, **PORT n** (der Port des Eintrags) | was der Sweep, **ZENTRIEREN**, **FREIGEBEN**, das Halten einer Stellung und der automatische Test treiben |
 | PORT-PWM | **EIN**, **AUS** | ob der Programmierport den Puls des Testers ausgibt, solange er das Ziel ist |
 
 Ein Tippen auf die Zeile ZIEL der rechten Karte öffnet **OUTPUTS** auf dem
@@ -101,9 +102,13 @@ und beendet einen Sweep oder einen Test, wie jeder Weg aus dem Bildschirm.
 
 ![Der Eintrag PROG-PORT von OUTPUTS](img/de/outputs-port.png)
 
-Beide werden mit den SERVO-Einstellungen gehalten. Die Zeile ZIEL nennt das
-aktive Ziel mit Protokoll und Pins: `PROG-PORT GP13` in der Warnfarbe oder
-`SERVO PWM GP4` für die als SERVO PWM gebundenen Pins. **SERVO-TESTER**
+Beide werden mit den SERVO-Einstellungen gehalten, SERVO-TESTER als
+OUTPUTS, PORT 1, PORT 2, PORT 3 oder PORT 4. Die Zeile ZIEL nennt das
+aktive Ziel mit Protokoll und Pins: `PROG-PORT 1 GP13` in der Warnfarbe
+oder `SERVO PWM GP4` für die als SERVO PWM gebundenen Pins. Ein Port mit
+FUNKTION KEINE ist kein Ziel: sein Eintrag sperrt **PORT n** und sagt
+`DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM`. Ein gespeicherter Wert
+1, der PROG-PORT eines Panels mit einem Port, gilt als PORT 1. **SERVO-TESTER**
 wechselt nur bei einem Prüfstand in SAFE, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den IOmcu um das
@@ -117,7 +122,8 @@ gezeichnet, und die Zeile darunter nennt den Grund:
 | --- | --- |
 | `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | der Programmierer hat den Port |
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED oder soll es werden, oder ein Sweep oder ein Test läuft |
-| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | **PORT-PWM** mit **OUTPUTS** als Ziel |
+| `SERVO-TESTER STEUERT PROG-PORT 3` | der Eintrag eines anderen Ports: der Tester steuert Port 3 |
+| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | **PORT-PWM** auf einem Eintrag, dessen Port nicht das Ziel ist |
 
 Die Zeile ZIEL auf der rechten Karte nimmt kein Tippen an, solange der
 Prüfstand ARMED ist, ein Sweep oder ein Test läuft oder der Programmierer
@@ -753,7 +759,7 @@ wiederherstellbar.
 | Die Karte wird entnommen, während eine Seite offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2 s sendet das Schreiben |
 | Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |
 | **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
-| Eine Karte, die nach dem Start des Panels eingesteckt wird | das Panel versucht, eine Karte einzubinden, wenn der Programmierer öffnet und bei jedem Tippen auf **VERBINDEN**, **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN INS SERVO FREIGEBEN** oder die Schreibzeile, solange keine eingebunden ist. Das Tippen, das die Karte findet, liest noch keine Karte; das nächste hat sie, und eine offene Schreibseite wechselt zur Seite mit der Datei |
+| Eine Karte, die nach dem Start des Panels eingesteckt, entnommen oder getauscht wird | das Panel sieht in den Steckplatz, wenn der Programmierer öffnet und bei jedem Tippen auf **VERBINDEN**, **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN INS SERVO FREIGEBEN** oder die Schreibzeile: Eine eingesteckte oder getauschte Karte wird eingebunden, eine entnommene freigegeben. Der Blick auf eine eingebundene Karte ist ein Befehl SEND_STATUS (CMD13). Eine Dateianfrage (Liste, Laden, Speichern) läuft auf der Karte, für die sie gestellt wurde; ist bis dahin eine andere an ihrer Stelle eingebunden, findet sie keine Karte. Das Protokoll eines Schreibvorgangs geht auf die Karte, deren Protokoll der Programmierer zuletzt gelesen hat, nie auf eine an ihrer Stelle eingebundene, bevor der nächste Blick deren Protokoll liest. Das Tippen, das eine neue Karte findet, liest noch den Kartenzustand von vorher; das nächste hat ihn, und eine offene Schreibseite wechselt zur Seite mit der Datei |
 
 Eine Karte im Steckplatz, die sich nicht mounten lässt, zählt als keine
 Karte: Das Schreiben, das Zurückspielen und das Lösen der Paarung laufen wie
@@ -955,7 +961,7 @@ Sitzung nach dem Ende des Laufs gehört dem Bediener: ihr erstes Schreiben
 sichert eine eigene Backup-Datei, wie das erste Schreiben jeder Sitzung. Der
 Lauf hält dieses Lesen im Speicher des Panels bis zum ersten Schreiben des nächsten Laufs oder
 einem Start des Panels, und ZURÜCKSPIELEN bietet es als `Werte vor dem Endlagenlauf.` an. Solange der Lauf den Port hält, nennen die Zeile ZIEL
-und das Feld des Laufs ihn: `PROG-PORT GP13`.
+und das Feld des Laufs ihn: `PROG-PORT 1 GP13`.
 
 Ein Lauf, der in einer Sitzung abgebrochen wird, lässt den Port im
 Programmiermodus mit den zuletzt geschriebenen Werten. VERLASSEN gibt ihn
@@ -1253,7 +1259,7 @@ Codes.
   Schreiben: eine nach dem Einhängen gezogene Karte, eine schreibgeschützte
   Karte oder eine Karte, auf der `BENCH/KST/CONF/KST.TXT` oder
   `BENCH/KST/CONF/KST.NEW` ein Ordner ist oder eine Ebene von
-  `BENCH/KST/CONF` eine Datei. Jeder Versuch endet mit `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.` Das Panel hängt eine solche Karte nicht aus. Ein ohne
+  `BENCH/KST/CONF` eine Datei. Jeder Versuch endet mit `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.` Das Panel hält eine solche Karte eingehängt, außer einer entnommenen, die der nächste Blick auf den Steckplatz freigibt ([Bildschirme](Screens-de.md#das-format-der-sd-karte)). Ein ohne
   Karte gestartetes Panel hält den Vermerk im Speicher und schreibt.
 - Der Vermerk eines beendeten Schreibens wird auf der Karte nach dem
   Schreiben gelöscht, durch ein eigenes Schreiben der Datei, das alle 5 s

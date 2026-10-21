@@ -323,6 +323,9 @@ card_dir_t panel_card_make_dir(void *ctx, const char *level);
  * the logger. */
 extern char        s_kst_file[KST_PROG_FILE_MAX];
 extern size_t      s_kst_file_len;
+/* The mount whose record the model holds (storage_mount_count()): the
+ * record is written to that volume or not at all. */
+extern unsigned    s_kst_file_mount;
 extern atomic_uint s_kst_file_sent;
 extern atomic_uint s_kst_file_done;
 extern atomic_bool s_kst_file_ok;
@@ -332,6 +335,9 @@ void kst_record_load(bool late);
 /* A servo file request: taken from the model by the render loop, run on
  * the card by the logger. */
 extern kst_prog_card_req_t  s_kst_card_req;
+/* The mount the request was taken under (storage_mount_count()): it is
+ * run on that volume or finds no card. */
+extern unsigned             s_kst_card_mount;
 extern kst_prog_card_done_t s_kst_card_done;
 extern atomic_uint          s_kst_card_sent;
 extern atomic_uint          s_kst_card_answered;
@@ -585,6 +591,13 @@ extern atomic_uint    s_prog_pin;
  * with another's pins. */
 #define PROG_PORTS_NONE 0xFFFFFFFFu
 extern atomic_uint    s_prog_ports;
+/* panel_ports.c: the ports' view and the screens' asks (port_view.h).
+ * prog_ports_publish() and prog_ports_lost() on the control task, the
+ * other two on the render loop. */
+void prog_ports_publish(void);
+void prog_ports_lost(void);
+void prog_ports_init_screens(void);
+void prog_ports_to_screens(void);
 /* Where the tester's commands go, for the SERVO screen's TARGET row:
  * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
  * pulse in bit 16.  One word, so the screen never reads one drive's target

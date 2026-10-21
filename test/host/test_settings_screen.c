@@ -653,7 +653,8 @@ TEST_CASE(a_held_setting_is_left_by_every_call_that_changes_one)
         s_hold_on = false;
         CHECK(!settings_held(SET_SERVO_TARGET));
         settings_adjust(SET_SERVO_TARGET, 1);
-        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1 - (int)target);
+        /* OUTPUTS, PORT 1 to PORT 4: a step moves to the next port. */
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), (int)target + 1);
         settings_set(SET_SERVO_PORT_PWM, 1.0f - pwm);
         CHECK_EQ(settings_get_int(SET_SERVO_PORT_PWM), 1 - (int)pwm);
         settings_reset(SET_CAT_SERVO);

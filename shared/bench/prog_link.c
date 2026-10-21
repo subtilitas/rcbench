@@ -24,6 +24,12 @@ void prog_link_came_up(prog_link_t *p, uint16_t minor)
     p->up          = true;
     p->page        = minor >= LINK_MINOR_PROG;
     p->target_rate = minor >= LINK_MINOR_SERVO_TARGET_RATE;
+    p->func        = minor >= LINK_MINOR_PROG_FUNC;
+    /* An ask is for the IOmcu it was made to: one still waiting is not
+     * carried to the one that answers now. */
+    if (p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING) {
+        p->ask_state = (uint8_t)PROG_LINK_ASK_LOST;
+    }
     p->known       = false;
     p->read_once   = false;
     p->seen        = PROG_LINK_SEEN_NONE;
@@ -38,6 +44,10 @@ void prog_link_lost(prog_link_t *p)
     p->up          = false;
     p->page        = false;
     p->target_rate = false;
+    p->func        = false;
+    if (p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING) {
+        p->ask_state = (uint8_t)PROG_LINK_ASK_LOST;
+    }
     p->known       = false;
     p->read_once   = false;
     p->seen        = PROG_LINK_SEEN_NONE;
@@ -89,9 +99,18 @@ bool prog_link_held(const prog_link_t *p)
     return p != NULL && p->held;
 }
 
+bool prog_link_no_drive(const prog_link_t *p)
+{
+    return p != NULL && p->page && p->known && p->want_target != 0u
+           && prog_link_wanted(p) == 0u;
+}
+
 bool prog_link_command(const prog_link_t *p, bool release)
 {
     if (!prog_link_ready(p)) {
+        return false;
+    }
+    if (!release && prog_link_no_drive(p)) {
         return false;
     }
     if (prog_link_held(p) && prog_link_target(p) != 0u) {
@@ -120,7 +139,14 @@ void prog_link_read(prog_link_t *p, const uint16_t *regs, uint32_t now_ms)
         p->known = false;
         return;
     }
-    memcpy(p->regs, regs, sizeof(p->regs));
+    memcpy(p->regs, regs, (size_t)prog_link_regs(p) * sizeof(uint16_t));
+    p->reread = false;
+    if (!p->func) {
+        /* An older IOmcu runs every port's pin as SERVO PWM. */
+        for (unsigned port = 0; port < LINK_PG_PORTS_MAX; ++port) {
+            p->regs[LINK_PG_FUNC(port)] = (uint16_t)LINK_PG_FN_SERVO_PWM;
+        }
+    }
     p->known = true;
     target_seen(p, regs[LINK_PG_TARGET]);
 }
@@ -137,9 +163,76 @@ static bool known(const prog_link_t *p)
     return p != NULL && p->page && p->known;
 }
 
+/* Whether an ask waits on port @p port. */
+static bool asking(const prog_link_t *p, unsigned port)
+{
+    return p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING
+           && p->ask_port == port;
+}
+
+uint8_t prog_link_regs(const prog_link_t *p)
+{
+    return (p != NULL && p->func) ? (uint8_t)LINK_PG_REGS
+                                  : (uint8_t)LINK_PG_REGS_V424;
+}
+
+bool prog_link_has_func(const prog_link_t *p)
+{
+    return p != NULL && p->page && p->func;
+}
+
+bool prog_link_ask(prog_link_t *p, uint8_t port, prog_link_ask_kind_t kind,
+                   uint16_t value)
+{
+    if (p == NULL || !p->page || port >= LINK_PG_PORTS_MAX
+        || (p->known && port >= p->regs[LINK_PG_COUNT])) {
+        return false;
+    }
+    if (kind == PROG_LINK_ASK_FUNC
+        && (!p->func || value >= (uint16_t)LINK_PG_FN_COUNT)) {
+        return false;
+    }
+    if (kind != PROG_LINK_ASK_PIN && kind != PROG_LINK_ASK_FUNC) {
+        return false;
+    }
+    p->ask_state = (uint8_t)PROG_LINK_ASK_WAITING;
+    p->ask_port  = port;
+    p->ask_kind  = (uint8_t)kind;
+    p->ask_value = value;
+    return true;
+}
+
+prog_link_ask_state_t prog_link_ask_state(const prog_link_t *p,
+                                          uint8_t *port, uint8_t *kind,
+                                          uint16_t *value)
+{
+    if (p == NULL) {
+        return PROG_LINK_ASK_IDLE;
+    }
+    if (port != NULL) {
+        *port = p->ask_port;
+    }
+    if (kind != NULL) {
+        *kind = p->ask_kind;
+    }
+    if (value != NULL) {
+        *value = p->ask_value;
+    }
+    return (prog_link_ask_state_t)p->ask_state;
+}
+
+/* The register the ask waiting writes. */
+static uint8_t ask_reg(const prog_link_t *p)
+{
+    return (p->ask_kind == (uint8_t)PROG_LINK_ASK_FUNC)
+               ? LINK_PG_FUNC(p->ask_port)
+               : LINK_PG_REG(p->ask_port, LINK_PG_PIN);
+}
+
 uint8_t prog_link_wanted(const prog_link_t *p)
 {
     if (!known(p) || p->want_target == 0u
+        || asking(p, p->want_target - 1u)
         || p->want_target > LINK_PG_PORTS_MAX
         || (uint16_t)(p->want_target - 1u) >= p->regs[LINK_PG_COUNT]
         || (p->regs[LINK_PG_FLAGS]
@@ -200,7 +293,7 @@ bool prog_link_next(const prog_link_t *p, bool quiet, prog_link_write_t *w)
 {
     uint16_t pwm;
 
-    if (!known(p) || w == NULL || p->held) {
+    if (!known(p) || w == NULL || p->held || p->reread) {
         return false;
     }
     pwm = pwm_wanted(p);
@@ -213,9 +306,18 @@ bool prog_link_next(const prog_link_t *p, bool quiet, prog_link_write_t *w)
     if (!quiet) {
         return false;
     }
+    /* A port an ask waits on is let go first: its pulse is off above, and
+     * no port is the target while its pin or function changes. */
+    const bool ask = p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING;
     if (p->regs[LINK_PG_TARGET] != prog_link_wanted(p)) {
+        /* prog_link_wanted() is 0 for a port an ask waits on. */
         w->off   = (uint8_t)LINK_PG_TARGET;
         w->value = prog_link_wanted(p);
+        return true;
+    }
+    if (ask && (p->regs[LINK_PG_PWM] & (1u << p->ask_port)) == 0u) {
+        w->off   = ask_reg(p);
+        w->value = p->ask_value;
         return true;
     }
     if (p->regs[LINK_PG_PWM] != pwm) {
@@ -254,11 +356,23 @@ void prog_link_written(prog_link_t *p, const prog_link_write_t *w, bool ack)
             p->seen = PROG_LINK_SEEN_NONE;
         }
     }
-    if (!ack || !p->known || w->off >= LINK_PG_REGS) {
+    const bool was_ask = p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING
+                         && w->off == ask_reg(p) && w->value == p->ask_value;
+    if (was_ask) {
+        p->ask_state = ack ? (uint8_t)PROG_LINK_ASK_DONE
+                           : (uint8_t)PROG_LINK_ASK_REFUSED;
+    }
+    if (!ack || !p->known || w->off >= prog_link_regs(p)) {
         p->known = false;
         return;
     }
     p->regs[w->off] = w->value;
+    if (was_ask) {
+        /* FLAGS moves with a PIN or FUNC: the page is read again now, and
+         * nothing more is written on what it said before. */
+        p->read_once = false;
+        p->reread    = true;
+    }
 }
 
 uint8_t prog_link_count(const prog_link_t *p)
@@ -289,6 +403,21 @@ uint8_t prog_link_pin(const prog_link_t *p, uint8_t port)
     return pin >= PROG_LINK_NO_PIN ? PROG_LINK_NO_PIN : (uint8_t)pin;
 }
 
+bool prog_link_port(const prog_link_t *p, uint8_t port, prog_link_port_t *out)
+{
+    if (!known(p) || out == NULL || port >= LINK_PG_PORTS_MAX
+        || port >= p->regs[LINK_PG_COUNT]) {
+        return false;
+    }
+    const uint16_t pin = p->regs[LINK_PG_REG(port, LINK_PG_PIN)];
+    const uint16_t fn  = p->regs[LINK_PG_FUNC(port)];
+    out->pin     = (pin >= PROG_LINK_NO_PIN) ? PROG_LINK_NO_PIN : (uint8_t)pin;
+    out->func    = (fn < (uint16_t)LINK_PG_FN_COUNT) ? (uint8_t)fn
+                                                     : (uint8_t)LINK_PG_FN_NONE;
+    out->refused = (p->regs[LINK_PG_FLAGS] & LINK_PG_F_REFUSED(port)) != 0u;
+    return true;
+}
+
 prog_link_drive_t prog_link_drive(const prog_link_t *p)
 {
     prog_link_drive_t d = { 0u, PROG_LINK_NO_PIN, false };
@@ -303,7 +432,12 @@ prog_link_drive_t prog_link_drive(const prog_link_t *p)
         d.target = PROG_LINK_TARGET_UNKNOWN;
     } else {
         d.target = prog_link_target(p);
-        if (d.target != 0u) {
+        if (d.target == 0u && prog_link_no_drive(p)) {
+            /* The port the screen wants, which cannot be driven: named,
+             * with no pin, and nothing goes to the standard outputs. */
+            d.target = p->want_target;
+            d.pwm    = p->want_pwm;
+        } else if (d.target != 0u) {
             d.pin = prog_link_pin(p, (uint8_t)(d.target - 1u));
             d.pwm = prog_link_pwm(p);
         }

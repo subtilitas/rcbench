@@ -3435,8 +3435,8 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
  * 128 px 4 px apart.  Mirrored from outputs_screen.c.
  */
 #define OSEG_X(i)      (19 + 64 + (i) * 132)
-#define OSEG_TESTER_Y  (184 + 20 + 18)
-#define OSEG_PWM_Y     (254 + 20 + 18)
+#define OSEG_TESTER_Y  (242 + 20 + 18)
+#define OSEG_PWM_Y     (306 + 20 + 18)
 
 static void out_ev(int x, int y, touch_event_type_t type)
 {
@@ -3482,7 +3482,7 @@ TEST_CASE(outputs_prog_port_entry_sets_what_the_tester_drives_at_rest)
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
 
     CHECK(!servo_screen_tester_target_locked());
-    out_tap(OSEG_X(1), OSEG_TESTER_Y);         /* PROG PORT */
+    out_tap(OSEG_X(1), OSEG_TESTER_Y);         /* PORT 1 */
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
     CHECK(settings_save_asked());
     out_tap(OSEG_X(1), OSEG_PWM_Y);            /* OFF */
@@ -3606,14 +3606,14 @@ static const char *const k_tgt_txt[2][TGT_N] = {
       "SERVO PWM GP2 GP4 GP5", "SERVO PWM GP12 GP13 +2",
       "SERVO PWM GP2 GP4 +4", "SERVO PWM GP40 GP41 +6",
       "NO SERVO PWM PIN",
-      "PINS NOT READ", "PROG PORT", "PROG PORT GP13",
-      "PROG PORT GP63 PWM OFF", "PROG PORT PWM OFF", "UNKNOWN", "NO LINK" },
+      "PINS NOT READ", "PROG PORT 1", "PROG PORT 1 GP13",
+      "PORT 1 GP63 PWM OFF", "PROG PORT 1 PWM OFF", "UNKNOWN", "NO LINK" },
     { "SERVO PWM GP2", "SERVO PWM GP4", "SERVO PWM GP2 GP4",
       "SERVO PWM GP2 GP4 GP5", "SERVO PWM GP12 GP13 +2",
       "SERVO PWM GP2 GP4 +4", "SERVO PWM GP40 GP41 +6",
       "KEIN SERVO-PWM-PIN",
-      "PINS NICHT AUSGELESEN", "PROG-PORT", "PROG-PORT GP13",
-      "PROG-PORT GP63 PWM AUS", "PROG-PORT PWM AUS", "UNBEKANNT",
+      "PINS NICHT AUSGELESEN", "PROG-PORT 1", "PROG-PORT 1 GP13",
+      "PORT 1 GP63 PWM AUS", "PROG-PORT 1 PWM AUS", "UNBEKANNT",
       "KEINE VERBINDUNG" },
 };
 
@@ -3810,7 +3810,7 @@ TEST_CASE(the_target_row_stays_in_sight_under_the_settings_and_a_keypad)
     scr->render(&cv, 0);
     target_box(got);
     static gfx_color_t port[TGT_W * TGT_H];
-    target_reference(port, "TARGET", "PROG PORT GP13", true);
+    target_reference(port, "TARGET", "PROG PORT 1 GP13", true);
     scr->render(&cv, 0);
     target_box(got);
     CHECK_EQ(memcmp(port, got, sizeof(port)), 0);
@@ -3879,16 +3879,19 @@ TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
     /* With the outputs as target a port pin names nothing. */
     check_line(0u, 13u, false, PIN(2), true, "SERVO PWM GP2", false);
     /* A port target is the port, its pin known or not, pins bound or not. */
-    check_line(1u, 13u, true, PIN(2), true, "PROG PORT GP13", true);
-    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "PROG PORT",
+    check_line(1u, 13u, true, PIN(2), true, "PROG PORT 1 GP13", true);
+    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "PROG PORT 1",
                true);
-    check_line(2u, SERVO_SCREEN_NO_PIN, true, 0u, false, "PROG PORT", true);
+    check_line(2u, SERVO_SCREEN_NO_PIN, true, 0u, false, "PROG PORT 2", true);
+    check_line(4u, 47u, true, 0u, false, "PROG PORT 4 GP47", true);
     /* The pulse off: the port is still the target, and renders nothing.
-     * GP63 is the longest, 22 of the 23 cells the value holds. */
-    check_line(1u, 13u, false, PIN(2), true, "PROG PORT GP13 PWM OFF", true);
-    check_line(1u, 63u, false, PIN(2), true, "PROG PORT GP63 PWM OFF", true);
+     * Port 4 on GP63 is the longest, 19 of the 23 cells the value
+     * holds. */
+    check_line(1u, 13u, false, PIN(2), true, "PORT 1 GP13 PWM OFF", true);
+    check_line(1u, 63u, false, PIN(2), true, "PORT 1 GP63 PWM OFF", true);
+    check_line(4u, 63u, false, PIN(2), true, "PORT 4 GP63 PWM OFF", true);
     check_line(1u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
-               "PROG PORT PWM OFF", true);
+               "PROG PORT 1 PWM OFF", true);
     /* Not known and no link name no pin and no port, pins bound or not;
      * a pin and a pulse passed with them are ignored. */
     check_line(SERVO_SCREEN_TARGET_UNKNOWN, 13u, true, PIN(2), true,
@@ -3907,12 +3910,12 @@ TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
                "SERVO PWM GP40 GP41 +6", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
                "KEIN SERVO-PWM-PIN", true);
-    check_line(1u, 13u, true, PIN(2), true, "PROG-PORT GP13", true);
-    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "PROG-PORT",
+    check_line(1u, 13u, true, PIN(2), true, "PROG-PORT 1 GP13", true);
+    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "PROG-PORT 1",
                true);
-    check_line(1u, 63u, false, PIN(2), true, "PROG-PORT GP63 PWM AUS", true);
-    check_line(1u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
-               "PROG-PORT PWM AUS", true);
+    check_line(1u, 63u, false, PIN(2), true, "PORT 1 GP63 PWM AUS", true);
+    check_line(3u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
+               "PROG-PORT 3 PWM AUS", true);
     check_line(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN, false,
                PIN(2), true, "UNBEKANNT", true);
     check_line(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN, false,
@@ -4012,8 +4015,9 @@ TEST_CASE(the_tester_target_and_pulse_stay_while_the_port_is_held)
             /* The hold over, both take their taps. */
             s_port_held = false;
             CHECK(!servo_screen_target_locked());
+            /* The hold's line goes; another may stand in its place. */
             CHECK(!outputs_screen_port_reason(why, sizeof(why))
-                  || target == 0);
+                  || strcmp(why, TR(OUT_PORT_HELD)) != 0);
             out_tap(OSEG_X(1), OSEG_TESTER_Y);
             CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
             out_tap(OSEG_X(pwm), OSEG_PWM_Y);

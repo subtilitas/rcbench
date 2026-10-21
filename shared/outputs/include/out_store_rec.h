@@ -15,7 +15,16 @@
  *      (protocol 4.7).
  *   6  and the phase tap's set-up, TONE's registers 0 to 6 (protocol 4.8).
  *   7  and the programming ports' pin, slew and endpoints, 4 registers for
- *      each of the PROG page's 4 ports (protocol 4.13).
+ *      each of the PROG page's 4 ports (protocol 4.13).  From protocol
+ *      4.26 the word before them, spare until then, holds each port's
+ *      function (prog_func) with no version change, in version 7 and 8
+ *      records alike; 0 is every port's default function (port 0 SERVO
+ *      PWM, the others NONE).  An image of 4.13 to 4.25 reads the word as
+ *      spare and writes 0 back, and an image older than 4.25 reads no
+ *      version 8 record at all and starts with an empty store.  A board
+ *      taken to such an image and back has its ports on their default
+ *      functions; from 4.25 it keeps their pins, from an older image it
+ *      keeps nothing.
  *   8  and the INA3221s' map, SENSE_MAP's registers 0 to 25 and whether
  *      it is in force (protocol 4.25), and 12 per-channel current limits,
  *      0 until a page carries them.  308 bytes: the first version over
@@ -72,7 +81,11 @@ typedef struct {
     uint16_t supply[LINK_SP_OUTPUT];
     uint16_t sense[LINK_SN_CONFIG_COUNT];
     uint16_t tone[LINK_TN_CONFIG_COUNT];
-    uint16_t spare;   /**< 0; makes the set a whole number of 32-bit words */
+    /** Each port's function (protocol 4.26): bits 4n to 4n + 3 hold 1 +
+     *  port n's FUNC, 0 none stored (prog_port_kept_func()).  0 in a
+     *  record of version 6, of an image older than 4.26, or written by
+     *  one.  Makes the set a whole number of 32-bit words. */
+    uint16_t prog_func;
     uint16_t prog[LINK_PG_PORTS_MAX * 4u]; /**< prog_port_kept() */
     uint16_t sense_map[LINK_SM_KEPT];  /**< sense_map_kept()              */
     uint16_t sense_map_set;            /**< 1: the map is in force        */
@@ -106,8 +119,8 @@ typedef struct {
 /**
  * How many bytes of configuration a record of @p version carries, from the
  * start of an out_store_t: 128 for version 3, 136 for 4, 160 for 5, 176 for
- * 6 (two of them spare), 208 for 7, 288 for 8.  0 for a version this build
- * does not read.
+ * 6 (two of them the word prog_func), 208 for 7, 288 for 8.  0 for a
+ * version this build does not read.
  */
 size_t out_store_cfg_size(uint16_t version);
 

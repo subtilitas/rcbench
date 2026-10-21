@@ -41,7 +41,11 @@ static const char *const k_ina3221_addr[] = { "0x40", "0x41", "0x42", "0x43" };
 static const char *const k_ina3221_ch[] = { "CH1", "CH1+2+3" };
 static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
 static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
-static const char *const k_servo_target[] = { "OUTPUTS", "PROG PORT" };
+/* What the SERVO tester drives: the standard servo outputs, or
+ * programming port n as PORT n.  A value stored as PROG PORT (1) before
+ * there were four reads as PORT 1. */
+static const char *const k_servo_target[] = { "OUTPUTS", "PORT 1", "PORT 2",
+                                              "PORT 3", "PORT 4" };
 static const char *const k_upd_channel[] = { "STABLE", "TESTING" };
 /* How a Hitec D series line on the programming port receives, in
  * link_hitec_rx_t's order. */

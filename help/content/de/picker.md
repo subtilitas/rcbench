@@ -60,6 +60,12 @@ PINS, links abwärts, listet die Pins des gewählten Protokolls in Kanalreihenfo
 
 Der Pin des Programmierports, ab Werk GP13 (Pad 17), ist grau, solange kein Protokoll ihn hält, und BELEGT listet ihn zuerst unter `PROG-PORT`. Jeder weitere Port, den der IOmcu meldet, hält seinen Pin ebenso, unter demselben Namen gelistet.
 
+## Der Pin eines Programmierports
+
+![PROG-PORT 3 gewählt](view:picker-port)
+
+Die Protokollliste endet mit den Einträgen PROG-PORT, wie auf [Outputs](outputs.md), deren Taste PIN diesen Bildschirm auf ihrem Port öffnet. Mit einem gewählten Port setzt ein Tipp den Pin dieses Ports: eine freie Taste erbittet beim IOmcu diesen Pin, die hervorgehobene Taste des Ports erbittet keinen. Der Pin eines anderen Ports, eines Protokolls und einer Schnittstelle bleibt grau. Einem SERVO-PWM-Port wird ein Pin auf dem PWM-Slice eines gebundenen PWM-Ausgangs verweigert, `GP5: TEILT PWM-SLICE MIT OUTPUT GP4`, und einer auf dem Compare-Register eines anderen SERVO-PWM-Ports, `GP28: GLEICHER PWM-KANAL WIE GP12`. Ein Port mit KEINE nimmt jede freie Taste. Die Zählzeile nennt die Funktion des Ports, `FUNKTION: SERVO PWM`. Die Bitte wartet auf einen Prüfstand in Ruhe; die gelbe Zeile sagt, wie sie steht, wie auf Outputs. Bevor die Ports des IOmcu gelesen sind, ist jede Taste grau unter `PORTS NOCH NICHT GELESEN`.
+
 ![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](view:picker-iface)
 
 Ein Pin, den [SETUP > ANSCHLÜSSE](setup-interfaces.md) hält, ist ebenso grau, und BELEGT listet ihn nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Eine Tabelle mit mehr Zeilen, als passen, endet in `+N`, N die ausgelassenen Zeilen.

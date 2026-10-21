@@ -57,6 +57,36 @@ history is in git.
 - The IOmcu console prints a third sensor line, `sense map`: the parts
   fitted, FAST, the map's flags, each channel's mean current in mA, and
   SENSE_LIMIT's OVER and OVER_COUNT.
+- Four programming ports on the IOmcu, PROG PORT 1 to PROG PORT 4. Each
+  has a FUNCTION: SERVO PWM, a pulse from the PWM generator, or NONE, the
+  pin held as an input with its pull-down. Port 1 defaults to SERVO PWM,
+  ports 2 to 4 to NONE with no pin, so a bench that sets nothing on ports
+  2 to 4 runs as with one port. PIN and FUNCTION are kept in the IOmcu's
+  flash; the panel writes them only when the operator sets them, on the
+  PROG PORT entry of SETUP > OUTPUTS or in PICK A PIN, and only on a bench
+  in SAFE with no test, sweep or servo programmer running.
+- SETUP > OUTPUTS: one PROG PORT entry per port with PIN (opens PICK A
+  PIN on that port), FUNCTION, WATCHED BY (no current channel yet), SERVO
+  TESTER and PORT PWM. PICK A PIN lists the programming ports and rejects
+  a SERVO PWM pin that shares a PWM slice with an output.
+- The servo tester's target is OUTPUTS or PORT 1 to PORT 4 (SETUP > SERVO
+  > SERVO TESTER). A stored PROG PORT reads as PORT 1. The TARGET row names
+  the port: `PROG PORT 2 GP14`. A port without a SERVO PWM pin, or one the
+  IOmcu does not have, reads `PROG PORT 2` in the warning colour, and the
+  tester then sends the standard outputs no command but a release.
+- Link protocol 4.26: PROG page registers 24 to 27 (`FUNC`) and `FLAGS`
+  bits 4 to 7 (port parked). The functions are kept in the store record's
+  word before the ports, spare until 4.26, in version 7 and 8 records
+  alike. An image of 4.25 writes the word back as 0, and an older one
+  reads no version 8 record and starts empty: after such a downgrade and
+  an upgrade the ports are on their default functions. With an IOmcu older than 4.26 every port is SERVO PWM and
+  OUTPUTS says `IOMCU OLDER THAN 4.26: SERVO PWM ONLY`.
+
+### Fixed
+
+- SERVO > TARGET reads the set programming port in SAFE within 500 ms after
+  a programming session gives the port back and after an IOmcu restart,
+  without waiting for the next ARM.
 
 ### Changed
 
@@ -100,6 +130,22 @@ history is in git.
   request. A receiver that stopped reading held the page's server, and
   with it every other request, until the connection timed out: about
   7.5 min for one that kept its connection open.
+- A card put in, taken out or swapped while the panel runs is found by the
+  next RESCAN, opening of LOGS, page or OPEN of LOGS, run start or servo
+  test start, with no restart. A mounted card is asked with one SEND_STATUS
+  (CMD13) command at those events and not once a frame; one that does not
+  answer is unmounted and the slot mounted again, so the volume label, the
+  list, the run alerts and the card state are the card's in the slot. A
+  card swapped for one with no FAT volume said `No card.` on LOGS and kept
+  the old label; it says `Card is neither FAT32 nor exFAT. Format it on a
+  computer.`. The look logs no E line. A card taken out during a run closes
+  the run's file at the first failed write and the run goes on unrecorded
+  under `Data can no longer be saved to the card. Recording stopped here.`;
+  the next ARM names the slot's state now. A card that answers SEND_STATUS and
+  fails a read is unreadable and is mounted once per look. The volume is
+  unmounted only with no file or folder open on it from LOGS, the run log or
+  the Wi-Fi access. The `runlog` task's stack is 6,656 bytes (5,632), for
+  the mount it makes.
 
 ## 0.21.2 - 2026-10-20
 

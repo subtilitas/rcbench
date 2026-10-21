@@ -151,6 +151,12 @@ typedef struct {
      * card that cannot be read.  May be NULL: no card.
      */
     card_state_t (*card)(void *ctx);
+    /**
+     * A number that changes with every mount: another number is another
+     * volume, whatever its name.  Two cards with one label are told apart
+     * by it.  May be NULL: the name alone tells cards apart.
+     */
+    unsigned (*mounts)(void *ctx);
     void *ctx;
 } log_viewer_io_t;
 

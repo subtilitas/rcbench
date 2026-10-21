@@ -56,16 +56,20 @@ void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
 void outputs_hw_service(const outputs_t *o);
 
 /**
- * The programming ports' pins on the PWM generator: @p pin[n] for port n,
- * LINK_PG_PORTS_MAX entries, a value above OUT_MAX_PIN for a port without
- * one, port n at @p rate_hz[n] frames a second.  A port whose pin or rate
- * moved is released and bound again; one that did not is left running.  A
- * port is no slot: it is rendered from bank channel @p channel0 + n.
+ * The programming ports' pins: @p pin[n] for port n, LINK_PG_PORTS_MAX
+ * entries, a value above OUT_MAX_PIN for a port without one.  A port in
+ * @p parked (bit n, FUNC NONE) holds its pin as an input with its
+ * pull-down and renders nothing; any other port's pin is bound to the PWM
+ * generator at @p rate_hz[n] frames a second (SERVO PWM).  A port whose
+ * pin, rate or function moved is released and held again; one that did
+ * not is left running.  A port is no slot: it is rendered from bank
+ * channel @p channel0 + n.  A pin the chip does not have is not held.
  */
 void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
-                      uint8_t channel0);
+                      uint8_t parked, uint8_t channel0);
 
-/** The ports the generator has bound, bit n for port n. */
+/** The ports whose function holds their pin, bit n for port n: bound to
+ *  the generator, or parked. */
 uint8_t outputs_hw_ports_bound(void);
 
 /**

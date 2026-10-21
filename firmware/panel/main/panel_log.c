@@ -48,10 +48,12 @@ static const char *TAG = "rcbench";
  * and fclose happens there.
  *
  * That task holds the run's handle.  It is not the only handle on the card:
- * the viewer opens a log from the task that renders, so a card that is
- * unmounted or whose SPI2 (Serial Peripheral Interface) bus is freed would
- * pull the floor from under either of them.  Nothing in this build unmounts,
- * which is what makes that safe rather than any sequencing between the two.
+ * the viewer opens a log from the task that renders, and the Wi-Fi access
+ * reads from its HTTP server.  Each open file and each path call is made
+ * under a hold of the storage component (storage_hold(), storage_fopen()),
+ * and a volume is unmounted only with no hold left, so a card swapped while
+ * the panel runs is let go after the last handle on it is closed and never
+ * from under one.
  */
 
 /*
@@ -103,6 +105,10 @@ static uint32_t     s_log_run_id;
  * starts from what it handed out last.  The logger task's own.
  */
 static log_series_set_t s_series;
+/* The mount s_series numbers the folders of (storage_mount_count()):
+ * another mount is another card, or the same card edited elsewhere, and
+ * every folder is walked again.  The logger task's own. */
+static unsigned s_series_mount;
 
 /*
  * The log folders.  s_dir_want is what SETUP > SD CARD names, written by
@@ -171,12 +177,12 @@ typedef struct {
     FILE       **fp;
     atomic_uint *mark;
     int          tab;          /* log_viewer_tab_t of the folder */
+    bool         held;         /* the volume is held for the take */
 } take_ctx_t;
 
 static bool take_mounted(void *ctx)
 {
-    (void)ctx;
-    return storage_mounted();
+    return ((const take_ctx_t *)ctx)->held;
 }
 
 /* "/sdcard/<dir>", or "/sdcard/<dir>/<name>" with a name. */
@@ -272,7 +278,8 @@ static bool take_create(void *ctx, const char *dir, const char *name,
      * every number leaves no run claimed.
      */
     atomic_store(t->mark, (unsigned)number);
-    *t->fp = fopen(path, "w");
+    /* Its own hold, kept until the file is closed (storage_fclose()). */
+    *t->fp = storage_fopen(path, "w");
     if (*t->fp == NULL) {
         atomic_store(t->mark, 0u);
         return false;
@@ -290,7 +297,19 @@ static bool take_create(void *ctx, const char *dir, const char *name,
 static log_take_t take(const char *dir, log_prefix_t prefix, bool report,
                        FILE **fp, atomic_uint *mark, int tab, int *number)
 {
-    take_ctx_t t = { fp, mark, tab };
+    /*
+     * The card in the slot now: a run's start is one of the events that
+     * looks (storage_check()), so a card pulled, swapped or put in since
+     * the last run is what this run is written to, or what its alert
+     * names.  Then held for the take's folder, walk and probes, so another
+     * task cannot let the volume go under them.
+     */
+    (void)storage_check();
+    take_ctx_t t = { fp, mark, tab, storage_hold() };
+    if (storage_mount_count() != s_series_mount) {
+        s_series_mount = storage_mount_count();
+        log_series_init(&s_series);
+    }
     const log_take_io_t io = {
         .ctx      = &t,
         .mounted  = take_mounted,
@@ -299,7 +318,12 @@ static log_take_t take(const char *dir, log_prefix_t prefix, bool report,
         .exists   = take_exists,
         .create   = take_create,
     };
-    return log_take(&s_series, &io, dir, prefix, report, number);
+    const log_take_t r = log_take(&s_series, &io, dir, prefix, report,
+                                  number);
+    if (t.held) {
+        storage_release();
+    }
+    return r;
 }
 
 /* The band's word for a take that wrote no file. */
@@ -383,14 +407,9 @@ static void log_open(uint32_t run, log_run_kind_t kind)
      * is a run not recorded rather than one numbered from 1 into the first
      * gap, which would rank as the oldest in a full list and hide itself.
      * A failed take is walked again next time (log_take.h): the operator's
-     * answer to a full folder is to delete a file.
-     *
-     * That rescues the card that stays in the slot.  It cannot rescue the
-     * one taken out to be edited on a computer: storage_mounted() is never
-     * cleared, so a swapped card leaves a stale mount and the walk reads
-     * the volume that is gone.  That is the open item in STATUS.md, and
-     * until it is closed a deletion made off the bench needs the panel
-     * restarted.
+     * answer to a full folder is to delete a file.  A card taken out to be
+     * edited on a computer and put back is found by take()'s look and
+     * mounted again, so its folder is walked afresh.
      */
     int number = -1;
     char dir[CARD_DIR_MAX];
@@ -439,7 +458,7 @@ static void log_close(void)
      * a complete-looking run that stops early.
      */
     const unsigned uncommitted = (unsigned)log_writer_pending(&s_log);
-    if (fclose(s_log_file) != 0) {
+    if (storage_fclose(s_log_file) != 0) {
         ESP_LOGW(TAG, "the log did not close: %u rows are not in it",
                  uncommitted);
         if (!failed) {
@@ -456,6 +475,23 @@ static void log_close(void)
      * failed close has still given up the handle, and holding the run back
      * for ever would hide the rows that did reach the card.
      */
+    atomic_store(&s_log_open_run, 0u);
+}
+
+/*
+ * The run's card is gone (storage_check() after a failed write): the file
+ * is closed now, best effort, rather than at the run's end, so the volume
+ * can be let go and the next look finds the card in the slot.  FatFs
+ * refuses the close of a volume found gone without card traffic.  The run
+ * goes on unrecorded: ALERT_CARD_ROWS_PAST has said so, and its later rows
+ * are dropped against s_log_run_id, which stays the run's.
+ */
+static void log_drop(void)
+{
+    ESP_LOGW(TAG, "card gone: the run goes on unrecorded after %u rows",
+             (unsigned)s_log.rows);
+    (void)storage_fclose(s_log_file);
+    s_log_file = NULL;
     atomic_store(&s_log_open_run, 0u);
 }
 
@@ -506,7 +542,7 @@ static void test_close(void)
         return;
     }
     bool bad = fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0;
-    bad = (fclose(s_test_fp) != 0) || bad;
+    bad = (storage_fclose(s_test_fp) != 0) || bad;
     /* This file's failure, not the run's: a CSV that failed does not make
      * a report written whole a bad one. */
     if (bad) {
@@ -585,7 +621,7 @@ static void test_write(const test_line_t *l)
         char path[64];
         test_path(s_test_num, true, path, sizeof(path));
         s_test_txt = true;
-        s_test_fp = fopen(path, "w");
+        s_test_fp = storage_fopen(path, "w");
         if (s_test_fp == NULL) {
             s_test_failed  = true;
             s_test_txt_bad = true;
@@ -595,26 +631,36 @@ static void test_write(const test_line_t *l)
     if (s_test_fp == NULL) {
         return;
     }
-    if (fputs(l->text, s_test_fp) < 0 || fputc('\n', s_test_fp) == EOF) {
-        s_test_failed  = true;
-        s_test_txt_bad = s_test_txt_bad || s_test_txt;
-    }
+    bool bad = fputs(l->text, s_test_fp) < 0
+               || fputc('\n', s_test_fp) == EOF;
     /* Committed as the run log is, every LOG_WRITER_FLUSH_ROWS lines. */
     if (++s_test_lines >= LOG_WRITER_FLUSH_ROWS) {
         s_test_lines = 0u;
-        if (fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0) {
-            s_test_failed  = true;
-            s_test_txt_bad = s_test_txt_bad || s_test_txt;
+        bad = fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0 || bad;
+    }
+    if (bad) {
+        /* One look, at the run's first failure and not per line: a card
+         * gone has its file closed now, as log_drop() closes a run's, and
+         * a full one keeps it to the END, which says the files are
+         * incomplete. */
+        const bool first = !s_test_failed;
+        s_test_failed  = true;
+        s_test_txt_bad = s_test_txt_bad || s_test_txt;
+        if (first && storage_check() != CARD_STATE_MOUNTED) {
+            test_close();
         }
     }
 }
 
 /* -------------------------------------------- the fault log (fault_log.h) */
 
+/* Whether log_note() holds the volume for its line. */
+static bool s_note_held;
+
 static bool note_mounted(void *ctx)
 {
     (void)ctx;
-    return storage_mounted();
+    return s_note_held;
 }
 
 /* "/sdcard/BENCH/RCBENCH.LOG" and the like: a path from the root. */
@@ -688,7 +734,12 @@ static void log_note(const char *line)
         .append   = note_append,
     };
     bool rotated = false;
+    s_note_held = storage_hold();
     const fault_log_t r = fault_log_note(&io, line, &rotated);
+    if (s_note_held) {
+        storage_release();
+        s_note_held = false;
+    }
     if (rotated) {
         ESP_LOGI(TAG, "%s full at %u bytes, now %s", CARD_FAULT_LOG,
                  (unsigned)FAULT_LOG_CAP, CARD_FAULT_OLD);
@@ -766,6 +817,11 @@ void log_task(void *arg)
 
         if (s_log_file != NULL && !was_failed && log_writer_failed(&s_log)) {
             control_alert(TR(ALERT_CARD_ROWS_PAST));
+            /* One look, at the failure's edge and not per row: a card
+             * taken out is let go now, a full one is kept to the end. */
+            if (storage_check() != CARD_STATE_MOUNTED) {
+                log_drop();
+            }
         }
 
         /*

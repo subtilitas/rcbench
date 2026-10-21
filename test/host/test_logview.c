@@ -88,6 +88,12 @@ static bool g_no_card;
 static bool g_empty_card;
 /* The card's name in the header; another name is another card. */
 static const char *g_volume = "BENCH01";
+/* A card the next listing finds in the slot and mounts, as card_list()'s
+ * look does on the panel: its name, its runs; NULL for none. */
+static const char *g_swap_volume;
+static int g_swap_runs;
+/* The mount number the io reports; a swap counts it up. */
+static unsigned g_mounts;
 
 /*
  * A card holding more runs than the list has room for, or 0 for the fixture
@@ -161,6 +167,12 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
 {
     (void)ctx;
     ++g_list_calls;
+    if (g_swap_volume != NULL) {
+        ++g_mounts;
+        g_volume = g_swap_volume;
+        g_card_runs = g_swap_runs;
+        g_swap_volume = NULL;
+    }
     if (page != NULL) {
         g_last_page = *page;
     }
@@ -261,13 +273,38 @@ static card_state_t fake_card(void *ctx)
     return g_card_state;
 }
 
+/* A card another task mounts after the listing read the old one: its
+ * name and runs, NULL for none. */
+static const char *g_swap_late_volume;
+static int g_swap_late_runs;
+
+static int fake_list_late(log_viewer_file_t *out, int max_entries,
+                          log_viewer_page_t *page, void *ctx)
+{
+    const int n = fake_list(out, max_entries, page, ctx);
+    if (g_swap_late_volume != NULL) {
+        ++g_mounts;
+        g_volume = g_swap_late_volume;
+        g_card_runs = g_swap_late_runs;
+        g_swap_late_volume = NULL;
+    }
+    return n;
+}
+
+static unsigned fake_mounts(void *ctx)
+{
+    (void)ctx;
+    return g_mounts;
+}
+
 static const log_viewer_io_t k_io = {
-    .list = fake_list,
+    .list = fake_list_late,
     .open = fake_open,
     .close = NULL,
     .volume = fake_volume,
     .remove = fake_remove,
     .card = fake_card,
+    .mounts = fake_mounts,
     .ctx = NULL,
 };
 
@@ -300,6 +337,9 @@ static void reset_screen(void)
     memset(g_run_gone, 0, sizeof(g_run_gone));
     memset(&g_last_page, 0, sizeof(g_last_page));
     g_volume = "BENCH01";
+    g_swap_volume = NULL;
+    g_swap_late_volume = NULL;
+    g_mounts = 0u;
     memset(g_removed, 0, sizeof(g_removed));
     g_remove_calls = 0;
     g_removed_name[0] = '\0';
@@ -437,6 +477,37 @@ TEST_CASE(every_view_draws_something)
     draw();
     CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
     CHECK(gfx_pixel_get(&s_c, 400, 240) != 0);
+}
+
+/*
+ * A file open in IMPORT while LOGS is left and the card swapped for one of
+ * the same label and names: the way back in reads the new card's list
+ * behind the view, and PLOT does not read the new card's file of that
+ * name as the open one.
+ */
+TEST_CASE(an_open_file_is_not_read_from_the_card_swapped_behind_it)
+{
+    fresh();
+    log_viewer_refresh();
+    open_file(0);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    const int opens = g_open_calls;
+    g_swap_volume = "BENCH01";
+    g_swap_runs = 0;
+    screen()->enter();
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    tap(PLOT_X, IM_BTN_CY);
+    CHECK_EQ(g_open_calls, opens);
+    CHECK(log_viewer_view() != LOG_VIEW_PLOT);
+    char want[96];
+    snprintf(want, sizeof(want), ui_tr(TX_LOG_CANNOT_OPEN), k_card[0].name);
+    CHECK_STR_EQ(log_viewer_message(), want);
+    /* Opened again from the new list, it is the new card's file. */
+    tap(BACK_X, IM_BTN_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    open_file(0);
+    CHECK_EQ(g_open_calls, opens + 1);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
 }
 
 TEST_CASE(a_file_that_vanished_between_listing_and_opening)
@@ -2294,6 +2365,43 @@ TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
     /* The page started at run 72; every run of 500 to 699 ranks ahead of
      * it, so it is past the end and the last page shows. */
     check_tab(193, 200, 200);
+
+    /* Swapped with no tap between, found by the RESCAN's own look: the
+     * header named the old card until the list mounted the new one, and
+     * the new one opens on its first page. */
+    runs_card(150);
+    next_page();
+    check_tab(49, 96, 150);
+    g_swap_volume = "SK64G";
+    g_swap_runs = 120;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(1, 48, 120);
+    check_newest(120);
+    /* And PREV and NEXT go on from there. */
+    next_page();
+    check_tab(49, 96, 120);
+
+    /* Swapped for a card of the same label: the mount number tells them
+     * apart, at the RESCAN's own list and at the next one. */
+    g_swap_volume = "SK64G";
+    g_swap_runs = 150;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(1, 48, 150);
+    next_page();
+    ++g_mounts;                        /* mounted by another event */
+    g_card_runs = 130;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(1, 48, 130);
+
+    /* Mounted by another task after the top page was read from the old
+     * card: the page is read again, from the new card's top. */
+    g_swap_late_volume = "SK64G";
+    g_swap_late_runs = 110;
+    const int calls = g_list_calls;
+    tap(RESCAN_X, FOOT_CY);
+    CHECK_EQ(g_list_calls, calls + 2);
+    check_tab(1, 48, 110);
+    check_newest(110);
 }
 
 
@@ -4346,6 +4454,7 @@ int main(void)
 {
     RUN(the_home_tag_climbs_as_each_views_way_back);
     RUN(every_view_draws_something);
+    RUN(an_open_file_is_not_read_from_the_card_swapped_behind_it);
     RUN(a_file_that_vanished_between_listing_and_opening);
     RUN(with_no_io_at_all_the_screen_still_works);
     RUN(a_file_that_proves_both_conventions_is_flagged);
