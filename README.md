@@ -35,8 +35,9 @@ single press.
 
 Three stop mechanisms are designed in: a heartbeat whose absence removes the
 outputs, the IOmcu's own link watchdog, and a STOP command over the link.
-The line between the panel's J8 and the IOmcu's GP3 is fitted on the
-bring-up bench. The heartbeat's retriggerable
+The line runs from the panel's GPIO28 (`PANEL_HEARTBEAT_PIN`) to the
+IOmcu's GP3; GPIO28 is provisional until the pin is fixed on the first
+sample of the 7-inch ESP32-P4 board. The heartbeat's retriggerable
 monostable is on no board, so firmware at both ends is the only thing gating
 the outputs and there is no hardware backstop behind it.
 [Safety](https://github.com/subtilitas/rcbench/wiki/Safety) specifies all
@@ -101,7 +102,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 50,154 of 51,321 lines in 215 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 50,168 of 51,335 lines in 215 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).

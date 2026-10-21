@@ -18,7 +18,6 @@ exclude *.json | data: drawings, anchors, profiles and the configurator's packag
 exclude test/host/fixtures/* | recorded bench captures the host suite replays as they were taken
 
 # What stays over 1,000 lines after the plan.
-firmware/panel/main/main.c | 2422 +-100 | the panel's start, its main loop and the console report; rows 24 to 27 moved the rest out (plan about 2,214)
 shared/bench/kst_prog.c | 2407 +-100 | row 7 moved the card and file parts out; the session engine stays one file
 shared/servo/servo_limrun.c | 1044 +-100 | row 29 moved the report out (F18); the search stays one file
 shared/outputs/servo_link.c | 1393 +-100 | row 22 created it behind link_port_t; no second cut (owner decision)

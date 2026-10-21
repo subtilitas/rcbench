@@ -10,6 +10,11 @@ On the Xtensa windowed ABI (application binary interface) every function
 opens with `entry a1, N`, and N is its whole frame.  A task's depth is the
 largest sum of frames along any chain of calls from its entry point.
 
+The panel half reads Xtensa code, the ESP32-S3's.  It stops on an ELF of
+another machine: the ESP32-P4 builds RISC-V, which the tool does not
+decode, so the P4 panel's stack depths are not measured by it.  The IOmcu
+half is unaffected.
+
 The tool reads the panel ELF (Executable and Linkable Format) file and
 decodes the instructions it needs itself.  A linear disassembly, objdump's,
 loses its place on the alignment padding the assembler leaves after an
@@ -121,8 +126,8 @@ import struct
 import sys
 from pathlib import Path
 
-from stack_elf import (ROOT, STT_FUNC, STT_OBJECT, Elf, Graph, call_args,
-                       die, doc_rows, sext)
+from stack_elf import (EM_XTENSA, ROOT, STT_FUNC, STT_OBJECT, Elf, Graph,
+                       call_args, die, doc_rows, sext)
 from stack_iomcu import IOMCU_DIR, IOMCU_ELF, check_iomcu_doc, iomcu_check
 
 PANEL_DIR = ROOT / "firmware" / "panel"
@@ -662,6 +667,14 @@ def check_panel_doc(rows: dict, pointer_calls: int) -> list:
 
 
 def main() -> int:
+    """Run the check the command line names.
+
+    Returns:
+        0 when every stack holds its deepest chain, 1 when one does not.
+
+    Raises:
+        SystemExit: The build is missing, or the panel ELF is not Xtensa.
+    """
     ap = argparse.ArgumentParser(
         description=__doc__.split("\n")[0],
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -696,6 +709,10 @@ def main() -> int:
         die(f"{path} not found; build the panel first")
     sys.setrecursionlimit(20000)
     elf = Elf(path)
+    if elf.machine != EM_XTENSA:
+        die(f"{path} is ELF machine {elf.machine}, not Xtensa ({EM_XTENSA}): "
+            "the panel decoder reads Xtensa code only, and the ESP32-P4 "
+            "builds RISC-V")
 
     # Where several names share an address, the alphabetically first.
     sizes, names, rom = {}, {}, {}

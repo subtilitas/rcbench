@@ -14,8 +14,12 @@
  * older of the two ages.  One silent for TOUCH_MERGE_DETACH_MS (1000 ms) is
  * detached: its age no longer counts, and the touch task reads its product
  * ID once every TOUCH_MERGE_PROBE_MS (1000 ms) until it answers, which
- * re-attaches it.  A build with RCBENCH_TOUCH_INJECTOR=OFF compiles none of
- * this; it addresses 0x14 only as the glass's alternate address, when nothing answers at 0x5D.
+ * re-attaches it.  In a build with the injector, a controller that answers
+ * only at 0x14 is taken as the injector and refused as the glass.  The
+ * injector's contacts are panel pixels of the UI's area, mapped unmirrored
+ * (touch_inject_map()) before they are merged with the glass's.  A build
+ * with RCBENCH_TOUCH_INJECTOR=OFF compiles none of this; it addresses 0x14
+ * only as the glass's alternate address, when nothing answers at 0x5D.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -46,6 +50,14 @@ extern "C" {
  */
 void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
                          uint32_t now_ms);
+
+/**
+ * @brief The map for the injector's contacts: panel pixels of the UI's
+ *        BOARD_UI_H_RES x BOARD_UI_V_RES area, unmirrored.
+ * @return The map; touch_init() also takes it for a controller that
+ *         answers only at TOUCH_INJECT_ADDR.
+ */
+touch_map_t touch_inject_map(void);
 
 /**
  * The glass reported (@p fresh) or did not.  Merges its set with the
