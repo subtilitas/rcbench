@@ -49,6 +49,7 @@
 #include "splash_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
+#include "port_view.h"
 #include "prog_registry.h"
 #include "esc_stick_panel.h"
 #include "esc_sim.h"
@@ -406,6 +407,17 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
 /* NEXT in the header row, over OPEN. */
 #define BR_NEXT_CX      724
 #define BR_PG_CY_LOCAL  21
+
+/* The ask hook of the outputs-port2 view: taken, and never answered. */
+static bool render_port_ask(uint8_t seq, uint8_t port,
+                            prog_link_ask_kind_t kind, uint16_t value)
+{
+    (void)seq;
+    (void)port;
+    (void)kind;
+    (void)value;
+    return true;
+}
 
 static void tap(int x, int y)
 {
@@ -2753,6 +2765,25 @@ int main(int argc, char **argv)
         settings_set(SET_TONE_EN, 1.0f);
     }
 
+    if (strcmp(view, "outputs-port") == 0 || strcmp(view, "outputs-port2") == 0
+        || strcmp(view, "picker-port") == 0) {
+        /* A 4.26 IOmcu's four ports: port 1 SERVO PWM on GP13, port 2
+         * NONE on GP14, port 3 SERVO PWM and port 4 NONE without a pin. */
+        port_view_t v;
+        port_view_unknown(&v);
+        v.count    = 4u;
+        v.has_func = true;
+        v.pin[0]   = 13u;
+        v.pin[1]   = 14u;
+        v.func[0]  = v.func[2] = (uint8_t)LINK_PG_FN_SERVO_PWM;
+        v.func[1]  = v.func[3] = (uint8_t)LINK_PG_FN_NONE;
+        port_view_set(&v);
+        static const uint8_t held[LINK_PG_PORTS_MAX] = { 13u, 14u, 0xFFu,
+                                                         0xFFu };
+        outputs_screen_set_prog_ports(4u, held);
+        picker_screen_set_prog_ports(4u, held);
+    }
+
     if (id == SCREEN_OUTPUTS) {
         /* Four servo leads on the first four free pins: the state an
          * operator reaches in four taps, and the one worth a picture. */
@@ -2796,8 +2827,7 @@ int main(int argc, char **argv)
             outbind_set_proto(&b, proto_named("DSHOT300"));
             (void)outbind_toggle(&b, outbind_index_of(brd, 5));
         }
-        if (strcmp(view, "outputs-prog") == 0
-            || strcmp(view, "outputs-port") == 0) {
+        if (strcmp(view, "outputs-prog") == 0) {
             /* The IOmcu's programming port on GP13: not to be had. */
             static const uint8_t pins[LINK_PG_PORTS_MAX] = { 13u, 0xFFu,
                                                              0xFFu, 0xFFu };
@@ -2814,11 +2844,20 @@ int main(int argc, char **argv)
             servo_screen_set_drive(1u, 13u, true);
             ui_router_goto(SCREEN_SERVO);
             tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
+        } else if (strcmp(view, "outputs-port2") == 0) {
+            /* PROG PORT 2 from the list, SERVO PWM asked of it: the ask
+             * waits for a bench at rest. */
+            port_view_set_ask(render_port_ask);
+            outputs_screen_open_on_port(1u);
+            ui_router_goto(SCREEN_OUTPUTS);
+            (void)port_view_ask(1u, PROG_LINK_ASK_FUNC,
+                                (uint16_t)LINK_PG_FN_SERVO_PWM);
         } else {
             ui_router_goto(SCREEN_OUTPUTS);
         }
         if (strcmp(view, "outputs-off") != 0
             && strcmp(view, "outputs-port") != 0
+            && strcmp(view, "outputs-port2") != 0
             && strcmp(view, "outputs-iface") != 0) {
             /* Every visit opens on the overview, OFF; the views of a
              * protocol being edited pick it, as the operator does. */
@@ -2965,6 +3004,13 @@ int main(int argc, char **argv)
                 ui_router_event(&d);
                 ui_router_event(&u);
             }
+        }
+        if (strcmp(view, "picker-port") == 0) {
+            /* PROG PORT 3 picked, as from the OUTPUTS entry's PIN
+             * button. */
+            picker_screen_open_on_port(2u);
+            ui_router_goto(SCREEN_OUTPUTS);
+            ui_router_goto(SCREEN_PICKER);
         }
         if (strcmp(view, "picker-protocol") == 0) {
             /* The protocol list tapped open over the board. */

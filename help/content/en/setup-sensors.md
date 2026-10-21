@@ -20,7 +20,7 @@ Each fitted part has a heading, `INA3221 0x40` to `INA3221 0x43`, and two rows f
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
-| 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to PORT 4, SUPPLY | OUT 1 for 0x40 CH1, NONE otherwise | what the channel's shunt is in: an output channel, a programming port or the supply rail |
+| 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE otherwise | what the channel's shunt is in: an output channel, a programming port or the supply rail |
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0 mOhm, 0.1 mOhm steps | 100.0 | OFF: the channel is not read; 100 mOhm reads to 1.64 A |
 
 - `+` on a shunt at OFF gives 5.0 mOhm, `-` at 5.0 mOhm gives OFF.

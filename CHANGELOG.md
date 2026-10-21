@@ -49,9 +49,39 @@ history is in git.
   empty store.
 - The IOmcu console prints a third sensor line, `sense map`: the parts
   fitted, FAST, the map's flags and each channel's mean current in mA.
+- Four programming ports on the IOmcu, PROG PORT 1 to PROG PORT 4. Each
+  has a FUNCTION: SERVO PWM, a pulse from the PWM generator, or NONE, the
+  pin held as an input with its pull-down. Port 1 defaults to SERVO PWM,
+  ports 2 to 4 to NONE with no pin, so a bench that sets nothing on ports
+  2 to 4 runs as with one port. PIN and FUNCTION are kept in the IOmcu's
+  flash; the panel writes them only when the operator sets them, on the
+  PROG PORT entry of SETUP > OUTPUTS or in PICK A PIN, and only on a bench
+  in SAFE with no test, sweep or servo programmer running.
+- SETUP > OUTPUTS: one PROG PORT entry per port with PIN (opens PICK A
+  PIN on that port), FUNCTION, WATCHED BY (no current channel yet), SERVO
+  TESTER and PORT PWM. PICK A PIN lists the programming ports and rejects
+  a SERVO PWM pin that shares a PWM slice with an output.
+- The servo tester's target is OUTPUTS or PORT 1 to PORT 4 (SETUP > SERVO
+  > SERVO TESTER). A stored PROG PORT reads as PORT 1. The TARGET row names
+  the port: `PROG PORT 2 GP14`. A port without a SERVO PWM pin, or one the
+  IOmcu does not have, reads `PROG PORT 2` in the warning colour, and the
+  tester then sends the standard outputs no command but a release.
+- Link protocol 4.26: PROG page registers 24 to 27 (`FUNC`) and `FLAGS`
+  bits 4 to 7 (port parked). The functions are kept in the store record's
+  word before the ports, spare until 4.26, in version 7 and 8 records
+  alike. An image of 4.25 writes the word back as 0, and an older one
+  reads no version 8 record and starts empty: after such a downgrade and
+  an upgrade the ports are on their default functions. With an IOmcu older than 4.26 every port is SERVO PWM and
+  OUTPUTS says `IOMCU OLDER THAN 4.26: SERVO PWM ONLY`.
+
+### Fixed
+
+- SERVO > TARGET reads the set programming port in SAFE within 500 ms after
+  a programming session gives the port back and after an IOmcu restart,
+  without waiting for the next ARM.
 - SETUP > SENSORS (German `SENSOREN`), the eighth tile: up to four INA3221
   current monitors at 0x40 to 0x43. Per part `0x40 fitted`; per channel
-  `0x40 CH1 watches` (NONE, OUT 1 to OUT 8, PORT 1 to PORT 4, SUPPLY) and
+  `0x40 CH1 watches` (NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY) and
   `0x40 CH1 shunt` (OFF, 5.0 to 1000.0 mOhm). A fitted part's heading shows
   its state: `ONLINE`, `NOT ANSWERING`, `IOMCU OLDER THAN 4.25: NOT READ`
   and eight more. The panel writes the map to SENSE_MAP (link protocol
@@ -91,6 +121,16 @@ history is in git.
 
 ### Fixed
 
+- The bench console's Hitec section says what `flags=PRECHARGE` and the
+  `rx=` of `hitec line` each read: register 23, the mode of the next OPEN,
+  and the mode of the open line. They differ after register 23 is written
+  while a line is open, as the panel does at every edit of SETUP >
+  INTERFACES > Hitec D receive, saved or not. It also says that `hitec`
+  and `hitec state` print the report with `now`, that an option of
+  `send`, `listen` or `power` left out is 0 (`answer` left out answers
+  nothing), that a 5-byte D series SEND has its 117.2 us lead with or
+  without `lead=`, and gives the raw `send` of a D series read with its sum
+  byte.
 - A POWER on a PRECHARGE line answers: its LISTEN starts in the pass of the
   ON, while the PD mini's output still reads off, and is cut only when the
   output reads off after it read on, when the supply is asked off, or when

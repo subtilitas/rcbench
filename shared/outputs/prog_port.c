@@ -20,6 +20,27 @@ static uint64_t bit64(uint16_t pin)
     return (uint64_t)1u << pin;
 }
 
+/* Port @p port's function as @p regs hold it. */
+static uint16_t fn_of(const uint16_t *regs, unsigned port)
+{
+    return regs[LINK_PG_FUNC(port)];
+}
+
+/* Whether the port's function is the servo pulse, which the PWM generator
+ * renders and which the PWM-pin and slice rules hold. */
+static bool fn_pwm(const uint16_t *regs, unsigned port)
+{
+    return fn_of(regs, port) == (uint16_t)LINK_PG_FN_SERVO_PWM;
+}
+
+/* The function a port starts with on a board that has stored none: the
+ * servo pulse on port 0, nothing on the others. */
+static uint16_t fn_default(unsigned port)
+{
+    return (port == 0u) ? (uint16_t)LINK_PG_FN_SERVO_PWM
+                        : (uint16_t)LINK_PG_FN_NONE;
+}
+
 /* Whether port @p port holds the pin its register names. */
 static bool holds(const prog_port_t *p, unsigned port)
 {
@@ -28,21 +49,25 @@ static bool holds(const prog_port_t *p, unsigned port)
            && (p->blocked & (1u << port)) == 0u;
 }
 
-/* Two port pins that cannot both be on the generator. */
-static bool ports_clash(uint16_t a, uint16_t b)
+/* Two port pins that cannot both be held: one pin, or two servo pulses
+ * on one compare register of the generator. */
+static bool ports_clash(uint16_t a, bool a_pwm, uint16_t b, bool b_pwm)
 {
-    return a == b || out_pwm_same_compare((uint8_t)a, (uint8_t)b);
+    return a == b
+           || (a_pwm && b_pwm && out_pwm_same_compare((uint8_t)a, (uint8_t)b));
 }
 
 /*
- * Whether @p pin may be a port's beside the bank: a pin of the PWM
- * generator, not reserved unless it is one the ports hold now (@p ours),
- * not in @p taken, no slot's, and beside no PWM slot's in the silicon.
+ * Whether @p pin may be a port's beside the bank: a header pin, not
+ * reserved unless it is one the ports hold now (@p ours), not in @p taken
+ * and no slot's.  For the servo pulse (@p pwm) also a pin of the PWM
+ * generator beside no PWM slot's in the silicon.
  */
-static bool pin_ok(const outputs_t *o, uint16_t pin, uint64_t ours,
+static bool pin_ok(const outputs_t *o, uint16_t pin, bool pwm, uint64_t ours,
                    uint64_t taken)
 {
-    if (pin > OUT_MAX_PIN || out_pwm_slice_of((uint8_t)pin) == OUT_PWM_NONE) {
+    if (pin > OUT_MAX_PIN
+        || (pwm && out_pwm_slice_of((uint8_t)pin) == OUT_PWM_NONE)) {
         return false;
     }
     if ((taken & bit64(pin)) != 0u) {
@@ -59,7 +84,7 @@ static bool pin_ok(const outputs_t *o, uint16_t pin, uint64_t ours,
         if (s->pin == pin) {
             return false;
         }
-        if (s->driver == OUT_DRIVER_PWM
+        if (pwm && s->driver == OUT_DRIVER_PWM
             && out_pwm_same_slice(s->pin, (uint8_t)pin)) {
             return false;
         }
@@ -96,6 +121,7 @@ void prog_port_init(prog_port_t *p, uint8_t count)
         p->regs[REG(port, LINK_PG_CMD)]    = (uint16_t)(OUT_SPAN / 2u);
         p->regs[REG(port, LINK_PG_MIN_US)] = LINK_CC_DEFAULT_MIN;
         p->regs[REG(port, LINK_PG_MAX_US)] = LINK_CC_DEFAULT_MAX;
+        p->regs[LINK_PG_FUNC(port)]        = fn_default(port);
     }
 }
 
@@ -116,6 +142,21 @@ void prog_port_defaults(uint16_t *kept, uint16_t pin0)
 void prog_port_restore(prog_port_t *p, const uint16_t *kept, outputs_t *o,
                        uint64_t taken)
 {
+    prog_port_restore_fn(p, kept, PROG_PORT_FUNC_UNSTORED, o, taken);
+}
+
+/* Port @p port's function from the kept word @p word: the nibble's value
+ * less 1, or the port's default for 0 or a value no write would take. */
+static uint16_t fn_from_word(uint16_t word, unsigned port)
+{
+    const unsigned v = ((unsigned)word >> (4u * port)) & 0xFu;
+    return (v == 0u || v - 1u >= (unsigned)LINK_PG_FN_COUNT)
+               ? fn_default(port) : (uint16_t)(v - 1u);
+}
+
+void prog_port_restore_fn(prog_port_t *p, const uint16_t *kept,
+                          uint16_t func_word, outputs_t *o, uint64_t taken)
+{
     if (p == NULL || kept == NULL || o == NULL) {
         return;
     }
@@ -126,11 +167,15 @@ void prog_port_restore(prog_port_t *p, const uint16_t *kept, outputs_t *o,
     for (unsigned port = 0; port < LINK_PG_PORTS_MAX; ++port) {
         const uint16_t *k = &kept[(size_t)port * PROG_PORT_KEPT];
         uint16_t pin = k[0];
+        const uint16_t fn = fn_from_word(func_word, port);
+        const bool pwm = fn == (uint16_t)LINK_PG_FN_SERVO_PWM;
 
+        p->regs[LINK_PG_FUNC(port)] = fn;
         if (port >= p->count
             || (pin != LINK_PG_PIN_NONE
                 && (pin > OUT_MAX_PIN
-                    || out_pwm_slice_of((uint8_t)pin) == OUT_PWM_NONE))) {
+                    || (pwm && out_pwm_slice_of((uint8_t)pin)
+                                   == OUT_PWM_NONE)))) {
             pin = LINK_PG_PIN_NONE;
         }
         p->regs[REG(port, LINK_PG_PIN)]  = pin;
@@ -146,11 +191,12 @@ void prog_port_restore(prog_port_t *p, const uint16_t *kept, outputs_t *o,
             p->regs[REG(port, LINK_PG_MAX_US)] = LINK_CC_DEFAULT_MAX;
         }
         if (pin != LINK_PG_PIN_NONE) {
-            bool free = pin_ok(o, pin, 0u, taken);
+            bool free = pin_ok(o, pin, pwm, 0u, taken);
 
             for (unsigned q = 0; q < port; ++q) {
                 if (holds(p, q)
-                    && ports_clash(p->regs[REG(q, LINK_PG_PIN)], pin)) {
+                    && ports_clash(p->regs[REG(q, LINK_PG_PIN)],
+                                   fn_pwm(p->regs, q), pin, pwm)) {
                     free = false;
                 }
             }
@@ -174,6 +220,19 @@ void prog_port_kept(const prog_port_t *p, uint16_t *kept)
         k[2] = p->regs[REG(port, LINK_PG_MIN_US)];
         k[3] = p->regs[REG(port, LINK_PG_MAX_US)];
     }
+}
+
+uint16_t prog_port_kept_func(const prog_port_t *p)
+{
+    uint16_t word = 0u;
+
+    if (p == NULL) {
+        return PROG_PORT_FUNC_UNSTORED;
+    }
+    for (unsigned port = 0; port < LINK_PG_PORTS_MAX; ++port) {
+        word |= (uint16_t)((fn_of(p->regs, port) + 1u) << (4u * port));
+    }
+    return word;
 }
 
 /* The rate port @p port runs at with @p target as TARGET and the SERVO
@@ -210,23 +269,39 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
     for (uint8_t i = 0; i < n; ++i) {
         next[off + i] = in[i];
     }
-    /* No register of a port the build does not have. */
-    if ((unsigned)off + (unsigned)n > REG(p->count, 0)) {
-        return LINK_NACK_BAD_VALUE;
+    /* No register of a port the build does not have, and no function this
+     * build does not render. */
+    for (unsigned port = 0; port < LINK_PG_PORTS_MAX; ++port) {
+        bool theirs = carries(off, n, LINK_PG_FUNC(port));
+        for (unsigned r = 0; r < (unsigned)LINK_PG_STRIDE; ++r) {
+            theirs = theirs || carries(off, n, REG(port, r));
+        }
+        if (port >= p->count && theirs) {
+            return LINK_NACK_BAD_VALUE;
+        }
+        if (carries(off, n, LINK_PG_FUNC(port))
+            && next[LINK_PG_FUNC(port)] >= (uint16_t)LINK_PG_FN_COUNT) {
+            return LINK_NACK_BAD_VALUE;
+        }
     }
 
-    uint8_t moved = 0u;   /* ports whose PIN this frame changes */
+    /* Ports whose PIN or FUNC this frame changes, or whose refused PIN it
+     * names again: each is bound anew. */
+    uint8_t moved = 0u;
     for (unsigned port = 0; port < p->count; ++port) {
         const unsigned r = REG(port, LINK_PG_PIN);
-        if (carries(off, n, r)
-            && (next[r] != p->regs[r]
-                || (p->blocked & (1u << port)) != 0u)) {
+        const unsigned f = LINK_PG_FUNC(port);
+        if ((carries(off, n, r)
+             && (next[r] != p->regs[r]
+                 || (p->blocked & (1u << port)) != 0u))
+            || (carries(off, n, f) && next[f] != p->regs[f])) {
             moved |= (uint8_t)(1u << port);
         }
     }
     const uint64_t ours = prog_port_pins(p);
     for (unsigned port = 0; port < p->count; ++port) {
         const uint16_t pin = next[REG(port, LINK_PG_PIN)];
+        const bool pwm = fn_pwm(next, port);
 
         if (carries(off, n, REG(port, LINK_PG_CMD))
             && next[REG(port, LINK_PG_CMD)] > OUT_SPAN) {
@@ -257,7 +332,7 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
         if (pin == LINK_PG_PIN_NONE) {
             continue;
         }
-        if (!pin_ok(o, pin, ours, taken)) {
+        if (!pin_ok(o, pin, pwm, ours, taken)) {
             return LINK_NACK_BAD_VALUE;
         }
         for (unsigned q = 0; q < p->count; ++q) {
@@ -265,13 +340,20 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
             const bool there = (moved & (1u << q)) != 0u || holds(p, q);
 
             if (q != port && there && other != LINK_PG_PIN_NONE
-                && ports_clash(other, pin)) {
+                && ports_clash(other, fn_pwm(next, q), pin, pwm)) {
                 return LINK_NACK_BAD_VALUE;
             }
         }
     }
-    /* The pulse and the tester only on a pin the generator has. */
-    const uint8_t usable = (uint8_t)(p->bound & ~moved);
+    /* The pulse and the tester only on a pin the generator has: a port
+     * whose function is the servo pulse, bound, and not bound anew by this
+     * frame. */
+    uint8_t usable = (uint8_t)(p->bound & ~moved);
+    for (unsigned port = 0; port < LINK_PG_PORTS_MAX; ++port) {
+        if (!fn_pwm(next, port)) {
+            usable &= (uint8_t)~(1u << port);
+        }
+    }
     if ((next[LINK_PG_PWM] & (uint16_t)~usable) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
@@ -291,6 +373,7 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
         for (unsigned port = 0; port < p->count; ++port) {
             const uint16_t pin = next[REG(port, LINK_PG_PIN)];
             if ((moved & (1u << port)) != 0u && port + 1u != target
+                && fn_pwm(next, port)
                 && pin != LINK_PG_PIN_NONE && tpin != LINK_PG_PIN_NONE
                 && out_pwm_same_slice((uint8_t)pin, (uint8_t)tpin)) {
                 return LINK_NACK_BAD_VALUE;
@@ -350,10 +433,13 @@ void prog_port_read(const prog_port_t *p, uint8_t off, uint8_t n,
         || (unsigned)off + (unsigned)n > (unsigned)LINK_PG_REGS) {
         return;
     }
-    uint16_t flags = p->bound;
+    uint16_t flags = 0u;
     for (unsigned port = 0; port < p->count; ++port) {
-        if (p->regs[REG(port, LINK_PG_PIN)] != LINK_PG_PIN_NONE
-            && (p->bound & (1u << port)) == 0u) {
+        if ((p->bound & (1u << port)) != 0u) {
+            flags = (uint16_t)(flags | (fn_pwm(p->regs, port)
+                                            ? LINK_PG_F_BOUND(port)
+                                            : LINK_PG_F_PARKED(port)));
+        } else if (p->regs[REG(port, LINK_PG_PIN)] != LINK_PG_PIN_NONE) {
             flags |= LINK_PG_F_REFUSED(port);
         }
     }
@@ -392,11 +478,50 @@ void prog_port_bound(prog_port_t *p, uint8_t mask)
         }
     }
     p->bound = (uint8_t)(mask & held);
-    p->regs[LINK_PG_PWM] &= p->bound;
+    const uint8_t pulse = prog_port_pwm_ports(p);
+    p->regs[LINK_PG_PWM] &= pulse;
     const uint16_t t = p->regs[LINK_PG_TARGET];
-    if (t != 0u && (p->bound & (1u << (t - 1u))) == 0u) {
+    if (t != 0u && (pulse & (1u << (t - 1u))) == 0u) {
         p->regs[LINK_PG_TARGET] = 0u;
     }
+}
+
+uint8_t prog_port_func(const prog_port_t *p, uint8_t port)
+{
+    if (p == NULL || port >= LINK_PG_PORTS_MAX) {
+        return (uint8_t)LINK_PG_FN_NONE;
+    }
+    return (uint8_t)fn_of(p->regs, port);
+}
+
+uint8_t prog_port_pwm_ports(const prog_port_t *p)
+{
+    uint8_t m = 0u;
+
+    if (p == NULL) {
+        return 0u;
+    }
+    for (unsigned port = 0; port < p->count; ++port) {
+        if ((p->bound & (1u << port)) != 0u && fn_pwm(p->regs, port)) {
+            m |= (uint8_t)(1u << port);
+        }
+    }
+    return m;
+}
+
+uint8_t prog_port_parked(const prog_port_t *p)
+{
+    uint8_t m = 0u;
+
+    if (p == NULL) {
+        return 0u;
+    }
+    for (unsigned port = 0; port < p->count; ++port) {
+        if (holds(p, port) && !fn_pwm(p->regs, port)) {
+            m |= (uint8_t)(1u << port);
+        }
+    }
+    return m;
 }
 
 uint8_t prog_port_count(const prog_port_t *p)
@@ -472,6 +597,7 @@ uint16_t prog_port_sliced_channels(const prog_port_t *p)
     for (unsigned a = 0; a < p->count; ++a) {
         for (unsigned b = 0; b < p->count; ++b) {
             if (a != b && holds(p, a) && holds(p, b)
+                && fn_pwm(p->regs, a) && fn_pwm(p->regs, b)
                 && out_pwm_same_slice(
                     (uint8_t)p->regs[REG(a, LINK_PG_PIN)],
                     (uint8_t)p->regs[REG(b, LINK_PG_PIN)])) {
@@ -547,6 +673,7 @@ uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots)
             }
             if (r[LINK_OS_PIN] == pin
                 || (r[LINK_OS_DRIVER] == (uint16_t)OUT_DRIVER_PWM
+                    && fn_pwm(p->regs, port)
                     && out_pwm_same_slice((uint8_t)r[LINK_OS_PIN],
                                           (uint8_t)pin))) {
                 return LINK_NACK_BAD_VALUE;
@@ -557,8 +684,13 @@ uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots)
 }
 
 _Static_assert(LINK_PG_PORT0 + LINK_PG_PORTS_MAX * LINK_PG_STRIDE
-                   == LINK_PG_REGS,
-               "the PROG page's ports do not fill its registers");
+                   == LINK_PG_FUNC0
+                   && LINK_PG_FUNC0 == LINK_PG_REGS_V424
+                   && LINK_PG_FUNC0 + LINK_PG_PORTS_MAX == LINK_PG_REGS,
+               "the PROG page's ports and functions do not fill its "
+               "registers");
+_Static_assert(LINK_PG_FN_COUNT < 15 && LINK_PG_PORTS_MAX * 4u <= 16u,
+               "a port's function does not fit its nibble of the kept word");
 _Static_assert(PROG_PORT_CHANNEL0 + LINK_PG_PORTS_MAX <= OUT_MAX_CHANNELS,
                "the bank has no channels for the programming ports");
 _Static_assert(PROG_PORT_CHANNEL0 > LINK_OUT_CHANNELS,

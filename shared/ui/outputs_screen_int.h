@@ -47,8 +47,9 @@ bool outputs_port_event(const touch_event_t *evt);
 void outputs_port_tick(void);
 
 /* Bumped by every change of what the entry draws; the screen repaints on
- * a change of it as on one of its own. */
+ * a change of it as on one of its own.  outputs_port_touched() bumps it. */
 uint32_t outputs_port_revision(void);
+void outputs_port_touched(void);
 
 /* The entry's left column, under the dropdown @p dd drawn @p pressed and
  * @p open. */
@@ -76,4 +77,9 @@ void outputs_port_forget_open(void);
 
 /* Every programming port's pin, LINK_PG_PORTS_MAX of them, OUTPUTS_NO_PIN
  * past the entries: what outbind_pwm_clash_ports() checks a pin beside. */
+/* The ports' pins that hold a PWM slice, for the slice and compare
+ * rules: @p pins (LINK_PG_PORTS_MAX of them) with a NONE port's pin taken
+ * out, as the IOmcu's prog_port_slots_check() does.  A NONE port's pin
+ * stays taken as a pin.  One static copy, UI task only. */
+const uint8_t *outputs_pwm_pins(const uint8_t *pins);
 const uint8_t *outputs_port_pins(void);

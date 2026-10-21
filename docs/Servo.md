@@ -58,8 +58,8 @@ shorter hold starts nothing.
 ![The limit run, ready](img/servo-limrun-ready.png)
 
 The line under the button names what the run drives and reads, the whole
-time: `OUTPUT PROG PORT GP13, CURRENT INA3221 CH1`, or
-`OUTPUT SERVO PWM GP2, CURRENT INA3221 CH1` with TARGET on OUTPUTS. While
+time: `OUTPUT PROG PORT 1 GP13, CURRENT INA3221 CH1`, or
+`OUTPUT SERVO PWM GP2, CURRENT INA3221 CH1` while the tester drives the standard outputs. While
 the run goes on, LIVE's left card shows its box: the phase, the side and the pulse commanded, and the output
 again on its third line. The output card's TARGET row stays in sight as well.
 
@@ -343,7 +343,7 @@ Result:         PASS
 Device:         SERVO
 Firmware:       rcbench 0.21.2
 Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
-Output:         PROG PORT GP13, 50 Hz
+Output:         PROG PORT 1 GP13, 50 Hz
 Pulse range:    centre 1500 us, 1000-2000 us
 Searched:       from 1500 us out to 1000 us and 2000 us
 Current:        INA3221 CH1, 50 ms windows, shunt 100.0 mOhm

@@ -233,7 +233,7 @@ bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  239 such
+  240 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -259,7 +259,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,524 | 528 | 1,788 |
+| core 0 | `main` | 4,096 | 1,492 | 528 | 1,820 |
 | core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -356,15 +356,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 128,864 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 297,120 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 129,176 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 296,808 |
 | `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 107,248 |
-| `before` | heap left with the panel up and the radio off | 189,872 |
+| `before` | heap left with the panel up and the radio off | 189,560 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 86,712 |
+| `left` | heap left with the largest mode up | 86,400 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every

@@ -1244,7 +1244,7 @@ das Verfahren, die Schutzmechanismen und den Bericht. Es ist ein Halten von
 Servoschiene. Darüber nennt die Zusammenfassung der Karte die Betriebsart,
 `NUR SUCHE` oder `SUCHEN + PROGRAMMIEREN`, und SERVOPULSE, solange der Lauf
 den Port liest. Darunter nennt eine Zeile den Ausgang, den er treibt, und
-das Messgerät, `AUSGANG PROG-PORT GP13, STROM INA3221 CH1` oder `AUSGANG
+das Messgerät, `AUSGANG PROG-PORT 1 GP13, STROM INA3221 CH1` oder `AUSGANG
 SERVO PWM GP2, STROM INA3221 CH1`, die nächste sagt, warum er nicht starten
 kann oder was er gerade tut, dann folgen das letzte Ergebnis und sein
 Bericht. TEST bleibt beim Start zu sehen. Sein Feld auf der linken Karte von
@@ -1387,20 +1387,25 @@ nennt sie trotzdem. Die Ausgangskarte bleibt unter den Seiten, ihren
 Tastenfeldern und dem Servo-Programmierer sichtbar, die Zeile nennt den Pin
 also auch, während einer davon die linke Spalte bedeckt.
 
-Mit OUTPUTS nennt die Zeile die GPIOs, die in der vom Tester getriebenen
+SERVO-TESTER hält OUTPUTS, PORT 1, PORT 2, PORT 3 oder PORT 4. Mit
+OUTPUTS nennt die Zeile die GPIOs, die in der vom Tester getriebenen
 Bindung als SERVO PWM gebunden sind: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`;
 so viele Pins, wie in die 23 Zeichen des Werts passen, dann `+N`: 8 Pins ab
 GP40 lauten `SERVO PWM GP40 GP41 +6`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
 (`KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen wurde
-(`PINS NICHT AUSGELESEN`). Mit PROG-PORT lautet sie `PROG-PORT GP13` in der
-Warnfarbe; der Pin ist der GPIO, den der IOmcu für den Programmierport
-meldet. Die Befehle des Testers erreichen dann die SERVO-PWM-Ausgänge nicht;
+(`PINS NICHT AUSGELESEN`). Mit einem Programmierport lautet sie `PROG-PORT
+1 GP13` in der Warnfarbe, die Nummer des Ports und der GPIO, den der IOmcu
+für ihn meldet. Die Befehle des Testers erreichen dann die SERVO-PWM-Ausgänge nicht;
 bei einer Bank in ARMED halten diese ihren Ruhepuls, die Mitte zwischen
 ihren Endpunkten. Ein Port als Ziel ohne nutzbaren Pin (keiner, beim Start
-abgelehnt, oder ein Port, den der IOmcu nicht hat) lautet `PROG-PORT`,
-ebenfalls in der Warnfarbe: die Befehle gehen trotzdem an den Port. Mit
-PORT-PWM aus gibt der Port keinen Puls aus, und die Zeile hängt `PWM AUS`
-an: `PROG-PORT GP13 PWM AUS`, 22 Zeichen mit einem zweistelligen Pin. Zwei
+abgelehnt, FUNKTION KEINE, oder ein Port, den der IOmcu nicht hat) lautet
+`PROG-PORT 1`, ebenfalls in der Warnfarbe. Der IOmcu behält dann die
+Standardausgänge als Ziel, und der Tester sendet ihnen keinen Befehl außer
+einer Freigabe, und SWEEP ist ausgegraut, bis der Port einen SERVO-PWM-Pin
+hat oder SERVO-TESTER auf OUTPUTS steht. Mit
+PORT-PWM aus gibt der Port keinen Puls aus, und die Zeile lautet `PORT 1
+GP13 PWM AUS`, 19 Zeichen mit einem zweistelligen Pin, oder `PROG-PORT 1
+PWM AUS`. Zwei
 Zustände nennen kein Ziel, beide in der Warnfarbe, und in keinem sendet der
 Tester einen Befehl: `KEINE VERBINDUNG`, solange kein IOmcu antwortet, und
 `UNBEKANNT`, solange die Programmierport-Seite des IOmcu seit dem
@@ -1413,7 +1418,10 @@ IOmcu ohne diese Seite (Protokoll älter als 4.13) hat die
 Standardausgänge als Ziel. Die Zeile folgt dem Ziel, das der IOmcu
 hält, nicht der Einstellung: eine Änderung von SERVO-TESTER wartet auf einen
 ruhigen Prüfstand und erscheint in der Zeile, sobald der IOmcu sie
-übernommen hat.
+übernommen hat. Der IOmcu startet mit den Ausgängen als Ziel und legt das
+Ziel auf die Ausgänge, solange eine Programmiersitzung ihren Port ohne Pin
+lässt. In SAFE schreibt das Panel den eingestellten Port innerhalb eines
+Lesens der Seite, 500 ms, zurück, ohne auf das nächste ARM zu warten.
 
 ![Die Zeile ZIEL mit PROG-PORT](img/de/servo-target.png)
 
@@ -2910,7 +2918,7 @@ Baustein, der nicht bestückt ist, hat keine Überschrift und keine Zeilen.
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
-| 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis PORT 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, KEINE für jeden anderen Kanal | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
+| 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, KEINE für jeden anderen Kanal | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
 | 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | AUS: der Kanal wird nicht gelesen. Der R100 des DAOKAI misst bis 1,64 A |
 
 Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
@@ -3832,35 +3840,67 @@ SETUP markiert die Zeile.
 
 ### Der Eintrag PROG-PORT
 
-Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport,
-den der IOmcu meldet: 1 beim Bring-up-Build, höchstens 4. Solange die
-Anzahl nicht bekannt ist (keine Verbindung, die Seite seit dem Aufbau der
-Verbindung nicht gelesen), hält die Liste einen Eintrag, für Port 1. Ein
-IOmcu älter als Protokoll 4.13 hat keinen Programmierport, und die Liste
-hält keinen Eintrag.
-Bei mehr als einem heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`. Ein
-Programmierport ist ein Ausgang eigener Art, kein Slot und kein Protokoll
-([Link](Link-de.md#die-programmierports)). Sein Eintrag zeigt:
+Die Protokollliste von OUTPUTS endet mit einem Eintrag PROG-PORT je Programmierport,
+den der IOmcu meldet: 4 ab Protokoll 4.26, 1 bei einem älteren Build.
+Solange die Anzahl nicht bekannt ist (keine Verbindung, die Seite seit dem
+Aufbau der Verbindung nicht gelesen), hält die Liste einen Eintrag, für
+Port 1. Ein IOmcu älter als Protokoll 4.13 hat keinen Programmierport, und
+die Liste hält keinen Eintrag. Bei mehr als einem heißen die Einträge
+`PROG-PORT 1`, `PROG-PORT 2`, `PROG-PORT 3` und `PROG-PORT 4`. Ein Programmierport ist ein Ausgang
+eigener Art, kein Slot und kein Protokoll
+([Link](Link-de.md#die-programmierports)). Jeder Eintrag hat dieselben
+Zeilen:
 
-- die Pins, wie die Übersicht sie benennt, den eigenen Pin des Ports
-  hervorgehoben; kein Pin nimmt einen Haken an, und der Pin des Ports ist
-  nur lesbar;
-- `PIN GP13`, oder `KEIN PIN BEKANNT` in der Warnfarbe;
-- was der Port trägt: `TRÄGT SERVO PWM UND KST/CHASERVO-PROGRAMMIERUNG`.
-  Der IOmcu gibt auf einem Port kein Gas-Protokoll aus: kein MOTOR PWM,
-  kein DShot;
-- auf Port 1 SERVO-TESTER (OUTPUTS | PROG-PORT) und PORT-PWM (EIN | AUS),
-  zwei Segmente unter ihren Beschriftungen, mit dem Grund darunter, solange
-  eines gesperrt ist ([das Ziel](ServoProgrammer-de.md#das-ziel)). Der
-  SERVO-Tester treibt nur Port 1; der Eintrag eines anderen Ports sagt
-  `DER SERVO-TESTER STEUERT NUR PROG-PORT 1 AN`.
+| Zeile | Was sie zeigt und tut |
+| --- | --- |
+| PIN | eine Taste: `PIN GP13`, `PIN WÄHLEN` für einen Port ohne Pin, `PIN GP14 ABGELEHNT` für einen Pin, den der IOmcu nicht hält, `KEIN PIN BEKANNT` vor dem ersten Lesen. Ein Tippen öffnet [PICK A PIN](#pin-auswählen) auf diesem Port |
+| FUNKTION | SERVO PWM \| KEINE: was der Pin trägt, solange keine Programmiersitzung ihn hält. Ein Tippen erbittet beim IOmcu die andere |
+| ÜBERWACHT VON | der Stromkanal, der den Port überwacht, `VON KEINEM STROMKANAL ÜBERWACHT`, bis eine Sensorzuordnung einen nennt |
+| SERVO-TESTER | OUTPUTS \| PORT n: das Ziel des Testers ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
+| PORT-PWM | EIN \| AUS: der Puls des Ports, der das Ziel des Testers ist |
+
+Die Pins rechts sind gezeichnet, wie die Übersicht sie benennt, den
+eigenen Pin des Ports hervorgehoben; kein Pin nimmt dort einen Haken an.
+
+| Funktion | Der Pin | Pin-Regel |
+| --- | --- | --- |
+| SERVO PWM | der Servopuls aus dem PWM-Generator, solange die Bank für die Servos ARMED ist und PORT-PWM auf dem Port des Testers EIN ist; sonst low | ein PWM-Pin, auf keinem Slice eines PWM-Ausgangs und auf keinem Compare-Register eines anderen SERVO-PWM-Ports |
+| KEINE | ein Eingang mit seinem Pull-down; kein Puls | jeder freie Pin der Stiftleiste |
+
+Port 1 beginnt als SERVO PWM auf GP13, die Ports 2 bis 4 als KEINE ohne
+Pin. Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash mit der
+Bindung der Ausgänge, sie gehören also zur Platine, nicht zum Panel. Ein
+Tippen auf FUNKTION und ein in PICK A PIN getippter Pin sind Bitten: das
+Panel schreibt sie bei einem Prüfstand in Ruhe (SAFE, kein Test, kein
+Sweep, keine Sitzung des Servo-Programmierers) und sagt in der gelben
+Zeile, wie die Bitte steht: `WARTET AUF SAFE, KEINEN TEST, SWEEP ODER
+SERVO-PROGRAMMIERER`, `DER IOMCU HAT ES ABGELEHNT` oder `VERBINDUNG VOR DEM
+SCHREIBEN VERLOREN`. Ein Port, der das Ziel des Testers ist, wird für das
+Schreiben losgelassen (sein Puls aus, das Ziel die Ausgänge) und danach
+wieder genommen.
 
 ![Der Eintrag PROG-PORT](img/de/outputs-port.png)
 
-Keines der beiden Segmente schreibt von diesem Bildschirm eine Seite: die
-Einstellung wird im NVS gehalten, und das Panel bringt sie bei einem
-Prüfstand in Ruhe zum IOmcu. Das Wählen des Eintrags schreibt nichts, und
-LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt.
+Die gelbe Zeile unter den Zeilen nennt den ersten Grund, der zutrifft:
+
+| Zeile | Wann |
+| --- | --- |
+| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | eine Programmiersitzung hält einen Port |
+| die Zeile der Bitte | die letzte Bitte für diesen Port wartet, wurde abgelehnt oder ging verloren |
+| `PORTS NOCH NICHT GELESEN` | die Seite seit dem Linkaufbau nicht gelesen: FUNKTION nimmt kein Tippen an |
+| `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | ARMED, oder ein Test oder Sweep läuft |
+| `SERVO-TESTER STEUERT PROG-PORT n` | der Tester steuert einen anderen Port, Port n |
+| `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE: der Tester nimmt ihn nicht als Ziel |
+| `IOMCU ÄLTER ALS 4.26: NUR SERVO PWM` | der IOmcu hat keine FUNKTION: jeder Port ist SERVO PWM, und die Zeile nimmt kein Tippen an |
+| `SERVO-TESTER STEUERT PROG-PORT n` | der Tester steuert diesen Port, Port n: FUNKTION nimmt kein Tippen an |
+| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM auf einem Port, der nicht das Ziel des Testers ist |
+
+![PROG-PORT 2, KEINE, die Bitte wartet](img/de/outputs-port2.png)
+
+Die beiden Segmente des Testers schreiben von diesem Bildschirm keine
+Seite: die Einstellungen werden im NVS gehalten, und das Panel bringt sie
+bei einem Prüfstand in Ruhe zum IOmcu. Das Wählen des Eintrags schreibt
+nichts, und LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt.
 
 SERVO PWM und MOTOR PWM laufen auf den PWM-Slices, und der IOmcu lehnt
 dort zwei Bindungen ab ([Servo-PWM](DShot-de.md#servo-pwm)). Unter diesen
@@ -3870,7 +3910,7 @@ Pin, mit dem er kollidiert.
 
 | Zelle | Zeile nach einem Tippen darauf | Regel |
 | --- | --- | --- |
-| `SLICE VON GP13` | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin eines Programmierports, solange der Port ihn hält, geprüft gegen jeden Port, den der IOmcu meldet; GP13 und GP28 sind Slice 6 |
+| `SLICE VON GP13` | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin eines SERVO-PWM-Programmierports, solange der Port ihn hält, geprüft gegen jeden Port, den der IOmcu meldet; GP13 und GP28 sind Slice 6. Der Pin eines Ports mit KEINE steht unter keiner Slice-Regel |
 | `KANAL VON GP0` | `GP16: GLEICHER PWM-KANAL WIE GP0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22 |
 
 Die Zeile steht in Bernstein unter dem Protokoll bis zur nächsten Auswahl,
@@ -4100,6 +4140,27 @@ unten wird gegen jeden geprüft. Ein
 Protokoll, dessen gespeicherte Bindung diesen Pin hält, behält ihn, der
 IOmcu gibt dem Port dann keinen Pin, und die Taste gehört diesem
 Protokoll wie jede andere.
+
+Die Liste endet mit den Einträgen PROG-PORT, wie auf dem
+Outputs-Bildschirm, und beide Bildschirme zeigen eine Auswahl: die Taste
+PIN von OUTPUTS öffnet diesen Bildschirm auf ihrem Port. Mit einem
+gewählten Port setzen die Tasten den Pin dieses Ports:
+
+| Taste | Ein Tippen |
+| --- | --- |
+| der Pin des Ports, hervorgehoben | erbittet keinen Pin |
+| eine freie Taste | erbittet diesen Pin |
+| grau, unter dem Namen eines anderen Ports (`PROG-PORT 2`), eines Protokolls oder einer Schnittstelle | ändert nichts |
+| grau, `SLICE VON GP4` oder `KANAL VON GP12`, auf einem SERVO-PWM-Port | ändert nichts; die Zeile sagt `GP5: TEILT PWM-SLICE MIT OUTPUT GP4` oder `GP28: GLEICHER PWM-KANAL WIE GP12` |
+
+Die Zählzeile nennt die Funktion des Ports, `FUNKTION: SERVO PWM`, und PINS
+hält den einen Pin des Ports mit seinem Pad. Ein Port mit KEINE nimmt
+jede freie Taste. Eine Bitte wartet auf einen Prüfstand in Ruhe und sagt
+das in der gelben Zeile, wie auf dem Outputs-Bildschirm. Bevor die Ports
+gelesen sind, ist jede Taste grau, und die Zeile lautet `PORTS NOCH NICHT
+GELESEN`.
+
+![PROG-PORT 3 gewählt](img/de/picker-port.png)
 
 Unter SERVO PWM und MOTOR PWM ist auch eine Taste grau, die der IOmcu
 auf einem PWM-Slice ablehnt, wie auf dem Outputs-Bildschirm: GP28, solange

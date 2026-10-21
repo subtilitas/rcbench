@@ -20,7 +20,7 @@ Jeder bestückte Baustein hat eine Überschrift, `INA3221 0x40` bis `INA3221 0x4
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
-| 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis PORT 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, sonst KEINE | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
+| 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, sonst KEINE | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
 | 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0 mOhm, Schritte von 0,1 mOhm | 100,0 | AUS: der Kanal wird nicht gelesen; 100 mOhm misst bis 1,64 A |
 
 - `+` auf einem Shunt bei AUS gibt 5,0 mOhm, `-` bei 5,0 mOhm gibt AUS.

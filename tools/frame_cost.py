@@ -101,7 +101,10 @@ SOURCES = [
     "shared/ui/sensors_rows.c",
     "shared/ui/outputs_screen.c",
     "shared/ui/outputs_port.c",
+    "shared/ui/outputs_port_entry.c",
+    "shared/ui/port_view.c",
     "shared/ui/picker_screen.c",
+    "shared/ui/picker_port.c",
     "shared/ui/board_drawing.c",
     # The board drawing the IOmcu serves, which the picker draws.
     "firmware/iomcu/src/board_drawing_rp2350_can.c",

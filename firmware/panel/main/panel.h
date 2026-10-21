@@ -594,6 +594,13 @@ extern atomic_uint    s_prog_pin;
  * with another's pins. */
 #define PROG_PORTS_NONE 0xFFFFFFFFu
 extern atomic_uint    s_prog_ports;
+/* panel_ports.c: the ports' view and the screens' asks (port_view.h).
+ * prog_ports_publish() and prog_ports_lost() on the control task, the
+ * other two on the render loop. */
+void prog_ports_publish(void);
+void prog_ports_lost(void);
+void prog_ports_init_screens(void);
+void prog_ports_to_screens(void);
 /* Where the tester's commands go, for the SERVO screen's TARGET row:
  * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
  * pulse in bit 16.  One word, so the screen never reads one drive's target

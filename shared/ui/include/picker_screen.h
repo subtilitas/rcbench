@@ -109,6 +109,23 @@ void picker_screen_set_prog_pin(uint8_t gpio);
  */
 void picker_screen_set_prog_ports(uint8_t count, const uint8_t *pins);
 
+/**
+ * The next entry to this screen opens on PROG PORT @p port (0 for port
+ * 1), as the OUTPUTS entry's PIN button asks, instead of on OFF; once.
+ *
+ * With a port picked, in this list or on OUTPUTS, a button is the port's
+ * pin: its own pin is ticked and a tap on it asks the IOmcu for no pin,
+ * a tap on a free pin asks for that pin (port_view_ask()).  A SERVO PWM
+ * port is refused the slice of a bound PWM output and the compare
+ * register of another SERVO PWM port; a NONE port takes any free pin.
+ * The pins are the IOmcu's to take: the ask waits for a bench at rest,
+ * and the line under the count says how it stands.
+ */
+void picker_screen_open_on_port(uint8_t port);
+
+/** The port picked, 0 for port 1, or -1 for a protocol. */
+int picker_screen_port_shown(void);
+
 /** The first GPIO IN USE lists under PROG PORT, or PICKER_NO_PIN. */
 uint8_t picker_screen_prog_listed(void);
 

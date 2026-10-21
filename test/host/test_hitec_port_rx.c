@@ -75,9 +75,13 @@ TEST_CASE(an_open_takes_the_mode_written_before_it)
     CHECK_EQ(g_hw.take_rx, HITEC_RX_PRECHARGE);
     CHECK_EQ(line_reg(), LINK_HT_LINE_OF(HITEC_D, HITEC_DRIVE_OPEN_DRAIN)
                              | LINK_HT_LINE_PRECHARGE);
-    /* A change while the line is open waits for the next OPEN. */
+    /* A change while the line is open waits for the next OPEN: STATE's
+     * flag reads the register, the line keeps its mode. */
+    CHECK(flag(LINK_HT_F_PRECHARGE));
     CHECK_EQ(rx_mode_write(LINK_HITEC_RX_PULL_UP), 0);
+    CHECK(!flag(LINK_HT_F_PRECHARGE));
     CHECK((line_reg() & LINK_HT_LINE_PRECHARGE) != 0u);
+    CHECK_EQ(g_hw.take_rx, HITEC_RX_PRECHARGE);
     CHECK_EQ(cmd(LINK_HITEC_OP_CLOSE, CH, 0), 0);
     open_line(HITEC_D, HITEC_DRIVE_PUSH_PULL);
     CHECK_EQ(g_hw.take_rx, HITEC_RX_PULL_UP);

@@ -4,14 +4,25 @@
  *
  * A programming port is an output of its own kind.  It has its own pin, is
  * no slot of the OUTPUTS page and holds no channel of the CHANNELS page.
- * Its pin does one of two things:
+ * Its pin carries the port's function (FUNC, protocol 4.26) while no wire
+ * page holds the port, or that page's wire protocol:
  *
- *   PWM          a servo pulse from the PWM (pulse-width modulation)
+ *   SERVO PWM    a servo pulse from the PWM (pulse-width modulation)
  *                generator, rendered while the bank is armed and the port's
  *                bit in LINK_PG_PWM is set.  The pulse is a channel of the
  *                bank (prog_port_channel()), so arming, clamping, slew, the
  *                500 ms command timeout and the endpoints are the bank's.
- *   PROGRAMMING  the wire protocol of the KST page (kst_port.h).
+ *   NONE         no driver: the pin is held for the port, parked as an
+ *                input with its pull-down, and renders nothing.  Any free
+ *                header pin; no PWM-pin or slice rule.
+ *   PROGRAMMING  the wire protocol of the KST or HITEC page (kst_port.h,
+ *                hitec_port.h), which takes the pin from the function and
+ *                gives it back.
+ *
+ * A FUNC write is refused, as a PIN write is, while the bank is armed, a
+ * wire page holds a port, the port's pulse is on or the port is the
+ * TARGET.  The pulse and the TARGET name SERVO PWM ports only.  Port 0
+ * starts as SERVO PWM, the others as NONE.
  *
  * The servo tester reaches a port three ways: LINK_PG_CMD is the manual
  * command, LINK_PG_TARGET points the SERVO page's sweep and hold at the
@@ -20,9 +31,11 @@
  *
  * Pins.  A port's pin and a slot's pin are never the same: a PIN write
  * refuses a slot's pin, and prog_port_slots_check() refuses a slot on a
- * port's pin.  A port's pin shares no PWM slice and no compare register
- * with a PWM slot's pin either, so neither can change the other's frame
- * rate.  Two ports may share a slice; both then run at PROG_PORT_RATE_HZ.
+ * port's pin.  A SERVO PWM port's pin shares no PWM slice and no compare
+ * register with a PWM slot's pin either, so neither can change the
+ * other's frame rate.  Two SERVO PWM ports may share a slice; both then
+ * run at PROG_PORT_RATE_HZ.  A NONE port's pin is under none of the PWM
+ * rules.
  *
  * Rates.  Every port runs at PROG_PORT_RATE_HZ, 50 Hz, except the TARGET
  * port while the SERVO page names a rate: that port alone runs at it
@@ -63,7 +76,7 @@ extern "C" {
 #define PROG_PORT_NO_PIN 0xFFu
 
 /** The registers of one port that are kept in flash: PIN, SLEW, MIN_US,
- *  MAX_US. */
+ *  MAX_US.  FUNC is kept apart, in one word (prog_port_kept_func()). */
 #define PROG_PORT_KEPT 4u
 #define PROG_PORT_KEPT_COUNT (LINK_PG_PORTS_MAX * PROG_PORT_KEPT)
 
@@ -82,6 +95,10 @@ typedef struct {
  *  PROG_PORT_RATE_HZ. */
 void prog_port_init(prog_port_t *p, uint8_t count);
 
+/** The kept function word of a board that has stored none: every port at
+ *  its default function (SERVO PWM for port 0, NONE for the others). */
+#define PROG_PORT_FUNC_UNSTORED 0u
+
 /** The kept registers of a board that has stored none: port 0 on
  *  @p pin0 (LINK_PG_PIN_NONE for none), the others without a pin, slew 0,
  *  LINK_CC_DEFAULT_MIN to LINK_CC_DEFAULT_MAX. */
@@ -99,6 +116,20 @@ void prog_port_defaults(uint16_t *kept, uint16_t pin0);
 void prog_port_restore(prog_port_t *p, const uint16_t *kept, outputs_t *o,
                        uint64_t taken);
 
+/**
+ * As prog_port_restore(), with each port's function from the kept word
+ * @p func_word (prog_port_kept_func()): bits 4n to 4n + 3 hold 1 + port
+ * n's FUNC; 0, or a value no write would take, is the port's default.  A
+ * kept pin is judged under its port's function: a SERVO PWM port's pin
+ * must be a pin of the generator.
+ */
+void prog_port_restore_fn(prog_port_t *p, const uint16_t *kept,
+                          uint16_t func_word, outputs_t *o, uint64_t taken);
+
+/** The functions as they stand, as the kept word: bits 4n to 4n + 3 hold
+ *  1 + port n's FUNC, never 0. */
+uint16_t prog_port_kept_func(const prog_port_t *p);
+
 /** The kept registers as they stand, PROG_PORT_KEPT_COUNT of them. */
 void prog_port_kept(const prog_port_t *p, uint16_t *kept);
 
@@ -106,12 +137,16 @@ void prog_port_kept(const prog_port_t *p, uint16_t *kept);
  * A write of the page: 0, or the LINK_NACK_* reason with nothing changed.
  *
  * @p taken: the pins other holders have beyond the slots and the bank's
- * reservation.  @p locked: no PIN may change now (the bank is armed or
- * asked to arm, or the KST port is out of PWM).  A PIN change is also
- * refused for a port whose PWM bit is set or that is the TARGET.
+ * reservation.  @p locked: no PIN or FUNC may change now (the bank is
+ * armed or asked to arm, or a wire page holds a port).  A PIN or FUNC
+ * change is also refused for a port whose PWM bit is set or that is the
+ * TARGET, before or after the frame.  A FUNC above LINK_PG_FN_NONE, and
+ * any register of a port the build does not have, is BAD_VALUE.  A PIN is
+ * judged under the FUNC the frame leaves its port with.
  *
- * PWM and TARGET name only ports whose pin the generator has
- * (prog_port_bound()), and not a port whose PIN the same frame changes.
+ * PWM and TARGET name only SERVO PWM ports whose pin the generator has
+ * (prog_port_bound()), and not a port whose PIN or FUNC the same frame
+ * changes.
  *
  * No port whose PWM bit the write leaves set may have an endpoint longer
  * than its frame carries: MIN_US and MAX_US at most out_pwm_pulse_max() of
@@ -144,12 +179,25 @@ void prog_port_read(const prog_port_t *p, uint8_t off, uint8_t n,
  */
 void prog_port_revert(prog_port_t *p, const prog_port_t *was, outputs_t *o);
 
-/** Tell the page which ports' pins the generator has, bit n for port n.
- *  A port that loses its pin loses its PWM bit and, if it was the TARGET,
- *  the target returns to the standard servo ports. */
+/** Tell the page which ports' pins are held by their function, bit n for
+ *  port n: bound to the generator for SERVO PWM, parked for NONE, or held
+ *  by a wire page.  A port that loses its pin loses its PWM bit and, if
+ *  it was the TARGET, the target returns to the standard servo ports. */
 void prog_port_bound(prog_port_t *p, uint8_t mask);
 
 uint8_t prog_port_count(const prog_port_t *p);
+
+/** Port @p port's function, a link_pg_func_t; NONE for a port the model
+ *  does not hold. */
+uint8_t prog_port_func(const prog_port_t *p, uint8_t port);
+
+/** The SERVO PWM ports whose pin the generator has, bit n for port n:
+ *  the ports a pulse bit and the TARGET may name. */
+uint8_t prog_port_pwm_ports(const prog_port_t *p);
+
+/** The NONE ports that hold a pin, bit n for port n: the pins the
+ *  caller parks as inputs. */
+uint8_t prog_port_parked(const prog_port_t *p);
 
 /** The pin port @p port holds, or PROG_PORT_NO_PIN. */
 uint8_t prog_port_pin(const prog_port_t *p, uint8_t port);
@@ -185,8 +233,8 @@ uint8_t prog_port_channel(uint8_t port);
 
 /**
  * Whether the OUTPUTS page @p slots may be taken beside the ports: 0, or
- * LINK_NACK_BAD_VALUE for a slot on a port's pin, a PWM slot on a port
- * pin's slice, or a bound slot whose channel range reaches a port's bank
+ * LINK_NACK_BAD_VALUE for a slot on a port's pin, a PWM slot on a SERVO PWM
+ * port pin's slice, or a bound slot whose channel range reaches a port's bank
  * channel (PROG_PORT_CHANNEL0 to PROG_PORT_CHANNEL0 + LINK_PG_PORTS_MAX - 1).
  */
 uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots);
