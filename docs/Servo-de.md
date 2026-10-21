@@ -709,8 +709,8 @@ PWM-Frame misst, verwendet der Lauf nicht.
   aufgezeichneten Lauf eines MS24 war der höchste Messwert des PD mini
   0,390 A und der höchste 1-ms-Messwert des INA3221 1,637 A. Ein Lauf am PD
   mini läuft mit ihm weiter, wenn der INA3221 unter ihm zum Messgerät wird.
-- **Warum nicht der INA3221.** Ein Lauf am PD mini, bei dem der INA3221 in
-  SETUP an ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
+- **Warum nicht der INA3221.** Ein Lauf am PD mini, bei dem ein INA3221
+  unter SETUP > SENSOREN bestückt ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
   `der IOmcu ist älter als Link-Protokoll 4.11`, `der IOmcu hält
   seine Einstellung nicht`, `er antwortet nicht`, `kein Fenster mit Strom in
   den letzten 200 ms`, `er hat sich zurückgesetzt`, `er arbeitet seit weniger

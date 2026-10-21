@@ -25,6 +25,7 @@
 #include "servo_sim.h"
 #include "servo_test.h"
 #include "settings.h"
+#include "settings_sensors.h"
 #include "supply_screen.h"
 #include "ui_widgets.h"
 
@@ -382,7 +383,7 @@ static inline void window(const sense_link_win_t *w)
 static inline void bench_on_ina(void)
 {
     bench_fresh();
-    settings_set(SET_INA3221_EN, 1.0f);
+    settings_set(SET_INA_FIT(0), 1.0f);
     short_runs();
     meter(SERVO_SOURCE_PDMINI);
     meter(SERVO_SOURCE_INA3221);

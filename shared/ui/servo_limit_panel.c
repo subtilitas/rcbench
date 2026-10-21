@@ -22,6 +22,7 @@
 #include "rcbench_version.h"
 #include "servo_limrun.h"
 #include "settings.h"
+#include "settings_sensors.h"
 #include "supply_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -53,10 +54,12 @@ static bool lim_pd_answers(void)
 
 /* Why the INA3221 is not the meter a run may start on, or NULL.  The limit
  * run reads the INA3221 and nothing else: the PD mini's readings and the
- * model are refused. */
+ * model are refused.  No channel of a fitted part watching the tester's
+ * target is no INA3221 set up for it (SETUP > SENSORS). */
 static const char *lim_meter_why(void)
 {
-    if (!settings_get_bool(SET_INA3221_EN) || s.src_why == SERVO_SOURCE_WHY_OFF
+    if (settings_sensors_fast() == LINK_SM_FAST_NONE
+        || s.src_why == SERVO_SOURCE_WHY_OFF
         || s.src_why == SERVO_SOURCE_WHY_OLD
         || s.src_why == SERVO_SOURCE_WHY_NOT_HELD) {
         return TR(SV_LIM_INA_SETUP);
@@ -159,8 +162,7 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     c->frame_hz = s.frame_hz;
     (void)servo_target_line(c->output, sizeof(c->output), s.drive_target,
                             s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
-    c->shunt_dmohm =
-        (uint16_t)lroundf(settings_get(SET_INA3221_MOHM) * 10.0f);
+    c->shunt_dmohm = settings_sensors_meter_dmohm();
     c->enc_on = settings_get_bool(SET_ENC_EN) && s.enc_held;
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
     c->text = ui_servo_table();

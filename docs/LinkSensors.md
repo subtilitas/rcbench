@@ -173,9 +173,9 @@ version 8 record and starts as from an empty store.
 
 | Panel | IOmcu | SENSE_MAP, SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT |
 | --- | --- | --- |
-| 4.25 or later | 4.27 or later | served. This build's panel reads and writes none of the four pages and sets SENSE's one INA3221, so the map stays derived and no limit is set |
-| 4.25 or later | 4.25 or 4.26 | the map and window pages are served; the IOmcu answers SENSE_LIMIT with BAD_PAGE and judges no limit |
-| 4.25 or later | 4.24 or older | the IOmcu answers each of the four pages with BAD_PAGE |
+| 4.25 or later | 4.27 or later | served. The panel reads SENSE_MAP whole at every link-up, writes registers 0 to 25 in one write as SETUP > SENSORS sets them, and reads registers 26 to 30 every 500 ms while a part is fitted. It does not read SENSE_WIN_A or SENSE_WIN_B and reads and writes no limit |
+| 4.25 or later | 4.25 or 4.26 | SENSE_MAP as above; the IOmcu answers SENSE_LIMIT with BAD_PAGE and judges no limit |
+| 4.25 or later | 4.24 or older | the panel sends nothing to the four pages and sets SENSE's one INA3221 to one fitted part ([Screens](Screens.md)) |
 | 4.24 or older | 4.25 or later, map derived | the panel never reads or writes the four pages. SENSE runs as before. Kept limits are judged and `OVER` holds its bits until something reads it |
 | 4.24 or older | 4.25 or later, map in force | SENSE's ENABLE bit 1 and registers 8 to 10 read the mirror part. A SENSE write that changes them is refused with BAD_VALUE, so that panel cannot change the INA3221 set-up. The INA228, the encoder and the pins stay its own |
 

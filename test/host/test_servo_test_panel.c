@@ -18,6 +18,7 @@
 #include "kst_panel.h"
 #include "servo_screen.h"
 #include "settings.h"
+#include "settings_sensors.h"
 #include "supply_screen.h"
 #include "ui_screen.h"
 #include "ui_workbench.h"
@@ -653,7 +654,7 @@ static unsigned ink_in_row(int y0, ui_color_id_t col)
 TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
 {
     bench_on_ina();
-    settings_set(SET_INA3221_MOHM, 50.0f);
+    settings_set(SET_INA_SH(0), 50.0f);
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     const unsigned wins0 = bench.wins;
@@ -706,7 +707,7 @@ TEST_CASE(an_ina3221_window_stamped_on_tick_zero_keeps_its_stamp)
         bench.now = k_base[k];
         bench.next = bench.now;
         servo_screen_clock(bench.now);
-        settings_set(SET_INA3221_EN, 1.0f);
+        settings_set(SET_INA_FIT(0), 1.0f);
         short_runs();
         meter(SERVO_SOURCE_PDMINI);
         meter(SERVO_SOURCE_INA3221);
@@ -824,7 +825,7 @@ TEST_CASE(the_meter_changing_ends_a_run_on_the_ina3221)
 TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
 {
     bench_fresh();
-    settings_set(SET_INA3221_EN, 1.0f);
+    settings_set(SET_INA_FIT(0), 1.0f);
     short_runs();
     meter(SERVO_SOURCE_PDMINI);
     servo_screen_source_why(SERVO_SOURCE_WHY_SETTLING);
@@ -878,7 +879,7 @@ TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
     };
     for (size_t k = 0; k < sizeof(k_why) / sizeof(k_why[0]); ++k) {
         bench_fresh();
-        settings_set(SET_INA3221_EN, 1.0f);
+        settings_set(SET_INA_FIT(0), 1.0f);
         short_runs();
         meter(SERVO_SOURCE_PDMINI);
         servo_screen_source_why(k_why[k].why);
@@ -992,7 +993,9 @@ TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
     servo_invalidate();
     CHECK_EQ(ink_in_row(y, UI_C_WARN), 0u);
     /* The INA3221 on 0.1 Ohm reads to 1.638 A: 1.95 A is out of its
-     * reach, 1.60 A is in it and 1.65 A is not. */
+     * reach, 1.60 A is in it and 1.65 A is not.  Its shunt is 0x40 CH1's,
+     * the channel watching the outputs. */
+    settings_set(SET_INA_FIT(0), 1.0f);
     meter(SERVO_SOURCE_PDMINI);
     meter(SERVO_SOURCE_INA3221);
     CHECK(ink_in_row(y, UI_C_WARN) > 100u);

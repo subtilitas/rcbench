@@ -22,6 +22,7 @@
 #include "rcbench_version.h"
 #include "servo_limrun.h"
 #include "settings.h"
+#include "settings_sensors.h"
 #include "supply_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -186,18 +187,16 @@ static void test_cfg(servo_test_cfg_t *c)
      * are an upper bound; and with the supply modelled, the model, which
      * stands in for the PD mini with no lag of its own. */
     if (test_on_ina_now()) {
-        servo_test_meter_ina3221(
-            &c->meter,
-            (uint16_t)lroundf(settings_get(SET_INA3221_MOHM) * 10.0f));
+        servo_test_meter_ina3221(&c->meter, settings_sensors_meter_dmohm());
         c->meter_changes = s.changes;
     } else if (c->model) {
         servo_test_meter_model(&c->meter);
     } else {
         servo_test_meter_pdmini(&c->meter);
     }
-    /* And why not the INA3221, where SETUP has it on. */
+    /* And why not the INA3221, where SETUP > SENSORS has a part fitted. */
     if (c->meter.kind != (uint8_t)SERVO_TEST_METER_INA3221
-        && settings_get_bool(SET_INA3221_EN)) {
+        && settings_sensors_fitted() != 0u) {
         c->ina_why = c->model ? (uint8_t)SERVO_TEST_INA_MODEL
                               : (uint8_t)test_ina_why();
     }

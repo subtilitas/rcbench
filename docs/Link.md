@@ -130,9 +130,9 @@ pull-up. The panel sends no Hitec transaction
 ([The programming port for Hitec servos](LinkHitec.md)). From 4.25
 SENSE_MAP (0x35) sets up to 4 INA3221 with a shunt and a watch target per
 channel, and SENSE_WIN_A and SENSE_WIN_B (0x37, 0x38) carry every channel's
-last window; an older IOmcu refuses the three with BAD_PAGE, and this
-build's panel writes none of them
-([The INA3221 map and windows](LinkSensors.md)). From 4.26 PROG
+last window; an older IOmcu refuses the three with BAD_PAGE. This
+build's panel writes SENSE_MAP from SETUP > SENSORS and reads neither
+window page ([The INA3221 map and windows](LinkSensors.md)). From 4.26 PROG
 has 28 registers: registers 24 to 27 are each port's FUNC, and the build
 has 4 ports; the panel reads 24 registers of an older IOmcu and offers its
 ports SERVO PWM only ([The programming ports](#the-programming-ports)). From
@@ -550,14 +550,14 @@ one poll, the row of the window that closed in between has no CH2 and CH3
 figures.
 
 **The servo rail's meter.** `shared/bench/servo_source.c` decides once per
-poll which meter measures the servo rail. The INA3221's CH1 is the meter
-while all of these hold:
+poll which meter measures the servo rail. The INA3221 channel that watches
+the servo tester's target is the meter while all of these hold:
 
 | # | Condition |
 | ---: | --- |
-| 1 | SETUP INTERFACES has the INA3221 on with CH1 among its channels |
+| 1 | SETUP SENSORS has a fitted part with a channel that watches the servo tester's target; that channel is the part's CH1 |
 | 2 | the IOmcu's protocol minor is 11 or more |
-| 3 | SENSE's registers 0 to 11 are the set-up asked: no write owed, no frame refused |
+| 3 | SENSE's registers 0 to 11 are the set-up asked: no write owed, no frame refused; with SENSE_MAP its INA3221 enable bit and registers 8 to 11 are the map's, and SENSE_MAP's registers 0 to 25 are the map asked: read since the link came up, not refused, no write owed |
 | 4 | the last SENSE read is less than 200 ms old, and its `FLAGS` have the INA3221's bits 4 and 5 set and bit 9 clear |
 | 5 | SERVO_WIN's newest window holds current samples and its number moved less than 200 ms ago |
 | 6 | the INA3221's byte of `RESETS` has not moved since the poll before |

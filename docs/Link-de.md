@@ -142,8 +142,8 @@ und empfängt mit dem Pull-up. Das Panel sendet keine Hitec-Transaktion
 richtet SENSE_MAP (0x35) bis zu 4 INA3221 mit einem Shunt und einem
 Beobachtungsziel je Kanal ein, und SENSE_WIN_A und SENSE_WIN_B (0x37, 0x38)
 tragen das letzte Fenster jedes Kanals; ein älterer IOmcu weist die drei mit
-BAD_PAGE ab, und das Panel dieses Builds schreibt keine davon
-([Die INA3221-Map und ihre Fenster](LinkSensors-de.md)).
+BAD_PAGE ab. Das Panel dieses Builds schreibt SENSE_MAP aus SETUP > SENSOREN
+und liest keine der beiden Fenster-Pages ([Die INA3221-Map und ihre Fenster](LinkSensors-de.md)).
 Ab 4.26 hat PROG 28 Register: die Register 24 bis 27 sind die FUNC jedes
 Ports, und der Build hat 4 Ports; das Panel liest 24 Register eines
 älteren IOmcu und bietet dessen Ports nur SERVO PWM an
@@ -602,14 +602,15 @@ von SERVO_SENSE und dem von SERVO_WIN eines Polls, hat die Zeile des
 dazwischen geschlossenen Fensters keine Werte von CH2 und CH3.
 
 **Das Messgerät der Servo-Schiene.** `shared/bench/servo_source.c`
-entscheidet einmal je Poll, welches Messgerät die Servo-Schiene misst. CH1
-des INA3221 ist das Messgerät, solange alles Folgende gilt:
+entscheidet einmal je Poll, welches Messgerät die Servo-Schiene misst. Der
+Kanal des INA3221, der das Ziel des Servotesters misst, ist das Messgerät,
+solange alles Folgende gilt:
 
 | # | Bedingung |
 | ---: | --- |
-| 1 | SETUP ANSCHLÜSSE hat den INA3221 eingeschaltet, mit CH1 unter seinen Kanälen |
+| 1 | SETUP SENSOREN hat einen bestückten Baustein mit einem Kanal, der das Ziel des Servotesters misst; dieser Kanal ist CH1 des Bausteins |
 | 2 | die Protokoll-Minor des IOmcu ist 11 oder mehr |
-| 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen |
+| 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen; mit SENSE_MAP sind sein Enable-Bit des INA3221 und die Register 8 bis 11 die der Zuordnung, und die Register 0 bis 25 von SENSE_MAP sind die verlangte Zuordnung: seit dem Link-Aufbau gelesen, nicht abgelehnt, kein Schreiben offen |
 | 4 | das letzte Lesen von SENSE ist jünger als 200 ms, und in seinen `FLAGS` sind die Bits 4 und 5 des INA3221 gesetzt und Bit 9 gelöscht |
 | 5 | das neueste Fenster von SERVO_WIN hält Strommessungen, und seine Nummer hat sich vor weniger als 200 ms bewegt |
 | 6 | das Byte des INA3221 in `RESETS` hat sich seit dem Poll davor nicht bewegt |

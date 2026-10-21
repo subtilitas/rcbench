@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "kst_panel_rig.h"
+#include "settings_sensors.h"
 
 /* ------------------------------------------------- the SERVO screen's limit run */
 
@@ -171,7 +172,7 @@ static void lr_fresh(bool reversion)
     lr.cmd = 1500u;
     lr.ina = true;
     lr.armed = true;
-    settings_set(SET_INA3221_EN, 1.0f);
+    settings_set(SET_INA_FIT(0), 1.0f);
     servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
     servo_screen_source(SERVO_SOURCE_INA3221, 2u);
     link_up();
