@@ -29,6 +29,14 @@ static bool port_pwm(uint8_t port)
     return fn != (uint8_t)LINK_PG_FN_NONE;
 }
 
+/* Whether port @p n holds the pin its PIN register names: one the IOmcu
+ * refused is shown, not held. */
+static bool holds(const port_view_t *v, uint8_t n)
+{
+    return port_view_has(n) && v->pin[n] != PORT_VIEW_NO_PIN
+           && (v->refused & (1u << n)) == 0u;
+}
+
 static clash_t clash(const outbind_t *b, uint8_t index, uint8_t port,
                      uint8_t *with)
 {
@@ -49,8 +57,7 @@ static clash_t clash(const outbind_t *b, uint8_t index, uint8_t port,
     }
     const port_view_t *v = port_view_get();
     for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
-        if (n != port && port_view_has(n) && v->pin[n] != PORT_VIEW_NO_PIN
-            && port_pwm(n) && v->pin[n] != gpio
+        if (n != port && holds(v, n) && port_pwm(n) && v->pin[n] != gpio
             && out_pwm_same_compare(v->pin[n], gpio)) {
             *with = v->pin[n];
             return CLASH_COMPARE;
@@ -83,7 +90,7 @@ picker_pin_t picker_port_pin(const outbind_t *b, uint8_t index, uint8_t port,
     }
     char name[24];
     for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
-        if (n != port && port_view_has(n) && v->pin[n] == gpio) {
+        if (n != port && holds(v, n) && v->pin[n] == gpio) {
             outputs_port_name(n, name, sizeof(name));
             hold(holder, cap, name);
             return PICKER_PIN_HELD;

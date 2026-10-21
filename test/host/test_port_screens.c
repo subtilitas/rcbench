@@ -19,7 +19,9 @@
  * canvas; the port rules at their edges: no binding, an index past the
  * catalogue, a locked free pin, an interface's pin, each reason line,
  * a function not known, PICK A PIN opened on a port OUTPUTS lacks; a
- * NONE port's pin holding no PWM slice for an output on either screen.
+ * NONE port's pin holding no PWM slice for an output on either screen;
+ * another port's refused pin held neither as a pin nor as a compare
+ * mate.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -594,6 +596,34 @@ TEST_CASE(a_none_ports_pin_holds_no_pwm_slice_for_the_outputs)
     CHECK_EQ(pin_of(15u, NULL, 0), PICKER_PIN_HELD);
 }
 
+TEST_CASE(another_ports_refused_pin_is_not_held)
+{
+    char holder[32];
+
+    fresh();
+    /* Port 2's GP14 refused by the IOmcu: shown on port 2, held by none,
+     * so port 3 may take it. */
+    port_view_t v = *port_view_get();
+    v.refused = 0x2u;
+    port_view_set(&v);
+    pk_port(2u);
+    CHECK_EQ(pin_of(14u, NULL, 0), PICKER_PIN_FREE);
+    v.refused = 0u;
+    port_view_set(&v);
+    CHECK_EQ(pin_of(14u, holder, sizeof(holder)), PICKER_PIN_HELD);
+    CHECK_STR_EQ(holder, "PROG PORT 2");
+    /* Port 1 as SERVO PWM on GP12, refused: its compare mate GP28 is free
+     * to port 3; held once the IOmcu holds GP12. */
+    v.pin[0]  = 12u;
+    v.refused = 0x1u;
+    port_view_set(&v);
+    CHECK_EQ(pin_of(28u, NULL, 0), PICKER_PIN_FREE);
+    v.refused = 0u;
+    port_view_set(&v);
+    CHECK_EQ(pin_of(28u, holder, sizeof(holder)), PICKER_PIN_HELD);
+    CHECK_STR_EQ(holder, "PWM CH OF GP12");
+}
+
 int main(void)
 {
     RUN(the_view_is_not_known_until_read_and_takes_no_ask_then);
@@ -608,5 +638,6 @@ int main(void)
     RUN(a_port_picked_before_the_read_or_on_an_unread_binding_is_locked);
     RUN(the_port_rules_hold_at_their_edges);
     RUN(a_none_ports_pin_holds_no_pwm_slice_for_the_outputs);
+    RUN(another_ports_refused_pin_is_not_held);
     return test_summary("port_screens");
 }

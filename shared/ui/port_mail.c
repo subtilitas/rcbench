@@ -69,6 +69,9 @@ static void take_ask(port_mail_t *m, prog_link_t *pl)
             state_store(m, seq, PROG_LINK_ASK_REFUSED);
             return;
         }
+        /* Taken: WAITING under its number, so a final word left from the
+         * number's last use, 255 asks ago, does not stand for it. */
+        state_store(m, seq, PROG_LINK_ASK_WAITING);
     }
     const prog_link_ask_state_t st =
         prog_link_ask_state(pl, NULL, NULL, NULL);
@@ -130,6 +133,10 @@ bool port_mail_post(port_mail_t *m, uint8_t seq, uint8_t port,
     if (m == NULL || seq == 0u) {
         return false;     /* 0 is "none yet": the number wraps past it */
     }
+    /* WAITING under the new number first: the word may still hold a final
+     * state from the number's last use, which the view must not take for
+     * this ask before the control task has. */
+    state_store(m, seq, PROG_LINK_ASK_WAITING);
     atomic_store(&m->ask,
                  ((unsigned)seq << 24)
                      | ((m->ui_epoch & EPOCH_MASK) << ASK_EPOCH_SHIFT)

@@ -9,7 +9,8 @@
  * one handed on and waiting, both LOST and neither written after the link
  * comes back; an ask made on the view of a lost link LOST in the next
  * epoch; an ask in the new epoch handed on; ports past the count not
- * known; number 0 and NULL refused.
+ * known; number 0 and NULL refused; a number reused after the wrap
+ * never taking the outcome its last use left.
  * Both tasks run on one thread here, in the order the panel runs them.
  *
  * SPDX-License-Identifier: MIT
@@ -278,6 +279,31 @@ TEST_CASE(number_0_and_null_are_refused)
     CHECK_EQ(atomic_load(&g_m.ask_state), 0u);
 }
 
+TEST_CASE(a_reused_number_does_not_take_its_old_outcome)
+{
+    fresh();
+    up();
+    /* The word still holds the outcome of the ask the next number named
+     * 255 asks ago: REFUSED. */
+    const uint8_t next = (uint8_t)(port_view_ask_seq() == 0xFFu
+                                       ? 1u : port_view_ask_seq() + 1u);
+    atomic_store(&g_m.ask_state,
+                 ((unsigned)next << 8) | (unsigned)PROG_LINK_ASK_REFUSED);
+    CHECK(port_view_ask(2u, PROG_LINK_ASK_PIN, 15u));
+    CHECK_EQ(port_view_ask_seq(), next);
+    /* Before the control task takes it, and after: WAITING. */
+    port_mail_to_view(&g_m);
+    CHECK_EQ(port_view_ask_state(NULL, NULL), PROG_LINK_ASK_WAITING);
+    port_mail_publish(&g_m, &g_p);
+    port_mail_to_view(&g_m);
+    CHECK_EQ(port_view_ask_state(NULL, NULL), PROG_LINK_ASK_WAITING);
+    /* And its own outcome. */
+    CHECK(write_one());
+    port_mail_publish(&g_m, &g_p);
+    port_mail_to_view(&g_m);
+    CHECK_EQ(port_view_ask_state(NULL, NULL), PROG_LINK_ASK_DONE);
+}
+
 int main(void)
 {
     RUN(nothing_is_known_before_the_first_read);
@@ -290,5 +316,6 @@ int main(void)
     RUN(an_ask_made_on_a_lost_links_view_is_lost_in_the_next_epoch);
     RUN(the_epoch_wraps_past_eight_losses);
     RUN(number_0_and_null_are_refused);
+    RUN(a_reused_number_does_not_take_its_old_outcome);
     return test_summary("port_mail");
 }

@@ -17,10 +17,13 @@
  * ask LOST, whether it was handed on or still waited in the word, so an
  * ask made for one IOmcu is never written to the one that answers after
  * the loss.  How the ask stands crosses back in one word under the same
- * number.
+ * number.  The number wraps from 255 to 1, so a post first sets that word
+ * to WAITING under its number: a final state the word kept from the
+ * number's last use never stands for the new ask.
  *
  * One writer per side: port_mail_publish() and port_mail_lost() on the
- * control task, port_mail_post() and port_mail_to_view() on the UI task.
+ * control task, port_mail_post() and port_mail_to_view() on the UI task;
+ * the ask's state word is the control task's but for that WAITING.
  *
  * SPDX-License-Identifier: MIT
  */
