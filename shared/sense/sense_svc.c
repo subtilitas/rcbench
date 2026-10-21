@@ -73,9 +73,23 @@ bool sense_window_over(const sense_window_t *w, int32_t clip_ua,
     return max_over || clip_over;
 }
 
+/* Bit a: part a is online now. */
+static uint8_t parts_online(const sense_sched_t *s)
+{
+    uint8_t m = 0u;
+    for (unsigned a = 0; a < SENSE_I3221_PARTS; ++a) {
+        if (ina3221_state(&s->i3221[a]) == SENSE_PART_ONLINE) {
+            m = (uint8_t)(m | (1u << a));
+        }
+    }
+    return m;
+}
+
 /* The windows that closed in this tick, each channel against its limit,
- * once a window.  A part not online at the close is judged on nothing. */
-static void judge(sense_svc_t *v, const sense_cmd_t *cmd)
+ * once a window.  A part not online at the close -- @p online, taken
+ * before the tick, whose reads can take a part offline after the window
+ * rolled -- is judged on nothing. */
+static void judge(sense_svc_t *v, const sense_cmd_t *cmd, uint8_t online)
 {
     const sense_sched_t *s = &v->sched;
     if (!s->have_last) {
@@ -88,8 +102,7 @@ static void judge(sense_svc_t *v, const sense_cmd_t *cmd)
     v->lim_have = true;
     v->lim_win  = number;
     for (unsigned c = 0; c < SENSE_CHANNELS; ++c) {
-        if (ina3221_state(&s->i3221[c / INA3221_CHANNELS])
-                == SENSE_PART_ONLINE
+        if ((online & (1u << (c / INA3221_CHANNELS))) != 0u
             && sense_window_over(&s->last[c], s->ch_clip_ua[c],
                                  cmd->limit_ma[c])) {
             ++v->over_n[c];
@@ -280,8 +293,9 @@ void sense_svc_step(sense_svc_t *v, const sense_cmd_t *cmd, sense_snap_t *out)
             sense_sched_arm(&v->sched);
         }
         capture(v, cmd);
+        const uint8_t online = parts_online(&v->sched);
         sense_sched_tick(&v->sched);
-        judge(v, cmd);
+        judge(v, cmd, online);
         scan(v, now_us(v));
     } else {
         /* No bus: a run has nothing to restart, and an arm nothing to

@@ -16,7 +16,8 @@
  * offline and its capture lost, and both starting again with a set-up;
  * each channel's window judged against its limit once, as it closes, at
  * the limit and 1 mA under it, a channel of a part not fitted never, the
- * counts running on across a set-up; and every snapshot field.
+ * counts running on across a set-up, a part that drops in the tick that
+ * closes the window judged as online; and every snapshot field.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -694,6 +695,43 @@ TEST_CASE(each_window_is_judged_against_its_limit_as_it_closes)
     CHECK_EQ(snap.over_n[0], (uint16_t)(before + 1u));
 }
 
+TEST_CASE(a_part_online_at_the_close_is_judged_if_it_drops_in_that_tick)
+{
+    /* The bus fails from k ticks before a window closes: the part goes
+     * offline in some tick near the close.  The closed window is judged
+     * by whether the part was online before the tick that rolled it. */
+    bool dropped_in_closing_tick = false;
+    for (unsigned k = 0; k < 6u; ++k) {
+        rig();
+        /* CH1 to CH3: more than one read of the part a tick. */
+        sense_i3221_one(&cmd.parts.i3221, true, I3221_ADDR, 100000u, 7u);
+        cmd.limit_ma[0] = 100u;
+        steps(120u);
+        (void)to_next_window();
+        const uint16_t n = snap.win[0].number;
+        steps(50u - 1u - k);
+        CHECK_EQ(snap.win[0].number, n);
+        const uint16_t count = snap.over_n[0];
+        fb.fail_with = SENSE_NACK;
+        fb.fail_count = 1000u;
+        bool online_before = false;
+        for (unsigned t = 0; t < 10u; ++t) {
+            online_before = ina3221_state(&svc.sched.i3221[0])
+                            == SENSE_PART_ONLINE;
+            step();
+            if (snap.win[0].number != n) {
+                break;
+            }
+        }
+        CHECK(snap.win[0].number != n);
+        const bool online_after = ina3221_state(&svc.sched.i3221[0])
+                                  == SENSE_PART_ONLINE;
+        dropped_in_closing_tick |= online_before && !online_after;
+        CHECK_EQ(snap.over_n[0], (uint16_t)(count + (online_before ? 1u : 0u)));
+    }
+    CHECK(dropped_in_closing_tick);
+}
+
 int main(void)
 {
     RUN(a_set_up_opens_the_bus_and_reads_both_parts);
@@ -712,5 +750,6 @@ int main(void)
     RUN(a_reset_under_a_capture_reports_it_lost);
     RUN(a_service_starts_closed);
     RUN(each_window_is_judged_against_its_limit_as_it_closes);
+    RUN(a_part_online_at_the_close_is_judged_if_it_drops_in_that_tick);
     return test_summary("sense_svc");
 }
