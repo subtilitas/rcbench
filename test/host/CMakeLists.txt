@@ -46,6 +46,7 @@ set(PROTOCOLS "${CMAKE_CURRENT_SOURCE_DIR}/../../protocols")
 # here that is the add_library() branch.
 add_subdirectory("${SHARED}/gfx"      gfx)
 add_subdirectory("${SHARED}/touch"    touch)
+add_subdirectory("${SHARED}/text"     text)
 add_subdirectory("${SHARED}/ui"       ui)
 add_subdirectory("${SHARED}/settings" settings)
 add_subdirectory("${SHARED}/logfile"  logfile)

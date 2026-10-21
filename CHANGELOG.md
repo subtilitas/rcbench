@@ -126,6 +126,14 @@ history is in git.
 
 ### Changed
 
+- Every text the interface shows or writes in the operator's language is
+  one entry of `shared/text/include/ui_text.def`, with its English and its
+  German side by side: the screens' strings, the settings' labels, help
+  lines, categories and options, the servo test's words and the Wi-Fi
+  page's. `shared/ui/ui_text_de.c` and the English in the settings schema,
+  `servo_str.c` and `wa_page.c` are gone; every string is unchanged.
+  `tools/merge_texts.py merge` carries text changes made in the old form
+  into the table ([Interface language](docs/Language.md#the-tables)).
 - The four INA3221 rows leave SETUP > INTERFACES (23 settings now). A panel
   updated from 0.21 seeds SENSORS from them at start-up: the part at the old
   address fitted when the INA3221 was ON, its CH1 on the old shunt, CH2 and

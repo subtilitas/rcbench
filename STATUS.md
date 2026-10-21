@@ -95,7 +95,7 @@ is taken in a gap ahead of the save that needs it.
 | Subsystem | State |
 | --- | --- |
 | Rasteriser, fonts, touch mapping, theme, widgets, icons, router | built and tested; text is UTF-8, one cell a code point, and the two text faces carry Ä Ö Ü ß ä ö ü |
-| Interface language | built and tested on the host: English and German, chosen by SETUP's Language and applied on the next frame without a restart. Every translated string is an ID in `shared/ui/include/ui_text.def`, German is `shared/ui/ui_text_de.c`, and a missing entry shows the English. The servo test's TXT report is in the language its run started in; its CSV stays English. `render_ui.py --fit` draws every view in both languages and fails on a German string that overflows; `test_text` holds the rest. [Reference](docs/Language.md) |
+| Interface language | built and tested on the host: English and German, chosen by SETUP's Language and applied on the next frame without a restart. Every translated string is an entry in `shared/text/include/ui_text.def` with its English and its German side by side, and a German entry of `NULL` shows the English. The servo test's TXT report is in the language its run started in; its CSV stays English. `render_ui.py --fit` draws every view in both languages and fails on a German string that overflows; `test_text` holds the rest. [Reference](docs/Language.md) |
 | Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/`. The home tag that leaves SETUP with values unsaved opens a warning listing each change against the stored copy, with SAVE, DISCARD (refused while ARMED) and STAY; no route the panel takes by itself is held (`test_settings`) |
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
 | Logger | built: a run is written while ARMED, or while the supply's output is on with the bench SAFE, in the format the viewer reads. The log of a bench in ARMED has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the switch to ARMED; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the IOmcu's pages. A file goes to one of two folders and is named by what started it: `BENCH/LOGS` holds `SERVOnnn` for an arm from SERVO, `MOTORnnn` for an arm from MOTOR & ESC or ESC STICK and `SUPPLnnn` for a supply run; `USER/LOGS` holds `ATESTnnn` for the automatic test and `LIMITnnn` for the limit run; the `BENCHnnn`, `ESCnnn` and `SERVOnnn` runs of firmware 0.21.0 and older stay in the root and stay readable. Each folder is made one level at a time on its first write, and its numbers are one series across every name in it, read by one walk and probed name by name before each take (`shared/logfile/log_name.c`, `shared/logfile/log_take.c`, host-tested in `test_log_name` and `test_log_take`). SETUP > SD CARD switches each folder's writing off (Auto logs, User logs; `test_log_cadence`, `test_servo_test_panel`, `test_servo_limit_panel`) and sets each folder (Auto log folder, User log folder: 1 or 2 folders of up to 8 characters, `card_folder_check()` in `shared/logfile/card_tree.c`; `test_card_tree`, `test_keypad`, `test_settings_folders`); a changed folder takes the next file and numbers from what it holds (`log_series_follow()`, `test_log_take`), and LOGS lists the folders set (`test_logview`). The logger's copy of the folders and the open markers' folders, under a spinlock in `panel_log.c`, are not host-tested. The bench's own files are under `BENCH` too: the fault log `BENCH/RCBENCH.LOG`, written whatever SETUP > SD CARD says and held to 1 MiB with the full file kept as `BENCH/RCBENCH.OLD` (`shared/logfile/fault_log.c`, `test_fault_log`), the ESC profiles read from `BENCH/ESC/CONF` and the servo files and the write record in `BENCH/KST/CONF`; each folder is made one level at a time (`shared/logfile/card_tree.c`, `test_card_tree`). The folders `ESC` and `KST` and the root's `RCBENCH.LOG` of 0.21.0 and older are not read. An automatic servo test's CSV and report take the next number of `USER/LOGS`, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full. A row the cut stops part way through has no line feed; the reader leaves it out and reports it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in `test_logwriter` |
@@ -158,7 +158,7 @@ rcbench/
 
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
     artwork/ gfx/ touch/ ui/ settings/ logfile/ link/ bench/ outputs/
-    safety/ servo/ can/ esc/ sense/ fwupdate/ webaccess/
+    safety/ servo/ can/ esc/ sense/ fwupdate/ webaccess/ text/
 
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
@@ -174,7 +174,7 @@ rcbench/
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
-| `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `ppm` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ✔ | ✔ | ✔ |
@@ -360,7 +360,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_workbench.c` | 65 | 65 | 100.0% |
 | `shared/ui/ui_target_row.c` | 85 | 84 | 98.8% |
 | `shared/ui/prog_registry.c` | 412 | 409 | 99.3% |
-| `shared/ui/ui_text.c` | 105 | 104 | 99.0% |
+| `shared/ui/ui_text.c` | 106 | 105 | 99.1% |
 | `shared/ui/ui_router.c` | 363 | 354 | 97.5% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
@@ -404,6 +404,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/upd_screen.c` | 595 | 570 | 95.8% |
 | `shared/settings/settings.c` | 350 | 343 | 98.0% |
 | `shared/settings/settings_sensors.c` | 117 | 116 | 99.2% |
+| `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
 | `shared/logfile/log_csv.c` | 468 | 444 | 94.9% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
@@ -545,7 +546,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **51318** | **50151** | **97.7%** |
+| **total** | **51333** | **50165** | **97.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -1,9 +1,9 @@
 /*
  * The automatic servo test's words by id: every string the run writes or
- * the SERVO screen shows about it is an entry of one table
- * (shared/servo/servo_str.c).  A caller that names an entry and nothing
- * else of the run includes this alone, as ui_text.h does; the engine is
- * servo_test.h.
+ * the SERVO screen shows about it is an entry of one table (UI_SERVO_TEXT
+ * in shared/text/include/ui_text.def).  A caller that names an entry and
+ * nothing else of the run includes this alone, as ui_text.h does; the
+ * engine is servo_test.h.
  *
  * SPDX-License-Identifier: MIT
  */

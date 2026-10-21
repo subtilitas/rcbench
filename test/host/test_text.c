@@ -9,6 +9,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -146,6 +148,85 @@ TEST_CASE(every_translation_converts_what_the_english_does)
                                           (servo_str_t)i));
         }
     }
+}
+
+/**
+ * @brief Whether every code point of a string has a glyph of its own in a
+ *        face: the block first..last or one of the extra letters (gfx.h).
+ * @param f The face.
+ * @param s The string, UTF-8.
+ * @return True when the face holds every code point of @p s.
+ */
+static bool in_face(const gfx_font_t *f, const char *s)
+{
+    const char *p = s;
+    for (uint32_t c = gfx_utf8_next(&p); c != 0u; c = gfx_utf8_next(&p)) {
+        bool held = c >= f->first && c <= f->last;
+        for (int k = 0; !held && k < f->extra_count; ++k) {
+            held = f->extra[k] == c;
+        }
+        if (!held) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/** @brief Fails the case when a text face lacks a letter of @p s, naming
+ *  it by @p what, @p i and language @p l. */
+static void drawn(const char *what, int i, int l, const char *s)
+{
+    if (!in_face(&gfx_font_8x16, s) || !in_face(&gfx_font_16x28, s)) {
+        T_FAIL("%s %d in language %d has a letter the fonts lack: \"%s\"",
+               what, i, l, s);
+    }
+}
+
+/** @brief As drawn(), for screen string @p i in language @p l. */
+static void drawn_tx(int i, int l)
+{
+    const char *s = ui_tr_in((ui_lang_t)l, (ui_text_id_t)i);
+    if (!in_face(&gfx_font_8x16, s) || !in_face(&gfx_font_16x28, s)) {
+        T_FAIL("%s in language %d has a letter the fonts lack: \"%s\"",
+               ui_text_name((ui_text_id_t)i), l, s);
+    }
+}
+
+/** @brief The text faces hold printable ASCII and the German letters; any
+ * other code point draws as '?'.  Every string of the table the panel
+ * draws, in every language, keeps to them: the screens' strings, the
+ * settings' words and the servo test's, which the SERVO screen shows.  The
+ * Wi-Fi page is a browser's and is not held to them. */
+TEST_CASE(every_drawn_string_has_its_glyphs)
+{
+    settings_init();
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        ui_text_set_language((ui_lang_t)l);
+        for (int i = 0; i < TX_COUNT; ++i) {
+            drawn_tx(i, l);
+        }
+        for (int i = 0; i < SETTING_COUNT; ++i) {
+            drawn("label", i, l, ui_setting_label((setting_id_t)i));
+            drawn("help", i, l, ui_setting_help((setting_id_t)i));
+            const setting_def_t *d = settings_def((setting_id_t)i);
+            for (int k = 0; k < d->option_count; ++k) {
+                drawn("option", i * 100 + k, l,
+                      ui_setting_option((setting_id_t)i, k));
+            }
+        }
+        for (int i = 0; i < SET_CAT_COUNT; ++i) {
+            drawn("category", i, l, ui_setting_category((setting_cat_t)i));
+        }
+        for (int i = 0; i < SERVO_STR_COUNT; ++i) {
+            drawn("servo", i, l, ui_servo_str((servo_str_t)i));
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    /* The check sees what is outside: a euro sign, and a byte that starts
+     * no sequence, which decodes as '?' and so is held. */
+    CHECK(!in_face(&gfx_font_8x16, "5 \xe2\x82\xac"));
+    CHECK(in_face(&gfx_font_8x16, "GR\xc3\x96\xc3\x9f" "E"));
+    CHECK(in_face(&gfx_font_16x28, ""));
 }
 
 /* Every language, English included: a string no screenshot shows is held
@@ -700,6 +781,7 @@ int main(void)
     RUN(german_has_every_string);
     RUN(every_translation_converts_what_the_english_does);
     RUN(every_string_fits_its_declared_field);
+    RUN(every_drawn_string_has_its_glyphs);
     RUN(the_servo_device_line_names_a_series_and_no_model);
     RUN(alerts_and_details_fit_their_buffers);
     RUN(translated_settings_fit_where_they_are_drawn);

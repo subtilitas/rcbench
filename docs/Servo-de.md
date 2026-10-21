@@ -1030,9 +1030,9 @@ leer. Eine Datei aus der Zeit vor diesen Spalten, 13 breit oder 15 mit
 AS5600, liest die Log-Ansicht wie zuvor: ihr Parser nimmt die Spalten aus
 der Kopfzeile.
 
-Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; seine
-deutschen Wörter liegen in `shared/ui/ui_text_de.c`, die englischen in
-`shared/servo/servo_str.c` ([Sprache der Oberfläche](Language-de.md)).
+Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; jedes
+seiner Wörter ist ein Eintrag in `shared/text/include/ui_text.def`, mit
+Englisch und Deutsch ([Sprache der Oberfläche](Language-de.md)).
 Die CSV ist in jeder Sprache englisch. Ein englischer Bericht aus der
 Wiedergabe eines Laufs eines MG90S am Prüfstand mit dem PD mini steht auf
 der [englischen Seite](Servo.md#files); auf Deutsch lauten seine Stufen:

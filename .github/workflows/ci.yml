@@ -521,7 +521,7 @@ jobs:
       # The default build reads a touch injector at 0x14 beside the glass
       # (testbench/touch-injector).  The image must hold its code, INJECT's
       # mode name and one literal of INJECT's bubble text
-      # (shared/ui/include/ui_text.def).
+      # (shared/text/include/ui_text.def).
       - name: The default image holds the touch injector
         run: |
           for s in touch_inject_attach ui_band_mode_inject \

@@ -116,6 +116,7 @@ TRACKED = [
     "shared/ui/upd_screen.c",
     "shared/settings/settings.c",
     "shared/settings/settings_sensors.c",
+    "shared/settings/settings_text.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
     "shared/logfile/log_reader.c",
@@ -271,8 +272,6 @@ DATA_ONLY = {
     "shared/gfx/gfx_font_num24x30.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.
     "shared/esc/esc_profiles_gen.c",
-    # The German string tables; ui_text.c holds the lookups.
-    "shared/ui/ui_text_de.c",
 }
 
 # Below this, CI fails.  Raise it when the suite gets better; never lower it

@@ -209,15 +209,82 @@ Funktionen oben.
 
 ## Die Tabellen
 
-| Datei | Enthält |
-| --- | --- |
-| `shared/ui/include/ui_text.def` | jeden übersetzten Text: seine ID (Identifier), die Zellen seines Feldes, wo kein Screenshot ihn zeigt, und sein Englisch |
-| `shared/ui/ui_text_de.c` | das Deutsche nach ID; Beschriftungen, Hilfetexte, Optionen und Kategorien der Einstellungen; die Wörter des Servotests und den Bericht |
-| `shared/ui/ui_text.c` | die Suche: `TR(ID)`, `ui_setting_label()`, `ui_servo_str()` und die übrigen |
+Jeder Text, den die Oberfläche in der Sprache des Bedieners zeigt oder
+schreibt, ist ein Eintrag in `shared/text/include/ui_text.def`, mit seinem
+Englisch und seinem Deutsch nebeneinander, jedes in einer eigenen Zeile:
 
-Ein Eintrag, den eine Sprache auf `NULL` lässt, zeigt das Englische; eine
-unvollständige Tabelle funktioniert also. Ein übersetztes Format wandelt
-dieselben Argumente in derselben Reihenfolge wie sein Englisch.
+```c
+UI_TEXT(PL_GRP_PROG_PORT, 40,
+    "PROG PORT SERVOS",
+    "SERVOS AM PROG-PORT")
+```
+
+| Eintrag | Enthält |
+| --- | --- |
+| `UI_TEXT(ID, cells, en, de)` | einen Text einer Seite, `TR(ID)`, und die Zellen seines Feldes, wo kein Screenshot ihn zeigt (0, wo `--fit` ihn misst) |
+| `UI_SETTING_LABEL(SET_..., en, de)` | den Namen einer Einstellung |
+| `UI_SETTING_HELP(SET_..., en, de)` | den Hilfetext einer Einstellung |
+| `UI_SETTING_CATEGORY(SET_CAT_..., en, de)` | den Namen einer Kategorie |
+| `UI_OPTIONS(name)`, `UI_OPTION(en, de)`, `UI_OPTIONS_END(name)` | die Optionen einer Auswahl-Einstellung, eine Zeile je Option in ihrer Reihenfolge |
+| `UI_SERVO_TEXT(SERVO_STR_..., en, de)` | die Wörter des Servotests und seines TXT-Berichts |
+| `UI_WEB_TEXT(P_..., en, de)` | die WLAN-Seite des Panels |
+
+`NULL` in der deutschen Spalte zeigt das Englische: die Einträge des
+Servotests mit leerem Englisch und die Optionen, die in jeder Sprache
+dasselbe Wort sind (die Namen der Sprachen, Adressen, Kanäle, Baudraten,
+`STABLE` und `TESTING`, `PULL-UP` und `PRECHARGE`). Ein übersetztes Format
+wandelt dieselben Argumente in derselben Reihenfolge wie sein Englisch.
+
+Die Tabelle bleibt eine Datei und steht in `tools/check_sizes.txt`. Eine
+Datei, die sie liest, definiert die Makros, die sie braucht, und bindet sie
+ein; die Tabelle definiert die übrigen leer und hebt am Ende alle auf.
+
+| Datei | Liest |
+| --- | --- |
+| `shared/ui/include/ui_text.h` | die IDs `TX_` |
+| `shared/ui/ui_text.c` | Englisch und Zellen der Texte der Seiten, die Tabellen jeder anderen Sprache und die Suche: `TR(ID)`, `ui_setting_label()`, `ui_servo_str()` und die übrigen |
+| `shared/settings/settings_text.c`, `settings.c`, `settings_opts.h` | das Englisch der Einstellungen: Namen, Hilfetexte, Optionen, Kategorien |
+| `shared/servo/servo_str.c` | das Englisch des Servotests, das auch die CSV nutzt |
+| `shared/webaccess/wa_page.c` | Englisch und Deutsch der WLAN-Seite |
+
+Die Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E) und die 7
+deutschen Buchstaben Ä Ö Ü ä ö ü ß. Jeder andere Codepoint erscheint als
+`?`. `every_drawn_string_has_its_glyphs` in `test_text` hält jeden Text der
+Tabelle, den das Panel zeichnet, in jeder Sprache an diese Menge. Die
+WLAN-Seite zeichnet der Browser; für sie gilt das nicht.
+
+## Einen Text hinzufügen
+
+1. Einen Eintrag im Abschnitt der Seite anlegen, die ihn zeichnet, Englisch
+   zuerst: `UI_TEXT(ID, cells, "English", "Deutsch")`. `cells` ist die
+   Breite des Feldes in Zellen seines Fonts, wo kein Screenshot den Text
+   zeigt, und 0, wo eine gerenderte Ansicht ihn zeigt.
+2. Ihn mit `TR(ID)` zeichnen. Name und Hilfetext einer Einstellung sind ein
+   Eintrag `UI_SETTING_LABEL` und ein Eintrag `UI_SETTING_HELP` für ihre
+   ID `SET_`; eine Optionsliste ist ein Block `UI_OPTIONS`, den
+   `ENUM_OPTS(name)` in `shared/settings/settings.c` an seine Einstellung
+   bindet.
+3. Die Host-Suite, `python3 tools/render_ui.py --fit`,
+   `python3 tools/check_formats.py` und `python3 tools/check_docs.py`
+   ausführen. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
+   einem deutschen Format, das andere Argumente wandelt als sein Englisch,
+   bei einem Text, der breiter ist als seine angegebenen Zellen, und bei
+   einem Buchstaben, den die Fonts nicht enthalten.
+
+Ein Branch, der die Texte noch in der Form mit mehreren Dateien hat
+(Englisch in `shared/ui/include/ui_text.def` und im Schema der
+Einstellungen, Deutsch in `shared/ui/ui_text_de.c`), wird mit
+`tools/merge_texts.py` gemergt:
+
+```bash
+git merge --no-commit origin/main
+python3 tools/merge_texts.py merge "$(git merge-base HEAD origin/main)" origin/main
+```
+
+Das Werkzeug wandelt beide Seiten des Merges um und übernimmt die
+Textänderungen des Branches mit einem Drei-Wege-Merge in die Tabelle; eine
+Änderung, die beide Seiten an denselben Zeilen gemacht haben, bleibt mit
+Konfliktmarkierungen stehen.
 
 ## Die Passprüfungen
 
@@ -276,20 +343,36 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-1. `UI_LANG_xx` in `ui_lang_t` in `shared/ui/include/ui_text.h` eintragen,
-   und den eigenen Namen der Sprache an derselben Stelle in `k_language` in
-   `shared/settings/settings.c`.
-2. `shared/ui/ui_text_de.c` nach `ui_text_xx.c` kopieren, übersetzen und
-   `ui_lang_xx` in `k_langs` in `shared/ui/ui_text.c` und seine Deklaration
-   in `ui_text.h` eintragen.
-3. Die Datei in `shared/ui/CMakeLists.txt` und in `SOURCES` in
-   `tools/render_ui.py` und `tools/frame_cost.py` eintragen.
-4. Ein Buchstabe, den die Fonts nicht enthalten, kommt in die Liste in
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.057
+Einträge mit ID und 64 Optionen, 10 davon mit leerem Englisch.
+
+1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
+   ergänzen und den Parameter in jedem Makro, das eine Spalte liest: 7
+   leere Vorgaben am Kopf der Tabelle und 19 Zeilen `#define` in 7 Dateien
+   (`ui_text.h`, `ui_text.c`, `settings.c`, `settings_text.c`,
+   `settings_opts.h`, `servo_str.c`, `wa_page.c`). `NULL` zeigt das
+   Englische.
+2. `UI_LANG_xx` in `ui_lang_t` in `shared/ui/include/ui_text.h` eintragen,
+   und den eigenen Namen der Sprache an derselben Stelle in die Optionsliste
+   `language`.
+3. Den deutschen Block in `shared/ui/ui_text.c` (`DE()`, seine Tabellen und
+   `ui_lang_de`) für die neue Spalte kopieren, `ui_lang_xx` in `k_langs`
+   und seine Deklaration in `ui_text.h` eintragen.
+4. Ein Buchstabe, den die Text-Fonts nicht enthalten, kommt in die Liste in
    `FONTS` in `tools/gen_font.py`, und `python3 tools/gen_font.py` erzeugt
-   sie neu.
+   sie neu. Jeder Buchstabe belegt 128 Byte im Font 8x16 und 448 Byte im
+   Font 16x28, ein Byte je Pixel.
 5. Die Sprache in `LANGS` in `tools/render_ui.py` und im Argument von
    `test/host/render_screen.c` eintragen, dann
    `python3 tools/render_ui.py --fit` und `python3 tools/render_ui.py`
    ausführen.
 6. `german_has_every_string` in `test/host/test_text.c` auf die neue
    Tabelle erweitern, ihr Glossar hier schreiben und diese Seite übersetzen.
+
+Zwei Leser nehmen die deutsche Spalte nach ihrer Position: `TABLE_ENTRY` in
+`tools/check_docs.py` und die Prüfung der Servo-Bedienelemente in
+`configurator/core/test/help.test.ts`. Die WLAN-Seite wählt ihre Sprache
+über einen Schalter, `wifi_access_set_german()`, und ein ESC-Profil trägt
+seine manuellen Schritte auf Englisch und auf Deutsch (`action`,
+`action_de`); keines von beiden nimmt eine dritte Sprache ohne eigene
+Änderung.

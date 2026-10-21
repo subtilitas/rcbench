@@ -201,15 +201,78 @@ functions above.
 
 ## The tables
 
-| File | Holds |
-| --- | --- |
-| `shared/ui/include/ui_text.def` | every translated string: its ID (identifier), the cells its field has where no screenshot shows it, and its English |
-| `shared/ui/ui_text_de.c` | the German, by ID; the settings' labels, help, options and categories; the servo test's words and the report |
-| `shared/ui/ui_text.c` | the lookup: `TR(ID)`, `ui_setting_label()`, `ui_servo_str()` and the rest |
+Every text the interface shows or writes in the operator's language is one
+entry of `shared/text/include/ui_text.def`, with its English and its German
+side by side, each on a line of its own:
 
-An entry a language leaves `NULL` shows the English, so a partial table
-works. A translated format converts the same arguments in the same order as
-its English.
+```c
+UI_TEXT(PL_GRP_PROG_PORT, 40,
+    "PROG PORT SERVOS",
+    "SERVOS AM PROG-PORT")
+```
+
+| Entry | Holds |
+| --- | --- |
+| `UI_TEXT(ID, cells, en, de)` | a screen's string, `TR(ID)`, and the cells its field has where no screenshot shows it (0 where `--fit` measures it) |
+| `UI_SETTING_LABEL(SET_..., en, de)` | a setting's label |
+| `UI_SETTING_HELP(SET_..., en, de)` | a setting's help line |
+| `UI_SETTING_CATEGORY(SET_CAT_..., en, de)` | a category's name |
+| `UI_OPTIONS(name)`, `UI_OPTION(en, de)`, `UI_OPTIONS_END(name)` | an enum setting's options, one row each in order |
+| `UI_SERVO_TEXT(SERVO_STR_..., en, de)` | the servo test's words and its TXT report |
+| `UI_WEB_TEXT(P_..., en, de)` | the panel's Wi-Fi page |
+
+`NULL` in the German column shows the English: the servo test's entries
+whose English is empty, and the options that are the same word in every
+language (the language names, addresses, channels, baud rates, `STABLE` and
+`TESTING`, `PULL-UP` and `PRECHARGE`). A translated format converts the
+same arguments in the same order as its English.
+
+The table stays one file, listed in `tools/check_sizes.txt`. A file that
+reads it defines the macros it needs and includes it; the table defines the
+others as empty and undefines all of them at its end.
+
+| File | Reads |
+| --- | --- |
+| `shared/ui/include/ui_text.h` | the `TX_` IDs |
+| `shared/ui/ui_text.c` | the English and the cells of the screens' strings, every other language's tables, and the lookup: `TR(ID)`, `ui_setting_label()`, `ui_servo_str()` and the rest |
+| `shared/settings/settings_text.c`, `settings.c`, `settings_opts.h` | the settings' English: labels, help lines, options, categories |
+| `shared/servo/servo_str.c` | the servo test's English, which the CSV also uses |
+| `shared/webaccess/wa_page.c` | the Wi-Fi page's English and German |
+
+The text faces hold printable ASCII (0x20 to 0x7E) and the 7 German letters
+Ä Ö Ü ä ö ü ß. Any other code point draws as `?`.
+`every_drawn_string_has_its_glyphs` in `test_text` holds every string of
+the table the panel draws, in every language, to that set. The Wi-Fi page is
+drawn by the browser and is not held to it.
+
+## Adding a text
+
+1. Add an entry in the section of the screen that draws it, English first:
+   `UI_TEXT(ID, cells, "English", "Deutsch")`. `cells` is the field's width
+   in cells of its face where no screenshot shows the string, and 0 where a
+   rendered view does.
+2. Draw it with `TR(ID)`. A setting's label and help line are a
+   `UI_SETTING_LABEL` and a `UI_SETTING_HELP` entry for its `SET_` ID; an
+   option list is a `UI_OPTIONS` block, bound to its setting by
+   `ENUM_OPTS(name)` in `shared/settings/settings.c`.
+3. Run the host suite, `python3 tools/render_ui.py --fit`,
+   `python3 tools/check_formats.py` and `python3 tools/check_docs.py`.
+   `test_text` fails on an entry without German, on a German format that
+   converts other arguments than its English, on a string wider than its
+   declared cells and on a letter the fonts lack.
+
+A branch that still holds the per-file form of the texts (English in
+`shared/ui/include/ui_text.def` and in the settings schema, German in
+`shared/ui/ui_text_de.c`) merges with `tools/merge_texts.py`:
+
+```bash
+git merge --no-commit origin/main
+python3 tools/merge_texts.py merge "$(git merge-base HEAD origin/main)" origin/main
+```
+
+It converts both sides of the merge and carries the branch's text changes
+into the table by a three-way merge; a change both sides made to the same
+lines is left with conflict markers.
 
 ## The fit checks
 
@@ -262,18 +325,32 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-1. Add `UI_LANG_xx` to `ui_lang_t` in `shared/ui/include/ui_text.h`, and the
-   language's own name to `k_language` in `shared/settings/settings.c`, in
-   the same position.
-2. Copy `shared/ui/ui_text_de.c` to `ui_text_xx.c`, translate it, and add
-   `ui_lang_xx` to `k_langs` in `shared/ui/ui_text.c` and its declaration to
-   `ui_text.h`.
-3. Add the file to `shared/ui/CMakeLists.txt` and to `SOURCES` in
-   `tools/render_ui.py` and `tools/frame_cost.py`.
-4. A letter the fonts do not hold goes into the list in `FONTS` in
+A language is one more column in every entry of the table: 2,057 entries
+with an ID and 64 options, 10 of them with an empty English.
+
+1. Add the column to every entry of `shared/text/include/ui_text.def`, and
+   the parameter to every macro that reads a column: 7 empty defaults at the
+   head of the table and 19 `#define` lines in 7 files (`ui_text.h`,
+   `ui_text.c`, `settings.c`, `settings_text.c`, `settings_opts.h`,
+   `servo_str.c`, `wa_page.c`). `NULL` shows the English.
+2. Add `UI_LANG_xx` to `ui_lang_t` in `shared/ui/include/ui_text.h`, and the
+   language's own name to the `language` option list, in the same position.
+3. Copy the German block in `shared/ui/ui_text.c` (`DE()`, its tables and
+   `ui_lang_de`) for the new column, add `ui_lang_xx` to `k_langs` and its
+   declaration to `ui_text.h`.
+4. A letter the text faces do not hold goes into the list in `FONTS` in
    `tools/gen_font.py`, and `python3 tools/gen_font.py` regenerates them.
+   Each letter takes 128 bytes in the 8x16 face and 448 bytes in the 16x28
+   face, one byte a pixel.
 5. Add the language to `LANGS` in `tools/render_ui.py` and to the argument
    `test/host/render_screen.c` takes, and run
    `python3 tools/render_ui.py --fit` and `python3 tools/render_ui.py`.
 6. Extend `german_has_every_string` in `test/host/test_text.c` to the new
    table, write its glossary here, and translate this page.
+
+Two readers take the German column by position: `TABLE_ENTRY` in
+`tools/check_docs.py` and the servo controls' check in
+`configurator/core/test/help.test.ts`. The Wi-Fi page chooses its language
+by a flag, `wifi_access_set_german()`, and an ESC profile carries its
+manual steps in English and in German (`action`, `action_de`); neither
+takes a third language without a change of its own.
