@@ -21,7 +21,7 @@
 #define Q_START  gfx_rect_make(416, 258, 240, 48)
 
 /* The progress, on the whole panel. */
-#define W        800
+#define W        UI_PANEL_W
 #define BAR_H    56
 #define COL_X    24
 #define STEP_Y   (BAR_H + 16)

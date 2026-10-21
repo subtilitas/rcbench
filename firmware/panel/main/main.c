@@ -152,6 +152,11 @@ void publish_throttle_ramp(void)
 
 static const char *TAG = "rcbench";
 
+/* The screens draw a UI_PANEL_W x UI_PANEL_H canvas (ui_layout.h); the glass
+ * is the board's. */
+_Static_assert(BOARD_LCD_H_RES == UI_PANEL_W && BOARD_LCD_V_RES == UI_PANEL_H,
+               "the board's panel is the size the screens draw");
+
 /* Used during bring-up as well as in the loop, so file scope. */
 link_host_t    s_host;
 /* A link_cap_t bitmap from the IOmcu's identity page.  Zero until
