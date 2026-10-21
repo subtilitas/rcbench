@@ -18,6 +18,14 @@
 
 /* --- output ---------------------------------------------------------------- */
 
+/**
+ * @brief Append @p n bytes of @p s to the output, or drop them and count the
+ *        loss.
+ *
+ * @param c The console.
+ * @param s The bytes.
+ * @param n Number of bytes.
+ */
 static void push(page_console_t *c, const char *s, size_t n)
 {
     if (n > (size_t)(PAGE_CONSOLE_OUT_MAX - c->used)) {
@@ -64,10 +72,18 @@ void page_console_say(page_console_t *c, const char *fmt, ...)
     va_end(ap);
 }
 
-/* The console's own lines. */
+/** @brief The console's own lines. */
 #define say page_console_say
 
 /* @p n bytes from the head to @p buf. */
+/**
+ * @brief Move @p n bytes from the head of the output to @p buf.
+ *
+ * @param c   The console.
+ * @param buf Receives the bytes.
+ * @param n   Number of bytes to take from the head of the output.
+ * @return n, the bytes taken.
+ */
 static size_t take_out(page_console_t *c, char *buf, size_t n)
 {
     for (size_t i = 0; i < n; ++i) {
@@ -119,12 +135,21 @@ size_t page_console_take_part(page_console_t *c, char *buf, size_t room)
 
 /* --- names ----------------------------------------------------------------- */
 
+/**
+ * @brief The name of value @p v from a table of names.
+ *
+ * @param names The table of names.
+ * @param count Entries in the table.
+ * @param v     The value to name.
+ * @return The name of v, or "?" when v is out of range or has no name.
+ */
 static const char *name_of(const char *const *names, unsigned count,
                            unsigned v)
 {
     return v < count && names[v] != NULL ? names[v] : "?";
 }
 
+/** @brief The name of value @p v in @p table, or "?". */
 #define NAME(table, v) \
     name_of((table), sizeof(table) / sizeof((table)[0]), (v))
 
@@ -163,8 +188,17 @@ _Static_assert(sizeof(k_rx) / sizeof(k_rx[0])
 
 /* --- requests -------------------------------------------------------------- */
 
-/** @brief A read or a write through the link's handlers; the reply. */
-/** @brief The reply is c->reply. */
+/**
+ * @brief A read or a write through the link's handlers; the reply is c->reply.
+ *
+ * @param c    The console.
+ * @param op   The operation, LINK_OP_READ or LINK_OP_WRITE.
+ * @param page The page number.
+ * @param off  First register of the window.
+ * @param n    Number of registers.
+ * @param in   The n values to write; NULL for a read.
+ * @return true when the link device answered; the reply is c->reply.
+ */
 static bool apply(page_console_t *c, uint8_t op, uint8_t page, uint8_t off,
                   uint8_t n, const uint16_t *in)
 {
@@ -181,6 +215,16 @@ static bool apply(page_console_t *c, uint8_t op, uint8_t page, uint8_t off,
     return link_dev_apply(c->dev, req, &c->reply);
 }
 
+/**
+ * @brief Read n registers of a page through the link.
+ *
+ * @param c    The console.
+ * @param page The page number.
+ * @param off  First register of the window.
+ * @param n    Number of registers to read.
+ * @param out  Receives the n register values.
+ * @return true when the reply is data; false otherwise.
+ */
 static bool read_regs(page_console_t *c, uint8_t page, uint8_t off,
                       uint8_t n, uint16_t *out)
 {
@@ -212,6 +256,13 @@ static bool write_regs(page_console_t *c, uint8_t page, uint8_t off,
 
 /* --- parsing --------------------------------------------------------------- */
 
+/**
+ * @brief Parse an unsigned number, decimal or 0x hexadecimal.
+ *
+ * @param s   The text: decimal, or hexadecimal after 0x.
+ * @param out Receives the value.
+ * @return true when the text has at least one digit and its value fits 32 bits.
+ */
 static bool parse_u32(const char *s, uint32_t *out)
 {
     uint32_t v = 0;
@@ -244,12 +295,26 @@ static bool parse_u32(const char *s, uint32_t *out)
     return digits > 0u;
 }
 
+/**
+ * @brief Parse an unsigned number no larger than @p max.
+ *
+ * @param s   The text, as parse_u32() reads it.
+ * @param max The largest value accepted.
+ * @param out Receives the value.
+ * @return true when parse_u32() accepts the text and the value is at most max.
+ */
 static bool parse_max(const char *s, uint32_t max, uint32_t *out)
 {
     return parse_u32(s, out) && *out <= max;
 }
 
-/* "key=value": the value when @p tok starts with @p key and '='. */
+/**
+ * @brief "key=value": the value when @p tok starts with @p key and '='.
+ *
+ * @param tok A token of the line.
+ * @param key The key to match.
+ * @return The text after the '=' when tok is key=value, otherwise NULL.
+ */
 static const char *value_of(const char *tok, const char *key)
 {
     const size_t n = strlen(key);
@@ -257,6 +322,13 @@ static const char *value_of(const char *tok, const char *key)
     return strncmp(tok, key, n) == 0 && tok[n] == '=' ? tok + n + 1u : NULL;
 }
 
+/**
+ * @brief Split a line into tokens at spaces and tabs.
+ *
+ * @param line The line; each separator is replaced by a NUL.
+ * @param tok  Receives a pointer to each token, TOKENS_MAX entries.
+ * @return The number of tokens.
+ */
 static unsigned split(char *line, char **tok)
 {
     unsigned n = 0;
@@ -303,6 +375,11 @@ static void say_regs(page_console_t *c, const char *what, uint8_t page,
     }
 }
 
+/**
+ * @brief Answer the pages command: one line per page.
+ *
+ * @param c The console.
+ */
 static void cmd_pages(page_console_t *c)
 {
     for (uint8_t i = 0; i < c->dev->page_count; ++i) {
@@ -313,6 +390,13 @@ static void cmd_pages(page_console_t *c)
     }
 }
 
+/**
+ * @brief Answer the r command: read n registers and reply with them.
+ *
+ * @param c   The console.
+ * @param tok The tokens of the line.
+ * @param n   Number of tokens.
+ */
 static void cmd_read(page_console_t *c, char **tok, unsigned n)
 {
     uint32_t page, off, cnt = 1;
@@ -339,6 +423,14 @@ static void cmd_read(page_console_t *c, char **tok, unsigned n)
              reply->regs);
 }
 
+/**
+ * @brief Answer the w command: write the values and reply with the
+ *        acknowledgement.
+ *
+ * @param c   The console.
+ * @param tok The tokens of the line.
+ * @param n   Number of tokens.
+ */
 static void cmd_write(page_console_t *c, char **tok, unsigned n)
 {
     uint32_t page, off;
@@ -378,19 +470,41 @@ static void cmd_write(page_console_t *c, char **tok, unsigned n)
 
 /* --- the HITEC page -------------------------------------------------------- */
 
+/** @brief The staged HITEC register @p reg of console @p c. */
 #define HST(c, reg) ((c)->staged[(reg) - LINK_HT_W_LINE])
 
+/**
+ * @brief Stage a 32-bit value in two HITEC registers, low word first.
+ *
+ * @param c  The console.
+ * @param lo Register number of the low word.
+ * @param v  The value.
+ */
 static void hst32(page_console_t *c, unsigned lo, uint32_t v)
 {
     HST(c, lo) = (uint16_t)(v & 0xFFFFu);
     HST(c, lo + 1u) = (uint16_t)(v >> 16);
 }
 
+/**
+ * @brief Read a 32-bit value from two registers, low word first.
+ *
+ * @param r  The register values.
+ * @param lo Index of the low word.
+ * @return The value.
+ */
 static uint32_t u32_of(const uint16_t *r, unsigned lo)
 {
     return (uint32_t)r[lo] | ((uint32_t)r[lo + 1u] << 16);
 }
 
+/**
+ * @brief Write the names of the STATE flags set in st, comma separated, or "-".
+ *
+ * @param buf  Receives the text, NUL-terminated.
+ * @param size Size of buf in bytes.
+ * @param st   The STATE register value.
+ */
 static void say_flags(char *buf, size_t size, uint16_t st)
 {
     static const struct { uint16_t bit; const char *name; } k[] = {
@@ -414,7 +528,11 @@ static void say_flags(char *buf, size_t size, uint16_t st)
 
 /** @brief What the page says now: the state line, and the capture with its
  *        bytes
- * when it holds one. */
+ * when it holds one.
+ *
+ * @param c    The console.
+ * @param what The word that opens the report, such as done.
+ */
 static void hitec_report(page_console_t *c, const char *what)
 {
     uint16_t *r = c->regs;
@@ -494,7 +612,14 @@ static void hitec_report(page_console_t *c, const char *what)
 #undef RUN_AT
 }
 
-/** @brief Stage, name the CRC and the next SEQ, and send the command. */
+/**
+ * @brief Stage, name the CRC and the next SEQ, and send the command.
+ *
+ * @param c    The console.
+ * @param op   The operation.
+ * @param port Programming port index.
+ * @param key  true to put LINK_HITEC_WRITE_KEY in the command.
+ */
 static void hitec_command(page_console_t *c, link_hitec_op_t op,
                           uint32_t port, bool key)
 {
@@ -547,7 +672,13 @@ static void hitec_command(page_console_t *c, link_hitec_op_t op,
     }
 }
 
-/** @brief dec=none | c:<cmd> | d:<addr> | l:<byte> */
+/**
+ * @brief dec=none | c:<cmd> | d:<addr> | l:<byte>
+ *
+ * @param v   The text after dec=.
+ * @param out Receives the packed decoder word.
+ * @return true when the text parses.
+ */
 static bool parse_dec(const char *v, uint16_t *out)
 {
     uint32_t arg;
@@ -582,6 +713,16 @@ typedef struct {
     unsigned n_tx;
 } hitec_args_t;
 
+/**
+ * @brief Parse the options and the bytes of send, listen, power and level.
+ *
+ * @param c   The console.
+ * @param tok The tokens of the line.
+ * @param n   Number of tokens.
+ * @param a   Receives the options and the bytes.
+ * @return true when every token parses; otherwise false, with the bad token
+ *         said.
+ */
 static bool parse_args(page_console_t *c, char **tok, unsigned n,
                        hitec_args_t *a)
 {
@@ -636,6 +777,10 @@ static bool parse_args(page_console_t *c, char **tok, unsigned n,
 
 /**
  * @brief The staged registers of a transaction; LINE and the supply's are 0.
+ *
+ * @param c   The console.
+ * @param x   The transaction to stage.
+ * @param dec The packed decoder word.
  */
 static void stage_xfer(page_console_t *c, const hitec_xfer_t *x,
                        uint16_t dec)
@@ -654,6 +799,15 @@ static void stage_xfer(page_console_t *c, const hitec_xfer_t *x,
     HST(c, LINK_HT_W_DECODE) = dec;
 }
 
+/**
+ * @brief Parse a programming port number, 0 to 15.
+ *
+ * @param c    The console.
+ * @param tok  The token.
+ * @param port Receives the port.
+ * @return true when the token is a port number; otherwise false, with the error
+ *         said.
+ */
 static bool parse_port(page_console_t *c, const char *tok, uint32_t *port)
 {
     if (!parse_max(tok, 15u, port)) {
@@ -663,6 +817,15 @@ static bool parse_port(page_console_t *c, const char *tok, uint32_t *port)
     return true;
 }
 
+/**
+ * @brief Answer hitec open: OPEN the port with the family, drive and receive
+ *        mode.
+ *
+ * @param c    The console.
+ * @param port Programming port index.
+ * @param tok  The tokens after the port.
+ * @param n    Number of tokens.
+ */
 static void hitec_open(page_console_t *c, uint32_t port, char **tok,
                        unsigned n)
 {
@@ -710,6 +873,10 @@ static void hitec_open(page_console_t *c, uint32_t port, char **tok,
 
 /**
  * @brief The family of the open line, from the page; false when none is open.
+ *
+ * @param c      The console.
+ * @param family Receives the family of the open line.
+ * @return true when a line is open; false when none is open.
  */
 static bool open_family(page_console_t *c, uint8_t *family)
 {
@@ -727,6 +894,14 @@ static bool open_family(page_console_t *c, uint8_t *family)
     return true;
 }
 
+/**
+ * @brief Answer hitec send: transmit the bytes in one transaction.
+ *
+ * @param c    The console.
+ * @param port Programming port index.
+ * @param tok  The tokens after the port.
+ * @param n    Number of tokens.
+ */
 static void hitec_send(page_console_t *c, uint32_t port, char **tok,
                        unsigned n)
 {
@@ -759,6 +934,15 @@ static void hitec_send(page_console_t *c, uint32_t port, char **tok,
     hitec_command(c, LINK_HITEC_OP_SEND, port, true);
 }
 
+/**
+ * @brief Answer hitec listen or hitec power, the listen part of it.
+ *
+ * @param c     The console.
+ * @param port  Programming port index.
+ * @param tok   The tokens after the port.
+ * @param n     Number of tokens.
+ * @param power true for hitec power.
+ */
 static void hitec_listen(page_console_t *c, uint32_t port, char **tok,
                          unsigned n, bool power)
 {
@@ -791,6 +975,14 @@ static void hitec_listen(page_console_t *c, uint32_t port, char **tok,
                   port, a.has_answer);
 }
 
+/**
+ * @brief Answer hitec level: hold the line at a level for a time.
+ *
+ * @param c    The console.
+ * @param port Programming port index.
+ * @param tok  The tokens after the port.
+ * @param n    Number of tokens.
+ */
 static void hitec_level(page_console_t *c, uint32_t port, char **tok,
                         unsigned n)
 {
@@ -809,8 +1001,17 @@ static void hitec_level(page_console_t *c, uint32_t port, char **tok,
     hitec_command(c, LINK_HITEC_OP_LEVEL, port, false);
 }
 
-/* Whether the open line is of @p family; says why not.  A frame of one
- * family on a line of the other goes out at the wrong rate and polarity. */
+/**
+ * @brief Whether the open line is of @p family; says why not.
+ *
+ * A frame of one family on a line of the other goes out at the wrong rate and
+ * polarity.
+ *
+ * @param c      The console.
+ * @param family The family the command needs.
+ * @return true when the open line is of family; false otherwise, with the error
+ *         said.
+ */
 static bool family_is(page_console_t *c, uint8_t family)
 {
     uint8_t open;
@@ -827,6 +1028,14 @@ static bool family_is(page_console_t *c, uint8_t family)
     return true;
 }
 
+/**
+ * @brief Answer hitec c: one classic command and its reply.
+ *
+ * @param c    The console.
+ * @param port Programming port index.
+ * @param tok  The tokens after the port.
+ * @param n    Number of tokens.
+ */
 static void hitec_classic(page_console_t *c, uint32_t port, char **tok,
                           unsigned n)
 {
@@ -849,6 +1058,14 @@ static void hitec_classic(page_console_t *c, uint32_t port, char **tok,
     hitec_command(c, LINK_HITEC_OP_SEND, port, true);
 }
 
+/**
+ * @brief Answer hitec d: one D series read or write.
+ *
+ * @param c    The console.
+ * @param port Programming port index.
+ * @param tok  The tokens after the port.
+ * @param n    Number of tokens.
+ */
 static void hitec_d(page_console_t *c, uint32_t port, char **tok, unsigned n)
 {
     uint32_t id = 0, addr = 0, value = 0;
@@ -877,6 +1094,13 @@ static void hitec_d(page_console_t *c, uint32_t port, char **tok, unsigned n)
     hitec_command(c, LINK_HITEC_OP_SEND, port, true);
 }
 
+/**
+ * @brief Answer the hitec command and route it by its subcommand.
+ *
+ * @param c   The console.
+ * @param tok The tokens of the line.
+ * @param n   Number of tokens.
+ */
 static void cmd_hitec(page_console_t *c, char **tok, unsigned n)
 {
     uint32_t port;
@@ -920,6 +1144,11 @@ static void cmd_hitec(page_console_t *c, char **tok, unsigned n)
     }
 }
 
+/**
+ * @brief Answer the help command: the command list.
+ *
+ * @param c The console.
+ */
 static void cmd_help(page_console_t *c)
 {
     say(c, "help | pages | r <page> <off> [n] | w <page> <off> <v>...");
@@ -935,6 +1164,11 @@ static void cmd_help(page_console_t *c)
     say(c, "dec=none|c:<cmd>|d:<addr>|l:<byte>; numbers decimal or 0x hex");
 }
 
+/**
+ * @brief Run the command line held in the console.
+ *
+ * @param c The console.
+ */
 static void run_line(page_console_t *c)
 {
     char *tok[TOKENS_MAX];
