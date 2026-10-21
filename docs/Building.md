@@ -87,7 +87,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 
 | | Version | Notes |
 | --- | --- | --- |
-| ESP-IDF | v5.5.5 | the panel's target is the ESP32-P4. A Rev3.2 chip needs v5.5.5 or v6.0.1 and later; v6.0.1 is not built. Neither v5.5.0 nor v5.5.1 compiles: their TWAI (two-wire automotive interface) driver sends a CAN frame with DLC (data length code) 0 as DLC 8, and the IOmcu refuses every link read sent that way. CI (continuous integration) builds v5.5.5 |
+| ESP-IDF | v5.5.5 or newer on the v5.5 line | the panel's ESP32-P4 is chip revision 3.2, which Espressif's advisory AR2026-004 pairs with v5.5.5 or later; the build sets `CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n` and minimum revision 3.1. Neither v5.5.0 nor v5.5.1 compiles: their TWAI (two-wire automotive interface) driver sends a CAN frame with DLC (data length code) 0 as DLC 8, and the IOmcu refuses every link read sent that way. CI (continuous integration) builds v5.5.5 |
 | pico-sdk | 2.0 or newer | RP2350 support; CI builds 2.3.0 |
 | ARM GNU toolchain | 14.2 | any `arm-none-eabi` release targeting Cortex-M33 |
 
@@ -181,7 +181,7 @@ ctest --test-dir test/host/build --output-on-failure
 
 # panel
 . $IDF_PATH/export.sh
-idf.py -C firmware/panel set-target esp32p4    # regenerates sdkconfig from sdkconfig.defaults
+idf.py -C firmware/panel set-target esp32p4
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 
