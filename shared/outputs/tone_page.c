@@ -1,5 +1,8 @@
-/*
- * The TONE link page.  See tone_page.h.
+/**
+ * @file
+ * @brief The TONE link page: the phase tap set-up, its capture and the beep ring.
+ *
+ * See tone_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -56,8 +59,10 @@ uint64_t tone_page_pins(const tone_page_t *p)
     return tone_page_wanted(p) ? ((uint64_t)1u << p->cfg[LINK_TN_PIN]) : 0u;
 }
 
-/* The pins that are ADC inputs on either part the image may run on: GP26 to
- * GP29 of the RP2350A, GP40 to GP47 of the RP2354B.  Rated IOVDD + 0.5 V,
+/** @brief The pins that are ADC inputs on either part the image may run on:
+ *        GP26 to GP29 of the RP2350A, GP40 to GP47 of the RP2354B.
+ *
+ * Rated IOVDD + 0.5 V,
  * not fault tolerant. */
 static bool adc_pin(uint16_t pin)
 {
@@ -103,9 +108,11 @@ bool tone_page_pin_free(const tone_page_t *p, const outputs_t *o,
     return p != NULL && o != NULL && pin_free(p, o, p->cfg[LINK_TN_PIN], taken);
 }
 
-/* The values themselves, whatever is enabled: a set-up kept in flash is one
- * a later enable can take without another write.  The detector's own
- * verdict is the last word: tone_init() refuses a gap shorter than the
+/** @brief The values themselves, whatever is enabled: a set-up kept in flash is
+ *        one a later enable can take without another write.
+ *
+ * The detector's own verdict is the last word: tone_init() refuses a gap
+ * shorter than the
  * lowest tone's period and any range the tick clock cannot resolve. */
 static bool values_ok(tone_page_t *p, const uint16_t *c)
 {
@@ -134,8 +141,10 @@ static bool values_ok(tone_page_t *p, const uint16_t *c)
     return tone_init(&p->scratch, &cfg);
 }
 
-/* A new set-up: what core 1 said under the old one is gone, so no read
- * shows a tone or a flag before core 1 has run under the new one.  The
+/** @brief A new set-up: what core 1 said under the old one is gone, so no read
+ *        shows a tone or a flag before core 1 has run under the new one.
+ *
+ * The
  * ring and the counters are the capture's and stay. */
 static void forget_status(tone_page_t *p)
 {

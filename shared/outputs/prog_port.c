@@ -1,5 +1,8 @@
-/*
- * The programming ports and the PROG link page.  See prog_port.h.
+/**
+ * @file
+ * @brief The programming ports and the PROG link page.
+ *
+ * See prog_port.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -26,21 +29,23 @@ static uint16_t fn_of(const uint16_t *regs, unsigned port)
     return regs[LINK_PG_FUNC(port)];
 }
 
-/* Whether the port's function is the servo pulse, which the PWM generator
+/** @brief Whether the port's function is the servo pulse, which the PWM
+ *        generator
  * renders and which the PWM-pin and slice rules hold. */
 static bool fn_pwm(const uint16_t *regs, unsigned port)
 {
     return fn_of(regs, port) == (uint16_t)LINK_PG_FN_SERVO_PWM;
 }
 
-/* Whether the port's function is DShot (4.28): a PIO state machine renders
+/** @brief Whether the port's function is DShot (4.28): a PIO state machine
+ *        renders
  * it from the port's channel, a throttle. */
 static bool fn_dshot(const uint16_t *regs, unsigned port)
 {
     return LINK_PG_FN_IS_DSHOT(fn_of(regs, port));
 }
 
-/* The function a port starts with on a board that has stored none: the
+/** @brief The function a port starts with on a board that has stored none: the
  * servo pulse on port 0, nothing on the others. */
 static uint16_t fn_default(unsigned port)
 {
@@ -56,7 +61,7 @@ static bool holds(const prog_port_t *p, unsigned port)
            && (p->blocked & (1u << port)) == 0u;
 }
 
-/* Two port pins that cannot both be held: one pin, or two servo pulses
+/** @brief Two port pins that cannot both be held: one pin, or two servo pulses
  * on one compare register of the generator. */
 static bool ports_clash(uint16_t a, bool a_pwm, uint16_t b, bool b_pwm)
 {
@@ -64,7 +69,7 @@ static bool ports_clash(uint16_t a, bool a_pwm, uint16_t b, bool b_pwm)
            || (a_pwm && b_pwm && out_pwm_same_compare((uint8_t)a, (uint8_t)b));
 }
 
-/*
+/**
  * Whether @p pin may be a port's beside the bank: a header pin, not
  * reserved unless it is one the ports hold now (@p ours), not in @p taken
  * and no slot's.  For the servo pulse (@p pwm) also a pin of the PWM
@@ -673,7 +678,7 @@ uint8_t prog_port_channel(uint8_t port)
     return (uint8_t)(PROG_PORT_CHANNEL0 + port);
 }
 
-/* Whether a bound slot's channels reach a port's bank channel. */
+/** @brief Whether a bound slot's channels reach a port's bank channel. */
 static bool slot_on_port_channel(const uint16_t *r)
 {
     const unsigned first = LINK_OS_FIRST(r[LINK_OS_RANGE]);

@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The bench console: command lines read and written as link page
+ *        requests and replies.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -26,7 +30,8 @@ static void push(page_console_t *c, const char *s, size_t n)
     }
 }
 
-/* One line; the LF is added, and a LF the text ends with is not doubled.
+/** @brief One line; the LF is added, and a LF the text ends with is not
+ *        doubled.
  * At most PAGE_CONSOLE_OUT_LINE bytes with the LF: a longer text is cut. */
 void page_console_vsay(page_console_t *c, const char *fmt, va_list ap)
 {
@@ -158,8 +163,8 @@ _Static_assert(sizeof(k_rx) / sizeof(k_rx[0])
 
 /* --- requests -------------------------------------------------------------- */
 
-/* A read or a write through the link's handlers; the reply. */
-/* The reply is c->reply. */
+/** @brief A read or a write through the link's handlers; the reply. */
+/** @brief The reply is c->reply. */
 static bool apply(page_console_t *c, uint8_t op, uint8_t page, uint8_t off,
                   uint8_t n, const uint16_t *in)
 {
@@ -187,7 +192,9 @@ static bool read_regs(page_console_t *c, uint8_t page, uint8_t off,
     return true;
 }
 
-/* A write; false, with the refusal said, when it is not acknowledged. */
+/**
+ * @brief A write; false, with the refusal said, when it is not acknowledged.
+ */
 static bool write_regs(page_console_t *c, uint8_t page, uint8_t off,
                        uint8_t n, const uint16_t *in)
 {
@@ -272,7 +279,7 @@ static unsigned split(char *line, char **tok)
 
 /* --- raw pages ------------------------------------------------------------- */
 
-/* The reply's registers: up to 32 of 7 characters each, so the line is
+/** @brief The reply's registers: up to 32 of 7 characters each, so the line is
  * made in two halves of 16 when it is long. */
 static void say_regs(page_console_t *c, const char *what, uint8_t page,
                      uint8_t off, uint8_t n, const uint16_t *regs)
@@ -405,7 +412,8 @@ static void say_flags(char *buf, size_t size, uint16_t st)
     }
 }
 
-/* What the page says now: the state line, and the capture with its bytes
+/** @brief What the page says now: the state line, and the capture with its
+ *        bytes
  * when it holds one. */
 static void hitec_report(page_console_t *c, const char *what)
 {
@@ -486,7 +494,7 @@ static void hitec_report(page_console_t *c, const char *what)
 #undef RUN_AT
 }
 
-/* Stage, name the CRC and the next SEQ, and send the command. */
+/** @brief Stage, name the CRC and the next SEQ, and send the command. */
 static void hitec_command(page_console_t *c, link_hitec_op_t op,
                           uint32_t port, bool key)
 {
@@ -539,7 +547,7 @@ static void hitec_command(page_console_t *c, link_hitec_op_t op,
     }
 }
 
-/* dec=none | c:<cmd> | d:<addr> | l:<byte> */
+/** @brief dec=none | c:<cmd> | d:<addr> | l:<byte> */
 static bool parse_dec(const char *v, uint16_t *out)
 {
     uint32_t arg;
@@ -565,7 +573,7 @@ static bool parse_dec(const char *v, uint16_t *out)
     return true;
 }
 
-/* The options of send, listen and power, and the bytes of a send. */
+/** @brief The options of send, listen and power, and the bytes of a send. */
 typedef struct {
     uint32_t lead, gap, window, rx, answer, mv, ma, off;
     bool     has_answer;
@@ -626,7 +634,9 @@ static bool parse_args(page_console_t *c, char **tok, unsigned n,
     return true;
 }
 
-/* The staged registers of a transaction; LINE and the supply's are 0. */
+/**
+ * @brief The staged registers of a transaction; LINE and the supply's are 0.
+ */
 static void stage_xfer(page_console_t *c, const hitec_xfer_t *x,
                        uint16_t dec)
 {
@@ -698,7 +708,9 @@ static void hitec_open(page_console_t *c, uint32_t port, char **tok,
     hitec_command(c, LINK_HITEC_OP_OPEN, port, false);
 }
 
-/* The family of the open line, from the page; false when none is open. */
+/**
+ * @brief The family of the open line, from the page; false when none is open.
+ */
 static bool open_family(page_console_t *c, uint8_t *family)
 {
     uint16_t *r = c->data[2];

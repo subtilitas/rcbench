@@ -1,5 +1,6 @@
-/*
- * Where the next copy of the output binding goes in the IOmcu's flash.
+/**
+ * @file
+ * @brief Where the next copy of the output binding goes in the IOmcu's flash.
  *
  * The store is a run of record slots laid across two or more flash sectors.
  * A save programs one slot.  A sector is erased only when nothing in it is
@@ -56,14 +57,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/** One record slot, as the caller found it in flash. */
+/** @brief One record slot, as the caller found it in flash. */
 typedef struct {
     bool     erased;  /**< every byte 0xFF: nothing has been written here */
     bool     valid;   /**< magic, version and checksum all agree */
     uint32_t seq;     /**< the record's sequence number; valid records only */
 } out_store_rec_t;
 
-/** Where the next save goes. */
+/** @brief Where the next save goes. */
 typedef struct {
     uint8_t  at;            /**< the record slot to program */
     uint32_t seq;           /**< the sequence number that record carries */
@@ -72,7 +73,7 @@ typedef struct {
 } out_store_write_t;
 
 /**
- * The live record: the valid one with the highest sequence number.
+ * @brief The live record: the valid one with the highest sequence number.
  *
  * -1 when none of them is valid, which is a store that has never been
  * written, one written by a build with a different record in it, and one
@@ -87,7 +88,7 @@ int out_store_map_newest(const out_store_rec_t *recs, uint8_t sectors,
                          uint8_t per_sector);
 
 /**
- * Plan the next save.
+ * @brief Plan the next save.
  *
  * The slot after the live record, while its sector has an erased slot left;
  * then the first sector that is already erased; then the next sector, which
@@ -102,19 +103,21 @@ bool out_store_map_write(const out_store_rec_t *recs, uint8_t sectors,
                          uint8_t per_sector, out_store_write_t *out);
 
 /**
- * The same, with sector @p keep never erased while no record is valid: it
- * holds the live record of the layout before this one (a one-page slot of
- * version 7 or older, out_store_rec.h), which the store reads until its
- * first record of the new layout is written.  The first other sector is
- * erased instead.  -1 keeps none, as out_store_map_write().
+ * @brief The same, with sector @p keep never erased while no record is valid:
+ *        it holds the live record of the layout before this one (a one-page
+ *        slot of version 7 or older, out_store_rec.h), which the store reads
+ *        until its first record of the new layout is written.
+ *
+ * The first other sector is erased instead.  -1 keeps none, as
+ * out_store_map_write().
  */
 bool out_store_map_write_keep(const out_store_rec_t *recs, uint8_t sectors,
                               uint8_t per_sector, int keep,
                               out_store_write_t *out);
 
 /**
- * A sector worth erasing now, ahead of the save that would have to wait for
- * it, or -1 when there is none.
+ * @brief A sector worth erasing now, ahead of the save that would have to wait
+ *        for it, or -1 when there is none.
  *
  * A sector qualifies when it does not hold the live record and is not
  * already erased.  Erasing it costs the same window as erasing it later; the
@@ -124,13 +127,13 @@ bool out_store_map_write_keep(const out_store_rec_t *recs, uint8_t sectors,
 int out_store_map_stale(const out_store_rec_t *recs, uint8_t sectors,
                         uint8_t per_sector);
 
-/** The same, never offering sector @p keep while no record is valid (see
+/** @brief The same, never offering sector @p keep while no record is valid (see
  *  out_store_map_write_keep()). */
 int out_store_map_stale_keep(const out_store_rec_t *recs, uint8_t sectors,
                              uint8_t per_sector, int keep);
 
 /**
- * Whether a record was written whole and has stayed as it was written.
+ * @brief Whether a record was written whole and has stayed as it was written.
  *
  * @p zeros is the number of 0 bits the record held when it was written, @p
  * zeros_inv is ~@p zeros, and @p counted is the number of 0 bits it holds

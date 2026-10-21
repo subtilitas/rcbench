@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The Hitec servo wire on a programming port: the OPEN, transaction,
+ *        POWER and CLOSE states.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -62,7 +66,7 @@ static void op_begin(hitec_port_t *p, link_hitec_op_t op)
     p->result = (uint8_t)LINK_HITEC_RESULT_RUNNING;
 }
 
-/* Back to free: the line closed, the pin the generator's. */
+/** @brief Back to free: the line closed, the pin the generator's. */
 static void go_free(hitec_port_t *p)
 {
     const bool had_pin = p->has_pin != 0u;
@@ -77,7 +81,7 @@ static void go_free(hitec_port_t *p)
     }
 }
 
-/* The capture is in: decode it as the transaction asked. */
+/** @brief The capture is in: decode it as the transaction asked. */
 static void finish(hitec_port_t *p)
 {
     hitec_rx_t r = HITEC_RX_OK;
@@ -112,7 +116,7 @@ static void finish(hitec_port_t *p)
                                      : (uint8_t)LINK_HITEC_RESULT_DONE;
 }
 
-/* Cut the running transaction; its capture comes at the next poll. */
+/** @brief Cut the running transaction; its capture comes at the next poll. */
 static void cut(hitec_port_t *p)
 {
     if (p->state == (uint8_t)LINK_HITEC_BUSY && p->cutting == 0u) {
@@ -177,7 +181,9 @@ static void on_stop(hitec_port_t *p)
 
 /* --- commands ------------------------------------------------------------ */
 
-/* The decoder the staged registers ask for, checked against the family. */
+/**
+ * @brief The decoder the staged registers ask for, checked against the family.
+ */
 static bool decoder_ok(const hitec_port_t *p, link_hitec_op_t op)
 {
     const uint16_t d = ST(p, LINK_HT_W_DECODE);
@@ -381,7 +387,7 @@ static bool puts_byte_out(link_hitec_op_t op, const hitec_xfer_t *x)
     return op == LINK_HITEC_OP_SEND || x->answer != 0u;
 }
 
-/* SEND, LISTEN, LEVEL and POWER. */
+/** @brief SEND, LISTEN, LEVEL and POWER. */
 static link_hitec_refusal_t transaction(hitec_port_t *p, link_hitec_op_t op,
                                         uint8_t port, const uint16_t *in,
                                         uint32_t now_ms)

@@ -1,5 +1,6 @@
-/*
- * The SENSE_LIMIT page: see sense_limit.h.
+/**
+ * @file
+ * @brief The SENSE_LIMIT page: see sense_limit.h.
  *
  * SPDX-License-Identifier: MIT
  */

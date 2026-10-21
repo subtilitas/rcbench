@@ -1,5 +1,8 @@
-/*
- * The SERVO link page.  See servo_page.h.
+/**
+ * @file
+ * @brief The SERVO link page.
+ *
+ * See servo_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,7 +36,8 @@ static sweep_cfg_t cfg_of(const uint16_t *r)
     return c;
 }
 
-/* Whether two sweeps trace the same curve; the movement count is not the
+/** @brief Whether two sweeps trace the same curve; the movement count is not
+ *        the
  * curve, and it applies to the next start. */
 static bool same_curve(const sweep_cfg_t *a, const sweep_cfg_t *b)
 {
@@ -41,7 +45,8 @@ static bool same_curve(const sweep_cfg_t *a, const sweep_cfg_t *b)
            && a->amplitude == b->amplitude && a->dwell_ms == b->dwell_ms;
 }
 
-/* The channels the sweep and the hold command: the standard servo ports,
+/** @brief The channels the sweep and the hold command: the standard servo
+ *        ports,
  * or the range servo_page_target() named. */
 static uint8_t target_first(const servo_page_t *p)
 {
@@ -65,11 +70,12 @@ static void command_surfaces(const servo_page_t *p, outputs_t *o,
     }
 }
 
-/*
- * Every surface held where its output has got to.  The last command a sweep
- * left would otherwise be slewed towards for as long again as the channel's
- * own timeout, past the moment the sweep stopped.  The channel's clock is
- * left alone, so it rests when it would have.
+/**
+ * @brief Every surface held where its output has got to.
+ *
+ * The last command a sweep left would otherwise be slewed towards for as long
+ * again as the channel's own timeout, past the moment the sweep stopped.  The
+ * channel's clock is left alone, so it rests when it would have.
  */
 static void freeze_surfaces(const servo_page_t *p, outputs_t *o)
 {
@@ -80,10 +86,11 @@ static void freeze_surfaces(const servo_page_t *p, outputs_t *o)
     }
 }
 
-/*
- * Whether a RESUME can carry on the sweep held now: a phase kept by a hold
- * still in force and a page that still describes that sweep.  A curve
- * changed while held is a new sweep, which starts only whole.
+/**
+ * @brief Whether a RESUME can carry on the sweep held now: a phase kept by a
+ *        hold still in force and a page that still describes that sweep.
+ *
+ * A curve changed while held is a new sweep, which starts only whole.
  */
 static bool resumable(const servo_page_t *p, const uint16_t *next)
 {
@@ -97,7 +104,7 @@ static bool resumable(const servo_page_t *p, const uint16_t *next)
            && next[LINK_SV_SWEEP_MOVES] == k->moves;
 }
 
-/*
+/**
  * Whether the frame rate @p hz may be the target's.  The standard servo
  * ports: every PWM slot whose first channel is a surface, judged against the
  * slices it shares (outputs_servo_rate_check()) and against every PWM slot's

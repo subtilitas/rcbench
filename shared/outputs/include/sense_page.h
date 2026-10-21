@@ -1,9 +1,11 @@
-/*
- * The SENSE, SERVO_SENSE and SERVO_WIN link pages at the IOmcu: the
- * I2C bus of the two current monitors and the output encoder, its set-up
- * and what they last read, the servo rail's channels with a move capture,
- * and CH1's last four windows.  The registers are in
- * link_pages.h (LINK_SN_*, LINK_SS_*, LINK_SW_*).
+/**
+ * @file
+ * @brief The SENSE, SERVO_SENSE and SERVO_WIN link pages at the IOmcu: the I2C
+ *        bus of the two current monitors and the output encoder, its set-up and
+ *        what they last read, the servo rail's channels with a move capture,
+ *        and CH1's last four windows.
+ *
+ * The registers are in link_pages.h (LINK_SN_*, LINK_SS_*, LINK_SW_*).
  *
  * The set-up is refused while the bank is armed, on pins that are not one
  * I2C block's SDA and SCL, and on pins the board, an output or the SUPPLY
@@ -62,7 +64,8 @@ extern "C" {
 #define SENSE_DEFAULT_I3221_DMOHM 1000u
 #define SENSE_DEFAULT_I3221_CH   0x01u
 
-/** A capture armed before anything else is written: 100 mA of movement and
+/** @brief A capture armed before anything else is written: 100 mA of movement
+ *        and
  *  a 50 mA band, the servo test's SERVO_TEST_MOVE_A and SERVO_TEST_BAND_A. */
 #define SENSE_DEFAULT_MOVE_MA 100u
 #define SENSE_DEFAULT_BAND_MA  50u
@@ -97,29 +100,29 @@ typedef struct {
 
 void sense_page_init(sense_page_t *p);
 
-/** The set-up as a page starts, into @p cfg (LINK_SN_CONFIG_COUNT
+/** @brief The set-up as a page starts, into @p cfg (LINK_SN_CONFIG_COUNT
  *  registers): what a store record from before protocol 4.7 restores. */
 void sense_page_defaults(uint16_t *cfg);
 
 /**
- * The INA3221's full scale in mA for a shunt of @p shunt_dmohm tenths of a
- * milliohm: 163.8 mV across it.  1638 at 0.1 Ohm.  0 for no shunt.
+ * @brief The INA3221's full scale in mA for a shunt of @p shunt_dmohm tenths of
+ *        a milliohm: 163.8 mV across it.  1638 at 0.1 Ohm.  0 for no shunt.
  */
 uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm);
 
 /**
- * A SENSE write, validated whole before any of it is stored.  Refused: off
- * the page (BAD_RANGE); a read-only register (READ_ONLY); a value out of
- * its range, a reserved register written other than 0, SDA and SCL not
- * one I2C block's pair (link_sn_pins_pair()) whatever is enabled -- but
- * for nothing enabled with SDA or SCL 0, a panel's pins that are not set
- * -- and while a part is enabled a pin past the bank,
- * reserved, bound to an output or in @p taken, the two parts on one
- * address while both are enabled, the INA3221 enabled with no channel, an
- * INA228 shunt and maximum ina228_calibrate() refuses (past 163.84 mV
- * across the shunt, or a full scale past INA228_FS_MA_LIMIT at the range
- * it chooses), and any change while @p o is driving (BAD_VALUE).  A write
- * of the set-up in force is taken armed or not.
+ * @brief A SENSE write, validated whole before any of it is stored.
+ *
+ * Refused: off the page (BAD_RANGE); a read-only register (READ_ONLY); a value
+ * out of its range, a reserved register written other than 0, SDA and SCL not
+ * one I2C block's pair (link_sn_pins_pair()) whatever is enabled -- but for
+ * nothing enabled with SDA or SCL 0, a panel's pins that are not set -- and
+ * while a part is enabled a pin past the bank, reserved, bound to an output or
+ * in @p taken, the two parts on one address while both are enabled, the INA3221
+ * enabled with no channel, an INA228 shunt and maximum ina228_calibrate()
+ * refuses (past 163.84 mV across the shunt, or a full scale past
+ * INA228_FS_MA_LIMIT at the range it chooses), and any change while @p o is
+ * driving (BAD_VALUE).  A write of the set-up in force is taken armed or not.
  *
  * The INA228's calibration is the driver's, ina228_calibrate(), so the
  * page refuses exactly the set-ups the driver could not run.
@@ -143,76 +146,84 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
                      uint16_t *out);
 
 /**
- * A SERVO_SENSE write.  CAP_ARM written 0 at the head of the write
- * disarms, is never refused, and stores nothing else of the write.  Any
- * other write is an arm, LINK_SS_CAP_FRAME registers from CAP_ARM.
- * Refused: off the page (BAD_RANGE); a read-only register (READ_ONLY);
- * not the whole frame, CAP_ARM with bits it does not have, an INA3221
- * channel that is not 1 (LINK_SS_CAP_CH) or not read, an output channel
- * that is not a surface on a PWM slot bound to silicon
- * (sense_page_bound()), with LINK_SS_ARM_PORT a programming port that
- * renders no pulse (sense_page_ports()), a movement or band of 0 or past
- * 32767 mA
- * (BAD_VALUE); an arm while @p o is not armed for the surfaces
- * (NOT_ARMED).  The holding level is signed mA and every value of it is
- * taken, -32768 to 32767.
- * An arm restarts the capture: CAP_STATE armed, the results 0.
+ * @brief A SERVO_SENSE write.
+ *
+ * CAP_ARM written 0 at the head of the write disarms, is never refused, and
+ * stores nothing else of the write.  Any other write is an arm,
+ * LINK_SS_CAP_FRAME registers from CAP_ARM.  Refused: off the page (BAD_RANGE);
+ * a read-only register (READ_ONLY); not the whole frame, CAP_ARM with bits it
+ * does not have, an INA3221 channel that is not 1 (LINK_SS_CAP_CH) or not read,
+ * an output channel that is not a surface on a PWM slot bound to silicon
+ * (sense_page_bound()), with LINK_SS_ARM_PORT a programming port that renders
+ * no pulse (sense_page_ports()), a movement or band of 0 or past 32767 mA
+ * (BAD_VALUE); an arm while @p o is not armed for the surfaces (NOT_ARMED).
+ * The holding level is signed mA and every value of it is taken, -32768 to
+ * 32767.  An arm restarts the capture: CAP_STATE armed, the results 0.
  */
 uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,
                           const uint16_t *in, const outputs_t *o);
 
-/** Which output slots the silicon bound (bit n slot n): a capture arms
- *  only on a PWM slot that renders frames.  The IOmcu says so after
+/** @brief Which output slots the silicon bound (bit n slot n): a capture arms
+ *        only on a PWM slot that renders frames.
+ *
+ * The IOmcu says so after
  *  every change of the bindings; until it does, no slot counts as bound. */
 void sense_page_bound(sense_page_t *p, uint8_t slots);
 
-/** Which programming ports render a pulse while the bank drives (bit n
- *  port n): bound to the PWM generator, switched on in LINK_PG_PWM and not
- *  held by the KST port.  A capture with LINK_SS_ARM_PORT arms only on one
+/** @brief Which programming ports render a pulse while the bank drives (bit n
+ *        port n): bound to the PWM generator, switched on in LINK_PG_PWM and
+ *        not held by the KST port.
+ *
+ * A capture with LINK_SS_ARM_PORT arms only on one
  *  of them.  Until told, none. */
 void sense_page_ports(sense_page_t *p, uint8_t ports);
 
-/** Whether the capture in CAP_ARM names a programming port that renders
- *  no pulse now: its PWM switched off, its pin gone, or the KST port on
- *  the pin.  The caller ends such a capture as it ends one whose bank
+/** @brief Whether the capture in CAP_ARM names a programming port that renders
+ *        no pulse now: its PWM switched off, its pin gone, or the KST port on
+ *        the pin.
+ *
+ * The caller ends such a capture as it ends one whose bank
  *  stopped driving, with sense_page_step(p, false). */
 bool sense_page_port_gone(const sense_page_t *p);
 
 void sense_servo_read(const sense_page_t *p, uint8_t off, uint8_t n,
                       uint16_t *out);
 
-/** A SERVO_WIN read: CH1's ring as last published, and the capture's
- *  state, count and clipped bit as SERVO_SENSE reads them at this moment.
+/** @brief A SERVO_WIN read: CH1's ring as last published, and the capture's
+ *        state, count and clipped bit as SERVO_SENSE reads them at this moment.
  *  The page takes no write. */
 void sense_win_read(const sense_page_t *p, uint8_t off, uint8_t n,
                     uint16_t *out);
 
 /**
- * One pass: a bank that is not @p driving ends a capture that has not
- * finished -- CAP_ARM 0, CAP_STATE idle -- and returns true.  A finished
- * capture keeps its result until the next arm.
+ * @brief One pass: a bank that is not @p driving ends a capture that has not
+ *        finished -- CAP_ARM 0, CAP_STATE idle -- and returns true.
+ *
+ * A finished capture keeps its result until the next arm.
  */
 bool sense_page_step(sense_page_t *p, bool driving);
 
 /**
- * The order for core 1 from the page: the set-up and its generation, and
- * the capture's.  The INA228's maximum in mA, the INA3221's shunt in µΩ;
- * a capture's level before the command left to CH1
- * (SENSE_CAP_RISE_AUTO).  run_gen, edge_set and edge_us are the caller's,
- * and left as they are.
+ * @brief The order for core 1 from the page: the set-up and its generation, and
+ *        the capture's.
+ *
+ * The INA228's maximum in mA, the INA3221's shunt in µΩ; a capture's level
+ * before the command left to CH1 (SENSE_CAP_RISE_AUTO).  run_gen, edge_set and
+ * edge_us are the caller's, and left as they are.
  */
 void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd);
 
 /**
- * What core 1 read into the read-only registers of both pages, when @p s
- * was taken under the set-up in force.  SENSE: FLAGS, PRESENT, the IDs,
- * ERRORS, the die temperature, DIAG_ALRT, the charge and energy while
- * they are the totals of run @p run_gen (sense_run_t.totals_ok), 0
- * otherwise, and RESETS.  SERVO_SENSE: each channel's last window and its
- * flags, the window number, and the capture when @p s was taken under the
- * capture order in force.  SERVO_WIN: CH1's ring, a clipped sample
- * counted at the end of the range it read.  Values are rounded to their register's step and held
- * to its range.
+ * @brief What core 1 read into the read-only registers of both pages, when @p s
+ *        was taken under the set-up in force.
+ *
+ * SENSE: FLAGS, PRESENT, the IDs, ERRORS, the die temperature, DIAG_ALRT, the
+ * charge and energy while they are the totals of run @p run_gen
+ * (sense_run_t.totals_ok), 0 otherwise, and RESETS.  SERVO_SENSE: each
+ * channel's last window and its flags, the window number, and the capture when
+ * @p s was taken under the capture order in force.  SERVO_WIN: CH1's ring, a
+ * clipped sample counted at the end of the range it read.  Values are rounded
+ * to their register's step and held to its range.
  *
  * FLAGS bit 3 (LINK_SN_I228_CLIPPED) is set when the INA228's last window
  * held a clipped current, or the run's peaks lack one.
@@ -220,14 +231,14 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd);
 void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
                         uint16_t run_gen);
 
-/** The ESC's own telemetry voltage and current, each with its valid bit,
+/** @brief The ESC's own telemetry voltage and current, each with its valid bit,
  *  into SENSE registers 23 to 25. */
 void sense_page_esc(sense_page_t *p, bool v_ok, float volts, bool i_ok,
                     float amps);
 
 /**
- * The BENCH page's numbers from the INA228, over what the ESC's telemetry
- * put in @p b, once the peaks of @p b are tracked.
+ * @brief The BENCH page's numbers from the INA228, over what the ESC's
+ *        telemetry put in @p b, once the peaks of @p b are tracked.
  *
  * The INA228 is BENCH's source (LINK_BN_SENSED) while it is enabled and
  * online, and stays it to the end of a run it was online in: a part that
@@ -244,37 +255,43 @@ void sense_page_bench(sense_page_t *p, const sense_snap_t *s,
                       uint16_t run_gen, bool driving, bench_state_t *b);
 
 /**
- * The capability bits the set-up makes true: LINK_CAP_PACK_SENSE while
- * the INA228 is enabled, LINK_CAP_SERVO_SENSE while the INA3221 is --
- * fitted as configured, not online now -- or, with SENSE_MAP in force,
- * while a channel it reads watches an output channel or a programming
- * port (sense_map.h).  They change only with a SENSE or SENSE_MAP write
- * taken, because a panel reads the identity page at link-up and again
- * after such a write, not on every poll; whether a part answers is FLAGS'
- * and BENCH bit 5's, which it polls.
+ * @brief The capability bits the set-up makes true: LINK_CAP_PACK_SENSE while
+ *        the INA228 is enabled, LINK_CAP_SERVO_SENSE while the INA3221 is --
+ *        fitted as configured, not online now -- or, with SENSE_MAP in force,
+ *        while a channel it reads watches an output channel or a programming
+ *        port (sense_map.h).
+ *
+ * They change only with a SENSE or SENSE_MAP write taken, because a panel reads
+ * the identity page at link-up and again after such a write, not on every poll;
+ * whether a part answers is FLAGS' and BENCH bit 5's, which it polls.
  */
 uint16_t sense_page_caps(const sense_page_t *p);
 
-/** Whether either part is enabled, and so the bus runs. */
+/** @brief Whether either part is enabled, and so the bus runs. */
 bool sense_page_enabled(const sense_page_t *p);
 
-/** The bus's pins and clock. */
+/** @brief The bus's pins and clock. */
 uint8_t  sense_page_sda(const sense_page_t *p);
 uint8_t  sense_page_scl(const sense_page_t *p);
 uint32_t sense_page_hz(const sense_page_t *p);
 
-/** The pins the set-up holds, as a reservation mask; 0 while neither part
+/** @brief The pins the set-up holds, as a reservation mask; 0 while neither
+ *        part
  *  is enabled. */
 uint64_t sense_page_pins(const sense_page_t *p);
 
-/** Those and the pins core 1 has not let go of yet (sense_page_t.held): a
- *  bus moved or closed keeps its old pins for about 1 ms.  What no output
+/** @brief Those and the pins core 1 has not let go of yet (sense_page_t.held):
+ *        a bus moved or closed keeps its old pins for about 1 ms.
+ *
+ * What no output
  *  may have. */
 uint64_t sense_page_held(const sense_page_t *p);
 
-/** LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
- *  registers) that binds a slot to a pin sense_page_held() names, the
- *  refusal the SUPPLY page gives for its own; 0 otherwise.  Taken instead,
+/** @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
+ *        registers) that binds a slot to a pin sense_page_held() names, the
+ *        refusal the SUPPLY page gives for its own; 0 otherwise.
+ *
+ * Taken instead,
  *  such a slot would be left unbound with nothing on the wire to say so. */
 uint8_t sense_page_slots_check(const sense_page_t *p, const uint16_t *slots);
 

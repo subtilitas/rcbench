@@ -1,5 +1,8 @@
-/*
- * A binding prepared beside the one in force.  See out_stage.h.
+/**
+ * @file
+ * @brief A binding prepared beside the one in force.
+ *
+ * See out_stage.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -74,7 +77,10 @@ void out_stage_slots_read(const out_stage_t *st, uint8_t off, uint8_t n,
     }
 }
 
-/* Byte by byte, so the value does not depend on either processor's order. */
+/**
+ * @brief Byte by byte, so the value does not depend on either processor's
+ *        order.
+ */
 static uint16_t crc_regs(uint16_t crc, const uint16_t *regs, unsigned count)
 {
     for (unsigned i = 0; i < count; ++i) {
@@ -100,7 +106,7 @@ uint16_t out_stage_held_crc(const out_stage_t *st)
     return (st != NULL) ? out_stage_crc(st->cfg, st->slots) : 0u;
 }
 
-/* The bank's channels from before a commit. */
+/** @brief The bank's channels from before a commit. */
 static out_channel_t s_held[OUT_MAX_CHANNELS];
 
 uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
