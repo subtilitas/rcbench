@@ -1,5 +1,6 @@
-/*
- * When the panel may write its own flash, and when the IOmcu may
+/**
+ * @file
+ * @brief When the panel may write its own flash, and when the IOmcu may
  * not write its own.  See flash_gate.h.
  *
  * SPDX-License-Identifier: MIT

@@ -1,5 +1,6 @@
-/*
- * The safety heartbeat: the panel's signal that it is running, and the
+/**
+ * @file
+ * @brief The safety heartbeat: the panel's signal that it is running, and the
  * IOmcu's judgement of whether to believe it.
  *
  * A level cannot carry this.  A GPIO (general-purpose input/output) held
@@ -83,14 +84,19 @@
 typedef struct {
     uint32_t last_ms;   /**< when the last edge was emitted */
     bool     level;     /**< the level the line is being held at */
-    bool     started;   /**< false until the first step, so t=0 is not an edge */
+    bool     started;   /**< false until the first step; t=0 is no edge */
 } heartbeat_gen_t;
 
-/** Start held low: nothing downstream may run until this loop asks for it. */
+/**
+ * @brief Start held low: nothing downstream may run until this loop asks for
+ *        it.
+ *
+ * @param g Generator state to initialise.
+ */
 void heartbeat_gen_init(heartbeat_gen_t *g);
 
 /**
- * Advance the generator; returns the level the pin should be driven to.
+ * @brief Advance the generator; returns the level the pin should be driven to.
  *
  * @p alive is the caller's own judgement of whether it is fit to keep the
  * bench running -- touch answering, link up, no latched stop. When it is
@@ -99,6 +105,11 @@ void heartbeat_gen_init(heartbeat_gen_t *g);
  * and the fastest correct thing to do with a stop is all of it at once.
  *
  * Call it as often as you like; it edges no faster than HEARTBEAT_PERIOD_MS.
+ *
+ * @param g Generator state.
+ * @param now_ms Current time, in milliseconds.
+ * @param alive true when the caller judges the bench fit to run.
+ * @return The level the pin is driven to.
  */
 bool heartbeat_gen_step(heartbeat_gen_t *g, uint32_t now_ms, bool alive);
 
@@ -115,23 +126,36 @@ typedef struct {
     uint32_t rejected_slow; /**< intervals over the ceiling -- a stall */
 } heartbeat_mon_t;
 
-/** Start not alive, with no edge seen. */
+/**
+ * @brief Start not alive, with no edge seen.
+ *
+ * @param m Monitor state to initialise.
+ */
 void heartbeat_mon_init(heartbeat_mon_t *m);
 
 /**
+ * @brief Record an edge on the safety line.
+ *
  * Record an edge on the safety line.
  *
  * Called from wherever edges are noticed -- an interrupt, or a poll that
  * samples faster than HEARTBEAT_MIN_GAP_MS. It only ever costs a subtraction
  * and a compare, so an ISR is a fine place for it.
+ *
+ * @param m Monitor state.
+ * @param now_ms Time of the edge, in milliseconds.
  */
 void heartbeat_mon_edge(heartbeat_mon_t *m, uint32_t now_ms);
 
 /**
- * Whether the line may be believed *now*.
+ * @brief Whether the line may be believed *now*.
  *
  * Must be called even when no edges are arriving: silence is the failure this
  * exists to catch, and silence generates no events. Calling it is what
  * notices that nothing has happened.
+ *
+ * @param m Monitor state.
+ * @param now_ms Current time, in milliseconds.
+ * @return true when the line may be believed now.
  */
 bool heartbeat_mon_alive(heartbeat_mon_t *m, uint32_t now_ms);

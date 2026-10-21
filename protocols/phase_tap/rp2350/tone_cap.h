@@ -1,8 +1,10 @@
-/*
- * The phase tap's capture: one PIO (programmable input/output) state
- * machine on one input pin (tone_cap.pio) and a DMA (direct memory access)
- * channel that collects its words in a ring of TONE_RING_WORDS words,
- * endlessly, with the write address wrapping on the ring.
+/**
+ * @file
+ * @brief The phase tap's capture: one PIO (programmable input/output) state
+ *        machine on one input pin (tone_cap.pio) and a DMA (direct memory
+ *        access) channel that collects its words in a ring of
+ *        TONE_RING_WORDS words, endlessly, with the write address wrapping on
+ *        the ring.
  *
  * Core 0 starts and stops it.  Core 1 reads the ring and the channel's
  * write position, with tone_svc_step() or a reader of its own, and the
@@ -34,47 +36,91 @@ extern "C" {
 #endif
 
 /**
- * Claim a state machine and a DMA channel, load the program, start the
- * capture on @p pin.  False, with nothing claimed, when no PIO block that
- * reaches the pin has room for the program and a state machine, no DMA
- * channel is free, or the system clock is not 150 MHz.
+ * @brief Claim a state machine and a DMA channel, and start the capture.
+ *
+ * Loads the program and starts the capture on @p pin.  False, with nothing
+ * claimed, when no PIO block that reaches the pin has room for the program
+ * and a state machine, no DMA channel is free, or the system clock is not
+ * 150 MHz.
+ *
+ * @param pin  GPIO number of the phase input.
+ * @return     true when the capture runs.
  */
 bool tone_cap_start(uint8_t pin);
 
-/** Mark the capture not running, so the next order tells core 1 to read
- *  nothing from it; the state machine and the channel stay, and
- *  tone_cap_wr() and tone_cap_stalled() still read them for a pass already
- *  under way.  True when it was running.  The first step of taking the
- *  capture down: tell core 1, wait for it to acknowledge, then
- *  tone_cap_stop(). */
+/**
+ * @brief Mark the capture not running.
+ *
+ * The next order tells core 1 to read nothing from it; the state machine and
+ * the channel stay, and tone_cap_wr() and tone_cap_stalled() still read them
+ * for a pass already under way.  The first step of taking the capture down:
+ * tell core 1, wait for it to acknowledge, then tone_cap_stop().
+ *
+ * @return  true when it was running.
+ */
 bool tone_cap_pause(void);
 
-/** Mark a paused capture running again, when core 1 did not acknowledge
- *  the pause and nothing was taken down. */
+/**
+ * @brief Mark a paused capture running again.
+ *
+ * Used when core 1 did not acknowledge the pause and nothing was taken down.
+ */
 void tone_cap_resume(void);
 
-/** Stop the capture and give back what it claimed; the pin is left an
- *  input with its pull-down on.  Safe when it is not running.  Core 1 is
- *  not reading the ring or the channel at that moment (tone_cap_pause()). */
+/**
+ * @brief Stop the capture and give back what it claimed.
+ *
+ * The pin is left an input with its pull-down on.  Safe when it is not
+ * running.  Core 1 is not reading the ring or the channel at that moment
+ * (tone_cap_pause()).
+ */
 void tone_cap_stop(void);
 
+/**
+ * @brief Whether the capture runs.
+ *
+ * @return  true while the capture runs.
+ */
 bool tone_cap_running(void);
 
-/** The microsecond timer when the counter began. */
+/**
+ * @brief The microsecond timer when the counter began.
+ *
+ * @return The microsecond timer value when the counter began.
+ */
 uint64_t tone_cap_start_us(void);
 
-/** The pin as an input with its pull-down on, driven by nothing: a tap
- *  that is off.  Not while the capture runs. */
+/**
+ * @brief Rest the pin as an input with its pull-down on.
+ *
+ * Driven by nothing: a tap that is off.  Not while the capture runs.
+ *
+ * @param pin  GPIO number of the phase input.
+ */
 void tone_cap_rest(uint8_t pin);
 
-/** The ring. */
+/**
+ * @brief The ring.
+ *
+ * @return The ring of edge words.
+ */
 const uint32_t *tone_cap_ring(void);
 
-/** The slot the DMA writes next; 0 when the capture does not run. */
+/**
+ * @brief The slot the DMA writes next; 0 when the capture does not run.
+ *
+ * @return The slot the DMA writes next, 0 when the capture does not run.
+ */
 uint32_t tone_cap_wr(void);
 
-/** Whether the state machine dropped a word (its FIFO was full) since the
- *  last call; clears the flag.  Called from core 1 only. */
+/**
+ * @brief Whether the state machine dropped a word since the last call.
+ *
+ * The state machine's FIFO was full.  Clears the flag.  Called from core 1
+ * only.
+ *
+ * @return  true when a word was dropped since the last call.
+ */
 bool tone_cap_stalled(void);
 
 #ifdef __cplusplus

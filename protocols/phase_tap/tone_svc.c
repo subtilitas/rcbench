@@ -1,5 +1,8 @@
-/*
- * The tone service.  See tone_svc.h.
+/**
+ * @file
+ * @brief The tone service.
+ *
+ * See tone_svc.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -10,12 +13,24 @@
 
 #define U16_MAX 65535u
 
+/**
+ * @brief Clip a 64-bit count to 16 bits.
+ *
+ * @param v  Count to clip.
+ * @return   @p v, or 65535 when it is larger.
+ */
 static uint16_t clip16(uint64_t v)
 {
     return (uint16_t)(v > U16_MAX ? U16_MAX : v);
 }
 
-/* A non-negative float rounded to the nearest integer, clipped to 16 bits. */
+/**
+ * @brief Round a non-negative float to the nearest integer, clipped to 16
+ *        bits.
+ *
+ * @param v  Value to round.
+ * @return   The rounded value, 0 for a value not above zero, 65535 at most.
+ */
 static uint16_t round16(float v)
 {
     if (!(v > 0.0f)) {
@@ -63,8 +78,14 @@ void tone_svc_rec(const tone_beep_t *b, tone_rec_t *r)
     r->flags       = (uint8_t)(b->flags & 3u);
 }
 
-/* Restart under a new order: the detector, the hold-off horizon, the ring
- * reader and the flags.  False when the order's settings are refused. */
+/**
+ * @brief Restart under a new order: the detector, the hold-off horizon, the
+ *        ring reader and the flags.
+ *
+ * @param s    Service state.
+ * @param cmd  Order from core 0.
+ * @return     false when the order's settings are refused.
+ */
 static bool restart(tone_svc_t *s, const tone_cmd_t *cmd)
 {
     tone_cfg_t c;
@@ -87,6 +108,12 @@ static bool restart(tone_svc_t *s, const tone_cmd_t *cmd)
     return true;
 }
 
+/**
+ * @brief Fill the status for this pass.
+ *
+ * @param s   Service state.
+ * @param st  Receives the status; cleared first.
+ */
 static void report(const tone_svc_t *s, tone_status_t *st)
 {
     memset(st, 0, sizeof(*st));
