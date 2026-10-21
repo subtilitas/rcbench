@@ -60,7 +60,7 @@ extern "C" {
  * panel: it does not know this board, so it offers nothing.
  */
 typedef enum {
-    OUTBIND_BOARD_UNKNOWN = 0,      /**< nothing answered, or unknown identity */
+    OUTBIND_BOARD_UNKNOWN = 0,  /**< nothing answered, or unknown identity */
     OUTBIND_BOARD_PICO_HEADER = 1,  /**< Pico form factor, wired by hand    */
 } outbind_board_id_t;
 
