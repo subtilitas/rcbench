@@ -1,13 +1,14 @@
-/*
- * The interface's words, one table per language.
+/**
+ * @file
+ * @brief The interface's words, one table per language.
  *
  * Every string a screen shows in the operator's language has an ID in
- * ui_text.def, which also holds its English.  A language is a table of the
- * same IDs (ui_text_de.c for German); an entry the table leaves NULL shows
- * the English, so a partial table is a working one.  What stays English in
- * every language -- ARM, DISARM, STOP, the screen titles, protocol and mode
- * names, units, and the field's own terms -- is not in the table at all and
- * is written where it is drawn.
+ * ui_text.def (shared/text/include), which holds its English and its German
+ * side by side.  ui_text.c makes a table of each language's column; an
+ * entry a language leaves NULL shows the English, so a partial column is a
+ * working one.  What stays English in every language -- ARM, DISARM, STOP,
+ * the screen titles, protocol and mode names, units, and the field's own
+ * terms -- is not in the table at all and is written where it is drawn.
  *
  * Text is UTF-8; gfx decodes it and draws one cell per code point
  * (gfx.h).  A translated format string must convert the same arguments in
@@ -38,23 +39,26 @@ typedef enum {
     UI_LANG_COUNT
 } ui_lang_t;
 
+/** @brief The screens' strings, TX_<ID> for each UI_TEXT() of ui_text.def. */
 typedef enum {
-#define UI_TEXT(id, cells, en) TX_##id,
+#define UI_TEXT(id, cells, en, de) TX_##id,
 #include "ui_text.def"
-#undef UI_TEXT
     TX_COUNT
 } ui_text_id_t;
 
 /**
- * A language.  Every table is indexed by the ID beside it and may be NULL
- * or hold NULL entries, each of which shows the English.
+ * @brief A language: its column of ui_text.def.
+ *
+ * Every table is indexed by the ID beside it and may be NULL or hold NULL
+ * entries, each of which shows the English.
  */
 typedef struct {
     const char *const *text;             /**< [TX_COUNT]                  */
     const char *const *setting_label;    /**< [SETTING_COUNT]             */
     const char *const *setting_help;     /**< [SETTING_COUNT]             */
-    /** [SETTING_COUNT], each an array of that setting's option_count. */
-    const char *const *const *setting_options;
+    /** One per UI_OPTIONS() of ui_text.def, in its order
+     *  (settings_option_list()), each as long as the English list. */
+    const char *const *const *options;
     const char *const *category;         /**< [SET_CAT_COUNT]             */
     const char *const *servo;            /**< [SERVO_STR_COUNT]           */
 } ui_language_t;

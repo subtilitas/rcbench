@@ -1,5 +1,7 @@
-/*
- * The Wi-Fi page. See wa_page.h.
+/**
+ * @file
+ * @brief The Wi-Fi page: the code form, the card listing and the upload
+ *        answers in English and German. See wa_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -10,149 +12,45 @@
 
 #include "wa_zip.h"
 
-/* The page's texts, English and German. */
+/** @brief The page's texts, P_<ID> for each UI_WEB_TEXT() of ui_text.def. */
 typedef enum {
-    P_FIRMWARE = 0,
-    P_INSTALLED,
-    P_FW_NOTE,
-    P_UPLOAD,
-    P_TOO_BIG,
-    P_BROKE,
-    P_REFUSED,
-    P_FILES,
-    P_ALL,
-    P_ALL_SIZE_1,
-    P_ALL_SIZE_2,
-    P_ALL_SIZE_3,
-    P_NO_CARD,
-    P_EMPTY,
-    P_LEFT_OUT,
-    P_NAME,
-    P_BYTES,
-    P_MODIFIED,
-    P_CODE,
-    P_CODE_NOTE,
-    P_CODE_WRONG,
-    P_OK,
-    P_UP_OK_1,
-    P_UP_OK_2,
-    P_UP_SAME,
-    P_UP_EMPTY,
-    P_UP_TOO_BIG,
-    P_UP_SHORT,
-    P_UP_NOT_IMAGE,
-    P_UP_CHIP,
-    P_UP_PROJECT,
-    P_UP_VERSION,
-    P_UP_NO_HASH,
-    P_UP_LENGTH,
-    P_UP_HASH,
-    P_UP_BUSY,
-    P_UP_MEMORY,
-    P_UP_OTHER,
+#define UI_WEB_TEXT(id, en, de) id,
+#include "ui_text.def"
     P_COUNT
 } p_text_t;
 
+/** @brief The page's texts in English. */
 static const char *const k_en[P_COUNT] = {
-    [P_FIRMWARE]     = "Panel firmware",
-    [P_INSTALLED]    = "Installed: ",
-    /* One text in three literals: the initialisers are designated, so no
-     * comma is missing. */
-    /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
-    [P_FW_NOTE]      = "Upload a panel image, rcbench-panel-p4-vX.Y.Z.bin. The "
-                       "panel checks it and asks. It installs only after "
-                       "INSTALL is held for 2 s on the panel.",
-    [P_UPLOAD]       = "Upload",
-    [P_TOO_BIG]      = "The file is larger than the panel's slot.",
-    [P_BROKE]        = "The upload broke off.",
-    [P_REFUSED]      = "The panel did not take the upload: HTTP ",
-    [P_FILES]        = "Files on the card",
-    [P_ALL]          = "Download all as one ZIP file",
-    [P_ALL_SIZE_1]   = " files, ",
-    [P_ALL_SIZE_2]   = " bytes. The ZIP file is ",
-    [P_ALL_SIZE_3]   = " bytes.",
-    [P_NO_CARD]      = "No card, or the card cannot be read.",
-    [P_EMPTY]        = "The card holds no files.",
-    [P_LEFT_OUT]     = " entries are not listed: a name over 255 characters, "
-                       "a path over 384 bytes, or a folder deeper than 16.",
-    [P_NAME]         = "Name",
-    [P_BYTES]        = "Bytes",
-    [P_MODIFIED]     = "Modified",
-    [P_CODE]         = "Access code",
-    [P_CODE_NOTE]    = "Enter the code the panel's Wi-Fi screen shows.",
-    [P_CODE_WRONG]   = "Wrong code.",
-    [P_OK]           = "OK",
-    [P_UP_OK_1]      = "Received and checked: panel firmware ",
-    [P_UP_OK_2]      = ". To install, hold INSTALL on the panel for 2 s.",
-    [P_UP_SAME]      = ". This is the build the panel runs; the panel "
-                       "offers no install.",
-    [P_UP_EMPTY]     = "The file is empty.",
-    [P_UP_TOO_BIG]   = "The file is larger than the panel's slot.",
-    [P_UP_SHORT]     = "The file is cut short.",
-    [P_UP_NOT_IMAGE] = "This is not a panel firmware image.",
-    [P_UP_CHIP]      = "The image is built for another chip.",
-    [P_UP_PROJECT]   = "The image is another project's.",
-    [P_UP_VERSION]   = "The image carries no release number.",
-    [P_UP_NO_HASH]   = "The image is built without its SHA-256.",
-    [P_UP_LENGTH]    = "The file is longer than the image it holds.",
-    [P_UP_HASH]      = "The SHA-256 does not match: the file is damaged.",
-    [P_UP_BUSY]      = "An image waits on the panel. CANCEL it there first.",
-    [P_UP_MEMORY]    = "The panel has no memory for the image.",
-    [P_UP_OTHER]     = "The panel refused the image.",
+#define UI_WEB_TEXT(id, en, de) [id] = (en),
+#include "ui_text.def"
 };
 
+#ifndef WA_PAGE_DE
+/**
+ * @brief The German entry of text @p id as the table gives it.
+ *
+ * test_wa_page_de defines it before it includes this file, to blank one
+ * entry.
+ */
+#define WA_PAGE_DE(id, de) (de)
+#endif
+
+/** @brief The page's texts in German; NULL where the table has no German. */
 static const char *const k_de[P_COUNT] = {
-    [P_FIRMWARE]     = "Panel-Firmware",
-    [P_INSTALLED]    = "Installiert: ",
-    /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
-    [P_FW_NOTE]      = "Ein Panel-Image hochladen, "
-                       "rcbench-panel-p4-vX.Y.Z.bin. Das Panel prüft es und "
-                       "fragt. Es installiert erst, wenn INSTALL am Panel "
-                       "2 s gehalten wird.",
-    [P_UPLOAD]       = "Hochladen",
-    [P_TOO_BIG]      = "Die Datei ist größer als der Slot des Panels.",
-    [P_BROKE]        = "Der Upload brach ab.",
-    [P_REFUSED]      = "Das Panel hat den Upload nicht angenommen: HTTP ",
-    [P_FILES]        = "Dateien auf der Karte",
-    [P_ALL]          = "Alles als eine ZIP-Datei herunterladen",
-    [P_ALL_SIZE_1]   = " Dateien, ",
-    [P_ALL_SIZE_2]   = " Bytes. Die ZIP-Datei hat ",
-    [P_ALL_SIZE_3]   = " Bytes.",
-    [P_NO_CARD]      = "Keine Karte, oder die Karte ist nicht lesbar.",
-    [P_EMPTY]        = "Auf der Karte sind keine Dateien.",
-    [P_LEFT_OUT]     = " Einträge fehlen in der Liste: ein Name über 255 "
-                       "Zeichen, ein Pfad über 384 Bytes oder ein Ordner "
-                       "tiefer als 16.",
-    [P_NAME]         = "Name",
-    [P_BYTES]        = "Bytes",
-    [P_MODIFIED]     = "Geändert",
-    [P_CODE]         = "Zugangscode",
-    [P_CODE_NOTE]    = "Den Code eingeben, den der WLAN-Bildschirm des "
-                       "Panels zeigt.",
-    [P_CODE_WRONG]   = "Falscher Code.",
-    [P_OK]           = "OK",
-    [P_UP_OK_1]      = "Empfangen und geprüft: Panel-Firmware ",
-    [P_UP_OK_2]      = ". Zum Installieren INSTALL am Panel 2 s halten.",
-    [P_UP_SAME]      = ". Das ist der Build, der auf dem Panel läuft; das "
-                       "Panel bietet keine Installation an.",
-    [P_UP_EMPTY]     = "Die Datei ist leer.",
-    [P_UP_TOO_BIG]   = "Die Datei ist größer als der Slot des Panels.",
-    [P_UP_SHORT]     = "Die Datei ist abgeschnitten.",
-    [P_UP_NOT_IMAGE] = "Das ist kein Panel-Firmware-Image.",
-    [P_UP_CHIP]      = "Das Image ist für einen anderen Chip gebaut.",
-    [P_UP_PROJECT]   = "Das Image gehört zu einem anderen Projekt.",
-    [P_UP_VERSION]   = "Das Image trägt keine Release-Nummer.",
-    [P_UP_NO_HASH]   = "Das Image ist ohne seinen SHA-256 gebaut.",
-    [P_UP_LENGTH]    = "Die Datei ist länger als das Image darin.",
-    [P_UP_HASH]      = "Der SHA-256 stimmt nicht: die Datei ist beschädigt.",
-    [P_UP_BUSY]      = "Am Panel wartet ein Image. Erst dort ABBRECHEN.",
-    [P_UP_MEMORY]    = "Das Panel hat keinen Speicher für das Image.",
-    [P_UP_OTHER]     = "Das Panel hat das Image abgelehnt.",
+#define UI_WEB_TEXT(id, en, de) [id] = WA_PAGE_DE(id, de),
+#include "ui_text.def"
 };
 
+/**
+ * @brief One text of the page in the page's language.
+ *
+ * @param de German page.
+ * @param t  The text.
+ * @return The German entry, or the English where the German is NULL.
+ */
 static const char *pt(bool de, p_text_t t)
 {
-    return de ? k_de[t] : k_en[t];
+    return (de && k_de[t] != NULL) ? k_de[t] : k_en[t];
 }
 
 static void head(wa_out_t *o, const wa_page_info_t *pi)

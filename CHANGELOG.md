@@ -133,6 +133,14 @@ history is in git.
 
 ### Changed
 
+- Every text the interface shows or writes in the operator's language is
+  one entry of `shared/text/include/ui_text.def`, with its English and its
+  German side by side: the screens' strings, the settings' labels, help
+  lines, categories and options, the servo test's words and the Wi-Fi
+  page's. `shared/ui/ui_text_de.c` and the English in the settings schema,
+  `servo_str.c` and `wa_page.c` are gone; every string is unchanged.
+  `tools/merge_texts.py merge` carries text changes made in the old form
+  into the table ([Interface language](docs/Language.md#the-tables)).
 - The panel firmware targets the 7-inch ESP32-P4 display board from
   Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, chip revision 3.2) and no longer
   builds for the ESP32-S3-Touch-LCD-7. ESP-IDF v5.5.5, target `esp32p4`,
