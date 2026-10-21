@@ -1,6 +1,7 @@
 /**
  * @file
  * @brief Touch events that never arrived, and an arm that must not outlive one.
+ *
  * See touch_loss.h.
  *
  * SPDX-License-Identifier: MIT

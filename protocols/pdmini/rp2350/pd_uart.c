@@ -25,7 +25,7 @@ static struct {
 } s;
 
 /**
- * @brief Put a pin at rest: an input with a pull-down, driven by nothing here.
+ * @brief A pin at rest: an input with a pull-down, driven by nothing here.
  *
  * @param pin  GPIO number.
  */
@@ -83,8 +83,7 @@ void pd_uart_close(void)
 }
 
 /**
- * @brief Stop both machines, empty their FIFOs and return them to their first
- *        instruction.
+ * @brief Both machines stopped, emptied and back at their first instruction.
  */
 static void reset_machines(void)
 {

@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief Fetching a board's drawing: the order of the transactions, without the
- * link underneath them.
+ *        link underneath them.
  *
  * The panel asks the IOmcu what its drawing is, then asks for it a
  * block at a time. The sequence is small and the failures are all quiet
@@ -36,13 +36,16 @@ extern "C" {
 /** @brief How the sequence reaches the far end. */
 typedef struct {
     /**
-     * Read @p count registers of @p page. False when nothing answered, or
-     * the reply was a refusal rather than data -- the two are the same to a
-     * sequence that cannot go on either way.
+     * @brief Read @p count registers of @p page.
+     *
+     * False when nothing answered, or the reply was a refusal rather than data
+     * -- the two are the same to a sequence that cannot go on either way.
      */
     bool (*read_page)(void *ctx, uint8_t page, uint8_t count, uint16_t *regs);
     /**
-     * @brief Write one register.  False when it was refused or went unanswered.
+     * @brief Write one register.
+     *
+     * False when it was refused or went unanswered.
      */
     bool (*write_reg)(void *ctx, uint8_t page, uint8_t reg, uint16_t value);
     void *ctx;
@@ -64,8 +67,8 @@ typedef struct {
 } art_fetch_t;
 
 /**
- * @brief What the far end says its drawing is: LINK_AW_COUNT registers into
- * @p meta_regs.
+ * @brief What the far end says its drawing is: LINK_AW_COUNT registers into @p
+ *        meta_regs.
  *
  * False when it has none, when the page is not there at all -- an IOmcu
  * built before it -- or when what it says cannot be a drawing. Those are
@@ -88,9 +91,10 @@ bool art_fetch_meta(const art_transport_t *t, uint16_t *meta_regs,
 
 /**
  * @brief The cache entry @p meta_regs describe for @p board: the content key a
- * kept drawing has to match field for field (art_store_read_same()) before
- * it is shown.  False, with @p out zeroed, when the registers cannot
- * describe a drawing.
+ *        kept drawing has to match field for field (art_store_read_same())
+ *        before it is shown.
+ *
+ * False, with @p out zeroed, when the registers cannot describe a drawing.
  *
  * @param meta_regs Registers from art_fetch_meta().
  * @param board Board the drawing is for.
@@ -101,6 +105,9 @@ bool art_fetch_key(const uint16_t *meta_regs, uint16_t board,
                    art_entry_t *out);
 
 /**
+ * @brief Get ready to assemble into @p buf.
+ *
+ * False when the metadata cannot describe a drawing that fits.
  *
  * @param f Fetch state to start.
  * @param meta_regs Registers from art_fetch_meta().
@@ -127,7 +134,7 @@ art_fetch_state_t art_fetch_step(art_fetch_t *f, const art_transport_t *t,
                                  unsigned blocks);
 
 /**
- * @brief The format code of the drawing.
+ * @brief What the drawing is, once it is whole.
  *
  * @param f  Fetch state.
  * @return  The value from the fetched metadata; 0 when @p f is NULL.
@@ -168,6 +175,7 @@ uint32_t art_fetch_hash(const art_fetch_t *f);
  * @return  The value from the fetched metadata; 0 when @p f is NULL.
  */
 uint32_t art_fetch_bytes(const art_fetch_t *f);
+
 /**
  * @brief Why it stopped, for a log line.
  *

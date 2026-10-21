@@ -33,9 +33,7 @@ static bool reached(uint32_t now_ms, uint32_t deadline_ms)
     return (int32_t)(deadline_ms - now_ms) <= 0;
 }
 
-/**
- * @brief Wrap-safe: true from the millisecond after `deadline` on.
- */
+/** @brief Wrap-safe: true from the millisecond after `deadline` on. */
 static bool past(uint32_t now_ms, uint32_t deadline_ms)
 {
     return (int32_t)(deadline_ms - now_ms) < 0;

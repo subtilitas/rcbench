@@ -1,7 +1,7 @@
 /**
  * @file
- * @brief The outbound half of DShot: sixteen bits and the map from travel
- *        onto them.
+ * @brief The outbound half of DShot: sixteen bits and the map from travel onto
+ *        them.
  *
  * See dshot.h for the model.
  *
@@ -11,13 +11,13 @@
 #include "dshot.h"
 
 /**
- * @brief Fold the payload into its checksum nibble.
+ * @brief The checksum is three nibbles of the twelve-bit payload folded
+ *        together.
  *
- * The checksum is three nibbles of the twelve-bit payload folded together.
- * It catches every single-bit error and every burst inside one nibble, which
- * is what a bit period misread as its neighbour looks like.  It is not a CRC
- * (cyclic redundancy check) in any useful sense and the protocol does not
- * claim one.
+ * It catches every single-bit error and every burst inside one nibble, which is
+ * what a bit period misread as its neighbour looks like.  It is not a CRC
+ * (cyclic redundancy check) in any useful sense and the protocol does not claim
+ * one.
  *
  * @param payload  The twelve-bit payload, value and telemetry bit.
  * @return         The checksum, 0 to 15.

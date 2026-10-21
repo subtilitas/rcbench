@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief The PD mini driver: state machine, readings and the set-point rules.
+ * @brief The PD mini.
  *
  * See pdmini.h.
  *
@@ -245,7 +245,7 @@ void pdmini_finish(pdmini_t *d, uint32_t now, bool ok)
 }
 
 /**
- * @brief Whether a byte run holds a string.
+ * @brief Whether @p n bytes at @p p hold @p s.
  *
  * @param p  Bytes to search.
  * @param n  Number of bytes in @p p.
@@ -332,14 +332,13 @@ void pdmini_sag_hold(pdmini_t *d)
 }
 
 /**
- * @brief Count one input reading against a live output's set point.
+ * @brief An input reading, against a live output's set point: under it and the
+ *        headroom on PDMINI_SAG_READS readings in a row, the output is switched
+ *        off and held off until an OFF is asked.
  *
- * An input reading, against a live output's set point: under it and the
- * headroom on PDMINI_SAG_READS readings in a row, the output is switched
- * off and held off until an OFF is asked.  Only an output read on with ON
- * asked and a set point read back; a reading at or over the line, or an
- * output not live, starts the count again.  A failed read is no reading
- * and leaves the count as it is.
+ * Only an output read on with ON asked and a set point read back; a reading at
+ * or over the line, or an output not live, starts the count again.  A failed
+ * read is no reading and leaves the count as it is.
  */
 static void sag_check(pdmini_t *d)
 {
@@ -413,8 +412,8 @@ static bool take_reply(pdmini_t *d, uint32_t now)
             /*
              * On, and now off with ON still asked, the last write ours an
              * ON and nothing on its way: the module switched it off -- its
-             * overcurrent protection, or its button.  Not switched on again:
-             * held off, and said, until an OFF is asked.
+             * overcurrent protection, or its button.  Not switched on again: held off,
+             * and said, until an OFF is asked.
              */
             d->held_off    = true;
             d->want_output = false;

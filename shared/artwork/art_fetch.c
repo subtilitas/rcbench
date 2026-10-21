@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief Fetching a board's drawing.  See art_fetch.h.
+ * @brief Fetching a board's drawing.
+ *
+ * See art_fetch.h.
  *
  * SPDX-License-Identifier: MIT
  */

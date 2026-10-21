@@ -1,8 +1,6 @@
 /**
  * @file
- * @brief OpenYGE frame encoding, decoding and telemetry parsing.
- *
- * SPDX-License-Identifier: MIT
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "openyge.h"
@@ -10,9 +8,8 @@
 #include <string.h>
 
 /**
- * @brief Read a little-endian 16-bit field.
- *
- * Little-endian, assembled byte by byte rather than cast; see the header.
+ * @brief Little-endian, assembled byte by byte rather than cast; see the
+ *        header.
  *
  * @param p  Two bytes, least significant first.
  * @return   The 16-bit value.
@@ -55,11 +52,11 @@ static bool type_is_known(uint8_t t)
 }
 
 /**
- * @brief Whether a frame type carries telemetry.
+ * @brief A frame from the ESC (electronic speed controller) carries telemetry;
+ *        one from the master carries the 4-byte control payload.
  *
- * A frame from the ESC (electronic speed controller) carries telemetry; one
- * from the master carries the 4-byte control payload.  The parameter-write
- * acknowledgement is an ESC frame and carries telemetry too.
+ * The parameter-write acknowledgement is an ESC frame and carries telemetry
+ * too.
  *
  * @param t  Type byte from the header.
  * @return   true for a telemetry-carrying type.
@@ -119,10 +116,9 @@ typedef enum {
 } parse_result_t;
 
 /**
- * @brief Examine the candidate frame starting at @p at.
- *
- * The decoder is not modified, so several candidates can be weighed before
- * one is committed to.
+ * @brief Examine the candidate frame starting at @p at without modifying the
+ *        decoder, so several candidates can be weighed before one is committed
+ *        to.
  *
  * @param d           Decoder holding the buffer.
  * @param at          Index of the sync byte of the candidate.

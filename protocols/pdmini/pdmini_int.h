@@ -1,8 +1,9 @@
 /**
  * @file
  * @brief The PD mini driver's private functions, shared by pdmini.c and
- * pdmini_jobs.c.  Not part of the module's interface; another project
- * includes pdmini.h only.
+ *        pdmini_jobs.c.
+ *
+ * Not part of the module's interface; another project includes pdmini.h only.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,10 +18,10 @@
 #include <stdint.h>
 
 /**
- * @brief Start a transaction.
+ * @brief Starts the transaction @p req of @p n bytes and its CRC8: attaches the
+ *        pins and enters PD_ATTACH.
  *
- * Starts the transaction @p req of @p n bytes and its CRC8: attaches the pins
- * and enters PD_ATTACH.  @p write is true for a write.
+ * @p write is true for a write.
  *
  * @param d      Driver state.
  * @param now    Current time, in milliseconds.
@@ -32,7 +33,7 @@ void pdmini_start(pdmini_t *d, uint32_t now, const uint8_t *req, size_t n,
                   bool write);
 
 /**
- * @brief Start a read of one command byte.
+ * @brief Starts the one-byte read @p cmd.
  *
  * @param d    Driver state.
  * @param now  Current time, in milliseconds.
@@ -41,7 +42,8 @@ void pdmini_start(pdmini_t *d, uint32_t now, const uint8_t *req, size_t n,
 void pdmini_read1(pdmini_t *d, uint32_t now, uint8_t cmd);
 
 /**
- * @brief End the transaction under way and enter PD_GAP.
+ * @brief Ends the transaction under way, @p ok when its reply was taken (a
+ *        write: when its bytes left), and enters PD_GAP.
  *
  * @param d    Driver state.
  * @param now  Current time, in milliseconds.
@@ -67,8 +69,8 @@ uint16_t pdmini_target_mv(const pdmini_t *d);
 bool pdmini_under_line(const pdmini_t *d);
 
 /**
- * @brief Switch the output off for a sagging input, or hold back its ON, and
- *        hold it off until an OFF is asked.
+ * @brief The output switched off for the input, or its ON not written, and held
+ *        off until an OFF is asked.
  *
  * @param d  Driver state.
  */

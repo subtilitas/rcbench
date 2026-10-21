@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief The safety heartbeat: the panel's signal that it is running, and the
- * IOmcu's judgement of whether to believe it.
+ *        IOmcu's judgement of whether to believe it.
  *
  * A level cannot carry this.  A GPIO (general-purpose input/output) held
  * high is also what a crashed processor, a shorted pin and an unpowered
@@ -36,7 +36,7 @@
 #include <stdint.h>
 
 /**
- * How often the panel asks for an edge.
+ * @brief How often the panel asks for an edge.
  *
  * The panel toggles from its control task, which runs every 5 ms, so an edge
  * asked for at 20 ms is delivered within one of those passes and the line
@@ -46,7 +46,7 @@
 #define HEARTBEAT_PERIOD_MS   20u
 
 /**
- * The interval the monitor will accept between two edges.
+ * @brief The interval the monitor will accept between two edges.
  *
  * The floor rejects noise: a line that is ringing, shorted to a clock, or
  * driven by something other than the panel edges far faster than a 20 ms
@@ -58,7 +58,7 @@
 #define HEARTBEAT_MAX_GAP_MS  150u
 
 /**
- * Consecutive good intervals before the line is called alive.
+ * @brief Consecutive good intervals before the line is called alive.
  *
  * Four, which is two full toggles: enough that a glitch pair cannot do it,
  * few enough that arming does not wait a perceptible time. Four intervals at
@@ -67,8 +67,8 @@
 #define HEARTBEAT_GOOD_RUN    4u
 
 /**
- * The least time the panel gives a line that was already running before it
- * writes an arm: HEARTBEAT_GOOD_RUN intervals, plus one, 100 ms.
+ * @brief The least time the panel gives a line that was already running before
+ *        it writes an arm: HEARTBEAT_GOOD_RUN intervals, plus one, 100 ms.
  *
  * It is not enough for a line that was withheld.  The generator's first
  * edge is one period after it resumes and the monitor rejects the interval
@@ -84,7 +84,7 @@
 typedef struct {
     uint32_t last_ms;   /**< when the last edge was emitted */
     bool     level;     /**< the level the line is being held at */
-    bool     started;   /**< false until the first step; t=0 is no edge */
+    bool     started;   /**< false until the first step, so t=0 is not an edge */
 } heartbeat_gen_t;
 
 /**
@@ -135,8 +135,6 @@ void heartbeat_mon_init(heartbeat_mon_t *m);
 
 /**
  * @brief Record an edge on the safety line.
- *
- * Record an edge on the safety line.
  *
  * Called from wherever edges are noticed -- an interrupt, or a poll that
  * samples faster than HEARTBEAT_MIN_GAP_MS. It only ever costs a subtraction

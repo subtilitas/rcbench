@@ -10,7 +10,7 @@
  *     set      at start-up (link_dev_init()), on the edge into link silence,
  *              on the edge where the heartbeat stops being trusted, and by
  *              an ARM that is refused
- *     cleared  by CLEAR on the control page, and by nothing else
+ *     cleared by CLEAR on the control page, and by nothing else
  *
  * The supply's ON and the STATUS page do not read the latch.  They read the
  * link failsafe and the heartbeat, so an IOmcu that has just started
@@ -36,21 +36,27 @@ extern "C" {
 
 /** @brief What a pass decided. */
 typedef struct {
-    /** The heartbeat stopped being trusted or the link went silent in this
-     *  pass: the outputs come down now.  True on the edge only. */
+    /**
+     * @brief The heartbeat stopped being trusted or the link went silent in
+     *        this pass: the outputs come down now.
+     *
+     * True on the edge only.
+     */
     bool off;
-    /** @brief Whether the bank is armed for this pass. */
+        /** @brief Whether the bank is armed for this pass. */
     bool arm;
-    /** The roles armed for this pass, LINK_ARM_ROLES bits: link_arm_roles()
-     *  of ARM while arm is true, else 0.  An output of a role outside it
-     *  carries no pulse. */
+    /**
+     * @brief The roles armed for this pass, LINK_ARM_ROLES bits:
+     *        link_arm_roles()  of ARM while arm is true, else 0.
+     *
+     * An output of a role outside it carries no pulse.
+     */
     uint16_t roles;
 } safety_gate_t;
 
 /**
- * @brief Whether a write of ARM is taken.
- *
- * Heartbeat trusted, link out of failsafe, latch clear.
+ * @brief Whether a write of ARM is taken: heartbeat trusted, link out of
+ *        failsafe, latch clear.
  *
  * @param beat  Heartbeat monitor.
  * @param dev   Link device state.
@@ -59,10 +65,10 @@ typedef struct {
 bool safety_gate_may_arm(const heartbeat_mon_t *beat, const link_dev_t *dev);
 
 /**
- * @brief Whether the supply's output may be on.
+ * @brief Whether the supply's output may be on: heartbeat trusted and link out
+ *        of failsafe.
  *
- * Heartbeat trusted and link out of failsafe.  The arm latch is not part of
- * it.
+ * The arm latch is not part of it.
  *
  * @param beat  Heartbeat monitor.
  * @param dev   Link device state.
@@ -92,10 +98,9 @@ safety_gate_t safety_gate_step(heartbeat_mon_t *beat, bool line_edge,
                                uint32_t now_ms);
 
 /**
- * @brief Whether the bank is armed for this pass.
- *
- * The pass's decision (safety_gate_t.arm, @p gate_arm) and two holds only the
- * firmware can see.
+ * @brief Whether the bank is armed for this pass: the pass's decision
+ *        (safety_gate_t.arm, @p gate_arm) and two holds only the firmware can
+ *        see.
  *
  * Not while a programming port is out of PWM (@p quiet_mask, the ports
  * kst_port_quiet_mask() names, non-zero): programming and an armed bank
@@ -118,15 +123,15 @@ bool safety_gate_arm_now(bool gate_arm, uint16_t quiet_mask,
                          bool update_holds);
 
 /**
- * @brief A write to the CONTROL page.
- *
- * link_control_write() with this end's answer to whether the bench may arm,
- * and the CLEAR acted on.
+ * @brief A write to the CONTROL page: link_control_write() with this end's
+ *        answer to whether the bench may arm, and the CLEAR acted on.
  *
  * An ARM refused with LINK_NACK_NOT_ARMED sets the latch.  A CLEAR
  * acknowledged while the heartbeat is not yet trusted is followed by such a
  * refusal, and the line becoming trusted a few milliseconds later would
  * otherwise leave this end unlatched with nobody armed.
+ *
+ * Returns 0 when the window is stored, else the NACK reason.
  *
  * @param control  CONTROL page, LINK_CT_COUNT registers.
  * @param off      First register of the window.
@@ -142,11 +147,10 @@ uint8_t safety_gate_control_write(uint16_t *control, uint8_t off, uint8_t n,
                                   link_dev_t *dev);
 
 /**
- * @brief The STATUS page's state register and the two fault bits this
- *        decision owns.
+ * @brief The STATUS page's state register and the two fault bits this decision
+ *        owns (LINK_FAULT_LINK_SILENT, LINK_FAULT_HEARTBEAT).
  *
- * The two bits are LINK_FAULT_LINK_SILENT and LINK_FAULT_HEARTBEAT.  The
- * latch is not reported: after a start the state is idle and both bits are
+ * The latch is not reported: after a start the state is idle and both bits are
  * clear.
  *
  * @param beat     Heartbeat monitor.
@@ -160,9 +164,8 @@ void safety_gate_status(const heartbeat_mon_t *beat, const link_dev_t *dev,
                         uint16_t *faults);
 
 /**
- * @brief The panel's reading of a STATUS fault bitmap.
- *
- * Whether the far end trusts the heartbeat.
+ * @brief The panel's reading of a STATUS fault bitmap: whether the far end
+ *        trusts the heartbeat.
  *
  * @param faults  STATUS fault bitmap.
  * @return        true when the heartbeat is trusted.

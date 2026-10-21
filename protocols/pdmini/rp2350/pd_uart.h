@@ -30,7 +30,7 @@ extern "C" {
 #endif
 
 /**
- * @brief Claim the state machines for a UART at a baud rate.
+ * @brief Claim the state machines for @p tx and @p rx at @p baud.
  *
  * False, and nothing held, when no PIO block can reach the pins or has room.
  *
@@ -42,9 +42,8 @@ extern "C" {
 bool pd_uart_open(uint8_t tx, uint8_t rx, uint32_t baud);
 
 /**
- * @brief Set another rate for both machines, between transactions only.
- *
- * Nothing happens while the UART is attached.
+ * @brief Another rate for both machines, between transactions only: nothing
+ *        happens while the UART is attached.
  *
  * @param baud  Baud rate.
  */
@@ -59,14 +58,12 @@ void pd_uart_close(void);
  * @param ctx  Unused; passed by the driver's callback table.
  */
 void pd_uart_attach(void *ctx);
-
 /**
  * @brief Detach the UART; the pins go back to pulled-down inputs.
  *
  * @param ctx  Unused; passed by the driver's callback table.
  */
 void pd_uart_detach(void *ctx);
-
 /**
  * @brief Send bytes on the attached UART.
  *

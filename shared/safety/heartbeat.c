@@ -11,8 +11,8 @@
  * @brief Every comparison is an unsigned difference against a timeout, never a
  *        comparison of two timestamps.
  *
- *  A 32-bit millisecond counter wraps after 49.7 days, and `now < then` is
- * wrong for about 1 ms either side of the wrap; the subtraction wraps with the
+ * A 32-bit millisecond counter wraps after 49.7 days, and `now < then` is wrong
+ * for about 1 ms either side of the wrap; the subtraction wraps with the
  * counter and stays correct.
  */
 static inline bool elapsed_at_least(uint32_t now, uint32_t then, uint32_t ms)

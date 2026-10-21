@@ -42,7 +42,7 @@ extern "C" {
 #define ART_SLOT_BYTES  (16u * 1024u)
 
 /**
- * The flash a store lives in.
+ * @brief The flash a store lives in.
  *
  * @p erase and @p write take offsets from the start of the partition. Erase
  * is whole sectors; write is anywhere in an erased one. Any of them may fail
@@ -73,8 +73,9 @@ typedef struct {
 } art_entry_t;
 
 /**
- * @brief Whether two entries describe the same payload: every field equal.  The
- * content key of the cache -- a kept drawing is shown only for an ARTWORK
+ * @brief Whether two entries describe the same payload: every field equal.
+ *
+ * The content key of the cache -- a kept drawing is shown only for an ARTWORK
  * page that says exactly what the entry says.
  *
  * @param a First entry.
@@ -132,11 +133,11 @@ bool art_store_read(const art_flash_t *f, uint16_t board, uint8_t *dst,
 
 /**
  * @brief Read the drawing @p key describes into @p dst: only when the entry
- *        kept
- * for key->board equals @p key in every field (art_entry_same()) and the
- * payload checks out.  False for nothing kept, for another drawing kept
- * under the same board, and for one that decayed -- each a fetch, never a
- * stale or wrong drawing.
+ *        kept for key->board equals @p key in every field (art_entry_same())
+ *        and the payload checks out.
+ *
+ * False for nothing kept, for another drawing kept under the same board, and
+ * for one that decayed -- each a fetch, never a stale or wrong drawing.
  *
  * @param f Flash the store lives in.
  * @param key Entry the kept drawing must equal.
@@ -166,7 +167,9 @@ bool art_store_put(const art_flash_t *f, uint16_t board,
                    const art_entry_t *entry, const uint8_t *payload);
 
 /**
- * @brief Forget what is kept for @p board.  True even when nothing was.
+ * @brief Forget what is kept for @p board.
+ *
+ * True even when nothing was.
  *
  * @param f Flash the store lives in.
  * @param board Board ID.
@@ -177,8 +180,10 @@ bool art_store_forget(const art_flash_t *f, uint16_t board);
 /* ------------------------------------------------- a keep, a sector at a time */
 
 /**
- * Bytes read back per read while a keep checks what it wrote.  The buffer is
- * in the keeper, so a step costs its caller's stack no more than its frame.
+ * @brief Bytes read back per read while a keep checks what it wrote.
+ *
+ * The buffer is in the keeper, so a step costs its caller's stack no more than
+ * its frame.
  */
 #define ART_KEEP_READ_BYTES 256u
 
@@ -192,8 +197,8 @@ typedef enum {
 } art_keep_status_t;
 
 /**
- * The write art_store_put() does, cut into steps of at most one sector each,
- * so a caller can stop between any two and carry on later.
+ * @brief The write art_store_put() does, cut into steps of at most one sector
+ *        each, so a caller can stop between any two and carry on later.
  *
  * The steps, in order: choose the slot; erase each sector the header and the
  * payload occupy, the header's first; write the payload a sector at a time;
@@ -222,7 +227,9 @@ typedef struct {
 } art_keep_t;
 
 /**
- * @brief Set @p k up to keep @p payload for @p board.  Touches no flash.
+ * @brief Set @p k up to keep @p payload for @p board.
+ *
+ * Touches no flash.
  *
  * False, with @p k idle, for what art_store_put() refuses before it writes,
  * except the payload's checksums: computing them here is a pass over the
@@ -242,9 +249,9 @@ bool art_keep_begin(art_keep_t *k, const art_flash_t *f, uint16_t board,
 
 /**
  * @brief One step, when @p may_write is true: at most one sector erased,
- *        written
- * or read back, or the header written.  When it is false, WAITING, and no
- * flash is touched.
+ *        written or read back, or the header written.
+ *
+ * When it is false, WAITING, and no flash is touched.
  *
  * DONE and FAILED are returned once; the keep is idle after them and a
  * further step returns IDLE.
