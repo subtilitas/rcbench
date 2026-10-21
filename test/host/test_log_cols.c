@@ -6,6 +6,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -257,13 +258,19 @@ TEST_CASE(a_header_cut_in_the_groups_fails_the_writer)
     CHECK(w.failed);
     CHECK(strstr(g_sink.buf, "window;") != NULL);
     CHECK(strstr(g_sink.buf, "source") == NULL);
-    /* Too many groups asked: held to LOG_COLS_MAX. */
+    /* Too many groups asked: held to LOG_COLS_MAX; a group on no channel
+     * there is: left out. */
     log_cols_t many;
     memset(&many, 0, sizeof(many));
     many.n = LOG_COLS_MAX + 3u;
+    many.ch[1] = BENCH_CHW_CHANNELS;
+    many.ch[2] = 7u;
+    snprintf(many.name[2], sizeof(many.name[2]), "supply");
     log_writer_t w2 = writer();
     log_writer_set_cols(&w2, &many);
-    CHECK_EQ(w2.cols.n, LOG_COLS_MAX);
+    CHECK_EQ(w2.cols.n, LOG_COLS_MAX - 1u);
+    CHECK_EQ(w2.cols.ch[1], 7u);
+    CHECK_STR_EQ(w2.cols.name[1], "supply");
 }
 
 /* The longest name, a target two channels watch, fits the reader's 28

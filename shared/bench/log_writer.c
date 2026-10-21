@@ -113,13 +113,19 @@ void log_writer_set_cols(log_writer_t *w, const log_cols_t *cols)
         return;
     }
     w->by_map = cols != NULL;
-    if (cols != NULL) {
-        w->cols = *cols;
-        if (w->cols.n > LOG_COLS_MAX) {
-            w->cols.n = LOG_COLS_MAX;
+    memset(&w->cols, 0, sizeof(w->cols));
+    if (cols == NULL) {
+        return;
+    }
+    /* At most LOG_COLS_MAX groups, each on a channel there is. */
+    const unsigned n = (cols->n > LOG_COLS_MAX) ? LOG_COLS_MAX : cols->n;
+    for (unsigned i = 0u; i < n; ++i) {
+        if (cols->ch[i] < BENCH_CHW_CHANNELS) {
+            w->cols.ch[w->cols.n] = cols->ch[i];
+            memcpy(w->cols.name[w->cols.n], cols->name[i],
+                   sizeof(w->cols.name[0]));
+            ++w->cols.n;
         }
-    } else {
-        memset(&w->cols, 0, sizeof(w->cols));
     }
 }
 
@@ -371,8 +377,7 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         if (w->by_map) {
             const unsigned c = w->cols.ch[k];
             const uint16_t bit = (uint16_t)(1u << c);
-            const bool ch = same && c < BENCH_CHW_CHANNELS
-                            && (b->chw.ok & bit) != 0u;
+            const bool ch = same && (b->chw.ok & bit) != 0u;
             i    = ch && (b->chw.no_current & bit) == 0u;
             v    = ch && (b->chw.no_voltage & bit) == 0u;
             mean = ch ? (float)b->chw.mean_ma[c] : 0.0f;
