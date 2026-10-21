@@ -1,5 +1,6 @@
-/*
- * The page map: what the panel can ask the IOmcu for, and set.
+/**
+ * @file
+ * @brief The page map: what the panel can ask the IOmcu for, and set.
  *
  * A page is a window of up to LINK_MAX_REGS 16-bit registers with one
  * function.  Adding a capability adds a page, not a message type, which
