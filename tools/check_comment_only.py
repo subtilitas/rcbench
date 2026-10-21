@@ -28,6 +28,8 @@ It fails on
 A changed line number moves `__LINE__`, so a byte compare of the compiled
 objects can differ where `assert` or a logging macro expands it; this check
 is the one that holds for every file.
+
+SPDX-License-Identifier: MIT
 """
 
 import argparse
