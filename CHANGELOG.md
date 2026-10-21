@@ -113,6 +113,22 @@ history is in git.
   request. A receiver that stopped reading held the page's server, and
   with it every other request, until the connection timed out: about
   7.5 min for one that kept its connection open.
+- A card put in, taken out or swapped while the panel runs is found by the
+  next RESCAN, opening of LOGS, page or OPEN of LOGS, run start or servo
+  test start, with no restart. A mounted card is asked with one SEND_STATUS
+  (CMD13) command at those events and not once a frame; one that does not
+  answer is unmounted and the slot mounted again, so the volume label, the
+  list, the run alerts and the card state are the card's in the slot. A
+  card swapped for one with no FAT volume said `No card.` on LOGS and kept
+  the old label; it says `Card is neither FAT32 nor exFAT. Format it on a
+  computer.`. The look logs no E line. A card taken out during a run closes
+  the run's file at the first failed write and the run goes on unrecorded
+  under `Data can no longer be saved to the card. Recording stopped here.`;
+  the next ARM names the slot's state now. A card that answers SEND_STATUS and
+  fails a read is unreadable and is mounted once per look. The volume is
+  unmounted only with no file or folder open on it from LOGS, the run log or
+  the Wi-Fi access. The `runlog` task's stack is 6,656 bytes (5,632), for
+  the mount it makes.
 
 ## 0.21.2 - 2026-10-20
 

@@ -47,11 +47,24 @@ void kst_ui_service(void)
     snap_unlock();
     kst_panel_feed(&feed);
 
-    /* A card put in after the boot is mounted here, on the task RESCAN
-     * mounts one on: once for an opening of the programmer or a tap on one
-     * of its actions while none is mounted. */
-    if (!file_out && !storage_mounted() && kst_panel_card_look()) {
-        (void)storage_init();
+    /* The card in the slot now, on the task RESCAN looks on: once for an
+     * opening of the programmer or a tap on one of its actions
+     * (storage_check()).  A card put in, or found in place of one taken
+     * out or swapped, is mounted here. */
+    /* The mount whose record the model has: the start's, read before
+     * the render loop runs (kst_record_load(false)), then each one read
+     * here.  A card mounted by LOGS or a run's start since is read at the
+     * next look as well. */
+    static bool     loaded_known;
+    static unsigned loaded_mount;
+    if (!loaded_known) {
+        loaded_known = true;
+        loaded_mount = storage_mount_count();
+    }
+    if (!file_out && kst_panel_card_look()
+        && storage_check() == CARD_STATE_MOUNTED
+        && storage_mount_count() != loaded_mount) {
+        loaded_mount = storage_mount_count();
         /* And its record is read before a command or a file goes out: a
          * write interrupted before this start stands as at the start. */
         kst_record_load(true);
@@ -76,6 +89,8 @@ void kst_ui_service(void)
         kst_panel_card_done(&s_kst_card_done);
     }
     if (!card_out && kst_panel_card_take(&s_kst_card_req)) {
+        /* Before the count, which hands the request and this over. */
+        s_kst_card_mount = storage_mount_count();
         atomic_fetch_add(&s_kst_card_sent, 1u);
         card_out = true;
     }
@@ -90,6 +105,9 @@ void kst_ui_service(void)
     const size_t len = kst_panel_file_take(s_kst_file, sizeof(s_kst_file));
     if (len != 0u) {
         s_kst_file_len = len;
+        /* The card the model's record came from: a card mounted in its
+         * place keeps its own record until the next look reads it. */
+        s_kst_file_mount = loaded_mount;
         atomic_fetch_add(&s_kst_file_sent, 1u);
         file_out = true;
     }

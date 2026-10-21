@@ -692,7 +692,7 @@ servo held before the write are then not recoverable from the bench.
 | The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2 s sends the write |
 | The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |
 | **FILES**, save and load without a card | refused: `No card. Nothing saved or written to the servo.` |
-| A card put in after the panel started | the panel tries to mount a card when the programmer opens and at each tap on **CONNECT**, **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row while none is mounted. The tap that finds the card still reads no card; the next one has it, and an open write page changes to the page with the file |
+| A card put in, taken out or swapped after the panel started | the panel looks at the slot when the programmer opens and at each tap on **CONNECT**, **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row: a card put in or swapped is mounted, and one taken out is let go. The look at a mounted card is one SEND_STATUS (CMD13) command. A file request (list, load, save) runs on the card it was asked of; with another card mounted in its place by then, it finds no card. The record of a write goes to the card whose record the programmer read last, never to one mounted in its place before the next look reads that card's record. The tap that finds a new card still reads the card state from before; the next one has it, and an open write page changes to the page with the file |
 
 A card in the slot that does not mount counts as no card: the write, the
 restore and the pairing release go as above, and **FILES** is refused. Its
@@ -1133,8 +1133,9 @@ line. [The link page](LinkKST.md) lists the codes.
 - A mounted card that does not take the record stops every write: a card
   taken out after the mount, a write-protected card, or a card on which
   `BENCH/KST/CONF/KST.TXT` or `BENCH/KST/CONF/KST.NEW` is a folder, or a
-  level of `BENCH/KST/CONF` is a file. Each attempt ends with `Could not save the file to the card. Nothing was written to the servo.` The panel does not
-  unmount such a card. A panel started without a card holds the record in
+  level of `BENCH/KST/CONF` is a file. Each attempt ends with `Could not save the file to the card. Nothing was written to the servo.` The panel keeps such a
+  card mounted, except a card taken out, which the next look at the slot
+  lets go ([Screens](Screens.md#the-sd-cards-format)). A panel started without a card holds the record in
   memory and writes.
 - The record of a write that ended is cleared on the card after the write,
   by a file write of its own that is repeated every 5 s until the card
