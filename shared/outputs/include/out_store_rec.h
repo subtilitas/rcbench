@@ -89,10 +89,12 @@ typedef struct {
     uint16_t supply[LINK_SP_OUTPUT];    /**< SUPPLY ENABLE to BAUD, version 4 */
     uint16_t sense[LINK_SN_CONFIG_COUNT];  /**< SENSE 0 to 11 (version 5) */
     uint16_t tone[LINK_TN_CONFIG_COUNT];   /**< TONE 0 to 6 (version 6) */
-    /** Each port's function (protocol 4.26): bits 4n to 4n + 3 hold 1 +
-     *  port n's FUNC, 0 none stored (prog_port_kept_func()).  0 in a
-     *  record of version 6, of an image older than 4.26, or written by
-     *  one.  Makes the set a whole number of 32-bit words. */
+    /** @brief Each port's function (protocol 4.26): bits 4n to 4n + 3 hold 1 +
+     *        port n's FUNC, 0 none stored (prog_port_kept_func()).
+     *
+     * 0 in a record of version 6, of an image older than 4.26, or written by
+     * one.  Makes the set a whole number of 32-bit words.
+     */
     uint16_t prog_func;
     uint16_t prog[LINK_PG_PORTS_MAX * 4u]; /**< prog_port_kept() */
     uint16_t sense_map[LINK_SM_KEPT];  /**< sense_map_kept()              */

@@ -32,9 +32,7 @@ _Static_assert(LINK_HITEC_OP_COUNT <= 16, "the op is 4 bits");
 /** @brief The transaction count stops at this value (12 bits). */
 #define COUNT_MAX 0x0FFFu
 
-/**
- * @brief The staged register @p reg of @p p, by its write offset.
- */
+/* A staged register by its write offset. */
 #define ST(p, reg) ((p)->staged[(reg) - LINK_HT_W_LINE])
 
 /**

@@ -252,8 +252,8 @@ bool tone_page_pin_free(const tone_page_t *p, const outputs_t *o,
                         uint64_t taken);
 
 /**
- * @brief LINK_NACK_BAD_VALUE for an OUTPUTS page that binds a slot to the
- *        tap's pin; 0 otherwise.
+ * @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (slots, LINK_OS_COUNT
+ *        registers) that binds a slot to the tap's pin; 0 otherwise.
  *
  * @param p The page state.
  * @param slots The OUTPUTS page, LINK_OS_COUNT registers.
@@ -277,8 +277,7 @@ void tone_page_cmd(const tone_page_t *p, bool run, tone_cmd_t *cmd);
 /**
  * @brief What core 1 handed back: its status, and the @p n beeps it finished.
  *
- * Taken when @p st was made under the set-up in force and the capture in
- * force; ignored otherwise.
+ * Taken when @p st was made under the set-up in force; ignored otherwise.
  *
  * @param p The page state.
  * @param st The status core 1 returned.
@@ -289,13 +288,13 @@ void tone_page_publish(tone_page_t *p, const tone_status_t *st,
                        const tone_rec_t *rec, size_t n);
 
 /**
- * @brief The @p n beeps finished by core 1 under set-up @p gen and capture
- *        @p cap_gen, into the ring.
+ * @brief @p n beeps finished by core 1 under set-up @p gen and capture
+ *        @p cap_gen, into the ring; dropped when the capture is not the one in
+ *        force.
  *
- * Dropped when the capture is not the one in force.  A beep
- * finished under an earlier set-up of the same capture is taken: a change
- * of the range keeps the ring and the numbering, and a beep the detector
- * finished before it took the change is a beep that happened.
+ * A beep finished under an earlier set-up of the same capture is taken: a
+ * change of the range keeps the ring and the numbering, and a beep the
+ * detector finished before it took the change is a beep that happened.
  *
  * @param p The page state.
  * @param gen The set-up generation the beeps finished under. Not checked.

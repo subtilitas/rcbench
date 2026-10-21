@@ -189,7 +189,9 @@ _Static_assert(sizeof(k_rx) / sizeof(k_rx[0])
 /* --- requests -------------------------------------------------------------- */
 
 /**
- * @brief A read or a write through the link's handlers; the reply is c->reply.
+ * @brief A read or a write through the link's handlers; the reply.
+ *
+ * The reply is c->reply.
  *
  * @param c    The console.
  * @param op   The operation, LINK_OP_READ or LINK_OP_WRITE.

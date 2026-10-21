@@ -131,11 +131,15 @@ typedef struct {
      * board cannot honour.
      */
     bool                 fixed;
-    /** Where the pads are, or NULL when nothing here says.  A board without
-     *  one is used from its catalogue and simply is not drawn. */
+    /** @brief Where the pads are, or NULL when nothing here says.
+     *
+     * A board without one is used from its catalogue and simply is not drawn.
+     */
     const outbind_shape_t *shape;
-    /** The pads that are not pins, or NULL when nothing here says. A board
-     *  without them is drawn with its grounds and rails unmarked. */
+    /** @brief The pads that are not pins, or NULL when nothing here says.
+     *
+     * A board without them is drawn with its grounds and rails unmarked.
+     */
     const outbind_pad_t *pads;
     uint8_t              pad_count;   /**< entries in `pads`                  */
 } outbind_board_t;
@@ -237,8 +241,9 @@ bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
                     uint16_t *x_cmm, uint16_t *y_cmm);
 
 /**
- * @brief The pads that are not pins, or NULL for a board nothing here
- *        describes that way.
+ * @brief The pads that are not pins, and how many.
+ *
+ * NULL and 0 for a board nothing here describes that way.
  *
  * @param board  Identity of the board, as for outbind_board().
  * @return       The pad table, or NULL.  The count is outbind_pad_count().
@@ -574,9 +579,9 @@ bool outbind_can_add(const outbind_t *b, uint8_t index);
  */
 typedef enum {
     OUTBIND_CLASH_NONE = 0,
-    /** The pin's slice is the programming port's pin's slice. */
+    /** @brief The pin's slice is the programming port's pin's slice. */
     OUTBIND_CLASH_PROG_SLICE,
-    /** The pin's compare register drives a pin already bound as PWM. */
+    /** @brief The pin's compare register drives a pin already bound as PWM. */
     OUTBIND_CLASH_COMPARE,
 } outbind_clash_t;
 
@@ -683,10 +688,7 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
 bool outbind_from_slots(outbind_t *b, uint16_t board,
                         const uint16_t *regs, const uint16_t *chan_cfg);
 
-/**
- * @brief The result of outbind_role_proto() when the role's slots are bound
- *        as several entries.
- */
+/** @brief outbind_role_proto(): the role's slots are bound as several entries. */
 #define OUTBIND_PROTO_MIXED 0xFFu
 
 /**

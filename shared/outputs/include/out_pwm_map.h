@@ -53,7 +53,7 @@ extern "C" {
 #define OUT_PWM_NONE      0xFFu
 
 /**
- * @brief The slice @p pin is wired to.
+ * @brief The slice @p pin is wired to, or OUT_PWM_NONE.
  *
  * @param pin GPIO number, 0 to OUT_PWM_GPIOS - 1 (47).
  * @return Slice index, 0 to 11. OUT_PWM_NONE for a pin of 48 or more.

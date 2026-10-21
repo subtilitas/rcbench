@@ -375,7 +375,9 @@ uint16_t sense_page_caps(const sense_page_t *p);
 bool sense_page_enabled(const sense_page_t *p);
 
 /**
- * @brief The SDA pin of the bus.
+ * @brief The bus's pins and clock.
+ *
+ * The SDA pin of the bus.
  *
  * @param p The page, or NULL.
  * @return The SDA pin number; 0 for a NULL p.

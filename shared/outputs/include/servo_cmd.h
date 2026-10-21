@@ -88,28 +88,40 @@ typedef struct {
      * servo_screen_rate().
      */
     uint16_t         frame_hz;
-    /** SERVO_CMD_SWEEP's curve, as the SERVO page takes it (servo_sweep.h):
-     *  the curve, thousandths of a cycle a second, command units either
-     *  side of the centre and the hold at each end.  Zero otherwise. */
+    /** @brief SERVO_CMD_SWEEP's curve, as the SERVO page takes it
+     *        (servo_sweep.h): the curve, thousandths of a cycle a second,
+     *        command units either side of the centre and the hold at each end.
+     *
+     * Zero otherwise.
+     */
     uint16_t         sweep_kind, sweep_mhz, sweep_span, sweep_dwell_ms;
-    /** This command ends a sweep the screen was running: a HOLD, a finger
-     *  on the dial, CENTRE.  The panel gives it way at once over sweep
-     *  writes already on the wire or queued. */
+    /** @brief This command ends a sweep the screen was running: a HOLD, a
+     *        finger on the dial, CENTRE.
+     *
+     * The panel gives it way at once over sweep writes already on the wire or
+     * queued.
+     */
     bool             ends_sweep;
-    /** SERVO_CMD_SWEEP carrying on the sweep PAUSE held, from where it was
-     *  held: the panel asks the IOmcu to resume it (protocol 4.6),
-     *  and an older one, or one that refuses, starts the curve over. */
+    /** @brief SERVO_CMD_SWEEP carrying on the sweep PAUSE held, from where it
+     *        was held: the panel asks the IOmcu to resume it (protocol 4.6),
+     *        and an older one, or one that refuses, starts the curve over.
+     */
     bool             resume;
-    /** SERVO_CMD_HOLD: which pause it is, given back with its
-     *  acknowledgement in servo_screen_sweep_held().  Never 0. */
+    /** @brief SERVO_CMD_HOLD: which pause it is, given back with its
+     *        acknowledgement in servo_screen_sweep_held().
+     *
+     * Never 0.
+     */
     uint16_t         pause_seq;
-    /** The pause this command derives from -- a resume of it, a repeat of
-     *  that resume, a position said again under a changed profile -- or 0:
-     *  what the panel drops once it has let that pause go
-     *  (servo_cmd_stale()). */
+    /** @brief The pause this command derives from -- a resume of it, a repeat
+     *        of that resume, a position said again under a changed profile --
+     *        or 0: what the panel drops once it has let that pause go
+     *        (servo_cmd_stale()).
+     */
     uint16_t         from_pause;
-    /** SERVO_CMD_SWEEP: which sweep command it is, given back with the
-     *  acknowledgement of a start in servo_screen_sweep_started(). */
+    /** @brief SERVO_CMD_SWEEP: which sweep command it is, given back with the
+     *        acknowledgement of a start in servo_screen_sweep_started().
+     */
     uint16_t         start_seq;
 } servo_cmd_t;
 
@@ -130,10 +142,9 @@ typedef enum {
 
 /**
  * @brief The state an acknowledged rate is shown in, by the IOmcu's protocol
- *        minor.
- *
- * SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE (4.19), where the rate
- * reaches the PWM TARGET alone, and SERVO_RATE_IN_FORCE_SURFACES below it.
+ *        minor @p minor: SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE
+ *        (4.19), where the rate reaches the PWM TARGET alone, and
+ *        SERVO_RATE_IN_FORCE_SURFACES below it.
  *
  * @param minor IOmcu protocol minor version, as acknowledged.
  * @return SERVO_RATE_IN_FORCE for @p minor at 4.19 or above,
