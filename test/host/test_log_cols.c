@@ -167,6 +167,9 @@ TEST_CASE(the_header_and_rows_follow_the_groups)
     CHECK(log_writer_row(&w, 0.0f, &b));
     b = row(78u, 77u);                  /* a chw of another window */
     CHECK(log_writer_row(&w, 0.05f, &b));
+    b = row(79u, 79u);                  /* port 1 without current samples */
+    b.chw.no_current = (uint16_t)(1u << 4);
+    CHECK(log_writer_row(&w, 0.1f, &b));
     CHECK(strstr(g_sink.buf,
                  "window;port 1 current (A);port 1 max (A);"
                  "port 1 voltage (V);out 1 current (A);out 1 max (A);"
@@ -174,6 +177,7 @@ TEST_CASE(the_header_and_rows_follow_the_groups)
     CHECK(strstr(g_sink.buf, ";77;1.234;-0.050;5.012;0.020;0.040;;measured\n")
           != NULL);
     CHECK(strstr(g_sink.buf, ";78;;;;;;;measured\n") != NULL);
+    CHECK(strstr(g_sink.buf, ";79;;;5.012;0.020;0.040;;measured\n") != NULL);
     /* After the header the columns hold: a late set is ignored. */
     log_writer_set_cols(&w, NULL);
     CHECK(w.by_map);
@@ -258,6 +262,13 @@ TEST_CASE(a_header_cut_in_the_groups_fails_the_writer)
     CHECK(w.failed);
     CHECK(strstr(g_sink.buf, "window;") != NULL);
     CHECK(strstr(g_sink.buf, "source") == NULL);
+    /* And without a map, cut in CH1 to CH3's columns. */
+    memset(&g_sink, 0, sizeof(g_sink));
+    log_writer_init(&w, &sk);
+    log_writer_set_cols(&w, NULL);
+    CHECK(!log_writer_header(&w));
+    CHECK(w.failed);
+    CHECK(strstr(g_sink.buf, "ch1") == NULL);
     /* Too many groups asked: held to LOG_COLS_MAX; a group on no channel
      * there is: left out. */
     log_cols_t many;
