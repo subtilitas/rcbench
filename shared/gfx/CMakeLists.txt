@@ -1,4 +1,4 @@
-# The rasteriser and its three fonts.  Pure C over a block of RGB565 pixels
+# The rasteriser and its seven fonts.  Pure C over a block of RGB565 pixels
 # with no vendor SDK (software development kit), so the identical code renders
 # to the panel, to a PNG (Portable Network Graphics) image on a laptop, and
 # into the test suite.
@@ -9,6 +9,10 @@ set(SRCS
     gfx_font8x16.c
     gfx_font16x28.c
     gfx_font_num24x30.c
+    gfx_font10x20.c
+    gfx_font12x24.c
+    gfx_font20x36.c
+    gfx_font_num32x44.c
 )
 
 if(ESP_PLATFORM)

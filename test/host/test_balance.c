@@ -14,11 +14,11 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /* Mirrored from balance_screen.c. */
-#define PAD      6
+#define PAD      UI_MARGIN
 #define LCARD_W  450
 #define RCARD_X  (PAD + LCARD_W + 8)
 #define RCARD_W  (W - RCARD_X - PAD)

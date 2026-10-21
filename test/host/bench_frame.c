@@ -69,8 +69,8 @@
 extern const uint8_t  board_drawing_rp2350_can[];
 extern const uint32_t board_drawing_rp2350_can_bytes;
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 static gfx_color_t fb[W * H];
 
@@ -249,9 +249,9 @@ int main(int argc, char **argv)
             wifi_screen_set(&v);
             const touch_event_t taps[] = {
                 { .type = TOUCH_EVENT_DOWN,
-                  .point = { .id = 1, .x = 196, .y = 48 + 16 + 2 * 68 + 28 } },
+                  .point = { .id = 1, .x = 196, .y = UI_BAND_H + 16 + 2 * 68 + 28 } },
                 { .type = TOUCH_EVENT_UP,
-                  .point = { .id = 1, .x = 196, .y = 48 + 16 + 2 * 68 + 28 } },
+                  .point = { .id = 1, .x = 196, .y = UI_BAND_H + 16 + 2 * 68 + 28 } },
             };
             ui_router_event(&taps[0]);
             ui_router_event(&taps[1]);
@@ -262,9 +262,9 @@ int main(int argc, char **argv)
             wifi_screen_set(&v);
             const touch_event_t row[] = {
                 { .type = TOUCH_EVENT_DOWN,
-                  .point = { .id = 1, .x = 116, .y = 48 + 16 + 20 } },
+                  .point = { .id = 1, .x = 116, .y = UI_BAND_H + 16 + 20 } },
                 { .type = TOUCH_EVENT_UP,
-                  .point = { .id = 1, .x = 116, .y = 48 + 16 + 20 } },
+                  .point = { .id = 1, .x = 116, .y = UI_BAND_H + 16 + 20 } },
             };
             ui_router_event(&row[0]);
             ui_router_event(&row[1]);

@@ -410,7 +410,7 @@ TEST_CASE(the_driver_takes_no_null)
  * both views and both languages, inside the canvas. */
 TEST_CASE(every_view_renders_inside_its_canvas)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 480)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_PANEL_H)];
     gfx_canvas_t c;
     guard_canvas_t g;
     static const cu_step_t steps[] = { CU_STEP_PREPARE, CU_STEP_SEND,
@@ -429,7 +429,7 @@ TEST_CASE(every_view_renders_inside_its_canvas)
         };
         for (size_t p = 0; p < sizeof(pairs) / sizeof(pairs[0]); ++p) {
             fresh(pairs[p][0], pairs[p][1]);
-            guard_canvas_init(&g, &c, px, 800, 432);
+            guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
             coproc_update_screen_invalidate();
             scr()->render(&c, 0);
             CHECK_EQ(guard_canvas_touched(&g), 0u);
@@ -439,7 +439,7 @@ TEST_CASE(every_view_renders_inside_its_canvas)
             for (size_t k = 0; k < sizeof(counts) / sizeof(counts[0]); ++k) {
                 coproc_update_screen_progress(steps[i], counts[k][0],
                                               counts[k][1]);
-                guard_canvas_init(&g, &c, px, 800, 480);
+                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_PANEL_H);
                 coproc_update_screen_invalidate();
                 scr()->render(&c, 1);
                 CHECK_EQ(guard_canvas_touched(&g), 0u);

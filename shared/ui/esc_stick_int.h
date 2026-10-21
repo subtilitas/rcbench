@@ -28,8 +28,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H (480 - UI_BAND_H)
+#define W UI_PANEL_W
+#define H UI_BODY_H
 
 /*
  * A full-width session (prog_registry.h): MOTOR & ESC draws the output
@@ -39,7 +39,7 @@
  * foot row of buttons.  The foot is the body's: BTN_Y and HELP_Y are where
  * they are on an 800 x 432 px body whatever the top holds.
  */
-#define PAD       6
+#define PAD       UI_MARGIN
 #define CRUMB_Y   (PROG_FULL_Y + 2)
 #define DEV_Y     (CRUMB_Y + 34)
 #define DEV_H     40
@@ -57,7 +57,7 @@
  * buttons at their foot, which end above the foot row's labels. */
 #define SP_PANEL_Y  PROG_FULL_Y
 #define SP_PANEL_H  (H - PAD - SP_PANEL_Y)
-#define SP_PBTN_H   44
+#define SP_PBTN_H   UI_BTN_H_TALL
 #define SP_PBTN_Y   (H - PAD - 20 - SP_PBTN_H)
 
 _Static_assert(ROW_Y0 + (ROWS_MAX - 1) * ROW_H + 24 <= PARM_Y + PARM_H - 4,

@@ -1903,8 +1903,8 @@ TEST_CASE(an_older_coprocessor_left_mixed_is_not_overwritten_by_a_tap)
 
 /* ------------------------------------------------------------ PICK A PIN */
 
-#define SCREEN_W 800
-#define SCREEN_H (480 - UI_BAND_H)
+#define SCREEN_W UI_PANEL_W
+#define SCREEN_H UI_BODY_H
 
 /* The button of a pin, found as picker_screen_rig.h finds it: walk out
  * from the pad until a press acts.  The pin is left as it was. */
