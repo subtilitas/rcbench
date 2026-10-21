@@ -1,4 +1,8 @@
-/*
+/**
+ * @file storage.c
+ * @brief The SD card on SDMMC slot 0: mount, unmount, holds, and the look
+ *        at a card that does not mount.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -56,9 +60,9 @@ static const char *TAG = "storage";
  */
 static struct {
     sdmmc_card_t *card;
-    /* The card's supply, on-chip LDO channel 4: made once, kept until
-     * storage_deinit(). */
-    sd_pwr_ctrl_handle_t pwr;
+    sd_pwr_ctrl_handle_t pwr;   /**< the card's supply, on-chip LDO channel
+                                     4: made once, kept until
+                                     storage_deinit() */
     bool mounted;
     /* Found gone while held: unmounted at the last release. */
     bool lost;
@@ -188,18 +192,19 @@ static const char *volume_format(void)
  * work area is on the heap for the call: FATFS holds a sector, 4096 bytes
  * with the panel's CONFIG_FATFS_SECTOR_4096.
  *
- * @param host The SD card's host, slot 0.
- * @param slot The slot's pins and width.
- * @param why  Receives the ESP-IDF error of the last step.
+ * @param host The host as the mount had it, SDMMC slot 0.
+ * @param slot The slot's pins and width as the mount had them.
+ * @param why  Set to the error that kept FatFs from being asked, or ESP_OK.
  * @return f_mount()'s FRESULT, or -1 with @p why set when FatFs could not
  *         be asked: no device, a card that no longer starts, no memory.
  */
 static int probe_fatfs(const sdmmc_host_t *host,
                        const sdmmc_slot_config_t *slot, esp_err_t *why)
 {
-    /* The SDMMC host is shared with the C6's SDIO link on slot 1: a slot
-     * that did not start is not counted by ESP-IDF, and a deinit of it
-     * would count slot 1 down and stop the whole host. */
+    /* No slot deinit after a slot that did not start: the SDMMC host is
+     * shared with the C6's SDIO link on slot 1, ESP-IDF counts a slot only
+     * once it has started, and a deinit here would count slot 1 down and
+     * stop the whole host. */
     esp_err_t err = (*host->init)();
     if (err == ESP_OK) {
         err = sdmmc_host_init_slot(host->slot, slot);
@@ -229,8 +234,13 @@ static int probe_fatfs(const sdmmc_host_t *host,
     return fr;
 }
 
-/* A mount that failed after the card started: which kind of card it is,
- * said once in the log and kept for the screens. */
+/**
+ * @brief A mount that failed after the card started: which kind of card it
+ *        is, said once in the log and kept for the screens.
+ * @param err The mount's error.
+ * @param host The host as the mount had it.
+ * @param slot The slot as the mount had it.
+ */
 static void mount_failed(esp_err_t err, const sdmmc_host_t *host,
                          const sdmmc_slot_config_t *slot)
 {
@@ -270,7 +280,10 @@ static bool fat_usage(uint64_t *total, uint64_t *freebytes)
     return true;
 }
 
-/* A mount of whatever the slot holds, under s.lock, with nothing mounted. */
+/**
+ * @brief Mount whatever the slot holds, under s.lock, with nothing mounted.
+ * @return As storage_init().
+ */
 static esp_err_t mount_locked(void)
 {
     s.status[0] = '\0';
@@ -360,10 +373,12 @@ static esp_err_t mount_locked(void)
     return ESP_OK;
 }
 
-/*
- * Let the volume go, under s.lock, with nothing holding it.  No card
- * traffic: f_mount(NULL) forgets the volume without writing, and the
- * device is taken off the bus that stays up for the next mount.
+/**
+ * @brief Let the volume go, under s.lock, with nothing holding it.
+ *
+ * No card traffic: f_mount(NULL) forgets the volume without writing, and
+ * the slot is let go.  The SDMMC host stays up: the radio's slot 1 shares
+ * it.
  */
 static void unmount_locked(void)
 {

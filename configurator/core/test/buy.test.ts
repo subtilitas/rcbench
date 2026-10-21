@@ -215,7 +215,7 @@ test('each row has a token of its own: the part id, or the part id and the row i
     for (const row of part.buy) if (row.id !== undefined) assert.match(row.id, ROW_ID, part.id);
   }
   const of = (id: string): string[] => CATALOGUE.parts.find((p) => p.id === id)!.buy.map((row) => rowToken(CATALOGUE.parts.find((p) => p.id === id)!, row));
-  assert.deepEqual(of('panel'), ['panel']);
+  assert.deepEqual(of('panel'), ['panel.p47b']);
   assert.deepEqual(of('copro'), ['copro', 'copro.osoyoo']);
   assert.deepEqual(of('wire'), ['wire.pair', 'wire.jumper', 'wire.dmm']);
   assert.deepEqual(of('usbtap'), ['usbtap.board', 'usbtap.cable']);

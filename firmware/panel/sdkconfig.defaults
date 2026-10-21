@@ -64,8 +64,8 @@ CONFIG_FREERTOS_USE_TRACE_FACILITY=y
 # Main task stack ----------------------------------------------------------
 # app_main runs the UI: every screen's enter, tick, event and render is
 # called on the main task.  ESP-IDF's default stack, 3584 bytes, is below
-# the UI's deepest call chain, 3856 bytes on the ESP32-S3 build, through the
-# log viewer's render and snprintf().  8192 bytes hold that with room.  The
+# the UI's deepest call chain, 3856 bytes in the ESP32-S3's Xtensa code,
+# through the log viewer's render and snprintf().  8192 bytes hold that with room.  The
 # chain on the ESP32-P4's RISC-V code is not measured.
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 
@@ -112,11 +112,11 @@ CONFIG_FATFS_USE_LABEL=y
 # not who built it.
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 #
-# The ESP32-P4's second-stage bootloader sits at 0x2000, and the partition
-# table at 0x8000 leaves it 24,576 bytes.  With rollback and the INFO log
-# level it is 24,896 bytes; at WARN it fits.  The table stays at 0x8000 so
-# nvs, phy_init and otadata keep their offsets.
-CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
+# The ESP32-P4's second-stage bootloader sits at 0x2000.  The partition
+# table at 0xC000 leaves it 40,960 bytes; with rollback and the INFO log
+# level it is 24,896 bytes.
+CONFIG_PARTITION_TABLE_OFFSET=0xC000
+CONFIG_BOOTLOADER_LOG_LEVEL_INFO=y
 
 # Wi-Fi through the ESP32-C6 -----------------------------------------------
 #

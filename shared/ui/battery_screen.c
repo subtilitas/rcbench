@@ -19,10 +19,10 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H (480 - UI_BAND_H)
+#define W UI_PANEL_W
+#define H UI_BODY_H
 
-#define PAD     6
+#define PAD     UI_MARGIN
 #define LCARD_W 494
 #define RCARD_X (PAD + LCARD_W + 8)
 #define RCARD_W (W - RCARD_X - PAD)

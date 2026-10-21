@@ -1,4 +1,8 @@
-/*
+/**
+ * @file board.c
+ * @brief Board bring-up for the 7-inch ESP32-P4 display board: touch I2C
+ *        bus, backlight PWM and the GT911 reset.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -13,18 +17,24 @@
 
 static const char *TAG = "board";
 
+/** @brief The board's state, set once by board_init(). */
 static struct {
-    bool initialised;
-    i2c_master_bus_handle_t bus;
+    bool initialised;               /**< board_init() succeeded            */
+    i2c_master_bus_handle_t bus;    /**< the touch bus                     */
 } s_board;
 
+/** @brief The largest LEDC duty at BOARD_BL_DUTY_BITS. */
 #define BL_DUTY_MAX ((1u << BOARD_BL_DUTY_BITS) - 1u)
 
-/*
+/**
+ * @brief Set up the backlight's LEDC timer and channel, dark.
+ *
  * LEDC low-speed mode, inverted output: duty 0 holds GPIO32 high, the
  * dimmest state, from the moment the channel exists.  Before that the pin
  * is undriven and the converter's own resistors set the brightest state
  * (from the schematic, not measured).
+ *
+ * @return ESP_OK, or the LEDC error.
  */
 static esp_err_t backlight_init(void)
 {

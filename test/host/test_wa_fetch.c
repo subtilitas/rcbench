@@ -382,7 +382,7 @@ static void make_release(const char *version, bool right_hash)
         snprintf(hex + 2u * i, 3u, "%02x", h[i]);
     }
     snprintf(g_sums_text, sizeof(g_sums_text),
-             "%s  ./rcbench-coproc-v0.20.0.zip\n%s  ./rcbench-panel-v0.20.0"
+             "%s  ./rcbench-coproc-v0.20.0.zip\n%s  ./rcbench-panel-p4-v0.20.0"
              ".bin\n", "00000000000000000000000000000000"
                        "00000000000000000000000000000000", hex);
 }
@@ -471,7 +471,7 @@ TEST_CASE(a_release_downloads_checked_and_staged)
                             "download/v0.20.0/SHA256SUMS");
     CHECK_STR_EQ(g.urls[1], ASSET);
     CHECK_STR_EQ(g.urls[2], "https://github.com/subtilitas/rcbench/releases/"
-                            "download/v0.20.0/rcbench-panel-v0.20.0.bin");
+                            "download/v0.20.0/rcbench-panel-p4-v0.20.0.bin");
     CHECK_EQ(g.opens, 4u);
     CHECK_EQ(g.closes, 4u);
     /* The phases in order, and the bytes of the last report. */
@@ -518,7 +518,7 @@ TEST_CASE(an_image_the_checks_refuse_stages_nothing)
         snprintf(hex + 2u * i, 3u, "%02x", h[i]);
     }
     snprintf(g_sums_text, sizeof(g_sums_text),
-             "%s  ./rcbench-panel-v0.20.0.bin\n", hex);
+             "%s  ./rcbench-panel-p4-v0.20.0.bin\n", hex);
     script_good();
     const wa_fetch_res_t out = download(0u);
     CHECK_EQ(out.got, WA_GOT_IMAGE);

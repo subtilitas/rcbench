@@ -40,6 +40,10 @@ extern bool       g_probe_card_gone;        /* pulled before the second look */
 extern esp_err_t  g_dev_fail;               /* the next slot set-up */
 extern bool       g_drives_full;            /* ff_diskio_get_drive() */
 extern unsigned   g_dev_adds;               /* sdmmc_host_init_slot() */
+/* sdmmc_host_deinit_slot() calls: the host is shared with the radio's
+ * slot, and each call counts it down, so a slot that never came up must
+ * not be let go. */
+extern unsigned   g_dev_removes;
 extern int        g_dev_live;               /* slots set up, not let go */
 extern int        g_drive_live;             /* drives registered */
 extern int        g_fs_live;                /* volumes f_mount()ed */

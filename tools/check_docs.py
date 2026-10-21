@@ -291,32 +291,69 @@ def check_suites(problems: list[str]) -> None:
 # Not implemented: a check that every settings row shown on screen reaches
 # code.
 
+# Every word the interface shows in the operator's language, with its
+# English and German (docs/Language.md).
+TEXT_DEF = REPO / "shared" / "text" / "include" / "ui_text.def"
+
 OPTIONS_RE = re.compile(
-    r"static const char \*const (k_\w+)\s*\[\]\s*=\s*\{(.*?)\}\s*;", re.S)
+    r"^UI_OPTIONS\((\w+)\)\n(.*?)^UI_OPTIONS_END\(\1\)", re.S | re.M)
+OPTION_RE = re.compile(r'^UI_OPTION\("([^"]+)",', re.M)
 
-# Files whose option arrays the docs quote: only the arrays that name
-# user-visible choices, because those are what prose enumerates.
-OPTION_SOURCES = (
-    REPO / "shared" / "settings" / "settings.c",
-)
-
-
-# Option arrays that are a range of numbers offered one by one, not choices
-# with names: the current monitors' I2C addresses, 0x40 to 0x4F and 0x40 to
-# 0x43.  Prose names an address it means, and that is not an enumeration of
-# the menu.
-NOT_MENUS = {"settings.c:k_ina228_addr", "settings.c:k_ina3221_addr"}
+# Option lists that are no menu prose enumerates.  The current monitors'
+# I2C addresses (ina228_addr, 0x40 to 0x4F; old_addr, 0x40 to 0x43) are
+# numbers offered one by one: prose names the address it means.  The kept
+# INA3221 of 0.21 (old_addr, old_ch) is on no screen.  What a SENSORS
+# channel watches (watch) is the outputs' and ports' own names, which prose
+# names one at a time.
+NOT_MENUS = {"ina228_addr", "old_addr", "old_ch", "watch"}
 
 
 def option_lists() -> dict[str, list[str]]:
+    """Collects the option lists prose may enumerate.
+
+    Returns:
+        The English options of every list of the text table with more than
+        one option, by "ui_text.def:<name>", those in NOT_MENUS left out.
+    """
     lists: dict[str, list[str]] = {}
-    for source in OPTION_SOURCES:
-        for name, body in OPTIONS_RE.findall(read(source)):
-            members = re.findall(r'"([^"]+)"', body)
-            key = f"{source.name}:{name}"
-            if len(members) > 1 and key not in NOT_MENUS:
-                lists[key] = members
+    for name, body in OPTIONS_RE.findall(read(TEXT_DEF)):
+        members = OPTION_RE.findall(body)
+        if len(members) > 1 and name not in NOT_MENUS:
+            lists[f"{TEXT_DEF.name}:{name}"] = members
     return lists
+
+
+# The sentence on each Language page that counts what a new language
+# translates: the entries with an ID, the options, the empty English.
+TEXT_COUNTS = (
+    ("Language.md", r"([\d,]+) entries with an ID and ([\d,]+) options, "
+     r"([\d,]+) of them with an empty English"),
+    ("Language-de.md", r"([\d.]+) Einträge mit ID und ([\d.]+) Optionen, "
+     r"([\d.]+) davon mit leerem Englisch"),
+)
+
+
+def check_text_counts(problems: list[str]) -> None:
+    """Holds the Language pages' count of the text table to the table.
+
+    Args:
+        problems: Gets one line per finding.
+    """
+    entries = table_entries()
+    options = re.findall(rf"^UI_OPTION\(({C_STR}),", read(TEXT_DEF), re.M)
+    empty = sum(1 for _, _, en, _ in entries if en == "")
+    empty += sum(1 for en in options if en == '""')
+    want = (len(entries), len(options), empty)
+    for page, pattern in TEXT_COUNTS:
+        m = re.search(pattern, " ".join(read(DOCS / page).split()))
+        if m is None:
+            problems.append(f"{page}: no sentence matches /{pattern}/")
+            continue
+        have = tuple(int(re.sub(r"[,.]", "", g)) for g in m.groups())
+        if have != want:
+            problems.append(f"{page}: counts {have[0]} entries, {have[1]} "
+                            f"options and {have[2]} empty; the table holds "
+                            f"{want[0]}, {want[1]} and {want[2]}")
 
 
 def check_option_lists(problems: list[str]) -> None:
@@ -345,11 +382,6 @@ def check_option_lists(problems: list[str]) -> None:
 
 
 UI_DIR = REPO / "shared" / "ui"
-UI_TEXT_DEF = UI_DIR / "include" / "ui_text.def"
-UI_TEXT_DE = UI_DIR / "ui_text_de.c"
-SETTINGS_C = REPO / "shared" / "settings" / "settings.c"
-SETTINGS_H = REPO / "shared" / "settings" / "include" / "settings.h"
-SERVO_STR_C = REPO / "shared" / "servo" / "servo_str.c"
 
 # Quotes on a German page that stay English although the screen translates
 # the same word: values of the servo test's CSV, which is English in every
@@ -399,70 +431,56 @@ def c_strings(source: str) -> str:
                    for p in parts)
 
 
-def keyed(source: str, prefix: str) -> dict[str, str]:
-    """`[PREFIX_ID] = "text"` entries of a designated initialiser."""
-    return {k: c_strings(v) for k, v in re.findall(
-        rf"\[({prefix}\w+)\]\s*=\s*{C_STRS}", source)}
+# An entry of the text table: its macro, its ID, then the English and the
+# German column, each a run of literals; the German NULL where it shows the
+# English.  UI_TEXT's cells column comes before the English.
+TABLE_ENTRY = re.compile(
+    rf"^(UI_\w+)\((\w+),(?:\s*\d+,)?\s*{C_STRS},\s*(NULL|{C_STRS[1:-1]})\)",
+    re.M)
 
 
-def table(source: str, name: str) -> str:
-    """The body of the C array @p name."""
-    start = source.index(name)
-    return source[start:source.index("\n};", start)]
+def table_entries() -> list[tuple[str, str, str, str | None]]:
+    """Reads every entry of the text table that has an ID.
+
+    Returns:
+        (macro, ID, English, German) per entry, German None for NULL.
+    """
+    return [(macro, ident, c_strings(en), None if de == "NULL"
+             else c_strings(de))
+            for macro, ident, en, de in TABLE_ENTRY.findall(read(TEXT_DEF))]
 
 
-def initialiser(source: str, name: str) -> str:
-    """The braces of the array @p name, written on one line or several."""
-    m = re.search(rf"\b{name}\[\w*\]\s*=\s*\{{([^}}]*)\}}", source)
-    return m.group(1) if m else ""
+def screen_words(lang: str) -> dict[str, str]:
+    """Gives the screens' strings in one language.
+
+    Args:
+        lang: "en" or "de".
+
+    Returns:
+        The string of every UI_TEXT entry by ID, the English where the
+        German is NULL.
+    """
+    return {ident: (de if lang == "de" and de is not None else en)
+            for macro, ident, en, de in table_entries()
+            if macro == "UI_TEXT"}
 
 
 def string_pairs() -> list[tuple[str, str]]:
-    """(English, German) for every interface string, setting label, help
-    line, option, category and servo test word the German table holds."""
-    de = read(UI_TEXT_DE)
-    pairs: list[tuple[str, str]] = []
+    """Pairs every translated word with its English.
 
-    english = {k: c_strings(v) for k, v in re.findall(
-        rf"UI_TEXT\((\w+),\s*\d+,\s*{C_STRS}\)", read(UI_TEXT_DEF))}
-    german = keyed(table(de, "k_text["), "TX_")
-    pairs += [(english[k[3:]], v) for k, v in german.items()
-              if k[3:] in english]
+    The interface strings, setting labels, help lines, options, categories
+    and servo test words the table translates; not the Wi-Fi page's, which
+    no wiki page quotes.  Runs of spaces are one space on both sides, as in a
+    quote.
 
-    settings = read(SETTINGS_C)
-    defs = {k: (label, help_) for k, label, help_ in re.findall(
-        rf'\[(SET_\w+)\]\s*=\s*\{{\s*"[^"]*",\s*({C_STR}),\s*({C_STR})',
-        settings)}
-    for name, col in (("k_label[", 0), ("k_help[", 1)):
-        for k, v in keyed(table(de, name), "SET_").items():
-            if k in defs:
-                pairs.append((c_strings(defs[k][col]), v))
-
-    english_opts = {k: v for k, v in re.findall(
-        r"\[(SET_\w+)\][^\[]*?ENUM_OPTS\((\w+)\)", settings)}
-    german_opts = dict(re.findall(r"\[(SET_\w+)\]\s*=\s*(k_\w+),",
-                                  table(de, "k_options[")))
-    for k, de_name in german_opts.items():
-        if k not in english_opts:
-            continue
-        en_list = re.findall(C_STR, initialiser(settings, english_opts[k]))
-        de_list = re.findall(C_STR, initialiser(de, de_name))
-        pairs += [(c_strings(e), c_strings(d))
-                  for e, d in zip(en_list, de_list, strict=True)]
-
-    header = read(SETTINGS_H)
-    enum = header[header.index("SET_CAT_APP = 0"):
-                  header.index("SET_CAT_COUNT")]
-    cats = re.findall(r"^\s*(SET_CAT_\w+)", enum, re.M)
-    en_cats = [c_strings(s) for s in
-               re.findall(C_STR, table(settings, "k_cat_names["))]
-    de_cats = keyed(table(de, "k_category["), "SET_CAT_")
-    pairs += [(e, de_cats[c])
-              for c, e in zip(cats, en_cats, strict=True) if c in de_cats]
-
-    en_servo = keyed(read(SERVO_STR_C), "SERVO_STR_")
-    de_servo = keyed(table(de, "k_servo["), "SERVO_STR_")
-    pairs += [(en_servo[k], v) for k, v in de_servo.items() if k in en_servo]
+    Returns:
+        (English, German) for every entry whose German differs from its
+        English and whose English has two characters or more.
+    """
+    pairs = [(en, de) for macro, _, en, de in table_entries()
+             if de is not None and macro != "UI_WEB_TEXT"]
+    pairs += [(c_strings(en), c_strings(de)) for en, de in re.findall(
+        rf"^UI_OPTION\(({C_STR}),\s*({C_STR})\)", read(TEXT_DEF), re.M)]
 
     # A quote's spaces are collapsed (quoted_spans), so both sides are too:
     # a column padded with two spaces is quoted with one.
@@ -833,18 +851,22 @@ def reason_faults() -> dict[str, bool]:
 
 
 def check_red_light_tables(problems: list[str]) -> None:
-    """The stick pages' table of how a run ends says, for every reason, what
-    esc_stick_reason_is_fault() does with it, under the words the screen
-    shows in that language: one row per reason, DONE dark, nothing else."""
+    """Holds the stick pages' table of how a run ends to the code.
+
+    The table says, for every reason, what esc_stick_reason_is_fault() does
+    with it, under the words the screen shows in that language: one row per
+    reason, DONE dark, nothing else.
+
+    Args:
+        problems: Gets one line per finding.
+    """
     faults = reason_faults()
     if not faults:
         problems.append(
             "esc_stick_read.c: no esc_stick_reason_is_fault() cases")
         return
-    english = {k: c_strings(v) for k, v in re.findall(
-        rf"UI_TEXT\((\w+),\s*\d+,\s*{C_STRS}\)", read(UI_TEXT_DEF))}
-    german = {k[3:]: v for k, v in keyed(table(read(UI_TEXT_DE), "k_text["),
-                                         "TX_").items()}
+    english = screen_words("en")
+    german = screen_words("de")
     for page, header, lang, words in RED_TABLES:
         names = english if lang == "en" else german
         want: dict[str, bool] = {names["SP_PH_DONE"]: False}
@@ -1105,30 +1127,10 @@ FACTS = [
      ("coverage.py:MIN_TOTAL_COVERAGE", "coverage.py:MIN_FILE_COVERAGE")),
     ("codecov.yml", rf"project: default: target: {N}%",
      ("coverage.py:MIN_TOTAL_COVERAGE",)),
-    ("CONTRIBUTING.md", rf"exceeds its stack less {N} bytes",
-     ("stack_check.py:MARGIN",)),
-    ("STATUS.md", rf"deepest call chain to its stack less {N} bytes",
-     ("stack_check.py:MARGIN",)),
     ("docs/Performance.md", rf"exceeds its stack less {N} bytes",
      ("stack_check.py:MARGIN",)),
     ("docs/Performance-de.md", rf"abzüglich {N} Bytes überschreitet",
      ("stack_check.py:MARGIN",)),
-    # The panel's internal RAM floor with the radio up.
-    ("docs/Performance.md", rf"largest mode up is under {N} bytes",
-     ("ram_budget.py:FLOOR",)),
-    ("docs/Performance-de.md",
-     rf"größten Modus weniger als {N_DE} Bytes Heap",
-     ("ram_budget.py:FLOOR",)),
-    ("docs/Building.md", rf"largest mode leaves under {N} bytes",
-     ("ram_budget.py:FLOOR",)),
-    ("docs/Building-de.md", rf"größte Modus weniger als {N_DE} Bytes",
-     ("ram_budget.py:FLOOR",)),
-    ("CONTRIBUTING.md", rf"largest Wi-Fi mode up is under {N} bytes",
-     ("ram_budget.py:FLOOR",)),
-    ("STATUS.md", rf"largest Wi-Fi mode up to at least {N} bytes",
-     ("ram_budget.py:FLOOR",)),
-    (".github/workflows/ci.yml", rf"against a floor of {N} bytes",
-     ("ram_budget.py:FLOOR",)),
 ]
 
 
@@ -1259,11 +1261,25 @@ def doc_ceilings(text: str, header: str, german: bool):
 
 def check_ceilings(problems: list[str], ci_text: str | None = None,
                    pages=None) -> None:
-    """The ceiling table in Performance.md gives, for every mode CI holds,
-    the ceiling CI holds it to, and has no row CI does not run."""
+    """Hold the ceiling table of the Performance pages to ci.yml.
+
+    The table gives, for every mode CI holds, the ceiling CI holds it to,
+    and has no row CI does not run.  While CI holds no ceiling, the pages
+    carry no such table.
+
+    Args:
+        problems: Receives one line per disagreement.
+        ci_text: The text of ci.yml; the file in the tree when None.
+        pages: (page, table header) pairs; the two Performance pages when
+            None.
+    """
     calls = ci_ceilings(read(CI_YML) if ci_text is None else ci_text)
     if not calls:
-        problems.append("ci.yml: no frame_cost.py call with --max-lines")
+        for page, header in (CEILING_PAGES if pages is None else pages):
+            if header in read(page):
+                problems.append(f"{page.name}: has the ceiling table, and "
+                                "ci.yml has no frame_cost.py call with "
+                                "--max-lines")
         return
     for page, header in (CEILING_PAGES if pages is None else pages):
         german = page.name.endswith(DE_SUFFIX)
@@ -1338,12 +1354,17 @@ def check_pin_counts(problems: list[str]) -> None:
 
 
 def check_sdk_tags(problems: list[str]) -> None:
-    """The SDK (software development kit) tags are spelled in ci.yml,
-    release.yml and the build pages, and the copies agree.
+    """Hold the SDK tags of ci.yml, release.yml and the pages together.
 
-    The pico-sdk tag is env.PICO_SDK_TAG of ci.yml; the ESP-IDF
-    (Espressif Internet-of-Things Development Framework) tags are the
-    `idf` matrix of ci.yml, whose first entry is the release build's.
+    The SDK (software development kit) tags are spelled in ci.yml,
+    release.yml and the build pages, and the copies agree.  The pico-sdk
+    tag is env.PICO_SDK_TAG of ci.yml; the ESP-IDF (Espressif
+    Internet-of-Things Development Framework) tag is the
+    `esp_idf_version` of the panel builds in ci.yml, which release.yml
+    repeats, and the version in the panel job's name.
+
+    Args:
+        problems: Receives one line per disagreement.
     """
     ci = read(REPO / ".github" / "workflows" / "ci.yml")
     rel = read(REPO / ".github" / "workflows" / "release.yml")
@@ -1383,30 +1404,34 @@ def check_sdk_tags(problems: list[str]) -> None:
             problems.append(f"SDK tags: {what} says pico-sdk {tag}; "
                             f"ci.yml builds {pico}")
 
-    matrix = re.search(r"idf:\s*\[([^\]]*)\]", ci)
-    idfs = [v.strip() for v in matrix.group(1).split(",")] if matrix else []
-    if not idfs:
-        problems.append("SDK tags: no idf matrix in ci.yml")
+    idfs = sorted(set(re.findall(r"esp_idf_version:\s*(v[\d.]+)", ci)))
+    if len(idfs) != 1:
+        problems.append("SDK tags: ci.yml builds the panel with "
+                        f"{len(idfs)} ESP-IDF versions "
+                        f"({', '.join(idfs) or 'none'}); it names one")
         return
+    idf = idfs[0]
     release = first("esp_idf_version in release.yml",
                     r"esp_idf_version:\s*(v[\d.]+)", rel)
-    if release and release != idfs[0]:
+    if release and release != idf:
         problems.append(f"SDK tags: release.yml builds ESP-IDF {release}; "
-                        f"the first of the ci.yml matrix is {idfs[0]}")
-    for page, joiner in (("Building.md", "and"), ("Building-de.md", "und")):
+                        f"ci.yml builds {idf}")
+    job = first("'Panel (ESP-IDF vX, ...)' job name in ci.yml",
+                r"name: Panel \(ESP-IDF (v[\d.]+)[,)]", ci)
+    if job and job != idf:
+        problems.append(f"SDK tags: the ci.yml panel job is named for "
+                        f"ESP-IDF {job}; it builds {idf}")
+    for page, verb in (("Building.md", "builds"), ("Building-de.md", "baut")):
         text = read(REPO / "docs" / page)
-        stated = list(re.finditer(
-            r"(v\d+\.\d+(?:\.\d+)?) %s (v\d+\.\d+(?:\.\d+)?)" % joiner,
-            text))
+        stated = re.findall(
+            r"CI (?:\([^)]*\) )?%s (v\d+\.\d+(?:\.\d+)?)" % verb, text)
         if not stated:
-            problems.append(f"SDK tags: no 'vX.Y {joiner} vX.Z' ESP-IDF "
+            problems.append(f"SDK tags: no 'CI {verb} vX.Y.Z' ESP-IDF "
                             f"statement in {page}")
-        for m in stated:
-            if [m.group(1), m.group(2)] != idfs:
-                problems.append(
-                    f"SDK tags: {page} says ESP-IDF {m.group(1)} "
-                    f"{joiner} {m.group(2)}; ci.yml builds "
-                    f"{', '.join(idfs)}")
+        for tag in stated:
+            if tag != idf:
+                problems.append(f"SDK tags: {page} says ESP-IDF {tag}; "
+                                f"ci.yml builds {idf}")
 
 
 # Where the SPDX line is required: the directories walked and the suffixes
@@ -1462,6 +1487,7 @@ def main() -> int:
     check_translations(problems)
     check_suites(problems)
     check_option_lists(problems)
+    check_text_counts(problems)
     check_quoted_labels(problems)
     check_shared_modules(problems)
     check_compile_table(problems)

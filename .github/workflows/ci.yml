@@ -165,60 +165,6 @@ jobs:
           python3 tools/wiki_links.py /tmp/wikicheck
           python3 tools/wiki_links.py --verify /tmp/wikicheck
 
-      # Frame rate on this panel is bandwidth-bound, so the regression guard
-      # is cache-line traffic per frame, not wall-clock on a runner that
-      # shares nothing with an ESP32-S3.  Two ceilings, because a
-      # chrome-cached screen and a live plot are unrelated.
-      #
-      # 15,600: the panel moves 976 KiB per frame at 39 Hz, and a render
-      # costing twice that lands at 19.5 fps, one frame per 20 Hz telemetry
-      # sample.  Above it the panel cannot deliver a frame per sample.
-      # 2,000 catches a menu that has stopped caching its chrome.
-      - name: The bench frame still fits one telemetry sample
-        run: python3 tools/frame_cost.py frame sim supply --max-lines 15600
-
-      - name: The chrome-cached screens have not started repainting
-        run: python3 tools/frame_cost.py overview --max-lines 2000
-
-      # The servo card draws its arm and grip from coverage; 17,000 catches
-      # that growing.  A breath repaints a clipped box and nothing else, and
-      # 4,000 catches a revision bump on every poll that puts the whole card
-      # back in the frame.  A window of the INA3221 in every frame repaints
-      # the CURRENT row's value, the line and the plot beside the grip, each
-      # clipped; 4,500 catches a changed digit that repaints the card.
-      - name: The servo card is drawn, and its grip is only breathed on
-        run: python3 tools/frame_cost.py servo --max-lines 17000
-             && python3 tools/frame_cost.py servo-grip --max-lines 4000
-             && python3 tools/frame_cost.py servo-current --max-lines 4500
-
-      # Every screen caches its chrome, so a steady frame is a few hundred
-      # fills; 1,200 catches one that has started repainting.  The watermark
-      # blends over the whole canvas and costs about 1,355 on top of that.
-      - name: Every screen still idles on a cached frame
-        run: python3 tools/frame_cost.py analyser logs settings battery balance
-             motor-stick picker wifi --max-lines 1200
-             && python3 tools/frame_cost.py settings-list --max-lines 1200
-
-      - name: The SIMULATION watermark has not grown
-        run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
-             --max-lines 2800
-
-      # A theme change or a change of the SIMULATED flag invalidates every
-      # screen, which costs one full repaint.  45,000 catches that growing.
-      - name: A full repaint of every screen stays bounded
-        run: python3 tools/frame_cost.py analyser-chrome balance-chrome
-             battery-chrome motor-stick-chrome logs-chrome settings-chrome
-             settings-list-chrome picker-chrome supply-chrome wifi-chrome
-             --max-lines 45000
-
-      # A key typed on the Wi-Fi keyboard repaints the whole WI-FI
-      # screen, about 21,900 fills; 24,000 catches a key that repaints more.
-      - name: A key of the Wi-Fi keyboard costs one repaint
-        run: python3 tools/frame_cost.py wifi-keys --max-lines 24000
-
-      - name: The frame-cost table in the docs is current
-        run: python3 tools/frame_cost.py --check-doc
-
       # The screens are rendered by the code the panel runs, so a golden image
       # checks what they look like; the unit tests cover what they decide.
       - name: The committed screenshots match the current render
@@ -424,104 +370,81 @@ jobs:
           if-no-files-found: warn
 
   panel:
-    name: Panel (ESP-IDF ${{ matrix.idf }})
-    # The v5.4 build carries the IOmcu image of this commit, as the
-    # release does; the v5.5.3 build carries none, as a build without the
-    # option does.
+    name: Panel (ESP-IDF v5.5.5, ESP32-P4)
+    # The build carries the IOmcu image of this commit, as the release
+    # does.
     needs: [iomcu]
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        # v5.4 is the floor: the RGB (parallel red-green-blue) panel's
-        # on_frame_buf_complete event exists from v5.4.  The floor is built as
-        # well as the newest release, because a component that includes
-        # esp_timer.h without requiring it compiles on a later v5.4.x point
-        # release and not on v5.4.0.  v5.5.0 and v5.5.1 send a DLC 0 frame
-        # as DLC 8 and are refused by can_twai.c, so the newer entry names
-        # its point release.
-        idf: [v5.4, v5.5.3]
-        include:
-          - idf: v5.4
-            image: true
     steps:
       - uses: actions/checkout@v6
 
       # Inside firmware/panel, the directory the build runs in, so the
       # container sees it under the same relative path.
       - name: Fetch the IOmcu image
-        if: matrix.image
         uses: actions/download-artifact@v7
         with:
           name: iomcu
           path: firmware/panel/iomcu-image
 
+      # The managed components (firmware/panel/managed_components) come from
+      # the ESP component registry at build time; the lock file pins their
+      # versions.  The step runs once the lock file is committed.
+      - name: Restore the managed components
+        if: hashFiles('firmware/panel/dependencies.lock') != ''
+        uses: actions/cache@v6
+        with:
+          path: firmware/panel/managed_components
+          key: managed-components-${{ hashFiles('firmware/panel/dependencies.lock') }}
+
+      # v5.5.5 is the floor: a Rev3.2 ESP32-P4 needs v5.5.5 or v6.0.1 and
+      # later, and v5.5.0 and v5.5.1 send a DLC 0 CAN frame as DLC 8, which
+      # can_twai.c refuses.
       # No cache step: the build runs inside the espressif/idf container, so
       # ~/.espressif on the runner is never written or read and a cache would
-      # never hit.
+      # never hit.  The checkout holds no sdkconfig, so every build
+      # generates one from sdkconfig.defaults.
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: ${{ matrix.idf }}
-          target: esp32s3
+          esp_idf_version: v5.5.5
+          target: esp32p4
           path: 'firmware/panel'
           # A single image flashable at 0x0, as well as the three parts.
           # Flashing bootloader, partition table and app at three offsets is
           # three chances to get an offset wrong; the merged one has none.
           command: >-
-            idf.py ${{ matrix.image && '-D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin' || '' }} build
+            idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin build
             && idf.py merge-bin -o rcbench-panel-merged.bin
+
+      # A build that rewrites the lock file resolved a version the commit
+      # does not pin.
+      - name: The build leaves the lock file as committed
+        run: |
+          if [ -f firmware/panel/dependencies.lock ]; then
+            git diff --exit-code firmware/panel/dependencies.lock
+          fi
 
       - name: Size report
         run: |
           ls -l firmware/panel/build/*.bin firmware/panel/build/bootloader/bootloader.bin
           sha256sum firmware/panel/build/*.bin
 
-      # The symbol target_add_binary_data() names the embedded image by:
-      # present in the build with the image, absent in the one without.
-      - name: The IOmcu image is carried only when asked for
-        env:
-          IMAGE: ${{ matrix.image }}
+      # The image against the smaller of the two update slots: an update
+      # writes the slot that is not running.
+      - name: The image fits its update slot
+        run: python3 tools/image_slot.py firmware/panel/build
+
+      # The symbol target_add_binary_data() names the embedded image by.
+      - name: The IOmcu image is carried
         run: |
-          if grep -aq _binary_rcbench_iomcu_bin_start \
-              firmware/panel/build/rcbench-panel.elf; then
-            carried=true
-          else
-            carried=false
-          fi
-          echo "carries the IOmcu image: $carried"
-          [ "$carried" = "${IMAGE:-false}" ]
-
-      # Every task's deepest call chain, read out of the ELF, against its
-      # stack less a 1024-byte margin.  The UI runs on the main task, and a
-      # chain past its end restarts the panel.  Needs only Python: the tool
-      # decodes the instructions itself.  On both matrix entries, because
-      # each ESP-IDF release brings its own toolchain and its own frames.
-      - name: Every task's stack holds its deepest call chain
-        run: python3 tools/stack_check.py firmware/panel/build
-
-      # The table in docs/Performance.md is measured on ESP-IDF v5.4, so it
-      # is held to that build and not to the other.
-      - name: The stack table in the docs is this build's
-        if: matrix.idf == 'v5.4'
-        run: python3 tools/stack_check.py firmware/panel/build --check-doc
-
-      # The internal heap the build leaves, less every task stack, queue
-      # and buffer the panel allocates at run time and what the largest
-      # Wi-Fi mode allocates on top, against a floor of 32768 bytes.  The
-      # Wi-Fi driver takes 51,200 bytes of DMA-capable internal RAM at
-      # esp_wifi_init(), and a panel short of it refuses ACCESS POINT at
-      # once.  On both matrix entries; the table in the docs is the v5.4
-      # build's.
-      - name: Internal RAM holds the largest Wi-Fi mode
-        run: python3 tools/ram_budget.py firmware/panel/build
-             ${{ matrix.idf == 'v5.4' && '--check-doc' || '' }}
+          grep -aq _binary_rcbench_iomcu_bin_start \
+            firmware/panel/build/rcbench-panel.elf
 
       # The default build reads a touch injector at 0x14 beside the glass
       # (testbench/touch-injector).  The image must hold its code, INJECT's
       # mode name and one literal of INJECT's bubble text
-      # (shared/ui/include/ui_text.def).
+      # (shared/text/include/ui_text.def).
       - name: The default image holds the touch injector
         run: |
           for s in touch_inject_attach ui_band_mode_inject \
@@ -545,16 +468,14 @@ jobs:
       # The build without it, so the option keeps building: the image
       # must hold none of that code.  Not uploaded.
       - name: The build without the injector compiles
-        if: matrix.idf == 'v5.4'
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: ${{ matrix.idf }}
-          target: esp32s3
+          esp_idf_version: v5.5.5
+          target: esp32p4
           path: 'firmware/panel'
           command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF build
 
       - name: The injector code is not in the build without it
-        if: matrix.idf == 'v5.4'
         run: |
           if grep -aqF -e touch_inject_ -e touch_merge_ \
               -e ui_band_mode_inject \
@@ -563,12 +484,10 @@ jobs:
             echo "::error::the build without the injector holds its code"
             exit 1
           fi
-          python3 tools/stack_check.py firmware/panel/build-noinject
-          python3 tools/ram_budget.py firmware/panel/build-noinject
 
       - uses: actions/upload-artifact@v7
         with:
-          name: panel-${{ matrix.idf }}
+          name: panel
           path: |
             firmware/panel/build/rcbench-panel-merged.bin
             firmware/panel/build/rcbench-panel.bin

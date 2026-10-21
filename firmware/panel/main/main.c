@@ -1,5 +1,7 @@
-/*
- * The panel application.
+/**
+ * @file main.c
+ * @brief The panel application: app_main, the console report and the
+ *        main loop's hardware glue.
  *
  * Brings the board up, reports each step to the splash as it happens, then
  * runs the router at the panel's refresh rate.
@@ -29,11 +31,12 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 
-/* sdkconfig.defaults sets the main task's stack to 8192 bytes, and
- * tools/stack_check.py holds the UI's deepest chain to it.  ESP-IDF reads the
- * defaults only when it creates sdkconfig, so a checkout whose sdkconfig
- * predates that line still builds with 3584 bytes and overflows on
- * ESC STICK's first frame.  Such a build stops here. */
+/* sdkconfig.defaults sets the main task's stack to 8192 bytes.  The UI's
+ * deepest chain on the ESP32-P4's RISC-V code is not measured:
+ * tools/stack_check.py reads Xtensa code only.  ESP-IDF reads the defaults
+ * only when it creates sdkconfig, so a checkout whose sdkconfig predates
+ * that line builds with 3584 bytes, below what the UI needs.  Such a build
+ * stops here. */
 #if CONFIG_ESP_MAIN_TASK_STACK_SIZE < 8192
 #error "CONFIG_ESP_MAIN_TASK_STACK_SIZE is under 8192: delete firmware/panel/sdkconfig so sdkconfig.defaults applies"
 #endif
@@ -150,6 +153,16 @@ void publish_throttle_ramp(void)
 
 static const char *TAG = "rcbench";
 
+/* The screens draw a UI_PANEL_W x UI_PANEL_H canvas (ui_layout.h).  The
+ * display's canvas is BOARD_UI_H_RES x BOARD_UI_V_RES (display_canvas()),
+ * in the top-left corner of the BOARD_LCD_H_RES x BOARD_LCD_V_RES glass,
+ * with the glass's stride. */
+_Static_assert(BOARD_UI_H_RES == UI_PANEL_W && BOARD_UI_V_RES == UI_PANEL_H,
+               "the display's canvas is the size the screens draw");
+_Static_assert(BOARD_UI_H_RES <= BOARD_LCD_H_RES
+               && BOARD_UI_V_RES <= BOARD_LCD_V_RES,
+               "the display's canvas fits the glass");
+
 /* Used during bring-up as well as in the loop, so file scope. */
 link_host_t    s_host;
 /* A link_cap_t bitmap from the IOmcu's identity page.  Zero until
@@ -218,7 +231,7 @@ uint32_t s_recoveries_total;  /* since boot                       */
  *
  * The control task writes it and app_main hands it to the screen, because
  * screen state is app_main's alone.  Atomic rather than volatile, for the
- * reason this file already gives for s_stop_live: volatile orders nothing
+ * reason given for s_stop_request: volatile orders nothing
  * between processors and promises no atomicity, and these two tasks are
  * pinned to different cores.
  */
@@ -307,8 +320,9 @@ arming_t  s_arm;
 uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 
 /*
- * Both cross the two cores, so both are atomic rather than volatile: volatile
- * orders nothing between processors and promises no atomicity.
+ * Crosses the two cores, so it is atomic rather than volatile, as
+ * s_stop_live (panel_control.c) is: volatile orders nothing between
+ * processors and promises no atomicity.
  *
  * s_stop_request carries the router's backstop for a press this task's own
  * hit test did not see, so it crosses from app_main.  A press this task sees
@@ -587,7 +601,8 @@ atomic_bool s_enc_held;
 /*
  * The SERVO screen's link (shared/outputs/servo_link.c) reaches this task's
  * state through these: the output bank, the arming policy, the alerts and
- * the disarm.  stack_check.py follows each by name (SERVO_CALLS).
+ * the disarm.  stack_check.py names each (SERVO_CALLS) for its Xtensa
+ * decoder, which does not read the ESP32-P4's RISC-V code.
  */
 static bool servo_ctx_armed(void *ctx)
 {
@@ -878,9 +893,11 @@ void app_main(void)
      * able to delay the safety line, so it runs in the gaps the control task
      * leaves rather than beside it on the core the renderer uses.  Its
      * stack holds one line of a servo test, SERVO_TEST_LINE_MAX bytes, and
-     * the deepest card chain tools/stack_check.py follows: the card mounted
-     * again under a servo file's walk, as a run's start mounts it
-     * (storage_check(), docs/Performance.md).
+     * the deepest card chain: the card mounted again under a servo file's
+     * walk, as a run's start mounts it (storage_check()).  6656 bytes is
+     * the ESP32-S3's figure; the chain's depth on the ESP32-P4's RISC-V
+     * code is not measured, because tools/stack_check.py reads Xtensa code
+     * only.
      */
     ESP_ERROR_CHECK(xTaskCreatePinnedToCore(log_task, "runlog", 6656,
                                             NULL, 3, NULL, 1) == pdPASS

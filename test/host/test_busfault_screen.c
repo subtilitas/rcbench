@@ -19,8 +19,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define SCREEN_W 800
-#define SCREEN_H 480
+#define SCREEN_W UI_PANEL_W
+#define SCREEN_H UI_PANEL_H
 
 /* Mirrored from busfault_screen.c: the button across the bottom. */
 #define ACK_H 52

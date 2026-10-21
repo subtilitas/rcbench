@@ -574,7 +574,7 @@ void link_report(void)
     /*
      * Left at zero.  link_bringup reads rx_crc_errors as "frames this end
      * received and found corrupt", and TWAI (Two-Wire Automotive Interface,
-     * the ESP32-S3's CAN controller) has no such counter: bus_error_count is
+     * the ESP32-P4's CAN controller) has no such counter: bus_error_count is
      * cumulative for the life of the driver and includes transmit-side
      * acknowledge errors, so one missing ACK (acknowledge) at power-on would
      * pin the diagnosis at "frames arrive corrupt" for the whole session.

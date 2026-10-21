@@ -1,10 +1,12 @@
-/*
- * The render loop: what the control task published, into the screens;
- * touch, into the router; the screens' commands, back to the control task;
- * then one frame drawn and flipped, and every 300 frames the console line
- * with the frame rate, the draw and wait times, the panel's own refresh
- * and the touch losses.  app_main (main.c) enters it once the tasks are
- * running, and it does not return.
+/**
+ * @file panel_frame.c
+ * @brief The render loop, from app_main once the tasks are running.
+ *
+ * What the control task published goes into the screens; touch, into the
+ * router; the screens' commands, back to the control task; then one frame
+ * is drawn and flipped.  Every 300 frames the console line gives the frame
+ * rate, the draw and wait times, the panel's own refresh and the touch
+ * losses.  panel_frame_loop() does not return.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -56,9 +58,11 @@ static const char *TAG = "rcbench";
  */
 #define LINK_LOST_SCREEN_MS 4000u
 
+/** @brief The render loop (panel_main.h).  Does not return. */
 void panel_frame_loop(void)
 {
     uint32_t frames  = 0;
+    uint32_t flip_timeouts = 0;   /* since start-up */
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     uint32_t last_vs = display_vsync_count();
     uint32_t last_vs_us = last_us;
@@ -666,13 +670,19 @@ void panel_frame_loop(void)
         const int64_t draw_start = esp_timer_get_time();
         ui_router_render(c, display_back_index());
         const uint32_t draw_us = (uint32_t)(esp_timer_get_time() - draw_start);
-        display_flip();   /* blocks until the swap has taken effect */
+        /* Blocks until the swap has taken effect.  A flip that saw no
+         * frame-done event in 200 ms is counted for the console line. */
+        if (display_flip() == ESP_ERR_TIMEOUT) {
+            ++flip_timeouts;
+        }
 
         /*
          * DRAW is the paint time of the frame; WAIT is how long the flip
          * blocked afterwards.  A healthy frame is mostly WAIT, the loop
          * paced by the panel.  DRAW climbing until WAIT reaches zero is the
-         * frame budget being spent.  Printed every 300 frames.
+         * frame budget being spent.  VSYNC is the panel's refresh as
+         * measured here, FLIP TIMEOUTS the flips since start-up that waited
+         * 200 ms for a frame-done event in vain.  Printed every 300 frames.
          */
         if (++frames % 300u == 0u) {
             /* And the panel's own refresh, from its VSYNC (vertical sync)
@@ -687,10 +697,11 @@ void panel_frame_loop(void)
             last_vs_us = vs_us;
             ESP_LOGI(TAG,
                      "%.1f fps  DRAW %u us  WAIT %u us  VSYNC %.2f Hz  "
-                     "TOUCHLOST %u/%u",
+                     "FLIP TIMEOUTS %u  TOUCHLOST %u/%u",
                      (double)display_fps(), (unsigned)draw_us,
                      (unsigned)display_last_wait_us(), (double)vsync_hz,
-                     s_tq_lost, atomic_load(&s_drv_gaps));
+                     (unsigned)flip_timeouts, s_tq_lost,
+                     atomic_load(&s_drv_gaps));
         }
     }
 }

@@ -151,7 +151,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
     ],
   );
   assert.equal(CATALOGUE.rules.length, 7);
-  assert.equal(CATALOGUE.checks.length, 43);
+  assert.equal(CATALOGUE.checks.length, 44);
   assert.deepEqual(
     CATALOGUE.powerSources.map((s) => [s.id, s.feeds]),
     [
@@ -186,13 +186,15 @@ test('the pictures of the parts are the files of the picture folder', () => {
   const folder = pictureFolder(PICTURE_DIR);
   assert.deepEqual(errors(checkPictures(CATALOGUE, folder)), []);
   const pictures = CATALOGUE.parts.flatMap((p) => p.pictures ?? []);
-  assert.equal(pictures.filter((p) => p.kind === 'photo').length, 12);
+  assert.equal(pictures.filter((p) => p.kind === 'photo').length, 11);
   assert.equal(pictures.filter((p) => p.kind === 'drawing').length, 0);
-  assert.equal(folder.names.length, 24);
+  assert.equal(folder.names.length, 22);
+  // The panel has no photo: the picture folder holds none of the board.
+  assert.deepEqual(CATALOGUE.parts.find((p) => p.id === 'panel')?.pictures, undefined);
   // The check tool runs the same check.
   assert.deepEqual(errors(checkAll(CATALOGUE, null, false, ANCHOR_TEXTS, folder).findings), []);
   reports(checkAll(CATALOGUE, null, false, ANCHOR_TEXTS, folderOf({})).findings,
-    'part.panel.picture.01-panel-back', /01-panel-back\.webp is missing/);
+    'part.copro.picture.05-rp2350-can-breakout', /05-rp2350-can-breakout\.webp is missing/);
 });
 
 test('a picture record is held to its files', () => {
@@ -271,12 +273,12 @@ test('a drawing is an SVG file without script, reference or raster', () => {
 test('every unknown of the data is a check entry of kind unknown', () => {
   const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
   assert.deepEqual(unknown, [
-    'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
+    'panel-heartbeat-pin', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
     'osoyoo-labels', 'prog-level', 'servo-5v-pin', 'strip-supply', 'esc-programming-power',
   ]);
   const unconfirmed = CATALOGUE.parts.flatMap((part) =>
     part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
-  assert.deepEqual(unconfirmed, ['ina3221.LP', 'as5600.GPO']);
+  assert.deepEqual(unconfirmed, ['panel.HB', 'ina3221.LP', 'as5600.GPO']);
   // No entry states whether a part or a function has run on hardware: the page states that once, for the project.
   for (const entry of [...CATALOGUE.parts, ...CATALOGUE.functions]) assert.ok(!('hardware' in entry), entry.id);
   assert.deepEqual(CATALOGUE.checks.filter((k) => k.id.endsWith('-state')).map((k) => k.id), []);
@@ -919,7 +921,7 @@ test('src: guide, photo and page rules', () => {
   // An owner statement is named by a date of the list.
   const stated = copy();
   assert.deepEqual(stated.parts.find((p) => p.id === 'usbtap')?.src, { kind: 'owner', date: '2026-10-11' });
-  assert.deepEqual(OWNER_STATEMENTS, ['2026-10-11']);
+  assert.deepEqual(OWNER_STATEMENTS, ['2026-10-11', '2026-10-21']);
   stated.parts[4]!.src = { kind: 'owner', date: '2026-10-11' };
   assert.deepEqual(checkSrc(stated, null).findings, []);
   stated.parts[4]!.src = { kind: 'owner', date: '2026-10-12' };
@@ -1251,7 +1253,7 @@ test('the wire table prints one row per wire in the column order of the specific
   assert.equal(rows.length, 2 + CATALOGUE.wires.length);
   assert.equal(rows[0], '| No. | From | To | Class | Route | Lane | Stage | Present when |');
   assert.equal(rows[2], '| 1 | panel.CANH | can.H | canh | L | 0 | 1 | always |');
-  assert.equal(rows[5], '| 4 | panel.J8S | pad.5 | hb | L | 3 | 1 | not estop |');
+  assert.equal(rows[5], '| 4 | panel.HB | pad.5 | hb | L | 3 | 1 | not estop |');
   assert.equal(rows[14], '| 13 | esc.BEC | (nothing) | nc | S |  | 1 | esc |');
   assert.equal(rows[15], '| 14 | batt.POS | esc.POS | power | O | 2 | 1 | esc and escPower=battery and not ina228 |');
   assert.equal(rows[29], '| 28 | pdmini.OP | ina3221.C1A | power | X | L12, R16, C0 | 3 | servo and pdmini and ina3221 |');

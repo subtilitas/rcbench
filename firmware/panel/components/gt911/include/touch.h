@@ -1,5 +1,6 @@
-/*
- * Touch input for the 7-inch ESP32-P4 display board.
+/**
+ * @file touch.h
+ * @brief Touch input for the 7-inch ESP32-P4 display board.
  *
  * A background task polls the GT911 every poll_interval_ms, maps the
  * coordinates into screen space, drops the ones outside the UI's
@@ -26,16 +27,18 @@
 extern "C" {
 #endif
 
+/** @brief How touch_init() sets the touch input up. */
 typedef struct {
     touch_rotation_t rotation;      /**< matches how the panel is mounted      */
-    bool     mirror_x;
-    bool     mirror_y;
+    bool     mirror_x;              /**< mirror x before rotation             */
+    bool     mirror_y;              /**< mirror y before rotation             */
     uint32_t poll_interval_ms;      /**< sampling period                      */
     uint32_t event_queue_len;       /**< 0 disables the event queue           */
-    int      task_priority;
+    int      task_priority;         /**< FreeRTOS priority of the task        */
     int      task_core;             /**< -1 for no affinity                   */
 } touch_config_t;
 
+/** @brief Polled every 10 ms, mirrored as board_pins.h says, 32 events. */
 #define TOUCH_CONFIG_DEFAULT()              \
     (touch_config_t) {                      \
         .rotation = TOUCH_ROTATION_0,       \
@@ -47,10 +50,18 @@ typedef struct {
         .task_core = 0,                     \
     }
 
-/** Reset the controller, probe it and start the sampling task. */
+/**
+ * @brief Reset the controller, probe it and start the polling task.
+ * @param cfg The set-up; NULL takes TOUCH_CONFIG_DEFAULT().
+ * @return ESP_OK, also when already up; ESP_ERR_NO_MEM for the task, lock
+ *         or queue; otherwise the board's or the GT911's error.
+ */
 esp_err_t touch_init(const touch_config_t *cfg);
 
-/** Stop the task and release the controller. */
+/**
+ * @brief Stop the task and release the controller.
+ * @return ESP_OK, also when touch was not up.
+ */
 esp_err_t touch_deinit(void);
 
 /**

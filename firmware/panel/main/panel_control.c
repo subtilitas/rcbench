@@ -1,8 +1,11 @@
-/*
- * The control task: touch, STOP, arming, the outputs, the link and the
- * heartbeat, at a fixed CONTROL_PERIOD_MS on the core the renderer does
- * not use, and control_pump(), the part of it with a deadline, which also
- * runs inside every link exchange's wait.  The heartbeat's pin and the
+/**
+ * @file panel_control.c
+ * @brief The control task: touch, STOP, arming, the outputs, the link and
+ *        the heartbeat.
+ *
+ * The task runs at a fixed CONTROL_PERIOD_MS on the core the renderer
+ * does not use.  control_pump() is the part of it with a deadline; it
+ * also runs inside every link exchange's wait.  The heartbeat's pin and the
  * die temperature are this task's too.  app_main (main.c) creates it.
  *
  * SPDX-License-Identifier: MIT

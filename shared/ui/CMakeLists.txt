@@ -21,7 +21,6 @@ set(SRCS
     ui_router.c
     ui_alert_slot.c
     ui_text.c
-    ui_text_de.c
     splash_screen.c
     overview_screen.c
     motor_screen.c
@@ -30,16 +29,30 @@ set(SRCS
     motor_program_page.c
     supply_screen.c
     servo_screen.c
+    servo_screen_sweep.c
+    servo_screen_link.c
+    servo_screen_touch.c
+    servo_screen_draw.c
     servo_settings_panel.c
     servo_test_panel.c
     servo_limit_panel.c
     servo_workbench.c
     kst_panel.c
+    kst_panel_text.c
+    kst_panel_warn.c
+    kst_panel_edit.c
+    kst_panel_touch.c
+    kst_panel_run.c
+    kst_panel_draw.c
     analyser_screen.c
     balance_screen.c
     battery_screen.c
     esc_stick_pages.c
     esc_stick_panel.c
+    esc_stick_list.c
+    esc_stick_touch.c
+    esc_stick_draw.c
+    esc_stick_draw_run.c
     prog_models.c
     log_viewer_screen.c
     log_select.c
@@ -62,19 +75,12 @@ set(SRCS
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
-                           REQUIRES gfx touch bench logfile settings sbus link outputs servo can esc)
-    # INJECT's mode name and bubble text, in a build with the touch injector
-    # (the default; idf.py -D RCBENCH_TOUCH_INJECTOR=OFF drops them).  PUBLIC, as the
-    # include path is: the define changes ui_text.def's IDs, and every file
-    # that includes ui_text.h has to see the same set.
-    if(RCBENCH_TOUCH_INJECTOR)
-        target_compile_definitions(${COMPONENT_LIB} PUBLIC RCBENCH_TOUCH_INJECTOR=1)
-    endif()
+                           REQUIRES gfx touch bench logfile settings sbus link outputs servo can esc
+                                    text)
+    # RCBENCH_TOUCH_INJECTOR comes with component text (shared/text).
 else()
     add_library(rcbench_ui STATIC ${SRCS})
     target_include_directories(rcbench_ui PUBLIC include "${CMAKE_CURRENT_LIST_DIR}/../link/include" "${CMAKE_CURRENT_LIST_DIR}/../can/include")
-    # The host suite tests INJECT's bubble, so it builds with the injector's
-    # texts; PUBLIC for the reason above.
-    target_compile_definitions(rcbench_ui PUBLIC RCBENCH_TOUCH_INJECTOR=1)
-    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc rcbench_servo)
+    # RCBENCH_TOUCH_INJECTOR comes with rcbench_text (shared/text).
+    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc rcbench_servo rcbench_text)
 endif()

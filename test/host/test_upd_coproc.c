@@ -762,7 +762,7 @@ TEST_CASE(the_wifi_hint_names_setup)
 
 TEST_CASE(every_section_state_renders_inside_its_canvas)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
     gfx_canvas_t c;
     guard_canvas_t g;
     for (int lang = 0; lang < 2; ++lang) {
@@ -777,7 +777,7 @@ TEST_CASE(every_section_state_renders_inside_its_canvas)
                 v.known = (sec % 2 == 0);
                 v.running = (cu_version_t){ 65535, 65535, 65535 };
                 upd_screen_set_coproc(&v);
-                guard_canvas_init(&g, &c, px, 800, 432);
+                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
                 upd_screen_invalidate();
                 upd()->render(&c, 0);
                 CHECK_EQ(guard_canvas_touched(&g), 0u);

@@ -98,7 +98,11 @@ uint32_t can_timing_max_bitrate(const can_timing_limits_t *lim);
 /** The IOmcu's XL2515 (MCP2515-compatible), given its crystal. */
 void can_timing_limits_mcp2515(can_timing_limits_t *out, uint32_t crystal_hz);
 
-/** The panel's TWAI on the ESP32-P4, off the 40 MHz crystal. */
+/**
+ * @brief The panel's TWAI on the ESP32-P4, off the 40 MHz crystal: even
+ *        prescalers from 2 to 32768.
+ * @param out Filled with the limits; NULL is ignored.
+ */
 void can_timing_limits_twai(can_timing_limits_t *out);
 
 /* --------------------------------------------------- MCP2515 registers */

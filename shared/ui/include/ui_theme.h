@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "ui_layout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -117,13 +118,10 @@ int ui_theme_contrast(void);
 #define UI_CHAMFER_SM    4
 
 /*
- * Corner radii, one scale for the whole interface, so a card, a button and a
- * track read as the same material.  UI_CHAMFER is the 45-degree cut ui_panel
- * and the home tag use.
+ * Corner radii (UI_R_CARD, UI_R_CTL, UI_R_CHIP, in ui_layout.h) are one scale
+ * for the whole interface, so a card, a button and a track read as the same
+ * material.  UI_CHAMFER is the 45-degree cut ui_panel and the home tag use.
  */
-#define UI_R_CARD  8
-#define UI_R_CTL   6
-#define UI_R_CHIP  4
 
 /*
  * The bench's numeral style, in one place: the four readings and the throttle
@@ -142,6 +140,18 @@ static inline gfx_seg_style_t ui_seg_hero(void)
 #define UI_FONT_LABEL    (&gfx_font_8x16)
 #define UI_FONT_HEAD     (&gfx_font_16x28)
 #define UI_FONT_NUM      (&gfx_font_num_24x30)
+
+/*
+ * Roles of the faces the 1024 x 600 layout adds.  No screen draws with BODY
+ * yet.  The layout switch points LABEL at gfx_font_10x20, HEAD at
+ * gfx_font_20x36 and NUM at gfx_font_num_32x44.
+ */
+/** @brief The 8x16 face for data columns: log table, analyser values, pad
+ *  numbers. */
+#define UI_FONT_FINE     (&gfx_font_8x16)
+/** @brief The 12x24 face for prose: help text, warnings, questions, run
+ *  results. */
+#define UI_FONT_BODY     (&gfx_font_12x24)
 
 #ifdef __cplusplus
 }

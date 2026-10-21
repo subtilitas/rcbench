@@ -1,4 +1,9 @@
-/*
+/**
+ * @file touch.c
+ * @brief The GT911 polling task: reads contacts, maps them into the
+ *        panel's coordinates, crops them to the UI's area and publishes
+ *        snapshots and events.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -114,13 +119,15 @@ static void publish(const touch_point_t *pts, int count)
     }
 }
 
-/* Into the panel's coordinates, then only what lies inside the UI's
- * area: the UI draws BOARD_UI_H_RES x BOARD_UI_V_RES of the panel. */
-static void map_and_publish(touch_point_t *pts, int count)
+/**
+ * @brief Publish only the contacts inside the UI's area: the UI draws
+ *        BOARD_UI_H_RES x BOARD_UI_V_RES of the panel.
+ * @param pts Contacts in panel pixels, each source already mapped with its
+ *            own map; cropped in place.
+ * @param count How many.
+ */
+static void crop_and_publish(touch_point_t *pts, int count)
 {
-    for (int i = 0; i < count; ++i) {
-        touch_map_point(&s_touch.map, &pts[i]);
-    }
     publish(pts, touch_map_crop(pts, count, BOARD_UI_H_RES, BOARD_UI_V_RES));
 }
 
@@ -144,18 +151,23 @@ static void touch_task(void *arg)
             continue;
         }
         s_touch.last_ok_ms = now_ms();
+        /* The glass's report into panel pixels before any merge: the
+         * injector's contacts are panel pixels already (touch_inject.c). */
+        if (fresh) {
+            touch_map_points(&s_touch.map, raw, count);
+        }
 #ifdef RCBENCH_TOUCH_INJECTOR
         /* The glass's report goes out before the injector is read, so a
          * slow or failing injector never delays a contact on the glass. */
         if (touch_inject_glass(raw, &count, fresh)) {
-            map_and_publish(raw, count);
+            crop_and_publish(raw, count);
         }
         fresh = touch_inject_read(raw, &count, now_ms());
 #endif
         if (!fresh) {
             continue;
         }
-        map_and_publish(raw, count);
+        crop_and_publish(raw, count);
     }
 
     s_touch.task = NULL;
@@ -182,6 +194,14 @@ esp_err_t touch_init(const touch_config_t *cfg)
     const gt911_config_t gt_cfg = { 0 }; /* probe 0x5D then 0x14 */
     ESP_RETURN_ON_ERROR(gt911_new(board_i2c_bus(), &gt_cfg, &s_touch.gt911),
                         TAG, "gt911 probe");
+    /*
+     * The GT911 takes 0x5D or 0x14 at the end of its reset from the level
+     * on its INT line, which no GPIO drives on this board; which one it
+     * takes is not measured.
+     */
+    const uint16_t glass_addr = gt911_address(s_touch.gt911);
+    ESP_LOGI(TAG, "GT911 answers at 0x%02x after the reset (0x5d probed "
+                  "first, then 0x14)", glass_addr);
 
 #ifdef RCBENCH_TOUCH_INJECTOR
     /* Before the task exists: adding a device to the bus is not safe
@@ -204,6 +224,17 @@ esp_err_t touch_init(const touch_config_t *cfg)
         .mirror_y = s_touch.cfg.mirror_y,
         .rotation = s_touch.cfg.rotation,
     };
+#ifdef RCBENCH_TOUCH_INJECTOR
+    if (glass_addr == TOUCH_INJECT_ADDR) {
+        /* 0x14 is the injector's address in this build, so what answers
+         * there is taken as the injector and not as the glass: panel
+         * pixels of the UI's area, unmirrored. */
+        s_touch.map = touch_inject_map();
+        ESP_LOGW(TAG, "0x14 refused as the glass: it is the touch "
+                      "injector's address in this build; touch is the "
+                      "injector alone");
+    }
+#endif
     touch_tracker_reset(&s_touch.tracker);
     s_touch.point_count = 0;
     s_touch.stop = false;
