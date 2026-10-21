@@ -1265,10 +1265,17 @@ ausgeschaltetem Ausgang.
 
 ![Die Liste von PROGRAMMIEREN](img/de/servo-program.png)
 ![Eine Zeile, deren Fähigkeit der IOmcu fehlt](img/de/servo-program-nocap.png)
+![Eine Zeile, deren Port eine Hitec-Sitzung der Konsole hält](img/de/servo-program-busy.png)
 
 PROGRAMMIEREN in der Leiste zeigt die Liste der Programmierer im
 Seitenbereich, eine Zeile je Programmierer: links der Name, rechts, was die
-Zeile ansteuert, mit dem Pin, `PROG-PORT GP13`, dann `>`. Die Liste hat
+Zeile ansteuert, mit dem Pin, `PROG-PORT 1 GP13`, dann `>`. Die Zeile für
+KST und Chaservo liegt auf dem Port, den SERVO-TESTER nennt, PORT 1, PORT 2,
+PORT 3 oder PORT 4, und lautet `PROG-PORT` mit ihrem Pin, solange
+SERVO-TESTER auf OUTPUTS steht. Eine Zeile ist mit `PORT BELEGT` ausgegraut,
+solange eine andere Sitzung ihren Port hält: die einer anderen Zeile oder
+eine HITEC-Sitzung, die die Bench-Konsole geöffnet hat; das Panel liest
+dazu alle 500 ms STATE der HITEC-Seite. Die Liste hat
 eine Zeile, `KST- und Chaservo-Servos`. Ein Tippen auf eine aktive Zeile
 öffnet ihren Programmierer über der linken Spalte samt den Reitern der
 Leiste, eine Ebene tiefer, und beendet einen laufenden automatischen Test.
@@ -1296,11 +1303,11 @@ Zeilen. Mit einer Zeile ist nichts davon gezeichnet. Modellierte Protokolle
 ohne Transport auf dem IOmcu, die Hitec-Servos der D-Serie darunter, haben
 keine Zeile ([Programmieren](#programmieren) auf MOTOR & ESC).
 
-Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport des
-IOmcu, im Auslieferzustand GP13 an Pad 17, aus PWM (Pulsweitenmodulation)
-und liest und schreibt die Einstellungen des Servos über dessen
-Signalleitung. Er verbindet nur, wenn SERVO-TESTER auf SETUP > OUTPUTS auf
-PROG-PORT steht; mit OUTPUTS zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Unter SETUP > OUTPUTS den SERVO-TESTER auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
+Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport,
+den der Tester treibt, aus PWM (Pulsweitenmodulation) und liest und
+schreibt die Einstellungen des Servos über dessen Signalleitung. PROG-PORT 1
+ist im Auslieferzustand GP13 an Pad 17. Er verbindet nur, wenn SERVO-TESTER auf SETUP > OUTPUTS auf
+einem Port steht, PORT 1, PORT 2, PORT 3 oder PORT 4; mit OUTPUTS zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Unter SETUP > OUTPUTS den SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
 bleibt er offen: SCHLIESSEN und das Home-Tag öffnen PROGRAMMIERMODUS
 VERLASSEN, und während der Port ins Programmieren oder hinaus wechselt,
 tun sie nichts. Das Verlassen von SERVO lässt den Port, wie er ist; zurück

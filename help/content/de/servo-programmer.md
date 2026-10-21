@@ -10,9 +10,13 @@ Der Servo-Programmierer liest die 32 Register eines KST- oder Chaservo-Servos ü
 
 ![Die Liste von PROGRAMMIEREN](view:servo-program)
 
-Die Zeile nennt, was sie ansteuert, `PROG-PORT GP13`. Sie ist gedimmt und öffnet nichts, solange der IOmcu, die RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet: die Zeile zeigt dann `IOMCU OHNE SERVO PWM`.
+Die Zeile nennt, was sie ansteuert: den Port, den SERVO-TESTER nennt, und seinen Pin, `PROG-PORT 1 GP13`. Sie ist gedimmt und öffnet nichts, solange der IOmcu, die RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet: die Zeile zeigt dann `IOMCU OHNE SERVO PWM`.
 
 ![Die Zeile gedimmt](view:servo-program-nocap)
+
+Sie ist mit `PORT BELEGT` gedimmt, solange eine Hitec-Sitzung, die die Bench-Konsole geöffnet hat, diesen Port hält.
+
+![Der Port belegt](view:servo-program-busy)
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench ist mit ihnen nicht verbunden, wird von ihnen nicht empfohlen und nicht gefördert. Die Namen sagen, mit welchen Servos der Programmierer arbeitet.
 

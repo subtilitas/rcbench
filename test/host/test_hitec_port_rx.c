@@ -498,6 +498,36 @@ TEST_CASE(a_stop_close_and_abort_cut_a_precharge_receive_as_any_other)
     CHECK_EQ(g_drv.aborts, 4);
 }
 
+/* A build of 4 ports: a PRECHARGE line opens on port 3 as on port 0, the
+ * driver handed port 3's pin, and the KST page holding port 2 keeps the
+ * HITEC page off port 2 only. */
+TEST_CASE(a_precharge_line_opens_on_the_fourth_port)
+{
+    g_rig_ports = 4u;
+    fresh();
+    g_hw.pin[3] = 22u;
+    g_hw.pin[2] = 14u;
+    hitec_port_other_mask(&g_port, 0x4u);
+    CHECK_EQ(rx_mode_write(LINK_HITEC_RX_PRECHARGE), 0);
+    line(HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    CHECK_EQ(cmd(LINK_HITEC_OP_OPEN, 2u, 0), 0);
+    CHECK(refusal() != LINK_HITEC_REF_NONE);
+    line(HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    CHECK_EQ(cmd(LINK_HITEC_OP_OPEN, 3u, 0), 0);
+    CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
+    until_state(LINK_HITEC_OPEN);
+    CHECK_EQ(g_hw.take_port, 3u);
+    CHECK_EQ(g_hw.take_pin, 22u);
+    CHECK_EQ(g_hw.take_rx, HITEC_RX_PRECHARGE);
+    CHECK_EQ(LINK_HT_PORT_OF(reg(LINK_HT_STATE)), 3u);
+    CHECK_EQ(hitec_port_quiet_mask(&g_port), 0x8u);
+    /* Closed: the pin goes back, and port 3 is free again. */
+    CHECK_EQ(cmd(LINK_HITEC_OP_CLOSE, 3u, 0), 0);
+    until_state(LINK_HITEC_FREE);
+    CHECK_EQ(hitec_port_quiet_mask(&g_port), 0u);
+    g_rig_ports = 2u;
+}
+
 int main(void)
 {
     RUN(the_receive_mode_starts_pull_up_and_takes_0_and_1_only);
@@ -514,5 +544,6 @@ int main(void)
     RUN(a_listen_on_an_output_read_off_is_cut_at_once);
     RUN(the_window_counts_the_waiting_only);
     RUN(a_stop_close_and_abort_cut_a_precharge_receive_as_any_other);
+    RUN(a_precharge_line_opens_on_the_fourth_port);
     return test_summary("hitec_port_rx");
 }

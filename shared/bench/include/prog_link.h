@@ -116,6 +116,8 @@ typedef struct {
     uint16_t ask_value;            /**< the register value to write        */
     bool     reread;               /**< an ask was written: nothing more
                                         until the page is read again      */
+    bool     hitec;                /**< from 4.23: the HITEC page         */
+    uint8_t  hitec_held;           /**< bit n: the HITEC page holds port n */
 } prog_link_t;
 
 /** One register to write. */
@@ -176,6 +178,25 @@ prog_link_ask_state_t prog_link_ask_state(const prog_link_t *p,
 /** Whether the page is to be read now: it is unknown, or
  *  PROG_LINK_POLL_MS have passed. */
 bool prog_link_read_due(const prog_link_t *p, uint32_t now_ms);
+
+/**
+ * The HITEC page beside the PROG page (protocol 4.23): a session the bench
+ * console opens holds a port the panel's rows must leave alone.  Whether
+ * its STATE register is read with the PROG page: an IOmcu answers that has
+ * the page.
+ */
+bool prog_link_hitec_due(const prog_link_t *p);
+
+/**
+ * The HITEC STATE register as read, @p state NULL for a read nobody
+ * answered: the port it names is held from STOPPING on, free at FREE.  A
+ * read not answered keeps what was known.
+ */
+void prog_link_hitec_read(prog_link_t *p, const uint16_t *state);
+
+/** Bit n: the HITEC page holds port n, as last read; 0 with no link, no
+ *  page or nothing read since the link came up. */
+uint8_t prog_link_hitec_held(const prog_link_t *p);
 
 /** The page as read, prog_link_regs() registers, or NULL for a read that
  *  was not answered: the page is unknown then.  Below 4.26 every port's

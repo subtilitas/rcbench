@@ -130,7 +130,7 @@ A port without a pin cannot be the target: a slot of OUTPUTS that holds
 GP13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
-With the standard outputs as target the programmer shows `Use the programming port to program a servo.` and `Set SERVO TESTER to PROG PORT on SETUP > OUTPUTS.`, and every control but **CLOSE** is off.
+With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer shows `Use the programming port to program a servo.` and `Set SERVO TESTER to PORT 1 to PORT 4 on SETUP > OUTPUTS.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
 
 ![The standard outputs are the target](img/servo-kst-target.png)
 
@@ -856,7 +856,7 @@ its first **READ ALL** finds it. A backup file on the card stays there.
 ## The limit run
 
 The SERVO screen's limit run drives the programmer itself whenever SERVO
-TESTER is PROG PORT
+TESTER is a port
 ([Servo procedures](Servo.md#programming-the-servos-travel-limits)). Its
 first session reads the servo, with SEARCH ONLY as well: CONNECT with its
 read, LEAVE. With SERVO PULSES at 1000-2000 that session also writes PULSE

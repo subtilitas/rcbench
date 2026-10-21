@@ -10,9 +10,13 @@ The servo programmer reads the 32 registers of a KST or Chaservo servo over its 
 
 ![PROGRAM's list](view:servo-program)
 
-The row names what it drives, `PROG PORT GP13`. It is dimmed and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM, which includes no IOmcu answering: the row then reads `IOMCU HAS NO SERVO PWM`.
+The row names what it drives: the port SERVO TESTER names and its pin, `PROG PORT 1 GP13`. It is dimmed and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM, which includes no IOmcu answering: the row then reads `IOMCU HAS NO SERVO PWM`.
 
 ![The row dimmed](view:servo-program-nocap)
+
+It is dimmed with `PORT IN USE` while a Hitec session opened from the bench console holds that port.
+
+![The port in use](view:servo-program-busy)
 
 KST and Chaservo are names or trademarks of their respective owners. rcbench is not affiliated with, endorsed by or sponsored by them. The names say which servos the programmer works with.
 

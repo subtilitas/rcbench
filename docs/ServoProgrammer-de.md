@@ -142,10 +142,12 @@ Ein Port ohne Pin kann nicht das Ziel sein: ein Slot von OUTPUTS, der GP13
 hält, lässt dem Port keinen. Der Tester behält dann die Standardausgänge,
 was immer die Zeile sagt.
 
-Mit den Standardausgängen als Ziel zeigt der Programmierer
+Mit den Standardausgängen als Ziel, SERVO-TESTER auf OUTPUTS, zeigt der
+Programmierer
 `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und
-`Unter SETUP > OUTPUTS den SERVO-TESTER auf PROG-PORT stellen.`, und jedes
-Bedienelement außer **SCHLIESSEN** ist aus.
+`Unter SETUP > OUTPUTS den SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und jedes
+Bedienelement außer **SCHLIESSEN** ist aus. Er verbindet auf PORT 1, PORT 2,
+PORT 3 oder PORT 4, dem Port, den SERVO-TESTER nennt, mit dessen Pin.
 
 ![Die Standardausgänge sind das Ziel](img/de/servo-kst-target.png)
 
@@ -937,7 +939,7 @@ Backup-Datei auf der Karte bleibt dort.
 ## Der Endlagenlauf
 
 Der Endlagenlauf des SERVO-Bildschirms führt den Programmierer selbst,
-sobald SERVO-TESTER auf PROG-PORT steht
+sobald SERVO-TESTER auf einem Port steht
 ([Servoverfahren](Servo-de.md#die-weggrenzen-des-servos-programmieren)).
 Seine erste Sitzung liest das Servo, auch bei NUR SUCHE: VERBINDEN mit
 seinem Lesen, VERLASSEN. Mit SERVOPULSE auf 1000-2000 schreibt diese

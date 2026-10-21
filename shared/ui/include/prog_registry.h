@@ -11,10 +11,13 @@
  *   - group is the heading the row sits under once the list has headings.
  *   - transport is what the row's line says it drives ("PROG PORT"), as
  *     the TARGET row on the output card says it.
- *   - port is the IOmcu programming port the row's session holds, or
- *     PROG_REG_NO_PORT.  Two rows on one port are exclusive: while one
- *     holds the port the other is drawn dimmed, PORT IN USE, and opens
- *     nothing.
+ *   - port is the IOmcu programming port the row's session holds,
+ *     PROG_REG_TESTER_PORT for the port the SERVO screen's tester drives
+ *     (prog_registry_set_ports()), or PROG_REG_NO_PORT.  Two rows on one
+ *     port are exclusive: while one holds the port the other is drawn
+ *     dimmed, PORT IN USE, and opens nothing.  A port another page of the
+ *     IOmcu holds (a HITEC session the bench console opened) dims every
+ *     row on it the same way.
  *   - needs_capability holds link_cap_t bits.  A row whose bits the IOmcu
  *     does not report is drawn dimmed with its reason, not hidden, and
  *     opens nothing.
@@ -76,6 +79,9 @@ typedef enum {
 /** The IOmcu's programming ports a row may name: 0 to 3 (protocol
  *  LINK_PG_PORTS_MAX). */
 #define PROG_REG_PORTS   4u
+/** A row on the port the SERVO screen's tester drives, whichever that is:
+ *  PORT 1 to PORT 4 of SERVO TESTER, none with OUTPUTS. */
+#define PROG_REG_TESTER_PORT 0xFEu
 
 /*
  * A function that calls one hook of a page set and nothing else through a
@@ -175,6 +181,19 @@ const prog_reg_row_t *prog_registry(size_t *count);
  *  goes back to the table as it ships. */
 void prog_registry_use(const prog_reg_row_t *rows, size_t count);
 
+/**
+ * The ports as the panel last read them: @p tester_port, the port the
+ * SERVO screen's tester drives (0 to 3), PROG_REG_NO_PORT with the
+ * standard outputs or the target not known; @p held, bit n for port n
+ * held by an IOmcu page no row's session drives (the HITEC page, opened
+ * from the bench console).  Both start as none.
+ */
+void prog_registry_set_ports(uint8_t tester_port, uint8_t held);
+
+/** Row @p r's port as it stands: its own, the tester's for
+ *  PROG_REG_TESTER_PORT, or PROG_REG_NO_PORT. */
+uint8_t prog_reg_port(const prog_reg_row_t *r);
+
 /* ------------------------------------------------------------ the checks */
 
 typedef enum {
@@ -257,9 +276,11 @@ uint16_t prog_reg_missing(const prog_reg_row_t *row, uint16_t caps);
 const char *prog_reg_cap_name(uint16_t bit);
 
 /**
- * The text right of row @p i's name: its transport and the session's pin
- * ("PROG PORT GP13", "PROG PORT" with the pin not known) for a live row,
- * its reason for a dimmed one ("IOMCU HAS NO SERVO PWM", "PORT IN USE").
+ * The text right of row @p i's name: for a live row on a port its number
+ * and the session's pin ("PROG PORT 2 GP14", "PROG PORT 2" with the pin
+ * not known), its transport and the pin for any other ("PROG PORT" with
+ * the tester's port not known); its reason for a dimmed one ("IOMCU HAS
+ * NO SERVO PWM", "PORT IN USE").
  * Writes at most @p size - 1 characters and returns whether the row is
  * dimmed.
  */

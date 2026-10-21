@@ -170,7 +170,7 @@ Bitzeiten Bytes und 1 losgelassene Bitzeit.
 | Kommando | Tut |
 | --- | --- |
 | `hitec [state]` | die Page, dekodiert, mit dem Mitschnitt |
-| `hitec open <port> c\|d [od\|pp] [pu\|pre]` | OPEN: classic oder D-Serie, Open Drain (Standard) oder Push-Pull. Für die D-Serie schreibt `pu` oder `pre` zuerst den Empfangsmodus, PULL-UP oder PRECHARGE (Register 23, [Empfangsmodus](LinkHitec-de.md#empfangsmodus)); ohne beides nimmt das OPEN den Modus, den die Page hält. Classic weist beides ab: ein classic-Servo braucht keins davon |
+| `hitec open <port> c\|d [od\|pp] [pu\|pre]` | OPEN auf Port 0 bis 3 (PROG-PORT 1 bis 4; vor Protokoll 4.26 nur 0): classic oder D-Serie, Open Drain (Standard) oder Push-Pull. Für die D-Serie schreibt `pu` oder `pre` zuerst den Empfangsmodus, PULL-UP oder PRECHARGE (Register 23, [Empfangsmodus](LinkHitec-de.md#empfangsmodus)); ohne beides nimmt das OPEN den Modus, den die Page hält. Classic weist beides ab: ein classic-Servo braucht keins davon |
 | `hitec close <port>` | CLOSE |
 | `hitec abort <port>` | ABORT |
 | `hitec clear <port>` | CLEAR, nach einem Stopp |

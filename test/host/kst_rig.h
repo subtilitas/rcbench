@@ -40,6 +40,9 @@ typedef struct {
     bool rail;                 /* a PD mini answers */
     bool rail_deaf;            /* it takes no request */
     bool no_pin;               /* the generator has no pin for the port */
+    uint8_t ports;             /* the build's ports; 0 is 1 */
+    uint8_t pin_of[4];         /* ports past RIG_PORT: their pins, 0 none */
+    uint8_t taken_port, taken_pin;  /* what the last take handed over */
     bool sup_on;
     uint16_t sup_mv, sup_ma;
     unsigned sup_sets;
@@ -77,14 +80,18 @@ static rig_t g_rig;
 static inline uint8_t rig_hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
-    return (port == RIG_PORT && !g_rig.no_pin) ? RIG_PIN : 0xFFu;
+    if (port == RIG_PORT) {
+        return g_rig.no_pin ? 0xFFu : RIG_PIN;
+    }
+    return (port < 4u && g_rig.pin_of[port] != 0u) ? g_rig.pin_of[port]
+                                                   : 0xFFu;
 }
 
 static inline bool rig_hw_take(void *ctx, uint8_t port, uint8_t pin)
 {
     (void)ctx;
-    (void)port;
-    (void)pin;
+    g_rig.taken_port = port;
+    g_rig.taken_pin = pin;
     return true;
 }
 
@@ -147,7 +154,7 @@ static inline void rig_port_fresh(void)
     kst_port_hw_t hw;
 
     memset(&hw, 0, sizeof(hw));
-    hw.ports = 1u;
+    hw.ports = (g_rig.ports != 0u) ? g_rig.ports : 1u;
     hw.pin = rig_hw_pin;
     hw.take = rig_hw_take;
     hw.give = rig_hw_give;

@@ -113,7 +113,8 @@ static prog_reg_row_t row_of(ui_text_id_t name, ui_text_id_t group,
 
 /* The table as it ships: sound in every language, every row's name and
  * page set present.  SERVO's PROGRAM list is one live row, the KST and
- * Chaservo programmer on programming port 0, over the left column.  MOTOR
+ * Chaservo programmer on the tester's programming port, over the left
+ * column.  MOTOR
  * & ESC's is one row too, ESC STICK under STICK MENU, full width, holding
  * no port and needing no capability.  The modelled protocols without a
  * transport (prog_models.h) are no row. */
@@ -149,7 +150,7 @@ TEST_CASE(the_shipped_table_is_sound_and_lists_the_kst_programmer)
     CHECK_EQ(kst->name, TX_PL_KST);
     CHECK_STR_EQ(ui_tr(kst->name), "KST and Chaservo servos");
     CHECK_EQ(kst->transport, TX_SV_TARGET_PORT);
-    CHECK_EQ(kst->port, 0u);
+    CHECK_EQ(kst->port, PROG_REG_TESTER_PORT);
     CHECK_EQ(kst->needs_capability, (uint16_t)LINK_CAP_SERVO_PWM);
     CHECK(kst->page_set == &kst_panel_pages);
     CHECK(!kst->full_width);
@@ -320,16 +321,16 @@ TEST_CASE(a_row_the_iomcu_lacks_is_dimmed_with_its_reason)
     CHECK_STR_EQ(out, "IOMCU OHNE SERVO PWM");
     ui_text_set_language(UI_LANG_EN);
 
-    /* Reported: live, the transport and the session's pin. */
+    /* Reported: live, the port's number and the session's pin. */
     CHECK_EQ(prog_reg_state(r, 1, 0, LINK_CAP_SERVO_PWM), PROG_ROW_LIVE);
     CHECK(!prog_reg_detail(r, 1, 0, LINK_CAP_SERVO_PWM, out, sizeof(out)));
-    CHECK_STR_EQ(out, "PROG PORT");
+    CHECK_STR_EQ(out, "PROG PORT 1");
     fa.pin = 13u;
     CHECK(!prog_reg_detail(r, 1, 0, LINK_CAP_SERVO_PWM, out, sizeof(out)));
-    CHECK_STR_EQ(out, "PROG PORT GP13");
+    CHECK_STR_EQ(out, "PROG PORT 1 GP13");
     ui_text_set_language(UI_LANG_DE);
     CHECK(!prog_reg_detail(r, 1, 0, LINK_CAP_SERVO_PWM, out, sizeof(out)));
-    CHECK_STR_EQ(out, "PROG-PORT GP13");
+    CHECK_STR_EQ(out, "PROG-PORT 1 GP13");
     ui_text_set_language(UI_LANG_EN);
 
     /* Two bits missing: the lower is named. */
@@ -412,6 +413,72 @@ TEST_CASE(two_rows_on_one_port_are_exclusive)
     r[1].page_set = &k_set_a;
     fa.holds = true;
     CHECK_EQ(prog_reg_state(r, 4, 1, caps), PROG_ROW_LIVE);
+}
+
+/* A row on the tester's port follows SERVO TESTER: the port it names, its
+ * number and pin in the detail, PORT IN USE against a row on that port
+ * and while the HITEC page holds it, unless its own session does. */
+TEST_CASE(a_row_on_the_testers_port_follows_the_tester)
+{
+    fakes_fresh();
+    ui_text_set_language(UI_LANG_EN);
+    prog_reg_row_t r[2] = {
+        row_of(TX_PL_KST, TX_PL_GRP_PROG_PORT, PROG_REG_TESTER_PORT,
+               &k_set_a),
+        row_of(TX_WB_LIVE, TX_PL_GRP_PROG_PORT, 1u, &k_set_b),
+    };
+    const uint16_t caps = LINK_CAP_SERVO_PWM;
+    char out[48];
+
+    CHECK_EQ(prog_reg_check(r, 2, NULL), PROG_REG_OK);
+    /* The tester on the outputs: no port, the transport alone. */
+    prog_registry_set_ports(PROG_REG_NO_PORT, 0u);
+    CHECK_EQ(prog_reg_port(&r[0]), PROG_REG_NO_PORT);
+    CHECK(!prog_reg_detail(r, 2, 0, caps, out, sizeof(out)));
+    CHECK_STR_EQ(out, "PROG PORT");
+    fa.pin = 13u;
+    CHECK(!prog_reg_detail(r, 2, 0, caps, out, sizeof(out)));
+    CHECK_STR_EQ(out, "PROG PORT GP13");
+    /* PORT 2: its number and pin. */
+    prog_registry_set_ports(1u, 0u);
+    CHECK_EQ(prog_reg_port(&r[0]), 1u);
+    fa.pin = 14u;
+    CHECK(!prog_reg_detail(r, 2, 0, caps, out, sizeof(out)));
+    CHECK_STR_EQ(out, "PROG PORT 2 GP14");
+    fa.pin = PROG_REG_NO_PIN;
+    CHECK(!prog_reg_detail(r, 2, 0, caps, out, sizeof(out)));
+    CHECK_STR_EQ(out, "PROG PORT 2");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(!prog_reg_detail(r, 2, 0, caps, out, sizeof(out)));
+    CHECK_STR_EQ(out, "PROG-PORT 2");
+    ui_text_set_language(UI_LANG_EN);
+    /* The other row on port 2 holds it. */
+    fb_.holds = true;
+    CHECK_EQ(prog_reg_state(r, 2, 0, caps), PROG_ROW_PORT_BUSY);
+    prog_registry_set_ports(2u, 0u);
+    CHECK_EQ(prog_reg_state(r, 2, 0, caps), PROG_ROW_LIVE);
+    fb_.holds = false;
+    /* The HITEC page holds port 3: every row on it is PORT IN USE, a row
+     * on another port is not. */
+    prog_registry_set_ports(2u, 0x4u);
+    CHECK_EQ(prog_reg_state(r, 2, 0, caps), PROG_ROW_PORT_BUSY);
+    CHECK(prog_reg_detail(r, 2, 0, caps, out, sizeof(out)));
+    CHECK_STR_EQ(out, "PORT IN USE");
+    CHECK_EQ(prog_reg_state(r, 2, 1, caps), PROG_ROW_LIVE);
+    /* Unless the row's own session holds the port. */
+    fa.holds = true;
+    CHECK_EQ(prog_reg_state(r, 2, 0, caps), PROG_ROW_LIVE);
+    fa.holds = false;
+    /* A port past the four and bits past them are none. */
+    prog_registry_set_ports(4u, 0xF0u);
+    CHECK_EQ(prog_reg_port(&r[0]), PROG_REG_NO_PORT);
+    CHECK_EQ(prog_reg_state(r, 2, 1, caps), PROG_ROW_LIVE);
+    CHECK_EQ(prog_reg_port(NULL), PROG_REG_NO_PORT);
+    /* A port value that is neither a port, none nor the tester's fails
+     * the check. */
+    r[1].port = 0xFDu;
+    CHECK_EQ(prog_reg_check(r, 2, NULL), PROG_REG_BAD_PORT);
+    prog_registry_set_ports(PROG_REG_NO_PORT, 0u);
 }
 
 /* ---------------------------------------------------- the list rules */
@@ -750,6 +817,7 @@ int main(void)
     RUN(a_devices_sessions_are_each_listed_once);
     RUN(a_row_the_iomcu_lacks_is_dimmed_with_its_reason);
     RUN(two_rows_on_one_port_are_exclusive);
+    RUN(a_row_on_the_testers_port_follows_the_tester);
     RUN(search_comes_over_nine_rows_and_headings_over_eight);
     RUN(headings_group_the_rows_in_the_tables_order);
     RUN(the_search_narrows_the_list_and_keeps_its_box);

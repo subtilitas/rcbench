@@ -160,7 +160,7 @@ bytes and 1 released bit time.
 | Command | Does |
 | --- | --- |
 | `hitec [state]` | the page, decoded, with the capture |
-| `hitec open <port> c\|d [od\|pp] [pu\|pre]` | OPEN: classic or D series, open drain (the default) or push-pull. For the D series `pu` or `pre` first writes the receive mode, PULL-UP or PRECHARGE (register 23, [Receive mode](LinkHitec.md#receive-mode)); without either the OPEN takes the mode the page holds. Classic refuses both: a classic servo needs neither |
+| `hitec open <port> c\|d [od\|pp] [pu\|pre]` | OPEN on port 0 to 3 (PROG PORT 1 to 4; 0 alone before protocol 4.26): classic or D series, open drain (the default) or push-pull. For the D series `pu` or `pre` first writes the receive mode, PULL-UP or PRECHARGE (register 23, [Receive mode](LinkHitec.md#receive-mode)); without either the OPEN takes the mode the page holds. Classic refuses both: a classic servo needs neither |
 | `hitec close <port>` | CLOSE |
 | `hitec abort <port>` | ABORT |
 | `hitec clear <port>` | CLEAR, after a stop |
