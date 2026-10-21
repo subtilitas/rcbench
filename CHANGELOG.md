@@ -133,6 +133,13 @@ history is in git.
 
 ### Changed
 
+- `tools/check_sizes.py` counts code lines: a line that is not blank and
+  not comment-only. Block and `//` comments, Doxygen blocks included, and in
+  Python `#` comments and docstrings do not count; a line with code and a
+  trailing comment does. The limits stay 1,000 and 1,300, now in code
+  lines. 28 entries of `tools/check_sizes.txt` whose files hold 1,000 code
+  lines or fewer are removed, and four recorded figures are re-measured.
+
 - The four INA3221 rows leave SETUP > INTERFACES (23 settings now). A panel
   updated from 0.21 seeds SENSORS from them at start-up: the part at the old
   address fitted when the INA3221 was ON, its CH1 on the old shunt, CH2 and

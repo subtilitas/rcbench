@@ -125,10 +125,11 @@ jobs:
       - name: The checked-in ESC profile tables match their JSON
         run: python3 tools/gen_esc_profiles.py --check
 
-      # Every file over 1,000 lines is in tools/check_sizes.txt with the
-      # reason it stays whole, and no listed file is at or under 1,000.
+      # Every file over 1,000 code lines (not blank, not comment-only) is
+      # in tools/check_sizes.txt with the reason it stays whole, and no
+      # listed file is at or under 1,000 code lines.
       # Generated files are the generators' above.
-      - name: The files over 1,000 lines are the listed ones
+      - name: The files over 1,000 code lines are the listed ones
         run: python3 tools/check_sizes.py --check
 
       # Links, anchors, the sidebar, the translations, the list of test

@@ -61,7 +61,7 @@ python3 tools/frame_cost.py --check-doc
 python3 tools/gen_font.py --check
 python3 tools/gen_board_drawing.py --check
 python3 tools/gen_esc_profiles.py --check
-python3 tools/check_sizes.py --check  # every file over 1,000 lines is in tools/check_sizes.txt
+python3 tools/check_sizes.py --check  # every file over 1,000 code lines is in tools/check_sizes.txt
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
 python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
@@ -135,8 +135,9 @@ A change fails if:
   `tools/ram_budget.py` cannot size, or the internal RAM table or the
   PSRAM table in [Performance](docs/Performance.md#internal-ram) differs
   from the ESP-IDF v5.4 build;
-- a file over 1,000 lines is not in `tools/check_sizes.txt` with the reason
-  it stays whole, a listed file is at or under 1,000 lines, or a listed
+- a file over 1,000 code lines (lines that are not blank and not
+  comment-only) is not in `tools/check_sizes.txt` with the reason it stays
+  whole, a listed file is at or under 1,000 code lines, or a listed
   line count is outside its tolerance;
 - a string overflows where it is drawn, in English or in German, and is not
   one of the overflows `tools/render_ui.py` lists as known;
