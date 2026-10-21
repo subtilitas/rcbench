@@ -19,15 +19,12 @@ exclude test/host/fixtures/* | recorded bench captures the host suite replays as
 
 # What stays over 1,000 lines after the plan.
 firmware/panel/main/main.c | 2422 +-100 | the panel's start, its main loop and the console report; rows 24 to 27 moved the rest out (plan about 2,214)
-shared/ui/servo_screen.c | 3564 +-100 | the sweep core reads 98 fields of the screen's state; rows 20, 21, 31 and 22 moved the overlays and the link client out
-shared/ui/esc_stick_panel.c | 3451 +-100 | row 19 created it; its 16 drawers, about 1,470 lines, can go to esc_stick_draw.c later
 shared/bench/kst_prog.c | 2407 +-100 | row 7 moved the card and file parts out; the session engine stays one file
 shared/servo/servo_limrun.c | 1044 +-100 | row 29 moved the report out (F18); the search stays one file
 shared/outputs/servo_link.c | 1393 +-100 | row 22 created it behind link_port_t; no second cut (owner decision)
 shared/ui/servo_settings_panel.c | none | row 20 created it; the drawers moved with the overlay
 
 # Screens left whole: one screen each, a cut is a design change.
-shared/ui/kst_panel.c | none | F9: no section over 913 lines
 shared/ui/log_viewer_screen.c | none | one screen
 shared/ui/supply_screen.c | none | one screen
 shared/ui/motor_screen.c | none | one screen
