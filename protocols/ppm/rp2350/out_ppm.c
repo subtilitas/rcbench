@@ -1,5 +1,7 @@
-/*
- * PPM out: a PIO state machine and a self-restarting pair of DMA channels.
+/**
+ * @file
+ * @brief PPM out: a PIO state machine and a self-restarting pair of DMA channels.
+ *
  * See out_ppm.h.
  *
  * SPDX-License-Identifier: MIT
@@ -16,14 +18,20 @@
 #include "ppm.h"
 #include "ppm.pio.h"
 
-/*
+/**
+ * @brief Convert a run length in microseconds to the count the FIFO holds.
+ *
  * The program renders a run of N microseconds as a one-cycle `out` and N-1
  * cycles of loop, so the count in the FIFO (first in first out) is two less
  * than the duration.  ppm_frame() refuses a run shorter than the mark, and the
  * mark is 300 us, so this cannot go negative.
+ *
+ * @param us  Run length in microseconds, at least 2.
+ * @return The FIFO count, us - 2.
  */
 #define RUN_TO_COUNT(us)  ((uint32_t)(us) - 2u)
 
+/** @brief State of one bound output pin: PIO, DMA pair and frame buffer. */
 typedef struct {
     bool     used;
     bool     running;
@@ -40,20 +48,33 @@ typedef struct {
     dma_channel_config cfg_data;
     dma_channel_config cfg_ctrl;
 
+    /** Frame buffer: one FIFO count per run. */
     uint32_t buf[PPM_MAX_RUNS];
+    /** Number of words in buf that the frame uses. */
     uint32_t words;
-    /* The widths the buffer currently holds, so a service pass that has
-     * nothing new to say does not rewrite a frame that is being played. */
+    /**
+     * The widths the buffer currently holds, so a service pass that has
+     * nothing new to say does not rewrite a frame that is being played.
+     */
     uint16_t last_us[PPM_MAX_CHANNELS];
+    /** true when last_us holds a frame that is in buf. */
     bool     have_last;
-    /* What the control channel writes back into the data channel: the buffer
-     * address, in a word of its own so the DMA has somewhere to read it. */
+    /**
+     * What the control channel writes back into the data channel: the buffer
+     * address, in a word of its own so the DMA has somewhere to read it.
+     */
     const uint32_t *restart;
 } ppm_out_t;
 
-/* One per pin that can be bound.  DMA channels run out before these do. */
+/** @brief One entry per pin that can be bound. DMA channels run out before these do. */
 static ppm_out_t s_out[OUT_PPM_MAX_PINS];
 
+/**
+ * @brief Find the bound entry for a pin.
+ *
+ * @param pin  GPIO number.
+ * @return The entry, or NULL when the pin is not bound.
+ */
 static ppm_out_t *find(uint8_t pin)
 {
     for (unsigned i = 0; i < OUT_PPM_MAX_PINS; ++i) {
@@ -64,11 +85,16 @@ static ppm_out_t *find(uint8_t pin)
     return NULL;
 }
 
-/*
+/**
+ * @brief Enable or disable both DMA channels of an output.
+ *
  * Erratum RP2350-E5: a channel that is aborted while it or a channel chained
  * to it is still enabled can be retriggered by the abort itself.  Both are
  * therefore disabled first, and the enable bit is put back when the frame is
  * started again.
+ *
+ * @param s   Output whose data and control channels are set.
+ * @param on  true to enable both channels, false to disable both.
  */
 static void set_enabled(ppm_out_t *s, bool on)
 {
@@ -78,6 +104,13 @@ static void set_enabled(ppm_out_t *s, bool on)
     dma_channel_set_config((uint)s->dma_ctrl, &s->cfg_ctrl, false);
 }
 
+/**
+ * @brief Stop the frame and hold the pin low.
+ *
+ * Does nothing when the output has no DMA channels.
+ *
+ * @param s  Output to halt.
+ */
 static void halt(ppm_out_t *s)
 {
     if (s->dma_data < 0 || s->dma_ctrl < 0) {
@@ -104,6 +137,13 @@ static void halt(ppm_out_t *s)
     s->have_last = false;
 }
 
+/**
+ * @brief Halt an output and return its DMA channels, PIO state machine and program.
+ *
+ * Leaves the pin as an input, and clears the entry so it reads as unbound.
+ *
+ * @param s  Output to tear down.
+ */
 static void teardown(ppm_out_t *s)
 {
     halt(s);
@@ -126,6 +166,12 @@ static void teardown(ppm_out_t *s)
     gpio_set_dir(pin, GPIO_IN);
 }
 
+/**
+ * @brief Build the frame timing for a frame period, with the default mark and sync gap.
+ *
+ * @param frame_us  Frame period in microseconds.
+ * @return The timing, with mark_us and sync_min_us at their defaults.
+ */
 static ppm_cfg_t cfg_of(uint16_t frame_us)
 {
     return (ppm_cfg_t){

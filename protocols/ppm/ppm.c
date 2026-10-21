@@ -1,18 +1,27 @@
-/*
- * PPM frame layout.  See ppm.h for the model.
+/**
+ * @file
+ * @brief PPM frame layout.  See ppm.h for the model.
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "ppm.h"
 
+/** @brief Default frame timing, used when a field of the caller's config is 0. */
 static const ppm_cfg_t k_default = {
     .mark_us     = PPM_DEFAULT_MARK_US,
     .frame_us    = PPM_DEFAULT_FRAME_US,
     .sync_min_us = PPM_SYNC_MIN_US,
 };
 
-/* A zero field means "the default for it", so a caller can set one thing. */
+/**
+ * @brief Copy a caller's frame timing, replacing each zero field with its default.
+ *
+ * A zero field means "the default for it", so a caller can set one thing.
+ *
+ * @param cfg  Caller's timing, or NULL for all defaults.
+ * @return The resolved timing; no field is zero.
+ */
 static ppm_cfg_t resolve(const ppm_cfg_t *cfg)
 {
     ppm_cfg_t c = (cfg != NULL) ? *cfg : k_default;
