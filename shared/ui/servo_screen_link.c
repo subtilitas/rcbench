@@ -61,7 +61,7 @@ void value_edge(ui_value_edge_t edge, servo_test_abort_t why)
          * at once, as the output is: nothing slews to a rest it is
          * already at.
          */
-        s.commanded_deg = rest_deg();
+        s.commanded_deg = svs_rest_deg();
         s.at_rest       = true;
         if (!s.have_feedback) {
             s.shown_cmd = (float)outputs_role_rest(OUT_ROLE_SURFACE);
@@ -269,9 +269,9 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
          * reports, not the one it had at the tap.
          */
         if (s.paused) {
-            const uint16_t was = deg_to_us(s.commanded_deg);
+            const uint16_t was = svs_deg_to_us(s.commanded_deg);
             s.commanded_deg = clamp_travel(deg);
-            if (deg_to_us(s.commanded_deg) != was) {
+            if (svs_deg_to_us(s.commanded_deg) != was) {
                 ++s.ctrl_rev;       /* COMMANDED shows it */
             }
         }
@@ -432,7 +432,7 @@ static void supply_sample(const supply_state_t *st, bool in_force)
      * the supply's state alone in a run on the INA3221. */
     const servo_test_reading_t r = test_reading_of(st);
     servo_test_reading(&s.test, &r,
-                       s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
+                       s.have_feedback ? svs_deg_to_us(s.measured_deg) : 0u);
     servo_limrun_supply(&s.lim, &r, test_now());
     test_tell();
     /* The line, the plot and the CURRENT row are the supply's while it is
@@ -561,7 +561,7 @@ void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
         };
         if (s.test_on_ina) {
             servo_test_window(&s.test, &tw,
-                              s.have_feedback ? deg_to_us(s.measured_deg)
+                              s.have_feedback ? svs_deg_to_us(s.measured_deg)
                                               : 0u);
         }
         servo_limrun_window(&s.lim, &tw);
@@ -578,7 +578,10 @@ float servo_screen_power_sample(int series, int back)
     return ui_plot_sample(&s.power, series, back);
 }
 
-uint16_t servo_screen_commanded(void) { return deg_to_us(s.commanded_deg); }
+uint16_t servo_screen_commanded(void)
+{
+    return svs_deg_to_us(s.commanded_deg);
+}
 
 const char *servo_screen_commanded_text(void)
 {
@@ -589,11 +592,11 @@ const char *servo_screen_commanded_text(void)
         return "---";
     }
     snprintf(text, sizeof(text), "%u us",
-             (unsigned)deg_to_us(s.commanded_deg));
+             (unsigned)svs_deg_to_us(s.commanded_deg));
     return text;
 }
 
-uint16_t servo_screen_drawn(void) { return deg_to_us(s.shown_deg); }
+uint16_t servo_screen_drawn(void) { return svs_deg_to_us(s.shown_deg); }
 
 uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
 
@@ -658,7 +661,7 @@ void servo_screen_set_link(bool up)
             s.sw.paused     = false;
             if (!s.have_feedback) {
                 s.shown_cmd = (float)OUT_SPAN / 2.0f;
-                s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+                s.shown_deg = us_to_deg_f(svs_cmd_to_us(s.shown_cmd));
             }
             s.commanded_deg = clamp_travel(s.shown_deg);
             ++s.ctrl_rev;

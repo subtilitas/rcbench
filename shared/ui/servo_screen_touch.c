@@ -131,7 +131,7 @@ void svs_knob_withdraw(void)
     s.driving       = s.knob_had_driving && value_live();
     ++s.ctrl_rev;
     if (s.knob_had_cmd) {
-        s.pending.value_us = deg_to_us(s.commanded_deg);
+        s.pending.value_us = svs_deg_to_us(s.commanded_deg);
     } else {
         s.pending.kind = SERVO_CMD_NONE;
     }
@@ -342,7 +342,7 @@ void svs_event_body(const touch_event_t *evt)
             test_end_now(SERVO_TEST_AB_OPERATOR);
             stop_sweep();
             s.commanded_deg = 0.0f;
-            post(SERVO_CMD_CENTRE, deg_to_us(0.0f));
+            post(SERVO_CMD_CENTRE, svs_deg_to_us(0.0f));
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.sweep_btn, px, py)) {
             test_end_now(SERVO_TEST_AB_OPERATOR);

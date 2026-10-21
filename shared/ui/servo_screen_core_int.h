@@ -8,14 +8,11 @@
  * servo_screen_link.c, what the panel reports to the screen and takes
  * from it; servo_screen_touch.c, the presses, the dial and the knob; and
  * servo_screen_draw.c, the drawing.  It holds the dial's geometry, the
- * conversions between angle, pulse and command, the rail's reading, and
- * the functions one of the five calls of another.  Nothing outside these
- * five files includes this header; the seam with the screen's pages and
- * panels is servo_screen_int.h, which this header includes.
- *
- * The conversions are static inline, as servo_screen_int.h's helpers
- * are: they were static in the one file, and GCC inlines them in each
- * file as it did.
+ * rail's reading, and the functions one of the five calls of another,
+ * prefixed svs_: among them the conversions between angle, pulse and
+ * command in servo_screen.c.  Nothing outside these five files includes
+ * this header; the seam with the screen's pages and panels is
+ * servo_screen_int.h, which this header includes.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -65,98 +62,6 @@
 /* The power plot's series: the servo rail's voltage, current and power. */
 enum { PS_V = 0, PS_A, PS_W, PS_COUNT };
 
-/* ------------------------------------------------------------- conversions */
-
-/*
- * Each side of centre runs to its own end: MIN, CENTRE and MAX are set one
- * by one, so -90 deg is MIN and +90 deg is MAX however far each lies from
- * the centre.
- */
-static inline float half_travel_us(bool below)
-{
-    return below ? (float)s.centre_us - (float)s.min_us
-                 : (float)s.max_us - (float)s.centre_us;
-}
-
-static inline float deg_to_us_f(float deg)
-{
-    const float d = s.reverse ? -deg : deg;
-    float us = (float)s.centre_us + (float)s.trim_us
-               + d / 90.0f * half_travel_us(d < 0.0f);
-    if (us < (float)s.min_us) { us = (float)s.min_us; }
-    if (us > (float)s.max_us) { us = (float)s.max_us; }
-    return us;
-}
-
-static inline uint16_t deg_to_us(float deg)
-{
-    return (uint16_t)(deg_to_us_f(deg) + 0.5f);
-}
-
-/* The mapping in force now. */
-static inline servo_map_t map_now(void)
-{
-    const servo_map_t m = { s.min_us, s.centre_us, s.max_us, s.trim_us,
-                            s.reverse, s.travel_deg };
-    return m;
-}
-
-/* A command of @p m's range as a pulse, and a pulse as @p m's angle: what
- * cmd_to_us() and us_to_deg_f() are for the mapping in force. */
-static inline float map_cmd_to_us(const servo_map_t *m, float cmd)
-{
-    const unsigned below = (unsigned)m->centre_us - (unsigned)m->min_us;
-    const unsigned above = (unsigned)m->max_us - (unsigned)m->centre_us;
-    const float half = (float)((below > above) ? below : above);
-    return (float)m->centre_us - half + 2.0f * half * cmd / (float)OUT_SPAN;
-}
-
-static inline float map_us_to_deg(const servo_map_t *m, float us)
-{
-    const float off = us - (float)m->centre_us - (float)m->trim_us;
-    const float half = (off < 0.0f)
-                       ? (float)m->centre_us - (float)m->min_us
-                       : (float)m->max_us - (float)m->centre_us;
-    if (half <= 0.0f) {
-        return 0.0f;
-    }
-    float d = off * 90.0f / half;
-    if (m->reverse) {
-        d = -d;
-    }
-    if (d < -m->travel_deg) { d = -m->travel_deg; }
-    if (d >  m->travel_deg) { d =  m->travel_deg; }
-    return d;
-}
-
-/* A pulse as the far end's command, 0..OUT_SPAN of the range a command
- * carries, and back: the units it slews in. */
-static inline float us_to_cmd(float us)
-{
-    uint16_t lo, hi;
-    cmd_range(&lo, &hi);
-    return (hi > lo) ? (us - (float)lo) * (float)OUT_SPAN / (float)(hi - lo)
-                     : (float)OUT_SPAN / 2.0f;
-}
-
-static inline float cmd_to_us(float cmd)
-{
-    uint16_t lo, hi;
-    cmd_range(&lo, &hi);
-    return (float)lo + (float)(hi - lo) * cmd / (float)OUT_SPAN;
-}
-
-/*
- * The angle the pin drives on an armed bench while nothing commands it: the
- * outputs layer's rest for a surface, in the range a command carries.  The
- * midpoint of that range, so PULSE CENTRE without the trim: 1500 us for
- * STANDARD PWM, 760 us for NARROW 760.
- */
-static inline float rest_deg(void)
-{
-    return us_to_deg_f(cmd_to_us((float)outputs_role_rest(OUT_ROLE_SURFACE)));
-}
-
 /*
  * SPEED as the bench's slew, in channel-span units a second.
  *
@@ -171,17 +76,6 @@ static inline float rest_deg(void)
  * with nothing in front of it.
  */
 #define SPEED_FULL_SPAN_S (2u * OUT_SPAN)
-
-static inline uint16_t slew_of(int pct)
-{
-    if (pct >= 100) {
-        return 0u;
-    }
-    if (pct < 1) {
-        pct = 1;
-    }
-    return (uint16_t)((unsigned)SPEED_FULL_SPAN_S * (unsigned)pct / 100u);
-}
 
 /* What the servo rail's meter reads, at the precision it is drawn with. */
 typedef struct {
@@ -211,6 +105,26 @@ bool svs_command(float deg);
 void svs_drop_motion(void);
 /** @brief DISARM asked of an armed bench: the value leaves LIVE now. */
 void svs_ask_disarm(void);
+/** @brief The angle @p deg as a pulse, us, through the profile, the trim,
+ *         REVERSE and the ends; svs_deg_to_us() rounds it. */
+float svs_deg_to_us_f(float deg);
+uint16_t svs_deg_to_us(float deg);
+/** @brief The mapping in force now. */
+servo_map_t svs_map_now(void);
+/** @brief A command of @p m's range as a pulse, us. */
+float svs_map_cmd_to_us(const servo_map_t *m, float cmd);
+/** @brief A pulse as @p m's angle, degrees, held to its TRAVEL. */
+float svs_map_us_to_deg(const servo_map_t *m, float us);
+/** @brief A pulse as the far end's command, 0..OUT_SPAN of the range a
+ *         command carries, and back. */
+float svs_us_to_cmd(float us);
+float svs_cmd_to_us(float cmd);
+/** @brief The angle the pin drives on an armed bench while nothing
+ *         commands it: the outputs layer's rest for a surface. */
+float svs_rest_deg(void);
+/** @brief SPEED @p pct as the bench's slew, channel-span units a second;
+ *         0 at 100 %, which is no slew. */
+uint16_t svs_slew_of(int pct);
 
 /* servo_screen_sweep.c */
 

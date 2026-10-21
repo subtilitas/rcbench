@@ -337,7 +337,7 @@ static DRAWER void sp_draw_timing(gfx_canvas_t *c)
               t->tscroll < max_scroll);
     for (int i = 0; i < sp_rows_shown(SP_SETTINGS, t->tscroll); ++i) {
         const int idx = t->tscroll + i;
-        const setting_id_t id = k_sp_settings[idx];
+        const setting_id_t id = sp_settings_list[idx];
         const setting_def_t *d = settings_def(id);
         const int y = ROW_Y0 + i * ROW_H;
         if (idx == t->tpicked) {
@@ -358,7 +358,7 @@ static DRAWER void sp_draw_timing(gfx_canvas_t *c)
         ui_button(c, pg.up[i], "+", ui_theme_color(UI_C_PANEL_HI), false,
                   now < d->max);
     }
-    const setting_id_t picked = k_sp_settings[t->tpicked];
+    const setting_id_t picked = sp_settings_list[t->tpicked];
     gfx_text(c, PAD + 12, HELP_Y, ui_setting_label(picked), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     gfx_text(c, PAD + 12, HELP_Y + 18, ui_setting_help(picked),

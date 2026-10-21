@@ -169,7 +169,7 @@ static const int16_t k_ses[] = {
 };
 #define SES_COUNT ((unsigned)(sizeof(k_ses) / sizeof(k_ses[0])))
 
-const int16_t k_rule[KST_RULE_COUNT] = {
+const int16_t kpn_rule[KST_RULE_COUNT] = {
     [KST_H_DUTY_HIGH]          = TX_KP_H_DUTY_HIGH,
     [KST_H_DUTY_LOW]           = TX_KP_H_DUTY_LOW,
     [KST_H_DUTY_COPY]          = TX_KP_H_DUTY_COPY,
@@ -226,7 +226,7 @@ const int16_t k_rule[KST_RULE_COUNT] = {
 const char *kst_panel_rule_text(unsigned rule)
 {
     return rule < (unsigned)KST_RULE_COUNT
-               ? ui_tr((ui_text_id_t)k_rule[rule]) : TR(KP_M_OUTSIDE);
+               ? ui_tr((ui_text_id_t)kpn_rule[rule]) : TR(KP_M_OUTSIDE);
 }
 
 /* A session result that leaves a servo nobody should use. */

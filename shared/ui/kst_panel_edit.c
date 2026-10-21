@@ -197,7 +197,7 @@ void kpn_edit_field(const row_t *r)
             kpn_fmt_field(id, (uint16_t)v, label, sizeof(label));
             choice_add(label, (int)v);
         }
-        k.kp_row = (int)(r - k_rows);
+        k.kp_row = (int)(r - kpn_rows);
         return;
     }
     scale = kpn_decimals_of(id) != 0 ? 10.0f : 1.0f;
@@ -205,7 +205,7 @@ void kpn_edit_field(const row_t *r)
                    (float)dv / scale,
                    (float)(dlo < dhi ? dlo : dhi) / scale,
                    (float)(dlo < dhi ? dhi : dlo) / scale, kpn_decimals_of(id));
-    k.kp_row = (int)(r - k_rows);
+    k.kp_row = (int)(r - kpn_rows);
 }
 
 /* The highest programming voltage the keypad takes: a standard servo's
@@ -295,7 +295,7 @@ void kpn_keypad_done(float v)
         return;
     }
     {
-        const row_t *r = &k_rows[k.kp_row];
+        const row_t *r = &kpn_rows[k.kp_row];
         const kst_field_id_t id = (kst_field_id_t)r->what;
         const float scale = kpn_decimals_of(id) != 0 ? 10.0f : 1.0f;
         uint16_t raw = 0;
@@ -424,7 +424,7 @@ void kpn_choice_done(int value)
 
     k.ch.open = false;
     if (kind == C_STRETCH) {
-        const row_t *r = &k_rows[k.kp_row];
+        const row_t *r = &kpn_rows[k.kp_row];
 
         edited(r, kst_prog_edit(p, (kst_field_id_t)r->what, (uint16_t)value));
     } else if (kind == C_RESTORE) {

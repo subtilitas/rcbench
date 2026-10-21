@@ -125,12 +125,13 @@ void svs_hold_sweep(void)
     s.pause_tap_ms = s.sw.paused_ms;
     s.pause_speed_pct = s.speed_pct;
     s.dr.speed_pct    = s.speed_pct;
-    s.dr.map          = map_now();
+    s.dr.map          = svs_map_now();
     s.dr.out          = s.shown_cmd;
     /* With feedback the reading itself: tick() turns it into a command
      * only on its next pass. */
-    s.pause_from_cmd  = s.have_feedback ? us_to_cmd(deg_to_us_f(s.shown_deg))
-                                        : s.shown_cmd;
+    s.pause_from_cmd  = s.have_feedback
+                        ? svs_us_to_cmd(svs_deg_to_us_f(s.shown_deg))
+                        : s.shown_cmd;
     stop_sweep();
     /* Drawn on along the curve until the HOLD is acknowledged, as the far
      * end runs it; held where it is if it was not yet moving. */
@@ -219,7 +220,7 @@ void svs_restart_sweep(void)
 bool svs_speed_limits_sweep(void)
 {
     const sweep_cfg_t cfg = sweep_cfg_now();
-    return sweep_slew_limited(&cfg, slew_of(s.speed_pct));
+    return sweep_slew_limited(&cfg, svs_slew_of(s.speed_pct));
 }
 
 bool svs_same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
@@ -352,7 +353,7 @@ void servo_screen_released(uint16_t pause_seq)
     s.dr.on      = false;
     /* Where the pins follow; behind a disarm the value last driven stays. */
     if (value_live()) {
-        s.commanded_deg = rest_deg();
+        s.commanded_deg = svs_rest_deg();
         s.at_rest       = true;
     }
     ++s.ctrl_rev;
@@ -361,14 +362,14 @@ void servo_screen_released(uint16_t pause_seq)
 /*
  * The drawn output's slew at @p speed_pct, command units a millisecond, as
  * the far end's: SPEED_FULL_SPAN_S times the share, and at 100 % none --
- * the command goes straight through (slew_of()), which is negative here.
+ * the command goes straight through (svs_slew_of()), which is negative here.
  */
 static float slew_per_ms(int speed_pct)
 {
     if (speed_pct >= 100) {
         return -1.0f;
     }
-    return (float)slew_of(speed_pct) / 1000.0f;
+    return (float)svs_slew_of(speed_pct) / 1000.0f;
 }
 
 /* One step of the drawn output towards @p want, at most @p step command
@@ -467,7 +468,7 @@ void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
                                          : shown_cmd_ago(moving);
     const uint32_t ms = (moving > 5000u) ? 5000u : moving;
     s.shown_cmd = drawn_after(&s.sw, age_ms - moving, ms, from_cmd, speed);
-    s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+    s.shown_deg = us_to_deg_f(svs_cmd_to_us(s.shown_cmd));
 }
 
 /*
@@ -491,7 +492,8 @@ static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
         done += dt;
         uint16_t cmd = (uint16_t)SWEEP_CENTRE;
         (void)sweep_step(&run, phase_ms + done, &cmd);
-        const float want = us_to_cmd(deg_to_us_f(clamp_travel(sweep_deg(cmd))));
+        const float want =
+            svs_us_to_cmd(svs_deg_to_us_f(clamp_travel(sweep_deg(cmd))));
         shown = chase_cmd(shown, want, per_ms * (float)dt);
     }
     return shown;
@@ -529,7 +531,7 @@ void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
         if (s.have_feedback) {
             /* The reading, kept for the resume's replay in case feedback
              * goes before the resume is acknowledged. */
-            s.resume_from_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
+            s.resume_from_cmd = svs_us_to_cmd(svs_deg_to_us_f(s.shown_deg));
         } else {
             const uint32_t late = kept_ms - s.pause_tap_ms;
             const uint32_t ms = ((int32_t)late <= 0) ? 0u
@@ -538,7 +540,7 @@ void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
                                             s.pause_from_cmd,
                                             s.pause_speed_pct);
             s.shown_cmd = s.resume_from_cmd;
-            s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+            s.shown_deg = us_to_deg_f(svs_cmd_to_us(s.shown_cmd));
             s.commanded_deg = clamp_travel(s.shown_deg);
             ++s.ctrl_rev;
         }
@@ -552,13 +554,13 @@ void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
     const uint32_t extra = kept_ms - s.sw.paused_ms;
     if (s.have_feedback) {
         /* The servo is where it reports, and is held there. */
-        s.shown_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
+        s.shown_cmd = svs_us_to_cmd(svs_deg_to_us_f(s.shown_deg));
     } else {
         const uint32_t ms = ((int32_t)extra <= 0) ? 0u
                             : (extra > 5000u) ? 5000u : extra;
         s.shown_cmd = drawn_after(&s.sw, s.sw.paused_ms, ms,
                                   s.pause_from_cmd, s.pause_speed_pct);
-        s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+        s.shown_deg = us_to_deg_f(svs_cmd_to_us(s.shown_cmd));
     }
     /* Either way the held angle is the one a changed profile says again
      * (reissue()), and the curve is no longer drawn on. */
@@ -682,9 +684,9 @@ void svs_tick_body(float dt_s)
                 s.dr.out = chase_cmd(s.dr.out, (float)cmd,
                                      (per_ms < 0.0f) ? -1.0f
                                                      : per_ms * dt_s * 1000.0f);
-                const float us = map_cmd_to_us(m, s.dr.out);
-                s.shown_deg = map_us_to_deg(m, us);
-                s.shown_cmd = us_to_cmd(us);
+                const float us = svs_map_cmd_to_us(m, s.dr.out);
+                s.shown_deg = svs_map_us_to_deg(m, us);
+                s.shown_cmd = svs_us_to_cmd(us);
             }
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
@@ -838,13 +840,13 @@ void svs_tick_body(float dt_s)
      * because the measurement has already placed the arm.
      */
     if (s.have_feedback) {
-        s.shown_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
+        s.shown_cmd = svs_us_to_cmd(svs_deg_to_us_f(s.shown_deg));
         remember_shown();
         return;
     }
     /*
      * In the units the far end slews in -- its command across the range a
-     * command carries -- and at its rate, slew_of(); at 100% there is none
+     * command carries -- and at its rate, svs_slew_of(); at 100% there is none
      * and the output is drawn at the command at once.  An angle a second
      * would not be: with CENTRE off the middle a degree is a different share
      * of the command on either side, and PAUSE, which keeps the servo where
@@ -856,7 +858,7 @@ void svs_tick_body(float dt_s)
     }
     const float per_ms = slew_per_ms(s.speed_pct);
     const float step = (per_ms < 0.0f) ? -1.0f : per_ms * dt_s * 1000.0f;
-    const float want = us_to_cmd(deg_to_us_f(s.commanded_deg));
+    const float want = svs_us_to_cmd(svs_deg_to_us_f(s.commanded_deg));
     const float next = chase_cmd(s.shown_cmd, want, step);
 
     if (next == want) {
@@ -869,7 +871,7 @@ void svs_tick_body(float dt_s)
         return;
     }
     s.shown_cmd = next;
-    s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+    s.shown_deg = us_to_deg_f(svs_cmd_to_us(s.shown_cmd));
     ++s.ctrl_rev;
     remember_shown();
 }

@@ -133,9 +133,9 @@ static void warn_values(const kst_image_t *to, int room, int room_rows)
     int n = 0;
 
     for (int i = 0; i < ROW_COUNT; ++i) {
-        const kst_field_id_t id = (kst_field_id_t)k_rows[i].what;
+        const kst_field_id_t id = (kst_field_id_t)kpn_rows[i].what;
 
-        if (k_rows[i].kind != K_ACT
+        if (kpn_rows[i].kind != K_ACT
             && kst_field_get(to, id)
                    != kst_field_get(kst_prog_servo(&k.prog), id)) {
             ids[n++] = (uint8_t)id;
@@ -167,10 +167,10 @@ static void warn_rules(kst_rules_t rules, int room, int room_rows)
         }
         /* Two rules share a line where the line says the same of both. */
         for (int i = 0; i < n; ++i) {
-            twice = twice || lines[i] == k_rule[rule];
+            twice = twice || lines[i] == kpn_rule[rule];
         }
         if (!twice) {
-            lines[n++] = k_rule[rule];
+            lines[n++] = kpn_rule[rule];
         }
     }
     for (int i = 0, used = 0; i < n; ++i) {

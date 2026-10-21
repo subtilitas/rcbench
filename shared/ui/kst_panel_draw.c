@@ -662,7 +662,7 @@ const char *kst_panel_button(int page, int row, int col)
 
 static void draw_row(gfx_canvas_t *c, int i)
 {
-    const row_t *r = &k_rows[i];
+    const row_t *r = &kpn_rows[i];
     const kst_prog_t *p = &k.prog;
     const gfx_rect_t rr = kpn_row_rect(r);
     const gfx_rect_t vr = kpn_value_rect(r);
@@ -730,7 +730,7 @@ static void draw_page(gfx_canvas_t *c)
               k.have && k.pressed == P_CLOSE,
               !kst_panel_holds_port() || kpn_programming());
     for (int i = 0; i < ROW_COUNT; ++i) {
-        if (k_rows[i].page == k.tabs.selected) {
+        if (kpn_rows[i].page == k.tabs.selected) {
             draw_row(c, i);
         }
     }
@@ -739,7 +739,7 @@ static void draw_page(gfx_canvas_t *c)
 
 static void draw_choice(gfx_canvas_t *c)
 {
-    const row_t *r = &k_rows[k.kp_row >= 0 ? k.kp_row : 0];
+    const row_t *r = &kpn_rows[k.kp_row >= 0 ? k.kp_row : 0];
 
     gfx_text(c, k.area.x + 10, k.area.y + 16, k.ch.title, &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT), 1);

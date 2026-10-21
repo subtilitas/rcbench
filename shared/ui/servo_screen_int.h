@@ -749,8 +749,8 @@ static inline const servo_type_t *type(void) { return &k_types[s.type]; }
  * endpoints and rests a surface at their midpoint -- on RELEASE, before an
  * arm, after a silence -- so MIN..MAX itself would rest a servo whose CENTRE
  * is not midway between them away from its centre.  Commands never leave
- * MIN..MAX: deg_to_us() clamps them.  The PULSE keypads keep this range
- * inside OUT_FLOOR_US..OUT_CEILING_US.
+ * MIN..MAX: svs_deg_to_us() clamps them.  The PULSE keypads keep this
+ * range inside OUT_FLOOR_US..OUT_CEILING_US.
  */
 static inline void cmd_range(uint16_t *lo, uint16_t *hi)
 {

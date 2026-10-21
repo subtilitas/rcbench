@@ -274,10 +274,10 @@ ROWS = [("kst_card", "bench", KST), ("log_csv", "logfile", CSV)]
 
 @pytest.fixture
 def psram_tree(tmp_path, monkeypatch):
-    # No screen keeps .bss internal in MAP.
-    monkeypatch.setattr(rb, "UI_INTERNAL", ())
     """A build with MAP and a fragment with LF; pages that agree with them.
     Returns (build, en, de)."""
+    # No screen keeps .bss internal in MAP.
+    monkeypatch.setattr(rb, "UI_INTERNAL", ())
     build = tmp_path / "build"
     build.mkdir()
     (build / rb.MAP_NAME).write_text(MAP, encoding="utf-8")

@@ -93,6 +93,34 @@ static const ui_plot_series_t k_power[PS_COUNT] = {
 /* The state, its type in servo_screen_int.h. */
 servo_screen_state_t s;
 
+/* ------------------------------------------------------------- conversions */
+
+/*
+ * Each side of centre runs to its own end: MIN, CENTRE and MAX are set one
+ * by one, so -90 deg is MIN and +90 deg is MAX however far each lies from
+ * the centre.
+ */
+static float half_travel_us(bool below)
+{
+    return below ? (float)s.centre_us - (float)s.min_us
+                 : (float)s.max_us - (float)s.centre_us;
+}
+
+float svs_deg_to_us_f(float deg)
+{
+    const float d = s.reverse ? -deg : deg;
+    float us = (float)s.centre_us + (float)s.trim_us
+               + d / 90.0f * half_travel_us(d < 0.0f);
+    if (us < (float)s.min_us) { us = (float)s.min_us; }
+    if (us > (float)s.max_us) { us = (float)s.max_us; }
+    return us;
+}
+
+uint16_t svs_deg_to_us(float deg)
+{
+    return (uint16_t)(svs_deg_to_us_f(deg) + 0.5f);
+}
+
 float us_to_deg_f(float us)
 {
     const float off = us - (float)s.centre_us - (float)s.trim_us;
@@ -103,6 +131,72 @@ float us_to_deg_f(float us)
     const float d = off * 90.0f / half;
     return s.reverse ? -d : d;
 }
+
+/* The mapping in force now. */
+servo_map_t svs_map_now(void)
+{
+    const servo_map_t m = { s.min_us, s.centre_us, s.max_us, s.trim_us,
+                            s.reverse, s.travel_deg };
+    return m;
+}
+
+/* A command of @p m's range as a pulse, and a pulse as @p m's angle: what
+ * svs_cmd_to_us() and us_to_deg_f() are for the mapping in force. */
+float svs_map_cmd_to_us(const servo_map_t *m, float cmd)
+{
+    const unsigned below = (unsigned)m->centre_us - (unsigned)m->min_us;
+    const unsigned above = (unsigned)m->max_us - (unsigned)m->centre_us;
+    const float half = (float)((below > above) ? below : above);
+    return (float)m->centre_us - half + 2.0f * half * cmd / (float)OUT_SPAN;
+}
+
+float svs_map_us_to_deg(const servo_map_t *m, float us)
+{
+    const float off = us - (float)m->centre_us - (float)m->trim_us;
+    const float half = (off < 0.0f)
+                       ? (float)m->centre_us - (float)m->min_us
+                       : (float)m->max_us - (float)m->centre_us;
+    if (half <= 0.0f) {
+        return 0.0f;
+    }
+    float d = off * 90.0f / half;
+    if (m->reverse) {
+        d = -d;
+    }
+    if (d < -m->travel_deg) { d = -m->travel_deg; }
+    if (d >  m->travel_deg) { d =  m->travel_deg; }
+    return d;
+}
+
+/* A pulse as the far end's command, 0..OUT_SPAN of the range a command
+ * carries, and back: the units it slews in. */
+float svs_us_to_cmd(float us)
+{
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    return (hi > lo) ? (us - (float)lo) * (float)OUT_SPAN / (float)(hi - lo)
+                     : (float)OUT_SPAN / 2.0f;
+}
+
+float svs_cmd_to_us(float cmd)
+{
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    return (float)lo + (float)(hi - lo) * cmd / (float)OUT_SPAN;
+}
+
+/*
+ * The angle the pin drives on an armed bench while nothing commands it: the
+ * outputs layer's rest for a surface, in the range a command carries.  The
+ * midpoint of that range, so PULSE CENTRE without the trim: 1500 us for
+ * STANDARD PWM, 760 us for NARROW 760.
+ */
+float svs_rest_deg(void)
+{
+    return us_to_deg_f(
+        svs_cmd_to_us((float)outputs_role_rest(OUT_ROLE_SURFACE)));
+}
+
 
 /*
  * RELEASE posted.  On an armed bench the pins go to every surface's rest,
@@ -117,10 +211,21 @@ void release(void)
     post(SERVO_CMD_RELEASE, 0);
     if (value_live() && s.pending.kind == SERVO_CMD_RELEASE) {
         s.dragging      = false;
-        s.commanded_deg = rest_deg();
+        s.commanded_deg = svs_rest_deg();
         s.at_rest       = true;
     }
     ++s.ctrl_rev;
+}
+
+uint16_t svs_slew_of(int pct)
+{
+    if (pct >= 100) {
+        return 0u;
+    }
+    if (pct < 1) {
+        pct = 1;
+    }
+    return (uint16_t)((unsigned)SPEED_FULL_SPAN_S * (unsigned)pct / 100u);
 }
 
 void post(servo_cmd_kind_t kind, uint16_t us)
@@ -173,7 +278,7 @@ void post(servo_cmd_kind_t kind, uint16_t us)
             s.start_rec.cfg       = s.sw.cfg;
             s.start_rec.speed_pct = s.speed_pct;
         }
-        s.posted_map = map_now();
+        s.posted_map = svs_map_now();
     }
     if (kind == SERVO_CMD_ARM) {
         s.arm_profile_rev = s.profile_rev;
@@ -186,7 +291,7 @@ void post(servo_cmd_kind_t kind, uint16_t us)
      * servo's floor.  The frame rate goes with it. */
     cmd_range(&s.pending.min_us, &s.pending.max_us);
     s.pending.frame_hz = s.frame_hz;
-    s.pending.slew_per_s = slew_of(s.speed_pct);
+    s.pending.slew_per_s = svs_slew_of(s.speed_pct);
     /* The grip only breathes while something is actually being held, so this
      * has to follow the command rather than the screen being open. */
     s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE
@@ -235,7 +340,7 @@ void reissue(void)
          */
         cmd_range(&s.pending.min_us, &s.pending.max_us);
         s.pending.frame_hz   = s.frame_hz;
-        s.pending.slew_per_s = slew_of(s.speed_pct);
+        s.pending.slew_per_s = svs_slew_of(s.speed_pct);
         s.arm_profile_rev    = s.profile_rev;
         return;
     }
@@ -275,7 +380,7 @@ void reissue(void)
             s.dr.on = false;
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
-        post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
+        post(SERVO_CMD_POSITION, svs_deg_to_us(s.commanded_deg));
     } else if (s.gate.armed || s.gate.arm_asked) {
         /*
          * Resting on an armed bench: the rest restated under the profile now
@@ -303,7 +408,7 @@ bool svs_command(float deg)
         return false;
     }
     s.commanded_deg = clamp_travel(deg);
-    post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
+    post(SERVO_CMD_POSITION, svs_deg_to_us(s.commanded_deg));
     ++s.ctrl_rev;
     return true;
 }
