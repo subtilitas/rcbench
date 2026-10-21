@@ -50,6 +50,10 @@ set(SRCS
     battery_screen.c
     esc_stick_pages.c
     esc_stick_panel.c
+    esc_stick_list.c
+    esc_stick_touch.c
+    esc_stick_draw.c
+    esc_stick_draw_run.c
     prog_models.c
     log_viewer_screen.c
     log_select.c
