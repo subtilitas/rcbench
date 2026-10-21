@@ -81,6 +81,7 @@ void touch_map_point(const touch_map_t *m, touch_point_t *p)
     touch_map_apply(m, p->x, p->y, &p->x, &p->y);
 }
 
+/** @brief Keep the points inside w x h, in order (touch_map.h). */
 int touch_map_crop(touch_point_t *pts, int count, int16_t w, int16_t h)
 {
     if (pts == NULL || count <= 0 || w <= 0 || h <= 0) {

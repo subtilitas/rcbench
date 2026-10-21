@@ -1,6 +1,9 @@
-/*
- * The settings the control task follows, handed across from app_main:
- * each value the settings screen writes is published into an atomic or
+/**
+ * @file panel_settings.c
+ * @brief The settings the control task follows, handed across from
+ *        app_main.
+ *
+ * Each value the settings screen writes is published into an atomic or
  * under a spinlock, beside the debt its write to the IOmcu is, and the
  * control task reads it from there.  settings_changed() is the settings
  * model's observer; bring_up() (panel_boot.c) publishes every value once.

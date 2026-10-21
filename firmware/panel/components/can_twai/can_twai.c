@@ -1,4 +1,8 @@
-/*
+/**
+ * @file can_twai.c
+ * @brief The panel's TWAI controller on the link: start, stop, send and
+ *        receive.
+ *
  * SPDX-License-Identifier: MIT
  */
 

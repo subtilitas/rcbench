@@ -1,10 +1,12 @@
-/*
- * The render loop: what the control task published, into the screens;
- * touch, into the router; the screens' commands, back to the control task;
- * then one frame drawn and flipped, and every 300 frames the console line
- * with the frame rate, the draw and wait times, the panel's own refresh
- * and the touch losses.  app_main (main.c) enters it once the tasks are
- * running, and it does not return.
+/**
+ * @file panel_frame.c
+ * @brief The render loop, from app_main once the tasks are running.
+ *
+ * What the control task published goes into the screens; touch, into the
+ * router; the screens' commands, back to the control task; then one frame
+ * is drawn and flipped.  Every 300 frames the console line gives the frame
+ * rate, the draw and wait times, the panel's own refresh and the touch
+ * losses.  panel_frame_loop() does not return.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -56,6 +58,7 @@ static const char *TAG = "rcbench";
  */
 #define LINK_LOST_SCREEN_MS 4000u
 
+/** @brief The render loop (panel_main.h).  Does not return. */
 void panel_frame_loop(void)
 {
     uint32_t frames  = 0;

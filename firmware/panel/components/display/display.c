@@ -1,6 +1,7 @@
-/*
- * The EK79007 panel on the ESP32-P4's DSI host, written from the EK79007
- * datasheet and ESP-IDF's esp_lcd headers.
+/**
+ * @file display.c
+ * @brief The EK79007 panel on the ESP32-P4's DSI host, written from the
+ *        EK79007 datasheet and ESP-IDF's esp_lcd headers.
  *
  * Bring-up order: the PHY supply, the bus, the command interface, the DPI
  * panel (frame buffers allocated and black, video not started), the
@@ -31,32 +32,36 @@
 
 static const char *TAG = "display";
 
+/** @brief The longest display_flip() waits for a frame-done event. */
 #define FLIP_WAIT_MS 200
 
-/*
- * The panel's reset: low for 10 ms (the EK79007 needs 1 ms), then 20 ms
+/**
+ * @brief The panel's reset: low for 10 ms (the EK79007 needs 1 ms), then 20 ms
  * before the first command (the datasheet states no minimum).
  */
 #define RESET_LOW_MS   10
 #define RESET_WAIT_MS  20
 
-/*
- * After sleep out (0x11): the EK79007 takes the next command after 5 ms
+/**
+ * @brief After sleep out (0x11): the EK79007 takes the next command after 5 ms
  * and shows a picture about 7 frames later.  120 ms covers both.
  */
 #define SLEEP_OUT_MS   120
 
-/* DCS (Display Command Set) commands, EK79007 register list. */
+/** @brief DCS (Display Command Set) commands, EK79007 register list. */
 #define EK_CMD_SLEEP_OUT     0x11
 #define EK_CMD_ADDRESS_MODE  0x36
-#define EK_CMD_PANEL_CTRL2   0xB2   /* bit 4: 2 lanes; bit 6: normally black */
+#define EK_CMD_PANEL_CTRL2   0xB2   /**< bit 4: 2 lanes; bit 6: normally black */
 
+/** @brief One register write: a command and its one parameter byte. */
 typedef struct {
-    uint8_t cmd;
-    uint8_t value;
+    uint8_t cmd;      /**< the register */
+    uint8_t value;    /**< its parameter */
 } ek_reg_t;
 
-/*
+/**
+ * @brief The initialisation table.
+ *
  * Every register takes one parameter byte and takes effect at the next
  * valid frame.  The lane count goes first: the chip resets to 4 lanes.
  * 0x80 to 0x86 are the 14 gamma fields, two per register; the values are
@@ -75,32 +80,41 @@ static const ek_reg_t k_init[] = {
     { EK_CMD_ADDRESS_MODE, BOARD_LCD_ADDRESS_MODE },
 };
 
+/** @brief The driver's state; all zero while the display is down. */
 typedef struct {
-    bool initialised;
-    esp_ldo_channel_handle_t phy_ldo;
-    esp_lcd_dsi_bus_handle_t bus;
-    esp_lcd_panel_io_handle_t io;
-    esp_lcd_panel_handle_t panel;
-    SemaphoreHandle_t done_sem;     /* a frame buffer's scan ended */
-    SemaphoreHandle_t vsync_sem;
-    atomic_uint vsyncs;
+    bool initialised;                   /**< display_init() succeeded      */
+    esp_ldo_channel_handle_t phy_ldo;   /**< the DSI PHY supply            */
+    esp_lcd_dsi_bus_handle_t bus;       /**< the DSI bus                   */
+    esp_lcd_panel_io_handle_t io;       /**< the command interface         */
+    esp_lcd_panel_handle_t panel;       /**< the DPI panel                 */
+    SemaphoreHandle_t done_sem;         /**< a frame buffer's scan ended   */
+    SemaphoreHandle_t vsync_sem;        /**< a VSYNC event came            */
+    atomic_uint vsyncs;                 /**< VSYNC events since init       */
 
-    gfx_color_t *fb[2];
-    uint8_t num_fbs;
-    uint8_t back;          /* index the CPU is allowed to draw into */
+    gfx_color_t *fb[2];                 /**< the frame buffers             */
+    uint8_t num_fbs;                    /**< 1 or 2                        */
+    uint8_t back;                       /**< index the CPU draws into      */
 
-    gfx_canvas_t canvas;
+    gfx_canvas_t canvas;                /**< points into fb[back]          */
 
-    uint32_t frames;
-    uint32_t fps_frames;
-    int64_t fps_window_us;
-    float fps;
-    uint32_t last_wait_us;
+    uint32_t frames;                    /**< flips since init              */
+    uint32_t fps_frames;                /**< flips in the current window   */
+    int64_t fps_window_us;              /**< start of the current window   */
+    float fps;                          /**< the last window's rate        */
+    uint32_t last_wait_us;              /**< the last flip's wait          */
 } display_state_t;
 
+/** @brief The one display. */
 static display_state_t s_disp;
 
-/* ISR (interrupt service routine) context. */
+/**
+ * @brief Frame-done callback: a frame buffer's scan ended.  ISR (interrupt
+ *        service routine) context.
+ * @param panel Unused.
+ * @param edata Unused.
+ * @param user_ctx The display_state_t.
+ * @return true when a task woke and a context switch is due.
+ */
 static IRAM_ATTR bool on_frame_done(esp_lcd_panel_handle_t panel,
                                     esp_lcd_dpi_panel_event_data_t *edata,
                                     void *user_ctx)
@@ -113,6 +127,14 @@ static IRAM_ATTR bool on_frame_done(esp_lcd_panel_handle_t panel,
     return woken == pdTRUE;
 }
 
+/**
+ * @brief VSYNC callback: count it and wake display_wait_vsync().  ISR
+ *        context.
+ * @param panel Unused.
+ * @param edata Unused.
+ * @param user_ctx The display_state_t.
+ * @return true when a task woke and a context switch is due.
+ */
 static IRAM_ATTR bool on_vsync(esp_lcd_panel_handle_t panel,
                                esp_lcd_dpi_panel_event_data_t *edata,
                                void *user_ctx)
@@ -126,12 +148,17 @@ static IRAM_ATTR bool on_vsync(esp_lcd_panel_handle_t panel,
     return woken == pdTRUE;
 }
 
+/** @brief Point the canvas at the UI's area of the back buffer. */
 static void rebind_canvas(void)
 {
     gfx_canvas_init(&s_disp.canvas, s_disp.fb[s_disp.back],
                     BOARD_UI_H_RES, BOARD_UI_V_RES, BOARD_LCD_H_RES);
 }
 
+/**
+ * @brief Pulse the panel's reset line, RESET_LOW_MS low, then RESET_WAIT_MS.
+ * @return ESP_OK, or the GPIO error.
+ */
 static esp_err_t panel_reset(void)
 {
     const gpio_config_t rst = {
@@ -149,8 +176,14 @@ static esp_err_t panel_reset(void)
     return ESP_OK;
 }
 
-/* The register table, then sleep out.  All in LP (low-power) mode on
- * virtual channel 0, before the video stream starts. */
+/**
+ * @brief Send the register table, then sleep out.
+ *
+ * All in LP (low-power) mode on virtual channel 0, before the video stream
+ * starts.
+ *
+ * @return ESP_OK, or the error of the first command that failed.
+ */
 static esp_err_t panel_commands(void)
 {
     for (size_t i = 0; i < sizeof(k_init) / sizeof(k_init[0]); ++i) {
@@ -169,6 +202,12 @@ static esp_err_t panel_commands(void)
     return ESP_OK;
 }
 
+/**
+ * @brief Take the PHY supply, then create the DSI bus, the command
+ *        interface and the DPI panel with its frame buffers.
+ * @return ESP_OK, or the error of the step that failed; bus_down() frees
+ *         what was taken.
+ */
 static esp_err_t bus_up(void)
 {
     const esp_ldo_channel_config_t ldo = {
@@ -218,7 +257,8 @@ static esp_err_t bus_up(void)
     return ESP_OK;
 }
 
-/* Whatever bus_up() got, in reverse, after a failure or at deinit. */
+/** @brief Free whatever bus_up() and start() got, in reverse, after a
+ *         failure or at deinit, and zero the state. */
 static void bus_down(void)
 {
     if (s_disp.panel != NULL) {
@@ -242,6 +282,13 @@ static void bus_down(void)
     memset(&s_disp, 0, sizeof(s_disp));
 }
 
+/**
+ * @brief Bring the display up: semaphores, bus, callbacks, frame buffers,
+ *        panel reset and commands, video stream.
+ * @param c The set-up.
+ * @return ESP_OK, or the error of the step that failed; the caller runs
+ *         bus_down().
+ */
 static esp_err_t start(const display_config_t *c)
 {
     s_disp.num_fbs = c->double_buffer ? 2 : 1;
@@ -361,6 +408,7 @@ esp_err_t display_wait_vsync(uint32_t timeout_ms)
                ? ESP_OK : ESP_ERR_TIMEOUT;
 }
 
+/** @brief Count a flip and update the rolling rate every 500 ms. */
 static void account_frame(void)
 {
     s_disp.frames++;
@@ -374,6 +422,10 @@ static void account_frame(void)
     }
 }
 
+/**
+ * @brief Wait for the next frame-done event, at most FLIP_WAIT_MS.
+ * @return ESP_OK, or ESP_ERR_TIMEOUT.
+ */
 static esp_err_t wait_frame_done(void)
 {
     return (xSemaphoreTake(s_disp.done_sem, pdMS_TO_TICKS(FLIP_WAIT_MS))

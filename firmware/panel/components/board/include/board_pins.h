@@ -1,6 +1,9 @@
-/*
- * Pin map for the 7-inch ESP32-P4 display board from Waveshare
- * (ESP32-P4-WIFI6-Touch-LCD-7B): a 1024 x 600 IPS (in-plane switching) LCD
+/**
+ * @file board_pins.h
+ * @brief Pin map for the 7-inch ESP32-P4 display board from Waveshare
+ *        (ESP32-P4-WIFI6-Touch-LCD-7B).
+ *
+ * The board carries a 1024 x 600 IPS (in-plane switching) LCD
  * (liquid-crystal display) on a 2-lane MIPI DSI (Display Serial Interface)
  * link with an EK79007 controller, a GT911 touch controller and an
  * ESP32-C6 for the radio.
@@ -21,25 +24,26 @@ extern "C" {
 
 /* ------------------------------------------------------------------ board */
 
-/* The board and the display as the splash names them. */
+/** @brief The board and the display as the splash names them. */
 #define BOARD_NAME_TEXT             "ESP32-P4 7B"
 #define BOARD_DISPLAY_TEXT          "1024x600 60Hz DSI"
 
 /* ------------------------------------------------------------------ panel */
 
+/** @brief The panel's size in pixels. */
 #define BOARD_LCD_H_RES             1024
 #define BOARD_LCD_V_RES             600
 
-/*
- * The area the UI (user interface) draws: 800 x 480 in the top-left corner
+/**
+ * @brief The area the UI (user interface) draws: 800 x 480 in the top-left corner
  * of the panel, the rest of the frame black.  Touches outside it are
  * dropped (touch.c).
  */
 #define BOARD_UI_H_RES              800
 #define BOARD_UI_V_RES              480
 
-/*
- * DPI (Display Pixel Interface) timing, in pixels and lines.  52 MHz is
+/**
+ * @brief DPI (Display Pixel Interface) timing, in pixels and lines.  52 MHz is
  * requested; the 240 MHz DPI clock divided by 5 delivers 48 MHz, which
  * gives 60.38 Hz over 1250 x 636 (derived, not measured).  The EK79007
  * accepts 44.9 to 70.3 MHz at 60 Hz.
@@ -52,8 +56,8 @@ extern "C" {
 #define BOARD_LCD_VSYNC_BACK_PORCH  23
 #define BOARD_LCD_VSYNC_FRONT_PORCH 12
 
-/*
- * The DSI link: 2 data lanes.  The lane rate is one define; 1000, 900 and
+/**
+ * @brief The DSI link: 2 data lanes.  The lane rate is one define; 1000, 900 and
  * 500 Mbit/s per lane are the three to try on a board.  RGB565 at 60 Hz
  * carries 297 Mbit/s of pixels a lane.  The EK79007 datasheet states
  * 500 Mbit/s as its maximum; Waveshare's examples run 900 and 1000.
@@ -61,17 +65,21 @@ extern "C" {
 #define BOARD_DSI_LANES             2
 #define BOARD_DSI_LANE_MBPS         1000
 
-/* The DSI PHY (physical layer) supply: on-chip LDO (low-dropout regulator)
- * channel 3 at 2500 mV, on before the bus starts. */
+/**
+ * @brief The DSI PHY (physical layer) supply: on-chip LDO (low-dropout
+ *        regulator) channel 3 at 2500 mV, on before the bus starts.
+ */
 #define BOARD_DSI_PHY_LDO_CHAN      3
 #define BOARD_DSI_PHY_LDO_MV        2500
 
-/* LCD reset, active low; a 10 kOhm pull-down holds the panel in reset
- * until firmware drives the pin. */
+/**
+ * @brief LCD reset, active low; a 10 kOhm pull-down holds the panel in
+ *        reset until firmware drives the pin.
+ */
 #define BOARD_LCD_PIN_RST           GPIO_NUM_33
 
-/*
- * The EK79007's address mode (DCS command 0x36): bit 1 the gate scan
+/**
+ * @brief The EK79007's address mode (DCS command 0x36): bit 1 the gate scan
  * direction, bit 0 the source shift direction, 0x01 after reset.  0x02
  * reverses both, which turns the picture by 180 degrees.  Waveshare's own
  * start-up turns its picture by 180 degrees in software, so the panel's
@@ -81,7 +89,9 @@ extern "C" {
 
 /* ------------------------------------------------------------- backlight */
 
-/*
+/**
+ * @brief The backlight's PWM (pulse-width modulation) on GPIO32.
+ *
  * GPIO32 feeds the backlight boost converter's feedback node through
  * 10 kOhm: a higher level dims.  LEDC (the LED pulse-width modulation
  * controller) drives it inverted, so a duty of 100 % is a constant low and
@@ -95,7 +105,10 @@ extern "C" {
 
 /* -------------------------------------------------------------------- I2C */
 
-/* The touch bus: GPIO7 and GPIO8 reach the touch connector J3. */
+/**
+ * @brief The touch bus, I2C (Inter-Integrated Circuit): GPIO7 and GPIO8
+ *        reach the touch connector J3.
+ */
 #define BOARD_I2C_PORT              0
 #define BOARD_I2C_PIN_SDA           GPIO_NUM_7
 #define BOARD_I2C_PIN_SCL           GPIO_NUM_8
@@ -103,7 +116,9 @@ extern "C" {
 
 /* ------------------------------------------------------------------ touch */
 
-/*
+/**
+ * @brief The GT911 touch controller's addresses and reset line.
+ *
  * GT911 at 0x5D, 0x14 its second address.  Its INT line reaches only J3
  * and a test point, so the touch task polls.  The schematic routes GPIO23
  * to the GT911's reset through a 0 Ohm resistor; GPIO_NUM_NC here runs no
@@ -113,7 +128,9 @@ extern "C" {
 #define BOARD_TOUCH_I2C_ADDR_ALT    0x14
 #define BOARD_TOUCH_PIN_RST         GPIO_NUM_23
 
-/*
+/**
+ * @brief Touch mirroring, 1 to mirror an axis.
+ *
  * The GT911 reports 1024 x 600 in its own orientation.  These mirror it
  * into the panel's, applied before rotation; both set match
  * BOARD_LCD_ADDRESS_MODE 0x02.  Not measured.
@@ -123,8 +140,8 @@ extern "C" {
 
 /* -------------------------------------------------------------- SD card --- */
 
-/*
- * SDMMC (SD card host) slot 0, 4-bit, on its fixed IO MUX pins: D0 to D3
+/**
+ * @brief The SD card: SDMMC (SD card host) slot 0, 4-bit, on its fixed IO MUX pins: D0 to D3
  * GPIO39 to GPIO42, CLK GPIO43, CMD GPIO44.  The card's supply is
  * on-chip LDO channel 4.
  */
@@ -140,7 +157,9 @@ extern "C" {
 #define BOARD_SD_FREQ_KHZ           20000
 
 /* -------------------------------------------------------------------- CAN */
-/*
+/**
+ * @brief The link's CAN (Controller Area Network) pins.
+ *
  * TWAI (Two-Wire Automotive Interface, the ESP32-P4's CAN controller) to
  * the TJA1051T/3 transceiver on header H11.  Pin 1 of H11 is the board's
  * 5 V rail, so the link cable can power the board.
@@ -148,21 +167,24 @@ extern "C" {
 #define PANEL_CAN_PIN_TX   GPIO_NUM_22
 #define PANEL_CAN_PIN_RX   GPIO_NUM_21
 
-/* Both ends must agree.  1 Mbit/s is what the IOmcu's 16 MHz crystal
- * reaches exactly; see IOMCU_CAN_BITRATE and docs/Link.md. */
+/**
+ * @brief The link's bit rate.  Both ends must agree.  1 Mbit/s is what
+ *        the IOmcu's 16 MHz crystal reaches exactly; see IOMCU_CAN_BITRATE
+ *        and docs/Link.md.
+ */
 #define PANEL_CAN_BITRATE  1000000u
 
 /* ----------------------------------------------------------------- safety */
-/*
- * The heartbeat, on a free header GPIO: one of IO2-5, IO28-31, IO34, IO36
+/**
+ * @brief The heartbeat, on a free header GPIO: one of IO2-5, IO28-31, IO34, IO36
  * and IO46-52.  IO34 and IO36 are strapping pins.
  */
 #define PANEL_HEARTBEAT_PIN   GPIO_NUM_28   /* placeholder: pending the owner's pick */
 
 /* ------------------------------------------------------------------- knob */
-/*
- * The rotary knob's sensor, on an I2C (Inter-Integrated Circuit)
- * controller of its own: nothing of the board shares its bus.
+/**
+ * @brief The rotary knob's sensor, on an I2C controller of its own: nothing of
+ * the board shares its bus.
  */
 #define BOARD_KNOB_I2C_PORT     1
 #define BOARD_KNOB_PIN_SDA      GPIO_NUM_30   /* placeholder: pending the owner's pick */

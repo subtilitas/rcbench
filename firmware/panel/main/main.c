@@ -1,5 +1,7 @@
-/*
- * The panel application.
+/**
+ * @file main.c
+ * @brief The panel application: app_main, the console report and the
+ *        main loop's hardware glue.
  *
  * Brings the board up, reports each step to the splash as it happens, then
  * runs the router at the panel's refresh rate.
@@ -218,7 +220,7 @@ uint32_t s_recoveries_total;  /* since boot                       */
  *
  * The control task writes it and app_main hands it to the screen, because
  * screen state is app_main's alone.  Atomic rather than volatile, for the
- * reason this file already gives for s_stop_live: volatile orders nothing
+ * reason given for s_stop_request: volatile orders nothing
  * between processors and promises no atomicity, and these two tasks are
  * pinned to different cores.
  */
@@ -307,8 +309,9 @@ arming_t  s_arm;
 uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 
 /*
- * Both cross the two cores, so both are atomic rather than volatile: volatile
- * orders nothing between processors and promises no atomicity.
+ * Crosses the two cores, so it is atomic rather than volatile, as
+ * s_stop_live (panel_control.c) is: volatile orders nothing between
+ * processors and promises no atomicity.
  *
  * s_stop_request carries the router's backstop for a press this task's own
  * hit test did not see, so it crosses from app_main.  A press this task sees

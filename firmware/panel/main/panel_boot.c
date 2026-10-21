@@ -1,7 +1,10 @@
-/*
- * The panel's start-up: the board, the settings, the display, touch, the
- * card, the link and the IOmcu, each reported to the splash as it
- * happens.  app_main (main.c) calls bring_up() once.
+/**
+ * @file panel_boot.c
+ * @brief The panel's start-up: the board, the settings, the display,
+ *        touch, the card, the link and the IOmcu, each reported to the
+ *        splash as it happens.
+ *
+ * app_main (main.c) calls bring_up() once.
  *
  * SPDX-License-Identifier: MIT
  */

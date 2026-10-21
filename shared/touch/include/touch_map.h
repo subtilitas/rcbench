@@ -35,13 +35,17 @@ void touch_map_apply(const touch_map_t *m, int16_t x, int16_t y,
 void touch_map_point(const touch_map_t *m, touch_point_t *p);
 
 /**
- * Keep the mapped points inside a @p w x @p h area at the origin and drop
+ * @brief Keep the mapped points inside a @p w x @p h area at the origin and drop
  * the rest, in place and in order.  A panel whose UI (user interface) draws
  * a smaller area than the glass reports drops the touches outside it.
  *
  * A contact dragged out of the area leaves the next frame as a release;
  * one dragged back in is a new press.
  *
+ * @param pts The mapped points; the kept ones move to the front.
+ * @param count How many there are.
+ * @param w The area's width in pixels.
+ * @param h The area's height in pixels.
  * @return the number of points kept; 0 for a NULL @p pts, a negative
  *         @p count or an empty area.
  */

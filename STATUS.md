@@ -194,7 +194,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, frame-cost, screenshot, fit, translated-format, docs, wiki-link and research-script checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the pytest cases of the tools (`test/tools/`); on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5.3) building the panel, each with the task stack check; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, screenshot, fit, translated-format, docs, wiki-link and research-script checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the pytest cases of the tools (`test/tools/`); on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v5.5.5 for the ESP32-P4, with the check of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400 s) and publishes `docs/` to the GitHub wiki when it passed |
 | `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000 s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
@@ -327,17 +327,18 @@ or a core file under `protocols/` that is in neither of its two lists, is not co
 `render_ui.py --check` holds 448 committed screenshots to the current
 render, 224 in English and the same 224 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
-except an English overflow it lists as known (none listed); `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
-chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
-deepest call chain to its stack less 1024 bytes: the UI's main task reaches
-5440 of 8192. With `--iomcu` it holds each IOmcu core's deepest chain,
-one interrupt and 256 bytes to the core's stack: core 0 reaches 1484 of
-4096 with 528 for an interrupt. `ram_budget.py` holds the panel's
-internal heap left with the largest Wi-Fi mode up to at least 32,768 bytes,
-by an estimate that counts three allowances that are not measured. `check_docs.py` holds the protocol version,
+except an English overflow it lists as known (none listed). `image_slot.py`
+holds the panel image to the smaller of its two update slots.
+`stack_check.py --iomcu` holds each IOmcu core's deepest chain, one
+interrupt and 256 bytes to the core's stack: core 0 reaches 1484 of
+4096 with 528 for an interrupt. The panel's stack depths on the ESP32-P4
+are not measured: `stack_check.py` decodes Xtensa code only and stops on
+the P4's RISC-V image, and no run-time high-water log exists yet. No CI step
+holds a frame-cost ceiling or the internal RAM of the panel.
+`check_docs.py` holds the protocol version,
 the heartbeat and link timings, the heartbeat and CAN pins, the coverage
-floors, the stack margin, the internal RAM floor, the servo test's constants and the frame-cost
-ceilings the pages state to the headers, the tools and `ci.yml`.
+floors, the stack margin, the servo test's constants and the ESP-IDF and
+pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 `check_sanitizers.py` holds every compile command of the sanitizer build to
 `-fsanitize=address,undefined -fno-sanitize-recover=all`.
 
@@ -347,7 +348,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/gfx/gfx.c` | 468 | 457 | 97.7% |
 | `shared/gfx/gfx_text.c` | 223 | 212 | 95.1% |
 | `shared/gfx/gfx_seg.c` | 96 | 91 | 94.8% |
-| `shared/touch/touch_map.c` | 106 | 106 | 100.0% |
+| `shared/touch/touch_map.c` | 115 | 115 | 100.0% |
 | `shared/touch/touch_merge.c` | 101 | 101 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
 | `shared/ui/ui_widgets.c` | 296 | 289 | 97.6% |
@@ -545,7 +546,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **51318** | **50151** | **97.7%** |
+| **total** | **51327** | **50160** | **97.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

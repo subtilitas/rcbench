@@ -1,5 +1,7 @@
-/*
- * The SD (Secure Digital) card: mounting it, and listing what is on it.
+/**
+ * @file storage.h
+ * @brief The SD (Secure Digital) card: mounting it, and listing what is on
+ *        it.
  *
  * The card is on SDMMC (the SD card host) slot 0, 4 data lines, its
  * supply on the ESP32-P4's on-chip LDO (low-dropout regulator) channel 4
@@ -50,7 +52,7 @@ typedef struct {
 } storage_stat_t;
 
 /**
- * Switch the card's supply on and mount the card at /sdcard.
+ * @brief Switch the card's supply on and mount the card at /sdcard.
  *
  * Never formats.  A card that starts and does not mount is looked at once
  * more, so storage_card_state() can tell a card with no FAT (File
@@ -114,8 +116,8 @@ FILE *storage_fopen(const char *path, const char *mode);
  *  traffic, and the handle and its descriptor are freed. */
 int storage_fclose(FILE *f);
 
-/** Unmount and switch the card's supply off.  Safe to call when nothing
- *  was mounted.
+/** @brief Unmount and switch the card's supply off.  Safe to call when
+ *         nothing was mounted.
  *  Clears storage_status() and storage_card_state().  The end of the
  *  card's use: nothing may still be open, and no hold is waited for. */
 void storage_deinit(void);
@@ -142,7 +144,7 @@ uint64_t storage_free_bytes(void);
 void storage_card_name(char *out, size_t n);
 
 /**
- * What went wrong, in a few words for the console and the start-up line:
+ * @brief What went wrong, in a few words for the console and the start-up line:
  * "no card", "no FAT volume", "FatFs <n>", "LDO <error>" or
  * ESP-IDF's error name.  "" when all is well.  At most 47 characters.
  */
