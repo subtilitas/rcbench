@@ -18,10 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/*
- * ------------------------------------------------------------- the
- *        report
- */
+/* ------------------------------------------------------------- the report */
 
 /**
  * @brief Cursor that prints one report line, found by counting.
@@ -107,7 +104,8 @@ static void amps(char *b, size_t n, const servo_test_mean_t *m)
 }
 
 /**
- * @brief The first and the last brown-out voltage that ran to its end.
+ * @brief The first and the last brown-out voltage that ran to its end; NULL for
+ *        none.
  *
  * @param t     Run state.
  * @param first Out: the first such step, or NULL for none. NULL to skip.
@@ -520,8 +518,9 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
 }
 
 /**
- * @brief A step's mean end angle at @p end and its error against the
- *        commanded one, both on the circle (servo_test_enc_end()), signed.
+ * @brief A step's mean end angle at @p end and its error against the commanded
+ *        one, both on the circle (servo_test_enc_end()), signed, or "--" for
+ *        none.
  *
  * @param t   Run state.
  * @param s   Step.

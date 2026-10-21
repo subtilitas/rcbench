@@ -1,10 +1,10 @@
 /**
  * @file
  * @brief What servo_limrun.c and servo_limrun_report.c share and nothing else
- * reads: where a side stands, a side's span, and whether RESTORE is
- * offered.  The two predicates are inline here so that the report, in its
- * own file, inlines them; the public servo_limrun_span() and
- * servo_limrun_restore() wrap them.
+ *        reads: where a side stands, a side's span, and whether RESTORE is
+ *        offered.  The two predicates are inline here so that the report, in
+ *        its own file, inlines them; the public servo_limrun_span() and
+ *        servo_limrun_restore() wrap them.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -59,7 +59,7 @@ static inline bool limrun_restore(const servo_limrun_t *r)
 
 /**
  * @brief The span from the pulses in force: after SERVO PULSES at 1000-2000
- * those written, not those read.
+ *        those written, not those read.
  *
  * @param r    Run state holding pulse_now.
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.

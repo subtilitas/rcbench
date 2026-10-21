@@ -1,6 +1,7 @@
 /**
  * @file
  * @brief Search for a servo mechanical limit by current: the state machine.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -128,10 +129,12 @@ static void finish(servo_limit_t *lf, servo_limit_state_t state,
 }
 
 /**
- * @brief Move one step further out.  A step that would pass the end of the
- * permitted travel stops at that end, so the end itself is measured.  With
- * the end measured free, the surface is free over the whole range asked
- * about, and that is reported as NO_LIMIT rather than as a mechanical limit.
+ * @brief Move one step further out.
+ *
+ * A step that would pass the end of the permitted travel stops at that end, so
+ * the end itself is measured. With the end measured free, the surface is free
+ * over the whole range asked about, and that is reported as NO_LIMIT rather
+ * than as a mechanical limit.
  *
  * Returns false if the search ended here.
  *

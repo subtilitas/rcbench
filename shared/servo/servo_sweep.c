@@ -72,10 +72,9 @@ bool sweep_resume(sweep_t *w, uint32_t now_ms)
 
 /**
  * @brief One cycle in microseconds: the motion's period, a quarter of it, the
- *        dwell
- * and the whole cycle with both dwells.  Integers, because a sweep can run
- * for hours and a float of milliseconds stops counting single ones after
- * four and a half.
+ *        dwell and the whole cycle with both dwells.  Integers, because a sweep
+ *        can run for hours and a float of milliseconds stops counting single
+ *        ones after four and a half.
  */
 typedef struct {
     uint32_t period, quarter, dwell, cycle;
@@ -177,7 +176,7 @@ bool sweep_slew_limited(const sweep_cfg_t *cfg, uint16_t slew_per_s)
 
 /**
  * @brief The curve's position, -1..1, a fraction @p x of the way through its
- * motion.
+ *        motion.
  *
  * @param kind Shape of the curve.
  * @param x    Fraction of the motion, 0 to 1.

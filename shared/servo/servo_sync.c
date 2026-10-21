@@ -1,6 +1,7 @@
 /**
  * @file
  * @brief Search that synchronises two servos on one surface by total current.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -115,10 +116,7 @@ static void aim(servo_sync_t *sy)
         break;
     }
 
-    /**
-     * @brief How long the larger of the two moves needs, added to the fixed
-     *        wait.
-     */
+    /* How long the larger of the two moves needs, added to the fixed wait. */
     int32_t da = (int32_t)sy->cmd_a_us - was_a;
     int32_t db = (int32_t)sy->cmd_b_us - was_b;
     if (da < 0) {

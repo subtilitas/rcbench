@@ -67,8 +67,8 @@ static bool under_way(const servo_move_t *m)
 
 /**
  * @brief A move under way whose window has run out at @p now is over: late with
- * movement, unseen without, ended at @p now.  A @p now before the command
- * decides nothing.  Whether it ran out.
+ *        movement, unseen without, ended at @p now.  A @p now before the
+ *        command decides nothing.  Whether it ran out.
  *
  * @param m   Move state. Updated when the window has run out.
  * @param now Current time, in the caller time unit.
@@ -113,7 +113,7 @@ void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip)
 
 /**
  * @brief The filtered sample, from the newest filter_n samples: false when the
- * window holds clips at both ends and so no bound.
+ *        window holds clips at both ends and so no bound.
  *
  * @param m        Move state. Pushes the sample into the filter.
  * @param a        Sample, A.
@@ -146,7 +146,7 @@ static bool filtered(servo_move_t *m, float a, servo_move_clip_t clip,
 
 /**
  * @brief The samples in a row near the level with @p i added: their count, or 1
- * when @p i spreads them wider than the band and starts a new run.
+ *        when @p i spreads them wider than the band and starts a new run.
  *
  * @param m  Move state holding the current run.
  * @param i  Sample to add, A.

@@ -21,17 +21,19 @@
 #include <stdint.h>
 
 typedef struct {
-    /** Where the linkage binds, as a pulse width.  Two values: a surface's
-     *  stops are not symmetric about the servo's centre once a horn and a
-     *  pushrod are involved, which is why the limit is measured per
-     *  installation. */
+    /** @brief Where the linkage binds, as a pulse width.
+     *
+     * Two values: a surface's stops are not symmetric about the servo's centre
+     * once a horn and a pushrod are involved, which is why the limit is
+     * measured per installation. */
     uint16_t stop_lo_us;
     uint16_t stop_hi_us;
 
     float    free_a;        /**< holding a free surface */
     float    stall_a;       /**< hard against the stop */
-    /** How far past the stop the current takes to go from free to stall. A
-     *  linkage is not infinitely stiff; this is the width of the knee. */
+    /** @brief How far past the stop the current takes to go from free to stall.
+     *
+     * A linkage is not infinitely stiff; this is the width of the knee. */
     uint16_t bind_us;
 
     /**
@@ -45,9 +47,9 @@ typedef struct {
     float    travel_a;
     /**
      * @brief A stiff patch: a band of travel that costs more to hold than the
-     *        rest
-     * without being the end of anything, such as a bellcrank binding at one
-     * angle, a pushrod rubbing through a former, or a tight hinge mid-range.
+     *        rest without being the end of anything, such as a bellcrank
+     *        binding at one angle, a pushrod rubbing through a former, or a
+     *        tight hinge mid-range.
      *
      * The knee test carries an absolute margin as well as a ratio because of
      * these: on a lightly loaded surface a tight spot is a large multiple of
@@ -63,10 +65,9 @@ typedef struct {
 
     /**
      * @brief The servo's own travel limits, as the pulse widths they stop it
-     *        at: a
-     * command past one moves the horn to it and no further, and pushes no
-     * harder than there.  A programmable servo's end angles (KST's LEFT and
-     * RIGHT ANGLE) are such limits.  0 is none.
+     *        at: a command past one moves the horn to it and no further, and
+     *        pushes no harder than there.  A programmable servo's end angles
+     *        (KST's LEFT and RIGHT ANGLE) are such limits.  0 is none.
      */
     uint16_t limit_lo_us;
     uint16_t limit_hi_us;
@@ -98,8 +99,7 @@ void servo_sim_init(servo_sim_t *s, const servo_sim_cfg_t *cfg);
 
 /**
  * @brief Advance the model to @p now_ms with the servo commanded to @p cmd_us,
- *        and
- * return the current its sensor would report.
+ *        and return the current its sensor would report.
  *
  * @param s      Model state.
  * @param cmd_us Commanded pulse width, us.
@@ -108,9 +108,7 @@ void servo_sim_init(servo_sim_t *s, const servo_sim_cfg_t *cfg);
  */
 float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms);
 
-/*
- * ------------------------------------------ two servos on one surface
- */
+/* ------------------------------------------ two servos on one surface */
 
 /**
  * @brief A pair, coupled through the surface they both drive.
@@ -123,16 +121,18 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms);
  */
 typedef struct {
     uint16_t centre_us;
-    /** How far servo B's real centre sits from where it is commanded. */
+    /** @brief How far servo B's real centre sits from where it is commanded. */
     int16_t  offset_us;
-    /** B's real throw as a multiple of what it is commanded. 1.0 is right. */
+    /** @brief B's real throw as a multiple of what it is commanded. 1.0 is
+     *         right. */
     float    travel;
-    /** What the pair draws with nothing to fight about. */
+    /** @brief What the pair draws with nothing to fight about. */
     float    free_a;
-    /** Extra *total* current per microsecond of disagreement. */
+    /** @brief Extra *total* current per microsecond of disagreement. */
     float    fight_a_per_us;
-    /** What the pair draws while either of them is still travelling.  As
-     *  with the single servo, a reading taken too early sees this. */
+    /** @brief What the pair draws while either of them is still travelling.
+     *
+     * As with the single servo, a reading taken too early sees this. */
     float    travel_a;
     float    slew_us_per_ms;
     float    noise_a;
@@ -164,8 +164,7 @@ void servo_pair_init(servo_pair_t *p, const servo_pair_cfg_t *cfg);
 
 /**
  * @brief Advance both servos to @p now_ms with the commands given, and return
- *        the
- * total current the pair draws.
+ *        the total current the pair draws.
  *
  * Both servos take time to arrive, which is why this takes a clock: a
  * reading taken before they have arrived is a reading of two servos in
@@ -182,7 +181,7 @@ float servo_pair_step(servo_pair_t *p, uint16_t cmd_a_us, uint16_t cmd_b_us,
 
 /**
  * @brief How far apart the two hold the surface, in microseconds.  Hardware
- *  cannot report this; the search is blind to it and a test may read it.
+ *        cannot report this; the search is blind to it and a test may read it.
  *
  * @param p        Model state.
  * @param cmd_a_us Commanded pulse width of servo A, us.

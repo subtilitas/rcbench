@@ -1,6 +1,7 @@
 /**
  * @file
  * @brief Single-servo and two-servo models of a control surface.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -128,10 +129,7 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
         amps = s->cfg.free_a;
     }
 
-    /**
-     * @brief A tight spot costs extra to hold, whether or not anything is
-     *        bound.
-     */
+    /* A tight spot costs extra to hold, whether or not anything is bound. */
     if (arrived && s->cfg.stiff_hi_us > s->cfg.stiff_lo_us
         && cmd_us >= s->cfg.stiff_lo_us && cmd_us <= s->cfg.stiff_hi_us) {
         amps += s->cfg.stiff_a;
@@ -141,9 +139,7 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     return amps < 0.0f ? 0.0f : amps;
 }
 
-/*
- * ------------------------------------------ two servos on one surface
- */
+/* ------------------------------------------ two servos on one surface */
 
 void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t centre_us)
 {
