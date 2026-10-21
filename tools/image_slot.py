@@ -34,8 +34,16 @@ OTA_FIRST, OTA_LAST = 0x10, 0x1F        # ota_0 to ota_15 (ESP-IDF)
 
 
 def ota_slots(table: bytes) -> dict[str, int]:
-    """{name: size in bytes} of every OTA application partition in a
-    binary partition table."""
+    """Read the OTA application partitions of a binary partition table.
+
+    Args:
+        table: The bytes of partition-table.bin.
+
+    Returns:
+        {name: size in bytes} of every OTA application partition, in table
+        order.  The read stops at the first entry without the partition
+        magic, the table's checksum entry.
+    """
     slots = {}
     for at in range(0, len(table) - ENTRY.size + 1, ENTRY.size):
         magic, kind, sub, _off, size, name, _flags = ENTRY.unpack_from(
@@ -48,7 +56,15 @@ def ota_slots(table: bytes) -> dict[str, int]:
 
 
 def problems(image: int, slots: dict[str, int]) -> list[str]:
-    """What is wrong with an image of `image` bytes and these slots."""
+    """Name what is wrong with an image and its update slots.
+
+    Args:
+        image: Size of the application image in bytes.
+        slots: {name: size in bytes} from ota_slots().
+
+    Returns:
+        One line per problem; empty when the image fits every slot.
+    """
     if len(slots) < 2:
         return [f"the partition table has {len(slots)} OTA application "
                 "slot(s); an update needs two"]
@@ -64,6 +80,14 @@ def problems(image: int, slots: dict[str, int]) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
+    """Check a panel build and print the room left in its smallest slot.
+
+    Args:
+        argv: Program name, then optionally the build directory.
+
+    Returns:
+        0 when the image fits, 1 when it does not or a file is missing.
+    """
     build = Path(argv[1]) if len(argv) > 1 else BUILD
     image, table = build / IMAGE, build / TABLE
     for f in (image, table):

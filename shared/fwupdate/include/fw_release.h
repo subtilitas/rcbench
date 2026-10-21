@@ -248,7 +248,16 @@ bool fw_release_offered(fw_version_t found, fw_version_t running,
 /** "0.20.0" into @p out of FW_REL_VER_TEXT bytes. */
 void fw_release_version_text(fw_version_t v, char out[FW_REL_VER_TEXT]);
 
-/** "rcbench-panel-p4-v0.20.0.bin" into @p out of FW_REL_NAME_MAX bytes. */
+/**
+ * @brief The file name of a release's panel image.
+ *
+ * Writes "rcbench-panel-p4-v0.20.0.bin" for version 0.20.0.  The longest
+ * name, for 65535.65535.65535, fills FW_REL_NAME_MAX bytes with its
+ * terminator.
+ *
+ * @param v   Version of the release.
+ * @param out Receives the name, terminated.
+ */
 void fw_release_image_name(fw_version_t v, char out[FW_REL_NAME_MAX]);
 
 /**

@@ -344,6 +344,15 @@ jobs:
           (cd artifacts/iomcu && zip -r "../../dist/rcbench-iomcu-$TAG.zip" .)
           # And the panel's application on its own: the file the panel's
           # Wi-Fi page takes for an update (WI-FI).
+          # The panel archive carries the licence and the notice of the
+          # libraries linked into the image, next to the binary.
+          zip -j "dist/rcbench-panel-p4-$TAG.zip" NOTICE LICENSE
+          for f in NOTICE LICENSE; do
+            unzip -Z1 "dist/rcbench-panel-p4-$TAG.zip" | grep -qx "$f" || {
+              echo "::error::rcbench-panel-p4-$TAG.zip does not list $f"
+              exit 1
+            }
+          done
           cp artifacts/panel/rcbench-panel.bin "dist/rcbench-panel-p4-$TAG.bin"
           (cd dist && sha256sum ./*.zip ./*.bin > SHA256SUMS)
           ls -l dist

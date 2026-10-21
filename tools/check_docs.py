@@ -1239,9 +1239,18 @@ def doc_ceilings(text: str, header: str, german: bool):
 
 def check_ceilings(problems: list[str], ci_text: str | None = None,
                    pages=None) -> None:
-    """The ceiling table in Performance.md gives, for every mode CI holds,
-    the ceiling CI holds it to, and has no row CI does not run.  While CI
-    holds no ceiling, the pages carry no such table."""
+    """Hold the ceiling table of the Performance pages to ci.yml.
+
+    The table gives, for every mode CI holds, the ceiling CI holds it to,
+    and has no row CI does not run.  While CI holds no ceiling, the pages
+    carry no such table.
+
+    Args:
+        problems: Receives one line per disagreement.
+        ci_text: The text of ci.yml; the file in the tree when None.
+        pages: (page, table header) pairs; the two Performance pages when
+            None.
+    """
     calls = ci_ceilings(read(CI_YML) if ci_text is None else ci_text)
     if not calls:
         for page, header in (CEILING_PAGES if pages is None else pages):
@@ -1323,13 +1332,17 @@ def check_pin_counts(problems: list[str]) -> None:
 
 
 def check_sdk_tags(problems: list[str]) -> None:
-    """The SDK (software development kit) tags are spelled in ci.yml,
-    release.yml and the build pages, and the copies agree.
+    """Hold the SDK tags of ci.yml, release.yml and the pages together.
 
-    The pico-sdk tag is env.PICO_SDK_TAG of ci.yml; the ESP-IDF
-    (Espressif Internet-of-Things Development Framework) tag is the
+    The SDK (software development kit) tags are spelled in ci.yml,
+    release.yml and the build pages, and the copies agree.  The pico-sdk
+    tag is env.PICO_SDK_TAG of ci.yml; the ESP-IDF (Espressif
+    Internet-of-Things Development Framework) tag is the
     `esp_idf_version` of the panel builds in ci.yml, which release.yml
-    repeats.
+    repeats, and the version in the panel job's name.
+
+    Args:
+        problems: Receives one line per disagreement.
     """
     ci = read(REPO / ".github" / "workflows" / "ci.yml")
     rel = read(REPO / ".github" / "workflows" / "release.yml")

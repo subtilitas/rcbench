@@ -667,6 +667,14 @@ def check_panel_doc(rows: dict, pointer_calls: int) -> list:
 
 
 def main() -> int:
+    """Run the check the command line names.
+
+    Returns:
+        0 when every stack holds its deepest chain, 1 when one does not.
+
+    Raises:
+        SystemExit: The build is missing, or the panel ELF is not Xtensa.
+    """
     ap = argparse.ArgumentParser(
         description=__doc__.split("\n")[0],
         formatter_class=argparse.RawDescriptionHelpFormatter)

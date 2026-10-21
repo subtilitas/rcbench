@@ -12,11 +12,31 @@ SLOT = 0x3E0000
 
 
 def entry(kind, sub, off, size, name):
+    """Pack one 32-byte partition table entry.
+
+    Args:
+        kind: Partition type.
+        sub: Partition subtype.
+        off: Offset in flash.
+        size: Size in bytes.
+        name: Partition name.
+
+    Returns:
+        The entry's bytes.
+    """
     return im.ENTRY.pack(im.MAGIC, kind, sub, off, size,
                          name.encode().ljust(16, b"\0"), 0)
 
 
 def table(*entries):
+    """Join entries into a table that ends at a checksum entry.
+
+    Args:
+        *entries: Packed entries from entry().
+
+    Returns:
+        The bytes of a partition table.
+    """
     # The checksum entry ends a table: not the partition magic.
     return b"".join(entries) + b"\xeb\xeb" + b"\0" * 30
 

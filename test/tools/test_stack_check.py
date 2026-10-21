@@ -403,7 +403,12 @@ def test_card_calls_name_every_folder_maker_handed_to_card_make_dirs():
 
 
 def elf_of_machine(path, machine):
-    """The 52-byte header of a 32-bit little-endian ELF with no sections."""
+    """Write the 52-byte header of a 32-bit little-endian ELF.
+
+    Args:
+        path: The file to write.
+        machine: The e_machine value; the file has no sections.
+    """
     head = bytearray(52)
     head[:6] = b"\x7fELF\x01\x01"
     head[0x12:0x14] = machine.to_bytes(2, "little")

@@ -26,9 +26,26 @@ def die(msg: str) -> None:
 
 class Elf:
     """The sections with contents, and the symbol table, of a 32-bit
-    little-endian ELF."""
+    little-endian ELF.
+
+    Attributes:
+        data: The file's bytes.
+        machine: e_machine of the header, for example EM_XTENSA.
+        sections: (address, file offset, size) of every allocated section
+            that has bytes in the file.
+        symbols: (address, kind, size, name, file of a local symbol,
+            absolute) of every symbol.
+    """
 
     def __init__(self, path: Path) -> None:
+        """Read an ELF file.
+
+        Args:
+            path: The file.
+
+        Raises:
+            SystemExit: The file is not a 32-bit little-endian ELF.
+        """
         d = path.read_bytes()
         if d[:4] != b"\x7fELF" or d[4] != 1 or d[5] != 1:
             die(f"{path} is not a 32-bit little-endian ELF")
