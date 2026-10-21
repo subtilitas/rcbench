@@ -54,7 +54,7 @@ for (const size of SIZES) {
       await expect(page.locator('#buy > li')).toHaveCount(list.buy.length);
       await expect(page.locator('#bring > li')).toHaveCount(list.bring.length);
       await expect(page.locator('#buy-note')).toHaveText(`Parts list as of release v${CATALOGUE.release}. Makers change products without notice. Check every part against its check line before ordering. No warranty.`);
-      await expect(page.locator('#buy > li[data-part="panel"]')).toContainText('1 × Waveshare ESP32-S3-Touch-LCD-7');
+      await expect(page.locator('#buy > li[data-part="panel"]')).toContainText('1 × Waveshare ESP32-P4-WIFI6-Touch-LCD-7B');
       await expect(page.locator('#bring > li[data-part="servo"]')).toBeVisible();
       await expect(page.locator('#bring a')).toHaveCount(0);
       // Every link of the list opens a new tab without an opener.
@@ -67,7 +67,7 @@ for (const size of SIZES) {
       // The search link of a spec without a maker.
       await expect(page.locator('#buy > li[data-part="pull"] a.websearch')).toHaveAttribute('href', searchUrl(null, 'Resistor 2.2 kΩ, 0.25 W'));
       await expect(page.locator('#buy > li[data-part="pull"] a.websearch')).toHaveAttribute('href', 'https://www.google.com/search?q=%22Resistor%202.2%20k%CE%A9%22%20%220.25%20W%22');
-      await expect(page.locator('#buy > li[data-part="panel"] a.websearch')).toHaveAttribute('href', 'https://www.google.com/search?q=%22Waveshare%22%20%22ESP32-S3-Touch-LCD-7%22');
+      await expect(page.locator('#buy > li[data-part="panel"] a.websearch')).toHaveAttribute('href', 'https://www.google.com/search?q=%22Waveshare%22%20%22ESP32-P4-WIFI6-Touch-LCD-7B%22');
       // The links start at the left edge of their row, the search after the maker page.
       const row = page.locator('#buy > li[data-part="panel"]');
       const [li, maker, search] = await Promise.all([row.boundingBox(), row.locator('a.maker').boundingBox(), row.locator('a.websearch').boundingBox()]);
@@ -177,8 +177,8 @@ for (const size of SIZES) {
       await expect(page.locator('#live')).toContainText('Moved to "You have".');
       await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=wire.dmm');
       // A second tick: the link names both in catalogue order.
-      await page.locator('#buy [data-h="panel"]').click();
-      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel,wire.dmm');
+      await page.locator('#buy [data-h="panel.p47b"]').click();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel.p47b,wire.dmm');
       await expect(page.locator('#have > li')).toHaveCount(2);
       await page.reload();
       await page.locator('#h-buy').waitFor();
@@ -191,8 +191,8 @@ for (const size of SIZES) {
       await expect(buyRow.nth(2)).toContainText('Digital multimeter');
       await expect(page.locator('#buy [data-h="wire.dmm"]')).not.toBeChecked();
       await expect(page.locator('#live')).toContainText('Back under "Parts to buy".');
-      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel');
-      await page.locator('#have [data-h="panel"]').click();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel.p47b');
+      await page.locator('#have [data-h="panel.p47b"]').click();
       await expect(page.locator('#have')).toHaveCount(0);
       await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow');
       await page.waitForLoadState('networkidle');
@@ -206,14 +206,14 @@ for (const size of SIZES) {
       // The tick follows the links of its row in the tab order.
       await page.locator('#buy > li[data-part="panel"] a.websearch').focus();
       await page.keyboard.press('Tab');
-      await expect(page.locator('#buy [data-h="panel"]')).toBeFocused();
+      await expect(page.locator('#buy [data-h="panel.p47b"]')).toBeFocused();
       await page.keyboard.press('Space');
       // The focus moves with the tick to "You have".
-      await expect(page.locator('#have [data-h="panel"]')).toBeFocused();
-      await expect(page.locator('#have [data-h="panel"]')).toBeChecked();
-      await expect.poll(() => hashOf(page)).toBe('#v=1&h=panel');
+      await expect(page.locator('#have [data-h="panel.p47b"]')).toBeFocused();
+      await expect(page.locator('#have [data-h="panel.p47b"]')).toBeChecked();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&h=panel.p47b');
       await page.keyboard.press('Space');
-      await expect(page.locator('#buy [data-h="panel"]')).toBeFocused();
+      await expect(page.locator('#buy [data-h="panel.p47b"]')).toBeFocused();
       await expect(page.locator('#have')).toHaveCount(0);
       await expect.poll(() => hashOf(page)).toBe('#v=1');
     });
@@ -226,11 +226,11 @@ for (const size of SIZES) {
       await expect(page.locator('#buy [data-h="ina228.xt90"]')).not.toBeChecked();
       await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&o=xt90');
       // A link with a stale and a malformed tick opens with the note that names both; the link of the print header leaves both out.
-      await open(page, '#v=1&f=escpow&o=xt90&h=ina228.matek,Panel,panel');
+      await open(page, '#v=1&f=escpow&o=xt90&h=ina228.matek,Panel,panel.p47b');
       await expect(page.locator('.msg.note')).toContainText('Panel, ina228.matek');
       await expect(page.locator('#have > li')).toHaveCount(1);
-      await expect(page.locator('#have [data-h="panel"]')).toBeChecked();
-      await expect(page.locator('p.printonly')).toContainText(/#v=1&f=escpow&o=xt90&h=panel$/);
+      await expect(page.locator('#have [data-h="panel.p47b"]')).toBeChecked();
+      await expect(page.locator('p.printonly')).toContainText(/#v=1&f=escpow&o=xt90&h=panel.p47b$/);
     });
 
     test('Copy as text, Copy as CSV and Copy link follow the "have it" ticks', async ({ page, context }) => {

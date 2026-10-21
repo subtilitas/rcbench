@@ -90,8 +90,9 @@ test('empty selection: the locked parts and the wires 1 to 4', () => {
   const setup = resolve(CATALOGUE, select());
   assert.deepEqual(partIds(setup), LOCKED);
   assert.deepEqual(wireNumbers(setup), [1, 2, 3, 4]);
-  assert.deepEqual(setup.checks.map((c) => c.id), ['can-60', 'panel-terminals', 'same-release']);
-  assert.deepEqual(setup.unknown.map((u) => u.id), []);
+  assert.deepEqual(setup.checks.map((c) => c.id), ['can-60', 'panel-terminals', 'panel-heartbeat-pin', 'same-release']);
+  // The heartbeat pin of the panel is not decided: every setup names it.
+  assert.deepEqual(setup.unknown.map((u) => u.id), ['panel-heartbeat-pin']);
   assert.deepEqual(setup.ignored, []);
   for (const p of setup.parts) {
     assert.deepEqual(p.addedBy, [{ kind: 'always' }]);
@@ -447,7 +448,7 @@ test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo bre
   assert.deepEqual(plus(pin), [[59, 'servo.POS', 'pad.40']]);
   assert.equal(CATALOGUE.pads.find((p) => p.n === 40)?.name, 'VBUS');
   assert.ok(ids(pin).includes(WARNING) && ids(pin).includes('servo-5v-pin') && !ids(pin).includes('servo-external'));
-  assert.deepEqual(pin.unknown.map((u) => u.id), ['servo-5v-pin']);
+  assert.deepEqual(pin.unknown.map((u) => u.id), ['panel-heartbeat-pin', 'servo-5v-pin']);
   assert.deepEqual(used(pin), ['copro-5v']);
 
   assert.ok(!partIds(pin).includes('dcsup') && !partIds(external).includes('dcsup'));
@@ -536,7 +537,7 @@ test('an option keeps its value while it is not visible', () => {
   const setup = resolve(CATALOGUE, select([], [], { ina228Board: 'xt90', escPower: 'pd', connection: 'osoyoo' }));
   assert.deepEqual(setup.options.map((o) => o.value), ['osoyoo', 'xt90', 'pd', 'external', 'outputs']);
   assert.deepEqual(setup.checks.map((c) => c.id), [
-    'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'osoyoo-terminals', 'strip-parts', 'strip-load', 'strip-level',
+    'can-60', 'panel-terminals', 'panel-heartbeat-pin', 'same-release', 'osoyoo-labels', 'osoyoo-terminals', 'strip-parts', 'strip-load', 'strip-level',
   ]);
 });
 
@@ -690,7 +691,7 @@ test('the servo programmer: the 2 boards, the servo on GP13 at pad 17, and the P
   assert.equal(option(own, 'servoPower').visible, true);
   assert.deepEqual(own.functions.filter((f) => f.enabled && f.fn.drives !== undefined).map((f) => f.fn.id), ['servo', 'servoprog']);
   assert.deepEqual(own.checks.filter((c) => c.id.startsWith('prog-')).map((c) => c.id), ['prog-target', 'prog-supply-own', 'prog-level']);
-  assert.deepEqual(own.unknown.map((u) => u.id), ['prog-level']);
+  assert.deepEqual(own.unknown.map((u) => u.id), ['panel-heartbeat-pin', 'prog-level']);
   // No wire of the standard outputs and none of their notes.
   assert.ok(!own.checks.some((c) => c.id === 'servo-pin'));
 
@@ -721,7 +722,7 @@ test('the servo programmer: the 2 boards, the servo on GP13 at pad 17, and the P
 test('the unknown list is the checks of kind unknown, in data order', () => {
   const setup = resolve(CATALOGUE, select(FUNCTIONS, SELECTABLE, { connection: 'osoyoo', ina228Board: 'xt90' }));
   assert.deepEqual(setup.unknown.map((u) => u.id), [
-    'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
+    'panel-heartbeat-pin', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
     'osoyoo-labels', 'prog-level', 'esc-programming-power',
   ]);
   for (const u of setup.unknown) {

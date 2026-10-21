@@ -89,6 +89,13 @@ const XL1509_DATASHEET = doc(
   'page 6, table XL1509-5.0 (4.8 to 5.2 V from 7 to 40 V in, 0.2 to 2 A); page 7, DC parameters (150 kHz, current limit 4 A)',
 );
 
+/** Schematic of the panel board, page 1 (circuit). */
+const P4_SCHEMATIC = doc(
+  'Waveshare schematic ESP32-P4-WIFI6-Touch-LCD-7B, 2 pages, file dated 2025-09-25',
+  'https://files.waveshare.com/wiki/ESP32-P4-WIFI6-Touch-LCD-7B/ESP32-P4-WIFI6-Touch-LCD-7B.pdf',
+  'page 1: headers H11 and P3, jumper H5; page 2: prints',
+);
+
 /** A statement of the project owner, by its date. */
 function owner(date: string): Src {
   return { kind: 'owner', date };
@@ -110,7 +117,6 @@ function pin(id: string, label: Text, src: Src, confirmed = true): Pin {
 
 const OUT_BIND = 'shared/outputs/out_bind.c';
 const SETTINGS = 'shared/settings/settings.c';
-const BOARD_PINS = 'firmware/panel/components/board/include/board_pins.h';
 const IOMCU_PINS = 'firmware/iomcu/include/iomcu_pins.h';
 const PROG_PORT = 'shared/outputs/include/prog_port.h';
 const PROGRAMMER = 'docs/ServoProgrammer.md';
@@ -126,37 +132,32 @@ const PROGRAMMER = 'docs/ServoProgrammer.md';
 const parts: Part[] = [
   {
     id: 'panel',
-    name: t('Waveshare ESP32-S3-Touch-LCD-7 panel', 'Waveshare-ESP32-S3-Touch-LCD-7-Panel'),
+    name: t('7-inch ESP32-P4 display board from Waveshare', '7-Zoll-ESP32-P4-Displayplatine von Waveshare'),
     short: same('Panel'),
     role: t('Touch screen, STOP button, heartbeat source.', 'Touchscreen, STOP-Taste, Quelle des Heartbeat.'),
     locked: true,
     selectable: false,
     release: 'released',
-    slot: { column: 'L', order: 1, sub: same('ESP32-S3-Touch-LCD-7') },
+    slot: { column: 'L', order: 1, sub: t('ESP32-P4, 7 inch', 'ESP32-P4, 7 Zoll') },
     pins: [
-      // Prints as photo 01 of the owner shows them: the CAN socket reads H and
-      // L, the 3-pin socket J8 reads "Sensor AD" with the pins AD, GND, 3V3.
-      pin('CANH', same('CAN H'), OWNER),
-      pin('CANL', same('CAN L'), OWNER),
-      pin('J8G', same('J8 GND'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
-      pin('J8S', t('J8 GPIO6 (print AD)', 'J8 GPIO6 (Aufdruck AD)'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
-    ],
-    pictures: [
-      {
-        kind: 'photo', file: '01-panel-back', width: 480, height: 297,
-        alt: t(
-          'Back of the panel on its metal plate: the board with the print ESP32-S3-Touch-LCD-7, 2 USB-C sockets, the ESP32-S3 module and the white sockets for I2C, CAN and RS-485.',
-          'Rückseite des Panels auf seiner Metallplatte: die Platine mit dem Aufdruck ESP32-S3-Touch-LCD-7, 2 USB-C-Buchsen, das ESP32-S3-Modul und die weißen Buchsen für I2C, CAN und RS-485.',
-        ),
-      },
+      // The 4-pin CAN header H11 prints CAN with L, H, GND, 5V: pins 4 to 1.
+      // Pin 1 (5V, the board's rail Core_5V) takes no wire: the panel runs
+      // from its USB-C charger.
+      pin('CANH', same('CAN H'), P4_SCHEMATIC),
+      pin('CANL', same('CAN L'), P4_SCHEMATIC),
+      pin('CANG', same('CAN GND'), P4_SCHEMATIC),
+      // The heartbeat: PANEL_HEARTBEAT_PIN in board_pins.h, a placeholder
+      // until the owner picks the pin. Not confirmed; the check entry
+      // `panel-heartbeat-pin` says so.
+      pin('HB', same('IO28'), P4_SCHEMATIC, false),
     ],
     buy: [
-      buy('Waveshare', same('ESP32-S3-Touch-LCD-7'), t(
-        'The touch version with 800 × 480 pixels. Not the ESP32-S3-LCD-7 without touch, not the ESP32-S3-Touch-LCD-7B with 1024 × 600.',
-        'Die Touch-Version mit 800 × 480 Pixeln. Nicht das ESP32-S3-LCD-7 ohne Touch, nicht das ESP32-S3-Touch-LCD-7B mit 1024 × 600.',
-      ), { page: 'https://www.waveshare.com/esp32-s3-touch-lcd-7.htm' }),
+      buy('Waveshare', same('ESP32-P4-WIFI6-Touch-LCD-7B'), t(
+        'The 7-inch touch board with 1024 × 600 pixels and the ESP32-P4. Ask for chip revision 3.2 in the order note: older stock may ship otherwise.',
+        'Die 7-Zoll-Touch-Platine mit 1024 × 600 Pixeln und dem ESP32-P4. In der Bestellnotiz Chip-Revision 3.2 verlangen: Sonst kann ältere Ware kommen.',
+      ), { id: 'p47b', page: 'https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-7b.htm' }),
     ],
-    src: guide('parts'),
+    src: owner('2026-10-21'),
   },
   {
     id: 'copro',
@@ -209,8 +210,8 @@ const parts: Part[] = [
   {
     id: 'usb',
     name: t(
-      '2 USB-C cables with data lines, USB-C charger of at least 2 A',
-      '2 USB-C-Kabel mit Datenleitungen, USB-C-Ladegerät mit mindestens 2 A',
+      '2 USB-C cables with data lines, USB-C charger of at least 3 A',
+      '2 USB-C-Kabel mit Datenleitungen, USB-C-Ladegerät mit mindestens 3 A',
     ),
     short: t('USB-C cables', 'USB-C-Kabel'),
     role: t(
@@ -227,10 +228,10 @@ const parts: Part[] = [
         'Not a charge-only cable: the firmware of each board is flashed over USB.',
         'Kein reines Ladekabel: Die Firmware jeder Platine wird über USB geflasht.',
       ), { id: 'cable', qty: 2 }),
-      buy(null, t('USB-C charger, 5 V, 2 A', 'USB-C-Ladegerät, 5 V, 2 A'), t(
-        'At least 2 A at 5 V. It feeds the panel through a short cable.',
-        'Mindestens 2 A bei 5 V. Es speist das Panel über ein kurzes Kabel.',
-      ), { id: 'charger' }),
+      buy(null, t('USB-C charger, 5 V, 3 A', 'USB-C-Ladegerät, 5 V, 3 A'), t(
+        'At least 3 A at 5 V. It feeds the panel through a short cable.',
+        'Mindestens 3 A bei 5 V. Es speist das Panel über ein kurzes Kabel.',
+      ), { id: 'charger3a' }),
     ],
     src: guide('also-needed'),
   },
@@ -963,13 +964,13 @@ const wires: Wire[] = [
     when: null, stage: 1, route: { kind: 'L', lane: 1 }, src: guide('wires'),
   },
   {
-    n: 3, kind: 'wire', a: 'panel.J8G', b: 'pad.3', net: 'gnd', cls: 'gnd',
+    n: 3, kind: 'wire', a: 'panel.CANG', b: 'pad.3', net: 'gnd', cls: 'gnd',
     signal: GND,
     note: t('Common ground.', 'Gemeinsame Masse.'),
     when: null, stage: 1, route: { kind: 'L', lane: 2 }, src: guide('wires'),
   },
   {
-    n: 4, kind: 'wire', a: 'panel.J8S', b: 'pad.5', net: 'hb', cls: 'hb',
+    n: 4, kind: 'wire', a: 'panel.HB', b: 'pad.5', net: 'hb', cls: 'hb',
     signal: HB,
     note: t(
       'The interlock. The IOmcu refuses to arm without it.',
@@ -979,7 +980,7 @@ const wires: Wire[] = [
     src: guide('wires'),
   },
   {
-    n: 5, kind: 'wire', a: 'panel.J8S', b: 'estop.NC1', net: 'hb', cls: 'hb',
+    n: 5, kind: 'wire', a: 'panel.HB', b: 'estop.NC1', net: 'hb', cls: 'hb',
     signal: HB,
     note: t(
       'In place of wire 4. Use the 2 outer tabs C and NC. The middle tab NO stays unconnected.',
@@ -1701,10 +1702,18 @@ const checks: Check[] = [
   {
     id: 'panel-terminals', kind: 'note',
     text: t(
-      'Panel: the CAN socket has the print H and L. The 3-pin socket J8 has the print Sensor AD with the pins AD, GND and 3V3. The heartbeat (GPIO6) is the pin AD. The pin 3V3 takes no wire.',
-      'Panel: Die CAN-Buchse trägt den Aufdruck H und L. Die 3-polige Buchse J8 trägt den Aufdruck Sensor AD mit den Pins AD, GND und 3V3. Der Heartbeat (GPIO6) ist der Pin AD. Der Pin 3V3 bekommt keinen Draht.',
+      'Panel: the 4-pin CAN header H11 has the print CAN with L, H, GND and 5V. CAN H, CAN L and GND take wires 1 to 3. The pin 5V is the 5 V rail of the board and takes no wire: the panel runs from its USB-C charger. The heartbeat is the pin IO28 of the 12-pin header P3. The jumper H5 beside the print CAN sits on 120R: the 120 Ω termination. The slide switch at the print ON OFF sits on ON.',
+      'Panel: Die 4-polige CAN-Buchse H11 trägt den Aufdruck CAN mit L, H, GND und 5V. CAN H, CAN L und GND bekommen die Drähte 1 bis 3. Der Pin 5V ist die 5-V-Schiene der Platine und bekommt keinen Draht: Das Panel läuft an seinem USB-C-Ladegerät. Der Heartbeat ist der Pin IO28 der 12-poligen Buchse P3. Der Jumper H5 neben dem Aufdruck CAN steckt auf 120R: der 120-Ω-Abschluss. Der Schiebeschalter am Aufdruck ON OFF steht auf ON.',
     ),
-    when: null, src: OWNER,
+    when: null, src: P4_SCHEMATIC,
+  },
+  {
+    id: 'panel-heartbeat-pin', kind: 'unknown',
+    text: t(
+      'Heartbeat pin of the panel: not decided. IO28 is a placeholder of the firmware until the pin is chosen on a board. Check this page again before wiring the heartbeat.',
+      'Heartbeat-Pin des Panels: nicht entschieden. IO28 ist ein Platzhalter der Firmware, bis der Pin an einer Platine gewählt ist. Vor dem Verdrahten des Heartbeat diese Seite erneut prüfen.',
+    ),
+    when: null, src: owner('2026-10-21'),
   },
   {
     id: 'same-release', kind: 'note',
@@ -2134,11 +2143,11 @@ const notInRelease: Catalogue['notInRelease'] = [
   {
     id: 'knob',
     text: t(
-      'Rotary knob: the docs disagree. The page follows the build guide: no knob is read on this panel.',
-      'Drehknopf: Die Dokumente widersprechen sich. Die Seite folgt der Bauanleitung: An diesem Panel wird kein Knopf gelesen.',
+      'Rotary knob on the panel: not in this data. Its pins on the 12-pin header P3 are not decided: IO30 (SDA) and IO31 (SCL) are placeholders of the firmware.',
+      'Drehknopf am Panel: nicht in diesen Daten. Seine Pins an der 12-poligen Buchse P3 sind nicht entschieden: IO30 (SDA) und IO31 (SCL) sind Platzhalter der Firmware.',
     ),
     release: 'planned',
-    src: guide('stage-5'),
+    src: owner('2026-10-21'),
   },
   {
     id: 'mt6701',
@@ -2231,8 +2240,8 @@ const powerSources: PowerSource[] = [
     id: 'usb', feeds: 'logic',
     label: t('USB, 5 V, one supply per board', 'USB, 5 V, je Platine eine Versorgung'),
     text: t(
-      'The panel and the IOmcu each run from their own USB-C cable. The panel is on a charger of at least 2 A with a short cable.',
-      'Panel und IOmcu laufen je an einem eigenen USB-C-Kabel. Das Panel hängt mit kurzem Kabel an einem Ladegerät mit mindestens 2 A.',
+      'The panel and the IOmcu each run from their own USB-C cable. The panel is on a charger of at least 3 A with a short cable.',
+      'Panel und IOmcu laufen je an einem eigenen USB-C-Kabel. Das Panel hängt mit kurzem Kabel an einem Ladegerät mit mindestens 3 A.',
     ),
     volts: { min: 5, max: 5 }, amps: null, basis: null,
     pros: [t('Each board has its own supply.', 'Jede Platine hat ihre eigene Versorgung.')],
@@ -2240,7 +2249,10 @@ const powerSources: PowerSource[] = [
       'A servo on the 5 V pin, or on a V pin of the Osoyoo breakout board with the jumper on 3V3, draws from it.',
       'Ein Servo am 5-V-Pin, oder an einem V-Pin der Osoyoo-Breakout-Platine mit dem Jumper auf 3V3, zieht daraus.',
     )],
-    unknowns: [t('Current the IOmcu board draws: not stated.', 'Strom, den die IOmcu-Platine zieht: nicht angegeben.')],
+    unknowns: [
+      t('Current the IOmcu board draws: not stated.', 'Strom, den die IOmcu-Platine zieht: nicht angegeben.'),
+      t('Current the panel draws: not measured. Waveshare states 3 A as the maximum.', 'Strom, den das Panel zieht: nicht gemessen. Waveshare nennt 3 A als Maximum.'),
+    ],
     when: null, used: { has: 'usb' }, src: guide('also-needed'),
   },
   {

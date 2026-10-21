@@ -1737,29 +1737,19 @@
    ],
    "names": "catalogue",
    "pins": {
-    "J8G": {
-     "x": 294,
-     "y": 114,
+    "CANG": {
+     "x": 358,
+     "y": 128,
      "side": "E",
-     "labelId": "pnl-lbl-J8G",
+     "labelId": "pnl-lbl-CANG",
      "label": {
-      "en": "J8 GND",
-      "de": "J8 GND"
-     }
-    },
-    "J8S": {
-     "x": 294,
-     "y": 96,
-     "side": "E",
-     "labelId": "pnl-lbl-J8S",
-     "label": {
-      "en": "J8 GPIO6 (print AD)",
-      "de": "J8 GPIO6 (Aufdruck AD)"
+      "en": "CAN GND",
+      "de": "CAN GND"
      }
     },
     "CANH": {
-     "x": 294,
-     "y": 163,
+     "x": 358,
+     "y": 146,
      "side": "E",
      "labelId": "pnl-lbl-CANH",
      "label": {
@@ -1768,13 +1758,23 @@
      }
     },
     "CANL": {
-     "x": 294,
-     "y": 181,
+     "x": 358,
+     "y": 164,
      "side": "E",
      "labelId": "pnl-lbl-CANL",
      "label": {
       "en": "CAN L",
       "de": "CAN L"
+     }
+    },
+    "HB": {
+     "x": 244,
+     "y": 30,
+     "side": "N",
+     "labelId": "pnl-lbl-HB",
+     "label": {
+      "en": "IO28",
+      "de": "IO28"
      }
     }
    }

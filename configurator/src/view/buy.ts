@@ -108,7 +108,7 @@ export function partsList(view: View): PartsList {
   return out;
 }
 
-/** "Waveshare ESP32-S3-Touch-LCD-7", or the spec alone. */
+/** "Waveshare ESP32-P4-WIFI6-Touch-LCD-7B", or the spec alone. */
 export function lineName(l: BuyLine): string {
   return l.maker === null ? l.order : `${l.maker} ${l.order}`;
 }
