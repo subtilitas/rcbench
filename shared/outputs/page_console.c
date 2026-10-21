@@ -238,6 +238,14 @@ static bool read_regs(page_console_t *c, uint8_t page, uint8_t off,
 
 /**
  * @brief A write; false, with the refusal said, when it is not acknowledged.
+ *
+ * @param c    The console.
+ * @param page The page number.
+ * @param off  First register of the window.
+ * @param n    Number of registers to write.
+ * @param in   The n register values.
+ * @return true when the device acknowledges the write; false otherwise, with
+ *         the refusal said.
  */
 static bool write_regs(page_console_t *c, uint8_t page, uint8_t off,
                        uint8_t n, const uint16_t *in)
@@ -352,7 +360,15 @@ static unsigned split(char *line, char **tok)
 /* --- raw pages ------------------------------------------------------------- */
 
 /** @brief The reply's registers: up to 32 of 7 characters each, so the line is
- * made in two halves of 16 when it is long. */
+ * made in two halves of 16 when it is long.
+ *
+ * @param c    The console.
+ * @param what The word that opens the line, such as data or ack.
+ * @param page The page number.
+ * @param off  First register of the window.
+ * @param n    Number of registers.
+ * @param regs The register values.
+ */
 static void say_regs(page_console_t *c, const char *what, uint8_t page,
                      uint8_t off, uint8_t n, const uint16_t *regs)
 {
