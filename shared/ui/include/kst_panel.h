@@ -124,8 +124,8 @@ void kst_panel_set_hv(bool on);
  *  screens takes no press, and the ESC stick programmer starts no run. */
 void kst_panel_bench_armed(bool armed);
 /** True once after the overlay was opened or one of its actions tapped
- *  while the feed reports no card: the caller, which has the card, tries to
- *  mount one. */
+ *  with a feed: the caller, which has the card, looks at the slot, mounts
+ *  a card put in or swapped and lets one taken out go. */
 bool kst_panel_card_look(void);
 bool kst_panel_take(kst_prog_cmd_t *out);
 /** The gate the task that owns the link module claims each START at

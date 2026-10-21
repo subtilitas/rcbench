@@ -348,7 +348,7 @@ static struct {
     ui_tabs_t  tabs;
     bool       hv;             /* HV SERVO: above KST_PANEL_STD_MV may be set */
     bool       loaded;         /* the options were read from the settings   */
-    bool       card_look;      /* a card is asked for and none is mounted   */
+    bool       card_look;      /* the card in the slot is asked for         */
 
     ui_keypad_t kp;
     int        kp_row;
@@ -1832,8 +1832,9 @@ static void act(const row_t *r)
     kst_prog_t *p = &k.prog;
     const kst_prog_state_t st = kst_prog_state(p);
 
-    /* A card put in since the last look is found before the next tap. */
-    k.card_look = k.card_look || (p->fed && !p->f.card);
+    /* A card put in, taken out or swapped since the last look is found
+     * before the next tap. */
+    k.card_look = k.card_look || p->fed;
     switch (r->what) {
     case A_PORT:
         if (st == KST_PROG_PWM) {
@@ -2428,7 +2429,7 @@ void kst_panel_open(void)
         k.note_page = 0;
         /* The settings may have gone back to their defaults. */
         options_fresh();
-        k.card_look = k.card_look || (k.prog.fed && !k.prog.f.card);
+        k.card_look = k.card_look || k.prog.fed;
         ++k.rev;
     }
 }

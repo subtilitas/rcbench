@@ -51,7 +51,7 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 - Opening LOGS reads the card: the first page, its newest run selected. A run recorded while LOGS was closed is listed without RESCAN.
 - On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.
-- A card put in while none is mounted is mounted by RESCAN and opens on its first page. A card swapped for another while one is mounted is not mounted again until the panel restarts; what the list shows in that state is not measured.
+- A card put in, taken out or swapped while the panel runs is found by the next RESCAN, the next opening of LOGS, the next page or OPEN, and the next run's start, with no restart. A new card opens on its first page; an empty slot says `No card. Insert one and tap RESCAN.`.
 - Newest means the highest number in the name. The panel has no clock that survives a power cycle, so every file is dated 1980-01-01.
 - A run being written is not listed. Its number in another folder is.
 - A row takes a tap. A drag of more than 8 px on the rows scrolls the list and selects nothing.
