@@ -262,6 +262,8 @@ SP_SHARED int sp_wrap(gfx_canvas_t *c, int x, int y, int pitch,
             memcpy(buf, at, n);
             buf[n] = '\0';
             at += len;
+            /* len is at most strlen(at): at stops on the terminator. */
+            /* NOLINTNEXTLINE(clang-analyzer-security.ArrayBound) */
             while (*at == ' ') {
                 ++at;
             }

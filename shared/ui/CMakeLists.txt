@@ -29,16 +29,30 @@ set(SRCS
     motor_program_page.c
     supply_screen.c
     servo_screen.c
+    servo_screen_sweep.c
+    servo_screen_link.c
+    servo_screen_touch.c
+    servo_screen_draw.c
     servo_settings_panel.c
     servo_test_panel.c
     servo_limit_panel.c
     servo_workbench.c
     kst_panel.c
+    kst_panel_text.c
+    kst_panel_warn.c
+    kst_panel_edit.c
+    kst_panel_touch.c
+    kst_panel_run.c
+    kst_panel_draw.c
     analyser_screen.c
     balance_screen.c
     battery_screen.c
     esc_stick_pages.c
     esc_stick_panel.c
+    esc_stick_list.c
+    esc_stick_touch.c
+    esc_stick_draw.c
+    esc_stick_draw_run.c
     prog_models.c
     log_viewer_screen.c
     log_select.c

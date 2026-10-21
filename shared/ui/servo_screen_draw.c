@@ -1,0 +1,826 @@
+/**
+ * @file servo_screen_draw.c
+ * @brief The SERVO screen's drawing.
+ *
+ * The SERVO screen's drawing: the servo on the dial, the left card, the
+ * right card with its readings, plot, set points and controls, and the
+ * frame, which repaints what changed.  The state and the seam are
+ * servo_screen_int.h and servo_screen_core_int.h.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#include "servo_screen.h"
+
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "sensors_rows.h"
+#include "settings.h"
+#include "supply_screen.h"
+#include "ui_plot.h"
+#include "ui_slider.h"
+#include "ui_text.h"
+#include "ui_theme.h"
+#include "ui_widgets.h"
+
+/* Last: the layout macros of the headers it includes have short names
+ * (W, H, PAD), which no header included after it may meet. */
+#include "servo_screen_core_int.h"
+
+/*
+ * The widths of the three readings on the line over the plot, in px of 8 px
+ * cells.  Beside PD MINI 68 each.  Beside an INA3221 channel's 12-cell
+ * name, "INA 0x41 CH2", 52, 64 and 56, which hold the widest reading of the
+ * part's registers: a voltage of 6 cells, `9.99 V` or `65.5 V`, `-32.77 A`,
+ * and a power of 7 cells, `-99.9 W` or `-2147 W`.
+ */
+static const uint8_t k_line_w[2][PS_COUNT] = {
+    { 68, 68, 68 },
+    { 52, 64, 56 },
+};
+
+static gfx_rect_t sup_row_rect(void)
+{
+    return (gfx_rect_t){ RC_X, SUP_Y, RC_W, SUP_H };
+}
+
+/* ----------------------------------------------------------------- drawing */
+
+static void at(float deg, int r, int *x, int *y)
+{
+    const float k = 3.14159265358979f / 180.0f;
+    const float phi = PHI(deg) * k;
+    *x = SHAFT_X + (int)((float)r * cosf(phi) + 0.5f);
+    *y = SHAFT_Y - (int)((float)r * sinf(phi) + 0.5f);
+}
+
+/* The case, its tabs and its boss.  Drawn per framebuffer, not per frame:
+ * thing on this card that moves is the horn. */
+static void draw_body(gfx_canvas_t *c)
+{
+    const gfx_color_t shell = ui_theme_color(UI_C_PANEL_HI);
+    const gfx_color_t edge  = ui_theme_color(UI_C_EDGE);
+    const int bx = SHAFT_X - BODY_W + 24;
+    const int by = SHAFT_Y - BODY_H / 2;
+
+    /* Mounting tabs first, so the case overlaps them. */
+    for (int i = 0; i < 2; ++i) {
+        /* Two holes, and the flange centred on the case: a servo's mounting
+         * lugs are symmetric about its centreline. */
+        const int tx = (i == 0) ? bx - TAB_W + TAB_OVER
+                                : bx + BODY_W - TAB_OVER;
+        const int ty = by;
+        gfx_fill_round_rect(c, tx, ty, TAB_W, TAB_H, 5, shell);
+        gfx_draw_round_rect(c, tx, ty, TAB_W, TAB_H, 5, edge);
+        /*
+         * Open slots, not drilled holes: a servo's lugs are cut through to
+         * the outer edge so it drops into a mount whose screws are already
+         * in.
+         */
+        /* Set in from the flange's own outer edge, so the bore keeps its
+         * distance from the case whichever end it is on. */
+        const int cxh   = (i == 0) ? tx + TAB_MARGIN + TAB_HOLE_R
+                                   : tx + TAB_W - TAB_MARGIN - TAB_HOLE_R;
+        const int mouth = (i == 0) ? tx : tx + TAB_W;   /* the open edge */
+        /*
+         * The bore is darker than both the lug and the card behind it: at
+         * these two greys a hole showing the card reads as a smudge, and a
+         * recess reads as a hole.
+         */
+        const gfx_color_t bore = ui_theme_color(UI_C_PANEL_SUNK);
+        for (int h = 0; h < 2; ++h) {
+            const int hy = by + BODY_H / 2
+                           + ((h == 0) ? -TAB_HOLE_DY : TAB_HOLE_DY);
+            for (int pass = 0; pass < 2; ++pass) {
+                const gfx_color_t ink = (pass == 0) ? edge : bore;
+                const int r  = TAB_HOLE_R - pass;
+                /* The throat is a fraction of the bore, not a fixed
+                 * inset off it: subtracting a couple of pixels from a large
+                 * hole leaves a slot with no waist at all. */
+                const int nk = TAB_HOLE_R * 3 / 5 - pass;
+                gfx_fill_circle_aa(c, cxh, hy, r, ink);
+                /* Both passes run flush to the lug's edge, so the mouth is
+                 * open rather than capped by its own outline. */
+                const int x0 = (mouth < cxh) ? mouth : cxh;
+                const int x1 = (mouth < cxh) ? cxh : mouth;
+                gfx_fill_rect(c, x0, hy - nk, x1 - x0, 2 * nk, ink);
+            }
+        }
+    }
+
+    gfx_fill_round_rect(c, bx, by, BODY_W, BODY_H, 8, shell);
+    gfx_draw_round_rect(c, bx, by, BODY_W, BODY_H, 8, edge);
+    gfx_hline(c, bx + 8, by + 1, BODY_W - 16, gfx_lerp(shell, GFX_WHITE, 34));
+    /* The band across the case, which is the one place a servo has colour. */
+    gfx_fill_rect(c, bx + 26, by + 1, 24, BODY_H - 2,
+                  ui_theme_color(UI_C_ACCENT));
+    /* The label. */
+    gfx_fill_round_rect(c, bx + 74, by + 20, 92, 46, 4,
+                        ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_draw_round_rect(c, bx + 74, by + 20, 92, 46, 4, edge);
+    /* The lead, leaving the case at the end away from the output. */
+    for (int i = 0; i < 3; ++i) {
+        gfx_hline(c, bx - 62, by + 32 + i * 8, 34,
+                  ui_theme_color(UI_C_TEXT_FAINT));
+    }
+}
+
+/*
+ * Where a ring of radius @p r has to stop so that a constant band of dark
+ * card shows between its end and the arm.
+ *
+ * A fixed angle does not do it: the arm is the same width at every radius,
+ * so it subtends less angle further out, and two rings sharing one angular
+ * gap leave the outer one further clear of the arm than the inner.  The
+ * outer ring is therefore the longer of the two.
+ */
+static float ring_gap_deg(float r, float half_w, float dark_px)
+{
+    const float k = 180.0f / 3.14159265358979f;
+    float sine = half_w / r;
+    if (sine > 0.99f) {
+        sine = 0.99f;
+    }
+    return (asinf(sine) + dark_px / r) * k;
+}
+
+static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
+{
+    int tx, ty;
+    at(deg, HORN_L, &tx, &ty);
+
+    /*
+     * The unlit rings are drawn first and whole, so the arm is drawn over
+     * them and they pass behind it.
+     */
+    const gfx_color_t ghost =
+        gfx_lerp(ui_theme_color(UI_C_PANEL), col, 46);
+    gfx_arc(c, tx, ty, 25, 3, 0.0f, 360.0f, ghost);
+    gfx_arc(c, tx, ty, 33, 2, 0.0f, 360.0f, ghost);
+
+    gfx_capsule_aa(c, SHAFT_X, SHAFT_Y, tx, ty, 26, col);
+    gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 25, col);
+
+    /* Holes along the arm, spaced from the tip inwards so the outermost stays
+     * on the arm whatever HORN_L is; a hole drawn past the tip reads as a
+     * bite out of the card. */
+    for (int i = 1; i <= 3; ++i) {
+        int hx, hy;
+        at(deg, HORN_L - 12 - (3 - i) * 14, &hx, &hy);
+        gfx_fill_circle_aa(c, hx, hy, 5, ui_theme_color(UI_C_PANEL));
+    }
+    /* And the outermost one, which is the hole the ring is pointing at. */
+    gfx_fill_circle_aa(c, tx, ty, 5, ui_theme_color(UI_C_PANEL));
+
+    /*
+     * The lit part of each ring, over the top.  It is split on the side the
+     * arm comes in from, with a constant 9 px band of card either side of
+     * the metal (ring_gap_deg), and each end fades into the unlit ring
+     * beneath.
+     *
+     * The rings breathe while the output is being held: the on-picture sign
+     * that the servo is under command.
+     */
+    const float breath = s.driving
+                             ? 0.42f + 0.58f * (0.5f + 0.5f * sinf(s.pulse))
+                             : 0.62f;
+    const gfx_color_t grip =
+        gfx_lerp(col, GFX_WHITE, (uint8_t)(150.0f + 100.0f * breath));
+    const gfx_color_t faint =
+        gfx_lerp(col, GFX_WHITE, (uint8_t)(90.0f + 90.0f * breath));
+
+    const float half_w = 13.0f;   /* the arm's half width, as drawn */
+    const float dark   = 9.0f;    /* the band of card between ring and arm */
+    const float g_in   = ring_gap_deg(25.0f, half_w, dark);
+    const float g_out  = ring_gap_deg(33.0f, half_w, dark);
+    gfx_arc_fade(c, tx, ty, 25, 3, deg + 180.0f + g_in,
+                 deg + 540.0f - g_in, grip, ghost, 78.0f);
+    gfx_arc_fade(c, tx, ty, 33, 2, deg + 180.0f + g_out,
+                 deg + 540.0f - g_out, faint, ghost, 78.0f);
+
+    /* The boss and its splines. */
+    /* An outline is two discs, not a circle walked round: an arc closed on
+     * itself lays some pixels twice and misses others, and at two pixels wide
+     * that stipples. */
+    gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 17, gfx_lerp(col, GFX_BLACK, 60));
+    gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 15,
+                       ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 6, col);
+}
+
+static void draw_dial(gfx_canvas_t *c)
+{
+    const gfx_color_t dim = ui_theme_color(UI_C_TEXT_FAINT);
+
+    /* The travel the settings allow, over the travel the servo has. */
+    gfx_arc(c, SHAFT_X, SHAFT_Y, ARC_R, 2, PHI(90.0f), PHI(-90.0f),
+            ui_theme_color(UI_C_GRID));
+    gfx_arc(c, SHAFT_X, SHAFT_Y, ARC_R, 4, PHI(s.travel_deg),
+            PHI(-s.travel_deg), ui_theme_color(UI_C_EDGE_HI));
+
+    for (int i = -2; i <= 2; ++i) {
+        const float a = (float)i * 45.0f;
+        int x0, y0, x1, y1;
+        at(a, ARC_R - 10, &x0, &y0);
+        at(a, ARC_R + 8, &x1, &y1);
+        gfx_thick_line(c, x0, y0, x1, y1, (i == 0) ? 3 : 2,
+                       (i == 0) ? ui_theme_color(UI_C_TEXT_DIM) : dim);
+
+        char lbl[8];
+        snprintf(lbl, sizeof(lbl), "%+d", (int)a);
+        int lx, ly;
+        at(a, ARC_R + 26, &lx, &ly);
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(lx - 24), (int16_t)(ly - 8),
+                                     48, 16 },
+                    lbl, UI_FONT_LABEL, dim, 1, GFX_ALIGN_CENTER);
+    }
+}
+
+/*
+ * @p text in the 8x16 face from (x, y) down, @p pitch px a line, in lines
+ * of at most @p cells cells: each broken at the last double space that
+ * keeps the line within them, the gap between two fields, or else at the
+ * last single space.  A word longer than a line stays whole.  With @p c
+ * NULL nothing is drawn.  Returns the lines it takes.
+ */
+int wrap_text(gfx_canvas_t *c, int x, int y, int pitch,
+                     const char *text, int cells, gfx_color_t ink)
+{
+    int lines = 0;
+    const char *rest = text;
+    while (*rest != '\0') {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "%s", rest);
+        size_t len = strlen(buf);
+        if (gfx_text_cells(buf) > cells) {
+            size_t brk = 0u, dbl = 0u;
+            for (size_t i = 1u; i < len; ++i) {
+                if (buf[i] != ' ' || buf[i - 1u] == ' ') {
+                    continue;
+                }
+                buf[i] = '\0';
+                const bool fits = gfx_text_cells(buf) <= cells;
+                buf[i] = ' ';
+                if (!fits) {
+                    break;
+                }
+                brk = i;
+                if (buf[i + 1u] == ' ') {
+                    dbl = i;
+                }
+            }
+            if (dbl > 0u) {
+                brk = dbl;
+            }
+            if (brk == 0u) {
+                const char *sp = strchr(buf, ' ');
+                brk = (sp != NULL) ? (size_t)(sp - buf) : len;
+            }
+            buf[brk] = '\0';
+            len = brk;
+        }
+        if (c != NULL) {
+            gfx_text(c, x, y + lines * pitch, buf, &gfx_font_8x16, ink, 1);
+        }
+        ++lines;
+        rest += len;
+        while (*rest == ' ') {
+            ++rest;
+        }
+    }
+    return lines;
+}
+
+static void draw_left(gfx_canvas_t *c)
+{
+    /* Everything that moves lives in this rectangle, so this is what gets
+     * cleared -- the case and the dial below it are chrome. */
+    gfx_fill_rect(c, PAD + 1, CARD_Y + 1, LCARD_W - 2, CARD_H - 2,
+                  ui_theme_color(UI_C_PANEL));
+    draw_dial(c);
+    /* The case first: the horn bolts to the top of it and must be drawn over
+     * it, not under. */
+    draw_body(c);
+
+    /* The commanded position behind the measured one, so a lag is visible as
+     * two arms rather than as a number that disagrees with a picture. */
+    if (fabsf(s.shown_deg - s.commanded_deg) > 1.0f) {
+        draw_horn(c, s.commanded_deg,
+                  gfx_lerp(ui_theme_color(UI_C_PANEL),
+                           ui_theme_color(UI_C_ACCENT), 70));
+    }
+    /* Dimmed while the bench is disarmed, as a button that takes no press
+     * is: the dial takes none either. */
+    draw_horn(c, s.shown_deg,
+              value_live() ? ui_theme_color(UI_C_ACCENT)
+                      : gfx_lerp(ui_theme_color(UI_C_PANEL),
+                                 ui_theme_color(UI_C_ACCENT), 120));
+
+    char deg[16];
+    snprintf(deg, sizeof(deg), "%+.1f", (double)s.shown_deg);
+    const gfx_seg_style_t seg = ui_seg_hero();
+    const int dw = gfx_seg_width(deg, &seg);
+    gfx_seg_text(c, PAD + 46, H - 84, deg, &seg,
+                 ui_theme_color(UI_C_ACCENT),
+                 gfx_lerp(ui_theme_color(UI_C_PANEL),
+                          ui_theme_color(UI_C_ACCENT), 30));
+    gfx_text(c, PAD + 52 + dw, H - 70, "DEG",
+             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    /* Why the dial takes no press, in the words START TEST's line uses. */
+    if (!value_live()) {
+        gfx_text(c, PAD + 46, H - 36,
+                 ui_servo_str(SERVO_STR_START_NOT_ARMED), UI_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+    }
+    if (s.test_box) {
+        draw_test_box(c);
+    } else if (s.lim_box) {
+        draw_lim_box(c);
+    }
+}
+
+static inline void row_in(gfx_canvas_t *c, int y, const char *label,
+                   gfx_color_t label_col, const char *value)
+{
+    gfx_text(c, RC_X, y + 5, label, UI_FONT_LABEL, label_col, 1);
+    if (value != NULL) {
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(RC_X + 80), (int16_t)(y + 5),
+                                     (int16_t)(RC_W - 80), 16 },
+                    value, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
+                    GFX_ALIGN_RIGHT);
+    }
+}
+
+static void row(gfx_canvas_t *c, int y, const char *label, const char *value)
+{
+    row_in(c, y, label, ui_theme_color(UI_C_TEXT_DIM), value);
+}
+
+/*
+ * The same fill as MOTOR & ESC's ARM, from the same widget: armed is the
+ * danger red the press fades towards, and the flash is the whole button.
+ */
+static gfx_color_t arm_fill(void)
+{
+    gfx_color_t fill = s.gate.armed ? ui_theme_color(UI_C_DANGER)
+                               : ui_theme_color(UI_C_OK);
+    if (s.arm.flash_left > 0) {
+        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_left);
+    }
+    if (!s.gate.armed && s.arm.held_s > 0.0f) {
+        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm.held_s);
+    }
+    return fill;
+}
+
+static void draw_arm(gfx_canvas_t *c)
+{
+    ui_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
+              s.arm_down, !svs_arm_locked());
+}
+
+static gfx_rect_t power_rect(void)
+{
+    return (gfx_rect_t){ RC_X, (int16_t)(PWR_TXT_Y - 2), RC_W,
+                         (int16_t)(PWR_Y + PWR_H - PWR_TXT_Y + 2) };
+}
+
+/* @p q, a signed count of 10^-@p places of @p unit, as text: the sign kept,
+ * and a reading that rounds to nothing drawn without one. */
+static void fixed_text(char *out, size_t n, int32_t q, int places,
+                       const char *unit)
+{
+    const int32_t  scale = (places == 2) ? 100 : 10;
+    const uint32_t mag   = (q < 0) ? (uint32_t)(-(int64_t)q) : (uint32_t)q;
+    snprintf(out, n, "%s%u.%0*u %s", (q < 0) ? "-" : "",
+             (unsigned)(mag / (uint32_t)scale), places,
+             (unsigned)(mag % (uint32_t)scale), unit);
+}
+
+/* The servo rail's voltage, current and power, read and plotted, under the
+ * name of its meter: the supply, or the INA3221 channel that watches the
+ * tester's target, "INA 0x41 CH2", while that is the meter. */
+static void draw_power(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = power_rect();
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    const bool ina = (s.source == SERVO_SOURCE_INA3221);
+    /* The supply is the PD mini, named so in both languages, also while
+     * the panel's model stands in for it; the model carries the pill
+     * below. */
+    char src[16];
+    (void)sensors_rows_short(src, sizeof(src));
+    gfx_text(c, RC_X, PWR_TXT_Y, ina ? src : "PD MINI",
+             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    const rail_t m = svs_rail_now();
+    char v[20], a[20], w[20];
+    const uint8_t *fw = k_line_w[ina ? 1 : 0];
+    /* Hundredths of a volt, and tenths where those do not fit. */
+    if (m.v_ok) {
+        snprintf(v, sizeof(v), "%.2f V", (double)m.v);
+        if (gfx_text_width(UI_FONT_LABEL, v, 1) > fw[PS_V]) {
+            snprintf(v, sizeof(v), "%.1f V", (double)m.v);
+        }
+    } else {
+        snprintf(v, sizeof(v), "-- V");
+    }
+    if (m.i_ok) { fixed_text(a, sizeof(a), m.q_a, 2, "A"); }
+    else        { snprintf(a, sizeof(a), "-- A"); }
+    if (m.v_ok && m.i_ok) {
+        /* Tenths of a watt, and whole watts where those do not fit. */
+        const float p = isfinite(m.p) ? m.p : 0.0f;
+        fixed_text(w, sizeof(w), svs_fixed_of(p, 10.0f), 1, "W");
+        if (gfx_text_width(UI_FONT_LABEL, w, 1) > fw[PS_W]) {
+            snprintf(w, sizeof(w), "%ld W", (long)svs_fixed_of(p, 1.0f));
+        }
+    } else {
+        snprintf(w, sizeof(w), "-- W");
+    }
+    /* Each in its trace's colour, so the numbers name the lines; a current
+     * from a window with a sample at an end of the range in the warning
+     * colour. */
+    const gfx_color_t col[PS_COUNT] = { ui_theme_color(UI_C_VOLT),
+                                        ui_theme_color(UI_C_CURR),
+                                        ui_theme_color(UI_C_POWER) };
+    const char *txt[PS_COUNT] = { v, a, w };
+    int x = RC_X + (ina ? PWR_LAB_W_INA : PWR_LAB_W);
+    for (int k = 0; k < PS_COUNT; ++k) {
+        s.power.series[k].color = col[k];
+        const gfx_color_t tc = (k == PS_A && m.clipped)
+                                   ? ui_theme_color(UI_C_WARN) : col[k];
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)x, PWR_TXT_Y, fw[k], 16 },
+                    txt[k], UI_FONT_LABEL, tc, 1, GFX_ALIGN_RIGHT);
+        x += fw[k];
+    }
+    ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
+    /*
+     * The readings of the panel's model are no measurement: the overview's
+     * pill, 88 px or as wide as a longer word and 20 px high, on the plot's
+     * top-left corner under the name, as the line beside the name is full.
+     */
+    if (!ina && supply_screen_model()) {
+        int mw = 24 + gfx_text_width(UI_FONT_LABEL, TR(SV_MODELLED), 1);
+        mw = (mw < 88) ? 88 : mw;
+        ui_pill(c, (gfx_rect_t){ RC_X + 2, PWR_Y + 2, (int16_t)mw, 20 },
+                TR(SV_MODELLED), ui_theme_color(UI_C_WARN),
+                ui_theme_color(UI_C_PANEL_SUNK));
+    }
+}
+
+/* The value of the CURRENT row, where row() draws a row's value. */
+static gfx_rect_t cur_val_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(RC_X + 80), (int16_t)(CUR_Y + 5),
+                         (int16_t)(RC_W - 80), 16 };
+}
+
+/* The rail's current as its meter reads it, signed, in hundredths of an
+ * amp; in the warning colour from a clipped window. */
+static void cur_value(gfx_canvas_t *c)
+{
+    const rail_t m = svs_rail_now();
+    char buf[20];
+    if (m.i_ok) { fixed_text(buf, sizeof(buf), m.q_a, 2, "A"); }
+    else        { snprintf(buf, sizeof(buf), "---"); }
+    gfx_text_in(c, cur_val_rect(), buf, UI_FONT_LABEL,
+                m.clipped ? ui_theme_color(UI_C_WARN)
+                          : ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_RIGHT);
+}
+
+/* The same over its own background: the row's repaint between two repaints
+ * of the card. */
+static void draw_cur_value(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = cur_val_rect();
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    cur_value(c);
+}
+
+/* OUTPUT ON and OFF in SUPPLY's colours: off is the green the hold fades
+ * from, on the danger red it fades to. */
+static gfx_color_t out_fill(void)
+{
+    if (s.out_hold.flash_left > 0) {
+        return ui_hold_flash(ui_theme_color(UI_C_DANGER),
+                             s.out_hold.flash_left);
+    }
+    gfx_color_t fill = s.out_on ? ui_theme_color(UI_C_DANGER)
+                                : ui_theme_color(UI_C_OK);
+    if (!s.out_on && s.out_hold.held_s > 0.0f) {
+        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
+                            s.out_hold.held_s);
+    }
+    return fill;
+}
+
+/* SET, the two set points, and the output switch. */
+static void draw_sup_row(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = sup_row_rect();
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    gfx_text(c, RC_X, SUP_Y + 5, TR(SV_SET), UI_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+    char v[12], a[12];
+    snprintf(v, sizeof(v), "%.2f V", (double)supply_screen_set_v());
+    snprintf(a, sizeof(a), "%.2f A", (double)supply_screen_set_i());
+    /* Held by a programming port they take no press, and say so. */
+    const bool held = supply_screen_port_held();
+    const struct { const char *txt; gfx_color_t col; int op; } k[2] = {
+        { v, held ? ui_theme_color(UI_C_TEXT_FAINT)
+                  : ui_theme_color(UI_C_VOLT), OP_SUP_V },
+        { a, held ? ui_theme_color(UI_C_TEXT_FAINT)
+                  : ui_theme_color(UI_C_CURR), OP_SUP_I },
+    };
+    for (int i = 0; i < 2; ++i) {
+        const gfx_rect_t b = sup_val_rect(i);
+        const bool down = s.ov_have && s.ov_pressed == k[i].op;
+        gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, 4,
+                            down ? ui_theme_color(UI_C_PANEL_HI)
+                                 : ui_theme_color(UI_C_PANEL_SUNK));
+        gfx_text_in(c, b, k[i].txt, UI_FONT_LABEL, k[i].col, 1,
+                    GFX_ALIGN_CENTER);
+    }
+    ui_button(c, s.out_btn, s.out_on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
+              out_fill(),
+              s.out_down, s.out_on || !held);
+    if (s.out_hold.flash_left > 0) {
+        ui_hold_flash_step(&s.out_hold);
+    }
+}
+
+static gfx_rect_t tag_rect(void)
+{
+    return (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H };
+}
+
+/* The profile in force, its frame rate and its pulse range in
+ * microseconds, in the danger colour when it is one that can destroy a
+ * servo not made for it.  The longest, a 13-character type, 560 Hz and two
+ * 4-digit ends, is 32 of the row's 33 cells. */
+static void draw_tag(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = tag_rect();
+    const bool danger = in_force_dangerous();
+    const gfx_color_t fill = danger ? ui_theme_color(UI_C_DANGER)
+                                    : ui_theme_color(UI_C_PANEL_SUNK);
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 4, fill);
+    char line[40];
+    snprintf(line, sizeof(line), "%s  %u Hz  %u-%u", type()->name,
+             (unsigned)s.frame_hz, (unsigned)s.min_us, (unsigned)s.max_us);
+    gfx_text_in(c, r, line, UI_FONT_LABEL,
+                danger ? GFX_WHITE : ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_CENTER);
+}
+
+/*
+ * The right card.  The power plot only when @p power: a drag of the horn
+ * repaints this card every frame for the COMMANDED line, and the plot
+ * beside it has not moved -- its own samples repaint it, clipped.
+ */
+static void draw_right(gfx_canvas_t *c, bool power)
+{
+    const gfx_rect_t pr = power_rect();
+    if (power) {
+        gfx_fill_rect(c, RCARD_X + 1, CARD_Y + 1, RCARD_W - 2, CARD_H - 2,
+                      ui_theme_color(UI_C_PANEL));
+    } else {
+        /* Around the plot, which keeps what it shows. */
+        gfx_fill_rect(c, RCARD_X + 1, CARD_Y + 1, RCARD_W - 2,
+                      pr.y - CARD_Y - 1, ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, RCARD_X + 1, pr.y + pr.h, RCARD_W - 2,
+                      H - PAD - 1 - (pr.y + pr.h), ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, RCARD_X + 1, pr.y, pr.x - RCARD_X - 1, pr.h,
+                      ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, pr.x + pr.w, pr.y, RCARD_X + RCARD_W - 1 - (pr.x + pr.w),
+                      pr.h, ui_theme_color(UI_C_PANEL));
+    }
+
+    char buf[24];
+    row(c, 44, TR(SV_COMMANDED), servo_screen_commanded_text());
+    /* The horn's angle from the encoder where one reads.  With the encoder
+     * off in SETUP, from the feedback; with it on and not reading, the
+     * dashes: the pulse position is not the horn's angle then. */
+    if (enc_shown()) {
+        snprintf(buf, sizeof(buf), "%+.1f deg", (double)enc_deg_now());
+        row(c, 68, TR(SV_MEASURED), buf);
+    } else if (s.have_feedback && !settings_get_bool(SET_ENC_EN)) {
+        snprintf(buf, sizeof(buf), "%+.1f deg", (double)s.measured_deg);
+        row(c, 68, TR(SV_MEASURED), buf);
+    } else {
+        row(c, 68, TR(SV_MEASURED), "---");
+    }
+    row(c, CUR_Y, TR(SV_CURRENT), NULL);
+    cur_value(c);
+
+    draw_tag(c);
+    if (power) {
+        draw_power(c);
+    }
+    draw_sup_row(c);
+
+    /* SPEED's row says when SPEED, not CURVE, decides how a sweep moves:
+     * the curves then look alike. */
+    snprintf(buf, sizeof(buf), "%d %%", s.speed_pct);
+    if (svs_speed_limits_sweep()) {
+        row_in(c, 264, TR(SV_SPEED_LIMITS), ui_theme_color(UI_C_WARN), buf);
+    } else {
+        row(c, 264, TR(SV_SPEED), buf);
+    }
+    s.speed.color = ui_theme_color(UI_C_ACCENT);
+    ui_slider_render(&s.speed, c);
+
+    draw_target(c);
+
+    /* CENTRE sets a position, so it is dimmed with SWEEP while the bench
+     * is disarmed. */
+    ui_button(c, s.centre_btn, TR(SV_CENTRE_BTN), ui_theme_color(UI_C_ACCENT),
+              false, value_live());
+    /* PAUSE while a sweep runs, in the accent; PAUSED (PAUSIERT) while it
+     * is paused, filled in the warning colour, so the two read apart by
+     * fill as well as by the word. */
+    const gfx_color_t sweep_fill = s.sweeping ? ui_theme_color(UI_C_ACCENT)
+                                   : s.paused ? ui_theme_color(UI_C_WARN)
+                                              : ui_theme_color(UI_C_PANEL_HI);
+    ui_button(c, s.sweep_btn,
+              s.paused ? TR(SV_PAUSED) : s.sweeping ? TR(SV_PAUSE) : "SWEEP", sweep_fill,
+              false, s.sweeping || s.paused
+                     || (value_live() && s.sweep_able && s.surfaces
+                         && s.link_up));
+    ui_button(c, s.release_btn, TR(SV_RELEASE), ui_theme_color(UI_C_PANEL_HI),
+              false, true);
+    draw_arm(c);
+}
+
+/* Draw @p fn clipped to @p box. */
+static void clipped(gfx_canvas_t *c, gfx_rect_t box, void (*fn)(gfx_canvas_t *))
+{
+    gfx_rect_t old_clip = c->clip;
+    if (gfx_clip_set(c, box)) {
+        fn(c);
+    }
+    c->clip = old_clip;
+}
+
+/* The same for a session, drawn through its own function (PROG_CALLS). */
+static void clipped_session(gfx_canvas_t *c, gfx_rect_t box,
+                            const prog_page_set_t *ps)
+{
+    gfx_rect_t old_clip = c->clip;
+    if (gfx_clip_set(c, box)) {
+        prog_ps_render(ps, c);
+    }
+    c->clip = old_clip;
+}
+
+void svs_render(gfx_canvas_t *c, int buffer_index)
+{
+    const unsigned bit = 1u << (buffer_index & 1);
+    const int buf = buffer_index & 1;
+    /* A panel or a session over the left column, the strip's tabs with
+     * it: one that opens or goes repaints the buffer whole. */
+    const prog_page_set_t *ps = prog_shown_set();
+    const bool cover = modal_open() || ps != NULL;
+    if (cover != s.drawn_cover[buf]) {
+        s.drawn_mask &= ~bit;
+    }
+
+    if ((s.drawn_mask & bit) == 0) {
+        gfx_clear(c, ui_theme_color(UI_C_BG));
+        ui_card(c, page_area(), ui_theme_color(UI_C_PANEL));
+        ui_card(c, (gfx_rect_t){ RCARD_X, CARD_Y, RCARD_W, CARD_H },
+                ui_theme_color(UI_C_PANEL));
+        if (!cover) {               /* under a cover, the cover's */
+            draw_strip(c);
+        }
+        s.drawn_mask |= bit;
+        s.drawn_cover[buf] = cover;
+        s.drawn_strip[buf] = s.strip_rev;
+        s.drawn_ctrl[buf]  = UINT32_MAX;
+        s.drawn_power[buf] = UINT32_MAX;
+    }
+    if (!cover && s.drawn_strip[buf] != s.strip_rev) {
+        s.drawn_strip[buf] = s.strip_rev;
+        clipped(c, strip_area(), draw_strip);
+    }
+
+    /* The keypad and the keyboard keep their own counts of what changed. */
+    const uint32_t ov_rev = s.ctrl_rev + s.kp.revision + s.tk.revision;
+    if (s.drawn_ctrl[buf] != ov_rev) {
+        /* The plot when it moved or this buffer has never had it. */
+        const bool power = (s.drawn_power[buf] != s.power_rev);
+        s.drawn_ctrl[buf]  = ov_rev;
+        s.drawn_arm[buf]   = s.arm_rev;
+        s.drawn_sup[buf]   = s.sup_rev;
+        s.drawn_power[buf] = s.power_rev;
+        s.drawn_cur[buf]   = s.cur_rev;
+        s.drawn_warn[buf]  = s.warn.rev;
+        s.drawn_ask[buf]   = s.ask.rev;
+        s.drawn_test[buf]  = s.test_rev;
+        s.drawn_save[buf]  = save_state();
+        s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
+        s.drawn_kst[buf]   = (ps != NULL) ? prog_ps_revision(ps) : 0u;
+        s.drawn_kst_hold[buf] = (ps != NULL) ? prog_ps_hold_revision(ps) : 0u;
+        if (modal_open()) {
+            draw_overlay(c);
+        } else if (ps != NULL) {
+            prog_ps_render(ps, c);
+        } else if (wb_task() == UI_WB_LIVE) {
+            draw_left(c);
+        } else if (rows_page() >= 0) {
+            draw_rows_page(c);
+        } else if (wb_task() == UI_WB_PROGRAM) {
+            draw_prog_page(c);
+        } else {
+            draw_test_page(c);
+        }
+        draw_right(c, power);
+        if (s.arm.flash_left > 0) {
+            ui_hold_flash_step(&s.arm);
+        }
+        return;
+    }
+
+    /*
+     * Otherwise only what moved on its own, each clipped to itself: ARM's
+     * fade, the warning's hold, the power plot, the CURRENT row, the save
+     * line, the START holds and the grip.  The right card is 292 x 388 and
+     * the fades run for two seconds: asking for whole cards every frame
+     * would spend most of the panel's bandwidth on a button.
+     */
+    if (s.drawn_arm[buf] != s.arm_rev) {
+        s.drawn_arm[buf] = s.arm_rev;
+        clipped(c, s.arm_btn, draw_arm);
+        if (s.arm.flash_left > 0) {
+            ui_hold_flash_step(&s.arm);
+        }
+    }
+    if (s.drawn_power[buf] != s.power_rev) {
+        s.drawn_power[buf] = s.power_rev;
+        clipped(c, power_rect(), draw_power);
+    }
+    if (s.drawn_cur[buf] != s.cur_rev) {
+        s.drawn_cur[buf] = s.cur_rev;
+        clipped(c, cur_val_rect(), draw_cur_value);
+    }
+    if (s.drawn_sup[buf] != s.sup_rev) {
+        s.drawn_sup[buf] = s.sup_rev;
+        clipped(c, sup_row_rect(), draw_sup_row);
+    }
+    if (modal_open()) {
+        if (s.warn.open && s.drawn_warn[buf] != s.warn.rev) {
+            s.drawn_warn[buf] = s.warn.rev;
+            clipped(c, warn_apply_rect(), draw_warn_apply);
+        }
+        if (s.ask.open && s.ask.hv && s.drawn_ask[buf] != s.ask.rev) {
+            s.drawn_ask[buf] = s.ask.rev;
+            clipped(c, warn_apply_rect(), draw_ask_apply);
+        }
+        return;
+    }
+    if (ps != NULL) {
+        /* The session, when it changed; of a hold only its button. */
+        if (s.drawn_kst[buf] != prog_ps_revision(ps)) {
+            s.drawn_kst[buf] = prog_ps_revision(ps);
+            s.drawn_kst_hold[buf] = prog_ps_hold_revision(ps);
+            clipped_session(c, overlay_area(), ps);
+        } else if (s.drawn_kst_hold[buf] != prog_ps_hold_revision(ps)) {
+            s.drawn_kst_hold[buf] = prog_ps_hold_revision(ps);
+            clipped_session(c, prog_ps_hold_rect(ps), ps);
+        }
+        return;
+    }
+    if (rows_page() >= 0) {
+        if (s.drawn_save[buf] != save_state()) {
+            s.drawn_save[buf] = save_state();
+            clipped(c, save_line_rect(), draw_save_line);
+        }
+        return;
+    }
+    if (wb_task() == UI_WB_TEST) {
+        /* START TEST's and START LIMIT RUN's fades. */
+        if (s.drawn_test[buf] != s.test_rev) {
+            s.drawn_test[buf] = s.test_rev;
+            clipped(c, test_start_rect(), draw_test_start);
+            clipped(c, lim_start_rect(), draw_lim_start);
+        }
+        return;
+    }
+
+    /*
+     * The grip, only while it breathes.  Clipped to the tip: repainting the
+     * 488x386 card at the frame rate to animate a ring of 36 px radius would
+     * cost most of the panel's bandwidth.
+     */
+    const int grip_r = 36;
+    const int step = (int)(s.pulse * 8.0f);
+    if (!s.driving || s.drawn_pulse[buf] == step) {
+        return;
+    }
+    s.drawn_pulse[buf] = step;
+    int tx, ty;
+    at(s.shown_deg, HORN_L, &tx, &ty);
+    const gfx_rect_t box = { (int16_t)(tx - grip_r), (int16_t)(ty - grip_r),
+                             (int16_t)(grip_r * 2), (int16_t)(grip_r * 2) };
+    clipped(c, box, draw_left);
+}
