@@ -204,9 +204,9 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 104 | 2 064 |
-| `control` | `control_task` | 6 144 | 4 384 | 736 |
-| `runlog` | `log_task` | 6 656 | 4 464 | 1 168 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 184 | 1 984 |
+| `control` | `control_task` | 6 144 | 4 512 | 608 |
+| `runlog` | `log_task` | 6 656 | 4 576 | 1 056 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 328 | 720 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 680 | 1 392 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 5 120 | 3 360 | 736 |
@@ -229,8 +229,8 @@ nicht mehr antwortet (`storage_read_end()`, `esp_vfs_fat_sdspi_mount()`).
 Das Werkzeug folgt jedem Aufruf, den das Einbinden machen kann, darunter
 `f_mkfs()`, das ein Einbinden ohne Formatieren nie erreicht. Der Start
 eines Laufs bindet die Karte ebenfalls auf diesem Task ein
-(`storage_check()`). Die Kette braucht 4 464 Bytes; der Stack von 6 656
-Bytes lässt 1 168 über der Marge von 1 024 Bytes.
+(`storage_check()`). Die Kette braucht 4 576 Bytes; der Stack von 6 656
+Bytes lässt 1 056 über der Marge von 1 024 Bytes.
 
 Gemessen mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb
 der Frames auf: 320 für den gesicherten Zustand von FPU (Floating-Point Unit)
@@ -383,15 +383,15 @@ Kartenübertragung, solange das WLAN läuft.
 
 | Posten | Was es ist | Bytes |
 | --- | --- | ---: |
-| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 129 176 |
-| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 296 808 |
+| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 130 040 |
+| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 295 944 |
 | `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 107 248 |
-| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 189 560 |
+| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 188 696 |
 | `AP` | WLAN-HOTSPOT: das WLAN, der Server der Seite und seine Task | 98 724 |
 | `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
 | `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
 | `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |
-| `left` | übriger Heap mit dem größten Modus | 86 400 |
+| `left` | übriger Heap mit dem größten Modus | 85 536 |
 
 Gelesen aus dem Build mit ESP-IDF v5.4. CI führt das Werkzeug auf diesem
 Build mit `--check-doc` aus; das schlägt fehl, wenn die Tabelle von ihm
@@ -427,7 +427,7 @@ Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
 Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 20
-Objekten, 163 920 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
+Objekten, 164 024 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
 wpa_supplicant, 13 742 Bytes.
@@ -435,10 +435,10 @@ wpa_supplicant, 13 742 Bytes.
 | Objekt | Komponente | .bss (Bytes) |
 | --- | --- | ---: |
 | `log_viewer_screen` | ui | 35 984 |
-| `servo_screen` | ui | 29 509 |
+| `servo_screen` | ui | 29 533 |
 | `ui_watermark` | ui | 20 504 |
 | `supply_screen` | ui | 20 508 |
-| `motor_screen` | ui | 20 008 |
+| `motor_screen` | ui | 20 088 |
 | `kst_card` | bench | 6 208 |
 | `esc_stick_panel` | ui | 6 096 |
 | `kst_panel` | ui | 5 185 |
