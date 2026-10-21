@@ -12,7 +12,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define PANEL_W 800
+#define PANEL_W UI_PANEL_W
 
 /*
  * STOP is 132 px wide at the right edge of the band, sized for a thumb rather
@@ -113,7 +113,7 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
  * the strips meet without overlapping.  A label starts UI_PILL_INSET px
  * into its chip and ends 4 px short of its right edge, LINK's 18 px.  A row
  * that would reach CHIPS_MIN_X, where MOTOR & ESC's home tag, the widest
- * (test_nav measures every screen's), ends, starts its labels 16 px in.
+ * (test_nav_bubble measures every screen's), ends, starts its labels 16 px in.
  * One row is wider than that still and reaches under MOTOR & ESC's tag:
  * ARMED with a FAULT code, down to x 224, in German to x 216.  Every other
  * tag ends at x 210 or less.
@@ -200,8 +200,10 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
  * The bubble is the DELETE question's box of LOGS: a panel with its border
  * and a title tab, the text in the label face.  It opens 4 px under the
  * band, 8 px in from the panel's edges at most.  A bubble is 520 px wide,
- * 61 cells of text; FAULT's spans the panel, 94 cells, so the seven bits
- * and their advice fit above the alert strip in either language.
+ * 61 cells of text; FAULT's spans the panel less 8 px each side and the
+ * text's 16 px padding: 752 px, 94 cells on the 800 px panel, the width of
+ * the alert band's text, so the seven bits and their advice fit above the
+ * alert strip in either language.
  */
 #define HELP_W       520
 #define HELP_M       8

@@ -34,8 +34,8 @@
 #include "ui_widgets.h"
 #include "touch_feed.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /* Geometry mirrored from settings_screen.c; if the layout moves these move
  * with it, and the test names say what they aim at.  The hub's tiles come

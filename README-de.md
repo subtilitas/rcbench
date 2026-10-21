@@ -115,7 +115,7 @@ Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
 rcbench steht unter der MIT-Lizenz (Massachusetts Institute of Technology):
 [LICENSE](LICENSE).
 
-- **DejaVu Sans Mono.** Die drei Fonttabellen unter `shared/gfx/` sind
+- **DejaVu Sans Mono.** Die sieben Fonttabellen unter `shared/gfx/` sind
   Glyphen-Bitmaps, die `tools/gen_font.py` aus DejaVu Sans Mono erzeugt, unter
   dem Bitstream Vera Fonts Copyright ([NOTICE](NOTICE)). Es wird keine
   Fontdatei weitergegeben.

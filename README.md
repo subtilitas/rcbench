@@ -111,7 +111,7 @@ Security and safety reports: [SECURITY.md](SECURITY.md).
 
 rcbench is MIT licensed: [LICENSE](LICENSE).
 
-- **DejaVu Sans Mono.** The three font tables under `shared/gfx/` are glyph
+- **DejaVu Sans Mono.** The seven font tables under `shared/gfx/` are glyph
   bitmaps rendered from DejaVu Sans Mono by `tools/gen_font.py`, under the
   Bitstream Vera Fonts Copyright ([NOTICE](NOTICE)). No font file is
   redistributed.
