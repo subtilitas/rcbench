@@ -24,10 +24,14 @@ set(SRCS
     splash_screen.c
     overview_screen.c
     motor_screen.c
+    motor_events.c
+    motor_draw.c
     motor_workbench.c
     motor_settings_page.c
     motor_program_page.c
     supply_screen.c
+    supply_events.c
+    supply_draw.c
     servo_screen.c
     servo_screen_sweep.c
     servo_screen_link.c
@@ -55,8 +59,12 @@ set(SRCS
     esc_stick_draw_run.c
     prog_models.c
     log_viewer_screen.c
+    log_viewer_load.c
+    log_viewer_draw.c
+    log_viewer_events.c
     log_select.c
     settings_screen.c
+    settings_draw.c
     settings_rows.c
     sensors_rows.c
     outputs_screen.c
@@ -65,10 +73,13 @@ set(SRCS
     port_view.c
     port_mail.c
     picker_screen.c
+    picker_geometry.c
+    picker_draw.c
     picker_port.c
     board_drawing.c
     busfault_screen.c
     wifi_screen.c
+    update_screen.c
     coproc_update_screen.c
     upd_screen.c
 )
