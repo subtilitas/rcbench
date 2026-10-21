@@ -2,7 +2,7 @@
  * @file
  * @brief Core 1: the sensor bus and the hand-over.
  *
- * The declarations are in sense_core1.h.
+ * See sense_core1.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -49,10 +49,10 @@ static uint32_t s_stack[1024];
 static uint32_t s_taken_seq;
 
 /**
- * @brief Reads the microsecond timer for the sensor schedule.
+ * @brief Reads the 64-bit microsecond timer for the sensor schedule.
  *
  * @param ctx  Unused.
- * @return The 64-bit microsecond timer.
+ * @return The current time, in microseconds.
  */
 static uint64_t clock_us(void *ctx)
 {
@@ -61,7 +61,7 @@ static uint64_t clock_us(void *ctx)
 }
 
 /**
- * @brief Clears the sensor bus after a fault.
+ * @brief Clears the sensor bus with sense_i2c_recover().
  *
  * @param ctx  Unused.
  */
@@ -75,8 +75,8 @@ static void recover(void *ctx)
  * @brief Opens the sensor bus on the given pins.
  *
  * @param ctx  Unused.
- * @param sda  SDA (serial data) GPIO number.
- * @param scl  SCL (serial clock) GPIO number.
+ * @param sda  GPIO number of SDA.
+ * @param scl  GPIO number of SCL.
  * @return True when the bus opened.
  */
 static bool bus_open(void *ctx, uint8_t sda, uint8_t scl)
@@ -97,11 +97,11 @@ static void bus_close(void *ctx)
 }
 
 /**
- * @brief Asks whether a device answers on the sensor bus.
+ * @brief Asks whether a device acknowledges on the sensor bus.
  *
- * @param ctx   Unused.
+ * @param ctx  Unused.
  * @param addr  I2C address of the device.
- * @return The bus error code from sense_i2c_ask().
+ * @return The result of sense_i2c_ask().
  */
 static sense_err_t bus_ask(void *ctx, uint8_t addr)
 {
@@ -110,10 +110,8 @@ static sense_err_t bus_ask(void *ctx, uint8_t addr)
 }
 
 /**
- * @brief Core 1's entry point: runs the sensor loop forever.
- *
- * Runs once per SENSE_TICK_US: takes the order, runs one step of the sensor
- * service, then the tone service's pass, and hands back the snapshot.
+ * @brief Core 1's entry point: runs the sensor loop, one step per tick,
+ * forever.
  */
 static void core1_main(void)
 {

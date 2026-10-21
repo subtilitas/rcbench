@@ -2,7 +2,7 @@
  * @file
  * @brief Core 1's half of the phase tap.
  *
- * The declarations are in tone_core1.h.
+ * See tone_core1.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,6 +16,9 @@
 
 #include "tone_cap.h"
 
+/**
+ * @brief One beep queued for core 0, with the generations it was made under.
+ */
 typedef struct {
     tone_rec_t rec;
     uint16_t   gen, cap_gen;
@@ -41,8 +44,10 @@ static volatile uint32_t s_dropped;        /* core 1 counts                */
 
 /* --- core 1's own -------------------------------------------------------- */
 
-/* Static: the service holds the detector, 1,100 bytes or so, and core 1's
- * stack is small. */
+/**
+ * @brief Static: the service holds the detector, 1,100 bytes or so, and core
+ * 1's stack is small.
+ */
 static tone_svc_t    s_svc;
 static tone_cmd_t    s_cmd;
 static uint64_t      s_cmd_t0_us;
@@ -102,12 +107,11 @@ bool tone_core1_quiesce(void)
 }
 
 /**
- * @brief Pushes one beep onto the queue to core 0.
+ * @brief Pushes one beep onto the queue to core 0. A beep that finds the
+ * queue full is counted in s_dropped and dropped.
  *
- * A beep that finds the queue full is counted in s_dropped and dropped.
- *
- * @param r        The beep.
- * @param gen      Set-up generation the beep was made under.
+ * @param r  The beep.
+ * @param gen  Set-up generation the beep was made under.
  * @param cap_gen  Capture generation the beep was made under.
  */
 static void push(const tone_rec_t *r, uint16_t gen, uint16_t cap_gen)
@@ -126,10 +130,7 @@ static void push(const tone_rec_t *r, uint16_t gen, uint16_t cap_gen)
 }
 
 /**
- * @brief Runs one pass under the order taken.
- *
- * Does nothing when there is no order to run and none has run before. Pushes
- * the beeps the pass finished, and publishes the status to core 0.
+ * @brief One pass under the order taken.
  */
 static void pass(void)
 {

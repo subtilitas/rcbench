@@ -6,18 +6,18 @@
  * Private to firmware/iomcu/src: nothing under shared/ or protocols/
  * includes it.
  *
- * - main.c: boot, the main loop and the page table; defines most of the
- *   state declared below.
- * - iomcu_report.c: the console report every 3 s.
- * - iomcu_pages.c: IDENTITY, STATUS, CONTROL, BENCH, CHANNELS, CHAN_CFG,
- *   OUTPUTS, SERVO and PROG, and the glue that binds the outputs.
- * - iomcu_kst.c: the KST page and the port's hardware.
- * - iomcu_hitec.c: the HITEC page and the port's hardware.
- * - iomcu_sense.c: SUPPLY, SENSE, SERVO_SENSE, SERVO_WIN, SENSE_MAP,
- *   SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT.
- * - iomcu_tone.c: the TONE page and the phase tap's capture.
- * - iomcu_bind.c: BIND, BIND_CFG, BIND_OUT and the board's own pages.
- * - iomcu_can.c: the heartbeat's input and the CAN bus.
+ * main.c         boot, the main loop and the page table; defines most of
+ *                the state declared below
+ * iomcu_report.c the console report every 3 s
+ * iomcu_pages.c  IDENTITY, STATUS, CONTROL, BENCH, CHANNELS, CHAN_CFG,
+ *                OUTPUTS, SERVO and PROG, and the glue that binds the outputs
+ * iomcu_kst.c    the KST page and the port's hardware
+ * iomcu_hitec.c  the HITEC page and the port's hardware
+ * iomcu_sense.c  SUPPLY, SENSE, SERVO_SENSE, SERVO_WIN, SENSE_MAP,
+ *                SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT
+ * iomcu_tone.c   the TONE page and the phase tap's capture
+ * iomcu_bind.c   BIND, BIND_CFG, BIND_OUT and the board's own pages
+ * iomcu_can.c    the heartbeat's input and the CAN bus
  *
  * The helpers at the end are `static inline`, so the main loop and each
  * page handler that calls one carry their own inlined copy.
@@ -64,42 +64,49 @@ typedef struct {
     uint16_t control[LINK_CT_COUNT];
     uint16_t status[LINK_ST_COUNT];
     uint16_t bench[LINK_BN_COUNT];
-    uint16_t channels[LINK_CH_COUNT];   /**< what each output is asked for */
-    uint16_t chan_cfg[LINK_CC_COUNT];   /**< what each channel is */
-    uint16_t slots[LINK_OS_COUNT];      /**< which driver drives what */
+    uint16_t channels[LINK_CH_COUNT];   /* what each output is asked for   */
+    uint16_t chan_cfg[LINK_CC_COUNT];   /* what each channel is            */
+    uint16_t slots[LINK_OS_COUNT];      /* which driver drives what        */
 } iomcu_state_t;
 
-/** @brief The register images of the pages in iomcu_state_t. */
+/**
+ * @brief The register images of the pages in iomcu_state_t.
+ */
 extern iomcu_state_t s_state;
 
-/** @brief The capabilities the output drivers make true, whatever is
- *  connected; see main(). */
+/**
+ * @brief What the output drivers make true, whatever is connected; see
+ * main().
+ */
 #define IOMCU_CAPABILITIES \
     ((uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE | LINK_CAP_ESC_TELEM))
-
-/** @brief The SERVO page: the PWM target's frame rate and the sweep. Not
- *  kept. */
-extern servo_page_t s_servo;
-/** @brief The SUPPLY page and the PD mini it drives on a PIO UART. Not
- *  kept. */
-extern supply_page_t s_supply;
-/** @brief The PD mini driven over the PIO UART. */
-extern pdmini_t      s_pd;
-/** @brief True while the UART is claimed for its pins. */
-extern bool          s_pd_open;
-/** @brief The rate the PD mini UART runs at, 0 to 6. */
-extern uint8_t       s_pd_rate;
-/** @brief Wiring taken and not yet in flash.
+/**
+ * @brief The SERVO page: the PWM target's frame rate and the sweep.
  *
- * No ON until it is saved, so a restart in the run finds the wiring that
- * drives the module and can switch it off.
+ * Not kept.
+ */
+extern servo_page_t s_servo;
+/**
+ * @brief The SUPPLY page and the PD mini it drives on a PIO UART.
+ *
+ * Not kept.
+ */
+extern supply_page_t s_supply;
+extern pdmini_t      s_pd;
+extern bool          s_pd_open;      /* the UART claimed for its pins */
+extern uint8_t       s_pd_rate;      /* the rate it runs at, 0..6     */
+/**
+ * @brief Wiring taken and not yet in flash: no ON until it is, so a restart
+ * in the run finds the wiring that drives the module and can switch it off.
  */
 extern bool          s_supply_unsaved;
-/** @brief New wiring taken, the UART to attach once it is saved. */
+/**
+ * @brief New wiring taken, the UART to attach once it is saved.
+ */
 extern bool          s_supply_attach;
 /**
- * @brief The SENSE and SERVO_SENSE pages: the current monitors' set-up, kept,
- *        and the pins it holds.
+ * @brief The SENSE and SERVO_SENSE pages: the current monitors' set-up,
+ * kept, and the pins it holds.
  *
  * Core 1 reads the parts (sense_core1.h); this core gives it its orders and
  * publishes what it hands back.
@@ -107,72 +114,71 @@ extern bool          s_supply_attach;
 extern sense_page_t  s_sense;
 /**
  * @brief The TONE page: the phase tap's set-up, kept, and the beeps core 1
- *        hears on it.
+ * hears on it.
  *
  * Core 0 owns the PIO state machine and the DMA ring (tone_cap.c in
  * protocols/phase_tap/rp2350); core 1 reads and detects (tone_core1.c).
  */
 extern tone_page_t   s_tone;
-/** @brief Core 1's last snapshot.
+/**
+ * @brief Core 1's last snapshot.
  *
  * The pins it said it still holds are the page's (sense_page_held()): a bus
  * moved or closed keeps its old pins from the outputs until core 1 has let
  * them go, about 1 ms.
  */
 extern sense_snap_t  s_sense_snap;
-/** @brief Core 1's order as last built. */
-extern sense_cmd_t   s_sense_cmd;
-/** @brief Moves on each edge of the bank into driving.
- *
- * Core 1 starts the run's peaks and the INA228's totals on it.
+extern sense_cmd_t   s_sense_cmd;    /* core 1's order as last built */
+/**
+ * @brief Moves on each edge of the bank into driving: core 1 starts the
+ * run's peaks and the INA228's totals on it.
  */
 extern uint16_t      s_run_gen;
-/** @brief The capture's PWM edge, stamped by outputs_hw for capture order
- *  s_edge_gen. */
+/**
+ * @brief The capture's PWM edge, stamped by outputs_hw for capture order
+ * s_edge_gen.
+ */
 extern bool          s_edge_set;
-/** @brief Capture order of the PWM edge in s_edge_us. */
 extern uint16_t      s_edge_gen;
-/** @brief Time of the capture's PWM edge, in microseconds on time_us_64(). */
 extern uint64_t      s_edge_us;
-/** @brief The pins the board and this application hold, before the supply
- *  and the sensor bus take theirs. */
+/**
+ * @brief What the board and this application hold, before the supply and the
+ * sensor bus take their pins.
+ */
 extern uint64_t      s_base_reserved;
 /**
  * @brief The PROG page: the programming ports, outputs of their own kind
- *        with their own pins (shared/outputs/prog_port.h).
+ * with their own pins (shared/outputs/prog_port.h).
  *
  * Pin, slew, endpoints and function are kept; the pulse's switch and the
  * tester's target are not.
  */
 extern prog_port_t   s_prog;
-/** @brief Number of programming ports this build has.
- *
- * The model holds LINK_PG_PORTS_MAX.
+/**
+ * @brief The programming ports this build has; the model holds
+ * LINK_PG_PORTS_MAX.
  */
 #define IOMCU_PROG_PORTS 4u
 /**
  * @brief The KST page: the wire protocol for KST and Chaservo servos on a
- *        programming port (shared/outputs/kst_port.h) and the wire driver
- *        the port's pin is handed to (protocols/kst/rp2350).
+ * programming port (shared/outputs/kst_port.h) and the wire driver the
+ * port's pin is handed to (protocols/kst/rp2350).
  *
  * Not kept: a restart finds the port in PWM (pulse-width modulation) with no
  * session.
  */
 extern kst_port_t    s_kst;
-/** @brief The KST wire driver the port's pin is handed to. */
 extern kst_line_t    s_kst_line;
 /**
  * @brief The HITEC page: raw transactions of the Hitec wire on a programming
- *        port (shared/outputs/hitec_port.h) and the wire driver the port's
- *        pin is handed to (protocols/hitec/rp2350).
+ * port (shared/outputs/hitec_port.h) and the wire driver the port's pin is
+ * handed to (protocols/hitec/rp2350).
  *
- * A port is free, the KST page's or this page's, never two of them. Not
+ * A port is free, the KST page's or this page's, never two of them.  Not
  * kept: a restart finds the port free.
  */
 extern hitec_port_t  s_hitec;
-/** @brief The HITEC wire driver the port's pin is handed to. */
 extern hitec_line_t  s_hitec_line;
-/** @brief The link device the pages are served over. */
 extern link_dev_t    s_dev;
 
 /**
@@ -182,15 +188,14 @@ extern link_dev_t    s_dev;
  * the silence timeout) live in shared/outputs and nowhere else, so this end
  * and the panel cannot answer them differently.
  *
- * The output pages address bank channels 0 to LINK_OUT_CHANNELS - 1
- * directly. The throttle lives above that range, so the control page
- * commands it without colliding with a CHANNELS-page write, and a motor
- * command keeps the control page's priority on the wire.
+ * The output pages address bank channels 0..LINK_OUT_CHANNELS-1 directly.
+ * The throttle lives above that range, so the control page commands it
+ * without colliding with a CHANNELS-page write, and a motor command keeps
+ * the control page's priority on the wire.
  */
 extern outputs_t s_outputs;
 
-/** @brief Bank channel of the throttle, off the CHANNELS page. */
-#define CH_THROTTLE  LINK_OUT_CHANNELS
+#define CH_THROTTLE  LINK_OUT_CHANNELS   /* bank channel 8, off the page */
 
 /**
  * @brief The panel's safety line, as judged in firmware.
@@ -200,669 +205,600 @@ extern outputs_t s_outputs;
  */
 extern heartbeat_mon_t s_beat;
 
-/** @brief Requests this end has answered, published on the STATUS page. */
+/**
+ * @brief Requests this end has answered, published on the STATUS page.
+ */
 extern uint32_t s_frames;
 
 /**
- * @brief CAN frames received and refused since power-up.
+ * @brief CAN frames received and refused since power-up, published on the
+ * STATUS page (LINK_ST_REFUSED_LO and _HI).
  *
- * The count is published on the STATUS page (LINK_ST_REFUSED_LO and
- * _HI). It is counted in two places, both shared code: a receive buffer with
- * no frame the link carries in it (mcp2515_recv_next()) and a frame
- * link_can_decode() refuses (link_can_decode_counted()). It wraps at 2^32.
+ * Counted in two places, both shared code: a receive buffer with no frame
+ * the link carries in it (mcp2515_recv_next()) and a frame link_can_decode()
+ * refuses (link_can_decode_counted()).  Wraps at 2^32.
  */
 extern uint32_t s_refused;
 
 /**
- * @brief The pass's clock, used by everything the pass reaches.
- *
- * That includes the page callbacks, which run inside can_service() and have
- * no `now` of their own.
+ * @brief The pass's clock, used by everything the pass reaches -- including
+ * the page callbacks, which run inside can_service() and have no `now` of
+ * their own.
  *
  * Read at the top of the loop and once more before its tail, and nowhere
- * else. The second read is there because two things in a pass can stop this
+ * else.  The second read is there because two things in a pass can stop this
  * core for longer than a pass lasts: a flash window, and a printf to a USB
- * host. See the loop for why that matters to what is measured after them.
+ * host.  See the loop for why that matters to what is measured after them.
  *
  * Every timeout in this application is a wrap-safe unsigned subtraction of
- * two timestamps. A second reading of the clock inside a pass can be a
+ * two timestamps.  A second reading of the clock inside a pass can be a
  * millisecond ahead of the pass's own, and a stamp ahead of the `now` it is
  * later compared against subtracts to 4,294,967,295 ms -- past every timeout
- * there is. A CHANNELS write stamped that way reads as stale in the same
+ * there is.  A CHANNELS write stamped that way reads as stale in the same
  * pass and is put back to rest; a save stamped that way skips the settle and
  * the quiet-bus wait and takes its flash window inside the request burst it
  * was meant to wait out.
  */
 extern uint32_t s_now_ms;
 
-/** @brief The heartbeat line's level at the last sample; see iomcu_can.c. */
+/**
+ * @brief The heartbeat line's level at the last sample; see iomcu_can.c.
+ */
 extern bool s_beat_level;
 
-/** @brief The CAN controller, its echoes and its receive overruns; see
- *  iomcu_can.c. */
+/**
+ * @brief The CAN controller, its echoes and its receive overruns; see
+ * iomcu_can.c.
+ */
 extern bool     s_can_up;
-/** @brief Self-test echoes received on the CAN bus; see iomcu_can.c. */
 extern uint32_t s_can_echoes;
-/** @brief Receive overruns on the CAN bus; see iomcu_can.c. */
 extern uint32_t s_can_overflows;
 
-/** @brief When a frame was last taken out of the controller, in ms; see
- *  iomcu_can.c. */
+/**
+ * @brief When a frame was last taken out of the controller; see iomcu_can.c.
+ */
 extern uint32_t s_last_rx_ms;
 
-/** @brief The binding BIND_CFG and BIND_OUT hold prepared; see iomcu_bind.c.
+/**
+ * @brief The binding BIND_CFG and BIND_OUT hold prepared; see iomcu_bind.c.
  */
 extern out_stage_t s_stage;
 
 /* ------------------------------------------------------- the page handlers */
 
-/*
- * The page handlers below are link_page_t callbacks. A read handler copies
- * @p n words from register @p off into @p out. A write handler takes @p n
- * words from @p in at register @p off and returns 0 to accept them, or a
- * link_nack_t to refuse with a reason.
- */
-
-/* iomcu_pages.c */
-
 /**
  * @brief Reads the IDENTITY page.
  *
+ * iomcu_pages.c
+ *
  * @param ctx  The iomcu_state_t the page reads or writes.
- * @param off  First register to read, 0 to LINK_ID_COUNT - 1.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Reads the CONTROL page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the CONTROL page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t control_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
-
 /**
  * @brief Reads the STATUS page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void status_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Reads the BENCH page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Reads the CHANNELS page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the CHANNELS page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
                        const uint16_t *in);
-
 /**
  * @brief Reads the CHAN_CFG page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the CHAN_CFG page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
                        const uint16_t *in);
-
 /**
- * @brief Reads the OUTPUTS page (slots).
+ * @brief Reads the OUTPUTS page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
- * @brief Writes the OUTPUTS page (slots).
+ * @brief Writes the OUTPUTS page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t slots_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
-
 /**
  * @brief Reads the SERVO page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the SERVO page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t servo_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
-
 /**
  * @brief Reads the PROG page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void prog_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the PROG page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t prog_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
-/* iomcu_kst.c */
-
 /**
  * @brief Reads the KST page.
  *
+ * iomcu_kst.c
+ *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void kst_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the KST page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t kst_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
-/* iomcu_hitec.c */
-
 /**
  * @brief Reads the HITEC page.
  *
+ * iomcu_hitec.c
+ *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void hitec_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the HITEC page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t hitec_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
-/* iomcu_sense.c */
-
 /**
  * @brief Reads the SUPPLY page.
  *
+ * iomcu_sense.c
+ *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void supply_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the SUPPLY page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t supply_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
-
 /**
  * @brief Reads the SENSE page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void sense_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the SENSE page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t sense_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
-
 /**
  * @brief Reads the SERVO_SENSE page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void servo_sense_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the SERVO_SENSE page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in);
-
 /**
  * @brief Reads the SERVO_WIN page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void servo_win_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Reads the SENSE_MAP page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void sense_map_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the SENSE_MAP page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t sense_map_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
-
 /**
  * @brief Reads the SENSE_WIN_A page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void sense_win_a_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Reads the SENSE_WIN_B page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void sense_win_b_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Reads the SENSE_LIMIT page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void sense_limit_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the SENSE_LIMIT page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t sense_limit_wr(void *ctx, uint8_t off, uint8_t n,
                        const uint16_t *in);
 
-/* iomcu_tone.c */
-
 /**
  * @brief Reads the TONE page.
  *
+ * iomcu_tone.c
+ *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the TONE page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t tone_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
-/* iomcu_bind.c */
-
 /**
  * @brief Reads the BIND_CFG page.
  *
+ * iomcu_bind.c
+ *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void bind_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the BIND_CFG page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t bind_cfg_write(void *ctx, uint8_t off, uint8_t n,
                        const uint16_t *in);
-
 /**
  * @brief Reads the BIND_OUT page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void bind_out_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the BIND_OUT page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t bind_out_write(void *ctx, uint8_t off, uint8_t n,
                        const uint16_t *in);
-
 /**
  * @brief Reads the BIND page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void bind_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
  * @brief Writes the BIND page.
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t bind_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
-
 /**
- * @brief Reads the board's CATALOGUE page.
+ * @brief Reads the CATALOGUE page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void catalogue_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
- * @brief Reads the board's SHAPE page.
+ * @brief Reads the SHAPE page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void shape_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
- * @brief Reads the board's ARTWORK page.
+ * @brief Reads the ARTWORK page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void artwork_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
- * @brief Reads the board's ART_DATA page.
+ * @brief Reads the ART_DATA page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void art_data_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
-
 /**
- * @brief Writes the board's ART_DATA page.
+ * @brief Writes the ART_DATA page.
  *
  * @param ctx  Unused.
  * @param off  First register to write.
- * @param n    Number of registers to write.
- * @param in   The @p n register values to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t art_data_write(void *ctx, uint8_t off, uint8_t n,
                        const uint16_t *in);
-
 /**
- * @brief Reads the board's PADS page.
+ * @brief Reads the PADS page.
  *
  * @param ctx  Unused.
  * @param off  First register to read.
- * @param n    Number of registers to read.
- * @param out  Receives @p n register values.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
  */
 void pads_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 
 /* ---------------------------------------------- shared between the files */
 
-/* iomcu_pages.c */
-
 /**
  * @brief Asks for the output configuration to be saved.
  *
- * Nothing reaches flash here. The request is taken later by the loop, once the
- * bank has stopped driving. The saved set is the slots, CHAN_CFG, the supply's
- * wiring, the sensor bus's set-up, the phase tap's set-up, the programming
- * ports, the INA3221 map and the current limits.
+ * iomcu_pages.c
  *
  * @param s  The state whose output configuration is saved.
  */
 void save_outputs(const iomcu_state_t *s);
-
 /**
  * @brief Makes the programming ports' pins agree with the PROG page.
- *
- * The SERVO sweep is pointed at the TARGET port before and after the binding,
- * because the binding can take that port's pin away. The ports that pulse are
- * handed to the SERVO page and the SENSE page, so they judge their writes
- * against them.
  */
 void ports_apply(void);
-
 /**
- * @brief Makes the silicon agree with the bank, binding only some slots.
- *
- * Every slot is bound at the rate it runs at. The programming ports follow on
- * what the slots leave.
+ * @brief Makes the silicon agree with the bank, binding only the slots in @p
+ * may_bind.
  *
  * @param may_bind  Bit mask of the slots that may be bound. The others are
  *                  released and left unbound.
  */
 void hw_apply_only(uint8_t may_bind);
-
 /**
  * @brief Makes the silicon agree with the bank, binding every slot.
  */
 void hw_apply(void);
-
 /**
  * @brief Takes a whole CHAN_CFG page into force, when it passes the checks.
  *
- * A CHAN_CFG write passes NULL for @p slots. A BIND commit passes the OUTPUTS
- * page prepared beside it, and passes @p save false, because the commit saves
- * both pages once.
- *
- * @param s      The state to update.
- * @param next   The new CHAN_CFG register values.
- * @param slots  The OUTPUTS page prepared beside @p next, or NULL.
- * @param save   True to save the configuration to flash.
+ * @param s  The state to update.
+ * @param next  The new CHAN_CFG register values.
+ * @param slots  The OUTPUTS page prepared beside @p next by a BIND commit, or
+ *               NULL for a CHAN_CFG write.
+ * @param save  True to save the configuration to flash.
  * @return 0 to accept, or a link_nack_t to refuse. A refused page leaves the
  *         page in force unchanged.
  */
 uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
                       const uint16_t *slots, bool save);
-
 /**
  * @brief Takes a whole OUTPUTS page (slots) into force, when it passes the
- *        checks.
+ * checks.
  *
- * A slots write passes the page with one window replaced. A BIND commit passes
- * the page prepared for it, and passes @p save false.
- *
- * @param s     The state to update.
+ * @param s  The state to update.
  * @param next  The new slot register values.
  * @param save  True to save the configuration to flash.
- * @return 0 to accept, or a link_nack_t to refuse. A refused page leaves the
- *         page, the bank and the silicon as they were.
+ * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save);
-
-/* iomcu_kst.c: the port's hardware, which main() hands to kst_port_init() */
 
 /**
  * @brief Returns the pin of a programming port for the KST wire driver.
  *
- * @param ctx   Unused.
- * @param port  Index of the programming port, 0 to IOMCU_PROG_PORTS - 1.
- * @return The GPIO number, or the value prog_port_wire_pin() returns for a
- *         port with no pin.
+ * iomcu_kst.c: the port's hardware, which main() hands to kst_port_init()
+ *
+ * @param ctx  Unused.
+ * @param port  Index of the programming port.
+ * @return The GPIO number, or the value prog_port_wire_pin() gives for a port
+ *         with no pin.
  */
 uint8_t kst_hw_pin(void *ctx, uint8_t port);
-
 /**
  * @brief Takes the programming port's pin for the KST wire driver.
  *
- * @param ctx   Unused.
- * @param port  Index of the programming port.
- * @param pin   GPIO number to take.
+ * @param ctx  Unused.
+ * @param port  Index of the programming port. Not used here.
+ * @param pin  GPIO number to take.
  * @return True when the KST line opened on the pin.
  */
 bool kst_hw_take(void *ctx, uint8_t port, uint8_t pin);
-
 /**
  * @brief Gives the programming port's pin back from the KST wire driver.
  *
  * @param ctx  Unused.
  */
 void kst_hw_give(void *ctx);
-
 /**
  * @brief Fills the supply view of the KST port.
  *
@@ -870,152 +806,124 @@ void kst_hw_give(void *ctx);
  * @param out  Receives the port's supply view.
  */
 void kst_hw_supply(void *ctx, supply_port_view_t *out);
-
 /**
  * @brief Sets the supply of the KST port.
  *
  * @param ctx  Unused.
- * @param on   True to switch the supply on.
- * @param mv   Supply voltage in millivolts.
- * @param ma   Supply current limit in milliamperes.
- * @return False when the switch was refused, true when it was accepted.
+ * @param on  True to switch the supply on.
+ * @param mv  Supply voltage.
+ * @param ma  Supply current limit.
+ * @return False when the switch was refused, otherwise the result of
+ *         supply_page_port_set().
  */
 bool kst_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma);
-
-/* iomcu_hitec.c: the port's hardware, which main() hands to
- * hitec_port_init() beside kst_hw_pin() and the supply's two */
 
 /**
  * @brief Takes the programming port's pin for the HITEC wire driver.
  *
- * @param ctx     Unused.
- * @param port    Index of the programming port.
- * @param pin     GPIO number to take.
+ * iomcu_hitec.c: the port's hardware, which main() hands to
+ * hitec_port_init() beside kst_hw_pin() and the supply's two
+ *
+ * @param ctx  Unused.
+ * @param port  Index of the programming port. Not used here.
+ * @param pin  GPIO number to take.
  * @param family  Hitec protocol family the line is opened for.
- * @param drive   Drive setting of the pin.
- * @param rx      Nonzero to claim the sampler as well, for PRECHARGE.
+ * @param drive  Drive setting of the pin.
+ * @param rx  Nonzero to claim the sampler as well, for PRECHARGE.
  * @return True when the HITEC line opened on the pin.
  */
 bool hitec_hw_take(void *ctx, uint8_t port, uint8_t pin, uint8_t family,
                    uint8_t drive, uint8_t rx);
-
 /**
  * @brief Gives the programming port's pin back from the HITEC wire driver.
  *
  * @param ctx  Unused.
  */
 void hitec_hw_give(void *ctx);
-
 /**
  * @brief Aborts the HITEC operation in progress.
  *
  * @param ctx  Unused.
  */
 void hitec_hw_abort(void *ctx);
-
 /**
  * @brief Reports the timing of the last HITEC run.
  *
  * @param ctx  Unused.
- * @param out  Receives the lead, span and bit timing of the run.
+ * @param out  Receives the lead time, span and bit time of the run.
  */
 void hitec_hw_run(void *ctx, hitec_port_run_t *out);
-
-/* iomcu_sense.c */
 
 /**
  * @brief Refreshes the IDENTITY page's capability word.
  *
- * The word is the output drivers' capabilities plus the current monitors the
- * SENSE set-up enables. It reflects the parts as configured, not as online: it
- * moves only with a SENSE write taken.
+ * iomcu_sense.c
  */
 void capabilities_update(void);
-
 /**
  * @brief Rebinds the supply's PD mini UART to the wiring in force.
  *
- * Reserves the supply's pins, then attaches the UART when the supply is
- * enabled.
- *
- * @return True when the supply is disabled or its UART is attached. False when
- *         no PIO block can reach the pins or has room.
+ * @return True when the supply is disabled or its UART is attached. False
+ *         when no PIO block can reach the pins or has room.
  */
 bool supply_rewire(void);
-
 /**
  * @brief Takes a SUPPLY write into the supply's wiring and output state.
  *
- * @param off      First register of the write.
- * @param n        Number of registers in the write.
- * @param in       The @p n register values.
- * @param checked  True for the wiring change a state read has shown the module
- *                 off for (supply_page_wire_ready()); false for a write from
- *                 the link.
- * @return 0 to accept, or a link_nack_t to refuse. A refused write leaves the
- *         supply as it was.
+ * @param off  First register of the write.
+ * @param n  Number of registers in the write.
+ * @param in  The @p n register values.
+ * @param checked  True for the wiring change a state read has shown the
+ *                 module off for (supply_page_wire_ready()); false for a
+ *                 write from the link.
+ * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t supply_take(uint8_t off, uint8_t n, const uint16_t *in,
                     bool checked);
 
-/* iomcu_tone.c */
-
 /**
  * @brief Returns the pins the phase tap may not take now.
  *
- * These are the supply's pins, the programming ports' pins, and the sensor
- * bus's pins, with the ones core 1 has not let go of yet. A TONE write naming
- * one is refused with BUSY; the board's own reserved pins are refused with
- * BAD_VALUE.
+ * iomcu_tone.c
  *
- * @return One bit per GPIO number.
+ * @return One bit per GPIO: the supply's pins, the programming ports' pins
+ *         and the sensor bus's pins, including those core 1 has not let go of
+ *         yet.
  */
 uint64_t tone_taken(void);
-
 /**
  * @brief Makes the phase tap's capture agree with the TONE page's pin.
- *
- * The capture is restarted on the new pin, or left as it was when core 1 is
- * still in a pass and the wiring cannot be changed.
  *
  * @return True when the capture agrees with the page. False when the wiring
  *         could not take the pin, or core 1 was still in a pass.
  */
 bool tone_rewire(void);
 
-/* iomcu_can.c */
-
 /**
  * @brief Sets up the heartbeat input.
  *
- * The pin is an input with its pull-down. The heartbeat monitor is
- * initialized, and the line's level is sampled.
+ * iomcu_can.c
  */
 void heartbeat_init(void);
-
 /**
  * @brief Brings up the CAN controller at IOMCU_CAN_BITRATE.
  *
- * A failure is not fatal. It is reported on the USB serial port, and s_can_up
+ * A failure is not fatal: it is reported on the USB serial port, and s_can_up
  * stays false.
  */
 void can_start(void);
-
 /**
  * @brief Empties the CAN receive buffers and answers each frame.
- *
- * Self-test echoes and status replies are answered in place. Link requests
- * are dispatched, and each reply frame is sent with a bounded retry.
  *
  * @param now  The pass's clock in ms, stamped on each frame received and
  *             passed to the link dispatcher.
  */
 void can_service(uint32_t now);
 
-/* iomcu_report.c: every 3 s at most, from the main loop */
-
 /**
  * @brief Prints the console report when 3 s have passed.
+ *
+ * iomcu_report.c: every 3 s at most, from the main loop
  *
  * @param now  The pass's clock in ms.
  */
@@ -1024,11 +932,10 @@ void can_report(uint32_t now);
 /* ------------------------------------------------------ the inline helpers */
 
 /**
- * @brief Refreshes the STATUS page's state and fault registers.
+ * @brief STATUS's state and fault registers.
  *
  * The state and the link and heartbeat bits are the gate's
- * (safety_gate_status()); the arm latch is on neither. The store-off fault
- * is set while out_store_is_off() holds.
+ * (safety_gate_status()); the arm latch is on neither.
  *
  * @param s  The state whose STATUS registers are updated.
  */
@@ -1044,9 +951,9 @@ static inline void status_gate(iomcu_state_t *s)
 }
 
 /**
- * @brief Returns the slots the silicon has bound.
+ * @brief The slots the silicon has bound, one bit each.
  *
- * @return One bit per slot, bit i set when slot i is bound.
+ * @return One bit per slot: bit i is set when slot i is bound.
  */
 static inline uint8_t bound_slots(void)
 {
@@ -1060,7 +967,8 @@ static inline uint8_t bound_slots(void)
 }
 
 /**
- * @brief Samples the heartbeat line.
+ * @brief Sample the line; returns whether its level changed since the last
+ * sample.
  *
  * safety_gate_step() hands the edge to the monitor.
  *
@@ -1077,10 +985,8 @@ static inline bool heartbeat_edge(void)
 }
 
 /**
- * @brief Returns the programming ports out of PWM.
- *
- * The ports are held by the KST page or the HITEC page, in any state but PWM
- * and free.
+ * @brief The programming ports out of PWM: held by the KST page or the HITEC
+ * page, in any state but PWM and free.
  *
  * @return One bit per programming port.
  */
@@ -1091,7 +997,7 @@ static inline uint8_t ports_quiet(void)
 }
 
 /**
- * @brief Returns the programming ports whose pin a wire driver holds.
+ * @brief The programming ports whose pin a wire driver holds.
  *
  * @return One bit per programming port.
  */
@@ -1102,10 +1008,10 @@ static inline uint8_t ports_wire(void)
 }
 
 /**
- * @brief Tells each wire page which ports the other holds.
+ * @brief Each wire page told which ports the other holds: neither takes a
+ * port the other has.
  *
- * Neither takes a port the other has. Called after a write of either and once
- * a pass.
+ * Called after a write of either and once a pass.
  */
 static inline void ports_exclusive(void)
 {
@@ -1114,10 +1020,8 @@ static inline void ports_exclusive(void)
 }
 
 /**
- * @brief Tells whether a wire page holds the SUPPLY page.
- *
- * A wire page holds it while the KST port is out of PWM, or while a HITEC
- * POWER is running.
+ * @brief A wire page holds the SUPPLY page: the KST port out of PWM, or a
+ * HITEC POWER running.
  *
  * @return True when the SUPPLY page is held.
  */
@@ -1128,10 +1032,8 @@ static inline bool ports_hold_supply(void)
 }
 
 /**
- * @brief Returns the ports that render their pulse while the bank drives.
- *
- * A port pulses when it is bound, switched on, and not out of PWM for a wire
- * protocol or a supply cycle.
+ * @brief The ports that render their pulse while the bank drives: bound,
+ * switched on, and not out of PWM for a wire protocol or a supply cycle.
  *
  * @return One bit per programming port.
  */
@@ -1142,11 +1044,9 @@ static inline uint8_t ports_pulsing(void)
 }
 
 /**
- * @brief Reserves the pins no output may have.
- *
- * These are the board's own pins, and the ones the supply, the sensor bus and
- * the phase tap hold now: the pages' pins, and the ones core 1 has not let go
- * of yet.
+ * @brief What no output may have: the board's own pins, and the ones the
+ * supply, the sensor bus and the phase tap hold now -- the pages', and the
+ * ones core 1 has not let go of yet.
  */
 static inline void reserve_held(void)
 {
@@ -1158,11 +1058,9 @@ static inline void reserve_held(void)
 }
 
 /**
- * @brief Builds core 1's order from the SENSE page as it stands.
+ * @brief Core 1's order, from the page as it stands, the run and the edge.
  *
- * The order carries the run and the edge.
- *
- * @param cmd  Receives the order. Zeroed first.
+ * @param cmd  Receives the order. It is zeroed first.
  */
 static inline void sense_build(sense_cmd_t *cmd)
 {
@@ -1174,12 +1072,12 @@ static inline void sense_build(sense_cmd_t *cmd)
 }
 
 /**
- * @brief Sends core 1 its order.
+ * @brief Sent whenever something in it changes; core 1 takes it at its next
+ * tick.
  *
- * Sent whenever something in it changes. Core 1 takes it at its next tick.
- * A copy under a lock, about a microsecond. The order, 136 bytes with the 12
- * channels' shunts and limits, is built in s_sense_cmd rather than on core
- * 0's 4 kB stack: core 0 alone builds it, from its main loop.
+ * A copy under a lock, about a microsecond.  The order, 136 bytes with the
+ * 12 channels' shunts and limits, is built in s_sense_cmd rather than on
+ * core 0's 4 kB stack: core 0 alone builds it, from its main loop.
  */
 static inline void sense_order(void)
 {
@@ -1188,11 +1086,11 @@ static inline void sense_order(void)
 }
 
 /**
- * @brief Copies core 1's newest snapshot into the pages, when there is one.
+ * @brief Core 1's newest snapshot into the pages, when there is one.
  *
- * Called where its contents are needed: a read of either page, the 50 Hz
- * sample, a capture ending. It is not called every pass, so a pass with
- * nothing to publish costs one load.
+ * Called where its contents are needed -- a read of either page, the 50 Hz
+ * sample, a capture ending -- rather than every pass, so a pass with nothing
+ * to publish costs one load.
  */
 static inline void sense_sync(void)
 {

@@ -1,9 +1,7 @@
 /**
  * @file
- * @brief A programming port's pin held with no driver (FUNC NONE).
- *
- * The pin is an input with its pull-down, so a lead on it reads low rather
- * than floating.
+ * @brief A programming port's pin held with no driver (FUNC NONE): an input
+ * with its pull-down, so a lead on it reads low rather than floating.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,7 +12,9 @@
 #include <stdint.h>
 
 /**
- * @brief Holds @p pin as an input with its pull-down.
+ * @brief @p pin as an input with its pull-down.
+ *
+ * False for a pin the chip does not have.
  *
  * @param pin  GPIO number of the pin to hold.
  * @return True when the pin was held. False when the chip does not have the
@@ -23,12 +23,11 @@
 bool port_park(uint8_t pin);
 
 /**
- * @brief Lets @p pin go: an input with no pull.
+ * @brief @p pin let go: an input with no pull, as out_pwm_release() leaves a
+ * pin, for whoever takes it next.
  *
- * This is the state out_pwm_release() leaves a pin in, for whoever takes it
- * next.
- *
- * @param pin  GPIO number of the pin to release.
+ * @param pin  GPIO number of the pin to release. A pin the chip does not
+ *             have is ignored.
  */
 void port_unpark(uint8_t pin);
 
