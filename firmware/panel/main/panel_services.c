@@ -184,12 +184,15 @@ void sense_link_alerts(void)
     }
     if ((ev & SENSE_LINK_EV_I3221_CLIPPED) != 0u) {
         /* The full scale in hundredths of an ampere, rounded: 1638 mA on
-         * the DAOKAI's 0.1 Ohm reads 1.64 A. */
-        const uint32_t ca = (sense_i3221_full_scale_ma(
-                                 sense_link_i3221_dmohm(&s_sense_link))
-                             + 5u) / 10u;
-        snprintf(line, sizeof(line), TR(ALERT_SENSE_I3221_CLIPPED),
-                 (unsigned)sense_link_clipped_channel(&s_sense_link),
+         * the DAOKAI's 0.1 Ohm reads 1.64 A.  With a map the clipped
+         * channel's own shunt. */
+        const unsigned ch = sense_link_clipped_channel(&s_sense_link);
+        uint16_t dmohm = sense_map_link_mirror_dmohm(&s_sense_map, ch);
+        if (dmohm == 0u) {
+            dmohm = sense_link_i3221_dmohm(&s_sense_link);
+        }
+        const uint32_t ca = (sense_i3221_full_scale_ma(dmohm) + 5u) / 10u;
+        snprintf(line, sizeof(line), TR(ALERT_SENSE_I3221_CLIPPED), ch,
                  (unsigned)(ca / 100u), (unsigned)(ca % 100u));
         s_sense_alert_gen = control_alert_numbered(line);
     }

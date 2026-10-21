@@ -209,6 +209,23 @@ static unsigned held_mirror(const sense_map_link_t *s)
     return LINK_SM_PARTS;
 }
 
+uint16_t sense_map_link_mirror_dmohm(const sense_map_link_t *s, unsigned ch)
+{
+    if (!sense_map_link_page(s) || !s->known || ch < 1u || ch > 3u) {
+        return 0u;
+    }
+    const unsigned a = held_mirror(s);
+    return (a < LINK_SM_PARTS) ? s->held[LINK_SM_SHUNT(3u * a + ch - 1u)]
+                               : 0u;
+}
+
+bool sense_map_link_waits_for_pins(const sense_map_link_t *s,
+                                   const sense_link_t *sl)
+{
+    return s != NULL && s->want_set && s->want[LINK_SM_ENABLE] != 0u
+           && (sense_link_unheld(sl) & SENSE_LINK_ROW_PINS) != 0u;
+}
+
 /* What a read of IDs and FLAGS says that the operator is told. */
 static void judge(sense_map_link_t *s, uint32_t now_ms)
 {
@@ -230,6 +247,7 @@ static void judge(sense_map_link_t *s, uint32_t now_ms)
         }
         if ((s->flags & LINK_SM_ID_WRONG(a)) != 0u) {
             if ((s->was_flags & LINK_SM_ID_WRONG(a)) == 0u) {
+                s->wrong_id[a] = s->ids[a];    /* as read, kept if put back */
                 raise(s, SENSE_MAP_LINK_EV_WRONG, bit);
             }
             continue;
@@ -344,7 +362,7 @@ uint8_t sense_map_link_event(sense_map_link_t *s, uint32_t now_ms,
             *part = (a < LINK_SM_PARTS) ? a : 0u;
         }
         if (id != NULL) {
-            *id = (a < LINK_SM_PARTS) ? s->ids[a] : 0u;
+            *id = (a < LINK_SM_PARTS) ? s->wrong_id[a] : 0u;
         }
         s->told    = true;
         s->told_ms = now_ms;

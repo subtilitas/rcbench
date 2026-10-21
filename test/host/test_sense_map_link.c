@@ -433,6 +433,81 @@ TEST_CASE(an_older_iomcus_part_waits_for_its_frame_before_online)
     CHECK_EQ(sense_map_link_part(&ml, &sl, 0u, 0u, now), SENS_PART_ONLINE);
 }
 
+/* A WRONG event put back names the ID it was raised with, not the one
+ * read since. */
+TEST_CASE(a_wrong_event_put_back_keeps_its_id)
+{
+    map_fresh(25u, 0x0Du);
+    map_polls(4);
+    fm[LINK_SM_FLAGS] = (uint16_t)(LINK_SM_IN_FORCE | LINK_SM_ID_WRONG(2));
+    fm[LINK_SM_ID(2)] = 0x1234u;
+    map_polls(12);
+    uint8_t part = 9u;
+    uint16_t id = 0u;
+    CHECK_EQ(take_event(&part, &id), SENSE_MAP_LINK_EV_WRONG);
+    CHECK_EQ(id, 0x1234u);
+    fm[LINK_SM_ID(2)] = 0x5678u;
+    map_polls(12);
+    sense_map_link_event_back(&ml, SENSE_MAP_LINK_EV_WRONG, part);
+    CHECK_EQ(take_event(&part, &id), SENSE_MAP_LINK_EV_WRONG);
+    CHECK_EQ(part, 2u);
+    CHECK_EQ(id, 0x1234u);
+}
+
+/* The mirror part's shunts as the page holds them, for the clipped
+ * channel's alert: FAST's part, else the lowest enabled. */
+TEST_CASE(the_mirror_parts_shunt_is_the_held_maps)
+{
+    map_fresh(24u, 0x01u);
+    map_polls(20);
+    CHECK_EQ(sense_map_link_mirror_dmohm(&ml, 1u), 0u);
+    map_fresh(25u, 0x01u);
+    CHECK_EQ(sense_map_link_mirror_dmohm(&ml, 1u), 0u);   /* not read */
+    sense_map_want_t w = map_of(0x06u);
+    w.regs[LINK_SM_SHUNT(4)] = 200u;
+    sense_map_link_want(&ml, &w, now);
+    map_polls(20);
+    CHECK_EQ(sense_map_link_mirror_dmohm(&ml, 1u), 1000u);
+    CHECK_EQ(sense_map_link_mirror_dmohm(&ml, 2u), 200u);
+    CHECK_EQ(sense_map_link_mirror_dmohm(&ml, 0u), 0u);
+    CHECK_EQ(sense_map_link_mirror_dmohm(&ml, 4u), 0u);
+    CHECK_EQ(sense_map_link_mirror_dmohm(NULL, 1u), 0u);
+    /* FAST on 0x42 CH3: that part. */
+    w.regs[LINK_SM_FAST] = 8u;
+    w.regs[LINK_SM_SHUNT(8)] = 50u;
+    sense_map_link_want(&ml, &w, now);
+    map_polls(20);
+    CHECK_EQ(sense_map_link_mirror_dmohm(&ml, 3u), 50u);
+}
+
+/* A map that enables a part waits while SENSE's pins are not the ones
+ * asked: the page judges it against the pins it holds.  One that enables
+ * nothing goes first, so SENSE can clear its pins after it. */
+TEST_CASE(a_map_waits_for_the_pins_it_reads_on)
+{
+    map_fresh(25u, 0x01u);
+    idle = false;
+    sense_setup_t s = setup_default();
+    want(&s);
+    polls(4);                       /* SENSE read, its write held back */
+    s.sda = 20;
+    s.scl = 21;
+    want(&s);
+    polls(4);
+    CHECK(sense_link_unheld(&sl) & SENSE_LINK_ROW_PINS);
+    CHECK(sense_map_link_waits_for_pins(&ml, &sl));
+    sense_map_want_t w = map_of(0x01u);
+    w.nobus = true;
+    sense_map_link_want(&ml, &w, now);
+    CHECK(!sense_map_link_waits_for_pins(&ml, &sl));
+    idle = true;
+    polls(20);
+    w.nobus = false;
+    sense_map_link_want(&ml, &w, now);
+    CHECK(!sense_map_link_waits_for_pins(&ml, &sl));
+    CHECK(!sense_map_link_waits_for_pins(NULL, &sl));
+}
+
 /* Two parts not answering in one read: each has the band for the gap
  * before the next is handed out. */
 TEST_CASE(each_event_has_the_band_for_its_gap)
@@ -807,6 +882,9 @@ int main(void)
     RUN(a_part_on_the_ina228s_address_is_left_out);
     RUN(no_sensor_bus_takes_every_part_out);
     RUN(each_event_has_the_band_for_its_gap);
+    RUN(a_wrong_event_put_back_keeps_its_id);
+    RUN(the_mirror_parts_shunt_is_the_held_maps);
+    RUN(a_map_waits_for_the_pins_it_reads_on);
     RUN(an_older_iomcus_part_waits_for_its_frame_before_online);
     RUN(an_event_stands_while_its_cause_does);
     RUN(the_map_is_held_once_the_page_holds_it);

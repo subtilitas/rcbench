@@ -213,7 +213,10 @@ void sense_map_service(bool idle)
     sense_map_link_want(&s_sense_map, &w, now_ms());
     for (int k = 0; k < 2; ++k) {
         sense_map_link_op_t op;
-        if (!sense_map_link_next(&s_sense_map, now_ms(), idle, &op)) {
+        /* Pins the bus gets back are SENSE's to write first. */
+        const bool go = idle && !sense_map_link_waits_for_pins(&s_sense_map,
+                                                               &s_sense_link);
+        if (!sense_map_link_next(&s_sense_map, now_ms(), go, &op)) {
             break;
         }
         link_msg_t reply = { 0 };

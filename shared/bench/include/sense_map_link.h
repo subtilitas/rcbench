@@ -148,6 +148,7 @@ typedef struct {
     uint32_t asked_ms;
     bool     have_status;     /**< IDs and FLAGS read under this map        */
     uint16_t ids[LINK_SM_PARTS];
+    uint16_t wrong_id[LINK_SM_PARTS];  /**< the ID a WRONG event names    */
     uint16_t flags;
     uint16_t was_flags;
 
@@ -186,6 +187,17 @@ void sense_map_link_done(sense_map_link_t *s, int result,
 /** Whether the IOmcu has the page: up, 4.25 or later, and no read
  *  refused. */
 bool sense_map_link_page(const sense_map_link_t *s);
+
+/** The shunt in 0.1 mOhm of CH @p ch (1 to 3) of the part SENSE mirrors,
+ *  as the page holds the map: the part SENSE's CLIPPED flag and
+ *  SERVO_SENSE are about.  0 without a map read, or for no such part. */
+uint16_t sense_map_link_mirror_dmohm(const sense_map_link_t *s, unsigned ch);
+
+/** Whether the map waits for SENSE's pins: it enables a part while the
+ *  sensor bus's pins SENSE holds are not the ones asked.  The page judges
+ *  a map against the pins it holds, so SENSE writes them first. */
+bool sense_map_link_waits_for_pins(const sense_map_link_t *s,
+                                   const sense_link_t *sl);
 
 /** Whether the page holds the map asked: read since link-up, not
  *  refused, and nothing owed.  False on an IOmcu older than 4.25. */
