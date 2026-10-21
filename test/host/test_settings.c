@@ -15,7 +15,7 @@ TEST_CASE(defaults_come_from_the_schema)
         const setting_def_t *d = settings_def((setting_id_t)i);
         CHECK(d != NULL);
         CHECK(d->key != NULL && d->key[0] != '\0');
-        CHECK(d->label != NULL && d->label[0] != '\0');
+        CHECK(settings_label((setting_id_t)i)[0] != '\0');
         if (settings_get((setting_id_t)i) != d->def) {
             T_FAIL("%s: got %f, default %f", d->key,
                    (double)settings_get((setting_id_t)i), (double)d->def);
@@ -654,6 +654,38 @@ TEST_CASE(bad_ids_are_survivable)
     settings_adjust((setting_id_t)-1, 1);
     settings_adjust(SET_PACK_CELLS, 0);
     CHECK(settings_category_name((setting_cat_t)-1)[0] == '\0');
+    CHECK_STR_EQ(settings_label((setting_id_t)-1), "");
+    CHECK_STR_EQ(settings_label((setting_id_t)SETTING_COUNT), "");
+    CHECK_STR_EQ(settings_help((setting_id_t)-1), "");
+    CHECK_STR_EQ(settings_help((setting_id_t)SETTING_COUNT), "");
+    CHECK_EQ(settings_option_list((setting_id_t)-1), -1);
+    CHECK_EQ(settings_option_list((setting_id_t)SETTING_COUNT), -1);
+}
+
+/** @brief An enum setting finds its list among ui_text.def's, which a
+ * language's options follow; a number finds none.  Settings that show one
+ * list find the same one. */
+TEST_CASE(every_choice_finds_its_option_list)
+{
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        const setting_def_t *d = settings_def((setting_id_t)i);
+        const int list = settings_option_list((setting_id_t)i);
+        if ((d->options != NULL) != (list >= 0)) {
+            T_FAIL("%s: options %p, list %d", d->key,
+                   (const void *)d->options, list);
+        }
+    }
+    CHECK_EQ(settings_option_list(SET_PACK_CELLS), -1);
+    CHECK_EQ(settings_option_list(SET_THEME), 0);
+    CHECK(settings_option_list(SET_INA_W_01) >= 0);
+    CHECK_EQ(settings_option_list(SET_INA_W_01),
+             settings_option_list(SET_INA_W_33));
+    CHECK(settings_option_list(SET_INA_W_01)
+          != settings_option_list(SET_SERVO_TARGET));
+    CHECK_STR_EQ(settings_label(SET_PACK_CELLS), "Cells");
+    CHECK_STR_EQ(settings_help(SET_PACK_CELLS), "Series count in the pack");
+    CHECK_STR_EQ(settings_label(SET_INA_SH_23), "0x42 CH3 shunt");
+    CHECK_STR_EQ(settings_help(SET_THEME), "");
 }
 
 /* ----------------------------------------------------------------- theme */
@@ -944,6 +976,7 @@ int main(void)
     RUN(every_pole_count_the_schema_allows_is_one_the_link_takes);
     RUN(reset_restores_one_category_only);
     RUN(bad_ids_are_survivable);
+    RUN(every_choice_finds_its_option_list);
     RUN(theme_switch_changes_the_palette);
     RUN(brightness_and_contrast_are_clamped_and_monotonic);
     RUN(the_card_switches_are_on_kept_and_on_after_an_update);

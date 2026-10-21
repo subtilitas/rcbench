@@ -1,9 +1,12 @@
-/*
- * Device settings: a typed schema, a value per entry, and a persistence seam.
+/**
+ * @file
+ * @brief Device settings: a typed schema, a value per entry, and a persistence
+ *        seam.
  *
- * The schema carries range, step, unit and help text, so the settings screen
- * is generic -- it renders whatever the table says rather than hard-coding a
- * control per option.  Adding a setting is one table row.
+ * The schema carries range, step and unit, so the settings screen is generic
+ * -- it renders whatever the table says rather than hard-coding a control per
+ * option.  Adding a setting is one table row, and its label and help line
+ * are two entries of ui_text.def (shared/text), with every language.
  *
  * Pure C.  Persistence is a pair of function pointers, so the host tests use
  * memory and the firmware uses NVS (non-volatile storage) without the model
@@ -189,11 +192,14 @@ typedef enum {
     SETTING_COUNT
 } setting_id_t;
 
+/**
+ * @brief A setting's row of the schema: its key, unit, category, type,
+ *        range, step, default and options.  Its label and help line are
+ *        ui_text.def's (settings_label(), settings_help()).
+ */
 typedef struct {
     const char        *key;      /**< NVS key, 15 chars or fewer   */
-    const char        *label;
-    const char        *help;
-    const char        *unit;
+    const char        *unit;     /**< shown beside the value; "" none */
     setting_cat_t      cat;
     setting_type_t     type;
     float              min;
@@ -268,7 +274,36 @@ const setting_def_t *settings_def(setting_id_t id);
  *  settings_adjust() leave it, and SETUP draws its row without keys.
  *  Sensor SCL, which is the GPIO after Sensor SDA. */
 bool settings_derived(setting_id_t id);
+/**
+ * @brief A category's name in English, from ui_text.def.
+ * @param cat The category.
+ * @return Its name; "" for one out of range.  ui_setting_category() gives
+ *         it in the language showing.
+ */
 const char *settings_category_name(setting_cat_t cat);
+/**
+ * @brief A setting's label in English, from ui_text.def.
+ * @param id The setting.
+ * @return Its label; "" for an id out of range.  ui_setting_label() gives
+ *         it in the language showing.
+ */
+const char *settings_label(setting_id_t id);
+/**
+ * @brief A setting's help line in English, from ui_text.def.
+ * @param id The setting.
+ * @return Its help line, "" for none and for an id out of range.
+ *         ui_setting_help() gives it in the language showing.
+ */
+const char *settings_help(setting_id_t id);
+/**
+ * @brief Which option list a setting shows, so a language's options are
+ *        found by it.
+ * @param id The setting.
+ * @return The list's place among the UI_OPTIONS() of ui_text.def, counted
+ *         from 0; -1 for a setting that is no choice and for an id out of
+ *         range.
+ */
+int settings_option_list(setting_id_t id);
 
 float settings_get(setting_id_t id);
 int   settings_get_int(setting_id_t id);
