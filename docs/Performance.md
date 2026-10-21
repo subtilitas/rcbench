@@ -439,7 +439,11 @@ when a row is given twice. It also fails on a line of `psram_bss.lf` other
 than `object (extram_bss)` entries under a `[mapping:...]` header, on an
 object the fragment names and the map places no .bss of, and on an object
 in PSRAM that the fragment does not name, outside lwIP, net80211, pp and
-wpa_supplicant. `-v` lists every object.
+wpa_supplicant. It fails as well on a screen object (`libui.a`) whose .bss
+the map places in internal RAM and that `UI_INTERNAL` in the tool does not
+name: 19 small objects, 2,291 bytes in all, stay there. A screen split
+into more files keeps its .bss in PSRAM only when the fragment names each
+new object that holds any. `-v` lists every object.
 
 An object moves only when its state
 

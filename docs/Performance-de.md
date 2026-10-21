@@ -468,7 +468,12 @@ bei einer Zeile in `psram_bss.lf`, die kein Eintrag `object (extram_bss)`
 unter einem Kopf `[mapping:...]` ist, bei einem Objekt, das das Fragment
 nennt und von dem die Map keine .bss platziert, und bei einem Objekt im
 PSRAM, das das Fragment nicht nennt, außerhalb von lwIP, net80211, pp und
-wpa_supplicant. `-v` listet jedes Objekt.
+wpa_supplicant. Ebenso schlägt es fehl bei einem Objekt der Bildschirme
+(`libui.a`), dessen .bss die Map in den internen RAM legt und das
+`UI_INTERNAL` im Werkzeug nicht nennt: 19 kleine Objekte, zusammen
+2 291 Bytes, bleiben dort. Ein Bildschirm, der auf mehr Dateien verteilt
+wird, behält seine .bss nur dann im PSRAM, wenn das Fragment jedes neue
+Objekt nennt, das welche hat. `-v` listet jedes Objekt.
 
 Ein Objekt zieht nur um, wenn seinen Zustand
 

@@ -198,6 +198,9 @@ KST_O = "esp-idf/bench/libbench.a(kst_card.c.obj)"
 CSV_O = "esp-idf/logfile/liblogfile.a(log_csv.c.obj)"
 WPA_O = "esp-idf/wpa_supplicant/libwpa_supplicant.a(wpa.c.obj)"
 MAP = f"""\
+.dram0.bss      0x3fca2080     0x5b18
+ .bss.s_log     0x3fca2080       0x40 esp-idf/main/libmain.a(main.c.obj)
+
 .ext_ram.dummy  0x3c000020   0x1bffe0
  *fill*         0x3c000020   0x1bfd60
 
@@ -271,6 +274,8 @@ ROWS = [("kst_card", "bench", KST), ("log_csv", "logfile", CSV)]
 
 @pytest.fixture
 def psram_tree(tmp_path, monkeypatch):
+    # No screen keeps .bss internal in MAP.
+    monkeypatch.setattr(rb, "UI_INTERNAL", ())
     """A build with MAP and a fragment with LF; pages that agree with them.
     Returns (build, en, de)."""
     build = tmp_path / "build"
@@ -537,3 +542,72 @@ def test_both_pages_list_the_fragments_objects():
     for page, header, _ in rb.PSRAM_PAGES:
         said = rb.psram_rows(page.read_text(encoding="utf-8"), header)
         assert sorted(r[0] for r in said) == sorted(named), page.name
+
+
+# ------------------------------------------ the screens' internal .bss --
+
+UI_O = "esp-idf/ui/libui.a({}.c.obj)"
+
+
+def dram(*objects):
+    """A map's .dram0.bss with one input section per object.
+
+    Args:
+        objects: (archive object name, bytes) pairs of libui.a.
+
+    Returns:
+        The map text, with .ext_ram.bss after it.
+    """
+    lines = "".join(f" .bss.x         0x3fca2080 {hex(n):>10} "
+                    f"{UI_O.format(o)}\n" for o, n in objects)
+    return (".dram0.bss      0x3fca2080     0x5b18\n" + lines
+            + "\n.ext_ram.bss    0x3c1c0000    0x0\n")
+
+
+def test_the_internal_section_is_read_object_by_object(tmp_path):
+    path = tmp_path / "a.map"
+    path.write_text(dram(("splash_screen", 488), ("ui_router", 412)),
+                    encoding="utf-8")
+    assert rb.map_section(path, ".dram0.bss") == {
+        ("libui.a", "splash_screen"): 488, ("libui.a", "ui_router"): 412}
+
+
+def test_a_screen_object_left_out_of_the_fragment_fails(monkeypatch):
+    """A split screen's new file with a static buffer, not named in
+    psram_bss.lf, lands in internal RAM."""
+    monkeypatch.setattr(rb, "UI_INTERNAL", ("splash_screen",))
+    internal = {("libui.a", "splash_screen"): 488,
+                ("libui.a", "servo_screen_link"): 16,
+                ("libmain.a", "main"): 64}
+    assert rb.ui_internal(internal) == [
+        "the map places 16 bytes of .bss of servo_screen_link in libui.a "
+        "in internal RAM; name it in psram_bss.lf, or in UI_INTERNAL with "
+        "the reason it stays"]
+
+
+def test_a_stale_internal_entry_fails(monkeypatch):
+    monkeypatch.setattr(rb, "UI_INTERNAL", ("splash_screen", "gone"))
+    assert rb.ui_internal({("libui.a", "splash_screen"): 488}) == [
+        "UI_INTERNAL names gone, and the map places none of its .bss in "
+        "internal RAM"]
+
+
+def test_the_psram_check_reads_the_internal_section(psram_tree,
+                                                     monkeypatch):
+    build, _, _ = psram_tree
+    (build / rb.MAP_NAME).write_text(
+        MAP.replace(" .bss.s_log ", " .bss.y         0x3fca20c0       0x10 "
+                    + UI_O.format("kst_panel_draw") + "\n .bss.s_log ", 1),
+        encoding="utf-8")
+    _, _, errors = rb.psram(build)
+    assert errors == [
+        "the map places 16 bytes of .bss of kst_panel_draw in libui.a in "
+        "internal RAM; name it in psram_bss.lf, or in UI_INTERNAL with the "
+        "reason it stays"]
+
+
+def test_a_map_without_the_internal_section_stops(tmp_path):
+    path = tmp_path / "a.map"
+    path.write_text(".ext_ram.bss    0x3c1c0000    0x0\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="no .dram0.bss section"):
+        rb.map_section(path, ".dram0.bss")

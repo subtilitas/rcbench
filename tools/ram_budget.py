@@ -59,7 +59,11 @@ on a line of the fragment other than `object (extram_bss)` entries under
 [mapping:...] headers (lf_objects() says why), on an object in
 .ext_ram.bss that the fragment does not name, outside ESP_IDF_PSRAM's
 archives, and on a table row given twice or a count other than the
-table's rows.
+table's rows.  It also reads .dram0.bss and fails on an object of libui.a
+(the screens) whose .bss the map places in internal RAM and that
+UI_INTERNAL does not name, and on a UI_INTERNAL entry with no .bss there:
+a screen split into more files keeps its .bss in PSRAM only when the
+fragment names the new objects.
 
 SPDX-License-Identifier: MIT
 """
@@ -156,6 +160,19 @@ PSRAM_PAGES = (
 # net80211 and pp, and wpa_supplicant.
 ESP_IDF_PSRAM = ("liblwip.a", "libnet80211.a", "libpp.a",
                  "libwpa_supplicant.a")
+
+
+# The objects of libui.a whose .bss stays in internal RAM: each under 500
+# bytes, 2,291 in all, in the ESP-IDF v5.4 build.  Every other object of
+# libui.a with .bss is named in psram_bss.lf.
+UI_ARCHIVE = "libui.a"
+UI_INTERNAL = (
+    "balance_screen", "battery_screen", "busfault_screen", "outputs_port",
+    "outputs_port_entry", "outputs_screen", "overview_screen",
+    "picker_screen", "port_view", "prog_registry", "sensors_rows",
+    "servo_workbench", "settings_screen", "splash_screen", "ui_router",
+    "ui_text", "ui_textkey", "ui_theme", "upd_screen",
+)
 
 
 def die(msg: str) -> None:
@@ -486,11 +503,25 @@ def map_psram(path: Path) -> dict:
     in the .ext_ram.bss output section of an ESP-IDF map file: .bss,
     COMMON and EXT_RAM_BSS_ATTR's .ext_ram.bss alike.  An input section's
     name and its address, size and file can be on two lines."""
+    return map_section(path, ".ext_ram.bss")
+
+
+def map_section(path: Path, section: str) -> dict:
+    """Reads one output section of an ESP-IDF map file object by object.
+
+    Args:
+        path: The map file.
+        section: The output section's name, ".ext_ram.bss" or
+            ".dram0.bss".
+
+    Returns:
+        {(archive, object): bytes} of the input sections placed in it.
+    """
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     start = next((i for i, line in enumerate(lines)
-                  if re.match(r"\.ext_ram\.bss\s+0x", line)), None)
+                  if re.match(re.escape(section) + r"\s+0x", line)), None)
     if start is None:
-        die(f"{path} has no .ext_ram.bss section")
+        die(f"{path} has no {section} section")
     out, held = {}, None
     for line in lines[start + 1:]:
         if line and not line.startswith(" "):
@@ -536,7 +567,34 @@ def psram(build: Path) -> tuple:
                           f"ESP_IDF_PSRAM names")
     esp_idf = sum(n for (a, _), n in placed.items() if a in ESP_IDF_PSRAM)
     objects.sort(key=lambda o: (-o[2], o[0]))
+    errors += ui_internal(map_section(path, ".dram0.bss"))
     return objects, esp_idf, errors
+
+
+def ui_internal(internal: dict) -> list:
+    """Holds the screens' .bss in internal RAM to UI_INTERNAL.
+
+    Args:
+        internal: {(archive, object): bytes} of .dram0.bss, as
+            map_section() reads it.
+
+    Returns:
+        The errors: an object of libui.a with .bss in internal RAM that
+        UI_INTERNAL does not name, and a UI_INTERNAL entry with none.
+    """
+    errors = []
+    held = {o: n for (a, o), n in internal.items() if a == UI_ARCHIVE}
+    for obj in sorted(held):
+        if held[obj] > 0 and obj not in UI_INTERNAL:
+            errors.append(f"the map places {held[obj]} bytes of .bss of "
+                          f"{obj} in {UI_ARCHIVE} in internal RAM; name it "
+                          f"in {PSRAM_LF.name}, or in UI_INTERNAL with the "
+                          f"reason it stays")
+    for obj in UI_INTERNAL:
+        if held.get(obj, 0) == 0:
+            errors.append(f"UI_INTERNAL names {obj}, and the map places "
+                          f"none of its .bss in internal RAM")
+    return errors
 
 
 def psram_rows(text: str, header: str) -> list | None:
