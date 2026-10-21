@@ -267,6 +267,18 @@ extern const gfx_font_t gfx_font_8x16;
 extern const gfx_font_t gfx_font_16x28;
 /** 24x30 digits and punctuation, 0x20..0x3A.  Hero numerals. */
 extern const gfx_font_t gfx_font_num_24x30;
+/** 10x20 monospaced, ASCII 0x20..0x7E and the German letters.  Cap height
+ *  12 px.  Labels, tabs, buttons and row values on the 1024 x 600 panel. */
+extern const gfx_font_t gfx_font_10x20;
+/** 12x24 monospaced, ASCII 0x20..0x7E and the German letters.  Cap height
+ *  15 px.  Prose: help text, warnings, questions, run results. */
+extern const gfx_font_t gfx_font_12x24;
+/** 20x36 monospaced, ASCII 0x20..0x7E and the German letters.  Cap height
+ *  24 px.  Headings, tile names and choice faces on the 1024 x 600 panel. */
+extern const gfx_font_t gfx_font_20x36;
+/** 32x44 digits and punctuation, 0x20..0x3A.  Cap height 40 px.  Hero
+ *  numerals on the 1024 x 600 panel. */
+extern const gfx_font_t gfx_font_num_32x44;
 
 /* ------------------------------------------------- seven-segment numerals */
 

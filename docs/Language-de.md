@@ -186,10 +186,10 @@ Jeder Text ist UTF-8 (Unicode Transformation Format, 8 Bit), vom C-Quelltext
 bis zum TXT-Bericht auf der Karte. `gfx` dekodiert ihn, und ein Codepoint ist
 eine Zelle:
 
-- Die beiden Text-Fonts enthalten druckbares ASCII (American Standard Code
+- Die fünf Text-Fonts enthalten druckbares ASCII (American Standard Code
   for Information Interchange, 0x20 bis 0x7E) und die sieben deutschen
   Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6,
-  U+00FC), je 102 Glyphen. Der Ziffern-Font enthält nur Ziffern und
+  U+00FC), je 102 Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
   Satzzeichen.
 - Ein Codepoint, den ein Font nicht enthält, erscheint als `?`. Ein Byte,
   das keine gültige Folge beginnt, eine abgeschnittene Folge und eine

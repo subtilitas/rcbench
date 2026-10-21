@@ -181,10 +181,10 @@ Every string is UTF-8 (Unicode Transformation Format, 8-bit), from the C
 source to the TXT report on the card. `gfx` decodes it, and one code point
 is one cell:
 
-- The two text faces hold printable ASCII (American Standard Code for
+- The five text faces hold printable ASCII (American Standard Code for
   Information Interchange, 0x20 to 0x7E) and the seven German letters
   Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6, U+00FC),
-  102 glyphs each. The numeral face holds digits and punctuation only.
+  102 glyphs each. The two numeral faces hold digits and punctuation only.
 - A code point a face does not hold draws as `?`. A byte that does not start
   a well-formed sequence, a sequence cut short and an overlong form are one
   `?` each, and the decoder never reads past the terminator.
