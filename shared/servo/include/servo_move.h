@@ -191,11 +191,19 @@ void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip);
 
 /**
  * @brief A sample taken at @p at: @p a amps, or for a clip the end of the range
- * it is at or past.  A sample taken before the command only fills the
- * filter; one at or past window_t after the command ends the move late
- * or unseen, as servo_move_tick() would, and is not judged.  Returns the
- * state after it; ARRIVED and SETTLED leave end_t at the arrival.  Nothing
- * once the move is over.
+ *        it is at or past.
+ *
+ * A sample taken before the command only fills the filter; one at or past
+ * window_t after the command ends the move late or unseen, as
+ * servo_move_tick() would, and is not judged.  Nothing once the move is over.
+ * ARRIVED and SETTLED leave end_t at the arrival.
+ *
+ * @param m    Move state.
+ * @param at   Time of the sample, in the caller time unit.
+ * @param a    Sample, A.
+ * @param clip SERVO_MOVE_CLIP_NONE for a sample; SERVO_MOVE_CLIP_LOW or
+ *             SERVO_MOVE_CLIP_HIGH when the reading is at the end of its range.
+ * @return state after the sample.
  */
 servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
                                      servo_move_clip_t clip);

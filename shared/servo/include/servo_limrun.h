@@ -688,6 +688,12 @@ servo_str_t servo_limrun_verdict_str(servo_limrun_verdict_t v);
  *        other values.
  */
 servo_str_t servo_limrun_why_str(const servo_limrun_t *r);
+/**
+ * @brief Table entry for a phase of the limit run.
+ *
+ * @param ph Phase to name.
+ * @return table entry for the phase; PHASE_NONE for a value not in the enum.
+ */
 servo_str_t servo_limrun_phase_str(servo_limrun_phase_t ph);
 
 /**

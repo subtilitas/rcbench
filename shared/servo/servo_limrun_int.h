@@ -19,15 +19,16 @@
 
 /** @brief Where a side stands. */
 typedef enum {
-    ST_NONE = 0,      /* not bound in the first search: nothing to write */
-    ST_OVERSET,       /* the overset is to be written                    */
-    ST_OVERSET_SEARCH,/* written; the side's search follows              */
-    ST_FINAL,         /* the final value is to be written                */
-    ST_DONE,          /* the final value is written                      */
+    ST_NONE = 0,      /**< not bound in the first search: nothing to write */
+    ST_OVERSET,       /**< the overset is to be written                    */
+    ST_OVERSET_SEARCH,/**< written; the side's search follows              */
+    ST_FINAL,         /**< the final value is to be written                */
+    ST_DONE,          /**< the final value is written                      */
 } limrun_stage_t;
 
 /**
- * @brief servo_limrun_span().
+ * @brief Distance from NEUTRAL to a side pulse limit, 0.1 us, from the
+ *        pulses given. servo_limrun_span() wraps this.
  *
  * @param sv   Servo pulses, 0.1 us.
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
@@ -43,7 +44,8 @@ static inline int32_t limrun_span(const servo_limrun_servo_t *sv,
 }
 
 /**
- * @brief servo_limrun_restore().
+ * @brief Whether RESTORE is offered: the run is DONE and programmed, and ended
+ *        as FAIL or ABORTED. servo_limrun_restore() wraps this.
  *
  * @param r Run state. NULL gives false.
  * @return true when the run is DONE, programmed, and ended as FAIL or ABORTED.
