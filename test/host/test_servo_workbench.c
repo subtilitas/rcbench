@@ -669,7 +669,7 @@ TEST_CASE(the_program_row_repaints_when_the_testers_port_moves)
 
 /* The session is a level below PROGRAM's list: the home tag closes it to
  * the list, the next one leaves the screen.  (An editor in the session and
- * a port in programming: test_kst_panel.c.) */
+ * a port in programming: test_kst_panel_screen.c.) */
 TEST_CASE(the_home_tag_climbs_from_the_session_to_the_list_and_leaves)
 {
     fresh();

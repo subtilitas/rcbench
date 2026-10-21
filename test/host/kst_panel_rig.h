@@ -6,8 +6,7 @@
  * IOmcu's port, the link dispatch and the panel's link module are
  * kst_rig.h.
  *
- * For test_kst_panel.c, test_kst_panel_files.c, test_kst_panel_nocard.c and
- * test_kst_panel_limrun.c.
+ * For test_kst_panel.c and test_kst_panel_*.c.
  *
  * SPDX-License-Identifier: MIT
  */
