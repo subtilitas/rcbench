@@ -148,10 +148,11 @@ void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out)
         return;
     }
     out->page   = s->page;
+    /* FAST on CH1 only: the windows are taken as CH1's. */
     out->wanted = s->want_set && s->want_i3221 && !s->want_unwatched
+                  && !s->want_off_ch1
                   && (s->map
-                      || ((s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u
-                          && !s->want_off_ch1));
+                      || (s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u);
     uint16_t regs[FRAME_N];
     out->held = out->wanted && s->known
                 && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u

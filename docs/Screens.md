@@ -2670,6 +2670,10 @@ target is OUTPUTS, and PORT n while it is programming port n. Every other
 channel with a shunt is read in turn, one a millisecond: 90.9 Hz each with
 eleven ([Link](Link.md)).
 
+Current limitation: the servo test and the SERVO screen take the INA3221 as
+the servo rail's meter only while that channel is CH1 of its part. With it
+on CH2 or CH3 the rail's meter is the PD mini.
+
 An IOmcu older than 4.25 has no SENSE_MAP and reads one INA3221 from
 SENSE: the part of the channel read at 1 kHz, else the lowest fitted part,
 with its CH1 shunt (or its first one that is not OFF) and the channels on

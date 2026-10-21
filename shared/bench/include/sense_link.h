@@ -186,8 +186,9 @@ typedef struct {
     /** No fitted channel watches the servo tester's target (SENSORS'
      *  FAST is none): the INA3221 is not the servo rail's meter. */
     bool     i3221_unwatched;
-    /** FAST is CH2 or CH3 of its part: an IOmcu older than 4.25 reads CH1
-     *  at 1 kHz, which then is not the servo rail's meter. */
+    /** FAST is CH2 or CH3 of its part: the INA3221 is not the servo
+     *  rail's meter then.  The windows are taken as CH1's, and an IOmcu
+     *  older than 4.25 reads CH1 at 1 kHz whatever watches. */
     bool     i3221_fast_off_ch1;
 } sense_setup_t;
 

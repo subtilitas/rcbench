@@ -482,6 +482,12 @@ TEST_CASE(sensors_lists_a_fitted_parts_rows_under_its_heading)
     /* The fifth setting listed is 0x40 CH1 WATCHES, under its heading. */
     CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 0), 1);
     CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4), 6);
+    /* By schema index: 0x42 CH1 WATCHES under its heading, 0x41's rows
+     * not listed. */
+    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4 + 12), 13);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4 + 6), -1);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, -1), -1);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 28), -1);
     char buf[24];
     CHECK_STR_EQ(sensors_rows_title(2, buf, sizeof(buf)), "INA3221 0x42");
     CHECK_STR_EQ(sensors_rows_title(2, NULL, 0u), "");

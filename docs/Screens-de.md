@@ -2936,6 +2936,10 @@ AUSGANG 1 bis AUSGANG 8, solange das Ziel OUTPUTS ist, und PORT n, solange
 es Programmierport n ist. Jeder andere Kanal mit Shunt wird reihum gelesen,
 einer je Millisekunde: 90,9 Hz je Kanal bei elf ([Link](Link-de.md)).
 
+Derzeitige Einschränkung: Der Servotest und der SERVO-Bildschirm nehmen den
+INA3221 nur als Messgerät der Servo-Schiene, solange dieser Kanal CH1 seines
+Bausteins ist. Liegt er auf CH2 oder CH3, ist das Messgerät der PD mini.
+
 Ein IOmcu älter als 4.25 hat kein SENSE_MAP und liest einen INA3221 über
 SENSE: den Baustein des Kanals, der mit 1 kHz gelesen wird, sonst den
 niedrigsten bestückten, mit seinem CH1-Shunt (oder dem ersten, der nicht AUS

@@ -540,12 +540,11 @@ figures.
 
 **The servo rail's meter.** `shared/bench/servo_source.c` decides once per
 poll which meter measures the servo rail. The INA3221 channel that watches
-the servo tester's target -- CH1 on an IOmcu older than 4.25 -- is the
-meter while all of these hold:
+the servo tester's target is the meter while all of these hold:
 
 | # | Condition |
 | ---: | --- |
-| 1 | SETUP SENSORS has a fitted part with a channel that watches the servo tester's target; without SENSE_MAP (an IOmcu older than 4.25) that channel is the part's CH1 |
+| 1 | SETUP SENSORS has a fitted part with a channel that watches the servo tester's target; that channel is the part's CH1 |
 | 2 | the IOmcu's protocol minor is 11 or more |
 | 3 | SENSE's registers 0 to 11 are the set-up asked: no write owed, no frame refused; with SENSE_MAP its INA3221 enable bit and registers 8 to 11 are the map's, and SENSE_MAP's registers 0 to 25 are the map asked: read since the link came up, not refused, no write owed |
 | 4 | the last SENSE read is less than 200 ms old, and its `FLAGS` have the INA3221's bits 4 and 5 set and bit 9 clear |

@@ -718,6 +718,14 @@ TEST_CASE(the_meter_follows_fast_with_the_map_and_ch1_without)
     sense_link_meter(&sl, &m);
     CHECK(!m.wanted);
     CHECK(!sense_link_win_on(&sl));
+    /* FAST on CH2 or CH3: the windows are taken as CH1's, so no meter. */
+    w.i3221_unwatched = false;
+    w.i3221_fast_off_ch1 = true;
+    want(&w);
+    sense_link_meter(&sl, &m);
+    CHECK(!m.wanted);
+    CHECK(!sense_link_win_on(&sl));
+    w.i3221_fast_off_ch1 = false;
     /* Without the map: CH1 of the one part, and still a watching channel. */
     sense_link_set_map(&sl, false);
     w.i3221_unwatched = false;

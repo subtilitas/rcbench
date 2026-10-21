@@ -84,16 +84,20 @@ static int entries(setting_cat_t cat, settings_row_t *out, int max)
 
 int settings_screen_row_of(setting_cat_t cat, int index)
 {
+    setting_id_t ids[MAX_ROWS];
+    const int ni = settings_in_category(cat, ids, MAX_ROWS);
+    if (index < 0 || index >= ni || index >= MAX_ROWS) {
+        return -1;
+    }
     settings_row_t e[MAX_ENTRIES];
     const int n = entries(cat, e, MAX_ENTRIES);
-    int seen = -1;
     for (int r = 0; r < n && r < MAX_ENTRIES; ++r) {
         if (e[r].heading < 0 && e[r].part < 0 && e[r].text < 0
-            && ++seen == index) {
+            && e[r].id == ids[index]) {
             return r;
         }
     }
-    return -1;
+    return -1;                      /* not listed: a part not fitted */
 }
 
 int settings_screen_text_row(setting_cat_t cat, setting_text_id_t id)
