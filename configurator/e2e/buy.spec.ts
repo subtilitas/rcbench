@@ -226,7 +226,7 @@ for (const size of SIZES) {
       await expect(page.locator('#buy [data-h="ina228.xt90"]')).not.toBeChecked();
       await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&o=xt90');
       // A link with a stale and a malformed tick opens with the note that names both; the link of the print header leaves both out.
-      await open(page, '#v=1&f=escpow&o=xt90&h=ina228.matek,Panel,panel');
+      await open(page, '#v=1&f=escpow&o=xt90&h=ina228.matek,Panel,panel.p47b');
       await expect(page.locator('.msg.note')).toContainText('Panel, ina228.matek');
       await expect(page.locator('#have > li')).toHaveCount(1);
       await expect(page.locator('#have [data-h="panel.p47b"]')).toBeChecked();
