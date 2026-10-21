@@ -668,7 +668,8 @@ FIT_ONLY = {
 # Views that open a drop-down, a chip's help bubble or the alert band over
 # the screen: the list, the bubble or the band covers the labels under it by
 # design, so a fill drawn over a string is not a finding there.
-OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol", "overview-alert",
+OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "picker-protocol",
+                 "overview-alert",
                  "setup-folder"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
