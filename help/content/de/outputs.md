@@ -80,7 +80,7 @@ Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport, den der
 | Zeile | Zeigt und tut |
 |---|---|
 | PIN | `PIN GP13`, `PIN WÄHLEN`, `PIN GP14 ABGELEHNT` oder `KEIN PIN BEKANNT`; ein Tipp öffnet [PICK A PIN](picker.md) auf dem Port, wo ein Tipp auf einen Pin ihn setzt |
-| FUNKTION | SERVO PWM oder KEINE: was der Pin trägt, solange keine Programmiersitzung ihn hält. SERVO PWM ist der Servopuls auf einem PWM-Pin; KEINE lässt den Pin einen Eingang mit seinem Pull-down, auf jedem freien Pin |
+| FUNKTION | was der Pin trägt, solange keine Programmiersitzung ihn hält; ein Tipp öffnet die Liste. SERVO PWM ist der Servopuls auf einem PWM-Pin; KEINE lässt den Pin einen Eingang mit seinem Pull-down, auf jedem freien Pin; DSHOT150, DSHOT300 und DSHOT600 (IOmcu ab 4.28) senden DShot mit dem Gas von MOTOR & ESC, ein Frame alle 1 ms, solange für das Gas ARMED, auf jedem freien Pin |
 | ÜBERWACHT VON | der Stromkanal, der den Port überwacht; `VON KEINEM STROMKANAL ÜBERWACHT`, bis eine Sensorzuordnung einen nennt |
 | SERVO-TESTER | OUTPUTS oder PORT n: was der Tester von [SERVO](servo.md) treibt. Die Zeile ZIEL von SERVO öffnet OUTPUTS hier, solange der IOmcu den Port treibt |
 | PORT-PWM | EIN oder AUS: der Puls des Ports, der das Ziel des Testers ist |
@@ -98,7 +98,7 @@ Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung de
 | `PORTS NOCH NICHT GELESEN` | die Ports des IOmcu seit dem Linkaufbau nicht gelesen |
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED, oder ein Sweep oder ein Test läuft; PORT-PWM geht trotzdem aus |
 | `SERVO-TESTER STEUERT PROG-PORT 3` | der Tester steuert einen anderen Port |
-| `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE |
+| `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE oder DShot |
 | `IOMCU ÄLTER ALS 4.26: NUR SERVO PWM` | der IOmcu hat keine FUNKTION |
 | `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM auf einem Port, der nicht das Ziel des Testers ist |
 

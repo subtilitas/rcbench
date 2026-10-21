@@ -33,6 +33,7 @@
 #include "ui_value_gate.h"
 #include "kst_panel.h"
 #include "outputs_screen.h"
+#include "port_view.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -176,6 +177,9 @@ static struct {
     /* The protocol they are bound as: an outbind_protos() index, 0 for
      * none known, MOTOR_PROTO_MIXED for several. */
     uint8_t       thr_proto;
+    /* port_view_revision() when the TARGET row last named the DShot
+     * programming ports. */
+    uint32_t      thr_ports_rev;
     /* The strip's and SETTINGS' page's revisions last painted into each
      * framebuffer, and whether the TARGET row was drawn locked. */
     uint32_t      drawn_strip[2];
@@ -690,15 +694,25 @@ static void session_opened(void)
 
 /*
  * The TARGET row tapped: OUTPUTS, where the throttle's pins are bound, on
- * the protocol they are bound as; on the overview while they are bound as
- * several or none is known.  The router leaves this screen for it, which
+ * the protocol they are bound as; on the PROG PORT entry of a DShot
+ * programming port the throttle drives alone; on the overview while they
+ * are bound as several or none is known.  The router leaves this screen for it, which
  * switches the bench to SAFE as any way out does (leave()); the row takes
  * the tap only on a SAFE bench.  The home tag there comes back here
  * (ui_router_parent()), on the task the row was tapped on.
  */
 static void open_outputs(void)
 {
-    if (s.thr_proto != MOTOR_PROTO_MIXED && s.thr_proto < OUTBIND_PROTOS) {
+    const uint8_t ports = motor_dshot_ports();
+    if (s.thr_pins == 0u && ports != 0u && (ports & (ports - 1u)) == 0u) {
+        /* One DShot programming port and no slot: its PROG PORT entry. */
+        uint8_t k = 0u;
+        while ((ports & (1u << k)) == 0u) {
+            ++k;
+        }
+        outputs_screen_open_on_port(k);
+    } else if (s.thr_proto != MOTOR_PROTO_MIXED
+               && s.thr_proto < OUTBIND_PROTOS) {
         outputs_screen_open_on(s.thr_proto);
     }
     ui_router_goto(SCREEN_OUTPUTS);
@@ -919,6 +933,11 @@ static void tick(float dt_s)
      * taking a press again. */
     if (target_locked() != s.target_locked) {
         s.target_locked = target_locked();
+        ++s.ctrl_rev;
+    }
+    /* And names the DShot ports the throttle drives as they are read. */
+    if (port_view_revision() != s.thr_ports_rev) {
+        s.thr_ports_rev = port_view_revision();
         ++s.ctrl_rev;
     }
     msp_tick(endpoints_free());

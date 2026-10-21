@@ -128,6 +128,10 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
 void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
                     bool pressed, bool open);
 
+/** The face of a choice that takes no press now, as ui_tabs_render_locked()
+ *  draws a segment row: sunk, its text and chevron dim, no accent. */
+void ui_choice_face_locked(gfx_canvas_t *c, gfx_rect_t r, const char *text);
+
 /** The open list's ground: a shadow 4 px down and right, then the panel. */
 void ui_choice_list(gfx_canvas_t *c, gfx_rect_t r);
 

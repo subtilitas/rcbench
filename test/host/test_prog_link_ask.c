@@ -62,8 +62,11 @@ static void flags(void)
         if (g_page[LINK_PG_REG(n, LINK_PG_PIN)] == LINK_PG_PIN_NONE) {
             continue;
         }
-        f |= (g_page[LINK_PG_FUNC(n)] == (uint16_t)LINK_PG_FN_SERVO_PWM)
-                 ? LINK_PG_F_BOUND(n) : LINK_PG_F_PARKED(n);
+        const uint16_t fn = g_page[LINK_PG_FUNC(n)];
+        f = (uint16_t)(f | ((fn == (uint16_t)LINK_PG_FN_SERVO_PWM)
+                                ? LINK_PG_F_BOUND(n)
+                            : LINK_PG_FN_IS_DSHOT(fn) ? LINK_PG_F_DSHOT(n)
+                                                      : LINK_PG_F_PARKED(n)));
     }
     g_page[LINK_PG_FLAGS] = f;
 }
@@ -109,7 +112,8 @@ TEST_CASE(an_ask_is_refused_where_nothing_could_take_it)
     CHECK(!prog_link_ask(&g_p, 0u, PROG_LINK_ASK_PIN, 14u));   /* no page */
     fresh();
     CHECK(!prog_link_ask(&g_p, 4u, PROG_LINK_ASK_PIN, 14u));
-    CHECK(!prog_link_ask(&g_p, 1u, PROG_LINK_ASK_FUNC, 2u));   /* DSHOT150 */
+    CHECK(!prog_link_ask(&g_p, 1u, PROG_LINK_ASK_FUNC, 2u));   /* DSHOT150,
+                                                                  4.28 */
     CHECK(!prog_link_ask(&g_p, 1u, PROG_LINK_ASK_FUNC, 0xFFFFu));
     CHECK(!prog_link_ask(&g_p, 1u, (prog_link_ask_kind_t)7, 0u));
     CHECK_EQ(prog_link_ask_state(&g_p, NULL, NULL, NULL), PROG_LINK_ASK_IDLE);
@@ -298,6 +302,62 @@ TEST_CASE(an_older_iomcu_is_read_as_24_registers_all_servo_pwm)
     CHECK(prog_link_has_func(&g_p));
 }
 
+/*
+ * The DShot functions are asked of a 4.28 IOmcu only: a 4.26 or 4.27 one
+ * refuses them, so the panel never writes one there.  A 4.28 page's DShot
+ * port reads as its function and is no target for the tester.
+ */
+TEST_CASE(dshot_is_asked_of_a_4_28_iomcu_only)
+{
+    fresh();
+    CHECK(prog_link_has_func(&g_p));
+    CHECK(!prog_link_has_dshot(&g_p));
+    CHECK(!prog_link_ask(&g_p, 1u, PROG_LINK_ASK_FUNC, LINK_PG_FN_DSHOT150));
+    CHECK(!prog_link_ask(&g_p, 1u, PROG_LINK_ASK_FUNC, LINK_PG_FN_DSHOT600));
+    CHECK(prog_link_ask(&g_p, 1u, PROG_LINK_ASK_FUNC, LINK_PG_FN_NONE));
+    /* 4.27: still not. */
+    prog_link_came_up(&g_p, LINK_MINOR_PROG_DSHOT - 1u);
+    prog_link_read(&g_p, g_page, 1u);
+    CHECK(!prog_link_has_dshot(&g_p));
+    CHECK(!prog_link_ask(&g_p, 1u, PROG_LINK_ASK_FUNC, LINK_PG_FN_DSHOT300));
+    /* What a 4.27 page cannot hold reads as NONE. */
+    g_page[LINK_PG_FUNC(1u)] = (uint16_t)LINK_PG_FN_DSHOT300;
+    prog_link_read(&g_p, g_page, 2u);
+    prog_link_port_t pt;
+    CHECK(prog_link_port(&g_p, 1u, &pt));
+    CHECK_EQ(pt.func, (uint8_t)LINK_PG_FN_NONE);
+    /* 4.28: all three rates, nothing past them. */
+    prog_link_came_up(&g_p, LINK_MINOR_PROG_DSHOT);
+    prog_link_read(&g_p, g_page, 3u);
+    CHECK(prog_link_has_dshot(&g_p));
+    CHECK(prog_link_port(&g_p, 1u, &pt));
+    CHECK_EQ(pt.func, (uint8_t)LINK_PG_FN_DSHOT300);
+    CHECK(prog_link_ask(&g_p, 2u, PROG_LINK_ASK_FUNC, LINK_PG_FN_DSHOT150));
+    CHECK(prog_link_ask(&g_p, 2u, PROG_LINK_ASK_FUNC, LINK_PG_FN_DSHOT600));
+    CHECK(!prog_link_ask(&g_p, 2u, PROG_LINK_ASK_FUNC, LINK_PG_FN_COUNT));
+    g_page[LINK_PG_FUNC(3u)] = (uint16_t)LINK_PG_FN_COUNT;
+    prog_link_read(&g_p, g_page, 4u);
+    CHECK(prog_link_port(&g_p, 3u, &pt));
+    CHECK_EQ(pt.func, (uint8_t)LINK_PG_FN_NONE);
+    /* The ask is written as any FUNC is, on a bench at rest. */
+    uint8_t log[10] = { 0 };
+    CHECK_EQ(run(true, log), 1);
+    CHECK_EQ(log[0], LINK_PG_FUNC(2u));
+    CHECK_EQ(g_page[LINK_PG_FUNC(2u)], (uint16_t)LINK_PG_FN_DSHOT600);
+    /* A DShot port is no tester target: the wanted port is not driven. */
+    g_page[LINK_PG_REG(2u, LINK_PG_PIN)] = 14u;
+    g_page[LINK_PG_FLAGS] = LINK_PG_F_BOUND(0) | LINK_PG_F_DSHOT(2u);
+    prog_link_read(&g_p, g_page, 5u);
+    prog_link_want(&g_p, 3u, true);
+    CHECK_EQ(prog_link_wanted(&g_p), 0u);
+    CHECK(prog_link_no_drive(&g_p));
+    CHECK(!prog_link_command(&g_p, false));
+    /* Lost, the flag goes with the link; NULL is none. */
+    prog_link_lost(&g_p);
+    CHECK(!prog_link_has_dshot(&g_p));
+    CHECK(!prog_link_has_dshot(NULL));
+}
+
 TEST_CASE(a_port_is_unknown_before_the_first_read_then_as_the_page_holds_it)
 {
     prog_link_port_t pt = { 0xAAu, 0xAAu, true };
@@ -436,6 +496,7 @@ int main(void)
     RUN(a_later_ask_replaces_one_waiting);
     RUN(an_ask_waiting_is_lost_with_the_link);
     RUN(an_older_iomcu_is_read_as_24_registers_all_servo_pwm);
+    RUN(dshot_is_asked_of_a_4_28_iomcu_only);
     RUN(a_port_is_unknown_before_the_first_read_then_as_the_page_holds_it);
     RUN(a_port_that_cannot_be_driven_stops_the_tester);
     RUN(the_hitec_page_says_which_port_it_holds);

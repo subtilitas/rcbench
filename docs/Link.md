@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.27. The
+IOmcu transmits only in answer to a request. Protocol version 4.28. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -138,7 +138,10 @@ has 4 ports; the panel reads 24 registers of an older IOmcu and offers its
 ports SERVO PWM only ([The programming ports](#the-programming-ports)). From
 4.27 SENSE_LIMIT (0x36) holds a current limit per channel and flags each
 channel whose window passed it, an alert only; an older IOmcu refuses it
-with BAD_PAGE, and this build's panel writes no limit. The
+with BAD_PAGE, and this build's panel writes no limit. From
+4.28 a port's FUNC also takes DSHOT150, DSHOT300 and DSHOT600, and FLAGS
+bits 12 to 15 say a port's DShot holds its pin; an older IOmcu refuses
+those values with BAD_VALUE and the panel offers them from 4.28 only. The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -621,6 +624,12 @@ and holds no channel of CHANNELS. Its pin carries one of these, never two:
   that drives the standard servo ports. The port's function `FUNC` 0.
 - NONE (since 4.26): no driver. The pin is held for the port as an input
   with its pull-down and renders nothing. `FUNC` 1.
+- DSHOT150, DSHOT300, DSHOT600 (since 4.28): plain DShot at 150, 300 or
+  600 kbit/s from a PIO (programmable I/O) state machine of its own, a
+  frame every 1 ms. The port is a throttle: MOTOR & ESC drives it. `FUNC`
+  2, 3 and 4. No telemetry wire: bidirectional DShot is not offered on a
+  port. A KST or HITEC session refuses a DShot port with NO_PIN: an ESC is
+  on that lead.
 - PROGRAMMING: the wire protocol for KST and Chaservo servos, which the
   servo programming page (`KST`, 0x32) runs, see
   [The programming port for KST and Chaservo servos](LinkKST.md); or, since
@@ -634,24 +643,36 @@ The page holds 4 ports. Register 0 says how many the build has: 4 from
 | Register | Name | Access | Holds |
 | ---: | --- | --- | --- |
 | 0 | `COUNT` | read | the ports of this build, 0 to 4 |
-| 1 | `FLAGS` | read | bit n: the PWM generator has port n's pin (SERVO PWM). Bit 4 + n (since 4.26): port n's pin is parked (NONE). Bit 8 + n: port n names a pin it does not hold: the stored pin was taken at start, or the silicon refused it |
+| 1 | `FLAGS` | read | bit n: the PWM generator has port n's pin (SERVO PWM). Bit 4 + n (since 4.26): port n's pin is parked (NONE). Bit 8 + n: port n names a pin it does not hold: the stored pin was taken at start, the silicon refused it, or no PIO state machine was free for its DShot. Bit 12 + n (since 4.28): port n's DShot holds its pin |
 | 2 | `PWM` | read, write | bit n: port n renders its pulse while the bank is ARMED for the surfaces. Not kept |
 | 3 | `TARGET` | read, write | what SERVO's frame rate, sweep and hold drive: 0 the standard servo ports, n + 1 port n. A change sets SERVO's frame rate to 0 (since 4.19). Not kept |
 | 4 + 5 n | `PIN` | read, write | port n's IOmcu GPIO (general-purpose input/output), or 0xFFFF for none. Kept |
-| 5 + 5 n | `CMD` | read, write | the command, 0 to 1000; a higher value is taken as 1000. Not kept |
-| 6 + 5 n | `SLEW` | read, write | as CHAN_CFG's slew: 0 to 3000, a higher value refused with BAD_VALUE, nothing stored (since 4.16). Kept; a kept slew above 3000 starts as 3000 |
+| 5 + 5 n | `CMD` | read, write | the command, 0 to 1000; a higher value is taken as 1000. Refused with BAD_VALUE on a DShot port, whose command is the bench throttle (since 4.28). Not kept |
+| 6 + 5 n | `SLEW` | read, write | as CHAN_CFG's slew: 0 to 3000, a higher value refused with BAD_VALUE, nothing stored (since 4.16). Not applied on a DShot port. Kept; a kept slew above 3000 starts as 3000 |
 | 7 + 5 n | `MIN_US` | read, write | the pulse at command 0, 400 to 2500 µs, default 1000; while the port's `PWM` bit is set, at most the frame of the port's rate minus 1 µs (since 4.16). Kept |
 | 8 + 5 n | `MAX_US` | read, write | the pulse at command 1000, 400 to 2500 µs, default 2000; while the port's `PWM` bit is set, at most the frame of the port's rate minus 1 µs (since 4.16). Kept |
-| 24 + n | `FUNC` | read, write | since 4.26: port n's function, 0 SERVO PWM, 1 NONE; any other value refused with BAD_VALUE (2 to 4 are reserved for DSHOT150, DSHOT300 and DSHOT600). Default 0 for port 0, 1 for the others. Kept |
+| 24 + n | `FUNC` | read, write | since 4.26: port n's function, 0 SERVO PWM, 1 NONE; since 4.28 also 2 DSHOT150, 3 DSHOT300, 4 DSHOT600. Any other value is refused with BAD_VALUE, and so are 2 to 4 by a 4.26 or 4.27 IOmcu. Default 0 for port 0, 1 for the others. Kept |
 
 A port's pulse is a channel of the output bank: port n is bank channel
 9 + n, above the 8 channels of CHANNELS and the bench throttle's channel 8.
 The switch to ARMED, the clamp to 0 to 1000, the slew, the endpoints and the 500 ms
 command timeout are the bank's and act on a port as on a standard servo
-port. A port is a surface: it renders a pulse while the bank is ARMED for
+port. A SERVO PWM port is a surface: it renders a pulse while the bank is ARMED for
 the surfaces (ARM 1, 0x0004 or 0x0006), its `PWM` bit is set,
 the generator has its pin and the servo programming page holds the port in
-PWM. The port that `TARGET` names runs at SERVO's frame rate (register 0 of
+PWM.
+
+A DShot port is a throttle (since 4.28): its bank channel has the
+throttle's role and rest, 0. The bench throttle on CONTROL reaches it as it
+reaches every slot bound as a motor, and the port sends a frame every 1 ms
+while the bank is ARMED for the throttle (ARM 1, 0x0002 or 0x0006): the
+throttle as DShot 48 to 2047, or 0 at rest. While the bank is not ARMED
+for the throttle -- SAFE, ARMED for the surfaces alone, STOP, heartbeat
+loss, link silence -- the port sends no frame and the ESC times out, as on
+a motor slot. `PWM`, `TARGET` and `CMD` never name a DShot port; its
+`SLEW`, `MIN_US` and `MAX_US` stay on the page for SERVO PWM and are not
+applied. A change of `FUNC` from or to DShot puts the channel at the new
+role's rest. The port that `TARGET` names runs at SERVO's frame rate (register 0 of
 SERVO), or at 50 Hz while that reads 0. Every other port runs at 50 Hz, and
 the PWM slots run at their own OUTPUTS rates while a port is the target
 (since 4.19).
@@ -677,7 +698,16 @@ BAD_VALUE for a pin that is reserved, past GP63, a slot's, held by SUPPLY,
 SENSE or TONE or another port's. For a SERVO PWM port it is also refused
 for a pin past GP47 (no PWM slice), one that shares a PWM slice or a
 compare register with a PWM slot's pin, and one on the compare register of
-another SERVO PWM port; a NONE port's pin is under none of the PWM rules.
+another SERVO PWM port; a NONE or DShot port's pin is under none of the PWM
+rules. A DShot port needs a PIO block that reaches its pin and a free state
+machine in it; without one the port holds no pin and bit 8 + n of `FLAGS`
+is set. The output slots come first: an OUTPUTS or BIND write that binds a
+DShot or PPM slot anew lets every DShot port go, binds the slots, and binds
+the ports again on the state machines left. The IOmcu's DShot driver holds
+12 pins, the 8 slots and the 4 ports. A `FUNC` or `PIN` write that binds a
+DShot port is refused with BAD_VALUE, and changes nothing, while the
+supply's PD mini UART waits for its save and the port would leave it no
+PIO room, as a slot or TONE write is.
 A pin the chip does not have is refused when the IOmcu cannot park it, and
 the write is undone; a write of OUTPUTS or BIND that
 puts a slot on a port's pin or beside it in the silicon is refused the same
@@ -714,8 +744,11 @@ the ports' registers that was spare until 4.26 (`prog_func`): bits 4n to
 as port 0 SERVO PWM and the others NONE. The word has no version of its
 own: version 7 and version 8 records carry it at the same place.
 
+A DShot function is stored as 3 to 5.
+
 | Image the board goes down to | What it does with the word | Back on 4.26 or later |
 | --- | --- | --- |
+| 4.26 or 4.27 | reads a DShot port's 3 to 5 as no value it takes: the port starts at its default function and keeps its pin, unless that default is SERVO PWM and the pin is no PWM pin | the port is at the function the older image wrote back, the default |
 | 4.25 | reads it as spare and writes it back as 0 | the ports keep their pins and are at the default functions; a kept pin a SERVO PWM port cannot hold (past GP47) is dropped |
 | older than 4.25 | reads no version 8 record and starts with an empty store | every port is at its default pin and function |
 
@@ -732,10 +765,14 @@ the screen wants is written back after the page is read again.
 | 4.12 or older | 4.13 | the panel never reads or writes 0x33: no port renders a pulse, and port 0 holds GP13 |
 | 4.26 | 4.13 to 4.25 | the panel reads 24 registers and takes every port as SERVO PWM; it asks no `FUNC` and says `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` |
 | 4.13 to 4.25 | 4.26 | the panel reads 24 registers and never writes `FUNC`; a port it sets as the target must be SERVO PWM, or the IOmcu refuses the `TARGET` |
+| 4.28 | 4.26 or 4.27 | the panel offers SERVO PWM and NONE only and asks no DShot `FUNC` |
+| 4.26 or 4.27 | 4.28 | the panel shows a DShot port as NONE and never sets it as the target; MOTOR & ESC's throttle reaches it all the same |
 
-`test_prog_port_fn` runs the functions: the two values taken and 2, 3,
-4, 15 and 65535 refused, a NONE port's pin under the pin rules and none of
-the PWM rules, a function change under every lock, SERVO PWM refused on a
+`test_prog_port_fn` runs the functions: the five values taken and 5, 15,
+32768 and 65535 refused, a NONE or DShot port's pin under the pin rules and
+none of the PWM rules, a DShot port's channel a throttle at rest with no
+slew, its `CMD` refused, `PWM` and `TARGET` refused on it, FLAGS bit
+12 + n, the kept nibbles 3 to 5, a function change under every lock, SERVO PWM refused on a
 pin the generator cannot take, the parked flag, the kept word and a record
 an older image wrote back. `test_prog_link_ask` runs the panel's asks.
 `test_prog_port` runs the page: every pin refusal in both directions, the
@@ -745,8 +782,23 @@ set `PWM` bit and a `TARGET`, 0 and 5 ports asked of a 4-port model, a
 stored pin taken at start, the SERVO rate reaching the target port alone, a
 target change judged at 50 Hz, a pin refused onto the slice of a target at
 its own rate, and a target change that would leave a slot with a pulse
-longer than its frame. No pulse of a port has been measured on
-hardware.
+longer than its frame. `test_outputs_hw_ports` runs a DShot port: bound at
+150, 300 and 600 kbit/s, moved by a rate or function change, no state
+machine left, a DShot slot bound anew taking the port's state machine,
+a frame every 1 ms only while ARMED for the throttle, the
+throttle at 1000 as 2047, none on SAFE, ARM SURFACE and STOP, and the
+period across the microsecond clock's wrap. No pulse or frame of a port
+has been measured on hardware.
+
+PIO budget. The RP2350 has 3 PIO blocks of 4 state machines and 32
+instructions. The pico-sdk loads one copy of a program for each pin. By
+the generated program lengths, a plain DShot pin takes 1 state machine
+and 4 instructions, a bidirectional one 2 and 16, a Hitec line 1 and 29
+and its precharge sampler 1 more and up to 12. Two bidirectional slots,
+two DShot ports and a Hitec line with precharge take 8 of 12 state
+machines and 81 of 96 instructions; the arithmetic is not run on
+hardware. A block reaches GP0 to GP31 or GP16 to GP47, so a pin above
+GP31 can be refused earlier.
 
 ### The programming port for KST and Chaservo servos
 
@@ -822,7 +874,7 @@ per 5 s offer.
 | ---: | --- | --- | --- |
 | 0x00 | IDENTITY | read | protocol major, protocol minor, firmware major, minor, patch, hardware revision, capabilities bitmap |
 | 0x01 | STATUS | read | 10 registers (since 4.21; 8 before it): state (0 idle, 1 armed, 2 failsafe), faults bitmap, uptime in ms (two registers), requests accepted (two registers), XL2515 receive error counter, XL2515 transmit error counter, CAN frames refused since power-up (two registers, low half first; [Refused frames](#refused-frames)) |
-| 0x10 | CONTROL | read, write | ARM (0 switches to SAFE; 1 switches every output to ARMED; from 4.18 0x0002 switches the throttle channels to ARMED, 0x0004 the surfaces and the programming ports, 0x0006 both; any other value is refused with BAD_VALUE, [An arm for one role](#an-arm-for-one-role)), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle), MOTOR_POLES, CLEAR (write 0x5AFE to leave failsafe). Registers 0 to 2 are the frame that switches to ARMED |
+| 0x10 | CONTROL | read, write | ARM (0 switches to SAFE; 1 switches every output to ARMED; from 4.18 0x0002 switches the throttle channels to ARMED, 0x0004 the surfaces and the SERVO PWM programming ports, 0x0006 both; a DShot programming port is a throttle (since 4.28); any other value is refused with BAD_VALUE, [An arm for one role](#an-arm-for-one-role)), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle and every DShot programming port, since 4.28), MOTOR_POLES, CLEAR (write 0x5AFE to leave failsafe). Registers 0 to 2 are the frame that switches to ARMED |
 | 0x11 | LIMITS | | declared, not served |
 | 0x12 | FAILSAFE | | declared, not served |
 | 0x13 | CHANNELS | read, write | one command per output channel, 0..1000 of the channel's travel; eight channels |
@@ -978,14 +1030,15 @@ registers 0 and 1 at the read.
 ### An arm for one role
 
 From 4.18 the ARM register names the roles a switch to ARMED covers. A channel's role
-is CHAN_CFG's: throttle or surface. A programming port is a surface.
+is CHAN_CFG's: throttle or surface. A SERVO PWM programming port is a
+surface, a DShot one a throttle (since 4.28).
 
 | ARM | Name | Drives |
 | ---: | --- | --- |
 | 0x0000 | -- | nothing: a switch to SAFE |
 | 0x0001 | `LINK_ARM_ALL` | every output, as an IOmcu before 4.18 does for any value but 0 |
-| 0x0002 | `LINK_ARM_THROTTLE` | the slots whose channels are throttles: motors and ESCs |
-| 0x0004 | `LINK_ARM_SURFACE` | the slots whose channels are surfaces, and the programming ports whose `PWM` bit is set |
+| 0x0002 | `LINK_ARM_THROTTLE` | the slots whose channels are throttles: motors and ESCs; and the DShot programming ports (since 4.28) |
+| 0x0004 | `LINK_ARM_SURFACE` | the slots whose channels are surfaces, and the SERVO PWM programming ports whose `PWM` bit is set |
 | 0x0006 | both role bits | every output, as 0x0001 |
 
 Any other value is refused with BAD_VALUE and changes nothing. It is

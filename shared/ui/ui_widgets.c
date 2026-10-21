@@ -353,6 +353,20 @@ void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
     }
 }
 
+void ui_choice_face_locked(gfx_canvas_t *c, gfx_rect_t r, const char *text)
+{
+    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0,
+                             UI_PANEL_SUNK);
+    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, UI_EDGE);
+    gfx_text(c, r.x + 10, r.y + (r.h - 28) / 2, text ? text : "",
+             UI_FONT_HEAD, UI_TEXT_DIM, 1);
+    const int cx = r.x + r.w - 22, cy = r.y + r.h / 2;
+    for (int i = 0; i < 7; ++i) {
+        gfx_fill_rect(c, cx - 6 + i, cy - 3 + (i < 4 ? i : 6 - i), 1, 2,
+                      UI_EDGE);
+    }
+}
+
 void ui_choice_list(gfx_canvas_t *c, gfx_rect_t r)
 {
     /* A shadow rather than a border, so the list reads as being over what

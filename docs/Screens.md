@@ -261,19 +261,36 @@ DShot protocol, read from the same SETUP > OUTPUTS pages the IOmcu's throttle
 role reads. The pins are in pin order; those that do not fit are counted.
 With GP0 to GP7 bound as DSHOT300 it reads `DSHOT300 GP0 +7`.
 
+A programming port whose FUNCTION is DSHOT150, DSHOT300 or DSHOT600 and whose
+pin the IOmcu holds follows the pins as `PORT n`, and counts with them. A
+port alone is named in full where it fits, `DSHOT300 PROG PORT 2 GP14` (25
+characters, on the PROGRAM page's strip), and `DSHOT300 PORT 2` in the 18 of
+the card.
+
 | TARGET reads | Condition |
 | --- | --- |
 | `DSHOT300 GP0 GP1` | one protocol drives every throttle pin |
 | `MIXED GP0 GP4` | the throttle pins run on two or more protocols, or one of them on a rate no OUTPUTS protocol has |
 | `GP0 GP1` | every throttle pin runs on a rate no OUTPUTS protocol has |
-| `NO MOTOR PIN` | the binding is read and no pin is bound as a motor; warning colour |
+| `NO MOTOR PIN` | the binding is read and neither a pin nor a programming port is bound as a motor; warning colour |
 | `PINS NOT READ` | no binding was read: the link is down, the pages did not read, or no pin map exists for the board; warning colour |
+
+With DShot programming ports:
+
+| TARGET reads | Condition |
+| --- | --- |
+| `DSHOT300 PORT 2` | a DSHOT300 programming port drives the throttle and no pin is bound as a motor |
+| `DSHOT300 GP0 +1` | GP0 bound as DSHOT300 and a DSHOT300 port: the port does not fit in 18 characters |
+| `MIXED GP0 PORT 2` | the pins and the ports run at different rates, or the pins at a rate no catalogue protocol has |
+
+![TARGET names PROG PORT 2 as DSHOT300](img/motor-port.png)
 
 The throttle still moves in the two warning states. ARM switches the whole
 bank to ARMED, not only the pins named here.
 
 A tap on TARGET opens [OUTPUTS](#outputs) on the protocol the throttle's
-pins are bound as, on the overview while they are bound as several or none
+pins are bound as, on the PROG PORT entry of a DShot port that drives the
+throttle alone, on the overview while they are bound as several or none
 is known. Leaving switches the bench to SAFE,
 as every way off the screen does. The home tag on OUTPUTS returns to MOTOR &
 ESC on the task TARGET was tapped on; any other screen opened in between
@@ -3415,7 +3432,7 @@ it opens on what that workbench drives:
 | Opened from | Opens on |
 | --- | --- |
 | SETUP's OUTPUTS tile | the overview, OFF |
-| MOTOR & ESC's TARGET row | the protocol the throttle's pins are bound as; the overview while they are bound as several (`MIXED`) or none is known |
+| MOTOR & ESC's TARGET row | the protocol the throttle's pins are bound as; the PROG PORT entry of a DShot port with no pin beside it; the overview while they are bound as several (`MIXED`), two ports drive the throttle, or none is known |
 | SERVO's TARGET row | what the row shows: the PROG PORT entry while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known |
 
 ![Outputs](img/outputs.png)
@@ -3529,7 +3546,7 @@ output of its own kind, no slot and no protocol
 | Row | What it shows and does |
 | --- | --- |
 | PIN | a button: `PIN GP13`, `SET A PIN` for a port without one, `PIN GP14 REFUSED` for a pin the IOmcu does not hold, `NO PIN KNOWN` before the first read. A tap opens [PICK A PIN](#pick-a-pin) on this port |
-| FUNCTION | SERVO PWM \| NONE: what the pin carries while no programming session holds it. A tap asks the IOmcu for the other one |
+| FUNCTION | a choice face with what the pin carries while no programming session holds it. A tap opens the list over the rows under it: SERVO PWM, NONE, and on an IOmcu of protocol 4.28 or later DSHOT150, DSHOT300 and DSHOT600. A tap on an entry asks the IOmcu for it and shuts the list; a press beside the list shuts it and reaches nothing under it. The face is drawn sunk and dim, and takes no tap, while the row is locked |
 | WATCHED BY | the current channel that watches the port, `WATCHED BY NO CURRENT CHANNEL` until a sensor map names one |
 | SERVO TESTER | OUTPUTS \| PORT n: the tester's target ([the target](ServoProgrammer.md#the-target)) |
 | PORT PWM | ON \| OFF: the pulse of the port that is the tester's target |
@@ -3541,6 +3558,7 @@ own pin lit; no pin takes a tick there.
 | --- | --- | --- |
 | SERVO PWM | the servo pulse from the PWM generator, while the bank is ARMED for the servos and PORT PWM is ON on the tester's port; low otherwise | a PWM pin, on no slice of a PWM output and on no compare register of another SERVO PWM port |
 | NONE | an input with its pull-down; no pulse | any free header pin |
+| DSHOT150, DSHOT300, DSHOT600 | plain DShot at 150, 300 or 600 kbit/s, a frame every 1 ms while the bank is ARMED for the throttle; no frame otherwise. MOTOR & ESC drives it ([TARGET](#target-names-the-protocol-and-the-pins)) | any free header pin a PIO block reaches; no slice rule |
 
 Port 1 starts as SERVO PWM on GP13, ports 2 to 4 as NONE with no pin. The
 IOmcu keeps each port's pin and function in its flash with the outputs'
@@ -3554,6 +3572,8 @@ target the outputs) and taken back after it.
 
 ![The PROG PORT entry](img/outputs-port.png)
 
+![PROG PORT 2 as DSHOT300, the FUNCTION list open](img/outputs-port-dshot.png)
+
 The amber line under the rows names the first reason that holds:
 
 | Line | When |
@@ -3563,7 +3583,7 @@ The amber line under the rows names the first reason that holds:
 | `PORTS NOT READ YET` | the page not read since the link came up: FUNCTION takes no tap |
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | ARMED, or a test or a sweep runs |
 | `SERVO TESTER DRIVES PROG PORT n` | the tester drives another port, port n |
-| `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE: the tester takes it as no target |
+| `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE or DShot: the tester takes it as no target |
 | `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` | the IOmcu has no FUNCTION: every port is SERVO PWM and the row takes no tap |
 | `SERVO TESTER DRIVES PROG PORT n` | the tester drives this port, port n: FUNCTION takes no tap |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
@@ -3582,7 +3602,7 @@ grey, no tick, and the pin it clashes with named under its name.
 
 | Cell | Line after a tap on it | Rule |
 | --- | --- | --- |
-| `SLICE OF GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with a SERVO PWM programming port's pin while the port holds it, checked against every port the IOmcu reports; GP13 and GP28 are slice 6. A NONE port's pin is under no slice rule |
+| `SLICE OF GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with a SERVO PWM programming port's pin while the port holds it, checked against every port the IOmcu reports; GP13 and GP28 are slice 6. A NONE or DShot port's pin is under no slice rule |
 | `PWM CH OF GP0` | `GP16: SAME PWM CHANNEL AS GP0` | the pin shares a compare register with a pin bound as SERVO PWM or MOTOR PWM: GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 |
 
 The line stands under the protocol, in amber, until the next pick, the next

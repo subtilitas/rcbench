@@ -2076,10 +2076,25 @@ int main(int argc, char **argv)
     const bool mo_prog = id == SCREEN_MOTOR
                          && (strncmp(view, "motor-program", 13) == 0
                              || strncmp(view, "motor-stick", 11) == 0);
-    if (id == SCREEN_MOTOR && strcmp(view, "motor-idle") == 0) {
+    if (id == SCREEN_MOTOR && (strcmp(view, "motor-idle") == 0
+                               || strcmp(view, "motor-port") == 0)) {
         /* A linked bench before its first run: no sample, never armed, and
          * a binding read with no pin bound as a motor. */
         motor_screen_set_throttle_pins(0u, true);
+        if (strcmp(view, "motor-port") == 0) {
+            /* A 4.28 IOmcu with PROG PORT 2 as DSHOT300 on GP14. */
+            port_view_t v;
+            port_view_unknown(&v);
+            v.count     = 4u;
+            v.has_func  = true;
+            v.has_dshot = true;
+            v.pin[0]    = 13u;
+            v.pin[1]    = 14u;
+            v.func[0]   = (uint8_t)LINK_PG_FN_SERVO_PWM;
+            v.func[1]   = (uint8_t)LINK_PG_FN_DSHOT300;
+            v.func[2]   = v.func[3] = (uint8_t)LINK_PG_FN_NONE;
+            port_view_set(&v);
+        }
     } else if (mo_prog) {
         motor_screen_set_armed(false);
         motor_screen_set_throttle_pins(1u, true);
@@ -2774,6 +2789,7 @@ int main(int argc, char **argv)
     }
 
     if (strcmp(view, "outputs-port") == 0 || strcmp(view, "outputs-port2") == 0
+        || strcmp(view, "outputs-port-dshot") == 0
         || strcmp(view, "picker-port") == 0) {
         /* A 4.26 IOmcu's four ports: port 1 SERVO PWM on GP13, port 2
          * NONE on GP14, port 3 SERVO PWM and port 4 NONE without a pin. */
@@ -2785,6 +2801,11 @@ int main(int argc, char **argv)
         v.pin[1]   = 14u;
         v.func[0]  = v.func[2] = (uint8_t)LINK_PG_FN_SERVO_PWM;
         v.func[1]  = v.func[3] = (uint8_t)LINK_PG_FN_NONE;
+        if (strcmp(view, "outputs-port-dshot") == 0) {
+            /* 4.28: port 2 DSHOT300. */
+            v.has_dshot = true;
+            v.func[1]   = (uint8_t)LINK_PG_FN_DSHOT300;
+        }
         port_view_set(&v);
         static const uint8_t held[LINK_PG_PORTS_MAX] = { 13u, 14u, 0xFFu,
                                                          0xFFu };
@@ -2860,12 +2881,18 @@ int main(int argc, char **argv)
             ui_router_goto(SCREEN_OUTPUTS);
             (void)port_view_ask(1u, PROG_LINK_ASK_FUNC,
                                 (uint16_t)LINK_PG_FN_SERVO_PWM);
+        } else if (strcmp(view, "outputs-port-dshot") == 0) {
+            /* PROG PORT 2 from the list, its FUNCTION face tapped. */
+            outputs_screen_open_on_port(1u);
+            ui_router_goto(SCREEN_OUTPUTS);
+            tap(16 + 3 + 130, UI_BAND_H + 154 + 20 + 18);
         } else {
             ui_router_goto(SCREEN_OUTPUTS);
         }
         if (strcmp(view, "outputs-off") != 0
             && strcmp(view, "outputs-port") != 0
             && strcmp(view, "outputs-port2") != 0
+            && strcmp(view, "outputs-port-dshot") != 0
             && strcmp(view, "outputs-iface") != 0) {
             /* Every visit opens on the overview, OFF; the views of a
              * protocol being edited pick it, as the operator does. */

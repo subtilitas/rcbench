@@ -1066,7 +1066,7 @@ TEST_CASE(prog_func_is_a_frame_after_the_ports)
     CHECK_EQ(LINK_PG_REGS, 28);
     CHECK_EQ(LINK_PG_FN_SERVO_PWM, 0);
     CHECK_EQ(LINK_PG_FN_NONE, 1);
-    CHECK_EQ(LINK_PG_FN_COUNT, 2);
+    CHECK_EQ(LINK_PG_FN_COUNT_V426, 2u);
     uint16_t seen = 0;
     for (unsigned port = 0; port < LINK_PG_PORTS_MAX; port++) {
         CHECK_EQ(seen & LINK_PG_F_BOUND(port), 0u);
@@ -1077,6 +1077,36 @@ TEST_CASE(prog_func_is_a_frame_after_the_ports)
         seen |= LINK_PG_F_REFUSED(port);
     }
     CHECK_EQ(seen, 0x0FFFu);
+}
+
+/*
+ * Protocol 4.28 gives FUNC the DShot values 2 to 4 and FLAGS a DShot bit
+ * per port in bits 12 to 15, which read 0 before.  4.27 is another page's
+ * and moves nothing here.
+ */
+TEST_CASE(prog_func_takes_dshot_from_4_28)
+{
+    CHECK_EQ(LINK_MINOR_PROG_DSHOT, 28u);
+    CHECK(LINK_MINOR_PROG_DSHOT > LINK_MINOR_PROG_FUNC);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_PROG_DSHOT);
+    CHECK_EQ(LINK_PG_FN_DSHOT150, 2);
+    CHECK_EQ(LINK_PG_FN_DSHOT300, 3);
+    CHECK_EQ(LINK_PG_FN_DSHOT600, 4);
+    CHECK_EQ(LINK_PG_FN_COUNT, 5);
+    /* Every value a register holds: DShot is 2 to 4 and nothing else,
+     * 150, 300 and 600 kbit/s, 0 for the rest. */
+    static const unsigned kbit[] = { 0u, 0u, 150u, 300u, 600u, 0u };
+    for (uint32_t fn = 0u; fn <= 0xFFFFu; ++fn) {
+        const bool dshot = fn >= 2u && fn <= 4u;
+        CHECK_EQ(LINK_PG_FN_IS_DSHOT(fn), dshot);
+        CHECK_EQ(LINK_PG_FN_KBIT(fn), (fn < 6u) ? kbit[fn] : 0u);
+    }
+    uint16_t seen = 0x0FFFu;
+    for (unsigned port = 0; port < LINK_PG_PORTS_MAX; port++) {
+        CHECK_EQ(seen & LINK_PG_F_DSHOT(port), 0u);
+        seen |= LINK_PG_F_DSHOT(port);
+    }
+    CHECK_EQ(seen, 0xFFFFu);
 }
 
 /*
@@ -1658,7 +1688,7 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 27u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 28u);
     CHECK_EQ(LINK_MINOR_UPDATE, 22u);
     CHECK(LINK_MINOR_UPDATE > LINK_MINOR_REFUSED);
 
@@ -1734,6 +1764,7 @@ int main(void)
     RUN(kst_extends_the_map_without_moving_it);
     RUN(prog_extends_the_map_without_moving_it);
     RUN(prog_func_is_a_frame_after_the_ports);
+    RUN(prog_func_takes_dshot_from_4_28);
     RUN(hitec_extends_the_map_without_moving_it);
     RUN(the_hitec_receive_mode_is_a_register_after_view);
     RUN(the_kst_staged_check_tells_a_change_a_swap_and_a_length);

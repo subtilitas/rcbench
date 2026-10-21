@@ -363,7 +363,7 @@ LIBRARY_RE = re.compile(r"\brcbench_\w+")
 ASSERTED = {
     "dshot": {
         "firmware/iomcu/src/outputs_hw.c": (
-            "OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS",
+            "OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS + LINK_PG_PORTS_MAX",
         ),
     },
     "kst": {

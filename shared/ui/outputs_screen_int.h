@@ -46,6 +46,13 @@ bool outputs_port_event(const touch_event_t *evt);
  * compared with what was drawn. */
 void outputs_port_tick(void);
 
+/* Whether the entry's FUNCTION list is open. */
+bool outputs_port_fn_open(void);
+
+/* The home tag: an open FUNCTION list shuts and the tag is taken (true);
+ * with none open the screen is left (false). */
+bool outputs_port_back(void);
+
 /* Bumped by every change of what the entry draws; the screen repaints on
  * a change of it as on one of its own.  outputs_port_touched() bumps it. */
 uint32_t outputs_port_revision(void);

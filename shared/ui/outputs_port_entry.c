@@ -6,8 +6,10 @@
  *
  *   PIN        a button with the port's pin; a tap opens PICK A PIN on
  *              PROG PORT n, where a tap on a pin asks the IOmcu for it.
- *   FUNCTION   SERVO PWM | NONE, the port's FUNC (protocol 4.26), asked
- *              of the IOmcu on a tap (port_view_ask()).
+ *   FUNCTION   a choice face with the port's FUNC (protocol 4.26); a tap
+ *              opens the list over the rows under it: SERVO PWM, NONE,
+ *              and from 4.28 DSHOT150, DSHOT300, DSHOT600.  A tap on an
+ *              entry asks the IOmcu for it (port_view_ask()).
  *   WATCHED BY the INA3221 channel that watches the port, from the sensor
  *              map (outputs_screen_set_port_watch()), or none.
  *   SERVO TESTER  OUTPUTS | PORT n: SET_SERVO_TARGET, 0 or n.
@@ -55,10 +57,16 @@
 #define SEG_DY       20     /* label to segment */
 #define SEG_H        36
 #define WATCH_LEN    24
+/* The FUNCTION list under its face: 5 rows of 40 px, 208 px with its
+ * margin, ending 10 px above the column's 432. */
+#define FN_ROW_H     40
+#define FN_ROWS_MAX  5
 
 static struct {
     int       port;         /* the entry shown, or -1 for a protocol      */
-    ui_tabs_t fn;           /* FUNCTION: SERVO PWM | NONE                 */
+    bool      fn_open;      /* the FUNCTION list is open                  */
+    int       fn_hit;       /* pressed: -1 none, 0 the face, 1 + row      */
+    int       fn_id;
     ui_tabs_t tester;       /* SERVO TESTER: OUTPUTS | PORT n             */
     ui_tabs_t pwm;          /* PORT PWM: ON | OFF                         */
     char      tester_port[16];   /* PORT n, the tester's second tab */
@@ -102,14 +110,44 @@ static gfx_rect_t pin_rect(void)
     return gfx_rect_make(COL_X, PIN_Y, COL_W, PIN_H);
 }
 
+static gfx_rect_t fn_face(void) { return seg_row(FN_Y); }
+
+/* The functions the list offers: SERVO PWM and NONE, and the DShot rates
+ * from an IOmcu of 4.28. */
+static int fn_rows(void)
+{
+    return port_view_get()->has_dshot ? (int)LINK_PG_FN_COUNT
+                                      : (int)LINK_PG_FN_COUNT_V426;
+}
+
+static gfx_rect_t fn_list(void)
+{
+    const gfx_rect_t f = fn_face();
+    return gfx_rect_make(COL_X, f.y + f.h + 4, COL_W,
+                         fn_rows() * FN_ROW_H + 8);
+}
+
+static gfx_rect_t fn_row(int i)
+{
+    const gfx_rect_t l = fn_list();
+    return gfx_rect_make(l.x + 4, l.y + 4 + i * FN_ROW_H, l.w - 8, FN_ROW_H);
+}
+
+_Static_assert(LINK_PG_FN_COUNT <= FN_ROWS_MAX,
+               "the FUNCTION list holds every function");
+
+static void fn_close(void)
+{
+    p.fn_open = false;
+    p.fn_hit  = -1;
+}
+
 void outputs_port_reset(void)
 {
-    static const ui_text_id_t fn[] = { TX_OUT_PORT_FN_PWM,
-                                       TX_OUT_PORT_FN_NONE };
     static const ui_text_id_t pwm[] = { TX_ON, TX_OFF };
     p.port = -1;
     p.pin_down = false;
-    ui_tabs_init_text(&p.fn, fn, 2, seg_row(FN_Y));
+    fn_close();
     ui_tabs_init_text(&p.pwm, pwm, 2, seg_row(PWM_Y));
     static const ui_text_id_t tester[] = { TX_OUT_TESTER_OUTPUTS,
                                            TX_OUT_TESTER_OUTPUTS };
@@ -123,7 +161,7 @@ void outputs_port_reset(void)
 
 void outputs_port_cancel(void)
 {
-    ui_tabs_cancel(&p.fn);
+    fn_close();
     ui_tabs_cancel(&p.tester);
     ui_tabs_cancel(&p.pwm);
     p.pin_down = false;
@@ -180,7 +218,7 @@ static bool held(void)
  * there was a function. */
 static bool fn_pwm(void)
 {
-    return port_view_func((uint8_t)p.port) != (uint8_t)LINK_PG_FN_NONE;
+    return port_view_pwm((uint8_t)p.port);
 }
 
 /* FUNCTION: not before the ports are read, not on an IOmcu without FUNC,
@@ -210,9 +248,6 @@ static bool pwm_locked(void)
 /* The segments follow the view and the settings, whoever set them. */
 static void sync_tabs(void)
 {
-    const uint8_t fn = port_view_func((uint8_t)p.port);
-    p.fn.selected = (fn == (uint8_t)LINK_PG_FN_SERVO_PWM) ? 0
-                    : (fn == (uint8_t)LINK_PG_FN_NONE)    ? 1 : -1;
     snprintf(p.tester_port, sizeof(p.tester_port), TR(OUT_TESTER_PORT),
              (unsigned)p.port + 1u);
     p.tester.selected = (target() == 0)            ? 0
@@ -266,7 +301,8 @@ static uint32_t signature(void)
            | (settings_get_bool(SET_SERVO_PORT_PWM) ? 16u : 0u)
            | (servo_screen_tester_target_locked() ? 32u : 0u)
            | (servo_screen_port_pwm_locked() ? 64u : 0u)
-           | (held() ? 128u : 0u);
+           | (held() ? 128u : 0u)
+           | (fn_locked() ? 256u : 0u);
 }
 
 void outputs_port_tick(void)
@@ -276,6 +312,10 @@ void outputs_port_tick(void)
     if (sig != p.sig || rev != p.view_rev) {
         p.sig = sig;
         p.view_rev = rev;
+        /* A list opened on a row that has locked since shuts. */
+        if (p.fn_open && fn_locked()) {
+            fn_close();
+        }
         outputs_port_touched();
     }
 }
@@ -354,26 +394,82 @@ static bool pin_event(const touch_event_t *evt)
     return true;
 }
 
+/*
+ * FUNCTION: a tap on the face opens the list, a tap on an entry asks for
+ * that function and shuts it, and a press anywhere else while it is open
+ * shuts it and is taken, so nothing under the list sees it.
+ */
+static bool fn_event(const touch_event_t *evt)
+{
+    const int16_t x = evt->point.x, y = evt->point.y;
+    if (evt->type == TOUCH_EVENT_DOWN) {
+        if (p.fn_open) {
+            p.fn_hit = -1;
+            for (int i = 0; i < fn_rows(); ++i) {
+                if (gfx_rect_contains(fn_row(i), x, y)) {
+                    p.fn_hit = 1 + i;
+                }
+            }
+            if (p.fn_hit < 0 && !gfx_rect_contains(fn_face(), x, y)) {
+                fn_close();
+            } else if (p.fn_hit < 0) {
+                p.fn_hit = 0;
+            }
+            p.fn_id = evt->point.id;
+            outputs_port_touched();
+            return true;
+        }
+        if (!gfx_rect_contains(fn_face(), x, y)) {
+            return false;
+        }
+        if (!fn_locked()) {
+            p.fn_hit = 0;
+            p.fn_id  = evt->point.id;
+        }
+        outputs_port_touched();
+        return true;
+    }
+    if (p.fn_hit < 0 || evt->point.id != p.fn_id) {
+        return false;
+    }
+    if (evt->type != TOUCH_EVENT_UP) {
+        return true;
+    }
+    const int hit = p.fn_hit;
+    p.fn_hit = -1;
+    outputs_port_touched();
+    if (!touch_event_is_tap_up(evt) || fn_locked()) {
+        if (fn_locked()) {
+            fn_close();
+        }
+        return true;
+    }
+    if (hit == 0 && gfx_rect_contains(fn_face(), x, y)) {
+        p.fn_open = !p.fn_open;
+    } else if (hit > 0 && gfx_rect_contains(fn_row(hit - 1), x, y)) {
+        const uint8_t fn = (uint8_t)(hit - 1);
+        if (fn != port_view_func((uint8_t)p.port)) {
+            (void)port_view_ask((uint8_t)p.port, PROG_LINK_ASK_FUNC, fn);
+        }
+        fn_close();
+    }
+    return true;
+}
+
 bool outputs_port_event(const touch_event_t *evt)
 {
     if (evt == NULL || p.port < 0) {
         return false;
     }
     sync_tabs();
+    if (fn_event(evt)) {
+        return true;
+    }
     if (pin_event(evt)) {
         return true;
     }
     bool took;
-    int i = seg_event(&p.fn, evt, fn_locked(), &took);
-    if (took) {
-        if (i >= 0 && i != p.fn.selected) {
-            (void)port_view_ask((uint8_t)p.port, PROG_LINK_ASK_FUNC,
-                                (i == 0) ? (uint16_t)LINK_PG_FN_SERVO_PWM
-                                         : (uint16_t)LINK_PG_FN_NONE);
-        }
-        return true;
-    }
-    i = seg_event(&p.tester, evt, tester_locked(), &took);
+    int i = seg_event(&p.tester, evt, tester_locked(), &took);
     if (took) {
         if (i >= 0 && i != p.tester.selected) {
             settings_set(SET_SERVO_TARGET,
@@ -434,7 +530,13 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
 
     gfx_text(c, COL_X, FN_Y, TR(OUT_PORT_FUNCTION), UI_FONT_LABEL,
              UI_TEXT_FAINT, 1);
-    ui_tabs_render_locked(&p.fn, c, fn_locked());
+    const uint8_t fn = port_view_func((uint8_t)p.port);
+    const char *fn_name = known() ? port_view_fn_name(fn) : "?";
+    if (fn_locked()) {
+        ui_choice_face_locked(c, fn_face(), fn_name);
+    } else {
+        ui_choice_face(c, fn_face(), fn_name, p.fn_hit == 0, p.fn_open);
+    }
 
     if (g_watch[p.port][0] != '\0') {
         snprintf(buf, sizeof(buf), TR(OUT_PORT_WATCHED), g_watch[p.port]);
@@ -453,4 +555,24 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
         (void)outputs_wrap(c, gfx_rect_make(COL_X, WHY_Y, COL_W, 16), 18,
                            buf, 2, UI_FONT_LABEL, UI_WARN, false);
     }
+    /* Last: the open list lies over the rows under the face. */
+    if (p.fn_open && !fn_locked()) {
+        ui_choice_list(c, fn_list());
+        for (int i = 0; i < fn_rows(); ++i) {
+            ui_choice_row(c, fn_row(i), port_view_fn_name((uint8_t)i),
+                          (uint8_t)i == fn, p.fn_hit == 1 + i);
+        }
+    }
+}
+
+bool outputs_port_fn_open(void) { return p.fn_open; }
+
+bool outputs_port_back(void)
+{
+    if (!p.fn_open) {
+        return false;
+    }
+    fn_close();
+    outputs_port_touched();
+    return true;
 }

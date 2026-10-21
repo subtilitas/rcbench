@@ -173,10 +173,13 @@ static uint8_t ports_bind(void)
     for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
         pin[i] = ((wire & (1u << i)) != 0u) ? (uint8_t)PROG_PORT_NO_PIN
                                             : prog_port_pin(&s_prog, i);
-        hz[i] = prog_port_port_hz(&s_prog, i);
+        /* A DShot port's rate is its bit rate, in kbit/s. */
+        hz[i] = ((prog_port_dshot(&s_prog) & (1u << i)) != 0u)
+                    ? prog_port_kbit(&s_prog, i)
+                    : prog_port_port_hz(&s_prog, i);
     }
     outputs_hw_ports(pin, hz, prog_port_parked(&s_prog),
-                     (uint8_t)PROG_PORT_CHANNEL0);
+                     prog_port_dshot(&s_prog), (uint8_t)PROG_PORT_CHANNEL0);
     return wire;
 }
 
@@ -346,18 +349,35 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
     reserve_held();
     (void)ports_bind();
     /* Every port that holds a pin has it held by its function -- bound to
-     * the generator, or parked -- or the write is undone: the pins, the
-     * functions, the reservation and the silicon as before. */
+     * the generator or to DShot, or parked -- or the write is undone: the
+     * pins, the functions, the reservation and the silicon as before. */
+    bool refused = false;
     for (uint8_t i = 0; i < prog_port_count(&s_prog); ++i) {
         if (prog_port_pin(&s_prog, i) != PROG_PORT_NO_PIN
             && (outputs_hw_ports_bound() & (1u << i)) == 0u
             && (prog_port_pin(&was, i) != prog_port_pin(&s_prog, i)
                 || prog_port_func(&was, i) != prog_port_func(&s_prog, i))) {
-            prog_port_revert(&s_prog, &was, &s_outputs);
-            reserve_held();
-            ports_apply();
-            return LINK_NACK_BAD_VALUE;
+            refused = true;
         }
+    }
+    if (!refused && s_supply_attach && !s_pd_open
+        && supply_page_enabled(&s_supply)
+        && (prog_port_dshot(&s_prog) & ~prog_port_dshot(&was)) != 0u) {
+        /* The supply's UART waits for its save with its two state machines
+         * free: a DShot port bound now may not take that PIO room.  Tried,
+         * and let go again, as slots_take() and tone_write() do. */
+        refused = !pd_uart_open(supply_page_tx(&s_supply),
+                                supply_page_rx(&s_supply),
+                                supply_page_uart_baud(&s_supply));
+        if (!refused) {
+            pd_uart_close();
+        }
+    }
+    if (refused) {
+        prog_port_revert(&s_prog, &was, &s_outputs);
+        reserve_held();
+        ports_apply();
+        return LINK_NACK_BAD_VALUE;
     }
     ports_apply();
     prog_port_kept(&s_prog, kept_now);
@@ -541,10 +561,12 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      * throttle screen would command a channel no slot reads while the ESC on
      * GP0 sat at its rest for ever.  Which channels are motors is the
      * binding's answer, carried as the role on the CHAN_CFG page, so a servo
-     * bound beside a motor is left alone.
+     * bound beside a motor is left alone.  A programming port whose FUNC is
+     * DShot is a motor too: its channel, past the page's, has the role.
      */
     (void)outputs_set_role_channels(&s_outputs, OUT_ROLE_THROTTLE,
-                                    (uint8_t)LINK_OUT_CHANNELS, thr,
-                                    s_now_ms);
+                                    (uint8_t)(PROG_PORT_CHANNEL0
+                                              + LINK_PG_PORTS_MAX),
+                                    thr, s_now_ms);
     return 0;
 }

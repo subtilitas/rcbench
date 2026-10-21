@@ -92,6 +92,18 @@ history is in git.
   SETUP > OUTPUTS.`
 - The HITEC page opens on any of the 4 ports, a NONE port's parked pin
   included, which goes back to NONE at CLOSE.
+- A programming port's FUNCTION takes DSHOT150, DSHOT300 and DSHOT600:
+  plain DShot from a PIO state machine of its own, a frame every 1 ms. The
+  port is a throttle: ARM THROTTLE arms it, the MOTOR & ESC throttle drives
+  it, and SAFE, ARM SURFACE, STOP, heartbeat loss and link silence send no
+  frame, as on a motor slot. A DShot pin is under no PWM slice rule. The
+  servo tester never drives a DShot port.
+- Link protocol 4.28: PROG `FUNC` values 2 to 4 (DSHOT150 to DSHOT600)
+  and `FLAGS` bits 12 to 15 (port DShot bound). A `CMD` write on a DShot
+  port is refused. The store keeps a DShot function as 3 to 5 in the
+  `prog_func` word; an image of 4.26 or 4.27 starts such a port at its
+  default function. With an IOmcu older than 4.28 the panel offers SERVO
+  PWM and NONE only.
 
 ### Fixed
 
