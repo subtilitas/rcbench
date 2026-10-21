@@ -2984,13 +2984,14 @@ Die Liste beginnt mit der Überschrift INA3221-BAUSTEINE über vier Zeilen:
 | 0x40 bestückt bis 0x43 bestückt | EIN, AUS | AUS | ein INA3221 an dieser Adresse. Das DAOKAI-Modul nimmt 0x40 mit geschlossener A0-Lötbrücke nach GND. Ab Werk sind alle vier A0-Brücken offen, und die Adresse schwankt zwischen 0x40 und 0x41 |
 
 Jeder bestückte Baustein folgt unter einer eigenen Überschrift,
-`INA3221 0x40` bis `INA3221 0x43`, mit sechs Zeilen, zwei je Kanal. Ein
+`INA3221 0x40` bis `INA3221 0x43`, mit neun Zeilen, drei je Kanal. Ein
 Baustein, der nicht bestückt ist, hat keine Überschrift und keine Zeilen.
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
 | 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, KEINE für jeden anderen Kanal | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
 | 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | AUS: der Kanal wird nicht gelesen. Der R100 des DAOKAI misst bis 1,64 A |
+| 0x40 CH1 Grenze | AUS, 10 bis 32767 mA, Schritte von 10 mA mit den Pfeilen | AUS | ein 50-ms-Fenster, dessen höchster Strom sie überschreitet, wird auf dem Band gesagt. Nur eine Meldung: nichts stoppt, schaltet auf SAFE oder treibt etwas. AUS: keine Grenze |
 
 Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 
@@ -3017,6 +3018,42 @@ der Warnfarbe und eine Zeile statt der Hilfe. Bei einem IOmcu älter als
 
 ![SENSOREN bei einem IOmcu älter als 4.25](img/de/setup-sensors-old.png)
 
+Eine Zeile GRENZE ist ebenso markiert, solange der IOmcu ihre Grenze nicht
+hält: von der Änderung bis zum angenommenen Schreiben, nach einem
+abgelehnten Schreiben oder einer abgelehnten Page mit
+`Vom IOmcu nicht übernommen.` und bei einem IOmcu
+älter als 4.27 für jede Grenze, die nicht AUS ist, mit
+`IOmcu älter als 4.27: keine Grenze wird geprüft.`:
+
+![Eine Grenze bei einem IOmcu älter als 4.27](img/de/setup-sensors-limit.png)
+
+Das Panel schreibt die Grenzen in die Page SENSE_LIMIT des IOmcu
+(Protokoll 4.27), in einem Schreiben von 12 Registern, LIMIT_MA in mA,
+500 ms nach der letzten Änderung, in jedem Zustand der Bank und nur, wo die
+Page etwas anderes hält. Bei jedem Link-Aufbau liest es die Page ganz.
+Solange die Page eine Grenze hält, die nicht AUS ist, liest es alle 200 ms
+OVER und OVER_COUNT, in ARMED wie in SAFE; dieses Lesen löscht OVER im
+IOmcu. Der IOmcu prüft jedes 50-ms-Fenster eines Kanals einmal, wenn es
+schließt: darüber, wenn der höchste Strom des Fensters über der Grenze
+liegt oder ein Messwert das Ende des Bereichs erreicht hat und dieses Ende
+über ihr liegt ([Link](LinkSensors-de.md#sense_limit)). Bevor das Panel
+neue Grenzen über gehaltene schreibt, liest es OVER einmal; ein Fenster,
+das an der alten Grenze geprüft wurde, wird mit der alten Grenze gesagt.
+Das Band sagt, höchstens einmal alle 5 s und für einen Kanal höchstens
+einmal alle 30 s, solange er sie weiter überschreitet. Kanäle, die
+gleichzeitig darüber liegen, kommen reihum dran, ab dem Kanal nach dem
+zuletzt gesagten: sind alle 12 darüber, wird jeder innerhalb von 12
+Meldungen gesagt, 60 s.
+
+| Band | Wann |
+| --- | --- |
+| `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80 A.` | ein Fenster des Kanals hat seit dem letzten Lesen seine Grenze überschritten; in Klammern, was der Kanal misst, nichts bei KEINE; die Grenze ist die, an der das Fenster geprüft wurde |
+| `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | OVER_COUNT hat sich ohne OVER-Bit bewegt: die Antwort mit den Bits kam nicht an. Eine Antwort, die nicht ankommt, beendet den Link; das sagt also das Lesen beim nächsten Link-Aufbau. Ein Zähler von 0 dort ist ein neu gestarteter IOmcu und wird nicht gesagt |
+| `INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.` | der IOmcu hat das Schreiben abgelehnt; er behält die Grenzen, die er hielt, und das Panel schreibt erst wieder, wenn sich eine Grenze ändert. Ebenso ein IOmcu, der Protokoll 4.27 oder neuer nennt und die Page mit BAD_PAGE beantwortet: das Panel schickt der Page bis zum nächsten Link-Aufbau nichts mehr |
+
+OVER-Bits, die der IOmcu von vor dem Link-Aufbau hält, auch die eines
+neu gestarteten IOmcu, sagt das erste Lesen mit ihrem Kanal.
+
 Das Panel schreibt die Zuordnung in die Page SENSE_MAP des IOmcu
 (Protokoll 4.25), in einem Schreiben von 26 Registern: die bestückten
 Bausteine, den Kanal, der mit 1 kHz gelesen wird, die zwölf Shunts und was
@@ -3037,9 +3074,10 @@ AUSGANG 1 bis AUSGANG 8, solange das Ziel OUTPUTS ist, und PORT n, solange
 es Programmierport n ist. Jeder andere Kanal mit Shunt wird reihum gelesen,
 einer je Millisekunde: 90,9 Hz je Kanal bei elf ([Link](Link-de.md)).
 
-Derzeitige Einschränkung: Der Servotest und der SERVO-Bildschirm nehmen den
-INA3221 nur als Messgerät der Servo-Schiene, solange dieser Kanal CH1 seines
-Bausteins ist. Liegt er auf CH2 oder CH3, ist das Messgerät der PD mini.
+An einem IOmcu älter als 4.25 nehmen der Servotest und der
+SERVO-Bildschirm den INA3221 nur als Messgerät der Servo-Schiene, solange
+dieser Kanal CH1 seines Bausteins ist: dieser IOmcu liest CH1 mit 1 kHz.
+Liegt er auf CH2 oder CH3, ist das Messgerät dort der PD mini.
 
 Ein IOmcu älter als 4.25 hat kein SENSE_MAP und liest einen INA3221 über
 SENSE: den Baustein des Kanals, der mit 1 kHz gelesen wird, sonst den
@@ -3056,7 +3094,8 @@ vier INA3221-Einstellungen, die 0.21 hielt: der Baustein an der alten
 Adresse bestückt, wenn der INA3221 EIN war, sein CH1 auf dem alten Shunt,
 CH2 und CH3 darauf bei CH1+2+3 und AUS bei CH1, und sein CH1 misst PORT 1,
 wenn das Ziel des Servotesters der Programmierport war, sonst AUSGANG 1;
-jeder andere Kanal 100,0 mΩ und KEINE. Die alten Einstellungen bleiben
+jeder andere Kanal 100,0 mΩ und KEINE; jede Grenze AUS. Die alten
+Einstellungen bleiben
 unverändert gespeichert, damit ein Panel, das auf 0.21 zurückgeht, seine
 Einstellung findet. Das nächste SPEICHERN schreibt jeden Schlüssel von
 SENSOREN.

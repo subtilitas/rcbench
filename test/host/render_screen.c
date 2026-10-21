@@ -34,6 +34,7 @@
 #include "coproc_update_screen.h"
 #include "sense_link.h"
 #include "settings.h"
+#include "sense_limit_link.h"
 #include "sensors_rows.h"
 #include "settings_sensors.h"
 #include "settings_screen.h"
@@ -3438,21 +3439,34 @@ int main(int argc, char **argv)
 
     /*
      * SETUP > SENSORS: 0x40 and 0x41 fitted, 0x41's CH2 watching PORT 1
-     * and its CH3 off.  At the top, 0x40 online; and scrolled to 0x41's
-     * rows, an IOmcu older than 4.25 reading 0x40 alone.
+     * with a limit of 800 mA, and its CH3 off.  At the top, 0x40 online;
+     * scrolled to 0x41's heading, an IOmcu older than 4.25 reading 0x40
+     * alone; and scrolled to 0x41 CH2, both online on an IOmcu older than
+     * 4.27, which judges no limit.
      */
     if (strncmp(view, "setup-sensors", 13) == 0) {
         settings_set(SET_INA_FIT(1), 1.0f);
         settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
+        settings_set(SET_INA_LIM(4), 800.0f);
         settings_set(SET_INA_SH(5), 0.0f);
         setup_tile(SET_CAT_SENSORS);
-        if (strcmp(view, "setup-sensors-old") == 0) {
+        if (strcmp(view, "setup-sensors-old") == 0
+            || strcmp(view, "setup-sensors-limit") == 0) {
+            const bool lim = strcmp(view, "setup-sensors-limit") == 0;
             sensors_rows_set_status((uint16_t)(SENS_PART_ONLINE
-                                               | (SENS_PART_OLD << 4)));
-            /* The 12 rows above 0x41's heading: three drags. */
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+                                               | ((lim ? SENS_PART_ONLINE
+                                                       : SENS_PART_OLD)
+                                                  << 4)));
+            if (lim) {
+                sensors_rows_set_limits((uint16_t)((SENSE_LIMIT_ST_OLD << 12)
+                                                   | (1u << 4)));
+            }
+            /* The 15 rows above 0x41's heading: three drags; to 0x41
+             * CH2's rows, two more. */
+            const int drags = lim ? 5 : 3;
+            for (int k = 0; k < drags; ++k) {
+                drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+            }
         } else {
             sensors_rows_set_status((uint16_t)(SENS_PART_ONLINE
                                                | (SENS_PART_SILENT << 4)));

@@ -387,6 +387,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SENS_ST_OLD]            = "IOMCU ÄLTER ALS 4.25: NICHT GELESEN",
     [TX_SENS_ST_NO_BUS]         = "SENSOR-SDA ODER -SCL NICHT FESTGELEGT",
     [TX_SET_SENS_OLD]           = "IOmcu älter als 4.25: ein INA3221, CH1 mit 1 kHz.",
+    [TX_SET_SENS_LIM_OLD]       = "IOmcu älter als 4.27: keine Grenze wird geprüft.",
     [TX_SET_SENS_DARK]          = "Alle Kanäle aus. Der IOmcu nimmt so keinen Baustein.",
     [TX_SET_SENS_SAME_ADDR]     = "Der INA228 nutzt diese Adresse. Keiner wird gelesen.",
     [TX_SET_SENS_NO_BUS]        = "SDA oder SCL der Sensoren fehlt. Beide auf ANSCHLÜSSE festlegen.",
@@ -1110,6 +1111,9 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ALERT_SENSE_STUCK]      = "Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.",
     [TX_ALERT_SENSE_I228_CLIPPED] = "INA228-Strom am Messbereichsende. Anzeige zeigt nur den Grenzwert.",
     [TX_ALERT_SENSE_I3221_CLIPPED] = "INA3221 0x%02X CH%u bei %u.%02u A übersteuert. Anzeige zeigt nur den Grenzwert.",
+    [TX_ALERT_SENSE_OVER]       = "INA3221 0x%02X CH%u%s über der Grenze von %u.%02u A.",
+    [TX_ALERT_SENSE_OVER_LOST]  = "Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.",
+    [TX_ALERT_SENSE_LIMITS]     = "INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.",
     [TX_ALERT_ENC_OLD]          = "IOmcu-Firmware älter als 4.9. AS5600 nicht ausgelesen.",
     [TX_ALERT_SERVO_METER_OLD]  = "IOmcu-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.",
     [TX_ALERT_I3221_RESET]      = "INA3221 hat sich zurückgesetzt. Versorgung prüfen.",
@@ -1632,12 +1636,13 @@ static const char *const k_text[TX_COUNT] = {
  */
 /*
  * SETUP > SENSORS' rows (settings_sensors.h), part by part: 0x40 FITTED
- * to 0x43 FITTED, then each channel's WATCHES and SHUNT.
+ * to 0x43 FITTED, then each channel's WATCHES, SHUNT and LIMIT.
  */
 #define DE_INA_FIT(a)   [SET_INA_FIT(a)] = "0x4" #a " bestückt",
 #define DE_INA_CH(a, ch)                                                   \
     [SET_INA_W(3 * (a) + (ch) - 1)]  = "0x4" #a " CH" #ch " misst",        \
-    [SET_INA_SH(3 * (a) + (ch) - 1)] = "0x4" #a " CH" #ch " Shunt",
+    [SET_INA_SH(3 * (a) + (ch) - 1)] = "0x4" #a " CH" #ch " Shunt",        \
+    [SET_INA_LIM(3 * (a) + (ch) - 1)] = "0x4" #a " CH" #ch " Grenze",
 #define DE_INA_PART(a) DE_INA_CH(a, 1) DE_INA_CH(a, 2) DE_INA_CH(a, 3)
 #define DE_INA_LABELS                                                      \
     DE_INA_FIT(0) DE_INA_FIT(1) DE_INA_FIT(2) DE_INA_FIT(3)                \
@@ -1645,7 +1650,8 @@ static const char *const k_text[TX_COUNT] = {
 #define DE_INA_FIT_HELP(a) [SET_INA_FIT(a)] = "Ein INA3221 an dieser Adresse",
 #define DE_INA_CH_HELP(c)                                                  \
     [SET_INA_W(c)]  = "Was der Kanal misst",                               \
-    [SET_INA_SH(c)] = "0 schaltet den Kanal ab",
+    [SET_INA_SH(c)] = "0 schaltet den Kanal ab",                           \
+    [SET_INA_LIM(c)] = "Meldung im Band darüber; 0 keine",
 #define DE_INA_PART_HELP(a)                                                \
     DE_INA_CH_HELP(3 * (a)) DE_INA_CH_HELP(3 * (a) + 1)                    \
     DE_INA_CH_HELP(3 * (a) + 2)

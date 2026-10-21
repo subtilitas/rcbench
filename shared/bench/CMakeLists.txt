@@ -19,6 +19,7 @@ set(SRCS
     sense_link_view.c
     sense_map_link.c
     sense_win_link.c
+    sense_limit_link.c
     servo_source.c
     tone_link.c
     endpoints_link.c

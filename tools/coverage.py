@@ -221,6 +221,7 @@ TRACKED = [
     "shared/bench/sense_link_view.c",
     "shared/bench/sense_map_link.c",
     "shared/bench/sense_win_link.c",
+    "shared/bench/sense_limit_link.c",
     "shared/bench/servo_source.c",
     "shared/bench/tone_link.c",
     "shared/bench/endpoints_link.c",

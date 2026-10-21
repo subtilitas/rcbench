@@ -17,7 +17,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 | PANEL | `9 EINSTELLUNGEN` | die Liste von PANEL |
 | ANSCHLÜSSE | `23 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
 | SD-KARTE | `4 EINSTELLUNGEN` | die Liste von SD-KARTE: welche Logs das Panel schreibt, und wohin |
-| SENSOREN | `4 EINSTELLUNGEN`, und 6 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
+| SENSOREN | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
 | PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): die Dateien der Karte und ein Upload der Panel-Firmware im Browser, und das Heimnetz |

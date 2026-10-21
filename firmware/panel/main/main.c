@@ -2013,6 +2013,7 @@ void app_main(void)
                 (uint16_t)atomic_load(&s_sense_unheld),
                 (uint8_t)atomic_load(&s_tone_unheld));
             sensors_rows_set_status((uint16_t)atomic_load(&s_sense_parts));
+            sensors_rows_set_limits((uint16_t)atomic_load(&s_sense_limits));
             /* What the IOmcu holds of Hitec D receive, back to SETUP's
              * row. */
             settings_screen_set_hitec_rx(

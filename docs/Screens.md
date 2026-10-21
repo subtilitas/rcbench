@@ -2711,13 +2711,14 @@ The list starts with the heading INA3221 PARTS over four rows:
 | 0x40 fitted to 0x43 fitted | ON, OFF | OFF | an INA3221 at this address. The DAOKAI module takes 0x40 with its A0 solder bridge closed to GND. As shipped all four A0 bridges are open and the address floats between 0x40 and 0x41 |
 
 Each fitted part follows under a heading of its own, `INA3221 0x40` to
-`INA3221 0x43`, with six rows, two a channel. A part that is not fitted has
-no heading and no rows.
+`INA3221 0x43`, with nine rows, three a channel. A part that is not fitted
+has no heading and no rows.
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE for every other channel | what the channel's shunt is in: an output channel, a programming port, or the supply rail |
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | OFF: the channel is not read. The DAOKAI's R100 reads to 1.64 A |
+| 0x40 CH1 limit | OFF, 10 to 32767 mA, 10 mA steps on the arrows | OFF | a 50 ms window whose highest current passes it is said on the band. An alert only: nothing stops, switches to SAFE or drives anything. OFF: no limit |
 
 The heading of a part shows on its right what the part is doing:
 
@@ -2743,6 +2744,37 @@ one INA3221, CH1 at 1 kHz.`:
 
 ![SENSORS on an IOmcu older than 4.25](img/setup-sensors-old.png)
 
+A LIMIT row is marked the same way while the IOmcu does not hold its
+limit: from the edit to the write taken, after a refused write or a
+refused page with `Not accepted by the IOmcu.`, and on an IOmcu older than 4.27, for every
+limit that is not OFF, with `IOmcu older than 4.27: no limit is judged.`:
+
+![A limit on an IOmcu older than 4.27](img/setup-sensors-limit.png)
+
+The panel writes the limits to the IOmcu's SENSE_LIMIT page (protocol
+4.27) in one write of 12 registers, LIMIT_MA in mA, 500 ms after the last
+edit, in any bank state, and only where the page holds something else. It
+reads the page whole at every link-up. While the page holds a limit that
+is not OFF, it reads OVER and OVER_COUNT every 200 ms, armed or not; that
+read clears OVER on the IOmcu. The IOmcu judges each channel's 50 ms
+window once as it closes: over when the window's highest current is above
+the limit, or when a sample read the top of the range and that top is
+above it ([Link](LinkSensors.md#sense_limit)). Before it writes new
+limits over held ones, the panel reads OVER once, so a window judged under
+the old limit is said with the old limit. The band says, at most once
+every 5 s and for one channel at most once every 30 s while it keeps
+passing. Channels over at the same time take turns, starting after the
+channel said last: with all 12 over, each is said within 12 alerts, 60 s.
+
+| Band | When |
+| --- | --- |
+| `INA3221 0x41 CH2 (PORT 1) over its 0.80 A limit.` | a window of the channel passed its limit since the last read; the target in brackets is what the channel watches, none for NONE; the limit is the one the window was judged by |
+| `An INA3221 channel passed its limit; which one was lost on the link.` | OVER_COUNT moved with no OVER bit: the reply that carried the bits did not arrive. A reply that does not arrive takes the link down, so this is said after the read at the next link-up. A count of 0 there is an IOmcu that started again and is not said |
+| `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the write; it keeps the limits it held, and the panel does not write again until a limit changes. Also an IOmcu that names protocol 4.27 or later and answers the page with BAD_PAGE: the panel sends the page nothing more until the next link-up |
+
+OVER bits the IOmcu holds from before the link came up, also those of an
+IOmcu that started again, are said by channel at the first read.
+
 The panel writes the map to the IOmcu's SENSE_MAP page (protocol 4.25) in
 one write of 26 registers: the parts fitted, the channel read at 1 kHz,
 the twelve shunts and what each channel watches. As for SENSE it reads the
@@ -2760,9 +2792,10 @@ target is OUTPUTS, and PORT n while it is programming port n. Every other
 channel with a shunt is read in turn, one a millisecond: 90.9 Hz each with
 eleven ([Link](Link.md)).
 
-Current limitation: the servo test and the SERVO screen take the INA3221 as
-the servo rail's meter only while that channel is CH1 of its part. With it
-on CH2 or CH3 the rail's meter is the PD mini.
+On an IOmcu older than 4.25 the servo test and the SERVO screen take the
+INA3221 as the servo rail's meter only while that channel is CH1 of its
+part: that IOmcu reads CH1 at 1 kHz. With it on CH2 or CH3 the rail's meter
+is the PD mini there.
 
 An IOmcu older than 4.25 has no SENSE_MAP and reads one INA3221 from
 SENSE: the part of the channel read at 1 kHz, else the lowest fitted part,
@@ -2778,7 +2811,8 @@ it lacks is taken at start-up from the four INA3221 settings 0.21 kept:
 the part at the old address fitted when the INA3221 was ON, its CH1 on the
 old shunt, CH2 and CH3 on it with CH1+2+3 and OFF with CH1, and its CH1
 watching PORT 1 when the servo tester's target was the programming port,
-OUT 1 otherwise; every other channel 100.0 mΩ and NONE. The old settings
+OUT 1 otherwise; every other channel 100.0 mΩ and NONE; every limit OFF.
+The old settings
 stay stored, unchanged, so a panel taken back to 0.21 finds its set-up. The
 next SAVE writes every SENSORS key.
 

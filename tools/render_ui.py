@@ -385,6 +385,7 @@ SCREENS = {
     # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
+    "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
     # INTERFACES drawn on to the bus's pins, which the IOmcu has not taken:
     # the mark on Sensor SDA and Sensor SCL.
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
