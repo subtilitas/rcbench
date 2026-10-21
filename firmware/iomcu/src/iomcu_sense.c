@@ -10,6 +10,7 @@
 #include "iomcu.h"
 
 #include "pd_uart.h"
+#include "sense_limit.h"
 #include "sense_map.h"
 
 /* ------------------------------------------------------------- core 1 */
@@ -271,6 +272,38 @@ void sense_win_b_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     (void)ctx;
     sense_sync();
     sense_xwin_read(&s_sense, 1u, off, n, out);
+}
+
+/*
+ * SENSE_LIMIT: the limits go to core 1 in its order, which judges each
+ * window as it closes, and are saved when a write changes them; a read
+ * that covers OVER clears it.  A write takes core 1's snapshot first, so a
+ * window that closed under the limits before it is counted under them.
+ */
+void sense_limit_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    sense_sync();
+    sense_limit_read(&s_sense, off, n, out);
+}
+
+uint8_t sense_limit_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
+{
+    (void)ctx;
+    sense_sync();
+    uint16_t was[LINK_SL_KEPT];
+    sense_limit_kept(&s_sense, was);
+    const uint8_t nack = sense_limit_write(&s_sense, off, n, in);
+    if (nack != 0u) {
+        return nack;
+    }
+    uint16_t now[LINK_SL_KEPT];
+    sense_limit_kept(&s_sense, now);
+    if (memcmp(was, now, sizeof(was)) != 0) {
+        sense_order();
+        save_outputs(&s_state);
+    }
+    return 0u;
 }
 
 /* CH1's last four windows.  Read only: the page has no write handler. */

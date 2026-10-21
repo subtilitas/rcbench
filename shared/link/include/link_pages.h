@@ -59,6 +59,8 @@ typedef enum {
     LINK_PAGE_HITEC     = 0x34, /**< raw Hitec wire transactions on a port   */
     LINK_PAGE_SENSE_MAP = 0x35, /**< up to 4 INA3221 parts: fitted, shunts,
                                      what each channel watches; kept     */
+    LINK_PAGE_SENSE_LIMIT = 0x36, /**< a current limit per channel, kept,
+                                       and the windows over them        */
     LINK_PAGE_SENSE_WIN_A = 0x37, /**< channels 0 to 5's last window, read-only */
     LINK_PAGE_SENSE_WIN_B = 0x38, /**< channels 6 to 11's, read-only         */
     /* Frozen: the same numbers, layout and meaning under every major. */
@@ -119,7 +121,9 @@ typedef enum {
  * reads SENSE's one INA3221.  From 4.26 PROG has 28 registers: registers
  * 24 to 27 are each port's FUNC, the function its pin carries while no
  * wire page holds it; the panel reads the 24 an older IOmcu has and offers
- * a port SERVO PWM only.  An
+ * a port SERVO PWM only.  From 4.27 SENSE_LIMIT (0x36) holds a
+ * current limit per channel and flags each channel whose window passed
+ * its limit; an older IOmcu refuses it with LINK_NACK_BAD_PAGE.  An
  * IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -132,7 +136,7 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 26u
+#define LINK_PROTOCOL_MINOR 27u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -207,6 +211,9 @@ typedef enum {
  *  pages with LINK_NACK_BAD_PAGE and reads one INA3221 from SENSE
  *  registers 8 to 10. */
 #define LINK_MINOR_SENSE_MAP 25u
+/** The first minor that serves SENSE_LIMIT.  An older minor refuses the
+ *  page with LINK_NACK_BAD_PAGE and checks no limit. */
+#define LINK_MINOR_SENSE_LIMIT 27u
 
 /** The first minor whose PROG page has a FUNC register per port
  *  (LINK_PG_FUNC0, LINK_PG_REGS 28) and the parked flag in FLAGS.  An
@@ -967,6 +974,40 @@ enum {
 #define LINK_SX_E_VOLTAGE   0x0002u
 #define LINK_SX_E_CLIP_HI   0x0004u
 #define LINK_SX_E_CLIP_LO   0x0008u
+
+/* --- the SENSE_LIMIT page (protocol 4.27): a current limit for each of
+ *     SENSE_MAP's 12 channels, and the windows that passed them.  An
+ *     alert only: a limit passed stops nothing and drives nothing.
+ *
+ *     LIMIT_MA[c] (registers 0 to 11): channel c's limit in mA, 1 to
+ *     32767; 0 = none.  Kept in the IOmcu's flash.  A write lies within
+ *     them: one that reaches register 12 is refused with READ_ONLY, a
+ *     value above 32767 with BAD_VALUE, and a refused write stores none
+ *     of its registers.  Taken in any bank state.
+ *
+ *     Core 1 judges each channel's window once, as it closes
+ *     (sense_window_over()): over when its highest current, in mA as
+ *     SENSE_WIN shows it, is above the limit, or when a sample read the
+ *     top of the range and that top, unrounded, is above the limit.  A
+ *     negative current is never over, nor a channel off or of a part not
+ *     online at the close.  Core 0 adds what core 1 counted at each
+ *     snapshot, so no window is missed however late it takes one.
+ *
+ *     OVER (register 12, read only): bit c set when a window of channel c
+ *     was over since the last read of this register.  A read that covers
+ *     register 12 clears it after the reply is filled; a reply lost on
+ *     the link loses those bits, which OVER_COUNT still counts.
+ *     OVER_COUNT (register 13, read only): channel windows over, modulo
+ *     65536, since the IOmcu started.  Registers 14 and 15 are reserved:
+ *     they read 0. */
+enum {
+    LINK_SL_LIMIT_0    = 0,     /**< LIMIT_MA[c] at c                    */
+    LINK_SL_KEPT       = 12,    /**< registers 0 to 11 are kept          */
+    LINK_SL_OVER       = 12,
+    LINK_SL_OVER_COUNT = 13,
+    LINK_SL_COUNT      = 16,
+};
+#define LINK_SL_MA_MAX 32767u
 
 /* --- the TONE page (protocol 4.8): the beeps of an ESC (electronic speed
  *     controller), heard on one motor phase.  One GPIO reads the phase

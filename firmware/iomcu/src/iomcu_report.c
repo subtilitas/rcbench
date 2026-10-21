@@ -8,6 +8,7 @@
 
 #include "iomcu.h"
 
+#include "sense_limit.h"
 #include "sense_map.h"
 #include "update_hw.h"
 #include "xl2515.h"
@@ -71,11 +72,14 @@ static void sense_report(void)
         ma[c] = (int16_t)s_sense.xwin[c / LINK_SX_PER_PAGE]
                     [LINK_SX_E(c % LINK_SX_PER_PAGE, LINK_SX_E_MEAN_MA)];
     }
+    /* And SENSE_LIMIT's OVER and OVER_COUNT, read without clearing. */
+    uint16_t over[2];
+    sense_limit_peek(&s_sense, (uint8_t)LINK_SL_OVER, 2u, over);
     IOMCU_SAY("rcbench-iomcu: sense map fit 0x%X fast %u flags 0x%04X | mA "
-              "%d %d %d %d %d %d %d %d %d %d %d %d\n",
+              "%d %d %d %d %d %d %d %d %d %d %d %d | over 0x%03X count %u\n",
               m[LINK_SM_ENABLE], m[LINK_SM_FAST], m[LINK_SM_FLAGS], ma[0],
               ma[1], ma[2], ma[3], ma[4], ma[5], ma[6], ma[7], ma[8], ma[9],
-              ma[10], ma[11]);
+              ma[10], ma[11], over[0], over[1]);
 }
 
 /*

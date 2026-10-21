@@ -576,6 +576,14 @@ static void roll_windows(sense_sched_t *s, uint64_t now_ms)
         acc_close(&s->acc[k], s->win, &s->last[k]);
         acc_clear(&s->acc[k]);
     }
+    /* Which parts were online as these windows closed: what a limit
+     * judges them by (sense_svc). */
+    s->last_online = 0u;
+    for (unsigned a = 0; a < SENSE_I3221_PARTS; ++a) {
+        if (ina3221_state(&s->i3221[a]) == SENSE_PART_ONLINE) {
+            s->last_online = (uint8_t)(s->last_online | (1u << a));
+        }
+    }
     s->have_last = true;
     s->win       = win;
 }

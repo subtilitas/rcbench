@@ -90,6 +90,9 @@ typedef struct {
                              false: it is SENSE's one part             */
     uint16_t xwin[2][LINK_SX_COUNT]; /**< SENSE_WIN_A and SENSE_WIN_B as
                              published                                   */
+    uint16_t limit[LINK_SL_COUNT]; /**< SENSE_LIMIT (protocol 4.27); see
+                             sense_limit.h                               */
+    uint16_t lim_seen[LINK_SL_KEPT]; /**< core 1's over_n as last taken */
 } sense_page_t;
 
 void sense_page_init(sense_page_t *p);

@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.26. The
+IOmcu transmits only in answer to a request. Protocol version 4.27. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -130,12 +130,15 @@ pull-up. The panel sends no Hitec transaction
 ([The programming port for Hitec servos](LinkHitec.md)). From 4.25
 SENSE_MAP (0x35) sets up to 4 INA3221 with a shunt and a watch target per
 channel, and SENSE_WIN_A and SENSE_WIN_B (0x37, 0x38) carry every channel's
-last window; an older IOmcu refuses the three with BAD_PAGE, and this
-build's panel writes none of them
-([The INA3221 map and windows](LinkSensors.md)). From 4.26 PROG
+last window; an older IOmcu refuses the three with BAD_PAGE. This
+build's panel writes SENSE_MAP from SETUP > SENSORS and reads neither
+window page ([The INA3221 map and windows](LinkSensors.md)). From 4.26 PROG
 has 28 registers: registers 24 to 27 are each port's FUNC, and the build
 has 4 ports; the panel reads 24 registers of an older IOmcu and offers its
-ports SERVO PWM only ([The programming ports](#the-programming-ports)). The
+ports SERVO PWM only ([The programming ports](#the-programming-ports)). From
+4.27 SENSE_LIMIT (0x36) holds a current limit per channel and flags each
+channel whose window passed it, an alert only; an older IOmcu refuses it
+with BAD_PAGE, and this build's panel writes no limit. The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -759,11 +762,11 @@ registers.
 
 ### The INA3221 map and windows
 
-SENSE_MAP (0x35), SENSE_WIN_A (0x37) and SENSE_WIN_B (0x38) have
-[their own page](LinkSensors.md): up to 4 INA3221 and their 12 channels,
-the FAST channel that SERVO_WIN and a SERVO_SENSE capture follow, how SENSE
-mirrors a map in force, every channel's window, and the flash record over
-two pages.
+SENSE_MAP (0x35), SENSE_LIMIT (0x36), SENSE_WIN_A (0x37) and SENSE_WIN_B
+(0x38) have [their own page](LinkSensors.md): up to 4 INA3221 and their 12
+channels, the FAST channel that SERVO_WIN and a SERVO_SENSE capture follow,
+how SENSE mirrors a map in force, the current limits, every channel's
+window, and the flash record over two pages.
 
 ### Identifier
 
@@ -845,6 +848,7 @@ per 5 s offer.
 | 0x33 | PROG | read, write | the programming ports (since 4.13): 28 registers, 24 before 4.26. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints, then each port's FUNC in 24 to 27 (since 4.26). [The programming ports](#the-programming-ports) has the rules. Pin, slew, endpoints and FUNC are kept in the IOmcu's flash |
 | 0x34 | `HITEC` | read, write | raw transactions of the Hitec servo wire on a programming port (since 4.23). A read gives 32 registers: state, flags and port, `SEQ`, operation and transaction count, result and refusal, the capture's count and flags, the decoder's result, the decoded value, `VIEW`, the received bytes in 8 registers, and in 16 registers the bytes' start times or the run. A write takes 24: the command in registers 0 to 3, one frame, the staged transaction, decoder and POWER set points in 4 to 21, `VIEW` in 22, and the receive mode of a D series line in 23 (since 4.24). [The programming port for Hitec servos](LinkHitec.md) has the rules. Nothing is kept |
 | 0x35 | SENSE_MAP | read, write | up to 4 INA3221 at 0x40 to 0x43 on SENSE's bus (since 4.25). Register 0 the parts fitted, bit a for 0x40 + a; 1 `FAST`, the channel read every 1 ms (0 to 11, 0xFF none); 2 to 13 each channel's shunt in 0.1 mΩ (0 off, 50 to 10000); 14 to 25 what each channel measures (0 none, 0x01 to 0x08 an output channel, 0x10 to 0x13 a programming port, 0x20 the supply); read only: 26 to 29 each part's die ID, 30 flags, 31 reserved. Registers 0 to 25 are kept in the IOmcu's flash. While the map is in force SENSE's ENABLE bit 1 and registers 8 to 10 mirror it. [The INA3221 map and windows](LinkSensors.md) has the rules |
+| 0x36 | SENSE_LIMIT | read, write | a current limit per channel of SENSE_MAP (since 4.27), an alert only. Registers 0 to 11 each channel's limit in mA (0 none, 1 to 32767), kept in the IOmcu's flash; read only: 12 `OVER`, bit c a window of channel c above its limit since the last read of the register, which clears it; 13 `OVER_COUNT`, channel windows over, modulo 65536; 14 and 15 reserved. 16 registers. [The INA3221 map and windows](LinkSensors.md#sense_limit) has the rules |
 | 0x37 | SENSE_WIN_A | read | channels 0 to 5's last 50 ms window (since 4.25): the window number, flags, and 5 registers a channel: mean and highest current (mA, signed), mean and lowest bus voltage (mV), flags. Every write is refused with READ_ONLY. Nothing is kept |
 | 0x38 | SENSE_WIN_B | read | channels 6 to 11's, as SENSE_WIN_A (since 4.25) |
 | 0xF0 | UPDATE_CTL | read, write | the IOmcu's own firmware update (since 4.22; frozen across majors): 32 registers. Version, state, error, slot, slot sectors, next block, image size, then the command in register 8 with up to 3 arguments, and a SHA-256 digest in registers 16 to 31. A write that is not a command is refused with READ_ONLY. [Firmware update over the link](#firmware-update-over-the-link) has the rules. Nothing is kept |
