@@ -1,19 +1,25 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "kst_plan.h"
 
 #include <string.h>
 
-/* The registers whose hard rules read each other.  Every other register
+/**
+ * @brief The registers whose hard rules read each other.
+ *
+ * Every other register
  * has rules that read that register alone. */
 static const uint8_t k_position[] = { 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D };
 static const uint8_t k_speed[] = { 0x04, 0x1B, 0x1C };
 
 #define GROUPS 2u
 
-/* What a job does next.  One call of advance() does one of these once. */
+/**
+ * @brief What a job does next.  One call of advance() does one of these once.
+ */
 enum {
     PH_IDLE = 0,   /* no begin call prepared the job */
     PH_GROUP,      /* take up the next group, or the registers after them */
@@ -25,7 +31,7 @@ enum {
     PH_DONE,
 };
 
-/* Units of the work that is no image check, by its cost against one. */
+/** @brief Units of the work that is no image check, by its cost against one. */
 #define UNITS_CHOOSE KST_PLAN_PIECE_UNITS  /* a pass over 256 detour values */
 #define UNITS_SETTLE 4u                    /* the settled mark of one write */
 
@@ -34,11 +40,19 @@ static bool bit_of(const uint8_t *set, unsigned i)
     return (set[i / 8u] & (1u << (i % 8u))) != 0u;
 }
 
+/**
+ * @brief Set one bit of a bit set.
+ *
+ */
 static void bit_set(uint8_t *set, unsigned i)
 {
     set[i / 8u] |= (uint8_t)(1u << (i % 8u));
 }
 
+/**
+ * @brief Clear one bit of a bit set.
+ *
+ */
 static void bit_clear(uint8_t *set, unsigned i)
 {
     set[i / 8u] &= (uint8_t)~(1u << (i % 8u));
@@ -49,11 +63,19 @@ static const uint8_t *regs_of(const kst_plan_job_t *j)
     return j->group == 0u ? k_position : k_speed;
 }
 
+/**
+ * @brief Number of registers in the group the job is working on.
+ *
+ */
 static unsigned count_of(const kst_plan_job_t *j)
 {
     return j->group == 0u ? sizeof(k_position) : sizeof(k_speed);
 }
 
+/**
+ * @brief Append a write to the plan and apply it to the job's image.
+ *
+ */
 static void emit(kst_plan_job_t *j, uint8_t reg, uint8_t value)
 {
     kst_write_t *w = &j->plan->step[j->plan->n++];
@@ -65,17 +87,23 @@ static void emit(kst_plan_job_t *j, uint8_t reg, uint8_t value)
     j->img.r[reg] = value;
 }
 
+/**
+ * @brief Check the job's image against the hard rules it may not break.
+ *
+ * Costs one unit.
+ *
+ */
 static bool valid(kst_plan_job_t *j)
 {
     j->spent++;
     return (kst_limits_image(&j->img) & ~j->allowed) == 0u;
 }
 
-/*
- * Whether the image with the registers of @p todo still to write is valid;
- * j->img is that image.  The image is a function of @p todo and, while the
- * detour byte is in @p todo, of the detour value, so the verdict is kept
- * per subset and an image is checked once.
+/**
+ * @brief Whether the image with the registers of @p todo still to write is
+ *                valid; j->img is that image.  The image is a function of @p todo and, while
+ *                the detour byte is in @p todo, of the detour value, so the verdict is kept
+ *                per subset and an image is checked once.
  */
 static bool sound(kst_plan_job_t *j, unsigned todo)
 {
@@ -90,8 +118,8 @@ static bool sound(kst_plan_job_t *j, unsigned todo)
     return bit_of(j->sound, todo);
 }
 
-/*
- * Forget what is known of every subset that holds register index @p lo:
+/**
+ * @brief Forget what is known of every subset that holds register index @p lo:
  * its images change with the value of that register.  The subsets without
  * it keep their verdicts, which hold for every detour value.
  */
@@ -110,7 +138,9 @@ static void forget(kst_plan_job_t *j, unsigned lo)
     }
 }
 
-/* A field's raw value, as kst_field_get() gives it, read from the table row
+/**
+ * @brief A field's raw value, as kst_field_get() gives it, read from the table
+ *          row
  * in place: the search reads two fields for every image it scores. */
 static uint16_t raw_of(const kst_image_t *img, kst_field_id_t id)
 {
@@ -123,7 +153,8 @@ static uint16_t raw_of(const kst_image_t *img, kst_field_id_t id)
     return (uint16_t)raw;
 }
 
-/* Lower is better: less travel between the end points, or less speed.
+/**
+ * @brief Lower is better: less travel between the end points, or less speed.
  * With spd_sel off the servo runs at its own speed, taken as the highest. */
 static int32_t authority(const kst_plan_job_t *j)
 {
@@ -135,8 +166,8 @@ static int32_t authority(const kst_plan_job_t *j)
            - (int32_t)raw_of(&j->img, KST_F_PULSE_LOWER);
 }
 
-/*
- * The register of j->todo, not tried at this depth, whose write leaves a
+/**
+ * @brief The register of j->todo, not tried at this depth, whose write leaves a
  * valid image of the least authority; of two alike the first.  The group's
  * count when there is none.  A register whose write leaves an invalid image,
  * or a set of registers known to have no order, is marked tried.
@@ -172,7 +203,10 @@ static unsigned pick(kst_plan_job_t *j)
     return best;
 }
 
-/* Take back the write at the depth below.  Its bit returns to the todo
+/**
+ * @brief Take back the write at the depth below.
+ *
+ * Its bit returns to the todo
  * set. */
 static void take_back(kst_plan_job_t *j)
 {
@@ -181,6 +215,11 @@ static void take_back(kst_plan_job_t *j)
     j->todo |= (uint8_t)(1u << j->order[j->depth]);
 }
 
+/**
+ * @brief Start the depth-first search for an order of the group's changed
+ *              registers.
+ *
+ */
 static void search_begin(kst_plan_job_t *j)
 {
     j->todo = j->todo_all;
@@ -189,7 +228,9 @@ static void search_begin(kst_plan_job_t *j)
     j->phase = PH_SEARCH;
 }
 
-/* The search found an order: its writes go into the plan, after the extra
+/**
+ * @brief The search found an order: its writes go into the plan, after the
+ *            extra
  * write when the search ran from a detour value. */
 static void search_found(kst_plan_job_t *j)
 {
@@ -212,8 +253,8 @@ static void search_found(kst_plan_job_t *j)
     j->phase = PH_GROUP;
 }
 
-/*
- * One level of a depth-first search for an order of the registers in
+/**
+ * @brief One level of a depth-first search for an order of the registers in
  * j->todo, bit i for the group's register i, in which every image is
  * valid.  At most 7 levels deep; the levels are the entries of order, tried
  * and held.  No image is copied and no function calls itself: a write is
@@ -258,18 +299,29 @@ static void search_level(kst_plan_job_t *j)
     }
 }
 
+/**
+ * @brief Absolute difference of two 16-bit values.
+ *
+ */
 static uint16_t excursion(uint16_t a, uint16_t b)
 {
     return (uint16_t)(a > b ? a - b : b - a);
 }
 
-/* The part of a field's value that its low register holds when the
+/**
+ * @brief The part of a field's value that its low register holds when the
  * register holds @p x. */
 static uint16_t low_part(const kst_field_t *f, unsigned x)
 {
     return (uint16_t)((x >> f->lo_shift) & ((1u << f->lo_bits) - 1u));
 }
 
+/**
+ * @brief Index of a register in the group the job is working on.
+ *
+ * The group's count when the register is not in it.
+ *
+ */
 static unsigned index_of(const kst_plan_job_t *j, uint8_t reg)
 {
     const uint8_t *regs = regs_of(j);
@@ -282,6 +334,12 @@ static unsigned index_of(const kst_plan_job_t *j, uint8_t reg)
     return i;
 }
 
+/**
+ * @brief End the job with a result.
+ *
+ * A result other than KST_PLAN_OK leaves no writes in the plan.
+ *
+ */
 static void finish(kst_plan_job_t *j, kst_plan_result_t result)
 {
     if (result != KST_PLAN_OK) {
@@ -292,6 +350,11 @@ static void finish(kst_plan_job_t *j, kst_plan_result_t result)
     j->phase = PH_DONE;
 }
 
+/**
+ * @brief Write a register to its target value when the job's image differs from
+ *              it.
+ *
+ */
 static void emit_if_changed(kst_plan_job_t *j, uint8_t reg)
 {
     if (j->img.r[reg] != j->plan->target.r[reg]) {
@@ -299,12 +362,22 @@ static void emit_if_changed(kst_plan_job_t *j, uint8_t reg)
     }
 }
 
+/**
+ * @brief Write Max.
+ *
+ * Duty and its copy to their target values when they differ.
+ *
+ */
 static void emit_duty(kst_plan_job_t *j)
 {
     emit_if_changed(j, KST_REG_DUTY);
     emit_if_changed(j, KST_REG_DUTY_COPY);
 }
 
+/**
+ * @brief Start the settled-mark pass from the start image.
+ *
+ */
 static void settle_begin(kst_plan_job_t *j)
 {
     j->img = j->plan->start;
@@ -312,7 +385,10 @@ static void settle_begin(kst_plan_job_t *j)
     j->phase = PH_SETTLE;
 }
 
-/* No order and no detour for a group.  An edit ends here; a restore takes
+/**
+ * @brief No order and no detour for a group.
+ *
+ * An edit ends here; a restore takes
  * ascending address order and is marked unchecked. */
 static void group_failed(kst_plan_job_t *j)
 {
@@ -330,8 +406,8 @@ static void group_failed(kst_plan_job_t *j)
     settle_begin(j);
 }
 
-/*
- * The next field, from j->field on, that lies in two of the group's
+/**
+ * @brief The next field, from j->field on, that lies in two of the group's
  * registers which both change: its low byte can take one extra write to a
  * third value before the search runs again.
  */
@@ -363,7 +439,8 @@ static void field_next(kst_plan_job_t *j)
     group_failed(j);
 }
 
-/* One value of the detour byte: it is a candidate when the image with it
+/**
+ * @brief One value of the detour byte: it is a candidate when the image with it
  * is valid and it is neither the old nor the new value. */
 static void open_one(kst_plan_job_t *j)
 {
@@ -382,8 +459,8 @@ static void open_one(kst_plan_job_t *j)
     }
 }
 
-/*
- * The untried detour value with the smallest excursion of the field from
+/**
+ * @brief The untried detour value with the smallest excursion of the field from
  * its old value before, and from its new value after, the high part
  * changes; of two alike the lower value.  The search then runs from it.
  * The excursion is computed again for every pass, from the field's layout:
@@ -439,6 +516,10 @@ static void choose(kst_plan_job_t *j)
     search_begin(j);
 }
 
+/**
+ * @brief Check whether a register is one of the two searched groups.
+ *
+ */
 static bool in_group(uint8_t reg)
 {
     for (unsigned i = 0; i < sizeof(k_position); ++i) {
@@ -454,12 +535,21 @@ static bool in_group(uint8_t reg)
     return reg == KST_REG_DUTY || reg == KST_REG_DUTY_COPY;
 }
 
+/**
+ * @brief Check whether registers 0x02 and 0x01 of two images agree.
+ *
+ */
 static bool pair_is(const kst_image_t *img, const kst_image_t *ref)
 {
     return img->r[KST_REG_DUTY] == ref->r[KST_REG_DUTY]
            && img->r[KST_REG_DUTY_COPY] == ref->r[KST_REG_DUTY_COPY];
 }
 
+/**
+ * @brief Check that every two-register field of an image holds its start or its
+ *              target value.
+ *
+ */
 static bool is_settled(const kst_plan_t *plan, const kst_image_t *img)
 {
     for (unsigned i = 0; i < KST_F_COUNT; ++i) {
@@ -475,7 +565,8 @@ static bool is_settled(const kst_plan_t *plan, const kst_image_t *img)
     return pair_is(img, &plan->start) || pair_is(img, &plan->target);
 }
 
-/* The settled mark of the next write, or the end of the job after the
+/**
+ * @brief The settled mark of the next write, or the end of the job after the
  * last.  j->img follows the plan from its start image. */
 static void settle_one(kst_plan_job_t *j)
 {
@@ -491,7 +582,8 @@ static void settle_one(kst_plan_job_t *j)
     j->settle++;
 }
 
-/* Take up the next group: the registers of it that change, and nothing
+/**
+ * @brief Take up the next group: the registers of it that change, and nothing
  * known of their subsets.  After the last group the duty pair and every
  * other register follow, which need no search. */
 static void group_begin(kst_plan_job_t *j)
@@ -522,6 +614,10 @@ static void group_begin(kst_plan_job_t *j)
     search_begin(j);
 }
 
+/**
+ * @brief Run one step of the job, selected by its phase.
+ *
+ */
 static void advance(kst_plan_job_t *j)
 {
     switch (j->phase) {
@@ -569,7 +665,8 @@ uint32_t kst_plan_units(const kst_plan_job_t *job)
     return job != NULL ? job->spent : 0u;
 }
 
-/* @p start and @p target may lie in @p out, as a plan's own start or
+/**
+ * @brief @p start and @p target may lie in @p out, as a plan's own start or
  * target do: both are read before the plan is cleared.  The caller reads
  * them from the plan afterwards. */
 static void begin(kst_plan_t *out, const kst_image_t *start,
@@ -584,7 +681,9 @@ static void begin(kst_plan_t *out, const kst_image_t *start,
     out->kind = (uint8_t)kind;
 }
 
-/* A final result at a begin call.  The job, when there is one, holds it. */
+/**
+ * @brief A final result at a begin call.  The job, when there is one, holds it.
+ */
 static kst_plan_result_t ended(kst_plan_job_t *job, kst_plan_result_t result)
 {
     if (job != NULL) {
@@ -595,6 +694,10 @@ static kst_plan_result_t ended(kst_plan_job_t *job, kst_plan_result_t result)
     return result;
 }
 
+/**
+ * @brief Set up a planning job for a plan from its start and target images.
+ *
+ */
 static kst_plan_result_t job_begin(kst_plan_job_t *job, kst_plan_t *out,
                                    bool may_be_unchecked, uint32_t cap)
 {
@@ -670,6 +773,10 @@ kst_plan_result_t kst_plan_restore_begin(kst_plan_job_t *job,
     return job_begin(job, out, true, cap);
 }
 
+/**
+ * @brief Run a job to its end in one call.
+ *
+ */
 static kst_plan_result_t run(kst_plan_job_t *job, kst_plan_result_t r)
 {
     while (r == KST_PLAN_BUSY) {

@@ -1,5 +1,6 @@
-/*
- * KST servo programming protocol: the register image and its fields.
+/**
+ * @file
+ * @brief KST servo programming protocol: the register image and its fields.
  *
  * Implements the programming protocol of KST and Chaservo servos.  KST and
  * Chaservo are names or trademarks of their respective owners; they are used
@@ -42,18 +43,20 @@
 extern "C" {
 #endif
 
-/** The 32 registers, by address. */
+/** @brief The 32 registers, by address. */
 typedef struct {
     uint8_t r[KST_REG_COUNT];
 } kst_image_t;
 
-/* Register addresses that code outside the field table names. */
+/** @brief Register addresses that code outside the field table names. */
 #define KST_REG_DUTY_COPY 0x01u
 #define KST_REG_DUTY      0x02u
 #define KST_REG_NODE_ADDR 0x1Du
 
 /**
- * Every bit of the 32 registers belongs to exactly one field.  Fields named
+ * @brief Every bit of the 32 registers belongs to exactly one field.
+ *
+ * Fields named
  * KST_F_Rxx are bits the vendor tool gives no name.
  */
 typedef enum {
@@ -104,11 +107,14 @@ typedef enum {
     KST_F_COUNT
 } kst_field_id_t;
 
-/** A set of fields, bit n for field n. */
+/** @brief A set of fields, bit n for field n. */
 typedef uint64_t kst_field_set_t;
 #define KST_FIELD_BIT(id) ((kst_field_set_t)1 << (id))
 
-/** Who may change a field.  A decision about a field changes this column of
+/**
+ * @brief Who may change a field.
+ *
+ * A decision about a field changes this column of
  *  the table and no code. */
 typedef enum {
     KST_ACCESS_EDITABLE = 0, /**< an edit may change it */
@@ -117,7 +123,7 @@ typedef enum {
     KST_ACCESS_NEVER,        /**< no edit path; only a restore writes it */
 } kst_access_t;
 
-/** Unit of a displayed value. */
+/** @brief Unit of a displayed value. */
 typedef enum {
     KST_UNIT_RAW = 0,        /**< the raw value, no unit known */
     KST_UNIT_BOOL,           /**< 0 or 1 */
@@ -129,7 +135,7 @@ typedef enum {
     KST_UNIT_COUNT_OF,       /**< a count: 0 to the field's width in bits */
 } kst_unit_t;
 
-/** One row of the field table. */
+/** @brief One row of the field table. */
 typedef struct {
     const char *name;   /**< the vendor tool's label; "" for unnamed bits */
     uint8_t lo_reg;     /**< register of the low part */
@@ -143,30 +149,64 @@ typedef struct {
     uint8_t conv;       /**< conversion, private to kst_reg.c */
 } kst_field_t;
 
-/** The table row of @p id; NULL for an id outside the table. */
+/** @brief The table row of @p id; NULL for an id outside the table.
+ *
+ * @param id  Field.
+ * @return The table row, or NULL for an id outside the table.
+ */
 const kst_field_t *kst_field(kst_field_id_t id);
 
-/** Largest raw value the field's bits hold; 0 for an id outside the table. */
+/** @brief Largest raw value the field's bits hold; 0 for an id outside the table.
+ *
+ * @param id  Field.
+ * @return Largest raw value the field holds; 0 for an id outside the table.
+ */
 uint16_t kst_field_raw_max(kst_field_id_t id);
 
-/** Bits of register @p reg that belong to @p id. */
+/** @brief Bits of register @p reg that belong to @p id.
+ *
+ * @param id   Field.
+ * @param reg  Register address.
+ * @return Bits of reg that belong to id.
+ */
 uint8_t kst_field_reg_mask(kst_field_id_t id, uint8_t reg);
 
-/** Raw value of a field; 0 for a bad argument. */
+/** @brief Raw value of a field; 0 for a bad argument.
+ *
+ * @param img  Image to read.
+ * @param id   Field.
+ * @return Raw value of the field; 0 for a NULL image or bad id.
+ */
 uint16_t kst_field_get(const kst_image_t *img, kst_field_id_t id);
 
-/** Set a field's bits.  No other bit of the image changes.  False, and no
- *  change, when @p raw does not fit the field. */
+/**
+ * @brief Set a field's bits.
+ *
+ * No other bit of the image changes.  False, and no
+ *  change, when @p raw does not fit the field.
+ *
+ * @param img  Image to change.
+ * @param id   Field.
+ * @param raw  Raw value.
+ * @return true when the value fits and was stored.
+ */
 bool kst_field_set(kst_image_t *img, kst_field_id_t id, uint16_t raw);
 
 /**
- * Set a field as an edit does: kst_field_set(), and for KST_F_DUTY the copy
- * in register 0x01 as well.  Both known images hold 0x01 equal to 0x02.
+ * @brief Set a field as an edit does: kst_field_set(), and for KST_F_DUTY the
+ *            copy in register 0x01 as well.  Both known images hold 0x01 equal to 0x02.
+ *
+ * @param img  Image to change.
+ * @param id   Field.
+ * @param raw  Raw value.
+ * @return true when the value fits and was stored.
  */
 bool kst_field_edit(kst_image_t *img, kst_field_id_t id, uint16_t raw);
 
 /**
- * Raw value to displayed value.  False where the displayed value of that
+ * @brief Raw value to displayed value.
+ *
+ * False where the displayed value of that
  * raw value is not established: Stretch index 6 and 7.
  *
  *   Max. Duty      round(raw x 100 / 255) %
@@ -184,14 +224,26 @@ bool kst_field_edit(kst_image_t *img, kst_field_id_t id, uint16_t raw);
  *                  that image gives 12
  *   SPD            0.1 % x raw
  *   all others     raw
+ *
+ * @param id       Field.
+ * @param raw      Raw value.
+ * @param display  Receives the displayed value.
+ * @return true when the displayed value is established.
  */
 bool kst_field_display(kst_field_id_t id, uint16_t raw, int32_t *display);
 
 /**
- * Displayed value to the nearest raw value.  False when the value lies
+ * @brief Displayed value to the nearest raw value.
+ *
+ * False when the value lies
  * outside what the field encodes, when Stretch is not a power of two from
  * 1 to 32, and for prot1_time and prot1_pwm, whose encoding on write is
  * not observed.
+ *
+ * @param id       Field.
+ * @param display  Displayed value.
+ * @param raw      Receives the raw value.
+ * @return true when a raw value gives this display value.
  */
 bool kst_field_raw_from_display(kst_field_id_t id, int32_t display,
                                 uint16_t *raw);
@@ -199,7 +251,9 @@ bool kst_field_raw_from_display(kst_field_id_t id, int32_t display,
 /* --- servo type ----------------------------------------------------------- */
 
 /**
- * The servo type of an image.  A servo answers no model number.  The type
+ * @brief The servo type of an image.
+ *
+ * A servo answers no model number.  The type
  * is one bit: 20k_sel, register 04 bit 6.  The manufacturer states the
  * factory default of that bit as set for the V6.0 series (20 kHz drive) and
  * clear for the V8.0 series (333 Hz drive).  The mapping rests on that
@@ -213,18 +267,26 @@ typedef enum {
     KST_TYPE_NONE = 2, /**< no image, or a file that states no type */
 } kst_type_t;
 
-/** The type of @p img; KST_TYPE_NONE for NULL. */
+/** @brief The type of @p img; KST_TYPE_NONE for NULL.
+ *
+ * @param img  Image to read.
+ * @return The servo type; KST_TYPE_NONE for NULL.
+ */
 kst_type_t kst_type(const kst_image_t *img);
 
-/** "V8", "V6", and "" for any other value. */
+/** @brief "V8", "V6", and "" for any other value.
+ *
+ * @param type  Servo type.
+ * @return "V8", "V6", or "" for any other value.
+ */
 const char *kst_type_name(kst_type_t type);
 
 /* --- layout fingerprint --------------------------------------------------- */
 
 /**
- * What both known images have in common and the vendor tool forces on every
- * write.  An image that breaks one of these does not have the measured
- * layout, and nothing is written to that servo.
+ * @brief What both known images have in common and the vendor tool forces on
+ *             every write.  An image that breaks one of these does not have the measured
+ *             layout, and nothing is written to that servo.
  */
 typedef enum {
     KST_FP_R00 = 0,         /**< 00 reads 00 */
@@ -244,7 +306,12 @@ typedef struct {
     uint32_t regs;    /**< bit n: register n deviates */
 } kst_fingerprint_t;
 
-/** True when the image has the measured layout.  @p out may be NULL. */
+/** @brief True when the image has the measured layout.  @p out may be NULL.
+ *
+ * @param img  Image to check.
+ * @param out  Receives the broken rules and deviating registers; may be NULL.
+ * @return true when the image has the measured layout.
+ */
 bool kst_fingerprint(const kst_image_t *img, kst_fingerprint_t *out);
 
 #ifdef __cplusplus

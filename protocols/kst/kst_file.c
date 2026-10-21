@@ -1,5 +1,6 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "kst_file.h"
@@ -15,15 +16,19 @@
 
 #define REGS_PER_LINE  8u
 #define REG_LINES      (KST_REG_COUNT / REGS_PER_LINE)
-/* "00:" and 8 times " xx". */
+/** @brief "00:" and 8 times " xx". */
 #define REG_LINE_LEN   (3u + 3u * REGS_PER_LINE)
-/* "checksum", a space and 8 digits. */
+/** @brief "checksum", a space and 8 digits. */
 #define CHECKSUM_LEN   (STR_LEN(CHECKSUM) + 9u)
 
-/* A number in a file saturates here; no field encodes a value this high. */
+/**
+ * @brief A number in a file saturates here; no field encodes a value this high.
+ */
 #define NUMBER_MAX 9999999u
 
-/* The byte order mark of UTF-8 (8-bit Unicode Transformation Format), which
+/**
+ * @brief The byte order mark of UTF-8 (8-bit Unicode Transformation Format),
+ *            which
  * some editors put in front of a text. */
 #define BOM "\xEF\xBB\xBF"
 
@@ -33,7 +38,7 @@ static const char k_hex[] = "0123456789ABCDEF";
 
 #define CRC_START 0xFFFFFFFFu
 
-/* CRC-32 of IEEE 802.3, 4 bits a step. */
+/** @brief CRC-32 of IEEE 802.3, 4 bits a step. */
 static uint32_t crc_add(uint32_t crc, unsigned byte)
 {
     static const uint32_t table[16] = {
@@ -51,7 +56,10 @@ static uint32_t crc_add(uint32_t crc, unsigned byte)
 
 /* --- formatter ------------------------------------------------------------ */
 
-/* The text as it grows.  A byte past the buffer is counted and not
+/**
+ * @brief The text as it grows.
+ *
+ * A byte past the buffer is counted and not
  * written, so the length tells an overflow at the end. */
 typedef struct {
     char *out;
@@ -59,6 +67,12 @@ typedef struct {
     size_t n;
 } buf_t;
 
+/**
+ * @brief Append one character to a buffer.
+ *
+ * Characters past the capacity are counted but not stored.
+ *
+ */
 static void put_char(buf_t *b, char c)
 {
     if (b->n < b->cap) {
@@ -67,6 +81,10 @@ static void put_char(buf_t *b, char c)
     b->n++;
 }
 
+/**
+ * @brief Append a string to a buffer.
+ *
+ */
 static void put_str(buf_t *b, const char *s)
 {
     while (*s != '\0') {
@@ -75,6 +93,10 @@ static void put_str(buf_t *b, const char *s)
     }
 }
 
+/**
+ * @brief Append an unsigned decimal number to a buffer.
+ *
+ */
 static void put_uint(buf_t *b, uint32_t v)
 {
     char digits[10];
@@ -91,6 +113,10 @@ static void put_uint(buf_t *b, uint32_t v)
     }
 }
 
+/**
+ * @brief Append the low digits of a value as upper-case hexadecimal digits.
+ *
+ */
 static void put_hex(buf_t *b, uint32_t v, unsigned digits)
 {
     while (digits > 0u) {
@@ -99,7 +125,7 @@ static void put_hex(buf_t *b, uint32_t v, unsigned digits)
     }
 }
 
-/* One line of the register block, without its line end. */
+/** @brief One line of the register block, without its line end. */
 static void put_row(buf_t *b, const uint8_t *regs, unsigned row)
 {
     put_hex(b, row * REGS_PER_LINE, 2);
@@ -110,13 +136,19 @@ static void put_row(buf_t *b, const uint8_t *regs, unsigned row)
     }
 }
 
+/**
+ * @brief Check whether a field's unit has a tenths digit.
+ *
+ */
 static bool has_tenths(const kst_field_t *f)
 {
     return f->unit == KST_UNIT_TENTH_US || f->unit == KST_UNIT_TENTH_PERCENT ||
            f->unit == KST_UNIT_TENTH_S;
 }
 
-/* What follows the number of a field's value, terminated: "us", "%", "s",
+/**
+ * @brief What follows the number of a field's value, terminated: "us", "%",
+ *             "s",
  * "of 12" or nothing.  @p out holds 8 characters. */
 static void unit_text(const kst_field_t *f, char *out)
 {
@@ -143,6 +175,10 @@ static void unit_text(const kst_field_t *f, char *out)
     out[b.n] = '\0';
 }
 
+/**
+ * @brief Append the displayed value of a field, with its unit.
+ *
+ */
 static void put_value(buf_t *b, kst_field_id_t id, const kst_field_t *f,
                       uint16_t raw)
 {
@@ -229,17 +265,28 @@ size_t kst_file_format(const kst_image_t *img, char *out, size_t out_size)
 
 /* --- reading: characters and lines ---------------------------------------- */
 
+/**
+ * @brief Check whether a character is a space or a tab.
+ */
 static bool is_blank(char c)
 {
     return c == ' ' || c == '\t';
 }
 
+/**
+ * @brief Convert an ASCII upper-case letter to lower case.
+ *
+ * Other characters are returned unchanged.
+ *
+ */
 static char lower(char c)
 {
     return (c >= 'A' && c <= 'Z') ? (char)(c + ('a' - 'A')) : c;
 }
 
-/* Whether @p s is @p ref, compared without case and without the spaces and
+/**
+ * @brief Whether @p s is @p ref, compared without case and without the spaces
+ *                and
  * tabs in either. */
 static bool loose_eq(const char *s, size_t n, const char *ref)
 {
@@ -263,6 +310,10 @@ static bool loose_eq(const char *s, size_t n, const char *ref)
     }
 }
 
+/**
+ * @brief Skip leading spaces and tabs of a string.
+ *
+ */
 static void trim(const char **s, size_t *n)
 {
     while (*n > 0u && is_blank((*s)[0])) {
@@ -274,7 +325,7 @@ static void trim(const char **s, size_t *n)
     }
 }
 
-/* Decimal digits from @p s[*i] on.  False without a digit. */
+/** @brief Decimal digits from @p s[*i] on.  False without a digit. */
 static bool number(const char *s, size_t n, size_t *i, uint32_t *v)
 {
     const size_t start = *i;
@@ -291,7 +342,7 @@ static bool number(const char *s, size_t n, size_t *i, uint32_t *v)
     return *i > start;
 }
 
-/* 2 hexadecimal digits of either case from @p s[*i] on. */
+/** @brief 2 hexadecimal digits of either case from @p s[*i] on. */
 static bool hex2(const char *s, size_t n, size_t *i, unsigned *v)
 {
     unsigned value = 0;
@@ -329,7 +380,9 @@ typedef struct {
     bool open;      /* the text ends in this line, without a line end */
 } line_t;
 
-/* The next line: a complete one, or with @c open the bytes behind the last
+/**
+ * @brief The next line: a complete one, or with @c open the bytes behind the
+ *            last
  * line end.  False at the end of the text. */
 static bool next_line(cur_t *c, line_t *l)
 {
@@ -353,7 +406,7 @@ static bool next_line(cur_t *c, line_t *l)
     return true;
 }
 
-/* Whether a line holds spaces and tabs only, or nothing. */
+/** @brief Whether a line holds spaces and tabs only, or nothing. */
 static bool blank_line(const line_t *l)
 {
     for (size_t i = 0; i < l->n; ++i) {
@@ -364,7 +417,7 @@ static bool blank_line(const line_t *l)
     return true;
 }
 
-/* Whether the first word of a line is "checksum", in any case. */
+/** @brief Whether the first word of a line is "checksum", in any case. */
 static bool is_checksum_line(const char *s, size_t n)
 {
     size_t w = 0;
@@ -379,6 +432,10 @@ static bool is_checksum_line(const char *s, size_t n)
     return w == STR_LEN(CHECKSUM) && loose_eq(s, w, CHECKSUM);
 }
 
+/**
+ * @brief Check whether a text has a line whose first word is "checksum".
+ *
+ */
 static bool has_checksum_line(const char *text, size_t len)
 {
     cur_t c = {text, len, 0, 0};
@@ -392,7 +449,7 @@ static bool has_checksum_line(const char *text, size_t len)
     return false;
 }
 
-/* Line 1: the header and a version this code reads. */
+/** @brief Line 1: the header and a version this code reads. */
 static kst_file_err_t read_head(cur_t *c)
 {
     const size_t have = c->len < STR_LEN(HEADER) ? c->len : STR_LEN(HEADER);
@@ -417,7 +474,7 @@ static kst_file_err_t read_head(cur_t *c)
     return KST_FILE_OK;
 }
 
-/* "V6" or "V8" in either case. */
+/** @brief "V6" or "V8" in either case. */
 static kst_type_t type_value(const char *s, size_t n)
 {
     if (loose_eq(s, n, "V6")) {
@@ -429,7 +486,7 @@ static kst_type_t type_value(const char *s, size_t n)
     return KST_TYPE_NONE;
 }
 
-/* The number after "registers". */
+/** @brief The number after "registers". */
 static kst_file_err_t register_count(const char *s, size_t n)
 {
     size_t i = 0;
@@ -441,7 +498,10 @@ static kst_file_err_t register_count(const char *s, size_t n)
     return count == KST_REG_COUNT ? KST_FILE_OK : KST_FILE_ERR_REG_COUNT;
 }
 
-/* One line of the register block into its 8 registers.  @p strict takes
+/**
+ * @brief One line of the register block into its 8 registers.
+ *
+ * @p strict takes
  * the line as kst_file_format() writes it and no other. */
 static bool register_row(const char *s, size_t n, unsigned row, bool strict,
                          kst_image_t *img)
@@ -479,6 +539,9 @@ static bool register_row(const char *s, size_t n, unsigned row, bool strict,
 
 /* --- reading: a file with a checksum line --------------------------------- */
 
+/**
+ * @brief Check whether a line equals the checksum line for a CRC value.
+ */
 static bool checksum_fits(const line_t *l, uint32_t crc)
 {
     char written[CHECKSUM_LEN];
@@ -489,7 +552,10 @@ static bool checksum_fits(const line_t *l, uint32_t crc)
     return l->n == CHECKSUM_LEN && memcmp(l->s, written, CHECKSUM_LEN) == 0;
 }
 
-/* Add a line and its end as one LF.  False for a line longer than the
+/**
+ * @brief Add a line and its end as one LF.
+ *
+ * False for a line longer than the
  * format has and for a character outside 0x20 to 0x7E. */
 static bool crc_line(const line_t *l, uint32_t *crc)
 {
@@ -508,8 +574,10 @@ static bool crc_line(const line_t *l, uint32_t *crc)
     return true;
 }
 
-/*
- * The caller found a line whose first word is "checksum".  Every state
+/**
+ * @brief The caller found a line whose first word is "checksum".
+ *
+ * Every state
  * below ends at that line or refuses before it, so the loop leaves with the
  * checksum compared.
  *
@@ -620,7 +688,7 @@ typedef struct {
     int32_t typed[KST_F_COUNT];
 } edit_t;
 
-/* Whether a raw value of the field displays as @p display. */
+/** @brief Whether a raw value of the field displays as @p display. */
 static bool shows(kst_field_id_t id, int32_t display)
 {
     const uint32_t max = kst_field_raw_max(id);
@@ -634,8 +702,10 @@ static bool shows(kst_field_id_t id, int32_t display)
     return false;
 }
 
-/*
- * The value of field @p id as a person writes it.  @p typed receives the
+/**
+ * @brief The value of field @p id as a person writes it.
+ *
+ * @p typed receives the
  * number of a line without "raw".  @p closed is set when the line shows
  * its own end: a unit, a "[...]" or a remark behind the number.  A line
  * that ends in the digits of its number does not: a text cut inside that
@@ -725,7 +795,8 @@ static bool field_value(kst_field_id_t id, const char *s, size_t n,
     return true;
 }
 
-/* A line that is not empty, not a comment and not in the register block.
+/**
+ * @brief A line that is not empty, not a comment and not in the register block.
  * @p closed: see field_value(); the other lines show their end by their
  * form. */
 static kst_file_err_t edited_line(edit_t *e, const char *s, size_t n,
@@ -790,7 +861,8 @@ static kst_file_err_t edited_line(edit_t *e, const char *s, size_t n,
     return KST_FILE_ERR_NAME;
 }
 
-/* An editable field whose line shows what the register block holds takes
+/**
+ * @brief An editable field whose line shows what the register block holds takes
  * the block's raw value: several raw values of Max. Duty show as one
  * percentage, and the line alone gives the one its number converts to. */
 static void take_block_values(const edit_t *e, kst_file_t *f)
@@ -810,8 +882,10 @@ static void take_block_values(const edit_t *e, kst_file_t *f)
     }
 }
 
-/*
- * A text may end without a line end, as an editor leaves it.  The last
+/**
+ * @brief A text may end without a line end, as an editor leaves it.
+ *
+ * The last
  * line is then taken when it shows its own end, and the text is refused as
  * truncated when it does not or when the line is not read: a text cut
  * inside a line never gives a shortened number.
@@ -930,14 +1004,14 @@ kst_file_err_t kst_file_parse(const char *text, size_t len, kst_file_t *out,
 
 /* --- a file against a servo ----------------------------------------------- */
 
-/* Whether the file gives a value for the field. */
+/** @brief Whether the file gives a value for the field. */
 static bool gives(const kst_file_t *file, kst_field_id_t id)
 {
     return file->kind == KST_FILE_VERIFIED ||
            (file->named & KST_FIELD_BIT(id)) != 0u;
 }
 
-/* Whether the file's value of a field is the value @p img holds. */
+/** @brief Whether the file's value of a field is the value @p img holds. */
 static bool holds(const kst_file_t *file, kst_field_id_t id,
                   const kst_image_t *img)
 {
@@ -968,7 +1042,7 @@ static bool holds(const kst_file_t *file, kst_field_id_t id,
            wanted == shown;
 }
 
-/* The raw value a load sets an editable field to. */
+/** @brief The raw value a load sets an editable field to. */
 static bool wanted_raw(const kst_file_t *file, kst_field_id_t id,
                        uint16_t *raw)
 {
@@ -983,7 +1057,8 @@ static bool wanted_raw(const kst_file_t *file, kst_field_id_t id,
     return true;
 }
 
-/* The first field of the file, by line, whose value a broken hard rule
+/**
+ * @brief The first field of the file, by line, whose value a broken hard rule
  * needs: putting the servo's value back clears at least one of them. */
 static kst_field_id_t blame(const kst_file_t *file, const kst_image_t *servo,
                             const kst_image_t *backup,
