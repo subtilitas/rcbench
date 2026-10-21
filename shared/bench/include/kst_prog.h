@@ -428,13 +428,12 @@ typedef struct {
 /**
  * @brief The pass a START needs to be carried out.
  *
- * The model's task and the task
- * that owns the link module share one of these.  kst_prog_take() offers the
- * pass of each START it hands out; the link's task claims it when the
- * command comes out of its queue and carries the command out only with the
- * pass; the model revokes the pass of a START nobody answered.  Each pass
- * is taken once, by the one or by the other: a START whose pass the model
- * revoked is never carried out, however late it leaves the queue.
+ * The model's task and the task that owns the link module share one of these.
+ * kst_prog_take() offers the pass of each START it hands out; the link's task
+ * claims it when the command comes out of its queue and carries the command out
+ * only with the pass; the model revokes the pass of a START nobody answered.
+ * Each pass is taken once, by the one or by the other: a START whose pass the
+ * model revoked is never carried out, however late it leaves the queue.
  *
  * The three calls are safe from two tasks without a lock: each is one
  * atomic exchange of a 32-bit word.
@@ -680,10 +679,9 @@ void kst_prog_init(kst_prog_t *p);
 /**
  * @brief The gate the link's task claims each START at.
  *
- * With one set, a START
- * nobody answers within KST_PROG_START_MS is revoked and was never carried
- * out.  With none set, such a START counts as one that may have run: the
- * servo is read before anything else.  kst_prog_init() sets none.
+ * With one set, a START nobody answers within KST_PROG_START_MS is revoked and
+ * was never carried out.  With none set, such a START counts as one that may
+ * have run: the servo is read before anything else.  kst_prog_init() sets none.
  *
  * @param p The programmer state.
  * @param g The gate, or NULL for none.
@@ -848,8 +846,7 @@ bool kst_prog_journal_other(const kst_prog_t *p);
  *        (KST_PROG_MSG_JOURNAL_DONE), and the record stands: a second servo
  *        with the same settings is not told apart from the one of the write.
  *
- * Nothing
- * is written to the servo until kst_prog_forget() discards the record.
+ * Nothing is written to the servo until kst_prog_forget() discards the record.
  * KST_PROG_MSG_NONE otherwise.
  *
  * @param p The programmer state.
@@ -1454,11 +1451,10 @@ unsigned kst_prog_files_first(const kst_prog_t *p);
 /**
  * @brief Load the file with @p name into the draft.
  *
- * Taken with a servo read that
- * passes the fingerprint and is not in doubt.  A file of another servo
- * type, a file with a value that is not taken, a file that breaks a hard
- * rule and a file that is not whole change nothing.  A file that breaks
- * soft rules waits for kst_prog_soft_confirm().
+ * Taken with a servo read that passes the fingerprint and is not in doubt.  A
+ * file of another servo type, a file with a value that is not taken, a file
+ * that breaks a hard rule and a file that is not whole change nothing.  A file
+ * that breaks soft rules waits for kst_prog_soft_confirm().
  *
  * @param p    The programmer state.
  * @param name The file name.

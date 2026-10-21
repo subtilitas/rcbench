@@ -26,10 +26,9 @@ void sense_link_init(sense_link_t *s)
  * @brief Everything read under one set-up, forgotten when another is taken or
  *        the link goes: what was said about it is news again under the next.
  *
- * Not
- * the magnet: its bits are the part's and the shaft's, not the set-up's,
- * and a weak magnet said once is not said again for an edit of another
- * row (judge_enc()).
+ * Not the magnet: its bits are the part's and the shaft's, not the set-up's,
+ * and a weak magnet said once is not said again for an edit of another row
+ * (judge_enc()).
  *
  * @param s The link state.
  */
@@ -250,8 +249,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
  * @brief The bus frame as it is to be written: the pins asked and the parts
  *        whose own frames the page has not refused.
  *
- * The encoder's bit goes only
- * to an IOmcu that has it.
+ * The encoder's bit goes only to an IOmcu that has it.
  *
  * @param s   The link state.
  * @param out Receives the frame.
@@ -773,8 +771,7 @@ static void win_entry(const uint16_t *regs, unsigned k, uint16_t newest,
  * @brief A SERVO_WIN read of @p n registers from 0: the windows it owes into
  *        the queue, oldest first, and the cursor after the last one taken.
  *
- * A read
- * that owes an entry it does not carry takes nothing and asks for the
+ * A read that owes an entry it does not carry takes nothing and asks for the
  * whole page.
  *
  * @param s      The link state.

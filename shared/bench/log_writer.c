@@ -50,11 +50,11 @@ static const char *const k_supply_header =
  * @brief A short write latches the writer, and the bytes the sink took stay in
  *        the file: nothing takes them back out of a card.
  *
- * Nothing is written after
- * them either, a line feed least of all.  The row they start has no line
- * feed, and that is what the reader drops it by (log_reader_row()): a row
- * cut after "95" of "9554" has its fields and a number that parses, and only
- * the missing terminator tells it from a whole row.
+ * Nothing is written after them either, a line feed least of all.  The row they
+ * start has no line feed, and that is what the reader drops it by
+ * (log_reader_row()): a row cut after "95" of "9554" has its fields and a
+ * number that parses, and only the missing terminator tells it from a whole
+ * row.
  *
  * @param w The writer.
  * @param s The bytes.
@@ -231,10 +231,9 @@ static bool finish_row(log_writer_t *w, float t_s, char *line, int n)
 /**
  * @brief One cell of a row: the separator, then the value if @p present.
  *
- * False
- * once the row no longer fits, checked before anything is written past what
- * the last cell left: snprintf answers the length it wanted, not the one it
- * had, so an offset taken from it unchecked points past the line.
+ * False once the row no longer fits, checked before anything is written past
+ * what the last cell left: snprintf answers the length it wanted, not the one
+ * it had, so an offset taken from it unchecked points past the line.
  *
  * @param line     The row text.
  * @param cap      The size of line, in bytes.

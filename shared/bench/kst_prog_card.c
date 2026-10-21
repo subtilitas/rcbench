@@ -3,8 +3,7 @@
  * @brief The programmer's files on the card: the save, the list and the load of
  *        kst_prog.h as the state sends them and takes their answers back.
  *
- * See
- * kst_prog.h and kst_card.h.
+ * See kst_prog.h and kst_card.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -404,9 +403,8 @@ static void load_done(kst_prog_t *p, const kst_prog_card_done_t *d)
 /**
  * @brief The card ends a save this model gave up at KST_PROG_CARD_MS.
  *
- * The file
- * is on the card: it is named, and it is the session's backup where a save
- * by hand would be, so that the write that follows makes no second one.
+ * The file is on the card: it is named, and it is the session's backup where a
+ * save by hand would be, so that the write that follows makes no second one.
  *
  * @param p The programmer state.
  * @param d The answer of the card.

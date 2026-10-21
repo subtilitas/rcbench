@@ -490,12 +490,10 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
 /**
  * @brief Whether the page @p regs took the command that was not sent again.
  *
- * A
- * command taken leaves its SEQ, and either its operation in LINK_KS_OP or a
- * refusal in LINK_KS_RESULT's high byte.  A page that started again has SEQ
- * 0, operation NONE and no refusal: at SEQ 0, the command after 0xFFFF, the
- * SEQ alone does not tell the two apart.  The command's operation is never
- * NONE.
+ * A command taken leaves its SEQ, and either its operation in LINK_KS_OP or a
+ * refusal in LINK_KS_RESULT's high byte.  A page that started again has SEQ 0,
+ * operation NONE and no refusal: at SEQ 0, the command after 0xFFFF, the SEQ
+ * alone does not tell the two apart.  The command's operation is never NONE.
  *
  * @param k    The link state.
  * @param regs The registers of the page as read.
@@ -514,11 +512,10 @@ static bool page_took_cmd(const kst_link_t *k, const uint16_t *regs)
  * @brief Whether the page @p regs is one that started again since the status
  *        last read, whatever its SEQ.
  *
- * The IOmcu names the operation it last
- * started in LINK_KS_OP and keeps it until the next one; a refused command
- * leaves it.  Only a start of the IOmcu sets it back to NONE.  A
- * page that has started no operation yet reads NONE before and after a
- * start, and only its SEQ tells.
+ * The IOmcu names the operation it last started in LINK_KS_OP and keeps it
+ * until the next one; a refused command leaves it.  Only a start of the IOmcu
+ * sets it back to NONE.  A page that has started no operation yet reads NONE
+ * before and after a start, and only its SEQ tells.
  *
  * @param k    The link state.
  * @param regs The registers of the page as read.

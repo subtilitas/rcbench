@@ -179,12 +179,11 @@ void prog_link_want(prog_link_t *p, uint8_t target, bool pwm);
 /**
  * @brief Whether the servo programmer has a port (kst_prog_port_taken()).
  *
- * While
- * it has, the page is read and not written: prog_link_want() changes
- * nothing, prog_link_next() names no write -- not a pulse switched off
- * either -- prog_link_pending() is false and prog_link_command() takes no
- * command for a port.  What is wanted afterwards is what prog_link_want()
- * says after the hold.
+ * While it has, the page is read and not written: prog_link_want() changes
+ * nothing, prog_link_next() names no write -- not a pulse switched off either
+ * -- prog_link_pending() is false and prog_link_command() takes no command for
+ * a port.  What is wanted afterwards is what prog_link_want() says after the
+ * hold.
  *
  * @param p    The link state.
  * @param held true while the servo programmer has a port.
@@ -228,11 +227,10 @@ bool prog_link_has_dshot(const prog_link_t *p);
  * @brief Ask for port @p port's PIN (@p value a GPIO, or LINK_PG_PIN_NONE) or
  *        FUNC (a link_pg_func_t) to be written.
  *
- * True when taken: the page is
- * there, the port is one it has, and for FUNC the IOmcu has the register
- * and @p value is SERVO PWM or NONE, or from 4.28 DSHOT150, DSHOT300 or
- * DSHOT600.  A later ask replaces one still
- * waiting.  prog_link_next() writes it on a bench at rest.
+ * True when taken: the page is there, the port is one it has, and for FUNC the
+ * IOmcu has the register and @p value is SERVO PWM or NONE, or from 4.28
+ * DSHOT150, DSHOT300 or DSHOT600.  A later ask replaces one still waiting.
+ * prog_link_next() writes it on a bench at rest.
  *
  * @param p     The link state.
  * @param port  The port.
@@ -271,9 +269,8 @@ bool prog_link_read_due(const prog_link_t *p, uint32_t now_ms);
  * @brief The HITEC page beside the PROG page (protocol 4.23): a session the
  *        bench console opens holds a port the panel's rows must leave alone.
  *
- * Whether
- * its STATE register is read with the PROG page: an IOmcu answers that has
- * the page.
+ * Whether its STATE register is read with the PROG page: an IOmcu answers that
+ * has the page.
  *
  * @param p The link state.
  * @return true when the HITEC STATE register is read with the PROG page.
@@ -284,8 +281,7 @@ bool prog_link_hitec_due(const prog_link_t *p);
  * @brief The HITEC STATE register as read, @p state NULL for a read nobody
  *        answered: the port it names is held from STOPPING on, free at FREE.
  *
- * A
- * read not answered keeps what was known.
+ * A read not answered keeps what was known.
  *
  * @param p     The link state.
  * @param state The STATE register as read, or NULL for a read nobody answered.
@@ -421,12 +417,10 @@ bool prog_link_settled(const prog_link_t *p);
 /**
  * @brief Whether the tester sends a command now, a release for @p release.
  *
- * Not
- * before the page is read (prog_link_ready()); not to a port while the
- * programmer has one, a release neither -- it stays owed; and a command
- * that is not a release only once the target is the one wanted
- * (prog_link_settled()) and the screen wants one that can be driven
- * (prog_link_no_drive()).
+ * Not before the page is read (prog_link_ready()); not to a port while the
+ * programmer has one, a release neither -- it stays owed; and a command that is
+ * not a release only once the target is the one wanted (prog_link_settled())
+ * and the screen wants one that can be driven (prog_link_no_drive()).
  *
  * @param p       The link state.
  * @param release true for a release command.
@@ -523,11 +517,10 @@ typedef struct {
  *        the IOmcu does not have, one without a pin the PWM generator holds
  *        (none, refused, or FUNCTION NONE), or one an ask waits on.
  *
- * prog_link_wanted()
- * is then 0, so the IOmcu's target is the standard outputs; the tester
- * drives nothing in their place (prog_link_command() takes no command but
- * a release).  False before the page is read and with an IOmcu without
- * the page, whose target is the standard outputs.
+ * prog_link_wanted() is then 0, so the IOmcu's target is the standard outputs;
+ * the tester drives nothing in their place (prog_link_command() takes no
+ * command but a release).  False before the page is read and with an IOmcu
+ * without the page, whose target is the standard outputs.
  *
  * @param p The link state.
  * @return true when the screen wants a port the page cannot make the target.

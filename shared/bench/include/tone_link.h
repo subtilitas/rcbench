@@ -315,8 +315,7 @@ void tone_link_lost(tone_link_t *t);
 /**
  * @brief An IOmcu answered with protocol minor @p minor.
  *
- * Below
- * TONE_LINK_MINOR it has no page and nothing is sent to it, and the tap
+ * Below TONE_LINK_MINOR it has no page and nothing is sent to it, and the tap
  * enabled on SETUP raises TONE_LINK_EV_NO_PAGE.
  *
  * @param t      The link state.
@@ -342,8 +341,7 @@ void tone_link_want(tone_link_t *t, const tone_setup_t *w, uint32_t now_ms);
 /**
  * @brief The next exchange owed at @p now_ms, into @p op; false for none.
  *
- * The
- * caller makes the exchange and reports with tone_link_done().
+ * The caller makes the exchange and reports with tone_link_done().
  *
  * @param t      The link state.
  * @param now_ms The time, in ms.
@@ -370,8 +368,7 @@ void tone_link_done(tone_link_t *t, int result, const uint16_t *regs,
  * @brief One event for the alert band, which shows one line and replaces it
  *        with the next: the most pressing waiting, cleared, and the rest kept.
  *
- * 0
- * while none waits or while the last one handed out is younger than
+ * 0 while none waits or while the last one handed out is younger than
  * TONE_LINK_EVENT_GAP_MS at @p now_ms.
  *
  * @param t      The link state.
@@ -383,15 +380,14 @@ uint16_t tone_link_event(tone_link_t *t, uint32_t now_ms);
 /**
  * @brief Whether what @p ev, one TONE_LINK_EV_* bit, says still holds now.
  *
- * A
- * refused frame -- TONE_LINK_EV_PIN_REFUSED for the first,
- * TONE_LINK_EV_SETUP_REFUSED for the second -- until the page is known to
- * hold that frame as asked: not refused, and written and taken.  A value
- * stepped back on SETUP ends it once the IOmcu takes the frame, after
- * TONE_LINK_SETTLE_MS and a poll.  TONE_LINK_EV_PIN_BUSY until the tap is
- * off as asked and held, or a status read under the first frame as asked
- * shows its pin taken (FLAGS bit 1 clear).  With no IOmcu answering they
- * stand.  True for every other event.
+ * A refused frame -- TONE_LINK_EV_PIN_REFUSED for the first,
+ * TONE_LINK_EV_SETUP_REFUSED for the second -- until the page is known to hold
+ * that frame as asked: not refused, and written and taken.  A value stepped
+ * back on SETUP ends it once the IOmcu takes the frame, after
+ * TONE_LINK_SETTLE_MS and a poll.  TONE_LINK_EV_PIN_BUSY until the tap is off
+ * as asked and held, or a status read under the first frame as asked shows its
+ * pin taken (FLAGS bit 1 clear).  With no IOmcu answering they stand.  True for
+ * every other event.
  *
  * The caller takes back an alert it showed for such an event once this
  * is false; tone_link_event() drops one waiting that is over.
@@ -437,10 +433,9 @@ enum {
  * @brief The frames whose values as asked are not the ones the page holds,
  *        TONE_LINK_ROWS_*: not written yet, or refused.
  *
- * The comparison is want
- * against held, the two this module writes from.  0 while no IOmcu
- * answers and before the page has been read.  An IOmcu without the
- * page holds no tap, and a tap that is on is named.
+ * The comparison is want against held, the two this module writes from.  0
+ * while no IOmcu answers and before the page has been read.  An IOmcu without
+ * the page holds no tap, and a tap that is on is named.
  *
  * @param t The link state.
  * @return The frames not held as asked, as a TONE_LINK_ROWS_* value.
@@ -524,8 +519,8 @@ unsigned tone_link_f_max(const tone_link_t *t);
  *        and the last status read does not say the pin refused, -1 otherwise
  *        and while the IOmcu has no TONE page.
  *
- * False, -1, while that is not known:
- * no link, or no read yet.  @p pin may be NULL.
+ * False, -1, while that is not known: no link, or no read yet.  @p pin may be
+ * NULL.
  *
  * @param t   The link state.
  * @param pin Receives the pin, or -1 while not known; may be NULL.

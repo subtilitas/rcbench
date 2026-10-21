@@ -427,11 +427,10 @@ bool tone_link_next(tone_link_t *t, uint32_t now_ms, tone_link_op_t *op)
  * @brief Whether a first frame refused with @p result may pass later,
  *        unchanged: the page said its pin is busy.
  *
- * A 4.17 page says BUSY for that and
- * BAD_VALUE for a set-up no freed pin makes good.  An older page says
- * BAD_VALUE for both, so its refusal may pass later unless the panel sees
- * the frame's own values fail: a high tone not above the low one, or the
- * gap held too short for the low tone.
+ * A 4.17 page says BUSY for that and BAD_VALUE for a set-up no freed pin makes
+ * good.  An older page says BAD_VALUE for both, so its refusal may pass later
+ * unless the panel sees the frame's own values fail: a high tone not above the
+ * low one, or the gap held too short for the low tone.
  *
  * @param t      The link state.
  * @param result The NACK reason.
@@ -537,10 +536,9 @@ static void judge_status(tone_link_t *t)
 /**
  * @brief When WINDOW last moved, after a status read.
  *
- * A page that does not run
- * reads WINDOW 0 and is not judged by it: each such read counts as a move,
- * so a capture that starts has TONE_LINK_WINDOW_STALE_MS from the last read
- * that found it not running to show its first window.
+ * A page that does not run reads WINDOW 0 and is not judged by it: each such
+ * read counts as a move, so a capture that starts has TONE_LINK_WINDOW_STALE_MS
+ * from the last read that found it not running to show its first window.
  *
  * @param t      The link state.
  * @param now_ms The time, in ms.

@@ -102,9 +102,8 @@ typedef struct {
  *        "model" for a row the panel's model produced (LINK_BN_SIMULATED on a
  *        bench row, supply_state_t.modelled on a supply row).
  *
- * A reader takes a file with the
- * column and a file without it; a file written without it ends at the
- * previous column.
+ * A reader takes a file with the column and a file without it; a file written
+ * without it ends at the previous column.
  */
 #define LOG_WRITER_SRC_MEASURED "measured"
 #define LOG_WRITER_SRC_MODEL    "model"
@@ -123,8 +122,7 @@ void log_writer_init(log_writer_t *w, const log_sink_t *sink);
  *        bench_state_t.chw carries; NULL for SERVO_SENSE's CH1 to CH3, as an
  *        IOmcu older than 4.25 has them.
  *
- * Taken until the header is written,
- * ignored after.
+ * Taken until the header is written, ignored after.
  *
  * @param w    The writer.
  * @param cols The INA3221 columns, or NULL.

@@ -493,8 +493,7 @@ void sense_link_lost(sense_link_t *s);
 /**
  * @brief An IOmcu answered with protocol minor @p minor.
  *
- * Below
- * SENSE_LINK_MINOR it has neither page and nothing is sent to it, and a
+ * Below SENSE_LINK_MINOR it has neither page and nothing is sent to it, and a
  * part enabled on SETUP raises SENSE_LINK_EV_NO_PAGE.
  *
  * @param s      The link state.
@@ -521,8 +520,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
 /**
  * @brief The next exchange owed at @p now_ms, into @p op; false for none.
  *
- * Writes
- * only while @p idle: the bank is disarmed here and at the far end.  The
+ * Writes only while @p idle: the bank is disarmed here and at the far end.  The
  * caller makes the exchange and reports with sense_link_done().
  *
  * @param s      The link state.
@@ -576,9 +574,8 @@ uint32_t sense_link_events(sense_link_t *s);
  *        or refused, a stuck bus, a part not answering, another identity, a
  *        clipped reading, the store off -- cleared, and the rest kept.
  *
- * 0 while none waits
- * or while the last one handed out is younger than SENSE_LINK_EVENT_GAP_MS
- * at @p now_ms.
+ * 0 while none waits or while the last one handed out is younger than
+ * SENSE_LINK_EVENT_GAP_MS at @p now_ms.
  *
  * @param s      The link state.
  * @param now_ms The time, in ms.
@@ -589,15 +586,14 @@ uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms);
 /**
  * @brief Whether what @p ev, one SENSE_LINK_EV_* bit, says still holds now.
  *
- * For
- * the events about the set-up asked: SENSE_LINK_EV_PINS_UNSET and
+ * For the events about the set-up asked: SENSE_LINK_EV_PINS_UNSET and
  * SENSE_LINK_EV_SAME_ADDR while the settings ask it; a refusal --
- * SENSE_LINK_EV_BUS_REFUSED, _I228_REFUSED, _I3221_REFUSED -- until the
- * page is known to hold the frame as asked: not refused, and written and
- * taken.  A refused value stepped back on SETUP ends it once the IOmcu
- * takes the frame; the rest and the write take SENSE_LINK_SETTLE_MS and a
- * poll.  With no IOmcu answering a refusal stands.  True for every other
- * event: what a read raised ends with the band's own time.
+ * SENSE_LINK_EV_BUS_REFUSED, _I228_REFUSED, _I3221_REFUSED -- until the page is
+ * known to hold the frame as asked: not refused, and written and taken.  A
+ * refused value stepped back on SETUP ends it once the IOmcu takes the frame;
+ * the rest and the write take SENSE_LINK_SETTLE_MS and a poll.  With no IOmcu
+ * answering a refusal stands.  True for every other event: what a read raised
+ * ends with the band's own time.
  *
  * The caller takes back an alert it showed for such an event once this
  * is false; sense_link_event() drops one waiting that is over.
@@ -613,9 +609,8 @@ bool sense_link_event_stands(const sense_link_t *s, uint32_t ev);
  *        band -- another alert replaced it first -- with what it was raised
  *        with, so it is handed out again after the gap.
  *
- * A clipped event takes
- * its channel back.  An event about an IOmcu is not put back once the
- * link has gone.
+ * A clipped event takes its channel back.  An event about an IOmcu is not put
+ * back once the link has gone.
  *
  * @param s  The link state.
  * @param ev The event to put back.
@@ -653,11 +648,10 @@ enum {
  *        because its frame was refused, its pins are unset, both monitors share
  *        an address or the IOmcu is older than the part.
  *
- * The comparison
- * is want against held, the two this module writes from.  0 while no
- * IOmcu answers and before the page has been read: nothing is
- * known to compare with.  An IOmcu without the page holds no part,
- * and the parts that are on are named.
+ * The comparison is want against held, the two this module writes from.  0
+ * while no IOmcu answers and before the page has been read: nothing is known to
+ * compare with.  An IOmcu without the page holds no part, and the parts that
+ * are on are named.
  *
  * @param s The link state.
  * @return The SENSE_LINK_ROW_* bits of the rows not held as asked.
@@ -924,8 +918,8 @@ uint8_t sense_link_found(const sense_link_t *s, sense_link_part_t part);
  * @brief The INA3221 channel SENSE_LINK_EV_I3221_CLIPPED names, 1 to 3: the one
  *        sense_link_event() last handed out.
  *
- * Channels that clip together are
- * handed out one each, the event standing until the last.
+ * Channels that clip together are handed out one each, the event standing until
+ * the last.
  *
  * @param s The link state.
  * @return The INA3221 channel, 1 to 3.
@@ -937,8 +931,8 @@ uint8_t sense_link_clipped_channel(const sense_link_t *s);
  *        @p part gave for SENSE_LINK_EV_*_WRONG, and the address the scan found
  *        for SENSE_LINK_EV_*_SILENT (0 none).
  *
- * A later read can show another; a
- * part that answers as itself before the band shows either drops it.
+ * A later read can show another; a part that answers as itself before the band
+ * shows either drops it.
  *
  * @param s    The link state.
  * @param part The part.

@@ -143,8 +143,7 @@ void supply_trip_reset(supply_trip_t *t)
  *        hold_s, counted from the first reading seen over -- not from the one
  *        before it, which was not over, so the first interval is not credited.
  *
- * A
- * threshold of 0 or less is off.
+ * A threshold of 0 or less is off.
  *
  * @param over_s    The time over the threshold, in s.
  * @param over      true while the reading is over.

@@ -51,9 +51,8 @@ extern "C" {
 /**
  * @brief The longest step the model is given, in ms.
  *
- * A probe for the IOmcu
- * can hold the loop for its whole timeout; the model then advances by this
- * much and no more.  Equal to BENCH_TOTALS_MAX_STEP_S.
+ * A probe for the IOmcu can hold the loop for its whole timeout; the model then
+ * advances by this much and no more.  Equal to BENCH_TOTALS_MAX_STEP_S.
  */
 #define LOG_CADENCE_MODEL_MAX_MS 1000u
 
@@ -127,8 +126,8 @@ void log_cadence_init(log_cadence_t *c, uint32_t now_ms);
 /**
  * @brief The model's gate, once per pass.
  *
- * Opens when LOG_CADENCE_MODEL_MS or more
- * have passed since it last opened, and its clock moves then whatever
+ * Opens when LOG_CADENCE_MODEL_MS or more have passed since it last opened, and
+ * its clock moves then whatever
  * @p link_up says, so the first step after a link is lost is not the whole
  * time the link was up.
  *

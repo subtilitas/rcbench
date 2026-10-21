@@ -2,8 +2,7 @@
  * @file
  * @brief The panel's half of the throttle's pulse endpoints.
  *
- * See
- * endpoints_link.h.
+ * See endpoints_link.h.
  *
  * SPDX-License-Identifier: MIT
  */

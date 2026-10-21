@@ -113,8 +113,7 @@ typedef struct {
  * @brief What the operator allows, on top of what the supply can do: caps on
  *        the set points, and trips that switch the output off.
  *
- * A trip threshold of 0
- * is off.
+ * A trip threshold of 0 is off.
  */
 typedef struct {
     float v_max;          /**< highest voltage set point, V             */
@@ -168,11 +167,10 @@ void supply_trip_reset(supply_trip_t *t);
 /**
  * @brief Take @p dt_s of the readings in @p s into the trips.
  *
- * The count starts at
- * the first reading seen over a threshold, and each reading over it after
- * that adds the time since the one before; one at or under it starts the
- * count again, and one that did not arrive leaves it where it is.  A trip
- * that is off forgets its count, and so does one whose threshold changed.
+ * The count starts at the first reading seen over a threshold, and each reading
+ * over it after that adds the time since the one before; one at or under it
+ * starts the count again, and one that did not arrive leaves it where it is.  A
+ * trip that is off forgets its count, and so does one whose threshold changed.
  * A trip time of 0 fires on the first reading over.  Returns which trip fired,
  * once the time over reaches lim->trip_s; nothing while the output is off.
  * @p dt_s is clamped to 0 .. 1 s, as the totals' steps are.
@@ -189,8 +187,7 @@ supply_trip_kind_t supply_trip_step(supply_trip_t *t,
 
 /**
  * @brief @p value clamped to @p min .. @p max and rounded to a multiple of @p
- *        step
- *        above @p min.
+ *        step above @p min.
  *
  * A step of 0 or less only clamps.
  *
@@ -206,9 +203,8 @@ float supply_snap(float value, float min, float max, float step);
  * @brief The run's extremes start again from what is shown, and only from
  *        readings that arrived; a maximum with nothing under it starts at 0.
  *
- * The minimum
- * voltage is a reading only while the output is on: an output switched off
- * reads 0 V, and a floor of 0 V reads as a collapsed rail.
+ * The minimum voltage is a reading only while the output is on: an output
+ * switched off reads 0 V, and a floor of 0 V reads as a collapsed rail.
  *
  * @param s The supply state.
  */
@@ -232,8 +228,7 @@ void supply_reset_totals(supply_state_t *s);
  * @brief Add @p dt_s of the readings to the run's charge and energy while the
  *        output is on, only what arrived; @p dt_s is clamped to 0 ..
  *
- * 1 s, as the
- * bench's totals are.
+ * 1 s, as the bench's totals are.
  *
  * @param s    The supply state.
  * @param dt_s The time since the last call, in s.

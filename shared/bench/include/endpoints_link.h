@@ -134,8 +134,7 @@ typedef enum {
  * @brief Whether every throttle channel of a CHAN_CFG page @p page
  *        (LINK_CC_COUNT registers) holds @p min_us and @p max_us.
  *
- * A page with no
- * throttle channel holds any pair.  False for NULL.
+ * A page with no throttle channel holds any pair.  False for NULL.
  *
  * @param page   The CHAN_CFG page, LINK_CC_COUNT registers.
  * @param min_us The Idle pulse, in us.
@@ -168,8 +167,7 @@ typedef struct {
      * @brief Control task only: raised at a link-up edge, the far end is held
      *        disarmed until the debt is paid.
      *
-     * Ends with every outcome but a
-     * missing answer, and when nothing is owed.
+     * Ends with every outcome but a missing answer, and when nothing is owed.
      */
     bool hold;
     /**
