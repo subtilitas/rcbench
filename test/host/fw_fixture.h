@@ -20,7 +20,7 @@
 typedef struct {
     uint8_t     magic;        /* 0xE9                                   */
     uint8_t     segments;     /* 1 to 16                                */
-    uint16_t    chip;         /* 9, the ESP32-S3                        */
+    uint16_t    chip;         /* 0x0012, the ESP32-P4                  */
     uint32_t    desc_magic;
     const char *project;      /* copied into the 32-byte field          */
     const char *version;
@@ -35,7 +35,7 @@ static inline fw_fix_t fw_fix_default(void)
     fw_fix_t f;
     f.magic      = FW_IMAGE_MAGIC;
     f.segments   = 3u;
-    f.chip       = FW_CHIP_ESP32S3;
+    f.chip       = FW_CHIP_ESP32P4;
     f.desc_magic = FW_DESC_MAGIC;
     f.project    = FW_PROJECT;
     f.version    = "0.19.0";

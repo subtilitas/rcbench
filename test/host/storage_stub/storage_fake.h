@@ -27,23 +27,23 @@ extern esp_log_level_t g_mount_tag_level;   /* "vfs_fat_sdmmc" */
 extern esp_log_level_t g_disk_tag_level;    /* "diskio_sdmmc" */
 extern esp_log_level_t g_cmd_tag_level;     /* "sdmmc_cmd" */
 extern esp_log_level_t g_default_level;
-extern unsigned   g_bus_inits;              /* spi_bus_initialize() calls */
-extern bool       g_bus_up;
-extern esp_err_t  g_bus_fail;               /* what the next init returns */
-extern esp_err_t  g_cs_fail;                /* what the next CS on returns */
-extern bool       g_cs;                     /* chip select held */
+extern unsigned   g_pwr_news;               /* the card supply's set-ups */
+extern bool       g_pwr_on;                 /* the supply is on */
+extern esp_err_t  g_pwr_fail;               /* what the next set-up returns */
+extern int        g_mount_width;            /* the last mount's data lines */
+extern int        g_mount_slot;             /* and its SDMMC slot */
 extern bool       g_card;                   /* a card in the slot */
 extern esp_err_t  g_card_start;             /* how the card's start-up ends */
 extern FRESULT    g_card_fs;                /* what f_mount() finds on it */
 extern int        g_probe_fs;               /* the second look, -1: as above */
 extern bool       g_probe_card_gone;        /* pulled before the second look */
-extern esp_err_t  g_dev_fail;               /* the next device add */
+extern esp_err_t  g_dev_fail;               /* the next slot set-up */
 extern bool       g_drives_full;            /* ff_diskio_get_drive() */
-extern unsigned   g_dev_adds;               /* sdspi_host_init_device() */
-extern int        g_dev_live;               /* devices on the bus */
+extern unsigned   g_dev_adds;               /* sdmmc_host_init_slot() */
+extern int        g_dev_live;               /* slots set up, not let go */
 extern int        g_drive_live;             /* drives registered */
 extern int        g_fs_live;                /* volumes f_mount()ed */
-extern bool       g_cs_in_probe;            /* CS held at the second look */
+extern bool       g_slot_in_probe;          /* a slot set up at the look */
 extern uint64_t   g_total;                  /* the volume's bytes */
 extern BYTE       g_fs_type;                /* FS_FAT12 .. FS_EXFAT */
 extern FRESULT    g_getfree;                /* what f_getfree() answers */
@@ -83,7 +83,7 @@ extern const vol_entry_t k_vol[4];
 
 /* Nothing mounted, nothing in the slot, every fake as at power-up. */
 void slot_empty(void);
-/* The second look let go of all it took, and chip select with it. */
+/* The second look let go of all it took, the slot with it. */
 bool probe_left_nothing(void);
 /* An empty slot, then a card of @p fs_type and @p total bytes mounted. */
 void card_in(BYTE fs_type, uint64_t total);

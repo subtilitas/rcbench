@@ -10,17 +10,16 @@ protocol reference.
 | | |
 | --- | --- |
 | Bus | classic CAN without FD (flexible data rate), 1 Mbit/s, 29-bit identifiers only |
-| Panel | TWAI controller on GPIO19 (RX) and GPIO20 (TX), through the board's USB (Universal Serial Bus)/CAN multiplexer |
+| Panel | TWAI controller on GPIO21 (RX) and GPIO22 (TX) to the board's TJA1051T/3 transceiver, clocked from the 40 MHz crystal |
 | IOmcu | XL2515 (MCP2515-compatible) on `spi1`: SCK GP10, MOSI GP11, MISO GP12, CS GP9, INT GP8; SPI (Serial Peripheral Interface) clock 10 MHz |
 | Transceiver | SIT65HVD230 (3.3 V) on the IOmcu module |
 | Termination | 120 Ω at both ends |
 | Crystal | the XL2515 must have a 16 MHz crystal; 8 MHz limits the controller to 500 kbit/s |
 
-Selecting CAN removes the panel's native USB. GPIO19 and GPIO20 carry both, and
-the FSUSB42UMX multiplexer (CH422G EXIO5: 0 = USB, 1 = CAN) selects one. The
-console is therefore on UART0, the board's second USB-C socket behind the
-USB-UART bridge, with USB-Serial-JTAG (the ESP32-S3's built-in USB serial and
-debug bridge) as secondary.
+The panel's CAN pins are its own: CAN and the USB (Universal Serial Bus)
+console run at the same time. Pin 1 of the panel's CAN header H11 is the
+board's 5 V rail, so the link cable can power the panel; the panel's
+current draw on that path is not measured.
 
 If frames do not cross: [Bringing up the link](Bringup.md).
 
