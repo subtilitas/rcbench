@@ -149,8 +149,11 @@ CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_D3_4BIT_BUS_SLOT_1=17
 CONFIG_ESP_HOSTED_SDIO_GPIO_RESET_SLAVE=54
 CONFIG_ESP_HOSTED_SDIO_RESET_ACTIVE_HIGH=y
 #
-# The C6 is reset once per start of the panel, at the radio's first start,
-# and given 1500 ms (CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS) to answer.
+# At the radio's first start after power-up esp_hosted resets the C6 (EN
+# low for 10 ms) and then waits a fixed 1,500 ms
+# (CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS) before it starts the card.  A C6
+# that answers is reset once per start of the panel; wifi_radio.h gives the
+# resets and times of one that does not.
 CONFIG_ESP_HOSTED_SLAVE_RESET_ON_EVERY_HOST_BOOTUP=y
 #
 # A failed SDIO link does not restart the panel: esp_hosted's default would,

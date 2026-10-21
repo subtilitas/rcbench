@@ -776,9 +776,11 @@ void log_follow_runs(void)
 /**
  * @brief Every task with its core and priority, once at start-up.
  *
- * A task created without a core runs on core 0 (wifi_radio.c); core 1
- * belongs to the control task and the tasks pinned there.  "any" would be a
- * task that escaped that rule.
+ * A task created through xTaskCreate() or xTaskCreatePinnedToCore()
+ * without a core runs on core 0 (wifi_radio.c); core 1 belongs to the
+ * control task and the tasks pinned there.  "any" would be a task that
+ * escaped that rule, such as one made with xTaskCreateStatic() without a
+ * core.
  */
 static void task_report(void)
 {

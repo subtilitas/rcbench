@@ -345,9 +345,11 @@ ausführen und die neue Lock-Datei einchecken.
 
 Der C6 betreibt Espressifs esp_hosted-Co-Prozessor-Firmware. Mit welcher
 Version das Board ausgeliefert wird, ist nicht veröffentlicht und hier nicht
-bekannt. Beim ersten Wi-Fi-Start nach dem Einschalten setzt das Panel den C6
-über GPIO54 zurück, wartet bis zu 1500 ms auf ihn und schreibt seine Version
-auf die Konsole:
+bekannt. Beim ersten Wi-Fi-Start nach dem Einschalten setzt esp_hosted den C6
+zurück: GPIO54 (EN) geht für 10 ms auf Low, dann wartet esp_hosted fest
+1 500 ms (`CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS`), startet den C6 als
+SDIO-Karte und fragt alle 200 ms nach seinem Start-Event. Danach schreibt
+das Panel die Version des C6 auf die Konsole:
 
 ```
 wifi: C6: esp_hosted firmware 2.13.0, host 2.13.0
@@ -359,58 +361,128 @@ außerdem `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`, wenn Haupt-
 oder Nebenversion abweichen. Laut Espressif läuft ein Host, der neuer ist als
 sein Co-Prozessor, und kann Zeitüberschreitungen bei Anfragen sehen; das
 Verhalten des Panels mit einer älteren C6-Firmware ist nicht gemessen. Das
-Panel hat keinen Weg, den C6 zu aktualisieren.
+Panel hat keinen Weg, den C6 zu aktualisieren. Ein C6, der antwortet, wird
+einmal je Start des Panels zurückgesetzt; spätere Wi-Fi-Starts finden die
+Verbindung stehend vor und setzen nichts zurück.
 
 ### Fehler
 
-- Ein C6, der nicht antwortet: der Start scheitert nach 100 Versuchen von
-  esp_hosted im Abstand von 200 ms, nach höchstens 20 s, und WI-FI zeigt den
-  gescheiterten Start. Spätere Starts scheitern sofort. Prüfstand und Anzeige
-  laufen derweil weiter; der Start des Funkteils läuft in einem eigenen Task.
-- Eine Verbindung, die während einer Sitzung ausfällt: esp_hosted meldet es,
-  die Sitzung endet als gescheiterter Start, und Wi-Fi bleibt bis zum
-  nächsten Neustart des Panels aus. Das Panel startet dafür nicht neu
+`esp_hosted_connect_to_slave()` gibt `ESP_OK` zurück, ob der C6
+hochgekommen ist oder nicht (`esp_hosted_api.c` 177-192). Das Panel nimmt
+das Event `ESP_HOSTED_EVENT_TRANSPORT_UP` von esp_hosted als Antwort und
+wartet darauf höchstens 1 000 ms, nachdem dieser Aufruf zurückgekehrt ist
+(`wifi_radio.c`).
+
+- Ein C6, der nicht als SDIO-Karte startet: esp_hosted gibt nach dem Start
+  der Karte auf, mindestens 1 500 ms nach dem Reset von 1 520 ms; 1 Reset.
+- Ein C6, der als Karte startet und kein Start-Event schickt: esp_hosted
+  fragt 100-mal im Abstand von 200 ms und setzt den C6 nach 50 und nach 100
+  Abfragen erneut zurück (`transport_drv.c` 227-252); 3 Resets, etwa 25 s.
+- In beiden Fällen scheitert der Start, WI-FI zeigt den gescheiterten
+  Start, und das Panel hält den C6 bis zum nächsten Neustart im Reset
+  (GPIO54 auf Low). Spätere Starts scheitern sofort, ohne Reset. Prüfstand
+  und Anzeige laufen derweil weiter; der Start des Funkteils läuft in einem
+  eigenen Task.
+- Eine Verbindung, die während einer Sitzung ausfällt: esp_hosted sendet
+  `ESP_HOSTED_EVENT_TRANSPORT_FAILURE`. Das Panel schreibt einmal
+  `wifi: C6 link failed: C6 held in reset, Wi-Fi is off until the panel
+  restarts`, hält den C6 im Reset, und die Sitzung endet als gescheiterter
+  Start. Mit dem C6 im Reset halten die 51-kOhm-Pull-ups seine SDIO-Leitungen
+  auf High, sodass der Lese-Task von esp_hosted, Priorität 23 auf Kern 0,
+  wartet, statt in einer Schleife zu scheitern; auf einem Board ist das
+  nicht gemessen. Das Panel startet dafür nicht neu
   (`CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n`): ein Neustart würde
   den Link zum IOmcu und den Heartbeat unterbrechen.
+- Vom Ausfall bis Wi-Fi aus: die Event-Schleife stellt das Event zu (nicht
+  gemessen), der Task des Funkteils sieht es binnen 100 ms und nimmt das
+  Funkteil ohne die zwei Anfragen an den C6 herunter, `esp_wifi_stop()` und
+  `esp_wifi_deinit()`, die jeweils erst mit der Antwort-Zeitüberschreitung
+  von esp_hosted nach 5 s enden würden. Das Herunterfahren wartet bis zu
+  1 500 ms auf eine laufende GitHub-Abfrage und bis zu 20 000 ms auf das
+  Ende ihres Tasks. Die Zeit auf einem Board ist nicht gemessen.
 
-Bekannte Einschränkungen, beide in esp_hosted:
+Bekannte Einschränkungen, alle in esp_hosted. Jede hält das Panel mit einem
+Abbruch an, der es neu startet:
 
 - Meldet der Co-Prozessor in seinem Start-Event einen anderen Chip als den
-  ESP32-C6, hält esp_hosted das Panel mit einer Assertion an. Das
-  Start-Event kommt beim ersten Wi-Fi-Start nach dem Einschalten.
+  ESP32-C6 (`transport_drv.c` 697-702), ein Init-Event länger als 64 Byte
+  (`transport_drv.c` 875-881) oder einen Streaming-SDIO-Modus, den der Host
+  nicht fährt (`transport_drv.c` 944-947). Das Start-Event kommt beim ersten
+  Wi-Fi-Start nach dem Einschalten.
+- Scheitert ein CMD52-Zugriff (ein einzelnes Register) auf den C6, während
+  esp_hosted die Karte startet: `ESP_ERROR_CHECK` auf die Register für
+  Interrupt-Freigabe, Busbreite und Blockgröße
+  (`port_esp_hosted_host_sdio.c` 131-134, 195-217). Ein C6, der während
+  eines Wi-Fi-Starts nur halb antwortet, kann das auslösen.
 - Lassen sich der SDMMC-Controller oder sein Slot 1 nicht einrichten, oder
-  fehlt der Speicher für die Queues, den Pufferpool oder die Tasks von
+  fehlt der Speicher für die Queues, die Pufferpools oder die Tasks von
   esp_hosted, hält esp_hosted das Panel beim Start mit einer Assertion an,
   vor `app_main()` und bevor die Anzeige etwas zeigt. Es richtet diese bei
   jedem Start ein, auch mit Wi-Fi aus.
+
+Die Release-Prüfung beim Start startet das Funkteil von selbst: mit der
+Erinnerung in SETUP > UPDATES an (`SET_UPD_REMIND`, ab Werk an) und einem
+gespeicherten Heimnetz fragt das Panel nach jedem Einschalten GitHub nach
+einem Release. Ein bleibender Fehler der Arten oben startet das Panel dann
+bei jedem Einschalten neu, bis die Erinnerung aus ist oder das Heimnetz
+vergessen ist.
 
 Die SD-Karte auf Slot 0 und der C6 auf Slot 1 teilen sich einen
 SDMMC-Controller:
 
 - ESP-IDFs SDMMC-Treiber hält die Einrichtung eines Slots nicht gegen eine
-  Übertragung auf dem anderen Slot zurück. Wird die Karte eingebunden,
-  während eine Wi-Fi-Sitzung Daten mit dem C6 austauscht, kann die laufende
-  Übertragung scheitern; esp_hosted meldet dann eine ausgefallene
-  Verbindung, und Wi-Fi bleibt bis zum nächsten Neustart des Panels aus.
+  Übertragung auf dem anderen Slot zurück. Der Start eines Slots und der
+  Start einer Karte setzen den Taktteiler des Controllers, den beide Slots
+  teilen, und senden seine Takt-Update-Befehle außerhalb des
+  Anfrage-Mutex des Treibers (`sdmmc_host_set_card_clk()`, `sdmmc_host.c`
+  301-351). Wird die Karte eingebunden, während eine Wi-Fi-Sitzung Daten mit
+  dem C6 austauscht, kann die laufende Übertragung scheitern; esp_hosted
+  meldet dann eine ausgefallene Verbindung, und Wi-Fi bleibt bis zum
+  nächsten Neustart des Panels aus. Umgekehrt kann der Start von Slot 1
+  durch esp_hosted, beim ersten Wi-Fi-Start und bei jedem Reset des C6, den
+  es auslöst, ein laufendes Lesen oder Schreiben der Karte scheitern lassen.
   Nicht gemessen.
-- Kann ESP-IDFs Einbinden Slot 0 nicht starten, nachdem der Controller
-  läuft, hält es den Controller an und damit die Verbindung zum C6; Wi-Fi
-  bleibt dann bis zum nächsten Neustart des Panels aus. Die eigene Prüfung
-  des Panels für eine Karte, die sich nicht einbinden ließ (`storage.c`),
-  lässt den Controller laufen.
+- ESP-IDFs Einbinden hält Slot 0 bei jedem Fehler nach dem Init des
+  Controllers an (`vfs_fat_sdmmc.c` 310-312) und hält den ganzen Controller
+  an, wenn danach kein Slot mehr gezählt ist (`sdmmc_host.c` 906-923).
+  `storage.c` startet Slot 0 vor dem Einbinden selbst und gibt ohne Anhalten
+  auf, wenn er nicht startet, sodass der Zähler unter der Verbindung zum C6
+  nie auf 0 fällt.
 
 ### Kerne und Speicher
 
-Auf dem ESP32-P4 läuft ein Task, der ohne Kern angelegt wird, auf Kern 0,
-und Kern 1 gehört dem Control-Task und den dort festgelegten Tasks. Dafür
-linkt das Panel mit `--wrap=xTaskCreatePinnedToCore`
+Auf dem ESP32-P4 läuft ein Task, der über `xTaskCreate()` oder
+`xTaskCreatePinnedToCore()` ohne Kern angelegt wird, auf Kern 0, und Kern 1
+gehört dem Control-Task und den dort festgelegten Tasks. Dafür linkt das
+Panel mit `--wrap=xTaskCreatePinnedToCore`
 (`components/wifi_access/wifi_radio.c`): esp_hosted legt 6 Tasks mit
-Priorität 23 an, ohne einen Kern zu nennen. Die Konsole listet beim Start
-jeden Task, `task <Name> core <0|1> priority <n>`.
+Priorität 23 an, ohne einen Kern zu nennen. `xTaskCreateStatic()` und die
+Aufrufe `xTaskCreate*WithCaps()` sind nicht umgeleitet; esp_hosted nutzt
+`xTaskCreateStatic()` nur mit `CONFIG_ESP_HOSTED_DFLT_TASK_FROM_SPIRAM`,
+das den Build abbricht. Die Konsole listet beim Start jeden Task,
+`task <Name> core <0|1|any> priority <n>`.
 
-Der statische interne RAM von esp_hosted beträgt 1 637 Byte (esp_hosted
-1 576, esp_wifi_remote 61); seine Task-Stacks belegen 20 480 Byte
-(4 x 3 072 und 2 x 4 096); seine Puffer sind nicht gemessen. Die
+Die SD-Karte und der C6 teilen sich den Anfrage-Mutex des SDMMC-Treibers
+von ESP-IDF, der Priorität vererbt. Hält der Run-Log-Task auf Kern 1 ihn für
+einen Schreibvorgang auf die Karte und wartet ein Task von esp_hosted
+darauf, läuft der Run-Log-Task mit Priorität 23 auf Kern 1, über dem
+Control-Task. Die längste Periode des Control-Tasks unter dieser Last ist
+nicht gemessen.
+
+Speicher von esp_hosted, alles interner RAM:
+
+| Teil | Byte | Quelle |
+| --- | ---: | --- |
+| statische Daten | 1 637 | esp_hosted 1 576, esp_wifi_remote 61 (Map-Datei) |
+| Task-Stacks | 20 480 | 4 x 3 072 und 2 x 4 096 |
+| SDIO-Pufferpool | 47 680 | 31 Blöcke zu 1 536 Byte, auf 64 Byte ausgerichtet (`sdio_drv.c` 246-262) |
+| gemeinsamer Pufferpool | 38 464 | 25 Blöcke zu 1 536 Byte, auf 64 Byte ausgerichtet (`transport_drv.c` 298-316) |
+
+Die beiden Pools kommen aus DMA-fähigem (direct memory access) internem RAM
+(`port_esp_hosted_host_os.c` 130-147) und werden vor `app_main()` angelegt,
+auch mit Wi-Fi aus. `CONFIG_ESP_HOSTED_MEMPOOL_PREFER_SPIRAM` würde sie ins
+PSRAM legen; es ist aus, und der freie interne RAM damit ist nicht gemessen.
+Weitere Belegungen von esp_hosted sind hier nicht gezählt. Die
 Konsolenzeile `wifi: radio up` nennt den freien internen RAM mit laufendem
 Funkteil.
 

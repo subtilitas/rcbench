@@ -14,12 +14,12 @@ idf_component_register(
     INCLUDE_DIRS include
     REQUIRES board webaccess fwupdate storage esp_wifi esp_netif esp_event
              esp_http_server esp_http_client esp-tls mbedtls esp_timer
-             nvs_flash lwip freertos esp_hw_support heap
+             nvs_flash lwip freertos esp_hw_support heap esp_driver_gpio
 )
 
-# A task created without a core runs on core 0; core 1 belongs to the
-# control task and the tasks pinned there (wifi_radio.c,
-# __wrap_xTaskCreatePinnedToCore).
+# A task created through xTaskCreatePinnedToCore() or xTaskCreate()
+# without a core runs on core 0; core 1 belongs to the control task and the
+# tasks pinned there (wifi_radio.c, __wrap_xTaskCreatePinnedToCore).
 idf_build_set_property(LINK_OPTIONS
     "-Wl,--wrap=xTaskCreatePinnedToCore"
     "-Wl,--undefined=__wrap_xTaskCreatePinnedToCore" APPEND)

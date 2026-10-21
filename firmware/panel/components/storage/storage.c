@@ -3,6 +3,17 @@
  * @brief The SD card on SDMMC slot 0: mount, unmount, holds, and the look
  *        at a card that does not mount.
  *
+ * The SDMMC host is shared with the ESP32-C6's SDIO link on slot 1
+ * (wifi_radio.c).  Each slot's start and card start set the host's clock
+ * divider, which both slots share, and send the clock update commands
+ * outside ESP-IDF's request mutex (sdmmc_host_set_card_clk(), sdmmc_host.c
+ * 301-351).  So a mount here can make a C6 transfer under way fail, and
+ * esp_hosted's start of slot 1 (at the first Wi-Fi start, and at each C6
+ * reset it makes) can make a card read or write under way fail.  Neither
+ * is measured.  test_storage holds the slot count against
+ * test/host/storage_stub/storage_fake.c, which counts slots as ESP-IDF
+ * does; the shared clock divider is not modelled there.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -328,6 +339,30 @@ static esp_err_t mount_locked(void)
         .max_files = 4,
         .allocation_unit_size = 16 * 1024,
     };
+
+    /*
+     * The SDMMC host is shared with the C6's SDIO link on slot 1, which
+     * esp_hosted starts before app_main().  ESP-IDF v5.5.5 counts a slot
+     * only once it has started (sdmmc_host_init_slot(), sdmmc_host.c
+     * 837-840), and the mount deinits slot 0 on every failure after the
+     * host's init (vfs_fat_sdmmc.c 310-312): after a slot 0 that did not
+     * start, that deinit would count slot 1 down to 0 and stop the host
+     * under esp_hosted.  So slot 0 is started here first, and a slot that
+     * does not start ends the attempt with no deinit, as in probe_fatfs().
+     * With both slots started the count is at its ceiling of 2, so the
+     * mount's own start of slot 0 does not count again, and its deinit
+     * counts back to 1.
+     */
+    err = (*host.init)();
+    if (err == ESP_OK) {
+        err = sdmmc_host_init_slot(host.slot, &slot);
+    }
+    if (err != ESP_OK) {
+        set_state(CARD_STATE_UNREADABLE);
+        snprintf(s.status, sizeof(s.status), "%s", esp_err_to_name(err));
+        ESP_LOGW(TAG, "SD slot did not start: %s", esp_err_to_name(err));
+        return err;
+    }
 
     /*
      * ESP-IDF's mount logs every failure of its own at E level, "no card"

@@ -33,14 +33,21 @@ void wifi_radio_mac(uint8_t mac[6]);
 /**
  * @brief Bring the link to the C6 up, before esp_wifi_init().
  *
- * Called from the task that brings the radio up.  The C6 is reset once per
- * start of the panel and answers within
- * CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS; its firmware version is logged
- * once and the handler of a link failure is registered once.
+ * Called from the task that brings the radio up.  The first call resets
+ * the C6 (EN low for 10 ms, then a fixed 1,500 ms,
+ * CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS), starts it as an SDIO card and
+ * waits for its start event, polling every 200 ms.  A C6 that starts as a
+ * card and sends no start event is reset again after 50 and after 100
+ * polls; the call returns after about 25 s.  A C6 that does not start as a
+ * card ends the call after the card's start-up, at least 1,500 ms.  Then
+ * esp_hosted's TRANSPORT_UP event is awaited for at most 1,000 ms.  The
+ * C6's firmware version is logged once.  Later calls with the link up
+ * return at once, with no reset.
  *
- * @return ESP_OK with the link up; ESP_FAIL when the C6 does not answer,
+ * @return ESP_OK with the link up; ESP_FAIL when the C6 did not answer,
+ *         when the handlers of esp_hosted's events cannot be registered,
  *         and on every call once the link has failed, until the panel
- *         restarts.
+ *         restarts.  A C6 that did not answer is held in reset.
  */
 esp_err_t wifi_radio_link(void);
 

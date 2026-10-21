@@ -1345,6 +1345,14 @@ static bool fetch_wait(uint32_t wait_ms)
     return !atomic_load(&s.fetch_alive);
 }
 
+/**
+ * @brief Take the radio down: mDNS, the fetch, the page's server, the
+ *        driver and the interface.
+ *
+ * After a failed C6 link, esp_wifi_stop() and esp_wifi_deinit() are not
+ * called: each is a request to the C6, which is held in reset then, and
+ * would end only at esp_hosted's response time-out, 5 s each.
+ */
 static void radio_down(void)
 {
     atomic_store(&s.abort, true);
@@ -1362,8 +1370,10 @@ static void radio_down(void)
         s.httpd = NULL;
     }
     if (s.radio_up) {
-        (void)esp_wifi_stop();
-        (void)esp_wifi_deinit();
+        if (!wifi_radio_failed()) {
+            (void)esp_wifi_stop();
+            (void)esp_wifi_deinit();
+        }
         if (s.netif != NULL) {
             esp_netif_destroy_default_wifi(s.netif);
             s.netif = NULL;

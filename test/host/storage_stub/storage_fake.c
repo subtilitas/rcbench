@@ -27,10 +27,14 @@ FRESULT    g_card_fs;
 int        g_probe_fs;
 bool       g_probe_card_gone;
 esp_err_t  g_dev_fail;
+unsigned   g_dev_fail_after;
 bool       g_drives_full;
 unsigned   g_dev_adds;
 unsigned   g_dev_removes;
 int        g_dev_live;
+int        g_host_slots;
+int        g_host_active;
+unsigned   g_host_stops;
 int        g_drive_live;
 int        g_fs_live;
 bool       g_slot_in_probe;
@@ -160,14 +164,29 @@ esp_err_t esp_vfs_fat_sdmmc_mount(const char *base, const sdmmc_host_t *host,
     const sdmmc_slot_config_t *sc = (const sdmmc_slot_config_t *)slot;
     g_mount_width = sc->width;
     g_mount_slot = host->slot;
+    /* ESP-IDF v5.5.5's order (vfs_fat_sdmmc.c 266-312): the host, the slot,
+     * the card, FatFs; every failure after the host's init stops the slot
+     * through deinit_p, the one of a slot that did not start too. */
+    esp_err_t err = (*host->init)();
+    if (err != ESP_OK) {
+        return err;
+    }
+    err = sdmmc_host_init_slot(host->slot, sc);
+    if (err != ESP_OK) {
+        ESP_LOGE("vfs_fat_sdmmc", "slot init failed (0x%x).", err);
+        (void)(*host->deinit_p)(host->slot);
+        return err;
+    }
     const esp_err_t start = card_start(host);
     if (start != ESP_OK) {
         ESP_LOGE("vfs_fat_sdmmc", "sdmmc_card_init failed (0x%x).", start);
+        (void)(*host->deinit_p)(host->slot);
         return start;
     }
     if (g_card_fs != FR_OK) {
         ESP_LOGW("vfs_fat_sdmmc", "failed to mount card (%d)", (int)g_card_fs);
         ESP_LOGE("vfs_fat_sdmmc", "mount_to_vfs failed (0x%x).", ESP_FAIL);
+        (void)(*host->deinit_p)(host->slot);
         return ESP_FAIL;
     }
     snprintf(g_sd.cid.name, sizeof(g_sd.cid.name), "SC16G");
@@ -182,26 +201,59 @@ esp_err_t sdmmc_host_init(void)
     return ESP_OK;
 }
 
+/**
+ * @brief Start a slot, counted as ESP-IDF v5.5.5 counts it.
+ *
+ * sdmmc_host.c 837-840: a slot that starts counts while the count is under
+ * 2 and the slot is not the active one; a slot that fails to start does
+ * not count.
+ *
+ * @param slot The slot.
+ * @param cfg  Unused.
+ * @return g_dev_fail once g_dev_fail_after starts have worked, else ESP_OK.
+ */
 esp_err_t sdmmc_host_init_slot(int slot, const sdmmc_slot_config_t *cfg)
 {
-    (void)slot;
     (void)cfg;
     ++g_dev_adds;
-    if (g_dev_fail != ESP_OK) {
+    if (g_dev_fail != ESP_OK && g_dev_fail_after > 0u) {
+        --g_dev_fail_after;
+    } else if (g_dev_fail != ESP_OK) {
         const esp_err_t e = g_dev_fail;
         g_dev_fail = ESP_OK;
         return e;
     }
-    ++g_dev_live;
+    if (g_host_slots < 2 && g_host_active != slot) {
+        ++g_host_slots;
+    }
+    g_host_active = slot;
+    if (slot == 0) {
+        g_dev_live = 1;
+    }
     return ESP_OK;
 }
 
+/**
+ * @brief Stop a slot, as ESP-IDF v5.5.5 does.
+ *
+ * sdmmc_host.c 906-923: every call counts down, and the count reaching 0
+ * stops the host, the C6's slot 1 with it (g_host_stops).
+ *
+ * @param slot The slot.
+ * @return ESP_OK.
+ */
 esp_err_t sdmmc_host_deinit_slot(int slot)
 {
-    (void)slot;
     ++g_dev_removes;
-    if (g_dev_live > 0) {
-        --g_dev_live;
+    if (slot == 0) {
+        g_dev_live = 0;
+    }
+    g_host_active = -1;
+    if (g_host_slots > 0) {
+        --g_host_slots;
+        if (g_host_slots == 0) {
+            ++g_host_stops;
+        }
     }
     return ESP_OK;
 }
@@ -262,6 +314,7 @@ esp_err_t esp_vfs_fat_sdcard_unmount(const char *base, sdmmc_card_t *card)
     (void)card;
     ++g_unmounts;
     g_live = false;
+    (void)sdmmc_host_deinit_slot(0);    /* as ESP-IDF's unmount does */
     return ESP_OK;
 }
 
@@ -448,10 +501,14 @@ void slot_empty(void)
     g_probe_fs   = -1;
     g_probe_card_gone = false;
     g_dev_fail   = ESP_OK;
+    g_dev_fail_after = 0u;
     g_drives_full = false;
     g_dev_adds   = 0u;
     g_dev_removes = 0u;
     g_dev_live   = 0;
+    g_host_slots = 1;                   /* the C6's slot 1, from start-up */
+    g_host_active = 1;
+    g_host_stops = 0u;
     g_drive_live = 0;
     g_fs_live    = 0;
     g_slot_in_probe = false;
@@ -471,10 +528,12 @@ void slot_empty(void)
     g_pull_after = -1;
 }
 
-/* The second look let go of all it took, and chip select with it. */
+/* The second look let go of all it took, and the host still counts the
+ * C6's slot 1. */
 bool probe_left_nothing(void)
 {
-    return g_dev_live == 0 && g_drive_live == 0 && g_fs_live == 0;
+    return g_dev_live == 0 && g_drive_live == 0 && g_fs_live == 0
+           && g_host_slots == 1 && g_host_stops == 0u;
 }
 
 void card_in(BYTE fs_type, uint64_t total)

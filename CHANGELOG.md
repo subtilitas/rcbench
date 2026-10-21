@@ -15,11 +15,16 @@ history is in git.
   through the managed components `esp_wifi_remote` 1.6.5 and `esp_hosted`
   2.13.0 (Apache-2.0; esp_hosted carries the protobuf-c runtime,
   BSD-2-Clause, in NOTICE), pinned in `firmware/panel/dependencies.lock`. The
-  first Wi-Fi start logs the C6's firmware version. A failed SDIO link ends
-  the session and leaves Wi-Fi off until the next start; the panel does not
-  restart for it. Every task created without a core runs on core 0, so
-  esp_hosted's 6 tasks at priority 23 stay off the control task's core; the
-  console lists every task's core and priority at start-up.
+  first Wi-Fi start logs the C6's firmware version. A C6 that does not
+  answer at the first start, or an SDIO link that fails later, ends the
+  session, holds the C6 in reset (GPIO54 low) and leaves Wi-Fi off until
+  the next start; the panel does not restart for it. The card's mount
+  starts SDMMC slot 0 before ESP-IDF's mount, so a slot 0 that does not
+  start leaves the controller and the C6's link running. Every task created
+  through `xTaskCreate()` or `xTaskCreatePinnedToCore()` without a core
+  runs on core 0, so esp_hosted's 6 tasks at priority 23 stay off the
+  control task's core; the console lists every task's core and priority at
+  start-up.
 - Four glyph tables for the 1024 x 600 panel: 10x20, 12x24 and 20x36 text
   faces and a 32x44 numeral face (20,400, 29,376, 73,440 and 38,016 bytes
   of flash), and the roles `UI_FONT_FINE` (8x16) and `UI_FONT_BODY`
