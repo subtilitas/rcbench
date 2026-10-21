@@ -33,7 +33,8 @@
  */
 static const prog_reg_row_t k_rows[] = {
     { PROG_DEV_SERVO, UI_WB_PROGRAM, TX_PL_KST, TX_PL_GRP_PROG_PORT,
-      TX_SV_TARGET_PORT, 0u, LINK_CAP_SERVO_PWM, &kst_panel_pages, false },
+      TX_SV_TARGET_PORT, PROG_REG_TESTER_PORT, LINK_CAP_SERVO_PWM,
+      &kst_panel_pages, false },
     { PROG_DEV_MOTOR, UI_WB_PROGRAM, TX_PL_STICK, TX_PL_GRP_STICK,
       TX_MO_SET_THROTTLE, PROG_REG_NO_PORT, 0u, &esc_stick_pages, true },
 };
@@ -41,6 +42,28 @@ static const prog_reg_row_t k_rows[] = {
 /* The table the lists are built from: k_rows, or one a test hands in. */
 static const prog_reg_row_t *s_rows = k_rows;
 static size_t s_count = sizeof(k_rows) / sizeof(k_rows[0]);
+
+/* The ports as the panel last read them (prog_registry_set_ports()). */
+static uint8_t s_tester_port = PROG_REG_NO_PORT;
+static uint8_t s_held;
+
+void prog_registry_set_ports(uint8_t tester_port, uint8_t held)
+{
+    s_tester_port = (tester_port < PROG_REG_PORTS) ? tester_port
+                                                   : (uint8_t)PROG_REG_NO_PORT;
+    s_held = (uint8_t)(held & ((1u << PROG_REG_PORTS) - 1u));
+}
+
+uint8_t prog_reg_port(const prog_reg_row_t *r)
+{
+    if (r == NULL) {
+        return PROG_REG_NO_PORT;
+    }
+    if (r->port == PROG_REG_TESTER_PORT) {
+        return s_tester_port;
+    }
+    return (r->port < PROG_REG_PORTS) ? r->port : (uint8_t)PROG_REG_NO_PORT;
+}
 
 const prog_reg_row_t *prog_registry(size_t *count)
 {
@@ -100,7 +123,9 @@ prog_reg_fault_t prog_reg_check(const prog_reg_row_t *rows, size_t n,
             f = PROG_REG_NO_GROUP;
         } else if (!filled(r->transport)) {
             f = PROG_REG_NO_TRANSPORT;
-        } else if (r->port != PROG_REG_NO_PORT && r->port >= PROG_REG_PORTS) {
+        } else if (r->port != PROG_REG_NO_PORT
+                   && r->port != PROG_REG_TESTER_PORT
+                   && r->port >= PROG_REG_PORTS) {
             f = PROG_REG_BAD_PORT;
         } else if (!hooks_filled(r->page_set)) {
             f = PROG_REG_NO_PAGE_SET;
@@ -284,14 +309,22 @@ prog_row_state_t prog_reg_state(const prog_reg_row_t *rows, size_t n,
     if (prog_reg_missing(r, caps) != 0u) {
         return PROG_ROW_NO_CAP;
     }
-    if (r->port == PROG_REG_NO_PORT) {
+    const uint8_t port = prog_reg_port(r);
+    if (port == PROG_REG_NO_PORT) {
         return PROG_ROW_LIVE;
+    }
+    /* A page no row drives holds the port, unless the row's own session
+     * does: then it is that session's port. */
+    const bool own = r->page_set != NULL && r->page_set->holds_port != NULL
+                     && prog_ps_holds(r->page_set);
+    if ((s_held & (1u << port)) != 0u && !own) {
+        return PROG_ROW_PORT_BUSY;
     }
     /* Exclusive: another session on the port holds it.  A row sharing the
      * page set is the same session, not another one. */
     for (size_t j = 0; j < n; ++j) {
         const prog_reg_row_t *o = &rows[j];
-        if (j != i && o->port == r->port && o->page_set != r->page_set
+        if (j != i && prog_reg_port(o) == port && o->page_set != r->page_set
             && o->page_set != NULL && o->page_set->holds_port != NULL
             && prog_ps_holds(o->page_set)) {
             return PROG_ROW_PORT_BUSY;
@@ -343,7 +376,15 @@ bool prog_reg_detail(const prog_reg_row_t *rows, size_t n, size_t i,
     const uint8_t pin = (r->page_set != NULL && r->page_set->pin != NULL)
                             ? prog_ps_pin(r->page_set)
                             : PROG_REG_NO_PIN;
-    if (pin == PROG_REG_NO_PIN) {
+    const uint8_t port = prog_reg_port(r);
+    if (port != PROG_REG_NO_PORT) {
+        if (pin == PROG_REG_NO_PIN) {
+            snprintf(out, size, TR(SV_TARGET_PN), (unsigned)port + 1u);
+        } else {
+            snprintf(out, size, TR(SV_TARGET_PN_PIN), (unsigned)port + 1u,
+                     (unsigned)pin);
+        }
+    } else if (pin == PROG_REG_NO_PIN) {
         snprintf(out, size, "%s", ui_tr(r->transport));
     } else {
         snprintf(out, size, "%s GP%u", ui_tr(r->transport), (unsigned)pin);

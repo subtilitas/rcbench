@@ -12,7 +12,9 @@
  * page re-read after a written ask; an older IOmcu read as 24 registers
  * with every port SERVO PWM; a port as the page holds it, and not known
  * before the first read; a wanted port that cannot be driven (NONE, past
- * the count) stopping every command but a release.
+ * the count) stopping every command but a release; the HITEC page's
+ * STATE naming the port it holds, kept over a read not answered, none
+ * with no link or no page.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -378,6 +380,52 @@ TEST_CASE(a_port_that_cannot_be_driven_stops_the_tester)
     CHECK(!prog_link_no_drive(&g_p));
 }
 
+TEST_CASE(the_hitec_page_says_which_port_it_holds)
+{
+    uint16_t st;
+
+    /* No link, and an IOmcu without the page: not read, nothing held. */
+    prog_link_init(&g_p);
+    CHECK(!prog_link_hitec_due(&g_p));
+    CHECK(!prog_link_hitec_due(NULL));
+    CHECK_EQ(prog_link_hitec_held(NULL), 0u);
+    prog_link_came_up(&g_p, LINK_MINOR_HITEC - 1u);
+    CHECK(!prog_link_hitec_due(&g_p));
+    st = (uint16_t)(LINK_HITEC_OPEN | (2u << 12));
+    prog_link_hitec_read(&g_p, &st);
+    CHECK_EQ(prog_link_hitec_held(&g_p), 0u);
+    /* An IOmcu with it: STOPPING to POWER_OFF hold the port named. */
+    fresh();
+    CHECK(prog_link_hitec_due(&g_p));
+    CHECK_EQ(prog_link_hitec_held(&g_p), 0u);
+    for (unsigned s = LINK_HITEC_STOPPING; s <= LINK_HITEC_POWER_OFF; ++s) {
+        st = (uint16_t)(s | LINK_HT_F_RAIL | (2u << 12));
+        prog_link_hitec_read(&g_p, &st);
+        CHECK_EQ(prog_link_hitec_held(&g_p), 0x4u);
+    }
+    /* A read nobody answered keeps it; FREE lets it go. */
+    prog_link_hitec_read(&g_p, NULL);
+    CHECK_EQ(prog_link_hitec_held(&g_p), 0x4u);
+    st = (uint16_t)(LINK_HITEC_FREE | (2u << 12));
+    prog_link_hitec_read(&g_p, &st);
+    CHECK_EQ(prog_link_hitec_held(&g_p), 0u);
+    /* A port past the four holds none. */
+    st = (uint16_t)(LINK_HITEC_OPEN | (9u << 12));
+    prog_link_hitec_read(&g_p, &st);
+    CHECK_EQ(prog_link_hitec_held(&g_p), 0u);
+    /* Lost, and back: nothing held until it is read again. */
+    st = (uint16_t)(LINK_HITEC_OPEN | (1u << 12));
+    prog_link_hitec_read(&g_p, &st);
+    CHECK_EQ(prog_link_hitec_held(&g_p), 0x2u);
+    prog_link_lost(&g_p);
+    CHECK_EQ(prog_link_hitec_held(&g_p), 0u);
+    prog_link_hitec_read(&g_p, &st);
+    CHECK_EQ(prog_link_hitec_held(&g_p), 0u);
+    prog_link_came_up(&g_p, LINK_MINOR_PROG_FUNC);
+    CHECK_EQ(prog_link_hitec_held(&g_p), 0u);
+    prog_link_hitec_read(NULL, &st);
+}
+
 int main(void)
 {
     RUN(an_ask_is_refused_where_nothing_could_take_it);
@@ -390,5 +438,6 @@ int main(void)
     RUN(an_older_iomcu_is_read_as_24_registers_all_servo_pwm);
     RUN(a_port_is_unknown_before_the_first_read_then_as_the_page_holds_it);
     RUN(a_port_that_cannot_be_driven_stops_the_tester);
+    RUN(the_hitec_page_says_which_port_it_holds);
     return test_summary("prog_link_ask");
 }

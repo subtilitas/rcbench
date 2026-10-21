@@ -349,6 +349,10 @@ static inline bool hw_supply_set(void *ctx, bool on, uint16_t mv,
     return true;
 }
 
+/* The ports the build has: 2 unless a case asks for the 4 of protocol
+ * 4.26 (rig_ports()). */
+static unsigned g_rig_ports = 2u;
+
 static inline void fresh_at(uint32_t t0, supply_kind_t supply)
 {
     hitec_port_hw_t hw;
@@ -379,7 +383,7 @@ static inline void fresh_at(uint32_t t0, supply_kind_t supply)
     g_hw.v.vin_mv = 20000u;
 
     memset(&hw, 0, sizeof(hw));
-    hw.ports = 2u;
+    hw.ports = (uint8_t)g_rig_ports;
     hw.pin = hw_pin;
     hw.take = hw_take;
     hw.give = hw_give;

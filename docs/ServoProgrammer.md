@@ -39,12 +39,14 @@ before a write is relied on.
 
   ![An IOmcu without the port](img/servo-kst-nopage.png)
 
-- The servo is on the IOmcu's programming port, port 1: GP13, pad 17
-  of the bring-up module, unless another pin is stored for it. The port is
-  no output channel and no slot of OUTPUTS.
-- The SERVO screen's **TARGET** is **PROG PORT**
-  ([the target](#the-target)). With the standard outputs as target the
-  programmer is locked.
+- The servo is on one of the IOmcu's programming ports, PROG PORT 1 to 4,
+  with FUNCTION SERVO PWM and a pin: port 1 is GP13, pad 17 of the
+  bring-up module, unless another pin is stored for it; ports 2 to 4 have
+  the pin set on their PROG PORT entry. A port is no output channel and no
+  slot of OUTPUTS.
+- **SERVO TESTER** names that port: PORT 1, PORT 2, PORT 3 or PORT 4
+  ([the target](#the-target)). With OUTPUTS, the standard outputs as
+  target, the programmer is locked.
 - One servo at a time.
 - The port is in PWM (pulse-width modulation) or in programming, never both.
   While the port is in programming, the tester sends no pulse to it, and
@@ -130,7 +132,7 @@ A port without a pin cannot be the target: a slot of OUTPUTS that holds
 GP13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
-With the standard outputs as target the programmer shows `Use the programming port to program a servo.` and `Set SERVO TESTER to PROG PORT on SETUP > OUTPUTS.`, and every control but **CLOSE** is off.
+With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer shows `Use the programming port to program a servo.` and `Set SERVO TESTER to PORT 1 to PORT 4 on SETUP > OUTPUTS.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
 
 ![The standard outputs are the target](img/servo-kst-target.png)
 
@@ -856,7 +858,7 @@ its first **READ ALL** finds it. A backup file on the card stays there.
 ## The limit run
 
 The SERVO screen's limit run drives the programmer itself whenever SERVO
-TESTER is PROG PORT
+TESTER is a port
 ([Servo procedures](Servo.md#programming-the-servos-travel-limits)). Its
 first session reads the servo, with SEARCH ONLY as well: CONNECT with its
 read, LEAVE. With SERVO PULSES at 1000-2000 that session also writes PULSE
@@ -999,7 +1001,7 @@ The page is the same with a PD mini answering.
 The state line reads `Leaving programming mode. PWM is still off.` and the
 tester's controls stay off until the port reports PWM. The button reads
 **ABORT** while the wait runs. Then `The port is back in tester mode.` and
-the tester drives the port at once, with **SERVO TESTER** on **PROG PORT**
+the tester drives the port at once, with **SERVO TESTER** on that port
 and **PORT PWM** on. The next **CONNECT** starts a new session with its own
 read.
 

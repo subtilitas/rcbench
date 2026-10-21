@@ -636,6 +636,37 @@ TEST_CASE(a_row_the_iomcu_lacks_is_dimmed_and_opens_nothing)
     CHECK(!kst_panel_is_open());
 }
 
+/* The row's detail names the tester's port: a move of SERVO TESTER from
+ * OUTPUTS to PORT 1 repaints it on its own, with the row's state and pin
+ * unchanged. */
+TEST_CASE(the_program_row_repaints_when_the_testers_port_moves)
+{
+    fresh();
+    scr->enter();
+    prog_registry_set_ports(PROG_REG_NO_PORT, 0u);
+    open_program();
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
+    const gfx_color_t bg = fb[(SV_PROG_ROW_Y(0)) * W + 470];
+    unsigned before = 0u;
+    for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
+        for (int x = 200; x < 484; ++x) {
+            before += fb[y * W + x] != bg;
+        }
+    }
+    prog_registry_set_ports(0u, 0u);
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
+    unsigned after = 0u;
+    for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
+        for (int x = 200; x < 484; ++x) {
+            after += fb[y * W + x] != bg;
+        }
+    }
+    CHECK(after > before);           /* "PROG PORT 1 ..." over "PROG PORT" */
+    prog_registry_set_ports(PROG_REG_NO_PORT, 0u);
+}
+
 /* The session is a level below PROGRAM's list: the home tag closes it to
  * the list, the next one leaves the screen.  (An editor in the session and
  * a port in programming: test_kst_panel.c.) */
@@ -752,6 +783,7 @@ int main(void)
     RUN(a_tile_opens_live_and_each_task_keeps_its_place);
     RUN(the_strip_reads_live_test_program_settings);
     RUN(a_row_the_iomcu_lacks_is_dimmed_and_opens_nothing);
+    RUN(the_program_row_repaints_when_the_testers_port_moves);
     RUN(the_home_tag_climbs_from_the_session_to_the_list_and_leaves);
     RUN(program_offers_search_over_nine_rows_and_narrows_the_list);
     RUN(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves);

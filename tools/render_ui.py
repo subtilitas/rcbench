@@ -248,6 +248,7 @@ SCREENS = {
     # with the port's pin; with no IOmcu answering, dimmed with its reason.
     "servo-program": ("servo-program.png", "servo", "dark"),
     "servo-program-nocap": ("servo-program-nocap.png", "servo", "sim"),
+    "servo-program-busy": ("servo-program-busy.png", "servo", "dark"),
     "servo-kst": ("servo-kst.png", "servo", "dark"),
     "servo-kst-nopage": ("servo-kst-nopage.png", "servo", "dark"),
     # The tester drives the standard outputs: PROGRAM is locked.

@@ -603,6 +603,9 @@ void prog_ports_to_screens(void);
  * pulse in bit 16.  One word, so the screen never reads one drive's target
  * with another's pin or pulse.  No link until an IOmcu answers. */
 #define DRIVE_PWM_BIT (1u << 16)
+/* Bits 20 to 23 of s_drive: the ports the HITEC page holds
+ * (prog_link_hitec_held()), for the PROGRAM list's PORT IN USE. */
+#define DRIVE_HELD_SHIFT 20u
 extern atomic_uint    s_drive;
 /* Whether the servo programmer has a port, or an operation under way. */
 extern bool            s_kst_taken;
@@ -634,7 +637,9 @@ static inline void prog_drive_publish(void)
 {
     const prog_link_drive_t drive = prog_link_drive(&s_prog_link);
     atomic_store(&s_drive, ((unsigned)drive.target << 8) | drive.pin
-                           | (drive.pwm ? DRIVE_PWM_BIT : 0u));
+                           | (drive.pwm ? DRIVE_PWM_BIT : 0u)
+                           | ((unsigned)prog_link_hitec_held(&s_prog_link)
+                              << DRIVE_HELD_SHIFT));
 }
 
 /* ------------------------------------------------------------ panel_poll.c */
