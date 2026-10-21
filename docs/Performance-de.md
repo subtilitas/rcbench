@@ -149,7 +149,7 @@ Aufrufer herleiten zu lassen.
 Neues. Der Prüfstandsbildschirm führt den Push-Zähler des Plots und eine
 Revisionsnummer der Bedienelemente, jeweils je Framebuffer, und zeichnet Plot,
 Anzeigen und Bedienelemente nur neu, wenn der zugehörige Zähler sich bewegt
-hat. `each_framebuffer_is_updated_independently` in `test_motor` hält die
+hat. `each_framebuffer_is_updated_independently` in `test_motor_draw` hält die
 Zähler je Buffer fest.
 
 ## Obergrenzen
