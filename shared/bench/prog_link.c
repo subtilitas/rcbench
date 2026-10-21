@@ -25,6 +25,8 @@ void prog_link_came_up(prog_link_t *p, uint16_t minor)
     p->page        = minor >= LINK_MINOR_PROG;
     p->target_rate = minor >= LINK_MINOR_SERVO_TARGET_RATE;
     p->func        = minor >= LINK_MINOR_PROG_FUNC;
+    p->hitec       = minor >= LINK_MINOR_HITEC;
+    p->hitec_held  = 0u;
     /* An ask is for the IOmcu it was made to: one still waiting is not
      * carried to the one that answers now. */
     if (p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING) {
@@ -45,6 +47,8 @@ void prog_link_lost(prog_link_t *p)
     p->page        = false;
     p->target_rate = false;
     p->func        = false;
+    p->hitec       = false;
+    p->hitec_held  = 0u;
     if (p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING) {
         p->ask_state = (uint8_t)PROG_LINK_ASK_LOST;
     }
@@ -52,6 +56,27 @@ void prog_link_lost(prog_link_t *p)
     p->read_once   = false;
     p->seen        = PROG_LINK_SEEN_NONE;
     p->rate        = (uint8_t)PROG_LINK_RATE_KEPT;
+}
+
+bool prog_link_hitec_due(const prog_link_t *p)
+{
+    return p != NULL && p->up && p->hitec;
+}
+
+void prog_link_hitec_read(prog_link_t *p, const uint16_t *state)
+{
+    if (p == NULL || !p->up || !p->hitec || state == NULL) {
+        return;
+    }
+    const uint8_t port = LINK_HT_PORT_OF(*state);
+    p->hitec_held = (LINK_HT_STATE_OF(*state) == (uint8_t)LINK_HITEC_FREE
+                     || port >= LINK_PG_PORTS_MAX)
+                        ? 0u : (uint8_t)(1u << port);
+}
+
+uint8_t prog_link_hitec_held(const prog_link_t *p)
+{
+    return (p != NULL && p->up && p->hitec) ? p->hitec_held : 0u;
 }
 
 /* The TARGET now known to be @p t: a change from the one known before

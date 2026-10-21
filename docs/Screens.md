@@ -1149,10 +1149,16 @@ automatic test's reasons end it with the output off.
 
 ![PROGRAM's list](img/servo-program.png)
 ![A row the IOmcu lacks the capability for](img/servo-program-nocap.png)
+![A row whose port a console Hitec session holds](img/servo-program-busy.png)
 
 PROGRAM in the strip shows the list of programmers in the page area, one
 row each: the name on the left, and on the right what the row drives with
-its pin, `PROG PORT GP13`, then `>`. The list has one row, `KST and
+its pin, `PROG PORT 1 GP13`, then `>`. The KST and Chaservo row is on the
+port SERVO TESTER names, PORT 1, PORT 2, PORT 3 or PORT 4, and reads `PROG
+PORT` with its pin while SERVO TESTER is OUTPUTS. A row is dimmed with
+`PORT IN USE` while another session holds its port: another row's, or a
+HITEC session the bench console opened, which the panel reads from the
+HITEC page's STATE every 500 ms. The list has one row, `KST and
 Chaservo servos` (German `KST- und Chaservo-Servos`). A tap on a live row
 opens its programmer over the left column, the strip's tabs with it, one
 level down, and ends a running automatic test. CLOSE in the programmer, or
@@ -1177,12 +1183,13 @@ list holds 48 rows at most. With one row none of these is drawn. Modelled
 protocols without a transport on the IOmcu, the Hitec D-series servos among
 them, have no row ([PROGRAM](#program) on MOTOR & ESC).
 
-The KST and Chaservo programmer takes the IOmcu's programming port, GP13 on
-pad 17 by default, out of PWM (pulse-width modulation) and reads and writes
-the servo's settings on its signal wire. It connects only with SERVO
-TESTER on SETUP > OUTPUTS set to PROG PORT; with OUTPUTS it shows `Use the
-programming port to program a servo.` and `Set SERVO TESTER to PROG PORT on
-SETUP > OUTPUTS.`, and CONNECT is locked. While it holds the port it stays open: CLOSE and the
+The KST and Chaservo programmer takes the programming port the tester
+drives out of PWM (pulse-width modulation) and reads and writes the
+servo's settings on its signal wire. PROG PORT 1 is GP13 on pad 17 by
+default. It connects only with SERVO TESTER on SETUP > OUTPUTS set to a
+port, PORT 1, PORT 2, PORT 3 or PORT 4; with OUTPUTS it shows `Use the programming port to
+program a servo.` and `Set SERVO TESTER to PORT 1 to PORT 4 on SETUP >
+OUTPUTS.`, and CONNECT is locked. While it holds the port it stays open: CLOSE and the
 home tag open LEAVE PROGRAMMING, and while the port moves into or out of
 programming they do nothing. Leaving SERVO leaves the port as it is; back
 on SERVO the programmer is open again on PROGRAM. ARM is drawn disabled and

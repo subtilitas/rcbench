@@ -23,8 +23,21 @@ des Schreibers. Eine Session auf dem Panel ist nicht gebaut.
 
 Ein Port ist frei, von dieser Page gehalten oder von der KST-Page gehalten
 ([Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md)), nie
-zwei davon. Nichts wird im Flash gehalten: nach einem Neustart des IOmcu ist
-der Port frei.
+zwei davon. Die Page hält einen Port zur Zeit; die KST-Page darf einen
+anderen halten. Nichts wird im Flash gehalten: nach einem Neustart des IOmcu
+ist der Port frei.
+
+Jeder Port des Builds kann geöffnet werden, 4 ab Protokoll 4.26: der Pin des
+Ports wird übergeben, gleich welche FUNKTION er hat, der geparkte Pin eines
+Ports mit KEINE wie der eines SERVO-PWM-Ports, und bei CLOSE dieser Funktion
+zurückgegeben. Der Bedarf an PIO und DMA ist der der Leitung, auf welchem
+Port sie auch liegt: eine Leitung, also höchstens 2 State Machines und 3
+DMA-Kanäle mit PRECHARGE.
+
+Das Panel liest `STATE` mit der PROG-Page alle 500 ms, ab 4.23. Solange es
+einen gehaltenen Port nennt (STOPPING bis POWER_OFF), graut SERVO >
+PROGRAMMIEREN eine Zeile auf diesem Port mit `PORT BELEGT` aus
+([Bildschirme](Screens-de.md#programmierer)).
 
 ## Hinein und hinaus
 

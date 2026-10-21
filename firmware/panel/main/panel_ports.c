@@ -12,6 +12,7 @@
 #include "picker_screen.h"
 #include "port_mail.h"
 #include "port_view.h"
+#include "prog_registry.h"
 
 static port_mail_t s_mail = PORT_MAIL_INIT;
 
@@ -34,6 +35,15 @@ void prog_ports_init_screens(void)
 void prog_ports_to_screens(void)
 {
     port_mail_to_view(&s_mail);
+
+    /* The PROGRAM list's ports: the one the tester drives, and those the
+     * HITEC page holds, from one word. */
+    const unsigned drive = atomic_load(&s_drive);
+    const unsigned target = (drive >> 8) & 0xFFu;
+    prog_registry_set_ports(
+        (target >= 1u && target <= LINK_PG_PORTS_MAX)
+            ? (uint8_t)(target - 1u) : (uint8_t)PROG_REG_NO_PORT,
+        (uint8_t)((drive >> DRIVE_HELD_SHIFT) & 0xFu));
 
     /* The pins the IOmcu holds, to both views of the binding, as before
      * there were functions: a refused pin is none. */

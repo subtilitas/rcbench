@@ -671,6 +671,14 @@ static __attribute__((noinline)) void prog_page_read(void)
                                 prog_link_regs(&s_prog_link), &reply)
                       && reply.op == LINK_OP_DATA;
     prog_link_read(&s_prog_link, read ? reply.regs : NULL, now_ms());
+    /* And the HITEC page's STATE: a session the bench console opened
+     * holds a port the PROGRAM list leaves alone. */
+    if (prog_link_hitec_due(&s_prog_link)) {
+        const bool st = read_regs(&s_host, LINK_PAGE_HITEC, LINK_HT_STATE,
+                                  1u, &reply)
+                        && reply.op == LINK_OP_DATA;
+        prog_link_hitec_read(&s_prog_link, st ? reply.regs : NULL);
+    }
 }
 
 /*

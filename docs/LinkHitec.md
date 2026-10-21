@@ -21,8 +21,20 @@ panel is not built. `shared/outputs/hitec_port.c` holds the rules.
 
 A port is free, held by this page or held by the KST page
 ([The programming port for KST and Chaservo servos](LinkKST.md)), never two
-of them. Nothing is kept in flash: after a restart of the IOmcu the port is
+of them. The page holds one port at a time; the KST page may hold another.
+Nothing is kept in flash: after a restart of the IOmcu the port is
 free.
+
+Any of the build's ports may be opened, 4 from protocol 4.26: the port's pin
+is handed over whatever its FUNCTION, a NONE port's parked pin as a SERVO
+PWM port's, and given back to that function at CLOSE. The PIO and DMA use is
+the line's, whichever port it is on: one line, so at most 2 state machines
+and 3 DMA channels with PRECHARGE.
+
+The panel reads `STATE` with the PROG page, every 500 ms, from 4.23 on. While
+it names a port held (STOPPING to POWER_OFF), SERVO > PROGRAM dims a row on
+that port with `PORT IN USE`
+([Screens](Screens.md#programmer)).
 
 ## The way in and out
 

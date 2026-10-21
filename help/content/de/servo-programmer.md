@@ -10,9 +10,13 @@ Der Servo-Programmierer liest die 32 Register eines KST- oder Chaservo-Servos ü
 
 ![Die Liste von PROGRAMMIEREN](view:servo-program)
 
-Die Zeile nennt, was sie ansteuert, `PROG-PORT GP13`. Sie ist gedimmt und öffnet nichts, solange der IOmcu, die RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet: die Zeile zeigt dann `IOMCU OHNE SERVO PWM`.
+Die Zeile nennt, was sie ansteuert: den Port, den SERVO-TESTER nennt, und seinen Pin, `PROG-PORT 1 GP13`. Sie ist gedimmt und öffnet nichts, solange der IOmcu, die RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet: die Zeile zeigt dann `IOMCU OHNE SERVO PWM`.
 
 ![Die Zeile gedimmt](view:servo-program-nocap)
+
+Sie ist mit `PORT BELEGT` gedimmt, solange eine Hitec-Sitzung, die die Bench-Konsole geöffnet hat, diesen Port hält.
+
+![Der Port belegt](view:servo-program-busy)
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench ist mit ihnen nicht verbunden, wird von ihnen nicht empfohlen und nicht gefördert. Die Namen sagen, mit welchen Servos der Programmierer arbeitet.
 
@@ -23,8 +27,8 @@ Registerbelegung und Timing stammen von 1 KST Tool Card #2 und 1 Chaservo-Servo.
 ![Der Programmierer, während der Tester den Port hält](view:servo-kst)
 
 - Einen IOmcu mit Protokoll 4.13 oder neuer; VERLASSEN braucht 4.15.
-- Das Servo am Programmierport des IOmcu, Port 1: GP13, Pad 17, solange kein anderer Pin dafür gespeichert ist.
-- SERVO-TESTER auf dem Eintrag PROG-PORT von Ausgänge auf PROG-PORT; ein Tipp auf die Zeile ZIEL öffnet ihn ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)).
+- Das Servo an einem Programmierport des IOmcu, PROG-PORT 1 bis 4, mit FUNKTION SERVO PWM und einem Pin: Port 1 ist GP13, Pad 17, solange kein anderer Pin dafür gespeichert ist; die Ports 2 bis 4 haben den Pin, der auf ihrem Eintrag PROG-PORT von Ausgänge gesetzt ist.
+- SERVO-TESTER auf diesem Eintrag auf diesen Port, PORT 1, PORT 2, PORT 3 oder PORT 4; ein Tipp auf die Zeile ZIEL öffnet ihn ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)).
 - Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
 
 ![Ein IOmcu ohne Programmierport](view:servo-kst-nopage)

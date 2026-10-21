@@ -700,13 +700,17 @@ static bool kst_file_view(const char *v)
 }
 
 /*
- * SERVO > PROGRAM's list: the registry's KST row, live with the pin the
- * feed carries (servo-program), or with no IOmcu answering, dimmed with its
- * reason (servo-program-nocap).
+ * SERVO > PROGRAM's list: the registry's KST row on the tester's PROG PORT
+ * 1, live with the pin the feed carries (servo-program), dimmed PORT IN
+ * USE while the HITEC page holds port 1 (servo-program-busy), or with no
+ * IOmcu answering, dimmed with its reason (servo-program-nocap).
  */
 static void program_view(const char *view)
 {
     rig_fresh();
+    prog_registry_set_ports(
+        strcmp(view, "servo-program-nocap") == 0 ? PROG_REG_NO_PORT : 0u,
+        strcmp(view, "servo-program-busy") == 0 ? 0x1u : 0u);
     if (strcmp(view, "servo-program-many") == 0) {
         /* The fit check only: a table of 12 rows under two headings,
          * SEARCH and the page keys over them, one row dimmed. */
@@ -723,10 +727,14 @@ static void program_view(const char *view)
         prog_registry_use(many, 12);
     }
     if (strcmp(view, "servo-program") == 0
+        || strcmp(view, "servo-program-busy") == 0
         || strcmp(view, "servo-program-many") == 0) {
         (void)rig_link_up(LINK_PROTOCOL_MINOR);
     }
     ui_router_goto(SCREEN_SERVO);
+    if (strcmp(view, "servo-program-nocap") != 0) {
+        servo_screen_set_drive(1u, 13u, true);    /* the tester on PORT 1 */
+    }
     tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);
     ui_router_tick(0.02f);
 }
