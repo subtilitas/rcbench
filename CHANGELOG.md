@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- ESP32-P4 panel: Wi-Fi through the board's ESP32-C6 on SDIO (Secure
+  Digital input/output) slot 1, CLK GPIO18, CMD GPIO19, D0 to D3 GPIO14 to
+  GPIO17, the C6's enable on GPIO54, 4 bits at 40 MHz. The `esp_wifi` calls
+  of the WI-FI session, the release check and the download reach the C6
+  through the managed components `esp_wifi_remote` 1.6.5 and `esp_hosted`
+  2.13.0 (Apache-2.0), pinned in `firmware/panel/dependencies.lock`. The
+  first Wi-Fi start logs the C6's firmware version. A failed SDIO link ends
+  the session and leaves Wi-Fi off until the next start; the panel does not
+  restart for it. Every task created without a core runs on core 0, so
+  esp_hosted's 6 tasks at priority 23 stay off the control task's core.
 - Hitec D series servos answer with no pull-up on the signal wire: SETUP >
   INTERFACES > Hitec D receive (PROG PORT, German `Hitec-D-Empfang`)
   chooses PULL-UP, the default, or PRECHARGE. With PRECHARGE the IOmcu

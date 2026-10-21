@@ -1,6 +1,7 @@
 /*
  * The panel's Wi-Fi over esp_wifi, esp_http_server, esp_http_client and a
- * UDP (user datagram protocol) socket for the mDNS name.
+ * UDP (user datagram protocol) socket for the mDNS name.  The radio under
+ * esp_wifi, on chip or reached over SDIO, is wifi_radio.h's.
  *
  * Three tasks touch the session: the UI loop (start, close, tick), the event
  * loop (what the radio reports) and the HTTP server (requests).  Everything
@@ -31,7 +32,6 @@
 #include "esp_http_server.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
-#include "esp_mac.h"
 #include "esp_netif.h"
 #include "esp_random.h"
 #include "esp_timer.h"
@@ -46,6 +46,7 @@
 #include "wa_mdns.h"
 #include "wa_page.h"
 #include "wa_send.h"
+#include "wifi_radio.h"
 #include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
@@ -1381,6 +1382,11 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     if (!net_once()) {
         return false;
     }
+    esp_err_t e = wifi_radio_link();
+    if (e != ESP_OK) {
+        start_failed("wifi_radio_link", e);
+        return false;
+    }
     s.up_mode = mode;
     s.netif = (mode == WA_MODE_AP) ? esp_netif_create_default_wifi_ap()
                                    : esp_netif_create_default_wifi_sta();
@@ -1392,7 +1398,7 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     }
     wifi_init_config_t ic = WIFI_INIT_CONFIG_DEFAULT();
     ic.nvs_enable = 0;   /* nothing of the radio's is kept */
-    esp_err_t e = esp_wifi_init(&ic);
+    e = esp_wifi_init(&ic);
     if (e != ESP_OK) {
         start_failed("esp_wifi_init", e);
         esp_netif_destroy_default_wifi(s.netif);
@@ -1470,7 +1476,7 @@ static void worker(void *arg)
         const wa_conf_t c = s.conf;
         unlock();
         if (s.radio_up || !atomic_load(&s.down)) {
-            if (!want || gen != s.up_gen) {
+            if (!want || gen != s.up_gen || wifi_radio_failed()) {
                 radio_down();
                 ESP_LOGI(TAG, "radio off");
             }
@@ -1486,7 +1492,9 @@ static void worker(void *arg)
                 unlock();
             } else {
                 wa_mdns_tries_reset(&s.mdns_tries);
-                ESP_LOGI(TAG, "radio up, mode %d", (int)w.mode);
+                ESP_LOGI(TAG, "radio up, mode %d; internal RAM %u B free",
+                         (int)w.mode, (unsigned)heap_caps_get_free_size(
+                                          MALLOC_CAP_INTERNAL));
             }
         }
         if (s.radio_up && w.state == WA_ST_JOINED
@@ -1536,7 +1544,7 @@ esp_err_t wifi_access_init(uint32_t slot, const fw_image_info_t *running)
     fw_upload_init(&s.up, NULL, 0u, slot);
     wa_fetch_init(&s.f, running->version);
     uint8_t mac[6] = { 0 };
-    (void)esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
+    wifi_radio_mac(mac);
     wa_name(mac, s.name);
     atomic_store(&s.down, true);
     return ESP_OK;

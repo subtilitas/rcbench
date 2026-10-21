@@ -280,6 +280,100 @@ Kommando `gh`. `sense_trace.py` braucht CMake und einen C-Compiler: es baut
 `test/host/sense_trace_replay.c` nach `build-trace/`, wenn `--replay` kein
 gebautes Programm nennt.
 
+## Wi-Fi über den ESP32-C6
+
+Der ESP32-P4 hat kein Funkteil. Das 7-Zoll-Display-Board von Waveshare trägt
+ein ESP32-C6-MINI-1-Modul, das als SDIO-Gerät (Secure Digital input/output)
+am SDMMC-Host (SD/MMC host) des P4 auf Slot 1 hängt; die SD-Karte liegt auf
+Slot 0. Der Wi-Fi-Code des Panels (`firmware/panel/components/wifi_access/`)
+ruft die `esp_wifi`-API wie auf dem ESP32-S3 auf; auf dem P4 tragen zwei
+Komponenten aus der Espressif component registry jeden Aufruf und jeden
+Netzwerk-Frame zum C6. lwIP (lightweight IP stack), der Server der Seite und
+der TLS-Client (transport layer security) laufen auf dem P4; der C6 betreibt
+das Funkteil.
+
+| Signal | P4 | C6 |
+| --- | --- | --- |
+| CLK | GPIO18 | IO19 |
+| CMD | GPIO19 | IO18 |
+| D0 bis D3 | GPIO14 bis GPIO17 | IO20 bis IO23 |
+| EN (chip enable), Low setzt zurück | GPIO54 | EN |
+
+SDIO läuft mit 4 Bit Breite und 40 MHz.
+`firmware/panel/sdkconfig.defaults.esp32p4` hält diese Einstellungen;
+ESP-IDF liest die Datei für das Target esp32p4 nach `sdkconfig.defaults`.
+
+### Die managed components
+
+| Komponente | Version | Lizenz | Aufgabe |
+| --- | --- | --- | --- |
+| `espressif/esp_wifi_remote` | 1.6.5 | Apache-2.0 | die `esp_wifi`-API auf einem Chip ohne Funkteil |
+| `espressif/esp_hosted` | 2.13.0 | Apache-2.0 | der SDIO-Transport und die Aufrufe zum C6 |
+| `espressif/wifi_remote_over_eppp` | 0.3.3 | Apache-2.0 | von `esp_wifi_remote` verlangt; kompiliert, nicht gelinkt |
+| `espressif/eppp_link` | 1.1.6 | Apache-2.0 | von der Zeile darüber verlangt; kompiliert, nicht gelinkt |
+| `espressif/esp_serial_slave_link` | 1.1.2 | Apache-2.0 | von der Zeile darüber verlangt; kompiliert, nicht gelinkt |
+
+`components/wifi_access/idf_component.yml` nennt die ersten beiden mit
+exakter Version, nur für das Target esp32p4.
+`firmware/panel/dependencies.lock` hält alle fünf mit ihren Hashes und ist
+eingecheckt. Der erste P4-Build lädt sie von `components.espressif.com` nach
+`firmware/panel/managed_components/`, das git ignoriert, und prüft jede gegen
+ihren Hash. Ein späterer Build stellt keine Anfrage: mit gefülltem Ordner
+läuft ein Build ohne Netzwerk durch. Für eine andere Version
+`idf_component.yml` ändern, `idf.py update-dependencies` ausführen und die
+neue Lock-Datei einchecken.
+
+Ein ESP32-S3-Build liest dasselbe Manifest, nimmt keine der Komponenten und
+schreibt `dependencies.lock` für sein Target neu; die Datei vor einem Commit
+wiederherstellen.
+
+### Die Firmware des C6
+
+Der C6 betreibt Espressifs esp_hosted-Co-Prozessor-Firmware. Mit welcher
+Version das Board ausgeliefert wird, ist nicht veröffentlicht und hier nicht
+bekannt. Beim ersten Wi-Fi-Start nach dem Einschalten setzt das Panel den C6
+über GPIO54 zurück, wartet bis zu 1500 ms auf ihn und schreibt seine Version
+auf die Konsole:
+
+```
+wifi: C6: esp_hosted firmware 2.13.0, host 2.13.0
+```
+
+Eine C6-Firmware ohne die Versionsabfrage antwortet nach bis zu 5 s mit
+`wifi: C6: firmware version not reported, host 2.13.0`. esp_hosted meldet
+außerdem `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`, wenn Haupt-
+oder Nebenversion abweichen. Laut Espressif läuft ein Host, der neuer ist als
+sein Co-Prozessor, und kann Zeitüberschreitungen bei Anfragen sehen; das
+Verhalten des Panels mit einer älteren C6-Firmware ist nicht gemessen. Das
+Panel hat keinen Weg, den C6 zu aktualisieren.
+
+### Fehler
+
+- Ein C6, der nicht antwortet: der Start scheitert nach 100 Versuchen von
+  esp_hosted im Abstand von 200 ms, nach höchstens 20 s, und WI-FI zeigt den
+  gescheiterten Start. Spätere Starts scheitern sofort. Prüfstand und Anzeige
+  laufen derweil weiter; der Start des Funkteils läuft in einem eigenen Task.
+- Eine Verbindung, die während einer Sitzung ausfällt: esp_hosted meldet es,
+  die Sitzung endet als gescheiterter Start, und Wi-Fi bleibt bis zum
+  nächsten Neustart des Panels aus. Das Panel startet dafür nicht neu
+  (`CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n`): ein Neustart würde
+  den Link zum IOmcu und den Heartbeat unterbrechen.
+- Ein Co-Prozessor, der einen anderen Chip als den ESP32-C6 meldet, hält das
+  Panel beim ersten Wi-Fi-Start mit einer Assertion in esp_hosted an.
+
+### Kerne und Speicher
+
+esp_hosted legt 6 Tasks mit Priorität 23 an, ohne einen Kern zu nennen. Das
+Panel linkt mit `--wrap=xTaskCreatePinnedToCore`
+(`components/wifi_access/wifi_radio.c`): jeder Task, den das Image ohne Kern
+anlegt, läuft auf Kern 0, so behält Kern 1 den Control-Task und den
+Run-Log-Task (`runlog`) für sich. esp_hosted richtet den SDMMC-Controller, seine
+Queues und seine 6 Tasks vor `app_main()` ein, bei jedem Start, auch mit
+Wi-Fi aus. Sein statischer interner RAM beträgt 1 637 Byte (esp_hosted 1 576,
+esp_wifi_remote 61); seine Task-Stacks belegen 20 480 Byte (4 x 3 072 und
+2 x 4 096); seine Puffer sind nicht gemessen. Die Konsolenzeile
+`wifi: radio up` nennt den freien internen RAM mit laufendem Funkteil.
+
 ## CI
 
 | Workflow | Auslöser | Jobs |

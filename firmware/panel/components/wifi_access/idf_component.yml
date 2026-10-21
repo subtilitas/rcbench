@@ -1,0 +1,25 @@
+# The ESP32-P4 has no radio.  The 7-inch display board from Waveshare
+# carries an ESP32-C6 on SDIO (Secure Digital input/output) slot 1, and the
+# esp_wifi calls in wifi_access.c reach it through these two components
+# from the Espressif component registry: esp_wifi_remote gives the esp_wifi
+# API, esp_hosted carries it over SDIO.  Both are Apache-2.0.  They are the
+# only managed components of the panel; nothing else is fetched.
+#
+# Exact versions.  firmware/panel/dependencies.lock records them and the
+# components they pull in (wifi_remote_over_eppp, eppp_link,
+# esp_serial_slave_link: unused by this configuration, required by
+# esp_wifi_remote's manifest) with their hashes; a build with the lock file
+# and a filled managed_components/ folder makes no network request.
+#
+# esp_hosted 2.13.0 is the newest of the 2.x line.  Its host code reports
+# the C6's firmware version at the first start and runs beside an older one
+# with a warning (docs/Building.md, the C6's firmware).
+dependencies:
+  espressif/esp_wifi_remote:
+    version: "==1.6.5"
+    rules:
+      - if: "target in [esp32p4]"
+  espressif/esp_hosted:
+    version: "==2.13.0"
+    rules:
+      - if: "target in [esp32p4]"
