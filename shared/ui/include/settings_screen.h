@@ -55,6 +55,13 @@ void settings_screen_set_hitec_rx(uint8_t mark);
 bool settings_screen_unheld(setting_id_t id);
 
 /**
+ * The help line of the row of @p id: PD mini TX and RX on one pin first,
+ * then a mark's line, then the setting's help.  Hitec D receive's help
+ * follows its value: PULL-UP the setting's, PRECHARGE its own.
+ */
+const char *settings_screen_help(setting_id_t id);
+
+/**
  * How far the open category's list is scrolled, in px from its top; 0 to
  * @p max, which is 0 for a list that fits its 348 px.  @p max may be NULL.
  */

@@ -10,6 +10,8 @@
 
 #include "iomcu.h"
 
+#include "sense_map.h"
+
 #include "out_store.h"
 #include "outputs_pages.h"
 #include "pd_uart.h"
@@ -78,7 +80,8 @@ void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  */
 void save_outputs(const iomcu_state_t *s)
 {
-    out_store_t cfg;
+    /* Core 0's alone, and 288 bytes: off the stack. */
+    static out_store_t cfg;
     memset(&cfg, 0, sizeof(cfg));
     memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
@@ -91,6 +94,8 @@ void save_outputs(const iomcu_state_t *s)
     /* And where the programming ports are, and what each carries. */
     prog_port_kept(&s_prog, cfg.prog);
     cfg.prog_func = prog_port_kept_func(&s_prog);
+    /* And the INA3221s' map, in force or derived. */
+    sense_map_kept(&s_sense, cfg.sense_map, &cfg.sense_map_set);
     out_store_save(&cfg, s_now_ms);
 }
 

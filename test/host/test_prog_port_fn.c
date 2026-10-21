@@ -302,9 +302,12 @@ TEST_CASE(the_kept_word_restores_each_ports_function)
 }
 
 /*
- * A board taken to an image older than 4.26 and back: the older image
- * reads the record's word as spare and writes its records with 0 there.
- * The ports keep their pins and come back at their default functions.
+ * A board taken to an image older than 4.26 and back.  An image of 4.25
+ * reads the version 8 record's word as spare and writes its records with
+ * 0 there: the ports keep their pins and come back at their default
+ * functions.  An image older than 4.25 reads no version 8 record and
+ * starts empty, the same as a restore with nothing saved.  A version 7
+ * record carries the word at the same place.
  */
 TEST_CASE(a_record_an_older_image_wrote_back_restores_the_defaults)
 {
@@ -339,9 +342,25 @@ TEST_CASE(a_record_an_older_image_wrote_back_restores_the_defaults)
     CHECK_EQ(prog_port_func(&pg, 1u), NONE_FN);
     CHECK_EQ(prog_port_pin(&pg, 1u), 14u);
 
-    /* A version 6 record has the word 0 as well. */
+    /* A version 7 record carries the word where version 8 does. */
+    rec.prog_func = 0x2212u;
+    CHECK(out_store_cfg_read(OUT_STORE_VERSION_V7, &rec, &back));
+    CHECK_EQ(back.prog_func, 0x2212u);
+    CHECK_EQ(memcmp(back.prog, rec.prog, sizeof(rec.prog)), 0);
+    /* A version 6 image wrote the word as its spare, 0. */
+    rec.prog_func = 0u;
     CHECK(out_store_cfg_read(6u, &rec, &back));
     CHECK_EQ(back.prog_func, 0u);
+    /* Nothing saved, as after an image older than 4.25: the start-up's
+     * defaults, port 0 SERVO PWM on GP13 and the others NONE without a
+     * pin. */
+    uint16_t none[PROG_PORT_KEPT_COUNT];
+    prog_port_defaults(none, 13u);
+    prog_port_restore_fn(&pg, none, 0u, &o, 0u);
+    CHECK_EQ(prog_port_func(&pg, 0u), PWM_FN);
+    CHECK_EQ(prog_port_pin(&pg, 0u), 13u);
+    CHECK_EQ(prog_port_func(&pg, 1u), NONE_FN);
+    CHECK_EQ(prog_port_pin(&pg, 1u), PROG_PORT_NO_PIN);
 }
 
 TEST_CASE(a_revert_takes_the_function_back)

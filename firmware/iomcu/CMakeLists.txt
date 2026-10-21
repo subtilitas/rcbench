@@ -63,6 +63,7 @@ add_executable(rcbench-iomcu
     src/iomcu_tone.c
     src/iomcu_bind.c
     src/iomcu_can.c
+    src/iomcu_report.c
     src/xl2515.c
     src/out_pwm.c
     src/outputs_hw.c

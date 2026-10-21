@@ -29,10 +29,12 @@
  *
  * What this store does about it:
  *
- *   The sector is not erased per save.  Two sectors hold sixteen record
- *   slots each; a save programs the next erased slot, and a sector is erased
- *   only once its records are all superseded.  Fifteen saves in sixteen
- *   therefore cost one page program rather than an erase and a program.
+ *   The sector is not erased per save.  Two sectors hold eight record
+ *   slots each, a slot two 256-byte flash pages (record version 8; one page
+ *   a slot and sixteen a sector before it); a save programs the next erased
+ *   slot, and a sector is erased only once its records are all superseded.
+ *   Seven saves in eight therefore cost one program of two pages rather
+ *   than an erase and a program.
  *
  *   The erase is taken before the save that needs it, by out_store_reclaim():
  *   at boot before the CAN controller is started, and otherwise on the first
@@ -44,10 +46,10 @@
  *   Both wait for a gap in the traffic; see OUT_STORE_QUIET_MS.
  *
  * The window is not eliminated.  A page program is not measured on this part:
- * the erase covers 4,096 bytes and the program 256, and the two differ by one
- * to two orders of magnitude on serial NOR (not-or) flash, which puts it
- * somewhere between 200 and 2,000 us against the 260 us of frames the
- * controller holds.  out_store_last_program_us() is what will settle it.
+ * the erase covers 4,096 bytes and the program 512, and on serial NOR
+ * (not-or) flash a page program takes one to two orders of magnitude less
+ * than an erase, which puts the two pages somewhere between 400 and
+ * 4,000 us against the 260 us of frames the controller holds.  out_store_last_program_us() is what will settle it.
  * Removing the loss rather than shrinking it needs the receive buffers
  * emptied during the window, which means reading the controller over SPI
  * (Serial Peripheral Interface) from a routine held in RAM while the flash is
@@ -205,7 +207,7 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
  * A window core 1 did not stop for erases nothing and returns false.
  *
  * One call erases at most one sector, and the call after it looks again.
- * Nothing to do is the ordinary answer: one save in sixteen leaves a sector
+ * Nothing to do is the ordinary answer: one save in eight leaves a sector
  * behind.  A store whose sectors all hold records this build cannot read --
  * an earlier record version -- has one to reclaim per sector, so a caller
  * that wants them all takes them in as many calls.
@@ -235,7 +237,8 @@ uint32_t out_store_last_erase_us(void);
 uint32_t out_store_last_program_us(void);
 
 /**
- * Which of the 32 record slots the store last used.
+ * Which of the 16 record slots the store last used (of the 32 one-page
+ * slots before version 8 while the boot read a record of that layout).
  *
  * The slot the last save was programmed into.  out_store_load() sets it as
  * well, so before the first save of a run it is the slot the boot read the

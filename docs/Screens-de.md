@@ -3003,6 +3003,10 @@ Das Panel sendet selbst keine Hitec-Transaktion: die Einstellung erreicht
 die Leitungen, die die Prüfstandskonsole öffnet
 ([Die Prüfstandskonsole](BenchConsole-de.md)).
 
+Unmarkiert folgt die Hilfezeile dem Wert: `PULL-UP braucht 2.2 kOhm an der
+Signalleitung` bei PULL-UP, `PRECHARGE: kein Pull-up an der Signalleitung`
+bei PRECHARGE.
+
 Die Zeile wird markiert wie die Zeilen unter
 [Eine Zeile, die der IOmcu nicht hält](#eine-zeile-die-der-iomcu-nicht-hält),
 mit eigener Hilfezeile:

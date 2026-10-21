@@ -3,13 +3,15 @@
  * into.  Private to firmware/iomcu/src: nothing under shared/ or protocols/
  * includes it.
  *
- * main.c         boot, the main loop, the console report and the page
- *                table; defines most of the state declared below
+ * main.c         boot, the main loop and the page table; defines most of
+ *                the state declared below
+ * iomcu_report.c the console report every 3 s
  * iomcu_pages.c  IDENTITY, STATUS, CONTROL, BENCH, CHANNELS, CHAN_CFG,
  *                OUTPUTS, SERVO and PROG, and the glue that binds the outputs
  * iomcu_kst.c    the KST page and the port's hardware
  * iomcu_hitec.c  the HITEC page and the port's hardware
- * iomcu_sense.c  SUPPLY, SENSE, SERVO_SENSE and SERVO_WIN
+ * iomcu_sense.c  SUPPLY, SENSE, SERVO_SENSE, SERVO_WIN, SENSE_MAP,
+ *                SENSE_WIN_A and SENSE_WIN_B
  * iomcu_tone.c   the TONE page and the phase tap's capture
  * iomcu_bind.c   BIND, BIND_CFG, BIND_OUT and the board's own pages
  * iomcu_can.c    the heartbeat's input and the CAN bus
@@ -238,6 +240,10 @@ void servo_sense_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in);
 void servo_win_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+void sense_map_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+uint8_t sense_map_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+void sense_win_a_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+void sense_win_b_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 
 /* iomcu_tone.c */
 void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
@@ -300,6 +306,9 @@ bool tone_rewire(void);
 void heartbeat_init(void);
 void can_start(void);
 void can_service(uint32_t now);
+
+/* iomcu_report.c: every 3 s at most, from the main loop */
+void can_report(uint32_t now);
 
 /* ------------------------------------------------------ the inline helpers */
 

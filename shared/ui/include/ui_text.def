@@ -403,6 +403,9 @@ UI_TEXT(SET_SAVE,                   0, "SAVE")
 UI_TEXT(SET_UNHELD,                 0, "Not accepted by the IOmcu.")
 UI_TEXT(SET_HITEC_RX_OLD,           0, "IOmcu older than 4.24: receives with PULL-UP.")
 UI_TEXT(SET_HITEC_RX_NO_LINE,       0, "IOmcu older than 4.23: no Hitec line.")
+/* Hitec D receive's help line at PRECHARGE, unmarked; PULL-UP keeps the
+ * setting's help. */
+UI_TEXT(SET_HITEC_RX_PRE,           0, "PRECHARGE: no pull-up on the signal wire")
 /* In place of the help of PD mini TX and PD mini RX while both hold one
  * GPIO, a stored set-up: SETUP's help line, 65 cells of the label face. */
 UI_TEXT(SET_PD_SAME_PIN,           65, "TX and RX on one pin. The PD mini stays off.")

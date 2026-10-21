@@ -30,6 +30,25 @@ history is in git.
   4.23 it says `IOmcu older than 4.23: no Hitec line.`
 - The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
   receive mode before the OPEN, and the report names it (`rx=pu|pre`).
+- Link protocol 4.25: SENSE_MAP (0x35) sets up to 4 INA3221 at 0x40 to
+  0x43, a shunt of 5 mOhm to 1 Ohm (0 off) and a watch target (an output
+  channel, a programming port or the supply) for each of their 12
+  channels, and the FAST channel. SENSE_WIN_A and SENSE_WIN_B (0x37,
+  0x38) carry every channel's last 50 ms window. Until it is first
+  written the map is SENSE's one INA3221; once written, SENSE's INA3221
+  bit and registers 8 to 10 mirror it and a SENSE write that would change
+  them is refused. With a map in force, IDENTITY's capability bit 3
+  (`SERVO_SENSE`) is set while a channel it reads watches an output
+  channel or a programming port. The panel writes none of the three pages
+  yet.
+- The IOmcu's store record is version 8, 308 bytes in a slot of two
+  256-byte flash pages, 16 slots in the store; it keeps the map. Records
+  of version 3 to 7 are read until the first version 8 save, and the
+  sector that holds the last of them is kept until then. An IOmcu image
+  older than this build reads no version 8 record and starts as from an
+  empty store.
+- The IOmcu console prints a third sensor line, `sense map`: the parts
+  fitted, FAST, the map's flags and each channel's mean current in mA.
 - Four programming ports on the IOmcu, PROG PORT 1 to PROG PORT 4. Each
   has a FUNCTION: SERVO PWM, a pulse from the PWM generator, or NONE, the
   pin held as an input with its pull-down. Port 1 defaults to SERVO PWM,
@@ -48,10 +67,11 @@ history is in git.
   IOmcu does not have, reads `PROG PORT 2` in the warning colour, and the
   tester then sends the standard outputs no command but a release.
 - Link protocol 4.26: PROG page registers 24 to 27 (`FUNC`) and `FLAGS`
-  bits 4 to 7 (port parked). The functions are kept in the spare word of
-  the version 7 outputs record; an older image writes the word back as 0,
-  and the ports return to their default functions after a downgrade and
-  upgrade. With an IOmcu older than 4.26 every port is SERVO PWM and
+  bits 4 to 7 (port parked). The functions are kept in the store record's
+  word before the ports, spare until 4.26, in version 7 and 8 records
+  alike. An image of 4.25 writes the word back as 0, and an older one
+  reads no version 8 record and starts empty: after such a downgrade and
+  an upgrade the ports are on their default functions. With an IOmcu older than 4.26 every port is SERVO PWM and
   OUTPUTS says `IOMCU OLDER THAN 4.26: SERVO PWM ONLY`.
 
 ### Fixed
@@ -80,6 +100,18 @@ history is in git.
 
 ### Fixed
 
+- A POWER on a PRECHARGE line answers: its LISTEN starts in the pass of the
+  ON, while the PD mini's output still reads off, and is cut only when the
+  output reads off after it read on, when the supply is asked off, or when
+  the PD mini stops answering. It was cut in the first pass, 2.4 ms into
+  the window. A LISTEN whose output reads off for its whole window, 30 ms
+  at most, ends `DONE` with what it heard.
+- SETUP > INTERFACES > Hitec D receive at PRECHARGE reads `PRECHARGE: no
+  pull-up on the signal wire` (German `PRECHARGE: kein Pull-up an der
+  Signalleitung`); PULL-UP keeps `PULL-UP needs 2.2 kOhm on the signal
+  wire`. A mark's line goes before both.
+- The D series answer delay through PRECHARGE is given as measured: 5.93
+  to 6.52 ms over 153 reads (D485HW, 2026-10-20).
 - Downloads from the Wi-Fi page on a home network run without Wi-Fi power
   save and with a TCP (transmission control protocol) send buffer of
   11,520 bytes instead of 5,760. On 0.21.2 a station measured 15,900 and
