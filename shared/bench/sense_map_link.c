@@ -222,8 +222,11 @@ uint16_t sense_map_link_mirror_dmohm(const sense_map_link_t *s, unsigned ch)
 bool sense_map_link_waits_for_pins(const sense_map_link_t *s,
                                    const sense_link_t *sl)
 {
-    return s != NULL && s->want_set && s->want[LINK_SM_ENABLE] != 0u
-           && (sense_link_unheld(sl) & SENSE_LINK_ROW_PINS) != 0u;
+    /* SENSE not read yet: its pins are not known to be the ones asked. */
+    return s != NULL && sl != NULL && s->want_set
+           && s->want[LINK_SM_ENABLE] != 0u
+           && (!sl->known
+               || (sense_link_unheld(sl) & SENSE_LINK_ROW_PINS) != 0u);
 }
 
 /* What a read of IDs and FLAGS says that the operator is told. */

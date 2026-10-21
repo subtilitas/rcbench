@@ -489,6 +489,9 @@ TEST_CASE(a_map_waits_for_the_pins_it_reads_on)
     idle = false;
     sense_setup_t s = setup_default();
     want(&s);
+    /* SENSE not read yet: its pins are unknown. */
+    CHECK(sense_map_link_waits_for_pins(&ml, &sl));
+    CHECK(!sense_map_link_waits_for_pins(&ml, NULL));
     polls(4);                       /* SENSE read, its write held back */
     s.sda = 20;
     s.scl = 21;
@@ -853,11 +856,13 @@ TEST_CASE(the_meter_is_held_beside_a_part_the_ina228_takes_out)
     sense_link_meter_t m;
     sense_link_meter(&sl, &m);
     CHECK(m.wanted);
-    /* Held only once SENSE_MAP holds the map asked. */
+    /* Held, and the ring read, only once SENSE_MAP holds the map asked. */
     CHECK(!m.held);
+    CHECK(!sense_link_win_on(&sl));
     sense_link_set_map_held(&sl, true);
     sense_link_meter(&sl, &m);
     CHECK(m.held);
+    CHECK(sense_link_win_on(&sl));
     /* What the panel does ask still counts: other pins are not held. */
     idle = false;
     pg.sense[LINK_SN_SDA_PIN] = 18u;

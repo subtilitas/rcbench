@@ -193,8 +193,9 @@ bool sense_map_link_page(const sense_map_link_t *s);
  *  SERVO_SENSE are about.  0 without a map read, or for no such part. */
 uint16_t sense_map_link_mirror_dmohm(const sense_map_link_t *s, unsigned ch);
 
-/** Whether the map waits for SENSE's pins: it enables a part while the
- *  sensor bus's pins SENSE holds are not the ones asked.  The page judges
+/** Whether the map waits for SENSE's pins: it enables a part while
+ *  SENSE has not been read since link-up or the sensor bus's pins it holds
+ *  are not the ones asked.  The page judges
  *  a map against the pins it holds, so SENSE writes them first. */
 bool sense_map_link_waits_for_pins(const sense_map_link_t *s,
                                    const sense_link_t *sl);
