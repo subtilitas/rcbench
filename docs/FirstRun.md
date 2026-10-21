@@ -714,11 +714,12 @@ connecting the IOmcu**, power the modules and measure SDA and SCL to
 GND: both must read 3.3 V or less. The MATEK's pull-up rail is not known.
 
 **The console.** Every 3 s, while a part is enabled, the IOmcu prints
-two lines:
+three lines:
 
 ```
 rcbench-iomcu: sense flags 0x0133 present 0x0021 ids 0x2281 0x3220 errors 0 | bench 1680 cV 1200 cA 33 mAh 6 dWh flags 0x63 | temp 254 dC
 rcbench-iomcu: sense window 4711 CH1 120 mA 6000 mV ch_flags 0x01 | capture state 0 seq 0 move 0 arrive 0
+rcbench-iomcu: sense map fit 0x1 fast 0 flags 0x0201 | mA 120 0 0 0 0 0 0 0 0 0 0 0
 ```
 
 `flags` is the SENSE page's FLAGS: 0x0001 INA228 online, 0x0002 its
@@ -728,6 +729,9 @@ the INA3221, 0x0100 the bus is open, 0x0200 the bus is stuck. `present`
 has bit n for address 0x40 + n. `bench` is the BENCH page: 10 mV and
 10 mA steps, charge in mAh, energy in 0.1 Wh, and its flags (0x01
 voltage, 0x02 current, 0x20 the INA228's, 0x40 the INA228's totals).
+The third line is the INA3221 map, SENSE_MAP: the parts fitted, the FAST
+channel, its flags (0x0200 derived from SENSE) and each channel's mean
+current ([The INA3221 map and windows](LinkSensors.md#on-the-console)).
 
 ### 8.1 The parts answer
 

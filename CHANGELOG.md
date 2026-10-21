@@ -30,6 +30,25 @@ history is in git.
   4.23 it says `IOmcu older than 4.23: no Hitec line.`
 - The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
   receive mode before the OPEN, and the report names it (`rx=pu|pre`).
+- Link protocol 4.25: SENSE_MAP (0x35) sets up to 4 INA3221 at 0x40 to
+  0x43, a shunt of 5 mOhm to 1 Ohm (0 off) and a watch target (an output
+  channel, a programming port or the supply) for each of their 12
+  channels, and the FAST channel. SENSE_WIN_A and SENSE_WIN_B (0x37,
+  0x38) carry every channel's last 50 ms window. Until it is first
+  written the map is SENSE's one INA3221; once written, SENSE's INA3221
+  bit and registers 8 to 10 mirror it and a SENSE write that would change
+  them is refused. With a map in force, IDENTITY's capability bit 3
+  (`SERVO_SENSE`) is set while a channel it reads watches an output
+  channel or a programming port. The panel writes none of the three pages
+  yet.
+- The IOmcu's store record is version 8, 308 bytes in a slot of two
+  256-byte flash pages, 16 slots in the store; it keeps the map. Records
+  of version 3 to 7 are read until the first version 8 save, and the
+  sector that holds the last of them is kept until then. An IOmcu image
+  older than this build reads no version 8 record and starts as from an
+  empty store.
+- The IOmcu console prints a third sensor line, `sense map`: the parts
+  fitted, FAST, the map's flags and each channel's mean current in mA.
 
 ### Changed
 

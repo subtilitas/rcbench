@@ -51,6 +51,13 @@ int out_store_map_newest(const out_store_rec_t *recs, uint8_t sectors,
 bool out_store_map_write(const out_store_rec_t *recs, uint8_t sectors,
                          uint8_t per_sector, out_store_write_t *out)
 {
+    return out_store_map_write_keep(recs, sectors, per_sector, -1, out);
+}
+
+bool out_store_map_write_keep(const out_store_rec_t *recs, uint8_t sectors,
+                              uint8_t per_sector, int keep,
+                              out_store_write_t *out)
+{
     if (out == NULL || !usable(recs, sectors, per_sector)) {
         return false;
     }
@@ -74,9 +81,12 @@ bool out_store_map_write(const out_store_rec_t *recs, uint8_t sectors,
                 return true;
             }
         }
+        /* The first sector that does not hold the layout before's live
+         * record: with one sector there is no other. */
+        const uint8_t s = (keep == 0 && sectors > 1u) ? 1u : 0u;
         out->erase_first  = true;
-        out->erase_sector = 0u;
-        out->at           = 0u;
+        out->erase_sector = s;
+        out->at           = (uint8_t)((uint16_t)s * per_sector);
         return true;
     }
 
@@ -119,11 +129,18 @@ bool out_store_map_write(const out_store_rec_t *recs, uint8_t sectors,
 int out_store_map_stale(const out_store_rec_t *recs, uint8_t sectors,
                         uint8_t per_sector)
 {
+    return out_store_map_stale_keep(recs, sectors, per_sector, -1);
+}
+
+int out_store_map_stale_keep(const out_store_rec_t *recs, uint8_t sectors,
+                             uint8_t per_sector, int keep)
+{
     if (!usable(recs, sectors, per_sector)) {
         return -1;
     }
     const int newest = out_store_map_newest(recs, sectors, per_sector);
-    const int live = (newest < 0) ? -1 : (int)((uint16_t)newest / per_sector);
+    const int live = (newest < 0) ? keep
+                                  : (int)((uint16_t)newest / per_sector);
     for (uint8_t s = 0; s < sectors; ++s) {
         if ((int)s == live) {
             continue;
