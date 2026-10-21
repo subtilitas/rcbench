@@ -172,11 +172,29 @@ static bool in_face(const gfx_font_t *f, const char *s)
     return true;
 }
 
+/** @brief The five text faces, which hold the same letters. */
+static const gfx_font_t *const k_text_faces[] = {
+    &gfx_font_8x16, &gfx_font_10x20, &gfx_font_12x24, &gfx_font_16x28,
+    &gfx_font_20x36,
+};
+
+/** @brief Whether every text face holds every code point of @p s. */
+static bool in_text_faces(const char *s)
+{
+    for (size_t f = 0; f < sizeof(k_text_faces) / sizeof(k_text_faces[0]);
+         ++f) {
+        if (!in_face(k_text_faces[f], s)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /** @brief Fails the case when a text face lacks a letter of @p s, naming
  *  it by @p what, @p i and language @p l. */
 static void drawn(const char *what, int i, int l, const char *s)
 {
-    if (!in_face(&gfx_font_8x16, s) || !in_face(&gfx_font_16x28, s)) {
+    if (!in_text_faces(s)) {
         T_FAIL("%s %d in language %d has a letter the fonts lack: \"%s\"",
                what, i, l, s);
     }
@@ -186,7 +204,7 @@ static void drawn(const char *what, int i, int l, const char *s)
 static void drawn_tx(int i, int l)
 {
     const char *s = ui_tr_in((ui_lang_t)l, (ui_text_id_t)i);
-    if (!in_face(&gfx_font_8x16, s) || !in_face(&gfx_font_16x28, s)) {
+    if (!in_text_faces(s)) {
         T_FAIL("%s in language %d has a letter the fonts lack: \"%s\"",
                ui_text_name((ui_text_id_t)i), l, s);
     }
@@ -227,6 +245,7 @@ TEST_CASE(every_drawn_string_has_its_glyphs)
     CHECK(!in_face(&gfx_font_8x16, "5 \xe2\x82\xac"));
     CHECK(in_face(&gfx_font_8x16, "GR\xc3\x96\xc3\x9f" "E"));
     CHECK(in_face(&gfx_font_16x28, ""));
+    CHECK(!in_text_faces("\xc3\xa9"));
 }
 
 /* Every language, English included: a string no screenshot shows is held

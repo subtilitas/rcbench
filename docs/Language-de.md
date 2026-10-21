@@ -186,11 +186,17 @@ Jeder Text ist UTF-8 (Unicode Transformation Format, 8 Bit), vom C-Quelltext
 bis zum TXT-Bericht auf der Karte. `gfx` dekodiert ihn, und ein Codepoint ist
 eine Zelle:
 
-- Die beiden Text-Fonts enthalten druckbares ASCII (American Standard Code
+- Die fünf Text-Fonts enthalten druckbares ASCII (American Standard Code
   for Information Interchange, 0x20 bis 0x7E) und die sieben deutschen
   Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6,
-  U+00FC), je 102 Glyphen. Der Ziffern-Font enthält nur Ziffern und
+  U+00FC), je 102 Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
   Satzzeichen.
+- Die Fonts 10x20, 12x24 und 20x36 haben Versalhöhen von 12, 15 und 23 px und
+  zeichnen jedes Glyph innerhalb der Zelle; sonst schlägt
+  `gen_font.py --check` fehl. Der Ziffern-Font 32x44 (Versalhöhe 40 px)
+  schneidet am Zellenrand Tinte in sechs Zeichen ab: `#` 5 px, `$` 16 px,
+  `(` 12 px, `)` 12 px, `,` 23 px und `/` 6 px (Pixel mit Deckung ab 128
+  außerhalb der Zelle). `gen_font.py --check` gibt diese Zahlen aus.
 - Ein Codepoint, den ein Font nicht enthält, erscheint als `?`. Ein Byte,
   das keine gültige Folge beginnt, eine abgeschnittene Folge und eine
   überlange Form sind je ein `?`, und der Dekoder liest nie über das
@@ -247,7 +253,7 @@ ein; die Tabelle definiert die übrigen leer und hebt am Ende alle auf.
 | `shared/servo/servo_str.c` | das Englisch des Servotests, das auch die CSV nutzt |
 | `shared/webaccess/wa_page.c` | Englisch und Deutsch der WLAN-Seite |
 
-Die Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E) und die 7
+Die fünf Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E) und die 7
 deutschen Buchstaben Ä Ö Ü ä ö ü ß. Jeder andere Codepoint erscheint als
 `?`. `every_drawn_string_has_its_glyphs` in `test_text` hält jeden Text der
 Tabelle, den das Panel zeichnet, in jeder Sprache an diese Menge. Die
@@ -360,8 +366,9 @@ Einträge mit ID und 64 Optionen, 10 davon mit leerem Englisch.
    und seine Deklaration in `ui_text.h` eintragen.
 4. Ein Buchstabe, den die Text-Fonts nicht enthalten, kommt in die Liste in
    `FONTS` in `tools/gen_font.py`, und `python3 tools/gen_font.py` erzeugt
-   sie neu. Jeder Buchstabe belegt 128 Byte im Font 8x16 und 448 Byte im
-   Font 16x28, ein Byte je Pixel.
+   sie neu. Jeder Buchstabe belegt ein Byte je Pixel in jedem der fünf
+   Text-Fonts: 128, 200, 288, 448 und 720 Byte in den Fonts 8x16, 10x20,
+   12x24, 16x28 und 20x36, zusammen 1.784 Byte.
 5. Die Sprache in `LANGS` in `tools/render_ui.py` und im Argument von
    `test/host/render_screen.c` eintragen, dann
    `python3 tools/render_ui.py --fit` und `python3 tools/render_ui.py`

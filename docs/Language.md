@@ -181,10 +181,16 @@ Every string is UTF-8 (Unicode Transformation Format, 8-bit), from the C
 source to the TXT report on the card. `gfx` decodes it, and one code point
 is one cell:
 
-- The two text faces hold printable ASCII (American Standard Code for
+- The five text faces hold printable ASCII (American Standard Code for
   Information Interchange, 0x20 to 0x7E) and the seven German letters
   Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6, U+00FC),
-  102 glyphs each. The numeral face holds digits and punctuation only.
+  102 glyphs each. The two numeral faces hold digits and punctuation only.
+- The 10x20, 12x24 and 20x36 faces have cap heights of 12, 15 and 23 px and
+  draw every glyph inside the cell; `gen_font.py --check` fails otherwise.
+  The 32x44 numeral face (cap height 40 px) cuts ink at the cell edge in six
+  characters: `#` 5 px, `$` 16 px, `(` 12 px, `)` 12 px, `,` 23 px and `/`
+  6 px (pixels of coverage 128 or more outside the cell). `gen_font.py
+  --check` prints these counts.
 - A code point a face does not hold draws as `?`. A byte that does not start
   a well-formed sequence, a sequence cut short and an overlong form are one
   `?` each, and the decoder never reads past the terminator.
@@ -239,8 +245,8 @@ others as empty and undefines all of them at its end.
 | `shared/servo/servo_str.c` | the servo test's English, which the CSV also uses |
 | `shared/webaccess/wa_page.c` | the Wi-Fi page's English and German |
 
-The text faces hold printable ASCII (0x20 to 0x7E) and the 7 German letters
-Ä Ö Ü ä ö ü ß. Any other code point draws as `?`.
+The five text faces hold printable ASCII (0x20 to 0x7E) and the 7 German
+letters Ä Ö Ü ä ö ü ß. Any other code point draws as `?`.
 `every_drawn_string_has_its_glyphs` in `test_text` holds every string of
 the table the panel draws, in every language, to that set. The Wi-Fi page is
 drawn by the browser and is not held to it.
@@ -340,8 +346,9 @@ with an ID and 64 options, 10 of them with an empty English.
    declaration to `ui_text.h`.
 4. A letter the text faces do not hold goes into the list in `FONTS` in
    `tools/gen_font.py`, and `python3 tools/gen_font.py` regenerates them.
-   Each letter takes 128 bytes in the 8x16 face and 448 bytes in the 16x28
-   face, one byte a pixel.
+   Each letter takes one byte a pixel in each of the five text faces: 128,
+   200, 288, 448 and 720 bytes in the 8x16, 10x20, 12x24, 16x28 and 20x36
+   faces, 1,784 bytes in all.
 5. Add the language to `LANGS` in `tools/render_ui.py` and to the argument
    `test/host/render_screen.c` takes, and run
    `python3 tools/render_ui.py --fit` and `python3 tools/render_ui.py`.
