@@ -129,10 +129,12 @@ static bool poll_bench(bench_state_t *bench)
          * while the bank drives.  SENSE_MAP first: SENSE's mirror
          * registers follow the map it holds. */
         sense_map_service(written && !armed && !outputs_armed(&s_out));
-        /* And every channel's last window, armed or not: readings. */
-        sense_win_service();
         sense_link_service(written && !armed && !outputs_armed(&s_out),
                            bench);
+        /* And every channel's last window, armed or not: readings.  After
+         * SERVO_WIN, so the pages hold the ring's newest window or a newer
+         * one, and a row of the ring finds its window on them. */
+        sense_win_service();
         /* And the phase tap's: an input, taken armed or not. */
         tone_link_service();
         iface_pins_publish(true);
@@ -738,7 +740,7 @@ static void servo_window_take(bench_state_t *bench)
 {
     if (!sense_link_win_on(&s_sense_link)) {
         if (sense_link_take_window(&s_sense_link, bench)) {
-            sense_win_attach(bench);
+            sense_win_attach(bench, false);
         }
         return;
     }
@@ -748,7 +750,7 @@ static void servo_window_take(bench_state_t *bench)
     }
     sense_link_win_bench(&s_sense_link, &w, bench);
     /* And every watched channel's same window, for the log. */
-    sense_win_attach(bench);
+    sense_win_attach(bench, true);
     /* With the meter as this poll decided it: the snapshot the render side
      * reads can be older or newer than a window on the queue. */
     servo_win_item_t item = {

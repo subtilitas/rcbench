@@ -6,7 +6,7 @@
  * SENSE_WIN_A carries channels 0 to 5 (the parts at 0x40 and 0x41),
  * SENSE_WIN_B channels 6 to 11 (0x42 and 0x43).  A page is read whole, 32
  * registers in one exchange, every SENSE_WIN_LINK_READ_MS while a part it
- * carries is enabled in the map the IOmcu holds, and not at all otherwise.
+ * carries is enabled in the map in force, and not at all otherwise.
  * An IOmcu older than 4.25 has neither page: nothing is sent to it.
  *
  * Each read keeps the page's registers as read, and the read before it
@@ -35,8 +35,9 @@ extern "C" {
 #endif
 
 /** A page is read this often while a part it carries is enabled: the
- *  IOmcu closes a window every 50 ms. */
-#define SENSE_WIN_LINK_READ_MS 50u
+ *  IOmcu closes a window every 50 ms, and a gate under the poll's 50 ms
+ *  lets every poll read, whatever its offset in the pass. */
+#define SENSE_WIN_LINK_READ_MS 40u
 
 #define SENSE_WIN_LINK_ACK       0
 #define SENSE_WIN_LINK_NO_ANSWER (-1)
@@ -93,6 +94,15 @@ void sense_win_link_done(sense_win_link_t *s, int result,
  */
 bool sense_win_link_window(const sense_win_link_t *s, uint16_t window,
                            bench_chw_t *out);
+
+/**
+ * FAST's channel @p fast (0 to 11) of @p out from the window ring's window
+ * that @p b carries in its first channel (sense_link_win_bench()): the ring
+ * holds every window of FAST, the pages only the last.  Nothing for a
+ * @p fast of LINK_SM_FAST_NONE or a @p b with no new window.
+ */
+void sense_win_link_ring(bench_chw_t *out, unsigned fast,
+                         const bench_state_t *b);
 
 #ifdef __cplusplus
 }

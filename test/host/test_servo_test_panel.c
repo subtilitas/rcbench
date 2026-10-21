@@ -648,6 +648,23 @@ static unsigned ink_in_row(int y0, ui_color_id_t col)
     return n;
 }
 
+/* The meter beside the box's button on LIVE: @p text flush right at the
+ * box's right edge less 10 px, on the box's fill. */
+static bool box_meter_reads(const char *text)
+{
+    close_settings();
+    scr->render(&cv, 0);
+    want_fresh();
+    const int y = 48 + 92 + 8;
+    const int right = 16 + 270 - 10;
+    const int x = right - gfx_text_width(&gfx_font_8x16, text, 1);
+    const gfx_color_t bg = fb[(size_t)y * W + right + 2];
+    gfx_fill_rect(&want_cv, 160, (int16_t)y, (int16_t)(right - 160), 16, bg);
+    gfx_text(&want_cv, x, y, text, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+    return same_in(fb, want_fb, 160, y, right - 160, 16);
+}
+
 /* With the INA3221 as the rail's meter at START TEST the run reads its
  * windows: one row a window, the report naming it and the shunt SETUP
  * holds, and the supply named as the supply. */
@@ -657,6 +674,9 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
     settings_set(SET_INA_SH(0), 50.0f);
     hold_start(2.3f);
     CHECK(servo_screen_testing());
+    /* The box names the channel as the plot does. */
+    CHECK(box_meter_reads("INA 0x40 CH1"));
+    CHECK(!box_meter_reads("INA3221 0x40 CH1"));
     const unsigned wins0 = bench.wins;
     /* A window without a stamp of its own is stamped where the screen has
      * it, and is the run's reading as any other. */

@@ -572,14 +572,20 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   Gruppen + 1 Spalten. Überwacht kein Kanal etwas, hat die Datei keine
   Kanalspalte.
 
-Die Werte stammen aus SENSE_WIN_A und SENSE_WIN_B
-([Link](LinkSensors-de.md#sense_win_a-und-sense_win_b)), alle 50 ms gelesen,
-solange ein Baustein der Page bestückt ist. Eine Gruppe steht in der Zeile
-ihres Fensters, wenn das letzte Lesen ihrer Page oder das davor diese
-Fensternummer hält, und ist sonst leer: ein Fenster, das der IOmcu zwischen
-zwei Lesezugriffen geschlossen und ersetzt hat, steht in keiner Zeile. Die
-Map nimmt kein Schreiben an, solange die Bank treibt, also halten die
-Spalten den ganzen Lauf. LOGS gruppiert die Spalten `out`, `port` und
+Die Gruppe des Kanals, der das Ziel des Servotesters überwacht, stammt aus
+dem Fenster-Ring, SERVO_WIN, und steht in jeder Zeile mit `window`. Die
+anderen Gruppen stammen aus SENSE_WIN_A und SENSE_WIN_B
+([Link](LinkSensors-de.md#sense_win_a-und-sense_win_b)), die nur das letzte
+Fenster jedes Kanals halten. Das Panel liest sie in jedem Poll nach
+SERVO_WIN, mit einer Sperre von 40 ms, solange ein Baustein der Page
+bestückt ist. Eine solche Gruppe steht in der Zeile ihres Fensters, wenn das
+letzte Lesen ihrer Page oder das davor diese Fensternummer hält, und ist
+sonst leer. Ein Fenster, das zwischen zwei Lesezugriffen schloss und auf
+das schon das nächste folgte, steht in keiner Zeile: bei einem Poll von
+53 ms etwa 1 Zeile von 17 (`test_sense_win_link`). Die Map gilt, sobald der
+IOmcu sie in Kraft hält; mit der aus SENSE abgeleiteten Map behält die
+Datei `ch1` bis `ch3`. Die Map nimmt kein Schreiben an, solange die Bank
+treibt, also halten die Spalten den ganzen Lauf. LOGS gruppiert die Spalten `out`, `port` und
 `supply` unter INA3221.
 
 ### MOTOR & ESC, Optionen
@@ -2858,7 +2864,7 @@ einmal. Mit einem IOmcu mit Protokoll 4.11 und CH1 unter den Kanälen
 des INA3221 liest es außerdem alle 50 ms SERVO_WIN, das die letzten vier
 Fenster des Messkanals hält, und SENSE bis Register 31
 ([Link](Link-de.md#der-fenster-ring)). Mit einem IOmcu mit Protokoll 4.25
-liest es SENSE_WIN_A und SENSE_WIN_B alle 50 ms, solange ein Baustein der
+liest es SENSE_WIN_A und SENSE_WIN_B in jedem Poll, nach SERVO_WIN und höchstens alle 40 ms, solange ein Baustein der
 Page bestückt ist, für die Spalten des Lauf-Logs
 ([TABELLE](#tabelle-und-was-der-esc-meldet)).
 

@@ -133,10 +133,12 @@ history is in git.
 - The run log's INA3221 columns follow the sensor map with an IOmcu of
   protocol 4.25: one group of current, max and voltage per watching
   channel, named after its target (`port 1 current (A)`, `out 3 max (A)`,
-  `supply voltage (V)`), the FAST channel first, at most 3 groups. The
-  figures come from SENSE_WIN_A and SENSE_WIN_B, read every 50 ms while a
-  part on the page is fitted. A fourth watching channel and later are not
-  logged. An older IOmcu keeps `ch1` to `ch3`.
+  `supply voltage (V)`), the FAST channel first, at most 3 groups. FAST's
+  group comes from the window ring and is on every row; the others from
+  SENSE_WIN_A and SENSE_WIN_B, read on every poll after SERVO_WIN at most
+  every 40 ms while a part on the page is fitted, and miss about 1 row in
+  17 at a 53 ms poll. A fourth watching channel and later are not logged.
+  An older IOmcu, or a map derived from SENSE, keeps `ch1` to `ch3`.
 - OUTPUTS' PROG PORT entry names the channel watching the port,
   `WATCHED BY INA3221 0x41 CH2`.
 - `INA3221 0x40 CH1 clipped at 1.64 A. Reading shows only the limit.`

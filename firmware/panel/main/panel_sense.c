@@ -202,10 +202,12 @@ bool sense_log_cols(log_cols_t *out)
     return map;
 }
 
-/* The held map's columns and pages, after every SENSE_MAP exchange. */
+/* The held map's columns and pages, after every SENSE_MAP exchange: only
+ * a map in force, as one derived from SENSE watches nothing and would give
+ * a file no INA3221 column, where SERVO_SENSE's CH1 to CH3 read. */
 static void publish_held(void)
 {
-    const bool map = sense_map_link_page(&s_sense_map) && s_sense_map.known;
+    const bool map = sense_map_link_in_force(&s_sense_map);
     log_cols_t cols;
     log_cols_from_map(map ? s_sense_map.held : NULL, &cols);
     taskENTER_CRITICAL(&s_sense_mux);
@@ -322,9 +324,15 @@ void sense_win_service(void)
     }
 }
 
-void sense_win_attach(bench_state_t *b)
+void sense_win_attach(bench_state_t *b, bool ring)
 {
-    if (b != NULL) {
-        (void)sense_win_link_window(&s_sense_win, b->servo_window, &b->chw);
+    if (b == NULL) {
+        return;
+    }
+    (void)sense_win_link_window(&s_sense_win, b->servo_window, &b->chw);
+    /* FAST's group from the ring, which has every window of it; the ring
+     * is the held map's FAST only once the page holds the map asked. */
+    if (ring && sense_map_link_held(&s_sense_map)) {
+        sense_win_link_ring(&b->chw, s_sense_map.held[LINK_SM_FAST], b);
     }
 }

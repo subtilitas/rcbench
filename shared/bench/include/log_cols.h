@@ -28,8 +28,8 @@ extern "C" {
 #endif
 
 #define LOG_COLS_MAX     LINK_SM_CHANNELS
-/** The groups a file carries: 14 columns and 3 groups of 3 fill the 24
- *  the reader takes. */
+/** The groups a file carries: its 14 other columns and 3 groups of 3 make
+ *  23 of the 24 the reader takes. */
 #define LOG_COLS_GROUPS  3u
 /** "supply 0x43 ch3" and its terminator. */
 #define LOG_COL_NAME_MAX 20u

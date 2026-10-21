@@ -524,13 +524,19 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   columns. With no channel watching anything the file has no channel
   column.
 
-The figures are SENSE_WIN_A's and SENSE_WIN_B's
-([Link](LinkSensors.md#sense_win_a-and-sense_win_b)), read every 50 ms
-while a part on the page is fitted. A group is on the row of its window
-when the last read of its page, or the read before it, holds that window
-number, and empty otherwise: a window the IOmcu closed and replaced between
-two reads is in no row. The map takes no write while the bank drives, so
-the columns hold the whole run. LOGS groups `out`, `port` and `supply`
+The group of the channel watching the servo tester's target comes from
+the window ring, SERVO_WIN, and is on every row that has a `window`. The
+other groups come from SENSE_WIN_A and SENSE_WIN_B
+([Link](LinkSensors.md#sense_win_a-and-sense_win_b)), which hold each
+channel's last window only. The panel reads them on every poll, after
+SERVO_WIN, with a gate of 40 ms, while a part on the page is fitted. Such a
+group is on the row of its window when the last read of its page, or the
+read before it, holds that window number, and empty otherwise. A window
+that closed and was followed by the next one between two reads is in no
+row: at a 53 ms poll about 1 row in 17 (`test_sense_win_link`). The map
+counts once the IOmcu holds it in force; with the map derived from SENSE
+the file keeps `ch1` to `ch3`. The map takes no write while the bank
+drives, so the columns hold the whole run. LOGS groups `out`, `port` and `supply`
 columns under INA3221.
 
 ### MOTOR & ESC settings
@@ -2594,7 +2600,7 @@ every 50 ms; while the INA3221 is, SERVO_SENSE's channel windows every
 among the INA3221's channels it also reads SERVO_WIN every 50 ms, which
 holds the meter channel's last four windows, and SENSE to register 31
 ([Link](Link.md#the-window-ring)). With an IOmcu of protocol 4.25 it reads
-SENSE_WIN_A and SENSE_WIN_B every 50 ms while a part on the page is fitted,
+SENSE_WIN_A and SENSE_WIN_B on every poll, after SERVO_WIN and at most every 40 ms, while a part on the page is fitted,
 for the run log's columns ([TABLE](#table-and-what-the-esc-says)).
 
 The servo rail has one meter at a time: the INA3221 channel that watches

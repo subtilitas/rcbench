@@ -167,3 +167,33 @@ bool sense_win_link_window(const sense_win_link_t *s, uint16_t window,
     }
     return out->ok != 0u;
 }
+
+void sense_win_link_ring(bench_chw_t *out, unsigned fast,
+                         const bench_state_t *b)
+{
+    if (out == NULL || b == NULL || !b->servo_new
+        || fast >= BENCH_CHW_CHANNELS) {
+        return;
+    }
+    const uint16_t bit = (uint16_t)(1u << fast);
+    out->window = b->servo_window;
+    out->ok         = (uint16_t)(out->ok & ~bit);
+    out->no_current = (uint16_t)(out->no_current & ~bit);
+    out->no_voltage = (uint16_t)(out->no_voltage & ~bit);
+    out->mean_ma[fast] = 0;
+    out->max_ma[fast]  = 0;
+    out->min_mv[fast]  = 0u;
+    if ((b->servo_ok & 0x01u) == 0u) {
+        return;
+    }
+    out->ok = (uint16_t)(out->ok | bit);
+    if ((b->servo_no_current & 0x01u) != 0u) {
+        out->no_current = (uint16_t)(out->no_current | bit);
+    }
+    if ((b->servo_no_voltage & 0x01u) != 0u) {
+        out->no_voltage = (uint16_t)(out->no_voltage | bit);
+    }
+    out->mean_ma[fast] = b->servo_mean_ma[0];
+    out->max_ma[fast]  = b->servo_max_ma[0];
+    out->min_mv[fast]  = b->servo_min_mv[0];
+}

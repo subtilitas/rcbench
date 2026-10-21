@@ -237,6 +237,115 @@ TEST_CASE(the_reads_keep_their_rate_across_the_clock_wrap)
     CHECK(sense_win_link_window(&s, 1u, &w));
 }
 
+/* FAST's channel from the ring's window over what the pages hold; a ring
+ * window without readings clears it; no FAST, no new window, nothing. */
+TEST_CASE(fast_comes_from_the_ring)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.servo_new = true;
+    b.servo_window = 9u;
+    b.servo_ok = 0x01u;
+    b.servo_no_voltage = 0x01u;
+    b.servo_mean_ma[0] = 321;
+    b.servo_max_ma[0] = 400;
+    b.servo_min_mv[0] = 4800u;
+    bench_chw_t w;
+    memset(&w, 0, sizeof(w));
+    w.window = 9u;
+    w.ok = 0x0011u;                     /* channel 4 from a page */
+    w.mean_ma[4] = 5;
+    sense_win_link_ring(&w, 4u, &b);
+    CHECK_EQ(w.ok, 0x0011u);
+    CHECK_EQ(w.no_voltage, 0x0010u);
+    CHECK_EQ(w.no_current, 0u);
+    CHECK_EQ(w.mean_ma[4], 321);
+    CHECK_EQ(w.max_ma[4], 400);
+    CHECK_EQ(w.min_mv[4], 4800u);
+    b.servo_no_voltage = 0u;
+    b.servo_no_current = 0x01u;
+    sense_win_link_ring(&w, 4u, &b);
+    CHECK_EQ(w.no_current, 0x0010u);
+    CHECK_EQ(w.no_voltage, 0u);
+    b.servo_ok = 0u;
+    sense_win_link_ring(&w, 4u, &b);
+    CHECK_EQ(w.ok, 0x0001u);
+    CHECK_EQ(w.no_current, 0u);
+    CHECK_EQ(w.no_voltage, 0u);
+    CHECK_EQ(w.mean_ma[4], 0);
+    b.servo_ok = 0x01u;
+    sense_win_link_ring(&w, LINK_SM_FAST_NONE, &b);
+    CHECK_EQ(w.ok, 0x0001u);
+    b.servo_new = false;
+    sense_win_link_ring(&w, 4u, &b);
+    CHECK_EQ(w.ok, 0x0001u);
+    sense_win_link_ring(NULL, 4u, &b);
+    sense_win_link_ring(&w, 4u, NULL);
+}
+
+/*
+ * The control task's poll, every @p period_ms: SERVO_WIN's windows taken,
+ * a row each, then the pages read, as the panel orders them, at an offset
+ * in the pass of 0 to 6 ms that shrinks from poll to poll; each row's
+ * groups attached as the panel does.  The IOmcu closes window n at 50 n
+ * ms.  Counts the rows in 20 s and those without FAST's channel 0 and
+ * without page A's channel 3.
+ */
+static void poll_rows(uint32_t period_ms, unsigned *rows, unsigned *no_fast,
+                      unsigned *no_other)
+{
+    sense_win_link_init(&s);
+    sense_win_link_came_up(&s, 25u);
+    sense_win_link_want(&s, 0x03u);
+    *rows = *no_fast = *no_other = 0u;
+    uint16_t taken = 20u;
+    unsigned k = 0u;
+    for (uint32_t p = 1000u; p < 21000u; p += period_ms, ++k) {
+        bench_state_t row[4];
+        unsigned n = 0u;
+        for (uint16_t w = (uint16_t)(taken + 1u); w <= p / 50u && n < 4u;
+             ++w) {
+            memset(&row[n], 0, sizeof(row[n]));
+            row[n].servo_new = true;
+            row[n].servo_window = w;
+            row[n].servo_ok = 0x01u;
+            ++n;
+            taken = w;
+        }
+        const uint32_t tp = p + 6u - 2u * (k % 4u);
+        uint16_t r[LINK_SX_COUNT];
+        page_regs(r, (uint16_t)(tp / 50u), LINK_SX_E_CURRENT, 0);
+        while (read_one(tp, r, NULL)) {
+        }
+        for (unsigned i = 0u; i < n; ++i) {
+            (void)sense_win_link_window(&s, row[i].servo_window,
+                                        &row[i].chw);
+            sense_win_link_ring(&row[i].chw, 0u, &row[i]);
+            ++*rows;
+            *no_fast += ((row[i].chw.ok & 0x0001u) == 0u) ? 1u : 0u;
+            *no_other += ((row[i].chw.ok & 0x0008u) == 0u) ? 1u : 0u;
+        }
+    }
+}
+
+/* FAST is on every row.  The other channels miss only the windows no read
+ * saw: at a 53 ms poll about 1 in 17, at a 50 ms poll none, the offset in
+ * the pass shrinking or not. */
+TEST_CASE(every_poll_reads_the_pages_after_the_ring)
+{
+    unsigned rows, no_fast, no_other;
+    poll_rows(53u, &rows, &no_fast, &no_other);
+    CHECK(rows >= 398u);
+    CHECK_EQ(no_fast, 0u);
+    CHECK(no_other <= rows / 17u + 1u);
+    /* A gate of 50 ms would skip every read whose offset shrank: half the
+     * rows. */
+    poll_rows(50u, &rows, &no_fast, &no_other);
+    CHECK(rows >= 398u);
+    CHECK_EQ(no_fast, 0u);
+    CHECK_EQ(no_other, 0u);
+}
+
 int main(void)
 {
     RUN(nothing_goes_to_an_older_iomcu_or_with_no_part);
@@ -245,5 +354,7 @@ int main(void)
     RUN(a_page_gone_forgets_its_reads);
     RUN(the_read_before_answers_for_its_window);
     RUN(the_reads_keep_their_rate_across_the_clock_wrap);
+    RUN(fast_comes_from_the_ring);
+    RUN(every_poll_reads_the_pages_after_the_ring);
     return test_summary("sense_win_link");
 }

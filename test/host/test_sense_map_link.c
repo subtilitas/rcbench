@@ -348,14 +348,23 @@ TEST_CASE(the_map_is_held_once_the_page_holds_it)
     map_polls(20);
     CHECK(!sense_map_link_held(&ml));
     CHECK(!sense_map_link_held(NULL));
+    CHECK(!sense_map_link_in_force(&ml));
+    /* Read and derived, the write refused: not in force. */
+    map_fresh(25u, 0x01u);
+    fm_drives = true;
+    map_polls(20);
+    CHECK(!sense_map_link_in_force(&ml));
+    fm_drives = false;
     map_fresh(25u, 0x01u);
     CHECK(!sense_map_link_held(&ml));
     map_polls(20);
     CHECK(sense_map_link_held(&ml));
+    CHECK(sense_map_link_in_force(&ml));
     sense_map_want_t w = map_of(0x01u);
     w.regs[LINK_SM_SHUNT(0)] = 500u;
     sense_map_link_want(&ml, &w, now);
     CHECK(!sense_map_link_held(&ml));
+    CHECK(sense_map_link_in_force(&ml));       /* the old map still is */
     map_polls(20);
     CHECK(sense_map_link_held(&ml));
     fm_drives = true;
@@ -820,7 +829,12 @@ TEST_CASE(a_reread_reads_the_setup_and_the_identity_again)
 TEST_CASE(a_watch_only_change_reads_the_identity_again)
 {
     map_fresh(25u, 0x01u);
+    /* The part SENSE reads, for the clipped alert: none before the page
+     * is read. */
+    CHECK_EQ(sense_link_i3221_addr(&sl), 0u);
+    CHECK_EQ(sense_link_i3221_addr(NULL), 0u);
     polls(4);
+    CHECK_EQ(sense_link_i3221_addr(&sl), 0x40u);
     map_polls(20);
     CHECK(sense_map_link_held(&ml));
     (void)sense_map_link_take_reread(&ml);

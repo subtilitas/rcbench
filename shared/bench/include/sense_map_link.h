@@ -141,6 +141,8 @@ typedef struct {
     uint16_t held[LINK_SM_KEPT];
     bool     refused;         /**< the page refused want                    */
     bool     reread;          /**< a write was taken: SENSE to be read again */
+    bool     forced;          /**< FLAGS' IN_FORCE as last read, or a write
+                                   taken since                              */
     uint32_t setup_ms;        /**< when the map in force was taken or read  */
 
     sense_map_link_op_kind_t pending;
@@ -203,6 +205,11 @@ bool sense_map_link_waits_for_pins(const sense_map_link_t *s,
 /** Whether the page holds the map asked: read since link-up, not
  *  refused, and nothing owed.  False on an IOmcu older than 4.25. */
 bool sense_map_link_held(const sense_map_link_t *s);
+
+/** Whether the IOmcu goes by a map written to it, not the one derived from
+ *  SENSE: FLAGS' IN_FORCE as last read, or a write taken since.  False
+ *  before the page is read and on an IOmcu older than 4.25. */
+bool sense_map_link_in_force(const sense_map_link_t *s);
 
 /** Whether a write was taken since the last call: SENSE's set-up is to be
  *  read again.  Cleared. */

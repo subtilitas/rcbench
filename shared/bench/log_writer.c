@@ -140,12 +140,11 @@ bool log_writer_header(log_writer_t *w)
                                            "voltage (V)" };
     for (unsigned i = 0u; i < w->cols.n; ++i) {
         for (unsigned q = 0u; q < 3u; ++q) {
+            /* A name of LOG_COL_NAME_MAX - 1 and " voltage (V);" fit. */
             char cell[LOG_COL_NAME_MAX + 16];
-            const int len = snprintf(cell, sizeof(cell), "%s %s;",
-                                     w->cols.name[i], k_what[q]);
-            if (len <= 0 || (size_t)len >= sizeof(cell)
-                || !put(w, cell, (size_t)len)) {
-                w->failed = true;
+            (void)snprintf(cell, sizeof(cell), "%s %s;", w->cols.name[i],
+                           k_what[q]);
+            if (!put(w, cell, strlen(cell))) {
                 return false;
             }
         }

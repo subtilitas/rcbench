@@ -226,6 +226,46 @@ TEST_CASE(the_reader_takes_the_groups_as_ina3221)
     CHECK_STR_EQ(log_field_meta("outside").group, "Other");
 }
 
+/* A sink that takes @c g_room bytes and refuses the rest. */
+static size_t g_room;
+static int short_write(void *ctx, const void *data, size_t len)
+{
+    const sink_t *s = (const sink_t *)ctx;
+    if (s->len + len > g_room) {
+        return -1;
+    }
+    return sink_write(ctx, data, len);
+}
+
+/* A sink that fails inside the groups' header fails the writer once; more
+ * than LOG_COLS_MAX groups asked are held to it. */
+TEST_CASE(a_header_cut_in_the_groups_fails_the_writer)
+{
+    uint16_t m[LINK_SM_KEPT];
+    map_of(m, 0x01u);
+    m[LINK_SM_WATCH(0)] = LINK_SM_WATCH_OUT(0);
+    log_cols_t c;
+    log_cols_from_map(m, &c);
+    memset(&g_sink, 0, sizeof(g_sink));
+    g_room = 151u + 10u;            /* past "window;", inside the group */
+    const log_sink_t sk = { .write = short_write, .flush = NULL,
+                            .ctx = &g_sink };
+    log_writer_t w;
+    log_writer_init(&w, &sk);
+    log_writer_set_cols(&w, &c);
+    CHECK(!log_writer_header(&w));
+    CHECK(w.failed);
+    CHECK(strstr(g_sink.buf, "window;") != NULL);
+    CHECK(strstr(g_sink.buf, "source") == NULL);
+    /* Too many groups asked: held to LOG_COLS_MAX. */
+    log_cols_t many;
+    memset(&many, 0, sizeof(many));
+    many.n = LOG_COLS_MAX + 3u;
+    log_writer_t w2 = writer();
+    log_writer_set_cols(&w2, &many);
+    CHECK_EQ(w2.cols.n, LOG_COLS_MAX);
+}
+
 /* The longest name, a target two channels watch, fits the reader's 28
  * bytes with its unit: "supply 0x43 ch3 voltage (V)" is 27. */
 TEST_CASE(the_longest_column_name_reads_back_whole)
@@ -268,5 +308,6 @@ int main(void)
     RUN(without_a_map_the_file_keeps_ch1_to_ch3);
     RUN(the_reader_takes_the_groups_as_ina3221);
     RUN(the_longest_column_name_reads_back_whole);
+    RUN(a_header_cut_in_the_groups_fails_the_writer);
     return test_summary("log_cols");
 }
