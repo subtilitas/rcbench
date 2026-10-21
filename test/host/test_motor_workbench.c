@@ -2,7 +2,9 @@
  * MOTOR & ESC as a workbench: the strip LIVE | PROGRAM | SETTINGS and what
  * each task keeps, SETTINGS' rows, their keypad and the write when idle beside
  * SETUP's SAVE, the pulse rows' lock, the CONTROL card's TARGET row and its
- * lock, the way to OUTPUTS and back, and the home tag's levels.
+ * lock, the way to OUTPUTS and back, and the home tag's levels; the
+ * TARGET text with DShot programming ports beside the slots and alone,
+ * in 18 and 26 cells.
  *
  * Driven through the router, in panel coordinates, as the panel drives it.
  *
@@ -22,6 +24,7 @@
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "motor_screen.h"
+#include "port_view.h"
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
@@ -833,6 +836,96 @@ TEST_CASE(the_save_line_follows_the_store)
     CHECK(differ > 0);
 }
 
+/* DSHOT300 is entry 4 of the outputs catalogue, DSHOT600 entry 5. */
+#define PROTO_DSHOT300 4u
+#define PROTO_DSHOT600 5u
+
+/* A 4.28 view: port 0 SERVO PWM on GP13, port 1 on GP14 as @p fn1, port 2
+ * on GP15 as @p fn2, port 3 NONE; @p refused as FLAGS has it. */
+static void view_ports(uint8_t fn1, uint8_t fn2, uint8_t refused)
+{
+    port_view_t v;
+    port_view_unknown(&v);
+    v.count     = 4u;
+    v.has_func  = true;
+    v.has_dshot = true;
+    v.pin[0] = 13u; v.func[0] = (uint8_t)LINK_PG_FN_SERVO_PWM;
+    v.pin[1] = 14u; v.func[1] = fn1;
+    v.pin[2] = 15u; v.func[2] = fn2;
+    v.pin[3] = PORT_VIEW_NO_PIN; v.func[3] = (uint8_t)LINK_PG_FN_NONE;
+    v.refused = refused;
+    port_view_set(&v);
+}
+
+TEST_CASE(the_target_names_the_dshot_ports_the_throttle_drives)
+{
+    char line[64];
+    const uint8_t none = (uint8_t)LINK_PG_FN_NONE;
+    const uint8_t d300 = (uint8_t)LINK_PG_FN_DSHOT300;
+    const uint8_t d600 = (uint8_t)LINK_PG_FN_DSHOT600;
+    ui_text_set_language(UI_LANG_EN);
+    /* No DShot port: as before. */
+    view_ports(none, none, 0u);
+    CHECK_EQ(motor_dshot_ports(), 0u);
+    CHECK(motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
+    /* A port alone: in full where it fits, PORT n where it does not. */
+    view_ports(d300, none, 0u);
+    CHECK_EQ(motor_dshot_ports(), 2u);
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 26u));
+    CHECK_STR_EQ(line, "DSHOT300 PROG PORT 2 GP14");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 25u));
+    CHECK_STR_EQ(line, "DSHOT300 PROG PORT 2 GP14");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 24u));
+    CHECK_STR_EQ(line, "DSHOT300 PORT 2");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
+    CHECK_STR_EQ(line, "DSHOT300 PORT 2");
+    /* Slots of the same rate first, then the port. */
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 1u,
+                                 true, 18u));
+    CHECK_STR_EQ(line, "DSHOT300 GP0 +1");
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 1u,
+                                 true, 26u));
+    CHECK_STR_EQ(line, "DSHOT300 GP0 PORT 2");
+    /* Another rate: MIXED. */
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT600, 1u,
+                                 true, 18u));
+    CHECK_STR_EQ(line, "MIXED GP0 PORT 2");
+    view_ports(d300, d600, 0u);
+    CHECK_EQ(motor_dshot_ports(), 6u);
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
+    CHECK_STR_EQ(line, "MIXED PORT 2 +1");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 19u));
+    CHECK_STR_EQ(line, "MIXED PORT 2 PORT 3");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
+    CHECK_STR_EQ(line, "GEMISCHT PORT 2 +1");
+    view_ports(d300, none, 0u);
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 26u));
+    CHECK_STR_EQ(line, "DSHOT300 PROG-PORT 2 GP14");
+    ui_text_set_language(UI_LANG_EN);
+    /* Eight slot pins and two ports in 18 cells: the count holds both. */
+    view_ports(d300, d300, 0u);
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0xFFu,
+                                 true, 18u));
+    CHECK_STR_EQ(line, "DSHOT300 GP0 +9");
+    /* A refused port drives nothing and is not named. */
+    view_ports(d300, d600, 0x4u);
+    CHECK_EQ(motor_dshot_ports(), 2u);
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
+    CHECK_STR_EQ(line, "DSHOT300 PORT 2");
+    view_ports(none, d600, 0x4u);
+    CHECK(motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
+    /* The binding not read still says so. */
+    view_ports(d300, none, 0u);
+    CHECK(motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 1u,
+                                false, 18u));
+    /* Nothing known about the ports: none named. */
+    port_view_t v;
+    port_view_unknown(&v);
+    port_view_set(&v);
+    CHECK_EQ(motor_dshot_ports(), 0u);
+}
+
 int main(void)
 {
     RUN(the_strip_reads_live_program_settings_and_a_tile_opens_live);
@@ -850,6 +943,7 @@ int main(void)
     RUN(the_target_row_opens_outputs_on_the_throttle_protocol);
     RUN(the_home_tag_closes_the_keypad_then_leaves);
     RUN(the_save_line_follows_the_store);
+    RUN(the_target_names_the_dshot_ports_the_throttle_drives);
     free(fb);
     return test_summary("motor_workbench");
 }

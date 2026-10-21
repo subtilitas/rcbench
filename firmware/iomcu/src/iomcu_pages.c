@@ -170,10 +170,13 @@ static uint8_t ports_bind(void)
     for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
         pin[i] = ((wire & (1u << i)) != 0u) ? (uint8_t)PROG_PORT_NO_PIN
                                             : prog_port_pin(&s_prog, i);
-        hz[i] = prog_port_port_hz(&s_prog, i);
+        /* A DShot port's rate is its bit rate, in kbit/s. */
+        hz[i] = ((prog_port_dshot(&s_prog) & (1u << i)) != 0u)
+                    ? prog_port_kbit(&s_prog, i)
+                    : prog_port_port_hz(&s_prog, i);
     }
     outputs_hw_ports(pin, hz, prog_port_parked(&s_prog),
-                     (uint8_t)PROG_PORT_CHANNEL0);
+                     prog_port_dshot(&s_prog), (uint8_t)PROG_PORT_CHANNEL0);
     return wire;
 }
 
@@ -538,10 +541,12 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      * throttle screen would command a channel no slot reads while the ESC on
      * GP0 sat at its rest for ever.  Which channels are motors is the
      * binding's answer, carried as the role on the CHAN_CFG page, so a servo
-     * bound beside a motor is left alone.
+     * bound beside a motor is left alone.  A programming port whose FUNC is
+     * DShot is a motor too: its channel, past the page's, has the role.
      */
     (void)outputs_set_role_channels(&s_outputs, OUT_ROLE_THROTTLE,
-                                    (uint8_t)LINK_OUT_CHANNELS, thr,
-                                    s_now_ms);
+                                    (uint8_t)(PROG_PORT_CHANNEL0
+                                              + LINK_PG_PORTS_MAX),
+                                    thr, s_now_ms);
     return 0;
 }

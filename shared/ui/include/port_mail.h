@@ -51,7 +51,7 @@ typedef struct {
 } port_mail_t;
 
 /** Nothing known and no ask. */
-#define PORT_MAIL_META_UNKNOWN 0x00FF8888u
+#define PORT_MAIL_META_UNKNOWN 0x00FF7777u
 #define PORT_MAIL_INIT { 0xFFFFFFFFu, PORT_MAIL_META_UNKNOWN, 0u, 0u, 0u, \
                          0u, 0u, 0u }
 

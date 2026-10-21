@@ -57,7 +57,7 @@ static slot_state_t s_state[OUT_MAX_SLOTS];
 typedef struct {
     bool         bound;    /* the pin is held: bound, or parked */
     bool         parked;   /* FUNC NONE: an input with its pull-down */
-    out_slot_t   as;
+    out_slot_t   as;       /* driver PWM, or DSHOT for a DShot port */
     slot_state_t st;
 } port_state_t;
 
@@ -411,7 +411,7 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
 }
 
 void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
-                      uint8_t parked, uint8_t channel0)
+                      uint8_t parked, uint8_t dshot, uint8_t channel0)
 {
     if (pin == NULL || rate_hz == NULL) {
         return;
@@ -423,15 +423,18 @@ void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
         const port_state_t *p = &s_port[i];
         const bool wanted = pin[i] <= OUT_MAX_PIN;
         const bool park_it = (parked & (1u << i)) != 0u;
+        const out_driver_t drv = (!park_it && (dshot & (1u << i)) != 0u)
+                                     ? OUT_DRIVER_DSHOT : OUT_DRIVER_PWM;
         moved[i] = wanted != p->bound
                    || (wanted && (p->as.pin != pin[i] || p->parked != park_it
                                   || (!park_it
-                                      && p->as.rate_hz != rate_hz[i])));
+                                      && (p->as.driver != drv
+                                          || p->as.rate_hz != rate_hz[i]))));
         if (moved[i] && p->bound) {
             if (p->parked) {
                 port_unpark(p->as.pin);
             } else {
-                out_pwm_release(p->as.pin);
+                unbind(&p->as);
             }
         }
     }
@@ -453,7 +456,13 @@ void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
             p->parked = true;
             p->bound  = port_park(pin[i]);
         } else {
-            p->bound  = out_pwm_bind(pin[i], rate_hz[i]);
+            if ((dshot & (1u << i)) != 0u) {
+                p->as.driver = OUT_DRIVER_DSHOT;
+            }
+            p->bound = bind(&p->as);
+            /* Due at once, and asked nothing yet, as a slot bound afresh. */
+            p->st.next_us = time_us_32();
+            dshot_edt_bind(&p->st.edt, now_ms());
         }
     }
 }
@@ -582,12 +591,22 @@ void outputs_hw_service(const outputs_t *o)
 
     for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
         port_state_t *p = &s_port[i];
-        if (p->bound && !p->parked) {
-            service_pwm(&p->st, &p->as,
-                        drive && (s_port_drive & (1u << i)) != 0u
-                            && outputs_channel_driving(o, p->as.first_channel)
-                            ? outputs_pulse_us(o, p->as.first_channel) : 0u);
+        if (!p->bound || p->parked) {
+            continue;
         }
+        if (p->as.driver == OUT_DRIVER_DSHOT) {
+            /* A motor slot's rendering: the throttle while the bank is
+             * armed for it, no frame while it is not.  No slot of its own
+             * for telemetry: plain DShot sends none. */
+            service_dshot(o, &p->as, &p->st, OUT_MAX_SLOTS,
+                          drive && outputs_channel_driving(
+                                       o, p->as.first_channel));
+            continue;
+        }
+        service_pwm(&p->st, &p->as,
+                    drive && (s_port_drive & (1u << i)) != 0u
+                        && outputs_channel_driving(o, p->as.first_channel)
+                        ? outputs_pulse_us(o, p->as.first_channel) : 0u);
     }
 
     /*

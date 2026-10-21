@@ -25,6 +25,7 @@ void prog_link_came_up(prog_link_t *p, uint16_t minor)
     p->page        = minor >= LINK_MINOR_PROG;
     p->target_rate = minor >= LINK_MINOR_SERVO_TARGET_RATE;
     p->func        = minor >= LINK_MINOR_PROG_FUNC;
+    p->dshot       = minor >= LINK_MINOR_PROG_DSHOT;
     p->hitec       = minor >= LINK_MINOR_HITEC;
     p->hitec_held  = 0u;
     /* An ask is for the IOmcu it was made to: one still waiting is not
@@ -47,6 +48,7 @@ void prog_link_lost(prog_link_t *p)
     p->page        = false;
     p->target_rate = false;
     p->func        = false;
+    p->dshot       = false;
     p->hitec       = false;
     p->hitec_held  = 0u;
     if (p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING) {
@@ -206,6 +208,11 @@ bool prog_link_has_func(const prog_link_t *p)
     return p != NULL && p->page && p->func;
 }
 
+bool prog_link_has_dshot(const prog_link_t *p)
+{
+    return prog_link_has_func(p) && p->dshot;
+}
+
 bool prog_link_ask(prog_link_t *p, uint8_t port, prog_link_ask_kind_t kind,
                    uint16_t value)
 {
@@ -214,7 +221,9 @@ bool prog_link_ask(prog_link_t *p, uint8_t port, prog_link_ask_kind_t kind,
         return false;
     }
     if (kind == PROG_LINK_ASK_FUNC
-        && (!p->func || value >= (uint16_t)LINK_PG_FN_COUNT)) {
+        && (!p->func
+            || value >= (p->dshot ? (uint16_t)LINK_PG_FN_COUNT
+                                  : (uint16_t)LINK_PG_FN_COUNT_V426))) {
         return false;
     }
     if (kind != PROG_LINK_ASK_PIN && kind != PROG_LINK_ASK_FUNC) {
@@ -437,8 +446,9 @@ bool prog_link_port(const prog_link_t *p, uint8_t port, prog_link_port_t *out)
     const uint16_t pin = p->regs[LINK_PG_REG(port, LINK_PG_PIN)];
     const uint16_t fn  = p->regs[LINK_PG_FUNC(port)];
     out->pin     = (pin >= PROG_LINK_NO_PIN) ? PROG_LINK_NO_PIN : (uint8_t)pin;
-    out->func    = (fn < (uint16_t)LINK_PG_FN_COUNT) ? (uint8_t)fn
-                                                     : (uint8_t)LINK_PG_FN_NONE;
+    const uint16_t fns = p->dshot ? (uint16_t)LINK_PG_FN_COUNT
+                                  : (uint16_t)LINK_PG_FN_COUNT_V426;
+    out->func    = (fn < fns) ? (uint8_t)fn : (uint8_t)LINK_PG_FN_NONE;
     out->refused = (p->regs[LINK_PG_FLAGS] & LINK_PG_F_REFUSED(port)) != 0u;
     return true;
 }

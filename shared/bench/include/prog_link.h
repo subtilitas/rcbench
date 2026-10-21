@@ -110,6 +110,7 @@ typedef struct {
     bool     want_pwm;
     bool     held;                 /**< the programmer has a port          */
     bool     func;                 /**< from 4.26: FUNC and 28 registers  */
+    bool     dshot;                /**< from 4.28: FUNC takes DShot       */
     uint8_t  ask_state;            /**< a prog_link_ask_state_t            */
     uint8_t  ask_port;
     uint8_t  ask_kind;             /**< a prog_link_ask_kind_t             */
@@ -159,11 +160,16 @@ uint8_t prog_link_regs(const prog_link_t *p);
 /** Whether the IOmcu takes a FUNC: protocol 4.26 or later. */
 bool prog_link_has_func(const prog_link_t *p);
 
+/** Whether the IOmcu takes FUNC DSHOT150 to DSHOT600: protocol 4.28 or
+ *  later. */
+bool prog_link_has_dshot(const prog_link_t *p);
+
 /**
  * Ask for port @p port's PIN (@p value a GPIO, or LINK_PG_PIN_NONE) or
  * FUNC (a link_pg_func_t) to be written.  True when taken: the page is
  * there, the port is one it has, and for FUNC the IOmcu has the register
- * and @p value is SERVO PWM or NONE.  A later ask replaces one still
+ * and @p value is SERVO PWM or NONE, or from 4.28 DSHOT150, DSHOT300 or
+ * DSHOT600.  A later ask replaces one still
  * waiting.  prog_link_next() writes it on a bench at rest.
  */
 bool prog_link_ask(prog_link_t *p, uint8_t port, prog_link_ask_kind_t kind,

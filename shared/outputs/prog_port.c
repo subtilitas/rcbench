@@ -33,6 +33,13 @@ static bool fn_pwm(const uint16_t *regs, unsigned port)
     return fn_of(regs, port) == (uint16_t)LINK_PG_FN_SERVO_PWM;
 }
 
+/* Whether the port's function is DShot (4.28): a PIO state machine renders
+ * it from the port's channel, a throttle. */
+static bool fn_dshot(const uint16_t *regs, unsigned port)
+{
+    return LINK_PG_FN_IS_DSHOT(fn_of(regs, port));
+}
+
 /* The function a port starts with on a board that has stored none: the
  * servo pulse on port 0, nothing on the others. */
 static uint16_t fn_default(unsigned port)
@@ -102,8 +109,15 @@ static void apply_cfg(const prog_port_t *p, outputs_t *o, unsigned port)
 {
     const uint8_t ch = prog_port_channel((uint8_t)port);
 
-    (void)outputs_set_role(o, ch, OUT_ROLE_SURFACE);
-    (void)outputs_set_slew(o, ch, p->regs[REG(port, LINK_PG_SLEW)]);
+    /* A DShot port is a motor: ARM THROTTLE arms it, and its rest is a
+     * throttle's.  A role change while disarmed puts the channel at the new
+     * rest (outputs_set_role()). */
+    const bool dshot = fn_dshot(p->regs, port);
+    (void)outputs_set_role(o, ch, dshot ? OUT_ROLE_THROTTLE : OUT_ROLE_SURFACE);
+    /* The bench throttle reaches a DShot port as MOTOR & ESC sends it, as it
+     * reaches a motor slot: the port's SLEW is kept for SERVO PWM and not
+     * applied. */
+    (void)outputs_set_slew(o, ch, dshot ? 0u : p->regs[REG(port, LINK_PG_SLEW)]);
     (void)outputs_set_endpoints(o, ch, p->regs[REG(port, LINK_PG_MIN_US)],
                                 p->regs[REG(port, LINK_PG_MAX_US)]);
 }
@@ -307,6 +321,11 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
             && next[REG(port, LINK_PG_CMD)] > OUT_SPAN) {
             next[REG(port, LINK_PG_CMD)] = (uint16_t)OUT_SPAN;
         }
+        /* A DShot port's command is the bench throttle's (the CONTROL
+         * page), never this page's. */
+        if (carries(off, n, REG(port, LINK_PG_CMD)) && fn_dshot(next, port)) {
+            return LINK_NACK_BAD_VALUE;
+        }
         if (carries(off, n, REG(port, LINK_PG_SLEW))
             && next[REG(port, LINK_PG_SLEW)] > LINK_CC_SLEW_MAX) {
             return LINK_NACK_BAD_VALUE;
@@ -416,7 +435,8 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
 
         if (carries(off, n, REG(port, LINK_PG_SLEW))
             || carries(off, n, REG(port, LINK_PG_MIN_US))
-            || carries(off, n, REG(port, LINK_PG_MAX_US))) {
+            || carries(off, n, REG(port, LINK_PG_MAX_US))
+            || carries(off, n, LINK_PG_FUNC(port))) {
             apply_cfg(p, o, port);
         }
         if (carries(off, n, REG(port, LINK_PG_CMD))) {
@@ -438,6 +458,8 @@ void prog_port_read(const prog_port_t *p, uint8_t off, uint8_t n,
         if ((p->bound & (1u << port)) != 0u) {
             flags = (uint16_t)(flags | (fn_pwm(p->regs, port)
                                             ? LINK_PG_F_BOUND(port)
+                                        : fn_dshot(p->regs, port)
+                                            ? LINK_PG_F_DSHOT(port)
                                             : LINK_PG_F_PARKED(port)));
         } else if (p->regs[REG(port, LINK_PG_PIN)] != LINK_PG_PIN_NONE) {
             flags |= LINK_PG_F_REFUSED(port);
@@ -517,11 +539,35 @@ uint8_t prog_port_parked(const prog_port_t *p)
         return 0u;
     }
     for (unsigned port = 0; port < p->count; ++port) {
-        if (holds(p, port) && !fn_pwm(p->regs, port)) {
+        if (holds(p, port)
+            && fn_of(p->regs, port) == (uint16_t)LINK_PG_FN_NONE) {
             m |= (uint8_t)(1u << port);
         }
     }
     return m;
+}
+
+uint8_t prog_port_dshot(const prog_port_t *p)
+{
+    uint8_t m = 0u;
+
+    if (p == NULL) {
+        return 0u;
+    }
+    for (unsigned port = 0; port < p->count; ++port) {
+        if (holds(p, port) && fn_dshot(p->regs, port)) {
+            m |= (uint8_t)(1u << port);
+        }
+    }
+    return m;
+}
+
+uint16_t prog_port_kbit(const prog_port_t *p, uint8_t port)
+{
+    if (p == NULL || port >= LINK_PG_PORTS_MAX) {
+        return 0u;
+    }
+    return (uint16_t)LINK_PG_FN_KBIT(fn_of(p->regs, port));
 }
 
 uint8_t prog_port_count(const prog_port_t *p)

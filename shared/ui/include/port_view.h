@@ -43,6 +43,7 @@ typedef struct {
     uint8_t count;                      /**< ports the IOmcu has, 0 for no
                                              page, PORT_VIEW_UNKNOWN      */
     bool    has_func;                   /**< it takes FUNC (4.26)         */
+    bool    has_dshot;                  /**< FUNC takes DShot (4.28)      */
     uint8_t pin[LINK_PG_PORTS_MAX];     /**< the PIN register              */
     uint8_t func[LINK_PG_PORTS_MAX];    /**< a link_pg_func_t              */
     uint8_t refused;                    /**< bit n: the pin is refused     */
@@ -62,6 +63,18 @@ bool port_view_has(uint8_t port);
 
 /** Port @p port's function, PORT_VIEW_FN_UNKNOWN while not known. */
 uint8_t port_view_func(uint8_t port);
+
+/** Whether port @p port is under the SERVO PWM rules: its function is
+ *  SERVO PWM, or not known yet (the stricter rule). */
+bool port_view_pwm(uint8_t port);
+
+/** Whether port @p port's function is DSHOT150, DSHOT300 or DSHOT600. */
+bool port_view_dshot(uint8_t port);
+
+/** Function @p fn's name as the screens write it: SERVO PWM and NONE in
+ *  the panel's language, the DShot rates by their catalogue names, the
+ *  same in every language; "?" for a value no IOmcu sends. */
+const char *port_view_fn_name(uint8_t fn);
 
 /** Where an ask goes: true when the control task took it. */
 typedef bool (*port_view_ask_fn)(uint8_t seq, uint8_t port,

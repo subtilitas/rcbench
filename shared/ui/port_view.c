@@ -62,13 +62,40 @@ uint8_t port_view_func(uint8_t port)
                                : (uint8_t)PORT_VIEW_FN_UNKNOWN;
 }
 
+bool port_view_pwm(uint8_t port)
+{
+    const uint8_t fn = port_view_func(port);
+    return fn == (uint8_t)LINK_PG_FN_SERVO_PWM
+           || fn == (uint8_t)PORT_VIEW_FN_UNKNOWN;
+}
+
+bool port_view_dshot(uint8_t port)
+{
+    return LINK_PG_FN_IS_DSHOT(port_view_func(port));
+}
+
+const char *port_view_fn_name(uint8_t fn)
+{
+    switch (fn) {
+    case LINK_PG_FN_SERVO_PWM: return TR(OUT_PORT_FN_PWM);
+    case LINK_PG_FN_NONE:      return TR(OUT_PORT_FN_NONE);
+    case LINK_PG_FN_DSHOT150:  return "DSHOT150";
+    case LINK_PG_FN_DSHOT300:  return "DSHOT300";
+    case LINK_PG_FN_DSHOT600:  return "DSHOT600";
+    default:                   return "?";
+    }
+}
+
 void port_view_set_ask(port_view_ask_fn fn) { g_ask = fn; }
 
 bool port_view_ask(uint8_t port, prog_link_ask_kind_t kind, uint16_t value)
 {
     if (g_ask == NULL || !port_view_has(port)
         || (kind == PROG_LINK_ASK_FUNC
-            && (!g_view.has_func || value >= (uint16_t)LINK_PG_FN_COUNT))) {
+            && (!g_view.has_func
+                || value >= (g_view.has_dshot
+                                 ? (uint16_t)LINK_PG_FN_COUNT
+                                 : (uint16_t)LINK_PG_FN_COUNT_V426)))) {
         return false;
     }
     /* 1 to 255: 0 stands for no ask in the word that carries it. */

@@ -33,6 +33,7 @@
 #include "ui_value_gate.h"
 #include "kst_panel.h"
 #include "outputs_screen.h"
+#include "port_view.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -176,6 +177,9 @@ static struct {
     /* The protocol they are bound as: an outbind_protos() index, 0 for
      * none known, MOTOR_PROTO_MIXED for several. */
     uint8_t       thr_proto;
+    /* port_view_revision() when the TARGET row last named the DShot
+     * programming ports. */
+    uint32_t      thr_ports_rev;
     /* The strip's and SETTINGS' page's revisions last painted into each
      * framebuffer, and whether the TARGET row was drawn locked. */
     uint32_t      drawn_strip[2];
@@ -919,6 +923,11 @@ static void tick(float dt_s)
      * taking a press again. */
     if (target_locked() != s.target_locked) {
         s.target_locked = target_locked();
+        ++s.ctrl_rev;
+    }
+    /* And names the DShot ports the throttle drives as they are read. */
+    if (port_view_revision() != s.thr_ports_rev) {
+        s.thr_ports_rev = port_view_revision();
         ++s.ctrl_rev;
     }
     msp_tick(endpoints_free());

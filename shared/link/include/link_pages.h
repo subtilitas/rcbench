@@ -119,7 +119,10 @@ typedef enum {
  * reads SENSE's one INA3221.  From 4.26 PROG has 28 registers: registers
  * 24 to 27 are each port's FUNC, the function its pin carries while no
  * wire page holds it; the panel reads the 24 an older IOmcu has and offers
- * a port SERVO PWM only.  An
+ * a port SERVO PWM only.  From 4.28 FUNC takes DSHOT150, DSHOT300 and
+ * DSHOT600 (plain DShot, the port's channel a throttle) and FLAGS bits 12
+ * to 15 say a port's DShot is bound; an older IOmcu refuses those values
+ * with LINK_NACK_BAD_VALUE, and the panel offers them from 4.28 only.  An
  * IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -132,7 +135,7 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 26u
+#define LINK_PROTOCOL_MINOR 28u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -213,6 +216,12 @@ typedef enum {
  *  older minor's page has LINK_PG_REGS_V424 registers, refuses a longer
  *  read with LINK_NACK_BAD_RANGE and runs every port's pin as SERVO PWM. */
 #define LINK_MINOR_PROG_FUNC 26u
+
+/** The first minor whose PROG page takes FUNC DSHOT150, DSHOT300 and
+ *  DSHOT600 (LINK_PG_FN_DSHOT150 on) and sets LINK_PG_F_DSHOT in FLAGS.
+ *  An older minor refuses those values with LINK_NACK_BAD_VALUE.  4.27 is
+ *  another page's. */
+#define LINK_MINOR_PROG_DSHOT 28u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1895,14 +1904,30 @@ enum {
     LINK_PG_STRIDE = 5,
 };
 /** A port's function: what its pin carries while no wire page holds it.
- *  Values 2 to 4 are DSHOT150, DSHOT300 and DSHOT600, which this protocol
- *  minor refuses with LINK_NACK_BAD_VALUE. */
+ *  DSHOT150 to DSHOT600 from 4.28 (LINK_MINOR_PROG_DSHOT); an older IOmcu
+ *  refuses them with LINK_NACK_BAD_VALUE. */
 typedef enum {
     LINK_PG_FN_SERVO_PWM = 0, /**< the servo pulse; a PWM pin only */
     LINK_PG_FN_NONE      = 1, /**< no driver: an input with its pull-down;
                                    any free header pin */
-    LINK_PG_FN_COUNT     = 2,
+    LINK_PG_FN_DSHOT150  = 2, /**< plain DShot at 150 kbit/s: the port's
+                                   channel a throttle, a PIO state machine
+                                   of its own; any free header pin */
+    LINK_PG_FN_DSHOT300  = 3, /**< the same at 300 kbit/s */
+    LINK_PG_FN_DSHOT600  = 4, /**< the same at 600 kbit/s */
+    LINK_PG_FN_COUNT     = 5,
 } link_pg_func_t;
+/** The functions an IOmcu of 4.26 and 4.27 takes. */
+#define LINK_PG_FN_COUNT_V426 2u
+/** Whether @p fn is one of the DShot functions. */
+#define LINK_PG_FN_IS_DSHOT(fn) \
+    ((unsigned)(fn) - (unsigned)LINK_PG_FN_DSHOT150 \
+     <= (unsigned)LINK_PG_FN_DSHOT600 - (unsigned)LINK_PG_FN_DSHOT150)
+/** A DShot function's bit rate in kbit/s, 0 for another function. */
+#define LINK_PG_FN_KBIT(fn) \
+    ((unsigned)(fn) == (unsigned)LINK_PG_FN_DSHOT150 ? 150u \
+     : (unsigned)(fn) == (unsigned)LINK_PG_FN_DSHOT300 ? 300u \
+     : (unsigned)(fn) == (unsigned)LINK_PG_FN_DSHOT600 ? 600u : 0u)
 /** Ports the page has room for. */
 #define LINK_PG_PORTS_MAX 4u
 #define LINK_PG_PIN_NONE  0xFFFFu
@@ -1912,6 +1937,8 @@ typedef enum {
 #define LINK_PG_F_BOUND(port)   ((uint16_t)(1u << (unsigned)(port)))
 #define LINK_PG_F_PARKED(port)  ((uint16_t)(0x10u << (unsigned)(port)))
 #define LINK_PG_F_REFUSED(port) ((uint16_t)(0x100u << (unsigned)(port)))
+/** From 4.28: port n's DShot driver holds its pin. */
+#define LINK_PG_F_DSHOT(port)   ((uint16_t)(0x1000u << (unsigned)(port)))
 
 /* ------------------------------------------------------------------- HITEC */
 /*

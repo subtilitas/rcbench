@@ -180,7 +180,7 @@ static bool held(void)
  * there was a function. */
 static bool fn_pwm(void)
 {
-    return port_view_func((uint8_t)p.port) != (uint8_t)LINK_PG_FN_NONE;
+    return port_view_pwm((uint8_t)p.port);
 }
 
 /* FUNCTION: not before the ports are read, not on an IOmcu without FUNC,

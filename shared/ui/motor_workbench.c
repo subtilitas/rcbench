@@ -24,6 +24,8 @@
 
 #include "motor_screen.h"
 #include "out_bind.h"
+#include "port_view.h"
+#include "ui_pinlist.h"
 #include "ui_target_row.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -160,6 +162,108 @@ unsigned motor_target_cells(void)
     return ui_target_row_cells(&w.trow);
 }
 
+uint8_t motor_dshot_ports(void)
+{
+    const port_view_t *v = port_view_get();
+    uint8_t m = 0u;
+    for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        if (port_view_dshot(n) && v->pin[n] != PORT_VIEW_NO_PIN
+            && (v->refused & (1u << n)) == 0u) {
+            m |= (uint8_t)(1u << n);
+        }
+    }
+    return m;
+}
+
+/* Append @p item to @p out (length @p *n) after a space, when it fits in
+ * @p cells with @p reserve cells kept free after it. */
+static bool put_item(char *out, size_t size, size_t *n, const char *item,
+                     unsigned cells, size_t reserve)
+{
+    const size_t sep = (*n > 0u) ? 1u : 0u;
+    const size_t len = strlen(item);
+    if (*n + sep + len + reserve > cells || *n + sep + len >= size) {
+        return false;
+    }
+    if (sep != 0u) {
+        out[(*n)++] = ' ';
+    }
+    memcpy(out + *n, item, len + 1u);
+    *n += len;
+    return true;
+}
+
+/* Item @p i of the list the TARGET text names, into @p buf: the slot
+ * pins in order, then the ports as PORT n. */
+static void item_text(unsigned i, uint64_t pins, uint8_t ports, char *buf,
+                      size_t cap)
+{
+    for (unsigned g = 0; g < UI_PINLIST_PINS; ++g) {
+        if ((pins & ((uint64_t)1u << g)) != 0u && i-- == 0u) {
+            snprintf(buf, cap, "GP%u", g);
+            return;
+        }
+    }
+    for (unsigned k = 0; k < LINK_PG_PORTS_MAX; ++k) {
+        if ((ports & (1u << k)) != 0u && i-- == 0u) {
+            snprintf(buf, cap, TR(OUT_TESTER_PORT), k + 1u);
+            return;
+        }
+    }
+    buf[0] = '\0';
+}
+
+static unsigned bits(uint64_t m)
+{
+    unsigned n = 0u;
+    for (; m != 0u; m &= m - 1u) {
+        ++n;
+    }
+    return n;
+}
+
+/*
+ * The protocol, the slot pins and the DShot programming ports in @p ports,
+ * in @p cells: the pins first, then each port as PORT n, and what does not
+ * fit as "+N".  A single port with no pin beside it is named in full,
+ * PROG PORT n GPx, where that fits.
+ */
+static void target_with_ports(char *out, size_t size, const char *name,
+                              uint64_t pins, uint8_t ports, unsigned cells)
+{
+    const unsigned count = bits(pins) + bits(ports);
+    size_t n = 0u;
+    out[0] = '\0';
+    if (name != NULL) {
+        (void)put_item(out, size, &n, name, cells, 0u);
+    }
+    if (pins == 0u && bits(ports) == 1u) {
+        unsigned k = 0u;
+        while ((ports & (1u << k)) == 0u) {
+            ++k;
+        }
+        char full[32];
+        snprintf(full, sizeof(full), TR(SV_TARGET_PN_PIN), k + 1u,
+                 (unsigned)port_view_get()->pin[k]);
+        if (put_item(out, size, &n, full, cells, 0u)) {
+            return;
+        }
+    }
+    for (unsigned i = 0; i < count; ++i) {
+        char item[16];
+        char more[8];
+        item_text(i, pins, ports, item, sizeof(item));
+        const unsigned left = count - i - 1u;
+        snprintf(more, sizeof(more), "+%u", left);
+        const size_t reserve = (left > 0u) ? 1u + strlen(more) : 0u;
+        if (!put_item(out, size, &n, item, cells, reserve)) {
+            snprintf(more, sizeof(more), "+%u", count - i);
+            (void)put_item(out, size, &n, more, cells, 0u);
+            return;
+        }
+    }
+}
+
 bool motor_throttle_target(char *out, size_t size, uint8_t proto,
                            uint64_t pins, bool known, unsigned cells)
 {
@@ -170,7 +274,8 @@ bool motor_throttle_target(char *out, size_t size, uint8_t proto,
         snprintf(out, size, "%s", TR(MO_TGT_UNREAD));
         return true;
     }
-    if (pins == 0u) {
+    const uint8_t ports = motor_dshot_ports();
+    if (pins == 0u && ports == 0u) {
         snprintf(out, size, "%s", TR(MO_TGT_NONE));
         return true;
     }
@@ -183,6 +288,29 @@ bool motor_throttle_target(char *out, size_t size, uint8_t proto,
     } else if (proto > 0u && proto < OUTBIND_PROTOS) {
         name = outbind_protos()[proto].name;
     }
-    (void)ui_target_text(out, size, name, pins, cells);
+    if (ports == 0u) {
+        (void)ui_target_text(out, size, name, pins, cells);
+        return false;
+    }
+    /* A DShot port's function by its catalogue name: one name for the
+     * slots and the ports, or MIXED. */
+    const char *pname = NULL;
+    for (uint8_t k = 0; k < LINK_PG_PORTS_MAX; ++k) {
+        if ((ports & (1u << k)) == 0u) {
+            continue;
+        }
+        const char *f = port_view_fn_name(port_view_func(k));
+        if (pname == NULL) {
+            pname = f;
+        } else if (strcmp(pname, f) != 0) {
+            pname = TR(MO_TGT_MIXED);
+        }
+    }
+    if (pins == 0u) {
+        name = pname;
+    } else if (name != NULL && strcmp(name, pname) != 0) {
+        name = TR(MO_TGT_MIXED);
+    }
+    target_with_ports(out, size, name, pins, ports, cells);
     return false;
 }

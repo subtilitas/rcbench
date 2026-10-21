@@ -11,10 +11,15 @@
 #include "link_pages.h"
 #include "port_view.h"
 
-/* meta: bits 0 to 15 a nibble a port, bit 0 NONE (else SERVO PWM), bit 1
- * refused, bit 3 not known; bits 16 to 23 the count, 0xFF not known; bit
- * 24 the IOmcu takes FUNC; bits 25 to 27 the link epoch. */
+/* meta: bits 0 to 15 a nibble a port, bits 0 to 2 its link_pg_func_t
+ * (NIB_FN_UNKNOWN: not known), bit 3 refused; bits 16 to 23 the count,
+ * 0xFF not known; bit 24 the IOmcu takes FUNC; bits 25 to 27 the link
+ * epoch; bit 28 it takes the DShot functions. */
 #define META_EPOCH_SHIFT 25u
+#define META_DSHOT       (1u << 28)
+#define NIB_FN_MASK      0x7u
+#define NIB_FN_UNKNOWN   0x7u
+#define NIB_REFUSED      0x8u
 /* ask: bits 24 to 31 the number, 21 to 23 the epoch, bit 20 FUNC, bits 16
  * to 17 the port, bits 0 to 15 the value. */
 #define ASK_EPOCH_SHIFT  21u
@@ -24,6 +29,8 @@
 
 _Static_assert(LINK_PG_PORTS_MAX == 4u,
                "the view packs 4 ports into two 32-bit words");
+_Static_assert(LINK_PG_FN_COUNT <= NIB_FN_UNKNOWN,
+               "a port's function and the not-known mark fit in 3 bits");
 
 static void view_store(port_mail_t *m, unsigned pins, unsigned meta)
 {
@@ -93,15 +100,16 @@ void port_mail_publish(port_mail_t *m, prog_link_t *pl)
     if (count != PROG_LINK_COUNT_UNKNOWN) {
         meta = ((unsigned)count << 16)
                | (prog_link_has_func(pl) ? (1u << 24) : 0u)
+               | (prog_link_has_dshot(pl) ? META_DSHOT : 0u)
                | ((m->epoch & EPOCH_MASK) << META_EPOCH_SHIFT);
         for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
             prog_link_port_t pt;
-            unsigned nib = 0x8u;
+            unsigned nib = NIB_FN_UNKNOWN;
             if (prog_link_port(pl, n, &pt)) {
                 pins = (pins & ~(0xFFu << (8u * n)))
                        | ((unsigned)pt.pin << (8u * n));
-                nib = ((pt.func == (uint8_t)LINK_PG_FN_NONE) ? 1u : 0u)
-                      | (pt.refused ? 2u : 0u);
+                nib = ((unsigned)pt.func & NIB_FN_MASK)
+                      | (pt.refused ? NIB_REFUSED : 0u);
             }
             meta |= nib << (4u * n);
         }
@@ -166,15 +174,15 @@ void port_mail_to_view(port_mail_t *m)
             m->ui_epoch = (meta >> META_EPOCH_SHIFT) & EPOCH_MASK;
             v.count     = count;
             v.has_func  = ((meta >> 24) & 1u) != 0u;
+            v.has_dshot = (meta & META_DSHOT) != 0u;
             for (unsigned n = 0; n < LINK_PG_PORTS_MAX; ++n) {
                 const unsigned nib = (meta >> (4u * n)) & 0xFu;
-                if ((nib & 0x8u) != 0u) {
+                if ((nib & NIB_FN_MASK) == NIB_FN_UNKNOWN) {
                     continue;
                 }
                 v.pin[n]  = (uint8_t)(pins >> (8u * n));
-                v.func[n] = (nib & 1u) ? (uint8_t)LINK_PG_FN_NONE
-                                       : (uint8_t)LINK_PG_FN_SERVO_PWM;
-                if ((nib & 2u) != 0u) {
+                v.func[n] = (uint8_t)(nib & NIB_FN_MASK);
+                if ((nib & NIB_REFUSED) != 0u) {
                     v.refused |= (uint8_t)(1u << n);
                 }
             }

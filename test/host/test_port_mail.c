@@ -123,6 +123,54 @@ TEST_CASE(the_view_draws_the_page)
     CHECK(!port_view_has(2u));
 }
 
+/* 4.28: each port's function crosses whole, DSHOT150 to DSHOT600 beside
+ * SERVO PWM and NONE, a refused DShot port refused; the DShot functions
+ * are asked of a 4.28 IOmcu only. */
+TEST_CASE(the_view_carries_five_functions_and_whether_dshot_is_taken)
+{
+    fresh();
+    up();
+    CHECK(!port_view_get()->has_dshot);
+    CHECK(!port_view_ask(2u, PROG_LINK_ASK_FUNC, LINK_PG_FN_DSHOT300));
+    g_page[LINK_PG_REG(2, LINK_PG_PIN)] = 15u;
+    g_page[LINK_PG_REG(3, LINK_PG_PIN)] = 16u;
+    g_page[LINK_PG_FUNC(1)] = (uint16_t)LINK_PG_FN_DSHOT150;
+    g_page[LINK_PG_FUNC(2)] = (uint16_t)LINK_PG_FN_DSHOT300;
+    g_page[LINK_PG_FUNC(3)] = (uint16_t)LINK_PG_FN_DSHOT600;
+    g_page[LINK_PG_FLAGS] = LINK_PG_F_BOUND(0) | LINK_PG_F_DSHOT(1)
+                            | LINK_PG_F_DSHOT(2) | LINK_PG_F_REFUSED(3);
+    prog_link_came_up(&g_p, LINK_MINOR_PROG_DSHOT);
+    prog_link_read(&g_p, g_page, 0u);
+    port_mail_publish(&g_m, &g_p);
+    port_mail_to_view(&g_m);
+    const port_view_t *v = port_view_get();
+    CHECK(v->has_func);
+    CHECK(v->has_dshot);
+    CHECK_EQ(v->func[0], (uint8_t)LINK_PG_FN_SERVO_PWM);
+    CHECK_EQ(v->func[1], (uint8_t)LINK_PG_FN_DSHOT150);
+    CHECK_EQ(v->func[2], (uint8_t)LINK_PG_FN_DSHOT300);
+    CHECK_EQ(v->func[3], (uint8_t)LINK_PG_FN_DSHOT600);
+    CHECK_EQ(v->pin[3], 16u);
+    CHECK_EQ(v->refused, 0x8u);
+    CHECK(port_view_dshot(1u));
+    CHECK(!port_view_pwm(1u));
+    CHECK(port_view_pwm(0u));
+    CHECK(!port_view_dshot(0u));
+    CHECK(port_view_pwm(LINK_PG_PORTS_MAX));     /* not known: stricter */
+    CHECK(!port_view_dshot(LINK_PG_PORTS_MAX));
+    CHECK_EQ(strcmp(port_view_fn_name(LINK_PG_FN_DSHOT600), "DSHOT600"), 0);
+    CHECK_EQ(strcmp(port_view_fn_name(LINK_PG_FN_DSHOT150), "DSHOT150"), 0);
+    CHECK_EQ(strcmp(port_view_fn_name(LINK_PG_FN_COUNT), "?"), 0);
+    CHECK(port_view_ask(2u, PROG_LINK_ASK_FUNC, LINK_PG_FN_DSHOT600));
+    CHECK(!port_view_ask(2u, PROG_LINK_ASK_FUNC, LINK_PG_FN_COUNT));
+    /* Lost: nothing known, DShot with it. */
+    prog_link_lost(&g_p);
+    port_mail_lost(&g_m);
+    port_mail_to_view(&g_m);
+    CHECK(!port_view_get()->has_dshot);
+    CHECK_EQ(port_view_get()->count, PORT_VIEW_UNKNOWN);
+}
+
 TEST_CASE(a_torn_pair_keeps_the_last_view)
 {
     fresh();
@@ -308,6 +356,7 @@ int main(void)
 {
     RUN(nothing_is_known_before_the_first_read);
     RUN(the_view_draws_the_page);
+    RUN(the_view_carries_five_functions_and_whether_dshot_is_taken);
     RUN(a_torn_pair_keeps_the_last_view);
     RUN(an_ask_is_handed_on_once_and_its_outcome_comes_back);
     RUN(a_refused_ask_stays_refused);

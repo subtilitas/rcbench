@@ -15,13 +15,21 @@
  *   NONE         no driver: the pin is held for the port, parked as an
  *                input with its pull-down, and renders nothing.  Any free
  *                header pin; no PWM-pin or slice rule.
+ *   DSHOT150, DSHOT300, DSHOT600 (4.28)
+ *                plain DShot at 150, 300 or 600 kbit/s from a PIO state
+ *                machine of its own, rendered from the port's channel as
+ *                a motor slot is: the channel's role is THROTTLE, so ARM
+ *                THROTTLE arms it and the CONTROL page's throttle commands
+ *                it.  Any free header pin; no PWM-pin or slice rule.  The
+ *                page's CMD register is refused on such a port.
  *   PROGRAMMING  the wire protocol of the KST or HITEC page (kst_port.h,
  *                hitec_port.h), which takes the pin from the function and
  *                gives it back.
  *
  * A FUNC write is refused, as a PIN write is, while the bank is armed, a
  * wire page holds a port, the port's pulse is on or the port is the
- * TARGET.  The pulse and the TARGET name SERVO PWM ports only.  Port 0
+ * TARGET.  The pulse and the TARGET name SERVO PWM ports only, so the
+ * servo tester never drives a NONE or DShot port.  Port 0
  * starts as SERVO PWM, the others as NONE.
  *
  * The servo tester reaches a port three ways: LINK_PG_CMD is the manual
@@ -34,8 +42,8 @@
  * port's pin.  A SERVO PWM port's pin shares no PWM slice and no compare
  * register with a PWM slot's pin either, so neither can change the
  * other's frame rate.  Two SERVO PWM ports may share a slice; both then
- * run at PROG_PORT_RATE_HZ.  A NONE port's pin is under none of the PWM
- * rules.
+ * run at PROG_PORT_RATE_HZ.  A NONE or DShot port's pin is under none of
+ * the PWM rules.
  *
  * Rates.  Every port runs at PROG_PORT_RATE_HZ, 50 Hz, except the TARGET
  * port while the SERVO page names a rate: that port alone runs at it
@@ -198,6 +206,13 @@ uint8_t prog_port_pwm_ports(const prog_port_t *p);
 /** The NONE ports that hold a pin, bit n for port n: the pins the
  *  caller parks as inputs. */
 uint8_t prog_port_parked(const prog_port_t *p);
+
+/** The DShot ports that hold a pin (FUNC DSHOT150 to DSHOT600, 4.28), bit
+ *  n for port n: the pins the caller binds to a DShot state machine. */
+uint8_t prog_port_dshot(const prog_port_t *p);
+
+/** Port @p port's DShot bit rate in kbit/s, 0 for another function. */
+uint16_t prog_port_kbit(const prog_port_t *p, uint8_t port);
 
 /** The pin port @p port holds, or PROG_PORT_NO_PIN. */
 uint8_t prog_port_pin(const prog_port_t *p, uint8_t port);
