@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Implementation of the current-based servo limit search.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -6,9 +9,9 @@
 
 #include <string.h>
 
-/*
- * How many positions feed the free-running baseline before the knee test is
- * allowed to fire.
+/**
+ * @brief Positions that feed the free-running baseline before the knee test
+ *        may fire.
  *
  * Three, more than one: the first position is the centre, where a surface
  * with any preload draws more than it does a few degrees out, and a baseline
@@ -17,11 +20,29 @@
  */
 #define BASELINE_STEPS 3u
 
+/**
+ * @brief Tell whether a millisecond timer has run for at least a span.
+ *
+ * Uses unsigned subtraction, so the test holds across a counter wrap.
+ *
+ * @param now    Current time, ms.
+ * @param then   Time the timer started, ms.
+ * @param ms     Span to test for, ms.
+ * @return true when now - then is at least ms.
+ */
 static inline bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
 {
     return (uint32_t)(now - then) >= ms;
 }
 
+/**
+ * @brief Clamp a pulse width to the search travel and to the pulse range.
+ *
+ * @param cfg  Configuration whose centre_us and max_travel_us bound the
+ *             travel.
+ * @param us   Pulse width to clamp, microseconds.
+ * @return The clamped width, SERVO_LIMIT_MIN_US to SERVO_LIMIT_MAX_US.
+ */
 static uint16_t clamp_travel(const servo_limit_cfg_t *cfg, int32_t us)
 {
     const int32_t centre = (int32_t)cfg->centre_us;
@@ -95,7 +116,13 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg)
     }
 }
 
-/* Finish the search with the surface returned to centre. */
+/**
+ * @brief Finish the search with the surface returned to centre.
+ *
+ * @param lf     Search state to update.
+ * @param state  Final state to store.
+ * @param fault  Fault code to store.
+ */
 static void finish(servo_limit_t *lf, servo_limit_state_t state,
                    servo_limit_fault_t fault)
 {
@@ -104,13 +131,16 @@ static void finish(servo_limit_t *lf, servo_limit_state_t state,
     lf->cmd_us = lf->cfg.centre_us;
 }
 
-/*
- * Move one step further out.  A step that would pass the end of the
- * permitted travel stops at that end, so the end itself is measured.  With
- * the end measured free, the surface is free over the whole range asked
- * about, and that is reported as NO_LIMIT rather than as a mechanical limit.
+/**
+ * @brief Move one step further out.
  *
- * Returns false if the search ended here.
+ * A step that would pass the end of the permitted travel stops at that end,
+ * so the end itself is measured.  With the end measured free, the surface is
+ * free over the whole range asked about, and that is reported as NO_LIMIT
+ * rather than as a mechanical limit.
+ *
+ * @param lf  Search state to advance.
+ * @return false if the search ended here, true if the command moved.
  */
 static bool advance(servo_limit_t *lf)
 {
@@ -142,7 +172,15 @@ static bool advance(servo_limit_t *lf)
     return true;
 }
 
-/* One position's averaged current has arrived; decide what it means. */
+/**
+ * @brief Decide what one position's averaged current means.
+ *
+ * The first BASELINE_STEPS positions feed the baseline. Later positions are
+ * tested against it: a bound position ends the search, a free one advances it.
+ *
+ * @param lf     Search state to update.
+ * @param avg_a  Current averaged over the measure phase at this position, A.
+ */
 static void judge(servo_limit_t *lf, float avg_a)
 {
     if (lf->baseline_steps < BASELINE_STEPS) {

@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Implementation of the single-servo and two-servo models.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -36,7 +39,14 @@ void servo_sim_init(servo_sim_t *s, const servo_sim_cfg_t *cfg)
     s->position_us = ((float)cfg->stop_lo_us + (float)cfg->stop_hi_us) / 2.0f;
 }
 
-/* Deterministic, so a failing case reproduces. */
+/**
+ * @brief Next noise sample of the single-servo model.
+ *
+ * Deterministic, so a failing case reproduces.
+ *
+ * @param s  Model state. Advances the noise generator.
+ * @return Noise, A, within plus or minus half of noise_a.
+ */
 static float noise(servo_sim_t *s)
 {
     s->seed = s->seed * 1664525u + 1013904223u;
@@ -180,7 +190,16 @@ float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
     return d < 0.0f ? -d : d;
 }
 
-/* Move @p pos toward @p target by at most @p reach; true if it arrived. */
+/**
+ * @brief Move a position toward a target by at most one reach.
+ *
+ * Move @p pos toward @p target by at most @p reach; true if it arrived.
+ *
+ * @param pos     Position to move, us. Updated in place.
+ * @param target  Target position, us.
+ * @param reach   Largest move allowed, us.
+ * @return true when the position equals the target after the move.
+ */
 static bool approach(float *pos, float target, float reach)
 {
     if (*pos < target) {
