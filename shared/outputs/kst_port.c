@@ -37,7 +37,9 @@ _Static_assert(LINK_KS_W_SUPPLY_MV == LINK_KS_W_VIEW + 1
                && LINK_KS_W_COUNT == LINK_KS_W_VIEW + 4,
                "the registers after the staged ones");
 
+/** @brief No register: the value of fail_reg when none failed. */
 #define NO_REG 0xFFu
+/** @brief The frame count stops at this value (12 bits). */
 #define FRAMES_MAX 0x0FFFu
 
 /** @brief Where a wait for the supply is. */
@@ -59,7 +61,14 @@ enum {
 
 /** @brief A frame starts only on a channel in PROGRAMMING and while the bench
  *        is
- * safe.  The first one marks the servo as possibly in programming mode. */
+ * safe.  The first one marks the servo as possibly in programming mode.
+ *
+ * @param ctx       The port, as the driver's context.
+ * @param frame     The frame to send.
+ * @param window_ns The listen window in nanoseconds.
+ * @return true when the driver takes the frame in PROGRAMMING with the bench
+ *         safe.
+ */
 static bool drv_start(void *ctx, const kst_frame_t *frame, uint32_t window_ns)
 {
     kst_port_t *p = (kst_port_t *)ctx;
@@ -75,6 +84,13 @@ static bool drv_start(void *ctx, const kst_frame_t *frame, uint32_t window_ns)
     return true;
 }
 
+/**
+ * @brief The session's poll, through the port's wire driver.
+ *
+ * @param ctx The port, as the driver's context.
+ * @param out Receives the capture.
+ * @return The driver's result: true when a capture is ready.
+ */
 static bool drv_poll(void *ctx, kst_capture_t *out)
 {
     kst_port_t *p = (kst_port_t *)ctx;
@@ -82,6 +98,12 @@ static bool drv_poll(void *ctx, kst_capture_t *out)
     return p->hw.driver.poll(p->hw.driver.ctx, out);
 }
 
+/**
+ * @brief The session's clock, through the port's wire driver.
+ *
+ * @param ctx The port, as the driver's context.
+ * @return The driver's time in microseconds.
+ */
 static uint32_t drv_now(void *ctx)
 {
     kst_port_t *p = (kst_port_t *)ctx;
@@ -89,6 +111,12 @@ static uint32_t drv_now(void *ctx)
     return p->hw.driver.now_us(p->hw.driver.ctx);
 }
 
+/**
+ * @brief Start the session on a fresh model whose driver frames through this
+ *        port.
+ *
+ * @param p The port.
+ */
 static void session_fresh(kst_port_t *p)
 {
     kst_driver_t d;
@@ -102,6 +130,12 @@ static void session_fresh(kst_port_t *p)
 
 /* --- images on the page ------------------------------------------------------- */
 
+/**
+ * @brief Pack an image into LINK_KS_IMAGE_REGS registers, low byte first.
+ *
+ * @param img  The image.
+ * @param regs Receives the registers.
+ */
 static void image_to_regs(const kst_image_t *img, uint16_t *regs)
 {
     for (size_t k = 0; k < LINK_KS_IMAGE_REGS; ++k) {
@@ -110,6 +144,12 @@ static void image_to_regs(const kst_image_t *img, uint16_t *regs)
     }
 }
 
+/**
+ * @brief Unpack LINK_KS_IMAGE_REGS registers into an image, low byte first.
+ *
+ * @param regs The registers.
+ * @param img  Receives the image.
+ */
 static void image_from_regs(const uint16_t *regs, kst_image_t *img)
 {
     for (size_t k = 0; k < LINK_KS_IMAGE_REGS; ++k) {
@@ -118,6 +158,12 @@ static void image_from_regs(const uint16_t *regs, kst_image_t *img)
     }
 }
 
+/**
+ * @brief The index of the lowest set bit of a register mask.
+ *
+ * @param mask One bit per register.
+ * @return The index, 0 to KST_REG_COUNT - 1; NO_REG for an empty mask.
+ */
 static uint8_t lowest_bit(uint32_t mask)
 {
     for (uint8_t i = 0; i < KST_REG_COUNT; ++i) {
@@ -130,7 +176,13 @@ static uint8_t lowest_bit(uint32_t mask)
 
 /* --- the supply --------------------------------------------------------------- */
 
-/** @brief What the supply says; false with no PD mini answering. */
+/**
+ * @brief What the supply says; false with no PD mini answering.
+ *
+ * @param p The port.
+ * @param v Receives the supply's view.
+ * @return true when the PD mini is online.
+ */
 static bool supply_view(const kst_port_t *p, supply_port_view_t *v)
 {
     memset(v, 0, sizeof(*v));
@@ -141,6 +193,11 @@ static bool supply_view(const kst_port_t *p, supply_port_view_t *v)
     return v->online;
 }
 
+/**
+ * @brief Ask the supply off, when the build has one to switch.
+ *
+ * @param p The port.
+ */
 static void supply_off(kst_port_t *p)
 {
     if (p->hw.supply_set != NULL) {
@@ -148,15 +205,30 @@ static void supply_off(kst_port_t *p)
     }
 }
 
-/* The voltage a session asked for at @p mv runs at: an output that is on is
- * lowered to it or left, never raised. */
+/**
+ * @brief The voltage a session asked for at @p mv runs at: an output that is on
+ * is lowered to it or left, never raised.
+ *
+ * @param v  The supply's view.
+ * @param mv The requested voltage in mV.
+ * @return The voltage the output runs at, in mV.
+ */
 static uint16_t supply_runs_at(const supply_port_view_t *v, uint16_t mv)
 {
     return (v->asked_on && v->set_mv < mv) ? v->set_mv : mv;
 }
 
-/* Whether the PD mini gives a servo in programming mode @p mv and @p ma.
- * The cap under the input holds for the voltage the output runs at. */
+/**
+ * @brief Whether the PD mini gives a servo in programming mode @p mv and @p ma.
+ *
+ * The cap under the input holds for the voltage the output runs at.
+ *
+ * @param v  The supply's view.
+ * @param mv The voltage in mV.
+ * @param ma The current limit in mA.
+ * @return true when mv and ma are in range and the cap holds at the voltage the
+ *         output runs at.
+ */
 static bool supply_range_ok(const supply_port_view_t *v, uint16_t mv,
                             uint16_t ma)
 {
@@ -170,6 +242,12 @@ static bool supply_range_ok(const supply_port_view_t *v, uint16_t mv,
 
 /* --- operations --------------------------------------------------------------- */
 
+/**
+ * @brief Start an operation: record its code and set the result to BUSY.
+ *
+ * @param p  The port.
+ * @param op The operation.
+ */
 static void op_begin(kst_port_t *p, link_kst_op_t op)
 {
     p->op = (uint8_t)op;
@@ -182,6 +260,12 @@ static void op_begin(kst_port_t *p, link_kst_op_t op)
     p->running = 0;
 }
 
+/**
+ * @brief End the running operation with its result.
+ *
+ * @param p      The port.
+ * @param result The session result.
+ */
 static void op_end(kst_port_t *p, kst_ses_t result)
 {
     p->result = (uint8_t)result;
@@ -189,7 +273,12 @@ static void op_end(kst_port_t *p, kst_ses_t result)
     p->running = 0;
 }
 
-/* The session's operation ended with @p r. */
+/**
+ * @brief The session's operation ended with @p r.
+ *
+ * @param p The port.
+ * @param r The session's result.
+ */
 static void session_done(kst_port_t *p, kst_ses_t r)
 {
     const kst_session_t *s = &p->session;
@@ -231,7 +320,12 @@ static void session_done(kst_port_t *p, kst_ses_t r)
     }
 }
 
-/** @brief What a session function returned when asked to start. */
+/**
+ * @brief What a session function returned when asked to start.
+ *
+ * @param p The port.
+ * @param r What the session function returned.
+ */
 static void session_started(kst_port_t *p, kst_ses_t r)
 {
     if (r == KST_SES_BUSY) {
@@ -241,7 +335,11 @@ static void session_started(kst_port_t *p, kst_ses_t r)
     }
 }
 
-/** @brief Back to PWM: the driver closed, the pin the generator's. */
+/**
+ * @brief Back to PWM: the driver closed, the pin the generator's.
+ *
+ * @param p The port.
+ */
 static void go_pwm(kst_port_t *p)
 {
     const bool had_pin = p->has_pin != 0u;
@@ -262,6 +360,9 @@ static void go_pwm(kst_port_t *p)
 
 /**
  * @brief The way in ended before a frame went out: the supply as it was found.
+ *
+ * @param p      The port.
+ * @param result The result to report, a KST_SES_* value.
  */
 static void back_out(kst_port_t *p, uint8_t result)
 {
@@ -277,7 +378,10 @@ static void back_out(kst_port_t *p, uint8_t result)
 /** @brief End the running operation.
  *
  * A frame on the wire is finished first; the
- * session ends at one of the next steps. */
+ * session ends at one of the next steps.
+ *
+ * @param p The port.
+ */
 static void cut(kst_port_t *p)
 {
     if (p->running != 0u) {
@@ -285,6 +389,11 @@ static void cut(kst_port_t *p)
     }
 }
 
+/**
+ * @brief Apply a stop to the port, by its state.
+ *
+ * @param p The port.
+ */
 static void on_stop(kst_port_t *p)
 {
     switch ((link_kst_state_t)p->state) {
@@ -313,6 +422,15 @@ static void on_stop(kst_port_t *p)
     }
 }
 
+/**
+ * @brief Start ENTER from PWM: check the port and its pin, then take the supply
+ *        and the pin.
+ *
+ * @param p      The port.
+ * @param port   Programming port index.
+ * @param now_ms Current time in milliseconds.
+ * @return LINK_KST_REF_NONE when ENTER starts; otherwise the refusal.
+ */
 static link_kst_refusal_t enter_from_pwm(kst_port_t *p, uint8_t port,
                                          uint32_t now_ms)
 {
@@ -346,8 +464,15 @@ static link_kst_refusal_t enter_from_pwm(kst_port_t *p, uint8_t port,
     return LINK_KST_REF_NONE;
 }
 
-/* The supply switched off for RAIL_OFF; @p again: and on after it, at what
- * it was set to. */
+/**
+ * @brief The supply switched off for RAIL_OFF; @p again: and on after it, at what
+ * it was set to.
+ *
+ * @param p      The port.
+ * @param v      The supply's view.
+ * @param again  true to switch the supply on again afterwards.
+ * @param now_ms Current time in milliseconds.
+ */
 static void rail_off(kst_port_t *p, const supply_port_view_t *v, bool again,
                      uint32_t now_ms)
 {
@@ -360,6 +485,14 @@ static void rail_off(kst_port_t *p, const supply_port_view_t *v, bool again,
     p->t0_ms = now_ms;
 }
 
+/**
+ * @brief Start REBOOT: a supply cycle, from PWM or from PROGRAMMING.
+ *
+ * @param p      The port.
+ * @param port   Programming port index.
+ * @param now_ms Current time in milliseconds.
+ * @return LINK_KST_REF_NONE when REBOOT starts; otherwise the refusal.
+ */
 static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, uint32_t now_ms)
 {
     const link_kst_state_t state = (link_kst_state_t)p->state;
@@ -406,7 +539,12 @@ static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, uint32_t now_ms)
     return LINK_KST_REF_NONE;
 }
 
-/** @brief Why the planner took a request without a search. */
+/**
+ * @brief Why the planner took a request without a search.
+ *
+ * @param plan_result The planner's result, a kst_plan_result_t value.
+ * @return The LINK_KST_REF_* refusal the planner's result maps to.
+ */
 static link_kst_refusal_t plan_refusal(uint8_t plan_result)
 {
     switch ((kst_plan_result_t)plan_result) {
@@ -422,6 +560,11 @@ static link_kst_refusal_t plan_refusal(uint8_t plan_result)
  * The session plans it, from the image it read to what is staged, one slice of
  * the planner in each pass, and runs its own plan.  This call checks the
  * request and prepares the job: no search runs in the command's frame.
+ *
+ * @param p       The port.
+ * @param op      The write or restore operation.
+ * @param confirm true to confirm a restore.
+ * @return LINK_KST_REF_NONE when the plan starts; otherwise the refusal.
  */
 static link_kst_refusal_t start_plan(kst_port_t *p, link_kst_op_t op,
                                      bool confirm)
@@ -468,12 +611,28 @@ static link_kst_refusal_t start_plan(kst_port_t *p, link_kst_op_t op,
     return LINK_KST_REF_NONE;
 }
 
+/**
+ * @brief Whether an operation writes to the servo.
+ *
+ * @param op The operation.
+ * @return true for an operation that writes.
+ */
 static bool writes_servo(link_kst_op_t op)
 {
     return op == LINK_KST_OP_WRITE || op == LINK_KST_OP_RESTORE
            || op == LINK_KST_OP_RELEASE;
 }
 
+/**
+ * @brief Route one command to its operation, judged against the port's state.
+ *
+ * @param p      The port.
+ * @param op     The operation.
+ * @param port   Programming port index.
+ * @param in     The command frame's registers.
+ * @param now_ms Current time in milliseconds.
+ * @return LINK_KST_REF_NONE when the operation is taken; otherwise the refusal.
+ */
 static link_kst_refusal_t dispatch(kst_port_t *p, link_kst_op_t op,
                                    uint8_t port, const uint16_t *in,
                                    uint32_t now_ms)
@@ -591,6 +750,15 @@ static link_kst_refusal_t dispatch(kst_port_t *p, link_kst_op_t op,
     return start_plan(p, op, (in[LINK_KS_W_CMD] & LINK_KS_W_CMD_CONFIRM) != 0u);
 }
 
+/**
+ * @brief Handle the command frame, registers 0 to 3.
+ *
+ * @param p      The port.
+ * @param in     The command frame's four registers.
+ * @param now_ms Current time in milliseconds.
+ * @return 0 when the frame is acknowledged; LINK_NACK_BAD_VALUE for a bad frame
+ *         or SEQ.
+ */
 static uint8_t command(kst_port_t *p, const uint16_t *in, uint32_t now_ms)
 {
     const uint16_t cmd = in[LINK_KS_W_CMD];
@@ -658,11 +826,23 @@ uint8_t kst_port_write(kst_port_t *p, uint8_t off, uint8_t n,
 
 /* --- the page ----------------------------------------------------------------- */
 
+/**
+ * @brief Hold a 32-bit count to 16 bits.
+ *
+ * @param v The count.
+ * @return v, or 65535 when v is larger.
+ */
 static uint16_t clamp16(uint32_t v)
 {
     return v > 0xFFFFu ? 0xFFFFu : (uint16_t)v;
 }
 
+/**
+ * @brief The STATE register: the state, the port and the flags.
+ *
+ * @param p The port.
+ * @return The STATE register value.
+ */
 static uint16_t state_reg(const kst_port_t *p)
 {
     const kst_session_t *s = &p->session;
@@ -682,7 +862,12 @@ static uint16_t state_reg(const kst_port_t *p)
 }
 
 /** @brief The operation the page names is a write whose plan the session still
- * builds: no frame of it has gone out. */
+ * builds: no frame of it has gone out.
+ *
+ * @param p The port.
+ * @return true when the operation is a write or restore whose plan the session
+ *         still builds.
+ */
 static bool plans(const kst_port_t *p)
 {
     return p->running != 0u && p->session.planning != 0u
@@ -738,7 +923,11 @@ void kst_port_read(const kst_port_t *p, uint8_t off, uint8_t n,
 
 /* --- the pass ----------------------------------------------------------------- */
 
-/** @brief The servo is asked to enter programming mode. */
+/**
+ * @brief The servo is asked to enter programming mode.
+ *
+ * @param p The port.
+ */
 static void start_session(kst_port_t *p)
 {
     p->state = (uint8_t)LINK_KST_PROGRAMMING;
@@ -752,7 +941,10 @@ static void start_session(kst_port_t *p)
  *        is spoken to.
  *
  * The voltage of an output that is on is lowered or left, never
- * raised. */
+ * raised.
+ *
+ * @param p The port.
+ */
 static void low_begin(kst_port_t *p)
 {
     supply_port_view_t v;
@@ -785,6 +977,13 @@ static void low_begin(kst_port_t *p)
     }
 }
 
+/**
+ * @brief The pass of a LOW port: hold the line low for KST_PORT_LOW_MS, then
+ *        settle the supply.
+ *
+ * @param p      The port.
+ * @param now_ms Current time in milliseconds.
+ */
 static void step_low(kst_port_t *p, uint32_t now_ms)
 {
     const uint32_t waited = (uint32_t)(now_ms - p->t0_ms);
@@ -823,6 +1022,13 @@ static void step_low(kst_port_t *p, uint32_t now_ms)
     }
 }
 
+/**
+ * @brief The pass of a PROGRAMMING port: step the session, or end the mode when
+ *        the supply went off.
+ *
+ * @param p      The port.
+ * @param now_ms Current time in milliseconds.
+ */
 static void step_programming(kst_port_t *p, uint32_t now_ms)
 {
     supply_port_view_t v;
@@ -879,7 +1085,11 @@ static void step_programming(kst_port_t *p, uint32_t now_ms)
 /** @brief A LEAVE waits with the line low.
  *
  * The supply is read for one thing: a
- * servo found without power ends as it does in PROGRAMMING. */
+ * servo found without power ends as it does in PROGRAMMING.
+ *
+ * @param p      The port.
+ * @param now_ms Current time in milliseconds.
+ */
 static void step_leaving(kst_port_t *p, uint32_t now_ms)
 {
     supply_port_view_t v;
@@ -895,6 +1105,13 @@ static void step_leaving(kst_port_t *p, uint32_t now_ms)
     }
 }
 
+/**
+ * @brief The pass of RAIL_OFF: wait for the supply to read off and its off
+ *        time, then the switch-on.
+ *
+ * @param p      The port.
+ * @param now_ms Current time in milliseconds.
+ */
 static void step_rail_off(kst_port_t *p, uint32_t now_ms)
 {
     supply_port_view_t v;
@@ -941,6 +1158,13 @@ static void step_rail_off(kst_port_t *p, uint32_t now_ms)
     }
 }
 
+/**
+ * @brief The pass of RAIL_WAIT: wait for the supply to read on, then the rail
+ *        wait.
+ *
+ * @param p      The port.
+ * @param now_ms Current time in milliseconds.
+ */
 static void step_rail_wait(kst_port_t *p, uint32_t now_ms)
 {
     supply_port_view_t v;

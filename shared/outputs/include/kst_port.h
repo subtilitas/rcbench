@@ -214,6 +214,7 @@ extern "C" {
 
 /** @brief What the port needs from the hardware. */
 typedef struct {
+    /** The caller's context, passed as the first argument of each hook. */
     void *ctx;
     /** Programming ports the build has, 1 to LINK_PG_PORTS_MAX. */
     uint8_t ports;
@@ -237,6 +238,10 @@ typedef struct {
     kst_driver_t driver;
 } kst_port_hw_t;
 
+/**
+ * @brief The state of one KST port: the hardware, the session, the staged
+ *        registers and the running or last operation.
+ */
 typedef struct {
     kst_port_hw_t hw;
     kst_session_t session;
@@ -287,7 +292,13 @@ typedef struct {
 /** @brief Prepare a port in LINK_KST_PWM.
  *
  * False when @p hw names no port, lacks
- *  a function other than the supply's two, or has one of those two. */
+ *  a function other than the supply's two, or has one of those two.
+ *
+ * @param p  The port to prepare.
+ * @param hw The hardware hooks, copied into the port.
+ * @return true when the port is prepared; false for a NULL p, or a hw that
+ *         fails the checks above.
+ */
 bool kst_port_init(kst_port_t *p, const kst_port_hw_t *hw);
 
 /**
@@ -297,11 +308,27 @@ bool kst_port_init(kst_port_t *p, const kst_port_hw_t *hw);
  * A window that starts in registers 0 to 3 is a command and has to be
  * exactly those 4.  Registers 4 to 28 are taken in any windows; 29 and up
  * are LINK_NACK_READ_ONLY.
+ *
+ * @param p      The port.
+ * @param off    First register of the window.
+ * @param n      Number of registers in the window.
+ * @param in     The n register values to write.
+ * @param now_ms Current time in milliseconds.
+ * @return 0 when the write is applied or acknowledged; otherwise the
+ *         LINK_NACK_* reason.
  */
 uint8_t kst_port_write(kst_port_t *p, uint8_t off, uint8_t n,
                        const uint16_t *in, uint32_t now_ms);
 
-/** @brief A read of the page, LINK_KS_*. */
+/**
+ * @brief A read of the page, LINK_KS_*.
+ *
+ * @param p   The port.
+ * @param off First register of the window.
+ * @param n   Number of registers to read.
+ * @param out Receives n register values; left unchanged for a NULL p or out, or
+ *            a window past LINK_KS_COUNT.
+ */
 void kst_port_read(const kst_port_t *p, uint8_t off, uint8_t n,
                    uint16_t *out);
 
@@ -313,43 +340,76 @@ void kst_port_read(const kst_port_t *p, uint8_t off, uint8_t n,
  * Steps the session and the port's timers; a pass every 1 ms or faster
  * keeps the session's pacing.  A pass does one slice of planning at most
  * and never a whole search.
+ *
+ * @param p      The port.
+ * @param safe   true when the heartbeat is trusted and the link is not silent.
+ * @param stop   true when the bank was switched off or disarmed since the last
+ *               pass.
+ * @param now_ms Current time in milliseconds.
  */
 void kst_port_step(kst_port_t *p, bool safe, bool stop, uint32_t now_ms);
 
-/** @brief Where the port is. */
+/**
+ * @brief Where the port is.
+ *
+ * @param p The port, or NULL.
+ * @return The state of the port; LINK_KST_PWM for a NULL p.
+ */
 link_kst_state_t kst_port_state(const kst_port_t *p);
 
 /** @brief Bit n: programming port n renders no PWM pulse.
  *
  * The held port in every
- *  state but LINK_KST_PWM. */
+ *  state but LINK_KST_PWM.
+ *
+ * @param p The port, or NULL.
+ * @return Bit n set for port n while the port is not in PWM; 0 for a NULL p.
+ */
 uint8_t kst_port_quiet_mask(const kst_port_t *p);
 
 /** @brief An operation of the session runs: a frame may be on the wire.
  *
  * False
- *  from the pass in which an operation, or its cut, has ended. */
+ *  from the pass in which an operation, or its cut, has ended.
+ *
+ * @param p The port, or NULL.
+ * @return true while an operation of the session may have a frame on the wire;
+ *         false for a NULL p.
+ */
 bool kst_port_frame_out(const kst_port_t *p);
 
 /** @brief Whether the bank is armed.
  *
  * An ENTER is refused with LINK_KST_REF_BUSY while it is; the caller arms no
  * output while kst_port_quiet_mask() is
- *  not 0. */
+ *  not 0.
+ *
+ * @param p     The port, or NULL; a NULL p is ignored.
+ * @param armed true when the bank is armed.
+ */
 void kst_port_bench_armed(kst_port_t *p, bool armed);
 
 /** @brief Bit n: the HITEC page holds programming port n
  *        (hitec_port_quiet_mask()).
  *
  * An ENTER on it, and a REBOOT taken in PWM,
- *  are refused with LINK_KST_REF_BUSY. */
+ *  are refused with LINK_KST_REF_BUSY.
+ *
+ * @param p    The port, or NULL; a NULL p is ignored.
+ * @param mask Bit n: the HITEC page holds programming port n.
+ */
 void kst_port_other_mask(kst_port_t *p, uint8_t mask);
 
 /** @brief Bit n: programming port n's pin is the wire driver's, not the PWM
  *        generator's.
  *
  * The held port from LINK_KST_LOW until it is back in
- *  LINK_KST_PWM; never for a REBOOT taken in PWM. */
+ *  LINK_KST_PWM; never for a REBOOT taken in PWM.
+ *
+ * @param p The port, or NULL.
+ * @return Bit n set for port n while the wire driver holds its pin; 0 for a
+ *         NULL p.
+ */
 uint8_t kst_port_pin_mask(const kst_port_t *p);
 
 #ifdef __cplusplus
