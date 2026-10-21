@@ -101,10 +101,6 @@ test/host/test_outputs.c | none | F14: every section calls the outputs_* interfa
 test/host/test_sense_page.c | none | F14: one source, sense_page.c
 test/host/test_bind_link.c | none | F14: the panel sections use 30 symbols of the IOmcu fixture
 test/host/test_outbind.c | none | row 18 moves the board suite out with out_board.c; 1,457 lines stay
-test/host/test_supply_screen.c | none | F14: one screen; the largest section is 599 lines
-test/host/test_motor.c | none | F14: one screen; the head has no marker to cut along
-test/host/test_outputs_screen.c | none | F14: one screen
-test/host/test_picker_screen.c | none | F14: one screen; the head's cases call into the second section
 test/host/test_widgets.c | none | F14: the optional 4-way cut is not taken
 test/host/test_servo_page.c | none | F14: one source, servo_page.c; no section markers
 test/host/test_servo_arm.c | none | F14: keeps its own fixture; taking servo_rig.h rewrites it (#436)
@@ -118,7 +114,6 @@ test/host/test_sense_link_view.c | none | F14: one source, sense_link.c, beside 
 # Tests the plan's rows cut that stay over 1,000.
 test/host/test_servo_settings.c | none | row 9: the settings overlay's 48 cases
 test/host/test_servo_test_panel.c | none | row 9: the servo test panel's cases
-test/host/test_esc_stick_panel.c | none | row 10: the stick programming panel's cases, over 1,000 by design
 test/host/test_kst_prog.c | none | row 12: 122 cases stay; the card cases moved out
 test/host/test_kst_prog_card.c | none | row 12: the card's 31 cases
 test/host/test_servo_test_win.c | none | row 16: one of three suites over its own rig
