@@ -192,10 +192,6 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 # look at a board
 idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON build
 
-# the radio: the ESP32-P4's is an ESP32-C6 beside it, which the panel does
-# not reach yet; RCBENCH_PANEL_WIFI defaults to OFF, and a panel built so
-# starts no Wi-Fi and checks for no release
-
 # panel carrying the IOmcu image it offers over CAN; build the
 # IOmcu first
 idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin build
@@ -286,10 +282,10 @@ The ESP32-P4 has no radio. The 7-inch display board from Waveshare carries an
 ESP32-C6-MINI-1 module wired to the P4's SDMMC (SD/MMC host) slot 1 as an
 SDIO (Secure Digital input/output) device; the SD card is on slot 0. The
 panel's Wi-Fi code (`firmware/panel/components/wifi_access/`) calls the
-`esp_wifi` API as on the ESP32-S3; on the P4 two components from the
-Espressif component registry carry each call and every network frame to the
-C6. lwIP (lightweight IP stack), the page's server and the TLS (transport
-layer security) client run on the P4; the C6 runs the radio.
+`esp_wifi` API; two components from the Espressif component registry carry
+each call and every network frame to the C6. lwIP (lightweight IP stack),
+the page's server and the TLS (transport layer security) client run on the
+P4; the C6 runs the radio.
 
 | Signal | P4 | C6 |
 | --- | --- | --- |
@@ -298,9 +294,9 @@ layer security) client run on the P4; the C6 runs the radio.
 | D0 to D3 | GPIO14 to GPIO17 | IO20 to IO23 |
 | EN (chip enable), low resets | GPIO54 | EN |
 
-SDIO runs 4 bits wide at 40 MHz. `firmware/panel/sdkconfig.defaults.esp32p4`
-holds these settings; ESP-IDF reads it after `sdkconfig.defaults` for the
-esp32p4 target.
+SDIO runs 4 bits wide at 40 MHz. `components/board/include/board_pins.h`
+names the pins (`BOARD_C6_*`), `firmware/panel/sdkconfig.defaults` hands
+them to esp_hosted, and `wifi_radio.c` fails the build when the two differ.
 
 ### The managed components
 
@@ -312,19 +308,22 @@ esp32p4 target.
 | `espressif/eppp_link` | 1.1.6 | Apache-2.0 | required by the one above; compiled, not linked |
 | `espressif/esp_serial_slave_link` | 1.1.2 | Apache-2.0 | required by the one above; compiled, not linked |
 
-`components/wifi_access/idf_component.yml` names the first two at exact
-versions, for the esp32p4 target only. `firmware/panel/dependencies.lock`
-records all five with their hashes and is committed. The first P4 build
-downloads them from `components.espressif.com` into
-`firmware/panel/managed_components/`, which git ignores, and checks each
-against its hash. A later build makes no request: with the folder filled, a
-build without network access completes. To move a version, change
-`idf_component.yml`, run `idf.py update-dependencies` and commit the new lock
-file.
+esp_hosted 2.x: every file the panel compiles from the registry is
+Apache-2.0, except the protobuf-c runtime inside esp_hosted, BSD-2-Clause.
+esp_hosted's message code generated from its `.proto` file is Espressif's,
+Apache-2.0; `esp_wifi_remote`'s `dummy_src.c` is an empty file without a
+licence line. [NOTICE](https://github.com/subtilitas/rcbench/blob/main/NOTICE)
+carries the protobuf-c copyright and licence, which a panel image's
+distribution has to reproduce.
 
-An ESP32-S3 build reads the same manifest, takes none of the components and
-rewrites `dependencies.lock` for its target; restore the file before a
-commit.
+`components/wifi_access/idf_component.yml` names the first two at exact
+versions. `firmware/panel/dependencies.lock` records all five with their
+hashes and is committed. The first build downloads them from
+`components.espressif.com` into `firmware/panel/managed_components/`, which
+git ignores, and checks each against its hash. A later build makes no
+request: with the folder filled, a build without network access completes.
+To move a version, change `idf_component.yml`, run
+`idf.py update-dependencies` and commit the new lock file.
 
 ### The C6's firmware
 
@@ -356,21 +355,42 @@ that updates the C6.
   panel does not restart for it
   (`CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n`): a restart would drop
   the link to the IOmcu and the heartbeat.
-- A co-processor that reports a chip other than the ESP32-C6 stops the
-  panel with an assertion inside esp_hosted at the first Wi-Fi start.
+
+Current limitations, both inside esp_hosted:
+
+- When the co-processor reports a chip other than the ESP32-C6 in its start
+  event, esp_hosted stops the panel with an assertion. The start event
+  arrives at the first Wi-Fi start after power-up.
+- When the SDMMC controller or its slot 1 cannot be set up, or the memory
+  for esp_hosted's queues, buffer pool or tasks cannot be had, esp_hosted
+  stops the panel with an assertion during start-up, before `app_main()`
+  and before the display shows anything. It sets these up at every start,
+  with Wi-Fi off.
+
+The SD card on slot 0 and the C6 on slot 1 share one SDMMC controller:
+
+- ESP-IDF's SDMMC driver does not hold a slot's set-up against a transfer
+  on the other slot. When the card is mounted while a Wi-Fi session moves
+  data to or from the C6, the transfer under way can fail; esp_hosted then
+  reports a failed link and Wi-Fi stays off until the panel restarts. Not
+  measured.
+- When ESP-IDF's mount cannot start slot 0 after the controller is up, it
+  stops the controller, and the C6's link with it; Wi-Fi then stays off
+  until the panel restarts. The panel's own probe of a card that did not
+  mount (`storage.c`) leaves the controller up.
 
 ### Cores and memory
 
-esp_hosted creates 6 tasks at priority 23 without naming a core. The panel
-links with `--wrap=xTaskCreatePinnedToCore`
-(`components/wifi_access/wifi_radio.c`): every task the image creates
-without a core runs on core 0, so core 1 keeps the control task and the run
-log task (`runlog`) alone. esp_hosted sets up the SDMMC controller, its queues and its 6
-tasks before `app_main()`, at every start, with Wi-Fi off. Its static
-internal RAM is 1,637 bytes (esp_hosted 1,576, esp_wifi_remote 61); its task
-stacks take 20,480 bytes (4 x 3,072 and 2 x 4,096); its buffers are not
-measured. The console line `wifi: radio up` names the internal RAM free with
-the radio up.
+On the ESP32-P4 a task created without a core runs on core 0, and core 1
+belongs to the control task and the tasks pinned there. The panel links
+with `--wrap=xTaskCreatePinnedToCore` (`components/wifi_access/wifi_radio.c`)
+for it: esp_hosted creates 6 tasks at priority 23 without naming a core. The
+console lists every task at start-up, `task <name> core <0|1> priority <n>`.
+
+esp_hosted's static internal RAM is 1,637 bytes (esp_hosted 1,576,
+esp_wifi_remote 61); its task stacks take 20,480 bytes (4 x 3,072 and
+2 x 4,096); its buffers are not measured. The console line `wifi: radio up`
+names the internal RAM free with the radio up.
 
 ## CI
 

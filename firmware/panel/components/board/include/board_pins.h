@@ -139,6 +139,29 @@ extern "C" {
 #define BOARD_SD_LDO_CHAN           4
 #define BOARD_SD_FREQ_KHZ           20000
 
+/* ------------------------------------------------------------------ radio */
+
+/*
+ * The ESP32-C6-MINI-1 that carries Wi-Fi, an SDIO (Secure Digital
+ * input/output) device on SDMMC slot 1, 4-bit, through the GPIO matrix.
+ * C6 IO19 is CLK, IO18 CMD, IO20 to IO23 D0 to D3; each line has a 51 kOhm
+ * pull-up.  The C6's EN (chip enable) has a 10 kOhm pull-up and 1 uF and
+ * reaches GPIO54 through 0 Ohm: a low holds the C6 in reset.  esp_hosted
+ * reads these from sdkconfig.defaults; wifi_radio.c fails the build when
+ * the two differ.  Header H4 carries the C6's UART0 (TXD0, RXD0), GND
+ * and its strapping pin IO9.
+ */
+#define BOARD_C6_SLOT               1
+#define BOARD_C6_WIDTH              4
+#define BOARD_C6_FREQ_KHZ           40000
+#define BOARD_C6_PIN_CLK            GPIO_NUM_18
+#define BOARD_C6_PIN_CMD            GPIO_NUM_19
+#define BOARD_C6_PIN_D0             GPIO_NUM_14
+#define BOARD_C6_PIN_D1             GPIO_NUM_15
+#define BOARD_C6_PIN_D2             GPIO_NUM_16
+#define BOARD_C6_PIN_D3             GPIO_NUM_17
+#define BOARD_C6_PIN_EN             GPIO_NUM_54
+
 /* -------------------------------------------------------------------- CAN */
 /*
  * TWAI (Two-Wire Automotive Interface, the ESP32-P4's CAN controller) to

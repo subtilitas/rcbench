@@ -1376,6 +1376,16 @@ static void radio_down(void)
     atomic_store(&s.down, true);
 }
 
+/**
+ * @brief Bring the radio up in @p mode: the C6's link, the interface, the
+ *        driver, the configuration and, in AP and JOIN, the page's server.
+ *
+ * @param mode The session's mode.
+ * @param w    The session, for the access point's password.
+ * @param c    The kept home network, for JOIN and FETCH.
+ * @return true when every step worked; false after the first that failed,
+ *         logged by start_failed().
+ */
 static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
 {
     atomic_store(&s.down, false);
@@ -1463,6 +1473,13 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     return true;
 }
 
+/**
+ * @brief The task that owns the radio: compares what the session wants
+ *        with what runs, and brings the radio up or down; a failed C6 link
+ *        takes it down.
+ *
+ * @param arg Unused.
+ */
 static void worker(void *arg)
 {
     (void)arg;

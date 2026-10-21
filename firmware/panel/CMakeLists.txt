@@ -44,12 +44,6 @@ option(RCBENCH_TOUCH_INJECTOR "Read a touch injector at I2C 0x14" ON)
 #   idf.py -D RCBENCH_DISPLAY_BARS=ON build
 option(RCBENCH_DISPLAY_BARS "Show the DSI host's colour bars at start-up" OFF)
 
-# The panel's Wi-Fi.  The radio is the ESP32-C6 beside the ESP32-P4, reached
-# through Espressif's esp_wifi_remote, which this build does not carry yet;
-# with this OFF the panel starts no radio and WI-FI reports the start as
-# failed.  Read by component wifi_access.
-option(RCBENCH_PANEL_WIFI "Start the panel's Wi-Fi radio" OFF)
-
 # ESP-IDF's fatfs component with exFAT on, in place of its own; the reason
 # and the mechanism are in the file.
 include("${CMAKE_CURRENT_LIST_DIR}/fatfs_exfat.cmake")

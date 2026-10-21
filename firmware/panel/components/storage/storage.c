@@ -171,8 +171,9 @@ static const char *volume_format(void)
     }
 }
 
-/*
- * What FatFs says of the card esp_vfs_fat_sdmmc_mount() just gave up on.
+/**
+ * @brief What FatFs says of the card esp_vfs_fat_sdmmc_mount() just gave
+ *        up on.
  *
  * That mount answers ESP_FAIL for every FatFs refusal alike, and only after
  * the card has started (its own start-up errors come back as they are): no
@@ -187,18 +188,21 @@ static const char *volume_format(void)
  * work area is on the heap for the call: FATFS holds a sector, 4096 bytes
  * with the panel's CONFIG_FATFS_SECTOR_4096.
  *
+ * @param host The SD card's host, slot 0.
+ * @param slot The slot's pins and width.
+ * @param why  Receives the ESP-IDF error of the last step.
  * @return f_mount()'s FRESULT, or -1 with @p why set when FatFs could not
  *         be asked: no device, a card that no longer starts, no memory.
  */
 static int probe_fatfs(const sdmmc_host_t *host,
                        const sdmmc_slot_config_t *slot, esp_err_t *why)
 {
+    /* The SDMMC host is shared with the C6's SDIO link on slot 1: a slot
+     * that did not start is not counted by ESP-IDF, and a deinit of it
+     * would count slot 1 down and stop the whole host. */
     esp_err_t err = (*host->init)();
     if (err == ESP_OK) {
         err = sdmmc_host_init_slot(host->slot, slot);
-        if (err != ESP_OK) {
-            (void)(*host->deinit_p)(host->slot);
-        }
     }
     if (err != ESP_OK) {
         *why = err;

@@ -416,3 +416,25 @@ def test_only_a_help_image_block_counts_a_view_as_shown(tmp_path, monkeypatch):
     monkeypatch.setattr(cd, "IMG", img)
     shown = {p.name for p in cd.help_images()}
     assert shown == {"motor-table.png"}
+
+
+def test_a_source_without_a_licence_line_fails(tree):
+    """A source file of the tree without its SPDX line is reported."""
+    src = tree / "firmware" / "panel" / "main"
+    src.mkdir(parents=True)
+    (src / "a.c").write_text("int a;\n", encoding="utf-8")
+    problems = []
+    cd.check_spdx(problems)
+    assert problems == [
+        "firmware/panel/main/a.c has no SPDX-License-Identifier"]
+
+
+def test_registry_components_are_not_held_to_the_licence_line(tree):
+    """Files under managed_components/ are the registry's, not the tree's."""
+    fetched = (tree / "firmware" / "panel" / "managed_components"
+               / "espressif__esp_hosted")
+    fetched.mkdir(parents=True)
+    (fetched / "protobuf-c.c").write_text("int b;\n", encoding="utf-8")
+    problems = []
+    cd.check_spdx(problems)
+    assert problems == []

@@ -758,6 +758,32 @@ void log_follow_runs(void)
  * start-up, bring_up(): panel_boot.c.  The settings the control task
  * follows: panel_settings.c.  The render loop: panel_frame.c. */
 
+/**
+ * @brief Every task with its core and priority, once at start-up.
+ *
+ * A task created without a core runs on core 0 (wifi_radio.c); core 1
+ * belongs to the control task and the tasks pinned there.  "any" would be a
+ * task that escaped that rule.
+ */
+static void task_report(void)
+{
+    const UBaseType_t n = uxTaskGetNumberOfTasks() + 4u;
+    TaskStatus_t *t = heap_caps_malloc(n * sizeof(*t), MALLOC_CAP_SPIRAM);
+    if (t == NULL) {
+        ESP_LOGW(TAG, "tasks: no room for the list");
+        return;
+    }
+    const UBaseType_t got = uxTaskGetSystemState(t, n, NULL);
+    ESP_LOGI(TAG, "tasks: %u", (unsigned)got);
+    for (UBaseType_t i = 0; i < got; ++i) {
+        const BaseType_t core = xTaskGetCoreID(t[i].xHandle);
+        const char *where = (core == 0) ? "0" : (core == 1) ? "1" : "any";
+        ESP_LOGI(TAG, "task %-16s core %-3s priority %2u", t[i].pcTaskName,
+                 where, (unsigned)t[i].uxCurrentPriority);
+    }
+    heap_caps_free(t);
+}
+
 void app_main(void)
 {
     servo_link_init(&k_servo_ctx);
@@ -869,6 +895,7 @@ void app_main(void)
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    task_report();
 
     panel_frame_loop();   /* does not return */
 }
