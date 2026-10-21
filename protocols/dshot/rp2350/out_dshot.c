@@ -18,20 +18,17 @@
 #include "dshot.pio.h"
 
 /**
- * @brief Capture buffer size, in 32-bit words.
+ * @brief Eight words is 256 samples at five to a reply bit, which is 51 bits
+ *        against a reply of 21.
  *
- * Eight words is 256 samples at five to a reply bit, which is 51 bits against
- * a reply of 21.  The state machine stalls when the queue is full, so the
- * extra is idle line after the burst rather than anything that has to arrive
- * in time.
+ * The state machine stalls when the queue is full, so the extra is idle line
+ * after the burst rather than anything that has to arrive in time.
  */
 #define CAP_WORDS  8u
 
 /**
- * @brief The fewest capture words that can hold a whole reply.
- *
- * One idle sample plus 21 bits at five samples each is 106, which is four
- * words.
+ * @brief The fewest words that can hold a whole reply: one idle sample plus 21
+ *        bits at five samples each is 106, which is four words.
  *
  * A poll that took less than this would take a reply that has not finished
  * arriving.  The loop turns over thousands of times in the 70 us a capture
@@ -91,13 +88,11 @@ static const pio_program_t *tx_program(bool bidir)
 /* ---------------------------------------------------------------- binding */
 
 /**
- * @brief Claim and load the receiver on the state machine above the
- *        transmitter.
- *
- * The receiver has to sit on the state machine one above its transmitter, in
- * the same block: the transmitter raises a flag relative to its own number
- * and the receiver waits on the flag one below its own, so the pairing is
- * what keeps two ESCs on one block from starting each other's receivers.
+ * @brief The receiver has to sit on the state machine one above its
+ *        transmitter, in the same block: the transmitter raises a flag relative
+ *        to its own number and the receiver waits on the flag one below its
+ *        own, so the pairing is what keeps two ESCs on one block from starting
+ *        each other's receivers.
  *
  * @param s  Binding with its transmitter already loaded.
  * @return   true when the receiver is claimed and loaded; false when that
@@ -121,11 +116,11 @@ static bool claim_receiver(dshot_out_t *s)
 }
 
 /**
- * @brief Give the pad back as it was at boot.
+ * @brief Give the pad back exactly as it was at boot: no inversion, no pull,
+ *        and a plain input rather than a pin still muxed to a PIO block.
  *
- * No inversion, no pull, and a plain input rather than a pin still muxed to
- * a PIO block.  A pin left muxed is one the next configuration cannot have
- * and one a scope reads as driven by something that no longer exists.
+ * A pin left muxed is one the next configuration cannot have and one a scope
+ * reads as driven by something that no longer exists.
  *
  * @param pin  GPIO number.
  */

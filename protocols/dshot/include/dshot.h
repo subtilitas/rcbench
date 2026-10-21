@@ -1,8 +1,7 @@
 /**
  * @file
- * @brief DShot: sixteen bits per frame to an ESC (electronic speed
- *        controller), and the GCR (group-coded recording) burst that comes
- *        back.
+ * @brief DShot: sixteen bits per frame to an ESC (electronic speed controller),
+ *        and the GCR (group-coded recording) burst that comes back.
  *
  * Implements the DShot protocol of ESCs.  DShot is the name of a protocol; it
  * is used here only to say which ESCs this module works with.  The project
@@ -56,8 +55,7 @@ extern "C" {
 #define DSHOT_THROTTLE_MAX  2047u   /**< highest throttle value            */
 
 /**
- * @brief How many times a command has to be repeated before an ESC acts
- *        on it.
+ * @brief How many times a command has to be repeated before an ESC acts on it.
  *
  * A command is an ordinary frame; the ESC tells a command from a glitch by
  * counting repeats.  Sending one once does nothing at all, which looks
@@ -102,6 +100,9 @@ typedef enum {
  * bidirectional DShot, whose checksum is the complement of the ordinary one
  * so that a receiver cannot mistake one protocol for the other.
  *
+ * Returns 0 for a value above 2047: zero is motor-stop, which is the safe
+ * reading of a number this end could not encode.
+ *
  * @param value      Frame value, 0..2047, used as given.
  * @param telemetry  true asks the ESC to answer on its telemetry wire.
  * @param inverted   true selects bidirectional DShot (complemented checksum).
@@ -132,7 +133,10 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
 
 /* ------------------------------------------------- the burst coming back */
 
-/** @brief Bits in the response, including the line code's leading one. */
+/**
+ * @brief Bits in the response, including the leading one the line code
+ *        produces.
+ */
 #define DSHOT_TELEM_BITS   21u
 
 /** @brief The response rate, as a fraction of the DShot rate: 5/4. */
@@ -151,15 +155,13 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
 #define DSHOT_EDT_DEGC_PER_COUNT    1u
 
 /**
- * @brief Millivolts for a DSHOT_TELEM_VOLTAGE payload.
- *
- * At most 255 * 250 = 63,750 mV.
+ * @brief Millivolts for a DSHOT_TELEM_VOLTAGE payload (at most 255 * 250 =
+ *        63,750).
  *
  * @param count  Payload count, 0 to 255.
  * @return       Millivolts.
  */
 uint32_t dshot_edt_millivolts(uint16_t count);
-
 /**
  * @brief Amperes for a DSHOT_TELEM_CURRENT payload.
  *
@@ -167,7 +169,6 @@ uint32_t dshot_edt_millivolts(uint16_t count);
  * @return       Amperes.
  */
 uint32_t dshot_edt_amps(uint16_t count);
-
 /**
  * @brief Degrees Celsius for a DSHOT_TELEM_TEMPERATURE payload.
  *
@@ -192,8 +193,9 @@ typedef enum {
     DSHOT_TELEM_DEBUG2,       /**< type nibble 0x0A; payload not decoded  */
     DSHOT_TELEM_STRESS,       /**< type nibble 0x0C; payload not decoded  */
     DSHOT_TELEM_STATUS,       /**< type nibble 0x0E; payload not decoded  */
-    /** @brief How many kinds there are, for anything holding one slot per
-     *         kind. */
+    /**
+     * @brief How many kinds there are, for anything holding one slot per kind.
+     */
     DSHOT_TELEM_KINDS,
 } dshot_telem_kind_t;
 
@@ -209,14 +211,16 @@ typedef struct {
 } dshot_telem_t;
 
 /**
- * @brief Undo the line code and the group code: 21 line bits to a 16-bit
- *        value.
+ * @brief Undo the line code and the group code: 21 line bits to a 16-bit value.
  *
  * The line is differential -- each bit is the previous one exclusive-ored
  * with the data -- so a run of identical bits becomes a level that does not
  * change, which is what keeps the ESC's clock and this end's from having to
  * agree for long.  Undoing it is `x ^ (x >> 1)`, and the leading bit falls
  * off the top.  The 20 bits below are four quintets, each one nibble.
+ *
+ * Returns false for a quintet that is not in the table, which is what a
+ * missed or extra sample looks like.
  *
  * @param line  The 21 captured line bits.
  * @param out   Receives the 16-bit value.
@@ -226,8 +230,7 @@ typedef struct {
 bool dshot_gcr_decode(uint32_t line, uint16_t *out);
 
 /**
- * @brief Encode a 16-bit value as line bits, for the suite and for anything
- *        that fakes an ESC.
+ * @brief The other direction, for the suite and for anything that fakes an ESC.
  *
  * @param value  The 16-bit value, checksum included.
  * @return       The 21 line bits.
@@ -289,8 +292,10 @@ uint32_t dshot_rpm(uint32_t erpm, uint8_t pole_pairs);
 
 /* ---------------------------------------- asking for extended telemetry */
 
-/** @brief From the last repeat of an ask that got no answer to the start of
- *         the next. */
+/**
+ * @brief From the last repeat of an ask that got no answer to the start of the
+ *        next.
+ */
 #define DSHOT_EDT_RETRY_MS  500u
 
 /** @brief Asks per run before an ESC that never answers is left alone. */
@@ -384,6 +389,9 @@ void dshot_edt_heard(dshot_edt_t *e, dshot_telem_kind_t kind);
  *
  * The response is located by the first falling edge: bidirectional DShot
  * idles high, so everything before that edge is idle line and not data.
+ *
+ * Returns false when the capture holds no falling edge, or ends before 21
+ * bits have been read.
  *
  * @param samples     Capture, one bit per sample, MSB of word 0 first.
  * @param words       Number of 32-bit words in @p samples.

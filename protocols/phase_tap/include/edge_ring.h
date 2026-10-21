@@ -52,7 +52,7 @@ extern "C" {
 #define EDGE_COUNT_MASK 0x7FFFFFFFu
 
 /**
- * @brief The word the program pushes for an edge.
+ * @brief The word the program pushes for an edge at counter value @p count.
  *
  * @param count  Counter value at the edge; the low 31 bits are used.
  * @param level  Level after the edge: true for a rise.
@@ -61,13 +61,12 @@ extern "C" {
 uint32_t edge_word(uint32_t count, bool level);
 
 /**
- * @brief The word's count, as the 31 bits of the counter.
+ * @brief A word's 31-bit count and level.
  *
  * @param word  Edge word.
  * @return      The count, 0 to 2^31 - 1.
  */
 uint32_t edge_word_count(uint32_t word);
-
 /**
  * @brief The word's level after the edge.
  *
@@ -77,10 +76,10 @@ uint32_t edge_word_count(uint32_t word);
 bool     edge_word_level(uint32_t word);
 
 /**
- * @brief The tick of the counter value nearest an estimate.
+ * @brief The tick of the counter value @p count nearest @p est, with a counter
+ *        that started at 0 and counts down.
  *
- * The counter started at 0 and counts down.  Ticks before the start do not
- * exist: the result is at least 0.
+ * Ticks before the start do not exist: the result is at least 0.
  *
  * @param count  Counter value of the edge, 31 bits.
  * @param est    Estimate of the present tick.
@@ -106,12 +105,12 @@ typedef struct {
 void edge_ring_init(edge_ring_t *r);
 
 /**
- * @brief Take the words written to a ring since the last call.
+ * @brief Take the words in @p ring ( @p size words, a power of two) written
+ *        since the last call, @p wr being the slot the DMA writes next, as
+ *        edges stamped against @p est (the present tick, edge_tick()).
  *
- * The words are those in @p ring (@p size words, a power of two) written
- * since the last call, @p wr being the slot the DMA writes next, as edges
- * stamped against @p est (the present tick, edge_tick()).  At most @p max
- * edges go to @p out; words past that stay in the ring for the next call.
+ * At most @p max edges go to @p out; words past that stay in the ring for the
+ * next call.
  *
  * Returns the edges written.  *@p overrun is set when the DMA lapped the
  * reader: nothing is returned, the reader is moved after the newest word,

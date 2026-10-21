@@ -1,8 +1,6 @@
 /**
  * @file
- * @brief OpenYGE status byte decoding and motor state names.
- *
- * SPDX-License-Identifier: MIT
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "openyge.h"
@@ -18,7 +16,7 @@
 #define WARN_OVERTEMP   0x20u   /**< overtemperature warning bit           */
 #define WARN_OVERCURR   0x40u   /**< overcurrent warning bit               */
 #define WARN_DEV_BEC    0x80u   /**< subject is the BEC, not the ESC       */
-#define WARN_SETPOINT   0xC0u   /**< the overloaded combination            */
+#define WARN_SETPOINT   0xC0u   /**< the overloaded combination */
 
 const char *openyge_state_name(uint8_t state)
 {

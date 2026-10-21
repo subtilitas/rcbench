@@ -40,7 +40,7 @@ extern "C" {
 /* ------------------------------------------------ numbered event streams */
 
 /**
- * The consumer's side of one numbered stream.
+ * @brief The consumer's side of one numbered stream.
  *
  * The producer numbers its events from 1, adding one per event it offers to
  * the queue whether or not the queue keeps it, and publishes the number of
@@ -60,10 +60,11 @@ typedef struct {
 void touch_seq_rx_init(touch_seq_rx_t *rx);
 
 /**
- * @brief An event numbered @p seq has been taken off the queue.  Returns how
- *        many
- * events before it never arrived; nonzero means the consumer's record of the
- * glass is stale and has to be dropped before this event is handled.
+ * @brief An event numbered @p seq has been taken off the queue.
+ *
+ * Returns how many events before it never arrived; nonzero means the consumer's
+ * record of the glass is stale and has to be dropped before this event is
+ * handled.
  *
  * @param rx Consumer state.
  * @param seq Number the event carries.
@@ -72,12 +73,12 @@ void touch_seq_rx_init(touch_seq_rx_t *rx);
 uint32_t touch_seq_take(touch_seq_rx_t *rx, uint32_t seq);
 
 /**
- * @brief The queue has been drained.  @p published is the producer's last
- *        published
- * number, read *before* the drain began: every event up to it had been
- * offered by then, so any of them not taken is lost.  Returns how many.
- * Read after the drain instead, it could name an event offered during it and
- * still in the queue.
+ * @brief The queue has been drained.
+ *
+ * @p published is the producer's last published number, read *before* the drain
+ * began: every event up to it had been offered by then, so any of them not
+ * taken is lost.  Returns how many. Read after the drain instead, it could name
+ * an event offered during it and still in the queue.
  *
  * @param rx Consumer state.
  * @param published Producer's last published number, read before the drain.
@@ -88,7 +89,7 @@ uint32_t touch_seq_tail(touch_seq_rx_t *rx, uint32_t published);
 /* --------------------------------------------------------- the arm watch */
 
 /**
- * Whether an arm stands until the render loop has seen it.
+ * @brief Whether an arm stands until the render loop has seen it.
  *
  * Two loss counts are compared, because the two queues are watched by two
  * tasks: @c loss_gen is how many times the render loop has dropped the
@@ -100,17 +101,18 @@ uint32_t touch_seq_tail(touch_seq_rx_t *rx, uint32_t published);
  */
 typedef struct {
     bool     on;
-    uint32_t loss_gen;   /**< render loop loss count the arm was posted under */
+    uint32_t loss_gen;   /**< the render loop's count the arm was posted under */
     uint32_t drv_gaps;   /**< the control task's count when it took the arm   */
     uint32_t arm_gen;    /**< which arm this is, as the snapshot carries it   */
 } arm_watch_t;
 
 /**
- * @brief May an arm taken now go ahead?  False when the render loop has dropped
- * gestures since it posted the arm (@p loss_gen_now differs from
- * @p loss_gen_stamp), or when a loss notice for the render loop was queued
- * after the last event it had consumed when it posted (@p lost_notice_seq is
- * later than @p consumed_seq; both 0 means none).
+ * @brief May an arm taken now go ahead?
+ *
+ * False when the render loop has dropped gestures since it posted the arm (@p
+ * loss_gen_now differs from @p loss_gen_stamp), or when a loss notice for the
+ * render loop was queued after the last event it had consumed when it posted
+ * (@p lost_notice_seq is later than @p consumed_seq; both 0 means none).
  *
  * @param loss_gen_stamp Render loop loss count stamped on the arm.
  * @param loss_gen_now Render loop loss count now.
@@ -134,11 +136,12 @@ void arm_watch_begin(arm_watch_t *w, uint32_t loss_gen_stamp,
                      uint32_t drv_gaps_at_take, uint32_t arm_gen);
 
 /**
- * @brief One look, once the snapshot has been published.  Returns true when the
- * arm has to be undone: a loss of either kind since it was taken, before the
- * render loop acknowledged @c arm_gen.  A loss is looked for before the
- * acknowledgement, so one that arrives with it still retires the arm.  The
- * watch ends either way it resolves.
+ * @brief One look, once the snapshot has been published.
+ *
+ * Returns true when the arm has to be undone: a loss of either kind since it
+ * was taken, before the render loop acknowledged @c arm_gen.  A loss is looked
+ * for before the acknowledgement, so one that arrives with it still retires the
+ * arm.  The watch ends either way it resolves.
  *
  * @param w Watch state.
  * @param loss_gen_now Render loop loss count now.

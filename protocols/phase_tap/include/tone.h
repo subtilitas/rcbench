@@ -123,21 +123,17 @@ extern "C" {
 /** @brief Periods compared at once for a pitch change. */
 #define TONE_BLOCK 4u
 /**
- * @brief Percent distance from a beep's mean beyond which a period is left
- *        out of the mean.
- *
- *  A period this far from its beep's mean, in percent, is left out of the
- *  mean.
+ * @brief A period this far from its beep's mean, in percent, is left out of the
+ *        mean.
  */
 #define TONE_OUTLIER_PCT 45u
 /** @brief Beeps held until the caller takes them. */
 #define TONE_BEEP_QUEUE 16u
 
 /**
- * @brief Upper limits of the time settings.
+ * @brief The longest each time setting may be; tone_init() refuses more.
  *
- * The longest each time setting may be; tone_init() refuses more.  At
- * these, every setting is under 2^32 ticks at any 32-bit tick_hz.
+ * At these, every setting is under 2^32 ticks at any 32-bit tick_hz.
  */
 #define TONE_WINDOW_US_MAX 100000u   /**< 100 ms                          */
 #define TONE_GAP_US_MAX    1000000u  /**< 1 s                             */
@@ -150,21 +146,32 @@ typedef struct {
     uint32_t window_us;      /**< a window's length, 1000 to 100000 us    */
     uint32_t f_min_hz;       /**< lowest tone, at least 50 Hz             */
     uint32_t f_max_hz;       /**< highest tone                            */
-    /** Rise intervals up to this carrier's period are chopping inside a
-     *  burst.  Above f_max_hz. */
+    /**
+     * @brief Rise intervals up to this carrier's period are chopping inside a
+     *        burst.
+     *
+     * Above f_max_hz.
+     */
     uint32_t carrier_min_hz;
-    /** @brief A low shorter than this, ns, is no low; 1 to 10000. */
+        /** @brief A low shorter than this, ns, is no low; 1 to 10000. */
     uint32_t glitch_ns;
-    /** The capture's hold-off (tone_holdoff_t), ns, 0 to
-     *  TONE_HOLD_NS_MAX; 0 none.
-     *  A rise starts a burst only after a low of at least twice it. */
+    /**
+     * @brief The capture's hold-off (tone_holdoff_t), ns, 0 to
+     *        TONE_HOLD_NS_MAX; 0 none.
+     *
+     * A rise starts a burst only after a low of at least twice it.
+     */
     uint32_t hold_ns;
-    /** No edge for this long ends a beep, us, at most TONE_GAP_US_MAX;
-     *  at least the period of f_min_hz, so a tone's own off time never
-     *  does. */
+    /**
+     * @brief No edge for this long ends a beep, us, at most TONE_GAP_US_MAX;
+     *        at least the period of f_min_hz, so a tone's own off time never
+     *        does.
+     */
     uint32_t gap_us;
-    /** TONE_BLOCK periods this far from the beep's mean, in percent, start
-     *  a new beep; 0 splits only on silence; at most 100. */
+    /**
+     * @brief TONE_BLOCK periods this far from the beep's mean, in percent,
+     *        start a new beep; 0 splits only on silence; at most 100.
+     */
     uint32_t split_pct;
     uint32_t min_periods;    /**< in-range periods a beep needs, >= 1     */
     uint32_t window_min_periods; /**< in-range periods a window needs to
@@ -187,9 +194,9 @@ typedef struct {
 } tone_window_t;
 
 typedef enum {
-    /** @brief Began at a pitch change, with no silence before it. */
+        /** @brief Began at a pitch change, with no silence before it. */
     TONE_BEEP_AFTER_CHANGE  = 1u << 0,
-    /** @brief Ended at a pitch change, with no silence after it. */
+        /** @brief Ended at a pitch change, with no silence after it. */
     TONE_BEEP_BEFORE_CHANGE = 1u << 1,
 } tone_beep_flag_t;
 
@@ -197,8 +204,10 @@ typedef struct {
     uint64_t start;          /**< its first rise, ticks                   */
     uint64_t end;            /**< its last edge, ticks                    */
     float    freq_hz;        /**< mean of the in-range periods            */
-    /** The carrier its run was chopped at; 0 when no rise came at the
-     *  carrier rate. */
+    /**
+     * @brief The carrier its run was chopped at; 0 when no rise came at the
+     *        carrier rate.
+     */
     float    carrier_hz;
     uint32_t bursts;
     uint32_t periods;        /**< in the mean                             */
@@ -211,8 +220,10 @@ typedef struct {
     uint32_t glitches;       /**< lows shorter than glitch_ns, ignored    */
     uint32_t out_of_order;   /**< earlier than the last time seen; ignored */
     uint32_t beeps;          /**< reported                                */
-    /** Runs that made no beep: too few periods, or a mean outside the
-     *  tone range. */
+    /**
+     * @brief Runs that made no beep: too few periods, or a mean outside the
+     *        tone range.
+     */
     uint32_t rejected;
     uint32_t lost;           /**< beeps dropped with the queue full       */
 } tone_stats_t;
@@ -230,9 +241,11 @@ typedef struct {
     tone_cfg_t c;
     uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
     uint64_t start_low;      /**< twice the hold-off, ticks               */
-    /** The shortest time between two burst starts that makes a counted
-     *  period, ticks: the most of half the shortest period in range, the
-     *  glitch and start_low. */
+    /**
+     * @brief The shortest time between two burst starts that makes a counted
+     *        period, ticks: the most of half the shortest period in range, the
+     *        glitch and start_low.
+     */
     uint64_t spacing;
 
     bool     seen;           /**< any time given yet                      */
@@ -271,11 +284,9 @@ typedef struct {
 } tone_t;
 
 /**
- * @brief Fill the settings with the defaults for a clock.
- *
- * Defaults for a clock of @p tick_hz: 8000 us windows, 400 to 6500 Hz,
- * carrier from 7 kHz, 500 ns glitch, 8000 ns hold-off, 3000 us gap, 8 %
- * split, 3 periods a beep, 2 a window.
+ * @brief Defaults for a clock of @p tick_hz: 8000 us windows, 400 to 6500 Hz,
+ *        carrier from 7 kHz, 500 ns glitch, 8000 ns hold-off, 3000 us gap, 8 %
+ *        split, 3 periods a beep, 2 a window.
  *
  * @param c        Settings to fill.
  * @param tick_hz  Clock of the edge stamps, Hz.
@@ -283,23 +294,22 @@ typedef struct {
 void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz);
 
 /**
- * @brief Start a detector from nothing.
+ * @brief Start from nothing.
  *
- * False, leaving @p d unusable, when @p c contradicts
- *  itself or names a range the tick clock cannot resolve: f_min_hz >=
- *  f_max_hz, carrier_min_hz <= f_max_hz, f_max_hz or carrier_min_hz above
- *  tick_hz (a period under one tick), hold_ns above TONE_HOLD_NS_MAX,
- *  glitch_ns outside 1 to TONE_GLITCH_NS_MAX or under one tick, gap_us
- *  under the period of f_min_hz or above TONE_GAP_US_MAX, a window
- *  outside 1000 us to TONE_WINDOW_US_MAX, f_min_hz under 50 Hz, a minimum
- *  of 0, split_pct above 100.  Also refused, as settings under which no
- *  signal makes a tone, in whole ticks: the period of f_min_hz, or the gap,
- *  at most the glitch or at most twice the hold-off (no low could part two
- *  bursts without being a glitch, being too short to start one, or ending
- *  the run); the period of f_max_hz rounded down at most the period of
- *  carrier_min_hz rounded up, where the tone and carrier ranges meet in
- *  whole ticks; window_min_periods - 1 of the shortest burst-start spacings
- *  (tone_t's spacing) filling a window.
+ * False, leaving @p d unusable, when @p c contradicts itself or names a range
+ * the tick clock cannot resolve: f_min_hz >=  f_max_hz, carrier_min_hz <=
+ * f_max_hz, f_max_hz or carrier_min_hz above tick_hz (a period under one
+ * tick), hold_ns above TONE_HOLD_NS_MAX, glitch_ns outside 1 to
+ * TONE_GLITCH_NS_MAX or under one tick, gap_us under the period of f_min_hz or
+ * above TONE_GAP_US_MAX, a window outside 1000 us to TONE_WINDOW_US_MAX,
+ * f_min_hz under 50 Hz, a minimum of 0, split_pct above 100.  Also refused, as
+ * settings under which no signal makes a tone, in whole ticks: the period of
+ * f_min_hz, or the gap, at most the glitch or at most twice the hold-off (no
+ * low could part two bursts without being a glitch, being too short to start
+ * one, or ending the run); the period of f_max_hz rounded down at most the
+ * period of carrier_min_hz rounded up, where the tone and carrier ranges meet
+ * in whole ticks; window_min_periods - 1 of the shortest burst-start spacings
+ * (tone_t's spacing) filling a window.
  *
  * @param d  Detector state; set up by this call.
  * @param c   Settings to check and use.
@@ -308,7 +318,7 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz);
 bool tone_init(tone_t *d, const tone_cfg_t *c);
 
 /**
- * @brief Feed one edge at a tick.
+ * @brief One edge at tick @p t, @p level after it.
  *
  * @param d      Detector state.
  * @param t      Tick of the edge.
@@ -317,7 +327,7 @@ bool tone_init(tone_t *d, const tone_cfg_t *c);
 void tone_edge(tone_t *d, uint64_t t, bool level);
 
 /**
- * @brief Feed edges in time order.
+ * @brief @p n edges in time order.
  *
  * @param d  Detector state.
  * @param e  Edges, in time order.
@@ -326,7 +336,7 @@ void tone_edge(tone_t *d, uint64_t t, bool level);
 void tone_feed(tone_t *d, const tone_edge_t *e, size_t n);
 
 /**
- * @brief No edge up to a tick: a silence ends a beep, a window closes.
+ * @brief No edge up to tick @p now: a silence ends a beep, a window closes.
  *
  * @param d    Detector state.
  * @param now  Tick the detector is advanced to.
@@ -334,18 +344,16 @@ void tone_feed(tone_t *d, const tone_edge_t *e, size_t n);
 void tone_advance(tone_t *d, uint64_t now);
 
 /**
- * @brief End the beep under way, and forget the line's level.
- *
- * End the beep under way at its last edge, as a silence would, and
- * forget the line's level, so the first rise after it starts a run: the
- * caller's edges have a hole (a buffer overrun) or the recording ends.
+ * @brief End the beep under way at its last edge, as a silence would, and
+ *        forget the line's level, so the first rise after it starts a run: the
+ *        caller's edges have a hole (a buffer overrun) or the recording ends.
  *
  * @param d  Detector state.
  */
 void tone_flush(tone_t *d);
 
 /**
- * @brief The last window finished.
+ * @brief The last window finished; false before the first.
  *
  * @param d  Detector state.
  * @param w  Receives the window.
@@ -354,7 +362,7 @@ void tone_flush(tone_t *d);
 bool tone_window(const tone_t *d, tone_window_t *w);
 
 /**
- * @brief Take the oldest beep reported.
+ * @brief Take the oldest beep reported; false with none waiting.
  *
  * @param d  Detector state.
  * @param b  Receives the beep.
@@ -363,7 +371,7 @@ bool tone_window(const tone_t *d, tone_window_t *w);
 bool tone_next_beep(tone_t *d, tone_beep_t *b);
 
 /**
- * @brief Whether a run of bursts is under way.
+ * @brief A run of bursts is under way.
  *
  * @param d  Detector state.
  * @return   true while a run is open.
@@ -379,11 +387,10 @@ bool tone_busy(const tone_t *d);
 const tone_stats_t *tone_stats(const tone_t *d);
 
 /**
- * @brief Convert nanoseconds to ticks of a clock, rounded up.
+ * @brief @p ns as ticks of a @p tick_hz clock, rounded up: the conversion of
+ *        every time setting.
  *
- * @p ns as ticks of a @p tick_hz clock, rounded up: the conversion of
- * every time setting.  Exact for every result that fits 64 bits; no
- * intermediate product overflows.
+ * Exact for every result that fits 64 bits; no intermediate product overflows.
  *
  * @param tick_hz  Clock, Hz.
  * @param ns       Time, nanoseconds.
@@ -392,7 +399,7 @@ const tone_stats_t *tone_stats(const tone_t *d);
 uint64_t tone_ns_ticks(uint64_t tick_hz, uint64_t ns);
 
 /**
- * @brief Convert ticks of the detector's clock to microseconds, rounded down.
+ * @brief @p ticks of the detector's clock in microseconds, rounded down.
  *
  * @param d      Detector state; gives the clock.
  * @param ticks  Ticks of the detector's clock.
@@ -404,9 +411,8 @@ uint64_t tone_ticks_us(const tone_t *d, uint64_t ticks);
 
 /**
  * @brief The capture's hold-off: the rule the PIO program applies before an
- *        edge reaches the detector.
- *
- * Written here so it is tested on the host and the PIO is held to it.
+ *        edge reaches the detector, written here so it is tested on the host
+ *        and the PIO is held to it.
  *
  * A fall is reported only once the line has stayed low for at least the
  * hold-off; a low that ends sooner is not reported at all, and the pulse
@@ -436,10 +442,8 @@ typedef struct {
 } tone_holdoff_t;
 
 /**
- * @brief Set up a hold-off for a clock.
- *
- * @p hold_ns of a clock of @p tick_hz, rounded up to whole ticks; the
- * line starts low.
+ * @brief @p hold_ns of a clock of @p tick_hz, rounded up to whole ticks; the
+ *        line starts low.
  *
  * @param h        Hold-off state to initialise.
  * @param tick_hz  Clock, Hz.
@@ -448,10 +452,8 @@ typedef struct {
 void tone_holdoff_init(tone_holdoff_t *h, uint32_t tick_hz, uint32_t hold_ns);
 
 /**
- * @brief Feed one edge through the hold-off.
- *
- * The edges reported, 0 to 2, go into @p out in time order: a held fall
- * whose low lasted the hold-off, then the rise.
+ * @brief One edge at @p t; the edges reported, 0 to 2, into @p out in time
+ *        order: a held fall whose low lasted the hold-off, then the rise.
  *
  * @param h      Hold-off state.
  * @param t      Tick of the edge.
@@ -463,9 +465,8 @@ size_t tone_holdoff_edge(tone_holdoff_t *h, uint64_t t, bool level,
                          tone_edge_t out[2]);
 
 /**
- * @brief Advance the hold-off to a tick with no edge.
- *
- * A held fall whose low has lasted the hold-off by then goes into @p out.
+ * @brief No edge up to @p now: a held fall whose low has lasted the hold-off by
+ *        then, into @p out; 0 or 1.
  *
  * @param h    Hold-off state.
  * @param now  Tick the hold-off is advanced to.
@@ -476,12 +477,10 @@ size_t tone_holdoff_advance(tone_holdoff_t *h, uint64_t now,
                             tone_edge_t out[1]);
 
 /**
- * @brief The tick up to which the detector may be advanced.
- *
- * @p now less the hold-off, at least 0, and never before the latest edge
- * handed out: every edge before it is out, and it never runs backward,
- * so advancing the detector to it after feeding the edges out keeps the
- * detector's time in order.
+ * @brief @p now less the hold-off, at least 0, and never before the latest edge
+ *        handed out: every edge before it is out, and it never runs backward,
+ *        so advancing the detector to it after feeding the edges out keeps the
+ *        detector's time in order.
  *
  * @param h    Hold-off state.
  * @param now  Current tick.

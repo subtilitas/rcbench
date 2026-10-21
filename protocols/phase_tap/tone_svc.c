@@ -25,7 +25,7 @@ static uint16_t clip16(uint64_t v)
 }
 
 /**
- * @brief Round a non-negative float to the nearest integer, clipped to 16
+ * @brief A non-negative float rounded to the nearest integer, clipped to 16
  *        bits.
  *
  * @param v  Value to round.
@@ -81,6 +81,8 @@ void tone_svc_rec(const tone_beep_t *b, tone_rec_t *r)
 /**
  * @brief Restart under a new order: the detector, the hold-off horizon, the
  *        ring reader and the flags.
+ *
+ * False when the order's settings are refused.
  *
  * @param s    Service state.
  * @param cmd  Order from core 0.

@@ -27,7 +27,7 @@ uint8_t pdmini_crc8(const uint8_t *p, size_t n)
 }
 
 /**
- * @brief A fixed-length reply's whole length.
+ * @brief A fixed-length reply's whole length, or 0 for one that is not.
  *
  * @param cmd  Command byte the reply answers.
  * @return     The reply length in bytes, or 0 for a command whose reply is not

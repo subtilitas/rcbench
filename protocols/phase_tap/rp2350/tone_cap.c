@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief The phase tap's capture, on the RP2350 PIO and DMA.
+ * @brief The phase tap's capture.
  *
  * See tone_cap.h.
  *
@@ -20,11 +20,7 @@
 #include "tone_cap.pio.h"
 #include "tone_svc.h"
 
-/**
- * @brief Ring size, 16 kB, on a 16 kB boundary.
- *
- * The DMA wraps its write address on the boundary.
- */
+/** @brief 16 kB, on a 16 kB boundary: the DMA wraps its write address on it. */
 #define RING_BYTES (TONE_RING_WORDS * 4u)
 #define RING_BITS  14u
 _Static_assert(RING_BYTES == (1u << RING_BITS), "the ring's size is 2^14");
@@ -32,10 +28,8 @@ _Static_assert(RING_BYTES == (1u << RING_BITS), "the ring's size is 2^14");
 static uint32_t s_ring[TONE_RING_WORDS] __attribute__((aligned(RING_BYTES)));
 
 /**
- * @brief State shared by core 0 and core 1.
- *
- * Written by core 0 while the capture is stopped or starting, read by
- * core 1: running is set last and cleared first.
+ * @brief Written by core 0 while the capture is stopped or starting, read by
+ *        core 1: running is set last and cleared first.
  */
 static volatile bool     s_running;
 static PIO               s_pio;

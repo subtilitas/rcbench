@@ -1,8 +1,6 @@
 /**
  * @file
- * @brief OpenYGE parameter cache: observe, complete, read and derived RPM.
- *
- * SPDX-License-Identifier: MIT
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "openyge.h"

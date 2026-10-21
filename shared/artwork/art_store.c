@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief Keeping a board's drawing.  See art_store.h.
+ * @brief Keeping a board's drawing.
+ *
+ * See art_store.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -75,9 +77,7 @@ uint32_t art_store_capacity(const art_flash_t *f)
     return usable(f) ? (ART_SLOT_BYTES - f->sector) : 0u;
 }
 
-/**
- * @brief The header of slot @p i, if it has one that checks out.
- */
+/** @brief The header of slot @p i, if it has one that checks out. */
 static bool slot_head(const art_flash_t *f, uint32_t i, art_head_t *out)
 {
     art_head_t h;
@@ -98,9 +98,7 @@ static bool slot_head(const art_flash_t *f, uint32_t i, art_head_t *out)
     return true;
 }
 
-/**
- * @brief Which slot holds @p board, or the count when none does.
- */
+/** @brief Which slot holds @p board, or the count when none does. */
 static uint32_t find_slot(const art_flash_t *f, uint16_t board)
 {
     const uint32_t n = art_store_slots(f);
@@ -201,8 +199,8 @@ static uint32_t slot_for(const art_flash_t *f, uint16_t board)
  *        is written: an entry this flash cannot hold, an empty payload, one
  *        with no format, or one with no outline.
  *
- *  What the payload says inside is the reader's to check
- * (link_drawing_parse()); the store keeps bytes.
+ * What the payload says inside is the reader's to check (link_drawing_parse());
+ * the store keeps bytes.
  */
 static bool entry_fits(const art_flash_t *f, const art_entry_t *e)
 {
@@ -327,9 +325,9 @@ static bool keep_write(art_keep_t *k)
 /**
  * @brief Read back before the header is written.
  *
- *  A write that reported success and did not take would otherwise be sealed
- * with a header saying it did, and the store would hand out a corrupt drawing
- * for as long as the board is known.
+ * A write that reported success and did not take would otherwise be sealed with
+ * a header saying it did, and the store would hand out a corrupt drawing for as
+ * long as the board is known.
  */
 static bool keep_verify(art_keep_t *k)
 {

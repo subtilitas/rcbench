@@ -26,7 +26,7 @@ static const uint8_t k_quintet[16] = {
 };
 
 /**
- * @brief Find the nibble for a five-bit line code.
+ * @brief 0xFF for the sixteen codes that are not in the table.
  *
  * @param quintet  Five-bit code, 0 to 31.
  * @return         The nibble, 0 to 15, or 0xFF for the sixteen codes that
@@ -43,10 +43,9 @@ static uint8_t nibble_of(uint8_t quintet)
 }
 
 /**
- * @brief Fold a payload into its checksum nibble.
+ * @brief The checksum, folded over the twelve bits that carry the reading.
  *
- * The checksum, folded over the twelve bits that carry the reading.  The
- * response inverts it, which is what stops a decoder locked onto the wrong
+ * The response inverts it, which is what stops a decoder locked onto the wrong
  * bit boundary from accepting a shifted copy of a valid frame.
  *
  * @param v  The payload, the twelve bits that carry the reading.
@@ -63,13 +62,13 @@ static uint16_t fold(uint16_t v)
 /* ------------------------------------------------------------- the code */
 
 /**
- * @brief The line is differential: each bit is the one before it
- *        exclusive-ored with the data.
+ * @brief The line is differential: each bit is the one before it exclusive-ored
+ *        with the data, so the data is recovered by exclusive-oring the line
+ *        with itself shifted down one.
  *
- * The data is recovered by exclusive-oring the line with itself
- * shifted down one.  Bit 20 is the seed and is not data; it is sent as zero,
- * because the line idles high in bidirectional DShot and the response has to
- * begin with a falling edge for a receiver to find it at all.
+ * Bit 20 is the seed and is not data; it is sent as zero, because the line
+ * idles high in bidirectional DShot and the response has to begin with a
+ * falling edge for a receiver to find it at all.
  */
 #define GCR_DATA_MASK  0x000FFFFFu   /* bits 19..0: four quintets */
 
@@ -114,14 +113,14 @@ bool dshot_gcr_decode(uint32_t line, uint16_t *out)
 /* --------------------------------------------------------- what it meant */
 
 /**
- * @brief Extended telemetry type codes, the top nibble of the payload.
+ * @brief Extended telemetry types.
  *
- * The type is the top nibble of the twelve-bit
- * payload and is always even, because an eRPM payload always has bit 8 set:
- * an ESC with extended telemetry enabled normalises its exponent so that it
- * does.  An ESC without it sends nothing but eRPM, and then bit 8 means what
- * it says -- which is why the caller has to declare whether the mode was
- * turned on rather than this file guessing from the bits.
+ * The type is the top nibble of the twelve-bit payload and is always even,
+ * because an eRPM payload always has bit 8 set: an ESC with extended telemetry
+ * enabled normalises its exponent so that it does.  An ESC without it sends
+ * nothing but eRPM, and then bit 8 means what it says -- which is why the
+ * caller has to declare whether the mode was turned on rather than this file
+ * guessing from the bits.
  */
 #define EDT_TYPE_TEMPERATURE  0x02u
 #define EDT_TYPE_VOLTAGE      0x04u

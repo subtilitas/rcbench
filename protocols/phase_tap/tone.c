@@ -31,9 +31,7 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz)
     c->window_min_periods = 2u;
 }
 
-/**
- * @brief @p a / @p b rounded up.
- */
+/** @brief @p a / @p b rounded up. */
 static uint64_t div_up(uint64_t a, uint64_t b)
 {
     return (a + b - 1u) / b;
@@ -121,8 +119,7 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
      * Settings under which no signal can make a tone, refused rather than
      * run deaf.  The tone and carrier ranges, as whole ticks, must not
      * meet: a rise interval of per_min, the fastest tone unchopped, would
-     * read as carrier-rate at car_max or under.  Two bursts need that spacing
-     * to be under the longest
+     * read as carrier-rate at car_max or under.  Two bursts need that spacing to be under the longest
      * period in range (per_max) and under the silence that ends the run
      * (gap; at least per_max by the gap_us check above, so the weaker of
      * the two).  A window needs window_min_periods periods to end in its
@@ -144,7 +141,7 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
 /**
  * @brief @p n periods over @p ticks, in Hz; 0 for none.
  *
- *  Only at a window's or a beep's end, never per edge.
+ * Only at a window's or a beep's end, never per edge.
  */
 static float hz_of(const tone_t *d, uint32_t n, uint64_t ticks)
 {
@@ -216,8 +213,8 @@ static ratio_t beep_mean(const tone_t *d)
 /**
  * @brief The carrier period, ticks; 0 with no carrier seen.
  *
- *  The shortest rise interval inside a burst, not counting a burst's first,
- * once there is one; until then the shortest carrier-rate low and the longest
+ * The shortest rise interval inside a burst, not counting a burst's first, once
+ * there is one; until then the shortest carrier-rate low and the longest
  * carrier-rate high.  The rise interval is the better: a high that spans two
  * carrier periods, the low between them too short to reach the input, lengthens
  * the second and is a multiple of the first.
@@ -230,9 +227,7 @@ static uint64_t carrier(const tone_t *d)
     return d->car_low != 0u ? d->car_low + d->car_high : 0u;
 }
 
-/**
- * @brief A mean period inside the tone range: per_min <= s / n <= per_max.
- */
+/** @brief A mean period inside the tone range: per_min <= s / n <= per_max. */
 static bool in_band(const tone_t *d, ratio_t m)
 {
     return m.n != 0u && m.s >= d->per_min * m.n && m.s <= d->per_max * m.n;
@@ -275,7 +270,7 @@ static void window_open(tone_t *d, uint64_t index)
 /**
  * @brief Close every window that ends at or before @p t.
  *
- *  A stretch of empty windows reports the last of them only.
+ * A stretch of empty windows reports the last of them only.
  */
 static void windows_to(tone_t *d, uint64_t t)
 {
@@ -362,7 +357,7 @@ static void commit(tone_t *d, uint32_t n, ratio_t ref)
  * @brief The block's pitch: the mean of its in-range periods within
  *        TONE_OUTLIER_PCT of their median, as a sum over a count.
  *
- *  The median keeps one stray period -- a burst missed, a stuck line's rise --
+ * The median keeps one stray period -- a burst missed, a stuck line's rise --
  * out of the mean; the mean of neighbours keeps a burst start that moves, as
  * one gated from a carrier running free does, from moving the pitch.
  */
@@ -421,11 +416,11 @@ static uint32_t on_side(const tone_t *d, ratio_t bm, ratio_t m, uint32_t pct)
  *        m, and all but one of the block's periods lie more than half that on
  *        the same side.
  *
- *  One stray period moves the block's pitch and is alone on its side.  A
- * carrier running free of the tone moves burst starts, and with them single
- * periods, by up to one carrier period; the block's pitch, a mean of
- * neighbours, by up to a quarter of that.  A block whose pitch rests on two
- * periods far apart, their median, has not moved.
+ * One stray period moves the block's pitch and is alone on its side.  A carrier
+ * running free of the tone moves burst starts, and with them single periods, by
+ * up to one carrier period; the block's pitch, a mean of neighbours, by up to a
+ * quarter of that.  A block whose pitch rests on two periods far apart, their
+ * median, has not moved.
  */
 static bool moved(const tone_t *d, ratio_t bm, ratio_t m, uint32_t pct)
 {
@@ -433,9 +428,7 @@ static bool moved(const tone_t *d, ratio_t bm, ratio_t m, uint32_t pct)
            && on_side(d, bm, m, pct) + 1u >= TONE_BLOCK;
 }
 
-/**
- * @brief |p - x|, scaled by x.n.
- */
+/** @brief |p - x|, scaled by x.n. */
 static uint64_t dist(uint64_t p, ratio_t x)
 {
     bool more = false;
@@ -446,11 +439,11 @@ static uint64_t dist(uint64_t p, ratio_t x)
  * @brief A full block: the oldest period joins the beep, or the pitch has
  *        moved.
  *
- * A beep with a mean of TONE_BLOCK periods or more splits where the new pitch
- * begins, when the block moved by split_pct.  One with fewer keeps its start
- * and starts its mean again, when the block moved by TONE_OUTLIER_PCT: its
- * first periods came before the carrier was known, and every period after them
- * would be an outlier to them.
+ * A beep with a mean of TONE_BLOCK periods or more splits where the new
+ * pitch begins, when the block moved by split_pct.  One with fewer keeps
+ * its start and starts its mean again, when the block moved by
+ * TONE_OUTLIER_PCT: its first periods came before the carrier was known,
+ * and every period after them would be an outlier to them.
  */
 static void block_check(tone_t *d)
 {
@@ -520,9 +513,7 @@ static void period(tone_t *d, uint64_t p, uint64_t s_open, uint64_t e_before)
     }
 }
 
-/**
- * @brief The run ends at its last edge.
- */
+/** @brief The run ends at its last edge. */
 static void run_end(tone_t *d)
 {
     if (!d->in_run) {
@@ -559,9 +550,7 @@ static void burst(tone_t *d, uint64_t t, uint64_t e_before)
 
 /* ---------------------------------------------------------------- edges */
 
-/**
- * @brief Time reaches @p t: windows close, and a silence ends the run.
- */
+/** @brief Time reaches @p t: windows close, and a silence ends the run. */
 static bool time_to(tone_t *d, uint64_t t)
 {
     if (d->seen && t < d->now) {

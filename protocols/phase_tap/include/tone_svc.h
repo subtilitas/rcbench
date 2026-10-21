@@ -10,10 +10,10 @@
  * hold-off, and hands back the beeps it finished and a status.
  *
  * Core 0 gives the service an order (tone_cmd_t) built from its set-up.
- * A new set-up generation restarts the detector; a new capture generation
- * also starts the ring reader again, because the DMA writes from slot 0 of a
- * ring the counter has started over in.  A pass under an order with run clear
- * does nothing and reports not running.
+ * A new set-up generation restarts the detector; a new capture
+ * generation also starts the ring reader again, because the DMA writes from
+ * slot 0 of a ring the counter has started over in.  A pass under an order with run clear does
+ * nothing and reports not running.
  *
  * The present tick.  The caller passes the ticks elapsed since the capture
  * started, from the 1 MHz timer (tone_svc_ticks()); the words' own counts
@@ -43,8 +43,8 @@ extern "C" {
 #endif
 
 /**
- * @brief The system clock the capture is built for, and the tick it gives:
- *        one count per 4 cycles.
+ * @brief The system clock the capture is built for, and the tick it gives: one
+ *        count per 4 cycles.
  */
 #define TONE_SVC_SYS_HZ   150000000u  /**< system clock, Hz                   */
 #define TONE_SVC_TICK_HZ  (TONE_SVC_SYS_HZ / 4u)  /**< the capture's tick, Hz */
@@ -62,15 +62,16 @@ extern "C" {
 #define TONE_SVC_BEEPS    TONE_BEEP_QUEUE
 
 /** @brief The order from core 0. */
-/** @brief Set-up from core 0 for one pass of the service. */
 typedef struct {
     uint16_t gen;            /**< moves with each change of set-up          */
     uint16_t cap_gen;        /**< moves each time the capture starts again;
                                   its counter and ring begin anew          */
     bool     run;            /**< the capture runs and the ring is filling  */
     uint32_t f_min_hz, f_max_hz, split_pct, gap_ms, min_periods;
-    /* f_min_hz, f_max_hz: tone range, Hz; split_pct: percent; gap_ms: ms;
-     * min_periods: periods a beep needs. */
+/**
+ * @brief f_min_hz, f_max_hz: tone range, Hz; split_pct: percent; gap_ms: ms;
+ *        min_periods: periods a beep needs.
+ */
 } tone_cmd_t;
 
 /** @brief A finished beep, in the TONE page's units. */
@@ -107,11 +108,16 @@ typedef struct {
     uint16_t       gen, cap_gen;
     bool           active;
     bool           overrun;
-    /** Passes still to discard after a FIFO overflow: the one that sees it
-     *  and the next. */
+    /**
+     * @brief Passes still to discard after a FIFO overflow: the one that sees
+     *        it and the next.
+     */
     uint8_t        discard;
-    /** One pass's words as edges.  Here, not on the stack: core 1's stack
-     *  is small. */
+    /**
+     * @brief One pass's words as edges.
+     *
+     * Here, not on the stack: core 1's stack is small.
+     */
     tone_edge_t    batch[TONE_SVC_BATCH];
 } tone_svc_t;
 
@@ -123,9 +129,7 @@ typedef struct {
 void tone_svc_init(tone_svc_t *s);
 
 /**
- * @brief Convert microseconds to ticks.
- *
- * @p us microseconds after the capture started, in ticks.
+ * @brief @p us microseconds after the capture started, in ticks.
  *
  * @param us  Time, microseconds.
  * @return    Ticks of the capture's clock.
@@ -133,19 +137,18 @@ void tone_svc_init(tone_svc_t *s);
 uint64_t tone_svc_ticks(uint64_t us);
 
 /**
- * @brief One pass of the service.
+ * @brief One pass.
  *
- * @p ring is the capture ring (TONE_RING_WORDS words), @p wr the
- * slot the DMA writes next, @p now the present in ticks since the capture
- * started, @p fifo_overrun true when the state machine dropped a word
- * (its FIFO was full): the words read in that pass and in the next are
- * discarded, the beep under way ends and the status shows the overrun.
- * The caller reads the flag before @p wr, so the next pass's boundary
- * lies after the flag was cleared; words the FIFO still held at the drop
- * reach the ring before that boundary unless the DMA stalls for a whole
- * pass, 1 ms, and a stall that long overflows the FIFO again.  The beeps
- * finished go to @p rec, at most TONE_SVC_BEEPS; the count is returned.
- * @p st is always written.
+ * @p ring is the capture ring (TONE_RING_WORDS words), @p wr the slot the DMA
+ * writes next, @p now the present in ticks since the capture started, @p
+ * fifo_overrun true when the state machine dropped a word (its FIFO was full):
+ * the words read in that pass and in the next are discarded, the beep under way
+ * ends and the status shows the overrun. The caller reads the flag before @p
+ * wr, so the next pass's boundary lies after the flag was cleared; words the
+ * FIFO still held at the drop reach the ring before that boundary unless the
+ * DMA stalls for a whole pass, 1 ms, and a stall that long overflows the FIFO
+ * again.  The beeps finished go to @p rec, at most TONE_SVC_BEEPS; the count is
+ * returned.  @p st is always written.
  *
  * @param s            Service state.
  * @param cmd          Order from core 0.
@@ -162,9 +165,7 @@ size_t tone_svc_step(tone_svc_t *s, const tone_cmd_t *cmd,
                      bool fifo_overrun, tone_rec_t *rec, tone_status_t *st);
 
 /**
- * @brief Convert a detector beep to the page's units.
- *
- * The beep's ticks are of TONE_SVC_TICK_HZ.
+ * @brief A detector beep in the page's units, ticks of TONE_SVC_TICK_HZ.
  *
  * @param b  Beep from the detector.
  * @param r  Receives the beep in the page's units.
@@ -172,10 +173,8 @@ size_t tone_svc_step(tone_svc_t *s, const tone_cmd_t *cmd,
 void tone_svc_rec(const tone_beep_t *b, tone_rec_t *r);
 
 /**
- * @brief The detector's configuration for an order.
- *
- * The defaults of tone.h at the capture's tick, with the order's range,
- * split, gap and minimum.
+ * @brief The detector's configuration for an order: the defaults of tone.h at
+ *        the capture's tick, with the order's range, split, gap and minimum.
  *
  * @param cmd  Order from core 0.
  * @param c    Receives the detector settings.
