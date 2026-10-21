@@ -101,7 +101,7 @@ test('every supply plus wire of the data file is red, every minus wire black, an
     if (end === null) return null;
     const pin = end.slice(end.indexOf('.') + 1);
     if (/^(POS|OP|VS|VCC|V|V3|V5|BAT|ESC|C1A|C1B|USB)$/.test(pin) || end === 'pad.36' || end === 'pad.40') return 'plus';
-    if (/^(NEG|ON|G|GND|SG|J8G|BATN|ESCN)$/.test(pin) || ['pad.3', 'pad.8', 'pad.13', 'pad.18', 'pad.23', 'pad.38'].includes(end)) return 'minus';
+    if (/^(NEG|ON|G|GND|SG|CANG|BATN|ESCN)$/.test(pin) || ['pad.3', 'pad.8', 'pad.13', 'pad.18', 'pad.23', 'pad.38'].includes(end)) return 'minus';
     return null;
   };
   const seen = { plus: 0, minus: 0, signal: 0 };

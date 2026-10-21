@@ -199,37 +199,61 @@ function coproOsoyoo(d: Dwg): void {
 }
 
 // ---------------------------------------------------------------- panel
+/**
+ * Draws the back of the 7-inch ESP32-P4 board from Waveshare, after the
+ * assembly drawing on page 2 of its schematic, turned by 180 degrees so that
+ * the CAN header H11 is on the right edge. Not to scale. No photo of the
+ * board is in the picture folder.
+ * @param d The drawing to add the shapes and the pins CANG, CANH, CANL and HB to.
+ */
 function panel(d: Dwg): void {
-  d.add(`<g filter="${d.u('sh')}"><rect x="12" y="14" width="356" height="262" rx="12" fill="#1a2733"/></g>`);
-  d.add(`<rect x="28" y="26" width="324" height="238" rx="4" fill="${d.grad('plate', ['#d9dee2', '#c3c9ce', '#a9b0b6'])}"/>`);
-  d.add(d.hole(46, 48, 5, '#70777e'), d.hole(338, 44, 5, '#70777e'), d.hole(46, 244, 5, '#70777e'), d.hole(338, 248, 5, '#70777e'));
-  // touch flex cable
-  d.add(`<rect x="150" y="14" width="56" height="46" fill="#c9862f"/><rect x="166" y="26" width="22" height="18" rx="1" fill="#1b1c20"/>`);
-  d.add(d.board(66, 54, 240, 204, 'blue', 4));
-  d.add(d.hole(84, 70, 4.5, '#70777e'), d.hole(288, 70, 4.5, '#70777e'), d.hole(84, 240, 4.5, '#70777e'));
-  // card slot, USB-C sockets, radio module
-  d.add(`<g filter="${d.u('s3')}"><rect x="100" y="62" width="40" height="34" rx="2" fill="${d.u('tin')}"/></g><path d="M106 70H134M106 78H126" stroke="#8e959d" stroke-width="1.5"/>`);
-  d.add(d.usbc(58, 108, 30, 22, 'W'), d.usbc(58, 150, 30, 22, 'W'));
-  d.add(`<g filter="${d.u('s3')}"><rect x="72" y="196" width="52" height="54" rx="2" fill="${d.u('tin')}"/></g><rect x="72" y="250" width="52" height="14" fill="#1b1c20"/><path d="M78 260V254H86V260H94V254H102V260H110V254H118" fill="none" stroke="#c9a54a" stroke-width="1.2"/>`);
-  // display flex cable and its connector
-  d.add(`<rect x="148" y="112" width="56" height="62" fill="#a9a6a0"/><rect x="148" y="174" width="56" height="14" fill="#c9862f"/><rect x="142" y="188" width="68" height="9" rx="1" fill="#e9e6de" filter="${d.u('s2')}"/>`);
-  d.add(d.chip(176, 86, 16, 12, { n: 3, leg: 3 }), d.chip(212, 84, 22, 14, { n: 4, leg: 3 }));
-  d.add(d.smd(120, 120, 'c', 0, 0.8), d.smd(120, 136, 'r', 0, 0.8), d.smd(104, 152, 'r', 90, 0.8), d.smd(120, 170, 'c', 0, 0.8));
-  d.add(d.chip(150, 226, 20, 16, { n: 4, leg: 3 }), d.smd(182, 214, 'r', 0, 0.8), d.smd(182, 230, 'c', 0, 0.8), d.smd(206, 222, 'r', 90, 0.8));
-  d.add(`<rect x="138" y="244" width="22" height="9" rx="1" fill="#1b1c20"/><rect x="170" y="244" width="22" height="9" rx="1" fill="#1b1c20"/>`);
-  d.add(`<rect x="212" y="238" width="9" height="14" rx="1" fill="#e2b93b"/><rect x="232" y="238" width="9" height="14" rx="1" fill="#e2b93b"/>`);
-  // connector column on the right edge
-  const conn = (y: number, h: number): string => `<g filter="${d.u('s3')}"><rect x="280" y="${y}" width="30" height="${h}" rx="2" fill="#f4f1e8"/></g><rect x="284" y="${y + 3}" width="18" height="${h - 6}" fill="#d9d5c9"/>`;
-  const big = (y: number): string => `<rect x="288" y="${y - 4}" width="12" height="8" rx="1" fill="${d.u('gold')}" stroke="#6b5a1e" stroke-width=".6"/>`;
-  const small = (y: number): string => `<rect x="290" y="${y - 2.2}" width="8" height="4.4" rx="1" fill="${d.u('tin')}"/>`;
-  d.add(conn(84, 60), big(96), big(114), small(132));
-  d.add(d.pin('J8G', 294, 114, 'E', 274, 118.5, { sz: 12, a: 'end' }));
-  d.add(d.pin('J8S', 294, 96, 'E', 274, 100.5, { sz: 12, a: 'end' }));
-  d.add(conn(150, 44), big(163), big(181));
-  d.add(d.pin('CANH', 294, 163, 'E', 274, 167.5, { sz: 12, a: 'end' }));
-  d.add(d.pin('CANL', 294, 181, 'E', 274, 185.5, { sz: 12, a: 'end' }));
-  d.add(conn(200, 34), small(208), small(214.5), small(221), small(227.5));
-  d.add(conn(238, 18), small(244), small(250.5));
+  d.add(d.board(24, 40, 320, 210, 'blue', 6));
+  d.add(d.hole(40, 56, 4.5, '#70777e'), d.hole(328, 56, 4.5, '#70777e'), d.hole(40, 234, 4.5, '#70777e'), d.hole(328, 234, 4.5, '#70777e'));
+  // left edge: 2 USB-C sockets (USB full speed, USB-to-UART) and the USB Type-A
+  // OTG socket; bottom left: the power switch, print ON OFF
+  /**
+   * Draws a USB Type-A socket with its opening on the west edge.
+   * @param x Left edge of the shell.
+   * @param y Top edge of the shell.
+   * @param w Shell length along the plug direction.
+   * @param h Shell width across the plug direction.
+   * @returns The SVG markup.
+   */
+  const usba = (x: number, y: number, w: number, h: number): string => {
+    const tongue = `<rect x="${x + 5}" y="${y + h * 0.36}" width="${w - 9}" height="${h * 0.28}" fill="#e9e6de"/>`;
+    const contacts = [0.1, 0.3, 0.5, 0.7].map((f) => `<rect x="${x + 6 + f * (w - 12)}" y="${y + h * 0.38}" width="3" height="${h * 0.24}" fill="${d.u('gold')}"/>`).join('');
+    return `<g filter="${d.u('s3')}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${d.u('tin')}"/></g><rect x="${x + 4}" y="${y + 3}" width="${w - 7}" height="${h - 6}" rx="1" fill="#2a2c31"/>${tongue}${contacts}`;
+  };
+  d.add(d.usbc(14, 62, 30, 22, 'W'), d.usbc(14, 96, 30, 22, 'W'), usba(14, 140, 30, 26));
+  d.add(`<g filter="${d.u('s2')}"><rect x="66" y="206" width="22" height="10" rx="1.5" fill="#1b1c20"/></g><rect x="69" y="208" width="8" height="6" fill="#e9e6de"/>`);
+  d.add(d.text(77, 230, 'ON OFF', { sz: 8, a: 'middle' }));
+  // the processor, the radio module, the card slot and the display connector
+  d.add(d.chip(124, 126, 48, 48, { n: 8, sides: 4, leg: 3, text: ['ESP32-P4'], tsz: 7 }));
+  d.add(`<g filter="${d.u('s3')}"><rect x="186" y="150" width="46" height="34" rx="2" fill="${d.u('tin')}"/></g>`);
+  d.add(`<g filter="${d.u('s3')}"><rect x="104" y="48" width="36" height="28" rx="2" fill="${d.u('tin')}"/></g><path d="M110 56H134M110 64H126" stroke="#8e959d" stroke-width="1.5"/>`);
+  d.add(`<rect x="110" y="200" width="120" height="10" rx="1" fill="#e9e6de" filter="${d.u('s2')}"/><rect x="114" y="202" width="112" height="4" fill="#1b1c20"/>`);
+  // the backup cell holder
+  d.add(`<g filter="${d.u('s3')}"><circle cx="288" cy="208" r="20" fill="${d.u('tin')}"/></g><circle cx="288" cy="208" r="14" fill="#8e959d"/>`);
+  d.add(d.smd(200, 104, 'c', 0, 0.8), d.smd(200, 120, 'r', 0, 0.8), d.smd(222, 112, 'r', 90, 0.8), d.smd(250, 140, 'c', 0, 0.8));
+  // white PH2.0 headers. Right edge from the top: RS-485 H9, CAN H11, UART H8.
+  const conn = (y: number, h: number): string => `<g filter="${d.u('s3')}"><rect x="336" y="${y}" width="30" height="${h}" rx="2" fill="#f4f1e8"/></g><rect x="350" y="${y + 3}" width="12" height="${h - 6}" fill="#d9d5c9"/>`;
+  const big = (y: number): string => `<rect x="352" y="${y - 4}" width="12" height="8" rx="1" fill="${d.u('gold')}" stroke="#6b5a1e" stroke-width=".6"/>`;
+  const small = (y: number): string => `<rect x="354" y="${y - 2.2}" width="8" height="4.4" rx="1" fill="${d.u('tin')}"/>`;
+  d.add(conn(50, 40), small(58), small(66), small(74), small(82));
+  // H11 from the top: 5V (no wire), GND, H, L.
+  d.add(conn(98, 82), small(110), big(128), big(146), big(164));
+  d.add(d.text(330, 113.5, '5V', { sz: 12, a: 'end', f: '#9fb3c8' }));
+  d.add(d.pin('CANG', 358, 128, 'E', 330, 132.5, { sz: 12, a: 'end' }));
+  d.add(d.pin('CANH', 358, 146, 'E', 330, 150.5, { sz: 12, a: 'end' }));
+  d.add(d.pin('CANL', 358, 164, 'E', 330, 168.5, { sz: 12, a: 'end' }));
+  d.add(conn(188, 40), small(196), small(204), small(212), small(220));
+  // Top edge: the 12-pin header P3, from the left IO36, IO34, IO31 to IO28,
+  // IO5 to IO2, GND, 3V3.
+  d.add(`<g filter="${d.u('s3')}"><rect x="198" y="30" width="104" height="22" rx="2" fill="#f4f1e8"/></g><rect x="201" y="30" width="98" height="10" fill="#d9d5c9"/>`);
+  for (let i = 0; i < 12; i++) if (i !== 5) d.add(`<rect x="${204 + 8 * i - 2.2}" y="32" width="4.4" height="7" rx="1" fill="${d.u('tin')}"/>`);
+  d.add(`<rect x="${204 + 8 * 5 - 4}" y="30" width="8" height="11" rx="1" fill="${d.u('gold')}" stroke="#6b5a1e" stroke-width=".6"/>`);
+  d.add(d.text(194, 58, 'P3', { sz: 11, a: 'end' }));
+  d.add(d.pin('HB', 244, 30, 'N', 244, 70, { sz: 12, a: 'middle' }));
 }
 
 // ---------------------------------------------------------------- microSD card
@@ -743,7 +767,7 @@ export const LIST: Entry[] = [
     name: T('ADXL345 board, not wired by this release', 'ADXL345-Platine, in diesem Release nicht verdrahtet'),
     desc: T('Illustration of the ADXL345 board, front: 8-hole header GND, VCC, CS, INT1, INT2, SDO, SDA, SCL at the left edge.', 'Illustration der ADXL345-Platine, Vorderseite: 8-polige Leiste GND, VCC, CS, INT1, INT2, SDO, SDA, SCL an der linken Kante.') },
   { file: 'panel', part: 'panel', pfx: 'pnl', w: 380, h: 290, draw: panel,
-    desc: T('Illustration of the back of the panel: connector J8 with GND and GPIO6, CAN connector with CAN H and CAN L.', 'Illustration der Rückseite des Panels: Stecker J8 mit GND und GPIO6, CAN-Stecker mit CAN H und CAN L.') },
+    desc: T('Illustration of the back of the panel board, turned so that the CAN header is on the right: CAN header H11 with 5V, GND, CAN H and CAN L, 12-pin header P3 with IO28 at the top edge.', 'Illustration der Rückseite der Panel-Platine, so gedreht, dass die CAN-Buchse rechts liegt: CAN-Buchse H11 mit 5V, GND, CAN H und CAN L, 12-polige Buchse P3 mit IO28 an der Oberkante.') },
   { file: 'copro', part: 'copro', pfx: 'cop', w: 340, h: 790, draw: copro,
     desc: T('Illustration of the RP2350-CAN board: pads 1 to 20 down the left edge, pads 40 to 21 down the right edge, CAN screw terminal at the bottom.', 'Illustration der RP2350-CAN-Platine: Pads 1 bis 20 an der linken Kante abwärts, Pads 40 bis 21 an der rechten Kante abwärts, CAN-Schraubklemme unten.') },
   { file: 'copro--osoyoo', part: 'copro', variant: 'osoyoo', pfx: 'cos', w: 480, h: 820, draw: coproOsoyoo, breakout: true,

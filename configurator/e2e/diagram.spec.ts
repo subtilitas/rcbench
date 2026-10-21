@@ -425,7 +425,8 @@ test('a drag moves the zoomed picture and does not mark the wire under it', asyn
       const m = el.getScreenCTM()!;
       return { x: p.x * m.a + p.y * m.c + m.e, y: p.x * m.b + p.y * m.d + m.f };
     };
-    window.scrollBy(0, at().y - window.innerHeight / 2);
+    // Instant: the page scrolls smoothly by default, and the point is read right after.
+    window.scrollBy({ top: at().y - window.innerHeight / 2, behavior: 'instant' });
     return at();
   });
   expect(spot.y).toBeGreaterThan(0);
