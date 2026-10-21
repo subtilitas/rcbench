@@ -213,10 +213,9 @@ bool endpoints_owed(const endpoints_debt_t *d);
 
 /**
  * @brief A binding was written: the throttle channels may have moved, so the
- *        pair  is owed again, due at the next poll once its edit has rested.
+ *        pair is owed again, due at the next poll once its edit has rested.
  *
- * Control
- *  task only.
+ * Control task only.
  *
  * @param d The debt to update.
  */
