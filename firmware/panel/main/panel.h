@@ -23,6 +23,7 @@
 
 #include "arming.h"
 #include "bench_state.h"
+#include "log_cols.h"
 #include "bind_link.h"
 #include "card_tree.h"
 #include "busfault_screen.h"
@@ -637,6 +638,13 @@ extern atomic_uint      s_sense_parts;
 void sense_map_came_up(uint16_t minor);
 void sense_map_lost(void);
 void sense_map_service(bool idle);
+/* SENSE_WIN_A and SENSE_WIN_B (4.25): read on every poll; the window
+ * number @p b's servo_window names attached as its chw.  Control task. */
+void sense_win_service(void);
+void sense_win_attach(bench_state_t *b);
+/* The log's INA3221 columns for a file opened now (log_cols.h); false for
+ * CH1 to CH3.  Any task. */
+bool sense_log_cols(log_cols_t *out);
 void tone_link_alerts(void);
 void tone_link_service(void);
 void kst_commands(void);

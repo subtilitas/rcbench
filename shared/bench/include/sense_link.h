@@ -186,9 +186,9 @@ typedef struct {
     /** No fitted channel watches the servo tester's target (SENSORS'
      *  FAST is none): the INA3221 is not the servo rail's meter. */
     bool     i3221_unwatched;
-    /** FAST is CH2 or CH3 of its part: the INA3221 is not the servo
-     *  rail's meter then.  The windows are taken as CH1's, and an IOmcu
-     *  older than 4.25 reads CH1 at 1 kHz whatever watches. */
+    /** FAST is CH2 or CH3 of its part: without the map the INA3221 is
+     *  not the servo rail's meter then, as an IOmcu older than 4.25 reads
+     *  CH1 at 1 kHz whatever watches. */
     bool     i3221_fast_off_ch1;
 } sense_setup_t;
 
@@ -674,6 +674,10 @@ uint8_t  sense_link_event_found(const sense_link_t *s, sense_link_part_t part);
 
 /** The INA3221's shunt on the page, 0.1 mOhm. */
 uint16_t sense_link_i3221_dmohm(const sense_link_t *s);
+
+/** The INA3221's address on the page, the part SERVO_SENSE reads: 0x40 to
+ *  0x43; 0 before the page is read. */
+uint8_t sense_link_i3221_addr(const sense_link_t *s);
 
 /** The pins asked, -1 for unset: what SENSE_LINK_EV_BUS_REFUSED names. */
 int sense_link_sda(const sense_link_t *s);

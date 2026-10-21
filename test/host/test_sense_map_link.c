@@ -814,8 +814,39 @@ TEST_CASE(a_reread_reads_the_setup_and_the_identity_again)
     CHECK(!sense_link_next(&sl, now, true, &op));
 }
 
+/* A map that changes only which output a channel watches is still a
+ * write, and the IOmcu's capability bits can follow it: the panel takes
+ * the reread from the map and reads IDENTITY again, as panel_sense does. */
+TEST_CASE(a_watch_only_change_reads_the_identity_again)
+{
+    map_fresh(25u, 0x01u);
+    polls(4);
+    map_polls(20);
+    CHECK(sense_map_link_held(&ml));
+    (void)sense_map_link_take_reread(&ml);
+    uint16_t caps = 0u;
+    (void)sense_link_take_caps(&sl, &caps);
+    const unsigned i0 = idents;
+    const unsigned w0 = fm_writes;
+    sense_map_want_t w = map_of(0x01u);
+    w.regs[LINK_SM_WATCH(0)] = LINK_SM_WATCH_PORT(1);
+    sense_map_link_want(&ml, &w, now);
+    map_polls(20);                              /* the settle, then one write */
+    CHECK_EQ(fm_writes, w0 + 1u);
+    CHECK_EQ(fm[LINK_SM_WATCH(0)], (uint16_t)LINK_SM_WATCH_PORT(1));
+    CHECK(sense_map_link_take_reread(&ml));
+    sense_link_reread(&sl);
+    polls(2);
+    CHECK_EQ(idents, i0 + 1u);
+    CHECK(sense_link_take_caps(&sl, &caps));
+    /* No write, no reread. */
+    map_polls(20);
+    CHECK_EQ(fm_writes, w0 + 1u);
+    CHECK(!sense_map_link_take_reread(&ml));
+}
+
 /* The meter and the ring with the map in force: FAST, whichever channel of
- * the mirror part it is; without it, CH1.  No channel watching the target
+ * whichever part it is; without it, CH1.  No channel watching the target
  * is no meter either way. */
 TEST_CASE(the_meter_follows_fast_with_the_map_and_ch1_without)
 {
@@ -834,13 +865,13 @@ TEST_CASE(the_meter_follows_fast_with_the_map_and_ch1_without)
     sense_link_meter(&sl, &m);
     CHECK(!m.wanted);
     CHECK(!sense_link_win_on(&sl));
-    /* FAST on CH2 or CH3: the windows are taken as CH1's, so no meter. */
+    /* FAST on CH2 or CH3: with the map the ring is FAST's, the meter all
+     * the same. */
     w.i3221_unwatched = false;
     w.i3221_fast_off_ch1 = true;
     want(&w);
     sense_link_meter(&sl, &m);
-    CHECK(!m.wanted);
-    CHECK(!sense_link_win_on(&sl));
+    CHECK(m.wanted);
     w.i3221_fast_off_ch1 = false;
     /* Without the map: CH1 of the one part, and still a watching channel. */
     sense_link_set_map(&sl, false);
@@ -933,6 +964,7 @@ int main(void)
     RUN(an_older_iomcus_part_waits_for_its_frame_before_online);
     RUN(an_event_stands_while_its_cause_does);
     RUN(the_map_is_held_once_the_page_holds_it);
+    RUN(a_watch_only_change_reads_the_identity_again);
     RUN(a_dark_part_says_so_on_an_older_iomcu);
     RUN(a_queued_part_event_goes_with_its_reads);
     RUN(an_unanswered_exchange_is_asked_again);

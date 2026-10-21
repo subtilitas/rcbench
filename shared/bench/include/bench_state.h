@@ -23,6 +23,28 @@
 extern "C" {
 #endif
 
+/** The INA3221 channels SENSE_WIN_A and SENSE_WIN_B carry (4.25). */
+#define BENCH_CHW_CHANNELS 12u
+
+/**
+ * One 50 ms window of every INA3221 channel, from SENSE_WIN_A and
+ * SENSE_WIN_B (protocol 4.25), for the log's columns per watched target:
+ * channel c = 3 a + CHn - 1 of the part at 0x40 + a.  Bit c of ok says
+ * channel c's window holds readings and was read under the window number
+ * window; of no_current that it holds no current sample, of no_voltage no
+ * bus voltage sample: those figures read 0 and are not readings.  Mean and
+ * highest current in mA, signed; lowest bus voltage in mV.
+ */
+typedef struct {
+    uint16_t window;
+    uint16_t ok;
+    uint16_t no_current;
+    uint16_t no_voltage;
+    int16_t  mean_ma[BENCH_CHW_CHANNELS];
+    int16_t  max_ma[BENCH_CHW_CHANNELS];
+    uint16_t min_mv[BENCH_CHW_CHANNELS];
+} bench_chw_t;
+
 typedef struct {
     float voltage;      /**< V   */
     float current;      /**< A   */
@@ -94,6 +116,9 @@ typedef struct {
     int16_t  servo_mean_ma[3];
     int16_t  servo_max_ma[3];
     uint16_t servo_min_mv[3];
+    /** The same window of every channel the map reads, ok 0 for none: on
+     *  the row of servo_window, as SERVO_SENSE's CH2 and CH3 are. */
+    bench_chw_t chw;
 } bench_state_t;
 
 /** True when the numbers are modelled rather than measured. */
@@ -127,8 +152,8 @@ void bench_state_run_starts(bench_state_t *b, uint16_t *regs);
 
 /**
  * One row of the bench log from @p b, into @p out.  With @p whole the
- * sample as it is.  Without, the INA3221's window alone -- servo_new and
- * the servo_ fields -- and every other field 0 with no flag set, which the
+ * sample as it is.  Without, the INA3221's window alone -- servo_new, the
+ * servo_ fields and chw -- and every other field 0 with no flag set, which the
  * log writes as empty cells: the row of a window that closed before the
  * newest one of its pass.
  */

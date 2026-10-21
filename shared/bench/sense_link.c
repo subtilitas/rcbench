@@ -315,15 +315,14 @@ static bool due(bool asked, uint32_t asked_ms, uint32_t now_ms,
 bool sense_link_win_on(const sense_link_t *s)
 {
     /* With the map in force SERVO_WIN carries FAST, whichever channel of
-     * the mirror part that is; without it, CH1.  The windows are taken as
-     * CH1's (sense_link_win_bench()), so FAST on CH2 or CH3 reads none,
-     * and with the map only once the page holds the map asked: the ring is
-     * the held FAST's. */
+     * whichever part that is, and only once the page holds the map asked:
+     * the ring is the held FAST's.  Without it, CH1 of the one part: FAST
+     * on CH2 or CH3 is not what an older IOmcu reads at 1 kHz. */
     return s != NULL && s->win_page && s->known
            && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
-           && !s->want_off_ch1
            && (s->map ? !s->want_unwatched && s->map_held
-                      : (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u);
+                      : (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u
+                            && !s->want_off_ch1);
 }
 
 /* The registers a SENSE status read takes: to the page's last when it has

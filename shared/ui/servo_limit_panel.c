@@ -20,6 +20,7 @@
 #include "kst_port.h"
 #include "log_name.h"
 #include "rcbench_version.h"
+#include "sensors_rows.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "settings_sensors.h"
@@ -163,6 +164,7 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     (void)servo_target_line(c->output, sizeof(c->output), s.drive_target,
                             s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
     c->shunt_dmohm = settings_sensors_meter_dmohm();
+    (void)sensors_rows_meter(c->meter, sizeof(c->meter));
     c->enc_on = settings_get_bool(SET_ENC_EN) && s.enc_held;
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
     c->text = ui_servo_table();
@@ -656,7 +658,10 @@ void draw_lim_lines(gfx_canvas_t *c)
     char out[32];
     (void)servo_target_line(out, sizeof(out), s.drive_target, s.drive_pin,
                             s.drive_pwm, s.pins, s.pins_known);
-    snprintf(line, sizeof(line), TR(SV_LIM_LINE), out);
+    char meter[20];
+    snprintf(line, sizeof(line), TR(SV_LIM_LINE), out,
+             running ? s.lim.cfg.meter
+                     : sensors_rows_meter(meter, sizeof(meter)));
     gfx_text(c, x, y, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
 
     gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);

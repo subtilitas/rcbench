@@ -2846,7 +2846,10 @@ int main(int argc, char **argv)
         if (strcmp(view, "outputs-port") == 0) {
             /* From SERVO's TARGET row with the IOmcu driving the port: on
              * the PROG PORT entry, the servo PWM pins as the overview
-             * names them. */
+             * names them, and 0x41 CH2 watching the port. */
+            settings_set(SET_INA_FIT(1), 1.0f);
+            settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
+            sensors_rows_publish_watch();
             settings_set(SET_SERVO_TARGET, 1.0f);
             settings_set(SET_SERVO_PORT_PWM, 1.0f);
             servo_screen_set_drive(1u, 13u, true);
@@ -3082,11 +3085,14 @@ int main(int argc, char **argv)
          * a servo of the same model stepped between two positions every
          * 2 s, the bus voltage 0.25 V lower for each amp.  In the clipped
          * view the last window holds samples at the top of the range of a
-         * 0.1 Ohm shunt, 1.638 A.
+         * 0.1 Ohm shunt, 1.638 A.  The channel is 0x41 CH2, watching
+         * OUT 1, and names the plot.
          */
         if (strcmp(view, "servo-ina") == 0
             || strcmp(view, "servo-clipped") == 0) {
             const bool clip = strcmp(view, "servo-clipped") == 0;
+            settings_set(SET_INA_FIT(1), 1.0f);
+            settings_set(SET_INA_W(4), (float)SENS_W_OUT_1);
             servo_sim_t ws;
             servo_sim_init(&ws, &cfg);
             servo_screen_source(SERVO_SOURCE_INA3221, 1u);

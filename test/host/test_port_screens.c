@@ -35,9 +35,11 @@
 #include "outputs_screen_int.h"
 #include "picker_port.h"
 #include "picker_screen.h"
+#include "sensors_rows.h"
 #include "port_view.h"
 #include "servo_screen.h"
 #include "settings.h"
+#include "settings_sensors.h"
 #include "ui_text.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
@@ -368,6 +370,50 @@ TEST_CASE(the_tester_takes_port_3_and_the_watch_line_follows_the_map)
     outputs_screen_set_port_watch(0u, "INA3221 0x41 CH2");
     outputs_screen()->render(&c, 0);
     CHECK_EQ(guard_canvas_sum(&g), watched);
+    /* From the SENSORS rows: 0x41 CH2 on PORT 1 writes that line; with
+     * its part not fitted, or its shunt off, none.  Each against the line
+     * set by hand with the same rows. */
+    settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
+    sensors_rows_publish_watch();
+    outputs_screen()->render(&c, 0);
+    CHECK_EQ(guard_canvas_sum(&g), before);
+    settings_set(SET_INA_FIT(1), 1.0f);
+    CHECK_EQ(sensors_rows_watcher((uint16_t)LINK_SM_WATCH_PORT(0)), 4);
+    outputs_screen_set_port_watch(0u, "INA3221 0x41 CH2");
+    outputs_screen()->render(&c, 0);
+    const uint32_t by_hand = guard_canvas_sum(&g);
+    outputs_screen_set_port_watch(0u, "");
+    outputs_screen()->render(&c, 0);
+    const uint32_t none = guard_canvas_sum(&g);
+    CHECK(by_hand != none);
+    sensors_rows_publish_watch();
+    outputs_screen()->render(&c, 0);
+    CHECK_EQ(guard_canvas_sum(&g), by_hand);
+    settings_set(SET_INA_SH(4), 0.0f);
+    CHECK_EQ(sensors_rows_watcher((uint16_t)LINK_SM_WATCH_PORT(0)), -1);
+    sensors_rows_publish_watch();
+    outputs_screen()->render(&c, 0);
+    CHECK_EQ(guard_canvas_sum(&g), none);
+    char name[12];
+    CHECK_STR_EQ(sensors_rows_channel(11, name, sizeof(name)), "0x43 CH3");
+    CHECK_STR_EQ(sensors_rows_channel(12, name, sizeof(name)), "");
+    CHECK_STR_EQ(sensors_rows_channel(-1, name, sizeof(name)), "");
+    CHECK_STR_EQ(sensors_rows_channel(0, NULL, 0u), "");
+    /* The meter's name in the reports: the channel watching the tester's
+     * target, PORT 1 now, or the part alone with none. */
+    char meter[20];
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    CHECK_STR_EQ(sensors_rows_meter(meter, sizeof(meter)), "INA3221");
+    settings_set(SET_INA_SH(4), 100.0f);
+    CHECK_STR_EQ(sensors_rows_meter(meter, sizeof(meter)),
+                 "INA3221 0x41 CH2");
+    CHECK_STR_EQ(sensors_rows_meter(NULL, 0u), "");
+    CHECK_STR_EQ(sensors_rows_short(meter, sizeof(meter)), "INA 0x41 CH2");
+    CHECK_STR_EQ(sensors_rows_short(NULL, 0u), "");
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    settings_set(SET_INA_FIT(1), 0.0f);
+    settings_set(SET_INA_SH(4), 100.0f);
+    settings_set(SET_INA_W(4), 0.0f);
     outputs_screen_set_port_watch(0u, NULL);
     outputs_screen_set_port_watch(LINK_PG_PORTS_MAX, "X");
 }

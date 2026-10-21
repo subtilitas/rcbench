@@ -133,7 +133,7 @@ version 8 record and starts as from an empty store.
 
 | Panel | IOmcu | SENSE_MAP, SENSE_WIN_A and SENSE_WIN_B |
 | --- | --- | --- |
-| 4.25 | 4.25 | served. The panel reads SENSE_MAP whole at every link-up, writes registers 0 to 25 in one write as SETUP > SENSORS sets them, and reads registers 26 to 30 every 500 ms while a part is fitted. It does not read SENSE_WIN_A or SENSE_WIN_B |
+| 4.25 | 4.25 | served. The panel reads SENSE_MAP whole at every link-up, writes registers 0 to 25 in one write as SETUP > SENSORS sets them, and reads registers 26 to 30 every 500 ms while a part is fitted. After a write taken it reads SENSE and IDENTITY again: capability bit 3 can change with `WATCH` alone. It reads SENSE_WIN_A whole while 0x40 or 0x41 is fitted in the map the IOmcu holds, and SENSE_WIN_B while 0x42 or 0x43 is, each every 50 ms, ARMED or SAFE, for the run log's columns ([Screens](Screens.md#table-and-what-the-esc-says)) |
 | 4.25 | 4.24 or older | the panel sends nothing to the three pages and sets SENSE's one INA3221 to one fitted part ([Screens](Screens.md)) |
 | 4.24 or older | 4.25, map derived | the panel never reads or writes the three pages. SENSE runs as before |
 | 4.24 or older | 4.25, map in force | SENSE's ENABLE bit 1 and registers 8 to 10 read the mirror part. A SENSE write that changes them is refused with BAD_VALUE, so that panel cannot change the INA3221 set-up. The INA228, the encoder and the pins stay its own |

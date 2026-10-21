@@ -4505,7 +4505,7 @@ TEST_CASE(a_withdrawal_on_an_armed_bench_restores_the_drive)
 #define PWR_BOX_Y  148
 #define PWR_BOX_H  70
 #define LAB_SUPPLY 64
-#define LAB_INA    88
+#define LAB_INA    96
 
 /* Buffer 0 drawn, and whether its CURRENT row reads @p text in @p col. */
 static bool row_reads(const char *text, ui_color_id_t col)
@@ -4536,8 +4536,8 @@ static bool line_reads(const char *label, int lab_w, const char *v,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     const char *txt[3] = { v, a, w };
     const ui_color_id_t col[3] = { UI_C_VOLT, a_col, UI_C_POWER };
-    /* 68 px each beside PD MINI; 60, 64 and 56 px beside INA3221 CH1. */
-    static const int k_fw[2][3] = { { 68, 68, 68 }, { 60, 64, 56 } };
+    /* 68 px each beside PD MINI; 52, 64 and 56 px beside a channel. */
+    static const int k_fw[2][3] = { { 68, 68, 68 }, { 52, 64, 56 } };
     const int *fw = k_fw[lab_w == LAB_INA ? 1 : 0];
     int x = RAIL_X + lab_w;
     bool fits = true;
@@ -4560,9 +4560,23 @@ static bool line_supply(const char *v, const char *a, const char *w)
     return line_reads("PD MINI", LAB_SUPPLY, v, a, UI_C_CURR, w);
 }
 
+/* The meter's name over the plot: the channel watching the tester's
+ * target, "INA 0x40 CH1", or INA3221 with none fitted. */
+static const char *ina_label(void)
+{
+    static char name[16];
+    const uint8_t f = settings_sensors_fast();
+    if (f >= SET_INA_CHANNELS) {
+        return "INA3221";
+    }
+    snprintf(name, sizeof(name), "INA 0x%02X CH%u", 0x40u + f / 3u,
+             f % 3u + 1u);
+    return name;
+}
+
 static bool line_ina(const char *v, const char *a, const char *w)
 {
-    return line_reads("INA3221 CH1", LAB_INA, v, a, UI_C_CURR, w);
+    return line_reads(ina_label(), LAB_INA, v, a, UI_C_CURR, w);
 }
 
 
@@ -4873,28 +4887,32 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
     CHECK_EQ(servo_screen_power_points(), 1);
 
     /* The range of the registers: every reading whole on the line, with
-     * its sign, the power in whole watts where tenths do not fit. */
+     * its sign, the voltage in tenths and the power in whole watts where
+     * hundredths or tenths do not fit. */
     rail_window(32767, 26000u);
     CHECK(row_reads("32.77 A", UI_C_TEXT));
-    CHECK(line_ina("26.00 V", "32.77 A", "851.9 W"));
+    CHECK(line_ina("26.0 V", "32.77 A", "851.9 W"));
     rail_window(-32768, 26000u);
     CHECK(row_reads("-32.77 A", UI_C_TEXT));
-    CHECK(line_ina("26.00 V", "-32.77 A", "-852 W"));
+    CHECK(line_ina("26.0 V", "-32.77 A", "-852 W"));
     rail_window(-32768, 65535u);
-    CHECK(line_ina("65.54 V", "-32.77 A", "-2147 W"));
+    CHECK(line_ina("65.5 V", "-32.77 A", "-2147 W"));
     rail_window(32767, 65535u);
-    CHECK(line_ina("65.54 V", "32.77 A", "2147 W"));
+    CHECK(line_ina("65.5 V", "32.77 A", "2147 W"));
     /* Where the tenths stop fitting: 7 cells. */
+    /* Hundredths of a volt to 9.99 V. */
+    rail_window(1000, 9994u);
+    CHECK(line_ina("9.99 V", "1.00 A", "10.0 W"));
     rail_window(-9990, 10000u);
-    CHECK(line_ina("10.00 V", "-9.99 A", "-99.9 W"));
+    CHECK(line_ina("10.0 V", "-9.99 A", "-99.9 W"));
     rail_window(-10000, 10000u);
-    CHECK(line_ina("10.00 V", "-10.00 A", "-100 W"));
+    CHECK(line_ina("10.0 V", "-10.00 A", "-100 W"));
     rail_window(9999, 10000u);
-    CHECK(line_ina("10.00 V", "10.00 A", "100.0 W"));
+    CHECK(line_ina("10.0 V", "10.00 A", "100.0 W"));
     rail_window(10000, 10005u);
-    CHECK(line_ina("10.01 V", "10.00 A", "100.1 W"));
+    CHECK(line_ina("10.0 V", "10.00 A", "100.1 W"));
     rail_window(-10005, 10000u);                  /* -100.05 W */
-    CHECK(line_ina("10.00 V", "-10.01 A", "-100 W"));
+    CHECK(line_ina("10.0 V", "-10.01 A", "-100 W"));
     rail_window(1637, 5000u);
     CHECK(row_reads("1.64 A", UI_C_TEXT));
     rail_window(0, 0u);
@@ -4974,7 +4992,7 @@ TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
     window(&w);
     /* The same digits: the colour alone repaints the row. */
     CHECK(row_reads("1.59 A", UI_C_WARN));
-    CHECK(line_reads("INA3221 CH1", LAB_INA, "5.90 V", "1.59 A", UI_C_WARN,
+    CHECK(line_reads(ina_label(), LAB_INA, "5.90 V", "1.59 A", UI_C_WARN,
                      "9.4 W"));
     CHECK_NEAR(servo_screen_power_sample(1, 0), 1.59f, 1e-6f);
 
@@ -4988,7 +5006,7 @@ TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
     w.clipped = 255u;
     window(&w);
     CHECK(row_reads("-1.60 A", UI_C_WARN));
-    CHECK(line_reads("INA3221 CH1", LAB_INA, "5.90 V", "-1.60 A", UI_C_WARN,
+    CHECK(line_reads(ina_label(), LAB_INA, "5.90 V", "-1.60 A", UI_C_WARN,
                      "-9.4 W"));
 
     /* The count of clipped samples alone marks nothing, and a clipped

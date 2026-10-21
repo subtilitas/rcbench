@@ -69,13 +69,13 @@ The line over the plot names the meter of the servo rail:
 
 | Name | Meter |
 |---|---|
-| `INA3221 CH1` | CH1 of the INA3221: the mean current and voltage of its last 50 ms window, 20 points a second |
+| `INA 0x41 CH2` | the INA3221 channel that watches the servo tester's target in SETUP > SENSORS, here 0x41's CH2: the mean current and voltage of its last 50 ms window, 20 points a second |
 | `PD MINI` | the PD mini supply's last sample, or the panel's supply model |
 
 ![The INA3221 as the rail's meter](view:servo-ina)
 ![A clipped window, in the warning colour](view:servo-clipped)
 
-The INA3221 becomes the meter 1000 ms after its conditions hold: it is enabled on SETUP, INTERFACES with CH1, the IOmcu speaks protocol 4.11, and windows with current samples arrive. A window in which a sample hit the end of the range, 1.638 A on a 0.1 ohm shunt, shows in the warning colour: its mean is then a bound.
+The INA3221 becomes the meter 1000 ms after its conditions hold: a channel of a fitted part watches the tester's target in SETUP > SENSORS (on an IOmcu older than 4.25, CH1 of its part), the IOmcu speaks protocol 4.11, and windows with current samples arrive. A window in which a sample hit the end of the range, 1.638 A on a 0.1 ohm shunt, shows in the warning colour: its mean is then a bound.
 
 ![The panel's supply model as the meter, with the SIMULATED pill](view:servo-model)
 
@@ -117,7 +117,7 @@ The card's summary line names the steps and the length of each, `4.8 6.0 V BROWN
 
 ![A test run](view:servo-run)
 
-TEST stays shown as the run starts, and the card's state line reads the step. LIVE shows its step and phase at the top of the left card, with the meter beside STOP TEST: `PD mini`, `INA3221 CH1` or `SIMULATION`. The run ends early, the output off and the servo released, on STOP TEST, STOP, a switch to SAFE, a lost link, leaving the screen, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, or a change to the servo's settings. A run on the INA3221 also ends when the INA3221 stops being the meter, or when no window with both current and voltage arrives for 200 ms (4 windows of 50 ms): `no INA3221 window for 0.2 s`.
+TEST stays shown as the run starts, and the card's state line reads the step. LIVE shows its step and phase at the top of the left card, with the meter beside STOP TEST: `PD mini`, the channel, `INA 0x41 CH2`, or `SIMULATION`. The run ends early, the output off and the servo released, on STOP TEST, STOP, a switch to SAFE, a lost link, leaving the screen, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, or a change to the servo's settings. A run on the INA3221 also ends when the INA3221 stops being the meter, or when no window with both current and voltage arrives for 200 ms (4 windows of 50 ms): `no INA3221 window for 0.2 s`.
 
 ![A result](view:servo-result)
 ![A result read from the INA3221](view:servo-result-ina)
@@ -136,14 +136,14 @@ The limit run finds where the installed servo binds at each end of its travel. I
 4. Hold START LIMIT RUN for 2 s while the bench is ARMED. A tap or a shorter hold starts nothing.
 5. TEST stays shown. The box on LIVE's left card shows the phase, the side and the pulse, and the output it drives.
 
-The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT 1 GP13, CURRENT INA3221 CH1` or `OUTPUT SERVO PWM GP2, CURRENT INA3221 CH1`. The TARGET row stays in sight as well.
+The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT 1 GP13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GP2, CURRENT INA3221 0x40 CH1`. The TARGET row stays in sight as well.
 
-The run reads only INA3221 CH1. With the PD mini or the model as the servo rail's meter, START LIMIT RUN stays grey and the line says why:
+The run reads only the INA3221 channel that watches the tester's target. With the PD mini or the model as the servo rail's meter, START LIMIT RUN stays grey and the line says why:
 
 | Line | Condition |
 |---|---|
 | `ARM FIRST` | the bench is SAFE |
-| `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | the INA3221 or its CH1 is off on SETUP, INTERFACES |
+| `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS |
 | `INA3221 OFFLINE` | no link, or the INA3221 does not answer |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the meter yet |
 | `SERVO SUPPLY BELOW 3.0 V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0 V: an output that is off reads 0 V |

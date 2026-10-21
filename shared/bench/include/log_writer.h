@@ -15,6 +15,7 @@
 #include <stdint.h>
 
 #include "bench_state.h"
+#include "log_cols.h"
 #include "supply.h"
 
 #ifdef __cplusplus
@@ -47,6 +48,10 @@ typedef struct {
     float      committed_s;  /**< t_s of the row the last commit ended at */
     bool       header_done;
     bool       failed;     /**< a write failed; the file is not trustworthy */
+    /** The INA3221 columns go by cols (log_writer_set_cols()), not CH1 to
+     *  CH3. */
+    bool       by_map;
+    log_cols_t cols;
     /** A bench row as it is built: 23 cells, here rather than on the
      *  stack of the task that writes the card. */
     char       line[LOG_WRITER_LINE_MAX];
@@ -92,6 +97,15 @@ typedef struct {
 #define LOG_WRITER_SRC_MODEL    "model"
 
 void log_writer_init(log_writer_t *w, const log_sink_t *sink);
+
+/**
+ * The INA3221 columns of this file, before its header: with SENSE_MAP in
+ * force a group per watched target (log_cols.h), read from the window
+ * bench_state_t.chw carries; NULL for SERVO_SENSE's CH1 to CH3, as an
+ * IOmcu older than 4.25 has them.  Taken until the header is written,
+ * ignored after.
+ */
+void log_writer_set_cols(log_writer_t *w, const log_cols_t *cols);
 
 /**
  * Write the header row.  log_writer_row calls it if it has not been called,

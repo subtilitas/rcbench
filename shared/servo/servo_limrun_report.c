@@ -174,6 +174,7 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
     }
     if (here(c)) {
         snprintf(c->buf, c->n, LS(L_R_METER),
+                 (g->meter[0] != '\0') ? g->meter : "INA3221",
                  (double)g->shunt_dmohm / 10.0);
         return true;
     }

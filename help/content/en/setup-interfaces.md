@@ -34,7 +34,7 @@ The IOmcu reads a TI INA228 in the ESC's power path, set up here, and up to four
 - A reading at the top of the range is shown as clipped, never as a value: 163.8 mV across the INA3221's shunt.
 - A monitor that stops answering does not switch the bench to SAFE: nothing trips on the monitors' readings.
 
-The band names what goes wrong, one message at a time, at most one every 5 s. For example: `Sensor SDA or SCL not set. Check SETUP > INTERFACES.`, `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.`, `INA228 is not responding at 0x45.`, `INA3221 CH1 clipped at 1.64 A. Reading shows only the limit.`. A message about the set-up -- pins not set, one address, a value rejected -- leaves the band as soon as the setting is right again and the IOmcu holds it.
+The band names what goes wrong, one message at a time, at most one every 5 s. For example: `Sensor SDA or SCL not set. Check SETUP > INTERFACES.`, `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.`, `INA228 is not responding at 0x45.`, `INA3221 0x40 CH1 clipped at 1.64 A. Reading shows only the limit.`. A message about the set-up -- pins not set, one address, a value rejected -- leaves the band as soon as the setting is right again and the IOmcu holds it.
 
 ## A row the IOmcu does not hold
 

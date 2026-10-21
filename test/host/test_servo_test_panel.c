@@ -677,9 +677,9 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
     CHECK_EQ(bench.ends, 1u);
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "Supply:         PD mini\n") != NULL);
-    CHECK(strstr(bench.report, "Current:        INA3221 CH1, shunt 50.0 mOhm, "
+    CHECK(strstr(bench.report, "Current:        INA3221 0x40 CH1, shunt 50.0 mOhm, "
                            "range 3.276 A\n") != NULL);
-    CHECK(strstr(bench.report, "Voltage:        INA3221 CH1, load side of the "
+    CHECK(strstr(bench.report, "Voltage:        INA3221 0x40 CH1, load side of the "
                            "shunt\n") != NULL);
     CHECK(strstr(bench.report, "INA3221:        not used") == NULL);
     CHECK(strstr(bench.csv_head, ";travel (ms);meter;window;current max (A);")

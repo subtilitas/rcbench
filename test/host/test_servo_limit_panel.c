@@ -339,7 +339,7 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     CHECK(strstr(bench.report, "RCBENCH SERVO LIMIT REPORT\n") == bench.report);
     CHECK(strstr(bench.report, "FOUND") != NULL);
     CHECK(strstr(bench.report, "search only, nothing written") != NULL);
-    CHECK(strstr(bench.report, "INA3221 CH1, 50 ms windows") != NULL);
+    CHECK(strstr(bench.report, "INA3221 0x40 CH1, 50 ms windows") != NULL);
     CHECK(strstr(bench.report, "Not run: search only.") != NULL);
     CHECK(strstr(bench.report, "RESTORE") == NULL);
     unsigned lo = 0u, hi = 0u;

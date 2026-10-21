@@ -66,10 +66,10 @@
 #define TAG_Y     118
 #define TAG_H     24
 #define PWR_TXT_Y 150
-/* The line over the plot: the meter's name, 8 cells of 8 px for PD MINI
- * and 11 for INA3221 CH1, then the three readings (k_line_w). */
+/* The line over the plot: the meter's name, 8 cells of 8 px for PD MINI,
+ * 12 for "INA 0x41 CH2", then the three readings (k_line_w). */
 #define PWR_LAB_W     64
-#define PWR_LAB_W_INA 88
+#define PWR_LAB_W_INA 96
 #define PWR_Y     170
 #define PWR_H     48
 /* The supply's set points, each a value the keypad opens on, and OUTPUT ON

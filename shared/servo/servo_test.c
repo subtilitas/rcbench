@@ -106,7 +106,7 @@ void servo_test_meter_ina3221(servo_test_meter_t *m, uint16_t shunt_dmohm)
     }
     memset(m, 0, sizeof(*m));
     m->kind        = (uint8_t)SERVO_TEST_METER_INA3221;
-    snprintf(m->name, sizeof(m->name), "INA3221 CH1");
+    snprintf(m->name, sizeof(m->name), "INA3221");
     m->span_ms     = SERVO_TEST_WIN_MS;
     m->lag_ms      = SERVO_TEST_WIN_MS;
     m->repeats     = false;

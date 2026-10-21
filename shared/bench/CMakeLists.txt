@@ -11,12 +11,14 @@ set(SRCS
     bench_state.c
     telemetry_sim.c
     log_writer.c
+    log_cols.c
     log_cadence.c
     supply.c
     supply_link.c
     sense_link.c
     sense_link_view.c
     sense_map_link.c
+    sense_win_link.c
     servo_source.c
     tone_link.c
     endpoints_link.c

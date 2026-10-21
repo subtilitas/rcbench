@@ -431,6 +431,10 @@ static void log_open(uint32_t run, log_run_kind_t kind)
     const log_sink_t sink = { .write = file_write, .flush = file_flush,
                               .ctx = s_log_file };
     log_writer_init(&s_log, &sink);
+    /* The INA3221 columns as the map the IOmcu holds makes them now: a
+     * run's file keeps them, as the map takes no change while it drives. */
+    log_cols_t cols;
+    log_writer_set_cols(&s_log, sense_log_cols(&cols) ? &cols : NULL);
 }
 
 static void log_close(void)

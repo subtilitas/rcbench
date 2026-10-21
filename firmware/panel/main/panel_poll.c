@@ -129,6 +129,8 @@ static bool poll_bench(bench_state_t *bench)
          * while the bank drives.  SENSE_MAP first: SENSE's mirror
          * registers follow the map it holds. */
         sense_map_service(written && !armed && !outputs_armed(&s_out));
+        /* And every channel's last window, armed or not: readings. */
+        sense_win_service();
         sense_link_service(written && !armed && !outputs_armed(&s_out),
                            bench);
         /* And the phase tap's: an input, taken armed or not. */
@@ -735,7 +737,9 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
 static void servo_window_take(bench_state_t *bench)
 {
     if (!sense_link_win_on(&s_sense_link)) {
-        (void)sense_link_take_window(&s_sense_link, bench);
+        if (sense_link_take_window(&s_sense_link, bench)) {
+            sense_win_attach(bench);
+        }
         return;
     }
     sense_link_win_t w;
@@ -743,6 +747,8 @@ static void servo_window_take(bench_state_t *bench)
         return;
     }
     sense_link_win_bench(&s_sense_link, &w, bench);
+    /* And every watched channel's same window, for the log. */
+    sense_win_attach(bench);
     /* With the meter as this poll decided it: the snapshot the render side
      * reads can be older or newer than a window on the queue. */
     servo_win_item_t item = {
