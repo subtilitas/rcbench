@@ -93,8 +93,13 @@ On a PRECHARGE line:
   stops with the pad released, and the pin's control and pad registers
   are written back as they were.
 - A receive started with the supply asked on is cut (result 6, `CUT`) at
-  the pass that finds the supply asked off, its output read off (the PD
-  mini's protection leaves OUTPUT asked on), or no PD mini answering. One
+  the pass that finds the supply asked off, no PD mini answering, or its
+  output read off after it read on (the PD mini's protection leaves
+  OUTPUT asked on). A SEND or a LISTEN counts as read on from its start.
+  POWER's LISTEN starts in the pass of the ON, while the output still
+  reads off; it counts as read on from the first pass that does not read
+  the output off. One whose output reads off for the whole window,
+  30,000 us at most, runs to its end with result 2 (`DONE`). A receive
   started with the supply off, or with no PD mini, runs to its end.
 
 `STATE` bit 7 reads the register; register 25 of `VIEW` 2, bit 8, says the

@@ -47,7 +47,7 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
 | High level | made by the servo; with no servo the line is low | made by a pull-up; the servo has a 3 kOhm pull-down (reported with another programmer, not measured here) |
 | Master frame | 4 bytes `cmd p1 p2 sum`; the 4 bytes sum to 0 modulo 256 | write 7 bytes `96 ID addr 02 lo hi sum`, read 5 bytes `96 ID addr 00 sum`; `sum` is the low byte of the sum of every byte after the header |
 | Reply | 2 bytes: value and `+`, `+ +`, or position high and low | 7 bytes `69 ID addr 02 lo hi sum`; a write is not answered |
-| Reply start | 508 to 517 us after the start of the master's last byte after reads, up to 614 us after writes and after the first read of a session: inside the master's stop bit | 5.9 to 6.5 ms after the end of the request |
+| Reply start | 508 to 517 us after the start of the master's last byte after reads, up to 614 us after writes and after the first read of a session: inside the master's stop bit | 5.9 to 6.5 ms after the end of the request (HFP-30); 5.93 to 6.52 ms over 153 reads by PRECHARGE (D485HW, 2026-10-20) |
 | Reply bytes | 516 to 528 us start to start (10 bits are 520.8 us) | back to back, 86 to 87 us start to start (86.8 us) |
 | Master bytes | 572 us start to start (HPP-21 Plus), 521 us (HFP-30) | back to back |
 
@@ -133,7 +133,7 @@ classic entry. Every failed check has its own code:
 | Accept window of the first byte | From | Accepted | Measured |
 |---|---|---|---|
 | Classic | the start of the master's last byte | 494.8 us (the middle of the master's stop bit) to 1 ms | 508 to 614 us |
-| D series | the end of the request's last stop bit | 2 ms to 20 ms | 5.9 to 6.5 ms; 15.2 ms is reported with another programmer |
+| D series | the end of the request's last stop bit | 2 ms to 20 ms | 5.9 to 6.5 ms (HFP-30); 5.93 to 6.52 ms over 153 reads by PRECHARGE (D485HW, 2026-10-20); 15.2 ms is reported with another programmer |
 
 The D decoder checks the first 7 bytes and no byte after them: the byte
 0x00 the D485HW sends after its answer, and the release of the line,
@@ -223,7 +223,11 @@ setting:
 With a 20 ns precharge and the sample 80 ns after the release, 133 of 133
 reads of 19 registers passed with a 10 ms window and 30 of 30 with a
 25 ms window, equal to the HFP-30's reads of the same registers. The
-answer started 5.2 to 5.9 ms into the window.
+answer started 5.2 to 5.9 ms into the bench reader's window.
+
+With this module's values on GP13 and no pull-up (D485HW, 2026-10-20),
+the D decoder's delay, from the end of the request's last stop bit, was
+5.93 to 6.52 ms over 153 reads.
 
 The module takes the middle of that window:
 
