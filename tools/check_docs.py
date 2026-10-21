@@ -1447,19 +1447,27 @@ SPDX_DIRS = (
 
 
 def check_spdx(problems: list[str]) -> None:
-    """Every source file and every tool script carries an SPDX (Software
-    Package Data Exchange) licence line.  A new file without one fails the
-    build.
+    """Check that every source file and tool script carries an SPDX line.
+
+    SPDX is Software Package Data Exchange.  A new file without the licence
+    line fails the build.  The walk skips build trees, tool caches and the
+    registry components a panel build fetches.
+
+    Args:
+        problems: Receives one line per file without the licence line.
     """
     import os
     seen = set()
     for base, suffixes in SPDX_DIRS:
         for dp, dn, fn in os.walk(REPO / base):
             # Prune build trees in place (build, build-san, build-cov) so the
-            # walk never reaches a toolchain's own probe files, and the
-            # caches and installed packages of the tools.
+            # walk never reaches a toolchain's own probe files, the caches
+            # and installed packages of the tools, and the registry
+            # components a panel build fetches (managed_components), which
+            # are not the repository's and carry their own licences.
             dn[:] = [d for d in dn if not d.startswith("build")
-                     and d not in ("__pycache__", "node_modules")]
+                     and d not in ("__pycache__", "node_modules",
+                                   "managed_components")]
             for f in fn:
                 path = pathlib.Path(dp) / f
                 if not f.endswith(suffixes) or path in seen:
