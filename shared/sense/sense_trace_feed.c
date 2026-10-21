@@ -124,9 +124,7 @@ static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt,
 }
 
 /**
- * @brief The tick's records, when it has any.
- *
- * @p tick_t is its start.
+ * @brief The tick's records, when it has any.  @p tick_t is its start.
  *
  * @param tr The trace.
  * @param s The schedule that has ticked; NULL when there is no bus.

@@ -1,6 +1,9 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief Bring-up of the link: status replies, round-trip times and the
+ *        diagnosis.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "link_bringup.h"
@@ -17,9 +20,6 @@
  * INTERMITTENT.
  */
 #define SHORTFALL_NUM 9
-/**
- * @brief Shortfall ratio of the link diagnosis: 9 of 10 polls must be answered.
- */
 #define SHORTFALL_DEN 10
 
 /**

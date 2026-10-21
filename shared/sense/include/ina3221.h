@@ -5,25 +5,26 @@
  *
  * The register codec and a driver that talks to one part through sense_bus.h.
  *
- * Written from the datasheet, TI SBOS576C (May 2012, revised September 2026).
- * Tables and sections below are that document's.
+ * Written from the datasheet, TI SBOS576C (May 2012, revised September
+ * 2026).  Tables and sections below are that document's.
  *
- * Readings.  Shunt and bus registers hold a sign and 12 data bits in bits 15-3
- * (Table 8-2): shunt 40 µV a step, ±163.84 mV; bus 8 mV a step, measured at
- * IN-, the load side of the shunt (§7.3.1).  The DAOKAI module's 0.1 Ω shunts
- * give 400 µA a step and 1.638 A at the top code (7FF8h); a reading at either
- * end of the code range is a clip, never a value.  What the part reports past
- * 163.84 mV is not stated; a reading there is taken to stay at the end code.
+ * Readings.  Shunt and bus registers hold a sign and 12 data bits in bits
+ * 15-3 (Table 8-2): shunt 40 µV a step, ±163.84 mV; bus 8 mV a step,
+ * measured at IN-, the load side of the shunt (§7.3.1).  The DAOKAI
+ * module's 0.1 Ω shunts give 400 µA a step and 1.638 A at the top code
+ * (7FF8h); a reading at either end of the code range is a clip, never a
+ * value.  What the part reports past 163.84 mV is not stated; a reading
+ * there is taken to stay at the end code.
  *
- * Identity (§8.2.19, §8.2.20): manufacturer 5449h ("TI"), die 3220h.  A DAOKAI
- * unit read by one buyer answered 1408h, 0000h and configuration 1101h: such a
- * part is reported with what it answered and is not used. Nothing is written to
- * a part before both IDs match.
+ * Identity (§8.2.19, §8.2.20): manufacturer 5449h ("TI"), die 3220h.  A
+ * DAOKAI unit read by one buyer answered 1408h, 0000h and configuration
+ * 1101h: such a part is reported with what it answered and is not used.
+ * Nothing is written to a part before both IDs match.
  *
- * Averaging.  Table 8-4 says AVG sets the samples averaged together; §7.4.1
- * describes a running filter that updates on every conversion. When a result
- * updates with averaging above 1 is not settled by the datasheet and not
- * measured; this bench runs averaging at 1.
+ * Averaging.  Table 8-4 says AVG sets the samples averaged together;
+ * §7.4.1 describes a running filter that updates on every conversion.
+ * When a result updates with averaging above 1 is not settled by the
+ * datasheet and not measured; this bench runs averaging at 1.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -54,7 +55,7 @@ enum {
 };
 
 /**
- * @brief Identity values of the INA3221.
+ * @brief Identity values and I2C addresses of the INA3221.
  */
 #define INA3221_MAKER_ID  0x5449u   /**< §8.2.19 */
 #define INA3221_DIE       0x3220u   /**< §8.2.20 */
@@ -68,13 +69,8 @@ enum {
  */
 #define INA3221_SHUNT_MIN_UOHM 100u
 
-/**
- * @brief Configuration bits, Table 8-4.
- */
+/** @brief Configuration bits, Table 8-4. */
 #define INA3221_CONFIG_RST    0x8000u
-/**
- * @brief Bits of the INA3221 Configuration register.
- */
 #define INA3221_CONFIG_CH1EN  0x4000u
 #define INA3221_CONFIG_CH2EN  0x2000u
 #define INA3221_CONFIG_CH3EN  0x1000u
@@ -98,9 +94,6 @@ enum {
  * Reading the register clears CF1-3, SF, WF1-3 and CVRF.
  */
 #define INA3221_ME_SCC1  0x4000u
-/**
- * @brief Bits of the INA3221 Mask/Enable register.
- */
 #define INA3221_ME_SCC2  0x2000u
 #define INA3221_ME_SCC3  0x1000u
 #define INA3221_ME_WEN   0x0800u
@@ -123,16 +116,11 @@ enum {
  * CH1 alone gives a fresh result every 280 µs; all three every 840 µs.
  */
 #define INA3221_CONFIG_BENCH_CH1 0x4007u
-/**
- * @brief Configuration values the bench runs.
- */
 #define INA3221_CONFIG_BENCH_ALL 0x7007u
 
 /**
- * @brief Configuration from its fields.
- *
- * @p channels: bit 0 CH1, bit 1 CH2, bit 2 CH3, which the register holds in
- * bits 14, 13 and 12.
+ * @brief Configuration from its fields.  @p channels: bit 0 CH1, bit 1 CH2, bit
+ * 2 CH3, which the register holds in bits 14, 13 and 12.
  *
  * @param channels Bit 0 CH1, bit 1 CH2, bit 2 CH3, which the register holds in
  *       bits 14, 13 and 12.
@@ -227,9 +215,6 @@ int32_t ina3221_bus_mv(int32_t code);
 
 /* -------------------------------------------------------------- driver */
 
-/**
- * @brief Result of ina3221_init() and ina3221_init_shunts().
- */
 typedef enum {
     INA3221_SETUP_OK = 0,
     INA3221_SETUP_BAD_ADDR,     /**< outside 0x40 to 0x43                 */

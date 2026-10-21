@@ -11,12 +11,11 @@
 #include "link_can.h"
 #include "link_pages.h"
 
-/**
- * @brief The frame that arms is ARM, THROTTLE and MOTOR_POLES from offset 0,
- * and it fits one CAN (Controller Area Network) frame only while the three stay
- * contiguous from register 0 and no wider than a frame.
- *
- * Renumbering them is a protocol major, and this is where the build says so.
+/*
+ * The frame that arms is ARM, THROTTLE and MOTOR_POLES from offset 0, and it
+ * fits one CAN (Controller Area Network) frame only while the three stay
+ * contiguous from register 0 and no wider than a frame.  Renumbering them is
+ * a protocol major, and this is where the build says so.
  */
 _Static_assert(LINK_CT_ARM == 0 && LINK_CT_THROTTLE == 1
                && LINK_CT_MOTOR_POLES == 2,

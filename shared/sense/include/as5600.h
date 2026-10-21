@@ -5,71 +5,80 @@
  *
  * The register codec and a driver that talks to one part through sense_bus.h.
  *
- * Written from the datasheet, ams AS5600 DS000365 v1-06.  The part sits at the
- * fixed address 0x36 and sends the most significant byte first.  A register
- * pointer write followed by a repeated START reads one register or, with the
- * pointer incrementing, the next ones.
+ * Written from the datasheet, ams AS5600 DS000365 v1-06.  The part sits at
+ * the fixed address 0x36 and sends the most significant byte first.  A
+ * register pointer write followed by a repeated START reads one register
+ * or, with the pointer incrementing, the next ones.
  *
  * Registers used:
  *
- * 0x0B STATUS  bit 5 MD (magnet detected), bit 4 ML (magnet too weak), bit 3 MH
- * (magnet too strong); bits 7, 6, 2, 1 and 0 are blank in the register map and
- * are masked off 0x0C RAW ANGLE  bits 11-0 in 0x0C bits 3-0 and 0x0D: the angle
- * before the zero position, the maximum angle and the filters 0x0E ANGLE  the
- * same 12 bits after them; equal to RAW ANGLE while ZPOS and MPOS are not
- * burned 0x1A AGC  automatic gain control, 0 to 255 at 5 V and 0 to 128 at 3.3
- * V; a magnet at the right distance reads near the middle of the range 0x1B
- * MAGNITUDE  bits 11-0 in 0x1B bits 3-0 and 0x1C: the CORDIC magnitude, a
- * measure of the field
+ *   0x0B STATUS     bit 5 MD (magnet detected), bit 4 ML (magnet too weak),
+ *                   bit 3 MH (magnet too strong); bits 7, 6, 2, 1 and 0 are
+ *                   blank in the register map and are masked off
+ *   0x0C RAW ANGLE  bits 11-0 in 0x0C bits 3-0 and 0x0D: the angle before
+ *                   the zero position, the maximum angle and the filters
+ *   0x0E ANGLE      the same 12 bits after them; equal to RAW ANGLE while
+ *                   ZPOS and MPOS are not burned
+ *   0x1A AGC        automatic gain control, 0 to 255 at 5 V and 0 to 128 at
+ *                   3.3 V; a magnet at the right distance reads near the
+ *                   middle of the range
+ *   0x1B MAGNITUDE  bits 11-0 in 0x1B bits 3-0 and 0x1C: the CORDIC
+ *                   magnitude, a measure of the field
  *
  * One count is 360 / 4096 = 0.0879 degrees.  The count wraps from 4095 to 0;
- * differences between two angles are taken on the circle (as5600_delta()).
+ * differences between two angles are taken on the circle
+ * (as5600_delta()).
  *
  * Reads.  Each register is read in a transaction of its own: the register
- * address, a repeated START, then the register's bytes.  The datasheet (ams
- * AS5600 DS000365, I2C section, "Automatic Increment of the Address Pointer for
- * ANGLE, RAW ANGLE and MAGNITUDE Registers") says: "These are special registers
- * which suppress the automatic increment of the address pointer on reads, so a
- * re-read of these registers requires no I2C write command to reload the
- * address pointer. This special treatment of the pointer is effective only if
- * the address pointer is set to the high byte of the register."  Elsewhere it
- * says the pointer "is incremented after each byte is transferred, except for
- * certain read transactions to special registers".  A read that runs from
- * STATUS (0x0B) into RAW ANGLE, or from AGC (0x1A) into MAGNITUDE, arrives at a
- * special register by the increment, and the code does not rely on what the
- * part does then:
+ * address, a repeated START, then the register's bytes.  The datasheet
+ * (ams AS5600 DS000365, I2C section, "Automatic Increment of the Address
+ * Pointer for ANGLE, RAW ANGLE and MAGNITUDE Registers") says: "These are
+ * special registers which suppress the automatic increment of the address
+ * pointer on reads, so a re-read of these registers requires no I2C write
+ * command to reload the address pointer. This special treatment of the
+ * pointer is effective only if the address pointer is set to the high byte
+ * of the register."  Elsewhere it says the pointer "is incremented after
+ * each byte is transferred, except for certain read transactions to special
+ * registers".  A read that runs from STATUS (0x0B) into RAW ANGLE, or from
+ * AGC (0x1A) into MAGNITUDE, arrives at a special register by the
+ * increment, and the code does not rely on what the part does then:
  *
- * STATUS  0x0B  1 byte RAW ANGLE  0x0C  2 bytes, high byte first AGC  0x1A  1
- * byte MAGNITUDE  0x1B  2 bytes, high byte first
+ *   STATUS     0x0B  1 byte
+ *   RAW ANGLE  0x0C  2 bytes, high byte first
+ *   AGC        0x1A  1 byte
+ *   MAGNITUDE  0x1B  2 bytes, high byte first
  *
- * Bus time at 400 kHz, 9 clocks a byte, the address byte written, the register
- * byte and the address byte read, and 3 clocks for START, repeated START and
- * STOP: 39 clocks (97.5 us) for a 1-byte read, 48 clocks (120 us) for a 2-byte
- * read, without the controller's own time between transactions, which is not
- * measured.  as5600_read_angle() is 217.5 us, as5600_read_magnitude() 217.5 us.
+ * Bus time at 400 kHz, 9 clocks a byte, the address byte written, the
+ * register byte and the address byte read, and 3 clocks for START,
+ * repeated START and STOP: 39 clocks (97.5 us) for a 1-byte read, 48 clocks
+ * (120 us) for a 2-byte read, without the controller's own time between
+ * transactions, which is not measured.  as5600_read_angle() is 217.5 us,
+ * as5600_read_magnitude() 217.5 us.
  *
- * The magnet bits.  The datasheet's STATUS table (Figure 23) gives the state
- * when each bit is high: MD (0x0B bit 5) "Magnet was detected", ML (bit 4) "AGC
- * maximum gain overflow, magnet too weak", MH (bit 3) "AGC minimum gain
- * overflow, magnet too strong".  Under "Magnet Detection" it says: "the AS5600
- * indicates the absence of the magnet. If the measured magnet field strength
- * goes below the minimum specified level (Bz_ERROR), the output is driven low,
- * without regard to which output mode has been selected (analog or PWM) and the
- * MD bit in the STATUS register is 0." Bz_ERROR is 8 mT at most.  So with MD
- * clear RAW ANGLE is not a position and is not used as one (as5600_md()).  For
- * ML and MH the datasheet states no effect on the angle or the output: the gain
- * control has reached the end of its range, and the noise figures (0.015 and
- * 0.043 degrees RMS) are specified for a field of 30 to 90 mT only.  An angle
- * read with MD set and ML or MH set is used, and its noise is not specified.
+ * The magnet bits.  The datasheet's STATUS table (Figure 23) gives the
+ * state when each bit is high: MD (0x0B bit 5) "Magnet was detected", ML
+ * (bit 4) "AGC maximum gain overflow, magnet too weak", MH (bit 3) "AGC
+ * minimum gain overflow, magnet too strong".  Under "Magnet Detection" it
+ * says: "the AS5600 indicates the absence of the magnet. If the measured
+ * magnet field strength goes below the minimum specified level (Bz_ERROR),
+ * the output is driven low, without regard to which output mode has been
+ * selected (analog or PWM) and the MD bit in the STATUS register is 0."
+ * Bz_ERROR is 8 mT at most.  So with MD clear RAW ANGLE is not a position
+ * and is not used as one (as5600_md()).  For ML and MH the datasheet states
+ * no effect on the angle or the output: the gain control has reached the
+ * end of its range, and the noise figures (0.015 and 0.043 degrees RMS)
+ * are specified for a field of 30 to 90 mT only.  An angle read with MD
+ * set and ML or MH set is used, and its noise is not specified.
  *
- * Identity.  The part has no identity register, and the five blank STATUS bits
- * are no identity: the register map's note says "Blank fields may contain
- * factory settings", so what they read is not guaranteed.  A probe reads STATUS
- * and takes any answer as the part, with one exception: ML and MH both set say
- * the gain is at its maximum and its minimum at once, which no AS5600 reports
- * and a device answering 0xFF does (as5600_status_possible()); that answer is
- * not used (SENSE_PART_WRONG_ID).  The datasheet does not state the exception;
- * it follows from the two bits' meanings.  An AS5600L answers at 0x40 by
+ * Identity.  The part has no identity register, and the five blank STATUS
+ * bits are no identity: the register map's note says "Blank fields may
+ * contain factory settings", so what they read is not guaranteed.  A probe
+ * reads STATUS and takes any answer as the part, with one exception: ML and
+ * MH both set say the gain is at its maximum and its minimum at once, which
+ * no AS5600 reports and a device answering 0xFF does
+ * (as5600_status_possible()); that answer is not used
+ * (SENSE_PART_WRONG_ID).  The datasheet does not state the exception; it
+ * follows from the two bits' meanings.  An AS5600L answers at 0x40 by
  * default and is not addressed here.
  *
  * Pure C, no SDK (software development kit): host-tested in test_as5600.
@@ -88,9 +97,6 @@
 extern "C" {
 #endif
 
-/**
- * @brief I2C address, register addresses and STATUS bits of the AS5600.
- */
 #define AS5600_ADDR          0x36u
 #define AS5600_REG_STATUS    0x0Bu
 #define AS5600_REG_RAW_ANGLE 0x0Cu
@@ -98,24 +104,15 @@ extern "C" {
 #define AS5600_REG_AGC       0x1Au
 #define AS5600_REG_MAGNITUDE 0x1Bu
 
-/**
- * @brief STATUS bits of the AS5600.
- */
 #define AS5600_STATUS_MH     0x08u
 #define AS5600_STATUS_ML     0x10u
 #define AS5600_STATUS_MD     0x20u
-/**
- * @brief The bits STATUS defines; the other five are not read.
- */
+/** @brief The bits STATUS defines; the other five are not read. */
 #define AS5600_STATUS_MASK   (AS5600_STATUS_MH | AS5600_STATUS_ML | AS5600_STATUS_MD)
 
-/**
- * @brief Counts in one turn: 12 bits.
- */
+/** @brief Counts in one turn: 12 bits. */
 #define AS5600_COUNTS        4096u
-/**
- * @brief Hundredths of a degree in one turn.
- */
+/** @brief Hundredths of a degree in one turn. */
 #define AS5600_CDEG_TURN     36000
 
 /**
@@ -189,9 +186,6 @@ int32_t as5600_cdeg(int32_t counts);
 
 /* -------------------------------------------------------------- driver */
 
-/**
- * @brief One AS5600 on a sensor bus: its part record.
- */
 typedef struct {
     sense_part_t part;
 } as5600_t;

@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief Maps link messages onto CAN frames and back; see link_can.h.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "link_can.h"

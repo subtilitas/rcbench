@@ -18,9 +18,7 @@
 extern "C" {
 #endif
 
-/**
- * @brief Registers in a page, and therefore in the largest transfer.
- */
+/** @brief Registers in a page, and therefore in the largest transfer. */
 #define LINK_MAX_REGS 32
 
 /**
@@ -34,19 +32,20 @@ typedef enum {
     LINK_OP_NACK  = 0x05, /**< IOmcu refused it; regs[0] says why      */
 } link_op_t;
 
-/**
- * @brief Reasons a NACK (negative acknowledge) carries.
- */
+/** @brief Reasons a NACK (negative acknowledge) carries. */
 typedef enum {
     LINK_NACK_BAD_PAGE   = 1,
     LINK_NACK_BAD_RANGE  = 2, /**< offset + count runs off the end of a page */
     LINK_NACK_READ_ONLY  = 3,
     LINK_NACK_BAD_VALUE  = 4,
     LINK_NACK_NOT_ARMED  = 5,
-    /** The value is good and something else holds what it names: a pin
-     *  another page or an output has, or a resource the wiring needs.
-     *  Freed, the same write is taken.  TONE only, since 4.17
-     *  (LINK_MINOR_TONE_BUSY); an older IOmcu says BAD_VALUE. */
+    /**
+     * @brief The value is good and something else holds what it names: a pin
+     * another page or an output has, or a resource the wiring needs.
+     *
+     * Freed, the same write is taken.  TONE only, since 4.17
+     * (LINK_MINOR_TONE_BUSY); an older IOmcu says BAD_VALUE.
+     */
     LINK_NACK_BUSY       = 6,
 } link_nack_t;
 

@@ -11,18 +11,11 @@
 
 #include <string.h>
 
-/**
- * @brief Ends of a 20-bit two's complement register.
- */
+/** @brief Ends of a 20-bit two's complement register. */
 #define CODE20_MAX   524287
-/**
- * @brief Ends of the 20-bit code range.
- */
 #define CODE20_MIN (-524288)
 
-/**
- * @brief Full-scale shunt voltages as max mA × µΩ, which is nV (Table 8-1).
- */
+/** @brief Full-scale shunt voltages as max mA × µΩ, which is nV (Table 8-1). */
 #define FS_NARROW_NV  40960000u    /* ±40.96 mV, ADCRANGE 1  */
 #define FS_WIDE_NV   163840000u    /* ±163.84 mV, ADCRANGE 0 */
 

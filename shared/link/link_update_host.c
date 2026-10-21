@@ -15,9 +15,7 @@
 #include "link_crc.h"
 #include "link_msg.h"
 
-/**
- * @brief How an exchange ended.
- */
+/** @brief How an exchange ended. */
 typedef enum {
     X_NONE = 0,   /* unanswered                       */
     X_OK,         /* DATA for a read, ACK for a write  */
@@ -109,17 +107,6 @@ uint16_t link_uph_permille(const link_uph_t *u)
 
 /* ---------------------------------------------------------------- the wire */
 
-/**
- * @brief Read registers from the IOmcu and classify the answer.
- *
- * @param h The panel's link state.
- * @param port The transport and clock.
- * @param page Page to read.
- * @param offset First register.
- * @param count Number of registers.
- * @param reply Receives the answer.
- * @return X_NONE when unanswered, X_OK for DATA, X_NACK for a refusal.
- */
 static x_t read_regs(link_host_t *h, const link_port_t *port, uint8_t page,
                      uint8_t offset, uint8_t count, link_msg_t *reply)
 {
@@ -263,11 +250,6 @@ static void resync(link_uph_t *u, uint8_t from)
 
 /* -------------------------------------------------------------- the check */
 
-/**
- * @brief CHECK_HASH step: hash one chunk of this end's image.
- *
- * @param u The update state.
- */
 static void step_check_hash(link_uph_t *u)
 {
     if (link_image_hash_step(&u->hash, &u->img[u->hash.pos],
@@ -418,14 +400,6 @@ static void step_check_wait(link_uph_t *u, link_host_t *h,
 
 /* ------------------------------------------------------------- the update */
 
-/**
- * @brief PREPARE step: hash the image as sent, then read the slot layout.
- *
- * @param u The update state.
- * @param h The panel's link state.
- * @param port The transport and clock.
- * @param now_ms The current time, in ms.
- */
 static void step_prepare(link_uph_t *u, link_host_t *h,
                          const link_port_t *port, uint32_t now_ms)
 {
@@ -892,7 +866,7 @@ link_uph_phase_t link_uph_step(link_uph_t *u, link_host_t *h,
     return u->phase;
 }
 
-/* the mismatched answer */
+/* ---------------------------------------------- the mismatched answer */
 
 bool link_uph_mismatch_probe(link_uph_mismatch_t *m, bool mismatch)
 {

@@ -4,14 +4,15 @@
  * runs the image the panel carries, sending it, and buying it once it has
  * started.
  *
- * Stepwise.  Each link_uph_step() does one thing -- one block of 64 bytes (8
- * data frames and a COMMIT), one read, one command, or 8 KiB of a hash -- and
- * returns, so the caller runs its own loop between steps.  The wire is a
- * link_port_t, so the host suite runs every step against a simulated IOmcu over
- * the real link layer.
+ * Stepwise.  Each link_uph_step() does one thing -- one block of 64 bytes
+ * (8 data frames and a COMMIT), one read, one command, or 8 KiB of a hash --
+ * and returns, so the caller runs its own loop between steps.  The wire is
+ * a link_port_t, so the host suite runs every step against a simulated
+ * IOmcu over the real link layer.
  *
- * Only the frozen registers are used: IDENTITY 0 to 6 and the two update pages.
- * An IOmcu of another protocol major is checked and updated the same way.
+ * Only the frozen registers are used: IDENTITY 0 to 6 and the two update
+ * pages.  An IOmcu of another protocol major is checked and updated
+ * the same way.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,9 +32,7 @@
 extern "C" {
 #endif
 
-/**
- * @brief Image bytes hashed in one step.
- */
+/** @brief Image bytes hashed in one step. */
 #define LINK_UPH_HASH_STEP   8192u
 /**
  * @brief How long exchanges may go unanswered in a row before the link counts
@@ -47,17 +46,13 @@ extern "C" {
  * silence) before the update gives up.
  */
 #define LINK_UPH_RESTARTS    3u
-/**
- * @brief Refusals of the same block before the update gives up.
- */
+/** @brief Refusals of the same block before the update gives up. */
 #define LINK_UPH_BLOCK_TRIES 3u
 /**
  * @brief How long the store's gate may stay shut while a command waits for it.
  */
 #define LINK_UPH_BUSY_MS     10000u
-/**
- * @brief How long a hash at the IOmcu may take: 2036 KiB at 1 KiB a pass.
- */
+/** @brief How long a hash at the IOmcu may take: 2036 KiB at 1 KiB a pass. */
 #define LINK_UPH_HASH_MS     10000u
 /**
  * @brief After ACTIVATE: nothing asked for this long, so the old image has
@@ -149,10 +144,10 @@ typedef struct {
  *
  * Ends SAME, DIFFERENT, TRIAL, NEEDS_USB, NO_ANSWER or REFUSED.
  *
- * A session found in the IOmcu -- this panel's own, from before it restarted or
- * lost the link -- is ended with ABORT first: nobody sends its blocks any more,
- * and it would hold ARM.  An ACTIVATE found is waited out for LINK_UPH_HASH_MS:
- * the restart it leads to ends it.
+ * A session found in the IOmcu -- this panel's own, from before it
+ * restarted or lost the link -- is ended with ABORT first: nobody sends its
+ * blocks any more, and it would hold ARM.  An ACTIVATE found is waited out
+ * for LINK_UPH_HASH_MS: the restart it leads to ends it.
  *
  * @param u The update state.
  * @param img The image to compare with the IOmcu's running slot.

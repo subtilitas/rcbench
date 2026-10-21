@@ -3,12 +3,12 @@
  * @brief The IOmcu's half of the firmware update: the UPDATE_CTL and
  * UPDATE_DATA pages (link_pages.h) and what they write.
  *
- * Pure C.  The flash, the store's gate, the boot ROM's BUY and the restart are
- * the caller's, handed in as callbacks, and both slots are read through plain
- * pointers, so the host suite runs every path against a slot in RAM.
+ * Pure C.  The flash, the store's gate, the boot ROM's BUY and the restart
+ * are the caller's, handed in as callbacks, and both slots are read through
+ * plain pointers, so the host suite runs every path against a slot in RAM.
  *
- * RAM: two 4 KiB sector buffers -- the slot's first sector, held until ACTIVATE
- * writes it last, and the sector being filled.
+ * RAM: two 4 KiB sector buffers -- the slot's first sector, held until
+ * ACTIVATE writes it last, and the sector being filled.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -59,16 +59,20 @@ extern "C" {
  * @brief The flash, gate, boot ROM and restart callbacks of the update.
  */
 typedef struct {
-    /** Erase the 4 KiB sector @p off bytes into the slot being written. */
+    /**
+     * @brief Erase the 4 KiB sector @p off bytes into the slot being written.
+     */
     bool (*erase)(void *ctx, uint32_t off);
-    /** Program the 4 KiB sector at @p off from @p data. */
+    /** @brief Program the 4 KiB sector at @p off from @p data. */
     bool (*program)(void *ctx, uint32_t off, const uint8_t *data);
-    /** True while flash may be written: the bank not driving, the supply's
-     *  output off, no servo programming session, no store save pending. */
+    /**
+     * @brief True while flash may be written: the bank not driving, the
+     * supply's output off, no servo programming session, no store save pending.
+     */
     bool (*gate)(void *ctx);
-    /** Buy the image on trial; true when the boot ROM took it. */
+    /** @brief Buy the image on trial; true when the boot ROM took it. */
     bool (*buy)(void *ctx);
-    /** Restart into the slot written, as a flash update boot. */
+    /** @brief Restart into the slot written, as a flash update boot. */
     void (*restart)(void *ctx);
     void *ctx;
 } link_update_io_t;
@@ -114,13 +118,13 @@ typedef struct {
 } link_update_dev_t;
 
 /**
- * @brief Start idle.
+ * @brief Start idle.  @p slot is LINK_UPD_SLOT as the boot ROM reports it: the
+ * running slot, LINK_UPD_SLOT_NONE without a partition table this build writes,
+ * and LINK_UPD_SLOT_TRIAL for an image that waits for its BUY. @p running and
+ * @p target may be NULL with LINK_UPD_SLOT_NONE.
  *
- * @p slot is LINK_UPD_SLOT as the boot ROM reports it: the running slot,
- * LINK_UPD_SLOT_NONE without a partition table this build writes, and
- * LINK_UPD_SLOT_TRIAL for an image that waits for its BUY. @p running and @p
- * target may be NULL with LINK_UPD_SLOT_NONE.  A bought image that finds the
- * other slot's first sector written owes its erase.
+ * A bought image that finds the other slot's first sector written owes its
+ * erase.
  *
  * @param u The update state to set up.
  * @param io The callbacks; kept, not copied.

@@ -1,15 +1,14 @@
-/**
- * @file
- * @brief The page map: what the panel can ask the IOmcu for, and set.
+/*
+ * The page map: what the panel can ask the IOmcu for, and set.
  *
- * A page is a window of up to LINK_MAX_REGS 16-bit registers with one function.
- * Adding a capability adds a page, not a message type, which keeps the wire
- * format stable while the bench grows.
+ * A page is a window of up to LINK_MAX_REGS 16-bit registers with one
+ * function.  Adding a capability adds a page, not a message type, which
+ * keeps the wire format stable while the bench grows.
  *
  * Pages are numbered with room between the groups.  A page number is part of
  * the contract between two firmwares that are flashed separately and can
- * disagree about their versions, so renumbering an existing page is a breaking
- * change; the gaps let a new page land beside related ones.
+ * disagree about their versions, so renumbering an existing page is a
+ * breaking change; the gaps let a new page land beside related ones.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -80,84 +79,81 @@ typedef enum {
  * the minor when a page or a register is added at the end, which an older host
  * can ignore.
  *
- * Only the major has to agree for the link to come up and the bench to arm. The
- * panel reads the minor at link-up and sends nothing to a page the IOmcu's
- * minor does not have: SUPPLY from 4.3, SENSE and SERVO_SENSE from 4.7, TONE
- * from 4.8, and SENSE's output encoder (the ENABLE bit LINK_SN_EN_AS5600 and
- * registers 26 to 30) from 4.9, and BIND_CFG, BIND_OUT and BIND from 4.10, and
- * SERVO_WIN, SENSE's RESETS and a signed CAP_HOLD_MA from 4.11, and KST from
- * 4.12, and PROG, the port fields of KST, CAP_ARM bit 11 and SUPPLY FLAGS bit
- * 11 from 4.13.  From 4.14 the servo programming page (KST, 0x32) plans a write
- * after the command's frame and reports LINK_KST_RESULT_PLANNING, _NO_PATH and
- * _TOO_COMPLEX; nothing is sent differently for it.  LINK_KST_OP_LEAVE and
- * LINK_KS_W_LEAVE_MS go to an IOmcu from 4.15 only.  From 4.16 CHAN_CFG and
- * PROG refuse a slew above 3000, and CHAN_CFG, OUTPUTS, BIND, SERVO and PROG
- * refuse a write that would leave a PWM output with an endpoint longer than its
- * frame (out_pwm_pulse_max()); the panel states a port's range before it
- * switches the port's pulse on, which an older IOmcu takes as well.  From 4.17
- * the TONE page refuses a busy pin with LINK_NACK_BUSY and keeps BAD_VALUE for
+ * Only the major has to agree for the link to come up and the bench to arm.
+ * The panel reads the minor at link-up and sends nothing to a page the
+ * IOmcu's minor does not have: SUPPLY from 4.3, SENSE and
+ * SERVO_SENSE from 4.7, TONE from 4.8, and SENSE's output encoder (the
+ * ENABLE bit LINK_SN_EN_AS5600 and registers 26 to 30) from 4.9, and
+ * BIND_CFG, BIND_OUT and BIND from 4.10, and SERVO_WIN, SENSE's RESETS
+ * and a signed CAP_HOLD_MA from 4.11, and KST from 4.12, and PROG, the port
+ * fields of KST, CAP_ARM bit 11 and SUPPLY FLAGS bit 11 from 4.13.  From
+ * 4.14 the servo programming page (KST, 0x32) plans a write after the
+ * command's frame and reports LINK_KST_RESULT_PLANNING, _NO_PATH and _TOO_COMPLEX; nothing is sent
+ * differently for it.  LINK_KST_OP_LEAVE and LINK_KS_W_LEAVE_MS go to an
+ * IOmcu from 4.15 only.  From 4.16 CHAN_CFG and PROG refuse a slew
+ * above 3000, and CHAN_CFG, OUTPUTS, BIND, SERVO and PROG refuse a write that would leave a PWM output with an endpoint longer
+ * than its frame (out_pwm_pulse_max()); the panel states a port's range
+ * before it switches the port's pulse on, which an older IOmcu takes
+ * as well.  From 4.17 the
+ * TONE page refuses a busy pin with LINK_NACK_BUSY and keeps BAD_VALUE for
  * a set-up no freed pin makes good; the panel offers the first frame again
  * after a BUSY only.  From 4.18 CONTROL's ARM names the roles it arms
  * (LINK_ARM_THROTTLE, LINK_ARM_SURFACE); the panel writes LINK_ARM_ALL to an
- * older IOmcu, which arms its whole bank on any non-zero ARM.  From 4.19 the
- * SERVO rate reaches the tester's target only (the standard servo ports'
- * surfaces, or the one programming port PROG's TARGET names) and a TARGET
- * change returns it to 0; the panel then counts the rate as 0 after a TARGET
- * change it saw, and as not known after a TARGET write that went
+ * older IOmcu, which arms its whole bank on any non-zero ARM.  From
+ * 4.19 the SERVO rate reaches the tester's target only (the standard servo
+ * ports' surfaces, or the one programming port PROG's TARGET names) and a
+ * TARGET change returns it to 0; the panel then counts the rate as 0 after
+ * a TARGET change it saw, and as not known after a TARGET write that went
  * unacknowledged.  From 4.20 ARTWORK serves the board's drawing
- * (LINK_ART_DRAWING) with a hash of its payload in registers 7 and 8; the panel
- * reads ARTWORK from 4.20 only and draws an older IOmcu's board from its shape
- * page.  From 4.21 STATUS has 10 registers: registers 8 and 9 count the CAN
- * frames the IOmcu refused to decode; the panel asks an older IOmcu for the 8
- * it has (LINK_ST_COUNT_V420).  From 4.22 UPDATE_CTL and UPDATE_DATA take a new
- * IOmcu image over the link; an older IOmcu refuses both with
- * LINK_NACK_BAD_PAGE, which the panel answers by saying a USB (Universal Serial
- * Bus) load is needed.  From 4.23 HITEC (0x34) runs raw Hitec wire transactions
- * on a programming port; an older IOmcu refuses it with LINK_NACK_BAD_PAGE.
- * From 4.24 HITEC takes the receive mode of a D series line in write register
- * 23 (LINK_HT_W_RX_MODE); a 4.23 IOmcu refuses that write with
- * LINK_NACK_READ_ONLY and receives with the pull-up, which the panel says on
- * SETUP when the mode asked is PRECHARGE.  From 4.25 SENSE_MAP (0x35) sets up
- * to 4 INA3221 with a shunt and a watch target per channel, and SENSE_WIN_A and
- * SENSE_WIN_B (0x37, 0x38) carry every channel's last window; an older IOmcu
- * refuses the three with LINK_NACK_BAD_PAGE and reads SENSE's one INA3221.
- * From 4.26 PROG has 28 registers: registers 24 to 27 are each port's FUNC, the
- * function its pin carries while no wire page holds it; the panel reads the 24
- * an older IOmcu has and offers a port SERVO PWM only.  From 4.27 SENSE_LIMIT
- * (0x36) holds a current limit per channel and flags each channel whose window
- * passed its limit; an older IOmcu refuses it with LINK_NACK_BAD_PAGE. From
- * 4.28 FUNC takes DSHOT150, DSHOT300 and DSHOT600 (plain DShot, the port's
- * channel a throttle) and FLAGS bits 12 to 15 say a port's DShot is bound; an
- * older IOmcu refuses those values with LINK_NACK_BAD_VALUE, and the panel
- * offers them from 4.28 only.  An IOmcu never asks the panel's minor; a page an
- * older panel does not know is a page it never writes.
+ * (LINK_ART_DRAWING) with a hash of its payload in registers 7 and 8; the
+ * panel reads ARTWORK from 4.20 only and draws an older IOmcu's board
+ * from its shape page.  From 4.21 STATUS has 10 registers: registers 8 and
+ * 9 count the CAN frames the IOmcu refused to decode; the panel asks
+ * an older IOmcu for the 8 it has (LINK_ST_COUNT_V420).  From 4.22
+ * UPDATE_CTL and UPDATE_DATA take a new IOmcu image over the link;
+ * an older IOmcu refuses both with LINK_NACK_BAD_PAGE, which the panel
+ * answers by saying a USB (Universal Serial Bus) load is needed.  From
+ * 4.23 HITEC (0x34) runs raw Hitec wire transactions on a programming
+ * port; an older IOmcu refuses it with LINK_NACK_BAD_PAGE.  From 4.24
+ * HITEC takes the receive mode of a D series line in write register 23
+ * (LINK_HT_W_RX_MODE); a 4.23 IOmcu refuses that write with
+ * LINK_NACK_READ_ONLY and receives with the pull-up, which the panel says
+ * on SETUP when the mode asked is PRECHARGE.  From 4.25 SENSE_MAP (0x35)
+ * sets up to 4 INA3221 with a shunt and a watch target per channel, and
+ * SENSE_WIN_A and SENSE_WIN_B (0x37, 0x38) carry every channel's last
+ * window; an older IOmcu refuses the three with LINK_NACK_BAD_PAGE and
+ * reads SENSE's one INA3221.  From 4.26 PROG has 28 registers: registers
+ * 24 to 27 are each port's FUNC, the function its pin carries while no
+ * wire page holds it; the panel reads the 24 an older IOmcu has and offers
+ * a port SERVO PWM only.  From 4.27 SENSE_LIMIT (0x36) holds a
+ * current limit per channel and flags each channel whose window passed
+ * its limit; an older IOmcu refuses it with LINK_NACK_BAD_PAGE.
+ * From 4.28 FUNC takes DSHOT150, DSHOT300 and DSHOT600 (plain DShot,
+ * the port's channel a throttle) and FLAGS bits 12 to 15 say a port's
+ * DShot is bound; an older IOmcu refuses those values with
+ * LINK_NACK_BAD_VALUE, and the panel offers them from 4.28 only.  An
+ * IOmcu never asks the panel's minor; a page an older panel does not
+ * know is a page it never writes.
  *
- * Frozen across majors.  Registers 0 to 6 of IDENTITY (LINK_ID_*) and the two
- * update pages keep their numbers, their layout and their meaning under every
- * later major, and an IOmcu of any later major answers them.  A panel reads
- * them before it compares majors, so a panel and an IOmcu whose majors differ
- * still find out what the other runs and can still move the IOmcu to the
- * panel's own image.  Changing one of them is not a major change; it is a new
- * page.
+ * Frozen across majors.  Registers 0 to 6 of IDENTITY (LINK_ID_*) and the
+ * two update pages keep their numbers, their layout and their meaning under
+ * every later major, and an IOmcu of any later major answers them.  A
+ * panel reads them before it compares majors, so a panel and an IOmcu
+ * whose majors differ still find out what the other runs and can still move
+ * the IOmcu to the panel's own image.  Changing one of them is not a
+ * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/**
- * @brief Protocol minor version: the first minor that serves each page or register is named by the LINK_MINOR_* macros.
- */
 #define LINK_PROTOCOL_MINOR 28u
 
-/**
- * @brief The first minor that serves BIND_CFG, BIND_OUT and BIND.
- */
+/** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
 /**
  * @brief The first minor that serves SERVO_WIN, counts resets in SENSE register
  * 31 and takes a negative CAP_HOLD_MA.
  */
 #define LINK_MINOR_SERVO_WIN 11u
-/**
- * @brief The first minor that serves KST.
- */
+/** @brief The first minor that serves KST. */
 #define LINK_MINOR_KST 12u
 /**
  * @brief The first minor that serves PROG, names a programming port in a KST
@@ -292,46 +288,34 @@ typedef enum {
 
 /* ----------------------------------------------------------------- outputs */
 
-/**
- * @brief The three output pages.
+/*
+ * The three output pages.  Every output protocol has a proportion of travel
+ * and a driver that renders it, so that is what the wire carries:
  *
- * Every output protocol has a proportion of travel and a driver that renders
- * it, so that is what the wire carries:
- *
- * CHANNELS  what each output is asked for, and nothing else.  Hot: written many
- * times a second, and the only page in the group that is. CHAN_CFG  what a
- * channel is (throttle or surface), how fast it may move, and the pulse widths
- * its ends correspond to. OUTPUTS  which driver renders which channels, on
- * which pin, how often.
+ *   CHANNELS  what each output is asked for, and nothing else.  Hot: written
+ *             many times a second, and the only page in the group that is.
+ *   CHAN_CFG  what a channel is (throttle or surface), how fast it may move,
+ *             and the pulse widths its ends correspond to.
+ *   OUTPUTS   which driver renders which channels, on which pin, how often.
  *
  * Eight of each.  At four registers per slot, eight slots fit a page of
- * LINK_MAX_REGS registers; eight is also the number of servo outputs the bench
- * has and the number of channels PPM (pulse-position modulation) carries.  A
- * ninth slot needs a minor version and a second page.
+ * LINK_MAX_REGS registers; eight is also the number of servo outputs the
+ * bench has and the number of channels PPM (pulse-position modulation)
+ * carries.  A ninth slot needs a minor version and a second page.
  */
 
-/**
- * @brief Output slots and channels of the OUTPUTS and CHAN_CFG pages.
- */
 #define LINK_OUT_SLOTS     8u
 #define LINK_OUT_CHANNELS  8u
 
-/**
- * @brief A command runs 0..LINK_CH_SPAN across the channel's own travel.
- */
+/** @brief A command runs 0..LINK_CH_SPAN across the channel's own travel. */
 #define LINK_CH_SPAN    1000u
 
-/**
- * @brief what each output is asked for
- */
+/* --- what each output is asked for */
 #define LINK_CH_COUNT   LINK_OUT_CHANNELS
 
-/**
- * @brief what a channel is.
- *
- * Four registers each, and a channel must be written whole: min and max are a
- * pair, and a range half-applied is a range nothing is clamped against.
- */
+/* --- what a channel is.  Four registers each, and a channel must be written
+ *     whole: min and max are a pair, and a range half-applied is a range
+ *     nothing is clamped against. */
 enum {
     LINK_CC_ROLE    = 0, /**< 0 throttle, 1 surface                     */
     LINK_CC_SLEW    = 1, /**< span a second, 0 to LINK_CC_SLEW_MAX; 0 means at once */
@@ -339,9 +323,6 @@ enum {
     LINK_CC_MAX_US  = 3, /**< and of LINK_CH_SPAN                       */
     LINK_CC_STRIDE  = 4,
 };
-/**
- * @brief Register count and roles of the CHAN_CFG page.
- */
 #define LINK_CC_COUNT  (LINK_OUT_CHANNELS * LINK_CC_STRIDE)
 
 /**
@@ -352,9 +333,6 @@ enum {
  */
 #define LINK_CC_SLEW_MAX 3000u
 
-/**
- * @brief Values of the CHAN_CFG role register.
- */
 #define LINK_CC_ROLE_THROTTLE 0u
 #define LINK_CC_ROLE_SURFACE  1u
 
@@ -368,27 +346,20 @@ enum {
  * The limits are enforced at the IOmcu, the end holding the wire, so a
  * restarted, reflashed or wrong host cannot drive a servo into its stops.
  *
- * A PWM output's endpoints also fit its frame (since 4.16): neither longer than
- * out_pwm_pulse_max() of the rate the output runs at, one microsecond under the
- * period -- 1784 us at 560 Hz, 2499 us at 400 Hz.  Below 400 Hz the ceiling is
- * the shorter of the two.  A write that would leave a longer one is refused
- * with BAD_VALUE (outputs_pulse_check()).
+ * A PWM output's endpoints also fit its frame (since 4.16): neither longer
+ * than out_pwm_pulse_max() of the rate the output runs at, one microsecond
+ * under the period -- 1784 us at 560 Hz, 2499 us at 400 Hz.  Below 400 Hz
+ * the ceiling is the shorter of the two.  A write that would leave a
+ * longer one is refused with BAD_VALUE (outputs_pulse_check()).
  */
 #define LINK_CC_DEFAULT_MIN 1000u
-/**
- * @brief Default and limit values of the channel range, in µs.
- */
 #define LINK_CC_DEFAULT_MAX 2000u
 #define LINK_CC_FLOOR_US     400u
 #define LINK_CC_CEILING_US  2500u
 
-/**
- * @brief which driver drives what.
- *
- * Four registers a slot, written whole for the same reason: a driver claimed on
- * a pin the rest of the write has not arrived to name yet is a driver on the
- * wrong pin.
- */
+/* --- which driver drives what.  Four registers a slot, written whole for the
+ *     same reason: a driver claimed on a pin the rest of the write has not
+ *     arrived to name yet is a driver on the wrong pin. */
 enum {
     LINK_OS_DRIVER  = 0, /**< link_out_driver_t                          */
     LINK_OS_PIN     = 1, /**< which pin it drives                        */
@@ -401,59 +372,58 @@ enum {
     LINK_OS_RATE_HZ = 3, /**< frames a second, or kbit/s for DShot       */
     LINK_OS_STRIDE  = 4,
 };
-/**
- * @brief Register count of the OUTPUTS page.
- */
 #define LINK_OS_COUNT  (LINK_OUT_SLOTS * LINK_OS_STRIDE)
 
-/**
- * @brief the SERVO screen's page: the target's frame rate (protocol 4.1) and
- * the sweep that drives it through a curve (4.2).
+/* --- the SERVO screen's page: the target's frame rate (protocol 4.1) and
+ *     the sweep that drives it through a curve (4.2).
  *
- * FRAME_HZ is the frame rate, in Hz, of the tester's target (PROG's
- * LINK_PG_TARGET), or 0 for its own rate.  With the standard servo ports as
- * target it is every PWM output whose first channel is a surface, 0 meaning
- * each slot's own rate from the OUTPUTS page.  One register for all of them, so
- * a write is whole: a servo screen that moved some surfaces to 560 Hz and not
- * their slice-mates would leave a slice asked for two rates.  A rate that would
- * do that against the binding in force -- a surface and a throttle on one slice
- * -- is refused with BAD_VALUE and nothing changes.  With a programming port as
- * target (since 4.19) it is that port's pin alone, 0 meaning 50 Hz; the slots
- * run at their own rates.  A port pin that shares its PWM slice with another
- * port's pin takes only 0 or 50 (BAD_VALUE).  Every port that is not the target
- * runs at 50 Hz, and a TARGET change sets FRAME_HZ to 0.  An IOmcu before 4.19
- * runs every surface and every port at FRAME_HZ, whatever the target.
+ *     FRAME_HZ is the frame rate, in Hz, of the tester's target (PROG's
+ *     LINK_PG_TARGET), or 0 for its own rate.  With the standard servo
+ *     ports as target it is every PWM output whose first channel is a
+ *     surface, 0 meaning each slot's own rate from the OUTPUTS page.  One
+ *     register for all of them, so a write is whole: a servo screen that
+ *     moved some surfaces to 560 Hz and not their slice-mates would leave a
+ *     slice asked for two rates.  A rate that would do that against the
+ *     binding in force -- a surface and a throttle on one slice -- is
+ *     refused with BAD_VALUE and nothing changes.  With a programming port
+ *     as target (since 4.19) it is that port's pin alone, 0 meaning 50 Hz;
+ *     the slots run at their own rates.  A port pin that shares its PWM
+ *     slice with another port's pin takes only 0 or 50 (BAD_VALUE).  Every
+ *     port that is not the target runs at 50 Hz, and a TARGET change sets
+ *     FRAME_HZ to 0.  An IOmcu before 4.19 runs every surface and
+ *     every port at FRAME_HZ, whatever the target.
  *
- * SWEEP to SWEEP_DWELL_MS are a sweep (servo_sweep.h), four registers so a
- * start fits one frame.  SWEEP is the curve, 0 stopped, 1 square, 2 sine, 3
- * triangle; MHZ thousandths of a cycle a second, 50 to 5000; SPAN command units
- * either side of the centre, 0 to 500; DWELL_MS the hold at each end, 0 to
- * 5000.  A sweep needs the bench armed (NOT_ARMED) and stops after 500 ms
- * unwritten, on a disarm, or after SWEEP_MOVES ends (0 for no end), read back
- * in SWEEP_DONE.
+ *     SWEEP to SWEEP_DWELL_MS are a sweep (servo_sweep.h), four registers so
+ *     a start fits one frame.  SWEEP is the curve, 0 stopped, 1 square,
+ *     2 sine, 3 triangle; MHZ thousandths of a cycle a second, 50 to 5000;
+ *     SPAN command units either side of the centre, 0 to 500; DWELL_MS the
+ *     hold at each end, 0 to 5000.  A sweep needs the bench armed
+ *     (NOT_ARMED) and stops after 500 ms unwritten, on a disarm, or after
+ *     SWEEP_MOVES ends (0 for no end), read back in SWEEP_DONE.
  *
- * SWEEP = 4 (LINK_SV_HOLD), one register, holds every surface where its output
- * is -- a sweep stopped part way, exactly where it got to, slew and all -- for
- * as long as it is written, on the same 500 ms and disarm rules.  A sweep that
- * was running when the hold began keeps its phase: how far into the curve it
- * was, so its point, its dwell and its movements reached.  One that had made
- * its movements is held at the centre it ended on.  A write is judged against
- * the page as a pass at the same moment leaves it: a sweep past its last
- * movement, unwritten for 500 ms or disarmed has ended, even before the pass
- * that ends it.
+ *     SWEEP = 4 (LINK_SV_HOLD), one register, holds every surface where
+ *     its output is -- a sweep stopped part way, exactly where it got to,
+ *     slew and all -- for as long as it is written, on the same 500 ms and
+ *     disarm rules.  A sweep that was running when the hold began keeps its
+ *     phase: how far into the curve it was, so its point, its dwell and its
+ *     movements reached.  One that had made its movements is held at the
+ *     centre it ended on.  A write is judged against the page as a pass at
+ *     the same moment leaves it: a sweep past its last movement, unwritten
+ *     for 500 ms or disarmed has ended, even before the pass that ends it.
  *
- * SWEEP = 5 (LINK_SV_RESUME, since 4.6), one register, carries that sweep on
- * from the kept phase.  The surfaces are commanded along the curve again at
- * once and slew there from where they were held, at their own rate.  Refused
- * with BAD_VALUE when no phase is kept -- no sweep was running when the hold
- * began, or the hold has ended by a write of 0, a curve written over it, a
- * disarm, 500 ms unwritten or a restart -- and when SWEEP_MHZ, SPAN, DWELL_MS
- * or MOVES no longer read what the paused sweep runs; NOT_ARMED on a disarmed
- * bench.  A 4.5 IOmcu refuses 5 with BAD_VALUE, as any curve not written whole.
+ *     SWEEP = 5 (LINK_SV_RESUME, since 4.6), one register, carries that
+ *     sweep on from the kept phase.  The surfaces are commanded along the
+ *     curve again at once and slew there from where they were held, at
+ *     their own rate.  Refused with BAD_VALUE when no phase is kept -- no
+ *     sweep was running when the hold began, or the hold has ended by a
+ *     write of 0, a curve written over it, a disarm, 500 ms unwritten or
+ *     a restart -- and when
+ *     SWEEP_MHZ, SPAN, DWELL_MS or MOVES no longer read what the paused
+ *     sweep runs; NOT_ARMED on a disarmed bench.  A 4.5 IOmcu refuses
+ *     5 with BAD_VALUE, as any curve not written whole.
  *
- * Not kept: an IOmcu restart drives every slot at its own rate again, which is
- * the binding's 50 Hz for a servo, and runs no sweep.
- */
+ *     Not kept: an IOmcu restart drives every slot at its own rate
+ *     again, which is the binding's 50 Hz for a servo, and runs no sweep. */
 enum {
     LINK_SV_FRAME_HZ       = 0,
     LINK_SV_SWEEP          = 1,
@@ -464,61 +434,61 @@ enum {
     LINK_SV_SWEEP_DONE     = 6,   /**< read only */
     LINK_SV_COUNT          = 7,
 };
-/**
- * @brief SWEEP's value for holding the surfaces where their outputs are.
- */
+/** @brief SWEEP's value for holding the surfaces where their outputs are. */
 #define LINK_SV_HOLD 4u
-/**
- * @brief SWEEP's value for carrying a held sweep on from its phase (4.6).
- */
+/** @brief SWEEP's value for carrying a held sweep on from its phase (4.6). */
 #define LINK_SV_RESUME 5u
 
-/**
- * @brief the SUPPLY page (protocol 4.3): a WeAct PD Power Mini V1 Buck on a PIO
- * UART the IOmcu runs on two of its pins (shared/bench/ pdmini.h).
+/* --- the SUPPLY page (protocol 4.3): a WeAct PD Power Mini V1 Buck on a
+ *     PIO UART the IOmcu runs on two of its pins (shared/bench/
+ *     pdmini.h).
  *
- * ENABLE to BAUD are its wiring, one frame: 1 to drive it, the GPIO the UART
- * transmits on (to the module's DM) and receives on (its DP), and the module's
- * UART Baudrate setting, 0 to 6 for 9600 to 460800 baud, or 7 (protocol 4.4) to
- * find it: the UART steps to the next rate after every WHO_AM_I without a valid
- * answer, until a module has answered once, and BAUD_FOUND says which rate is
- * in use.
+ *     ENABLE to BAUD are its wiring, one frame: 1 to drive it, the GPIO the
+ *     UART transmits on (to the module's DM) and receives on (its DP), and
+ *     the module's UART Baudrate setting, 0 to 6 for 9600 to 460800 baud,
+ *     or 7 (protocol 4.4) to find it: the UART steps to the next rate
+ *     after every WHO_AM_I without a valid answer, until a module has
+ *     answered once, and BAUD_FOUND says which rate is in use.
  *
- * RESET, written alone as 1 with OUTPUT 0, restarts the module (SYSTEM_RESET)
- * once it has answered and its output reads off; it reads 0. Refused with
- * BAD_VALUE: a pin that is reserved, bound to an output or the other pin, a
- * baud out of range, or any change while the output is asked on or may be on
- * (FLAGS bit 6).  The pins it takes are no output's while it holds them.
+ *     RESET, written alone as 1 with OUTPUT 0, restarts the module
+ *     (SYSTEM_RESET) once it has answered and its output reads off; it
+ *     reads 0.
+ *     Refused with BAD_VALUE: a pin that is reserved, bound to an output or
+ *     the other pin, a baud out of range, or any change while the output is
+ *     asked on or may be on (FLAGS bit 6).  The pins it takes are no
+ *     output's while it holds them.
  *
- * Protocol 4.5: a change while a module has answered is acknowledged and waits,
- * ENABLE to BAUD reading the wiring in force and FLAGS bit 8 set, for a state
- * read of the module sent after it -- at most about 1.2 s.  That read showing
- * the output off takes it; on, or failed, refuses it: bit 8 clears and bit 9
- * sets until the next wiring write. Such a change comes alone, without OUTPUT
- * to SET_MA, and an ON is refused with BAD_VALUE while one waits.
+ *     Protocol 4.5: a change while a module has answered is acknowledged
+ *     and waits, ENABLE to BAUD reading the wiring in force and FLAGS bit 8
+ *     set, for a state read of the module sent after it -- at most about
+ *     1.2 s.  That read showing the output off takes it; on, or failed,
+ *     refuses it: bit 8 clears and bit 9 sets until the next wiring write.
+ *     Such a change comes alone, without OUTPUT to SET_MA, and an ON is
+ *     refused with BAD_VALUE while one waits.
  *
- * OUTPUT to SET_MA are what it is to do, one frame: 1 for the output on, the
- * set points in mV and mA, clamped to the module's 1 to 20 V and 0.05 to 3 A.
- * An ON is refused with NOT_ARMED without a live heartbeat, and the output goes
- * off when the heartbeat stops.
+ *     OUTPUT to SET_MA are what it is to do, one frame: 1 for the output
+ *     on, the set points in mV and mA, clamped to the module's 1 to 20 V
+ *     and 0.05 to 3 A.  An ON is refused with NOT_ARMED without a live
+ *     heartbeat, and the output goes off when the heartbeat stops.
  *
- * FLAGS onwards are read only, what the module last said: bit 0 online, bit 1
- * output on, bits 3..2 the mode (0 normal, 1 constant current, 2 overcurrent),
- * bit 4 an output that would not switch, bit 5 set points that would not take,
- * bit 6 an output that is on or may be -- read on, an ON not yet confirmed, or
- * an OFF owed to a module that stopped answering, bit 7 an output the module
- * switched off by itself, held off until OUTPUT is written 0, bit 8 a wiring
- * change waiting for its state read and bit 9 one refused by it (4.5), bit 10
- * an output switched off because its input read under the set point and 500 mV
- * on 2 input reads in a row, held off until OUTPUT is written 0 (4.5); the
- * output's voltage and current, the set points read back from it, the input's
- * state and voltage, and the counts of readings taken and of transactions that
- * failed, modulo 65536.
+ *     FLAGS onwards are read only, what the module last said: bit 0
+ *     online, bit 1 output on, bits 3..2 the mode (0 normal, 1 constant
+ *     current, 2 overcurrent), bit 4 an output that would not switch,
+ *     bit 5 set points that would not take, bit 6 an output that is on or
+ *     may be -- read on, an ON not yet confirmed, or an OFF owed to a
+ *     module that stopped answering, bit 7 an output the module switched
+ *     off by itself, held off until OUTPUT is written 0, bit 8 a wiring
+ *     change waiting for its state read and bit 9 one refused by it
+ *     (4.5), bit 10 an output switched off because its input read under
+ *     the set point and 500 mV on 2 input reads in a row, held off until
+ *     OUTPUT is written 0 (4.5);
+ *     the output's voltage and current, the set points read back from it,
+ *     the input's state and voltage, and the counts of readings taken and
+ *     of transactions that failed, modulo 65536.
  *
- * The wiring is kept in the IOmcu's flash and driven at boot with the output
- * off, so a module left on is switched off after a restart; the command is not
- * kept.
- */
+ *     The wiring is kept in the IOmcu's flash and driven at boot with
+ *     the output off, so a module left on is switched off after a restart;
+ *     the command is not kept. */
 enum {
     LINK_SP_ENABLE    = 0,
     LINK_SP_TX_PIN    = 1,
@@ -540,9 +510,6 @@ enum {
     LINK_SP_RESET     = 17,   /**< protocol 4.4: write 1 to restart the module */
     LINK_SP_COUNT     = 18,
 };
-/**
- * @brief Bits of the SUPPLY flags register.
- */
 #define LINK_SP_ONLINE  0x01u
 #define LINK_SP_ON      0x02u
 #define LINK_SP_MODE(f) (((f) >> 2) & 3u)
@@ -560,99 +527,100 @@ enum {
  */
 #define LINK_SP_PORT         0x800u
 
-/**
- * @brief the SENSE page (protocol 4.7): two I2C (Inter-Integrated Circuit)
- * current monitors on one bus the IOmcu runs on two of its pins, a TI INA228 in
- * the ESC's power path and a TI INA3221 on the servo rail.
+/* --- the SENSE page (protocol 4.7): two I2C (Inter-Integrated Circuit)
+ *     current monitors on one bus the IOmcu runs on two of its pins,
+ *     a TI INA228 in the ESC's power path and a TI INA3221 on the servo
+ *     rail.
  *
- * ENABLE to KHZ are the bus, one frame: ENABLE bit 0 the INA228, bit 1 the
- * INA3221, bit 2 the AS5600 output encoder (protocol 4.9); the GPIO for SDA and
- * the one for SCL; the clock, 400 kHz and nothing else (LINK_SN_KHZ_BUS): the
- * schedule's 1 ms tick does not fit a slower bus.  The RP2350 has its I2C
- * function at pin mod 4 -- 0 I2C0 SDA, 1 I2C0 SCL, 2 I2C1 SDA, 3 I2C1 SCL -- so
- * SDA is a GPIO whose number mod 4 is 0 or 2 and SCL is the one after it: one
- * I2C block's pair.
+ *     ENABLE to KHZ are the bus, one frame: ENABLE bit 0 the INA228, bit 1
+ *     the INA3221, bit 2 the AS5600 output encoder (protocol 4.9); the GPIO for SDA and the one for SCL; the clock, 400 kHz
+ *     and nothing else (LINK_SN_KHZ_BUS): the schedule's 1 ms tick does not
+ *     fit a slower bus.  The RP2350 has its I2C function at pin mod 4 -- 0 I2C0 SDA,
+ *     1 I2C0 SCL, 2 I2C1 SDA, 3 I2C1 SCL -- so SDA is a GPIO whose number
+ *     mod 4 is 0 or 2 and SCL is the one after it: one I2C block's pair.
  *
- * I228_ADDR to register 7 are the INA228, one frame: its address, 0x40 to 0x4F;
- * its shunt in micro-ohms, 50 to 20000; the current its range is set for, in
- * 0.1 A, 1.0 to 300.0 A, the bench's design maximum. That current chooses
- * ADCRANGE only: 1 while the shunt's voltage at it is at most 40.96 mV, 0 up to
- * 163.84 mV, and past that the write is refused.  CURRENT_LSB is the shunt
- * ADC's step divided by the shunt at that range, so CURRENT and VSHUNT clip
- * together, and SHUNT_CAL is 4096 at either range.  A shunt whose full scale at
- * the chosen range passes 2000 A is refused too: below 81.92 micro-ohms only
- * ADCRANGE 1 is taken.  The rule is the driver's, ina228_calibrate() in
- * shared/sense.
+ *     I228_ADDR to register 7 are the INA228, one frame: its address, 0x40
+ *     to 0x4F; its shunt in micro-ohms, 50 to 20000; the current its range
+ *     is set for, in 0.1 A, 1.0 to 300.0 A, the bench's design maximum.
+ *     That current chooses ADCRANGE only: 1
+ *     while the shunt's voltage at it is at most 40.96 mV, 0 up to
+ *     163.84 mV, and past that the write is refused.  CURRENT_LSB is the
+ *     shunt ADC's step divided by the shunt at that range, so CURRENT and
+ *     VSHUNT clip together, and SHUNT_CAL is 4096 at either range.  A
+ *     shunt whose full scale at the chosen range passes 2000 A is refused
+ *     too: below 81.92 micro-ohms only ADCRANGE 1 is taken.  The rule is
+ *     the driver's, ina228_calibrate() in shared/sense.
  *
- * I3221_ADDR to register 11 are the INA3221, one frame: its address, 0x40 to
- * 0x43; its shunt in 0.1 milliohm, 50 to 10000 (5 mOhm to 1 Ohm); the channels
- * read, bits 0..2 for CH1 to CH3, at least one while the part is enabled.  The
- * part's full scale is 163.8 mV across the shunt: 1.638 A at the DAOKAI
- * module's 0.1 Ohm, 32.76 A at 5 mOhm, which is the most SERVO_SENSE's signed
- * mA carry.
+ *     I3221_ADDR to register 11 are the INA3221, one frame: its address,
+ *     0x40 to 0x43; its shunt in 0.1 milliohm, 50 to 10000 (5 mOhm to
+ *     1 Ohm); the channels read, bits 0..2 for CH1 to CH3, at least one
+ *     while the part is enabled.  The part's full scale is 163.8 mV across
+ *     the shunt: 1.638 A at the DAOKAI module's 0.1 Ohm, 32.76 A at 5 mOhm,
+ *     which is the most SERVO_SENSE's signed mA carry.
  *
- * Registers 7 and 11 are reserved: they read 0, and a write of anything else is
- * refused with BAD_VALUE.  They keep each part's frame four registers long for
- * a later minor to give them a meaning.
+ *     Registers 7 and 11 are reserved: they read 0, and a write of anything
+ *     else is refused with BAD_VALUE.  They keep each part's frame four
+ *     registers long for a later minor to give them a meaning.
  *
- * Refused with BAD_VALUE: a value out of its range, SDA and SCL not one I2C
- * block's pair (link_sn_pins_pair()) whatever ENABLE holds, and while a part is
- * enabled a pin past the bank, reserved, bound to an output or held by the
- * SUPPLY page, the two parts on one address while both are enabled, and any
- * change while the bank is armed -- the bus opened again stops the readings for
- * some milliseconds mid-run.  One frame that is not a pair is taken: ENABLE 0
- * with SDA or SCL 0, which is how a panel writes pins that are not set.  The
- * pins are no output's while a part is enabled.
+ *     Refused with BAD_VALUE: a value out of its range, SDA and SCL not one
+ *     I2C block's pair (link_sn_pins_pair()) whatever ENABLE holds, and
+ *     while a part is enabled a pin past the bank, reserved, bound to an
+ *     output or held by the SUPPLY page, the two parts on one address while
+ *     both are enabled, and any change while the bank is armed -- the bus
+ *     opened again stops the readings for some milliseconds mid-run.  One
+ *     frame that is not a pair is taken: ENABLE 0 with SDA or SCL 0, which
+ *     is how a panel writes pins that are not set.  The pins are no
+ *     output's while a part is enabled.
  *
- * FLAGS onwards are read only: FLAGS (link_sense_flag_t); PRESENT, bit n for
- * address 0x40 + n answering the last scan; the ID the INA228 gave (DEVICE_ID)
- * and the one the INA3221 gave (die ID); transactions failed, modulo 65536; the
- * INA228's die temperature in 0.1 C, signed, and its DIAG_ALRT as read; its
- * CHARGE in 0.01 mAh, signed 32 bit, and its ENERGY in 0.01 Wh, 32 bit, each
- * low register first and counted since the run's arm; and the ESC's own
- * telemetry voltage (10 mV) and current (10 mA), ESC_FLAGS bit 0 and bit 1
- * saying each is valid -- here because BENCH carries the INA228's while it
- * answers.
+ *     FLAGS onwards are read only: FLAGS (link_sense_flag_t); PRESENT, bit
+ *     n for address 0x40 + n answering the last scan; the ID the INA228
+ *     gave (DEVICE_ID) and the one the INA3221 gave (die ID); transactions
+ *     failed, modulo 65536; the INA228's die temperature in 0.1 C, signed,
+ *     and its DIAG_ALRT as read; its CHARGE in 0.01 mAh, signed 32 bit, and
+ *     its ENERGY in 0.01 Wh, 32 bit, each low register first and counted
+ *     since the run's arm; and the ESC's own telemetry voltage (10 mV) and
+ *     current (10 mA), ESC_FLAGS bit 0 and bit 1 saying each is valid --
+ *     here because BENCH carries the INA228's while it answers.
  *
- * The output encoder (protocol 4.9) is an ams OSRAM AS5600 magnetic angle
- * sensor on the same bus, at its fixed address 0x36, on the horn shaft of the
- * servo under test.  ENABLE bit 2 turns it on and has no parameter of its own:
- * the bus pins are the INA parts', and the angle comes back as the 12-bit
- * count, 0 to 4095 for one turn (0.0879 degrees a count), with no centre
- * applied -- the panel keeps that.  The IOmcu reads it at 500 Hz.  A bit 2
- * written to a 4.8 or older IOmcu is not sent: the panel gates it on minor >=
- * 9.
+ *     The output encoder (protocol 4.9) is an ams OSRAM AS5600 magnetic
+ *     angle sensor on the same bus, at its fixed address 0x36, on the horn
+ *     shaft of the servo under test.  ENABLE bit 2 turns it on and has no
+ *     parameter of its own: the bus pins are the INA parts', and the angle
+ *     comes back as the 12-bit count, 0 to 4095 for one turn (0.0879 degrees
+ *     a count), with no centre applied -- the panel keeps that.  The
+ *     IOmcu reads it at 500 Hz.  A bit 2 written to a 4.8 or older
+ *     IOmcu is not sent: the panel gates it on minor >= 9.
  *
- * AS5600_FLAGS (link_sense_enc_flag_t) say whether it answers and what its
- * magnet is doing.  AS5600_ANGLE is RAW ANGLE as last read, 0 until the first
- * read of a set-up.  It is a position only while ENC_ONLINE, ENC_VALID and
- * ENC_MD are all set: with MD clear the part sees no magnet and the count means
- * nothing.  With ML or MH set beside MD the count is a position whose noise the
- * datasheet does not specify.  AS5600_MAGNITUDE is the part's CORDIC
- * (coordinate rotation digital computer) magnitude, read at 20 Hz, 0 until
- * read; it is a measure of the field.  AS5600_SAMPLES counts the angle reads,
- * modulo 65536: two reads of the page with the same count are one sample.
- * AS5600_STILL_MS is how long the angle has stayed within 12 counts (1.05
- * degrees) of an anchor -- the angle at the last time it left that band -- in
- * milliseconds, saturating at 65535, 0 with no sample and 0 while MD is clear:
- * without a magnet the count is not a position, and the anchor starts afresh
- * when MD returns.  A move that ends at time t_end, read at time t_read, shows
- * STILL_MS = t_read - t_end to within the 2 ms sample interval, so the panel
- * times the end of a move to the IOmcu's resolution whatever its own polling
- * interval.
+ *     AS5600_FLAGS (link_sense_enc_flag_t) say whether it answers and what
+ *     its magnet is doing.  AS5600_ANGLE is RAW ANGLE as last read, 0 until
+ *     the first read of a set-up.  It is a position only while ENC_ONLINE,
+ *     ENC_VALID and ENC_MD are all set: with MD clear the part sees no
+ *     magnet and the count means nothing.  With ML or MH set beside MD the
+ *     count is a position whose noise the datasheet does not specify.  AS5600_MAGNITUDE is the part's CORDIC
+ *     (coordinate rotation digital computer) magnitude, read at 20 Hz, 0
+ *     until read; it is a measure of the field.  AS5600_SAMPLES counts the
+ *     angle reads, modulo 65536: two reads of the page with the same count
+ *     are one sample.  AS5600_STILL_MS is how long the angle has stayed
+ *     within 12 counts (1.05 degrees) of an anchor -- the angle at the last
+ *     time it left that band -- in milliseconds, saturating at 65535, 0 with
+ *     no sample and 0 while MD is clear: without a magnet the count is not
+ *     a position, and the anchor starts afresh when MD returns.  A move that ends at time t_end, read at time t_read, shows
+ *     STILL_MS = t_read - t_end to within the 2 ms sample interval, so the
+ *     panel times the end of a move to the IOmcu's resolution
+ *     whatever its own polling interval.
  *
- * RESETS (register 31, protocol 4.11) counts the times a current monitor was
- * found running on its power-on set-up and not the one written to it: the
- * INA228 in the low byte, the INA3221 in the high byte, each modulo 256, since
- * the set-up in force was taken.  The IOmcu reads the INA228's ADC_CONFIG and
- * the INA3221's Configuration back every 40 ms; a part found reset loses ONLINE
- * and is set up again 1000 ms on.  The count shows a reset that was found and
- * repaired between two reads of FLAGS.  Before 4.11 the register is reserved
- * and reads 0.
+ *     RESETS (register 31, protocol 4.11) counts the times a current
+ *     monitor was found running on its power-on set-up and not the one
+ *     written to it: the INA228 in the low byte, the INA3221 in the high
+ *     byte, each modulo 256, since the set-up in force was taken.  The
+ *     IOmcu reads the INA228's ADC_CONFIG and the INA3221's
+ *     Configuration back every 40 ms; a part found reset loses ONLINE and
+ *     is set up again 1000 ms on.  The count shows a reset that was found
+ *     and repaired between two reads of FLAGS.  Before 4.11 the register
+ *     is reserved and reads 0.
  *
- * ENABLE to register 11 are kept in the IOmcu's flash beside the bindings and
- * the supply's wiring, and the bus is opened at boot.
- */
+ *     ENABLE to register 11 are kept in the IOmcu's flash beside the
+ *     bindings and the supply's wiring, and the bus is opened at boot. */
 enum {
     LINK_SN_ENABLE          = 0,
     LINK_SN_SDA_PIN         = 1,
@@ -688,9 +656,7 @@ enum {
     LINK_SN_RESETS          = 31,  /**< protocol 4.11; reads 0 before it    */
     LINK_SN_COUNT           = 32,
 };
-/**
- * @brief The registers a 4.8 IOmcu's page has.
- */
+/** @brief The registers a 4.8 IOmcu's page has. */
 #define LINK_SN_COUNT_V48 26u
 /**
  * @brief The set-up, ENABLE to register 11: what a write may change, and what
@@ -698,30 +664,16 @@ enum {
  */
 #define LINK_SN_CONFIG_COUNT 12u
 
-/**
- * @brief ENABLE's bits.
- */
+/** @brief ENABLE's bits. */
 #define LINK_SN_EN_I228   0x01u
-/**
- * @brief Bits of the SENSE page's enable register.
- */
 #define LINK_SN_EN_I3221  0x02u
 #define LINK_SN_EN_AS5600 0x04u     /**< protocol 4.9 */
-/**
- * @brief Every bit ENABLE takes.
- */
+/** @brief Every bit ENABLE takes. */
 #define LINK_SN_EN_ALL    (LINK_SN_EN_I228 | LINK_SN_EN_I3221 | LINK_SN_EN_AS5600)
 
-/**
- * @brief The ranges a write is held to.
- */
-/**
- * @brief The bus clock, the one KHZ takes: 400 kHz, the parts' fast mode.
- */
+/* The ranges a write is held to. */
+/** @brief The bus clock, the one KHZ takes: 400 kHz, the parts' fast mode. */
 #define LINK_SN_KHZ_BUS          400u
-/**
- * @brief Fields of the SENSE page: addresses, channels and set-up of the parts.
- */
 #define LINK_SN_I228_ADDR_MIN    0x40u
 #define LINK_SN_I228_ADDR_MAX    0x4Fu
 #define LINK_SN_I228_UOHM_MIN      50u
@@ -741,30 +693,31 @@ enum {
  * The one rule for the page, the bus that opens the pins, the panel's writes
  * and the values SETUP offers.  It does not say the pins are free, or that the
  * board has them.
- *
- * @param sda The SDA GPIO number.
- * @param scl The SCL GPIO number.
- * @return true when sda is even and scl is sda + 1.
  */
 static inline bool link_sn_pins_pair(unsigned sda, unsigned scl)
 {
     return (sda % 2u) == 0u && scl == sda + 1u;
 }
 
-/**
- * @brief What the IOmcu says about the bus and the two parts.
- */
+/** @brief What the IOmcu says about the bus and the two parts. */
 typedef enum {
     LINK_SN_I228_ONLINE    = 1u << 0, /**< answering, identity good, in use */
-    /** Its last identity read was an INA228's.  With ONLINE clear, it has
-     *  stopped answering since. */
+    /**
+     * @brief Its last identity read was an INA228's.
+     *
+     * With ONLINE clear, it has stopped answering since.
+     */
     LINK_SN_I228_ID_OK     = 1u << 1,
-    /** Something answers at its address with another identity, and is not
-     *  used. */
+    /**
+     * @brief Something answers at its address with another identity, and is not
+     * used.
+     */
     LINK_SN_I228_ID_WRONG  = 1u << 2,
-    /** A current read at the end of its range, in the last 50 ms window
-     *  or since the run's arm: BENCH's current and power, or their peaks,
-     *  are then bounds, not values. */
+    /**
+     * @brief A current read at the end of its range, in the last 50 ms window
+     * or since the run's arm: BENCH's current and power, or their peaks, are
+     * then bounds, not values.
+     */
     LINK_SN_I228_CLIPPED   = 1u << 3,
     LINK_SN_I3221_ONLINE   = 1u << 4,
     LINK_SN_I3221_ID_OK    = 1u << 5,
@@ -773,85 +726,82 @@ typedef enum {
     LINK_SN_BUS_STUCK      = 1u << 9, /**< SDA held low, being clocked free */
 } link_sense_flag_t;
 
-/**
- * @brief RESETS' two counts, each modulo 256.
- */
+/** @brief RESETS' two counts, each modulo 256. */
 #define LINK_SN_RESETS_I228(r)  ((uint8_t)((r) & 0xFFu))
-/**
- * @brief Reset counts of the SENSE page.
- */
 #define LINK_SN_RESETS_I3221(r) ((uint8_t)(((r) >> 8) & 0xFFu))
 
-/**
- * @brief AS5600_FLAGS' bits (protocol 4.9).
- */
+/** @brief AS5600_FLAGS' bits (protocol 4.9). */
 typedef enum {
-    /** Answering at 0x36 with a STATUS an AS5600 can give. */
+    /** @brief Answering at 0x36 with a STATUS an AS5600 can give. */
     LINK_SN_ENC_ONLINE = 1u << 0,
-    /** STATUS MD: a magnet is detected.  Clear, AS5600_ANGLE is no
-     *  position. */
+    /**
+     * @brief STATUS MD: a magnet is detected.
+     *
+     * Clear, AS5600_ANGLE is no position.
+     */
     LINK_SN_ENC_MD     = 1u << 1,
-    /** STATUS ML: the field is too weak. */
+    /** @brief STATUS ML: the field is too weak. */
     LINK_SN_ENC_ML     = 1u << 2,
-    /** STATUS MH: the field is too strong. */
+    /** @brief STATUS MH: the field is too strong. */
     LINK_SN_ENC_MH     = 1u << 3,
-    /** Something answers at 0x36 with a STATUS no AS5600 gives, ML and MH
-     *  both set; not used. */
+    /**
+     * @brief Something answers at 0x36 with a STATUS no AS5600 gives, ML and MH
+     * both set; not used.
+     */
     LINK_SN_ENC_WRONG  = 1u << 4,
-    /** AS5600_ANGLE and bits 1 to 3 hold a reading of this set-up. */
+    /** @brief AS5600_ANGLE and bits 1 to 3 hold a reading of this set-up. */
     LINK_SN_ENC_VALID  = 1u << 5,
 } link_sense_enc_flag_t;
 
-/**
- * @brief ESC_FLAGS' bits.
- */
+/** @brief ESC_FLAGS' bits. */
 #define LINK_SN_ESC_VOLTAGE_OK 0x01u
-/**
- * @brief Current-reading flag of the SENSE page's output encoder.
- */
 #define LINK_SN_ESC_CURRENT_OK 0x02u
 
-/**
- * @brief the SERVO_SENSE page (protocol 4.7): the INA3221's three channels, and
- * a move timed on the IOmcu's clock.
+/* --- the SERVO_SENSE page (protocol 4.7): the INA3221's three channels,
+ *     and a move timed on the IOmcu's clock.
  *
- * Registers 0 to 11, four a channel from CH1: the mean and the highest current
- * in mA, signed, and the mean and the lowest bus voltage in mV, at the load
- * side of the shunt, over the last 50 ms window.  WINDOW numbers the windows,
- * modulo 65536; a read does not end one, so a reply lost on the link loses
- * nothing.  CH_FLAGS bits 0..2 say a channel's window holds readings; bits 4..6
- * that one of them read the top of the range, 163.8 mV across the shunt, which
- * makes that channel's mean and highest current lower bounds and not values;
- * bit 7 the same of the capture's move.
+ *     Registers 0 to 11, four a channel from CH1: the mean and the highest
+ *     current in mA, signed, and the mean and the lowest bus voltage in mV,
+ *     at the load side of the shunt, over the last 50 ms window.  WINDOW
+ *     numbers the windows, modulo 65536; a read does not end one, so a
+ *     reply lost on the link loses nothing.  CH_FLAGS bits 0..2 say a
+ *     channel's window holds readings; bits 4..6 that one of them read the
+ *     top of the range, 163.8 mV across the shunt, which makes that
+ *     channel's mean and highest current lower bounds and not values; bit 7
+ *     the same of the capture's move.
  *
- * CAP_ARM to CAP_BAND_MA are a capture, one frame: CAP_ARM with bit 7 set, the
- * INA3221 channel in bits 0..1 (1: CH2 and CH3 are refused, LINK_SS_CAP_CH) and
- * in bits 8..10 the output channel (0 to 7) whose next changed command starts
- * the timing; the holding level the move ends at in mA, signed, -32768 to 32767
- * (protocol 4.11; before it 0 to 32767, and 32768 to 65535 refused): a holding
- * level near 0 A reads below zero by the part's offset; the distance from the
- * level before the command that counts as movement, and the band around the
- * holding level that counts as arrival, each 1 to 32767 mA. An arm is the whole
- * frame from CAP_ARM; an arm restarts a capture already running.  CAP_ARM
- * written 0 disarms and is never refused, alone or at the head of the frame,
- * whose other registers are then not stored.  Refused with BAD_VALUE: any other
- * write that is not the whole frame, CAP_ARM bits outside the three fields, a
- * value out of range, an INA3221 channel other than CH1 or one SENSE does not
- * read, and an output channel that is not a surface rendered by a PWM slot;
- * with NOT_ARMED on a disarmed bank.  A bank that stops driving ends a capture
- * that has not finished: CAP_ARM reads 0 and CAP_STATE idle.
+ *     CAP_ARM to CAP_BAND_MA are a capture, one frame: CAP_ARM with bit 7
+ *     set, the INA3221 channel in bits 0..1 (1: CH2 and CH3 are refused,
+ *     LINK_SS_CAP_CH) and in bits 8..10 the
+ *     output channel (0 to 7) whose next changed command starts the timing;
+ *     the holding level the move ends at in mA, signed, -32768 to 32767
+ *     (protocol 4.11; before it 0 to 32767, and 32768 to 65535 refused):
+ *     a holding level near 0 A reads below zero by the part's offset; the
+ *     distance from
+ *     the level before the command that counts as movement, and the band
+ *     around the holding level that counts as arrival, each 1 to 32767 mA.
+ *     An arm is the whole frame from CAP_ARM; an arm restarts a capture
+ *     already running.  CAP_ARM written 0 disarms and is never refused,
+ *     alone or at the head of the frame, whose other registers are then not
+ *     stored.  Refused with BAD_VALUE: any other write that is not the
+ *     whole frame, CAP_ARM bits outside the three fields, a value out of
+ *     range, an INA3221 channel other than CH1 or one SENSE does not read,
+ *     and an output channel
+ *     that is not a surface rendered by a PWM slot; with NOT_ARMED on a
+ *     disarmed bank.  A bank that stops driving ends a capture that has not
+ *     finished: CAP_ARM reads 0 and CAP_STATE idle.
  *
- * CAP_STATE onwards are read only: the state (link_cap_state_t); captures
- * finished, modulo 65536; the time from the PWM frame that carries the new
- * pulse to the movement and to the arrival, in 0.1 ms, 6553.5 ms at most,
- * resolved to CH1's 1 ms sample interval; the highest and the mean filtered
- * current of the move in mA, signed, over CAP_SAMPLES samples.  A capture ends
- * arrived, at a stop, late (movement and no arrival within 3000 ms plus the
- * meter's lag), unseen (no movement in that time) or lost (the INA3221 stopped
- * answering, or no PWM edge came within 3000 ms of the arm).
+ *     CAP_STATE onwards are read only: the state (link_cap_state_t);
+ *     captures finished, modulo 65536; the time from the PWM frame that
+ *     carries the new pulse to the movement and to the arrival, in 0.1 ms,
+ *     6553.5 ms at most, resolved to CH1's 1 ms sample interval; the
+ *     highest and the mean filtered current of the move in mA, signed,
+ *     over CAP_SAMPLES samples.  A capture ends arrived, at a stop, late
+ *     (movement and no arrival within 3000 ms plus the meter's lag),
+ *     unseen (no movement in that time) or lost (the INA3221 stopped
+ *     answering, or no PWM edge came within 3000 ms of the arm).
  *
- * Not kept: an IOmcu restart reads 0 throughout.
- */
+ *     Not kept: an IOmcu restart reads 0 throughout. */
 enum {
     LINK_SS_CH_MEAN_MA  = 0,   /**< channel n's at LINK_SS_CH_STRIDE * (n-1) */
     LINK_SS_CH_MAX_MA   = 1,
@@ -859,12 +809,10 @@ enum {
     LINK_SS_CH_MIN_MV   = 3,
     LINK_SS_CH_STRIDE   = 4,
 };
-/**
- * @brief Channels of the SERVO_SENSE page.
- */
 #define LINK_SS_CHANNELS 3u
 /**
- * @brief Register offsets of the SERVO_SENSE page's window fields, from register 12.
+ * @brief Register offsets of the SERVO_SENSE page's window fields, from
+ * register 12.
  */
 enum {
     LINK_SS_WINDOW       = 12,
@@ -882,18 +830,11 @@ enum {
     LINK_SS_CAP_SAMPLES  = 24,
     LINK_SS_COUNT        = 25,
 };
-/**
- * @brief The registers a capture is armed with, from LINK_SS_CAP_ARM.
- */
+/** @brief The registers a capture is armed with, from LINK_SS_CAP_ARM. */
 #define LINK_SS_CAP_FRAME 4u
 
-/**
- * @brief CH_FLAGS' bits, for INA3221 channel 1 to 3.
- */
+/** @brief CH_FLAGS' bits, for INA3221 channel 1 to 3. */
 #define LINK_SS_CH_VALID(ch)   ((uint16_t)(1u << ((unsigned)(ch) - 1u)))
-/**
- * @brief Bits of the SERVO_SENSE page's channel and capture flags.
- */
 #define LINK_SS_CH_CLIPPED(ch) ((uint16_t)(1u << ((unsigned)(ch) + 3u)))
 #define LINK_SS_CAP_CLIPPED    0x80u
 
@@ -905,21 +846,14 @@ enum {
  * PROG page, 0 to 3.
  */
 #define LINK_SS_ARM            0x80u
-/**
- * @brief Fields of the SERVO_SENSE page's capture arm register.
- */
 #define LINK_SS_ARM_OF(ch, out) \
     ((uint16_t)(LINK_SS_ARM | ((unsigned)(ch) & 0x03u) \
                 | (((unsigned)(out) & 0x07u) << 8)))
 #define LINK_SS_ARM_CH(r)      ((uint8_t)((r) & 0x03u))
 #define LINK_SS_ARM_OUT(r)     ((uint8_t)(((r) >> 8) & 0x07u))
-/**
- * @brief Every bit CAP_ARM may carry.
- */
+/** @brief Every bit CAP_ARM may carry. */
 #define LINK_SS_ARM_BITS       0x0F83u
-/**
- * @brief Bits 8 to 10 name a programming port, not an output channel.
- */
+/** @brief Bits 8 to 10 name a programming port, not an output channel. */
 #define LINK_SS_ARM_PORT       0x0800u
 /**
  * @brief The one INA3221 channel a capture is taken on; CH2 and CH3 are refused
@@ -945,50 +879,50 @@ typedef enum {
                                  edge came within 3000 ms of the arm       */
 } link_cap_state_t;
 
-/**
- * @brief the SERVO_WIN page (protocol 4.11): the INA3221's CH1, the servo under
- * test, as its last four 50 ms windows.
+/* --- the SERVO_WIN page (protocol 4.11): the INA3221's CH1, the servo
+ *     under test, as its last four 50 ms windows.  Read only: every write
+ *     is refused with READ_ONLY.
  *
- * Read only: every write is refused with READ_ONLY.
+ *     SERVO_SENSE shows the last window alone, so a host whose reads lie
+ *     further apart than 50 ms misses windows.  Here a host takes each
+ *     window number once, and misses none while two of its reads lie at
+ *     most 200 ms apart.
  *
- * SERVO_SENSE shows the last window alone, so a host whose reads lie further
- * apart than 50 ms misses windows.  Here a host takes each window number once,
- * and misses none while two of its reads lie at most 200 ms apart.
+ *     WINDOW is the number of the newest complete window, modulo 65536,
+ *     the number SERVO_SENSE's WINDOW shows.  FLAGS bit 0 (LINK_SW_HAVE)
+ *     says a window has closed under the set-up in force, so WINDOW is a
+ *     number; bit 7 (LINK_SW_CAP_CLIPPED) is SERVO_SENSE's capture bit.
+ *     CAP_STATE and CAP_SEQ read as SERVO_SENSE's registers 18 and 19, so
+ *     one read shows the windows and whether a capture has ended.
  *
- * WINDOW is the number of the newest complete window, modulo 65536, the number
- * SERVO_SENSE's WINDOW shows.  FLAGS bit 0 (LINK_SW_HAVE) says a window has
- * closed under the set-up in force, so WINDOW is a number; bit 7
- * (LINK_SW_CAP_CLIPPED) is SERVO_SENSE's capture bit. CAP_STATE and CAP_SEQ
- * read as SERVO_SENSE's registers 18 and 19, so one read shows the windows and
- * whether a capture has ended.
+ *     Then four entries of six registers, newest first: entry k, from
+ *     register 4 + 6 k, is window number WINDOW - k.  Mean, highest and
+ *     lowest current in mA, signed; mean and lowest bus voltage in mV, at
+ *     the load side of the shunt; and the entry's flags.  The schedule
+ *     reads CH1's current every 1 ms and its bus voltage every 24 ms: a
+ *     window holds up to 50 current samples and 2 or 3 voltage samples.
  *
- * Then four entries of six registers, newest first: entry k, from register 4 +
- * 6 k, is window number WINDOW - k.  Mean, highest and lowest current in mA,
- * signed; mean and lowest bus voltage in mV, at the load side of the shunt; and
- * the entry's flags.  The schedule reads CH1's current every 1 ms and its bus
- * voltage every 24 ms: a window holds up to 50 current samples and 2 or 3
- * voltage samples.
+ *     An entry's flags: bit 15 (LINK_SW_E_CLOSED) a window closed with
+ *     this number -- clear for a number the IOmcu skipped because
+ *     its tick ran late by more than a window, and for a number before
+ *     the first window, and the entry then reads 0 throughout; bit 8
+ *     (LINK_SW_E_CURRENT) the window holds current samples; bit 9
+ *     (LINK_SW_E_VOLTAGE) it holds voltage samples; bit 10
+ *     (LINK_SW_E_CLIP_HI) a current sample read the top of the range,
+ *     163.8 mV across the shunt; bit 11 (LINK_SW_E_CLIP_LO) one read the
+ *     bottom; bits 0..7 the number of samples that did, held at 255.
  *
- * An entry's flags: bit 15 (LINK_SW_E_CLOSED) a window closed with this number
- * -- clear for a number the IOmcu skipped because its tick ran late by more
- * than a window, and for a number before the first window, and the entry then
- * reads 0 throughout; bit 8 (LINK_SW_E_CURRENT) the window holds current
- * samples; bit 9 (LINK_SW_E_VOLTAGE) it holds voltage samples; bit 10
- * (LINK_SW_E_CLIP_HI) a current sample read the top of the range, 163.8 mV
- * across the shunt; bit 11 (LINK_SW_E_CLIP_LO) one read the bottom; bits 0..7
- * the number of samples that did, held at 255.
+ *     A clipped sample counts in an entry as the reading it is: the end
+ *     of the range, 1.638 A or -1.6384 A on the 0.1 Ohm shunt, in the
+ *     mean, the highest and the lowest.  SERVO_SENSE's registers 0 to 11
+ *     leave a clipped sample out of their figures, so the two pages
+ *     differ for a window with a clipped sample, and only for such a
+ *     window.
  *
- * A clipped sample counts in an entry as the reading it is: the end of the
- * range, 1.638 A or -1.6384 A on the 0.1 Ohm shunt, in the mean, the highest
- * and the lowest.  SERVO_SENSE's registers 0 to 11 leave a clipped sample out
- * of their figures, so the two pages differ for a window with a clipped sample,
- * and only for such a window.
+ *     A window being filled when the INA3221 is found reset (SENSE's
+ *     RESETS) is emptied: its entry is closed and holds no samples.
  *
- * A window being filled when the INA3221 is found reset (SENSE's RESETS) is
- * emptied: its entry is closed and holds no samples.
- *
- * Not kept, and cleared by a SENSE set-up taken.
- */
+ *     Not kept, and cleared by a SENSE set-up taken. */
 enum {
     LINK_SW_WINDOW    = 0,
     LINK_SW_FLAGS     = 1,
@@ -997,13 +931,9 @@ enum {
     LINK_SW_ENTRIES   = 4,   /**< entry k's registers start at 4 + 6 k   */
     LINK_SW_COUNT     = 28,
 };
-/**
- * @brief The windows the page carries.
- */
+/** @brief The windows the page carries. */
 #define LINK_SW_RING 4u
-/**
- * @brief One entry's registers.
- */
+/** @brief One entry's registers. */
 enum {
     LINK_SW_E_MEAN_MA = 0,   /**< signed -- read as int16_t              */
     LINK_SW_E_MAX_MA  = 1,   /**< signed                                 */
@@ -1013,28 +943,16 @@ enum {
     LINK_SW_E_FLAGS   = 5,
     LINK_SW_E_STRIDE  = 6,
 };
-/**
- * @brief Register @p r of the entry @p k windows before the newest.
- */
+/** @brief Register @p r of the entry @p k windows before the newest. */
 #define LINK_SW_ENTRY(k, r) \
     ((unsigned)LINK_SW_ENTRIES + (unsigned)(k) * LINK_SW_E_STRIDE + (unsigned)(r))
 
-/**
- * @brief FLAGS' bits.
- */
+/** @brief FLAGS' bits. */
 #define LINK_SW_HAVE        0x01u
-/**
- * @brief Fields of the SERVO_WIN page.
- */
 #define LINK_SW_CAP_CLIPPED 0x80u
 
-/**
- * @brief An entry's flags.
- */
+/** @brief An entry's flags. */
 #define LINK_SW_E_CLIPPED(f) ((uint8_t)((f) & 0xFFu))
-/**
- * @brief Entry fields of the SERVO_WIN page.
- */
 #define LINK_SW_E_CLIPPED_MAX 255u
 #define LINK_SW_E_CURRENT   0x0100u
 #define LINK_SW_E_VOLTAGE   0x0200u
@@ -1042,47 +960,48 @@ enum {
 #define LINK_SW_E_CLIP_LO   0x0800u
 #define LINK_SW_E_CLOSED    0x8000u
 
-/**
- * @brief the SENSE_MAP page (protocol 4.25): up to four INA3221 parts on the
- * sensor bus, at 0x40 to 0x43, three channels each.
+/* --- the SENSE_MAP page (protocol 4.25): up to four INA3221 parts on the
+ *     sensor bus, at 0x40 to 0x43, three channels each.  Channel c is
+ *     part a's channel ch for c = 3 a + ch - 1, so 0 to 11.
  *
- * Channel c is part a's channel ch for c = 3 a + ch - 1, so 0 to 11.
+ *     ENABLE bit a: the part at 0x40 + a is fitted.  FAST: the channel
+ *     read every 1 ms, whose last four windows SERVO_WIN carries and
+ *     on which SERVO_SENSE times a move; 0xFF (LINK_SM_FAST_NONE) none.
+ *     SHUNT[c]: channel c's shunt in 0.1 mOhm, 50 to 10000, 0 = the
+ *     channel is off and never read.  WATCH[c]: what channel c measures,
+ *     for the panel's screens and logs; the IOmcu keeps it and acts on
+ *     nothing in it.
  *
- * ENABLE bit a: the part at 0x40 + a is fitted.  FAST: the channel read every 1
- * ms, whose last four windows SERVO_WIN carries and on which SERVO_SENSE times
- * a move; 0xFF (LINK_SM_FAST_NONE) none. SHUNT[c]: channel c's shunt in 0.1
- * mOhm, 50 to 10000, 0 = the channel is off and never read.  WATCH[c]: what
- * channel c measures, for the panel's screens and logs; the IOmcu keeps it and
- * acts on nothing in it.
+ *     Registers 0 to 25 are kept in the IOmcu's flash.  A write lies
+ *     within them: one that reaches register 26 is refused with
+ *     READ_ONLY.  The registers written are merged into the map and the
+ *     whole map judged; a map refused leaves every register as it was.
+ *     Refused with BAD_VALUE: ENABLE above 15; FAST not 0xFF and past 11,
+ *     on a part not fitted or on a channel whose SHUNT is 0; a SHUNT not 0
+ *     outside 50 to 10000; a WATCH value outside the list below; a fitted
+ *     part with all three SHUNT 0; a fitted part on the address of the
+ *     INA228 while SENSE enables it; any change while the bank drives.
+ *     A part not fitted keeps the values written for it, judged by range
+ *     alone.
  *
- * Registers 0 to 25 are kept in the IOmcu's flash.  A write lies within them:
- * one that reaches register 26 is refused with READ_ONLY.  The registers
- * written are merged into the map and the whole map judged; a map refused
- * leaves every register as it was. Refused with BAD_VALUE: ENABLE above 15;
- * FAST not 0xFF and past 11, on a part not fitted or on a channel whose SHUNT
- * is 0; a SHUNT not 0 outside 50 to 10000; a WATCH value outside the list
- * below; a fitted part with all three SHUNT 0; a fitted part on the address of
- * the INA228 while SENSE enables it; any change while the bank drives. A part
- * not fitted keeps the values written for it, judged by range alone.
+ *     ID[a] (read only): the die ID part a answered at its last probe, 0
+ *     before one.  FLAGS (read only): bit a part a online; bit 4 + a part
+ *     a answered with another identity; bit 8 (LINK_SM_IN_FORCE) the map
+ *     has been written and is kept; bit 9 (LINK_SM_DERIVED) it has never
+ *     been written and is SENSE's one part (below).
  *
- * ID[a] (read only): the die ID part a answered at its last probe, 0 before
- * one.  FLAGS (read only): bit a part a online; bit 4 + a part a answered with
- * another identity; bit 8 (LINK_SM_IN_FORCE) the map has been written and is
- * kept; bit 9 (LINK_SM_DERIVED) it has never been written and is SENSE's one
- * part (below).
- *
- * SENSE and the map.  Until the map is first written it is derived from SENSE:
- * ENABLE bit 1 fits the part at SENSE's I3221_ADDR, each channel in
- * I3221_CHANNELS has SENSE's shunt, FAST is that part's CH1 when it is read,
- * and nothing is watched.  Once written, SENSE's ENABLE bit 1 and registers 8
- * to 10 mirror the map: bit 1 set while a part is fitted; I3221_ADDR the mirror
- * part -- FAST's part, or the lowest fitted part while FAST is 0xFF;
- * I3221_SHUNT_DMOHM that part's CH1 shunt, or its first one not 0;
- * I3221_CHANNELS its channels with a shunt.  A SENSE write that would change
- * bit 1 or registers 8 to 10 is then refused with BAD_VALUE.  SERVO_SENSE's
- * registers 0 to 11 are the mirror part's three channels, and a capture's
- * channel 1 (LINK_SS_CAP_CH) is FAST.
- */
+ *     SENSE and the map.  Until the map is first written it is derived
+ *     from SENSE: ENABLE bit 1 fits the part at SENSE's I3221_ADDR, each
+ *     channel in I3221_CHANNELS has SENSE's shunt, FAST is that part's
+ *     CH1 when it is read, and nothing is watched.  Once written, SENSE's
+ *     ENABLE bit 1 and registers 8 to 10 mirror the map: bit 1 set while
+ *     a part is fitted; I3221_ADDR the mirror part -- FAST's part, or
+ *     the lowest fitted part while FAST is 0xFF; I3221_SHUNT_DMOHM that
+ *     part's CH1 shunt, or its first one not 0; I3221_CHANNELS its
+ *     channels with a shunt.  A SENSE write that would change bit 1 or
+ *     registers 8 to 10 is then refused with BAD_VALUE.  SERVO_SENSE's
+ *     registers 0 to 11 are the mirror part's three channels, and a
+ *     capture's channel 1 (LINK_SS_CAP_CH) is FAST. */
 enum {
     LINK_SM_ENABLE   = 0,
     LINK_SM_FAST     = 1,
@@ -1095,9 +1014,6 @@ enum {
     LINK_SM_RESERVED_31 = 31,
     LINK_SM_COUNT    = 32,
 };
-/**
- * @brief Fields of the SENSE_MAP page: parts, channels and their watch targets.
- */
 #define LINK_SM_PARTS        4u
 #define LINK_SM_CHANNELS    12u
 #define LINK_SM_SHUNT(c)    ((unsigned)LINK_SM_SHUNT_0 + (unsigned)(c))
@@ -1107,57 +1023,43 @@ enum {
 #define LINK_SM_FAST_NONE   0x00FFu
 #define LINK_SM_DMOHM_MIN   50u
 #define LINK_SM_DMOHM_MAX   10000u
-/**
- * @brief WATCH values.
- */
+/** @brief WATCH values. */
 #define LINK_SM_WATCH_NONE    0x00u
-/**
- * @brief Watch target values of the SENSE_MAP page.
- */
 #define LINK_SM_WATCH_OUT(n)  (0x01u + (unsigned)(n))   /**< output channel n, 0..7 */
 #define LINK_SM_WATCH_PORT(n) (0x10u + (unsigned)(n))   /**< programming port n, 0..3 */
 #define LINK_SM_WATCH_SUPPLY  0x20u
-/**
- * @brief FLAGS' bits.
- */
+/** @brief FLAGS' bits. */
 #define LINK_SM_ONLINE(a)    (1u << (unsigned)(a))
-/**
- * @brief Bits of the SENSE_MAP page's status register.
- */
 #define LINK_SM_ID_WRONG(a)  (1u << (4u + (unsigned)(a)))
 #define LINK_SM_IN_FORCE     0x0100u
 #define LINK_SM_DERIVED      0x0200u
 
-/**
- * @brief the SENSE_WIN_A and SENSE_WIN_B pages (protocol 4.25): every channel's
- * last complete 50 ms window, channels 0 to 5 on A and 6 to 11 on B.
+/* --- the SENSE_WIN_A and SENSE_WIN_B pages (protocol 4.25): every
+ *     channel's last complete 50 ms window, channels 0 to 5 on A and 6 to
+ *     11 on B.  Read only: every write is refused with READ_ONLY.
  *
- * Read only: every write is refused with READ_ONLY.
- *
- * WINDOW is the window's number, SERVO_SENSE's WINDOW.  FLAGS: bit a part a
- * online, on both pages; bit 8 (LINK_SX_HAVE) a window has closed under the
- * set-up in force.  Then six entries of five registers, entry k from register 2
- * + 5 k the page's channel k: mean and highest current in mA, signed; mean and
- * lowest bus voltage in mV; the entry's flags -- bit 0 current samples, bit 1
- * voltage samples, bit 2 a current sample at the top of the range, bit 3 one at
- * the bottom.  A clipped sample is left out of the figures, as on SERVO_SENSE.
- * A channel off, or of a part not online, reads 0 throughout.  Rates: FAST
- * every 1 ms; every other channel with a shunt in turn, one a 1 ms tick (1000 /
- * n Hz for n of them, 90.9 Hz with 11); each bus voltage every 24 ms.  Not
- * kept.
- */
+ *     WINDOW is the window's number, SERVO_SENSE's WINDOW.  FLAGS: bit a
+ *     part a online, on both pages; bit 8 (LINK_SX_HAVE) a window has
+ *     closed under the set-up in force.  Then six entries of five
+ *     registers, entry k from register 2 + 5 k the page's channel k: mean
+ *     and highest current in mA, signed; mean and lowest bus voltage in
+ *     mV; the entry's flags -- bit 0 current samples, bit 1 voltage
+ *     samples, bit 2 a current sample at the top of the range, bit 3 one
+ *     at the bottom.  A clipped sample is left out of the figures, as on
+ *     SERVO_SENSE.  A channel off, or of a part not online, reads 0
+ *     throughout.  Rates: FAST every 1 ms; every other channel with a
+ *     shunt in turn, one a 1 ms tick (1000 / n Hz for n of them, 90.9 Hz
+ *     with 11); each bus voltage every 24 ms.  Not kept. */
 enum {
     LINK_SX_WINDOW   = 0,
     LINK_SX_FLAGS    = 1,
     LINK_SX_ENTRIES  = 2,
     LINK_SX_COUNT    = 32,
 };
-/**
- * @brief Entries per page and fields of the SENSE_WIN_A and SENSE_WIN_B pages.
- */
 #define LINK_SX_PER_PAGE 6u
 /**
- * @brief Register offsets within one entry of the SENSE_WIN_A and SENSE_WIN_B pages.
+ * @brief Register offsets within one entry of the SENSE_WIN_A and SENSE_WIN_B
+ * pages.
  */
 enum {
     LINK_SX_E_MEAN_MA = 0,   /**< signed -- read as int16_t              */
@@ -1167,45 +1069,40 @@ enum {
     LINK_SX_E_FLAGS   = 4,
     LINK_SX_E_STRIDE  = 5,
 };
-/**
- * @brief Register @p r of the page's entry @p k (channel 6 * page + k).
- */
+/** @brief Register @p r of the page's entry @p k (channel 6 * page + k). */
 #define LINK_SX_E(k, r) \
     ((unsigned)LINK_SX_ENTRIES + (unsigned)(k) * LINK_SX_E_STRIDE + (unsigned)(r))
-/**
- * @brief Bits of the SENSE_WIN entry flags.
- */
 #define LINK_SX_HAVE        0x0100u
 #define LINK_SX_E_CURRENT   0x0001u
 #define LINK_SX_E_VOLTAGE   0x0002u
 #define LINK_SX_E_CLIP_HI   0x0004u
 #define LINK_SX_E_CLIP_LO   0x0008u
 
-/**
- * @brief the SENSE_LIMIT page (protocol 4.27): a current limit for each of
- * SENSE_MAP's 12 channels, and the windows that passed them.
+/* --- the SENSE_LIMIT page (protocol 4.27): a current limit for each of
+ *     SENSE_MAP's 12 channels, and the windows that passed them.  An
+ *     alert only: a limit passed stops nothing and drives nothing.
  *
- * An alert only: a limit passed stops nothing and drives nothing.
+ *     LIMIT_MA[c] (registers 0 to 11): channel c's limit in mA, 1 to
+ *     32767; 0 = none.  Kept in the IOmcu's flash.  A write lies within
+ *     them: one that reaches register 12 is refused with READ_ONLY, a
+ *     value above 32767 with BAD_VALUE, and a refused write stores none
+ *     of its registers.  Taken in any bank state.
  *
- * LIMIT_MA[c] (registers 0 to 11): channel c's limit in mA, 1 to 32767; 0 =
- * none.  Kept in the IOmcu's flash.  A write lies within them: one that reaches
- * register 12 is refused with READ_ONLY, a value above 32767 with BAD_VALUE,
- * and a refused write stores none of its registers.  Taken in any bank state.
+ *     Core 1 judges each channel's window once, as it closes
+ *     (sense_window_over()): over when its highest current, in mA as
+ *     SENSE_WIN shows it, is above the limit, or when a sample read the
+ *     top of the range and that top, unrounded, is above the limit.  A
+ *     negative current is never over, nor a channel off or of a part not
+ *     online at the close.  Core 0 adds what core 1 counted at each
+ *     snapshot, so no window is missed however late it takes one.
  *
- * Core 1 judges each channel's window once, as it closes (sense_window_over()):
- * over when its highest current, in mA as SENSE_WIN shows it, is above the
- * limit, or when a sample read the top of the range and that top, unrounded, is
- * above the limit.  A negative current is never over, nor a channel off or of a
- * part not online at the close.  Core 0 adds what core 1 counted at each
- * snapshot, so no window is missed however late it takes one.
- *
- * OVER (register 12, read only): bit c set when a window of channel c was over
- * since the last read of this register.  A read that covers register 12 clears
- * it after the reply is filled; a reply lost on the link loses those bits,
- * which OVER_COUNT still counts. OVER_COUNT (register 13, read only): channel
- * windows over, modulo 65536, since the IOmcu started.  Registers 14 and 15 are
- * reserved: they read 0.
- */
+ *     OVER (register 12, read only): bit c set when a window of channel c
+ *     was over since the last read of this register.  A read that covers
+ *     register 12 clears it after the reply is filled; a reply lost on
+ *     the link loses those bits, which OVER_COUNT still counts.
+ *     OVER_COUNT (register 13, read only): channel windows over, modulo
+ *     65536, since the IOmcu started.  Registers 14 and 15 are reserved:
+ *     they read 0. */
 enum {
     LINK_SL_LIMIT_0    = 0,     /**< LIMIT_MA[c] at c                    */
     LINK_SL_KEPT       = 12,    /**< registers 0 to 11 are kept          */
@@ -1213,75 +1110,76 @@ enum {
     LINK_SL_OVER_COUNT = 13,
     LINK_SL_COUNT      = 16,
 };
-/**
- * @brief Limit range of the SENSE_LIMIT page, in mA.
- */
 #define LINK_SL_MA_MAX 32767u
 
-/**
- * @brief the TONE page (protocol 4.8): the beeps of an ESC (electronic speed
- * controller), heard on one motor phase.
+/* --- the TONE page (protocol 4.8): the beeps of an ESC (electronic speed
+ *     controller), heard on one motor phase.  One GPIO reads the phase
+ *     through a series resistor and a zener clamp; a PIO (programmable
+ *     input/output) state machine stamps its edges at 26.7 ns, and
+ *     protocols/phase_tap/tone.c turns them into beeps and their pitch.
  *
- * One GPIO reads the phase through a series resistor and a zener clamp; a PIO
- * (programmable input/output) state machine stamps its edges at 26.7 ns, and
- * protocols/phase_tap/tone.c turns them into beeps and their pitch.
+ *     ENABLE to F_MAX_HZ are one frame and SPLIT_PCT to register 7 the
+ *     next.  ENABLE bit 0 runs the tap.  PIN is the GPIO.  F_MIN_HZ and
+ *     F_MAX_HZ bound the tones heard: 50 to 2000 Hz, and F_MIN_HZ + 1 to
+ *     6900 Hz (EVT_FREQ_DHZ holds 0.1 Hz in 16 bits, to 6553.5 Hz).
+ *     SPLIT_PCT is how far a pitch moves, in percent, to start a new beep
+ *     without a silence: 0 splits on silence only, 50 at most.  GAP_MS is
+ *     the silence that ends a beep, 1 to 100 ms and at least the period of
+ *     F_MIN_HZ.  MIN_PERIODS is how many tone periods make a beep, 1 to
+ *     64.  Register 7 reads 0 and takes only 0.
  *
- * ENABLE to F_MAX_HZ are one frame and SPLIT_PCT to register 7 the next.
- * ENABLE bit 0 runs the tap.  PIN is the GPIO.  F_MIN_HZ and F_MAX_HZ bound the
- * tones heard: 50 to 2000 Hz, and F_MIN_HZ + 1 to 6900 Hz (EVT_FREQ_DHZ holds
- * 0.1 Hz in 16 bits, to 6553.5 Hz). SPLIT_PCT is how far a pitch moves, in
- * percent, to start a new beep without a silence: 0 splits on silence only, 50
- * at most.  GAP_MS is the silence that ends a beep, 1 to 100 ms and at least
- * the period of F_MIN_HZ.  MIN_PERIODS is how many tone periods make a beep, 1
- * to 64.  Register 7 reads 0 and takes only 0.
+ *     Refused with BAD_VALUE: a value out of its range, a combination the
+ *     detector refuses (tone_init()), and, while the tap is enabled, a pin
+ *     past the bank, one the board reserves, or an ADC (analog to digital
+ *     converter) pin: GP26 to GP29 on the RP2350A and GP40 to GP47 on the
+ *     RP2354B, rated IOVDD + 0.5 V and not fault tolerant, and any pin on
+ *     an IOmcu whose core 1 did not start at boot: no capture runs
+ *     before a restart.  Refused with
+ *     BUSY (since 4.17, BAD_VALUE before): while the tap is enabled, a pin
+ *     bound to an output or held by the SENSE, SUPPLY or PROG page, and a
+ *     capture the wiring cannot start for now -- core 1 in a pass, or no
+ *     PIO state machine or DMA channel left.  Freed, the same write is
+ *     taken.  The pin is no output's while the tap
+ *     is enabled, and an OUTPUTS write that binds it is refused, as are a
+ *     SENSE or SUPPLY write that takes it.  A change is taken armed or
+ *     not: the tap is an input and drives nothing.
  *
- * Refused with BAD_VALUE: a value out of its range, a combination the detector
- * refuses (tone_init()), and, while the tap is enabled, a pin past the bank,
- * one the board reserves, or an ADC (analog to digital converter) pin: GP26 to
- * GP29 on the RP2350A and GP40 to GP47 on the RP2354B, rated IOVDD + 0.5 V and
- * not fault tolerant, and any pin on an IOmcu whose core 1 did not start at
- * boot: no capture runs before a restart.  Refused with BUSY (since 4.17,
- * BAD_VALUE before): while the tap is enabled, a pin bound to an output or held
- * by the SENSE, SUPPLY or PROG page, and a capture the wiring cannot start for
- * now -- core 1 in a pass, or no PIO state machine or DMA channel left.  Freed,
- * the same write is taken.  The pin is no output's while the tap is enabled,
- * and an OUTPUTS write that binds it is refused, as are a SENSE or SUPPLY write
- * that takes it.  A change is taken armed or not: the tap is an input and
- * drives nothing.
+ *     FLAGS onwards are read only: FLAGS (link_tone_flag_t); WINDOW, the
+ *     detector's 8 ms windows counted modulo 65536; WIN_FREQ_DHZ, the last
+ *     window's tone in 0.1 Hz, 0 with no tone; WIN_PERIODS, the periods in
+ *     it.
  *
- * FLAGS onwards are read only: FLAGS (link_tone_flag_t); WINDOW, the detector's
- * 8 ms windows counted modulo 65536; WIN_FREQ_DHZ, the last window's tone in
- * 0.1 Hz, 0 with no tone; WIN_PERIODS, the periods in it.
+ *     The IOmcu keeps the last LINK_TN_RING beeps and numbers them
+ *     from 1 to 65535, then from 1 again.  BEEP_HEAD is the newest number,
+ *     0 before the first beep.  EVT_SEL names the beep that EVT_SEQ to
+ *     EVT_FLAGS show.  It is the one writable register after register 7,
+ *     it is not kept, and a read does not consume a beep, so a reply lost
+ *     on the link loses nothing.  EVT_SEQ equals EVT_SEL while that beep is
+ *     in the ring; when it has left the ring, or has not happened yet,
+ *     EVT_SEQ and registers 15 to 21 read 0.  EVT_START_MS is the beep's
+ *     first rise in ms since the capture started (ENABLE written 1, or PIN
+ *     changed while enabled), 32 bit, low register first (49.7 days);
+ *     EVT_LEN_DMS its length to its last edge in 0.1 ms, to 6553.5 ms;
+ *     EVT_FREQ_DHZ its mean pitch in 0.1 Hz; EVT_BURSTS its bursts, to
+ *     65535; EVT_CARRIER_HHZ the carrier it was chopped at in 100 Hz
+ *     steps, 0 unchopped.  A length, pitch, burst count or carrier past its
+ *     register reads as the largest it holds.  EVT_FLAGS bit 0: the beep
+ *     began at a pitch change with no silence before it; bit 1: it ended
+ *     at one.
+ *     LOST counts beeps dropped, modulo 65536: the detector's queue full,
+ *     or the hand-over between the cores full.  GLITCHES counts lows the
+ *     detector ignored as shorter than 500 ns, modulo 65536.  The
+ *     capture's 8 us hold-off removes every low shorter than 8 us before
+ *     the detector sees it, so the register reads 0 on the tap.
  *
- * The IOmcu keeps the last LINK_TN_RING beeps and numbers them from 1 to 65535,
- * then from 1 again.  BEEP_HEAD is the newest number, 0 before the first beep.
- * EVT_SEL names the beep that EVT_SEQ to EVT_FLAGS show.  It is the one
- * writable register after register 7, it is not kept, and a read does not
- * consume a beep, so a reply lost on the link loses nothing.  EVT_SEQ equals
- * EVT_SEL while that beep is in the ring; when it has left the ring, or has not
- * happened yet, EVT_SEQ and registers 15 to 21 read 0.  EVT_START_MS is the
- * beep's first rise in ms since the capture started (ENABLE written 1, or PIN
- * changed while enabled), 32 bit, low register first (49.7 days); EVT_LEN_DMS
- * its length to its last edge in 0.1 ms, to 6553.5 ms; EVT_FREQ_DHZ its mean
- * pitch in 0.1 Hz; EVT_BURSTS its bursts, to 65535; EVT_CARRIER_HHZ the carrier
- * it was chopped at in 100 Hz steps, 0 unchopped.  A length, pitch, burst count
- * or carrier past its register reads as the largest it holds.  EVT_FLAGS bit 0:
- * the beep began at a pitch change with no silence before it; bit 1: it ended
- * at one. LOST counts beeps dropped, modulo 65536: the detector's queue full,
- * or the hand-over between the cores full.  GLITCHES counts lows the detector
- * ignored as shorter than 500 ns, modulo 65536.  The capture's 8 us hold-off
- * removes every low shorter than 8 us before the detector sees it, so the
- * register reads 0 on the tap.
+ *     The capture starts when the tap is enabled or its pin changes, and
+ *     then empties the ring; the numbers go on.  Registers 0 to 6 are kept
+ *     in the IOmcu's flash beside the SENSE set-up, and the tap starts
+ *     at boot.  Nothing else is kept.
  *
- * The capture starts when the tap is enabled or its pin changes, and then
- * empties the ring; the numbers go on.  Registers 0 to 6 are kept in the
- * IOmcu's flash beside the SENSE set-up, and the tap starts at boot.  Nothing
- * else is kept.
- *
- * While the tap is disabled the pin is an input with its pull-down on, so a
- * wire connected to nothing reads low.  The panel's read at 20 Hz is registers
- * 8 to 23: a request and 4 data frames.
- */
+ *     While the tap is disabled the pin is an input with its pull-down on,
+ *     so a wire connected to nothing reads low.  The panel's read at
+ *     20 Hz is registers 8 to 23: a request and 4 data frames. */
 enum {
     LINK_TN_ENABLE       = 0,
     LINK_TN_PIN          = 1,
@@ -1315,18 +1213,11 @@ enum {
  */
 #define LINK_TN_CONFIG_COUNT 7u
 
-/**
- * @brief ENABLE's bit.
- */
+/** @brief ENABLE's bit. */
 #define LINK_TN_EN_TAP   0x01u
 
-/**
- * @brief The ranges a write is held to.
- */
+/** @brief The ranges a write is held to. */
 #define LINK_TN_F_MIN_LO       50u
-/**
- * @brief Fields of the TONE page: its flags, frequency and periods.
- */
 #define LINK_TN_F_MIN_HI     2000u
 #define LINK_TN_F_MAX_HI     6900u
 #define LINK_TN_SPLIT_MAX      50u
@@ -1334,9 +1225,7 @@ enum {
 #define LINK_TN_GAP_MS_MAX    100u
 #define LINK_TN_PERIODS_MIN     1u
 #define LINK_TN_PERIODS_MAX    64u
-/**
- * @brief Beeps the IOmcu keeps.
- */
+/** @brief Beeps the IOmcu keeps. */
 #define LINK_TN_RING           64u
 
 /**
@@ -1344,47 +1233,39 @@ enum {
  * 400 to 6500 Hz, 8 % split, 3 ms gap, 3 periods a beep.
  */
 #define LINK_TN_DEFAULT_PIN        22u
-/**
- * @brief Default values of the TONE page's set-up.
- */
 #define LINK_TN_DEFAULT_F_MIN     400u
 #define LINK_TN_DEFAULT_F_MAX    6500u
 #define LINK_TN_DEFAULT_SPLIT       8u
 #define LINK_TN_DEFAULT_GAP_MS      3u
 #define LINK_TN_DEFAULT_PERIODS     3u
 
-/**
- * @brief What the IOmcu says about the tap.
- */
+/** @brief What the IOmcu says about the tap. */
 typedef enum {
-    /** The PIO state machine and its DMA ring run on the pin. */
+    /** @brief The PIO state machine and its DMA ring run on the pin. */
     LINK_TN_RUNNING     = 1u << 0,
-    /** The tap is enabled and does not run: the pin is not free (a kept
-     *  set-up met a binding or a reservation at boot) or no PIO state
-     *  machine could take it. */
+    /**
+     * @brief The tap is enabled and does not run: the pin is not free (a kept
+     * set-up met a binding or a reservation at boot) or no PIO state machine
+     * could take it.
+     */
     LINK_TN_PIN_REFUSED = 1u << 1,
-    /** The capture ring or the state machine's FIFO was overrun since the
-     *  capture started; the beep under way was cut at its last edge.
-     *  Cleared when the capture starts again. */
+    /**
+     * @brief The capture ring or the state machine's FIFO was overrun since the
+     * capture started; the beep under way was cut at its last edge.
+     *
+     * Cleared when the capture starts again.
+     */
     LINK_TN_OVERRUN     = 1u << 2,
-    /** A run of bursts is under way. */
+    /** @brief A run of bursts is under way. */
     LINK_TN_BEEP        = 1u << 3,
-    /** The last window held a tone. */
+    /** @brief The last window held a tone. */
     LINK_TN_TONE        = 1u << 4,
 } link_tone_flag_t;
 
-/**
- * @brief EVT_FLAGS' bits, tone_beep_flag_t's.
- */
+/** @brief EVT_FLAGS' bits, tone_beep_flag_t's. */
 #define LINK_TN_EVT_AFTER_CHANGE  0x01u
-/**
- * @brief Event values of the TONE page.
- */
 #define LINK_TN_EVT_BEFORE_CHANGE 0x02u
 
-/**
- * @brief Packing of an OUTPUTS slot range: first slot in the high byte.
- */
 #define LINK_OS_RANGE_OF(first, count) \
     ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))
 #define LINK_OS_FIRST(range) ((uint8_t)((range) >> 8))
@@ -1416,19 +1297,20 @@ typedef enum {
 /**
  * @brief A binding taken whole (protocol 4.10).
  *
- * A binding is two pages of 32 registers, 16 frames, and a write to CHAN_CFG or
- * OUTPUTS is in force frame by frame: a sequence that stops part way leaves the
- * first frames of one binding and the rest of another.  BIND_CFG and BIND_OUT
- * hold a CHAN_CFG and an OUTPUTS page that are not in force. They take the
- * registers and the windows of the pages they prepare, check each frame by
- * those pages' value rules, and change no output.
+ * A binding is two pages of 32 registers, 16 frames, and a write to CHAN_CFG
+ * or OUTPUTS is in force frame by frame: a sequence that stops part way
+ * leaves the first frames of one binding and the rest of another.  BIND_CFG
+ * and BIND_OUT hold a CHAN_CFG and an OUTPUTS page that are not in force.
+ * They take the registers and the windows of the pages they prepare, check
+ * each frame by those pages' value rules, and change no output.
  *
  * BIND has one register.  A write of LINK_BD_COMMIT carries the CRC (cyclic
- * redundancy check, out_stage_crc()) of the 64 prepared registers.  The IOmcu
- * compares it with the CRC of what it holds prepared and refuses a difference
- * with BAD_VALUE; on a match it judges the two pages by every rule a CHAN_CFG
- * and an OUTPUTS write is judged by, CHAN_CFG first, and puts both in force or
- * neither.  The register reads the CRC of what is prepared.
+ * redundancy check, out_stage_crc()) of the 64 prepared registers.  The
+ * IOmcu compares it with the CRC of what it holds prepared and refuses
+ * a difference with BAD_VALUE; on a match it judges the two pages by every
+ * rule a CHAN_CFG and an OUTPUTS write is judged by, CHAN_CFG first, and
+ * puts both in force or neither.  The register reads the CRC of what is
+ * prepared.
  *
  * What is prepared starts as the pages in force at boot and is not kept in
  * flash.  CHAN_CFG and OUTPUTS stay writable, one entry a frame.
@@ -1438,7 +1320,8 @@ enum {
     LINK_BD_COUNT  = 1,
 };
 
-/** @brief identity */
+/* ---------------------------------------------------------------- identity */
+/** @brief Registers of the IDENTITY page. */
 enum {
     LINK_ID_PROTOCOL_MAJOR = 0,
     LINK_ID_PROTOCOL_MINOR = 1,
@@ -1457,8 +1340,8 @@ enum {
  * The menu marks derive from this bitmap, so a mark disappears when the part is
  * fitted.
  *
- * Absent is not forbidden.  A screen whose capability is missing opens and runs
- * from the model, marked MODELLED.
+ * Absent is not forbidden.  A screen whose capability is missing opens and
+ * runs from the model, marked MODELLED.
  */
 typedef enum {
     LINK_CAP_ESC_DRIVE   = 1u << 0, /**< a signal line out to an ESC       */
@@ -1472,7 +1355,8 @@ typedef enum {
     LINK_CAP_PROGRAM     = 1u << 8, /**< one-wire and text-CLI programming */
 } link_cap_t;
 
-/** @brief status */
+/* ------------------------------------------------------------------ status */
+/** @brief Registers of the STATUS page. */
 enum {
     LINK_ST_STATE      = 0, /**< a link_dev_state_t                      */
     LINK_ST_FAULTS     = 1, /**< a bitmap of link_fault_t                */
@@ -1483,21 +1367,21 @@ enum {
     LINK_ST_CRC_ERRORS = 6,
     LINK_ST_RESYNCS    = 7,
     /**
-     * Protocol 4.21: CAN frames received and refused since power-up, low
-     * half first, modulo 2^32.  A frame is refused when its receive buffer
-     * holds no frame the link carries (an 11-bit identifier, a remote frame,
-     * a DLC above 8: mcp2515_decode_rx()) or when link_can_decode() refuses
-     * it (an unknown op, a count past a page, a DLC that disagrees with the
-     * count).  Self-test frames are answered, not refused.  0 at power-up
-     * and at every restart; nothing clears it over the link.
+     * @brief Protocol 4.21: CAN frames received and refused since power-up, low
+     * half first, modulo 2^32.
+     *
+     * A frame is refused when its receive buffer holds no frame the link
+     * carries (an 11-bit identifier, a remote frame, a DLC above 8:
+     * mcp2515_decode_rx()) or when link_can_decode() refuses it (an unknown op,
+     * a count past a page, a DLC that disagrees with the count).  Self-test
+     * frames are answered, not refused.  0 at power-up and at every restart;
+     * nothing clears it over the link.
      */
     LINK_ST_REFUSED_LO = 8,
     LINK_ST_REFUSED_HI = 9,
     LINK_ST_COUNT      = 10,
 };
-/**
- * @brief The registers a 4.20 or older IOmcu's STATUS page has.
- */
+/** @brief The registers a 4.20 or older IOmcu's STATUS page has. */
 #define LINK_ST_COUNT_V420 8u
 
 /**
@@ -1515,11 +1399,12 @@ typedef enum {
     LINK_FAULT_HEARTBEAT     = 1u << 4, /**< the safety line stopped edging */
     LINK_FAULT_VERSION       = 1u << 5, /**< the two ends disagree          */
     /**
-     * The IOmcu's flash store is off for this boot (protocol 4.7):
-     * its second core did not register for the flash lock-out, so no
-     * erase or program may run.  Set-ups written over the link are taken
-     * and run from RAM, and are gone at the next restart.  Set while it
-     * lasts, which is until a restart.
+     * @brief The IOmcu's flash store is off for this boot (protocol 4.7): its
+     * second core did not register for the flash lock-out, so no erase or
+     * program may run.
+     *
+     * Set-ups written over the link are taken and run from RAM, and are gone at
+     * the next restart.  Set while it lasts, which is until a restart.
      */
     LINK_FAULT_STORE_OFF     = 1u << 6,
 } link_fault_t;
@@ -1537,11 +1422,11 @@ typedef enum {
 /**
  * @brief The numbers, read-only.
  *
- * Fixed-point rather than floats: a register is 16 bits, and the scale is part
- * of the contract between the two firmwares.
+ * Fixed-point rather than floats: a register is 16 bits, and the scale is
+ * part of the contract between the two firmwares.
  *
- * The peaks are tracked here rather than on the panel: the IOmcu has the fast
- * samples and the panel sees one poll in fifty of them.
+ * The peaks are tracked here rather than on the panel: the IOmcu has
+ * the fast samples and the panel sees one poll in fifty of them.
  */
 enum {
     LINK_BN_VOLTAGE_CV   = 0,  /**< 10 mV steps, 0..655.35 V              */
@@ -1560,15 +1445,13 @@ enum {
     LINK_BN_COUNT        = 13,
 };
 
-/**
- * @brief What the IOmcu says about the numbers it is sending.
- */
+/** @brief What the IOmcu says about the numbers it is sending. */
 typedef enum {
     LINK_BN_VOLTAGE_OK = 1u << 0, /**< a sensor answered; else the field is 0 */
     LINK_BN_CURRENT_OK = 1u << 1,
     LINK_BN_RPM_OK     = 1u << 2,
     /**
-     * The ESC's own temperature.
+     * @brief The ESC's own temperature.
      *
      * Its meaning changed at protocol 3.0: before that it validated both
      * temperature fields, which is why the change is a major and not an
@@ -1577,7 +1460,7 @@ typedef enum {
      */
     LINK_BN_TEMP_OK    = 1u << 3,
     /**
-     * The motor's temperature, which is a different sensor.
+     * @brief The motor's temperature, which is a different sensor.
      *
      * Separate because the two arrive from different places and one of them
      * usually does not arrive at all: an ESC reports its own temperature over
@@ -1587,21 +1470,23 @@ typedef enum {
      */
     LINK_BN_TEMP_MOT_OK = 1u << 4,
     /**
-     * Voltage, current and power are the INA228's (protocol 4.7), not the
-     * ESC's telemetry, which the SENSE page then carries.
+     * @brief Voltage, current and power are the INA228's (protocol 4.7), not
+     * the ESC's telemetry, which the SENSE page then carries.
      */
     LINK_BN_SENSED     = 1u << 5,
     /**
-     * CHARGE_MAH and ENERGY_DWH are the INA228's accumulators, cleared at
-     * this run's arm, with the part answering throughout (protocol 4.7).
-     * Clear, the two registers count nothing the panel can use, and it
-     * counts its own from the current.
+     * @brief CHARGE_MAH and ENERGY_DWH are the INA228's accumulators, cleared
+     * at this run's arm, with the part answering throughout (protocol 4.7).
+     *
+     * Clear, the two registers count nothing the panel can use, and it counts
+     * its own from the current.
      */
     LINK_BN_TOTALS_OK  = 1u << 6,
     /**
-     * The numbers are modelled, not measured.  Set by an IOmcu running
-     * without a front end and by the panel's own simulator; the panel draws
-     * SIMULATION across the screen either way.
+     * @brief The numbers are modelled, not measured.
+     *
+     * Set by an IOmcu running without a front end and by the panel's own
+     * simulator; the panel draws SIMULATION across the screen either way.
      */
     LINK_BN_SIMULATED  = 1u << 7,
 } link_bench_flag_t;
@@ -1613,36 +1498,29 @@ typedef enum {
  * printed beside each, and what already holds the ones an output may not have.
  *
  * A board describes itself so a panel that has never heard of it can still
- * offer the right pins.  What it cannot do is make a pin safe: the IOmcu
- * reserves its own set at its own end whatever it says here, so a page that
- * lies costs a pin rather than the safety line.
+ * offer the right pins.  What it cannot do is make a pin safe: the
+ * IOmcu reserves its own set at its own end whatever it says here, so
+ * a page that lies costs a pin rather than the safety line.
  *
  * One register per pin and no count register.  A count would have to live in
- * the identity page, and lengthening that page breaks every IOmcu built before
- * it: the panel asks for LINK_ID_COUNT registers, and a device whose identity
- * page is shorter refuses the read rather than returning what it has -- which
- * would leave the link down instead of degraded.  Instead a pad number of zero
- * means there is no pin in that slot, since pads are numbered from one.
+ * the identity page, and lengthening that page breaks every IOmcu
+ * built before it: the panel asks for LINK_ID_COUNT registers, and a device
+ * whose identity page is shorter refuses the read rather than returning what
+ * it has -- which would leave the link down instead of degraded.  Instead a
+ * pad number of zero means there is no pin in that slot, since pads are
+ * numbered from one.
  *
- * An IOmcu built before this page answers NACK with LINK_NACK_BAD_PAGE, which
- * is the panel's cue to use the catalogue compiled into it.
+ * An IOmcu built before this page answers NACK with LINK_NACK_BAD_PAGE,
+ * which is the panel's cue to use the catalogue compiled into it.
  */
 #define LINK_CAT_PINS  32u
-/**
- * @brief Register count and fields of the CATALOGUE page.
- */
 #define LINK_CAT_COUNT LINK_CAT_PINS
 
-/**
- * @brief gpio in 6 bits, pad in 6, and what holds it in 4.
- */
+/** @brief gpio in 6 bits, pad in 6, and what holds it in 4. */
 #define LINK_CAT_OF(gpio, pad, hold) \
     ((uint16_t)((((unsigned)(gpio) & 0x3Fu) << 10) \
                 | (((unsigned)(pad) & 0x3Fu) << 4) \
                 | ((unsigned)(hold) & 0x0Fu)))
-/**
- * @brief Fields of a CATALOGUE pin record.
- */
 #define LINK_CAT_GPIO(r) ((uint8_t)(((r) >> 10) & 0x3Fu))
 #define LINK_CAT_PAD(r)  ((uint8_t)(((r) >> 4) & 0x3Fu))
 #define LINK_CAT_HOLD(r) ((uint8_t)((r) & 0x0Fu))
@@ -1650,10 +1528,10 @@ typedef enum {
 /**
  * @brief What holds a pin the bench may not drive.
  *
- * A code rather than a name: a name is a string and a register is sixteen bits.
- * The panel prints its own words for these, so a board it knows shows the exact
- * signal -- "CAN CS" rather than "CAN" -- and a board it has only been told
- * about shows the group.
+ * A code rather than a name: a name is a string and a register is sixteen
+ * bits.  The panel prints its own words for these, so a board it knows shows
+ * the exact signal -- "CAN CS" rather than "CAN" -- and a board it has only
+ * been told about shows the group.
  */
 typedef enum {
     LINK_PIN_FREE      = 0,  /**< an output may have it                    */
@@ -1670,20 +1548,20 @@ typedef enum {
 /**
  * @brief Where the pins are, as opposed to which they are.
  *
- * The catalogue page names a pad and the pin on it; it does not say where that
- * pad sits.  A picture of the board is the one place a pin number has to become
- * a position, and a picture drawn from a guessed shape points at the wrong pad
- * with the same confidence as the right one -- so the board says its shape
- * rather than the panel assuming one.
+ * The catalogue page names a pad and the pin on it; it does not say where
+ * that pad sits.  A picture of the board is the one place a pin number has
+ * to become a position, and a picture drawn from a guessed shape points at
+ * the wrong pad with the same confidence as the right one -- so the board
+ * says its shape rather than the panel assuming one.
  *
- * An IOmcu that does not serve this page gets no drawn board.  That is a screen
- * the operator does not get, not a bench that does not work: the outputs grid
- * offers the same pins from the catalogue alone.
+ * An IOmcu that does not serve this page gets no drawn board.  That is
+ * a screen the operator does not get, not a bench that does not work: the
+ * outputs grid offers the same pins from the catalogue alone.
  *
- * Two rows on one pitch, which is every 0.1-inch header board.  Pad 1 sits at
- * LINK_SH_CORNER and the numbers run away from it along that edge, then back
- * along the opposite one -- the DIP (dual in-line package) convention, and the
- * one the Pico form factor follows.
+ * Two rows on one pitch, which is every 0.1-inch header board.  Pad 1 sits
+ * at LINK_SH_CORNER and the numbers run away from it along that edge, then
+ * back along the opposite one -- the DIP (dual in-line package) convention,
+ * and the one the Pico form factor follows.
  *
  * Hundredths of a millimetre throughout: a register is sixteen bits, which
  * reaches 655.35 mm, and 0.01 mm is finer than any board is placed to.
@@ -1694,22 +1572,17 @@ enum {
     LINK_SH_LAYOUT     = 2, /**< (corner << 8) | pads in one row          */
     LINK_SH_PITCH_CMM  = 3, /**< centre to centre, 254 for 0.1 inch       */
     /**
-     * Edge to the centre of the pad row, from the outline's own edge.  A
-     * board drawing (LINK_ART_DRAWING) places its pads on the same grid.
+     * @brief Edge to the centre of the pad row, from the outline's own edge.
+     *
+     * A board drawing (LINK_ART_DRAWING) places its pads on the same grid.
      */
     LINK_SH_INSET_CMM  = 4,
     LINK_SH_COUNT      = 5,
 };
 
-/**
- * @brief Fields of the SHAPE page.
- */
 #define LINK_SH_LAYOUT_OF(corner, per_side) \
     ((uint16_t)((((unsigned)(corner) & 0xFFu) << 8) \
                 | ((unsigned)(per_side) & 0xFFu)))
-/**
- * @brief Fields of the SHAPE page's layout register.
- */
 #define LINK_SH_CORNER(r)   ((uint8_t)(((r) >> 8) & 0xFFu))
 #define LINK_SH_PER_SIDE(r) ((uint8_t)((r) & 0xFFu))
 
@@ -1734,19 +1607,19 @@ typedef enum {
  * The IOmcu carries the drawing of its own board; a new board brings its
  * drawing in its own firmware image, and the panel needs no change for it.
  *
- * Two pages because a page is thirty-two registers and no more.  Metadata here,
- * payload next door, and a block stays sixty-two bytes.  The drawing of the
- * RP2350-CAN is under 2 kB, at most 33 blocks: at 1 Mbit/s a block is a write
- * to say which one and a read to fetch it, about 1.4 ms the pair.
+ * Two pages because a page is thirty-two registers and no more.  Metadata
+ * here, payload next door, and a block stays sixty-two bytes.  The drawing
+ * of the RP2350-CAN is under 2 kB, at most 33 blocks: at 1 Mbit/s a block
+ * is a write to say which one and a read to fetch it, about 1.4 ms the pair.
  *
- * LINK_AW_BLOCKS of zero means this IOmcu carries no drawing of itself.  That
- * is the ordinary answer, not a fault: the board is then drawn from its shape
- * page, and used from its catalogue when there is no shape.
+ * LINK_AW_BLOCKS of zero means this IOmcu carries no drawing of
+ * itself.  That is the ordinary answer, not a fault: the board is then drawn
+ * from its shape page, and used from its catalogue when there is no shape.
  *
- * The panel keeps a drawing in its flash under the IOmcu's board ID together
- * with every register of this page from LINK_AW_WIDTH on, and shows the kept
- * one only while all of them still match: an IOmcu flashed with another drawing
- * for the same board ID fetches the new one.
+ * The panel keeps a drawing in its flash under the IOmcu's board ID
+ * together with every register of this page from LINK_AW_WIDTH on, and
+ * shows the kept one only while all of them still match: an IOmcu
+ * flashed with another drawing for the same board ID fetches the new one.
  */
 enum {
     LINK_AW_BLOCKS   = 0, /**< blocks of payload; 0 when there is none    */
@@ -1756,14 +1629,16 @@ enum {
     LINK_AW_BYTES_LO = 4, /**< payload length, low half                   */
     LINK_AW_BYTES_HI = 5,
     /**
-     * link_crc() over the whole payload, seeded zero.  A block lost and
-     * silently skipped would otherwise be cached in flash and shown until
-     * somebody wired a lead by it.
+     * @brief link_crc() over the whole payload, seeded zero.
+     *
+     * A block lost and silently skipped would otherwise be cached in flash and
+     * shown until somebody wired a lead by it.
      */
     LINK_AW_CRC      = 6,
     /**
-     * link_fnv1a32() over the whole payload, low half then high half.  The
-     * content key of the panel's cache, next to the CRC: two drawings that
+     * @brief link_fnv1a32() over the whole payload, low half then high half.
+     *
+     * The content key of the panel's cache, next to the CRC: two drawings that
      * share a sixteen-bit CRC and a length differ here.
      */
     LINK_AW_HASH_LO  = 7,
@@ -1776,10 +1651,13 @@ enum {
  */
 typedef enum {
     LINK_ART_NONE    = 0,
-    /** A photograph, two bytes a pixel.  Minor 19 and older serve it; this
-     *  panel does not read it. */
+    /**
+     * @brief A photograph, two bytes a pixel.
+     *
+     * Minor 19 and older serve it; this panel does not read it.
+     */
     LINK_ART_RGB565  = 1,
-    /** The board drawing laid out below (LINK_DRAW_*). */
+    /** @brief The board drawing laid out below (LINK_DRAW_*). */
     LINK_ART_DRAWING = 2,
 } link_art_format_t;
 
@@ -1791,29 +1669,39 @@ typedef enum {
  * ring and every shape lies inside the outline; a payload with anything else is
  * refused whole.
  *
- * Header, LINK_DRAW_HEAD_BYTES: 0  u8  LINK_DRAW_VERSION 1  u8  pads, 1 to
- * LINK_DRAW_MAX_PADS 2  u16  shapes, 0 to LINK_DRAW_MAX_SHAPES 4  u16  outline
- * width, the same as LINK_AW_WIDTH 6  u16  outline height, the same as
- * LINK_AW_HEIGHT 8  u16  board colour, RGB565 10 u16  pad ring colour, RGB565
- * 12 u8  corner radius of the outline 13 u8  ring radius 14 u8  hole radius,
- * below the ring radius 15 u8  0 Then the pads, LINK_DRAW_PAD_BYTES each, in
- * ascending pad order: 0  u8  pad, 1 to 63 1  u8  kind: LINK_PAD_GROUND,
- * LINK_PAD_POWER, LINK_PAD_OTHER or LINK_DRAW_PAD_GPIO 2  u8  the GPIO of a
- * LINK_DRAW_PAD_GPIO pad, the rail of a POWER pad in tenths of a volt (0: not a
- * fixed voltage), else 0 3  u8  flags: LINK_DRAW_PAD_SQUARE 4  u16  x of the
- * pad centre 6  u16  y of the pad centre Then the shapes, LINK_DRAW_SHAPE_BYTES
- * each, drawn in order over the board colour and under the rings: 0  u8  kind:
- * a link_draw_shape_kind_t 1  u8  corner radius of an RRECT, width of a LINE,
- * else 0 2  u16  colour, RGB565 4  u16  a  RECT, RRECT: left x;  DISC: centre
- * x;  LINE: x0 6  u16  b  RECT, RRECT: top y;  DISC: centre y;  LINE: y0 8  u16
- * c  RECT, RRECT: width;  DISC: radius;  LINE: x1 10 u16  d  RECT, RRECT:
- * height;  DISC: 0;  LINE: y1 The length is exactly the header, the pads and
- * the shapes.
+ * Header, LINK_DRAW_HEAD_BYTES:
+ *   0  u8   LINK_DRAW_VERSION
+ *   1  u8   pads, 1 to LINK_DRAW_MAX_PADS
+ *   2  u16  shapes, 0 to LINK_DRAW_MAX_SHAPES
+ *   4  u16  outline width, the same as LINK_AW_WIDTH
+ *   6  u16  outline height, the same as LINK_AW_HEIGHT
+ *   8  u16  board colour, RGB565
+ *   10 u16  pad ring colour, RGB565
+ *   12 u8   corner radius of the outline
+ *   13 u8   ring radius
+ *   14 u8   hole radius, below the ring radius
+ *   15 u8   0
+ * Then the pads, LINK_DRAW_PAD_BYTES each, in ascending pad order:
+ *   0  u8   pad, 1 to 63
+ *   1  u8   kind: LINK_PAD_GROUND, LINK_PAD_POWER, LINK_PAD_OTHER or
+ *           LINK_DRAW_PAD_GPIO
+ *   2  u8   the GPIO of a LINK_DRAW_PAD_GPIO pad, the rail of a POWER pad in
+ *           tenths of a volt (0: not a fixed voltage), else 0
+ *   3  u8   flags: LINK_DRAW_PAD_SQUARE
+ *   4  u16  x of the pad centre
+ *   6  u16  y of the pad centre
+ * Then the shapes, LINK_DRAW_SHAPE_BYTES each, drawn in order over the board
+ * colour and under the rings:
+ *   0  u8   kind: a link_draw_shape_kind_t
+ *   1  u8   corner radius of an RRECT, width of a LINE, else 0
+ *   2  u16  colour, RGB565
+ *   4  u16  a   RECT, RRECT: left x;  DISC: centre x;  LINE: x0
+ *   6  u16  b   RECT, RRECT: top y;   DISC: centre y;  LINE: y0
+ *   8  u16  c   RECT, RRECT: width;   DISC: radius;    LINE: x1
+ *   10 u16  d   RECT, RRECT: height;  DISC: 0;         LINE: y1
+ * The length is exactly the header, the pads and the shapes.
  */
 #define LINK_DRAW_VERSION      1u
-/**
- * @brief Sizes of a board drawing: header, pad record, shape record and largest drawing, in bytes.
- */
 #define LINK_DRAW_HEAD_BYTES   16u
 #define LINK_DRAW_PAD_BYTES    8u
 #define LINK_DRAW_SHAPE_BYTES  12u
@@ -1826,9 +1714,7 @@ typedef enum {
  * @brief A pad that is a GPIO, the fourth kind next to link_pad_kind_t's three.
  */
 #define LINK_DRAW_PAD_GPIO     4u
-/**
- * @brief The pad's ring is square: pad 1 of a header, by convention.
- */
+/** @brief The pad's ring is square: pad 1 of a header, by convention. */
 #define LINK_DRAW_PAD_SQUARE   0x01u
 
 /**
@@ -1857,9 +1743,6 @@ enum {
     LINK_AD_DATA  = 1,            /**< the payload starts here             */
     LINK_AD_COUNT = LINK_MAX_REGS,
 };
-/**
- * @brief Layout of the ART_DATA page: the block number, then the data registers.
- */
 #define LINK_AD_WORDS ((unsigned)(LINK_AD_COUNT - LINK_AD_DATA))
 #define LINK_AD_BYTES (LINK_AD_WORDS * 2u)
 
@@ -1871,21 +1754,18 @@ enum {
  *
  * A servo lead has three wires and the catalogue describes one of them. An
  * operator who has found where the signal goes still has to find a ground for
- * the return and a rail for the positive, and counting pads on a board to do it
- * is how a lead goes to the wrong place.
+ * the return and a rail for the positive, and counting pads on a board to do
+ * it is how a lead goes to the wrong place.
  *
  * Separate from the catalogue because they do not fit in it: a page is
- * thirty-two registers, the catalogue is one per pin an output may have, and a
- * forty-pad board has more pads than that between the two of them.
+ * thirty-two registers, the catalogue is one per pin an output may have, and
+ * a forty-pad board has more pads than that between the two of them.
  *
- * An IOmcu that does not serve this page has its grounds and rails unmarked,
- * which is where the picker started. It is a lead placed by reading the board
- * instead of the screen, not a bench that does not work.
+ * An IOmcu that does not serve this page has its grounds and rails
+ * unmarked, which is where the picker started. It is a lead placed by
+ * reading the board instead of the screen, not a bench that does not work.
  */
 #define LINK_PAD_SLOTS 32u
-/**
- * @brief Register count and fields of the PADS page.
- */
 #define LINK_PAD_COUNT LINK_PAD_SLOTS
 
 /**
@@ -1895,9 +1775,6 @@ enum {
     ((uint16_t)((((unsigned)(pad) & 0x3Fu) << 10) \
                 | (((unsigned)(kind) & 0x03u) << 8) \
                 | ((unsigned)(dv) & 0xFFu)))
-/**
- * @brief Fields of a PADS pad record.
- */
 #define LINK_PAD_NUM(r)  ((uint8_t)(((r) >> 10) & 0x3Fu))
 #define LINK_PAD_KIND(r) ((uint8_t)(((r) >> 8) & 0x03u))
 #define LINK_PAD_DV(r)   ((uint8_t)((r) & 0xFFu))
@@ -1905,10 +1782,10 @@ enum {
 /**
  * @brief What a pad that is not a pin is.
  *
- * Tenths of a volt reach 25.5 V, which covers every rail a logic board brings
- * to a header. Zero on a power pad means the rail is not a fixed voltage -- an
- * input like VSYS follows whatever feeds it -- and the screen says so rather
- * than printing a number that is only sometimes true.
+ * Tenths of a volt reach 25.5 V, which covers every rail a logic board
+ * brings to a header. Zero on a power pad means the rail is not a fixed
+ * voltage -- an input like VSYS follows whatever feeds it -- and the screen
+ * says so rather than printing a number that is only sometimes true.
  */
 typedef enum {
     LINK_PAD_NONE   = 0, /**< no pad in this slot; the list ends here      */
@@ -1917,7 +1794,7 @@ typedef enum {
     LINK_PAD_OTHER  = 3, /**< neither: a RUN or an enable                  */
 } link_pad_kind_t;
 
-/** @brief KST */
+/* --------------------------------------------------------------------- KST */
 /**
  * @brief The servo programming page (KST, 0x32, since 4.12): the programming
  * port for KST and Chaservo servos.
@@ -1928,11 +1805,12 @@ typedef enum {
  * it needs, and reads the state, the result and the servo's 32 registers.
  * shared/outputs/kst_port.h holds the rules.
  *
- * A read and a write of the page see different registers.  A read gives the 32
- * registers LINK_KS_*.  A write takes LINK_KS_W_*: the command in registers 0
- * to 3, which is one frame and taken whole or not at all, and the staged
- * registers 4 to 24, written in any windows before the command that names their
- * CRC (cyclic redundancy check).  Nothing is kept in flash.
+ * A read and a write of the page see different registers.  A read gives
+ * the 32 registers LINK_KS_*.  A write takes LINK_KS_W_*: the command in
+ * registers 0 to 3, which is one frame and taken whole or not at all, and
+ * the staged registers 4 to 24, written in any windows before the command
+ * that names their CRC (cyclic redundancy check).  Nothing is kept in
+ * flash.
  */
 enum {
     LINK_KS_STATE = 0,   /**< bits 0-2 link_kst_state_t, bits 3-11 the
@@ -1972,9 +1850,7 @@ enum {
     LINK_KS_COUNT = 32,
 };
 
-/**
- * @brief What a write of the page takes.
- */
+/** @brief What a write of the page takes. */
 enum {
     LINK_KS_W_CMD = 0,   /**< bits 0-3 link_kst_op_t, bit 6
                               LINK_KS_W_CMD_PORT, bit 7 the confirmation
@@ -2011,17 +1887,11 @@ enum {
     LINK_KS_W_COUNT = 29,
 };
 
-/**
- * @brief Registers of the command, from LINK_KS_W_CMD: one frame.
- */
+/** @brief Registers of the command, from LINK_KS_W_CMD: one frame. */
 #define LINK_KS_W_CMD_FRAME 4u
-/**
- * @brief The staged registers a command's CRC covers, from LINK_KS_W_IMAGE.
- */
+/** @brief The staged registers a command's CRC covers, from LINK_KS_W_IMAGE. */
 #define LINK_KS_W_STAGED 21u
-/**
- * @brief Registers a servo image takes on the page.
- */
+/** @brief Registers a servo image takes on the page. */
 #define LINK_KS_IMAGE_REGS 16u
 
 /**
@@ -2031,9 +1901,6 @@ enum {
  */
 #define LINK_KST_WRITE_KEY 0x57A5u
 
-/**
- * @brief Fields of the KST page: state, flags and command.
- */
 #define LINK_KS_STATE_OF(r)   ((uint8_t)((r) & 0x7u))
 #define LINK_KS_PORT_OF(r)    ((uint8_t)(((r) >> 12) & 0xFu))
 #define LINK_KS_OP_OF(r)      ((uint8_t)(((r) >> 12) & 0xFu))
@@ -2046,9 +1913,6 @@ enum {
  * which is no programming port, and is refused with LINK_KST_REF_PORT.
  */
 #define LINK_KS_W_CMD_PORT    0x0040u
-/**
- * @brief Command values of the KST page.
- */
 #define LINK_KS_W_CMD_OF(op, port) \
     ((uint16_t)((unsigned)(op) | LINK_KS_W_CMD_PORT \
                 | (((unsigned)(port) & 0xFu) << 8)))
@@ -2093,13 +1957,7 @@ enum {
  */
 #define LINK_KST_LEAVE_MS_DEFAULT 100u
 
-/**
- * @brief The CRC of @p n page registers, low byte first, seeded 0xFFFF.
- *
- * @param regs The page registers.
- * @param n Number of registers in regs.
- * @return The CRC of the registers, seeded 0xFFFF.
- */
+/** @brief The CRC of @p n page registers, low byte first, seeded 0xFFFF. */
 static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
 {
     uint16_t crc = 0xFFFFu;
@@ -2112,9 +1970,7 @@ static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
     return crc;
 }
 
-/**
- * @brief Where the programming port is.
- */
+/** @brief Where the programming port is. */
 typedef enum {
     LINK_KST_PWM = 0,      /**< the port's pin is the PWM generator's */
     LINK_KST_STOPPING = 1, /**< PWM renders no pulse; the running one ends */
@@ -2149,9 +2005,7 @@ enum {
     LINK_KS_F_VIEW_BACKUP = 0x0800u, /**< LINK_KS_IMAGE shows the backup */
 };
 
-/**
- * @brief The operations of a command.
- */
+/** @brief The operations of a command. */
 typedef enum {
     LINK_KST_OP_NONE = 0,     /**< never written; LINK_KS_OP at start */
     LINK_KST_OP_ENTER = 1,    /**< take the port's pin out of PWM, set the
@@ -2223,7 +2077,7 @@ typedef enum {
                                        KST_PORT_SUPPLY_MIN_MV */
 } link_kst_refusal_t;
 
-/** @brief PROG */
+/* -------------------------------------------------------------------- PROG */
 /**
  * @brief The PROG page (0x33, since 4.13): the programming ports.
  *
@@ -2235,9 +2089,10 @@ typedef enum {
  * pin parked as an input with its pull-down.  A wire page that holds the port
  * has the pin, never both.  shared/outputs/prog_port.h holds the rules.
  *
- * Registers 0 to 3 are the page's own; LINK_PG_STRIDE registers per port follow
- * from LINK_PG_PORT0, then one FUNC register per port from LINK_PG_FUNC0.  PIN,
- * SLEW, MIN_US, MAX_US and FUNC are kept in flash; PWM, TARGET and CMD are not.
+ * Registers 0 to 3 are the page's own; LINK_PG_STRIDE registers per port
+ * follow from LINK_PG_PORT0, then one FUNC register per port from
+ * LINK_PG_FUNC0.  PIN, SLEW, MIN_US, MAX_US and FUNC are kept in flash;
+ * PWM, TARGET and CMD are not.
  */
 enum {
     LINK_PG_COUNT  = 0,  /**< read only: the ports this build has */
@@ -2257,7 +2112,8 @@ enum {
     LINK_PG_REGS   = 28,
 };
 /**
- * @brief Register offsets of the PROG page: per-port fields and the function of each port.
+ * @brief Register offsets of the PROG page: per-port fields and the function of
+ * each port.
  */
 enum {
     LINK_PG_PIN    = 0,  /**< per port: the IOmcu GPIO, or
@@ -2285,46 +2141,30 @@ typedef enum {
     LINK_PG_FN_DSHOT600  = 4, /**< the same at 600 kbit/s */
     LINK_PG_FN_COUNT     = 5,
 } link_pg_func_t;
-/**
- * @brief The functions an IOmcu of 4.26 and 4.27 takes.
- */
+/** @brief The functions an IOmcu of 4.26 and 4.27 takes. */
 #define LINK_PG_FN_COUNT_V426 2u
-/**
- * @brief Whether @p fn is one of the DShot functions.
- */
+/** @brief Whether @p fn is one of the DShot functions. */
 #define LINK_PG_FN_IS_DSHOT(fn) \
     ((unsigned)(fn) - (unsigned)LINK_PG_FN_DSHOT150 \
      <= (unsigned)LINK_PG_FN_DSHOT600 - (unsigned)LINK_PG_FN_DSHOT150)
-/**
- * @brief A DShot function's bit rate in kbit/s, 0 for another function.
- */
+/** @brief A DShot function's bit rate in kbit/s, 0 for another function. */
 #define LINK_PG_FN_KBIT(fn) \
     ((unsigned)(fn) == (unsigned)LINK_PG_FN_DSHOT150 ? 150u \
      : (unsigned)(fn) == (unsigned)LINK_PG_FN_DSHOT300 ? 300u \
      : (unsigned)(fn) == (unsigned)LINK_PG_FN_DSHOT600 ? 600u : 0u)
-/**
- * @brief Ports the page has room for.
- */
+/** @brief Ports the page has room for. */
 #define LINK_PG_PORTS_MAX 4u
-/**
- * @brief Pin value of a PROG port with no pin.
- */
 #define LINK_PG_PIN_NONE  0xFFFFu
 #define LINK_PG_REG(port, r) \
     ((uint8_t)(LINK_PG_PORT0 + (unsigned)(port) * LINK_PG_STRIDE + (r)))
-/**
- * @brief Function values of a PROG port.
- */
 #define LINK_PG_FUNC(port) ((uint8_t)(LINK_PG_FUNC0 + (unsigned)(port)))
 #define LINK_PG_F_BOUND(port)   ((uint16_t)(1u << (unsigned)(port)))
 #define LINK_PG_F_PARKED(port)  ((uint16_t)(0x10u << (unsigned)(port)))
 #define LINK_PG_F_REFUSED(port) ((uint16_t)(0x100u << (unsigned)(port)))
-/**
- * @brief From 4.28: port n's DShot driver holds its pin.
- */
+/** @brief From 4.28: port n's DShot driver holds its pin. */
 #define LINK_PG_F_DSHOT(port)   ((uint16_t)(0x1000u << (unsigned)(port)))
 
-/** @brief HITEC */
+/* ------------------------------------------------------------------- HITEC */
 /**
  * @brief The HITEC page (0x34, since 4.23): raw transactions of the Hitec servo
  * wire (protocols/hitec) on a programming port.
@@ -2333,12 +2173,12 @@ typedef enum {
  * transaction at a time and reads what came back.  shared/outputs/hitec_port.h
  * holds the rules.
  *
- * A read and a write see different registers.  A read gives the 32 registers
- * LINK_HT_*: 16 fixed ones and 16 that LINK_HT_W_VIEW selects. A write takes
- * LINK_HT_W_*: the command in registers 0 to 3, one frame taken whole or not at
- * all, and the staged registers 4 to 21, written in any windows before the
- * command that names their CRC (cyclic redundancy check, link_kst_crc()).
- * Nothing is kept in flash.
+ * A read and a write see different registers.  A read gives the 32
+ * registers LINK_HT_*: 16 fixed ones and 16 that LINK_HT_W_VIEW selects.
+ * A write takes LINK_HT_W_*: the command in registers 0 to 3, one frame
+ * taken whole or not at all, and the staged registers 4 to 21, written in
+ * any windows before the command that names their CRC (cyclic redundancy
+ * check, link_kst_crc()).  Nothing is kept in flash.
  */
 enum {
     LINK_HT_STATE  = 0,  /**< bits 0-2 link_hitec_state_t, bits 3-11 the
@@ -2367,23 +2207,21 @@ enum {
     LINK_HT_COUNT  = 32,
 };
 
-/**
- * @brief What registers 16 to 31 show.
- */
+/** @brief What registers 16 to 31 show. */
 typedef enum {
-    /** The start bits of bytes 0 to 7, ns from the receiver's start, 32
-     *  bits each, low half first; 0 past the bytes held. */
+    /**
+     * @brief The start bits of bytes 0 to 7, ns from the receiver's start, 32
+     * bits each, low half first; 0 past the bytes held.
+     */
     LINK_HITEC_VIEW_TIMES_LO = 0,
-    /** Bytes 8 to 15, the same way. */
+    /** @brief Bytes 8 to 15, the same way. */
     LINK_HITEC_VIEW_TIMES_HI = 1,
-    /** The run: LINK_HT_I_*. */
+    /** @brief The run: LINK_HT_I_*. */
     LINK_HITEC_VIEW_RUN = 2,
     LINK_HITEC_VIEW_COUNT
 } link_hitec_view_t;
 
-/**
- * @brief Registers 16 and up in LINK_HITEC_VIEW_RUN.
- */
+/** @brief Registers 16 and up in LINK_HITEC_VIEW_RUN. */
 enum {
     LINK_HT_I_DELAY_LO = 16, /**< the decoder's delay_ns, low half */
     LINK_HT_I_DELAY_HI = 17,
@@ -2404,9 +2242,7 @@ enum {
                                   the start level */
 };
 
-/**
- * @brief What a write of the page takes.
- */
+/** @brief What a write of the page takes. */
 enum {
     LINK_HT_W_CMD  = 0,  /**< bits 0-3 link_hitec_op_t, bits 8-11 the
                               programming port; every other bit 0 */
@@ -2455,30 +2291,26 @@ enum {
     LINK_HT_W_COUNT = 24,
 };
 
-/**
- * @brief LINK_HT_W_RX_MODE.
- */
+/** @brief LINK_HT_W_RX_MODE. */
 typedef enum {
-    /** Released for the answer; a pull-up on the board lifts the line. */
+    /**
+     * @brief Released for the answer; a pull-up on the board lifts the line.
+     */
     LINK_HITEC_RX_PULL_UP = 0,
-    /** No pull-up: the IOmcu precharges the line and samples it
-     *  (protocols/hitec/include/hitec_pre.h). */
+    /**
+     * @brief No pull-up: the IOmcu precharges the line and samples it
+     * (protocols/hitec/include/hitec_pre.h).
+     */
     LINK_HITEC_RX_PRECHARGE = 1,
     LINK_HITEC_RX_COUNT
 } link_hitec_rx_t;
 
-/**
- * @brief LINK_HT_I_LINE: the open line receives by PRECHARGE.
- */
+/** @brief LINK_HT_I_LINE: the open line receives by PRECHARGE. */
 #define LINK_HT_LINE_PRECHARGE 0x0100u
 
-/**
- * @brief Registers of the command, from LINK_HT_W_CMD: one frame.
- */
+/** @brief Registers of the command, from LINK_HT_W_CMD: one frame. */
 #define LINK_HT_W_CMD_FRAME 4u
-/**
- * @brief The staged registers a command's CRC covers, from LINK_HT_W_LINE.
- */
+/** @brief The staged registers a command's CRC covers, from LINK_HT_W_LINE. */
 #define LINK_HT_W_STAGED 18u
 
 /**
@@ -2491,32 +2323,19 @@ typedef enum {
  * model, 4800 to 6000 mV.
  */
 #define LINK_HITEC_SUPPLY_MIN_MV 4800u
-/**
- * @brief Supply limit of the HITEC page, in mV.
- */
 #define LINK_HITEC_SUPPLY_MAX_MV 6000u
-/**
- * @brief The longest off time of a POWER, ms.
- */
+/** @brief The longest off time of a POWER, ms. */
 #define LINK_HITEC_OFF_MS_MAX 10000u
 
-/**
- * @brief Fields of the HITEC page: state, flags, command and line.
- */
 #define LINK_HT_STATE_OF(r) ((uint8_t)((r) & 0x7u))
 #define LINK_HT_PORT_OF(r)  ((uint8_t)(((r) >> 12) & 0xFu))
 #define LINK_HT_OP_OF(r)    ((uint8_t)(((r) >> 12) & 0xFu))
 #define LINK_HT_W_CMD_OF(op, port) \
     ((uint16_t)((unsigned)(op) | (((unsigned)(port) & 0xFu) << 8)))
-/**
- * @brief Line values of the HITEC page.
- */
 #define LINK_HT_LINE_OF(family, drive) \
     ((uint16_t)(((unsigned)(family) & 1u) | (((unsigned)(drive) & 1u) << 4)))
 
-/**
- * @brief Where the port is.
- */
+/** @brief Where the port is. */
 typedef enum {
     LINK_HITEC_FREE = 0,     /**< the port's pin is the PWM generator's */
     LINK_HITEC_STOPPING = 1, /**< PWM renders no pulse; the running one
@@ -2541,9 +2360,7 @@ enum {
                                         LINK_HITEC_RX_PRECHARGE */
 };
 
-/**
- * @brief LINK_HT_CAP bits 8-11, as hitec_capture_t has them.
- */
+/** @brief LINK_HT_CAP bits 8-11, as hitec_capture_t has them. */
 enum {
     LINK_HT_CAP_FULL     = 0x0100u,
     LINK_HT_CAP_ANSWERED = 0x0200u,
@@ -2551,9 +2368,7 @@ enum {
     LINK_HT_CAP_ABORTED  = 0x0800u,
 };
 
-/**
- * @brief How the page decodes a capture.
- */
+/** @brief How the page decodes a capture. */
 typedef enum {
     LINK_HITEC_DEC_NONE = 0,
     LINK_HITEC_DEC_C = 1,       /**< hitec_c_decode() */
@@ -2561,9 +2376,7 @@ typedef enum {
     LINK_HITEC_DEC_LISTEN = 3,  /**< hitec_listen_decode() */
 } link_hitec_dec_t;
 
-/**
- * @brief The operations of a command.
- */
+/** @brief The operations of a command. */
 typedef enum {
     LINK_HITEC_OP_NONE = 0,   /**< never written; LINK_HT_OP at start */
     LINK_HITEC_OP_OPEN = 1,   /**< take the port's pin from PWM and open
@@ -2580,9 +2393,7 @@ typedef enum {
     LINK_HITEC_OP_COUNT
 } link_hitec_op_t;
 
-/**
- * @brief LINK_HT_RESULT's low byte.
- */
+/** @brief LINK_HT_RESULT's low byte. */
 typedef enum {
     LINK_HITEC_RESULT_NONE = 0,    /**< no operation since the start */
     LINK_HITEC_RESULT_RUNNING = 1, /**< the operation runs */
@@ -2601,9 +2412,7 @@ typedef enum {
                                         the bytes so far, marked aborted */
 } link_hitec_result_t;
 
-/**
- * @brief The time a POWER waits for the supply to read off, ms.
- */
+/** @brief The time a POWER waits for the supply to read off, ms. */
 #define LINK_HITEC_SUPPLY_MS 3000u
 
 /**
@@ -2660,9 +2469,7 @@ enum {
     LINK_CT_COUNT      = 4,
 };
 
-/**
- * @brief The registers the frame that arms carries, from LINK_CT_ARM.
- */
+/** @brief The registers the frame that arms carries, from LINK_CT_ARM. */
 #define LINK_CT_ARM_FRAME 3u
 
 /**
@@ -2670,9 +2477,6 @@ enum {
  * unknown.
  */
 #define LINK_POLES_MIN  2u
-/**
- * @brief Largest motor pole count the CONTROL page takes.
- */
 #define LINK_POLES_MAX 42u
 
 /**
@@ -2685,24 +2489,22 @@ enum {
 /**
  * @brief What a non-zero ARM arms, from LINK_MINOR_ARM_ROLE.
  *
- * An arm is limited to the roles it names.  A channel of another role stays at
- * no pulse, and a programming port is a surface.  LINK_ARM_ALL is every role,
- * which is what a panel older than LINK_MINOR_ARM_ROLE writes as 1. Any other
- * value is refused with LINK_NACK_BAD_VALUE, ahead of the failsafe check, so a
- * refused value never latches anything.
+ * An arm is limited to the roles it names.  A channel of another role stays
+ * at no pulse, and a programming port is a surface.  LINK_ARM_ALL is every
+ * role, which is what a panel older than LINK_MINOR_ARM_ROLE writes as 1.
+ * Any other value is refused with LINK_NACK_BAD_VALUE, ahead of the failsafe
+ * check, so a refused value never latches anything.
  *
- * The roles of an arm change only through a disarm: a non-zero ARM that differs
- * from the non-zero ARM in force is refused with LINK_NACK_BAD_VALUE. Writing
- * the value in force again is not a change.
+ * The roles of an arm change only through a disarm: a non-zero ARM that
+ * differs from the non-zero ARM in force is refused with LINK_NACK_BAD_VALUE.
+ * Writing the value in force again is not a change.
  */
 #define LINK_ARM_ALL       0x0001u /**< every role                          */
 #define LINK_ARM_THROTTLE  0x0002u /**< outputs bound as a motor            */
 #define LINK_ARM_SURFACE   0x0004u /**< outputs bound as a servo, and ports */
 #define LINK_ARM_ROLES     (LINK_ARM_THROTTLE | LINK_ARM_SURFACE)
 
-/**
- * @brief Throttle is hundredths of a percent: 0..10000 inclusive.
- */
+/** @brief Throttle is hundredths of a percent: 0..10000 inclusive. */
 #define LINK_THROTTLE_MAX 10000u
 
 /* ----------------------------------------------------------------- update */
@@ -2719,46 +2521,46 @@ enum {
  * table.  The image goes to the slot that is not running, in 64-byte blocks
  * (LINK_UPD_BLOCK_BYTES), strictly in order, each staged in UPDATE_DATA and
  * then committed with its CRC-16 (cyclic redundancy check, link_crc() seeded
- * LINK_CRC_INIT over the block's bytes).  The IOmcu writes a 4 KiB sector once
- * its 64 blocks are in, and acknowledges the COMMIT that filled it only once
- * the sector is erased and programmed.  The slot's first sector is erased at
- * BEGIN and written last, at ACTIVATE, so a slot written in part holds no image
- * the boot ROM would start.
+ * LINK_CRC_INIT over the block's bytes).  The IOmcu writes a 4 KiB
+ * sector once its 64 blocks are in, and acknowledges the COMMIT that filled
+ * it only once the sector is erased and programmed.  The slot's first sector
+ * is erased at BEGIN and written last, at ACTIVATE, so a slot written in part
+ * holds no image the boot ROM would start.
  *
- * Once every block is in, FINISH compares the SHA-256 (Secure Hash Algorithm)
- * of the slot with the digest the panel staged in UPDATE_DATA registers 0 to
- * 15.  ACTIVATE writes the first sector, reads the whole sector back and
- * restarts into the new slot as a flash update boot.  The image the panel sends
- * carries the TBYB (try before you buy) flag, so the boot ROM starts it under a
- * 16.7 s watchdog; it stays only when the panel reads its identity over the
- * link and writes BUY.  Without the BUY the watchdog restarts the IOmcu into
- * the slot it came from.
+ * Once every block is in, FINISH compares the SHA-256 (Secure Hash
+ * Algorithm) of the slot with the digest the panel staged in UPDATE_DATA
+ * registers 0 to 15.  ACTIVATE writes the first sector, reads the whole
+ * sector back and restarts into the new slot as a flash update boot.  The
+ * image the panel sends carries the TBYB (try before you buy) flag, so the
+ * boot ROM starts it under a 16.7 s watchdog; it stays only when the panel
+ * reads its identity over the link and writes BUY.  Without the BUY the
+ * watchdog restarts the IOmcu into the slot it came from.
  *
- * A session runs from BEGIN to ACTIVATE, ABORT, a failure or a restart. While
- * one runs, and while a BUY is pending, the IOmcu refuses ARM with
- * LINK_NACK_NOT_ARMED.  BEGIN, COMMIT and ACTIVATE need the store's gate open
- * -- the bank not driving, the supply's output off, no servo programming
- * session -- and refuse with LINK_NACK_BUSY while it is shut. Five seconds
- * (LINK_UPD_SILENCE_MS) without a request to UPDATE_CTL or UPDATE_DATA ends a
- * session with LINK_UPD_ERR_LINK; the panel's ordinary polling does not keep
- * one alive.  A restart ends it as well; the panel then starts again from block
- * 0.  A panel that finds a session it did not start -- its own, from before it
- * restarted -- ends it with ABORT.
+ * A session runs from BEGIN to ACTIVATE, ABORT, a failure or a restart.
+ * While one runs, and while a BUY is pending, the IOmcu refuses ARM
+ * with LINK_NACK_NOT_ARMED.  BEGIN, COMMIT and ACTIVATE need the store's
+ * gate open -- the bank not driving, the supply's output off, no servo
+ * programming session -- and refuse with LINK_NACK_BUSY while it is shut.
+ * Five seconds (LINK_UPD_SILENCE_MS) without a request to UPDATE_CTL or
+ * UPDATE_DATA ends a session with LINK_UPD_ERR_LINK; the panel's ordinary
+ * polling does not keep one alive.  A restart ends it as well; the panel
+ * then starts again from block 0.  A panel that finds a session it did not
+ * start -- its own, from before it restarted -- ends it with ABORT.
  *
  * After a BUY the slot the image came from must hold no image the boot ROM
- * could start, or a later normal boot may choose between two.  The IOmcu erases
- * that slot's first sector: at the BUY when the gate is open, and otherwise, or
- * after an erase that failed, once a second while the gate is open until the
- * erase holds.  It owes the same erase after any start that finds the other
- * slot's first sector written outside a session or a trial.
- * LINK_UPD_SLOT_OTHER says the erase is owed.  The BUY is acknowledged when the
- * boot ROM took it, owed erase or not: the bought image is the one a normal
- * boot prefers either way.
+ * could start, or a later normal boot may choose between two.  The
+ * IOmcu erases that slot's first sector: at the BUY when the gate is
+ * open, and otherwise, or after an erase that failed, once a second while
+ * the gate is open until the erase holds.  It owes the same erase after any
+ * start that finds the other slot's first sector written outside a session
+ * or a trial.  LINK_UPD_SLOT_OTHER says the erase is owed.  The BUY is
+ * acknowledged when the boot ROM took it, owed erase or not: the bought
+ * image is the one a normal boot prefers either way.
  *
- * A command is one frame: a write of 1 to 4 registers starting at LINK_UPD_CMD,
- * the arguments after it.  Any other write to UPDATE_CTL is refused with
- * LINK_NACK_READ_ONLY.  A command that does not fit the state is refused with
- * LINK_NACK_BAD_VALUE and the reason in LINK_UPD_ERROR.
+ * A command is one frame: a write of 1 to 4 registers starting at
+ * LINK_UPD_CMD, the arguments after it.  Any other write to UPDATE_CTL is
+ * refused with LINK_NACK_READ_ONLY.  A command that does not fit the state
+ * is refused with LINK_NACK_BAD_VALUE and the reason in LINK_UPD_ERROR.
  */
 enum {
     LINK_UPD_VERSION     = 0,  /**< LINK_UPD_PROTOCOL; read-only            */
@@ -2785,46 +2587,25 @@ enum {
  */
 #define LINK_UPD_PROTOCOL 1u
 
-/**
- * @brief Bytes in a block, and registers in UPDATE_DATA.
- */
+/** @brief Bytes in a block, and registers in UPDATE_DATA. */
 #define LINK_UPD_BLOCK_BYTES 64u
-/**
- * @brief Register counts and slot flags of the update pages.
- */
 #define LINK_UPD_DATA_COUNT  32u
-/**
- * @brief Bytes in a flash sector, the unit of an erase.
- */
+/** @brief Bytes in a flash sector, the unit of an erase. */
 #define LINK_UPD_SECTOR_BYTES 4096u
-/**
- * @brief UPDATE_DATA registers FINISH takes the expected SHA-256 from.
- */
+/** @brief UPDATE_DATA registers FINISH takes the expected SHA-256 from. */
 #define LINK_UPD_EXPECT_REGS 16u
 
-/**
- * @brief LINK_UPD_SLOT: the running slot in bits 0 to 3, and two flags.
- */
+/** @brief LINK_UPD_SLOT: the running slot in bits 0 to 3, and two flags. */
 #define LINK_UPD_SLOT_A      0x0000u
-/**
- * @brief Slot flags of the UPDATE_CTL page.
- */
 #define LINK_UPD_SLOT_B      0x0001u
 /**
  * @brief No slot to write: no partition table, or not the one this build has.
  */
 #define LINK_UPD_SLOT_NONE   0x000Fu
-/**
- * @brief Mask of the slot field of the UPDATE_CTL page.
- */
 #define LINK_UPD_SLOT_MASK   0x000Fu
-/**
- * @brief The running image is on trial and waits for BUY.
- */
+/** @brief The running image is on trial and waits for BUY. */
 #define LINK_UPD_SLOT_TRIAL  0x0100u
-/**
- * @brief The other slot's first sector still waits for its erase.
- */
+/** @brief The other slot's first sector still waits for its erase. */
 #define LINK_UPD_SLOT_OTHER  0x0200u
 
 /**
@@ -2846,23 +2627,36 @@ typedef enum {
  */
 typedef enum {
     LINK_UPD_CMD_NONE         = 0,
-    /** SHA-256 of the running slot's first ARG0 | ARG1 << 16 bytes, with the
-     *  image's TBYB flag read as clear (link_update_image.h).  Idle only. */
+    /**
+     * @brief SHA-256 of the running slot's first ARG0 | ARG1 << 16 bytes, with
+     * the image's TBYB flag read as clear (link_update_image.h).
+     *
+     * Idle only.
+     */
     LINK_UPD_CMD_HASH_RUNNING = 1,
-    /** A session for an image of ARG0 | ARG1 << 16 bytes: 1 to the slot. */
+    /**
+     * @brief A session for an image of ARG0 | ARG1 << 16 bytes: 1 to the slot.
+     */
     LINK_UPD_CMD_BEGIN        = 2,
-    /** UPDATE_DATA is block ARG0; ARG1 is its CRC-16.  The last block is
-     *  the image's remainder, its CRC over those bytes only.  The block
-     *  before LINK_UPD_NEXT_BLOCK again is acknowledged and not written. */
+    /**
+     * @brief UPDATE_DATA is block ARG0; ARG1 is its CRC-16.
+     *
+     * The last block is the image's remainder, its CRC over those bytes only.
+     * The block before LINK_UPD_NEXT_BLOCK again is acknowledged and not
+     * written.
+     */
     LINK_UPD_CMD_COMMIT       = 3,
-    /** UPDATE_DATA registers 0 to 15 hold the expected SHA-256. */
+    /** @brief UPDATE_DATA registers 0 to 15 hold the expected SHA-256. */
     LINK_UPD_CMD_FINISH       = 4,
-    /** Write the first sector and restart into the new slot. */
+    /** @brief Write the first sector and restart into the new slot. */
     LINK_UPD_CMD_ACTIVATE     = 5,
-    /** End the session; the slot is left without an image. */
+    /** @brief End the session; the slot is left without an image. */
     LINK_UPD_CMD_ABORT        = 6,
-    /** Keep the image on trial.  Acknowledged with nothing to do when no
-     *  image is on trial. */
+    /**
+     * @brief Keep the image on trial.
+     *
+     * Acknowledged with nothing to do when no image is on trial.
+     */
     LINK_UPD_CMD_BUY          = 7,
 } link_upd_cmd_t;
 

@@ -3,10 +3,10 @@
  * @brief Both ends' link counters turned into one diagnosis.
  *
  * Wrong pins, a mismatched bit rate, a missing terminator and a firmware skew
- * all present as a link that does not work.  The counters read from both ends
- * and compared tell them apart: an IOmcu that decoded 100 requests while the
- * panel heard no answers is a return-path fault, which the panel's own numbers
- * cannot show.
+ * all present as a link that does not work.  The counters read from both
+ * ends and compared tell them apart: an IOmcu that decoded 100 requests
+ * while the panel heard no answers is a return-path fault, which the panel's
+ * own numbers cannot show.
  *
  * Pure arithmetic over two structs, so every diagnosis has a host test that
  * constructs the fault.
@@ -45,11 +45,15 @@ typedef struct {
     uint32_t dev_frames;    /**< requests it decoded */
     uint32_t dev_crc_errors;
     uint32_t dev_resyncs;
-    /** The last status read carried LINK_ST_REFUSED_LO and _HI: protocol
-     *  4.21 and later. */
+    /**
+     * @brief The last status read carried LINK_ST_REFUSED_LO and _HI: protocol
+     * 4.21 and later.
+     */
     bool     have_refused;
-    /** CAN frames it refused to decode since its power-up, modulo 2^32;
-     *  0 while have_refused is false. */
+    /**
+     * @brief CAN frames it refused to decode since its power-up, modulo 2^32; 0
+     * while have_refused is false.
+     */
     uint32_t dev_refused;
 
     /* Identity, read once at link-up. */
@@ -69,18 +73,27 @@ typedef struct {
  */
 typedef enum {
     LINK_DIAG_OK = 0,
-    /** Nothing came back at all. */
+    /** @brief Nothing came back at all. */
     LINK_DIAG_SILENT,
-    /** It answers, but it is not speaking this protocol. */
+    /** @brief It answers, but it is not speaking this protocol. */
     LINK_DIAG_PROTOCOL_MISMATCH,
-    /** Requests arrive and answers do not: the return path, not the link. */
+    /**
+     * @brief Requests arrive and answers do not: the return path, not the link.
+     */
     LINK_DIAG_REPLIES_LOST,
-    /** Frames arrive corrupt. Bit timing, noise, or termination. */
+    /**
+     * @brief Frames arrive corrupt.
+     *
+     * Bit timing, noise, or termination.
+     */
     LINK_DIAG_CORRUPT,
-    /** Answers arrive too late to be wanted. A slow far end, or a
-     *  timeout tighter than the round trip. */
+    /**
+     * @brief Answers arrive too late to be wanted.
+     *
+     * A slow far end, or a timeout tighter than the round trip.
+     */
     LINK_DIAG_STALE,
-    /** It works, and not every time. */
+    /** @brief It works, and not every time. */
     LINK_DIAG_INTERMITTENT,
 } link_diag_t;
 
@@ -131,11 +144,11 @@ uint8_t link_bringup_status_count(uint16_t minor);
  * @brief Take a STATUS reply read from register 0 into @p b and the fault
  * bitmap into @p faults (either may be NULL).
  *
- * False, and nothing taken, for anything but a DATA reply from offset 0 with at
- * least LINK_ST_COUNT_V420 registers.  A reply that ends before
- * LINK_ST_REFUSED_HI clears have_refused and dev_refused: an older IOmcu counts
- * no refusals, and a count is not carried over from an IOmcu that answered
- * before it.
+ * False, and nothing taken, for anything but a DATA reply from offset 0
+ * with at least LINK_ST_COUNT_V420 registers.  A reply that ends before
+ * LINK_ST_REFUSED_HI clears have_refused and dev_refused: an older
+ * IOmcu counts no refusals, and a count is not carried over from an
+ * IOmcu that answered before it.
  *
  * @param b The counters to fill; may be NULL.
  * @param st The STATUS reply.
@@ -145,7 +158,7 @@ uint8_t link_bringup_status_count(uint16_t minor);
 bool link_bringup_take_status(link_bringup_t *b, const link_msg_t *st,
                               uint16_t *faults);
 
-/** @brief round-trip stats */
+/* ------------------------------------------------------- round-trip stats */
 
 /**
  * @brief Fold one round-trip measurement in.

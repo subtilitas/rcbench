@@ -1,6 +1,9 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief The IOmcu end of the link: page dispatch, the arm latch and the
+ *        failsafe tick.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "link_dev.h"

@@ -11,9 +11,6 @@
 
 #include <string.h>
 
-/**
- * @brief Fields of a trace record's meta word: kind in the top byte, dropped count in the low bits.
- */
 #define META_KIND(m)  ((uint8_t)((m) >> 24))
 #define META_LOST(m)  ((m) & SENSE_TRACE_LOST_MAX)
 
@@ -34,14 +31,8 @@ bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
     return true;
 }
 
-/** @brief core 0 */
+/* ------------------------------------------------------------- core 0 */
 
-/**
- * @brief Convert microseconds to trace time, in units of 0.1 ms.
- *
- * @param us Time, in µs.
- * @return Time, in units of 0.1 ms.
- */
 static uint32_t to_t(uint64_t us)
 {
     return (uint32_t)(us / 100u);
@@ -289,9 +280,7 @@ static bool mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
     return true;
 }
 
-/**
- * @brief Where a trigger went.
- */
+/** @brief Where a trigger went. */
 typedef enum {
     TRIG_LOST = 0,  /* a queue was full: counted                     */
     TRIG_PLACED,    /* its line is in the trace under way            */
@@ -534,9 +523,6 @@ void sense_trace_key(sense_trace_t *tr, int c, uint64_t now_us)
 
 /* --------------------------------------------------------------- lines */
 
-/**
- * @brief One line of trace text, built before it is written.
- */
 typedef struct {
     char   s[SENSE_TRACE_LINE_MAX];
     size_t n;
@@ -737,9 +723,7 @@ static void line_end(const sense_trace_out_t *o, sense_trace_end_t why,
     put_eol(l);
 }
 
-/**
- * @brief What writing a line changes.
- */
+/** @brief What writing a line changes. */
 typedef enum {
     ACT_NONE = 0,   /* nothing to write yet                          */
     ACT_STAGE,      /* a header line: the stage moves on             */
@@ -1004,10 +988,9 @@ static void to_idle(sense_trace_t *tr)
 
 /**
  * @brief The end line is written: the triggers that waited for it start the
- * next trace, in their order, over what the ring holds since the end.
- *
- * @p cut is the time of the set-up record the trace ended at, NULL for a trace
- * that ended on its time.
+ * next trace, in their order, over what the ring holds since the end. @p cut is
+ * the time of the set-up record the trace ended at, NULL for a trace that ended
+ * on its time.
  *
  * @param tr The trace.
  * @param cut The time the trace ended, in 0.1 ms.

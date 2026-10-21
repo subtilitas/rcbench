@@ -5,43 +5,54 @@
  * publishes on the link.
  *
  * Core 0 owns the link pages and the outputs; core 1 owns the I2C
- * (Inter-Integrated Circuit) bus.  Two plain structs pass between them, each
- * copied whole under a lock by the firmware: sense_cmd_t from core 0 to core 1,
- * sense_snap_t back.  This module is core 1's side in pure C, so the host suite
- * runs it against fake_ina.h; the lock, the timer and the I2C block are the
- * firmware's (firmware/iomcu/src/sense_core1.c, sense_i2c.c).
+ * (Inter-Integrated Circuit) bus.  Two plain structs pass between them,
+ * each copied whole under a lock by the firmware: sense_cmd_t from core 0
+ * to core 1, sense_snap_t back.  This module is core 1's side in pure C,
+ * so the host suite runs it against fake_ina.h; the lock, the timer and
+ * the I2C block are the firmware's (firmware/iomcu/src/sense_core1.c,
+ * sense_i2c.c).
  *
  * Each step, in this order:
  *
- * Set-up  cfg_gen moved: the bus is closed, then opened on the command's pins
- * when a part is enabled, and the schedule started afresh -- every part probed
- * again, the windows, the run and the capture empty.  A bus that does not open
- * reads closed and nothing is ticked. Run  run_gen moved: sense_sched_arm(),
- * the run's peaks and totals start again. Capture  cap_gen moved: armed with
- * the command's levels, or disarmed. An arm the schedule refuses -- no FAST
- * channel, its INA3221 not online, or no bus open -- ends at once as lost and
- * counts as a capture ended.  The count runs on across set-ups. Edge  edge_set
- * for this cap_gen, once: sense_sched_cap_edge(). Tick  sense_sched_tick().
- * Scan  at the first tick of an open bus, then every SENSE_RETRY_MS while an
- * enabled part is not online: every address from 0x40 to 0x4F that no online
- * part holds is asked for one byte.  Not on a stuck bus and not while a capture
- * is under way.  Each answer goes to sense_bus (sense_bus_note()): a held line,
- * or SENSE_STUCK_TIMEOUTS timeouts in a row, mark the bus stuck and end the
- * scan, and the recovery is due at the next tick, parts online or not; a NACK
- * is an empty address and no error.  An address that gave no answer keeps its
- * last one. An online part's address counts as answering without being asked: a
- * read at it would clear the flags its last register pointer holds.  16
- * addresses at 400 kHz are about 0.8 ms of bus time, in the tick they run in.
- * Encoder  with the AS5600 enabled, the bus is opened and the schedule reads
- * the part at 0x36 on the ticks that read no rotation item (sense_sched.h).
- * The scan does not look for it: its address is fixed and outside 0x40 to 0x4F,
- * and it counts for nothing in "a part is missing". Snapshot every field from
- * the schedule, with the generations the step has taken, so core 0 can tell a
- * reading of the set-up, run and capture in force from one that came before
- * them. FAST's window ring and the reset counts are the schedule's, and start
- * again with a set-up.
+ *   Set-up   cfg_gen moved: the bus is closed, then opened on the
+ *            command's pins when a part is enabled, and the schedule
+ *            started afresh -- every part probed again, the windows, the
+ *            run and the capture empty.  A bus that does not open reads
+ *            closed and nothing is ticked.
+ *   Run      run_gen moved: sense_sched_arm(), the run's peaks and totals
+ *            start again.
+ *   Capture  cap_gen moved: armed with the command's levels, or disarmed.
+ *            An arm the schedule refuses -- no FAST channel, its INA3221
+ *            not online, or no bus open -- ends at once as lost and counts
+ *            as a capture ended.  The count runs on across set-ups.
+ *   Edge     edge_set for this cap_gen, once: sense_sched_cap_edge().
+ *   Tick     sense_sched_tick().
+ *   Scan     at the first tick of an open bus, then every SENSE_RETRY_MS
+ *            while an enabled part is not online: every address from 0x40
+ *            to 0x4F that no online part holds is asked for one byte.  Not
+ *            on a stuck bus and not while a capture is under way.  Each
+ *            answer goes to sense_bus (sense_bus_note()): a held line, or
+ *            SENSE_STUCK_TIMEOUTS timeouts in a row, mark the bus stuck and
+ *            end the scan, and the recovery is due at the next tick, parts
+ *            online or not; a NACK is an empty address and no error.  An
+ *            address that gave no answer keeps its last one.
+ *            An online part's address counts as answering without being
+ *            asked: a read at it would clear the flags its last register
+ *            pointer holds.  16 addresses at 400 kHz are about 0.8 ms of
+ *            bus time, in the tick they run in.
+ *   Encoder  with the AS5600 enabled, the bus is opened and the schedule
+ *            reads the part at 0x36 on the ticks that read no rotation item
+ *            (sense_sched.h).  The scan does not look for it: its address
+ *            is fixed and outside 0x40 to 0x4F, and it counts for nothing in
+ *            "a part is missing".
+ *   Snapshot every field from the schedule, with the generations the
+ *            step has taken, so core 0 can tell a reading of the set-up,
+ *            run and capture in force from one that came before them.
+ *            FAST's window ring and the reset counts are the schedule's,
+ *            and start again with a set-up.
  *
- * Pure C, no SDK (software development kit).  Host-tested in test_sense_svc.
+ * Pure C, no SDK (software development kit).  Host-tested in
+ * test_sense_svc.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -58,13 +69,8 @@
 extern "C" {
 #endif
 
-/**
- * @brief The first address a scan asks, and how many.
- */
+/** @brief The first address a scan asks, and how many. */
 #define SENSE_SCAN_FIRST 0x40u
-/**
- * @brief Address scan range of the sensor service.
- */
 #define SENSE_SCAN_COUNT 16u
 
 /**
@@ -89,9 +95,7 @@ typedef struct {
                                       with no new set-up                 */
 } sense_cmd_t;
 
-/**
- * @brief What core 1 hands back after each step.
- */
+/** @brief What core 1 hands back after each step. */
 typedef struct {
     uint16_t cfg_gen, run_gen, cap_gen;   /**< the generations taken     */
     bool     open;               /**< the bus runs on its pins              */
@@ -110,8 +114,10 @@ typedef struct {
     uint16_t diag;               /**< its DIAG_ALRT as last read            */
     bool     have_win;           /**< a window has closed                   */
     sense_window_t win[SENSE_SRC_COUNT];
-    /** FAST's last windows, newest first: entry k is the window numbered k
-     *  before the number of win[]. */
+    /**
+     * @brief FAST's last windows, newest first: entry k is the window numbered
+     * k before the number of win[].
+     */
     sense_ring_win_t ring[SENSE_WIN_RING];
     uint8_t  i228_resets;        /**< found reset under this set-up, mod 256 */
     uint8_t  i3221_resets[SENSE_I3221_PARTS];
@@ -139,18 +145,20 @@ typedef struct {
                                       started: across set-ups            */
 } sense_snap_t;
 
-/**
- * @brief The wire, the clock, the recovery and the pins.
- */
+/** @brief The wire, the clock, the recovery and the pins. */
 typedef struct {
     sense_sched_io_t sched;      /**< its ctx is passed to the three below */
-    /** The I2C block on @p sda and @p scl at 400 kHz; false when those
-     *  pins cannot carry it, and nothing is changed. */
+    /**
+     * @brief The I2C block on @p sda and @p scl at 400 kHz; false when those
+     * pins cannot carry it, and nothing is changed.
+     */
     bool        (*open)(void *ctx, uint8_t sda, uint8_t scl);
-    /** The block off and its pins let go. */
+    /** @brief The block off and its pins let go. */
     void        (*close)(void *ctx);
-    /** The address byte and one byte read back: SENSE_OK when @p addr
-     *  acknowledged, SENSE_NACK when it did not, or a fault. */
+    /**
+     * @brief The address byte and one byte read back: SENSE_OK when @p addr
+     * acknowledged, SENSE_NACK when it did not, or a fault.
+     */
     sense_err_t (*ask)(void *ctx, uint8_t addr);
 } sense_svc_io_t;
 
