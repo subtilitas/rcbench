@@ -426,7 +426,7 @@ beiden Event-Handler, die Netzwerkschnittstelle, `esp_wifi_init`,
 Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
-Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 20
+Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 25
 Objekten, 164 024 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
@@ -435,13 +435,13 @@ wpa_supplicant, 13 742 Bytes.
 | Objekt | Komponente | .bss (Bytes) |
 | --- | --- | ---: |
 | `log_viewer_screen` | ui | 35 984 |
-| `servo_screen` | ui | 29 533 |
+| `servo_screen` | ui | 29 517 |
 | `ui_watermark` | ui | 20 504 |
 | `supply_screen` | ui | 20 508 |
 | `motor_screen` | ui | 20 088 |
 | `kst_card` | bench | 6 208 |
-| `esc_stick_panel` | ui | 6 096 |
-| `kst_panel` | ui | 5 185 |
+| `esc_stick_panel` | ui | 5 832 |
+| `kst_panel` | ui | 4 253 |
 | `log_csv` | logfile | 4 904 |
 | `esc_registry` | esc | 4 228 |
 | `analyser_screen` | ui | 4 036 |
@@ -449,10 +449,15 @@ wpa_supplicant, 13 742 Bytes.
 | `wa_page` | webaccess | 1 408 |
 | `wifi_screen` | ui | 1 320 |
 | `ui_band` | ui | 1 040 |
+| `kst_panel_draw` | ui | 932 |
 | `esc_stick_pages` | ui | 252 |
+| `esc_stick_draw_run` | ui | 128 |
 | `motor_settings_page` | ui | 128 |
 | `motor_workbench` | ui | 124 |
+| `esc_stick_list` | ui | 96 |
 | `motor_program_page` | ui | 44 |
+| `esc_stick_draw` | ui | 40 |
+| `servo_screen_link` | ui | 16 |
 | `log_reader` | logfile | 1 |
 
 Gelesen aus der Map-Datei des Builds mit ESP-IDF v5.4. CI führt
