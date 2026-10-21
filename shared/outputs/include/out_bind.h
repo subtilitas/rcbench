@@ -241,8 +241,9 @@ bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
                     uint16_t *x_cmm, uint16_t *y_cmm);
 
 /**
- * @brief The pads that are not pins, or NULL for a board nothing here
- *        describes that way.
+ * @brief The pads that are not pins, and how many.
+ *
+ * NULL and 0 for a board nothing here describes that way.
  *
  * @param board  Identity of the board, as for outbind_board().
  * @return       The pad table, or NULL.  The count is outbind_pad_count().
@@ -687,10 +688,7 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
 bool outbind_from_slots(outbind_t *b, uint16_t board,
                         const uint16_t *regs, const uint16_t *chan_cfg);
 
-/**
- * @brief The result of outbind_role_proto() when the role's slots are bound
- *        as several entries.
- */
+/** @brief outbind_role_proto(): the role's slots are bound as several entries. */
 #define OUTBIND_PROTO_MIXED 0xFFu
 
 /**

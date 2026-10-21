@@ -48,11 +48,13 @@ extern "C" {
 /** @brief Slots in a bank: driver configurations, each rendering channels. */
 #define OUT_MAX_SLOTS        8u
 
-/** @brief What a pulse driver may render, in microseconds.
+/**
+ * @brief What a pulse driver may render, in microseconds.
  *
  * Endpoints outside this are refused: no servo made takes them, so they are a
- * typo, not a range.
- *  The floor is below a 760 us tail servo's end of travel, 410 us. */
+ * typo, not a range.  The floor is below a 760 us tail servo's end of travel,
+ * 410 us.
+ */
 #define OUT_FLOOR_US       400u
 #define OUT_CEILING_US    2500u
 
@@ -148,10 +150,8 @@ typedef struct {
     uint64_t      reserved;     /**< pins this build will not drive        */
 } outputs_t;
 
-/** @brief Silence after which a channel is rendered at its role's rest.
- *
- * It keeps
- *  driving; see outputs_driving(). */
+/** @brief Silence after which a channel is rendered at its role's rest.  It
+ *  keeps driving; see outputs_driving(). */
 #define OUT_DEFAULT_TIMEOUT_MS  500u
 
 /**
@@ -366,7 +366,7 @@ void outputs_arm(outputs_t *o, bool armed, uint32_t now_ms);
 void outputs_arm_roles(outputs_t *o, uint8_t roles, uint32_t now_ms);
 
 /**
- * @brief The roles the bank is armed for.
+ * @brief The roles the bank is armed for: 0 while disarmed.
  *
  * @param o The bank.
  * @return The OUT_ROLE_BIT() set the bank is armed for, 0 while disarmed or
@@ -527,14 +527,13 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  *   where they are.
  *
  * Limitation: an armed bank drives every bound pin of the roles it is armed
- * for, whether or not anything is commanding it.  A channel that has had no
- * command for timeout_ms is rendered at its role's rest.  A surface's rest is
- * OUT_SPAN/2, which outputs_pulse_us() renders as the midpoint of that
- * channel's own endpoints: 1500 us across the default 1000 to 2000 us, and 760
- * us across the 660 to 860 us of a narrow servo.  Endpoints are per channel and
- * are written over the CHAN_CFG page, so a channel carrying the wrong role
- * presents the midpoint of whatever range it was given, for as long as the bank
- * is armed.
+ * for, whether or not anything is commanding it.  A channel that has had no command for timeout_ms is
+ * rendered at its role's rest.  A surface's rest is OUT_SPAN/2, which
+ * outputs_pulse_us() renders as the midpoint of that channel's own endpoints:
+ * 1500 us across the default 1000 to 2000 us, and 760 us across the 660 to
+ * 860 us of a narrow servo.  Endpoints are per channel and are written over
+ * the CHAN_CFG page, so a channel carrying the wrong role presents the
+ * midpoint of whatever range it was given, for as long as the bank is armed.
  *
  * The timeout does reach that channel.  outputs_overdue() is true for it and
  * outputs_step() acts on it every pass; what the timeout resolves to is the

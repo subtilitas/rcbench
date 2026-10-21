@@ -113,7 +113,7 @@ void sense_map_kept(const sense_page_t *p, uint16_t *kept, uint16_t *set);
  * @brief A kept map back in force at boot, through sense_map_write()'s checks,
  *        after SENSE's restore: nothing when @p set is 0.
  *
- * The refusal leaves the map derived.
+ * 0, or the refusal, which leaves the map derived.
  *
  * @param p The SENSE page state.
  * @param kept The kept registers, LINK_SM_KEPT of them.

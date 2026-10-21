@@ -235,7 +235,7 @@ void supply_page_read(const supply_page_t *p, uint8_t off, uint8_t n,
                       uint16_t *out);
 
 /**
- * @brief Whether the page drives a supply.
+ * @brief Whether the page drives a supply, and on which pins.
  *
  * @param p The page state.
  * @return true when ENABLE is not 0, false otherwise or for NULL.

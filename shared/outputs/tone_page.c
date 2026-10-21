@@ -1,7 +1,6 @@
 /**
  * @file
- * @brief The TONE link page: the phase tap set-up, its capture and the beep
- *        ring.
+ * @brief The TONE link page.
  *
  * See tone_page.h.
  *

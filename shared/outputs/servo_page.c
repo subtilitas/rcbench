@@ -62,7 +62,7 @@ static bool same_curve(const sweep_cfg_t *a, const sweep_cfg_t *b)
 }
 
 /**
- * @brief The first channel the sweep and the hold command: the standard servo
+ * @brief The channels the sweep and the hold command: the standard servo
  *        ports, or the range servo_page_target() named.
  *
  * @param p The page state.

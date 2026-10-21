@@ -142,10 +142,9 @@ typedef enum {
 
 /**
  * @brief The state an acknowledged rate is shown in, by the IOmcu's protocol
- *        minor.
- *
- * SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE (4.19), where the rate
- * reaches the PWM TARGET alone, and SERVO_RATE_IN_FORCE_SURFACES below it.
+ *        minor @p minor: SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE
+ *        (4.19), where the rate reaches the PWM TARGET alone, and
+ *        SERVO_RATE_IN_FORCE_SURFACES below it.
  *
  * @param minor IOmcu protocol minor version, as acknowledged.
  * @return SERVO_RATE_IN_FORCE for @p minor at 4.19 or above,
