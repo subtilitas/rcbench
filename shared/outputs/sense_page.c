@@ -5,6 +5,7 @@
  */
 
 #include "sense_page.h"
+#include "sense_page_int.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -187,7 +188,7 @@ static bool values_ok(const uint16_t *c)
  * counts on across set-ups.  A capture under way cannot meet this: a
  * set-up is refused while the bank drives, and a stopped bank ends it.
  */
-static void forget_readings(sense_page_t *p)
+void sense_page_forget(sense_page_t *p)
 {
     memset(&p->sense[LINK_SN_FLAGS], 0,
            (size_t)(LINK_SN_ESC_VOLTAGE_CV - LINK_SN_FLAGS) * sizeof(uint16_t));
@@ -203,6 +204,43 @@ static void forget_readings(sense_page_t *p)
     p->servo[LINK_SS_CAP_PEAK_MA]  = 0u;
     p->servo[LINK_SS_CAP_MEAN_MA]  = 0u;
     p->servo[LINK_SS_CAP_SAMPLES]  = 0u;
+    memset(&p->map[LINK_SM_KEPT], 0,
+           (size_t)(LINK_SM_COUNT - LINK_SM_KEPT) * sizeof(uint16_t));
+    memset(p->xwin, 0, sizeof(p->xwin));
+}
+
+uint8_t sense_cfg_check(const sense_page_t *p, const uint16_t *next,
+                        const outputs_t *o, uint64_t taken)
+{
+    if (!values_ok(next) || !pins_ok(next)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    const uint16_t en = next[LINK_SN_ENABLE];
+    if ((en & LINK_SN_EN_I3221) != 0u && next[LINK_SN_I3221_CHANNELS] == 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    if ((en & LINK_SN_EN_I228) != 0u && (en & LINK_SN_EN_I3221) != 0u
+        && next[LINK_SN_I228_ADDR] == next[LINK_SN_I3221_ADDR]) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /* With the map in force, no fitted INA3221 on the INA228's address. */
+    if (p->map_set && (en & LINK_SN_EN_I228) != 0u
+        && sense_map_on_addr(p->map, next[LINK_SN_I228_ADDR])) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (en != 0u
+        && (!pin_free(p, o, next[LINK_SN_SDA_PIN], taken)
+            || !pin_free(p, o, next[LINK_SN_SCL_PIN], taken))) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    return 0u;
+}
+
+void sense_cfg_take(sense_page_t *p, const uint16_t *next)
+{
+    memcpy(p->sense, next, LINK_SN_CONFIG_COUNT * sizeof(uint16_t));
+    ++p->cfg_gen;
+    sense_page_forget(p);
 }
 
 uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
@@ -233,25 +271,19 @@ uint8_t sense_page_write(sense_page_t *p, uint8_t off, uint8_t n,
     if (outputs_driving(o)) {
         return LINK_NACK_BAD_VALUE;
     }
-    if (!values_ok(next) || !pins_ok(next)) {
+    /* The map in force owns the INA3221's bit and frame: they mirror it. */
+    if (p->map_set
+        && (((next[LINK_SN_ENABLE] ^ p->sense[LINK_SN_ENABLE])
+             & LINK_SN_EN_I3221) != 0u
+            || memcmp(&next[LINK_SN_I3221_ADDR], &p->sense[LINK_SN_I3221_ADDR],
+                      3u * sizeof(uint16_t)) != 0)) {
         return LINK_NACK_BAD_VALUE;
     }
-    const uint16_t en = next[LINK_SN_ENABLE];
-    if ((en & LINK_SN_EN_I3221) != 0u && next[LINK_SN_I3221_CHANNELS] == 0u) {
-        return LINK_NACK_BAD_VALUE;
+    const uint8_t nack = sense_cfg_check(p, next, o, taken);
+    if (nack != 0u) {
+        return nack;
     }
-    if ((en & LINK_SN_EN_I228) != 0u && (en & LINK_SN_EN_I3221) != 0u
-        && next[LINK_SN_I228_ADDR] == next[LINK_SN_I3221_ADDR]) {
-        return LINK_NACK_BAD_VALUE;
-    }
-    if (en != 0u
-        && (!pin_free(p, o, next[LINK_SN_SDA_PIN], taken)
-            || !pin_free(p, o, next[LINK_SN_SCL_PIN], taken))) {
-        return LINK_NACK_BAD_VALUE;
-    }
-    memcpy(p->sense, next, sizeof(next));
-    ++p->cfg_gen;
-    forget_readings(p);
+    sense_cfg_take(p, next);
     return 0u;
 }
 
@@ -342,10 +374,14 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
     if (ch != LINK_SS_CAP_CH) {
         return LINK_NACK_BAD_VALUE;
     }
+    /* The capture runs on FAST: with the map in force, its FAST channel;
+     * else SENSE's CH1. */
     const uint16_t *c = p->sense;
-    if ((c[LINK_SN_ENABLE] & LINK_SN_EN_I3221) == 0u
-        || (c[LINK_SN_I3221_CHANNELS] & (1u << (ch - 1u))) == 0u
-        || !arm_output(p, o, arm)) {
+    const bool fast = p->map_set
+        ? p->map[LINK_SM_FAST] != LINK_SM_FAST_NONE
+        : (c[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
+          && (c[LINK_SN_I3221_CHANNELS] & (1u << (ch - 1u))) != 0u;
+    if (!fast || !arm_output(p, o, arm)) {
         return LINK_NACK_BAD_VALUE;
     }
     /* The output timed is a surface: a servo's PWM or a programming port.
@@ -487,12 +523,16 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd)
     cmd->parts.ina228_addr        = (uint8_t)c[LINK_SN_I228_ADDR];
     cmd->parts.ina228_shunt_uohm  = c[LINK_SN_I228_SHUNT_UOHM];
     cmd->parts.ina228_max_ma      = (uint32_t)c[LINK_SN_I228_MAX_DA] * 100u;
-    /* SENSE's one INA3221: the part at its address, each channel it
-     * reads on its shunt, FAST its CH1. */
-    sense_i3221_one(&cmd->parts.i3221, (en & LINK_SN_EN_I3221) != 0u,
-                    (uint8_t)c[LINK_SN_I3221_ADDR],
-                    (uint32_t)c[LINK_SN_I3221_SHUNT_DMOHM] * 100u,
-                    (uint8_t)c[LINK_SN_I3221_CHANNELS]);
+    /* The map in force, or SENSE's one INA3221: the part at its address,
+     * each channel it reads on its shunt, FAST its CH1. */
+    if (p->map_set) {
+        sense_map_cfg(p->map, &cmd->parts.i3221);
+    } else {
+        sense_i3221_one(&cmd->parts.i3221, (en & LINK_SN_EN_I3221) != 0u,
+                        (uint8_t)c[LINK_SN_I3221_ADDR],
+                        (uint32_t)c[LINK_SN_I3221_SHUNT_DMOHM] * 100u,
+                        (uint8_t)c[LINK_SN_I3221_CHANNELS]);
+    }
     cmd->parts.as5600_en          = (en & LINK_SN_EN_AS5600) != 0u;
     const uint16_t *v = p->servo;
     cmd->cap_gen      = p->cap_gen;
@@ -501,32 +541,6 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd)
     cmd->cap.hold_ua  = (int32_t)(int16_t)v[LINK_SS_CAP_HOLD_MA] * 1000;
     cmd->cap.move_ua  = (int32_t)v[LINK_SS_CAP_MOVE_MA] * 1000;
     cmd->cap.band_ua  = (int32_t)v[LINK_SS_CAP_BAND_MA] * 1000;
-}
-
-/* @p a / @p d to the nearest, halves away from zero; @p d positive. */
-static int64_t div_round(int64_t a, int64_t d)
-{
-    return (a >= 0) ? (a + d / 2) / d : -((-a + d / 2) / d);
-}
-
-/* A signed register: two's complement, held to -32767 .. 32767. */
-static uint16_t reg_i16(int64_t v)
-{
-    if (v > 32767) {
-        v = 32767;
-    } else if (v < -32767) {
-        v = -32767;
-    }
-    return (uint16_t)(int16_t)v;
-}
-
-/* An unsigned register, held to 0 .. 65535. */
-static uint16_t reg_u16(int64_t v)
-{
-    if (v < 0) {
-        return 0u;
-    }
-    return (v > 65535) ? 65535u : (uint16_t)v;
 }
 
 /* A 32-bit value into two registers, low half first. */
@@ -759,6 +773,7 @@ void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
     publish_enc(p->sense, s);
     publish_channels(p->servo, s, a);
     publish_ring(p->win, s, a);
+    sense_map_publish(p, s);
     if (s->cap_gen == p->cap_gen) {
         publish_capture(p->servo, s);
     }
@@ -851,7 +866,9 @@ uint16_t sense_page_caps(const sense_page_t *p)
     if ((en & LINK_SN_EN_I228) != 0u) {
         caps |= (uint16_t)LINK_CAP_PACK_SENSE;
     }
-    if ((en & LINK_SN_EN_I3221) != 0u) {
+    const bool servo = p->map_set ? sense_map_watches(p)
+                                  : (en & LINK_SN_EN_I3221) != 0u;
+    if (servo) {
         caps |= (uint16_t)LINK_CAP_SERVO_SENSE;
     }
     return caps;

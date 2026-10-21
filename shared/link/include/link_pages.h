@@ -57,6 +57,10 @@ typedef enum {
     LINK_PAGE_KST       = 0x32, /**< the KST servo programming port          */
     LINK_PAGE_PROG      = 0x33, /**< the programming ports: pin, pulse, target */
     LINK_PAGE_HITEC     = 0x34, /**< raw Hitec wire transactions on a port   */
+    LINK_PAGE_SENSE_MAP = 0x35, /**< up to 4 INA3221 parts: fitted, shunts,
+                                     what each channel watches; kept     */
+    LINK_PAGE_SENSE_WIN_A = 0x37, /**< channels 0 to 5's last window, read-only */
+    LINK_PAGE_SENSE_WIN_B = 0x38, /**< channels 6 to 11's, read-only         */
     /* Frozen: the same numbers, layout and meaning under every major. */
     LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the IOmcu's own firmware update */
     LINK_PAGE_UPDATE_DATA = 0xF1, /**< and the 64 bytes of the block in hand */
@@ -108,7 +112,11 @@ typedef enum {
  * HITEC takes the receive mode of a D series line in write register 23
  * (LINK_HT_W_RX_MODE); a 4.23 IOmcu refuses that write with
  * LINK_NACK_READ_ONLY and receives with the pull-up, which the panel says
- * on SETUP when the mode asked is PRECHARGE.  An
+ * on SETUP when the mode asked is PRECHARGE.  From 4.25 SENSE_MAP (0x35)
+ * sets up to 4 INA3221 with a shunt and a watch target per channel, and
+ * SENSE_WIN_A and SENSE_WIN_B (0x37, 0x38) carry every channel's last
+ * window; an older IOmcu refuses the three with LINK_NACK_BAD_PAGE and
+ * reads SENSE's one INA3221.  An
  * IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -121,7 +129,7 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 24u
+#define LINK_PROTOCOL_MINOR 25u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -191,6 +199,11 @@ typedef enum {
  *  refuses the write with LINK_NACK_READ_ONLY and receives with the
  *  pull-up. */
 #define LINK_MINOR_HITEC_RX 24u
+/** The first minor that serves SENSE_MAP, SENSE_WIN_A and SENSE_WIN_B: up
+ *  to 4 INA3221 parts, 12 channels.  An older minor refuses the three
+ *  pages with LINK_NACK_BAD_PAGE and reads one INA3221 from SENSE
+ *  registers 8 to 10. */
+#define LINK_MINOR_SENSE_MAP 25u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -831,6 +844,120 @@ enum {
 #define LINK_SW_E_CLIP_HI   0x0400u
 #define LINK_SW_E_CLIP_LO   0x0800u
 #define LINK_SW_E_CLOSED    0x8000u
+
+/* --- the SENSE_MAP page (protocol 4.25): up to four INA3221 parts on the
+ *     sensor bus, at 0x40 to 0x43, three channels each.  Channel c is
+ *     part a's channel ch for c = 3 a + ch - 1, so 0 to 11.
+ *
+ *     ENABLE bit a: the part at 0x40 + a is fitted.  FAST: the channel
+ *     read every 1 ms, whose last four windows SERVO_WIN carries and
+ *     on which SERVO_SENSE times a move; 0xFF (LINK_SM_FAST_NONE) none.
+ *     SHUNT[c]: channel c's shunt in 0.1 mOhm, 50 to 10000, 0 = the
+ *     channel is off and never read.  WATCH[c]: what channel c measures,
+ *     for the panel's screens and logs; the IOmcu keeps it and acts on
+ *     nothing in it.
+ *
+ *     Registers 0 to 25 are kept in the IOmcu's flash.  A write lies
+ *     within them: one that reaches register 26 is refused with
+ *     READ_ONLY.  The registers written are merged into the map and the
+ *     whole map judged; a map refused leaves every register as it was.
+ *     Refused with BAD_VALUE: ENABLE above 15; FAST not 0xFF and past 11,
+ *     on a part not fitted or on a channel whose SHUNT is 0; a SHUNT not 0
+ *     outside 50 to 10000; a WATCH value outside the list below; a fitted
+ *     part with all three SHUNT 0; a fitted part on the address of the
+ *     INA228 while SENSE enables it; any change while the bank drives.
+ *     A part not fitted keeps the values written for it, judged by range
+ *     alone.
+ *
+ *     ID[a] (read only): the die ID part a answered at its last probe, 0
+ *     before one.  FLAGS (read only): bit a part a online; bit 4 + a part
+ *     a answered with another identity; bit 8 (LINK_SM_IN_FORCE) the map
+ *     has been written and is kept; bit 9 (LINK_SM_DERIVED) it has never
+ *     been written and is SENSE's one part (below).
+ *
+ *     SENSE and the map.  Until the map is first written it is derived
+ *     from SENSE: ENABLE bit 1 fits the part at SENSE's I3221_ADDR, each
+ *     channel in I3221_CHANNELS has SENSE's shunt, FAST is that part's
+ *     CH1 when it is read, and nothing is watched.  Once written, SENSE's
+ *     ENABLE bit 1 and registers 8 to 10 mirror the map: bit 1 set while
+ *     a part is fitted; I3221_ADDR the mirror part -- FAST's part, or
+ *     the lowest fitted part while FAST is 0xFF; I3221_SHUNT_DMOHM that
+ *     part's CH1 shunt, or its first one not 0; I3221_CHANNELS its
+ *     channels with a shunt.  A SENSE write that would change bit 1 or
+ *     registers 8 to 10 is then refused with BAD_VALUE.  SERVO_SENSE's
+ *     registers 0 to 11 are the mirror part's three channels, and a
+ *     capture's channel 1 (LINK_SS_CAP_CH) is FAST. */
+enum {
+    LINK_SM_ENABLE   = 0,
+    LINK_SM_FAST     = 1,
+    LINK_SM_SHUNT_0  = 2,    /**< SHUNT[c] at 2 + c                      */
+    LINK_SM_WATCH_0  = 14,   /**< WATCH[c] at 14 + c                     */
+    LINK_SM_KEPT     = 26,   /**< registers 0 to 25 are kept; read only
+                                  from here                              */
+    LINK_SM_ID_0     = 26,   /**< ID[a] at 26 + a                        */
+    LINK_SM_FLAGS    = 30,
+    LINK_SM_RESERVED_31 = 31,
+    LINK_SM_COUNT    = 32,
+};
+#define LINK_SM_PARTS        4u
+#define LINK_SM_CHANNELS    12u
+#define LINK_SM_SHUNT(c)    ((unsigned)LINK_SM_SHUNT_0 + (unsigned)(c))
+#define LINK_SM_WATCH(c)    ((unsigned)LINK_SM_WATCH_0 + (unsigned)(c))
+#define LINK_SM_ID(a)       ((unsigned)LINK_SM_ID_0 + (unsigned)(a))
+#define LINK_SM_FIT_ALL     0x000Fu
+#define LINK_SM_FAST_NONE   0x00FFu
+#define LINK_SM_DMOHM_MIN   50u
+#define LINK_SM_DMOHM_MAX   10000u
+/* WATCH values. */
+#define LINK_SM_WATCH_NONE    0x00u
+#define LINK_SM_WATCH_OUT(n)  (0x01u + (unsigned)(n))   /**< output channel n, 0..7 */
+#define LINK_SM_WATCH_PORT(n) (0x10u + (unsigned)(n))   /**< programming port n, 0..3 */
+#define LINK_SM_WATCH_SUPPLY  0x20u
+/* FLAGS' bits. */
+#define LINK_SM_ONLINE(a)    (1u << (unsigned)(a))
+#define LINK_SM_ID_WRONG(a)  (1u << (4u + (unsigned)(a)))
+#define LINK_SM_IN_FORCE     0x0100u
+#define LINK_SM_DERIVED      0x0200u
+
+/* --- the SENSE_WIN_A and SENSE_WIN_B pages (protocol 4.25): every
+ *     channel's last complete 50 ms window, channels 0 to 5 on A and 6 to
+ *     11 on B.  Read only: every write is refused with READ_ONLY.
+ *
+ *     WINDOW is the window's number, SERVO_SENSE's WINDOW.  FLAGS: bit a
+ *     part a online, on both pages; bit 8 (LINK_SX_HAVE) a window has
+ *     closed under the set-up in force.  Then six entries of five
+ *     registers, entry k from register 2 + 5 k the page's channel k: mean
+ *     and highest current in mA, signed; mean and lowest bus voltage in
+ *     mV; the entry's flags -- bit 0 current samples, bit 1 voltage
+ *     samples, bit 2 a current sample at the top of the range, bit 3 one
+ *     at the bottom.  A clipped sample is left out of the figures, as on
+ *     SERVO_SENSE.  A channel off, or of a part not online, reads 0
+ *     throughout.  Rates: FAST every 1 ms; every other channel with a
+ *     shunt in turn, one a 1 ms tick (1000 / n Hz for n of them, 90.9 Hz
+ *     with 11); each bus voltage every 24 ms.  Not kept. */
+enum {
+    LINK_SX_WINDOW   = 0,
+    LINK_SX_FLAGS    = 1,
+    LINK_SX_ENTRIES  = 2,
+    LINK_SX_COUNT    = 32,
+};
+#define LINK_SX_PER_PAGE 6u
+enum {
+    LINK_SX_E_MEAN_MA = 0,   /**< signed -- read as int16_t              */
+    LINK_SX_E_MAX_MA  = 1,   /**< signed                                 */
+    LINK_SX_E_MEAN_MV = 2,
+    LINK_SX_E_MIN_MV  = 3,
+    LINK_SX_E_FLAGS   = 4,
+    LINK_SX_E_STRIDE  = 5,
+};
+/** Register @p r of the page's entry @p k (channel 6 * page + k). */
+#define LINK_SX_E(k, r) \
+    ((unsigned)LINK_SX_ENTRIES + (unsigned)(k) * LINK_SX_E_STRIDE + (unsigned)(r))
+#define LINK_SX_HAVE        0x0100u
+#define LINK_SX_E_CURRENT   0x0001u
+#define LINK_SX_E_VOLTAGE   0x0002u
+#define LINK_SX_E_CLIP_HI   0x0004u
+#define LINK_SX_E_CLIP_LO   0x0008u
 
 /* --- the TONE page (protocol 4.8): the beeps of an ESC (electronic speed
  *     controller), heard on one motor phase.  One GPIO reads the phase

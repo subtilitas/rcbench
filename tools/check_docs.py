@@ -371,6 +371,7 @@ ENGLISH_QUOTES = {
     ("LinkHitec-de.md", "RESULT"),
     ("LinkHitec-de.md", "SUPPLY"),
     ("LinkHitec-de.md", "RANGE"),
+    ("LinkSensors-de.md", "WATCH"),
     ("BenchConsole-de.md", "none"),
 }
 
