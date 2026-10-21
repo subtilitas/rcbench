@@ -204,6 +204,7 @@ TRACKED = [
     "shared/outputs/servo_cmd.c",
     "shared/outputs/servo_link.c",
     "shared/outputs/sense_page.c",
+    "shared/outputs/sense_map.c",
     "shared/outputs/tone_page.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",

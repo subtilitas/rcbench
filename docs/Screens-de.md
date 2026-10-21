@@ -2901,10 +2901,10 @@ Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 | `ANDERE ID ANTWORTET` | an der Adresse antwortet etwas mit einer anderen Identität |
 | `NOCH NICHT GESCHRIEBEN` | eine Änderung wartet: 500 ms nach der letzten Änderung, und nur bei einem Prüfstand in SAFE |
 | `NOCH NICHT GELESEN` | kein IOmcu antwortet, oder seine Page ist seit dem Link-Aufbau nicht gelesen |
-| `VOM IOmcu NICHT ÜBERNOMMEN` | der IOmcu hat die Zuordnung abgelehnt; er behält die, die er hielt |
+| `VOM IOMCU NICHT ÜBERNOMMEN` | der IOmcu hat die Zuordnung abgelehnt; er behält die, die er hielt |
 | `ALLE KANÄLE AUS` | alle drei Shunts des Bausteins stehen auf AUS: keine Zuordnung wird geschrieben |
 | `INA228 AUF DIESER ADRESSE` | der INA228 ist auf der Adresse des Bausteins eingeschaltet: der Baustein bleibt aus der Zuordnung und der INA228 aus |
-| `IOmcu ÄLTER ALS 4.25: NICHT GELESEN` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
+| `IOMCU ÄLTER ALS 4.25: NICHT GELESEN` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
 | `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | ANSCHLÜSSE hat keinen Pin für SDA oder SCL des Sensorbusses: kein Baustein ist eingeschaltet |
 
 Die Zeilen eines abgelehnten Bausteins, eines mit allen Kanälen aus, eines

@@ -39,10 +39,10 @@ The right of a part's heading says what the part is doing:
 | `ANOTHER ID ANSWERS` | something else answers there |
 | `NOT WRITTEN YET` | an edit waits for its write |
 | `NOT READ YET` | no IOmcu answers yet |
-| `NOT ACCEPTED BY THE IOmcu` | the IOmcu refused the set-up |
+| `NOT ACCEPTED BY THE IOMCU` | the IOmcu refused the set-up |
 | `EVERY CHANNEL OFF` | all three shunts are OFF; nothing is written |
 | `INA228 ON THIS ADDRESS` | the INA228 is on at this address; neither is read |
-| `IOmcu OLDER THAN 4.25: NOT READ` | an older IOmcu reads one part only |
+| `IOMCU OLDER THAN 4.25: NOT READ` | an older IOmcu reads one part only |
 | `SENSOR SDA OR SCL UNSET` | INTERFACES sets no sensor bus; nothing is read |
 
 ![An IOmcu older than 4.25](view:setup-sensors-old)

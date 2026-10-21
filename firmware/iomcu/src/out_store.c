@@ -14,7 +14,6 @@
 #include "pico/flash.h"
 #include "pico/stdlib.h"
 
-#include "link_crc.h"
 #include "out_store_map.h"
 
 /*
@@ -39,8 +38,14 @@
  */
 #define STORE_FLASH_BYTES (4u * 1024u * 1024u)
 #define STORE_SECTORS     OUT_STORE_SECTORS
-#define STORE_RECORDS     (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE)
+#define STORE_SLOT_BYTES  OUT_STORE_SLOT_BYTES
+#define STORE_RECORDS     (FLASH_SECTOR_SIZE / STORE_SLOT_BYTES)
 #define STORE_SLOTS       (STORE_SECTORS * STORE_RECORDS)
+/* The one-page slots of version 7 and older, read until the first version
+ * 8 record is written (out_store_rec.h). */
+#define STORE_V7_BYTES    OUT_STORE_SLOT_BYTES_V7
+#define STORE_V7_RECORDS  (FLASH_SECTOR_SIZE / STORE_V7_BYTES)
+#define STORE_V7_SLOTS    (STORE_SECTORS * STORE_V7_RECORDS)
 #define STORE_OFFSET      IOMCU_STORE_OFFSET
 
 /*
@@ -66,19 +71,23 @@ _Static_assert(IOMCU_STORE_BYTES == STORE_SECTORS * FLASH_SECTOR_SIZE,
                "partitions.json: the store partition is not two sectors");
 _Static_assert(STORE_OFFSET + IOMCU_STORE_BYTES <= STORE_OLD_OFFSET,
                "partitions.json: the store overlaps the old store's sectors");
-_Static_assert(STORE_SLOTS <= 255u,
+_Static_assert(STORE_V7_SLOTS <= 255u,
                "the store has more slots than a slot index holds");
+_Static_assert(STORE_V7_BYTES == FLASH_PAGE_SIZE
+               && STORE_SLOT_BYTES == 2u * FLASH_PAGE_SIZE,
+               "a record slot is one flash page before version 8, two from it");
 
-#define STORE_MAGIC    0x7263626FuL    /* "rcbo" */
-/* Written at OUT_STORE_VERSION; versions 3 to 5 are still read, so the
- * output bindings, the supply's wiring and the sensor bus's set-up an
- * earlier build saved survive the update (out_store_rec.h). */
-#define STORE_VERSION  OUT_STORE_VERSION
+/* Written at OUT_STORE_VERSION; versions 3 to 7 are still read, so the
+ * output bindings, the supply's wiring, the sensor bus's set-up, the
+ * phase tap's and the ports an earlier build saved survive the update
+ * (out_store_rec.h). */
 
 /*
- * One flash page holds a record, so a save is one program.  The checksum is
- * the link's, because a half-written record and a corrupt frame are the same
- * problem and there is no reason for two answers to it.
+ * Two flash pages hold a version 8 record, and a save programs both in one
+ * window.  The record's layout, its checksum and its zero count are
+ * out_store_rec.c's (host-tested); the checksum is the link's, because a
+ * half-written record and a corrupt frame are the same problem and there is
+ * no reason for two answers to it.
  *
  * The checksum is not what says the record is whole, though, and a power cut
  * can leave one that is not.  Two ways, and they are opposites:
@@ -86,61 +95,17 @@ _Static_assert(STORE_SLOTS <= 255u,
  *   During an erase.  Bits lift towards 0xFF, so a superseded record's
  *   sequence number can grow past the live one's and outrank it.
  *   During a program.  Bits fall towards their value, so a record whose
- *   header has landed and whose configuration has not ranks above the record
+ *   first page has landed and whose second has not ranks above the record
  *   before it and carries a configuration that is part 0xFF.
  *
- * A 16-bit checksum makes each unlikely rather than impossible: the corrupted
- * record has to happen to check out, which is one chance in 65,536 per
- * candidate, over an enormous number of candidates.  This is the field a
- * guarantee was claimed for, so it gets one.
- *
- * zeros is how many 0 bits the record holds from crc onwards, written with
- * the record and stored beside its own complement.  Every partial write is
- * then caught by arithmetic rather than by luck:
- *
- *   an erase sets bits, so a partly erased record holds fewer 0 bits than
- *   zeros says;
- *   a program clears bits, so a partly programmed record has not reached the
- *   count yet either.
- *
- * Both are "fewer zeros than the record claims", and the claim cannot be
- * faked: for zeros and zeros_inv to still exclusive-or to 0xFFFFFFFF, both
- * words have to hold exactly what they were written with.  An erase would
- * have to clear a bit to compensate for one it set, and a program would have
- * to set one to compensate for one it cleared; neither can do the other's
- * work.
- *
- * The checksum stays for what it is good at: a bit that changed for a reason
- * other than an interrupted write.
+ * A 16-bit checksum makes each unlikely rather than impossible.  The zero
+ * count is what makes it impossible: zeros is how many 0 bits the record
+ * holds from crc to its end, across both pages, written beside its own
+ * complement.  An erase sets bits and a program clears them, so either one
+ * cut off leaves fewer 0 bits than zeros says, and neither can keep the
+ * pair: an erase would have to clear a bit to pay for one it set, a program
+ * set one to pay for one it cleared (out_store_map.h).
  */
-typedef struct {
-    uint32_t magic;
-    uint32_t zeros;           /**< 0 bits from crc onwards, as written */
-    uint32_t zeros_inv;       /**< ~zeros; no partial write keeps the pair */
-    uint16_t crc;             /**< over every byte from version onwards */
-    uint16_t version;
-    uint32_t seq;
-    out_store_t cfg;
-} record_t;
-
-_Static_assert(sizeof(record_t) <= FLASH_PAGE_SIZE,
-               "the record has outgrown one flash page");
-
-/* Every version's header is this one's, and its configuration starts at
- * cfg and runs out_store_cfg_size() bytes: the checksum and the zero count
- * cover a record to its own end, so its size is that.  cfg is the last
- * field and ends the struct with no padding after it. */
-_Static_assert(offsetof(record_t, cfg) + sizeof(out_store_t)
-               == sizeof(record_t),
-               "the configuration ends the record");
-
-/* How many bytes a record of @p version spans, or 0 for one not read. */
-static size_t record_size(uint16_t version)
-{
-    const size_t cfg = out_store_cfg_size(version);
-    return (cfg == 0u) ? 0u : offsetof(record_t, cfg) + cfg;
-}
-
 static bool        s_pending;
 static uint32_t    s_asked_ms;
 static out_store_t s_want;
@@ -179,75 +144,53 @@ static bool        s_reclaim_wanted = true;
  * assume is aligned when it is not.
  */
 static union {
-    uint8_t  bytes[FLASH_PAGE_SIZE];
-    record_t rec;
+    uint8_t  bytes[STORE_SLOT_BYTES];
+    uint32_t align;
 } s_page;
 
-static uint16_t record_crc(const record_t *r, size_t size)
-{
-    return link_crc(LINK_CRC_INIT, &r->version,
-                    size - offsetof(record_t, version));
-}
-
 /*
- * The 0 bits from crc onwards: everything the record carries except the count
- * itself and the magic that says the slot has been written at all.
+ * The live record of the layout before version 8, by sector, while the
+ * store holds no version 8 record: never erased until the first one is
+ * written.  -1 for none.
  */
-static uint32_t record_zeros(const record_t *r, size_t size)
-{
-    const uint8_t *p = (const uint8_t *)(const void *)r
-                       + offsetof(record_t, crc);
-    const size_t n = size - offsetof(record_t, crc);
-    uint32_t zeros = 0u;
-    for (size_t i = 0; i < n; ++i) {
-        uint8_t v = (uint8_t)~p[i];
-        while (v != 0u) {
-            zeros += (uint32_t)(v & 1u);
-            v = (uint8_t)(v >> 1);
-        }
-    }
-    return zeros;
-}
+static int s_keep_sector = -1;
 
 /* The store read is at STORE_OFFSET, or at STORE_OLD_OFFSET while
  * out_store_load() looks there. */
 static uint32_t s_read_offset = STORE_OFFSET;
 
-static const record_t *record_at(uint8_t slot)
+static const uint8_t *slot_at(uint8_t slot, uint32_t bytes)
 {
-    return (const record_t *)(const void *)
-           (STORE_READ_BASE + s_read_offset
-            + (uint32_t)slot * FLASH_PAGE_SIZE);
+    return (const uint8_t *)(STORE_READ_BASE + s_read_offset
+                             + (uint32_t)slot * bytes);
 }
 
 /*
- * What is in the store, read out of flash rather than remembered.
+ * What is in the store, read out of flash rather than remembered: @p n
+ * slots of @p bytes, a record of @p min_version to @p max_version taken.
  *
- * Eight kilobytes of cached reads per call, and a call happens only when
+ * Eight kilobytes of uncached reads per call, and a call happens only when
  * something is about to be written.  Holding the answer in RAM instead would
  * be a second copy of the truth that a torn write could disagree with.
  */
-static void survey(out_store_rec_t *recs)
+static void survey(out_store_rec_t *recs, uint8_t n, uint32_t bytes,
+                   uint16_t min_version, uint16_t max_version)
 {
-    for (uint8_t i = 0; i < STORE_SLOTS; ++i) {
-        const uint8_t *p = (const uint8_t *)(const void *)record_at(i);
+    for (uint8_t i = 0; i < n; ++i) {
+        const uint8_t *p = slot_at(i, bytes);
         bool erased = true;
-        for (size_t b = 0; b < FLASH_PAGE_SIZE; ++b) {
+        for (size_t b = 0; b < bytes; ++b) {
             if (p[b] != 0xFFu) {
                 erased = false;
                 break;
             }
         }
-        const record_t *r = record_at(i);
-        const size_t size = erased ? 0u : record_size(r->version);
+        uint32_t seq = 0u;
         recs[i].erased = erased;
         recs[i].valid  = !erased
-                         && r->magic == STORE_MAGIC
-                         && size != 0u
-                         && out_store_intact(r->zeros, r->zeros_inv,
-                                             record_zeros(r, size))
-                         && r->crc == record_crc(r, size);
-        recs[i].seq    = recs[i].valid ? r->seq : 0u;
+                         && out_store_rec_check(p, bytes, min_version,
+                                                max_version, NULL, &seq);
+        recs[i].seq    = recs[i].valid ? seq : 0u;
     }
 }
 
@@ -271,7 +214,7 @@ typedef struct {
     bool     erase;       /* a sector erase; else a program of data        */
     bool     done;        /* the operation ran                             */
     uint32_t window_us;
-    const uint8_t *data;  /* what a program writes; NULL: s_page           */
+    const uint8_t *data;  /* what a program writes                         */
     uint32_t len;         /* and how many bytes of it                      */
     void   (*call)(void *); /* in place of either: the boot ROM's BUY      */
     void    *arg;
@@ -285,10 +228,8 @@ static void flash_op_run(void *arg)
         op->call(op->arg);
     } else if (op->erase) {
         flash_range_erase(op->off, FLASH_SECTOR_SIZE);
-    } else if (op->data != NULL) {
-        flash_range_program(op->off, op->data, op->len);
     } else {
-        flash_range_program(op->off, s_page.bytes, FLASH_PAGE_SIZE);
+        flash_range_program(op->off, op->data, op->len);
     }
     op->window_us = (uint32_t)absolute_time_diff_us(began, get_absolute_time());
     op->done = true;
@@ -395,11 +336,14 @@ static bool erase_sector(uint8_t sector, uint32_t *window_us)
     return true;
 }
 
+/* The staged slot, both of its pages, in one window. */
 static bool program_record(uint8_t slot, uint32_t *window_us)
 {
     flash_op_t op = {
-        .off   = STORE_OFFSET + (uint32_t)slot * FLASH_PAGE_SIZE,
+        .off   = STORE_OFFSET + (uint32_t)slot * STORE_SLOT_BYTES,
         .erase = false,
+        .data  = s_page.bytes,
+        .len   = STORE_SLOT_BYTES,
     };
     if (!flash_window(&op)) {
         return false;
@@ -408,41 +352,57 @@ static bool program_record(uint8_t slot, uint32_t *window_us)
     return true;
 }
 
+/* The newest record of @p n slots of @p bytes, @p min_version to
+ * @p max_version, into
+ * @p out; its slot, or -1 when none is valid. */
+static int load_from(out_store_rec_t *recs, uint8_t n, uint8_t per_sector,
+                     uint32_t bytes, uint16_t min_version,
+                     uint16_t max_version, out_store_t *out)
+{
+    survey(recs, n, bytes, min_version, max_version);
+    const int newest = out_store_map_newest(recs, STORE_SECTORS, per_sector);
+    if (newest < 0) {
+        return -1;
+    }
+    const uint8_t *p = slot_at((uint8_t)newest, bytes);
+    out_store_hdr_t h;
+    memcpy(&h, p, sizeof(h));
+    /* Valid, so its version is one out_store_cfg_size() knows. */
+    return out_store_cfg_read(h.version, p + sizeof(h), out) ? newest : -1;
+}
+
 bool out_store_load(out_store_t *out)
 {
     if (out == NULL) {
         return false;
     }
-    out_store_rec_t recs[STORE_SLOTS];
-    survey(recs);
-    int newest = out_store_map_newest(recs, STORE_SECTORS, STORE_RECORDS);
-    bool old = false;
-    if (newest < 0) {
-        /* Nothing saved since the partition table went in: the bindings of
-         * the build before it, where that build kept them. */
-        s_read_offset = STORE_OLD_OFFSET;
-        survey(recs);
-        newest = out_store_map_newest(recs, STORE_SECTORS, STORE_RECORDS);
-        old = true;
-    }
-    bool ok = false;
-    if (newest >= 0) {
-        const record_t *r = record_at((uint8_t)newest);
-        /* Valid, so its version is one out_store_cfg_size() knows. */
-        ok = out_store_cfg_read(r->version, &r->cfg, out);
-    }
-    s_read_offset = STORE_OFFSET;
-    if (!ok) {
-        return false;
-    }
-    if (!old) {
-        /* Saved as it is.  One read from the old place is not: the first
-         * save writes it into the store. */
+    out_store_rec_t recs[STORE_V7_SLOTS];
+    s_keep_sector = -1;
+    int at = load_from(recs, STORE_SLOTS, STORE_RECORDS, STORE_SLOT_BYTES,
+                       OUT_STORE_VERSION, OUT_STORE_VERSION, out);
+    if (at >= 0) {
+        /* Saved as it is. */
         s_saved = *out;
         s_have_saved = true;
-        s_last_record = (uint8_t)newest;
+        s_last_record = (uint8_t)at;
+        return true;
     }
-    return true;
+    /* No version 8 record: one of version 7 or older in its one-page slot,
+     * kept until the first version 8 record is written.  The first save
+     * writes it in the new layout. */
+    at = load_from(recs, STORE_V7_SLOTS, STORE_V7_RECORDS, STORE_V7_BYTES,
+                   OUT_STORE_VERSION_V3, OUT_STORE_VERSION_V7, out);
+    if (at >= 0) {
+        s_keep_sector = at / (int)STORE_V7_RECORDS;
+        return true;
+    }
+    /* Nothing saved since the partition table went in: the bindings of
+     * the build before it, where that build kept them. */
+    s_read_offset = STORE_OLD_OFFSET;
+    at = load_from(recs, STORE_V7_SLOTS, STORE_V7_RECORDS, STORE_V7_BYTES,
+                   OUT_STORE_VERSION_V3, OUT_STORE_VERSION_V7, out);
+    s_read_offset = STORE_OFFSET;
+    return at >= 0;
 }
 
 void out_store_save(const out_store_t *cfg, uint32_t now_ms)
@@ -497,9 +457,11 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
     }
 
     out_store_rec_t recs[STORE_SLOTS];
-    survey(recs);
+    survey(recs, STORE_SLOTS, STORE_SLOT_BYTES, OUT_STORE_VERSION,
+           OUT_STORE_VERSION);
     out_store_write_t w;
-    if (!out_store_map_write(recs, STORE_SECTORS, STORE_RECORDS, &w)) {
+    if (!out_store_map_write_keep(recs, STORE_SECTORS, STORE_RECORDS,
+                                  s_keep_sector, &w)) {
         return OUT_STORE_IDLE;   /* the geometry is a compile-time constant */
     }
 
@@ -514,21 +476,13 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
                    ? OUT_STORE_ERASED : OUT_STORE_REFUSED;
     }
 
-    record_t *r = &s_page.rec;
-    memset(s_page.bytes, 0xFF, sizeof(s_page.bytes));
-    r->magic   = STORE_MAGIC;
-    r->version = STORE_VERSION;
-    r->seq     = w.seq;
-    r->cfg     = s_want;
-    r->crc     = record_crc(r, sizeof(*r));
-    /* Last, because it counts everything above it. */
-    r->zeros     = record_zeros(r, sizeof(*r));
-    r->zeros_inv = ~r->zeros;
-
+    (void)out_store_rec_build(s_page.bytes, sizeof(s_page.bytes),
+                              OUT_STORE_VERSION, w.seq, &s_want);
     if (!program_record(w.at, &s_last_program_us)) {
         return OUT_STORE_REFUSED;   /* still pending; nothing changed */
     }
     s_last_record = w.at;
+    s_keep_sector = -1;        /* the layout before is superseded */
     s_reclaim_wanted = true;   /* this record may have left a sector behind */
     s_saved = s_want;
     s_have_saved = true;
@@ -545,8 +499,10 @@ bool out_store_reclaim(bool driving, uint32_t quiet_ms)
         return false;
     }
     out_store_rec_t recs[STORE_SLOTS];
-    survey(recs);
-    const int stale = out_store_map_stale(recs, STORE_SECTORS, STORE_RECORDS);
+    survey(recs, STORE_SLOTS, STORE_SLOT_BYTES, OUT_STORE_VERSION,
+           OUT_STORE_VERSION);
+    const int stale = out_store_map_stale_keep(recs, STORE_SECTORS,
+                                               STORE_RECORDS, s_keep_sector);
     if (stale < 0) {
         s_reclaim_wanted = false;
         return false;

@@ -112,7 +112,11 @@ typedef enum {
  * HITEC takes the receive mode of a D series line in write register 23
  * (LINK_HT_W_RX_MODE); a 4.23 IOmcu refuses that write with
  * LINK_NACK_READ_ONLY and receives with the pull-up, which the panel says
- * on SETUP when the mode asked is PRECHARGE.  An
+ * on SETUP when the mode asked is PRECHARGE.  From 4.25 SENSE_MAP (0x35)
+ * sets up to 4 INA3221 with a shunt and a watch target per channel, and
+ * SENSE_WIN_A and SENSE_WIN_B (0x37, 0x38) carry every channel's last
+ * window; an older IOmcu refuses the three with LINK_NACK_BAD_PAGE and
+ * reads SENSE's one INA3221.  An
  * IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -125,7 +129,7 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 24u
+#define LINK_PROTOCOL_MINOR 25u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u

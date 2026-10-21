@@ -101,7 +101,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.6%**, 48,668 of 49,849 lines in 193 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.6%**, 48,928 of 50,110 lines in 194 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).

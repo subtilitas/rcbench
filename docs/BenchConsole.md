@@ -82,13 +82,13 @@ as the USB host takes it. What does not fit is dropped, and a line
 
 ```text
 > r 0x00 0 2
-data page=0x00 off=0 n=2: 0x0004 0x0018
+data page=0x00 off=0 n=2: 0x0004 0x0019
 > w 0x2A 4 1 5000 1000
 nack page=0x2A off=4: NOT_ARMED (5)
 ```
 
 Lines typed are shown here after `> `; the console prints no prompt. The
-first line reads the protocol version, 4.24. The second is SUPPLY's ON at
+first line reads the protocol version, 4.25. The second is SUPPLY's ON at
 5000 mV and 1000 mA, refused because no panel sends a heartbeat. With a
 panel running, the same line is taken:
 

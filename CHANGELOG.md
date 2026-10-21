@@ -30,11 +30,30 @@ history is in git.
   4.23 it says `IOmcu older than 4.23: no Hitec line.`
 - The bench console's `hitec open <port> d [od|pp] [pu|pre]` writes the
   receive mode before the OPEN, and the report names it (`rx=pu|pre`).
+- Link protocol 4.25: SENSE_MAP (0x35) sets up to 4 INA3221 at 0x40 to
+  0x43, a shunt of 5 mOhm to 1 Ohm (0 off) and a watch target (an output
+  channel, a programming port or the supply) for each of their 12
+  channels, and the FAST channel. SENSE_WIN_A and SENSE_WIN_B (0x37,
+  0x38) carry every channel's last 50 ms window. Until it is first
+  written the map is SENSE's one INA3221; once written, SENSE's INA3221
+  bit and registers 8 to 10 mirror it and a SENSE write that would change
+  them is refused. With a map in force, IDENTITY's capability bit 3
+  (`SERVO_SENSE`) is set while a channel it reads watches an output
+  channel or a programming port. The panel writes SENSE_MAP from SETUP >
+  SENSORS (below) and does not read SENSE_WIN_A or SENSE_WIN_B yet.
+- The IOmcu's store record is version 8, 308 bytes in a slot of two
+  256-byte flash pages, 16 slots in the store; it keeps the map. Records
+  of version 3 to 7 are read until the first version 8 save, and the
+  sector that holds the last of them is kept until then. An IOmcu image
+  older than this build reads no version 8 record and starts as from an
+  empty store.
+- The IOmcu console prints a third sensor line, `sense map`: the parts
+  fitted, FAST, the map's flags and each channel's mean current in mA.
 - SETUP > SENSORS (German `SENSOREN`), the eighth tile: up to four INA3221
   current monitors at 0x40 to 0x43. Per part `0x40 fitted`; per channel
   `0x40 CH1 watches` (NONE, OUT 1 to OUT 8, PORT 1 to PORT 4, SUPPLY) and
   `0x40 CH1 shunt` (OFF, 5.0 to 1000.0 mOhm). A fitted part's heading shows
-  its state: `ONLINE`, `NOT ANSWERING`, `IOmcu OLDER THAN 4.25: NOT READ`
+  its state: `ONLINE`, `NOT ANSWERING`, `IOMCU OLDER THAN 4.25: NOT READ`
   and eight more. The panel writes the map to SENSE_MAP (link protocol
   4.25) in one write of 26 registers; an IOmcu older than 4.25 gets SENSE's
   one-part frame. The channel read at 1 kHz is the lowest one on a fitted
@@ -54,9 +73,6 @@ history is in git.
   0.21.
 - `INA3221 settings rejected. Check SETUP > SENSORS.` names SENSORS in
   place of INTERFACES.
-
-### Changed
-
 - The IOmcu's sensor schedule reads up to 4 INA3221 at 0x40 to 0x43, 12
   channels, each with its own shunt. One channel, FAST, is read every 1 ms
   and carries the window ring and the move capture; the other channels

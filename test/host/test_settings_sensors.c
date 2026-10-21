@@ -565,10 +565,10 @@ TEST_CASE(every_part_state_has_its_words_and_colour)
         { SENS_PART_ONLINE,    "ONLINE",                    UI_C_OK },
         { SENS_PART_SILENT,    "NOT ANSWERING",             UI_C_WARN },
         { SENS_PART_WRONG,     "ANOTHER ID ANSWERS",        UI_C_WARN },
-        { SENS_PART_REFUSED,   "NOT ACCEPTED BY THE IOmcu", UI_C_WARN },
+        { SENS_PART_REFUSED,   "NOT ACCEPTED BY THE IOMCU", UI_C_WARN },
         { SENS_PART_DARK,      "EVERY CHANNEL OFF",         UI_C_WARN },
         { SENS_PART_SAME_ADDR, "INA228 ON THIS ADDRESS",    UI_C_WARN },
-        { SENS_PART_OLD,       "IOmcu OLDER THAN 4.25: NOT READ", UI_C_WARN },
+        { SENS_PART_OLD,       "IOMCU OLDER THAN 4.25: NOT READ", UI_C_WARN },
         { SENS_PART_NO_BUS,    "SENSOR SDA OR SCL UNSET",   UI_C_WARN },
     };
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {

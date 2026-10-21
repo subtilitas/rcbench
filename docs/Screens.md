@@ -2639,10 +2639,10 @@ The heading of a part shows on its right what the part is doing:
 | `ANOTHER ID ANSWERS` | something answers at the address with another identity |
 | `NOT WRITTEN YET` | an edit waits: 500 ms after the last edit, and only while the bench is SAFE |
 | `NOT READ YET` | no IOmcu answers, or its page has not been read since the link came up |
-| `NOT ACCEPTED BY THE IOmcu` | the IOmcu refused the map; it keeps the one it held |
+| `NOT ACCEPTED BY THE IOMCU` | the IOmcu refused the map; it keeps the one it held |
 | `EVERY CHANNEL OFF` | all three shunts of the part are OFF: no map is written |
 | `INA228 ON THIS ADDRESS` | the INA228 is on at the part's address: the part is left out of the map and the INA228 off |
-| `IOmcu OLDER THAN 4.25: NOT READ` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
+| `IOMCU OLDER THAN 4.25: NOT READ` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
 | `SENSOR SDA OR SCL UNSET` | INTERFACES has no pin for the sensor bus's SDA or SCL: no part is enabled |
 
 The rows of a part refused, with every channel off, on the INA228's

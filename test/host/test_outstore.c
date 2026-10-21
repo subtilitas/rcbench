@@ -457,7 +457,8 @@ static void numbered(out_store_t *c, uint16_t base)
 /* Each version appends to the one before: 64 registers of bindings, then
  * 4 of supply wiring, then 12 of sensor set-up, then 7 of the phase tap's
  * and a spare to keep the set a whole number of 32-bit words, then 16 of
- * the programming ports'. */
+ * the programming ports', then the INA3221s' map (26), whether it is in
+ * force, 12 limits and a spare. */
 TEST_CASE(each_record_version_carries_the_one_before_and_more)
 {
     CHECK_EQ(out_store_cfg_size(3u), 128u);
@@ -465,26 +466,181 @@ TEST_CASE(each_record_version_carries_the_one_before_and_more)
     CHECK_EQ(out_store_cfg_size(5u), 160u);
     CHECK_EQ(out_store_cfg_size(6u), 176u);
     CHECK_EQ(out_store_cfg_size(7u), 208u);
-    CHECK_EQ(OUT_STORE_VERSION, 7u);
+    CHECK_EQ(out_store_cfg_size(8u), 288u);
+    CHECK_EQ(OUT_STORE_VERSION, 8u);
     CHECK_EQ(sizeof(((out_store_t *)0)->prog),
              PROG_PORT_KEPT_COUNT * sizeof(uint16_t));
     CHECK_EQ(out_store_cfg_size(OUT_STORE_VERSION), sizeof(out_store_t));
     CHECK_EQ(sizeof(out_store_t) % 4u, 0u);
     CHECK_EQ(out_store_cfg_size(2u), 0u);
-    CHECK_EQ(out_store_cfg_size(8u), 0u);
-    /* A header of 20 bytes and the newest configuration fit one 256-byte
-     * flash page. */
-    CHECK(20u + sizeof(out_store_t) <= 256u);
+    CHECK_EQ(out_store_cfg_size(9u), 0u);
+    /* A header of 20 bytes: version 7 fits one 256-byte flash page, version
+     * 8 takes two. */
+    CHECK_EQ(out_store_rec_size(7u), 228u);
+    CHECK_EQ(out_store_rec_size(8u), 308u);
+    CHECK_EQ(out_store_rec_size(9u), 0u);
+    CHECK(out_store_rec_size(7u) <= OUT_STORE_SLOT_BYTES_V7);
+    CHECK(out_store_rec_size(8u) > 256u);
+    CHECK(out_store_rec_size(8u) <= OUT_STORE_SLOT_BYTES);
+    CHECK_EQ(OUT_STORE_SLOT_BYTES, 512u);
 }
 
-TEST_CASE(a_version_7_record_reads_back_whole)
+TEST_CASE(a_version_8_record_reads_back_whole)
 {
     out_store_t in;
     out_store_t out;
     numbered(&in, 0x1000u);
     memset(&out, 0, sizeof(out));
-    CHECK(out_store_cfg_read(7u, &in, &out));
+    CHECK(out_store_cfg_read(8u, &in, &out));
     CHECK_EQ(memcmp(&in, &out, sizeof(in)), 0);
+}
+
+/* A record from before the map: everything it carries; the map not in
+ * force, so SENSE's one part is the map again; no limit. */
+TEST_CASE(a_version_7_record_keeps_everything_and_leaves_the_map_derived)
+{
+    out_store_t in;
+    out_store_t out;
+    numbered(&in, 0x1200u);
+    memset(&out, 0xA5, sizeof(out));
+    CHECK(out_store_cfg_read(7u, &in, &out));
+    CHECK_EQ(memcmp(&out, &in, offsetof(out_store_t, sense_map)), 0);
+    for (unsigned k = 0; k < LINK_SM_KEPT; ++k) {
+        CHECK_EQ(out.sense_map[k], 0u);
+    }
+    CHECK_EQ(out.sense_map_set, 0u);
+    for (unsigned c = 0; c < LINK_SM_CHANNELS; ++c) {
+        CHECK_EQ(out.sense_limit[c], 0u);
+    }
+    CHECK_EQ(out.spare8, 0u);
+}
+
+/* A record as a save stages it: two pages, the record and then 0xFF. */
+static uint8_t g_slot[OUT_STORE_SLOT_BYTES];
+
+static bool check8(uint32_t *seq)
+{
+    uint16_t version = 0u;
+    return out_store_rec_check(g_slot, sizeof(g_slot), 8u, 8u, &version, seq)
+           && version == 8u;
+}
+
+TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
+{
+    out_store_t cfg;
+    numbered(&cfg, 0x5000u);
+    CHECK(out_store_rec_build(g_slot, sizeof(g_slot), OUT_STORE_VERSION, 41u,
+                              &cfg));
+    uint32_t seq = 0u;
+    CHECK(check8(&seq));
+    CHECK_EQ(seq, 41u);
+    for (size_t b = out_store_rec_size(8u); b < sizeof(g_slot); ++b) {
+        CHECK_EQ(g_slot[b], 0xFFu);
+    }
+    /* Its configuration where the record says it is. */
+    out_store_t back;
+    CHECK(out_store_cfg_read(8u, g_slot + sizeof(out_store_hdr_t), &back));
+    CHECK_EQ(memcmp(&back, &cfg, sizeof(cfg)), 0);
+    /* The first page programmed, the second not yet: no record. */
+    uint8_t keep[OUT_STORE_SLOT_BYTES];
+    memcpy(keep, g_slot, sizeof(keep));
+    memset(g_slot + 256, 0xFF, 256u);
+    CHECK(!check8(&seq));
+    /* The second page and the first not: no magic, no record. */
+    memcpy(g_slot, keep, sizeof(keep));
+    memset(g_slot, 0xFF, 256u);
+    CHECK(!check8(&seq));
+    /* One bit of the second page's configuration still erased. */
+    memcpy(g_slot, keep, sizeof(keep));
+    for (size_t b = 300u; b < out_store_rec_size(8u); ++b) {
+        if (g_slot[b] != 0xFFu) {
+            g_slot[b] = (uint8_t)(g_slot[b] | 0x01u
+                                  | (uint8_t)~g_slot[b]);   /* all set */
+            break;
+        }
+    }
+    CHECK(!check8(&seq));
+    /* An erase cut off: one bit lifted in the sequence number. */
+    memcpy(g_slot, keep, sizeof(keep));
+    g_slot[offsetof(out_store_hdr_t, seq)] |= 0x80u;
+    CHECK(!check8(&seq));
+    /* The record whole again, and a slot too short to hold it. */
+    memcpy(g_slot, keep, sizeof(keep));
+    CHECK(check8(&seq));
+    CHECK(!out_store_rec_check(g_slot, 307u, 8u, 8u, NULL, NULL));
+    CHECK(!out_store_rec_check(g_slot, 10u, 8u, 8u, NULL, NULL));
+    CHECK(!out_store_rec_check(NULL, 512u, 8u, 8u, NULL, NULL));
+    CHECK(out_store_rec_check(g_slot, 308u, 8u, 8u, NULL, NULL));
+    /* An erased slot is no record. */
+    memset(g_slot, 0xFF, sizeof(g_slot));
+    CHECK(!check8(&seq));
+    CHECK(!out_store_rec_build(NULL, sizeof(g_slot), 8u, 1u, &cfg));
+    CHECK(!out_store_rec_build(g_slot, 256u, 8u, 1u, &cfg));  /* too long */
+    CHECK(!out_store_rec_build(g_slot, sizeof(g_slot), 9u, 1u, &cfg));
+}
+
+/* Each layout takes its own versions: a version 7 record that starts a
+ * two-page slot is not read as one of the new layout. */
+TEST_CASE(a_version_7_record_belongs_to_the_one_page_layout)
+{
+    out_store_t cfg;
+    numbered(&cfg, 0x6000u);
+    /* A version 7 record as an earlier build wrote it, in a one-page
+     * slot that begins a two-page one. */
+    CHECK(out_store_rec_build(g_slot, sizeof(g_slot), 7u, 7u, &cfg));
+    uint16_t version = 0u;
+    uint32_t seq = 0u;
+    CHECK(out_store_rec_check(g_slot, OUT_STORE_SLOT_BYTES_V7, 3u, 7u,
+                              &version, &seq));
+    CHECK_EQ(version, 7u);
+    CHECK_EQ(seq, 7u);
+    CHECK(!check8(NULL));
+    /* And a version 8 record is not read as the one-page layout's. */
+    CHECK(out_store_rec_build(g_slot, sizeof(g_slot), 8u, 8u, &cfg));
+    CHECK(!out_store_rec_check(g_slot, sizeof(g_slot), 3u, 7u, NULL, NULL));
+    CHECK(check8(NULL));
+}
+
+/* The store moving to two-page slots: until a version 8 record is
+ * written, the sector holding the live record of the one-page layout is
+ * neither erased for room nor offered for reclaim. */
+TEST_CASE(the_one_page_layouts_live_sector_is_kept_until_replaced)
+{
+    /* 2 sectors of 8 two-page slots, none valid, none erased: the old
+     * records fill both. */
+    out_store_rec_t r16[16];
+    memset(r16, 0, sizeof(r16));
+    out_store_write_t w;
+    CHECK(out_store_map_write_keep(r16, 2u, 8u, 0, &w));
+    CHECK(w.erase_first);
+    CHECK_EQ(w.erase_sector, 1u);
+    CHECK_EQ(w.at, 8u);
+    CHECK(out_store_map_write_keep(r16, 2u, 8u, 1, &w));
+    CHECK_EQ(w.erase_sector, 0u);
+    CHECK(out_store_map_write_keep(r16, 2u, 8u, -1, &w));
+    CHECK_EQ(w.erase_sector, 0u);
+    CHECK_EQ(out_store_map_stale_keep(r16, 2u, 8u, 0), 1);
+    CHECK_EQ(out_store_map_stale_keep(r16, 2u, 8u, 1), 0);
+    CHECK_EQ(out_store_map_stale(r16, 2u, 8u), 0);
+    /* An erased slot in the kept sector is taken as it is: a program
+     * there leaves the old record beside it. */
+    r16[5].erased = true;
+    CHECK(out_store_map_write_keep(r16, 2u, 8u, 0, &w));
+    CHECK(!w.erase_first);
+    CHECK_EQ(w.at, 5u);
+    /* Once a version 8 record is valid the old layout counts for nothing:
+     * the sector without the live record is the stale one. */
+    r16[5].erased = false;
+    r16[5].valid = true;
+    r16[5].seq = 1u;
+    CHECK_EQ(out_store_map_stale_keep(r16, 2u, 8u, 0), 1);
+    r16[5].valid = false;
+    r16[12].valid = true;
+    r16[12].seq = 1u;
+    CHECK_EQ(out_store_map_stale_keep(r16, 2u, 8u, 0), 0);
+    /* One sector: nowhere else to go. */
+    CHECK(out_store_map_write_keep(r16, 1u, 8u, 0, &w));
+    CHECK_EQ(w.erase_sector, 0u);
 }
 
 /* A record from before the programming ports: everything it carries, and
@@ -579,7 +735,7 @@ TEST_CASE(a_record_of_another_version_reads_as_nothing)
     memset(&out, 0x5A, sizeof(out));
     was = out;
     CHECK(!out_store_cfg_read(2u, &in, &out));
-    CHECK(!out_store_cfg_read(8u, &in, &out));
+    CHECK(!out_store_cfg_read(9u, &in, &out));
     CHECK(!out_store_cfg_read(7u, NULL, &out));
     CHECK_EQ(memcmp(&out, &was, sizeof(out)), 0);
     CHECK(!out_store_cfg_read(7u, &in, NULL));
@@ -604,7 +760,11 @@ int main(void)
     RUN(a_power_cut_during_a_save_leaves_the_record_before_it);
     RUN(a_power_cut_during_an_erase_leaves_the_live_record);
     RUN(each_record_version_carries_the_one_before_and_more);
-    RUN(a_version_7_record_reads_back_whole);
+    RUN(a_version_8_record_reads_back_whole);
+    RUN(a_version_7_record_keeps_everything_and_leaves_the_map_derived);
+    RUN(a_record_over_two_pages_is_whole_or_no_record);
+    RUN(a_version_7_record_belongs_to_the_one_page_layout);
+    RUN(the_one_page_layouts_live_sector_is_kept_until_replaced);
     RUN(a_version_6_record_keeps_its_tap_and_gives_the_port_its_default_pin);
     RUN(a_version_5_record_keeps_its_sensors_and_leaves_the_tap_off);
     RUN(a_version_4_record_keeps_its_wiring_and_leaves_the_sensors_off);
