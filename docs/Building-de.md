@@ -98,9 +98,10 @@ Pseudo-Static Random-Access Memory) auf 200 MHz, Code und Konstanten im
 Flash statt im PSRAM, die nullinitialisierten Daten, die
 `main/psram_bss.lf` nennt, im PSRAM ([Interner RAM](Performance-de.md#interner-ram)),
 den Interrupt des DSI-Hosts (DSI: Display Serial Interface), der auch
-während einer Flash-Operation läuft (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), das
-Log des Bootloaders auf WARN, damit er in die 24.576 Bytes zwischen 0x2000
-und der Partitionstabelle passt, `-O2` und die Konsole auf UART0 (UART:
+während einer Flash-Operation läuft (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), die
+Partitionstabelle bei 0xC000, die dem Bootloader ab 0x2000 40.960 Bytes
+lässt (er belegt mit Rollback und Log auf INFO 0x6140 Bytes), `-O2` und
+die Konsole auf UART0 (UART:
 Universal Asynchronous Receiver-Transmitter) mit USB-Serial-JTAG (die
 eingebaute serielle und Debug-Bridge des Chips über USB, Universal Serial
 Bus) als Zweitkonsole. Von dieser Datei ausgehen, nicht von `menuconfig`.

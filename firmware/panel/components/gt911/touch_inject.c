@@ -23,6 +23,19 @@ static const char *TAG = "touch_inject";
  * at least TOUCH_MERGE_DETACH_MS, which touch_merge_inject_age() counts as
  * 0, so the order of the two loads cannot age touch.
  */
+/**
+ * @brief The injector's map: its contacts are panel pixels of the UI's
+ *        BOARD_UI_H_RES x BOARD_UI_V_RES area, unmirrored and unrotated
+ *        (testbench/touch-injector/README.md).
+ */
+static const touch_map_t k_inject_map = {
+    .src_w = BOARD_UI_H_RES,
+    .src_h = BOARD_UI_V_RES,
+    .mirror_x = false,
+    .mirror_y = false,
+    .rotation = TOUCH_ROTATION_0,
+};
+
 static gt911_handle_t    s_dev;
 static bool              s_is_glass;
 static touch_merge_t     s_merge;
@@ -37,9 +50,9 @@ void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
     touch_merge_start(&s_merge, false, now_ms);
     s_ok_ms = now_ms;
     if (glass_addr == TOUCH_INJECT_ADDR) {
-        /* No controller at 0x5D, and the injector took the glass's place. */
+        /* No controller at 0x5D, and the injector took the glass's place;
+         * touch_init() says so on the console. */
         s_is_glass = true;
-        ESP_LOGW(TAG, "no GT911 at 0x5d; the injector is the only touch");
         return;
     }
     if (i2c_master_probe(bus, TOUCH_INJECT_ADDR, PROBE_TIMEOUT_MS) != ESP_OK) {
@@ -55,6 +68,11 @@ void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
     touch_merge_start(&s_merge, true, now_ms);
     s_attached = true;
     ESP_LOGW(TAG, "touch injector attached at 0x%02x", TOUCH_INJECT_ADDR);
+}
+
+touch_map_t touch_inject_map(void)
+{
+    return k_inject_map;
 }
 
 bool touch_injector_attached(void)
@@ -132,6 +150,9 @@ bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms)
         bool fresh = false;
         if (gt911_read(s_dev, got, TOUCH_MAX_POINTS, &n, &fresh) == ESP_OK) {
             s_ok_ms = now_ms;
+            if (fresh) {
+                touch_map_points(&k_inject_map, got, n);
+            }
             changed = touch_merge_inject(&s_merge, got, n, fresh, now_ms);
         } else {
             changed = touch_merge_inject_failed(&s_merge, now_ms);

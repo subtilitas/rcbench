@@ -393,7 +393,7 @@ Proposed channel map, to be checked against the wiring as built:
 | 0 | GP0 output | IOmcu | whatever OUTPUTS binds first |
 | 1 | GP1 output | IOmcu | |
 | 2 | GP2 output | IOmcu | the servo screen's own pin |
-| 3 | heartbeat | panel J8 / GPIO6 to IOmcu GP3 | an edge every 20 ms (40 ms cycle), the safety line |
+| 3 | heartbeat | panel GPIO28 (provisional until the pin is fixed on the first sample) to IOmcu GP3 | an edge every 20 ms (40 ms cycle), the safety line |
 | 4 | CAN SCK | IOmcu GP10, pad 14 | the XL2515's SPI clock |
 | 5 | CAN MOSI | IOmcu GP11, pad 15 | |
 | 6 | CAN MISO | IOmcu GP12, pad 16 | with SCK and MOSI, every register the driver writes |
