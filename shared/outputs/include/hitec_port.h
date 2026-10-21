@@ -131,6 +131,7 @@ typedef struct {
 
 /** @brief What the port needs from the hardware. */
 typedef struct {
+    /** The caller's context, passed as the first argument of each hook. */
     void *ctx;
     /** Programming ports the build has, 1 to LINK_PG_PORTS_MAX. */
     uint8_t ports;
@@ -160,6 +161,10 @@ typedef struct {
     hitec_driver_t driver;
 } hitec_port_hw_t;
 
+/**
+ * @brief The state of one Hitec port: the hardware, the staged registers,
+ *        the running or last transaction and its capture.
+ */
 typedef struct {
     hitec_port_hw_t hw;
     uint16_t staged[LINK_HT_W_STAGED];
@@ -210,7 +215,13 @@ typedef struct {
  *
  * False when @p hw names no port or lacks a function other than run and the
  * supply's two, or has one of those
- *  two. */
+ *  two.
+ *
+ * @param p  The port to prepare; zeroed first.
+ * @param hw The hardware hooks, copied into the port.
+ * @return true when the port is prepared; false for a NULL p, or for a hw that
+ *         fails the checks above.
+ */
 bool hitec_port_init(hitec_port_t *p, const hitec_port_hw_t *hw);
 
 /**
@@ -221,11 +232,27 @@ bool hitec_port_init(hitec_port_t *p, const hitec_port_hw_t *hw);
  * those 4.  Registers 4 to 23 are taken in any windows; 24 and up are
  * LINK_NACK_READ_ONLY.  A VIEW or an RX_MODE above the last is
  * LINK_NACK_BAD_VALUE.
+ *
+ * @param p      The port.
+ * @param off    First register of the window.
+ * @param n      Number of registers in the window; 0 is refused.
+ * @param in     The n register values to write.
+ * @param now_ms Current time in milliseconds.
+ * @return 0 when the write is applied or the command is acknowledged; otherwise
+ *         LINK_NACK_BAD_RANGE, LINK_NACK_READ_ONLY or LINK_NACK_BAD_VALUE.
  */
 uint8_t hitec_port_write(hitec_port_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, uint32_t now_ms);
 
-/** @brief A read of the page, LINK_HT_*. */
+/**
+ * @brief A read of the page, LINK_HT_*.
+ *
+ * @param p   The port.
+ * @param off First register of the window.
+ * @param n   Number of registers to read.
+ * @param out Receives n register values; left unchanged for a NULL p or out, or
+ *            a window past LINK_HT_COUNT.
+ */
 void hitec_port_read(const hitec_port_t *p, uint8_t off, uint8_t n,
                      uint16_t *out);
 
@@ -234,38 +261,80 @@ void hitec_port_read(const hitec_port_t *p, uint8_t off, uint8_t n,
  *
  * @p safe: the heartbeat is trusted and the link is not silent.
  * @p stop: the bank was switched off or disarmed since the last pass.
+ *
+ * @param p      The port.
+ * @param safe   true when the heartbeat is trusted and the link is not silent.
+ * @param stop   true when the bank was switched off or disarmed since the last
+ *               pass.
+ * @param now_ms Current time in milliseconds.
  */
 void hitec_port_step(hitec_port_t *p, bool safe, bool stop, uint32_t now_ms);
 
-/** @brief Where the port is. */
+/**
+ * @brief Where the port is.
+ *
+ * @param p The port, or NULL.
+ * @return The state of the port; LINK_HITEC_FREE for a NULL p.
+ */
 link_hitec_state_t hitec_port_state(const hitec_port_t *p);
 
 /** @brief Bit n: programming port n renders no PWM pulse.
  *
  * The held port in every
- *  state but LINK_HITEC_FREE. */
+ *  state but LINK_HITEC_FREE.
+ *
+ * @param p The port, or NULL.
+ * @return Bit n set for port n while the port is held and not free; 0 for a
+ *         NULL p.
+ */
 uint8_t hitec_port_quiet_mask(const hitec_port_t *p);
 
 /** @brief Bit n: programming port n's pin is the wire driver's.
  *
  * From the take
- *  until CLOSE. */
+ *  until CLOSE.
+ *
+ * @param p The port, or NULL.
+ * @return Bit n set for port n while the wire driver holds its pin; 0 for a
+ *         NULL p.
+ */
 uint8_t hitec_port_pin_mask(const hitec_port_t *p);
 
-/** @brief Whether the bank is armed: OPEN is refused while it is. */
+/**
+ * @brief Whether the bank is armed: OPEN is refused while it is.
+ *
+ * @param p     The port, or NULL; a NULL p is ignored.
+ * @param armed true when the bank is armed.
+ */
 void hitec_port_bench_armed(hitec_port_t *p, bool armed);
 
 /** @brief Bit n: the KST page holds programming port n (kst_port_quiet_mask()).
- *  OPEN on it is refused with LINK_HITEC_REF_HELD. */
+ *  OPEN on it is refused with LINK_HITEC_REF_HELD.
+ *
+ * @param p    The port, or NULL; a NULL p is ignored.
+ * @param mask Bit n: the KST page holds programming port n.
+ */
 void hitec_port_other_mask(hitec_port_t *p, uint8_t mask);
 
-/** @brief A POWER runs: the SUPPLY page is held (supply_page_hold()). */
+/**
+ * @brief A POWER runs: the SUPPLY page is held (supply_page_hold()).
+ *
+ * @param p The port, or NULL.
+ * @return true while a POWER runs, from the OFF to the end of its listen; false
+ *         for a NULL p.
+ */
 bool hitec_port_supply_hold(const hitec_port_t *p);
 
 /** @brief A byte may be on the wire: a SEND from its start until the lead and
  *        the bytes have had their time, counted in whole ms; a LISTEN or a
  *        POWER
- *  that answers, while it runs. */
+ *  that answers, while it runs.
+ *
+ * @param p      The port, or NULL.
+ * @param now_ms Current time in milliseconds.
+ * @return true while a byte may be on the wire; false for a NULL p or a port
+ *         that is not BUSY.
+ */
 bool hitec_port_frame_out(const hitec_port_t *p, uint32_t now_ms);
 
 #ifdef __cplusplus

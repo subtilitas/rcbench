@@ -18,42 +18,76 @@
 
 #define REG(port, r) LINK_PG_REG(port, r)
 
+/**
+ * @brief The 64-bit mask with only bit @p pin set.
+ *
+ * @param pin The pin number, used as a shift count.
+ * @return A mask with bit @p pin set.
+ */
 static uint64_t bit64(uint16_t pin)
 {
     return (uint64_t)1u << pin;
 }
 
-/* Port @p port's function as @p regs hold it. */
+/**
+ * @brief Port @p port's function as @p regs hold it.
+ *
+ * @param regs The page's registers, LINK_PG_REGS entries.
+ * @param port Port index.
+ * @return The FUNC register of the port.
+ */
 static uint16_t fn_of(const uint16_t *regs, unsigned port)
 {
     return regs[LINK_PG_FUNC(port)];
 }
 
-/** @brief Whether the port's function is the servo pulse, which the PWM
- *        generator
- * renders and which the PWM-pin and slice rules hold. */
+/**
+ * @brief Whether the port's function is the servo pulse, which the PWM
+ * generator renders and which the PWM-pin and slice rules hold.
+ *
+ * @param regs The page's registers, LINK_PG_REGS entries.
+ * @param port Port index.
+ * @return true when the port's function is the servo pulse.
+ */
 static bool fn_pwm(const uint16_t *regs, unsigned port)
 {
     return fn_of(regs, port) == (uint16_t)LINK_PG_FN_SERVO_PWM;
 }
 
-/** @brief Whether the port's function is DShot (4.28): a PIO state machine
- *        renders
- * it from the port's channel, a throttle. */
+/**
+ * @brief Whether the port's function is DShot (4.28): a PIO state machine
+ * renders it from the port's channel, a throttle.
+ *
+ * @param regs The page's registers, LINK_PG_REGS entries.
+ * @param port Port index.
+ * @return true when the port's function is DShot (DSHOT150 to DSHOT600).
+ */
 static bool fn_dshot(const uint16_t *regs, unsigned port)
 {
     return LINK_PG_FN_IS_DSHOT(fn_of(regs, port));
 }
 
-/** @brief The function a port starts with on a board that has stored none: the
- * servo pulse on port 0, nothing on the others. */
+/**
+ * @brief The function a port starts with on a board that has stored none: the
+ * servo pulse on port 0, nothing on the others.
+ *
+ * @param port Port index.
+ * @return LINK_PG_FN_SERVO_PWM for port 0, LINK_PG_FN_NONE otherwise.
+ */
 static uint16_t fn_default(unsigned port)
 {
     return (port == 0u) ? (uint16_t)LINK_PG_FN_SERVO_PWM
                         : (uint16_t)LINK_PG_FN_NONE;
 }
 
-/* Whether port @p port holds the pin its register names. */
+/**
+ * @brief Whether port @p port holds the pin its register names.
+ *
+ * @param p    The port model.
+ * @param port Port index.
+ * @return true when the port index is below the count, its PIN register is not
+ *         LINK_PG_PIN_NONE and the port is not blocked.
+ */
 static bool holds(const prog_port_t *p, unsigned port)
 {
     return port < p->count
@@ -62,7 +96,14 @@ static bool holds(const prog_port_t *p, unsigned port)
 }
 
 /** @brief Two port pins that cannot both be held: one pin, or two servo pulses
- * on one compare register of the generator. */
+ * on one compare register of the generator.
+ *
+ * @param a     The pin of one port.
+ * @param a_pwm true when that port is a SERVO PWM port.
+ * @param b     The pin of the other port.
+ * @param b_pwm true when that port is a SERVO PWM port.
+ * @return true when the two pins cannot both be held.
+ */
 static bool ports_clash(uint16_t a, bool a_pwm, uint16_t b, bool b_pwm)
 {
     return a == b
@@ -70,10 +111,19 @@ static bool ports_clash(uint16_t a, bool a_pwm, uint16_t b, bool b_pwm)
 }
 
 /**
- * Whether @p pin may be a port's beside the bank: a header pin, not
+ * @brief Whether @p pin may be a port's beside the bank: a header pin, not
  * reserved unless it is one the ports hold now (@p ours), not in @p taken
- * and no slot's.  For the servo pulse (@p pwm) also a pin of the PWM
+ * and no slot's.
+ *
+ * For the servo pulse (@p pwm) also a pin of the PWM
  * generator beside no PWM slot's in the silicon.
+ *
+ * @param o     The outputs model, for its reservations and slots.
+ * @param pin   The pin to test.
+ * @param pwm   true for a SERVO PWM port.
+ * @param ours  Bit n: pins the ports hold now.
+ * @param taken Bit n: pins other holders have.
+ * @return true when the pin may be a port's pin.
  */
 static bool pin_ok(const outputs_t *o, uint16_t pin, bool pwm, uint64_t ours,
                    uint64_t taken)
@@ -104,12 +154,25 @@ static bool pin_ok(const outputs_t *o, uint16_t pin, bool pwm, uint64_t ours,
     return true;
 }
 
+/**
+ * @brief Whether @p us lies in the endpoint range.
+ *
+ * @param us The endpoint in microseconds.
+ * @return true when @p us lies between LINK_CC_FLOOR_US and LINK_CC_CEILING_US,
+ *         both included.
+ */
 static bool us_ok(uint16_t us)
 {
     return us >= LINK_CC_FLOOR_US && us <= LINK_CC_CEILING_US;
 }
 
-/* The channel of @p port as the page describes it. */
+/**
+ * @brief The channel of @p port as the page describes it.
+ *
+ * @param p    The port model.
+ * @param o    The outputs model whose port channel is set.
+ * @param port Port index.
+ */
 static void apply_cfg(const prog_port_t *p, outputs_t *o, unsigned port)
 {
     const uint8_t ch = prog_port_channel((uint8_t)port);
@@ -164,8 +227,14 @@ void prog_port_restore(prog_port_t *p, const uint16_t *kept, outputs_t *o,
     prog_port_restore_fn(p, kept, PROG_PORT_FUNC_UNSTORED, o, taken);
 }
 
-/* Port @p port's function from the kept word @p word: the nibble's value
- * less 1, or the port's default for 0 or a value no write would take. */
+/**
+ * @brief Port @p port's function from the kept word @p word: the nibble's
+ * value less 1, or the port's default for 0 or a value no write would take.
+ *
+ * @param word The kept function word, 4 bits per port.
+ * @param port Port index.
+ * @return The FUNC value of the port.
+ */
 static uint16_t fn_from_word(uint16_t word, unsigned port)
 {
     const unsigned v = ((unsigned)word >> (4u * port)) & 0xFu;
@@ -254,14 +323,28 @@ uint16_t prog_port_kept_func(const prog_port_t *p)
     return word;
 }
 
-/* The rate port @p port runs at with @p target as TARGET and the SERVO
- * rate @p hz: @p hz for the target port, PROG_PORT_RATE_HZ otherwise. */
+/**
+ * @brief The rate port @p port runs at with @p target as TARGET and the
+ * SERVO rate @p hz: @p hz for the target port, PROG_PORT_RATE_HZ otherwise.
+ *
+ * @param target The TARGET register: 1 + the port index, or 0 for none.
+ * @param hz     The SERVO page's rate in Hz, 0 for none.
+ * @param port   Port index.
+ * @return The frame rate of the port in Hz.
+ */
 static uint16_t port_hz(uint16_t target, uint16_t hz, unsigned port)
 {
     return (hz != 0u && target == port + 1u) ? hz : (uint16_t)PROG_PORT_RATE_HZ;
 }
 
-/* Whether the window @p off, @p n carries register @p r. */
+/**
+ * @brief Whether the window @p off, @p n carries register @p r.
+ *
+ * @param off First register of the window.
+ * @param n   Number of registers in the window.
+ * @param r   Register index.
+ * @return true when @p r lies in the window.
+ */
 static bool carries(uint8_t off, uint8_t n, unsigned r)
 {
     return r >= off && r < (unsigned)off + n;
@@ -678,7 +761,13 @@ uint8_t prog_port_channel(uint8_t port)
     return (uint8_t)(PROG_PORT_CHANNEL0 + port);
 }
 
-/** @brief Whether a bound slot's channels reach a port's bank channel. */
+/**
+ * @brief Whether a bound slot's channels reach a port's bank channel.
+ *
+ * @param r The slot's register words.
+ * @return true when the slot drives and its channel range reaches a port's bank
+ *         channel.
+ */
 static bool slot_on_port_channel(const uint16_t *r)
 {
     const unsigned first = LINK_OS_FIRST(r[LINK_OS_RANGE]);
