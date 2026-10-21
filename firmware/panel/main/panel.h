@@ -635,6 +635,14 @@ void sense_link_service(bool idle, bench_state_t *bench);
  * s_sense_parts, which app_main reads. */
 extern sense_map_link_t s_sense_map;
 extern atomic_uint      s_sense_parts;
+/* SENSE_LIMIT (4.27, panel_limit.c): SETUP > SENSORS' LIMIT rows taken on
+ * app_main by publish_limits(), the page served by the control task, and
+ * s_sense_limits, sensors_rows_set_limits()'s word, for app_main. */
+void publish_limits(void);
+void sense_limit_came_up(uint16_t minor);
+void sense_limit_lost(void);
+void sense_limit_service(void);
+extern atomic_uint s_sense_limits;
 void sense_map_came_up(uint16_t minor);
 void sense_map_lost(void);
 void sense_map_service(bool idle);

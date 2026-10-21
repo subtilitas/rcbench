@@ -17,7 +17,7 @@ SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACE
 | PANEL | `9 SETTINGS` | the list of PANEL |
 | INTERFACES | `23 SETTINGS` | the list of INTERFACES |
 | SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
-| SENSORS | `4 SETTINGS`, and 6 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
+| SENSORS | `4 SETTINGS`, and 9 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |

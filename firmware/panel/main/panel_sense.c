@@ -82,6 +82,8 @@ void publish_sense(void)
     taskEXIT_CRITICAL(&s_sense_mux);
     /* And OUTPUTS' WATCHED BY lines: app_main, as the screens. */
     sensors_rows_publish_watch();
+    /* And the channels' limits (panel_limit.c). */
+    publish_limits();
 }
 
 sense_setup_t sense_wanted(void)

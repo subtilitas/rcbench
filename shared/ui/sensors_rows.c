@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "outputs_screen.h"
+#include "sense_limit_link.h"
 #include "settings_screen.h"
 #include "settings_sensors.h"
 #include "ui_text.h"
@@ -24,6 +25,29 @@ void sensors_rows_set_status(uint16_t word)
         s_status = word;
         settings_screen_invalidate();
     }
+}
+
+/* The limits' marks as the control task last said: bits 0 to 11 the
+ * channels, 12 to 15 sense_limit_st_t. */
+static uint16_t s_limits;
+
+void sensors_rows_set_limits(uint16_t word)
+{
+    if (word != s_limits) {
+        s_limits = word;
+        settings_screen_invalidate();
+    }
+}
+
+/* Whether @p id is a LIMIT row, and its channel in @p c. */
+static bool limit_row(setting_id_t id, int *c)
+{
+    if (id < SET_INA_CH_0 || id > SET_INA_CH_LAST) {
+        return false;
+    }
+    const int k = (int)id - (int)SET_INA_CH_0;
+    *c = k / SET_INA_CH_ROWS;
+    return k % SET_INA_CH_ROWS == SET_INA_CH_ROWS - 1;
 }
 
 sens_part_t sensors_rows_status(int a)
@@ -110,8 +134,10 @@ bool sensors_rows_unheld(setting_id_t id)
     case SENS_PART_NO_BUS:
         return true;
     default:
-        return false;
+        break;
     }
+    int c = 0;
+    return limit_row(id, &c) && (s_limits & (1u << c)) != 0u;
 }
 
 const char *sensors_rows_why(setting_id_t id)
@@ -121,8 +147,13 @@ const char *sensors_rows_why(setting_id_t id)
     case SENS_PART_DARK:      return TR(SET_SENS_DARK);
     case SENS_PART_SAME_ADDR: return TR(SET_SENS_SAME_ADDR);
     case SENS_PART_NO_BUS:    return TR(SET_SENS_NO_BUS);
-    default:                  return TR(SET_UNHELD);
+    default:                  break;
     }
+    int c = 0;
+    if (limit_row(id, &c) && (s_limits >> 12) == SENSE_LIMIT_ST_OLD) {
+        return TR(SET_SENS_LIM_OLD);
+    }
+    return TR(SET_UNHELD);
 }
 
 const char *sensors_rows_channel(int c, char *buf, size_t n)

@@ -14,7 +14,7 @@
 #include "settings_sensors.h"
 
 /* The settings a category holds, at most: SENSORS' 28. */
-#define MAX_ROWS 32
+#define MAX_ROWS 40
 
 /*
  * Section headings.  A list over 8 rows groups its settings under

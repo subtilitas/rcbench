@@ -55,7 +55,19 @@ history is in git.
   range above the limit -- sets the
   channel's bit in OVER, which a read of the register clears, and counts
   in OVER_COUNT. An alert only: nothing stops or switches to SAFE. The
-  panel writes no limit yet.
+  panel writes the limits from SETUP > SENSORS (below).
+- SETUP > SENSORS has a LIMIT row per channel, `0x40 CH1 limit` (German
+  `0x40 CH1 Grenze`): OFF, or 10 to 32767 mA in 10 mA steps on the
+  arrows. The panel writes the 12 limits to SENSE_LIMIT 500 ms after the
+  last edit, in any bank state, and reads OVER and OVER_COUNT every 200 ms
+  while a limit is held. The band says `INA3221 0x41 CH2 (PORT 1) over its
+  0.80 A limit.` at most once every 5 s, and once every 30 s for a channel
+  that keeps passing; `An INA3221 channel passed its limit; which one was
+  lost on the link.` when a reply with the bits did not arrive; and
+  `INA3221 limits rejected. Check SETUP > SENSORS.` on a refused write. A
+  LIMIT row the IOmcu does not hold is marked; on an IOmcu older than
+  4.27 the line reads `IOmcu older than 4.27: no limit is judged.` and
+  nothing is sent to the page.
 - The IOmcu console prints a third sensor line, `sense map`: the parts
   fitted, FAST, the map's flags, each channel's mean current in mA, and
   SENSE_LIMIT's OVER and OVER_COUNT.
