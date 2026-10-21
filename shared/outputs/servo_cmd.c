@@ -1,5 +1,6 @@
-/*
- * The SERVO screen's command and the link's reports on it: the state an
+/**
+ * @file
+ * @brief The SERVO screen's command and the link's reports on it: the state an
  * acknowledged frame rate is shown in, and the rules a kept command and a
  * pause follow (servo_cmd.h).
  *

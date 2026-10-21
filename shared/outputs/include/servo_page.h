@@ -1,5 +1,6 @@
-/*
- * The SERVO link page at the IOmcu: the frame rate of the tester's
+/**
+ * @file
+ * @brief The SERVO link page at the IOmcu: the frame rate of the tester's
  * target and the sweep that drives it through a curve.
  *
  * Register 0 is the target's frame rate (protocol 4.19).  With the standard
@@ -69,7 +70,7 @@ typedef struct {
 void servo_page_init(servo_page_t *p);
 
 /**
- * A write to the page, validated whole against the bank @p o before any of
+ * @brief A write to the page, validated whole against the bank @p o before any of
  * it is stored.  A stop holds each surface where its output has got to.
  * Refused: off the page (BAD_RANGE); register 6 (READ_ONLY); a frame rate
  * the target cannot take (BAD_VALUE): for the standard servo ports one
@@ -89,12 +90,12 @@ void servo_page_init(servo_page_t *p);
 uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, outputs_t *o, uint32_t now_ms);
 
-/** The page as a read sees it: the sweep register 0 once the sweep has
+/** @brief The page as a read sees it: the sweep register 0 once the sweep has
  *  stopped, and the ends it reached as of the last servo_page_step(). */
 void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out);
 
 /**
- * One pass: stop a sweep the bank's surfaces are no longer armed for, one
+ * @brief One pass: stop a sweep the bank's surfaces are no longer armed for, one
  * not written
  * for OUT_DEFAULT_TIMEOUT_MS or one that has made its movements, and
  * command every surface along a sweep that runs.  True while it runs.
@@ -102,7 +103,7 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out);
 bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms);
 
 /**
- * The programming ports as a rate for a port target is judged, bit n for
+ * @brief The programming ports as a rate for a port target is judged, bit n for
  * bank channel n: @p channels the ports whose pulse is on, whose endpoints
  * the rate must fit, and @p sliced the ports whose pin shares a PWM slice
  * with another port's pin, which run at PROG_PORT_RATE_HZ only.  Both 0
@@ -110,16 +111,16 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms);
  */
 void servo_page_ports(servo_page_t *p, uint16_t channels, uint16_t sliced);
 
-/** The frame rate register: the target's rate, 0 for its own. */
+/** @brief The frame rate register: the target's rate, 0 for its own. */
 uint16_t servo_page_hz(const servo_page_t *p);
 
-/** The rate the slots take, for outputs_slot_rates() and the OUTPUTS and
+/** @brief The rate the slots take, for outputs_slot_rates() and the OUTPUTS and
  *  CHAN_CFG checks: the register with the standard servo ports as target,
  *  0 with a programming port. */
 uint16_t servo_page_slots_hz(const servo_page_t *p);
 
 /**
- * Name the channels the sweep and the hold command: @p count channels of
+ * @brief Name the channels the sweep and the hold command: @p count channels of
  * the bank from @p first, or with @p count 0 the standard servo ports
  * (channels 0 to LINK_OUT_CHANNELS - 1), which is what a page starts with.
  * A programming port is such a range of 1 channel.
@@ -135,7 +136,7 @@ bool servo_page_target(servo_page_t *p, outputs_t *o, uint8_t first,
 
 /* ------------------------------------------------------- the host's side */
 
-/** What a host writes to carry on a sweep it asked to be resumed. */
+/** @brief What a host writes to carry on a sweep it asked to be resumed. */
 typedef enum {
     SERVO_RESUME_CURVE,      /**< the curve whole, as any sweep           */
     SERVO_RESUME_WRITE,      /**< LINK_SV_RESUME alone                    */
@@ -149,7 +150,7 @@ typedef enum {
 } servo_resume_t;
 
 /**
- * The host's choice for a sweep command: @p asked a resume of the sweep
+ * @brief The host's choice for a sweep command: @p asked a resume of the sweep
  * held, @p held a hold at the far end, @p timed its phase known here (false
  * for a HOLD that went unanswered and was not yet acknowledged, which may or
  * may not have reached the far end), @p proto_minor its protocol minor, and
@@ -164,7 +165,7 @@ servo_resume_t servo_page_resume_plan(bool asked, bool held, bool timed,
                                       uint16_t proto_minor, bool refused);
 
 /**
- * The far end's sweep phase as the host times it, from the acknowledgements
+ * @brief The far end's sweep phase as the host times it, from the acknowledgements
  * of the writes that start, hold and resume it: when the curve's phase 0
  * is on the host's clock, and the phase a hold kept.  The far end times
  * each from when the write reached it; the reply's delay is in every
@@ -176,20 +177,20 @@ typedef struct {
     bool     kept;       /**< a hold of a running sweep, not yet resumed  */
 } servo_phase_t;
 
-/** A sweep started, from its beginning, when acknowledged at @p ack_ms. */
+/** @brief A sweep started, from its beginning, when acknowledged at @p ack_ms. */
 void servo_phase_started(servo_phase_t *ph, uint32_t ack_ms);
 
-/** A running sweep held at @p ack_ms: its phase is kept; returned. */
+/** @brief A running sweep held at @p ack_ms: its phase is kept; returned. */
 uint32_t servo_phase_held(servo_phase_t *ph, uint32_t ack_ms);
 
-/** The sweep stopped, or the far end restarted: nothing is held to resume. */
+/** @brief The sweep stopped, or the far end restarted: nothing is held to resume. */
 void servo_phase_stopped(servo_phase_t *ph);
 
-/** Whether a hold of a running sweep stands to be resumed. */
+/** @brief Whether a hold of a running sweep stands to be resumed. */
 bool servo_phase_resumable(const servo_phase_t *ph);
 
 /**
- * A held sweep resumed at @p ack_ms: its phase 0 moves on by the hold, into
+ * @brief A held sweep resumed at @p ack_ms: its phase 0 moves on by the hold, into
  * @p start_ms.  False, and nothing changes, with no phase kept.
  */
 bool servo_phase_resumed(servo_phase_t *ph, uint32_t ack_ms,

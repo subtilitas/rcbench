@@ -79,11 +79,11 @@
 extern "C" {
 #endif
 
-/** The longest command line, without its end. */
+/** @brief The longest command line, without its end. */
 #define PAGE_CONSOLE_LINE_MAX 160u
-/** The longest output line, with its LF. */
+/** @brief The longest output line, with its LF. */
 #define PAGE_CONSOLE_OUT_LINE 200u
-/** The output buffer. */
+/** @brief The output buffer. */
 #define PAGE_CONSOLE_OUT_MAX 2048u
 
 typedef struct {
@@ -105,36 +105,36 @@ typedef struct {
     uint16_t   data[3][16];
 } page_console_t;
 
-/** An empty console on the pages of @p dev. */
+/** @brief An empty console on the pages of @p dev. */
 void page_console_init(page_console_t *c, const link_dev_t *dev);
 
-/** One character in.  CR or LF runs the line. */
+/** @brief One character in.  CR or LF runs the line. */
 void page_console_key(page_console_t *c, int ch);
 
-/** Once a pass: the report of a HITEC operation that has ended. */
+/** @brief Once a pass: the report of a HITEC operation that has ended. */
 void page_console_poll(page_console_t *c);
 
 /**
- * One line of output from outside the console, formatted as printf()
+ * @brief One line of output from outside the console, formatted as printf()
  * formats: the LF is added, and one the text ends with is not doubled.  At
  * most PAGE_CONSOLE_OUT_LINE bytes with the LF; a longer text is cut.
  */
 void page_console_say(page_console_t *c, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
 
-/** page_console_say() with a va_list. */
+/** @brief page_console_say() with a va_list. */
 void page_console_vsay(page_console_t *c, const char *fmt, va_list ap)
     __attribute__((format(printf, 2, 0)));
 
 /**
- * Whole lines of output, at most @p room bytes; the bytes copied.  A line
+ * @brief Whole lines of output, at most @p room bytes; the bytes copied.  A line
  * longer than @p room does not leave: a caller whose room can be smaller
  * than PAGE_CONSOLE_OUT_LINE takes with page_console_take_part().
  */
 size_t page_console_take(page_console_t *c, char *buf, size_t room);
 
 /**
- * The first @p room bytes of output, a line cut where the room ends: a line
+ * @brief The first @p room bytes of output, a line cut where the room ends: a line
  * longer than @p room leaves in pieces, and the rest of it comes first in
  * the next take.  Any @p room from 1 byte on moves the output.  A caller
  * that takes in parts keeps to this function: page_console_take() leaves a

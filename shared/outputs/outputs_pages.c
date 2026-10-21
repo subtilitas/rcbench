@@ -1,5 +1,6 @@
-/*
- * The link's output pages, expressed as bank operations.  See
+/**
+ * @file
+ * @brief The link's output pages, expressed as bank operations.  See
  * outputs_pages.h.
  *
  * SPDX-License-Identifier: MIT
@@ -15,8 +16,8 @@
 #include "link_pages.h"
 #include "out_pwm_map.h"
 
-/*
- * The wire's driver numbers are a contract, so they are mapped rather than
+/**
+ * @brief The wire's driver numbers are a contract, so they are mapped rather than
  * cast: a reordered bank enum leaves this correct.
  */
 static out_driver_t driver_of(uint16_t wire)
@@ -237,7 +238,7 @@ uint8_t outputs_servo_rate_check(const outputs_t *o, uint16_t hz)
     return 0u;
 }
 
-/* The bank a page write would leave, judged on a copy: the bank itself is
+/** @brief The bank a page write would leave, judged on a copy: the bank itself is
  * what drives, and a refused write must leave it as it was.  Static rather
  * than on the stack, which on the IOmcu is the link task's. */
 static outputs_t s_trial;

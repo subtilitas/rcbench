@@ -1,5 +1,6 @@
-/*
- * The SENSE, SERVO_SENSE and SERVO_WIN link pages at the IOmcu: the
+/**
+ * @file
+ * @brief The SENSE, SERVO_SENSE and SERVO_WIN link pages at the IOmcu: the
  * I2C bus of the two current monitors and the output encoder, its set-up
  * and what they last read, the servo rail's channels with a move capture,
  * and CH1's last four windows.  The registers are in
@@ -62,7 +63,7 @@ extern "C" {
 #define SENSE_DEFAULT_I3221_DMOHM 1000u
 #define SENSE_DEFAULT_I3221_CH   0x01u
 
-/** A capture armed before anything else is written: 100 mA of movement and
+/** @brief A capture armed before anything else is written: 100 mA of movement and
  *  a 50 mA band, the servo test's SERVO_TEST_MOVE_A and SERVO_TEST_BAND_A. */
 #define SENSE_DEFAULT_MOVE_MA 100u
 #define SENSE_DEFAULT_BAND_MA  50u
@@ -97,18 +98,18 @@ typedef struct {
 
 void sense_page_init(sense_page_t *p);
 
-/** The set-up as a page starts, into @p cfg (LINK_SN_CONFIG_COUNT
+/** @brief The set-up as a page starts, into @p cfg (LINK_SN_CONFIG_COUNT
  *  registers): what a store record from before protocol 4.7 restores. */
 void sense_page_defaults(uint16_t *cfg);
 
 /**
- * The INA3221's full scale in mA for a shunt of @p shunt_dmohm tenths of a
+ * @brief The INA3221's full scale in mA for a shunt of @p shunt_dmohm tenths of a
  * milliohm: 163.8 mV across it.  1638 at 0.1 Ohm.  0 for no shunt.
  */
 uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm);
 
 /**
- * A SENSE write, validated whole before any of it is stored.  Refused: off
+ * @brief A SENSE write, validated whole before any of it is stored.  Refused: off
  * the page (BAD_RANGE); a read-only register (READ_ONLY); a value out of
  * its range, a reserved register written other than 0, SDA and SCL not
  * one I2C block's pair (link_sn_pins_pair()) whatever is enabled -- but
@@ -143,7 +144,7 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
                      uint16_t *out);
 
 /**
- * A SERVO_SENSE write.  CAP_ARM written 0 at the head of the write
+ * @brief A SERVO_SENSE write.  CAP_ARM written 0 at the head of the write
  * disarms, is never refused, and stores nothing else of the write.  Any
  * other write is an arm, LINK_SS_CAP_FRAME registers from CAP_ARM.
  * Refused: off the page (BAD_RANGE); a read-only register (READ_ONLY);
@@ -161,18 +162,18 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
 uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,
                           const uint16_t *in, const outputs_t *o);
 
-/** Which output slots the silicon bound (bit n slot n): a capture arms
+/** @brief Which output slots the silicon bound (bit n slot n): a capture arms
  *  only on a PWM slot that renders frames.  The IOmcu says so after
  *  every change of the bindings; until it does, no slot counts as bound. */
 void sense_page_bound(sense_page_t *p, uint8_t slots);
 
-/** Which programming ports render a pulse while the bank drives (bit n
+/** @brief Which programming ports render a pulse while the bank drives (bit n
  *  port n): bound to the PWM generator, switched on in LINK_PG_PWM and not
  *  held by the KST port.  A capture with LINK_SS_ARM_PORT arms only on one
  *  of them.  Until told, none. */
 void sense_page_ports(sense_page_t *p, uint8_t ports);
 
-/** Whether the capture in CAP_ARM names a programming port that renders
+/** @brief Whether the capture in CAP_ARM names a programming port that renders
  *  no pulse now: its PWM switched off, its pin gone, or the KST port on
  *  the pin.  The caller ends such a capture as it ends one whose bank
  *  stopped driving, with sense_page_step(p, false). */
@@ -181,21 +182,21 @@ bool sense_page_port_gone(const sense_page_t *p);
 void sense_servo_read(const sense_page_t *p, uint8_t off, uint8_t n,
                       uint16_t *out);
 
-/** A SERVO_WIN read: CH1's ring as last published, and the capture's
+/** @brief A SERVO_WIN read: CH1's ring as last published, and the capture's
  *  state, count and clipped bit as SERVO_SENSE reads them at this moment.
  *  The page takes no write. */
 void sense_win_read(const sense_page_t *p, uint8_t off, uint8_t n,
                     uint16_t *out);
 
 /**
- * One pass: a bank that is not @p driving ends a capture that has not
+ * @brief One pass: a bank that is not @p driving ends a capture that has not
  * finished -- CAP_ARM 0, CAP_STATE idle -- and returns true.  A finished
  * capture keeps its result until the next arm.
  */
 bool sense_page_step(sense_page_t *p, bool driving);
 
 /**
- * The order for core 1 from the page: the set-up and its generation, and
+ * @brief The order for core 1 from the page: the set-up and its generation, and
  * the capture's.  The INA228's maximum in mA, the INA3221's shunt in µΩ;
  * a capture's level before the command left to CH1
  * (SENSE_CAP_RISE_AUTO).  run_gen, edge_set and edge_us are the caller's,
@@ -204,7 +205,7 @@ bool sense_page_step(sense_page_t *p, bool driving);
 void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd);
 
 /**
- * What core 1 read into the read-only registers of both pages, when @p s
+ * @brief What core 1 read into the read-only registers of both pages, when @p s
  * was taken under the set-up in force.  SENSE: FLAGS, PRESENT, the IDs,
  * ERRORS, the die temperature, DIAG_ALRT, the charge and energy while
  * they are the totals of run @p run_gen (sense_run_t.totals_ok), 0
@@ -220,13 +221,13 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd);
 void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
                         uint16_t run_gen);
 
-/** The ESC's own telemetry voltage and current, each with its valid bit,
+/** @brief The ESC's own telemetry voltage and current, each with its valid bit,
  *  into SENSE registers 23 to 25. */
 void sense_page_esc(sense_page_t *p, bool v_ok, float volts, bool i_ok,
                     float amps);
 
 /**
- * The BENCH page's numbers from the INA228, over what the ESC's telemetry
+ * @brief The BENCH page's numbers from the INA228, over what the ESC's telemetry
  * put in @p b, once the peaks of @p b are tracked.
  *
  * The INA228 is BENCH's source (LINK_BN_SENSED) while it is enabled and
@@ -244,7 +245,7 @@ void sense_page_bench(sense_page_t *p, const sense_snap_t *s,
                       uint16_t run_gen, bool driving, bench_state_t *b);
 
 /**
- * The capability bits the set-up makes true: LINK_CAP_PACK_SENSE while
+ * @brief The capability bits the set-up makes true: LINK_CAP_PACK_SENSE while
  * the INA228 is enabled, LINK_CAP_SERVO_SENSE while the INA3221 is --
  * fitted as configured, not online now -- or, with SENSE_MAP in force,
  * while a channel it reads watches an output channel or a programming
@@ -255,24 +256,24 @@ void sense_page_bench(sense_page_t *p, const sense_snap_t *s,
  */
 uint16_t sense_page_caps(const sense_page_t *p);
 
-/** Whether either part is enabled, and so the bus runs. */
+/** @brief Whether either part is enabled, and so the bus runs. */
 bool sense_page_enabled(const sense_page_t *p);
 
-/** The bus's pins and clock. */
+/** @brief The bus's pins and clock. */
 uint8_t  sense_page_sda(const sense_page_t *p);
 uint8_t  sense_page_scl(const sense_page_t *p);
 uint32_t sense_page_hz(const sense_page_t *p);
 
-/** The pins the set-up holds, as a reservation mask; 0 while neither part
+/** @brief The pins the set-up holds, as a reservation mask; 0 while neither part
  *  is enabled. */
 uint64_t sense_page_pins(const sense_page_t *p);
 
-/** Those and the pins core 1 has not let go of yet (sense_page_t.held): a
+/** @brief Those and the pins core 1 has not let go of yet (sense_page_t.held): a
  *  bus moved or closed keeps its old pins for about 1 ms.  What no output
  *  may have. */
 uint64_t sense_page_held(const sense_page_t *p);
 
-/** LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
+/** @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
  *  registers) that binds a slot to a pin sense_page_held() names, the
  *  refusal the SUPPLY page gives for its own; 0 otherwise.  Taken instead,
  *  such a slot would be left unbound with nothing on the wire to say so. */

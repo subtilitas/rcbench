@@ -1,5 +1,6 @@
-/*
- * Binding a protocol to pins.  See out_bind.h.
+/**
+ * @file
+ * @brief Binding a protocol to pins.  See out_bind.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -13,8 +14,8 @@
 #include "out_pwm_map.h"
 #include "outputs_pages.h"
 
-/*
- * The header, in GPIO order.
+/**
+ * @brief The header, in GPIO order.
  *
  * GP23 to GP25 and GP29 are missing because the Pico form factor does not
  * bring them out: on the module GP23 is the MODE pin of the MP28164 power
@@ -59,12 +60,12 @@ static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
     { 28, 34, false, NULL },
 };
 
-/*
- * Every board this build knows.  A second one appends a row here and a
+/**
+ * @brief Every board this build knows.  A second one appends a row here and a
  * catalogue above it; nothing else in this file is per-board.
  */
-/*
- * The Pico form factor: 51.00 x 21.00 mm, forty pads on 2.54 mm, twenty a
+/**
+ * @brief The Pico form factor: 51.00 x 21.00 mm, forty pads on 2.54 mm, twenty a
  * side, pad 1 at the bottom left with the numbers running away from it.
  *
  * The outline's own numbers.  The board drawing the IOmcu serves
@@ -75,8 +76,8 @@ static const outbind_shape_t k_pico_shape = {
     5100u, 2100u, 254u, 161u, 20u, (uint8_t)LINK_SH_BOTTOM_LEFT,
 };
 
-/*
- * The pads that are not pins, in pad order.
+/**
+ * @brief The pads that are not pins, in pad order.
  *
  * VSYS carries no voltage here because it does not have one: it is the input
  * rail and follows whatever feeds it, which on the bring-up module is USB
@@ -106,8 +107,8 @@ static const outbind_board_t k_boards[] = {
       (uint8_t)(sizeof(k_pico_pads) / sizeof(k_pico_pads[0])) },
 };
 
-/*
- * One board learned over the link, for an IOmcu this build ships no
+/**
+ * @brief One board learned over the link, for an IOmcu this build ships no
  * catalogue for.  The name is formatted rather than carried: a name is a
  * string and the page is registers, and the identity is what the operator
  * needs to match against the board in front of them.
@@ -135,7 +136,7 @@ const outbind_board_t *outbind_board(uint16_t id)
     return NULL;                 /* including OUTBIND_BOARD_UNKNOWN */
 }
 
-/* The panel's words for what the wire can only number. */
+/** @brief The panel's words for what the wire can only number. */
 static const char *hold_name(uint8_t hold)
 {
     switch (hold) {
@@ -476,7 +477,7 @@ const outbind_board_t *outbind_board_at(uint8_t index)
     return (index < outbind_board_count()) ? &k_boards[index] : NULL;
 }
 
-/* Which bits of a selection can mean anything on this board. */
+/** @brief Which bits of a selection can mean anything on this board. */
 static uint32_t board_mask(const outbind_board_t *bd)
 {
     if (bd == NULL) {
@@ -551,8 +552,8 @@ uint64_t outbind_reserved_mask(uint16_t board)
 
 /* ------------------------------------------------------------- protocols */
 
-/*
- * PWM runs at 50 Hz, which every analogue and digital servo takes.
+/**
+ * @brief PWM runs at 50 Hz, which every analogue and digital servo takes.
  *
  * PPM runs at 40 Hz because eight channels do not fit in a 50 Hz frame.  A
  * channel is at most OUT_CEILING_US (2500 us), and the frame also carries
@@ -613,7 +614,7 @@ void outbind_set_board(outbind_t *b, uint16_t board)
     b->proto = 0u;
 }
 
-/* How many bits are set in one protocol's pin set. */
+/** @brief How many bits are set in one protocol's pin set. */
 static uint8_t count_pins(uint32_t pins, uint8_t width)
 {
     uint8_t n = 0u;
@@ -625,7 +626,7 @@ static uint8_t count_pins(uint32_t pins, uint8_t width)
     return n;
 }
 
-/* What a protocol may take: its own cap, and never more slots than the page
+/** @brief What a protocol may take: its own cap, and never more slots than the page
  * has. */
 static uint8_t cap_of(const outbind_proto_t *p)
 {
@@ -960,8 +961,8 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs)
     return slot;
 }
 
-/*
- * What the CHAN_CFG page says the channels of this slot are for.
+/**
+ * @brief What the CHAN_CFG page says the channels of this slot are for.
  *
  * The slot's first channel answers for the run: outbind_to_chan_cfg() writes
  * one role across every channel a slot renders, so no page this end produced

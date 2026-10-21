@@ -1,5 +1,6 @@
-/*
- * The SENSE_MAP, SENSE_WIN_A and SENSE_WIN_B link pages at the IOmcu
+/**
+ * @file
+ * @brief The SENSE_MAP, SENSE_WIN_A and SENSE_WIN_B link pages at the IOmcu
  * (protocol 4.25): up to four INA3221 at 0x40 to 0x43, a shunt and a watch
  * target for each of their 12 channels, the FAST channel, and every
  * channel's last 50 ms window.  The registers are in link_pages.h
@@ -31,13 +32,13 @@
 extern "C" {
 #endif
 
-/** A SENSE_MAP read.  Registers 0 to 25 are the map in force, or the one
+/** @brief A SENSE_MAP read.  Registers 0 to 25 are the map in force, or the one
  *  derived from SENSE; 26 to 30 what core 1 last read; 31 reads 0. */
 void sense_map_read(const sense_page_t *p, uint8_t off, uint8_t n,
                     uint16_t *out);
 
 /**
- * A SENSE_MAP write, merged into the map in force (or the derived one) and
+ * @brief A SENSE_MAP write, merged into the map in force (or the derived one) and
  * the whole map judged before any of it is stored.  Refused: off the page
  * (BAD_RANGE); a register from 26 on (READ_ONLY); ENABLE above 15, FAST not
  * 0xFF and past 11, on a part not fitted or on a channel whose shunt is 0,
@@ -53,16 +54,16 @@ uint8_t sense_map_write(sense_page_t *p, uint8_t off, uint8_t n,
                         const uint16_t *in, const outputs_t *o,
                         uint64_t taken);
 
-/** A SENSE_WIN_A (@p page 0) or SENSE_WIN_B (1) read; no write is taken. */
+/** @brief A SENSE_WIN_A (@p page 0) or SENSE_WIN_B (1) read; no write is taken. */
 void sense_xwin_read(const sense_page_t *p, unsigned page, uint8_t off,
                      uint8_t n, uint16_t *out);
 
-/** What is kept: registers 0 to 25 (LINK_SM_KEPT) into @p kept, and 1 into
+/** @brief What is kept: registers 0 to 25 (LINK_SM_KEPT) into @p kept, and 1 into
  *  @p set while the map is in force, else 0 (the registers then the
  *  derived ones). */
 void sense_map_kept(const sense_page_t *p, uint16_t *kept, uint16_t *set);
 
-/** A kept map back in force at boot, through sense_map_write()'s checks,
+/** @brief A kept map back in force at boot, through sense_map_write()'s checks,
  *  after SENSE's restore: nothing when @p set is 0.  0, or the refusal,
  *  which leaves the map derived. */
 uint8_t sense_map_restore(sense_page_t *p, const uint16_t *kept,

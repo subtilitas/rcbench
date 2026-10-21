@@ -1,5 +1,6 @@
-/*
- * The panel's half of a binding on the link: writing the two output pages
+/**
+ * @file
+ * @brief The panel's half of a binding on the link: writing the two output pages
  * and reading them back.
  *
  * Both run over a link_port_t, so the sequences the panel sends are the
@@ -23,17 +24,17 @@
 extern "C" {
 #endif
 
-/** What became of a binding written. */
+/** @brief What became of a binding written. */
 typedef enum {
     BIND_WRITTEN = 0,   /**< every exchange acknowledged                   */
     BIND_NO_LINK,       /**< an exchange ended unanswered                  */
     BIND_REFUSED,       /**< the far end answered and would not have it    */
 } bind_write_t;
 
-/** The first minor that serves SERVO's frame rate. */
+/** @brief The first minor that serves SERVO's frame rate. */
 #define LINK_MINOR_SERVO_RATE 1u
 
-/** What became of the SERVO rate reset that leads a binding. */
+/** @brief What became of the SERVO rate reset that leads a binding. */
 typedef enum {
     BIND_RATE_NOT_SENT = 0, /**< the IOmcu has no SERVO page (4.0)   */
     BIND_RATE_LANDED,
@@ -42,7 +43,7 @@ typedef enum {
 } bind_rate_t;
 
 /**
- * Write a CHAN_CFG page @p cfg and an OUTPUTS page @p slots, each frame its
+ * @brief Write a CHAN_CFG page @p cfg and an OUTPUTS page @p slots, each frame its
  * own acknowledged exchange (link_write_acked()).
  *
  * First, to an IOmcu of minor 1 or later, SERVO's FRAME_HZ = 0: each
@@ -69,7 +70,7 @@ bind_write_t bind_link_write(link_host_t *h, const link_port_t *port,
                              uint16_t minor, const uint16_t *cfg,
                              const uint16_t *slots, bind_rate_t *rate);
 
-/** What a read of the two pages gave. */
+/** @brief What a read of the two pages gave. */
 typedef enum {
     /** Both pages read and the binding model describes them; a page with
      *  nothing bound is this. */
@@ -96,7 +97,7 @@ typedef struct {
 } bind_reading_t;
 
 /**
- * Whether a binding @p b may be written while the last reading is @p last
+ * @brief Whether a binding @p b may be written while the last reading is @p last
  * and the IOmcu answering is board @p board.  Never a binding made
  * for another board: a pin index belongs to one board's catalogue.
  *
@@ -110,14 +111,14 @@ bool bind_link_may_write(bind_read_t last, uint16_t board,
                          const outbind_t *b);
 
 /**
- * Tell the four states apart from two replies.  @p slots and @p cfg are the
+ * @brief Tell the four states apart from two replies.  @p slots and @p cfg are the
  * OUTPUTS and CHAN_CFG pages read, or NULL for one that did not read.
  */
 bind_read_t bind_link_classify(bind_reading_t *out, uint16_t board,
                                const uint16_t *slots, const uint16_t *cfg);
 
 /**
- * Read OUTPUTS and then CHAN_CFG, two exchanges, and classify them.  The
+ * @brief Read OUTPUTS and then CHAN_CFG, two exchanges, and classify them.  The
  * second is not sent when the first did not read.
  */
 bind_read_t bind_link_read(link_host_t *h, const link_port_t *port,

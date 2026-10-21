@@ -1,5 +1,6 @@
-/*
- * What sense_page.c and sense_map.c share: the SENSE set-up's checks and
+/**
+ * @file
+ * @brief What sense_page.c and sense_map.c share: the SENSE set-up's checks and
  * its taking, and the map's own helpers the SENSE page calls.  Not for any
  * other module.
  *
@@ -23,7 +24,7 @@ static inline int64_t div_round(int64_t a, int64_t d)
     return (a >= 0) ? (a + d / 2) / d : -((-a + d / 2) / d);
 }
 
-/* A signed register: two's complement, held to -32767 .. 32767. */
+/** @brief A signed register: two's complement, held to -32767 .. 32767. */
 static inline uint16_t reg_i16(int64_t v)
 {
     if (v > 32767) {
@@ -34,7 +35,7 @@ static inline uint16_t reg_i16(int64_t v)
     return (uint16_t)(int16_t)v;
 }
 
-/* An unsigned register, held to 0 .. 65535. */
+/** @brief An unsigned register, held to 0 .. 65535. */
 static inline uint16_t reg_u16(int64_t v)
 {
     if (v < 0) {
@@ -43,34 +44,34 @@ static inline uint16_t reg_u16(int64_t v)
     return (v > 65535) ? 65535u : (uint16_t)v;
 }
 
-/** A SENSE set-up @p next (LINK_SN_CONFIG_COUNT registers) judged as a
+/** @brief A SENSE set-up @p next (LINK_SN_CONFIG_COUNT registers) judged as a
  *  write is: values, pins, addresses and channels; 0 or the refusal.  Not
  *  the bank's state: the caller asks that. */
 uint8_t sense_cfg_check(const sense_page_t *p, const uint16_t *next,
                         const outputs_t *o, uint64_t taken);
 
-/** @p next in force: the generation moves, and every reading of the set-up
+/** @brief @p next in force: the generation moves, and every reading of the set-up
  *  before it goes (sense_page_forget()). */
 void sense_cfg_take(sense_page_t *p, const uint16_t *next);
 
-/** Every register core 1 fills, on both pages and the map's, cleared. */
+/** @brief Every register core 1 fills, on both pages and the map's, cleared. */
 void sense_page_forget(sense_page_t *p);
 
-/** Whether the map @p map fits an INA3221 at @p addr. */
+/** @brief Whether the map @p map fits an INA3221 at @p addr. */
 bool sense_map_on_addr(const uint16_t *map, uint16_t addr);
 
-/** Whether a channel the map reads watches an output channel or a
+/** @brief Whether a channel the map reads watches an output channel or a
  *  programming port: the map in force's LINK_CAP_SERVO_SENSE. */
 bool sense_map_watches(const sense_page_t *p);
 
-/** Core 1's counts of windows over each channel's limit in @p s into
+/** @brief Core 1's counts of windows over each channel's limit in @p s into
  *  OVER and OVER_COUNT: what each gained since the last snapshot taken. */
 void sense_limit_judge(sense_page_t *p, const sense_snap_t *s);
 
-/** The map's kept registers as the schedule's INA3221 set-up. */
+/** @brief The map's kept registers as the schedule's INA3221 set-up. */
 void sense_map_cfg(const uint16_t *map, sense_i3221_cfg_t *out);
 
-/** The snapshot's per-part state into SENSE_MAP's read-only registers, and
+/** @brief The snapshot's per-part state into SENSE_MAP's read-only registers, and
  *  every channel's window into SENSE_WIN_A and SENSE_WIN_B. */
 void sense_map_publish(sense_page_t *p, const sense_snap_t *s);
 

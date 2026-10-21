@@ -1,5 +1,6 @@
-/*
- * The SUPPLY link page at the IOmcu: a PD mini on a PIO UART, its
+/**
+ * @file
+ * @brief The SUPPLY link page at the IOmcu: a PD mini on a PIO UART, its
  * wiring, what it is to do and what it last said.  The registers are in
  * link_pages.h (LINK_SP_*).
  *
@@ -32,17 +33,17 @@
 extern "C" {
 #endif
 
-/** The module's UART Baudrate settings, 0 to 6, and 7 to find it. */
+/** @brief The module's UART Baudrate settings, 0 to 6, and 7 to find it. */
 #define SUPPLY_BAUD_COUNT 7u
 #define SUPPLY_BAUD_AUTO  7u
 uint32_t supply_page_baud(uint16_t setting);
 
-/** The longest an OFF waits for a programming port's frame to end, in ms.
+/** @brief The longest an OFF waits for a programming port's frame to end, in ms.
  *  A frame of the port and its answer are shorter; how long a servo needs
  *  after a frame to store a register is not measured. */
 #define SUPPLY_PAGE_OFF_WAIT_MS 12u
 
-/** Where a wiring change that waits for a state read is. */
+/** @brief Where a wiring change that waits for a state read is. */
 typedef enum {
     SUPPLY_WIRE_IDLE = 0,  /**< none waits                              */
     SUPPLY_WIRE_WAIT,      /**< waits for the driver's state read        */
@@ -68,7 +69,7 @@ typedef struct {
     uint32_t off_t0;      /**< when the waiting OFF was asked          */
 } supply_page_t;
 
-/** The supply as a programming port sees it (kst_port.h). */
+/** @brief The supply as a programming port sees it (kst_port.h). */
 typedef struct {
     bool     online;    /**< wired, a PD mini answers, no wiring change
                              waits */
@@ -84,7 +85,7 @@ typedef struct {
 void supply_page_init(supply_page_t *p);
 
 /**
- * The rate the UART is to run at now, 0 to 6.  The setting itself, or under
+ * @brief The rate the UART is to run at now, 0 to 6.  The setting itself, or under
  * AUTO the one being tried: the next after every WHO_AM_I @p drv reports
  * without a valid answer, until a module has answered once, from when the
  * rate holds.  Publishes it in BAUD_FOUND -- 7 while AUTO has found none.
@@ -92,11 +93,11 @@ void supply_page_init(supply_page_t *p);
  */
 uint8_t supply_page_rate(supply_page_t *p, const pdmini_t *drv);
 
-/** The baud the UART is to be opened at now. */
+/** @brief The baud the UART is to be opened at now. */
 uint32_t supply_page_uart_baud(const supply_page_t *p);
 
 /**
- * A write, validated whole before any of it is stored.  Refused: off the
+ * @brief A write, validated whole before any of it is stored.  Refused: off the
  * page (BAD_RANGE); a read-only register (READ_ONLY); a wiring change while
  * the output is asked on or may be on, a pin past the bank, reserved, bound to an output or
  * the other pin, a baud setting past 7 (AUTO), an ON without the supply enabled
@@ -116,7 +117,7 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
                           bool beat_alive);
 
 /**
- * What the driver says now, straight before a write is judged: FLAGS bit 6
+ * @brief What the driver says now, straight before a write is judged: FLAGS bit 6
  * (the output on or maybe on) and whether its module has answered.  @p drv
  * NULL for no driver: nothing answered, nothing on.  supply_page_step()
  * does the same every pass.
@@ -124,24 +125,24 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
 void supply_page_follow(supply_page_t *p, const pdmini_t *drv);
 
 /**
- * The wiring change whose state read showed the output off, into @p regs
+ * @brief The wiring change whose state read showed the output off, into @p regs
  * (ENABLE to BAUD): true while one is SUPPLY_WIRE_READY.  The caller writes
  * it with supply_page_wire_write() in the same pass.
  */
 bool supply_page_wire_ready(const supply_page_t *p, uint16_t *regs);
 
 /**
- * The ready wiring written: judged whole as a link write is, against the
+ * @brief The ready wiring written: judged whole as a link write is, against the
  * driver's state as supply_page_follow() last took it, without waiting
  * again.  0, or the NACK reason, which refuses it (FLAGS bit 9).
  */
 uint8_t supply_page_wire_write(supply_page_t *p, const outputs_t *o);
 
-/** The ready wiring could not be put in force after it was written (no
+/** @brief The ready wiring could not be put in force after it was written (no
  *  UART for its pins): refused, FLAGS bit 9, as a refused read is. */
 void supply_page_wire_refuse(supply_page_t *p);
 
-/** LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
+/** @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
  *  registers) that binds a slot to a pin the supply holds; 0 otherwise.
  *  Checked before the page is stored, so no binding is kept that the bank
  *  would leave unbound -- and that a restart, with the supply not yet
@@ -151,16 +152,16 @@ uint8_t supply_page_slots_check(const supply_page_t *p, const uint16_t *slots);
 void supply_page_read(const supply_page_t *p, uint8_t off, uint8_t n,
                       uint16_t *out);
 
-/** Whether the page drives a supply, and on which pins. */
+/** @brief Whether the page drives a supply, and on which pins. */
 bool    supply_page_enabled(const supply_page_t *p);
 uint8_t supply_page_tx(const supply_page_t *p);
 uint8_t supply_page_rx(const supply_page_t *p);
 
-/** The pins it holds, as a reservation mask; 0 while not enabled. */
+/** @brief The pins it holds, as a reservation mask; 0 while not enabled. */
 uint64_t supply_page_pins(const supply_page_t *p);
 
 /**
- * One pass: the output off without a heartbeat, what the driver is to do,
+ * @brief One pass: the output off without a heartbeat, what the driver is to do,
  * and what it last said into the read-only registers.  @p drv may be NULL
  * while no supply is wired.  A wiring change waiting asks the driver for
  * its state read and follows the answer: off makes it SUPPLY_WIRE_READY,
@@ -169,11 +170,11 @@ uint64_t supply_page_pins(const supply_page_t *p);
  */
 void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv);
 
-/** The page as of the last supply_page_step(), for a programming port. */
+/** @brief The page as of the last supply_page_step(), for a programming port. */
 void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out);
 
 /**
- * A programming port's request, in place of a link write of OUTPUT to
+ * @brief A programming port's request, in place of a link write of OUTPUT to
  * SET_MA.  Off is always taken and leaves the set points.  On is refused
  * (false, nothing changed) without a live heartbeat, while the supply is
  * not wired or a wiring change waits, for set points outside the module's
@@ -184,7 +185,7 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
                           uint16_t ma, bool beat_alive);
 
 /**
- * Whether a programming port holds the command registers (FLAGS bit 11,
+ * @brief Whether a programming port holds the command registers (FLAGS bit 11,
  * LINK_SP_PORT).  While it does, supply_page_write() takes an OFF, which
  * leaves SET_MV and SET_MA as they are whatever the write names, and
  * refuses every other write of OUTPUT to SET_MA that changes one of the
@@ -194,7 +195,7 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
 void supply_page_hold(supply_page_t *p, bool held);
 
 /**
- * Whether a programming port has a frame on the wire, and the clock, once
+ * @brief Whether a programming port has a frame on the wire, and the clock, once
  * a pass before supply_page_step().  An OFF taken while one is -- written
  * by the panel or forced by a lost heartbeat -- reaches the driver when
  * the frame has ended, SUPPLY_PAGE_OFF_WAIT_MS after it was asked at the

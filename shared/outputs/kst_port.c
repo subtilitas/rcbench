@@ -1,4 +1,5 @@
-/*
+/**
+ * @file
  * SPDX-License-Identifier: MIT
  */
 
@@ -9,7 +10,7 @@
 
 #include "kst_plan.h"
 
-/* The page carries the session's result as the core numbers it. */
+/** @brief The page carries the session's result as the core numbers it. */
 _Static_assert(KST_SES_OK == 0 && KST_SES_BUSY == 1, "kst_ses_t on the page");
 _Static_assert(KST_SES_ERR_NO_SERVO == 4 && KST_SES_ERR_NOT_IN_MODE == 5
                && KST_SES_ERR_READ == 6 && KST_SES_ERR_NO_BACKUP == 7
@@ -36,7 +37,7 @@ _Static_assert(LINK_KS_W_SUPPLY_MV == LINK_KS_W_VIEW + 1
 #define NO_REG 0xFFu
 #define FRAMES_MAX 0x0FFFu
 
-/* Where a wait for the supply is. */
+/** @brief Where a wait for the supply is. */
 enum {
     SUP_NONE = 0, /* no supply in this step */
     SUP_OFF,      /* waits for the read that shows it off */
@@ -44,7 +45,7 @@ enum {
     SUP_TIMED,    /* read; the time after it runs from t1_ms */
 };
 
-/* Why PROGRAMMING is left once the session has ended. */
+/** @brief Why PROGRAMMING is left once the session has ended. */
 enum {
     LEAVE_NONE = 0,
     LEAVE_ASKED,  /* POWER_CYCLED or REBOOT */
@@ -53,7 +54,7 @@ enum {
 
 /* --- the driver the session sees --------------------------------------------- */
 
-/* A frame starts only on a channel in PROGRAMMING and while the bench is
+/** @brief A frame starts only on a channel in PROGRAMMING and while the bench is
  * safe.  The first one marks the servo as possibly in programming mode. */
 static bool drv_start(void *ctx, const kst_frame_t *frame, uint32_t window_ns)
 {
@@ -125,7 +126,7 @@ static uint8_t lowest_bit(uint32_t mask)
 
 /* --- the supply --------------------------------------------------------------- */
 
-/* What the supply says; false with no PD mini answering. */
+/** @brief What the supply says; false with no PD mini answering. */
 static bool supply_view(const kst_port_t *p, supply_port_view_t *v)
 {
     memset(v, 0, sizeof(*v));
@@ -226,7 +227,7 @@ static void session_done(kst_port_t *p, kst_ses_t r)
     }
 }
 
-/* What a session function returned when asked to start. */
+/** @brief What a session function returned when asked to start. */
 static void session_started(kst_port_t *p, kst_ses_t r)
 {
     if (r == KST_SES_BUSY) {
@@ -236,7 +237,7 @@ static void session_started(kst_port_t *p, kst_ses_t r)
     }
 }
 
-/* Back to PWM: the driver closed, the pin the generator's. */
+/** @brief Back to PWM: the driver closed, the pin the generator's. */
 static void go_pwm(kst_port_t *p)
 {
     const bool had_pin = p->has_pin != 0u;
@@ -255,7 +256,7 @@ static void go_pwm(kst_port_t *p)
     }
 }
 
-/* The way in ended before a frame went out: the supply as it was found. */
+/** @brief The way in ended before a frame went out: the supply as it was found. */
 static void back_out(kst_port_t *p, uint8_t result)
 {
     if (p->on_here != 0u) {
@@ -267,7 +268,7 @@ static void back_out(kst_port_t *p, uint8_t result)
     p->running = 0;
 }
 
-/* End the running operation.  A frame on the wire is finished first; the
+/** @brief End the running operation.  A frame on the wire is finished first; the
  * session ends at one of the next steps. */
 static void cut(kst_port_t *p)
 {
@@ -397,7 +398,7 @@ static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, uint32_t now_ms)
     return LINK_KST_REF_NONE;
 }
 
-/* Why the planner took a request without a search. */
+/** @brief Why the planner took a request without a search. */
 static link_kst_refusal_t plan_refusal(uint8_t plan_result)
 {
     switch ((kst_plan_result_t)plan_result) {
@@ -407,8 +408,8 @@ static link_kst_refusal_t plan_refusal(uint8_t plan_result)
     }
 }
 
-/*
- * A write to the servo.  The session plans it, from the image it read to
+/**
+ * @brief A write to the servo.  The session plans it, from the image it read to
  * what is staged, one slice of the planner in each pass, and runs its own
  * plan.  This call checks the request and prepares the job: no search runs
  * in the command's frame.
@@ -671,7 +672,7 @@ static uint16_t state_reg(const kst_port_t *p)
     return r;
 }
 
-/* The operation the page names is a write whose plan the session still
+/** @brief The operation the page names is a write whose plan the session still
  * builds: no frame of it has gone out. */
 static bool plans(const kst_port_t *p)
 {
@@ -728,7 +729,7 @@ void kst_port_read(const kst_port_t *p, uint8_t off, uint8_t n,
 
 /* --- the pass ----------------------------------------------------------------- */
 
-/* The servo is asked to enter programming mode. */
+/** @brief The servo is asked to enter programming mode. */
 static void start_session(kst_port_t *p)
 {
     p->state = (uint8_t)LINK_KST_PROGRAMMING;
@@ -738,7 +739,7 @@ static void start_session(kst_port_t *p)
     session_started(p, kst_session_enter(&p->session));
 }
 
-/* The pin is the driver's: what the supply has to do before the servo is
+/** @brief The pin is the driver's: what the supply has to do before the servo is
  * spoken to.  The voltage of an output that is on is lowered or left, never
  * raised. */
 static void low_begin(kst_port_t *p)
@@ -864,7 +865,7 @@ static void step_programming(kst_port_t *p, uint32_t now_ms)
     }
 }
 
-/* A LEAVE waits with the line low.  The supply is read for one thing: a
+/** @brief A LEAVE waits with the line low.  The supply is read for one thing: a
  * servo found without power ends as it does in PROGRAMMING. */
 static void step_leaving(kst_port_t *p, uint32_t now_ms)
 {

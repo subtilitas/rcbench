@@ -111,17 +111,17 @@
 extern "C" {
 #endif
 
-/** The port renders no pulse this long before the generator gives up the
+/** @brief The port renders no pulse this long before the generator gives up the
  *  pin: 2 frames at 40 Hz, the lowest PWM rate. */
 #define HITEC_PORT_STOP_MS 50u
-/** A transaction still running this long is aborted: longer than the
+/** @brief A transaction still running this long is aborted: longer than the
  *  longest one the driver takes, a 4 s lead and a 4 s window with 16
  *  bytes. */
 #define HITEC_PORT_BUSY_MS 10000u
-/** The PD mini has this long to read off after a POWER asked it off. */
+/** @brief The PD mini has this long to read off after a POWER asked it off. */
 #define HITEC_PORT_SUPPLY_MS LINK_HITEC_SUPPLY_MS
 
-/** What the driver says about the line and the running transaction. */
+/** @brief What the driver says about the line and the running transaction. */
 typedef struct {
     uint32_t lead_ns;   /**< the lead's first edge to the release: the
                              lead and every bit time sent */
@@ -129,7 +129,7 @@ typedef struct {
     uint32_t bit_ns;    /**< the bit time of the open line */
 } hitec_port_run_t;
 
-/** What the port needs from the hardware. */
+/** @brief What the port needs from the hardware. */
 typedef struct {
     void *ctx;
     /** Programming ports the build has, 1 to LINK_PG_PORTS_MAX. */
@@ -206,13 +206,13 @@ typedef struct {
                                  start; set at the start but for POWER */
 } hitec_port_t;
 
-/** Prepare a free port.  False when @p hw names no port or lacks a
+/** @brief Prepare a free port.  False when @p hw names no port or lacks a
  *  function other than run and the supply's two, or has one of those
  *  two. */
 bool hitec_port_init(hitec_port_t *p, const hitec_port_hw_t *hw);
 
 /**
- * A write of the page: 0, or the LINK_NACK_* reason with nothing changed.
+ * @brief A write of the page: 0, or the LINK_NACK_* reason with nothing changed.
  * A window that starts in registers 0 to 3 is a command and has to be
  * exactly those 4.  Registers 4 to 23 are taken in any windows; 24 and up
  * are LINK_NACK_READ_ONLY.  A VIEW or an RX_MODE above the last is
@@ -221,38 +221,38 @@ bool hitec_port_init(hitec_port_t *p, const hitec_port_hw_t *hw);
 uint8_t hitec_port_write(hitec_port_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, uint32_t now_ms);
 
-/** A read of the page, LINK_HT_*. */
+/** @brief A read of the page, LINK_HT_*. */
 void hitec_port_read(const hitec_port_t *p, uint8_t off, uint8_t n,
                      uint16_t *out);
 
 /**
- * One pass.  @p safe: the heartbeat is trusted and the link is not silent.
+ * @brief One pass.  @p safe: the heartbeat is trusted and the link is not silent.
  * @p stop: the bank was switched off or disarmed since the last pass.
  */
 void hitec_port_step(hitec_port_t *p, bool safe, bool stop, uint32_t now_ms);
 
-/** Where the port is. */
+/** @brief Where the port is. */
 link_hitec_state_t hitec_port_state(const hitec_port_t *p);
 
-/** Bit n: programming port n renders no PWM pulse.  The held port in every
+/** @brief Bit n: programming port n renders no PWM pulse.  The held port in every
  *  state but LINK_HITEC_FREE. */
 uint8_t hitec_port_quiet_mask(const hitec_port_t *p);
 
-/** Bit n: programming port n's pin is the wire driver's.  From the take
+/** @brief Bit n: programming port n's pin is the wire driver's.  From the take
  *  until CLOSE. */
 uint8_t hitec_port_pin_mask(const hitec_port_t *p);
 
-/** Whether the bank is armed: OPEN is refused while it is. */
+/** @brief Whether the bank is armed: OPEN is refused while it is. */
 void hitec_port_bench_armed(hitec_port_t *p, bool armed);
 
-/** Bit n: the KST page holds programming port n (kst_port_quiet_mask()).
+/** @brief Bit n: the KST page holds programming port n (kst_port_quiet_mask()).
  *  OPEN on it is refused with LINK_HITEC_REF_HELD. */
 void hitec_port_other_mask(hitec_port_t *p, uint8_t mask);
 
-/** A POWER runs: the SUPPLY page is held (supply_page_hold()). */
+/** @brief A POWER runs: the SUPPLY page is held (supply_page_hold()). */
 bool hitec_port_supply_hold(const hitec_port_t *p);
 
-/** A byte may be on the wire: a SEND from its start until the lead and
+/** @brief A byte may be on the wire: a SEND from its start until the lead and
  *  the bytes have had their time, counted in whole ms; a LISTEN or a POWER
  *  that answers, while it runs. */
 bool hitec_port_frame_out(const hitec_port_t *p, uint32_t now_ms);

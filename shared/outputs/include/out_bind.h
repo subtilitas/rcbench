@@ -1,5 +1,6 @@
-/*
- * Binding a protocol to pins: what the operator chooses, and the OUTPUTS page
+/**
+ * @file
+ * @brief Binding a protocol to pins: what the operator chooses, and the OUTPUTS page
  * that comes out of it.
  *
  * A set of pins for each protocol, rather than eight independent slots.  A
@@ -43,8 +44,8 @@ extern "C" {
 
 /* ------------------------------------------------------------ the boards */
 
-/*
- * Which IOmcu is on the other end.
+/**
+ * @brief Which IOmcu is on the other end.
  *
  * There is one today and there will be more: a custom board carries its
  * outputs on pins that are soldered, not chosen, and knows a different set of
@@ -63,7 +64,7 @@ typedef enum {
     OUTBIND_BOARD_PICO_HEADER = 1,  /**< Pico form factor, wired by hand    */
 } outbind_board_id_t;
 
-/** The most pins any board in this build brings out. */
+/** @brief The most pins any board in this build brings out. */
 #define OUTBIND_PINS  26u
 
 typedef struct {
@@ -74,7 +75,7 @@ typedef struct {
 } outbind_pin_t;
 
 /**
- * Where a board's pads are: two rows on one pitch, which is every 0.1-inch
+ * @brief Where a board's pads are: two rows on one pitch, which is every 0.1-inch
  * header board.  Hundredths of a millimetre throughout.
  *
  * Only a picture of the board needs this.  Which pins exist and what holds
@@ -90,7 +91,7 @@ typedef struct {
 } outbind_shape_t;
 
 /**
- * A pad that is not a pin: a ground, a rail, or neither.
+ * @brief A pad that is not a pin: a ground, a rail, or neither.
  *
  * A servo lead has three wires and the catalogue describes one. Somebody who
  * has found where the signal goes still needs a ground for the return and a
@@ -132,7 +133,7 @@ typedef struct {
 } outbind_board_t;
 
 /**
- * The board with this identity, or NULL when nothing here describes it.
+ * @brief The board with this identity, or NULL when nothing here describes it.
  *
  * The table compiled into this build first, then a board learned over the
  * link.  A build that ships a catalogue for a board uses its own: the
@@ -144,7 +145,7 @@ const outbind_board_t *outbind_board(uint16_t id);
 /* ------------------------------------------------ a board that describes itself */
 
 /**
- * Render a board's catalogue into LINK_CAT_COUNT registers for the wire.
+ * @brief Render a board's catalogue into LINK_CAT_COUNT registers for the wire.
  *
  * Slots past the board's own pins are left with a pad number of zero, which
  * is how the page says there is no pin there.
@@ -152,7 +153,7 @@ const outbind_board_t *outbind_board(uint16_t id);
 void outbind_board_to_regs(const outbind_board_t *board, uint16_t *regs);
 
 /**
- * Learn the board a catalogue page describes, replacing any previous one.
+ * @brief Learn the board a catalogue page describes, replacing any previous one.
  *
  * There is room for exactly one: the panel talks to one IOmcu, and a
  * second learned board would be a pin map for hardware that is not on the
@@ -167,12 +168,12 @@ void outbind_board_to_regs(const outbind_board_t *board, uint16_t *regs);
  */
 bool outbind_learn_board(uint16_t id, const uint16_t *regs);
 
-/** Render a board's shape into LINK_SH_COUNT registers, or leave them zero
+/** @brief Render a board's shape into LINK_SH_COUNT registers, or leave them zero
  *  when it has none. */
 void outbind_shape_to_regs(const outbind_board_t *board, uint16_t *regs);
 
 /**
- * Give the learned board a shape from a shape page.
+ * @brief Give the learned board a shape from a shape page.
  *
  * Refuses one that cannot be a board: no pads in a row, a corner that is not
  * one, no pitch, or an outline too small to hold the row it claims.  Refuses
@@ -184,23 +185,23 @@ void outbind_shape_to_regs(const outbind_board_t *board, uint16_t *regs);
 bool outbind_learn_shape(uint16_t id, const uint16_t *regs);
 
 /**
- * Where a pad's centre is, in hundredths of a millimetre from the top-left
+ * @brief Where a pad's centre is, in hundredths of a millimetre from the top-left
  * of the outline.  False for a pad the shape does not place: pads are
  * numbered from one, up to twice the row length.
  */
 bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
                     uint16_t *x_cmm, uint16_t *y_cmm);
 
-/** The pads that are not pins, and how many.  NULL and 0 for a board nothing
+/** @brief The pads that are not pins, and how many.  NULL and 0 for a board nothing
  *  here describes that way. */
 const outbind_pad_t *outbind_pads(uint16_t board);
 uint8_t outbind_pad_count(uint16_t board);
 
-/** Render them into LINK_PAD_COUNT registers, or leave them zero. */
+/** @brief Render them into LINK_PAD_COUNT registers, or leave them zero. */
 void outbind_pads_to_regs(const outbind_board_t *board, uint16_t *regs);
 
 /**
- * Give the learned board its grounds and rails.
+ * @brief Give the learned board its grounds and rails.
  *
  * Refuses a list that cannot belong to the board: a pad of zero, a kind that
  * is not one, pads out of order or repeated, or a pad the catalogue already
@@ -211,7 +212,7 @@ void outbind_pads_to_regs(const outbind_board_t *board, uint16_t *regs);
 bool outbind_learn_pads(uint16_t id, const uint16_t *regs);
 
 /**
- * Forget it.
+ * @brief Forget it.
  *
  * Not needed when the link drops.  The slot is keyed by identity and is
  * returned for that identity alone, so a board that has been unplugged
@@ -221,13 +222,13 @@ bool outbind_learn_pads(uint16_t id, const uint16_t *regs);
  */
 void outbind_forget_learned(void);
 
-/** The table itself, so a caller can walk every board rather than guess at a
+/** @brief The table itself, so a caller can walk every board rather than guess at a
  *  range of identities.  outbind_board_at() returns NULL past the end. */
 uint8_t outbind_board_count(void);
 const outbind_board_t *outbind_board_at(uint8_t index);
 
 /**
- * Whether @p index may be added to a selection on @p board.
+ * @brief Whether @p index may be added to a selection on @p board.
  *
  * Takes the board rather than reading it from the table, so the rule can be
  * held against a board this build does not yet contain -- a soldered one, for
@@ -235,18 +236,18 @@ const outbind_board_t *outbind_board_at(uint8_t index);
  */
 bool outbind_pin_selectable(const outbind_board_t *board, uint8_t index);
 
-/** Its catalogue and how long it is.  NULL and 0 for a board this build does
+/** @brief Its catalogue and how long it is.  NULL and 0 for a board this build does
  *  not know, so a caller that forgets to check offers nothing rather than
  *  offering the wrong thing. */
 const outbind_pin_t *outbind_pins(uint16_t board);
 uint8_t outbind_pin_count(uint16_t board);
 
-/** Index of @p gpio in that board's catalogue, or its count when the board
+/** @brief Index of @p gpio in that board's catalogue, or its count when the board
  *  does not bring that pin out. */
 uint8_t outbind_index_of(uint16_t board, uint8_t gpio);
 
 /**
- * Every pin of a board that no output and no PD mini pin may take, one bit
+ * @brief Every pin of a board that no output and no PD mini pin may take, one bit
  * per GPIO (0 to 63).
  *
  * That is the catalogue's reserved pins, plus every pin the catalogue does
@@ -263,7 +264,7 @@ uint64_t outbind_reserved_mask(uint16_t board);
 /* ------------------------------------------------------------- protocols */
 
 /**
- * What can be bound, as an operator names it.
+ * @brief What can be bound, as an operator names it.
  *
  * Rate is not offered separately.  DShot600 and DShot300 are different
  * entries because they are different things to choose between, not one thing
@@ -305,11 +306,11 @@ typedef struct {
     uint32_t pins[OUTBIND_PROTOS];
 } outbind_t;
 
-/** Empty, and belonging to no board: nothing can be chosen until one is set. */
+/** @brief Empty, and belonging to no board: nothing can be chosen until one is set. */
 void outbind_init(outbind_t *b);
 
 /**
- * Which protocol holds @p index, or 0 (OFF) when nothing does.
+ * @brief Which protocol holds @p index, or 0 (OFF) when nothing does.
  *
  * A pin refused because another protocol holds it is a different fact from
  * one the IOmcu reserves: the first is a choice the operator can undo
@@ -318,13 +319,13 @@ void outbind_init(outbind_t *b);
  */
 uint8_t outbind_group_of(const outbind_t *b, uint8_t index);
 
-/** Pins chosen across every protocol, and the channels they render.  Both
+/** @brief Pins chosen across every protocol, and the channels they render.  Both
  *  are budgets shared by all of them: LINK_OUT_SLOTS and LINK_OUT_CHANNELS. */
 uint8_t outbind_chosen_total(const outbind_t *b);
 uint8_t outbind_channels_used(const outbind_t *b);
 
 /**
- * Drop anything a selection cannot mean on its board.
+ * @brief Drop anything a selection cannot mean on its board.
  *
  * Bits above the catalogue's width, and pins past what a protocol takes.
  * `outbind_t` is a plain struct and one arrives from outside -- read off the
@@ -334,7 +335,7 @@ uint8_t outbind_channels_used(const outbind_t *b);
 void outbind_trim(outbind_t *b);
 
 /**
- * Say which board this binding is for.
+ * @brief Say which board this binding is for.
  *
  * Clears the selection whenever the board changes, and that is the point: a
  * bit in `pins` is an index into one board's catalogue and means a different
@@ -344,11 +345,11 @@ void outbind_trim(outbind_t *b);
  */
 void outbind_set_board(outbind_t *b, uint16_t board);
 
-/** How many pins the protocol being edited has chosen. */
+/** @brief How many pins the protocol being edited has chosen. */
 uint8_t outbind_chosen(const outbind_t *b);
 
 /**
- * The protocol a page rendered from this selection reads back as: the
+ * @brief The protocol a page rendered from this selection reads back as: the
  * lowest-numbered one holding a pin, or OFF when nothing does.
  *
  * Which protocol is being edited is not on the wire.  A page carries pins,
@@ -360,7 +361,7 @@ uint8_t outbind_chosen(const outbind_t *b);
 uint8_t outbind_wire_proto(const outbind_t *b);
 
 /**
- * Add or remove a pin, in the protocol being edited.
+ * @brief Add or remove a pin, in the protocol being edited.
  *
  * Refuses a reserved pin, an index off the end, one more pin than the
  * protocol can take -- PPM's second pin is not a second output, it is a
@@ -371,7 +372,7 @@ uint8_t outbind_wire_proto(const outbind_t *b);
 bool outbind_toggle(outbind_t *b, uint8_t index);
 
 /**
- * Choose which protocol is being edited.
+ * @brief Choose which protocol is being edited.
  *
  * Nothing is dropped.  The pins chosen for the protocol being left stay
  * bound and appear as held on the grid, and the pins of the one arrived at
@@ -384,7 +385,7 @@ bool outbind_toggle(outbind_t *b, uint8_t index);
 void outbind_set_proto(outbind_t *b, uint8_t proto);
 
 /**
- * True when this pin may still be added to the protocol being edited, for a
+ * @brief True when this pin may still be added to the protocol being edited, for a
  * screen drawing it.
  *
  * Includes the compare-register rule of outbind_pwm_clash(), which needs no
@@ -394,10 +395,10 @@ void outbind_set_proto(outbind_t *b, uint8_t proto);
  */
 bool outbind_can_add(const outbind_t *b, uint8_t index);
 
-/** No programming port pin, for outbind_pwm_clash(). */
+/** @brief No programming port pin, for outbind_pwm_clash(). */
 #define OUTBIND_NO_GPIO 0xFFu
 
-/** Why the PWM generator cannot take a pin, as outbind_pwm_clash() says. */
+/** @brief Why the PWM generator cannot take a pin, as outbind_pwm_clash() says. */
 typedef enum {
     OUTBIND_CLASH_NONE = 0,
     /** The pin's slice is the programming port's pin's slice. */
@@ -407,7 +408,7 @@ typedef enum {
 } outbind_clash_t;
 
 /**
- * Whether the IOmcu refuses catalogue entry @p index for the protocol
+ * @brief Whether the IOmcu refuses catalogue entry @p index for the protocol
  * being edited, beside @p prog_gpio and the pins @p b binds as PWM.
  *
  * Applies to a protocol on OUT_DRIVER_PWM and a pin that is not reserved
@@ -429,7 +430,7 @@ outbind_clash_t outbind_pwm_clash(const outbind_t *b, uint8_t index,
                                   uint8_t prog_gpio, uint8_t *with);
 
 /**
- * outbind_pwm_clash() beside every programming port's pin: @p count pins
+ * @brief outbind_pwm_clash() beside every programming port's pin: @p count pins
  * from @p ports (NULL or 0 for none), each OUTBIND_NO_GPIO for a port
  * without one.  The slice rule is checked against each in order, the first
  * clash named; then the compare rule.  The IOmcu checks a slot against
@@ -442,7 +443,7 @@ outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
 /* ------------------------------------------------------------- the pages */
 
 /**
- * Render the selection into the OUTPUTS page.
+ * @brief Render the selection into the OUTPUTS page.
  *
  * @p regs is LINK_OS_COUNT registers, cleared and rebuilt: every slot the
  * selection does not use is set to no driver, so a page written from this is
@@ -456,7 +457,7 @@ outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
 uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
 
 /**
- * Read a selection back out of an OUTPUTS page.
+ * @brief Read a selection back out of an OUTPUTS page.
  *
  * The IOmcu holds the configuration, so the panel asks it what is
  * driving rather than remembering: a binding is a description of wiring, and
@@ -483,11 +484,11 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
 bool outbind_from_slots(outbind_t *b, uint16_t board,
                         const uint16_t *regs, const uint16_t *chan_cfg);
 
-/** outbind_role_proto(): the role's slots are bound as several entries. */
+/** @brief outbind_role_proto(): the role's slots are bound as several entries. */
 #define OUTBIND_PROTO_MIXED 0xFFu
 
 /**
- * The entry the slots of @p role are bound as, an index into
+ * @brief The entry the slots of @p role are bound as, an index into
  * outbind_protos(), read from an OUTPUTS page and the CHAN_CFG page that
  * came back with it: what MOTOR & ESC's TARGET row names before the
  * throttle's pins.
@@ -503,7 +504,7 @@ uint8_t outbind_role_proto(const uint16_t *regs, const uint16_t *chan_cfg,
                            out_role_t role);
 
 /**
- * Render the channel configuration to match.
+ * @brief Render the channel configuration to match.
  *
  * Each entry says what its channels are for, and that is what decides where
  * a channel rests when it stops being commanded -- stopped, or centred.  With more than one

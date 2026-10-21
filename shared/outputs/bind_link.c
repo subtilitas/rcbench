@@ -1,5 +1,6 @@
-/*
- * A binding on the link, from the panel's side.  See bind_link.h.
+/**
+ * @file
+ * @brief A binding on the link, from the panel's side.  See bind_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -11,7 +12,7 @@
 
 #include "out_stage.h"
 
-/* page_written() writes from register 0. */
+/** @brief page_written() writes from register 0. */
 _Static_assert(LINK_SV_FRAME_HZ == 0, "the rate reset writes register 0");
 
 /* One page, a frame per exchange.  True when it was acknowledged whole;

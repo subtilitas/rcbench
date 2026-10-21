@@ -1,5 +1,6 @@
-/*
- * The output bank.  See outputs.h for the model.
+/**
+ * @file
+ * @brief The output bank.  See outputs.h for the model.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -92,7 +93,7 @@ bool outputs_pin_available(const outputs_t *o, uint8_t pin)
     return (o->reserved & ((uint64_t)1u << pin)) == 0u;
 }
 
-/* Does [a0,a0+an) meet [b0,b0+bn)? */
+/** @brief Does [a0,a0+an) meet [b0,b0+bn)? */
 static bool overlaps(unsigned a0, unsigned an, unsigned b0, unsigned bn)
 {
     return a0 < b0 + bn && b0 < a0 + an;

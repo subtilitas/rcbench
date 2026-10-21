@@ -1,5 +1,6 @@
-/*
- * The RP2350's GPIO-to-PWM fold. See out_pwm_map.h.
+/**
+ * @file
+ * @brief The RP2350's GPIO-to-PWM fold. See out_pwm_map.h.
  *
  * SPDX-License-Identifier: MIT
  */

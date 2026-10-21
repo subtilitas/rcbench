@@ -1,5 +1,6 @@
-/*
- * Where the next copy of the output binding goes.  See out_store_map.h.
+/**
+ * @file
+ * @brief Where the next copy of the output binding goes.  See out_store_map.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -8,7 +9,7 @@
 
 #include <stddef.h>
 
-/* A geometry this file can index: slots are addressed by uint8_t, and the
+/** @brief A geometry this file can index: slots are addressed by uint8_t, and the
  * caller's plan carries them as one. */
 static bool usable(const out_store_rec_t *recs, uint8_t sectors,
                    uint8_t per_sector)

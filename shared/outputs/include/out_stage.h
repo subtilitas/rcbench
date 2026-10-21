@@ -1,5 +1,6 @@
-/*
- * A binding prepared beside the one in force, and taken whole.
+/**
+ * @file
+ * @brief A binding prepared beside the one in force, and taken whole.
  *
  * The IOmcu's half of the BIND_CFG, BIND_OUT and BIND pages (protocol
  * 4.10; see link_pages.h).  A CHAN_CFG and an OUTPUTS page are written here
@@ -30,12 +31,12 @@ typedef struct {
     uint16_t slots[LINK_OS_COUNT];  /**< the OUTPUTS page prepared  */
 } out_stage_t;
 
-/** Start from the pages in force; NULL starts from the pages' defaults. */
+/** @brief Start from the pages in force; NULL starts from the pages' defaults. */
 void out_stage_init(out_stage_t *st, const uint16_t *cfg,
                     const uint16_t *slots);
 
 /**
- * A window of BIND_CFG or BIND_OUT written: 0, or the link_nack_t
+ * @brief A window of BIND_CFG or BIND_OUT written: 0, or the link_nack_t
  * outputs_chan_cfg_write() and outputs_slots_write() give for the same
  * window, and then nothing of it is stored.
  */
@@ -50,7 +51,7 @@ void out_stage_slots_read(const out_stage_t *st, uint8_t off, uint8_t n,
                           uint16_t *out);
 
 /**
- * The CRC a commit names: CRC-16/CCITT-FALSE (polynomial 0x1021, seed
+ * @brief The CRC a commit names: CRC-16/CCITT-FALSE (polynomial 0x1021, seed
  * 0xFFFF, link_crc()) over the 32 CHAN_CFG registers and then the 32
  * OUTPUTS registers, each as its low byte and then its high byte.  The
  * panel computes it over the pages it sent, the IOmcu over what it
@@ -58,11 +59,11 @@ void out_stage_slots_read(const out_stage_t *st, uint8_t off, uint8_t n,
  */
 uint16_t out_stage_crc(const uint16_t *cfg, const uint16_t *slots);
 
-/** The same of what @p st holds; 0 for NULL. */
+/** @brief The same of what @p st holds; 0 for NULL. */
 uint16_t out_stage_held_crc(const out_stage_t *st);
 
 /**
- * What the IOmcu does with a page once the commit has matched.
+ * @brief What the IOmcu does with a page once the commit has matched.
  *
  * take_cfg and take_slots judge a whole page by the rules of a CHAN_CFG and
  * an OUTPUTS write and put it in force: 0, or a link_nack_t with the page in
@@ -88,7 +89,7 @@ typedef struct {
 } out_stage_ops_t;
 
 /**
- * A write of LINK_BD_COMMIT.
+ * @brief A write of LINK_BD_COMMIT.
  *
  * LINK_NACK_BAD_VALUE, and nothing is called, when @p crc is not the CRC of
  * what @p st holds.  Otherwise the prepared CHAN_CFG page is taken, then
