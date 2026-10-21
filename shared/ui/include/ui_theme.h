@@ -141,6 +141,18 @@ static inline gfx_seg_style_t ui_seg_hero(void)
 #define UI_FONT_HEAD     (&gfx_font_16x28)
 #define UI_FONT_NUM      (&gfx_font_num_24x30)
 
+/*
+ * Roles of the faces the 1024 x 600 layout adds.  No screen draws with BODY
+ * yet.  The layout switch points LABEL at gfx_font_10x20, HEAD at
+ * gfx_font_20x36 and NUM at gfx_font_num_32x44.
+ */
+/** @brief The 8x16 face for data columns: log table, analyser values, pad
+ *  numbers. */
+#define UI_FONT_FINE     (&gfx_font_8x16)
+/** @brief The 12x24 face for prose: help text, warnings, questions, run
+ *  results. */
+#define UI_FONT_BODY     (&gfx_font_12x24)
+
 #ifdef __cplusplus
 }
 #endif
