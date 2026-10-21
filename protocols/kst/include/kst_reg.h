@@ -56,8 +56,7 @@ typedef struct {
 /**
  * @brief Every bit of the 32 registers belongs to exactly one field.
  *
- * Fields named
- * KST_F_Rxx are bits the vendor tool gives no name.
+ * Fields named KST_F_Rxx are bits the vendor tool gives no name.
  */
 typedef enum {
     KST_F_R00 = 0,  /**< not named by the vendor tool */
@@ -150,7 +149,8 @@ typedef struct {
     uint8_t conv;       /**< conversion, private to kst_reg.c */
 } kst_field_t;
 
-/** @brief The table row of @p id; NULL for an id outside the table.
+/**
+ * @brief The table row of @p id; NULL for an id outside the table.
  *
  * @param id  Field.
  * @return The table row, or NULL for an id outside the table.
@@ -166,7 +166,8 @@ const kst_field_t *kst_field(kst_field_id_t id);
  */
 uint16_t kst_field_raw_max(kst_field_id_t id);
 
-/** @brief Bits of register @p reg that belong to @p id.
+/**
+ * @brief Bits of register @p reg that belong to @p id.
  *
  * @param id   Field.
  * @param reg  Register address.
@@ -174,7 +175,8 @@ uint16_t kst_field_raw_max(kst_field_id_t id);
  */
 uint8_t kst_field_reg_mask(kst_field_id_t id, uint8_t reg);
 
-/** @brief Raw value of a field; 0 for a bad argument.
+/**
+ * @brief Raw value of a field; 0 for a bad argument.
  *
  * @param img  Image to read.
  * @param id   Field.
@@ -211,8 +213,8 @@ bool kst_field_edit(kst_image_t *img, kst_field_id_t id, uint16_t raw);
 /**
  * @brief Raw value to displayed value.
  *
- * False where the displayed value of that
- * raw value is not established: Stretch index 6 and 7.
+ * False where the displayed value of that raw value is not established: Stretch
+ * index 6 and 7.
  *
  *   Max. Duty      round(raw x 100 / 255) %
  *   Boost          50 us + 12.5 us x raw
@@ -240,10 +242,9 @@ bool kst_field_display(kst_field_id_t id, uint16_t raw, int32_t *display);
 /**
  * @brief Displayed value to the nearest raw value.
  *
- * False when the value lies
- * outside what the field encodes, when Stretch is not a power of two from
- * 1 to 32, and for prot1_time and prot1_pwm, whose encoding on write is
- * not observed.
+ * False when the value lies outside what the field encodes, when Stretch is not
+ * a power of two from 1 to 32, and for prot1_time and prot1_pwm, whose encoding
+ * on write is not observed.
  *
  * @param id       Field.
  * @param display  Displayed value.
@@ -258,13 +259,12 @@ bool kst_field_raw_from_display(kst_field_id_t id, int32_t display,
 /**
  * @brief The servo type of an image.
  *
- * A servo answers no model number.  The type
- * is one bit: 20k_sel, register 04 bit 6.  The manufacturer states the
- * factory default of that bit as set for the V6.0 series (20 kHz drive) and
- * clear for the V8.0 series (333 Hz drive).  The mapping rests on that
- * statement.  It is read on 1 servo, whose bit is set; no V8.0 servo is
- * measured.  A servo whose 20k_sel was changed by another tool reads as the
- * other type.
+ * A servo answers no model number.  The type is one bit: 20k_sel, register 04
+ * bit 6.  The manufacturer states the factory default of that bit as set for
+ * the V6.0 series (20 kHz drive) and clear for the V8.0 series (333 Hz drive).
+ * The mapping rests on that statement.  It is read on 1 servo, whose bit is
+ * set; no V8.0 servo is measured.  A servo whose 20k_sel was changed by another
+ * tool reads as the other type.
  */
 typedef enum {
     KST_TYPE_V8 = 0,   /**< 20k_sel clear */
@@ -272,14 +272,16 @@ typedef enum {
     KST_TYPE_NONE = 2, /**< no image, or a file that states no type */
 } kst_type_t;
 
-/** @brief The type of @p img; KST_TYPE_NONE for NULL.
+/**
+ * @brief The type of @p img; KST_TYPE_NONE for NULL.
  *
  * @param img  Image to read.
  * @return The servo type; KST_TYPE_NONE for NULL.
  */
 kst_type_t kst_type(const kst_image_t *img);
 
-/** @brief "V8", "V6", and "" for any other value.
+/**
+ * @brief "V8", "V6", and "" for any other value.
  *
  * @param type  Servo type.
  * @return "V8", "V6", or "" for any other value.
@@ -314,7 +316,10 @@ typedef struct {
     uint32_t regs;    /**< bit n: register n deviates */
 } kst_fingerprint_t;
 
-/** @brief True when the image has the measured layout.  @p out may be NULL.
+/**
+ * @brief True when the image has the measured layout.
+ *
+ * @p out may be NULL.
  *
  * @param img  Image to check.
  * @param out  Receives the broken rules and deviating registers; may be NULL.

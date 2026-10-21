@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief Limit checks of an edited register image against the servo's limits.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "kst_limits.h"

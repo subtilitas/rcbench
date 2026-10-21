@@ -67,7 +67,8 @@ extern "C" {
 #define KST_PIO_BIT_OVERHEAD 4u
 /**
  * @brief Cycles from the last edge to the release beyond the half-cell and the
- *  low count. */
+ *        low count.
+ */
 #define KST_PIO_LOW_OVERHEAD 2u
 /** @brief Cycles from the release to the first sample. */
 #define KST_PIO_SAMPLE_LEAD 3u
@@ -85,11 +86,13 @@ extern "C" {
 
 /**
  * @brief Words of the longest stream: 3 counts in front of 4 level words, 3
- *  behind. */
+ *        behind.
+ */
 #define KST_PIO_TX_WORDS 9u
 /**
  * @brief Stamps a transaction keeps: one for a line that is high at the start,
- *  KST_CAP_MAX_EDGES edges and one that shows an overflow. */
+ *        KST_CAP_MAX_EDGES edges and one that shows an overflow.
+ */
 #define KST_PIO_RX_WORDS (KST_CAP_MAX_EDGES + 2u)
 
 /** @brief The counts a system clock gives. */
@@ -110,11 +113,10 @@ typedef struct {
 /**
  * @brief The counts for a system clock of @p sys_hz.
  *
- * False when a tick is longer
- * than KST_PIO_MAX_TICK_NS, which it is below 8 MHz, and when the half-cell
- * the clock gives is more than 0.2 % from KST_HALF_CELL_NS.  Every clock
- * from 9.9 MHz up gives one within 0.2 %, and a multiple of 5 MHz gives it
- * exactly.
+ * False when a tick is longer than KST_PIO_MAX_TICK_NS, which it is below 8
+ * MHz, and when the half-cell the clock gives is more than 0.2 % from
+ * KST_HALF_CELL_NS.  Every clock from 9.9 MHz up gives one within 0.2 %, and a
+ * multiple of 5 MHz gives it exactly.
  *
  * @param sys_hz  System clock, in Hz.
  * @param out     Receives the counts; left unchanged when false is returned.
@@ -122,14 +124,16 @@ typedef struct {
  */
 bool kst_pio_clock(uint32_t sys_hz, kst_pio_clock_t *out);
 
-/** @brief The transmit half-cell of @p clock in ns, rounded to nearest.
+/**
+ * @brief The transmit half-cell of @p clock in ns, rounded to nearest.
  *
  * @param clock  Counts of the clock.
  * @return The transmit half-cell in ns, rounded to nearest.
  */
 uint32_t kst_pio_half_cell_ns(const kst_pio_clock_t *clock);
 
-/** @brief One tick of @p clock in ns, rounded up.
+/**
+ * @brief One tick of @p clock in ns, rounded up.
  *
  * @param clock  Counts of the clock.
  * @return One tick in ns, rounded up.
@@ -138,9 +142,11 @@ uint32_t kst_pio_tick_ns(const kst_pio_clock_t *clock);
 
 /**
  * @brief The word stream for @p frame and a capture until @p window_ns after
- *            its last edge.  Returns the number of words written to @p words, at most
- *            KST_PIO_TX_WORDS, or 0 for a frame without half-cells, one longer than
- *            KST_FRAME_MAX_HALF_CELLS, or a window that ends before the release.
+ *        its last edge.
+ *
+ * Returns the number of words written to @p words, at most KST_PIO_TX_WORDS, or
+ * 0 for a frame without half-cells, one longer than KST_FRAME_MAX_HALF_CELLS,
+ * or a window that ends before the release.
  *
  * @param clock      Counts of the clock.
  * @param frame      Frame to send.
@@ -154,11 +160,12 @@ unsigned kst_pio_tx(const kst_pio_clock_t *clock, const kst_frame_t *frame,
 
 /**
  * @brief The capture from the @p n stamps of a transaction, in the order the
- * program gave them.  @p lost says the program gave more stamps than were
- * kept.  A first stamp equal to the window count is a line that was high at
- * the first sample: it sets level0 and is no edge.  More than
- * KST_CAP_MAX_EDGES edges, @p lost, and a stamp no count of the stream can
- * give set overflow.
+ *        program gave them.
+ *
+ * @p lost says the program gave more stamps than were kept.  A first stamp
+ * equal to the window count is a line that was high at the first sample: it
+ * sets level0 and is no edge.  More than KST_CAP_MAX_EDGES edges, @p lost, and
+ * a stamp no count of the stream can give set overflow.
  *
  * @param clock  Counts of the clock.
  * @param run    Layout of the transaction.

@@ -39,9 +39,11 @@ static PIO line_pio(const kst_line_t *l)
 
 /**
  * @brief The state machine waits for a stream: it stalls on the first `out`,
- *            the FIFO is empty and the channel has handed over every word.  A stream is 6
- *            words or more and the FIFO and the shift register hold 5, so this is
- * false from the start of a transfer to the end of the capture. */
+ *        the FIFO is empty and the channel has handed over every word.
+ *
+ * A stream is 6 words or more and the FIFO and the shift register hold 5, so
+ * this is false from the start of a transfer to the end of the capture.
+ */
 static bool line_idle(const kst_line_t *l)
 {
     const PIO pio = line_pio(l);
@@ -53,7 +55,8 @@ static bool line_idle(const kst_line_t *l)
 
 /**
  * @brief Put the state machine at the start of the program with the pad driven
- * low, whatever it was doing. */
+ *        low, whatever it was doing.
+ */
 static void line_restart(kst_line_t *l)
 {
     const PIO pio = line_pio(l);

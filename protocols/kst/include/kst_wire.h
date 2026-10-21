@@ -60,15 +60,15 @@ extern "C" {
 /**
  * @brief Transmit half-cell, 25.40 us.
  *
- * The only rate the servo is proven to accept.  Required accuracy: 50 ns,
- * edge jitter below 100 ns.
+ * The only rate the servo is proven to accept.  Required accuracy: 50 ns, edge
+ * jitter below 100 ns.
  */
 #define KST_HALF_CELL_NS 25400u
 /** @brief The same half-cell in cycles of a 150 MHz system clock. */
 #define KST_HALF_CELL_CYCLES_150MHZ 3810u
 /**
- * @brief The servo's own cell, 51.15 us (half-cell 25.575 us, 0.7 % slower
- *        than the master).
+ * @brief The servo's own cell, 51.15 us (half-cell 25.575 us, 0.7 % slower than
+ *        the master).
  *
  * The decoder predicts each mid-cell edge with it.
  */
@@ -78,8 +78,7 @@ extern "C" {
 #define KST_FRAME_BITS  27u   /**< master to servo */
 #define KST_REPLY_BITS  11u   /**< servo to master */
 /**
- * @brief The sync burst: 64 high pulses of one half-cell, one half-cell
- *        apart.
+ * @brief The sync burst: 64 high pulses of one half-cell, one half-cell apart.
  *
  * Other counts are not tested.
  */
@@ -131,8 +130,7 @@ extern "C" {
 #define KST_RX_HALF_CELL_MIN_NS 24300u
 #define KST_RX_HALF_CELL_MAX_NS 26900u
 /**
- * @brief After a last bit 1 the line is low within 100 us of the nominal
- *        end.
+ * @brief After a last bit 1 the line is low within 100 us of the nominal end.
  *
  * The servo releases the line there; the last high reads 32 us at a 1.4 V
  * threshold and 59 us at 0.1 V.
@@ -186,8 +184,8 @@ bool kst_frame_read(uint8_t reg, kst_frame_t *out);
 /**
  * @brief Write frame.
  *
- * False, and no frame, for register 0x00 and for an address above
- * KST_REG_MAX: neither is ever written.
+ * False, and no frame, for register 0x00 and for an address above KST_REG_MAX:
+ * neither is ever written.
  *
  * @param reg    Register address.
  * @param value  Value to write.
@@ -196,13 +194,15 @@ bool kst_frame_read(uint8_t reg, kst_frame_t *out);
  */
 bool kst_frame_write(uint8_t reg, uint8_t value, kst_frame_t *out);
 
-/** @brief The sync burst that puts a servo into programming mode.
+/**
+ * @brief The sync burst that puts a servo into programming mode.
  *
  * @param out  Receives the frame; NULL is ignored.
  */
 void kst_frame_sync(kst_frame_t *out);
 
-/** @brief Level of half-cell @p index; false past the end.
+/**
+ * @brief Level of half-cell @p index; false past the end.
  *
  * @param frame  Frame to read.
  * @param index  Half-cell index, counted from 0.
@@ -210,7 +210,8 @@ void kst_frame_sync(kst_frame_t *out);
  */
 bool kst_frame_level(const kst_frame_t *frame, unsigned index);
 
-/** @brief Time the frame takes on the wire, in ns.
+/**
+ * @brief Time the frame takes on the wire, in ns.
  *
  * @param frame  Frame to measure.
  * @return Time the frame takes on the wire, in ns; 0 for a NULL frame.
@@ -245,7 +246,11 @@ typedef enum {
     KST_EXPECT_SYNC,        /**< a sync burst was sent */
 } kst_expect_t;
 
-/** @brief Result of decoding one reply window.  One code per failed check. */
+/**
+ * @brief Result of decoding one reply window.
+ *
+ * One code per failed check.
+ */
 typedef enum {
     KST_RX_OK = 0,       /**< every check passed */
     KST_RX_NO_REPLY,     /**< no edge in the window */
@@ -272,7 +277,8 @@ typedef struct {
     uint32_t half_cell_ns;  /**< mean over the 10 cells, rounded to nearest */
 } kst_reply_t;
 
-/** @brief Accept window and capture length for @p expect.
+/**
+ * @brief Accept window and capture length for @p expect.
  *
  * @param expect  What the master sent.
  * @return Capture length in ns.

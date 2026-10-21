@@ -1,11 +1,12 @@
 /**
  * @file
  * @brief The Hitec wire on one RP2350 pin: a hitec_driver_t made of one PIO
- * (programmable input/output) state machine (hitec_line.pio) and two DMA
- * (direct memory access) channels, one for the words of a transaction and
- * one for the received bytes.  A D series line opened to receive by
- * PRECHARGE (hitec_pre.h) adds a second state machine, the sampler, and a
- * third DMA channel for its samples.
+ *        (programmable input/output) state machine (hitec_line.pio) and two DMA
+ *        (direct memory access) channels, one for the words of a transaction
+ *        and one for the received bytes.
+ *
+ * A D series line opened to receive by PRECHARGE (hitec_pre.h) adds a second
+ * state machine, the sampler, and a third DMA channel for its samples.
  *
  * Implements the signal-wire programming protocols of Hitec servos.  Hitec
  * is a name or trademark of its owner; it is used here only to say which
@@ -73,32 +74,35 @@ extern "C" {
 
 /**
  * @brief The driver ends a transaction whose state machine still runs this long
- *  after the time the transaction can take. */
+ *        after the time the transaction can take.
+ */
 #define HITEC_LINE_GRACE_US 1000u
 
 typedef enum {
     HITEC_LINE_OK = 0,
-/**
- * @brief     /** No line object, a pin the chip does not have, an unknown
- *                family or
-     *  drive, or push-pull for classic. */
+    /**
+     * @brief No line object, a pin the chip does not have, an unknown family or
+     *        drive, or push-pull for classic.
+     */
     HITEC_LINE_ERR_ARG,
-/**
- * @brief     /** The system clock gives no divider (hitec_pio.h), or PRECHARGE
- *                no
-     *  cycle counts (hitec_pre_timing()). */
+    /**
+     * @brief The system clock gives no divider (hitec_pio.h), or PRECHARGE no
+     *        cycle counts (hitec_pre_timing()).
+     */
     HITEC_LINE_ERR_CLOCK,
-/**
- * @brief     /** No state machine or no program space; for PRECHARGE, none for
- *                the
-     *  sampler. */
+    /**
+     * @brief No state machine or no program space; for PRECHARGE, none for the
+     *        sampler.
+     */
     HITEC_LINE_ERR_PIO,
-/** @brief Fewer than 2 free DMA channels, 3 for PRECHARGE. */
+    /** @brief Fewer than 2 free DMA channels, 3 for PRECHARGE. */
     HITEC_LINE_ERR_DMA,
 } hitec_line_err_t;
 
 /**
- * @brief One line.  The caller keeps the object; the fields are the driver's.
+ * @brief One line.
+ *
+ * The caller keeps the object; the fields are the driver's.
  */
 typedef struct {
     hitec_pio_clock_t clock;
@@ -140,7 +144,10 @@ typedef struct {
     uint32_t samples[HITEC_PRE_WORDS];
 } hitec_line_t;
 
-/** @brief Mark @p line closed.  Call once, before the first open.
+/**
+ * @brief Mark @p line closed.
+ *
+ * Call once, before the first open.
  *
  * @param line  Line object to mark closed.
  */
@@ -148,11 +155,11 @@ void hitec_line_init(hitec_line_t *line);
 
 /**
  * @brief Claim the resources and take @p pin for @p family (hitec_family_t)
- *              with
- * @p drive (hitec_drive_t): from the return on the pad is a released input with
- *          the family's pull.  The caller has stopped every other use of the pin.  On an
- *          error nothing stays claimed and the pin is not touched.  An open line is
- *          closed first.
+ *        with @p drive (hitec_drive_t): from the return on the pad is a
+ *        released input with the family's pull.
+ *
+ * The caller has stopped every other use of the pin.  On an error nothing stays
+ * claimed and the pin is not touched.  An open line is closed first.
  *
  * @param line    Line object.
  * @param pin     GPIO number.
@@ -165,9 +172,10 @@ hitec_line_err_t hitec_line_open(hitec_line_t *line, unsigned pin,
 
 /**
  * @brief hitec_line_open() with the receive mode @p rx (hitec_rx_mode_t).
- * HITEC_RX_PULL_UP is hitec_line_open().  HITEC_RX_PRECHARGE takes the
- * D series only (HITEC_LINE_ERR_ARG for classic) and claims the sampler as
- * well; on an error nothing stays claimed and the pin is not touched.
+ *
+ * HITEC_RX_PULL_UP is hitec_line_open().  HITEC_RX_PRECHARGE takes the D series
+ * only (HITEC_LINE_ERR_ARG for classic) and claims the sampler as well; on an
+ * error nothing stays claimed and the pin is not touched.
  *
  * @param line    Line object.
  * @param pin     GPIO number.
@@ -180,7 +188,8 @@ hitec_line_err_t hitec_line_open_rx(hitec_line_t *line, unsigned pin,
                                     uint8_t family, uint8_t drive,
                                     uint8_t rx);
 
-/** @brief The receive mode of the open line; HITEC_RX_PULL_UP while closed.
+/**
+ * @brief The receive mode of the open line; HITEC_RX_PULL_UP while closed.
  *
  * @param line  Line object.
  * @return The receive mode of the open line; HITEC_RX_PULL_UP while closed.
@@ -189,8 +198,9 @@ uint8_t hitec_line_rx_mode(const hitec_line_t *line);
 
 /**
  * @brief Stop the state machine, give back what the open claimed and leave the
- *  pad an input with the family's pull and no input override.  A
- *  transaction on the wire is cut.  Safe on a closed line.
+ *        pad an input with the family's pull and no input override.
+ *
+ * A transaction on the wire is cut.  Safe on a closed line.
  *
  * @param line  Line object.
  */
@@ -206,7 +216,7 @@ bool hitec_line_is_open(const hitec_line_t *line);
 
 /**
  * @brief A transaction runs: between a start() that returned true and the
- *          poll() that returns true.
+ *        poll() that returns true.
  *
  * @param line  Line object.
  * @return true between a start that returned true and the poll that returns
@@ -214,7 +224,8 @@ bool hitec_line_is_open(const hitec_line_t *line);
  */
 bool hitec_line_busy(const hitec_line_t *line);
 
-/** @brief The bit time the system clock gives, in ns; 0 on a closed line.
+/**
+ * @brief The bit time the system clock gives, in ns; 0 on a closed line.
  *
  * @param line  Line object.
  * @return The bit time in ns; 0 on a closed line.
@@ -223,14 +234,16 @@ uint32_t hitec_line_bit_ns(const hitec_line_t *line);
 
 /**
  * @brief Cut the running transaction: the pad is released at once, and the next
- *  poll() returns the bytes so far with the capture marked aborted.  Does
- *  nothing when no transaction runs.
+ *        poll() returns the bytes so far with the capture marked aborted.
+ *
+ * Does nothing when no transaction runs.
  *
  * @param line  Line object.
  */
 void hitec_line_abort(hitec_line_t *line);
 
-/** @brief The three functions of hitec_driver_t; @p ctx is the hitec_line_t.
+/**
+ * @brief The three functions of hitec_driver_t; @p ctx is the hitec_line_t.
  *
  * @param ctx   The hitec_line_t.
  * @param xfer  Transaction to run.
@@ -253,7 +266,8 @@ bool hitec_line_poll(void *ctx, hitec_capture_t *out);
  */
 uint32_t hitec_line_now_us(void *ctx);
 
-/** @brief The driver for @p line.
+/**
+ * @brief The driver for @p line.
  *
  * @param line  Line object.
  * @return The hitec_driver_t for the line.

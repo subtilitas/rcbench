@@ -55,28 +55,35 @@
  *
  * Without a checksum line the file is EDITED: a person's input.
  *
- * - Line 1 is the header, unchanged. - A field line is "<name> = <value>".  The
- * name is the field table's, compared without case and without spaces.  The
- * value is a number in the field's unit, with a full stop or a comma before at
- * most 1 decimal place where the unit has tenths.  The unit may follow and may
- * be left out.  "raw <n>" gives the raw value.  A trailing "[...]" is ignored.
- * - "#" starts a comment that runs to the end of the line.  Empty lines, spaces
- * and tabs around a name and a value, and LF and CR LF in one file are taken. -
- * A name the table does not have, a name given twice and a value the field does
- * not encode are refused with the line number. - A field without a line keeps
- * the servo's value. - The type line ("Type: V6", also "type = v6") and the
- * register block ("registers 32" and its 4 lines) may each stay or go.  The
- * block states the servo type.  A file with a block or a type line is
- * KST_FILE_EDITED_TYPED; a type line that contradicts the block refuses the
- * file.  A file with neither states no type (KST_FILE_EDITED_UNTYPED). - The
- * value of an editable field becomes a raw value through
- * kst_field_raw_from_display(), with its rounding, as an entry on a keypad
- * does.  A value that reads as the servo already shows it changes nothing. -
- * Where the register block shows as the line of an editable field reads, the
- * block gives the raw value: several raw values of Max. Duty show as one
- * percentage, and a file whose line is unchanged loads the raw value it was
- * written from.  A line that reads otherwise wins over the block.  The block
- * gives no value for a field without a line.
+ *   - Line 1 is the header, unchanged.
+ *   - A field line is "<name> = <value>".  The name is the field table's,
+ *     compared without case and without spaces.  The value is a number in
+ *     the field's unit, with a full stop or a comma before at most 1
+ *     decimal place where the unit has tenths.  The unit may follow and
+ *     may be left out.  "raw <n>" gives the raw value.  A trailing
+ *     "[...]" is ignored.
+ *   - "#" starts a comment that runs to the end of the line.  Empty lines,
+ *     spaces and tabs around a name and a value, and LF and CR LF in one
+ *     file are taken.
+ *   - A name the table does not have, a name given twice and a value the
+ *     field does not encode are refused with the line number.
+ *   - A field without a line keeps the servo's value.
+ *   - The type line ("Type: V6", also "type = v6") and the register block
+ *     ("registers 32" and its 4 lines) may each stay or go.  The block
+ *     states the servo type.  A file with a block or a type line is
+ *     KST_FILE_EDITED_TYPED; a type line that contradicts the block refuses
+ *     the file.  A file with neither states no type
+ *     (KST_FILE_EDITED_UNTYPED).
+ *   - The value of an editable field becomes a raw value through
+ *     kst_field_raw_from_display(), with its rounding, as an entry on a
+ *     keypad does.  A value that reads as the servo already shows it
+ *     changes nothing.
+ *   - Where the register block shows as the line of an editable field
+ *     reads, the block gives the raw value: several raw values of
+ *     Max. Duty show as one percentage, and a file whose line is unchanged loads
+ *     the raw value it was written from.  A line that reads otherwise
+ *     wins over the block.  The block gives no value for a field without
+ *     a line.
  *
  * Both kinds take the 3 bytes EF BB BF (the byte order mark of UTF-8,
  * 8-bit Unicode Transformation Format) in front of the header; they are
@@ -108,31 +115,38 @@ extern "C" {
 #endif
 
 /**
- * @brief The format version kst_file_format() writes and kst_file_parse() reads.
+ * @brief The format version kst_file_format() writes and kst_file_parse()
+ *        reads.
  */
 #define KST_FILE_FORMAT 1u
 
 /**
  * @brief Characters kst_file_format() puts in a line at most, the line end not
- *  counted.  A line of an edited file may be longer. */
+ *        counted.
+ *
+ * A line of an edited file may be longer.
+ */
 #define KST_FILE_LINE_MAX 64u
 
 /**
  * @brief Lines kst_file_format() writes at most: one per field, the header, the
- *  type, the register count, 4 register lines and the checksum. */
+ *        type, the register count, 4 register lines and the checksum.
+ */
 #define KST_FILE_LINES_MAX ((unsigned)KST_F_COUNT + 8u)
 
 /**
- * @brief Bytes in a file at most: 3432.
- *
- * kst_file_parse() refuses a longer text.
- * kst_file_format() writes fewer than 1024 bytes with this field table, so
- * a buffer of this size holds every written file with either line end and
- * leaves more than 2300 bytes for a person's comments.
+ * @brief Bytes in a file at most: 3432.  kst_file_parse() refuses a longer
+ *        text. kst_file_format() writes fewer than 1024 bytes with this field
+ *        table, so a buffer of this size holds every written file with either
+ *        line end and leaves more than 2300 bytes for a person's comments.
  */
 #define KST_FILE_MAX ((size_t)KST_FILE_LINES_MAX * (KST_FILE_LINE_MAX + 2u))
 
-/** @brief Why a text is refused.  The numbers are stable. */
+/**
+ * @brief Why a text is refused.
+ *
+ * The numbers are stable.
+ */
 typedef enum {
     KST_FILE_OK = 0,
     KST_FILE_ERR_ARG = 1,        /**< a NULL argument */
@@ -178,29 +192,31 @@ typedef enum {
 /** @brief A text as read. */
 typedef struct {
     kst_file_kind_t kind;
-/**
- * @brief     /** The servo type the file states; KST_TYPE_NONE for
-     *  KST_FILE_EDITED_UNTYPED. */
+    /**
+     * @brief The servo type the file states; KST_TYPE_NONE for
+     *        KST_FILE_EDITED_UNTYPED.
+     */
     kst_type_t type;
-/** @brief The register block; all 0 for a file without one. */
+    /** @brief The register block; all 0 for a file without one. */
     kst_image_t image;
-/**
- * @brief     /** Edited kinds: the fields a line gives a value for.
- *
- * 0 for
-     *  KST_FILE_VERIFIED. */
+    /**
+     * @brief Edited kinds: the fields a line gives a value for.
+     *
+     * 0 for KST_FILE_VERIFIED.
+     */
     kst_field_set_t named;
-/**
- * @brief     /** Named fields whose @c value is raw: the line reads "raw <n>",
- *                or
-     *  the line of an editable field reads as the register block shows. */
+    /**
+     * @brief Named fields whose @c value is raw: the line reads "raw <n>", or
+     *        the line of an editable field reads as the register block shows.
+     */
     kst_field_set_t as_raw;
-/**
- * @brief     /** Per named field: the raw value for an editable field and for a
-     *  field in @c as_raw, else the displayed value in the unit of
-     *  kst_field_display(). */
+    /**
+     * @brief Per named field: the raw value for an editable field and for a
+     *        field in @c as_raw, else the displayed value in the unit of
+     *        kst_field_display().
+     */
     int32_t value[KST_F_COUNT];
-/** @brief Per named field: the line of the file, counted from 1. */
+    /** @brief Per named field: the line of the file, counted from 1. */
     uint16_t line[KST_F_COUNT];
 } kst_file_t;
 
@@ -243,7 +259,11 @@ kst_file_err_t kst_file_parse(const char *text, size_t len, kst_file_t *out,
 
 /* --- a file against a servo ----------------------------------------------- */
 
-/** @brief Whether a file loads.  The numbers are stable. */
+/**
+ * @brief Whether a file loads.
+ *
+ * The numbers are stable.
+ */
 typedef enum {
     KST_FILE_LOAD_OK = 0,            /**< @c target is the image to write */
     KST_FILE_LOAD_TYPE_MISMATCH = 1, /**< the file states another servo

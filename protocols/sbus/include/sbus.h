@@ -78,11 +78,12 @@ typedef struct {
     uint16_t channel[SBUS_CHANNELS]; /**< 0..2047, as sent */
     bool     ch17;                   /**< the two digital channels */
     bool     ch18;
-/** @brief This frame did not arrive intact at the receiver. */
+    /** @brief This frame did not arrive intact at the receiver. */
     bool     frame_lost;
-/**
- * @brief The receiver has lost the transmitter and is generating these values.
- */
+    /**
+     * @brief The receiver has lost the transmitter and is generating these
+     *        values.
+     */
     bool     failsafe;
 } sbus_frame_t;
 
@@ -111,8 +112,8 @@ void sbus_decoder_reset(sbus_decoder_t *d);
  *        frame.
  *
  * @p now_us paces the framing.  A gap of SBUS_GAP_US or more starts a new
- *           frame, whatever was half-collected before it; the gap is the only
- *           reliable boundary this protocol has.
+ * frame, whatever was half-collected before it; the gap is the only reliable
+ * boundary this protocol has.
  *
  * @param d       Decoder state.  NULL returns false.
  * @param byte    Received byte.
@@ -123,7 +124,8 @@ void sbus_decoder_reset(sbus_decoder_t *d);
 bool sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,
                       sbus_frame_t *out);
 
-/** @brief Microseconds for a raw channel value, clamped to a sane pulse.
+/**
+ * @brief Microseconds for a raw channel value, clamped to a sane pulse.
  *
  * @param raw  Raw channel value.
  * @return Pulse width in us, clamped to 800 to 2200.

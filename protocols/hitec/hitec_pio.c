@@ -14,7 +14,8 @@
 
 /**
  * @brief The longest window, lead and level fit their fields at the fastest bit
- * rate, with the divider 0.05 % short. */
+ *        rate, with the divider 0.05 % short.
+ */
 _Static_assert((uint64_t)HITEC_TIME_MAX_US * HITEC_D_BIT_RATE
                    * HITEC_PIO_CYCLES_PER_BIT / HITEC_PIO_TICK_CYCLES
                    / 1000000u * 1001u / 1000u
@@ -27,7 +28,8 @@ _Static_assert((uint64_t)HITEC_TIME_MAX_US * HITEC_D_BIT_RATE
 
 /**
  * @brief A bit time as the pad makes it: bit 0 the direction (1 drives), bit 1
- * the output level. */
+ *        the output level.
+ */
 #define PAIR(dir, level) ((uint8_t)((dir) | ((level) << 1)))
 #define RELEASED PAIR(0u, 0u)
 
@@ -90,8 +92,11 @@ uint32_t hitec_pio_cycles_ns(const hitec_pio_clock_t *clock, uint64_t cycles)
 
 /**
  * @brief @p cycles state machine cycles of @p clock, in us, rounded up and held
- * at UINT32_MAX.  The seconds come apart from the rest, so no product
- * leaves 64 bits for any count a uint64_t holds times a divider. */
+ *        at UINT32_MAX.
+ *
+ * The seconds come apart from the rest, so no product leaves 64 bits for any
+ * count a uint64_t holds times a divider.
+ */
 static uint32_t cycles_us_up(const hitec_pio_clock_t *clock, uint64_t cycles)
 {
     const uint64_t q = cycles * clock->div256;   /* system cycles x 256 */
@@ -104,7 +109,8 @@ static uint32_t cycles_us_up(const hitec_pio_clock_t *clock, uint64_t cycles)
 
 /**
  * @brief @p us as state machine cycles of @p clock, rounded to nearest, or up
- * with @p up. */
+ *        with @p up.
+ */
 static uint64_t us_cycles(const hitec_pio_clock_t *clock, uint32_t us,
                           bool up)
 {
@@ -115,9 +121,12 @@ static uint64_t us_cycles(const hitec_pio_clock_t *clock, uint32_t us,
 }
 
 /**
- * @brief The bit time of logical @p bit (1 the idle level) for @p family and
- * @p drive.  Classic: the wire carries the bit.  D series: the wire carries
- * it inverted.  Open drain drives a low wire and releases a high one. */
+ * @brief The bit time of logical @p bit (1 the idle level) for @p family and @p
+ *        drive.
+ *
+ * Classic: the wire carries the bit.  D series: the wire carries it inverted.
+ * Open drain drives a low wire and releases a high one.
+ */
 static uint8_t pair_of(uint8_t family, uint8_t drive, unsigned bit)
 {
     const unsigned wire = family == HITEC_D ? (bit ^ 1u) : bit;

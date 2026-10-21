@@ -71,8 +71,9 @@ static uint32_t crc_add(uint32_t crc, unsigned byte)
 /**
  * @brief The text as it grows.
  *
- * A byte past the buffer is counted and not
- * written, so the length tells an overflow at the end. */
+ * A byte past the buffer is counted and not written, so the length tells an
+ * overflow at the end.
+ */
 typedef struct {
     char *out;
     size_t cap;
@@ -160,8 +161,10 @@ static bool has_tenths(const kst_field_t *f)
 
 /**
  * @brief What follows the number of a field's value, terminated: "us", "%",
- *             "s",
- * "of 12" or nothing.  @p out holds 8 characters. */
+ *        "s", "of 12" or nothing.
+ *
+ * @p out holds 8 characters.
+ */
 static void unit_text(const kst_field_t *f, char *out)
 {
     buf_t b = {out, 7, 0};
@@ -298,8 +301,8 @@ static char lower(char c)
 
 /**
  * @brief Whether @p s is @p ref, compared without case and without the spaces
- *                and
- * tabs in either. */
+ *        and tabs in either.
+ */
 static bool loose_eq(const char *s, size_t n, const char *ref)
 {
     size_t i = 0;
@@ -337,7 +340,11 @@ static void trim(const char **s, size_t *n)
     }
 }
 
-/** @brief Decimal digits from @p s[*i] on.  False without a digit. */
+/**
+ * @brief Decimal digits from @p s[*i] on.
+ *
+ * False without a digit.
+ */
 static bool number(const char *s, size_t n, size_t *i, uint32_t *v)
 {
     const size_t start = *i;
@@ -396,8 +403,10 @@ typedef struct {
 
 /**
  * @brief The next line: a complete one, or with @c open the bytes behind the
- *            last
- * line end.  False at the end of the text. */
+ *        last line end.
+ *
+ * False at the end of the text.
+ */
 static bool next_line(cur_t *c, line_t *l)
 {
     const char *start = c->text + c->pos;
@@ -515,8 +524,8 @@ static kst_file_err_t register_count(const char *s, size_t n)
 /**
  * @brief One line of the register block into its 8 registers.
  *
- * @p strict takes
- * the line as kst_file_format() writes it and no other. */
+ * @p strict takes the line as kst_file_format() writes it and no other.
+ */
 static bool register_row(const char *s, size_t n, unsigned row, bool strict,
                          kst_image_t *img)
 {
@@ -569,8 +578,9 @@ static bool checksum_fits(const line_t *l, uint32_t crc)
 /**
  * @brief Add a line and its end as one LF.
  *
- * False for a line longer than the
- * format has and for a character outside 0x20 to 0x7E. */
+ * False for a line longer than the format has and for a character outside 0x20
+ * to 0x7E.
+ */
 static bool crc_line(const line_t *l, uint32_t *crc)
 {
     if (l->n > KST_FILE_LINE_MAX) {
@@ -591,9 +601,8 @@ static bool crc_line(const line_t *l, uint32_t *crc)
 /**
  * @brief The caller found a line whose first word is "checksum".
  *
- * Every state
- * below ends at that line or refuses before it, so the loop leaves with the
- * checksum compared.
+ * Every state below ends at that line or refuses before it, so the loop leaves
+ * with the checksum compared.
  *
  * Behind the checksum line only blank lines pass.  The checksum line is
  * the one line taken without its line end: its 17 characters show it
@@ -699,8 +708,8 @@ typedef struct {
     kst_type_t stated;    /**< by the type line */
     unsigned type_line;   /**< 0: the file has none */
     /**
-     * Per named field without "raw": the number as written, in the unit
-     * of kst_field_display().
+     * @brief Per named field without "raw": the number as written, in the unit
+     *        of kst_field_display().
      */
     int32_t typed[KST_F_COUNT];
 } edit_t;
@@ -722,10 +731,9 @@ static bool shows(kst_field_id_t id, int32_t display)
 /**
  * @brief The value of field @p id as a person writes it.
  *
- * @p typed receives the
- * number of a line without "raw".  @p closed is set when the line shows
- * its own end: a unit, a "[...]" or a remark behind the number.  A line
- * that ends in the digits of its number does not: a text cut inside that
+ * @p typed receives the number of a line without "raw".  @p closed is set when
+ * the line shows its own end: a unit, a "[...]" or a remark behind the number.
+ * A line that ends in the digits of its number does not: a text cut inside that
  * number reads the same.
  */
 static bool field_value(kst_field_id_t id, const char *s, size_t n,
@@ -814,8 +822,9 @@ static bool field_value(kst_field_id_t id, const char *s, size_t n,
 
 /**
  * @brief A line that is not empty, not a comment and not in the register block.
- * @p closed: see field_value(); the other lines show their end by their
- * form. */
+ *
+ * @p closed: see field_value(); the other lines show their end by their form.
+ */
 static kst_file_err_t edited_line(edit_t *e, const char *s, size_t n,
                                   unsigned line, bool *closed)
 {
@@ -880,8 +889,11 @@ static kst_file_err_t edited_line(edit_t *e, const char *s, size_t n,
 
 /**
  * @brief An editable field whose line shows what the register block holds takes
- * the block's raw value: several raw values of Max. Duty show as one
- * percentage, and the line alone gives the one its number converts to. */
+ *        the block's raw value: several raw values of Max.
+ *
+ * Duty show as one percentage, and the line alone gives the one its number
+ * converts to.
+ */
 static void take_block_values(const edit_t *e, kst_file_t *f)
 {
     for (unsigned i = 0; i < (unsigned)KST_F_COUNT; ++i) {
@@ -902,10 +914,9 @@ static void take_block_values(const edit_t *e, kst_file_t *f)
 /**
  * @brief A text may end without a line end, as an editor leaves it.
  *
- * The last
- * line is then taken when it shows its own end, and the text is refused as
- * truncated when it does not or when the line is not read: a text cut
- * inside a line never gives a shortened number.
+ * The last line is then taken when it shows its own end, and the text is
+ * refused as truncated when it does not or when the line is not read: a text
+ * cut inside a line never gives a shortened number.
  */
 static kst_file_err_t read_edited(cur_t *c, kst_file_t *f)
 {
@@ -1076,7 +1087,8 @@ static bool wanted_raw(const kst_file_t *file, kst_field_id_t id,
 
 /**
  * @brief The first field of the file, by line, whose value a broken hard rule
- * needs: putting the servo's value back clears at least one of them. */
+ *        needs: putting the servo's value back clears at least one of them.
+ */
 static kst_field_id_t blame(const kst_file_t *file, const kst_image_t *servo,
                             const kst_image_t *backup,
                             const kst_file_load_t *load, kst_rules_t hard)

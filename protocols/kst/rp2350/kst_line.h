@@ -1,9 +1,9 @@
 /**
  * @file
  * @brief The KST wire on one RP2350 pin: a kst_driver_t made of one PIO
- * (programmable input/output) state machine (kst_line.pio) and two DMA
- * (direct memory access) channels, one for the words of a frame and one
- * for the stamps of its reply window.
+ *        (programmable input/output) state machine (kst_line.pio) and two DMA
+ *        (direct memory access) channels, one for the words of a frame and one
+ *        for the stamps of its reply window.
  *
  * Implements the programming protocol of KST and Chaservo servos.  KST and
  * Chaservo are names or trademarks of their respective owners; they are used
@@ -56,8 +56,8 @@ extern "C" {
 #endif
 
 /**
- * @brief The driver ends a transaction whose state machine still runs this
- *        long after the end of the window.
+ * @brief The driver ends a transaction whose state machine still runs this long
+ *        after the end of the window.
  */
 #define KST_LINE_GRACE_US 1000u
 
@@ -71,7 +71,9 @@ typedef enum {
 } kst_line_err_t;
 
 /**
- * @brief One line.  The caller keeps the object; the fields are the driver's.
+ * @brief One line.
+ *
+ * The caller keeps the object; the fields are the driver's.
  */
 typedef struct {
     kst_pio_clock_t clock;
@@ -89,7 +91,10 @@ typedef struct {
     uint32_t rx[KST_PIO_RX_WORDS];
 } kst_line_t;
 
-/** @brief Mark @p line closed.  Call once, before the first open.
+/**
+ * @brief Mark @p line closed.
+ *
+ * Call once, before the first open.
  *
  * @param line  Line object to mark closed.
  */
@@ -97,9 +102,10 @@ void kst_line_init(kst_line_t *line);
 
 /**
  * @brief Claim the resources and take @p pin: from the return on the pad drives
- * low.  The caller has stopped every other use of the pin.  On an error
- * nothing stays claimed and the pin is not touched.  An open line is closed
- * first.
+ *        low.
+ *
+ * The caller has stopped every other use of the pin.  On an error nothing stays
+ * claimed and the pin is not touched.  An open line is closed first.
  *
  * @param line  Line object.
  * @param pin   GPIO number.
@@ -109,8 +115,9 @@ kst_line_err_t kst_line_open(kst_line_t *line, unsigned pin);
 
 /**
  * @brief Stop the state machine, give back what the open claimed and leave the
- *  pad an input with its pull-down on.  A transaction on the wire is cut.
- *  Safe on a closed line.
+ *        pad an input with its pull-down on.
+ *
+ * A transaction on the wire is cut. Safe on a closed line.
  *
  * @param line  Line object.
  */
@@ -126,7 +133,7 @@ bool kst_line_is_open(const kst_line_t *line);
 
 /**
  * @brief A transaction runs: between a start() that returned true and the
- *          poll() that returns true.
+ *        poll() that returns true.
  *
  * @param line  Line object.
  * @return true between a start that returned true and the poll that returns
@@ -136,14 +143,15 @@ bool kst_line_busy(const kst_line_t *line);
 
 /**
  * @brief The transmit half-cell the system clock gives, in ns; 0 on a closed
- *  line.
+ *        line.
  *
  * @param line  Line object.
  * @return The transmit half-cell in ns; 0 on a closed line.
  */
 uint32_t kst_line_half_cell_ns(const kst_line_t *line);
 
-/** @brief The three functions of kst_driver_t; @p ctx is the kst_line_t.
+/**
+ * @brief The three functions of kst_driver_t; @p ctx is the kst_line_t.
  *
  * @param ctx       The kst_line_t.
  * @param frame     Frame to send.
@@ -167,7 +175,8 @@ bool kst_line_poll(void *ctx, kst_capture_t *out);
  */
 uint32_t kst_line_now_us(void *ctx);
 
-/** @brief The driver for a session on @p line.
+/**
+ * @brief The driver for a session on @p line.
  *
  * @param line  Line object.
  * @return The driver for a session on the line.

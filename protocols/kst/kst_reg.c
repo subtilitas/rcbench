@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief Register image conversions and the field table.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "kst_reg.h"

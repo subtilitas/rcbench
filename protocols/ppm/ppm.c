@@ -16,7 +16,8 @@ static const ppm_cfg_t k_default = {
 };
 
 /**
- * @brief A zero field means "the default for it", so a caller can set one thing.
+ * @brief A zero field means "the default for it", so a caller can set one
+ *        thing.
  */
 static ppm_cfg_t resolve(const ppm_cfg_t *cfg)
 {

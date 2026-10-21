@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief Frame building and reply decoding for the KST wire.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "kst_wire.h"
@@ -11,7 +13,10 @@
 
 /**
  * @brief The 10 bits after the start bit: `10 00000000` reads, `00 10000000`
- * writes.  No other prefix is known. */
+ *        writes.
+ *
+ * No other prefix is known.
+ */
 #define PREFIX_READ  0x200u
 #define PREFIX_WRITE 0x080u
 
@@ -30,9 +35,8 @@ static void put_level(kst_frame_t *f, bool high)
 /**
  * @brief 27 bits, most significant first, as 54 half-cells.
  *
- * The first half-cell is
- * the low half of the start bit and is left out; a trailing low is cut, so
- * the sequence ends on the frame's last high.
+ * The first half-cell is the low half of the start bit and is left out; a
+ * trailing low is cut, so the sequence ends on the frame's last high.
  */
 static void build(uint32_t word, kst_frame_kind_t kind, kst_frame_t *out)
 {
@@ -114,9 +118,11 @@ uint32_t kst_reply_window_ns(kst_expect_t expect)
 
 /**
  * @brief The glitch rule: a level change counts once the new level has lasted
- * KST_GLITCH_NS.  On timestamps that is a pair of edges closer than that,
- * and both go.  An edge that follows a removed pair is compared with the
- * edge before the pair, so a burst of chatter ends on its last edge.
+ *        KST_GLITCH_NS.
+ *
+ * On timestamps that is a pair of edges closer than that, and both go.  An edge
+ * that follows a removed pair is compared with the edge before the pair, so a
+ * burst of chatter ends on its last edge.
  */
 static unsigned filter(const kst_capture_t *cap, uint32_t *e, uint8_t *removed)
 {
@@ -136,7 +142,9 @@ static unsigned filter(const kst_capture_t *cap, uint32_t *e, uint8_t *removed)
 }
 
 /**
- * @brief Edges at or before @p t.  The line starts low, so an odd count is high.
+ * @brief Edges at or before @p t.
+ *
+ * The line starts low, so an odd count is high.
  */
 static unsigned edges_upto(const uint32_t *e, unsigned n, uint32_t t)
 {
@@ -159,7 +167,7 @@ static bool halves_differ(const uint32_t *e, unsigned n, uint32_t t)
 
 /**
  * @brief Index of the edge after @p last nearest to @p pred and within
- * KST_RX_SEARCH_NS of it; @p n when there is none.
+ *        KST_RX_SEARCH_NS of it; @p n when there is none.
  */
 static unsigned find_mid_edge(const uint32_t *e, unsigned n, unsigned last,
                               uint32_t pred)

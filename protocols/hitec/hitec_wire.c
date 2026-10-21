@@ -1,7 +1,9 @@
 /**
  * @file
  * @brief Hitec servo programming protocols: frames, transactions and the reply
- * decoders.  See include/hitec_wire.h.
+ *        decoders.
+ *
+ * See include/hitec_wire.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -229,8 +231,8 @@ bool hitec_c_expect_of(uint8_t cmd, hitec_c_expect_t *out)
 /**
  * @brief The checks every decoder starts with.
  *
- * HITEC_RX_OK when the capture holds
- * at least one byte to look at. */
+ * HITEC_RX_OK when the capture holds at least one byte to look at.
+ */
 static hitec_rx_t common_checks(const hitec_capture_t *cap,
                                 hitec_reply_t *out)
 {
@@ -256,7 +258,8 @@ static uint32_t half_bits_ns(uint8_t family, uint32_t half)
 }
 
 /**
- * @brief Bytes 1 to @p n - 1 each start 9.5 to 15 bit times after the one before.
+ * @brief Bytes 1 to @p n - 1 each start 9.5 to 15 bit times after the one
+ *        before.
  */
 static bool gaps_ok(const hitec_capture_t *cap, unsigned n)
 {
