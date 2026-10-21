@@ -1,6 +1,7 @@
 /*
- * The rotary knob's reader: an MT6701 at 0x06 on the panel's I2C
- * (Inter-Integrated Circuit) bus, polled from a task of its own.
+ * The rotary knob's reader: an MT6701 at 0x06 on an I2C (Inter-Integrated
+ * Circuit) bus of its own (BOARD_KNOB_PIN_SDA, BOARD_KNOB_PIN_SCL), polled
+ * from a task of its own.
  *
  * The sensor is registered on the bus once, before the control task
  * starts, and the task reads it only while the setting is on, so a panel
@@ -19,10 +20,8 @@
 #include <stdint.h>
 
 /**
- * Register the sensor on the bus.  Call once, after board_init().  The
- * touch task already reads the bus by then; ESP-IDF v5.4's
- * i2c_master_bus_add_device() inserts the device under the bus lock, so the
- * add waits out a touch transaction instead of racing it.
+ * Set up the knob's bus and register the sensor on it.  Call once, before
+ * knob_task_start().  Sends nothing.
  */
 void knob_task_attach(void);
 

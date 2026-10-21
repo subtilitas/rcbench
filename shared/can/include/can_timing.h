@@ -10,7 +10,7 @@
  *
  * The arithmetic is here, in pure C with tests, rather than in a table of
  * register values.  Two controllers use it: the panel's TWAI (Two-Wire
- * Automotive Interface, the ESP32-S3's CAN controller) and the IOmcu's
+ * Automotive Interface, the ESP32-P4's CAN controller) and the IOmcu's
  * XL2515.  They have different clocks and segment limits and the same
  * arithmetic.
  *
@@ -98,7 +98,7 @@ uint32_t can_timing_max_bitrate(const can_timing_limits_t *lim);
 /** The IOmcu's XL2515 (MCP2515-compatible), given its crystal. */
 void can_timing_limits_mcp2515(can_timing_limits_t *out, uint32_t crystal_hz);
 
-/** The panel's TWAI, off the 80 MHz APB (advanced peripheral bus) clock. */
+/** The panel's TWAI on the ESP32-P4, off the 40 MHz crystal. */
 void can_timing_limits_twai(can_timing_limits_t *out);
 
 /* --------------------------------------------------- MCP2515 registers */

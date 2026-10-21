@@ -1,11 +1,9 @@
 /*
  * The SD (Secure Digital) card: mounting it, and listing what is on it.
  *
- * The card is alone on SPI2 (Serial Peripheral Interface), and its chip
- * select is on the I/O (input/output) expander rather than on a GPIO
- * (general-purpose input/output), so the SPI driver is configured with no
- * CS (chip select) pin and board_sd_cs() holds the line asserted while the
- * card is mounted.
+ * The card is on SDMMC (the SD card host) slot 0, 4 data lines, its
+ * supply on the ESP32-P4's on-chip LDO (low-dropout regulator) channel 4
+ * (board_pins.h).
  *
  * Everything above this file works in names and sizes, not paths and FILE
  * pointers, so a screen can be driven from a fake list on the host.  This
@@ -52,7 +50,7 @@ typedef struct {
 } storage_stat_t;
 
 /**
- * Bring up SPI2 and mount the card at /sdcard.
+ * Switch the card's supply on and mount the card at /sdcard.
  *
  * Never formats.  A card that starts and does not mount is looked at once
  * more, so storage_card_state() can tell a card with no FAT (File
@@ -63,7 +61,7 @@ typedef struct {
  * @return ESP_OK when a volume is mounted, also when one already was.
  *         ESP_ERR_NOT_FOUND when no card answers, which is a normal state:
  *         the bench runs without a card.  ESP_FAIL for a card FatFs does not
- *         mount, ESP-IDF's code for a card that does not start or a bus
+ *         mount, ESP-IDF's code for a card that does not start or a supply
  *         that does not come up.  ESP_ERR_INVALID_STATE while a card found
  *         gone is still held (storage_hold()).
  */
@@ -116,7 +114,8 @@ FILE *storage_fopen(const char *path, const char *mode);
  *  traffic, and the handle and its descriptor are freed. */
 int storage_fclose(FILE *f);
 
-/** Unmount and free the bus.  Safe to call when nothing was mounted.
+/** Unmount and switch the card's supply off.  Safe to call when nothing
+ *  was mounted.
  *  Clears storage_status() and storage_card_state().  The end of the
  *  card's use: nothing may still be open, and no hold is waited for. */
 void storage_deinit(void);
@@ -144,7 +143,7 @@ void storage_card_name(char *out, size_t n);
 
 /**
  * What went wrong, in a few words for the console and the start-up line:
- * "no card", "no FAT volume", "FatFs <n>", "SPI <error>", "CS <error>" or
+ * "no card", "no FAT volume", "FatFs <n>", "LDO <error>" or
  * ESP-IDF's error name.  "" when all is well.  At most 47 characters.
  */
 const char *storage_status(void);

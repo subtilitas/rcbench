@@ -127,7 +127,7 @@ fw_err_t fw_image_head(const uint8_t *head, uint32_t have, uint32_t bytes,
         || head[OFF_SEGMENTS] > FW_MAX_SEGMENTS) {
         return FW_ERR_NOT_IMAGE;
     }
-    if (le16(head + OFF_CHIP) != FW_CHIP_ESP32S3) {
+    if (le16(head + OFF_CHIP) != FW_CHIP_ESP32P4) {
         return FW_ERR_CHIP;
     }
     if (le32(head + HEADER_BYTES + 4u) < DESC_BYTES
