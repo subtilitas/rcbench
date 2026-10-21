@@ -254,6 +254,7 @@ TEST_CASE(a_card_with_no_fat_volume_is_said_so)
     CHECK(strstr(last_line()->text, "FAT32") != NULL);
     /* The second look ran once, on a slot set up for it, and let go. */
     CHECK_EQ(g_dev_adds, 1u);
+    CHECK_EQ(g_dev_removes, 1u);
     CHECK(g_slot_in_probe);
     CHECK(probe_left_nothing());
     CHECK_EQ(g_mount_tag_level, ESP_LOG_INFO);
@@ -341,6 +342,9 @@ TEST_CASE(a_second_look_that_cannot_ask_fatfs_leaves_it_unreadable)
     CHECK_STR_EQ(storage_status(), "ESP_FAIL");
     CHECK(strstr(last_line()->text, "card check: ESP_ERR_NO_MEM") != NULL);
     CHECK(probe_left_nothing());
+    /* A slot that did not come up is not let go: the host is shared. */
+    CHECK_EQ(g_dev_adds, 1u);
+    CHECK_EQ(g_dev_removes, 0u);
 
     /* The card pulled between the mount and the look. */
     slot_empty();

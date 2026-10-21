@@ -1,4 +1,8 @@
-/*
+/**
+ * @file knob_task.c
+ * @brief The knob's I2C bus, its sensor's registration and the task that
+ *        polls it.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -16,7 +20,9 @@
 
 static const char *TAG = "knob";
 
-/*
+/**
+ * @brief The longest one transaction waits, in milliseconds.
+ *
  * The bus is the knob's alone, so a transaction waits for nothing else.
  * The three transactions of one poll take about 0.3 ms at 400 kHz.  A
  * failed one costs more: the driver resets the controller and clears the
@@ -27,6 +33,7 @@ static const char *TAG = "knob";
 
 static atomic_bool s_on;
 static atomic_int  s_steps;
+/** @brief The knob's own bus; NULL when it did not come up. */
 static i2c_master_bus_handle_t s_bus;
 static i2c_master_dev_handle_t s_dev;
 /* Written by knob_task_attach() before the task exists, then the task's. */

@@ -1,5 +1,8 @@
-/*
- * The panel's CAN (Controller Area Network) driver, on the ESP32-P4's TWAI
+/**
+ * @file can_twai.h
+ * @brief The panel's CAN (Controller Area Network) driver.
+ *
+ * On the ESP32-P4's TWAI
  * (Two-Wire Automotive Interface) controller 0, GPIO22 TX and GPIO21 RX
  * (board_pins.h), clocked from the 40 MHz crystal.  The bit timing comes
  * from shared/can, which is host-tested; this file holds the peripheral's
@@ -17,10 +20,17 @@
 #include "esp_err.h"
 #include "link_can.h"
 
-/** Start TWAI at @p bitrate. */
+/**
+ * @brief Start TWAI at a bit rate made exactly from the 40 MHz crystal.
+ * @param bitrate Bits per second; PANEL_CAN_BITRATE on the link.
+ * @return ESP_OK; ESP_ERR_INVALID_ARG for a rate the crystal does not
+ *         make exactly; otherwise the TWAI driver's error, with the driver
+ *         uninstalled again.
+ */
 esp_err_t can_twai_start(uint32_t bitrate);
 
-/** Stop TWAI. */
+/** @brief Stop TWAI and uninstall its driver.  Does nothing when it is
+ *         not running. */
 void can_twai_stop(void);
 
 /** Queue one frame. @p timeout_ms of 0 does not block. */

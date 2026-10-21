@@ -61,8 +61,8 @@ CONFIG_FREERTOS_HZ=1000
 # Main task stack ----------------------------------------------------------
 # app_main runs the UI: every screen's enter, tick, event and render is
 # called on the main task.  ESP-IDF's default stack, 3584 bytes, is below
-# the UI's deepest call chain, 3856 bytes on the ESP32-S3 build, through the
-# log viewer's render and snprintf().  8192 bytes hold that with room.  The
+# the UI's deepest call chain, 3856 bytes in the ESP32-S3's Xtensa code,
+# through the log viewer's render and snprintf().  8192 bytes hold that with room.  The
 # chain on the ESP32-P4's RISC-V code is not measured.
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 

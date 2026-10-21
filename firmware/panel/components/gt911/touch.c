@@ -1,4 +1,9 @@
-/*
+/**
+ * @file touch.c
+ * @brief The GT911 polling task: reads contacts, maps them into the
+ *        panel's coordinates, crops them to the UI's area and publishes
+ *        snapshots and events.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -114,8 +119,13 @@ static void publish(const touch_point_t *pts, int count)
     }
 }
 
-/* Into the panel's coordinates, then only what lies inside the UI's
- * area: the UI draws BOARD_UI_H_RES x BOARD_UI_V_RES of the panel. */
+/**
+ * @brief Map contacts into the panel's coordinates, then publish only what
+ *        lies inside the UI's area: the UI draws BOARD_UI_H_RES x
+ *        BOARD_UI_V_RES of the panel.
+ * @param pts The controller's contacts; mapped and cropped in place.
+ * @param count How many.
+ */
 static void map_and_publish(touch_point_t *pts, int count)
 {
     for (int i = 0; i < count; ++i) {

@@ -1,7 +1,8 @@
-/*
- * The rotary knob's reader: an MT6701 at 0x06 on an I2C (Inter-Integrated
- * Circuit) bus of its own (BOARD_KNOB_PIN_SDA, BOARD_KNOB_PIN_SCL), polled
- * from a task of its own.
+/**
+ * @file knob_task.h
+ * @brief The rotary knob's reader: an MT6701 at 0x06 on an I2C
+ *        (Inter-Integrated Circuit) bus of its own (BOARD_KNOB_PIN_SDA,
+ *        BOARD_KNOB_PIN_SCL), polled from a task of its own.
  *
  * The sensor is registered on the bus once, before the control task
  * starts, and the task reads it only while the setting is on, so a panel
@@ -20,8 +21,10 @@
 #include <stdint.h>
 
 /**
- * Set up the knob's bus and register the sensor on it.  Call once, before
- * knob_task_start().  Sends nothing.
+ * @brief Set up the knob's bus and register the sensor on it.
+ *
+ * Call once, before knob_task_start().  Sends nothing.  A bus or a device
+ * that does not come up is logged; the task then reads nothing.
  */
 void knob_task_attach(void);
 

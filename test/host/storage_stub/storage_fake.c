@@ -29,6 +29,7 @@ bool       g_probe_card_gone;
 esp_err_t  g_dev_fail;
 bool       g_drives_full;
 unsigned   g_dev_adds;
+unsigned   g_dev_removes;
 int        g_dev_live;
 int        g_drive_live;
 int        g_fs_live;
@@ -198,6 +199,7 @@ esp_err_t sdmmc_host_init_slot(int slot, const sdmmc_slot_config_t *cfg)
 esp_err_t sdmmc_host_deinit_slot(int slot)
 {
     (void)slot;
+    ++g_dev_removes;
     if (g_dev_live > 0) {
         --g_dev_live;
     }
@@ -448,6 +450,7 @@ void slot_empty(void)
     g_dev_fail   = ESP_OK;
     g_drives_full = false;
     g_dev_adds   = 0u;
+    g_dev_removes = 0u;
     g_dev_live   = 0;
     g_drive_live = 0;
     g_fs_live    = 0;
