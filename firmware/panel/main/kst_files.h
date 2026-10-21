@@ -19,8 +19,10 @@
 extern "C" {
 #endif
 
-/** The card for kst_card_run(). */
-const kst_store_io_t *kst_files_io(void);
+/** The card for kst_card_run(): with @p held, the caller holds the volume
+ *  (storage_hold()) for the whole request; without, the request finds no
+ *  card, even one another task mounts meanwhile. */
+const kst_store_io_t *kst_files_io(bool held);
 
 /** Make the folder, each missing level of it.  False when it is not
  *  there afterwards. */

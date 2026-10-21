@@ -191,7 +191,7 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,104 | 2,064 |
 | `control` | `control_task` | 6,144 | 4,384 | 736 |
-| `runlog` | `log_task` | 5,632 | 3,744 | 864 |
+| `runlog` | `log_task` | 6,656 | 4,464 | 1,168 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,328 | 720 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,680 | 1,392 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,360 | 736 |
@@ -207,13 +207,14 @@ handshake and every read under it: esp_http_client reaches its transport
 through a function pointer. Its stack is the page server's, which never runs
 beside it; the handshake's depth is not measured.
 
-`runlog`'s deepest chain saves a servo file: `kst_store_save()`, the create
-in `kst_files.c` and a folder level of `BENCH/KST/CONF` made through
-`card_make_dirs()`. `CARD_CALLS` names every function a caller hands
-`card_make_dirs()`, and the tool counts each of them under every call, so
-that step is counted at its deepest callee: 64 bytes over the chain a save
-takes. The chain needs 3,744 bytes; the stack of 5,632 bytes leaves 864
-above the 1,024-byte margin.
+`runlog`'s deepest chain mounts the SD card: a servo file listed in
+`BENCH/KST/CONF` (`kst_store_preset()`), the walk's `storage_walk()`, and
+the mount again of a card found gone (`storage_read_end()`,
+`esp_vfs_fat_sdspi_mount()`). The tool follows every call the mount can
+make, `f_mkfs()` among them, which a mount that never formats does not
+reach. A run's start mounts the card on this task as well
+(`storage_check()`). The chain needs 4,464 bytes; the stack of 6,656
+bytes leaves 1,168 above the 1,024-byte margin.
 
 Measured on ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
 the frames: 320 for the FPU (floating-point unit) and vector-unit state saved
@@ -232,7 +233,7 @@ bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  232 such
+  240 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -355,15 +356,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 128,544 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 297,440 |
-| `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 106,056 |
-| `before` | heap left with the panel up and the radio off | 191,384 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 128,664 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 297,320 |
+| `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 107,248 |
+| `before` | heap left with the panel up and the radio off | 190,072 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 88,224 |
+| `left` | heap left with the largest mode up | 86,912 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every
@@ -398,14 +399,14 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
-163,904 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+163,920 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
 
 | Object | Component | .bss (bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35,968 |
+| `log_viewer_screen` | ui | 35,984 |
 | `servo_screen` | ui | 29,509 |
 | `ui_watermark` | ui | 20,504 |
 | `supply_screen` | ui | 20,508 |

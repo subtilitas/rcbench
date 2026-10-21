@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "card_state.h"
 #include "esp_err.h"
@@ -55,31 +56,91 @@ typedef struct {
  *
  * Never formats.  A card that starts and does not mount is looked at once
  * more, so storage_card_state() can tell a card with no FAT (File
- * Allocation Table) volume from one that fails another way.
+ * Allocation Table) volume from one that fails another way.  The first
+ * call makes the lock every other call takes: the start-up's, on
+ * app_main, before any task that reaches the card exists.
  *
- * @return ESP_ERR_NOT_FOUND when no card answers, which is a normal state:
+ * @return ESP_OK when a volume is mounted, also when one already was.
+ *         ESP_ERR_NOT_FOUND when no card answers, which is a normal state:
  *         the bench runs without a card.  ESP_FAIL for a card FatFs does not
  *         mount, ESP-IDF's code for a card that does not start or a bus
- *         that does not come up.
+ *         that does not come up.  ESP_ERR_INVALID_STATE while a card found
+ *         gone is still held (storage_hold()).
  */
 esp_err_t storage_init(void);
 
+/**
+ * What the slot holds now, at an event that reads the card: LOGS opening,
+ * RESCAN, a page of LOGS, a file opened in LOGS, a run's or a servo test's
+ * start, the servo programmer looking for its card.  Not once a frame.
+ *
+ * A mounted volume is asked whether its card still answers: one SEND_STATUS
+ * (CMD13) command through FatFs.  A card that does not is taken out or
+ * swapped; the volume is let go and the slot mounted again, so the volume
+ * label, the list and the run alerts are the card's in the slot now.  Held
+ * (storage_hold()), the volume is let go at the last release instead, and
+ * reads as no card until the next call.  An empty slot or one whose card
+ * did not mount is tried again.  ESP-IDF's E lines for a card that is not
+ * there are quiet for the call; the outcome is one I or W line of its own.
+ *
+ * @return storage_card_state() after the look.
+ */
+card_state_t storage_check(void);
+
+/**
+ * Keep the mounted volume from being let go: around every path call
+ * (fopen(), stat(), mkdir(), unlink(), rename(), opendir()) and for as long
+ * as a file or folder stays open.  Counted; every true is matched by one
+ * storage_release().
+ *
+ * @return false with nothing mounted, or with a card found gone: the
+ *         caller makes no card call.
+ */
+bool storage_hold(void);
+
+/** storage_hold() of the volume of mount @p mount (storage_mount_count())
+ *  only: false once another volume is mounted, so a name read from one
+ *  card is not opened or deleted on the next. */
+bool storage_hold_mount(unsigned mount);
+
+/** The end of a storage_hold() that answered true.  The last release of a
+ *  volume whose card was found gone lets the volume go. */
+void storage_release(void);
+
+/** fopen() under a hold that the file keeps until storage_fclose(); NULL,
+ *  with no hold kept, when nothing is mounted or the open fails. */
+FILE *storage_fopen(const char *path, const char *mode);
+
+/** fclose() of a storage_fopen() file, and its hold given back.  The
+ *  close is made also on a card found gone: FatFs refuses it without card
+ *  traffic, and the handle and its descriptor are freed. */
+int storage_fclose(FILE *f);
+
 /** Unmount and free the bus.  Safe to call when nothing was mounted.
- *  Clears storage_status() and storage_card_state(). */
+ *  Clears storage_status() and storage_card_state().  The end of the
+ *  card's use: nothing may still be open, and no hold is waited for. */
 void storage_deinit(void);
 
+/** A volume is mounted and its card was not found gone.  Lock-free. */
 bool storage_mounted(void);
+
+/** The mounts that worked since the start: another number after a
+ *  storage_check() is another volume, the same card's or a new one's.
+ *  Lock-free. */
+unsigned storage_mount_count(void);
 
 /** Card size and free space in bytes; 0 when nothing is mounted. */
 uint64_t storage_total_bytes(void);
 uint64_t storage_free_bytes(void);
 
 /**
- * The card's name: its volume label, or the product name in its CID (card
- * identification register) when it has no label.  Read once per mount.
- * "" when nothing is mounted.
+ * The card's name, into @p out of @p n bytes (40 hold every name): its
+ * volume label, or the product name in its CID (card identification
+ * register) when it has no label.  Read once per mount.  "" when nothing
+ * is mounted.  A copy, so that a mount on another task cannot change it
+ * under the caller.
  */
-const char *storage_card_name(void);
+void storage_card_name(char *out, size_t n);
 
 /**
  * What went wrong, in a few words for the console and the start-up line:
@@ -89,9 +150,11 @@ const char *storage_card_name(void);
 const char *storage_status(void);
 
 /**
- * What the slot holds as the last storage_init() found it, or
+ * What the slot holds as the last mount or look found it, or
  * CARD_STATE_MOUNTED while a volume is mounted.  CARD_STATE_NONE before the
- * first try and after storage_deinit().
+ * first try, after storage_deinit() and for a card found gone.
+ * CARD_STATE_UNREADABLE for a card that mounted, answers and fails a read.
+ * Lock-free: the control task and every frame may ask.
  */
 card_state_t storage_card_state(void);
 
@@ -102,6 +165,10 @@ typedef void (*storage_tick_fn)(void);
 
 /** storage_walk()'s answer for a folder that is not there. */
 #define STORAGE_WALK_NO_DIR (-2)
+/** storage_walk()'s answer when the walk found the card gone and the slot
+ *  was mounted again: what was visited is the old card's, and a walk of
+ *  the card in the slot now starts over. */
+#define STORAGE_WALK_REMOUNTED (-3)
 
 /**
  * Walk a directory, handing every matching entry to @p visit, with its size
@@ -131,10 +198,20 @@ typedef void (*storage_tick_fn)(void);
  *                  suffixes and over-long names without reaching @p visit, so
  *                  a root of unrelated files is read with nothing else
  *                  running.  It takes no argument and must be cheap.
+ * A read that fails the way a card taken out does (FatFs FR_DISK_ERR,
+ * FR_NOT_READY or FR_INVALID_OBJECT) is followed by one SEND_STATUS
+ * (CMD13).  A card that does not answer is gone: the volume is let go,
+ * and with nothing else holding it the slot is mounted again once.  A card
+ * that answers fails its reads on its own: CARD_STATE_UNREADABLE, the
+ * volume let go, and no second mount.  Any other failure leaves the volume
+ * mounted.
+ *
  * @return the number of matching entries; STORAGE_WALK_NO_DIR (-2) when
  *         the volume is mounted and has no folder @p dir, or a file holds
- *         its name; -1 when the directory cannot be opened or read to its
- *         end, or nothing is mounted.
+ *         its name; STORAGE_WALK_REMOUNTED (-3) when the walk found the
+ *         card gone and a card in the slot is mounted now; -1 when the
+ *         directory cannot be opened or read to its end, or nothing is
+ *         mounted.
  */
 int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
                  void *ctx, storage_tick_fn tick);
@@ -147,6 +224,9 @@ int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
  * (virtual file system) puts the size in st_size, an off_t of 32 bits on
  * the panel: a file of 4 GiB and more comes back as its size less a
  * multiple of 4 GiB, and one of 2 GiB and more as a negative number.
+ *
+ * A failure that says the card is gone lets the volume go as
+ * storage_walk() does, without mounting again.
  *
  * @return ESP_OK; ESP_ERR_NOT_FOUND when the volume has no such name;
  *         ESP_ERR_INVALID_STATE when nothing is mounted or @p path is not

@@ -1882,14 +1882,18 @@ The header names the card by its volume label, read once when the card is
 mounted. A card without a label shows the product name the card reports
 (for example `SC16G`), and a card that reports neither shows `SD CARD`.
 
-A card put in while none is mounted is mounted by RESCAN and opens on its
-first page. A card swapped for another while one is mounted is not mounted
-again until the panel restarts
-([STATUS](https://github.com/subtilitas/rcbench/blob/main/STATUS.md)); what
-the list shows in that state is not measured. The viewer reads from the first
-page whenever the name in the header changes, and on the panel that name
-changes only with a new mount. Two cards with the same label, or two
-unlabelled cards of one model, carry the same name.
+A card put in, taken out or swapped while the panel runs is found by the
+next RESCAN, the next opening of LOGS, the next page and the next OPEN,
+with no restart ([The SD card's format](#the-sd-cards-format)). The header,
+the list and the empty list's words are then the card's in the slot: a new
+card opens on its first page, an empty slot says `No card. Insert one and
+tap RESCAN.`. OPEN and DELETE act on the card the page was read from only,
+and a file left open in the import or plot view is read again from its own
+card only. After a swap they are refused: a file reads `Cannot open
+<name>.`, nothing is deleted, and the new card stays as it is. The viewer reads from the first page after every new mount,
+also of a card with the same label as the one before: two cards with the
+same label, or two unlabelled cards of one model, carry the same name in
+the header and are still told apart.
 
 In the plot, two fingers zoom: spreading them zooms in, pinching zooms out,
 and moving both together pans. The view stays where the fingers leave it, and
@@ -1952,7 +1956,7 @@ Nine messages say what a card did to a run. Each appears on the band:
 | `Card full or not writable. Run not recorded.` | no run number could be created |
 | `Card too slow. Run not recorded.` | every row was dropped, so there is no file for this run at all |
 | `The card was too slow. Some data is missing from the recording.` | some rows were dropped; the file's time column shows where |
-| `Data can no longer be saved to the card. Recording stopped here.` | a write failed mid-run; every later row is rejected |
+| `Data can no longer be saved to the card. Recording stopped here.` | a write failed mid-run; every later row is rejected. A card taken out during the run is found at this failure: the file is closed at once, the run goes on unrecorded, and the run's close says nothing more |
 | `Data could no longer be saved to the card. Recording incomplete.` | the same failure, said again when the run closes |
 | `The last write to the card failed. Recording incomplete.` | the close failed, so the rows since the last commit are not in the file |
 
@@ -1996,23 +2000,34 @@ or `ExFAT`. On Linux, for the card's first partition at `/dev/sdX1` on a
 `sudo mkfs.exfat /dev/sdX1`.
 
 Formatting erases the card. The panel looks for a card at start-up, at
-RESCAN, when LOGS opens, at a tab tap on LOGS while none is mounted, and on
-the servo programmer's taps listed in
-[Servo programmer](ServoProgrammer.md). What the slot holds is said in each
-place that needs a card:
+RESCAN, when LOGS opens, at a page or a tab of LOGS, at OPEN, at a run's
+start and a servo test's start, and on the servo programmer's taps listed
+in [Servo programmer](ServoProgrammer.md). It does not look once a frame.
+A look at a mounted card is one SEND_STATUS (CMD13) command. A card that
+does not answer it has been taken out or swapped: the panel lets its volume
+go and mounts what the slot holds now. A file open on that card, such as
+the run being written or a Wi-Fi download, is closed first; until the last
+one is, the slot reads as no card. A read that fails is followed by the same
+command: a card that answers it and fails its reads reads as unreadable,
+and the panel mounts it once per look, not in a loop. What the slot holds is said in each place that needs a card:
 
 | Slot | [Splash](#splash), SD card line | LOGS | Run on the band |
 |---|---|---|---|
 | empty | `no card` | `No card. Insert one and tap RESCAN.` | `No card. This run is not being recorded.` |
 | a card with no FAT or exFAT volume: NTFS, GPT or not formatted | `not FAT32/exFAT` | `Card is neither FAT32 nor exFAT. Format it on a computer.` | `Card is neither FAT32 nor exFAT. Run not recorded.` |
-| a card that does not mount for another reason: a read error, a card that does not finish its start-up | `unreadable` | `Cannot read the card. Check it on a computer, then tap RESCAN.` | `Cannot read the card. Run not recorded.` |
+| a card that does not mount for another reason, or answers and fails a read: a read error, a card that does not finish its start-up | `unreadable` | `Cannot read the card. Check it on a computer, then tap RESCAN.` | `Cannot read the card. Run not recorded.` |
 
 The panel's console line says which with the code behind it:
 `I storage: SK64G mounted, exFAT, 61002 MB` with the format of a card that
 mounts, `I storage: no card (ESP_ERR_TIMEOUT)`,
 `W storage: card holds no FAT volume (FatFs 13): format it FAT32 or exFAT`,
 or `W storage: mount failed: FatFs <n>` and `W storage: mount failed:
-<ESP-IDF error name>`. A card that starts and does not mount is started a
+<ESP-IDF error name>`. A card taken out or swapped is
+`I storage: card gone (check: FatFs 3)`, with no E line from ESP-IDF, and
+the next line says what the slot holds now. A card that answers and fails a
+read is `W storage: card answers and does not read (walk: FatFs 1)`. A card taken out during a run is found by the write that fails, and
+ESP-IDF logs that write's E lines (`sdmmc_cmd`, `diskio_sdmmc`) before the
+`I storage: card gone` line. A card that starts and does not mount is started a
 second time to ask FatFs why. That look adds one card start-up to each
 failed try, its time not measured, and nothing to a card that mounts.
 

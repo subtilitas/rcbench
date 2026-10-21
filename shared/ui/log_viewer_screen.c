@@ -204,6 +204,8 @@ static struct {
     /* The card's name when the page was read: another name on RESCAN is
      * another card, and it opens on its first page. */
     char volume[LOG_VIEWER_NAME_MAX];
+    unsigned mounts;    /* the io's mount number when the page was read */
+    unsigned open_mounts;   /* and when the open file's page was read */
 
     /* A finger on the scroll bar: the thumb follows it, held where it took
      * the thumb, grab px below the thumb's top. */
@@ -433,6 +435,18 @@ static const char *volume_now(void)
     return (vol != NULL) ? vol : "";
 }
 
+/* The I/O's mount number now, 0 without one. */
+static unsigned mounts_now(void)
+{
+    return (s.io.mounts != NULL) ? s.io.mounts(s.io.ctx) : 0u;
+}
+
+/* Whether the volume is another than the one the page was read from. */
+static bool volume_changed(void)
+{
+    return strcmp(s.volume, volume_now()) != 0 || s.mounts != mounts_now();
+}
+
 /*
  * The entry on the page that log_name_rank() puts first (@p sign 1) or last
  * (-1), or "" with an empty page: the edges PREV, NEXT and RESCAN name.
@@ -522,6 +536,7 @@ static void read_page(log_page_dir_t dir, const char *key)
     char k[LOG_VIEWER_NAME_MAX];
     snprintf(k, sizeof(k), "%s", (key != NULL) ? key : "");
     snprintf(s.volume, sizeof(s.volume), "%s", volume_now());
+    s.mounts = mounts_now();
     if (s.io.list == NULL) {
         s.listed = -1;
         s.card = CARD_STATE_NONE;
@@ -529,6 +544,17 @@ static void read_page(log_page_dir_t dir, const char *key)
         return;
     }
     int n = list_once(dir, k, LOG_VIEWER_MAX_FILES);
+    /* The list looks at the slot, and it or another task can mount
+     * another card: what was read may be the old one's, so the new one's
+     * top is read again. */
+    if (volume_changed()) {
+        snprintf(s.volume, sizeof(s.volume), "%s", volume_now());
+        s.mounts = mounts_now();
+        if (n >= 0) {
+            dir = LOG_PAGE_FROM;
+            n = list_once(LOG_PAGE_FROM, "", LOG_VIEWER_MAX_FILES);
+        }
+    }
     if (n > 0 && dir == LOG_PAGE_BEFORE && s.first < LOG_VIEWER_MAX_FILES
         && (s.first > 0 || s.n_files < LOG_VIEWER_MAX_FILES)
         && s.n_files < n) {
@@ -580,8 +606,7 @@ void log_viewer_refresh(void)
  */
 static void rescan(void)
 {
-    if (s.first == 0 || s.listed != 1
-        || strcmp(s.volume, volume_now()) != 0) {
+    if (s.first == 0 || s.listed != 1 || volume_changed()) {
         read_page(LOG_PAGE_FROM, "");
     } else {
         read_page(LOG_PAGE_FROM, page_edge(1));
@@ -679,6 +704,14 @@ static const char *delim_text(char delimiter)
     }
 }
 
+/* The open file again: from the mount its page was read from, or not at
+ * all, so a list read since from another card lends it no file. */
+static bool open_name(log_source_t *src)
+{
+    return s.open_mounts == s.mounts && s.mounts == mounts_now()
+           && s.io.open(s.name, src, s.io.ctx);
+}
+
 static void run_analysis(void)
 {
     /*
@@ -710,7 +743,7 @@ static void run_analysis(void)
 
     log_source_t src;
     point(s.open_tab);
-    if (!s.io.open(s.name, &src, s.io.ctx)) {
+    if (!open_name(&src)) {
         set_message(TR(LOG_CANNOT_OPEN), s.name);
         return;
     }
@@ -905,7 +938,7 @@ static void load_data(void)
 
     log_source_t src;
     point(s.open_tab);
-    if (!s.io.open(s.name, &src, s.io.ctx)) {
+    if (!open_name(&src)) {
         set_message(TR(LOG_CANNOT_OPEN), s.name);
         return;
     }
@@ -950,6 +983,7 @@ static void open_selected(void)
     }
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
+    s.open_mounts = s.mounts;
     s.delim_index = -1;
     s.conv = LOG_CONV_AUTO;
     run_analysis();

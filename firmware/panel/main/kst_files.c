@@ -67,10 +67,15 @@ static bool denied(int err)
     return err == EROFS || err == EACCES || err == EPERM;
 }
 
+/* Whether the caller holds the volume (kst_files_io()): not whether one
+ * is mounted now, which another task can change between the two.  The
+ * runlog task's own, set per request. */
+static bool s_held;
+
 static bool io_mounted(void *ctx)
 {
     (void)ctx;
-    return storage_mounted();
+    return s_held;
 }
 
 typedef struct {
@@ -181,7 +186,7 @@ static kst_store_io_result_t io_create(void *ctx, const char *name,
     return r;
 }
 
-const kst_store_io_t *kst_files_io(void)
+const kst_store_io_t *kst_files_io(bool held)
 {
     static const kst_store_io_t io = {
         .ctx = NULL,
@@ -192,5 +197,6 @@ const kst_store_io_t *kst_files_io(void)
         .create = io_create,
     };
 
+    s_held = held;
     return &io;
 }

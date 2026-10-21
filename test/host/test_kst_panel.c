@@ -3469,7 +3469,7 @@ TEST_CASE(a_label_under_the_wrong_row_name_fails)
           || strcmp(kst_panel_label(PG_SERVO, 2, 1), TR(KP_FILES)) != 0);
 }
 
-TEST_CASE(a_tap_with_no_card_asks_for_a_look_once)
+TEST_CASE(a_tap_asks_for_a_look_once)
 {
     fresh();
     /* Nothing is known of the card before the first feed. */
@@ -3491,10 +3491,12 @@ TEST_CASE(a_tap_with_no_card_asks_for_a_look_once)
     CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
     CHECK(kst_panel_card_look());
     CHECK(!kst_panel_card_look());
-    /* With a card no look is asked for. */
+    /* With a card the look is asked for too: the card in the slot can be
+     * another one, or none. */
     card_in();
     tap(val(PG_SERVO, 1, 0));
     settle();
+    CHECK(kst_panel_card_look());
     CHECK(!kst_panel_card_look());
 }
 
@@ -3877,7 +3879,7 @@ int main(void)
     RUN(a_port_found_held_ends_a_hold_of_arm);
     RUN(an_unknown_coordinate_is_no_row);
     RUN(a_label_under_the_wrong_row_name_fails);
-    RUN(a_tap_with_no_card_asks_for_a_look_once);
+    RUN(a_tap_asks_for_a_look_once);
     RUN(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold);
     RUN(notes_that_do_not_fit_take_pages_and_none_is_lost);
     RUN(standing_notes_are_on_the_first_page_whole);
