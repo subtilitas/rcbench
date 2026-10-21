@@ -123,9 +123,8 @@ static void acc_close(const sense_acc_t *a, uint64_t number, sense_window_t *w)
 
 /**
  * @brief FAST's window into a ring entry: every sample counted, a clipped one
- * as the end of the range it read.
- *
- * @p top and @p bottom are the ends of FAST's range.
+ * as the end of the range it read.  @p top and @p bottom are the ends of FAST's
+ * range.
  *
  * @param top The current at the top code, in µA.
  * @param bottom The current at the bottom code, in µA.
@@ -327,12 +326,6 @@ static bool i228_ok(sense_sched_t *s, sense_err_t e)
     return true;
 }
 
-/**
- * @brief Close the windows whose time has passed.
- *
- * @param s The schedule.
- * @param now_ms The current time, in ms.
- */
 static void roll_windows(sense_sched_t *s, uint64_t now_ms);
 
 /**
@@ -350,9 +343,8 @@ static uint64_t stamp(sense_sched_t *s)
 }
 
 /**
- * @brief Channel @p c's current into its window; true with a sample.
- *
- * @p at_us, when given, is when the read was done, sample or not.
+ * @brief Channel @p c's current into its window; true with a sample.  @p at_us,
+ * when given, is when the read was done, sample or not.
  *
  * @param s The schedule.
  * @param c Channel index, 0 to 11.

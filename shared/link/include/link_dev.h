@@ -4,8 +4,8 @@
  * stop.
  *
  * Pure C with the clock passed in as a millisecond count.  No timers, no
- * FreeRTOS, no pico-sdk, so both watchdogs are driven through their transitions
- * on the host, including across the 32-bit wrap at 49.7 days.
+ * FreeRTOS, no pico-sdk, so both watchdogs are driven through their
+ * transitions on the host, including across the 32-bit wrap at 49.7 days.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -44,7 +44,7 @@ typedef struct {
     uint8_t page;
     uint8_t count;    /**< registers in this page, 1..LINK_MAX_REGS */
     void  (*read)(void *ctx, uint8_t offset, uint8_t count, uint16_t *out);
-    /** Returns 0 to accept, or a link_nack_t to refuse with a reason. */
+    /** @brief Returns 0 to accept, or a link_nack_t to refuse with a reason. */
     uint8_t (*write)(void *ctx, uint8_t offset, uint8_t count,
                      const uint16_t *in);
 } link_page_t;
@@ -59,7 +59,7 @@ typedef struct {
 
     uint32_t last_request_ms;
     /**
-     * Whether a request has ever arrived.
+     * @brief Whether a request has ever arrived.
      *
      * Silence before the first one is not silence: this end is awake a few
      * hundred milliseconds before the panel starts polling, and counting
@@ -71,7 +71,7 @@ typedef struct {
     bool     silent;      /**< nothing has arrived for LINK_DEV_SILENCE_MS  */
     bool     failsafe;    /**< latched: only an explicit clear leaves it    */
     /**
-     * The arm latch: while set, a write of ARM is refused.
+     * @brief The arm latch: while set, a write of ARM is refused.
      *
      * Set by link_dev_init(), on the silence edge and by
      * link_dev_latch_arm(); cleared by link_dev_clear_failsafe() and by
@@ -106,8 +106,8 @@ void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
  * No transport is visible from here.
  *
  * False only on a null argument.  Every request produces exactly one reply,
- * refusals included: silence means an IOmcu that is not there, and must not
- * also mean a declined request.
+ * refusals included: silence means an IOmcu that is not there, and must
+ * not also mean a declined request.
  *
  * @param d The link state.
  * @param req The request received.

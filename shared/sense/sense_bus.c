@@ -235,8 +235,8 @@ uint64_t sense_be40(const uint8_t *b)
          | ((uint64_t)b[2] << 16) | ((uint64_t)b[3] << 8) | b[4];
 }
 
-/*
- * Two's complement by subtraction rather than a signed shift, which C
+/**
+ * @brief Two's complement by subtraction rather than a signed shift, which C
  * leaves to the implementation for negative numbers.
  */
 int32_t sense_sext32(uint32_t v, unsigned bits)

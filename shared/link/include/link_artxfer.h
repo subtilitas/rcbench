@@ -3,15 +3,15 @@
  * @brief Assembling a board drawing out of the blocks the link carries it in.
  *
  * The transfer happens once and the result is kept.  So the failure that
- * matters is not a slow transfer but a quiet one: a block lost and skipped, or
- * a reply arriving for a block other than the one asked for, assembled into a
- * drawing that is wrong in a way nobody sees until an operator wires a lead by
- * it.
+ * matters is not a slow transfer but a quiet one: a block lost and skipped,
+ * or a reply arriving for a block other than the one asked for, assembled
+ * into a drawing that is wrong in a way nobody sees until an operator wires
+ * a lead by it.
  *
  * Blocks are therefore taken strictly in order, one at a time, and anything
- * else is refused rather than placed.  The whole payload is checked against the
- * CRC (cyclic redundancy check) and the hash the IOmcu declared before any of
- * it counts as the board's drawing.
+ * else is refused rather than placed.  The whole payload is checked against
+ * the CRC (cyclic redundancy check) and the hash the IOmcu declared
+ * before any of it counts as the board's drawing.
  *
  * Nothing here talks to the wire.  It is fed register windows and says which
  * block to ask for next.
@@ -31,9 +31,7 @@
 extern "C" {
 #endif
 
-/**
- * @brief What the IOmcu says its drawing is, off the ARTWORK page.
- */
+/** @brief What the IOmcu says its drawing is, off the ARTWORK page. */
 typedef struct {
     uint16_t blocks;
     uint16_t width;    /**< outline, 0.01 mm                               */
@@ -59,12 +57,12 @@ typedef struct {
 /**
  * @brief Whether these LINK_AW_COUNT registers can describe a drawing at all.
  *
- * Everything that does not depend on where the drawing would go: the one format
- * this build reads, LINK_ART_DRAWING; an outline; a length from a drawing
- * header up to LINK_DRAW_MAX_BYTES; and the block count that length implies.
- * Split out because the caller has to know the size before it can find room,
- * and a page that cannot be a drawing should be refused before anything is
- * allocated for it rather than after.
+ * Everything that does not depend on where the drawing would go: the one
+ * format this build reads, LINK_ART_DRAWING; an outline; a length from a
+ * drawing header up to LINK_DRAW_MAX_BYTES; and the block count that length
+ * implies. Split out because the caller has to know the size before it can
+ * find room, and a page that cannot be a drawing should be refused before
+ * anything is allocated for it rather than after.
  *
  * @param meta The LINK_AW_COUNT registers of the ARTWORK page.
  * @param out Receives the decoded metadata when the test passes.
@@ -75,8 +73,8 @@ bool link_artxfer_meta_ok(const uint16_t *meta, link_art_meta_t *out);
 /**
  * @brief Read the metadata and get ready to assemble into @p buf.
  *
- * Refuses what link_artxfer_meta_ok() refuses, and a length longer than @p cap.
- * A transfer that cannot end well should not take the link first.
+ * Refuses what link_artxfer_meta_ok() refuses, and a length longer than
+ * @p cap. A transfer that cannot end well should not take the link first.
  *
  * @param x The transfer state to set up.
  * @param meta The LINK_AW_COUNT registers of the ARTWORK page.
@@ -102,8 +100,8 @@ uint16_t link_artxfer_next(const link_artxfer_t *x);
  *
  * Refuses a window whose LINK_AD_BLOCK is not the one being waited for, and
  * places nothing: a block out of order is a reply to a question that was not
- * asked, and guessing where it belongs is how a hole is filled with the wrong
- * bytes. The caller asks again.
+ * asked, and guessing where it belongs is how a hole is filled with the
+ * wrong bytes. The caller asks again.
  *
  * @param x The transfer state.
  * @param data The LINK_AD_COUNT registers of the ART_DATA window.
@@ -126,15 +124,15 @@ bool link_artxfer_complete(const link_artxfer_t *x);
  * declared.
  *
  * Separate from complete() because they fail differently. Incomplete is a
- * transfer to carry on with; complete and wrong is one to throw away, and the
- * difference decides whether anything is written to flash.
+ * transfer to carry on with; complete and wrong is one to throw away, and
+ * the difference decides whether anything is written to flash.
  *
  * @param x The transfer state.
  * @return true when the transfer is complete and both checks match.
  */
 bool link_artxfer_verify(const link_artxfer_t *x);
 
-/** @brief the IOmcu's side */
+/* --------------------------------------------- the IOmcu's side */
 
 /**
  * @brief The LINK_AW_COUNT registers ARTWORK answers for @p bytes of payload,

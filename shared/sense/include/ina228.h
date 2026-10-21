@@ -8,48 +8,51 @@
  * Written from the datasheet, TI SLYS021A (January 2021, revised May 2022).
  * Tables and sections below are that document's.
  *
- * Calibration (§8.1.2).  The maximum current chooses the shunt range: ADCRANGE
- * 1 (±40.96 mV, 78.125 nV a step) when the maximum across the shunt fits it,
- * else ADCRANGE 0 (±163.84 mV, 312.5 nV a step); a maximum past 163.84 mV is
- * refused (Table 8-1).
+ * Calibration (§8.1.2).  The maximum current chooses the shunt range:
+ * ADCRANGE 1 (±40.96 mV, 78.125 nV a step) when the maximum across the
+ * shunt fits it, else ADCRANGE 0 (±163.84 mV, 312.5 nV a step); a maximum
+ * past 163.84 mV is refused (Table 8-1).
  *
- * CURRENT_LSB is the ADC (analog-to-digital converter) step over the shunt, not
- * Equation 3 taken at the maximum (maximum / 2^19).  Equation 2, SHUNT_CAL =
- * 13107.2 × 10^6 × CURRENT_LSB × R, times 4 at ADCRANGE 1, then gives 13107.2 ×
- * 10^6 × 312.5 nV = 4096 at either range for every shunt, and with Equation 4
- * CURRENT = VSHUNT × 4096 / SHUNT_CAL = VSHUNT. Why:
+ * CURRENT_LSB is the ADC (analog-to-digital converter) step over the
+ * shunt, not Equation 3 taken at the maximum (maximum / 2^19).  Equation 2,
+ * SHUNT_CAL = 13107.2 × 10^6 × CURRENT_LSB × R, times 4 at ADCRANGE 1,
+ * then gives 13107.2 × 10^6 × 312.5 nV = 4096 at either range for every
+ * shunt, and with Equation 4 CURRENT = VSHUNT × 4096 / SHUNT_CAL = VSHUNT.
+ * Why:
  *
- * - The ADC's 20 bits bound the resolution.  A finer CURRENT_LSB from a maximum
- * below the range's top adds no information. - With Equation 3's LSB and such a
- * maximum, CURRENT reaches the end of its 20 bits before the ADC does, and the
- * datasheet does not say whether CURRENT then holds or wraps.  Here CURRENT and
- * VSHUNT reach their ends together, at the ADC's.
+ * - The ADC's 20 bits bound the resolution.  A finer CURRENT_LSB from a
+ *   maximum below the range's top adds no information.
+ * - With Equation 3's LSB and such a maximum, CURRENT reaches the end of
+ *   its 20 bits before the ADC does, and the datasheet does not say
+ *   whether CURRENT then holds or wraps.  Here CURRENT and VSHUNT reach
+ *   their ends together, at the ADC's.
  *
- * Equation 3's condition, CURRENT_LSB at least maximum / 2^19, still holds: the
- * range is chosen so that the maximum fits it.  4096 fits SHUNT_CAL's 15-bit
- * field (Table 7-7) whatever the shunt, so no shunt is refused for it.  A shunt
- * whose full scale at the chosen range passes INA228_FS_MA_LIMIT is refused.
+ * Equation 3's condition, CURRENT_LSB at least maximum / 2^19, still holds:
+ * the range is chosen so that the maximum fits it.  4096 fits SHUNT_CAL's
+ * 15-bit field (Table 7-7) whatever the shunt, so no shunt is refused for
+ * it.  A shunt whose full scale at the chosen range passes
+ * INA228_FS_MA_LIMIT is refused.
  *
  * The MATEK I2C-INA-BM (200 µΩ, address 0x45) at its 204.8 A: ADCRANGE 1,
  * SHUNT_CAL 4096, CURRENT_LSB 390.625 µA, power 1.25 mW, energy 20 mJ and
  * charge 390.625 µC a step.
  *
- * Identity (Tables 7-23, 7-24): MANUFACTURER_ID 5449h ("TI") and DEVICE_ID bits
- * 15-4 equal to 228h, any revision in bits 3-0.  Anything else, an INA238
- * (238xh) included, is not used and nothing is written to it.
+ * Identity (Tables 7-23, 7-24): MANUFACTURER_ID 5449h ("TI") and DEVICE_ID
+ * bits 15-4 equal to 228h, any revision in bits 3-0.  Anything else, an
+ * INA238 (238xh) included, is not used and nothing is written to it.
  *
- * Clipping.  A CURRENT or VSHUNT reading at an end of its 20-bit range (2^19 -
- * 1 or -2^19) is a clip, never a value.  With the calibration above the two
- * reach their ends together, at the ADC's full scale.  What the ADC reports
- * past its full scale is not stated; it is taken to stay at the end code.
- * DIAG_ALRT.MATHOF (Table 7-16) reports an arithmetic overflow and is the
- * caller's to read.
+ * Clipping.  A CURRENT or VSHUNT reading at an end of its 20-bit range
+ * (2^19 - 1 or -2^19) is a clip, never a value.  With the calibration
+ * above the two reach their ends together, at the ADC's full scale.  What
+ * the ADC reports past its full scale is not stated; it is taken to stay
+ * at the end code.  DIAG_ALRT.MATHOF (Table 7-16) reports an arithmetic
+ * overflow and is the caller's to read.
  *
- * Set-up written at each probe: CONFIG with ADCRANGE, SHUNT_CAL, ADC_CONFIG,
- * then CONFIG with RSTACC and CONFIG without it, and the three read back.
- * Whether RSTACC clears itself is not stated (Table 7-5); it is written back to
- * 0.  Shunt temperature compensation stays off: the shunts' coefficients are
- * not known.
+ * Set-up written at each probe: CONFIG with ADCRANGE, SHUNT_CAL,
+ * ADC_CONFIG, then CONFIG with RSTACC and CONFIG without it, and the three
+ * read back.  Whether RSTACC clears itself is not stated (Table 7-5); it is
+ * written back to 0.  Shunt temperature compensation stays off: the
+ * shunts' coefficients are not known.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -65,9 +68,7 @@
 extern "C" {
 #endif
 
-/**
- * @brief Registers, Table 7-3.
- */
+/** @brief Registers, Table 7-3. */
 enum {
     INA228_CONFIG       = 0x00,   /**< 16 bit */
     INA228_ADC_CONFIG   = 0x01,   /**< 16 bit */
@@ -85,9 +86,6 @@ enum {
     INA228_DEVICE_ID    = 0x3F,   /**< 16 bit, 228xh */
 };
 
-/**
- * @brief Identity values of the INA228.
- */
 #define INA228_MAKER_ID      0x5449u   /**< Table 7-23 */
 #define INA228_DIE_ID         0x228u   /**< DEVICE_ID bits 15-4, Table 7-24 */
 #define INA228_ADDR_MIN        0x40u   /**< A1, A0 at GND, GND: Table 7-2 */
@@ -106,24 +104,14 @@ enum {
  */
 #define INA228_SHUNT_CAL_ADC 4096u
 
-/**
- * @brief CONFIG bits, Table 7-5.
- */
+/** @brief CONFIG bits, Table 7-5. */
 #define INA228_CONFIG_RST      0x8000u
-/**
- * @brief Bits of the INA228 CONFIG register.
- */
 #define INA228_CONFIG_RSTACC   0x4000u
 #define INA228_CONFIG_TEMPCOMP 0x0020u
 #define INA228_CONFIG_ADCRANGE 0x0010u
 
-/**
- * @brief DIAG_ALRT bits, Table 7-16.
- */
+/** @brief DIAG_ALRT bits, Table 7-16. */
 #define INA228_DIAG_ALATCH    0x8000u
-/**
- * @brief Bits of the INA228 DIAG_ALRT register.
- */
 #define INA228_DIAG_CNVR      0x4000u
 #define INA228_DIAG_SLOWALERT 0x2000u
 #define INA228_DIAG_APOL      0x1000u
@@ -166,9 +154,7 @@ enum {
  */
 #define INA228_ADC_BENCH 0xF900u
 
-/**
- * @brief The ADC_CONFIG reset value, FB68h (Table 7-6).
- */
+/** @brief The ADC_CONFIG reset value, FB68h (Table 7-6). */
 #define INA228_ADC_RESET 0xFB68u
 
 /**
@@ -214,9 +200,6 @@ bool ina228_identity_ok(uint16_t maker, uint16_t device);
 
 /* ------------------------------------------------------- calibration */
 
-/**
- * @brief Result of ina228_init() and ina228_calibrate().
- */
 typedef enum {
     INA228_SETUP_OK = 0,
     INA228_SETUP_BAD_ADDR,     /**< outside 0x40 to 0x4F                  */
@@ -238,9 +221,8 @@ typedef struct {
 } ina228_cal_t;
 
 /**
- * @brief SHUNT_CAL and ADCRANGE for a shunt and a maximum current.
- *
- * @p out is filled only on INA228_SETUP_OK.
+ * @brief SHUNT_CAL and ADCRANGE for a shunt and a maximum current.  @p out is
+ * filled only on INA228_SETUP_OK.
  *
  * @param shunt_uohm Shunt resistance, in µΩ.
  * @param max_ma Maximum current, in mA.
@@ -331,9 +313,6 @@ int64_t ina228_charge_uc(const ina228_cal_t *cal, uint64_t raw40);
 
 /* -------------------------------------------------------------- driver */
 
-/**
- * @brief One INA228 on a sensor bus: its part record, calibration and registers as written.
- */
 typedef struct {
     sense_part_t part;
     ina228_cal_t cal;

@@ -15,9 +15,7 @@
 #include "link_crc.h"
 #include "link_msg.h"
 
-/**
- * @brief link_update_dev_refuses_arm() reads ARM from a frame's first register.
- */
+/* link_update_dev_refuses_arm() reads ARM from a frame's first register. */
 _Static_assert(LINK_CT_ARM == 0, "ARM is not CONTROL's first register");
 
 void link_update_dev_init(link_update_dev_t *u, const link_update_io_t *io,

@@ -1,14 +1,16 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief The host end of the link: starting transactions, accepting replies and
+ *        timeouts.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "link_host.h"
 
-/**
- * @brief For LINK_CAN_REGS_PER_FRAME, to tell a refusal of a fragment this
+/*
+ * For LINK_CAN_REGS_PER_FRAME, to tell a refusal of a fragment this
  * transaction sent from one naming a register between two fragment starts.
- *
  * The header stays transport-agnostic; only this file knows the link is CAN,
  * which STATUS.md records as a constraint of the design rather than a layer
  * waiting to be swapped.

@@ -1,6 +1,9 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief Acknowledged write and read sequences over a link port; see
+ *        link_port.h.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "link_port.h"

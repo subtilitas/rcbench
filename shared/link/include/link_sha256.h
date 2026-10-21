@@ -3,10 +3,10 @@
  * @brief SHA-256 (Secure Hash Algorithm, 256-bit digest), as FIPS (Federal
  * Information Processing Standard) 180-4 section 6.2 states it.
  *
- * The IOmcu update checks an image with it at both ends: the panel over the
- * image it sends, the IOmcu over what it wrote to flash.  One routine in
- * shared/link, so the two ends and the host suite compute the same function and
- * the suite holds it to the standard's test vectors.
+ * The IOmcu update checks an image with it at both ends: the panel
+ * over the image it sends, the IOmcu over what it wrote to flash.  One
+ * routine in shared/link, so the two ends and the host suite compute the
+ * same function and the suite holds it to the standard's test vectors.
  *
  * Fed in pieces of any length; the state is 108 bytes and no allocation.
  * Portable C, no hardware unit used on either chip.
@@ -23,9 +23,7 @@
 extern "C" {
 #endif
 
-/**
- * @brief Bytes in a digest.
- */
+/** @brief Bytes in a digest. */
 #define LINK_SHA256_BYTES 32u
 
 /**
@@ -45,9 +43,7 @@ typedef struct {
 void link_sha256_init(link_sha256_t *s);
 
 /**
- * @brief Fold @p len bytes in.
- *
- * @p data may be NULL when @p len is 0.
+ * @brief Fold @p len bytes in.  @p data may be NULL when @p len is 0.
  *
  * @param s The state, from link_sha256_init().
  * @param data The bytes to fold in; may be NULL when len is 0.
@@ -56,9 +52,7 @@ void link_sha256_init(link_sha256_t *s);
 void link_sha256_update(link_sha256_t *s, const void *data, size_t len);
 
 /**
- * @brief Pad, finish and write the 32-byte digest.
- *
- * @p s is spent afterwards.
+ * @brief Pad, finish and write the 32-byte digest.  @p s is spent afterwards.
  *
  * @param s The state, from link_sha256_init() and link_sha256_update().
  * @param out Receives the 32-byte digest.

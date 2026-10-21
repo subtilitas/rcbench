@@ -3,9 +3,9 @@
  * @brief CRC-16 (cyclic redundancy check): polynomial 0x1021, no reflection, no
  * final XOR, seed passed by the caller.
  *
- * With the seed 0xFFFF this is CRC-16/CCITT-FALSE, whose published check value
- * is 0x29B1 over the ASCII string "123456789".  With the seed 0x0000 it is
- * CRC-16/XMODEM, which the OpenYGE protocol uses (check value 0x31C3);
+ * With the seed 0xFFFF this is CRC-16/CCITT-FALSE, whose published check
+ * value is 0x29B1 over the ASCII string "123456789".  With the seed 0x0000 it
+ * is CRC-16/XMODEM, which the OpenYGE protocol uses (check value 0x31C3);
  * protocols/openyge carries its own routine and does not call this one.
  *
  * The panel link carries no CRC of its own: CAN (Controller Area Network)
@@ -23,9 +23,7 @@
 extern "C" {
 #endif
 
-/**
- * @brief The value a fresh accumulator starts at.
- */
+/** @brief The value a fresh accumulator starts at. */
 #define LINK_CRC_INIT 0xFFFFu
 
 /**

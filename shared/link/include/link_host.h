@@ -3,8 +3,9 @@
  * @brief The panel's half of the link: poll, match the reply to the question,
  * and escalate when the answers stop.
  *
- * One request outstanding at a time, which is the protocol: the IOmcu transmits
- * only when asked, so there is one request in flight and nothing to arbitrate.
+ * One request outstanding at a time, which is the protocol: the IOmcu
+ * transmits only when asked, so there is one request in flight and nothing
+ * to arbitrate.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -105,13 +106,14 @@ bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
  * @brief Offer one received message against the outstanding request.
  *
  * True when the request is answered, which for a read may take several
- * messages: @p whole then holds the reassembled reply.  Parts that land without
- * completing it return false and are not a fault; the caller keeps feeding
- * until it gets true or the request times out.
+ * messages: @p whole then holds the reassembled reply.  Parts that land
+ * without completing it return false and are not a fault; the caller keeps
+ * feeding until it gets true or the request times out.
  *
- * Anything that does not answer the question in flight is counted as a mismatch
- * and refused.  A late reply can arrive after the panel has moved on, and
- * accepting it would attach one page's registers to another page's request.
+ * Anything that does not answer the question in flight is counted as a
+ * mismatch and refused.  A late reply can arrive after the panel has moved
+ * on, and accepting it would attach one page's registers to another page's
+ * request.
  *
  * @param h The panel's link state.
  * @param part The received message.
@@ -126,8 +128,8 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
  * @brief Time out the outstanding request, and report the link down once.
  *
  * Two clocks: a request is abandoned when it has been outstanding for
- * LINK_HOST_TIMEOUT_MS, every time; the link is reported down when nothing has
- * been answered for LINK_HOST_TIMEOUT_MS, once until the next reply.
+ * LINK_HOST_TIMEOUT_MS, every time; the link is reported down when nothing
+ * has been answered for LINK_HOST_TIMEOUT_MS, once until the next reply.
  *
  * True if it abandoned a request or escalated; a caller waiting for a reply
  * stops waiting.
@@ -142,8 +144,8 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms);
 /**
  * @brief Give up on the outstanding request.
  *
- * For a caller that failed to transmit it: nothing is on the wire to wait for,
- * and an outstanding request refuses every later one until its timeout.
+ * For a caller that failed to transmit it: nothing is on the wire to wait
+ * for, and an outstanding request refuses every later one until its timeout.
  *
  * @param h The panel's link state.
  */
@@ -153,9 +155,9 @@ void link_host_abandon(link_host_t *h);
  * @brief Whether a request is outstanding.
  *
  * A caller waiting for an answer needs this rather than link_host_tick()'s
- * return, which is true for the link going quiet as well as for this request's
- * timeout: only one of the two releases the slot, and a wait that ended on the
- * other one left the host unable to send anything again.
+ * return, which is true for the link going quiet as well as for this
+ * request's timeout: only one of the two releases the slot, and a wait that
+ * ended on the other one left the host unable to send anything again.
  *
  * @param h The panel's link state.
  * @return true while a request is outstanding.
