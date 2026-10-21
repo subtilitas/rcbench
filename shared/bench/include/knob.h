@@ -152,10 +152,9 @@ typedef struct {
 /**
  * @brief Take @p addr as the sensor's address and forget the reference.
  *
- * An
- * address the panel board answers at (panel_i2c.h) is refused: the knob
- * stays detached, knob_poll_addr() names no address and nothing is ever
- * sent for it.  Returns whether the address was taken.
+ * An address the panel board answers at (panel_i2c.h) is refused: the knob
+ * stays detached, knob_poll_addr() names no address and nothing is ever sent
+ * for it.  Returns whether the address was taken.
  *
  * @param k    The knob to attach.
  * @param addr The 7-bit sensor address.

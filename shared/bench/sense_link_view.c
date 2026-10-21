@@ -6,8 +6,8 @@
  *        encoder and the parts' addresses and identities -- and the rows of
  *        SETUP the page does not hold.
  *
- * The state machine that decides what
- * is read and written is in sense_link.c.  See sense_link.h.
+ * The state machine that decides what is read and written is in sense_link.c.
+ * See sense_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -143,9 +143,8 @@ bool sense_link_take_window(sense_link_t *s, bench_state_t *b)
 /**
  * @brief Whether the page holds what the panel asks of it.
  *
- * With the map in
- * force the INA3221's enable bit and frame are the map's mirror, which the
- * panel does not ask: they are left out.
+ * With the map in force the INA3221's enable bit and frame are the map's
+ * mirror, which the panel does not ask: they are left out.
  *
  * @param s The link state.
  * @return true when the page holds the set-up asked.

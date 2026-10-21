@@ -136,8 +136,7 @@ kst_prog_msg_id_t kst_prog_say(kst_prog_t *p, unsigned id, unsigned arg)
  * @brief The last message no longer describes what is shown: an edit was taken,
  *        the switch went on, the pending values went.
  *
- * A message of the danger
- * level stays until the next one.
+ * A message of the danger level stays until the next one.
  *
  * @param p The programmer state.
  */
@@ -276,8 +275,7 @@ static kst_rules_t soft_new(const kst_prog_t *p, const kst_image_t *target)
  * @brief The image the soft rules compare with: the servo as the session found
  *        it, so that the writes of a session do not add up unseen.
  *
- * The servo as
- * last read where the session's backup is not held or is another
+ * The servo as last read where the session's backup is not held or is another
  * servo's.
  */
 static const kst_image_t *soft_base(const kst_prog_t *p)
@@ -739,11 +737,10 @@ static uint32_t journal_detours(const kst_prog_t *p)
  *        port, and holding in every register the record's value or the
  *        target's.
  *
- * A
- * register the write leaves alone holds the record's value then; a field
- * the write changes holds the one, the other, or a mix of their registers.
- * The registers of journal_detours() are exempt.  A servo of the same type
- * with other settings does not fit.
+ * A register the write leaves alone holds the record's value then; a field the
+ * write changes holds the one, the other, or a mix of their registers. The
+ * registers of journal_detours() are exempt.  A servo of the same type with
+ * other settings does not fit.
  *
  * @param p The programmer state.
  * @return true when it can.
@@ -1002,8 +999,7 @@ static void keep_back(kst_prog_t *p)
 /**
  * @brief A write that ended without the servo verified.
  *
- * True when no register
- * was written.
+ * True when no register was written.
  *
  * @param p The programmer state.
  * @param o The outcome.
@@ -1163,11 +1159,11 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
 /**
  * @brief Whether an outcome is taken.
  *
- * The one of the operation awaited is, by
- * its number.  An IOmcu that started again ends whatever is awaited.
- * The late end of a write given up is taken while nothing else is on its
- * way; with another operation asked for, it is left out: the servo is in
- * doubt already, and the operation asked for is not that outcome's.
+ * The one of the operation awaited is, by its number.  An IOmcu that started
+ * again ends whatever is awaited. The late end of a write given up is taken
+ * while nothing else is on its way; with another operation asked for, it is
+ * left out: the servo is in doubt already, and the operation asked for is not
+ * that outcome's.
  *
  * @param p The programmer state.
  * @param o The outcome.
@@ -1267,12 +1263,11 @@ static void unanswered(kst_prog_t *p, unsigned id)
 /**
  * @brief An IOmcu below link 4.15 has no LEAVE.
  *
- * Its one command from
- * PROGRAMMING to PWM is POWER_CYCLED, and with a PD mini answering the port
- * cycles the supply on it: it is sent only where no PD mini answers, where
- * it changes nothing but the port's state, and its end says that no wait
- * was applied.  With a PD mini the session stays and the message says what
- * ends it.
+ * Its one command from PROGRAMMING to PWM is POWER_CYCLED, and with a PD mini
+ * answering the port cycles the supply on it: it is sent only where no PD mini
+ * answers, where it changes nothing but the port's state, and its end says that
+ * no wait was applied.  With a PD mini the session stays and the message says
+ * what ends it.
  *
  * @param p The programmer state.
  */
@@ -2491,8 +2486,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
  * @brief The confirmed restore from a record or a file: its values become the
  *        pending ones and go out as an ordinary write.
  *
- * A restore that does not
- * start leaves the pending values as they were.
+ * A restore that does not start leaves the pending values as they were.
  *
  * @param p    The programmer state.
  * @param from The source of the image.

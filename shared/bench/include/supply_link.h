@@ -248,13 +248,11 @@ bool supply_link_settled(const supply_link_t *s);
 /**
  * @brief Whether what @p ev, one SUPPLY_LINK_EV_* bit, says still holds now.
  *
- * A
- * refused wiring -- SUPPLY_LINK_EV_WIRING_REFUSED or _WIRING_LIVE --
- * until a read shows the page holding the wiring the settings ask: pins
- * stepped back to ones the page takes end it with the first read that
- * shows them held.  With no IOmcu
- * answering it stands.  True for every other event.  The caller takes back
- * an alert it showed for a refused wiring once this is false.
+ * A refused wiring -- SUPPLY_LINK_EV_WIRING_REFUSED or _WIRING_LIVE -- until a
+ * read shows the page holding the wiring the settings ask: pins stepped back to
+ * ones the page takes end it with the first read that shows them held.  With no
+ * IOmcu answering it stands.  True for every other event.  The caller takes
+ * back an alert it showed for a refused wiring once this is false.
  *
  * @param s  The link state.
  * @param ev One SUPPLY_LINK_EV_* bit.
@@ -290,11 +288,10 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
  *        that first showed that count, and online only for a page read younger
  *        than SUPPLY_LINK_STALE_MS from a module the page drives.
  *
- * The readings are
- * marked valid (ok) only while the count moved within the last
- * SUPPLY_LINK_STALE_MS; behind a count that stands still they stay as
- * the last ones with ok 0.  Left as they are: output, which is what
- * the panel asked, and the run's extremes, totals and trip.
+ * The readings are marked valid (ok) only while the count moved within the last
+ * SUPPLY_LINK_STALE_MS; behind a count that stands still they stay as the last
+ * ones with ok 0.  Left as they are: output, which is what the panel asked, and
+ * the run's extremes, totals and trip.
  *
  * @param s      The link state.
  * @param now_ms The time, in ms.
@@ -326,9 +323,8 @@ bool supply_link_blind(const supply_link_t *s, uint32_t now_ms);
  *        on, @p mv and @p ma filled when the page's command was taken as the
  *        one asked since the last call.
  *
- * The caller's own copy of the command
- * follows it; a copy left as it was is written again at the caller's next
- * supply_link_command().
+ * The caller's own copy of the command follows it; a copy left as it was is
+ * written again at the caller's next supply_link_command().
  *
  * @param s  The link state.
  * @param on Receives the output state the page holds.
@@ -366,10 +362,9 @@ void supply_link_sag(const supply_link_t *s, uint16_t *vin_mv,
  * @brief Where the PD mini's wiring stood when last followed: the edit count
  *        and the wiring word the settings publish.
  *
- * supply_link_wiring_moved() says
- * whether either has moved since, and takes the new ones.  The count is
- * read before the word: an edit that has counted and not yet stored its
- * word, or one undone, is a move too.
+ * supply_link_wiring_moved() says whether either has moved since, and takes the
+ * new ones.  The count is read before the word: an edit that has counted and
+ * not yet stored its word, or one undone, is a move too.
  */
 typedef struct {
     bool     seen;

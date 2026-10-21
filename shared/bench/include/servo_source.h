@@ -206,8 +206,7 @@ uint32_t servo_source_event(servo_source_t *s, uint32_t now_ms);
  * @brief Put back an event servo_source_event() handed out that never reached
  *        the band, so it is handed out again after the gap.
  *
- * Not once the link
- * has gone: both events are about the IOmcu that answered.
+ * Not once the link has gone: both events are about the IOmcu that answered.
  *
  * @param s  The source state.
  * @param ev The event to put back.

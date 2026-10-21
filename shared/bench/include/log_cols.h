@@ -5,9 +5,9 @@
  *        after what it watches: FAST's channel first, then the others in
  *        channel order, at most LOG_COLS_GROUPS of them.
  *
- * The reader takes 24 columns
- * (LOG_MAX_COLUMNS), and the bench file's other columns are 14 of them, so
- * a channel past the third watching one is not logged.
+ * The reader takes 24 columns (LOG_MAX_COLUMNS), and the bench file's other
+ * columns are 14 of them, so a channel past the third watching one is not
+ * logged.
  *
  * A channel takes a group when its part is enabled, its shunt is not 0
  * and its WATCH is not NONE.  The group is "<target> current (A);

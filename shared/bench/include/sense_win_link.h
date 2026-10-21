@@ -135,8 +135,7 @@ void sense_win_link_done(sense_win_link_t *s, int result,
  *        into @p out: out->ok bit c for channel c with readings, its current
  *        and voltage flags, and the figures; every other channel 0.
  *
- * Returns whether any channel has
- * readings.  @p out is always written.
+ * Returns whether any channel has readings.  @p out is always written.
  *
  * @param s      The link state.
  * @param window The window number to find.

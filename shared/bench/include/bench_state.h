@@ -32,11 +32,10 @@ extern "C" {
  *        SENSE_WIN_B (protocol 4.25), for the log's columns per watched target:
  *        channel c = 3 a + CHn - 1 of the part at 0x40 + a.
  *
- * Bit c of ok says
- * channel c's window holds readings and was read under the window number
- * window; of no_current that it holds no current sample, of no_voltage no
- * bus voltage sample: those figures read 0 and are not readings.  Mean and
- * highest current in mA, signed; lowest bus voltage in mV.
+ * Bit c of ok says channel c's window holds readings and was read under the
+ * window number window; of no_current that it holds no current sample, of
+ * no_voltage no bus voltage sample: those figures read 0 and are not readings.
+ * Mean and highest current in mA, signed; lowest bus voltage in mV.
  */
 typedef struct {
     uint16_t window;
@@ -173,10 +172,9 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs);
  *        page @p regs built from it -- charge and energy 0 and
  *        LINK_BN_TOTALS_OK clear -- and every other register stays.
  *
- * For the IOmcu, on the
- * edge into driving: it rebuilds the page at its 50 Hz sample, and until
- * the next one a panel reading the page would see the last run's totals
- * marked as this run's.  Either pointer may be NULL.
+ * For the IOmcu, on the edge into driving: it rebuilds the page at its 50 Hz
+ * sample, and until the next one a panel reading the page would see the last
+ * run's totals marked as this run's.  Either pointer may be NULL.
  *
  * @param b    The state to update, or NULL.
  * @param regs The page to update, or NULL.
@@ -186,11 +184,10 @@ void bench_state_run_starts(bench_state_t *b, uint16_t *regs);
 /**
  * @brief One row of the bench log from @p b, into @p out.
  *
- * With @p whole the
- * sample as it is.  Without, the INA3221's window alone -- servo_new, the
- * servo_ fields and chw -- and every other field 0 with no flag set, which the
- * log writes as empty cells: the row of a window that closed before the
- * newest one of its pass.
+ * With @p whole the sample as it is.  Without, the INA3221's window alone --
+ * servo_new, the servo_ fields and chw -- and every other field 0 with no flag
+ * set, which the log writes as empty cells: the row of a window that closed
+ * before the newest one of its pass.
  *
  * @param b     The state to take the row from.
  * @param whole true for the whole sample, false for the INA3221 window alone.
@@ -288,8 +285,7 @@ bool bench_state_ina_current(const bench_state_t *b, float *out);
  *        with BENCH's within the tolerance above, or where BENCH reads its
  *        ceiling and the finer figure is at or above it.
  *
- * Nothing changes without
- * TOTALS_OK.
+ * Nothing changes without TOTALS_OK.
  *
  * @param b           The state whose totals are set.
  * @param charge_cmah The INA228 charge in 0.01 mAh.
@@ -343,11 +339,10 @@ typedef struct {
 /**
  * @brief How long into a run the INA228's totals are not taken, in seconds.
  *
- * An
- * IOmcu builds the BENCH page from its 50 Hz sample, so one that does
- * not clear the page on the arm (bench_state_run_starts()) can carry the
- * last run's totals with LINK_BN_TOTALS_OK for up to 20 ms after it; the
- * panel counts on its own until five such samples have passed.
+ * An IOmcu builds the BENCH page from its 50 Hz sample, so one that does not
+ * clear the page on the arm (bench_state_run_starts()) can carry the last run's
+ * totals with LINK_BN_TOTALS_OK for up to 20 ms after it; the panel counts on
+ * its own until five such samples have passed.
  */
 #define BENCH_TOTALS_SETTLE_S 0.1f
 
@@ -444,8 +439,8 @@ typedef struct {
  * @brief The live readings of @p b and their valid bits from @p t, for the
  *        IOmcu's sample.
  *
- * voltage, current, power, rpm, temp_esc,
- * temp_motor and flags are rebuilt; the peaks and every other field stay.
+ * voltage, current, power, rpm, temp_esc, temp_motor and flags are rebuilt; the
+ * peaks and every other field stay.
  *
  * rpm with LINK_BN_RPM_OK from a speed no older than BENCH_RPM_STALE_MS
  * and poles not 0; voltage, current and temp_esc with LINK_BN_VOLTAGE_OK,
