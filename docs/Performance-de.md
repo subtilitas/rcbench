@@ -249,7 +249,7 @@ Untergrenze:
   Servodateien geschrieben werden, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  240
+  238
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
@@ -426,7 +426,7 @@ beiden Event-Handler, die Netzwerkschnittstelle, `esp_wifi_init`,
 Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
-Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 20
+Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 21
 Objekten, 164 024 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
@@ -447,9 +447,10 @@ wpa_supplicant, 13 742 Bytes.
 | `analyser_screen` | ui | 4 036 |
 | `wa_zip` | webaccess | 2 433 |
 | `wa_page` | webaccess | 1 408 |
-| `wifi_screen` | ui | 1 320 |
+| `wifi_screen` | ui | 1 068 |
 | `ui_band` | ui | 1 040 |
 | `esc_stick_pages` | ui | 252 |
+| `update_screen` | ui | 252 |
 | `motor_settings_page` | ui | 128 |
 | `motor_workbench` | ui | 124 |
 | `motor_program_page` | ui | 44 |

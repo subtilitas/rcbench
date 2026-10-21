@@ -233,7 +233,7 @@ bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  240 such
+  238 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -398,7 +398,7 @@ event handlers, the network interface, `esp_wifi_init`,
 tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
-What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
+What lives in PSRAM instead: the zero-initialised data (.bss) of 21 objects,
 164,024 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
@@ -419,9 +419,10 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
 | `analyser_screen` | ui | 4,036 |
 | `wa_zip` | webaccess | 2,433 |
 | `wa_page` | webaccess | 1,408 |
-| `wifi_screen` | ui | 1,320 |
+| `wifi_screen` | ui | 1,068 |
 | `ui_band` | ui | 1,040 |
 | `esc_stick_pages` | ui | 252 |
+| `update_screen` | ui | 252 |
 | `motor_settings_page` | ui | 128 |
 | `motor_workbench` | ui | 124 |
 | `motor_program_page` | ui | 44 |
