@@ -1,4 +1,7 @@
-/*
+/**
+ * @file servo_screen_touch.c
+ * @brief The SERVO screen's presses, dial and knob.
+ *
  * The SERVO screen's presses: the controls a DOWN that stops what the
  * bench drives reaches first, the dial, the knob, and every press, move
  * and release on the screen's own controls.  The state and the seam are

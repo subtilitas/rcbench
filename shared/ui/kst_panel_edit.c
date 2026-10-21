@@ -1,4 +1,7 @@
-/*
+/**
+ * @file kst_panel_edit.c
+ * @brief The editors of the programmer's overlay.
+ *
  * The editors of the programmer's overlay for KST and Chaservo servos: the
  * list of choices, the keypad, the keyboard for a file's name, the
  * steppers, the actions of the SERVO page's rows and the options kept;

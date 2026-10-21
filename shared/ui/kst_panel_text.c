@@ -1,4 +1,7 @@
-/*
+/**
+ * @file kst_panel_text.c
+ * @brief The texts of the programmer's overlay.
+ *
  * The texts of the programmer's overlay for KST and Chaservo servos: the
  * tables from the model's codes to the interface's words, and the lines
  * of a message.  The state and the seam are kst_panel_int.h.

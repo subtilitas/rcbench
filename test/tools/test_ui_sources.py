@@ -15,7 +15,14 @@ UI = "shared/ui"
 
 
 def panel_ui_sources(text):
-    """shared/ui paths of the .c files in the set(SRCS ...) of @p text."""
+    """The .c files of the set(SRCS ...) block of a CMakeLists.txt.
+
+    Args:
+        text: The text of shared/ui/CMakeLists.txt.
+
+    Returns:
+        The files as repo paths under shared/ui, in the block's order.
+    """
     block = re.search(r"set\(SRCS\b(.*?)\)", text, re.S)
     assert block, "no set(SRCS ...) in shared/ui/CMakeLists.txt"
     return [f"{UI}/{name}"
@@ -24,7 +31,16 @@ def panel_ui_sources(text):
 
 
 def missing(built, sources, excluded):
-    """The files the panel builds that neither list names."""
+    """The files the panel builds that neither list names.
+
+    Args:
+        built: The repo paths the panel's build compiles.
+        sources: The renderers' list, ui_sources.SOURCES.
+        excluded: The named exclusions, ui_sources.EXCLUDED.
+
+    Returns:
+        The paths of built in neither list, in their order.
+    """
     return [p for p in built if p not in sources and p not in excluded]
 
 

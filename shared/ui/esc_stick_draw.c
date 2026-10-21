@@ -1,4 +1,7 @@
-/*
+/**
+ * @file esc_stick_draw.c
+ * @brief ESC STICK's pages drawn.
+ *
  * ESC STICK's pages drawn: the search field, the makers and the models of
  * the list, the TIMING page, a profile's items, the crumb row, the device
  * card, and the render that picks what to draw.  The state and the seam

@@ -1,4 +1,7 @@
-/*
+/**
+ * @file kst_panel_touch.c
+ * @brief The presses on the programmer's overlay.
+ *
  * The presses on the programmer's overlay for KST and Chaservo servos: a
  * DOWN, its moves and its release, the repeat of a held stepper, CLOSE and
  * the home tag, and each frame's hold and repeat.  The state and the seam

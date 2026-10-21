@@ -1,4 +1,7 @@
-/*
+/**
+ * @file kst_panel_run.c
+ * @brief The limit run's sessions on the programmer.
+ *
  * The limit run's sessions on the programmer for KST and Chaservo servos:
  * the CONNECT, the write and the LEAVE the limit run (servo_limrun.h)
  * asks of the overlay's model, and the poll that reports each step's end.

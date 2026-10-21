@@ -8,6 +8,13 @@ shared/ui/CMakeLists.txt: every file the panel builds there is here or in
 EXCLUDED, so a screen split into more files is not left out of the
 renderers.
 
+Attributes:
+    SOURCES: The C sources both renderers compile, relative to the repo.
+    INCLUDES: The include directories they compile with, relative to the
+        repo.
+    EXCLUDED: The files of shared/ui/CMakeLists.txt that SOURCES leaves
+        out, each with the reason.
+
 SPDX-License-Identifier: MIT
 """
 

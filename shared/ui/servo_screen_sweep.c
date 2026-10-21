@@ -1,4 +1,7 @@
-/*
+/**
+ * @file servo_screen_sweep.c
+ * @brief The SERVO screen's sweep core and frame step.
+ *
  * The SERVO screen's sweep core: the curve the IOmcu runs, drawn on the
  * screen's own clock; SWEEP and PAUSE and their acknowledgements; the far
  * end's curve drawn on after the screen stopped drawing it as its own;

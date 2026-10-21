@@ -1,4 +1,8 @@
-/*
+/**
+ * @file kst_panel_int.h
+ * @brief The seam between the files of the KST and Chaservo programmer's
+ *        overlay.
+ *
  * The private seam between the files of the programmer's overlay for KST
  * and Chaservo servos: kst_panel.c, the state, the rows, the helpers and
  * the caller's side; kst_panel_text.c, the texts of the messages;
@@ -61,11 +65,11 @@ typedef struct {
     const char *name;       /* the field's name, as the vendor's tool has it */
 } row_t;
 
-/* The rows of the five pages, in kst_panel.c, and their count. */
+/** @brief The rows of the five pages, in kst_panel.c, and their count. */
 #define ROW_COUNT 33
 extern const row_t k_rows[ROW_COUNT];
 
-/* A soft limit's words, in kst_panel_text.c. */
+/** @brief A soft limit's words, by rule, in kst_panel_text.c. */
 extern const int16_t k_rule[KST_RULE_COUNT];
 
 /* -------------------------------------------------------------------- state */
@@ -103,7 +107,7 @@ enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
  * widest of these that fits, and the rows of a wrapped line at LINE_H. */
 #define WARN_TOP 68
 
-/* The overlay's state. */
+/** @brief The overlay's state. */
 typedef struct {
     kst_prog_t prog;
     gfx_rect_t area;
@@ -171,96 +175,163 @@ typedef struct {
     } run;
 } kst_panel_state_t;
 
-/* The state, kst_panel_k, in kst_panel.c, so its .bss stays where
- * psram_bss.lf puts kst_panel's.  The files read it as k, the name it had
- * as the one file's static: the object's own name keeps it apart from
- * every other screen's state. */
+/** @brief The state, kst_panel_k, in kst_panel.c, so its .bss stays
+ *         where psram_bss.lf puts kst_panel's.  The files read it as k,
+ *         the name it had as the one file's static: the object's own name
+ *         keeps it apart from every other screen's state. */
 extern kst_panel_state_t kst_panel_k;
 #define k kst_panel_k
 
 /* --- the functions one file calls of another ---------------------------- */
 
-/* kst_panel.c: the card's words for @p at; the bits set in @p v; the
- * programming port and whether the tester drives one; a flag of the
- * port's report; whether the port is in programming; the servo's type. */
+/* kst_panel.c */
+
+/** @brief The card's words for @p at, for the slot as the feed says it. */
 ui_text_id_t kpn_card_text_id(ui_card_at_t at);
+/** @brief The same words, translated. */
 const char *kpn_card_tr(ui_card_at_t at);
+/** @brief The bits set in @p v. */
 unsigned kpn_ones(uint64_t v);
+/** @brief The programming port the overlay works on: the SERVO screen's
+ *         target, and the first port while that is the servo outputs. */
 uint8_t kpn_port_no(void);
+/** @brief Whether the SERVO screen's tester drives a programming port. */
 bool kpn_on_port(void);
+/** @brief Whether flag @p f is set in the port's report. */
 bool kpn_flag(uint16_t f);
+/** @brief Whether the port is in programming. */
 bool kpn_programming(void);
+/** @brief The servo's type as the card names it; 0 without a servo. */
 unsigned kpn_servo_type(void);
-/* A row's label; a field's name, its membership of @p set, its unit, its
- * decimals and its value as a row shows it; whether the draft changed
- * it. */
+/** @brief A row's label: its text, or for PORT and SERVO what they hold
+ *         now. */
 const char *kpn_row_label(const row_t *r);
+/** @brief The name a field has on its row; NULL for one without a row. */
 const char *kpn_field_name(unsigned id);
+/** @brief Whether field @p id is in @p set. */
 bool kpn_in_set(kst_field_set_t set, unsigned id);
+/** @brief A field's unit as its value shows it; "" for none. */
 const char *kpn_unit_of(kst_field_id_t id);
+/** @brief Digits after the point a field's displayed value has. */
 int kpn_decimals_of(kst_field_id_t id);
+/**
+ * @brief A field's value as its row shows it.
+ * @param id the field
+ * @param raw its raw value
+ * @param out the text
+ * @param n the size of @p out, bytes
+ * @param unit with the unit; without where a line gives it once behind two
+ *        values
+ */
 void kpn_fmt_value(kst_field_id_t id, uint16_t raw, char *out, size_t n,
                    bool unit);
+/** @brief kpn_fmt_value() with the unit. */
 void kpn_fmt_field(kst_field_id_t id, uint16_t raw, char *out, size_t n);
+/** @brief Whether the draft holds another value of @p id than the servo. */
 bool kpn_changed(kst_field_id_t id);
-/* @p s in rows of the area's width from @p y down; the y under it. */
+/**
+ * @brief @p s in rows of the area's width, a row each LINE_H.
+ * @return the y under the last row
+ */
 int kpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
                   gfx_color_t color);
-/* The tabs, a row, its value, its plus or minus key, and the row at a
- * place of a page. */
+/** @brief The tabs. */
 gfx_rect_t kpn_tabs_rect(void);
+/** @brief Row @p r, its label and its control. */
 gfx_rect_t kpn_row_rect(const row_t *r);
+/** @brief Row @p r's value, between its keys where it has them. */
 gfx_rect_t kpn_value_rect(const row_t *r);
+/** @brief Row @p r's plus key (@p up) or minus key. */
 gfx_rect_t kpn_step_rect(const row_t *r, bool up);
+/** @brief The row at (@p row, @p col) of page @p page, or NULL. */
 const row_t *kpn_row_at(int page, int row, int col);
-/* A file name as a line shows it. */
+/** @brief A file name as a line shows it: whole up to
+ *         KST_PANEL_NAME_TYPED characters, else its start and "..". */
 const char *kpn_shown(const char *name);
 
-/* kst_panel_text.c: the lines of a message -- how many values stay, a line
- * of the interrupted write's record, what an edited file is, and how many
- * values a write sends. */
+/* kst_panel_text.c */
+
+/** @brief Into @p out, KST_PANEL_LINE bytes: how many values stay as they
+ *         are, @p n. */
 void kpn_stay_line(char *out, unsigned n);
+/** @brief Into @p out: a line of the interrupted write's record, the GPIO
+ *         or the port of kst_prog_journal_arg() in @p arg. */
 void kpn_journal_line(char *out, int text, unsigned arg);
+/** @brief Into @p out: what an edited file is, with the fields it gives a
+ *         value for where the card's side counted them. */
 void kpn_kind_line(char *out, int text);
+/** @brief Into @p out, @p size bytes: the title of a write of @p n
+ *         values. */
 void kpn_write_n(char *out, size_t size, unsigned n);
 
-/* kst_panel_warn.c: the rows a page's lines take; the warning pages, each
- * opened by what it says before it acts; the name of a restore's source;
- * APPLY's hold completed. */
+/* kst_panel_warn.c */
+
+/** @brief The rows the page's lines take. */
 int kpn_warn_rows(void);
+/** @brief The page of an edit of row @p r that passes a soft limit. */
 void kpn_warn_soft(const row_t *r);
+/** @brief The page of ENABLE WRITE TO SERVO. */
 void kpn_warn_enable(void);
+/** @brief The page of a file whose values pass soft limits: its
+ *         warnings, and the draft takes it after the hold. */
 void kpn_warn_file(void);
+/** @brief The page of WRITE: the values, the horn and the card. */
 void kpn_warn_write(void);
+/** @brief The words for where a restore's values come from. */
 ui_text_id_t kpn_from_text(unsigned from);
+/** @brief The page of a restore by @p plan. */
 void kpn_warn_restore(const kst_prog_restore_t *plan);
+/** @brief The page of a backup whose values pass soft limits the servo
+ *         keeps: its warnings first, the restore's page after the hold. */
 void kpn_warn_check(const kst_prog_restore_t *plan);
+/** @brief The page of RELEASE. */
 void kpn_warn_release(void);
+/** @brief The page of the way back to PWM, with and without a PD mini. */
 void kpn_warn_leave(void);
+/** @brief The page of a programming voltage @p mv, mV, above what a
+ *         standard servo is rated for. */
 void kpn_warn_hv(uint16_t mv);
+/** @brief The hold completed: what the page asked for. */
 void kpn_warn_apply(void);
 
-/* kst_panel_edit.c: every editor shut; a file's name typed; what the
- * card's side brought; a row's editor opened; the options kept and
- * loaded; the keypad's value; a plus or minus key; whether a LEAVE's
- * wait runs; a row's action; the list's choice; whether a row's control
- * takes a tap now. */
+/* kst_panel_edit.c */
+
+/** @brief Every editor shut: the keypad, the keyboard, the list and the
+ *         page; a soft limit's edit is cancelled. */
 void kpn_close_editors(void);
+/** @brief A file's name typed: the save, or the keyboard again for a name
+ *         the card's side does not take. */
 void kpn_name_done(const char *name);
+/** @brief What the card's side brought: the list, the name again, a
+ *         file's warnings. */
 void kpn_card_moved(void);
+/** @brief Row @p r's editor: a toggle, the list or the keypad. */
 void kpn_edit_field(const row_t *r);
+/** @brief The programmer's options into the settings. */
 void kpn_options_keep(void);
+/** @brief The programmer's options from the settings. */
 void kpn_options_load(void);
+/** @brief The keypad's value @p v for the row or the supply it edits. */
 void kpn_keypad_done(float v);
+/** @brief One step of a plus (@p up) or minus key on row @p r. */
 void kpn_step(const row_t *r, bool up);
+/** @brief Whether a LEAVE's wait runs: an abort keeps the session. */
 bool kpn_leave_waits(const kst_prog_t *p);
+/** @brief The action of row @p r of the SERVO page. */
 void kpn_act(const row_t *r);
+/** @brief The list's choice @p value for what the list was opened for. */
 void kpn_choice_done(int value);
+/** @brief Whether row @p r's control takes a tap now. */
 bool kpn_row_live(const row_t *r);
 
-/* kst_panel_touch.c: the supply's own controls follow the port. */
+/* kst_panel_touch.c */
+
+/** @brief The supply's own controls follow the port: while one is out of
+ *         PWM they offer an OFF and nothing else. */
 void kpn_supply_sync(void);
 
-/* kst_panel_draw.c: whether (x, y) is on notes that take more than one
- * page. */
+/* kst_panel_draw.c */
+
+/** @brief Whether (@p x, @p y) is on notes that take more than one
+ *         page. */
 bool kpn_notes_paged_at(int x, int y);

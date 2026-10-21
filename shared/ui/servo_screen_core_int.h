@@ -1,4 +1,7 @@
-/*
+/**
+ * @file servo_screen_core_int.h
+ * @brief The SERVO screen's seam between its own five files.
+ *
  * The SERVO screen's own seam, between the five files the screen itself
  * is: servo_screen.c, the state, the profile, the command and the
  * screen's hooks; servo_screen_sweep.c, the sweep and the frame step;
@@ -195,36 +198,89 @@ typedef struct {
 
 /* --- the functions one file calls of another ---------------------------- */
 
-/* servo_screen.c: a position from an input, refused while the value is
- * not live; a motion command still waiting dropped as the bench stops
- * driving; DISARM asked of an armed bench. */
+/* servo_screen.c */
+
+/**
+ * @brief A position from an input, refused while the value is not live.
+ * @param deg the angle asked for, degrees; held to TRAVEL
+ * @return true when the position was posted
+ */
 bool svs_command(float deg);
+/** @brief A motion command still waiting is dropped as the bench stops
+ *         driving; a release, an arm and a disarm stay. */
 void svs_drop_motion(void);
+/** @brief DISARM asked of an armed bench: the value leaves LIVE now. */
 void svs_ask_disarm(void);
 
-/* servo_screen_sweep.c: the sweep paused where the output has got to,
- * started over, and SWEEP's tap; whether two curves are the same, and
- * whether SPEED slows the sweep below its curve; the frame step. */
+/* servo_screen_sweep.c */
+
+/** @brief The sweep paused where the output has got to, as PAUSE does. */
 void svs_hold_sweep(void);
+/** @brief The sweep started over under the curve the settings give now. */
 void svs_restart_sweep(void);
+/** @brief SWEEP's tap: start, pause or resume, or undo a tap whose
+ *         command has not left. */
 void svs_toggle_sweep(void);
+/**
+ * @brief Whether two curves are the same: kind, rate, amplitude and dwell.
+ * @param a one curve
+ * @param b the other
+ * @return true when all four match
+ */
 bool svs_same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b);
+/** @brief Whether SPEED is slower than the fastest change the curve asks
+ *         for, so the slew and not the curve shapes the sweep. */
 bool svs_speed_limits_sweep(void);
+/**
+ * @brief The frame step: the holds, the supply followed, the sweep drawn
+ *        and the drawn output moved towards the command at SPEED.
+ * @param dt_s the time since the last frame, seconds
+ */
 void svs_tick_body(float dt_s);
 
-/* servo_screen_link.c: a reading's digits, and the servo rail as its
- * meter reads it. */
+/* servo_screen_link.c */
+
+/**
+ * @brief @p x in units of 1/@p per, rounded half away from zero, held to
+ *        +-10^8.
+ * @param x the reading
+ * @param per the units in one of @p x's
+ * @return the count
+ */
 int32_t svs_fixed_of(float x, float per);
+/** @brief The servo rail as its meter reads it: what arrived, at the
+ *         precision it is drawn with. */
 rail_t svs_rail_now(void);
 
-/* servo_screen_touch.c: whether ARM takes a press, the controls a DOWN
- * that stops the bench reaches first, the knob's owners latched, the
- * knob's command withdrawn, and a touch event. */
+/* servo_screen_touch.c */
+
+/** @brief Whether ARM takes no press: the programmer or a limit run holds
+ *         the port and the bench is not armed. */
 bool svs_arm_locked(void);
+/**
+ * @brief Whether a DOWN at (x, y) lands on a control whose press stops
+ *        what the bench drives.
+ * @param x the press, panel px
+ * @param y the press, panel px
+ * @return true when the DOWN goes to that control first
+ */
 bool svs_safe_at(int x, int y);
+/** @brief The owners the knob yields to, latched for the frame's turn. */
 void svs_knob_note_owner(void);
+/** @brief The knob's position command withdrawn, with the value it
+ *         replaced put back. */
 void svs_knob_withdraw(void);
+/**
+ * @brief A touch event on the screen's own controls and pages.
+ * @param evt the event
+ */
 void svs_event_body(const touch_event_t *evt);
 
-/* servo_screen_draw.c: the frame. */
+/* servo_screen_draw.c */
+
+/**
+ * @brief The frame: what changed since @p buffer_index was last drawn.
+ * @param c the canvas
+ * @param buffer_index the frame buffer drawn into
+ */
 void svs_render(gfx_canvas_t *c, int buffer_index);
