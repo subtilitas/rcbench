@@ -628,7 +628,8 @@ and holds no channel of CHANNELS. Its pin carries one of these, never two:
   600 kbit/s from a PIO (programmable I/O) state machine of its own, a
   frame every 1 ms. The port is a throttle: MOTOR & ESC drives it. `FUNC`
   2, 3 and 4. No telemetry wire: bidirectional DShot is not offered on a
-  port.
+  port. A KST or HITEC session refuses a DShot port with NO_PIN: an ESC is
+  on that lead.
 - PROGRAMMING: the wire protocol for KST and Chaservo servos, which the
   servo programming page (`KST`, 0x32) runs, see
   [The programming port for KST and Chaservo servos](LinkKST.md); or, since
@@ -703,7 +704,10 @@ machine in it; without one the port holds no pin and bit 8 + n of `FLAGS`
 is set. The output slots come first: an OUTPUTS or BIND write that binds a
 DShot or PPM slot anew lets every DShot port go, binds the slots, and binds
 the ports again on the state machines left. The IOmcu's DShot driver holds
-12 pins, the 8 slots and the 4 ports.
+12 pins, the 8 slots and the 4 ports. A `FUNC` or `PIN` write that binds a
+DShot port is refused with BAD_VALUE, and changes nothing, while the
+supply's PD mini UART waits for its save and the port would leave it no
+PIO room, as a slot or TONE write is.
 A pin the chip does not have is refused when the IOmcu cannot park it, and
 the write is undone; a write of OUTPUTS or BIND that
 puts a slot on a port's pin or beside it in the silicon is refused the same

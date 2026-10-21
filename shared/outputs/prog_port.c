@@ -583,6 +583,15 @@ uint8_t prog_port_pin(const prog_port_t *p, uint8_t port)
     return (uint8_t)p->regs[REG(port, LINK_PG_PIN)];
 }
 
+uint8_t prog_port_wire_pin(const prog_port_t *p, uint8_t port, uint8_t bound)
+{
+    if (p == NULL || port >= LINK_PG_PORTS_MAX
+        || (bound & (1u << port)) == 0u || fn_dshot(p->regs, port)) {
+        return PROG_PORT_NO_PIN;
+    }
+    return prog_port_pin(p, port);
+}
+
 uint64_t prog_port_pins(const prog_port_t *p)
 {
     uint64_t pins = 0u;

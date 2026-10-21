@@ -324,7 +324,7 @@ ended.
 | PLAN_R00 | 13 | the target differs in servo register 0x00 |
 | PLAN_PAIRING | 14 | a WRITE differs in servo register 0x1D |
 | PLAN_NO_PATH | 15 | no order of writes keeps every image in between valid (4.12 and 4.13 only; result 33 since 4.14) |
-| NO_PIN | 16 | the port holds no pin, for an ENTER and for a REBOOT in PWM (since 4.13) |
+| NO_PIN | 16 | the port holds no pin, or its FUNC is DShot (since 4.28), for an ENTER and for a REBOOT in PWM (since 4.13) |
 | SUPPLY_RANGE | 17 | the staged supply voltage or current is outside what ENTER takes (since 4.13) |
 | NO_SUPPLY | 18 | a REBOOT with no PD mini answering or the PD mini asked off (since 4.13) |
 | LEAVE_MS | 19 | a LEAVE with more than 10,000 ms in register 28 (since 4.15) |

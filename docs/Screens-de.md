@@ -297,7 +297,7 @@ Mit DShot-Programmierports:
 | --- | --- |
 | `DSHOT300 PORT 2` | ein DSHOT300-Programmierport treibt das Gas, und kein Pin ist als Motor gebunden |
 | `DSHOT300 GP0 +1` | GP0 als DSHOT300 gebunden und ein DSHOT300-Port: der Port passt nicht in 18 Zeichen |
-| `GEMISCHT GP0 PORT 2` | die Pins und die Ports laufen mit verschiedenen DShot-Raten |
+| `GEMISCHT GP0 PORT 2` | die Pins und die Ports laufen mit verschiedenen Raten, oder die Pins mit einer Rate, die kein Protokoll des Katalogs hat |
 
 ![ZIEL nennt PROG-PORT 2 als DSHOT300](img/de/motor-port.png)
 

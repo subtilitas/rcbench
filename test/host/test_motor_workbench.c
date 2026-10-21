@@ -892,6 +892,9 @@ TEST_CASE(the_target_names_the_dshot_ports_the_throttle_drives)
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT600, 1u,
                                  true, 18u));
     CHECK_STR_EQ(line, "MIXED GP0 PORT 2");
+    /* Slot pins at a rate no protocol has, beside a port: MIXED too. */
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 1u, true, 18u));
+    CHECK_STR_EQ(line, "MIXED GP0 PORT 2");
     view_ports(d300, d600, 0u);
     CHECK_EQ(motor_dshot_ports(), 6u);
     CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));

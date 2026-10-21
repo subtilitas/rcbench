@@ -349,18 +349,35 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
     reserve_held();
     (void)ports_bind();
     /* Every port that holds a pin has it held by its function -- bound to
-     * the generator, or parked -- or the write is undone: the pins, the
-     * functions, the reservation and the silicon as before. */
+     * the generator or to DShot, or parked -- or the write is undone: the
+     * pins, the functions, the reservation and the silicon as before. */
+    bool refused = false;
     for (uint8_t i = 0; i < prog_port_count(&s_prog); ++i) {
         if (prog_port_pin(&s_prog, i) != PROG_PORT_NO_PIN
             && (outputs_hw_ports_bound() & (1u << i)) == 0u
             && (prog_port_pin(&was, i) != prog_port_pin(&s_prog, i)
                 || prog_port_func(&was, i) != prog_port_func(&s_prog, i))) {
-            prog_port_revert(&s_prog, &was, &s_outputs);
-            reserve_held();
-            ports_apply();
-            return LINK_NACK_BAD_VALUE;
+            refused = true;
         }
+    }
+    if (!refused && s_supply_attach && !s_pd_open
+        && supply_page_enabled(&s_supply)
+        && (prog_port_dshot(&s_prog) & ~prog_port_dshot(&was)) != 0u) {
+        /* The supply's UART waits for its save with its two state machines
+         * free: a DShot port bound now may not take that PIO room.  Tried,
+         * and let go again, as slots_take() and tone_write() do. */
+        refused = !pd_uart_open(supply_page_tx(&s_supply),
+                                supply_page_rx(&s_supply),
+                                supply_page_uart_baud(&s_supply));
+        if (!refused) {
+            pd_uart_close();
+        }
+    }
+    if (refused) {
+        prog_port_revert(&s_prog, &was, &s_outputs);
+        reserve_held();
+        ports_apply();
+        return LINK_NACK_BAD_VALUE;
     }
     ports_apply();
     prog_port_kept(&s_prog, kept_now);

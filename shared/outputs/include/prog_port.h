@@ -217,6 +217,12 @@ uint16_t prog_port_kbit(const prog_port_t *p, uint8_t port);
 /** The pin port @p port holds, or PROG_PORT_NO_PIN. */
 uint8_t prog_port_pin(const prog_port_t *p, uint8_t port);
 
+/** The pin a wire page (KST, HITEC) may take for a session on port
+ *  @p port: the port's pin while the IOmcu holds it (@p bound, bit n, as
+ *  outputs_hw_ports_bound() says), PROG_PORT_NO_PIN otherwise and for a
+ *  DShot port, whose lead goes to an ESC. */
+uint8_t prog_port_wire_pin(const prog_port_t *p, uint8_t port, uint8_t bound);
+
 /** Every pin the ports hold, one bit per pin. */
 uint64_t prog_port_pins(const prog_port_t *p);
 

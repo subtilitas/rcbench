@@ -287,7 +287,7 @@ transaction:
 | 12 | `SUPPLY_RANGE` | POWER: a set point or the off time out of range |
 | 3 | `HELD` | OPEN: the KST page holds the port |
 | 4 | `ARMED` | OPEN: the bank is ARMED |
-| 10 | `NO_PIN` | OPEN: the port has no pin |
+| 10 | `NO_PIN` | OPEN: the port has no pin, or its FUNC is DShot (since 4.28): an ESC is on that lead |
 
 The KST page refuses ENTER and a REBOOT from PWM with its `BUSY` (1) while
 this page holds the port.

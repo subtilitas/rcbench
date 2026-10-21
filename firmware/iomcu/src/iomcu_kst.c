@@ -15,16 +15,13 @@
  * page's module is the one switched.
  */
 
-/* The pin of a port the generator has bound; a port without a pin, or one
- * the silicon refused, has none to hand over. */
+/* The pin of a port the IOmcu holds; a port without a pin, one the
+ * silicon refused, or a DShot port, whose lead goes to an ESC, has none
+ * to hand over (prog_port_wire_pin()).  KST and HITEC both ask here. */
 uint8_t kst_hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
-    if (port >= LINK_PG_PORTS_MAX
-        || (outputs_hw_ports_bound() & (1u << port)) == 0u) {
-        return PROG_PORT_NO_PIN;
-    }
-    return prog_port_pin(&s_prog, port);
+    return prog_port_wire_pin(&s_prog, port, outputs_hw_ports_bound());
 }
 
 /* The port's pin from the generator to the wire driver.  The port says it

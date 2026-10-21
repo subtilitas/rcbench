@@ -34,6 +34,8 @@
 #include "outputs_hw.h"
 #include "pico/stdlib.h"
 #include "port_park.h"
+#include "prog_port.h"
+#include "dshot.h"
 
 uint64_t pico_stub_us;
 
@@ -400,13 +402,77 @@ TEST_CASE(a_dshot_port_frames_every_ms_only_while_armed_for_the_throttle)
     outputs_hw_service(&o);
     CHECK_EQ(g_dshot_sends, 0);
     CHECK_EQ(g_dshot_stops, 1);
-    /* And the throttle is at its rest when it is armed again. */
-    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), 0u);
+}
+
+/* What iomcu_pages.c's control_write() does with a CONTROL frame: the arm,
+ * then THROTTLE (0 to 10000) to every throttle channel up to the last
+ * programming port's. */
+static void control_frame(outputs_t *o, uint8_t roles, uint16_t thr,
+                          uint32_t now)
+{
+    outputs_arm_roles(o, roles, now);
+    (void)outputs_set_role_channels(
+        o, OUT_ROLE_THROTTLE, (uint8_t)(PROG_PORT_CHANNEL0 + LINK_PG_PORTS_MAX),
+        (uint16_t)(((uint32_t)thr * OUT_SPAN) / LINK_THROTTLE_MAX), now);
+}
+
+/*
+ * A re-arm as the IOmcu's main loop runs it: the CONTROL frame, then
+ * outputs_step(), then the service.  The frame that arms carries the
+ * page's THROTTLE and sets the port's command before the first frame goes
+ * out, so the first frame after a re-arm is that throttle, not the one
+ * the port ran at before the disarm.  The panel's MOTOR & ESC writes
+ * THROTTLE 0 before ARM (throttle_from_zero()), and SAFE from the gate
+ * sets the page's THROTTLE to 0 (safety_gate.c): the first frame is then
+ * DShot 0, MOTOR_STOP.
+ */
+TEST_CASE(a_dshot_port_rearmed_sends_the_arming_frames_throttle_first)
+{
+    outputs_t o;
+    throttle_bank(&o);
+    outputs_hw_init();
+    pico_stub_us = 2000000u;
+    uint32_t now = 0u;
+    dshot_port(14u, 300u);
+    const uint8_t thr = OUT_ROLE_BIT(OUT_ROLE_THROTTLE);
+    /* Running at full throttle. */
+    control_frame(&o, thr, LINK_THROTTLE_MAX, now);
+    outputs_step(&o, now);
+    outputs_hw_service(&o);
+    CHECK_EQ(g_dshot_value, 2047u);
+    /* STOP: no frame. */
+    control_frame(&o, 0u, LINK_THROTTLE_MAX, ++now);
+    outputs_step(&o, now);
+    counts_zero();
+    pico_stub_us += 1000u;
+    outputs_hw_service(&o);
+    CHECK_EQ(g_dshot_sends, 0);
+    /* Re-armed with THROTTLE 0: the first frame is MOTOR_STOP. */
+    control_frame(&o, thr, 0u, ++now);
+    outputs_step(&o, now);
     counts_zero();
     g_dshot_value = 0xFFFFu;
+    pico_stub_us += 1000u;
     outputs_hw_service(&o);
     CHECK_EQ(g_dshot_sends, 1);
-    CHECK_EQ(g_dshot_value, 0u);
+    CHECK_EQ(g_dshot_value, (uint16_t)DSHOT_CMD_MOTOR_STOP);
+    /* The page's THROTTLE is what a re-arm runs at: 50.00 % is the frame
+     * dshot_throttle() makes of half the span. */
+    control_frame(&o, 0u, 0u, ++now);
+    outputs_step(&o, now);
+    outputs_hw_service(&o);
+    control_frame(&o, thr, 5000u, ++now);
+    outputs_step(&o, now);
+    pico_stub_us += 1000u;
+    outputs_hw_service(&o);
+    CHECK_EQ(g_dshot_value, dshot_throttle(OUT_SPAN / 2u, OUT_SPAN));
+    /* ARM SURFACE alone after it: no frame, whatever THROTTLE holds. */
+    control_frame(&o, OUT_ROLE_BIT(OUT_ROLE_SURFACE), 5000u, ++now);
+    outputs_step(&o, now);
+    counts_zero();
+    pico_stub_us += 1000u;
+    outputs_hw_service(&o);
+    CHECK_EQ(g_dshot_sends, 0);
 }
 
 /* The port's own drive bit is the tester's, for SERVO PWM: a DShot port
@@ -514,6 +580,7 @@ int main(void)
     RUN(a_dshot_port_no_state_machine_is_left_for_is_not_held);
     RUN(a_dshot_port_frames_every_ms_only_while_armed_for_the_throttle);
     RUN(a_dshot_port_ignores_the_tester_drive_bit);
+    RUN(a_dshot_port_rearmed_sends_the_arming_frames_throttle_first);
     RUN(a_dshot_port_period_survives_the_clock_wrap);
     RUN(a_dshot_slot_bound_anew_goes_before_a_dshot_port);
     return test_summary("outputs_hw_ports");

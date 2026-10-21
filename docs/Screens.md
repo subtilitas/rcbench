@@ -281,7 +281,7 @@ With DShot programming ports:
 | --- | --- |
 | `DSHOT300 PORT 2` | a DSHOT300 programming port drives the throttle and no pin is bound as a motor |
 | `DSHOT300 GP0 +1` | GP0 bound as DSHOT300 and a DSHOT300 port: the port does not fit in 18 characters |
-| `MIXED GP0 PORT 2` | the pins and the ports run at different DShot rates |
+| `MIXED GP0 PORT 2` | the pins and the ports run at different rates, or the pins at a rate no catalogue protocol has |
 
 ![TARGET names PROG PORT 2 as DSHOT300](img/motor-port.png)
 

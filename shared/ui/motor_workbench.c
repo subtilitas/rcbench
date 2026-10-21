@@ -306,9 +306,10 @@ bool motor_throttle_target(char *out, size_t size, uint8_t proto,
             pname = TR(MO_TGT_MIXED);
         }
     }
+    /* Slot pins at a rate no protocol has beside a port are two rates. */
     if (pins == 0u) {
         name = pname;
-    } else if (name != NULL && strcmp(name, pname) != 0) {
+    } else if (name == NULL || strcmp(name, pname) != 0) {
         name = TR(MO_TGT_MIXED);
     }
     target_with_ports(out, size, name, pins, ports, cells);

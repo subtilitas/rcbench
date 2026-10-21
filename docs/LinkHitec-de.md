@@ -300,7 +300,7 @@ dieser Reihenfolge für eine Transaktion:
 | 12 | `SUPPLY_RANGE` | POWER: ein Sollwert oder die Auszeit außerhalb des Bereichs |
 | 3 | `HELD` | OPEN: die KST-Page hält den Port |
 | 4 | `ARMED` | OPEN: die Bank ist ARMED |
-| 10 | `NO_PIN` | OPEN: der Port hat keinen Pin |
+| 10 | `NO_PIN` | OPEN: der Port hat keinen Pin, oder seine FUNC ist DShot (seit 4.28): an dieser Leitung hängt ein ESC |
 
 Die KST-Page weist ENTER und ein REBOOT aus PWM mit ihrem `BUSY` (1) ab,
 solange diese Page den Port hält.

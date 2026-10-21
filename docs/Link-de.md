@@ -691,7 +691,8 @@ eines davon, nie zwei:
   oder 600 kbit/s aus einer eigenen State Machine der PIO (Programmable
   I/O), ein Frame alle 1 ms. Der Port ist ein Throttle: MOTOR & ESC treibt
   ihn. `FUNC` 2, 3 und 4. Keine Telemetrie-Leitung: bidirektionales DShot
-  gibt es auf einem Port nicht.
+  gibt es auf einem Port nicht. Eine KST- oder HITEC-Sitzung weist einen
+  DShot-Port mit NO_PIN ab: an dieser Leitung hängt ein ESC.
 - PROGRAMMING: das Leitungsprotokoll für KST- und Chaservo-Servos, das die
   Servo-Programmier-Page (`KST`, 0x32) fährt, siehe
   [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md); oder,
@@ -773,7 +774,11 @@ State Machine; ohne sie hält der Port keinen Pin, und Bit 8 + n von
 OUTPUTS oder BIND, das einen DShot- oder PPM-Slot neu bindet, lässt jeden
 DShot-Port los, bindet die Slots und bindet die Ports wieder auf den State
 Machines, die übrig sind. Der DShot-Treiber des IOmcu hält 12 Pins, die 8
-Slots und die 4 Ports. Ein Pin, den der Chip nicht
+Slots und die 4 Ports. Ein Schreiben von `FUNC` oder `PIN`, das einen
+DShot-Port bindet, wird mit BAD_VALUE abgewiesen und ändert nichts,
+solange der PD-mini-UART der Versorgung auf sein Speichern wartet und der
+Port ihm keinen PIO-Platz ließe, wie ein Schreiben eines Slots oder von
+TONE. Ein Pin, den der Chip nicht
 hat, wird abgewiesen, wenn der IOmcu ihn nicht parken kann, und das
 Schreiben wird zurückgenommen; ein Schreiben von
 OUTPUTS oder BIND, das einen Slot auf den Pin eines Ports oder im Silizium

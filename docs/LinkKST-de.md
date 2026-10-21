@@ -353,7 +353,7 @@ Operation plant; es ist nie das Ergebnis einer beendeten Operation.
 | PLAN_R00 | 13 | das Ziel in Servoregister 0x00 abweicht |
 | PLAN_PAIRING | 14 | ein WRITE in Servoregister 0x1D abweicht |
 | PLAN_NO_PATH | 15 | keine Reihenfolge von Schreibzugriffen jedes Image dazwischen gültig hält (nur 4.12 und 4.13; seit 4.14 Ergebnis 33) |
-| NO_PIN | 16 | der Port keinen Pin hält, bei einem ENTER und bei einem REBOOT in PWM (seit 4.13) |
+| NO_PIN | 16 | der Port keinen Pin hält oder seine FUNC DShot ist (seit 4.28), bei einem ENTER und bei einem REBOOT in PWM (seit 4.13) |
 | SUPPLY_RANGE | 17 | die bereitgestellte Versorgungsspannung oder der Strom außerhalb dessen liegt, was ENTER nimmt (seit 4.13) |
 | NO_SUPPLY | 18 | ein REBOOT, bei dem kein PD mini antwortet oder der PD mini aus angefordert ist (seit 4.13) |
 | LEAVE_MS | 19 | ein LEAVE mit mehr als 10 000 ms in Register 28 (seit 4.15) |

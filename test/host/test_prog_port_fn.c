@@ -516,6 +516,32 @@ TEST_CASE(a_dshot_port_is_no_pulse_no_target_and_waits_for_rest)
     CHECK_EQ(prog_port_dshot(&pg), 6u);   /* still asked for */
 }
 
+/* A session's wire page (KST, HITEC) gets no pin on a DShot port: an ESC
+ * is on that lead.  SERVO PWM and NONE ports hand theirs over while the
+ * IOmcu holds them. */
+TEST_CASE(a_wire_session_gets_no_pin_on_a_dshot_port)
+{
+    fresh();
+    CHECK_EQ(put(PIN(0u), 13u), 0u);
+    CHECK_EQ(put(PIN(1u), 14u), 0u);
+    CHECK_EQ(put(PIN(2u), 15u), 0u);
+    CHECK_EQ(put(FN(2u), D300_FN), 0u);
+    hold_all();
+    CHECK_EQ(prog_port_wire_pin(&pg, 0u, 0x7u), 13u);   /* SERVO PWM */
+    CHECK_EQ(prog_port_wire_pin(&pg, 1u, 0x7u), 14u);   /* NONE */
+    CHECK_EQ(prog_port_wire_pin(&pg, 2u, 0x7u), PROG_PORT_NO_PIN);
+    /* Not held, past the ports, no page: none. */
+    CHECK_EQ(prog_port_wire_pin(&pg, 0u, 0x6u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_wire_pin(&pg, 3u, 0xFu), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_wire_pin(&pg, LINK_PG_PORTS_MAX, 0xFFu),
+             PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_wire_pin(NULL, 0u, 0x7u), PROG_PORT_NO_PIN);
+    /* Back to NONE: handed over again. */
+    CHECK_EQ(put(FN(2u), NONE_FN), 0u);
+    hold_all();
+    CHECK_EQ(prog_port_wire_pin(&pg, 2u, 0x7u), 15u);
+}
+
 /*
  * The kept word holds 1 + FUNC: DShot is 3 to 5.  A 4.26 or 4.27 image
  * takes 1 and 2 only and reads 3 to 5 as the port's default, as it reads
@@ -570,5 +596,6 @@ int main(void)
     RUN(a_dshot_port_is_under_the_pin_rules_and_no_pwm_rule);
     RUN(a_dshot_port_is_no_pulse_no_target_and_waits_for_rest);
     RUN(the_kept_word_restores_dshot_and_an_older_image_its_default);
+    RUN(a_wire_session_gets_no_pin_on_a_dshot_port);
     return test_summary("prog_port_fn");
 }
