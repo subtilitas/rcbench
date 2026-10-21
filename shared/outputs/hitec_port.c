@@ -29,11 +29,21 @@ _Static_assert(HITEC_RX_MAX == 16 && HITEC_TX_MAX == 8,
                "the page carries 16 bytes in and 8 out");
 _Static_assert(LINK_HITEC_OP_COUNT <= 16, "the op is 4 bits");
 
+/** @brief The transaction count stops at this value (12 bits). */
 #define COUNT_MAX 0x0FFFu
 
-/* A staged register by its write offset. */
+/**
+ * @brief The staged register @p reg of @p p, by its write offset.
+ */
 #define ST(p, reg) ((p)->staged[(reg) - LINK_HT_W_LINE])
 
+/**
+ * @brief Read the 32-bit staged value at write offset @p lo, low word first.
+ *
+ * @param p  The port.
+ * @param lo Write offset of the low 16-bit register.
+ * @return The registers lo and lo + 1 joined, lo in the low half.
+ */
 static uint32_t st32(const hitec_port_t *p, unsigned lo)
 {
     return (uint32_t)ST(p, lo) | ((uint32_t)ST(p, lo + 1u) << 16);
@@ -41,6 +51,13 @@ static uint32_t st32(const hitec_port_t *p, unsigned lo)
 
 /* --- the supply ---------------------------------------------------------- */
 
+/**
+ * @brief Read the supply's view of the port into @p v.
+ *
+ * @param p The port.
+ * @param v Receives the view; zeroed first.
+ * @return true when the supply is online; false when the build has no supply.
+ */
 static bool supply_view(const hitec_port_t *p, supply_port_view_t *v)
 {
     memset(v, 0, sizeof(*v));
@@ -51,6 +68,11 @@ static bool supply_view(const hitec_port_t *p, supply_port_view_t *v)
     return v->online;
 }
 
+/**
+ * @brief Ask the supply off, when the build has a supply to switch.
+ *
+ * @param p The port.
+ */
 static void supply_off(hitec_port_t *p)
 {
     if (p->hw.supply_set != NULL) {
@@ -60,13 +82,23 @@ static void supply_off(hitec_port_t *p)
 
 /* --- states -------------------------------------------------------------- */
 
+/**
+ * @brief Start an operation: record its code and set the result to RUNNING.
+ *
+ * @param p  The port.
+ * @param op The operation to record.
+ */
 static void op_begin(hitec_port_t *p, link_hitec_op_t op)
 {
     p->op = (uint8_t)op;
     p->result = (uint8_t)LINK_HITEC_RESULT_RUNNING;
 }
 
-/** @brief Back to free: the line closed, the pin the generator's. */
+/**
+ * @brief Back to free: the line closed, the pin the generator's.
+ *
+ * @param p The port.
+ */
 static void go_free(hitec_port_t *p)
 {
     const bool had_pin = p->has_pin != 0u;
@@ -81,7 +113,11 @@ static void go_free(hitec_port_t *p)
     }
 }
 
-/** @brief The capture is in: decode it as the transaction asked. */
+/**
+ * @brief The capture is in: decode it as the transaction asked.
+ *
+ * @param p The port.
+ */
 static void finish(hitec_port_t *p)
 {
     hitec_rx_t r = HITEC_RX_OK;
@@ -116,7 +152,11 @@ static void finish(hitec_port_t *p)
                                      : (uint8_t)LINK_HITEC_RESULT_DONE;
 }
 
-/** @brief Cut the running transaction; its capture comes at the next poll. */
+/**
+ * @brief Cut the running transaction; its capture comes at the next poll.
+ *
+ * @param p The port.
+ */
 static void cut(hitec_port_t *p)
 {
     if (p->state == (uint8_t)LINK_HITEC_BUSY && p->cutting == 0u) {
@@ -125,7 +165,13 @@ static void cut(hitec_port_t *p)
     }
 }
 
-/* Start @p x on the line: BUSY, or OPEN with LINK_HITEC_RESULT_START. */
+/**
+ * @brief Start @p x on the line: BUSY, or OPEN with LINK_HITEC_RESULT_START.
+ *
+ * @param p     The port.
+ * @param x     The transaction to start.
+ * @param keyed 1 when the transaction puts a byte out, else 0.
+ */
 static void start(hitec_port_t *p, const hitec_xfer_t *x, uint8_t keyed)
 {
     supply_port_view_t v;
@@ -153,6 +199,11 @@ static void start(hitec_port_t *p, const hitec_xfer_t *x, uint8_t keyed)
     p->state = (uint8_t)LINK_HITEC_BUSY;
 }
 
+/**
+ * @brief Apply a stop to the port, by its state.
+ *
+ * @param p The port.
+ */
 static void on_stop(hitec_port_t *p)
 {
     switch ((link_hitec_state_t)p->state) {
@@ -183,6 +234,10 @@ static void on_stop(hitec_port_t *p)
 
 /**
  * @brief The decoder the staged registers ask for, checked against the family.
+ *
+ * @param p  The port.
+ * @param op The operation the registers were staged for.
+ * @return true when the staged decoder fits the operation and the family.
  */
 static bool decoder_ok(const hitec_port_t *p, link_hitec_op_t op)
 {
@@ -210,8 +265,16 @@ static bool decoder_ok(const hitec_port_t *p, link_hitec_op_t op)
     }
 }
 
-/* The transaction the staged registers say for @p op; false when it is not
- * one the line runs. */
+/**
+ * @brief The transaction the staged registers say for @p op; false when it is
+ * not one the line runs.
+ *
+ * @param p  The port.
+ * @param op The operation the registers were staged for.
+ * @param x  Receives the transaction the staged registers describe.
+ * @return true when the transaction is valid; false when it is not one the line
+ *         runs.
+ */
 static bool staged_xfer(const hitec_port_t *p, link_hitec_op_t op,
                         hitec_xfer_t *x)
 {
@@ -253,8 +316,17 @@ static bool staged_xfer(const hitec_port_t *p, link_hitec_op_t op,
     return hitec_xfer_valid(x);
 }
 
-/* Whether the PD mini gives the servo @p mv and @p ma: inside the POWER
- * bounds, and under the input with the module's cap. */
+/**
+ * @brief Whether the PD mini gives the servo @p mv and @p ma: inside the POWER
+ * bounds, and under the input with the module's cap.
+ *
+ * @param v      The supply's view.
+ * @param mv     The supply set point in mV.
+ * @param ma     The supply current limit in mA.
+ * @param off_ms The off time in milliseconds.
+ * @return true when the set points and the off time are in range and the input
+ *         is unknown or holds the module's cap above mv.
+ */
 static bool power_range_ok(const supply_port_view_t *v, uint16_t mv,
                            uint16_t ma, uint16_t off_ms)
 {
@@ -266,6 +338,16 @@ static bool power_range_ok(const supply_port_view_t *v, uint16_t mv,
     return v->vin_mv == 0u || (uint32_t)mv + PDMINI_CAP_MV <= v->vin_mv;
 }
 
+/**
+ * @brief Start OPEN on @p port: take the staged line and the port's pin, and
+ *        enter STOPPING.
+ *
+ * @param p      The port.
+ * @param port   Programming port index.
+ * @param in     The command frame's registers.
+ * @param now_ms Current time in milliseconds.
+ * @return LINK_HITEC_REF_NONE when OPEN starts; otherwise the refusal.
+ */
 static link_hitec_refusal_t open_port(hitec_port_t *p, uint8_t port,
                                       const uint16_t *in, uint32_t now_ms)
 {
@@ -313,6 +395,14 @@ static link_hitec_refusal_t open_port(hitec_port_t *p, uint8_t port,
     return LINK_HITEC_REF_NONE;
 }
 
+/**
+ * @brief Start CLOSE on @p port: cut what runs, close the line and free the
+ *        port.
+ *
+ * @param p    The port.
+ * @param port Programming port index.
+ * @return LINK_HITEC_REF_NONE when CLOSE runs; otherwise the refusal.
+ */
 static link_hitec_refusal_t close_port(hitec_port_t *p, uint8_t port)
 {
     if (p->state == (uint8_t)LINK_HITEC_FREE) {
@@ -334,6 +424,12 @@ static link_hitec_refusal_t close_port(hitec_port_t *p, uint8_t port)
     return LINK_HITEC_REF_NONE;
 }
 
+/**
+ * @brief Cut what runs: a STOPPING port is freed, a BUSY port is cut, and a
+ *        POWER in its off time ends.
+ *
+ * @param p The port.
+ */
 static void abort_op(hitec_port_t *p)
 {
     switch ((link_hitec_state_t)p->state) {
@@ -355,6 +451,15 @@ static void abort_op(hitec_port_t *p)
     }
 }
 
+/**
+ * @brief Start POWER: check the supply and the set points, then ask the supply
+ *        off.
+ *
+ * @param p      The port.
+ * @param x      The listen the POWER runs after the ON.
+ * @param now_ms Current time in milliseconds.
+ * @return LINK_HITEC_REF_NONE when POWER starts; otherwise the refusal.
+ */
 static link_hitec_refusal_t power(hitec_port_t *p, const hitec_xfer_t *x,
                                   uint32_t now_ms)
 {
@@ -382,12 +487,28 @@ static link_hitec_refusal_t power(hitec_port_t *p, const hitec_xfer_t *x,
     return LINK_HITEC_REF_NONE;
 }
 
+/**
+ * @brief Whether a transaction puts a byte on the wire.
+ *
+ * @param op The operation.
+ * @param x  The transaction.
+ * @return true for a SEND, or a transaction that answers.
+ */
 static bool puts_byte_out(link_hitec_op_t op, const hitec_xfer_t *x)
 {
     return op == LINK_HITEC_OP_SEND || x->answer != 0u;
 }
 
-/** @brief SEND, LISTEN, LEVEL and POWER. */
+/**
+ * @brief SEND, LISTEN, LEVEL and POWER.
+ *
+ * @param p      The port.
+ * @param op     The operation.
+ * @param port   Programming port index.
+ * @param in     The command frame's registers.
+ * @param now_ms Current time in milliseconds.
+ * @return LINK_HITEC_REF_NONE when the operation starts; otherwise the refusal.
+ */
 static link_hitec_refusal_t transaction(hitec_port_t *p, link_hitec_op_t op,
                                         uint8_t port, const uint16_t *in,
                                         uint32_t now_ms)
@@ -445,6 +566,17 @@ static link_hitec_refusal_t transaction(hitec_port_t *p, link_hitec_op_t op,
     return LINK_HITEC_REF_NONE;
 }
 
+/**
+ * @brief Route one command to its operation.
+ *
+ * @param p      The port.
+ * @param op     The operation.
+ * @param port   Programming port index.
+ * @param in     The command frame's registers.
+ * @param now_ms Current time in milliseconds.
+ * @return LINK_HITEC_REF_NONE when the operation is taken; otherwise the
+ *         refusal.
+ */
 static link_hitec_refusal_t dispatch(hitec_port_t *p, link_hitec_op_t op,
                                      uint8_t port, const uint16_t *in,
                                      uint32_t now_ms)
@@ -478,6 +610,15 @@ static link_hitec_refusal_t dispatch(hitec_port_t *p, link_hitec_op_t op,
     return transaction(p, op, port, in, now_ms);
 }
 
+/**
+ * @brief Handle the command frame, registers 0 to 3.
+ *
+ * @param p      The port.
+ * @param in     The command frame's four registers.
+ * @param now_ms Current time in milliseconds.
+ * @return 0 when the frame is acknowledged; LINK_NACK_BAD_VALUE for a bad frame
+ *         or SEQ.
+ */
 static uint8_t command(hitec_port_t *p, const uint16_t *in, uint32_t now_ms)
 {
     const uint16_t cmd = in[LINK_HT_W_CMD];
@@ -543,12 +684,24 @@ uint8_t hitec_port_write(hitec_port_t *p, uint8_t off, uint8_t n,
 
 /* --- the page ------------------------------------------------------------ */
 
+/**
+ * @brief Store a 32-bit value in two registers, low word first.
+ *
+ * @param at The first of two registers.
+ * @param v  The value.
+ */
 static void put32(uint16_t *at, uint32_t v)
 {
     at[0] = (uint16_t)(v & 0xFFFFu);
     at[1] = (uint16_t)(v >> 16);
 }
 
+/**
+ * @brief The STATE register: the state, the port and the flags.
+ *
+ * @param p The port.
+ * @return The STATE register value.
+ */
 static uint16_t state_reg(const hitec_port_t *p)
 {
     uint16_t r = (uint16_t)(p->state | ((uint16_t)p->port << 12));
@@ -563,7 +716,12 @@ static uint16_t state_reg(const hitec_port_t *p)
     return r;
 }
 
-/* Registers 16 to 31 of @p all, as VIEW selects. */
+/**
+ * @brief Registers 16 to 31 of @p all, as VIEW selects.
+ *
+ * @param p   The port.
+ * @param all The register image, LINK_HT_COUNT entries, filled in place.
+ */
 static void data_regs(const hitec_port_t *p, uint16_t *all)
 {
     const hitec_capture_t *c = &p->cap;
@@ -649,6 +807,13 @@ void hitec_port_read(const hitec_port_t *p, uint8_t off, uint8_t n,
 
 /* --- the pass ------------------------------------------------------------ */
 
+/**
+ * @brief The pass of a BUSY port: take the capture, or cut a precharge line or
+ *        a run past its time.
+ *
+ * @param p      The port.
+ * @param now_ms Current time in milliseconds.
+ */
 static void step_busy(hitec_port_t *p, uint32_t now_ms)
 {
     supply_port_view_t v;
@@ -675,6 +840,13 @@ static void step_busy(hitec_port_t *p, uint32_t now_ms)
     }
 }
 
+/**
+ * @brief The pass of a POWER port: wait for the supply to read off, its off
+ *        time, then the ON and the listen.
+ *
+ * @param p      The port.
+ * @param now_ms Current time in milliseconds.
+ */
 static void step_power(hitec_port_t *p, uint32_t now_ms)
 {
     supply_port_view_t v;
