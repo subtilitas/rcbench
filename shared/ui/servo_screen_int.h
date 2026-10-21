@@ -1,5 +1,5 @@
 /*
- * The SERVO screen's private seam between servo_screen.c, the screen,
+ * The SERVO screen's private seam between servo_screen*.c, the screen,
  * servo_workbench.c, its task strip, TEST page and TARGET row
  * (servo_workbench_int.h), servo_settings_panel.c, its settings pages and
  * the panels they open, servo_test_panel.c, its automatic test, and
@@ -602,7 +602,7 @@ typedef struct {
 /* The state, in servo_screen.c. */
 extern servo_screen_state_t s;
 
-/* --- servo_screen.c's side, which the other four files call -------------- */
+/* --- the screen's side, servo_screen*.c, which the other four files call */
 
 /* The profile in force (apply_profile()) and the one asked for, which
  * opens the warning first where it can destroy a servo (ask_profile()). */

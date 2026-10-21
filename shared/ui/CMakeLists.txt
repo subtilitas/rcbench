@@ -30,6 +30,10 @@ set(SRCS
     motor_program_page.c
     supply_screen.c
     servo_screen.c
+    servo_screen_sweep.c
+    servo_screen_link.c
+    servo_screen_touch.c
+    servo_screen_draw.c
     servo_settings_panel.c
     servo_test_panel.c
     servo_limit_panel.c
