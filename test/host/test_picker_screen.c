@@ -26,8 +26,8 @@
 #include "touch_feed.h"
 
 #define BOARD ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
-#define SCREEN_W 800
-#define SCREEN_H (480 - UI_BAND_H)
+#define SCREEN_W UI_PANEL_W
+#define SCREEN_H UI_BODY_H
 
 static int         s_applied;
 static outbind_t   s_last;
