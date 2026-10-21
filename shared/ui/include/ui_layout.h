@@ -4,11 +4,12 @@
  *
  * Every screen, the router and the host renderers take the panel size, the
  * band, the body and the shared metrics from here, so a different panel
- * changes these figures and nothing else.  Two other places hold the panel's
- * resolution, both checked against this header: `BOARD_LCD_H_RES` and
- * `BOARD_LCD_V_RES` in the panel firmware's `board_pins.h` (a
- * `_Static_assert` in `main.c`) and `INJ_RES_X` and `INJ_RES_Y` in the touch
- * injector's `injector.h` (`test_layout`).  Per-screen constants stay in the
+ * changes these figures and nothing else.  Two other places hold the size
+ * the screens draw, both checked against this header: `BOARD_UI_H_RES` and
+ * `BOARD_UI_V_RES` in the panel firmware's `board_pins.h`, the display's
+ * canvas (a `_Static_assert` in `main.c`, beside one that the canvas fits
+ * the glass, `BOARD_LCD_H_RES` x `BOARD_LCD_V_RES`), and `INJ_RES_X` and
+ * `INJ_RES_Y` in the touch injector's `injector.h` (`test_layout`).  Per-screen constants stay in the
  * screen's own files, in panel pixels.
  *
  * Plain constants only, with no includes, so a file that needs a size does

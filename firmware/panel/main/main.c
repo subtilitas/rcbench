@@ -153,10 +153,15 @@ void publish_throttle_ramp(void)
 
 static const char *TAG = "rcbench";
 
-/* The screens draw a UI_PANEL_W x UI_PANEL_H canvas (ui_layout.h); the glass
- * is the board's. */
-_Static_assert(BOARD_LCD_H_RES == UI_PANEL_W && BOARD_LCD_V_RES == UI_PANEL_H,
-               "the board's panel is the size the screens draw");
+/* The screens draw a UI_PANEL_W x UI_PANEL_H canvas (ui_layout.h).  The
+ * display's canvas is BOARD_UI_H_RES x BOARD_UI_V_RES (display_canvas()),
+ * in the top-left corner of the BOARD_LCD_H_RES x BOARD_LCD_V_RES glass,
+ * with the glass's stride. */
+_Static_assert(BOARD_UI_H_RES == UI_PANEL_W && BOARD_UI_V_RES == UI_PANEL_H,
+               "the display's canvas is the size the screens draw");
+_Static_assert(BOARD_UI_H_RES <= BOARD_LCD_H_RES
+               && BOARD_UI_V_RES <= BOARD_LCD_V_RES,
+               "the display's canvas fits the glass");
 
 /* Used during bring-up as well as in the loop, so file scope. */
 link_host_t    s_host;
