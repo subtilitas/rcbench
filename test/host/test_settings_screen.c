@@ -584,7 +584,7 @@ TEST_CASE(the_encoder_settings_start_off_with_a_12_bit_centre)
     const setting_def_t *d = settings_def(SET_ENC_EN);
     CHECK_EQ(d->type, SET_TYPE_BOOL);
     CHECK_EQ(d->cat, SET_CAT_IFACE);
-    CHECK_STR_EQ(d->label, "AS5600");
+    CHECK_STR_EQ(settings_label(SET_ENC_EN), "AS5600");
     d = settings_def(SET_ENC_CENTRE);
     CHECK_EQ(d->type, SET_TYPE_INT);
     CHECK_EQ(d->cat, SET_CAT_IFACE);

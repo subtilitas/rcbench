@@ -1,5 +1,6 @@
-/*
- * The string tables and the lookup.  See include/ui_text.h.
+/**
+ * @file
+ * @brief The string tables and the lookup.  See include/ui_text.h.
  *
  * A lookup is two loads and a test: the language's entry, else the
  * English.  The language is an atomic int, read once per string, so the
@@ -19,26 +20,94 @@
 
 #include "gfx.h"
 
+/** @brief The screens' strings in English, by TX_ ID. */
 static const char *const k_en[TX_COUNT] = {
-#define UI_TEXT(id, cells, en) [TX_##id] = (en),
+#define UI_TEXT(id, cells, en, de) [TX_##id] = (en),
 #include "ui_text.def"
-#undef UI_TEXT
 };
 
+/** @brief The cells each string's field has, 0 where --fit measures it. */
 static const unsigned char k_cells[TX_COUNT] = {
-#define UI_TEXT(id, cells, en) [TX_##id] = (unsigned char)(cells),
+#define UI_TEXT(id, cells, en, de) [TX_##id] = (unsigned char)(cells),
 #include "ui_text.def"
-#undef UI_TEXT
 };
 
-/* The IDs' names are for the host's checks; the panel image carries none. */
+/** @brief The IDs' names, for the host's checks; the panel image carries
+ *  none. */
 #ifndef ESP_PLATFORM
 static const char *const k_names[TX_COUNT] = {
-#define UI_TEXT(id, cells, en) [TX_##id] = #id,
+#define UI_TEXT(id, cells, en, de) [TX_##id] = #id,
 #include "ui_text.def"
-#undef UI_TEXT
 };
 #endif
+
+/* ------------------------------------------------- the German column */
+
+/**
+ * @brief Picks the German column of an entry of ui_text.def.
+ *
+ * Each language but English is a block like this one: its tables are
+ * ui_text.def's entries with its pick choosing the language's column.  A
+ * language added to the table adds a column to every entry, a parameter to
+ * every entry macro and a block of its own.
+ */
+#define DE(en, de) (de)
+
+/** @brief The screens' strings in German, by TX_ ID; NULL shows the
+ *  English. */
+static const char *const k_de_text[TX_COUNT] = {
+#define UI_TEXT(id, cells, en, de) [TX_##id] = DE(en, de),
+#include "ui_text.def"
+};
+
+/** @brief The settings' labels in German, by setting ID. */
+static const char *const k_de_label[SETTING_COUNT] = {
+#define UI_SETTING_LABEL(id, en, de) [id] = DE(en, de),
+#include "ui_text.def"
+};
+
+/** @brief The settings' help lines in German, by setting ID. */
+static const char *const k_de_help[SETTING_COUNT] = {
+#define UI_SETTING_HELP(id, en, de) [id] = DE(en, de),
+#include "ui_text.def"
+};
+
+/** @brief The settings categories' names in German. */
+static const char *const k_de_category[SET_CAT_COUNT] = {
+#define UI_SETTING_CATEGORY(id, en, de) [id] = DE(en, de),
+#include "ui_text.def"
+};
+
+/** @brief One array k_de_opts_<name> per option list, in German. */
+#define UI_OPTIONS(name) static const char *const k_de_opts_##name[] = {
+#define UI_OPTION(en, de) DE(en, de),
+#define UI_OPTIONS_END(name) };
+#include "ui_text.def"
+
+/** @brief The German option lists, in the order of the table, which is
+ *  the order settings_option_list() counts. */
+static const char *const *const k_de_options[] = {
+#define UI_OPTIONS(name) k_de_opts_##name,
+#include "ui_text.def"
+};
+
+/** @brief The servo test's words in German, by SERVO_STR_ ID. */
+static const char *const k_de_servo[SERVO_STR_COUNT] = {
+#define UI_SERVO_TEXT(id, en, de) [id] = DE(en, de),
+#include "ui_text.def"
+};
+
+#undef DE
+
+/** @brief The German tables, as ui_text.h declares them. */
+const ui_language_t ui_lang_de = {
+    .text          = k_de_text,
+    .setting_label = k_de_label,
+    .setting_help  = k_de_help,
+    .options       = k_de_options,
+    .category      = k_de_category,
+    .servo         = k_de_servo,
+};
 
 static const ui_language_t *const k_langs[UI_LANG_COUNT] = {
     [UI_LANG_EN] = NULL,
@@ -144,7 +213,7 @@ const char *ui_setting_label(setting_id_t id)
     }
     const ui_language_t *l = ui_text_table(ui_text_language());
     const char *t = (l != NULL) ? entry(l->setting_label, (int)id) : NULL;
-    return (t != NULL) ? t : d->label;
+    return (t != NULL) ? t : settings_label(id);
 }
 
 const char *ui_setting_help(setting_id_t id)
@@ -155,7 +224,7 @@ const char *ui_setting_help(setting_id_t id)
     }
     const ui_language_t *l = ui_text_table(ui_text_language());
     const char *t = (l != NULL) ? entry(l->setting_help, (int)id) : NULL;
-    return (t != NULL) ? t : d->help;
+    return (t != NULL) ? t : settings_help(id);
 }
 
 const char *ui_setting_category(setting_cat_t cat)
@@ -168,15 +237,27 @@ const char *ui_setting_category(setting_cat_t cat)
     return (t != NULL) ? t : settings_category_name(cat);
 }
 
+/**
+ * @brief A setting's option list in the language showing.
+ * @param id The setting.
+ * @return The list, as long as the English one, or NULL for English and
+ *         for a setting that is no choice.
+ */
+static const char *const *lang_options(setting_id_t id)
+{
+    const ui_language_t *l = ui_text_table(ui_text_language());
+    const int list = settings_option_list(id);
+    return (l != NULL && l->options != NULL && list >= 0)
+               ? l->options[list] : NULL;
+}
+
 const char *ui_setting_option(setting_id_t id, int k)
 {
     const setting_def_t *d = settings_def(id);
     if (d == NULL || d->options == NULL || k < 0 || k >= d->option_count) {
         return "?";
     }
-    const ui_language_t *l = ui_text_table(ui_text_language());
-    const char *const *opts = (l != NULL && l->setting_options != NULL)
-                                  ? l->setting_options[id] : NULL;
+    const char *const *opts = lang_options(id);
     return (opts != NULL && opts[k] != NULL) ? opts[k] : d->options[k];
 }
 
@@ -205,9 +286,7 @@ const char *ui_setting_value_of(setting_id_t id, float value, char *buf,
     }
     if (d->type == SET_TYPE_ENUM) {
         const int i = (int)lrintf(value);
-        const ui_language_t *l = ui_text_table(ui_text_language());
-        const char *const *opts = (l != NULL && l->setting_options != NULL)
-                                      ? l->setting_options[id] : NULL;
+        const char *const *opts = lang_options(id);
         if (opts != NULL && i >= 0 && i < d->option_count
             && opts[i] != NULL) {
             snprintf(buf, n, "%s", opts[i]);

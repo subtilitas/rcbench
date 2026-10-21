@@ -32,8 +32,7 @@ shared/ui/settings_screen.c | none | one screen
 shared/ui/wifi_screen.c | none | one screen; crossed 1,000 after the plan with the text rework (#422), not weighed by the plan
 
 # Tables left whole.
-shared/ui/include/ui_text.def | none | F10: a split needs check_docs.py and check_formats.py to follow includes
-shared/ui/ui_text_de.c | none | F10: a split needs check_docs.py and check_formats.py to follow includes
+shared/text/include/ui_text.def | none | owner 2026-10-21: one file, all languages
 shared/link/include/link_pages.h | none | one register map
 test/host/test_link_pages.c | none | one register map
 
