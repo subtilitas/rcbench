@@ -1,6 +1,9 @@
-/*
- * The console report every 3 s: the flash store, the running slot, the CAN
- * bus and the current monitors as the pages show them.  See iomcu.h.
+/**
+ * @file
+ * @brief The console report every 3 s.
+ *
+ * The report covers the flash store, the running slot, the CAN bus and the
+ * current monitors as the pages show them. See iomcu.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,12 +19,13 @@
 #include "console_hw.h"
 #endif
 
-/*
- * This file's report lines.  The bench console build sends them through
- * the console's output: none lands inside a console line that leaves in
- * pieces, and none waits for the host.  Every other build prints them,
- * and printf() waits for the host for up to 500 ms
- * (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
+/**
+ * @brief Output function for the report lines.
+ *
+ * The bench console build sends them through the console's output: none
+ * lands inside a console line that leaves in pieces, and none waits for the
+ * host. Every other build prints them, and printf() waits for the host for up
+ * to 500 ms (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
  */
 #if IOMCU_CONSOLE
 #define IOMCU_SAY console_hw_say
@@ -29,12 +33,13 @@
 #define IOMCU_SAY printf
 #endif
 
-/*
- * The current monitors as the pages show them, with can_report() every 3 s,
- * while either part is enabled: what a bench session reads before the
- * panel has a screen for them.  The registers as published, in their own
- * units: FLAGS, PRESENT and the IDs in hex, the reset counts of the INA228
- * and the INA3221, BENCH's 10 mV and 10 mA, CH1's
+/**
+ * @brief Prints the current monitors as the pages show them.
+ *
+ * Called from can_report() every 3 s, while either part is enabled: what a
+ * bench session reads before the panel has a screen for them. The registers
+ * as published, in their own units: FLAGS, PRESENT and the IDs in hex, the
+ * reset counts of the INA228 and the INA3221, BENCH's 10 mV and 10 mA, CH1's
  * mA and mV, times in 0.1 ms; and the INA3221 map with each channel's mA.
  */
 static void sense_report(void)

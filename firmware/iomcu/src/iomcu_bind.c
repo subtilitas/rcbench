@@ -1,7 +1,10 @@
-/*
- * The binding prepared and taken whole (BIND, BIND_CFG, BIND_OUT), and the
- * board's own pages: CATALOGUE, SHAPE, ARTWORK, ART_DATA and PADS; see
- * iomcu.h for the other files.
+/**
+ * @file
+ * @brief The binding prepared and taken whole (BIND, BIND_CFG, BIND_OUT), and
+ *        the board's own pages.
+ *
+ * The board's own pages are CATALOGUE, SHAPE, ARTWORK, ART_DATA and PADS.
+ * See iomcu.h for the other files.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,17 +19,21 @@
 
 /* ---------------------------------------------------------------- BIND */
 
-/*
- * A binding prepared and taken whole (protocol 4.10): BIND_CFG and BIND_OUT
- * hold a CHAN_CFG and an OUTPUTS page that are not in force, and a write of
- * BIND's COMMIT that names their CRC (cyclic redundancy check) puts both in
- * force or neither.  shared/outputs/out_stage.c decides; this is the glue
- * to the two pages' own rules in iomcu_pages.c.  Not kept in flash: it starts as the
- * pages in force at boot.
+/**
+ * @brief The binding prepared and taken whole, from protocol 4.10.
+ *
+ * BIND_CFG and BIND_OUT hold a CHAN_CFG and an OUTPUTS page that are not in
+ * force, and a write of BIND's COMMIT that names their CRC (cyclic redundancy
+ * check) puts both in force or neither. shared/outputs/out_stage.c decides;
+ * this is the glue to the two pages' own rules in iomcu_pages.c. Not kept in
+ * flash: it starts as the pages in force at boot.
  */
 out_stage_t s_stage;
-/* The slots the silicon had bound when a commit began, put back with the
- * CHAN_CFG page when the commit's OUTPUTS page is refused. */
+/**
+ * @brief The slots the silicon had bound when a commit began.
+ *
+ * Put back with the CHAN_CFG page when the commit's OUTPUTS page is refused.
+ */
 static uint8_t s_stage_bound;
 
 void bind_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -55,17 +62,39 @@ uint8_t bind_out_write(void *ctx, uint8_t off, uint8_t n,
     return out_stage_slots_write(&s_stage, off, n, in);
 }
 
+/**
+ * @brief Takes the staged CHAN_CFG page for a commit.
+ *
+ * Records the slots the silicon has bound, then calls chan_cfg_take().
+ *
+ * @param ctx   The iomcu_state_t the commit applies to.
+ * @param next  The staged CHAN_CFG register values.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
 static uint8_t stage_take_cfg(void *ctx, const uint16_t *next)
 {
     s_stage_bound = bound_slots();
     return chan_cfg_take((iomcu_state_t *)ctx, next, s_stage.slots, false);
 }
 
+/**
+ * @brief Takes the staged OUTPUTS page for a commit.
+ *
+ * @param ctx   The iomcu_state_t the commit applies to.
+ * @param next  The staged slot register values.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
 static uint8_t stage_take_slots(void *ctx, const uint16_t *next)
 {
     return slots_take((iomcu_state_t *)ctx, next, false);
 }
 
+/**
+ * @brief Puts the CHAN_CFG page back after a refused commit.
+ *
+ * @param ctx   The iomcu_state_t to restore.
+ * @param prev  The CHAN_CFG register values from before the commit.
+ */
 static void stage_put_cfg(void *ctx, const uint16_t *prev)
 {
     /* The commit has put the bank's channels back, each command with its
@@ -75,11 +104,17 @@ static void stage_put_cfg(void *ctx, const uint16_t *prev)
     hw_apply_only(s_stage_bound);
 }
 
+/**
+ * @brief Saves the committed configuration to flash.
+ *
+ * @param ctx  The iomcu_state_t to save.
+ */
 static void stage_keep(void *ctx)
 {
     save_outputs((const iomcu_state_t *)ctx);
 }
 
+/** @brief The commit callbacks handed to out_stage_commit(). */
 static const out_stage_ops_t k_stage_ops = {
     stage_take_cfg, stage_take_slots, stage_put_cfg, stage_keep, &s_outputs,
 };
@@ -177,11 +212,13 @@ void artwork_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
-/*
- * Which block the data page is answering with.  Held here because the host
- * says it in one transaction and reads it in the next: a block that advanced
- * on being read would resend nothing after a reply went missing, and the
- * panel would assemble a drawing with a hole in it.
+/**
+ * @brief The block the ART_DATA page is answering with.
+ *
+ * Held here because the host says it in one transaction and reads it in the
+ * next: a block that advanced on being read would resend nothing after a
+ * reply went missing, and the panel would assemble a drawing with a hole in
+ * it.
  */
 static uint16_t s_art_block;
 

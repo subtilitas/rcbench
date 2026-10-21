@@ -1,7 +1,9 @@
-/*
- * The panel's heartbeat input and the CAN bus: the controller and the
- * receive loop that answers the link's requests; see iomcu.h for the
- * other files.
+/**
+ * @file
+ * @brief The panel's heartbeat input and the CAN bus.
+ *
+ * The file holds the controller and the receive loop that answers the link's
+ * requests. See iomcu.h for the other files.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,20 +20,22 @@
 
 /* ------------------------------------------------------------ the heartbeat */
 
-/*
+/**
+ * @brief The heartbeat line's level at the last sample.
+ *
  * The panel's safety line, watched in firmware as well as in hardware.
  *
  * No board carries the retriggerable monostable that would gate the output
  * enable in hardware (docs/Safety.md), so this monitor is the whole check.
  * A ringing line, a short to a clock or a floating input next to a switching
- * supply look like edges.  heartbeat_mon_t knows the expected period and
+ * supply look like edges. heartbeat_mon_t knows the expected period and
  * rejects what cannot be the panel's control task edging every 20 ms.
  *
- * The pin is sampled in the main loop rather than by an interrupt.  A pass
+ * The pin is sampled in the main loop rather than by an interrupt. A pass
  * that turns over faster than HEARTBEAT_MIN_GAP_MS (4 ms) cannot miss an
- * edge the monitor would accept.  The pass time is not measured: a printf
+ * edge the monitor would accept. The pass time is not measured: a printf
  * every 3 s goes to USB (Universal Serial Bus) stdio, and the supply's
- * UART send blocks while its PIO FIFO is full.  An ISR (interrupt service
+ * UART send blocks while its PIO FIFO is full. An ISR (interrupt service
  * routine) would notice edges faster than the floor, which the monitor
  * rejects anyway.
  */
@@ -51,7 +55,9 @@ void heartbeat_init(void)
 
 /* ------------------------------------------------------------ the CAN bus */
 
-/*
+/**
+ * @brief True when the CAN controller answered at boot.
+ *
  * Tried at boot, and not fatal if it fails.
  *
  * The controller either answers on SPI (Serial Peripheral Interface) or it
@@ -59,21 +65,23 @@ void heartbeat_init(void)
  * distinguishes "no module fitted" and "SPI miswired" from anything on the
  * CAN (Controller Area Network) bus itself.
  *
- * The echo responder runs unconditionally.  It costs one register read per
+ * The echo responder runs unconditionally. It costs one register read per
  * loop, answers only frames addressed to a page the map does not use, and
  * runs at the lowest priority on the bus, so it stays in every build.
  */
 bool     s_can_up;
+/** @brief Self-test echoes sent by the echo responder. */
 uint32_t s_can_echoes;
+/** @brief Receive overruns counted by can_service(). */
 uint32_t s_can_overflows;
 
-/*
- * When a frame was last taken out of the controller.
+/**
+ * @brief When a frame was last taken out of the controller, in ms.
  *
  * can_service() empties both receive buffers every pass, so where this is
  * read it is the age of the last frame on the bus rather than of the last one
- * collected.  The flash windows are opened against it: this core answers
- * nothing while it writes, and the two buffers hold 260 us of frames.  Zero
+ * collected. The flash windows are opened against it: this core answers
+ * nothing while it writes, and the two buffers hold 260 us of frames. Zero
  * until the first frame, so a board that has heard nothing since boot reads
  * as a quiet bus, which is what it has.
  */

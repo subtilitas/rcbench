@@ -1,6 +1,8 @@
-/*
- * The KST page and the programming port's hardware it drives; see
- * iomcu.h for the other files.
+/**
+ * @file
+ * @brief The KST page and the programming port's hardware it drives.
+ *
+ * See iomcu.h for the other files.
  *
  * SPDX-License-Identifier: MIT
  */
