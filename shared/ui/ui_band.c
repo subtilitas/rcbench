@@ -200,8 +200,10 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
  * The bubble is the DELETE question's box of LOGS: a panel with its border
  * and a title tab, the text in the label face.  It opens 4 px under the
  * band, 8 px in from the panel's edges at most.  A bubble is 520 px wide,
- * 61 cells of text; FAULT's spans the panel, 94 cells, so the seven bits
- * and their advice fit above the alert strip in either language.
+ * 61 cells of text; FAULT's spans the panel less 8 px each side and the
+ * text's 16 px padding: 752 px, 94 cells on the 800 px panel, the width of
+ * the alert band's text, so the seven bits and their advice fit above the
+ * alert strip in either language.
  */
 #define HELP_W       520
 #define HELP_M       8

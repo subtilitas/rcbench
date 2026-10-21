@@ -2924,8 +2924,8 @@ int main(int argc, char **argv)
         }
         if (strcmp(view, "outputs-protocol") == 0) {
             /* Tap the dropdown open. */
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0u };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0u };
+            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, UI_BAND_H + 70, 40 }, 0u };
+            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, UI_BAND_H + 70, 40 }, 0u };
             ui_router_event(&d);
             ui_router_event(&u);
         }

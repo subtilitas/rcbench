@@ -234,10 +234,10 @@ static inline void acked(uint32_t age_ms, servo_sweep_from_t from,
 /* The ARM button, mirrored from servo_screen.c: full width of the right
  * card's inner column, under CENTRE and RELEASE. */
 /* The SPEED track, mirrored from the screen: x, w and y of the slider. */
-#define SPEED_X_HALF (508 + 12 + (800 - 508 - 6 - 24) / 2)
+#define SPEED_X_HALF (508 + 12 + (UI_PANEL_W - 508 - UI_MARGIN - 24) / 2)
 #define SPEED_Y (296 + 11)
 #define ARM_X (508 + 12)
-#define ARM_W (UI_PANEL_W - 508 - 6 - 24)
+#define ARM_W (UI_PANEL_W - 508 - UI_MARGIN - 24)
 #define ARM_Y 388
 #define ARM_H 32
 static inline void arm_press(void)   { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_DOWN, 1); }

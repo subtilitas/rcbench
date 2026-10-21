@@ -422,7 +422,7 @@ TEST_CASE(every_row_fits_its_columns_in_both_languages)
     for (int i = 0; i < n; ++i) {
         const gfx_rect_t a = motor_settings_box(i);
         CHECK(a.x >= 6 && a.x + a.w <= 6 + 546);
-        CHECK(a.y >= 38 && a.y + a.h <= 432 - 6 - 24);
+        CHECK(a.y >= 38 && a.y + a.h <= UI_BODY_H - UI_MARGIN - 24);
         if (i > 0) {
             const gfx_rect_t b = motor_settings_box(i - 1);
             CHECK(a.y >= b.y + b.h + 4);

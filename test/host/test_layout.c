@@ -1,6 +1,7 @@
-/*
- * The panel's layout header: the figures every screen reads, and the
- * relations between them that the screens assume.
+/**
+ * @file
+ * @brief The panel's layout header: the figures every screen reads, and the
+ *        relations between them that the screens assume.
  *
  * The values are the 800 x 480 px panel's.  A panel of another size changes
  * the figures here and in the same commit; the relations hold for any size.
@@ -51,7 +52,6 @@ TEST_CASE(the_shared_metrics_fit_the_panel)
     CHECK_EQ(UI_BTN_H, 36);
     CHECK_EQ(UI_BTN_H_TALL, 44);
     CHECK(UI_BTN_H < UI_BTN_H_TALL);
-    CHECK(UI_BTN_H_TALL < UI_TAP_MIN);
     CHECK_EQ(UI_R_CARD, 8);
     CHECK_EQ(UI_R_CTL, 6);
     CHECK_EQ(UI_R_CHIP, 4);

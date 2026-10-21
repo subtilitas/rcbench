@@ -124,7 +124,8 @@ typedef struct {
  */
 
 /**
- * The rows the alert band gives @p text: 1 for a text of up to 94 cells,
+ * The rows the alert band gives @p text: 1 for a text of up to 94 cells
+ * (ALERT_TEXT_W in ui_router.c: 752 px of 8 px cells on the 800 px panel),
  * 2 when it breaks at a space onto a second row, more for a text the band
  * cannot hold.  The band draws two rows of the 8x16 face, 16 px apart.
  */

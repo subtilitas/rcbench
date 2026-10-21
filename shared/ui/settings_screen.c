@@ -78,7 +78,8 @@
 #define ROW_PITCH (ROW_H + ROW_GAP)
 
 #define BTN_W    44
-#define BTN_H    UI_BTN_H
+#define BTN_H    36
+_Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
 #define PLUS_X   (LIST_X + LIST_W - 14 - BTN_W)
 #define MINUS_X  (PLUS_X - 8 - 110 - 8 - BTN_W)
 #define VALUE_R  (PLUS_X - 8)
