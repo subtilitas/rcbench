@@ -87,8 +87,8 @@ static uint8_t stage_take_slots(void *ctx, const uint16_t *next)
 }
 
 /**
- * @brief Puts the CHAN_CFG register values back and applies them to the
- * silicon.
+ * @brief Puts the CHAN_CFG register values back and applies them to
+ * the silicon.
  *
  * @param ctx   The iomcu_state_t to restore.
  * @param prev  The CHAN_CFG register values to put back.

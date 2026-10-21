@@ -53,8 +53,8 @@ bool xl2515_send(const link_can_frame_t *f);
  *  holds a valid frame.
  *
  * @param f  Receives the frame.
- * @param refused  Counts the frames this link does not carry. NULL counts
- *                 nothing.
+ * @param refused  Counts the frames this link does not carry. NULL
+ *                 counts nothing.
  * @return True when a valid frame was taken. False when no buffer holds one.
  */
 bool xl2515_recv(link_can_frame_t *f, uint32_t *refused);

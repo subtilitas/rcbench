@@ -32,19 +32,17 @@
  *
  * What a transaction comes to (sense_err_t):
  *
- *   SENSE_BUS_LOW   SDA or SCL low with the bus idle, before anything is
- *                   sent, or a failed transaction after which a line stays
- *                   low for SENSE_I2C_IDLE_US, and still low on the pad's
- *                   pull-up after SENSE_I2C_PROBE_US: a part holding the
- *                   bus.
- *   SENSE_TIMEOUT   not finished in SENSE_I2C_TIMEOUT_US, measured from
- *                   its start: SCL held low by a part.
- *   SENSE_NACK      the address or a byte not acknowledged, the lines back
- *                   high: the bus works and nothing answers there.  Also
- *                   lines low at idle that rise on the pad's pull-up: a
- *                   bus without pull-ups, with nothing sent, and no
- *                   recovery owed (sense_bus.h); the parts read as not
- *                   answering.
+ *   SENSE_BUS_LOW   SDA or SCL low with the bus idle, before anything is sent,
+ *                   or a failed transaction after which a line stays low for
+ *                   SENSE_I2C_IDLE_US, and still low on the pad's pull-up after
+ *                   SENSE_I2C_PROBE_US: a part holding the bus. SENSE_TIMEOUT
+ *                   not finished in SENSE_I2C_TIMEOUT_US, measured from its
+ *                   start: SCL held low by a part. SENSE_NACK      the address
+ *                   or a byte not acknowledged, the lines back high: the bus
+ *                   works and nothing answers there.  Also lines low at idle
+ *                   that rise on the pad's pull-up: a bus without pull-ups,
+ *                   with nothing sent, and no recovery owed (sense_bus.h); the
+ *                   parts read as not answering.
  *
  * After any failure the block is reset and set up again, so the next
  * transaction starts from a known state; the pins keep their function.
@@ -61,8 +59,7 @@
 #include "sense_bus.h"
 
 /**
- * @brief The bus clock: fast mode, the one both parts and the SENSE page
- * take.
+ * @brief The bus clock: fast mode, the one both parts and the SENSE page take.
  */
 #define SENSE_I2C_HZ          400000u
 /**
@@ -90,8 +87,8 @@
  */
 #define SENSE_I2C_CLEAR_HALF_US    5u
 /**
- * @brief How long SCL may be held low by a part during the bus clear, each
- * clock.
+ * @brief How long SCL may be held low by a part during the bus clear,
+ * each clock.
  */
 #define SENSE_I2C_CLEAR_STRETCH_US 100u
 
@@ -136,8 +133,8 @@ sense_err_t sense_i2c_read(void *ctx, uint8_t addr, uint8_t reg,
  * @param addr  I2C address of the device.
  * @param reg  Register pointer, sent before the bytes.
  * @param buf  The bytes to write.
- * @param n  Number of bytes, 1 to 4. Other counts are refused with
- *           SENSE_BAD_ARG.
+ * @param n  Number of bytes, 1 to 4. Other counts are refused
+ *           with SENSE_BAD_ARG.
  * @return SENSE_OK, or the error the transaction came to.
  */
 sense_err_t sense_i2c_write(void *ctx, uint8_t addr, uint8_t reg,

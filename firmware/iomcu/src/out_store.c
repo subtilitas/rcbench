@@ -69,8 +69,8 @@
  * Held at compile time as well as in the paragraph above.
  *
  * This catches a board file with less flash than the store needs, and a
- * partition table whose store partition is not the two sectors this file
- * writes.
+ * partition table whose store partition is not the two sectors this
+ * file writes.
  */
 _Static_assert(STORE_FLASH_BYTES <= PICO_FLASH_SIZE_BYTES,
                "the output store is past the end of this board's flash");
@@ -128,10 +128,9 @@ static uint8_t     s_last_record;
  *
  * Two numbers rather than one, because they answer different questions.  The
  * program is what every save costs; the erase is what one save in sixteen
- * costs, or none of them when out_store_reclaim() has been given a quiet
- * moment first.  Measured rather than compensated for: what a window does to
- * the link is decided by its length, and the length belongs to the flash
- * part.
+ * costs, or none of them when out_store_reclaim() has been given a quiet moment
+ * first.  Measured rather than compensated for: what a window does to the link
+ * is decided by its length, and the length belongs to the flash part.
  */
 static uint32_t    s_last_erase_us;
 static uint32_t    s_last_program_us;
@@ -159,9 +158,8 @@ static union {
 } s_page;
 
 /**
- * @brief The live record of the layout before version 8, by sector, while
- * the store holds no version 8 record: never erased until the first one is
- * written.
+ * @brief The live record of the layout before version 8, by sector, while the
+ * store holds no version 8 record: never erased until the first one is written.
  *
  * -1 for none.
  */
@@ -251,8 +249,8 @@ typedef struct {
 } flash_op_t;
 
 /**
- * @brief Runs the operation and records how long the window held interrupts
- * off.
+ * @brief Runs the operation and records how long the window held
+ * interrupts off.
  *
  * @param arg  The flash_op_t to run.
  */
@@ -332,8 +330,8 @@ static uint32_t clock_ms(void)
 /**
  * @brief Tells whether windows are refused because core 1 did not stop.
  *
- * @return True while a window is refused. The refusal lapses after
- *         OUT_STORE_REFUSED_WAIT_MS.
+ * @return True while a window is refused. The refusal lapses
+ *         after OUT_STORE_REFUSED_WAIT_MS.
  */
 static bool refusing(void)
 {

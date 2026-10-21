@@ -7,15 +7,14 @@
  * words written since the last pass into the detector, and the beeps it
  * finished and a status back to core 0.
  *
- * The hand-over.  The order, core 0 to core 1, and the status, core 1 to
- * core 0, are copied whole under one hardware spin lock, as the sensor
- * bus's are.  The beeps go the other way through a single-producer,
- * single-consumer queue of TONE_Q_LEN entries: core 1 writes the entry and
- * then the head index, core 0 reads the entry and then writes the tail
- * index, each behind a memory barrier.  A beep that finds the queue full is
- * counted and dropped.  Each entry carries the set-up and capture
- * generations it was made under, so the page drops a beep from an earlier
- * one.
+ * The hand-over.  The order, core 0 to core 1, and the status, core 1 to core
+ * 0, are copied whole under one hardware spin lock, as the sensor bus's are.
+ * The beeps go the other way through a single-producer, single-consumer queue
+ * of TONE_Q_LEN entries: core 1 writes the entry and then the head index, core
+ * 0 reads the entry and then writes the tail index, each behind a memory
+ * barrier.  A beep that finds the queue full is counted and dropped.  Each
+ * entry carries the set-up and capture generations it was made under, so the
+ * page drops a beep from an earlier one.
  *
  * Tearing the capture down.  Core 1 reads the ring and the DMA channel's
  * write address in its pass.  After core 0 posts an order with run clear,
@@ -56,8 +55,7 @@ void tone_core1_init(void);
 void tone_core1_order(const tone_cmd_t *cmd, uint64_t t0_us);
 
 /**
- * @brief Core 0: wait until core 1 has finished a pass under the latest
- * order.
+ * @brief Core 0: wait until core 1 has finished a pass under the latest order.
  *
  * Bounded by TONE_CORE1_WAIT_US; returns at once when core 1 has not
  *  taken an order yet (at boot: the first it takes is the latest).  False

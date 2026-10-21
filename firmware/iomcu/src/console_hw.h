@@ -1,8 +1,8 @@
 /**
  * @file
  * @brief The IOMCU_CONSOLE build: the bench console
- * (shared/outputs/page_console.h) on the USB (Universal Serial Bus) serial
- * port.
+ * (shared/outputs/page_console.h) on the USB (Universal Serial Bus)
+ * serial port.
  *
  * A bench tool, in no
  * released image.

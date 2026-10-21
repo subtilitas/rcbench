@@ -1,8 +1,8 @@
 /**
  * @file
  * @brief The panel's heartbeat input and the CAN bus: the controller and the
- * receive loop that answers the link's requests; see iomcu.h for the other
- * files.
+ * receive loop that answers the link's requests; see iomcu.h for the
+ * other files.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,8 +20,7 @@
 /* ------------------------------------------------------------ the heartbeat */
 
 /**
- * @brief The panel's safety line, watched in firmware as well as in
- * hardware.
+ * @brief The panel's safety line, watched in firmware as well as in hardware.
  *
  * No board carries the retriggerable monostable that would gate the output
  * enable in hardware (docs/Safety.md), so this monitor is the whole check.

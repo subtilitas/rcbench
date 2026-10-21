@@ -78,26 +78,24 @@ void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
 void outputs_hw_service(const outputs_t *o);
 
 /**
- * @brief The programming ports' pins: @p pin[n] for port n,
- * LINK_PG_PORTS_MAX entries, a value above OUT_MAX_PIN for a port without
- * one.
+ * @brief The programming ports' pins: @p pin[n] for port n, LINK_PG_PORTS_MAX
+ * entries, a value above OUT_MAX_PIN for a port without one.
  *
  * A port in
- * @p parked (bit n, FUNC NONE) holds its pin as an input with its
- * pull-down and renders nothing.  A port in @p dshot (bit n, FUNC DSHOT150
- * to DSHOT600) is bound to a DShot state machine at @p rate_hz[n] kbit/s
- * and rendered as a plain DShot slot is: a frame every 1 ms while the bank
- * is armed for its channel's role, the throttle, and none while it is not.
- * Any other port's pin is bound to the PWM generator at @p rate_hz[n]
- * frames a second (SERVO PWM).  A port whose pin, rate or function moved
- * is released and held again; one that did not is left running.  A port
- * is no slot: it is rendered from bank channel @p channel0 + n.  A pin the
- * chip does not have, or a DShot pin no state machine is left for, is not
- * held.
+ * @p parked (bit n, FUNC NONE) holds its pin as an input with its pull-down and
+ * renders nothing.  A port in @p dshot (bit n, FUNC DSHOT150 to DSHOT600) is
+ * bound to a DShot state machine at @p rate_hz[n] kbit/s and rendered as a
+ * plain DShot slot is: a frame every 1 ms while the bank is armed for its
+ * channel's role, the throttle, and none while it is not. Any other port's pin
+ * is bound to the PWM generator at @p rate_hz[n] frames a second (SERVO PWM).
+ * A port whose pin, rate or function moved is released and held again; one that
+ * did not is left running.  A port is no slot: it is rendered from bank channel
+ * @p channel0 + n.  A pin the chip does not have, or a DShot pin no state
+ * machine is left for, is not held.
  *
  * @param pin  Pin of each port, one entry per port.
- * @param rate_hz  Rate of each port: kbit/s for DShot, frames per second for
- *                 PWM.
+ * @param rate_hz  Rate of each port: kbit/s for DShot, frames per second
+ *                 for PWM.
  * @param parked  Bit n set when port n is parked.
  * @param dshot  Bit n set when port n runs DShot.
  * @param channel0  Bank channel of port 0.
@@ -171,8 +169,8 @@ bool outputs_hw_bound(uint8_t slot);
 bool outputs_hw_erpm(uint32_t *erpm, uint32_t *age_ms);
 
 /**
- * @brief The last extended-telemetry reading of @p kind, and how long ago in
- * milliseconds.
+ * @brief The last extended-telemetry reading of @p kind, and how long ago
+ * in milliseconds.
  *
  * Raw: the payload byte as the ESC sent it, because the units belong to the
  * frame type and not to this file.  Returns false for a kind no reply has

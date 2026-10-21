@@ -22,11 +22,10 @@
 /**
  * @brief This file's report lines.
  *
- * The bench console build sends them through
- * the console's output: none lands inside a console line that leaves in
- * pieces, and none waits for the host.  Every other build prints them,
- * and printf() waits for the host for up to 500 ms
- * (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
+ * The bench console build sends them through the console's output: none lands
+ * inside a console line that leaves in pieces, and none waits for the host.
+ * Every other build prints them, and printf() waits for the host for up to 500
+ * ms (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
  */
 #if IOMCU_CONSOLE
 #define IOMCU_SAY console_hw_say

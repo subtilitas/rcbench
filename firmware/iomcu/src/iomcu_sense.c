@@ -30,9 +30,8 @@ void capabilities_update(void)
 }
 
 /*
- * The supply's pins: reserved from the outputs while it holds them, and the
- * PIO UART claimed for them.  False when no PIO block can reach them or has
- * room.
+ * The supply's pins: reserved from the outputs while it holds them, and the PIO
+ * UART claimed for them.  False when no PIO block can reach them or has room.
  */
 bool supply_rewire(void)
 {
