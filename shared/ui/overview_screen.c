@@ -12,8 +12,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H (480 - UI_BAND_H)   /* the router owns the band */
+#define W UI_PANEL_W
+#define H UI_BODY_H   /* the router owns the band */
 
 /*
  * Four columns by two rows: eight 190 x 204 px tiles with 8 px margins

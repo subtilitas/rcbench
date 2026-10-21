@@ -9,11 +9,15 @@ This file records the material in this repository that originates elsewhere.
 DejaVu Sans Mono (and Liberation Mono as a fallback)
 ----------------------------------------------------
 
-The three generated font tables
+The seven generated font tables
 
     shared/gfx/gfx_font8x16.c
     shared/gfx/gfx_font16x28.c
     shared/gfx/gfx_font_num24x30.c
+    shared/gfx/gfx_font10x20.c
+    shared/gfx/gfx_font12x24.c
+    shared/gfx/gfx_font20x36.c
+    shared/gfx/gfx_font_num32x44.c
 
 contain glyph bitmaps rasterised from DejaVu Sans Mono by tools/gen_font.py.
 They are therefore derived from that font's outlines, and its terms travel with

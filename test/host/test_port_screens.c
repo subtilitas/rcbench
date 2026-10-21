@@ -178,10 +178,10 @@ static const char *out_reason(void)
 /* OUTPUTS alone, every pixel inside the canvas painted. */
 static void render_out(void)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
     outputs_screen()->tick(0.016f);
     outputs_screen()->render(&c, -1);    /* no framebuffer: always drawn */
     CHECK_EQ(guard_canvas_touched(&g), 0u);
@@ -190,14 +190,14 @@ static void render_out(void)
 
 static void render_both(void)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
     outputs_screen()->render(&c, 0);
     CHECK_EQ(guard_canvas_touched(&g), 0u);
     CHECK_EQ(guard_canvas_unpainted(&g), 0u);
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
     picker_screen()->render(&c, 0);
     CHECK_EQ(guard_canvas_touched(&g), 0u);
     CHECK_EQ(guard_canvas_unpainted(&g), 0u);
@@ -481,11 +481,11 @@ TEST_CASE(the_tester_takes_port_3_and_the_watch_line_follows_the_map)
     out_tap(SEG_X(1), TESTER_Y);
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
     /* The watch line repaints with the map. */
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
     out_port(0u);
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
     outputs_screen()->tick(0.02f);
     outputs_screen()->render(&c, 0);
     const uint32_t before = guard_canvas_sum(&g);
@@ -568,7 +568,7 @@ static void pk_port(uint8_t n)
     CHECK(picker_screen_list_open());
     const gfx_rect_t row =
         picker_screen_list_row((uint8_t)(OUTBIND_PROTOS + n));
-    CHECK(row.y + row.h <= 432);
+    CHECK(row.y + row.h <= UI_BODY_H);
     tap_on(picker_screen(), row.x + 20, row.y + row.h / 2);
     CHECK_EQ(picker_screen_port_shown(), (int)n);
     CHECK_EQ(outputs_screen_port_shown(), (int)n);
