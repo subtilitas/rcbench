@@ -1,5 +1,6 @@
-/*
- * The automatic servo test's TXT report, line by line.
+/**
+ * @file
+ * @brief The automatic servo test's TXT report, line by line.
  *
  * Its words are entries of servo_str.c's table, looked up in the language
  * of the table the run was started with (S() below).  A report is UTF-8,
@@ -13,10 +14,13 @@
 #include <stdio.h>
 #include <string.h>
 
-/* ------------------------------------------------------------- the report */
+/**
+ * @brief ------------------------------------------------------------- the
+ *        report
+ */
 
-/*
- * The report is written a line at a time as the card takes it, so it is
+/**
+ * @brief The report is written a line at a time as the card takes it, so it is
  * not held anywhere whole.  Each line is found by counting: a cursor walks
  * the report's lines in order and the one asked for is printed.
  */
@@ -28,7 +32,7 @@ typedef struct {
     const char *const *text;    /* the run's language; NULL is English */
 } cursor_t;
 
-/* A word or a line format of the report, in the run's language. */
+/** @brief A word or a line format of the report, in the run's language. */
 #define S(id) servo_str_in(c->text, SERVO_STR_##id)
 
 static bool here(cursor_t *c)
@@ -36,7 +40,7 @@ static bool here(cursor_t *c)
     return c->want == c->at++;
 }
 
-/* A limit's value, or OFF for 0. */
+/** @brief A limit's value, or OFF for 0. */
 static void limit_a(const cursor_t *c, char *b, size_t n, float a)
 {
     if (a > 0.0f) {
@@ -58,7 +62,7 @@ static const char *verdict_word(const cursor_t *c, bool checked,
     return over ? S(FAIL) : S(PASS);
 }
 
-/* A mean in amperes, or "--" for none. */
+/** @brief A mean in amperes, or "--" for none. */
 static void amps(char *b, size_t n, const servo_test_mean_t *m)
 {
     if (m->n > 0u) {
@@ -68,7 +72,8 @@ static void amps(char *b, size_t n, const servo_test_mean_t *m)
     }
 }
 
-/* The first and the last brown-out voltage that ran to its end; NULL for
+/**
+ * @brief The first and the last brown-out voltage that ran to its end; NULL for
  * none. */
 static void brownout_ran(const servo_test_t *t, const servo_test_step_t **first,
                          const servo_test_step_t **last)
@@ -116,7 +121,10 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         } else if (v == SERVO_TEST_NOT_MEASURABLE && unseen > 0u) {
             snprintf(b, n, S(R_RESULT_UNSEEN), verdict, unseen, counted);
         } else if (v == SERVO_TEST_NOT_MEASURABLE) {
-            /* Every counted move seen: the walk's first voltage saw none. */
+            /**
+             * @brief Every counted move seen: the walk's first voltage saw
+             *        none.
+             */
             const servo_test_step_t *first = NULL;
             brownout_ran(t, &first, NULL);
             snprintf(b, n, S(R_RESULT_BO_UNSEEN), verdict,
@@ -214,7 +222,7 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         }
         return true;
     }
-    /* What the meter's readings are worth, where it says. */
+    /** @brief What the meter's readings are worth, where it says. */
     if (g->meter.lag_ms > 0u && here(c)) {
         snprintf(b, n, S(R_LAG), (unsigned)g->meter.lag_ms);
         return true;
@@ -414,7 +422,9 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
             snprintf(mean_ms, sizeof(mean_ms), "--");
             snprintf(max_ms, sizeof(max_ms), "--");
         }
-        /* A step none of whose moves showed movement is not measurable. */
+        /**
+         * @brief A step none of whose moves showed movement is not measurable.
+         */
         const bool none = s->moves > 0u && s->no_rise == s->moves;
         snprintf(b, n,
                  "%5.2f  %6s  %-6s %-6s %-6s %-6s %-6s %-7s %-7s %-6s %-7s %5u "
@@ -450,7 +460,7 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
-/* A step's mean end angle at @p end and its error against the commanded
+/** @brief A step's mean end angle at @p end and its error against the commanded
  * one, both on the circle (servo_test_enc_end()), signed, or "--" for
  * none. */
 static void deg_end(const servo_test_t *t, const servo_test_step_t *s,
@@ -599,7 +609,7 @@ static bool brownout_lines(const servo_test_t *t, cursor_t *c)
         }
         return true;
     }
-    /* The threshold where the walk ended: the last voltage it ran. */
+    /** @brief The threshold where the walk ended: the last voltage it ran. */
     const servo_test_step_t *last = NULL;
     brownout_ran(t, NULL, &last);
     if (last != NULL && here(c)) {
@@ -610,7 +620,7 @@ static bool brownout_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
-/* STALL AT against the current limit, or against the meter's range. */
+/** @brief STALL AT against the current limit, or against the meter's range. */
 static void stall_line(const cursor_t *c, const servo_test_cfg_t *g,
                        bool by_limit)
 {
@@ -701,7 +711,7 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
                  (double)g->stall_a, t->stalled ? S(FAIL) : S(PASS));
         return true;
     }
-    /* A STALL AT no reading can pass, said beside its line. */
+    /** @brief A STALL AT no reading can pass, said beside its line. */
     bool by_limit = false, by_range = false;
     (void)servo_test_stall_unreachable(g, &by_limit, &by_range);
     if (by_limit && here(c)) {

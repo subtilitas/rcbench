@@ -1,7 +1,6 @@
 /**
  * @file
- * @brief Implementation of the single-servo and two-servo models.
- *
+ * @brief Implementation of servo_sim.c.
  * SPDX-License-Identifier: MIT
  */
 
@@ -39,14 +38,7 @@ void servo_sim_init(servo_sim_t *s, const servo_sim_cfg_t *cfg)
     s->position_us = ((float)cfg->stop_lo_us + (float)cfg->stop_hi_us) / 2.0f;
 }
 
-/**
- * @brief Next noise sample of the single-servo model.
- *
- * Deterministic, so a failing case reproduces.
- *
- * @param s  Model state. Advances the noise generator.
- * @return Noise, A, within plus or minus half of noise_a.
- */
+/** @brief Deterministic, so a failing case reproduces. */
 static float noise(servo_sim_t *s)
 {
     s->seed = s->seed * 1664525u + 1013904223u;
@@ -67,7 +59,7 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     const uint32_t dt_ms = (uint32_t)(now_ms - s->last_ms);
     s->last_ms = now_ms;
 
-    /* The servo's own limits first: past one, the servo holds it. */
+    /** @brief The servo's own limits first: past one, the servo holds it. */
     if (s->cfg.limit_hi_us != 0u && cmd_us > s->cfg.limit_hi_us) {
         cmd_us = s->cfg.limit_hi_us;
     }
@@ -131,7 +123,10 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
         amps = s->cfg.free_a;
     }
 
-    /* A tight spot costs extra to hold, whether or not anything is bound. */
+    /**
+     * @brief A tight spot costs extra to hold, whether or not anything is
+     *        bound.
+     */
     if (arrived && s->cfg.stiff_hi_us > s->cfg.stiff_lo_us
         && cmd_us >= s->cfg.stiff_lo_us && cmd_us <= s->cfg.stiff_hi_us) {
         amps += s->cfg.stiff_a;
@@ -141,7 +136,9 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     return amps < 0.0f ? 0.0f : amps;
 }
 
-/* ------------------------------------------ two servos on one surface */
+/**
+ * @brief ------------------------------------------ two servos on one surface
+ */
 
 void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t centre_us)
 {
@@ -191,14 +188,7 @@ float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
 }
 
 /**
- * @brief Move a position toward a target by at most one reach.
- *
- * Move @p pos toward @p target by at most @p reach; true if it arrived.
- *
- * @param pos     Position to move, us. Updated in place.
- * @param target  Target position, us.
- * @param reach   Largest move allowed, us.
- * @return true when the position equals the target after the move.
+ * @brief Move @p pos toward @p target by at most @p reach; true if it arrived.
  */
 static bool approach(float *pos, float target, float reach)
 {
@@ -239,7 +229,7 @@ float servo_pair_step(servo_pair_t *p, uint16_t cmd_a_us, uint16_t cmd_b_us,
 
     float amps;
     if (!a_in || !b_in) {
-        /* In transit: no disagreement is applied to the surface. */
+        /** @brief In transit: no disagreement is applied to the surface. */
         amps = p->cfg.travel_a + n;
     } else {
         const float fight = servo_pair_disagreement(

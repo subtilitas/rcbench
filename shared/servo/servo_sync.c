@@ -1,7 +1,6 @@
 /**
  * @file
- * @brief Implementation of the two-servo synchronising search.
- *
+ * @brief Implementation of servo_sync.c.
  * SPDX-License-Identifier: MIT
  */
 
@@ -9,14 +8,6 @@
 
 #include <string.h>
 
-/**
- * @brief Tell whether a millisecond span has elapsed.
- *
- * @param now   Current time, ms.
- * @param then  Start of the span, ms.
- * @param ms    Span length, ms.
- * @return true when now - then is at least ms, across a counter wrap.
- */
 static inline bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
 {
     return (uint32_t)(now - then) >= ms;
@@ -48,12 +39,7 @@ void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t centre_us)
     cfg->hard_limit_a  = 4.0f;   /* two servos, so higher than one servo's */
 }
 
-/**
- * @brief Clamp a pulse width to the pulse range of the search.
- *
- * @param us  Pulse width, us.
- * @return The width, SERVO_SYNC_MIN_US to SERVO_SYNC_MAX_US.
- */
+/** @brief A command within the pulse widths a servo takes. */
 static uint16_t pulse_us(int32_t us)
 {
     if (us < (int32_t)SERVO_SYNC_MIN_US) {
@@ -65,15 +51,7 @@ static uint16_t pulse_us(int32_t us)
     return (uint16_t)us;
 }
 
-/**
- * @brief Position of a scan point within its window.
- *
- * Where in its window the scan's @p i-th point sits.
- *
- * @param sy  Search state holding the window.
- * @param i   Point index, 0 to points - 1.
- * @return Offset of the point, us.
- */
+/** @brief Where in its window the scan's @p i-th point sits. */
 static int32_t point_us(const servo_sync_t *sy, uint8_t i)
 {
     const uint8_t n = sy->cfg.points;
@@ -87,13 +65,7 @@ static int32_t point_us(const servo_sync_t *sy, uint8_t i)
            + (span * (int32_t)i) / (int32_t)(n - 1);
 }
 
-/**
- * @brief Set the two commands for the point being measured.
- *
- * Where the servos should be for the stage being measured.
- *
- * @param sy  Search state. Sets cmd_a_us, cmd_b_us and travel_ms.
- */
+/** @brief Where the servos should be for the stage being measured. */
 static void aim(servo_sync_t *sy)
 {
     const int32_t centre = (int32_t)sy->cfg.centre_us;
@@ -120,7 +92,10 @@ static void aim(servo_sync_t *sy)
         break;
     }
 
-    /* How long the larger of the two moves needs, added to the fixed wait. */
+    /**
+     * @brief How long the larger of the two moves needs, added to the fixed
+     *        wait.
+     */
     int32_t da = (int32_t)sy->cmd_a_us - was_a;
     int32_t db = (int32_t)sy->cmd_b_us - was_b;
     if (da < 0) {
@@ -163,13 +138,6 @@ void servo_sync_init(servo_sync_t *sy, const servo_sync_cfg_t *cfg)
     aim(sy);
 }
 
-/**
- * @brief End the search with the servos back at centre.
- *
- * @param sy     Search state. Sets state, fault and the two commands.
- * @param state  Final state.
- * @param fault  Fault code.
- */
 static void finish(servo_sync_t *sy, servo_sync_state_t state,
                    servo_sync_fault_t fault)
 {
@@ -179,11 +147,7 @@ static void finish(servo_sync_t *sy, servo_sync_state_t state,
     sy->cmd_b_us = pulse_us((int32_t)sy->cfg.centre_us + sy->trim_us);
 }
 
-/**
- * @brief Start the next stage, or finish if that was the last.
- *
- * @param sy  Search state.
- */
+/** @brief Start the next stage, or finish if that was the last. */
 static void next_stage(servo_sync_t *sy)
 {
     sy->round = 0;
@@ -208,11 +172,7 @@ static void next_stage(servo_sync_t *sy)
 }
 
 /**
- * @brief Close a round of points: narrow the window, or take the answer.
- *
- * A whole round of points has been measured; narrow, or take the answer.
- *
- * @param sy  Search state holding scan_a for the round.
+ * @brief A whole round of points has been measured; narrow, or take the answer.
  */
 static void close_round(servo_sync_t *sy)
 {

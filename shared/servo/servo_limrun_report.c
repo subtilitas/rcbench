@@ -1,5 +1,6 @@
-/*
- * The limit run's outbox and report, and the words the screen and the
+/**
+ * @file
+ * @brief The limit run's outbox and report, and the words the screen and the
  * report name a verdict, a reason and a phase by: see servo_limrun.h.
  *
  * SPDX-License-Identifier: MIT
@@ -11,7 +12,10 @@
 
 #include "servo_limrun_int.h"
 
-/* ------------------------------------------------------------ the outbox */
+/**
+ * @brief ------------------------------------------------------------ the
+ *        outbox
+ */
 
 servo_test_out_t servo_limrun_peek(servo_limrun_t *r, const char **text)
 {
@@ -57,10 +61,14 @@ bool servo_limrun_drained(const servo_limrun_t *r)
         || (r->state == SERVO_LIMRUN_DONE && r->out_done);
 }
 
-/* ------------------------------------------------------------ the report */
+/**
+ * @brief ------------------------------------------------------------ the
+ *        report
+ */
 
-/*
- * One line at a time, found by counting, as the automatic test's report is
+/**
+ * @brief One line at a time, found by counting, as the automatic test's report
+ *        is
  * (servo_report.c): a cursor walks the lines in order and prints the one
  * asked for.
  */
@@ -219,7 +227,10 @@ static servo_str_t side_word(const servo_limrun_t *r, int g)
     }
 }
 
-/* A share of travel, 0.1 us over 0.1 us, as three decimals; "-" for none. */
+/**
+ * @brief A share of travel, 0.1 us over 0.1 us, as three decimals; "-" for
+ *        none.
+ */
 static void share_text(char *buf, size_t n, int32_t d, int32_t span)
 {
     if (d <= 0 || span <= 0) {
@@ -264,7 +275,7 @@ static bool reg_lines(const servo_limrun_t *r, cur_t *c, int g)
     return false;
 }
 
-/* NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1 us, as microseconds. */
+/** @brief NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1 us, as microseconds. */
 static double us_of(uint16_t dus)
 {
     return (double)dus / 10.0;
@@ -378,7 +389,10 @@ bool servo_limrun_report_line(const servo_limrun_t *r, unsigned idx,
     return head_lines(r, &c) || prog_lines(r, &c) || tail_lines(r, &c);
 }
 
-/* -------------------------------------------------------------- the words */
+/**
+ * @brief -------------------------------------------------------------- the
+ *        words
+ */
 
 servo_str_t servo_limrun_verdict_str(servo_limrun_verdict_t v)
 {
