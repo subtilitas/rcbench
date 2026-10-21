@@ -41,7 +41,10 @@ void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz);
  * As outputs_hw_apply(), with only the slots in @p may_bind bound; a slot
  * outside it is released and left unbound.  A refused OUTPUTS write puts
  * back exactly the set that was bound before it, so a slot unbound then
- * cannot take the resource a slot bound then needs.
+ * cannot take the resource a slot bound then needs.  When a slot that runs
+ * on PIO (DShot, PPM) is bound anew, every DShot programming port is let go
+ * first, so the slots take the state machines before the ports; the caller
+ * binds the ports again with outputs_hw_ports() after.
  */
 void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
                            uint8_t may_bind);

@@ -697,7 +697,10 @@ compare register with a PWM slot's pin, and one on the compare register of
 another SERVO PWM port; a NONE or DShot port's pin is under none of the PWM
 rules. A DShot port needs a PIO block that reaches its pin and a free state
 machine in it; without one the port holds no pin and bit 8 + n of `FLAGS`
-is set.
+is set. The output slots come first: an OUTPUTS or BIND write that binds a
+DShot or PPM slot anew lets every DShot port go, binds the slots, and binds
+the ports again on the state machines left. The IOmcu's DShot driver holds
+12 pins, the 8 slots and the 4 ports.
 A pin the chip does not have is refused when the IOmcu cannot park it, and
 the write is undone; a write of OUTPUTS or BIND that
 puts a slot on a port's pin or beside it in the silicon is refused the same
@@ -774,7 +777,8 @@ target change judged at 50 Hz, a pin refused onto the slice of a target at
 its own rate, and a target change that would leave a slot with a pulse
 longer than its frame. `test_outputs_hw_ports` runs a DShot port: bound at
 150, 300 and 600 kbit/s, moved by a rate or function change, no state
-machine left, a frame every 1 ms only while ARMED for the throttle, the
+machine left, a DShot slot bound anew taking the port's state machine,
+a frame every 1 ms only while ARMED for the throttle, the
 throttle at 1000 as 2047, none on SAFE, ARM SURFACE and STOP, and the
 period across the microsecond clock's wrap. No pulse or frame of a port
 has been measured on hardware.

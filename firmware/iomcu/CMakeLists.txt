@@ -86,6 +86,9 @@ target_include_directories(rcbench-iomcu PRIVATE include src)
 # core 1 runs on the array sense_core1.c passes.  The link fails when
 # anything else is placed in either region.
 target_compile_definitions(rcbench-iomcu PRIVATE PICO_STACK_SIZE=0x1000)
+# The DShot driver's pin table: the 8 output slots and the 4 programming
+# ports (outputs_hw.c asserts it).
+target_compile_definitions(rcbench-iomcu PRIVATE OUT_DSHOT_MAX_PINS=12u)
 
 # A bring-up build for the current monitors: with no part enabled in flash,
 # both are enabled at the SENSE page's defaults for that boot, not saved.

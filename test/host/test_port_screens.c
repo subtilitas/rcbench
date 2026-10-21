@@ -388,6 +388,11 @@ TEST_CASE(function_list_offers_dshot_from_4_28_and_takes_every_press)
     /* Lost touches shut it. */
     outputs_screen()->cancel();
     CHECK(!outputs_port_fn_open());
+    /* The home tag shuts it and is taken; with none open it leaves. */
+    out_tap(FACE_X, FN_Y);
+    CHECK(outputs_screen()->back());
+    CHECK(!outputs_port_fn_open());
+    CHECK(!outputs_screen()->back());
     /* A lock while it is open shuts it at the next tick. */
     out_tap(FACE_X, FN_Y);
     servo_screen_set_bench_armed(true);

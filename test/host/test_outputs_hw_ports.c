@@ -43,11 +43,18 @@ static uint8_t g_last_pin;
 static int g_dshot_binds, g_dshot_releases, g_dshot_sends, g_dshot_stops;
 static uint16_t g_dshot_kbit, g_dshot_value;
 static bool g_dshot_bidir, g_dshot_full;
+/* State machines the fake has left when g_sm_model is set: a bind takes
+ * one, a release gives it back. */
+static bool g_sm_model;
+static int g_sm_free;
 
 bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
 {
-    if (g_dshot_full) {
+    if (g_dshot_full || (g_sm_model && g_sm_free <= 0)) {
         return false;                /* no state machine left */
+    }
+    if (g_sm_model) {
+        --g_sm_free;
     }
     ++g_dshot_binds;
     g_last_pin    = pin;
@@ -57,6 +64,9 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
 }
 void out_dshot_release(uint8_t pin)
 {
+    if (g_sm_model) {
+        ++g_sm_free;
+    }
     ++g_dshot_releases;
     g_last_pin = pin;
 }
@@ -148,6 +158,7 @@ static void counts_zero(void)
     g_dshot_binds = g_dshot_releases = g_dshot_sends = g_dshot_stops = 0;
     g_dshot_kbit = g_dshot_value = 0u;
     g_dshot_bidir = g_dshot_full = false;
+    g_sm_model = false;
 }
 
 /* Port 0 on @p pin0 and port 1 on @p pin1, port 1 parked by @p parked. */
@@ -442,6 +453,56 @@ TEST_CASE(a_dshot_port_period_survives_the_clock_wrap)
     CHECK_EQ(g_dshot_sends, 3);
 }
 
+/*
+ * The slots come first: a DShot slot bound anew takes the state machine a
+ * DShot port held, and the port binds again on what is left.  A PWM slot
+ * moves no port.
+ */
+TEST_CASE(a_dshot_slot_bound_anew_goes_before_a_dshot_port)
+{
+    outputs_t o;
+    outputs_init(&o, 0u);
+    outputs_hw_init();
+    uint16_t rate[OUT_MAX_SLOTS];
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        rate[i] = 50u;
+    }
+    outputs_hw_apply(&o, rate);
+    counts_zero();
+    g_sm_model = true;
+    g_sm_free  = 1;                  /* one state machine left */
+    dshot_port(14u, 300u);
+    CHECK_EQ(outputs_hw_ports_bound(), 3u);
+    CHECK_EQ(g_sm_free, 0);
+    /* A PWM slot: the port keeps its state machine. */
+    const out_slot_t pwm = { .driver = OUT_DRIVER_PWM, .first_channel = 0,
+                             .channels = 1, .pin = 4, .rate_hz = 50 };
+    CHECK(outputs_configure(&o, 0, &pwm));
+    outputs_hw_apply(&o, rate);
+    CHECK_EQ(g_dshot_releases, 0);
+    dshot_port(14u, 300u);
+    CHECK_EQ(outputs_hw_ports_bound(), 3u);
+    /* A DShot slot: the port lets go first and the slot binds. */
+    const out_slot_t esc = { .driver = OUT_DRIVER_DSHOT, .first_channel = 1,
+                             .channels = 1, .pin = 0, .rate_hz = 300 };
+    CHECK(outputs_configure(&o, 1, &esc));
+    rate[1] = 300u;
+    outputs_hw_apply(&o, rate);
+    CHECK_EQ(g_dshot_releases, 1);
+    CHECK(outputs_hw_bound(1u));
+    CHECK_EQ(outputs_hw_ports_bound(), 1u);
+    /* The ports follow on what is left: none, so port 1 is not held. */
+    dshot_port(14u, 300u);
+    CHECK_EQ(outputs_hw_ports_bound(), 1u);
+    /* With the slot gone, the port binds again. */
+    const out_slot_t off = { .driver = OUT_DRIVER_NONE };
+    CHECK(outputs_configure(&o, 1, &off));
+    outputs_hw_apply(&o, rate);
+    dshot_port(14u, 300u);
+    CHECK_EQ(outputs_hw_ports_bound(), 3u);
+    counts_zero();
+}
+
 int main(void)
 {
     RUN(a_none_port_is_parked_and_held_without_the_generator);
@@ -454,5 +515,6 @@ int main(void)
     RUN(a_dshot_port_frames_every_ms_only_while_armed_for_the_throttle);
     RUN(a_dshot_port_ignores_the_tester_drive_bit);
     RUN(a_dshot_port_period_survives_the_clock_wrap);
+    RUN(a_dshot_slot_bound_anew_goes_before_a_dshot_port);
     return test_summary("outputs_hw_ports");
 }

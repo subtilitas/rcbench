@@ -566,3 +566,13 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
 }
 
 bool outputs_port_fn_open(void) { return p.fn_open; }
+
+bool outputs_port_back(void)
+{
+    if (!p.fn_open) {
+        return false;
+    }
+    fn_close();
+    outputs_port_touched();
+    return true;
+}

@@ -766,7 +766,11 @@ einen auf dem Compare-Register eines anderen SERVO-PWM-Ports; der Pin eines
 NONE- oder DShot-Ports steht unter keiner der PWM-Regeln. Ein DShot-Port
 braucht einen PIO-Block, der seinen Pin erreicht, und darin eine freie
 State Machine; ohne sie hält der Port keinen Pin, und Bit 8 + n von
-`FLAGS` ist gesetzt. Ein Pin, den der Chip nicht
+`FLAGS` ist gesetzt. Die Ausgangs-Slots gehen vor: ein Schreiben von
+OUTPUTS oder BIND, das einen DShot- oder PPM-Slot neu bindet, lässt jeden
+DShot-Port los, bindet die Slots und bindet die Ports wieder auf den State
+Machines, die übrig sind. Der DShot-Treiber des IOmcu hält 12 Pins, die 8
+Slots und die 4 Ports. Ein Pin, den der Chip nicht
 hat, wird abgewiesen, wenn der IOmcu ihn nicht parken kann, und das
 Schreiben wird zurückgenommen; ein Schreiben von
 OUTPUTS oder BIND, das einen Slot auf den Pin eines Ports oder im Silizium
@@ -853,7 +857,8 @@ Ziels, beurteilt bei 50 Hz, einen Pin, der nicht auf den Slice eines Ziels
 mit eigener Rate darf, und eine Änderung des Ziels, die einem Slot einen
 Puls länger als sein Frame ließe. `test_outputs_hw_ports` fährt einen
 DShot-Port: gebunden mit 150, 300 und 600 kbit/s, bewegt von einem
-Wechsel der Rate oder Funktion, keine State Machine mehr frei, ein Frame
+Wechsel der Rate oder Funktion, keine State Machine mehr frei, einen neu
+gebundenen DShot-Slot, der die State Machine des Ports nimmt, ein Frame
 alle 1 ms nur in ARMED für den Throttle, das Gas bei 1000 als 2047, keiner
 bei SAFE, ARM SURFACE und STOP, und die Periode über den Überlauf der
 Mikrosekunden-Uhr. Kein Puls und kein Frame eines Ports ist an Hardware

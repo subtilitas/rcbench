@@ -62,6 +62,19 @@ typedef struct {
 } port_state_t;
 
 static port_state_t s_port[LINK_PG_PORTS_MAX];
+
+/* Every DShot port let go: no frame, its state machine free, held again
+ * by the next outputs_hw_ports(). */
+static void ports_release_dshot(void)
+{
+    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        port_state_t *p = &s_port[i];
+        if (p->bound && !p->parked && p->as.driver == OUT_DRIVER_DSHOT) {
+            out_dshot_release(p->as.pin);
+            p->bound = false;
+        }
+    }
+}
 /* The ports that render their pulse (outputs_hw_ports_drive()). */
 static uint8_t s_port_drive;
 
@@ -227,6 +240,24 @@ void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
             /* A slot bound afresh has rendered nothing to change from. */
             s_state[i].pwm_have = false;
         }
+    }
+    /*
+     * The slots come first and the programming ports follow on what they
+     * leave (hw_apply_only()).  A DShot port bound earlier holds a state
+     * machine and program space a slot bound now may need, so every DShot
+     * port is let go before a slot that runs on PIO is bound; the caller's
+     * outputs_hw_ports() binds them again from what is left.
+     */
+    bool pio_slot = false;
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        pio_slot = pio_slot
+                   || (moved[i] && (may_bind & (1u << i)) != 0u
+                       && (want[i].driver == OUT_DRIVER_DSHOT
+                           || want[i].driver == OUT_DRIVER_DSHOT_BIDIR
+                           || want[i].driver == OUT_DRIVER_PPM));
+    }
+    if (pio_slot) {
+        ports_release_dshot();
     }
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
         if (!moved[i]) {
@@ -657,8 +688,9 @@ bool outputs_hw_edt(dshot_telem_kind_t kind, uint16_t *value, uint32_t *age_ms)
  * hold is a pin a driver can bind, and a width the bank passes is a width
  * the PPM frame carries.
  */
-_Static_assert(OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS,
-               "the DShot driver binds fewer pins than the bank has slots");
+_Static_assert(OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS + LINK_PG_PORTS_MAX,
+               "the DShot driver binds fewer pins than the bank has slots "
+               "and programming ports");
 _Static_assert(OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS,
                "the PPM driver binds fewer pins than the bank has slots");
 _Static_assert(PPM_CHANNEL_MIN_US == OUT_FLOOR_US
