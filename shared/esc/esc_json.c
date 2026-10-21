@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Decoder that reads one ESC profile from its JSON text.
+ *
  * Read one ESC profile from JSON.  See esc_profile.h.
  *
  * Two stages.  The text is first cut into tokens: one per value, each with
@@ -26,28 +29,33 @@
 
 /* ------------------------------------------------------------ decoding */
 
-/* A model name and where it stands in the file. */
+/** @brief A model name and where it stands in the file. */
 typedef struct {
-    const char *name;
-    uint32_t    at;
+    const char *name;   /**< the model name                                 */
+    uint32_t    at;     /**< index of the model in the models array         */
 } name_at_t;
 
+/** @brief State of one decoding pass over the tokens. */
 typedef struct {
-    const char  *s;
-    const tok_t *t;
-    uint8_t     *base;      /* NULL while sizing */
-    size_t       used;
-    size_t       cap;       /* the block's size; 0 while sizing */
-    char        *err;
-    size_t       err_size;
-    bool         failed;
-    name_at_t   *names;     /* the model names, sorted; NULL while sizing */
-    uint32_t     name_count;
+    const char  *s;          /**< the JSON text                              */
+    const tok_t *t;          /**< the tokens of the text                     */
+    uint8_t     *base;       /**< NULL while sizing */
+    size_t       used;       /**< bytes taken from the block so far          */
+    size_t       cap;        /**< the block's size; 0 while sizing           */
+    char        *err;        /**< receives the reason, or NULL               */
+    size_t       err_size;   /**< size of err, bytes                         */
+    bool         failed;     /**< a reason was set; decoding stops           */
+    name_at_t   *names;      /**< the model names, sorted; NULL while sizing */
+    uint32_t     name_count; /**< number of entries in names                 */
 } dec_t;
 
-/* The first reason stands.  A macro rather than a variadic function: the
+/**
+ * @brief Record the first failure reason and set the failed flag.
+ *
+ * The first reason stands.  A macro rather than a variadic function: the
  * arguments go straight to snprintf(), and there is no va_list to get
- * wrong. */
+ * wrong.
+ */
 #define FAIL(d, ...)                                                      \
     do {                                                                  \
         if (!(d)->failed) {                                               \
@@ -58,6 +66,17 @@ typedef struct {
         }                                                                 \
     } while (0)
 
+/**
+ * @brief Take aligned bytes from the block being filled.
+ *
+ * While sizing, only the used count moves; while filling, the bytes are
+ * handed out from the block.
+ *
+ * @param d      The decoding state.
+ * @param n      Bytes wanted.
+ * @param align  Alignment of the returned pointer, bytes.
+ * @return The pointer into the block, or NULL while sizing.
+ */
 static void *take(dec_t *d, size_t n, size_t align)
 {
     d->used = (d->used + align - 1u) / align * align;
@@ -75,7 +94,16 @@ static void *take(dec_t *d, size_t n, size_t align)
     return p;
 }
 
-/* The value of @p key in the object at token @p obj, or -1. */
+/**
+ * @brief Find the value of a key in an object.
+ *
+ * The value of @p key in the object at token @p obj, or -1.
+ *
+ * @param d    The decoding state.
+ * @param obj  Index of the object token.
+ * @param key  The key to find.
+ * @return Index of the value token, or -1 when the key is absent.
+ */
 static int64_t member(const dec_t *d, uint32_t obj, const char *key)
 {
     if (d->t[obj].type != T_OBJ) {
@@ -92,8 +120,16 @@ static int64_t member(const dec_t *d, uint32_t obj, const char *key)
     return -1;
 }
 
-/* A string token's text, decoded into the block.  Never longer than the
- * text it came from: no escape decodes to more bytes than it is written in. */
+/**
+ * @brief Decode a string token into the block.
+ *
+ * A string token's text, decoded into the block.  Never longer than the
+ * text it came from: no escape decodes to more bytes than it is written in.
+ *
+ * @param d   The decoding state.
+ * @param ti  Index of the string token.
+ * @return The decoded, NUL-terminated text in the block, or NULL while sizing.
+ */
 static const char *copy_str(dec_t *d, uint32_t ti)
 {
     const tok_t *t = &d->t[ti];
@@ -114,8 +150,16 @@ static const char *copy_str(dec_t *d, uint32_t ti)
     return out;
 }
 
-/* A string token's length once decoded, in bytes: UTF-8, as the generator
- * measures it.  The sizing pass has no copy to measure. */
+/**
+ * @brief Length of a string token once decoded.
+ *
+ * A string token's length once decoded, in bytes: UTF-8, as the generator
+ * measures it.  The sizing pass has no copy to measure.
+ *
+ * @param d   The decoding state.
+ * @param ti  Index of the string token.
+ * @return The decoded length, bytes.
+ */
 static size_t decoded_len(const dec_t *d, uint32_t ti)
 {
     const tok_t *t = &d->t[ti];
@@ -128,6 +172,20 @@ static size_t decoded_len(const dec_t *d, uint32_t ti)
     return o;
 }
 
+/**
+ * @brief Read a string member.
+ *
+ * Fails when the member is absent or not a string, or is empty while
+ * @p empty_ok is false.  A null member is "" when @p null_ok is set.
+ *
+ * @param d        The decoding state.
+ * @param obj      Index of the object token.
+ * @param key      The member name.
+ * @param where    Path of the object, for the reason text.
+ * @param empty_ok true when an empty string is allowed.
+ * @param null_ok  true when a missing or null member is allowed.
+ * @return The decoded text, "" or NULL as described above.
+ */
 static const char *get_str(dec_t *d, uint32_t obj, const char *key,
                            const char *where, bool empty_ok, bool null_ok)
 {
@@ -146,7 +204,21 @@ static const char *get_str(dec_t *d, uint32_t obj, const char *key,
     return copy_str(d, (uint32_t)v);
 }
 
-/* A whole number in lo..hi; *out untouched for null when null_ok. */
+/**
+ * @brief Read a whole number member in a range.
+ *
+ * A whole number in lo..hi; *out untouched for null when null_ok.
+ *
+ * @param d        The decoding state.
+ * @param obj      Index of the object token.
+ * @param key      The member name.
+ * @param where    Path of the object, for the reason text.
+ * @param lo       Smallest allowed value.
+ * @param hi       Largest allowed value.
+ * @param null_ok  true when a missing or null member is allowed.
+ * @param out      Receives the value.
+ * @return true when a value was read into @p out.
+ */
 static bool get_num(dec_t *d, uint32_t obj, const char *key, const char *where,
                     int64_t lo, int64_t hi, bool null_ok, int64_t *out)
 {
@@ -193,6 +265,16 @@ static bool get_num(dec_t *d, uint32_t obj, const char *key, const char *where,
     return true;
 }
 
+/**
+ * @brief Read a boolean member.
+ *
+ * @param d         The decoding state.
+ * @param obj       Index of the object token.
+ * @param key       The member name.
+ * @param where     Path of the object, for the reason text.
+ * @param absent_ok true when an absent member reads as false.
+ * @return The value; false when absent and @p absent_ok is set.
+ */
 static bool get_bool(dec_t *d, uint32_t obj, const char *key,
                      const char *where, bool absent_ok)
 {
@@ -207,7 +289,19 @@ static bool get_bool(dec_t *d, uint32_t obj, const char *key,
     return d->t[v].type == T_TRUE;
 }
 
-/* The index of @p key's string value in @p names, or -1 after a FAIL(). */
+/**
+ * @brief Read a string member that must be one of a list.
+ *
+ * The index of @p key's string value in @p names, or -1 after a FAIL().
+ *
+ * @param d      The decoding state.
+ * @param obj    Index of the object token.
+ * @param key    The member name.
+ * @param where  Path of the object, for the reason text.
+ * @param names  The allowed values.
+ * @param count  Number of entries in @p names.
+ * @return The index into @p names, or -1 after a FAIL().
+ */
 static int get_enum(dec_t *d, uint32_t obj, const char *key,
                     const char *where, const char *const *names, int count)
 {
@@ -224,6 +318,16 @@ static int get_enum(dec_t *d, uint32_t obj, const char *key,
     return -1;
 }
 
+/**
+ * @brief Read a member that must be an object or an array.
+ *
+ * @param d      The decoding state.
+ * @param obj    Index of the object token.
+ * @param key    The member name.
+ * @param where  Path of the object, for the reason text.
+ * @param type   T_OBJ or T_ARR.
+ * @return Index of the member token, or -1 after a FAIL().
+ */
 static int64_t get_obj(dec_t *d, uint32_t obj, const char *key,
                        const char *where, ttype_t type)
 {
@@ -236,6 +340,14 @@ static int64_t get_obj(dec_t *d, uint32_t obj, const char *key,
     return v;
 }
 
+/**
+ * @brief Check an id or key: 1 to max of a-z, 0-9 and one separator.
+ *
+ * @param k     The text to check.
+ * @param max   Longest allowed length, characters.
+ * @param dash  true for "-" as the separator, false for "_".
+ * @return true when the text is allowed.
+ */
 static bool key_ok(const char *k, size_t max, bool dash)
 {
     const size_t n = strlen(k);
@@ -252,6 +364,7 @@ static bool key_ok(const char *k, size_t max, bool dash)
     return true;
 }
 
+/** @brief Allowed values of the enumerated members, as the JSON spells them. */
 static const char *const k_scheme[]   = { "count", "short_long",
     "melody_groups", "yes_no", "stick_position", "other" };
 static const char *const k_encoding[] = { "count", "short_long", "melody",
@@ -267,8 +380,20 @@ static const char *const k_manual[]   = { "before_power", "at_power_up",
     "before_menu", "during_menu", "before_power_off", "after_programming" };
 static const char *const k_cells[]    = { "lipo", "nimh" };
 
+/**
+ * @brief Number of entries in a static array.
+ *
+ * @param a  The array.
+ */
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
+/**
+ * @brief Sort comparison of model names, then by position.
+ *
+ * @param a  Pointer to a name_at_t.
+ * @param b  Pointer to a name_at_t.
+ * @return Negative, zero or positive as @p a sorts before, with or after @p b.
+ */
 static int by_name(const void *a, const void *b)
 {
     const name_at_t *x = a, *y = b;
@@ -279,11 +404,27 @@ static int by_name(const void *a, const void *b)
     return (x->at > y->at) - (x->at < y->at);
 }
 
+/**
+ * @brief Search comparison of a name with a name_at_t.
+ *
+ * @param key   The name searched for, a const char *.
+ * @param elem  A name_at_t.
+ * @return Negative, zero or positive as @p key sorts before, with or after.
+ */
 static int name_is(const void *key, const void *elem)
 {
     return strcmp((const char *)key, ((const name_at_t *)elem)->name);
 }
 
+/**
+ * @brief Decode the models array of a profile.
+ *
+ * Model names must be unique within the profile.
+ *
+ * @param d     The decoding state.
+ * @param root  Index of the root object token.
+ * @param p     Receives the models.
+ */
 static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
 {
     const int64_t arr = get_obj(d, root, "models", "", T_ARR);
@@ -363,6 +504,13 @@ static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
     p->models = m;
 }
 
+/**
+ * @brief Whether a profile has a model with a name.
+ *
+ * @param d     The decoding state, with the sorted model names.
+ * @param name  The model name.
+ * @return true when a model has the name.
+ */
 static bool has_model(const dec_t *d, const char *name)
 {
     return d->names != NULL
@@ -370,10 +518,15 @@ static bool has_model(const dec_t *d, const char *name)
                       name_is) != NULL;
 }
 
-/*
+/**
+ * @brief Stick position where a value's own moves begin.
+ *
  * Where the stick is when a value's own moves (after_select) begin: the
  * profile's store move, else the move that stores the value; ESC_THR_NONE
  * for a profile with no select move.
+ *
+ * @param p  The profile.
+ * @return The position the moves start from.
  */
 static esc_throttle_t moves_from(const esc_profile_t *p)
 {
@@ -387,6 +540,15 @@ static esc_throttle_t moves_from(const esc_profile_t *p)
                ? p->value_select_throttle : p->select_throttle;
 }
 
+/**
+ * @brief Decode the values array of one item.
+ *
+ * @param d       The decoding state.
+ * @param arr     Index of the values array token.
+ * @param iw      Path of the item, for the reason text.
+ * @param it      The item that receives the values.
+ * @param before  Stick position before the item's first value move.
+ */
 static void decode_values(dec_t *d, uint32_t arr, const char *iw,
                           esc_item_t *it, esc_throttle_t before)
 {
@@ -485,6 +647,13 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
     it->values = v;
 }
 
+/**
+ * @brief Decode the items array of a profile.
+ *
+ * @param d     The decoding state.
+ * @param root  Index of the root object token.
+ * @param p     Receives the items.
+ */
 static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
 {
     const int64_t arr = get_obj(d, root, "items", "", T_ARR);
@@ -579,9 +748,15 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
     p->items = it;
 }
 
-/*
+/**
+ * @brief Decode the operator's steps at the ESC.
+ *
  * The operator's steps at the ESC: absent or null, none.  Only an assisted
  * profile has them, 1 to ESC_MANUAL_MAX, in the order a run meets them.
+ *
+ * @param d     The decoding state.
+ * @param root  Index of the root object token.
+ * @param p     Receives the steps.
  */
 static void decode_manual(dec_t *d, uint32_t root, esc_profile_t *p)
 {
@@ -700,6 +875,14 @@ static void decode_manual(dec_t *d, uint32_t root, esc_profile_t *p)
     p->manual = m;
 }
 
+/**
+ * @brief Decode a whole profile from the tokens.
+ *
+ * Run once to size the block and once to fill it.
+ *
+ * @param d  The decoding state.
+ * @param p  Receives the profile.
+ */
 static void decode(dec_t *d, esc_profile_t *p)
 {
     const uint32_t root = 0;

@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Readouts of a stick programming run: reason and phase words.
+ *
  * Stick programming: the readouts of a run.  The words for each reason and
  * phase, whether an end lights the red light, and what a run has done so
  * far.  See esc_stick.h.
