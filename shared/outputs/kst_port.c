@@ -465,8 +465,8 @@ static link_kst_refusal_t enter_from_pwm(kst_port_t *p, uint8_t port,
 }
 
 /**
- * @brief The supply switched off for RAIL_OFF; @p again: and on after it, at what
- * it was set to.
+ * @brief The supply switched off for RAIL_OFF; @p again: and on after it, at
+ * what it was set to.
  *
  * @param p      The port.
  * @param v      The supply's view.
