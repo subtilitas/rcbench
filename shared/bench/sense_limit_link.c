@@ -1,5 +1,6 @@
-/*
- * SENSE_LIMIT, the panel's half.  See sense_limit_link.h.
+/**
+ * @file sense_limit_link.c
+ * @brief SENSE_LIMIT, the panel's half.  See sense_limit_link.h.
  *
  * SPDX-License-Identifier: MIT
  */

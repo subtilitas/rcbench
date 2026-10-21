@@ -1,7 +1,10 @@
-/*
- * The panel's half of SENSE_LIMIT (0x36, protocol 4.27): a current limit
- * per INA3221 channel, and the channels whose 50 ms window passed it.  An
- * alert only: a limit passed stops nothing and drives nothing.
+/**
+ * @file sense_limit_link.h
+ * @brief The panel's half of SENSE_LIMIT (0x36, protocol 4.27): a current
+ *        limit per INA3221 channel, and the channels whose 50 ms window
+ *        passed it.
+ *
+ * An alert only: a limit passed stops nothing and drives nothing.
  *
  *   1. At link-up the page is read whole, registers 0 to 15.  An IOmcu
  *      older than 4.27 is sent nothing; one that names 4.27 or later and
@@ -51,18 +54,22 @@
 extern "C" {
 #endif
 
-/** A limit edit rests this long before it is written. */
+/** @brief A limit edit rests this long before it is written, ms. */
 #define SENSE_LIMIT_LINK_SETTLE_MS  500u
-/** OVER is read this often while a limit is held. */
+/** @brief OVER is read this often while a limit is held, ms. */
 #define SENSE_LIMIT_LINK_READ_MS    200u
-/** At most one alert this often. */
+/** @brief At most one alert this often, ms. */
 #define SENSE_LIMIT_LINK_GAP_MS     5000u
-/** A channel's alert again at most this often while it keeps passing. */
+/** @brief A channel's alert again at most this often while it keeps
+ *         passing, ms. */
 #define SENSE_LIMIT_LINK_REPEAT_MS  30000u
 
+/** @brief sense_limit_link_done()'s results besides a NACK's reason: the
+ *         exchange answered, or not answered. */
 #define SENSE_LIMIT_LINK_ACK       0
 #define SENSE_LIMIT_LINK_NO_ANSWER (-1)
 
+/** @brief The exchanges the page is served with. */
 typedef enum {
     SENSE_LIMIT_LINK_OP_NONE = 0,
     SENSE_LIMIT_LINK_OP_READ,     /**< registers 0 to 15                */
@@ -70,6 +77,7 @@ typedef enum {
     SENSE_LIMIT_LINK_OP_OVER,     /**< registers 12 and 13              */
 } sense_limit_link_op_kind_t;
 
+/** @brief One exchange for the caller to make. */
 typedef struct {
     sense_limit_link_op_kind_t kind;
     bool            write;
@@ -78,7 +86,7 @@ typedef struct {
     const uint16_t *regs;     /**< a write's registers, n of them       */
 } sense_limit_link_op_t;
 
-/** What sense_limit_link_event() hands out. */
+/** @brief What sense_limit_link_event() hands out. */
 typedef enum {
     SENSE_LIMIT_LINK_EV_NONE = 0,
     SENSE_LIMIT_LINK_EV_OVER,     /**< channel *ch passed its limit     */
@@ -86,7 +94,8 @@ typedef enum {
     SENSE_LIMIT_LINK_EV_REFUSED,  /**< the limits were refused          */
 } sense_limit_link_ev_t;
 
-/** What SETUP > SENSORS shows of the limits (sensors_rows_set_limits()). */
+/** @brief What SETUP > SENSORS shows of the limits
+ *         (sensors_rows_set_limits()). */
 typedef enum {
     SENSE_LIMIT_ST_UNKNOWN = 0,   /**< no link, or not read yet          */
     SENSE_LIMIT_ST_HELD,          /**< the page holds the limits asked   */
@@ -95,6 +104,7 @@ typedef enum {
     SENSE_LIMIT_ST_OLD,           /**< the IOmcu has no SENSE_LIMIT      */
 } sense_limit_st_t;
 
+/** @brief The service's state; zeroed by sense_limit_link_init(). */
 typedef struct {
     bool     up;              /**< an IOmcu answers                     */
     bool     page;            /**< it has SENSE_LIMIT (4.27)            */
@@ -127,47 +137,103 @@ typedef struct {
     uint8_t  turn;            /**< the channel the next search starts at */
 } sense_limit_link_t;
 
+/**
+ * @brief Clears the service: no link, no limits asked.
+ * @param s the service; NULL does nothing.
+ */
 void sense_limit_link_init(sense_limit_link_t *s);
 
-/** The link went: what was read is no longer the IOmcu's.  The limits
- *  asked stay, and OVER_COUNT as last read, for the link-up read. */
+/**
+ * @brief The link went: what was read is no longer the IOmcu's.
+ *
+ * The limits asked stay, and OVER_COUNT as last read, for the link-up
+ * read.
+ * @param s the service; NULL does nothing.
+ */
 void sense_limit_link_lost(sense_limit_link_t *s);
 
-/** An IOmcu answered with protocol minor @p minor. */
+/**
+ * @brief An IOmcu answered.
+ * @param s      the service; NULL does nothing.
+ * @param minor  its protocol minor; below LINK_MINOR_SENSE_LIMIT (27) the
+ *               page is sent nothing.
+ * @param now_ms the time, ms; a limit asked before rests from it.
+ */
 void sense_limit_link_came_up(sense_limit_link_t *s, uint16_t minor,
                               uint32_t now_ms);
 
-/** The limits SETUP > SENSORS asks, LIMIT_MA[0] to [11], at @p now_ms; a
- *  change clears a refusal. */
+/**
+ * @brief The limits SETUP > SENSORS asks.  A change clears a refusal.
+ * @param s      the service; NULL does nothing.
+ * @param ma     LIMIT_MA[0] to [11], mA, 0 for none; above 32767 taken as
+ *               32767.  NULL does nothing.
+ * @param now_ms the time, ms; a change rests SENSE_LIMIT_LINK_SETTLE_MS
+ *               from it.
+ */
 void sense_limit_link_want(sense_limit_link_t *s, const uint16_t *ma,
                            uint32_t now_ms);
 
-/** The next exchange owed at @p now_ms into @p op; false for none. */
+/**
+ * @brief The next exchange owed.
+ * @param s      the service.
+ * @param now_ms the time, ms.
+ * @param op     where the exchange goes; zeroed for none.
+ * @return true for an exchange to make and report to
+ *         sense_limit_link_done(); false for none, and for a NULL @p s or
+ *         @p op.
+ */
 bool sense_limit_link_next(sense_limit_link_t *s, uint32_t now_ms,
                            sense_limit_link_op_t *op);
 
-/** How it went: SENSE_LIMIT_LINK_ACK with the registers a read asked for,
- *  a NACK's reason, or SENSE_LIMIT_LINK_NO_ANSWER. */
+/**
+ * @brief How the exchange sense_limit_link_next() named went.
+ * @param s      the service; NULL does nothing.
+ * @param result SENSE_LIMIT_LINK_ACK, a NACK's reason (LINK_NACK_*), or
+ *               SENSE_LIMIT_LINK_NO_ANSWER.
+ * @param regs   for an answered read, the registers it asked for; else
+ *               NULL.
+ * @param now_ms the time, ms.
+ */
 void sense_limit_link_done(sense_limit_link_t *s, int result,
                            const uint16_t *regs, uint32_t now_ms);
 
-/** The next alert at @p now_ms, and for EV_OVER its channel, 0 to 11, in
- *  @p ch and the limit it passed, mA, in @p ma; EV_NONE while the last is
- *  younger than SENSE_LIMIT_LINK_GAP_MS. */
+/**
+ * @brief The next band alert.
+ * @param s      the service.
+ * @param now_ms the time, ms.
+ * @param ch     for EV_OVER the channel, 0 to 11; may be NULL.
+ * @param ma     for EV_OVER the limit the window was judged by, mA; may be
+ *               NULL.
+ * @return the alert; EV_NONE for none, for a NULL @p s and while the last
+ *         is younger than SENSE_LIMIT_LINK_GAP_MS.
+ */
 sense_limit_link_ev_t sense_limit_link_event(sense_limit_link_t *s,
                                              uint32_t now_ms, unsigned *ch,
                                              uint16_t *ma);
 
-/** The channel's limit the page holds, mA; 0 for none or not read. */
+/**
+ * @brief A channel's limit the page holds.
+ * @param s  the service.
+ * @param ch the channel, 0 to 11.
+ * @return the limit, mA; 0 for none, not read, or @p ch out of range.
+ */
 uint16_t sense_limit_link_held_ma(const sense_limit_link_t *s, unsigned ch);
 
-/** What SETUP > SENSORS shows of the limits. */
+/**
+ * @brief What SETUP > SENSORS shows of the limits.
+ * @param s the service.
+ * @return the status; SENSE_LIMIT_ST_UNKNOWN with no link or a NULL @p s.
+ */
 sense_limit_st_t sense_limit_link_status(const sense_limit_link_t *s);
 
-/** The channels whose LIMIT row SETUP marks, bit c for channel c: on an
- *  IOmcu older than 4.27 every limit asked that is not 0; else, once the
- *  page is read, every limit the page holds otherwise than asked, owed or
- *  refused.  0 with no link. */
+/**
+ * @brief The channels whose LIMIT row SETUP marks.
+ * @param s the service.
+ * @return bit c for channel c: on an IOmcu without the page every limit
+ *         asked that is not 0; else, once the page is read, every limit
+ *         the page holds otherwise than asked, owed or refused.  0 with no
+ *         link.
+ */
 uint16_t sense_limit_link_unheld(const sense_limit_link_t *s);
 
 #ifdef __cplusplus

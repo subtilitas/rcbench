@@ -1,9 +1,12 @@
-/*
- * The INA3221 channels' current limits on their way to the IOmcu's
- * SENSE_LIMIT page (protocol 4.27, sense_limit_link.h): SETUP > SENSORS'
- * LIMIT rows, published by the settings observer on app_main and taken by
- * the control task, the page's service there, and the band alert when a
- * channel's window passed its limit.  An alert only: nothing here stops or
+/**
+ * @file panel_limit.c
+ * @brief The INA3221 channels' current limits on their way to the IOmcu's
+ *        SENSE_LIMIT page.
+ *
+ * Protocol 4.27, sense_limit_link.h: SETUP > SENSORS' LIMIT rows,
+ * published by the settings observer on app_main and taken by the control
+ * task, the page's service there, and the band alert when a channel's
+ * window passed its limit.  An alert only: nothing here stops or
  * switches anything.
  *
  * SPDX-License-Identifier: MIT

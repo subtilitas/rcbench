@@ -5,8 +5,8 @@
  *
  * The list: the heading INA3221 PARTS over 0x40 FITTED to 0x43 FITTED,
  * then per fitted part a heading "INA3221 0x4n" with the part's state on
- * its right, over its channels' WATCHES, SHUNT and LIMIT rows.  A part not fitted
- * has no heading and no rows.
+ * its right, over its channels' WATCHES, SHUNT and LIMIT rows.  A part
+ * not fitted has no heading and no rows.
  *
  * A row of a part the IOmcu does not read is marked as SETUP marks a value
  * the IOmcu does not hold: its edge and value in the warning colour and a
@@ -44,8 +44,11 @@ void sensors_rows_set_status(uint16_t word);
 /** Part @p a's state as last set. */
 sens_part_t sensors_rows_status(int a);
 
-/** The limits' marks, sense_limit_link_unheld()'s 12 bits, and
- *  sense_limit_link_status() in bits 12 to 15.  A change repaints SETUP. */
+/**
+ * @brief Sets the LIMIT rows' marks.  A change repaints SETUP.
+ * @param word sense_limit_link_unheld()'s 12 bits in bits 0 to 11, and
+ *             sense_limit_link_status() in bits 12 to 15.
+ */
 void sensors_rows_set_limits(uint16_t word);
 
 /** Whether SETUP lists @p id: any id that is not a SENSORS row, a FITTED
@@ -63,20 +66,29 @@ const char *sensors_rows_title(int a, char *buf, size_t n);
 const char *sensors_rows_state(int a);
 gfx_color_t sensors_rows_state_color(int a);
 
-/** Whether the row of @p id is marked: a SENSORS row of a part the IOmcu
- *  does not read, and a LIMIT row the IOmcu does not hold
- *  (sensors_rows_set_limits()). */
+/**
+ * @brief Whether the row of @p id is marked.
+ * @param id a setting id.
+ * @return true for a SENSORS row of a part the IOmcu does not read, and
+ *         for a LIMIT row the IOmcu does not hold
+ *         (sensors_rows_set_limits()).
+ */
 bool sensors_rows_unheld(setting_id_t id);
 
 /** The line a marked row shows in place of its help. */
 const char *sensors_rows_why(setting_id_t id);
 
 /**
- * The band's line for SENSE_LIMIT's alert @p ev (sense_limit_link_event())
- * into @p buf, in the panel's language: for EV_OVER channel @p ch, the
- * limit @p ma it passed in hundredths of an ampere, and in brackets what
- * the channel watches, WATCHES option @p watch, none for NONE.  "" for
- * EV_NONE.
+ * @brief Builds the band's line for a SENSE_LIMIT alert, in the panel's
+ *        language.
+ * @param buf   where the line goes.
+ * @param n     the size of @p buf, bytes; UI_ALERT_MAX holds every line.
+ * @param ev    the alert, from sense_limit_link_event().
+ * @param ch    for EV_OVER the channel, 0 to 11.
+ * @param ma    for EV_OVER the limit it passed, mA, shown in A to 0.01 A.
+ * @param watch for EV_OVER the channel's WATCHES option, said in brackets;
+ *              none for SENS_W_NONE.
+ * @return @p buf; "" for EV_NONE, a channel past 11, or no buffer.
  */
 const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
                                unsigned ch, uint16_t ma, int watch);

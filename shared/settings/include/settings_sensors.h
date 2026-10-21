@@ -53,8 +53,10 @@
 extern "C" {
 #endif
 
-/** The row ids: part @p a's FITTED, channel @p c's WATCHES, SHUNT and
- *  LIMIT. */
+/**
+ * @brief The row ids: part @p a's FITTED, channel @p c's WATCHES, SHUNT
+ *        and LIMIT.  @p a is 0 to 3, @p c 0 to 11.
+ */
 #define SET_INA_FIT(a) ((setting_id_t)(SET_INA_FIT_0 + (int)(a)))
 #define SET_INA_W(c)   ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS))
 #define SET_INA_SH(c)  ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS + 1))
@@ -87,12 +89,19 @@ int settings_sensors_part(setting_id_t id);
  *  of range. */
 uint16_t settings_sensors_watch_code(int option);
 
-/** The WATCHES option of SENSE_MAP WATCH value @p code: SENS_W_NONE for a
- *  value no option has. */
+/**
+ * @brief The WATCHES option of a SENSE_MAP WATCH value.
+ * @param code a SENSE_MAP WATCH value.
+ * @return the option, SENS_W_*; SENS_W_NONE for a value no option has.
+ */
 int settings_sensors_watch_option(uint16_t code);
 
-/** Channel @p c's LIMIT as SENSE_LIMIT's LIMIT_MA takes it: mA, 0 for none
- *  and for a @p c out of range. */
+/**
+ * @brief Channel @p c's LIMIT as SENSE_LIMIT's LIMIT_MA takes it.
+ * @param c the channel, 0 to 11.
+ * @return the limit, mA, at most 32767; 0 for none and for a @p c out of
+ *         range.
+ */
 uint16_t settings_sensors_limit_ma(int c);
 
 /**

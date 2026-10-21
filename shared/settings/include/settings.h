@@ -52,12 +52,14 @@ typedef enum {
     SET_TYPE_ENUM,
 } setting_type_t;
 
-/* The INA3221 parts SETUP > SENSORS sets up: four, at 0x40 to 0x43, three
- * channels each, and the rows a channel has (settings_sensors.h). */
+/** @brief The INA3221 parts SETUP > SENSORS sets up: four, at 0x40 to
+ *         0x43, three channels each, and the rows a channel has: WATCHES,
+ *         SHUNT and LIMIT (settings_sensors.h). */
 #define SET_INA_PARTS    4
 #define SET_INA_CHANNELS 12
 #define SET_INA_CH_ROWS  3
 
+/** @brief Every setting's id, in schema order. */
 typedef enum {
     /* --- pack, motor, telemetry, output ------------------------------- */
     SET_PACK_CELLS = 0,

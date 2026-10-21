@@ -1,11 +1,15 @@
-/*
- * The panel's half of SENSE_LIMIT (sense_limit_link.h) against the
- * IOmcu's page code (sense_limit.c): read whole at link-up, the limits
- * written after their settle in any bank state and only where they differ,
- * OVER read while a limit is held and each bit told once, at most one
- * alert every 5 s and a channel once every 30 s, a lost reply's bits said
- * as lost, a refusal said once, and nothing sent to an IOmcu older than
- * 4.27.
+/**
+ * @file test_sense_limit_link.c
+ * @brief The panel's half of SENSE_LIMIT (sense_limit_link.h) against the
+ *        IOmcu's page code (sense_limit.c).
+ *
+ * Read whole at link-up, the limits written after their settle in any
+ * bank state and only where they differ, OVER read while a limit is held
+ * and once before new limits, each bit told once with the limit it was
+ * judged by, at most one alert every 5 s and a channel once every 30 s,
+ * channels in turn, a lost reply's bits said as lost at the next link-up
+ * and an IOmcu restart not, a refusal and BAD_PAGE said once, and nothing
+ * sent to an IOmcu older than 4.27.
  *
  * SPDX-License-Identifier: MIT
  */
