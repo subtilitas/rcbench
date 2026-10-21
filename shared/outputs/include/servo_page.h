@@ -55,9 +55,10 @@
 extern "C" {
 #endif
 
+/** @brief The SERVO page state: its registers, the sweep, and the hold. */
 typedef struct {
-    uint16_t regs[LINK_SV_COUNT];
-    sweep_t  sweep;
+    uint16_t regs[LINK_SV_COUNT];  /**< registers 0 to 6, LINK_SV_* */
+    sweep_t  sweep;                /**< the sweep in progress, if any */
     uint32_t heard_ms;   /**< when the sweep was last written          */
     bool     finished;   /**< made its movements; the curve not changed */
     bool     holding;    /**< LINK_SV_HOLD in force                     */
@@ -67,6 +68,14 @@ typedef struct {
     uint16_t sliced;       /**< bank channels held at PROG_PORT_RATE_HZ   */
 } servo_page_t;
 
+/**
+ * @brief Set the page to its start: no sweep, no hold, the standard servo
+ *        ports as target.
+ *
+ * Nothing is done when @p p is NULL.
+ *
+ * @param p The page state, overwritten.
+ */
 void servo_page_init(servo_page_t *p);
 
 /**
@@ -86,12 +95,34 @@ void servo_page_init(servo_page_t *p);
  * phase kept or with a curve that has changed since the hold (BAD_VALUE); a
  * sweep, a hold or a resume while the bank is not armed for the surfaces, an
  * arm for the throttle alone among them (NOT_ARMED).
+ *
+ * @param p The page state, changed only when the write is taken.
+ * @param off First register, 0 to LINK_SV_COUNT - 1.
+ * @param n Number of registers to write. 0 is taken with no change.
+ * @param in The @p n new register values.
+ * @param o The outputs bank, judged and driven by the sweep and the hold.
+ * @param now_ms Current time in milliseconds, on the same clock as the passes.
+ * @return 0 when taken. LINK_NACK_BAD_RANGE for a NULL pointer or a range past
+ *         LINK_SV_COUNT. LINK_NACK_READ_ONLY for a range that reaches
+ *         register 6. LINK_NACK_BAD_VALUE and LINK_NACK_NOT_ARMED as described
+ *         above.
  */
 uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, outputs_t *o, uint32_t now_ms);
 
-/** @brief The page as a read sees it: the sweep register 0 once the sweep has
- *  stopped, and the ends it reached as of the last servo_page_step(). */
+/**
+ * @brief The page as a read sees it: the sweep register 0 once the sweep has
+ *        stopped, and the ends it reached as of the last servo_page_step().
+ *
+ * Nothing is done when @p p or @p out is NULL, or when off and n reach past
+ * LINK_SV_COUNT.
+ *
+ * @param p The page state. The sweep register is cleared when the sweep has
+ *        stopped.
+ * @param off First register, 0 to LINK_SV_COUNT - 1.
+ * @param n Number of registers to read.
+ * @param out Receives the @p n register values.
+ */
 void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out);
 
 /**
@@ -100,6 +131,12 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out);
  *        movements, and command every surface along a sweep that runs.
  *
  * True while it runs.
+ *
+ * @param p The page state. Nothing is done when NULL.
+ * @param o The outputs bank whose surfaces are commanded.
+ * @param now_ms Current time in milliseconds.
+ * @return true while the sweep runs, false when it has stopped or @p p or @p o
+ *         is NULL.
  */
 bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms);
 
@@ -111,15 +148,30 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms);
  *        only.
  *
  * Both 0 after servo_page_init().
+ *
+ * @param p The page state. Nothing is done when NULL.
+ * @param channels Bit n set for a bank channel whose pulse is on.
+ * @param sliced Bit n set for a bank channel that runs at PROG_PORT_RATE_HZ.
  */
 void servo_page_ports(servo_page_t *p, uint16_t channels, uint16_t sliced);
 
-/** @brief The frame rate register: the target's rate, 0 for its own. */
+/**
+ * @brief The frame rate register: the target's rate, 0 for its own.
+ *
+ * @param p The page state.
+ * @return The frame rate in Hz from register 0, or 0 for NULL.
+ */
 uint16_t servo_page_hz(const servo_page_t *p);
 
-/** @brief The rate the slots take, for outputs_slot_rates() and the OUTPUTS and
+/**
+ * @brief The rate the slots take, for outputs_slot_rates() and the OUTPUTS and
  *        CHAN_CFG checks: the register with the standard servo ports as target,
- *  0 with a programming port. */
+ *        0 with a programming port.
+ *
+ * @param p The page state.
+ * @return The frame rate in Hz when the target is the standard servo ports,
+ *         otherwise 0. 0 for NULL.
+ */
 uint16_t servo_page_slots_hz(const servo_page_t *p);
 
 /**
@@ -135,6 +187,13 @@ uint16_t servo_page_slots_hz(const servo_page_t *p);
  * register to 0, so a change of target never raises a rate under pulses
  * meant for a slower one (protocol 4.19).  False, with nothing changed, for
  * a range that runs off the bank.
+ *
+ * @param p The page state.
+ * @param o The outputs bank, for the surfaces a running sweep stops on.
+ * @param first First channel of the target.
+ * @param count Number of channels; 0 selects the standard servo ports.
+ * @return true when the target is in force, including when it is unchanged.
+ *         false for NULL @p p or @p o, or a range past OUT_MAX_CHANNELS.
  */
 bool servo_page_target(servo_page_t *p, outputs_t *o, uint8_t first,
                        uint8_t count);
@@ -159,13 +218,23 @@ typedef enum {
  *        held, @p held a hold at the far end, @p timed its phase known here
  *        (false for a HOLD that went unanswered and was not yet acknowledged,
  *        which may or may not have reached the far end), @p proto_minor its
- *        protocol minor, and
- * @p refused the RESUME just written was refused.  A resume is
- * written only for a hold in force, so a repeat of the resumed sweep is the
- * curve; the two fallbacks start the curve over -- a stop, then the curve
- * whole, since a RESUME whose acknowledgement was lost leaves the far end
- * running and a repeat of its curve would carry it on -- and are for
+ *        protocol minor, and @p refused the RESUME just written was refused.
+ *
+ * A resume is written only for a hold in force, so a repeat of the resumed
+ * sweep is the curve; the two fallbacks start the curve over -- a stop, then
+ * the curve whole, since a RESUME whose acknowledgement was lost leaves the far
+ * end running and a repeat of its curve would carry it on -- and are for
  * saying so.
+ *
+ * @param asked Whether a resume of the held sweep was asked.
+ * @param held Whether a hold is in force at the far end.
+ * @param timed Whether the phase of the hold is known on the host.
+ * @param proto_minor The IOmcu's protocol minor. Below 6 has no resume.
+ * @param refused Whether the RESUME just written was refused.
+ * @return SERVO_RESUME_CURVE when nothing is asked or held,
+ *         SERVO_RESUME_TOO_OLD below minor 6, SERVO_RESUME_UNTIMED when the
+ *         phase is unknown, SERVO_RESUME_REFUSED when @p refused, and
+ *         SERVO_RESUME_WRITE otherwise.
  */
 servo_resume_t servo_page_resume_plan(bool asked, bool held, bool timed,
                                       uint16_t proto_minor, bool refused);
@@ -186,25 +255,52 @@ typedef struct {
 
 /**
  * @brief A sweep started, from its beginning, when acknowledged at @p ack_ms.
+ *
+ * Nothing is done when @p ph is NULL.
+ *
+ * @param ph The phase record, set to the start and no kept phase.
+ * @param ack_ms Host time of the acknowledgement, in milliseconds.
  */
 void servo_phase_started(servo_phase_t *ph, uint32_t ack_ms);
 
-/** @brief A running sweep held at @p ack_ms: its phase is kept; returned. */
+/**
+ * @brief A running sweep held at @p ack_ms: its phase is kept; returned.
+ *
+ * @param ph The phase record. Nothing is changed when NULL.
+ * @param ack_ms Host time of the hold's acknowledgement, in milliseconds.
+ * @return The kept phase in milliseconds: @p ack_ms minus the start. 0 for
+ *         NULL.
+ */
 uint32_t servo_phase_held(servo_phase_t *ph, uint32_t ack_ms);
 
 /**
  * @brief The sweep stopped, or the far end restarted: nothing is held to
  *        resume.
+ *
+ * Nothing is done when @p ph is NULL.
+ *
+ * @param ph The phase record. Its kept phase is cleared.
  */
 void servo_phase_stopped(servo_phase_t *ph);
 
-/** @brief Whether a hold of a running sweep stands to be resumed. */
+/**
+ * @brief Whether a hold of a running sweep stands to be resumed.
+ *
+ * @param ph The phase record.
+ * @return true when a phase is kept, false otherwise or for NULL.
+ */
 bool servo_phase_resumable(const servo_phase_t *ph);
 
 /**
  * @brief A held sweep resumed at @p ack_ms: its phase 0 moves on by the hold,
- *        into
- * @p start_ms.  False, and nothing changes, with no phase kept.
+ *        into @p start_ms.
+ *
+ * False, and nothing changes, with no phase kept.
+ *
+ * @param ph The phase record. Its kept phase is cleared on success.
+ * @param ack_ms Host time of the resume's acknowledgement, in milliseconds.
+ * @param start_ms Receives the new phase 0 on the host's clock. May be NULL.
+ * @return true when a phase was kept and resumed, false otherwise or for NULL.
  */
 bool servo_phase_resumed(servo_phase_t *ph, uint32_t ack_ms,
                          uint32_t *start_ms);

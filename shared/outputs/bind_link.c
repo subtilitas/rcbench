@@ -17,8 +17,19 @@
 /** @brief page_written() writes from register 0. */
 _Static_assert(LINK_SV_FRAME_HZ == 0, "the rate reset writes register 0");
 
-/* One page, a frame per exchange.  True when it was acknowledged whole;
- * otherwise @p res says which way it ended. */
+/**
+ * @brief One page, a frame per exchange.  True when it was acknowledged whole;
+ *        otherwise @p res says which way it ended.
+ *
+ * @param h The link host to write through.
+ * @param port The link port the IOmcu answers on.
+ * @param page The page to write.
+ * @param count Number of registers written, from register 0.
+ * @param regs The registers to write, @p count of them.
+ * @param res Receives BIND_NO_LINK for an unanswered exchange and BIND_REFUSED
+ *        for a reply other than an ACK. Set only when false is returned.
+ * @return true when the write was acknowledged whole, false otherwise.
+ */
 static bool page_written(link_host_t *h, const link_port_t *port,
                          uint8_t page, uint8_t count, const uint16_t *regs,
                          bind_write_t *res)

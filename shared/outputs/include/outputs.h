@@ -42,7 +42,10 @@ extern "C" {
 /** @brief A command runs 0..OUT_SPAN across the channel's own travel. */
 #define OUT_SPAN            1000u
 
+/** @brief Channels in a bank. */
 #define OUT_MAX_CHANNELS    16u
+
+/** @brief Slots in a bank: driver configurations, each rendering channels. */
 #define OUT_MAX_SLOTS        8u
 
 /** @brief What a pulse driver may render, in microseconds.
@@ -62,23 +65,35 @@ extern "C" {
  * direction.  A surface at rest is centred, and its slew is symmetric,
  * because for a surface neither direction is the safe one.
  */
+/**
+ * @brief What rest means for a channel, which is the one thing a command cannot
+ *        say.
+ *
+ * A throttle at rest is stopped, and its slew is asymmetric: going up is
+ * ramped and coming down is immediate, because reducing throttle is the safe
+ * direction.  A surface at rest is centred, and its slew is symmetric,
+ * because for a surface neither direction is the safe one.
+ */
 typedef enum {
-    OUT_ROLE_THROTTLE = 0,
-    OUT_ROLE_SURFACE  = 1,
+    OUT_ROLE_THROTTLE = 0,   /**< rests at 0 */
+    OUT_ROLE_SURFACE  = 1,   /**< rests at OUT_SPAN / 2 */
 } out_role_t;
 
 /** @brief A set of roles, one bit a role: what an arm covers. */
 #define OUT_ROLE_BIT(r)  ((uint8_t)(1u << (unsigned)(r)))
+
+/** @brief Every role: the bits of all of them. */
 #define OUT_ROLES_ALL    ((uint8_t)(OUT_ROLE_BIT(OUT_ROLE_THROTTLE) \
                                     | OUT_ROLE_BIT(OUT_ROLE_SURFACE)))
 
+/** @brief The drivers a slot can be configured as. */
 typedef enum {
-    OUT_DRIVER_NONE = 0,
+    OUT_DRIVER_NONE = 0,             /**< not configured */
     OUT_DRIVER_PWM,      /**< one channel, one pin, a pulse per frame      */
     OUT_DRIVER_PPM,      /**< several channels multiplexed onto one pin    */
     OUT_DRIVER_DSHOT,    /**< one channel, one pin, an 11-bit code         */
     OUT_DRIVER_DSHOT_BIDIR, /**< the same, inverted, with a reply           */
-    OUT_DRIVER_COUNT
+    OUT_DRIVER_COUNT                 /**< number of drivers */
 } out_driver_t;
 
 /**
@@ -88,21 +103,27 @@ typedef enum {
  * when it is configured.
  */
 typedef struct {
-    const char *name;
-    uint8_t     channels_min;
-    uint8_t     channels_max;
-    uint8_t     pins;
+    const char *name;            /**< name shown to the operator */
+    uint8_t     channels_min;    /**< fewest channels a slot takes */
+    uint8_t     channels_max;    /**< most channels a slot takes */
+    uint8_t     pins;            /**< pins a slot takes */
     bool        reads_back;   /**< the pin is not purely an output         */
     bool        pulsed;       /**< renders through the channel's endpoints */
-    uint16_t    rate_min_hz;
-    uint16_t    rate_max_hz;
+    uint16_t    rate_min_hz;     /**< lowest rate the driver takes, Hz */
+    uint16_t    rate_max_hz;     /**< highest rate the driver takes, Hz */
 } out_driver_def_t;
 
-/** @brief The table itself, so callers can ask rather than assume. */
+/**
+ * @brief The table itself, so callers can ask rather than assume.
+ *
+ * @param d The driver to look up.
+ * @return The table entry for @p d, or NULL when @p d is not a driver.
+ */
 const out_driver_def_t *out_driver(out_driver_t d);
 
+/** @brief The state of one channel of the bank. */
 typedef struct {
-    out_role_t role;
+    out_role_t role;         /**< throttle or surface */
     uint16_t   command;      /**< asked for, 0..OUT_SPAN                   */
     uint16_t   actual;       /**< what the slew has reached                */
     uint16_t   rest;         /**< where it goes when it is not driving     */
@@ -110,27 +131,29 @@ typedef struct {
     uint16_t   slew_rem;     /**< thousandths carried between steps        */
     uint16_t   min_us;       /**< what a pulse driver renders 0 as         */
     uint16_t   max_us;       /**< and OUT_SPAN                             */
-    uint32_t   last_command_ms;
+    uint32_t   last_command_ms;  /**< time of the last command, in ms */
 } out_channel_t;
 
+/** @brief One driver configuration: the channels and pin it renders. */
 typedef struct {
-    out_driver_t driver;
-    uint8_t      first_channel;
-    uint8_t      channels;
-    uint8_t      pin;
-    uint16_t     rate_hz;
+    out_driver_t driver;         /**< OUT_DRIVER_* */
+    uint8_t      first_channel;  /**< first channel the slot renders */
+    uint8_t      channels;       /**< channels the slot renders */
+    uint8_t      pin;            /**< GPIO number */
+    uint16_t     rate_hz;        /**< frame rate, or bit rate for DShot */
 } out_slot_t;
 
 /** @brief The highest pin number a reservation mask can hold. */
 #define OUT_MAX_PIN     63u
 
+/** @brief The state of a bank of channels and slots. */
 typedef struct {
-    out_channel_t channel[OUT_MAX_CHANNELS];
-    out_slot_t    slot[OUT_MAX_SLOTS];
+    out_channel_t channel[OUT_MAX_CHANNELS];  /**< per-channel state */
+    out_slot_t    slot[OUT_MAX_SLOTS];        /**< per-slot configuration */
     bool          armed;
     uint8_t       roles;        /**< what an arm covers, OUT_ROLE_BIT()s   */
     uint32_t      timeout_ms;   /**< silence after which a channel rests   */
-    uint32_t      last_step_ms;
+    uint32_t      last_step_ms;   /**< time of the last outputs_step() */
     uint64_t      reserved;     /**< pins this build will not drive        */
 } outputs_t;
 
@@ -146,9 +169,22 @@ typedef struct {
  *
  * What an armed bank renders on a channel nobody commands, and what a screen
  * that shows such a channel's value shows.
+ *
+ * @param role The channel's role.
+ * @return 0 for a throttle, OUT_SPAN / 2 for a surface.
  */
 uint16_t outputs_role_rest(out_role_t role);
 
+/**
+ * @brief Set the bank to its start: every channel a surface at rest, the
+ *        endpoints 1000 to 2000 us, and the timeout OUT_DEFAULT_TIMEOUT_MS.
+ *
+ * Nothing is done when @p o is NULL. The bank starts disarmed, with every role
+ * in its arm set.
+ *
+ * @param o The bank, overwritten.
+ * @param now_ms Current time in milliseconds, stamped on every channel.
+ */
 void outputs_init(outputs_t *o, uint32_t now_ms);
 
 /**
@@ -158,6 +194,14 @@ void outputs_init(outputs_t *o, uint32_t now_ms);
  * a channel range that runs off the end, a rate the driver cannot produce, a
  * pin another slot is already driving, and a channel another slot is already
  * rendering.
+ *
+ * OUT_DRIVER_NONE clears the slot and is accepted for any valid slot index.
+ *
+ * @param o The bank.
+ * @param slot Slot index, 0 to OUT_MAX_SLOTS - 1.
+ * @param cfg The configuration to store.
+ * @return true when the slot is stored or cleared, false when @p o or @p cfg is
+ *         NULL, the slot index is out of range, or a check above refuses it.
  */
 bool outputs_configure(outputs_t *o, uint8_t slot, const out_slot_t *cfg);
 
@@ -174,23 +218,65 @@ bool outputs_configure(outputs_t *o, uint8_t slot, const out_slot_t *cfg);
  * Setting the mask does not tear down a slot that is already using a pin in
  * it.  Reserve before configuring; the IOmcu does this once at boot,
  * and the panel leaves the mask empty because it drives no pin of its own.
+ *
+ * @param o The bank.
+ * @param mask Reserved pins, bit n for GPn. Pins above OUT_MAX_PIN are not
+ *        reachable and need no bit.
  */
 void outputs_reserve_pins(outputs_t *o, uint64_t mask);
 
 /**
  * @brief Whether @p pin may be driven: it exists and nothing else has claimed
  *        it.
+ *
+ * The reserved mask is the only test here. Slots that already drive a pin are
+ * tested by outputs_configure().
+ *
+ * @param o The bank.
+ * @param pin GPIO number.
+ * @return true when @p pin is at most OUT_MAX_PIN and not in the reserved
+ *         mask, false otherwise or for NULL.
  */
 bool outputs_pin_available(const outputs_t *o, uint8_t pin);
 
-/** @brief Endpoints, refused rather than clamped.
+/**
+ * @brief Endpoints, refused rather than clamped.
  *
  * Inverted pairs are straightened: an inverted pair is a mistake rather than a
- * range, and it would make the
- *  clamp unsatisfiable. */
+ * range, and it would make the clamp unsatisfiable.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @param min_us Pulse width in microseconds for command 0.
+ * @param max_us Pulse width in microseconds for OUT_SPAN.
+ * @return true when stored. false for NULL, a channel out of range, or an
+ *         endpoint outside OUT_FLOOR_US to OUT_CEILING_US (400 to 2500 us).
+ */
 bool outputs_set_endpoints(outputs_t *o, uint8_t ch, uint16_t min_us,
                            uint16_t max_us);
+
+/**
+ * @brief Set the role of a channel: throttle or surface.
+ *
+ * A role change moves the channel's rest. When the bank is disarmed the
+ * channel's command and actual value move to the new rest as well.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @param role The new role.
+ * @return true when the role is set or already was, false for NULL, a channel
+ *         out of range, or a role other than the two defined.
+ */
 bool outputs_set_role(outputs_t *o, uint8_t ch, out_role_t role);
+
+/**
+ * @brief Set how fast a channel moves towards its command.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @param per_s Speed in span units per second; 0 is immediate.
+ * @return true when stored, false for NULL or a channel out of range.
+ */
 bool outputs_set_slew(outputs_t *o, uint8_t ch, uint16_t per_s);
 
 /**
@@ -202,6 +288,12 @@ bool outputs_set_slew(outputs_t *o, uint8_t ch, uint16_t per_s);
  * somebody else's traffic.  That is the whole of the per-channel timeout --
  * a servo held at 10 Hz must not keep a surface nobody is driving from
  * reaching its rest.
+ *
+ * @param o The bank.
+ * @param regs The CHANNELS page, indexed by channel number.
+ * @param first First channel to command, below LINK_CH_COUNT.
+ * @param count Number of channels from @p first. Clipped at LINK_CH_COUNT.
+ * @param now_ms Current time in milliseconds, stamped on each channel.
  */
 void outputs_channels_apply_n(outputs_t *o, const uint16_t *regs,
                               uint8_t first, uint8_t count, uint32_t now_ms);
@@ -210,6 +302,13 @@ void outputs_channels_apply_n(outputs_t *o, const uint16_t *regs,
  * @brief Command a channel.
  *
  * Clamped, and remembered even while disarmed.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @param command Asked position, 0 to OUT_SPAN; a larger value is clamped to
+ *        OUT_SPAN.
+ * @param now_ms Current time in milliseconds, stamped as the last command.
+ * @return true when stored, false for NULL or a channel out of range.
  */
 bool outputs_set(outputs_t *o, uint8_t ch, uint16_t command, uint32_t now_ms);
 
@@ -225,19 +324,34 @@ bool outputs_set(outputs_t *o, uint8_t ch, uint16_t command, uint32_t now_ms);
  *
  * Channels of another role are not touched, so a servo bound beside a motor
  * keeps its own command.
+ *
+ * @param o The bank.
+ * @param role Role whose channels are commanded.
+ * @param limit Channels below this index are considered, clipped at
+ *        OUT_MAX_CHANNELS.
+ * @param command Asked position, 0 to OUT_SPAN, as outputs_set() takes it.
+ * @param now_ms Current time in milliseconds.
+ * @return The number of channels of @p role below @p limit that were
+ *         commanded. 0 for NULL.
  */
 unsigned outputs_set_role_channels(outputs_t *o, out_role_t role,
                                    uint8_t limit, uint16_t command,
                                    uint32_t now_ms);
 
-/** @brief Arming is decided by the end holding the wire, not by the asker.
+/**
+ * @brief Arming is decided by the end holding the wire, not by the asker.
  *
  * Disarming goes to rest with no ramp.
  *
- *  Re-asserting the current state is not an event and does nothing, so the
- *  call is safe every pass from a loop that recomputes whether driving is
- *  allowed.  Stamping the clock on every call would hold every channel alive
- *  and defeat the timeout. */
+ * Re-asserting the current state is not an event and does nothing, so the
+ * call is safe every pass from a loop that recomputes whether driving is
+ * allowed.  Stamping the clock on every call would hold every channel alive
+ * and defeat the timeout.
+ *
+ * @param o The bank.
+ * @param armed true to arm for every role, false to disarm.
+ * @param now_ms Current time in milliseconds.
+ */
 void outputs_arm(outputs_t *o, bool armed, uint32_t now_ms);
 
 /**
@@ -253,16 +367,39 @@ void outputs_arm(outputs_t *o, bool armed, uint32_t now_ms);
  * leaves goes to rest with no ramp, as at a disarm, and a channel whose role
  * joins is stamped fresh, as at an arm.  Re-asserting the set in force is not
  * an event.  Bits outside OUT_ROLES_ALL are ignored.
+ *
+ * @param o The bank.
+ * @param roles Set of roles to arm, OUT_ROLE_BIT() bits. 0 disarms.
+ * @param now_ms Current time in milliseconds.
  */
 void outputs_arm_roles(outputs_t *o, uint8_t roles, uint32_t now_ms);
 
-/** @brief The roles the bank is armed for: 0 while disarmed. */
+/**
+ * @brief The roles the bank is armed for.
+ *
+ * @param o The bank.
+ * @return The OUT_ROLE_BIT() set the bank is armed for, 0 while disarmed or
+ *         for NULL.
+ */
 uint8_t outputs_armed_roles(const outputs_t *o);
 
-/** @brief Whether the bank is armed for @p role. */
+/**
+ * @brief Whether the bank is armed for @p role.
+ *
+ * @param o The bank.
+ * @param role The role to test.
+ * @return true when the role's bit is in outputs_armed_roles(), false otherwise.
+ */
 bool outputs_role_armed(const outputs_t *o, out_role_t role);
 
-/** @brief Whether @p ch is driven: the bank is armed for its role. */
+/**
+ * @brief Whether @p ch is driven: the bank is armed for its role.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @return true when the channel's role is armed, false for NULL or a channel
+ *         out of range.
+ */
 bool outputs_channel_driving(const outputs_t *o, uint8_t ch);
 
 /**
@@ -272,6 +409,11 @@ bool outputs_channel_driving(const outputs_t *o, uint8_t ch);
  * A PPM (pulse-position modulation) frame carries all of its channels or none,
  * so a slot that mixes roles drives every channel when one of them is armed;
  * the others are held at their rest by outputs_step().
+ *
+ * @param o The bank.
+ * @param slot Slot index, 0 to OUT_MAX_SLOTS - 1.
+ * @return true when the slot has a driver and one of its channels is driven,
+ *         false otherwise or for NULL.
  */
 bool outputs_slot_driving(const outputs_t *o, uint8_t slot);
 
@@ -281,6 +423,12 @@ bool outputs_slot_driving(const outputs_t *o, uint8_t slot);
  * Per channel rather than per bank, because the pages that write them are
  * written independently: a servo being dragged does not keep a throttle
  * alive, and a throttle nobody has touched must not stop a servo.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @param now_ms Current time in milliseconds.
+ * @return true when at least timeout_ms has passed since the last command, and
+ *         also for NULL or a channel out of range.
  */
 bool outputs_overdue(const outputs_t *o, uint8_t ch, uint32_t now_ms);
 
@@ -292,25 +440,52 @@ bool outputs_overdue(const outputs_t *o, uint8_t ch, uint32_t now_ms);
  * stopped, and the timeout exists to tell those apart.  Re-sending the last
  * command would also overwrite a command that arrived from elsewhere in the
  * same pass.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @param now_ms Current time in milliseconds, stamped as the last command time.
+ * @return true when stamped, false for NULL or a channel out of range.
  */
 bool outputs_keepalive(outputs_t *o, uint8_t ch, uint32_t now_ms);
 
-/** @brief Whether the bank is armed, for a screen that shows it. */
+/**
+ * @brief Whether the bank is armed, for a screen that shows it.
+ *
+ * @param o The bank.
+ * @return true when armed, false when disarmed or for NULL.
+ */
 bool outputs_armed(const outputs_t *o);
 
-/** @brief Advance slew to @p now_ms, and put a channel nobody has commanded for
+/**
+ * @brief Advance slew to @p now_ms, and put a channel nobody has commanded for
  *        timeout_ms at its role's rest.
  *
  * It decides what a channel renders, not
- *  whether it renders: see outputs_driving(). */
+ * whether it renders: see outputs_driving().
+ *
+ * @param o The bank. Nothing is done when NULL.
+ * @param now_ms Current time in milliseconds.
+ */
 void outputs_step(outputs_t *o, uint32_t now_ms);
 
-/** @brief Everything to rest, immediately.
+/**
+ * @brief Everything to rest, immediately.
  *
- * The failsafe edge calls this, and it
- *  reaches every output because every output is in this bank. */
+ * The failsafe edge calls this, and it reaches every output because every
+ * output is in this bank.
+ *
+ * @param o The bank. Nothing is done when NULL.
+ */
 void outputs_all_off(outputs_t *o);
 
+/**
+ * @brief The position a channel has reached.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @return The slew's actual value, 0..OUT_SPAN; 0 for NULL or a channel out of
+ *         range.
+ */
 uint16_t outputs_actual(const outputs_t *o, uint8_t ch);
 
 /**
@@ -318,10 +493,23 @@ uint16_t outputs_actual(const outputs_t *o, uint8_t ch);
  *        slew and the staleness timeout have got it to.
  *
  * A channel nobody has commanded is asking for its role's rest.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @return The command, 0..OUT_SPAN; 0 for NULL or a channel out of range.
  */
 uint16_t outputs_command(const outputs_t *o, uint8_t ch);
 
-/** @brief What a pulse driver should emit for @p ch, in microseconds. */
+/**
+ * @brief What a pulse driver should emit for @p ch, in microseconds.
+ *
+ * The actual value mapped onto the channel's min_us..max_us endpoints, rounded
+ * to the nearest microsecond.
+ *
+ * @param o The bank.
+ * @param ch Channel index, 0 to OUT_MAX_CHANNELS - 1.
+ * @return The pulse width in microseconds; 0 for NULL or a channel out of range.
+ */
 uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
 
 /**
@@ -402,6 +590,10 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  * question about the ESC.  A receiver output of 1500 us is about half
  * throttle.  Whether one that has seen no pulses and is then handed 1500 us
  * runs there or refuses to arm is not measured on this bench.
+ *
+ * @param o The bank.
+ * @return true when the bank is armed for any role, false when it is not or
+ *         @p o is NULL.
  */
 bool outputs_driving(const outputs_t *o);
 

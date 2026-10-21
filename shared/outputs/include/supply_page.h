@@ -37,6 +37,14 @@ extern "C" {
 /** @brief The module's UART Baudrate settings, 0 to 6, and 7 to find it. */
 #define SUPPLY_BAUD_COUNT 7u
 #define SUPPLY_BAUD_AUTO  7u
+
+/**
+ * @brief The baud rate of a UART setting.
+ *
+ * @param setting UART setting, 0 to SUPPLY_BAUD_COUNT - 1.
+ * @return 9600, 19200, 38400, 57600, 115200, 230400 or 460800 for settings 0
+ *         to 6; 0 for a setting of 7 or more, including SUPPLY_BAUD_AUTO.
+ */
 uint32_t supply_page_baud(uint16_t setting);
 
 /** @brief The longest an OFF waits for a programming port's frame to end, in
@@ -53,8 +61,9 @@ typedef enum {
     SUPPLY_WIRE_READY,     /**< the read showed off: to be written now   */
 } supply_wire_t;
 
+/** @brief The SUPPLY page state: registers, and the wiring change in hand. */
 typedef struct {
-    uint16_t regs[LINK_SP_COUNT];
+    uint16_t regs[LINK_SP_COUNT];  /**< the page's registers, LINK_SP_* */
     bool     commanded;   /**< set points written since init          */
     bool     answered;    /**< the driver's module has answered once  */
     uint8_t  wire;        /**< supply_wire_t                          */
@@ -85,6 +94,14 @@ typedef struct {
     uint16_t vin_mv;    /**< the PD mini's input, 0 while not read */
 } supply_port_view_t;
 
+/**
+ * @brief Clears the page to its start: BAUD 1 (19200), BAUD_FOUND AUTO, the
+ *        scan at 1.
+ *
+ * Nothing is done when @p p is NULL.
+ *
+ * @param p The page state, overwritten.
+ */
 void supply_page_init(supply_page_t *p);
 
 /**
@@ -95,10 +112,20 @@ void supply_page_init(supply_page_t *p);
  * once, from when the rate holds.  Publishes it in BAUD_FOUND -- 7 while AUTO
  * has found none.
  * @p drv NULL leaves the scan where it is.
+ *
+ * @param p The page state. BAUD_FOUND is updated.
+ * @param drv The PD mini driver, or NULL.
+ * @return The setting, 0 to 6. 1 for a NULL @p p.
  */
 uint8_t supply_page_rate(supply_page_t *p, const pdmini_t *drv);
 
-/** @brief The baud the UART is to be opened at now. */
+/**
+ * @brief The baud the UART is to be opened at now.
+ *
+ * @param p The page state.
+ * @return supply_page_baud() of the rate from supply_page_rate()'s rules, or 0
+ *         for NULL.
+ */
 uint32_t supply_page_uart_baud(const supply_page_t *p);
 
 /**
@@ -117,6 +144,16 @@ uint32_t supply_page_uart_baud(const supply_page_t *p);
  * (SUPPLY_WIRE_WAIT, FLAGS bit 8) for a state read the next
  * supply_page_step() asks of the driver.  Another change replaces it and
  * is read for again; a write of the wiring in force drops it.
+ *
+ * @param p The page state, changed only when the write is taken.
+ * @param off First register, 0 to LINK_SP_COUNT - 1.
+ * @param n Number of registers to write. 0 is taken with no change.
+ * @param in The @p n new register values.
+ * @param o The outputs bank, for the pins a wiring change takes.
+ * @param beat_alive Whether the panel's heartbeat is live.
+ * @return 0 when taken, or when the write waits for a state read. The NACK
+ *         reason otherwise: LINK_NACK_BAD_RANGE, LINK_NACK_READ_ONLY,
+ *         LINK_NACK_BAD_VALUE or LINK_NACK_NOT_ARMED, as listed above.
  */
 uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
                           const uint16_t *in, const outputs_t *o,
@@ -128,6 +165,9 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
  *
  * @p drv NULL for no driver: nothing answered, nothing on.  supply_page_step()
  * does the same every pass.
+ *
+ * @param p The page state, updated.
+ * @param drv The PD mini driver, or NULL.
  */
 void supply_page_follow(supply_page_t *p, const pdmini_t *drv);
 
@@ -136,6 +176,12 @@ void supply_page_follow(supply_page_t *p, const pdmini_t *drv);
  *        (ENABLE to BAUD): true while one is SUPPLY_WIRE_READY.
  *
  * The caller writes it with supply_page_wire_write() in the same pass.
+ *
+ * @param p The page state.
+ * @param regs Receives the four wiring registers, ENABLE to BAUD. Not written
+ *        when false is returned.
+ * @return true when a change is ready and @p regs is filled, false otherwise
+ *         or for NULL.
  */
 bool supply_page_wire_ready(const supply_page_t *p, uint16_t *regs);
 
@@ -143,30 +189,81 @@ bool supply_page_wire_ready(const supply_page_t *p, uint16_t *regs);
  * @brief The ready wiring written: judged whole as a link write is, against the
  *        driver's state as supply_page_follow() last took it, without waiting
  *        again.  0, or the NACK reason, which refuses it (FLAGS bit 9).
+ *
+ * @param p The page state.
+ * @param o The outputs bank, for the pins.
+ * @return 0 when written. LINK_NACK_BAD_VALUE when no change is ready, or the
+ *         refusal of the page write otherwise.
  */
 uint8_t supply_page_wire_write(supply_page_t *p, const outputs_t *o);
 
-/** @brief The ready wiring could not be put in force after it was written (no
- *  UART for its pins): refused, FLAGS bit 9, as a refused read is. */
+/**
+ * @brief The ready wiring could not be put in force after it was written (no
+ *        UART for its pins): refused, FLAGS bit 9, as a refused read is.
+ *
+ * @param p The page state. Nothing is done when NULL.
+ */
 void supply_page_wire_refuse(supply_page_t *p);
 
-/** @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
+/**
+ * @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
  *        registers) that binds a slot to a pin the supply holds; 0 otherwise.
  *
  * Checked before the page is stored, so no binding is kept that the bank would
  * leave unbound -- and that a restart, with the supply not yet
- *  wired, would drive on the module's pin. */
+ *  wired, would drive on the module's pin.
+ *
+ * @param p The page state.
+ * @param slots The OUTPUTS page, LINK_OS_COUNT registers.
+ * @return LINK_NACK_BAD_VALUE for a NULL @p slots or a slot with a driver on a
+ *         pin in supply_page_pins(), 0 otherwise.
+ */
 uint8_t supply_page_slots_check(const supply_page_t *p, const uint16_t *slots);
 
+/**
+ * @brief Copies registers of the SUPPLY page.
+ *
+ * Nothing is done when @p p or @p out is NULL, or when off and n reach past
+ * LINK_SP_COUNT.
+ *
+ * @param p The page state, not changed.
+ * @param off First register, 0 to LINK_SP_COUNT - 1.
+ * @param n Number of registers to copy.
+ * @param out Receives the @p n register values.
+ */
 void supply_page_read(const supply_page_t *p, uint8_t off, uint8_t n,
                       uint16_t *out);
 
-/** @brief Whether the page drives a supply, and on which pins. */
-bool    supply_page_enabled(const supply_page_t *p);
+/**
+ * @brief Whether the page drives a supply.
+ *
+ * @param p The page state.
+ * @return true when ENABLE is not 0, false otherwise or for NULL.
+ */
+bool supply_page_enabled(const supply_page_t *p);
+
+/**
+ * @brief The TX pin register, as a GPIO number.
+ *
+ * @param p The page state.
+ * @return The pin, 0 for NULL.
+ */
 uint8_t supply_page_tx(const supply_page_t *p);
+
+/**
+ * @brief The RX pin register, as a GPIO number.
+ *
+ * @param p The page state.
+ * @return The pin, 0 for NULL.
+ */
 uint8_t supply_page_rx(const supply_page_t *p);
 
-/** @brief The pins it holds, as a reservation mask; 0 while not enabled. */
+/**
+ * @brief The pins it holds, as a reservation mask; 0 while not enabled.
+ *
+ * @param p The page state.
+ * @return Bits for the TX and RX pins, 0 when not enabled or for NULL.
+ */
 uint64_t supply_page_pins(const supply_page_t *p);
 
 /**
@@ -177,11 +274,19 @@ uint64_t supply_page_pins(const supply_page_t *p);
  * the driver for its state read and follows the answer: off makes it
  * SUPPLY_WIRE_READY, anything else refuses it (FLAGS bit 9).  With no driver it
  * is ready: nothing is attached to the module to switch it off.
+ *
+ * @param p The page state. Nothing is done when NULL.
+ * @param beat_alive Whether the panel's heartbeat is live.
+ * @param drv The PD mini driver, or NULL.
  */
 void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv);
 
 /**
  * @brief The page as of the last supply_page_step(), for a programming port.
+ *
+ * @param p The page state.
+ * @param out Receives the view. Zeroed first; nothing else is done when @p p
+ *        is NULL. Nothing is done when @p out is NULL.
  */
 void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out);
 
@@ -194,6 +299,14 @@ void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out);
  * change waits, for set points outside the module's range, and for a voltage
  * above SET_MV while OUTPUT is 1: the voltage of an output that is on is not
  * raised here.
+ *
+ * @param p The page state.
+ * @param on true for ON, false for OFF.
+ * @param mv Set voltage in millivolts, for ON.
+ * @param ma Set current in milliamps, for ON.
+ * @param beat_alive Whether the panel's heartbeat is live.
+ * @return true when taken. false for NULL, an ON that is refused (see above),
+ *         otherwise true for an OFF.
  */
 bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
                           uint16_t ma, bool beat_alive);
@@ -207,6 +320,9 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
  * OUTPUT to SET_MA that changes one of the three with LINK_NACK_BAD_VALUE: the
  * panel can switch the supply off, and cannot switch it on or move a set point
  * under the servo.
+ *
+ * @param p The page state. Nothing is done when NULL.
+ * @param held true while the programming port holds the registers.
  */
 void supply_page_hold(supply_page_t *p, bool held);
 
@@ -218,6 +334,10 @@ void supply_page_hold(supply_page_t *p, bool held);
  * heartbeat -- reaches the driver when the frame has ended,
  * SUPPLY_PAGE_OFF_WAIT_MS after it was asked at the latest.  OUTPUT reads 0
  * from the moment it is asked.
+ *
+ * @param p The page state. Nothing is done when NULL.
+ * @param frame_out true while a frame is on the wire.
+ * @param now_ms Current time in milliseconds.
  */
 void supply_page_port_frame(supply_page_t *p, bool frame_out,
                             uint32_t now_ms);

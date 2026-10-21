@@ -24,13 +24,26 @@ _Static_assert(LINK_SX_ENTRIES + LINK_SX_PER_PAGE * LINK_SX_E_STRIDE
 _Static_assert(2u * LINK_SX_PER_PAGE == LINK_SM_CHANNELS,
                "two SENSE_WIN pages carry every channel");
 
+/**
+ * @brief Whether INA3221 part @p a is fitted: its bit in ENABLE is set.
+ *
+ * @param m The map registers.
+ * @param a Part index, 0 to LINK_SM_PARTS - 1.
+ * @return true when the bit is set, false otherwise.
+ */
 static bool fitted(const uint16_t *m, unsigned a)
 {
     return (m[LINK_SM_ENABLE] & (1u << a)) != 0u;
 }
 
-/** @brief The map SENSE's one part makes: what a read shows and a first write
- * starts from. */
+/**
+ * @brief The map SENSE's one part makes: what a read shows and a first write
+ *        starts from.
+ *
+ * @param p The SENSE page state. Its set-up registers are read.
+ * @param m Receives LINK_SM_KEPT registers. An address outside the INA3221
+ *        range leaves them at the defaults of FAST and zero for the rest.
+ */
 static void derive(const sense_page_t *p, uint16_t *m)
 {
     memset(m, 0, LINK_SM_KEPT * sizeof(uint16_t));
@@ -56,7 +69,13 @@ static void derive(const sense_page_t *p, uint16_t *m)
     }
 }
 
-/* The kept registers in force, or derived into @p buf. */
+/**
+ * @brief The kept registers in force, or derived into @p buf.
+ *
+ * @param p The SENSE page state.
+ * @param buf Receives the derived map when the map is not in force.
+ * @return p->map when the map is in force, otherwise @p buf.
+ */
 static const uint16_t *kept_regs(const sense_page_t *p, uint16_t *buf)
 {
     if (p->map_set) {
@@ -66,6 +85,15 @@ static const uint16_t *kept_regs(const sense_page_t *p, uint16_t *buf)
     return buf;
 }
 
+/**
+ * @brief Whether a WATCH value is one the map accepts.
+ *
+ * Accepted: none, an output channel from OUT(0) to OUT(7), a programming port
+ * from PORT(0) below LINK_PG_PORTS_MAX, and the supply.
+ *
+ * @param w The WATCH register value.
+ * @return true for an accepted value, false otherwise.
+ */
 static bool watch_ok(uint16_t w)
 {
     return w == LINK_SM_WATCH_NONE
@@ -81,7 +109,13 @@ bool sense_map_on_addr(const uint16_t *map, uint16_t addr)
            && fitted(map, addr - INA3221_ADDR_MIN);
 }
 
-/** @brief The map's own rules, whatever the bus. */
+/**
+ * @brief The map's own rules, whatever the bus.
+ *
+ * @param m The map to judge, LINK_SM_KEPT registers.
+ * @param sense The SENSE page's set-up registers, read for the INA228 check.
+ * @return true when the map passes, false when any rule is broken.
+ */
 static bool map_ok(const uint16_t *m, const uint16_t *sense)
 {
     if (m[LINK_SM_ENABLE] > LINK_SM_FIT_ALL) {
@@ -113,9 +147,16 @@ static bool map_ok(const uint16_t *m, const uint16_t *sense)
            || !sense_map_on_addr(m, sense[LINK_SN_I228_ADDR]);
 }
 
-/** @brief SENSE's set-up with the map mirrored into ENABLE bit 1 and registers
- *        8
- * to 10.  With no part fitted only the bit clears. */
+/**
+ * @brief SENSE's set-up with the map mirrored into ENABLE bit 1 and registers
+ *        8 to 10.
+ *
+ * With no part fitted only the bit clears.
+ *
+ * @param m The map in force.
+ * @param sense The SENSE page's set-up registers.
+ * @param next Receives the mirrored set-up, LINK_SN_CONFIG_COUNT registers.
+ */
 static void mirror(const uint16_t *m, const uint16_t *sense, uint16_t *next)
 {
     memcpy(next, sense, LINK_SN_CONFIG_COUNT * sizeof(uint16_t));
@@ -148,6 +189,11 @@ static void mirror(const uint16_t *m, const uint16_t *sense, uint16_t *next)
 
 /**
  * @brief Whether two maps differ in what core 1 reads: ENABLE, FAST, a shunt.
+ *
+ * @param a The first map.
+ * @param b The second map.
+ * @return true when the first LINK_SM_WATCH_0 registers differ, false when
+ *         they are equal.
  */
 static bool bus_differs(const uint16_t *a, const uint16_t *b)
 {
@@ -281,6 +327,15 @@ void sense_map_cfg(const uint16_t *map, sense_i3221_cfg_t *out)
 
 /* ------------------------------------------------------------ publish */
 
+/**
+ * @brief The flags of one SENSE_WIN entry: which samples it holds and which
+ *        clip.
+ *
+ * @param w The channel's window.
+ * @return LINK_SX_E_CURRENT when n_i is above 0, LINK_SX_E_VOLTAGE when n_v
+ *         is above 0, and LINK_SX_E_CLIP_HI or LINK_SX_E_CLIP_LO when the
+ *         window clipped high or low.
+ */
 static uint16_t entry_flags(const sense_window_t *w)
 {
     uint16_t f = 0u;
