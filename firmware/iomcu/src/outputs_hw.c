@@ -15,6 +15,7 @@
 #include "out_dshot.h"
 #include "out_ppm.h"
 #include "out_pwm.h"
+#include "port_park.h"
 #include "ppm.h"
 
 /*
@@ -54,7 +55,8 @@ static slot_state_t s_state[OUT_MAX_SLOTS];
  * PWM channel, so the rendering and the capture's edge are the slots' code.
  */
 typedef struct {
-    bool         bound;
+    bool         bound;    /* the pin is held: bound, or parked */
+    bool         parked;   /* FUNC NONE: an input with its pull-down */
     out_slot_t   as;
     slot_state_t st;
 } port_state_t;
@@ -409,7 +411,7 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
 }
 
 void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
-                      uint8_t channel0)
+                      uint8_t parked, uint8_t channel0)
 {
     if (pin == NULL || rate_hz == NULL) {
         return;
@@ -420,11 +422,17 @@ void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
     for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
         const port_state_t *p = &s_port[i];
         const bool wanted = pin[i] <= OUT_MAX_PIN;
+        const bool park_it = (parked & (1u << i)) != 0u;
         moved[i] = wanted != p->bound
-                   || (wanted && (p->as.pin != pin[i]
-                                  || p->as.rate_hz != rate_hz[i]));
+                   || (wanted && (p->as.pin != pin[i] || p->parked != park_it
+                                  || (!park_it
+                                      && p->as.rate_hz != rate_hz[i])));
         if (moved[i] && p->bound) {
-            out_pwm_release(p->as.pin);
+            if (p->parked) {
+                port_unpark(p->as.pin);
+            } else {
+                out_pwm_release(p->as.pin);
+            }
         }
     }
     for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
@@ -441,7 +449,12 @@ void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
         p->as.channels      = 1u;
         p->as.pin           = pin[i];
         p->as.rate_hz       = rate_hz[i];
-        p->bound            = out_pwm_bind(pin[i], rate_hz[i]);
+        if ((parked & (1u << i)) != 0u) {
+            p->parked = true;
+            p->bound  = port_park(pin[i]);
+        } else {
+            p->bound  = out_pwm_bind(pin[i], rate_hz[i]);
+        }
     }
 }
 
@@ -569,7 +582,7 @@ void outputs_hw_service(const outputs_t *o)
 
     for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
         port_state_t *p = &s_port[i];
-        if (p->bound) {
+        if (p->bound && !p->parked) {
             service_pwm(&p->st, &p->as,
                         drive && (s_port_drive & (1u << i)) != 0u
                             && outputs_channel_driving(o, p->as.first_channel)

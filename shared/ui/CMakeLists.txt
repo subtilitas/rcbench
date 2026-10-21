@@ -46,7 +46,11 @@ set(SRCS
     settings_screen.c
     outputs_screen.c
     outputs_port.c
+    outputs_port_entry.c
+    port_view.c
+    port_mail.c
     picker_screen.c
+    picker_port.c
     board_drawing.c
     busfault_screen.c
     wifi_screen.c

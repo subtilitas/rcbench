@@ -590,12 +590,12 @@ bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
      * With its pulse off the port renders none, and the line says so. */
     if (target != 0u) {
         if (gpio == SERVO_SCREEN_NO_PIN) {
-            snprintf(out, size, "%s",
-                     pwm ? TR(SV_TARGET_PORT) : TR(SV_TARGET_PORT_OFF));
+            snprintf(out, size, pwm ? TR(SV_TARGET_PN) : TR(SV_TARGET_PN_OFF),
+                     (unsigned)target);
         } else {
             snprintf(out, size,
-                     pwm ? TR(SV_TARGET_PORT_PIN) : TR(SV_TARGET_PORT_PIN_OFF),
-                     (unsigned)gpio);
+                     pwm ? TR(SV_TARGET_PN_PIN) : TR(SV_TARGET_PN_PIN_OFF),
+                     (unsigned)target, (unsigned)gpio);
         }
         return true;
     }

@@ -966,6 +966,101 @@ TEST_CASE(a_silent_far_end_leaves_the_release_owed)
     CHECK(!servo_link_release_owed());
 }
 
+/* ------------------------------------------- the tester's port at rest */
+
+/* An IOmcu page with port 0 on GP13, SERVO PWM and bound, TARGET @p t. */
+static void prog_page(uint16_t t, bool bound)
+{
+    uint16_t page[LINK_PG_REGS];
+    memset(page, 0, sizeof(page));
+    page[LINK_PG_COUNT]  = 4u;
+    page[LINK_PG_FLAGS]  = bound ? LINK_PG_F_BOUND(0u) : LINK_PG_F_REFUSED(0u);
+    page[LINK_PG_TARGET] = t;
+    for (unsigned n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        page[LINK_PG_REG(n, LINK_PG_PIN)] =
+            (n == 0u) ? (uint16_t)13u : (uint16_t)LINK_PG_PIN_NONE;
+        page[LINK_PG_FUNC(n)] = (uint16_t)((n == 0u) ? 0u : 1u);
+    }
+    prog_link_read(&prog, page, s_now);
+}
+
+/* Whether a TARGET write of @p t went to the PROG page. */
+static bool target_sent(uint16_t t)
+{
+    for (unsigned i = 0; i < bus.n && i < LOG_MAX; ++i) {
+        const frame_t *f = &bus.log[i];
+        if (f->page == LINK_PAGE_PROG && f->offset == LINK_PG_TARGET
+            && f->regs[0] == t) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+ * SAFE right after a link-up, as after an IOmcu update: the IOmcu starts
+ * with the standard outputs as TARGET and the sweep state is not known.
+ * The port the tester is set to is written back at rest, with the stop
+ * that settles the sweep in front of it, and not only at the next ARM.
+ */
+TEST_CASE(the_tester_port_is_put_back_at_rest_after_a_link_up)
+{
+    up(LINK_MINOR_PROG_FUNC, 0x01u);
+    prog_link_came_up(&prog, LINK_MINOR_PROG_FUNC);
+    prog_page(0u, true);
+    prog_link_want(&prog, 1u, true);
+    panel.armed = false;
+    servo_link_prog_service();
+    CHECK(sweep_reg_sent(0u));
+    CHECK(target_sent(1u));
+    CHECK_EQ(prog_link_target(&prog), 1u);
+    /* Armed, the sweep state not known: nothing is written for it. */
+    up(LINK_MINOR_PROG_FUNC, 0x01u);
+    prog_link_came_up(&prog, LINK_MINOR_PROG_FUNC);
+    prog_page(0u, true);
+    prog_link_want(&prog, 1u, true);
+    panel.armed = true;
+    servo_link_prog_service();
+    CHECK(!sweep_reg_sent(0u));
+    CHECK(!target_sent(1u));
+    /* A stop that is not answered leaves it waiting. */
+    panel.armed = false;
+    bus.quiet = true;
+    servo_link_prog_service();
+    CHECK(!target_sent(1u));
+    bus.quiet = false;
+    servo_link_prog_service();
+    CHECK(target_sent(1u));
+}
+
+/*
+ * SAFE after a programming session gives the port back: the IOmcu took
+ * the TARGET to the standard outputs while the port had no pin bound,
+ * and the panel puts the port back once it is bound again.
+ */
+TEST_CASE(the_tester_port_is_put_back_at_rest_after_a_session)
+{
+    up(LINK_MINOR_PROG_FUNC, 0x01u);
+    prog_link_came_up(&prog, LINK_MINOR_PROG_FUNC);
+    prog_page(0u, true);
+    prog_link_want(&prog, 1u, true);
+    servo_link_prog_service();
+    servo_link_prog_service();
+    CHECK_EQ(prog_link_target(&prog), 1u);
+    /* The session holds the port: nothing is written. */
+    prog_link_hold(&prog, true);
+    prog_page(0u, false);
+    clear_log();
+    servo_link_prog_service();
+    CHECK_EQ(bus.n, 0u);
+    /* Given back, read bound again: the target goes back at rest. */
+    prog_link_hold(&prog, false);
+    prog_page(0u, true);
+    servo_link_prog_service();
+    CHECK(target_sent(1u));
+    CHECK_EQ(prog_link_target(&prog), 1u);
+}
+
 int main(void)
 {
     RUN(a_coprocessor_before_4_2_has_no_sweep_and_a_hold_sends_nothing);
@@ -999,5 +1094,7 @@ int main(void)
     RUN(a_pulse_is_clamped_to_the_range_it_names);
     RUN(nothing_is_written_before_the_binding_is_read);
     RUN(a_silent_far_end_leaves_the_release_owed);
+    RUN(the_tester_port_is_put_back_at_rest_after_a_link_up);
+    RUN(the_tester_port_is_put_back_at_rest_after_a_session);
     return test_summary("servo_link");
 }

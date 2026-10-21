@@ -688,7 +688,7 @@ TEST_CASE(a_version_5_record_keeps_its_sensors_and_leaves_the_tap_off)
     CHECK_EQ(memcmp(out.tone, want, sizeof(want)), 0);
     CHECK_EQ(out.tone[LINK_TN_ENABLE], 0u);
     CHECK_EQ(out.tone[LINK_TN_PIN], 22u);
-    CHECK_EQ(out.spare, 0u);
+    CHECK_EQ(out.prog_func, 0u);
 }
 
 TEST_CASE(a_version_4_record_keeps_its_wiring_and_leaves_the_sensors_off)

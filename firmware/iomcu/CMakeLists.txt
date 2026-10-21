@@ -67,6 +67,7 @@ add_executable(rcbench-iomcu
     src/xl2515.c
     src/out_pwm.c
     src/outputs_hw.c
+    src/port_park.c
     src/out_store.c
     src/update_hw.c
     src/sense_i2c.c

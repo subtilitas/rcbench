@@ -38,7 +38,7 @@ Die rechte Karte, von oben:
 | Messzeile und Grafik | Spannung, Strom und Leistung der Schiene, aufgetragen über die letzten 13 s |
 | SOLL | Spannung und Strombegrenzung des Netzteils und sein Ausgangsschalter |
 | TEMPO | die Rate, mit der der Prüfstand den Ausgang bewegen darf; 100 % gibt den Befehl unverändert weiter |
-| ZIEL | was der Tester treibt, `Protokoll Pins`: `SERVO PWM GP2`, `PROG-PORT GP13` oder eine Warnung; ein Tipp öffnet Ausgänge, wo es gewählt wird ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)) |
+| ZIEL | was der Tester treibt, `Protokoll Pins`: `SERVO PWM GP2`, `PROG-PORT 1 GP13` oder eine Warnung; ein Tipp öffnet Ausgänge, wo es gewählt wird ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)) |
 
 ## ARMED
 
@@ -136,7 +136,7 @@ Der Endlagenlauf sucht, wo das eingebaute Servo an jedem Ende seines Wegs anläu
 4. ENDLAGENLAUF STARTEN 2 s halten, während der Prüfstand ARMED ist. Ein Tipp oder ein kürzeres Halten startet nichts.
 5. TEST bleibt zu sehen. Der Kasten auf der linken Karte von LIVE zeigt die Phase, die Seite und den Puls sowie den Ausgang, den er treibt.
 
-Die Zeile unter der Taste nennt die ganze Zeit Ausgang und Messgerät: `AUSGANG PROG-PORT GP13, STROM INA3221 CH1` oder `AUSGANG SERVO PWM GP2, STROM INA3221 CH1`. Die Zeile ZIEL bleibt ebenfalls sichtbar.
+Die Zeile unter der Taste nennt die ganze Zeit Ausgang und Messgerät: `AUSGANG PROG-PORT 1 GP13, STROM INA3221 CH1` oder `AUSGANG SERVO PWM GP2, STROM INA3221 CH1`. Die Zeile ZIEL bleibt ebenfalls sichtbar.
 
 Der Lauf liest nur INA3221 CH1. Mit dem PD mini oder dem Modell als Messgerät der Servoschiene bleibt ENDLAGENLAUF STARTEN grau, und die Zeile nennt den Grund:
 

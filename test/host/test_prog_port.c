@@ -39,8 +39,12 @@ static prog_port_t pg;
 #define PIN0 LINK_PG_REG(0u, LINK_PG_PIN)
 #define PIN1 LINK_PG_REG(1u, LINK_PG_PIN)
 
+/* Every port's kept function SERVO PWM: the rules under test here are the
+ * generator's.  test_prog_port_fn.c holds the functions. */
+#define ALL_PWM 0x1111u
+
 /* A bank with GP3 and GP12 reserved and a PWM output on GP4, and @p count
- * ports without a pin. */
+ * ports without a pin, every one SERVO PWM. */
 static void fresh(uint8_t count)
 {
     outputs_init(&o, 0u);
@@ -49,6 +53,9 @@ static void fresh(uint8_t count)
                              .channels = 1, .pin = 4, .rate_hz = 50 };
     CHECK(outputs_configure(&o, 0, &pwm));
     prog_port_init(&pg, count);
+    for (unsigned port = 0; port < LINK_PG_PORTS_MAX; ++port) {
+        pg.regs[LINK_PG_FUNC(port)] = (uint16_t)LINK_PG_FN_SERVO_PWM;
+    }
 }
 
 static uint16_t reg(unsigned i)
@@ -136,7 +143,7 @@ TEST_CASE(a_board_that_has_stored_none_has_port_0_on_the_default_pin)
     /* The default pin is one the page takes on the bank of this file. */
     fresh(1u);
     prog_port_defaults(kept, PROG_PORT_DEFAULT_PIN);
-    prog_port_restore(&pg, kept, &o, 0u);
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, 0u);
     CHECK_EQ(prog_port_pin(&pg, 0u), 13u);
     CHECK_EQ(prog_port_pins(&pg), BIT(13));
     /* Not bound until the caller says so: refused until then. */
@@ -160,7 +167,7 @@ TEST_CASE(the_kept_set_is_restored_through_the_pages_checks)
     kept[PROG_PORT_KEPT + 2u] = 399u;       /* one under the floor */
     kept[PROG_PORT_KEPT + 3u] = 2000u;
     kept[2u * PROG_PORT_KEPT] = 16u;        /* a port the build has not */
-    prog_port_restore(&pg, kept, &o, 0u);
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, 0u);
     CHECK_EQ(reg(PIN0), 13u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_SLEW)), 300u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MIN_US)), 400u);
@@ -185,13 +192,13 @@ TEST_CASE(the_kept_set_is_restored_through_the_pages_checks)
     /* One over the ceiling, and each end alone. */
     kept[2] = 1000u;
     kept[3] = 2501u;
-    prog_port_restore(&pg, kept, &o, 0u);
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, 0u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MAX_US)), 2000u);
     /* A restore ends every pulse and the tester's hold on a port. */
     prog_port_bound(&pg, 0x03u);
     CHECK_EQ(put(LINK_PG_PWM, 0x03u), 0u);
     CHECK_EQ(put(LINK_PG_TARGET, 2u), 0u);
-    prog_port_restore(&pg, kept, &o, 0u);
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, 0u);
     CHECK_EQ(reg(LINK_PG_PWM), 0u);
     CHECK_EQ(reg(LINK_PG_TARGET), 0u);
     CHECK_EQ(reg(LINK_PG_FLAGS),
@@ -225,7 +232,7 @@ TEST_CASE(a_kept_pin_something_else_holds_is_flagged_and_not_held)
     for (unsigned i = 0; i < sizeof(held) / sizeof(held[0]); ++i) {
         fresh(1u);
         prog_port_defaults(kept, held[i].pin);
-        prog_port_restore(&pg, kept, &o, held[i].taken);
+        prog_port_restore_fn(&pg, kept, ALL_PWM, &o, held[i].taken);
         CHECK_EQ(reg(PIN0), held[i].pin);
         CHECK_EQ(prog_port_pin(&pg, 0u), PROG_PORT_NO_PIN);
         CHECK_EQ(prog_port_pins(&pg), 0u);
@@ -243,16 +250,16 @@ TEST_CASE(a_kept_pin_something_else_holds_is_flagged_and_not_held)
     /* Free again: the same pin written again is taken. */
     fresh(1u);
     prog_port_defaults(kept, 13u);
-    prog_port_restore(&pg, kept, &o, BIT(13));
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, BIT(13));
     CHECK_EQ(put(PIN0, 13u), 0u);
     CHECK_EQ(prog_port_pin(&pg, 0u), 13u);
     /* A pin that is no generator pin is not kept at all. */
     fresh(1u);
     prog_port_defaults(kept, 48u);
-    prog_port_restore(&pg, kept, &o, 0u);
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, 0u);
     CHECK_EQ(reg(PIN0), LINK_PG_PIN_NONE);
     prog_port_defaults(kept, 64u);
-    prog_port_restore(&pg, kept, &o, 0u);
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, 0u);
     CHECK_EQ(reg(PIN0), LINK_PG_PIN_NONE);
     CHECK_EQ(reg(LINK_PG_FLAGS), 0u);
     /* Two kept ports on one pin, or on one compare register: the first
@@ -260,7 +267,7 @@ TEST_CASE(a_kept_pin_something_else_holds_is_flagged_and_not_held)
     fresh(2u);
     prog_port_defaults(kept, 13u);
     kept[PROG_PORT_KEPT] = 29u;
-    prog_port_restore(&pg, kept, &o, 0u);
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, 0u);
     CHECK_EQ(prog_port_pin(&pg, 0u), 13u);
     CHECK_EQ(prog_port_pin(&pg, 1u), PROG_PORT_NO_PIN);
     prog_port_bound(&pg, 0x03u);
@@ -501,7 +508,7 @@ TEST_CASE(a_kept_slew_above_the_maximum_starts_as_the_maximum)
         prog_port_defaults(kept, 13u);
         kept[1] = old[i];
         kept[PROG_PORT_KEPT + 1u] = LINK_CC_SLEW_MAX;
-        prog_port_restore(&pg, kept, &o, 0u);
+        prog_port_restore_fn(&pg, kept, ALL_PWM, &o, 0u);
         CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_SLEW)), LINK_CC_SLEW_MAX);
         CHECK_EQ(o.channel[9].slew_per_s, LINK_CC_SLEW_MAX);
         CHECK_EQ(reg(LINK_PG_REG(1u, LINK_PG_SLEW)), LINK_CC_SLEW_MAX);
@@ -583,7 +590,8 @@ TEST_CASE(read_only_registers_the_page_end_and_absent_ports_are_refused)
     CHECK_EQ(out[0], 0xA5A5u);
     prog_port_read(&pg, 0u, LINK_PG_REGS, out);
     CHECK_EQ(out[LINK_PG_COUNT], 1u);
-    CHECK_EQ(out[LINK_PG_REGS - 1u], 2000u);
+    CHECK_EQ(out[LINK_PG_REG(0u, LINK_PG_MAX_US)], 2000u);
+    CHECK_EQ(out[LINK_PG_REGS - 1u], (uint16_t)LINK_PG_FN_SERVO_PWM);
     CHECK_EQ(out[LINK_PG_REGS], 0xA5A5u);
 }
 
@@ -632,7 +640,7 @@ TEST_CASE(a_slot_is_refused_on_a_ports_pin_and_beside_it)
     uint16_t kept[PROG_PORT_KEPT_COUNT];
     fresh(1u);
     prog_port_defaults(kept, 13u);
-    prog_port_restore(&pg, kept, &o, BIT(13));
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, BIT(13));
     CHECK_EQ(prog_port_slots_check(&pg, slots), 0u);
     CHECK_EQ(prog_port_slots_check(NULL, slots), 0u);
 }
@@ -1036,7 +1044,7 @@ TEST_CASE(a_blocked_port_on_the_targets_slice_holds_nothing_there)
     fresh(2u);
     prog_port_defaults(kept, 13u);
     kept[PROG_PORT_KEPT] = 28u;
-    prog_port_restore(&pg, kept, &o, BIT(28));
+    prog_port_restore_fn(&pg, kept, ALL_PWM, &o, BIT(28));
     prog_port_bound(&pg, 0x01u);
     CHECK_EQ(prog_port_pin(&pg, 0u), 13u);
     CHECK_EQ(prog_port_pin(&pg, 1u), PROG_PORT_NO_PIN);
