@@ -155,7 +155,7 @@ UI_TEXT(LINK_REFUSED, 0,
 
 /* --------------------------------------------- the band's help bubbles
  * A tap on a chip of the band opens one.  Each is wrapped to the bubble's
- * width, so a view draws it and --fit measures it there; test_nav holds
+ * width, so a view draws it and --fit measures it there; test_nav_bubble holds
  * the bubble above the alert strip in its tallest state. */
 UI_TEXT(BH_LINK_UP, 0,
     "The IOmcu is responding on the CAN bus. The screens control its outputs and show its readings. The panel requests data every 50 ms. If the IOmcu stops responding while ARMED, the bench switches to SAFE.",
@@ -6667,12 +6667,13 @@ UI_WEB_TEXT(P_INSTALLED,
     "Installed: ",
     "Installiert: ")
 UI_WEB_TEXT(P_FW_NOTE,
-    "Upload a panel image, rcbench-panel-vX.Y.Z.bin. The "
+    "Upload a panel image, rcbench-panel-p4-vX.Y.Z.bin. The "
     "panel checks it and asks. It installs only after "
     "INSTALL is held for 2 s on the panel.",
-    "Ein Panel-Image hochladen, rcbench-panel-vX.Y.Z.bin. "
-    "Das Panel prüft es und fragt. Es installiert erst, "
-    "wenn INSTALL am Panel 2 s gehalten wird.")
+    "Ein Panel-Image hochladen, "
+    "rcbench-panel-p4-vX.Y.Z.bin. Das Panel prüft es und "
+    "fragt. Es installiert erst, wenn INSTALL am Panel "
+    "2 s gehalten wird.")
 UI_WEB_TEXT(P_UPLOAD,
     "Upload",
     "Hochladen")

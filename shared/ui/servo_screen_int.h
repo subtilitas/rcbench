@@ -42,10 +42,10 @@
 #include "ui_widgets.h"
 #include "ui_workbench.h"
 
-#define W 800
-#define H (480 - UI_BAND_H)
+#define W UI_PANEL_W
+#define H UI_BODY_H
 
-#define PAD    6
+#define PAD    UI_MARGIN
 #define LCARD_W 488
 #define RCARD_X (PAD + LCARD_W + 8)
 #define RCARD_W (W - RCARD_X - PAD)

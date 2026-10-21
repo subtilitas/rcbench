@@ -831,7 +831,7 @@ TEST_CASE(the_download_cancels_and_its_failure_closes)
 
 TEST_CASE(every_view_renders_inside_its_canvas)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 480)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_PANEL_H)];
     gfx_canvas_t c;
     guard_canvas_t g;
     for (int lang = 0; lang < 2; ++lang) {
@@ -854,12 +854,12 @@ TEST_CASE(every_view_renders_inside_its_canvas)
                 snprintf(g_v.found, sizeof(g_v.found), "%s",
                          "65535.65535.65535");
                 push();
-                guard_canvas_init(&g, &c, px, 800, 432);
+                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
                 upd_screen_invalidate();
                 upd()->render(&c, 0);
                 CHECK_EQ(guard_canvas_touched(&g), 0u);
                 CHECK_EQ(guard_canvas_unpainted(&g), 0u);
-                guard_canvas_init(&g, &c, px, 800, 432);
+                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
                 upd_screen_invalidate();
                 rem()->render(&c, 1);
                 CHECK_EQ(guard_canvas_touched(&g), 0u);
@@ -870,7 +870,7 @@ TEST_CASE(every_view_renders_inside_its_canvas)
             base_view();
             g_v.phase = (upd_phase_t)ph;
             push();
-            guard_canvas_init(&g, &c, px, 800, 432);
+            guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
             upd_screen_invalidate();
             upd()->render(&c, 0);
             CHECK_EQ(guard_canvas_touched(&g), 0u);
@@ -895,7 +895,7 @@ TEST_CASE(every_view_renders_inside_its_canvas)
                 memset(v.what, 'x', sizeof(v.what) - 1u);
                 memset(v.why, 'y', sizeof(v.why) - 1u);
                 update_screen_set(&v);
-                guard_canvas_init(&g, &c, px, 800, 480);
+                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_PANEL_H);
                 update_screen_invalidate();
                 update_screen()->render(&c, 0);
                 CHECK_EQ(guard_canvas_touched(&g), 0u);

@@ -1,15 +1,15 @@
 # Name,     Type, SubType, Offset,   Size,  Flags
-# nvs and phy_init stay where every earlier table had them, so a flash of
-# the parts (bootloader, table, app) keeps the settings.
-nvs,        data, nvs,     0x9000,   0x6000,
-phy_init,   data, phy,     0xf000,   0x1000,
-# Two application slots of 3968 kB and the record of which one starts.  An
-# update from the card writes the slot that is not running; a new image that
-# does not confirm itself is rolled back at the next start.
-otadata,    data, ota,     0x10000,  0x2000,
-ota_0,      app,  ota_0,   0x20000,  0x3E0000,
-ota_1,      app,  ota_1,   0x400000, 0x3E0000,
+# The table itself sits at 0xC000 (CONFIG_PARTITION_TABLE_OFFSET), which
+# leaves the second-stage bootloader 40,960 bytes from 0x2000.
+nvs,        data, nvs,     0xD000,   0x6000,
+phy_init,   data, phy,     0x13000,  0x1000,
+# Two application slots of 7936 kB and the record of which one starts.  An
+# update writes the slot that is not running; a new image that does not
+# confirm itself is rolled back at the next start.
+otadata,    data, ota,     0x14000,  0x2000,
+ota_0,      app,  ota_0,   0x20000,  0x7C0000,
 # Board drawings, fetched over the link once per board and kept.  Eight
-# slots of 16 kB; a drawing takes at most 5328 bytes of one.  The table ends
-# at the last byte of the 8 MB part.
+# slots of 16 kB; a drawing takes at most 5328 bytes of one.
 boardart,   data, 0x40,    0x7E0000, 0x20000,
+ota_1,      app,  ota_1,   0x800000, 0x7C0000,
+# 0xFC0000 to the end of the 32 MB part: not allocated.

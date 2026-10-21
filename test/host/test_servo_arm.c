@@ -31,8 +31,8 @@
 
 #include "servo_spots.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /*
  * Geometry in panel coordinates, mirrored from servo_screen.c with the

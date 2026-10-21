@@ -158,11 +158,21 @@ jobs:
           name: iomcu
           path: firmware/panel/iomcu-image
 
+      # The managed components (firmware/panel/managed_components) come from
+      # the ESP component registry at build time; the lock file pins their
+      # versions.  The step runs once the lock file is committed.
+      - name: Restore the managed components
+        if: hashFiles('firmware/panel/dependencies.lock') != ''
+        uses: actions/cache@v6
+        with:
+          path: firmware/panel/managed_components
+          key: managed-components-${{ hashFiles('firmware/panel/dependencies.lock') }}
+
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.4
-          target: esp32s3
+          esp_idf_version: v5.5.5
+          target: esp32p4
           path: 'firmware/panel'
           # A single image flashable at 0x0, as well as the three parts.
           # Flashing bootloader, partition table and app at three offsets is
@@ -170,6 +180,14 @@ jobs:
           command: >-
             idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin build
             && idf.py merge-bin -o rcbench-panel-merged.bin
+
+      # A build that rewrites the lock file resolved a version the commit
+      # does not pin.
+      - name: The build leaves the lock file as committed
+        run: |
+          if [ -f firmware/panel/dependencies.lock ]; then
+            git diff --exit-code firmware/panel/dependencies.lock
+          fi
 
       - uses: actions/upload-artifact@v7
         with:
@@ -318,12 +336,24 @@ jobs:
           # does not belong inside an ESP-IDF (Espressif Internet-of-Things
           # Development Framework) archive.  The panel archive carries the
           # merged image, which goes to 0x0 on its own, and the four parts
-          # for flashing them separately.
-          (cd artifacts/panel && zip -r "../../dist/rcbench-panel-$TAG.zip" .)
+          # for flashing them separately.  The panel's names carry "p4":
+          # the update check of a panel looks for rcbench-panel-p4-<tag>.bin
+          # in SHA256SUMS (shared/fwupdate/fw_release.c), so an ESP32-S3
+          # panel finds no entry and installs nothing.
+          (cd artifacts/panel && zip -r "../../dist/rcbench-panel-p4-$TAG.zip" .)
           (cd artifacts/iomcu && zip -r "../../dist/rcbench-iomcu-$TAG.zip" .)
           # And the panel's application on its own: the file the panel's
           # Wi-Fi page takes for an update (WI-FI).
-          cp artifacts/panel/rcbench-panel.bin "dist/rcbench-panel-$TAG.bin"
+          # The panel archive carries the licence and the notice of the
+          # libraries linked into the image, next to the binary.
+          zip -j "dist/rcbench-panel-p4-$TAG.zip" NOTICE LICENSE
+          for f in NOTICE LICENSE; do
+            unzip -Z1 "dist/rcbench-panel-p4-$TAG.zip" | grep -qx "$f" || {
+              echo "::error::rcbench-panel-p4-$TAG.zip does not list $f"
+              exit 1
+            }
+          done
+          cp artifacts/panel/rcbench-panel.bin "dist/rcbench-panel-p4-$TAG.bin"
           (cd dist && sha256sum ./*.zip ./*.bin > SHA256SUMS)
           ls -l dist
 

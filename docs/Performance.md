@@ -141,31 +141,17 @@ and the panel refreshes at 39 Hz, so about every other frame has nothing new.
 The bench screen keeps the plot's push count and a control revision, each per
 framebuffer, and repaints the plot, the readouts and the controls only when the
 corresponding counter has moved. `each_framebuffer_is_updated_independently` in
-`test_motor` pins the per-buffer counters.
+`test_motor_draw` pins the per-buffer counters.
 
 ## Ceilings
 
-The panel moves 976 KiB per frame at 39 Hz. A render costing twice that lands
-at 19.5 fps, which is one frame per 20 Hz telemetry sample; drawing faster
-would repaint identical pixels, drawing slower would drop samples. CI
-(continuous integration) holds each mode to a ceiling:
-
-| Modes | Ceiling (fills) | Catches |
-| --- | ---: | --- |
-| `frame`, `sim`, `supply` | 15,600 | a bench frame that exceeds one telemetry sample |
-| `overview` | 2,000 | a chrome-cached screen that has started repainting |
-| `servo` | 17,000 | the arm and grip drawing growing |
-| `servo-grip` | 4,000 | a breath repainting the whole card |
-| `servo-current` | 4,500 | a changed digit of the current repainting the whole card |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `picker`, `wifi` | 1,200 | a screen that has started repainting |
-| `settings-list` | 1,200 | a SETUP list that has started repainting |
-| the three `-sim` modes | 2,800 | the watermark growing past a full canvas |
-| the ten `-chrome` modes | 45,000 | a full repaint growing |
-| `wifi-keys` | 24,000 | a key of the Wi-Fi keyboard repainting more than the screen |
-
-`tools/check_docs.py` holds this table to the `--max-lines` arguments in
-`.github/workflows/ci.yml`: a ceiling that differs, a mode CI holds with no
-row here, and a row CI does not run each fail.
+No CI (continuous integration) step holds a frame to a ceiling.
+`tools/frame_cost.py` models the ESP32-S3's cache and bandwidth at
+800 x 480 px, and the table above is that model. The 7-inch ESP32-P4 panel
+scans 1024 x 600 px through a different cache. Its profile and the ceilings
+CI holds come with measurements on that board. `frame_cost.py --check-doc`
+checks the table above against a local build. `tools/check_docs.py` fails
+on a ceiling table in this page while `.github/workflows/ci.yml` holds none.
 
 If a future pane needs more room, the remaining levers in order of bluntness
 are the plot's height, its width, and clipping the simulation watermark to the
@@ -184,8 +170,16 @@ file: the frame of every function is the `entry a1, N` it opens with, and the
 depth is the largest sum of frames along any chain from the task's entry
 point. A jump out of a function, the form a tail call takes, counts as a
 call. The tasks are every `xTaskCreatePinnedToCore()` and `xTaskCreate()`
-in `firmware/panel`, and the main task. CI runs it after both panel builds
-and fails when a task's depth exceeds its stack less 1024 bytes.
+in `firmware/panel`, and the main task. The tool fails when a task's depth
+exceeds its stack less 1024 bytes.
+
+The tool decodes Xtensa code, the ESP32-S3's, and stops on an image of
+another machine. The ESP32-P4 builds RISC-V code. The stack depths of the
+P4 panel are not measured, no CI step checks a panel task's stack, and the
+table below holds the figures of the last ESP32-S3 build. A RISC-V decoder
+in the tool, or a run-time high-water log of every task's stack, is needed
+before the P4 panel has figures of its own. The IOmcu's stacks are checked in
+CI, as below.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
@@ -216,7 +210,7 @@ reach. A run's start mounts the card on this task as well
 (`storage_check()`). The chain needs 4,576 bytes; the stack of 6,656
 bytes leaves 1,056 above the 1,024-byte margin.
 
-Measured on ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
+Measured on the ESP32-S3 build with ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
 the frames: 320 for the FPU (floating-point unit) and vector-unit state saved
 at the top of every stack, 192 for the frame an interrupt pushes, and 16 below
 the deepest frame. The other
@@ -241,9 +235,8 @@ bound for that reason:
 - recursion: a function already on a chain is not entered again, so a
   chain runs round a cycle at most once.
 
-CI runs the tool with `--check-doc` on the ESP-IDF v5.4 build, which fails
-when the table above or the count of calls through a pointer differs from
-that build.
+`stack_check.py --check-doc` on an ESP32-S3 build fails when the table above
+or the count of calls through a pointer differs from that build.
 
 ### The IOmcu
 
@@ -338,47 +331,12 @@ newlib's float conversion: 2,368 bytes deep in the call graph.
 
 ## Internal RAM
 
-The radio needs internal RAM (random-access memory) that PSRAM cannot
-stand in for. `esp_wifi_init()` takes the Wi-Fi driver's static RX
-(receive) and TX (transmit) buffers: 16 of each, about 1,600 bytes each,
-51,200 bytes of DMA-capable (direct memory access) internal RAM.
-`CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP` makes the TX buffers static. When
-they do not fit, the radio does not start, and WI-FI shows "Wi-Fi could not start.".
-
-`tools/ram_budget.py` reads the internal heap a panel build leaves and
-subtracts what the panel allocates at run time, then what each Wi-Fi mode
-allocates on top. CI runs it after both panel builds and fails when the
-heap left with the largest mode up is under 32,768 bytes: the size of the
-pool ESP-IDF keeps for internal and DMA allocations at run time
-(`CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL`). The radio's sockets, the
-hardware AES (Advanced Encryption Standard) and SHA (Secure Hash Algorithm)
-engines' buffers and a card transfer take from it while the radio runs.
-
-| Item | What it is | Bytes |
-| --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 129,944 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 296,040 |
-| `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 107,248 |
-| `before` | heap left with the panel up and the radio off | 188,792 |
-| `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
-| `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
-| `SCAN` | the network search: the radio alone | 86,096 |
-| `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 85,632 |
-
-Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
-that build, which fails when the table differs from it. `-v` lists every
-allocation and where its size comes from.
-
-Each figure is an estimate. A task's stack, a queue's length and the Wi-Fi
-buffer count are read from the build and the source; the sizes of a task's
-control block, a queue's header and a queue's item are `sizeof()` values
-read with GDB from the v5.4 build. Three allowances are not read from
-anything: 12,288 bytes for the drivers' start-up allocations, 16,384 bytes
-for the Wi-Fi driver's blocks beyond its buffers and its task, and 4,096
-bytes for TLS. The tool leaves out RTC (real-time clock) fast memory, about
-8 KB of heap that is not DMA-capable. The free heap on a panel is not
-measured. The panel prints it at start-up:
+The ESP32-P4 has no radio. Wi-Fi runs on the ESP32-C6 of the 7-inch board,
+which the P4 reaches over SDIO (secure digital input output). The S3 build's
+estimate of the internal RAM the radio takes, 51,200 bytes of DMA-capable
+(direct memory access) internal RAM at `esp_wifi_init()`, does not apply to
+the P4. The internal RAM the P4 build leaves is not measured, and no tool or
+CI step estimates it. The panel prints the free memory at start-up:
 
 ```text
 I (…) rcbench: internal RAM: <n> B free, largest block <n> B; PSRAM: <n> B free
@@ -398,63 +356,10 @@ event handlers, the network interface, `esp_wifi_init`,
 tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
-What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
-164,024 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
-`CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
-.bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
-13,742 bytes.
-
-| Object | Component | .bss (bytes) |
-| --- | --- | ---: |
-| `log_viewer_screen` | ui | 35,984 |
-| `servo_screen` | ui | 29,533 |
-| `ui_watermark` | ui | 20,504 |
-| `supply_screen` | ui | 20,508 |
-| `motor_screen` | ui | 20,088 |
-| `kst_card` | bench | 6,208 |
-| `esc_stick_panel` | ui | 6,096 |
-| `kst_panel` | ui | 5,185 |
-| `log_csv` | logfile | 4,904 |
-| `esc_registry` | esc | 4,228 |
-| `analyser_screen` | ui | 4,036 |
-| `wa_zip` | webaccess | 2,433 |
-| `wa_page` | webaccess | 1,408 |
-| `wifi_screen` | ui | 1,320 |
-| `ui_band` | ui | 1,040 |
-| `esc_stick_pages` | ui | 252 |
-| `motor_settings_page` | ui | 128 |
-| `motor_workbench` | ui | 124 |
-| `motor_program_page` | ui | 44 |
-| `log_reader` | logfile | 1 |
-
-Read from the map file of the ESP-IDF v5.4 build. CI runs
-`tools/ram_budget.py --check-doc` on that build, which fails when a row,
-the count, the total or ESP-IDF's 13,742 bytes differ from the map, or
-when a row is given twice. It also fails on a line of `psram_bss.lf` other
-than `object (extram_bss)` entries under a `[mapping:...]` header, on an
-object the fragment names and the map places no .bss of, and on an object
-in PSRAM that the fragment does not name, outside lwIP, net80211, pp and
-wpa_supplicant. `-v` lists every object.
-
-An object moves only when its state
-
-- is read and written by no interrupt handler: the panel's IRAM
-  (instruction RAM) handlers are `display.c`'s and `touch.c`'s, and their
-  state stays internal;
-- is read and written by no DMA: the card's SPI (Serial Peripheral
-  Interface) driver copies a buffer that is not DMA-capable through one
-  that is;
-- holds no atomic, spinlock, mutex or queue: the ESP32-S3's
-  compare-and-swap instruction works on internal RAM only.
-
-A flash write closes the cache, and PSRAM with it. For its length the
-writing task runs from IRAM and the other core waits in IRAM, so no code
-that reads these objects runs.
-
-The screens' state is read through the same 64 KB data cache as the
-framebuffers. `tools/frame_cost.py` models the frames it renders through
-that cache with every read and write, these objects' included. The frame rate on a
-panel with them in PSRAM is not measured.
+`firmware/panel/main/psram_bss.lf` places the zero-initialised data (.bss)
+of the screens' large objects in PSRAM (pseudo-static random-access memory)
+and names each object. The sizes of those objects on the P4 build are not
+measured.
 
 ## Wi-Fi downloads
 

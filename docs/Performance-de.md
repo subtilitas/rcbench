@@ -149,34 +149,19 @@ Aufrufer herleiten zu lassen.
 Neues. Der Prüfstandsbildschirm führt den Push-Zähler des Plots und eine
 Revisionsnummer der Bedienelemente, jeweils je Framebuffer, und zeichnet Plot,
 Anzeigen und Bedienelemente nur neu, wenn der zugehörige Zähler sich bewegt
-hat. `each_framebuffer_is_updated_independently` in `test_motor` hält die
+hat. `each_framebuffer_is_updated_independently` in `test_motor_draw` hält die
 Zähler je Buffer fest.
 
 ## Obergrenzen
 
-Das Panel bewegt 976 KiB je Frame bei 39 Hz. Ein Frame, der das Doppelte
-kostet, landet bei 19,5 fps (Frames pro Sekunde), also einem Frame je
-20-Hz-Telemetriesample; schneller zu zeichnen würde identische Pixel neu
-malen, langsamer würde Samples verlieren. CI (Continuous Integration) hält
-jeden Modus an eine Obergrenze:
-
-| Modi | Obergrenze (Fills) | Fängt |
-| --- | ---: | --- |
-| `frame`, `sim`, `supply` | 15 600 | einen Prüfstandsframe, der ein Telemetriesample überschreitet |
-| `overview` | 2 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
-| `servo` | 17 000 | ein Wachsen der Arm- und Griffzeichnung |
-| `servo-grip` | 4 000 | ein Atmen, das die ganze Karte neu zeichnet |
-| `servo-current` | 4 500 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `picker`, `wifi` | 1 200 | einen Bildschirm, der neu zu zeichnen begonnen hat |
-| `settings-list` | 1 200 | eine SETUP-Liste, die neu zu zeichnen begonnen hat |
-| die drei `-sim`-Modi | 2 800 | ein Watermark, das über die volle Canvas hinauswächst |
-| die zehn `-chrome`-Modi | 45 000 | ein wachsendes vollständiges Neuzeichnen |
-| `wifi-keys` | 24 000 | eine Taste der WLAN-Tastatur, die mehr als den Bildschirm neu zeichnet |
-
-`tools/check_docs.py` hält diese Tabelle an den `--max-lines`-Argumenten in
-`.github/workflows/ci.yml`: eine abweichende Obergrenze, ein Modus, den CI
-hält und der hier keine Zeile hat, und eine Zeile, die CI nicht ausführt,
-schlagen jeweils fehl.
+Kein CI-Schritt (Continuous Integration) hält einen Frame an eine
+Obergrenze. `tools/frame_cost.py` bildet den Cache und die Bandbreite des
+ESP32-S3 bei 800 x 480 px nach, und die Tabelle oben ist dieses Modell. Das
+7-Zoll-Panel mit dem ESP32-P4 gibt 1024 x 600 px über einen anderen Cache
+aus. Sein Profil und die Obergrenzen, die CI hält, kommen mit Messungen auf
+diesem Board. `frame_cost.py --check-doc` prüft die Tabelle oben gegen einen
+lokalen Build. `tools/check_docs.py` schlägt bei einer Obergrenzen-Tabelle
+auf dieser Seite fehl, solange `.github/workflows/ci.yml` keine hält.
 
 Braucht ein künftiger Bereich mehr Platz, sind die verbleibenden Hebel vom
 gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das
@@ -198,9 +183,16 @@ Linkable Format) des Panels: der Frame jeder Funktion ist das
 Frames entlang einer Kette vom Einstiegspunkt der Task. Ein Sprung aus einer
 Funktion heraus, die Form eines Tail Calls, zählt als Aufruf. Die Tasks sind
 jedes `xTaskCreatePinnedToCore()` und `xTaskCreate()` in `firmware/panel`
-und die Main-Task. CI (Continuous Integration) führt es nach beiden
-Panel-Builds aus und schlägt fehl, wenn die Tiefe einer Task ihren Stack
-abzüglich 1024 Bytes überschreitet.
+und die Main-Task. Das Werkzeug schlägt fehl, wenn die Tiefe einer Task
+ihren Stack abzüglich 1024 Bytes überschreitet.
+
+Das Werkzeug dekodiert Xtensa-Code, den des ESP32-S3, und hält bei einem
+Image einer anderen Maschine an. Der ESP32-P4 baut RISC-V-Code. Die
+Stacktiefen des P4-Panels sind nicht gemessen, kein CI-Schritt prüft den
+Stack einer Panel-Task, und die Tabelle unten enthält die Zahlen des letzten
+ESP32-S3-Builds. Bevor das P4-Panel eigene Zahlen hat, braucht es einen
+RISC-V-Dekoder im Werkzeug oder ein Laufzeit-Log der High-Water-Marks aller
+Task-Stacks. Die Stacks des IOmcu prüft CI, wie unten beschrieben.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
@@ -232,7 +224,7 @@ eines Laufs bindet die Karte ebenfalls auf diesem Task ein
 (`storage_check()`). Die Kette braucht 4 576 Bytes; der Stack von 6 656
 Bytes lässt 1 056 über der Marge von 1 024 Bytes.
 
-Gemessen mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb
+Gemessen auf dem ESP32-S3-Build mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb
 der Frames auf: 320 für den gesicherten Zustand von FPU (Floating-Point Unit)
 und Vektoreinheit am oberen Ende jedes Stacks, 192 für den Frame, den ein
 Interrupt ablegt, und 16 unter dem tiefsten Frame. Die übrigen 496 Bytes
@@ -258,9 +250,9 @@ Untergrenze:
   noch einmal betreten; eine Kette läuft also höchstens einmal durch einen
   Zyklus.
 
-CI führt das Werkzeug auf dem Build mit ESP-IDF v5.4 mit `--check-doc` aus;
-das schlägt fehl, wenn die Tabelle oben oder die Zahl der Aufrufe über einen
-Zeiger von diesem Build abweicht.
+`stack_check.py --check-doc` auf einem ESP32-S3-Build schlägt fehl, wenn die
+Tabelle oben oder die Zahl der Aufrufe über einen Zeiger von diesem Build
+abweicht.
 
 ### Der IOmcu
 
@@ -364,49 +356,13 @@ Aufrufgraphen.
 
 ## Interner RAM
 
-Das WLAN braucht internen RAM (Random-Access Memory), für den PSRAM nicht
-einspringen kann. `esp_wifi_init()` nimmt die statischen RX- und
-TX-Puffer (Empfangen, Senden) des WLAN-Treibers: je 16 zu etwa 1 600
-Bytes, 51 200 Bytes DMA-fähiger (Direct Memory Access) interner RAM.
-`CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP` macht die TX-Puffer statisch.
-Passen sie nicht, startet das WLAN nicht, und WI-FI zeigt „WLAN konnte nicht starten.“.
-
-`tools/ram_budget.py` liest den internen Heap, den ein Panel-Build übrig
-lässt, und zieht ab, was das Panel zur Laufzeit belegt, dann, was jeder
-WLAN-Modus dazu belegt. CI führt es nach beiden Panel-Builds aus und
-schlägt fehl, wenn mit dem größten Modus weniger als 32 768 Bytes Heap
-übrig bleiben: die Größe des Vorrats, den ESP-IDF zur Laufzeit für interne
-und DMA-Belegungen zurückhält (`CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL`).
-Daraus nehmen die Sockets des WLANs, die Puffer der Hardware-Einheiten für
-AES (Advanced Encryption Standard) und SHA (Secure Hash Algorithm) und eine
-Kartenübertragung, solange das WLAN läuft.
-
-| Posten | Was es ist | Bytes |
-| --- | --- | ---: |
-| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 129 944 |
-| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 296 040 |
-| `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 107 248 |
-| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 188 792 |
-| `AP` | WLAN-HOTSPOT: das WLAN, der Server der Seite und seine Task | 98 724 |
-| `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
-| `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
-| `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |
-| `left` | übriger Heap mit dem größten Modus | 85 632 |
-
-Gelesen aus dem Build mit ESP-IDF v5.4. CI führt das Werkzeug auf diesem
-Build mit `--check-doc` aus; das schlägt fehl, wenn die Tabelle von ihm
-abweicht. `-v` listet jede Belegung und woher ihre Größe stammt.
-
-Jede Zahl ist eine Schätzung. Der Stack einer Task, die Länge einer Queue
-und die Zahl der WLAN-Puffer stammen aus dem Build und dem Quelltext; die
-Größen des Kontrollblocks einer Task, des Kopfes einer Queue und eines
-Queue-Eintrags sind `sizeof()`-Werte, mit GDB aus dem v5.4-Build gelesen.
-Drei Zuschläge stammen aus nichts davon: 12 288 Bytes für die Belegungen
-der Treiber beim Start, 16 384 Bytes für die Blöcke des WLAN-Treibers
-neben seinen Puffern und seiner Task und 4 096 Bytes für TLS. Das Werkzeug
-lässt den Fast-Speicher der RTC (Real-Time Clock) aus, etwa 8 KB Heap, der
-nicht DMA-fähig ist. Der freie Heap auf einem Panel ist nicht gemessen. Das
-Panel gibt ihn beim Start aus:
+Der ESP32-P4 hat kein Funkmodul. Das WLAN läuft auf dem ESP32-C6 des
+7-Zoll-Boards, den der P4 über SDIO (Secure Digital Input Output) erreicht.
+Die Schätzung des S3-Builds für den internen RAM, den das Funkmodul belegt,
+51 200 Bytes DMA-fähiger (Direct Memory Access) interner RAM bei
+`esp_wifi_init()`, gilt für den P4 nicht. Der interne RAM, den der P4-Build
+übrig lässt, ist nicht gemessen, und kein Werkzeug und kein CI-Schritt
+schätzt ihn. Das Panel gibt den freien Speicher beim Start aus:
 
 ```text
 I (…) rcbench: internal RAM: <n> B free, largest block <n> B; PSRAM: <n> B free
@@ -426,65 +382,10 @@ beiden Event-Handler, die Netzwerkschnittstelle, `esp_wifi_init`,
 Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
-Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 20
-Objekten, 164 024 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
-über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
-ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
-wpa_supplicant, 13 742 Bytes.
-
-| Objekt | Komponente | .bss (Bytes) |
-| --- | --- | ---: |
-| `log_viewer_screen` | ui | 35 984 |
-| `servo_screen` | ui | 29 533 |
-| `ui_watermark` | ui | 20 504 |
-| `supply_screen` | ui | 20 508 |
-| `motor_screen` | ui | 20 088 |
-| `kst_card` | bench | 6 208 |
-| `esc_stick_panel` | ui | 6 096 |
-| `kst_panel` | ui | 5 185 |
-| `log_csv` | logfile | 4 904 |
-| `esc_registry` | esc | 4 228 |
-| `analyser_screen` | ui | 4 036 |
-| `wa_zip` | webaccess | 2 433 |
-| `wa_page` | webaccess | 1 408 |
-| `wifi_screen` | ui | 1 320 |
-| `ui_band` | ui | 1 040 |
-| `esc_stick_pages` | ui | 252 |
-| `motor_settings_page` | ui | 128 |
-| `motor_workbench` | ui | 124 |
-| `motor_program_page` | ui | 44 |
-| `log_reader` | logfile | 1 |
-
-Gelesen aus der Map-Datei des Builds mit ESP-IDF v5.4. CI führt
-`tools/ram_budget.py --check-doc` auf diesem Build aus; das schlägt fehl,
-wenn eine Zeile, die Anzahl, die Summe oder die 13 742 Bytes von ESP-IDF
-von der Map abweichen oder eine Zeile doppelt steht. Es schlägt auch fehl
-bei einer Zeile in `psram_bss.lf`, die kein Eintrag `object (extram_bss)`
-unter einem Kopf `[mapping:...]` ist, bei einem Objekt, das das Fragment
-nennt und von dem die Map keine .bss platziert, und bei einem Objekt im
-PSRAM, das das Fragment nicht nennt, außerhalb von lwIP, net80211, pp und
-wpa_supplicant. `-v` listet jedes Objekt.
-
-Ein Objekt zieht nur um, wenn seinen Zustand
-
-- kein Interrupt-Handler liest oder schreibt: die IRAM-Handler (Instruction
-  RAM) des Panels sind die von `display.c` und `touch.c`, und ihr Zustand
-  bleibt intern;
-- kein DMA liest oder schreibt: der SPI-Treiber (Serial Peripheral
-  Interface) der Karte kopiert einen Puffer, der nicht DMA-fähig ist, über
-  einen, der es ist;
-- kein Atomic, kein Spinlock, kein Mutex und keine Queue enthält: der
-  Compare-and-Swap-Befehl des ESP32-S3 arbeitet nur auf internem RAM.
-
-Ein Flash-Schreibvorgang schließt den Cache und mit ihm den PSRAM. Für
-seine Dauer läuft die schreibende Task aus dem IRAM, und der andere Kern
-wartet im IRAM; kein Code, der diese Objekte liest, läuft.
-
-Der Zustand der Bildschirme wird über denselben 64-KB-Datencache gelesen
-wie die Framebuffer. `tools/frame_cost.py` bildet die Frames, die es zeichnet,
-mit jedem Lesen und Schreiben über diesen Cache nach, das dieser Objekte
-eingeschlossen. Die Frame Rate auf einem Panel mit ihnen im PSRAM ist nicht
-gemessen.
+`firmware/panel/main/psram_bss.lf` legt die nullinitialisierten Daten (.bss)
+der großen Objekte der Bildschirme in den PSRAM (Pseudo-Static Random-Access
+Memory) und nennt jedes Objekt. Die Größen dieser Objekte im P4-Build sind
+nicht gemessen.
 
 ## WLAN-Downloads
 

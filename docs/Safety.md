@@ -25,8 +25,10 @@ acknowledge) from the IOmcu to either leaves the panel SAFE.
 
 ## Required external circuit: the monostable
 
-The safety line is panel GPIO6 (general-purpose input/output pin 6) on
-header J8 (3V3, GND, GPIO6). It carries
+The safety line is panel GPIO28 (general-purpose input/output pin 28), a
+free header pin of the 7-inch ESP32-P4 display board. GPIO28 is a
+placeholder: the header pin that carries the line is not chosen yet
+(`PANEL_HEARTBEAT_PIN` in `board_pins.h`). It carries
 edges, not a level. The IOmcu's output enable and the servo and ESC
 (electronic speed controller) power path must be gated by a retriggerable
 monostable that stays energised only while edges keep arriving. A crash, a
@@ -41,7 +43,7 @@ the margin is what survives a task that is late, and nothing is gained by
 removing it.
 
 The monostable is on no board. On the bring-up bench the edges reach the
-IOmcu's GP3 by a direct wire from J8, which is what lets that bench switch to ARMED.
+IOmcu's GP3 by a direct wire from the panel's heartbeat pin, which is what lets that bench switch to ARMED.
 
 The monostable is retriggered by the panel's edges and removes the outputs
 when they stop. What it adds over the direct wire is that it does this without

@@ -36,8 +36,9 @@ Finger abhebt. Das Schalten auf SAFE und STOP sind ein einzelner Druck.
 
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
 Ausgänge abschaltet, der Link-Watchdog des IOmcu und ein STOP-Kommando
-über den Link. Die Leitung zwischen J8 des Panels und GP3 des
-IOmcu ist auf dem Aufbau-Prüfstand bestückt. Das retriggerbare Monoflop des Heartbeats ist auf keiner
+über den Link. Die Leitung läuft von GPIO28 des Panels
+(`PANEL_HEARTBEAT_PIN`) zu GP3 des IOmcu; GPIO28 ist vorläufig, bis der Pin
+am ersten Muster des 7-Zoll-ESP32-P4-Boards festgelegt ist. Das retriggerbare Monoflop des Heartbeats ist auf keiner
 Platine vorhanden, die Ausgänge hängen also allein an der Firmware an beiden
 Enden, ohne Hardware-Rückfallebene dahinter.
 [Sicherheit](https://github.com/subtilitas/rcbench/wiki/Safety-de) spezifiziert
