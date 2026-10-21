@@ -84,6 +84,10 @@ typedef struct {
     sense_cap_arm_t cap;         /**< the arm's levels                      */
     bool     edge_set;           /**< edge_us is cap_gen's PWM edge         */
     uint64_t edge_us;            /**< on the clock now_us() reads           */
+    uint16_t limit_ma[SENSE_CHANNELS]; /**< each channel's current limit in
+                                      mA, 0 none (SENSE_LIMIT): taken
+                                      from the next window that closes,
+                                      with no new set-up                 */
 } sense_cmd_t;
 
 /** What core 1 hands back after each step. */
@@ -129,6 +133,9 @@ typedef struct {
     bool     enc_have_mag;
     uint8_t  enc_agc;
     uint16_t enc_magnitude;
+    uint16_t over_n[SENSE_CHANNELS]; /**< each channel's windows over its
+                                      limit, modulo 65536, since core 1
+                                      started: across set-ups            */
 } sense_snap_t;
 
 /** The wire, the clock, the recovery and the pins. */
@@ -157,6 +164,9 @@ typedef struct {
     bool     scan_due;
     uint64_t scan_at_us;         /**< the next scan while a part is missing */
     uint16_t present;
+    bool     lim_have;           /**< lim_win is a window judged            */
+    uint16_t lim_win;            /**< the number of the last one judged    */
+    uint16_t over_n[SENSE_CHANNELS];
     uint32_t setups;             /**< schedules set up, modulo 2^32: each
                                       one's sched.gen                     */
     sense_sched_t sched;
@@ -169,6 +179,18 @@ void sense_svc_init(sense_svc_t *v, const sense_svc_io_t *io);
 /** One tick, every 1 ms: @p cmd acted on, the schedule ticked while the
  *  bus is open, and @p out filled. */
 void sense_svc_step(sense_svc_t *v, const sense_cmd_t *cmd, sense_snap_t *out);
+
+/**
+ * Whether window @p w of a channel passed @p limit_ma: its highest current
+ * rounded to mA (as SENSE_WIN shows it) above the limit, or a sample
+ * clipped at the top of the range when that top, @p clip_ua (a clipped
+ * sample is at least this much), is above the limit.  Never with a limit
+ * of 0, and never for a negative current.  The service judges each
+ * channel's window once, as it closes, on core 1, so no window is missed
+ * however late core 0 takes the snapshot.
+ */
+bool sense_window_over(const sense_window_t *w, int32_t clip_ua,
+                       uint16_t limit_ma);
 
 #ifdef __cplusplus
 }

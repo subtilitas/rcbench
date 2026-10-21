@@ -36,6 +36,7 @@ static void set_up(sense_svc_t *v, const sense_cmd_t *cmd)
     }
     v->cfg_gen  = cmd->cfg_gen;
     v->present  = 0u;
+    v->lim_have = false;        /* the new schedule numbers from 0 */
     v->scan_due = false;
     /* Whatever happens to the bus, the set-up ends the capture and the run
      * before it: the ones in force are taken as they stand and act from
@@ -55,6 +56,45 @@ static void set_up(sense_svc_t *v, const sense_cmd_t *cmd)
     sense_sched_init(&v->sched, &v->io.sched, &cmd->parts);
     v->sched.gen = ++v->setups;
     v->scan_due = true;
+}
+
+bool sense_window_over(const sense_window_t *w, int32_t clip_ua,
+                       uint16_t limit_ma)
+{
+    if (limit_ma == 0u) {
+        return false;
+    }
+    const int64_t lim_ua = (int64_t)limit_ma * 1000;
+    /* Rounded to mA, halves away from zero: above the limit from
+     * limit + 0.5 mA on. */
+    const bool max_over = w->n_i > 0u
+                          && (int64_t)w->i_max_ua >= lim_ua + 500;
+    const bool clip_over = w->clip_hi && (int64_t)clip_ua > lim_ua;
+    return max_over || clip_over;
+}
+
+/* The windows that closed in this tick, each channel against its limit,
+ * once a window.  A part not online at the close is judged on nothing. */
+static void judge(sense_svc_t *v, const sense_cmd_t *cmd)
+{
+    const sense_sched_t *s = &v->sched;
+    if (!s->have_last) {
+        return;
+    }
+    const uint16_t number = s->last[0].number;
+    if (v->lim_have && v->lim_win == number) {
+        return;
+    }
+    v->lim_have = true;
+    v->lim_win  = number;
+    for (unsigned c = 0; c < SENSE_CHANNELS; ++c) {
+        if (ina3221_state(&s->i3221[c / INA3221_CHANNELS])
+                == SENSE_PART_ONLINE
+            && sense_window_over(&s->last[c], s->ch_clip_ua[c],
+                                 cmd->limit_ma[c])) {
+            ++v->over_n[c];
+        }
+    }
 }
 
 static void capture(sense_svc_t *v, const sense_cmd_t *cmd)
@@ -184,6 +224,7 @@ static void snap(const sense_svc_t *v, sense_snap_t *out)
     out->cfg_gen = v->cfg_gen;
     out->run_gen = v->run_gen;
     out->cap_gen = v->cap_gen;
+    memcpy(out->over_n, v->over_n, sizeof(out->over_n));
     out->open    = v->open;
     snap_capture(v, out);
     if (!v->open) {
@@ -240,6 +281,7 @@ void sense_svc_step(sense_svc_t *v, const sense_cmd_t *cmd, sense_snap_t *out)
         }
         capture(v, cmd);
         sense_sched_tick(&v->sched);
+        judge(v, cmd);
         scan(v, now_us(v));
     } else {
         /* No bus: a run has nothing to restart, and an arm nothing to

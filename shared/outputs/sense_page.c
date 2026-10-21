@@ -207,7 +207,6 @@ void sense_page_forget(sense_page_t *p)
     memset(&p->map[LINK_SM_KEPT], 0,
            (size_t)(LINK_SM_COUNT - LINK_SM_KEPT) * sizeof(uint16_t));
     memset(p->xwin, 0, sizeof(p->xwin));
-    p->lim_have = false;
 }
 
 uint8_t sense_cfg_check(const sense_page_t *p, const uint16_t *next,
@@ -535,6 +534,9 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd)
                         (uint8_t)c[LINK_SN_I3221_CHANNELS]);
     }
     cmd->parts.as5600_en          = (en & LINK_SN_EN_AS5600) != 0u;
+    /* SENSE_LIMIT's limits, judged on core 1 as each window closes. */
+    memcpy(cmd->limit_ma, &p->limit[LINK_SL_LIMIT_0],
+           sizeof(cmd->limit_ma));
     const uint16_t *v = p->servo;
     cmd->cap_gen      = p->cap_gen;
     cmd->cap_on       = (v[LINK_SS_CAP_ARM] & LINK_SS_ARM) != 0u;

@@ -4,13 +4,16 @@
  *
  * Under test: the layout and the minor; every register range of a write
  * and a limit at 0, 32767 and 32768; a refused write storing nothing; a
- * window's highest current at limit - 1, limit and limit + 1 mA and across
- * the rounding to mA; a clipped sample against a range top below, at and
- * above the limit, the bottom end, a negative current, a channel off and
- * no limit, a part offline at the window's close; each window judged once, again after a set-up; OVER sticky
- * until a read covers it, the peek and a read off the page leaving it;
- * OVER_COUNT wrapping at 65536; the derived map's shunt; what is kept and
- * its restore at boot.
+ * window's highest current at limit - 1, limit and limit + 1 mA, across
+ * the rounding to mA and at the highest limit (sense_window_over()); a
+ * clipped sample against a range top below, at and above the limit,
+ * unrounded (163.8 mA on 1 Ohm), the bottom end, a negative current, no
+ * samples and no limit; core 1's counts into OVER and OVER_COUNT, several
+ * windows in one snapshot, a stale set-up's snapshot, a set-up, the count's
+ * wrap; the limits in core 1's order; OVER sticky until a read covers it,
+ * the peek and a read off the page leaving it; OVER_COUNT wrapping at
+ * 65536; what is kept and its restore at boot.  Core 1's side, each
+ * window judged as it closes and a part offline, is in test_sense_svc.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,6 +27,7 @@
 #include "sense_limit.h"
 #include "sense_map.h"
 #include "sense_page.h"
+#include "sense_svc.h"
 
 static outputs_t    o;
 static sense_page_t pg;
@@ -143,121 +147,119 @@ TEST_CASE(a_write_lies_within_the_limits_and_their_range)
     CHECK_EQ(peek(0u), 100u);
 }
 
+/* A window of 5 samples whose highest current is @p max_ua. */
+static sense_window_t win_max(int32_t max_ua)
+{
+    sense_window_t w;
+    memset(&w, 0, sizeof(w));
+    w.n_i = 5u;
+    w.i_max_ua = max_ua;
+    return w;
+}
+
 TEST_CASE(a_window_is_over_above_its_limit_and_not_at_it)
 {
-    fresh();
-    map_all(0x01u);
-    CHECK_EQ(limit(0u, 100u), 0u);
     static const struct { int32_t ua; bool over; } k[] = {
-        { 99000, false },  { 100000, false }, { 101000, true },
-        { 100499, false }, { 100500, true },  { -150000, false },
+        { 99000, false },  { 100000, false }, { 100499, false },
+        { 100500, true },  { 101000, true },  { -150000, false },
+        { INT32_MAX, true },
     };
     for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
-        sense_snap_t s = snapshot((uint16_t)(10u + i));
-        s.win[0].i_max_ua = k[i].ua;
-        sense_page_publish(&pg, &s, 0u);
-        CHECK_EQ(take_over(), k[i].over ? 0x001u : 0u);
+        const sense_window_t w = win_max(k[i].ua);
+        CHECK_EQ(sense_window_over(&w, 1638000, 100u), k[i].over);
     }
-    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 2u);
-    /* No limit, and a channel with no samples, are never over. */
-    CHECK_EQ(limit(0u, 0u), 0u);
-    CHECK_EQ(limit(1u, 1u), 0u);
-    sense_snap_t s = snapshot(20u);
-    s.win[0].i_max_ua = 30000000;
-    s.win[1].n_i = 0u;
-    s.win[1].i_max_ua = 0;
-    sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(take_over(), 0u);
-    /* Limit 1 mA, 2 mA read: over; every channel at once. */
-    for (unsigned c = 0; c < LINK_SM_CHANNELS; ++c) {
-        CHECK_EQ(limit(c, 1u), 0u);
-    }
-    s = snapshot(21u);
-    for (unsigned c = 0; c < LINK_SM_CHANNELS; ++c) {
-        s.win[c].i_max_ua = 2000;
-    }
-    sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(take_over(), 0x0FFFu);
-    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 2u + 12u);
-    /* A part offline at the window's close: its samples from before are
-     * not judged, as SENSE_WIN shows them 0. */
-    s.win[0].number = 22u;
-    s.i3221[1] = SENSE_PART_OFFLINE;
-    s.i3221[3] = SENSE_PART_WRONG_ID;
-    sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(take_over(), 0x1C7u);
+    /* No limit, and no samples, are never over. */
+    sense_window_t w = win_max(30000000);
+    CHECK(!sense_window_over(&w, 1638000, 0u));
+    w.n_i = 0u;
+    CHECK(!sense_window_over(&w, 1638000, 1u));
+    /* The highest limit. */
+    w = win_max(32767499);
+    CHECK(!sense_window_over(&w, 0, 32767u));
+    w = win_max(32767500);
+    CHECK(sense_window_over(&w, 0, 32767u));
 }
 
-TEST_CASE(a_clipped_sample_is_over_when_the_range_top_is)
+TEST_CASE(a_clipped_sample_is_over_when_the_unrounded_top_is)
 {
-    fresh();
-    map_all(0x01u);
-    /* 0.1 Ohm: the top of the range is 1638 mA. */
-    CHECK_EQ(sense_i3221_full_scale_ma(1000u), 1638u);
-    static const struct { uint16_t lim; bool over; } k[] = {
-        { 1637u, true }, { 1638u, false }, { 1639u, false },
-    };
-    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
-        CHECK_EQ(limit(2u, k[i].lim), 0u);
-        sense_snap_t s = snapshot((uint16_t)(40u + i));
-        s.win[2].n_i = 0u;              /* every sample clipped */
-        s.win[2].clip_hi = true;
-        sense_page_publish(&pg, &s, 0u);
-        CHECK_EQ(take_over(), k[i].over ? 0x004u : 0u);
-    }
-    /* The bottom end is a negative current: never over. */
-    CHECK_EQ(limit(2u, 1u), 0u);
-    sense_snap_t s = snapshot(50u);
-    s.win[2].clip_lo = true;
-    sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(take_over(), 0u);
-    /* A clipped sample on a channel with no shunt has no top. */
-    s = snapshot(51u);
-    s.win[5].clip_hi = true;
-    CHECK_EQ(limit(5u, 1u), 0u);
-    sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(take_over(), 0u);
+    /* Every sample clipped: no value, the top of the range only. */
+    sense_window_t w;
+    memset(&w, 0, sizeof(w));
+    w.clip_hi = true;
+    /* 0.1 Ohm: 1638.000 mA. */
+    CHECK(sense_window_over(&w, 1638000, 1637u));
+    CHECK(!sense_window_over(&w, 1638000, 1638u));
+    CHECK(!sense_window_over(&w, 1638000, 1639u));
+    /* 1 Ohm: 163.800 mA, above a limit of 163 mA. */
+    CHECK(sense_window_over(&w, 163800, 163u));
+    CHECK(!sense_window_over(&w, 163800, 164u));
+    /* A channel with no shunt has no top; the bottom end never counts. */
+    CHECK(!sense_window_over(&w, 0, 1u));
+    w.clip_hi = false;
+    w.clip_lo = true;
+    CHECK(!sense_window_over(&w, 1638000, 1u));
 }
 
-TEST_CASE(each_window_is_judged_once_and_again_after_a_set_up)
+TEST_CASE(core_1s_counts_become_over_and_over_count)
 {
     fresh();
-    map_all(0x01u);
-    CHECK_EQ(limit(0u, 100u), 0u);
-    sense_snap_t s = snapshot(7u);
-    s.win[0].i_max_ua = 200000;
+    map_all(0x0Fu);
+    sense_snap_t s = snapshot(10u);
     sense_page_publish(&pg, &s, 0u);
+    CHECK_EQ(peek(LINK_SL_OVER), 0u);
+    /* One window over on channel 0, three on channel 11 -- windows that
+     * closed between two snapshots count all the same. */
+    s.over_n[0] = 1u;
+    s.over_n[11] = 3u;
     sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 1u);
-    s.win[0].number = 8u;
+    CHECK_EQ(take_over(), 0x801u);
+    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 4u);
+    /* The same counts again: nothing new. */
     sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 2u);
-    /* No window closed yet: nothing judged. */
-    s.have_win = false;
-    s.win[0].number = 9u;
-    sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 2u);
-    /* A set-up taken: its windows count from 0 again, and a window
-     * number seen under the set-up before is a new window. */
-    uint16_t sh = 1500u;
-    CHECK_EQ(sense_map_write(&pg, (uint8_t)LINK_SM_SHUNT(1u), 1u, &sh, &o,
-                             0u), 0u);
-    s = snapshot(8u);
-    s.win[0].i_max_ua = 200000;
-    sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 3u);
-    /* A snapshot of the set-up before is not judged. */
+    CHECK_EQ(take_over(), 0u);
+    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 4u);
+    /* A snapshot of the set-up before is not taken; its counts are, with
+     * the next snapshot that is. */
+    s.over_n[5] = 2u;
     s.cfg_gen = (uint16_t)(pg.cfg_gen - 1u);
-    s.win[0].number = 9u;
     sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 3u);
-    /* The window number wraps: 65535 then 0 are two windows. */
-    s = snapshot(65535u);
-    s.win[0].i_max_ua = 200000;
+    CHECK_EQ(peek(LINK_SL_OVER), 0u);
+    s.cfg_gen = pg.cfg_gen;
     sense_page_publish(&pg, &s, 0u);
-    s.win[0].number = 0u;
+    CHECK_EQ(take_over(), 0x020u);
+    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 6u);
+    /* A set-up taken keeps OVER, OVER_COUNT and the counts seen: core 1's
+     * counts run on across set-ups. */
+    s.over_n[1] = 1u;
     sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 5u);
+    uint16_t sh = 1500u;
+    CHECK_EQ(sense_map_write(&pg, (uint8_t)LINK_SM_SHUNT(2u), 1u, &sh, &o,
+                             0u), 0u);
+    CHECK_EQ(peek(LINK_SL_OVER), 0x002u);
+    s.cfg_gen = pg.cfg_gen;
+    sense_page_publish(&pg, &s, 0u);
+    CHECK_EQ(take_over(), 0x002u);
+    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 7u);
+    /* Core 1's count wraps: 65535 to 1 is two windows. */
+    pg.lim_seen[3] = 65535u;
+    s.over_n[3] = 1u;
+    sense_page_publish(&pg, &s, 0u);
+    CHECK_EQ(take_over(), 0x008u);
+    CHECK_EQ(peek(LINK_SL_OVER_COUNT), 9u);
+}
+
+TEST_CASE(the_limits_go_to_core_1_in_its_order)
+{
+    fresh();
+    for (unsigned c = 0; c < LINK_SL_KEPT; ++c) {
+        CHECK_EQ(limit(c, (uint16_t)(c == 11u ? 32767u : 10u * c)), 0u);
+    }
+    sense_cmd_t cmd;
+    memset(&cmd, 0xA5, sizeof(cmd));
+    sense_page_cmd(&pg, &cmd);
+    CHECK_EQ(cmd.limit_ma[0], 0u);
+    CHECK_EQ(cmd.limit_ma[4], 40u);
+    CHECK_EQ(cmd.limit_ma[11], 32767u);
 }
 
 TEST_CASE(over_holds_until_a_read_covers_it)
@@ -266,11 +268,9 @@ TEST_CASE(over_holds_until_a_read_covers_it)
     map_all(0x03u);
     CHECK_EQ(limit(4u, 10u), 0u);
     sense_snap_t s = snapshot(1u);
-    s.win[4].i_max_ua = 50000;
+    s.over_n[4] = 1u;
     sense_page_publish(&pg, &s, 0u);
-    /* Windows after it under the limit leave the bit. */
-    s.win[4].i_max_ua = 0;
-    s.win[4].number = 2u;
+    /* Snapshots after it with no window over leave the bit. */
     sense_page_publish(&pg, &s, 0u);
     CHECK_EQ(peek(LINK_SL_OVER), 0x010u);
     /* The peek, a read of the limits, of OVER_COUNT alone and one off the
@@ -302,34 +302,12 @@ TEST_CASE(over_holds_until_a_read_covers_it)
 TEST_CASE(over_count_wraps_at_65536)
 {
     fresh();
-    map_all(0x01u);
-    CHECK_EQ(limit(0u, 1u), 0u);
     pg.limit[LINK_SL_OVER_COUNT] = 65535u;
     sense_snap_t s = snapshot(3u);
-    s.win[0].i_max_ua = 5000;
+    s.over_n[0] = 1u;
     sense_page_publish(&pg, &s, 0u);
     CHECK_EQ(peek(LINK_SL_OVER_COUNT), 0u);
     CHECK_EQ(take_over(), 0x001u);
-}
-
-TEST_CASE(the_derived_map_gives_senses_shunt)
-{
-    fresh();
-    /* SENSE's one INA3221 at 0x41 on 0.05 Ohm, CH1 to CH3: channels 3 to
-     * 5, range top 3276 mA. */
-    const uint16_t f[4] = { 0x41u, 500u, 0x07u, 0u };
-    CHECK_EQ(sense_page_write(&pg, LINK_SN_I3221_ADDR, 4u, f, &o, 0u), 0u);
-    const uint16_t en = LINK_SN_EN_I3221;
-    CHECK_EQ(sense_page_write(&pg, LINK_SN_ENABLE, 1u, &en, &o, 0u), 0u);
-    CHECK(!pg.map_set);
-    CHECK_EQ(limit(3u, 3275u), 0u);
-    CHECK_EQ(limit(0u, 1u), 0u);
-    sense_snap_t s = snapshot(5u);
-    s.win[3].n_i = 0u;
-    s.win[3].clip_hi = true;
-    s.win[0].n_i = 0u;              /* 0x40 not fitted: no samples */
-    sense_page_publish(&pg, &s, 0u);
-    CHECK_EQ(take_over(), 0x008u);
 }
 
 TEST_CASE(the_limits_are_kept_and_come_back_at_boot)
@@ -361,11 +339,11 @@ int main(void)
     RUN(the_page_is_where_protocol_4_27_puts_it);
     RUN(a_write_lies_within_the_limits_and_their_range);
     RUN(a_window_is_over_above_its_limit_and_not_at_it);
-    RUN(a_clipped_sample_is_over_when_the_range_top_is);
-    RUN(each_window_is_judged_once_and_again_after_a_set_up);
+    RUN(a_clipped_sample_is_over_when_the_unrounded_top_is);
+    RUN(core_1s_counts_become_over_and_over_count);
+    RUN(the_limits_go_to_core_1_in_its_order);
     RUN(over_holds_until_a_read_covers_it);
     RUN(over_count_wraps_at_65536);
-    RUN(the_derived_map_gives_senses_shunt);
     RUN(the_limits_are_kept_and_come_back_at_boot);
     return test_summary("sense_limit");
 }

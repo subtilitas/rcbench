@@ -985,12 +985,13 @@ enum {
  *     value above 32767 with BAD_VALUE, and a refused write stores none
  *     of its registers.  Taken in any bank state.
  *
- *     Each complete 50 ms window core 0 takes is judged once, channel by
- *     channel: over when its highest current, in mA as SENSE_WIN shows
- *     it, is above the limit, or when a sample read the top of the range
- *     and that top (sense_i3221_full_scale_ma()) is above the limit.  A
- *     negative current is never over.  A channel off or not online has
- *     no samples and is never over.
+ *     Core 1 judges each channel's window once, as it closes
+ *     (sense_window_over()): over when its highest current, in mA as
+ *     SENSE_WIN shows it, is above the limit, or when a sample read the
+ *     top of the range and that top, unrounded, is above the limit.  A
+ *     negative current is never over, nor a channel off or of a part not
+ *     online at the close.  Core 0 adds what core 1 counted at each
+ *     snapshot, so no window is missed however late it takes one.
  *
  *     OVER (register 12, read only): bit c set when a window of channel c
  *     was over since the last read of this register.  A read that covers

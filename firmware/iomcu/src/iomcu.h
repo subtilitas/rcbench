@@ -418,9 +418,10 @@ static inline void sense_build(sense_cmd_t *cmd)
 }
 
 /* Sent whenever something in it changes; core 1 takes it at its next
- * tick.  A copy under a lock, about a microsecond.  The order, 112 bytes
- * with the 12 channels' shunts, is built in s_sense_cmd rather than on
- * core 0's 4 kB stack: core 0 alone builds it, from its main loop. */
+ * tick.  A copy under a lock, about a microsecond.  The order, 136 bytes
+ * with the 12 channels' shunts and limits, is built in s_sense_cmd rather
+ * than on core 0's 4 kB stack: core 0 alone builds it, from its main
+ * loop. */
 static inline void sense_order(void)
 {
     sense_build(&s_sense_cmd);

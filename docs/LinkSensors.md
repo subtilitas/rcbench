@@ -131,16 +131,17 @@ one that reaches register 12 is refused with READ_ONLY, a value above 32767
 with BAD_VALUE, and a refused write stores none of its registers. A write is
 taken in any bank state.
 
-Each complete 50 ms window core 0 takes from core 1 is judged once, channel
-by channel. A window is over when its highest current, in mA as SENSE_WIN
-shows it, is above the limit: with a limit of 100 mA, 100 mA is not over
-and 101 mA is. A window is also over when one of its samples read the top
-of the range and that top is above the limit: 1638 mA on 0.1 Ω, 163.8 mV
-across the shunt. A negative current is never over. A channel that is off,
-or of a part not online, has no samples and is never over. Core 0 takes
-core 1's snapshot at least every 20 ms (the 50 Hz BENCH sample), so it sees
-each 50 ms window while its main loop runs; a window it misses is not
-judged.
+Core 1 judges each channel's 50 ms window once, as the window closes. A
+window is over when its highest current, in mA as SENSE_WIN shows it, is
+above the limit: with a limit of 100 mA, 100.4 mA is not over and 100.5 mA
+is. A window is also over when one of its samples read the top of the range
+and that top, not rounded, is above the limit: 163.8 mV across the shunt,
+1638.0 mA on 0.1 Ω, 163.8 mA on 1 Ω, so a limit of 163 mA on 1 Ω is passed.
+A negative current is never over. A channel that is off, or of a part not
+online when the window closes, is never over. Core 1 counts each channel's
+windows over; core 0 adds what the counts gained whenever it takes core 1's
+snapshot, so no window is missed however long core 0 takes. A limit
+written applies from the next window that closes.
 
 `OVER` holds its bits until a read covers register 12: that read returns
 them and clears them. A reply lost on the link loses those bits;

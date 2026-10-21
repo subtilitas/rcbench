@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "ina3221.h"
 #include "link_msg.h"
 #include "link_pages.h"
 #include "sense_page_int.h"
@@ -74,33 +73,16 @@ uint8_t sense_limit_restore(sense_page_t *p, const uint16_t *kept)
 
 void sense_limit_judge(sense_page_t *p, const sense_snap_t *s)
 {
-    if (!s->have_win) {
-        return;
-    }
-    const uint16_t number = s->win[0].number;
-    if (p->lim_have && p->lim_win == number) {
-        return;                 /* this window is judged */
-    }
-    p->lim_have = true;
-    p->lim_win  = number;
+    /* Core 1 counts each channel's windows over its limit as they close;
+     * what the count gained since the last snapshot taken is OVER's bit
+     * and OVER_COUNT's gain, however many windows that snapshot spans. */
     for (unsigned c = 0; c < LINK_SM_CHANNELS; ++c) {
-        const uint16_t lim = p->limit[LINK_SL_LIMIT_0 + c];
-        /* A part not online at the window's close is judged on nothing,
-         * as SENSE_WIN shows it 0. */
-        if (lim == 0u
-            || s->i3221[c / INA3221_CHANNELS] != SENSE_PART_ONLINE) {
-            continue;
-        }
-        const sense_window_t *w = &s->win[c];
-        /* In mA as SENSE_WIN shows it; a clipped sample is at least the
-         * top of the range, which is over when the top is. */
-        const int64_t max_ma = div_round(w->i_max_ua, 1000);
-        const uint32_t top_ma =
-            sense_i3221_full_scale_ma(sense_map_shunt(p, c));
-        if ((w->n_i > 0u && max_ma > (int64_t)lim)
-            || (w->clip_hi && top_ma > lim)) {
+        const uint16_t gain = (uint16_t)(s->over_n[c] - p->lim_seen[c]);
+        p->lim_seen[c] = s->over_n[c];
+        if (gain != 0u) {
             p->limit[LINK_SL_OVER] |= (uint16_t)(1u << c);
-            ++p->limit[LINK_SL_OVER_COUNT];
+            p->limit[LINK_SL_OVER_COUNT] =
+                (uint16_t)(p->limit[LINK_SL_OVER_COUNT] + gain);
         }
     }
 }

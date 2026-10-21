@@ -15,4 +15,6 @@ if(ESP_PLATFORM)
 else()
     add_library(rcbench_servo STATIC ${SRCS})
     target_include_directories(rcbench_servo PUBLIC include)
+    # servo_move.c's noise figure takes a square root.
+    target_link_libraries(rcbench_servo PUBLIC m)
 endif()

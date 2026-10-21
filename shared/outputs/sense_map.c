@@ -230,12 +230,6 @@ void sense_xwin_read(const sense_page_t *p, unsigned page, uint8_t off,
     memcpy(out, &p->xwin[page][off], (size_t)n * sizeof(uint16_t));
 }
 
-uint16_t sense_map_shunt(const sense_page_t *p, unsigned c)
-{
-    uint16_t buf[LINK_SM_KEPT];
-    return kept_regs(p, buf)[LINK_SM_SHUNT(c)];
-}
-
 bool sense_map_watches(const sense_page_t *p)
 {
     for (unsigned c = 0; c < LINK_SM_CHANNELS; ++c) {

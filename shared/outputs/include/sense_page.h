@@ -92,9 +92,7 @@ typedef struct {
                              published                                   */
     uint16_t limit[LINK_SL_COUNT]; /**< SENSE_LIMIT (protocol 4.27); see
                              sense_limit.h                               */
-    bool     lim_have;  /**< lim_win is a window judged under the set-up
-                             in force                                    */
-    uint16_t lim_win;   /**< the number of the last window judged        */
+    uint16_t lim_seen[LINK_SL_KEPT]; /**< core 1's over_n as last taken */
 } sense_page_t;
 
 void sense_page_init(sense_page_t *p);

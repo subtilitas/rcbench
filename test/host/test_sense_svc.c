@@ -13,8 +13,10 @@
  * each SENSE_RETRY_MS while a part is missing, not on a stuck bus nor
  * during a capture, and a fault part way keeping what it found; CH1's ring
  * and the reset counts in the snapshot, a part found reset reported
- * offline and its capture lost, and both starting again with a set-up; and
- * every snapshot field.
+ * offline and its capture lost, and both starting again with a set-up;
+ * each channel's window judged against its limit once, as it closes, at
+ * the limit and 1 mA under it, a channel of a part not fitted never, the
+ * counts running on across a set-up; and every snapshot field.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -641,6 +643,57 @@ TEST_CASE(a_service_starts_closed)
     CHECK_EQ(snap.cap_seq, 0u);
 }
 
+/* Steps until a window closes; its number. */
+static uint16_t to_next_window(void)
+{
+    const uint16_t was = snap.have_win ? snap.win[0].number : 0xFFFFu;
+    for (unsigned k = 0; k < 60u; ++k) {
+        step();
+        if (snap.have_win && snap.win[0].number != was) {
+            break;
+        }
+    }
+    return snap.win[0].number;
+}
+
+TEST_CASE(each_window_is_judged_against_its_limit_as_it_closes)
+{
+    rig();
+    /* 0.12 A on 0.1 Ohm: 300 codes of 0.4 mA, 120.0 mA exactly. */
+    cmd.limit_ma[0] = 120u;
+    cmd.limit_ma[3] = 1u;           /* 0x41 is not fitted */
+    steps(120u);
+    (void)to_next_window();
+    CHECK_EQ(snap.win[0].i_max_ua, 120000);
+    CHECK_EQ(snap.over_n[0], 0u);
+    /* 1 mA under the reading: each window that closes counts once. */
+    cmd.limit_ma[0] = 119u;
+    const uint16_t n0 = to_next_window();
+    CHECK_EQ(snap.over_n[0], 1u);
+    steps(10u);
+    CHECK_EQ(snap.over_n[0], 1u);
+    const uint16_t n1 = to_next_window();
+    CHECK_EQ((uint16_t)(n1 - n0), 1u);
+    CHECK_EQ(snap.over_n[0], 2u);
+    CHECK_EQ(snap.over_n[3], 0u);
+    /* A set-up: the new schedule's windows number from 0 again, and the
+     * counts run on. */
+    ++cmd.cfg_gen;
+    step();
+    CHECK_EQ(snap.over_n[0], 2u);
+    steps(60u);
+    (void)to_next_window();
+    CHECK(snap.over_n[0] >= 3u);
+    const uint16_t before = snap.over_n[0];
+    (void)to_next_window();
+    CHECK_EQ(snap.over_n[0], (uint16_t)(before + 1u));
+    /* No limit: nothing more. */
+    cmd.limit_ma[0] = 0u;
+    (void)to_next_window();
+    (void)to_next_window();
+    CHECK_EQ(snap.over_n[0], (uint16_t)(before + 1u));
+}
+
 int main(void)
 {
     RUN(a_set_up_opens_the_bus_and_reads_both_parts);
@@ -658,5 +711,6 @@ int main(void)
     RUN(the_snapshot_carries_the_ring_and_the_reset_counts);
     RUN(a_reset_under_a_capture_reports_it_lost);
     RUN(a_service_starts_closed);
+    RUN(each_window_is_judged_against_its_limit_as_it_closes);
     return test_summary("sense_svc");
 }

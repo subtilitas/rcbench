@@ -140,18 +140,20 @@ eines, das Register 12 erreicht, wird mit READ_ONLY abgewiesen, ein Wert über
 32767 mit BAD_VALUE, und ein abgewiesenes Schreiben speichert keines seiner
 Register. Ein Schreiben wird in jedem Zustand der Bank angenommen.
 
-Jedes vollständige 50-ms-Fenster, das Core 0 von Core 1 übernimmt, wird
-einmal geprüft, Kanal für Kanal. Ein Fenster liegt über der Grenze, wenn sein
-höchster Strom, in mA wie SENSE_WIN ihn zeigt, über der Grenze liegt: bei
-einer Grenze von 100 mA liegen 100 mA nicht darüber und 101 mA schon. Ein
-Fenster liegt auch darüber, wenn eines seiner Samples das obere
-Bereichsende gelesen hat und dieses Ende über der Grenze liegt: 1638 mA an
-0,1 Ω, 163,8 mV über dem Shunt. Ein negativer Strom liegt nie darüber. Ein
-abgeschalteter Kanal oder einer eines Bauteils, das nicht online ist, hat
-keine Samples und liegt nie darüber. Core 0 übernimmt den Snapshot von Core 1
-mindestens alle 20 ms (das 50-Hz-Sample von BENCH) und sieht so jedes
-50-ms-Fenster, solange seine Hauptschleife läuft; ein Fenster, das er
-verpasst, wird nicht geprüft.
+Core 1 prüft das 50-ms-Fenster jedes Kanals einmal, wenn das Fenster
+schließt. Ein Fenster liegt über der Grenze, wenn sein höchster Strom, in mA
+wie SENSE_WIN ihn zeigt, über der Grenze liegt: bei einer Grenze von 100 mA
+liegen 100,4 mA nicht darüber und 100,5 mA schon. Ein Fenster liegt auch
+darüber, wenn eines seiner Samples das obere Bereichsende gelesen hat und
+dieses Ende, ungerundet, über der Grenze liegt: 163,8 mV über dem Shunt,
+1638,0 mA an 0,1 Ω, 163,8 mA an 1 Ω, so dass eine Grenze von 163 mA an 1 Ω
+überschritten wird. Ein negativer Strom liegt nie darüber. Ein
+abgeschalteter Kanal oder einer eines Bauteils, das beim Schließen des
+Fensters nicht online ist, liegt nie darüber. Core 1 zählt die Fenster jedes
+Kanals über der Grenze; Core 0 addiert, was die Zähler gewonnen haben, sooft
+er den Snapshot von Core 1 übernimmt, so dass kein Fenster verloren geht,
+gleich wie lange Core 0 braucht. Eine geschriebene Grenze gilt ab dem
+nächsten Fenster, das schließt.
 
 `OVER` hält seine Bits, bis ein Lesen Register 12 abdeckt: dieses Lesen gibt
 sie zurück und löscht sie. Eine auf dem Link verlorene Antwort verliert diese
