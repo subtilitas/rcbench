@@ -480,7 +480,7 @@ bus-off. In order of what costs least to check:
 GP0, GP1 and GP2 for whatever OUTPUTS binds.
 
 **The heartbeat does not go straight from the panel to the IOmcu.** It
-leaves the panel at GPIO6 on J8, drives the retriggerable monostable, and the
+leaves the panel at GPIO28 on its GPIO header (GPIO28 is provisional until the pin is fixed on the first sample.), drives the retriggerable monostable, and the
 monostable gates the IOmcu's output enable and the servo and ESC power
 path; GP3 sees the line as well so the firmware can judge it. `docs/Safety.md`
 sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
@@ -495,13 +495,13 @@ What it has to do, so that a circuit can be designed against it and checked:
 
 | | |
 |---|---|
-| Input | edges from the panel's GPIO6 on J8, nominally one every 20 ms, which is a 40 ms cycle: `heartbeat_gen_step()` toggles the level once per period |
+| Input | edges from the panel's GPIO28, nominally one every 20 ms, which is a 40 ms cycle: `heartbeat_gen_step()` toggles the level once per period |
 | Behaviour | retriggerable: asserted while edges keep arriving, deasserted no later than the window after the last one |
 | Window | about 150 ms. Above the 20 ms period with margin for a late task, and below the IOmcu's 200 ms link failsafe |
 | Gates | two, both downstream of the IOmcu's pins: its output enable, and the servo and ESC power path |
 | Fail-safe direction | unpowered, undriven or unbuilt means disabled. A failure of the interlock cannot be a bench that keeps driving |
 | Not defeatable | no firmware at either end is in the path, which is the whole point |
-| Two links, both removable | one in the panel's GPIO6 branch and one in the monostable's trigger branch, meeting at a junction with the IOmcu's GP3. The differential test needs to split that node three ways, and the panel drives GPIO6 push-pull, so it cannot simply be joined |
+| Two links, both removable | one in the panel's GPIO28 branch and one in the monostable's trigger branch, meeting at a junction with the IOmcu's GP3. The differential test needs to split that node three ways, and the panel drives GPIO28 push-pull, so it cannot simply be joined |
 
 Part numbers are deliberately absent: `hardware/README.md` says a part is not
 chosen until it is available at a vendor, and this belongs in `hardware/` as
@@ -599,9 +599,9 @@ same failure on another one.
 
 *The differential test.* Keep the firmware happy and starve only the hardware.
 
-The heartbeat is one node: the panel's GPIO6, the IOmcu's GP3 and the
+The heartbeat is one node: the panel's GPIO28, the IOmcu's GP3 and the
 monostable's trigger all meet on it. The panel drives its end **push-pull**
-(`firmware/panel/main/main.c`), so a second driver on that node is contention
+(`firmware/panel/main/panel_control.c`), so a second driver on that node is contention
 rather than a test -- a corrupted reading at best and a damaged pin at worst.
 
 Split it before injecting anything, which is what the two links are for:
@@ -689,7 +689,7 @@ being asked for: D0 in the same trace is what separates a quiet gate from a
 dead lead, which is why it is captured alongside.
 
 **Probe D3 on the monostable's side of that link, not on the junction.** The
-channel map puts D3 at the GPIO6/GP3 node, and GP22 goes on driving that node
+channel map puts D3 at the GPIO28/GP3 node, and GP22 goes on driving that node
 throughout -- a probe there keeps edging after the link comes out and gives no
 last edge at all. What has to go quiet is the monostable's own input, which is
 what the link disconnects. Move the lead, or put a second one there and
@@ -720,7 +720,7 @@ input to the gate, not the output of it.
 the junction and both links open, which is not a state to walk away from: the
 first power-up in section 9 cannot acquire a heartbeat with the panel's branch
 open, and closing that branch while GP22 still drives is the push-pull
-contention this section opened by warning about -- the panel's GPIO6 against
+contention this section opened by warning about -- the panel's GPIO28 against
 the RP2350's output, at whatever levels the two happen to be on.
 
 1. **Switch the bench to SAFE**, so nothing is driving an output while the interlock

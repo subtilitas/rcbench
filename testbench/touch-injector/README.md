@@ -10,6 +10,13 @@ start-up; `RCBENCH_TOUCH_INJECTOR` defaults to ON, and a panel built with
 that finds nothing at 0x14 at start-up does not look again until its next
 start.
 
+The glass's GT911 takes 0x5D or 0x14 at the end of its reset, from the
+level on its INT line; on the 7-inch ESP32-P4 board no GPIO drives that
+line, and which address it takes is not measured. A panel built with the
+injector accepts the glass at 0x5D only: a controller that answers only at
+0x14 is taken as the injector, and the console says
+`0x14 refused as the glass`.
+
 It is a test-bench tool. No release carries its UF2 (USB Flashing Format)
 image.
 
@@ -117,9 +124,10 @@ one reply line; a gesture gets a second when it ends.
 | `release` | `ok release`; a gesture under way first gets `fail <gesture> released` |
 
 Coordinates are panel pixels: x 0 to 799, y 0 to 479. `ms` is 1 to 30000.
-The panel maps injected points as it maps the glass's, scaled from the
-resolution the glass reports; they land on the pixel named when the glass
-reports 800 x 480. The resolution the panel's GT911 reports is not measured.
+The panel takes injected points as pixels of its 800 x 480 UI (user
+interface) area, unmirrored, and lands each on the pixel named; a point
+past the area is clamped to its edge. The glass's own report (1024 x 600,
+mirrored in x and y) is mapped separately before the two are merged.
 
 A tap or a hold is two frames: one puts the contact down, one lifts it at
 the end of `ms`. The panel keeps a contact down while the controller has
