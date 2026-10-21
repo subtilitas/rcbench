@@ -30,6 +30,7 @@
 #include "outputs.h"
 #include "outputs_hw.h"
 #include "pico/stdlib.h"
+#include "port_park.h"
 
 uint64_t pico_stub_us;
 
@@ -112,6 +113,15 @@ bool out_pwm_write_stamped(uint8_t pin, uint16_t pulse_us, uint64_t *frame_us)
     }
     return true;
 }
+
+/* No port is parked here: test_outputs_hw_ports.c holds them. */
+bool port_park(uint8_t pin)
+{
+    (void)pin;
+    return true;
+}
+
+void port_unpark(uint8_t pin) { (void)pin; }
 
 /* The millisecond clock at @p ms, which may be past the wrap. */
 static void at_ms(uint32_t ms)

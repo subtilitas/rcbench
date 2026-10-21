@@ -665,14 +665,16 @@ static __attribute__((noinline)) void prog_page_read(void)
 {
     link_msg_t reply = { 0 };
     const bool read = read_regs(&s_host, LINK_PAGE_PROG, 0u,
-                                (uint8_t)LINK_PG_REGS, &reply)
+                                prog_link_regs(&s_prog_link), &reply)
                       && reply.op == LINK_OP_DATA;
     prog_link_read(&s_prog_link, read ? reply.regs : NULL, now_ms());
 }
 
 /*
  * The programming ports' page: read every PROG_LINK_POLL_MS (500 ms), and
- * at most 1 write a pass towards what the SERVO screen wants (prog_link.h).
+ * at once after a written ask, and at most 1 write a pass towards what the
+ * SERVO screen wants and the operator asked of a port's PIN or FUNC
+ * (prog_link.h).
  * From poll_bench(); an IOmcu older than 4.13 is sent nothing.
  *
  * A pulse bit goes off whatever the bench does.  The target changes, and a
@@ -697,6 +699,7 @@ __attribute__((noinline)) void prog_link_service(void)
         ports |= (unsigned)prog_link_pin(&s_prog_link, port) << (8u * port);
     }
     atomic_store(&s_prog_ports, ports);
+    prog_ports_publish();
     prog_drive_publish();
     servo_link_surfaces_publish();
 }

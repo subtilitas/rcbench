@@ -888,9 +888,10 @@ TEST_CASE(the_in_force_note_carries_the_rate_and_names_none_without_a_link)
 }
 
 /* The note and the drive come from the same record: PROG PORT set with no
- * pin bound to port 0 leaves the IOmcu on the standard outputs, and
- * the note says OUTPUTS in the warning colour; with GP13 bound the TARGET
- * write lands and the note names the port's pin. */
+ * pin bound to port 0 leaves the IOmcu on the standard outputs, which the
+ * tester then does not drive (prog_link_no_drive()): the drive names the
+ * port without a pin and the note says so in the warning colour; with
+ * GP13 bound the TARGET write lands and the note names the port's pin. */
 TEST_CASE(the_in_force_note_follows_the_prog_page_not_the_setting)
 {
     static prog_link_t p;
@@ -917,7 +918,11 @@ TEST_CASE(the_in_force_note_follows_the_prog_page_not_the_setting)
             ++writes;
         }
         const prog_link_drive_t d = prog_link_drive(&p);
-        CHECK_EQ(d.target, bound ? 1u : 0u);
+        CHECK_EQ(d.target, 1u);
+        CHECK_EQ(d.pin, bound ? 13u : PROG_LINK_NO_PIN);
+        CHECK_EQ(prog_link_no_drive(&p), !bound);
+        CHECK_EQ(prog_link_command(&p, false), (bool)bound);
+        CHECK(prog_link_command(&p, true));
 
         fresh();
         two_buffers();
@@ -930,8 +935,8 @@ TEST_CASE(the_in_force_note_follows_the_prog_page_not_the_setting)
             CHECK(note_matches("Active: PROG PORT GP13 runs at 50 Hz.",
                                PPM_LINE, false));
         } else {
-            CHECK(note_matches("Active: OUTPUTS run at 50 Hz.", NOT_SET,
-                               true));
+            CHECK(note_matches("Active: 50 Hz on PROG PORT. No pin is "
+                               "assigned to it.", PPM_LINE, true));
         }
     }
 }
