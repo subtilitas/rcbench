@@ -1467,7 +1467,7 @@ static void tap(const ui_screen_t *scr, int x, int y)
     scr->event(&u);
 }
 
-/* The outputs screen's geometry, as test_outputs_screen.c holds it. */
+/* The outputs screen's geometry, as outputs_screen_rig.h holds it. */
 #define COL_X  16
 #define COL_W  266
 #define DD_Y   44
@@ -1906,7 +1906,7 @@ TEST_CASE(an_older_coprocessor_left_mixed_is_not_overwritten_by_a_tap)
 #define SCREEN_W 800
 #define SCREEN_H (480 - UI_BAND_H)
 
-/* The button of a pin, found as test_picker_screen.c finds it: walk out
+/* The button of a pin, found as picker_screen_rig.h finds it: walk out
  * from the pad until a press acts.  The pin is left as it was. */
 static bool picker_button(uint8_t gpio, int *bx, int *by)
 {
