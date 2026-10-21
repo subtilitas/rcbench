@@ -758,7 +758,7 @@ static bool pins_table_inked(gfx_color_t ink)
  */
 TEST_CASE(off_draws_no_pins_table_and_no_pressed_key)
 {
-    static gfx_color_t was[800 * 432];
+    static gfx_color_t was[SCREEN_W * SCREEN_H];
     fresh();
     static const uint8_t dshot[2] = { 6, 7 };
     bind_more("DSHOT300", dshot, 2u, "SERVO PWM");

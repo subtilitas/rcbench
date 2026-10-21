@@ -28,8 +28,8 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 static gfx_color_t *fb __attribute__((unused));
 static gfx_canvas_t cv __attribute__((unused));
@@ -73,7 +73,7 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define UP_H     208
 #define LO_Y     (UP_Y + UP_H + 6)        /* 272 */
 #define TITLE_H  20
-#define BTN_H    36
+#define BTN_H    UI_BTN_H
 #define TRACK_H  40
 #define ROW_Y    (LO_Y + TITLE_H + 2)
 #define CTRL_Y   (ROW_Y + 42)             /* the throttle track */

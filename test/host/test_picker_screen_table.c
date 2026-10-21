@@ -31,7 +31,7 @@
  */
 TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     static const struct { const char *proto; uint8_t gp[2]; unsigned n; }
     spread[6] = {
         { "SERVO PWM",      { 0, 1 }, 2u },
@@ -61,7 +61,7 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
 
             guard_canvas_t g;
             gfx_canvas_t c;
-            guard_canvas_init(&g, &c, px, 800, 432);
+            guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
             scr()->render(&c, 0);
             if (guard_canvas_touched(&g) != 0u) {
                 T_FAIL("language %d, pass %d drew outside", lang, pass);
@@ -261,10 +261,10 @@ TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
         picker_screen_set_prog_ports(0u, NULL);
 
         /* Drawn, the names in the table in red. */
-        static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+        static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
         guard_canvas_t g;
         gfx_canvas_t c;
-        guard_canvas_init(&g, &c, px, 800, 432);
+        guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
         scr()->render(&c, 0);
         CHECK_EQ(guard_canvas_touched(&g), 0u);
         CHECK(picker_screen_in_use(0u, &line));
@@ -280,16 +280,16 @@ TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
         /* The bus moved to GP14: GP16 binds, GP14 is held.  The frame
          * drawn before is repainted without a touch on this screen. */
         settings_set(SET_SENSE_SDA, 14.0f);
-        for (int y = 0; y < 432; y += 7) {
-            for (int x = 0; x < 800; x += 13) {
+        for (int y = 0; y < SCREEN_H; y += 7) {
+            for (int x = 0; x < SCREEN_W; x += 13) {
                 c.pixels[(size_t)y * c.stride + (size_t)x] =
                     GFX_RGB(255, 0, 255);
             }
         }
         scr()->render(&c, 0);
         bool repainted = true;
-        for (int y = 0; y < 432; y += 7) {
-            for (int x = 0; x < 800; x += 13) {
+        for (int y = 0; y < SCREEN_H; y += 7) {
+            for (int x = 0; x < SCREEN_W; x += 13) {
                 repainted = repainted
                             && c.pixels[(size_t)y * c.stride + (size_t)x]
                                    != GFX_RGB(255, 0, 255);
@@ -352,7 +352,7 @@ TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
  */
 TEST_CASE(the_fullest_in_use_table_ends_in_a_count_of_the_lines_left_out)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     static const uint8_t four[LINK_PG_PORTS_MAX] = { 13u, 26u, 27u, 28u };
     static const struct { const char *proto; uint8_t gp[2]; unsigned n; }
     spread[6] = {
@@ -411,7 +411,7 @@ TEST_CASE(the_fullest_in_use_table_ends_in_a_count_of_the_lines_left_out)
         }
         guard_canvas_t g;
         gfx_canvas_t c;
-        guard_canvas_init(&g, &c, px, 800, 432);
+        guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
         scr()->render(&c, 0);
         CHECK_EQ(guard_canvas_touched(&g), 0u);
         unsigned ink = 0;
@@ -463,7 +463,7 @@ TEST_CASE(the_pins_table_names_each_pins_channel_and_pad)
  * canvas it was given. */
 TEST_CASE(every_state_renders_inside_its_canvas)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -482,7 +482,7 @@ TEST_CASE(every_state_renders_inside_its_canvas)
             case 6: pick("OFF"); break;
             default: break;
             }
-            guard_canvas_init(&g, &c, px, 800, 432);
+            guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
             scr()->render(&c, 0);
             if (guard_canvas_touched(&g) != 0u) {
                 T_FAIL("state %d, language %d drew outside", state, lang);

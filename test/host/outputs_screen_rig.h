@@ -35,6 +35,10 @@
 #include "ui_theme.h"
 #include "touch_feed.h"
 
+/* The screen's body, as the router hands it over. */
+#define SCREEN_W UI_PANEL_W
+#define SCREEN_H UI_BODY_H
+
 /* Geometry the screen draws to; a test that hard-codes it is a test that
  * notices when the layout moves under the hit testing. */
 #define COL_X  16

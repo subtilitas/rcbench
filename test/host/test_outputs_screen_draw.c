@@ -34,14 +34,14 @@ static const uint8_t k_gp13[1] = { 13u };
  * protocol's grid is a picture of its own. */
 TEST_CASE(every_state_renders_without_reading_off_the_canvas)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
     uint32_t sum[OUTBIND_PROTOS];
 
     fresh();
     for (int p = 0; p < (int)OUTBIND_PROTOS; ++p) {
-        guard_canvas_init(&g, &c, px, 800, 432);
+        guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
         choose_proto(p);
         for (uint8_t pin = 0; pin < 29u; ++pin) {
             if (outbind_index_of(OUTBIND_BOARD_PICO_HEADER, pin) < outbind_pin_count(OUTBIND_BOARD_PICO_HEADER)) {
@@ -79,8 +79,8 @@ TEST_CASE(a_board_that_can_take_nothing_says_why)
      * in grey with nothing beside it reads as a fault, and an operator
      * reported it as one.
      */
-    static gfx_color_t px[800 * 432];
-    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+    static gfx_color_t px[SCREEN_W * SCREEN_H];
+    gfx_canvas_t c = { px, SCREEN_W, SCREEN_H, SCREEN_W, { 0, 0, SCREEN_W, SCREEN_H } };
 
     fresh();
     choose_named("SERVO PWM");
@@ -108,8 +108,8 @@ TEST_CASE(a_board_that_can_take_nothing_says_why)
 
 TEST_CASE(a_protocol_that_has_all_its_pins_says_so)
 {
-    static gfx_color_t px[800 * 432];
-    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+    static gfx_color_t px[SCREEN_W * SCREEN_H];
+    gfx_canvas_t c = { px, SCREEN_W, SCREEN_H, SCREEN_W, { 0, 0, SCREEN_W, SCREEN_H } };
 
     fresh();
     choose_named("SERVO PWM");                    /* eight pins */
@@ -158,8 +158,8 @@ TEST_CASE(a_protocol_index_from_outside_cannot_run_off_the_table)
     /* The binding arrives from the wire and from flash, so the index is not
      * this screen's to trust.  Reading past the protocol table would render
      * a name from whatever followed it. */
-    static gfx_color_t px[800 * 432];
-    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+    static gfx_color_t px[SCREEN_W * SCREEN_H];
+    gfx_canvas_t c = { px, SCREEN_W, SCREEN_H, SCREEN_W, { 0, 0, SCREEN_W, SCREEN_H } };
 
     fresh();
     outbind_t b;
@@ -439,7 +439,7 @@ TEST_CASE(the_longest_protocol_name_fits_the_list_and_a_cell)
     CHECK(5 + lab <= CELL_W - 1);
     CHECK(5 + lab + 8 > CELL_W - 1);
     /* And the grid ends inside the 800 px screen with its 16 px margin. */
-    CHECK_EQ(GRID_X + 4 * CELL_W + 3 * CELL_GAP, 800 - 16);
+    CHECK_EQ(GRID_X + 4 * CELL_W + 3 * CELL_GAP, SCREEN_W - 16);
     CHECK(DD_X + DD_W < GRID_X);
 }
 

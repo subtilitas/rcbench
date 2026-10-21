@@ -155,7 +155,7 @@ TEST_CASE(the_screen_opens_on_the_overview)
  * on any of them writes. */
 TEST_CASE(the_overview_with_nothing_bound_writes_nothing)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
 
@@ -176,7 +176,7 @@ TEST_CASE(the_overview_with_nothing_bound_writes_nothing)
     }
     CHECK_EQ(s_applied, 0);
     CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 0);
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
     scr()->render(&c, 0);
     CHECK_EQ(guard_canvas_touched(&g), 0u);
     CHECK_EQ(guard_canvas_unpainted(&g), 0u);
@@ -207,7 +207,7 @@ static void every_slot_bound(outbind_t *b)
  */
 TEST_CASE(the_overview_with_every_slot_bound_names_every_pin)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
 
@@ -244,7 +244,7 @@ TEST_CASE(the_overview_with_every_slot_bound_names_every_pin)
     }
     CHECK_EQ(s_applied, 0);
     CHECK(memcmp(&before, outputs_screen_binding(), sizeof(before)) == 0);
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
     scr()->render(&c, 0);
     CHECK_EQ(guard_canvas_touched(&g), 0u);
     CHECK_EQ(guard_canvas_unpainted(&g), 0u);
@@ -292,8 +292,8 @@ static bool count_row_inked(const gfx_canvas_t *c, gfx_color_t ink)
  */
 TEST_CASE(the_overview_shows_no_count_and_no_pressed_face)
 {
-    static gfx_color_t px[800 * 432], was[800 * 432];
-    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+    static gfx_color_t px[SCREEN_W * SCREEN_H], was[SCREEN_W * SCREEN_H];
+    gfx_canvas_t c = { px, SCREEN_W, SCREEN_H, SCREEN_W, { 0, 0, SCREEN_W, SCREEN_H } };
 
     pose_three_protocols();
     scr()->enter();
@@ -332,8 +332,8 @@ TEST_CASE(the_overview_shows_no_count_and_no_pressed_face)
  */
 TEST_CASE(the_overview_draws_each_bound_pins_protocol_in_full_ink)
 {
-    static gfx_color_t px[800 * 432];
-    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+    static gfx_color_t px[SCREEN_W * SCREEN_H];
+    gfx_canvas_t c = { px, SCREEN_W, SCREEN_H, SCREEN_W, { 0, 0, SCREEN_W, SCREEN_H } };
 
     pose_three_protocols();
     scr()->enter();
@@ -441,8 +441,8 @@ TEST_CASE(a_tap_on_a_pin_does_nothing_while_off_is_selected)
  */
 TEST_CASE(off_stays_until_another_entry_is_picked)
 {
-    static gfx_color_t px[800 * 432];
-    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+    static gfx_color_t px[SCREEN_W * SCREEN_H];
+    gfx_canvas_t c = { px, SCREEN_W, SCREEN_H, SCREEN_W, { 0, 0, SCREEN_W, SCREEN_H } };
 
     pose_three_protocols();
     scr()->enter();
@@ -642,8 +642,8 @@ TEST_CASE(off_with_nothing_bound_is_left_by_a_pick)
  */
 TEST_CASE(a_binding_that_did_not_read_is_kept_marked_and_not_edited)
 {
-    static gfx_color_t px[800 * 432];
-    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+    static gfx_color_t px[SCREEN_W * SCREEN_H];
+    gfx_canvas_t c = { px, SCREEN_W, SCREEN_H, SCREEN_W, { 0, 0, SCREEN_W, SCREEN_H } };
 
     pose_three_protocols();
     CHECK(outputs_screen_editable());

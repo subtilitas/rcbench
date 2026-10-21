@@ -239,7 +239,7 @@ TEST_CASE(a_reserved_pin_never_reaches_the_apply_seam)
 
 TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
     char l[32];
@@ -262,7 +262,7 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
         CHECK_EQ(s_applied, was);
         /* The pin beside it is not the port's. */
         CHECK_EQ(outputs_screen_cell(idx(14), NULL, 0), OUTPUTS_CELL_FREE);
-        guard_canvas_init(&g, &c, px, 800, 432);
+        guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
         scr()->render(&c, 0);
         CHECK_EQ(guard_canvas_touched(&g), 0u);
         /* The screen left and entered again: the pin is still the port's. */
@@ -314,7 +314,7 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
  */
 TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
     char l[32];
@@ -387,7 +387,7 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
         CHECK_STR_EQ(l, TR(OUT_IFACE_TAP));
 
         /* Drawn, inside the canvas, every name in its cell. */
-        guard_canvas_init(&g, &c, px, 800, 432);
+        guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
         scr()->render(&c, 0);
         CHECK_EQ(guard_canvas_touched(&g), 0u);
 
@@ -396,16 +396,16 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
          * before is repainted without a touch on this screen. */
         settings_set(SET_SENSE_SDA, 14.0f);
         CHECK_EQ(settings_get_int(SET_SENSE_SCL), 15);
-        for (int y = 0; y < 432; y += 7) {
-            for (int x = 0; x < 800; x += 13) {
+        for (int y = 0; y < SCREEN_H; y += 7) {
+            for (int x = 0; x < SCREEN_W; x += 13) {
                 c.pixels[(size_t)y * c.stride + (size_t)x] =
                     GFX_RGB(255, 0, 255);
             }
         }
         scr()->render(&c, 0);
         bool repainted = true;
-        for (int y = 0; y < 432; y += 7) {
-            for (int x = 0; x < 800; x += 13) {
+        for (int y = 0; y < SCREEN_H; y += 7) {
+            for (int x = 0; x < SCREEN_W; x += 13) {
                 repainted = repainted
                             && c.pixels[(size_t)y * c.stride + (size_t)x]
                                    != GFX_RGB(255, 0, 255);

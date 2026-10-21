@@ -49,7 +49,7 @@ static void ports(uint8_t count, uint8_t pin0)
  * protocols and the entries would pass the screen's 432 px. */
 static int row_h(void)
 {
-    const int fit = (432 - DD_Y - 16)
+    const int fit = (SCREEN_H - DD_Y - 16)
                     / ((int)OUTBIND_PROTOS + outputs_screen_port_entries());
     return fit < 46 ? fit : 46;
 }
@@ -107,7 +107,7 @@ TEST_CASE(the_list_ends_in_one_prog_port_entry_per_port_reported)
         ports(k[i].count, 13u);
         CHECK_EQ(outputs_screen_port_entries(), k[i].entries);
         CHECK(DD_Y + 8 + row_h() * ((int)OUTBIND_PROTOS + k[i].entries)
-              <= 432);
+              <= SCREEN_H);
         for (int n = 0; n < (int)k[i].entries; ++n) {
             choose_port(n);
             CHECK_EQ(outputs_screen_port_shown(), n);
@@ -167,7 +167,7 @@ TEST_CASE(the_list_ends_in_one_prog_port_entry_per_port_reported)
  */
 TEST_CASE(a_prog_port_entry_lights_its_pin_and_takes_no_tick)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
     int x, y;
@@ -185,7 +185,7 @@ TEST_CASE(a_prog_port_entry_lights_its_pin_and_takes_no_tick)
     CHECK_EQ(outputs_screen_cell(idx(13u), label, sizeof(label)),
              OUTPUTS_CELL_RESERVED);
     CHECK_STR_EQ(label, TR(OUT_PROG_PORT));
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
     scr()->render(&c, 0);
     CHECK_EQ(guard_canvas_touched(&g), 0u);
     CHECK_EQ(guard_canvas_unpainted(&g), 0u);
@@ -215,7 +215,7 @@ TEST_CASE(a_prog_port_entry_lights_its_pin_and_takes_no_tick)
         ports(4u, pin0 == 0u ? OUTPUTS_NO_PIN : 13u);
         for (int n = 0; n < 4; ++n) {
             choose_port(n);
-            guard_canvas_init(&g, &c, px, 800, 432);
+            guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
             scr()->render(&c, 0);
             CHECK_EQ(guard_canvas_touched(&g), 0u);
             CHECK_EQ(guard_canvas_unpainted(&g), 0u);
@@ -290,7 +290,7 @@ TEST_CASE(the_next_entry_opens_on_the_entry_asked_for_once)
  */
 TEST_CASE(the_port_segments_set_the_tester_and_say_why_they_are_locked)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
     char why[96];
@@ -357,7 +357,7 @@ TEST_CASE(the_port_segments_set_the_tester_and_say_why_they_are_locked)
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
     /* Every lock draws inside the canvas. */
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
     scr()->render(&c, 0);
     CHECK_EQ(guard_canvas_touched(&g), 0u);
     CHECK_EQ(guard_canvas_unpainted(&g), 0u);

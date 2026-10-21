@@ -29,12 +29,12 @@
 #include "touch_feed.h"
 
 #define BOARD ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
-#define SCREEN_W 800
-#define SCREEN_H (480 - UI_BAND_H)
+#define SCREEN_W UI_PANEL_W
+#define SCREEN_H UI_BODY_H
 
 static int         s_applied __attribute__((unused));
 static outbind_t   s_last __attribute__((unused));
-static gfx_color_t s_px[800 * 432] __attribute__((unused));
+static gfx_color_t s_px[SCREEN_W * SCREEN_H] __attribute__((unused));
 
 /* firmware/iomcu/src/board_drawing_rp2350_can.c: the drawing the
  * IOmcu serves for this board. */
