@@ -126,7 +126,9 @@ static bool poll_bench(bench_state_t *bench)
         supply_link_service();
         /* And the current monitors': a set-up only with ARM written 0 and
          * acknowledged and the bank disarmed here, as the page refuses one
-         * while the bank drives. */
+         * while the bank drives.  SENSE_MAP first: SENSE's mirror
+         * registers follow the map it holds. */
+        sense_map_service(written && !armed && !outputs_armed(&s_out));
         sense_link_service(written && !armed && !outputs_armed(&s_out),
                            bench);
         /* And the phase tap's: an input, taken armed or not. */
@@ -443,6 +445,8 @@ static void link_came_up(const link_msg_t *reply)
     }
     sense_link_came_up(&s_sense_link, reply->regs[LINK_ID_PROTOCOL_MINOR],
                        now_ms());
+    /* And the INA3221 parts' map (4.25), read before anything is written. */
+    sense_map_came_up(reply->regs[LINK_ID_PROTOCOL_MINOR]);
     sense_link_alerts();
     /* And the phase tap's page (4.8), the same way. */
     {
@@ -648,6 +652,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* And the monitors' pages: nothing on them is known until the
              * link comes back, and the ESC's figures go with the readings. */
             sense_link_lost(&s_sense_link);
+            sense_map_lost();
             (void)servo_source_step(&s_servo_source, now_ms(), false, 0u,
                                     NULL);
             tone_link_lost(&s_tone_link);

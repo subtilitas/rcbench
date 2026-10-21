@@ -2583,16 +2583,17 @@ Namen.
 
 ![Setup](img/de/setup.png)
 
-- Drei Kategorien: PANEL, ANSCHLÜSSE und SD-KARTE, die Einstellungen für
-  den ganzen Prüfstand. Jede Kachel nennt die Zahl ihrer Einstellungen. Ein
-  Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+- Vier Kategorien: PANEL, ANSCHLÜSSE, SD-KARTE und SENSOREN, die
+  Einstellungen für den ganzen Prüfstand. Jede Kachel nennt die Zahl der
+  Einstellungen, die ihre Liste zeigt. Ein Tippen öffnet die Liste der
+  Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
   ([Pin auswählen](#pin-auswählen)), WI-FI ([WLAN](#wlan)) und UPDATES
   ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn wie seine
   Kachel, und das Band dieser Seite zeigt SETUP.
-- Zwei Plätze sind frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
+- Ein Platz ist frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
   fasst 9, und der Build scheitert am zehnten.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -2643,8 +2644,9 @@ Die Tasten `-` und `+` einer Zeile (`<` und `>` bei einem Schalter oder einer
 Auswahl) ändern ihren Wert um einen Schritt. Ein geänderter Wert gilt sofort;
 SPEICHERN entscheidet, ob er einen Neustart übersteht
 ([Werte behalten](#werte-behalten)). Eine Zahl bleibt an den Enden ihres
-Bereichs stehen, ebenso INA228 Adresse und INA3221 Adresse, die Tasten `-`
-und `+` haben: 0x40 bis 0x4F und 0x40 bis 0x43. Ein Schalter oder eine
+Bereichs stehen, ebenso INA228 Adresse, die Tasten `-` und `+` hat: 0x40
+bis 0x4F. Ein Shunt unter SENSOREN nimmt 0 (AUS) oder 5,0 bis 1000,0 mΩ:
+`+` von AUS gibt 5,0 und `-` von 5,0 gibt AUS. Ein Schalter oder eine
 Auswahl springt vom letzten Wert auf den ersten.
 
 - **Tippen.** Eine Taste stellt einmal, wenn der Finger abhebt. Das Abheben
@@ -2748,22 +2750,23 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
 
 ### ANSCHLÜSSE: die Strommonitore
 
-ANSCHLÜSSE listet seine 27 Einstellungen in fünf Abschnitten. Eine
-Überschrift über der ersten Zeile jedes Abschnitts benennt ihn: I2C-BUS (die
-beiden Strommonitore, Sensor SDA und SCL und der AS5600), PHASENABGRIFF,
+ANSCHLÜSSE listet seine 23 Einstellungen in fünf Abschnitten. Eine
+Überschrift über der ersten Zeile jedes Abschnitts benennt ihn: I2C-BUS (der
+INA228, Sensor SDA und SCL und der AS5600), PHASENABGRIFF,
 BALANCE-SENSOREN (Vibration und Optischer Tacho), NETZTEIL (der PD mini) und
 PROG-PORT (Hitec-D-Empfang).
 Eine Überschrift ist eine eigene Zeile, 54 px hoch bei 58 px Zeilenabstand
 der Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert:
 ein Tippen darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die
-Liste ist 32 Zeilen lang.
+Liste ist 28 Zeilen lang.
 
 ![ANSCHLÜSSE, die Strommonitore](img/de/setup-interfaces.png)
 
-Der IOmcu liest zwei I2C-Strommonitore (I2C: Inter-Integrated Circuit)
-an einem Bus auf zwei seiner Pins: einen TI INA228 im Strompfad des ESC und
-einen TI INA3221 an der Servoschiene. Ihre Zeilen stehen oben unter
-ANSCHLÜSSE:
+Der IOmcu liest I2C-Strommonitore (I2C: Inter-Integrated Circuit) an einem
+Bus auf zwei seiner Pins: einen TI INA228 im Strompfad des ESC, hier
+eingestellt, und bis zu vier TI INA3221, unter SENSOREN eingestellt
+([SENSOREN: die INA3221-Bausteine](#sensoren-die-ina3221-bausteine)). Die
+Zeilen des INA228 und die Pins des Busses stehen oben unter ANSCHLÜSSE:
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
@@ -2771,14 +2774,8 @@ ANSCHLÜSSE:
 | INA228 Adresse | 0x40 bis 0x4F | 0x45 | der MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41 |
 | INA228 Shunt | 50 bis 20000 µΩ, Schritte von 1 µΩ | 200 | der des MATEK |
 | INA228 Höchststrom | 1,0 bis 300,0 A, Schritte von 0,1 A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts. 300 A ist das Auslegungsmaximum des Prüfstands; mehr lehnt der IOmcu ab. Seine Ablehnung eines Bereichs über 2000 A Vollausschlag bleibt, und 300 A am kleinsten Shunt, 50 µΩ, erreichen sie nicht |
-| INA3221 | EIN, AUS | AUS | die drei Kanäle der Servoschiene |
-| INA3221 Adresse | 0x40 bis 0x43 | 0x40 | das DAOKAI-Modul mit geschlossener A0-Lötbrücke nach GND. Ab Werk sind alle vier A0-Brücken offen, und die Adresse schwankt zwischen 0x40 und 0x41 |
-| INA3221 Shunt | 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | einer je Kanal; der R100 des DAOKAI misst bis 1,64 A |
-| INA3221 Kanäle | CH1, CH1+2+3 | CH1 | CH1 ist der des Servotests, CH2 und CH3 die eines synchronisierten Paars |
 | Sensor-SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | GPIO des IOmcu (GPIO: General-Purpose Input/Output). `-` und `+` gehen von einem dieser Werte zum nächsten und halten bei −1 und bei 26. −1: die Pins sind nicht gesetzt, und auf der Page ist kein Bauteil eingeschaltet |
 | Sensor-SCL | SDA + 1 oder −1 | 17 | der GPIO nach Sensor-SDA, und −1 mit ihm. Die Zeile zeigt den Wert und hat keine Tasten |
-
-![ANSCHLÜSSE, der INA3221 und die Pins des Busses](img/de/setup-sensors.png)
 
 SDA und SCL sind das Paar eines I2C-Blocks: die GPIO-Nummer von SDA ist
 modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach. Sensor-SDA nimmt nur
@@ -2825,8 +2822,11 @@ des INA3221 liest es außerdem alle 50 ms SERVO_WIN, das die letzten vier
 Fenster von CH1 hält, und SENSE bis Register 31
 ([Link](Link-de.md#der-fenster-ring)).
 
-Die Servo-Schiene hat zu jeder Zeit ein Messgerät: CH1 des INA3221, solange
-er mit CH1 eingeschaltet ist, der IOmcu Protokoll 4.11 spricht, der
+Die Servo-Schiene hat zu jeder Zeit ein Messgerät: der Kanal des INA3221,
+der das Ziel des Servotesters misst ([SENSOREN](#sensoren-die-ina3221-bausteine))
+-- bei einem IOmcu älter als 4.25 CH1 des einen Bausteins, den SENSE liest
+--, solange ein bestückter Baustein diesen Kanal hat, der IOmcu Protokoll
+4.11 spricht, der
 IOmcu die Einstellung hält, das Bauteil als INA3221 an einem Bus
 antwortet, der nicht hängt, in den letzten 200 ms ein Fenster mit
 Strommessungen geschlossen hat, sein Reset-Zähler steht und all das seit
@@ -2843,10 +2843,11 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | --- | --- |
 | `IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.` | ein Monitor ist eingeschaltet, und der IOmcu spricht ein Protokoll älter als 4.7; gesagt beim Link-Aufbau und wenn ein Monitor eingeschaltet wird, während er antwortet |
 | `SDA oder SCL der Sensoren nicht festgelegt. SETUP > ANSCHLÜSSE prüfen.` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
-| `INA228 und INA3221 nutzen beide 0x40. SETUP > ANSCHLÜSSE prüfen.` | beide auf einer Adresse eingeschaltet; auf der Page ist keiner eingeschaltet |
+| `INA228 und INA3221 nutzen beide 0x40. SETUP > ANSCHLÜSSE prüfen.` | der INA228 auf der Adresse eines bestückten INA3221; keiner wird gelesen |
 | `Sensor-Pins GP16/GP17 abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30 s lang gezeigt oder bis zum Antippen, einmal je Änderung |
 | `INA228-Shunt oder Höchststrom abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84 mV, oder der Messbereich, den er ergibt, übersteigt 2000 A; der INA228 bleibt aus |
-| `INA3221-Einstellungen abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der INA3221 bleibt aus |
+| `INA3221-Einstellungen abgelehnt. SETUP > SENSOREN prüfen.` | der IOmcu hat die Einstellung der INA3221 abgelehnt: die Zuordnung auf SENSE_MAP, bei einem IOmcu älter als 4.25 den Frame des einen Bausteins; der IOmcu behält, was er hielt |
+| `INA3221 0x41 hat alle Kanäle aus. SETUP > SENSOREN prüfen.` | alle drei Shunts eines bestückten Bausteins stehen auf AUS; keine Zuordnung wird geschrieben, bis einer wieder an ist, und die Zeile verlässt dann das Band |
 | `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der IOmcu fand SDA oder SCL auf low gehalten und taktet den Bus frei. Eine Leitung, die low liest, ohne dass etwas sie hält -- Pins ohne angeschlossenes Bauteil und ohne Pull-up --, ist das nicht: sie steigt innerhalb von 50 µs am eigenen Pad-Pull-up des IOmcu (32 bis 86 kΩ), und die Monitore gelten als nicht antwortend |
 | `INA228 antwortet nicht unter 0x45.` | eingeschaltet, und 2,5 s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `Ein Gerät antwortet unter 0x44.` wird angefügt, wenn der Adress-Scan des IOmcu dort etwas gefunden hat, wo das Bauteil sein könnte |
 | `0x40 meldet 1408h, kein INA3221. Gerät wird nicht verwendet.` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
@@ -2889,19 +2890,112 @@ bestätigt oder zurückgelesen hat (`sense_link_unheld()`,
 Sensor-SDA und Sensor-SCL (eine Marke, die Pins sind ein Frame), für AS5600
 und für die Zeilen des Phasenabgriffs in zwei Gruppen: Phasenabgriff,
 Abgriff-Pin und die zwei Töne, sowie Tonsprung, Abgriff-Pause und Min.
-Perioden.
+Perioden. SENSOREN markiert seine Zeilen je Baustein
+([SENSOREN: die INA3221-Bausteine](#sensoren-die-ina3221-bausteine)).
 
 | Die Marke steht | Bis |
 | --- | --- |
 | ab einer Änderung | das Schreiben bestätigt ist: 500 ms nach der letzten Änderung, und bei den Strommonitoren erst bei einem Prüfstand in SAFE |
 | auf einem Wert, den der IOmcu abgelehnt hat | der Wert auf einen geändert ist, den er annimmt; bei anderswo belegten Pins, bis der Versuch alle 5 s angenommen wird |
-| auf INA228, INA3221 oder AS5600 auf EIN, während die Page das Bauteil aus hat | die Ursache weg ist: ein abgelehnter Frame, Sensor-SDA auf −1, beide Monitore auf einer Adresse, ein IOmcu älter als das Bauteil |
+| auf INA228 oder AS5600 auf EIN, während die Page das Bauteil aus hat | die Ursache weg ist: ein abgelehnter Frame, Sensor-SDA auf −1, der INA228 auf der Adresse eines bestückten INA3221, ein IOmcu älter als das Bauteil |
 | nach einem Neustart des IOmcu oder einem Link-Aufbau auf dem, was seine Page anders liest | das Panel es geschrieben hat |
 
 Keine Zeile ist markiert, solange kein IOmcu antwortet oder die Page
 nach einem Link-Aufbau noch nicht gelesen ist: es gibt nichts zum
 Vergleichen. AS5600-Mitte gehört dem Panel und wird nie markiert. Der Alert
 auf dem Band ist davon getrennt und bleibt wie oben beschrieben.
+
+### SENSOREN: die INA3221-Bausteine
+
+SENSOREN stellt bis zu vier TI INA3221 ein, Dreikanal-Strommonitore am
+Sensorbus auf 0x40 bis 0x43, und sagt je Kanal, was er misst. Der INA228
+und die Pins des Busses bleiben unter ANSCHLÜSSE.
+
+![SENSOREN, zwei Bausteine bestückt](img/de/setup-sensors.png)
+
+Die Liste beginnt mit der Überschrift INA3221-BAUSTEINE über vier Zeilen:
+
+| Einstellung | Bereich | Standard | |
+| --- | --- | --- | --- |
+| 0x40 bestückt bis 0x43 bestückt | EIN, AUS | AUS | ein INA3221 an dieser Adresse. Das DAOKAI-Modul nimmt 0x40 mit geschlossener A0-Lötbrücke nach GND. Ab Werk sind alle vier A0-Brücken offen, und die Adresse schwankt zwischen 0x40 und 0x41 |
+
+Jeder bestückte Baustein folgt unter einer eigenen Überschrift,
+`INA3221 0x40` bis `INA3221 0x43`, mit sechs Zeilen, zwei je Kanal. Ein
+Baustein, der nicht bestückt ist, hat keine Überschrift und keine Zeilen.
+
+| Einstellung | Bereich | Standard | |
+| --- | --- | --- | --- |
+| 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, KEINE für jeden anderen Kanal | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
+| 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | AUS: der Kanal wird nicht gelesen. Der R100 des DAOKAI misst bis 1,64 A |
+
+Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
+
+| Zustand | Wann |
+| --- | --- |
+| `ONLINE` | der IOmcu liest den Baustein, der als INA3221 antwortet |
+| `SUCHT DEN BAUSTEIN` | die Einstellung ist angenommen, und der IOmcu hat den Baustein noch nicht gefunden: die ersten 2,5 s |
+| `ANTWORTET NICHT` | an der Adresse des Bausteins antwortet 2,5 s nach der angenommenen Einstellung nichts, oder der Baustein antwortet nicht mehr |
+| `ANDERE ID ANTWORTET` | an der Adresse antwortet etwas mit einer anderen Identität |
+| `NOCH NICHT GESCHRIEBEN` | eine Änderung wartet: 500 ms nach der letzten Änderung, und nur bei einem Prüfstand in SAFE |
+| `NOCH NICHT GELESEN` | kein IOmcu antwortet, oder seine Page ist seit dem Link-Aufbau nicht gelesen |
+| `VOM IOMCU NICHT ÜBERNOMMEN` | der IOmcu hat die Zuordnung abgelehnt; er behält die, die er hielt |
+| `ALLE KANÄLE AUS` | alle drei Shunts des Bausteins stehen auf AUS: keine Zuordnung wird geschrieben |
+| `INA228 AUF DIESER ADRESSE` | der INA228 ist auf der Adresse des Bausteins eingeschaltet: der Baustein bleibt aus der Zuordnung und der INA228 aus |
+| `IOMCU ÄLTER ALS 4.25: NICHT GELESEN` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
+| `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | ANSCHLÜSSE hat keinen Pin für SDA oder SCL des Sensorbusses: kein Baustein ist eingeschaltet |
+
+Die Zeilen eines abgelehnten Bausteins, eines mit allen Kanälen aus, eines
+auf der Adresse des INA228, eines ohne Sensorbus oder eines, den ein
+älterer IOmcu nicht liest,
+sind markiert wie eine Zeile, die der IOmcu nicht hält: Rand und Wert in
+der Warnfarbe und eine Zeile statt der Hilfe. Bei einem IOmcu älter als
+4.25 lautet sie `IOmcu älter als 4.25: ein INA3221, CH1 mit 1 kHz.`:
+
+![SENSOREN bei einem IOmcu älter als 4.25](img/de/setup-sensors-old.png)
+
+Das Panel schreibt die Zuordnung in die Page SENSE_MAP des IOmcu
+(Protokoll 4.25), in einem Schreiben von 26 Registern: die bestückten
+Bausteine, den Kanal, der mit 1 kHz gelesen wird, die zwölf Shunts und was
+jeder Kanal misst. Wie bei SENSE liest es die Page bei jedem Link-Aufbau
+zuerst, schreibt 500 ms nach der letzten Änderung und nur bei einem
+Prüfstand in SAFE, und schreibt nichts, was die Page hält. Eine abgelehnte
+Zuordnung wird erst wieder geschrieben, wenn sie sich ändert. Solange ein
+Baustein bestückt ist, liest das Panel alle 500 ms die IDs und Zustände der
+Bausteine. Ein Baustein, der nicht mehr antwortet oder als etwas anderes
+antwortet, wird einmal auf dem Band gesagt, wie unter ANSCHLÜSSE; den
+Baustein, über den SENSE berichtet (unten), sagen die Lesevorgänge von
+SENSE selbst.
+
+Der Kanal, der mit 1 kHz gelesen wird und dessen Fenster der Servotest und
+der SERVO-Bildschirm nutzen, ist der niedrigste Kanal mit Shunt an einem
+bestückten Baustein, der das Ziel des Servotesters misst: einen Ausgang,
+AUSGANG 1 bis AUSGANG 8, solange das Ziel OUTPUTS ist, und PORT n, solange
+es Programmierport n ist. Jeder andere Kanal mit Shunt wird reihum gelesen,
+einer je Millisekunde: 90,9 Hz je Kanal bei elf ([Link](Link-de.md)).
+
+Derzeitige Einschränkung: Der Servotest und der SERVO-Bildschirm nehmen den
+INA3221 nur als Messgerät der Servo-Schiene, solange dieser Kanal CH1 seines
+Bausteins ist. Liegt er auf CH2 oder CH3, ist das Messgerät der PD mini.
+
+Ein IOmcu älter als 4.25 hat kein SENSE_MAP und liest einen INA3221 über
+SENSE: den Baustein des Kanals, der mit 1 kHz gelesen wird, sonst den
+niedrigsten bestückten, mit seinem CH1-Shunt (oder dem ersten, der nicht AUS
+ist) und den Kanälen auf diesem Shunt. SENSE trägt einen Shunt für alle
+Kanäle, die er liest; ein Kanal auf einem anderen Shunt wird nicht gelesen.
+
+Mit der Zuordnung in Kraft spiegeln Adresse, Shunt und Kanäle des INA3221
+auf SENSE sie im IOmcu, und das Panel schreibt sie nie.
+
+Gespeicherte Einstellungen: Ein Panel, das von 0.21 aktualisiert wurde, hat
+keine Schlüssel für SENSOREN. Jeden, der fehlt, nimmt es beim Start aus den
+vier INA3221-Einstellungen, die 0.21 hielt: der Baustein an der alten
+Adresse bestückt, wenn der INA3221 EIN war, sein CH1 auf dem alten Shunt,
+CH2 und CH3 darauf bei CH1+2+3 und AUS bei CH1, und sein CH1 misst PORT 1,
+wenn das Ziel des Servotesters der Programmierport war, sonst AUSGANG 1;
+jeder andere Kanal 100,0 mΩ und KEINE. Die alten Einstellungen bleiben
+unverändert gespeichert, damit ein Panel, das auf 0.21 zurückgeht, seine
+Einstellung findet. Das nächste SPEICHERN schreibt jeden Schlüssel von
+SENSOREN.
 
 ### ANSCHLÜSSE: der Ausgangsencoder
 
@@ -3727,7 +3821,7 @@ nicht anhaken:
 
 | Unter dem Namen | Pins | Solange |
 |---|---|---|
-| `SENSORBUS` | Sensor-SDA und das Sensor-SCL danach, ab Werk GP16 und GP17 | INA228, INA3221 oder AS5600 EIN ist |
+| `SENSORBUS` | Sensor-SDA und das Sensor-SCL danach, ab Werk GP16 und GP17 | INA228 oder AS5600 EIN ist oder ein INA3221 unter SENSOREN bestückt ist |
 | `PD MINI` | PD mini TX und PD mini RX | PD mini EIN ist, beide Pins gesetzt, auf zwei Pins |
 | `PHASENABGRIFF` | Abgriff-Pin, ab Werk GP22 | Phasenabgriff EIN ist |
 

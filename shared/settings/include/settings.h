@@ -26,6 +26,8 @@ typedef enum {
     SET_CAT_APP = 0,     /**< theme, brightness, language, units, plot  */
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
     SET_CAT_CARD,        /**< the SD card: which logs are written     */
+    SET_CAT_SENSORS,     /**< the INA3221 parts: fitted, shunts, what
+                              each channel watches (settings_sensors.h) */
     SET_CAT_ESC,         /**< pack, motor, telemetry, throttle output */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
@@ -49,6 +51,12 @@ typedef enum {
     SET_TYPE_BOOL,
     SET_TYPE_ENUM,
 } setting_type_t;
+
+/* The INA3221 parts SETUP > SENSORS sets up: four, at 0x40 to 0x43, three
+ * channels each, and the rows a channel has (settings_sensors.h). */
+#define SET_INA_PARTS    4
+#define SET_INA_CHANNELS 12
+#define SET_INA_CH_ROWS  2
 
 typedef enum {
     /* --- pack, motor, telemetry, output ------------------------------- */
@@ -75,6 +83,9 @@ typedef enum {
     SET_INA228_ADDR,
     SET_INA228_UOHM,
     SET_INA228_MAX_A,
+    /* The one INA3221 of 0.21: in no category and on no screen, loaded
+     * and saved as stored, and read once to seed SENSORS
+     * (settings_sensors.h). */
     SET_INA3221_EN,
     SET_INA3221_ADDR,
     SET_INA3221_MOHM,
@@ -99,6 +110,26 @@ typedef enum {
     SET_PDMINI_BAUD,
     /* --- the programming port ------------------------------------------ */
     SET_HITEC_RX,
+    /* --- the INA3221 parts, on SETUP > SENSORS (settings_sensors.h) ----- */
+    /* Part a's FITTED, then channel by channel (part a's CHn) WATCHES and
+     * SHUNT, SET_INA_W_<a><n> for part a's CHn: settings_sensors.h names
+     * them by channel number. */
+    SET_INA_FIT_0, SET_INA_FIT_1, SET_INA_FIT_2, SET_INA_FIT_3,
+    SET_INA_W_01, SET_INA_SH_01,
+    SET_INA_W_02, SET_INA_SH_02,
+    SET_INA_W_03, SET_INA_SH_03,
+    SET_INA_W_11, SET_INA_SH_11,
+    SET_INA_W_12, SET_INA_SH_12,
+    SET_INA_W_13, SET_INA_SH_13,
+    SET_INA_W_21, SET_INA_SH_21,
+    SET_INA_W_22, SET_INA_SH_22,
+    SET_INA_W_23, SET_INA_SH_23,
+    SET_INA_W_31, SET_INA_SH_31,
+    SET_INA_W_32, SET_INA_SH_32,
+    SET_INA_W_33, SET_INA_SH_33,
+    SET_INA_FIT_LAST = SET_INA_FIT_3,
+    SET_INA_CH_0     = SET_INA_W_01,       /**< channel 0's first row     */
+    SET_INA_CH_LAST  = SET_INA_SH_33,
     /* --- the programmable supply --------------------------------------- */
     SET_SUPPLY_V_MAX,
     SET_SUPPLY_I_MAX,
@@ -171,6 +202,9 @@ typedef struct {
     float              def;
     const char *const *options;  /**< SET_TYPE_ENUM only */
     uint8_t            option_count;
+    /** A number whose values between 0 and this are not taken: 0 is
+     *  "off" and the next value up is this one.  0 for none. */
+    float              off_below;
 } setting_def_t;
 
 /** Called after any value actually changes, so the app can act on it. */

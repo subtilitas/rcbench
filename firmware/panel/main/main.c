@@ -91,6 +91,8 @@
 #include "safety_gate.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "settings_sensors.h"
+#include "sensors_rows.h"
 #include "splash_screen.h"
 #include "knob.h"
 #include "knob_task.h"
@@ -643,50 +645,6 @@ static void publish_pdmini(void)
 }
 
 /*
- * The current monitors' set-up, as SETUP INTERFACES left it, for the
- * control task's SENSE writes (sense_link.h).
- *
- * Ten values do not fit an atomic word, so the copy is taken under a
- * spinlock both ways: the control task never pairs one edit's shunt with
- * another's address.  Written by the settings observer on app_main, read
- * once a poll by the control task.
- */
-static portMUX_TYPE  s_sense_mux = portMUX_INITIALIZER_UNLOCKED;
-static sense_setup_t s_sense_want;
-
-static void publish_sense(void)
-{
-    const int ch = settings_get_int(SET_INA3221_CH);
-    const sense_setup_t w = {
-        .i228  = settings_get_bool(SET_INA228_EN),
-        .i3221 = settings_get_bool(SET_INA3221_EN),
-        .as5600 = settings_get_bool(SET_ENC_EN),
-        .sda   = (int8_t)settings_get_int(SET_SENSE_SDA),
-        .scl   = (int8_t)settings_get_int(SET_SENSE_SCL),
-        /* The address options run up from 0x40 in steps of one. */
-        .i228_addr   = (uint8_t)(LINK_SN_I228_ADDR_MIN
-                                 + (unsigned)settings_get_int(SET_INA228_ADDR)),
-        .i228_uohm   = (uint16_t)settings_get_int(SET_INA228_UOHM),
-        .i228_max_da = (uint16_t)lrintf(settings_get(SET_INA228_MAX_A) * 10.0f),
-        .i3221_addr  = (uint8_t)(LINK_SN_I3221_ADDR_MIN
-                                 + (unsigned)settings_get_int(SET_INA3221_ADDR)),
-        .i3221_dmohm = (uint16_t)lrintf(settings_get(SET_INA3221_MOHM) * 10.0f),
-        .i3221_ch    = (uint8_t)((ch != 0) ? LINK_SN_I3221_CH_ALL : 0x01u),
-    };
-    taskENTER_CRITICAL(&s_sense_mux);
-    s_sense_want = w;
-    taskEXIT_CRITICAL(&s_sense_mux);
-}
-
-sense_setup_t sense_wanted(void)
-{
-    taskENTER_CRITICAL(&s_sense_mux);
-    const sense_setup_t w = s_sense_want;
-    taskEXIT_CRITICAL(&s_sense_mux);
-    return w;
-}
-
-/*
  * The phase tap's set-up, as SETUP INTERFACES left it, for the control
  * task's TONE writes (tone_link.h).  Seven values do not fit an atomic
  * word, so the copy is taken under a spinlock both ways, as the current
@@ -772,14 +730,14 @@ static void settings_changed(setting_id_t id)
         publish_pdmini();
     } else if (id == SET_HITEC_RX) {
         publish_hitec_rx();
+    } else if (settings_sensors_row(id)) {
+        publish_sense();          /* SETUP > SENSORS */
     } else {
         switch (id) {
         case SET_INA228_EN:  case SET_INA228_ADDR:  case SET_INA228_UOHM:
         case SET_INA228_MAX_A:
-        case SET_INA3221_EN: case SET_INA3221_ADDR: case SET_INA3221_MOHM:
-        case SET_INA3221_CH:
         case SET_SENSE_SDA:  case SET_SENSE_SCL:
-        case SET_ENC_EN:
+        case SET_ENC_EN:     case SET_SERVO_TARGET:
             publish_sense();
             break;
         case SET_TONE_EN:    case SET_TONE_PIN:   case SET_TONE_F_MIN:
@@ -2054,6 +2012,7 @@ void app_main(void)
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),
                 (uint8_t)atomic_load(&s_tone_unheld));
+            sensors_rows_set_status((uint16_t)atomic_load(&s_sense_parts));
             /* What the IOmcu holds of Hitec D receive, back to SETUP's
              * row. */
             settings_screen_set_hitec_rx(

@@ -69,7 +69,8 @@ int settings_screen_scroll(int *max);
 
 /**
  * The list row that shows the @p index-th setting of @p cat (as
- * settings_in_category() orders them), or -1 past the last.  A category
+ * settings_in_category() orders them), or -1 past the last and for a
+ * setting not listed (SENSORS' rows of a part not fitted).  A category
  * with section headings has a row for each, above its section, so the row
  * is the index plus the headings above it.
  */

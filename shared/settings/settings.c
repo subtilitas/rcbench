@@ -25,20 +25,20 @@
 
 #include "link_pages.h"
 #include "out_bind.h"
+#include "settings_sensors.h"
+
+/* A row of the schema, the SENSORS rows' included (settings_sensors.c). */
+#define DEF(i) (*settings_def((setting_id_t)(i)))
 
 static const char *const k_theme[]     = { "DARK", "LIGHT" };
 static const char *const k_language[]  = { "ENGLISH", "DEUTSCH" };
 static const char *const k_units[]     = { "METRIC", "IMPERIAL" };
 /* The INA228's address, 0x40 + the option: A0 and A1 each to GND, VS, SDA
- * or SCL give sixteen.  The INA3221's, from its A0 pin: four. */
+ * or SCL give sixteen. */
 static const char *const k_ina228_addr[] = {
     "0x40", "0x41", "0x42", "0x43", "0x44", "0x45", "0x46", "0x47",
     "0x48", "0x49", "0x4A", "0x4B", "0x4C", "0x4D", "0x4E", "0x4F",
 };
-static const char *const k_ina3221_addr[] = { "0x40", "0x41", "0x42", "0x43" };
-/* Which INA3221 channels are read: CH1 alone, the servo test's, or all
- * three, CH2 and CH3 a synchronised pair's. */
-static const char *const k_ina3221_ch[] = { "CH1", "CH1+2+3" };
 static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
 static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
 /* What the SERVO tester drives: the standard servo outputs, or
@@ -124,8 +124,8 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * and a range of 1.0 to 300.0 A, an INA3221 shunt of 5 mOhm to 1 Ohm.
      * The defaults are the modules the bench is built with: the MATEK
      * I2C-INA-BM's INA228 at 0x45 on 200 uOhm, ranged for 204.8 A, and the
-     * DAOKAI INA3221 at 0x40, its A0 bridge closed to GND, on its 0.1 Ohm
-     * shunts (1.638 A full scale), reading CH1, on GP16 and GP17.  The bus clock is not a setting: the
+     * bus on GP16 and GP17; the INA3221 parts are SENSORS'
+     * (settings_sensors.c).  The bus clock is not a setting: the
      * page takes 400 kHz and nothing else.  The address keys are new ones:
      * the INA228's old key held an index into four addresses, which read
      * as one of sixteen would name another address.
@@ -142,18 +142,6 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_INA228_MAX_A] = {
         "ina228_max_a", "INA228 max current", "Highest current expected; sets range", "A",
         SET_CAT_IFACE, SET_TYPE_FLOAT, 1.0f, 300.0f, 0.1f, 204.8f, NULL, 0 },
-    [SET_INA3221_EN] = {
-        "ina3221_en", "INA3221", "Three-channel servo rail monitor", "",
-        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
-    [SET_INA3221_ADDR] = {
-        "ina3221_adr", "INA3221 address", "DAOKAI module: A0 to GND for 0x40", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_ina3221_addr) },
-    [SET_INA3221_MOHM] = {
-        "ina3221_mohm", "INA3221 shunt", "Per channel; 100 reads to 1.64 A", "mOhm",
-        SET_CAT_IFACE, SET_TYPE_FLOAT, 5.0f, 1000.0f, 0.1f, 100.0f, NULL, 0 },
-    [SET_INA3221_CH] = {
-        "ina3221_ch", "INA3221 channels", "CH1 the servo test, CH2+3 a pair", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_ina3221_ch) },
     /*
      * The bus's pins: IOmcu GPIO, one I2C block's SDA and SCL.
      * Sensor SDA takes the values settings_sense_sda_valid() does and no
@@ -452,6 +440,7 @@ static const char *const k_cat_names[SET_CAT_COUNT] = {
     [SET_CAT_APP]    = "PANEL",
     [SET_CAT_IFACE]  = "INTERFACES",
     [SET_CAT_CARD]   = "SD CARD",
+    [SET_CAT_SENSORS] = "SENSORS",
     [SET_CAT_ESC]    = "ESC / BENCH",
     [SET_CAT_SUPPLY] = "SUPPLY",
     [SET_CAT_SERVO]  = "SERVO TEST",
@@ -504,7 +493,7 @@ static struct {
  */
 static bool value_differs(int i)
 {
-    const float step = k_defs[i].step;
+    const float step = DEF(i).step;
     if (step > 0.0f) {
         return fabsf(s.values[i] - s.stored[i]) >= 0.5f * step;
     }
@@ -564,7 +553,8 @@ const setting_def_t *settings_def(setting_id_t id)
     if (id < 0 || id >= SETTING_COUNT) {
         return NULL;
     }
-    return &k_defs[id];
+    const setting_def_t *d = settings_sensors_def(id);
+    return (d != NULL) ? d : &k_defs[id];
 }
 
 bool settings_derived(setting_id_t id)
@@ -656,8 +646,14 @@ static float coerce(const setting_def_t *d, float v)
     case SET_TYPE_INT:
         return clampf(snap_to_step(d, (float)lrintf(v)), d->min, d->max);
     case SET_TYPE_FLOAT:
-    default:
-        return clampf(snap_to_step(d, v), d->min, d->max);
+    default: {
+        const float f = clampf(snap_to_step(d, v), d->min, d->max);
+        /* Below off_below only 0 is taken: the nearer of the two. */
+        if (f > 0.0f && f < d->off_below) {
+            return (f < 0.5f * d->off_below) ? 0.0f : d->off_below;
+        }
+        return f;
+    }
     }
 }
 
@@ -711,9 +707,9 @@ void settings_reset(setting_cat_t cat)
      */
     bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
-        if (k_defs[i].cat == cat && !settings_held((setting_id_t)i)) {
+        if (DEF(i).cat == cat && !settings_held((setting_id_t)i)) {
             float before = s.values[i];
-            s.values[i] = k_defs[i].def;
+            s.values[i] = DEF(i).def;
             moved = moved || (s.values[i] != before);
             notify_changed(i, before);
         }
@@ -738,7 +734,7 @@ static void defaults(bool held)
             continue;
         }
         float before = s.values[i];
-        s.values[i] = k_defs[i].def;
+        s.values[i] = DEF(i).def;
         moved = moved || (s.values[i] != before);
         notify_changed(i, before);
     }
@@ -775,18 +771,26 @@ void settings_set_text_observer(settings_text_observer_fn fn)
 void settings_init(void)
 {
     defaults(true);
+    /* A SENSORS key the store does not hold stays NAN through the load and
+     * is seeded from the old INA3221 keys after it, as a default is, at
+     * every start until a save writes it (settings_sensors.h). */
+    settings_sensors_unset(s.values);
     if (s.store && s.store->load) {
         if (s.store->load(s.values, SETTING_COUNT)) {
             /* Whatever came back has to satisfy the schema: a stored value
              * from an older build may be out of today's range. */
             for (int i = 0; i < SETTING_COUNT; ++i) {
-                s.values[i] = coerce(&k_defs[i], s.values[i]);
+                if (!isnan(s.values[i])) {
+                    s.values[i] = coerce(settings_def((setting_id_t)i),
+                                         s.values[i]);
+                }
             }
             /* A stored Sensor SCL is not read: whatever the medium held
              * for it, it is the pin after the SDA loaded. */
             (void)derive();
         }
     }
+    (void)settings_sensors_migrate(s.values);
     if (s.store && s.store->load_text) {
         (void)s.store->load_text(s.texts, SETTING_TEXT_COUNT);
         /* Terminated whatever the medium held. */
@@ -907,14 +911,21 @@ void settings_adjust(setting_id_t id, int steps)
         return;
     }
     float step = (d->step > 0.0f) ? d->step : 1.0f;
-    settings_set(id, s.values[id] + step * (float)steps);
+    float next = s.values[id] + step * (float)steps;
+    if (d->off_below > 0.0f && next < d->off_below) {
+        /* Off is the step below off_below, and off_below the step above
+         * off. */
+        next = (s.values[id] > 0.0f || steps < 0)
+                   ? 0.0f : d->off_below + step * (float)(steps - 1);
+    }
+    settings_set(id, next);
 }
 
 int settings_in_category(setting_cat_t cat, setting_id_t *out, int max)
 {
     int n = 0;
     for (int i = 0; i < SETTING_COUNT; ++i) {
-        if (k_defs[i].cat != cat) {
+        if (DEF(i).cat != cat) {
             continue;
         }
         if (out && n < max) {

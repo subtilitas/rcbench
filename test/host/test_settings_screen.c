@@ -767,7 +767,8 @@ TEST_CASE(setup_changes_no_held_setting)
 /* ------------------------------------------------------------ headings */
 
 /* INTERFACES carries five headings, each above the first row of its
- * section; no other list has one. */
+ * section; SENSORS one over its FITTED rows and one a fitted part
+ * (test_settings_sensors.c); no other list has one. */
 TEST_CASE(interfaces_has_five_headings_above_its_sections)
 {
     fresh_hub();
@@ -786,12 +787,14 @@ TEST_CASE(interfaces_has_five_headings_above_its_sections)
         CHECK_EQ(row, row_of(first[h]) + h + 1);
         prev = row;
     }
+    /* SENSORS with nothing fitted: its heading and four FITTED rows. */
+    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 1 + SET_INA_PARTS);
     /* Hitec D receive is the last row, alone under PROG PORT. */
     CHECK_EQ(row_of(SET_HITEC_RX), n - 1);
     CHECK_EQ(settings_screen_row_of(SET_CAT_IFACE, 0), 1);
     CHECK_EQ(settings_screen_row_of(SET_CAT_IFACE, n), -1);
     for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
-        if (c != SET_CAT_IFACE) {
+        if (c != SET_CAT_IFACE && c != SET_CAT_SENSORS) {
             CHECK_EQ(settings_screen_rows((setting_cat_t)c),
                      settings_in_category((setting_cat_t)c, ids, 64)
                          + settings_texts_in_category((setting_cat_t)c,
