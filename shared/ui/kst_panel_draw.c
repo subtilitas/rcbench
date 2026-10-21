@@ -1,4 +1,7 @@
-/*
+/**
+ * @file kst_panel_draw.c
+ * @brief The drawing of the programmer's overlay.
+ *
  * The drawing of the programmer's overlay for KST and Chaservo servos: the
  * notes under a page -- the standing message, the state line, a page of
  * notes and the message -- and the pages, their rows, the list of choices

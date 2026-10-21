@@ -1,4 +1,7 @@
-/*
+/**
+ * @file kst_panel_warn.c
+ * @brief The warning pages of the programmer's overlay.
+ *
  * The warning pages of the programmer's overlay for KST and Chaservo
  * servos: what a write, a restore, a soft limit, ENABLE WRITE TO SERVO, a
  * file, a release, a leave, a check and HV SERVO each say before they

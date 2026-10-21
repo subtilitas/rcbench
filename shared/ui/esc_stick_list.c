@@ -1,4 +1,7 @@
-/*
+/**
+ * @file esc_stick_list.c
+ * @brief ESC STICK's profile list.
+ *
  * ESC STICK's profile list: the texts a row and a page are drawn from,
  * why a profile cannot run on this bench, the makers and the models built
  * from the profiles and the search, and the profile picked.  The state and

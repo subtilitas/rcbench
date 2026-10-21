@@ -1,4 +1,7 @@
-/*
+/**
+ * @file servo_screen_draw.c
+ * @brief The SERVO screen's drawing.
+ *
  * The SERVO screen's drawing: the servo on the dial, the left card, the
  * right card with its readings, plot, set points and controls, and the
  * frame, which repaints what changed.  The state and the seam are

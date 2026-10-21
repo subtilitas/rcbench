@@ -1,4 +1,7 @@
-/*
+/**
+ * @file esc_stick_touch.c
+ * @brief The presses on ESC STICK's pages.
+ *
  * The presses on ESC STICK's pages: the search field and its keyboard,
  * the list's rows and pages, a profile's rows, TIMING, the warning's hold,
  * a run's ABORT and the manual steps, BACK and the home tag.  The state

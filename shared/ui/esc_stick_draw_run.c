@@ -1,4 +1,7 @@
-/*
+/**
+ * @file esc_stick_draw_run.c
+ * @brief A run of ESC STICK drawn.
+ *
  * A run of ESC STICK drawn: the stack light, the beeps the detector hears,
  * the progress, the result, the RUN warning, the manual steps and a run's
  * prompt.  The state and the seam are esc_stick_panel_int.h.

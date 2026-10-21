@@ -1,4 +1,7 @@
-/*
+/**
+ * @file servo_screen_link.c
+ * @brief What the panel tells the SERVO screen and takes from it.
+ *
  * What the panel tells the SERVO screen and takes from it: the bench's
  * arm and disarm, a stop, the command collected, the servo's feedback,
  * the output encoder, the servo rail's meter and the supply's samples,

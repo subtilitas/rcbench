@@ -1,4 +1,7 @@
-/*
+/**
+ * @file esc_stick_panel_int.h
+ * @brief The seam between the files of ESC STICK's pages.
+ *
  * The private seam between the files of ESC STICK's pages:
  * esc_stick_panel.c, the state, a run and the application's side;
  * esc_stick_list.c, the profile list and its texts; esc_stick_touch.c,
@@ -71,8 +74,8 @@
 /* What the run's and the result's lines may take beside it, in cells. */
 #define SP_LINE_CELLS  86
 
-/* The settings the TIMING page shows, in esc_stick_panel.c, and their
- * count. */
+/** @brief The settings the TIMING page shows, in esc_stick_panel.c, and
+ *         their count. */
 #define SP_SETTINGS 14
 extern const setting_id_t k_sp_settings[SP_SETTINGS];
 
@@ -174,89 +177,143 @@ typedef struct {
     gfx_rect_t hold_btn, cancel_btn, hand_btn, steps_btn, timing_btn;
 } stick_t;
 
-/* The state, esc_stick_s, in esc_stick_panel.c, so its .bss stays where
- * psram_bss.lf puts esc_stick_panel's.  The files read it as s, the name
- * it had as the one file's static: the object's own name keeps it apart
- * from the SERVO screen's s. */
+/** @brief The panel's state: the stick class's, and the phase tap's. */
 typedef struct {
     stick_t  st;
 
     /* The phase tap, as the control task last read it. */
     tone_readout_t tone;
 } sp_state_t;
+/** @brief The state, esc_stick_s, in esc_stick_panel.c, so its .bss stays
+ *         where psram_bss.lf puts esc_stick_panel's.  The files read it
+ *         as s, the name it had as the one file's static: the object's
+ *         own name keeps it apart from the SERVO screen's s. */
 extern sp_state_t esc_stick_s;
 #define s esc_stick_s
 
 /* --- the functions one file calls of another ---------------------------- */
 
-/* esc_stick_panel.c: the picks as changes; the timing and the supply's set
- * points for a run; whether the supply reads off; whether the warning
- * asks a step of the operator it may not; whether the warning shows every
- * before-power step whole; the steps after the warning's; whether HOLD TO
- * RUN may not count; whether a run can start; what the run asks for, onto
- * the operator's paths; the warning's hold ended; the run ended now. */
+/* esc_stick_panel.c */
+
+/**
+ * @brief The picks as changes, in item order.
+ * @param ch the changes, ESC_STICK_MAX_CHANGES of them at most
+ * @param picked how many were picked in all
+ * @return the changes written to @p ch
+ */
 size_t sp_changes(esc_stick_change_t *ch, size_t *picked);
+/** @brief The timing as the settings hold it, the profile's own entry
+ *         where it states one. */
 void sp_timing(esc_stick_timing_t *t);
+/** @brief The supply's set points for a run, mV and mA: VOLTAGE, or the
+ *         profile's cell count when it is 0. */
 void sp_supply(uint32_t *mv, uint32_t *ma);
+/** @brief Whether the supply reads off now, by the rule a run holds the
+ *         supply to. */
 bool sp_supply_reads_off(void);
+/** @brief Whether the warning asks a step at an unpowered ESC of the
+ *         operator and may not, as the supply does not read off. */
 bool sp_warn_gated(void);
+/** @brief Whether the warning shows every before-power step of @p p
+ *         whole. */
 bool sp_warn_steps_fit(const esc_profile_t *p);
+/** @brief The steps of @p p the run stops for after the warning's. */
 unsigned sp_later_steps(const esc_profile_t *p);
+/** @brief Whether HOLD TO RUN may not count. */
 bool sp_hold_blocked(void);
+/** @brief Whether a run can start now. */
 bool sp_can_run(void);
+/** @brief What the run asks for, onto the paths an operator's own presses
+ *         take. */
 void sp_follow(void);
+/** @brief The warning's hold dropped, with nothing started. */
 void sp_end_hold(void);
+/** @brief The run ends now as @p why; nothing it queued survives. */
 void sp_end_run(esc_stick_reason_t why);
 
-/* esc_stick_list.c: a text cut to @p max_chars; a manual step's action and
- * when it is due; a reason in the language showing; what the supply's set
- * points break of a model's ratings, the warning for a voltage the data
- * cannot vouch for, the same for a model with the settings now, and why a
- * model cannot run; what decides whether a profile runs; whether a model
- * runs; the level showing built again; a profile picked; the items the
- * page offers and the profile's index of one; the picked item kept among
- * those shown. */
+/* esc_stick_list.c */
+
+/** @brief @p text at (@p x, @p y) cut to @p max_chars, with ".." in place
+ *         of what did not fit. */
 void sp_text(gfx_canvas_t *c, int x, int y, const char *text, int max_chars,
              gfx_color_t ink);
+/** @brief What a manual step asks, in the language showing. */
 const char *sp_action(const esc_manual_t *m);
+/** @brief When a manual step is due, in the language showing. */
 const char *sp_when_text(const esc_manual_t *m);
+/** @brief The engine's reason @p why in the language showing. */
 const char *sp_why_text(const char *why);
+/** @brief What the supply's set points break of a model's ratings, into
+ *         @p buf, or NULL: the short form for a row, @p longer for the
+ *         page's note. */
 const char *sp_rating_why(const esc_profile_t *p, int model, uint32_t mv,
                           uint32_t ma, bool by_hand, bool longer, char *buf,
                           size_t n);
+/** @brief The warning for a voltage the data cannot vouch for, into
+ *         @p buf, or NULL; the run goes ahead. */
 const char *sp_rating_warn(const esc_profile_t *p, int model, uint32_t mv,
                            bool by_hand, bool longer, char *buf, size_t n);
+/** @brief sp_rating_warn() for model @p model with the settings now. */
 const char *sp_model_warn(const esc_profile_t *p, int model, char *buf,
                           size_t n);
+/** @brief Why model @p model cannot run, into @p buf, or NULL when it
+ *         can. */
 const char *sp_model_why(const esc_profile_t *p, int model, char *buf,
                          size_t n);
+/** @brief VOLTAGE and the SUPPLY cap, mV: what decides from outside a
+ *         profile whether it runs. */
 uint32_t sp_list_key(void);
+/** @brief Whether model @p model of @p p runs on this bench. */
 bool sp_model_runs(const esc_profile_t *p, int model);
+/** @brief The level showing built again, from the top or, with
+ *         @p keep_scroll, where it was. */
 void sp_build_list(bool keep_scroll);
+/** @brief Profile @p p picked: its picks cleared, and its manual steps
+ *         shown the first time it is opened. */
 void sp_pick_profile(const esc_profile_t *p);
+/** @brief The items the page offers. */
 int sp_items(void);
+/** @brief The profile's index of the @p at-th item offered, or -1. */
 int sp_item_at(int at);
+/** @brief The picked item kept among those shown; the first otherwise. */
 void sp_pick_shown(void);
 
-/* esc_stick_touch.c: the rows a page shows from @p scroll; a profile row;
- * the search's keyboard closed. */
+/* esc_stick_touch.c */
+
+/** @brief The rows a page of ROWS_MAX shows of @p total from @p scroll. */
 int sp_rows_shown(int total, int scroll);
+/** @brief Profile row @p i, narrowed to the left of the keyboard while it
+ *         is open. */
 gfx_rect_t sp_row(int i);
+/** @brief The keyboard closes; the search stays as typed. */
 void sp_find_close(void);
 
-/* esc_stick_draw.c: the entry time the page shows. */
+/* esc_stick_draw.c */
+
+/** @brief The entry time the page shows, ms. */
 uint32_t sp_entry_shown(void);
 
-/* esc_stick_draw_run.c: the red light; the result's count and its last
- * line; a manual step's text while a run waits for it; the drawers of a
- * run, its result, the RUN warning, the manual steps and a run's prompt. */
+/* esc_stick_draw_run.c */
+
+/** @brief The red light: a result on screen, until OK, of a run that ended
+ *         on something not as expected. */
 bool sp_red(void);
+/** @brief Into @p buf: the result's count of the selections made for
+ *         certain. */
 void sp_result_head(const esc_stick_t *e, char *buf, size_t n);
+/** @brief Into @p buf: the changes past the first @p shown, as the
+ *         result's last line says them. */
 void sp_result_more(const esc_stick_t *e, unsigned shown, char *buf,
                     size_t n);
+/** @brief What a run waiting for a manual step asks of the operator. */
 const char *sp_left_text(const esc_stick_t *e);
+/** @brief A run under way drawn. */
 void sp_draw_progress(gfx_canvas_t *c);
+/** @brief A run's result drawn. */
 void sp_draw_result(gfx_canvas_t *c);
+/** @brief The RUN warning drawn. */
 void sp_draw_warning(gfx_canvas_t *c);
+/** @brief A profile's manual steps drawn. */
 void sp_draw_hand(gfx_canvas_t *c);
+/** @brief A run's prompt for a manual step drawn. */
 void sp_draw_prompt(gfx_canvas_t *c);
