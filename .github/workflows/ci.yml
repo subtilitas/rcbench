@@ -387,6 +387,16 @@ jobs:
           name: iomcu
           path: firmware/panel/iomcu-image
 
+      # The managed components (firmware/panel/managed_components) come from
+      # the ESP component registry at build time; the lock file pins their
+      # versions.  The step runs once the lock file is committed.
+      - name: Restore the managed components
+        if: hashFiles('firmware/panel/dependencies.lock') != ''
+        uses: actions/cache@v6
+        with:
+          path: firmware/panel/managed_components
+          key: managed-components-${{ hashFiles('firmware/panel/dependencies.lock') }}
+
       # v5.5.5 is the floor: a Rev3.2 ESP32-P4 needs v5.5.5 or v6.0.1 and
       # later, and v5.5.0 and v5.5.1 send a DLC 0 CAN frame as DLC 8, which
       # can_twai.c refuses.
@@ -406,6 +416,14 @@ jobs:
           command: >-
             idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin build
             && idf.py merge-bin -o rcbench-panel-merged.bin
+
+      # A build that rewrites the lock file resolved a version the commit
+      # does not pin.
+      - name: The build leaves the lock file as committed
+        run: |
+          if [ -f firmware/panel/dependencies.lock ]; then
+            git diff --exit-code firmware/panel/dependencies.lock
+          fi
 
       - name: Size report
         run: |

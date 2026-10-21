@@ -158,6 +158,16 @@ jobs:
           name: iomcu
           path: firmware/panel/iomcu-image
 
+      # The managed components (firmware/panel/managed_components) come from
+      # the ESP component registry at build time; the lock file pins their
+      # versions.  The step runs once the lock file is committed.
+      - name: Restore the managed components
+        if: hashFiles('firmware/panel/dependencies.lock') != ''
+        uses: actions/cache@v6
+        with:
+          path: firmware/panel/managed_components
+          key: managed-components-${{ hashFiles('firmware/panel/dependencies.lock') }}
+
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -170,6 +180,14 @@ jobs:
           command: >-
             idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin build
             && idf.py merge-bin -o rcbench-panel-merged.bin
+
+      # A build that rewrites the lock file resolved a version the commit
+      # does not pin.
+      - name: The build leaves the lock file as committed
+        run: |
+          if [ -f firmware/panel/dependencies.lock ]; then
+            git diff --exit-code firmware/panel/dependencies.lock
+          fi
 
       - uses: actions/upload-artifact@v7
         with:
