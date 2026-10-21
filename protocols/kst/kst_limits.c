@@ -1,10 +1,11 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "kst_limits.h"
 
-/* The fields one image check reads. */
+/** @brief The fields one image check reads. */
 typedef struct {
     int32_t duty;
     int32_t boost;
@@ -29,11 +30,19 @@ typedef struct {
     int32_t gyro;
 } values_t;
 
+/**
+ * @brief Raw value of a field as a signed number.
+ *
+ */
 static int32_t raw_of(const kst_image_t *img, kst_field_id_t id)
 {
     return (int32_t)kst_field_get(img, id);
 }
 
+/**
+ * @brief Read the fields one image check uses into a values_t.
+ *
+ */
 static void load(const kst_image_t *img, values_t *v)
 {
     v->duty = raw_of(img, KST_F_DUTY);
@@ -61,16 +70,28 @@ static void load(const kst_image_t *img, values_t *v)
     v->gyro = raw_of(img, KST_F_GYRO);
 }
 
+/**
+ * @brief Give the rule bit when a condition holds.
+ *
+ */
 static kst_rules_t when(bool broken, kst_rule_t rule)
 {
     return broken ? KST_RULE_BIT(rule) : 0u;
 }
 
+/**
+ * @brief Absolute difference of two numbers.
+ *
+ */
 static int32_t distance(int32_t a, int32_t b)
 {
     return a > b ? a - b : b - a;
 }
 
+/**
+ * @brief Hard rules of one image.
+ *
+ */
 static kst_rules_t hard(const kst_image_t *img, const values_t *v)
 {
     kst_rules_t r = 0;
@@ -123,6 +144,10 @@ kst_rules_t kst_limits_image(const kst_image_t *img)
     return hard(img, &v);
 }
 
+/**
+ * @brief Access-class rules of an edit.
+ *
+ */
 static kst_rules_t access(const kst_image_t *backup, const kst_image_t *target,
                           kst_field_set_t unlocked, kst_field_set_t *refused)
 {
@@ -154,6 +179,10 @@ static kst_rules_t access(const kst_image_t *backup, const kst_image_t *target,
     return r;
 }
 
+/**
+ * @brief Soft rules of an edit: changes that move a value the hazardous way.
+ *
+ */
 static kst_rules_t soft(const values_t *b, const values_t *t)
 {
     kst_rules_t r = 0;

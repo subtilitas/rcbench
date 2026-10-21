@@ -1,5 +1,8 @@
-/*
- * PPM frame layout.  See ppm.h for the model.
+/**
+ * @file
+ * @brief PPM frame layout.
+ *
+ * See ppm.h for the model.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,7 +15,9 @@ static const ppm_cfg_t k_default = {
     .sync_min_us = PPM_SYNC_MIN_US,
 };
 
-/* A zero field means "the default for it", so a caller can set one thing. */
+/**
+ * @brief A zero field means "the default for it", so a caller can set one thing.
+ */
 static ppm_cfg_t resolve(const ppm_cfg_t *cfg)
 {
     ppm_cfg_t c = (cfg != NULL) ? *cfg : k_default;
