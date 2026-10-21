@@ -49,6 +49,7 @@ extern "C" {
 
 /* --- families ------------------------------------------------------------- */
 
+/** @brief The two servo families. */
 typedef enum {
     HITEC_CLASSIC = 0,   /**< HS-5xxx, HS-7xxx: 19 200 bit/s, normal polarity */
     HITEC_D       = 1,   /**< D series: 115 200 bit/s, inverted */
@@ -56,16 +57,18 @@ typedef enum {
 
 /** @brief How the master drives the line.  Classic is open drain only. */
 typedef enum {
-/**
- * @brief     /** The pad drives low and is released for high: classic toward
- *                the
-     *  servo's high level, D series toward a pull-up. */
+    /**
+     * @brief The pad drives low and is released for high: classic toward
+     *        the servo's high level, D series toward a pull-up.
+     */
     HITEC_DRIVE_OPEN_DRAIN = 0,
 /** @brief D series only: the pad drives both levels while it sends. */
     HITEC_DRIVE_PUSH_PULL  = 1,
 } hitec_drive_t;
 
+/** @brief Classic bit rate, in bit/s. */
 #define HITEC_C_BIT_RATE 19200u
+/** @brief D series bit rate, in bit/s. */
 #define HITEC_D_BIT_RATE 115200u
 
 /**
@@ -89,20 +92,23 @@ uint32_t hitec_bits_ns(uint8_t family, uint32_t bits);
 
 /* --- classic frames ------------------------------------------------------- */
 
+/** @brief Bytes of a classic frame. */
 #define HITEC_C_FRAME_LEN 4u
 
 /**
  * @brief Command bytes.
  *
- * 0x63 is described for the HS-5xxx and not seen on the
- *  wire; the others are measured. */
+ * 0x63 is described for the HS-5xxx and not seen on the wire; the others are
+ * measured.
+ */
 #define HITEC_C_READ_EEPROM   0x61u   /**< address; reply value, `+` */
 #define HITEC_C_WRITE_EEPROM  0x62u   /**< address, value; reply `+ +` */
 #define HITEC_C_READ_RAM      0x63u   /**< address; reply value, `+` */
 #define HITEC_C_WRITE_RAM     0x64u   /**< address, value; reply `+ +` */
 #define HITEC_C_READ_POSITION 0x65u   /**< unused; reply high, low */
 #define HITEC_C_MOVE          0x66u   /**< target high, low; reply `+ +` */
-#define HITEC_C_FIRST         0x67u   /**< the first command; reply value, `+` */
+#define HITEC_C_FIRST         0x67u   /**< the first command; reply value,
+                                     *   `+` */
 
 #define HITEC_C_ACK 0x2Bu   /**< `+` */
 #define HITEC_C_NAK 0x2Du   /**< `-`: described as the reply to a bad sum */
@@ -135,11 +141,12 @@ bool hitec_c_frame_ok(const uint8_t frame[HITEC_C_FRAME_LEN]);
 
 /* --- D series frames ------------------------------------------------------ */
 
-#define HITEC_D_HEADER_REQUEST 0x96u
-#define HITEC_D_HEADER_ANSWER  0x69u
-#define HITEC_D_READ_LEN       5u
-#define HITEC_D_WRITE_LEN      7u
-#define HITEC_D_ANSWER_LEN     7u
+/** @brief D series frame layout: header bytes and frame lengths. */
+#define HITEC_D_HEADER_REQUEST 0x96u /**< first byte of a request */
+#define HITEC_D_HEADER_ANSWER  0x69u /**< first byte of an answer */
+#define HITEC_D_READ_LEN       5u    /**< bytes of a read request */
+#define HITEC_D_WRITE_LEN      7u    /**< bytes of a write request */
+#define HITEC_D_ANSWER_LEN     7u    /**< bytes of an answer */
 /** @brief The length byte of a write and of an answer: 2 data bytes. */
 #define HITEC_D_DATA_LEN       2u
 
@@ -172,6 +179,7 @@ void hitec_d_write_frame(uint8_t id, uint8_t addr, uint16_t value,
 
 /* --- transactions --------------------------------------------------------- */
 
+/** @brief The kind of a transaction. */
 typedef enum {
 /** @brief Send 1 to HITEC_TX_MAX bytes, then receive. */
     HITEC_XFER_SEND = 0,
@@ -217,10 +225,10 @@ typedef struct {
     uint8_t  family;        /**< hitec_family_t */
     uint8_t  n_tx;          /**< SEND: 1 to HITEC_TX_MAX */
     uint8_t  gap_bits;      /**< SEND: 0 to HITEC_GAP_MAX */
-    uint8_t  tx[HITEC_TX_MAX];
+    uint8_t  tx[HITEC_TX_MAX];  /**< bytes a SEND sends, in order */
     uint8_t  max_rx;        /**< 1 to HITEC_RX_MAX; 0 with no window */
     uint8_t  answer;        /**< LISTEN: 1 sends answer_byte */
-    uint8_t  answer_byte;
+    uint8_t  answer_byte;   /**< byte sent as the answer */
     uint8_t  level;         /**< LEVEL: 0 or 1 */
     uint32_t lead_us;       /**< SEND: 0 to HITEC_TIME_MAX_US */
     uint32_t window_us;     /**< SEND, LISTEN: 0 to HITEC_TIME_MAX_US */
@@ -240,19 +248,24 @@ bool hitec_xfer_valid(const hitec_xfer_t *x);
 /* --- classic transactions ------------------------------------------------- */
 
 /**
- * @brief Idle bit times between two command bytes: 11 bit times start to start,
- *  572.9 us.  The HPP-21 Plus sends 572 us start to start, the HFP-30
- *  521 us. */
+ * @brief Idle bit times between two command bytes: 11 bit times start to
+ *        start, 572.9 us.  The HPP-21 Plus sends 572 us start to start, the
+ *        HFP-30 521 us.
+ */
 #define HITEC_C_GAP_BITS 1u
 /**
- * @brief The receiver starts at the start of the last byte's stop bit, 9 bit
- *  times after the start of that byte. */
+ * @brief The receiver starts at the start of the last byte's stop bit, 9
+ *        bit times after the start of that byte.
+ */
 #define HITEC_C_ARM_BITS 9u
 /**
- * @brief The first reply byte's start bit, from the start of the master's last
- *  byte.  Measured 508 to 517 us after reads, up to 614 us after writes
- *  and after the first read of a session; accepted 494.8 us (the middle of
- *  the master's stop bit) to 1 ms. */
+ * @brief The first reply byte's start bit, from the start of the master's
+ *        last byte.
+ *
+ * Measured 508 to 517 us after reads, up to 614 us after writes and after the
+ * first read of a session; accepted 494.8 us (the middle of the master's stop
+ * bit) to 1 ms.
+ */
 #define HITEC_C_REPLY_MIN_NS  494792u
 #define HITEC_C_REPLY_MAX_NS 1000000u
 /** @brief Receive window after a command, waiting time. */
@@ -275,24 +288,30 @@ void hitec_c_xfer(uint8_t cmd, uint8_t p1, uint8_t p2, hitec_xfer_t *out);
 
 /**
  * @brief The line driven low this long before the first start bit, as the
- *  HFP-30 does from a released line: 88 us. */
+ *        HFP-30 does from a released line: 88 us.
+ */
 #define HITEC_D_LEAD_US 88u
 /**
  * @brief Released bit times between the last stop bit and the receiver's
- *  start. */
+ *        start.
+ */
 #define HITEC_D_SETTLE_BITS 1u
 /**
- * @brief The answer's first start bit, from the end of the request's last stop
- *  bit.  Measured 5.9 to 6.5 ms with the HFP-30, and 5.93 to 6.52 ms over
- *  153 reads by PRECHARGE (D485HW, 2026-10-20); 15.2 ms is reported with
- *  another programmer.  Accepted 2 ms to 20 ms. */
+ * @brief The answer's first start bit, from the end of the request's last
+ *        stop bit.
+ *
+ * Measured 5.9 to 6.5 ms with the HFP-30, and 5.93 to 6.52 ms over 153 reads
+ * by PRECHARGE (D485HW, 2026-10-20); 15.2 ms is reported with another
+ * programmer.  Accepted 2 ms to 20 ms.
+ */
 #define HITEC_D_ANSWER_MIN_NS  2000000u
 #define HITEC_D_ANSWER_MAX_NS 20000000u
 /** @brief Receive window after a read, waiting time. */
 #define HITEC_D_WINDOW_US 25000u
 /**
  * @brief Bytes a read receives: the 7 of the answer and the byte 0x00 the
- *  D485HW sends after it. */
+ *        D485HW sends after it.
+ */
 #define HITEC_D_READ_RX 8u
 
 /**
@@ -336,8 +355,7 @@ bool hitec_listen_xfer(uint8_t family, uint32_t window_us, uint8_t max_rx,
 /**
  * @brief A LEVEL of @p level for @p time_us.
  *
- * False, and @p out untouched, when
- *  the result would not be valid.
+ * False, and @p out untouched, when the result would not be valid.
  *
  * @param family   hitec_family_t value.
  * @param level    Line level to hold, 0 or 1.
@@ -350,22 +368,25 @@ bool hitec_level_xfer(uint8_t family, uint8_t level, uint32_t time_us,
 
 /* --- capture -------------------------------------------------------------- */
 
+/** @brief One received byte. */
 typedef struct {
-/**
- * @brief     /** The start bit's leading edge, in ns from the receiver's start:
- *                the release after a SEND (classic: the start of the last stop bit; D series:
- *                HITEC_D_SETTLE_BITS after the end of the last stop bit), the
-     *  start of a LISTEN. */
+    /**
+     * @brief The start bit's leading edge, in ns from the receiver's start:
+     *        the release after a SEND (classic: the start of the last stop
+     *        bit; D series: HITEC_D_SETTLE_BITS after the end of the last stop
+     *        bit), the start of a LISTEN.
+     */
     uint32_t at_ns;
-    uint8_t  value;
+    uint8_t  value;         /**< received byte value */
     uint8_t  framing;   /**< 1: the stop bit was sampled at the start level */
 } hitec_rx_byte_t;
 
 /** @brief What the receiver took, in the order the bytes came. */
 typedef struct {
-    hitec_rx_byte_t byte[HITEC_RX_MAX];
+    hitec_rx_byte_t byte[HITEC_RX_MAX];  /**< received bytes, in arrival
+                                          *   order */
     uint32_t window_ns;  /**< the window as the transaction asked */
-    uint8_t  family;
+    uint8_t  family;     /**< hitec_family_t value */
     uint8_t  n;          /**< bytes held */
     uint8_t  full;       /**< 1: max_rx bytes came and ended the receive */
     uint8_t  answered;   /**< 1: the answer went out whole after byte 0;
@@ -380,10 +401,10 @@ typedef struct {
 /**
  * @brief Result of a decoder.
  *
- * One code per failed check, in the order the
- *  decoders check. */
+ * One code per failed check, in the order the decoders check.
+ */
 typedef enum {
-    HITEC_RX_OK = 0,
+    HITEC_RX_OK = 0,        /**< every check passed */
     HITEC_RX_ERR_ARG,       /**< NULL, another family, an unknown expectation */
     HITEC_RX_ERR_ABORTED,   /**< the transaction was cut */
     HITEC_RX_ERR_OVERFLOW,  /**< the capture is not whole */
@@ -391,7 +412,8 @@ typedef enum {
     HITEC_RX_ERR_EARLY,     /**< the first byte before the accept window */
     HITEC_RX_ERR_LATE,      /**< the first byte after it */
     HITEC_RX_ERR_NAK,       /**< classic: `-` and nothing after it */
-    HITEC_RX_ERR_LENGTH,    /**< fewer bytes than the reply has; classic: more */
+    HITEC_RX_ERR_LENGTH,    /**< fewer bytes than the reply has; classic:
+                             *   more */
     HITEC_RX_ERR_FRAMING,   /**< a byte of the reply with a bad stop bit */
     HITEC_RX_ERR_GAP,       /**< a byte of the reply too soon or too late
                              *   after the one before */
@@ -402,12 +424,16 @@ typedef enum {
 } hitec_rx_t;
 
 /**
- * @brief A byte of a reply starts 9.5 to 15 bit times after the start of the
- *          one before.  Measured: classic 516 to 528 us (10 bit times are 520.8 us),
- *  D series 86 to 87 us (86.8 us). */
+ * @brief A byte of a reply starts 9.5 to 15 bit times after the start of
+ *        the one before.
+ *
+ * Measured: classic 516 to 528 us (10 bit times are 520.8 us), D series 86 to
+ * 87 us (86.8 us).
+ */
 #define HITEC_NEXT_MIN_HALF_BITS 19u
 #define HITEC_NEXT_MAX_HALF_BITS 30u
 
+/** @brief The reply shape a classic command expects. */
 typedef enum {
     HITEC_C_EXPECT_VALUE = 0,   /**< value, `+` */
     HITEC_C_EXPECT_ACK,         /**< `+ +` */
@@ -417,8 +443,7 @@ typedef enum {
 /**
  * @brief The reply @p cmd has.
  *
- * False for a command byte this module does not
- *  know.
+ * False for a command byte this module does not know.
  *
  * @param cmd  Command byte.
  * @param out  Receives the expected reply shape; may be NULL.
@@ -426,14 +451,16 @@ typedef enum {
  */
 bool hitec_c_expect_of(uint8_t cmd, hitec_c_expect_t *out);
 
+/** @brief A decoded reply. */
 typedef struct {
     uint16_t value;     /**< classic: the value or the word; D: the data */
     uint8_t  id;        /**< D: the answer's second byte, not checked */
     uint8_t  n;         /**< bytes in the capture */
-/**
- * @brief     /** The first byte's start bit, from the start of the master's
- *                last byte (classic), the end of its last stop bit (D series) or the start
-     *  of the listen. */
+    /**
+     * @brief The first byte's start bit, from the start of the master's last
+     *        byte (classic), the end of its last stop bit (D series) or the
+     *        start of the listen.
+     */
     uint32_t delay_ns;
 } hitec_reply_t;
 
@@ -475,9 +502,10 @@ hitec_rx_t hitec_d_decode(const hitec_capture_t *cap, uint8_t addr,
 
 /**
  * @brief Decode a listen for the byte @p want, as the classic entry's `+`:
- *               abort, overflow, a byte at all, its stop bit, its value, no byte after it.
- *               delay_ns is the first byte's time from the start of the listen.  A listen for
- *               more bytes reads them from the capture.
+ * abort, overflow, a byte at all, its stop bit, its value, no byte after it.
+ *
+ * delay_ns is the first byte's time from the start of the listen.  A listen
+ * for more bytes reads them from the capture.
  *
  * @param cap   Capture to decode.
  * @param want  Byte expected as the first received byte.
@@ -503,10 +531,14 @@ hitec_rx_t hitec_listen_decode(const hitec_capture_t *cap, uint8_t want,
  *   times with hitec_elapsed_us().
  */
 typedef struct {
-    void *ctx;
-    bool (*start)(void *ctx, const hitec_xfer_t *xfer);
+    void *ctx;                 /**< driver state, passed to each function */
+    bool (*start)(void *ctx, const hitec_xfer_t *xfer);  /**< begin a run */
+    /**
+     * @brief Reports the end of a run: false while it runs; true once, with
+     *        @p out filled, after it has ended.
+     */
     bool (*poll)(void *ctx, hitec_capture_t *out);
-    uint32_t (*now_us)(void *ctx);
+    uint32_t (*now_us)(void *ctx);                       /**< us, may wrap */
 } hitec_driver_t;
 
 /** @brief Microseconds from @p since to @p now on a clock that wraps at 2^32.
@@ -518,8 +550,10 @@ typedef struct {
 uint32_t hitec_elapsed_us(uint32_t now, uint32_t since);
 
 /**
- * @brief True when @p span_us or more have passed from @p since to @p now, also
- *             across the wrap of the clock.  A span is shorter than 2^31 us.
+ * @brief True when @p span_us or more have passed from @p since to @p now,
+ *        also across the wrap of the clock.
+ *
+ * A span is shorter than 2^31 us.
  *
  * @param now      Current time, in us.
  * @param since    Earlier time, in us.

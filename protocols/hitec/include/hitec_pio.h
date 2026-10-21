@@ -75,8 +75,9 @@ extern "C" {
 /** @brief Cycles of one tick of the receiver's counter: 1/8 of a bit. */
 #define HITEC_PIO_TICK_CYCLES 2u
 /**
- * @brief Smallest clock divider: the input synchroniser's 2 system clock cycles
- *  are then half a state machine cycle or less. */
+ * @brief Smallest clock divider: the input synchroniser's 2 system clock
+ *        cycles are then half a state machine cycle or less.
+ */
 #define HITEC_PIO_MIN_DIV 4u
 /** @brief Largest integer part of the clock divider. */
 #define HITEC_PIO_MAX_DIV 65535u
@@ -85,22 +86,27 @@ extern "C" {
  */
 #define HITEC_PIO_SYNC_SYS_CYCLES 2u
 /**
- * @brief Largest bit time error a clock may give, in parts per million: 0.05 %.
- *  The 8 fractional bits of the divider and a divider of 4 or more keep
- *  every clock within 489 ppm. */
+ * @brief Largest bit time error a clock may give, in parts per million:
+ *        0.05 %.
+ *
+ * The 8 fractional bits of the divider and a divider of 4 or more keep
+ * every clock within 489 ppm.
+ */
 #define HITEC_PIO_MAX_ERROR_PPM 500u
 
 /** @brief Cycles of a lead beyond 2 per count. */
 #define HITEC_PIO_LEAD_CYCLES 8u
 /**
- * @brief Cycles of the receive path of one byte, start bit to start bit, beyond
- *  the waiting: detection, 9.5 bits of samples and the push. */
+ * @brief Cycles of the receive path of one byte, start bit to start bit,
+ *        beyond the waiting: detection, 9.5 bits of samples and the push.
+ */
 #define HITEC_PIO_BYTE_CYCLES 157u
 /** @brief Cycles an answer adds to the receive path of the first byte. */
 #define HITEC_PIO_ANSWER_CYCLES 261u
 /**
  * @brief Cycles from the sample that sees the first byte's start bit to the
- *  answer's first change of direction: 10 bit times. */
+ *        answer's first change of direction: 10 bit times.
+ */
 #define HITEC_PIO_ANSWER_CYCLES_TO_EDGE 160u
 /** @brief Bit times of the answer word. */
 #define HITEC_PIO_ANSWER_BITS 16u
@@ -112,11 +118,11 @@ extern "C" {
 /**
  * @brief Addresses in the program, from its first word.
  *
- * IDLE: the `out` the
- *  machine stalls on between transactions.  BIT to RELEASE - 1: the bit
- *  times.  RELEASE: the release before the receiver.  ASK: the `jmp !osre`
- *  after a byte.  ANSWER and ANSWER + 1: the way into the answer's bit
- *  times.  DRAIN: the end of the window. */
+ * IDLE: the `out` the machine stalls on between transactions.  BIT to
+ * RELEASE - 1: the bit times.  RELEASE: the release before the receiver.
+ * ASK: the `jmp !osre` after a byte.  ANSWER and ANSWER + 1: the way into
+ * the answer's bit times.  DRAIN: the end of the window.
+ */
 #define HITEC_PIO_IDLE_PC    1u
 #define HITEC_PIO_BIT_PC     8u
 #define HITEC_PIO_RELEASE_PC 11u
@@ -128,19 +134,21 @@ extern "C" {
  * @brief Bits of the tick counter a pushed word carries; the window is shorter.
  */
 #define HITEC_PIO_STAMP_BITS 23u
+/** @brief Largest window the tick counter carries, in ticks. */
 #define HITEC_PIO_MAX_WINDOW_TICKS ((1u << HITEC_PIO_STAMP_BITS) - 1u)
 /** @brief Largest lead count. */
 #define HITEC_PIO_MAX_LEAD ((1u << 30) - 1u)
 
 /**
  * @brief Words of the longest stream: 3 counts and 8 words of bit times (8
- *              bytes of 10 bits with 6 idle bits between two, and the D series' settle bit,
- *  padded to 128 bit times). */
+ *        bytes of 10 bits with 6 idle bits between two, and the D series'
+ *        settle bit, padded to 128 bit times).
+ */
 #define HITEC_PIO_TX_WORDS 11u
 
 /** @brief The divider and the counts a system clock gives for one family. */
 typedef struct {
-    uint32_t sys_hz;
+    uint32_t sys_hz;   /**< system clock, in Hz */
     uint32_t div256;   /**< clock divider times 256: integer part and 8
                         *   fractional bits */
     uint32_t err_ppm;  /**< bit time error, parts per million */
@@ -153,13 +161,14 @@ typedef struct {
     uint32_t window_ticks;  /**< W */
 /** @brief From the lead's first change of direction to the release, in ns. */
     uint32_t lead_ns;
-/**
- * @brief     /** An upper bound of the transaction's time from the hand-over of
- *                the
-     *  stream: lead, bits, window, max_rx bytes and the answer, in us. */
+    /**
+     * @brief An upper bound of the transaction's time from the hand-over
+     *        of the stream: lead, bits, window, max_rx bytes and the answer,
+     *        in us.
+     */
     uint32_t span_us;
-    uint8_t  family;
-    uint8_t  max_rx;
+    uint8_t  family;        /**< hitec_family_t value */
+    uint8_t  max_rx;        /**< bytes at which the receive ends */
     uint8_t  answer;        /**< 1: the stream carries an answer word */
 } hitec_pio_run_t;
 
@@ -196,9 +205,11 @@ uint32_t hitec_pio_cycles_ns(const hitec_pio_clock_t *clock, uint64_t cycles);
 
 /**
  * @brief The word stream for @p xfer on a line with @p drive (hitec_drive_t).
- *            Returns the number of words written to @p words, at most HITEC_PIO_TX_WORDS,
- *            or 0 when @p xfer is not valid, is of another family than @p clock, asks
- *            classic for push-pull, or asks an open-drain line to hold a high level.
+ *
+ * Returns the number of words written to @p words, at most
+ * HITEC_PIO_TX_WORDS, or 0 when @p xfer is not valid, is of another family
+ * than @p clock, asks classic for push-pull, or asks an open-drain line to
+ * hold a high level.
  *
  * @param clock  Divider and counts.
  * @param drive  hitec_drive_t value of the line.
@@ -214,11 +225,13 @@ unsigned hitec_pio_tx(const hitec_pio_clock_t *clock, uint8_t drive,
 
 /**
  * @brief Whether the answer of @p run is still to go out with @p n bytes
- *                received and the state machine at @p pc, counted from the program's first
- *                word. True only for a run with an answer, @p n of 1 and @p pc at ASK, at
- *                ANSWER or ANSWER + 1, or in the bit times.  A receive that has its count
- *                waits for this to turn false before the driver restarts the machine, so a
- *                LISTEN for 1 byte sends its whole answer.
+ *        received and the state machine at @p pc, counted from the program's
+ *        first word.
+ *
+ * True only for a run with an answer, @p n of 1 and @p pc at ASK, at ANSWER
+ * or ANSWER + 1, or in the bit times.  A receive that has its count waits for
+ * this to turn false before the driver restarts the machine, so a LISTEN for
+ * 1 byte sends its whole answer.
  *
  * @param run  Layout of the transaction.
  * @param n    Bytes received so far.
@@ -230,6 +243,7 @@ bool hitec_pio_answer_due(const hitec_pio_run_t *run, unsigned n,
 
 /**
  * @brief The capture from the @p n words the program pushed, in their order.
+ *
  * @p full says the receive ended at max_rx bytes, @p lost that the driver
  * ended a program that ran past run->span_us, @p aborted that the
  * transaction was cut, @p cut that the driver restarted the machine while

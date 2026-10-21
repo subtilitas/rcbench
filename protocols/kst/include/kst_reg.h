@@ -60,62 +60,63 @@ typedef struct {
  * KST_F_Rxx are bits the vendor tool gives no name.
  */
 typedef enum {
-    KST_F_R00 = 0,
+    KST_F_R00 = 0,  /**< not named by the vendor tool */
     KST_F_DUTY_COPY,     /**< 01: the vendor tool writes the value of 02 */
     KST_F_DUTY,          /**< 02: Max. Duty */
     KST_F_BOOST,         /**< 03 */
     KST_F_STRETCH,       /**< 04 bits 2-0 */
     KST_F_SOFT_START,    /**< 04 bit 3 */
-    KST_F_R04_B54,
+    KST_F_R04_B54,  /**< not named by the vendor tool */
     KST_F_20K_SEL,       /**< 04 bit 6 */
     KST_F_SPD_SEL,       /**< 04 bit 7 */
     KST_F_DEAD_BAND,     /**< 05 bits 5-0 */
     KST_F_LOCK,          /**< 05 bit 6; meaning unknown */
     KST_F_ALLOW_UNCONT,  /**< 05 bit 7 */
-    KST_F_R06,
+    KST_F_R06,  /**< not named by the vendor tool */
     KST_F_PULSE_LOWER,   /**< 07 and 09 bits 3-0 */
     KST_F_PULSE_UPPER,   /**< 08 and 09 bits 7-4 */
     KST_F_NEUTRAL,       /**< 0B and 0A bits 4-0 */
-    KST_F_R0A_B5,
+    KST_F_R0A_B5,  /**< not named by the vendor tool */
     KST_F_REVERSION,     /**< 0A bit 6 */
-    KST_F_R0A_B7,
+    KST_F_R0A_B7,  /**< not named by the vendor tool */
     KST_F_UNCONT_POS,    /**< 0C and 0D bits 3-0 */
-    KST_F_R0D_B76,
+    KST_F_R0D_B76,  /**< not named by the vendor tool */
     KST_F_UNCONT_TIME,   /**< 0E */
-    KST_F_R0F,
+    KST_F_R0F,  /**< not named by the vendor tool */
     KST_F_LEFT_ANGLE,    /**< 10 */
     KST_F_RIGHT_ANGLE,   /**< 11 */
-    KST_F_R12_B20,
+    KST_F_R12_B20,  /**< not named by the vendor tool */
     KST_F_PROT1_CANCLE,  /**< 12 bit 3; the vendor's spelling */
-    KST_F_R12_B54,
+    KST_F_R12_B54,  /**< not named by the vendor tool */
     KST_F_PROT1_EN,      /**< 12 bit 6 */
-    KST_F_R12_B7,
+    KST_F_R12_B7,  /**< not named by the vendor tool */
     KST_F_PROT1_TIME,    /**< 13 and 0D bits 5-4 */
-    KST_F_R14,
+    KST_F_R14,  /**< not named by the vendor tool */
     KST_F_PROT1_PWM,     /**< 15 */
-    KST_F_R16,
+    KST_F_R16,  /**< not named by the vendor tool */
     KST_F_PROT_POT_ERR,  /**< 17 and 18 bits 3-0 */
-    KST_F_R18_B74,
+    KST_F_R18_B74,  /**< not named by the vendor tool */
     KST_F_POT_SAM_TIMES, /**< 19 */
     KST_F_PROT_PWM_ERR,  /**< 1A */
     KST_F_SPD,           /**< 1B and 1C bits 3-0 */
-    KST_F_R1C_B74,
+    KST_F_R1C_B74,  /**< not named by the vendor tool */
     KST_F_NODE_ADDR,     /**< 1D: the pairing value of the vendor's card */
-    KST_F_R1E,
+    KST_F_R1E,  /**< not named by the vendor tool */
     KST_F_GYRO,          /**< 1F bit 0: Servo or Gyro Servo */
-    KST_F_R1F_B71,
+    KST_F_R1F_B71,  /**< not named by the vendor tool */
     KST_F_COUNT
 } kst_field_id_t;
 
 /** @brief A set of fields, bit n for field n. */
 typedef uint64_t kst_field_set_t;
+/** @brief The bit of field @p id in a kst_field_set_t. */
 #define KST_FIELD_BIT(id) ((kst_field_set_t)1 << (id))
 
 /**
  * @brief Who may change a field.
  *
- * A decision about a field changes this column of
- *  the table and no code. */
+ * A decision about a field changes this column of the table and no code.
+ */
 typedef enum {
     KST_ACCESS_EDITABLE = 0, /**< an edit may change it */
     KST_ACCESS_LOCKED,       /**< read-only until its function is measured;
@@ -142,7 +143,7 @@ typedef struct {
     uint8_t lo_shift;   /**< position of the low part's bit 0 */
     uint8_t lo_bits;    /**< width of the low part */
     uint8_t hi_reg;     /**< register of the high part */
-    uint8_t hi_shift;
+    uint8_t hi_shift;   /**< position of the high part's bit 0 */
     uint8_t hi_bits;    /**< 0: the field lies in one register */
     uint8_t access;     /**< kst_access_t */
     uint8_t unit;       /**< kst_unit_t */
@@ -156,7 +157,9 @@ typedef struct {
  */
 const kst_field_t *kst_field(kst_field_id_t id);
 
-/** @brief Largest raw value the field's bits hold; 0 for an id outside the table.
+/**
+ * @brief Largest raw value the field's bits hold; 0 for an id outside the
+ *        table.
  *
  * @param id  Field.
  * @return Largest raw value the field holds; 0 for an id outside the table.
@@ -182,8 +185,8 @@ uint16_t kst_field_get(const kst_image_t *img, kst_field_id_t id);
 /**
  * @brief Set a field's bits.
  *
- * No other bit of the image changes.  False, and no
- *  change, when @p raw does not fit the field.
+ * No other bit of the image changes.  False, and no change, when @p raw does
+ * not fit the field.
  *
  * @param img  Image to change.
  * @param id   Field.
@@ -194,7 +197,9 @@ bool kst_field_set(kst_image_t *img, kst_field_id_t id, uint16_t raw);
 
 /**
  * @brief Set a field as an edit does: kst_field_set(), and for KST_F_DUTY the
- *            copy in register 0x01 as well.  Both known images hold 0x01 equal to 0x02.
+ *        copy in register 0x01 as well.
+ *
+ * Both known images hold 0x01 equal to 0x02.
  *
  * @param img  Image to change.
  * @param id   Field.
@@ -285,8 +290,10 @@ const char *kst_type_name(kst_type_t type);
 
 /**
  * @brief What both known images have in common and the vendor tool forces on
- *             every write.  An image that breaks one of these does not have the measured
- *             layout, and nothing is written to that servo.
+ *        every write.
+ *
+ * An image that breaks one of these does not have the measured layout, and
+ * nothing is written to that servo.
  */
 typedef enum {
     KST_FP_R00 = 0,         /**< 00 reads 00 */
@@ -301,6 +308,7 @@ typedef enum {
     KST_FP_COUNT
 } kst_fp_rule_t;
 
+/** @brief Broken rules and deviating registers of an image. */
 typedef struct {
     uint16_t rules;   /**< bit n: rule n of kst_fp_rule_t is broken */
     uint32_t regs;    /**< bit n: register n deviates */

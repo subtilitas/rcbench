@@ -56,12 +56,14 @@ extern "C" {
 #endif
 
 /**
- * @brief The driver ends a transaction whose state machine still runs this long
- *  after the end of the window. */
+ * @brief The driver ends a transaction whose state machine still runs this
+ *        long after the end of the window.
+ */
 #define KST_LINE_GRACE_US 1000u
 
+/** @brief Error codes of the KST line driver. */
 typedef enum {
-    KST_LINE_OK = 0,
+    KST_LINE_OK = 0,     /**< no error */
     KST_LINE_ERR_ARG,    /**< no line object, or a pin the chip does not have */
     KST_LINE_ERR_CLOCK,  /**< the system clock gives no 25.40 us half-cell */
     KST_LINE_ERR_PIO,    /**< no state machine or no program space */

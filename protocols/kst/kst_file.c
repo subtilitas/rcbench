@@ -1,20 +1,30 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief KST servo configuration as a text file: write and read.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "kst_file.h"
 
 #include <string.h>
 
+/** @brief Start of the first line, before the format number. */
 #define HEADER      "KST servo configuration, format "
+/** @brief Start of the servo type line. */
 #define TYPE_LINE   "Type: "
+/** @brief Keyword that starts the register count line. */
 #define REGISTERS   "registers"
+/** @brief Keyword that starts the checksum line. */
 #define CHECKSUM    "checksum"
+/** @brief Suffix on a field line that is not editable. */
 #define NOT_LOADED  " [not loaded]"
+/** @brief Length of the string literal @p s, without its terminator. */
 #define STR_LEN(s)  (sizeof(s) - 1u)
 
+/** @brief Registers on each line of the register block. */
 #define REGS_PER_LINE  8u
+/** @brief Lines of the register block. */
 #define REG_LINES      (KST_REG_COUNT / REGS_PER_LINE)
 /** @brief "00:" and 8 times " xx". */
 #define REG_LINE_LEN   (3u + 3u * REGS_PER_LINE)
@@ -28,14 +38,16 @@
 
 /**
  * @brief The byte order mark of UTF-8 (8-bit Unicode Transformation Format),
- *            which
- * some editors put in front of a text. */
+ *        which some editors put in front of a text.
+ */
 #define BOM "\xEF\xBB\xBF"
 
+/** @brief Upper-case hex digits, indexed by a nibble value. */
 static const char k_hex[] = "0123456789ABCDEF";
 
 /* --- checksum ------------------------------------------------------------- */
 
+/** @brief Initial value of the CRC-32 register. */
 #define CRC_START 0xFFFFFFFFu
 
 /** @brief CRC-32 of IEEE 802.3, 4 bits a step. */
@@ -366,18 +378,20 @@ static bool hex2(const char *s, size_t n, size_t *i, unsigned *v)
     return true;
 }
 
+/** @brief Reading position in the file text. */
 typedef struct {
-    const char *text;
-    size_t len;
-    size_t pos;     /* start of the next line */
-    unsigned line;  /* number of the line asked for last, from 1 */
+    const char *text;   /**< the file text */
+    size_t len;         /**< bytes in text */
+    size_t pos;         /**< start of the next line */
+    unsigned line;      /**< number of the line asked for last, from 1 */
 } cur_t;
 
+/** @brief One line of the file text, without its line end. */
 typedef struct {
-    const char *s;
-    size_t n;       /* without the line end */
-    bool cr;        /* the line ends with CR LF */
-    bool open;      /* the text ends in this line, without a line end */
+    const char *s;      /**< first byte of the line */
+    size_t n;           /**< bytes without the line end */
+    bool cr;            /**< the line ends with CR LF */
+    bool open;          /**< the text ends in this line, without a line end */
 } line_t;
 
 /**
@@ -587,6 +601,7 @@ static bool crc_line(const line_t *l, uint32_t *crc)
  */
 static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
 {
+    /** @brief Parse states of read_verified(), in file order. */
     enum { S_HEAD, S_TYPE, S_FIELDS, S_ROWS, S_CHECK, S_DONE } state = S_HEAD;
     line_t l;
     uint32_t crc = CRC_START;
@@ -677,14 +692,17 @@ static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
 
 /* --- reading: a file without a checksum line ------------------------------ */
 
+/** @brief State of a write that applies edits to a file's lines. */
 typedef struct {
     kst_file_t *f;
-    unsigned rows_left;   /* lines of the register block still to come */
+    unsigned rows_left;   /**< lines of the register block still to come */
     bool has_block;
-    kst_type_t stated;    /* by the type line */
-    unsigned type_line;   /* 0: the file has none */
-    /* Per named field without "raw": the number as written, in the unit
-     * of kst_field_display(). */
+    kst_type_t stated;    /**< by the type line */
+    unsigned type_line;   /**< 0: the file has none */
+    /**
+     * Per named field without "raw": the number as written, in the unit
+     * of kst_field_display().
+     */
     int32_t typed[KST_F_COUNT];
 } edit_t;
 

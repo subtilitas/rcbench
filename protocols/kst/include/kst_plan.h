@@ -73,14 +73,16 @@ extern "C" {
  *  groups. */
 #define KST_PLAN_MAX_STEPS 33u
 
+/** @brief Kind of a plan. */
 typedef enum {
     KST_PLAN_EDIT = 0,         /**< a change of editable fields */
     KST_PLAN_RESTORE,          /**< back to the backup, locks lifted */
     KST_PLAN_RELEASE_PAIRING,  /**< register 0x1D to 0x00 */
 } kst_plan_kind_t;
 
+/** @brief Result of a planning request or job. */
 typedef enum {
-    KST_PLAN_OK = 0,
+    KST_PLAN_OK = 0,        /**< plan made; out holds the writes */
     KST_PLAN_ERR_ARG,      /**< a NULL argument */
     KST_PLAN_ERR_RULES,    /**< the target breaks a hard rule */
     KST_PLAN_ERR_R00,      /**< the target differs in register 0x00 */
@@ -95,9 +97,9 @@ typedef enum {
 /**
  * @brief The most units one piece of work takes.
  *
- * kst_plan_step() ends a call
- *  after the piece that brings its count to the budget, so a call takes
- *  less than its budget plus this. */
+ * kst_plan_step() ends a call after the piece that brings its count to the
+ * budget, so a call takes less than its budget plus this.
+ */
 #define KST_PLAN_PIECE_UNITS 10u
 /**
  * @brief Units per kst_plan_step() call of a caller that must not block: a call
@@ -128,17 +130,18 @@ typedef enum {
 
 /** @brief One write. */
 typedef struct {
-    uint8_t reg;
-    uint8_t value;
+    uint8_t reg;            /**< register address */
+    uint8_t value;          /**< value written */
     uint8_t prev;     /**< the register's value before this write */
     uint8_t settled;  /**< 1: after this write no two-register field and no
                            duty pair is half written */
 } kst_write_t;
 
+/** @brief A plan: the writes that take the servo from start to target. */
 typedef struct {
     kst_image_t start;       /**< the image the servo must hold beforehand */
     kst_image_t target;      /**< the image after the last write */
-    kst_field_set_t unlocked;
+    kst_field_set_t unlocked;  /**< fields whose lock is lifted */
     uint8_t kind;            /**< kst_plan_kind_t */
     uint8_t n;               /**< number of writes */
     uint8_t unchecked;       /**< 1: a restore whose order is not checked */
@@ -156,7 +159,7 @@ typedef struct {
  */
 typedef struct {
     kst_rules_t allowed;     /**< hard rules the end points break themselves */
-    kst_plan_t *plan;
+    kst_plan_t *plan;        /**< the plan the job builds */
     uint32_t spent;          /**< units since the job began */
     uint32_t cap;
     kst_image_t img;         /**< the image after the writes emitted so far */
@@ -185,12 +188,13 @@ typedef struct {
 } kst_plan_job_t;
 
 /**
- * @brief Check an edit from @p start to @p target and prepare @p job to plan it
- * into @p out.  KST_PLAN_BUSY: the job is ready for kst_plan_step().  Every
- * other result is final and is what kst_plan_edit() returns for the same
- * request before it searches: KST_PLAN_ERR_ARG, _R00, _PAIRING, _RULES.
- * The call checks at most 4 images; its cost does not grow with the
- * request.
+ * @brief Check an edit from @p start to @p target and prepare @p job to plan
+ *        it into @p out.
+ *
+ * KST_PLAN_BUSY: the job is ready for kst_plan_step().  Every other result is
+ * final and is what kst_plan_edit() returns for the same request before it
+ * searches: KST_PLAN_ERR_ARG, _R00, _PAIRING, _RULES.  The call checks at most
+ * 4 images; its cost does not grow with the request.
  *
  * @p start and @p target are copied before @p out is cleared: either may
  * lie in @p out.  The same holds for kst_plan_restore_begin(),
@@ -316,8 +320,7 @@ kst_plan_result_t kst_plan_release_pairing(const kst_image_t *current,
 /**
  * @brief The image after the first @p steps writes of a plan.
  *
- * False for more
- *  steps than the plan has.
+ * False for more steps than the plan has.
  *
  * @param plan   Plan to apply.
  * @param steps  Number of writes to apply.

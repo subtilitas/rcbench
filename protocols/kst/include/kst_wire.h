@@ -60,22 +60,29 @@ extern "C" {
 /**
  * @brief Transmit half-cell, 25.40 us.
  *
- * The only rate the servo is proven to
- *  accept.  Required accuracy: 50 ns, edge jitter below 100 ns. */
+ * The only rate the servo is proven to accept.  Required accuracy: 50 ns,
+ * edge jitter below 100 ns.
+ */
 #define KST_HALF_CELL_NS 25400u
 /** @brief The same half-cell in cycles of a 150 MHz system clock. */
 #define KST_HALF_CELL_CYCLES_150MHZ 3810u
 /**
- * @brief The servo's own cell, 51.15 us (half-cell 25.575 us, 0.7 % slower than
- *  the master).  The decoder predicts each mid-cell edge with it. */
+ * @brief The servo's own cell, 51.15 us (half-cell 25.575 us, 0.7 % slower
+ *        than the master).
+ *
+ * The decoder predicts each mid-cell edge with it.
+ */
 #define KST_SERVO_CELL_NS      51150u
 #define KST_SERVO_HALF_CELL_NS 25575u
 
 #define KST_FRAME_BITS  27u   /**< master to servo */
 #define KST_REPLY_BITS  11u   /**< servo to master */
 /**
- * @brief The sync burst: 64 high pulses of one half-cell, one half-cell apart.
- *  Other counts are not tested. */
+ * @brief The sync burst: 64 high pulses of one half-cell, one half-cell
+ *        apart.
+ *
+ * Other counts are not tested.
+ */
 #define KST_SYNC_PULSES 64u
 
 /** @brief Longest level sequence: the sync burst, 64 highs and 63 lows. */
@@ -86,8 +93,10 @@ extern "C" {
 
 /**
  * @brief After the last half-cell of a frame the driver drives low for 50 us,
- *  then switches the pad to input.  The earliest reply observed starts
- *  437 us after the last edge. */
+ *        then switches the pad to input.
+ *
+ * The earliest reply observed starts 437 us after the last edge.
+ */
 #define KST_RELEASE_NS 50000u
 
 /* --- reply windows, from the master's last edge to the first rising edge -- */
@@ -111,19 +120,23 @@ extern "C" {
 #define KST_RX_SEARCH_NS 8000u
 /**
  * @brief The two halves of a cell are compared 12.8 us before and after the
- *  mid-cell edge. */
+ *        mid-cell edge.
+ */
 #define KST_RX_CONFIRM_NS 12800u
 /**
  * @brief Mean half-cell of a reply: 25.6 us +/- 5 %.
  *
- * The servo's clock tolerance
- *  over temperature and supply is not measured. */
+ * The servo's clock tolerance over temperature and supply is not measured.
+ */
 #define KST_RX_HALF_CELL_MIN_NS 24300u
 #define KST_RX_HALF_CELL_MAX_NS 26900u
 /**
- * @brief After a last bit 1 the line is low within 100 us of the nominal end.
- *  The servo releases the line there; the last high reads 32 us at a 1.4 V
- *  threshold and 59 us at 0.1 V. */
+ * @brief After a last bit 1 the line is low within 100 us of the nominal
+ *        end.
+ *
+ * The servo releases the line there; the last high reads 32 us at a 1.4 V
+ * threshold and 59 us at 0.1 V.
+ */
 #define KST_RX_FINAL_EDGE_MAX_NS 100000u
 /** @brief The line stays low for 200 us after the reply. */
 #define KST_RX_QUIET_AFTER_NS 200000u
@@ -131,16 +144,17 @@ extern "C" {
 /**
  * @brief Edges a capture holds.
  *
- * A reply has at most 23; the rest is room for
- *  glitches, 2 edges each. */
+ * A reply has at most 23; the rest is room for glitches, 2 edges each.
+ */
 #define KST_CAP_MAX_EDGES 48u
 
 /* --- frames --------------------------------------------------------------- */
 
+/** @brief Kind of a master frame. */
 typedef enum {
-    KST_FRAME_READ = 0,
-    KST_FRAME_WRITE,
-    KST_FRAME_SYNC,
+    KST_FRAME_READ = 0,     /**< read request */
+    KST_FRAME_WRITE,        /**< write request */
+    KST_FRAME_SYNC,         /**< sync burst */
 } kst_frame_kind_t;
 
 /**
@@ -154,14 +168,14 @@ typedef enum {
 typedef struct {
     uint8_t kind;                           /**< kst_frame_kind_t */
     uint8_t n_half;                         /**< half-cells to clock out */
-    uint8_t level[KST_FRAME_LEVEL_BYTES];   /**< bit 7 of byte 0 first; 1 = high */
+    uint8_t level[KST_FRAME_LEVEL_BYTES];   /**< bit 7 of byte 0 first;
+                                             *   1 = high */
 } kst_frame_t;
 
 /**
  * @brief Read frame for register @p reg.
  *
- * False, and no frame, for an address
- *  above KST_REG_MAX.
+ * False, and no frame, for an address above KST_REG_MAX.
  *
  * @param reg  Register address, up to KST_REG_MAX.
  * @param out  Receives the frame.
@@ -172,8 +186,8 @@ bool kst_frame_read(uint8_t reg, kst_frame_t *out);
 /**
  * @brief Write frame.
  *
- * False, and no frame, for register 0x00 and for an address
- *  above KST_REG_MAX: neither is ever written.
+ * False, and no frame, for register 0x00 and for an address above
+ * KST_REG_MAX: neither is ever written.
  *
  * @param reg    Register address.
  * @param value  Value to write.
@@ -214,24 +228,26 @@ uint32_t kst_frame_duration_ns(const kst_frame_t *frame);
  */
 typedef struct {
     uint32_t window_ns;                     /**< end of the capture */
-    uint8_t  level0;                        /**< line level at the start, 0 or 1 */
-    uint8_t  overflow;                      /**< 1: more edges than the buffer holds */
-    uint8_t  n_edges;
-    uint32_t edge_ns[KST_CAP_MAX_EDGES];
+    uint8_t  level0;                        /**< line level at the start,
+                                             *   0 or 1 */
+    uint8_t  overflow;                      /**< 1: more edges than the
+                                             *   buffer holds */
+    uint8_t  n_edges;                       /**< edges in edge_ns */
+    uint32_t edge_ns[KST_CAP_MAX_EDGES];    /**< level changes, ascending */
 } kst_capture_t;
 
 /**
  * @brief What the master sent, which decides the accept window and the flags.
  */
 typedef enum {
-    KST_EXPECT_READ = 0,
-    KST_EXPECT_WRITE,
-    KST_EXPECT_SYNC,
+    KST_EXPECT_READ = 0,    /**< a read frame was sent */
+    KST_EXPECT_WRITE,       /**< a write frame was sent */
+    KST_EXPECT_SYNC,        /**< a sync burst was sent */
 } kst_expect_t;
 
 /** @brief Result of decoding one reply window.  One code per failed check. */
 typedef enum {
-    KST_RX_OK = 0,
+    KST_RX_OK = 0,       /**< every check passed */
     KST_RX_NO_REPLY,     /**< no edge in the window */
     KST_RX_QUIET,        /**< an edge before the accept window */
     KST_RX_START_LEVEL,  /**< the line is high when the capture starts */
@@ -246,6 +262,7 @@ typedef enum {
     KST_RX_CAPTURE,      /**< no capture, or edge times not ascending */
 } kst_rx_t;
 
+/** @brief A decoded reply window. */
 typedef struct {
     uint8_t  result;        /**< kst_rx_t */
     uint8_t  value;         /**< the 8 data bits; valid with KST_RX_OK */

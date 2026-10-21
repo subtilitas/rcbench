@@ -19,30 +19,36 @@
 
 /**
  * @brief The program renders a run of N microseconds as a one-cycle `out` and
- *            N-1 cycles of loop, so the count in the FIFO (first in first out) is two less
- *            than the duration.  ppm_frame() refuses a run shorter than the mark, and the
- *            mark is 300 us, so this cannot go negative.
+ *        N-1 cycles of loop, so the count in the FIFO (first in first out) is
+ *        two less than the duration.
+ *
+ * ppm_frame() refuses a run shorter than the mark, and the mark is 300 us, so
+ * this cannot go negative.
  */
 #define RUN_TO_COUNT(us)  ((uint32_t)(us) - 2u)
 
+/**
+ * @brief State of one PPM output: its pin, PIO state machine and DMA
+ *        channels.
+ */
 typedef struct {
-    bool     used;
-    bool     running;
-    uint8_t  pin;
-    uint8_t  channels;
-    uint16_t frame_us;
+    bool     used;      /**< slot is bound to a pin */
+    bool     running;   /**< a frame is being played */
+    uint8_t  pin;       /**< GPIO pin number */
+    uint8_t  channels;  /**< channels the frame carries */
+    uint16_t frame_us;  /**< frame length, in us */
 
-    PIO      pio;
-    uint     sm;
-    uint     offset;
+    PIO      pio;       /**< PIO block */
+    uint     sm;        /**< state machine index */
+    uint     offset;    /**< program offset in the PIO instruction memory */
 
-    int      dma_data;
-    int      dma_ctrl;
+    int      dma_data;  /**< data channel: plays the run counts */
+    int      dma_ctrl;  /**< control channel: restarts the data channel */
     dma_channel_config cfg_data;
     dma_channel_config cfg_ctrl;
 
-    uint32_t buf[PPM_MAX_RUNS];
-    uint32_t words;
+    uint32_t buf[PPM_MAX_RUNS];   /**< run counts, see RUN_TO_COUNT() */
+    uint32_t words;               /**< runs in buf */
     /* The widths the buffer currently holds, so a service pass that has
      * nothing new to say does not rewrite a frame that is being played. */
     uint16_t last_us[PPM_MAX_CHANNELS];
@@ -75,9 +81,10 @@ static ppm_out_t *find(uint8_t pin)
 
 /**
  * @brief Erratum RP2350-E5: a channel that is aborted while it or a channel
- *                chained to it is still enabled can be retriggered by the abort itself.  Both
- *                are therefore disabled first, and the enable bit is put back when the frame
- *                is started again.
+ *        chained to it is still enabled can be retriggered by the abort itself.
+ *
+ * Both are therefore disabled first, and the enable bit is put back when the
+ * frame is started again.
  */
 static void set_enabled(ppm_out_t *s, bool on)
 {

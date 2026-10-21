@@ -1,15 +1,23 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief KST session: the operations on one servo, run step by step.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "kst_session.h"
 
 #include <string.h>
 
+/** @brief Operation the session runs. */
 enum { OP_NONE = 0, OP_ENTER, OP_READ_ALL, OP_VERIFY, OP_WRITE };
+/**
+ * @brief Timer state of a transaction: idle, gap before the next frame, or
+ *        busy.
+ */
 enum { T_IDLE = 0, T_GAP, T_BUSY };
 
+/** @brief Steps of the enter sequence (E_*) and of a write (W_*). */
 enum {
     /* enter */
     E_WAITED = 0,     /* the line was low for KST_ENTRY_LOW_US */
@@ -30,6 +38,7 @@ enum {
     W_PLAN,           /* the planner runs; nothing is on the wire */
 };
 
+/** @brief Mask of all 32 registers, one bit each. */
 #define ALL_REGS 0xFFFFFFFFu
 
 /**
@@ -57,7 +66,7 @@ static uint32_t diff_mask(const kst_image_t *a, const kst_image_t *b)
     return mask;
 }
 
-/* --- one transaction -------------------------------------------------------- */
+/* --- one transaction ------------------------------------------------------ */
 
 /**
  * @brief Set up the frame of one transaction: a read, a write or a sync.
@@ -194,7 +203,7 @@ static bool replied(const kst_session_t *s)
     return s->last_reply.result == KST_RX_OK;
 }
 
-/* --- read all ---------------------------------------------------------------- */
+/* --- read all ------------------------------------------------------------- */
 
 /**
  * @brief Start a read of all registers and reset its pass state.
@@ -287,7 +296,7 @@ static bool read_advance(kst_session_t *s)
     return false;
 }
 
-/* --- operations -------------------------------------------------------------- */
+/* --- operations ----------------------------------------------------------- */
 
 /**
  * @brief The servo was without power: the servo on the port may be another one.
@@ -726,7 +735,7 @@ kst_ses_t kst_session_step(kst_session_t *s)
     return (kst_ses_t)s->result;
 }
 
-/* --- starting an operation --------------------------------------------------- */
+/* --- starting an operation ------------------------------------------------ */
 
 bool kst_session_init(kst_session_t *s, const kst_driver_t *driver)
 {
@@ -949,9 +958,11 @@ kst_ses_t kst_session_write(kst_session_t *s, const kst_plan_t *plan,
 }
 
 /**
- * @brief The checks of an operation that plans its own writes; KST_SES_OK lets
- *            it plan.  @p restore: the way back, which a lock and a failed fingerprint do
- * not refuse. */
+ * @brief The checks of an operation that plans its own writes.
+ *
+ * KST_SES_OK lets it plan.  @p restore: the way back, which a lock and a
+ * failed fingerprint do not refuse.
+ */
 static kst_ses_t plan_gate(kst_session_t *s, bool restore, bool no_target)
 {
     const kst_ses_t gate = may_start(s, true);

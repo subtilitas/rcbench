@@ -63,20 +63,23 @@ extern "C" {
 /**
  * @brief The same after a window without a valid reply, 20 ms.
  *
- * Inside the entry
- *  sequence the gap is KST_GAP_US: an unanswered read and an unanswered
- *  sync are its normal course. */
+ * Inside the entry sequence the gap is KST_GAP_US: an unanswered read and an
+ * unanswered sync are its normal course.
+ */
 #define KST_GAP_AFTER_FAULT_US 20000u
 /**
  * @brief The driver has this long after the end of the reply window to hand
- *            over
- *  the capture, 5 ms. */
+ *        over the capture, 5 ms.
+ */
 #define KST_DRIVER_SLACK_US 5000u
 
 /**
  * @brief Passes of a read over 0x00 to 0x1F, and the passes after a
- *  disagreement. */
+ *        disagreement.
+ */
 #define KST_READ_PASSES     3u
+/** @brief Most passes one read takes: the 3 passes and 2 after a
+ *        disagreement. */
 #define KST_READ_PASSES_MAX 5u
 /** @brief Equal reads a register needs. */
 #define KST_READ_EQUAL 3u
@@ -101,17 +104,27 @@ extern "C" {
  * kst_session_step().
  */
 typedef struct {
-    void *ctx;
+    void *ctx;              /**< driver state, passed to each function */
+    /**
+     * @brief Clocks out @p frame and records the line up to @p window_ns; false
+     *        when it cannot start.
+     */
     bool (*start)(void *ctx, const kst_frame_t *frame, uint32_t window_ns);
+    /**
+     * @brief Reports the window's end: false while the transaction runs; true
+     *        once, with @p out filled.
+     */
     bool (*poll)(void *ctx, kst_capture_t *out);
-    uint32_t (*now_us)(void *ctx);
+    uint32_t (*now_us)(void *ctx);  /**< free-running microseconds, may wrap */
 } kst_driver_t;
 
+/** @brief Result of a session operation. */
 typedef enum {
-    KST_SES_OK = 0,
-    KST_SES_BUSY,              /**< the operation runs; call kst_session_step() */
+    KST_SES_OK = 0,            /**< the operation finished without error */
+    KST_SES_BUSY,              /**< the operation runs; call
+                                    kst_session_step() */
     KST_SES_ERR_BUSY,          /**< another operation runs */
-    KST_SES_ERR_ARG,
+    KST_SES_ERR_ARG,           /**< bad argument */
     KST_SES_ERR_NO_SERVO,      /**< no reply to read, sync and read */
     KST_SES_ERR_NOT_IN_MODE,   /**< kst_session_enter() has not succeeded */
     KST_SES_ERR_READ,          /**< a register without 3 equal reads in 5 */
@@ -122,7 +135,8 @@ typedef enum {
     KST_SES_ERR_UNCONFIRMED,   /**< an unchecked restore without confirmation */
     KST_SES_ERR_CHANGED,       /**< the servo differs from the plan's start,
                                     or is not the backup's servo */
-    KST_SES_ERR_WRITE_FAILED,  /**< a write did not take; nothing half written */
+    KST_SES_ERR_WRITE_FAILED,  /**< a write did not take; nothing half
+                                    written */
     KST_SES_ERR_ROLLED_BACK,   /**< a write did not take; the field is back at
                                     its old value */
     KST_SES_ERR_TORN,          /**< the roll-back failed too */
@@ -137,20 +151,22 @@ typedef enum {
 /**
  * @brief Reply timing of the read frames since kst_session_init().
  *
- * A drift is
- *  the early sign of a marginal line. */
+ * A drift is the early sign of a marginal line.
+ */
 typedef struct {
     uint32_t replies;        /**< transactions with a valid reply */
     uint32_t faults;         /**< transactions without one */
     uint32_t delay_min_ns;   /**< reads only */
-    uint32_t delay_max_ns;
-    uint32_t half_min_ns;
-    uint32_t half_max_ns;
+    uint32_t delay_max_ns;   /**< longest reply delay, in ns */
+    uint32_t half_min_ns;    /**< shortest mean half-cell, in ns */
+    uint32_t half_max_ns;    /**< longest mean half-cell, in ns */
 } kst_stats_t;
 
+/** @brief The session with one servo: results and state of its operation. */
 typedef struct {
     /* --- for the caller to read ------------------------------------------- */
-    kst_image_t image;       /**< the servo as last known; valid with has_image */
+    kst_image_t image;       /**< the servo as last known; valid with
+                                  has_image */
     kst_image_t backup;      /**< the first image read, after
                                   kst_session_init() or the last
                                   kst_session_power_cycled(); valid with
@@ -171,9 +187,9 @@ typedef struct {
     uint8_t result;          /**< kst_ses_t of the last operation */
     uint8_t in_mode;         /**< the servo is in programming mode; the pin
                                   carries no PWM until the supply was off */
-    uint8_t has_image;
-    uint8_t has_backup;
-    uint8_t fingerprint_ok;
+    uint8_t has_image;       /**< 1: image is valid */
+    uint8_t has_backup;      /**< 1: backup is valid */
+    uint8_t fingerprint_ok;  /**< 1: the image passed the fingerprint */
     uint8_t locked;          /**< only a restore plan is accepted */
     uint8_t step_index;      /**< writes of the running plan that are done */
     uint8_t planning;        /**< 1: the operation plans; nothing is sent */
@@ -187,7 +203,7 @@ typedef struct {
                                   KST_PLAN_WORK_CAP after
                                   kst_session_init() */
 
-    /* --- private ----------------------------------------------------------- */
+    /* --- private ---------------------------------------------------------- */
     kst_driver_t drv;
     kst_plan_t plan;         /**< the running plan; between operations the
                                   planner's work space */
