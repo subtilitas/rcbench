@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief First stage of reading an ESC profile: JSON text cut into tokens.
+ *
  * The first stage of reading an ESC profile from JSON: the text cut into
  * tokens.  See esc_json.c for the second stage, and esc_json_int.h for the
  * four functions this file gives it.
@@ -21,18 +24,33 @@
 
 #include <string.h>
 
-/* Nesting deeper than any profile needs (five levels) is refused rather than
- * followed, so a hostile file cannot run the stack down. */
+/**
+ * @brief Deepest nesting the lexer follows, levels.
+ *
+ * Nesting deeper than any profile needs (five levels) is refused rather than
+ * followed, so a hostile file cannot run the stack down.
+ */
 #define MAX_DEPTH 16
 
-/* No profile object has more than 14 members.  The duplicate check compares
+/**
+ * @brief Most members one object may hold.
+ *
+ * No profile object has more than 14 members.  The duplicate check compares
  * each key with those before it, so this bounds it at 64 x 63 / 2
  * comparisons an object rather than letting a 64 KiB file of short keys ask
- * for tens of millions. */
+ * for tens of millions.
+ */
 #define MAX_MEMBERS 64u
 
 /* ------------------------------------------------------------ the tokens */
 
+/**
+ * @brief Skip white space.
+ *
+ * Skips space, tab, LF and CR.
+ *
+ * @param l  The lexer state; its position moves past the white space.
+ */
 static void ws(lex_t *l)
 {
     while (l->pos < l->len) {
@@ -44,6 +62,16 @@ static void ws(lex_t *l)
     }
 }
 
+/**
+ * @brief Add a token that starts at a byte.
+ *
+ * Stores the token when the lexer has a token array; counts it always.
+ *
+ * @param l      The lexer state.
+ * @param t      Type of the token.
+ * @param start  First byte of the token.
+ * @return Index of the token, or -1 when the array is full.
+ */
 static int64_t add(lex_t *l, ttype_t t, uint32_t start)
 {
     if (l->tok != NULL) {
@@ -55,6 +83,16 @@ static int64_t add(lex_t *l, ttype_t t, uint32_t start)
     return (int64_t)l->n++;
 }
 
+/**
+ * @brief Set the end, size and next link of a token.
+ *
+ * Does nothing when the lexer only counts tokens.
+ *
+ * @param l     The lexer state.
+ * @param i     Index of the token.
+ * @param end   One past the last byte of the token.
+ * @param size  Members of an object, elements of an array, or 0.
+ */
 static void close_tok(lex_t *l, int64_t i, uint32_t end, uint32_t size)
 {
     if (l->tok != NULL) {
@@ -66,6 +104,12 @@ static void close_tok(lex_t *l, int64_t i, uint32_t end, uint32_t size)
 
 static bool lex_value(lex_t *l, int depth);
 
+/**
+ * @brief Value of one hexadecimal digit.
+ *
+ * @param c  The digit character.
+ * @return 0 to 15, or -1 when @p c is not a hexadecimal digit.
+ */
 static int hexval(char c)
 {
     if (c >= '0' && c <= '9') { return c - '0'; }
@@ -74,7 +118,12 @@ static int hexval(char c)
     return -1;
 }
 
-/* The four hex digits at @p s, or -1. */
+/**
+ * @brief Value of four hexadecimal digits.
+ *
+ * @param s  The text; four digits are read.
+ * @return The 16-bit value, or -1 when a digit is not hexadecimal.
+ */
 static int32_t hex4(const char *s)
 {
     int32_t v = 0;
@@ -88,11 +137,17 @@ static int32_t hex4(const char *s)
     return v;
 }
 
-/*
+/**
+ * @brief Length of the well-formed UTF-8 sequence at a position.
+ *
  * The length of the well-formed UTF-8 sequence at @p s, or 0: no stray
  * continuation byte, no overlong form, no encoded surrogate, nothing past
  * U+10FFFF.  What Python's UTF-8 decoder takes, so a file the generator
  * would refuse to read is refused here too.
+ *
+ * @param s      The bytes, starting at the lead byte.
+ * @param avail  Bytes available from @p s.
+ * @return The sequence length, 2 to 4, or 0 when it is not well formed.
  */
 static uint32_t utf8_len(const unsigned char *s, uint32_t avail)
 {
@@ -123,12 +178,18 @@ static uint32_t utf8_len(const unsigned char *s, uint32_t avail)
     return n;
 }
 
-/*
+/**
+ * @brief Lex a string token and check every escape in it.
+ *
  * A string, with every escape checked here, in the one pass that sees every
  * string -- including those in fields the panel never reads.  \u0000 is
  * refused (it would end a C string early), and so is half a surrogate pair:
  * json.loads() keeps a lone half, which no UTF-8 can carry.  What passes is
  * what esc_json_decode_unit() decodes without looking again.
+ *
+ * @param l  The lexer state, at the opening quote; moves past the closing
+ *           quote on success.
+ * @return true when the string is well formed.
  */
 static bool lex_string(lex_t *l)
 {
@@ -203,12 +264,6 @@ static bool lex_string(lex_t *l)
     return false;                               /* no closing quote */
 }
 
-/*
- * The UTF-8 bytes of the character at s[*i], into @p out; *i moves past it.
- * A raw byte is itself (UTF-8 in the file passes through a byte at a time);
- * an escape is decoded, a surrogate pair into one four-byte character.  Only
- * for text lex_string() accepted.
- */
 unsigned esc_json_decode_unit(const char *s, uint32_t *i, uint8_t out[4])
 {
     const char c = s[*i];
@@ -257,11 +312,19 @@ unsigned esc_json_decode_unit(const char *s, uint32_t *i, uint8_t out[4])
     return 4u;
 }
 
-/* Whether two string tokens' texts decode to the same bytes, so "schema" and
- * "sch\u0065ma" are one key, as json.loads() has them.  The two decoded
- * streams are compared byte by byte, not unit by unit: a raw "\xC3\xA9" comes
- * a byte at a time and "\u00e9" as both bytes at once, and they are the same
- * character. */
+/**
+ * @brief Whether two string tokens decode to the same bytes.
+ *
+ * So "schema" and "schema" are one key, as json.loads() has them.  The
+ * two decoded streams are compared byte by byte, not unit by unit: a raw
+ * "\xC3\xA9" comes a byte at a time and "é" as both bytes at once, and
+ * they are the same character.
+ *
+ * @param s  The text both tokens point into.
+ * @param a  The first string token.
+ * @param b  The second string token.
+ * @return true when the decoded texts are equal.
+ */
 static bool same_text(const char *s, const tok_t *a, const tok_t *b)
 {
     uint32_t i = a->start, j = b->start;
@@ -287,7 +350,6 @@ static bool same_text(const char *s, const tok_t *a, const tok_t *b)
     }
 }
 
-/* Whether a string token's text decodes to the plain @p lit. */
 bool esc_json_text_is(const char *s, const tok_t *a, const char *lit)
 {
     uint32_t i = a->start;
@@ -304,14 +366,27 @@ bool esc_json_text_is(const char *s, const tok_t *a, const char *lit)
     return k == n;
 }
 
+/**
+ * @brief Whether a character is an ASCII decimal digit.
+ *
+ * @param c  The character.
+ * @return true for '0' to '9'.
+ */
 static bool is_digit(char c)
 {
     return c >= '0' && c <= '9';
 }
 
-/* -? (0 | [1-9][0-9]*) (. [0-9]+)? ([eE] [+-]? [0-9]+)?, as JSON has it and
+/**
+ * @brief Lex a number token.
+ *
+ * -? (0 | [1-9][0-9]*) (. [0-9]+)? ([eE] [+-]? [0-9]+)?, as JSON has it and
  * as the generator's json.loads() takes it, so a file one refuses the other
- * refuses too, whichever field the number sits in. */
+ * refuses too, whichever field the number sits in.
+ *
+ * @param l  The lexer state, at the first character of the number.
+ * @return true when a well-formed number was lexed.
+ */
 static bool lex_number(lex_t *l)
 {
     const uint32_t start = l->pos;
@@ -359,6 +434,14 @@ static bool lex_number(lex_t *l)
     return true;
 }
 
+/**
+ * @brief Lex a literal word: true, false or null.
+ *
+ * @param l  The lexer state.
+ * @param w  The word to match.
+ * @param t  The token type for the word.
+ * @return true when the word matched.
+ */
 static bool lex_word(lex_t *l, const char *w, ttype_t t)
 {
     const size_t n = strlen(w);
@@ -374,12 +457,19 @@ static bool lex_word(lex_t *l, const char *w, ttype_t t)
     return true;
 }
 
-/*
+/**
+ * @brief Whether the key just read is already in its object.
+ *
  * Whether the key just read is one of the @p members before it in the object
  * at token @p obj.  json.loads() keeps the last of two and a reader that
  * stops at the first keeps the first, so a file with a key twice is refused
  * rather than read two ways.  Only once the tokens exist: the counting pass
  * has nothing to compare.
+ *
+ * @param l        The lexer state; the key is its newest token.
+ * @param obj      Index of the object token.
+ * @param members  Members of the object read before this key.
+ * @return true when an earlier member has the same key.
  */
 static bool key_seen(const lex_t *l, uint32_t obj, uint32_t members)
 {
@@ -394,6 +484,14 @@ static bool key_seen(const lex_t *l, uint32_t obj, uint32_t members)
     return false;
 }
 
+/**
+ * @brief Lex an object or an array.
+ *
+ * @param l      The lexer state, at the opening bracket.
+ * @param depth  Nesting depth of this container.
+ * @param obj    true for an object, false for an array.
+ * @return true when the container was lexed.
+ */
 static bool lex_container(lex_t *l, int depth, bool obj)
 {
     const int64_t i = add(l, obj ? T_OBJ : T_ARR, l->pos);
@@ -450,6 +548,13 @@ static bool lex_container(lex_t *l, int depth, bool obj)
     }
 }
 
+/**
+ * @brief Lex one value of any type.
+ *
+ * @param l      The lexer state.
+ * @param depth  Nesting depth of the value.
+ * @return true when the value was lexed.
+ */
 static bool lex_value(lex_t *l, int depth)
 {
     if (depth > MAX_DEPTH) {
@@ -470,7 +575,6 @@ static bool lex_value(lex_t *l, int depth)
     }
 }
 
-/* The whole text is one value with nothing after it but white space. */
 bool esc_json_lex_all(lex_t *l)
 {
     l->pos = 0;
