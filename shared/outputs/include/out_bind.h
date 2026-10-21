@@ -60,15 +60,18 @@ extern "C" {
  * panel: it does not know this board, so it offers nothing.
  */
 typedef enum {
-    OUTBIND_BOARD_UNKNOWN = 0,
+    OUTBIND_BOARD_UNKNOWN = 0,      /**< nothing answered, or unknown identity */
     OUTBIND_BOARD_PICO_HEADER = 1,  /**< Pico form factor, wired by hand    */
 } outbind_board_id_t;
 
 /** @brief The most pins any board in this build brings out. */
 #define OUTBIND_PINS  26u
 
+/**
+ * @brief One pin of a board's catalogue.
+ */
 typedef struct {
-    uint8_t     gpio;
+    uint8_t     gpio;       /**< GPIO number                                */
     uint8_t     pad;        /**< the number printed on the board            */
     bool        reserved;   /**< the IOmcu refuses it                 */
     const char *held_by;    /**< what has it, or NULL when it is free       */
@@ -111,11 +114,14 @@ typedef struct {
     uint8_t decivolts;
 } outbind_pad_t;
 
+/**
+ * @brief One board: its identity, catalogue, outline and pads.
+ */
 typedef struct {
     uint16_t             id;      /**< as the identity page reports it      */
-    const char          *name;
-    const outbind_pin_t *pins;
-    uint8_t              count;
+    const char          *name;    /**< name shown to the operator           */
+    const outbind_pin_t *pins;    /**< catalogue, in GPIO order             */
+    uint8_t              count;   /**< entries in `pins`                    */
     /**
      * The outputs are soldered, not chosen.
      *
@@ -131,7 +137,7 @@ typedef struct {
     /** The pads that are not pins, or NULL when nothing here says. A board
      *  without them is drawn with its grounds and rails unmarked. */
     const outbind_pad_t *pads;
-    uint8_t              pad_count;
+    uint8_t              pad_count;   /**< entries in `pads`                  */
 } outbind_board_t;
 
 /**
@@ -141,6 +147,11 @@ typedef struct {
  * link.  A build that ships a catalogue for a board uses its own: the
  * compiled one has been read by somebody, names the exact signal holding
  * each reserved pin, and cannot change under a running bench.
+ *
+ * @param id  Identity the IOmcu reports, an outbind_board_id_t value or a
+ *            learned identity.
+ * @return    The board, or NULL when neither the table nor the learned board
+ *            has @p id.  OUTBIND_BOARD_UNKNOWN always returns NULL.
  */
 const outbind_board_t *outbind_board(uint16_t id);
 
@@ -151,6 +162,9 @@ const outbind_board_t *outbind_board(uint16_t id);
  *
  * Slots past the board's own pins are left with a pad number of zero, which
  * is how the page says there is no pin there.
+ *
+ * @param board  The board to render, or NULL for a page of zeroes.
+ * @param regs   LINK_CAT_COUNT registers to write.  NULL does nothing.
  */
 void outbind_board_to_regs(const outbind_board_t *board, uint16_t *regs);
 
@@ -168,12 +182,23 @@ void outbind_board_to_regs(const outbind_board_t *board, uint16_t *regs);
  * Refuses an identity the compiled table already has: that board is
  * described here already, and letting the wire replace it would let an
  * IOmcu rename the pin holding the safety line.
+ *
+ * @param id    Identity the catalogue page came from.  Must not be
+ *              OUTBIND_BOARD_UNKNOWN or an identity in the compiled table.
+ * @param regs  LINK_CAT_COUNT registers of the catalogue page.  NULL is
+ *              refused.
+ * @return      true when the board was learned, false when it was refused and
+ *              the previous learned board, if any, is unchanged.
  */
 bool outbind_learn_board(uint16_t id, const uint16_t *regs);
 
-/** @brief Render a board's shape into LINK_SH_COUNT registers, or leave them
- *        zero
- *  when it has none. */
+/**
+ * @brief Render a board's shape into LINK_SH_COUNT registers, or leave them
+ *        zero when it has none.
+ *
+ * @param board  The board whose shape to render, or NULL for a page of zeroes.
+ * @param regs   LINK_SH_COUNT registers to write.  NULL does nothing.
+ */
 void outbind_shape_to_regs(const outbind_board_t *board, uint16_t *regs);
 
 /**
@@ -185,6 +210,11 @@ void outbind_shape_to_regs(const outbind_board_t *board, uint16_t *regs);
  * describe the same board and a pad with nowhere to sit would be drawn off
  * the outline.  A board with no shape is used and not drawn, so refusing
  * costs the picture and nothing else.
+ *
+ * @param id    Identity of the learned board.  Must equal the learned board's
+ *              identity.
+ * @param regs  LINK_SH_COUNT registers of the shape page.  NULL is refused.
+ * @return      true when the shape was learned, false when it was refused.
  */
 bool outbind_learn_shape(uint16_t id, const uint16_t *regs);
 
@@ -194,18 +224,42 @@ bool outbind_learn_shape(uint16_t id, const uint16_t *regs);
  *
  * False for a pad the shape does not place: pads are numbered from one, up to
  * twice the row length.
+ *
+ * @param shape  The outline to place the pad on.
+ * @param pad    Pad number, 1 to twice @p shape's per_side.
+ * @param x_cmm  Receives the x coordinate of the pad centre.
+ * @param y_cmm  Receives the y coordinate of the pad centre.
+ * @return       true when the pad is placed and both outputs are written;
+ *               false for a NULL argument, a shape with no pads per side, or a
+ *               pad outside the range above.
  */
 bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
                     uint16_t *x_cmm, uint16_t *y_cmm);
 
-/** @brief The pads that are not pins, and how many.
+/**
+ * @brief The pads that are not pins, or NULL for a board nothing here
+ *        describes that way.
  *
- * NULL and 0 for a board nothing
- *  here describes that way. */
+ * @param board  Identity of the board, as for outbind_board().
+ * @return       The pad table, or NULL.  The count is outbind_pad_count().
+ */
 const outbind_pad_t *outbind_pads(uint16_t board);
+
+/**
+ * @brief How many pads that are not pins the board has, or 0 for a board
+ *        nothing here describes that way.
+ *
+ * @param board  Identity of the board, as for outbind_board().
+ * @return       The number of entries in outbind_pads(), or 0.
+ */
 uint8_t outbind_pad_count(uint16_t board);
 
-/** @brief Render them into LINK_PAD_COUNT registers, or leave them zero. */
+/**
+ * @brief Render them into LINK_PAD_COUNT registers, or leave them zero.
+ *
+ * @param board  The board whose pads to render, or NULL for a page of zeroes.
+ * @param regs   LINK_PAD_COUNT registers to write.  NULL does nothing.
+ */
 void outbind_pads_to_regs(const outbind_board_t *board, uint16_t *regs);
 
 /**
@@ -216,6 +270,12 @@ void outbind_pads_to_regs(const outbind_board_t *board, uint16_t *regs);
  * calls a pin -- one pad cannot be both a GPIO and a ground, and a page
  * saying so is describing something other than this board. Refusing costs
  * the marks and nothing else.
+ *
+ * @param id    Identity of the learned board.  Must equal the learned board's
+ *              identity.
+ * @param regs  LINK_PAD_COUNT registers of the pad page.  NULL is refused.
+ * @return      true when the pads were learned, false when the page was
+ *              refused.
  */
 bool outbind_learn_pads(uint16_t id, const uint16_t *regs);
 
@@ -230,10 +290,21 @@ bool outbind_learn_pads(uint16_t id, const uint16_t *regs);
  */
 void outbind_forget_learned(void);
 
-/** @brief The table itself, so a caller can walk every board rather than guess
- *        at a
- *  range of identities.  outbind_board_at() returns NULL past the end. */
+/**
+ * @brief The table itself, so a caller can walk every board rather than guess
+ *        at a range of identities.  outbind_board_at() returns NULL past the
+ *        end.
+ *
+ * @return  The number of boards in the compiled table.
+ */
 uint8_t outbind_board_count(void);
+
+/**
+ * @brief The board at @p index in the table, or NULL past the end.
+ *
+ * @param index  Position in the table, 0 to outbind_board_count() - 1.
+ * @return       The board, or NULL when @p index is past the end.
+ */
 const outbind_board_t *outbind_board_at(uint8_t index);
 
 /**
@@ -242,20 +313,44 @@ const outbind_board_t *outbind_board_at(uint8_t index);
  * Takes the board rather than reading it from the table, so the rule can be
  * held against a board this build does not yet contain -- a soldered one, for
  * instance, which refuses every pin because there is nothing there to choose.
+ *
+ * @param board  The board whose catalogue @p index indexes.
+ * @param index  Catalogue index, 0 to the board's count - 1.
+ * @return       true when the pin is in range, the board is not soldered and
+ *               the pin is not reserved; false otherwise.
  */
 bool outbind_pin_selectable(const outbind_board_t *board, uint8_t index);
 
-/** @brief Its catalogue and how long it is.
+/**
+ * @brief Its catalogue and how long it is.
  *
  * NULL and 0 for a board this build does not know, so a caller that forgets to
- * check offers nothing rather than
- *  offering the wrong thing. */
+ * check offers nothing rather than offering the wrong thing.
+ *
+ * @param board  Identity of the board, as for outbind_board().
+ * @return       The catalogue, in GPIO order, or NULL.  The length is
+ *               outbind_pin_count().
+ */
 const outbind_pin_t *outbind_pins(uint16_t board);
+
+/**
+ * @brief How many pins the board's catalogue lists, or 0 for a board this
+ *        build does not know.
+ *
+ * @param board  Identity of the board, as for outbind_board().
+ * @return       The number of entries in outbind_pins(), or 0.
+ */
 uint8_t outbind_pin_count(uint16_t board);
 
-/** @brief Index of @p gpio in that board's catalogue, or its count when the
- *        board
- *  does not bring that pin out. */
+/**
+ * @brief Index of @p gpio in that board's catalogue, or its count when the
+ *        board does not bring that pin out.
+ *
+ * @param board  Identity of the board, as for outbind_board().
+ * @param gpio   GPIO number to look up.
+ * @return       Catalogue index of @p gpio.  The board's count when it is not
+ *               listed, and 0 for a board this build does not know.
+ */
 uint8_t outbind_index_of(uint16_t board, uint8_t gpio);
 
 /**
@@ -270,6 +365,10 @@ uint8_t outbind_index_of(uint16_t board, uint8_t gpio);
  * disagree about which pins exist to be given away.  An unknown board
  * reserves everything: a build that cannot say which pins are safe must not
  * hand any of them out.
+ *
+ * @param board  Identity of the board, as for outbind_board().
+ * @return       Bit n is set when GPIO n is reserved. All 64 bits are set for
+ *               an unknown board.
  */
 uint64_t outbind_reserved_mask(uint16_t board);
 
@@ -283,8 +382,8 @@ uint64_t outbind_reserved_mask(uint16_t board);
  * with a number attached; the same goes for the bidirectional pair.
  */
 typedef struct {
-    const char *name;
-    out_driver_t driver;
+    const char *name;          /**< label the operator sees                */
+    out_driver_t driver;       /**< the driver that renders the pins       */
     uint16_t     rate;      /**< Hz for a pulse driver, kbit/s for DShot    */
     uint8_t      max_pins;  /**< PPM is one pin by definition               */
     uint8_t      channels;  /**< channels one pin of it renders             */
@@ -300,12 +399,22 @@ typedef struct {
     out_role_t   role;
 } outbind_proto_t;
 
+/** @brief Entries in the protocol table, OFF included. */
 #define OUTBIND_PROTOS 8u
 
+/**
+ * @brief The protocol table, indexed by protocol number; entry 0 is OFF.
+ *
+ * @return  The table of OUTBIND_PROTOS entries.
+ */
 const outbind_proto_t *outbind_protos(void);
 
 /* --------------------------------------------------------- the selection */
 
+/**
+ * @brief The selection: which board, the protocol being edited, and each
+ *        protocol's pins.
+ */
 typedef struct {
     uint16_t board;         /**< which catalogue every `pins` set indexes   */
     uint8_t  proto;         /**< the set being edited: outbind_protos()     */
@@ -321,6 +430,8 @@ typedef struct {
 /**
  * @brief Empty, and belonging to no board: nothing can be chosen until one is
  *        set.
+ *
+ * @param b  The selection to clear.  NULL does nothing.
  */
 void outbind_init(outbind_t *b);
 
@@ -331,14 +442,30 @@ void outbind_init(outbind_t *b);
  * one the IOmcu reserves: the first is a choice the operator can undo
  * by going to that protocol, the second is the wiring.  A screen that drew
  * them alike would offer to free the heartbeat line.
+ *
+ * @param b      The selection.
+ * @param index  Catalogue index of the pin.
+ * @return       The protocol number holding the pin, or 0 when none does or
+ *               @p b is NULL.
  */
 uint8_t outbind_group_of(const outbind_t *b, uint8_t index);
 
-/** @brief Pins chosen across every protocol, and the channels they render.
+/**
+ * @brief Pins chosen across every protocol, and the channels they render.
  *
- * Both
- *  are budgets shared by all of them: LINK_OUT_SLOTS and LINK_OUT_CHANNELS. */
+ * Both are budgets shared by all of them: LINK_OUT_SLOTS and LINK_OUT_CHANNELS.
+ *
+ * @param b  The selection.
+ * @return   The number of pins chosen in protocols 1 and up. 0 for NULL.
+ */
 uint8_t outbind_chosen_total(const outbind_t *b);
+
+/**
+ * @brief Channels the chosen pins render, across every protocol.
+ *
+ * @param b  The selection.
+ * @return   The sum of each chosen pin's channels, capped at 255. 0 for NULL.
+ */
 uint8_t outbind_channels_used(const outbind_t *b);
 
 /**
@@ -348,6 +475,8 @@ uint8_t outbind_channels_used(const outbind_t *b);
  * `outbind_t` is a plain struct and one arrives from outside -- read off the
  * wire, or restored -- so it is trimmed before it is shown rather than
  * trusted.
+ *
+ * @param b  The selection, trimmed in place.  NULL does nothing.
  */
 void outbind_trim(outbind_t *b);
 
@@ -359,10 +488,18 @@ void outbind_trim(outbind_t *b);
  * pin -- or no pin -- in another's.  Carrying a selection across would bind
  * whatever happened to sit at that index on the board now in front of the
  * operator.
+ *
+ * @param b      The selection.  NULL does nothing.
+ * @param board  Identity of the board the selection is now for.
  */
 void outbind_set_board(outbind_t *b, uint16_t board);
 
-/** @brief How many pins the protocol being edited has chosen. */
+/**
+ * @brief How many pins the protocol being edited has chosen.
+ *
+ * @param b  The selection.
+ * @return   The count of pins in the edited protocol. 0 for NULL.
+ */
 uint8_t outbind_chosen(const outbind_t *b);
 
 /**
@@ -374,6 +511,10 @@ uint8_t outbind_chosen(const outbind_t *b);
  * one.  A screen that has just been handed a binding uses this to tell the
  * two apart: a protocol equal to it says only what the pins already said,
  * and any other is somebody's choice.
+ *
+ * @param b  The selection.
+ * @return   The protocol number, or 0 (OFF) when no pin is chosen or @p b is
+ *           NULL.
  */
 uint8_t outbind_wire_proto(const outbind_t *b);
 
@@ -385,6 +526,11 @@ uint8_t outbind_wire_proto(const outbind_t *b);
  * mistake -- and a pin another protocol holds, which is that protocol's to
  * give up.  Removing a pin this protocol holds always succeeds, because an
  * operator must always be able to undo what they just did.
+ *
+ * @param b      The selection, changed on success.
+ * @param index  Catalogue index of the pin.
+ * @return       true when the pin was toggled; false when it was refused, and
+ *               the selection is unchanged.
  */
 bool outbind_toggle(outbind_t *b, uint8_t index);
 
@@ -398,6 +544,10 @@ bool outbind_toggle(outbind_t *b, uint8_t index);
  *
  * The whole selection is trimmed here, since this is every screen's way in
  * to a binding that came from outside.
+ *
+ * @param b      The selection.  NULL does nothing.
+ * @param proto  Protocol number, an index into outbind_protos().  A value of
+ *               OUTBIND_PROTOS or more does nothing.
  */
 void outbind_set_proto(outbind_t *b, uint8_t proto);
 
@@ -409,6 +559,10 @@ void outbind_set_proto(outbind_t *b, uint8_t proto);
  * programming port: a PWM protocol is not offered the partner of a pin bound
  * as PWM.  The slice rule needs the port's pin, which this binding does not
  * carry, so a screen asks outbind_pwm_clash() for it.
+ *
+ * @param b      The selection.
+ * @param index  Catalogue index of the pin.
+ * @return       true when the pin may be added; false otherwise.
  */
 bool outbind_can_add(const outbind_t *b, uint8_t index);
 
@@ -444,6 +598,12 @@ typedef enum {
  * Both are out_pwm_same_slice() and out_pwm_same_compare(), the helpers the
  * IOmcu decides with.  @p with, when not NULL, gets the GPIO the pin
  * clashes with, or OUTBIND_NO_GPIO for OUTBIND_CLASH_NONE.
+ *
+ * @param b         The selection.
+ * @param index     Catalogue index of the pin being checked.
+ * @param prog_gpio GPIO of the programming port's pin, or OUTBIND_NO_GPIO.
+ * @param with      Receives the GPIO clashed with, or NULL to skip it.
+ * @return          The refusal, or OUTBIND_CLASH_NONE.
  */
 outbind_clash_t outbind_pwm_clash(const outbind_t *b, uint8_t index,
                                   uint8_t prog_gpio, uint8_t *with);
@@ -456,6 +616,13 @@ outbind_clash_t outbind_pwm_clash(const outbind_t *b, uint8_t index,
  * The slice rule is checked against each in order, the first clash named; then
  * the compare rule.  The IOmcu checks a slot against every port it has
  * (prog_port_slots_check()).
+ *
+ * @param b      The selection.
+ * @param index  Catalogue index of the pin being checked.
+ * @param ports  GPIOs of the programming ports, or NULL.
+ * @param count  Number of entries in @p ports.
+ * @param with   Receives the GPIO clashed with, or NULL to skip it.
+ * @return       The first refusal found, or OUTBIND_CLASH_NONE.
  */
 outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
                                         const uint8_t *ports, uint8_t count,
@@ -474,6 +641,10 @@ outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
  * zero upward, so the lowest chosen pin is channel 0 whichever protocol holds
  * it.  Filling stops at LINK_OUT_SLOTS slots or LINK_OUT_CHANNELS channels,
  * whichever comes first.  Returns how many slots were used.
+ *
+ * @param b     The selection.  NULL leaves @p regs with the default slots.
+ * @param regs  LINK_OS_COUNT registers to write.  NULL does nothing.
+ * @return      The number of slots used, 0 for NULL arguments.
  */
 uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
 
@@ -501,12 +672,20 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
  * says which was chosen.  NULL takes the first entry that matches driver and
  * rate, which on this catalogue reads a motor back as a servo and rests it
  * at half throttle, so pass the page whenever there is one.
+ *
+ * @param b         Receives the selection.  Cleared on refusal.
+ * @param board     Identity of the board the page was read from.
+ * @param regs      LINK_OS_COUNT registers of the OUTPUTS page.
+ * @param chan_cfg  LINK_CC_COUNT registers of the CHAN_CFG page, or NULL.
+ * @return          true when the page reads back to itself as a selection on
+ *                  @p board; false when it is refused and @p b is cleared.
  */
 bool outbind_from_slots(outbind_t *b, uint16_t board,
                         const uint16_t *regs, const uint16_t *chan_cfg);
 
 /**
- * @brief outbind_role_proto(): the role's slots are bound as several entries.
+ * @brief The result of outbind_role_proto() when the role's slots are bound
+ *        as several entries.
  */
 #define OUTBIND_PROTO_MIXED 0xFFu
 
@@ -522,6 +701,11 @@ bool outbind_from_slots(outbind_t *b, uint16_t board,
  * role's, when a page is NULL, or when the role's one slot set matches no
  * entry, and OUTBIND_PROTO_MIXED when the role's slots match two entries
  * or one matches none beside one that does.
+ *
+ * @param regs      LINK_OS_COUNT registers of the OUTPUTS page.
+ * @param chan_cfg  LINK_CC_COUNT registers of the CHAN_CFG page.
+ * @param role      The role to look for.
+ * @return          The entry index, 0, or OUTBIND_PROTO_MIXED as above.
  */
 uint8_t outbind_role_proto(const uint16_t *regs, const uint16_t *chan_cfg,
                            out_role_t role);
@@ -539,6 +723,11 @@ uint8_t outbind_role_proto(const uint16_t *regs, const uint16_t *chan_cfg,
  * outputs_chan_cfg_set_throttle_range(); every surface channel keeps the
  * schema's 1000 to 2000 us.  Endpoints that page would refuse are not
  * written at all.
+ *
+ * @param b       The selection.  NULL leaves @p regs at the defaults.
+ * @param regs    LINK_CC_COUNT registers to write.  NULL does nothing.
+ * @param min_us  Low endpoint of the throttle channels, in microseconds.
+ * @param max_us  High endpoint of the throttle channels, in microseconds.
  */
 void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
                          uint16_t min_us, uint16_t max_us);

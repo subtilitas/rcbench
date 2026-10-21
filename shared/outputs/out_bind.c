@@ -64,12 +64,6 @@ static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
 };
 
 /**
- * @brief Every board this build knows.
- *
- * A second one appends a row here and a catalogue above it; nothing else in
- * this file is per-board.
- */
-/**
  * @brief The Pico form factor: 51.00 x 21.00 mm, forty pads on 2.54 mm, twenty
  *        a side, pad 1 at the bottom left with the numbers running away from
  *        it.
@@ -107,6 +101,12 @@ static const outbind_pad_t k_pico_pads[] = {
     { 40, LINK_PAD_POWER,  50 },   /* VBUS */
 };
 
+/**
+ * @brief Every board this build knows.
+ *
+ * A second one appends a row here and a catalogue above it; nothing else in
+ * this file is per-board.
+ */
 static const outbind_board_t k_boards[] = {
     { OUTBIND_BOARD_PICO_HEADER, "RP2350-CAN", k_pico_pins, OUTBIND_PINS,
       false, &k_pico_shape, k_pico_pads,
@@ -144,7 +144,12 @@ const outbind_board_t *outbind_board(uint16_t id)
     return NULL;                 /* including OUTBIND_BOARD_UNKNOWN */
 }
 
-/** @brief The panel's words for what the wire can only number. */
+/**
+ * @brief The panel's words for what the wire can only number.
+ *
+ * @param hold  A LINK_PIN_* value from the catalogue page.
+ * @return      The word for @p hold, or "in use" for any other value.
+ */
 static const char *hold_name(uint8_t hold)
 {
     switch (hold) {
@@ -485,7 +490,13 @@ const outbind_board_t *outbind_board_at(uint8_t index)
     return (index < outbind_board_count()) ? &k_boards[index] : NULL;
 }
 
-/** @brief Which bits of a selection can mean anything on this board. */
+/**
+ * @brief Which bits of a selection can mean anything on this board.
+ *
+ * @param bd  The board, or NULL.
+ * @return    One bit per catalogue entry, from bit 0. 0 for NULL, all 32 bits
+ *            for a catalogue of 32 or more entries.
+ */
 static uint32_t board_mask(const outbind_board_t *bd)
 {
     if (bd == NULL) {
@@ -622,7 +633,13 @@ void outbind_set_board(outbind_t *b, uint16_t board)
     b->proto = 0u;
 }
 
-/** @brief How many bits are set in one protocol's pin set. */
+/**
+ * @brief How many bits are set in one protocol's pin set.
+ *
+ * @param pins   The pin set, one bit per catalogue index.
+ * @param width  How many low bits to count, 0 to 32.
+ * @return       The number of set bits among the first @p width.
+ */
 static uint8_t count_pins(uint32_t pins, uint8_t width)
 {
     uint8_t n = 0u;
@@ -634,9 +651,13 @@ static uint8_t count_pins(uint32_t pins, uint8_t width)
     return n;
 }
 
-/** @brief What a protocol may take: its own cap, and never more slots than the
- *        page
- * has. */
+/**
+ * @brief What a protocol may take: its own cap, and never more slots than the
+ *        page has.
+ *
+ * @param p  The protocol entry.
+ * @return   The lower of @p p's max_pins and OUT_MAX_SLOTS.
+ */
 static uint8_t cap_of(const outbind_proto_t *p)
 {
     return (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
@@ -979,6 +1000,10 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs)
  * is read by its first channel rather than refused, and a first channel past
  * the page reads as a surface, which is where an unconfigured channel
  * already rests.
+ *
+ * @param chan_cfg  The CHAN_CFG page, or NULL.
+ * @param r         The slot's OUTPUTS registers.
+ * @return          OUT_ROLE_THROTTLE or OUT_ROLE_SURFACE.
  */
 static out_role_t role_of_slot(const uint16_t *chan_cfg, const uint16_t *r)
 {
