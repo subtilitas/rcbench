@@ -103,7 +103,7 @@ static void judge(sense_svc_t *v, const sense_cmd_t *cmd, uint8_t online)
     v->lim_win  = number;
     for (unsigned c = 0; c < SENSE_CHANNELS; ++c) {
         if ((online & (1u << (c / INA3221_CHANNELS))) != 0u
-            && sense_window_over(&s->last[c], s->ch_clip_ua[c],
+            && sense_window_over(&s->last[c], s->ch_top_ua[c],
                                  cmd->limit_ma[c])) {
             ++v->over_n[c];
         }

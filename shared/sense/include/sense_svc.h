@@ -183,8 +183,8 @@ void sense_svc_step(sense_svc_t *v, const sense_cmd_t *cmd, sense_snap_t *out);
 /**
  * Whether window @p w of a channel passed @p limit_ma: its highest current
  * rounded to mA (as SENSE_WIN shows it) above the limit, or a sample
- * clipped at the top of the range when that top, @p clip_ua (a clipped
- * sample is at least this much), is above the limit.  Never with a limit
+ * clipped at the top of the range when that top, @p clip_ua (the top
+ * code's current, 163.8 mV across the shunt), is above the limit.  Never with a limit
  * of 0, and never for a negative current.  The service judges each
  * channel's window once, as it closes, on core 1, so no window is missed
  * however late core 0 takes the snapshot.

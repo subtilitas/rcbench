@@ -16,8 +16,9 @@
  * offline and its capture lost, and both starting again with a set-up;
  * each channel's window judged against its limit once, as it closes, at
  * the limit and 1 mA under it, a channel of a part not fitted never, the
- * counts running on across a set-up, a part that drops in the tick that
- * closes the window judged as online; and every snapshot field.
+ * counts running on across a set-up, a clipped window against the top of
+ * the range on 5 mOhm (32,755 over, 32,760 not), a part that drops in the
+ * tick that closes the window judged as online; and every snapshot field.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -695,6 +696,28 @@ TEST_CASE(each_window_is_judged_against_its_limit_as_it_closes)
     CHECK_EQ(snap.over_n[0], (uint16_t)(before + 1u));
 }
 
+TEST_CASE(a_clipped_window_is_judged_against_the_top_of_the_range)
+{
+    /* 5 mOhm: the top code reads 32,760 mA; 40 A clips every sample. */
+    static const struct { uint16_t lim; bool over; } k[] = {
+        { 32755u, true }, { 32759u, true }, { 32760u, false },
+        { 32767u, false },
+    };
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        rig();
+        i3221->shunt_ohm = 0.005;
+        i3221->amps[0] = 40.0;
+        sense_i3221_one(&cmd.parts.i3221, true, I3221_ADDR, 5000u, 1u);
+        cmd.limit_ma[0] = k[i].lim;
+        steps(120u);
+        const uint16_t was = snap.over_n[0];
+        (void)to_next_window();
+        CHECK(snap.win[0].clip_hi);
+        CHECK_EQ(svc.sched.ch_top_ua[0], 32760000);
+        CHECK_EQ((uint16_t)(snap.over_n[0] - was), k[i].over ? 1u : 0u);
+    }
+}
+
 TEST_CASE(a_part_online_at_the_close_is_judged_if_it_drops_in_that_tick)
 {
     /* The bus fails from k ticks before a window closes: the part goes
@@ -750,6 +773,7 @@ int main(void)
     RUN(a_reset_under_a_capture_reports_it_lost);
     RUN(a_service_starts_closed);
     RUN(each_window_is_judged_against_its_limit_as_it_closes);
+    RUN(a_clipped_window_is_judged_against_the_top_of_the_range);
     RUN(a_part_online_at_the_close_is_judged_if_it_drops_in_that_tick);
     return test_summary("sense_svc");
 }
