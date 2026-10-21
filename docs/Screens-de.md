@@ -3538,7 +3538,9 @@ Link, und LOGS gehört der SD-Karte.
 UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist,
 und installiert es. Der Bildschirm öffnet über die Kachel UPDATES auf
 SETUP, und sein Home-Tag führt dorthin zurück. Eine Erinnerung beim Start stellt dieselbe Frage einmal
-pro Start des Panels.
+pro Start des Panels. 0.22 ist das letzte Release für das ESP32-S3-Panel:
+dem Panel werden nur Patch-Releases 0.22.x angeboten
+([Die Release-Linie](#die-release-linie)).
 
 ![UPDATES](img/de/updates.png)
 
@@ -3546,7 +3548,7 @@ pro Start des Panels.
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
 | `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
-| `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche anbietet ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
+| `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche liest ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
 | `2 s HALTEN: LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
 | `2 s HALTEN: IOMCU AKTUALISIEREN` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 
@@ -3578,12 +3580,12 @@ der Antwort. RELEASES legt die Anfrage fest:
 | RELEASES | Anfrage | Was gelesen wird |
 | --- | --- | --- |
 | `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | Der `Location`-Header des Redirects, der den Tag nennt (`.../releases/tag/v0.20.0`). Den Body liest das Panel nicht. Das Latest-Release von GitHub ist nie ein Pre-Release. |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge; das höchste Release der Release-Linie unter ihnen wird daneben gehalten. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
 
 Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen
-höchstens 30 s. In beiden Einstellungen wird nur ein Release angeboten, das
-neuer als der laufende Build ist: einem Panel mit Testing-Release 0.21.0 und
-`STABLE` wird das Stable-Release 0.20.0 nicht angeboten.
+höchstens 30 s. In beiden Einstellungen wird ein Release nur angeboten, wenn
+es zur Release-Linie 0.22 gehört und neuer als der laufende Build ist
+([Die Release-Linie](#die-release-linie)).
 
 Aktuelle Einschränkungen von `TESTING`: GitHub beantwortet ohne Konto 60
 API-Anfragen pro Stunde und öffentlicher IP-Adresse (Internet Protocol), und
@@ -3606,6 +3608,7 @@ Karte bis zur nächsten Suche:
 | --- | --- |
 | `Version 0.20.0 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
 | `Aktuell. Panel-Version: 0.19.0.` und `Neuestes Release auf GitHub: 0.19.0.` | Das neueste Release ist die laufende Version oder älter. |
+| `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.23.0.` | Das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie. Es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht. |
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf WI-FI. |
 | `Keine Antwort innerhalb von 30 s.` | Die 30 s sind abgelaufen. |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
@@ -3660,6 +3663,39 @@ Release und alles nach dem 10. liest das Panel nicht.
 | `Die Antwort hat nicht die erwartete JSON-Form.` | Kein Array von Objekten; ein `tag_name`, der kein einfacher String ist (ein Escape, ein Steuerzeichen, eine Zahl); ein `draft` anders als `true` oder `false`; ein Schlüssel zweimal in einem Release; ein Steuerzeichen in einem anderen String; eine Klammer, die die andere Art schließt; Verschachtelung tiefer als 32 Ebenen. |
 | `Die Releases enden nicht innerhalb von 262144 Bytes.` | Die eigene Grenze des Scans von 262 144 Bytes: eine Antwort mit Chunked-Kodierung, deren Array oder 10. Release nicht innerhalb davon endet. Eine Antwort innerhalb ihrer `Content-Length`-Grenze überschreitet sie nicht. |
 | `Der Versionstext hat ein ungültiges Format.` | Ein Tag verletzt die Regel oben. |
+
+### Die Release-Linie
+
+0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind
+für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare. Der Fuß der Karte
+sagt das in seinen ersten Zeilen, `0.22 ist das letzte Release für das
+ESP32-S3-Panel. Spätere Releases sind für das 7-Zoll-Display-Board mit
+ESP32-P4 von Waveshare.`, und seine letzte Zeile lautet `TESTING liest auch
+Testing-Releases. Beide bieten nur 0.22.x an.`.
+
+Eine Suche bietet nur ein Release mit MAJOR 0 und MINOR 22 an, das neuer
+als der laufende Build ist, mit `STABLE` und mit `TESTING` gleich
+(`FW_REL_LINE_MAJOR` und `FW_REL_LINE_MINOR` in
+`shared/fwupdate/include/fw_release.h`):
+
+| GitHub nennt | Panel mit 0.22.0 | Panel mit 0.22.1 |
+| --- | --- | --- |
+| `v0.22.1` | angeboten: `Version 0.22.1 ist verfügbar.` | `Aktuell. Panel-Version: 0.22.1.` |
+| `v0.22.0` | `Aktuell. Panel-Version: 0.22.0.` | `Aktuell. Panel-Version: 0.22.1.`: ein älteres Release wird nie angeboten |
+| `v0.23.0`, `v0.24.0`, `v1.0.0` | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.1.` |
+| ein ungültiger Tag, etwa `v0.22.1-rc1` | `Unerwartete Antwort von GitHub.` und `Der Versionstext hat ein ungültiges Format.` | dasselbe |
+
+Liegt mit `TESTING` das höchste der 10 neuesten Releases hinter der Linie,
+tritt das höchste Release der Linie unter ihnen an seine Stelle, sobald es
+neuer als der laufende Build ist: neben einem Pre-Release 0.23.0 wird einem
+Panel mit 0.22.0 das Release 0.22.1 angeboten. `STABLE` liest einen Tag,
+das Latest-Release von GitHub. Ein Stable-Release, das älter als ein
+veröffentlichtes ist, wird nicht Latest
+([Bauen: Releases](Building-de.md#releases)); ist ein späteres
+Stable-Release veröffentlicht, findet `STABLE` kein Patch-Release 0.22.x
+mehr, und `TESTING` findet es unter den 10 nach Datum neuesten Releases.
+Der IOmcu bekommt das Image, das dieses Panel mitbringt, aus demselben
+Release ([Der IOmcu](#der-iomcu)).
 
 ### Der IOmcu
 

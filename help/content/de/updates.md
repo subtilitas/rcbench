@@ -6,7 +6,7 @@ order: 64
 
 # Updates
 
-UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und installiert es. Der Bildschirm öffnet über die Taste UPDATES unter [Setup](setup.md). Eine [Erinnerung beim Start](upd_remind.md) stellt dieselbe Frage einmal pro Start des Panels.
+UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und installiert es. Der Bildschirm öffnet über die Taste UPDATES unter [Setup](setup.md). Eine [Erinnerung beim Start](upd_remind.md) stellt dieselbe Frage einmal pro Start des Panels. 0.22 ist das letzte Release für das ESP32-S3-Panel: dem Panel werden nur Patch-Releases 0.22.x angeboten, siehe [Die Release-Linie](#die-release-linie).
 
 ![UPDATES](view:updates)
 
@@ -14,7 +14,7 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 |---|---|
 | NACH UPDATES SUCHEN | fragt GitHub einmal; dieselbe Taste heißt ABBRECHEN, solange die Suche läuft |
 | ERINNERUNG BEIM START: EIN / AUS | schaltet die Suche beim Start und ihre Erinnerung; gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk an |
-| RELEASES: STABLE / TESTING | legt fest, welche Releases eine Suche anbietet, siehe [Die Suche](#die-suche); gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk STABLE; ein Wechsel blendet das letzte Ergebnis aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
+| RELEASES: STABLE / TESTING | legt fest, welche Releases eine Suche liest, siehe [Die Suche](#die-suche); gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk STABLE; ein Wechsel blendet das letzte Ergebnis aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
 | 2 s HALTEN: LADEN & INSTALLIEREN | erscheint, sobald eine Suche ein neueres Release gefunden hat; lädt, prüft und installiert es |
 | 2 s HALTEN: IOMCU AKTUALISIEREN | startet das [IOmcu-Update](coproc_update.md) aus dem Image, das dieses Panel mitbringt, auch nachdem seine Frage abgelehnt wurde |
 
@@ -41,7 +41,7 @@ Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über
 | STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | der Tag aus dem `Location`-Header der Antwort; das Latest-Release von GitHub ist nie ein Pre-Release |
 | TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` jedes der 10 nach Datum neuesten Releases, Testing oder Stable, aus der JSON-Antwort (JavaScript Object Notation); genommen wird die höchste Version unter denen, die kein Entwurf sind, gleich in welcher Reihenfolge; gelesen in Stücken von 4096 Bytes, höchstens 262 144 Bytes, und nicht gespeichert; ein ungültiges Release lehnt die ganze Antwort ab |
 
-In beiden Einstellungen wird nur ein Release angeboten, das neuer als der laufende Build ist. Einem Panel mit Testing-Release 0.21.0 und STABLE wird das Stable-Release 0.20.0 nicht angeboten.
+In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Linie 0.22 gehört und neuer als der laufende Build ist, siehe [Die Release-Linie](#die-release-linie).
 
 ![Ein neueres Release](view:updates-newer)
 ![Aktuell](view:updates-current)
@@ -51,6 +51,7 @@ In beiden Einstellungen wird nur ein Release angeboten, das neuer als der laufen
 |---|---|
 | `Version 0.20.0 ist verfügbar.` | das neueste Release ist neuer als der laufende Build; das Halten erscheint |
 | `Aktuell. Panel-Version: 0.19.0.` | das neueste Release ist die laufende Version oder älter |
+| `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` | das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie; es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht |
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | das Verbinden scheiterte, wie unter Dateien und Update |
 | `Keine Antwort innerhalb von 30 s.` | die 30 s sind abgelaufen |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten |
@@ -64,6 +65,19 @@ In beiden Einstellungen wird nur ein Release angeboten, das neuer als der laufen
 ![Eine Suche ohne Antwort](view:updates-failed)
 
 Der Tag lautet `v` und MAJOR.MINOR.PATCH, nur Ziffern, jede Zahl von 0 bis 65535 in höchstens 5 Ziffern und ohne führende Null. Ein Release ist neuer, wenn sein MAJOR größer ist, oder MAJOR gleich und MINOR größer, oder beide gleich und PATCH größer.
+
+## Die Release-Linie
+
+0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare. Der Fuß der Karte sagt das in seinen ersten Zeilen.
+
+| GitHub nennt | Panel mit 0.22.0 |
+|---|---|
+| `v0.22.1` | angeboten |
+| `v0.22.0` | aktuell; ein älteres Release wird nie angeboten |
+| `v0.23.0`, `v0.24.0`, `v1.0.0` | `Kein neueres Release für das ESP32-S3-Panel.` |
+| ein ungültiger Tag, etwa `v0.22.1-rc1` | `Unerwartete Antwort von GitHub.` |
+
+Liegt mit TESTING das höchste der 10 neuesten Releases hinter der Linie, wird an seiner Stelle das höchste Release der Linie unter ihnen angeboten, sobald es neuer als der laufende Build ist.
 
 ## Der Download
 
@@ -111,5 +125,6 @@ Ist das Halten aktiv, lautet die Zeile `Ausgänge bleiben aus. ARMED ist bis zum
 - Wie lange Suche und Download in einem echten Netz dauern, ist nicht gemessen.
 - TESTING: GitHub beantwortet ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, geteilt von allen Geräten dahinter. Das Panel wiederholt keine Anfrage.
 - TESTING liest die 10 nach Datum neuesten Releases. Ein Release, das nach Datum älter ist, sieht das Panel nicht, wie hoch seine Version auch ist.
+- STABLE liest nur das Latest-Release von GitHub. Ist ein späteres Stable-Release veröffentlicht, ist ein Patch-Release 0.22.x nicht mehr Latest, und nur TESTING findet es.
 - Die Daten der Zertifikate werden nicht geprüft: Das Panel hat keine Uhr.
 - Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und `SHA256SUMS` heißen, lässt sich nicht laden.

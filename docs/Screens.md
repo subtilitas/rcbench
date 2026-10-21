@@ -3220,7 +3220,9 @@ the link, and LOGS is about the SD card.
 UPDATES asks GitHub which panel firmware release is the newest, and installs
 it. It opens from the UPDATES tile on SETUP, and its home tag leads back
 there. A reminder at start
-asks the same question once per start of the panel.
+asks the same question once per start of the panel. 0.22 is the last
+release for the ESP32-S3 panel: the panel is offered 0.22.x patch releases
+only ([The release line](#the-release-line)).
 
 ![UPDATES](img/updates.png)
 
@@ -3228,7 +3230,7 @@ asks the same question once per start of the panel.
 | --- | --- |
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
-| `RELEASES: STABLE` / `TESTING` | Sets which releases a check offers ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
+| `RELEASES: STABLE` / `TESTING` | Sets which releases a check reads ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
 | `HOLD 2 s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
 | `HOLD 2 s: UPDATE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 
@@ -3259,12 +3261,12 @@ RELEASES sets the request:
 | RELEASES | Request | What is read |
 | --- | --- | --- |
 | `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
 
 Then the radio goes off. The join, the address and the request take 30 s at
-most, together. On either setting only a release newer than the running
-build is offered: a panel on testing release 0.21.0 with `STABLE` is not
-offered stable release 0.20.0.
+most, together. On either setting a release is offered only when it is of
+the release line, 0.22, and newer than the running build
+([The release line](#the-release-line)).
 
 Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
 each public IP (Internet Protocol) address without an account, and the
@@ -3286,6 +3288,7 @@ check:
 | --- | --- |
 | `Version 0.20.0 is available.` | The newest release is newer than the running build. The hold appears. |
 | `Up to date. Panel version: 0.19.0.` and `Latest release on GitHub: 0.19.0.` | The newest release is the running version or older. |
+| `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` and `Latest release on GitHub: 0.23.0.` | The newest release is newer than the running build and past the release line. It is not offered, and the reminder at start does not open for it. |
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
 | `No response within 30 s.` | The 30 s ran out. |
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
@@ -3339,6 +3342,37 @@ why. An 11th release and anything after the 10th is not read.
 | `The answer is not in the expected JSON form.` | Not an array of objects; a `tag_name` that is not a plain string (an escape, a control character, a number); a `draft` other than `true` or `false`; either key twice in a release; a control character in another string; a bracket closed by the other kind; nesting deeper than 32 levels. |
 | `The releases do not end within 262144 bytes.` | The scan's own bound of 262,144 bytes: a chunked answer whose array or 10th release does not end within it. An answer within its `Content-Length` bound does not pass it. |
 | `The version text has an invalid format.` | A tag fails the rule above. |
+
+### The release line
+
+0.22 is the last release for the ESP32-S3 panel. Later releases are for the
+7-inch ESP32-P4 display board from Waveshare. The card's foot says so in its
+first lines, `0.22 is the last release for the ESP32-S3 panel. Later
+releases are for the 7-inch ESP32-P4 display board from Waveshare.`, and
+its last line reads `TESTING also reads testing releases. Both offer only
+0.22.x.`.
+
+A check offers a release of MAJOR 0 and MINOR 22 only, newer than the
+running build, on `STABLE` and on `TESTING` alike (`FW_REL_LINE_MAJOR` and
+`FW_REL_LINE_MINOR` in `shared/fwupdate/include/fw_release.h`):
+
+| GitHub names | Panel on 0.22.0 | Panel on 0.22.1 |
+| --- | --- | --- |
+| `v0.22.1` | offered: `Version 0.22.1 is available.` | `Up to date. Panel version: 0.22.1.` |
+| `v0.22.0` | `Up to date. Panel version: 0.22.0.` | `Up to date. Panel version: 0.22.1.`: an older release is never offered |
+| `v0.23.0`, `v0.24.0`, `v1.0.0` | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` | `No newer release for the ESP32-S3 panel. Panel version: 0.22.1.` |
+| a tag out of form, such as `v0.22.1-rc1` | `Unexpected answer from GitHub.` and `The version text has an invalid format.` | the same |
+
+With `TESTING`, when the highest of the 10 newest releases is past the
+line, the highest release of the line among them stands in for it once it
+is newer than the running build: beside a 0.23.0 pre-release, 0.22.1 is
+offered to a panel on 0.22.0. `STABLE` reads one tag, GitHub's latest
+release. A stable release older than a published one is not marked latest
+([Building: Releases](Building.md#releases)), so once a later stable
+release is published, `STABLE` finds no 0.22.x patch release and
+`TESTING` finds one among the 10 newest releases by date. The IOmcu takes
+the image this panel carries, from the same release
+([The IOmcu](#the-iomcu)).
 
 ### The IOmcu
 

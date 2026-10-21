@@ -212,6 +212,18 @@ void wa_fetch_on_bytes(wa_fetch_t *f, uint32_t gen, uint32_t done,
     }
 }
 
+/* The results of a CHECK that name the release it found. */
+static bool got_found(wa_got_t got)
+{
+    return got == WA_GOT_NEWER || got == WA_GOT_CURRENT
+           || got == WA_GOT_UNVERSIONED || got == WA_GOT_PAST_LINE;
+}
+
+bool wa_fetch_has_found(const wa_fetch_t *f)
+{
+    return f != NULL && (f->job == WA_JOB_DOWNLOAD || got_found(f->got));
+}
+
 void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r)
 {
     if (!mine(f, gen)) {
@@ -220,8 +232,7 @@ void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r)
     f->rel = r->rel;
     f->img = r->img;
     f->status = r->status;
-    if (r->got == WA_GOT_NEWER || r->got == WA_GOT_CURRENT
-        || r->got == WA_GOT_UNVERSIONED) {
+    if (got_found(r->got)) {
         f->found = r->found;
     }
     end(f, r->got, r->why);
@@ -380,16 +391,20 @@ static bool fetch(const wa_run_t *r, const sink_t *k, wa_fetch_res_t *out)
     }
 }
 
-/* The release a check found, offered or not. */
+/* The release a check found, offered or not: one of the panel's release
+ * line newer than the running build is offered; a newer one past the line
+ * is not, and says so; an older or equal one is CURRENT. */
 static void found(const wa_run_t *r, wa_fetch_res_t *out, fw_version_t v)
 {
     out->found = v;
     if (!r->running_ok) {
         res(out, WA_GOT_UNVERSIONED, FW_REL_OK);
+    } else if (fw_release_offered(v, r->running, true)) {
+        res(out, WA_GOT_NEWER, FW_REL_OK);
+    } else if (fw_version_cmp(v, r->running) > 0) {
+        res(out, WA_GOT_PAST_LINE, FW_REL_OK);
     } else {
-        res(out, fw_release_offered(v, r->running, true) ? WA_GOT_NEWER
-                                                         : WA_GOT_CURRENT,
-            FW_REL_OK);
+        res(out, WA_GOT_CURRENT, FW_REL_OK);
     }
 }
 
@@ -485,6 +500,13 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
     if (e != FW_REL_OK) {
         res(out, WA_GOT_UNEXPECTED, e);
         return;
+    }
+    /* A patch release of the panel's line, beside a later release for
+     * another panel, is the one offered. */
+    fw_version_t line;
+    if (fw_release_scan_line(&scan, &line)
+        && fw_release_offered(line, r->running, r->running_ok)) {
+        v = line;
     }
     found(r, out, v);
 }

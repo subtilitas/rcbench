@@ -1875,6 +1875,11 @@ static void pose_upd(const char *view)
     } else if (strcmp(view, "updates-unversioned") == 0) {
         v.got = UPD_GOT_UNVERSIONED;
         strcpy(v.found, EX_NEWER);
+    } else if (strcmp(view, "updates-past-line") == 0) {
+        /* A release for the ESP32-P4 panel, past the panel's line. */
+        v.got = UPD_GOT_PAST_LINE;
+        strcpy(v.found, "0.23.0");
+        settings_set(SET_UPD_CHANNEL, 1.0f);
     } else if (strcmp(view, "updates-blocked") == 0) {
         v.phase = UPD_PH_IDLE;
         v.block = UPD_WHY_ARMED;

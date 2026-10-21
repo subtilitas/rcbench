@@ -843,7 +843,7 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
 
   // A named text that the line does not hold.
   const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 704, has: '| SDA | GP16 (pad 21) |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:704 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.21\.2/);
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:704 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.22\.0/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
@@ -1084,10 +1084,10 @@ test('tree: stale pin defaults are reported', () => {
 });
 
 test('tree: a newer release tag is a warning, not an error', () => {
-  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.22.0' };
+  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.23.0' };
   const findings = checkTree(CATALOGUE, tree);
   assert.deepEqual(findings, [
-    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.22.0` },
+    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.23.0` },
   ]);
   assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: null }), []);
   // The release pull request before its tag: the newest tag is older than the data.
@@ -1187,8 +1187,8 @@ test('counts: a missing safety note, stage or pad is reported', () => {
   reports(checkCounts(gpio), 'pads', /GP1 is on two pads/);
 
   const release = copy();
-  release.release = '0.22.0';
-  reports(checkCounts(release), 'release', /0\.22\.0/);
+  release.release = '0.23.0';
+  reports(checkCounts(release), 'release', /0\.23\.0/);
   release.release = 'next';
   reports(checkCounts(release), 'release', /version number/);
 

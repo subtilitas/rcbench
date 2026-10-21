@@ -9,10 +9,12 @@
  * that is not v + MAJOR.MINOR.PATCH, or one read out of an answer whose
  * JSON (JavaScript Object Notation) is out of form, a single release of
  * it included.  And
- * an offer of a release that is not newer than the running one: equal,
- * older, a stable one older than a running testing one, a running version
- * that did not parse.  Each bound is tested on both sides, and every answer
- * is fed whole, a byte at a time and in pieces.
+ * an offer of a release that is not newer than the running one (equal,
+ * older, a running version that did not parse) or past the panel's
+ * release line, 0.22 (0.23.0, 0.24.0, 1.0.0), and a patch release of the
+ * line lost behind a higher release for another panel.  Each bound is
+ * tested on both sides, and every answer is fed whole, a byte at a time
+ * and in pieces.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -318,7 +320,7 @@ TEST_CASE(the_scan_keeps_little)
 {
     /* What the runner holds on its stack for the scan. */
     fprintf(stderr, "  fw_rel_scan_t: %zu bytes\n", sizeof(fw_rel_scan_t));
-    CHECK(sizeof(fw_rel_scan_t) <= 80u);
+    CHECK(sizeof(fw_rel_scan_t) <= 84u);
     CHECK_STR_EQ(fw_rel_err_str(FW_REL_TAG_NONE), "no tag_name");
     CHECK_STR_EQ(fw_rel_err_str(FW_REL_TAG_LONG), "tag_name too long");
     CHECK_STR_EQ(fw_rel_err_str(FW_REL_TAG_FORM), "JSON out of form");
@@ -501,43 +503,150 @@ static bool offered(unsigned fm, unsigned fn, unsigned fp, unsigned rm,
     return fw_release_offered(f, r, true);
 }
 
-TEST_CASE(only_a_newer_release_is_offered)
+TEST_CASE(only_a_newer_release_of_the_line_is_offered)
 {
-    /* Equal, older, newer. */
-    CHECK(!offered(0, 20, 0, 0, 20, 0));
-    CHECK(!offered(0, 19, 9, 0, 20, 0));
-    CHECK(offered(0, 20, 1, 0, 20, 0));
-    CHECK(offered(0, 21, 0, 0, 20, 5));
-    CHECK(offered(1, 0, 0, 0, 65535, 65535));
-    CHECK(!offered(0, 65535, 65535, 1, 0, 0));
-    /* Each part a number, not text: 0.10 is after 0.9. */
-    CHECK(offered(0, 10, 0, 0, 9, 0));
-    CHECK(!offered(0, 9, 0, 0, 10, 0));
-    CHECK(offered(0, 9, 10, 0, 9, 9));
-    CHECK(offered(10, 0, 0, 9, 0, 0));
-    /* Testing (odd minor) and stable (even minor) mixed: a panel on a
-     * testing release is offered no older stable one, and a newer of
-     * either kind. */
-    CHECK(!offered(0, 20, 0, 0, 21, 0));
-    CHECK(!offered(0, 20, 3, 0, 21, 0));
-    CHECK(offered(0, 22, 0, 0, 21, 0));
-    CHECK(offered(0, 21, 1, 0, 21, 0));
-    CHECK(offered(0, 21, 0, 0, 20, 0));
-    CHECK(!offered(0, 21, 0, 0, 22, 0));
-    CHECK(!offered(0, 21, 0, 0, 21, 0));
+    /* The line: 0.22, the last release for the ESP32-S3 panel. */
+    CHECK_EQ(FW_REL_LINE_MAJOR, 0u);
+    CHECK_EQ(FW_REL_LINE_MINOR, 22u);
+    /* A patch release of the line: newer offered, equal and older not. */
+    CHECK(offered(0, 22, 1, 0, 22, 0));
+    CHECK(!offered(0, 22, 0, 0, 22, 1));
+    CHECK(!offered(0, 22, 0, 0, 22, 0));
+    CHECK(!offered(0, 22, 1, 0, 22, 1));
+    CHECK(offered(0, 22, 65535, 0, 22, 65534));
+    CHECK(!offered(0, 22, 65535, 0, 22, 65535));
+    /* Each part a number, not text: 0.22.10 is after 0.22.9. */
+    CHECK(offered(0, 22, 10, 0, 22, 9));
+    CHECK(!offered(0, 22, 9, 0, 22, 10));
+    /* Past the line, however much newer: never, testing or stable. */
+    CHECK(!offered(0, 23, 0, 0, 22, 0));
+    CHECK(!offered(0, 23, 0, 0, 22, 65535));
+    CHECK(!offered(0, 24, 0, 0, 22, 0));
+    CHECK(!offered(1, 0, 0, 0, 22, 0));
+    CHECK(!offered(1, 22, 0, 0, 22, 0));
+    CHECK(!offered(1, 22, 1, 0, 22, 0));
+    CHECK(!offered(65535, 65535, 65535, 0, 22, 0));
+    /* Before the line: older, and not offered either. */
+    CHECK(!offered(0, 21, 65535, 0, 22, 0));
+    CHECK(!offered(0, 20, 0, 0, 22, 0));
+    /* A build before the line is offered the line and nothing else. */
+    CHECK(offered(0, 22, 0, 0, 21, 2));
+    CHECK(!offered(0, 21, 3, 0, 21, 2));
+    CHECK(!offered(0, 23, 0, 0, 21, 2));
+    /* The line is MAJOR and MINOR, any PATCH. */
+    CHECK(fw_release_in_line((fw_version_t){ 0u, 22u, 0u }));
+    CHECK(fw_release_in_line((fw_version_t){ 0u, 22u, 65535u }));
+    CHECK(!fw_release_in_line((fw_version_t){ 0u, 21u, 65535u }));
+    CHECK(!fw_release_in_line((fw_version_t){ 0u, 23u, 0u }));
+    CHECK(!fw_release_in_line((fw_version_t){ 1u, 22u, 0u }));
 }
 
 TEST_CASE(a_running_version_that_did_not_parse_is_offered_nothing)
 {
     const fw_version_t zero = { 0u, 0u, 0u };
     const fw_version_t big = { 65535u, 65535u, 65535u };
-    const fw_version_t v = { 0u, 21u, 0u };
+    const fw_version_t v = { 0u, 22u, 1u };
     CHECK(!fw_release_offered(v, zero, false));
     CHECK(!fw_release_offered(big, zero, false));
-    CHECK(!fw_release_offered(big, v, false));
-    /* What fw_ota_running() leaves it as: 0.0.0, which every release is
-     * newer than once it is believed. */
+    CHECK(!fw_release_offered(v, big, false));
+    /* What fw_ota_running() leaves it as: 0.0.0, which every release of
+     * the line is newer than once it is believed; one past it is not
+     * offered even then. */
     CHECK(fw_release_offered(v, zero, true));
+    CHECK(!fw_release_offered(big, zero, true));
+}
+
+/* The highest release and the line's highest of @p text, fed in pieces of
+ * @p piece bytes: the line's result, and the answer's in @p e. */
+static bool scan_line(const char *text, size_t piece, fw_rel_err_t *e,
+                      fw_version_t *v, fw_version_t *line)
+{
+    fw_rel_scan_t s;
+    fw_release_scan_init(&s);
+    const size_t n = strlen(text);
+    for (size_t at = 0; at < n; at += piece) {
+        const size_t k = (n - at < piece) ? n - at : piece;
+        if (fw_release_scan_feed(&s, (const uint8_t *)text + at, k)) {
+            break;
+        }
+    }
+    *e = fw_release_scan_end(&s, v);
+    return fw_release_scan_line(&s, line);
+}
+
+TEST_CASE(the_lines_highest_release_is_kept_beside_the_highest)
+{
+    fw_rel_err_t e;
+    fw_version_t v = { 0u, 0u, 0u }, l = { 9u, 9u, 9u };
+    /* 0.22.1 published before 0.23.0 and 0.24.0: the highest is 0.24.0,
+     * the line's 0.22.1, whatever the order and the pieces. */
+    static const char *const both[] = { "v0.24.0", "v0.22.0", "v0.23.0",
+                                        "v0.22.1", "v0.21.2" };
+    char *t = releases(both, 5u, "");
+    REQUIRE_ALLOC(t);
+    static const size_t pieces[] = { 1u, 7u, 4096u };
+    for (size_t i = 0; i < sizeof(pieces) / sizeof(pieces[0]); ++i) {
+        CHECK(scan_line(t, pieces[i], &e, &v, &l));
+        CHECK_EQ(e, FW_REL_OK);
+        CHECK_EQ(v.minor, 24u);
+        CHECK_EQ(l.major, 0u);
+        CHECK_EQ(l.minor, 22u);
+        CHECK_EQ(l.patch, 1u);
+    }
+    free(t);
+    /* No release of the line among them: none, and the line untouched. */
+    static const char *const none[] = { "v0.23.0", "v1.22.0", "v0.21.2",
+                                        "v0.24.0" };
+    t = releases(none, 4u, "");
+    REQUIRE_ALLOC(t);
+    l = (fw_version_t){ 9u, 9u, 9u };
+    CHECK(!scan_line(t, 4096u, &e, &v, &l));
+    CHECK_EQ(e, FW_REL_OK);
+    CHECK_EQ(v.major, 1u);          /* 1.22.0: MINOR 22, another MAJOR */
+    CHECK_EQ(l.major, 9u);
+    free(t);
+    /* A draft of the line is passed over; the one that is no draft is
+     * kept. */
+    CHECK(scan_line("[{\"tag_name\":\"v0.22.5\",\"draft\":true},"
+                    "{\"draft\":false,\"tag_name\":\"v0.22.2\"},"
+                    "{\"tag_name\":\"v0.23.0\"}]", 3u, &e, &v, &l));
+    CHECK_EQ(l.patch, 2u);
+    CHECK(!scan_line("[{\"tag_name\":\"v0.22.5\",\"draft\":true},"
+                     "{\"tag_name\":\"v0.23.0\"}]", 3u, &e, &v, &l));
+    /* An answer refused after a release of the line was read: none. */
+    CHECK(!scan_line("[{\"tag_name\":\"v0.22.1\"},"
+                     "{\"tag_name\":\"v0.22.1-rc1\"}]", 1u, &e, &v, &l));
+    CHECK_EQ(e, FW_REL_VERSION);
+    CHECK(!scan_line("[{\"tag_name\":\"v0.22.1\"},{\"tag_name\":1}]",
+                     5u, &e, &v, &l));
+    CHECK_EQ(e, FW_REL_TAG_FORM);
+    /* An answer that ends before its array does: none. */
+    CHECK(!scan_line("[{\"tag_name\":\"v0.22.1\"}", 4096u, &e, &v, &l));
+    CHECK_EQ(e, FW_REL_TAG_NONE);
+    /* The line's release as the 11th is not read. */
+    static const char *const late[] = {
+        "v0.23.0", "v0.23.1", "v0.23.2", "v0.23.3", "v0.23.4",
+        "v0.24.0", "v0.24.1", "v0.24.2", "v0.25.0", "v0.25.1", "v0.22.9",
+    };
+    t = releases(late, 11u, "");
+    REQUIRE_ALLOC(t);
+    CHECK(!scan_line(t, 4096u, &e, &v, &l));
+    CHECK_EQ(e, FW_REL_OK);
+    CHECK_EQ(v.minor, 25u);
+    free(t);
+    t = releases(late + 1, 10u, "");
+    REQUIRE_ALLOC(t);
+    CHECK(scan_line(t, 4096u, &e, &v, &l));
+    CHECK_EQ(l.patch, 9u);
+    free(t);
+    /* A scan not ended, or none: nothing. */
+    fw_rel_scan_t s;
+    fw_release_scan_init(&s);
+    CHECK(!fw_release_scan_line(&s, &l));
+    CHECK(!fw_release_scan_line(NULL, &l));
+    static const char one[] = "[{\"tag_name\":\"v0.22.3\"}]";
+    (void)fw_release_scan_feed(&s, (const uint8_t *)one, sizeof(one) - 1u);
+    CHECK(fw_release_scan_line(&s, NULL));
 }
 
 int main(void)
@@ -557,7 +666,8 @@ int main(void)
     RUN(ten_releases_are_read_and_an_eleventh_is_not);
     RUN(one_release_out_of_form_refuses_the_whole_answer);
     RUN(a_draft_is_passed_over_wherever_its_key_stands);
-    RUN(only_a_newer_release_is_offered);
+    RUN(only_a_newer_release_of_the_line_is_offered);
     RUN(a_running_version_that_did_not_parse_is_offered_nothing);
+    RUN(the_lines_highest_release_is_kept_beside_the_highest);
     return test_summary("fw_release_scan");
 }

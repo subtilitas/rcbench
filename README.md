@@ -11,6 +11,11 @@ processors: an ESP32-S3 touch panel (user interface, settings, SD card) and an
 RP2350 IOmcu (IO microcontroller: measurement, outputs, and every
 protocol with timing requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
 
+Release 0.22.0 runs on the ESP32-S3 panel and is the last release for it.
+The panel is offered 0.22.x patch releases only, and no later release
+([Screens: The release line](docs/Screens.md#the-release-line)). Later
+releases are for the 7-inch ESP32-P4 display board from Waveshare.
+
 **Status: under construction.** The project is under development and its
 functions are not verified on hardware. The panel boots and every screen
 exists. The output drivers are built. Switching to ARMED names the roles it drives: the
@@ -101,7 +106,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 50,151 of 51,318 lines in 201 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 50,173 of 51,340 lines in 201 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).

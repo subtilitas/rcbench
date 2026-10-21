@@ -92,6 +92,7 @@ typedef enum {
     UPD_GOT_MEMORY,
     UPD_GOT_LIMIT,
     UPD_GOT_UNVERSIONED,
+    UPD_GOT_PAST_LINE,
 } upd_got_t;
 
 /** wa_why_t */
@@ -152,8 +153,8 @@ typedef struct {
     upd_rel_t   rel;           /**< UNEXPECTED, SUMS                       */
     int         status;        /**< REFUSED, LIMIT, and SUMS by status     */
     uint32_t    budget_s;      /**< TIMEOUT: the budget that ran out       */
-    char        found[WIFI_VER_MAX + 1];   /**< NEWER, CURRENT, UNVERSIONED;
-                                                DOWNLOAD's                 */
+    char        found[WIFI_VER_MAX + 1];   /**< NEWER, CURRENT, UNVERSIONED,
+                                                PAST_LINE; DOWNLOAD's      */
     uint32_t    left_s;        /**< while busy                             */
     uint32_t    done;          /**< IMAGE: bytes received of total         */
     uint32_t    total;

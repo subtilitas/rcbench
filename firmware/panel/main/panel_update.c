@@ -922,8 +922,7 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
         v.rel = (upd_rel_t)f.rel;
         v.status = f.status;
         v.budget_s = f.budget_ms / 1000u;
-        if (f.job == WA_JOB_DOWNLOAD || f.got == WA_GOT_NEWER
-            || f.got == WA_GOT_CURRENT || f.got == WA_GOT_UNVERSIONED) {
+        if (wa_fetch_has_found(&f)) {
             upd_ver_text(f.found, v.found, sizeof(v.found));
         }
     }

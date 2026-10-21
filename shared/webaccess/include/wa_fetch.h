@@ -14,8 +14,11 @@
  *             draft (fw_release_scan_feed()), read up to the 10th
  *             release's end and no further, with a Content-Length or in
  *             chunks; 403 and 429, GitHub's request limit, end as LIMIT.
- *             Either way a release is NEWER only when
- *             fw_release_offered() says so.  Join, address and request
+ *             Where the highest is past the panel's release line, the
+ *             highest of the line among them stands in for it when it is
+ *             offered.  Either way a release is NEWER only when
+ *             fw_release_offered() says so; one newer than the running
+ *             build and past the line is PAST_LINE.  Join, address and request
  *             take WA_FETCH_CHECK_MS at most, together.
  *   DOWNLOAD  join within WA_FETCH_JOIN_MS, then SHA256SUMS and the panel
  *             image of one release, each through at most FW_REL_HOPS_MAX
@@ -111,6 +114,10 @@ typedef enum {
                             of requests without an account; see status  */
     WA_GOT_UNVERSIONED,/**< CHECK: the running version did not parse, so
                             nothing is offered; wa_fetch_t.found        */
+    WA_GOT_PAST_LINE,  /**< CHECK: the newest release is newer than the
+                            running build and past the panel's release
+                            line (fw_release_in_line()): not offered;
+                            wa_fetch_t.found                            */
 } wa_got_t;
 
 /** Why a job did not start, or was ended from outside. */
@@ -142,7 +149,8 @@ typedef struct {
     uint32_t      gen;      /**< jobs started                             */
     uint32_t      start_ms;
     fw_version_t  running;
-    fw_version_t  found;    /**< NEWER, CURRENT, UNVERSIONED; the release
+    fw_version_t  found;    /**< NEWER, CURRENT, UNVERSIONED, PAST_LINE;
+                                 the release
                                  a DOWNLOAD fetches                       */
     uint32_t      done;     /**< IMAGE: bytes received                    */
     uint32_t      total;    /**< IMAGE: bytes announced                   */
@@ -184,6 +192,14 @@ bool wa_fetch_stale(const wa_fetch_t *f, wa_channel_t now);
 
 /** Whether a job runs: joining to checking. */
 bool wa_fetch_busy(const wa_fetch_t *f);
+
+/**
+ * @brief Whether the last job names a release in wa_fetch_t.found.
+ * @param f the job; NULL reads as none
+ * @return true for a DOWNLOAD, and for a CHECK that ended NEWER, CURRENT,
+ *         UNVERSIONED or PAST_LINE; false otherwise
+ */
+bool wa_fetch_has_found(const wa_fetch_t *f);
 
 /**
  * Once a frame, after wa_tick(): @p abort as the UI loop sees it now
