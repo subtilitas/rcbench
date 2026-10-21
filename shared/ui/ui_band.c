@@ -113,7 +113,7 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
  * the strips meet without overlapping.  A label starts UI_PILL_INSET px
  * into its chip and ends 4 px short of its right edge, LINK's 18 px.  A row
  * that would reach CHIPS_MIN_X, where MOTOR & ESC's home tag, the widest
- * (test_nav measures every screen's), ends, starts its labels 16 px in.
+ * (test_nav_bubble measures every screen's), ends, starts its labels 16 px in.
  * One row is wider than that still and reaches under MOTOR & ESC's tag:
  * ARMED with a FAULT code, down to x 224, in German to x 216.  Every other
  * tag ends at x 210 or less.
