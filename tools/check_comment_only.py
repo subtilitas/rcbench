@@ -17,6 +17,10 @@ docstrings removed.
 It fails on
 
 - a C/H file whose code tokens differ;
+- a C/H file with more comments than before that hold a nested `/*` or a
+  `//` comment ending in a backslash (both change what the compiler sees
+  without changing the tokens gcc's lexer returns here, and -Wcomment
+  fails the build on them);
 - a Python file whose syntax tree, docstrings aside, differs;
 - a file that BASE or HEAD does not have (a sweep adds and removes none);
 - a changed file of any other kind.
@@ -28,6 +32,7 @@ is the one that holds for every file.
 
 import argparse
 import ast
+import re
 import subprocess
 import sys
 
@@ -94,6 +99,34 @@ def c_tokens(text: str) -> str:
     return " ".join(run.stdout.split())
 
 
+COMMENT = re.compile(
+    r'"(?:\\.|[^"\\\n])*"'      # a string literal
+    r"|'(?:\\.|[^'\\\n])*'"     # a character literal
+    r"|//[^\n]*"                   # a line comment
+    r"|/\*.*?\*/",                 # a block comment
+    re.S)
+
+
+def comment_hazards(text: str) -> int:
+    """Count the comments a compiler warns about with -Wcomment.
+
+    Args:
+        text: The C or header source.
+
+    Returns:
+        The number of block comments that hold another `/*` plus the number
+        of line comments that end in a backslash.
+    """
+    count = 0
+    for match in COMMENT.finditer(text):
+        body = match.group(0)
+        if body.startswith("/*") and "/*" in body[2:]:
+            count += 1
+        elif body.startswith("//") and body.rstrip().endswith("\\"):
+            count += 1
+    return count
+
+
 def strip_docstrings(tree: ast.AST) -> ast.AST:
     """Remove the docstring of the module and of every function and class.
 
@@ -158,6 +191,9 @@ def main() -> int:
             try:
                 if c_tokens(old) != c_tokens(new):
                     failures.append(f"{path}: code changed")
+                elif comment_hazards(new) > comment_hazards(old):
+                    failures.append(f"{path}: a comment holds a nested /* "
+                                    "or ends a line comment in a backslash")
             except RuntimeError as err:
                 failures.append(f"{path}: gcc: {err}")
         elif path.endswith(PY_SUFFIXES):
