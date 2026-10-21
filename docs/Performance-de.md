@@ -360,8 +360,8 @@ Der ESP32-P4 hat kein Funkmodul. Das WLAN läuft auf dem ESP32-C6 des
 7-Zoll-Boards, den der P4 über SDIO (Secure Digital Input Output) erreicht.
 Die Schätzung des S3-Builds für den internen RAM, den das Funkmodul belegt,
 51 200 Bytes DMA-fähiger (Direct Memory Access) interner RAM bei
-`esp_wifi_init()`, gilt für den P4 nicht. Der interne RAM, den der P4-Build
-übrig lässt, ist nicht gemessen, und kein Werkzeug und kein CI-Schritt
+`esp_wifi_init()`, gilt für den P4 nicht. Der interne RAM, der zur Laufzeit
+frei ist, ist nicht gemessen, und kein Werkzeug und kein CI-Schritt
 schätzt ihn. Das Panel gibt den freien Speicher beim Start aus:
 
 ```text
@@ -383,9 +383,24 @@ Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
 `firmware/panel/main/psram_bss.lf` legt die nullinitialisierten Daten (.bss)
-der großen Objekte der Bildschirme in den PSRAM (Pseudo-Static Random-Access
-Memory) und nennt jedes Objekt. Die Größen dieser Objekte im P4-Build sind
-nicht gemessen.
+von 29 Objekten in den PSRAM (Pseudo-Static Random-Access Memory): den
+Zustand der Bildschirme und der Helfer für Karte, Seite, Einstellungen und
+Ausgänge. Das Fragment nennt jedes Objekt und die Regeln, die es erfüllt.
+`tools/psram_bss.py` liest die Linker-Map des Builds und lässt CI
+fehlschlagen, wenn ein genanntes Objekt .bss im internen RAM behält.
+Statische Zahlen des P4-Builds mit ESP-IDF v5.5.5, aus `idf.py size`:
+
+| Posten | Mit dem Fragment | Ohne es |
+| --- | ---: | ---: |
+| .bss im internen RAM (DIRAM) | 29 408 | 195 880 |
+| .bss im PSRAM (`.ext_ram.bss`) | 166 472 | 0 |
+| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, von 655 360 | 126 882 | 293 354 |
+| Anwendungs-Image | 2 151 376 | 2 151 376 |
+
+Alle Zahlen sind Bytes. Die PSRAM-Einträge von ESP-IDF für lwIP
+(Lightweight IP Stack) und wpa_supplicant nutzen ein Schema, das nur das
+Fragment von `esp_wifi` definiert, und der P4-Build bindet es nicht ein;
+die 3 551 Bytes .bss von lwIP bleiben im internen RAM.
 
 ## WLAN-Downloads
 

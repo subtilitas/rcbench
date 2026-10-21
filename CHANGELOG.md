@@ -132,6 +132,15 @@ history is in git.
 
 ### Fixed
 
+- ESP32-P4 panel: the .bss that `firmware/panel/main/psram_bss.lf` names
+  is in PSRAM (pseudo-static random-access memory): 29 objects, 166,472
+  bytes of `.ext_ram.bss`; internal .bss is 29,408 bytes instead of
+  195,880. The fragment
+  defines its own scheme, `rcbench_extram_bss`: the `extram_bss` scheme it
+  named is defined only in `esp_wifi`'s fragment, which the P4 build does
+  not include, and ldgen skipped the mappings without a message. CI fails
+  through `tools/psram_bss.py` when a named object keeps .bss in internal
+  RAM.
 - SERVO > TARGET reads the set programming port in SAFE within 500 ms after
   a programming session gives the port back and after an IOmcu restart,
   without waiting for the next ARM.
