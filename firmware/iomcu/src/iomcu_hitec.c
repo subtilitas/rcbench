@@ -1,8 +1,7 @@
 /**
  * @file
- * @brief The HITEC page and the programming port's hardware it drives.
- *
- * See iomcu.h for the other files.
+ * @brief The HITEC page and the programming port's hardware it drives; see
+ * iomcu.h for the other files.
  *
  * Implements the signal-wire programming protocols of Hitec servos.  Hitec
  * is a name or trademark of its owner; it is used here only to say which

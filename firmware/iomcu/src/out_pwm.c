@@ -2,7 +2,7 @@
  * @file
  * @brief Hardware PWM (pulse-width modulation) servo outputs.
  *
- * The declarations are in out_pwm.h.
+ * See out_pwm.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,34 +20,34 @@
 #include "outputs.h"
 
 /**
- * @brief Counts per second of the PWM counter: one count per microsecond.
+ * @brief One microsecond per count (OUT_PWM_TICK_HZ).
  *
  * The frame period then fits the sixteen-bit counter down to 16 Hz, past the
- * 40 Hz floor the driver table sets, and a microsecond is the resolution every
- * pulse in this firmware is expressed in.
+ * 40 Hz floor the driver table sets, and a microsecond is the resolution
+ * every pulse in this firmware is expressed in.
  */
 #define TICK_HZ  OUT_PWM_TICK_HZ
 
 /**
- * @brief Number of bindings the table holds.
- *
- * One entry per slot the bank can hold and one per programming port; nothing
- * here has more outputs than that.
+ * @brief What is bound, so the sharing rules can be checked and a release
+ * can put the pin back.  One entry per slot the bank can hold and one per
+ * programming port; nothing here has more outputs than that.
  */
 #define BINDINGS (OUT_MAX_SLOTS + LINK_PG_PORTS_MAX)
-
 /**
- * @brief One bound pin: what is bound, so the sharing rules can be checked and
- *        a release can put the pin back.
+ * @brief One pin binding: whether the entry is in use, its pin, its frame
+ * rate and the last count of its frame.
  */
 typedef struct {
-    bool     used;      /**< entry holds a bound pin */
-    uint8_t  pin;       /**< GPIO number */
-    uint16_t rate_hz;   /**< frame rate, in Hz */
+    bool     used;
+    uint8_t  pin;
+    uint16_t rate_hz;
     uint16_t wrap;      /**< the last count of the frame                  */
 } binding_t;
 
-/** @brief The bindings, one entry per bound pin. */
+/**
+ * @brief The pin bindings, one entry per bound pin.
+ */
 static binding_t s_bound[BINDINGS];
 
 /**
@@ -67,10 +67,8 @@ static binding_t *find(uint8_t pin)
 }
 
 /**
- * @brief Returns the frame's last count for a rate.
- *
- * It is the longest pulse the output pages let through at this rate: the same
- * function answers both.
+ * @brief The frame's last count, which is the longest pulse the output pages
+ * let through at this rate: the same function answers both.
  *
  * @param rate_hz  Frame rate in Hz.
  * @return The last count of the frame, in microseconds.

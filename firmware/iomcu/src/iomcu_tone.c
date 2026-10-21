@@ -1,8 +1,7 @@
 /**
  * @file
- * @brief The TONE page and the phase tap's capture behind it.
- *
- * See iomcu.h for the other files.
+ * @brief The TONE page and the phase tap's capture behind it; see iomcu.h
+ * for the other files.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,8 +26,7 @@ uint64_t tone_taken(void)
 }
 
 /**
- * @brief Gives core 1 its order from the TONE page, running when the capture
- *        does.
+ * @brief Core 1's order from the page, running when the capture does.
  */
 static void tone_order(void)
 {
@@ -37,26 +35,32 @@ static void tone_order(void)
     tone_core1_order(&cmd, tone_cap_start_us());
 }
 
-/** @brief True when the last tone_rewire() found core 1 busy. */
-static bool s_tone_busy;
-/** @brief The capture's start before a rewire, in microseconds. */
-static uint64_t s_tone_was_us;
+/*
+ * The capture made to agree with the page: stopped, then started on the
+ * page's pin if the tap is enabled and not refused, else the pin left an
+ * input with its pull-down on.  False when the tap is enabled and the
+ * wiring could not take its pin (no PIO state machine, no DMA channel).
+ * Core 1 is told first that nothing runs and given up to
+ * TONE_CORE1_WAIT_US to finish the pass it is in, then the capture is torn
+ * down, and core 1 is told again once the capture runs: it never reads a
+ * ring that is being started over.
+ */
+static bool s_tone_busy;   /* the last tone_rewire() found core 1 busy */
+static uint64_t s_tone_was_us;   /* the capture's start before a rewire */
 
 /**
- * @brief Makes the capture agree with the TONE page.
+ * @brief Makes the capture agree with the TONE page: stopped, then started on
+ * the page's pin.
  *
- * The capture is stopped, then started on the page's pin if the tap is enabled
- * and not refused, else the pin is left an input with its pull-down on.
- * Core 1 is told first that nothing runs and given up to TONE_CORE1_WAIT_US
- * to finish the pass it is in, then the capture is torn down, and core 1 is
- * told again once the capture runs: it never reads a ring that is being
- * started over.
- *
- * @param keep_ring  True to keep the beeps already in the ring across the
- *                   rewire, false to start a new capture.
+ * @param keep_ring  True to recapture the ring with the elapsed time since
+ *                   the start saved by the earlier rewire
+ *                   (tone_page_recapture()); false
+ *                   to start a new capture
+ *                   (tone_page_capture()).
  * @return False when the tap is enabled and the wiring could not take its pin
- *         (no PIO state machine, no DMA channel), or core 1 was still in a
- *         pass and the old capture runs on. True otherwise.
+ *         (no PIO state machine, no DMA channel), or core 1 was still
+ *         in a pass
+ *         and the old capture runs on. True otherwise.
  */
 static bool tone_rewire_as(bool keep_ring)
 {

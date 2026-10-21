@@ -1,10 +1,8 @@
 /**
  * @file
- * @brief The SUPPLY page and the PD mini behind it, and the current monitors'
- *        pages.
- *
- * The current monitors' pages are SENSE, SERVO_SENSE and SERVO_WIN, which
- * core 1 reads the parts for. See iomcu.h for the other files.
+ * @brief The SUPPLY page and the PD mini behind it, and the current
+ * monitors' pages SENSE, SERVO_SENSE and SERVO_WIN, which core 1 reads the
+ * parts for; see iomcu.h for the other files.
  *
  * SPDX-License-Identifier: MIT
  */

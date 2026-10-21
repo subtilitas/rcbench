@@ -2,8 +2,7 @@
  * @file
  * @brief The firmware update on this board.
  *
- * The declarations are in update_hw.h. The update section of link_pages.h
- * defines the pages.
+ * See update_hw.h and the update section of link_pages.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -25,10 +24,9 @@
 #include "out_store.h"
 
 /**
- * @brief Base address for reads of both slots by their storage address.
- *
- * The reads are not translated to the running slot, and not cached, so a
- * sector just written reads back as the flash holds it.
+ * @brief Reads of both slots by their storage address: not translated to the
+ * running slot, and not cached, so a sector just written reads back as the
+ * flash holds it.
  */
 #define FLASH_READ_BASE XIP_NOCACHE_NOALLOC_NOTRANSLATE_BASE
 
@@ -37,30 +35,26 @@ _Static_assert(IOMCU_SLOT_BYTES % FLASH_SECTOR_SIZE == 0u,
 _Static_assert(LINK_UPD_SECTOR_BYTES == FLASH_SECTOR_SIZE,
                "the update's sector is not the flash's");
 
-/** @brief The update's state machine. */
 static link_update_dev_t s_upd;
-/** @brief The flash callbacks handed to the update state machine. */
 static link_update_io_t  s_io;
-/** @brief Returns true while flash may not be written now. */
 static bool            (*s_busy)(void);
 static uint32_t          s_target_off;   /* the slot written, from flash 0 */
 static uint32_t          s_running_off;
-/** @brief The slot the boot ROM runs, 0 or 1, or -1 without a partition table.
- */
 static int               s_slot = -1;
 
-/** @brief The boot ROM's BUY work area: 4 KiB, to rewrite the sector holding
- *  the flag. */
+/**
+ * @brief The boot ROM's BUY needs 4 KiB to rewrite the sector holding the
+ * flag.
+ */
 static uint32_t s_buy_work[FLASH_SECTOR_SIZE / sizeof(uint32_t)];
-/** @brief The return code of the last BUY call. */
 static int      s_buy_rc;
 
 /**
- * @brief Erases a sector of the target slot.
+ * @brief Erases a sector of the slot being written.
  *
  * @param ctx  Unused.
- * @param off  Offset within the slot, in bytes. Must be below
- *             IOMCU_SLOT_BYTES.
+ * @param off  Offset within the slot, in bytes. An offset of IOMCU_SLOT_BYTES
+ *             or more is refused.
  * @return True when the erase ran.
  */
 static bool io_erase(void *ctx, uint32_t off)
@@ -73,12 +67,12 @@ static bool io_erase(void *ctx, uint32_t off)
 }
 
 /**
- * @brief Programs one sector of the target slot.
+ * @brief Programs one sector of the slot being written.
  *
- * @param ctx   Unused.
- * @param off   Offset within the slot, in bytes. Must be below
- *              IOMCU_SLOT_BYTES.
- * @param data  The sector's contents, FLASH_SECTOR_SIZE bytes.
+ * @param ctx  Unused.
+ * @param off  Offset within the slot, in bytes. An offset of IOMCU_SLOT_BYTES
+ *             or more is refused.
+ * @param data  The sector contents.
  * @return True when the program ran.
  */
 static bool io_program(void *ctx, uint32_t off, const uint8_t *data)
@@ -94,11 +88,8 @@ static bool io_program(void *ctx, uint32_t off, const uint8_t *data)
 /**
  * @brief Tells whether a flash write may run now.
  *
- * A write may run inside an open flash window while the bank and the other
- * busy parts allow it (s_busy).
- *
  * @param ctx  Unused.
- * @return True when a write may run.
+ * @return True when a flash window is open and the busy check allows it.
  */
 static bool io_gate(void *ctx)
 {
@@ -107,11 +98,10 @@ static bool io_gate(void *ctx)
 }
 
 /**
- * @brief Runs the boot ROM's BUY. Called inside a flash window.
- *
- * The boot ROM clears the TBYB (try before you buy) flag in flash, and for a
- * version downgrade erases the other slot's first sector. link_update_dev
- * erases that sector after every BUY, and owes the erase until it holds.
+ * @brief Inside a flash window: the boot ROM clears the TBYB (try before you
+ * buy) flag in flash, and for a version downgrade erases the other slot's
+ * first sector.  link_update_dev erases that sector after every BUY, and
+ * owes the erase until it holds.
  *
  * @param arg  Unused.
  */
@@ -124,10 +114,10 @@ static void buy_in_window(void *arg)
 }
 
 /**
- * @brief Runs BUY inside a flash window.
+ * @brief Runs the boot ROM's BUY inside a flash window.
  *
  * @param ctx  Unused.
- * @return True when the window opened and the boot ROM returned 0.
+ * @return True when the window opened and BUY returned 0.
  */
 static bool io_buy(void *ctx)
 {
@@ -137,9 +127,8 @@ static bool io_buy(void *ctx)
 }
 
 /**
- * @brief Restarts into the slot just written, as a flash update boot.
- *
- * Does not return.
+ * @brief Restarts into the slot just written, as a flash update boot. This
+ * function does not return.
  *
  * @param ctx  Unused.
  */
@@ -156,12 +145,13 @@ static void io_restart(void *ctx)
 }
 
 /**
- * @brief Finds where partition @p n of the table the boot ROM holds starts.
+ * @brief Where partition @p n of the table the boot ROM holds starts and how
+ * many bytes it spans; false without one.
  *
- * @param n      Partition number, 0 or 1.
- * @param start  Receives the start offset from flash 0, in bytes.
+ * @param n  Partition number, 0 or 1.
+ * @param start  Receives the start offset in bytes from flash 0.
  * @param bytes  Receives the length of the partition, in bytes.
- * @return True when the boot ROM holds the partition. False without one.
+ * @return True when the boot ROM holds the partition.
  */
 static bool partition_at(unsigned n, uint32_t *start, uint32_t *bytes)
 {

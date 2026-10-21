@@ -1,9 +1,7 @@
 /**
  * @file
- * @brief The XL2515 over SPI: chip-select edges and the register writes.
- *
- * This file holds chip-select edges and the register writes in the order the
- * datasheet gives them. The declarations are in xl2515.h.
+ * @brief The XL2515 over SPI: the part of the CAN driver that touches
+ * hardware.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,17 +18,21 @@
 #include "iomcu_pins.h"
 #include "mcp2515.h"
 
-/** @brief Drives the chip select low, selecting the part. */
+/**
+ * @brief Drives the chip select low, selecting the part.
+ */
 static inline void cs_low(void)  { gpio_put(IOMCU_CAN_PIN_CS, 0); }
-/** @brief Drives the chip select high, deselecting the part. */
+/**
+ * @brief Drives the chip select high, deselecting the part.
+ */
 static inline void cs_high(void) { gpio_put(IOMCU_CAN_PIN_CS, 1); }
 
 /**
- * @brief Writes @p n registers from @p addr with a WRITE command.
+ * @brief Writes @p n registers starting at @p addr, with a WRITE command.
  *
  * @param addr  Address of the first register.
  * @param data  Values to write.
- * @param n     Number of registers to write.
+ * @param n  Number of registers to write.
  */
 static void write_regs(uint8_t addr, const uint8_t *data, size_t n)
 {
@@ -44,7 +46,7 @@ static void write_regs(uint8_t addr, const uint8_t *data, size_t n)
 /**
  * @brief Writes one register.
  *
- * @param addr   Address of the register.
+ * @param addr  Address of the register.
  * @param value  Value to write.
  */
 static void write_reg(uint8_t addr, uint8_t value)
@@ -53,11 +55,11 @@ static void write_reg(uint8_t addr, uint8_t value)
 }
 
 /**
- * @brief Reads @p n registers from @p addr with a READ command.
+ * @brief Reads @p n registers starting at @p addr, with a READ command.
  *
  * @param addr  Address of the first register.
- * @param out   Receives the @p n values.
- * @param n     Number of registers to read.
+ * @param out  Receives the @p n values.
+ * @param n  Number of registers to read.
  */
 static void read_regs(uint8_t addr, uint8_t *out, size_t n)
 {
@@ -82,14 +84,12 @@ static uint8_t read_reg(uint8_t addr)
 }
 
 /**
- * @brief Sets or clears bits of a register with a BIT MODIFY command.
+ * @brief Read-modify-write in the part rather than here: the interrupt flags
+ * are set by the controller between a read and a write, and clearing them
+ * with a whole-register write would drop whatever arrived in between.
  *
- * The read-modify-write happens in the part rather than here: the interrupt
- * flags are set by the controller between a read and a write, and clearing
- * them with a whole-register write would drop whatever arrived in between.
- *
- * @param addr   Address of the register.
- * @param mask   Bits to change.
+ * @param addr  Address of the register.
+ * @param mask  Bits to change.
  * @param value  New value of the bits in @p mask.
  */
 static void bit_modify(uint8_t addr, uint8_t mask, uint8_t value)
@@ -188,9 +188,7 @@ bool xl2515_send(const link_can_frame_t *f)
 }
 
 /**
- * @brief Consumes the next full receive buffer, RXB0 before RXB1.
- *
- * Used as the fetch callback of mcp2515_recv_next().
+ * @brief Consume the next full receive buffer, RXB0 before RXB1.
  *
  * @param ctx  Unused.
  * @param buf  Receives the 13 bytes of the buffer.
