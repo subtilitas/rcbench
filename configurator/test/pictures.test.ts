@@ -33,7 +33,8 @@ const files = (id: string, options: Partial<Options> = {}): string[] =>
   picturesOf(part(id), { ...DEFAULT_OPTIONS, ...options }).map((p) => p.file);
 
 test('each part shows the pictures of its variant, the main one first', () => {
-  assert.deepEqual(files('panel'), ['01-panel-back']);
+  // No photo of the panel board is in the folder: its card shows the drawing alone.
+  assert.deepEqual(files('panel'), []);
   assert.deepEqual(files('pdmini'), ['02-pd-mini']);
   assert.deepEqual(files('usbtap'), ['04-usb-c-tap-closeup']);
   assert.deepEqual(files('copro'), ['08-rp2350-can-b']);
@@ -44,7 +45,7 @@ test('each part shows the pictures of its variant, the main one first', () => {
   assert.deepEqual(files('ina228', { ina228Board: 'xt90' }), ['15-current-sensor-top', '14-current-sensor-oblique']);
   assert.deepEqual(files('ina3221'), ['16-ina3221-front', '17-ina3221-back']);
   const withPictures = CATALOGUE.parts.filter((p) => (p.pictures ?? []).length > 0).map((p) => p.id);
-  assert.deepEqual(withPictures, ['panel', 'copro', 'pdmini', 'ina3221', 'as5600', 'ina228', 'estop', 'usbtap']);
+  assert.deepEqual(withPictures, ['copro', 'pdmini', 'ina3221', 'as5600', 'ina228', 'estop', 'usbtap']);
 });
 
 test('a card with a picture links the thumb to the full file, a card without one has no image and no frame', () => {
@@ -74,8 +75,8 @@ test('a card with a picture links the thumb to the full file, a card without one
         assert.equal(alt, p.alt[lang].replaceAll('&', '&amp;'));
       });
     }
-    // 8 parts carry a picture; the MATEK variant of the INA228 is not among the files.
-    assert.equal(withPicture, 11);
+    // 7 parts carry a picture; the MATEK variant of the INA228 is not among the files.
+    assert.equal(withPicture, 10);
   }
   const matek = view({ functions: FUNCTIONS });
   assert.ok(!result(matek, 'https://example.invalid/', []).includes('current-sensor'));

@@ -43,6 +43,62 @@ Anyone redistributing a build that embeds these tables should ship the full
 licence text of whichever font produced them alongside it.
 
 
+Components the ESP32-P4 panel build fetches
+-------------------------------------------
+
+The panel firmware for the ESP32-P4 reaches the board's ESP32-C6 radio
+through components from the Espressif component registry. They are not in
+this repository: firmware/panel/dependencies.lock names them with their
+hashes, and a build downloads them into firmware/panel/managed_components/.
+A panel image contains their compiled code.
+
+  espressif/esp_wifi_remote 1.6.5        Apache License 2.0
+  espressif/esp_hosted 2.13.0            Apache License 2.0, except the
+                                         protobuf-c runtime below
+  espressif/wifi_remote_over_eppp 0.3.3  Apache License 2.0 (not linked)
+  espressif/eppp_link 1.1.6              Apache License 2.0 (not linked)
+  espressif/esp_serial_slave_link 1.1.2  Apache License 2.0 (not linked)
+
+  Copyright Espressif Systems (Shanghai) CO LTD.  The Apache License 2.0 is
+  published at https://www.apache.org/licenses/LICENSE-2.0 and is shipped in
+  each component's LICENSE file.
+
+esp_hosted carries the protobuf-c runtime (common/protobuf-c/protobuf-c/),
+which serialises its messages to the C6, under these terms:
+
+  Copyright (c) 2008-2022, Dave Benson and the protobuf-c authors.
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+
+      * Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+      * Redistributions in binary form must reproduce the above
+  copyright notice, this list of conditions and the following disclaimer
+  in the documentation and/or other materials provided with the
+  distribution.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+esp_hosted's message code generated from its .proto file
+(common/proto/esp_hosted_rpc.pb-c.c and .h) belongs to Espressif under the
+Apache License 2.0. esp_wifi_remote's dummy_src.c is an empty file without a
+licence line.
+
+
 Design and protocol references
 ------------------------------
 

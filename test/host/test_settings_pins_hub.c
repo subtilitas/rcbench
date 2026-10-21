@@ -670,7 +670,7 @@ TEST_CASE(pd_mini_rows_on_one_pin_are_marked_and_nothing_else)
 /*
  * The hub is one page of three by three tiles.  The tile table fills them
  * in order; a tenth entry has no slot, and the build stops at it
- * (_Static_assert in settings_screen.c) as this test does.
+ * (_Static_assert in settings_screen_int.h) as this test does.
  */
 TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
 {

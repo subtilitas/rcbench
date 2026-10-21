@@ -134,6 +134,92 @@ TEST_CASE(map_point_updates_in_place)
     touch_map_apply(&m, 0, 0, NULL, NULL);
 }
 
+/*
+ * The 7-inch ESP32-P4 board: the GT911 reports 1024 x 600, mirrored in x
+ * and y, and the UI draws 800 x 480 in the top-left corner.  The glass's
+ * corners land on the panel's opposite corners, and a touch outside the
+ * UI's area is dropped.
+ */
+TEST_CASE(a_1024_by_600_glass_mirrored_lands_on_the_panels_corners)
+{
+    const touch_map_t m = {
+        .src_w = 1024, .src_h = 600, .mirror_x = true, .mirror_y = true,
+        .rotation = TOUCH_ROTATION_0,
+    };
+    expect(&m, 0, 0, 1023, 599);
+    expect(&m, 1023, 599, 0, 0);
+    expect(&m, 224, 120, 799, 479);       /* the UI's last pixel */
+    expect(&m, 223, 119, 800, 480);       /* just outside it */
+    expect(&m, 1024, 600, 0, 0);          /* past the range: clamped */
+    int16_t w = 0, h = 0;
+    touch_map_size(&m, &w, &h);
+    CHECK_EQ(w, 1024);
+    CHECK_EQ(h, 600);
+}
+
+TEST_CASE(a_crop_keeps_the_points_inside_and_their_order)
+{
+    touch_point_t p[5] = {
+        { .id = 1, .x = 0,   .y = 0 },      /* the first pixel: kept */
+        { .id = 2, .x = 800, .y = 10 },     /* one column past: dropped */
+        { .id = 3, .x = 799, .y = 479 },    /* the last pixel: kept */
+        { .id = 4, .x = 10,  .y = 480 },    /* one row past: dropped */
+        { .id = 5, .x = 400, .y = 240, .strength = 9 },
+    };
+    CHECK_EQ(touch_map_crop(p, 5, 800, 480), 3);
+    CHECK_EQ(p[0].id, 1);
+    CHECK_EQ(p[1].id, 3);
+    CHECK_EQ(p[2].id, 5);
+    CHECK_EQ(p[2].strength, 9);
+}
+
+TEST_CASE(a_crop_of_nothing_or_into_nothing_keeps_nothing)
+{
+    touch_point_t p[2] = {
+        { .id = 1, .x = 1023, .y = 599 },
+        { .id = 2, .x = -1,   .y = 5 },     /* never mapped this way: dropped */
+    };
+    CHECK_EQ(touch_map_crop(p, 2, 800, 480), 0);
+    CHECK_EQ(touch_map_crop(NULL, 2, 800, 480), 0);
+    CHECK_EQ(touch_map_crop(p, 0, 800, 480), 0);
+    CHECK_EQ(touch_map_crop(p, -1, 800, 480), 0);
+    p[0].x = 0;
+    p[0].y = 0;
+    CHECK_EQ(touch_map_crop(p, 1, 0, 480), 0);
+    CHECK_EQ(touch_map_crop(p, 1, 800, 0), 0);
+    /* The full panel keeps every mapped point. */
+    p[0].x = 1023;
+    p[0].y = 599;
+    CHECK_EQ(touch_map_crop(p, 1, 1024, 600), 1);
+}
+
+/*
+ * A drag that leaves the UI's area ends there as a release, and one that
+ * comes back is a new press: the tracker sees the cropped frames only.
+ */
+TEST_CASE(a_drag_out_of_the_crop_is_a_release_and_back_in_a_press)
+{
+    touch_tracker_t t;
+    touch_tracker_reset(&t);
+    touch_event_t ev[8];
+
+    touch_point_t f1[1] = { { .id = 2, .x = 790, .y = 100 } };
+    int n = touch_tracker_update(&t, f1, touch_map_crop(f1, 1, 800, 480),
+                                 ev, 8);
+    CHECK_EQ(n, 1);
+    CHECK_EQ(ev[0].type, TOUCH_EVENT_DOWN);
+
+    touch_point_t f2[1] = { { .id = 2, .x = 805, .y = 100 } };
+    n = touch_tracker_update(&t, f2, touch_map_crop(f2, 1, 800, 480), ev, 8);
+    CHECK_EQ(n, 1);
+    CHECK_EQ(ev[0].type, TOUCH_EVENT_UP);
+
+    touch_point_t f3[1] = { { .id = 2, .x = 795, .y = 100 } };
+    n = touch_tracker_update(&t, f3, touch_map_crop(f3, 1, 800, 480), ev, 8);
+    CHECK_EQ(n, 1);
+    CHECK_EQ(ev[0].type, TOUCH_EVENT_DOWN);
+}
+
 /* --------------------------------------------------------------- tracker */
 
 TEST_CASE(tracker_reports_down_move_up)
@@ -347,6 +433,10 @@ int main(void)
     RUN(mirrors_apply_before_rotation);
     RUN(out_of_range_input_is_clamped);
     RUN(map_point_updates_in_place);
+    RUN(a_1024_by_600_glass_mirrored_lands_on_the_panels_corners);
+    RUN(a_crop_keeps_the_points_inside_and_their_order);
+    RUN(a_crop_of_nothing_or_into_nothing_keeps_nothing);
+    RUN(a_drag_out_of_the_crop_is_a_release_and_back_in_a_press);
     RUN(tracker_reports_down_move_up);
     RUN(tracker_handles_multiple_contacts);
     RUN(tracker_clamps_and_survives_small_buffers);

@@ -1211,10 +1211,10 @@ None of these is done.
 pulse switch: a port without a pin, a target that waits for a bench at
 rest, an IOmcu that starts again, and a programmer that has the port
 for each of the 16 pairs of page and wanted values. `test_settings_screen`
-runs a held setting against every call that changes one, and `test_servo` the
+runs a held setting against every call that changes one, and `test_servo_target` the
 two rows of the DUT tab. `test_kst_card` runs the card's side
 of the files on a card held in memory. `test_kst_prog` and `test_kst_prog_card` run the model and
-`test_kst_panel` the overlay, both against the IOmcu's port, a supply
+`test_kst_panel` and its siblings the overlay, both against the IOmcu's port, a supply
 model and the servo model through the link's dispatcher: the supply's
 ranges at their ends and one step outside, the wait at 0 ms, 10 000 ms and
 10 001 ms as the leave's wait, an abort, a switch to SAFE and a supply that goes

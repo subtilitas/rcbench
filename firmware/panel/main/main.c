@@ -1,5 +1,7 @@
-/*
- * The panel application.
+/**
+ * @file main.c
+ * @brief The panel application: app_main, the console report and the
+ *        main loop's hardware glue.
  *
  * Brings the board up, reports each step to the splash as it happens, then
  * runs the router at the panel's refresh rate.
@@ -29,11 +31,12 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 
-/* sdkconfig.defaults sets the main task's stack to 8192 bytes, and
- * tools/stack_check.py holds the UI's deepest chain to it.  ESP-IDF reads the
- * defaults only when it creates sdkconfig, so a checkout whose sdkconfig
- * predates that line still builds with 3584 bytes and overflows on
- * ESC STICK's first frame.  Such a build stops here. */
+/* sdkconfig.defaults sets the main task's stack to 8192 bytes.  The UI's
+ * deepest chain on the ESP32-P4's RISC-V code is not measured:
+ * tools/stack_check.py reads Xtensa code only.  ESP-IDF reads the defaults
+ * only when it creates sdkconfig, so a checkout whose sdkconfig predates
+ * that line builds with 3584 bytes, below what the UI needs.  Such a build
+ * stops here. */
 #if CONFIG_ESP_MAIN_TASK_STACK_SIZE < 8192
 #error "CONFIG_ESP_MAIN_TASK_STACK_SIZE is under 8192: delete firmware/panel/sdkconfig so sdkconfig.defaults applies"
 #endif
@@ -146,13 +149,19 @@ void publish_throttle_ramp(void)
 #include "ui_theme.h"
 
 #include "panel.h"
+#include "panel_main.h"
 
 static const char *TAG = "rcbench";
 
-/* The screens draw a UI_PANEL_W x UI_PANEL_H canvas (ui_layout.h); the glass
- * is the board's. */
-_Static_assert(BOARD_LCD_H_RES == UI_PANEL_W && BOARD_LCD_V_RES == UI_PANEL_H,
-               "the board's panel is the size the screens draw");
+/* The screens draw a UI_PANEL_W x UI_PANEL_H canvas (ui_layout.h).  The
+ * display's canvas is BOARD_UI_H_RES x BOARD_UI_V_RES (display_canvas()),
+ * in the top-left corner of the BOARD_LCD_H_RES x BOARD_LCD_V_RES glass,
+ * with the glass's stride. */
+_Static_assert(BOARD_UI_H_RES == UI_PANEL_W && BOARD_UI_V_RES == UI_PANEL_H,
+               "the display's canvas is the size the screens draw");
+_Static_assert(BOARD_UI_H_RES <= BOARD_LCD_H_RES
+               && BOARD_UI_V_RES <= BOARD_LCD_V_RES,
+               "the display's canvas fits the glass");
 
 /* Used during bring-up as well as in the loop, so file scope. */
 link_host_t    s_host;
@@ -163,39 +172,6 @@ link_host_t    s_host;
  * loop reads it for the menu marks, so it is atomic. */
 atomic_uint    s_capabilities;
 link_bringup_t s_bring;
-
-
-/* ------------------------------------------------------------ the CAN bus */
-
-/*
- * How long the start-up echo test runs.
- *
- * A verdict needs CAN_SELFTEST_MIN_PROBES (8) probes and one probe is in
- * flight at a time, so with a far end that answers this is hundreds of
- * probes and with one that does not it is tens.  It is spent inside the
- * splash, which holds afterwards anyway, so it costs no start-up time an
- * operator waits through.
- */
-#define CAN_SELFTEST_MS 1200u
-
-static busfault_report_t s_busfault;
-static bool              s_bus_ok = true;   /* until the test says otherwise */
-static bool              s_touch_ok = true; /* touch_init() answered    */
-
-/*
- * A link that was up and stopped, said on the panel rather than on a console.
- *
- * The panel has no console an operator can reach while the bench runs: the
- * native USB socket carries GPIO19 and GPIO20, which the multiplexer hands to
- * CAN about a second into boot, and the bridged socket is not wired to UART0
- * on every board (board_pins.h).  A fault that only a console can explain is
- * one nobody in the field can report, and this one took five rounds with a
- * tester to narrow down.
- *
- * Four seconds, not one: the link drops for a poll now and then, and a screen
- * that took over on every blip would be a screen operators learn to dismiss.
- */
-#define LINK_LOST_SCREEN_MS 4000u
 
 /*
  * When the link went, 0 while it is up.
@@ -222,75 +198,6 @@ bool     s_link_lost_shown;   /* the screen has had its turn      */
 uint32_t s_recoveries;        /* this outage                      */
 uint32_t s_recoveries_total;  /* since boot                       */
 
-/* ------------------------------------------------------------ the heartbeat */
-
-/*
- * Driven from the loop that reads touch and draws STOP.  The line asserts
- * that the processor owning the STOP button is running its loop, which a
- * level cannot assert and a crashed panel cannot fake.
- *
- * The monostable the line gates is on no board: the edges reach the J8
- * header pin and nothing else.  They are emitted regardless, at one GPIO
- * (general-purpose input/output) write per frame, so the line is running and
- * can be scoped before the daughterboard exists.
- */
-static heartbeat_gen_t s_beat;
-
-
-static void heartbeat_init(void)
-{
-    const gpio_config_t cfg = {
-        .pin_bit_mask = 1ULL << PANEL_HEARTBEAT_PIN,
-        .mode         = GPIO_MODE_OUTPUT,
-        .pull_up_en   = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type    = GPIO_INTR_DISABLE,
-    };
-    ESP_ERROR_CHECK(gpio_config(&cfg));
-    ESP_ERROR_CHECK(gpio_set_level(PANEL_HEARTBEAT_PIN, 0));
-    heartbeat_gen_init(&s_beat);
-    ESP_LOGI(TAG, "heartbeat on GPIO%d (J8) every %u ms; the monostable it "
-                  "gates is on no board",
-             (int)PANEL_HEARTBEAT_PIN, (unsigned)HEARTBEAT_PERIOD_MS);
-}
-
-/* ------------------------------------------------------------ die temperature */
-
-/*
- * The panel's own die, not the IOmcu's.  The two boards sit in
- * different air and run different loads, and this is the one the ESP32-S3
- * can measure without a wire.  Read once a second; the sensor is slow and
- * nothing on the screen changes faster.
- */
-static temperature_sensor_handle_t s_tsens;
-/* Read and published by the control task; app_main takes it from the
- * snapshot with everything else that crosses between the two. */
-float s_mcu_c = NAN;
-
-static void tsens_init(void)
-{
-    temperature_sensor_config_t cfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(-10, 80);
-    if (temperature_sensor_install(&cfg, &s_tsens) != ESP_OK
-        || temperature_sensor_enable(s_tsens) != ESP_OK) {
-        s_tsens = NULL;
-        ESP_LOGW(TAG, "no die temperature; the strip shows --");
-    }
-}
-
-static void tsens_read(void)
-{
-    float c = 0.0f;
-    if (s_tsens != NULL && temperature_sensor_get_celsius(s_tsens, &c) == ESP_OK) {
-        s_mcu_c = c;
-    }
-}
-
-static void beat(bool alive)
-{
-    const bool level = heartbeat_gen_step(&s_beat, now_ms(), alive);
-    gpio_set_level(PANEL_HEARTBEAT_PIN, level ? 1 : 0);
-}
-
 /* --------------------------------------------------- the two loops' plumbing */
 
 /*
@@ -315,8 +222,6 @@ static void beat(bool alive)
 
 /* The updates' flags, s_fw_quiet_req and s_fw_quiet_ack among them:
  * panel_update.c. */
-/* What the start check found, for the band once the splash has gone. */
-static char        s_boot_alert[ALERT_MAX];
 /* s_wifi_ok and s_update_back: panel_update.c. */
 
 /* A screen's command (panel_cmd_t): panel.h. */
@@ -326,7 +231,7 @@ static char        s_boot_alert[ALERT_MAX];
  *
  * The control task writes it and app_main hands it to the screen, because
  * screen state is app_main's alone.  Atomic rather than volatile, for the
- * reason this file already gives for s_stop_live: volatile orders nothing
+ * reason given for s_stop_request: volatile orders nothing
  * between processors and promises no atomicity, and these two tasks are
  * pinned to different cores.
  */
@@ -414,11 +319,10 @@ arming_t  s_arm;
 
 uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 
-static bool      s_stop_press;
-static uint8_t   s_stop_id;
 /*
- * Both cross the two cores, so both are atomic rather than volatile: volatile
- * orders nothing between processors and promises no atomicity.
+ * Crosses the two cores, so it is atomic rather than volatile, as
+ * s_stop_live (panel_control.c) is: volatile orders nothing between
+ * processors and promises no atomicity.
  *
  * s_stop_request carries the router's backstop for a press this task's own
  * hit test did not see, so it crosses from app_main.  A press this task sees
@@ -429,7 +333,6 @@ static uint8_t   s_stop_id;
  * arriving between those two would have been dropped -- the read said "none",
  * the write then said "none" over the top of it.
  */
-static atomic_bool s_stop_live;
 atomic_bool        s_stop_request;
 /* A disarm, and the servo screen's own release, as flags rather than queue
  * entries: neither may be lost to an eviction.  See send_cmd(). */
@@ -523,7 +426,6 @@ atomic_uint s_supply_baud;
  * many events it found missing from that stream, since boot; it only rises,
  * and the arm watch compares it.
  */
-static touch_seq_rx_t s_drv_rx = { .next = 1u };   /* touch_seq_rx_init() */
 atomic_uint           s_drv_gaps;
 
 /*
@@ -536,7 +438,6 @@ atomic_uint           s_drv_gaps;
  * an arm (touch_loss.h, arm_watch_take_ok()).  Both control-task values.
  * The item is touch_item_t, in panel.h.
  */
-static uint32_t    s_tq_seq;
 atomic_uint        s_tq_published;
 uint32_t           s_lost_notice_seq;
 
@@ -585,729 +486,12 @@ arm_watch_t        s_arm_watch;
 atomic_bool s_poles_owed;
 atomic_uint s_poles_value;
 
-/*
- * A setting the far end keeps a copy of has changed.
- *
- * The settings screen runs on app_main and the link belongs to the control
- * task, so this publishes the value and records the debt; the write goes out
- * from there.  Motor poles is the only setting the IOmcu holds a copy
- * of.
- *
- * The value is stored before the flag, so a control task that sees the debt
- * sees at least this value and never an older one.
- */
-static void publish_poles(void)
-{
-    atomic_store(&s_poles_value,
-                 (unsigned)settings_get_int(SET_MOTOR_POLES));
-    atomic_store(&s_poles_owed, true);
-}
-
-/*
- * The throttle's pulse endpoints, Idle pulse and Full pulse, on their way to
- * the IOmcu.
- *
- * Published the way the pole count is, and for the same reason: the settings
- * screen writes the model from app_main and the control task owns the link,
- * so the values travel in atomics beside the debt rather than being read
- * from settings.c on the control task (endpoints_link.h).
- *
- * The time of the last edit travels too.  A key held on + or - steps the
- * value every few hundred milliseconds, and each write of CHAN_CFG is a
- * flash write at the far end; the debt is paid once the value has rested for
- * ENDPOINTS_SETTLE_MS.
- *
- * Its hold is raised at a link-up edge, control task only: the far end is
- * held disarmed until its throttle endpoints have been brought to the
- * settings.  A bench armed with no link -- the simulator, or a cable pulled
- * mid-run -- would otherwise arm an IOmcu that has just answered on
- * whatever range it kept in flash, and keep that range for the whole run.
- */
-endpoints_debt_t s_endpoints;
-
-static void publish_endpoints(void)
-{
-    endpoints_publish(&s_endpoints,
-                      (uint16_t)settings_get_int(SET_OUT_MIN_US),
-                      (uint16_t)settings_get_int(SET_OUT_MAX_US), now_ms());
-}
-
-/* The PD mini's wiring, as the settings screen left it; see
- * s_pdmini_wiring. */
-static void publish_pdmini(void)
-{
-    const int tx = settings_get_int(SET_PDMINI_TX);
-    const int rx = settings_get_int(SET_PDMINI_RX);
-    const unsigned word =
-        ((settings_get_int(SET_PDMINI_EN) != 0) ? (1u << 24) : 0u)
-        | ((unsigned)((tx < 0) ? 0 : tx + 1) & 0xFFu) << 16
-        | ((unsigned)((rx < 0) ? 0 : rx + 1) & 0xFFu) << 8
-        | ((unsigned)settings_get_int(SET_PDMINI_BAUD) & 0xFFu);
-    /* The count first: an ON stamped before it is dropped by the time the
-     * new wiring can be seen. */
-    atomic_fetch_add(&s_pdmini_edits, 1u);
-    atomic_store(&s_pdmini_wiring, word);
-}
-
-/*
- * The phase tap's set-up, as SETUP INTERFACES left it, for the control
- * task's TONE writes (tone_link.h).  Seven values do not fit an atomic
- * word, so the copy is taken under a spinlock both ways, as the current
- * monitors' is.  Written by the settings observer on app_main, read once a
- * poll by the control task.
- */
-static portMUX_TYPE  s_tone_mux = portMUX_INITIALIZER_UNLOCKED;
-static tone_setup_t  s_tone_want;
-
-static void publish_tone(void)
-{
-    const tone_setup_t w = {
-        .enable      = settings_get_bool(SET_TONE_EN),
-        .pin         = (uint8_t)settings_get_int(SET_TONE_PIN),
-        .f_min_hz    = (uint16_t)settings_get_int(SET_TONE_F_MIN),
-        .f_max_hz    = (uint16_t)settings_get_int(SET_TONE_F_MAX),
-        .split_pct   = (uint8_t)settings_get_int(SET_TONE_SPLIT),
-        .gap_ms      = (uint8_t)settings_get_int(SET_TONE_GAP),
-        .min_periods = (uint8_t)settings_get_int(SET_TONE_PERIODS),
-    };
-    taskENTER_CRITICAL(&s_tone_mux);
-    s_tone_want = w;
-    taskEXIT_CRITICAL(&s_tone_mux);
-}
-
-tone_setup_t tone_wanted(void)
-{
-    taskENTER_CRITICAL(&s_tone_mux);
-    const tone_setup_t w = s_tone_want;
-    taskEXIT_CRITICAL(&s_tone_mux);
-    return w;
-}
-
-/*
- * AUTO LOGS on SETUP > SD CARD, for the control task, which decides whether
- * a run is recorded (log_follow_runs()).  Written by the settings observer
- * on app_main.
- */
-static atomic_bool s_log_auto = true;
-
-static void publish_log_auto(void)
-{
-    atomic_store(&s_log_auto, settings_get_bool(SET_LOG_AUTO));
-}
-
-/*
- * AUTO LOG FOLDER and USER LOG FOLDER, for the logger: the folder in force
- * when card_folder_check() takes it, the default folder otherwise, so a
- * store that holds a folder no longer allowed writes to the default.
- * Written by the text observer on app_main.
- */
-static void publish_log_folder(setting_text_id_t id)
-{
-    char dir[CARD_DIR_MAX];
-    if (id == SET_TEXT_LOG_AUTO_DIR) {
-        log_set_folder(LOG_FOLDER_AUTO,
-                       card_folder_use(settings_text(id), CARD_AUTO_LOGS,
-                                       dir, sizeof(dir)));
-    } else if (id == SET_TEXT_LOG_USER_DIR) {
-        log_set_folder(LOG_FOLDER_USER,
-                       card_folder_use(settings_text(id), CARD_USER_LOGS,
-                                       dir, sizeof(dir)));
-    }
-}
-
-/* Hitec D receive to the control task (s_hitec_rx_want), at the load and
- * at every edit, so the first write after a link-up is the kept mode. */
-static void publish_hitec_rx(void)
-{
-    atomic_store(&s_hitec_rx_want, (unsigned)settings_get_int(SET_HITEC_RX));
-}
-
-static void settings_changed(setting_id_t id)
-{
-    if (id == SET_LOG_AUTO) {
-        publish_log_auto();
-    } else if (id == SET_MOTOR_POLES) {
-        publish_poles();
-    } else if (id == SET_OUT_MIN_US || id == SET_OUT_MAX_US) {
-        publish_endpoints();
-    } else if (id == SET_PDMINI_EN || id == SET_PDMINI_TX
-               || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD) {
-        publish_pdmini();
-    } else if (id == SET_HITEC_RX) {
-        publish_hitec_rx();
-    } else if (settings_sensors_row(id)) {
-        publish_sense();          /* SETUP > SENSORS */
-    } else {
-        switch (id) {
-        case SET_INA228_EN:  case SET_INA228_ADDR:  case SET_INA228_UOHM:
-        case SET_INA228_MAX_A:
-        case SET_SENSE_SDA:  case SET_SENSE_SCL:
-        case SET_ENC_EN:     case SET_SERVO_TARGET:
-            publish_sense();
-            break;
-        case SET_TONE_EN:    case SET_TONE_PIN:   case SET_TONE_F_MIN:
-        case SET_TONE_F_MAX: case SET_TONE_SPLIT: case SET_TONE_GAP:
-        case SET_TONE_PERIODS:
-            publish_tone();
-            break;
-        default:
-            break;
-        }
-    }
-}
 
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 bool s_pump_live;
 
-/*
- * Touch, STOP, the outputs and the heartbeat -- everything with a deadline,
- * and nothing that talks to the link.
- *
- * Called from the top of the control task and again from inside the wait in
- * exchange(), because that wait runs for up to LINK_HOST_TIMEOUT_MS (1000 ms)
- * and the heartbeat's ceiling is HEARTBEAT_MAX_GAP_MS (150 ms).  Without this
- * a single unanswered CAN reply drops the IOmcu's outputs and latches
- * its failsafe.  The loop that owns STOP really is still running during that
- * wait; this is what makes the line say so.
- */
-/*
- * Offer one item to s_touch_q, numbered.  Returns whether the queue holds it.
- *
- * The consumer is behind when the send fails.  The oldest entry is dropped
- * and the newest kept, which is what the GT911's own event queue and the
- * command queue do -- but which of the two is lost is not what makes this
- * safe, and no choice is safe on its own: a release that never arrives
- * leaves a screen holding a press, a DOWN that never arrives orphans the
- * release after it, and the MOVE where a finger leaves ARM is what abandons
- * the hold.  What makes it safe is that the dropped entry's number is
- * missing from what the render loop takes, and it drops the gesture before
- * it handles the next event (touch_loss.h).  Nothing is counted here.
- *
- * The retry runs whether or not the receive took anything: the render loop
- * can empty the queue between the failed send and the receive, and then
- * there is room without anything having been evicted.
- */
-static bool touch_q_put(const touch_event_t *evt, bool lost)
-{
-    touch_item_t it;
-    memset(&it, 0, sizeof(it));
-    if (evt != NULL) {
-        it.evt = *evt;
-    }
-    it.lost = lost;
-    it.seq  = ++s_tq_seq;
-    bool kept = (xQueueSend(s_touch_q, &it, 0) == pdTRUE);
-    if (!kept) {
-        touch_item_t stale;
-        (void)xQueueReceive(s_touch_q, &stale, 0);
-        kept = (xQueueSend(s_touch_q, &it, 0) == pdTRUE);
-    }
-    atomic_store(&s_tq_published, it.seq);
-    if (lost) {
-        s_lost_notice_seq = it.seq;
-    }
-    return kept;
-}
 
-/*
- * The driver's stream lost @p n events.  Found on the event after the gap,
- * before that event goes through the STOP branch, or at the end of a drain
- * against the number the driver last published.
- *
- * The render loop is told by an item in s_touch_q, ahead of the events that
- * followed the gap, so it drops the screens' gestures before it handles any
- * of them.
- *
- * And this task's own record of a STOP press is answered here.  It owns
- * s_stop_press independently of the screens, and the driver can drop that
- * press's release: the controller then reuses the track id, and a contact
- * that begins elsewhere and lifts over STOP would satisfy the release branch
- * and stop a run nobody asked to stop.  A press standing when the stream
- * broke stops the bench instead.  Dropping the ownership on its own is the
- * wrong direction: for every other gesture abandoning it asks for nothing,
- * and for this one abandoning it is the failure.  The release that would
- * have stopped the bench may be the event that went missing, and the render
- * side cancels the band's press for the same loss, so nothing else would
- * stop it, and the operator has already pressed STOP.  What this gives up: a
- * press that began on STOP and would have been carried off it before
- * lifting, which asks for nothing, stops the bench instead.  That is the
- * direction to be wrong in.
- *
- * Losses in s_touch_q itself cannot orphan this press: this task evicts from
- * that queue only after the event has been through the STOP branch.
- */
-static void drv_lost(uint32_t n)
-{
-    atomic_fetch_add(&s_drv_gaps, (unsigned)n);
-    (void)touch_q_put(NULL, true);
-    if (!s_stop_press) {
-        return;
-    }
-    s_stop_press = false;
-    arming_stop(&s_arm);
-    control_alert(TR(ALERT_TOUCH_LOST_STOP));
-}
-
-void control_pump(void)
-{
-    /*
-     * The driver's last published number, before the drain: every event up
-     * to it had been offered by then, so one the drain does not deliver was
-     * dropped (touch_seq_tail()).
-     */
-    const uint32_t drv_published = touch_published();
-
-    touch_event_t evt;
-    uint32_t seq = 0u;
-    bool saw_touch = false;
-    while (touch_wait_event(&evt, &seq, 0)) {
-        saw_touch = true;
-        /*
-         * A gap is answered before this event is looked at.  The events after
-         * it were captured around the one that went missing: a contact
-         * reusing the track id of a STOP press whose release the driver
-         * dropped would otherwise lift over STOP below and abort a run nobody
-         * asked to abort.
-         */
-        const uint32_t missed = touch_seq_take(&s_drv_rx, seq);
-        if (missed > 0u) {
-            drv_lost(missed);
-        }
-        bool counted_here = false;
-        /*
-         * The band's rectangle is a constant, so it has to be asked whether a
-         * STOP is drawn: on the splash a tap in that corner presses nothing.
-         */
-        const bool in_stop =
-            atomic_load(&s_stop_live)
-            && gfx_rect_contains(ui_band_stop_rect(), evt.point.x,
-                                 evt.point.y);
-        if (evt.type == TOUCH_EVENT_DOWN && in_stop) {
-            s_stop_press = true;
-            s_stop_id    = evt.point.id;
-        } else if (s_stop_press && evt.point.id == s_stop_id
-                   && evt.type == TOUCH_EVENT_UP) {
-            s_stop_press = false;
-            if (in_stop) {
-                /*
-                 * Applied here, not recorded for later.
-                 *
-                 * This runs inside the link's wait as well as at the top of
-                 * the loop, and a servo command makes up to three exchanges
-                 * of up to LINK_HOST_TIMEOUT_MS (1000 ms) each.  A stop that
-                 * only set a flag would wait all of that out with the far end
-                 * driving, because the policy that acts on the flag is what
-                 * is blocked.  arming_stop() takes effect in the same pass:
-                 * arming_heartbeat() is false while stopped, so the beat at
-                 * the end of this function stops asserting the line and the
-                 * IOmcu fails safe within HEARTBEAT_MAX_GAP_MS
-                 * (150 ms) whatever this task is waiting for.
-                 *
-                 * The rest of a stop -- the bank, the throttle, the servo's
-                 * slot, telling the far end -- follows when the loop is free.
-                 * Counted as pressed: an operator's STOP, which a stick run
-                 * tells apart from the bench's own.
-                 */
-                arming_stop_pressed(&s_arm);
-                counted_here = true;
-            }
-        }
-        /*
-         * The screen still sees every event: it draws the press.
-         *
-         * A still finger emits nothing, so filling 32 slots takes either
-         * coordinate wobble on the held contact or a second one; a palm
-         * resting on the glass reaches it in about 90 ms of undrained
-         * frame.  What happens when it does fill is touch_q_put()'s.
-         *
-         * The router will latch this same release and the backstop would
-         * then stop the bench a second time, so a stop applied here is
-         * marked -- before the event is offered, so the render loop cannot
-         * take the release and find a loss ahead of it (which clears the
-         * marker) before the marker exists.  Taken back if the queue did not
-         * keep the event: a marker left standing for an event nobody saw is
-         * consumed by the next stop the backstop really does have to apply,
-         * and that stop would be ignored.
-         */
-        if (counted_here) {
-            atomic_store(&s_stop_counted, true);
-        }
-        const bool routed = touch_q_put(&evt, false);
-        if (counted_here && !routed) {
-            atomic_store(&s_stop_counted, false);
-        }
-    }
-    /* And a loss at the end of the stream, with no later event to show it. */
-    const uint32_t tail = touch_seq_tail(&s_drv_rx, drv_published);
-    if (tail > 0u) {
-        drv_lost(tail);
-    }
-    /*
-     * An arm the render side has not seen yet, against what this pass found
-     * -- here, inside every exchange's wait, and not only once a pass.  The
-     * pass that applied the arm can block for seconds on a backlog of servo
-     * exchanges, and a loss in that time would leave the arm driving until
-     * the pass ended.  Undone the way a STOP is undone from here, because a
-     * disarm writes the far end and this runs inside an exchange:
-     * arming_stop() drops the heartbeat now, the IOmcu fails safe
-     * within HEARTBEAT_MAX_GAP_MS (150 ms) whatever this task is waiting
-     * for, and service_arming() lets go of the rest when the loop is free.
-     * A queued drive command carries the old stop count and is dropped.
-     */
-    if (outputs_armed(&s_out)
-        && arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
-                          atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
-        arming_stop(&s_arm);
-        control_alert(TR(ALERT_TOUCH_LOST_ARMING));
-    }
-    /*
-     * touch_age_ms() is the time since the controller last answered a poll,
-     * not since the last touch.  An untouched panel is healthy; a controller
-     * that has stopped answering is not.
-     */
-    if (saw_touch || touch_age_ms() < 200u) {
-        arming_touch_seen(&s_arm, now_ms());
-    }
-    /* And judged here, at the rate touch is judged: this runs inside the
-     * link's wait, where arming_step() does not. */
-    arming_touch_poll(&s_arm, now_ms());
-    /* And the supply: off at every stop counted above and at an OFF, and
-     * stepped on its own cadence.  It needs no link, so nothing here waits
-     * on it. */
-    supply_pump();
-
-    /* The setting can change under this loop, and a ramp read once at
-     * start-up would be the one the panel booted with.  The value read here
-     * is the one app_main last published, not the settings model itself. */
-    (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, panel_throttle_ramp());
-    outputs_step(&s_out, now_ms());
-    /*
-     * Not gated on the link.  The heartbeat asserts that the processor owning
-     * STOP is running its loop; whether the two boards can talk is a separate
-     * question with its own watchdog at each end.  Gating on both would let a
-     * dropped CAN frame cut the safety line.
-     *
-     * It is gated on a disarm nobody has served yet.  A write that has been
-     * transmitted cannot be recalled: the far end applies it and then
-     * acknowledges, and if that acknowledgement is lost this task waits
-     * LINK_HOST_TIMEOUT_MS (1000 ms) with the request unserved and the
-     * output driving.  The line is the one channel that does not need the
-     * link, so it carries the disarm instead.
-     *
-     * On a healthy link this costs nothing -- the request is served on the
-     * next pass, well inside HEARTBEAT_MAX_GAP_MS (150 ms).  On a link that
-     * has stopped answering it fails the far end safe, and a bench whose
-     * panel is asking it to disarm and cannot be heard is one that should
-     * fail safe.
-     *
-     * A release is not a disarm and does not do this: letting go of one pin
-     * is not worth latching the far end's failsafe.
-     */
-    beat(arming_heartbeat(&s_arm, now_ms())
-         && !atomic_load(&s_disarm_request));
-}
-
-/* ------------------------------------------------------------------- boot */
-
-static void pump(void)
-{
-    /* Draw between init steps so the splash fills in as it happens, rather
-     * than appearing complete at the end. */
-    gfx_canvas_t *c = display_canvas();
-    if (c != NULL) {
-        ui_router_render(c, display_back_index());
-        display_flip();
-    }
-}
-
-/*
- * How long to keep asking who is there: 3000 ms is about three attempts,
- * because a poll with no answer costs the 1000 ms host timeout.
- */
-#define IDENTITY_WAIT_MS 3000u
-
-
-/*
- * Ask the IOmcu who it is, repeatedly, for IDENTITY_WAIT_MS.
- *
- * The two boards do not finish booting at the same instant, and a first frame
- * onto a bus whose far end is not listening is retransmitted in silicon until
- * it is acknowledged, so a single attempt can miss a working IOmcu.
- * The wait is bounded: a bench with no IOmcu attached must not sit on
- * the splash for ever.
- */
-static bool poll_identity(link_host_t *host, link_msg_t *reply)
-{
-    const uint32_t start = now_ms();
-    do {
-        if (poll_page(host, LINK_PAGE_IDENTITY, LINK_ID_COUNT, reply)
-            && reply->op == LINK_OP_DATA) {
-            return true;
-        }
-        pump();
-    } while ((uint32_t)(now_ms() - start) < IDENTITY_WAIT_MS);
-    return false;
-}
-
-static bool bring_up(void)
-{
-    bool ok = true;
-
-    /* The panel's own build, on the first line it draws.  It is the host, so
-     * it publishes no identity page; without this the only version anywhere
-     * on the bench would be the IOmcu's.
-     *
-     * "panel fw" and not "fw": the CH422G beside it is the I2C expander, a
-     * fixed-function part with no firmware of its own, and a line reading
-     * "CH422G fw 0.8.0" says the expander is running a build that does not
-     * exist. */
-    splash_screen_set(SPLASH_STEP_BOARD, SPLASH_OK,
-                      "CH422G, panel fw " RCBENCH_VERSION_STRING);
-
-    /*
-     * Schema defaults, then the values the NVS (non-volatile storage) store
-     * holds on top of them.  A store that cannot be opened leaves the
-     * defaults in place: a working bench with unsaved settings.
-     *
-     * Done before the panel starts scanning, and reported at its place in the
-     * list below.  Two reasons.  The stored theme is in force for the first
-     * frame drawn rather than from the second onwards.  And the main flash is
-     * quiet while the RGB (red, green, blue) panel scans: the panel's
-     * interrupt handler copies the framebuffer out of PSRAM (pseudo-static
-     * random-access memory) through the external memory cache, and a flash
-     * operation closes that cache.  ESP-IDF masks the handler for the length
-     * of the operation (CONFIG_LCD_RGB_ISR_IRAM_SAFE is off), so the picture
-     * stalls, and past 512 us the scan restarts at the first VBlank
-     * (vertical blanking interval) interrupt after the operation ends,
-     * which can be mid-frame (display.h).
-     */
-    const settings_store_t *store = settings_nvs_store();
-    settings_set_store(store);
-    /* Installed before the load, so the count the store returns is owed to
-     * the IOmcu the same way an edit made later is. */
-    settings_set_observer(settings_changed);
-    settings_set_text_observer(publish_log_folder);
-    settings_init();
-    /* And once unconditionally, whatever settings_init() told the observer:
-     * a bench left at the defaults still has to tell the far end what it
-     * is, and each snapshot the control task reads starts zeroed.  The
-     * pulse endpoints the same way: the far end keeps CHAN_CFG in flash, so
-     * a range written by another panel, or before a reset to defaults,
-     * would otherwise stay on the motor channels.  The current monitors'
-     * set-up too: a zeroed one is no set-up at all.  Nothing is written
-     * when the page already agrees. */
-    publish_poles();
-    publish_endpoints();
-    publish_pdmini();
-    publish_sense();
-    publish_log_auto();
-    publish_tone();
-    publish_hitec_rx();
-    settings_apply_ui();
-    /*
-     * The panel's Wi-Fi reads its kept home network now, while the panel is
-     * not scanning yet, for the reason the settings are read here.  The
-     * radio stays off.
-     */
-    {
-        fw_image_info_t running;
-        if (!fw_ota_running(&running)) {
-            ESP_LOGW(TAG, "running version \"%s\" does not parse",
-                     running.version_text);
-        }
-        s_wifi_ok = (wifi_access_init(fw_ota_slot_bytes(), &running)
-                     == ESP_OK);
-        if (!s_wifi_ok) {
-            ESP_LOGE(TAG, "Wi-Fi not set up: unavailable until a restart");
-        }
-    }
-
-    display_config_t dcfg = DISPLAY_CONFIG_DEFAULT();
-    if (display_init(&dcfg) == ESP_OK) {
-        splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_OK, "800x480 39Hz");
-    } else {
-        splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_FAIL, TR(SPLASH_NO_PANEL));
-        /* A build on its first start after an update goes back to the one
-         * before it, here and now; any other start goes on as before. */
-        (void)fw_ota_boot_check(false, NULL, 0u);
-        return false;   /* nothing can be reported after this */
-    }
-    pump();
-
-    touch_config_t tcfg = TOUCH_CONFIG_DEFAULT();
-    if (touch_init(&tcfg) == ESP_OK) {
-        splash_screen_set(SPLASH_STEP_TOUCH, SPLASH_OK, "GT911 5pt");
-    } else {
-        /* A bench with no touch has no STOP button, so this is fatal rather
-         * than degraded -- but it is reported first. */
-        splash_screen_set(SPLASH_STEP_TOUCH, SPLASH_FAIL, TR(SPLASH_NO_ANSWER));
-        s_touch_ok = false;
-        ok = false;
-    }
-    pump();
-
-    /*
-     * A build's first start after an update is a trial until here: with
-     * the display and touch up it is kept, and without touch -- no STOP --
-     * the panel restarts into the build before it.  Keeping it writes
-     * otadata, a flash write against a scanning panel: one disturbed frame,
-     * once.
-     */
-    {
-        char other[FW_TEXT_MAX];
-        switch (fw_ota_boot_check(s_touch_ok, other, sizeof(other))) {
-        case FW_BOOT_UPDATED:
-            snprintf(s_boot_alert, sizeof(s_boot_alert), TR(ALERT_FW_UPDATED),
-                     RCBENCH_VERSION_STRING);
-            break;
-        case FW_BOOT_ROLLED_BACK:
-            snprintf(s_boot_alert, sizeof(s_boot_alert),
-                     TR(ALERT_FW_ROLLED_BACK), other, RCBENCH_VERSION_STRING);
-            break;
-        case FW_BOOT_UNCONFIRMED:
-            snprintf(s_boot_alert, sizeof(s_boot_alert),
-                     TR(ALERT_FW_UNCONFIRMED), RCBENCH_VERSION_STRING);
-            break;
-        case FW_BOOT_NORMAL:
-        default:
-            break;
-        }
-    }
-
-    /* A card is optional: the log viewer wants one, nothing else does, so a
-     * missing card is a warning the operator reads on the way past rather
-     * than a boot failure. */
-    (void)storage_init();
-    /* And the viewer is told how to reach it.  Without this it has no way to
-     * list anything and reports no card whatever is mounted. */
-    log_viewer_set_io(&k_card_io);
-    /* Before anything can ask for a profile; with no card, the built-in
-     * ones alone. */
-    esc_profiles_load();
-    /* No card, not FAT32 or unreadable, in the language showing; the
-     * console line of storage_init() has the code behind it. */
-    splash_screen_set(SPLASH_STEP_STORAGE,
-                      storage_mounted() ? SPLASH_OK : SPLASH_WARN,
-                      storage_mounted()
-                          ? storage_status()
-                          : ui_card_text(storage_card_state(),
-                                         UI_CARD_AT_SPLASH));
-    pump();
-
-    /* Loaded above, before the panel started scanning. */
-    splash_screen_set(SPLASH_STEP_SETTINGS,
-                      store != NULL ? SPLASH_OK : SPLASH_WARN,
-                      store != NULL ? "NVS" : TR(SPLASH_NVS_MISSING));
-    pump();
-
-    /*
-     * CAN (Controller Area Network), and from here on there is no native USB
-     * (Universal Serial Bus): GPIO19 and GPIO20 carry both, and the
-     * multiplexer selects one.  The console is on UART0 (universal
-     * asynchronous receiver-transmitter 0) for that reason.
-     */
-    const bool link_open = (can_twai_start(PANEL_CAN_BITRATE) == ESP_OK);
-    splash_screen_set(SPLASH_STEP_LINK,
-                      link_open ? SPLASH_OK : SPLASH_WARN,
-                      link_open ? "CAN 1 Mbit/s" : TR(SPLASH_NOT_OPENED));
-    /*
-     * After the bus is up, so the echo test measures the bus rather than
-     * reporting "nothing came back" regardless of the hardware, and before
-     * the identity poll, so a broken bus is diagnosed as such rather than as
-     * an identity that never answers.
-     *
-     * It runs at every start-up.  A bus that does not carry frames looks
-     * exactly like an IOmcu that is not fitted, and both look like a
-     * bench that shows no numbers; nothing else the panel does separates
-     * them, and an operator with no console cannot.
-     */
-    if (link_open) {
-        s_bus_ok = can_selftest_run(CAN_SELFTEST_MS, &s_busfault);
-        splash_screen_set(SPLASH_STEP_LINK,
-                          s_bus_ok ? SPLASH_OK : SPLASH_FAIL,
-                          s_bus_ok ? "CAN 1 Mbit/s"
-                                   : busfault_verdict_text(
-                                         s_busfault.verdict));
-        if (!s_bus_ok) {
-            busfault_screen_set(&s_busfault);
-        }
-    }
-    pump();
-
-    /*
-     * Ask who is there.  The IOMCU step is set to a result on every path: a
-     * splash step that is declared and never set keeps all_answered() false,
-     * and the splash never hands over.
-     */
-    /* The partition the drawings live in, looked up once. */
-    s_artflash = art_flash_esp();
-
-    link_host_init(&s_host, now_ms());
-    if (link_open) {
-        link_msg_t reply;
-        if (poll_identity(&s_host, &reply)) {
-            /*
-             * 48 bytes holds five 16-bit registers plus the words.  The
-             * splash truncates its detail field anyway, but a truncating
-             * snprintf is a compiler warning, and warnings are errors.
-             *
-             * The far end's firmware version is printed as well as the
-             * protocol it speaks.  Two boards can speak the same protocol
-             * and be different builds, and "which one is on the bench" is
-             * the question a bring-up line exists to answer.
-             */
-            char detail[48];
-            snprintf(detail, sizeof(detail), "proto %u.%u fw %u.%u.%u",
-                     (unsigned)reply.regs[LINK_ID_PROTOCOL_MAJOR],
-                     (unsigned)reply.regs[LINK_ID_PROTOCOL_MINOR],
-                     (unsigned)reply.regs[LINK_ID_FIRMWARE_MAJOR],
-                     (unsigned)reply.regs[LINK_ID_FIRMWARE_MINOR],
-                     (unsigned)reply.regs[LINK_ID_FIRMWARE_PATCH]);
-            s_bring.have_identity = true;
-            /*
-             * What the far end can do.  Read here, at bring-up, rather than
-             * at a later poll: a menu that greys itself only after a poll
-             * shows a state in which the bench claims more than it has.
-             */
-            atomic_store(&s_capabilities,
-                         (unsigned)reply.regs[LINK_ID_CAPABILITIES]);
-            /*
-             * Which board answered.  Everything the outputs screen offers is
-             * that board's, and a board this build does not know offers
-             * nothing -- guessing a pin map is how an output ends up on the
-             * safety line.
-             */
-            s_board               = reply.regs[LINK_ID_HARDWARE];
-            s_bring.proto_major   = reply.regs[LINK_ID_PROTOCOL_MAJOR];
-            s_bring.proto_minor   = reply.regs[LINK_ID_PROTOCOL_MINOR];
-            const bool speaks_ours =
-                reply.regs[LINK_ID_PROTOCOL_MAJOR] == LINK_PROTOCOL_MAJOR;
-            splash_screen_set(SPLASH_STEP_IOMCU,
-                              speaks_ours ? SPLASH_OK : SPLASH_FAIL, detail);
-            ok = ok && speaks_ours;
-        } else {
-            /*
-             * Not a failure: the bench runs without an IOmcu.  The two
-             * words name the kind of silence: nothing arriving and a reply
-             * that is rejected are different faults, and the poller counts
-             * which happened.
-             */
-            const char *why = TR(SPLASH_NO_ANSWER);
-            if (s_host.nacks > 0) {
-                why = TR(SPLASH_REFUSED);
-            } else if (s_host.mismatches > 0) {
-                why = TR(SPLASH_WRONG_REPLY);
-            }
-            splash_screen_set(SPLASH_STEP_IOMCU, SPLASH_WARN, why);
-        }
-    } else {
-        splash_screen_set(SPLASH_STEP_IOMCU, SPLASH_WARN, TR(SPLASH_NO_LINK));
-    }
-    pump();
-
-    return ok;
-}
 
 /* ------------------------------------------------------------- the logger */
 
@@ -1390,10 +574,10 @@ void log_post(log_row_t *row)
 
 /* The control page: panel_link.c. */
 
-
-/* ------------------------------------------------------------------- main */
-
 /* --------------------------------------------------------- the control task */
+
+/* The task itself, control_pump(), the heartbeat and the die temperature:
+ * panel_control.c. */
 
 /* The supply: panel_supply.c. */
 /* The link modules' state, SENSE to PROG: panel_services.c. */
@@ -1417,7 +601,8 @@ atomic_bool s_enc_held;
 /*
  * The SERVO screen's link (shared/outputs/servo_link.c) reaches this task's
  * state through these: the output bank, the arming policy, the alerts and
- * the disarm.  stack_check.py follows each by name (SERVO_CALLS).
+ * the disarm.  stack_check.py names each (SERVO_CALLS) for its Xtensa
+ * decoder, which does not read the ESP32-P4's RISC-V code.
  */
 static bool servo_ctx_armed(void *ctx)
 {
@@ -1577,128 +762,6 @@ void log_follow_runs(void)
 
 /* The IOmcu's update, cu_service(): panel_update.c. */
 
-/*
- * Everything the bench does, at a fixed 5 ms on the core the renderer does
- * not use: touch, STOP, arming, the outputs, the link and the heartbeat.
- *
- * STOP is hit-tested here against the band's own rectangle rather than waiting
- * for the router to report a press, because the router only sees events when
- * a frame is drawn and a frame can cost 50 ms.  app_main forwards the
- * router's own STOP as well, so a press this test misses still latches.
- */
-static void control_task(void *arg)
-{
-    (void)arg;
-
-    telemetry_sim_t sim;
-    bench_state_t   bench;
-    /* Before anything that can start a run: a run's start sets its clock. */
-    log_cadence_init(&s_log_cad, now_ms());
-    control_setup(&sim, &bench);
-
-    uint32_t last_poll     = 0;
-    uint32_t last_status   = 0;
-    uint32_t last_report   = 0;
-    uint32_t last_temp     = 0;
-    bool     link_up       = false;
-
-    for (;;) {
-        /*
-         * An install about to write the flash: this loop stands still.  No
-         * poll and no exchange starts, and the heartbeat is withheld on
-         * purpose, so the IOmcu goes to failsafe as it does at any
-         * restart of the panel.  A flash erase stalls this core anyway; the
-         * failsafe then comes from a decision rather than from the stall.
-         */
-        if (atomic_load(&s_fw_quiet_req)) {
-            beat(false);
-            atomic_store(&s_fw_quiet_ack, true);
-            vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
-            continue;
-        }
-        atomic_store(&s_fw_quiet_ack, false);
-
-        control_pump();
-
-        /*
-         * The policy first, then the screens.
-         *
-         * A stop must not wait behind a command that talks to the link: an
-         * unanswered exchange holds this loop for LINK_HOST_TIMEOUT_MS
-         * (1000 ms), and a queue with several such commands in it multiplies
-         * that, with the far end armed the whole time.  control_pump() keeps
-         * the heartbeat going during the wait but only records further stop
-         * requests; acting on them is here.
-         *
-         * What made this ordering unsafe before was an arm queued from a
-         * gesture made before the stop, which would clear the latch on the
-         * next pass.  Each command now carries the count of stops its sender
-         * had seen and an arm whose count is stale is dropped, so the stop
-         * can be served first without an older arm undoing it.
-         */
-        kst_port_look();
-        service_arming(link_up);
-        supply_service();
-
-        drain_commands(link_up, &bench);
-        kst_commands();
-        (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
-        servo_link_service(link_up);
-
-        log_follow_runs();
-
-        const float emitted =
-            (float)outputs_actual(&s_out, PANEL_CH_THROTTLE) * 100.0f
-            / (float)OUT_SPAN;
-
-        /*
-         * And the transaction clock, every pass.
-         *
-         * Defence rather than mechanism: exchange() releases the slot on the
-         * way out of every path it has.  But its tick was the only one, and
-         * a request left outstanding by any means at all would refuse every
-         * later one from a place that could no longer run the timeout.  Here
-         * the clock runs whatever the link is doing, so an outstanding
-         * request is abandoned a second after it was sent and the next poll
-         * gets its turn.
-         */
-        (void)link_host_tick(&s_host, now_ms());
-
-        /* --- the far end, at 1 Hz until it answers ----------------------- */
-        bool new_sample = false;
-        if (!cu_service(&link_up, &bench, &last_poll, &last_status)) {
-            new_sample = poll_far_end(&link_up, &bench, &last_poll,
-                                      &last_status);
-        }
-
-        advance_model_and_log(link_up, emitted, &sim, &bench, &new_sample);
-
-        if ((uint32_t)(now_ms() - last_temp) >= 1000u) {
-            last_temp = now_ms();
-            tsens_read();
-        }
-
-        /* Every 5 s while the link is down, every 60 s while it is up. */
-        if ((uint32_t)(now_ms() - last_report)
-            >= (link_up ? 60000u : 5000u)) {
-            last_report = now_ms();
-            link_report();
-        }
-
-        /* --- hand the screen what it draws -------------------------------- */
-        publish_snapshot(&bench, link_up, new_sample);
-        /* And only now the look at the touch stream for an arm the render
-         * side has not seen yet; see arm_watch_service(). */
-        arm_watch_service(link_up);
-
-        /* --- last, after every arm and ON this pass applied: a sector of
-         * the drawing's keep, on a safe bench only ---------------------- */
-        art_keep_service();
-
-        vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
-    }
-}
-
 /* The render side's services, the touch drain and the screens'
  * commands, send_cmd() among them: panel_render.c. */
 
@@ -1706,7 +769,37 @@ static void control_task(void *arg)
 
 /* ------------------------------------------------------------------ main */
 
-/* The IOmcu update's screen, cu_render_service(): panel_update.c. */
+/* The IOmcu update's screen, cu_render_service(): panel_update.c.  The
+ * start-up, bring_up(): panel_boot.c.  The settings the control task
+ * follows: panel_settings.c.  The render loop: panel_frame.c. */
+
+/**
+ * @brief Every task with its core and priority, once at start-up.
+ *
+ * A task created through xTaskCreate() or xTaskCreatePinnedToCore()
+ * without a core runs on core 0 (wifi_radio.c); core 1 belongs to the
+ * control task and the tasks pinned there.  "any" would be a task that
+ * escaped that rule, such as one made with xTaskCreateStatic() without a
+ * core.
+ */
+static void task_report(void)
+{
+    const UBaseType_t n = uxTaskGetNumberOfTasks() + 4u;
+    TaskStatus_t *t = heap_caps_malloc(n * sizeof(*t), MALLOC_CAP_SPIRAM);
+    if (t == NULL) {
+        ESP_LOGW(TAG, "tasks: no room for the list");
+        return;
+    }
+    const UBaseType_t got = uxTaskGetSystemState(t, n, NULL);
+    ESP_LOGI(TAG, "tasks: %u", (unsigned)got);
+    for (UBaseType_t i = 0; i < got; ++i) {
+        const BaseType_t core = xTaskGetCoreID(t[i].xHandle);
+        const char *where = (core == 0) ? "0" : (core == 1) ? "1" : "any";
+        ESP_LOGI(TAG, "task %-16s core %-3s priority %2u", t[i].pcTaskName,
+                 where, (unsigned)t[i].uxCurrentPriority);
+    }
+    heap_caps_free(t);
+}
 
 void app_main(void)
 {
@@ -1802,9 +895,11 @@ void app_main(void)
      * able to delay the safety line, so it runs in the gaps the control task
      * leaves rather than beside it on the core the renderer uses.  Its
      * stack holds one line of a servo test, SERVO_TEST_LINE_MAX bytes, and
-     * the deepest card chain tools/stack_check.py follows: the card mounted
-     * again under a servo file's walk, as a run's start mounts it
-     * (storage_check(), docs/Performance.md).
+     * the deepest card chain: the card mounted again under a servo file's
+     * walk, as a run's start mounts it (storage_check()).  6656 bytes is
+     * the ESP32-S3's figure; the chain's depth on the ESP32-P4's RISC-V
+     * code is not measured, because tools/stack_check.py reads Xtensa code
+     * only.
      */
     ESP_ERROR_CHECK(xTaskCreatePinnedToCore(log_task, "runlog", 6656,
                                             NULL, 3, NULL, 1) == pdPASS
@@ -1813,647 +908,13 @@ void app_main(void)
     knob_task_start();
 
     /* What internal RAM holds with every task of the panel running and the
-     * radio off.  A Wi-Fi start takes about 100 KB of it, 51 KB of that as
-     * the driver's DMA (direct memory access) buffers
-     * (tools/ram_budget.py). */
+     * radio off. */
     ESP_LOGI(TAG, "internal RAM: %u B free, largest block %u B; "
              "PSRAM: %u B free",
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    task_report();
 
-    uint32_t frames  = 0;
-    uint32_t last_us = (uint32_t)esp_timer_get_time();
-    bool     was_armed = false;
-    uint32_t last_stops = 0;
-
-    for (;;) {
-        const uint32_t us = (uint32_t)esp_timer_get_time();
-        const float dt_s = (float)(us - last_us) / 1e6f;
-        last_us = us;
-        /* The clock the supply's readings are stamped with, for the servo
-         * test's timing, before this frame's samples. */
-        servo_screen_clock(now_ms());
-
-        /*
-         * What the bench is, before this frame's touch is dispatched.
-         *
-         * A press dispatched below can command a position, and the screens
-         * decide what a command means from whether the bench is armed: an arm
-         * discards what was held before it, so learning of the arm after the
-         * press would throw away a position issued after it and leave the
-         * screen showing nothing driven while the panel held one.
-         */
-        bool     armed_now;
-        bool     arm_wanted_now;
-        bool     supply_now;
-        uint32_t supply_gen_now;
-        uint32_t stops_now;
-        uint32_t pressed_now;
-        uint32_t arm_gen_now;
-        bool     link_now;
-        servo_source_id_t servo_source_now;
-        uint32_t servo_changes_now;
-        snap_lock();
-        link_now       = s_snap.link_up;
-        servo_source_now = s_snap.servo_source;
-        servo_changes_now = s_snap.servo_source_changes;
-        const servo_source_why_t servo_why_now = s_snap.servo_source_why;
-        const servo_source_why_t servo_dropped_now =
-            s_snap.servo_source_dropped;
-        const uint32_t servo_dropped_at_now = s_snap.servo_source_dropped_at;
-        armed_now      = s_snap.armed;
-        const uint8_t armed_roles_now = armed_now ? s_snap.armed_roles : 0u;
-        arm_wanted_now = s_snap.arm_wanted;
-        supply_now     = s_snap.supply.output;
-        supply_gen_now = s_snap.supply_gen;
-        stops_now      = s_snap.stops;
-        pressed_now    = s_snap.pressed;
-        arm_gen_now    = s_snap.arm_gen;
-        snap_unlock();
-        /* Whether this frame found the touch stream broken; an arm is
-         * acknowledged only by a frame that did not.  See the end of the
-         * frame. */
-        bool frame_lost = false;
-        const knob_turn_t knob_turn = knob_take();
-
-        /*
-         * A stop ends any hold under way and drops an arm it has already
-         * produced, on both screens.
-         *
-         * Counted rather than watched for an edge.  The latch says only that
-         * a stop is in force, so a second STOP during a hold begun after the
-         * first one changes nothing about it, and that hold would run to
-         * completion and clear the latch.  Every stop is an event here, and
-         * touch that stops answering is counted as one.
-         */
-        if (stops_now != last_stops) {
-            motor_screen_cancel_arm();
-            servo_screen_cancel_arm();
-            supply_screen_cancel_on();
-        }
-        last_stops = stops_now;
-        /* And a stick run on MOTOR & ESC > PROGRAM, which ends on a stop,
-         * a disarm or a link that went, and steps on the frame's time.
-         * The pressed count tells an operator's STOP from the bench's
-         * own. */
-        /*
-         * Each screen is told whether the bench is armed for its own role:
-         * an arm covers the role of the screen that asked for it (MOTOR & ESC
-         * and its stick run the throttle, SERVO the surfaces), and a
-         * bench armed for the other role is a disarmed one to it.
-         */
-        const bool motor_armed_now =
-            (armed_roles_now & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u;
-        const bool servo_armed_now =
-            (armed_roles_now & OUT_ROLE_BIT(OUT_ROLE_SURFACE)) != 0u;
-        esc_stick_panel_bench(now_ms(), motor_armed_now, stops_now,
-                                pressed_now, link_now);
-        /* The phase tap's readout for the run's page, copied under the
-         * lock from the snapshot. */
-        snap_lock();
-        esc_stick_panel_tone(&s_snap.tone);
-        snap_unlock();
-        /* And the servo programmer on SERVO. */
-        kst_ui_service();
-
-        /* The slider follows the bench: a disarm returns the command to
-         * zero, so the control the operator picks up next is at zero too. */
-        if (was_armed && !motor_armed_now) {
-            motor_screen_set_throttle(0.0f);
-            motor_cmd_t follow;
-            (void)motor_screen_poll_cmd(&follow);   /* not a command */
-        }
-        was_armed = motor_armed_now;
-        /* The arm state the plot was last told, so the arm edge is seen here
-         * rather than inferred from was_armed, which several other things
-         * above already consume. */
-        static bool motor_armed;
-        /*
-         * The arm edge before this frame's samples and the disarm edge after
-         * them, so a queued sample lands on the side of the run boundary it
-         * was captured on.  The queue holds SAMPLE_Q_LEN samples, and this
-         * ordering is what decides where a run's trace begins and ends: the
-         * arm clears the plot, so an arm reported after the drain would wipe
-         * the samples the drain had just recorded into the new run.
-         *
-         * What this does not cover: a run that both arms and disarms between
-         * two frames is never seen armed here, so it leaves no trace at all.
-         * That is a run shorter than one frame, about 26 ms at 39 Hz.
-         */
-        if (motor_armed_now && !motor_armed) {
-            /*
-             * A run starts at the arm, so what the queue is holding from
-             * before it is not part of it.  Dropped rather than pushed: the
-             * queue can hold SAMPLE_Q_LEN samples, 400 ms at
-             * PANEL_SAMPLE_HZ, and without this the first 400 ms of a run's
-             * trace would be readings taken while the bench was not driving.
-             */
-            bench_state_t stale;
-            while (xQueueReceive(s_sample_q, &stale, 0) == pdTRUE) { }
-        }
-        if (motor_armed_now) {
-            motor_screen_set_armed(true);
-        }
-        motor_armed = motor_armed_now;
-        /* One sample, one plot column, however many frames it took to get
-         * here: the queue holds what this loop was too busy to draw. */
-        bench_state_t queued;
-        while (xQueueReceive(s_sample_q, &queued, 0) == pdTRUE) {
-            motor_screen_push(&queued);
-        }
-        if (!motor_armed_now) {
-            motor_screen_set_armed(false);
-        }
-        servo_screen_set_armed(servo_armed_now);
-        servo_screen_set_bench_armed(armed_now);
-        {
-            /*
-             * Whether the screen's frame rate reached the pins, and the
-             * drive it reached: one pair, for the note that names both.
-             * The control task (core 1) stores the rate reset of a TARGET
-             * change before the new drive (prog_link_service(), the
-             * link-up), and a rate that lands on the new target after it.
-             * This core reads the drive, the rate, then the drive again,
-             * every access sequentially consistent: the same drive on
-             * both sides of the rate means the two held together at the
-             * rate's load, so the note never pairs a rate with a target it
-             * was not stored for.  A drive that moves on every try keeps
-             * the screen's last pair for this frame.
-             */
-            unsigned drive = atomic_load(&s_drive);
-            unsigned r = 0u;
-            bool paired = false;
-            for (int k = 0; k < 3 && !paired; ++k) {
-                r = servo_link_rate_shown();
-                const unsigned again = atomic_load(&s_drive);
-                paired = again == drive;
-                drive = again;
-            }
-            if (paired) {
-                servo_screen_rate((servo_rate_state_t)(r >> 16),
-                                  (uint16_t)(r & 0xFFFFu));
-                servo_screen_set_drive((uint8_t)(drive >> 8),
-                                       (uint8_t)(drive & 0xFFu),
-                                       (drive & DRIVE_PWM_BIT) != 0u);
-            }
-            servo_screen_set_sweep(servo_link_sweep_able());
-            servo_screen_set_surfaces(servo_link_surfaces());
-            /* What the tester drives and whether the port renders its
-             * pulse, to the control task; the port's pin, to both views of
-             * the binding, from one read. */
-            atomic_store(&s_prog_want_target,
-                         (unsigned)settings_get_int(SET_SERVO_TARGET));
-            atomic_store(&s_prog_want_pwm,
-                         settings_get_bool(SET_SERVO_PORT_PWM));
-            prog_ports_to_screens();
-            motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
-                                           atomic_load(&s_throttle_pins_known));
-            motor_screen_set_throttle_protocol(
-                (uint8_t)atomic_load(&s_throttle_proto));
-            servo_screen_set_pins(atomic_load(&s_servo_pins),
-                                  atomic_load(&s_servo_pins_known));
-            servo_screen_set_enc_held(atomic_load(&s_enc_held));
-            settings_screen_set_unheld(
-                (uint16_t)atomic_load(&s_sense_unheld),
-                (uint8_t)atomic_load(&s_tone_unheld));
-            sensors_rows_set_status((uint16_t)atomic_load(&s_sense_parts));
-            /* What the IOmcu holds of Hitec D receive, back to SETUP's
-             * row. */
-            settings_screen_set_hitec_rx(
-                (uint8_t)atomic_load(&s_hitec_rx_mark));
-            if (servo_link_take_sweep_refused()) {
-                servo_screen_sweep_refused();
-            }
-            uint16_t pause_seq = 0u;
-            if (servo_link_take_hold_lost(&pause_seq)) {
-                servo_screen_released(pause_seq);
-            }
-            /* The pause's phase before a resume that rebases on it. */
-            uint32_t kept_ms = 0u;
-            if (servo_link_take_sweep_held(&pause_seq, &kept_ms)) {
-                servo_screen_sweep_held(pause_seq, kept_ms);
-            }
-            if (servo_link_take_sweep_start()) {
-                const uint32_t now = now_ms();
-                const servo_link_start_t st = servo_link_sweep_start();
-                servo_screen_sweep_started(st.start_seq, now - st.start_ms,
-                                           st.from, now - st.frozen_ms);
-            }
-        }
-
-        /*
-         * The supply's run, bounded by each sample's own output: a sample
-         * taken with it on starts or continues the run, one taken with it
-         * off ends it before its readings are shown.  The snapshot's edge
-         * cannot place them, because the control task steps the supply
-         * inside an exchange's wait and publishes the snapshot only after.
-         * supply_seen is the output the newest sample reported.
-         */
-        static bool supply_seen;
-        /* Which supply the control task drives: the screen's header, caps
-         * and the menu's badge follow it. */
-        static bool supply_real_shown;
-        static unsigned supply_vcap_shown;
-        const bool supply_real = atomic_load(&s_supply_real);
-        /* The PD mini is given no more than its input less PDMINI_CAP_MV:
-         * the screen's voltage cap follows the input as the page reads it,
-         * moved only on a change of 100 mV or more. */
-        unsigned vcap = 0u;
-        if (supply_real) {
-            const unsigned vin = atomic_load(&s_supply_vin_mv);
-            /* 0 is an input not read: the full range.  Any other input
-             * gets the cap the driver writes, floor included. */
-            vcap = (vin == 0u) ? PDMINI_V_MAX_MV : pdmini_cap_mv(vin);
-        }
-        const unsigned vcap_moved = (vcap > supply_vcap_shown)
-                                        ? vcap - supply_vcap_shown
-                                        : supply_vcap_shown - vcap;
-        if (supply_real != supply_real_shown || vcap_moved >= 100u) {
-            supply_real_shown = supply_real;
-            supply_vcap_shown = vcap;
-            supply_caps_t pdmini = SUPPLY_CAPS_PDMINI;
-            if (vcap != 0u) {
-                pdmini.v_max = (float)vcap / 1000.0f;
-            }
-            const supply_caps_t pps = SUPPLY_CAPS_PPS_DEFAULT;
-            supply_screen_set_caps(supply_real ? &pdmini : &pps);
-            supply_screen_set_model(!supply_real);
-            overview_screen_set_supply_real(supply_real);
-        }
-        {
-            const supply_wiring_t wiring = pdmini_wiring();
-            supply_screen_set_pins(wiring.tx, wiring.rx);
-        }
-        supply_screen_set_baud(supply_real ? atomic_load(&s_supply_baud)
-                                           : 0u);
-        servo_test_enc_t enc;
-        while (xQueueReceive(s_enc_q, &enc, 0) == pdTRUE) {
-            servo_screen_encoder(&enc);
-        }
-        /* The servo rail's meter, then the INA3221's CH1 windows, each
-         * once with the meter of its poll: the SERVO screen's CURRENT row,
-         * line and plot show the meter's reading, and a servo test reads
-         * the meter it started with.  Why the INA3221 last stopped being
-         * the meter goes in ahead of each, so a run that ends on the
-         * change names the condition. */
-        servo_screen_source_why(servo_why_now);
-        servo_screen_source_dropped(servo_dropped_now, servo_dropped_at_now);
-        servo_screen_source(servo_source_now, servo_changes_now);
-        servo_win_item_t win;
-        while (xQueueReceive(s_win_q, &win, 0) == pdTRUE) {
-            servo_screen_source_dropped(win.dropped, win.dropped_at);
-            servo_screen_window(&win.win, win.source, win.changes);
-        }
-        supply_item_t sup_item;
-        while (xQueueReceive(s_supply_q, &sup_item, 0) == pdTRUE) {
-            const supply_state_t sup = sup_item.st;
-            supply_screen_set_output(sup.output);
-            supply_screen_push(&sup);
-            /* And the SERVO screen's servo test and, while the supply is
-             * the servo rail's meter, its live power plot. */
-            servo_screen_source_dropped(sup_item.dropped,
-                                        sup_item.dropped_at);
-            servo_screen_supply_at(&sup, sup_item.source, sup_item.changes);
-            /* And a stick run, which counts beeps in every reading. */
-            esc_stick_panel_supply(&sup);
-            supply_seen = sup.output;
-        }
-        /* The simulated ESC follows the run, while the model is the
-         * supply; see escsim_load(). */
-        atomic_store(&s_escsim_runs, (unsigned)esc_stick_panel_runs());
-        atomic_store(&s_escsim_profile,
-                     (uintptr_t)esc_stick_panel_profile());
-
-        if (drain_touch(stops_now)) {
-            frame_lost = true;
-        }
-
-        /* What the screens decided, back to the control task. */
-        /*
-         * A command is taken from its screen before it is queued, so a queue
-         * that refused it would drop it for good -- a disarm among them.  The
-         * send waits briefly and, if the queue is still full, drops the
-         * OLDEST entry rather than this one: the newest throttle position and
-         * a disarm both matter more than a stale step.
-         */
-        /* What the IOmcu says its outputs are, and what became of the
-         * last write.  Screen state stays app_main's; the control task only
-         * leaves values behind. */
-        /* The flag is read inside the lock that guards the value it refers
-         * to.  Testing it outside would let this task cache it and miss a
-         * binding the control task had just read off the wire. */
-        static bind_reading_t got;      /* app_main only */
-        static bool got_read;           /* app_main only */
-        static uint8_t got_throttle;    /* app_main only */
-        bool have = false;
-        if (xSemaphoreTake(s_snap_lock, 0) == pdTRUE) {
-            have = s_outputs_read_fresh;
-            if (have) {
-                got = s_outputs_read;
-                s_outputs_read_fresh = false;
-            }
-            xSemaphoreGive(s_snap_lock);
-        }
-        if (have) {
-            /*
-             * Both views of one binding: whichever is on screen, the other is
-             * showing the same thing when the operator reaches it.
-             *
-             * The outputs screen first, and the picker takes what came out of
-             * it rather than what came off the wire.  The outputs screen
-             * holds the selected protocol -- the picker's list selects
-             * through it -- and an empty page carries no protocol at all, so
-             * handing the picker the raw read would leave it on OFF and
-             * unable to add a pin, however the outputs screen had
-             * reconciled it.
-             */
-            outputs_screen_set_reading(&got);
-            picker_screen_set_binding(outputs_screen_binding());
-            /* RUN on ESC STICK moves the throttle pins: none bound, or
-             * no binding read, is a run refused with the reason. */
-            got_read = got.state == BIND_READ_OK;
-            got_throttle = got_read
-                ? outputs_role_channels(got.slots, got.cfg, OUT_ROLE_THROTTLE)
-                : 0u;
-        }
-        esc_stick_panel_set_throttle(got_read, got_throttle);
-        /* A pick in either list writes nothing and so reads nothing back:
-         * the picker follows the outputs screen's selection, and whether
-         * the binding is one a read confirmed, every frame. */
-        picker_screen_follow(outputs_screen_binding()->proto,
-                             outputs_screen_editable());
-        /* A drawing a link-up edge published or withdrew, shown now and not
-         * on the picker's next visit. */
-        drawing_follow();
-        outputs_screen_set_result(
-            (outputs_result_t)atomic_load(&s_outputs_result));
-
-        flush_screen_commands(stops_now);
-        test_lines_service();
-        /* An ON the supply screen sent and the control task dropped -- stale,
-         * or lost to a full queue -- stops counting as live there. */
-        supply_screen_set_on_coming(supply_live_or_coming());
-        /* A servo test's end and the set points it put back, whichever
-         * screen is up: after this frame's OFF went and its samples. */
-        servo_screen_service();
-        /*
-         * Whether a STOP is on screen to press.  The control task hit-tests
-         * the band's rectangle and cannot see which screen is up.
-         */
-        atomic_store(&s_stop_live, ui_router_stop_live());
-        /*
-         * The control task hit-tests STOP itself; this is the backstop for a
-         * press it did not see.  It sets the flag rather than queueing,
-         * because a full queue must not be able to discard a stop.
-         */
-        if (ui_router_take_stop()) {
-            atomic_store(&s_stop_request, true);
-        }
-
-        bench_state_t bench;
-        bool     link_up;
-        uint16_t faults;
-        uint32_t link_errors;
-        uint32_t link_refused;
-        float    mcu_temp_c;
-        uint32_t run_seconds;
-        char     alert[ALERT_MAX];
-        bool     have_alert;
-        cu_snap_t cu;
-        snap_lock();
-        cu          = s_snap.cu;
-        bench       = s_snap.bench;
-        link_up     = s_snap.link_up;
-        faults      = s_snap.faults;
-        link_errors = s_snap.link_errors;
-        link_refused = s_snap.link_refused;
-        mcu_temp_c  = s_snap.mcu_temp_c;
-        run_seconds = s_snap.run_seconds;
-        have_alert  = ui_alert_slot_take(&s_snap.alert, alert, sizeof(alert));
-        const uint32_t alert_taken = s_snap.alert.taken;
-        const uint32_t withdrawn   = s_snap.alert.withdrawn;
-        snap_unlock();
-
-        /* The control task's alert on the band, cleared when the control
-         * task takes it back while the band still shows it. */
-        static ui_alert_band_t s_band;
-        (void)ui_alert_band_update(&s_band, have_alert ? alert : NULL,
-                                   alert_taken, withdrawn);
-        /* A servo test ends when the link goes. */
-        servo_screen_set_link(link_up);
-        /* The armed state this frame acted on, read before the touch was
-         * dispatched; the band shows what the screens were told. */
-        const bool armed = armed_now;
-        const bool cu_active = cu.active;
-        const ui_bench_status_t status = {
-            .link_up     = link_up,
-            .armed       = armed,
-            .armed_roles = (uint8_t)((motor_armed_now ? UI_ARMED_MOTOR : 0u)
-                                     | (servo_armed_now ? UI_ARMED_SERVO
-                                                        : 0u)),
-            .faults      = faults,
-            .run_seconds = run_seconds,
-#ifdef RCBENCH_TOUCH_INJECTOR
-            /* A build with the touch injector names an attached one where the
-             * mode goes; LINK still tells BENCH from SIM, and the
-             * SIMULATION watermark still covers a simulated bench. */
-            .mode        = touch_injector_attached()
-                               ? ui_band_mode_inject()
-                               : ui_band_mode(link_up),
-#else
-            .mode        = ui_band_mode(link_up),
-#endif
-            /* Not over an update: the link is down for it, and the
-             * simulator that runs while it is down drives nothing shown. */
-            .simulated   = bench_state_simulated(&bench) && !cu_active,
-            .capabilities = (uint16_t)atomic_load(&s_capabilities),
-            .link_errors = link_errors,
-            .link_refused = link_refused,
-            .mcu_temp_c  = mcu_temp_c,
-        };
-        ui_router_set_status(&status);
-
-        if (splash_screen_done() && ui_router_current() == SCREEN_SPLASH) {
-            /*
-             * A bus that failed its test is what the panel says first.  The
-             * menu offers screens that all read the same numbers, and every
-             * one of them would show the same nothing without saying why.
-             */
-            ui_router_goto(s_bus_ok ? SCREEN_OVERVIEW : SCREEN_BUSFAULT);
-            if (s_boot_alert[0] != '\0') {
-                ui_router_set_alert(s_boot_alert);
-                s_boot_alert[0] = '\0';
-            }
-        }
-
-        /*
-         * And the menu once it has been acknowledged.  The hold is the
-         * screen's; where an acknowledged fault leads is not, so it latches
-         * and this decides.
-         */
-        if (busfault_screen_take_ack()) {
-            ui_router_goto(SCREEN_OVERVIEW);
-        }
-
-        /*
-         * The IOmcu's update.  The question opens on the menu, on a
-         * bench that is SAFE with the supply off, the panel's radio wholly
-         * off and no install of the panel under way, once per offer; START
-         * and CANCEL go to the control task.  SETUP > UPDATES' hold starts
-         * the same update, offered or declined, under the same conditions.  While the update runs the screen
-         * shows its progress, and the menu comes back when it has ended --
-         * the alert says how.
-         */
-        /* The release reminder first: it yields to the IOmcu's
-         * question, which comes first. */
-        upd_remind_service(armed || arm_wanted_now,
-                           armed || arm_wanted_now || supply_now
-                               || supply_live_or_coming(),
-                           &cu);
-        cu_render_service(armed || arm_wanted_now || supply_now
-                              || supply_live_or_coming(),
-                          link_up, &cu);
-
-        /*
-         * A link that was up and has been gone for LINK_LOST_SCREEN_MS says
-         * so, with the controller's own counters on it.  The panel has no
-         * console an operator can reach while the bench runs, so a fault it
-         * cannot show is a fault nobody can report.
-         *
-         * Never while armed.  This screen carries no band and therefore no
-         * STOP, and a bench with something spinning must not have its stop
-         * button covered by a diagnosis.  Armed, the alert band already says
-         * the link is gone, and the screen waits for the disarm.  Nor while
-         * the supply's output is on, by the snapshot or by the newest
-         * sample: the supply does not need the link, and STOP and OUTPUT
-         * OFF stay on screen for as long as it is live.  Nor over WI-FI,
-         * whose Wi-Fi does not need the link, nor over PANEL
-         * UPDATE, which withholds the heartbeat on purpose while it writes.
-         *
-         * The timestamp is read once and tested twice.  The control task
-         * clears it on the other core the moment the link answers, and a
-         * second read that caught the zero would test now_ms() - 0, the
-         * uptime, against LINK_LOST_SCREEN_MS: past 4000 ms of uptime that
-         * passes, and the screen takes over on a link that is up.
-         */
-        const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
-        if (!armed && !cu_active && !supply_now && !supply_seen && !supply_live_or_coming()
-            && lost_ms != 0u && !s_link_lost_shown
-            && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
-            && ui_router_current() != SCREEN_SPLASH
-            && ui_router_current() != SCREEN_BUSFAULT
-            && ui_router_current() != SCREEN_WIFI
-            && ui_router_current() != SCREEN_UPDATE) {
-            /*
-             * The screen has no STOP, so it opens on a supply that is off
-             * and stays off: an ON this frame already queued, which the
-             * snapshot read above cannot show, is cancelled the way OUTPUT
-             * OFF cancels one -- the count it carries goes stale, and the
-             * flag switches it off again should it have been applied.
-             */
-            atomic_fetch_add(&s_supply_offs, 1u);
-            atomic_store(&s_supply_off_request, true);
-            busfault_report_t r;
-            link_lost_report(&r);
-            busfault_screen_set(&r);
-            s_link_lost_shown = true;
-            ui_router_goto(SCREEN_BUSFAULT);
-        }
-        /*
-         * And once more, right before the tick.  Both queues can lose an
-         * event while this loop is running: the control task refills
-         * s_touch_q from the other core, and the driver's own queue drops its
-         * oldest when nobody collects it.  A gesture that completes on a
-         * timer -- the arming hold, the fault acknowledgement -- would
-         * otherwise finish in this tick on a contact that has gone, its loss
-         * found only next frame.  The second drain finds everything offered
-         * up to now.
-         */
-        if (drain_touch(stops_now)) {
-            frame_lost = true;
-        }
-        ui_router_tick(dt_s);
-        knob_apply(&knob_turn, frame_lost);
-        wifi_service(arm_wanted_now || armed_now, stops_now);
-        upd_service(arm_wanted_now || armed_now,
-                    arm_wanted_now || armed_now || supply_now
-                        || supply_live_or_coming(),
-                    stops_now, &cu);
-
-        /*
-         * The arm this frame began with, acknowledged -- only by a frame that
-         * began with the bench armed and found the touch stream whole.  Until
-         * then the control task undoes the arm on any loss
-         * (arm_watch_service()), because a frame that began disarmed cancels
-         * screens that post no disarm.  A loss in a frame that began armed is
-         * answered by the screens against an armed bench.
-         */
-        if (armed_now && !frame_lost) {
-            atomic_store(&s_arm_ack, arm_gen_now);
-        }
-        /* And the supply's ON the same way; see supply_watch_service(). */
-        if (supply_now && !frame_lost) {
-            atomic_store(&s_supply_ack, supply_gen_now);
-        }
-
-        /*
-         * The save the settings screen asked for, taken at a moment that can
-         * afford it.
-         *
-         * Writing settings commits an NVS page, and a flash operation on this
-         * part disables the cache: neither core runs code that is not in
-         * IRAM for its duration.  Taken here it costs a frame.  When it may
-         * happen is flash_gate_open()'s rule, the one the drawing's keep
-         * asks too: not while the bench is armed or an arm waits -- the
-         * control task beats the safety line and its ceiling is
-         * HEARTBEAT_MAX_GAP_MS (150 ms) -- and not while the supply's output
-         * is on or an ON is queued: OUTPUT OFF, STOP and the trips are the
-         * control task's, and a flash write would stall them for its length.
-         * Nor while the board's drawing is being fetched or kept: one flash
-         * writer at a time.
-         *
-         * Waiting costs nothing.  The request stands until a quiet frame
-         * comes, and disarmed -- which is where the settings screen is used
-         * -- the next frame is one.
-         */
-        (void)settings_save_tick(flash_gate_open(arm_wanted_now,
-                                                 supply_live_or_coming())
-                                 && !s_artbusy && !atomic_load(&s_keeping));
-        /* And the ramp, from the task that owns the values, for the control
-         * task to read on its next pump. */
-        publish_throttle_ramp();
-
-        gfx_canvas_t *c = display_canvas();
-        const int64_t draw_start = esp_timer_get_time();
-        ui_router_render(c, display_back_index());
-        const uint32_t draw_us = (uint32_t)(esp_timer_get_time() - draw_start);
-        display_flip();   /* blocks until the swap has taken effect */
-
-        /* A restart of the scan, as it happens: the line before it in the
-         * log says what held the refill interrupt off (display.h). */
-        {
-            static uint32_t seen_restarts;
-            const uint32_t restarts = display_restarts();
-            if (restarts != seen_restarts) {
-                seen_restarts = restarts;
-                ESP_LOGW(TAG, "display: scan restarted, %u since start",
-                         (unsigned)restarts);
-            }
-        }
-
-        /*
-         * DRAW is the paint time of the frame; WAIT is how long the flip
-         * blocked afterwards.  A healthy frame is mostly WAIT, the loop
-         * paced by the panel.  DRAW climbing until WAIT reaches zero is the
-         * frame budget being spent.  Printed every 300 frames.
-         */
-        if (++frames % 300u == 0u) {
-            ESP_LOGI(TAG,
-                     "%.1f fps  DRAW %u us  WAIT %u us  TOUCHLOST %u/%u",
-                     (double)display_fps(), (unsigned)draw_us,
-                     (unsigned)display_last_wait_us(),
-                     s_tq_lost, atomic_load(&s_drv_gaps));
-        }
-    }
+    panel_frame_loop();   /* does not return */
 }

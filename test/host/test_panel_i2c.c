@@ -1,6 +1,6 @@
 /*
- * The addresses the panel board answers at on its I2C (Inter-Integrated
- * Circuit) bus: the table's edges, the constant-expression form against the
+ * The addresses taken on the panel board's I2C (Inter-Integrated Circuit)
+ * buses: the table's edges, the constant-expression form against the
  * function for every byte, the board's own addresses inside it, and the
  * addresses the I2C specification reserves (NXP UM10204, table 4), less
  * the Hs-mode master codes 0x04 to 0x07, which the MT6701 knob's 0x06 sits
@@ -34,9 +34,8 @@ TEST_CASE(the_table_holds_at_its_edges)
         { 0x04, false }, { 0x05, false }, { 0x06, false }, { 0x07, false },
         { 0x08, false },
         { 0x13, false }, { 0x14, true  }, { 0x15, false },
-        { 0x1F, false }, { 0x20, true  }, { 0x27, true  },
-        { 0x28, false }, { 0x2F, false },
-        { 0x30, true  }, { 0x36, true  }, { 0x3F, true  },
+        { 0x20, false }, { 0x26, false }, { 0x27, false },
+        { 0x30, false }, { 0x36, false }, { 0x3F, false }, /* no expander */
         { 0x40, false }, { 0x46, false },
         { 0x5C, false }, { 0x5D, true  }, { 0x5E, false },
         { 0x77, false }, { 0x78, true  }, { 0x7F, true  }, /* I2C reserved */
@@ -51,10 +50,6 @@ TEST_CASE(the_table_holds_at_its_edges)
 
 TEST_CASE(the_owners_are_named)
 {
-    CHECK_STR_EQ(own(0x20), "CH422G");
-    CHECK_STR_EQ(own(0x27), "CH422G");
-    CHECK_STR_EQ(own(0x30), "CH422G");
-    CHECK_STR_EQ(own(0x3F), "CH422G");
     CHECK_STR_EQ(own(0x14), "GT911");
     CHECK_STR_EQ(own(0x5D), "GT911");
     CHECK_STR_EQ(own(0x00), "I2C reserved");
@@ -64,6 +59,7 @@ TEST_CASE(the_owners_are_named)
     CHECK_STR_EQ(own(0x80), "not a 7-bit address");
     CHECK(panel_i2c_owner(0x06) == NULL);
     CHECK(panel_i2c_owner(0x28) == NULL);
+    CHECK(panel_i2c_owner(0x36) == NULL);
 }
 
 TEST_CASE(the_macro_and_the_function_agree_everywhere)
@@ -74,17 +70,17 @@ TEST_CASE(the_macro_and_the_function_agree_everywhere)
             break;
         }
     }
-    /* 0x00 to 0x03, 0x14, 0x20 to 0x27, 0x30 to 0x3F, 0x5D, 0x78 to 0x7F. */
+    /* 0x00 to 0x03, 0x14, 0x5D, 0x78 to 0x7F. */
     int n = 0;
     for (unsigned a = 0; a <= 0x7Fu; ++a) {
         n += panel_i2c_addr_reserved(a) ? 1 : 0;
     }
-    CHECK_EQ(n, 4 + 1 + 8 + 16 + 1 + 8);
+    CHECK_EQ(n, 4 + 1 + 1 + 8);
 }
 
 TEST_CASE(the_ranges_are_ordered_apart_and_seven_bit)
 {
-    CHECK_EQ(panel_i2c_reserved_count, 6u);
+    CHECK_EQ(panel_i2c_reserved_count, 4u);
     for (unsigned i = 0; i < panel_i2c_reserved_count; ++i) {
         const panel_i2c_range_t *r = &panel_i2c_reserved_table[i];
         CHECK(r->first <= r->last);
@@ -98,11 +94,6 @@ TEST_CASE(the_ranges_are_ordered_apart_and_seven_bit)
 
 TEST_CASE(the_boards_own_addresses_are_inside)
 {
-    /* BOARD_CH422G_ADDR_WR_OC, _WR_SET, _RD_IO and _WR_IO. */
-    CHECK_STR_EQ(own(0x23), "CH422G");
-    CHECK_STR_EQ(own(0x24), "CH422G");
-    CHECK_STR_EQ(own(0x26), "CH422G");
-    CHECK_STR_EQ(own(0x38), "CH422G");
     /* BOARD_TOUCH_I2C_ADDR and BOARD_TOUCH_I2C_ADDR_ALT. */
     CHECK_STR_EQ(own(0x5D), "GT911");
     CHECK_STR_EQ(own(0x14), "GT911");

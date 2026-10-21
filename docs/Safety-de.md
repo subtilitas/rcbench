@@ -26,8 +26,10 @@ IOmcu auf eines von beiden lässt das Panel SAFE.
 
 ## Vorausgesetzte externe Schaltung: das Monoflop
 
-Die Sicherheitsleitung ist GPIO6 (General-Purpose Input/Output) des Panels
-auf dem Header J8 (3V3, GND, GPIO6). Sie trägt Flanken, keinen Pegel. Das
+Die Sicherheitsleitung ist GPIO28 (General-Purpose Input/Output) des Panels,
+ein freier Header-Pin der 7-Zoll-ESP32-P4-Displayplatine. GPIO28 ist ein
+Platzhalter: Welcher Header-Pin die Leitung trägt, ist noch nicht gewählt
+(`PANEL_HEARTBEAT_PIN` in `board_pins.h`). Sie trägt Flanken, keinen Pegel. Das
 Output Enable des IOmcu und der Leistungspfad für Servos und ESC
 (Electronic Speed Controller, Motorregler) müssen hinter einem retriggerbaren
 Monoflop liegen, das nur angezogen bleibt, solange Flanken eintreffen.
@@ -43,7 +45,7 @@ statt auf die neue Periode zu schrumpfen: die Reserve ist das, was einen
 verspäteten Task überlebt.
 
 Das Monoflop ist auf keiner Platine. Auf dem Aufbau-Prüfstand erreichen die
-Flanken über eine direkte Leitung von J8 den GP3 des IOmcu, weshalb
+Flanken über eine direkte Leitung vom Heartbeat-Pin des Panels den GP3 des IOmcu, weshalb
 dieser Prüfstand auf ARMED schalten kann.
 
 Das Monoflop wird von den Flanken des Panels nachgetriggert und nimmt die

@@ -214,6 +214,16 @@ def test_a_missing_table_fails(tree):
     assert out == [f"Performance.md: no table headed '{HEADER}'"]
 
 
+def test_a_table_with_no_ceiling_in_ci_fails(tree):
+    out = ceilings(tree, DOC, ci="      - name: x\n        run: true\n")
+    assert out == ["Performance.md: has the ceiling table, and ci.yml has "
+                   "no frame_cost.py call with --max-lines"]
+
+
+def test_no_table_and_no_ceiling_in_ci_passes(tree):
+    assert ceilings(tree, "no table here", ci="run: true\n") == []
+
+
 def test_the_tree_passes_the_new_checks():
     problems = []
     cd.check_constant_tables(problems)
@@ -316,22 +326,24 @@ def test_spdx_covers_the_tool_scripts(tree):
 
 def sdk_tree(tree, **change):
     """ci.yml, release.yml and the build and performance pages, agreeing on
-    pico-sdk 2.3.0 and ESP-IDF v5.4 and v5.5 unless a name in @p change
+    pico-sdk 2.3.0 and ESP-IDF v5.5.5 unless a name in @p change
     replaces its text."""
     files = {
         ".github/workflows/ci.yml":
             "env:\n  PICO_SDK_TAG: '2.3.0'\n"
-            "        idf: [v5.4, v5.5]\n"
+            "    name: Panel (ESP-IDF v5.5.5, ESP32-P4)\n"
+            "          esp_idf_version: v5.5.5\n"
+            "          esp_idf_version: v5.5.5\n"
             "    name: IOmcu (pico-sdk 2.3.0)\n",
         ".github/workflows/release.yml":
-            "env:\n  PICO_SDK_TAG: '2.3.0'\n  esp_idf_version: v5.4\n",
+            "env:\n  PICO_SDK_TAG: '2.3.0'\n  esp_idf_version: v5.5.5\n",
         "docs/Building.md":
             "| pico-sdk | 2.0 or newer | CI builds 2.3.0 |\n"
-            "CI builds v5.4 and v5.5\n"
+            "CI builds v5.5.5\n"
             "IOmcu build on pico-sdk 2.3.0 with\n",
         "docs/Building-de.md":
             "| pico-sdk | 2.0 oder neuer | CI baut 2.3.0 |\n"
-            "CI baut v5.4 und v5.5\n"
+            "CI baut v5.5.5\n"
             "IOmcu-Build mit pico-sdk 2.3.0 mit\n",
         "docs/Performance.md": "the image CI builds, pico-sdk 2.3.0 with\n",
         "docs/Performance-de.md": "Image, das CI baut, pico-sdk 2.3.0 mit\n",
@@ -363,10 +375,14 @@ def test_sdk_tags_that_agree_pass(tree):
      "Performance.md says pico-sdk 2.1.0"),
     (".github/workflows/ci.yml", "(pico-sdk 2.3.0)", "(pico-sdk 2.0.0)",
      "ci.yml job name says pico-sdk 2.0.0"),
-    (".github/workflows/release.yml", "esp_idf_version: v5.4",
-     "esp_idf_version: v5.5", "release.yml builds ESP-IDF v5.5"),
-    ("docs/Building-de.md", "v5.4 und v5.5", "v5.4 und v5.6",
-     "Building-de.md says ESP-IDF v5.4 und v5.6"),
+    (".github/workflows/release.yml", "esp_idf_version: v5.5.5",
+     "esp_idf_version: v5.4", "release.yml builds ESP-IDF v5.4"),
+    ("docs/Building-de.md", "CI baut v5.5.5", "CI baut v5.5.3",
+     "Building-de.md says ESP-IDF v5.5.3"),
+    ("docs/Building.md", "CI builds v5.5.5", "CI builds v5.5",
+     "Building.md says ESP-IDF v5.5;"),
+    (".github/workflows/ci.yml", "Panel (ESP-IDF v5.5.5,",
+     "Panel (ESP-IDF v5.4,", "the ci.yml panel job is named for ESP-IDF v5.4"),
 ])
 def test_a_copy_that_differs_is_named(tree, rel, old, new, said):
     out = sdk_tree(tree, **{rel: [(old, new)]})
@@ -374,8 +390,8 @@ def test_a_copy_that_differs_is_named(tree, rel, old, new, said):
 
 
 @pytest.mark.parametrize("rel, old, new", [
-    ("docs/Building.md", "CI builds v5.4 and v5.5", "CI builds v5.4"),
-    ("docs/Building-de.md", "CI baut v5.4 und v5.5", "CI baut v5.4"),
+    ("docs/Building.md", "CI builds v5.5.5", "CI builds the newest"),
+    ("docs/Building-de.md", "CI baut v5.5.5", "CI baut das neueste"),
 ])
 def test_a_page_without_the_esp_idf_statement_is_named(tree, rel, old, new):
     out = sdk_tree(tree, **{rel: [(old, new)]})
@@ -383,18 +399,24 @@ def test_a_page_without_the_esp_idf_statement_is_named(tree, rel, old, new):
     assert len(out) == 1 and f"ESP-IDF statement in {page}" in out[0]
 
 
-def test_a_point_release_is_compared_whole(tree):
-    """v5.5 on a page is not v5.5.3 in the matrix, and v5.5.3 on both is."""
-    ci = {".github/workflows/ci.yml": [("idf: [v5.4, v5.5]",
-                                        "idf: [v5.4, v5.5.3]")]}
+def test_two_esp_idf_versions_in_ci_are_named(tree):
+    """The build without the injector builds the same ESP-IDF as the
+    first one."""
+    ci = {".github/workflows/ci.yml": [
+        ("          esp_idf_version: v5.5.5\n"
+         "          esp_idf_version: v5.5.5\n",
+         "          esp_idf_version: v5.5.5\n"
+         "          esp_idf_version: v5.5.3\n")]}
     out = sdk_tree(tree, **ci)
-    assert len(out) == 2
-    assert "Building.md says ESP-IDF v5.4 and v5.5; " in out[0]
-    assert "Building-de.md says ESP-IDF v5.4 und v5.5; " in out[1]
-    both = dict(ci)
-    both["docs/Building.md"] = [("v5.4 and v5.5", "v5.4 and v5.5.3")]
-    both["docs/Building-de.md"] = [("v5.4 und v5.5", "v5.4 und v5.5.3")]
-    assert sdk_tree(tree, **both) == []
+    assert out == ["SDK tags: ci.yml builds the panel with 2 ESP-IDF "
+                   "versions (v5.5.3, v5.5.5); it names one"]
+
+
+def test_a_ci_without_a_panel_build_is_named(tree):
+    ci = {".github/workflows/ci.yml": [
+        ("          esp_idf_version: v5.5.5\n"
+         "          esp_idf_version: v5.5.5\n", "")]}
+    assert sdk_tree(tree, **ci)[0].endswith("(none); it names one")
 
 
 def test_the_tree_holds_the_sdk_tags():
@@ -416,3 +438,25 @@ def test_only_a_help_image_block_counts_a_view_as_shown(tmp_path, monkeypatch):
     monkeypatch.setattr(cd, "IMG", img)
     shown = {p.name for p in cd.help_images()}
     assert shown == {"motor-table.png"}
+
+
+def test_a_source_without_a_licence_line_fails(tree):
+    """A source file of the tree without its SPDX line is reported."""
+    src = tree / "firmware" / "panel" / "main"
+    src.mkdir(parents=True)
+    (src / "a.c").write_text("int a;\n", encoding="utf-8")
+    problems = []
+    cd.check_spdx(problems)
+    assert problems == [
+        "firmware/panel/main/a.c has no SPDX-License-Identifier"]
+
+
+def test_registry_components_are_not_held_to_the_licence_line(tree):
+    """Files under managed_components/ are the registry's, not the tree's."""
+    fetched = (tree / "firmware" / "panel" / "managed_components"
+               / "espressif__esp_hosted")
+    fetched.mkdir(parents=True)
+    (fetched / "protobuf-c.c").write_text("int b;\n", encoding="utf-8")
+    problems = []
+    cd.check_spdx(problems)
+    assert problems == []

@@ -30,6 +30,7 @@ rcbench/
     sense/                Treiber für die Strommonitore INA228 und INA3221
     fwupdate/             Prüfung des Panel-Firmware-Images · Upload-Puffer · Installer
     webaccess/            WLAN-Sitzung · Kartenliste und ZIP-Strom · die Seite · mDNS
+    text/                 die Wörter der Oberfläche, alle Sprachen in einer Tabelle (nur Header)
   protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
     dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional
     ppm/                  PPM-Frame-Layout · PIO- und DMA-Treiber
@@ -40,7 +41,7 @@ rcbench/
     kst/                  Programmierung von KST- und Chaservo-Servos: Frames, Register, Grenzen, Schreibpläne, Session · rp2350: kst_line.pio · kst_line
     hitec/                Leitung der Hitec-Servos, beide Familien: Frames, Transaktionen, Decoder der Antworten · rp2350: hitec_line.pio · hitec_line
   firmware/
-    panel/                ESP-IDF-Projekt (ESP32-S3)
+    panel/                ESP-IDF-Projekt (ESP32-P4)
     iomcu/                pico-sdk-Projekt (RP2350)
   test/host/              die Host-Suite, eine Binary je Modul oder Bildschirm
   hardware/               Platinen-Designprotokoll; keine Platine existiert
@@ -79,7 +80,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | Modul | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
-| `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `ppm` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ✔ | ✔ | ✔ |
@@ -88,21 +89,23 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 
 | | Version | Hinweise |
 | --- | --- | --- |
-| ESP-IDF | v5.4 oder neuer | das Event `on_frame_buf_complete` des RGB-Panels (RGB: paralleles Rot-Grün-Blau-Interface), auf das der Framebuffer-Wechsel wartet, existiert ab v5.4. Weder v5.5.0 noch v5.5.1 lässt sich kompilieren: ihr TWAI-Treiber (Two-Wire Automotive Interface) sendet einen CAN-Frame mit DLC (Data Length Code) 0 als DLC 8, und der IOmcu lehnt jeden so gesendeten Link-Read ab. CI (Continuous Integration) baut v5.4 und v5.5.3 |
+| ESP-IDF | v5.5.5 oder neuer auf der Linie v5.5 | der ESP32-P4 des Panels ist Chiprevision 3.2, die Espressifs Hinweis AR2026-004 mit v5.5.5 oder neuer paart; der Build setzt `CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n` und Mindestrevision 3.1. Weder v5.5.0 noch v5.5.1 lässt sich kompilieren: ihr TWAI-Treiber (Two-Wire Automotive Interface) sendet einen CAN-Frame mit DLC (Data Length Code) 0 als DLC 8, und der IOmcu lehnt jeden so gesendeten Link-Read ab. CI (Continuous Integration) baut v5.5.5 |
 | pico-sdk | 2.0 oder neuer | RP2350-Unterstützung; CI baut 2.3.0 |
 | ARM GNU Toolchain | 14.2 | jede `arm-none-eabi`-Version für Cortex-M33 |
 
-`firmware/panel/sdkconfig.defaults` setzt Octal-PSRAM (PSRAM: Pseudo-Static
-Random-Access Memory) mit 80 MHz, den 64-KB-Datencache mit 64-Byte-Lines, Code
-und Konstanten im Flash statt im PSRAM, die nullinitialisierten Daten, die
+`firmware/panel/sdkconfig.defaults` setzt den ESP32-P4 auf Chiprevision 3.1
+oder neuer und 400 MHz, 32 MB Flash, das PSRAM im Gehäuse (PSRAM:
+Pseudo-Static Random-Access Memory) auf 200 MHz, Code und Konstanten im
+Flash statt im PSRAM, die nullinitialisierten Daten, die
 `main/psram_bss.lf` nennt, im PSRAM ([Interner RAM](Performance-de.md#interner-ram)),
-den RGB-LCD-Interrupt ohne IRAM-Sicherheit
-(IRAM: Instruction Random-Access Memory; LCD: Liquid-Crystal Display), sodass
-ESP-IDF ihn während einer Flash-Operation maskiert, `-O2`
-und die Konsole auf UART0 (UART: Universal Asynchronous Receiver-Transmitter)
-mit USB-Serial-JTAG (die eingebaute serielle und Debug-Bridge des ESP32-S3
-über USB, Universal Serial Bus) als Zweitkonsole. Von dieser Datei ausgehen,
-nicht von `menuconfig`.
+den Interrupt des DSI-Hosts (DSI: Display Serial Interface), der auch
+während einer Flash-Operation läuft (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), die
+Partitionstabelle bei 0xC000, die dem Bootloader ab 0x2000 40.960 Bytes
+lässt (er belegt mit Rollback und Log auf INFO 0x6140 Bytes), `-O2` und
+die Konsole auf UART0 (UART:
+Universal Asynchronous Receiver-Transmitter) mit USB-Serial-JTAG (die
+eingebaute serielle und Debug-Bridge des Chips über USB, Universal Serial
+Bus) als Zweitkonsole. Von dieser Datei ausgehen, nicht von `menuconfig`.
 
 ESP-IDF liest `sdkconfig.defaults` nur, wenn es `sdkconfig` erzeugt. Ein Baum,
 der schon einmal gebaut wurde, hat bereits `firmware/panel/sdkconfig`, und
@@ -111,13 +114,17 @@ diese Datei gewinnt: nach einer Änderung der Defaults löschen, sonst wirkt die
 
 ## Verdrahtung des Drehknopfs
 
-Der Drehknopf ist ein magnetischer Winkelsensor MT6701 am I2C-Anschluss
-(I2C: Inter-Integrated Circuit) des Panels, der 4-poligen PH2.0-Buchse des
-Waveshare ESP32-S3-Touch-LCD-7. Der Anschluss ist GPIO8 (SDA) und GPIO9 (SCL),
-der Bus von Touch-Controller und CH422G-Expander, über den Pegelumsetzer der
-Platine. Pinbelegung aus dem Text des Platinenschaltplans, nicht gemessen:
-1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. Vor dem Anschließen mit einem Multimeter
-prüfen.
+Der Drehknopf ist ein magnetischer Winkelsensor MT6701 an einem eigenen
+I2C-Bus (I2C: Inter-Integrated Circuit), dem zweiten I2C-Controller des
+ESP32-P4, auf zwei freien Header-Pins der 7-Zoll-ESP32-P4-Displayplatine:
+`BOARD_KNOB_PIN_SDA` und `BOARD_KNOB_PIN_SCL` in
+`firmware/panel/components/board/include/board_pins.h`. GPIO30 (SDA) und
+GPIO31 (SCL) sind dort Platzhalter; die Header-Pins sind noch nicht
+gewählt. Der Sensor nimmt 3,3 V und GND vom selben Header. Das Panel
+schaltet die internen Pull-ups des ESP32-P4 ein; ob sie allein 400 kHz auf
+den Leitungen des Knopfs halten, ist nicht gemessen, ein Sensor ohne eigene
+Pull-ups bekommt daher welche von 4,7 kOhm nach 3,3 V, wie die
+I2C-Schaltung des Datenblatts.
 
 Der Sensor muss in seinem I2C/SSI-Modus sein (SSI: Synchronous Serial
 Interface), MODE high. MODE low wählt die ABZ-Encoderausgänge, und der Sensor
@@ -129,7 +136,7 @@ SOP-8-Gehäuse, aus dem
 
 | MT6701-Pin | Anschluss an |
 | --- | --- |
-| 1 VDD | 3,3 V von I2C_VCC. Die Versorgung des Datenblatts ist 3,3 bis 5,0 V. Die Lötbrücke der Platine speist I2C_VCC ab Werk aus 3V3 |
+| 1 VDD | 3,3 V vom Header. Die Versorgung des Datenblatts ist 3,3 bis 5,0 V |
 | 2 MODE | VDD. Ein interner Pull-up von 200 kOhm hält einen offenen Pin high; Abbildung 17 legt ihn an VDD. Nie GND |
 | 3 OUT | nicht angeschlossen; das Panel liest den Winkel über I2C |
 | 4 GND | GND |
@@ -148,14 +155,12 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
   0x06. Eine EEPROM-Programmierung kann die Adresse auf 0x46 legen (Version
   1.9; Version 0.1 des Datenblatts nennt 0x26); ein so umgestellter Sensor
   wird nicht gelesen.
-- Die Platine antwortet an diesem Bus auf 0x14, 0x20 bis 0x27, 0x30 bis 0x3F
-  und 0x5D (CH422G und GT911). Das Panel legt kein anderes Gerät auf diese
-  Adressen und auch keines auf 0x00 bis 0x03 und 0x78 bis 0x7F, die die
-  I2C-Spezifikation reserviert (`shared/bench/include/panel_i2c.h`). 0x06
-  liegt außerhalb. Es ist einer der Hs-Mode-Mastercodes (Hs: High-Speed) der
-  Spezifikation, 0x04 bis 0x07, die kein Gerät an diesem Bus benutzt. Der
-  eine Busscan der Platine umfasste 0x08 bis 0x77; dass sonst nichts auf
-  0x06 antwortet, ist also nicht gemessen.
+- Nichts von der Platine liegt an diesem Bus. Das Panel lehnt eine Adresse
+  aus der Tabelle in `shared/bench/include/panel_i2c.h` ab: 0x00 bis 0x03
+  und 0x78 bis 0x7F, die die I2C-Spezifikation reserviert, und die Adressen
+  von CH422G und GT911 des ESP32-S3-Panels. 0x06 liegt außerhalb. Es ist
+  einer der Hs-Mode-Mastercodes (Hs: High-Speed) der Spezifikation, 0x04
+  bis 0x07, die kein Gerät an diesem Bus benutzt.
 - Bustakt: 400 kHz. Das Datenblatt erlaubt eine SCL-Periode (SCL: Serial
   Clock) ab 1 us und Anstiegs- und Abfallzeiten von höchstens 150 ns. Die
   Anstiegszeit am Anschluss ist nicht gemessen.
@@ -189,9 +194,13 @@ ctest --test-dir test/host/build --output-on-failure
 
 # panel
 . $IDF_PATH/export.sh
-idf.py -C firmware/panel set-target esp32s3
+idf.py -C firmware/panel set-target esp32p4
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
+
+# Panel mit den Farbbalken des DSI-Hosts für 3 s beim Start, für einen
+# ersten Blick auf eine Platine
+idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON build
 
 # panel carrying the IOmcu image it offers over CAN; build the
 # IOmcu first
@@ -203,7 +212,8 @@ idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-
 # weg. Die Option steht standardmäßig auf ON
 idf.py -C firmware/panel -B firmware/panel/build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF build
 
-# panel, as one image at offset 0; it erases the settings in nvs
+# panel, as one image at offset 0 (the ESP32-P4's bootloader sits at
+# 0x2000 inside it); it erases the settings in nvs
 idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
     firmware/panel/build/rcbench-panel-merged.bin
@@ -254,21 +264,21 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/check_sanitizers.py` | konfiguriert den Sanitizer-Build und schlägt fehl, wenn nicht jeder Compile-Befehl unter `shared/`, `protocols/` und `test/host/` `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` und `-fno-omit-frame-pointer` trägt und kein anderes Flag dieser Familie |
 | `tools/check_protocols.py` | hält jedes Modul unter `protocols/` an der Regel, nach der es in einem anderen pico-sdk-Projekt gebaut wird: eine Kern-Datei bindet nur C-Standard-Header und die eigenen Header des Kerns ein, eine Datei unter `rp2350/` außerdem die Treiber-Header des Moduls, sein erzeugtes `.pio.h` und pico-sdk-Header, der Header eines Treibers bindet keinen pico-sdk-Header ein, jeder öffentliche Header trägt `extern "C"` und kompiliert für sich als C11 und als C++17 mit `-Wall -Wextra -Werror`, kein Include eines Moduls nennt einen Pfad mit `..`, einen absoluten Pfad oder ein Makro oder hat ein Token nach seinem Operanden, kein `#include_next` nennt einen anderen Header als einen C-Standard-Header oder, in einer C-Datei unter `rp2350/`, einen pico-sdk-Header, der Name `__has_include` steht außerhalb eines Literals nur als Operand von `#ifdef`, `#ifndef`, `#elifdef` oder `#elifndef` oder eines `defined`-Terms in einer `#if`- oder `#elif`-Zeile, die nur solche Terme, Leerraum, `(`, `)`, `!`, `&` und `|` enthält, keine Zeile besteht nur aus `#`, gelesen nach den Literal-Regeln von ISO C, GNU C, C23 und C++ und in einer `.pio`-Datei in dem C, das pioasm in den erzeugten Header schreibt, keine C-Datei, kein Header und kein C einer `.pio`-Datei enthält einen Trigraph (`??` gefolgt von einem aus `= / ' ( ) ! < > -`), keine Datei enthält ein NUL-Byte, das Modul hat eine `README.md` mit einer Überschrift „Interface“, einer Überschrift mit „Trademark“ darin, wo sie eine Marke nennt (die Marke gilt an jeder Stelle der Datei, in jeder Schreibweise, auch innerhalb eines Bezeichners, Dateinamens, einer Adresse oder Zahl, nicht neben einem Buchstaben, also nicht in `KSTART` oder `KstSession`), und den Worten „no pin driver“, wo es keinen Ordner `rp2350/` hat, seine CMake-Dateien nennen kein anderes Modul, und jedes `_Static_assert` außerhalb von `protocols/` auf Konstanten eines Moduls steht nach Datei und Bedingung im Werkzeug und ist noch vorhanden (CMake-Include-Verzeichnisse und Link-Ziele werden nicht geprüft, und ein mit `##` zusammengesetztes `__has_include` besteht die Prüfung, und `""R"(` und `''R"(` werden wie in C gelesen, als Literal und Raw-String, sodass ein Include nicht gefunden wird, das eine solche Folge in C verbirgt und C++11 oder später liest, wo `R` ein Literal-Suffix ist); `--check` gibt nur die gebrochenen Regeln aus |
 | `tools/security_parsers.py` | listet die Module unter `shared/` und `protocols/`, deren öffentliche Header eine Funktion `parse`, `decode`, `unpack`, `_rx`, `_feed`, `_write`, `_read`, `_done` oder `_utf8_next` deklarieren, dazu die im Werkzeug erzwungenen Module, die Eingaben von außen unter anderen Namen annehmen, je mit Begründung (`shared/settings`, `shared/touch`); `--check` schlägt fehl, wenn die Parser-Tabelle in `SECURITY.md` und diese Liste abweichen oder ein erzwungener Eintrag ein Modul nennt, das es nicht gibt oder das die Namensregel schon findet; ein Modul ausgenommen wird nur durch einen Eintrag mit Begründung im Werkzeug |
-| `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/` und `protocols/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), die Protokollversion, die Zeiten von Heartbeat und Link, die Pins von Heartbeat und CAN, die Coverage-Untergrenzen und die Stack-Marge, die eine Seite nennt, sind die Konstanten in den Headern und Werkzeugen (`FACTS` im Werkzeug führt jeden Satz), eine Tabellenzeile, die eine C-Konstante nennt, gibt deren Wert an, die Tabelle der Obergrenzen in [Performance](Performance-de.md) stimmt mit den `--max-lines`-Argumenten in `ci.yml` überein, die Pinzahlen in `hardware/docs/Pins.md` stimmen mit `pinmap.json` überein, eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
+| `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/` und `protocols/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), die Protokollversion, die Zeiten von Heartbeat und Link, die Pins von Heartbeat und CAN, die Coverage-Untergrenzen und die Stack-Marge, die eine Seite nennt, sind die Konstanten in den Headern und Werkzeugen (`FACTS` im Werkzeug führt jeden Satz), eine Tabellenzeile, die eine C-Konstante nennt, gibt deren Wert an, [Performance](Performance-de.md) hat keine Tabelle der Obergrenzen, solange `ci.yml` kein `--max-lines`-Argument hat, die Pinzahlen in `hardware/docs/Pins.md` stimmen mit `pinmap.json` überein, eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
 | `tools/wiki_links.py` | schreibt die Links einer Kopie von `docs/` für das Wiki um, das Seiten über ihren Titel adressiert: `Page.md` wird zu `Page`, ein Ziel oberhalb von `docs/` zu einer Repository-URL (`blob`, `tree`, `raw` für ein Bild); vergleicht jede Seite über markdown-it-py 3.0.0 mit ihrer Umschreibung und endet bei jeder anderen Abweichung mit 1, mit Seite und Zeile; `--check` ändert nichts; `--verify` schlägt bei einer umgeschriebenen Seite fehl, deren Links ein Wiki nicht öffnen kann |
 | `tools/check_formats.py` | kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts durch sein englisches Literal ersetzt, unter `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung fehl: jedes englische Format gegen die Argumente seines Aufrufs ([Sprache](Language-de.md)) |
+| `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | bringen die Wörter der Oberfläche aus der Form in mehreren Dateien (Englisch in `ui_text.def` und im Schema, Deutsch in `ui_text_de.c`) in die eine Tabelle, `shared/text/include/ui_text.def`; `merge BASE THEIRS` übernimmt beim Merge die Textänderungen eines Branches, der noch die alte Form hat, in die Tabelle ([Sprache der Oberfläche](Language-de.md#einen-text-hinzufügen)) |
 | `tools/gen_font.py` | erzeugt die sieben eingebetteten Fonts aus DejaVu Sans Mono neu, die fünf Text-Fonts mit den deutschen Buchstaben; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein Text in einer der beiden Sprachen dort überläuft, wo er gezeichnet wird, außer den englischen Überläufen, die das Werkzeug als bekannt führt ([Sprache](Language-de.md)) |
-| `tools/frame_cost.py` | misst Cache-Line-Fills je Frame unter cachegrind; `--check-doc` hält die Tabelle in [Performance](Performance-de.md) |
-| `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann; `--check-doc` hält die Task-Tabelle in [Performance](Performance-de.md#stacks) am Build; `--iomcu` liest stattdessen das IOmcu-Image und schlägt fehl, wenn die tiefste Kette eines Kerns, ein Interrupt und 256 Bytes seinen Stack überschreiten; mit `--check-doc` hält es die Zeile von Kern 0 der IOmcu-Tabelle, die Zahl der von `main` aus erreichbaren Aufrufe über ein Register in beiden Performance-Seiten und den Satz zu Kern 0 in `STATUS.md`; der ELF-Leser und der Aufrufgraph stehen in `tools/stack_elf.py`, die IOmcu-Hälfte in `tools/stack_iomcu.py` |
-| `tools/ram_budget.py` | liest den internen Heap, den ein Panel-Build übrig lässt, zieht jeden Task-Stack, jede Queue und jeden Puffer ab, die das Panel zur Laufzeit belegt, und das, was jeder WLAN-Modus dazu belegt, und schlägt fehl, wenn der größte Modus weniger als 32 768 Bytes übrig lässt; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` listet jede Belegung; `--check-doc` hält die Tabelle des internen RAM (Random-Access Memory) in [Performance](Performance-de.md#interner-ram) am Build und die PSRAM-Tabelle an der Map-Datei des Builds: jedes Objekt, das `firmware/panel/main/psram_bss.lf` nennt, ihre Anzahl und Summe und die Bytes der eigenen Bibliotheken von ESP-IDF |
+| `tools/frame_cost.py` | misst Cache-Line-Fills je Frame unter cachegrind mit dem Cache des ESP32-S3 und 800 x 480 px; `--check-doc` hält die Tabelle in [Performance](Performance-de.md) an einem lokalen Build; CI führt es nicht aus |
+| `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; dekodiert nur Xtensa-Code und hält beim RISC-V-Image des ESP32-P4 an, sodass CI es auf dem Panel nicht ausführt; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann; `--check-doc` hält die Task-Tabelle in [Performance](Performance-de.md#stacks) am Build; `--iomcu` liest stattdessen das IOmcu-Image und schlägt fehl, wenn die tiefste Kette eines Kerns, ein Interrupt und 256 Bytes seinen Stack überschreiten; mit `--check-doc` hält es die Zeile von Kern 0 der IOmcu-Tabelle, die Zahl der von `main` aus erreichbaren Aufrufe über ein Register in beiden Performance-Seiten und den Satz zu Kern 0 in `STATUS.md`; der ELF-Leser und der Aufrufgraph stehen in `tools/stack_elf.py`, die IOmcu-Hälfte in `tools/stack_iomcu.py` |
+| `tools/image_slot.py` | liest die Partitionstabelle eines Panel-Builds und schlägt fehl, wenn das Image größer ist als der kleinere der zwei OTA-Anwendungsslots (Over-the-Air), wenn die Tabelle weniger als zwei solche Slots hat oder wenn sie sich in der Größe unterscheiden; gibt den verbleibenden Platz aus; nimmt das Build-Verzeichnis, Standard `firmware/panel/build` |
 | `tools/check_sizes.py` | zählt die Code-Zeilen jeder Datei, die git verfolgt (eine Code-Zeile ist weder leer noch nur Kommentar: Kommentare und Doxygen-Blöcke in C, C++, Headern, TypeScript und JavaScript sowie `#`-Kommentare und Docstrings in Python zählen nicht; andere Dateiarten zählen ihre nicht leeren Zeilen), und hält die Dateien über 1 000 Code-Zeilen an `tools/check_sizes.txt`, das für jede den Grund nennt, warum sie ganz bleibt, und für einige eine Code-Zeilenzahl mit Toleranz; `--check` schlägt fehl bei einer Datei über 1 000 Code-Zeilen, die die Liste nicht nennt, einer gelisteten Datei mit 1 000 Code-Zeilen oder weniger, einer Zahl außerhalb ihrer Toleranz und einem Ausschluss, der nichts trifft; eine Datei, deren Kopf das `tools/gen_*.py` nennt, das sie erzeugt, steht nicht in der Liste, wenn CI diesen Generator mit `--check` ausführt |
 | `tools/sense_trace.py` | liest die mitgeschnittene Konsole eines IOmcu, der mit `-DSENSE_TRACE=ON` gebaut ist: liest jede Zeile gegen das Zeilenformat und jeden Trace der 1-ms-Samples von INA3221 CH1 gegen seine Endzeile, schreibt je Trace eine CSV-Datei (Comma-Separated Values) und spielt jede Bewegung durch `shared/servo/servo_move.c`, mit dem Filter bei 1, 4 und 8 Samples und dem Band bei 0,02, 0,05 und 0,10 A; `--servo-csv` ergänzt die Ankunft abzüglich der Stellzeit des AS5600, `--loaded-channel` nennt die Ausgangskanäle mit angeschlossenem Servo und lässt die Kommandos der anderen aus ([Erster Lauf](FirstRun-de.md#89-die-1-ms-samples-von-ch1-auf-der-konsole)) |
 | `tools/pinmap_check.py` | prüft die vorläufige Pinbelegung des IO-Boards, `hardware/docs/ioboard-pinmap-draft.json`, gegen die Pinfunktionen in `io_bank0.h` des pico-sdk; braucht einen Checkout des pico-sdk |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | erzeugen die eingecheckten Tabellen der Platinenzeichnungen und der ESC-Profile aus ihren JSON-Quellen (die Platinenzeichnung aus `configurator/drawings/panel.json` des Konfigurators); `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
 | `tools/release_kind.py` | liest einen Release-Tag und gibt seine Art aus, `testing` für eine ungerade Minor-Nummer und `stable` für eine gerade, mit den Flags `prerelease` und `latest`, nach denen `release.yml` veröffentlicht; mit den Tags der vollen Releases auf GitHub dahinter ist `latest` `false` für einen stabilen Tag, der älter als einer davon ist; Exit-Code 1 bei einem Tag außerhalb der Form ([Releases](#releases)) |
-| `tools/patch_rgb_driver.py` | läuft im Configure-Schritt des Panels: schreibt eine Kopie des RGB-Panel-Treibers von ESP-IDF (`components/esp_lcd/rgb/esp_lcd_panel_rgb.c`) ins Build-Verzeichnis, in der jeder Neustart der Ausgabe der saubere Start des Bootens ist, und lässt den Build fehlschlagen, wenn einer seiner 3 Patches nicht genau einmal im Treiber passt ([Constraints](../STATUS.md#constraints)) |
 | `test/tools/` | pytest-Fälle für die Werkzeuge oben: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler |
 
@@ -280,11 +290,207 @@ Kommando `gh`. `sense_trace.py` braucht CMake und einen C-Compiler: es baut
 `test/host/sense_trace_replay.c` nach `build-trace/`, wenn `--replay` kein
 gebautes Programm nennt.
 
+## Wi-Fi über den ESP32-C6
+
+Der ESP32-P4 hat kein Funkteil. Das 7-Zoll-Display-Board von Waveshare trägt
+ein ESP32-C6-MINI-1-Modul, das als SDIO-Gerät (Secure Digital input/output)
+am SDMMC-Host (SD/MMC host) des P4 auf Slot 1 hängt; die SD-Karte liegt auf
+Slot 0. Der Wi-Fi-Code des Panels (`firmware/panel/components/wifi_access/`)
+ruft die `esp_wifi`-API auf; zwei Komponenten aus der Espressif component
+registry tragen jeden Aufruf und jeden Netzwerk-Frame zum C6. lwIP
+(lightweight IP stack), der Server der Seite und der TLS-Client (transport
+layer security) laufen auf dem P4; der C6 betreibt das Funkteil.
+
+| Signal | P4 | C6 |
+| --- | --- | --- |
+| CLK | GPIO18 | IO19 |
+| CMD | GPIO19 | IO18 |
+| D0 bis D3 | GPIO14 bis GPIO17 | IO20 bis IO23 |
+| EN (chip enable), Low setzt zurück | GPIO54 | EN |
+
+SDIO läuft mit 4 Bit Breite und 40 MHz.
+`components/board/include/board_pins.h` nennt die Pins (`BOARD_C6_*`),
+`firmware/panel/sdkconfig.defaults` gibt sie an esp_hosted, und
+`wifi_radio.c` bricht den Build ab, wenn beide abweichen.
+
+### Die managed components
+
+| Komponente | Version | Lizenz | Aufgabe |
+| --- | --- | --- | --- |
+| `espressif/esp_wifi_remote` | 1.6.5 | Apache-2.0 | die `esp_wifi`-API auf einem Chip ohne Funkteil |
+| `espressif/esp_hosted` | 2.13.0 | Apache-2.0 | der SDIO-Transport und die Aufrufe zum C6 |
+| `espressif/wifi_remote_over_eppp` | 0.3.3 | Apache-2.0 | von `esp_wifi_remote` verlangt; kompiliert, nicht gelinkt |
+| `espressif/eppp_link` | 1.1.6 | Apache-2.0 | von der Zeile darüber verlangt; kompiliert, nicht gelinkt |
+| `espressif/esp_serial_slave_link` | 1.1.2 | Apache-2.0 | von der Zeile darüber verlangt; kompiliert, nicht gelinkt |
+
+esp_hosted 2.x: jede Datei, die das Panel aus der Registry kompiliert, steht
+unter Apache-2.0, außer der protobuf-c-Laufzeit in esp_hosted, BSD-2-Clause.
+Der aus der `.proto`-Datei erzeugte Nachrichtencode von esp_hosted gehört
+Espressif, Apache-2.0; `dummy_src.c` von `esp_wifi_remote` ist eine leere
+Datei ohne Lizenzzeile.
+[NOTICE](https://github.com/subtilitas/rcbench/blob/main/NOTICE) enthält
+Copyright und Lizenz von protobuf-c, die bei der Weitergabe eines
+Panel-Images mitgegeben werden müssen.
+
+`components/wifi_access/idf_component.yml` nennt die ersten beiden mit
+exakter Version. `firmware/panel/dependencies.lock` hält alle fünf mit ihren
+Hashes und ist eingecheckt. Der erste Build lädt sie von
+`components.espressif.com` nach `firmware/panel/managed_components/`, das git
+ignoriert, und prüft jede gegen ihren Hash. Ein späterer Build stellt keine
+Anfrage: mit gefülltem Ordner läuft ein Build ohne Netzwerk durch. Für eine
+andere Version `idf_component.yml` ändern, `idf.py update-dependencies`
+ausführen und die neue Lock-Datei einchecken.
+
+### Die Firmware des C6
+
+Der C6 betreibt Espressifs esp_hosted-Co-Prozessor-Firmware. Mit welcher
+Version das Board ausgeliefert wird, ist nicht veröffentlicht und hier nicht
+bekannt. Beim ersten Wi-Fi-Start nach dem Einschalten setzt esp_hosted den C6
+zurück: GPIO54 (EN) geht für 10 ms auf Low, dann wartet esp_hosted fest
+1 500 ms (`CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS`), startet den C6 als
+SDIO-Karte und fragt alle 200 ms nach seinem Start-Event. Danach schreibt
+das Panel die Version des C6 auf die Konsole:
+
+```
+wifi: C6: esp_hosted firmware 2.13.0, host 2.13.0
+```
+
+Eine C6-Firmware ohne die Versionsabfrage antwortet nach bis zu 5 s mit
+`wifi: C6: firmware version not reported, host 2.13.0`. esp_hosted meldet
+außerdem `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`, wenn Haupt-
+oder Nebenversion abweichen. Laut Espressif läuft ein Host, der neuer ist als
+sein Co-Prozessor, und kann Zeitüberschreitungen bei Anfragen sehen; das
+Verhalten des Panels mit einer älteren C6-Firmware ist nicht gemessen. Das
+Panel hat keinen Weg, den C6 zu aktualisieren. Ein C6, der antwortet, wird
+einmal je Start des Panels zurückgesetzt; spätere Wi-Fi-Starts finden die
+Verbindung stehend vor und setzen nichts zurück.
+
+### Fehler
+
+`esp_hosted_connect_to_slave()` gibt `ESP_OK` zurück, ob der C6
+hochgekommen ist oder nicht (`esp_hosted_api.c` 177-192). Das Panel nimmt
+das Event `ESP_HOSTED_EVENT_TRANSPORT_UP` von esp_hosted als Antwort und
+wartet darauf höchstens 1 000 ms, nachdem dieser Aufruf zurückgekehrt ist
+(`wifi_radio.c`).
+
+- Ein C6, der nicht als SDIO-Karte startet: esp_hosted gibt nach dem Start
+  der Karte auf, mindestens 1 500 ms nach dem Reset von 1 520 ms; 1 Reset.
+- Ein C6, der als Karte startet und kein Start-Event schickt: esp_hosted
+  fragt 100-mal im Abstand von 200 ms und setzt den C6 nach 50 und nach 100
+  Abfragen erneut zurück (`transport_drv.c` 227-252); 3 Resets, etwa 25 s.
+- In beiden Fällen scheitert der Start, WI-FI zeigt den gescheiterten
+  Start, und das Panel hält den C6 bis zum nächsten Neustart im Reset
+  (GPIO54 auf Low). Spätere Starts scheitern sofort, ohne Reset. Prüfstand
+  und Anzeige laufen derweil weiter; der Start des Funkteils läuft in einem
+  eigenen Task.
+- Eine Verbindung, die während einer Sitzung ausfällt: esp_hosted sendet
+  `ESP_HOSTED_EVENT_TRANSPORT_FAILURE`. Das Panel schreibt einmal
+  `wifi: C6 link failed: C6 held in reset, Wi-Fi is off until the panel
+  restarts`, hält den C6 im Reset, und die Sitzung endet als gescheiterter
+  Start. Mit dem C6 im Reset halten die 51-kOhm-Pull-ups seine SDIO-Leitungen
+  auf High, sodass der Lese-Task von esp_hosted, Priorität 23 auf Kern 0,
+  wartet, statt in einer Schleife zu scheitern; auf einem Board ist das
+  nicht gemessen. Das Panel startet dafür nicht neu
+  (`CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n`): ein Neustart würde
+  den Link zum IOmcu und den Heartbeat unterbrechen.
+- Vom Ausfall bis Wi-Fi aus: die Event-Schleife stellt das Event zu (nicht
+  gemessen), der Task des Funkteils sieht es binnen 100 ms und nimmt das
+  Funkteil ohne die zwei Anfragen an den C6 herunter, `esp_wifi_stop()` und
+  `esp_wifi_deinit()`, die jeweils erst mit der Antwort-Zeitüberschreitung
+  von esp_hosted nach 5 s enden würden. Das Herunterfahren wartet bis zu
+  1 500 ms auf eine laufende GitHub-Abfrage und bis zu 20 000 ms auf das
+  Ende ihres Tasks. Die Zeit auf einem Board ist nicht gemessen.
+
+Bekannte Einschränkungen, alle in esp_hosted. Jede hält das Panel mit einem
+Abbruch an, der es neu startet:
+
+- Meldet der Co-Prozessor in seinem Start-Event einen anderen Chip als den
+  ESP32-C6 (`transport_drv.c` 697-702), ein Init-Event länger als 64 Byte
+  (`transport_drv.c` 875-881) oder einen Streaming-SDIO-Modus, den der Host
+  nicht fährt (`transport_drv.c` 944-947). Das Start-Event kommt beim ersten
+  Wi-Fi-Start nach dem Einschalten.
+- Scheitert ein CMD52-Zugriff (ein einzelnes Register) auf den C6, während
+  esp_hosted die Karte startet: `ESP_ERROR_CHECK` auf die Register für
+  Interrupt-Freigabe, Busbreite und Blockgröße
+  (`port_esp_hosted_host_sdio.c` 131-134, 195-217). Ein C6, der während
+  eines Wi-Fi-Starts nur halb antwortet, kann das auslösen.
+- Lassen sich der SDMMC-Controller oder sein Slot 1 nicht einrichten, oder
+  fehlt der Speicher für die Queues, die Pufferpools oder die Tasks von
+  esp_hosted, hält esp_hosted das Panel beim Start mit einer Assertion an,
+  vor `app_main()` und bevor die Anzeige etwas zeigt. Es richtet diese bei
+  jedem Start ein, auch mit Wi-Fi aus.
+
+Die Release-Prüfung beim Start startet das Funkteil von selbst: mit der
+Erinnerung in SETUP > UPDATES an (`SET_UPD_REMIND`, ab Werk an) und einem
+gespeicherten Heimnetz fragt das Panel nach jedem Einschalten GitHub nach
+einem Release. Ein bleibender Fehler der Arten oben startet das Panel dann
+bei jedem Einschalten neu, bis die Erinnerung aus ist oder das Heimnetz
+vergessen ist.
+
+Die SD-Karte auf Slot 0 und der C6 auf Slot 1 teilen sich einen
+SDMMC-Controller:
+
+- ESP-IDFs SDMMC-Treiber hält die Einrichtung eines Slots nicht gegen eine
+  Übertragung auf dem anderen Slot zurück. Der Start eines Slots und der
+  Start einer Karte setzen den Taktteiler des Controllers, den beide Slots
+  teilen, und senden seine Takt-Update-Befehle außerhalb des
+  Anfrage-Mutex des Treibers (`sdmmc_host_set_card_clk()`, `sdmmc_host.c`
+  301-351). Wird die Karte eingebunden, während eine Wi-Fi-Sitzung Daten mit
+  dem C6 austauscht, kann die laufende Übertragung scheitern; esp_hosted
+  meldet dann eine ausgefallene Verbindung, und Wi-Fi bleibt bis zum
+  nächsten Neustart des Panels aus. Umgekehrt kann der Start von Slot 1
+  durch esp_hosted, beim ersten Wi-Fi-Start und bei jedem Reset des C6, den
+  es auslöst, ein laufendes Lesen oder Schreiben der Karte scheitern lassen.
+  Nicht gemessen.
+- ESP-IDFs Einbinden hält Slot 0 bei jedem Fehler nach dem Init des
+  Controllers an (`vfs_fat_sdmmc.c` 310-312) und hält den ganzen Controller
+  an, wenn danach kein Slot mehr gezählt ist (`sdmmc_host.c` 906-923).
+  `storage.c` startet Slot 0 vor dem Einbinden selbst und gibt ohne Anhalten
+  auf, wenn er nicht startet, sodass der Zähler unter der Verbindung zum C6
+  nie auf 0 fällt.
+
+### Kerne und Speicher
+
+Auf dem ESP32-P4 läuft ein Task, der über `xTaskCreate()` oder
+`xTaskCreatePinnedToCore()` ohne Kern angelegt wird, auf Kern 0, und Kern 1
+gehört dem Control-Task und den dort festgelegten Tasks. Dafür linkt das
+Panel mit `--wrap=xTaskCreatePinnedToCore`
+(`components/wifi_access/wifi_radio.c`): esp_hosted legt 6 Tasks mit
+Priorität 23 an, ohne einen Kern zu nennen. `xTaskCreateStatic()` und die
+Aufrufe `xTaskCreate*WithCaps()` sind nicht umgeleitet; esp_hosted nutzt
+`xTaskCreateStatic()` nur mit `CONFIG_ESP_HOSTED_DFLT_TASK_FROM_SPIRAM`,
+das den Build abbricht. Die Konsole listet beim Start jeden Task,
+`task <Name> core <0|1|any> priority <n>`.
+
+Die SD-Karte und der C6 teilen sich den Anfrage-Mutex des SDMMC-Treibers
+von ESP-IDF, der Priorität vererbt. Hält der Run-Log-Task auf Kern 1 ihn für
+einen Schreibvorgang auf die Karte und wartet ein Task von esp_hosted
+darauf, läuft der Run-Log-Task mit Priorität 23 auf Kern 1, über dem
+Control-Task. Die längste Periode des Control-Tasks unter dieser Last ist
+nicht gemessen.
+
+Speicher von esp_hosted, alles interner RAM:
+
+| Teil | Byte | Quelle |
+| --- | ---: | --- |
+| statische Daten | 1 637 | esp_hosted 1 576, esp_wifi_remote 61 (Map-Datei) |
+| Task-Stacks | 20 480 | 4 x 3 072 und 2 x 4 096 |
+| SDIO-Pufferpool | 47 680 | 31 Blöcke zu 1 536 Byte, auf 64 Byte ausgerichtet (`sdio_drv.c` 246-262) |
+| gemeinsamer Pufferpool | 38 464 | 25 Blöcke zu 1 536 Byte, auf 64 Byte ausgerichtet (`transport_drv.c` 298-316) |
+
+Die beiden Pools kommen aus DMA-fähigem (direct memory access) internem RAM
+(`port_esp_hosted_host_os.c` 130-147) und werden vor `app_main()` angelegt,
+auch mit Wi-Fi aus. `CONFIG_ESP_HOSTED_MEMPOOL_PREFER_SPIRAM` würde sie ins
+PSRAM legen; es ist aus, und der freie interne RAM damit ist nicht gemessen.
+Weitere Belegungen von esp_hosted sind hier nicht gezählt. Die
+Konsolenzeile `wifi: radio up` nennt den freien internen RAM mit laufendem
+Funkteil.
+
 ## CI
 
 | Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.4 und v5.5.3, jeweils mit der Prüfung der Task-Stacks, dem Budget des internen RAM und der Prüfung, dass das Image die Symbole des Touch-Injectors enthält, v5.4 mit der Stack-Tabelle und der Tabelle des internen RAM dieses Wikis; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält, und ein dritter mit `-DIOMCU_CONSOLE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Symbol der Konsole enthält; mit v5.4 ein Panel-Build mit `RCBENCH_TOUCH_INJECTOR=OFF` mit der Stack-Prüfung und dem Budget des internen RAM, der fehlschlägt, wenn er ein Injector-Symbol enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
+| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.5.5 für den ESP32-P4 mit der Prüfung des Images gegen seinen Update-Slot, der Prüfung, dass das Image das IOmcu-Image trägt und die Symbole des Touch-Injectors und exFAT enthält, und einem zweiten Build mit `RCBENCH_TOUCH_INJECTOR=OFF`, der fehlschlägt, wenn er ein Injector-Symbol enthält; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält, und ein dritter mit `-DIOMCU_CONSOLE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Symbol der Konsole enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
 | `mutation.yml` | sonntags 03:17 UTC, manuell | jede Mutante der Zeilen von `shared/safety` und `shared/outputs` (3032 Mutanten) in 6 parallelen Shards von Dateien, ohne Obergrenze der Mutantenzahl, nach 18000 s startet in einem Shard keine mehr, die übrigen werden als nicht gelaufen gemeldet; schlägt bei einer überlebenden Mutante nicht fehl; das Ergebnis sind die Artifacts `mutation-full-0` bis `mutation-full-5` und die Job-Zusammenfassungen |
 | `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |

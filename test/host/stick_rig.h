@@ -3,7 +3,7 @@
  * (esc_stick_pages) behind a screen's hooks as MOTOR & ESC drives it, the
  * session reset and opened from PROGRAM's row, a tap on a body coordinate,
  * and the layout constants of esc_stick_int.h mirrored for the hit
- * rectangles.  For test_esc_stick_panel.c; test_motor_program.c drives the
+ * rectangles.  For test_esc_stick_panel.c and test_esc_stick_panel_*.c; test_motor_program.c drives the
  * session through MOTOR & ESC itself.
  *
  * For the host tests.

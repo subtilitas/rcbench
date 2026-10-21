@@ -1,6 +1,10 @@
-/*
- * The panel's Wi-Fi over esp_wifi, esp_http_server, esp_http_client and a
- * UDP (user datagram protocol) socket for the mDNS name.
+/**
+ * @file wifi_access.c
+ * @brief The panel's Wi-Fi over esp_wifi, esp_http_server, esp_http_client
+ *        and a UDP (user datagram protocol) socket for the mDNS name.
+ *
+ * The radio under esp_wifi is the board's ESP32-C6 on SDIO, brought up by
+ * wifi_radio.h.
  *
  * Three tasks touch the session: the UI loop (start, close, tick), the event
  * loop (what the radio reports) and the HTTP server (requests).  Everything
@@ -31,7 +35,6 @@
 #include "esp_http_server.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
-#include "esp_mac.h"
 #include "esp_netif.h"
 #include "esp_random.h"
 #include "esp_timer.h"
@@ -46,6 +49,7 @@
 #include "wa_mdns.h"
 #include "wa_page.h"
 #include "wa_send.h"
+#include "wifi_radio.h"
 #include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
@@ -1283,9 +1287,9 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 
 /*
  * A step of a start that failed: its name, the error, and what internal
- * RAM held at that moment.  The Wi-Fi driver takes about 51 KB of
- * DMA-capable internal RAM (direct memory access) at esp_wifi_init(), and a
- * start that finds less fails there (tools/ram_budget.py).
+ * RAM held at that moment.  A start that finds too little internal RAM
+ * fails at the allocation that runs short; how much the radio's driver
+ * through the ESP32-C6 takes is not measured.
  */
 static void start_failed(const char *step, esp_err_t e)
 {
@@ -1341,6 +1345,14 @@ static bool fetch_wait(uint32_t wait_ms)
     return !atomic_load(&s.fetch_alive);
 }
 
+/**
+ * @brief Take the radio down: mDNS, the fetch, the page's server, the
+ *        driver and the interface.
+ *
+ * After a failed C6 link, esp_wifi_stop() and esp_wifi_deinit() are not
+ * called: each is a request to the C6, which is held in reset then, and
+ * would end only at esp_hosted's response time-out, 5 s each.
+ */
 static void radio_down(void)
 {
     atomic_store(&s.abort, true);
@@ -1358,8 +1370,10 @@ static void radio_down(void)
         s.httpd = NULL;
     }
     if (s.radio_up) {
-        (void)esp_wifi_stop();
-        (void)esp_wifi_deinit();
+        if (!wifi_radio_failed()) {
+            (void)esp_wifi_stop();
+            (void)esp_wifi_deinit();
+        }
         if (s.netif != NULL) {
             esp_netif_destroy_default_wifi(s.netif);
             s.netif = NULL;
@@ -1375,10 +1389,25 @@ static void radio_down(void)
     atomic_store(&s.down, true);
 }
 
+/**
+ * @brief Bring the radio up in @p mode: the C6's link, the interface, the
+ *        driver, the configuration and, in AP and JOIN, the page's server.
+ *
+ * @param mode The session's mode.
+ * @param w    The session, for the access point's password.
+ * @param c    The kept home network, for JOIN and FETCH.
+ * @return true when every step worked; false after the first that failed,
+ *         logged by start_failed().
+ */
 static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
 {
     atomic_store(&s.down, false);
     if (!net_once()) {
+        return false;
+    }
+    esp_err_t e = wifi_radio_link();
+    if (e != ESP_OK) {
+        start_failed("wifi_radio_link", e);
         return false;
     }
     s.up_mode = mode;
@@ -1392,7 +1421,7 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     }
     wifi_init_config_t ic = WIFI_INIT_CONFIG_DEFAULT();
     ic.nvs_enable = 0;   /* nothing of the radio's is kept */
-    esp_err_t e = esp_wifi_init(&ic);
+    e = esp_wifi_init(&ic);
     if (e != ESP_OK) {
         start_failed("esp_wifi_init", e);
         esp_netif_destroy_default_wifi(s.netif);
@@ -1457,6 +1486,13 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     return true;
 }
 
+/**
+ * @brief The task that owns the radio: compares what the session wants
+ *        with what runs, and brings the radio up or down; a failed C6 link
+ *        takes it down.
+ *
+ * @param arg Unused.
+ */
 static void worker(void *arg)
 {
     (void)arg;
@@ -1470,7 +1506,7 @@ static void worker(void *arg)
         const wa_conf_t c = s.conf;
         unlock();
         if (s.radio_up || !atomic_load(&s.down)) {
-            if (!want || gen != s.up_gen) {
+            if (!want || gen != s.up_gen || wifi_radio_failed()) {
                 radio_down();
                 ESP_LOGI(TAG, "radio off");
             }
@@ -1486,7 +1522,9 @@ static void worker(void *arg)
                 unlock();
             } else {
                 wa_mdns_tries_reset(&s.mdns_tries);
-                ESP_LOGI(TAG, "radio up, mode %d", (int)w.mode);
+                ESP_LOGI(TAG, "radio up, mode %d; internal RAM %u B free",
+                         (int)w.mode, (unsigned)heap_caps_get_free_size(
+                                          MALLOC_CAP_INTERNAL));
             }
         }
         if (s.radio_up && w.state == WA_ST_JOINED
@@ -1536,7 +1574,7 @@ esp_err_t wifi_access_init(uint32_t slot, const fw_image_info_t *running)
     fw_upload_init(&s.up, NULL, 0u, slot);
     wa_fetch_init(&s.f, running->version);
     uint8_t mac[6] = { 0 };
-    (void)esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
+    wifi_radio_mac(mac);
     wa_name(mac, s.name);
     atomic_store(&s.down, true);
     return ESP_OK;

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Lang, Selection } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
+import { parseHash, shareHash } from '../src/hash.ts';
 import { t } from '../src/i18n.ts';
 import { optionsOf } from '../src/names.ts';
 import { SEARCH, buyNote, buyTokens, csvField, haveTicks, listCsv, listText, partsList, searchQuery, searchUrl } from '../src/view/buy.ts';
@@ -21,7 +22,7 @@ const URL = 'https://example.invalid/#v=1';
 const ids = (lines: { part: { id: string } }[]): string[] => lines.map((l) => l.part.id);
 
 test('searchQuery: maker and ordering name each in quotes', () => {
-  assert.equal(searchQuery('Waveshare', 'ESP32-S3-Touch-LCD-7'), '"Waveshare" "ESP32-S3-Touch-LCD-7"');
+  assert.equal(searchQuery('Waveshare', 'ESP32-P4-WIFI6-Touch-LCD-7B'), '"Waveshare" "ESP32-P4-WIFI6-Touch-LCD-7B"');
 });
 
 test('searchQuery: a spec without a maker is split at ", ", each term in quotes; a double quote leaves a term', () => {
@@ -169,12 +170,25 @@ test('every row to buy has a token; a part with 2 or 3 rows has a token per row'
 
 test('a "have it" tick moves its row from the rows to buy to the rows the visitor has', () => {
   const all = partsList(view({}));
-  const v = withHave({}, ['wire.dmm', 'panel']);
+  const v = withHave({}, ['wire.dmm', 'panel.p47b']);
   const list = partsList(v);
-  assert.deepEqual(tokens(list.have), ['panel', 'wire.dmm']);
-  assert.deepEqual(tokens(list.buy), tokens(all.buy).filter((x) => x !== 'wire.dmm' && x !== 'panel'));
+  assert.deepEqual(tokens(list.have), ['panel.p47b', 'wire.dmm']);
+  assert.deepEqual(tokens(list.buy), tokens(all.buy).filter((x) => x !== 'wire.dmm' && x !== 'panel.p47b'));
   // The other rows of the wire stay to buy.
   assert.ok(tokens(list.buy).includes('wire.pair') && tokens(list.buy).includes('wire.jumper'));
+});
+
+/** Checks that the ticks of an older link for the 7-inch board and the 3 A charger do not carry over. */
+test('a link with the ticks `panel` and `usb.charger` of an older version leaves both new rows under the rows to buy', () => {
+  const hash = '#v=1&h=panel,usb.charger';
+  const parsed = parseHash(hash, DEFAULT_OPTIONS);
+  const v = { ...view(parsed.selection), have: parsed.have };
+  assert.deepEqual(haveTicks(v.setup, v.options, parsed.have), []);
+  const list = partsList(v);
+  assert.deepEqual(tokens(list.have), []);
+  assert.ok(tokens(list.buy).includes('panel.p47b'));
+  assert.ok(tokens(list.buy).includes('usb.charger3a'));
+  assert.equal(shareHash(hash, DEFAULT_OPTIONS, CATALOGUE, haveTicks(v.setup, v.options, parsed.have)), '#v=1');
 });
 
 test('a tick counts only while its row is a row to buy of the setup', () => {
@@ -195,12 +209,12 @@ test('a tick counts only while its row is a row to buy of the setup', () => {
   const servo = view({ functions: ['servo'] });
   assert.deepEqual(haveTicks(servo.setup, servo.options, ['servo', 'ssup']), []);
   // Each tick counts once.
-  assert.deepEqual(haveTicks(bare.setup, bare.options, ['panel', 'panel']), ['panel']);
+  assert.deepEqual(haveTicks(bare.setup, bare.options, ['panel.p47b', 'panel.p47b']), ['panel.p47b']);
 });
 
 for (const lang of ['en', 'de'] as const) {
   test(`${lang}: the text form lists the ticked rows under "You have", the CSV leaves them out`, () => {
-    const v = withHave({ functions: ['servo'] }, ['panel', 'wire.dmm'], lang);
+    const v = withHave({ functions: ['servo'] }, ['panel.p47b', 'wire.dmm'], lang);
     const list = partsList(v);
     const text = listText(v, URL);
     const head = `\n${t(lang, 'have')}\n`;

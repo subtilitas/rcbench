@@ -1,5 +1,8 @@
 /*
- * The SUPPLY screen.  See supply_screen.h.
+ * The SUPPLY screen.  See supply_screen.h.  This file holds the state, the
+ * commands and the screen's interface; supply_events.c takes the touch
+ * events and frames, supply_draw.c draws, and supply_screen_int.h is what
+ * the three share.
  *
  * MOTOR & ESC's frame and its rules for what repaints when: chrome once per
  * framebuffer, the numbers when a sample arrives, the plot when it moves,
@@ -11,13 +14,10 @@
 #include "supply_screen.h"
 
 #include <math.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
-#include "bench_state.h"
 #include "settings.h"
-#include "ui_hero.h"
 #include "ui_keypad.h"
 #include "ui_plot.h"
 #include "ui_slider.h"
@@ -27,108 +27,9 @@
 #include "ui_widgets.h"
 #include "ui_workbench.h"
 
-#define W UI_PANEL_W
-#define H UI_BODY_H   /* the router owns the band */
+#include "supply_screen_int.h"
 
-#define PAD       UI_MARGIN
-#define INNER     6
-#define COL_GAP   6
-#define LEFT_X    PAD
-#define LEFT_W    546
-#define RIGHT_X   (LEFT_X + LEFT_W + COL_GAP)
-#define RIGHT_W   (W - PAD - RIGHT_X)
-
-/*
- * The task strip at the top (ui_workbench.h), LIVE | SETTINGS, as on MOTOR
- * & ESC and SERVO.  To its right on the same row the line that says where
- * the numbers come from, and the range the set points may take: in sight
- * on both tasks and under the keypad and the question.
- */
-#define TASKS     (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_SETTINGS))
-#define INFO_X    (UI_WB_STRIP_X + 2 * UI_WB_TAB_W + UI_WB_TAB_GAP + 3 + 12)
-#define INFO_Y    (UI_WB_STRIP_Y + 4)
-
-/* Under the strip, on LIVE: PLOT | TABLE, over the plot. */
-#define HDR_Y     UI_WB_PAGE_Y
-#define HDR_H     18
-
-#define UP_Y      (HDR_Y + HDR_H + 4)
-#define UP_H      (LO_Y - 6 - UP_Y)
-/* The rail's four cards, from the page's top down to the plot's foot. */
-#define RAIL_Y    UI_WB_PAGE_Y
-#define CARD_GAP  4
-#define CARD_H    ((UP_Y + UP_H - RAIL_Y - 3 * CARD_GAP) / 4)
-
-/* The lower row: the set points on the left, the CONTROL card on the right,
- * at the height MOTOR & ESC puts its throttle and CONTROL card. */
-#define LO_Y      272
-#define LO_H      (H - LO_Y - PAD)
-
-#define TITLE_H   20
-#define LEG_Y     (UP_Y + TITLE_H + 4)
-#define LEG_H     30
-#define PLOT_X    (LEFT_X + INNER)
-#define PLOT_W    (LEFT_W - 2 * INNER)
-#define PLOT_Y    (LEG_Y + LEG_H + 4)
-#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y)
-
-/*
- * The set points: two rows in the lower left, each a label and its value
- * over a track with a fine step at each end.  The step buttons move by a
- * tenth of a volt or of an amp, which the slider is too coarse to place;
- * the slider covers the range, and both snap to what the supply takes.  The
- * value itself opens the keypad.
- */
-#define SET_ROW_H   62
-#define SET_Y0      (LO_Y + TITLE_H + 4)
-#define SET_TEXT_H  20
-#define SET_CTRL_DY 24
-#define SET_CTRL_H  30
-#define NUDGE_W     54
-#define SET_TRACK_X (LEFT_X + INNER + NUDGE_W + 6)
-#define SET_TRACK_W (LEFT_W - 2 * INNER - 2 * (NUDGE_W + 6))
-#define NUDGE_V     0.1f
-#define NUDGE_I     0.1f
-
-#define BTN_H     UI_BTN_H
-#define OUT_Y     (LO_Y + TITLE_H + 8)
-#define TOTALS_Y  (OUT_Y + BTN_H + 10)
-#define RESET_Y   (LO_H + LO_Y - PAD - BTN_H)
-
-#define TAB_Y     HDR_Y
-#define TAB_H     HDR_H
-#define TAB_W     124
-
-/*
- * The keypad, the question and SETTINGS' page all take the left column under
- * the strip, plot and set points, and leave the right column -- the readings
- * and OUTPUT OFF -- where it is and working.
- */
-#define OV_X      LEFT_X
-#define OV_Y      UI_WB_PAGE_Y
-#define OV_W      LEFT_W
-#define OV_H      (H - OV_Y - PAD)
-#define OV_ROW_H  36
-#define OV_VAL_W  100
-/* The caps and start values on the left, 210 px; the trips, their help and
- * the confirmations on the right, 300 px, the 37 cells the help's lines
- * take. */
-#define OV_COL_W  210
-#define OV_COL1_X (OV_X + 10 + OV_COL_W + 16)
-#define OV_COL1_W (OV_X + OV_W - 10 - OV_COL1_X)
-
-/* The sample rate of the panel's loop, which is the plot's time base. */
-#define SAMPLE_HZ 20.0f
-
-/*
- * Three readings, and the two set points drawn dashed on their readings'
- * scales: a supply in CC (constant current) shows its voltage falling away
- * from the line it was set to.
- */
-enum { S_VOLT = 0, S_CURR, S_POWER, S_READINGS, S_VSET = S_READINGS, S_ISET,
-       S_COUNT };
-
-static const ui_plot_series_t k_series[S_COUNT] = {
+const ui_plot_series_t sup_series[S_COUNT] = {
     { "VOLT", "V", 0, 2, 5.0f,  0 },
     { "CURR", "A", 0, 2, 1.0f,  0 },
     { "PWR",  "W", 0, 1, 10.0f, 0 },
@@ -138,121 +39,8 @@ static const ui_plot_series_t k_series[S_COUNT] = {
 
 static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
                                               TX_MO_TAB_TABLE };
-
-/* What a press is on.  One contact holds the screen at a time. */
-enum { P_NONE = 0, P_OUTPUT, P_RESET, P_V_DOWN, P_V_UP, P_I_DOWN, P_I_UP,
-       P_V_SLIDER, P_I_SLIDER, P_TABS, P_CARD_V, P_CARD_I, P_TEXT_V,
-       P_TEXT_I, P_STRIP, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD, P_MODRESET };
-
-/* Where a set point change came from, for the question it may need. */
-enum { FROM_SLIDER = 0, FROM_KEYPAD };
-
-/* What the keypad is typing. */
-enum { KP_NONE = 0, KP_SET_V, KP_SET_I, KP_SETTING };
-
-/*
- * The settings SETTINGS' page edits, in two columns.  A start value is
- * capped like the set point it starts, and a trip of 0 is off.
- */
-typedef struct {
-    setting_id_t id;
-    ui_text_id_t label;
-    int          col;
-    int          y;          /* from the overlay's top */
-    int          decimals;
-} limit_row_t;
-
-static const limit_row_t k_rows[] = {
-    { SET_SUPPLY_V_MAX,   TX_SUP_ROW_V_MAX,   0, 38,  2 },
-    { SET_SUPPLY_I_MAX,   TX_SUP_ROW_I_MAX,   0, 80,  2 },
-    { SET_SUPPLY_V_START, TX_SUP_ROW_V_START, 0, 156, 2 },
-    { SET_SUPPLY_I_START, TX_SUP_ROW_I_START, 0, 198, 2 },
-    { SET_SUPPLY_TRIP_I,  TX_SUP_ROW_TRIP_I,  1, 38,  2 },
-    { SET_SUPPLY_TRIP_V,  TX_SUP_ROW_TRIP_V,  1, 80,  2 },
-    { SET_SUPPLY_TRIP_MS, TX_SUP_ROW_TRIP_MS, 1, 122, 0 },
-    { SET_SUPPLY_CONFIRM_SLIDE, TX_SUP_ROW_CONFIRM_SLIDE, 1, 260, 0 },
-    { SET_SUPPLY_CONFIRM_KEYS,  TX_SUP_ROW_CONFIRM_KEYS,  1, 304, 0 },
-};
-#define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
-
-static struct {
-    ui_plot_t       plot;
-    ui_wb_strip_t   wb;       /* LIVE | SETTINGS                        */
-    uint32_t        strip_rev;
-    uint32_t        drawn_strip[2];
-    ui_tabs_t       tabs;     /* PLOT | TABLE, on LIVE                  */
-    ui_slider_t     v_slider;
-    ui_slider_t     i_slider;
-    supply_caps_t   caps;     /* what the supply can be set to          */
-    supply_limits_t lim;      /* what the operator allows               */
-    supply_caps_t   eff;      /* the caps narrowed by the limits        */
-    supply_state_t  sup;
-    /*
-     * The set points the supply is given.  The sliders show them, except
-     * while a drag is under way or a change waits for its confirmation;
-     * see propose().
-     */
-    float           cv, ci;
-    /* An ON this screen has asked for and not yet seen applied: the output
-     * is treated as live from the moment it is asked; see confirm_needed(). */
-    bool            on_asked;
-    /* A servo programming port is out of PWM: the IOmcu takes an OFF
-     * and nothing else, so this screen offers nothing else; see
-     * supply_screen_set_port_held(). */
-    bool            port_held;
-    /* The screen whose ON the output is, while it is on or an ON is on
-     * its way; and an OFF owed for leaving it while a programming port
-     * held the supply, sent when the port lets go.  See
-     * supply_screen_left(). */
-    supply_by_t     owner;
-    bool            off_owed;
-    bool            confirm_open;
-    uint32_t        off_count;      /* reported ON-to-OFF edges */
-    /* Stops seen (supply_screen_cancel_on()), and the count the question
-     * was asked under: see confirm_stands(). */
-    uint32_t        stops;
-    uint32_t        confirm_stops;
-    /* Whether OUTPUT's press began on a live output: an OFF tap rather
-     * than an ON hold, whatever the output does before it lifts. */
-    bool            press_on;
-    float           pend_v, pend_i;
-    gfx_rect_t      apply_btn, discard_btn;
-    bool            model;
-    uint32_t        baud;          /* PD mini UART rate; 0: not shown */
-    int             tx1, rx1;      /* PD mini UART pins, GPIO + 1; 0 none */
-    /* The output as this screen believes it: what the supply reported, and
-     * an OFF this screen has asked for and not yet seen answered. */
-    bool            on;
-    /* The output as the supply reports it, which bounds a run. */
-    bool            out_reported;
-    supply_cmd_t    pending;
-    unsigned        drawn_mask;
-    uint32_t        drawn_push[2];
-    uint32_t        drawn_plot[2];
-    uint8_t         drawn_title[2];
-    uint32_t        ctrl_rev;
-    uint32_t        drawn_ctrl[2];
-    uint32_t        set_rev;
-    uint32_t        drawn_set[2];
-    uint32_t        out_rev;
-    uint32_t        drawn_out[2];
-    uint32_t        ov_rev;
-    uint32_t        drawn_ov[2];
-    uint8_t         drawn_save[2];
-    uint32_t        drawn_kp[2];
-    ui_hold_t       hold;
-    gfx_rect_t      out_rect;
-    gfx_rect_t      reset_rect;
-    gfx_rect_t      modreset_btn;   /* RESET PD MINI, on SETTINGS */
-    gfx_rect_t      v_down, v_up, i_down, i_up;
-    ui_keypad_t     kp;
-    int             kp_target;
-    setting_id_t    kp_setting;
-    int             pressed;
-    int             press_row;
-    uint8_t         press_id;
-    bool            have_press;
-} s;
+/* The screen's state; supply_screen_int.h names it s. */
+sup_state_t sup_s;
 
 static void forget_drawn(void)
 {
@@ -276,7 +64,7 @@ void supply_invalidate(void)
     forget_drawn();
 }
 
-static void bind_colours(void)
+void sup_bind_colours(void)
 {
     s.plot.series[S_VOLT].color  = ui_theme_color(UI_C_VOLT);
     s.plot.series[S_CURR].color  = ui_theme_color(UI_C_CURR);
@@ -308,7 +96,7 @@ static gfx_rect_t nudge_rect(int row, bool up)
 }
 
 /* A set point's value, at the right of its label line: tapped, the keypad. */
-static gfx_rect_t set_text_rect(int row)
+gfx_rect_t sup_set_text_rect(int row)
 {
     const int half = (LEFT_W - 2 * INNER) / 2;
     return (gfx_rect_t){ (int16_t)(LEFT_X + INNER + half),
@@ -316,31 +104,31 @@ static gfx_rect_t set_text_rect(int row)
                          (int16_t)half, SET_TEXT_H + 2 };
 }
 
-static gfx_rect_t card_rect(int i)
+gfx_rect_t sup_card_rect(int i)
 {
     return (gfx_rect_t){ RIGHT_X, (int16_t)(RAIL_Y + i * (CARD_H + CARD_GAP)),
                          RIGHT_W, CARD_H };
 }
 
 /* The strip's row with its trough's 3 px around it. */
-static gfx_rect_t strip_area(void)
+gfx_rect_t sup_strip_area(void)
 {
     const gfx_rect_t r = ui_wb_strip_rect(&s.wb);
     return (gfx_rect_t){ (int16_t)(r.x - 3), (int16_t)(r.y - 3),
                          (int16_t)(r.w + 6), (int16_t)(r.h + 6) };
 }
 
-static bool on_live(void)
+bool sup_on_live(void)
 {
     return ui_wb_strip_task(&s.wb) == UI_WB_LIVE;
 }
 
-static gfx_rect_t overlay_area(void)
+gfx_rect_t sup_overlay_area(void)
 {
     return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
 }
 
-static gfx_rect_t row_rect(int i)
+gfx_rect_t sup_row_rect(int i)
 {
     const bool left = (k_rows[i].col == 0);
     return (gfx_rect_t){ (int16_t)(left ? OV_X + 10 : OV_COL1_X),
@@ -348,9 +136,9 @@ static gfx_rect_t row_rect(int i)
                          (int16_t)(left ? OV_COL_W : OV_COL1_W), OV_ROW_H };
 }
 
-static gfx_rect_t row_value_rect(int i)
+gfx_rect_t sup_row_value_rect(int i)
 {
-    const gfx_rect_t r = row_rect(i);
+    const gfx_rect_t r = sup_row_rect(i);
     return (gfx_rect_t){ (int16_t)(r.x + r.w - OV_VAL_W), r.y, OV_VAL_W,
                          OV_ROW_H };
 }
@@ -401,7 +189,7 @@ static supply_limits_t limits_from_settings(void)
 }
 
 /* The limits as the settings hold them now, applied to the sliders. */
-static void refresh_limits(void)
+void sup_refresh_limits(void)
 {
     s.lim = limits_from_settings();
     s.eff = supply_caps_limited(&s.caps, &s.lim);
@@ -437,7 +225,7 @@ static void reset(void)
      * the settings' own default. */
     s.lim = (supply_limits_t){ caps.v_max, caps.i_max, 0.0f, 0.0f, 0.1f };
     s.eff = supply_caps_limited(&s.caps, &s.lim);
-    ui_plot_init(&s.plot, k_series, S_COUNT, (float)PLOT_W / SAMPLE_HZ);
+    ui_plot_init(&s.plot, sup_series, S_COUNT, (float)PLOT_W / SAMPLE_HZ);
     ui_plot_set_running(&s.plot, false);
     ui_wb_strip_init(&s.wb, TASKS, UI_WB_STRIP_X, UI_WB_STRIP_Y);
     ui_tabs_init_text(&s.tabs, k_tab_labels, SUPPLY_PANE_COUNT,
@@ -465,7 +253,7 @@ static void reset(void)
                                   (int16_t)(OV_Y + 270), 210, 60 };
     s.pressed = P_NONE;
     s.kp.pressed = -1;
-    bind_colours();
+    sup_bind_colours();
 }
 
 /* ---------------------------------------------------------------- commands */
@@ -474,7 +262,7 @@ static void reset(void)
  * The output's owner goes with the output: once it is off and no ON is on
  * its way, nobody owns it and no OFF is owed.
  */
-static void owner_settle(void)
+void sup_owner_settle(void)
 {
     if (!s.on && !s.on_asked && !s.pending.on) {
         s.owner    = SUPPLY_BY_NONE;
@@ -482,7 +270,7 @@ static void owner_settle(void)
     }
 }
 
-static void post_on(supply_by_t by)
+void sup_post_on(supply_by_t by)
 {
     /* An OFF already asked for stands: two touches in one frame must not
      * let an ON land on top of it.  And none while a programming port
@@ -495,7 +283,7 @@ static void post_on(supply_by_t by)
     }
 }
 
-static void post_off(void)
+void sup_post_off(void)
 {
     s.pending.off = true;
     s.pending.on  = false;
@@ -549,7 +337,7 @@ const supply_state_t *supply_screen_reading(void)
 }
 
 /* The press is over, whatever it was on. */
-static void let_go(void)
+void sup_let_go(void)
 {
     if (s.have_press || s.pressed != P_NONE) {
         s.have_press = false;
@@ -580,7 +368,7 @@ void supply_screen_set_output(bool on)
         if (on) {
             ui_hold_reached(&s.hold);
         } else if (ui_hold_left(&s.hold) && s.pressed == P_OUTPUT) {
-            let_go();
+            sup_let_go();
         }
         if (!on && s.confirm_open) {
             /* The question was about a live output and there is none: it
@@ -593,7 +381,7 @@ void supply_screen_set_output(bool on)
         ++s.out_rev;
         ++s.ctrl_rev;
     }
-    owner_settle();
+    sup_owner_settle();
 }
 
 void supply_screen_set_caps(const supply_caps_t *caps)
@@ -646,7 +434,7 @@ float supply_screen_set_i(void) { return s.ci; }
 
 void supply_screen_settings_loaded(void)
 {
-    refresh_limits();
+    sup_refresh_limits();
     s.cv = supply_snap(settings_get(SET_SUPPLY_V_START), s.eff.v_min,
                        s.eff.v_max, s.eff.v_step);
     s.ci = supply_snap(settings_get(SET_SUPPLY_I_START), s.eff.i_min,
@@ -660,7 +448,7 @@ void supply_screen_settings_loaded(void)
  * Whether a change from @p from waits for a confirmation: only while the
  * output is on, and only as the operator's settings ask.
  */
-static bool confirm_needed(int from)
+bool sup_confirm_needed(int from)
 {
     /* Live from the moment an ON is asked for: the first sample to show it
      * can be 50 ms behind, and a step button acts on its press. */
@@ -676,7 +464,7 @@ static bool confirm_needed(int from)
  * While one is asked, the sliders go back to the set points the supply has,
  * and the change is held in pend_v and pend_i.
  */
-static void propose(int from)
+void sup_propose(int from)
 {
     /* Snapped here and not on the slider: a slider written during a drag
      * re-anchors the drag on the written value while the press point stays
@@ -695,7 +483,7 @@ static void propose(int from)
     if (v == s.cv && i == s.ci) {
         return;
     }
-    if (confirm_needed(from)) {
+    if (sup_confirm_needed(from)) {
         s.pend_v = v;
         s.pend_i = i;
         ui_slider_set(&s.v_slider, s.cv);
@@ -719,13 +507,13 @@ static void propose(int from)
  * in the frame of the stop finds the output still on and is refused by the
  * count.
  */
-static bool confirm_stands(void)
+bool sup_confirm_stands(void)
 {
     return (s.on || s.on_asked) && s.stops == s.confirm_stops;
 }
 
 /* The question answered: APPLY gives the supply the change, CANCEL drops it. */
-static void confirm_close(bool apply)
+void sup_confirm_close(bool apply)
 {
     if (apply && !s.port_held) {
         s.cv = s.pend_v;
@@ -745,7 +533,7 @@ supply_limits_t supply_screen_limits(void)
 
 supply_caps_t supply_screen_caps(void) { return s.eff; }
 
-bool supply_screen_typed_asks(void) { return confirm_needed(FROM_KEYPAD); }
+bool supply_screen_typed_asks(void) { return sup_confirm_needed(FROM_KEYPAD); }
 
 void supply_screen_set_port_held(bool held)
 {
@@ -764,7 +552,7 @@ void supply_screen_set_port_held(bool held)
             || s.pressed == P_APPLY || s.pressed == P_CARD_V
             || s.pressed == P_CARD_I || s.pressed == P_TEXT_V
             || s.pressed == P_TEXT_I) {
-            let_go();
+            sup_let_go();
         }
         ui_slider_release(&s.v_slider);
         ui_slider_release(&s.i_slider);
@@ -776,7 +564,7 @@ void supply_screen_set_port_held(bool held)
         if (s.kp.open && (s.kp_target == KP_SET_V
                           || s.kp_target == KP_SET_I)) {
             if (s.pressed == P_KEYPAD) {
-                let_go();
+                sup_let_go();
             }
             ui_keypad_close(&s.kp);
             s.kp_target = KP_NONE;
@@ -784,11 +572,11 @@ void supply_screen_set_port_held(bool held)
         s.confirm_open = false;
         ui_slider_set(&s.v_slider, s.cv);
         ui_slider_set(&s.i_slider, s.ci);
-        owner_settle();
+        sup_owner_settle();
     } else if (s.off_owed) {
         /* The screen that switched the output on was left while the port
          * held it: the OFF it owed goes now. */
-        post_off();
+        sup_post_off();
     }
     /* Let go, the set points come under the caps again. */
     apply_caps();
@@ -829,7 +617,7 @@ bool supply_screen_output_live(void) { return s.on || s.on_asked; }
 
 uint32_t supply_screen_off_count(void) { return s.off_count; }
 
-void supply_screen_ask_on(supply_by_t by) { post_on(by); }
+void supply_screen_ask_on(supply_by_t by) { sup_post_on(by); }
 
 supply_by_t supply_screen_owner(void) { return s.owner; }
 
@@ -863,11 +651,11 @@ void supply_screen_left(supply_by_t by)
         return;
     }
     if (s.on || s.on_asked || s.pending.on) {
-        post_off();
+        sup_post_off();
     }
 }
 
-void supply_screen_ask_off(void) { post_off(); }
+void supply_screen_ask_off(void) { sup_post_off(); }
 
 bool supply_screen_off_pending(void) { return s.pending.off; }
 
@@ -878,7 +666,7 @@ bool supply_screen_output_held(void)
 
 void supply_screen_limits_changed(void)
 {
-    refresh_limits();
+    sup_refresh_limits();
 }
 
 void supply_screen_set_on_coming(bool coming)
@@ -886,7 +674,7 @@ void supply_screen_set_on_coming(bool coming)
     if (!coming && !s.pending.on) {
         s.on_asked = false;
     }
-    owner_settle();
+    sup_owner_settle();
 }
 
 void supply_screen_cancel_on(void)
@@ -901,13 +689,13 @@ void supply_screen_cancel_on(void)
         changed = true;
     }
     if (s.pressed == P_OUTPUT && !s.on) {
-        let_go();
+        sup_let_go();
         changed = true;
     }
     /* And an APPLY being pressed on the question: its release must not
      * change a set point after the stop. */
     if (s.pressed == P_APPLY) {
-        let_go();
+        sup_let_go();
         changed = true;
     }
     if (s.hold.down || s.hold.held_s > 0.0f) {
@@ -918,1161 +706,7 @@ void supply_screen_cancel_on(void)
         ++s.out_rev;
         ++s.ctrl_rev;
     }
-    owner_settle();
-}
-
-/* ------------------------------------------------------------------ keypad */
-
-static void open_keypad(int target, setting_id_t id)
-{
-    if (target == KP_SET_V) {
-        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_VOLTAGE), "V", s.cv,
-                       s.eff.v_min, s.eff.v_max, 2);
-    } else if (target == KP_SET_I) {
-        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_CURRENT_LIMIT), "A",
-                       s.ci,
-                       s.eff.i_min, s.eff.i_max, 2);
-    } else {
-        const setting_def_t *d = settings_def(id);
-        float lo = d->min;
-        float hi = d->max;
-        /* A cap reaches what the supply can do; a start value what the caps
-         * allow.  A trip goes down to 0, which is off. */
-        if (id == SET_SUPPLY_V_MAX) {
-            lo = s.caps.v_min;
-            hi = s.caps.v_max;
-        } else if (id == SET_SUPPLY_I_MAX) {
-            lo = s.caps.i_min;
-            hi = s.caps.i_max;
-        } else if (id == SET_SUPPLY_V_START) {
-            lo = s.eff.v_min;
-            hi = s.eff.v_max;
-        } else if (id == SET_SUPPLY_I_START) {
-            lo = s.eff.i_min;
-            hi = s.eff.i_max;
-        }
-        const char *label = ui_setting_label(id);
-        int decimals = 2;
-        for (int i = 0; i < ROW_COUNT; ++i) {
-            if (k_rows[i].id == id) {
-                label    = ui_tr(k_rows[i].label);
-                decimals = k_rows[i].decimals;
-            }
-        }
-        ui_keypad_open(&s.kp, overlay_area(), label, d->unit, settings_get(id),
-                       lo, hi, decimals);
-    }
-    s.kp_target  = target;
-    s.kp_setting = id;
-    supply_invalidate();
-}
-
-static void keypad_done(ui_keypad_result_t r, float v)
-{
-    if (r == UI_KEYPAD_NONE) {
-        if (s.kp.open) {
-            return;
-        }
-    } else if (r == UI_KEYPAD_OK) {
-        if (s.kp_target == KP_SET_V) {
-            ui_slider_set(&s.v_slider, supply_snap(v, s.eff.v_min, s.eff.v_max,
-                                                   s.eff.v_step));
-            s.kp_target = KP_NONE;
-            propose(FROM_KEYPAD);
-        } else if (s.kp_target == KP_SET_I) {
-            ui_slider_set(&s.i_slider, supply_snap(v, s.eff.i_min, s.eff.i_max,
-                                                   s.eff.i_step));
-            s.kp_target = KP_NONE;
-            propose(FROM_KEYPAD);
-        } else if (s.kp_target == KP_SETTING) {
-            /* Onto the setting's own step the safe way: a cap rounds down,
-             * so a typed 12.01 V allows no more than 12.00 V; a trip typed
-             * above 0 stays a trip, never rounded to off. */
-            const setting_def_t *d = settings_def(s.kp_setting);
-            if (d->step > 0.0f && (s.kp_setting == SET_SUPPLY_V_MAX
-                                   || s.kp_setting == SET_SUPPLY_I_MAX)) {
-                v = d->min + floorf((v - d->min) / d->step + 1e-3f) * d->step;
-            } else if (d->step > 0.0f && v > 0.0f && v < d->step
-                       && (s.kp_setting == SET_SUPPLY_TRIP_I
-                           || s.kp_setting == SET_SUPPLY_TRIP_V)) {
-                v = d->step;
-            }
-            /* Kept as soon as the bench allows a flash write; see
-             * settings_request_save().  An edit on SETUP that was not saved
-             * is written with it. */
-            settings_set(s.kp_setting, v);
-            refresh_limits();
-            settings_request_save();
-        }
-    }
-    s.kp_target = KP_NONE;
-    supply_invalidate();
-}
-
-/* ------------------------------------------------------------------ events */
-
-/* A set point moved by @p dv volts and @p di amps, snapped to the caps. */
-static void nudge(float dv, float di)
-{
-    ui_slider_set(&s.v_slider, supply_snap(s.v_slider.value + dv, s.eff.v_min,
-                                           s.eff.v_max, s.eff.v_step));
-    ui_slider_set(&s.i_slider, supply_snap(s.i_slider.value + di, s.eff.i_min,
-                                           s.eff.i_max, s.eff.i_step));
-    ++s.set_rev;
-    propose(FROM_SLIDER);
-}
-
-static void take(const touch_event_t *evt, int code)
-{
-    s.have_press = true;
-    s.press_id   = evt->point.id;
-    s.pressed    = code;
-    ++s.ctrl_rev;
-    ++s.ov_rev;
-}
-
-static void down(const touch_event_t *evt)
-{
-    const int x = evt->point.x, y = evt->point.y;
-
-    /* The output and the peaks work whatever covers the left column. */
-    if (gfx_rect_contains(s.out_rect, x, y)) {
-        /* Off is always taken; on is not while a port holds the supply. */
-        if (!s.on && s.port_held) {
-            return;
-        }
-        take(evt, P_OUTPUT);
-        s.press_on = s.on;
-        if (!s.on) {
-            ui_hold_begin(&s.hold);
-        }
-        ++s.out_rev;
-        return;
-    }
-    if (gfx_rect_contains(s.reset_rect, x, y)) {
-        take(evt, P_RESET);
-        return;
-    }
-    /* A question being asked is answered before anything else is opened. */
-    if (s.confirm_open) {
-        if (gfx_rect_contains(s.apply_btn, x, y)) {
-            take(evt, P_APPLY);
-        } else if (gfx_rect_contains(s.discard_btn, x, y)) {
-            take(evt, P_DISCARD);
-        }
-        return;
-    }
-    /* The strip, over the keypad too: a tap on the other task takes the
-     * keypad with it (task_changed()). */
-    if (gfx_rect_contains(strip_area(), x, y)) {
-        take(evt, P_STRIP);
-        (void)ui_wb_strip_event(&s.wb, evt);
-        ++s.strip_rev;
-        return;
-    }
-    if (gfx_rect_contains(card_rect(0), x, y)) {
-        if (!s.port_held) {
-            take(evt, P_CARD_V);
-        }
-        return;
-    }
-    if (gfx_rect_contains(card_rect(1), x, y)) {
-        if (!s.port_held) {
-            take(evt, P_CARD_I);
-        }
-        return;
-    }
-
-    if (s.kp.open) {
-        if (gfx_rect_contains(overlay_area(), x, y)) {
-            take(evt, P_KEYPAD);
-            (void)ui_keypad_event(&s.kp, evt, NULL);
-        }
-        return;
-    }
-    if (!on_live()) {
-        if (!s.model && gfx_rect_contains(s.modreset_btn, x, y)) {
-            take(evt, P_MODRESET);
-            return;
-        }
-        for (int i = 0; i < ROW_COUNT; ++i) {
-            if (gfx_rect_contains(row_rect(i), x, y)) {
-                take(evt, P_ROW);
-                s.press_row = i;
-                return;
-            }
-        }
-        return;
-    }
-
-    /* LIVE, nothing over the left column: its own controls. */
-    if (gfx_rect_contains((gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H }, x, y)) {
-        take(evt, P_TABS);
-        (void)ui_tabs_event(&s.tabs, evt);
-        return;
-    }
-    if (s.port_held) {
-        return;                         /* no set point moves */
-    }
-    if (gfx_rect_contains(s.v_slider.track, x, y)
-        || gfx_rect_contains(s.i_slider.track, x, y)) {
-        const bool v = gfx_rect_contains(s.v_slider.track, x, y);
-        take(evt, v ? P_V_SLIDER : P_I_SLIDER);
-        if (ui_slider_event(v ? &s.v_slider : &s.i_slider, evt)) {
-            ++s.set_rev;
-            /* Live as it moves, unless the change needs a question: then
-             * the release asks it. */
-            if (!confirm_needed(FROM_SLIDER)) {
-                propose(FROM_SLIDER);
-            }
-        }
-        return;
-    }
-    const struct { gfx_rect_t r; int code; float dv, di; } k_steps[] = {
-        { s.v_down, P_V_DOWN, -NUDGE_V, 0.0f },
-        { s.v_up,   P_V_UP,    NUDGE_V, 0.0f },
-        { s.i_down, P_I_DOWN,  0.0f, -NUDGE_I },
-        { s.i_up,   P_I_UP,    0.0f,  NUDGE_I },
-    };
-    for (size_t k = 0; k < sizeof(k_steps) / sizeof(k_steps[0]); ++k) {
-        if (gfx_rect_contains(k_steps[k].r, x, y)) {
-            /* On the press: a fine step should feel immediate. */
-            take(evt, k_steps[k].code);
-            nudge(k_steps[k].dv, k_steps[k].di);
-            return;
-        }
-    }
-    if (gfx_rect_contains(set_text_rect(0), x, y)) {
-        take(evt, P_TEXT_V);
-    } else if (gfx_rect_contains(set_text_rect(1), x, y)) {
-        take(evt, P_TEXT_I);
-    }
-}
-
-/* The release of the press, over the control it began on. */
-static void released(int was, int row, int x, int y)
-{
-    switch (was) {
-    case P_RESET:
-        if (gfx_rect_contains(s.reset_rect, x, y)) {
-            s.pending.reset = true;
-        }
-        break;
-    case P_CARD_V:
-        if (gfx_rect_contains(card_rect(0), x, y)) {
-            open_keypad(KP_SET_V, SETTING_COUNT);
-        }
-        break;
-    case P_CARD_I:
-        if (gfx_rect_contains(card_rect(1), x, y)) {
-            open_keypad(KP_SET_I, SETTING_COUNT);
-        }
-        break;
-    case P_TEXT_V:
-        if (gfx_rect_contains(set_text_rect(0), x, y)) {
-            open_keypad(KP_SET_V, SETTING_COUNT);
-        }
-        break;
-    case P_TEXT_I:
-        if (gfx_rect_contains(set_text_rect(1), x, y)) {
-            open_keypad(KP_SET_I, SETTING_COUNT);
-        }
-        break;
-    case P_MODRESET:
-        /* The module restarted: its output goes off first. */
-        if (gfx_rect_contains(s.modreset_btn, x, y)) {
-            s.pending.module_reset = true;
-            s.pending.off          = true;
-        }
-        break;
-    case P_ROW:
-        if (row >= 0 && row < ROW_COUNT && gfx_rect_contains(row_rect(row), x, y)) {
-            const setting_id_t id = k_rows[row].id;
-            if (settings_def(id)->type == SET_TYPE_BOOL) {
-                /* A switch flips on the tap; it has nothing to type. */
-                settings_set(id, settings_get_bool(id) ? 0.0f : 1.0f);
-                refresh_limits();
-                settings_request_save();
-            } else {
-                open_keypad(KP_SETTING, id);
-            }
-        }
-        break;
-    case P_APPLY:
-        /* Only while the question still stands: a release drained in the
-         * frame that dropped the ON it was about, or of a stop, must not
-         * apply it. */
-        if (gfx_rect_contains(s.apply_btn, x, y) && s.confirm_open
-            && confirm_stands()) {
-            confirm_close(true);
-        }
-        break;
-    case P_DISCARD:
-        if (gfx_rect_contains(s.discard_btn, x, y)) {
-            confirm_close(false);
-        }
-        break;
-    default:
-        break;
-    }
-}
-
-/*
- * The press this screen holds ends without its release.  Every gesture is
- * dropped, which asks for nothing, except a tap on OUTPUT OFF: switching off
- * is a press, so a release that never came is an OFF the operator made, and
- * it is sent.  An ON this screen has posted and the application has not
- * collected is dropped: the hold that posted it may have completed on a
- * contact that had gone.  An ON already collected stays asked, with its
- * owner, until the application reports what became of it; a leave switches
- * off an ON reported on.  A key held on the keypad is let go of; what was
- * typed stays.
- */
-static void drop_press(void)
-{
-    if (s.on && s.pressed == P_OUTPUT && s.press_on) {
-        post_off();
-    }
-    if (s.pending.on) {
-        s.pending.on = false;
-        s.on_asked   = false;
-    }
-    owner_settle();
-    ui_slider_release(&s.v_slider);
-    ui_slider_release(&s.i_slider);
-    /* A drag whose release went missing changes nothing: the slider goes
-     * back to the set point the supply has. */
-    if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER) {
-        ui_slider_set(&s.v_slider, s.cv);
-        ui_slider_set(&s.i_slider, s.ci);
-        ++s.set_rev;
-    }
-    ui_hold_reset(&s.hold);
-    ui_tabs_cancel(&s.tabs);
-    ui_wb_strip_cancel(&s.wb);
-    ++s.strip_rev;
-    ui_keypad_cancel_press(&s.kp);
-    let_go();
-    ++s.ctrl_rev;
-    ++s.out_rev;
-}
-
-/*
- * The strip switched the task.  A keypad open goes with the task it was
- * opened on, typed or not, as its CANCEL does; PLOT | TABLE and the set
- * points keep what they were.  A tab switch is no navigation level.
- */
-static void task_changed(void)
-{
-    ui_keypad_close(&s.kp);
-    s.kp_target = KP_NONE;
-    ui_tabs_cancel(&s.tabs);
-    ++s.set_rev;
-    ++s.ov_rev;
-    supply_invalidate();
-}
-
-/* OUTPUT OFF, the one control here whose press stops what the bench
- * drives: the router hands a press on it through the alert band and the
- * band's help bubble (ui_screen_t's safe_at).  OUTPUT ON is none. */
-static bool safe_at(int x, int y)
-{
-    return s.on && gfx_rect_contains(s.out_rect, x, y);
-}
-
-static void event(const touch_event_t *evt)
-{
-    if (evt == NULL) {
-        return;
-    }
-    /*
-     * One contact holds the screen at a time, and that is decided before
-     * any widget sees the event: a second finger on a track while the first
-     * holds OUTPUT OFF would otherwise move the set point of a live output,
-     * and on a button it would take over the record of the first press and
-     * lose its release.
-     */
-    if (evt->type == TOUCH_EVENT_DOWN) {
-        /* A contact comes down once between two releases, so a DOWN with
-         * the id of the press held says that contact has gone and its
-         * release with it.  Kept, the press would refuse every later touch
-         * and take this contact's release for its own. */
-        if (s.have_press && evt->point.id == s.press_id) {
-            drop_press();
-        }
-        if (!s.have_press) {
-            down(evt);
-        }
-        return;
-    }
-    if (!s.have_press || evt->point.id != s.press_id) {
-        return;
-    }
-    const int x = evt->point.x, y = evt->point.y;
-    const bool up = (evt->type == TOUCH_EVENT_UP);
-    switch (s.pressed) {
-    case P_KEYPAD: {
-        float v = 0.0f;
-        const ui_keypad_result_t r = ui_keypad_event(&s.kp, evt, &v);
-        if (up) {
-            let_go();
-        }
-        keypad_done(r, v);
-        return;
-    }
-    case P_V_SLIDER:
-    case P_I_SLIDER: {
-        ui_slider_t *sl = (s.pressed == P_V_SLIDER) ? &s.v_slider : &s.i_slider;
-        if (ui_slider_event(sl, evt)) {
-            ++s.set_rev;
-            if (!confirm_needed(FROM_SLIDER)) {
-                propose(FROM_SLIDER);
-            }
-        }
-        if (up) {
-            let_go();
-            /* A release the finger did not make -- the router's, at the
-             * home tag or a change of screen, or the tracker's for a jump
-             * -- asks no question: the drag ends as drop_press() ends one,
-             * with what it already gave the supply live and nothing more. */
-            if (touch_event_is_tap_up(evt)) {
-                propose(FROM_SLIDER);
-            }
-            /* The drag is over, so the slider can be written: it shows the
-             * set point it was snapped to, or, while a question is open,
-             * the one the supply keeps until it is answered. */
-            ui_slider_set(&s.v_slider, s.cv);
-            ui_slider_set(&s.i_slider, s.ci);
-            ++s.set_rev;
-        }
-        return;
-    }
-    case P_STRIP:
-        if (up) {
-            let_go();
-            if (ui_wb_strip_event(&s.wb, evt)) {
-                task_changed();
-            }
-            ++s.strip_rev;
-        }
-        return;
-    case P_TABS:
-        if (ui_tabs_event(&s.tabs, evt)) {
-            supply_invalidate();
-        }
-        if (up) {
-            let_go();
-        }
-        return;
-    case P_OUTPUT:
-        if (!up) {
-            /* A finger that leaves the switch abandons the hold. */
-            if (!s.press_on && !gfx_rect_contains(s.out_rect, x, y)
-                && ui_hold_leave(&s.hold)) {
-                let_go();
-                ++s.out_rev;
-            }
-            return;
-        }
-        {
-            const bool fired = ui_hold_end(&s.hold);
-            ++s.out_rev;
-            /* Off is a tap; on is a hold that has already sent its command
-             * by the time the finger lifts.  Which one is the press's: an
-             * earlier ON reported during a second hold does not make its
-             * release an OFF. */
-            if (s.press_on && s.on && !fired
-                && gfx_rect_contains(s.out_rect, x, y)) {
-                post_off();
-            }
-            let_go();
-        }
-        return;
-    default:
-        if (up) {
-            const int was = s.pressed;
-            const int row = s.press_row;
-            let_go();
-            /* A release the finger did not make ends the press and
-             * activates nothing. */
-            if (touch_event_is_tap_up(evt)) {
-                released(was, row, x, y);
-            }
-        }
-        return;
-    }
-}
-
-static void tick(float dt_s)
-{
-    /* A question about a live output goes once there is none: off, and no
-     * ON on its way -- a STOP or a lost touch can drop one that was -- or
-     * once a stop has come since it was asked. */
-    if (s.confirm_open && !confirm_stands()) {
-        s.confirm_open = false;
-        if (s.pressed == P_APPLY || s.pressed == P_DISCARD) {
-            let_go();                   /* its buttons have gone with it */
-        }
-        ++s.set_rev;
-        supply_invalidate();
-    }
-    if (s.pressed == P_OUTPUT && !s.press_on && !s.on && !s.port_held) {
-        ++s.out_rev;
-        if (ui_hold_tick(&s.hold, dt_s)) {
-            post_on(SUPPLY_BY_SUPPLY);
-        }
-    }
-    if (s.hold.flash_left > 0) {
-        ++s.out_rev;
-    }
-}
-
-/* ----------------------------------------------------------------- drawing */
-
-static gfx_color_t out_fill(void)
-{
-    /* Off is the OK green the hold fades from; on is the danger red, so the
-     * fade previews the colour the switch is about to hold. */
-    gfx_color_t fill = s.on ? ui_theme_color(UI_C_DANGER)
-                            : ui_theme_color(UI_C_OK);
-    if (s.hold.flash_left > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.hold.flash_left);
-    }
-    if (!s.on && s.hold.held_s > 0.0f) {
-        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.hold.held_s);
-    }
-    return fill;
-}
-
-static void out_flash_advance(void)
-{
-    if (s.hold.flash_left > 0) {
-        ui_hold_flash_step(&s.hold);
-        ++s.out_rev;
-    }
-}
-
-static void draw_out_button(gfx_canvas_t *c)
-{
-    ui_button(c, s.out_rect, s.on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
-              out_fill(),
-              s.pressed == P_OUTPUT, s.on || !s.port_held);
-    out_flash_advance();
-}
-
-/* The bytes of the next row of @p at that fit @p cells: up to the last
- * space in it, or the whole width where no space falls after its start. */
-static size_t row_len(const char *at, int cells)
-{
-    if (gfx_text_cells(at) <= cells) {
-        return strlen(at);
-    }
-    const size_t len = gfx_text_prefix(at, cells);
-    size_t cut = len;
-    while (cut > 0u && at[cut] != ' ') {
-        --cut;
-    }
-    return (cut > 0u) ? cut : len;
-}
-
-/*
- * @p text in rows of at most @p cells of the label face, broken after a
- * space, from (x, y) down by @p pitch; with @p c NULL only counted.
- * Returns the rows.
- */
-static int wrap_rows(gfx_canvas_t *c, int x, int y, int pitch,
-                     const char *text, int cells, gfx_color_t ink)
-{
-    int rows = 0;
-    const char *at = text;
-    while (*at != '\0') {
-        const size_t len = row_len(at, cells);
-        if (c != NULL) {
-            char line[128];
-            const size_t n = (len < sizeof(line)) ? len : sizeof(line) - 1u;
-            memcpy(line, at, n);
-            line[n] = '\0';
-            gfx_text(c, x, y + rows * pitch, line, &gfx_font_8x16, ink, 1);
-        }
-        ++rows;
-        at += len;
-        while (*at == ' ') {
-            ++at;
-        }
-    }
-    return rows;
-}
-
-static const char *mode_text(void)
-{
-    if (!s.sup.online) {
-        return "--";
-    }
-    if (!s.sup.output && s.sup.trip != SUPPLY_TRIP_NONE) {
-        return TR(SUP_MODE_TRIP);
-    }
-    switch (s.sup.mode) {
-    case SUPPLY_MODE_CV: return "CV";
-    case SUPPLY_MODE_CC: return "CC";
-    case SUPPLY_MODE_OFF:
-    default:             return TR(SUP_MODE_OFF);
-    }
-}
-
-static const char *mode_line(void)
-{
-    if (!s.sup.online) {
-        return "";
-    }
-    if (s.port_held) {
-        return TR(SUP_LINE_PORT);
-    }
-    if (!s.sup.output && s.sup.trip == SUPPLY_TRIP_CURRENT) {
-        return TR(SUP_LINE_TRIP_I);
-    }
-    if (!s.sup.output && s.sup.trip == SUPPLY_TRIP_VOLTAGE) {
-        return TR(SUP_LINE_TRIP_V);
-    }
-    if (s.sup.mode == SUPPLY_MODE_CC) {
-        return TR(SUP_LINE_CC);
-    }
-    return (s.sup.mode == SUPPLY_MODE_CV) ? TR(SUP_LINE_CV) : "";
-}
-
-void supply_screen_header_text(char *out, size_t size)
-{
-    char rate[16] = "";
-    if (!s.model && s.sup.online && s.baud != 0u) {
-        snprintf(rate, sizeof(rate), " %lu", (unsigned long)s.baud);
-    }
-    char who[40];
-    if (s.model) {
-        snprintf(who, sizeof(who), "%s", TR(SUP_MODEL));
-    } else if (s.tx1 > 0 && s.rx1 > 0) {
-        snprintf(who, sizeof(who), TR(SUP_PD_PINS), s.tx1 - 1, s.rx1 - 1);
-    } else {
-        snprintf(who, sizeof(who), "%s", TR(SUP_PD_NO_PINS));
-    }
-    snprintf(out, size, "%s   %s%s", who,
-             s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING), rate);
-}
-
-/* The row right of the strip: where the numbers come from, and the range
- * the set points may take. */
-static void draw_header(gfx_canvas_t *c)
-{
-    const int x0 = INFO_X;
-    const int x1 = W - PAD;
-    gfx_fill_rect(c, x0, 0, W - x0, OV_Y - 1, ui_theme_color(UI_C_BG));
-    char line[80];
-    supply_screen_header_text(line, sizeof(line));
-    gfx_text(c, x0, INFO_Y, line, &gfx_font_8x16,
-             s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
-                          : ui_theme_color(UI_C_WARN), 1);
-    char range[64];
-    snprintf(range, sizeof(range), "%.1f-%.1f V  %.2f-%.2f A",
-             (double)s.eff.v_min, (double)s.eff.v_max,
-             (double)s.eff.i_min, (double)s.eff.i_max);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, INFO_Y, (int16_t)(x1 - x0),
-                                 16 },
-                range, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1,
-                GFX_ALIGN_RIGHT);
-}
-
-static void draw_strip(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = strip_area();
-    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_BG));
-    ui_wb_strip_render(&s.wb, c);
-}
-
-/* One card of the rail, as MOTOR & ESC draws them, with the set point in
- * brackets after the label when there is one. */
-static void draw_card(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-                      const char *set, const char *unit, gfx_color_t color,
-                      int decimals, float value, const char *extreme,
-                      float peak, bool pressed)
-{
-    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_BG));
-    ui_card(c, r, pressed ? ui_theme_color(UI_C_PANEL_HI)
-                          : ui_theme_color(UI_C_PANEL));
-    gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, color);
-    gfx_fill_round_rect(c, r.x + 8, r.y + 7, 3, 10, 1, color);
-    const int lw = gfx_text(c, r.x + 16, r.y + 6, label, &gfx_font_8x16,
-                            ui_theme_color(UI_C_TEXT), 1);
-    if (set != NULL) {
-        gfx_text(c, r.x + 16 + lw + 8, r.y + 6, set, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-    }
-    if (extreme != NULL && isfinite(peak)) {
-        char pk[24], line[32];
-        ui_fmt(pk, sizeof(pk), peak, decimals);
-        snprintf(line, sizeof(line), "%s %s", extreme, pk);
-        gfx_text(c, r.x + 8, r.y + 26, line, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_FAINT), 1);
-    }
-    char number[24];
-    if (isfinite(value)) {
-        ui_fmt(number, sizeof(number), value, decimals);
-    } else {
-        snprintf(number, sizeof(number), "---");
-    }
-    const gfx_seg_style_t seg = { .digit_w = 15, .digit_h = 24,
-                                  .thickness = 3, .gap = 4, .slant = 2,
-                                  .ghost = true };
-    const int uw = gfx_text_width(&gfx_font_8x16, unit, 1);
-    const int nw = gfx_seg_width(number, &seg);
-    const int nx = r.x + r.w - 8 - uw - 6 - nw;
-    gfx_seg_text(c, nx, r.y + 16, number, &seg, color,
-                 gfx_lerp(ui_theme_color(UI_C_PANEL), color, 34));
-    gfx_text(c, nx + nw + 6, r.y + 30, unit, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-}
-
-/* The set points as the supply reports holding them, or as this screen holds
- * them while it does not answer. */
-static float shown_set_v(void)
-{
-    return s.sup.online ? s.sup.set_v : s.cv;
-}
-
-static float shown_set_i(void)
-{
-    return s.sup.online ? s.sup.set_i : s.ci;
-}
-
-static void draw_cards(gfx_canvas_t *c)
-{
-    const bool v_ok = s.sup.online && (s.sup.ok & SUPPLY_OK_VOLTAGE) != 0u;
-    const bool i_ok = s.sup.online && (s.sup.ok & SUPPLY_OK_CURRENT) != 0u;
-    const bool run = s.sup.output || s.plot.filled > 0;
-    char vset[16], iset[16];
-    snprintf(vset, sizeof(vset), "(%.2f)", (double)shown_set_v());
-    snprintf(iset, sizeof(iset), "(%.2f)", (double)shown_set_i());
-    draw_card(c, card_rect(0), TR(MO_VOLT), vset, "V",
-              ui_theme_color(UI_C_VOLT), 2, v_ok ? s.sup.v : NAN, TR(HERO_MIN),
-              (v_ok && run && s.sup.sag_seeded) ? s.sup.v_min : NAN,
-              s.pressed == P_CARD_V);
-    draw_card(c, card_rect(1), TR(MO_CURR), iset, "A",
-              ui_theme_color(UI_C_CURR), 2, i_ok ? s.sup.i : NAN,
-              TR(HERO_PEAK), (i_ok && run) ? s.sup.i_max : NAN,
-              s.pressed == P_CARD_I);
-    draw_card(c, card_rect(2), TR(MO_PWR), NULL, "W",
-              ui_theme_color(UI_C_POWER), 1, (v_ok && i_ok) ? s.sup.p : NAN,
-              TR(HERO_PEAK),
-              (v_ok && i_ok && run) ? s.sup.p_max : NAN, false);
-
-    /* The mode, in letters: which of the two set points the supply is
-     * holding.  CC in the warning colour, because a supply at its limit is
-     * not giving the load the voltage it was set to; a trip in the danger
-     * colour until the output is switched on again. */
-    const gfx_rect_t r = card_rect(3);
-    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_BG));
-    ui_card(c, r, ui_theme_color(UI_C_PANEL));
-    const bool tripped = s.sup.online && !s.sup.output
-                         && s.sup.trip != SUPPLY_TRIP_NONE;
-    const gfx_color_t mc = tripped ? ui_theme_color(UI_C_DANGER)
-                           : (s.sup.online && s.sup.mode == SUPPLY_MODE_CC)
-                               ? ui_theme_color(UI_C_WARN)
-                               : ui_theme_color(UI_C_ACCENT);
-    gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, mc);
-    gfx_fill_round_rect(c, r.x + 8, r.y + 7, 3, 10, 1, mc);
-    gfx_text(c, r.x + 16, r.y + 6, TR(SUP_MODE), &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT), 1);
-    if (tripped) {
-        /*
-         * A trip says why in a sentence the card's width does not hold
-         * beside the mode in the double size: the mode goes on the label's
-         * row in the single size, and the sentence takes the card's width
-         * in up to two rows under it, which the card's 54 px hold.
-         */
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 8), (int16_t)(r.y + 6),
-                                     (int16_t)(r.w - 16), 16 },
-                    mode_text(), &gfx_font_8x16, mc, 1, GFX_ALIGN_RIGHT);
-        (void)wrap_rows(c, r.x + 8, r.y + 22, 16, mode_line(),
-                        (r.w - 16) / 8, ui_theme_color(UI_C_TEXT_FAINT));
-        return;
-    }
-    gfx_text(c, r.x + 8, r.y + 26, mode_line(), &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 8), (int16_t)(r.y + 12),
-                                 (int16_t)(r.w - 16), 32 },
-                mode_text(), &gfx_font_8x16, mc, 2, GFX_ALIGN_RIGHT);
-}
-
-static void draw_table(gfx_canvas_t *c)
-{
-    gfx_text(c, PLOT_X, LEG_Y + 4, TR(SUP_TABLE_HEAD),
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
-    ui_rule(c, PLOT_X, LEG_Y + 24, PLOT_W, ui_theme_color(UI_C_EDGE));
-    const bool v_ok = s.sup.online && (s.sup.ok & SUPPLY_OK_VOLTAGE) != 0u;
-    const bool i_ok = s.sup.online && (s.sup.ok & SUPPLY_OK_CURRENT) != 0u;
-    static const ui_text_id_t rows[S_READINGS] = {
-        TX_MO_ROW_VOLTAGE, TX_MO_ROW_CURRENT, TX_MO_ROW_POWER,
-    };
-    const float set[S_READINGS] = { shown_set_v(), shown_set_i(), NAN };
-    const float now[S_READINGS] = { v_ok ? s.sup.v : NAN, i_ok ? s.sup.i : NAN,
-                                    (v_ok && i_ok) ? s.sup.p : NAN };
-    for (int i = 0; i < S_READINGS; ++i) {
-        const int y = LEG_Y + 34 + i * 30;
-        char a[24], b[24];
-        if (isfinite(set[i])) {
-            ui_fmt(a, sizeof(a), set[i], k_series[i].decimals);
-        } else {
-            snprintf(a, sizeof(a), "--");
-        }
-        if (isfinite(now[i])) {
-            ui_fmt(b, sizeof(b), now[i], k_series[i].decimals);
-        } else {
-            snprintf(b, sizeof(b), "--");
-        }
-        gfx_text(c, PLOT_X, y, ui_tr(rows[i]), &gfx_font_8x16,
-                 s.plot.series[i].color, 1);
-        gfx_text(c, PLOT_X + 128, y, a, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, PLOT_X + 248, y, b, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, PLOT_X + 348, y, k_series[i].unit, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-    }
-}
-
-static void draw_totals(gfx_canvas_t *c)
-{
-    const gfx_rect_t box = { (int16_t)(RIGHT_X + INNER), TOTALS_Y,
-                             (int16_t)(RIGHT_W - 2 * INNER), 16 };
-    gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
-    char mah[16], wh[16];
-    if ((s.sup.counted & BENCH_COUNTED_CHARGE) != 0u) {
-        snprintf(mah, sizeof(mah), "%.0f", (double)s.sup.charge_mah);
-    } else {
-        snprintf(mah, sizeof(mah), "--");
-    }
-    if ((s.sup.counted & BENCH_COUNTED_ENERGY) != 0u) {
-        snprintf(wh, sizeof(wh), "%.2f", (double)s.sup.energy_wh);
-    } else {
-        snprintf(wh, sizeof(wh), "--");
-    }
-    char line[48];
-    snprintf(line, sizeof(line), "%s mAh   %s Wh", mah, wh);
-    gfx_text_in(c, box, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1,
-                GFX_ALIGN_RIGHT);
-}
-
-/* The two set points: label and value, then the step buttons and the track. */
-static void draw_setters(gfx_canvas_t *c)
-{
-    static const ui_text_id_t label[2] = { TX_SUP_VOLTAGE,
-                                           TX_SUP_CURRENT_LIMIT };
-    const float value[2] = { s.v_slider.value, s.i_slider.value };
-    const char *unit[2] = { "V", "A" };
-    const gfx_color_t col[2] = { ui_theme_color(UI_C_VOLT),
-                                 ui_theme_color(UI_C_CURR) };
-    for (int row = 0; row < 2; ++row) {
-        const int y = SET_Y0 + row * SET_ROW_H;
-        gfx_fill_rect(c, LEFT_X + INNER, y - 2, LEFT_W - 2 * INNER,
-                      SET_TEXT_H + 2, ui_theme_color(UI_C_PANEL));
-        gfx_text(c, LEFT_X + INNER, y + 2, ui_tr(label[row]), &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        char v[24];
-        snprintf(v, sizeof(v), "%.2f %s", (double)value[row], unit[row]);
-        const bool pressed = s.pressed == ((row == 0) ? P_TEXT_V : P_TEXT_I);
-        const gfx_rect_t tr = set_text_rect(row);
-        if (pressed) {
-            gfx_fill_rect(c, tr.x, tr.y, tr.w, tr.h,
-                          ui_theme_color(UI_C_PANEL_HI));
-        }
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(LEFT_X + INNER), (int16_t)y,
-                                     (int16_t)(LEFT_W - 2 * INNER),
-                                     SET_TEXT_H },
-                    v, &gfx_font_8x16, col[row], 1, GFX_ALIGN_RIGHT);
-        const ui_slider_t *sl = (row == 0) ? &s.v_slider : &s.i_slider;
-        const gfx_rect_t pr = ui_slider_painted_rect(sl);
-        gfx_fill_rect(c, pr.x, pr.y, pr.w, pr.h, ui_theme_color(UI_C_PANEL));
-        ui_slider_render(sl, c);
-    }
-}
-
-static void draw_steps(gfx_canvas_t *c)
-{
-    const bool free = !s.port_held;
-    ui_button(c, s.v_down, "-0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_V_DOWN, free);
-    ui_button(c, s.v_up, "+0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_V_UP, free);
-    ui_button(c, s.i_down, "-0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_I_DOWN, free);
-    ui_button(c, s.i_up, "+0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_I_UP, free);
-}
-
-/*
- * Whether the settings reached the medium: 0 saved, 1 waiting for a quiet
- * moment, 2 refused, 3 changed on SETUP and not asked to be saved -- which
- * nothing writes until SAVE there, or a change here, asks for it.
- */
-static uint8_t save_state(void)
-{
-    if (settings_save_failed()) {
-        return 2u;
-    }
-    if (settings_save_asked()) {
-        return 1u;
-    }
-    return settings_dirty() ? 3u : 0u;
-}
-
-static void row_value_text(int i, char *buf, size_t n)
-{
-    const setting_def_t *d = settings_def(k_rows[i].id);
-    const float v = settings_get(k_rows[i].id);
-    const bool trip = (k_rows[i].id == SET_SUPPLY_TRIP_I
-                       || k_rows[i].id == SET_SUPPLY_TRIP_V);
-    if (d->type == SET_TYPE_BOOL) {
-        snprintf(buf, n, "%s", ui_on_off(v != 0.0f));
-    } else if (trip && !(v > 0.0f)) {
-        snprintf(buf, n, "%s", TR(OFF));
-    } else {
-        snprintf(buf, n, "%.*f %s", k_rows[i].decimals, (double)v, d->unit);
-    }
-}
-
-/* SETTINGS' page: the caps, the start values, the trips and the questions,
- * in the left column under the strip. */
-static void draw_settings(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = overlay_area();
-    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
-    if (!s.model) {
-        /* A module in ERR -- a set point over its input -- comes back only
-         * with a restart. */
-        ui_button(c, s.modreset_btn, TR(SUP_RESET_PDMINI),
-                  ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_MODRESET,
-                  true);
-    }
-
-    const int lx = a.x + 10;
-    const int rx = OV_COL1_X;
-    gfx_text(c, lx, a.y + 16, TR(SUP_CAPS), &gfx_font_8x16,
-             ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, lx, a.y + 134, TR(SUP_AFTER_RESTART), &gfx_font_8x16,
-             ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, rx, a.y + 16, TR(SUP_TRIPS), &gfx_font_8x16,
-             ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, rx, a.y + 238, TR(SUP_CONFIRM_ON), &gfx_font_8x16,
-             ui_theme_color(UI_C_ACCENT), 1);
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        const gfx_rect_t r = row_rect(i);
-        gfx_text(c, r.x, r.y + 10, ui_tr(k_rows[i].label), &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        char v[32];
-        row_value_text(i, v, sizeof(v));
-        ui_button(c, row_value_rect(i), v, ui_theme_color(UI_C_PANEL_SUNK),
-                  s.pressed == P_ROW && s.press_row == i, true);
-    }
-    static const ui_text_id_t help[] = {
-        TX_SUP_HELP_1, TX_SUP_HELP_2, TX_SUP_HELP_3,
-    };
-    for (size_t i = 0; i < sizeof(help) / sizeof(help[0]); ++i) {
-        gfx_text(c, rx, a.y + 174 + (int)i * 18, ui_tr(help[i]),
-                 &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_FAINT), 1);
-    }
-    const uint8_t st = save_state();
-    static const ui_text_id_t k_save[] = {
-        TX_SUP_SAVED, TX_SUP_SAVE_WAITING, TX_SUP_NOT_SAVED,
-        TX_SUP_SETUP_NOT_SAVED,
-    };
-    gfx_text(c, lx, a.y + a.h - 26, ui_tr(k_save[st]), &gfx_font_8x16,
-             (st == 2u) ? ui_theme_color(UI_C_WARN)
-                        : ui_theme_color(UI_C_TEXT_DIM), 1);
-}
-
-/*
- * The question a change to a live output asks: what changes, from what to
- * what, and APPLY or CANCEL.  OUTPUT OFF and STOP stay where they are.
- */
-static void draw_confirm(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = overlay_area();
-    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
-    gfx_text(c, a.x + 20, a.y + 20, TR(SUP_OUTPUT_IS_ON), &gfx_font_8x16,
-             ui_theme_color(UI_C_WARN), 2);
-    gfx_text(c, a.x + 20, a.y + 70, TR(SUP_ASK_WHY),
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
-    int y = a.y + 120;
-    const struct { const char *label; float was, now; const char *unit;
-                   gfx_color_t col; } k[] = {
-        { TR(SUP_VOLTAGE), s.cv, s.pend_v, "V", ui_theme_color(UI_C_VOLT) },
-        { TR(SUP_CURRENT_LIMIT), s.ci, s.pend_i, "A",
-          ui_theme_color(UI_C_CURR) },
-    };
-    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
-        if (k[i].was == k[i].now) {
-            continue;
-        }
-        gfx_text(c, a.x + 20, y + 8, k[i].label, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        char line[48];
-        snprintf(line, sizeof(line), "%.2f -> %.2f %s", (double)k[i].was,
-                 (double)k[i].now, k[i].unit);
-        gfx_text(c, a.x + 150, y, line, &gfx_font_8x16, k[i].col, 2);
-        y += 50;
-    }
-    ui_button(c, s.apply_btn, TR(SUP_APPLY), ui_theme_color(UI_C_WARN),
-              s.pressed == P_APPLY, true);
-    ui_button(c, s.discard_btn, TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_DISCARD, true);
-    /* Under the buttons, its last row where a single one stands. */
-    const int cells = (a.w - 40) / 8;
-    const int rows = wrap_rows(NULL, 0, 0, 18, TR(SUP_ASK_OFF), cells, 0);
-    (void)wrap_rows(c, a.x + 20, a.y + a.h - 26 - (rows - 1) * 18, 18,
-                    TR(SUP_ASK_OFF), cells, ui_theme_color(UI_C_TEXT_FAINT));
-}
-
-enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE, TAG_COUNT };
-static const ui_text_id_t k_tag[TAG_COUNT] = {
-    TX_SUP_TAG_LIVE, TX_SUP_TAG_HELD, TX_SUP_TAG_IDLE,
-};
-
-/* The heading says what the output is doing, on either pane: a held run is
- * the plot's to show, so TABLE says IDLE where PLOT says HELD. */
-static uint8_t output_tag(void)
-{
-    if (s.plot.running) {
-        return (uint8_t)TAG_LIVE;
-    }
-    return (uint8_t)((s.tabs.selected == SUPPLY_PANE_PLOT && s.plot.filled > 0)
-                         ? TAG_HELD : TAG_IDLE);
-}
-
-static void render(gfx_canvas_t *c, int buffer_index)
-{
-    const unsigned bit = 1u << (buffer_index & 1);
-    const int buf = buffer_index & 1;
-    bind_colours();
-
-    /* The left column shows LIVE's plot and set points unless the keypad
-     * or the question covers it, or SETTINGS' page has it. */
-    const bool covered = s.kp.open || s.confirm_open || !on_live();
-    const uint8_t tag = output_tag();
-    char tag_buf[48];
-    if ((s.drawn_mask & bit) == 0) {
-        gfx_clear(c, ui_theme_color(UI_C_BG));
-        if (!covered) {
-            ui_panel(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
-                     ui_tr_pad(k_tag, TAG_COUNT, tag, tag_buf,
-                               sizeof(tag_buf)),
-                     ui_theme_color(UI_C_ACCENT));
-            ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
-                     TR(SUP_SET_POINTS), ui_theme_color(UI_C_ACCENT));
-        }
-        ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
-                 TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
-        s.drawn_mask |= bit;
-        s.drawn_title[buf] = tag;
-        s.drawn_strip[buf] = UINT32_MAX;
-    }
-    if (s.drawn_strip[buf] != s.strip_rev) {
-        s.drawn_strip[buf] = s.strip_rev;
-        draw_strip(c);
-    }
-    if (!covered && s.drawn_title[buf] != tag) {
-        s.drawn_title[buf] = tag;
-        ui_panel_header(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
-                        ui_tr_pad(k_tag, TAG_COUNT, tag, tag_buf,
-                                  sizeof(tag_buf)),
-                        ui_theme_color(UI_C_ACCENT));
-    }
-    const bool data_moved = (s.drawn_push[buf] != s.plot.pushes);
-    const bool ctrl_moved = (s.drawn_ctrl[buf] != s.ctrl_rev);
-    const bool set_moved  = (s.drawn_set[buf] != s.set_rev);
-    const bool out_moved  = (s.drawn_out[buf] != s.out_rev);
-
-    if (ctrl_moved || data_moved) {
-        if (!covered) {
-            ui_tabs_render(&s.tabs, c);
-        }
-        draw_header(c);
-    }
-
-    if (s.kp.open) {
-        if (s.drawn_kp[buf] != s.kp.revision) {
-            s.drawn_kp[buf] = s.kp.revision;
-            ui_keypad_render(&s.kp, c);
-        }
-    } else if (s.confirm_open) {
-        if (s.drawn_ov[buf] != s.ov_rev) {
-            s.drawn_ov[buf] = s.ov_rev;
-            draw_confirm(c);
-        }
-    } else if (!on_live()) {
-        const uint8_t st = save_state();
-        if (s.drawn_ov[buf] != s.ov_rev || s.drawn_save[buf] != st) {
-            s.drawn_ov[buf]   = s.ov_rev;
-            s.drawn_save[buf] = st;
-            draw_settings(c);
-        }
-    } else if (s.tabs.selected == SUPPLY_PANE_PLOT) {
-        if (s.drawn_plot[buf] != s.plot.revision) {
-            s.drawn_plot[buf] = s.plot.revision;
-            gfx_fill_rect(c, PLOT_X, LEG_Y, PLOT_W, LEG_H,
-                          ui_theme_color(UI_C_PANEL));
-            ui_plot_render_legend(&s.plot, c,
-                                  (gfx_rect_t){ PLOT_X, LEG_Y, PLOT_W, LEG_H });
-            ui_plot_render(&s.plot, c,
-                           (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
-            if (!s.plot.running && s.plot.filled == 0) {
-                gfx_text_in(c, (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H },
-                            TR(SUP_NOT_ON_YET), &gfx_font_8x16,
-                            ui_theme_color(UI_C_TEXT_FAINT), 1,
-                            GFX_ALIGN_CENTER);
-            }
-        }
-    } else if (data_moved || set_moved) {
-        gfx_fill_rect(c, LEFT_X + 1, UP_Y + TITLE_H, LEFT_W - 2,
-                      UP_H - TITLE_H - 1 - UI_CHAMFER,
-                      ui_theme_color(UI_C_PANEL));
-        gfx_fill_rect(c, LEFT_X + 1, UP_Y + UP_H - 1 - UI_CHAMFER,
-                      LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
-                      ui_theme_color(UI_C_PANEL));
-        draw_table(c);
-    }
-    /* The cards carry the set point in brackets, so a set point that moves
-     * repaints them too, in each buffer. */
-    if (data_moved || ctrl_moved || set_moved) {
-        s.drawn_push[buf] = s.plot.pushes;
-        draw_cards(c);
-        draw_totals(c);
-    }
-
-    if (!ctrl_moved && !set_moved && !out_moved) {
-        return;
-    }
-    s.drawn_ctrl[buf] = s.ctrl_rev;
-    s.drawn_set[buf]  = s.set_rev;
-    s.drawn_out[buf]  = s.out_rev;
-
-    /* The switch animating on its own repaints its own button only. */
-    if (out_moved && !ctrl_moved && !set_moved) {
-        draw_out_button(c);
-        return;
-    }
-    if (!covered && (set_moved || ctrl_moved)) {
-        draw_setters(c);
-    }
-    if (ctrl_moved) {
-        if (!covered) {
-            draw_steps(c);
-        }
-        ui_button(c, s.reset_rect, TR(MO_RESET_PEAKS),
-                  ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_RESET, true);
-    }
-    if (ctrl_moved || out_moved) {
-        draw_out_button(c);
-    }
+    sup_owner_settle();
 }
 
 /*
@@ -2091,7 +725,7 @@ static void leave(void)
      * HOME, which the band handles without asking this screen -- is the OFF
      * the operator was making, and it is sent, as cancel() sends one. */
     if (s.on && s.pressed == P_OUTPUT && s.press_on) {
-        post_off();
+        sup_post_off();
     }
     ui_slider_release(&s.v_slider);
     ui_slider_release(&s.i_slider);
@@ -2106,7 +740,7 @@ static void leave(void)
     s.confirm_open  = false;
     ui_slider_set(&s.v_slider, s.cv);
     ui_slider_set(&s.i_slider, s.ci);
-    let_go();
+    sup_let_go();
     ++s.ctrl_rev;
     ++s.out_rev;
     ++s.set_rev;
@@ -2126,13 +760,13 @@ static void enter(void)
 int supply_screen_task(void) { return (int)ui_wb_strip_task(&s.wb); }
 
 /*
- * Touch events were lost.  The press is dropped as drop_press() drops it:
+ * Touch events were lost.  The press is dropped as sup_drop_press() drops it:
  * every gesture asks for nothing, except a tap on OUTPUT OFF, which is sent,
  * and an ON not yet collected is dropped; one collected stays asked.
  */
 static void cancel(void)
 {
-    drop_press();
+    sup_drop_press();
 }
 
 /*
@@ -2145,7 +779,7 @@ static void cancel(void)
 static bool back(void)
 {
     if (s.confirm_open) {
-        confirm_close(false);
+        sup_confirm_close(false);
     } else if (s.kp.open) {
         ui_keypad_close(&s.kp);
         s.kp_target = KP_NONE;
@@ -2161,12 +795,12 @@ static const ui_screen_t k_screen = {
     .reset  = reset,
     .enter  = enter,
     .leave  = leave,
-    .tick   = tick,
-    .event  = event,
+    .tick   = sup_tick,
+    .event  = sup_event,
     .cancel = cancel,
-    .render = render,
+    .render = sup_render,
     .back   = back,
-    .safe_at = safe_at,
+    .safe_at = sup_safe_at,
 };
 
 const ui_screen_t *supply_screen(void) { return &k_screen; }

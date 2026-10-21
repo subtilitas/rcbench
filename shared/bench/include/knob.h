@@ -18,8 +18,8 @@
  * - The 7-bit address is 0b0000110, 0x06.  EEPROM (electrically erasable
  *   programmable read-only memory) programming moves it to 0b1000110, 0x46
  *   (version 0.1 of the datasheet, 2020-03, gives 0b0100110, 0x26).  The
- *   panel reads 0x06 only.  0x06 is outside the board's table in
- *   panel_i2c.h; 0x26 would be inside it.
+ *   panel reads 0x06 only.  0x06, 0x46 and 0x26 are all outside the
+ *   board's table in panel_i2c.h.
  * - The 14-bit angle is in two registers: 0x03 holds Angle[13:6] in bits 7
  *   to 0, 0x04 holds Angle[5:0] in bits 7 to 2, and bits 1 and 0 of 0x04
  *   are not used.  Register 0x03 is read first, then 0x04, each in a

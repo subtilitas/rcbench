@@ -24,6 +24,9 @@
 #include "wa_fetch.h"
 
 #define SLOT 4063232u
+/* The ESP32-P4 panel's application slot, ota_0 and ota_1 of
+ * firmware/panel/partitions.csv: 8,126,464 bytes. */
+#define SLOT_P4 0x7C0000u
 
 /* ------------------------------------------------- the scripted client */
 
@@ -379,7 +382,7 @@ static void make_release(const char *version, bool right_hash)
         snprintf(hex + 2u * i, 3u, "%02x", h[i]);
     }
     snprintf(g_sums_text, sizeof(g_sums_text),
-             "%s  ./rcbench-coproc-v0.20.0.zip\n%s  ./rcbench-panel-v0.20.0"
+             "%s  ./rcbench-coproc-v0.20.0.zip\n%s  ./rcbench-panel-p4-v0.20.0"
              ".bin\n", "00000000000000000000000000000000"
                        "00000000000000000000000000000000", hex);
 }
@@ -421,6 +424,36 @@ static wa_fetch_res_t download(uint32_t start)
     return out;
 }
 
+/* As download(), into a slot of @p slot bytes. */
+static wa_fetch_res_t download_slot(uint32_t start, uint32_t slot)
+{
+    wa_run_t r = run_for(start, WA_FETCH_DOWNLOAD_MS);
+    r.slot = slot;
+    wa_fetch_res_t out;
+    wa_run_download(&r, V20, &out);
+    return out;
+}
+
+TEST_CASE(the_p4_slot_takes_its_own_size_and_refuses_a_byte_more)
+{
+    fresh(0u);
+    make_release("0.20.0", true);
+    answer(to_asset());
+    answer(sums_body());
+    answer((answer_t){ .status = 200, .length = (int64_t)SLOT_P4 + 1 });
+    wa_fetch_res_t out = download_slot(0u, SLOT_P4);
+    CHECK_EQ(out.rel, FW_REL_TOO_BIG);
+    CHECK_EQ(g.alloc_bytes, 0u);
+    /* The slot's size itself gets its buffer; the body ends short. */
+    fresh(0u);
+    answer(sums_body());
+    answer((answer_t){ .status = 200, .length = SLOT_P4, .body = g_img,
+                       .body_n = 10u });
+    out = download_slot(0u, SLOT_P4);
+    CHECK_EQ(g.alloc_bytes, SLOT_P4);
+    CHECK_EQ(out.rel, FW_REL_SHORT);
+}
+
 TEST_CASE(a_release_downloads_checked_and_staged)
 {
     fresh(0u);
@@ -438,7 +471,7 @@ TEST_CASE(a_release_downloads_checked_and_staged)
                             "download/v0.20.0/SHA256SUMS");
     CHECK_STR_EQ(g.urls[1], ASSET);
     CHECK_STR_EQ(g.urls[2], "https://github.com/subtilitas/rcbench/releases/"
-                            "download/v0.20.0/rcbench-panel-v0.20.0.bin");
+                            "download/v0.20.0/rcbench-panel-p4-v0.20.0.bin");
     CHECK_EQ(g.opens, 4u);
     CHECK_EQ(g.closes, 4u);
     /* The phases in order, and the bytes of the last report. */
@@ -485,7 +518,7 @@ TEST_CASE(an_image_the_checks_refuse_stages_nothing)
         snprintf(hex + 2u * i, 3u, "%02x", h[i]);
     }
     snprintf(g_sums_text, sizeof(g_sums_text),
-             "%s  ./rcbench-panel-v0.20.0.bin\n", hex);
+             "%s  ./rcbench-panel-p4-v0.20.0.bin\n", hex);
     script_good();
     const wa_fetch_res_t out = download(0u);
     CHECK_EQ(out.got, WA_GOT_IMAGE);
@@ -982,8 +1015,8 @@ TEST_CASE(a_report_for_an_earlier_job_is_dropped)
 
 int main(void)
 {
-    g_img = malloc(SLOT + 64u);
-    g.alloc_buf = malloc(SLOT);
+    g_img = malloc(SLOT_P4 + 64u);
+    g.alloc_buf = malloc(SLOT_P4);
     REQUIRE_ALLOC(g_img);
     REQUIRE_ALLOC(g.alloc_buf);
     RUN(a_newer_release_is_found);
@@ -994,6 +1027,7 @@ int main(void)
     RUN(the_check_waits_within_its_budget_across_the_wrap);
     RUN(a_check_stopped_before_the_request_sends_none);
     RUN(a_release_downloads_checked_and_staged);
+    RUN(the_p4_slot_takes_its_own_size_and_refuses_a_byte_more);
     RUN(a_hash_other_than_sha256sums_stages_nothing);
     RUN(an_image_that_says_another_version_stages_nothing);
     RUN(an_image_the_checks_refuse_stages_nothing);

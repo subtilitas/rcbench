@@ -2,8 +2,8 @@
  * The SERVO screen as the servo suites drive it: the screen on one canvas
  * in the body's coordinates, a touch handed to its event hook, and the
  * places of the dial, the SETTINGS overlay, ARM and SPEED and the supply's
- * SET row mirrored from servo_screen.c.  Taken by test_servo.c,
- * test_servo_settings.c, test_servo_test_panel.c and
+ * SET row mirrored from servo_screen.c.  Taken by the suites of
+ * servo_screen_rig.h, test_servo_settings.c, test_servo_test_panel.c and
  * test_servo_limit_panel.c.
  *
  * Only static inline helpers and the buffers and counters they use.

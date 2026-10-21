@@ -58,9 +58,9 @@ bool                      s_artbusy;
  * and carries on from the same step on the next safe pass.  Nothing is
  * findable for the board until the header, written last.
  *
- * The display stalls for each operation too: the panel's bounce-buffer refill
- * reads PSRAM through the cache a flash operation closes.  Settings saves
- * already cost that.
+ * A flash operation closes the cache for its length; the display's
+ * scan-out reads PSRAM by DMA and its interrupt runs regardless
+ * (CONFIG_LCD_DSI_ISR_CACHE_SAFE).
  */
 static uint8_t     *s_keepbuf;      /* the keeper's, once handed over */
 static art_entry_t  s_keepentry;

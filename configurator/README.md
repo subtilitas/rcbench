@@ -591,7 +591,7 @@ holds each record to the files of `public/pictures/`.
   picture more than 3000 px below it loads before a scroll, or when a full
   file loads without a tap.
 
-Picture folder: 24 files, 1916.8 kB.
+Picture folder: 22 files, 1694.5 kB.
 
 `test/pictures.test.ts` fails when this line differs from the folder.
 
@@ -604,7 +604,7 @@ the wire point of every pin in px of the drawing. The files are committed.
 generator or from the data file. The wiring picture shows them. They
 count against the 1 MB of the size budget.
 
-Drawing folder: 48 files, 459.1 kB.
+Drawing folder: 48 files, 458.9 kB.
 
 `drawings/test/cli.test.ts` fails when this line differs from the folder.
 

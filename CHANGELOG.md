@@ -8,6 +8,23 @@ history is in git.
 
 ### Added
 
+- ESP32-P4 panel: Wi-Fi through the board's ESP32-C6 on SDIO (Secure
+  Digital input/output) slot 1, CLK GPIO18, CMD GPIO19, D0 to D3 GPIO14 to
+  GPIO17, the C6's enable on GPIO54, 4 bits at 40 MHz. The `esp_wifi` calls
+  of the WI-FI session, the release check and the download reach the C6
+  through the managed components `esp_wifi_remote` 1.6.5 and `esp_hosted`
+  2.13.0 (Apache-2.0; esp_hosted carries the protobuf-c runtime,
+  BSD-2-Clause, in NOTICE), pinned in `firmware/panel/dependencies.lock`. The
+  first Wi-Fi start logs the C6's firmware version. A C6 that does not
+  answer at the first start, or an SDIO link that fails later, ends the
+  session, holds the C6 in reset (GPIO54 low) and leaves Wi-Fi off until
+  the next start; the panel does not restart for it. The card's mount
+  starts SDMMC slot 0 before ESP-IDF's mount, so a slot 0 that does not
+  start leaves the controller and the C6's link running. Every task created
+  through `xTaskCreate()` or `xTaskCreatePinnedToCore()` without a core
+  runs on core 0, so esp_hosted's 6 tasks at priority 23 stay off the
+  control task's core; the console lists every task's core and priority at
+  start-up.
 - Four glyph tables for the 1024 x 600 panel: 10x20, 12x24 and 20x36 text
   faces and a 32x44 numeral face (20,400, 29,376, 73,440 and 38,016 bytes
   of flash), and the roles `UI_FONT_FINE` (8x16) and `UI_FONT_BODY`
@@ -136,10 +153,32 @@ history is in git.
 - `tools/check_sizes.py` counts code lines: a line that is not blank and
   not comment-only. Block and `//` comments, Doxygen blocks included, and in
   Python `#` comments and docstrings do not count; a line with code and a
-  trailing comment does. The limits stay 1,000 and 1,300, now in code
-  lines. 28 entries of `tools/check_sizes.txt` whose files hold 1,000 code
-  lines or fewer are removed, and four recorded figures are re-measured.
-
+  trailing comment does. The limits are 1,000 and 1,300 code lines. 26
+  entries of `tools/check_sizes.txt` whose files hold 1,000 code lines or
+  fewer are removed, and the figure recorded for `shared/bench/kst_prog.c`
+  is 1,938 code lines.
+- Every text the interface shows or writes in the operator's language is
+  one entry of `shared/text/include/ui_text.def`, with its English and its
+  German side by side: the screens' strings, the settings' labels, help
+  lines, categories and options, the servo test's words and the Wi-Fi
+  page's. `shared/ui/ui_text_de.c` and the English in the settings schema,
+  `servo_str.c` and `wa_page.c` are gone; every string is unchanged.
+  `tools/merge_texts.py merge` carries text changes made in the old form
+  into the table ([Interface language](docs/Language.md#the-tables)).
+- The panel firmware targets the 7-inch ESP32-P4 display board from
+  Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, chip revision 3.2) and no longer
+  builds for the ESP32-S3-Touch-LCD-7. ESP-IDF v5.5.5, target `esp32p4`,
+  32 MB flash with two application slots of 7936 kB. The EK79007 panel runs
+  on 2 MIPI DSI (Display Serial Interface) lanes at 1000 Mbit/s each, 1024 x
+  600 RGB565 at 60.38 Hz (derived, not measured), two frame buffers in
+  PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
+  black. Touch is polled (the GT911's INT line does not reach the chip),
+  mirrored in x and y, and a touch outside 800 x 480 is dropped. The card
+  mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
+  (RX) from the 40 MHz crystal; the rotary knob has an I2C controller of its
+  own. The heartbeat pin (GPIO28) and the knob pins (GPIO30, GPIO31) are
+  placeholders until the header pins are chosen. Its Wi-Fi radio is the
+  board's ESP32-C6 on SDIO, listed under Added.
 - The four INA3221 rows leave SETUP > INTERFACES (23 settings now). A panel
   updated from 0.21 seeds SENSORS from them at start-up: the part at the old
   address fitted when the INA3221 was ON, its CH1 on the old shunt, CH2 and

@@ -422,7 +422,7 @@ static void control_frame(outputs_t *o, uint8_t roles, uint16_t thr,
  * page's THROTTLE and sets the port's command before the first frame goes
  * out, so the first frame after a re-arm is that throttle, not the one
  * the port ran at before the disarm.  The panel's MOTOR & ESC writes
- * THROTTLE 0 before ARM (throttle_from_zero()), and SAFE from the gate
+ * THROTTLE 0 before ARM (mo_throttle_from_zero()), and SAFE from the gate
  * sets the page's THROTTLE to 0 (safety_gate.c): the first frame is then
  * DShot 0, MOTOR_STOP.
  */

@@ -15,7 +15,7 @@ data and is not asserted.
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
 | `../release.ts` | `VERSION` and `TAG`, read from the `version` field of `../package.json`. The data, the page and the checks import them. |
-| `catalogue.ts` | The data: 20 parts of which 2 are test objects and 1 is modelled, 40 pads, 66 wires, 24 functions of which 12 run on every setup, 7 rules, 43 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 20 parts of which 2 are test objects and 1 is modelled, 40 pads, 66 wires, 24 functions of which 12 run on every setup, 7 rules, 44 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 11 pictures on 7 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
@@ -233,10 +233,10 @@ A test object and a part with `yours: true` are brought: their rows name no
 maker and no page. A modelled part names no maker and no page either: its
 row gives the required spec.
 
-5 rows have a maker page: Waveshare ESP32-S3-Touch-LCD-7, Waveshare RP2350-CAN,
+5 rows have a maker page: Waveshare ESP32-P4-WIFI6-Touch-LCD-7B, Waveshare RP2350-CAN,
 Osoyoo Breakout Board for Pico series, WeAct Studio PD Power Mini V1 Buck (the
 maker's GitHub repository) and Matek I2C-INA-BM. Each answered with HTTP 200 on
-2026-10-13. The DAOKAI INA3221 board has no known maker page.
+2026-10-21. The DAOKAI INA3221 board has no known maker page.
 
 ## Motor simulator
 
@@ -409,6 +409,17 @@ reachable, English and German for every text, no word of the list in
 `catalogue-osoyoo.test.ts` checks the facts, texts and sources of the Osoyoo strip data and the
 reader of the coverage report.
 
+`panel.test.ts` holds the panel part to
+`firmware/panel/components/board/include/board_pins.h` of the working tree,
+not of the tag: that pin map is newer than the tag the data names. The
+heartbeat pin is `PANEL_HEARTBEAT_PIN`, a GPIO of the free headers P1 and P3
+and none of the ESP32-C6 (GPIO6, GPIO14 to GPIO19, GPIO54). While the define
+carries the word "placeholder", the pin `HB` is unconfirmed and the check
+entry `panel-heartbeat-pin` names it as not decided; without the word, the
+pin must be confirmed and the entry gone. The knob pins
+`BOARD_KNOB_PIN_SDA` and `BOARD_KNOB_PIN_SCL` are held to the entry `knob`
+of the list "not in a release" in the same way.
+
 ## Coverage
 
 Line coverage of the resolver, the groups and the motor simulator, measured by `node --test --experimental-test-coverage`.
@@ -425,7 +436,8 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 
 ## Unknown in the data
 
-- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.21.2` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
+- Panel: the data describes the 7-inch ESP32-P4 display board from Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B). Its pins come from the Waveshare schematic of 2025-09-25, cited by the source kind `doc`: CAN header H11 (pin 1 5V, 2 GND, 3 CAN H, 4 CAN L) and the 12-pin header P3. The heartbeat pin is not decided: IO28 (`PANEL_HEARTBEAT_PIN` in `firmware/panel/components/board/include/board_pins.h`) is a placeholder, the pin `HB` is marked unconfirmed, and the check entry `panel-heartbeat-pin` of kind `unknown` is in every setup. The current the panel draws is not measured; Waveshare states 3 A as the maximum. No photo of the board is in the picture folder.
+- Pins marked unconfirmed: `HB` of the panel, see above. `GPO` of the AS5600 board: no source at `v0.21.2` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
 - Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
@@ -439,4 +451,4 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 - DC jack of the Osoyoo breakout board, plug size: the product page names the socket DC005-2.1. The 2.1 mm pin follows from that name. The 5.5 mm outer diameter is the usual size of that socket family; no vendor source states it.
 - SI2302 (Q3) of the Osoyoo breakout board above 12 V: its gate sits at PWRIN through R7 with no clamp and its source at GND (schematic REV 1.0), so its gate-source voltage is the input voltage at every input. The datasheet linked on the product page rates the gate-source voltage at ±12 V (absolute maximum). Above 12 V Q3 is outside that rating; the print of 16 V and the vendor limit of 18 V are above it. The data keeps the range at 7 to 12 V.
 - ESC STICK programming: `docs/StickProgramming.md` at `v0.21.2` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
-- 9 check entries of kind `unknown` state each open point in the text of a setup.
+- 10 check entries of kind `unknown` state each open point in the text of a setup.

@@ -33,6 +33,8 @@ import subprocess
 import sys
 import tempfile
 
+import ui_sources
+
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
 # The flags of the libraries in test/host/CMakeLists.txt, with -Werror: a
@@ -40,134 +42,18 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
           "-Wno-sign-conversion"]
 
+# The screens (ui_sources.py), the renderer, and what only its views
+# drive: the KST programmer's link module, the IOmcu's port and the wire
+# under it, and the card's choice of log files.
 SOURCES = [
     "test/host/render_screen.c",
-    "shared/gfx/gfx.c",
-    "shared/gfx/gfx_text.c",
-    "shared/gfx/gfx_seg.c",
-    "shared/gfx/gfx_font8x16.c",
-    "shared/gfx/gfx_font16x28.c",
-    "shared/gfx/gfx_font_num24x30.c",
-    "shared/gfx/gfx_font10x20.c",
-    "shared/gfx/gfx_font12x24.c",
-    "shared/gfx/gfx_font20x36.c",
-    "shared/gfx/gfx_font_num32x44.c",
-    "shared/ui/ui_theme.c",
-    "shared/ui/ui_widgets.c",
-    "shared/ui/ui_icons.c",
-    "shared/ui/ui_band.c",
-    "shared/ui/ui_plot.c",
-    "shared/ui/ui_slider.c",
-    "shared/ui/ui_tabs.c",
-    "shared/ui/ui_workbench.c",
-    "shared/ui/ui_target_row.c",
-    "shared/ui/prog_registry.c",
-    "shared/ui/ui_watermark.c",
-    "shared/ui/ui_router.c",
-    "shared/ui/ui_text.c",
-    "shared/ui/ui_text_de.c",
-    "shared/ui/splash_screen.c",
-    "shared/ui/overview_screen.c",
-    "shared/ui/motor_screen.c",
-    "shared/ui/motor_workbench.c",
-    "shared/ui/motor_settings_page.c",
-    "shared/ui/motor_program_page.c",
-    "shared/ui/supply_screen.c",
-    "shared/ui/ui_keypad.c",
-    "shared/ui/ui_textkey.c",
-    "shared/ui/ui_pinlist.c",
-    "shared/ui/servo_screen.c",
-    "shared/ui/servo_settings_panel.c",
-    "shared/ui/servo_test_panel.c",
-    "shared/ui/servo_limit_panel.c",
-    "shared/ui/servo_workbench.c",
-    # The programmer for KST and Chaservo servos on SERVO, and under it
-    # what the views drive it with: the link module, the IOmcu's
-    # port and the core.
-    "shared/ui/kst_panel.c",
-    "shared/bench/kst_prog.c",
-    "shared/bench/kst_prog_card.c",
-    "shared/bench/kst_prog_file.c",
-    "shared/bench/kst_card.c",
-    "shared/bench/prog_link.c",
-    "shared/logfile/kst_store.c",
-    "protocols/kst/kst_file.c",
+    *ui_sources.SOURCES,
     "shared/bench/kst_link.c",
     "shared/outputs/kst_port.c",
     "shared/link/link_dev.c",
-    "shared/link/link_crc.c",
-    "shared/link/link_drawing.c",
-    "protocols/kst/kst_reg.c",
-    "protocols/kst/kst_limits.c",
-    "protocols/kst/kst_plan.c",
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
-    "shared/ui/analyser_screen.c",
-    "shared/ui/balance_screen.c",
-    "shared/ui/battery_screen.c",
-    "shared/ui/prog_models.c",
-    "shared/ui/esc_stick_pages.c",
-    "shared/ui/esc_stick_panel.c",
-    "shared/ui/outputs_screen.c",
-    "shared/ui/outputs_port.c",
-    "shared/ui/outputs_port_entry.c",
-    "shared/ui/port_view.c",
-    "shared/ui/picker_screen.c",
-    "shared/ui/picker_port.c",
-    "shared/ui/busfault_screen.c",
-    "shared/ui/wifi_screen.c",
-    "shared/ui/coproc_update_screen.c",
-    "shared/ui/upd_screen.c",
-    # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's
-    # ESC STICK session lists and runs.
-    "shared/esc/esc_profiles_gen.c",
-    "shared/esc/esc_json.c",
-    "shared/esc/esc_json_lex.c",
-    "shared/esc/esc_registry.c",
-    "shared/esc/esc_stick.c",
-    "shared/esc/esc_stick_rules.c",
-    "shared/esc/esc_det.c",
-    "shared/esc/esc_stick_read.c",
-    "shared/esc/esc_sim.c",
-    # The board drawing the IOmcu serves: generated data, so the
-    # screenshot is the drawing a bench shows.
-    "firmware/iomcu/src/board_drawing_rp2350_can.c",
-    "shared/ui/board_drawing.c",
-    "shared/ui/log_viewer_screen.c",
     "shared/ui/log_select.c",
-    "shared/ui/settings_screen.c",
-    "shared/ui/settings_rows.c",
-    "shared/ui/sensors_rows.c",
-    "shared/settings/settings.c",
-    "shared/settings/settings_sensors.c",
-    "shared/logfile/log_numbers.c",
-    "shared/logfile/log_csv.c",
-    "shared/logfile/log_reader.c",
-    "shared/logfile/log_fields.c",
-    "shared/logfile/log_name.c",
-    "shared/logfile/card_tree.c",
-    "shared/bench/bench_state.c",
-    "shared/bench/telemetry_sim.c",
-    "shared/bench/supply.c",
-    "shared/servo/servo_sim.c",
-    "shared/servo/servo_sweep.c",
-    "shared/servo/servo_move.c",
-    "shared/servo/servo_test.c",
-    "shared/servo/servo_str.c",
-    "shared/servo/servo_report.c",
-    "shared/servo/servo_limit.c",
-    "shared/servo/servo_limrun.c",
-    "shared/servo/servo_limrun_report.c",
-    "protocols/sbus/sbus.c",
-    "protocols/dshot/dshot_telem.c",
-    "shared/outputs/outputs.c",
-    "shared/outputs/outputs_pages.c",
-    "shared/outputs/out_pwm_map.c",
-    "shared/outputs/out_bind.c",
-    "shared/outputs/servo_cmd.c",
-    "shared/can/can_selftest.c",
-    "shared/link/link_can.c",
-    "shared/link/link_control.c",
 ]
 
 # Every screen gets a committed screenshot; CI (continuous integration)
@@ -521,23 +407,7 @@ SCREENS = {
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
                               "dark"),
 }
-INCLUDES = [
-    "shared/gfx/include",
-    "shared/touch/include",
-    "shared/ui/include",
-    "shared/bench/include",
-    "shared/outputs/include",
-    "shared/link/include",
-    "shared/can/include",
-    "shared/logfile/include",
-    "shared/settings/include",
-    "shared/servo/include",
-    "shared/esc/include",
-    "protocols/sbus/include",
-    "protocols/pdmini/include",
-    "protocols/kst/include",
-    "protocols/dshot/include",
-]
+INCLUDES = ui_sources.INCLUDES
 
 
 def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:

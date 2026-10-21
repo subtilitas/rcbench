@@ -1,15 +1,17 @@
 /*
  * The MOTOR & ESC screen's private seam between motor_screen.c, the screen
- * and LIVE's page, motor_workbench.c, its task strip and the CONTROL card's
- * TARGET row, motor_program_page.c, PROGRAM's list and its sessions, and
- * motor_settings_page.c, SETTINGS' page: the layout they draw on and the
- * functions each calls of the others.  Nothing outside
+ * and LIVE's page (with motor_events.c and motor_draw.c, which share its
+ * state through motor_live_int.h), motor_workbench.c, its task strip and
+ * the CONTROL card's TARGET row, motor_program_page.c, PROGRAM's list and
+ * its sessions, and motor_settings_page.c, SETTINGS' page: the layout they
+ * draw on and the functions each calls of the others.  Nothing outside
  * shared/ui includes this header; the screen's interface is
  * motor_screen.h.
  *
- * Each file keeps its own state; psram_bss.lf places each one's .bss.
- * Included last: its layout macros have short names (W, H, PAD), which no
- * header included after it may meet.
+ * Each part keeps its own state; psram_bss.lf places each one's .bss.
+ * Included last, or last but one before motor_live_int.h: its layout
+ * macros have short names (W, H, PAD), which no other header included
+ * after it may meet.
  *
  * SPDX-License-Identifier: MIT
  */

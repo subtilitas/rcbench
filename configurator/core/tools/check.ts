@@ -49,7 +49,7 @@ export const GUIDE_SECTIONS: ReadonlyArray<string> = [
 export const DOC_URL = /^https:\/\/[^\s/]+\/\S*$/;
 
 /** Dates of the owner statements a source may name. */
-export const OWNER_STATEMENTS: ReadonlyArray<string> = ['2026-10-11'];
+export const OWNER_STATEMENTS: ReadonlyArray<string> = ['2026-10-11', '2026-10-21'];
 
 export const BANNED_WORDS: ReadonlyArray<string> = [
   'powerful', 'seamless', 'simply', 'just', 'easy', 'robust', 'mächtig', 'nahtlos', 'einfach',

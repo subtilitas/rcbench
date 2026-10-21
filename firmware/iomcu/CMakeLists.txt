@@ -43,6 +43,8 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
 # The move rules (servo_move.c) run in the sensor schedule's capture.  The
 # servo procedures beside them are not called here; --gc-sections drops
 # them from the image.
+# servo_str.c reads the servo test's English from the one text table.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/text"   text)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
