@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief State of the SD card slot as the last mount found it.
+ *
  * What the panel's SD (Secure Digital) card slot holds, as the last mount
  * found it: no card, a mounted volume, a card with no FAT (File Allocation
  * Table) volume on it, or a card that does not mount for another reason.
@@ -11,11 +14,12 @@
  */
 #pragma once
 
+/** @brief Mount state of the SD card. */
 typedef enum {
     /** No card answers in the slot, or no mount was tried yet.  Zero, so
      *  a zeroed feed reads as no card. */
     CARD_STATE_NONE = 0,
-    /** A volume is mounted. */
+    /** @brief A volume is mounted. */
     CARD_STATE_MOUNTED = 1,
     /** A card answers, and FatFs finds no FAT12, FAT16, FAT32 or exFAT
      *  volume on it (FR_NO_FILESYSTEM, 13): NTFS, a GPT or no format at

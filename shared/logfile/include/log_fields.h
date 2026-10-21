@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Blackbox field naming: group and unit of a channel.
+ *
  * Blackbox field naming: which group a channel belongs to, and what it is
  * measured in.
  *
@@ -21,12 +24,20 @@
 extern "C" {
 #endif
 
+/** @brief Group and unit of one channel. */
 typedef struct {
-    const char *group;
-    const char *unit;
+    const char *group;   /**< group the channel belongs to                 */
+    const char *unit;    /**< unit the channel is measured in               */
 } log_field_meta_t;
 
-/** Group and unit for a channel name.  Never NULL; "Other"/"" when unknown. */
+/**
+ * @brief Group and unit for a channel name.
+ *
+ * Never NULL; "Other"/"" when unknown.
+ *
+ * @param name  The channel name.
+ * @return The group and unit of the channel.
+ */
 log_field_meta_t log_field_meta(const char *name);
 
 #ifdef __cplusplus

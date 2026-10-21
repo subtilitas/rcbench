@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Fault log BENCH/RCBENCH.LOG: rotation and append rules.
+ *
  * The fault log, BENCH/RCBENCH.LOG: one line every 5 s while the link to the
  * IOmcu is down, written whatever SETUP > SD CARD says.
  *
@@ -42,34 +45,43 @@
 extern "C" {
 #endif
 
-/** size()'s answers that are no size. */
+/** @brief size() answer: nothing has the name. */
 #define FAULT_SIZE_NONE   (-1)
+/** @brief size() answer: the size does not read, or a folder has the name. */
 #define FAULT_SIZE_UNREAD (-2)
 
-/** The most bytes BENCH/RCBENCH.LOG holds. */
+/** @brief The most bytes BENCH/RCBENCH.LOG holds, bytes. */
 #define FAULT_LOG_CAP 1048576u     /* 1 MiB */
 
-/** The card.  A path is from the root (card_tree.h).  All 6 functions are
- *  set. */
+/**
+ * @brief Card functions the fault log rules call.
+ *
+ * The card.  A path is from the root (card_tree.h).  All 6 functions are
+ * set.
+ */
 typedef struct {
-    void *ctx;
-    /** Whether a card is mounted. */
+    void *ctx;                  /**< passed to every function               */
+    /** @brief Whether a card is mounted. */
     bool (*mounted)(void *ctx);
-    /** Make one folder level (card_make_fn). */
+    /** @brief Make one folder level (card_make_fn). */
     card_dir_t (*make_dir)(void *ctx, const char *level);
-    /** The size of file @p path in bytes, INT32_MAX for a larger one;
-     *  FAULT_SIZE_NONE when nothing has the name; FAULT_SIZE_UNREAD when the
-     *  size does not read, or a folder has the name. */
+    /** @brief The size of file @p path in bytes.
+     *
+     *  INT32_MAX for a larger one; FAULT_SIZE_NONE when nothing has the name;
+     *  FAULT_SIZE_UNREAD when the size does not read, or a folder has the
+     *  name. */
     int32_t (*size)(void *ctx, const char *path);
-    /** Remove file @p path.  True when no file has the name afterwards. */
+    /** @brief Remove file @p path.
+     *
+     *  True when no file has the name afterwards. */
     bool (*remove)(void *ctx, const char *path);
-    /** Give file @p from the name @p to, which no file has. */
+    /** @brief Give file @p from the name @p to, which no file has. */
     bool (*rename)(void *ctx, const char *from, const char *to);
-    /** Append @p line and a line feed to @p path, creating the file. */
+    /** @brief Append @p line and a line feed to @p path, creating the file. */
     bool (*append)(void *ctx, const char *path, const char *line);
 } fault_log_io_t;
 
-/** What a line came to. */
+/** @brief What a line came to. */
 typedef enum {
     FAULT_LOG_OK = 0,
     FAULT_LOG_ARG,        /**< a NULL, or a line longer than the cap     */
@@ -82,9 +94,16 @@ typedef enum {
 } fault_log_t;
 
 /**
+ * @brief Append a line to the fault log.
+ *
  * Append @p line to the fault log, renamed to RCBENCH.OLD first when the
  * line and its line feed would take it past FAULT_LOG_CAP.  @p rotated, when
  * not NULL, says whether that rename happened.
+ *
+ * @param io       The card functions.
+ * @param line     The line to append, without its line feed.
+ * @param rotated  Receives true when the file was renamed, or NULL.
+ * @return FAULT_LOG_OK, or the reason the line was not written.
  */
 fault_log_t fault_log_note(const fault_log_io_t *io, const char *line,
                            bool *rotated);
