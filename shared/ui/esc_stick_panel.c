@@ -103,6 +103,7 @@ void esc_stick_panel_reset(void)
      * with BACK's middle. */
     s.st.timing_btn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 168),
                                     (int16_t)(CRUMB_Y - 3), 168, 36 };
+    s.st.kp.pressed = -1;
 }
 
 void esc_stick_panel_enter(void)
@@ -123,6 +124,7 @@ void esc_stick_panel_open(void)
     t->maker = NULL;
     t->shown = false;
     t->timing = false;
+    sp_kp_close();
     t->bscroll = 0;
     sp_build_list(false);
     ++pg.rev;
@@ -604,6 +606,7 @@ void esc_stick_panel_leave(void)
     t->hand_open = false;
     sp_end_hold();
     sp_find_close();
+    sp_kp_close();
     if (t->timing) {
         t->timing = false;
         if (settings_dirty()) {
@@ -664,6 +667,11 @@ void esc_stick_panel_cancel(void)
     if (t->tk.open && t->tk.pressed >= 0) {
         ui_textkey_cancel_press(&t->tk);
         t->tk_rev = t->tk.revision;
+        ++pg.rev;
+    }
+    if (t->kp.open && t->kp.pressed >= 0) {
+        ui_keypad_cancel_press(&t->kp);
+        t->kp_rev = t->kp.revision;
         ++pg.rev;
     }
     bool queued = false;

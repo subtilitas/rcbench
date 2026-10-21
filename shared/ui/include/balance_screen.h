@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "ui_keypad.h"
 #include "ui_screen.h"
 
 typedef enum {
@@ -26,6 +27,20 @@ const ui_screen_t *balance_screen(void);
 int  balance_screen_blades(void);
 /** Propeller or ducted fan. */
 int  balance_screen_rotor(void);
+
+/**
+ * @brief The keypad a tap on the blade count opens over both cards, for
+ *        tests and the renderer.
+ * @return The keypad, open or closed.
+ */
+const ui_keypad_t *balance_screen_keypad(void);
+
+/**
+ * @brief Where the blade count is drawn and tapped, in the screen's
+ *        coordinates: between BLADES and the "-" key.
+ * @return The value's rectangle.
+ */
+gfx_rect_t balance_screen_blades_rect(void);
 
 /** The MODELLED mark the BALANCE pane shows beside its readings, or NULL on
  *  the other panes: the angle and both masses are fixed values. */

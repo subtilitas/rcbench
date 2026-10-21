@@ -65,6 +65,17 @@ void ui_keypad_close(ui_keypad_t *k)
     ++k->revision;
 }
 
+void ui_keypad_refuse(ui_keypad_t *k)
+{
+    if (k == NULL) {
+        return;
+    }
+    k->open    = true;
+    k->refused = true;
+    k->pressed = -1;
+    ++k->revision;
+}
+
 void ui_keypad_cancel_press(ui_keypad_t *k)
 {
     if (k != NULL && k->pressed >= 0) {

@@ -57,6 +57,10 @@ The header shows the menu's kind, the supply's voltage and current for the run, 
 
 None of the timings is measured. CLOSE asks for them to be saved; the save waits for the bench SAFE and the supply output off.
 
+`-` and `+` step a row. A tap on its value opens the keypad over the page. It names the setting, its range and its unit, and takes the step's digits after the point. OK sets the value as a step does, onto the nearer step: 1.23 A is 1.25 A. A value outside the range keeps the keypad open and names the range in the warning colour. CANCEL and the home tag change nothing; TIMING stays.
+
+![The keypad of Beep min, 250 typed](view:motor-stick-timing-keypad)
+
 ## The warning and the run
 
 ![PROPELLER REMOVED? MOTOR SECURED?](view:motor-stick-warning)

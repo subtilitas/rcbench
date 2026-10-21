@@ -8,6 +8,10 @@
  * blade and an angle wrong by a blade spacing.  Neither error is visible on
  * screen, so the screen carries the placement diagrams.
  *
+ * The blade count takes 2 to 6 from its "-" and "+" keys, which step on the
+ * press, or from the keypad a tap on the count opens over both cards.  A
+ * tab tapped while the keypad is open closes it, the count as it was.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -17,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_keypad.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -36,6 +41,13 @@
 #define LCARD_W 450
 #define RCARD_X (PAD + LCARD_W + 8)
 #define RCARD_W (W - RCARD_X - PAD)
+
+/* The blade count's keypad: over both cards, from the cards' top to 4 px
+ * above the alert band, 788 x 354 px with keys of 188 x 56 px. */
+#define KP_Y    (BODY_Y - 4)
+#define KP_H    (H - UI_ALERT_H - 4 - KP_Y)
+#define BLADES_MIN 2
+#define BLADES_MAX 6
 
 /* The rig, drawn side on: a post, an arm, a motor, and the disc it turns. */
 #define BASE_Y   356
@@ -70,6 +82,11 @@ static struct {
     int   rotor;                 /* propeller or ducted fan       */
     gfx_rect_t rotor_btn[ROTOR_COUNT];
     gfx_rect_t blade_dn, blade_up;
+    ui_keypad_t kp;
+    bool      value_down;        /* a press on the count, opening on its
+                                    release                        */
+    uint8_t   value_id;
+    uint32_t  kp_rev;            /* the keypad's revision last seen */
     uint32_t  rev;
     uint32_t  drawn[2];
     unsigned  drawn_mask;
@@ -82,13 +99,18 @@ void balance_invalidate(void)
     s.drawn[1] = UINT32_MAX;
 }
 
+/**
+ * @brief The screen's state cleared: the BALANCE pane, two blades, a
+ *        propeller, the controls laid out and the keypad closed.
+ */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
     s.drawn[0] = UINT32_MAX;
     s.drawn[1] = UINT32_MAX;
-    s.blades = 2;
+    s.blades = BLADES_MIN;
     s.rotor  = ROTOR_PROP;
+    s.kp.pressed = -1;
     ui_tabs_init_text(&s.tabs, k_tabs, BALANCE_PANE_COUNT,
                  (gfx_rect_t){ PAD + 3, TAB_Y, 390, TAB_H });
 
@@ -107,6 +129,75 @@ static void reset(void)
 
 int  balance_screen_blades(void) { return s.blades; }
 int  balance_screen_rotor(void)  { return s.rotor; }
+
+const ui_keypad_t *balance_screen_keypad(void) { return &s.kp; }
+
+gfx_rect_t balance_screen_blades_rect(void)
+{
+    const int x = RCARD_X + 14;
+    return (gfx_rect_t){ (int16_t)(x + 60), (int16_t)(BODY_Y + 96),
+                         (int16_t)(s.blade_dn.x - 4 - (x + 60)), 28 };
+}
+
+/**
+ * @brief The keypad's revision moved: the frame draws it again.
+ */
+static void kp_follow(void)
+{
+    if (s.kp.revision != s.kp_rev) {
+        s.kp_rev = s.kp.revision;
+        ++s.rev;
+    }
+}
+
+/**
+ * @brief One event while the keypad is open: it takes them all.  OK sets
+ *        the count; the keypad holds it to 2 to 6.
+ * @param evt The event.
+ */
+static void kp_event(const touch_event_t *evt)
+{
+    float v = 0.0f;
+    if (ui_keypad_event(&s.kp, evt, &v) == UI_KEYPAD_OK) {
+        s.blades = (int)lrintf(v);
+    }
+    kp_follow();
+}
+
+/**
+ * @brief The keypad closes, with nothing typed taken: the home tag over it
+ *        and leaving the screen.
+ */
+static void kp_close(void)
+{
+    if (s.kp.open) {
+        ui_keypad_close(&s.kp);
+        kp_follow();
+    }
+}
+
+/**
+ * @brief The home tag: over the keypad it is CANCEL.
+ * @return True when it closed the keypad; false to go home.
+ */
+static bool back(void)
+{
+    s.value_down = false;
+    if (!s.kp.open) {
+        return false;
+    }
+    kp_close();
+    return true;
+}
+
+/**
+ * @brief The screen is left: the keypad closes, with nothing typed taken.
+ */
+static void leave(void)
+{
+    s.value_down = false;
+    kp_close();
+}
 
 /*
  * Where the correction goes, modelled until a sensor is fitted.
@@ -127,17 +218,54 @@ const char *balance_screen_model_note(void)
                                                      : NULL;
 }
 
+/**
+ * @brief One touch event: the tabs first, then the keypad while it is
+ *        open, then the BALANCE pane's controls.  The rotor buttons and the
+ *        count's "-" and "+" act on the press; the count opens its keypad
+ *        on the release of a tap on it.
+ * @param evt The event, or NULL.
+ */
 static void event(const touch_event_t *evt)
 {
+    /* The tabs stay above the keypad: a pane switched takes the keypad
+     * with it, the count as it was. */
     if (ui_tabs_event(&s.tabs, evt)) {
+        s.value_down = false;
+        kp_close();
         ++s.rev;
         return;
     }
-    if (evt == NULL || evt->type != TOUCH_EVENT_DOWN
-        || s.tabs.selected != BALANCE_PANE_MEASURE) {
+    if (evt != NULL && s.kp.open) {
+        kp_event(evt);
+        return;
+    }
+    if (evt == NULL || s.tabs.selected != BALANCE_PANE_MEASURE) {
         return;
     }
     const int px = evt->point.x, py = evt->point.y;
+    /* The count opens its keypad on the release of the press that came
+     * down on it, over it, as a tap the finger made. */
+    if (evt->type != TOUCH_EVENT_DOWN) {
+        if (s.value_down && evt->point.id == s.value_id
+            && evt->type == TOUCH_EVENT_UP) {
+            s.value_down = false;
+            if (touch_event_is_tap_up(evt)
+                && gfx_rect_contains(balance_screen_blades_rect(), px, py)) {
+                ui_keypad_open(&s.kp,
+                               (gfx_rect_t){ PAD, KP_Y,
+                                             (int16_t)(W - 2 * PAD), KP_H },
+                               TR(BAL_BLADES), "", (float)s.blades,
+                               (float)BLADES_MIN, (float)BLADES_MAX, 0);
+                kp_follow();
+            }
+        }
+        return;
+    }
+    if (gfx_rect_contains(balance_screen_blades_rect(), px, py)) {
+        s.value_down = true;
+        s.value_id   = evt->point.id;
+        return;
+    }
     for (int i = 0; i < ROTOR_COUNT; ++i) {
         if (gfx_rect_contains(s.rotor_btn[i], px, py)) {
             if (s.rotor != i) { s.rotor = i; ++s.rev; }
@@ -146,9 +274,9 @@ static void event(const touch_event_t *evt)
     }
     /* Two to six.  Clamped, like every other stepper on this bench. */
     if (gfx_rect_contains(s.blade_dn, px, py)) {
-        if (s.blades > 2) { --s.blades; ++s.rev; }
+        if (s.blades > BLADES_MIN) { --s.blades; ++s.rev; }
     } else if (gfx_rect_contains(s.blade_up, px, py)) {
-        if (s.blades < 6) { ++s.blades; ++s.rev; }
+        if (s.blades < BLADES_MAX) { ++s.blades; ++s.rev; }
     }
 }
 
@@ -619,6 +747,12 @@ static void draw_rules(gfx_canvas_t *c, const rule_t *rules, int count)
     }
 }
 
+/**
+ * @brief The screen drawn on a revision not yet drawn: the tabs, then the
+ *        keypad alone while it is open, else both cards of the pane.
+ * @param c The canvas.
+ * @param buffer_index The framebuffer, whose revision it follows.
+ */
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -634,13 +768,19 @@ static void render(gfx_canvas_t *c, int buffer_index)
     s.drawn[buf] = s.rev;
     gfx_clear(c, ui_theme_color(UI_C_BG));
 
+    ui_tabs_render(&s.tabs, c);
+    if (s.kp.open) {
+        /* The blade count typed: the keypad covers both cards, and
+         * nothing under it is drawn, as nothing under it presses. */
+        ui_keypad_render(&s.kp, c);
+        return;
+    }
     ui_card(c, (gfx_rect_t){ PAD, BODY_Y - 4, LCARD_W,
                              (int16_t)(H - BODY_Y - 2) },
             ui_theme_color(UI_C_PANEL));
     ui_card(c, (gfx_rect_t){ RCARD_X, BODY_Y - 4, RCARD_W,
                              (int16_t)(H - BODY_Y - 2) },
             ui_theme_color(UI_C_PANEL));
-    ui_tabs_render(&s.tabs, c);
 
     if (s.tabs.selected == BALANCE_PANE_MEASURE) {
         draw_measure(c);
@@ -654,16 +794,21 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
-/*
- * The panel could not hand over every touch event, so this screen's record
- * of the glass is stale.  The tab row is the one control here that holds
- * state between a press and its release: a press it kept would own a track
- * id the controller reuses, and a later contact that began elsewhere and
- * lifts over the tab would switch the pane on a tap nobody made.
+/**
+ * @brief The panel could not hand over every touch event, so this screen's
+ *        record of the glass is stale.
+ *
+ * The tab row, a press on the blade count and a keypad key hold state
+ * between a press and its release: a press kept would own a track id the
+ * controller reuses, and a later contact that began elsewhere and lifts
+ * over the tab would switch the pane on a tap nobody made.  Each is let
+ * go; what the keypad has typed stays.
  */
 static void cancel(void)
 {
     ui_tabs_cancel(&s.tabs);
+    s.value_down = false;
+    ui_keypad_cancel_press(&s.kp);
     /* The tab row may already be drawn pressed in both framebuffers; a
      * cleared press with the same revision would leave it painted held. */
     ++s.rev;
@@ -673,11 +818,12 @@ static const ui_screen_t k_screen = {
     .title  = "BALANCE",
     .reset  = reset,
     .enter  = NULL,
-    .leave  = NULL,
+    .leave  = leave,
     .tick   = NULL,
     .event  = event,
     .cancel = cancel,
     .render = render,
+    .back   = back,
 };
 
 const ui_screen_t *balance_screen(void) { return &k_screen; }

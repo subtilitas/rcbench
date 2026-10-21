@@ -79,6 +79,15 @@ void ui_keypad_cancel_press(ui_keypad_t *k);
 ui_keypad_result_t ui_keypad_event(ui_keypad_t *k, const touch_event_t *evt,
                                    float *out);
 
+/**
+ * @brief Refuse the value the last OK handed back, after the caller has
+ *        judged it by a rule of its own: the keypad opens again with the
+ *        entry as typed and the range in the warning colour, as OK on a
+ *        value outside the range leaves it.
+ * @param k The keypad that returned UI_KEYPAD_OK.
+ */
+void ui_keypad_refuse(ui_keypad_t *k);
+
 /** Where a key is drawn and hit. */
 gfx_rect_t ui_keypad_key_rect(const ui_keypad_t *k, ui_key_t key);
 

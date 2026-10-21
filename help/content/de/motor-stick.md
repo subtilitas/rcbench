@@ -57,6 +57,10 @@ Der Kopf zeigt die Art des Menüs, Spannung und Strom des Netzteils für den Lau
 
 Keine der Zeiten ist gemessen. SCHLIESSEN fordert das Speichern an; das Speichern wartet auf den Prüfstand SAFE und den Netzteilausgang aus.
 
+`-` und `+` stellen eine Zeile. Ein Tippen auf ihren Wert öffnet das Tastenfeld über der Seite. Es nennt die Einstellung, ihren Bereich und ihre Einheit und nimmt die Stellen des Schritts nach dem Punkt. OK setzt den Wert wie ein Schritt auf den näheren Schritt: 1,23 A sind 1,25 A. Ein Wert außerhalb des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe. ABBRECHEN und das Home-Tag ändern nichts; TIMING bleibt.
+
+![Das Tastenfeld von Piepton min, 250 getippt](view:motor-stick-timing-keypad)
+
 ## Die Warnung und der Lauf
 
 ![PROPELLER AB? MOTOR GESICHERT?](view:motor-stick-warning)

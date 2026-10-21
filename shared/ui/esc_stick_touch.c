@@ -3,7 +3,8 @@
  * @brief The presses on ESC STICK's pages.
  *
  * The presses on ESC STICK's pages: the search field and its keyboard,
- * the list's rows and pages, a profile's rows, TIMING, the warning's hold,
+ * the list's rows and pages, a profile's rows, TIMING and its keypad, the
+ * warning's hold,
  * a run's ABORT and the manual steps, BACK and the home tag.  The state
  * and the seam are esc_stick_panel_int.h.
  *
@@ -16,6 +17,8 @@
 
 #include "esc_profile.h"
 #include "settings.h"
+#include "ui_keypad.h"
+#include "ui_setting_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_widgets.h"
@@ -113,17 +116,96 @@ static void sp_find_event(const touch_event_t *evt)
     }
 }
 
+/* ---------------------------------------------------- TIMING's keypad */
+
+/**
+ * @brief Where TIMING's row @p i shows its value: the control column, over
+ *        the row's height.  A tap there opens the row's keypad.
+ * @param i The row on the page, 0 to ROWS_MAX - 1.
+ * @return The value's rectangle.
+ */
+static gfx_rect_t sp_value_rect(int i)
+{
+    return (gfx_rect_t){ CTRL_X, (int16_t)(ROW_Y0 + i * ROW_H - 4), CTRL_W,
+                         ROW_H - 2 };
+}
+
+/* TIMING's keypad: from under the output strip to 4 px above the alert
+ * band, 788 x 368 px with keys of 188 x 60 px. */
+#define SP_KP_H (H - UI_ALERT_H - 4 - SP_PANEL_Y)
+
+/**
+ * @brief The keypad of TIMING's setting @p idx, over the session's pages.
+ * @param idx The setting's place in sp_settings_list.
+ */
+static void sp_kp_open(int idx)
+{
+    stick_t *t = &s.st;
+    ui_setting_keypad_open(&t->kp,
+                           (gfx_rect_t){ PAD, SP_PANEL_Y,
+                                         (int16_t)(W - 2 * PAD), SP_KP_H },
+                           sp_settings_list[idx]);
+    t->kp_idx = idx;
+    t->kp_rev = t->kp.revision;
+    ++pg.rev;
+}
+
+void sp_kp_close(void)
+{
+    stick_t *t = &s.st;
+    if (t->kp.open) {
+        ui_keypad_close(&t->kp);
+        t->kp_rev = t->kp.revision;
+        ++pg.rev;
+    }
+}
+
+/**
+ * @brief One event for TIMING's keypad.  OK sets the value through
+ *        settings_set(), the call a step ends in, and CLOSE asks for the
+ *        save as it does after a step; a value the steps never reach keeps
+ *        the keypad open, refused.
+ * @param evt The event.
+ */
+static void sp_kp_event(const touch_event_t *evt)
+{
+    stick_t *t = &s.st;
+    float v = 0.0f;
+    if (ui_keypad_event(&t->kp, evt, &v) == UI_KEYPAD_OK) {
+        (void)ui_setting_keypad_ok(&t->kp, sp_settings_list[t->kp_idx], v);
+    }
+    if (t->kp.revision != t->kp_rev) {
+        t->kp_rev = t->kp.revision;
+        ++pg.rev;
+    }
+}
+
+const ui_keypad_t *esc_stick_panel_keypad(void)
+{
+    return &s.st.kp;
+}
+
+int esc_stick_panel_keypad_setting(void)
+{
+    const stick_t *t = &s.st;
+    return t->kp.open ? (int)sp_settings_list[t->kp_idx] : -1;
+}
+
 bool esc_stick_panel_holds_press(uint8_t id)
 {
     const stick_t *t = &s.st;
     return (t->warn_down && t->warn_id == id)
-           || (t->tk.open && t->tk.pressed >= 0 && t->tk.press_id == id);
+           || (t->tk.open && t->tk.pressed >= 0 && t->tk.press_id == id)
+           || (t->kp.open && t->kp.pressed >= 0 && t->kp.press_id == id);
 }
 
 void esc_stick_panel_follow(const touch_event_t *evt)
 {
     if (s.st.tk.open) {
         sp_find_event(evt);
+    }
+    if (s.st.kp.open) {
+        sp_kp_event(evt);
     }
     sp_track(evt);
 }
@@ -136,6 +218,7 @@ uint32_t esc_stick_panel_showing(uint32_t h)
         (uint32_t)t->iscroll, (uint32_t)t->tscroll,
         t->warn ? 1u : 0u, t->hand_open ? 1u : 0u, t->shown ? 1u : 0u,
         t->timing ? 1u : 0u, t->tk.open ? 1u : 0u, t->builds,
+        t->kp.open ? 1u : 0u,
         esc_stick_running(&t->run) ? 1u : 0u,
         (esc_stick_hand(&t->run) != NULL) ? 1u : 0u,
     };
@@ -192,6 +275,10 @@ static void sp_timing_close(void)
 bool esc_stick_panel_back(void)
 {
     stick_t *t = &s.st;
+    if (t->kp.open) {
+        sp_kp_close();                  /* as CANCEL: TIMING stays */
+        return true;
+    }
     if (t->hand_open) {
         t->hand_open = false;
         t->warn_read = t->warn_read || t->warn;
@@ -239,6 +326,15 @@ bool esc_stick_panel_down(const touch_event_t *evt)
 {
     stick_t *t = &s.st;
     const int px = evt->point.x, py = evt->point.y;
+
+    /* TIMING's keypad covers the pages; its keys follow their own press
+     * and release. */
+    if (t->kp.open) {
+        if (hit_down(t->kp.area, px, py)) {
+            sp_kp_event(evt);
+        }
+        return true;
+    }
 
     /* The manual steps' pop-up covers the screen; OK closes it. */
     if (t->hand_open) {
@@ -422,6 +518,11 @@ bool esc_stick_panel_down(const touch_event_t *evt)
                          : hit(pg.up[i], px, py)    ?  1 : 0;
             if (by != 0) {
                 settings_adjust(sp_settings_list[idx], by);
+            }
+            if (hit(sp_value_rect(i), px, py)) {
+                t->tpicked = idx;       /* the value: its keypad */
+                sp_kp_open(idx);
+                return true;
             }
             if (by != 0 || hit(pg.row[i], px, py)) {
                 t->tpicked = idx;

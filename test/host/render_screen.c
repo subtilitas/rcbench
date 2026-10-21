@@ -471,6 +471,20 @@ static void ktap(gfx_rect_t r)
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 
+/* @p text typed on keypad @p k, digit by digit; '.' is the point.  The
+ * key rectangles are in the screen's coordinates, as ktap() takes them. */
+static void kp_type(const ui_keypad_t *k, const char *text)
+{
+    static const ui_key_t k_digit[10] = {
+        UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3, UI_KEY_4,
+        UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8, UI_KEY_9,
+    };
+    for (const char *p = text; *p != '\0'; ++p) {
+        ktap(ui_keypad_key_rect(k, (*p == '.') ? UI_KEY_DOT
+                                               : k_digit[*p - '0']));
+    }
+}
+
 static void kkey(ui_key_t key)
 {
     ktap(ui_keypad_key_rect(kst_panel_keypad(), key));
@@ -2495,8 +2509,13 @@ int main(int argc, char **argv)
             }
         } else if (strcmp(view, "motor-stick") != 0) {
             stick_open("Hobbywing", "hobbywing-flyfun-8item");
-            if (strcmp(view, "motor-stick-timing") == 0) {
+            if (strncmp(view, "motor-stick-timing", 18) == 0) {
                 tap(698, UI_BAND_H + 45);       /* TIMING */
+                if (strcmp(view, "motor-stick-timing-keypad") == 0) {
+                    /* BEEP MIN's value, the third row, typed as 250. */
+                    tap(400 + 216 / 2, UI_BAND_H + 142 + 2 * 30 + 10);
+                    kp_type(esc_stick_panel_keypad(), "250");
+                }
             } else {
                 /* Cutoff mode to hard, startup mode to soft. */
                 for (int i = 0; i < 2; ++i) {
@@ -2694,6 +2713,11 @@ int main(int argc, char **argv)
             tap(200, UI_BAND_H + 22);
         } else if (strcmp(view, "balance-aircraft") == 0) {
             tap(330, UI_BAND_H + 22);
+        } else if (strcmp(view, "balance-keypad") == 0) {
+            /* The blade count tapped, 5 typed. */
+            const gfx_rect_t r = balance_screen_blades_rect();
+            tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+            kp_type(balance_screen_keypad(), "5");
         } else if (strcmp(view, "balance-edf") == 0) {
             /* A five-blade ducted fan: the duct, and a rotor whose blades
              * are not reachable. */
@@ -3450,6 +3474,23 @@ int main(int argc, char **argv)
         } else {
             sensors_rows_set_status((uint16_t)(SENS_PART_ONLINE
                                                | (SENS_PART_SILENT << 4)));
+        }
+        /* 0x40 CH1's shunt, scrolled into view and its value tapped:
+         * 44.4 mOhm typed, the station's value. */
+        if (strcmp(view, "setup-sensors-keypad") == 0) {
+            settings_set(SET_INA_FIT(0), 1.0f);
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (2 * 58 + 8));
+            setting_id_t ids[48];
+            const int n = settings_in_category(SET_CAT_SENSORS, ids, 48);
+            int row = -1;
+            for (int i = 0; i < n && i < 48; ++i) {
+                if (ids[i] == SET_INA_SH(0)) {
+                    row = settings_screen_row_of(SET_CAT_SENSORS, i);
+                }
+            }
+            tap(663, UI_BAND_H + 6 + row * 58 - settings_screen_scroll(NULL)
+                         + 27);
+            kp_type(settings_screen_keypad(), "44.4");
         }
     }
 

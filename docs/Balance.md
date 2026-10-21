@@ -20,6 +20,14 @@ Set the blade count (2 to 6) and the rotor type. The screen converts the
 measured angle into a blade reference ("between blades two and three") in
 addition to the angle.
 
+The count's `-` and `+` step it on the press. A tap on the count opens the
+keypad over both cards, 788 x 354 px with keys of 188 x 56 px, its foot
+4 px above the alert band. OK takes 2 to 6; any other count keeps the
+keypad open and names the range in the warning colour. CANCEL, OK with
+nothing typed, the home tag and a tab close it and change nothing.
+
+![The blade count's keypad](img/balance-keypad.png)
+
 The readings (vibration 0.42 g, angle 265°, mass to add 0.35 g) are fixed
 values and not a measurement. A SIMULATED mark and the words "Not measured."
 stand under them, in the same pill the menu uses. Only the BALANCE pane carries

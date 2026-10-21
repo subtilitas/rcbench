@@ -785,6 +785,20 @@ measured:
 
 ![Timing](img/motor-stick-timing.png)
 
+A row's `-` and `+` step its value. A tap on the value, the 216 px column
+between the name and the keys, opens the keypad over the page, from under
+the output strip to 4 px above the alert band: 788 x 368 px, keys of
+188 x 60 px. It names the setting, its range and its unit and takes the
+step's digits after the point: one for Voltage's 0.1 V, two for Current
+limit's 0.05 A. OK sets the value as a step does, onto the nearer step (1.23 A is
+1.25 A); CLOSE asks for the save, as after a step. A value outside the
+range keeps the keypad open and names the range in the warning colour.
+CANCEL, OK with nothing typed and the home tag close it and change nothing;
+TIMING stays. Nothing under it takes a press. A profile's items are lists
+of the ESC's own values and open no keypad.
+
+![The keypad of Beep min](img/motor-stick-timing-keypad.png)
+
 ## Servo
 
 ![Servo](img/servo.png)
@@ -2474,6 +2488,23 @@ choice wraps round from its last value to its first.
   bar at the list's right edge shows the position and takes no touch.
 - A key is its column, 44 px wide, over the 54 px of its row. The 4 px
   between two rows belong to no key.
+- **Keypad.** A tap on a number's value, the 126 px between its `-` and `+`
+  keys, opens the keypad over the list and the strip: 784 x 386 px, keys of
+  187 x 64 px, its foot 4 px above the alert band. It names the setting, its
+  range and its unit, shows the value faint until a digit is typed, and
+  takes as many digits after the point as the step has: one for a shunt's
+  0.1 mΩ, none for a pin. OK sets the value as a step sets it: in force at
+  once, kept by SAVE. A value between two steps is set to the nearer step:
+  73 % brightness is 75 %. A value outside the range keeps the keypad open
+  and names the range in the warning colour, and so does a value the keys
+  never reach: a shunt between 0 and 5.0 mΩ, a Sensor SDA pin the bus cannot
+  have, the GPIO the other PD mini pin holds. The keypad has no minus sign:
+  -1, a pin not set, is set with `-`. CANCEL, OK with nothing typed and the
+  home tag close it and change nothing; leaving SETUP closes it too. Nothing
+  under it takes a press. A switch, a choice, INA228 address and Sensor SCL
+  open no keypad, and a drag that starts on a value scrolls and opens
+  nothing. The bench's state does not lock the keypad, as it does not lock
+  the keys.
 - One finger at a time. While one presses or scrolls, a second finger does
   nothing on this screen.
 
@@ -2718,6 +2749,12 @@ no heading and no rows.
 | --- | --- | --- | --- |
 | 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE for every other channel | what the channel's shunt is in: an output channel, a programming port, or the supply rail |
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | OFF: the channel is not read. The DAOKAI's R100 reads to 1.64 A |
+
+A tap on a shunt's value opens the keypad ([Keys and the list](#keys-and-the-list)).
+44.4 mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,
+where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused.
+
+![The keypad of 0x40 CH1 shunt](img/setup-sensors-keypad.png)
 
 The heading of a part shows on its right what the part is doing:
 

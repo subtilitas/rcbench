@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- A tap on a number's value opens the keypad on every row that sets a
+  number: SETUP's PANEL, INTERFACES and SENSORS lists, ESC STICK's TIMING
+  and BALANCE's blade count, beside the `-` and `+` keys, which stay. The
+  keypad names the setting, its range and its unit and takes the step's
+  digits after the point. OK sets the value through the call a step ends
+  in, onto the nearer step, and SAVE keeps it as it keeps a step. A value
+  outside the range keeps the keypad open, and so does one the keys never
+  reach: a SENSORS shunt between 0 and 5.0 mOhm, a Sensor SDA pin the bus
+  cannot have, the GPIO the other PD mini pin holds. A shunt of 44.4 mOhm
+  from the 100.0 default is five keys, where `-` takes 556 steps.
 - Four glyph tables for the 1024 x 600 panel: 10x20, 12x24 and 20x36 text
   faces and a 32x44 numeral face (20,400, 29,376, 73,440 and 38,016 bytes
   of flash), and the roles `UI_FONT_FINE` (8x16) and `UI_FONT_BODY`

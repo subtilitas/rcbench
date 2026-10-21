@@ -850,6 +850,22 @@ davon ist gemessen:
 
 ![Timing](img/de/motor-stick-timing.png)
 
+`-` und `+` einer Zeile stellen ihren Wert um einen Schritt. Ein Tipp auf
+den Wert, die 216 px breite Spalte zwischen dem Namen und den Tasten, öffnet
+das Tastenfeld über der Seite, von unter dem Ausgangsstreifen bis 4 px über
+dem Alarmband: 788 x 368 px, Tasten von 188 x 60 px. Es nennt die
+Einstellung, ihren Bereich und ihre Einheit und nimmt die Stellen des
+Schritts nach dem Punkt: eine für die 0,1 V von Spannung, zwei für die
+0,05 A von Strombegrenzung. OK setzt den Wert wie ein Schritt auf den
+näheren Schritt (1,23 A sind 1,25 A); SCHLIESSEN fordert das Speichern an,
+wie nach einem Schritt. Ein Wert außerhalb des Bereichs lässt das
+Tastenfeld offen und nennt den Bereich in der Warnfarbe. ABBRECHEN, OK ohne
+getippten Wert und das Home-Tag schließen es und ändern nichts; TIMING
+bleibt. Nichts darunter nimmt einen Druck an. Die Punkte eines Profils sind
+Listen der eigenen Werte des Reglers und öffnen kein Tastenfeld.
+
+![Das Tastenfeld von Piepton min](img/de/motor-stick-timing-keypad.png)
+
 ## Servo
 
 ![Servo](img/de/servo.png)
@@ -2726,6 +2742,26 @@ Auswahl springt vom letzten Wert auf den ersten.
   und nimmt keine Berührung an.
 - Eine Taste ist ihre Spalte, 44 px breit, über die 54 px ihrer Zeile. Die
   4 px zwischen zwei Zeilen gehören zu keiner Taste.
+- **Tastenfeld.** Ein Tipp auf den Wert einer Zahl, die 126 px zwischen
+  ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste und der
+  Leiste: 784 x 386 px, Tasten von 187 x 64 px, sein Fuß 4 px über dem
+  Alarmband. Es nennt die Einstellung, ihren Bereich und ihre Einheit, zeigt
+  den Wert blass, bis eine Ziffer getippt ist, und nimmt so viele Stellen
+  nach dem Punkt, wie der Schritt hat: eine für die 0,1 mΩ eines Shunts,
+  keine für einen Pin. OK setzt den Wert, wie ein Schritt ihn setzt: Er gilt
+  sofort, SPEICHERN behält ihn. Ein Wert zwischen zwei Schritten wird auf
+  den näheren Schritt gesetzt: 73 % Helligkeit sind 75 %. Ein Wert außerhalb
+  des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der
+  Warnfarbe, ebenso ein Wert, den die Tasten nie erreichen: ein Shunt
+  zwischen 0 und 5,0 mΩ, ein Pin für Sensor-SDA, den der Bus nicht haben
+  kann, der GPIO, den der andere PD-mini-Pin hält. Das Tastenfeld hat kein
+  Minuszeichen: -1, ein nicht gesetzter Pin, wird mit `-` gesetzt.
+  ABBRECHEN, OK ohne getippten Wert und das Home-Tag schließen es und ändern
+  nichts; das Verlassen von SETUP schließt es ebenfalls. Nichts darunter
+  nimmt einen Druck an. Ein Schalter, eine Auswahl, INA228 Adresse und
+  Sensor-SCL öffnen kein Tastenfeld, und ein Drag, der auf einem Wert
+  beginnt, scrollt und öffnet nichts. Der Zustand des Prüfstands sperrt das
+  Tastenfeld nicht, so wie er die Tasten nicht sperrt.
 - Ein Finger zur Zeit. Solange einer drückt oder scrollt, bewirkt ein zweiter
   Finger auf diesem Bildschirm nichts.
 
@@ -2991,6 +3027,13 @@ Baustein, der nicht bestückt ist, hat keine Überschrift und keine Zeilen.
 | --- | --- | --- | --- |
 | 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, KEINE für jeden anderen Kanal | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
 | 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | AUS: der Kanal wird nicht gelesen. Der R100 des DAOKAI misst bis 1,64 A |
+
+Ein Tipp auf den Wert eines Shunts öffnet das Tastenfeld
+([Tasten und Liste](#tasten-und-liste)). 44,4 mΩ vom Standardwert 100,0
+sind fünf Tasten, `4`, `4`, `.`, `4` und OK, wo `-` 556 Schritte braucht.
+0 ist AUS; 0,1 bis 4,9 wird abgelehnt.
+
+![Das Tastenfeld von 0x40 CH1 Shunt](img/de/setup-sensors-keypad.png)
 
 Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 

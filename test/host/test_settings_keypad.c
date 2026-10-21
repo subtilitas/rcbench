@@ -1,0 +1,484 @@
+/*
+ * SETUP's keypad: a tap on a number's value opens it; OK sets the value
+ * through settings_set(), the call a "-" or "+" step ends in, so SAVE keeps
+ * what a step would have kept; a value outside the range, or one the steps
+ * never reach, is refused with the keypad open; CANCEL and the home tag
+ * change nothing.  The helper every setting's keypad uses
+ * (ui_setting_keypad.h) is held here too.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#include "settings_rig.h"
+
+#include "sensors_rows.h"
+#include "settings_sensors.h"
+#include "ui_keypad.h"
+#include "ui_setting_keypad.h"
+
+/* The value between a row's "-" and "+" keys, in panel coordinates. */
+#define XV ((MINUS_X + BTN_W + PLUS_X) / 2)
+
+/* The keypad's key @p key tapped, in panel coordinates. */
+static void key(ui_key_t key)
+{
+    const gfx_rect_t r = ui_keypad_key_rect(settings_screen_keypad(), key);
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
+/* @p text typed on the keypad, digit by digit; '.' is the point. */
+static void type(const char *text)
+{
+    static const ui_key_t k_digit[10] = {
+        UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3, UI_KEY_4,
+        UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8, UI_KEY_9,
+    };
+    for (const char *p = text; *p != '\0'; ++p) {
+        key((*p == '.') ? UI_KEY_DOT : k_digit[*p - '0']);
+    }
+}
+
+/* A drag on the list by @p dy px, from the label column. */
+static void scroll_by(int dy)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = XL,
+                                   .y = (int16_t)(LIST_Y + LIST_H - 20) } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_MOVE;
+    for (int moved = 6; moved <= dy; moved += 6) {
+        e.point.y = (int16_t)(LIST_Y + LIST_H - 20 - moved);
+        ui_router_event(&e);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+}
+
+/* The middle of the row of @p id in the open list, in panel coordinates,
+ * scrolled into view; -1 for a row the list does not show. */
+static int show(setting_id_t id)
+{
+    const setting_cat_t cat = settings_def(id)->cat;
+    setting_id_t ids[64];
+    const int n = settings_in_category(cat, ids, 64);
+    int row = -1;
+    for (int i = 0; i < n; ++i) {
+        if (ids[i] == id) {
+            row = settings_screen_row_of(cat, i);
+        }
+    }
+    if (row < 0) {
+        return -1;
+    }
+    for (int k = 0; k < 40; ++k) {
+        const int top = LIST_Y + row * ROW_PITCH - settings_screen_scroll(NULL);
+        if (top >= LIST_Y && top + ROW_H <= LIST_Y + LIST_H) {
+            return top + ROW_H / 2;
+        }
+        scroll_by(96);
+    }
+    return -1;
+}
+
+/* SETUP on @p cat's list, at the defaults, with the memory store. */
+static void list_of(setting_cat_t cat)
+{
+    fresh_hub();
+    settings_set_store(&s_mem_store);
+    s_save_calls = 0;
+    s_has_saved = false;
+    open_category(cat);
+}
+
+/* The keypad of @p id, opened by a tap on its value. */
+static void open_on(setting_id_t id)
+{
+    const int y = show(id);
+    CHECK(y > 0);
+    tap(XV, y);
+}
+
+static void set_armed(bool armed)
+{
+    ui_bench_status_t st = *ui_router_status();
+    st.armed = armed;
+    ui_router_set_status(&st);
+}
+
+/* ---------------------------------------------------------------- opening */
+
+TEST_CASE(a_tap_on_a_value_opens_its_keypad)
+{
+    list_of(SET_CAT_IFACE);
+    const setting_id_t id = SET_INA228_MAX_A;
+    open_on(id);
+    const ui_keypad_t *k = settings_screen_keypad();
+    CHECK(k->open);
+    CHECK_EQ(settings_screen_keypad_setting(), (int)id);
+    CHECK_STR_EQ(k->title, ui_setting_label(id));
+    CHECK_STR_EQ(k->unit, "A");
+    CHECK_NEAR(k->min, 1.0f, 1e-6f);
+    CHECK_NEAR(k->max, 300.0f, 1e-6f);
+    CHECK_EQ(k->decimals, 1);
+    CHECK_NEAR(k->value, settings_get(id), 1e-6f);
+    /* Over the list and the strip, above the alert band. */
+    CHECK_EQ(k->area.x, 8);
+    CHECK_EQ(k->area.y, 8);
+    CHECK_EQ(k->area.w, 784);
+    CHECK(k->area.y + k->area.h <= UI_BODY_H - UI_ALERT_H);
+    /* Drawn: the frame carries its OK key's accent. */
+    ui_router_render(&s_c, 0);
+    const gfx_rect_t ok = ui_keypad_key_rect(k, UI_KEY_OK);
+    CHECK_EQ(s_fb[(UI_BAND_H + ok.y + ok.h / 2) * W + ok.x + 4],
+             ui_theme_color(UI_C_ACCENT));
+}
+
+TEST_CASE(a_tap_beside_the_value_opens_nothing)
+{
+    list_of(SET_CAT_IFACE);
+    snap();
+    /* The label, a switch's value, and a press that turns into a scroll. */
+    tap(XL, show(SET_INA228_MAX_A));
+    CHECK(!settings_screen_keypad()->open);
+    tap(XV, show(SET_INA228_EN));
+    CHECK(!settings_screen_keypad()->open);
+    /* A choice: the INA228 address is a list, stepped. */
+    tap(XV, show(SET_INA228_ADDR));
+    CHECK(!settings_screen_keypad()->open);
+    const int y = show(SET_INA228_MAX_A);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = XV, .y = (int16_t)y } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_MOVE;
+    for (int i = 1; i <= 6; ++i) {
+        e.point.y = (int16_t)(y - 6 * i);
+        ui_router_event(&e);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    CHECK(!settings_screen_keypad()->open);
+    /* Sensor SCL follows SDA: no keys, no keypad. */
+    tap(XV, show(SET_SENSE_SCL));
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_EQ(changed(), 0);
+}
+
+/* ----------------------------------------------------------- the entries */
+
+TEST_CASE(the_range_ends_are_taken_and_a_value_past_them_refused)
+{
+    list_of(SET_CAT_IFACE);
+    const setting_id_t id = SET_INA228_MAX_A;
+    open_on(id);
+    type("1");
+    key(UI_KEY_OK);
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_NEAR(settings_get(id), 1.0f, 1e-6f);
+
+    open_on(id);
+    type("300");
+    key(UI_KEY_OK);
+    CHECK_NEAR(settings_get(id), 300.0f, 1e-4f);
+
+    /* Above the maximum: refused, the keypad open with the entry kept,
+     * the value as it was. */
+    open_on(id);
+    type("300.1");
+    key(UI_KEY_OK);
+    CHECK(settings_screen_keypad()->open);
+    CHECK(settings_screen_keypad()->refused);
+    CHECK_STR_EQ(settings_screen_keypad()->entry, "300.1");
+    CHECK_NEAR(settings_get(id), 300.0f, 1e-4f);
+    key(UI_KEY_CLR);
+    type("0.9");                         /* under the minimum */
+    key(UI_KEY_OK);
+    CHECK(settings_screen_keypad()->refused);
+    CHECK_NEAR(settings_get(id), 300.0f, 1e-4f);
+    key(UI_KEY_CANCEL);
+    CHECK(!settings_screen_keypad()->open);
+}
+
+TEST_CASE(a_digit_past_the_steps_decimals_is_not_typed)
+{
+    list_of(SET_CAT_IFACE);
+    const setting_id_t id = SET_INA228_MAX_A;     /* steps of 0.1 A */
+    open_on(id);
+    type("12.345");
+    CHECK_STR_EQ(settings_screen_keypad()->entry, "12.3");
+    key(UI_KEY_OK);
+    CHECK_NEAR(settings_get(id), 12.3f, 1e-4f);
+    /* A whole number takes no point at all. */
+    open_on(SET_INA228_UOHM);
+    type("4.5");
+    CHECK_STR_EQ(settings_screen_keypad()->entry, "45");
+    key(UI_KEY_OK);                                 /* under its 50 */
+    CHECK(settings_screen_keypad()->refused);
+    CHECK_EQ(settings_get_int(SET_INA228_UOHM), 200);
+    type("5");
+    key(UI_KEY_OK);
+    CHECK_EQ(settings_get_int(SET_INA228_UOHM), 455);
+}
+
+TEST_CASE(cancel_and_the_home_tag_change_nothing)
+{
+    list_of(SET_CAT_IFACE);
+    snap();
+    open_on(SET_INA228_UOHM);
+    type("1234");
+    key(UI_KEY_CANCEL);
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_EQ(changed(), 0);
+    CHECK(!settings_dirty());
+    /* OK on nothing typed is CANCEL. */
+    open_on(SET_INA228_UOHM);
+    key(UI_KEY_OK);
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_EQ(changed(), 0);
+    /* The home tag over the keypad closes it, and the list stays. */
+    open_on(SET_INA228_UOHM);
+    type("999");
+    tap(home_x(), home_y());
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_EQ(settings_screen_category(), (int)SET_CAT_IFACE);
+    CHECK_EQ(changed(), 0);
+    CHECK(!settings_dirty());
+    /* Leaving SETUP takes the keypad with it. */
+    open_on(SET_INA228_UOHM);
+    type("999");
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_EQ(changed(), 0);
+}
+
+TEST_CASE(nothing_under_the_keypad_presses)
+{
+    list_of(SET_CAT_IFACE);
+    snap();
+    open_on(SET_INA228_UOHM);
+    /* The first row's "+" key lies under the keypad's title, and a row's
+     * value under its entry: neither steps nor opens anything. */
+    tap(PLUS_X + BTN_W / 2, row_y(0));
+    const gfx_rect_t a = settings_screen_keypad()->area;
+    tap(XV, UI_BAND_H + a.y + 30 + 6 + 26);
+    CHECK(settings_screen_keypad()->open);
+    CHECK_EQ(settings_screen_keypad_setting(), (int)SET_INA228_UOHM);
+    CHECK_EQ(changed(), 0);
+    CHECK(!settings_dirty());
+}
+
+/* ------------------------------------------------- the same as a step */
+
+/* The station's walk on 0.22.0: 0x40 CH1's shunt from 100.0 to 44.4 mOhm
+ * took 556 steps of 0.1 mOhm.  The keypad's 44.4 is the value those steps
+ * reach, set through the same call, and SAVE writes the same word. */
+TEST_CASE(a_typed_shunt_saves_what_556_steps_save)
+{
+    const setting_id_t id = SET_INA_SH(0);
+    list_of(SET_CAT_SENSORS);
+    settings_set(SET_INA_FIT(0), 1.0f);
+    ui_router_render(&s_c, 0);
+    open_on(id);
+    CHECK_STR_EQ(settings_screen_keypad()->title, "0x40 CH1 shunt");
+    CHECK_STR_EQ(settings_screen_keypad()->unit, "mOhm");
+    CHECK_NEAR(settings_screen_keypad()->min, 0.0f, 1e-6f);
+    CHECK_NEAR(settings_screen_keypad()->max, 1000.0f, 1e-6f);
+    type("44.4");
+    key(UI_KEY_OK);
+    const float typed = settings_get(id);
+    CHECK(settings_dirty());
+    tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
+    CHECK(settings_save_tick(true));
+    const float saved_typed = s_saved[id];
+
+    list_of(SET_CAT_SENSORS);
+    settings_set(SET_INA_FIT(0), 1.0f);
+    ui_router_render(&s_c, 0);
+    const int y = show(id);
+    CHECK(y > 0);
+    for (int i = 0; i < 556; ++i) {
+        tap(MINUS_X + BTN_W / 2, y);
+    }
+    const float stepped = settings_get(id);
+    tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
+    CHECK(settings_save_tick(true));
+
+    CHECK_NEAR(typed, 44.4f, 1e-4f);
+    CHECK(typed == stepped);
+    CHECK(saved_typed == s_saved[id]);
+}
+
+/* A value between two steps is set onto the nearer, as settings_set()
+ * puts any value; a PANEL row reaches the interface as a step does. */
+TEST_CASE(a_value_between_steps_takes_the_nearer_step)
+{
+    list_of(SET_CAT_APP);
+    settings_set(SET_BRIGHTNESS, 70.0f);
+    open_on(SET_BRIGHTNESS);                       /* steps of 5 % */
+    type("73");
+    key(UI_KEY_OK);
+    CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 75);
+    CHECK_EQ(ui_theme_brightness(), 75);
+    settings_set(SET_BRIGHTNESS, 70.0f);
+    tap(PLUS_X + BTN_W / 2, show(SET_BRIGHTNESS));
+    CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 75);
+}
+
+/* ------------------------------------------- what the steps never reach */
+
+TEST_CASE(a_shunt_between_off_and_five_milliohm_is_refused)
+{
+    const setting_id_t id = SET_INA_SH(0);
+    list_of(SET_CAT_SENSORS);
+    settings_set(SET_INA_FIT(0), 1.0f);
+    ui_router_render(&s_c, 0);
+    open_on(id);
+    type("4.9");
+    key(UI_KEY_OK);
+    CHECK(settings_screen_keypad()->refused);
+    CHECK_NEAR(settings_get(id), 100.0f, 1e-4f);
+    key(UI_KEY_CLR);
+    type("0");                                     /* off */
+    key(UI_KEY_OK);
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_EQ(settings_get(id), 0.0f);
+    open_on(id);
+    type("5");
+    key(UI_KEY_OK);
+    CHECK_NEAR(settings_get(id), 5.0f, 1e-4f);
+}
+
+TEST_CASE(a_pin_the_row_does_not_take_is_refused)
+{
+    list_of(SET_CAT_IFACE);
+    /* Sensor SDA takes 0, 4, 6, 14, 16, 18, 20 and 26. */
+    open_on(SET_SENSE_SDA);
+    type("5");
+    key(UI_KEY_OK);
+    CHECK(settings_screen_keypad()->refused);
+    CHECK_EQ(settings_get_int(SET_SENSE_SDA), 16);
+    key(UI_KEY_CLR);
+    type("14");
+    key(UI_KEY_OK);
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_EQ(settings_get_int(SET_SENSE_SDA), 14);
+    CHECK_EQ(settings_get_int(SET_SENSE_SCL), 15);
+    /* PD mini TX never on RX's pin. */
+    settings_set(SET_PDMINI_RX, 9.0f);
+    open_on(SET_PDMINI_TX);
+    type("9");
+    key(UI_KEY_OK);
+    CHECK(settings_screen_keypad()->refused);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
+    key(UI_KEY_CLR);
+    type("8");
+    key(UI_KEY_OK);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 8);
+}
+
+/* ------------------------------------------------------ ARMED and held */
+
+static setting_id_t s_held = SETTING_COUNT;
+
+static bool hold_one(setting_id_t id)
+{
+    return id == s_held;
+}
+
+/* SETUP's steps are not refused while the bench is ARMED, and neither is
+ * the keypad; a row held has no keys and opens no keypad, and a keypad
+ * open when its row is held closes on the next frame with nothing set. */
+TEST_CASE(armed_steps_and_keypad_alike_and_a_held_row_refuses_both)
+{
+    list_of(SET_CAT_IFACE);
+    set_armed(true);
+    open_on(SET_INA228_UOHM);
+    type("300");
+    key(UI_KEY_OK);
+    CHECK_EQ(settings_get_int(SET_INA228_UOHM), 300);
+    tap(PLUS_X + BTN_W / 2, show(SET_INA228_UOHM));
+    CHECK_EQ(settings_get_int(SET_INA228_UOHM), 301);
+    set_armed(false);
+
+    s_held = SET_INA228_UOHM;
+    settings_set_hold(hold_one);
+    snap();
+    tap(XV, show(SET_INA228_UOHM));
+    CHECK(!settings_screen_keypad()->open);
+    tap(PLUS_X + BTN_W / 2, show(SET_INA228_UOHM));
+    CHECK_EQ(changed(), 0);
+
+    settings_set_hold(NULL);
+    open_on(SET_INA228_UOHM);
+    type("777");
+    settings_set_hold(hold_one);
+    ui_router_tick(0.016f);
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_EQ(changed(), 0);
+    settings_set_hold(NULL);
+    s_held = SETTING_COUNT;
+}
+
+/* A press on a key the touch stream lost is let go; what was typed
+ * stays. */
+TEST_CASE(a_lost_press_keeps_what_was_typed)
+{
+    list_of(SET_CAT_IFACE);
+    open_on(SET_INA228_UOHM);
+    type("12");
+    const gfx_rect_t r = ui_keypad_key_rect(settings_screen_keypad(),
+                                            UI_KEY_3);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 2, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + r.y + r.h / 2) } };
+    ui_router_event(&e);
+    CHECK(settings_screen_keypad()->pressed >= 0);
+    ui_router_cancel_gestures();
+    CHECK(settings_screen_keypad()->pressed < 0);
+    CHECK(settings_screen_keypad()->open);
+    CHECK_STR_EQ(settings_screen_keypad()->entry, "12");
+}
+
+/* ------------------------------------------------------------ the helper */
+
+TEST_CASE(the_helper_takes_its_decimals_from_the_step)
+{
+    fresh_model();
+    CHECK_EQ(ui_setting_keypad_decimals(SET_INA228_UOHM), 0);    /* 1    */
+    CHECK_EQ(ui_setting_keypad_decimals(SET_INA228_MAX_A), 1);   /* 0.1  */
+    CHECK_EQ(ui_setting_keypad_decimals(SET_SUPPLY_I_MAX), 2);   /* 0.05 */
+    CHECK_EQ(ui_setting_keypad_decimals(SET_SUPPLY_V_MAX), 2);   /* 0.02 */
+    CHECK_EQ(ui_setting_keypad_decimals(SET_SERVO_IDLE_MAX), 2); /* 0.01 */
+    CHECK_EQ(ui_setting_keypad_decimals(SET_SERVO_PROG_I), 3);   /* 0.001 */
+    CHECK_EQ(ui_setting_keypad_decimals(SET_STICK_TIMEOUT), 0);  /* 5000 */
+    CHECK_EQ(ui_setting_keypad_decimals((setting_id_t)SETTING_COUNT), 0);
+    CHECK(ui_setting_keypad_offered(SET_STICK_V));
+    CHECK(!ui_setting_keypad_offered(SET_LANGUAGE));
+    CHECK(!ui_setting_keypad_offered(SET_LOG_AUTO));
+    CHECK(!ui_setting_keypad_offered(SET_SENSE_SCL));
+    CHECK(!ui_setting_keypad_offered((setting_id_t)-1));
+    CHECK(!ui_setting_keypad_takes((setting_id_t)SETTING_COUNT, 1.0f));
+    /* Opened for a row it does not offer, it stays shut. */
+    ui_keypad_t k;
+    memset(&k, 0, sizeof(k));
+    ui_setting_keypad_open(&k, gfx_rect_make(0, 0, 400, 300), SET_LANGUAGE);
+    CHECK(!k.open);
+    ui_setting_keypad_open(NULL, gfx_rect_make(0, 0, 400, 300), SET_STICK_V);
+    CHECK_EQ(ui_setting_keypad_ok(&k, SET_LANGUAGE, 1.0f), UI_SETKEY_LOCKED);
+}
+
+int main(void)
+{
+    RUN(a_tap_on_a_value_opens_its_keypad);
+    RUN(a_tap_beside_the_value_opens_nothing);
+    RUN(the_range_ends_are_taken_and_a_value_past_them_refused);
+    RUN(a_digit_past_the_steps_decimals_is_not_typed);
+    RUN(cancel_and_the_home_tag_change_nothing);
+    RUN(nothing_under_the_keypad_presses);
+    RUN(a_typed_shunt_saves_what_556_steps_save);
+    RUN(a_value_between_steps_takes_the_nearer_step);
+    RUN(a_shunt_between_off_and_five_milliohm_is_refused);
+    RUN(a_pin_the_row_does_not_take_is_refused);
+    RUN(armed_steps_and_keypad_alike_and_a_held_row_refuses_both);
+    RUN(a_lost_press_keeps_what_was_typed);
+    RUN(the_helper_takes_its_decimals_from_the_step);
+    return test_summary("settings_keypad");
+}

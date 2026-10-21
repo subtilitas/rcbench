@@ -28,6 +28,7 @@
 #include "prog_registry.h"
 #include "supply.h"
 #include "tone_link.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 
 /** The page set MOTOR & ESC opens: the registry's STICK MENU row. */
@@ -89,6 +90,19 @@ const esc_stick_t *esc_stick_panel_stick(void);
  *  is open; for tests. */
 const char *esc_stick_panel_search(void);
 bool esc_stick_panel_typing(void);
+
+/**
+ * @brief TIMING's keypad, which a tap on a row's value opens over the
+ *        session's pages; for tests and the renderer.
+ * @return The keypad, open or closed.
+ */
+const ui_keypad_t *esc_stick_panel_keypad(void);
+
+/**
+ * @brief The setting TIMING's open keypad types; for tests.
+ * @return Its setting_id_t, or -1 while the keypad is closed.
+ */
+int esc_stick_panel_keypad_setting(void);
 
 /** How many profiles the list holds under the search, and the index in it
  *  of the top row shown; for tests. */

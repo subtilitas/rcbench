@@ -15,6 +15,7 @@
 
 #include "esc_profile.h"
 #include "settings.h"
+#include "ui_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
@@ -589,11 +590,21 @@ static DRAWER void sp_draw_card(gfx_canvas_t *c)
               false, !esc_stick_running(&t->run) && !t->shown);
 }
 
-/* The profile page.  Its parts are drawn one after another, so none of
- * their buffers is on the stack below the stage drawn last. */
+/**
+ * @brief The profile page, or TIMING, or TIMING's keypad alone while it is
+ *        open.  Its parts are drawn one after another, so none of their
+ *        buffers is on the stack below the stage drawn last.
+ * @param c The canvas.
+ */
 static void sp_draw_device(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
+    if (t->timing && t->kp.open) {
+        /* A row's value typed: the keypad covers the page, and nothing
+         * under it is drawn, as nothing under it presses. */
+        ui_keypad_render(&t->kp, c);
+        return;
+    }
     sp_draw_crumb(c);
     if (t->timing) {
         sp_draw_timing(c);

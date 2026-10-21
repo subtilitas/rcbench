@@ -8,7 +8,10 @@
  * The list walks the rows shared/settings declares (settings_rows.c; SENSORS
  * lists a fitted part's rows only, sensors_rows.h) and draws each row by
  * its type: a stepper for a number, a toggle for a bool, a choice for an
- * enum.  A category's strings follow its settings, each a row that shows
+ * enum.  A tap on a number's value, between its "-" and "+" keys, opens the
+ * keypad over the list (ui_setting_keypad.h); its OK sets the value through
+ * settings_set(), as a step does.  A category's strings follow its
+ * settings, each a row that shows
  * its text and opens the on-screen keyboard on a tap (SD CARD's two log
  * folders, in the keyboard's folder mode).  A new setting is a schema row,
  * and a new tile is a line of k_tiles (settings_screen_int.h); nothing else
@@ -36,6 +39,8 @@
 #include "settings_sensors.h"
 #include "tone_link.h"
 #include "ui_icons.h"
+#include "ui_keypad.h"
+#include "ui_setting_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_widgets.h"
@@ -404,8 +409,47 @@ static bool on_key(int kind, int index, int x, int y)
     return gfx_rect_contains(stg_row_rect(index), x, y);
 }
 
+/**
+ * @brief Whether (x, y) is on the value of row @p index: the gap between
+ *        its "-" and "+" keys, over the row's own height, on a number the
+ *        keypad takes (ui_setting_keypad_offered()).
+ * @param index The row.
+ * @param x The point's x, in the screen's coordinates.
+ * @param y The point's y.
+ * @return True where a tap opens the row's keypad.
+ */
+static bool on_value(int index, int x, int y)
+{
+    if (x < VALUE_X || x >= VALUE_X + VALUE_W || row_at(x, y) != index
+        || row_is_heading(index) || row_text(index) >= 0) {
+        return false;
+    }
+    return ui_setting_keypad_offered(row_setting(index))
+           && gfx_rect_contains(stg_row_rect(index), x, y);
+}
+
 /* ------------------------------------------------------------------- input */
 
+/**
+ * @brief A setting changed by a step or by the keypad: the PANEL rows reach
+ *        the interface at once, and the list is drawn again.
+ * @param id The setting that changed.
+ */
+static void value_changed(setting_id_t id)
+{
+    const setting_def_t *d = settings_def(id);
+    if (d != NULL && d->cat == SET_CAT_APP) {
+        settings_apply_ui();      /* language, theme, brightness, contrast */
+    }
+    settings_screen_invalidate();
+}
+
+/**
+ * @brief The "-" or "+" key of row @p index stepped @p steps times through
+ *        settings_adjust(); a heading's and a string's row take none.
+ * @param index The row.
+ * @param steps The steps, negative for "-".
+ */
 static void step_row(int index, int steps)
 {
     if (row_is_heading(index) || row_text(index) >= 0) {
@@ -417,9 +461,30 @@ static void step_row(int index, int steps)
         return;
     }
     settings_adjust(id, steps);
-    if (d->cat == SET_CAT_APP) {
-        settings_apply_ui();      /* language, theme, brightness, contrast */
+    value_changed(id);
+}
+
+/**
+ * @brief The keypad closes, with nothing typed taken.
+ */
+static void close_keypad(void)
+{
+    if (s.kp.open) {
+        ui_keypad_close(&s.kp);
+        settings_screen_invalidate();
     }
+}
+
+/**
+ * @brief A tap on the value of row @p index: the keypad of its number,
+ *        over the list and the strip.
+ * @param index The row.
+ */
+static void open_keypad(int index)
+{
+    const setting_id_t id = row_setting(index);
+    ui_setting_keypad_open(&s.kp, KP_AREA, id);
+    s.kp_id = id;
     settings_screen_invalidate();
 }
 
@@ -434,27 +499,40 @@ static void drop_press(void)
     s.repeating = false;
 }
 
+/**
+ * @brief The screen's state cleared: the tiles, PANEL's list kept for the
+ *        first tap, no press, the keyboard and the keypad closed.
+ */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
     s.cat = SET_CAT_APP;
     s.hit_index = -1;
     s.tk.pressed = -1;
+    s.kp.pressed = -1;
     stg_clamp_scroll();
 }
 
+/**
+ * @brief SETUP shown: it opens on its tiles, from the menu and from a
+ *        screen a tile opened alike.  The list keeps its category and its
+ *        scroll; the keyboard and the keypad are closed.
+ */
 static void enter(void)
 {
-    /* SETUP opens on its tiles, from the menu and from a screen a tile
-     * opened alike.  The list keeps its category and its scroll. */
     s.list = false;
     s.warn = false;
     ui_textkey_close(&s.tk);
+    ui_keypad_close(&s.kp);
     drop_press();
     stg_clamp_scroll();
     settings_screen_invalidate();
 }
 
+/**
+ * @brief SETUP left: the warning, the keyboard and the keypad close, and
+ *        what was typed is not taken.
+ */
 static void leave(void)
 {
     /*
@@ -468,15 +546,24 @@ static void leave(void)
      */
     s.warn = false;
     ui_textkey_close(&s.tk);     /* what was typed is not taken */
+    ui_keypad_close(&s.kp);
     drop_press();
 }
 
-/* The home tag on a list goes back to the tiles; on the tiles it leaves,
- * through hold().  Over the warning it is STAY, over the keyboard
- * CANCEL. */
+/**
+ * @brief The home tag: on a list it goes back to the tiles; on the tiles it
+ *        leaves, through hold().  Over the warning it is STAY, over the
+ *        keyboard and the keypad CANCEL.
+ * @return True when it closed something or climbed to the tiles; false to
+ *         leave SETUP.
+ */
 static bool back(void)
 {
     drop_press();
+    if (s.kp.open) {
+        close_keypad();
+        return true;
+    }
     if (s.tk.open) {
         ui_textkey_close(&s.tk);
         settings_screen_invalidate();
@@ -495,6 +582,11 @@ static bool back(void)
     return true;
 }
 
+/**
+ * @brief A frame: the save button's inputs followed, a keypad whose row is
+ *        held since it opened closed, and a held "-" or "+" repeated.
+ * @param dt_s The frame's time, s.
+ */
 static void tick(float dt_s)
 {
     if (s.drawn_dirty != settings_dirty()
@@ -502,6 +594,11 @@ static void tick(float dt_s)
         || s.drawn_failed != settings_save_failed()
         || (s.warn && s.drawn_armed != stg_bench_armed())) {
         settings_screen_invalidate();
+    }
+    /* A row held or derived since its keypad opened takes no value: the
+     * keypad goes, as the row's keys have gone. */
+    if (s.kp.open && !ui_setting_keypad_offered(s.kp_id)) {
+        close_keypad();
     }
 
     if (s.hit_kind != HIT_MINUS && s.hit_kind != HIT_PLUS) {
@@ -560,7 +657,12 @@ static void open_text(setting_text_id_t id)
     settings_screen_invalidate();
 }
 
-/* The DOWN of the contact that holds the screen: what it presses. */
+/**
+ * @brief The DOWN of the contact that holds the screen: what it presses.
+ * @param evt The DOWN.
+ * @param x Its x, in the screen's coordinates.
+ * @param y Its y.
+ */
 static void press(const touch_event_t *evt, int x, int y)
 {
     if (s.warn) {
@@ -612,6 +714,7 @@ static void press(const touch_event_t *evt, int x, int y)
                      : row_text(row) >= 0           ? HIT_TEXT
                      : on_key(HIT_MINUS, row, x, y) ? HIT_MINUS
                      : on_key(HIT_PLUS, row, x, y)  ? HIT_PLUS
+                     : on_value(row, x, y)          ? HIT_VALUE
                                                     : HIT_LIST;
         if (s.hit_kind != HIT_LIST) {
             settings_screen_invalidate();   /* the key draws pressed */
@@ -621,7 +724,14 @@ static void press(const touch_event_t *evt, int x, int y)
     s.hit_kind = HIT_NONE;
 }
 
-/* The UP of a tap the finger made: what it activates. */
+/**
+ * @brief The UP of a tap the finger made: what it activates.
+ * @param kind The HIT_ kind the press took.
+ * @param index The tile or row it took.
+ * @param repeated Whether a held key has repeated, which adds no step.
+ * @param x The UP's x, in the screen's coordinates.
+ * @param y Its y.
+ */
 static void release(int kind, int index, bool repeated, int x, int y)
 {
     if (kind == HIT_MINUS || kind == HIT_PLUS) {
@@ -636,6 +746,8 @@ static void release(int kind, int index, bool repeated, int x, int y)
             && on_key(kind, index, x, y)) {
             step_row(index, (kind == HIT_PLUS) ? 1 : -1);
         }
+    } else if (kind == HIT_VALUE && s.list && on_value(index, x, y)) {
+        open_keypad(index);
     } else if (kind == HIT_TEXT && s.list && row_at(x, y) == index) {
         const int text = row_text(index);
         if (text >= 0) {
@@ -695,11 +807,39 @@ static void textkey_event(const touch_event_t *evt)
     }
 }
 
+/**
+ * @brief An event while the keypad is open goes to the keypad alone.  OK
+ *        sets the value through settings_set(), as a step does, and SAVE
+ *        keeps it; a value the steps never reach keeps the keypad open,
+ *        refused (ui_setting_keypad_ok()).
+ * @param evt The event.
+ */
+static void keypad_event(const touch_event_t *evt)
+{
+    float v = 0.0f;
+    if (ui_keypad_event(&s.kp, evt, &v) == UI_KEYPAD_OK
+        && ui_setting_keypad_ok(&s.kp, s.kp_id, v) == UI_SETKEY_SET) {
+        value_changed(s.kp_id);
+    }
+    if (s.kp.revision != s.drawn_kp_rev || s.kp.open != s.drawn_kp) {
+        settings_screen_invalidate();
+    }
+}
+
+/**
+ * @brief One touch event: to the keypad or the keyboard while one is open,
+ *        else to the press, the scroll and the release it ends in.
+ * @param evt The event, in the screen's coordinates.
+ */
 static void event(const touch_event_t *evt)
 {
     int x = evt->point.x;
     int y = evt->point.y;
 
+    if (s.kp.open) {
+        keypad_event(evt);
+        return;
+    }
     if (s.tk.open) {
         textkey_event(evt);
         return;
@@ -738,7 +878,8 @@ static void event(const touch_event_t *evt)
         if (moved < 0) { moved = -moved; }
         if (!s.dragging && moved > DRAG_SLOP &&
             (s.hit_kind == HIT_LIST || s.hit_kind == HIT_MINUS ||
-             s.hit_kind == HIT_PLUS || s.hit_kind == HIT_TEXT)) {
+             s.hit_kind == HIT_PLUS || s.hit_kind == HIT_TEXT ||
+             s.hit_kind == HIT_VALUE)) {
             /* Turned into a scroll: give up the button. */
             s.dragging = true;
             s.hit_kind = HIT_LIST;
@@ -782,18 +923,22 @@ static void event(const touch_event_t *evt)
     }
 }
 
-/*
- * Touch events were lost between two frames, so this screen's record of what
- * is on the glass cannot be trusted.  A hit held open acts on its release
- * and a drag owns its track id, and the GT911 reuses ids: a later contact
- * that began somewhere else would be taken for this one and press a control
- * nobody touched.  The repeat on the plus and minus keys runs on the frame
- * timer while a hit stands, so it stops here too.
+/**
+ * @brief Touch events were lost between two frames, so this screen's record
+ *        of what is on the glass cannot be trusted.
+ *
+ * A hit held open acts on its release and a drag owns its track id, and the
+ * GT911 reuses ids: a later contact that began somewhere else would be taken
+ * for this one and press a control nobody touched.  The repeat on the plus
+ * and minus keys runs on the frame timer while a hit stands, so it stops
+ * here too.  A key held on the keyboard or the keypad is let go; what was
+ * typed stays.
  */
 static void cancel(void)
 {
     drop_press();
     ui_textkey_cancel_press(&s.tk);
+    ui_keypad_cancel_press(&s.kp);
     settings_screen_invalidate();
 }
 
@@ -826,4 +971,14 @@ int settings_screen_scroll(int *max)
 const ui_textkey_t *settings_screen_textkey(void)
 {
     return &s.tk;
+}
+
+const ui_keypad_t *settings_screen_keypad(void)
+{
+    return &s.kp;
+}
+
+int settings_screen_keypad_setting(void)
+{
+    return s.kp.open ? (int)s.kp_id : -1;
 }
