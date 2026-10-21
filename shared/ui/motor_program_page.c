@@ -142,7 +142,7 @@ static uint32_t prog_signature(void)
                                 ? prog_ps_pin(rows[i].page_set)
                                 : PROG_REG_NO_PIN;
         sig = sig * 31u + (uint32_t)prog_reg_state(rows, n, i, caps) * 257u
-              + pin;
+              + pin + (uint32_t)prog_reg_port(&rows[i]) * 65537u;
     }
     return sig;
 }

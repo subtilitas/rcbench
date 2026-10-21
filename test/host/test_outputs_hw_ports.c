@@ -7,7 +7,8 @@
  * as held; no pulse written on it, armed or not; a port moved between the
  * two functions let go the old way before it is taken the new way; a
  * port whose function and pin stay is left alone; a pin the chip does
- * not have is not held; a port without a pin let go.
+ * not have is not held; a port without a pin let go; a session taking a
+ * parked pin and the pin parked again when it comes back.
  *
  * The pin drivers are fakes that count what they are asked.  The clock is
  * pico_stub/pico/stdlib.h's.
@@ -210,11 +211,33 @@ TEST_CASE(a_pin_the_chip_has_not_is_not_held_and_no_pin_lets_go)
     outputs_hw_ports(NULL, NULL, 0u, 9u);
 }
 
+/* A session on a NONE port: the wire page takes the parked pin (the port
+ * handed no pin), the SERVO PWM port beside it stays bound, and the give
+ * back parks the pin again. */
+TEST_CASE(a_session_takes_a_parked_pin_and_parks_it_again)
+{
+    outputs_hw_init();
+    ports(13u, 14u, 2u);
+    counts_zero();
+    ports(13u, 0xFFu, 2u);           /* the session takes port 1 */
+    CHECK_EQ(g_unparks, 1);
+    CHECK_EQ(g_last_pin, 14u);
+    CHECK_EQ(g_pwm_releases + g_pwm_binds + g_parks, 0);
+    CHECK_EQ(outputs_hw_ports_bound(), 1u);
+    counts_zero();
+    ports(13u, 14u, 2u);             /* and gives it back */
+    CHECK_EQ(g_parks, 1);
+    CHECK_EQ(g_last_pin, 14u);
+    CHECK_EQ(g_pwm_releases + g_pwm_binds + g_unparks, 0);
+    CHECK_EQ(outputs_hw_ports_bound(), 3u);
+}
+
 int main(void)
 {
     RUN(a_none_port_is_parked_and_held_without_the_generator);
     RUN(a_parked_port_renders_no_pulse_armed_or_not);
     RUN(a_function_change_lets_go_the_old_way_first);
     RUN(a_pin_the_chip_has_not_is_not_held_and_no_pin_lets_go);
+    RUN(a_session_takes_a_parked_pin_and_parks_it_again);
     return test_summary("outputs_hw_ports");
 }

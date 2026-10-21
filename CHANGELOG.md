@@ -80,8 +80,18 @@ history is in git.
   word before the ports, spare until 4.26, in version 7 and 8 records
   alike. An image of 4.25 writes the word back as 0, and an older one
   reads no version 8 record and starts empty: after such a downgrade and
-  an upgrade the ports are on their default functions. With an IOmcu older than 4.26 every port is SERVO PWM and
-  OUTPUTS says `IOMCU OLDER THAN 4.26: SERVO PWM ONLY`.
+  an upgrade the ports are on their default functions. With an IOmcu
+  older than 4.26 every port is SERVO PWM and OUTPUTS says `IOMCU OLDER
+  THAN 4.26: SERVO PWM ONLY`.
+- The KST and Chaservo programmer runs on the port SERVO TESTER names,
+  PORT 1 to PORT 4, with that port's pin. SERVO > PROGRAM's row names the
+  port and pin (`PROG PORT 2 GP14`) and is dimmed `PORT IN USE` while a
+  Hitec session opened from the bench console holds the port; the panel
+  reads the HITEC page's STATE with the PROG page every 500 ms. With
+  OUTPUTS the programmer says `Set SERVO TESTER to PORT 1 to PORT 4 on
+  SETUP > OUTPUTS.`
+- The HITEC page opens on any of the 4 ports, a NONE port's parked pin
+  included, which goes back to NONE at CLOSE.
 
 ### Fixed
 
