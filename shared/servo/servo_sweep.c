@@ -1,5 +1,6 @@
-/*
- * The sweep.  See servo_sweep.h.
+/**
+ * @file
+ * @brief The sweep.  See servo_sweep.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -42,8 +43,8 @@ void sweep_stop(sweep_t *w)
     }
 }
 
-/*
- * The phase is the time into the sweep, kept as milliseconds: everything
+/**
+ * @brief The phase is the time into the sweep, kept as milliseconds: everything
  * the curve is -- its point, the dwell it is in, the ends it has reached --
  * follows from that time, so starting the clock that far back again is the
  * whole of a resume.
@@ -69,8 +70,9 @@ bool sweep_resume(sweep_t *w, uint32_t now_ms)
     return true;
 }
 
-/*
- * One cycle in microseconds: the motion's period, a quarter of it, the dwell
+/**
+ * @brief One cycle in microseconds: the motion's period, a quarter of it, the
+ *        dwell
  * and the whole cycle with both dwells.  Integers, because a sweep can run
  * for hours and a float of milliseconds stops counting single ones after
  * four and a half.
@@ -79,6 +81,12 @@ typedef struct {
     uint32_t period, quarter, dwell, cycle;
 } cycle_t;
 
+/**
+ * @brief Derive the cycle lengths of a sweep.
+ *
+ * @param c Configuration. mhz must not be 0.
+ * @return the cycle lengths, microseconds.
+ */
 static cycle_t cycle_of(const sweep_cfg_t *c)
 {
     cycle_t y;
@@ -89,12 +97,25 @@ static cycle_t cycle_of(const sweep_cfg_t *c)
     return y;
 }
 
+/**
+ * @brief Microseconds since the sweep started.
+ *
+ * @param w      Sweep state.
+ * @param now_ms Current time, ms; the difference wraps with the 32-bit clock.
+ * @return microseconds since the sweep started.
+ */
 static uint64_t elapsed_us(const sweep_t *w, uint32_t now_ms)
 {
     return (uint64_t)(uint32_t)(now_ms - w->start_ms) * 1000u;
 }
 
-/* Ends reached by @p t microseconds into the sweep, with no limit. */
+/**
+ * @brief Ends reached by @p t microseconds into the sweep, with no limit.
+ *
+ * @param y Cycle lengths.
+ * @param t Time into the sweep, us.
+ * @return ends reached by t, with no limit.
+ */
 static uint64_t ends_by(const cycle_t *y, uint64_t t)
 {
     const uint64_t k = t / y->cycle;
@@ -103,7 +124,13 @@ static uint64_t ends_by(const cycle_t *y, uint64_t t)
            + (r >= 3u * (uint64_t)y->quarter + y->dwell ? 1u : 0u);
 }
 
-/* When the dwell at the @p n-th end is over, @p n at least 1. */
+/**
+ * @brief When the dwell at the @p n-th end is over, @p n at least 1.
+ *
+ * @param y Cycle lengths.
+ * @param n Index of the end, 1 or more.
+ * @return time into the sweep, us, at which the dwell at the n-th end is over.
+ */
 static uint64_t done_at(const cycle_t *y, uint32_t n)
 {
     const uint64_t k = (uint64_t)(n - 1u) / 2u;
@@ -148,8 +175,14 @@ bool sweep_slew_limited(const sweep_cfg_t *cfg, uint16_t slew_per_s)
     }
 }
 
-/* The curve's position, -1..1, a fraction @p x of the way through its
- * motion. */
+/**
+ * @brief The curve's position, -1..1, a fraction @p x of the way through its
+ * motion.
+ *
+ * @param kind Shape of the curve.
+ * @param x    Fraction of the motion, 0 to 1.
+ * @return position on the curve, -1 to 1; 0 for SWEEP_OFF and SWEEP_KIND_COUNT.
+ */
 static float shape(sweep_kind_t kind, float x)
 {
     switch (kind) {

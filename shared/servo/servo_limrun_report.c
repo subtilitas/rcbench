@@ -1,5 +1,6 @@
-/*
- * The limit run's outbox and report, and the words the screen and the
+/**
+ * @file
+ * @brief The limit run's outbox and report, and the words the screen and the
  * report name a verdict, a reason and a phase by: see servo_limrun.h.
  *
  * SPDX-License-Identifier: MIT
@@ -11,7 +12,10 @@
 
 #include "servo_limrun_int.h"
 
-/* ------------------------------------------------------------ the outbox */
+/*
+ * ------------------------------------------------------------ the
+ *        outbox
+ */
 
 servo_test_out_t servo_limrun_peek(servo_limrun_t *r, const char **text)
 {
@@ -57,27 +61,44 @@ bool servo_limrun_drained(const servo_limrun_t *r)
         || (r->state == SERVO_LIMRUN_DONE && r->out_done);
 }
 
-/* ------------------------------------------------------------ the report */
-
 /*
- * One line at a time, found by counting, as the automatic test's report is
+ * ------------------------------------------------------------ the
+ *        report
+ */
+
+/**
+ * @brief Cursor that prints one report line, found by counting.
+ *
+ * The lines are numbered from 0, as the automatic test's report is
  * (servo_report.c): a cursor walks the lines in order and prints the one
  * asked for.
  */
 typedef struct {
-    unsigned want, at;
-    char    *buf;
-    size_t   n;
-    const char *const *text;
+    unsigned want, at;      /**< index asked for; index of the next line */
+    char    *buf;           /**< out: the line                          */
+    size_t   n;             /**< size of buf, bytes                     */
+    const char *const *text;    /**< the language table; NULL for English */
 } cur_t;
 
 #define LS(id) servo_str_in(c->text, SERVO_STR_##id)
 
+/**
+ * @brief Count one line, and tell whether it is the one asked for.
+ *
+ * @param c Cursor. Its count goes up whether or not this is the line.
+ * @return true when the line counted is the one asked for.
+ */
 static bool here(cur_t *c)
 {
     return c->want == c->at++;
 }
 
+/**
+ * @brief Write an empty line when it is the one asked for.
+ *
+ * @param c Cursor; buf is set to "" when this is the line asked for.
+ * @return true when the line asked for is this one.
+ */
 static bool blank(cur_t *c)
 {
     if (here(c)) {
@@ -87,6 +108,13 @@ static bool blank(cur_t *c)
     return false;
 }
 
+/**
+ * @brief Write a table entry when it is the line asked for.
+ *
+ * @param c  Cursor; buf holds the entry when this is the line asked for.
+ * @param id Table entry to write, in the cursor's language.
+ * @return true when the line asked for is this one.
+ */
 static bool text_line(cur_t *c, servo_str_t id)
 {
     if (here(c)) {
@@ -96,6 +124,21 @@ static bool text_line(cur_t *c, servo_str_t id)
     return false;
 }
 
+/**
+ * @brief The lines of one end of the search: its result, and with the
+ *        encoder on, its angle.
+ *
+ * A side not run gives the not-run line; a bound end gives the bind and the
+ * limit pulses with the baseline and knee currents; a free end gives its
+ * limit pulse and the baseline current.  The angle line follows a run end
+ * when cfg.enc_on is set.
+ *
+ * @param r    Run state; its cfg gives enc_on.
+ * @param c    Cursor.
+ * @param e    The end's result.
+ * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI; picks the label.
+ * @return true when the line asked for is one of this end's lines.
+ */
 static bool end_lines(const servo_limrun_t *r, cur_t *c,
                       const servo_limrun_side_t *e, uint8_t side)
 {
@@ -124,6 +167,14 @@ static bool end_lines(const servo_limrun_t *r, cur_t *c,
     return false;
 }
 
+/**
+ * @brief The head of the report: title, result, device and settings, the
+ *        search, the meter, the limits, the duration and the two ends.
+ *
+ * @param r Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is in the head.
+ */
 static bool head_lines(const servo_limrun_t *r, cur_t *c)
 {
     const servo_limrun_cfg_t *g = &r->cfg;
@@ -210,6 +261,13 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
         || end_lines(r, c, &r->first[SERVO_LIMRUN_HI], SERVO_LIMRUN_HI);
 }
 
+/**
+ * @brief Name table entry for the side a register's value was found on.
+ *
+ * @param r Run state.
+ * @param g Register, SERVO_LIMRUN_LEFT or SERVO_LIMRUN_RIGHT.
+ * @return SIDE_LO or SIDE_HI for the side found, SIDE_UNKNOWN for none.
+ */
 static servo_str_t side_word(const servo_limrun_t *r, int g)
 {
     switch (r->reg_side[g]) {
@@ -219,7 +277,15 @@ static servo_str_t side_word(const servo_limrun_t *r, int g)
     }
 }
 
-/* A share of travel, 0.1 us over 0.1 us, as three decimals; "-" for none. */
+/**
+ * @brief A share of travel, 0.1 us over 0.1 us, as three decimals; "-" for
+ *        none.
+ *
+ * @param buf  Out: the text.
+ * @param n    Size of buf, bytes.
+ * @param d    Travel, 0.1 us.
+ * @param span Full span, 0.1 us; 0 or less gives "-".
+ */
 static void share_text(char *buf, size_t n, int32_t d, int32_t span)
 {
     if (d <= 0 || span <= 0) {
@@ -229,6 +295,13 @@ static void share_text(char *buf, size_t n, int32_t d, int32_t span)
     }
 }
 
+/**
+ * @brief A register count as text: "-" for none, else the count.
+ *
+ * @param buf Out: the text.
+ * @param n   Size of buf, bytes.
+ * @param v   Count; 0 for none.
+ */
 static void raw_text(char *buf, size_t n, uint16_t v)
 {
     if (v == 0u) {
@@ -238,6 +311,15 @@ static void raw_text(char *buf, size_t n, uint16_t v)
     }
 }
 
+/**
+ * @brief The lines of one register: its angle, count and side, then its linear
+ *        fit once the side is found and needed.
+ *
+ * @param r Run state.
+ * @param c Cursor.
+ * @param g Register, SERVO_LIMRUN_LEFT or SERVO_LIMRUN_RIGHT.
+ * @return true when the line asked for is one of this register's lines.
+ */
 static bool reg_lines(const servo_limrun_t *r, cur_t *c, int g)
 {
     if (here(c)) {
@@ -264,12 +346,25 @@ static bool reg_lines(const servo_limrun_t *r, cur_t *c, int g)
     return false;
 }
 
-/* NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1 us, as microseconds. */
+/**
+ * @brief NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1 us, as microseconds.
+ *
+ * @param dus Pulse width, 0.1 us.
+ * @return pulse width, us.
+ */
 static double us_of(uint16_t dus)
 {
     return (double)dus / 10.0;
 }
 
+/**
+ * @brief The programming section: the servo, its pulses, what was written,
+ *        the backup and restore lines, and the check ends.
+ *
+ * @param r Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is in the section.
+ */
 static bool prog_lines(const servo_limrun_t *r, cur_t *c)
 {
     if (blank(c) || text_line(c, SERVO_STR_L_R_PROG_HEAD)) {
@@ -356,6 +451,14 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
         || end_lines(r, c, &r->after[SERVO_LIMRUN_HI], SERVO_LIMRUN_HI);
 }
 
+/**
+ * @brief The last lines of the report: the unit note when programming, and
+ *        the bench line.
+ *
+ * @param r Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is one of these.
+ */
 static bool tail_lines(const servo_limrun_t *r, cur_t *c)
 {
     if (blank(c)) {
@@ -378,7 +481,10 @@ bool servo_limrun_report_line(const servo_limrun_t *r, unsigned idx,
     return head_lines(r, &c) || prog_lines(r, &c) || tail_lines(r, &c);
 }
 
-/* -------------------------------------------------------------- the words */
+/*
+ * -------------------------------------------------------------- the
+ *        words
+ */
 
 servo_str_t servo_limrun_verdict_str(servo_limrun_verdict_t v)
 {

@@ -1,5 +1,6 @@
-/*
- * One servo move judged from the servo's current, sample by sample: when
+/**
+ * @file
+ * @brief One servo move judged from the servo's current, sample by sample: when
  * it started moving and when it arrived, from a step command to one end.
  *
  * Nothing measures the horn.  Current rises while the motor drives and
@@ -117,15 +118,15 @@ typedef struct {
     servo_move_state_t state;
     bool     left;          /**< since movement, above ref_a by the
                                  threshold: not there yet                */
-    /* The samples in a row near ref_a, after movement. */
+    /** @brief The samples in a row near ref_a, after movement. */
     uint8_t  run_n;
     float    run_lo, run_hi;
     uint32_t run_t;         /**< the first of them                       */
-    /* The filter. */
+    /** @brief The filter. */
     float    fbuf[SERVO_MOVE_FILTER_MAX];
     int8_t   fclip[SERVO_MOVE_FILTER_MAX];
     uint8_t  f_n, f_head;
-    /* What it measured. */
+    /** @brief What it measured. */
     uint32_t moved_t;       /**< the first sample of the movement        */
     uint32_t end_t;         /**< the arrival, or when the window ran out */
     float    sum;           /**< valued samples from the command to the
@@ -138,50 +139,109 @@ typedef struct {
                                  and the peak lack it                    */
 } servo_move_t;
 
-/** The standard deviation of @p n samples given as their sum and the sum
- *  of their squares; 0 for none. */
+/**
+ * @brief The standard deviation of @p n samples given as their sum and the sum
+ *  of their squares; 0 for none.
+ *
+ * @param n      Number of samples.
+ * @param sum    Sum of the samples, A.
+ * @param sum_sq Sum of the squares of the samples, A^2.
+ * @return standard deviation, A; 0 when n is 0 or the variance is not positive.
+ */
 float servo_move_noise_a(uint32_t n, float sum, float sum_sq);
 
-/** The threshold for a noise at rest of @p noise_a. */
+/**
+ * @brief The threshold for a noise at rest of @p noise_a.
+ *
+ * @param noise_a Noise at rest, A.
+ * @return threshold, A: the larger of SERVO_MOVE_MIN_A and SERVO_MOVE_NOISE_K
+ *        times noise_a.
+ */
 float servo_move_threshold_a(float noise_a);
 
-/** SERVO_MOVE_TIMEOUT_MS plus a meter's lag of @p lag_ms. */
+/**
+ * @brief SERVO_MOVE_TIMEOUT_MS plus a meter's lag of @p lag_ms.
+ *
+ * @param lag_ms Lag of the meter readings, ms.
+ * @return window length, ms: SERVO_MOVE_TIMEOUT_MS plus lag_ms.
+ */
 uint32_t servo_move_window_ms(uint32_t lag_ms);
 
-/** A move begins: commanded at cfg->cmd_t, from cfg->rise_a towards
+/**
+ * @brief A move begins: commanded at cfg->cmd_t, from cfg->rise_a towards
  *  cfg->ref_a.  settle_n below 2 is taken as 2; filter_n is held to 1 to
- *  SERVO_MOVE_FILTER_MAX. */
+ *  SERVO_MOVE_FILTER_MAX.
+ *
+ * @param m   Move state to initialise.
+ * @param cfg Configuration of the move.
+ */
 void servo_move_begin(servo_move_t *m, const servo_move_cfg_t *cfg);
 
-/** A sample taken before the move began, into the filter only, as the
+/**
+ * @brief A sample taken before the move began, into the filter only, as the
  *  newest so far: a caller that held samples before it knew the command's
  *  time hands them over oldest first.  Decides nothing; nothing with
- *  filter_n 1 or once the move is over. */
+ *  filter_n 1 or once the move is over.
+ *
+ * @param m    Move state.
+ * @param a    Sample, A.
+ * @param clip Clip state of the sample.
+ */
 void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip);
 
 /**
- * A sample taken at @p at: @p a amps, or for a clip the end of the range
- * it is at or past.  A sample taken before the command only fills the
- * filter; one at or past window_t after the command ends the move late
- * or unseen, as servo_move_tick() would, and is not judged.  Returns the
- * state after it; ARRIVED and SETTLED leave end_t at the arrival.  Nothing
- * once the move is over.
+ * @brief A sample taken at @p at: @p a amps, or for a clip the end of the range
+ *        it is at or past.
+ *
+ * A sample taken before the command only fills the filter; one at or past
+ * window_t after the command ends the move late or unseen, as
+ * servo_move_tick() would, and is not judged.  Nothing once the move is over.
+ * ARRIVED and SETTLED leave end_t at the arrival.
+ *
+ * @param m    Move state.
+ * @param at   Time of the sample, in the caller time unit.
+ * @param a    Sample, A.
+ * @param clip SERVO_MOVE_CLIP_NONE for a sample; SERVO_MOVE_CLIP_LOW or
+ *             SERVO_MOVE_CLIP_HIGH when the reading is at the end of its range.
+ * @return state after the sample.
  */
 servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
                                      servo_move_clip_t clip);
 
-/** The time is @p now: a move still under way at window_t after its
+/**
+ * @brief The time is @p now: a move still under way at window_t after its
  *  command is over, late or unseen, with end_t at @p now.  A @p now before
- *  the command decides nothing. */
+ *  the command decides nothing.
+ *
+ * @param m   Move state.
+ * @param now Current time, in the caller time unit.
+ * @return state after the tick.
+ */
 servo_move_state_t servo_move_tick(servo_move_t *m, uint32_t now);
 
-/** Whether the move is over: arrived, settled, late or unseen. */
+/**
+ * @brief Whether the move is over: arrived, settled, late or unseen.
+ *
+ * @param m Move state.
+ * @return true when the state is not IDLE and the move is not WAITING or
+ *        MOVING.
+ */
 bool servo_move_over(const servo_move_t *m);
 
-/** Whether the move arrived: ARRIVED or SETTLED. */
+/**
+ * @brief Whether the move arrived: ARRIVED or SETTLED.
+ *
+ * @param m Move state.
+ * @return true when the state is ARRIVED or SETTLED.
+ */
 bool servo_move_arrived(const servo_move_t *m);
 
-/** Whether movement was seen. */
+/**
+ * @brief Whether movement was seen.
+ *
+ * @param m Move state.
+ * @return true when the state is MOVING, LATE, ARRIVED or SETTLED.
+ */
 bool servo_move_moved(const servo_move_t *m);
 
 #ifdef __cplusplus
