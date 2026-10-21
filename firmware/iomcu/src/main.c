@@ -1,19 +1,20 @@
-/*
- * The IOmcu application.
+/**
+ * @file
+ * @brief The IOmcu application.
  *
  * Answers polls and never transmits unsolicited: every transmission here
  * follows a decoded request.
  *
- * The power path is not written.  This application runs on core 0 and holds
+ * The power path is not written. This application runs on core 0 and holds
  * the wire, the failsafe and the output bank; iomcu.h lists the files it is
- * cut into.  The output protocols are out_pwm.c and the drivers in
+ * cut into. The output protocols are out_pwm.c and the drivers in
  * protocols/ppm and protocols/dshot, behind outputs_hw.c.
  * Core 1 reads the current monitors on their I2C bus (sense_core1.c) and
  * nothing else; core 0 gives it its orders and publishes what it reads.
  *
- * Nothing here models a reading.  A number this end publishes came off a
+ * Nothing here models a reading. A number this end publishes came off a
  * wire or a sensor, and a quantity nothing measures is left at zero with its
- * valid bit clear.  The panel models when no IOmcu answers at all,
+ * valid bit clear. The panel models when no IOmcu answers at all,
  * which is the only case where a modelled number cannot be mistaken for a
  * measured one.
  *
@@ -47,12 +48,13 @@
 #include "console_hw.h"
 #endif
 
-/*
- * This file's report lines.  The bench console build sends them through
- * the console's output: none lands inside a console line that leaves in
- * pieces, and none waits for the host.  Every other build prints them,
- * and printf() waits for the host for up to 500 ms
- * (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
+/**
+ * @brief Output function for this file's report lines.
+ *
+ * The bench console build sends them through the console's output: none lands
+ * inside a console line that leaves in pieces, and none waits for the host.
+ * Every other build prints them, and printf() waits for the host for up to
+ * 500 ms (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
  */
 #if IOMCU_CONSOLE
 #define IOMCU_SAY console_hw_say
@@ -92,14 +94,25 @@ uint32_t        s_frames;
 uint32_t        s_refused;
 uint32_t        s_now_ms;
 
-/* The bank was driving on the last pass: the edge into driving moves
- * s_run_gen. */
+/**
+ * @brief True when the bank was driving on the last pass.
+ *
+ * The edge into driving moves s_run_gen.
+ */
 static bool          s_pass_driving;
-/* The bank was asked to drive on the last pass: its falling edge stops a
- * session. */
+/**
+ * @brief True when the bank was asked to drive on the last pass.
+ *
+ * Its falling edge stops a session.
+ */
 static bool          s_kst_armed;
 
-/* Whether the page holds a capture that has not finished. */
+/**
+ * @brief Tells whether the SERVO_SENSE page holds a capture that has not
+ *        finished.
+ *
+ * @return True while the capture is armed, waiting for a move, or moving.
+ */
 static bool sense_capture_open(void)
 {
     const uint16_t st = s_sense.servo[LINK_SS_CAP_STATE];
@@ -107,6 +120,12 @@ static bool sense_capture_open(void)
            || st == (uint16_t)LINK_CAP_MOVING;
 }
 
+/**
+ * @brief The link pages this application serves, in page-table order.
+ *
+ * A page with a NULL write handler is read-only. Each handler is documented
+ * in iomcu.h.
+ */
 static const link_page_t k_pages[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
     { LINK_PAGE_STATUS,   LINK_ST_COUNT, status_read,   NULL },
@@ -145,33 +164,42 @@ static const link_page_t k_pages[] = {
 
 /* ---------------------------------------------------------------- the loop */
 
-/*
- * The numbers, and only the ones something measured.
+/**
+ * @brief The BENCH page's state: the numbers, and only the ones something
+ *        measured.
  *
  * Speed, and the ESC's own voltage, current and temperature, come from a
- * bidirectional DShot ESC (electronic speed controller) answering on its
- * own signal line.  Voltage, current, power, their peaks, charge and energy
- * come from the INA228 instead while it is enabled and answering
+ * bidirectional DShot ESC (electronic speed controller) answering on its own
+ * signal line. Voltage, current, power, their peaks, charge and energy come
+ * from the INA228 instead while it is enabled and answering
  * (LINK_BN_SENSED, sense_page_bench()), and the ESC's two then stay on the
- * SENSE page.  A quantity nothing measured is zero with its valid bit
- * clear, and the panel draws that field empty.
+ * SENSE page. A quantity nothing measured is zero with its valid bit clear,
+ * and the panel draws that field empty.
  *
- * LINK_BN_SIMULATED is never set here.  An IOmcu that is answering is
+ * LINK_BN_SIMULATED is never set here. An IOmcu that is answering is
  * reporting what it can see; the panel models only when nothing answers at
  * all, and marks that itself.
  */
 static bench_state_t s_bench;
 
-/*
- * The peaks belong to a run, and a run starts when the bank arms.
+/**
+ * @brief True when the bank was driving on the previous sample.
  *
- * They are kept on this end because it has the fast samples and the panel
- * sees one poll in fifty of them, so only this end can see the peak at all.
- * Holding them since boot instead would report a maximum from a motor that
- * was taken off the bench two runs ago.
+ * The peaks belong to a run, and a run starts when the bank arms. They are
+ * kept on this end because it has the fast samples and the panel sees one poll
+ * in fifty of them, so only this end can see the peak at all. Holding them
+ * since boot instead would report a maximum from a motor that was taken off
+ * the bench two runs ago.
  */
 static bool s_was_driving;
 
+/**
+ * @brief Takes one 50 Hz sample of the bench readings and publishes them.
+ *
+ * Gathers the ESC telemetry, folds in the INA228 numbers when they are the
+ * source, resets the run's peaks on the edge into driving, and refreshes the
+ * BENCH and STATUS registers.
+ */
 static void sample(void)
 {
     /*
@@ -247,10 +275,11 @@ static void sample(void)
     s_state.status[LINK_ST_REFUSED_HI] = (uint16_t)(s_refused >> 16);
 }
 
-/*
- * The failsafe edge: disarm the one bank every output goes through, then
- * bring the pages into line with it so what the panel reads back is what the
- * bank holds.
+/**
+ * @brief Runs the failsafe edge: disarms the bank and drives the pins to rest.
+ *
+ * Disarms the one bank every output goes through, then brings the pages into
+ * line with it so what the panel reads back is what the bank holds.
  */
 static void outputs_off(void)
 {
@@ -273,10 +302,14 @@ static void outputs_off(void)
     outputs_hw_service(&s_outputs);
 }
 
-/*
- * Whether flash may not be written now: flash_gate_busy(), host-tested,
- * with this end's four inputs.  A function of its own because
- * update_hw_init() takes one.  The PD mini is asked only while it is open.
+/**
+ * @brief Tells whether flash may not be written now.
+ *
+ * Calls flash_gate_busy(), host-tested, with this end's four inputs. A
+ * function of its own because update_hw_init() takes one. The PD mini is
+ * asked only while it is open.
+ *
+ * @return True while a flash write must wait.
  */
 static bool flash_busy(void)
 {
@@ -286,6 +319,15 @@ static bool flash_busy(void)
                            ports_quiet() != 0u);
 }
 
+/**
+ * @brief Boots the IOmcu, then runs the main loop.
+ *
+ * Sets up the identity, the pages, the outputs and the programming ports from
+ * the saved configuration, starts core 1 and the CAN controller, and then runs
+ * the loop. The loop does not return.
+ *
+ * @return Never returns.
+ */
 int main(void)
 {
     stdio_init_all();
@@ -336,8 +378,9 @@ int main(void)
      * the ARM register is set, the link is out of failsafe, the heartbeat is
      * trusted and the arm latch is clear.  The latch is set from start-up
      * until a CLEAR arrives, so a restored binding claims its pins and
-     * holds them at idle until somebody arms.  The channels are not restored: a command is
-     * not a configuration, and a bench that came back holding the last
+     * holds them at idle until somebody arms.  The channels are not restored:
+     * a command is not a configuration, and a bench that came back holding the
+     * last
      * throttle it was given is exactly what must not happen.
      */
     static out_store_t saved;            /* 288 bytes, off main()'s frame */
@@ -363,8 +406,9 @@ int main(void)
      * (Serial Peripheral Interface) pins and its interrupt, the pins the
      * module uses and does not break out (GP23, GP24, GP25, GP29), and every
      * number above the last GPIO (general-purpose input/output) the module
-     * has, whatever board the SDK is built for.  The pin arrives from the panel over the OUTPUTS page, so it is whatever an
-     * operator typed, and an output bound to the heartbeat input is an
+     * has, whatever board the SDK is built for. The pin arrives from the panel
+     * over the OUTPUTS page, so it is whatever an operator typed, and an output
+     * bound to the heartbeat input is an
      * interlock that stops working with nothing to show for it.
      *
      * The union of what shared/outputs greys out on the panel and what this
@@ -789,8 +833,8 @@ int main(void)
          * program together measured 19,178 us on the bring-up module -- and
          * what that costs is CAN frames: the controller holds two, about
          * 130 us each, and this loop collects none of them while the window is
-         * open.  A frame lost there can be the CONTROL write that disarms, and this
-         * loop steps no output while the window is open either, so the save
+         * open. A frame lost there can be the CONTROL write that disarms, and
+         * this loop steps no output while the window is open either, so the save
          * waits for a disarm: out_store_tick() is gated on outputs_driving(),
          * which is the bank's armed flag.
          *

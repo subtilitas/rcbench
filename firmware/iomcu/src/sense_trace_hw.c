@@ -1,6 +1,8 @@
-/*
- * The SENSE_TRACE build's ring, console and frame time.  See
- * sense_trace_hw.h.
+/**
+ * @file
+ * @brief The SENSE_TRACE build's ring, console and frame time.
+ *
+ * The declarations are in sense_trace_hw.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -19,7 +21,9 @@
 _Static_assert(SENSE_TRACE_SLOTS >= OUT_MAX_SLOTS,
                "every slot's pulse is watched");
 
+/** @brief The trace state. */
 static sense_trace_t     s_trace;
+/** @brief The trace ring's memory. */
 static sense_trace_rec_t s_ring[SENSE_TRACE_HW_RING];
 
 void sense_trace_hw_init(void)

@@ -1,5 +1,8 @@
-/*
- * Core 1's half of the phase tap.  See tone_core1.h.
+/**
+ * @file
+ * @brief Core 1's half of the phase tap.
+ *
+ * The declarations are in tone_core1.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -98,6 +101,15 @@ bool tone_core1_quiesce(void)
     return true;
 }
 
+/**
+ * @brief Pushes one beep onto the queue to core 0.
+ *
+ * A beep that finds the queue full is counted in s_dropped and dropped.
+ *
+ * @param r        The beep.
+ * @param gen      Set-up generation the beep was made under.
+ * @param cap_gen  Capture generation the beep was made under.
+ */
 static void push(const tone_rec_t *r, uint16_t gen, uint16_t cap_gen)
 {
     const uint32_t head = s_q_head;
@@ -113,7 +125,12 @@ static void push(const tone_rec_t *r, uint16_t gen, uint16_t cap_gen)
     s_q_head = head + 1u;
 }
 
-/* One pass under the order taken. */
+/**
+ * @brief Runs one pass under the order taken.
+ *
+ * Does nothing when there is no order to run and none has run before. Pushes
+ * the beeps the pass finished, and publishes the status to core 0.
+ */
 static void pass(void)
 {
     /* No order to run and none run before: nothing to do or to say. */
