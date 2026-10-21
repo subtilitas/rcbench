@@ -347,7 +347,7 @@ bestimmt die Größe dieses Arrays.
 Die UI hält ihre Frames klein, wo das wenig kostet. Der Zeichner einer Seite
 ist eine eigene Funktion, sodass nur die angezeigte Seite ihre Puffer hält:
 in ESC STICK ist der Frame von `esc_stick_panel_render()` 32 Bytes groß und
-der der größten Seite 464. `render()` von MOTOR & ESC nimmt 48 Bytes und ruft
+der der größten Seite 464. `mo_render()` von MOTOR & ESC nimmt 48 Bytes und ruft
 den Weg der Sitzung und den seines Körpers, 416 Bytes, als zwei Funktionen
 auf, sodass die Seiten einer Sitzung nicht auf dem Frame des Körpers
 liegen. Eine Zeile, die zur Anzeige kopiert wird, wird ohne `snprintf()`

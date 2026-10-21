@@ -398,7 +398,7 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
     fclose(f);
 }
 
-/* IM_BTN_Y from log_viewer_screen.c.  If the layout moves, this moves with
+/* IM_BTN_Y from log_viewer_int.h.  If the layout moves, this moves with
  * it; render_ui --check reports the drift. */
 #define IM_BTN_Y_LOCAL 352
 /* FOOT_Y and the DELETE button's x from the same file. */

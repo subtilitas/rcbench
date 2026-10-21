@@ -50,6 +50,7 @@ entries:
     kst_panel_draw (extram_bss)
     analyser_screen (extram_bss)
     wifi_screen (extram_bss)
+    update_screen (extram_bss)
     ui_band (extram_bss)
 
 [mapping:rcbench_bench_psram]

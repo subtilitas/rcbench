@@ -135,7 +135,7 @@ TEST_CASE(the_band_titles_match_the_tiles)
     }
 }
 
-/* LOGS' WI-FI button, mirrored from log_viewer_screen.c (BR_WIFI): x 144
+/* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 144
  * to 263, body y 352 to 393. */
 #define LOGS_WIFI_X 204
 

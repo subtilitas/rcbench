@@ -539,7 +539,7 @@ static uint32_t panel_look(void)
  * any: disarming is not held back by how the release came about. */
 TEST_CASE(reset_peaks_needs_the_fingers_release_and_disarm_does_not)
 {
-    /* Mirrored from motor_screen.c: the right rail's two buttons. */
+    /* Mirrored from motor_screen_int.h: the right rail's two buttons. */
     const int rail_x = 676, arm_y = UI_BAND_H + 342, reset_y = UI_BAND_H + 402;
     fresh();
     to_overview();

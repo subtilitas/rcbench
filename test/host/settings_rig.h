@@ -37,9 +37,9 @@
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
-/* Geometry mirrored from settings_screen.c; if the layout moves these move
- * with it, and the test names say what they aim at.  The hub's tiles come
- * from settings_hub_slot(). */
+/* Geometry mirrored from settings_screen_int.h; if the layout moves these
+ * move with it, and the test names say what they aim at.  The hub's tiles
+ * come from settings_hub_slot(). */
 #define LIST_X   8
 #define LIST_Y   (6 + UI_BAND_H)
 #define LIST_H   348
