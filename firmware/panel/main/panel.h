@@ -635,6 +635,27 @@ void sense_link_service(bool idle, bench_state_t *bench);
  * s_sense_parts, which app_main reads. */
 extern sense_map_link_t s_sense_map;
 extern atomic_uint      s_sense_parts;
+/* SENSE_LIMIT (4.27, panel_limit.c): SETUP > SENSORS' LIMIT rows taken on
+ * app_main by publish_limits(), the page served by the control task, and
+ * s_sense_limits, sensors_rows_set_limits()'s word, for app_main. */
+
+/** @brief Takes the LIMIT and WATCHES rows for the control task; app_main,
+ *         from the SENSORS observer. */
+void publish_limits(void);
+/**
+ * @brief The link came up; control task.
+ * @param minor the IOmcu's protocol minor; below 27 nothing is sent to
+ *              SENSE_LIMIT.
+ */
+void sense_limit_came_up(uint16_t minor);
+/** @brief The link went; control task.  Clears s_sense_limits. */
+void sense_limit_lost(void);
+/** @brief Serves SENSE_LIMIT, at most 2 exchanges, and sends the next band
+ *         alert; control task, every poll. */
+void sense_limit_service(void);
+/** @brief sensors_rows_set_limits()'s word; control task writes, app_main
+ *         reads. */
+extern atomic_uint s_sense_limits;
 void sense_map_came_up(uint16_t minor);
 void sense_map_lost(void);
 void sense_map_service(bool idle);

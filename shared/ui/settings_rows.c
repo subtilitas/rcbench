@@ -13,8 +13,9 @@
 #include "settings_screen.h"
 #include "settings_sensors.h"
 
-/* The settings a category holds, at most: SENSORS' 28. */
-#define MAX_ROWS 32
+/* The settings a category holds, at most: SENSORS' 40, 4 FITTED rows and
+ * 3 rows for each of 12 channels. */
+#define MAX_ROWS 40
 
 /*
  * Section headings.  A list over 8 rows groups its settings under
@@ -144,5 +145,5 @@ int settings_rows_listed(setting_cat_t cat)
     return listed;
 }
 
-_Static_assert(SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS <= MAX_ROWS,
+_Static_assert(MAX_ROWS >= SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS,
                "SENSORS' rows fit a list");
