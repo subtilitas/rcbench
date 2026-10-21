@@ -225,7 +225,7 @@ int32_t ina3221_end_ua(uint32_t shunt_uohm, sense_clip_t end);
  */
 int32_t ina3221_bus_mv(int32_t code);
 
-/** @brief driver */
+/* -------------------------------------------------------------- driver */
 
 /**
  * @brief Result of ina3221_init() and ina3221_init_shunts().

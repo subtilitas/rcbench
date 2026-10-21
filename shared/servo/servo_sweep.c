@@ -43,8 +43,8 @@ void sweep_stop(sweep_t *w)
     }
 }
 
-/**
- * @brief The phase is the time into the sweep, kept as milliseconds: everything
+/*
+ * The phase is the time into the sweep, kept as milliseconds: everything
  * the curve is -- its point, the dwell it is in, the ends it has reached --
  * follows from that time, so starting the clock that far back again is the
  * whole of a resume.

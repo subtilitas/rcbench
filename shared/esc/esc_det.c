@@ -22,11 +22,9 @@ void esc_det_init(esc_det_t *d, const esc_stick_timing_t *t,
     memset(d, 0, sizeof(*d));
     d->t = *t;
     d->long_equals_short = long_equals_short;
-/** Forget any group under way, as if the line had been silent. */
-/** Forget any group under way, as if the line had been silent. */
 }
 
-/** Forget any group under way, as if the line had been silent. */
+/* Forget any group under way, as if the line had been silent. */
 void esc_det_drop_group(esc_det_t *d)
 {
     d->high = false;
@@ -38,8 +36,8 @@ void esc_det_drop_group(esc_det_t *d)
     d->n_low = 0u;
     d->stuck_told = false;
 }
-/** Floor only: no pulses, no groups. */
 
+/* Floor only: no pulses, no groups. */
 void esc_det_floor_only(esc_det_t *d)
 {
     d->counting = false;

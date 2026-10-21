@@ -122,7 +122,7 @@ void sense_bus_recovered(sense_bus_t *b, uint32_t now_ms)
     b->trial      = true;
 }
 
-/** @brief one part */
+/* ----------------------------------------------------------- one part */
 
 void sense_part_init(sense_part_t *p, sense_bus_t *bus, uint8_t addr)
 {
@@ -217,7 +217,7 @@ void sense_part_lost(sense_part_t *p)
     p->probe_at = p->now + SENSE_RETRY_MS;
 }
 
-/** @brief codec */
+/* ------------------------------------------------------------- codec */
 
 uint16_t sense_be16(const uint8_t *b)
 {
@@ -235,8 +235,8 @@ uint64_t sense_be40(const uint8_t *b)
          | ((uint64_t)b[2] << 16) | ((uint64_t)b[3] << 8) | b[4];
 }
 
-/**
- * @brief Two's complement by subtraction rather than a signed shift, which C
+/*
+ * Two's complement by subtraction rather than a signed shift, which C
  * leaves to the implementation for negative numbers.
  */
 int32_t sense_sext32(uint32_t v, unsigned bits)

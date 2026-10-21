@@ -205,11 +205,11 @@ static bool values_ok(const uint16_t *c)
     return true;
 }
 
-/**
- * @brief A new set-up: everything read under the old one is gone -- FLAGS,
- *        PRESENT, the IDs, ERRORS, the readings, the windows and a finished
- *        capture's result -- so no read shows a part online, or a value scaled
- *        by the old shunt, before core 1 has read under the new one.
+/*
+ * A new set-up: everything read under the old one is gone -- FLAGS,
+ * PRESENT, the IDs, ERRORS, the readings, the windows and a finished
+ * capture's result -- so no read shows a part online, or a value scaled
+ * by the old shunt, before core 1 has read under the new one.
  *
  * The ESC's own telemetry (registers 23 to 25) is not the bus's and stays; the
  * output encoder's (26 to 30) and RESETS (31) go with the rest, and so does the

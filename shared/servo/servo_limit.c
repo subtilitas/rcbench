@@ -106,7 +106,7 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg)
     lf->last_free_us = lf->cfg.centre_us;
     lf->limit_us     = lf->cfg.centre_us;
     if (cfg->step_us == 0) {
-        /** @brief A search that never moves never ends. */
+        /* A search that never moves never ends. */
         lf->state = SERVO_LIMIT_FAULT;
         lf->fault = SERVO_LIMIT_FAULT_BAD_CONFIG;
     }
@@ -242,7 +242,7 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms)
      * window: a servo that hits its stop while still travelling would
      * otherwise draw stall current for the whole settle time.
      */
-    /** @brief A reading that is not a number is not under the ceiling. */
+    /* A reading that is not a number is not under the ceiling. */
     if (current_a >= lf->cfg.hard_limit_a || current_a != current_a) {
         finish(lf, SERVO_LIMIT_FAULT, SERVO_LIMIT_FAULT_OVERCURRENT);
         return lf->cmd_us;

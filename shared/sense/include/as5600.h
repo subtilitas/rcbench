@@ -187,7 +187,7 @@ int16_t as5600_delta(uint16_t a, uint16_t b);
  */
 int32_t as5600_cdeg(int32_t counts);
 
-/** @brief driver */
+/* -------------------------------------------------------------- driver */
 
 /**
  * @brief One AS5600 on a sensor bus: its part record.

@@ -601,7 +601,6 @@ static bool crc_line(const line_t *l, uint32_t *crc)
  */
 static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
 {
-    /** @brief Parse states of read_verified(), in file order. */
     enum { S_HEAD, S_TYPE, S_FIELDS, S_ROWS, S_CHECK, S_DONE } state = S_HEAD;
     line_t l;
     uint32_t crc = CRC_START;

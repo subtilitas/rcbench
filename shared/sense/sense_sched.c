@@ -308,7 +308,7 @@ bool sense_sched_ring(const sense_sched_t *s, unsigned back,
     return out->closed;
 }
 
-/** @brief reads */
+/* -------------------------------------------------------------- reads */
 
 /**
  * @brief An INA228 transaction's result: the first failure after the clear ends
@@ -597,7 +597,7 @@ static void read_rotation(sense_sched_t *s)
     }
 }
 
-/** @brief encoder */
+/* ------------------------------------------------------------ encoder */
 
 uint16_t sense_sched_enc_still_ms(const sense_sched_t *s)
 {

@@ -115,7 +115,7 @@ int32_t ina3221_bus_mv(int32_t code)
     return code * 8;
 }
 
-/** @brief driver */
+/* -------------------------------------------------------------- driver */
 
 ina3221_setup_err_t ina3221_init(ina3221_t *d, sense_bus_t *bus, uint8_t addr,
                                  uint32_t shunt_uohm, uint16_t config)

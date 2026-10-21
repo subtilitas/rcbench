@@ -57,7 +57,7 @@ int32_t as5600_cdeg(int32_t counts)
     return (r < -INT32_MAX) ? -INT32_MAX : (int32_t)r;
 }
 
-/** @brief driver */
+/* -------------------------------------------------------------- driver */
 
 void as5600_init(as5600_t *d, sense_bus_t *bus)
 {

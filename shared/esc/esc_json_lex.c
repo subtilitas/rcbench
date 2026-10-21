@@ -265,9 +265,9 @@ static bool lex_string(lex_t *l)
     return false;                               /* no closing quote */
 }
 
-/**
- * @brief The UTF-8 bytes of the character at s[*i], into @p out; *i moves past
- *        it.
+/*
+ * The UTF-8 bytes of the character at s[*i], into @p out; *i moves past
+ * it.
  *
  * A raw byte is itself (UTF-8 in the file passes through a byte at a time); an
  * escape is decoded, a surrogate pair into one four-byte character.  Only for
@@ -359,8 +359,8 @@ static bool same_text(const char *s, const tok_t *a, const tok_t *b)
     }
 }
 
-/**
- * @brief Whether a string token's text decodes to the plain @p lit.
+/*
+ * Whether a string token's text decodes to the plain @p lit.
  */
 bool esc_json_text_is(const char *s, const tok_t *a, const char *lit)
 {

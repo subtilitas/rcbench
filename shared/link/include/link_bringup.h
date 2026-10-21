@@ -113,7 +113,7 @@ const char *link_diag_text(link_diag_t d);
  */
 const char *link_diag_hint(link_diag_t d);
 
-/** @brief status page */
+/* ------------------------------------------------------------ status page */
 
 /**
  * @brief How many STATUS registers to read from an IOmcu of protocol minor @p

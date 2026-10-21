@@ -81,7 +81,7 @@ bool ina228_identity_ok(uint16_t maker, uint16_t device)
     return maker == INA228_MAKER_ID && (device >> 4) == INA228_DIE_ID;
 }
 
-/** @brief calibration */
+/* ------------------------------------------------------- calibration */
 
 ina228_setup_err_t ina228_calibrate(uint32_t shunt_uohm, uint32_t max_ma,
                                     ina228_cal_t *out)
@@ -127,7 +127,7 @@ static uint64_t r_k(const ina228_cal_t *cal)
     return (uint64_t)cal->shunt_uohm * (cal->adcrange != 0u ? 4u : 1u);
 }
 
-/** @brief decoding */
+/* ------------------------------------------------------------ decoding */
 
 int32_t ina228_code20(uint32_t raw24)
 {
@@ -208,7 +208,7 @@ int64_t ina228_charge_uc(const ina228_cal_t *cal, uint64_t raw40)
     return sense_muldiv(q * cal->shunt_cal, 78125u, 1024u * r_k(cal));
 }
 
-/** @brief driver */
+/* -------------------------------------------------------------- driver */
 
 ina228_setup_err_t ina228_init(ina228_t *d, sense_bus_t *bus, uint8_t addr,
                                uint32_t shunt_uohm, uint32_t max_ma,

@@ -175,7 +175,7 @@ bool sense_bus_recovery_due(const sense_bus_t *b, uint32_t now_ms);
  */
 void sense_bus_recovered(sense_bus_t *b, uint32_t now_ms);
 
-/** @brief one part */
+/* ----------------------------------------------------------- one part */
 
 /**
  * @brief A part on the bus, as far as it is known.
@@ -279,7 +279,7 @@ void sense_part_sample_failed(sense_part_t *p, uint8_t before);
  */
 void sense_part_lost(sense_part_t *p);
 
-/** @brief codec */
+/* ------------------------------------------------------------- codec */
 
 /**
  * @brief Big-endian register contents, most significant byte first.

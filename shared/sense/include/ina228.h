@@ -212,7 +212,7 @@ uint32_t ina228_cycle_us(uint16_t adc_config);
  */
 bool ina228_identity_ok(uint16_t maker, uint16_t device);
 
-/** @brief calibration */
+/* ------------------------------------------------------- calibration */
 
 /**
  * @brief Result of ina228_init() and ina228_calibrate().
@@ -250,7 +250,7 @@ typedef struct {
 ina228_setup_err_t ina228_calibrate(uint32_t shunt_uohm, uint32_t max_ma,
                                     ina228_cal_t *out);
 
-/** @brief decoding */
+/* ------------------------------------------------------------ decoding */
 
 /**
  * @brief The 20-bit value in bits 23-4 of a 24-bit register (VSHUNT, VBUS,
@@ -329,7 +329,7 @@ uint64_t ina228_energy_mj(const ina228_cal_t *cal, uint64_t raw40);
  */
 int64_t ina228_charge_uc(const ina228_cal_t *cal, uint64_t raw40);
 
-/** @brief driver */
+/* -------------------------------------------------------------- driver */
 
 /**
  * @brief One INA228 on a sensor bus: its part record, calibration and registers as written.

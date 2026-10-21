@@ -27,8 +27,8 @@ float servo_move_threshold_a(float noise_a)
     return (k > SERVO_MOVE_MIN_A) ? k : SERVO_MOVE_MIN_A;
 }
 
-/**
- * @brief The lag is added to the window rather than the window's last part left
+/*
+ * The lag is added to the window rather than the window's last part left
  * unjudged: a servo that arrives at 2900 ms shows it on the PD mini at
  * about 3200 ms, and waiting for that reading times the move.  A move that
  * never arrives is still late, only 300 ms later; a window left unjudged

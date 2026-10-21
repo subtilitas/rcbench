@@ -107,7 +107,7 @@ uint16_t link_uph_permille(const link_uph_t *u)
     return (uint16_t)((uint32_t)u->block * 1000u / u->blocks);
 }
 
-/** @brief the wire */
+/* ---------------------------------------------------------------- the wire */
 
 /**
  * @brief Read registers from the IOmcu and classify the answer.
@@ -261,7 +261,7 @@ static void resync(link_uph_t *u, uint8_t from)
     u->phase = LINK_UPH_RESYNC;
 }
 
-/** @brief the check */
+/* -------------------------------------------------------------- the check */
 
 /**
  * @brief CHECK_HASH step: hash one chunk of this end's image.
@@ -416,7 +416,7 @@ static void step_check_wait(link_uph_t *u, link_host_t *h,
                 ? LINK_UPH_SAME : LINK_UPH_DIFFERENT);
 }
 
-/** @brief the update */
+/* ------------------------------------------------------------- the update */
 
 /**
  * @brief PREPARE step: hash the image as sent, then read the slot layout.
@@ -892,7 +892,7 @@ link_uph_phase_t link_uph_step(link_uph_t *u, link_host_t *h,
     return u->phase;
 }
 
-/** @brief the mismatched answer */
+/* the mismatched answer */
 
 bool link_uph_mismatch_probe(link_uph_mismatch_t *m, bool mismatch)
 {

@@ -38,8 +38,8 @@ static void push(page_console_t *c, const char *s, size_t n)
     }
 }
 
-/** @brief One line; the LF is added, and a LF the text ends with is not
- *        doubled.
+/* One line; the LF is added, and a LF the text ends with is not
+ * doubled.
  * At most PAGE_CONSOLE_OUT_LINE bytes with the LF: a longer text is cut. */
 void page_console_vsay(page_console_t *c, const char *fmt, va_list ap)
 {

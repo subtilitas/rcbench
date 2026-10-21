@@ -290,7 +290,7 @@ typedef enum {
  */
 #define LINK_MINOR_PROG_DSHOT 28u
 
-/** @brief outputs */
+/* ----------------------------------------------------------------- outputs */
 
 /**
  * @brief The three output pages.
@@ -1411,7 +1411,7 @@ typedef enum {
     LINK_DRIVER_DSHOT_BIDIR = 4,
 } link_out_driver_t;
 
-/** @brief bind */
+/* -------------------------------------------------------------------- bind */
 
 /**
  * @brief A binding taken whole (protocol 4.10).
@@ -1533,7 +1533,7 @@ typedef enum {
     LINK_STATE_FAILSAFE = 2, /**< acted on its own authority    */
 } link_dev_state_t;
 
-/** @brief bench */
+/* ------------------------------------------------------------------- bench */
 /**
  * @brief The numbers, read-only.
  *
@@ -1606,7 +1606,7 @@ typedef enum {
     LINK_BN_SIMULATED  = 1u << 7,
 } link_bench_flag_t;
 
-/** @brief catalogue */
+/* --------------------------------------------------------------- catalogue */
 
 /**
  * @brief The board's own pins: which GPIOs it brings out, the pad number
@@ -1665,7 +1665,7 @@ typedef enum {
     LINK_PIN_OTHER     = 15, /**< spoken for, and this build has no word   */
 } link_pin_hold_t;
 
-/** @brief shape */
+/* ------------------------------------------------------------------- shape */
 
 /**
  * @brief Where the pins are, as opposed to which they are.
@@ -1724,7 +1724,7 @@ typedef enum {
     LINK_SH_TOP_RIGHT    = 3,
 } link_shape_corner_t;
 
-/** @brief artwork */
+/* ----------------------------------------------------------------- artwork */
 
 /**
  * @brief The board's drawing: its outline, its parts as flat shapes, and every
@@ -1863,7 +1863,7 @@ enum {
 #define LINK_AD_WORDS ((unsigned)(LINK_AD_COUNT - LINK_AD_DATA))
 #define LINK_AD_BYTES (LINK_AD_WORDS * 2u)
 
-/** @brief pads */
+/* -------------------------------------------------------------------- pads */
 
 /**
  * @brief The pads that are not pins: grounds, rails, and the few that are
@@ -2632,7 +2632,7 @@ typedef enum {
     LINK_HITEC_REF_NO_SUPPLY = 13, /**< POWER: no PD mini answers */
 } link_hitec_refusal_t;
 
-/** @brief control */
+/* ----------------------------------------------------------------- control */
 /**
  * @brief ARM, THROTTLE and MOTOR_POLES are registers 0 to 2 so that the write
  * that arms carries all three in one CAN (Controller Area Network) frame.
@@ -2705,7 +2705,7 @@ enum {
  */
 #define LINK_THROTTLE_MAX 10000u
 
-/** @brief update */
+/* ----------------------------------------------------------------- update */
 
 /**
  * @brief The IOmcu's firmware, written over the link into the flash slot it is

@@ -64,7 +64,7 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     const uint32_t dt_ms = (uint32_t)(now_ms - s->last_ms);
     s->last_ms = now_ms;
 
-    /** @brief The servo's own limits first: past one, the servo holds it. */
+    /* The servo's own limits first: past one, the servo holds it. */
     if (s->cfg.limit_hi_us != 0u && cmd_us > s->cfg.limit_hi_us) {
         cmd_us = s->cfg.limit_hi_us;
     }
@@ -239,7 +239,7 @@ float servo_pair_step(servo_pair_t *p, uint16_t cmd_a_us, uint16_t cmd_b_us,
 
     float amps;
     if (!a_in || !b_in) {
-        /** @brief In transit: no disagreement is applied to the surface. */
+        /* In transit: no disagreement is applied to the surface. */
         amps = p->cfg.travel_a + n;
     } else {
         const float fight = servo_pair_disagreement(

@@ -5,8 +5,8 @@
 
 #include "link_crc.h"
 
-/**
- * @brief Bitwise rather than table-driven: 8 iterations per byte, a few
+/*
+ * Bitwise rather than table-driven: 8 iterations per byte, a few
  * microseconds for a 64-byte frame on either processor, against a 512-byte
  * table that would have to be identical in two firmwares and the test binary.
  */

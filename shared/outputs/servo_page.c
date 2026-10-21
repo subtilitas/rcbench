@@ -17,8 +17,8 @@
 #include "outputs_pages.h"
 #include "prog_port.h"
 
-/**
- * @brief Clears the page: all registers, no sweep, no hold.
+/*
+ * Clears the page: all registers, no sweep, no hold.
  *
  * @param p The page state, overwritten.
  */

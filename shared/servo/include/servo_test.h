@@ -1048,11 +1048,10 @@ const char *servo_test_meter_word(uint8_t kind);
 
 /**
  * @brief The line that says STALL AT cannot be reached in a run of @p cfg, in
- *        the
- * language of @p cfg->text, into @p buf: against the current limit where
- * that is the reason, else against the meter's range
- * (servo_test_stall_unreachable()).  False, and @p buf empty, when a
- * reading can pass STALL AT.
+ *        the language of @p cfg->text, into @p buf: against the current limit
+ *        where that is the reason, else against the meter's range
+ *        (servo_test_stall_unreachable()).  False, and @p buf empty, when a
+ *        reading can pass STALL AT.
  *
  * @param cfg Configuration of the run.
  * @param buf Out: the line.

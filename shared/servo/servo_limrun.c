@@ -511,10 +511,10 @@ static bool map_side(servo_limrun_t *r, uint32_t now_ms)
         if (r->map_tries >= 2u) {
             fail(r, SERVO_LIMRUN_WHY_MAPPING, now_ms);
         } else if (!prepare_side(r, side, other)) {
-            /** @brief The other register holds the smallest value already. */
+            /* The other register holds the smallest value already. */
             fail(r, SERVO_LIMRUN_WHY_SMALLEST, now_ms);
         } else {
-            /** @brief That register back to its value, the other one tried. */
+            /* That register back to its value, the other one tried. */
             r->map_reg = (uint8_t)other;
             ++r->map_tries;
             go_safe(r, now_ms);
@@ -718,7 +718,7 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
     r->probe_side  = -1;
     search_span(r);
     if (cfg->read) {
-        /** @brief The servo read first: its pulses are the search's ends. */
+        /* The servo read first: its pulses are the search's ends. */
         go_safe(r, now_ms);
     } else {
         begin_search(r, SERVO_LIMRUN_LO, SERVO_LIMRUN_PH_SEARCH, now_ms);
@@ -872,7 +872,7 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
                || s->set_v > r->sup_v + 0.005f || s->set_v < r->sup_v - 0.005f
                || s->set_i > r->sup_i + 0.0005f
                || s->set_i < r->sup_i - 0.0005f) {
-        /** @brief Switched on from off, or its set points moved. */
+        /* Switched on from off, or its set points moved. */
         abort_why(r, SERVO_LIMRUN_WHY_SUPPLY_CHANGED, now_ms);
     }
 }
@@ -961,7 +961,7 @@ static void first_read(servo_limrun_t *r, const servo_limrun_servo_t *sv,
 {
     if (!sv->ok || sv->lo_raw > sv->hi_raw
         || sv->angle[0] < sv->lo_raw || sv->angle[1] < sv->lo_raw) {
-        /** @brief No servo, or values the hard rules do not take. */
+        /* No servo, or values the hard rules do not take. */
         fail(r, SERVO_LIMRUN_WHY_NOT_KST, now_ms);
         return;
     }
@@ -1090,7 +1090,7 @@ void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
         abort_why(r, SERVO_LIMRUN_WHY_OTHER_VALUES, now_ms);
         return;
     }
-    /** @brief The values are in: each side's stage moves on. */
+    /* The values are in: each side's stage moves on. */
     for (uint8_t s = 0; s < 2u; ++s) {
         if (!r->mapped && s != r->map_side) {
             continue;
@@ -1215,7 +1215,7 @@ void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,
         case SERVO_LIMRUN_PH_ARM:
             if (in->live) {
                 if (!r->searched) {
-                    /** @brief The read session is over: the first search. */
+                    /* The read session is over: the first search. */
                     begin_search(r, SERVO_LIMRUN_LO, SERVO_LIMRUN_PH_SEARCH,
                                  now_ms);
                 } else if (r->probe_side < 0) {
@@ -1238,7 +1238,7 @@ void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,
     *out = r->pend;
     memset(&r->pend, 0, sizeof(r->pend));
     if (servo_limrun_running(r) && r->cmd_due) {
-        /** @brief A search's position, or PULSE CENTRE after one. */
+        /* A search's position, or PULSE CENTRE after one. */
         out->command = true;
         out->cmd_us  = r->cmd_us;
         r->cmd_due   = false;

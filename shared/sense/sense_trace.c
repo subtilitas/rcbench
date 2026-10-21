@@ -532,7 +532,7 @@ void sense_trace_key(sense_trace_t *tr, int c, uint64_t now_us)
     }
 }
 
-/** @brief lines */
+/* --------------------------------------------------------------- lines */
 
 /**
  * @brief One line of trace text, built before it is written.
