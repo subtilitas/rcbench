@@ -52,13 +52,22 @@ extern "C" {
  */
 #define OUT_PWM_NONE      0xFFu
 
-/** @brief The slice @p pin is wired to, or OUT_PWM_NONE. */
+/**
+ * @brief The slice @p pin is wired to.
+ *
+ * @param pin GPIO number, 0 to OUT_PWM_GPIOS - 1 (47).
+ * @return Slice index, 0 to 11. OUT_PWM_NONE for a pin of 48 or more.
+ */
 uint8_t out_pwm_slice_of(uint8_t pin);
 
-/** @brief Which of that slice's channels: 0 is A, 1 is B.
+/**
+ * @brief Which of that slice's channels: 0 is A, 1 is B.
  *
- * OUT_PWM_NONE for a pin
- *  outside OUT_PWM_GPIOS. */
+ * OUT_PWM_NONE for a pin outside OUT_PWM_GPIOS.
+ *
+ * @param pin GPIO number, 0 to OUT_PWM_GPIOS - 1 (47).
+ * @return Channel index, 0 or 1. OUT_PWM_NONE for a pin of 48 or more.
+ */
 uint8_t out_pwm_channel_of(uint8_t pin);
 
 /**
@@ -67,6 +76,11 @@ uint8_t out_pwm_channel_of(uint8_t pin);
  * True for the two channels of a slice, which can carry different pulse
  * widths but not different frame rates. False when either pin is outside
  * OUT_PWM_GPIOS: a pin the fold does not reach shares nothing.
+ *
+ * @param a First GPIO number.
+ * @param b Second GPIO number.
+ * @return true when both pins are in range and fold to one slice, false
+ *         otherwise.
  */
 bool out_pwm_same_slice(uint8_t a, uint8_t b);
 
@@ -77,6 +91,11 @@ bool out_pwm_same_slice(uint8_t a, uint8_t b);
  * GP32 and GP40. Two such pins cannot carry different pulse widths at all,
  * so a driver that has one of them must refuse the other rather than bind
  * both. False when either pin is outside OUT_PWM_GPIOS.
+ *
+ * @param a First GPIO number.
+ * @param b Second GPIO number.
+ * @return true when both pins are in range and fold to one slice and one
+ *         channel, false otherwise.
  */
 bool out_pwm_same_compare(uint8_t a, uint8_t b);
 
@@ -89,8 +108,10 @@ bool out_pwm_same_compare(uint8_t a, uint8_t b);
 
 /**
  * @brief The longest pulse a frame of @p rate_hz carries, in microseconds: the
- *        frame's last count, one less than its period.  0 for a rate of 0 and
- *        for a period the sixteen-bit counter cannot hold (below 16 Hz).
+ *        frame's last count, one less than its period.
+ *
+ * 0 for a rate of 0 and for a period the sixteen-bit counter cannot hold
+ * (below 16 Hz).
  *
  * A pin is high while the counter is below the compare value, so a pulse of
  * this length leaves one count of low at the end of each frame.  One count
@@ -100,6 +121,10 @@ bool out_pwm_same_compare(uint8_t a, uint8_t b);
  *
  * 1784 us at 560 Hz, 1999 us at 500 Hz, 2499 us at 400 Hz and 19999 us at
  * 50 Hz.
+ *
+ * @param rate_hz Frame rate in Hz. The counter tick is OUT_PWM_TICK_HZ.
+ * @return Longest pulse in microseconds. 0 for a rate of 0 and for a period
+ *         above 65536 counts.
  */
 uint16_t out_pwm_pulse_max(uint16_t rate_hz);
 

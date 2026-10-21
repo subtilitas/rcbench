@@ -19,10 +19,11 @@
 extern "C" {
 #endif
 
+/** @brief The kind of a command of the SERVO screen. */
 typedef enum {
-    SERVO_CMD_NONE = 0,
+    SERVO_CMD_NONE = 0,   /**< no command */
     SERVO_CMD_POSITION,   /**< value is the pulse width in microseconds */
-    SERVO_CMD_CENTRE,
+    SERVO_CMD_CENTRE,     /**< centre the surfaces */
     /**
      * Let go of the output: the surfaces the bench drives return to centre,
      * which is where a surface rests.  The pins stay bound to what the
@@ -53,9 +54,10 @@ typedef enum {
     SERVO_CMD_HOLD,
 } servo_cmd_kind_t;
 
+/** @brief A command of the SERVO screen, as the servo link takes it. */
 typedef struct {
-    servo_cmd_kind_t kind;
-    uint16_t         value_us;
+    servo_cmd_kind_t kind;     /**< what the command asks */
+    uint16_t         value_us; /**< pulse width in microseconds, for a position */
     /**
      * The range the channel is configured with, carried with the command:
      * centred on the servo's PULSE CENTRE and reaching the further of its
@@ -126,10 +128,17 @@ typedef enum {
                                        4.18                                 */
 } servo_rate_state_t;
 
-/** @brief The state an acknowledged rate is shown in, by the IOmcu's protocol
- *        minor @p minor: SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE
- *        (4.19), where the rate reaches the PWM TARGET alone, and
- *  SERVO_RATE_IN_FORCE_SURFACES below it. */
+/**
+ * @brief The state an acknowledged rate is shown in, by the IOmcu's protocol
+ *        minor.
+ *
+ * SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE (4.19), where the rate
+ * reaches the PWM TARGET alone, and SERVO_RATE_IN_FORCE_SURFACES below it.
+ *
+ * @param minor IOmcu protocol minor version, as acknowledged.
+ * @return SERVO_RATE_IN_FORCE for @p minor at 4.19 or above,
+ *         SERVO_RATE_IN_FORCE_SURFACES below it. No other state is returned.
+ */
 servo_rate_state_t servo_rate_in_force(uint16_t minor);
 
 /**
@@ -139,6 +148,10 @@ servo_rate_state_t servo_rate_in_force(uint16_t minor);
  * A sweep or a hold may not: both end with the link, on the screen and at the
  * far end, and said again they would start motion nobody asked for.  A position
  * is what the screen still shows.
+ *
+ * @param c The command to test. NULL is refused.
+ * @return true for any kind other than a sweep or a hold, including NONE;
+ *         false for a sweep, a hold and NULL.
  */
 bool servo_cmd_survives_link_loss(const servo_cmd_t *c);
 
@@ -149,6 +162,10 @@ bool servo_cmd_survives_link_loss(const servo_cmd_t *c);
  *
  * What the panel records for servo_cmd_stale() and hands to
  * servo_screen_released().
+ *
+ * @param c The command to test. NULL is refused.
+ * @return The pause sequence number the command rests on, from_pause when it
+ *         is set and pause_seq otherwise. 0 for NULL.
  */
 uint16_t servo_cmd_pause_root(const servo_cmd_t *c);
 
@@ -167,6 +184,13 @@ typedef struct {
  * The screen asks nothing more of a pause it has left, and commands keep their
  * order, so the first drive command from after the pause retires @p e; a pause
  * number reused after 65535 more is then not mistaken for it.
+ *
+ * @param e The pause record. Cleared (on = false) when @p c is a drive command
+ *          that is not stale. Not changed when @p c is stale or is not a drive
+ *          command.
+ * @param c The command to test.
+ * @return true when @p c is stale and must not be sent, false otherwise,
+ *         including when @p e or @p c is NULL or @p e is off.
  */
 bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c);
 
