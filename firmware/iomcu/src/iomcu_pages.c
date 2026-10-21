@@ -10,6 +10,7 @@
 
 #include "iomcu.h"
 
+#include "sense_limit.h"
 #include "sense_map.h"
 
 #include "out_store.h"
@@ -96,6 +97,8 @@ void save_outputs(const iomcu_state_t *s)
     cfg.prog_func = prog_port_kept_func(&s_prog);
     /* And the INA3221s' map, in force or derived. */
     sense_map_kept(&s_sense, cfg.sense_map, &cfg.sense_map_set);
+    /* And the current limits. */
+    sense_limit_kept(&s_sense, cfg.sense_limit);
     out_store_save(&cfg, s_now_ms);
 }
 

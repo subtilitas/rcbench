@@ -534,6 +534,9 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd)
                         (uint8_t)c[LINK_SN_I3221_CHANNELS]);
     }
     cmd->parts.as5600_en          = (en & LINK_SN_EN_AS5600) != 0u;
+    /* SENSE_LIMIT's limits, judged on core 1 as each window closes. */
+    memcpy(cmd->limit_ma, &p->limit[LINK_SL_LIMIT_0],
+           sizeof(cmd->limit_ma));
     const uint16_t *v = p->servo;
     cmd->cap_gen      = p->cap_gen;
     cmd->cap_on       = (v[LINK_SS_CAP_ARM] & LINK_SS_ARM) != 0u;
@@ -774,6 +777,7 @@ void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
     publish_channels(p->servo, s, a);
     publish_ring(p->win, s, a);
     sense_map_publish(p, s);
+    sense_limit_judge(p, s);
     if (s->cap_gen == p->cap_gen) {
         publish_capture(p->servo, s);
     }

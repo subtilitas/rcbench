@@ -11,7 +11,7 @@
  * iomcu_kst.c    the KST page and the port's hardware
  * iomcu_hitec.c  the HITEC page and the port's hardware
  * iomcu_sense.c  SUPPLY, SENSE, SERVO_SENSE, SERVO_WIN, SENSE_MAP,
- *                SENSE_WIN_A and SENSE_WIN_B
+ *                SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT
  * iomcu_tone.c   the TONE page and the phase tap's capture
  * iomcu_bind.c   BIND, BIND_CFG, BIND_OUT and the board's own pages
  * iomcu_can.c    the heartbeat's input and the CAN bus
@@ -244,6 +244,9 @@ void sense_map_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 uint8_t sense_map_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 void sense_win_a_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 void sense_win_b_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+void sense_limit_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+uint8_t sense_limit_wr(void *ctx, uint8_t off, uint8_t n,
+                       const uint16_t *in);
 
 /* iomcu_tone.c */
 void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
@@ -415,9 +418,10 @@ static inline void sense_build(sense_cmd_t *cmd)
 }
 
 /* Sent whenever something in it changes; core 1 takes it at its next
- * tick.  A copy under a lock, about a microsecond.  The order, 112 bytes
- * with the 12 channels' shunts, is built in s_sense_cmd rather than on
- * core 0's 4 kB stack: core 0 alone builds it, from its main loop. */
+ * tick.  A copy under a lock, about a microsecond.  The order, 136 bytes
+ * with the 12 channels' shunts and limits, is built in s_sense_cmd rather
+ * than on core 0's 4 kB stack: core 0 alone builds it, from its main
+ * loop. */
 static inline void sense_order(void)
 {
     sense_build(&s_sense_cmd);
