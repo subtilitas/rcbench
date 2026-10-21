@@ -31,6 +31,10 @@ auf zwei Prozessoren: ein ESP32-S3-Touchpanel (Bedienoberfläche, Einstellungen,
 SD-Karte) und ein RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
 Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1 Mbit/s.
 
+Release 0.22.0 läuft auf dem ESP32-S3-Panel. Was seine Update-Suche
+anbietet, steht in
+[Bildschirme: Die Release-Linie](docs/Screens-de.md#die-release-linie).
+
 **Stand: im Aufbau.** Das Projekt ist in Entwicklung, und seine Funktionen
 sind nicht auf Hardware verifiziert. Das Panel bootet, und jeder Bildschirm
 existiert. Die Ausgangstreiber sind gebaut. Ein ARM nennt die Rollen, die es
@@ -125,7 +129,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,7 %**, 50 395 von 51 562 Zeilen in 202 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,7 %**, 50 431 von 51 598 Zeilen in 202 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).

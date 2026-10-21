@@ -212,6 +212,22 @@ void wa_fetch_on_bytes(wa_fetch_t *f, uint32_t gen, uint32_t done,
     }
 }
 
+/**
+ * @brief Whether a CHECK's result names the release it found.
+ * @param got the result
+ * @return true for NEWER, CURRENT, UNVERSIONED and PAST_LINE
+ */
+static bool got_found(wa_got_t got)
+{
+    return got == WA_GOT_NEWER || got == WA_GOT_CURRENT
+           || got == WA_GOT_UNVERSIONED || got == WA_GOT_PAST_LINE;
+}
+
+bool wa_fetch_has_found(const wa_fetch_t *f)
+{
+    return f != NULL && (f->job == WA_JOB_DOWNLOAD || got_found(f->got));
+}
+
 void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r)
 {
     if (!mine(f, gen)) {
@@ -220,8 +236,7 @@ void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r)
     f->rel = r->rel;
     f->img = r->img;
     f->status = r->status;
-    if (r->got == WA_GOT_NEWER || r->got == WA_GOT_CURRENT
-        || r->got == WA_GOT_UNVERSIONED) {
+    if (got_found(r->got)) {
         f->found = r->found;
     }
     end(f, r->got, r->why);
@@ -380,26 +395,49 @@ static bool fetch(const wa_run_t *r, const sink_t *k, wa_fetch_res_t *out)
     }
 }
 
-/* The release a check found, offered or not. */
+/**
+ * @brief The result of a check that found release @p v, offered or not.
+ *
+ * One of the panel's release line newer than the running build is NEWER; a
+ * newer one past the line is PAST_LINE; an older or equal one is CURRENT;
+ * any with a running version that did not parse is UNVERSIONED.
+ *
+ * @param r   the run: the running version
+ * @param out the result, with @p v as its found
+ * @param v   the release the check found
+ */
 static void found(const wa_run_t *r, wa_fetch_res_t *out, fw_version_t v)
 {
     out->found = v;
     if (!r->running_ok) {
         res(out, WA_GOT_UNVERSIONED, FW_REL_OK);
+    } else if (fw_release_offered(v, r->running, true)) {
+        res(out, WA_GOT_NEWER, FW_REL_OK);
+    } else if (fw_version_cmp(v, r->running) > 0) {
+        res(out, WA_GOT_PAST_LINE, FW_REL_OK);
     } else {
-        res(out, fw_release_offered(v, r->running, true) ? WA_GOT_NEWER
-                                                         : WA_GOT_CURRENT,
-            FW_REL_OK);
+        res(out, WA_GOT_CURRENT, FW_REL_OK);
     }
 }
 
-/*
- * TESTING: the API's answer, read a piece at a time into the scan until it
- * ends.  The bytes after the 10th release are not read: the connection
- * closes.  A chunked answer has no length to hold it to: it is read until
- * the scan ends, its last chunk, or FW_REL_SCAN_MAX bytes.
+/**
+ * @brief One request of FW_REL_API_URL, its answer read a piece at a time
+ *        into the scan until it ends.
+ *
+ * The bytes after the 10th release are not read: the connection closes.  A
+ * chunked answer has no length to hold it to: it is read until the scan
+ * ends, its last chunk, or FW_REL_SCAN_MAX bytes.
+ *
+ * @param r         the run
+ * @param left      ms of the budget left
+ * @param out       why it failed, on false
+ * @param v         the highest no-draft release, on true
+ * @param have_line set on true: a no-draft release of the line was read
+ * @param line      the highest of them, when @p have_line
+ * @return true when the answer was read and its scan ended with FW_REL_OK
  */
-static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
+static bool api_scan(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out,
+                     fw_version_t *v, bool *have_line, fw_version_t *line)
 {
     const wa_http_t *h = r->http;
     wa_http_head_t head = { .status = 0, .length = -1 };
@@ -407,19 +445,19 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
                  FW_REL_URL_MAX)) {
         h->close(h->ctx);
         failed(r, out, WA_GOT_CONNECT, FW_REL_OK);
-        return;
+        return false;
     }
     if (head.status == 403 || head.status == 429) {
         h->close(h->ctx);
         out->status = head.status;
         res(out, WA_GOT_LIMIT, FW_REL_STATUS);
-        return;
+        return false;
     }
     if (head.status != 200) {
         h->close(h->ctx);
         out->status = head.status;
         res(out, WA_GOT_REFUSED, FW_REL_STATUS);
-        return;
+        return false;
     }
     const bool chunked = head.chunked;
     uint32_t total = FW_REL_SCAN_MAX;    /* chunked: the most read */
@@ -429,7 +467,7 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
         if (le != FW_REL_OK) {
             h->close(h->ctx);
             res(out, WA_GOT_UNEXPECTED, le);
-            return;
+            return false;
         }
         total = (uint32_t)head.length;
     }
@@ -441,13 +479,13 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
         if (r->stopped(r->ctx)) {
             h->close(h->ctx);
             res(out, WA_GOT_ABORTED, FW_REL_OK);
-            return;
+            return false;
         }
         const uint32_t now_left = run_left(r);
         if (now_left == 0u) {
             h->close(h->ctx);
             res(out, WA_GOT_TIMEOUT, FW_REL_OK);
-            return;
+            return false;
         }
         const uint32_t want = (total - done < r->io_cap) ? total - done
                                                          : r->io_cap;
@@ -455,7 +493,7 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
         if (got < 0) {
             h->close(h->ctx);
             failed(r, out, WA_GOT_CONNECT, FW_REL_OK);
-            return;
+            return false;
         }
         if (got == 0 && chunked && done > 0u) {
             break;                       /* its last chunk */
@@ -464,12 +502,12 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
             h->close(h->ctx);
             res(out, WA_GOT_UNEXPECTED, chunked ? FW_REL_EMPTY
                                                 : FW_REL_SHORT);
-            return;
+            return false;
         }
         if ((uint32_t)got > want) {
             h->close(h->ctx);
             res(out, WA_GOT_UNEXPECTED, FW_REL_OVERRUN);
-            return;
+            return false;
         }
         done += (uint32_t)got;
         ended = fw_release_scan_feed(&scan, r->io, (size_t)got);
@@ -478,13 +516,36 @@ static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
     if (!ended && chunked && done >= total) {
         /* FW_REL_SCAN_MAX bytes in chunks without the releases' end. */
         res(out, WA_GOT_UNEXPECTED, FW_REL_SCAN_LONG);
-        return;
+        return false;
     }
-    fw_version_t v;
-    const fw_rel_err_t e = fw_release_scan_end(&scan, &v);
+    const fw_rel_err_t e = fw_release_scan_end(&scan, v);
     if (e != FW_REL_OK) {
         res(out, WA_GOT_UNEXPECTED, e);
+        return false;
+    }
+    *have_line = fw_release_scan_line(&scan, line);
+    return true;
+}
+
+/**
+ * @brief TESTING: the 10 newest releases by date, their highest offered,
+ *        or in its place the highest of the panel's release line when that
+ *        one is offered.
+ * @param r    the run
+ * @param left ms of the budget left
+ * @param out  the result
+ */
+static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
+{
+    fw_version_t v, line;
+    bool have_line = false;
+    if (!api_scan(r, left, out, &v, &have_line, &line)) {
         return;
+    }
+    /* A patch release of the panel's line, beside a later release for
+     * another panel, is the one offered. */
+    if (have_line && fw_release_offered(line, r->running, r->running_ok)) {
+        v = line;
     }
     found(r, out, v);
 }
@@ -529,6 +590,23 @@ void wa_run_check(const wa_run_t *r, wa_fetch_res_t *out)
     if (e != FW_REL_OK) {
         res(out, WA_GOT_UNEXPECTED, e);
         return;
+    }
+    /* GitHub's latest release is past the panel's line and newer than the
+     * running build: one request of the release list for the line's
+     * newest, offered when it is newer.  A list that fails or holds none
+     * leaves the latest release's result. */
+    if (r->running_ok && !fw_release_in_line(v)
+        && fw_version_cmp(v, r->running) > 0) {
+        const uint32_t now_left = run_left(r);
+        wa_fetch_res_t scan_out;
+        memset(&scan_out, 0, sizeof(scan_out));
+        fw_version_t top, line;
+        bool have_line = false;
+        if (now_left > 0u
+            && api_scan(r, now_left, &scan_out, &top, &have_line, &line)
+            && have_line && fw_release_offered(line, r->running, true)) {
+            v = line;
+        }
     }
     found(r, out, v);
 }

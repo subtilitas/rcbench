@@ -969,6 +969,14 @@ bool cu_service(bool *link_up, bench_state_t *bench,
  * and the IOmcu update's screen. */
 void wifi_service(bool armed, uint32_t stops_now);
 void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
+/**
+ * @brief SETUP > UPDATES, the reminder and the download, once a frame.
+ * @param armed     ARMED, or an arm waiting
+ * @param unsafe    ARMED, an arm waiting, or the supply's output on or
+ *                  coming on
+ * @param stops_now STOP presses since the start; a change is a STOP
+ * @param cs        the IOmcu update's state this frame
+ */
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                  const cu_snap_t *cs);
 void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs);

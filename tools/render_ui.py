@@ -610,10 +610,11 @@ FIT_ONLY = {
     "updates-unexpected": (None, "updates", "dark"),
     "updates-nonet":    (None, "updates", "dark"),
     "updates-blocked":  (None, "updates", "dark"),
-    # TESTING at GitHub's request limit, and a running version that did
-    # not parse.
+    # TESTING at GitHub's request limit, a running version that did not
+    # parse, and a newer release past the panel's release line.
     "updates-limit":    (None, "updates", "dark"),
     "updates-unversioned": (None, "updates", "dark"),
+    "updates-past-line": (None, "updates", "dark"),
     # Every other state of UPDATES' IOmcu section.
     "updates-cu-older":    (None, "updates", "dark"),
     "updates-cu-rebuilt":  (None, "updates", "dark"),

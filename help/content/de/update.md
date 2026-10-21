@@ -20,9 +20,9 @@ Wie lange Löschen und Schreiben dauern, ist nicht gemessen.
 
 ![Geschrieben und geprüft: das Panel startet neu](view:panel-update-done)
 
-Ist das Schreiben fertig, wird der Slot zurückgelesen und geprüft, er wird zum Slot, der startet, und das Panel startet neu. Der Splash zeigt die neue Version, und das Band meldet `Panel-Firmware 0.19.0 installiert.`.
+Ist das Schreiben fertig, wird der Slot zurückgelesen und geprüft, er wird zum Slot, der startet, und das Panel startet neu. Der Splash zeigt die neue Version, und das Band meldet `Panel-Firmware 0.22.1 installiert.`.
 
-Der erste Start eines neuen Builds ist ein Probestart. Der Build wird behalten, sobald Display und Touch laufen. Ein Start, der nicht so weit kommt, kehrt zum vorigen Build zurück, und das Band meldet `Panel-Firmware 0.19.0 ist nicht gestartet. Version 0.18.0 läuft wieder.`. Scheitert das Behalten eines guten Starts, meldet das Band `Panel-Firmware 0.19.0 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`.
+Der erste Start eines neuen Builds ist ein Probestart. Der Build wird behalten, sobald Display und Touch laufen. Ein Start, der nicht so weit kommt, kehrt zum vorigen Build zurück, und das Band meldet `Panel-Firmware 0.22.1 ist nicht gestartet. Version 0.22.0 läuft wieder.`. Scheitert das Behalten eines guten Starts, meldet das Band `Panel-Firmware 0.22.1 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`.
 
 ## Das Schreiben schlug fehl
 

@@ -173,6 +173,7 @@ TEST_CASE(the_enums_mirror_the_fetch_and_the_release_parser)
     CHECK_EQ((int)UPD_GOT_MEMORY, (int)WA_GOT_MEMORY);
     CHECK_EQ((int)UPD_GOT_LIMIT, (int)WA_GOT_LIMIT);
     CHECK_EQ((int)UPD_GOT_UNVERSIONED, (int)WA_GOT_UNVERSIONED);
+    CHECK_EQ((int)UPD_GOT_PAST_LINE, (int)WA_GOT_PAST_LINE);
 
     CHECK_EQ((int)UPD_WHY_NONE, (int)WA_WHY_NONE);
     CHECK_EQ((int)UPD_WHY_ARMED, (int)WA_WHY_ARMED);
@@ -400,7 +401,7 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
         ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
         base_view();
         g_v.phase = UPD_PH_ENDED;
-        for (int got = UPD_GOT_NEWER; got <= UPD_GOT_UNVERSIONED; ++got) {
+        for (int got = UPD_GOT_NEWER; got <= UPD_GOT_PAST_LINE; ++got) {
             for (int rel = 0; rel <= UPD_REL_SCAN_LONG; ++rel) {
                 for (int why = 0; why <= UPD_WHY_DRAWING; ++why) {
                     for (int job = 0; job < 2; ++job) {
@@ -467,6 +468,10 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
     CHECK_STR_EQ(a, "The panel's own version is not MAJOR.MINOR.PATCH: "
                     "no update offered.");
+    CHECK_STR_EQ(b, "Latest release on GitHub: 0.21.0.");
+    g_v.got = UPD_GOT_PAST_LINE;     /* a release for the ESP32-P4 panel */
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "No newer release for the ESP32-S3 panel. Panel version: 0.19.0.");
     CHECK_STR_EQ(b, "Latest release on GitHub: 0.21.0.");
 }
 
@@ -836,7 +841,7 @@ TEST_CASE(every_view_renders_inside_its_canvas)
     guard_canvas_t g;
     for (int lang = 0; lang < 2; ++lang) {
         ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
-        for (int got = UPD_GOT_NONE; got <= UPD_GOT_UNVERSIONED; ++got) {
+        for (int got = UPD_GOT_NONE; got <= UPD_GOT_PAST_LINE; ++got) {
             settings_set(SET_UPD_CHANNEL, (float)(got % 2));
             for (int net = 0; net < 3; ++net) {
                 base_view();

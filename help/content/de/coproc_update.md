@@ -47,7 +47,7 @@ Der Bildschirm kehrt zum Menü zurück, wenn das Update endet, oder zu [Updates]
 
 | Alert | Bedeutung |
 |---|---|
-| `IOmcu auf 0.18.0 aktualisiert.` | das neue Image läuft und wird behalten |
+| `IOmcu auf 0.22.0 aktualisiert.` | das neue Image läuft und wird behalten |
 | `IOmcu-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | 4 s antwortete nichts |
 | `IOmcu-Update abgebrochen: abgelehnt, Fehler 6. Vorherige Firmware läuft.` | der IOmcu lehnte einen Schritt ab |
 | `IOmcu-Update abgebrochen: Firmware-Prüfung fehlgeschlagen. Vorherige Firmware läuft.` | die SHA-256 des Slots ist nicht die des Images |

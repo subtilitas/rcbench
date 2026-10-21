@@ -1691,12 +1691,13 @@ static void wifi_type(const char *text)
 }
 
 /* The versions of the update screens' examples, fixed rather than read from
- * rcbench_version.h: a panel and an IOmcu on 0.18.0, an image of 0.19.0
- * offered and installed, 0.17.0 as the older one.  The screenshots and the
- * alerts quoted in Screens.md then tell one sequence at every release. */
-#define EX_RUNNING "0.18.0"
-#define EX_NEWER   "0.19.0"
-#define EX_OLDER   "0.17.0"
+ * rcbench_version.h: a panel and an IOmcu on 0.22.0, the patch release
+ * 0.22.1 offered and installed, 0.21.2 as the older one.  The screenshots
+ * and the alerts quoted in Screens.md then tell one sequence at every
+ * release. */
+#define EX_RUNNING "0.22.0"
+#define EX_NEWER   "0.22.1"
+#define EX_OLDER   "0.21.2"
 
 /* The views of WI-FI, reached as an operator reaches them: the
  * application's view handed in, the controls tapped. */
@@ -1876,14 +1877,19 @@ static void pose_upd(const char *view)
     } else if (strcmp(view, "updates-unversioned") == 0) {
         v.got = UPD_GOT_UNVERSIONED;
         strcpy(v.found, EX_NEWER);
+    } else if (strcmp(view, "updates-past-line") == 0) {
+        /* A release for the ESP32-P4 panel, past the panel's line. */
+        v.got = UPD_GOT_PAST_LINE;
+        strcpy(v.found, "0.23.0");
+        settings_set(SET_UPD_CHANNEL, 1.0f);
     } else if (strcmp(view, "updates-blocked") == 0) {
         v.phase = UPD_PH_IDLE;
         v.block = UPD_WHY_ARMED;
         v.dl_block = UPD_WHY_ARMED;
     } else {
         /* updates-newer, updates-testing, upd-remind, upd-remind-blocked:
-         * EX_NEWER has an odd minor number, a testing release, which
-         * updates-testing finds with RELEASES on TESTING. */
+         * EX_NEWER, the patch release 0.22.1 of the panel's release line,
+         * which updates-testing finds with RELEASES on TESTING. */
         v.got = UPD_GOT_NEWER;
         strcpy(v.found, EX_NEWER);
         if (strcmp(view, "updates-testing") == 0) {
@@ -1896,8 +1902,8 @@ static void pose_upd(const char *view)
     upd_screen_set(&v);
 
     /* The IOmcu section: an IOmcu on the build this panel
-     * carries, 0.18.0, as on the panel's card; updates-coproc an IOmcu
-     * on 0.17.0 the hold may move to 0.18.0; updates-cu-* every other
+     * carries, 0.22.0, as on the panel's card; updates-coproc an IOmcu
+     * on 0.21.2 the hold may move to 0.22.0; updates-cu-* every other
      * state, measured by the fit check. */
     static const struct {
         const char *view;
@@ -1919,16 +1925,16 @@ static void pose_upd(const char *view)
     };
     upd_cu_view_t cu = {
         .sec = CU_SEC_SAME, .known = true, .have_image = true,
-        .running = { 0, 18, 0 }, .carried = { 0, 18, 0 },
+        .running = { 0, 22, 0 }, .carried = { 0, 22, 0 },
     };
     for (size_t i = 0; i < sizeof(k_cu) / sizeof(k_cu[0]); ++i) {
         if (strcmp(view, k_cu[i].view) == 0) {
             cu.sec = k_cu[i].sec;
-            cu.running = (cu_version_t){ 0, 17, 0 };
+            cu.running = (cu_version_t){ 0, 21, 2 };
         }
     }
     if (strcmp(view, "updates-cu-older") == 0) {
-        cu.running = (cu_version_t){ 0, 19, 0 };
+        cu.running = (cu_version_t){ 0, 22, 1 };
     } else if (strcmp(view, "updates-cu-rebuilt") == 0) {
         cu.running = cu.carried;
     } else if (strcmp(view, "updates-cu-noimage") == 0) {
@@ -3313,13 +3319,13 @@ int main(int argc, char **argv)
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
     ui_router_set_status(&st);
     if (id == SCREEN_COPROC_UPDATE) {
-        /* The question as a link-up poses it: an IOmcu on 0.17.0 and
-         * a panel carrying 0.18.0, the version of the alert `IOmcu
-         * updated to 0.18.0` in Screens.md; the older one with the two
+        /* The question as a link-up poses it: an IOmcu on 0.21.2 and
+         * a panel carrying 0.22.0, the version of the alert `IOmcu
+         * updated to 0.22.0` in Screens.md; the older one with the two
          * swapped.  Fixed, as the examples above are.  The progress half
          * way through the blocks of a 191,592-byte image. */
-        const cu_version_t old_v = { 0, 17, 0 };
-        const cu_version_t new_v = { 0, 18, 0 };
+        const cu_version_t old_v = { 0, 21, 2 };
+        const cu_version_t new_v = { 0, 22, 0 };
         if (strcmp(view, "coproc-update-older") == 0) {
             coproc_update_screen_offer(new_v, old_v);
         } else {
