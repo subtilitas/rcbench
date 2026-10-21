@@ -54,6 +54,10 @@
 #define PIN_Y    (106 + 20)
 #define SEG_X(i) (19 + 64 + (i) * 132)
 #define FN_Y     (154 + 20 + 18)
+/* FUNCTION's face, 260 px from x 19, and its list's rows of 40 px from
+ * y 218 under it. */
+#define FACE_X   (19 + 130)
+#define FN_ROW_Y(i) (218 + 20 + (i) * 40)
 #define TESTER_Y (242 + 20 + 18)
 
 /* What the ask hook was handed. */
@@ -153,11 +157,33 @@ static void out_port(uint8_t n)
     CHECK_EQ(outputs_screen_port_shown(), (int)n);
 }
 
+/* FUNCTION: the face tapped, and entry @p fn of the list where it opened. */
+static void fn_pick(unsigned fn)
+{
+    out_tap(FACE_X, FN_Y);
+    if (outputs_port_fn_open()) {
+        out_tap(FACE_X, FN_ROW_Y(fn));
+    }
+}
+
 static const char *out_reason(void)
 {
     static char why[128];
     (void)outputs_screen_port_reason(why, sizeof(why));
     return why;
+}
+
+/* OUTPUTS alone, every pixel inside the canvas painted. */
+static void render_out(void)
+{
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    guard_canvas_t g;
+    gfx_canvas_t c;
+    guard_canvas_init(&g, &c, px, 800, 432);
+    outputs_screen()->tick(0.016f);
+    outputs_screen()->render(&c, -1);    /* no framebuffer: always drawn */
+    CHECK_EQ(guard_canvas_touched(&g), 0u);
+    CHECK_EQ(guard_canvas_unpainted(&g), 0u);
 }
 
 static void render_both(void)
@@ -250,7 +276,7 @@ TEST_CASE(the_entry_says_the_ports_are_not_read_before_the_first_read)
     view_unknown();
     out_port(0u);
     CHECK_STR_EQ(out_reason(), TR(OUT_PORT_NOT_READ));
-    out_tap(SEG_X(1), FN_Y);
+    fn_pick(1u);
     CHECK_EQ(g_ask.n, 0);
     /* The tester's rows take their settings as before the functions. */
     out_tap(SEG_X(1), TESTER_Y);
@@ -263,9 +289,9 @@ TEST_CASE(function_is_asked_on_a_tap_and_its_ask_is_said)
 {
     fresh();
     out_port(0u);
-    out_tap(SEG_X(0), FN_Y);                 /* the one it has */
+    fn_pick(0u);                 /* the one it has */
     CHECK_EQ(g_ask.n, 0);
-    out_tap(SEG_X(1), FN_Y);                 /* NONE */
+    fn_pick(1u);                 /* NONE */
     CHECK_EQ(g_ask.n, 1);
     CHECK_EQ(g_ask.port, 0u);
     CHECK_EQ(g_ask.kind, PROG_LINK_ASK_FUNC);
@@ -277,7 +303,7 @@ TEST_CASE(function_is_asked_on_a_tap_and_its_ask_is_said)
     /* Port 2's entry says nothing of port 1's ask. */
     out_port(1u);
     CHECK(strcmp(out_reason(), TR(OUT_PORT_ASK_REFUSED)) != 0);
-    out_tap(SEG_X(0), FN_Y);                 /* SERVO PWM */
+    fn_pick(0u);                 /* SERVO PWM */
     CHECK_EQ(g_ask.n, 2);
     CHECK_EQ(g_ask.port, 1u);
     CHECK_EQ(g_ask.value, (uint16_t)LINK_PG_FN_SERVO_PWM);
@@ -292,24 +318,120 @@ TEST_CASE(function_is_locked_where_the_iomcu_would_refuse_it)
     view_four(false);
     out_port(0u);
     CHECK_STR_EQ(out_reason(), TR(OUT_PORT_FN_OLD));
-    out_tap(SEG_X(1), FN_Y);
+    fn_pick(1u);
     CHECK_EQ(g_ask.n, 0);
     view_four(true);
     /* The tester's port. */
     settings_set(SET_SERVO_TARGET, 1.0f);
     CHECK_STR_EQ(out_reason(), "SERVO TESTER DRIVES PROG PORT 1");
-    out_tap(SEG_X(1), FN_Y);
+    fn_pick(1u);
     CHECK_EQ(g_ask.n, 0);
     settings_set(SET_SERVO_TARGET, 0.0f);
     /* ARMED. */
     servo_screen_set_bench_armed(true);
     CHECK_STR_EQ(out_reason(), TR(OUT_PORT_LOCKED));
-    out_tap(SEG_X(1), FN_Y);
+    fn_pick(1u);
     CHECK_EQ(g_ask.n, 0);
     render_both();
     servo_screen_set_bench_armed(false);
-    out_tap(SEG_X(1), FN_Y);
+    fn_pick(1u);
     CHECK_EQ(g_ask.n, 1);
+}
+
+/* 4.28: the list holds the DShot rates; a 4.26 or 4.27 IOmcu's holds
+ * SERVO PWM and NONE.  The open list takes every press: one on an entry
+ * asks, one beside it shuts it and reaches nothing under it. */
+TEST_CASE(function_list_offers_dshot_from_4_28_and_takes_every_press)
+{
+    fresh();
+    port_view_t v = *port_view_get();
+    out_port(1u);
+    /* 4.26: two entries; a press where a third would be shuts the list
+     * and reaches no row under it. */
+    out_tap(FACE_X, FN_Y);
+    CHECK(outputs_port_fn_open());
+    render_out();
+    const int target = settings_get_int(SET_SERVO_TARGET);
+    out_tap(SEG_X(1), FN_ROW_Y(2));
+    CHECK(!outputs_port_fn_open());
+    CHECK_EQ(g_ask.n, 0);
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), target);
+    /* 4.28: five, DSHOT300 asked as 3. */
+    v.has_dshot = true;
+    port_view_set(&v);
+    fn_pick(3u);
+    CHECK_EQ(g_ask.n, 1);
+    CHECK_EQ(g_ask.port, 1u);
+    CHECK_EQ(g_ask.kind, PROG_LINK_ASK_FUNC);
+    CHECK_EQ(g_ask.value, (uint16_t)LINK_PG_FN_DSHOT300);
+    CHECK(!outputs_port_fn_open());
+    fn_pick(4u);
+    CHECK_EQ(g_ask.value, (uint16_t)LINK_PG_FN_DSHOT600);
+    fn_pick(2u);
+    CHECK_EQ(g_ask.value, (uint16_t)LINK_PG_FN_DSHOT150);
+    CHECK_EQ(g_ask.n, 3);
+    /* The function it has: no ask. */
+    fn_pick(1u);
+    CHECK_EQ(g_ask.n, 3);
+    /* A second tap on the face shuts it; a press under way that slides
+     * off its entry asks nothing. */
+    out_tap(FACE_X, FN_Y);
+    out_tap(FACE_X, FN_Y);
+    CHECK(!outputs_port_fn_open());
+    out_tap(FACE_X, FN_Y);
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, FACE_X, FN_ROW_Y(3), 40 }, 0u };
+    touch_event_t u = { TOUCH_EVENT_UP, { 0, FACE_X, FN_ROW_Y(4), 40 }, 0u };
+    outputs_screen()->event(&d);
+    outputs_screen()->event(&u);
+    CHECK_EQ(g_ask.n, 3);
+    CHECK(outputs_port_fn_open());           /* still open for a choice */
+    /* Lost touches shut it. */
+    outputs_screen()->cancel();
+    CHECK(!outputs_port_fn_open());
+    /* A lock while it is open shuts it at the next tick. */
+    out_tap(FACE_X, FN_Y);
+    servo_screen_set_bench_armed(true);
+    outputs_screen()->tick(0.016f);
+    CHECK(!outputs_port_fn_open());
+    out_tap(FACE_X, FN_Y);
+    CHECK(!outputs_port_fn_open());
+    render_out();
+    servo_screen_set_bench_armed(false);
+    /* The face names each function. */
+    for (uint8_t fn = 0; fn < (uint8_t)LINK_PG_FN_COUNT; ++fn) {
+        v.func[1] = fn;
+        port_view_set(&v);
+        render_out();
+    }
+    v.has_dshot = false;
+    port_view_set(&v);
+}
+
+/* A DShot port is no tester target: SERVO TESTER takes no PORT n there,
+ * and the line says why. */
+TEST_CASE(a_dshot_port_locks_the_tester_segment)
+{
+    fresh();
+    port_view_t v = *port_view_get();
+    v.has_dshot = true;
+    v.func[1] = (uint8_t)LINK_PG_FN_DSHOT300;
+    port_view_set(&v);
+    out_port(1u);
+    CHECK_STR_EQ(out_reason(), TR(OUT_PORT_TESTER_PWM));
+    out_tap(SEG_X(1), TESTER_Y);
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
+    CHECK(!port_view_pwm(1u));
+    /* Under no PWM rule: no pin of it in the PWM pins. */
+    const uint8_t pins[LINK_PG_PORTS_MAX] = { 13u, 14u, 15u, 16u };
+    CHECK_EQ(outputs_pwm_pins(pins)[1], OUTBIND_NO_GPIO);
+    CHECK_EQ(outputs_pwm_pins(pins)[0], 13u);
+    char buf[48];
+    picker_port_count(1u, buf, sizeof(buf));
+    CHECK_STR_EQ(buf, "FUNCTION: DSHOT300");
+    render_out();
+    v.has_dshot = false;
+    v.func[1] = (uint8_t)LINK_PG_FN_NONE;
+    port_view_set(&v);
 }
 
 TEST_CASE(the_pin_button_names_the_pin_and_opens_pick_a_pin_on_the_port)
@@ -631,6 +753,8 @@ int main(void)
     RUN(the_entry_says_the_ports_are_not_read_before_the_first_read);
     RUN(function_is_asked_on_a_tap_and_its_ask_is_said);
     RUN(function_is_locked_where_the_iomcu_would_refuse_it);
+    RUN(function_list_offers_dshot_from_4_28_and_takes_every_press);
+    RUN(a_dshot_port_locks_the_tester_segment);
     RUN(the_pin_button_names_the_pin_and_opens_pick_a_pin_on_the_port);
     RUN(the_tester_takes_port_3_and_the_watch_line_follows_the_map);
     RUN(a_port_picked_ticks_its_pin_and_asks_for_another);

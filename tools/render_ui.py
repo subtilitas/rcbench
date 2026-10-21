@@ -185,6 +185,9 @@ SCREENS = {
     "motor-held": ("motor-held.png", "motor-held", "dark"),
     # A linked bench before its first run, no pin bound as a motor.
     "motor-idle": ("motor-idle.png", "motor", "dark"),
+    # The same bench with PROG PORT 2 as DSHOT300 on GP14 and no pin bound
+    # as a motor: TARGET names the port.
+    "motor-port": ("motor-port.png", "motor", "dark"),
     # The TABLE pane with an INA228 as BENCH's source, the ESC's own
     # telemetry beside it.
     "motor-table": ("motor-table.png", "motor", "dark"),
@@ -411,6 +414,9 @@ SCREENS = {
     # PROG PORT 2, function NONE on GP14, its FUNCTION ask waiting for a
     # bench at rest.
     "outputs-port2": ("outputs-port2.png", "outputs", "dark"),
+    # PROG PORT 2 on a 4.28 IOmcu, DSHOT300 on GP14: the FUNCTION list
+    # open over the column, five entries.
+    "outputs-port-dshot": ("outputs-port-dshot.png", "outputs", "dark"),
     # The overview with SETUP > INTERFACES wired: GP16 and GP17 the sensor
     # bus's, GP18 and GP19 the PD mini's, GP22 the phase tap's.
     "outputs-iface": ("outputs-iface.png", "outputs", "dark"),

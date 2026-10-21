@@ -80,7 +80,7 @@ The protocol list ends in one PROG PORT entry per programming port the IOmcu rep
 | Row | Shows and does |
 |---|---|
 | PIN | `PIN GP13`, `SET A PIN`, `PIN GP14 REFUSED` or `NO PIN KNOWN`; a tap opens [PICK A PIN](picker.md) on the port, where a tap on a pin sets it |
-| FUNCTION | SERVO PWM or NONE: what the pin carries while no programming session holds it. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin |
+| FUNCTION | what the pin carries while no programming session holds it; a tap opens the list. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin; DSHOT150, DSHOT300 and DSHOT600 (IOmcu 4.28 or later) send DShot from MOTOR & ESC's throttle, a frame every 1 ms while ARMED for the throttle, on any free pin |
 | WATCHED BY | the current channel that watches the port; `WATCHED BY NO CURRENT CHANNEL` until a sensor map names one |
 | SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port |
 | PORT PWM | ON or OFF: the pulse of the port that is the tester's target |
@@ -98,7 +98,7 @@ The IOmcu keeps each port's pin and function in its flash, with the outputs' bin
 | `PORTS NOT READ YET` | the IOmcu's ports not read since the link came up |
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED, or a sweep or a test runs; PORT PWM still goes off |
 | `SERVO TESTER DRIVES PROG PORT 3` | the tester drives another port |
-| `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE |
+| `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE or DShot |
 | `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
 
