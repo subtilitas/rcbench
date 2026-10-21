@@ -1,116 +1,59 @@
 # Target -------------------------------------------------------------------
-CONFIG_IDF_TARGET="esp32s3"
-CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+# The ESP32-P4 on the 7-inch display board from Waveshare is chip revision
+# 3.2.  Images for revision 3.x and for 1.x are not interchangeable: a v3
+# build needs CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n.  Minimum revision 3.1;
+# a 3.2 chip satisfies it.
+CONFIG_IDF_TARGET="esp32p4"
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n
+CONFIG_ESP32P4_REV_MIN_301=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_400=y
 
 # Flash --------------------------------------------------------------------
-# 8 MB boots on both module variants the board ships with,
-# ESP32-S3-WROOM-1-N8R8 and -N16R8.
+# 32 MB of NOR flash on the board.
 CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
 CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
-CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE_32MB=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 
 # PSRAM --------------------------------------------------------------------
-# Both framebuffers (2 x 750 KiB) live in PSRAM (pseudo-static random-access
-# memory), and the LCD (liquid-crystal display) DMA (direct memory access)
-# reads straight out of it, so the octal bus and the 64-byte cache line
-# matter.
+# 32 MB of hex-mode PSRAM (pseudo-static random-access memory) in the chip's
+# package.  Both frame buffers (2 x 1,228,800 bytes) live in it, and the
+# DSI (Display Serial Interface) host's DMA (direct memory access) reads
+# about 74 MB/s out of it for the scan-out at 60 Hz.  200 MHz is ESP-IDF
+# v5.5.5's default for this chip; 80 MHz is the setting to compare it
+# against.  The bandwidth the CPU (central processing unit) gets beside
+# the scan-out is not measured.
 CONFIG_SPIRAM=y
-CONFIG_SPIRAM_MODE_OCT=y
-CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_SPEED_200M=y
 #
-# Code and constants stay in flash; only the framebuffers live in PSRAM.
-#
-# The LCD (liquid-crystal display) scans about 30 MB/s out of PSRAM
-# continuously, and every instruction fetch or font lookup that misses the
-# 32 KB instruction cache is taken out of that budget.  Flash XIP (execute in
-# place) has its own cache and its own bus, so the fonts and the screen code
-# do not compete with the scan-out.
-#
-# CONFIG_SPIRAM_XIP_FROM_PSRAM=y, which selects SPIRAM_FETCH_INSTRUCTIONS and
-# SPIRAM_RODATA, puts about 460 KB of code and constants into PSRAM and holds
-# the cache open across a main-flash write.  Its effect on the frame rate here
-# is not measured.
+# Code and constants stay in flash; only the frame buffers and the data
+# psram_bss.lf names live in PSRAM.
 CONFIG_SPIRAM_XIP_FROM_PSRAM=n
 CONFIG_SPIRAM_RODATA=n
 CONFIG_SPIRAM_FETCH_INSTRUCTIONS=n
 CONFIG_SPIRAM_MEMTEST=n
 #
 # Zero-initialised data in PSRAM where a linker fragment asks for it:
-# main/psram_bss.lf names the panel's objects and why each is safe there,
-# and ESP-IDF's own fragments move the .bss of lwIP and of the Wi-Fi
-# driver's libraries.  Internal RAM keeps what the Wi-Fi driver must have
-# internal: about 51 KB of DMA (direct memory access) buffers at
-# esp_wifi_init().  tools/ram_budget.py holds the budget.
+# main/psram_bss.lf names the panel's objects and why each is safe there.
 CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
 
 # Cache --------------------------------------------------------------------
-CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB=y
-CONFIG_ESP32S3_DATA_CACHE_64KB=y
-CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
+# ESP-IDF's defaults: 128 KB of L2 cache, 64-byte lines.  Waveshare's
+# examples run 256 KB with 128-byte lines; the effect on the frame rate here
+# is not measured.
 
 # LCD ----------------------------------------------------------------------
-# The RGB ISR (interrupt service routine) is not IRAM-safe (IRAM: instruction
-# random-access memory), so ESP-IDF masks it while the cache is disabled.
-#
-# That ISR refills the bounce buffer by reading PSRAM through the data cache,
-# which a main-flash operation closes.  Left IRAM-safe it runs anyway, faults
-# on PSRAM and panics the core with `Cache disabled but cached memory region
-# accessed`.  Masked, it does not run: the bounce buffer starves for the
-# length of the operation.  The driver the panel links also restarts the scan
-# from that ISR with code in flash, and tools/patch_rgb_driver.py refuses a
-# build with this option on.
-CONFIG_LCD_RGB_ISR_IRAM_SAFE=n
-#
-# The DMA (direct memory access) is restarted when a desync is detected, not
-# on every VBlank (vertical blanking interval).  A desync is a frame that
-# counted fewer than its 48 bounce-buffer refills: the ISR was held off for
-# more than one buffer, 512 us.  ESP-IDF's own restart on the ESP32-S3 empties
-# the LCD FIFO (first-in, first-out buffer) and then resumes from a DMA link
-# that skips LCD_LL_FIFO_DEPTH + 1 = 17 pixels, on the assumption that the
-# FIFO still holds them.  It does not: the image sits 17 px to the left with
-# the tail of every line wrapped one line down, and stays there until the
-# panel restarts, because every later frame counts its 48 refills.  The panel
-# links a copy of the driver in which every restart is the clean start of boot
-# (components/display/include/rgb_panel_rcbench.h).  The restart runs in the
-# first VBlank interrupt after the ISR is unmasked, which can be mid-frame; it
-# cuts that frame, and the next one scans from its first pixel.  With this
-# option on, the clean start would stop and restart the LCD on every frame, so
-# tools/patch_rgb_driver.py refuses a build with it on.
-CONFIG_LCD_RGB_RESTART_IN_VSYNC=n
-#
-# The panel cannot scan while the main flash is busy.  The interrupt handler
-# refills the bounce buffer (10 lines, 16 KB, one every 512 us at a 16 MHz
-# pixel clock) from PSRAM through the data cache, and a flash read, write or
-# erase closes that cache for the length of the operation.  ESP-IDF documents
-# the restriction for the mode.  The ISR being masked rather than IRAM-safe is
-# what keeps that from being a panic.
-#
-# Flash work still happens where the panel is not scanning where it can: the
-# panel loads its settings before display_init().  A save from the settings
-# screen, the board drawing's keep and a panel update write against a live
-# panel: the picture is disturbed for the length of each operation and, when
-# one lasts longer than 512 us, the scan restarts cleanly at the first VBlank
-# interrupt after the operation ends, which can be mid-frame.  The console
-# logs each restart (`display: scan restarted`).
+# The DSI host's interrupt runs while a flash write has the cache off, so
+# the frame-done event that restarts the scan-out is not held for the
+# length of a settings save, a drawing's keep or an update.  The display's
+# two callbacks are in IRAM (instruction RAM) and touch internal RAM only.
+CONFIG_LCD_DSI_ISR_CACHE_SAFE=y
 
 # Performance --------------------------------------------------------------
 # ESP-IDF (Espressif Internet-of-Things Development Framework) defaults to
 # -Og.  The rasteriser is tight pixel loops; -O2 raises the frame rate.
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
-
-# The frame rate on this board is decided by PSRAM bandwidth: the LCD scans
-# about 30 MB/s out of PSRAM continuously, and every pixel the CPU (central
-# processing unit) writes costs 128 bytes of bus (write-allocate fetches the
-# 64-byte line before overwriting it, then writes it back).  For more headroom
-# than -O2 and fewer repainted pixels give, the next lever is 120 MHz PSRAM:
-#
-#   CONFIG_SPIRAM_SPEED_120M=y
-#
-# It is about 50% more bandwidth and marked experimental: it needs the flash
-# at 80 MHz or below, and Espressif documents temperature-related instability
-# outside 0 to 80 C.  Measure with tools/frame_cost.py before and after.
 
 # Scheduler ----------------------------------------------------------------
 CONFIG_FREERTOS_HZ=1000
@@ -118,37 +61,15 @@ CONFIG_FREERTOS_HZ=1000
 # Main task stack ----------------------------------------------------------
 # app_main runs the UI: every screen's enter, tick, event and render is
 # called on the main task.  ESP-IDF's default stack, 3584 bytes, is below
-# the UI's deepest call chain, which tools/stack_check.py reads out of the
-# ELF: 3856 bytes, through the log viewer's render and snprintf().  8192
-# holds that, the check's 1024-byte margin and 3312 bytes for the 165 calls
-# through a pointer the check cannot follow and for screens to grow.  The
-# stack is taken from internal RAM (random-access memory) at start-up, 4608
-# bytes more than the default.  CI fails when the chain outgrows the stack
-# less the margin.
+# the UI's deepest call chain, 3856 bytes on the ESP32-S3 build, through the
+# log viewer's render and snprintf().  8192 bytes hold that with room.  The
+# chain on the ESP32-P4's RISC-V code is not measured.
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 
-# Console on both sockets ---------------------------------------------------
-#
-# The board has two USB-C (Universal Serial Bus) sockets: one through a
-# USB-UART (universal asynchronous receiver-transmitter) bridge to UART0, and
-# one carrying the ESP32-S3's native USB.  Native USB, USB-Serial-JTAG (the
-# built-in serial and debug bridge) and USB-OTG (On-The-Go) alike, lives on
-# GPIO19 and GPIO20 (general-purpose input/output), dedicated analogue pins
-# that the GPIO matrix cannot move, and those are what the FSUSB42UMX
-# multiplexes against CAN (Controller Area Network).  When BOARD_EXIO_USB_SEL
-# selects CAN, the native USB console is gone.
-#
-# The bridged socket shares nothing with CAN, so it is the primary console.
-# It is on UART0: a Rev1.2 accepts a firmware download through it, and the ROM
-# bootloader takes a serial download on UART0 and nowhere else.
-#
-# What that socket is connected to is switchable: a slide switch beside BOOT
-# and RESET is marked UART1 and UART2.  In one position the bridge enumerates
-# and passes nothing, which looks exactly like a broken board and is not one.
-#
-# The native socket is the secondary console.  It costs nothing while USB is
-# selected, and it is what is left when the bridged one says nothing.  Output
-# goes to both.
+# Console ------------------------------------------------------------------
+# UART0 is the primary console and USB-Serial-JTAG (the chip's built-in
+# serial and debug bridge) the secondary.  Which of the board's two USB-C
+# sockets reaches which is not traced.
 CONFIG_ESP_CONSOLE_UART_DEFAULT=y
 CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y
 
@@ -187,27 +108,22 @@ CONFIG_FATFS_USE_LABEL=y
 # algorithm, 256 bits), which say what it is and that it arrived whole, and
 # not who built it.
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
-
-# Wi-Fi ---------------------------------------------------------------------
 #
-# The radio runs only while WI-FI asks for it, and while the panel
-# asks GitHub for a release (SETUP > UPDATES and the start-up check).  Its
-# buffers and lwIP's (lightweight IP stack) come from PSRAM where the driver
-# allows, so internal RAM keeps what the display and the bench need.
-CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
-# The hot paths stay in flash: the transfer rate matters less than the
-# internal RAM (IRAM, instruction RAM) they would take.
-CONFIG_ESP_WIFI_IRAM_OPT=n
-CONFIG_ESP_WIFI_RX_IRAM_OPT=n
-# Nothing of the radio's is kept in NVS: no driver settings, no PHY
-# (physical layer) calibration.  A start calibrates in full, and no flash is
-# written by the radio.
-CONFIG_ESP_WIFI_NVS_ENABLED=n
-CONFIG_ESP_PHY_CALIBRATION_AND_DATA_STORAGE=n
-# WPA2 and WPA3 personal only.
-CONFIG_ESP_WIFI_ENTERPRISE_SUPPORT=n
-# lwIP's task on core 0, with the radio and the UI (user interface).  Core 1
-# runs the control task, which owns STOP and the heartbeat.
+# The ESP32-P4's second-stage bootloader sits at 0x2000, and the partition
+# table at 0x8000 leaves it 24,576 bytes.  With rollback and the INFO log
+# level it is 24,896 bytes; at WARN it fits.  The table stays at 0x8000 so
+# nvs, phy_init and otadata keep their offsets.
+CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
+
+# Network -------------------------------------------------------------------
+#
+# The radio is an ESP32-C6 beside the ESP32-P4; this build does not start
+# it (RCBENCH_PANEL_WIFI, firmware/panel/CMakeLists.txt).  lwIP's (the
+# lightweight IP stack's) and the HTTP (hypertext transfer protocol)
+# settings below hold for the page and the release check once it does.
+#
+# lwIP's task on core 0, with the UI (user interface).  Core 1 runs the
+# control task, which owns STOP and the heartbeat.
 CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
 # A TCP (transmission control protocol) connection's send buffer: 8
 # segments of 1440 bytes, 11,520 bytes, where ESP-IDF's default is 4.  A
@@ -215,10 +131,7 @@ CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
 # in flight, a lost segment other than the first draws fewer than the 3
 # duplicate acknowledgements a fast retransmit needs and waits out the
 # retransmission time-out instead: 1,500 ms at the start
-# (CONFIG_LWIP_TCP_RTO_TIME), longer with each further loss.  8 stay within the Wi-Fi
-# driver's 16 static TX (transmit) buffers.  The bytes queued and not yet
-# acknowledged are taken from the heap, PSRAM first
-# (CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP).
+# (CONFIG_LWIP_TCP_RTO_TIME), longer with each further loss.
 CONFIG_LWIP_TCP_SND_BUF_DEFAULT=11520
 # SO_LINGER, so a download that fails resets its connection
 # (wifi_sock.c, wifi_sock_drop()) and frees what it had queued at once.

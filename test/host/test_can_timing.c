@@ -1,7 +1,8 @@
 /*
  * CAN (Controller Area Network) bit timing for the two controllers on the
- * link: the MCP2515-compatible XL2515 on the IOmcu and the ESP32-S3's
- * TWAI (Two-Wire Automotive Interface) controller on the panel.
+ * link: the MCP2515-compatible XL2515 on the IOmcu and the ESP32-P4's
+ * TWAI (Two-Wire Automotive Interface) controller on the panel, clocked
+ * from its 40 MHz crystal.
  *
  * Wrong timing does not fail cleanly: a node a fraction of a percent off
  * works on a short bench cable with one other node and logs errors when the
@@ -404,6 +405,51 @@ TEST_CASE(a_segmentation_the_part_cannot_express_is_refused)
     CHECK_EQ(mcp2515_encode_timing(&t, cnf), false);
 }
 
+/*
+ * The panel's TWAI divides the 40 MHz crystal by an even prescaler of 2 to
+ * 32768.  1 Mbit/s is 40 quanta of 25 ns: divisor 2 and 20 quanta a bit,
+ * 15 before the sample point and 5 after it, 75 %.
+ */
+TEST_CASE(the_p4_twai_makes_one_megabit_from_its_40_mhz_crystal)
+{
+    can_timing_limits_t lim;
+    can_timing_limits_twai(&lim);
+    CHECK_EQ(lim.clock_hz, 40000000u);
+    CHECK_EQ(lim.div_min, 2);
+    CHECK_EQ(lim.div_max, 32768);
+    CHECK_EQ(lim.div_step, 2);
+
+    can_timing_t t;
+    CHECK(can_timing_solve(&lim, 1000000u, CAN_SAMPLE_POINT_LINK, &t));
+    CHECK_EQ(t.div, 2);
+    CHECK_EQ(t.tq, 20);
+    CHECK_EQ(t.tseg1, 14);
+    CHECK_EQ(t.tseg2, 5);
+    CHECK_EQ(t.sjw, 4);
+    CHECK_EQ(t.sample_permille, 750);
+    CHECK_EQ(achieved(&lim, &t), 1000000u);
+}
+
+/*
+ * The prescaler's top end: 50 bit/s needs divisor 32000 with 25 quanta,
+ * inside the limit; 40 bit/s needs at least 40000 and is refused rather
+ * than made from a divisor the register cannot hold.
+ */
+TEST_CASE(the_p4_twai_stops_at_its_largest_prescaler)
+{
+    can_timing_limits_t lim;
+    can_timing_limits_twai(&lim);
+    can_timing_t t;
+    CHECK(can_timing_solve(&lim, 50u, CAN_SAMPLE_POINT_DEFAULT, &t));
+    CHECK_EQ(t.div, 32000);
+    CHECK_EQ(t.tq, 25);
+    CHECK_EQ(achieved(&lim, &t), 50u);
+    CHECK(t.tseg1 <= lim.tseg1_max);
+    CHECK(t.tseg2 >= lim.tseg2_min && t.tseg2 <= lim.tseg2_max);
+    CHECK_EQ(can_timing_solve(&lim, 40u, CAN_SAMPLE_POINT_DEFAULT, &t),
+             false);
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     can_timing_limits_t lim;
@@ -433,6 +479,8 @@ int main(void)
     RUN(both_ends_sample_the_bit_in_the_same_place);
     RUN(the_panel_never_gets_a_jump_width_of_one);
     RUN(the_panels_twai_reaches_every_rate_the_coprocessor_can);
+    RUN(the_p4_twai_makes_one_megabit_from_its_40_mhz_crystal);
+    RUN(the_p4_twai_stops_at_its_largest_prescaler);
     RUN(a_rate_that_cannot_be_hit_exactly_is_refused);
     RUN(the_sample_point_lands_near_the_target_and_the_segments_are_legal);
     RUN(no_legal_split_sits_closer_to_the_target);

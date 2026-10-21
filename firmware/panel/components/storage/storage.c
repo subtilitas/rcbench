@@ -10,18 +10,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "board.h"
+#include "board_pins.h"
 /* ff.h first: diskio_sdmmc.h uses its BYTE without including it. */
 #include "ff.h"
 #include "diskio_impl.h"
 #include "diskio_sdmmc.h"
-#include "driver/sdspi_host.h"
-#include "driver/spi_common.h"
+#include "driver/sdmmc_host.h"
 #include "esp_check.h"
 #include "esp_log.h"
 #include "esp_vfs_fat.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "sd_pwr_ctrl_by_on_chip_ldo.h"
 #include "sdmmc_cmd.h"
 
 static const char *TAG = "storage";
@@ -56,7 +56,9 @@ static const char *TAG = "storage";
  */
 static struct {
     sdmmc_card_t *card;
-    bool bus_up;
+    /* The card's supply, on-chip LDO channel 4: made once, kept until
+     * storage_deinit(). */
+    sd_pwr_ctrl_handle_t pwr;
     bool mounted;
     /* Found gone while held: unmounted at the last release. */
     bool lost;
@@ -170,7 +172,7 @@ static const char *volume_format(void)
 }
 
 /*
- * What FatFs says of the card esp_vfs_fat_sdspi_mount() just gave up on.
+ * What FatFs says of the card esp_vfs_fat_sdmmc_mount() just gave up on.
  *
  * That mount answers ESP_FAIL for every FatFs refusal alike, and only after
  * the card has started (its own start-up errors come back as they are): no
@@ -188,24 +190,27 @@ static const char *volume_format(void)
  * @return f_mount()'s FRESULT, or -1 with @p why set when FatFs could not
  *         be asked: no device, a card that no longer starts, no memory.
  */
-static int probe_fatfs(const sdmmc_host_t *host_in,
-                       const sdspi_device_config_t *slot, esp_err_t *why)
+static int probe_fatfs(const sdmmc_host_t *host,
+                       const sdmmc_slot_config_t *slot, esp_err_t *why)
 {
-    sdmmc_host_t host = *host_in;
-    sdspi_dev_handle_t dev = -1;
-    esp_err_t err = sdspi_host_init_device(slot, &dev);
+    esp_err_t err = (*host->init)();
+    if (err == ESP_OK) {
+        err = sdmmc_host_init_slot(host->slot, slot);
+        if (err != ESP_OK) {
+            (void)(*host->deinit_p)(host->slot);
+        }
+    }
     if (err != ESP_OK) {
         *why = err;
         return -1;
     }
-    host.slot = dev;
     int fr = -1;
     BYTE pdrv = 0xffu;
     sdmmc_card_t *card = calloc(1, sizeof(*card));
     FATFS *fs = calloc(1, sizeof(*fs));
     if (card == NULL || fs == NULL) {
         err = ESP_ERR_NO_MEM;
-    } else if ((err = sdmmc_card_init(&host, card)) == ESP_OK
+    } else if ((err = sdmmc_card_init(host, card)) == ESP_OK
                && (err = ff_diskio_get_drive(&pdrv)) == ESP_OK) {
         ff_diskio_register_sdmmc(pdrv, card);
         const char drv[3] = { (char)('0' + pdrv), ':', '\0' };
@@ -213,7 +218,7 @@ static int probe_fatfs(const sdmmc_host_t *host_in,
         (void)f_mount(NULL, drv, 0);
         ff_diskio_unregister(pdrv);
     }
-    (void)sdspi_host_remove_device(dev);
+    (void)(*host->deinit_p)(host->slot);
     free(fs);
     free(card);
     *why = err;
@@ -223,7 +228,7 @@ static int probe_fatfs(const sdmmc_host_t *host_in,
 /* A mount that failed after the card started: which kind of card it is,
  * said once in the log and kept for the screens. */
 static void mount_failed(esp_err_t err, const sdmmc_host_t *host,
-                         const sdspi_device_config_t *slot)
+                         const sdmmc_slot_config_t *slot)
 {
     set_state(CARD_STATE_UNREADABLE);
     if (err != ESP_FAIL) {
@@ -266,48 +271,38 @@ static esp_err_t mount_locked(void)
 {
     s.status[0] = '\0';
 
-    /* The bus once: a retry after "no card" finds it up, and ESP-IDF logs
-     * a second initialisation as an error before it returns
-     * ESP_ERR_INVALID_STATE. */
+    /* The card's supply once: a retry after "no card" finds it on. */
     esp_err_t err = ESP_OK;
-    if (!s.bus_up) {
-        spi_bus_config_t bus = {
-            .mosi_io_num = BOARD_SD_PIN_MOSI,
-            .miso_io_num = BOARD_SD_PIN_MISO,
-            .sclk_io_num = BOARD_SD_PIN_CLK,
-            .quadwp_io_num = -1,
-            .quadhd_io_num = -1,
-            .max_transfer_sz = 4096,
+    if (s.pwr == NULL) {
+        const sd_pwr_ctrl_ldo_config_t ldo = {
+            .ldo_chan_id = BOARD_SD_LDO_CHAN,
         };
-        err = spi_bus_initialize(BOARD_SD_SPI_HOST, &bus, SPI_DMA_CH_AUTO);
-        if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+        err = sd_pwr_ctrl_new_on_chip_ldo(&ldo, &s.pwr);
+        if (err != ESP_OK) {
+            s.pwr = NULL;
             set_state(CARD_STATE_UNREADABLE);
-            snprintf(s.status, sizeof(s.status), "SPI %s",
+            snprintf(s.status, sizeof(s.status), "LDO %s",
                      esp_err_to_name(err));
-            ESP_LOGW(TAG, "card bus failed: %s", s.status);
+            ESP_LOGW(TAG, "card supply failed: %s", s.status);
             return err;
         }
-        s.bus_up = true;
     }
 
-    /* Chip select is on the expander, and this is a read-modify-write: the
-     * vendor demo's raw 0x0A to address 0x38 would also clear EXIO2 and take
-     * the backlight down with it. */
-    err = board_sd_cs(true);
-    if (err != ESP_OK) {
-        set_state(CARD_STATE_UNREADABLE);
-        snprintf(s.status, sizeof(s.status), "CS %s", esp_err_to_name(err));
-        ESP_LOGW(TAG, "card bus failed: %s", s.status);
-        return err;
-    }
-
-    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-    host.slot = BOARD_SD_SPI_HOST;
+    /* SDMMC slot 0, 4-bit, on its IO MUX pins (board_pins.h). */
+    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+    host.slot = BOARD_SD_SLOT;
     host.max_freq_khz = BOARD_SD_FREQ_KHZ;
+    host.pwr_ctrl_handle = s.pwr;
 
-    sdspi_device_config_t slot = SDSPI_DEVICE_CONFIG_DEFAULT();
-    slot.host_id = BOARD_SD_SPI_HOST;
-    slot.gpio_cs = GPIO_NUM_NC; /* held by the expander, see board_pins.h */
+    sdmmc_slot_config_t slot = SDMMC_SLOT_CONFIG_DEFAULT();
+    slot.width = BOARD_SD_WIDTH;
+    slot.clk = BOARD_SD_PIN_CLK;
+    slot.cmd = BOARD_SD_PIN_CMD;
+    slot.d0 = BOARD_SD_PIN_D0;
+    slot.d1 = BOARD_SD_PIN_D1;
+    slot.d2 = BOARD_SD_PIN_D2;
+    slot.d3 = BOARD_SD_PIN_D3;
+    slot.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
 
     esp_vfs_fat_sdmmc_mount_config_t mount = {
         /* Never format on the bench: a card that will not mount is a card to
@@ -325,21 +320,19 @@ static esp_err_t mount_locked(void)
      */
     const esp_log_level_t was = esp_log_level_get(STORAGE_IDF_MOUNT_TAG);
     esp_log_level_set(STORAGE_IDF_MOUNT_TAG, ESP_LOG_NONE);
-    err = esp_vfs_fat_sdspi_mount(STORAGE_MOUNT_POINT, &host, &slot, &mount,
+    err = esp_vfs_fat_sdmmc_mount(STORAGE_MOUNT_POINT, &host, &slot, &mount,
                                   &s.card);
     esp_log_level_set(STORAGE_IDF_MOUNT_TAG, was);
     if (err != ESP_OK) {
         if (err == ESP_ERR_TIMEOUT || err == ESP_ERR_NOT_FOUND ||
             err == ESP_ERR_INVALID_RESPONSE) {
-            board_sd_cs(false);
             set_state(CARD_STATE_NONE);
             snprintf(s.status, sizeof(s.status), "no card");
             ESP_LOGI(TAG, "no card (%s)", esp_err_to_name(err));
             return ESP_ERR_NOT_FOUND;
         }
-        /* With chip select still held: the check starts the card again. */
+        /* The check starts the card again on its own. */
         mount_failed(err, &host, &slot);
-        board_sd_cs(false);
         return err;
     }
 
@@ -384,7 +377,6 @@ static void unmount_locked(void)
     s.mounted = false;
     s.lost = false;
     s.drive[0] = '\0';
-    board_sd_cs(false);
 }
 
 /*
@@ -581,9 +573,9 @@ void storage_deinit(void)
     /* The end: nothing may still be open, so no hold is waited for. */
     s.holds = 0u;
     unmount_locked();
-    if (s.bus_up) {
-        spi_bus_free(BOARD_SD_SPI_HOST);
-        s.bus_up = false;
+    if (s.pwr != NULL) {
+        (void)sd_pwr_ctrl_del_on_chip_ldo(s.pwr);
+        s.pwr = NULL;
     }
     /* Nothing is known of the slot until the next storage_init(). */
     set_state(CARD_STATE_NONE);

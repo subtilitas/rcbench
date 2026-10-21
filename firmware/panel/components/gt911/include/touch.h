@@ -1,8 +1,9 @@
 /*
- * Touch input for the Waveshare ESP32-S3-Touch-LCD-7.
+ * Touch input for the 7-inch ESP32-P4 display board.
  *
- * A background task samples the GT911, maps the coordinates into screen
- * space and publishes the result two ways:
+ * A background task polls the GT911 every poll_interval_ms, maps the
+ * coordinates into screen space, drops the ones outside the UI's
+ * BOARD_UI_H_RES x BOARD_UI_V_RES area and publishes the result two ways:
  *
  *   - touch_snapshot(): the current contacts, never blocks.  A redraw loop
  *     polls it every frame.
@@ -16,6 +17,8 @@
 
 #include "esp_err.h"
 
+#include "board_pins.h"
+
 #include "touch_map.h"
 #include "touch_types.h"
 
@@ -27,23 +30,21 @@ typedef struct {
     touch_rotation_t rotation;      /**< matches how the panel is mounted      */
     bool     mirror_x;
     bool     mirror_y;
-    bool     use_interrupt;         /**< react to the GT911 INT line          */
-    uint32_t poll_interval_ms;      /**< sampling period, and the INT timeout */
+    uint32_t poll_interval_ms;      /**< sampling period                      */
     uint32_t event_queue_len;       /**< 0 disables the event queue           */
     int      task_priority;
     int      task_core;             /**< -1 for no affinity                   */
 } touch_config_t;
 
-#define TOUCH_CONFIG_DEFAULT()          \
-    (touch_config_t) {                  \
-        .rotation = TOUCH_ROTATION_0,   \
-        .mirror_x = false,              \
-        .mirror_y = false,              \
-        .use_interrupt = true,          \
-        .poll_interval_ms = 10,         \
-        .event_queue_len = 32,          \
-        .task_priority = 5,             \
-        .task_core = 0,                 \
+#define TOUCH_CONFIG_DEFAULT()              \
+    (touch_config_t) {                      \
+        .rotation = TOUCH_ROTATION_0,       \
+        .mirror_x = BOARD_TOUCH_MIRROR_X,   \
+        .mirror_y = BOARD_TOUCH_MIRROR_Y,   \
+        .poll_interval_ms = 10,             \
+        .event_queue_len = 32,              \
+        .task_priority = 5,                 \
+        .task_core = 0,                     \
     }
 
 /** Reset the controller, probe it and start the sampling task. */

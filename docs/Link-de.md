@@ -10,18 +10,16 @@ Die beiden Platinen kommunizieren über CAN (Controller Area Network) mit
 | | |
 | --- | --- |
 | Bus | Classic CAN (kein CAN FD (Flexible Data Rate)), 1 Mbit/s, nur 29-Bit-Identifier |
-| Panel | TWAI-Controller (Two-Wire Automotive Interface, der CAN-Controller des ESP32-S3) auf GPIO19 (RX) und GPIO20 (TX; GPIO: General-Purpose Input/Output), über den USB/CAN-Multiplexer der Platine (USB: Universal Serial Bus) |
+| Panel | TWAI-Controller (Two-Wire Automotive Interface, der CAN-Controller des ESP32-P4) auf GPIO21 (RX) und GPIO22 (TX; GPIO: General-Purpose Input/Output) zum Transceiver TJA1051T/3 der Platine, getaktet vom 40-MHz-Quarz |
 | IOmcu | XL2515 (MCP2515-kompatibel) an `spi1`: SCK GP10, MOSI GP11, MISO GP12, CS GP9, INT GP8; SPI-Takt 10 MHz (SPI: Serial Peripheral Interface) |
 | Transceiver | SIT65HVD230 (3,3 V) auf dem IOmcu-Modul |
 | Abschluss | 120 Ω an beiden Enden |
 | Quarz | der XL2515 braucht einen 16-MHz-Quarz; 8 MHz begrenzen den Controller auf 500 kbit/s |
 
-Wer CAN wählt, verliert das native USB des Panels. GPIO19 und GPIO20 führen
-beides, und der Multiplexer FSUSB42UMX (CH422G EXIO5: 0 = USB, 1 = CAN) wählt
-eines aus. Die Konsole liegt deshalb auf UART0 (Universal Asynchronous
-Receiver-Transmitter), der zweiten USB-C-Buchse der Platine hinter der
-USB-UART-Bridge, mit USB-Serial-JTAG (der eingebauten USB-Seriell- und
-Debug-Bridge des ESP32-S3) als Zweitkonsole.
+Die CAN-Pins des Panels gehören CAN allein: CAN und die USB-Konsole (USB:
+Universal Serial Bus) laufen gleichzeitig. Pin 1 des CAN-Headers H11 des
+Panels ist die 5-V-Schiene der Platine, das Link-Kabel kann das Panel also
+versorgen; die Stromaufnahme des Panels auf diesem Weg ist nicht gemessen.
 
 Kommen keine Frames durch: [Den Link in Betrieb nehmen](Bringup-de.md).
 

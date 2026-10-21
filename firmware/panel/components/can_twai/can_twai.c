@@ -10,7 +10,6 @@
 #include "esp_idf_version.h"
 #include "esp_log.h"
 
-#include "board.h"
 #include "board_pins.h"
 #include "can_timing.h"
 
@@ -40,8 +39,8 @@ esp_err_t can_twai_start(uint32_t bitrate)
     can_timing_limits_twai(&lim);
     can_timing_t t;
     if (!can_timing_solve(&lim, bitrate, CAN_SAMPLE_POINT_LINK, &t)) {
-        ESP_LOGE(TAG, "%u bit/s cannot be made exactly from the APB clock",
-                 (unsigned)bitrate);
+        ESP_LOGE(TAG, "%u bit/s cannot be made exactly from the 40 MHz "
+                      "crystal", (unsigned)bitrate);
         return ESP_ERR_INVALID_ARG;
     }
     ESP_LOGI(TAG, "%u bit/s: brp %u, tseg1 %u, tseg2 %u, sjw %u, "
@@ -50,23 +49,10 @@ esp_err_t can_twai_start(uint32_t bitrate)
              t.sample_permille / 10u, t.sample_permille % 10u);
 
     /*
-     * The multiplexer, and its cost: GPIO19 and GPIO20 (general-purpose
-     * input/output) are the native USB (Universal Serial Bus) pins, so from
-     * here until can_twai_stop() there is no USB.  The console is on UART0
-     * (universal asynchronous receiver-transmitter) for that reason.
-     *
-     * Reported, not asserted: every failure here returns esp_err_t and leaves
-     * the caller to decide.  Aborting the panel because one I2C
-     * (Inter-Integrated Circuit) transaction to the expander failed would
-     * take the STOP button with it.
+     * Reported, not asserted: every failure here returns esp_err_t and
+     * leaves the caller to decide.  Aborting the panel because the
+     * controller did not start would take the STOP button with it.
      */
-    esp_err_t sel = board_select_can(true);
-    if (sel != ESP_OK) {
-        ESP_LOGE(TAG, "could not route the multiplexer to CAN: %s",
-                 esp_err_to_name(sel));
-        return sel;
-    }
-
     const twai_general_config_t g = {
         .mode = TWAI_MODE_NORMAL,
         .tx_io = PANEL_CAN_PIN_TX,
@@ -79,7 +65,9 @@ esp_err_t can_twai_start(uint32_t bitrate)
         .clkout_divider = 0,
         .intr_flags = ESP_INTR_FLAG_LEVEL1,
     };
+    /* The 40 MHz crystal, the clock can_timing_limits_twai() solves for. */
     const twai_timing_config_t timing = {
+        .clk_src = TWAI_CLK_SRC_XTAL,
         .brp = t.div,
         .tseg_1 = t.tseg1,
         .tseg_2 = t.tseg2,
@@ -92,13 +80,11 @@ esp_err_t can_twai_start(uint32_t bitrate)
 
     esp_err_t err = twai_driver_install(&g, &timing, &filter);
     if (err != ESP_OK) {
-        board_select_can(false);
         return err;
     }
     err = twai_start();
     if (err != ESP_OK) {
         twai_driver_uninstall();
-        board_select_can(false);
         return err;
     }
     s_running = true;
@@ -112,7 +98,6 @@ void can_twai_stop(void)
     }
     twai_stop();
     twai_driver_uninstall();
-    board_select_can(false);
     s_running = false;
 }
 

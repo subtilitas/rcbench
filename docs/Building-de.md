@@ -40,7 +40,7 @@ rcbench/
     kst/                  Programmierung von KST- und Chaservo-Servos: Frames, Register, Grenzen, Schreibpläne, Session · rp2350: kst_line.pio · kst_line
     hitec/                Leitung der Hitec-Servos, beide Familien: Frames, Transaktionen, Decoder der Antworten · rp2350: hitec_line.pio · hitec_line
   firmware/
-    panel/                ESP-IDF-Projekt (ESP32-S3)
+    panel/                ESP-IDF-Projekt (ESP32-P4)
     iomcu/                pico-sdk-Projekt (RP2350)
   test/host/              die Host-Suite, eine Binary je Modul oder Bildschirm
   hardware/               Platinen-Designprotokoll; keine Platine existiert
@@ -88,21 +88,22 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 
 | | Version | Hinweise |
 | --- | --- | --- |
-| ESP-IDF | v5.4 oder neuer | das Event `on_frame_buf_complete` des RGB-Panels (RGB: paralleles Rot-Grün-Blau-Interface), auf das der Framebuffer-Wechsel wartet, existiert ab v5.4. Weder v5.5.0 noch v5.5.1 lässt sich kompilieren: ihr TWAI-Treiber (Two-Wire Automotive Interface) sendet einen CAN-Frame mit DLC (Data Length Code) 0 als DLC 8, und der IOmcu lehnt jeden so gesendeten Link-Read ab. CI (Continuous Integration) baut v5.4 und v5.5.3 |
+| ESP-IDF | v5.5.5 oder neuer auf der Linie v5.5 | der ESP32-P4 des Panels ist Chiprevision 3.2, die Espressifs Hinweis AR2026-004 mit v5.5.5 oder neuer paart; der Build setzt `CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n` und Mindestrevision 3.1. Weder v5.5.0 noch v5.5.1 lässt sich kompilieren: ihr TWAI-Treiber (Two-Wire Automotive Interface) sendet einen CAN-Frame mit DLC (Data Length Code) 0 als DLC 8, und der IOmcu lehnt jeden so gesendeten Link-Read ab. CI (Continuous Integration) baut v5.5.5 |
 | pico-sdk | 2.0 oder neuer | RP2350-Unterstützung; CI baut 2.3.0 |
 | ARM GNU Toolchain | 14.2 | jede `arm-none-eabi`-Version für Cortex-M33 |
 
-`firmware/panel/sdkconfig.defaults` setzt Octal-PSRAM (PSRAM: Pseudo-Static
-Random-Access Memory) mit 80 MHz, den 64-KB-Datencache mit 64-Byte-Lines, Code
-und Konstanten im Flash statt im PSRAM, die nullinitialisierten Daten, die
+`firmware/panel/sdkconfig.defaults` setzt den ESP32-P4 auf Chiprevision 3.1
+oder neuer und 400 MHz, 32 MB Flash, das PSRAM im Gehäuse (PSRAM:
+Pseudo-Static Random-Access Memory) auf 200 MHz, Code und Konstanten im
+Flash statt im PSRAM, die nullinitialisierten Daten, die
 `main/psram_bss.lf` nennt, im PSRAM ([Interner RAM](Performance-de.md#interner-ram)),
-den RGB-LCD-Interrupt ohne IRAM-Sicherheit
-(IRAM: Instruction Random-Access Memory; LCD: Liquid-Crystal Display), sodass
-ESP-IDF ihn während einer Flash-Operation maskiert, `-O2`
-und die Konsole auf UART0 (UART: Universal Asynchronous Receiver-Transmitter)
-mit USB-Serial-JTAG (die eingebaute serielle und Debug-Bridge des ESP32-S3
-über USB, Universal Serial Bus) als Zweitkonsole. Von dieser Datei ausgehen,
-nicht von `menuconfig`.
+den Interrupt des DSI-Hosts (DSI: Display Serial Interface), der auch
+während einer Flash-Operation läuft (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), das
+Log des Bootloaders auf WARN, damit er in die 24.576 Bytes zwischen 0x2000
+und der Partitionstabelle passt, `-O2` und die Konsole auf UART0 (UART:
+Universal Asynchronous Receiver-Transmitter) mit USB-Serial-JTAG (die
+eingebaute serielle und Debug-Bridge des Chips über USB, Universal Serial
+Bus) als Zweitkonsole. Von dieser Datei ausgehen, nicht von `menuconfig`.
 
 ESP-IDF liest `sdkconfig.defaults` nur, wenn es `sdkconfig` erzeugt. Ein Baum,
 der schon einmal gebaut wurde, hat bereits `firmware/panel/sdkconfig`, und
@@ -111,13 +112,17 @@ diese Datei gewinnt: nach einer Änderung der Defaults löschen, sonst wirkt die
 
 ## Verdrahtung des Drehknopfs
 
-Der Drehknopf ist ein magnetischer Winkelsensor MT6701 am I2C-Anschluss
-(I2C: Inter-Integrated Circuit) des Panels, der 4-poligen PH2.0-Buchse des
-Waveshare ESP32-S3-Touch-LCD-7. Der Anschluss ist GPIO8 (SDA) und GPIO9 (SCL),
-der Bus von Touch-Controller und CH422G-Expander, über den Pegelumsetzer der
-Platine. Pinbelegung aus dem Text des Platinenschaltplans, nicht gemessen:
-1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. Vor dem Anschließen mit einem Multimeter
-prüfen.
+Der Drehknopf ist ein magnetischer Winkelsensor MT6701 an einem eigenen
+I2C-Bus (I2C: Inter-Integrated Circuit), dem zweiten I2C-Controller des
+ESP32-P4, auf zwei freien Header-Pins der 7-Zoll-ESP32-P4-Displayplatine:
+`BOARD_KNOB_PIN_SDA` und `BOARD_KNOB_PIN_SCL` in
+`firmware/panel/components/board/include/board_pins.h`. GPIO30 (SDA) und
+GPIO31 (SCL) sind dort Platzhalter; die Header-Pins sind noch nicht
+gewählt. Der Sensor nimmt 3,3 V und GND vom selben Header. Das Panel
+schaltet die internen Pull-ups des ESP32-P4 ein; ob sie allein 400 kHz auf
+den Leitungen des Knopfs halten, ist nicht gemessen, ein Sensor ohne eigene
+Pull-ups bekommt daher welche von 4,7 kOhm nach 3,3 V, wie die
+I2C-Schaltung des Datenblatts.
 
 Der Sensor muss in seinem I2C/SSI-Modus sein (SSI: Synchronous Serial
 Interface), MODE high. MODE low wählt die ABZ-Encoderausgänge, und der Sensor
@@ -129,7 +134,7 @@ SOP-8-Gehäuse, aus dem
 
 | MT6701-Pin | Anschluss an |
 | --- | --- |
-| 1 VDD | 3,3 V von I2C_VCC. Die Versorgung des Datenblatts ist 3,3 bis 5,0 V. Die Lötbrücke der Platine speist I2C_VCC ab Werk aus 3V3 |
+| 1 VDD | 3,3 V vom Header. Die Versorgung des Datenblatts ist 3,3 bis 5,0 V |
 | 2 MODE | VDD. Ein interner Pull-up von 200 kOhm hält einen offenen Pin high; Abbildung 17 legt ihn an VDD. Nie GND |
 | 3 OUT | nicht angeschlossen; das Panel liest den Winkel über I2C |
 | 4 GND | GND |
@@ -148,14 +153,12 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
   0x06. Eine EEPROM-Programmierung kann die Adresse auf 0x46 legen (Version
   1.9; Version 0.1 des Datenblatts nennt 0x26); ein so umgestellter Sensor
   wird nicht gelesen.
-- Die Platine antwortet an diesem Bus auf 0x14, 0x20 bis 0x27, 0x30 bis 0x3F
-  und 0x5D (CH422G und GT911). Das Panel legt kein anderes Gerät auf diese
-  Adressen und auch keines auf 0x00 bis 0x03 und 0x78 bis 0x7F, die die
-  I2C-Spezifikation reserviert (`shared/bench/include/panel_i2c.h`). 0x06
-  liegt außerhalb. Es ist einer der Hs-Mode-Mastercodes (Hs: High-Speed) der
-  Spezifikation, 0x04 bis 0x07, die kein Gerät an diesem Bus benutzt. Der
-  eine Busscan der Platine umfasste 0x08 bis 0x77; dass sonst nichts auf
-  0x06 antwortet, ist also nicht gemessen.
+- Nichts von der Platine liegt an diesem Bus. Das Panel lehnt eine Adresse
+  aus der Tabelle in `shared/bench/include/panel_i2c.h` ab: 0x00 bis 0x03
+  und 0x78 bis 0x7F, die die I2C-Spezifikation reserviert, und die Adressen
+  von CH422G und GT911 des ESP32-S3-Panels. 0x06 liegt außerhalb. Es ist
+  einer der Hs-Mode-Mastercodes (Hs: High-Speed) der Spezifikation, 0x04
+  bis 0x07, die kein Gerät an diesem Bus benutzt.
 - Bustakt: 400 kHz. Das Datenblatt erlaubt eine SCL-Periode (SCL: Serial
   Clock) ab 1 us und Anstiegs- und Abfallzeiten von höchstens 150 ns. Die
   Anstiegszeit am Anschluss ist nicht gemessen.
@@ -189,9 +192,17 @@ ctest --test-dir test/host/build --output-on-failure
 
 # panel
 . $IDF_PATH/export.sh
-idf.py -C firmware/panel set-target esp32s3
+idf.py -C firmware/panel set-target esp32p4
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
+
+# Panel mit den Farbbalken des DSI-Hosts für 3 s beim Start, für einen
+# ersten Blick auf eine Platine
+idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON build
+
+# Das Funkmodul: das des ESP32-P4 ist ein ESP32-C6 daneben, den das Panel
+# noch nicht erreicht; RCBENCH_PANEL_WIFI steht standardmäßig auf OFF, und
+# ein so gebautes Panel startet kein Wi-Fi und sucht kein Release
 
 # panel carrying the IOmcu image it offers over CAN; build the
 # IOmcu first
@@ -203,7 +214,8 @@ idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-
 # weg. Die Option steht standardmäßig auf ON
 idf.py -C firmware/panel -B firmware/panel/build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF build
 
-# panel, as one image at offset 0; it erases the settings in nvs
+# panel, as one image at offset 0 (the ESP32-P4's bootloader sits at
+# 0x2000 inside it); it erases the settings in nvs
 idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
     firmware/panel/build/rcbench-panel-merged.bin
@@ -268,7 +280,6 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | erzeugen die eingecheckten Tabellen der Platinenzeichnungen und der ESC-Profile aus ihren JSON-Quellen (die Platinenzeichnung aus `configurator/drawings/panel.json` des Konfigurators); `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
 | `tools/release_kind.py` | liest einen Release-Tag und gibt seine Art aus, `testing` für eine ungerade Minor-Nummer und `stable` für eine gerade, mit den Flags `prerelease` und `latest`, nach denen `release.yml` veröffentlicht; mit den Tags der vollen Releases auf GitHub dahinter ist `latest` `false` für einen stabilen Tag, der älter als einer davon ist; Exit-Code 1 bei einem Tag außerhalb der Form ([Releases](#releases)) |
-| `tools/patch_rgb_driver.py` | läuft im Configure-Schritt des Panels: schreibt eine Kopie des RGB-Panel-Treibers von ESP-IDF (`components/esp_lcd/rgb/esp_lcd_panel_rgb.c`) ins Build-Verzeichnis, in der jeder Neustart der Ausgabe der saubere Start des Bootens ist, und lässt den Build fehlschlagen, wenn einer seiner 3 Patches nicht genau einmal im Treiber passt ([Constraints](../STATUS.md#constraints)) |
 | `test/tools/` | pytest-Fälle für die Werkzeuge oben: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler |
 

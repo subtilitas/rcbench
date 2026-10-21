@@ -1,14 +1,16 @@
 /*
- * Double-buffered display driver for the Waveshare ESP32-S3-Touch-LCD-7.
+ * Double-buffered display driver for the 7-inch ESP32-P4 display board:
+ * an EK79007 panel of 1024 x 600 pixels on a 2-lane MIPI DSI (Display
+ * Serial Interface) link, fed in video mode by the DPI (Display Pixel
+ * Interface) side of the ESP32-P4's DSI host.
  *
- * Two full 800x480 RGB565 (16-bit red, green, blue) framebuffers live in
- * PSRAM (pseudo-static random-access memory).  The application draws into
- * the one that is not being scanned out; display_flip() hands the finished
- * buffer to the LCD (liquid-crystal display) peripheral, waits for the
- * VSYNC (vertical sync) that makes the swap take effect, and re-points the
- * canvas at the buffer that came free.  No pixels are copied; the swap is a
- * DMA (direct memory access) descriptor change, so a flip costs one frame of
- * latency and nothing else.
+ * Two full RGB565 (16-bit red, green, blue) frame buffers of 1,228,800
+ * bytes each live in PSRAM (pseudo-static random-access memory), allocated
+ * by the DPI panel.  The application draws into the one that is not being
+ * scanned out; display_flip() hands the finished buffer to the DPI panel,
+ * which takes the pointer without a copy and scans it from the next frame,
+ * waits for the frame-done event that frees the other buffer, and
+ * re-points the canvas at it.
  *
  *     gfx_canvas_t *c = display_canvas();
  *     for (;;) {
@@ -17,9 +19,14 @@
  *         display_flip();          // c re-points at the new back buffer
  *     }
  *
+ * The canvas is BOARD_UI_H_RES x BOARD_UI_V_RES (800 x 480) in the
+ * top-left corner of each buffer, with the buffer's 1024-pixel stride.
+ * The rest of each buffer is black from allocation and nothing draws
+ * there.
+ *
  * Because the two buffers alternate, the back buffer after a flip holds the
- * frame from *two* flips ago, not the one just shown.  Redraw everything each
- * frame, or use display_flip_retain() to carry the visible image forward.
+ * frame from *two* flips ago, not the one just shown.  Redraw everything
+ * each frame, or keep a per-buffer record keyed on display_back_index().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,10 +37,6 @@
 #include <stdint.h>
 
 #include "esp_err.h"
-#include "esp_lcd_panel_ops.h"
-/* First: it names the patched driver's functions (rgb_panel_rcbench.h). */
-#include "rgb_panel_rcbench.h"
-#include "esp_lcd_panel_rgb.h"
 
 #include "gfx.h"
 
@@ -42,41 +45,24 @@ extern "C" {
 #endif
 
 typedef struct {
-    uint32_t pclk_hz;             /**< 0 -> BOARD_LCD_PCLK_HZ (16 MHz)        */
-    uint16_t bounce_buffer_lines; /**< internal-RAM (random-access memory)
-                                   *   bounce buffer height.  Bouncing costs
-                                   *   CPU (central processing unit) time and
-                                   *   stops the panel for the length of any
-                                   *   main-flash operation, because the
-                                   *   refill runs in an interrupt handler and
-                                   *   reads PSRAM through the data cache.
-                                   *   It stops rather than faulting only
-                                   *   because CONFIG_LCD_RGB_ISR_IRAM_SAFE
-                                   *   is off, so ESP-IDF masks that handler
-                                   *   while the cache is disabled.  With it
-                                   *   on, the handler runs anyway, reads
-                                   *   PSRAM without a cache and panics.
-                                   *   0 disables it and the EDMA (external
-                                   *   direct memory access) fetches each
-                                   *   frame from PSRAM directly, bypassing
-                                   *   that cache.  Whether the EDMA keeps up
-                                   *   at this pixel clock is not measured. */
-    bool double_buffer;           /**< false -> single framebuffer, no flip   */
-    bool backlight_on;            /**< turn the backlight on after init       */
+    bool double_buffer;   /**< false -> single frame buffer, no flip     */
+    bool backlight_on;    /**< backlight to 100 % after the first frame  */
 } display_config_t;
 
 #define DISPLAY_CONFIG_DEFAULT()             \
     (display_config_t) {                     \
-        .pclk_hz = 0,                        \
-        .bounce_buffer_lines = 10,           \
         .double_buffer = true,               \
         .backlight_on = true,                \
     }
 
-/** Bring up the panel (and the board I2C/expander if not already up). */
+/**
+ * Bring up the DSI PHY supply, the bus, the panel and the video stream,
+ * and the board's I2C bus and backlight if not already up.
+ */
 esp_err_t display_init(const display_config_t *cfg);
 
-/** Tear the panel down and free both framebuffers. */
+/** Stop the video stream and release the panel, the bus and the PHY
+ *  supply. */
 esp_err_t display_deinit(void);
 
 /**
@@ -87,27 +73,23 @@ esp_err_t display_deinit(void);
 gfx_canvas_t *display_canvas(void);
 
 /**
- * Present the back buffer and block until the swap has taken effect.
- * In single-buffer mode this only waits for the next VSYNC.
+ * Present the back buffer and block until the buffer it replaces is no
+ * longer scanned out, at most 200 ms.  In single-buffer mode this only
+ * waits for the next frame-done event.
  */
 esp_err_t display_flip(void);
 
-/**
- * Like display_flip(), but copies the presented image into the new back
- * buffer so incremental drawing works.  That is a 750 KB PSRAM-to-PSRAM copy
- * per frame, only worth it when redrawing from scratch costs more.
- */
-esp_err_t display_flip_retain(void);
-
-/** Block until the next VSYNC.  0 means "wait forever". */
+/** Block until the next VSYNC (vertical sync) event.  0 means "wait
+ *  forever". */
 esp_err_t display_wait_vsync(uint32_t timeout_ms);
 
+/** The canvas's size: the UI's area, not the panel's. */
 int display_width(void);
 int display_height(void);
 bool display_double_buffered(void);
 
 /**
- * Which framebuffer display_canvas() points at (0 or 1).
+ * Which frame buffer display_canvas() points at (0 or 1).
  *
  * The buffers alternate, so static content has to be drawn into both.  A
  * per-buffer validity flag keyed on this index keeps unchanging chrome out of
@@ -124,25 +106,12 @@ uint32_t display_frame_count(void);
 /** Rolling frames per second, measured over the last 500 ms. */
 float display_fps(void);
 
-/**
- * Restarts of the scan since boot.  The driver restarts it after a frame
- * that lost a bounce-buffer refill, which a main-flash operation of more
- * than 512 us can cause, at the first VBlank (vertical blanking interval)
- * interrupt after the operation ends, which can be mid-frame.  Each
- * restart is the clean start of boot (rgb_panel_rcbench.h): it cuts the
- * frame in progress, and the next frame is whole.
- */
-uint32_t display_restarts(void);
+/** VSYNC events since init: the panel's own refresh, whatever the flips
+ *  do. */
+uint32_t display_vsync_count(void);
 
-/** Change the pixel clock at runtime; takes effect on the next VSYNC. */
-esp_err_t display_set_pclk(uint32_t hz);
-
-/** Panel DISP + backlight enable. */
+/** Backlight at 100 % (true) or 0 % (false). */
 esp_err_t display_backlight(bool on);
-
-/** Underlying esp_lcd handle, for the raw API (application programming
- *  interface). */
-esp_lcd_panel_handle_t display_panel(void);
 
 #ifdef __cplusplus
 }

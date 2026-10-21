@@ -12,15 +12,14 @@
 idf_component_register(
     SRCS "wifi_access.c" "wifi_radio.c" "wifi_sock.c"
     INCLUDE_DIRS include
-    REQUIRES webaccess fwupdate storage esp_wifi esp_netif esp_event
+    REQUIRES board webaccess fwupdate storage esp_wifi esp_netif esp_event
              esp_http_server esp_http_client esp-tls mbedtls esp_timer
              nvs_flash lwip freertos esp_hw_support heap
 )
 
-# The ESP32-P4's tasks with no core run on core 0, the core 1 is the
-# control task's (wifi_radio.c, __wrap_xTaskCreatePinnedToCore).
-if(NOT CONFIG_SOC_WIFI_SUPPORTED)
-    idf_build_set_property(LINK_OPTIONS
-        "-Wl,--wrap=xTaskCreatePinnedToCore"
-        "-Wl,--undefined=__wrap_xTaskCreatePinnedToCore" APPEND)
-endif()
+# A task created without a core runs on core 0; core 1 belongs to the
+# control task and the tasks pinned there (wifi_radio.c,
+# __wrap_xTaskCreatePinnedToCore).
+idf_build_set_property(LINK_OPTIONS
+    "-Wl,--wrap=xTaskCreatePinnedToCore"
+    "-Wl,--undefined=__wrap_xTaskCreatePinnedToCore" APPEND)

@@ -1,12 +1,9 @@
 /*
- * The panel's CAN (Controller Area Network) driver, on the ESP32-S3's TWAI
- * (Two-Wire Automotive Interface) controller.  The bit timing comes from
- * shared/can, which is host-tested; this file holds the peripheral's
+ * The panel's CAN (Controller Area Network) driver, on the ESP32-P4's TWAI
+ * (Two-Wire Automotive Interface) controller 0, GPIO22 TX and GPIO21 RX
+ * (board_pins.h), clocked from the 40 MHz crystal.  The bit timing comes
+ * from shared/can, which is host-tested; this file holds the peripheral's
  * configuration and the send and receive calls.
- *
- * Starting CAN routes the board's multiplexer away from native USB
- * (Universal Serial Bus), because both live on GPIO19 and GPIO20.  That is
- * why it is an explicit call rather than part of board_init().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,15 +17,10 @@
 #include "esp_err.h"
 #include "link_can.h"
 
-/**
- * Route the board's multiplexer to CAN, then start TWAI at @p bitrate.
- *
- * Native USB is unavailable while it runs (board_pins.h); the console is on
- * UART0 (universal asynchronous receiver-transmitter) for that reason.
- */
+/** Start TWAI at @p bitrate. */
 esp_err_t can_twai_start(uint32_t bitrate);
 
-/** Stop, and give the multiplexer back to USB. */
+/** Stop TWAI. */
 void can_twai_stop(void);
 
 /** Queue one frame. @p timeout_ms of 0 does not block. */

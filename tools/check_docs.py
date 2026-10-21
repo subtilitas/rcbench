@@ -1077,7 +1077,7 @@ FACTS = [
      ("IOMCU_HEARTBEAT_PIN",)),
     ("docs/Safety-de.md", rf"den GP{N} des IOmcu",
      ("IOMCU_HEARTBEAT_PIN",)),
-    ("STATUS.md", rf"control task drives GPIO{N} \(J8\)",
+    ("STATUS.md", rf"control task drives GPIO{N} \(`PANEL_HEARTBEAT_PIN`",
      ("PANEL_HEARTBEAT_PIN",)),
     ("docs/Link.md", rf"on GPIO{N} \(RX\) and GPIO{N} \(TX\)",
      ("PANEL_CAN_PIN_RX", "PANEL_CAN_PIN_TX")),
