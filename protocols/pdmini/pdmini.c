@@ -1,5 +1,8 @@
-/*
- * The PD mini.  See pdmini.h.
+/**
+ * @file
+ * @brief The PD mini driver: state machine, readings and the set-point rules.
+ *
+ * See pdmini.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,6 +31,14 @@ void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms)
     }
 }
 
+/**
+ * @brief Clamp a value into a range.
+ *
+ * @param v   Value to clamp.
+ * @param lo  Lowest value returned.
+ * @param hi  Highest value returned.
+ * @return    @p v limited to [@p lo, @p hi].
+ */
 static uint16_t clamp16(uint16_t v, uint16_t lo, uint16_t hi)
 {
     return (v < lo) ? lo : (v > hi) ? hi : v;
@@ -233,7 +244,14 @@ void pdmini_finish(pdmini_t *d, uint32_t now, bool ok)
     }
 }
 
-/* Whether @p n bytes at @p p hold @p s. */
+/**
+ * @brief Whether a byte run holds a string.
+ *
+ * @param p  Bytes to search.
+ * @param n  Number of bytes in @p p.
+ * @param s  Nul-terminated string to find.
+ * @return   true when @p s occurs in @p p.
+ */
 static bool holds(const uint8_t *p, size_t n, const char *s)
 {
     const size_t k = strlen(s);
@@ -313,7 +331,9 @@ void pdmini_sag_hold(pdmini_t *d)
     d->st.sagged   = true;
 }
 
-/*
+/**
+ * @brief Count one input reading against a live output's set point.
+ *
  * An input reading, against a live output's set point: under it and the
  * headroom on PDMINI_SAG_READS readings in a row, the output is switched
  * off and held off until an OFF is asked.  Only an output read on with ON
@@ -335,6 +355,11 @@ static void sag_check(pdmini_t *d)
     pdmini_sag_hold(d);
 }
 
+/**
+ * @brief Learn the OUTPUT_EN argument that means on from a seen output.
+ *
+ * @param d  Driver state.
+ */
 static void learn_on(pdmini_t *d)
 {
     if (d->on_seen && d->on_value == d->en_value) {
@@ -346,6 +371,14 @@ static void learn_on(pdmini_t *d)
     }
 }
 
+/**
+ * @brief Act on a whole reply for the command under way.
+ *
+ * @param d    Driver state; the reply is in @c d->rx.
+ * @param now  Current time, in milliseconds.
+ * @return     true when the reply is taken; false when it cannot be the
+ *             module's answer and the transaction fails.
+ */
 static bool take_reply(pdmini_t *d, uint32_t now)
 {
     const uint8_t *r = d->rx;
@@ -380,8 +413,8 @@ static bool take_reply(pdmini_t *d, uint32_t now)
             /*
              * On, and now off with ON still asked, the last write ours an
              * ON and nothing on its way: the module switched it off -- its
-             * overcurrent protection, or its button.  Not switched on again: held off,
-             * and said, until an OFF is asked.
+             * overcurrent protection, or its button.  Not switched on again:
+             * held off, and said, until an OFF is asked.
              */
             d->held_off    = true;
             d->want_output = false;
