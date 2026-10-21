@@ -56,7 +56,7 @@ An ESC calibrated on a transmitter takes that transmitter's shortest pulse as ze
 | greyed, the other protocol's name | held by another protocol | does nothing |
 | red, struck through | reserved: GP3 carries the safety heartbeat, GP8 to GP12 the CAN (Controller Area Network) controller | does nothing |
 | `PROG PORT` | the pin of the IOmcu's programming port, GP13 by default | does nothing |
-| red, `SENSOR BUS`, `PD MINI` or `PHASE TAP` | a pin [SETUP > INTERFACES](setup-interfaces.md) holds: Sensor SDA and SCL while the INA228, INA3221 or AS5600 is ON; PD mini TX and RX while the PD mini is ON with both pins set; the tap pin while the phase tap is ON. The cell follows those settings | does nothing |
+| red, `SENSOR BUS`, `PD MINI` or `PHASE TAP` | a pin [SETUP > INTERFACES](setup-interfaces.md) holds: Sensor SDA and SCL while the INA228 or AS5600 is ON or an INA3221 is fitted on [SETUP > SENSORS](setup-sensors.md); PD mini TX and RX while the PD mini is ON with both pins set; the tap pin while the phase tap is ON. The cell follows those settings | does nothing |
 | greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with a programming port's pin, any port the IOmcu reports; GP28 and GP13 are slice 6 | does nothing; `GP28: SHARES PWM SLICE WITH PROG PORT GP13` under the count |
 | greyed, `PWM CH OF GP0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22) | does nothing; `GP16: SAME PWM CHANNEL AS GP0` under the count |
 | free, `PAD 7` | not bound | binds it |

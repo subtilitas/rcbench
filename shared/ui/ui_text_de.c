@@ -18,6 +18,8 @@
 
 #include "ui_text.h"
 
+#include "settings_sensors.h"
+
 static const char *const k_text[TX_COUNT] = {
     /* -------------------------------------------------------- shared words */
     [TX_ON]                     = "EIN",
@@ -371,6 +373,23 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SET_HD_BALANCE]         = "BALANCE-SENSOREN",
     [TX_SET_HD_SUPPLY]          = "NETZTEIL",
     [TX_SET_HD_PROG]            = "PROG-PORT",
+    [TX_SET_HD_INA_PARTS]       = "INA3221-BAUSTEINE",
+    [TX_SET_HD_INA_PART]        = "INA3221 0x%02X",
+    [TX_SENS_ST_UNKNOWN]        = "NOCH NICHT GELESEN",
+    [TX_SENS_ST_PENDING]        = "NOCH NICHT GESCHRIEBEN",
+    [TX_SENS_ST_SEARCHING]      = "SUCHT DEN BAUSTEIN",
+    [TX_SENS_ST_ONLINE]         = "ONLINE",
+    [TX_SENS_ST_SILENT]         = "ANTWORTET NICHT",
+    [TX_SENS_ST_WRONG]          = "ANDERE ID ANTWORTET",
+    [TX_SENS_ST_REFUSED]        = "VOM IOMCU NICHT ÜBERNOMMEN",
+    [TX_SENS_ST_DARK]           = "ALLE KANÄLE AUS",
+    [TX_SENS_ST_SAME_ADDR]      = "INA228 AUF DIESER ADRESSE",
+    [TX_SENS_ST_OLD]            = "IOMCU ÄLTER ALS 4.25: NICHT GELESEN",
+    [TX_SENS_ST_NO_BUS]         = "SENSOR-SDA ODER -SCL NICHT FESTGELEGT",
+    [TX_SET_SENS_OLD]           = "IOmcu älter als 4.25: ein INA3221, CH1 mit 1 kHz.",
+    [TX_SET_SENS_DARK]          = "Alle Kanäle aus. Der IOmcu nimmt so keinen Baustein.",
+    [TX_SET_SENS_SAME_ADDR]     = "Der INA228 nutzt diese Adresse. Keiner wird gelesen.",
+    [TX_SET_SENS_NO_BUS]        = "SDA oder SCL der Sensoren fehlt. Beide auf ANSCHLÜSSE festlegen.",
     [TX_SET_RESET]              = "KATEGORIE ZURÜCKSETZEN",
     [TX_SET_SAVED]              = "GESPEICHERT",
     [TX_SET_WHEN_IDLE]          = "BEI STILLSTAND",
@@ -1084,7 +1103,8 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ALERT_SENSE_SAME_ADDR]  = "INA228 und INA3221 nutzen beide 0x%02X. SETUP > ANSCHLÜSSE prüfen.",
     [TX_ALERT_SENSE_PINS]       = "Sensor-Pins GP%d/GP%d abgelehnt. SETUP > ANSCHLÜSSE prüfen.",
     [TX_ALERT_SENSE_I228_SETUP] = "INA228-Shunt oder Höchststrom abgelehnt. SETUP > ANSCHLÜSSE prüfen.",
-    [TX_ALERT_SENSE_I3221_SETUP] = "INA3221-Einstellungen abgelehnt. SETUP > ANSCHLÜSSE prüfen.",
+    [TX_ALERT_SENSE_I3221_SETUP] = "INA3221-Einstellungen abgelehnt. SETUP > SENSOREN prüfen.",
+    [TX_ALERT_SENSE_DARK]       = "INA3221 0x%02X hat alle Kanäle aus. SETUP > SENSOREN prüfen.",
     [TX_ALERT_SENSE_SILENT]     = "%s antwortet nicht unter 0x%02X.",
     [TX_ALERT_SENSE_SILENT_FOUND] = "%s antwortet nicht unter 0x%02X. Ein Gerät antwortet unter 0x%02X.",
     [TX_ALERT_SENSE_WRONG]      = "0x%02X meldet %04Xh, kein %s. Gerät wird nicht verwendet.",
@@ -1609,6 +1629,30 @@ static const char *const k_text[TX_COUNT] = {
  * the SUPPLY, SERVO and ESC STICK categories are drawn on their own screens,
  * whose fields test_text holds them to.
  */
+/*
+ * SETUP > SENSORS' rows (settings_sensors.h), part by part: 0x40 FITTED
+ * to 0x43 FITTED, then each channel's WATCHES and SHUNT.
+ */
+#define DE_INA_FIT(a)   [SET_INA_FIT(a)] = "0x4" #a " bestückt",
+#define DE_INA_CH(a, ch)                                                   \
+    [SET_INA_W(3 * (a) + (ch) - 1)]  = "0x4" #a " CH" #ch " misst",        \
+    [SET_INA_SH(3 * (a) + (ch) - 1)] = "0x4" #a " CH" #ch " Shunt",
+#define DE_INA_PART(a) DE_INA_CH(a, 1) DE_INA_CH(a, 2) DE_INA_CH(a, 3)
+#define DE_INA_LABELS                                                      \
+    DE_INA_FIT(0) DE_INA_FIT(1) DE_INA_FIT(2) DE_INA_FIT(3)                \
+    DE_INA_PART(0) DE_INA_PART(1) DE_INA_PART(2) DE_INA_PART(3)
+#define DE_INA_FIT_HELP(a) [SET_INA_FIT(a)] = "Ein INA3221 an dieser Adresse",
+#define DE_INA_CH_HELP(c)                                                  \
+    [SET_INA_W(c)]  = "Was der Kanal misst",                               \
+    [SET_INA_SH(c)] = "0 schaltet den Kanal ab",
+#define DE_INA_PART_HELP(a)                                                \
+    DE_INA_CH_HELP(3 * (a)) DE_INA_CH_HELP(3 * (a) + 1)                    \
+    DE_INA_CH_HELP(3 * (a) + 2)
+#define DE_INA_HELP                                                        \
+    DE_INA_FIT_HELP(0) DE_INA_FIT_HELP(1) DE_INA_FIT_HELP(2)               \
+    DE_INA_FIT_HELP(3) DE_INA_PART_HELP(0) DE_INA_PART_HELP(1)             \
+    DE_INA_PART_HELP(2) DE_INA_PART_HELP(3)
+
 static const char *const k_label[SETTING_COUNT] = {
     [SET_PACK_CELLS]          = "Zellen",
     [SET_PACK_MAH]            = "Kapazität",
@@ -1654,6 +1698,7 @@ static const char *const k_label[SETTING_COUNT] = {
     [SET_PDMINI_RX]           = "PD mini RX",
     [SET_PDMINI_BAUD]         = "PD mini Baud",
     [SET_HITEC_RX]            = "Hitec-D-Empfang",
+    DE_INA_LABELS
     [SET_SUPPLY_V_MAX]        = "Spannung max",
     [SET_SUPPLY_I_MAX]        = "Strom max",
     [SET_SUPPLY_V_START]      = "Startspannung",
@@ -1751,6 +1796,7 @@ static const char *const k_help[SETTING_COUNT] = {
     [SET_PDMINI_RX]           = "Unser RX von DP am Modul; -1: offen",
     [SET_PDMINI_BAUD]         = "UART Baudrate des Moduls; AUTO sucht",
     [SET_HITEC_RX]            = "PULL-UP braucht 2.2 kOhm an der Signalleitung",
+    DE_INA_HELP
     [SET_SUPPLY_V_MAX]        = "Höchste Spannung eines Sollwerts",
     [SET_SUPPLY_I_MAX]        = "Höchste Strombegrenzung als Sollwert",
     [SET_SUPPLY_V_START]      = "Spannungssollwert nach Neustart",
@@ -1809,6 +1855,15 @@ static const char *const k_curve[]  = { "RECHTECK", "SINUS", "DREIECK" };
 static const char *const k_len_by[] = { "ZEIT", "BEWEGUNGEN" };
 static const char *const k_target[] = { "OUTPUTS", "PORT 1", "PORT 2",
                                         "PORT 3", "PORT 4" };
+/* What an INA3221 channel watches, in SENS_W_* order. */
+static const char *const k_watch[SENS_W_COUNT] = {
+    "KEINE",
+    "AUSGANG 1", "AUSGANG 2", "AUSGANG 3", "AUSGANG 4",
+    "AUSGANG 5", "AUSGANG 6", "AUSGANG 7", "AUSGANG 8",
+    "PORT 1", "PORT 2", "PORT 3", "PORT 4",
+    "NETZTEIL",
+};
+#define DE_INA_W(c) [SET_INA_W(c)] = k_watch,
 
 /* The language names each its own; the INA228's and the INA3221's
  * addresses, the INA3221's channels and the baud rates are the same words
@@ -1819,6 +1874,9 @@ static const char *const *const k_options[SETTING_COUNT] = {
     [SET_SERVO_CURVE]         = k_curve,
     [SET_SERVO_LEN_BY]        = k_len_by,
     [SET_SERVO_TARGET]        = k_target,
+    DE_INA_W(0) DE_INA_W(1) DE_INA_W(2)  DE_INA_W(3)
+    DE_INA_W(4) DE_INA_W(5) DE_INA_W(6)  DE_INA_W(7)
+    DE_INA_W(8) DE_INA_W(9) DE_INA_W(10) DE_INA_W(11)
 };
 
 static const char *const k_category[SET_CAT_COUNT] = {
@@ -1826,6 +1884,7 @@ static const char *const k_category[SET_CAT_COUNT] = {
     [SET_CAT_APP]             = "PANEL",
     [SET_CAT_IFACE]           = "ANSCHLÜSSE",
     [SET_CAT_CARD]            = "SD-KARTE",
+    [SET_CAT_SENSORS]         = "SENSOREN",
     [SET_CAT_SUPPLY]          = "NETZTEIL",
     [SET_CAT_SERVO]           = "SERVOTEST",
     [SET_CAT_STICK]           = "ESC STICK",

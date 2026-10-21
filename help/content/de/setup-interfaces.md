@@ -6,13 +6,13 @@ order: 61
 
 # Anschlüsse
 
-ANSCHLÜSSE, die zweite Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: zwei Strommonitore und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff, das Netzteil PD mini und wie der Programmierport ein Hitec-Servo der D-Serie empfängt. Ihre 27 Einstellungen stehen in fünf Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN, NETZTEIL und PROG-PORT; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500 ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
+ANSCHLÜSSE, die zweite Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: den Strommonitor INA228 und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff, das Netzteil PD mini und wie der Programmierport ein Hitec-Servo der D-Serie empfängt. Ihre 23 Einstellungen stehen in fünf Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN, NETZTEIL und PROG-PORT; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500 ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
 
 ## Die Strommonitore
 
 ![Die Zeilen des INA228](view:setup-interfaces)
 
-Der IOmcu liest einen TI INA228 im Strompfad des ESC und einen TI INA3221 an der Servoschiene.
+Der IOmcu liest einen TI INA228 im Strompfad des ESC, hier eingestellt, und bis zu vier TI INA3221 am selben Bus, unter [Sensoren](setup-sensors.md) eingestellt.
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -20,24 +20,17 @@ Der IOmcu liest einen TI INA228 im Strompfad des ESC und einen TI INA3221 an der
 | INA228 Adresse | 0x40 bis 0x4F | 0x45 | das MATEK I2C-INA-BM ab Werk |
 | INA228 Shunt | 50 bis 20000 uOhm | 200 | der Shunt, über dem er misst |
 | INA228 Höchststrom | 1,0 bis 300,0 A, Schritte von 0,1 A | 204,8 | der Strom, für den der Messbereich gesetzt ist |
-| INA3221 | EIN, AUS | AUS | der Dreikanal-Monitor der Servoschiene |
-| INA3221 Adresse | 0x40 bis 0x43 | 0x40 | das DAOKAI-Modul mit A0 nach GND gebrückt |
-| INA3221 Shunt | 5,0 bis 1000,0 mOhm, Schritte von 0,1 mOhm | 100,0 | je Kanal; 100 mOhm misst bis 1,64 A |
-| INA3221 Kanäle | CH1, CH1+2+3 | CH1 | CH1 für den Servotest; CH2 und CH3 für ein Paar |
-
-![Die Zeilen des INA3221 und die Pins des Busses](view:setup-sensors)
-
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Sensor-SDA | -1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | der GPIO (General-Purpose Input/Output) des IOmcu für SDA; -1 setzt keinen Bus |
 | Sensor-SCL | SDA + 1, oder -1 | 17 | folgt Sensor-SDA; die Zeile hat keine Tasten |
 
 - Der Bus läuft mit 400 kHz; das ist keine Einstellung.
-- Die beiden Adressen bleiben an den Enden ihres Bereichs stehen: `-` bei 0x40 und `+` bei 0x4F oder 0x43 ändern nichts.
+- Die Adresse bleibt an den Enden ihres Bereichs stehen: `-` bei 0x40 und `+` bei 0x4F ändern nichts.
 - Pins, an die nichts angeschlossen ist, gelten als nicht antwortende Monitore, nicht als blockierter Bus.
 - Der IOmcu übernimmt eine Änderung nur, solange der Prüfstand SAFE ist.
 - Ist der INA228 eingeschaltet und antwortet er, verliert die Kachel MOTOR & ESC ihre Marke SIMULIERT, und [MOTOR & ESC](motor.md#tabelle) zeigt seine Spannung und seinen Strom.
-- Ist der INA3221 mit CH1 eingeschaltet, liest [SERVO](servo.md#das-messgerät-der-servoschiene) den Strom der Servoschiene von ihm.
+- Misst ein Kanal eines INA3221 unter [Sensoren](setup-sensors.md) das Ziel des Servotesters, liest [SERVO](servo.md#das-messgerät-der-servoschiene) den Strom der Servoschiene von ihm.
 - Ein Messwert am oberen Ende des Bereichs wird als übersteuert gezeigt, nie als Wert: 163,8 mV über dem Shunt des INA3221.
 - Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand nicht auf SAFE: Auf die Messwerte der Monitore löst nichts aus.
 
@@ -51,7 +44,7 @@ Eine Zeile, deren Wert nicht der ist, den der IOmcu hält, hat Rand und Wert in 
 
 - nach einer Änderung, bis das Schreiben übernommen ist: 500 ms nach der letzten Änderung, für die Strommonitore erst, wenn der Prüfstand SAFE ist;
 - bei einem Wert, den der IOmcu abgelehnt hat, bis er auf einen geändert wird, den er annimmt;
-- bei einem eingeschalteten Teil, das der IOmcu aus hält: Sensor-SDA auf -1, beide Monitore auf einer Adresse oder ein IOmcu, der für das Teil zu alt ist.
+- bei einem eingeschalteten Teil, das der IOmcu aus hält: Sensor-SDA auf -1, der INA228 auf der Adresse eines bestückten INA3221 oder ein IOmcu, der für das Teil zu alt ist.
 
 Solange kein IOmcu antwortet, ist keine Zeile markiert. AS5600-Mitte ist ein eigener Wert des Panels und wird nie markiert.
 

@@ -3,9 +3,10 @@
  * schema.
  *
  * SETUP opens on a grid of tiles, the menu's kind: one per category it
- * holds (PANEL, INTERFACES, SD CARD), and one per screen of its own that SETUP
+ * holds (PANEL, INTERFACES, SD CARD, SENSORS), and one per screen of its own that SETUP
  * reaches (OUTPUTS, PICK A PIN, WI-FI, UPDATES).  A category's tile opens its list across the screen's width.
- * The list walks the rows shared/settings declares and draws each row by
+ * The list walks the rows shared/settings declares (settings_rows.c; SENSORS
+ * lists a fitted part's rows only, sensors_rows.h) and draws each row by
  * its type: a stepper for a number, a toggle for a bool, a choice for an
  * enum.  A category's strings follow its settings, each a row that shows
  * its text and opens the on-screen keyboard on a tap (SD CARD's two log
@@ -28,7 +29,10 @@
 #include "hitec_rx_link.h"
 #include "link_pages.h"
 #include "sense_link.h"
+#include "sensors_rows.h"
 #include "settings.h"
+#include "settings_rows_int.h"
+#include "settings_sensors.h"
 #include "tone_link.h"
 #include "ui_icons.h"
 #include "ui_text.h"
@@ -78,100 +82,6 @@
 #define PLUS_X   (LIST_X + LIST_W - 14 - BTN_W)
 #define MINUS_X  (PLUS_X - 8 - 110 - 8 - BTN_W)
 #define VALUE_R  (PLUS_X - 8)
-
-#define MAX_ROWS 32
-
-/*
- * Section headings.  A list over 8 rows groups its settings under
- * headings: INTERFACES' 27 rows fall into five sections.  A heading is a
- * row of the list's own pitch, ROW_PITCH px, with no keys, drawn above the
- * setting that opens its section; it does not count as a setting.
- */
-typedef struct {
-    setting_id_t first;      /**< the section's first setting            */
-    ui_text_id_t text;
-} heading_t;
-
-static const heading_t k_headings[] = {
-    { SET_INA228_EN, TX_SET_HD_I2C },       /* INA228, INA3221, bus, AS5600 */
-    { SET_TONE_EN,   TX_SET_HD_TAP },       /* the phase tap                */
-    { SET_VIBE_EN,   TX_SET_HD_BALANCE },   /* vibration, optical tacho     */
-    { SET_PDMINI_EN, TX_SET_HD_SUPPLY },    /* the PD mini                  */
-    { SET_HITEC_RX,  TX_SET_HD_PROG },      /* the programming port         */
-};
-
-#define N_HEADINGS ((int)(sizeof(k_headings) / sizeof(k_headings[0])))
-#define MAX_ENTRIES (MAX_ROWS + N_HEADINGS + SETTING_TEXT_COUNT)
-
-/* One row of a list: a setting, a heading above the next one, or a
- * string. */
-typedef struct {
-    setting_id_t id;
-    int8_t       heading;    /**< index into k_headings, or -1           */
-    int8_t       text;       /**< a setting_text_id_t, or -1             */
-} entry_t;
-
-/* The list of @p cat in row order, headings included, its strings after
- * its settings; the number of rows, counted past @p max. */
-static int entries(setting_cat_t cat, entry_t *out, int max)
-{
-    setting_id_t ids[MAX_ROWS];
-    const int n = settings_in_category(cat, ids, MAX_ROWS);
-    int rows = 0;
-    for (int i = 0; i < n && i < MAX_ROWS; ++i) {
-        for (int h = 0; h < N_HEADINGS; ++h) {
-            if (k_headings[h].first == ids[i]) {
-                if (out != NULL && rows < max) {
-                    out[rows] = (entry_t){ ids[i], (int8_t)h, -1 };
-                }
-                ++rows;
-            }
-        }
-        if (out != NULL && rows < max) {
-            out[rows] = (entry_t){ ids[i], -1, -1 };
-        }
-        ++rows;
-    }
-    setting_text_id_t texts[SETTING_TEXT_COUNT];
-    const int nt = settings_texts_in_category(cat, texts, SETTING_TEXT_COUNT);
-    for (int i = 0; i < nt && i < SETTING_TEXT_COUNT; ++i) {
-        if (out != NULL && rows < max) {
-            out[rows] = (entry_t){ (setting_id_t)0, -1, (int8_t)texts[i] };
-        }
-        ++rows;
-    }
-    return rows;
-}
-
-int settings_screen_row_of(setting_cat_t cat, int index)
-{
-    entry_t e[MAX_ENTRIES];
-    const int n = entries(cat, e, MAX_ENTRIES);
-    int seen = -1;
-    for (int r = 0; r < n && r < MAX_ENTRIES; ++r) {
-        if (e[r].heading < 0 && e[r].text < 0 && ++seen == index) {
-            return r;
-        }
-    }
-    return -1;
-}
-
-int settings_screen_text_row(setting_cat_t cat, setting_text_id_t id)
-{
-    entry_t e[MAX_ENTRIES];
-    const int n = entries(cat, e, MAX_ENTRIES);
-    for (int r = 0; r < n && r < MAX_ENTRIES; ++r) {
-        if (e[r].text >= 0 && e[r].text == (int8_t)id) {
-            return r;
-        }
-    }
-    return -1;
-}
-
-int settings_screen_rows(setting_cat_t cat)
-{
-    return entries(cat, NULL, 0);
-}
 
 /*
  * A "-" or "+" key is a tap: the press arms it and the release steps it
@@ -245,6 +155,7 @@ static const hub_tile_t k_tiles[] = {
     HUB_CATEGORY(SET_CAT_APP,   ui_icon_sliders),
     HUB_CATEGORY(SET_CAT_IFACE, ui_icon_chip),
     HUB_CATEGORY(SET_CAT_CARD,  ui_icon_chart),
+    HUB_CATEGORY(SET_CAT_SENSORS, ui_icon_supply),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
     HUB_SCREEN(SCREEN_PICKER,  TX_SET_HUB_PICKER,  ui_icon_board),
     HUB_SCREEN(SCREEN_WIFI,    TX_SET_HUB_WIFI,    ui_icon_wifi),
@@ -387,6 +298,9 @@ const char *settings_screen_help(setting_id_t id)
                    ? TR(SET_HITEC_RX_PRE)
                    : ui_setting_help(id);
     }
+    if (settings_sensors_row(id)) {
+        return sensors_rows_why(id);
+    }
     if (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_OLD) {
         return TR(SET_HITEC_RX_OLD);
     }
@@ -401,6 +315,9 @@ bool settings_screen_unheld(setting_id_t id)
     if (id == SET_HITEC_RX) {
         return s_hitec_rx_mark != (uint8_t)HITEC_RX_LINK_HELD;
     }
+    if (settings_sensors_row(id)) {
+        return sensors_rows_unheld(id);
+    }
     uint16_t sense = 0u;
     uint8_t  tone  = 0u;
     switch (id) {
@@ -408,10 +325,6 @@ bool settings_screen_unheld(setting_id_t id)
     case SET_INA228_ADDR:  sense = SENSE_LINK_ROW_I228_ADDR;   break;
     case SET_INA228_UOHM:  sense = SENSE_LINK_ROW_I228_SHUNT;  break;
     case SET_INA228_MAX_A: sense = SENSE_LINK_ROW_I228_MAX;    break;
-    case SET_INA3221_EN:   sense = SENSE_LINK_ROW_I3221;       break;
-    case SET_INA3221_ADDR: sense = SENSE_LINK_ROW_I3221_ADDR;  break;
-    case SET_INA3221_MOHM: sense = SENSE_LINK_ROW_I3221_SHUNT; break;
-    case SET_INA3221_CH:   sense = SENSE_LINK_ROW_I3221_CH;    break;
     case SET_SENSE_SDA:
     case SET_SENSE_SCL:    sense = SENSE_LINK_ROW_PINS;        break;
     case SET_ENC_EN:       sense = SENSE_LINK_ROW_ENC;         break;
@@ -545,12 +458,19 @@ static void change_line(int k, char *line, size_t n)
         }
         const setting_def_t *d = settings_def(id);
         const char *unit = (d != NULL && d->unit != NULL) ? d->unit : "";
-        const char *gap = (unit[0] != '\0') ? " " : "";
+        /* No unit after OFF, a SENSORS shunt's 0. */
+        const bool off_was = d != NULL && d->off_below > 0.0f
+                             && settings_stored(id) == 0.0f;
+        const bool off_now = d != NULL && d->off_below > 0.0f
+                             && settings_get(id) == 0.0f;
+        const char *u_was = off_was ? "" : unit;
+        const char *u_now = off_now ? "" : unit;
         char was[32], now[32];
         (void)ui_setting_value_of(id, settings_stored(id), was, sizeof(was));
         (void)ui_setting_value(id, now, sizeof(now));
         snprintf(line, n, "%s: %s%s%s -> %s%s%s", ui_setting_label(id), was,
-                 gap, unit, now, gap, unit);
+                 (u_was[0] != '\0') ? " " : "", u_was, now,
+                 (u_now[0] != '\0') ? " " : "", u_now);
         return;
     }
     for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
@@ -605,7 +525,7 @@ static bool hold(ui_screen_id_t to)
 
 static int row_count(void)
 {
-    return entries(s.cat, NULL, 0);
+    return settings_screen_rows(s.cat);
 }
 
 static void clamp_scroll(void)
@@ -636,21 +556,17 @@ static int row_at(int x, int y)
     return (idx >= 0 && idx < row_count()) ? idx : -1;
 }
 
-/* The entry of row @p index; a heading's carries heading >= 0, a string's
- * text >= 0. */
-static entry_t row_entry(int index)
+/* The entry of row @p index; a heading's carries heading or part >= 0, a
+ * string's text >= 0. */
+static settings_row_t row_entry(int index)
 {
-    entry_t e[MAX_ENTRIES];
-    const int n = entries(s.cat, e, MAX_ENTRIES);
-    if (index < 0 || index >= n || index >= MAX_ENTRIES) {
-        return (entry_t){ (setting_id_t)0, -1, -1 };
-    }
-    return e[index];
+    return settings_rows_entry(s.cat, index);
 }
 
 static bool row_is_heading(int index)
 {
-    return row_entry(index).heading >= 0;
+    const settings_row_t e = row_entry(index);
+    return e.heading >= 0 || e.part >= 0;
 }
 
 /* The string of row @p index, or -1 for a setting or a heading. */
@@ -1107,9 +1023,7 @@ static void draw_hub(gfx_canvas_t *c)
         }
         char count[40];
         snprintf(count, sizeof(count), TR(SET_COUNT),
-                 settings_in_category((setting_cat_t)t->cat, NULL, 0)
-                     + settings_texts_in_category((setting_cat_t)t->cat,
-                                                  NULL, 0));
+                 settings_rows_listed((setting_cat_t)t->cat));
         ui_tile(c, tile_rect(i), HUB_ICON_DY, t->icon,
                 ui_setting_category((setting_cat_t)t->cat), count, down);
     }
@@ -1164,12 +1078,24 @@ static void draw_row(gfx_canvas_t *c, int index)
     if (r.y + r.h <= LIST_Y || r.y >= LIST_Y + LIST_H) {
         return;
     }
-    const entry_t e = row_entry(index);
-    if (e.heading >= 0) {
-        /* The heading stands on the row's lower edge, over a rule. */
+    const settings_row_t e = row_entry(index);
+    if (e.heading >= 0 || e.part >= 0) {
+        /* The heading stands on the row's lower edge, over a rule; a
+         * part's carries its state on the right (sensors_rows.h). */
         const gfx_font_t *hf = UI_FONT_HEAD;
-        gfx_text(c, r.x + 16, r.y + ROW_H - gfx_text_height(hf, 1) - 6,
-                 ui_tr(k_headings[e.heading].text), hf, UI_ACCENT, 1);
+        char title[24];
+        const char *t = (e.part >= 0)
+                            ? sensors_rows_title(e.part, title, sizeof(title))
+                            : ui_tr(settings_rows_heading_text(e.heading));
+        gfx_text(c, r.x + 16, r.y + ROW_H - gfx_text_height(hf, 1) - 6, t,
+                 hf, UI_ACCENT, 1);
+        if (e.part >= 0) {
+            const char *st = sensors_rows_state(e.part);
+            const gfx_font_t *sf = UI_FONT_LABEL;
+            gfx_text(c, PLUS_X + BTN_W - gfx_text_width(sf, st, 1),
+                     r.y + ROW_H - gfx_text_height(sf, 1) - 6, st, sf,
+                     sensors_rows_state_color(e.part), 1);
+        }
         ui_rule(c, r.x, r.y + ROW_H - 2, r.w, UI_EDGE);
         return;
     }
@@ -1213,7 +1139,8 @@ static void draw_row(gfx_canvas_t *c, int index)
     char buf[32];
     ui_setting_value(id, buf, sizeof(buf));
     int ux = VALUE_R;
-    if (d->unit && d->unit[0]) {
+    if (d->unit && d->unit[0]
+        && !(d->off_below > 0.0f && settings_get(id) == 0.0f)) {
         int uw = gfx_text_width(UI_FONT_LABEL, d->unit, 1);
         gfx_text(c, VALUE_R - uw, r.y + 26, d->unit, UI_FONT_LABEL, UI_TEXT_DIM, 1);
         ux = VALUE_R - uw - 6;
@@ -1248,6 +1175,9 @@ static void draw_list(gfx_canvas_t *c)
      * cleanly at the pane edge instead of drawing over the strip. */
     gfx_rect_t saved = gfx_clip_get(c);
     gfx_clip_set(c, gfx_rect_make(LIST_X, LIST_Y, LIST_W, LIST_H));
+    /* SENSORS' list changes length with a FITTED edit or a reset: the
+     * scroll follows before a row is placed. */
+    clamp_scroll();
     int n = row_count();
     for (int i = 0; i < n; ++i) {
         draw_row(c, i);

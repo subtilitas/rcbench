@@ -39,8 +39,8 @@ history is in git.
   bit and registers 8 to 10 mirror it and a SENSE write that would change
   them is refused. With a map in force, IDENTITY's capability bit 3
   (`SERVO_SENSE`) is set while a channel it reads watches an output
-  channel or a programming port. The panel writes none of the three pages
-  yet.
+  channel or a programming port. The panel writes SENSE_MAP from SETUP >
+  SENSORS (below) and does not read SENSE_WIN_A or SENSE_WIN_B yet.
 - The IOmcu's store record is version 8, 308 bytes in a slot of two
   256-byte flash pages, 16 slots in the store; it keeps the map. Records
   of version 3 to 7 are read until the first version 8 save, and the
@@ -101,9 +101,30 @@ history is in git.
 - SERVO > TARGET reads the set programming port in SAFE within 500 ms after
   a programming session gives the port back and after an IOmcu restart,
   without waiting for the next ARM.
+- SETUP > SENSORS (German `SENSOREN`), the eighth tile: up to four INA3221
+  current monitors at 0x40 to 0x43. Per part `0x40 fitted`; per channel
+  `0x40 CH1 watches` (NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY) and
+  `0x40 CH1 shunt` (OFF, 5.0 to 1000.0 mOhm). A fitted part's heading shows
+  its state: `ONLINE`, `NOT ANSWERING`, `IOMCU OLDER THAN 4.25: NOT READ`
+  and eight more. The panel writes the map to SENSE_MAP (link protocol
+  4.25) in one write of 26 registers; an IOmcu older than 4.25 gets SENSE's
+  one-part frame. The channel read at 1 kHz is the lowest one on a fitted
+  part that watches the servo tester's target.
+- The band says `INA3221 0x41 has every channel off. Check SETUP >
+  SENSORS.` for a fitted part with all three shunts OFF; no map is written
+  then.
 
 ### Changed
 
+- The four INA3221 rows leave SETUP > INTERFACES (23 settings now). A panel
+  updated from 0.21 seeds SENSORS from them at start-up: the part at the old
+  address fitted when the INA3221 was ON, its CH1 on the old shunt, CH2 and
+  CH3 on it with CH1+2+3 and OFF with CH1, and CH1 watching PORT 1 when the
+  servo tester's target was the programming port, OUT 1 otherwise. The old
+  keys stay stored and unchanged for one release, for a panel taken back to
+  0.21.
+- `INA3221 settings rejected. Check SETUP > SENSORS.` names SENSORS in
+  place of INTERFACES.
 - The IOmcu's sensor schedule reads up to 4 INA3221 at 0x40 to 0x43, 12
   channels, each with its own shunt. One channel, FAST, is read every 1 ms
   and carries the window ring and the move capture; the other channels

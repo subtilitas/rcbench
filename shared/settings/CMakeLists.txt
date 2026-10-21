@@ -3,7 +3,7 @@
 # panel, because NVS (non-volatile storage) is hardware; every rule here is
 # tested without a chip.  The sensor bus's pins take the values the link
 # page's rule and the board's catalogue allow, so the model reads both.
-set(SRCS settings.c)
+set(SRCS settings.c settings_sensors.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include

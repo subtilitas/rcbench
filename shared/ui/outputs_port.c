@@ -23,6 +23,8 @@
 #include "link_pages.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "sensors_rows.h"
+#include "settings_sensors.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -131,6 +133,21 @@ static bool sense_part(setting_id_t en)
     return settings_get_bool(en) && !settings_screen_unheld(en);
 }
 
+/* Whether an INA3221 part is fitted on SETUP > SENSORS and its rows are
+ * not marked: a part the page refused, dark or on the INA228's address
+ * holds no bus (sensors_rows.h). */
+static bool sensors_on(void)
+{
+    const uint8_t parts = settings_sensors_fitted();
+    for (int a = 0; a < SET_INA_PARTS; ++a) {
+        if ((parts & (1u << a)) != 0u
+            && !sensors_rows_unheld(SET_INA_W(3 * a))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /* GPIO @p v as a mask bit, or 0 for -1 and anything past the mask. */
 static uint64_t pin_bit(int v)
 {
@@ -152,7 +169,7 @@ uint64_t outputs_iface_pins(outputs_iface_t which)
         /* A bus the IOmcu refused, its pins row or every part on marked
          * on SETUP, holds no pin there: the page enables no part. */
         const bool on = sense_part(SET_INA228_EN)
-                        || sense_part(SET_INA3221_EN)
+                        || sensors_on()
                         || sense_part(SET_ENC_EN);
         const int sda = settings_get_int(SET_SENSE_SDA);
         if (!on || sda < 0 || settings_screen_unheld(SET_SENSE_SDA)) {

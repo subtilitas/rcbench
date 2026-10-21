@@ -99,6 +99,17 @@ void sense_link_came_up(sense_link_t *s, uint16_t minor, uint32_t now_ms)
     }
 }
 
+/* Whether the INA228 at @p i228 shares an address with the INA3221: one
+ * of the fitted parts @p parts, or with none given the one at @p i3221. */
+static bool one_address(uint16_t i228, uint16_t i3221, uint8_t parts)
+{
+    if (parts != 0u) {
+        return i228 >= LINK_SN_I3221_ADDR_MIN && i228 <= LINK_SN_I3221_ADDR_MAX
+               && ((parts >> (i228 - LINK_SN_I3221_ADDR_MIN)) & 1u) != 0u;
+    }
+    return i228 == i3221;
+}
+
 /* Whether @p w is a set-up SETUP can name: every value inside the page's
  * own range.  A zeroed one -- a snapshot nobody has published into -- is
  * not, and is no reason to write anything. */
@@ -135,7 +146,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
         en = 0u;
     } else if ((en & (LINK_SN_EN_I228 | LINK_SN_EN_I3221))
                    == (LINK_SN_EN_I228 | LINK_SN_EN_I3221)
-               && w->i228_addr == w->i3221_addr) {
+               && one_address(w->i228_addr, w->i3221_addr, w->i3221_parts)) {
         local = SENSE_LINK_EV_SAME_ADDR;
         en = (uint16_t)(en & ~(LINK_SN_EN_I228 | LINK_SN_EN_I3221));
     }
@@ -155,7 +166,10 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
                        || s->want_i228 != w->i228
                        || s->want_i3221 != w->i3221
                        || s->want_enc != w->as5600
-                       || s->want_sda != w->sda || s->want_scl != w->scl;
+                       || s->want_sda != w->sda || s->want_scl != w->scl
+                       || s->want_parts != w->i3221_parts
+                       || s->want_unwatched != w->i3221_unwatched
+                       || s->want_off_ch1 != w->i3221_fast_off_ch1;
     if (!moved) {
         return;
     }
@@ -198,6 +212,9 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
     s->want_enc   = w->as5600;
     s->want_sda   = w->sda;
     s->want_scl   = w->scl;
+    s->want_parts = w->i3221_parts;
+    s->want_unwatched = w->i3221_unwatched;
+    s->want_off_ch1   = w->i3221_fast_off_ch1;
     memcpy(s->want, next, sizeof(next));
     /* A new set-up is a new question: what was refused is asked again. */
     s->refused_bus   = false;
@@ -222,6 +239,11 @@ static void bus_frame(const sense_link_t *s, uint16_t *out)
     if (s->refused_i3221) {
         en &= (uint16_t)~LINK_SN_EN_I3221;
     }
+    if (s->map) {
+        /* The map's mirror, as the page holds it. */
+        en = (uint16_t)((en & ~LINK_SN_EN_I3221)
+                        | (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221));
+    }
     out[0] = en;
     out[1] = s->want[LINK_SN_SDA_PIN];
     out[2] = s->want[LINK_SN_SCL_PIN];
@@ -239,7 +261,8 @@ sense_link_op_kind_t sense_link_write_owed(const sense_link_t *s,
                                            uint16_t *regs)
 {
     const bool i228  = !s->refused_i228 && frame_differs(s, I228_AT);
-    const bool i3221 = !s->refused_i3221 && frame_differs(s, I3221_AT);
+    const bool i3221 = !s->map && !s->refused_i3221
+                       && frame_differs(s, I3221_AT);
     /* The page holds two parts to two addresses only while both are
      * enabled, so that is when a part's frame goes with both off. */
     const uint16_t both = (uint16_t)(LINK_SN_EN_I228 | LINK_SN_EN_I3221);
@@ -291,9 +314,16 @@ static bool due(bool asked, uint32_t asked_ms, uint32_t now_ms,
 
 bool sense_link_win_on(const sense_link_t *s)
 {
+    /* With the map in force SERVO_WIN carries FAST, whichever channel of
+     * the mirror part that is; without it, CH1.  The windows are taken as
+     * CH1's (sense_link_win_bench()), so FAST on CH2 or CH3 reads none,
+     * and with the map only once the page holds the map asked: the ring is
+     * the held FAST's. */
     return s != NULL && s->win_page && s->known
            && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
-           && (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u;
+           && !s->want_off_ch1
+           && (s->map ? !s->want_unwatched && s->map_held
+                      : (s->held[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u);
 }
 
 /* The registers a SENSE status read takes: to the page's last when it has
@@ -850,7 +880,8 @@ bool sense_link_event_stands(const sense_link_t *s, uint32_t ev)
                && (s->want_sda < 0 || s->want_scl < 0);
     case SENSE_LINK_EV_SAME_ADDR:
         return s->want_i228 && s->want_i3221
-               && s->want[LINK_SN_I228_ADDR] == s->want[LINK_SN_I3221_ADDR];
+               && one_address(s->want[LINK_SN_I228_ADDR],
+                              s->want[LINK_SN_I3221_ADDR], s->want_parts);
     case SENSE_LINK_EV_BUS_REFUSED: {
         if (!known || s->refused_bus) {
             return true;
@@ -862,7 +893,8 @@ bool sense_link_event_stands(const sense_link_t *s, uint32_t ev)
     case SENSE_LINK_EV_I228_REFUSED:
         return !known || s->refused_i228 || frame_differs(s, I228_AT);
     case SENSE_LINK_EV_I3221_REFUSED:
-        return !known || s->refused_i3221 || frame_differs(s, I3221_AT);
+        return !s->map
+               && (!known || s->refused_i3221 || frame_differs(s, I3221_AT));
     default:
         return true;
     }
@@ -954,88 +986,4 @@ bool sense_link_settled(const sense_link_t *s)
     }
     uint16_t regs[FRAME_N];
     return s->known && sense_link_write_owed(s, regs) == SENSE_LINK_OP_NONE;
-}
-
-uint16_t sense_link_unheld(const sense_link_t *s)
-{
-    if (s == NULL || !s->up || !s->want_set) {
-        return 0u;
-    }
-    /* The parts as SETUP has them, against ENABLE as the page holds it. */
-    const uint16_t asked = (uint16_t)(
-        (s->want_i228 ? SENSE_LINK_ROW_I228 : 0u)
-        | (s->want_i3221 ? SENSE_LINK_ROW_I3221 : 0u)
-        | (s->want_enc ? SENSE_LINK_ROW_ENC : 0u));
-    if (!s->page) {
-        return asked;
-    }
-    if (!s->known) {
-        return 0u;
-    }
-    const uint16_t en = s->held[LINK_SN_ENABLE];
-    const uint16_t on = (uint16_t)(
-        (((en & LINK_SN_EN_I228) != 0u) ? SENSE_LINK_ROW_I228 : 0u)
-        | (((en & LINK_SN_EN_I3221) != 0u) ? SENSE_LINK_ROW_I3221 : 0u)
-        | (((en & LINK_SN_EN_AS5600) != 0u) ? SENSE_LINK_ROW_ENC : 0u));
-    uint16_t rows = (uint16_t)(asked ^ on);
-    if (s->want[LINK_SN_SDA_PIN] != s->held[LINK_SN_SDA_PIN]
-        || s->want[LINK_SN_SCL_PIN] != s->held[LINK_SN_SCL_PIN]) {
-        rows |= SENSE_LINK_ROW_PINS;
-    }
-    static const struct { uint8_t reg; uint16_t row; } k_rows[] = {
-        { LINK_SN_I228_ADDR,         SENSE_LINK_ROW_I228_ADDR },
-        { LINK_SN_I228_SHUNT_UOHM,   SENSE_LINK_ROW_I228_SHUNT },
-        { LINK_SN_I228_MAX_DA,       SENSE_LINK_ROW_I228_MAX },
-        { LINK_SN_I3221_ADDR,        SENSE_LINK_ROW_I3221_ADDR },
-        { LINK_SN_I3221_SHUNT_DMOHM, SENSE_LINK_ROW_I3221_SHUNT },
-        { LINK_SN_I3221_CHANNELS,    SENSE_LINK_ROW_I3221_CH },
-    };
-    for (size_t i = 0u; i < sizeof(k_rows) / sizeof(k_rows[0]); ++i) {
-        if (s->want[k_rows[i].reg] != s->held[k_rows[i].reg]) {
-            rows |= k_rows[i].row;
-        }
-    }
-    return rows;
-}
-
-bool sense_link_take_caps(sense_link_t *s, uint16_t *caps)
-{
-    if (s == NULL || caps == NULL || !s->caps_new) {
-        return false;
-    }
-    *caps = s->caps;
-    s->caps_new = false;
-    return true;
-}
-
-bool sense_link_take_win(sense_link_t *s, sense_link_win_t *out)
-{
-    if (s == NULL || out == NULL || s->winq_n == 0u) {
-        return false;
-    }
-    *out = s->winq[0];
-    --s->winq_n;
-    memmove(&s->winq[0], &s->winq[1], s->winq_n * sizeof(s->winq[0]));
-    return true;
-}
-
-uint32_t sense_link_win_lost(const sense_link_t *s)
-{
-    return (s != NULL) ? s->win_lost : 0u;
-}
-
-bool sense_link_held_pins(const sense_link_t *s, int *sda, int *scl)
-{
-    const bool known = s != NULL && s->up && (!s->page || s->known);
-    const bool on = known && s->page
-                    && (s->held[LINK_SN_ENABLE]
-                        & (LINK_SN_EN_I228 | LINK_SN_EN_I3221
-                           | LINK_SN_EN_AS5600)) != 0u;
-    if (sda != NULL) {
-        *sda = on ? (int)s->held[LINK_SN_SDA_PIN] : -1;
-    }
-    if (scl != NULL) {
-        *scl = on ? (int)s->held[LINK_SN_SCL_PIN] : -1;
-    }
-    return known;
 }

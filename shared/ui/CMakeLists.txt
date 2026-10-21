@@ -44,6 +44,8 @@ set(SRCS
     log_viewer_screen.c
     log_select.c
     settings_screen.c
+    settings_rows.c
+    sensors_rows.c
     outputs_screen.c
     outputs_port.c
     outputs_port_entry.c

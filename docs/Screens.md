@@ -2357,8 +2357,9 @@ style. Each tile is 256 x 108 px, its icon centred over its name.
 
 ![Setup](img/setup.png)
 
-- Three categories: PANEL, INTERFACES and SD CARD, the bench-wide settings.
-  Each tile names its number of settings. A tap opens the category's list.
+- Four categories: PANEL, INTERFACES, SD CARD and SENSORS, the bench-wide
+  settings. Each tile names the number of settings its list shows. A tap
+  opens the category's list.
   The settings of the pack, the motor and the throttle output are on
   MOTOR & ESC > SETTINGS
   ([MOTOR & ESC settings](#motor--esc-settings)).
@@ -2366,7 +2367,7 @@ style. Each tile is 256 x 108 px, its icon centred over its name.
   ([Pick a pin](#pick-a-pin)), WI-FI ([Wi-Fi](#wi-fi)) and UPDATES
   ([Updates](#updates)). The band of each names it as its tile does, and
   the band of this page reads SETUP.
-- Two slots are free. A tenth entry has no slot: the page holds 9, and
+- One slot is free. A tenth entry has no slot: the page holds 9, and
   the build fails at the tenth.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
@@ -2413,9 +2414,10 @@ as the slew of the modelled bench.
 A row's `-` and `+` keys (`<` and `>` on a switch or a choice) change its
 value by one step. A changed value is in force at once; SAVE decides whether
 it survives a restart ([Keeping the values](#keeping-the-values)). A number
-stops at the ends of its range, and so do INA228 address and INA3221
-address, which have `-` and `+` keys: 0x40 to 0x4F and 0x40 to 0x43. A
-switch or a choice wraps round from its last value to its first.
+stops at the ends of its range, and so does INA228 address, which has `-`
+and `+` keys: 0x40 to 0x4F. A shunt on SENSORS takes 0 (OFF) or 5.0 to
+1000.0 mΩ: `+` from OFF gives 5.0 and `-` from 5.0 gives OFF. A switch or a
+choice wraps round from its last value to its first.
 
 - **Tap.** A key steps once when the finger lifts. The lift counts when the
   finger is the one that pressed the key, is inside the key, and is no more
@@ -2510,19 +2512,21 @@ across a third of its travel from -travel to +travel.
 
 ### INTERFACES: the current monitors
 
-INTERFACES lists its 27 settings in five sections. A heading above the first
-row of each names it: I2C BUS (the two current monitors, Sensor SDA and
-SCL, and the AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical
-tacho), SUPPLY (the PD mini) and PROG PORT (Hitec D receive). A heading is a row of its own, 54 px high
-at the list's 58 px pitch, in the accent colour over a rule, with no keys
-and no value: a tap or a drag on it changes nothing, and a drag scrolls the
-list. The list is 32 rows long.
+INTERFACES lists its 23 settings in five sections. A heading above the first
+row of each names it: I2C BUS (the INA228, Sensor SDA and SCL, and the
+AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical tacho), SUPPLY
+(the PD mini) and PROG PORT (Hitec D receive). A heading is a row of its
+own, 54 px high at the list's 58 px pitch, in the accent colour over a rule,
+with no keys and no value: a tap or a drag on it changes nothing, and a drag
+scrolls the list. The list is 28 rows long.
 
 ![INTERFACES, the current monitors](img/setup-interfaces.png)
 
-The IOmcu reads two I2C (Inter-Integrated Circuit) current monitors on
-one bus on two of its pins: a TI INA228 in the ESC's power path and a TI
-INA3221 on the servo rail. Their rows are at the top of INTERFACES:
+The IOmcu reads I2C (Inter-Integrated Circuit) current monitors on one bus
+on two of its pins: a TI INA228 in the ESC's power path, set up here, and up
+to four TI INA3221, set up on SENSORS ([SENSORS: the INA3221
+parts](#sensors-the-ina3221-parts)). The INA228's rows and the bus's pins
+are at the top of INTERFACES:
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
@@ -2530,14 +2534,8 @@ INA3221 on the servo rail. Their rows are at the top of INTERFACES:
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped; its solder bridges give 0x44 or 0x41 |
 | INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
 | INA228 max current | 1.0 to 300.0 A, 0.1 A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. 300 A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000 A full scale stays, and 300 A on the smallest shunt, 50 µΩ, does not reach it |
-| INA3221 | ON, OFF | OFF | the servo rail's three channels |
-| INA3221 address | 0x40 to 0x43 | 0x40 | the DAOKAI module with its A0 solder bridge closed to GND. As shipped all four A0 bridges are open and the address floats between 0x40 and 0x41 |
-| INA3221 shunt | 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | one a channel; the DAOKAI's R100 reads to 1.64 A |
-| INA3221 channels | CH1, CH1+2+3 | CH1 | CH1 is the servo test's; CH2 and CH3 a synchronised pair's |
 | Sensor SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | IOmcu GPIO (general-purpose input/output). `-` and `+` step from one of these values to the next and stop at −1 and at 26. −1: the pins are not set, and no part is enabled on the page |
 | Sensor SCL | SDA + 1, or −1 | 17 | the GPIO after Sensor SDA, and −1 with it. The row shows the value and has no keys |
-
-![INTERFACES, the INA3221 and the bus's pins](img/setup-sensors.png)
 
 SDA and SCL are one I2C block's pair: SDA's GPIO number mod 4 is 0 or 2, and
 SCL is the GPIO after it. Sensor SDA takes only the pins of such a pair that
@@ -2579,8 +2577,10 @@ among the INA3221's channels it also reads SERVO_WIN every 50 ms, which
 holds CH1's last four windows, and SENSE to register 31
 ([Link](Link.md#the-window-ring)).
 
-The servo rail has one meter at a time: the INA3221's CH1 while it is on
-with CH1, the IOmcu speaks protocol 4.11, the IOmcu holds the
+The servo rail has one meter at a time: the INA3221 channel that watches
+the servo tester's target ([SENSORS](#sensors-the-ina3221-parts)) -- on an
+IOmcu older than 4.25 CH1 of the one part SENSE reads -- while a fitted
+part has that channel, the IOmcu speaks protocol 4.11, the IOmcu holds the
 set-up, the part answers as an INA3221 on a bus that is not stuck, a window
 with current samples closed in the last 200 ms, its reset count stands, and
 all of that has held for 1000 ms; the PD mini otherwise. The SERVO screen's
@@ -2595,10 +2595,11 @@ both said. In order:
 | --- | --- |
 | `IOmcu has no SENSE page. Current monitors cannot be read.` | a monitor is enabled and the IOmcu speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
 | `Sensor SDA or SCL not set. Check SETUP > INTERFACES.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
-| `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.` | both enabled on one address; neither is enabled on the page |
+| `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.` | the INA228 on the address of a fitted INA3221; neither is read |
 | `Sensor pins GP16/GP17 rejected. Check SETUP > INTERFACES.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30 s or until tapped, once per edit |
 | `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
-| `INA3221 settings rejected. Check SETUP > INTERFACES.` | the INA3221 stays off |
+| `INA3221 settings rejected. Check SETUP > SENSORS.` | the IOmcu refused the INA3221 set-up: the SENSE_MAP map, or on an IOmcu older than 4.25 the one-part frame; the IOmcu keeps what it held |
+| `INA3221 0x41 has every channel off. Check SETUP > SENSORS.` | a fitted part has all three shunts at OFF; no map is written until one is on again, and the line leaves the band then |
 | `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the IOmcu found SDA or SCL held low and clocks the bus free. A line that reads low with nothing holding it -- pins with no part and no pull-up wired to them -- is not this: it rises within 50 µs on the IOmcu's own pad pull-up (32 to 86 kΩ), and the monitors read as not answering |
 | `INA228 is not responding at 0x45.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `A device responds at 0x44.` is added when the IOmcu's address scan found something where the part could be |
 | `0x40 reports 1408h, not an INA3221. Device not used.` | something answers at the part's address with another identity |
@@ -2637,19 +2638,106 @@ with the one the page last acknowledged or read back (`sense_link_unheld()`,
 `tone_link_unheld()`). The mark covers the current monitors' rows, Sensor
 SDA and Sensor SCL (one mark, the pins are one frame), AS5600, and the phase
 tap's rows in two groups: Phase tap, Tap pin and the two tones, and Tap
-pitch split, Tap gap and Tap min periods.
+pitch split, Tap gap and Tap min periods. SENSORS marks its rows by part
+([SENSORS: the INA3221 parts](#sensors-the-ina3221-parts)).
 
 | The mark shows | Until |
 | --- | --- |
 | from an edit | the write is acknowledged: 500 ms after the last edit, and for the current monitors only once the bench is SAFE |
 | on a value the IOmcu refused | the value is changed to one it takes; for pins held elsewhere, until the 5 s retry is taken |
-| on INA228, INA3221 or AS5600 at ON while the page has the part off | the cause is gone: a refused frame, Sensor SDA at −1, both monitors on one address, an IOmcu older than the part |
+| on INA228 or AS5600 at ON while the page has the part off | the cause is gone: a refused frame, Sensor SDA at −1, the INA228 on a fitted INA3221's address, an IOmcu older than the part |
 | after an IOmcu restart or a link-up, on what its page reads differently | the panel has written it |
 
 No row is marked while no IOmcu answers, or before the page has been
 read after a link-up: there is nothing to compare with. AS5600 centre is the
 panel's own and is never marked. The alert on the band is separate and stays
 as described above.
+
+### SENSORS: the INA3221 parts
+
+SENSORS sets up to four TI INA3221 three-channel current monitors on the
+sensor bus, at 0x40 to 0x43, and says per channel what it measures. The
+INA228 and the bus's pins stay on INTERFACES.
+
+![SENSORS, two parts fitted](img/setup-sensors.png)
+
+The list starts with the heading INA3221 PARTS over four rows:
+
+| Setting | Range | Default | |
+| --- | --- | --- | --- |
+| 0x40 fitted to 0x43 fitted | ON, OFF | OFF | an INA3221 at this address. The DAOKAI module takes 0x40 with its A0 solder bridge closed to GND. As shipped all four A0 bridges are open and the address floats between 0x40 and 0x41 |
+
+Each fitted part follows under a heading of its own, `INA3221 0x40` to
+`INA3221 0x43`, with six rows, two a channel. A part that is not fitted has
+no heading and no rows.
+
+| Setting | Range | Default | |
+| --- | --- | --- | --- |
+| 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE for every other channel | what the channel's shunt is in: an output channel, a programming port, or the supply rail |
+| 0x40 CH1 shunt | OFF, 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | OFF: the channel is not read. The DAOKAI's R100 reads to 1.64 A |
+
+The heading of a part shows on its right what the part is doing:
+
+| State | When |
+| --- | --- |
+| `ONLINE` | the IOmcu reads the part, which answers as an INA3221 |
+| `LOOKING FOR THE PART` | the set-up is taken, and the IOmcu has not found the part yet: the first 2.5 s |
+| `NOT ANSWERING` | nothing answers at the part's address 2.5 s after the set-up was taken, or the part stopped answering |
+| `ANOTHER ID ANSWERS` | something answers at the address with another identity |
+| `NOT WRITTEN YET` | an edit waits: 500 ms after the last edit, and only while the bench is SAFE |
+| `NOT READ YET` | no IOmcu answers, or its page has not been read since the link came up |
+| `NOT ACCEPTED BY THE IOMCU` | the IOmcu refused the map; it keeps the one it held |
+| `EVERY CHANNEL OFF` | all three shunts of the part are OFF: no map is written |
+| `INA228 ON THIS ADDRESS` | the INA228 is on at the part's address: the part is left out of the map and the INA228 off |
+| `IOMCU OLDER THAN 4.25: NOT READ` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
+| `SENSOR SDA OR SCL UNSET` | INTERFACES has no pin for the sensor bus's SDA or SCL: no part is enabled |
+
+The rows of a part refused, with every channel off, on the INA228's
+address, without a sensor bus or not read by an older IOmcu are marked as a row the IOmcu does
+not hold: edge and value in the warning colour, and a line in place of the
+help. On an IOmcu older than 4.25 that line reads `IOmcu older than 4.25:
+one INA3221, CH1 at 1 kHz.`:
+
+![SENSORS on an IOmcu older than 4.25](img/setup-sensors-old.png)
+
+The panel writes the map to the IOmcu's SENSE_MAP page (protocol 4.25) in
+one write of 26 registers: the parts fitted, the channel read at 1 kHz,
+the twelve shunts and what each channel watches. As for SENSE it reads the
+page first at every link-up, writes 500 ms after the last edit and only
+while the bench is SAFE, and writes nothing the page holds. A refused map is
+not written again until it changes. While a part is fitted the panel reads
+the parts' IDs and states every 500 ms. A part that stops answering, or
+that answers as something else, is said on the band once, as on INTERFACES;
+the part SENSE reports on (below) is said by SENSE's own reads.
+
+The channel read at 1 kHz, whose windows the servo test and the SERVO
+screen use, is the lowest channel with a shunt on a fitted part that
+watches the servo tester's target: an output, OUT 1 to OUT 8, while the
+target is OUTPUTS, and PORT n while it is programming port n. Every other
+channel with a shunt is read in turn, one a millisecond: 90.9 Hz each with
+eleven ([Link](Link.md)).
+
+Current limitation: the servo test and the SERVO screen take the INA3221 as
+the servo rail's meter only while that channel is CH1 of its part. With it
+on CH2 or CH3 the rail's meter is the PD mini.
+
+An IOmcu older than 4.25 has no SENSE_MAP and reads one INA3221 from
+SENSE: the part of the channel read at 1 kHz, else the lowest fitted part,
+with its CH1 shunt (or its first one that is not OFF) and the channels on
+that shunt. SENSE carries one shunt for every channel it reads, so a channel
+on another shunt is not read.
+
+With the map in force, SENSE's INA3221 address, shunt and channels mirror
+it on the IOmcu and the panel never writes them.
+
+Stored settings: a panel updated from 0.21 has no SENSORS keys. Each one
+it lacks is taken at start-up from the four INA3221 settings 0.21 kept:
+the part at the old address fitted when the INA3221 was ON, its CH1 on the
+old shunt, CH2 and CH3 on it with CH1+2+3 and OFF with CH1, and its CH1
+watching PORT 1 when the servo tester's target was the programming port,
+OUT 1 otherwise; every other channel 100.0 mΩ and NONE. The old settings
+stay stored, unchanged, so a panel taken back to 0.21 finds its set-up. The
+next SAVE writes every SENSORS key.
 
 ### INTERFACES: the output encoder
 
@@ -3421,7 +3509,7 @@ through, with what holds it under its name, and cannot be ticked:
 
 | Under the name | Pins | While |
 |---|---|---|
-| `SENSOR BUS` | Sensor SDA and the Sensor SCL after it, GP16 and GP17 by default | INA228, INA3221 or AS5600 is ON |
+| `SENSOR BUS` | Sensor SDA and the Sensor SCL after it, GP16 and GP17 by default | INA228 or AS5600 is ON, or an INA3221 is fitted on SENSORS |
 | `PD MINI` | PD mini TX and PD mini RX | PD mini is ON with both pins set, on two pins |
 | `PHASE TAP` | Tap pin, GP22 by default | Phase tap is ON |
 

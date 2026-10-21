@@ -603,14 +603,15 @@ von SERVO_SENSE und dem von SERVO_WIN eines Polls, hat die Zeile des
 dazwischen geschlossenen Fensters keine Werte von CH2 und CH3.
 
 **Das Messgerät der Servo-Schiene.** `shared/bench/servo_source.c`
-entscheidet einmal je Poll, welches Messgerät die Servo-Schiene misst. CH1
-des INA3221 ist das Messgerät, solange alles Folgende gilt:
+entscheidet einmal je Poll, welches Messgerät die Servo-Schiene misst. Der
+Kanal des INA3221, der das Ziel des Servotesters misst, ist das Messgerät,
+solange alles Folgende gilt:
 
 | # | Bedingung |
 | ---: | --- |
-| 1 | SETUP ANSCHLÜSSE hat den INA3221 eingeschaltet, mit CH1 unter seinen Kanälen |
+| 1 | SETUP SENSOREN hat einen bestückten Baustein mit einem Kanal, der das Ziel des Servotesters misst; dieser Kanal ist CH1 des Bausteins |
 | 2 | die Protokoll-Minor des IOmcu ist 11 oder mehr |
-| 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen |
+| 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen; mit SENSE_MAP sind sein Enable-Bit des INA3221 und die Register 8 bis 11 die der Zuordnung, und die Register 0 bis 25 von SENSE_MAP sind die verlangte Zuordnung: seit dem Link-Aufbau gelesen, nicht abgelehnt, kein Schreiben offen |
 | 4 | das letzte Lesen von SENSE ist jünger als 200 ms, und in seinen `FLAGS` sind die Bits 4 und 5 des INA3221 gesetzt und Bit 9 gelöscht |
 | 5 | das neueste Fenster von SERVO_WIN hält Strommessungen, und seine Nummer hat sich vor weniger als 200 ms bewegt |
 | 6 | das Byte des INA3221 in `RESETS` hat sich seit dem Poll davor nicht bewegt |

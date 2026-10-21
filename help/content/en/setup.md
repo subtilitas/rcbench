@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's bench-wide settings in three categories: PANEL, INTERFACES and SD CARD. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
+SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACES, SD CARD and SENSORS. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
 
 ## The tiles
 
@@ -15,14 +15,15 @@ SETUP holds the panel's bench-wide settings in three categories: PANEL, INTERFAC
 | Tile | Second line | What it opens |
 |---|---|---|
 | PANEL | `9 SETTINGS` | the list of PANEL |
-| INTERFACES | `26 SETTINGS` | the list of INTERFACES |
+| INTERFACES | `23 SETTINGS` | the list of INTERFACES |
 | SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
+| SENSORS | `4 SETTINGS`, and 6 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 
-Two slots stay free. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
+One slot stays free. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
 
 ![The tiles with a value unsaved](view:setup-hub-dirty)
 
@@ -160,11 +161,16 @@ OK keeps the keyboard open, and the folder as it was, for a folder the card cann
 
 ## INTERFACES
 
-INTERFACES holds the current monitors, the output encoder, the phase tap, the vibration sensor, the optical tacho and the PD mini. The list has four headings: I2C BUS, PHASE TAP, BALANCE SENSORS and SUPPLY. [Interfaces](setup-interfaces.md) describes them.
+INTERFACES holds the INA228 current monitor, the sensor bus's pins, the output encoder, the phase tap, the vibration sensor, the optical tacho, the PD mini and the Hitec receive mode. The list has five headings: I2C BUS, PHASE TAP, BALANCE SENSORS, SUPPLY and PROG PORT. [Interfaces](setup-interfaces.md) describes them.
+
+## SENSORS
+
+SENSORS holds up to four INA3221 current monitors: which are fitted, each channel's shunt and what each channel measures. [Sensors](setup-sensors.md) describes them.
 
 ## Related pages
 
 - [Interfaces](setup-interfaces.md)
+- [Sensors](setup-sensors.md)
 - [Outputs](outputs.md) and [Pin picker](picker.md)
 - [Updates](updates.md)
 - [Supply](supply.md), [Servo settings](servo-settings.md) and [Motor settings](motor-settings.md): the settings kept on their own screens.

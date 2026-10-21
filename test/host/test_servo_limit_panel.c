@@ -18,6 +18,7 @@
 #include "servo_screen.h"
 #include "servo_sim.h"
 #include "settings.h"
+#include "settings_sensors.h"
 #include "supply_screen.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -139,7 +140,7 @@ TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
         CHECK(!servo_screen_testing());
         /* On, with no window yet: the PD mini is the meter. */
         close_settings();
-        settings_set(SET_INA3221_EN, 1.0f);
+        settings_set(SET_INA_FIT(0), 1.0f);
         meter(SERVO_SOURCE_PDMINI);
         lim_page();
         CHECK(lim_line_reads(1, TR(SV_LIM_INA_NO_WIN), UI_C_WARN));

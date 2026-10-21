@@ -147,8 +147,8 @@ Version 8 und startet wie mit einem leeren Speicher.
 
 | Panel | IOmcu | SENSE_MAP, SENSE_WIN_A und SENSE_WIN_B |
 | --- | --- | --- |
-| 4.25 | 4.25 | bedient. Das Panel dieses Builds liest und schreibt keine der drei Pages und richtet den einen INA3221 von SENSE ein, so dass die Map abgeleitet bleibt |
-| 4.25 | 4.24 oder älter | der IOmcu beantwortet jede der drei Pages mit BAD_PAGE |
+| 4.25 | 4.25 | bedient. Das Panel liest SENSE_MAP bei jedem Link-Aufbau ganz, schreibt die Register 0 bis 25 in einem Schreiben so, wie SETUP > SENSOREN sie einstellt, und liest die Register 26 bis 30 alle 500 ms, solange ein Baustein bestückt ist. SENSE_WIN_A und SENSE_WIN_B liest es nicht |
+| 4.25 | 4.24 oder älter | das Panel sendet an keine der drei Pages und richtet den einen INA3221 von SENSE auf einen bestückten Baustein ein ([Screens](Screens-de.md)) |
 | 4.24 oder älter | 4.25, Map abgeleitet | das Panel liest und schreibt die drei Pages nie. SENSE läuft wie zuvor |
 | 4.24 oder älter | 4.25, Map in Kraft | Bit 1 von ENABLE und die Register 8 bis 10 von SENSE lesen das Spiegelbauteil. Ein Schreiben an SENSE, das sie ändert, wird mit BAD_VALUE abgewiesen, so dass dieses Panel die INA3221-Konfiguration nicht ändern kann. Der INA228, der Encoder und die Pins bleiben seine |
 
