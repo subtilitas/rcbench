@@ -1,6 +1,15 @@
-/*
- * ESC STICK's maker and model lists: their order, the family a model
+/**
+ * @file test_esc_stick_panel_makers.c
+ * @brief ESC STICK's maker and model lists: their order, the family a model
  * opens, the search on both levels and the entry a run waits for.
+ *
+ * Cases:
+ * - makers_are_alphabetical_and_count_their_models
+ * - models_go_by_current_then_voltage_then_name
+ * - a_model_row_opens_its_family_at_its_own_voltage
+ * - the_search_finds_on_both_levels_and_back_keeps_it
+ * - a_card_profile_joins_its_maker
+ * - a_maker_at_its_most_models_lists_every_one
  *
  * SPDX-License-Identifier: MIT
  */

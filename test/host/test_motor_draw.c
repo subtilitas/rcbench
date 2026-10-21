@@ -1,6 +1,23 @@
-/*
- * The bench screen's panes and redraws: both framebuffers, the plot of a run,
+/**
+ * @file test_motor_draw.c
+ * @brief The bench screen's panes and redraws: both framebuffers, the plot of a run,
  * and the gestures that are cancelled.
+ *
+ * Cases:
+ * - the_tabs_switch_panes_and_both_render
+ * - each_framebuffer_is_updated_independently
+ * - a_redraw_leaves_no_stale_pixels
+ * - the_release_after_a_hold_does_not_disarm
+ * - the_arm_button_fades_across_the_hold
+ * - an_unanswered_bench_does_not_show_numbers
+ * - the_plot_records_one_run
+ * - leaving_the_screen_does_not_erase_the_run
+ * - a_cancelled_gesture_does_not_arm
+ * - a_cancelled_tab_press_does_not_switch_the_pane
+ * - a_cancelled_disarm_still_disarms
+ * - a_cancelled_arm_asks_for_nothing
+ * - a_cancel_drops_an_arm_the_hold_already_posted
+ * - a_cancel_keeps_a_disarm_already_posted
  *
  * SPDX-License-Identifier: MIT
  */

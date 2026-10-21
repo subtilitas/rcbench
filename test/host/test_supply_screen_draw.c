@@ -1,7 +1,32 @@
-/*
- * The supply screen's trace and redraws, a press that lost its release and
+/**
+ * @file test_supply_screen_draw.c
+ * @brief The supply screen's trace and redraws, a press that lost its release and
  * the header's pins: where a run's trace starts and stops, and that no
  * stale pixel stays in either buffer.
+ *
+ * Cases:
+ * - reset_pd_mini_is_offered_only_for_the_module
+ * - the_header_names_the_pd_minis_uart_pins
+ * - the_pins_in_the_header_are_drawn_and_a_change_redraws_it
+ * - the_heading_says_what_the_output_does_on_either_pane
+ * - a_reading_that_did_not_arrive_is_not_plotted_as_the_last_one
+ * - a_run_is_traced_from_the_switch_on_and_held_after_it
+ * - a_redraw_leaves_no_stale_pixels
+ * - each_framebuffer_is_updated_independently
+ * - a_set_point_moved_offline_repaints_the_cards_in_both_buffers
+ * - a_screen_without_a_sample_draws
+ * - an_on_reported_during_a_second_hold_is_not_an_off
+ * - a_question_for_an_on_that_was_dropped_goes
+ * - an_apply_held_as_its_on_is_dropped_applies_nothing
+ * - a_dropped_question_lets_go_of_its_apply
+ * - stop_lets_go_of_supplys_apply
+ * - stop_and_an_apply_tap_in_one_frame_apply_nothing_on_supply
+ * - a_question_asked_after_a_stop_stands_on_supply
+ * - a_press_that_lost_its_release_gives_way_to_the_next_press
+ * - a_lost_release_on_output_off_is_sent_at_the_next_press
+ * - an_on_posted_by_a_hold_that_lost_its_release_is_dropped
+ * - a_second_contact_does_not_end_a_press_that_is_held
+ * - a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off
  *
  * SPDX-License-Identifier: MIT
  */

@@ -1,6 +1,14 @@
-/*
- * ESC STICK's two-line strings and the home tag: it climbs a page at a
+/**
+ * @file test_esc_stick_panel_home.c
+ * @brief ESC STICK's two-line strings and the home tag: it climbs a page at a
  * time, leaves the stick class one level at a time and ends a run.
+ *
+ * Cases:
+ * - the_home_tag_climbs_as_each_pages_way_back
+ * - the_home_tag_leaves_the_stick_class_one_level_at_a_time
+ * - the_home_tag_ends_a_run_and_the_result_stays
+ * - a_wrap_into_no_cells_still_ends
+ * - every_two_line_string_breaks_into_two_lines
  *
  * SPDX-License-Identifier: MIT
  */

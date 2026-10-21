@@ -1,6 +1,23 @@
-/*
- * The outputs screen's overview and OFF: every bound pin named, a pick and
+/**
+ * @file test_outputs_screen_off.c
+ * @brief The outputs screen's overview and OFF: every bound pin named, a pick and
  * back, and a binding that did not read.
+ *
+ * Cases:
+ * - the_screen_opens_on_the_overview
+ * - the_overview_shows_no_count_and_no_pressed_face
+ * - the_overview_with_nothing_bound_writes_nothing
+ * - the_overview_with_every_slot_bound_names_every_pin
+ * - the_overview_draws_each_bound_pins_protocol_in_full_ink
+ * - a_pick_and_off_again_go_to_a_protocol_and_back_to_the_overview
+ * - off_shows_the_protocol_of_every_bound_pin
+ * - a_tap_on_a_pin_does_nothing_while_off_is_selected
+ * - off_stays_until_another_entry_is_picked
+ * - a_board_that_answers_during_a_visit_keeps_the_overview
+ * - a_board_swapped_during_a_visit_keeps_the_overview
+ * - off_with_nothing_bound_is_left_by_a_pick
+ * - a_binding_that_did_not_read_is_kept_marked_and_not_edited
+ * - a_failed_read_for_another_board_keeps_no_binding
  *
  * SPDX-License-Identifier: MIT
  */

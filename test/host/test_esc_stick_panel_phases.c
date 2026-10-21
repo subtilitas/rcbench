@@ -1,6 +1,17 @@
-/*
- * ESC STICK's timing page and the drawing of a run: every phase, every end
+/**
+ * @file test_esc_stick_panel_phases.c
+ * @brief ESC STICK's timing page and the drawing of a run: every phase, every end
  * and every refusal, and what a stop or a lost touch takes away.
+ *
+ * Cases:
+ * - timing_steps_the_settings_and_closing_asks_for_a_save
+ * - an_item_steps_from_keep_and_stops_at_its_ends
+ * - every_phase_of_a_run_draws
+ * - every_end_draws_its_reason
+ * - a_run_that_cannot_start_says_why
+ * - pages_step_back_and_leaving_closes_timing
+ * - a_stop_or_a_lost_touch_takes_a_queued_arm_away
+ * - the_screen_passes_the_supplys_own_state
  *
  * SPDX-License-Identifier: MIT
  */

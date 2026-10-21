@@ -1,6 +1,26 @@
-/*
- * The supply screen's drags, the home tag and the supply held by a
+/**
+ * @file test_supply_screen_home.c
+ * @brief The supply screen's drags, the home tag and the supply held by a
  * programming port: what each ends, answers or draws dimmed.
+ *
+ * Cases:
+ * - a_drag_moves_the_set_point_by_the_distance_dragged
+ * - a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip
+ * - a_drag_on_a_live_output_changes_nothing_until_it_is_answered
+ * - the_output_switch_works_under_every_overlay
+ * - a_second_finger_on_a_track_changes_nothing_while_off_is_held
+ * - leaving_drops_the_question_and_the_overlays
+ * - the_home_tag_answers_supplys_question_cancel_first
+ * - the_home_tag_closes_a_set_point_keypad_first
+ * - the_home_tag_closes_a_settings_keypad_then_leaves_settings
+ * - the_home_tag_closes_a_question_over_the_settings_first
+ * - a_drag_the_home_tag_releases_opens_no_question
+ * - a_trip_shows_on_the_mode_card
+ * - a_supply_held_by_a_port_takes_off_and_no_other_press
+ * - a_port_that_takes_the_supply_ends_what_was_under_way
+ * - caps_reach_the_set_points_when_the_port_lets_go
+ * - a_held_supply_is_drawn_dimmed_and_says_who_holds_it
+ * - the_pd_minis_rate_is_shown_after_online
  *
  * SPDX-License-Identifier: MIT
  */

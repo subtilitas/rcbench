@@ -1,6 +1,18 @@
-/*
- * The pin picker's tables and fit: the pins in use, the pins table, every
+/**
+ * @file test_picker_screen_table.c
+ * @brief The pin picker's tables and fit: the pins in use, the pins table, every
  * state inside its canvas, the home tag and the reasons.
+ *
+ * Cases:
+ * - the_in_use_table_lists_every_pin_of_the_fullest_binding
+ * - an_interface_pin_is_held_named_in_use_and_takes_no_tap
+ * - the_fullest_in_use_table_ends_in_a_count_of_the_lines_left_out
+ * - the_pins_table_names_each_pins_channel_and_pad
+ * - every_state_renders_inside_its_canvas
+ * - a_tall_board_is_drawn_to_scale_and_not_stretched
+ * - queries_past_the_end_answer_nothing
+ * - every_reason_ends_left_of_the_board
+ * - the_home_tag_closes_the_pickers_list_first
  *
  * SPDX-License-Identifier: MIT
  */

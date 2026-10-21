@@ -1,7 +1,22 @@
-/*
- * The pin picker's held pins and its OFF state: the programming ports' pins,
+/**
+ * @file test_picker_screen_hold.c
+ * @brief The pin picker's held pins and its OFF state: the programming ports' pins,
  * clear buttons, a full bench, PPM, a reserved pin, and what every visit opens
  * on.
+ *
+ * Cases:
+ * - a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named
+ * - every_visit_opens_on_off_until_a_protocol_is_picked
+ * - a_tap_on_every_key_on_off_writes_nothing
+ * - a_board_that_answers_during_a_visit_keeps_the_picker_on_off
+ * - off_draws_no_pins_table_and_no_pressed_key
+ * - the_programming_ports_pin_is_held_and_named
+ * - the_picker_holds_every_programming_ports_pin
+ * - every_button_is_clear_of_everything_else
+ * - a_full_bench_takes_no_ninth_pin_and_says_why
+ * - ppm_greys_the_board_and_the_reason_says_why
+ * - every_reserved_pin_is_named_and_has_no_button
+ * - switching_the_protocol_keeps_the_pins_and_writes_nothing
  *
  * SPDX-License-Identifier: MIT
  */

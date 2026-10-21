@@ -1,9 +1,24 @@
-/*
- * ESC STICK, the session MOTOR & ESC > PROGRAM opens: that a run starts
+/**
+ * @file test_esc_stick_panel.c
+ * @brief ESC STICK, the session MOTOR & ESC > PROGRAM opens: that a run starts
  * only from the warning held for its two seconds, that it is refused
  * rather than adjusted when the supply cannot give what it needs, and that
  * leaving, ABORT and STOP each end it with the bench let go.  The other
  * cases of the session are in test_esc_stick_panel_*.c.
+ *
+ * Cases:
+ * - a_profile_the_engine_cannot_run_goes_no_further
+ * - no_run_starts_while_the_servo_programmer_holds_a_port
+ * - no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply
+ * - a_bench_that_loses_its_throttle_closes_the_warning
+ * - a_run_needs_a_change_and_the_warning_held_two_seconds
+ * - a_hold_that_is_interrupted_starts_nothing
+ * - a_whole_run_on_the_modelled_bench_stores_and_lets_go
+ * - leaving_abort_and_stop_end_a_run_and_let_go
+ * - leaving_switches_off_a_supply_the_screen_switched_on_after_its_run
+ * - a_run_the_supply_cannot_give_is_refused
+ * - a_voltage_equal_to_the_supplys_cap_or_minimum_runs
+ * - a_profile_at_the_supplys_cap_opens_from_the_list
  *
  * SPDX-License-Identifier: MIT
  */

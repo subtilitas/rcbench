@@ -1,8 +1,15 @@
-/*
- * The supply screen's cases as test_supply_screen.c and
+/**
+ * @file supply_screen_rig.h
+ * @brief The supply screen's cases as test_supply_screen.c and
  * test_supply_screen_*.c share them.
  *
  * Only static inline helpers and the buffers and counters they use.
+ *
+ * Used by:
+ * - test_supply_screen.c
+ * - test_supply_screen_tasks.c
+ * - test_supply_screen_home.c
+ * - test_supply_screen_draw.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,12 +41,14 @@ static gfx_canvas_t cv __attribute__((unused));
 static gfx_canvas_t cv2 __attribute__((unused));
 static const ui_screen_t *scr __attribute__((unused));
 
+/** @brief Takes every queued supply command. */
 static inline void drain(void)
 {
     supply_cmd_t junk;
     while (supply_screen_poll_cmd(&junk)) { }
 }
 
+/** @brief Clears both canvases and resets the settings and the supply screen. */
 static inline void fresh(void)
 {
     if (fb == NULL) {
@@ -61,6 +70,7 @@ static inline void fresh(void)
     drain();
 }
 
+/** @brief Hands the screen one touch event of contact @p id at (@p x, @p y). */
 static inline void ev(int x, int y, touch_event_type_t t, uint8_t id)
 {
     const touch_event_t e = { .type = t,
@@ -68,6 +78,7 @@ static inline void ev(int x, int y, touch_event_type_t t, uint8_t id)
                                          .y = (int16_t)y, .strength = 40 } };
     scr->event(&e);
 }
+/** @brief Presses and releases contact 1 at (@p x, @p y). */
 static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
@@ -116,6 +127,7 @@ static inline supply_state_t reading(float v, float i);
 #define TICK_S     0.05f
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
 
+/** @brief Ticks the screen @p steps times at TICK_S. */
 static inline void tick_for(int steps)
 {
     for (int i = 0; i < steps; ++i) {
@@ -123,7 +135,7 @@ static inline void tick_for(int steps)
     }
 }
 
-/* A key of the keypad, where the screen opens it: over the left column. */
+/** @brief A key of the keypad, where the screen opens it: over the left column. */
 static inline void key(ui_key_t k)
 {
     ui_keypad_t probe;
@@ -134,6 +146,7 @@ static inline void key(ui_key_t k)
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
 
+/** @brief Types @p text on the keypad, digits and a dot, then OK. */
 static inline void keys(const char *text)
 {
     static const ui_key_t digit[10] = {
@@ -146,6 +159,7 @@ static inline void keys(const char *text)
     key(UI_KEY_OK);
 }
 
+/** @brief Holds OUTPUT ON for the hold time plus 5 ticks, then releases. */
 static inline void hold_on(void)
 {
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
@@ -153,7 +167,7 @@ static inline void hold_on(void)
     ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
 }
 
-/* Pixels that differ in the header, right of the task strip, y 0..33,
+/** @brief Pixels that differ in the header, right of the task strip, y 0..33,
  * between the two buffers. */
 static inline int header_differs(void)
 {
@@ -168,6 +182,7 @@ static inline int header_differs(void)
 
 /* ------------------------------------------------------------------ plot */
 
+/** @brief A supply state of @p v volts and @p i amps. */
 static inline supply_state_t reading(float v, float i)
 {
     supply_state_t st;

@@ -1,8 +1,14 @@
-/*
- * The pin picker's cases as test_picker_screen.c and
+/**
+ * @file picker_screen_rig.h
+ * @brief The pin picker's cases as test_picker_screen.c and
  * test_picker_screen_*.c share them.
  *
  * Only static inline helpers and the buffers and counters they use.
+ *
+ * Used by:
+ * - test_picker_screen.c
+ * - test_picker_screen_hold.c
+ * - test_picker_screen_table.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,19 +41,23 @@ static gfx_color_t s_px[800 * 432] __attribute__((unused));
 extern const uint8_t  board_drawing_rp2350_can[] __attribute__((unused));
 extern const uint32_t board_drawing_rp2350_can_bytes __attribute__((unused));
 
-/* Show the served drawing; whether the picker took it. */
+/** @brief Show the served drawing; whether the picker took it. */
 static inline bool serve_drawing(void)
 {
     return picker_screen_set_drawing(board_drawing_rp2350_can,
                                      board_drawing_rp2350_can_bytes, NULL);
 }
 
+/** @brief Apply seam: counts the call and keeps the binding it was given. */
 static inline void on_apply(const outbind_t *b) { ++s_applied; s_last = *b; }
 
+/** @brief The pin picker under test. */
 static inline const ui_screen_t *scr(void) { return picker_screen(); }
 
+/** @brief Index of @p gpio on the board the cases use. */
 static inline uint8_t idx(uint8_t gpio) { return outbind_index_of(BOARD, gpio); }
 
+/** @brief Resets the picker and the apply seam, binds the board with SERVO PWM picked and opens the visit. */
 static inline void fresh(void)
 {
     ui_theme_set(UI_THEME_DARK);
@@ -66,6 +76,7 @@ static inline void fresh(void)
     picker_screen_follow(1u, true);
 }
 
+/** @brief Renders the picker onto the case's pixel buffer. */
 static inline void render(void)
 {
     gfx_canvas_t c = { s_px, SCREEN_W, SCREEN_H, SCREEN_W,
@@ -73,8 +84,8 @@ static inline void render(void)
     scr()->render(&c, 0);
 }
 
-/*
- * Where the screen puts a pad, worked out the way the screen does: from the
+/**
+ * @brief Where the screen puts a pad, worked out the way the screen does: from the
  * board's own shape. A test that repeated the arithmetic would pass with the
  * screen's copy of it wrong in the same way.
  */
@@ -100,6 +111,7 @@ static inline bool pad_point_on(uint16_t board, uint8_t gpio, int *x, int *y)
 
 /* ------------------------------------------------ the settled design */
 
+/** @brief Presses and releases at (@p x, @p y). */
 static inline void tap(int x, int y)
 {
     touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)x, (int16_t)y, 40 }, 0u };
@@ -108,9 +120,10 @@ static inline void tap(int x, int y)
     scr()->event(&u);
 }
 
+/** @brief Taps the centre of @p r. */
 static inline void tap_rect(gfx_rect_t r) { tap(r.x + r.w / 2, r.y + r.h / 2); }
 
-/* By name, so an entry added to the catalogue does not retarget a test. */
+/** @brief By name, so an entry added to the catalogue does not retarget a test. */
 static inline uint8_t proto_named(const char *name)
 {
     const outbind_proto_t *k = outbind_protos();
@@ -121,7 +134,7 @@ static inline uint8_t proto_named(const char *name)
     return 0u;
 }
 
-/* A pick in the screen's own list: the face, then the row. */
+/** @brief A pick in the screen's own list: the face, then the row. */
 static inline void pick(const char *name)
 {
     tap_rect(picker_screen_list_face());
@@ -130,7 +143,7 @@ static inline void pick(const char *name)
     CHECK(!picker_screen_list_open());
 }
 
-/* Pose the screen with @p gpios bound to @p proto, on top of what it holds. */
+/** @brief Pose the screen with @p gpios bound to @p proto, on top of what it holds. */
 static inline void bind_more(const char *proto, const uint8_t *gpios, unsigned n,
                       const char *selected)
 {
@@ -145,6 +158,7 @@ static inline void bind_more(const char *proto, const uint8_t *gpios, unsigned n
     picker_screen_set_binding(&b);
 }
 
+/** @brief The reason line the picker gives, in a static buffer. */
 static inline const char *reason(void)
 {
     static char buf[64];
@@ -152,6 +166,7 @@ static inline const char *reason(void)
     return buf;
 }
 
+/** @brief The count line the picker gives, in a static buffer. */
 static inline const char *count(void)
 {
     static char buf[64];
@@ -159,6 +174,7 @@ static inline const char *count(void)
     return buf;
 }
 
+/** @brief True when the rectangles @p a and @p b share a pixel. */
 static inline bool overlap(gfx_rect_t a, gfx_rect_t b)
 {
     return a.x < b.x + b.w && b.x < a.x + a.w

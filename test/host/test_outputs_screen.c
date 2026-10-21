@@ -1,5 +1,6 @@
-/*
- * The outputs screen: a protocol list that opens, and a pin grid that ticks.
+/**
+ * @file test_outputs_screen.c
+ * @brief The outputs screen: a protocol list that opens, and a pin grid that ticks.
  *
  * The screen owns no rules -- out_bind does -- so what is under test here is
  * the touching: that a press and a release on the same thing acts once, that
@@ -7,6 +8,23 @@
  * without choosing, and that a refused pin does not reach the apply seam.
  * The last one matters most: the application writes the wire from that seam,
  * so a call it should not have received is a page write nobody asked for.
+ *
+ * Cases:
+ * - a_pick_calls_the_apply_seam_for_no_entry
+ * - the_protocol_list_opens_and_a_choice_closes_it
+ * - an_open_list_can_be_left_without_choosing
+ * - the_home_tag_closes_the_open_list_first
+ * - a_release_away_from_the_press_does_nothing
+ * - ticking_a_pin_applies_once_and_unticking_applies_again
+ * - a_reserved_pin_never_reaches_the_apply_seam
+ * - a_pin_too_many_does_not_apply
+ * - the_programming_ports_pin_is_taken_and_takes_no_tick
+ * - an_interface_pin_is_taken_named_and_takes_no_tick
+ * - a_pwm_pin_on_the_programming_ports_slice_is_not_offered
+ * - a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered
+ * - nothing_can_be_ticked_while_the_protocol_is_off
+ * - a_cancelled_press_applies_nothing
+ * - a_release_the_tracker_makes_for_a_jump_picks_nothing
  *
  * SPDX-License-Identifier: MIT
  */

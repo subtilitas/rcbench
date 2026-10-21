@@ -1,6 +1,13 @@
-/*
- * The outputs screen's PROG PORT entries: one per port reported, the pin a
+/**
+ * @file test_outputs_screen_port.c
+ * @brief The outputs screen's PROG PORT entries: one per port reported, the pin a
  * port lights and the tester it sets.
+ *
+ * Cases:
+ * - the_list_ends_in_one_prog_port_entry_per_port_reported
+ * - a_prog_port_entry_lights_its_pin_and_takes_no_tick
+ * - the_next_entry_opens_on_the_entry_asked_for_once
+ * - the_port_segments_set_the_tester_and_say_why_they_are_locked
  *
  * SPDX-License-Identifier: MIT
  */

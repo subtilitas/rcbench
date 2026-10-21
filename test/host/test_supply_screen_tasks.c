@@ -1,6 +1,27 @@
-/*
- * The supply screen's task strip, its settings page and its question: the
+/**
+ * @file test_supply_screen_tasks.c
+ * @brief The supply screen's task strip, its settings page and its question: the
  * caps and the start values, a change to a live output, and the keypads.
+ *
+ * Cases:
+ * - the_strip_switches_the_task_and_a_tile_opens_live
+ * - a_release_the_finger_did_not_make_switches_no_task
+ * - a_tab_switch_takes_the_keypad_with_it
+ * - a_question_on_settings_holds_the_strip_until_answered
+ * - a_second_finger_on_the_strip_switches_nothing_while_off_is_held
+ * - the_source_line_stays_in_sight_on_every_task
+ * - the_settings_page_sets_a_cap_the_set_points_obey
+ * - a_lowered_cap_brings_the_set_point_and_the_start_down
+ * - a_switch_in_the_settings_flips_on_a_tap
+ * - a_start_value_read_over_its_cap_is_corrected_and_kept
+ * - the_page_tells_an_unsaved_setup_change_from_a_waiting_save
+ * - the_set_points_start_at_the_start_values
+ * - a_card_or_a_value_opens_the_keypad_for_its_set_point
+ * - a_change_to_a_live_output_waits_for_the_question
+ * - an_on_asked_for_counts_as_live_before_it_is_seen
+ * - an_on_dropped_on_its_way_stops_counting_as_live
+ * - the_question_closes_when_the_output_goes_off
+ * - each_question_is_switched_on_its_own
  *
  * SPDX-License-Identifier: MIT
  */

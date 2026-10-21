@@ -1,6 +1,18 @@
-/*
- * ESC STICK's touch rules: a control acts on a tap and on nothing less,
+/**
+ * @file test_esc_stick_panel_touch.c
+ * @brief ESC STICK's touch rules: a control acts on a tap and on nothing less,
  * ABORT acts on the press, and a second finger presses nothing.
+ *
+ * Cases:
+ * - a_control_acts_on_a_tap_and_on_nothing_less
+ * - defaults_needs_a_tap
+ * - a_second_finger_presses_nothing_on_the_programmer
+ * - a_press_whose_control_changes_under_it_is_no_tap
+ * - abort_acts_on_the_press
+ * - abort_is_named_to_the_host_while_a_run_is_under_way
+ * - a_manual_step_takes_done_as_a_tap_and_abort_on_the_press
+ * - hold_to_run_keeps_its_two_seconds
+ * - a_stick_control_released_for_the_finger_is_not_pressed
  *
  * SPDX-License-Identifier: MIT
  */

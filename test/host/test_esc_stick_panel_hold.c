@@ -1,6 +1,15 @@
-/*
- * ESC STICK's pre-power steps and the run page: the hold that needs every
+/**
+ * @file test_esc_stick_panel_hold.c
+ * @brief ESC STICK's pre-power steps and the run page: the hold that needs every
  * step read, the steps after programming and the phase tap.
+ *
+ * Cases:
+ * - the_model_tapped_is_the_one_judged
+ * - the_page_shows_the_entry_the_run_waits
+ * - the_hold_needs_every_pre_power_step_read
+ * - every_step_after_programming_is_shown
+ * - no_step_at_the_esc_while_the_supply_reads_live
+ * - the_run_page_shows_the_phase_tap_while_it_is_enabled
  *
  * SPDX-License-Identifier: MIT
  */

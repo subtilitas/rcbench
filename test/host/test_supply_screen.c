@@ -1,10 +1,40 @@
-/*
- * What the supply screen decides: the switch's hold and tap, the set points
+/**
+ * @file test_supply_screen.c
+ * @brief What the supply screen decides: the switch's hold and tap, the set points
  * and their snapping, and what a stop, a touch loss and a leave leave
  * behind.  The task strip, the settings, the home tag and the redraws are in
  * test_supply_screen_*.c.
  *
  * Not what it looks like; that is the golden image's job.
+ *
+ * Cases:
+ * - the_output_comes_on_with_a_hold_and_only_once
+ * - a_short_press_on_output_on_does_nothing
+ * - a_finger_that_leaves_the_switch_switches_nothing
+ * - the_output_goes_off_with_a_tap
+ * - the_release_that_ends_the_hold_does_not_switch_off
+ * - an_off_outranks_an_on_in_the_same_poll
+ * - a_second_contact_cannot_steal_the_release
+ * - a_second_contact_on_another_button_cannot_steal_the_off
+ * - a_stop_abandons_the_hold_and_drops_a_posted_on
+ * - a_stop_while_the_output_reports_off_strands_no_press
+ * - a_touch_loss_drops_an_on_and_keeps_an_off
+ * - leaving_under_a_press_on_output_off_sends_the_off
+ * - leaving_keeps_an_output_it_did_not_switch_on_and_drops_the_hold
+ * - leaving_switches_off_the_output_this_screen_switched_on
+ * - the_overlays_of_supply_are_no_leave
+ * - a_leave_switches_off_only_the_screens_own_output
+ * - an_output_nobody_asked_for_is_claimed_once
+ * - an_off_owed_under_a_held_port_goes_when_the_port_lets_go
+ * - a_stale_off_report_does_not_drop_the_owner_of_an_on_on_its_way
+ * - a_dropped_hold_releases_the_owner_so_a_later_claim_works
+ * - a_dropped_hold_keeps_the_owner_of_an_on_already_taken
+ * - an_on_taken_before_the_port_held_is_owed_its_off
+ * - an_output_being_switched_off_is_not_claimed
+ * - reset_peaks_posts_its_own_command
+ * - the_fine_steps_move_a_set_point_by_a_tenth
+ * - a_tap_on_a_track_sets_a_value_the_supply_takes
+ * - new_caps_pull_the_set_points_into_range
  *
  * SPDX-License-Identifier: MIT
  */

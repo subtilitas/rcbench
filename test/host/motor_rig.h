@@ -1,7 +1,13 @@
-/*
- * The bench screen's cases as test_motor.c and test_motor_*.c share them.
+/**
+ * @file motor_rig.h
+ * @brief The bench screen's cases as test_motor.c and test_motor_*.c share them.
  *
  * Only static inline helpers and the buffers and counters they use.
+ *
+ * Used by:
+ * - test_motor.c
+ * - test_motor_draw.c
+ * - test_motor_throttle.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -29,6 +35,7 @@ static gfx_color_t *fb __attribute__((unused));
 static gfx_canvas_t cv __attribute__((unused));
 static const ui_screen_t *scr __attribute__((unused));
 
+/** @brief Clears the canvas and resets the bench screen and its queued commands. */
 static inline void fresh(void)
 {
     if (fb == NULL) {
@@ -44,7 +51,7 @@ static inline void fresh(void)
     while (motor_screen_poll_cmd(&junk)) { }
 }
 
-/* Screen coordinates: the router strips the band before the screen sees an
+/** @brief Screen coordinates: the router strips the band before the screen sees an
  * event, so these are already screen-local. */
 static inline void ev(int x, int y, touch_event_type_t t, uint8_t id)
 {
@@ -53,6 +60,7 @@ static inline void ev(int x, int y, touch_event_type_t t, uint8_t id)
                                          .y = (int16_t)y, .strength = 40 } };
     scr->event(&e);
 }
+/** @brief Presses and releases contact 1 at (@p x, @p y). */
 static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
@@ -87,6 +95,7 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
  * either constant does not silently stop these tests from arming. */
 #define HOLD_TICKS  ((int)(ARM_HOLD_S / TICK_S) + 5)
 
+/** @brief Ticks the screen @p steps times at TICK_S. */
 static inline void tick_for(int steps)
 {
     for (int i = 0; i < steps; ++i) {
@@ -94,7 +103,7 @@ static inline void tick_for(int steps)
     }
 }
 
-/* Hold ARM long enough to arm, and let go. */
+/** @brief Hold ARM long enough to arm, and let go. */
 static inline void hold_arm(void)
 {
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
@@ -102,13 +111,15 @@ static inline void hold_arm(void)
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
 }
 
-/*
- * RGB565 components, for comparing a button's fill without pinning it.
+/**
+ * @brief RGB565 components, for comparing a button's fill without pinning it.
  * Scaled to 8 bits, because red carries 5 bits and green 6 and the raw
  * fields are not comparable with each other.
  */
 static inline int red_of(gfx_color_t c)   { return (int)(((c >> 11) & 0x1f) << 3); }
+/** @brief The 8-bit green of an RGB565 pixel. */
 static inline int green_of(gfx_color_t c) { return (int)(((c >> 5) & 0x3f) << 2); }
+/** @brief The pixel inside the ARM button, clear of its corner, hairline and label. */
 static inline gfx_color_t arm_px(void)
 {
     /* Inside the ARM button, clear of its rounded corner, its hairline and
@@ -116,6 +127,7 @@ static inline gfx_color_t arm_px(void)
     return fb[(size_t)(ARM_Y + 8) * W + (ARM_X - 90)];
 }
 
+/** @brief Takes every queued motor command and returns the last; MOTOR_CMD_NONE when none was queued. */
 static inline motor_cmd_t last_cmd(void)
 {
     motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };

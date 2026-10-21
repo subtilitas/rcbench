@@ -1,5 +1,6 @@
-/*
- * What the bench screen decides: hit regions, the commands it produces, and
+/**
+ * @file test_motor.c
+ * @brief What the bench screen decides: hit regions, the commands it produces, and
  * the two rules that keep a tap from spinning something.
  *
  * This suite holds the ARM hold and its gestures, the throttle track, the knob
@@ -7,6 +8,46 @@
  * in test_motor_*.c.
  *
  * Not what it looks like; that is the golden image's job.
+ *
+ * Cases:
+ * - a_finger_that_leaves_arm_arms_nothing
+ * - a_finger_that_comes_back_has_to_be_lifted_first
+ * - a_hold_that_stays_put_still_arms_exactly_once
+ * - a_press_that_disarmed_the_bench_does_not_then_arm_it
+ * - a_press_that_wandered_off_does_not_arm_when_the_bench_disarms
+ * - a_throttle_drag_is_not_an_arming_gesture
+ * - arming_and_disarming_come_from_the_same_button
+ * - a_press_that_slides_off_arm_does_nothing
+ * - a_second_contact_cannot_steal_the_disarm_release
+ * - a_stop_abandons_a_hold_that_is_under_way
+ * - a_cancelled_hold_leaves_no_arm_to_be_read_later
+ * - leaving_under_a_held_arm_does_not_strand_the_button
+ * - a_second_contact_cannot_take_over_the_arm_hold
+ * - a_short_press_on_arm_does_nothing
+ * - arming_flashes_the_whole_button
+ * - a_pending_disarm_cannot_be_overwritten_by_an_arm
+ * - the_disarm_latch_clears_when_it_is_read
+ * - the_nudges_step_the_throttle_by_one_point
+ * - the_rated_kv_prefers_the_esc_over_the_entered_value
+ * - the_throttle_track_moves_by_how_far_it_is_dragged
+ * - the_knob_moves_the_throttle_by_how_far_it_turned
+ * - the_knob_stops_at_the_ends_of_the_throttle
+ * - a_knob_that_does_not_turn_commands_nothing
+ * - the_knob_never_arms
+ * - a_finger_on_the_throttle_track_owns_it_against_the_knob
+ * - a_finger_that_lifted_in_the_frame_still_owned_the_slider
+ * - a_touch_off_the_slider_leaves_it_to_the_knob
+ * - a_withdrawn_knob_command_restores_the_throttle
+ * - a_withdrawn_knob_command_leaves_a_throttle_from_a_touch
+ * - a_withdrawal_does_not_touch_a_command_posted_after_the_knob
+ * - a_posted_disarm_is_not_overwritten_by_the_knob
+ * - a_completed_arm_is_not_overwritten_by_the_knob
+ * - a_pending_peak_reset_is_not_overwritten_by_the_knob
+ * - the_knob_goes_on_from_zero_after_a_disarm
+ * - reset_peaks_posts_its_own_command
+ * - a_peak_outlasts_the_reading_that_went
+ * - leaving_the_screen_disarms
+ * - dragging_the_throttle_leaves_no_stale_pixels
  *
  * SPDX-License-Identifier: MIT
  */

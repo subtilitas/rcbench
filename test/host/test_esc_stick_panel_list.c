@@ -1,6 +1,18 @@
-/*
- * ESC STICK's profile list: what it offers for a voltage and a cap, the
+/**
+ * @file test_esc_stick_panel_list.c
+ * @brief ESC STICK's profile list: what it offers for a voltage and a cap, the
  * search and its keys, and the header at the registry's most.
+ *
+ * Cases:
+ * - reset_and_exit_rows_offer_no_value
+ * - the_list_follows_voltage_and_the_cap
+ * - a_profile_over_the_supply_cap_is_refused_in_the_list
+ * - the_search_filters_the_list_with_every_key
+ * - ok_keeps_the_search_cancel_restores_it_and_empty_clears_it
+ * - a_lost_touch_drops_a_search_key_under_way
+ * - the_header_fits_at_the_registrys_most
+ * - a_voltage_over_the_escs_rating_is_refused
+ * - the_page_offers_only_the_models_items
  *
  * SPDX-License-Identifier: MIT
  */

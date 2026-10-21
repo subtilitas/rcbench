@@ -1,10 +1,21 @@
-/*
- * ESC STICK's cases as test_esc_stick_panel.c and test_esc_stick_panel_*.c
+/**
+ * @file esc_stick_panel_rig.h
+ * @brief ESC STICK's cases as test_esc_stick_panel.c and test_esc_stick_panel_*.c
  * share them: the places of the list, the timing page and the hold, a press
  * and a hold, the maker and model openers and the modelled bench's steps,
  * on top of stick_rig.h.
  *
  * Only static inline helpers and the buffers and counters they use.
+ *
+ * Used by:
+ * - test_esc_stick_panel.c
+ * - test_esc_stick_panel_phases.c
+ * - test_esc_stick_panel_list.c
+ * - test_esc_stick_panel_steps.c
+ * - test_esc_stick_panel_makers.c
+ * - test_esc_stick_panel_hold.c
+ * - test_esc_stick_panel_touch.c
+ * - test_esc_stick_panel_home.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -46,6 +57,7 @@
 #define CANCEL_X     684
 #define HOLD_ID      7
 
+/** @brief Hands the screen one touch event of the hold's finger at (@p x, @p y). */
 static inline void press(touch_event_type_t type, int x, int y)
 {
     touch_event_t e = { .type = type,
@@ -54,6 +66,7 @@ static inline void press(touch_event_type_t type, int x, int y)
     scr->event(&e);
 }
 
+/** @brief Holds the warning's button for @p seconds seconds in 0.25 s ticks. */
 static inline void hold_for(float seconds)
 {
     press(TOUCH_EVENT_DOWN, HOLD_X, HOLD_Y);
@@ -63,7 +76,7 @@ static inline void hold_for(float seconds)
     press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
 }
 
-/* The supply reading off for 300 ms: its own state off, the current at
+/** @brief The supply reading off for 300 ms: its own state off, the current at
  * 0, as the warning needs before it asks for a step at the ESC. */
 static inline void supply_reads_off(void)
 {
@@ -82,7 +95,7 @@ static inline void supply_reads_off(void)
     scr->tick(0.02f);
 }
 
-/* @p a and @p b alike with case folded, as the list groups makers. */
+/** @brief @p a and @p b alike with case folded, as the list groups makers. */
 static inline bool same_name(const char *a, const char *b)
 {
     for (;; ++a, ++b) {
@@ -98,7 +111,7 @@ static inline bool same_name(const char *a, const char *b)
     }
 }
 
-/* Tap row @p at of the level showing, paging to it first. */
+/** @brief Tap row @p at of the level showing, paging to it first. */
 static inline void tap_listed(int at)
 {
     int top = 0;
@@ -114,7 +127,7 @@ static inline void tap_listed(int at)
     tap(ROW_CX, SP_ROW_CY(at - top));
 }
 
-/* On the makers: open the one named @p name. */
+/** @brief On the makers: open the one named @p name. */
 static inline void open_maker(const char *name)
 {
     for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
@@ -127,7 +140,7 @@ static inline void open_maker(const char *name)
     T_FAIL("no maker %s listed", name);
 }
 
-/* On a maker's models: open the first of profile @p id, or the one named
+/** @brief On a maker's models: open the first of profile @p id, or the one named
  * @p model. */
 static inline void open_model(const char *id, const char *model)
 {
@@ -144,7 +157,7 @@ static inline void open_model(const char *id, const char *model)
     T_FAIL("no model of %s listed", id);
 }
 
-/* The stick class, the profile's maker, and the profile's first model. */
+/** @brief The stick class, the profile's maker, and the profile's first model. */
 static inline void open_profile(const char *id)
 {
     esc_stick_panel_bench(0u, false, 0u, 0u, false);
@@ -158,19 +171,20 @@ static inline void open_profile(const char *id)
     open_model(id, NULL);
 }
 
-/* The stick class, then hobbywing-flyfun-8item. */
+/** @brief The stick class, then hobbywing-flyfun-8item. */
 static inline void descend_to_hobbywing(void)
 {
     open_profile("hobbywing-flyfun-8item");
 }
 
-/* Cutoff mode (item 3) to hard cutoff, its second value. */
+/** @brief Cutoff mode (item 3) to hard cutoff, its second value. */
 static inline void pick_cutoff(void)
 {
     tap(STEP_UP_X, STEP_CY(2));
     tap(STEP_UP_X, STEP_CY(2));
 }
 
+/** @brief Takes every queued motor command and returns how many are of kind @p want. */
 static inline int drain_cmds(motor_cmd_kind_t want)
 {
     int n = 0;
@@ -202,6 +216,7 @@ typedef struct {
                                  confirmed (before_power_off) */
 } rig_t;
 
+/** @brief One step of the modelled bench: applies the motor and supply commands the panel posted and moves the supply's flags. */
 static inline void rig_step(rig_t *r)
 {
     motor_cmd_t mc;
@@ -268,6 +283,7 @@ static inline void rig_step(rig_t *r)
     r->now++;
 }
 
+/** @brief Resets the rig and starts a simulated ESC that waits for a hand step. */
 static inline void rig_start(rig_t *r)
 {
     memset(r, 0, sizeof(*r));
@@ -278,6 +294,7 @@ static inline void rig_start(rig_t *r)
     esc_sim_init(&r->sim, esc_stick_panel_stick()->p, &c);
 }
 
+/** @brief Steps the rig for @p ms ms or until the run ends, then five steps more to take what the end asked for. */
 static inline void rig_run(rig_t *r, uint32_t ms)
 {
     for (uint32_t i = 0; i < ms && esc_stick_running(esc_stick_panel_stick());
@@ -298,7 +315,7 @@ static inline void rig_run(rig_t *r, uint32_t ms)
 #define FIND_Y     45
 static const gfx_rect_t k_dock __attribute__((unused)) = { 352, 68, 442, 358 };
 
-/* One key of the docked search keyboard; "\n" is OK, "~" CANCEL, "<" DEL,
+/** @brief One key of the docked search keyboard; "\n" is OK, "~" CANCEL, "<" DEL,
  * "#" CLR. */
 static inline void find_key(char ch)
 {
@@ -317,6 +334,7 @@ static inline void find_key(char ch)
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
 
+/** @brief Types each character of @p s on the search keyboard. */
 static inline void find_type(const char *s)
 {
     for (; *s != '\0'; ++s) {
@@ -324,6 +342,7 @@ static inline void find_type(const char *s)
     }
 }
 
+/** @brief Number of rows the list shows. */
 static inline int listed(void)
 {
     return esc_stick_panel_listed(NULL);
@@ -335,13 +354,14 @@ static inline int listed(void)
 #define HAND_X 264
 #define HAND_Y 124
 
-/* The stick class, page two, row five: kontronik-jazz, the fifth of the
+/** @brief The stick class, page two, row five: kontronik-jazz, the fifth of the
  * Kontronik profiles that run. */
 static inline void descend_to_jazz(void)
 {
     open_profile("kontronik-jazz");
 }
 
+/** @brief Renders the screen onto a cleared canvas and checks that it lit more than 20,000 pixels. */
 static inline void draws(void)
 {
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
@@ -349,7 +369,7 @@ static inline void draws(void)
     CHECK(lit() > 20000);
 }
 
-/* Everything the screen shows and every setting, as one number: two looks
+/** @brief Everything the screen shows and every setting, as one number: two looks
  * that agree say nothing happened in between. */
 static inline uint32_t look(void)
 {
@@ -379,6 +399,7 @@ static inline uint32_t look(void)
     }
     return h;
 }
+/** @brief Opens the session on the makers list with the bench reporting nothing. */
 static inline void at_makers(void)
 {
     fresh();
@@ -387,6 +408,7 @@ static inline void at_makers(void)
 }
 /* Hobbywing's models; s_model_y is the row of the first that runs. */
 static int s_model_y __attribute__((unused));
+/** @brief Opens the Hobbywing maker's models list and notes the y of a model row in s_model_y. */
 static inline void at_models(void)
 {
     at_makers();
@@ -401,22 +423,29 @@ static inline void at_models(void)
         }
     }
 }
+/** @brief Opens the makers list and enters the search HOB. */
 static inline void at_searched(void)
 {
     at_makers();
     tap(FIND_X, FIND_Y);
     find_type("HOB\n");
 }
+/** @brief Opens the session on Hobbywing's items page. */
 static inline void at_items(void)     { fresh(); descend_to_hobbywing(); }
+/** @brief As at_items(), with the cutoff item picked. */
 static inline void at_picked(void)    { at_items(); pick_cutoff(); }
+/** @brief As at_picked(), with WRITE tapped: the warning shows. */
 static inline void at_warning(void)   { at_picked(); tap(WRITE_X, BTN_CY); }
+/** @brief Opens the items page's timing page and steps BEEP MIN off its default. */
 static inline void at_timing(void)
 {
     at_items();
     tap(TIMING_X, TIMING_Y);
     tap(STEP_UP_X, STEP_CY(2));              /* BEEP MIN off its default */
 }
+/** @brief Opens the session on the Jazz steps page. */
 static inline void at_steps(void)     { fresh(); descend_to_jazz(); }
+/** @brief Holds the warning for 2.25 s, then taps ABORT: the result shows. */
 static inline void at_result(void)
 {
     at_warning();

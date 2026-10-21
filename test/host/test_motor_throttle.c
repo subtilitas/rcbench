@@ -1,8 +1,33 @@
-/*
- * The bench screen's throttle at an arm and its TARGET row: every arm starts
+/**
+ * @file test_motor_throttle.c
+ * @brief The bench screen's throttle at an arm and its TARGET row: every arm starts
  * from zero, no command or drag outlives the disarm, and the row names the
  * protocol and the pins, counts them, takes its colour from its state and
  * redraws when they change.
+ *
+ * Cases:
+ * - arming_returns_the_throttle_to_zero
+ * - arming_returns_every_throttle_to_zero
+ * - the_readout_after_an_arm_is_that_of_an_untouched_screen
+ * - the_hold_that_asks_for_the_arm_returns_the_throttle_to_zero
+ * - a_throttle_set_after_the_ask_stays_when_the_bench_answers
+ * - an_arm_after_a_dropped_ask_returns_the_throttle_to_zero
+ * - every_ask_returns_the_throttle_to_zero
+ * - a_hold_that_does_not_arm_leaves_the_throttle_alone
+ * - a_throttle_waiting_at_the_disarm_is_dropped
+ * - a_knob_command_waiting_at_the_disarm_is_not_put_back
+ * - an_armed_report_repeated_keeps_the_throttle
+ * - a_press_on_the_disarmed_track_is_no_drag_after_the_arm
+ * - a_drag_under_way_ends_at_the_disarm
+ * - every_arm_starts_from_zero
+ * - the_target_row_names_the_protocol_and_the_pins
+ * - many_throttle_pins_end_in_a_count_within_the_box
+ * - the_target_row_texts_fit_the_box
+ * - no_throttle_pin_and_an_unread_binding_are_warnings
+ * - the_target_row_is_drawn_in_the_colour_of_its_state
+ * - a_new_protocol_or_pin_set_redraws_the_row_and_a_throttle_keeps_it
+ * - a_binding_that_reads_with_no_motor_pin_leaves_not_read
+ * - a_changed_pin_set_redraws_the_controls_and_an_unchanged_one_does_not
  *
  * SPDX-License-Identifier: MIT
  */

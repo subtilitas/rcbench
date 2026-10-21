@@ -1,6 +1,23 @@
-/*
- * The outputs screen's rendering, its read-back of the binding, a change of
+/**
+ * @file test_outputs_screen_draw.c
+ * @brief The outputs screen's rendering, its read-back of the binding, a change of
  * board, and the fit of its strings.
+ *
+ * Cases:
+ * - the_longest_protocol_name_fits_the_list_and_a_cell
+ * - a_selection_from_the_picker_is_a_pick
+ * - an_empty_read_back_does_not_clear_the_chosen_protocol
+ * - a_protocol_named_from_outside_lands_over_the_one_on_screen
+ * - a_second_protocol_survives_the_read_back
+ * - a_change_of_board_takes_the_protocol_with_it
+ * - a_pick_made_for_one_board_is_not_carried_to_another
+ * - every_state_renders_without_reading_off_the_canvas
+ * - a_board_that_can_take_nothing_says_why
+ * - a_protocol_that_has_all_its_pins_says_so
+ * - the_binding_survives_being_set_from_outside
+ * - a_protocol_index_from_outside_cannot_run_off_the_table
+ * - null_events_are_refused_rather_than_dereferenced
+ * - every_two_line_string_of_the_column_breaks_into_two
  *
  * SPDX-License-Identifier: MIT
  */

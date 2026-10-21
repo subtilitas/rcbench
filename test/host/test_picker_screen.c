@@ -1,5 +1,6 @@
-/*
- * The pin picker: a board with a button on every pin an output may have.
+/**
+ * @file test_picker_screen.c
+ * @brief The pin picker: a board with a button on every pin an output may have.
  *
  * The screen owns no rules -- out_bind does -- so what is under test is the
  * touching and the geometry. The geometry is the part that can be wrong in a
@@ -12,6 +13,29 @@
  * This suite holds the buttons, the drawing, the ground marks and the follow of
  * the protocol.  The held pins, OFF, the tables and the fit are in
  * test_picker_screen_*.c.
+ *
+ * Cases:
+ * - an_unconfirmed_binding_takes_no_tap
+ * - the_picker_follows_the_protocol_chosen_on_the_outputs_screen
+ * - a_button_binds_the_pad_it_is_wired_to
+ * - every_button_binds_its_own_pin_and_no_other
+ * - a_reserved_pin_has_no_button_to_press
+ * - a_pin_another_protocol_holds_is_not_this_ones_to_take
+ * - a_release_somewhere_else_acts_not_at_all
+ * - a_board_that_does_not_say_where_its_pads_are_is_not_drawn
+ * - the_coprocessors_drawing_is_used_when_it_agrees_with_the_board
+ * - the_buttons_are_where_they_are_with_and_without_the_drawing
+ * - a_drawing_that_disagrees_or_does_not_parse_is_not_shown
+ * - a_drawing_is_shown_for_its_own_board_only
+ * - the_tables_beside_the_board_say_what_the_pins_became
+ * - the_drawing_is_asked_for_on_the_way_in
+ * - a_binding_for_another_board_asks_for_its_drawing
+ * - a_ground_is_marked_and_is_not_a_button
+ * - a_board_that_does_not_say_which_pads_are_ground_still_draws
+ * - the_marks_do_not_get_in_the_way_of_the_buttons
+ * - null_events_are_refused_rather_than_dereferenced
+ * - a_cancelled_press_toggles_nothing
+ * - a_release_the_tracker_makes_for_a_jump_binds_nothing
  *
  * SPDX-License-Identifier: MIT
  */

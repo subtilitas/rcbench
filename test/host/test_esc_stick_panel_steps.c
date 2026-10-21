@@ -1,6 +1,18 @@
-/*
- * ESC STICK's stack light and manual steps: the green light, the prompt
+/**
+ * @file test_esc_stick_panel_steps.c
+ * @brief ESC STICK's stack light and manual steps: the green light, the prompt
  * for a manual step, DONE, and what the supply does until it.
+ *
+ * Cases:
+ * - a_result_of_many_changes_counts_the_rest
+ * - the_green_light_follows_the_beeps
+ * - manual_steps_show_once_by_themselves_and_on_their_button
+ * - a_row_that_does_not_run_shows_its_manual_steps
+ * - a_run_asks_for_its_manual_step_and_goes_on_with_done
+ * - abort_on_the_prompt_ends_the_run
+ * - the_supply_stays_on_until_done_after_the_store
+ * - a_manual_step_shows_in_the_language_showing
+ * - an_unsure_selection_is_not_counted_as_made
  *
  * SPDX-License-Identifier: MIT
  */
