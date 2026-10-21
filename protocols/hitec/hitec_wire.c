@@ -1,6 +1,7 @@
-/*
- * Hitec servo programming protocols: frames, transactions and the reply
- * decoders.  See include/hitec_wire.h.
+/**
+ * @file
+ * @brief Hitec servo programming protocols: frames, transactions and the reply
+ *        decoders.  See include/hitec_wire.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -114,6 +115,14 @@ bool hitec_xfer_valid(const hitec_xfer_t *x)
     }
 }
 
+/**
+ * @brief Set up a SEND transaction with the given bytes and no receive window.
+ *
+ * @param family  hitec_family_t value.
+ * @param bytes   Bytes to send.
+ * @param n       Number of bytes, at most HITEC_TX_MAX.
+ * @param out     Receives the transaction.
+ */
 static void send_xfer(uint8_t family, const uint8_t *bytes, uint8_t n,
                       hitec_xfer_t *out)
 {
@@ -221,8 +230,16 @@ bool hitec_c_expect_of(uint8_t cmd, hitec_c_expect_t *out)
     return true;
 }
 
-/* The checks every decoder starts with.  HITEC_RX_OK when the capture holds
- * at least one byte to look at. */
+/**
+ * @brief The checks every decoder starts with.
+ *
+ * Checks abort, overflow and that the capture holds at least one byte.
+ *
+ * @param cap  Capture to check.
+ * @param out  Receives the byte count in out->n.
+ * @return HITEC_RX_OK when the capture holds at least one byte to look at, or
+ *         the code of the failed check.
+ */
 static hitec_rx_t common_checks(const hitec_capture_t *cap,
                                 hitec_reply_t *out)
 {
@@ -239,7 +256,13 @@ static hitec_rx_t common_checks(const hitec_capture_t *cap,
     return HITEC_RX_OK;
 }
 
-/* @p half half bit times of @p family in ns, rounded to nearest. */
+/**
+ * @brief Duration of half bit times.
+ *
+ * @param family  hitec_family_t value.
+ * @param half    Number of half bit times.
+ * @return @p half half bit times of @p family in ns, rounded to nearest.
+ */
 static uint32_t half_bits_ns(uint8_t family, uint32_t half)
 {
     const uint32_t rate = hitec_bit_rate(family);
@@ -247,7 +270,16 @@ static uint32_t half_bits_ns(uint8_t family, uint32_t half)
     return (uint32_t)(((uint64_t)half * 1000000000u + rate) / (2ull * rate));
 }
 
-/* Bytes 1 to @p n - 1 each start 9.5 to 15 bit times after the one before. */
+/**
+ * @brief Check the spacing of the reply bytes.
+ *
+ * Bytes 1 to @p n - 1 each start 9.5 to 15 bit times after the one before.
+ *
+ * @param cap  Capture to check.
+ * @param n    Number of bytes to check.
+ * @return true when every gap is within HITEC_NEXT_MIN_HALF_BITS to
+ *         HITEC_NEXT_MAX_HALF_BITS half bit times.
+ */
 static bool gaps_ok(const hitec_capture_t *cap, unsigned n)
 {
     const uint32_t lo = half_bits_ns(cap->family, HITEC_NEXT_MIN_HALF_BITS);
@@ -264,6 +296,13 @@ static bool gaps_ok(const hitec_capture_t *cap, unsigned n)
     return true;
 }
 
+/**
+ * @brief Check the stop bits of the first bytes of a capture.
+ *
+ * @param cap  Capture to check.
+ * @param n    Number of bytes to check.
+ * @return true when none of the first @p n bytes has a bad stop bit.
+ */
 static bool framing_ok(const hitec_capture_t *cap, unsigned n)
 {
     for (unsigned i = 0; i < n; ++i) {

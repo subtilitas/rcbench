@@ -1,5 +1,6 @@
-/*
- * The Hitec wire on one RP2350 pin.  See hitec_line.h.
+/**
+ * @file
+ * @brief The Hitec wire on one RP2350 pin.  See hitec_line.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,30 +21,52 @@
 
 #include "hitec_line.pio.h"
 
-/* A transfer count's low 28 bits are the count; the rest is the mode. */
+/** @brief Mask of the transfer count: a transfer count's low 28 bits are the count; the rest is the mode. */
 #define DMA_COUNT_MASK 0x0FFFFFFFu
 
-/* Reads of the receive FIFO a poll or an abort makes at most while the
- * channel takes the words still in it: 4 words, each a few system clock
- * cycles. */
+/**
+ * @brief Reads of the receive FIFO a poll or an abort makes at most.
+ *
+ * The bound applies while the channel takes the words still in the FIFO: 4
+ * words, each a few system clock cycles.
+ */
 #define RX_SETTLE_SPINS 64u
 
+/**
+ * @brief Get the PIO block of a line.
+ *
+ * @param l  Line object.
+ * @return The PIO block the line's state machine is in.
+ */
 static PIO line_pio(const hitec_line_t *l)
 {
     return (PIO)l->pio;
 }
 
-/* The family's pull: classic down, the D series up. */
+/**
+ * @brief Set the pad's pull for a family.
+ *
+ * The family's pull: classic down, the D series up.
+ *
+ * @param pin     GPIO number.
+ * @param family  hitec_family_t value.
+ */
 static void set_pull(unsigned pin, uint8_t family)
 {
     gpio_set_pulls(pin, family == HITEC_D, family == HITEC_CLASSIC);
 }
 
-/* The state machine waits for a stream: it stalls on the first `out`, the
- * FIFO is empty and the channel has handed over every word.  A stream is 3
- * words or more and the program reads all of them before the receiver
- * starts, so this is false from the start of a transfer to the end of the
- * transaction. */
+/**
+ * @brief Check whether the state machine waits for a stream.
+ *
+ * It stalls on the first `out`, the FIFO is empty and the channel has handed
+ * over every word.  A stream is 3 words or more and the program reads all of
+ * them before the receiver starts, so this is false from the start of a
+ * transfer to the end of the transaction.
+ *
+ * @param l  Line object.
+ * @return true when the state machine is idle at its stall point.
+ */
 static bool line_idle(const hitec_line_t *l)
 {
     const PIO pio = line_pio(l);
@@ -53,11 +76,17 @@ static bool line_idle(const hitec_line_t *l)
            && pio_sm_get_pc(pio, l->sm) == l->offset + HITEC_PIO_IDLE_PC;
 }
 
-/* Run the program's drain on the stopped machine and put it on the `out`
- * it stalls on between transactions: the output shift register is empty,
- * whatever a restart left in it, and line_idle() holds from the moment the
- * machine runs again.  The transmit FIFO is empty, so autopull takes
- * nothing. */
+/**
+ * @brief Run the program's drain on a stopped machine and put it on its idle `out`.
+ *
+ * The output shift register is empty, whatever a restart left in it, and
+ * line_idle() holds from the moment the machine runs again.  The transmit FIFO
+ * is empty, so autopull takes nothing.
+ *
+ * @param pio     PIO block.
+ * @param sm      State machine number.
+ * @param offset  Load offset of the program in the PIO block.
+ */
 static void line_ready(PIO pio, uint sm, uint offset)
 {
     pio_sm_exec(pio, sm, pio_encode_mov(pio_osr, pio_null));
@@ -65,8 +94,13 @@ static void line_ready(PIO pio, uint sm, uint offset)
     pio_sm_exec(pio, sm, pio_encode_jmp(offset + HITEC_PIO_IDLE_PC));
 }
 
-/* Put the state machine at idle with the pad released, whatever it was
- * doing. */
+/**
+ * @brief Put the state machine at idle with the pad released.
+ *
+ * Whatever it was doing, both DMA channels are aborted first.
+ *
+ * @param l  Line object.
+ */
 static void line_restart(hitec_line_t *l)
 {
     const PIO pio = line_pio(l);
@@ -81,15 +115,27 @@ static void line_restart(hitec_line_t *l)
     pio_sm_set_enabled(pio, l->sm, true);
 }
 
-/* Whether the answer is still to go out with @p n bytes received: a
- * restart now cuts it. */
+/**
+ * @brief Check whether the answer is still to go out.
+ *
+ * A restart now cuts it.
+ *
+ * @param l  Line object.
+ * @param n  Bytes received so far.
+ * @return true while the answer is due, see hitec_pio_answer_due().
+ */
 static bool answer_due(const hitec_line_t *l, unsigned n)
 {
     return hitec_pio_answer_due(&l->run, n,
                                 pio_sm_get_pc(line_pio(l), l->sm) - l->offset);
 }
 
-/* Bytes the receive channel has written. */
+/**
+ * @brief Count the bytes the receive channel has written.
+ *
+ * @param l  Line object.
+ * @return Bytes written, 0 to the run's max_rx.
+ */
 static unsigned rx_count(const hitec_line_t *l)
 {
     const uint32_t left = dma_channel_hw_addr((uint)l->dma_rx)->transfer_count
@@ -98,17 +144,28 @@ static unsigned rx_count(const hitec_line_t *l)
     return left >= l->run.max_rx ? 0u : l->run.max_rx - (unsigned)left;
 }
 
-/* The receive channel has every word the machine pushed, or all it
- * takes. */
+/**
+ * @brief Check whether the receive channel has taken every word.
+ *
+ * True when it has every word the machine pushed, or all it takes.
+ *
+ * @param l  Line object.
+ * @return true when no more words are to be taken.
+ */
 static bool rx_settled(const hitec_line_t *l)
 {
     return l->run.max_rx == 0u || pio_sm_is_rx_fifo_empty(line_pio(l), l->sm)
            || rx_count(l) >= l->run.max_rx;
 }
 
-/* Wait up to RX_SETTLE_SPINS FIFO reads for the channel to take the words
- * still in the receive FIFO.  The caller has made sure the machine pushes
- * nothing more. */
+/**
+ * @brief Wait for the receive channel to take the words still in the FIFO.
+ *
+ * Waits up to RX_SETTLE_SPINS FIFO reads.  The caller has made sure the
+ * machine pushes nothing more.
+ *
+ * @param l  Line object.
+ */
 static void rx_settle(const hitec_line_t *l)
 {
     for (unsigned i = 0; i < RX_SETTLE_SPINS && !rx_settled(l); ++i) {
@@ -118,7 +175,13 @@ static void rx_settle(const hitec_line_t *l)
 
 /* --- PRECHARGE: the sampler ---------------------------------------------- */
 
-/* The longest @p words sample words take, in us, rounded up. */
+/**
+ * @brief Time the longest sample words take.
+ *
+ * @param l      Line object.
+ * @param words  Sample words.
+ * @return The time @p words sample words take, in us, rounded up.
+ */
 static uint32_t pre_words_us(const hitec_line_t *l, uint32_t words)
 {
     return hitec_pre_cycles_ns(&l->pre_timing,
@@ -127,9 +190,15 @@ static uint32_t pre_words_us(const hitec_line_t *l, uint32_t words)
            + 1u;
 }
 
-/* The pad to the sampler, and the sampler started: the pin's control and
- * pad registers kept, the pin in the sampler's block with no input
- * override, 2 mA and slow slew, the samples to the line object. */
+/**
+ * @brief Hand the pad to the sampler and start it.
+ *
+ * The pin's control and pad registers are kept, the pin goes to the sampler's
+ * block with no input override, 2 mA and slow slew, and the samples go to the
+ * line object.
+ *
+ * @param l  Line object.
+ */
 static void pre_take(hitec_line_t *l)
 {
     const PIO pio = (PIO)l->pre_pio;
@@ -172,8 +241,14 @@ static void pre_take(hitec_line_t *l)
     pio_sm_set_enabled(pio, sm, true);
 }
 
-/* Sample words written so far: the channel's write address moves after
- * each write. */
+/**
+ * @brief Count the sample words written so far.
+ *
+ * The channel's write address moves after each write.
+ *
+ * @param l  Line object.
+ * @return Sample words written, at most the run's words.
+ */
 static uint32_t pre_words_in(const hitec_line_t *l)
 {
     const uintptr_t at = (uintptr_t)dma_channel_hw_addr((uint)l->dma_pre)
@@ -184,7 +259,12 @@ static uint32_t pre_words_in(const hitec_line_t *l)
     return n > l->pre.words ? l->pre.words : n;
 }
 
-/* Whether the sampler's receive FIFO has run full since its start. */
+/**
+ * @brief Check whether the sampler's receive FIFO has run full since its start.
+ *
+ * @param l  Line object.
+ * @return true when the FIFO stalled.
+ */
 static bool pre_rx_stalled(const hitec_line_t *l)
 {
     const PIO pio = (PIO)l->pre_pio;
@@ -192,11 +272,18 @@ static bool pre_rx_stalled(const hitec_line_t *l)
     return ((pio->fdebug >> (PIO_FDEBUG_RXSTALL_LSB + l->pre_sm)) & 1u) != 0u;
 }
 
-/* The sampler stopped with the pad released and the pin's two registers
- * back as they were.  True when samples went missing: the receive FIFO
- * ran full while the channel still had words to take.  Once the channel
- * has every word, the state machine runs on until this stops it and fills
- * the FIFO in 8 words, 278 us at 150 MHz; that stall loses nothing. */
+/**
+ * @brief Stop the sampler and give the pad back.
+ *
+ * The sampler stops with the pad released and the pin's two registers back as
+ * they were.  Once the channel has every word, the state machine runs on until
+ * this stops it and fills the FIFO in 8 words, 278 us at 150 MHz; that stall
+ * loses nothing.
+ *
+ * @param l  Line object.
+ * @return true when samples went missing: the receive FIFO ran full while the
+ *         channel still had words to take.
+ */
 static bool pre_give(hitec_line_t *l)
 {
     const PIO pio = (PIO)l->pre_pio;
@@ -228,14 +315,24 @@ static bool pre_give(hitec_line_t *l)
     return stalled;
 }
 
-/* The sampler from the start of a LISTEN, or once the request is out. */
+/**
+ * @brief Start the sampler, from the start of a LISTEN or once the request is out.
+ *
+ * @param l  Line object.
+ */
 static void pre_sample(hitec_line_t *l)
 {
     l->pre_span_us = pre_words_us(l, l->pre.words);
     pre_take(l);
 }
 
-/* poll() of a transaction the sampler receives. */
+/**
+ * @brief poll() of a transaction the sampler receives.
+ *
+ * @param l    Line object.
+ * @param out  Receives the capture when the transaction has ended.
+ * @return true once, when the transaction has ended and @p out is filled.
+ */
 static bool pre_poll(hitec_line_t *l, hitec_capture_t *out)
 {
     const uint32_t now = time_us_32();
@@ -308,7 +405,12 @@ hitec_line_err_t hitec_line_open(hitec_line_t *line, unsigned pin,
     return hitec_line_open_rx(line, pin, family, drive, HITEC_RX_PULL_UP);
 }
 
-/* The sampler's program as the SDK takes it. */
+/**
+ * @brief Build the sampler's program as the SDK takes it.
+ *
+ * @param l  Line object.
+ * @return A program that points at the line's copy of the words.
+ */
 static pio_program_t pre_program(const hitec_line_t *l)
 {
     pio_program_t p;
@@ -320,8 +422,15 @@ static pio_program_t pre_program(const hitec_line_t *l)
     return p;
 }
 
-/* Claim the sampler's state machine, program and DMA channel for @p pin.
- * Touches no pin; on false nothing stays claimed. */
+/**
+ * @brief Claim the sampler's state machine, program and DMA channel for a pin.
+ *
+ * Touches no pin; on an error nothing stays claimed.
+ *
+ * @param l    Line object.
+ * @param pin  GPIO number.
+ * @return HITEC_LINE_OK, or the error that refused the claim.
+ */
 static hitec_line_err_t pre_claim(hitec_line_t *l, unsigned pin)
 {
     pio_program_t prog;
@@ -355,6 +464,11 @@ static hitec_line_err_t pre_claim(hitec_line_t *l, unsigned pin)
     return HITEC_LINE_OK;
 }
 
+/**
+ * @brief Give back the sampler's state machine, program and DMA channel.
+ *
+ * @param l  Line object.
+ */
 static void pre_unclaim(hitec_line_t *l)
 {
     if (l->dma_pre >= 0) {
@@ -608,7 +722,13 @@ bool hitec_line_start(void *ctx, const hitec_xfer_t *xfer)
     }
 }
 
-/* A transaction on the line's own state machine. */
+/**
+ * @brief Start a transaction on the line's own state machine.
+ *
+ * @param l     Line object.
+ * @param xfer  Transaction to run.
+ * @return true when the transaction started.
+ */
 static bool line_start(hitec_line_t *l, const hitec_xfer_t *xfer)
 {
     const PIO pio = line_pio(l);

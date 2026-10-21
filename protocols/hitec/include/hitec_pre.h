@@ -70,7 +70,7 @@
 extern "C" {
 #endif
 
-/** How a D series line receives. */
+/** @brief How a D series line receives. */
 typedef enum {
     /** Released for the answer; a pull-up on the board makes the high
      *  level (2.2 kOhm to the servo supply on the bench). */
@@ -79,39 +79,64 @@ typedef enum {
     HITEC_RX_PRECHARGE = 1,
 } hitec_rx_mode_t;
 
-/** Samples a bit the period aims at: the period is the system clock cycles
- *  nearest to 1/8 of a D series bit. */
+/**
+ * @brief Samples a bit the period aims at.
+ *
+ * The period is the system clock cycles nearest to 1/8 of a D series bit.
+ */
 #define HITEC_PRE_SAMPLES_PER_BIT 8u
-/** The precharge and the wait from the release to the sample the cycle
- *  counts aim at, ns: the middle of the passing window measured on a
- *  D485HW, a precharge of 6.7 to 200 ns and a sample 40 to 187 ns after
- *  the release. */
+/**
+ * @brief Precharge the cycle counts aim at, in ns.
+ *
+ * The middle of the passing window measured on a D485HW, a precharge of 6.7
+ * to 200 ns.
+ */
 #define HITEC_PRE_CHARGE_NS 100u
+/**
+ * @brief Wait from the release to the sample the cycle counts aim at, in ns.
+ *
+ * The middle of the passing window measured on a D485HW, a sample 40 to 187
+ * ns after the release.
+ */
 #define HITEC_PRE_SAMPLE_NS 113u
-/** The measured passing window, ns.  A clock whose rounded cycles fall
- *  outside it is refused. */
+/**
+ * @brief Shortest precharge that passes on the bench, in ns.
+ *
+ * A clock whose rounded cycles fall outside the window is refused.
+ */
 #define HITEC_PRE_CHARGE_MIN_NS 7u
+/** @brief Longest precharge that passes on the bench, in ns. */
 #define HITEC_PRE_CHARGE_MAX_NS 200u
+/** @brief Shortest sample delay that passes on the bench, in ns. */
 #define HITEC_PRE_SAMPLE_MIN_NS 40u
+/** @brief Longest sample delay that passes on the bench, in ns. */
 #define HITEC_PRE_SAMPLE_MAX_NS 187u
-/** System clocks the arithmetic takes: one instruction's 32 cycles hold
- *  the wait, and 1/8 of a bit holds the precharge, the wait and the
- *  sample.  The bench ran at 150 MHz. */
+/**
+ * @brief Lowest system clock the arithmetic takes, in Hz.
+ *
+ * One instruction's 32 cycles hold the wait, and 1/8 of a bit holds the
+ * precharge, the wait and the sample.  The bench ran at 150 MHz.
+ */
 #define HITEC_PRE_MIN_HZ  48000000u
+/** @brief Highest system clock the arithmetic takes, in Hz. */
 #define HITEC_PRE_MAX_HZ 250000000u
-/** Longest window a run takes, us. */
+/** @brief Longest window a run takes, in us. */
 #define HITEC_PRE_WINDOW_MAX_US 30000u
-/** Sample words the sampler's buffer holds: the longest window and
- *  HITEC_RX_MAX bytes at every clock the arithmetic takes. */
+/**
+ * @brief Sample words the sampler's buffer holds.
+ *
+ * The longest window and HITEC_RX_MAX bytes at every clock the arithmetic
+ * takes.
+ */
 #define HITEC_PRE_WORDS 928u
-/** Instructions of the longest sampler program. */
+/** @brief Instructions of the longest sampler program. */
 #define HITEC_PRE_PROGRAM_MAX 12u
-/** Bits of a frame the decoder samples: start, 8 data, stop. */
+/** @brief Bits of a frame the decoder samples: start, 8 data, stop. */
 #define HITEC_PRE_FRAME_BITS 10u
 
-/** The cycle counts a system clock gives. */
+/** @brief The cycle counts a system clock gives. */
 typedef struct {
-    uint32_t sys_hz;
+    uint32_t sys_hz;    /**< system clock, in Hz */
     uint32_t period;    /**< system clock cycles from one sample to the next */
     uint32_t charge;    /**< cycles the pad is driven high */
     uint32_t wait;      /**< cycles from the release to the sample */
@@ -122,44 +147,79 @@ typedef struct {
 } hitec_pre_timing_t;
 
 /**
- * The counts for a system clock of @p sys_hz.  False, and @p out left as
- * it was, for a clock outside HITEC_PRE_MIN_HZ to HITEC_PRE_MAX_HZ or
- * one whose rounded precharge or wait falls outside the measured window.
+ * @brief Compute the cycle counts for a system clock.
+ *
  * At 150 MHz: a period of 163 cycles (1086.7 ns, 7.99 samples a bit), a
  * precharge of 15 cycles (100.0 ns) and the sample 17 cycles (113.3 ns)
  * after the release.
+ *
+ * @param sys_hz  System clock, in Hz.
+ * @param out     Receives the counts; left as it was when false is returned.
+ * @return false for a clock outside HITEC_PRE_MIN_HZ to HITEC_PRE_MAX_HZ, or
+ *         one whose rounded precharge or wait falls outside the measured
+ *         window.
  */
 bool hitec_pre_timing(uint32_t sys_hz, hitec_pre_timing_t *out);
 
-/** @p cycles system clock cycles of @p t in ns, rounded to nearest. */
+/**
+ * @brief Convert system clock cycles to nanoseconds.
+ *
+ * @param t       Timing of the clock.
+ * @param cycles  Cycle count.
+ * @return @p cycles system clock cycles of @p t in ns, rounded to nearest.
+ */
 uint32_t hitec_pre_cycles_ns(const hitec_pre_timing_t *t, uint64_t cycles);
 
 /**
- * The sampler's program: precharge, release, wait, sample, then the rest of
- * the period, as PIO instruction words: `set pindirs, 1 [charge - 1]`,
- * `set pindirs, 0 [wait - 1]`, `in pins, 1`, and `nop` with delays up to
- * the period.  The pad's SET and IN pin is the line; the output latch is
- * high; autopush at 32 bits, shifting left; no side-set.  The program wraps
- * from its last word to its first.  Returns the words written, 0 when
- * @p max is too small.
+ * @brief Build the sampler's PIO program.
+ *
+ * Precharge, release, wait, sample, then the rest of the period, as PIO
+ * instruction words: `set pindirs, 1 [charge - 1]`, `set pindirs, 0
+ * [wait - 1]`, `in pins, 1`, and `nop` with delays up to the period.  The
+ * pad's SET and IN pin is the line; the output latch is high; autopush at 32
+ * bits, shifting left; no side-set.  The program wraps from its last word to
+ * its first.
+ *
+ * @param t      Timing of the clock.
+ * @param words  Receives the instruction words.
+ * @param max    Capacity of @p words, in words.
+ * @return The words written, 0 when @p max is too small.
  */
 unsigned hitec_pre_program(const hitec_pre_timing_t *t, uint16_t *words,
                            unsigned max);
 
-/** Samples a window of @p window_us waits, rounded to nearest. */
+/**
+ * @brief Number of samples in a window.
+ *
+ * @param t          Timing of the clock.
+ * @param window_us  Window, in us.
+ * @return @p window_us waits, rounded to nearest, in samples.
+ */
 uint32_t hitec_pre_window_samples(const hitec_pre_timing_t *t,
                                   uint32_t window_us);
 
 /**
- * Sample words a run with a window of @p window_us and @p max_rx bytes
- * takes: the window, every byte from its start to its stop bit's middle,
- * and one word.  0 when the window is above HITEC_PRE_WINDOW_MAX_US or the
- * words would not fit HITEC_PRE_WORDS.
+ * @brief Number of sample words a run takes.
+ *
+ * The window, every byte from its start to its stop bit's middle, and one
+ * word.
+ *
+ * @param t          Timing of the clock.
+ * @param window_us  Window, in us.
+ * @param max_rx     Bytes to receive.
+ * @return The sample word count, or 0 when the window is above
+ *         HITEC_PRE_WINDOW_MAX_US or the words would not fit HITEC_PRE_WORDS.
  */
 uint32_t hitec_pre_words(const hitec_pre_timing_t *t, uint32_t window_us,
                          uint8_t max_rx);
 
-/** The level of sample @p k of @p words: 1 high. */
+/**
+ * @brief Read one sample.
+ *
+ * @param words  Sample words, 32 samples each.
+ * @param k      Sample index.
+ * @return The level of sample @p k of @p words: 1 high, 0 low.
+ */
 static inline unsigned hitec_pre_sample(const uint32_t *words, uint32_t k)
 {
     return (unsigned)((words[k >> 5] >> (31u - (k & 31u))) & 1u);
@@ -167,6 +227,7 @@ static inline unsigned hitec_pre_sample(const uint32_t *words, uint32_t k)
 
 /* --- the decoder ---------------------------------------------------------- */
 
+/** @brief Phase of the sample decoder. */
 typedef enum {
     HITEC_PRE_WAIT_REST = 0,  /**< waiting for the low rest level */
     HITEC_PRE_WAIT_START,     /**< waiting for a start bit */
@@ -174,7 +235,7 @@ typedef enum {
     HITEC_PRE_DEC_DONE,
 } hitec_pre_dec_phase_t;
 
-/** Why the decoder ended. */
+/** @brief Why the decoder ended. */
 typedef enum {
     HITEC_PRE_END_NONE = 0,
     HITEC_PRE_END_FULL,       /**< max_rx bytes */
@@ -182,6 +243,7 @@ typedef enum {
     HITEC_PRE_END_SHORT,      /**< the samples ended first */
 } hitec_pre_end_t;
 
+/** @brief State of the sample decoder. */
 typedef struct {
     uint32_t window;          /**< waiting samples the window allows */
     uint32_t at;              /**< the next sample to look at */
@@ -195,28 +257,47 @@ typedef struct {
     uint8_t  end;             /**< hitec_pre_end_t */
 } hitec_pre_dec_t;
 
-/** Prepare @p d for a window of @p window_us and up to @p max_rx bytes
- *  (1 to HITEC_RX_MAX). */
+/**
+ * @brief Prepare a decoder for a window.
+ *
+ * @param d          Decoder to prepare.
+ * @param t          Timing of the clock.
+ * @param window_us  Window, in us.
+ * @param max_rx     Bytes to receive, 1 to HITEC_RX_MAX.
+ */
 void hitec_pre_dec_init(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
                         uint32_t window_us, uint8_t max_rx);
 
 /**
- * Decode the samples of the first @p n_words words of @p words that it
- * has not seen.  @p words is the whole buffer from sample 0; a call may
- * pass the same words again with more after them.  Returns true once the
- * decoder has ended (max_rx bytes or the window).  A start bit whose
- * samples are not all in waits for the next call.
+ * @brief Decode the samples the decoder has not seen.
+ *
+ * Decodes the samples of the first @p n_words words of @p words that it has
+ * not seen.  @p words is the whole buffer from sample 0; a call may pass the
+ * same words again with more after them.  A start bit whose samples are not
+ * all in waits for the next call.
+ *
+ * @param d        Decoder state.
+ * @param t        Timing of the clock.
+ * @param words    Sample words, from sample 0.
+ * @param n_words  Number of words in @p words that are written.
+ * @return true once the decoder has ended (max_rx bytes or the window).
  */
 bool hitec_pre_dec_feed(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
                         const uint32_t *words, uint32_t n_words);
 
-/** No more samples come: a decoder that has not ended ends with
- *  HITEC_PRE_END_SHORT, dropping a byte whose samples are not all in. */
+/**
+ * @brief Close the decoder when no more samples come.
+ *
+ * A decoder that has not ended ends with HITEC_PRE_END_SHORT, dropping a byte
+ * whose samples are not all in.
+ *
+ * @param d  Decoder state.
+ */
 void hitec_pre_dec_close(hitec_pre_dec_t *d);
 
 /* --- the run -------------------------------------------------------------- */
 
-/** What a transaction asks of the sampler, hitec_pre_begin(). */
+/** @brief What a transaction asks of the sampler, hitec_pre_begin(). */
 typedef enum {
     /** No receive window, or a LEVEL: the line runs it as in PULL-UP. */
     HITEC_PRE_PLAN_LINE = 0,
@@ -229,6 +310,7 @@ typedef enum {
     HITEC_PRE_PLAN_REFUSE,
 } hitec_pre_plan_t;
 
+/** @brief Phase of a sampler run. */
 typedef enum {
     HITEC_PRE_IDLE = 0,       /**< no run, or one the line runs alone */
     HITEC_PRE_TX,             /**< the request is on the line */
@@ -236,6 +318,7 @@ typedef enum {
     HITEC_PRE_DONE,           /**< the capture is ready */
 } hitec_pre_phase_t;
 
+/** @brief State of one sampler run. */
 typedef struct {
     hitec_pre_dec_t dec;
     uint32_t words;           /**< sample words the sampler takes */
@@ -246,49 +329,92 @@ typedef struct {
 } hitec_pre_run_t;
 
 /**
- * Plan @p x on a PRECHARGE line.  For HITEC_PRE_PLAN_SEND the run is in
- * HITEC_PRE_TX, for HITEC_PRE_PLAN_LISTEN in HITEC_PRE_SAMPLE; otherwise
- * it is idle.
+ * @brief Plan a transaction on a PRECHARGE line.
+ *
+ * For HITEC_PRE_PLAN_SEND the run is in HITEC_PRE_TX, for
+ * HITEC_PRE_PLAN_LISTEN in HITEC_PRE_SAMPLE; otherwise it is idle.
+ *
+ * @param r  Run state to set up.
+ * @param t  Timing of the clock.
+ * @param x  Transaction to plan.
+ * @return The plan the transaction gets.
  */
 hitec_pre_plan_t hitec_pre_begin(hitec_pre_run_t *r,
                                  const hitec_pre_timing_t *t,
                                  const hitec_xfer_t *x);
 
-/** The transaction the line sends for a HITEC_PRE_PLAN_SEND: @p x with no
- *  window and no byte to receive. */
+/**
+ * @brief Build the transaction the line sends for a SEND plan.
+ *
+ * @param x    Transaction the run was planned with.
+ * @param out  Receives @p x with no window and no byte to receive.
+ */
 void hitec_pre_tx_xfer(const hitec_xfer_t *x, hitec_xfer_t *out);
 
-/** The request has ended: HITEC_PRE_TX to HITEC_PRE_SAMPLE.  Nothing in
- *  another phase. */
+/**
+ * @brief Mark the request as ended.
+ *
+ * Moves the run from HITEC_PRE_TX to HITEC_PRE_SAMPLE.  Nothing happens in
+ * another phase.
+ *
+ * @param r  Run state.
+ */
 void hitec_pre_tx_done(hitec_pre_run_t *r);
 
 /**
- * Feed the first @p n_words sample words.  @p all_in: the sampler has
- * written every word it takes (r->words) or stopped.  Returns true when
- * the run is in HITEC_PRE_DONE: the decoder ended, or every word is in.
- * Nothing outside HITEC_PRE_SAMPLE.
+ * @brief Feed the sample words the sampler has written.
+ *
+ * Only in HITEC_PRE_SAMPLE; nothing happens in another phase.
+ *
+ * @param r        Run state.
+ * @param t        Timing of the clock.
+ * @param words    Sample words, from sample 0.
+ * @param n_words  Number of words in @p words that are written.
+ * @param all_in   true when the sampler has written every word it takes
+ *                 (r->words) or stopped.
+ * @return true when the run is in HITEC_PRE_DONE: the decoder ended, or every
+ *         word is in.
  */
 bool hitec_pre_step(hitec_pre_run_t *r, const hitec_pre_timing_t *t,
                     const uint32_t *words, uint32_t n_words, bool all_in);
 
 /**
- * Cut the run in any phase but idle: what @p n_words words hold is
- * decoded, a byte not whole is dropped, and the run is done, aborted.
- * Nothing on an idle or a done run.
+ * @brief Cut the run in any phase but idle.
+ *
+ * What @p n_words words hold is decoded, a byte not whole is dropped, and the
+ * run is done, aborted.  Nothing happens on an idle or a done run.
+ *
+ * @param r        Run state.
+ * @param t        Timing of the clock.
+ * @param words    Sample words, from sample 0.
+ * @param n_words  Number of words in @p words that are written.
  */
 void hitec_pre_abort(hitec_pre_run_t *r, const hitec_pre_timing_t *t,
                      const uint32_t *words, uint32_t n_words);
 
-/** Samples went missing (the sampler stalled) or the sampler ran past its
- *  time: the capture is marked overflowed.  The run is done.  After
- *  hitec_pre_abort() it marks the aborted capture overflowed as well. */
+/**
+ * @brief Mark the capture as overflowed.
+ *
+ * Samples went missing (the sampler stalled) or the sampler ran past its
+ * time: the capture is marked overflowed.  The run is done.  After
+ * hitec_pre_abort() it marks the aborted capture overflowed as well.
+ *
+ * @param r  Run state.
+ */
 void hitec_pre_lost(hitec_pre_run_t *r);
 
 /**
- * The capture of a done run.  @p offset_ns: the sampler's start from the
- * receiver's time 0 (the release and one bit time after a SEND, the start
- * of a LISTEN), negative when it started before.  A start bit's time is
- * the middle between its first high sample and the sample before it.
+ * @brief Build the capture of a done run.
+ *
+ * A start bit's time is the middle between its first high sample and the
+ * sample before it.
+ *
+ * @param r          Done run state.
+ * @param t          Timing of the clock.
+ * @param offset_ns  The sampler's start from the receiver's time 0: the
+ *                   release and one bit time after a SEND, the start of a
+ *                   LISTEN. Negative when it started before.
+ * @param out        Receives the capture.
  */
 void hitec_pre_capture(const hitec_pre_run_t *r, const hitec_pre_timing_t *t,
                        int32_t offset_ns, hitec_capture_t *out);
