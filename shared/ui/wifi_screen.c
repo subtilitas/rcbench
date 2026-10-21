@@ -16,8 +16,8 @@
 #include "ui_widgets.h"
 
 /* The area below the band: 800 x 432 px. */
-#define W 800
-#define H 432
+#define W UI_PANEL_W
+#define H UI_BODY_H
 
 /* With the radio off: the buttons on the left, what is kept and what last
  * happened on the right. */

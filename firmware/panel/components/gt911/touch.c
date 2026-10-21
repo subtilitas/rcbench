@@ -1,4 +1,9 @@
-/*
+/**
+ * @file touch.c
+ * @brief The GT911 polling task: reads contacts, maps them into the
+ *        panel's coordinates, crops them to the UI's area and publishes
+ *        snapshots and events.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -8,7 +13,6 @@
 #include <string.h>
 
 #include "board.h"
-#include "driver/gpio.h"
 #include "esp_check.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -43,7 +47,7 @@ typedef struct {
 
     /*
      * When the controller last answered, in milliseconds.  32 bits because
-     * an aligned 32-bit load is atomic on the ESP32-S3, so the application
+     * an aligned 32-bit load is atomic on the ESP32-P4, so the application
      * reads it from its own task without the lock, and unsigned subtraction
      * stays correct across the 49-day wrap.
      *
@@ -80,16 +84,6 @@ static uint32_t now_ms(void)
 
 static touch_state_t s_touch;
 
-static void IRAM_ATTR touch_isr(void *arg)
-{
-    TaskHandle_t task = (TaskHandle_t)arg;
-    BaseType_t woken = pdFALSE;
-    vTaskNotifyGiveFromISR(task, &woken);
-    if (woken == pdTRUE) {
-        portYIELD_FROM_ISR();
-    }
-}
-
 static void publish(const touch_point_t *pts, int count)
 {
     touch_event_t evts[TOUCH_MAX_POINTS * 2];
@@ -125,19 +119,27 @@ static void publish(const touch_point_t *pts, int count)
     }
 }
 
+/**
+ * @brief Publish only the contacts inside the UI's area: the UI draws
+ *        BOARD_UI_H_RES x BOARD_UI_V_RES of the panel.
+ * @param pts Contacts in panel pixels, each source already mapped with its
+ *            own map; cropped in place.
+ * @param count How many.
+ */
+static void crop_and_publish(touch_point_t *pts, int count)
+{
+    publish(pts, touch_map_crop(pts, count, BOARD_UI_H_RES, BOARD_UI_V_RES));
+}
+
 static void touch_task(void *arg)
 {
     (void)arg;
     const TickType_t wait = pdMS_TO_TICKS(s_touch.cfg.poll_interval_ms ?: 10);
 
     while (!s_touch.stop) {
-        if (s_touch.cfg.use_interrupt) {
-            /* The timeout doubles as the polling fallback, so a controller
-             * whose INT polarity does not match still works. */
-            ulTaskNotifyTake(pdTRUE, wait);
-        } else {
-            vTaskDelay(wait);
-        }
+        /* Polled: the GT911's INT line does not reach the SoC.  The wait
+         * is a notification, so touch_deinit() ends it early. */
+        (void)ulTaskNotifyTake(pdTRUE, wait);
 
         touch_point_t raw[TOUCH_MAX_POINTS];
         int count = 0;
@@ -149,24 +151,23 @@ static void touch_task(void *arg)
             continue;
         }
         s_touch.last_ok_ms = now_ms();
+        /* The glass's report into panel pixels before any merge: the
+         * injector's contacts are panel pixels already (touch_inject.c). */
+        if (fresh) {
+            touch_map_points(&s_touch.map, raw, count);
+        }
 #ifdef RCBENCH_TOUCH_INJECTOR
         /* The glass's report goes out before the injector is read, so a
          * slow or failing injector never delays a contact on the glass. */
         if (touch_inject_glass(raw, &count, fresh)) {
-            for (int i = 0; i < count; ++i) {
-                touch_map_point(&s_touch.map, &raw[i]);
-            }
-            publish(raw, count);
+            crop_and_publish(raw, count);
         }
         fresh = touch_inject_read(raw, &count, now_ms());
 #endif
         if (!fresh) {
             continue;
         }
-        for (int i = 0; i < count; ++i) {
-            touch_map_point(&s_touch.map, &raw[i]);
-        }
-        publish(raw, count);
+        crop_and_publish(raw, count);
     }
 
     s_touch.task = NULL;
@@ -193,6 +194,14 @@ esp_err_t touch_init(const touch_config_t *cfg)
     const gt911_config_t gt_cfg = { 0 }; /* probe 0x5D then 0x14 */
     ESP_RETURN_ON_ERROR(gt911_new(board_i2c_bus(), &gt_cfg, &s_touch.gt911),
                         TAG, "gt911 probe");
+    /*
+     * The GT911 takes 0x5D or 0x14 at the end of its reset from the level
+     * on its INT line, which no GPIO drives on this board; which one it
+     * takes is not measured.
+     */
+    const uint16_t glass_addr = gt911_address(s_touch.gt911);
+    ESP_LOGI(TAG, "GT911 answers at 0x%02x after the reset (0x5d probed "
+                  "first, then 0x14)", glass_addr);
 
 #ifdef RCBENCH_TOUCH_INJECTOR
     /* Before the task exists: adding a device to the bus is not safe
@@ -215,6 +224,17 @@ esp_err_t touch_init(const touch_config_t *cfg)
         .mirror_y = s_touch.cfg.mirror_y,
         .rotation = s_touch.cfg.rotation,
     };
+#ifdef RCBENCH_TOUCH_INJECTOR
+    if (glass_addr == TOUCH_INJECT_ADDR) {
+        /* 0x14 is the injector's address in this build, so what answers
+         * there is taken as the injector and not as the glass: panel
+         * pixels of the UI's area, unmirrored. */
+        s_touch.map = touch_inject_map();
+        ESP_LOGW(TAG, "0x14 refused as the glass: it is the touch "
+                      "injector's address in this build; touch is the "
+                      "injector alone");
+    }
+#endif
     touch_tracker_reset(&s_touch.tracker);
     s_touch.point_count = 0;
     s_touch.stop = false;
@@ -239,32 +259,16 @@ esp_err_t touch_init(const touch_config_t *cfg)
     }
     ESP_RETURN_ON_FALSE(ok == pdPASS, ESP_ERR_NO_MEM, TAG, "touch task");
 
-    if (s_touch.cfg.use_interrupt) {
-        const gpio_config_t int_cfg = {
-            .pin_bit_mask = 1ULL << BOARD_TOUCH_PIN_INT,
-            .mode = GPIO_MODE_INPUT,
-            .pull_up_en = GPIO_PULLUP_DISABLE,
-            .pull_down_en = GPIO_PULLDOWN_DISABLE,
-            .intr_type = GPIO_INTR_NEGEDGE,
-        };
-        ESP_RETURN_ON_ERROR(gpio_config(&int_cfg), TAG, "int pin");
-        esp_err_t err = gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
-        if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
-            ESP_RETURN_ON_ERROR(err, TAG, "isr service");
-        }
-        ESP_RETURN_ON_ERROR(
-            gpio_isr_handler_add(BOARD_TOUCH_PIN_INT, touch_isr, s_touch.task),
-            TAG, "isr handler");
-    }
-
     /* Start the health clock here, so a stack that has just come up is not
      * momentarily reported as stale before its first poll. */
     s_touch.last_ok_ms = now_ms();
     s_touch.initialised = true;
-    ESP_LOGI(TAG, "GT911 ready at 0x%02x, %ux%u, rotation %d%s",
+    ESP_LOGI(TAG, "GT911 ready at 0x%02x, %ux%u, mirror x %d y %d, "
+                  "rotation %d, polled every %u ms",
              gt911_address(s_touch.gt911), x_max, y_max,
+             (int)s_touch.cfg.mirror_x, (int)s_touch.cfg.mirror_y,
              (int)s_touch.cfg.rotation * 90,
-             s_touch.cfg.use_interrupt ? ", INT enabled" : "");
+             (unsigned)s_touch.cfg.poll_interval_ms);
     return ESP_OK;
 }
 
@@ -272,9 +276,6 @@ esp_err_t touch_deinit(void)
 {
     if (!s_touch.initialised) {
         return ESP_OK;
-    }
-    if (s_touch.cfg.use_interrupt) {
-        gpio_isr_handler_remove(BOARD_TOUCH_PIN_INT);
     }
     s_touch.stop = true;
     if (s_touch.task) {

@@ -1283,9 +1283,9 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 
 /*
  * A step of a start that failed: its name, the error, and what internal
- * RAM held at that moment.  The Wi-Fi driver takes about 51 KB of
- * DMA-capable internal RAM (direct memory access) at esp_wifi_init(), and a
- * start that finds less fails there (tools/ram_budget.py).
+ * RAM held at that moment.  A start that finds too little internal RAM
+ * fails at the allocation that runs short; how much the radio's driver
+ * through the ESP32-C6 takes is not measured.
  */
 static void start_failed(const char *step, esp_err_t e)
 {

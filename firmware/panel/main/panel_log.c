@@ -759,8 +759,7 @@ static void log_note(const char *line)
  * On the control task's core and below it in priority: the control task
  * blocks for CONTROL_PERIOD_MS (5 ms) every pass and inside every receive
  * window of a link exchange, and this runs in those gaps.  It touches no
- * PSRAM, so it does not share bandwidth with the display's bounce-buffer
- * refill on the other core.
+ * PSRAM, so it does not share bandwidth with the display's scan-out.
  */
 void log_task(void *arg)
 {

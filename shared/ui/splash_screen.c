@@ -11,8 +11,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /* Hold after the last step has answered, before the menu: 1.6 s to read
  * seven lines.  A tap skips it; a failed step stays reported on screen. */

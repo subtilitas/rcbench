@@ -26,13 +26,13 @@
 #include "ui_screen.h"
 #include "ui_workbench.h"
 
-#define W 800
-#define H (480 - UI_BAND_H)   /* the router owns the band */
+#define W UI_PANEL_W
+#define H UI_BODY_H   /* the router owns the band */
 
 /* Horizontal bands, not columns: seventeen full-height vertical lines cost
  * about 8,160 cache-line fills on this panel, and the same pixels drawn as
  * horizontal lines cost none. */
-#define PAD       6                    /* the screen's outer margin */
+#define PAD       UI_MARGIN                    /* the screen's outer margin */
 #define INNER     6                    /* a panel's own padding */
 
 /*
@@ -71,7 +71,7 @@
  * RESET PEAKS, 4 px apart.  The TARGET row is the card's width less its
  * padding: TARGET's 64 px, and a value box of 18 cells.
  */
-#define BTN_H     36
+#define BTN_H     UI_BTN_H
 #define TARGET_Y  (LO_Y + TITLE_H + 6)
 #define TARGET_H  22
 #define ARM_Y     (TARGET_Y + TARGET_H + 4)

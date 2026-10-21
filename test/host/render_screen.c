@@ -71,8 +71,8 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /* MOTOR & ESC's PROGRAM tab, the second of the strip's (112 px a tab, 4 px
  * apart from x 9, 24 px high from y 6), and the STICK MENU row of its list,
@@ -2924,8 +2924,8 @@ int main(int argc, char **argv)
         }
         if (strcmp(view, "outputs-protocol") == 0) {
             /* Tap the dropdown open. */
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0u };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0u };
+            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, UI_BAND_H + 70, 40 }, 0u };
+            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, UI_BAND_H + 70, 40 }, 0u };
             ui_router_event(&d);
             ui_router_event(&u);
         }

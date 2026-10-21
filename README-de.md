@@ -36,8 +36,9 @@ Finger abhebt. Das Schalten auf SAFE und STOP sind ein einzelner Druck.
 
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
 Ausgänge abschaltet, der Link-Watchdog des IOmcu und ein STOP-Kommando
-über den Link. Die Leitung zwischen J8 des Panels und GP3 des
-IOmcu ist auf dem Aufbau-Prüfstand bestückt. Das retriggerbare Monoflop des Heartbeats ist auf keiner
+über den Link. Die Leitung läuft von GPIO28 des Panels
+(`PANEL_HEARTBEAT_PIN`) zu GP3 des IOmcu; GPIO28 ist vorläufig, bis der Pin
+am ersten Muster des 7-Zoll-ESP32-P4-Boards festgelegt ist. Das retriggerbare Monoflop des Heartbeats ist auf keiner
 Platine vorhanden, die Ausgänge hängen also allein an der Firmware an beiden
 Enden, ohne Hardware-Rückfallebene dahinter.
 [Sicherheit](https://github.com/subtilitas/rcbench/wiki/Safety-de) spezifiziert
@@ -104,7 +105,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,7 %**, 50 113 von 51 270 Zeilen in 226 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,7 %**, 50 176 von 51 336 Zeilen in 226 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
@@ -114,7 +115,7 @@ Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
 rcbench steht unter der MIT-Lizenz (Massachusetts Institute of Technology):
 [LICENSE](LICENSE).
 
-- **DejaVu Sans Mono.** Die drei Fonttabellen unter `shared/gfx/` sind
+- **DejaVu Sans Mono.** Die sieben Fonttabellen unter `shared/gfx/` sind
   Glyphen-Bitmaps, die `tools/gen_font.py` aus DejaVu Sans Mono erzeugt, unter
   dem Bitstream Vera Fonts Copyright ([NOTICE](NOTICE)). Es wird keine
   Fontdatei weitergegeben.

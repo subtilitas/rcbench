@@ -8,6 +8,7 @@ SPDX-License-Identifier: MIT
 import pathlib
 import re
 
+import pytest
 import ui_sources
 
 REPO = pathlib.Path(__file__).resolve().parent.parent.parent
@@ -22,12 +23,22 @@ def panel_ui_sources(text):
 
     Returns:
         The files as repo paths under shared/ui, in the block's order.
+
+    Raises:
+        AssertionError: The block is missing, or a line of it, less its
+            comment, is not one file name.
     """
-    block = re.search(r"set\(SRCS\b(.*?)\)", text, re.S)
+    block = re.search(r"set\(SRCS\b(.*?)\n\s*\)", text, re.S)
     assert block, "no set(SRCS ...) in shared/ui/CMakeLists.txt"
-    return [f"{UI}/{name}"
-            for name in re.findall(r"^\s*([\w.]+\.c)\s*$", block.group(1),
-                                   re.M)]
+    out = []
+    for line in block.group(1).splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        assert re.fullmatch(r"[\w.-]+\.c", line), (
+            f"set(SRCS ...) holds a line this test does not read: {line!r}")
+        out.append(f"{UI}/{line}")
+    return out
 
 
 def missing(built, sources, excluded):
@@ -47,6 +58,18 @@ def missing(built, sources, excluded):
 def test_the_parser_reads_the_srcs_block():
     text = "set(SRCS\n    a.c\n    b_c.c\n)\nset(OTHER x.c)\n"
     assert panel_ui_sources(text) == [f"{UI}/a.c", f"{UI}/b_c.c"]
+
+
+def test_a_comment_and_a_dash_are_read():
+    text = ("set(SRCS\n    # the screens\n    a.c  # the first\n"
+            "    b-c.c\n)\n")
+    assert panel_ui_sources(text) == [f"{UI}/a.c", f"{UI}/b-c.c"]
+
+
+@pytest.mark.parametrize("line", ["${EXTRA}", "a.c b.c", "a.h"])
+def test_a_line_it_cannot_read_fails(line):
+    with pytest.raises(AssertionError, match="does not read"):
+        panel_ui_sources(f"set(SRCS\n    a.c\n    {line}\n)\n")
 
 
 def test_a_file_in_neither_list_is_reported():

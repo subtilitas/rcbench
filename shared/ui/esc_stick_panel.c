@@ -58,15 +58,15 @@
 #include "esc_stick_panel_int.h"
 
 /* The settings the TIMING page shows, in its order. */
-const setting_id_t k_sp_settings[] = {
+const setting_id_t sp_settings_list[] = {
     SET_STICK_V, SET_STICK_I, SET_STICK_BEEP_MIN, SET_STICK_GAP_MIN,
     SET_STICK_LONG, SET_STICK_LONG_MAX, SET_STICK_GROUP_GAP, SET_STICK_ENTRY,
     SET_STICK_STORE, SET_STICK_OFF, SET_STICK_SILENCE, SET_STICK_TIMEOUT,
     SET_STICK_THRESHOLD, SET_STICK_HYST,
 };
-_Static_assert(sizeof(k_sp_settings) / sizeof(k_sp_settings[0])
+_Static_assert(sizeof(sp_settings_list) / sizeof(sp_settings_list[0])
                == SP_SETTINGS,
-               "SP_SETTINGS in esc_stick_panel_int.h counts k_sp_settings");
+               "SP_SETTINGS (esc_stick_panel_int.h) counts sp_settings_list");
 
 /* --------------------------------------------------------------- the state */
 

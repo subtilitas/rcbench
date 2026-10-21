@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- Four glyph tables for the 1024 x 600 panel: 10x20, 12x24 and 20x36 text
+  faces and a 32x44 numeral face (20,400, 29,376, 73,440 and 38,016 bytes
+  of flash), and the roles `UI_FONT_FINE` (8x16) and `UI_FONT_BODY`
+  (12x24). Cap heights are 12, 15, 23 and 40 px. The 32x44 numeral face
+  cuts `#` (5 px), `$` (16 px), `(` (12 px), `)` (12 px), `,` (23 px) and
+  `/` (6 px) at the cell edge; the three text faces cut nothing, which
+  `gen_font.py --check` verifies. No screen draws with the faces yet.
 - Hitec D series servos answer with no pull-up on the signal wire: SETUP >
   INTERFACES > Hitec D receive (PROG PORT, German `Hitec-D-Empfang`)
   chooses PULL-UP, the default, or PRECHARGE. With PRECHARGE the IOmcu
@@ -126,6 +133,21 @@ history is in git.
 
 ### Changed
 
+- The panel firmware targets the 7-inch ESP32-P4 display board from
+  Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, chip revision 3.2) and no longer
+  builds for the ESP32-S3-Touch-LCD-7. ESP-IDF v5.5.5, target `esp32p4`,
+  32 MB flash with two application slots of 7936 kB. The EK79007 panel runs
+  on 2 MIPI DSI (Display Serial Interface) lanes at 1000 Mbit/s each, 1024 x
+  600 RGB565 at 60.38 Hz (derived, not measured), two frame buffers in
+  PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
+  black. Touch is polled (the GT911's INT line does not reach the chip),
+  mirrored in x and y, and a touch outside 800 x 480 is dropped. The card
+  mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
+  (RX) from the 40 MHz crystal; the rotary knob has an I2C controller of its
+  own. The heartbeat pin (GPIO28) and the knob pins (GPIO30, GPIO31) are
+  placeholders until the header pins are chosen. The panel starts no Wi-Fi:
+  its radio is an ESP32-C6, which this build does not reach
+  (`RCBENCH_PANEL_WIFI`), so it does not update itself.
 - The four INA3221 rows leave SETUP > INTERFACES (23 settings now). A panel
   updated from 0.21 seeds SENSORS from them at start-up: the part at the old
   address fitted when the INA3221 was ON, its CH1 on the old shunt, CH2 and

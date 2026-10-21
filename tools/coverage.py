@@ -294,6 +294,10 @@ DATA_ONLY = {
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",
     "shared/gfx/gfx_font_num24x30.c",
+    "shared/gfx/gfx_font10x20.c",
+    "shared/gfx/gfx_font12x24.c",
+    "shared/gfx/gfx_font20x36.c",
+    "shared/gfx/gfx_font_num32x44.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.
     "shared/esc/esc_profiles_gen.c",
     # The German string tables; ui_text.c holds the lookups.

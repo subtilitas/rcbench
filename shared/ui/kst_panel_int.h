@@ -67,10 +67,10 @@ typedef struct {
 
 /** @brief The rows of the five pages, in kst_panel.c, and their count. */
 #define ROW_COUNT 33
-extern const row_t k_rows[ROW_COUNT];
+extern const row_t kpn_rows[ROW_COUNT];
 
 /** @brief A soft limit's words, by rule, in kst_panel_text.c. */
-extern const int16_t k_rule[KST_RULE_COUNT];
+extern const int16_t kpn_rule[KST_RULE_COUNT];
 
 /* -------------------------------------------------------------------- state */
 

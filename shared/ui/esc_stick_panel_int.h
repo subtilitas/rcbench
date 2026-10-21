@@ -77,7 +77,7 @@
 /** @brief The settings the TIMING page shows, in esc_stick_panel.c, and
  *         their count. */
 #define SP_SETTINGS 14
-extern const setting_id_t k_sp_settings[SP_SETTINGS];
+extern const setting_id_t sp_settings_list[SP_SETTINGS];
 
 /* A maker on the list's first level: how many models it has, how many the
  * search finds, how many of those run, and whether any has manual steps. */

@@ -126,8 +126,16 @@ TEST_CASE(another_chips_image_is_refused)
     CHECK_EQ(check_fix(&f), FW_ERR_CHIP);
     f.chip = 5u;                              /* ESP32-C3 */
     CHECK_EQ(check_fix(&f), FW_ERR_CHIP);
-    f.chip = 0x0109u;                         /* the high byte counts */
+    f.chip = 9u;                              /* ESP32-S3 */
     CHECK_EQ(check_fix(&f), FW_ERR_CHIP);
+    f.chip = 0x0112u;                         /* the high byte counts */
+    CHECK_EQ(check_fix(&f), FW_ERR_CHIP);
+    f.chip = 0x0011u;                         /* one below */
+    CHECK_EQ(check_fix(&f), FW_ERR_CHIP);
+    f.chip = 0x0013u;                         /* one above */
+    CHECK_EQ(check_fix(&f), FW_ERR_CHIP);
+    f.chip = FW_CHIP_ESP32P4;                 /* and the panel's own */
+    CHECK_EQ(check_fix(&f), FW_OK);
 }
 
 TEST_CASE(what_is_not_an_application_image_is_refused)

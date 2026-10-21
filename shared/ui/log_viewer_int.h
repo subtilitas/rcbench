@@ -27,10 +27,10 @@
 #include "ui_tabs.h"
 #include "ui_theme.h"
 
-#define SCREEN_W 800
+#define SCREEN_W UI_PANEL_W
 /* The router owns the band and hands this screen a sub-canvas of what is
  * left, so the screen's own height is the body rather than the panel. */
-#define SCREEN_H (480 - UI_BAND_H)
+#define SCREEN_H UI_BODY_H
 #define MAX_FBS  3
 
 /* ------------------------------------------------------------- browse ---- */

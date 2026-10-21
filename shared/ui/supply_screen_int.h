@@ -30,10 +30,10 @@
 #include "ui_widgets.h"
 #include "ui_workbench.h"
 
-#define W 800
-#define H (480 - UI_BAND_H)   /* the router owns the band */
+#define W UI_PANEL_W
+#define H UI_BODY_H   /* the router owns the band */
 
-#define PAD       6
+#define PAD       UI_MARGIN
 #define INNER     6
 #define COL_GAP   6
 #define LEFT_X    PAD
@@ -93,7 +93,7 @@
 #define NUDGE_V     0.1f
 #define NUDGE_I     0.1f
 
-#define BTN_H     36
+#define BTN_H     UI_BTN_H
 #define OUT_Y     (LO_Y + TITLE_H + 8)
 #define TOTALS_Y  (OUT_Y + BTN_H + 10)
 #define RESET_Y   (LO_H + LO_Y - PAD - BTN_H)

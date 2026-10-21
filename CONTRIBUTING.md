@@ -57,7 +57,6 @@ cmake --build test/host/build-san && ctest --test-dir test/host/build-san --outp
 python3 tools/coverage.py --check     # coverage floors, the STATUS.md table, the README figure
 python3 tools/check_docs.py           # links, translations, SPDX, the suite list, numbers against constants
 python3 tools/render_ui.py --check    # the committed screenshots match
-python3 tools/frame_cost.py --check-doc
 python3 tools/gen_font.py --check
 python3 tools/gen_board_drawing.py --check
 python3 tools/gen_esc_profiles.py --check
@@ -70,12 +69,9 @@ python3 tools/render_ui.py --fit      # every string fits where it is drawn
 python3 -m pytest test/tools          # the tools' own tests
 python3 tools/mutate.py               # what the suite misses in the changed lines
 
-# After a panel build, on ESP-IDF v5.4 for --check-doc: task stacks, and the
-# table in docs/Performance.md.
-python3 tools/stack_check.py firmware/panel/build --check-doc
-# After a panel build, on ESP-IDF v5.4 for --check-doc: internal RAM with
-# the largest Wi-Fi mode up, and its table in docs/Performance.md.
-python3 tools/ram_budget.py firmware/panel/build --check-doc
+# After a panel build on ESP-IDF v5.5.5 for the ESP32-P4: the image against
+# the smaller of its two update slots.
+python3 tools/image_slot.py firmware/panel/build
 # After an IOmcu build: the stacks of its two cores, and core 0's row
 # in docs/Performance.md.
 python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
@@ -123,26 +119,21 @@ A change fails if:
 - a screen's render changes and the committed images in `docs/img/` were not
   regenerated with `tools/render_ui.py`. Review the new images before
   committing them;
-- drawing code exceeds its cache-line ceiling
-  ([Performance](docs/Performance.md));
-- a panel task's deepest call chain exceeds its stack less 1024 bytes, or
-  an IOmcu core's deepest chain, one interrupt and 256 bytes exceed
+- the panel image is larger than the smaller of its two update slots, or
+  the panel build lacks the IOmcu image, the touch injector or exFAT, or
+  the build without the injector holds its code;
+- an IOmcu core's deepest chain, one interrupt and 256 bytes exceed
   its stack ([Performance](docs/Performance.md#stacks)), or a stack figure
   or a count of calls not followed that Performance or `STATUS.md` gives
   differs from the build;
-- the panel's internal heap with the largest Wi-Fi mode up is under 32,768
-  bytes, a task, queue or semaphore in `firmware/panel` is one
-  `tools/ram_budget.py` cannot size, or the internal RAM table or the
-  PSRAM table in [Performance](docs/Performance.md#internal-ram) differs
-  from the ESP-IDF v5.4 build;
 - a file over 1,000 lines is not in `tools/check_sizes.txt` with the reason
   it stays whole, a listed file is at or under 1,000 lines, or a listed
   line count is outside its tolerance;
 - a string overflows where it is drawn, in English or in German, and is not
   one of the overflows `tools/render_ui.py` lists as known;
 - a page states a protocol version, a timing, a pin, a coverage floor, a
-  stack margin, the internal RAM floor, a servo test constant or a
-  frame-cost ceiling that differs
+  stack margin, a servo test constant or an ESP-IDF or pico-sdk tag that
+  differs
   from the constant in the headers, the tools or `ci.yml`. A reworded
   sentence takes its entry in `FACTS` in `tools/check_docs.py` along;
 - a compile command of the sanitizer build lacks one of

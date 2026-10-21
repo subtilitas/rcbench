@@ -31,7 +31,7 @@
  * names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
-const row_t k_rows[] = {
+const row_t kpn_rows[] = {
     { PG_SERVO, 0, 0, 1, K_ACT, A_PORT, -1, "PORT" },
     { PG_SERVO, 1, 0, 0, K_ACT, A_READ, -1, "SERVO" },
     { PG_SERVO, 1, 1, 0, K_ACT, A_FILES, TX_KP_FILES, NULL },
@@ -70,8 +70,8 @@ const row_t k_rows[] = {
     { PG_LOCKED, 4, 0, 0, K_LOCKED, KST_F_POT_SAM_TIMES, -1, "POT SAMPLES" },
     { PG_LOCKED, 4, 1, 0, K_LOCKED, KST_F_PROT_PWM_ERR, -1, "PWM ERR" },
 };
-_Static_assert(sizeof(k_rows) / sizeof(k_rows[0]) == ROW_COUNT,
-               "ROW_COUNT in kst_panel_int.h counts k_rows");
+_Static_assert(sizeof(kpn_rows) / sizeof(kpn_rows[0]) == ROW_COUNT,
+               "ROW_COUNT in kst_panel_int.h counts kpn_rows");
 
 static const ui_text_id_t k_pages[PG_COUNT] = {
     TX_KP_TAB_SERVO, TX_KP_TAB_TUNE, TX_KP_TAB_PULSE, TX_KP_TAB_FAILSAFE,
@@ -168,8 +168,8 @@ const char *kpn_row_label(const row_t *r)
 const char *kpn_field_name(unsigned id)
 {
     for (int i = 0; i < ROW_COUNT; ++i) {
-        if (k_rows[i].kind != K_ACT && k_rows[i].what == id) {
-            return kpn_row_label(&k_rows[i]);
+        if (kpn_rows[i].kind != K_ACT && kpn_rows[i].what == id) {
+            return kpn_row_label(&kpn_rows[i]);
         }
     }
     return NULL;
@@ -373,9 +373,9 @@ gfx_rect_t kpn_step_rect(const row_t *r, bool up)
 const row_t *kpn_row_at(int page, int row, int col)
 {
     for (int i = 0; i < ROW_COUNT; ++i) {
-        if (k_rows[i].page == page && k_rows[i].row == row
-            && k_rows[i].col == col) {
-            return &k_rows[i];
+        if (kpn_rows[i].page == page && kpn_rows[i].row == row
+            && kpn_rows[i].col == col) {
+            return &kpn_rows[i];
         }
     }
     return NULL;

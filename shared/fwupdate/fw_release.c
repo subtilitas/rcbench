@@ -705,7 +705,7 @@ void fw_release_version_text(fw_version_t v, char out[FW_REL_VER_TEXT])
 
 void fw_release_image_name(fw_version_t v, char out[FW_REL_NAME_MAX])
 {
-    snprintf(out, FW_REL_NAME_MAX, "rcbench-panel-v%u.%u.%u.bin",
+    snprintf(out, FW_REL_NAME_MAX, "rcbench-panel-p4-v%u.%u.%u.bin",
              (unsigned)v.major, (unsigned)v.minor, (unsigned)v.patch);
 }
 

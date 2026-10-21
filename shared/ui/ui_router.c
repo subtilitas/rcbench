@@ -28,8 +28,8 @@
 #include "ui_watermark.h"
 #include "ui_widgets.h"
 
-#define PANEL_W 800
-#define PANEL_H 480
+#define PANEL_W UI_PANEL_W
+#define PANEL_H UI_PANEL_H
 #define ALERT_H UI_ALERT_H    /* the alert band, across the bottom */
 
 static struct {
@@ -742,11 +742,13 @@ const char *ui_router_alert(void)
     return s.has_held ? s.held : NULL;
 }
 
-/* The alert's text: 94 cells from x 12, clear of the "x" at x 780.  Text
- * wider than one line breaks at a space onto a second, 16 px under the
- * first: two rows of the 8x16 face fill 32 of the band's 34 px. */
+/* The alert's text: from x 12, the panel's width less 12 px at the left and
+ * 36 px at the right, which clears the "x" (752 px, 94 cells of 8 px, on the
+ * 800 px panel).  Text wider than one line breaks at a space onto a second,
+ * 16 px under the first: two rows of the 8x16 face fill 32 of the band's
+ * 34 px. */
 #define ALERT_TEXT_X 12
-#define ALERT_TEXT_W (94 * 8)
+#define ALERT_TEXT_W (PANEL_W - 2 * ALERT_TEXT_X - 24)
 #define ALERT_PITCH  16
 
 int ui_router_alert_rows(const char *text)

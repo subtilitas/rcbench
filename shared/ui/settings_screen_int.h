@@ -26,9 +26,9 @@
 #include "ui_text.h"
 #include "ui_textkey.h"
 
-#define SCREEN_W 800
+#define SCREEN_W UI_PANEL_W
 /* The router owns the top 48 and the home tag; this screen gets the body. */
-#define SCREEN_H (480 - UI_BAND_H)
+#define SCREEN_H UI_BODY_H
 #define MAX_FBS  3
 
 /*
@@ -66,6 +66,7 @@
 
 #define BTN_W    44
 #define BTN_H    36
+_Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
 #define PLUS_X   (LIST_X + LIST_W - 14 - BTN_W)
 #define MINUS_X  (PLUS_X - 8 - 110 - 8 - BTN_W)
 #define VALUE_R  (PLUS_X - 8)

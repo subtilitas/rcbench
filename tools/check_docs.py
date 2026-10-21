@@ -1077,7 +1077,7 @@ FACTS = [
      ("IOMCU_HEARTBEAT_PIN",)),
     ("docs/Safety-de.md", rf"den GP{N} des IOmcu",
      ("IOMCU_HEARTBEAT_PIN",)),
-    ("STATUS.md", rf"control task drives GPIO{N} \(J8\)",
+    ("STATUS.md", rf"control task drives GPIO{N} \(`PANEL_HEARTBEAT_PIN`",
      ("PANEL_HEARTBEAT_PIN",)),
     ("docs/Link.md", rf"on GPIO{N} \(RX\) and GPIO{N} \(TX\)",
      ("PANEL_CAN_PIN_RX", "PANEL_CAN_PIN_TX")),
@@ -1105,30 +1105,10 @@ FACTS = [
      ("coverage.py:MIN_TOTAL_COVERAGE", "coverage.py:MIN_FILE_COVERAGE")),
     ("codecov.yml", rf"project: default: target: {N}%",
      ("coverage.py:MIN_TOTAL_COVERAGE",)),
-    ("CONTRIBUTING.md", rf"exceeds its stack less {N} bytes",
-     ("stack_check.py:MARGIN",)),
-    ("STATUS.md", rf"deepest call chain to its stack less {N} bytes",
-     ("stack_check.py:MARGIN",)),
     ("docs/Performance.md", rf"exceeds its stack less {N} bytes",
      ("stack_check.py:MARGIN",)),
     ("docs/Performance-de.md", rf"abzüglich {N} Bytes überschreitet",
      ("stack_check.py:MARGIN",)),
-    # The panel's internal RAM floor with the radio up.
-    ("docs/Performance.md", rf"largest mode up is under {N} bytes",
-     ("ram_budget.py:FLOOR",)),
-    ("docs/Performance-de.md",
-     rf"größten Modus weniger als {N_DE} Bytes Heap",
-     ("ram_budget.py:FLOOR",)),
-    ("docs/Building.md", rf"largest mode leaves under {N} bytes",
-     ("ram_budget.py:FLOOR",)),
-    ("docs/Building-de.md", rf"größte Modus weniger als {N_DE} Bytes",
-     ("ram_budget.py:FLOOR",)),
-    ("CONTRIBUTING.md", rf"largest Wi-Fi mode up is under {N} bytes",
-     ("ram_budget.py:FLOOR",)),
-    ("STATUS.md", rf"largest Wi-Fi mode up to at least {N} bytes",
-     ("ram_budget.py:FLOOR",)),
-    (".github/workflows/ci.yml", rf"against a floor of {N} bytes",
-     ("ram_budget.py:FLOOR",)),
 ]
 
 
@@ -1259,11 +1239,25 @@ def doc_ceilings(text: str, header: str, german: bool):
 
 def check_ceilings(problems: list[str], ci_text: str | None = None,
                    pages=None) -> None:
-    """The ceiling table in Performance.md gives, for every mode CI holds,
-    the ceiling CI holds it to, and has no row CI does not run."""
+    """Hold the ceiling table of the Performance pages to ci.yml.
+
+    The table gives, for every mode CI holds, the ceiling CI holds it to,
+    and has no row CI does not run.  While CI holds no ceiling, the pages
+    carry no such table.
+
+    Args:
+        problems: Receives one line per disagreement.
+        ci_text: The text of ci.yml; the file in the tree when None.
+        pages: (page, table header) pairs; the two Performance pages when
+            None.
+    """
     calls = ci_ceilings(read(CI_YML) if ci_text is None else ci_text)
     if not calls:
-        problems.append("ci.yml: no frame_cost.py call with --max-lines")
+        for page, header in (CEILING_PAGES if pages is None else pages):
+            if header in read(page):
+                problems.append(f"{page.name}: has the ceiling table, and "
+                                "ci.yml has no frame_cost.py call with "
+                                "--max-lines")
         return
     for page, header in (CEILING_PAGES if pages is None else pages):
         german = page.name.endswith(DE_SUFFIX)
@@ -1338,12 +1332,17 @@ def check_pin_counts(problems: list[str]) -> None:
 
 
 def check_sdk_tags(problems: list[str]) -> None:
-    """The SDK (software development kit) tags are spelled in ci.yml,
-    release.yml and the build pages, and the copies agree.
+    """Hold the SDK tags of ci.yml, release.yml and the pages together.
 
-    The pico-sdk tag is env.PICO_SDK_TAG of ci.yml; the ESP-IDF
-    (Espressif Internet-of-Things Development Framework) tags are the
-    `idf` matrix of ci.yml, whose first entry is the release build's.
+    The SDK (software development kit) tags are spelled in ci.yml,
+    release.yml and the build pages, and the copies agree.  The pico-sdk
+    tag is env.PICO_SDK_TAG of ci.yml; the ESP-IDF (Espressif
+    Internet-of-Things Development Framework) tag is the
+    `esp_idf_version` of the panel builds in ci.yml, which release.yml
+    repeats, and the version in the panel job's name.
+
+    Args:
+        problems: Receives one line per disagreement.
     """
     ci = read(REPO / ".github" / "workflows" / "ci.yml")
     rel = read(REPO / ".github" / "workflows" / "release.yml")
@@ -1383,30 +1382,34 @@ def check_sdk_tags(problems: list[str]) -> None:
             problems.append(f"SDK tags: {what} says pico-sdk {tag}; "
                             f"ci.yml builds {pico}")
 
-    matrix = re.search(r"idf:\s*\[([^\]]*)\]", ci)
-    idfs = [v.strip() for v in matrix.group(1).split(",")] if matrix else []
-    if not idfs:
-        problems.append("SDK tags: no idf matrix in ci.yml")
+    idfs = sorted(set(re.findall(r"esp_idf_version:\s*(v[\d.]+)", ci)))
+    if len(idfs) != 1:
+        problems.append("SDK tags: ci.yml builds the panel with "
+                        f"{len(idfs)} ESP-IDF versions "
+                        f"({', '.join(idfs) or 'none'}); it names one")
         return
+    idf = idfs[0]
     release = first("esp_idf_version in release.yml",
                     r"esp_idf_version:\s*(v[\d.]+)", rel)
-    if release and release != idfs[0]:
+    if release and release != idf:
         problems.append(f"SDK tags: release.yml builds ESP-IDF {release}; "
-                        f"the first of the ci.yml matrix is {idfs[0]}")
-    for page, joiner in (("Building.md", "and"), ("Building-de.md", "und")):
+                        f"ci.yml builds {idf}")
+    job = first("'Panel (ESP-IDF vX, ...)' job name in ci.yml",
+                r"name: Panel \(ESP-IDF (v[\d.]+)[,)]", ci)
+    if job and job != idf:
+        problems.append(f"SDK tags: the ci.yml panel job is named for "
+                        f"ESP-IDF {job}; it builds {idf}")
+    for page, verb in (("Building.md", "builds"), ("Building-de.md", "baut")):
         text = read(REPO / "docs" / page)
-        stated = list(re.finditer(
-            r"(v\d+\.\d+(?:\.\d+)?) %s (v\d+\.\d+(?:\.\d+)?)" % joiner,
-            text))
+        stated = re.findall(
+            r"CI (?:\([^)]*\) )?%s (v\d+\.\d+(?:\.\d+)?)" % verb, text)
         if not stated:
-            problems.append(f"SDK tags: no 'vX.Y {joiner} vX.Z' ESP-IDF "
+            problems.append(f"SDK tags: no 'CI {verb} vX.Y.Z' ESP-IDF "
                             f"statement in {page}")
-        for m in stated:
-            if [m.group(1), m.group(2)] != idfs:
-                problems.append(
-                    f"SDK tags: {page} says ESP-IDF {m.group(1)} "
-                    f"{joiner} {m.group(2)}; ci.yml builds "
-                    f"{', '.join(idfs)}")
+        for tag in stated:
+            if tag != idf:
+                problems.append(f"SDK tags: {page} says ESP-IDF {tag}; "
+                                f"ci.yml builds {idf}")
 
 
 # Where the SPDX line is required: the directories walked and the suffixes

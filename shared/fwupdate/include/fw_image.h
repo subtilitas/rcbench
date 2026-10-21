@@ -38,8 +38,9 @@ extern "C" {
 /** Image header, first segment header and the application descriptor. */
 #define FW_HEAD_BYTES     288u
 #define FW_IMAGE_MAGIC    0xE9u
-/** esp_chip_id_t of the ESP32-S3. */
-#define FW_CHIP_ESP32S3   9u
+/** @brief esp_chip_id_t of the ESP32-P4: ESP_CHIP_ID_ESP32P4, 0x0012, in
+ *         ESP-IDF's esp_app_format.h. */
+#define FW_CHIP_ESP32P4   0x0012u
 #define FW_DESC_MAGIC     0xABCD5432uL
 /** The CMake project name, which the descriptor carries. */
 #define FW_PROJECT        "rcbench-panel"

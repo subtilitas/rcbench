@@ -81,6 +81,33 @@ void touch_map_point(const touch_map_t *m, touch_point_t *p)
     touch_map_apply(m, p->x, p->y, &p->x, &p->y);
 }
 
+/** @brief Map n points in place (touch_map.h). */
+void touch_map_points(const touch_map_t *m, touch_point_t *pts, int n)
+{
+    if (m == NULL || pts == NULL) {
+        return;
+    }
+    for (int i = 0; i < n; ++i) {
+        touch_map_point(m, &pts[i]);
+    }
+}
+
+/** @brief Keep the points inside w x h, in order (touch_map.h). */
+int touch_map_crop(touch_point_t *pts, int count, int16_t w, int16_t h)
+{
+    if (pts == NULL || count <= 0 || w <= 0 || h <= 0) {
+        return 0;
+    }
+    int kept = 0;
+    for (int i = 0; i < count; ++i) {
+        const touch_point_t p = pts[i];
+        if (p.x >= 0 && p.y >= 0 && p.x < w && p.y < h) {
+            pts[kept++] = p;
+        }
+    }
+    return kept;
+}
+
 /* ----------------------------------------------------------------- tracker */
 
 void touch_tracker_reset(touch_tracker_t *t)

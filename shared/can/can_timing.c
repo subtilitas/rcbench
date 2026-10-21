@@ -39,9 +39,13 @@ void can_timing_limits_twai(can_timing_limits_t *out)
         return;
     }
     memset(out, 0, sizeof(*out));
-    out->clock_hz  = 80000000u;   /* the APB (advanced peripheral bus) clock */
+    /*
+     * The ESP32-P4's TWAI, clocked from the 40 MHz crystal.  The prescaler
+     * takes even divisors from 2 to 32768: the register holds div / 2 - 1.
+     */
+    out->clock_hz  = 40000000u;
     out->div_min   = 2;
-    out->div_max   = 16384;
+    out->div_max   = 32768;
     out->div_step  = 2;
     out->tseg1_min = 1;
     out->tseg1_max = 16;

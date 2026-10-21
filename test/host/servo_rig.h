@@ -2,8 +2,8 @@
  * The SERVO screen as the servo suites drive it: the screen on one canvas
  * in the body's coordinates, a touch handed to its event hook, and the
  * places of the dial, the SETTINGS overlay, ARM and SPEED and the supply's
- * SET row mirrored from servo_screen.c.  Taken by test_servo.c,
- * test_servo_settings.c, test_servo_test_panel.c and
+ * SET row mirrored from servo_screen.c.  Taken by the suites of
+ * servo_screen_rig.h, test_servo_settings.c, test_servo_test_panel.c and
  * test_servo_limit_panel.c.
  *
  * Only static inline helpers and the buffers and counters they use.
@@ -32,11 +32,11 @@
 
 #include "servo_spots.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /* Mirrored from servo_screen.c; if the layout moves these move with it. */
-#define BODY_H  (480 - UI_BAND_H)
+#define BODY_H  UI_BODY_H
 #define SHAFT_X 300
 #define SHAFT_Y (BODY_H / 2)
 #define ARC_R   140
@@ -234,10 +234,10 @@ static inline void acked(uint32_t age_ms, servo_sweep_from_t from,
 /* The ARM button, mirrored from servo_screen.c: full width of the right
  * card's inner column, under CENTRE and RELEASE. */
 /* The SPEED track, mirrored from the screen: x, w and y of the slider. */
-#define SPEED_X_HALF (508 + 12 + (800 - 508 - 6 - 24) / 2)
+#define SPEED_X_HALF (508 + 12 + (UI_PANEL_W - 508 - UI_MARGIN - 24) / 2)
 #define SPEED_Y (296 + 11)
 #define ARM_X (508 + 12)
-#define ARM_W (800 - 508 - 6 - 24)
+#define ARM_W (UI_PANEL_W - 508 - UI_MARGIN - 24)
 #define ARM_Y 388
 #define ARM_H 32
 static inline void arm_press(void)   { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_DOWN, 1); }

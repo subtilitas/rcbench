@@ -421,7 +421,7 @@ bool esc_stick_panel_down(const touch_event_t *evt)
             const int by = hit(pg.down[i], px, py)  ? -1
                          : hit(pg.up[i], px, py)    ?  1 : 0;
             if (by != 0) {
-                settings_adjust(k_sp_settings[idx], by);
+                settings_adjust(sp_settings_list[idx], by);
             }
             if (by != 0 || hit(pg.row[i], px, py)) {
                 t->tpicked = idx;

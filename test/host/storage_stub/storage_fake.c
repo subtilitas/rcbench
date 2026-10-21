@@ -16,11 +16,11 @@ esp_log_level_t g_mount_tag_level;
 esp_log_level_t g_disk_tag_level;
 esp_log_level_t g_cmd_tag_level;
 esp_log_level_t g_default_level;
-unsigned   g_bus_inits;
-bool       g_bus_up;
-esp_err_t  g_bus_fail;
-esp_err_t  g_cs_fail;
-bool       g_cs;
+unsigned   g_pwr_news;
+bool       g_pwr_on;
+esp_err_t  g_pwr_fail;
+int        g_mount_width;
+int        g_mount_slot;
 bool       g_card;
 esp_err_t  g_card_start;
 FRESULT    g_card_fs;
@@ -29,10 +29,11 @@ bool       g_probe_card_gone;
 esp_err_t  g_dev_fail;
 bool       g_drives_full;
 unsigned   g_dev_adds;
+unsigned   g_dev_removes;
 int        g_dev_live;
 int        g_drive_live;
 int        g_fs_live;
-bool       g_cs_in_probe;
+bool       g_slot_in_probe;
 static sdmmc_card_t g_sd;
 uint64_t   g_total;
 BYTE       g_fs_type;
@@ -107,66 +108,59 @@ void fake_log(esp_log_level_t level, const char *tag, const char *text)
     snprintf(l->text, sizeof(l->text), "%s", text);
 }
 
-esp_err_t board_sd_cs(bool on)
-{
-    if (on && g_cs_fail != ESP_OK) {
-        const esp_err_t e = g_cs_fail;
-        g_cs_fail = ESP_OK;
-        return e;
-    }
-    g_cs = on;
-    return ESP_OK;
-}
+static struct fake_pwr { int chan; } g_pwr;
 
-esp_err_t spi_bus_initialize(int host, const spi_bus_config_t *cfg, int dma)
+esp_err_t sd_pwr_ctrl_new_on_chip_ldo(const sd_pwr_ctrl_ldo_config_t *cfg,
+                                      sd_pwr_ctrl_handle_t *out)
 {
-    (void)host;
-    (void)cfg;
-    (void)dma;
-    ++g_bus_inits;
-    if (g_bus_fail != ESP_OK) {
-        const esp_err_t e = g_bus_fail;
-        g_bus_fail = ESP_OK;
+    ++g_pwr_news;
+    if (g_pwr_fail != ESP_OK) {
+        const esp_err_t e = g_pwr_fail;
+        g_pwr_fail = ESP_OK;
         return e;
     }
-    if (g_bus_up) {
-        ESP_LOGE("spi", "spi_bus_initialize(802): SPI bus already initialized.");
+    if (g_pwr_on) {
+        /* The channel is taken: ESP-IDF refuses a second owner. */
         return ESP_ERR_INVALID_STATE;
     }
-    g_bus_up = true;
+    g_pwr.chan = cfg->ldo_chan_id;
+    g_pwr_on = true;
+    *out = &g_pwr;
     return ESP_OK;
 }
 
-esp_err_t spi_bus_free(int host)
+esp_err_t sd_pwr_ctrl_del_on_chip_ldo(sd_pwr_ctrl_handle_t handle)
 {
-    (void)host;
-    g_bus_up = false;
+    (void)handle;
+    g_pwr_on = false;
     return ESP_OK;
 }
 
 /* The card's start-up, as both the mount and the second look run it: no
- * answer without a card or without chip select. */
-static esp_err_t card_start(void)
+ * answer without a card, and none from a card on a host that carries no
+ * supply. */
+static esp_err_t card_start(const sdmmc_host_t *host)
 {
-    if (!g_bus_up) {
-        return ESP_ERR_INVALID_STATE;
+    if (!g_pwr_on || host->pwr_ctrl_handle != &g_pwr) {
+        return ESP_ERR_TIMEOUT;
     }
-    if (!g_card || !g_cs) {
+    if (!g_card) {
         return ESP_ERR_TIMEOUT;
     }
     return g_card_start;
 }
 
-esp_err_t esp_vfs_fat_sdspi_mount(const char *base, const sdmmc_host_t *host,
-                                  const sdspi_device_config_t *slot,
+esp_err_t esp_vfs_fat_sdmmc_mount(const char *base, const sdmmc_host_t *host,
+                                  const void *slot,
                                   const esp_vfs_fat_sdmmc_mount_config_t *cfg,
                                   sdmmc_card_t **out)
 {
     (void)base;
-    (void)host;
-    (void)slot;
     (void)cfg;
-    const esp_err_t start = card_start();
+    const sdmmc_slot_config_t *sc = (const sdmmc_slot_config_t *)slot;
+    g_mount_width = sc->width;
+    g_mount_slot = host->slot;
+    const esp_err_t start = card_start(host);
     if (start != ESP_OK) {
         ESP_LOGE("vfs_fat_sdmmc", "sdmmc_card_init failed (0x%x).", start);
         return start;
@@ -183,9 +177,14 @@ esp_err_t esp_vfs_fat_sdspi_mount(const char *base, const sdmmc_host_t *host,
     return ESP_OK;
 }
 
-esp_err_t sdspi_host_init_device(const sdspi_device_config_t *cfg,
-                                 sdspi_dev_handle_t *out)
+esp_err_t sdmmc_host_init(void)
 {
+    return ESP_OK;
+}
+
+esp_err_t sdmmc_host_init_slot(int slot, const sdmmc_slot_config_t *cfg)
+{
+    (void)slot;
     (void)cfg;
     ++g_dev_adds;
     if (g_dev_fail != ESP_OK) {
@@ -194,26 +193,27 @@ esp_err_t sdspi_host_init_device(const sdspi_device_config_t *cfg,
         return e;
     }
     ++g_dev_live;
-    *out = 0;
     return ESP_OK;
 }
 
-esp_err_t sdspi_host_remove_device(sdspi_dev_handle_t handle)
+esp_err_t sdmmc_host_deinit_slot(int slot)
 {
-    (void)handle;
-    --g_dev_live;
+    (void)slot;
+    ++g_dev_removes;
+    if (g_dev_live > 0) {
+        --g_dev_live;
+    }
     return ESP_OK;
 }
 
 esp_err_t sdmmc_card_init(const sdmmc_host_t *host, sdmmc_card_t *card)
 {
-    (void)host;
     (void)card;
-    g_cs_in_probe = g_cs;
+    g_slot_in_probe = g_dev_live > 0;
     if (g_probe_card_gone) {
         g_card = false;
     }
-    return card_start();
+    return card_start(host);
 }
 
 esp_err_t ff_diskio_get_drive(BYTE *out_pdrv)
@@ -437,11 +437,11 @@ void slot_empty(void)
     g_disk_tag_level  = ESP_LOG_INFO;
     g_cmd_tag_level   = ESP_LOG_INFO;
     g_default_level   = ESP_LOG_INFO;
-    g_bus_inits  = 0u;
-    g_bus_up     = false;
-    g_bus_fail   = ESP_OK;
-    g_cs_fail    = ESP_OK;
-    g_cs         = false;
+    g_pwr_news   = 0u;
+    g_pwr_on     = false;
+    g_pwr_fail   = ESP_OK;
+    g_mount_width = -1;
+    g_mount_slot  = -1;
     g_card       = false;
     g_card_start = ESP_OK;
     g_card_fs    = FR_OK;
@@ -450,10 +450,11 @@ void slot_empty(void)
     g_dev_fail   = ESP_OK;
     g_drives_full = false;
     g_dev_adds   = 0u;
+    g_dev_removes = 0u;
     g_dev_live   = 0;
     g_drive_live = 0;
     g_fs_live    = 0;
-    g_cs_in_probe = false;
+    g_slot_in_probe = false;
     g_total      = 16ull * 1024u * 1024u * 1024u;
     g_fs_type    = FS_FAT32;
     g_getfree    = FR_OK;
@@ -473,7 +474,7 @@ void slot_empty(void)
 /* The second look let go of all it took, and chip select with it. */
 bool probe_left_nothing(void)
 {
-    return g_dev_live == 0 && g_drive_live == 0 && g_fs_live == 0 && !g_cs;
+    return g_dev_live == 0 && g_drive_live == 0 && g_fs_live == 0;
 }
 
 void card_in(BYTE fs_type, uint64_t total)

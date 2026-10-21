@@ -85,7 +85,7 @@ static void down(const touch_event_t *evt)
         return;
     }
     for (int i = 0; i < ROW_COUNT; ++i) {
-        const row_t *r = &k_rows[i];
+        const row_t *r = &kpn_rows[i];
 
         if (r->page != k.tabs.selected || !kpn_row_live(r)) {
             continue;
@@ -219,7 +219,7 @@ static void rest(const touch_event_t *evt)
     case P_PLUS:
     case P_MINUS:
         /* A finger that leaves the key ends the repeat. */
-        if (up || !gfx_rect_contains(kpn_step_rect(&k_rows[which],
+        if (up || !gfx_rect_contains(kpn_step_rect(&kpn_rows[which],
                                                was == P_PLUS), x, y)) {
             let_go();
         }
@@ -238,12 +238,12 @@ static void rest(const touch_event_t *evt)
         }
         break;
     case P_ROW:
-        if (gfx_rect_contains(kpn_value_rect(&k_rows[which]), x, y)
-            && kpn_row_live(&k_rows[which])) {
-            if (k_rows[which].kind == K_ACT) {
-                kpn_act(&k_rows[which]);
+        if (gfx_rect_contains(kpn_value_rect(&kpn_rows[which]), x, y)
+            && kpn_row_live(&kpn_rows[which])) {
+            if (kpn_rows[which].kind == K_ACT) {
+                kpn_act(&kpn_rows[which]);
             } else {
-                kpn_edit_field(&k_rows[which]);
+                kpn_edit_field(&kpn_rows[which]);
             }
         }
         break;
@@ -344,7 +344,7 @@ void kst_panel_tick(float dt_s)
                            ? 0 : 1 + (int)((before - REPEAT_DELAY_S) * hz);
         fired_now = 1 + (int)((k.held_s - REPEAT_DELAY_S) * hz);
         for (int i = fired_before; i < fired_now && k.pressed != P_NONE; ++i) {
-            kpn_step(&k_rows[k.row], k.pressed == P_PLUS);
+            kpn_step(&kpn_rows[k.row], k.pressed == P_PLUS);
             if (k.warn.open) {
                 /* A soft limit: the page takes over and the repeat ends. */
                 let_go();
