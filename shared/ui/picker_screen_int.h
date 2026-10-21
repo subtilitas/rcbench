@@ -1,10 +1,11 @@
-/*
- * PICK A PIN's private seam between picker_screen.c, the state, the touch
- * handling and the screen's interface, picker_geometry.c, where the board,
- * its pads, buttons and marks and the protocol list sit, and
- * picker_draw.c, the drawing: the layout they work on, the state and the
- * functions one calls in another.  Nothing outside shared/ui includes this
- * header; the screen's interface is picker_screen.h.
+/**
+ * @file picker_screen_int.h
+ * @brief PICK A PIN's private seam between picker_screen.c, the state, the
+ *        touch handling and the screen's interface, picker_geometry.c, where
+ *        the board, its pads, buttons and marks and the protocol list sit, and
+ *        picker_draw.c, the drawing: the layout they work on, the state and
+ *        the functions one calls in another.  Nothing outside shared/ui
+ *        includes this header; the screen's interface is picker_screen.h.
  *
  * Included last: its layout macros have short names (GAP, ROW_H, INK) and
  * it names the state s, which no header included after it may meet.  The

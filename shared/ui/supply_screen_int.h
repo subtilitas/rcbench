@@ -1,10 +1,11 @@
-/*
- * The SUPPLY screen's private seam between supply_screen.c, the state, the
- * commands and the screen's interface, supply_events.c, its touch events
- * and frames, and supply_draw.c, its drawing: the layout the three work
- * on, the rows of SETTINGS' page, the state and the functions one calls in
- * another.  Nothing outside shared/ui includes this header; the screen's
- * interface is supply_screen.h.
+/**
+ * @file supply_screen_int.h
+ * @brief The SUPPLY screen's private seam between supply_screen.c, the state,
+ *        the commands and the screen's interface, supply_events.c, its touch
+ *        events and frames, and supply_draw.c, its drawing: the layout the
+ *        three work on, the rows of SETTINGS' page, the state and the
+ *        functions one calls in another.  Nothing outside shared/ui includes
+ *        this header; the screen's interface is supply_screen.h.
  *
  * Included last: its layout macros have short names (W, H, PAD) and it
  * names the state s, which no header included after it may meet.  What

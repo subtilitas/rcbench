@@ -1,9 +1,11 @@
-/*
- * The SUPPLY screen's drawing: the strip row, the rail with the readings
- * and the CONTROL card, LIVE's plot or table and set points, SETTINGS'
- * page and the question.  supply_screen.c holds the state, the commands
- * and the screen's interface (supply_screen.h); supply_screen_int.h is
- * what it shares with this file and supply_events.c.
+/**
+ * @file supply_draw.c
+ * @brief The SUPPLY screen's drawing: the strip row, the rail with the
+ *        readings and the CONTROL card, LIVE's plot or table and set points,
+ *        SETTINGS' page and the question.  supply_screen.c holds the state,
+ *        the commands and the screen's interface (supply_screen.h);
+ *        supply_screen_int.h is what it shares with this file and
+ *        supply_events.c.
  *
  * SPDX-License-Identifier: MIT
  */

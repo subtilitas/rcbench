@@ -1,9 +1,10 @@
-/*
- * The MOTOR & ESC screen's drawing: the strip row, the rail with the
- * readouts and the CONTROL card, LIVE's plot or table and the throttle,
- * and the page of the task shown.  motor_screen.c holds the state, the
- * commands and the screen's interface (motor_screen.h); motor_live_int.h
- * is what it shares with this file and motor_events.c.
+/**
+ * @file motor_draw.c
+ * @brief The MOTOR & ESC screen's drawing: the strip row, the rail with the
+ *        readouts and the CONTROL card, LIVE's plot or table and the throttle,
+ *        and the page of the task shown.  motor_screen.c holds the state, the
+ *        commands and the screen's interface (motor_screen.h);
+ *        motor_live_int.h is what it shares with this file and motor_events.c.
  *
  * SPDX-License-Identifier: MIT
  */

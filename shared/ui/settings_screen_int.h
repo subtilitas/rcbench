@@ -1,9 +1,10 @@
-/*
- * SETUP's private seam between settings_screen.c, the state, the touch
- * handling and the screen's interface, and settings_draw.c, its drawing:
- * the layout both work on, the hub's tiles, the state and the functions
- * one calls in the other.  Nothing outside shared/ui includes this header;
- * the screen's interface is settings_screen.h.
+/**
+ * @file settings_screen_int.h
+ * @brief SETUP's private seam between settings_screen.c, the state, the touch
+ *        handling and the screen's interface, and settings_draw.c, its
+ *        drawing: the layout both work on, the hub's tiles, the state and the
+ *        functions one calls in the other.  Nothing outside shared/ui includes
+ *        this header; the screen's interface is settings_screen.h.
  *
  * Included last: its layout macros have short names (ROW_H, BTN_W) and it
  * names the state s, which no header included after it may meet.  The

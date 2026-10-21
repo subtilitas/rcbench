@@ -1,9 +1,10 @@
-/*
- * The SUPPLY screen's events: a touch on the strip, the set points, the
- * rail and OUTPUT, SETTINGS' page, the keypad and the question, and the
- * frame's tick.  supply_screen.c holds the state, the commands and the
- * screen's interface (supply_screen.h); supply_screen_int.h is what it
- * shares with this file and supply_draw.c.
+/**
+ * @file supply_events.c
+ * @brief The SUPPLY screen's events: a touch on the strip, the set points, the
+ *        rail and OUTPUT, SETTINGS' page, the keypad and the question, and the
+ *        frame's tick.  supply_screen.c holds the state, the commands and the
+ *        screen's interface (supply_screen.h); supply_screen_int.h is what it
+ *        shares with this file and supply_draw.c.
  *
  * SPDX-License-Identifier: MIT
  */

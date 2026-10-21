@@ -1,6 +1,7 @@
-/*
- * PANEL UPDATE, the screen that writes an uploaded or downloaded image:
- * wifi_screen.h says what it is for and declares its interface.
+/**
+ * @file update_screen.c
+ * @brief PANEL UPDATE, the screen that writes an uploaded or downloaded image:
+ *        wifi_screen.h says what it is for and declares its interface.
  *
  * SPDX-License-Identifier: MIT
  */

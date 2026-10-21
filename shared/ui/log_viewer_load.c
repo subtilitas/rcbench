@@ -1,10 +1,12 @@
-/*
- * The log viewer's loading: a file the browse view opens is analysed (its
- * delimiter, decimal convention and time column, see shared/logfile), its
- * chosen columns are read, and lv_compute_spans() turns them into the
- * plot's scaled traces.  log_viewer_screen.c holds the state, the card's
- * listing and paging and the screen's interface (log_viewer_screen.h);
- * log_viewer_int.h is what the screen's four files share.
+/**
+ * @file log_viewer_load.c
+ * @brief The log viewer's loading: a file the browse view opens is analysed
+ *        (its delimiter, decimal convention and time column, see
+ *        shared/logfile), its chosen columns are read, and lv_compute_spans()
+ *        turns them into the plot's scaled traces.  log_viewer_screen.c holds
+ *        the state, the card's listing and paging and the screen's interface
+ *        (log_viewer_screen.h); log_viewer_int.h is what the screen's four
+ *        files share.
  *
  * SPDX-License-Identifier: MIT
  */

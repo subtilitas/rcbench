@@ -1,11 +1,12 @@
-/*
- * The private seam between motor_screen.c, the MOTOR & ESC screen's state,
- * commands and interface, motor_events.c, its touch events and frames, and
- * motor_draw.c, its drawing: LIVE's layout inside motor_screen_int.h's,
- * the channels, the state and the functions one calls in another.  The
- * other files of the screen (motor_workbench.c, motor_program_page.c,
- * motor_settings_page.c) keep their own state and do not include this
- * header.  Nothing outside shared/ui includes it.
+/**
+ * @file motor_live_int.h
+ * @brief The private seam between motor_screen.c, the MOTOR & ESC screen's
+ *        state, commands and interface, motor_events.c, its touch events and
+ *        frames, and motor_draw.c, its drawing: LIVE's layout inside
+ *        motor_screen_int.h's, the channels, the state and the functions one
+ *        calls in another.  The other files of the screen (motor_workbench.c,
+ *        motor_program_page.c, motor_settings_page.c) keep their own state and
+ *        do not include this header.  Nothing outside shared/ui includes it.
  *
  * Included last: it names the state s, which no header included after it
  * may meet.  What one file calls or reads in another carries the prefix

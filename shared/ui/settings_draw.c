@@ -1,9 +1,10 @@
-/*
- * SETUP's drawing: the hub's tiles, a category's list and its rows, the
- * SAVE strip under both, and the warning that holds the way out.
- * settings_screen.c holds the state, the touch handling and the screen's
- * interface (settings_screen.h); settings_screen_int.h is what the two
- * share.
+/**
+ * @file settings_draw.c
+ * @brief SETUP's drawing: the hub's tiles, a category's list and its rows, the
+ *        SAVE strip under both, and the warning that holds the way out.
+ *        settings_screen.c holds the state, the touch handling and the
+ *        screen's interface (settings_screen.h); settings_screen_int.h is what
+ *        the two share.
  *
  * SPDX-License-Identifier: MIT
  */

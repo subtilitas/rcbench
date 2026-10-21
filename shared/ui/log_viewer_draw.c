@@ -1,9 +1,10 @@
-/*
- * The log viewer's drawing: the browse view with its tabs, list, scroll
- * bar and DELETE question, the import view, and the plot.
- * log_viewer_screen.c holds the state, the card's listing and paging and
- * the screen's interface (log_viewer_screen.h); log_viewer_int.h is what
- * the screen's four files share.
+/**
+ * @file log_viewer_draw.c
+ * @brief The log viewer's drawing: the browse view with its tabs, list, scroll
+ *        bar and DELETE question, the import view, and the plot.
+ *        log_viewer_screen.c holds the state, the card's listing and paging
+ *        and the screen's interface (log_viewer_screen.h); log_viewer_int.h is
+ *        what the screen's four files share.
  *
  * SPDX-License-Identifier: MIT
  */

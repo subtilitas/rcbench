@@ -1,11 +1,12 @@
-/*
- * The log viewer's private seam between log_viewer_screen.c, the state,
- * the card's listing and paging and the screen's interface,
- * log_viewer_load.c, a file's analysis, data and plot traces,
- * log_viewer_draw.c, the drawing, and log_viewer_events.c, the touch
- * events: the layout the four work on, the state, the plot's traces and
- * the functions one calls in another.  Nothing outside shared/ui includes
- * this header; the screen's interface is log_viewer_screen.h.
+/**
+ * @file log_viewer_int.h
+ * @brief The log viewer's private seam between log_viewer_screen.c, the state,
+ *        the card's listing and paging and the screen's interface,
+ *        log_viewer_load.c, a file's analysis, data and plot traces,
+ *        log_viewer_draw.c, the drawing, and log_viewer_events.c, the touch
+ *        events: the layout the four work on, the state, the plot's traces and
+ *        the functions one calls in another.  Nothing outside shared/ui
+ *        includes this header; the screen's interface is log_viewer_screen.h.
  *
  * Included last: its layout macros have short names (FOOT_Y, PV_W) and it
  * names the state s, which no header included after it may meet.  What

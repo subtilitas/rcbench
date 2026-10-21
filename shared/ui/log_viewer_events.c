@@ -1,10 +1,11 @@
-/*
- * The log viewer's touch events: taps, drags and the scroll bar on the
- * browse view, the DELETE question, the import view's columns and
- * overrides, and the plot's cursor, pinch zoom and pan.
- * log_viewer_screen.c holds the state, the card's listing and paging and
- * the screen's interface (log_viewer_screen.h); log_viewer_int.h is what
- * the screen's four files share.
+/**
+ * @file log_viewer_events.c
+ * @brief The log viewer's touch events: taps, drags and the scroll bar on the
+ *        browse view, the DELETE question, the import view's columns and
+ *        overrides, and the plot's cursor, pinch zoom and pan.
+ *        log_viewer_screen.c holds the state, the card's listing and paging
+ *        and the screen's interface (log_viewer_screen.h); log_viewer_int.h is
+ *        what the screen's four files share.
  *
  * SPDX-License-Identifier: MIT
  */

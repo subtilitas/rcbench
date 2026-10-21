@@ -1,9 +1,10 @@
-/*
- * PICK A PIN's geometry: the box the board takes, where each pad sits, the
- * buttons above and below the board, the marks inside it, and the
- * protocol list's rows.  picker_screen.c holds the state, the touch
- * handling and the screen's interface (picker_screen.h); picker_draw.c
- * draws; picker_screen_int.h is what the three share.
+/**
+ * @file picker_geometry.c
+ * @brief PICK A PIN's geometry: the box the board takes, where each pad sits,
+ *        the buttons above and below the board, the marks inside it, and the
+ *        protocol list's rows.  picker_screen.c holds the state, the touch
+ *        handling and the screen's interface (picker_screen.h); picker_draw.c
+ *        draws; picker_screen_int.h is what the three share.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -1,9 +1,10 @@
-/*
- * The MOTOR & ESC screen's events: a touch on the strip, the rail, LIVE's
- * page and the pages of the other tasks, and the frame's tick.
- * motor_screen.c holds the state, the commands and the screen's interface
- * (motor_screen.h); motor_live_int.h is what it shares with this file and
- * motor_draw.c.
+/**
+ * @file motor_events.c
+ * @brief The MOTOR & ESC screen's events: a touch on the strip, the rail,
+ *        LIVE's page and the pages of the other tasks, and the frame's tick.
+ *        motor_screen.c holds the state, the commands and the screen's
+ *        interface (motor_screen.h); motor_live_int.h is what it shares with
+ *        this file and motor_draw.c.
  *
  * SPDX-License-Identifier: MIT
  */

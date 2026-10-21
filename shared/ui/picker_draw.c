@@ -1,9 +1,10 @@
-/*
- * PICK A PIN's drawing: the board, its buttons and marks, the head with
- * the protocol list's face, the PINS and IN USE tables and the open list.
- * picker_screen.c holds the state, the touch handling and the screen's
- * interface (picker_screen.h); picker_geometry.c says where things sit;
- * picker_screen_int.h is what the three share.
+/**
+ * @file picker_draw.c
+ * @brief PICK A PIN's drawing: the board, its buttons and marks, the head with
+ *        the protocol list's face, the PINS and IN USE tables and the open
+ *        list. picker_screen.c holds the state, the touch handling and the
+ *        screen's interface (picker_screen.h); picker_geometry.c says where
+ *        things sit; picker_screen_int.h is what the three share.
  *
  * SPDX-License-Identifier: MIT
  */

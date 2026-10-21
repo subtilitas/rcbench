@@ -1,7 +1,8 @@
 /*
  * SETUP's list rows: what settings_rows.c, settings_screen.c and
- * settings_draw.c share and nobody else sees.  A row is a setting, a heading above the next one, a
- * part's heading on SENSORS (sensors_rows.h), or a string.
+ * settings_draw.c share and nobody else sees.  A row is a setting, a
+ * heading above the next one, a part's heading on SENSORS
+ * (sensors_rows.h), or a string.
  *
  * SPDX-License-Identifier: MIT
  */
