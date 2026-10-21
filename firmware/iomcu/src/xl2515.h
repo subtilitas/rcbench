@@ -35,7 +35,8 @@ bool xl2515_init(uint32_t bitrate);
 /**
  * @brief Queue one frame in TXB0 and request transmission.
  *
- * False if the buffer is still busy with the previous one.
+ * False if the buffer is
+ *  still busy with the previous one.
  *
  * @param f  The frame to send. NULL is refused, and so is a DLC above 8.
  * @return True when the frame is queued. False when the buffer is still busy
@@ -46,13 +47,14 @@ bool xl2515_send(const link_can_frame_t *f);
 /**
  * @brief Take one frame from whichever receive buffer has one.
  *
- * A buffer holding a frame this link does not carry is consumed, adds 1 to
- * @p refused (modulo 2^32, NULL counts nothing) and the other buffer is
- * tried.  False if none holds a valid frame.
+ * A buffer holding a
+ *  frame this link does not carry is consumed, adds 1 to @p refused (modulo
+ *  2^32, NULL counts nothing) and the other buffer is tried.  False if none
+ *  holds a valid frame.
  *
  * @param f  Receives the frame.
- * @param refused  Counts the frames this link does not carry. NULL counts
- *                 nothing.
+ * @param refused  Counts the frames this link does not carry. NULL
+ *                 counts nothing.
  * @return True when a valid frame was taken. False when no buffer holds one.
  */
 bool xl2515_recv(link_can_frame_t *f, uint32_t *refused);

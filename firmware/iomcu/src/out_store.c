@@ -69,8 +69,8 @@
  * Held at compile time as well as in the paragraph above.
  *
  * This catches a board file with less flash than the store needs, and a
- * partition table whose store partition is not the two sectors this file
- * writes.
+ * partition table whose store partition is not the two sectors this
+ * file writes.
  */
 _Static_assert(STORE_FLASH_BYTES <= PICO_FLASH_SIZE_BYTES,
                "the output store is past the end of this board's flash");
@@ -93,10 +93,10 @@ _Static_assert(STORE_V7_BYTES == FLASH_PAGE_SIZE
  * @brief Two flash pages hold a version 8 record, and a save programs both
  * in one window.
  *
- * The record's layout, its checksum and its zero count are out_store_rec.c's
- * (host-tested); the checksum is the link's, because a half-written record
- * and a corrupt frame are the same problem and there is no reason for two
- * answers to it.
+ * The record's layout, its checksum and its zero count are
+ * out_store_rec.c's (host-tested); the checksum is the link's, because a
+ * half-written record and a corrupt frame are the same problem and there is
+ * no reason for two answers to it.
  *
  * The checksum is not what says the record is whole, though, and a power cut
  * can leave one that is not.  Two ways, and they are opposites:
@@ -128,10 +128,9 @@ static uint8_t     s_last_record;
  *
  * Two numbers rather than one, because they answer different questions.  The
  * program is what every save costs; the erase is what one save in sixteen
- * costs, or none of them when out_store_reclaim() has been given a quiet
- * moment first.  Measured rather than compensated for: what a window does to
- * the link is decided by its length, and the length belongs to the flash
- * part.
+ * costs, or none of them when out_store_reclaim() has been given a quiet moment
+ * first.  Measured rather than compensated for: what a window does to the link
+ * is decided by its length, and the length belongs to the flash part.
  */
 static uint32_t    s_last_erase_us;
 static uint32_t    s_last_program_us;
@@ -159,9 +158,8 @@ static union {
 } s_page;
 
 /**
- * @brief The live record of the layout before version 8, by sector, while
- * the store holds no version 8 record: never erased until the first one is
- * written.
+ * @brief The live record of the layout before version 8, by sector, while the
+ * store holds no version 8 record: never erased until the first one is written.
  *
  * -1 for none.
  */
@@ -225,14 +223,14 @@ static void survey(out_store_rec_t *recs, uint8_t n, uint32_t bytes,
 /**
  * @brief One erase or one program, run inside a flash window.
  *
- * One erase or one program: interrupts off on this core, and core 1 either not
- * launched yet or parked in RAM by the multicore lock-out (flash_window()), for
- * the whole operation.  The flash cannot be read while it is being written, and
+ * One erase or one program: interrupts off on this core, and core 1 either
+ * not launched yet or parked in RAM by the multicore lock-out
+ * (flash_window()), for the whole operation.  The flash cannot be read while it is being written, and
  * both cores execute from it.  That is also why none of this runs while the
- * bank is driving -- the caller's loop takes nothing off the CAN controller and
- * steps no output for the length of the window, so a disarm or a command in
- * flight waits for it.  Core 1 reads no sensor for it either, and the bank is
- * idle, so no run loses a reading.
+ * bank is driving -- the caller's loop takes nothing off the CAN controller
+ * and steps no output for the length of the window, so a disarm or a
+ * command in flight waits for it.  Core 1 reads no sensor for it either,
+ * and the bank is idle, so no run loses a reading.
  *
  * Both timestamps are inside the window, because the window is what is being
  * measured: taken either side of it they would also count the lock-out and
@@ -251,8 +249,8 @@ typedef struct {
 } flash_op_t;
 
 /**
- * @brief Runs the operation and records how long the window held interrupts
- * off.
+ * @brief Runs the operation and records how long the window held
+ * interrupts off.
  *
  * @param arg  The flash_op_t to run.
  */
@@ -332,8 +330,8 @@ static uint32_t clock_ms(void)
 /**
  * @brief Tells whether windows are refused because core 1 did not stop.
  *
- * @return True while a window is refused. The refusal lapses after
- *         OUT_STORE_REFUSED_WAIT_MS.
+ * @return True while a window is refused. The refusal lapses
+ *         after OUT_STORE_REFUSED_WAIT_MS.
  */
 static bool refusing(void)
 {
@@ -347,8 +345,9 @@ static bool refusing(void)
 /**
  * @brief True when the operation ran.
  *
- * flash_safe_execute() answers a timeout on the way in (nothing ran) and on
- * the way out (it ran) with the same code, so the operation says for itself.
+ * flash_safe_execute() answers a timeout on
+ * the way in (nothing ran) and on the way out (it ran) with the same code,
+ * so the operation says for itself.
  *
  * @param op  The operation. Its done field is set.
  * @return True when the operation ran.

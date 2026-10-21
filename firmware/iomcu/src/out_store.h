@@ -15,18 +15,18 @@
  *
  * What a write costs.  The flash cannot be read while it is written and this
  * core executes from it, so a write runs with interrupts off and this end
- * answers nothing for its length.  On the bring-up module an erase and program
- * together measured 19,178 us: a CAN (Controller Area Network) frame at 1
- * Mbit/s is about 130 us and the XL2515 holds two of them, so a request
+ * answers nothing for its length.  On the bring-up module an erase and
+ * program together measured 19,178 us: a CAN (Controller Area Network) frame
+ * at 1 Mbit/s is about 130 us and the XL2515 holds two of them, so a request
  * arriving in that window is lost with nothing wrong on the wire.  That
  * measurement is the two operations inside one window; neither half of it was
- * timed on its own.  It is 1 sample on the bring-up module, with the flash part
- * not yet identified; the window is to be argued again against the part's
- * datasheet maximum once the part is known.  A lost request costs the panel
- * LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches
- * this end's LINK_DEV_SILENCE_MS (200 ms) failsafe.  One lost frame is enough
- * for that, which is what makes the length of these windows a safety number
- * rather than a performance one.
+ * timed on its own.  It is 1 sample on the bring-up module, with the flash
+ * part not yet identified; the window is to be argued again against the
+ * part's datasheet maximum once the part is known.  A lost request costs
+ * the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's
+ * LINK_DEV_SILENCE_MS (200 ms) failsafe.  One lost frame is enough for that,
+ * which is what makes the length of these windows a safety number rather than
+ * a performance one.
  *
  * What this store does about it:
  *
@@ -47,14 +47,14 @@
  *   Both wait for a gap in the traffic; see OUT_STORE_QUIET_MS.
  *
  * The window is not eliminated.  A page program is not measured on this part:
- * the erase covers 4,096 bytes and the program 512, and on serial NOR (not-or)
- * flash a page program takes one to two orders of magnitude less than an erase,
- * which puts the two pages somewhere between 400 and 4,000 us against the 260
- * us of frames the controller holds.  out_store_last_program_us() is what will
- * settle it. Removing the loss rather than shrinking it needs the receive
- * buffers emptied during the window, which means reading the controller over
- * SPI (Serial Peripheral Interface) from a routine held in RAM while the flash
- * is busy; that is not written.
+ * the erase covers 4,096 bytes and the program 512, and on serial NOR
+ * (not-or) flash a page program takes one to two orders of magnitude less
+ * than an erase, which puts the two pages somewhere between 400 and
+ * 4,000 us against the 260 us of frames the controller holds.  out_store_last_program_us() is what will settle it.
+ * Removing the loss rather than shrinking it needs the receive buffers
+ * emptied during the window, which means reading the controller over SPI
+ * (Serial Peripheral Interface) from a routine held in RAM while the flash is
+ * busy; that is not written.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -79,8 +79,8 @@
  * -- and then @p out is untouched, so the caller keeps the defaults it
  * already had.
  *
- * @param out  Receives the configuration. Untouched when the function returns
- *             false.
+ * @param out  Receives the configuration. Untouched when the function
+ *             returns false.
  * @return True when a record was read. False when no slot holds a valid one.
  */
 bool out_store_load(out_store_t *out);
@@ -100,8 +100,8 @@ bool out_store_load(out_store_t *out);
  * Waiting for the writes to stop is what keeps the pair together.
  *
  * @param cfg  The configuration to save.
- * @param now_ms  The pass's clock in milliseconds. It restarts the settle
- *                window.
+ * @param now_ms  The pass's clock in milliseconds. It restarts the
+ *                settle window.
  */
 void out_store_save(const out_store_t *cfg, uint32_t now_ms);
 
@@ -129,9 +129,8 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms);
 #define OUT_STORE_QUIET_MS  5u
 
 /**
- * @brief How many sectors the store spans, so a caller reclaiming at boot
- * can bound its loop by the store's shape rather than by the flash
- * answering.
+ * @brief How many sectors the store spans, so a caller reclaiming at boot can
+ * bound its loop by the store's shape rather than by the flash answering.
  */
 #define OUT_STORE_SECTORS  2u
 
@@ -161,13 +160,13 @@ void out_store_core1_parkable(void);
  * @brief Switch the store's writing off for this boot: core 1 was launched
  * and did not register for the flash lock-out.
  *
- * A direct window would fault core 1 executing from flash, and
- * flash_safe_execute() would refuse, or in a build with
- * PICO_FLASH_ASSERT_ON_UNSAFE and asserts on, stop the core. Afterwards no
- * erase or program runs and flash_safe_execute() is never called:
- * out_store_save() takes nothing, so nothing waits for a save that cannot
- * come, out_store_tick() is idle and out_store_reclaim() false. What was
- * loaded stays readable.  Nothing switches it on again.
+ * A direct window would fault
+ * core 1 executing from flash, and flash_safe_execute() would refuse, or in
+ * a build with PICO_FLASH_ASSERT_ON_UNSAFE and asserts on, stop the core.
+ * Afterwards no erase or program runs and flash_safe_execute() is never
+ * called: out_store_save() takes nothing, so nothing waits for a save that
+ * cannot come, out_store_tick() is idle and out_store_reclaim() false.
+ * What was loaded stays readable.  Nothing switches it on again.
  */
 void out_store_off(void);
 
@@ -179,8 +178,7 @@ void out_store_off(void);
 bool out_store_is_off(void);
 
 /**
- * @brief How long a window waits for core 1 to stop, and to start again
- * after.
+ * @brief How long a window waits for core 1 to stop, and to start again after.
  *
  * Every erase and program runs through flash_safe_execute(): interrupts
  * off on this core, and core 1 -- the sensor bus -- parked in RAM by the
@@ -193,15 +191,13 @@ bool out_store_is_off(void);
 #define OUT_STORE_LOCKOUT_MS  10u
 
 /**
- * @brief After a window core 1 did not stop for, how long before the next is
- * tried.
+ * @brief After a window core 1 did not stop for, how long before the next
+ * is tried.
  */
 #define OUT_STORE_REFUSED_WAIT_MS  1000u
 
 /**
  * @brief What a pass of out_store_tick() did.
- *
- * What a pass of out_store_tick() did.
  */
 typedef enum {
     OUT_STORE_IDLE = 0,   /**< nothing to do, or not yet the moment for it */
@@ -258,8 +254,7 @@ bool out_store_reclaim(bool driving, uint32_t quiet_ms);
 bool out_store_pending(void);
 
 /**
- * @brief How long the last sector erase held interrupts off, in
- * microseconds.
+ * @brief How long the last sector erase held interrupts off, in microseconds.
  *
  * Zero until one has run.  The erase on its own is not measured: what the
  * bring-up module printed was 19,174 to 19,186 us over eight saves, and each
@@ -271,8 +266,7 @@ bool out_store_pending(void);
 uint32_t out_store_last_erase_us(void);
 
 /**
- * @brief How long the last page program held interrupts off, in
- * microseconds.
+ * @brief How long the last page program held interrupts off, in microseconds.
  *
  * Zero until one has run.  It is not measured.  It is the window
  * every save pays, so it is the number that says whether a save can still
@@ -283,9 +277,8 @@ uint32_t out_store_last_erase_us(void);
 uint32_t out_store_last_program_us(void);
 
 /**
- * @brief Which of the 16 record slots the store last used (of the 32
- * one-page slots before version 8 while the boot read a record of that
- * layout).
+ * @brief Which of the 16 record slots the store last used (of the 32 one-page
+ * slots before version 8 while the boot read a record of that layout).
  *
  * The slot the last save was programmed into.  out_store_load() sets it as
  * well, so before the first save of a run it is the slot the boot read the
@@ -338,8 +331,7 @@ bool out_store_flash_erase(uint32_t off);
 bool out_store_flash_program(uint32_t off, const uint8_t *data, uint32_t len);
 
 /**
- * @brief Run @p fn inside a window: the boot ROM's BUY, which rewrites
- * flash.
+ * @brief Run @p fn inside a window: the boot ROM's BUY, which rewrites flash.
  *
  * True when it ran.
  *

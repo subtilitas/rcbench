@@ -1,7 +1,6 @@
 /**
  * @file
- * @brief Servo pulses from the RP2350's hardware PWM (pulse-width
- * modulation).
+ * @brief Servo pulses from the RP2350's hardware PWM (pulse-width modulation).
  *
  * A servo pulse is a level held for a number of microseconds, repeated at a
  * frame rate, and that is what a PWM slice does with no processor involved.
@@ -42,25 +41,25 @@
  *
  * @param pin  GPIO number of the pin to bind.
  * @param rate_hz  Frame rate in Hz. Zero is refused.
- * @return True when the pin is bound at @p rate_hz. False when the bind is
- *         refused.
+ * @return True when the pin is bound at @p rate_hz. False when the bind
+ *         is refused.
  */
 bool out_pwm_bind(uint8_t pin, uint16_t rate_hz);
 
 /**
  * @brief Give the pin back: the counter stops and the pin is left low.
  *
- * @param pin  GPIO number of the pin to release. A pin that is not bound is
- *             ignored.
+ * @param pin  GPIO number of the pin to release. A pin that is not bound
+ *             is ignored.
  */
 void out_pwm_release(uint8_t pin);
 
 /**
  * @brief Emit @p pulse_us on every frame.
  *
- * Zero stops the pin edging altogether, which is what the bank means by not
- * driving -- a servo held at a pulse it was not commanded is worse than one
- * that is let go.
+ * Zero stops the pin edging altogether,
+ * which is what the bank means by not driving -- a servo held at a pulse it
+ * was not commanded is worse than one that is let go.
  *
  * @param pin  GPIO number of a bound pin. A pin that is not bound is ignored.
  * @param pulse_us  Pulse width in microseconds. A value above the frame's
@@ -99,8 +98,8 @@ void out_pwm_write(uint8_t pin, uint16_t pulse_us);
  *                  last count is clamped to it.
  * @param frame_us  Receives the start time of the frame. Written only when
  *                  the function returns true.
- * @return True when the write is stamped. See the description for the false
- *         cases.
+ * @return True when the write is stamped. See the description for the
+ *         false cases.
  */
 bool out_pwm_write_stamped(uint8_t pin, uint16_t pulse_us, uint64_t *frame_us);
 

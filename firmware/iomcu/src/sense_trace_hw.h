@@ -52,11 +52,11 @@ void sense_trace_hw_feed(const sense_svc_t *svc, uint64_t tick_us);
  * @brief Core 0, straight after outputs_hw_service(): each bound PWM slot's
  * pulse of this pass, no longer than the slice's frame.
  *
- * A changed one is a command (sense_trace_pulse()), timed at the start of
- * the frame that first carries it: now plus what the slice's counter has
- * left of its frame, 1 µs a count.  The counter is read after the level was
- * written, so a wrap between the two -- some tens of µs in a frame of 2,500
- * to 25,000 µs -- puts the time one frame late.
+ * A changed one is a command (sense_trace_pulse()), timed at the start of the
+ * frame that first carries it: now plus what the slice's counter has left of
+ * its frame, 1 µs a count.  The counter is read after the level was written, so
+ * a wrap between the two -- some tens of µs in a frame of 2,500 to 25,000 µs --
+ * puts the time one frame late.
  *
  * @param o  The output bank.
  */

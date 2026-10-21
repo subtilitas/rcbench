@@ -89,8 +89,7 @@ void update_hw_poll(uint32_t now_ms);
 bool update_hw_holds_arm(void);
 
 /**
- * @brief Whether a CONTROL write is refused for the update
- * (link_update_dev.h).
+ * @brief Whether a CONTROL write is refused for the update (link_update_dev.h).
  *
  * @param off  First register of the write.
  * @param n  Number of registers in the write.

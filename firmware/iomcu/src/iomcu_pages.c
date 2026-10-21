@@ -4,8 +4,8 @@
  * CONTROL, BENCH, CHANNELS, CHAN_CFG, OUTPUTS, SERVO and PROG, and the glue
  * that makes the silicon agree with the bank.
  *
- * The rules are in shared/outputs and shared/safety; see iomcu.h for the
- * other files.
+ * The rules are in
+ * shared/outputs and shared/safety; see iomcu.h for the other files.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -176,8 +176,8 @@ static void slots_rerate(void)
  * HITEC port gives it back, and the page keeps the port's pulse switch and
  * target meanwhile.  The pins the wire driver holds, as a mask of ports.
  *
- * @return The programming ports whose pins the wire driver holds, one bit per
- *         port.
+ * @return The programming ports whose pins the wire driver holds, one bit
+ *         per port.
  */
 static uint8_t ports_bind(void)
 {
@@ -198,10 +198,9 @@ static uint8_t ports_bind(void)
 }
 
 /*
- * The programming ports' pins made to agree with the PROG page
- * (ports_bind()).  The tester's sweep is pointed where the page's TARGET
- * says before and after the binding, which can take the TARGET port's pin
- * away.
+ * The programming ports' pins made to agree with the PROG page (ports_bind()).
+ * The tester's sweep is pointed where the page's TARGET says before and after
+ * the binding, which can take the TARGET port's pin away.
  */
 void ports_apply(void)
 {
@@ -436,8 +435,8 @@ uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
 /*
  * A whole OUTPUTS page, judged and put in force: 0, or the reason with the
  * page, the bank and the silicon as they were.  The page with one window
- * replaced for an OUTPUTS write, the page prepared for a BIND commit, as
- * chan_cfg_take().
+ * replaced for an OUTPUTS write, the page prepared for a BIND commit,
+ * as chan_cfg_take().
  */
 uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
 {

@@ -1,7 +1,6 @@
 /**
  * @file
- * @brief The XL2515 over SPI: the part of the CAN driver that touches
- * hardware.
+ * @brief The XL2515 over SPI: the part of the CAN driver that touches hardware.
  *
  * SPDX-License-Identifier: MIT
  */

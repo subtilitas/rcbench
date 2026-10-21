@@ -1,10 +1,11 @@
 /**
  * @file
  * @brief The IOMCU_CONSOLE build: the bench console
- * (shared/outputs/page_console.h) on the USB (Universal Serial Bus) serial
- * port.
+ * (shared/outputs/page_console.h) on the USB (Universal Serial Bus)
+ * serial port.
  *
- * A bench tool, in no released image.
+ * A bench tool, in no
+ * released image.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,9 +29,9 @@ void console_hw_init(const link_dev_t *dev);
  * has room for now, a line cut where the room ends and its rest first in the
  * next pass.
  *
- * A line of any length leaves.  Never waits for the host: a pass writes no
- * more than the buffer has free, and a host that stops reading leaves the
- * output in the console's buffer.
+ * A line of any length leaves.  Never waits for the host: a pass
+ * writes no more than the buffer has free, and a host that stops reading
+ * leaves the output in the console's buffer.
  */
 void console_hw_pass(void);
 
@@ -39,7 +40,8 @@ void console_hw_pass(void);
  * through the console's output: it leaves after the lines said before it and
  * never inside one, and saying it does not wait for the host.
  *
- * Dropped while no host has the port open, as printf() drops it.
+ * Dropped while no
+ * host has the port open, as printf() drops it.
  *
  * @param fmt  printf() format string.
  * @param ...  Arguments for the format string.

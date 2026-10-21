@@ -60,8 +60,8 @@ static slot_state_t s_state[OUT_MAX_SLOTS];
  * @brief The programming ports: pins of their own on the same generator,
  * each rendered from one channel of the bank.
  *
- * `as` is the port as a slot of one PWM channel, so the rendering and the
- * capture's edge are the slots' code.
+ * `as` is the port as a slot of one
+ * PWM channel, so the rendering and the capture's edge are the slots' code.
  */
 typedef struct {
     bool         bound;    /* the pin is held: bound, or parked */
@@ -100,8 +100,7 @@ static bool     s_edge_ready;
 static uint64_t s_edge_us;
 
 /**
- * @brief The millisecond clock the telemetry ages and the ask schedule run
- * on.
+ * @brief The millisecond clock the telemetry ages and the ask schedule run on.
  */
 static uint32_t now_ms(void)
 {
@@ -476,20 +475,19 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
      * An ESC that does not know the command ignores it and keeps sending
      * periods.  Those still read as periods: this decoder only takes a frame
      * for an extended one when the mantissa's top bit is clear and the type
-     * nibble is not zero, which an ESC that normalises its exponent never
-     * sends.
+     * nibble is not zero, which an ESC that normalises its exponent
+     * never sends.
      *
      * The telemetry bit is set on every one of the repeats, and it is not
-     * decoration.  On a value of 1 to 47 the bit is what marks the frame as
-     * a command: the BLHeli_S family (Bluejay) discards a command whose
-     * telemetry bit is clear and zeroes its repeat counter with it, so ten
-     * frames without the bit never reach the six repeats its command handler
-     * counts and extended telemetry never comes on.  AM32 has no such gate
-     * and takes the command either way.  On a bidirectional pin the word is
-     * 0x01B5 with the bit and 0x01A4 without it -- a different payload and a
-     * different checksum nibble.  The bit's other meaning is a request on
-     * the separate serial telemetry wire; nothing on this bench reads that
-     * wire.
+     * decoration.  On a value of 1 to 47 the bit is what marks the frame as a
+     * command: the BLHeli_S family (Bluejay) discards a command whose telemetry
+     * bit is clear and zeroes its repeat counter with it, so ten frames without
+     * the bit never reach the six repeats its command handler counts and
+     * extended telemetry never comes on.  AM32 has no such gate and takes the
+     * command either way.  On a bidirectional pin the word is 0x01B5 with the
+     * bit and 0x01A4 without it -- a different payload and a different checksum
+     * nibble.  The bit's other meaning is a request on the separate serial
+     * telemetry wire; nothing on this bench reads that wire.
      */
     const uint16_t value =
         dshot_throttle(outputs_actual(o, s->first_channel), OUT_SPAN);
@@ -594,10 +592,10 @@ bool outputs_hw_edge(uint64_t *us)
 /**
  * @brief A PWM slot's pulse for this pass.
  *
- * On the watched channel, the first pulse other than the last one rendered
- * -- a changed command, not a disarm -- is written stamped: the start of the
- * frame that first carries it is the capture's edge.  Once: the watch ends
- * with it, stamped or not.
+ * On the watched channel, the first
+ * pulse other than the last one rendered -- a changed command, not a
+ * disarm -- is written stamped: the start of the frame that first carries
+ * it is the capture's edge.  Once: the watch ends with it, stamped or not.
  *
  * @param st  The render state of the slot or port.
  * @param s  The slot or port, bound as PWM.
@@ -624,8 +622,8 @@ static void service_pwm(slot_state_t *st, const out_slot_t *s, uint16_t pulse)
  * @brief Whether the bank is armed for the role of a channel of @p s, the
  * slot as this layer bound it.
  *
- * The shadow rather than the bank's slot: the shadow is what the pin is
- * doing.
+ * The shadow rather than the bank's slot: the shadow is
+ * what the pin is doing.
  *
  * @param o  The output bank.
  * @param s  The slot, from s_shadow.

@@ -110,8 +110,8 @@ static sense_err_t bus_ask(void *ctx, uint8_t addr)
 }
 
 /**
- * @brief Core 1's entry point: runs the sensor loop, one step per tick,
- * forever.
+ * @brief Core 1's entry point: runs the sensor loop, one step per
+ * tick, forever.
  */
 static void core1_main(void)
 {

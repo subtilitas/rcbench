@@ -52,11 +52,9 @@ static uint64_t s_tone_was_us;   /* the capture's start before a rewire */
  * @brief Makes the capture agree with the TONE page: stopped, then started on
  * the page's pin.
  *
- * @param keep_ring  True to recapture the ring with the elapsed time since
- *                   the start saved by the earlier rewire
- *                   (tone_page_recapture()); false
- *                   to start a new capture
- *                   (tone_page_capture()).
+ * @param keep_ring  True to recapture the ring with the elapsed time since the
+ *                   start saved by the earlier rewire (tone_page_recapture());
+ *                   false to start a new capture (tone_page_capture()).
  * @return False when the tap is enabled and the wiring could not take its pin
  *         (no PIO state machine, no DMA channel), or core 1 was still
  *         in a pass

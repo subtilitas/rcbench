@@ -1,7 +1,6 @@
 /**
  * @file
- * @brief The IOmcu application's own state, shared by the files it is cut
- * into.
+ * @brief The IOmcu application's own state, shared by the files it is cut into.
  *
  * Private to firmware/iomcu/src: nothing under shared/ or protocols/
  * includes it.
@@ -75,8 +74,7 @@ typedef struct {
 extern iomcu_state_t s_state;
 
 /**
- * @brief What the output drivers make true, whatever is connected; see
- * main().
+ * @brief What the output drivers make true, whatever is connected; see main().
  */
 #define IOMCU_CAPABILITIES \
     ((uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE | LINK_CAP_ESC_TELEM))
@@ -108,24 +106,24 @@ extern bool          s_supply_attach;
  * @brief The SENSE and SERVO_SENSE pages: the current monitors' set-up,
  * kept, and the pins it holds.
  *
- * Core 1 reads the parts (sense_core1.h); this core gives it its orders and
- * publishes what it hands back.
+ * Core 1 reads the parts (sense_core1.h); this core
+ * gives it its orders and publishes what it hands back.
  */
 extern sense_page_t  s_sense;
 /**
  * @brief The TONE page: the phase tap's set-up, kept, and the beeps core 1
  * hears on it.
  *
- * Core 0 owns the PIO state machine and the DMA ring (tone_cap.c in
- * protocols/phase_tap/rp2350); core 1 reads and detects (tone_core1.c).
+ * Core 0 owns the PIO state machine and the DMA ring (tone_cap.c
+ * in protocols/phase_tap/rp2350); core 1 reads and detects (tone_core1.c).
  */
 extern tone_page_t   s_tone;
 /**
  * @brief Core 1's last snapshot.
  *
- * The pins it said it still holds are the page's (sense_page_held()): a bus
- * moved or closed keeps its old pins from the outputs until core 1 has let
- * them go, about 1 ms.
+ * The pins it said it still holds are the page's
+ * (sense_page_held()): a bus moved or closed keeps its old pins from the
+ * outputs until core 1 has let them go, about 1 ms.
  */
 extern sense_snap_t  s_sense_snap;
 extern sense_cmd_t   s_sense_cmd;    /* core 1's order as last built */
@@ -135,8 +133,8 @@ extern sense_cmd_t   s_sense_cmd;    /* core 1's order as last built */
  */
 extern uint16_t      s_run_gen;
 /**
- * @brief The capture's PWM edge, stamped by outputs_hw for capture order
- * s_edge_gen.
+ * @brief The capture's PWM edge, stamped by outputs_hw for capture
+ * order s_edge_gen.
  */
 extern bool          s_edge_set;
 extern uint16_t      s_edge_gen;
@@ -150,13 +148,13 @@ extern uint64_t      s_base_reserved;
  * @brief The PROG page: the programming ports, outputs of their own kind
  * with their own pins (shared/outputs/prog_port.h).
  *
- * Pin, slew, endpoints and function are kept; the pulse's switch and the
- * tester's target are not.
+ * Pin, slew, endpoints and
+ * function are kept; the pulse's switch and the tester's target are not.
  */
 extern prog_port_t   s_prog;
 /**
- * @brief The programming ports this build has; the model holds
- * LINK_PG_PORTS_MAX.
+ * @brief The programming ports this build has; the model
+ * holds LINK_PG_PORTS_MAX.
  */
 #define IOMCU_PROG_PORTS 4u
 /**
@@ -164,8 +162,8 @@ extern prog_port_t   s_prog;
  * programming port (shared/outputs/kst_port.h) and the wire driver the
  * port's pin is handed to (protocols/kst/rp2350).
  *
- * Not kept: a restart finds the port in PWM (pulse-width modulation) with no
- * session.
+ * Not kept: a restart
+ * finds the port in PWM (pulse-width modulation) with no session.
  */
 extern kst_port_t    s_kst;
 extern kst_line_t    s_kst_line;
@@ -174,8 +172,8 @@ extern kst_line_t    s_kst_line;
  * port (shared/outputs/hitec_port.h) and the wire driver the port's pin is
  * handed to (protocols/hitec/rp2350).
  *
- * A port is free, the KST page's or this page's, never two of them.  Not
- * kept: a restart finds the port free.
+ * A port is free, the KST page's or this page's, never two of them.  Not kept:
+ * a restart finds the port free.
  */
 extern hitec_port_t  s_hitec;
 extern hitec_line_t  s_hitec_line;
@@ -200,8 +198,8 @@ extern outputs_t s_outputs;
 /**
  * @brief The panel's safety line, as judged in firmware.
  *
- * The control page consults it before it arms; see heartbeat_init() in
- * iomcu_can.c.
+ * The control page consults
+ * it before it arms; see heartbeat_init() in iomcu_can.c.
  */
 extern heartbeat_mon_t s_beat;
 
@@ -214,9 +212,10 @@ extern uint32_t s_frames;
  * @brief CAN frames received and refused since power-up, published on the
  * STATUS page (LINK_ST_REFUSED_LO and _HI).
  *
- * Counted in two places, both shared code: a receive buffer with no frame
- * the link carries in it (mcp2515_recv_next()) and a frame link_can_decode()
- * refuses (link_can_decode_counted()).  Wraps at 2^32.
+ * Counted in two places, both shared
+ * code: a receive buffer with no frame the link carries in it
+ * (mcp2515_recv_next()) and a frame link_can_decode() refuses
+ * (link_can_decode_counted()).  Wraps at 2^32.
  */
 extern uint32_t s_refused;
 
@@ -247,8 +246,8 @@ extern uint32_t s_now_ms;
 extern bool s_beat_level;
 
 /**
- * @brief The CAN controller, its echoes and its receive overruns; see
- * iomcu_can.c.
+ * @brief The CAN controller, its echoes and its receive overruns;
+ * see iomcu_can.c.
  */
 extern bool     s_can_up;
 extern uint32_t s_can_echoes;
@@ -266,10 +265,9 @@ extern out_stage_t s_stage;
 
 /* ------------------------------------------------------- the page handlers */
 
+/* iomcu_pages.c */
 /**
  * @brief Reads the IDENTITY page.
- *
- * iomcu_pages.c
  *
  * @param ctx  The iomcu_state_t the page reads or writes.
  * @param off  First register to read.
@@ -412,10 +410,9 @@ void prog_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  */
 uint8_t prog_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
+/* iomcu_kst.c */
 /**
  * @brief Reads the KST page.
- *
- * iomcu_kst.c
  *
  * @param ctx  Unused.
  * @param off  First register to read.
@@ -434,10 +431,9 @@ void kst_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  */
 uint8_t kst_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
+/* iomcu_hitec.c */
 /**
  * @brief Reads the HITEC page.
- *
- * iomcu_hitec.c
  *
  * @param ctx  Unused.
  * @param off  First register to read.
@@ -456,10 +452,9 @@ void hitec_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  */
 uint8_t hitec_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
+/* iomcu_sense.c */
 /**
  * @brief Reads the SUPPLY page.
- *
- * iomcu_sense.c
  *
  * @param ctx  Unused.
  * @param off  First register to read.
@@ -583,10 +578,9 @@ void sense_limit_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 uint8_t sense_limit_wr(void *ctx, uint8_t off, uint8_t n,
                        const uint16_t *in);
 
+/* iomcu_tone.c */
 /**
  * @brief Reads the TONE page.
- *
- * iomcu_tone.c
  *
  * @param ctx  Unused.
  * @param off  First register to read.
@@ -605,10 +599,9 @@ void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  */
 uint8_t tone_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
+/* iomcu_bind.c */
 /**
  * @brief Reads the BIND_CFG page.
- *
- * iomcu_bind.c
  *
  * @param ctx  Unused.
  * @param off  First register to read.
@@ -725,10 +718,9 @@ void pads_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 
 /* ---------------------------------------------- shared between the files */
 
+/* iomcu_pages.c */
 /**
  * @brief Asks for the output configuration to be saved.
- *
- * iomcu_pages.c
  *
  * @param s  The state whose output configuration is saved.
  */
@@ -738,8 +730,8 @@ void save_outputs(const iomcu_state_t *s);
  */
 void ports_apply(void);
 /**
- * @brief Makes the silicon agree with the bank, binding only the slots in @p
- * may_bind.
+ * @brief Makes the silicon agree with the bank, binding only the slots in
+ * @p may_bind.
  *
  * @param may_bind  Bit mask of the slots that may be bound. The others are
  *                  released and left unbound.
@@ -763,8 +755,8 @@ void hw_apply(void);
 uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
                       const uint16_t *slots, bool save);
 /**
- * @brief Takes a whole OUTPUTS page (slots) into force, when it passes the
- * checks.
+ * @brief Takes a whole OUTPUTS page (slots) into force, when it passes
+ * the checks.
  *
  * @param s  The state to update.
  * @param next  The new slot register values.
@@ -773,10 +765,9 @@ uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
  */
 uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save);
 
+/* iomcu_kst.c: the port's hardware, which main() hands to kst_port_init() */
 /**
  * @brief Returns the pin of a programming port for the KST wire driver.
- *
- * iomcu_kst.c: the port's hardware, which main() hands to kst_port_init()
  *
  * @param ctx  Unused.
  * @param port  Index of the programming port.
@@ -809,20 +800,22 @@ void kst_hw_supply(void *ctx, supply_port_view_t *out);
 /**
  * @brief Sets the supply of the KST port.
  *
+ * No ON while the supply's wiring is not in flash, as the SUPPLY page
+ * refuses one: a restart in the run could not switch the module off.
+ *
  * @param ctx  Unused.
  * @param on  True to switch the supply on.
- * @param mv  Supply voltage.
- * @param ma  Supply current limit.
- * @return False when the switch was refused, otherwise the result of
- *         supply_page_port_set().
+ * @param mv  Set voltage in millivolts, for ON.
+ * @param ma  Set current in milliamps, for ON.
+ * @return False for an ON while the wiring is not saved; otherwise what
+ *         supply_page_port_set() returns.
  */
 bool kst_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma);
 
+/* iomcu_hitec.c: the port's hardware, which main() hands to
+ * hitec_port_init() beside kst_hw_pin() and the supply's two */
 /**
  * @brief Takes the programming port's pin for the HITEC wire driver.
- *
- * iomcu_hitec.c: the port's hardware, which main() hands to
- * hitec_port_init() beside kst_hw_pin() and the supply's two
  *
  * @param ctx  Unused.
  * @param port  Index of the programming port. Not used here.
@@ -854,10 +847,9 @@ void hitec_hw_abort(void *ctx);
  */
 void hitec_hw_run(void *ctx, hitec_port_run_t *out);
 
+/* iomcu_sense.c */
 /**
  * @brief Refreshes the IDENTITY page's capability word.
- *
- * iomcu_sense.c
  */
 void capabilities_update(void);
 /**
@@ -881,14 +873,12 @@ bool supply_rewire(void);
 uint8_t supply_take(uint8_t off, uint8_t n, const uint16_t *in,
                     bool checked);
 
+/* iomcu_tone.c */
 /**
  * @brief Returns the pins the phase tap may not take now.
  *
- * iomcu_tone.c
- *
- * @return One bit per GPIO: the supply's pins, the programming ports' pins
- *         and the sensor bus's pins, including those core 1 has not let go of
- *         yet.
+ * @return One bit per GPIO: the supply's pins, the programming ports' pins and
+ *         the sensor bus's pins, including those core 1 has not let go of yet.
  */
 uint64_t tone_taken(void);
 /**
@@ -899,10 +889,9 @@ uint64_t tone_taken(void);
  */
 bool tone_rewire(void);
 
+/* iomcu_can.c */
 /**
  * @brief Sets up the heartbeat input.
- *
- * iomcu_can.c
  */
 void heartbeat_init(void);
 /**
@@ -920,10 +909,9 @@ void can_start(void);
  */
 void can_service(uint32_t now);
 
+/* iomcu_report.c: every 3 s at most, from the main loop */
 /**
  * @brief Prints the console report when 3 s have passed.
- *
- * iomcu_report.c: every 3 s at most, from the main loop
  *
  * @param now  The pass's clock in ms.
  */
@@ -934,8 +922,8 @@ void can_report(uint32_t now);
 /**
  * @brief STATUS's state and fault registers.
  *
- * The state and the link and heartbeat bits are the gate's
- * (safety_gate_status()); the arm latch is on neither.
+ * The state and the link and heartbeat
+ * bits are the gate's (safety_gate_status()); the arm latch is on neither.
  *
  * @param s  The state whose STATUS registers are updated.
  */
@@ -967,8 +955,8 @@ static inline uint8_t bound_slots(void)
 }
 
 /**
- * @brief Sample the line; returns whether its level changed since the last
- * sample.
+ * @brief Sample the line; returns whether its level changed since the
+ * last sample.
  *
  * safety_gate_step() hands the edge to the monitor.
  *
@@ -1072,8 +1060,8 @@ static inline void sense_build(sense_cmd_t *cmd)
 }
 
 /**
- * @brief Sent whenever something in it changes; core 1 takes it at its next
- * tick.
+ * @brief Sent whenever something in it changes; core 1 takes it at its
+ * next tick.
  *
  * A copy under a lock, about a microsecond.  The order, 136 bytes with the
  * 12 channels' shunts and limits, is built in s_sense_cmd rather than on
