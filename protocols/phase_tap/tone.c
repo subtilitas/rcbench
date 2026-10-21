@@ -1,5 +1,8 @@
-/*
- * ESC tones from the edges of one motor phase.  The rules are in tone.h.
+/**
+ * @file
+ * @brief ESC tones from the edges of one motor phase.
+ *
+ * The rules are in tone.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,7 +31,9 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz)
     c->window_min_periods = 2u;
 }
 
-/* @p a / @p b rounded up. */
+/**
+ * @brief @p a / @p b rounded up.
+ */
 static uint64_t div_up(uint64_t a, uint64_t b)
 {
     return (a + b - 1u) / b;
@@ -53,6 +58,13 @@ uint64_t tone_ns_ticks(uint64_t tick_hz, uint64_t ns)
     return tick_hz * a + q * b + div_up(r * b, g);
 }
 
+/**
+ * @brief Convert nanoseconds to ticks, rounded up.
+ *
+ * @param tick_hz  Clock, Hz.
+ * @param ns       Time, nanoseconds.
+ * @return         Ticks, rounded up.
+ */
 static uint64_t ns_ticks(uint32_t tick_hz, uint64_t ns)
 {
     return tone_ns_ticks(tick_hz, ns);
@@ -109,7 +121,8 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
      * Settings under which no signal can make a tone, refused rather than
      * run deaf.  The tone and carrier ranges, as whole ticks, must not
      * meet: a rise interval of per_min, the fastest tone unchopped, would
-     * read as carrier-rate at car_max or under.  Two bursts need that spacing to be under the longest
+     * read as carrier-rate at car_max or under.  Two bursts need that spacing
+     * to be under the longest
      * period in range (per_max) and under the silence that ends the run
      * (gap; at least per_max by the gap_us check above, so the weaker of
      * the two).  A window needs window_min_periods periods to end in its
@@ -128,8 +141,11 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
 
 /* ------------------------------------------------------------ arithmetic */
 
-/* @p n periods over @p ticks, in Hz; 0 for none.  Only at a window's or a
- * beep's end, never per edge. */
+/**
+ * @brief @p n periods over @p ticks, in Hz; 0 for none.
+ *
+ *  Only at a window's or a beep's end, never per edge.
+ */
 static float hz_of(const tone_t *d, uint32_t n, uint64_t ticks)
 {
     if (n == 0u || ticks == 0u) {
@@ -150,14 +166,23 @@ typedef struct {
     uint64_t n;              /**< periods; 0 for no mean                  */
 } ratio_t;
 
+/**
+ * @brief Make a mean from a sum and a count.
+ *
+ * @param s  Sum, in ticks.
+ * @param n  Count of periods; 0 for no mean.
+ * @return   The ratio.
+ */
 static ratio_t ratio(uint64_t s, uint64_t n)
 {
     ratio_t r = { s, n };
     return r;
 }
 
-/* x - y, scaled by both counts: x.s * y.n - y.s * x.n, as its size and
- * whether x is the larger. */
+/**
+ * @brief x - y, scaled by both counts: x.s * y.n - y.s * x.n, as its size and
+ *        whether x is the larger.
+ */
 static uint64_t ratio_diff(ratio_t x, ratio_t y, bool *x_more)
 {
     const uint64_t a = x.s * y.n;
@@ -166,8 +191,10 @@ static uint64_t ratio_diff(ratio_t x, ratio_t y, bool *x_more)
     return a > b ? a - b : b - a;
 }
 
-/* @p x lies more than pct / den percent from @p y, relative to @p y:
- * |x - y| * 100 * den > pct * y, with both sides times x.n * y.n. */
+/**
+ * @brief @p x lies more than pct / den percent from @p y, relative to @p y: |x
+ *        - y| * 100 * den > pct * y, with both sides times x.n * y.n.
+ */
 static bool off_by_more(ratio_t x, ratio_t y, uint32_t pct, uint32_t den)
 {
     bool more = false;
@@ -175,17 +202,26 @@ static bool off_by_more(ratio_t x, ratio_t y, uint32_t pct, uint32_t den)
     return diff * 100u * den > (uint64_t)pct * y.s * x.n;
 }
 
+/**
+ * @brief The beep's mean, as a sum over a count.
+ *
+ * @param d  Detector state.
+ * @return   The mean of the beep's periods so far.
+ */
 static ratio_t beep_mean(const tone_t *d)
 {
     return ratio(d->b_sum, d->b_n);
 }
 
-/* The carrier period, ticks; 0 with no carrier seen.  The shortest rise
- * interval inside a burst, not counting a burst's first, once there is
- * one; until then the shortest carrier-rate low and the longest
- * carrier-rate high.  The rise interval is the better: a high that spans
- * two carrier periods, the low between them too short to reach the
- * input, lengthens the second and is a multiple of the first. */
+/**
+ * @brief The carrier period, ticks; 0 with no carrier seen.
+ *
+ *  The shortest rise interval inside a burst, not counting a burst's first,
+ * once there is one; until then the shortest carrier-rate low and the longest
+ * carrier-rate high.  The rise interval is the better: a high that spans two
+ * carrier periods, the low between them too short to reach the input, lengthens
+ * the second and is a multiple of the first.
+ */
 static uint64_t carrier(const tone_t *d)
 {
     if (d->car_rise != 0u) {
@@ -194,7 +230,9 @@ static uint64_t carrier(const tone_t *d)
     return d->car_low != 0u ? d->car_low + d->car_high : 0u;
 }
 
-/* A mean period inside the tone range: per_min <= s / n <= per_max. */
+/**
+ * @brief A mean period inside the tone range: per_min <= s / n <= per_max.
+ */
 static bool in_band(const tone_t *d, ratio_t m)
 {
     return m.n != 0u && m.s >= d->per_min * m.n && m.s <= d->per_max * m.n;
@@ -202,6 +240,11 @@ static bool in_band(const tone_t *d, ratio_t m)
 
 /* ---------------------------------------------------------------- windows */
 
+/**
+ * @brief Close the window under way and publish it.
+ *
+ * @param d  Detector state.
+ */
 static void window_finish(tone_t *d)
 {
     tone_window_t *w = &d->window;
@@ -217,14 +260,23 @@ static void window_finish(tone_t *d)
     d->w_bursts = 0;
 }
 
+/**
+ * @brief Open the window with an index.
+ *
+ * @param d      Detector state.
+ * @param index  Window index: start tick divided by the window length.
+ */
 static void window_open(tone_t *d, uint64_t index)
 {
     d->w_index = index;
     d->w_end = (index + 1u) * d->win_ticks;
 }
 
-/* Close every window that ends at or before @p t.  A stretch of empty
- * windows reports the last of them only. */
+/**
+ * @brief Close every window that ends at or before @p t.
+ *
+ *  A stretch of empty windows reports the last of them only.
+ */
 static void windows_to(tone_t *d, uint64_t t)
 {
     if (t < d->w_end) {
@@ -241,6 +293,12 @@ static void windows_to(tone_t *d, uint64_t t)
 
 /* ---------------------------------------------------------------- beeps */
 
+/**
+ * @brief Queue the beep that ends at a tick, if it passes the checks.
+ *
+ * @param d    Detector state.
+ * @param end  Tick of the beep's last edge.
+ */
 static void emit(tone_t *d, uint64_t end)
 {
     if (d->b_n < d->c.min_periods || !in_band(d, beep_mean(d))) {
@@ -263,6 +321,13 @@ static void emit(tone_t *d, uint64_t end)
     d->st.beeps++;
 }
 
+/**
+ * @brief Open a beep at a tick.
+ *
+ * @param d      Detector state.
+ * @param start  Tick of the beep's first rise.
+ * @param flags  Flags of the beep, tone_beep_flag_t bits.
+ */
 static void beep_open(tone_t *d, uint64_t start, uint8_t flags)
 {
     d->b_start  = start;
@@ -272,9 +337,11 @@ static void beep_open(tone_t *d, uint64_t start, uint8_t flags)
     d->b_flags  = flags;
 }
 
-/* The oldest @p n periods waiting join the beep under way: each is a
- * burst, and an in-range one near the beep's mean (or, before the beep
- * has one, near @p ref) is part of the mean. */
+/**
+ * @brief The oldest @p n periods waiting join the beep under way: each is a
+ *        burst, and an in-range one near the beep's mean (or, before the beep
+ *        has one, near @p ref) is part of the mean.
+ */
 static void commit(tone_t *d, uint32_t n, ratio_t ref)
 {
     for (uint32_t i = 0; i < n; ++i) {
@@ -291,11 +358,14 @@ static void commit(tone_t *d, uint32_t n, ratio_t ref)
     memmove(&d->pend[0], &d->pend[n], d->n_pend * sizeof d->pend[0]);
 }
 
-/* The block's pitch: the mean of its in-range periods within
- * TONE_OUTLIER_PCT of their median, as a sum over a count.  The median
- * keeps one stray period -- a burst missed, a stuck line's rise -- out of
- * the mean; the mean of neighbours keeps a burst start that moves, as one
- * gated from a carrier running free does, from moving the pitch. */
+/**
+ * @brief The block's pitch: the mean of its in-range periods within
+ *        TONE_OUTLIER_PCT of their median, as a sum over a count.
+ *
+ *  The median keeps one stray period -- a burst missed, a stuck line's rise --
+ * out of the mean; the mean of neighbours keeps a burst start that moves, as
+ * one gated from a carrier running free does, from moving the pitch.
+ */
 static ratio_t block_pitch(const tone_t *d)
 {
     uint64_t v[TONE_BLOCK];
@@ -325,8 +395,10 @@ static ratio_t block_pitch(const tone_t *d)
     return r.n != 0u ? r : med;
 }
 
-/* The block's periods that lie more than half of @p pct from @p m on the
- * side of @p bm. */
+/**
+ * @brief The block's periods that lie more than half of @p pct from @p m on the
+ *        side of @p bm.
+ */
 static uint32_t on_side(const tone_t *d, ratio_t bm, ratio_t m, uint32_t pct)
 {
     bool block_more = false;
@@ -344,33 +416,42 @@ static uint32_t on_side(const tone_t *d, ratio_t bm, ratio_t m, uint32_t pct)
     return n;
 }
 
-/* The block's pitch @p bm lies more than @p pct from the beep's mean @p m,
- * and all but one of the block's periods lie more than half that on the
- * same side.  One stray period moves the block's pitch and is alone on
- * its side.  A carrier running free of the tone moves burst starts, and
- * with them single periods, by up to one carrier period; the block's
- * pitch, a mean of neighbours, by up to a quarter of that.  A block whose
- * pitch rests on two periods far apart, their median, has not moved. */
+/**
+ * @brief The block's pitch @p bm lies more than @p pct from the beep's mean @p
+ *        m, and all but one of the block's periods lie more than half that on
+ *        the same side.
+ *
+ *  One stray period moves the block's pitch and is alone on its side.  A
+ * carrier running free of the tone moves burst starts, and with them single
+ * periods, by up to one carrier period; the block's pitch, a mean of
+ * neighbours, by up to a quarter of that.  A block whose pitch rests on two
+ * periods far apart, their median, has not moved.
+ */
 static bool moved(const tone_t *d, ratio_t bm, ratio_t m, uint32_t pct)
 {
     return bm.n + 1u >= TONE_BLOCK && off_by_more(bm, m, pct, 1u)
            && on_side(d, bm, m, pct) + 1u >= TONE_BLOCK;
 }
 
-/* |p - x|, scaled by x.n. */
+/**
+ * @brief |p - x|, scaled by x.n.
+ */
 static uint64_t dist(uint64_t p, ratio_t x)
 {
     bool more = false;
     return ratio_diff(ratio(p, 1u), x, &more);
 }
 
-/* A full block: the oldest period joins the beep, or the pitch has moved.
+/**
+ * @brief A full block: the oldest period joins the beep, or the pitch has
+ *        moved.
  *
- * A beep with a mean of TONE_BLOCK periods or more splits where the new
- * pitch begins, when the block moved by split_pct.  One with fewer keeps
- * its start and starts its mean again, when the block moved by
- * TONE_OUTLIER_PCT: its first periods came before the carrier was known,
- * and every period after them would be an outlier to them. */
+ * A beep with a mean of TONE_BLOCK periods or more splits where the new pitch
+ * begins, when the block moved by split_pct.  One with fewer keeps its start
+ * and starts its mean again, when the block moved by TONE_OUTLIER_PCT: its
+ * first periods came before the carrier was known, and every period after them
+ * would be an outlier to them.
+ */
 static void block_check(tone_t *d)
 {
     const ratio_t bm = block_pitch(d);
@@ -412,6 +493,14 @@ static void block_check(tone_t *d)
     beep_open(d, start, (uint8_t)TONE_BEEP_AFTER_CHANGE);
 }
 
+/**
+ * @brief Count one period between two burst starts.
+ *
+ * @param d         Detector state.
+ * @param p         Period, ticks.
+ * @param s_open    Burst start the period begins at.
+ * @param e_before  Last edge before @p s_open.
+ */
 static void period(tone_t *d, uint64_t p, uint64_t s_open, uint64_t e_before)
 {
     const bool good = p >= d->per_min / 2u && p <= d->per_max;
@@ -431,7 +520,9 @@ static void period(tone_t *d, uint64_t p, uint64_t s_open, uint64_t e_before)
     }
 }
 
-/* The run ends at its last edge. */
+/**
+ * @brief The run ends at its last edge.
+ */
 static void run_end(tone_t *d)
 {
     if (!d->in_run) {
@@ -445,6 +536,13 @@ static void run_end(tone_t *d)
     d->car_rise = 0;
 }
 
+/**
+ * @brief Count one burst, opening a run when none is under way.
+ *
+ * @param d         Detector state.
+ * @param t         Tick of the burst's first rise.
+ * @param e_before  Last edge before the burst.
+ */
 static void burst(tone_t *d, uint64_t t, uint64_t e_before)
 {
     d->w_bursts++;
@@ -461,7 +559,9 @@ static void burst(tone_t *d, uint64_t t, uint64_t e_before)
 
 /* ---------------------------------------------------------------- edges */
 
-/* Time reaches @p t: windows close, and a silence ends the run. */
+/**
+ * @brief Time reaches @p t: windows close, and a silence ends the run.
+ */
 static bool time_to(tone_t *d, uint64_t t)
 {
     if (d->seen && t < d->now) {
@@ -480,6 +580,13 @@ static bool time_to(tone_t *d, uint64_t t)
     return true;
 }
 
+/**
+ * @brief Handle a rising edge: decide whether it starts a burst.
+ *
+ * @param d         Detector state.
+ * @param t         Tick of the rise.
+ * @param e_before  Last edge before the rise.
+ */
 static void rise(tone_t *d, uint64_t t, uint64_t e_before)
 {
     bool starts = true;
