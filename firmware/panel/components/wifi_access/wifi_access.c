@@ -1,7 +1,10 @@
-/*
- * The panel's Wi-Fi over esp_wifi, esp_http_server, esp_http_client and a
- * UDP (user datagram protocol) socket for the mDNS name.  The radio under
- * esp_wifi, on chip or reached over SDIO, is wifi_radio.h's.
+/**
+ * @file wifi_access.c
+ * @brief The panel's Wi-Fi over esp_wifi, esp_http_server, esp_http_client
+ *        and a UDP (user datagram protocol) socket for the mDNS name.
+ *
+ * The radio under esp_wifi is the board's ESP32-C6 on SDIO, brought up by
+ * wifi_radio.h.
  *
  * Three tasks touch the session: the UI loop (start, close, tick), the event
  * loop (what the radio reports) and the HTTP server (requests).  Everything
