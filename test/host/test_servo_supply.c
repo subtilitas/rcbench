@@ -1,6 +1,16 @@
-/*
- * What the servo screen does with the supply's output and set points when a
+/**
+ * @file test_servo_supply.c
+ * @brief What the servo screen does with the supply's output and set points when a
  * run ends, the screen is left or a hold is asked.
+ *
+ * Cases:
+ * - leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked
+ * - a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v
+ * - output_ons_hold_looks_at_the_set_point_again_as_it_completes
+ * - the_set_points_go_back_whichever_screen_is_up
+ * - the_set_points_wait_for_a_sample_after_the_off
+ * - a_supply_reading_stamped_on_tick_zero_keeps_its_stamp
+ * - a_hold_on_supplys_output_on_holds_the_restore_back
  *
  * SPDX-License-Identifier: MIT
  */

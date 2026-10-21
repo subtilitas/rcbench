@@ -1,8 +1,23 @@
-/*
- * Host unit tests for deleting a file in the log viewer.
+/**
+ * @file test_logview_delete.c
+ * @brief Host unit tests for deleting a file in the log viewer.
  *
  * Tested is the question, who may answer it, and what a delete, a cancel, a
  * refusal and a touch loss leave behind.
+ *
+ * Cases:
+ * - delete_asks_first_and_deletes_only_the_file_it_named
+ * - cancel_deletes_nothing_and_keeps_the_selection
+ * - a_finger_that_slides_off_delete_deletes_nothing
+ * - only_the_finger_that_pressed_delete_can_release_it
+ * - a_touch_loss_drops_the_press_on_delete
+ * - delete_needs_a_selected_file
+ * - without_remove_there_is_no_delete
+ * - deleting_the_open_file_drops_what_was_read_from_it
+ * - deleting_another_file_keeps_the_open_one
+ * - a_refused_delete_keeps_the_file_listed
+ * - a_rescan_or_leaving_the_screen_closes_the_question
+ * - the_question_leaves_no_stale_pixels
  *
  * SPDX-License-Identifier: MIT
  */

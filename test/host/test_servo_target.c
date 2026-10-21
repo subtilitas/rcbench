@@ -1,6 +1,17 @@
-/*
- * The pins the servo screen says it drives: the target row, the target line
+/**
+ * @file test_servo_target.c
+ * @brief The pins the servo screen says it drives: the target row, the target line
  * and the port's pulse.
+ *
+ * Cases:
+ * - the_encoders_angle_replaces_the_dashes_in_the_measured_row
+ * - an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback
+ * - outputs_prog_port_entry_sets_what_the_tester_drives_at_rest
+ * - the_servo_screen_names_the_pins_the_tester_drives
+ * - the_target_line_lists_the_pins_that_fit_and_counts_the_rest
+ * - the_target_row_stays_in_sight_under_the_settings_and_a_keypad
+ * - the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep
+ * - the_tester_target_and_pulse_stay_while_the_port_is_held
  *
  * SPDX-License-Identifier: MIT
  */

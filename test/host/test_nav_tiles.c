@@ -1,7 +1,29 @@
-/*
- * The shell's navigation: the SETUP tiles, WiFi and its opener, the home tag
+/**
+ * @file test_nav_tiles.c
+ * @brief The shell's navigation: the SETUP tiles, WiFi and its opener, the home tag
  * climbing one level from every screen, the home grid with its texts in both
  * languages, and every screen's title.
+ *
+ * Cases:
+ * - the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates
+ * - the_band_titles_match_the_tiles
+ * - wifi_returns_to_the_screen_that_opened_it
+ * - wifi_keeps_its_opener_over_stop_link_loss_and_home
+ * - the_home_tag_climbs_one_level_from_every_screen
+ * - the_home_tag_climbs_the_stick_session_one_level_at_a_time
+ * - the_home_grid_is_four_by_two_by_kind
+ * - every_home_tile_text_fits_in_both_languages
+ * - the_home_tiles_carry_the_planned_names_and_lines
+ * - the_setup_hub_names_its_first_category_panel_in_both_languages
+ * - the_home_tag_on_servo_closes_a_panel_climbs_and_leaves
+ * - the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu
+ * - the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu
+ * - the_home_tag_closes_what_a_tool_screen_opened_first
+ * - the_home_tag_leaves_supply_under_a_drag
+ * - a_tile_navigates_and_a_slip_does_not
+ * - every_screen_renders_something_and_has_a_title
+ * - a_cancelled_tile_press_navigates_nowhere
+ * - a_cancel_reaches_a_screen_left_during_the_frame
  *
  * SPDX-License-Identifier: MIT
  */

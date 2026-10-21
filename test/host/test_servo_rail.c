@@ -1,6 +1,15 @@
-/*
- * The servo screen's tag row, rail line and current row under the supply
+/**
+ * @file test_servo_rail.c
+ * @brief The servo screen's tag row, rail line and current row under the supply
  * and the INA3221 as the meter.
+ *
+ * Cases:
+ * - the_tag_row_carries_the_pulse_range
+ * - the_rail_line_names_the_pd_mini_and_a_modelled_supply
+ * - the_current_row_shows_the_supply_while_it_is_the_meter
+ * - the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter
+ * - a_negative_current_is_shown_signed
+ * - a_clipped_window_draws_its_current_in_the_warning_colour
  *
  * SPDX-License-Identifier: MIT
  */

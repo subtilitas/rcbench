@@ -1,7 +1,22 @@
-/*
- * The programmer overlay's current limit, the supply it asks for, and the
+/**
+ * @file test_kst_panel_leave.c
+ * @brief The programmer overlay's current limit, the supply it asks for, and the
  * port it gives back: connect, the wait before PWM and what a leave, a STOP
  * and a lost link leave behind.
+ *
+ * Cases:
+ * - the_current_limit_is_typed_inside_50_to_3000_ma
+ * - a_supply_that_cannot_give_the_voltage_is_refused_by_name
+ * - a_supply_that_is_on_under_4_8_v_is_refused_by_name
+ * - a_supply_that_does_not_switch_on_ends_the_connect_with_its_line
+ * - a_leave_gives_the_port_back_and_switches_no_supply
+ * - a_leave_with_a_pd_mini_keeps_the_supply_on
+ * - the_tester_has_no_port_until_the_wait_ends_and_abort_keeps_it
+ * - a_coprocessor_without_leave_gets_a_stated_message
+ * - stop_and_a_lost_link_while_leaving_keep_the_port_from_the_tester
+ * - the_wait_before_pwm_is_a_row_with_limits_and_is_kept
+ * - a_count_of_1_is_said_in_the_singular
+ * - connect_reads_the_servo_and_keeps_the_overlay_while_the_port_is_held
  *
  * SPDX-License-Identifier: MIT
  */

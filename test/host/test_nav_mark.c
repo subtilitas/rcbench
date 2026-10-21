@@ -1,6 +1,15 @@
-/*
- * The shell's simulation mark and the cached chrome: what it covers, what
+/**
+ * @file test_nav_mark.c
+ * @brief The shell's simulation mark and the cached chrome: what it covers, what
  * it lets through, and what repaints when it switches.
+ *
+ * Cases:
+ * - the_simulation_mark_covers_the_whole_screen
+ * - the_simulation_mark_lets_the_screen_through
+ * - invalidating_the_router_repaints_every_screen
+ * - the_simulation_mark_follows_the_canvas_it_is_given
+ * - switching_the_mark_invalidates_the_cached_chrome
+ * - the_menu_marks_what_is_not_fitted
  *
  * SPDX-License-Identifier: MIT
  */

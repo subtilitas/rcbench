@@ -1,8 +1,24 @@
-/*
- * Host unit tests for the log viewer's folder tabs.
+/**
+ * @file test_logview_tabs.c
+ * @brief Host unit tests for the log viewer's folder tabs.
  *
  * Tested is which folder each tab lists, the tab of the file written last,
  * and what each empty folder says.
+ *
+ * Cases:
+ * - a_run_written_while_logs_is_closed_is_listed_on_the_next_open
+ * - the_way_back_in_lists_new_runs_after_delete_swap_and_sub_views
+ * - the_header_names_the_card_or_says_sd_card
+ * - three_tabs_list_three_folders_and_bench_comes_first
+ * - the_tabs_stand_root_user_bench_from_the_left
+ * - the_card_name_ends_the_header_row_and_stops_short_of_prev
+ * - the_tabs_switch_with_no_card
+ * - the_tabs_follow_the_folders_of_setup
+ * - delete_on_root_takes_the_report_and_stays_in_its_folder
+ * - an_open_test_in_user_does_not_hide_the_same_number_in_bench
+ * - each_empty_folder_says_what_it_holds_and_what_is_off
+ * - logs_opens_on_the_tab_of_the_file_written_last
+ * - a_file_opened_in_one_tab_is_read_again_from_its_folder
  *
  * SPDX-License-Identifier: MIT
  */

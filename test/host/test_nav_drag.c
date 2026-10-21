@@ -1,6 +1,27 @@
-/*
- * A drag that leaves by the band or ends under STOP, ARM, HOME or a touch
+/**
+ * @file test_nav_drag.c
+ * @brief A drag that leaves by the band or ends under STOP, ARM, HOME or a touch
  * loss, for the throttle, the dial, the speed and the set point.
+ *
+ * Cases:
+ * - a_stop_ends_a_throttle_drag
+ * - a_disarm_ends_a_throttle_drag
+ * - an_arm_ends_a_throttle_drag
+ * - leaving_ends_a_throttle_drag
+ * - a_touch_loss_ends_a_throttle_drag
+ * - a_dial_drag_that_leaves_by_the_band_ends_at_the_edge
+ * - a_slide_onto_the_dial_commands_nothing
+ * - a_speed_drag_that_leaves_by_the_band_ends_at_the_edge
+ * - home_under_a_dial_drag_ends_the_drag
+ * - a_touch_loss_ends_a_dial_drag
+ * - a_set_point_drag_that_leaves_by_the_band_ends_at_the_edge
+ * - output_off_answers_the_first_tap_after_a_drag_left_by_the_band
+ * - an_output_off_press_that_leaves_by_the_band_asks_for_nothing
+ * - an_output_on_hold_that_leaves_by_the_band_switches_nothing_on
+ * - leaving_or_a_touch_loss_ends_a_set_point_drag
+ * - a_release_made_for_the_finger_activates_nothing_but_stop
+ * - reset_peaks_needs_the_fingers_release_and_disarm_does_not
+ * - servo_strip_tabs_carried_into_the_band_do_nothing
  *
  * SPDX-License-Identifier: MIT
  */

@@ -1,6 +1,26 @@
-/*
- * The programmer overlay on the SERVO screen: the pulse while the port is
+/**
+ * @file test_kst_panel_screen.c
+ * @brief The programmer overlay on the SERVO screen: the pulse while the port is
  * held, the settings that cannot move, the supply and the ARM hold.
+ *
+ * Cases:
+ * - the_supplys_controls_are_held_for_as_long_as_the_port
+ * - connect_is_refused_over_the_supplys_limits
+ * - a_panel_that_starts_under_a_session_reads_its_options_at_the_entry
+ * - the_port_row_names_the_programming_voltage_and_current
+ * - commanded_shows_no_pulse_while_the_programmer_holds_the_port
+ * - program_lists_the_programmer_and_its_row_opens_it_a_level_down
+ * - the_home_tag_in_a_held_session_asks_for_leave_then_climbs
+ * - the_kst_row_names_the_ports_pin_from_the_feed
+ * - no_setting_that_reaches_the_port_changes_while_it_is_held
+ * - the_programmer_stays_on_the_screen_while_the_port_is_held
+ * - leaving_servo_switches_its_supply_off_once_the_port_lets_go
+ * - an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm
+ * - a_port_found_held_ends_a_hold_of_arm
+ * - an_unknown_coordinate_is_no_row
+ * - a_label_under_the_wrong_row_name_fails
+ * - a_tap_asks_for_a_look_once
+ * - a_lost_touch_stream_on_the_screen_drops_the_programmers_hold
  *
  * SPDX-License-Identifier: MIT
  */

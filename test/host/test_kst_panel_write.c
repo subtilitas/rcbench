@@ -1,6 +1,28 @@
-/*
- * The programmer overlay's write: ENABLE WRITE, the card, the working line,
+/**
+ * @file test_kst_panel_write.c
+ * @brief The programmer overlay's write: ENABLE WRITE, the card, the working line,
  * an abort, a lost link and the record of an interrupted write.
+ *
+ * Cases:
+ * - enable_write_is_off_until_its_page_is_held
+ * - a_write_needs_changes_the_switch_and_a_hold
+ * - with_a_card_the_values_before_the_write_go_to_it_first
+ * - a_card_that_takes_no_file_stops_the_write
+ * - a_write_the_servo_does_not_take_names_the_register
+ * - the_working_line_says_planning_while_the_port_plans
+ * - the_working_line_counts_the_frames
+ * - port_is_abort_while_an_operation_runs
+ * - stop_aborts_a_write_and_the_servo_must_be_read
+ * - a_link_lost_in_a_write_leaves_a_servo_nobody_should_use
+ * - the_record_of_an_interrupted_write_is_discarded_only_by_its_entry
+ * - a_restore_from_the_record_that_is_cancelled_leaves_no_value_pending
+ * - a_coprocessor_that_restarts_ends_the_session_and_says_so
+ * - an_open_page_goes_when_the_link_goes
+ * - a_servo_that_fails_the_fingerprint_is_shown_and_never_written
+ * - leave_with_changes_names_them_and_gives_the_port_back
+ * - one_press_at_a_time_and_a_lost_touch_stream_drops_it
+ * - leaving_the_screen_closes_the_pages_and_keeps_the_port
+ * - the_revision_moves_with_what_is_shown_and_rests_with_it
  *
  * SPDX-License-Identifier: MIT
  */

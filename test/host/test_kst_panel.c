@@ -1,5 +1,6 @@
-/*
- * The overlay of the programmer for KST and Chaservo servos
+/**
+ * @file test_kst_panel.c
+ * @brief The overlay of the programmer for KST and Chaservo servos
  * (shared/ui/kst_panel.c): what a touch does in each state, what each page
  * asks for, and what the operator is told.  The bench under it is
  * kst_panel_rig.h on kst_rig.h: the simulated servo, the IOmcu's port,
@@ -11,6 +12,20 @@
  * Not what it looks like; that is the golden images' job.  Every state is
  * rendered here all the same, so a draw that reads past a table falls over
  * under the sanitizers.
+ *
+ * Cases:
+ * - without_a_link_nothing_on_the_servo_tab_takes_a_tap
+ * - a_coprocessor_without_the_page_leaves_the_programmer_unavailable
+ * - programming_is_locked_until_the_port_is_the_testers_target
+ * - a_port_without_a_pin_is_refused_by_name
+ * - a_port_without_a_servo_says_so_and_gives_the_port_back
+ * - the_programming_voltage_is_typed_inside_1_to_6_v
+ * - a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold
+ * - a_stored_programming_voltage_above_6_v_is_loaded_as_6_v
+ * - a_confirmed_voltage_above_6_v_is_not_kept
+ * - the_fetched_backup_redraws_restore
+ * - a_locked_session_found_at_the_start_is_enabled_and_restored
+ * - a_read_under_a_locked_session_shows_the_servo_and_keeps_the_lock
  *
  * SPDX-License-Identifier: MIT
  */

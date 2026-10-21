@@ -1,8 +1,35 @@
-/*
- * Host unit tests for the log viewer's plot view.
+/**
+ * @file test_logview_plot.c
+ * @brief Host unit tests for the log viewer's plot view.
  *
  * Tested is what the plot draws (the columns, the cursor and the range), what
  * a view change leaves behind, and what each finger does.
+ *
+ * Cases:
+ * - plotting_loads_exactly_the_picked_columns
+ * - tapping_a_column_toggles_it_and_the_time_axis_is_not_offered
+ * - an_override_does_not_discard_the_column_selection
+ * - a_column_of_prose_is_not_plottable
+ * - forcing_the_separator_and_the_convention_re_runs_the_analysis
+ * - the_cursor_follows_the_touch_and_stays_in_range
+ * - fields_returns_to_the_picker_and_keeps_the_selection
+ * - back_from_the_picker_returns_to_the_file_list
+ * - redraw_leaves_no_stale_pixels
+ * - both_framebuffers_follow_an_interaction
+ * - two_fingers_spread_zoom_in_and_the_view_stays
+ * - two_fingers_moved_together_pan_and_pinching_zooms_out
+ * - the_arrows_still_pick_values_and_carry_the_view
+ * - a_third_finger_and_a_cancel_leave_the_view_alone
+ * - one_finger_drag_moves_the_cursor_while_the_setting_is_off
+ * - one_finger_drag_pans_a_zoomed_view_when_the_setting_is_on
+ * - a_tap_still_selects_and_a_short_slide_does_not_pan_with_the_setting_on
+ * - one_move_past_the_threshold_pans_by_what_lies_past_it
+ * - a_slide_of_10_px_moves_the_cursor_and_11_px_pans
+ * - a_pan_a_fraction_of_a_sample_past_the_end_stops_at_the_end
+ * - a_view_that_shows_the_whole_file_is_not_panned_by_one_finger
+ * - a_second_finger_after_a_pan_zooms_and_a_cancel_ends_the_pan
+ * - a_steep_trace_longer_than_the_plot_is_one_line
+ * - a_range_of_1000_or_more_drops_the_decimal
  *
  * SPDX-License-Identifier: MIT
  */

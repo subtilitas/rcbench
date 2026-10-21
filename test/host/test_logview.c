@@ -1,11 +1,33 @@
-/*
- * Host unit tests for the log viewer screen: opening a file, the states of
+/**
+ * @file test_logview.c
+ * @brief Host unit tests for the log viewer screen: opening a file, the states of
  * the card, and the import view.
  *
  * The screen is handed an I/O (input/output) vtable, so the whole browse ->
  * import -> plot path runs here against strings in memory: no card, no
  * filesystem, no board.  Tested is what the screen decides (which file,
  * which convention) and what it says when the card gives no list.
+ *
+ * Cases:
+ * - every_view_draws_something
+ * - an_open_file_is_not_read_from_the_card_swapped_behind_it
+ * - a_file_that_vanished_between_listing_and_opening
+ * - with_no_io_at_all_the_screen_still_works
+ * - a_file_that_proves_both_conventions_is_flagged
+ * - a_ragged_file_is_flagged_without_a_convention_conflict
+ * - a_file_with_no_time_column_plots_against_the_row_number
+ * - a_two_row_file_still_draws_a_trace
+ * - no_card_says_so_and_stays_put
+ * - an_empty_card_is_not_the_same_as_no_card
+ * - a_card_that_does_not_mount_says_which
+ * - a_second_tap_opens_the_file_and_analyses_it
+ * - a_cancelled_press_opens_nothing
+ * - a_german_file_is_read_as_german
+ * - a_directory_row_cannot_be_opened_as_a_log
+ * - a_file_of_2_gib_or_more_is_listed_and_refused_at_open
+ * - a_size_is_written_in_its_unit_up_to_an_sdxc_card
+ * - a_cut_last_row_is_left_out_and_said
+ * - a_cut_last_row_is_said_beside_a_convention_conflict
  *
  * SPDX-License-Identifier: MIT
  */

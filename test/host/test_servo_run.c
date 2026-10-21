@@ -1,6 +1,21 @@
-/*
- * The automatic test as the servo screen starts and reports it: the start
+/**
+ * @file test_servo_run.c
+ * @brief The automatic test as the servo screen starts and reports it: the start
  * line, the caps, the refusal and the encoder's angle columns.
+ *
+ * Cases:
+ * - an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns
+ * - the_dut_page_sets_the_encoders_centre_from_the_live_count
+ * - a_link_that_goes_down_takes_the_encoders_angle_with_it
+ * - a_run_with_the_encoder_on_writes_the_angle_columns
+ * - a_run_started_without_a_magnet_says_so_in_its_report
+ * - a_run_with_the_encoder_off_writes_the_old_columns
+ * - start_test_starts_a_second_run
+ * - the_start_line_follows_the_report_being_taken
+ * - arm_first_goes_once_the_bench_is_armed
+ * - a_run_outside_the_caps_is_refused_before_the_warning
+ * - the_result_names_the_report_only_when_it_was_written
+ * - a_refusal_goes_with_the_edit_that_answers_it
  *
  * SPDX-License-Identifier: MIT
  */

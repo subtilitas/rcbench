@@ -1,8 +1,18 @@
-/*
- * Host unit tests for the order of a card's runs in the log viewer.
+/**
+ * @file test_logview_rank.c
+ * @brief Host unit tests for the order of a card's runs in the log viewer.
  *
  * Tested is which run outranks which, how the list is cut and what it says
  * when it was cut.
+ *
+ * Cases:
+ * - a_run_name_and_its_number_are_one_rule
+ * - the_newest_run_outranks_the_rest_of_the_card
+ * - a_card_of_999_runs_offers_the_newest_that_fit
+ * - a_directory_sorts_first_from_either_side_of_the_comparison
+ * - a_full_list_keeps_runs_over_what_it_cannot_date
+ * - a_list_that_was_cut_says_so
+ * - a_count_above_the_list_does_not_reach_past_it
  *
  * SPDX-License-Identifier: MIT
  */

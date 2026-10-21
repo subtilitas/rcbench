@@ -1,6 +1,27 @@
-/*
- * What the servo screen draws from a sweep's acknowledgements: the origin of
+/**
+ * @file test_servo_curve.c
+ * @brief What the servo screen draws from a sweep's acknowledgements: the origin of
  * a resume, a restart, a changed curve, hold and the far end's slew.
+ *
+ * Cases:
+ * - leaving_disarms_and_lets_go_of_the_output
+ * - trim_shifts_the_pulse_and_not_the_angle
+ * - feedback_is_shown_rather_than_travelled_to
+ * - a_refused_sweep_leaves_nothing_driven
+ * - an_early_resume_keeps_the_reading_at_the_hold
+ * - a_released_pause_says_no_drawn_angle
+ * - leaving_forgets_the_sweep_model
+ * - a_start_acknowledgement_applies_to_its_own_command
+ * - a_later_repeat_acknowledged_ends_the_wait
+ * - a_restart_drains_the_old_curve_in_its_old_mapping
+ * - two_sweep_taps_in_one_pass_send_nothing
+ * - speed_100_is_immediate_in_the_drawing_and_the_replay
+ * - a_resume_is_drawn_from_its_acknowledgement
+ * - a_curve_changed_while_paused_starts_over
+ * - a_pause_ends_where_a_hold_ended
+ * - hold_without_feedback_matches_the_far_ends_slew
+ * - the_drawn_output_starts_where_the_far_ends_output_starts
+ * - the_horn_follows_the_curve_from_where_the_far_end_started_it
  *
  * SPDX-License-Identifier: MIT
  */

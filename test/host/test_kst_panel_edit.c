@@ -1,6 +1,22 @@
-/*
- * The programmer overlay's tabs and edits: the keypad's range, the hard
+/**
+ * @file test_kst_panel_edit.c
+ * @brief The programmer overlay's tabs and edits: the keypad's range, the hard
  * and soft limits, the switch, the step key and its repeat.
+ *
+ * Cases:
+ * - the_tabs_show_their_fields
+ * - a_locked_value_takes_no_tap
+ * - the_keypads_range_is_the_cores_and_a_value_inside_it_is_an_edit
+ * - a_value_beyond_a_hard_limit_cannot_be_entered
+ * - a_value_past_a_soft_limit_waits_for_a_2_s_hold
+ * - the_hold_button_fills_through_its_own_revision
+ * - stretch_is_chosen_from_the_values_the_core_takes
+ * - a_switch_is_toggled_by_its_tap_and_warns_where_the_core_does
+ * - a_switch_the_core_refuses_says_which_limit
+ * - a_step_key_acts_on_the_press_and_repeats_while_held
+ * - the_repeat_speeds_up_after_1_8_s_more
+ * - a_step_past_a_soft_limit_opens_the_page_and_ends_the_repeat
+ * - neutral_steps_through_its_page
  *
  * SPDX-License-Identifier: MIT
  */

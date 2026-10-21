@@ -1,6 +1,28 @@
-/*
- * The shell's alerts: the band's two rows, the 30 s clear, slots taken back or
+/**
+ * @file test_nav_alert.c
+ * @brief The shell's alerts: the band's two rows, the 30 s clear, slots taken back or
  * replaced, the tap that clears one, and what the band shows.
+ *
+ * Cases:
+ * - an_alert_survives_navigation
+ * - a_two_row_alert_fits_two_rows_of_the_band
+ * - an_alert_clears_after_30_s_and_a_new_one_starts_again
+ * - the_frame_an_alert_arrives_in_does_not_count
+ * - an_alert_is_withdrawn_only_while_it_still_shows
+ * - two_causes_over_in_one_frame_clear_the_alert_shown
+ * - a_slot_alert_taken_back_before_a_frame_never_shows
+ * - a_slot_alert_replaced_in_the_band_is_left_there
+ * - a_slot_number_is_never_0
+ * - a_second_contact_cannot_take_the_alert
+ * - a_held_alert_returns_after_a_passing_one
+ * - a_tap_on_the_alert_clears_it_and_reaches_no_screen
+ * - a_lift_clears_only_the_alert_it_was_pressed_on
+ * - a_press_on_an_alert_that_expires_stays_off_the_screen
+ * - cancelling_gestures_lets_go_of_the_alert
+ * - a_held_alert_stays_and_lets_taps_through
+ * - a_cleared_alert_leaves_no_red_behind
+ * - the_band_shows_what_is_wrong
+ * - the_band_names_the_bench_or_the_model_not_the_link
  *
  * SPDX-License-Identifier: MIT
  */

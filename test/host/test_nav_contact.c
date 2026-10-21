@@ -1,7 +1,24 @@
-/*
- * Who owns a contact: one owner from its DOWN to its UP, the screen or the
+/**
+ * @file test_nav_contact.c
+ * @brief Who owns a contact: one owner from its DOWN to its UP, the screen or the
  * router.  A contact that comes down on the band, leaves by it, or outlives
  * a touch loss.
+ *
+ * Cases:
+ * - home_under_a_setup_scroll_leaves_the_contact_to_no_screen
+ * - cancelling_gestures_lets_go_of_the_band
+ * - a_throttle_drag_that_leaves_by_the_band_ends_at_the_edge
+ * - the_release_at_the_edge_adds_no_travel_made_on_the_band
+ * - a_contact_that_came_down_on_the_band_reaches_no_screen
+ * - a_screen_without_a_band_owns_its_top_rows
+ * - no_later_contact_continues_a_drag_that_left_by_the_band
+ * - stop_answers_a_second_finger_during_a_drag
+ * - sliding_onto_stop_or_home_presses_neither
+ * - home_under_a_drag_leaves_the_dragging_contact_to_no_screen
+ * - the_alert_strip_answers_a_second_finger_during_a_drag
+ * - a_touch_loss_leaves_the_contacts_on_the_glass_to_no_screen
+ * - a_down_replaces_what_its_id_owned_before
+ * - a_contact_beyond_the_table_reaches_no_screen
  *
  * SPDX-License-Identifier: MIT
  */

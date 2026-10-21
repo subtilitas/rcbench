@@ -1,8 +1,17 @@
-/*
- * Host unit tests for the log viewer's touch rules and its text.
+/**
+ * @file test_logview_touch.c
+ * @brief Host unit tests for the log viewer's touch rules and its text.
  *
  * Tested is that a button or a row acts on a tap and on nothing less, what a
  * second finger presses, and that no message needs more than two lines.
+ *
+ * Cases:
+ * - the_home_tag_climbs_as_each_views_way_back
+ * - a_button_or_a_row_acts_on_a_tap_and_on_nothing_less
+ * - a_second_finger_presses_nothing_on_the_list_views
+ * - a_press_left_behind_holds_nothing_on_the_way_back_in
+ * - nothing_that_acts_is_under_the_alert_band
+ * - every_warning_and_file_message_takes_two_lines_at_most
  *
  * SPDX-License-Identifier: MIT
  */

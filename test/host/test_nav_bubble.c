@@ -1,6 +1,30 @@
-/*
- * The band's chips and their bubbles: what each opens, that none covers
+/**
+ * @file test_nav_bubble.c
+ * @brief The band's chips and their bubbles: what each opens, that none covers
  * STOP, and how each follows the bits it names.
+ *
+ * Cases:
+ * - the_armed_chip_names_the_role
+ * - the_band_renders_the_role_of_the_arm
+ * - a_tap_on_each_chip_opens_its_bubble
+ * - a_slide_off_a_chip_opens_nothing
+ * - a_tap_closes_the_bubble_and_does_nothing_else
+ * - a_tap_on_another_chip_moves_the_bubble_to_it
+ * - stop_works_through_an_open_bubble
+ * - the_bubble_never_covers_stop_and_fits_in_both_languages
+ * - the_widest_chip_row_clears_the_home_tag
+ * - the_fault_bubble_follows_the_bits_while_open
+ * - a_bubble_whose_chip_goes_closes
+ * - the_link_bubble_follows_the_link
+ * - the_inject_bubble_explains_the_injector
+ * - the_armed_bubble_follows_the_roles
+ * - the_link_bubble_carries_the_refused_frames
+ * - the_refused_line_follows_while_open
+ * - a_bubble_follows_its_chip_when_the_band_moves
+ * - a_closed_bubble_leaves_no_pixels_behind
+ * - leaving_the_screen_closes_the_bubble
+ * - opening_a_bubble_releases_the_screens_contacts
+ * - a_screen_without_a_band_opens_no_bubble
  *
  * SPDX-License-Identifier: MIT
  */

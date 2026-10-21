@@ -1,8 +1,34 @@
-/*
- * What the servo screen shows and sends while the coprocessor sweeps: the
+/**
+ * @file test_servo_dial_sweep.c
+ * @brief What the servo screen shows and sends while the coprocessor sweeps: the
  * horn, the knob, a changed setting, SPEED's limit, and what it draws and
  * replays across a pause: the acknowledged hold, feedback, the early
  * resume and the link going.
+ *
+ * Cases:
+ * - a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps
+ * - the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is
+ * - a_sweep_ends_on_the_dial_centre_release_disarm_and_leave
+ * - a_changed_setting_starts_the_sweep_over
+ * - a_profile_changed_while_it_sweeps_goes_with_the_sweep
+ * - hold_keeps_the_output_where_it_has_got_to
+ * - speed_says_when_it_limits_the_sweep
+ * - pause_holds_the_sweep_and_a_second_tap_resumes_it
+ * - paused_carries_the_sweep_on_from_its_phase
+ * - the_pause_is_drawn_from_when_the_hold_was_acknowledged
+ * - a_pause_with_feedback_holds_the_angle_the_servo_reports
+ * - a_pause_replays_from_the_tap_when_feedback_goes
+ * - the_acknowledged_pause_moves_the_output_at_speed
+ * - an_early_resume_is_rebased_on_the_phase_the_far_end_kept
+ * - a_changed_curve_is_drawn_from_its_acknowledged_start
+ * - a_change_during_a_pause_drain_holds_the_drawn_angle
+ * - an_early_resume_keeps_the_output_the_far_end_held
+ * - the_link_going_ends_a_pause_at_rest
+ * - an_unacknowledged_pause_is_drawn_on_for_500_ms_at_most
+ * - an_acknowledgement_after_the_pause_ended_changes_nothing
+ * - a_range_changed_while_it_sweeps_goes_with_its_own_amplitude
+ * - a_turn_in_a_frame_where_a_sweep_ran_is_dropped
+ * - the_knob_does_not_take_the_horn_from_a_sweep
  *
  * SPDX-License-Identifier: MIT
  */

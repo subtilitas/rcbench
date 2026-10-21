@@ -1,5 +1,6 @@
-/*
- * The shell: the band, the router, and the two safety properties they carry.
+/**
+ * @file test_nav.c
+ * @brief The shell: the band, the router, and the two safety properties they carry.
  *
  * STOP has to work from every screen that can have something armed behind it,
  * and no screen may draw over it.  The second is enforced by handing screens a
@@ -8,6 +9,23 @@
  * This suite holds the router, the splash, the band and STOP.  The tiles, the
  * alerts, the simulation mark, the owner of a contact and the bubbles are in
  * test_nav_*.c.
+ *
+ * Cases:
+ * - the_navigation_count_sees_away_and_back
+ * - the_router_starts_on_the_splash
+ * - the_splash_has_no_band_and_everything_else_does
+ * - no_screen_can_draw_over_the_band
+ * - stop_latches_and_clears_when_read
+ * - stop_works_from_every_screen_that_has_a_band
+ * - a_press_that_slides_off_stop_does_nothing
+ * - the_home_tag_returns_to_the_overview
+ * - the_overview_has_no_home_tag
+ * - a_second_contact_cannot_steal_the_release
+ * - an_unknown_screen_id_falls_back_to_the_overview
+ * - the_splash_holds_then_hands_over
+ * - a_tap_skips_the_splash_hold
+ * - a_failed_step_is_drawn_in_its_own_colour
+ * - the_alert_band_renders_at_the_bottom
  *
  * SPDX-License-Identifier: MIT
  */

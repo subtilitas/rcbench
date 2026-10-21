@@ -1,7 +1,33 @@
-/*
- * What the servo screen does with the knob and with a drag that loses its
+/**
+ * @file test_servo_knob.c
+ * @brief What the servo screen does with the knob and with a drag that loses its
  * release: the knob's turn, its withdrawal, and the drive restored after an
  * arm or a stop.
+ *
+ * Cases:
+ * - the_knob_moves_the_horn_by_how_far_it_turned
+ * - the_knob_stops_at_the_servos_travel
+ * - the_knob_never_arms_the_servo_bench
+ * - a_knob_that_does_not_turn_commands_nothing_on_the_servo
+ * - a_finger_on_the_dial_owns_the_horn_against_the_knob
+ * - a_finger_that_lifted_in_the_frame_still_owned_the_dial
+ * - a_withdrawn_knob_command_restores_the_horn
+ * - a_withdrawn_knob_command_leaves_the_servo_idle
+ * - a_turn_in_a_frame_where_the_settings_were_open_is_dropped
+ * - a_withdrawn_knob_command_leaves_a_position_from_a_touch
+ * - a_withdrawal_does_not_touch_a_command_posted_after_the_knob
+ * - the_knob_leaves_the_horn_to_the_settings_panel
+ * - a_pending_release_is_not_overwritten_by_the_knob
+ * - a_completed_arm_is_not_overwritten_by_the_servo_knob
+ * - leaving_under_a_dial_drag_ends_the_drag
+ * - a_press_ends_a_dial_drag_that_lost_its_release
+ * - a_second_press_ends_a_dial_drag
+ * - the_knob_stays_out_of_the_frame_a_second_press_ended_a_drag_in
+ * - a_withdrawal_after_an_arm_restores_no_drive_from_before_it
+ * - a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release
+ * - a_withdrawal_on_a_disarmed_bench_restores_no_drive
+ * - a_withdrawal_after_a_stop_restores_no_drive_before_the_disarm
+ * - a_withdrawal_on_an_armed_bench_restores_the_drive
  *
  * SPDX-License-Identifier: MIT
  */

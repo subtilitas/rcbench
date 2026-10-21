@@ -1,6 +1,15 @@
-/*
- * The programmer overlay's notes: pages, the standing lines and what the
+/**
+ * @file test_kst_panel_notes.c
+ * @brief The programmer overlay's notes: pages, the standing lines and what the
  * first page holds.
+ *
+ * Cases:
+ * - notes_that_do_not_fit_take_pages_and_none_is_lost
+ * - standing_notes_are_on_the_first_page_whole
+ * - every_message_fits_whole_beside_every_standing_pair
+ * - a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page
+ * - the_notes_start_on_their_first_page_again
+ * - a_text_before_the_area_is_set_still_ends
  *
  * SPDX-License-Identifier: MIT
  */

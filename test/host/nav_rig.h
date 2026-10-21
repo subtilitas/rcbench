@@ -1,9 +1,19 @@
-/*
- * The shell's cases as test_nav.c and test_nav_*.c share them: the canvas,
+/**
+ * @file nav_rig.h
+ * @brief The shell's cases as test_nav.c and test_nav_*.c share them: the canvas,
  * a touch and a tap, the way back to the overview, the tiles and the home
  * tag, STOP, and the openers of the screens' lists, keypads and panels.
  *
  * Only static inline helpers and the buffers and counters they use.
+ *
+ * Used by:
+ * - test_nav.c
+ * - test_nav_tiles.c
+ * - test_nav_alert.c
+ * - test_nav_mark.c
+ * - test_nav_contact.c
+ * - test_nav_drag.c
+ * - test_nav_bubble.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -47,6 +57,7 @@
 static gfx_color_t *fb __attribute__((unused));
 static gfx_canvas_t cv __attribute__((unused));
 
+/** @brief Clears the canvas and resets the router and the screens the cases use. */
 static inline void fresh(void)
 {
     if (fb == NULL) {
@@ -59,6 +70,7 @@ static inline void fresh(void)
     ui_router_init();
 }
 
+/** @brief Feeds the router one touch event of contact @p id at (@p x, @p y). */
 static inline void touch(int x, int y, touch_event_type_t type, uint8_t id)
 {
     touch_event_t e = { .type = type,
@@ -67,13 +79,14 @@ static inline void touch(int x, int y, touch_event_type_t type, uint8_t id)
     ui_router_event(&e);
 }
 
+/** @brief Presses and releases contact 1 at (@p x, @p y). */
 static inline void tap(int x, int y)
 {
     touch(x, y, TOUCH_EVENT_DOWN, 1);
     touch(x, y, TOUCH_EVENT_UP, 1);
 }
 
-/** Leave the splash the way the application does. */
+/** @brief Leave the splash the way the application does. */
 static inline void to_overview(void)
 {
     for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
@@ -83,7 +96,7 @@ static inline void to_overview(void)
     ui_router_goto(SCREEN_OVERVIEW);
 }
 
-/* The middle of SETUP's tile @p index, in panel coordinates. */
+/** @brief The middle of SETUP's tile @p index, in panel coordinates. */
 static inline void hub_point(int index, int *x, int *y)
 {
     gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
@@ -105,6 +118,7 @@ static inline void hub_point(int index, int *x, int *y)
 #define M_PX_PCT   (100.0f / 413.0f)     /* throttle per px of travel */
 #define UNDER_STOP_Y 44
 
+/** @brief Takes the next motor command into @p c when given and returns whether one was queued. */
 static inline bool motor_posted(motor_cmd_t *c)
 {
     motor_cmd_t got = { .kind = MOTOR_CMD_NONE };
@@ -115,11 +129,13 @@ static inline bool motor_posted(motor_cmd_t *c)
     return any;
 }
 
+/** @brief Takes every queued motor command. */
 static inline void drain_motor(void)
 {
     while (motor_posted(NULL)) { }
 }
 
+/** @brief Takes the next servo command; SERVO_CMD_NONE when none is queued. */
 static inline servo_cmd_t servo_took(void)
 {
     servo_cmd_t c = { .kind = SERVO_CMD_NONE };
@@ -127,18 +143,20 @@ static inline servo_cmd_t servo_took(void)
     return c;
 }
 
+/** @brief Takes every queued servo command. */
 static inline void drain_servo(void)
 {
     while (servo_took().kind != SERVO_CMD_NONE) { }
 }
 
+/** @brief Takes every queued supply command. */
 static inline void drain_supply(void)
 {
     supply_cmd_t c;
     while (supply_screen_poll_cmd(&c)) { }
 }
 
-/* A bench screen on top, nothing on the glass, nothing waiting. */
+/** @brief A bench screen on top, nothing on the glass, nothing waiting. */
 static inline void on_screen(ui_screen_id_t id)
 {
     settings_set_store(NULL);
@@ -155,7 +173,7 @@ static inline void on_screen(ui_screen_id_t id)
     feed_reset();
 }
 
-/* Whether the knob moves the throttle: it does not while a finger owns the
+/** @brief Whether the knob moves the throttle: it does not while a finger owns the
  * slider.  The turn is taken back. */
 static inline bool knob_moves_the_throttle(void)
 {
@@ -170,7 +188,7 @@ static inline bool knob_moves_the_throttle(void)
     return posted;
 }
 
-/* A point on the band, clear of STOP and of the home tag. */
+/** @brief A point on the band, clear of STOP and of the home tag. */
 static inline void check_plain_band(int x, int y)
 {
     CHECK(y < UI_BAND_H);

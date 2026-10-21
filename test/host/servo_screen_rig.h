@@ -1,9 +1,22 @@
-/*
- * The SERVO screen's cases as test_servo.c and test_servo_*.c share them:
+/**
+ * @file servo_screen_rig.h
+ * @brief The SERVO screen's cases as test_servo.c and test_servo_*.c share them:
  * the helpers that drive a sweep, a pause and the pins of the target row,
  * on top of servo_rig.h and servo_bench_rig.h.
  *
  * Only static inline helpers and the buffers and counters they use.
+ *
+ * Used by:
+ * - test_servo.c
+ * - test_servo_knob.c
+ * - test_servo_dial_sweep.c
+ * - test_servo_letgo.c
+ * - test_servo_curve.c
+ * - test_servo_supply.c
+ * - test_servo_run.c
+ * - test_servo_target.c
+ * - test_servo_rail.c
+ * - test_servo_meter.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -39,6 +52,7 @@
 #define SWEEP_X (ARM_X + ARM_W / 2)
 #define BTN_Y   (350 + 16)
 
+/** @brief Ticks the screen for @p secs seconds at the panel's 39 Hz frame rate. */
 static inline void frames(float secs)
 {
     for (int i = 0; i < (int)(secs * 39.0f + 0.5f); ++i) {
@@ -46,7 +60,7 @@ static inline void frames(float secs)
     }
 }
 
-/* SWEEP as the panel takes it, and the far end's start acknowledged now:
+/** @brief SWEEP as the panel takes it, and the far end's start acknowledged now:
  * until then the curve is not drawn. */
 static inline void sweep_go(void)
 {
@@ -55,7 +69,7 @@ static inline void sweep_go(void)
     acked(0u, SERVO_SWEEP_FROM_REST, 0u);
 }
 
-/* PAUSE as the panel takes it: the HOLD, for its acknowledgement. */
+/** @brief PAUSE as the panel takes it: the HOLD, for its acknowledgement. */
 static inline servo_cmd_t pause_go(void)
 {
     tap(SWEEP_X, BTN_Y);
@@ -64,8 +78,8 @@ static inline servo_cmd_t pause_go(void)
     return c;
 }
 
-/*
- * The panel's acknowledgement of @p hold, now: the phase the far end keeps
+/**
+ * @brief The panel's acknowledgement of @p hold, now: the phase the far end keeps
  * is the curve's now, the screen's own timing of the curve standing in for
  * the panel's, which the tests start in step with it.
  */
@@ -74,14 +88,14 @@ static inline void ack_hold(const servo_cmd_t *hold)
     servo_screen_sweep_held(hold->pause_seq, servo_screen_curve_ms());
 }
 
-/* The panel's acknowledgement of a RESUME, @p ago_ms ago, of a far end that
+/** @brief The panel's acknowledgement of a RESUME, @p ago_ms ago, of a far end that
  * kept @p kept_ms of its curve: the age of its phase 0, and of the resume. */
 static inline void ack_resume(uint32_t kept_ms, uint32_t ago_ms)
 {
     acked(kept_ms + ago_ms, SERVO_SWEEP_RESUMED, ago_ms);
 }
 
-/* Pixels of @p col across the middle of the sweep button. */
+/** @brief Pixels of @p col across the middle of the sweep button. */
 static inline int sweep_btn_pixels(gfx_color_t col)
 {
     int n = 0;
@@ -122,7 +136,7 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 #define LAB_SUPPLY 64
 #define LAB_INA    96
 
-/* Buffer 0 drawn, and whether its CURRENT row reads @p text in @p col. */
+/** @brief Buffer 0 drawn, and whether its CURRENT row reads @p text in @p col. */
 static inline bool row_reads(const char *text, ui_color_id_t col)
 {
     scr->render(&cv, 0);
@@ -137,7 +151,7 @@ static inline bool row_reads(const char *text, ui_color_id_t col)
     return same_in(fb, want_fb, RAIL_X, CUR_ROW_Y, RAIL_W, CUR_ROW_H);
 }
 
-/* Buffer 0 drawn, and whether the line over the plot reads the name
+/** @brief Buffer 0 drawn, and whether the line over the plot reads the name
  * @p label, @p lab_w px wide, and the three readings, the current in
  * @p a_col. */
 static inline bool line_reads(const char *label, int lab_w, const char *v,
@@ -170,12 +184,13 @@ static inline bool line_reads(const char *label, int lab_w, const char *v,
            && same_in(fb, want_fb, RAIL_X, LINE_Y, RAIL_W, LINE_H);
 }
 
+/** @brief True when the rail line reads the PD mini's voltage, current and power as given. */
 static inline bool line_supply(const char *v, const char *a, const char *w)
 {
     return line_reads("PD MINI", LAB_SUPPLY, v, a, UI_C_CURR, w);
 }
 
-/* The meter's name over the plot: the channel watching the tester's
+/** @brief The meter's name over the plot: the channel watching the tester's
  * target, "INA 0x40 CH1", or INA3221 with none fitted. */
 static inline const char *ina_label(void)
 {
@@ -189,12 +204,13 @@ static inline const char *ina_label(void)
     return name;
 }
 
+/** @brief True when the rail line reads the INA3221 window's voltage, current and power as given. */
 static inline bool line_ina(const char *v, const char *a, const char *w)
 {
     return line_reads(ina_label(), LAB_INA, v, a, UI_C_CURR, w);
 }
 
-/* A supply sample that answers with both readings. */
+/** @brief A supply sample that answers with both readings. */
 static inline void rail_supply(float v, float i)
 {
     supply_state_t st;
@@ -207,6 +223,7 @@ static inline void rail_supply(float v, float i)
     servo_screen_supply(&st);
 }
 
+/** @brief Hands the screen the INA3221 CH1 window of @p ma mA at @p mv mV. */
 static inline void rail_window(int ma, unsigned mv)
 {
     const sense_link_win_t w = rail_win(ma, mv);

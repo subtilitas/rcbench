@@ -1,5 +1,6 @@
-/*
- * What the servo screen decides: where a touch on the dial points the horn,
+/**
+ * @file test_servo.c
+ * @brief What the servo screen decides: where a touch on the dial points the horn,
  * what the travel limit refuses, and the commands it produces.  The
  * SETTINGS overlay, the automatic test and the limit run have their own
  * suites: test_servo_settings.c, test_servo_test_panel.c and
@@ -7,6 +8,35 @@
  *
  * This suite holds the dial, the ARM hold, STOP, the speed and the profile.
  * Not what it looks like; that is the golden image's job.
+ *
+ * Cases:
+ * - a_touch_on_the_dial_points_the_horn_there
+ * - a_drag_keeps_commanding
+ * - the_case_is_not_the_dial
+ * - the_travel_limit_clamps_rather_than_refuses
+ * - centre_and_release_post_their_own_commands
+ * - a_hold_on_arm_asks_to_arm_exactly_once
+ * - a_short_press_on_arm_asks_for_nothing
+ * - a_finger_that_leaves_arm_arms_nothing
+ * - arming_and_disarming_come_from_the_same_button
+ * - a_press_that_disarmed_the_bench_does_not_then_arm_it
+ * - a_pending_disarm_is_not_overwritten_by_a_position
+ * - the_arm_button_fades_across_the_hold_and_flashes_when_it_lands
+ * - the_hold_repaints_the_button_and_leaves_the_card_alone
+ * - a_command_carries_the_endpoints_of_the_type_it_was_made_for
+ * - the_speed_travels_with_the_command_as_a_rate
+ * - changing_the_type_says_the_position_again
+ * - the_trim_says_the_position_again_while_it_is_held
+ * - nothing_is_said_again_when_nothing_is_being_held
+ * - a_resting_armed_servo_takes_the_new_profile
+ * - a_profile_changed_while_an_arm_is_pending_is_the_one_armed
+ * - a_stop_abandons_a_hold_that_is_under_way
+ * - a_cancelled_hold_leaves_no_arm_to_be_read_later
+ * - a_second_contact_cannot_take_over_the_arm_hold
+ * - a_dial_press_before_the_arm_is_not_held_after_it
+ * - a_stop_on_a_bench_that_was_not_armed_still_lets_go
+ * - a_stop_stops_the_screen_holding_anything
+ * - a_cancelled_gesture_does_not_arm
  *
  * SPDX-License-Identifier: MIT
  */

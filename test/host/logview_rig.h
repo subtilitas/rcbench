@@ -1,11 +1,21 @@
-/*
- * The log viewer screen as the logview suites drive it: a card in memory
+/**
+ * @file logview_rig.h
+ * @brief The log viewer screen as the logview suites drive it: a card in memory
  * behind the screen's I/O (input/output) vtable, the screen on one canvas,
  * touch helpers, the places of the controls, and the page, folder and
- * scroll bar fakes the cases share.  Taken by test_logview.c and
+ * scroll bar fakes the cases share.
  * test_logview_*.c.
  *
  * Only static inline helpers and the buffers and counters they use.
+ *
+ * Used by:
+ * - test_logview.c
+ * - test_logview_plot.c
+ * - test_logview_rank.c
+ * - test_logview_pages.c
+ * - test_logview_tabs.c
+ * - test_logview_delete.c
+ * - test_logview_touch.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -131,8 +141,8 @@ static char g_removed_name[LOG_VIEWER_NAME_MAX] __attribute__((unused));
 static bool g_remove_refuses __attribute__((unused));
 static int g_list_calls __attribute__((unused));        /* how often the card was listed */
 
-/*
- * The runs card as the panel reads it: every entry offered to the page
+/**
+ * @brief The runs card as the panel reads it: every entry offered to the page
  * selection in directory order, which is creation order on FAT -- the others
  * first, then the runs oldest first -- as card_list() does.
  */
@@ -162,6 +172,7 @@ static inline int runs_list(log_viewer_file_t *out, int max_entries,
     return n;
 }
 
+/** @brief List hook over the fake card: fills the entries of the page asked for and counts the call. */
 static inline int fake_list(log_viewer_file_t *out, int max_entries,
                      log_viewer_page_t *page, void *ctx)
 {
@@ -216,6 +227,7 @@ static inline int fake_list(log_viewer_file_t *out, int max_entries,
     return n;
 }
 
+/** @brief Open hook: opens the named fake file as an in-memory source and counts the call; a name off the card, a removed file and a file with no text are refused. */
 static inline bool fake_open(const char *name, log_source_t *src, void *ctx)
 {
     (void)ctx;
@@ -233,12 +245,14 @@ static inline bool fake_open(const char *name, log_source_t *src, void *ctx)
     return false;
 }
 
+/** @brief Volume hook: the fake card's label, empty with no card in. */
 static inline const char *fake_volume(void *ctx)
 {
     (void)ctx;
     return g_no_card ? "" : g_volume;
 }
 
+/** @brief Remove hook: records the name removed and refuses it while g_remove_refuses is set. */
 static inline bool fake_remove(const char *name, void *ctx)
 {
     (void)ctx;
@@ -266,6 +280,7 @@ static inline bool fake_remove(const char *name, void *ctx)
 static card_state_t g_card_state __attribute__((unused));
 static unsigned g_card_asks __attribute__((unused));
 
+/** @brief Card-state hook: the state the case set, counting each ask. */
 static inline card_state_t fake_card(void *ctx)
 {
     (void)ctx;
@@ -278,6 +293,7 @@ static inline card_state_t fake_card(void *ctx)
 static const char *g_swap_late_volume __attribute__((unused));
 static int g_swap_late_runs __attribute__((unused));
 
+/** @brief List hook that lists as fake_list() does, then swaps the card for the late one. */
 static inline int fake_list_late(log_viewer_file_t *out, int max_entries,
                           log_viewer_page_t *page, void *ctx)
 {
@@ -291,6 +307,7 @@ static inline int fake_list_late(log_viewer_file_t *out, int max_entries,
     return n;
 }
 
+/** @brief Mount-count hook: how often the fake card was mounted. */
 static inline unsigned fake_mounts(void *ctx)
 {
     (void)ctx;
@@ -314,12 +331,13 @@ static gfx_color_t *s_fb __attribute__((unused));
 static gfx_color_t *s_fb_b __attribute__((unused));
 static gfx_canvas_t s_c __attribute__((unused));
 
+/** @brief The log viewer screen under test. */
 static inline const ui_screen_t *screen(void)
 {
     return log_viewer_screen();
 }
 
-/* Put the screen back to its start state without touching any framebuffer --
+/** @brief Put the screen back to its start state without touching any framebuffer --
  * the stale-pixel case needs to replay the same interaction into a second
  * buffer, and wiping the first one would compare a render against a blank. */
 static inline void reset_screen(void)
@@ -348,6 +366,7 @@ static inline void reset_screen(void)
     screen()->enter();
 }
 
+/** @brief Clears the canvas, the fake card's counters and the screen: the browse view of the default card. */
 static inline void fresh(void)
 {
     g_dir_index = -1;
@@ -364,6 +383,7 @@ static inline void fresh(void)
     reset_screen();
 }
 
+/** @brief Hands the screen one touch event of contact @p id at (@p x, @p y). */
 static inline void send_id(int type, int id, int x, int y)
 {
     touch_event_t e = {
@@ -373,18 +393,20 @@ static inline void send_id(int type, int id, int x, int y)
     screen()->event(&e);
 }
 
+/** @brief Hands the screen one touch event of contact 1 at (@p x, @p y). */
 static inline void send(int type, int x, int y)
 {
     send_id(type, 1, x, y);
 }
 
+/** @brief Presses and releases contact 1 at (@p x, @p y). */
 static inline void tap(int x, int y)
 {
     send(TOUCH_EVENT_DOWN, x, y);
     send(TOUCH_EVENT_UP, x, y);
 }
 
-/* Draw the current state.  Called after every interaction in the cases below,
+/** @brief Draw the current state.  Called after every interaction in the cases below,
  * because a screen that decides correctly and then draws nothing is still
  * broken -- and because a crash in a rarely-reached panel should surface
  * here rather than on the bench. */
@@ -417,12 +439,14 @@ static inline void draw(void)
 #define DQ_CANCEL_X 264
 #define DQ_DELETE_X 536
 
+/** @brief Selects row @p index of the file list with one tap and opens it with a second. */
 static inline void open_file(int index)
 {
     tap(400, BR_ROW_Y(index)); /* select */
     tap(400, BR_ROW_Y(index)); /* open   */
 }
 
+/** @brief Index of the first pixel at which two frames differ, -1 when equal; @p count receives the number that differ. */
 static inline int first_diff(const gfx_color_t *a, const gfx_color_t *b, int *count)
 {
     int at = -1;
@@ -450,6 +474,7 @@ static inline int first_diff(const gfx_color_t *a, const gfx_color_t *b, int *co
 #define BR_TAB_X 16
 #define BR_TAB_Y 44
 
+/** @brief Width in px of the active folder tab, read off the canvas. */
 static inline int browse_tab_width(void)
 {
     int w = 0;
@@ -460,6 +485,7 @@ static inline int browse_tab_width(void)
     return w;
 }
 
+/** @brief Width in px a tab with @p title draws at. */
 static inline int tab_width_for(const char *title)
 {
     return gfx_text_width(UI_FONT_LABEL, title, 1) + 26;
@@ -467,7 +493,7 @@ static inline int tab_width_for(const char *title)
 
 /* ------------------------------------------------------------- deleting -- */
 
-/* Select a row and ask to delete it: the question, not the deletion. */
+/** @brief Select a row and ask to delete it: the question, not the deletion. */
 static inline void ask_to_delete(int row)
 {
     tap(400, BR_ROW_Y(row));
@@ -476,12 +502,13 @@ static inline void ask_to_delete(int row)
 #define NEXT_X_PG 724
 #define PG_CY   21
 
+/** @brief Taps NEXT. */
 static inline void next_page(void)
 {
     tap(NEXT_X_PG, PG_CY);
 }
 
-/* The tab reads "FILES a TO b OF n", or FILES with @p n 0: the text the
+/** @brief The tab reads "FILES a TO b OF n", or FILES with @p n 0: the text the
  * list draws, compared as text, and its width on the drawn frame. */
 static inline void check_tab(int a, int b, int n)
 {
@@ -501,7 +528,7 @@ static inline void check_tab(int a, int b, int n)
     }
 }
 
-/* The run OPEN opens, which is the newest run on the page: the page's
+/** @brief The run OPEN opens, which is the newest run on the page: the page's
  * identity, read without a getter.  Back to the list afterwards. */
 static inline void check_newest(int run)
 {
@@ -513,7 +540,7 @@ static inline void check_newest(int run)
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
 }
 
-/* Open the top row; its run number says where the list is scrolled. */
+/** @brief Open the top row; its run number says where the list is scrolled. */
 static inline int top_row_run(void)
 {
     tap(400, BR_ROW_Y(0));
@@ -523,7 +550,7 @@ static inline int top_row_run(void)
     return run;
 }
 
-/* The page is drawn newest at the top: row 0 is the page's newest run, the
+/** @brief The page is drawn newest at the top: row 0 is the page's newest run, the
  * one OPEN opens. */
 static inline void check_top(int run)
 {
@@ -531,6 +558,7 @@ static inline void check_top(int run)
     CHECK_EQ(top_row_run(), run);
 }
 
+/** @brief Resets the screen to a card of @p runs runs and reads its first page. */
 static inline void runs_card(int runs)
 {
     fresh();

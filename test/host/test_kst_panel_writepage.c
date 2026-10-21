@@ -1,6 +1,15 @@
-/*
- * The programmer overlay's write page: each value from the servo's to the
+/**
+ * @file test_kst_panel_writepage.c
+ * @brief The programmer overlay's write page: each value from the servo's to the
  * new one, the count of the rest, and the horn a later write asks for.
+ *
+ * Cases:
+ * - the_write_page_lists_each_value_from_the_servos_to_the_new
+ * - a_write_of_more_values_than_lines_counts_the_rest
+ * - a_value_further_out_than_the_confirmed_one_opens_the_page_again
+ * - a_later_write_that_moves_the_horn_asks_for_a_free_horn_again
+ * - a_write_that_runs_says_writing_and_not_interrupted
+ * - the_writing_line_has_a_singular_and_a_form_without_a_count
  *
  * SPDX-License-Identifier: MIT
  */

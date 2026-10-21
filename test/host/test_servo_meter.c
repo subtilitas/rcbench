@@ -1,6 +1,15 @@
-/*
- * What the servo screen repaints when the meter changes or a window comes:
+/**
+ * @file test_servo_meter.c
+ * @brief What the servo screen repaints when the meter changes or a window comes:
  * the row, the line, the plot, the link loss and the point of each window.
+ *
+ * Cases:
+ * - a_change_of_meter_repaints_the_row_the_line_and_the_plot
+ * - a_window_is_shown_under_the_meter_of_its_poll
+ * - link_loss_clears_the_current_row
+ * - the_current_row_repaints_on_a_changed_digit_and_alone
+ * - the_plot_keeps_one_point_for_each_window
+ * - a_run_reads_the_supply_while_the_meter_changes
  *
  * SPDX-License-Identifier: MIT
  */

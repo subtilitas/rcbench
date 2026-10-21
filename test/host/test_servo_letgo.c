@@ -1,6 +1,23 @@
-/*
- * What the servo screen does with the answers of a sweep that was let go
+/**
+ * @file test_servo_letgo.c
+ * @brief What the servo screen does with the answers of a sweep that was let go
  * and with a sweep it refuses: stale pauses, resumes said twice, undo.
+ *
+ * Cases:
+ * - sweep_needs_a_surface_bound
+ * - a_sweep_does_not_come_back_with_the_link
+ * - sweep_needs_the_link
+ * - a_resume_of_a_let_go_pause_is_dropped
+ * - a_resume_origin_is_used_once
+ * - commands_from_a_let_go_pause_are_stale
+ * - a_resume_said_again_keeps_its_pause
+ * - a_drag_after_pause_outlives_the_let_go
+ * - a_resume_and_its_repeat_go_with_the_let_go
+ * - a_later_pause_goes_with_the_let_go
+ * - a_late_chained_hold_ends_its_root
+ * - a_changed_curve_from_paused_is_a_new_start
+ * - no_undo_across_a_let_go
+ * - an_undone_pair_keeps_the_resume_waiting
  *
  * SPDX-License-Identifier: MIT
  */

@@ -1,8 +1,27 @@
-/*
- * Host unit tests for the pages of the log viewer's list and its scroll bar.
+/**
+ * @file test_logview_pages.c
+ * @brief Host unit tests for the pages of the log viewer's list and its scroll bar.
  *
  * Tested is that the pages cover a card once in rank order, what the page
  * keys do at the ends and after a delete, swap or rescan, and the scroll bar.
+ *
+ * Cases:
+ * - pages_of_a_card_cover_it_once_in_rank_order_both_ways
+ * - pages_of_mixed_writers_run_newest_first_across_the_names
+ * - runs_that_share_a_number_split_by_a_page_edge_are_each_on_one_page
+ * - a_page_key_whose_file_has_gone_still_names_its_place
+ * - a_card_of_one_page_or_none_shows_no_page_buttons
+ * - forty_nine_runs_are_two_pages_and_the_second_holds_the_oldest
+ * - ninety_six_and_ninety_seven_runs_page_at_48
+ * - a_full_card_is_reached_to_its_oldest_run_a_walk_a_page
+ * - files_the_bench_did_not_write_follow_the_runs_and_are_counted
+ * - deleting_the_last_pages_only_file_shows_the_page_before
+ * - after_delete_nothing_is_selected_and_the_scroll_stays
+ * - rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card
+ * - prev_reads_the_first_page_from_the_top_whatever_changed_ahead
+ * - a_card_swapped_mid_page_opens_on_its_first_page
+ * - the_scroll_bar_jumps_drags_and_stays_on_its_page
+ * - re_reading_the_card_selects_the_newest_run
  *
  * SPDX-License-Identifier: MIT
  */

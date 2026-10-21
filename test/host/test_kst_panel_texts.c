@@ -1,6 +1,15 @@
-/*
- * The programmer overlay's texts: a line for every message in English and
+/**
+ * @file test_kst_panel_texts.c
+ * @brief The programmer overlay's texts: a line for every message in English and
  * German, every state drawn in both, and the rows a wrapped text takes.
+ *
+ * Cases:
+ * - every_message_refusal_result_and_rule_has_a_line_in_english
+ * - every_message_refusal_result_and_rule_has_a_line_in_german
+ * - every_state_is_drawn_in_both_languages
+ * - a_message_goes_when_what_it_says_no_longer_holds
+ * - every_wrapped_text_takes_two_rows_at_most
+ * - no_german_text_writes_a_number_with_a_comma
  *
  * SPDX-License-Identifier: MIT
  */
