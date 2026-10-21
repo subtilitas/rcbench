@@ -241,7 +241,7 @@ TEST_CASE(a_body_size_is_announced_and_within_the_cap)
 
 #define H0 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 #define H1 "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
-#define NAME "rcbench-panel-v0.19.0.bin"
+#define NAME "rcbench-panel-p4-v0.19.0.bin"
 
 static fw_rel_err_t sums(const char *text, uint8_t out[FW_SHA256_BYTES])
 {
@@ -270,7 +270,11 @@ TEST_CASE(sha256sums_without_the_files_line_or_with_it_twice)
     CHECK_EQ(sums(H0 "  ./rcbench-coproc-v0.19.0.zip\n", h),
              FW_REL_SUMS_NONE);
     /* Another version's image is another file. */
-    CHECK_EQ(sums(H0 "  ./rcbench-panel-v0.19.1.bin\n", h), FW_REL_SUMS_NONE);
+    CHECK_EQ(sums(H0 "  ./rcbench-panel-p4-v0.19.1.bin\n", h),
+             FW_REL_SUMS_NONE);
+    /* The S3 panel's name, without "p4", is another file. */
+    CHECK_EQ(sums(H0 "  ./rcbench-panel-v0.19.0.bin\n", h),
+             FW_REL_SUMS_NONE);
     CHECK_EQ(sums(H0 "  ./" NAME ".sig\n", h), FW_REL_SUMS_NONE);
     CHECK_EQ(sums(H0 "  ./x" NAME "\n", h), FW_REL_SUMS_NONE);
     CHECK_EQ(sums(H0 "  ./" NAME "\n" H1 "  " NAME "\n", h),
@@ -343,14 +347,16 @@ TEST_CASE(names_and_urls_of_a_release)
     fw_release_version_text(big, t);
     CHECK_STR_EQ(t, "65535.65535.65535");
     fw_release_image_name(big, n);
-    CHECK_STR_EQ(n, "rcbench-panel-v65535.65535.65535.bin");
+    CHECK_STR_EQ(n, "rcbench-panel-p4-v65535.65535.65535.bin");
+    /* The longest name fills the buffer to its terminator. */
+    CHECK_EQ(strlen(n), FW_REL_NAME_MAX - 1u);
     const fw_version_t v = { 0u, 20u, 1u };
     fw_release_image_name(v, n);
-    CHECK_STR_EQ(n, "rcbench-panel-v0.20.1.bin");
+    CHECK_STR_EQ(n, "rcbench-panel-p4-v0.20.1.bin");
     char url[FW_REL_URL_MAX + 1u];
     CHECK(fw_release_url(v, n, url, sizeof(url)));
     CHECK_STR_EQ(url, "https://github.com/subtilitas/rcbench/releases/"
-                      "download/v0.20.1/rcbench-panel-v0.20.1.bin");
+                      "download/v0.20.1/rcbench-panel-p4-v0.20.1.bin");
     CHECK(fw_release_url(v, FW_REL_SUMS_NAME, url, sizeof(url)));
     CHECK_STR_EQ(url, "https://github.com/subtilitas/rcbench/releases/"
                       "download/v0.20.1/SHA256SUMS");

@@ -400,3 +400,33 @@ def test_card_calls_name_every_folder_maker_handed_to_card_make_dirs():
     assert handed
     assert set(sc.CARD_CALLS) == {"card_make_dirs"}
     assert set(sc.CARD_CALLS["card_make_dirs"]) == handed
+
+
+def elf_of_machine(path, machine):
+    """Write the 52-byte header of a 32-bit little-endian ELF.
+
+    Args:
+        path: The file to write.
+        machine: The e_machine value; the file has no sections.
+    """
+    head = bytearray(52)
+    head[:6] = b"\x7fELF\x01\x01"
+    head[0x12:0x14] = machine.to_bytes(2, "little")
+    path.write_bytes(bytes(head))
+
+
+def test_a_risc_v_panel_build_is_refused(tmp_path, monkeypatch):
+    elf_of_machine(tmp_path / sc.ELF_NAME, 243)          # EM_RISCV
+    monkeypatch.setattr("sys.argv", ["stack_check.py", str(tmp_path)])
+    with pytest.raises(SystemExit) as stop:
+        sc.main()
+    assert "machine 243, not Xtensa (94)" in str(stop.value)
+    assert "builds RISC-V" in str(stop.value)
+
+
+def test_an_xtensa_header_passes_the_machine_check(tmp_path, monkeypatch):
+    elf_of_machine(tmp_path / sc.ELF_NAME, 94)
+    monkeypatch.setattr("sys.argv", ["stack_check.py", str(tmp_path)])
+    with pytest.raises(SystemExit) as stop:
+        sc.main()                    # on to the tables, which this ELF lacks
+    assert "not Xtensa" not in str(stop.value)
