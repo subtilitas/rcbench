@@ -18,10 +18,12 @@ and SETUP > UPDATES says so at the foot of its card
 0.22.0 is a stable release: its minor number, 22, is even, and GitHub marks
 it as the latest release. It reads up to four INA3221 current monitors at
 0x40 to 0x43, 12 channels, set up on the new SETUP > SENSORS tile with a
-shunt and a watch target for each channel, and logs them by target. It
-drives four programming ports, PROG PORT 1 to 4, each with a FUNCTION of
-SERVO PWM, DSHOT150 to DSHOT600 or NONE; the servo tester and the KST and
-Chaservo programmer run on any of them. Hitec D series servos answer
+shunt, a watch target and a current limit of 10 to 32767 mA for each
+channel, and logs them by target. A window above its channel's limit
+raises a band alert and nothing else; an IOmcu older than link protocol
+4.27 judges no limit. It drives four programming ports, PROG PORT 1 to
+4, each with a FUNCTION of SERVO PWM, DSHOT150 to DSHOT600 or NONE; the
+servo tester and the KST and Chaservo programmer run on any of them. Hitec D series servos answer
 without a pull-up with PRECHARGE receive. The link protocol is 4.28. It
 fixes defects of 0.21.2: SERVO's TARGET after a programming session, an SD
 card swapped while the panel runs, and Wi-Fi page downloads whose receiver

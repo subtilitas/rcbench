@@ -2165,7 +2165,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 690, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
+    src: repo('STATUS.md', 691, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
   },
 ];
 
