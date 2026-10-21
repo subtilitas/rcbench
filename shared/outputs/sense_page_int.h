@@ -63,6 +63,10 @@ bool sense_map_on_addr(const uint16_t *map, uint16_t addr);
  *  programming port: the map in force's LINK_CAP_SERVO_SENSE. */
 bool sense_map_watches(const sense_page_t *p);
 
+/** Core 1's counts of windows over each channel's limit in @p s into
+ *  OVER and OVER_COUNT: what each gained since the last snapshot taken. */
+void sense_limit_judge(sense_page_t *p, const sense_snap_t *s);
+
 /** The map's kept registers as the schedule's INA3221 set-up. */
 void sense_map_cfg(const uint16_t *map, sense_i3221_cfg_t *out);
 

@@ -142,12 +142,15 @@ und empfängt mit dem Pull-up. Das Panel sendet keine Hitec-Transaktion
 richtet SENSE_MAP (0x35) bis zu 4 INA3221 mit einem Shunt und einem
 Beobachtungsziel je Kanal ein, und SENSE_WIN_A und SENSE_WIN_B (0x37, 0x38)
 tragen das letzte Fenster jedes Kanals; ein älterer IOmcu weist die drei mit
-BAD_PAGE ab, und das Panel dieses Builds schreibt keine davon
-([Die INA3221-Map und ihre Fenster](LinkSensors-de.md)).
+BAD_PAGE ab. Das Panel dieses Builds schreibt SENSE_MAP aus SETUP > SENSOREN
+und liest keine der beiden Fenster-Pages ([Die INA3221-Map und ihre Fenster](LinkSensors-de.md)).
 Ab 4.26 hat PROG 28 Register: die Register 24 bis 27 sind die FUNC jedes
 Ports, und der Build hat 4 Ports; das Panel liest 24 Register eines
 älteren IOmcu und bietet dessen Ports nur SERVO PWM an
-([Die Programmierports](#die-programmierports)).
+([Die Programmierports](#die-programmierports)). Ab 4.27 hält
+SENSE_LIMIT (0x36) eine Stromgrenze je Kanal und markiert jeden Kanal, dessen
+Fenster sie überschritten hat, nur als Alarm; ein älterer IOmcu weist die
+Page mit BAD_PAGE ab, und das Panel dieses Builds schreibt keine Grenze.
 Ab 4.28 nimmt die FUNC eines Ports auch DSHOT150, DSHOT300 und DSHOT600,
 und die FLAGS-Bits 12 bis 15 sagen, dass das DShot eines Ports seinen Pin
 hält; ein älterer IOmcu weist diese Werte mit BAD_VALUE ab, und das Panel
@@ -890,11 +893,11 @@ macht, und die Register.
 
 ### Die INA3221-Map und ihre Fenster
 
-SENSE_MAP (0x35), SENSE_WIN_A (0x37) und SENSE_WIN_B (0x38) haben
-[eine eigene Seite](LinkSensors-de.md): bis zu 4 INA3221 und ihre 12 Kanäle,
-der FAST-Kanal, dem SERVO_WIN und eine Messung auf SERVO_SENSE folgen, wie
-SENSE eine geltende Map spiegelt, das Fenster jedes Kanals, und der
-Flash-Record über zwei Pages.
+SENSE_MAP (0x35), SENSE_LIMIT (0x36), SENSE_WIN_A (0x37) und SENSE_WIN_B
+(0x38) haben [eine eigene Seite](LinkSensors-de.md): bis zu 4 INA3221 und
+ihre 12 Kanäle, der FAST-Kanal, dem SERVO_WIN und eine Messung auf
+SERVO_SENSE folgen, wie SENSE eine geltende Map spiegelt, die Stromgrenzen,
+das Fenster jedes Kanals, und der Flash-Record über zwei Pages.
 
 ### Identifier
 
@@ -978,6 +981,7 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5 s.
 | 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 28 Register, vor 4.26 24. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte, dann die FUNC jedes Ports in 24 bis 27 (seit 4.26). [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew, Endpunkte und FUNC werden im Flash des IOmcu gehalten |
 | 0x34 | `HITEC` | lesen, schreiben | rohe Transaktionen der Hitec-Servoleitung auf einem Programmierport (seit 4.23). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Zahl der Transaktionen, Ergebnis und Abweisung, Anzahl und Flags des Mitschnitts, das Ergebnis des Dekoders, den dekodierten Wert, `VIEW`, die empfangenen Bytes in 8 Registern und in 16 Registern die Startzeiten der Bytes oder den Lauf. Ein Schreiben nimmt 24: das Kommando in den Registern 0 bis 3, ein Frame, die bereitgestellte Transaktion, Dekoder und Sollwerte eines POWER in 4 bis 21, `VIEW` in 22 und den Empfangsmodus einer Leitung der D-Serie in 23 (seit 4.24). [Der Programmierport für Servos von Hitec](LinkHitec-de.md) nennt die Regeln. Nichts wird gehalten |
 | 0x35 | SENSE_MAP | lesen, schreiben | bis zu 4 INA3221 an 0x40 bis 0x43 auf dem Bus von SENSE (seit 4.25). Register 0 die bestückten Bauteile, Bit a für 0x40 + a; 1 `FAST`, der Kanal, der jede 1 ms gelesen wird (0 bis 11, 0xFF keiner); 2 bis 13 der Shunt jedes Kanals in 0,1 mΩ (0 aus, 50 bis 10000); 14 bis 25 was jeder Kanal misst (0 nichts, 0x01 bis 0x08 ein Ausgangskanal, 0x10 bis 0x13 ein Programmierport, 0x20 die Versorgung); nur lesbar: 26 bis 29 die Die-ID jedes Bauteils, 30 Flags, 31 reserviert. Die Register 0 bis 25 hält der IOmcu im Flash. Solange die Map in Kraft ist, spiegeln Bit 1 von ENABLE und die Register 8 bis 10 von SENSE sie. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md) nennt die Regeln |
+| 0x36 | SENSE_LIMIT | lesen, schreiben | eine Stromgrenze je Kanal von SENSE_MAP (seit 4.27), nur ein Alarm. Register 0 bis 11 die Grenze jedes Kanals in mA (0 keine, 1 bis 32767), im Flash des IOmcu gehalten; nur lesbar: 12 `OVER`, Bit c ein Fenster von Kanal c über seiner Grenze seit dem letzten Lesen des Registers, das es löscht; 13 `OVER_COUNT`, Kanal-Fenster über der Grenze, modulo 65536; 14 und 15 reserviert. 16 Register. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md#sense_limit) nennt die Regeln |
 | 0x37 | SENSE_WIN_A | lesen | das letzte 50-ms-Fenster der Kanäle 0 bis 5 (seit 4.25): die Fensternummer, Flags, und 5 Register je Kanal: mittlerer und höchster Strom (mA, mit Vorzeichen), mittlere und niedrigste Busspannung (mV), Flags. Jedes Schreiben wird mit READ_ONLY abgewiesen. Nichts wird gehalten |
 | 0x38 | SENSE_WIN_B | lesen | das der Kanäle 6 bis 11, wie SENSE_WIN_A (seit 4.25) |
 | 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des IOmcu selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |

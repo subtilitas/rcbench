@@ -35,6 +35,7 @@
 #include "out_stage.h"
 #include "outputs_pages.h"
 #include "pd_uart.h"
+#include "sense_limit.h"
 #include "sense_map.h"
 #include "tone_core1.h"
 #include "update_hw.h"
@@ -133,6 +134,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_PROG,      LINK_PG_REGS,   prog_read,      prog_write },
     { LINK_PAGE_HITEC,     LINK_HT_COUNT,  hitec_read,     hitec_write },
     { LINK_PAGE_SENSE_MAP, LINK_SM_COUNT,  sense_map_rd,   sense_map_wr },
+    { LINK_PAGE_SENSE_LIMIT, LINK_SL_COUNT, sense_limit_rd, sense_limit_wr },
     { LINK_PAGE_SENSE_WIN_A, LINK_SX_COUNT, sense_win_a_read, NULL },
     { LINK_PAGE_SENSE_WIN_B, LINK_SX_COUNT, sense_win_b_read, NULL },
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
@@ -470,6 +472,7 @@ int main(void)
                                     saved.sense_map_set, &s_outputs,
                                     supply_page_pins(&s_supply));
         }
+        (void)sense_limit_restore(&s_sense, saved.sense_limit);
         reserve_held();
         tone_page_restore(&s_tone, saved.tone, &s_outputs, tone_taken());
     }

@@ -13,7 +13,12 @@
  * each SENSE_RETRY_MS while a part is missing, not on a stuck bus nor
  * during a capture, and a fault part way keeping what it found; CH1's ring
  * and the reset counts in the snapshot, a part found reset reported
- * offline and its capture lost, and both starting again with a set-up; and
+ * offline and its capture lost, and both starting again with a set-up;
+ * each channel's window judged against its limit once, as it closes, at
+ * the limit and 1 mA under it, a channel of a part not fitted never, the
+ * counts running on across a set-up, a clipped window against the top of
+ * the range on 5 mOhm (32,755 over, 32,760 not), a part judged by its
+ * state as the window rolled, also when it drops later in that tick; and
  * every snapshot field.
  *
  * SPDX-License-Identifier: MIT
@@ -641,6 +646,121 @@ TEST_CASE(a_service_starts_closed)
     CHECK_EQ(snap.cap_seq, 0u);
 }
 
+/* Steps until a window closes; its number. */
+static uint16_t to_next_window(void)
+{
+    const uint16_t was = snap.have_win ? snap.win[0].number : 0xFFFFu;
+    for (unsigned k = 0; k < 60u; ++k) {
+        step();
+        if (snap.have_win && snap.win[0].number != was) {
+            break;
+        }
+    }
+    return snap.win[0].number;
+}
+
+TEST_CASE(each_window_is_judged_against_its_limit_as_it_closes)
+{
+    rig();
+    /* 0.12 A on 0.1 Ohm: 300 codes of 0.4 mA, 120.0 mA exactly. */
+    cmd.limit_ma[0] = 120u;
+    cmd.limit_ma[3] = 1u;           /* 0x41 is not fitted */
+    steps(120u);
+    (void)to_next_window();
+    CHECK_EQ(snap.win[0].i_max_ua, 120000);
+    CHECK_EQ(snap.over_n[0], 0u);
+    /* 1 mA under the reading: each window that closes counts once. */
+    cmd.limit_ma[0] = 119u;
+    const uint16_t n0 = to_next_window();
+    CHECK_EQ(snap.over_n[0], 1u);
+    steps(10u);
+    CHECK_EQ(snap.over_n[0], 1u);
+    const uint16_t n1 = to_next_window();
+    CHECK_EQ((uint16_t)(n1 - n0), 1u);
+    CHECK_EQ(snap.over_n[0], 2u);
+    CHECK_EQ(snap.over_n[3], 0u);
+    /* A set-up: the new schedule's windows number from 0 again, and the
+     * counts run on. */
+    ++cmd.cfg_gen;
+    step();
+    CHECK_EQ(snap.over_n[0], 2u);
+    steps(60u);
+    (void)to_next_window();
+    CHECK(snap.over_n[0] >= 3u);
+    const uint16_t before = snap.over_n[0];
+    (void)to_next_window();
+    CHECK_EQ(snap.over_n[0], (uint16_t)(before + 1u));
+    /* No limit: nothing more. */
+    cmd.limit_ma[0] = 0u;
+    (void)to_next_window();
+    (void)to_next_window();
+    CHECK_EQ(snap.over_n[0], (uint16_t)(before + 1u));
+}
+
+TEST_CASE(a_clipped_window_is_judged_against_the_top_of_the_range)
+{
+    /* 5 mOhm: the top code reads 32,760 mA; 40 A clips every sample. */
+    static const struct { uint16_t lim; bool over; } k[] = {
+        { 32755u, true }, { 32759u, true }, { 32760u, false },
+        { 32767u, false },
+    };
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        rig();
+        i3221->shunt_ohm = 0.005;
+        i3221->amps[0] = 40.0;
+        sense_i3221_one(&cmd.parts.i3221, true, I3221_ADDR, 5000u, 1u);
+        cmd.limit_ma[0] = k[i].lim;
+        steps(120u);
+        const uint16_t was = snap.over_n[0];
+        (void)to_next_window();
+        CHECK(snap.win[0].clip_hi);
+        CHECK_EQ(svc.sched.ch_top_ua[0], 32760000);
+        CHECK_EQ((uint16_t)(snap.over_n[0] - was), k[i].over ? 1u : 0u);
+    }
+}
+
+TEST_CASE(a_part_online_at_the_roll_is_judged_if_it_drops_after_it)
+{
+    /* The bus fails from k ticks before a window closes: the part goes
+     * offline in some tick near the close.  The closed window is judged
+     * by whether the part was online as the window rolled, which in the
+     * tick it drops can be after the roll. */
+    bool dropped_in_closing_tick = false;
+    for (unsigned k = 0; k < 6u; ++k) {
+        rig();
+        /* CH1 to CH3: more than one read of the part a tick. */
+        sense_i3221_one(&cmd.parts.i3221, true, I3221_ADDR, 100000u, 7u);
+        cmd.limit_ma[0] = 100u;
+        steps(120u);
+        (void)to_next_window();
+        const uint16_t n = snap.win[0].number;
+        steps(50u - 1u - k);
+        CHECK_EQ(snap.win[0].number, n);
+        const uint16_t count = snap.over_n[0];
+        fb.fail_with = SENSE_NACK;
+        fb.fail_count = 1000u;
+        bool online_before = false;
+        for (unsigned t = 0; t < 10u; ++t) {
+            online_before = ina3221_state(&svc.sched.i3221[0])
+                            == SENSE_PART_ONLINE;
+            step();
+            if (snap.win[0].number != n) {
+                break;
+            }
+        }
+        CHECK(snap.win[0].number != n);
+        const bool online_after = ina3221_state(&svc.sched.i3221[0])
+                                  == SENSE_PART_ONLINE;
+        const bool at_roll = (svc.sched.last_online & 1u) != 0u;
+        /* Dropped in the closing tick after the roll: still counted. */
+        dropped_in_closing_tick |= online_before && !online_after && at_roll;
+        CHECK(online_after ? at_roll : true);
+        CHECK(online_before ? true : !at_roll);
+        CHECK_EQ(snap.over_n[0], (uint16_t)(count + (at_roll ? 1u : 0u)));
+    }
+    CHECK(dropped_in_closing_tick);
+}
+
 int main(void)
 {
     RUN(a_set_up_opens_the_bus_and_reads_both_parts);
@@ -658,5 +778,8 @@ int main(void)
     RUN(the_snapshot_carries_the_ring_and_the_reset_counts);
     RUN(a_reset_under_a_capture_reports_it_lost);
     RUN(a_service_starts_closed);
+    RUN(each_window_is_judged_against_its_limit_as_it_closes);
+    RUN(a_clipped_window_is_judged_against_the_top_of_the_range);
+    RUN(a_part_online_at_the_roll_is_judged_if_it_drops_after_it);
     return test_summary("sense_svc");
 }

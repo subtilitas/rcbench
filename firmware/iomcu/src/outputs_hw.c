@@ -689,8 +689,8 @@ bool outputs_hw_edt(dshot_telem_kind_t kind, uint16_t *value, uint32_t *age_ms)
  * the PPM frame carries.
  */
 _Static_assert(OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS + LINK_PG_PORTS_MAX,
-               "the DShot driver binds fewer pins than the bank has slots "
-               "and programming ports");
+               "the DShot driver binds fewer pins than the slots and the "
+               "programming ports");
 _Static_assert(OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS,
                "the PPM driver binds fewer pins than the bank has slots");
 _Static_assert(PPM_CHANNEL_MIN_US == OUT_FLOOR_US
