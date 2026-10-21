@@ -1,9 +1,7 @@
 /**
  * @file
- * @brief CSV and TSV import that streams a log too large to hold in memory.
- *
- * CSV (comma-separated values) and TSV (tab-separated values) import for a
- * board that cannot hold the file it is reading.
+ * @brief CSV (comma-separated values) and TSV (tab-separated values) import for
+ *        a board that cannot hold the file it is reading.
  *
  * The source is a card, a log can be tens of megabytes, and the 8 MB of PSRAM
  * (pseudo-static random-access memory) already hold two framebuffers.  So the
@@ -32,9 +30,12 @@
 extern "C" {
 #endif
 
-/* Ceilings.  The screen cannot draw more than 24 channels, and reporting the
- * limit beats a silent truncation. */
-/** @brief Most columns one import keeps. */
+/**
+ * @brief Ceilings.
+ *
+ * The screen cannot draw more than 24 channels, and reporting the limit beats a
+ * silent truncation.
+ */
 #define LOG_MAX_COLUMNS 24
 /** @brief Most series the build materialises. */
 #define LOG_MAX_SERIES  4
@@ -46,8 +47,9 @@ extern "C" {
 #define LOG_SAMPLES     3
 /** @brief Most bytes in one row. */
 #define LOG_ROW_MAX     1024
-
 /* -------------------------------------------------------------- source --- */
+
+
 
 /**
  * @brief A byte source that can be read from the top more than once.
@@ -59,7 +61,7 @@ typedef struct {
     size_t (*read)(void *ctx, char *buf, size_t max); /**< 0: end of input */
     bool (*rewind)(void *ctx);
     /**
-     * @brief Whether the last read failed, as opposed to reaching the end.
+     * @brief Did the last read fail, as opposed to reaching the end?
      *
      * Optional: NULL means "reads never fail", which is true of a block of
      * memory and false of an SD card.  Without it a bad sector reads as a
@@ -69,15 +71,14 @@ typedef struct {
     bool (*error)(void *ctx);
     void *ctx;
     /**
-     * @brief Optional length and seek of the input.
+     * @brief Optional, both or neither: the length of the input in bytes, and a
+     *        move to an offset from its start, after which read() continues
+     *        there.
      *
-     * Optional, both or neither: the length of the input in bytes, and a
-     * move to an offset from its start, after which read() continues there.
      * With them the analysis reads the last bytes of a file past the row cap
-     * for the cut row, instead of every row up to them.  NULL means the
-     * source can only be read from the top; it is then read on to its end.
-     * Last in the struct, so a source written as { read, rewind, error, ctx }
-     * has neither.
+     * for the cut row, instead of every row up to them.  NULL means the source
+     * can only be read from the top; it is then read on to its end. Last in the
+     * struct, so a source written as { read, rewind, error, ctx } has neither.
      */
     bool (*size)(void *ctx, size_t *bytes);
     bool (*seek)(void *ctx, size_t offset);
@@ -90,16 +91,31 @@ typedef struct {
     size_t pos;         /**< read position, bytes                      */
 } log_mem_ctx_t;
 
-/** @brief A source over a block of memory. */
+/**
+ * @brief A source over a block of memory.
+ *
+ * @param src   Receives the source.
+ * @param ctx   Holds the read position; set to the start of @p text.
+ * @param text  The bytes read.
+ * @param len   Length of @p text, bytes.
+ */
 void log_source_memory(log_source_t *src, log_mem_ctx_t *ctx, const char *text,
                        size_t len);
 
-/** @brief A source over an open stdio stream.  @p file is a FILE*. */
+/**
+ * @brief A source over an open stdio stream.  @p file is a FILE*.
+ *
+ * @param src   Receives the source.
+ * @param file  An open stream, a FILE *.
+ */
 void log_source_stdio(log_source_t *src, void *file);
-
 /* --------------------------------------------------------------- rows ---- */
 
-/** @brief Streaming row splitter: quotes, doubled quotes, and CRLF. */
+
+
+/**
+ * @brief Streaming row splitter: quotes, doubled quotes, and CRLF.
+ */
 typedef struct {
     log_source_t *src;     /**< the input                                    */
     char buf[256];         /**< read-ahead buffer, bytes                     */
@@ -142,10 +158,15 @@ void log_reader_init(log_reader_t *r, log_source_t *src);
 int log_reader_row(log_reader_t *r, char delimiter, char *store,
                    size_t store_size, char **fields, int max_fields,
                    int *total_fields);
-
 /* ------------------------------------------------------------ analysis --- */
 
-/** @brief Result of a CSV import step. */
+
+
+
+
+/**
+ * @brief Result of a CSV import step.
+ */
 typedef enum {
     LOG_OK = 0,
     LOG_ERR_READ,
@@ -204,10 +225,12 @@ typedef struct {
     int long_rows;   /**< rows too long for the field store; cells were lost */
     int max_fields;                  /**< most fields in one row           */
     bool truncated; /**< the row cap was hit; row_count is what was read */
-    /** @brief The file ends inside a row, without its line feed.
+    /**
+     * @brief The file ends inside a row, without its line feed.
      *
-     *  That row is left out of row_count and of every figure: a write cut off
-     *  mid-row leaves a number that is wrong and still parses. */
+     * That row is left out of row_count and of every figure: a write cut off
+     * mid-row leaves a number that is wrong and still parses.
+     */
     bool cut_row;
 } log_analysis_t;
 
@@ -233,7 +256,9 @@ typedef struct {
  */
 void log_csv_opts_default(log_csv_opts_t *opts);
 
-/** @brief The candidate delimiters, in the order they are scored. */
+/**
+ * @brief The candidate delimiters, in the order they are scored.
+ */
 extern const char log_csv_delimiters[4];
 
 /**
@@ -245,9 +270,8 @@ extern const char log_csv_delimiters[4];
 const char *log_csv_delimiter_label(char delimiter);
 
 /**
- * @brief Guess the delimiter from a text sample.
- *
- * Guess the delimiter from a text sample: the most consistent, widest split.
+ * @brief Guess the delimiter from a text sample: the most consistent, widest
+ *        split.
  *
  * @param sample  The sample text.
  * @param len     Length of @p sample, bytes.
@@ -256,9 +280,8 @@ const char *log_csv_delimiter_label(char delimiter);
 char log_csv_sniff(const char *sample, size_t len);
 
 /**
- * @brief Analyse a file in two streaming passes.
- *
- * Two streaming passes: geometry and evidence, then per-column statistics.
+ * @brief Two streaming passes: geometry and evidence, then per-column
+ *        statistics.
  *
  * @param src   The input.
  * @param opts  The import options.
@@ -267,10 +290,15 @@ char log_csv_sniff(const char *sample, size_t len);
  */
 log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
                           log_analysis_t *out);
-
 /* --------------------------------------------------------------- build --- */
 
-/** @brief One plotted field. */
+
+
+
+
+/**
+ * @brief One plotted field.
+ */
 typedef struct {
     char name[LOG_NAME_MAX];   /**< column name                             */
     char unit[LOG_UNIT_MAX];   /**< unit of the column                      */
@@ -324,10 +352,10 @@ log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
 void log_data_free(log_data_t *data);
 
 /**
- * @brief Set the allocator for the sample arrays.
+ * @brief Where the sample arrays come from.
  *
- * Where the sample arrays come from.  The firmware points this at PSRAM; the
- * default is malloc/free, which is what the host tests want.
+ * The firmware points this at PSRAM; the default is malloc/free, which is what
+ * the host tests want.
  *
  * @param alloc_fn  Allocates a block of bytes.
  * @param free_fn   Frees a block from @p alloc_fn.

@@ -1,9 +1,7 @@
 /**
  * @file
- * @brief Blank-character test shared by the CSV log reader and writer.
- *
- * Shared by log_csv.c and log_reader.c only; not part of the module's
- * interface (log_csv.h is).
+ * @brief Shared by log_csv.c and log_reader.c only; not part of the module's
+ *        interface (log_csv.h is).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,10 +12,9 @@
 #include <stdbool.h>
 
 /**
- * @brief Whether a byte is a blank: space, tab or CR.
+ * @brief The bytes after the last line feed that are no row: space, tab, CR.
  *
- * The bytes after the last line feed that are no row: space, tab, CR.  The
- * documented set; isspace() would add LF, VT and FF.
+ * The documented set; isspace() would add LF, VT and FF.
  *
  * @param c  The byte.
  * @return true for space, tab or CR.

@@ -1,9 +1,7 @@
 /**
  * @file
- * @brief Blackbox field naming: group and unit of a channel.
- *
- * Blackbox field naming: which group a channel belongs to, and what it is
- * measured in.
+ * @brief Blackbox field naming: which group a channel belongs to, and what it
+ *        is measured in.
  *
  * Every pattern is an anchored prefix or an exact name, so a table of
  * prefixes is sufficient and no regular-expression engine is needed on the

@@ -1,5 +1,6 @@
-/*
- * What a column means, from what it is called.
+/**
+ * @file
+ * @brief What a column means, from what it is called.
  *
  * A log names its columns but not their roles: "Time(ms)", "t", "timestamp"
  * and "Zeit" are all the x-axis, and "V", "Volt" and "Spannung" are all a
@@ -16,6 +17,7 @@
 #include <stddef.h>
 #include <string.h>
 
+/** @brief How a rule's pattern is matched against a column name. */
 typedef enum {
     M_PREFIX = 0,   /**< name starts with pattern            */
     M_EXACT,        /**< name equals pattern                 */
@@ -23,14 +25,17 @@ typedef enum {
     M_ANY_OF        /**< equals one of a '|'-separated list  */
 } match_kind_t;
 
+/** @brief One naming rule: how to match, and the group and unit it gives. */
 typedef struct {
-    match_kind_t kind;
-    const char *pattern;
-    const char *group;
-    const char *unit;
+    match_kind_t kind;       /**< how pattern is matched                   */
+    const char *pattern;     /**< the name, prefix or list to match        */
+    const char *group;       /**< group the column belongs to              */
+    const char *unit;        /**< unit the column is measured in           */
 } rule_t;
 
-/* Order matters: the first match wins. */
+/**
+ * @brief Order matters: the first match wins.
+ */
 static const rule_t k_rules[] = {
     { M_EXACT,  "loopIteration",  "Meta",  ""      },
     { M_EXACT,  "time",           "Meta",  "s"     },
@@ -78,6 +83,14 @@ static const rule_t k_rules[] = {
     { M_PREFIX, "supply ",        "INA3221", "" },
 };
 
+/**
+ * @brief Whether a name starts with a prefix.
+ *
+ * @param s       The column name.
+ * @param prefix  The prefix to find.
+ * @param fold    true to compare letters without regard to case.
+ * @return true when @p s starts with @p prefix.
+ */
 static bool starts_with(const char *s, const char *prefix, bool fold)
 {
     while (*prefix != '\0') {
@@ -94,6 +107,13 @@ static bool starts_with(const char *s, const char *prefix, bool fold)
     return true;
 }
 
+/**
+ * @brief Whether a name equals one of a '|'-separated list.
+ *
+ * @param s     The column name.
+ * @param list  The names, separated by '|'.
+ * @return true when @p s equals one entry of @p list.
+ */
 static bool any_of(const char *s, const char *list)
 {
     size_t n = strlen(s);
