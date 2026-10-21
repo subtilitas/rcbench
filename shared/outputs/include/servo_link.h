@@ -56,18 +56,19 @@ typedef struct {
     const link_port_t *port;   /**< the port, and its clock                 */
     prog_link_t       *prog;   /**< the programming ports' state            */
     void              *ctx;    /**< passed to every callback                */
-    /** Whether the output bank is armed (outputs_armed()). */
+    /** @brief Whether the output bank is armed (outputs_armed()). */
     bool     (*armed)(void *ctx);
-    /** A stop applied, or a disarm asked for since the write began. */
+    /** @brief A stop applied, or a disarm asked for since the write began. */
     bool     (*stopped)(void *ctx);
     /** Raise @p a for the operator. */
     void     (*alert)(void *ctx, servo_link_alert_t a);
     /** Disarm the bench, and tell the far end while @p link_up. */
     void     (*disarm)(void *ctx, bool link_up);
-    /** The arming policy's count of stops (arming_stop_count()). */
+    /** @brief The arming policy's count of stops (arming_stop_count()). */
     uint32_t (*stop_count)(void *ctx);
-    /** Ask the arming policy to arm the surfaces and the programming
-     *  ports, and no motor. */
+    /** @brief Ask the arming policy to arm the surfaces and the programming
+     *        ports, and no motor.
+     */
     void     (*arm_surfaces)(void *ctx);
 } servo_link_ctx_t;
 

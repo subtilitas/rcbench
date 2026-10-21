@@ -131,9 +131,10 @@ typedef struct {
 
 /** @brief What the port needs from the hardware. */
 typedef struct {
-    /** The caller's context, passed as the first argument of each hook. */
+    /** @brief The caller's context, passed as the first argument of each hook.
+     */
     void *ctx;
-    /** Programming ports the build has, 1 to LINK_PG_PORTS_MAX. */
+    /** @brief Programming ports the build has, 1 to LINK_PG_PORTS_MAX. */
     uint8_t ports;
     /** The pin the PWM generator has for @p port, or a value above
      *  OUT_MAX_PIN while it has none. */
@@ -144,20 +145,26 @@ typedef struct {
      *  driver gets no resources; give() returns the pin. */
     bool (*take)(void *ctx, uint8_t port, uint8_t pin, uint8_t family,
                  uint8_t drive, uint8_t rx);
-    /** Close the wire driver and give the pin back to the generator. */
+    /** @brief Close the wire driver and give the pin back to the generator. */
     void (*give)(void *ctx);
-    /** Cut the running transaction: the next poll() hands back what came,
-     *  marked aborted. */
+    /** @brief Cut the running transaction: the next poll() hands back what
+     *        came, marked aborted.
+     */
     void (*abort)(void *ctx);
-    /** What the driver says about the line; NULL: nothing. */
+    /** @brief What the driver says about the line; NULL: nothing. */
     void (*run)(void *ctx, hitec_port_run_t *out);
-    /** What the supply says now (supply_page_port_view()).  NULL, with
-     *  supply_set: the build has no supply to switch. */
+    /** @brief What the supply says now (supply_page_port_view()).
+     *
+     * NULL, with supply_set: the build has no supply to switch.
+     */
     void (*supply)(void *ctx, supply_port_view_t *out);
     /** Ask the supply on at @p mv and @p ma, or off.  False when it does
      *  not take the request. */
     bool (*supply_set)(void *ctx, bool on, uint16_t mv, uint16_t ma);
-    /** The wire driver.  now_us() works while the driver is closed. */
+    /** @brief The wire driver.
+     *
+     * now_us() works while the driver is closed.
+     */
     hitec_driver_t driver;
 } hitec_port_hw_t;
 

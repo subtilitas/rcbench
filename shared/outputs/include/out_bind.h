@@ -131,11 +131,15 @@ typedef struct {
      * board cannot honour.
      */
     bool                 fixed;
-    /** Where the pads are, or NULL when nothing here says.  A board without
-     *  one is used from its catalogue and simply is not drawn. */
+    /** @brief Where the pads are, or NULL when nothing here says.
+     *
+     * A board without one is used from its catalogue and simply is not drawn.
+     */
     const outbind_shape_t *shape;
-    /** The pads that are not pins, or NULL when nothing here says. A board
-     *  without them is drawn with its grounds and rails unmarked. */
+    /** @brief The pads that are not pins, or NULL when nothing here says.
+     *
+     * A board without them is drawn with its grounds and rails unmarked.
+     */
     const outbind_pad_t *pads;
     uint8_t              pad_count;   /**< entries in `pads`                  */
 } outbind_board_t;
@@ -574,9 +578,9 @@ bool outbind_can_add(const outbind_t *b, uint8_t index);
  */
 typedef enum {
     OUTBIND_CLASH_NONE = 0,
-    /** The pin's slice is the programming port's pin's slice. */
+    /** @brief The pin's slice is the programming port's pin's slice. */
     OUTBIND_CLASH_PROG_SLICE,
-    /** The pin's compare register drives a pin already bound as PWM. */
+    /** @brief The pin's compare register drives a pin already bound as PWM. */
     OUTBIND_CLASH_COMPARE,
 } outbind_clash_t;
 

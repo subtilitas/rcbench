@@ -143,15 +143,18 @@ uint16_t out_stage_held_crc(const out_stage_t *st);
  * the pins reserved may have been brought up to date inside it.
  */
 typedef struct {
-    /** Judges a CHAN_CFG page and puts it in force, or refuses it. */
+    /** @brief Judges a CHAN_CFG page and puts it in force, or refuses it. */
     uint8_t (*take_cfg)(void *ctx, const uint16_t *next);
-    /** Judges an OUTPUTS page and puts it in force, or refuses it. */
+    /** @brief Judges an OUTPUTS page and puts it in force, or refuses it. */
     uint8_t (*take_slots)(void *ctx, const uint16_t *next);
-    /** Puts a CHAN_CFG page back, without judging it. */
+    /** @brief Puts a CHAN_CFG page back, without judging it. */
     void    (*put_cfg)(void *ctx, const uint16_t *prev);
-    /** Called once when both pages are in force. May be NULL. */
+    /** @brief Called once when both pages are in force.
+     *
+     * May be NULL.
+     */
     void    (*keep)(void *ctx);
-    /** The bank the two takes change, or NULL. */
+    /** @brief The bank the two takes change, or NULL. */
     outputs_t *bank;
 } out_stage_ops_t;
 

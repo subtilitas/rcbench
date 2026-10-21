@@ -83,16 +83,21 @@ bind_write_t bind_link_write(link_host_t *h, const link_port_t *port,
 
 /** @brief What a read of the two pages gave. */
 typedef enum {
-    /** Both pages read and the binding model describes them; a page with
-     *  nothing bound is this. */
+    /** @brief Both pages read and the binding model describes them; a page with
+     *        nothing bound is this.
+     */
     BIND_READ_OK = 0,
-    /** A page did not read: unanswered or refused.  Nothing is known. */
+    /** @brief A page did not read: unanswered or refused.
+     *
+     * Nothing is known.
+     */
     BIND_READ_NONE,
-    /** Both pages read and no binding this model can hold renders to them:
-     *  a pin in two slots, a rate or driver no protocol entry has, a pin
-     *  off the board or reserved, channels out of slot order. */
+    /** @brief Both pages read and no binding this model can hold renders to
+     *        them: a pin in two slots, a rate or driver no protocol entry has,
+     *        a pin off the board or reserved, channels out of slot order.
+     */
     BIND_READ_ODD,
-    /** Both pages read and this build has no pin map for the board. */
+    /** @brief Both pages read and this build has no pin map for the board. */
     BIND_READ_NO_BOARD,
 } bind_read_t;
 
@@ -101,8 +106,9 @@ typedef struct {
     bind_read_t state;  /**< what the reading found */
     /** BIND_READ_OK: the binding.  Otherwise nothing bound on @p board. */
     outbind_t   bind;
-    /** Whether the two arrays below hold pages read: every state except
-     *  BIND_READ_NONE. */
+    /** @brief Whether the two arrays below hold pages read: every state except
+     *        BIND_READ_NONE.
+     */
     bool        pages;
     uint16_t    slots[LINK_OS_COUNT];
     uint16_t    cfg[LINK_CC_COUNT];
