@@ -1,5 +1,8 @@
-/*
- * A simulated ESC in its stick menu.  See esc_sim.h.
+/**
+ * @file
+ * @brief A simulated ESC in its stick menu.
+ *
+ * See esc_sim.h.
  *
  * The sound is a list of segments -- a beep, the gap after it, the pause
  * after a group, a wait -- each with the time it ends, walked forward to
@@ -15,12 +18,13 @@
 
 #include "esc_stick.h"
 
+/** @brief Segment of the sound the simulated ESC is making. */
 typedef enum {
-    SEG_NONE = 0,   /* silent until something happens */
-    SEG_BEEP,
-    SEG_GAP,
-    SEG_PAUSE,      /* after a group                  */
-    SEG_WAIT,       /* the entry's silences           */
+    SEG_NONE = 0,   /**< silent until something happens */
+    SEG_BEEP,       /**< one pulse of a group          */
+    SEG_GAP,        /**< silence between two pulses    */
+    SEG_PAUSE,      /**< after a group                 */
+    SEG_WAIT,       /**< the entry's silences          */
 } seg_t;
 
 void esc_sim_defaults(esc_sim_cfg_t *c)
@@ -61,6 +65,15 @@ uint8_t esc_sim_stored(const esc_sim_t *s, uint8_t item)
     return (s != NULL) ? s->stored[item] : 0u;
 }
 
+/**
+ * @brief Classify a throttle percentage as a position.
+ *
+ * Below 15 percent is MIN, 35 to 65 percent is MID and above 85 percent is
+ * MAX.  Anything else, or a negative value, is ESC_THR_NONE.
+ *
+ * @param pct  The throttle, percent of travel; negative for no signal.
+ * @return The position.
+ */
 static esc_throttle_t classify(float pct)
 {
     if (pct < 0.0f) {
@@ -78,16 +91,27 @@ static esc_throttle_t classify(float pct)
     return ESC_THR_NONE;
 }
 
-/* Where the stick rests while the menu sounds: the profile's listen
- * position, else where this power-up entered. */
+/**
+ * @brief Where the stick rests while the menu sounds: the profile's listen
+ *        position, else where this power-up entered.
+ *
+ * @param s  The simulator.
+ * @return The listen position.
+ */
 static esc_throttle_t listen_pos(const esc_sim_t *s)
 {
     return (s->p->listen_throttle != ESC_THR_NONE) ? s->p->listen_throttle
                                                    : s->entry;
 }
 
-/* Whether a power-up at @p pos enters the menu: the profile's entry, or
- * the position any value is programmed from. */
+/**
+ * @brief Whether a power-up at @p pos enters the menu: the profile's entry, or
+ *        the position any value is programmed from.
+ *
+ * @param p    The profile.
+ * @param pos  The stick position at power-up.
+ * @return true when the power-up enters the menu.
+ */
 static bool enters_from(const esc_profile_t *p, esc_throttle_t pos)
 {
     if (pos == p->entry_throttle) {
@@ -104,8 +128,15 @@ static bool enters_from(const esc_profile_t *p, esc_throttle_t pos)
     return false;
 }
 
-/* The position the value numbered @p value of item @p item is programmed
- * from. */
+/**
+ * @brief The position the value numbered @p value of item @p item is programmed
+ *        from.
+ *
+ * @param p     The profile.
+ * @param item  Item number.
+ * @param value Value number.
+ * @return The entry position of the value.
+ */
 static esc_throttle_t value_entry(const esc_profile_t *p, uint8_t item,
                                   uint8_t value)
 {
@@ -123,11 +154,25 @@ static esc_throttle_t value_entry(const esc_profile_t *p, uint8_t item,
     return p->entry_throttle;
 }
 
+/**
+ * @brief Whether a profile has a two-stage menu.
+ *
+ * @param p  The profile.
+ * @return true when a value select move stores the value.
+ */
 static bool two_stage(const esc_profile_t *p)
 {
     return p->value_select_throttle != ESC_THR_NONE;
 }
 
+/**
+ * @brief Add a number to the loop, in ascending order.
+ *
+ * Adds nothing when the number is already in the loop or the loop is full.
+ *
+ * @param s  The simulator.
+ * @param v  The group number to add.
+ */
 static void add_sorted(esc_sim_t *s, uint8_t v)
 {
     for (unsigned i = 0; i < s->loop_n; ++i) {
@@ -147,6 +192,14 @@ static void add_sorted(esc_sim_t *s, uint8_t v)
     s->loop_n++;
 }
 
+/**
+ * @brief Add the extra groups past the highest number.
+ *
+ * Adds the configured number of groups after the highest one in the loop,
+ * stopping at 255.
+ *
+ * @param s  The simulator.
+ */
 static void add_extra(esc_sim_t *s)
 {
     if (s->loop_n == 0u) {
@@ -158,7 +211,11 @@ static void add_extra(esc_sim_t *s)
     }
 }
 
-/* The loop a mode sounds: the items, one item's values, or every value. */
+/**
+ * @brief The loop a mode sounds: the items, one item's values, or every value.
+ *
+ * @param s  The simulator.
+ */
 static void build_loop(esc_sim_t *s)
 {
     s->loop_n = 0u;
@@ -194,11 +251,23 @@ static void build_loop(esc_sim_t *s)
     }
 }
 
+/**
+ * @brief Length of the pulse being sounded.
+ *
+ * @param s  The simulator.
+ * @return The long beep length, ms, for a long pulse, else the short beep.
+ */
 static uint32_t pulse_ms(const esc_sim_t *s)
 {
     return s->pulse[s->pulse_i] ? s->c.long_ms : s->c.beep_ms;
 }
 
+/**
+ * @brief Start one pulse of a group.
+ *
+ * @param s   The simulator.
+ * @param at  Time the pulse starts, ms.
+ */
 static void start_beep(esc_sim_t *s, uint32_t at)
 {
     s->seg = SEG_BEEP;
@@ -209,7 +278,15 @@ static void start_beep(esc_sim_t *s, uint32_t at)
                  && s->pulse_i + 1u == s->pulse_n;
 }
 
-/* A group of @p n beeps, longs first, or one long tone when @p tone. */
+/**
+ * @brief A group of @p n beeps, longs first, or one long tone when @p tone.
+ *
+ * @param s     The simulator.
+ * @param at    Time the group starts, ms.
+ * @param n     Number the group sounds.
+ * @param menu  true when the group is a menu entry.
+ * @param tone  true for one long tone.
+ */
 static void start_group(esc_sim_t *s, uint32_t at, uint8_t n, bool menu,
                         bool tone)
 {
@@ -244,6 +321,12 @@ static void start_group(esc_sim_t *s, uint32_t at, uint8_t n, bool menu,
     start_beep(s, at);
 }
 
+/**
+ * @brief Sound the next group of the loop.
+ *
+ * @param s   The simulator.
+ * @param at  Time the group starts, ms.
+ */
 static void sound_next(esc_sim_t *s, uint32_t at)
 {
     if (s->loop_n == 0u) {
@@ -260,6 +343,12 @@ static void sound_next(esc_sim_t *s, uint32_t at)
     start_group(s, at, n, true, false);
 }
 
+/**
+ * @brief Start the menu sounds.
+ *
+ * @param s   The simulator.
+ * @param at  Time the menu starts, ms.
+ */
 static void begin_menu(esc_sim_t *s, uint32_t at)
 {
     s->mode = two_stage(s->p) ? ESC_SIM_ITEMS : ESC_SIM_VALUES;
@@ -268,7 +357,12 @@ static void begin_menu(esc_sim_t *s, uint32_t at)
     sound_next(s, at);
 }
 
-/* A segment ended at @p at: what follows it. */
+/**
+ * @brief A segment ended at @p at: what follows it.
+ *
+ * @param s   The simulator.
+ * @param at  Time the segment ended, ms.
+ */
 static void segment_over(esc_sim_t *s, uint32_t at)
 {
     switch (s->seg) {
@@ -337,9 +431,16 @@ static void segment_over(esc_sim_t *s, uint32_t at)
     }
 }
 
-/* Whether a move now answers the group that ended last: inside the window
- * the configuration or the profile gives, or with neither, before the next
- * group begins. */
+/**
+ * @brief Whether a move now answers the group that ended last: inside the
+ *        window the configuration or the profile gives, or with neither, before
+ *        the next group begins.
+ *
+ * @param s           The simulator.
+ * @param now         Time of the move, ms.
+ * @param profile_ms  The profile's window, ms; 0 for none.
+ * @return true when the move answers the group.
+ */
 static bool in_window(const esc_sim_t *s, uint32_t now, uint32_t profile_ms)
 {
     if (s->ended == 0u || s->c.deaf) {
@@ -362,9 +463,12 @@ unsigned esc_sim_store_moves(const esc_profile_t *p, uint8_t item,
     if (p->store_throttle != ESC_THR_NONE && n < cap) {
         out[n++] = p->store_throttle;
     }
-    /* The first item and value of these numbers: conditional items may
-     * share both on different models, and the ESC has one of them.  Its
-     * moves, no more than @p cap holds. */
+    /**
+     * @brief The first item and value of these numbers: conditional items may
+     *        share both on different models, and the ESC has one of them.
+     *
+     * Its moves, no more than @p cap holds.
+     */
     for (unsigned i = 0; i < p->item_count; ++i) {
         if (p->items[i].number != item) {
             continue;
@@ -385,6 +489,17 @@ unsigned esc_sim_store_moves(const esc_profile_t *p, uint8_t item,
 }
 
 
+/**
+ * @brief Store a selected value.
+ *
+ * Starts the store moves when the value has any; otherwise stores the value
+ * at once and starts the stored tone.
+ *
+ * @param s      The simulator.
+ * @param now    Time of the store, ms.
+ * @param item   Item number.
+ * @param value  Value number.
+ */
 static void store(esc_sim_t *s, uint32_t now, uint8_t item, uint8_t value)
 {
     esc_throttle_t moves[ESC_AFTER_MAX + 1u];
@@ -420,6 +535,12 @@ static void store(esc_sim_t *s, uint32_t now, uint8_t item, uint8_t value)
     start_group(s, now, 1u, false, true);   /* the stored tone */
 }
 
+/**
+ * @brief React to a throttle move in the current mode.
+ *
+ * @param s    The simulator.
+ * @param now  Time of the move, ms.
+ */
 static void moved(esc_sim_t *s, uint32_t now)
 {
     const esc_profile_t *p = s->p;

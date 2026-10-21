@@ -1,7 +1,10 @@
-/*
- * Stick programming: what can run.  Which profiles the engine runs, the
- * voltage and current set points a model is given, and the check a run's
- * changes and timing pass before it starts.  See esc_stick.h.
+/**
+ * @file
+ * @brief Stick programming: what can run.
+ *
+ * Which profiles the engine runs, the voltage and current set points a model is
+ * given, and the check a run's changes and timing pass before it starts.  See
+ * esc_stick.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -29,7 +32,12 @@ float esc_stick_pct(esc_throttle_t pos)
     }
 }
 
-/* Whether any value number appears in two items. */
+/**
+ * @brief Whether any value number appears in two items.
+ *
+ * @param p  The profile.
+ * @return true when a value number repeats across items.
+ */
 static bool values_repeat(const esc_profile_t *p)
 {
     bool seen[256];
@@ -47,14 +55,18 @@ static bool values_repeat(const esc_profile_t *p)
     return false;
 }
 
-/*
- * Whether every manual step can be waited for.  A step during the menu has
- * no moment the run can know.  A hand at a powered ESC -- held while the
- * supply comes on, or after the entry -- is asked for with the stick where
- * the entry put it, so only for an entry at MIN, the motor-off position: a
- * person is not asked to reach for a powered ESC whose stick is at MID or
- * MAX.  A step before the supply goes off asks for no hand at all -- the
- * operator watches the ESC -- so any stick position holds it.
+/**
+ * @brief Whether every manual step can be waited for.
+ *
+ * A step during the menu has no moment the run can know.  A hand at a powered
+ * ESC -- held while the supply comes on, or after the entry -- is asked for
+ * with the stick where the entry put it, so only for an entry at MIN, the
+ * motor-off position: a person is not asked to reach for a powered ESC whose
+ * stick is at MID or MAX.  A step before the supply goes off asks for no hand
+ * at all -- the operator watches the ESC -- so any stick position holds it.
+ *
+ * @param p  The profile.
+ * @return true when every manual step can be waited for.
  */
 static bool hand_fits(const esc_profile_t *p)
 {
@@ -78,9 +90,14 @@ static bool hand_fits(const esc_profile_t *p)
     return true;
 }
 
-/* Whether a value states its own entry time: the profile-wide rest rule
- * leaves such a profile to the per-change one (entry_refused()), which
- * sees the value's time. */
+/**
+ * @brief Whether a value states its own entry time: the profile-wide rest rule
+ *        leaves such a profile to the per-change one (entry_refused()), which
+ *        sees the value's time.
+ *
+ * @param p  The profile.
+ * @return true when a value has an entry_hold_ms.
+ */
 static bool value_holds(const esc_profile_t *p)
 {
     for (unsigned i = 0; i < p->item_count; ++i) {
@@ -93,7 +110,12 @@ static bool value_holds(const esc_profile_t *p)
     return false;
 }
 
-/* The step that starts the menu, or NULL. */
+/**
+ * @brief The step that starts the menu, or NULL.
+ *
+ * @param p  The profile.
+ * @return The step marked starts_menu, or NULL when none is.
+ */
 static const esc_manual_t *menu_start(const esc_profile_t *p)
 {
     for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
@@ -104,6 +126,13 @@ static const esc_manual_t *menu_start(const esc_profile_t *p)
     return NULL;
 }
 
+/**
+ * @brief Set the refusal reason and return no menu kind.
+ *
+ * @param why   Receives @p text when not NULL.
+ * @param text  The static reason string.
+ * @return ESC_STICK_KIND_NONE.
+ */
 static esc_stick_kind_t refuse(const char **why, const char *text)
 {
     if (why != NULL) {
@@ -362,19 +391,26 @@ esc_throttle_t esc_stick_change_entry(const esc_profile_t *p,
     return (v != ESC_THR_NONE) ? v : p->entry_throttle;
 }
 
-/* Whether the profile asks for a hand at a powered ESC. */
+/**
+ * @brief Whether the profile asks for a hand at a powered ESC.
+ *
+ * @param p  The profile.
+ * @return true when an at_power_up or before_menu step is due.
+ */
 static bool hand_powered(const esc_profile_t *p)
 {
     return esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP) > 0u
            || esc_profile_manual_count(p, ESC_MANUAL_BEFORE_MENU) > 0u;
 }
 
-/*
- * Why change @p i cannot be powered up from its own entry position, or
- * NULL.  The run powers each change up from the position its value is
- * programmed from (esc_stick_change_entry()): a Kontronik car mode from
- * the middle, the neutral the mode teaches.  The profile-wide rules of
- * esc_stick_kind() hold for that position as they hold for the profile's:
+/**
+ * @brief Why change @p i cannot be powered up from its own entry position, or
+ *        NULL.
+ *
+ * The run powers each change up from the position its value is programmed from
+ * (esc_stick_change_entry()): a Kontronik car mode from the middle, the neutral
+ * the mode teaches.  The profile-wide rules of esc_stick_kind() hold for that
+ * position as they hold for the profile's:
  *
  *   - A power-up takes one position.  A two-stage menu, or one that takes
  *     several changes a power-up, makes its changes in the order the ESC
@@ -392,6 +428,12 @@ static bool hand_powered(const esc_profile_t *p)
  *     at_power_up step's hold states.
  *   - A hand at a powered ESC with the stick at MAX is not asked for.  MID
  *     is, where the value names it: the manual's motor-off in the middle.
+ *
+ * @param p  The profile.
+ * @param ch The changes of the run.
+ * @param i  Index of the change checked.
+ * @param t  The timing.
+ * @return A static reason string, or NULL when the change can be powered up.
  */
 static const char *entry_refused(const esc_profile_t *p,
                                  const esc_stick_change_t *ch, size_t i,

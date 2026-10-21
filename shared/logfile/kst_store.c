@@ -1,23 +1,41 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "kst_store.h"
 
 #include <string.h>
 
+/** @brief Prefix of a proposed base name. */
 #define PRESET      "KST"
+/** @brief Length of the prefix, characters. */
 #define PRESET_LEN  3u
+/** @brief Length of the file extension, characters. */
 #define EXT_LEN     (sizeof(KST_STORE_EXT) - 1u)
+/** @brief Bytes of a bit set that holds one flag per number 0 to
+ *  KST_STORE_LAST. */
 #define NUMBER_BYTES ((KST_STORE_LAST / 8) + 1)
 
+/**
+ * @brief Fold an ASCII capital letter to lower case.
+ *
+ * @param c  The character.
+ * @return The lower-case letter for A to Z; every other character unchanged.
+ */
 static char lower(char c)
 {
     return (c >= 'A' && c <= 'Z') ? (char)(c + ('a' - 'A')) : c;
 }
 
-/* Order of two names without case; the case decides between names that
- * are equal without it. */
+/**
+ * @brief Order of two names without case; the case decides between names that
+ *        are equal without it.
+ *
+ * @param a  The first name.
+ * @param b  The second name.
+ * @return Negative, zero or positive as @p a sorts before, with or after @p b.
+ */
 static int name_cmp(const char *a, const char *b)
 {
     size_t i = 0;
@@ -31,6 +49,13 @@ static int name_cmp(const char *a, const char *b)
     return strcmp(a, b);
 }
 
+/**
+ * @brief Whether two names are equal without case.
+ *
+ * @param a  The first name.
+ * @param b  The second name.
+ * @return true when the names match without regard to case.
+ */
 static bool same_name(const char *a, const char *b)
 {
     size_t i = 0;
@@ -41,7 +66,13 @@ static bool same_name(const char *a, const char *b)
     return a[i] == b[i];
 }
 
-/* Whether the first @p n characters of @p s are a device name. */
+/**
+ * @brief Whether the first @p n characters of @p s are a device name.
+ *
+ * @param s  The name.
+ * @param n  Number of characters to test: 3 or 4.
+ * @return true for CON, PRN, AUX, NUL, COM1 to COM9 and LPT1 to LPT9.
+ */
 static bool reserved(const char *s, size_t n)
 {
     static const char *const fixed[] = {"con", "prn", "aux", "nul"};
@@ -69,13 +100,26 @@ static bool reserved(const char *s, size_t n)
     return false;
 }
 
-/* Whether the first @p n characters of @p s are KST_STORE_RECORD. */
+/**
+ * @brief Whether the first @p n characters of @p s are KST_STORE_RECORD.
+ *
+ * @param s  The name.
+ * @param n  Number of characters in the base name.
+ * @return true when the base name is KST_STORE_RECORD, in any case.
+ */
 static bool record(const char *s, size_t n)
 {
     return n == PRESET_LEN && lower(s[0]) == 'k' && lower(s[1]) == 's' &&
            lower(s[2]) == 't';
 }
 
+/**
+ * @brief Check a base name of known length.
+ *
+ * @param base  The base name.
+ * @param n     Length of the base name, characters.
+ * @return KST_STORE_NAME_OK, or the first rule the name breaks.
+ */
 static kst_store_name_t check(const char *base, size_t n)
 {
     size_t stem = 0;
@@ -127,8 +171,13 @@ bool kst_store_file_name(const char *base, char *out, size_t out_size)
     return true;
 }
 
-/* Length of the base name in a file name with the extension; 0 when the
- * name does not end with it. */
+/**
+ * @brief Length of the base name in a file name with the extension; 0 when the
+ *        name does not end with it.
+ *
+ * @param name  The file name, with the extension.
+ * @return The length of the base name, characters, or 0.
+ */
 static size_t base_len(const char *name)
 {
     const size_t n = strlen(name);
@@ -139,7 +188,12 @@ static size_t base_len(const char *name)
     return n - EXT_LEN;
 }
 
-/* The number in "KSTnnn.TXT", in any case; 0 for any other name. */
+/**
+ * @brief The number in "KSTnnn.TXT", in any case; 0 for any other name.
+ *
+ * @param name  The file name.
+ * @return The number 1 to 999, or 0.
+ */
 static int preset_number(const char *name)
 {
     int number = 0;
@@ -158,6 +212,13 @@ static int preset_number(const char *name)
     return number;
 }
 
+/**
+ * @brief Set the bit of a directory entry's proposed number.
+ *
+ * @param name       The entry name.
+ * @param is_dir     Whether the entry is a directory; ignored.
+ * @param visit_ctx  The bit set, NUMBER_BYTES bytes.
+ */
 static void mark_number(const char *name, bool is_dir, void *visit_ctx)
 {
     uint8_t *taken = visit_ctx;
@@ -206,11 +267,19 @@ kst_store_t kst_store_preset(const kst_store_io_t *io, char *base,
     return KST_STORE_OK;
 }
 
+/** @brief State of a search for one file name. */
 typedef struct {
-    const char *name;
-    bool found;
+    const char *name;   /**< the name searched for                          */
+    bool found;         /**< a name equal to it was seen                    */
 } find_t;
 
+/**
+ * @brief Set found when a directory entry has the searched name.
+ *
+ * @param name       The entry name.
+ * @param is_dir     Whether the entry is a directory; ignored.
+ * @param visit_ctx  The find_t state.
+ */
 static void find_name(const char *name, bool is_dir, void *visit_ctx)
 {
     find_t *find = visit_ctx;
@@ -263,8 +332,13 @@ kst_store_t kst_store_save(const kst_store_io_t *io, const char *base,
     }
 }
 
-/* Whether a name that is no proposed one stands in front of the proposed
- * names: at or before "KST000.TXT" in the order without case. */
+/**
+ * @brief Whether a name that is no proposed one stands in front of the proposed
+ *        names: at or before "KST000.TXT" in the order without case.
+ *
+ * @param name  The file name.
+ * @return true when the name sorts at or before "KST000.TXT".
+ */
 static bool before_presets(const char *name)
 {
     static const char first[] = "kst000" ".txt";
@@ -276,9 +350,15 @@ static bool before_presets(const char *name)
     return (unsigned char)lower(name[i]) <= (unsigned char)first[i];
 }
 
-/* Order of two file names in a list: by name without case, with the
- * proposed names in one run where "KST000.TXT" would stand, the highest
- * number first. */
+/**
+ * @brief Order of two file names in a list: by name without case, with the
+ *        proposed names in one run where "KST000.TXT" would stand, the highest
+ *        number first.
+ *
+ * @param a  The first file name.
+ * @param b  The second file name.
+ * @return Negative, zero or positive as @p a sorts before, with or after @p b.
+ */
 static int list_cmp(const char *a, const char *b)
 {
     const int na = preset_number(a);
@@ -296,22 +376,30 @@ static int list_cmp(const char *a, const char *b)
     return name_cmp(a, b);
 }
 
+/** @brief State of one list: the sorted entries kept so far. */
 typedef struct {
-    kst_store_entry_t *entries;
-    const char *after;      /* NULL: from the first file on */
-    size_t cap;
-    size_t count;
-    size_t total;
-    size_t skipped;
+    kst_store_entry_t *entries;  /**< the list being built                  */
+    const char *after;           /**< NULL: from the first file on          */
+    size_t cap;                  /**< capacity of entries                   */
+    size_t count;                /**< entries kept                          */
+    size_t total;                /**< qualifying files seen                 */
+    size_t skipped;              /**< files with a bad base name            */
 } list_t;
 
+/**
+ * @brief Insert one directory entry into the sorted list.
+ *
+ * @param name       The entry name.
+ * @param is_dir     Whether the entry is a directory; directories are skipped.
+ * @param visit_ctx  The list_t state.
+ */
 static void list_name(const char *name, bool is_dir, void *visit_ctx)
 {
     list_t *list = visit_ctx;
     const size_t base = base_len(name);
     size_t at;
 
-    /* The record of a write under way is no servo file and no stray one. */
+        /* The record of a write under way is no servo file and no stray one. */
     if (is_dir || base == 0u || record(name, base)) {
         return;
     }

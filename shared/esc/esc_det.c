@@ -1,7 +1,9 @@
-/*
- * Stick programming: the beep detector.  It turns the supply readings into
- * pulses and the pulses into groups.  See esc_stick.h, and esc_stick.c for
- * the rules that make a count safe.
+/**
+ * @file
+ * @brief Stick programming: the beep detector.
+ *
+ * It turns the supply readings into pulses and the pulses into groups.  See
+ * esc_stick.h, and esc_stick.c for the rules that make a count safe.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,6 +22,8 @@ void esc_det_init(esc_det_t *d, const esc_stick_timing_t *t,
     memset(d, 0, sizeof(*d));
     d->t = *t;
     d->long_equals_short = long_equals_short;
+/** Forget any group under way, as if the line had been silent. */
+/** Forget any group under way, as if the line had been silent. */
 }
 
 /** Forget any group under way, as if the line had been silent. */
@@ -34,8 +38,8 @@ void esc_det_drop_group(esc_det_t *d)
     d->n_low = 0u;
     d->stuck_told = false;
 }
-
 /** Floor only: no pulses, no groups. */
+
 void esc_det_floor_only(esc_det_t *d)
 {
     d->counting = false;
@@ -61,13 +65,28 @@ int32_t esc_det_floor_ma(const esc_det_t *d)
     return d->floor_x16 / 16;
 }
 
-/* How many readings a span of @p ms must hold, at the longest interval seen
- * that was not late.  0 while no interval is known. */
+/**
+ * @brief How many readings a span of @p ms must hold, at the longest interval
+ *        seen that was not late.  0 while no interval is known.
+ *
+ * @param d   The beep detector.
+ * @param ms  Span, ms.
+ * @return The readings the span must hold, or 0 while no interval is known.
+ */
 static uint32_t readings_in(const esc_det_t *d, uint32_t ms)
 {
     return (d->iv_max_ms == 0u) ? 0u : ms / d->iv_max_ms;
 }
 
+/**
+ * @brief Close the pulse that has just fallen and judge its length.
+ *
+ * Counts the pulse as a short or a long beep, or marks the group bad when it
+ * is no beep.
+ *
+ * @param d     The beep detector.
+ * @param t_ms  Time of the first low reading after the pulse, ms.
+ */
 static void close_pulse(esc_det_t *d, uint32_t t_ms)
 {
     d->high = false;
