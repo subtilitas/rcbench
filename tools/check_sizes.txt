@@ -89,7 +89,6 @@ test/host/test_kst_pio.c | none | F14: left whole by the group report
 test/host/test_prog_port.c | none | F14: one source, prog_port.c; no section markers
 test/host/test_pdmini.c | none | F14: the driver's first 1,110 lines stay in any cut
 test/host/test_link_update.c | none | F14: the engine and session sections are 1,229 lines alone
-test/host/test_nav.c | none | F14: one owner per contact is 1,132 lines alone
 test/host/test_sense_sched.c | none | F14: 12 sections share 11 head statics
 test/host/test_arming.c | none | F14: 17 unmarked cases in the head; row 2 added its cases
 test/host/test_safety_gate.c | none | F14: the panel section is 1,133 lines alone
@@ -102,11 +101,6 @@ test/host/test_outputs.c | none | F14: every section calls the outputs_* interfa
 test/host/test_sense_page.c | none | F14: one source, sense_page.c
 test/host/test_bind_link.c | none | F14: the panel sections use 30 symbols of the IOmcu fixture
 test/host/test_outbind.c | none | row 18 moves the board suite out with out_board.c; 1,457 lines stay
-test/host/test_supply_screen.c | none | F14: one screen; the largest section is 599 lines
-test/host/test_logview.c | none | F14: one screen; the largest section is 637 lines
-test/host/test_motor.c | none | F14: one screen; the head has no marker to cut along
-test/host/test_outputs_screen.c | none | F14: one screen
-test/host/test_picker_screen.c | none | F14: one screen; the head's cases call into the second section
 test/host/test_widgets.c | none | F14: the optional 4-way cut is not taken
 test/host/test_servo_page.c | none | F14: one source, servo_page.c; no section markers
 test/host/test_servo_arm.c | none | F14: keeps its own fixture; taking servo_rig.h rewrites it (#436)
@@ -118,11 +112,8 @@ test/host/test_supply_link.c | none | F14: one source, supply_link.c; crossed 1,
 test/host/test_sense_link_view.c | none | F14: one source, sense_link.c, beside test_sense_link.c; crossed 1,000 after the plan, not weighed by the plan
 
 # Tests the plan's rows cut that stay over 1,000.
-test/host/test_servo.c | none | row 9 (F8): 144 cases stay over two rig headers
 test/host/test_servo_settings.c | none | row 9: the settings overlay's 48 cases
 test/host/test_servo_test_panel.c | none | row 9: the servo test panel's cases
-test/host/test_esc_stick_panel.c | none | row 10: the stick programming panel's cases, over 1,000 by design
-test/host/test_kst_panel.c | none | row 11: 82 cases stay over the rig header
 test/host/test_kst_prog.c | none | row 12: 122 cases stay; the card cases moved out
 test/host/test_kst_prog_card.c | none | row 12: the card's 31 cases
 test/host/test_servo_test_win.c | none | row 16: one of three suites over its own rig

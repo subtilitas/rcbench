@@ -3,8 +3,8 @@
  * output, SUPPLY's switch and set points as the panel carries them, the
  * INA3221's CH1 windows under the servo rail's meter, the output encoder,
  * and the files a run writes.  START TEST's place, the meter and the
- * expected-picture buffer go with it.  Taken by test_servo.c,
- * test_servo_test_panel.c and test_servo_limit_panel.c.
+ * expected-picture buffer go with it.  Taken by the suites of
+ * servo_screen_rig.h, test_servo_test_panel.c and test_servo_limit_panel.c.
  *
  * Only static inline helpers and the state they use.
  *

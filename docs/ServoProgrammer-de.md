@@ -1337,9 +1337,9 @@ Ports: einen Port ohne Pin, ein Ziel, das auf einen Prüfstand in Ruhe
 wartet, einen IOmcu, der neu startet, und einen Programmierer, der
 den Port hat, für jedes der 16 Paare aus Seite und gewünschten Werten.
 `test_settings_screen` fährt eine gehaltene Einstellung gegen jeden Aufruf, der
-eine ändert, und `test_servo` die zwei Zeilen des Reiters PRÜFLING.
+eine ändert, und `test_servo_target` die zwei Zeilen des Reiters PRÜFLING.
 `test_kst_card` fährt die Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog` und `test_kst_prog_card`
-fahren das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
+fahren das Modell und `test_kst_panel` mit seinen Geschwistern das Overlay, beide gegen den Port des
 IOmcu, ein Versorgungsmodell und das Servomodell durch den
 Dispatcher des Links: die Bereiche der Versorgung an ihren Enden und einen
 Schritt außerhalb, das Warten bei 0 ms, 100 ms, 10 000 ms und 10 001 ms als

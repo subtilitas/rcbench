@@ -26,7 +26,7 @@ extern "C" {
 
 /** @brief The board and the display as the splash names them. */
 #define BOARD_NAME_TEXT             "ESP32-P4 7B"
-#define BOARD_DISPLAY_TEXT          "1024x600 60Hz DSI"
+#define BOARD_DISPLAY_TEXT          "1024x600 DSI"
 
 /* ------------------------------------------------------------------ panel */
 

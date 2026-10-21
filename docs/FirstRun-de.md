@@ -542,7 +542,7 @@ und der Multiplexer wählt eines aus:
 
 | | |
 |---|---|
-| Panel-Seite | **GPIO6**, an **J8** (dreipolige Stiftleiste mit 3V3, GND, GPIO6) |
+| Panel-Seite | **GPIO28**, ein freier Pin der GPIO-Stiftleiste des 7-Zoll-ESP32-P4-Boards (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). GPIO28 ist vorläufig, bis der Pin am ersten Muster festgelegt ist. |
 | IOmcu-Seite | **GP3** |
 | Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der IOmcu gesund ist: Er schaltet nach 150 ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der IOmcu nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 

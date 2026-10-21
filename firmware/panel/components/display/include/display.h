@@ -49,14 +49,12 @@ extern "C" {
 
 /** @brief How display_init() sets the display up. */
 typedef struct {
-    bool double_buffer;   /**< false -> single frame buffer, no flip     */
     bool backlight_on;    /**< backlight to 100 % after the first frame  */
 } display_config_t;
 
-/** @brief Two buffers, backlight on after the first frame. */
+/** @brief Backlight on after the first frame. */
 #define DISPLAY_CONFIG_DEFAULT()             \
     (display_config_t) {                     \
-        .double_buffer = true,               \
         .backlight_on = true,                \
     }
 
@@ -87,8 +85,7 @@ gfx_canvas_t *display_canvas(void);
 
 /**
  * @brief Present the back buffer and block until the buffer it replaces is no
- * longer scanned out, at most 200 ms.  In single-buffer mode this only
- * waits for the next frame-done event.
+ * longer scanned out, at most 200 ms.
  *
  * @return ESP_OK; ESP_ERR_TIMEOUT when no frame-done event came in 200 ms;
  *         ESP_ERR_INVALID_STATE before display_init(); or the DPI panel's
@@ -115,12 +112,6 @@ int display_width(void);
  * @return BOARD_UI_V_RES, 480 pixels.
  */
 int display_height(void);
-
-/**
- * @brief Whether the display runs two frame buffers.
- * @return true with two buffers, false with one or before display_init().
- */
-bool display_double_buffered(void);
 
 /**
  * @brief Which frame buffer display_canvas() points at.

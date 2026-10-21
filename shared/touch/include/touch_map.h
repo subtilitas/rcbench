@@ -35,6 +35,19 @@ void touch_map_apply(const touch_map_t *m, int16_t x, int16_t y,
 void touch_map_point(const touch_map_t *m, touch_point_t *p);
 
 /**
+ * @brief Map @p n points in place, each as touch_map_point() maps it.
+ *
+ * Each source is mapped with its own map before the sources are merged:
+ * the glass from the resolution it reports, with the board's mirrors; the
+ * touch injector as panel pixels of the UI's area, unmirrored.
+ *
+ * @param m The map; NULL leaves the points as they are.
+ * @param pts The points.
+ * @param n How many; 0 or less maps nothing.
+ */
+void touch_map_points(const touch_map_t *m, touch_point_t *pts, int n);
+
+/**
  * @brief Keep the mapped points inside a @p w x @p h area at the origin and drop
  * the rest, in place and in order.  A panel whose UI (user interface) draws
  * a smaller area than the glass reports drops the touches outside it.

@@ -97,8 +97,9 @@ random-access memory) at 200 MHz, code and constants in flash rather than
 PSRAM, the zero-initialised data that `main/psram_bss.lf` names in PSRAM
 ([Internal RAM](Performance.md#internal-ram)), the DSI (Display Serial
 Interface) host's interrupt running during a flash operation
-(`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), the bootloader's log at WARN so it fits
-the 24,576 bytes between 0x2000 and the partition table, `-O2`, and the
+(`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), the partition table at 0xC000, which
+leaves the bootloader 40,960 bytes from 0x2000 (it takes 0x6140 bytes with
+rollback and its log at INFO), `-O2`, and the
 console on UART0 with USB-Serial-JTAG (the chip's built-in USB (Universal
 Serial Bus) serial and debug bridge) as secondary. Start from it rather
 than from `menuconfig`.

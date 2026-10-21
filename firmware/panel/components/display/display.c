@@ -32,6 +32,12 @@
 
 static const char *TAG = "display";
 
+/**
+ * @brief Two frame buffers, always: the DPI panel scans one while the CPU
+ *        draws the other, and display_flip() hands the finished one over.
+ */
+#define DISPLAY_NUM_FBS 2
+
 /** @brief The longest display_flip() waits for a frame-done event. */
 #define FLIP_WAIT_MS 200
 
@@ -92,7 +98,6 @@ typedef struct {
     atomic_uint vsyncs;                 /**< VSYNC events since init       */
 
     gfx_color_t *fb[2];                 /**< the frame buffers             */
-    uint8_t num_fbs;                    /**< 1 or 2                        */
     uint8_t back;                       /**< index the CPU draws into      */
 
     gfx_canvas_t canvas;                /**< points into fb[back]          */
@@ -240,7 +245,7 @@ static esp_err_t bus_up(void)
         .dpi_clock_freq_mhz = BOARD_LCD_DPI_CLOCK_MHZ,
         .in_color_format = LCD_COLOR_FMT_RGB565,
         .out_color_format = LCD_COLOR_FMT_RGB565,
-        .num_fbs = s_disp.num_fbs,
+        .num_fbs = DISPLAY_NUM_FBS,
         .video_timing = {
             .h_size = BOARD_LCD_H_RES,
             .v_size = BOARD_LCD_V_RES,
@@ -291,7 +296,6 @@ static void bus_down(void)
  */
 static esp_err_t start(const display_config_t *c)
 {
-    s_disp.num_fbs = c->double_buffer ? 2 : 1;
     s_disp.done_sem = xSemaphoreCreateBinary();
     s_disp.vsync_sem = xSemaphoreCreateBinary();
     ESP_RETURN_ON_FALSE(s_disp.done_sem && s_disp.vsync_sem, ESP_ERR_NO_MEM,
@@ -307,19 +311,11 @@ static esp_err_t start(const display_config_t *c)
         esp_lcd_dpi_panel_register_event_callbacks(s_disp.panel, &cbs, &s_disp),
         TAG, "callbacks");
 
-    if (s_disp.num_fbs == 2) {
-        ESP_RETURN_ON_ERROR(
-            esp_lcd_dpi_panel_get_frame_buffer(s_disp.panel, 2,
-                                               (void **)&s_disp.fb[0],
-                                               (void **)&s_disp.fb[1]),
-            TAG, "frame buffers");
-    } else {
-        ESP_RETURN_ON_ERROR(
-            esp_lcd_dpi_panel_get_frame_buffer(s_disp.panel, 1,
-                                               (void **)&s_disp.fb[0]),
-            TAG, "frame buffer");
-        s_disp.fb[1] = s_disp.fb[0];
-    }
+    ESP_RETURN_ON_ERROR(
+        esp_lcd_dpi_panel_get_frame_buffer(s_disp.panel, DISPLAY_NUM_FBS,
+                                           (void **)&s_disp.fb[0],
+                                           (void **)&s_disp.fb[1]),
+        TAG, "frame buffers");
 
     ESP_RETURN_ON_ERROR(panel_reset(), TAG, "panel reset");
     ESP_RETURN_ON_ERROR(panel_commands(), TAG, "panel commands");
@@ -341,8 +337,8 @@ static esp_err_t start(const display_config_t *c)
 #endif
 
     /* fb[0] scans first, so the CPU (central processing unit) starts on
-     * fb[1], or on fb[0] when single-buffered. */
-    s_disp.back = (s_disp.num_fbs == 2) ? 1 : 0;
+     * fb[1]. */
+    s_disp.back = 1;
     rebind_canvas();
     return ESP_OK;
 }
@@ -371,11 +367,11 @@ esp_err_t display_init(const display_config_t *cfg)
     ESP_RETURN_ON_ERROR(board_backlight(c.backlight_on), TAG, "backlight");
 
     ESP_LOGI(TAG, "%dx%d RGB565, %d lanes at %d Mbit/s, %.1f MHz pixel clock "
-                  "requested, %d frame buffer(s) in PSRAM (%u KiB each), "
+                  "requested, %d frame buffers in PSRAM (%u KiB each), "
                   "UI %dx%d",
              BOARD_LCD_H_RES, BOARD_LCD_V_RES, BOARD_DSI_LANES,
              BOARD_DSI_LANE_MBPS, (double)BOARD_LCD_DPI_CLOCK_MHZ,
-             s_disp.num_fbs,
+             DISPLAY_NUM_FBS,
              (unsigned)((size_t)BOARD_LCD_H_RES * BOARD_LCD_V_RES
                         * sizeof(gfx_color_t) / 1024u),
              BOARD_UI_H_RES, BOARD_UI_V_RES);
@@ -439,14 +435,6 @@ esp_err_t display_flip(void)
 
     const int64_t wait_start = esp_timer_get_time();
 
-    if (s_disp.num_fbs < 2) {
-        (void)xSemaphoreTake(s_disp.done_sem, 0);
-        const esp_err_t err = wait_frame_done();
-        s_disp.last_wait_us = (uint32_t)(esp_timer_get_time() - wait_start);
-        account_frame();
-        return err;
-    }
-
     /*
      * A pointer inside a frame buffer is taken as it is: the driver writes
      * the cache back and scans that buffer from the next frame on.
@@ -483,11 +471,6 @@ int display_width(void)
 int display_height(void)
 {
     return BOARD_UI_V_RES;
-}
-
-bool display_double_buffered(void)
-{
-    return s_disp.num_fbs >= 2;
 }
 
 int display_back_index(void)

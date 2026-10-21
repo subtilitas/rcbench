@@ -233,7 +233,7 @@ TEST_CASE(a_row_press_that_slides_off_or_is_cancelled_opens_nothing)
  * What MOTOR & ESC names to the router as a press that stops the bench is
  * the session's while one is shown: DISARM on the rail on an armed bench
  * without one, and nothing at DISARM's place under ESC STICK, whose own
- * ABORT is named while a run is under way (test_esc_stick_panel.c).
+ * ABORT is named while a run is under way (test_esc_stick_panel_touch.c).
  */
 TEST_CASE(the_session_answers_for_what_stops_the_bench)
 {

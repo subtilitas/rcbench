@@ -49,7 +49,7 @@ UI_TEXT(LINK_REFUSED,               0, "Rejected link frames: %lu")
 
 /* --------------------------------------------- the band's help bubbles
  * A tap on a chip of the band opens one.  Each is wrapped to the bubble's
- * width, so a view draws it and --fit measures it there; test_nav holds
+ * width, so a view draws it and --fit measures it there; test_nav_bubble holds
  * the bubble above the alert strip in its tallest state. */
 UI_TEXT(BH_LINK_UP,                 0, "The IOmcu is responding on the CAN bus. The screens control its outputs and show its readings. The panel requests data every 50 ms. If the IOmcu stops responding while ARMED, the bench switches to SAFE.")
 UI_TEXT(BH_NO_LINK,                 0, "No IOmcu is responding. The panel tries once a second. The screens show simulated data, and the IOmcu outputs stay off. Check the IOmcu's power supply and CAN cable. A different major protocol version also causes NO LINK. Install firmware from the same release on both boards.")
