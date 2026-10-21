@@ -11,7 +11,8 @@ docstrings removed.
 
     tools/check_comment_only.py BASE [HEAD]       HEAD defaults to the
                                                   working tree
-    tools/check_comment_only.py BASE HEAD -- PATH ...
+    tools/check_comment_only.py BASE [HEAD] --path DIR ...
+                                                  only these paths
 
 It fails on
 
@@ -136,7 +137,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("base")
     parser.add_argument("head", nargs="?")
-    parser.add_argument("paths", nargs="*")
+    parser.add_argument("--path", dest="paths", action="append",
+                        default=[], metavar="PATH",
+                        help="limit the comparison to this path; repeatable")
     args = parser.parse_args()
 
     diff = ["diff", "--name-only", args.base]
