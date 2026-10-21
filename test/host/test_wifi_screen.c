@@ -24,9 +24,9 @@
 #include "wa_session.h"
 #include "wifi_screen.h"
 
-#define SCREEN_W 800
-#define SCREEN_H 480
-#define BODY_H   432
+#define SCREEN_W UI_PANEL_W
+#define SCREEN_H UI_PANEL_H
+#define BODY_H   UI_BODY_H
 
 /* Mirrored from wifi_screen.c. */
 #define BTN_CX(i)    (16 + 180)

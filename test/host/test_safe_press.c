@@ -27,8 +27,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 #define P(y) (UI_BAND_H + (y))
 
 /* SERVO's ARM / DISARM in panel coordinates, mirrored from servo_screen.c:

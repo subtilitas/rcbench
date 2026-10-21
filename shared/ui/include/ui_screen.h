@@ -21,6 +21,7 @@
 
 #include "gfx.h"
 #include "touch_types.h"
+#include "ui_layout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -114,21 +115,17 @@ typedef struct {
     bool (*safe_at)(int x, int y);
 } ui_screen_t;
 
-/** The band the router owns, in panel coordinates. */
-#define UI_BAND_H 48
-
-/**
- * The alert band the router draws across the bottom of the 480 px panel
- * while an alert shows: its height, and its top in panel coordinates.  It
- * takes the touches under it, so a screen puts nothing that acts there --
- * except a control that stops what the bench drives, whose press the router
- * hands through (ui_screen_t's safe_at).
+/*
+ * UI_BAND_H, the band the router owns, and UI_ALERT_H and UI_ALERT_Y, the
+ * alert band the router draws across the bottom of the panel while an alert
+ * shows, are in ui_layout.h.  The alert band takes the touches under it, so a
+ * screen puts nothing that acts there -- except a control that stops what the
+ * bench drives, whose press the router hands through (ui_screen_t's safe_at).
  */
-#define UI_ALERT_H 34
-#define UI_ALERT_Y (480 - UI_ALERT_H)
 
 /**
- * The rows the alert band gives @p text: 1 for a text of up to 94 cells,
+ * The rows the alert band gives @p text: 1 for a text of up to 94 cells
+ * (ALERT_TEXT_W in ui_router.c: 752 px of 8 px cells on the 800 px panel),
  * 2 when it breaks at a space onto a second row, more for a text the band
  * cannot hold.  The band draws two rows of the 8x16 face, 16 px apart.
  */
