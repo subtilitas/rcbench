@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief The SENSE_MAP, SENSE_WIN_A and SENSE_WIN_B link pages.  See sense_map.h.
+ * @brief The SENSE_MAP, SENSE_WIN_A and SENSE_WIN_B link pages.
+ *
+ * See sense_map.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -111,7 +113,8 @@ static bool map_ok(const uint16_t *m, const uint16_t *sense)
            || !sense_map_on_addr(m, sense[LINK_SN_I228_ADDR]);
 }
 
-/** @brief SENSE's set-up with the map mirrored into ENABLE bit 1 and registers 8
+/** @brief SENSE's set-up with the map mirrored into ENABLE bit 1 and registers
+ *        8
  * to 10.  With no part fitted only the bit clears. */
 static void mirror(const uint16_t *m, const uint16_t *sense, uint16_t *next)
 {
@@ -143,7 +146,9 @@ static void mirror(const uint16_t *m, const uint16_t *sense, uint16_t *next)
     next[LINK_SN_I3221_CHANNELS]     = ch;
 }
 
-/** @brief Whether two maps differ in what core 1 reads: ENABLE, FAST, a shunt. */
+/**
+ * @brief Whether two maps differ in what core 1 reads: ENABLE, FAST, a shunt.
+ */
 static bool bus_differs(const uint16_t *a, const uint16_t *b)
 {
     return memcmp(a, b, (size_t)LINK_SM_WATCH_0 * sizeof(uint16_t)) != 0;

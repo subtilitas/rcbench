@@ -1,5 +1,8 @@
 /**
  * @file
+ * @brief The Hitec servo wire on a programming port: the OPEN, transaction,
+ *        POWER and CLOSE states.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -178,7 +181,9 @@ static void on_stop(hitec_port_t *p)
 
 /* --- commands ------------------------------------------------------------ */
 
-/** @brief The decoder the staged registers ask for, checked against the family. */
+/**
+ * @brief The decoder the staged registers ask for, checked against the family.
+ */
 static bool decoder_ok(const hitec_port_t *p, link_hitec_op_t op)
 {
     const uint16_t d = ST(p, LINK_HT_W_DECODE);

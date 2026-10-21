@@ -1,7 +1,7 @@
 /**
  * @file
- * @brief The panel's half of a binding on the link: writing the two output pages
- * and reading them back.
+ * @brief The panel's half of a binding on the link: writing the two output
+ *        pages and reading them back.
  *
  * Both run over a link_port_t, so the sequences the panel sends are the
  * ones the host suite runs against the IOmcu's page rules and a
@@ -43,8 +43,8 @@ typedef enum {
 } bind_rate_t;
 
 /**
- * @brief Write a CHAN_CFG page @p cfg and an OUTPUTS page @p slots, each frame its
- * own acknowledged exchange (link_write_acked()).
+ * @brief Write a CHAN_CFG page @p cfg and an OUTPUTS page @p slots, each frame
+ *        its own acknowledged exchange (link_write_acked()).
  *
  * First, to an IOmcu of minor 1 or later, SERVO's FRAME_HZ = 0: each
  * slot back at its own rate.  A refusal ends the sequence BIND_REFUSED and
@@ -97,9 +97,11 @@ typedef struct {
 } bind_reading_t;
 
 /**
- * @brief Whether a binding @p b may be written while the last reading is @p last
- * and the IOmcu answering is board @p board.  Never a binding made
- * for another board: a pin index belongs to one board's catalogue.
+ * @brief Whether a binding @p b may be written while the last reading is @p
+ *        last and the IOmcu answering is board @p board.
+ *
+ * Never a binding made for another board: a pin index belongs to one board's
+ * catalogue.
  *
  * BIND_READ_OK: yes.  BIND_READ_ODD: only a binding that holds no pin, the
  * one way out of pages no binding describes.  BIND_READ_NONE and
@@ -111,15 +113,18 @@ bool bind_link_may_write(bind_read_t last, uint16_t board,
                          const outbind_t *b);
 
 /**
- * @brief Tell the four states apart from two replies.  @p slots and @p cfg are the
- * OUTPUTS and CHAN_CFG pages read, or NULL for one that did not read.
+ * @brief Tell the four states apart from two replies.
+ *
+ * @p slots and @p cfg are the OUTPUTS and CHAN_CFG pages read, or NULL for one
+ * that did not read.
  */
 bind_read_t bind_link_classify(bind_reading_t *out, uint16_t board,
                                const uint16_t *slots, const uint16_t *cfg);
 
 /**
- * @brief Read OUTPUTS and then CHAN_CFG, two exchanges, and classify them.  The
- * second is not sent when the first did not read.
+ * @brief Read OUTPUTS and then CHAN_CFG, two exchanges, and classify them.
+ *
+ * The second is not sent when the first did not read.
  */
 bind_read_t bind_link_read(link_host_t *h, const link_port_t *port,
                            uint16_t board, bind_reading_t *out);

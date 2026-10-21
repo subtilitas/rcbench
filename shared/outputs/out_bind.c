@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief Binding a protocol to pins.  See out_bind.h.
+ * @brief Binding a protocol to pins.
+ *
+ * See out_bind.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,12 +19,13 @@
 /**
  * @brief The header, in GPIO order.
  *
- * GP23 to GP25 and GP29 are missing because the Pico form factor does not
- * bring them out: on the module GP23 is the MODE pin of the MP28164 power
- * converter, GP24 senses VBUS, GP25 drives LED1 and GP29 senses VSYS.
- * outbind_reserved_mask() reserves every pin the catalogue leaves out, so
- * those four and every number from GP30 up are refused.  The pad numbers are the ones printed on the board so an operator
- * counting pads and an operator reading GPIOs arrive at the same pin.
+ * GP23 to GP25 and GP29 are missing because the Pico form factor does not bring
+ * them out: on the module GP23 is the MODE pin of the MP28164 power converter,
+ * GP24 senses VBUS, GP25 drives LED1 and GP29 senses VSYS.
+ * outbind_reserved_mask() reserves every pin the catalogue leaves out, so those
+ * four and every number from GP30 up are refused.  The pad numbers are the ones
+ * printed on the board so an operator counting pads and an operator reading
+ * GPIOs arrive at the same pin.
  *
  * The reserved six are the IOmcu's: GP3 carries the safety heartbeat
  * in from the panel, and GP8 to GP12 are the CAN (Controller Area Network)
@@ -61,12 +64,15 @@ static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
 };
 
 /**
- * @brief Every board this build knows.  A second one appends a row here and a
- * catalogue above it; nothing else in this file is per-board.
+ * @brief Every board this build knows.
+ *
+ * A second one appends a row here and a catalogue above it; nothing else in
+ * this file is per-board.
  */
 /**
- * @brief The Pico form factor: 51.00 x 21.00 mm, forty pads on 2.54 mm, twenty a
- * side, pad 1 at the bottom left with the numbers running away from it.
+ * @brief The Pico form factor: 51.00 x 21.00 mm, forty pads on 2.54 mm, twenty
+ *        a side, pad 1 at the bottom left with the numbers running away from
+ *        it.
  *
  * The outline's own numbers.  The board drawing the IOmcu serves
  * places its pads on the same grid, and the picker refuses a drawing that
@@ -109,9 +115,11 @@ static const outbind_board_t k_boards[] = {
 
 /**
  * @brief One board learned over the link, for an IOmcu this build ships no
- * catalogue for.  The name is formatted rather than carried: a name is a
- * string and the page is registers, and the identity is what the operator
- * needs to match against the board in front of them.
+ *        catalogue for.
+ *
+ * The name is formatted rather than carried: a name is a string and the page is
+ * registers, and the identity is what the operator needs to match against the
+ * board in front of them.
  */
 static outbind_pin_t   s_learned_pins[LINK_CAT_PINS];
 static outbind_pad_t   s_learned_pads[LINK_PAD_SLOTS];
@@ -626,7 +634,8 @@ static uint8_t count_pins(uint32_t pins, uint8_t width)
     return n;
 }
 
-/** @brief What a protocol may take: its own cap, and never more slots than the page
+/** @brief What a protocol may take: its own cap, and never more slots than the
+ *        page
  * has. */
 static uint8_t cap_of(const outbind_proto_t *p)
 {

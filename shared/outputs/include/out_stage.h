@@ -31,14 +31,16 @@ typedef struct {
     uint16_t slots[LINK_OS_COUNT];  /**< the OUTPUTS page prepared  */
 } out_stage_t;
 
-/** @brief Start from the pages in force; NULL starts from the pages' defaults. */
+/**
+ * @brief Start from the pages in force; NULL starts from the pages' defaults.
+ */
 void out_stage_init(out_stage_t *st, const uint16_t *cfg,
                     const uint16_t *slots);
 
 /**
  * @brief A window of BIND_CFG or BIND_OUT written: 0, or the link_nack_t
- * outputs_chan_cfg_write() and outputs_slots_write() give for the same
- * window, and then nothing of it is stored.
+ *        outputs_chan_cfg_write() and outputs_slots_write() give for the same
+ *        window, and then nothing of it is stored.
  */
 uint8_t out_stage_cfg_write(out_stage_t *st, uint8_t off, uint8_t n,
                             const uint16_t *in);
@@ -52,10 +54,11 @@ void out_stage_slots_read(const out_stage_t *st, uint8_t off, uint8_t n,
 
 /**
  * @brief The CRC a commit names: CRC-16/CCITT-FALSE (polynomial 0x1021, seed
- * 0xFFFF, link_crc()) over the 32 CHAN_CFG registers and then the 32
- * OUTPUTS registers, each as its low byte and then its high byte.  The
- * panel computes it over the pages it sent, the IOmcu over what it
- * holds prepared.
+ *        0xFFFF, link_crc()) over the 32 CHAN_CFG registers and then the 32
+ *        OUTPUTS registers, each as its low byte and then its high byte.
+ *
+ * The panel computes it over the pages it sent, the IOmcu over what it holds
+ * prepared.
  */
 uint16_t out_stage_crc(const uint16_t *cfg, const uint16_t *slots);
 

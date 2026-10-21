@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief The output bank.  See outputs.h for the model.
+ * @brief The output bank.
+ *
+ * See outputs.h for the model.
  *
  * SPDX-License-Identifier: MIT
  */

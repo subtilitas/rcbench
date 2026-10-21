@@ -1,5 +1,8 @@
 /**
  * @file
+ * @brief The bench console: command lines read and written as link page
+ *        requests and replies.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -27,7 +30,8 @@ static void push(page_console_t *c, const char *s, size_t n)
     }
 }
 
-/** @brief One line; the LF is added, and a LF the text ends with is not doubled.
+/** @brief One line; the LF is added, and a LF the text ends with is not
+ *        doubled.
  * At most PAGE_CONSOLE_OUT_LINE bytes with the LF: a longer text is cut. */
 void page_console_vsay(page_console_t *c, const char *fmt, va_list ap)
 {
@@ -188,7 +192,9 @@ static bool read_regs(page_console_t *c, uint8_t page, uint8_t off,
     return true;
 }
 
-/** @brief A write; false, with the refusal said, when it is not acknowledged. */
+/**
+ * @brief A write; false, with the refusal said, when it is not acknowledged.
+ */
 static bool write_regs(page_console_t *c, uint8_t page, uint8_t off,
                        uint8_t n, const uint16_t *in)
 {
@@ -406,7 +412,8 @@ static void say_flags(char *buf, size_t size, uint16_t st)
     }
 }
 
-/** @brief What the page says now: the state line, and the capture with its bytes
+/** @brief What the page says now: the state line, and the capture with its
+ *        bytes
  * when it holds one. */
 static void hitec_report(page_console_t *c, const char *what)
 {
@@ -627,7 +634,9 @@ static bool parse_args(page_console_t *c, char **tok, unsigned n,
     return true;
 }
 
-/** @brief The staged registers of a transaction; LINE and the supply's are 0. */
+/**
+ * @brief The staged registers of a transaction; LINE and the supply's are 0.
+ */
 static void stage_xfer(page_console_t *c, const hitec_xfer_t *x,
                        uint16_t dec)
 {
@@ -699,7 +708,9 @@ static void hitec_open(page_console_t *c, uint32_t port, char **tok,
     hitec_command(c, LINK_HITEC_OP_OPEN, port, false);
 }
 
-/** @brief The family of the open line, from the page; false when none is open. */
+/**
+ * @brief The family of the open line, from the page; false when none is open.
+ */
 static bool open_family(page_console_t *c, uint8_t *family)
 {
     uint16_t *r = c->data[2];

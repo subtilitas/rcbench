@@ -103,19 +103,21 @@ bool out_store_map_write(const out_store_rec_t *recs, uint8_t sectors,
                          uint8_t per_sector, out_store_write_t *out);
 
 /**
- * @brief The same, with sector @p keep never erased while no record is valid: it
- * holds the live record of the layout before this one (a one-page slot of
- * version 7 or older, out_store_rec.h), which the store reads until its
- * first record of the new layout is written.  The first other sector is
- * erased instead.  -1 keeps none, as out_store_map_write().
+ * @brief The same, with sector @p keep never erased while no record is valid:
+ *        it holds the live record of the layout before this one (a one-page
+ *        slot of version 7 or older, out_store_rec.h), which the store reads
+ *        until its first record of the new layout is written.
+ *
+ * The first other sector is erased instead.  -1 keeps none, as
+ * out_store_map_write().
  */
 bool out_store_map_write_keep(const out_store_rec_t *recs, uint8_t sectors,
                               uint8_t per_sector, int keep,
                               out_store_write_t *out);
 
 /**
- * @brief A sector worth erasing now, ahead of the save that would have to wait for
- * it, or -1 when there is none.
+ * @brief A sector worth erasing now, ahead of the save that would have to wait
+ *        for it, or -1 when there is none.
  *
  * A sector qualifies when it does not hold the live record and is not
  * already erased.  Erasing it costs the same window as erasing it later; the

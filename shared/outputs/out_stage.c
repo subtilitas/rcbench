@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief A binding prepared beside the one in force.  See out_stage.h.
+ * @brief A binding prepared beside the one in force.
+ *
+ * See out_stage.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -75,7 +77,10 @@ void out_stage_slots_read(const out_stage_t *st, uint8_t off, uint8_t n,
     }
 }
 
-/** @brief Byte by byte, so the value does not depend on either processor's order. */
+/**
+ * @brief Byte by byte, so the value does not depend on either processor's
+ *        order.
+ */
 static uint16_t crc_regs(uint16_t crc, const uint16_t *regs, unsigned count)
 {
     for (unsigned i = 0; i < count; ++i) {

@@ -1,8 +1,9 @@
 /**
  * @file
  * @brief The TONE link page at the IOmcu: the phase tap that hears an ESC's
- * (electronic speed controller) beeps on one motor phase.  The registers
- * are in link_pages.h (LINK_TN_*).
+ *        (electronic speed controller) beeps on one motor phase.
+ *
+ * The registers are in link_pages.h (LINK_TN_*).
  *
  * The set-up, registers 0 to 6, is refused on a value out of its range, on
  * a combination the detector refuses (tone_init()), and, while the tap is
@@ -72,18 +73,18 @@ void tone_page_init(tone_page_t *p);
 void tone_page_defaults(uint16_t *cfg);
 
 /**
- * @brief A write, validated whole before any of it is stored.  Registers 0 to 7
- * are the set-up and EVT_SEL alone is the beep shown; anything else is
- * read only.  Refused: off the page (BAD_RANGE); a read-only register
+ * @brief A write, validated whole before any of it is stored.
+ *
+ * Registers 0 to 7 are the set-up and EVT_SEL alone is the beep shown; anything
+ * else is read only.  Refused: off the page (BAD_RANGE); a read-only register
  * (READ_ONLY); a value out of its range, register 7 other than 0, a set-up
- * tone_init() refuses, and with the tap enabled a pin past the bank, an
- * ADC pin or one the board reserves (BAD_VALUE); with the tap enabled on a
- * page that runs no capture this boot (tone_page_no_capture(), BAD_VALUE:
- * no freed pin makes it good before a restart); with the tap enabled a pin
- * in @p taken or bound to an output (BUSY, since 4.17: freed, the same
- * write is taken).  A
- * write of the set-up in force is taken, unless the tap is refused: then it
- * is tried again.
+ * tone_init() refuses, and with the tap enabled a pin past the bank, an ADC pin
+ * or one the board reserves (BAD_VALUE); with the tap enabled on a page that
+ * runs no capture this boot (tone_page_no_capture(), BAD_VALUE: no freed pin
+ * makes it good before a restart); with the tap enabled a pin in @p taken or
+ * bound to an output (BUSY, since 4.17: freed, the same write is taken).  A
+ * write of the set-up in force is taken, unless the tap is refused: then it is
+ * tried again.
  *
  * @p taken is the pins another page holds: SUPPLY's, PROG's, and SENSE's
  * including the ones core 1 has not let go of yet.  Every reserved pin
@@ -97,37 +98,42 @@ void tone_page_read(const tone_page_t *p, uint8_t off, uint8_t n,
                     uint16_t *out);
 
 /**
- * @brief The set-up kept in flash, loaded as a write would, at boot.  A set-up
- * that is not valid starts as the defaults.  A valid one that enables the
- * tap on a pin that is no longer free is kept, and the tap does not run:
+ * @brief The set-up kept in flash, loaded as a write would, at boot.
+ *
+ * A set-up that is not valid starts as the defaults.  A valid one that enables
+ * the tap on a pin that is no longer free is kept, and the tap does not run:
  * FLAGS says PIN_REFUSED and the pin is not reserved.
  */
 void tone_page_restore(tone_page_t *p, const uint16_t *cfg,
                        const outputs_t *o, uint64_t taken);
 
-/** @brief Put back the set-up @p cfg and refusal state a write replaced, after the
+/** @brief Put back the set-up @p cfg and refusal state a write replaced, after
+ *        the
  *  wiring could not take it. */
 void tone_page_revert(tone_page_t *p, const uint16_t *cfg, bool refused);
 
 /** @brief The wiring could not take the pin of an enabled set-up. */
 void tone_page_refuse(tone_page_t *p);
 
-/** @brief No capture runs this boot (core 1 did not start): an enabled set-up is
- *  refused as tone_page_refuse() does, and every later write that enables
- *  the tap is refused with LINK_NACK_BAD_VALUE until the IOmcu
+/** @brief No capture runs this boot (core 1 did not start): an enabled set-up
+ *        is refused as tone_page_refuse() does, and every later write that
+ *        enables the tap is refused with LINK_NACK_BAD_VALUE until the IOmcu
  *  restarts.  A write with ENABLE clear is taken. */
 void tone_page_no_capture(tone_page_t *p);
 
-/** @brief The capture starts again (the tap enabled, or its pin moved): the ring
+/** @brief The capture starts again (the tap enabled, or its pin moved): the
+ *        ring
  *  empties and the order carries a new capture generation. */
 void tone_page_capture(tone_page_t *p);
 
 /** @brief The capture starts again with the ring kept: a refused write that put
- *  the old set-up back.  The order carries a new capture generation; the
- *  beeps already in the ring stay readable, because the panel was told
- *  nothing restarted.  @p shift_ms, the time from the old capture's start
- *  to the new one's, is added to every later beep's start, so EVT_START_MS
- *  keeps its origin.  A beep under way was cut: FLAGS shows OVERRUN until
+ *        the old set-up back.
+ *
+ * The order carries a new capture generation; the beeps already in the ring
+ * stay readable, because the panel was told nothing restarted.  @p shift_ms,
+ * the time from the old capture's start to the new one's, is added to every
+ * later beep's start, so EVT_START_MS keeps its origin.  A beep under way was
+ * cut: FLAGS shows OVERRUN until
  *  the next capture. */
 void tone_page_recapture(tone_page_t *p, uint32_t shift_ms);
 
@@ -154,6 +160,7 @@ void tone_page_cmd(const tone_page_t *p, bool run, tone_cmd_t *cmd);
 
 /**
  * @brief What core 1 handed back: its status, and the @p n beeps it finished.
+ *
  * Taken when @p st was made under the set-up in force; ignored otherwise.
  */
 void tone_page_publish(tone_page_t *p, const tone_status_t *st,

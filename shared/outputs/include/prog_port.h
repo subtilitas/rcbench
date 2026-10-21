@@ -71,13 +71,17 @@
 extern "C" {
 #endif
 
-/** @brief The bank channel of port 0; port n has the next n-th.  Above the 8
+/** @brief The bank channel of port 0; port n has the next n-th.
+ *
+ * Above the 8
  *  channels of the CHANNELS page and the bench throttle's channel 8. */
 #define PROG_PORT_CHANNEL0 9u
 /** @brief A port's frame rate while the SERVO page names none. */
 #define PROG_PORT_RATE_HZ 50u
 /** @brief Port 0's pin on a board that has stored none: GP13, pad 17 of the
- *  bring-up module.  Its PWM slice partner GP12 is reserved and the pin
+ *        bring-up module.
+ *
+ * Its PWM slice partner GP12 is reserved and the pin
  *  with its compare register, GP29, is not on the header. */
 #define PROG_PORT_DEFAULT_PIN 13u
 /** @brief What prog_port_pin() returns for a port that holds no pin. */
@@ -114,12 +118,14 @@ void prog_port_defaults(uint16_t *kept, uint16_t pin0);
 
 /**
  * @brief Take the kept registers at start, after the slots and the other pin
- * holders are restored.  A value no write would take becomes its default,
- * except a slew above LINK_CC_SLEW_MAX, which becomes LINK_CC_SLEW_MAX.
- * A pin that is taken (a slot's, one in @p taken, reserved in @p o, or
- * beside a PWM slot in the silicon) stays on the page and is not held:
- * LINK_PG_FLAGS says refused until another pin is written.  Sets the role,
- * slew and endpoints of each port's channel in @p o.
+ *        holders are restored.
+ *
+ * A value no write would take becomes its default, except a slew above
+ * LINK_CC_SLEW_MAX, which becomes LINK_CC_SLEW_MAX.  A pin that is taken (a
+ * slot's, one in @p taken, reserved in @p o, or beside a PWM slot in the
+ * silicon) stays on the page and is not held: LINK_PG_FLAGS says refused until
+ * another pin is written.  Sets the role, slew and endpoints of each port's
+ * channel in @p o.
  */
 void prog_port_restore(prog_port_t *p, const uint16_t *kept, outputs_t *o,
                        uint64_t taken);
@@ -142,7 +148,8 @@ uint16_t prog_port_kept_func(const prog_port_t *p);
 void prog_port_kept(const prog_port_t *p, uint16_t *kept);
 
 /**
- * @brief A write of the page: 0, or the LINK_NACK_* reason with nothing changed.
+ * @brief A write of the page: 0, or the LINK_NACK_* reason with nothing
+ *        changed.
  *
  * @p taken: the pins other holders have beyond the slots and the bank's
  * reservation.  @p locked: no PIN or FUNC may change now (the bank is
@@ -181,15 +188,18 @@ void prog_port_read(const prog_port_t *p, uint8_t off, uint8_t n,
                     uint16_t *out);
 
 /**
- * @brief Undo a write the silicon could not follow: the page as @p was, and each
- * port's channel in @p o with the slew and endpoints of that page.  A
- * command the write carried stays commanded.
+ * @brief Undo a write the silicon could not follow: the page as @p was, and
+ *        each port's channel in @p o with the slew and endpoints of that page.
+ *
+ * A command the write carried stays commanded.
  */
 void prog_port_revert(prog_port_t *p, const prog_port_t *was, outputs_t *o);
 
 /** @brief Tell the page which ports' pins are held by their function, bit n for
- *  port n: bound to the generator for SERVO PWM, parked for NONE, or held
- *  by a wire page.  A port that loses its pin loses its PWM bit and, if
+ *        port n: bound to the generator for SERVO PWM, parked for NONE, or held
+ *        by a wire page.
+ *
+ * A port that loses its pin loses its PWM bit and, if
  *  it was the TARGET, the target returns to the standard servo ports. */
 void prog_port_bound(prog_port_t *p, uint8_t mask);
 
@@ -207,7 +217,8 @@ uint8_t prog_port_pwm_ports(const prog_port_t *p);
  *  caller parks as inputs. */
 uint8_t prog_port_parked(const prog_port_t *p);
 
-/** @brief The DShot ports that hold a pin (FUNC DSHOT150 to DSHOT600, 4.28), bit
+/** @brief The DShot ports that hold a pin (FUNC DSHOT150 to DSHOT600, 4.28),
+ *        bit
  *  n for port n: the pins the caller binds to a DShot state machine. */
 uint8_t prog_port_dshot(const prog_port_t *p);
 
@@ -234,11 +245,13 @@ uint8_t prog_port_pwm(const prog_port_t *p);
 uint16_t prog_port_pwm_channels(const prog_port_t *p);
 
 /** @brief The bank channels of the ports whose pin shares a PWM slice with
- *  another port's pin, bit c for channel c: what servo_page_ports() is
+ *        another port's pin, bit c for channel c: what servo_page_ports() is
  *  told as held at PROG_PORT_RATE_HZ. */
 uint16_t prog_port_sliced_channels(const prog_port_t *p);
 
-/** @brief The SERVO page's frame rate, 0 while it names none.  It reaches the
+/** @brief The SERVO page's frame rate, 0 while it names none.
+ *
+ * It reaches the
  *  TARGET port only; a write is judged against it. */
 void prog_port_rate(prog_port_t *p, uint16_t hz);
 
@@ -254,15 +267,18 @@ uint8_t prog_port_channel(uint8_t port);
 
 /**
  * @brief Whether the OUTPUTS page @p slots may be taken beside the ports: 0, or
- * LINK_NACK_BAD_VALUE for a slot on a port's pin, a PWM slot on a SERVO PWM
- * port pin's slice, or a bound slot whose channel range reaches a port's bank
- * channel (PROG_PORT_CHANNEL0 to PROG_PORT_CHANNEL0 + LINK_PG_PORTS_MAX - 1).
+ *        LINK_NACK_BAD_VALUE for a slot on a port's pin, a PWM slot on a SERVO
+ *        PWM port pin's slice, or a bound slot whose channel range reaches a
+ *        port's bank channel (PROG_PORT_CHANNEL0 to PROG_PORT_CHANNEL0 +
+ *        LINK_PG_PORTS_MAX - 1).
  */
 uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots);
 
 /**
- * @brief Unbinds every slot of @p slots whose channel range reaches a port's bank
- * channel, for a stored page read at start.  Returns how many.
+ * @brief Unbinds every slot of @p slots whose channel range reaches a port's
+ *        bank channel, for a stored page read at start.
+ *
+ * Returns how many.
  */
 unsigned prog_port_slots_free(uint16_t *slots);
 

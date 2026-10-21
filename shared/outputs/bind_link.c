@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief A binding on the link, from the panel's side.  See bind_link.h.
+ * @brief A binding on the link, from the panel's side.
+ *
+ * See bind_link.h.
  *
  * SPDX-License-Identifier: MIT
  */

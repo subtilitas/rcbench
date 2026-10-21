@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief A store record's configuration by version.  See out_store_rec.h.
+ * @brief A store record's configuration by version.
+ *
+ * See out_store_rec.h.
  *
  * SPDX-License-Identifier: MIT
  */

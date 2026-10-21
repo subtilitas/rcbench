@@ -1,9 +1,9 @@
 /**
  * @file
  * @brief The panel's half of the SERVO screen on the link: a command onto the
- * IOmcu's CHAN_CFG, CHANNELS, SERVO and PROG pages, the position said
- * again every SERVO_HOLD_MS (100 ms), the release owed while a surface holds
- * a position, the frame rate and the sweep.
+ *        IOmcu's CHAN_CFG, CHANNELS, SERVO and PROG pages, the position said
+ *        again every SERVO_HOLD_MS (100 ms), the release owed while a surface
+ *        holds a position, the frame rate and the sweep.
  *
  * Every exchange runs over a link_port_t, so the sequences the panel sends
  * run in the host suite against a modelled bus.  What belongs to the panel
@@ -44,9 +44,11 @@ typedef enum {
 } servo_link_alert_t;
 
 /**
- * @brief What the module reaches of the panel.  @p host and @p port carry every
- * exchange (link_write_acked()) and @p port's now_ms is the clock; @p prog
- * is the programming ports' page (prog_link.h).  Each callback takes
+ * @brief What the module reaches of the panel.
+ *
+ * @p host and @p port carry every exchange (link_write_acked()) and @p port's
+ * now_ms is the clock; @p prog is the programming ports' page (prog_link.h).
+ * Each callback takes
  * @p ctx.
  */
 typedef struct {
@@ -70,17 +72,19 @@ typedef struct {
 } servo_link_ctx_t;
 
 /**
- * @brief Start over with @p ctx: nothing held, no release owed, no binding read,
- * the rate not known, no sweep.  @p ctx is kept and must outlive the
- * module's use.  Before any other call.
+ * @brief Start over with @p ctx: nothing held, no release owed, no binding
+ *        read, the rate not known, no sweep.
+ *
+ * @p ctx is kept and must outlive the module's use.  Before any other call.
  */
 void servo_link_init(const servo_link_ctx_t *ctx);
 
 /**
- * @brief An IOmcu of protocol minor @p minor started answering.  Whether it
- * has a SERVO rate (4.1), a sweep (4.2) and a resume (4.6); each slot back
- * at its own rate, one exchange; the sweep's state not known until the next
- * command writes a stop.
+ * @brief An IOmcu of protocol minor @p minor started answering.
+ *
+ * Whether it has a SERVO rate (4.1), a sweep (4.2) and a resume (4.6); each
+ * slot back at its own rate, one exchange; the sweep's state not known until
+ * the next command writes a stop.
  */
 void servo_link_came_up(uint16_t minor);
 
@@ -90,13 +94,17 @@ void servo_link_lost(void);
 
 /**
  * @brief The binding read back: @p channels the surfaces' channel mask, bit n
- * channel n, and @p known whether the pages read.  An unknown binding is
- * not an empty one: no command reaches the standard outputs and a release
- * stays owed until a read succeeds.  Publishes servo_link_surfaces().
+ *        channel n, and @p known whether the pages read.
+ *
+ * An unknown binding is not an empty one: no command reaches the standard
+ * outputs and a release stays owed until a read succeeds.  Publishes
+ * servo_link_surfaces().
  */
 void servo_link_binding(uint8_t channels, bool known);
 
-/** @brief A binding was written: the mask is unknown until the next read.  Does
+/** @brief A binding was written: the mask is unknown until the next read.
+ *
+ * Does
  *  not publish servo_link_surfaces(). */
 void servo_link_forget_binding(void);
 
@@ -109,22 +117,27 @@ bool servo_link_binding_known(void);
 void servo_link_surfaces_publish(void);
 
 /**
- * @brief One command from the screen, with the link state @p link_up and the stop
- * count @p stops its sender had seen.  ARM centres the surfaces and asks
- * the policy to arm, unless a stop came in between; DISARM and RELEASE
- * centre them; a sweep waits for an owed release to be paid; a command
- * asked during a pause let go of is not sent.
+ * @brief One command from the screen, with the link state @p link_up and the
+ *        stop count @p stops its sender had seen.
+ *
+ * ARM centres the surfaces and asks the policy to arm, unless a stop came in
+ * between; DISARM and RELEASE centre them; a sweep waits for an owed release to
+ * be paid; a command asked during a pause let go of is not sent.
  */
 void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops);
 
-/** @brief Stop holding the servo.  A position written or held leaves a release
+/** @brief Stop holding the servo.
+ *
+ * A position written or held leaves a release
  *  owed. */
 void servo_link_let_go(void);
 
 /**
- * @brief Every pass: settle a rate not known while a release is owed or the bank
- * is armed, pay an owed release, and say a held position again once
- * SERVO_HOLD_MS (100 ms) has passed.  Nothing while @p link_up is false.
+ * @brief Every pass: settle a rate not known while a release is owed or the
+ *        bank is armed, pay an owed release, and say a held position again once
+ *        SERVO_HOLD_MS (100 ms) has passed.
+ *
+ * Nothing while @p link_up is false.
  */
 void servo_link_service(bool link_up);
 
@@ -133,20 +146,21 @@ void servo_link_service(bool link_up);
 bool servo_link_rate_settled(void);
 
 /**
- * @brief What a rate reset left behind: @p page whether the IOmcu has the
- * SERVO page, @p landed whether the reset was acknowledged.  For the reset
- * a binding's own sequence sends (bind_link_write()) and a TARGET change
- * (prog_link_rate()).
+ * @brief What a rate reset left behind: @p page whether the IOmcu has the SERVO
+ *        page, @p landed whether the reset was acknowledged.
+ *
+ * For the reset a binding's own sequence sends (bind_link_write()) and a TARGET
+ * change (prog_link_rate()).
  */
 void servo_link_rate_reset_note(bool page, bool landed);
 
 /**
  * @brief The SERVO screen's half of the programming ports' service, after the
- * page's read: a position still out is let go first while the bench is at
- * rest and a target change is pending, then at most one write towards what
- * the screen wants (prog_link_next()), a pulse that comes on preceded by
- * the range the screen names; then what a TARGET change means for the rate
- * (prog_link_rate()).
+ *        page's read: a position still out is let go first while the bench is
+ *        at rest and a target change is pending, then at most one write towards
+ *        what the screen wants (prog_link_next()), a pulse that comes on
+ *        preceded by the range the screen names; then what a TARGET change
+ *        means for the rate (prog_link_rate()).
  */
 void servo_link_prog_service(void);
 
@@ -158,9 +172,10 @@ bool servo_link_release_owed(void);
 uint16_t servo_link_hz_sent(void);
 
 /**
- * @brief A release the screen asked for through servo_link_ask_release(): taken,
- * it drops the position held and owes the release.  True when one was
- * asked for.
+ * @brief A release the screen asked for through servo_link_ask_release():
+ *        taken, it drops the position held and owes the release.
+ *
+ * True when one was asked for.
  */
 bool servo_link_take_release(void);
 
@@ -169,7 +184,9 @@ bool servo_link_take_release(void);
 void servo_link_ask_release(void);
 
 /** @brief From the screens' task: a HOLD, or a command that ends a sweep, asked
- *  for.  A sweep being written gives way to it; cleared when
+ *        for.
+ *
+ * A sweep being written gives way to it; cleared when
  *  servo_link_apply() takes the next command. */
 void servo_link_ask_hold(void);
 
@@ -185,14 +202,18 @@ bool servo_link_surfaces(void);
 /** @brief A sweep found no surface to sweep, once. */
 bool servo_link_take_sweep_refused(void);
 
-/** @brief The far end let go of a hold, once, with its pause in @p pause_seq. */
+/**
+ * @brief The far end let go of a hold, once, with its pause in @p pause_seq.
+ */
 bool servo_link_take_hold_lost(uint16_t *pause_seq);
 
 /** @brief The far end took the HOLD of pause @p pause_seq and kept its curve
  *  @p kept_ms in, once. */
 bool servo_link_take_sweep_held(uint16_t *pause_seq, uint32_t *kept_ms);
 
-/** @brief The far end started a sweep, once.  Its details:
+/** @brief The far end started a sweep, once.
+ *
+ * Its details:
  *  servo_link_sweep_start(). */
 bool servo_link_take_sweep_start(void);
 

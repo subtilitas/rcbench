@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief The SENSE, SERVO_SENSE and SERVO_WIN link pages.  See sense_page.h.
+ * @brief The SENSE, SERVO_SENSE and SERVO_WIN link pages.
+ *
+ * See sense_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -55,7 +57,8 @@ void sense_page_init(sense_page_t *p)
     }
 }
 
-/** @brief Whether the driver can calibrate the INA228 for this shunt and maximum:
+/** @brief Whether the driver can calibrate the INA228 for this shunt and
+ *        maximum:
  * one rule, the driver's, so the page takes no set-up the part refuses. */
 static bool i228_calibrates(uint16_t shunt_uohm, uint16_t max_da)
 {
@@ -133,11 +136,13 @@ static bool pin_free(const sense_page_t *p, const outputs_t *o,
 }
 
 /**
- * @brief Whether the set-up's pins are ones the bus can ever open: one I2C block's
- * pair, link_sn_pins_pair().  Judged whatever is enabled, so the page holds
- * no pair a later enable is refused for.  One set-up that is not a pair
- * passes: nothing enabled and SDA or SCL 0, which is what a panel writes
- * for pins that are not set (sense_link.c writes 0 for a pin at -1).
+ * @brief Whether the set-up's pins are ones the bus can ever open: one I2C
+ *        block's pair, link_sn_pins_pair().
+ *
+ * Judged whatever is enabled, so the page holds no pair a later enable is
+ * refused for.  One set-up that is not a pair passes: nothing enabled and SDA
+ * or SCL 0, which is what a panel writes for pins that are not set
+ * (sense_link.c writes 0 for a pin at -1).
  */
 static bool pins_ok(const uint16_t *c)
 {
@@ -180,14 +185,15 @@ static bool values_ok(const uint16_t *c)
 
 /**
  * @brief A new set-up: everything read under the old one is gone -- FLAGS,
- * PRESENT, the IDs, ERRORS, the readings, the windows and a finished
- * capture's result -- so no read shows a part online, or a value scaled by
- * the old shunt, before core 1 has read under the new one.  The ESC's own
- * telemetry (registers 23 to 25) is not the bus's and stays; the output
- * encoder's (26 to 30) and RESETS (31) go with the rest, and so does the
- * window ring.  CAP_SEQ
- * counts on across set-ups.  A capture under way cannot meet this: a
- * set-up is refused while the bank drives, and a stopped bank ends it.
+ *        PRESENT, the IDs, ERRORS, the readings, the windows and a finished
+ *        capture's result -- so no read shows a part online, or a value scaled
+ *        by the old shunt, before core 1 has read under the new one.
+ *
+ * The ESC's own telemetry (registers 23 to 25) is not the bus's and stays; the
+ * output encoder's (26 to 30) and RESETS (31) go with the rest, and so does the
+ * window ring.  CAP_SEQ counts on across set-ups.  A capture under way cannot
+ * meet this: a set-up is refused while the bank drives, and a stopped bank ends
+ * it.
  */
 void sense_page_forget(sense_page_t *p)
 {
@@ -554,7 +560,8 @@ static void reg_32(uint16_t *r, uint32_t v)
     r[1] = (uint16_t)(v >> 16);
 }
 
-/** @brief The INA3221 SENSE names, 0 to 3: the part whose channels, identity and
+/** @brief The INA3221 SENSE names, 0 to 3: the part whose channels, identity
+ *        and
  * resets the SENSE and SERVO_SENSE registers show. */
 static unsigned mirror_part(const sense_page_t *p)
 {
@@ -672,7 +679,8 @@ static void publish_channels(uint16_t *r, const sense_snap_t *s, unsigned a)
     r[LINK_SS_CH_FLAGS] = flags;
 }
 
-/** @brief FAST's ring into SERVO_WIN: the newest window's number, then each entry.
+/** @brief FAST's ring into SERVO_WIN: the newest window's number, then each
+ *        entry.
  * The capture's registers are filled at the read (sense_win_read()). */
 static void publish_ring(uint16_t *r, const sense_snap_t *s, unsigned a)
 {
@@ -728,9 +736,11 @@ static void publish_capture(uint16_t *r, const sense_snap_t *s)
     }
 }
 
-/** @brief The output encoder's registers 26 to 30.  The angle and its figures are
- * the snapshot's only for a part that is online or was: a part gone
- * offline keeps its last reading and loses ONLINE, and the still time
+/** @brief The output encoder's registers 26 to 30.
+ *
+ * The angle and its figures are the snapshot's only for a part that is online
+ * or was: a part gone offline keeps its last reading and loses ONLINE, and the
+ * still time
  * goes on counting from it. */
 static void publish_enc(uint16_t *r, const sense_snap_t *s)
 {

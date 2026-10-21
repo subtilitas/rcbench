@@ -1,6 +1,7 @@
 /**
  * @file
- * @brief Which PWM (pulse-width modulation) register drives which pin on the RP2350.
+ * @brief Which PWM (pulse-width modulation) register drives which pin on the
+ *        RP2350.
  *
  * The part has 12 slices of two channels, A and B. A slice counts against one
  * wrap register, so its two channels share a frame rate; each channel holds
@@ -46,13 +47,17 @@ extern "C" {
  */
 #define OUT_PWM_GPIOS     48u
 
-/** @brief Returned for a pin outside OUT_PWM_GPIOS, as a slice and as a channel. */
+/**
+ * @brief Returned for a pin outside OUT_PWM_GPIOS, as a slice and as a channel.
+ */
 #define OUT_PWM_NONE      0xFFu
 
 /** @brief The slice @p pin is wired to, or OUT_PWM_NONE. */
 uint8_t out_pwm_slice_of(uint8_t pin);
 
-/** @brief Which of that slice's channels: 0 is A, 1 is B. OUT_PWM_NONE for a pin
+/** @brief Which of that slice's channels: 0 is A, 1 is B.
+ *
+ * OUT_PWM_NONE for a pin
  *  outside OUT_PWM_GPIOS. */
 uint8_t out_pwm_channel_of(uint8_t pin);
 
@@ -77,15 +82,15 @@ bool out_pwm_same_compare(uint8_t a, uint8_t b);
 
 /**
  * @brief The counter's tick: one count per microsecond, so a pulse width in
- * microseconds is a compare value and a frame of rate R Hz is
- * 1,000,000 / R counts, rounded down.
+ *        microseconds is a compare value and a frame of rate R Hz is 1,000,000
+ *        / R counts, rounded down.
  */
 #define OUT_PWM_TICK_HZ 1000000u
 
 /**
  * @brief The longest pulse a frame of @p rate_hz carries, in microseconds: the
- * frame's last count, one less than its period.  0 for a rate of 0 and for
- * a period the sixteen-bit counter cannot hold (below 16 Hz).
+ *        frame's last count, one less than its period.  0 for a rate of 0 and
+ *        for a period the sixteen-bit counter cannot hold (below 16 Hz).
  *
  * A pin is high while the counter is below the compare value, so a pulse of
  * this length leaves one count of low at the end of each frame.  One count

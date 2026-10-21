@@ -1,7 +1,7 @@
 /**
  * @file
- * @brief The link's three output pages (CHAN_CFG, OUTPUTS, CHANNELS), expressed as
- * bank operations.
+ * @brief The link's three output pages (CHAN_CFG, OUTPUTS, CHANNELS), expressed
+ *        as bank operations.
  *
  * The mapping validates a driver number this build knows, an endpoint a
  * servo can take and a channel range that fits.  It is host-tested, and the
@@ -36,24 +36,28 @@
 uint16_t link_driver_of(out_driver_t d);
 
 /**
- * @brief The roles a CONTROL ARM value arms, as OUT_ROLE_BIT()s: OUT_ROLES_ALL for
- * LINK_ARM_ALL, the named roles for a set of LINK_ARM_ROLES, and 0 for 0 and
- * for a value the page refuses (link_arm_value_ok()).
+ * @brief The roles a CONTROL ARM value arms, as OUT_ROLE_BIT()s: OUT_ROLES_ALL
+ *        for LINK_ARM_ALL, the named roles for a set of LINK_ARM_ROLES, and 0
+ *        for 0 and for a value the page refuses (link_arm_value_ok()).
  */
 uint8_t outputs_arm_roles_of(uint16_t arm);
 
 /**
  * @brief The CONTROL ARM value that arms @p roles, OUT_ROLE_BIT()s: a set of
- * LINK_ARM_ROLES, or 0 for no role.  An IOmcu older than
- * LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL and nothing narrower.
+ *        LINK_ARM_ROLES, or 0 for no role.
+ *
+ * An IOmcu older than LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL and nothing
+ * narrower.
  */
 uint16_t outputs_arm_value_of(uint8_t roles);
 
 /**
  * @brief The ARM value the panel writes to arm @p roles, OUT_ROLE_BIT()s, at an
- * IOmcu of protocol minor @p far_minor: LINK_ARM_ALL below
- * LINK_MINOR_ARM_ROLE, else outputs_arm_value_of(@p roles), and LINK_ARM_ALL
- * when no role of OUT_ROLES_ALL is named.  Never 0.
+ *        IOmcu of protocol minor @p far_minor: LINK_ARM_ALL below
+ *        LINK_MINOR_ARM_ROLE, else outputs_arm_value_of(@p roles), and
+ *        LINK_ARM_ALL when no role of OUT_ROLES_ALL is named.
+ *
+ * Never 0.
  */
 uint16_t outputs_arm_value_for(uint16_t far_minor, uint8_t roles);
 
@@ -61,29 +65,33 @@ uint16_t outputs_arm_value_for(uint16_t far_minor, uint8_t roles);
  *     rendering a surface; the page itself is servo_page.h */
 
 /**
- * @brief Whether the SERVO page may take the frame rate @p hz against the bank @p o
- * as it is: 0, or LINK_NACK_BAD_VALUE for a rate that is neither 0 nor in
- * the PWM driver's range, or one that would leave a PWM slice asked for two
- * rates -- a surface it moves sharing a slice with an output it does not.
+ * @brief Whether the SERVO page may take the frame rate @p hz against the bank
+ *        @p o as it is: 0, or LINK_NACK_BAD_VALUE for a rate that is neither 0
+ *        nor in the PWM driver's range, or one that would leave a PWM slice
+ *        asked for two rates -- a surface it moves sharing a slice with an
+ *        output it does not.
  */
 uint8_t outputs_servo_rate_check(const outputs_t *o, uint16_t hz);
 
 /**
  * @brief The frame rate each slot of @p o is bound at, into @p rate
- * (OUT_MAX_SLOTS entries): the slot's own, or @p servo_hz for a PWM slot
- * whose first channel is a surface when @p servo_hz is not 0.  A slot that
- * is not PWM keeps its own rate, which for DShot is a bit rate.
+ *        (OUT_MAX_SLOTS entries): the slot's own, or @p servo_hz for a PWM slot
+ *        whose first channel is a surface when @p servo_hz is not 0.
+ *
+ * A slot that is not PWM keeps its own rate, which for DShot is a bit rate.
  */
 void    outputs_slot_rates(const outputs_t *o, uint16_t servo_hz,
                            uint16_t *rate);
 
 /**
- * @brief Whether the bank @p o, given the CHAN_CFG page @p chan_cfg or the OUTPUTS
- * page @p slots, would leave the SERVO page's rate @p servo_hz splitting a
- * PWM slice: 0, or LINK_NACK_BAD_VALUE.  A role that stops being a surface,
- * or a slot bound beside one, moves the rate the slice is asked for; the
- * silicon would refuse whichever bound second and the page would read back
- * a binding no pin has.  Always 0 while @p servo_hz is 0.
+ * @brief Whether the bank @p o, given the CHAN_CFG page @p chan_cfg or the
+ *        OUTPUTS page @p slots, would leave the SERVO page's rate @p servo_hz
+ *        splitting a PWM slice: 0, or LINK_NACK_BAD_VALUE.
+ *
+ * A role that stops being a surface, or a slot bound beside one, moves the rate
+ * the slice is asked for; the silicon would refuse whichever bound second and
+ * the page would read back a binding no pin has.  Always 0 while @p servo_hz is
+ * 0.
  */
 uint8_t outputs_chan_cfg_rate_check(const outputs_t *o,
                                     const uint16_t *chan_cfg,
@@ -92,8 +100,8 @@ uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
                                  uint16_t servo_hz);
 
 /**
- * @brief Whether every pulse the bank @p o can render fits the frame that carries
- * it: 0, or LINK_NACK_BAD_VALUE (protocol 4.16).
+ * @brief Whether every pulse the bank @p o can render fits the frame that
+ *        carries it: 0, or LINK_NACK_BAD_VALUE (protocol 4.16).
  *
  * A pulse fits when it is no longer than out_pwm_pulse_max() of its frame
  * rate: one microsecond less than the period, 1784 us at 560 Hz and 2499 us
@@ -109,7 +117,8 @@ uint8_t outputs_pulse_check(const outputs_t *o, uint16_t servo_hz,
                             uint16_t channels, uint16_t channels_hz);
 
 /**
- * @brief outputs_pulse_check() of the bank a write would leave, judged on a copy:
+ * @brief outputs_pulse_check() of the bank a write would leave, judged on a
+ *        copy:
  * @p chan_cfg applied, and @p slots too when it is not NULL -- a BIND
  * commit puts both pages in force at once, so its CHAN_CFG page is judged
  * with its own OUTPUTS page.  0, or LINK_NACK_BAD_VALUE.
@@ -123,12 +132,14 @@ uint8_t outputs_slots_pulse_check(const outputs_t *o, const uint16_t *slots,
 
 /**
  * @brief A stored OUTPUTS page made safe to restore under the channels of @p o:
- * every PWM slot whose channel's longer endpoint does not fit the frame of
- * the slot's own rate gets driver 0 in @p slots, and the count is returned.
- * The SERVO page starts at 0, so a restart runs each slot at its own rate,
- * and a slot stored by a build that took the combination -- or taken under
- * a SERVO rate that no longer holds -- starts unbound rather than pinned
- * high.  The page reads back driver 0 for it.
+ *        every PWM slot whose channel's longer endpoint does not fit the frame
+ *        of the slot's own rate gets driver 0 in @p slots, and the count is
+ *        returned.
+ *
+ * The SERVO page starts at 0, so a restart runs each slot at its own rate, and
+ * a slot stored by a build that took the combination -- or taken under a SERVO
+ * rate that no longer holds -- starts unbound rather than pinned high.  The
+ * page reads back driver 0 for it.
  */
 unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots);
 
@@ -139,9 +150,10 @@ unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots);
 uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next);
 
 /**
- * @brief Whether an OUTPUTS write the bank has taken must be refused because the
- * silicon did not bind it: LINK_NACK_BAD_VALUE when a slot of @p o with a
- * driver is not set in @p bound_after and is set in @p watch, else 0.
+ * @brief Whether an OUTPUTS write the bank has taken must be refused because
+ *        the silicon did not bind it: LINK_NACK_BAD_VALUE when a slot of @p o
+ *        with a driver is not set in @p bound_after and is set in @p watch,
+ *        else 0.
  * @p watch is the slots the write changed plus the slots that were bound
  * before it, so a slot an earlier write or a restart left unbound does not
  * refuse a write that never touched it.  A @p watch of 0xFF covers every
@@ -152,9 +164,11 @@ uint8_t outputs_bind_check(const outputs_t *o, uint8_t watch,
 
 /**
  * @brief Whether a CHAN_CFG or OUTPUTS write is refused because the bench is
- * armed: 0, or LINK_NACK_BAD_VALUE, the reason the SENSE page gives for the
- * same rule.  @p regs is the page in force and @p next the page as the
- * write would leave it.  Always 0 while @p armed is false.
+ *        armed: 0, or LINK_NACK_BAD_VALUE, the reason the SENSE page gives for
+ *        the same rule.
+ *
+ * @p regs is the page in force and @p next the page as the write would leave
+ * it.  Always 0 while @p armed is false.
  *
  * OUTPUTS: any change.  A slot rebound under a driving bank takes a pin
  * away from an output, or hands one a pin, in the middle of a run.
@@ -172,21 +186,27 @@ uint8_t outputs_chan_cfg_armed_check(const uint16_t *regs,
 uint8_t outputs_slots_armed_check(const uint16_t *regs, const uint16_t *next,
                                   bool armed);
 
-/** @brief --- CHAN_CFG: what each channel is -- role, slew, and its pulse endpoints */
+/**
+ * @brief --- CHAN_CFG: what each channel is -- role, slew, and its pulse
+ *        endpoints
+ */
 void    outputs_chan_cfg_defaults(uint16_t *regs);
 uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
                                const uint16_t *in);
 void    outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs);
 
 /**
- * @brief The CHAN_CFG page @p saved, kept in flash, into @p regs at start.  A slew
- * above LINK_CC_SLEW_MAX, which no write takes, becomes LINK_CC_SLEW_MAX;
- * every other register is copied as kept.  Nothing without both.
+ * @brief The CHAN_CFG page @p saved, kept in flash, into @p regs at start.
+ *
+ * A slew above LINK_CC_SLEW_MAX, which no write takes, becomes
+ * LINK_CC_SLEW_MAX; every other register is copied as kept.  Nothing without
+ * both.
  */
 void    outputs_chan_cfg_restore(uint16_t *regs, const uint16_t *saved);
 
 /**
- * @brief Give every channel @p regs marks as a throttle the endpoints @p min_us and
+ * @brief Give every channel @p regs marks as a throttle the endpoints @p min_us
+ *        and
  * @p max_us, and leave every other channel as it is.
  *
  * The bench's two pulse settings are a throttle's: an ESC (electronic speed
@@ -203,7 +223,10 @@ void    outputs_chan_cfg_restore(uint16_t *regs, const uint16_t *saved);
 bool    outputs_chan_cfg_set_throttle_range(uint16_t *regs, uint16_t min_us,
                                             uint16_t max_us);
 
-/** @brief --- OUTPUTS: which driver renders which channels, on which pin, how often */
+/**
+ * @brief --- OUTPUTS: which driver renders which channels, on which pin, how
+ *        often
+ */
 void    outputs_slots_defaults(uint16_t *regs);
 uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
                             const uint16_t *in);
@@ -231,23 +254,27 @@ uint8_t outputs_role_channels(const uint16_t *slots, const uint16_t *chan_cfg,
 
 /**
  * @brief The GPIOs of the slots that render a channel marked with @p role, as a
- * mask: bit n is GPIO n.  The channels are those of
- * outputs_role_channels(), so the pins named are the pins the SERVO screen's
- * commands reach.  A slot is one pin whatever its channel count.  Either page
- * NULL, or a pin of 64 or more, adds nothing.
+ *        mask: bit n is GPIO n.
+ *
+ * The channels are those of outputs_role_channels(), so the pins named are the
+ * pins the SERVO screen's commands reach.  A slot is one pin whatever its
+ * channel count.  Either page NULL, or a pin of 64 or more, adds nothing.
  */
 uint64_t outputs_role_pins(const uint16_t *slots, const uint16_t *chan_cfg,
                            out_role_t role);
 
-/** @brief --- CHANNELS: what each output is asked for.  Clamped, not refused, because
+/** @brief --- CHANNELS: what each output is asked for.
+ *
+ * Clamped, not refused, because
  *     a command arrives many times a second from a host that may be mid-drag. */
 void    outputs_channels_defaults(uint16_t *regs);
 /**
  * @brief The page as a mirror of the bank, for the two moments the bank is the
- * authority and the page is not: at boot, and after a failsafe.  Zero is not
- * the answer at either -- zero is a throttle's rest and a surface's low
- * endpoint, so a zero-filled page applied as commands asks every surface for
- * its endpoint.  Filling the page from the bank leaves a channel nobody has
+ *        authority and the page is not: at boot, and after a failsafe.
+ *
+ * Zero is not the answer at either -- zero is a throttle's rest and a surface's
+ * low endpoint, so a zero-filled page applied as commands asks every surface
+ * for its endpoint.  Filling the page from the bank leaves a channel nobody has
  * commanded reading back at its role's rest, which is where it sits.
  */
 void    outputs_channels_from_bank(const outputs_t *o, uint16_t *regs);

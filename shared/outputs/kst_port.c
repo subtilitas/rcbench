@@ -1,5 +1,8 @@
 /**
  * @file
+ * @brief The KST programming session on a programming port: the way into and
+ *        out of PWM.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -54,7 +57,8 @@ enum {
 
 /* --- the driver the session sees --------------------------------------------- */
 
-/** @brief A frame starts only on a channel in PROGRAMMING and while the bench is
+/** @brief A frame starts only on a channel in PROGRAMMING and while the bench
+ *        is
  * safe.  The first one marks the servo as possibly in programming mode. */
 static bool drv_start(void *ctx, const kst_frame_t *frame, uint32_t window_ns)
 {
@@ -256,7 +260,9 @@ static void go_pwm(kst_port_t *p)
     }
 }
 
-/** @brief The way in ended before a frame went out: the supply as it was found. */
+/**
+ * @brief The way in ended before a frame went out: the supply as it was found.
+ */
 static void back_out(kst_port_t *p, uint8_t result)
 {
     if (p->on_here != 0u) {
@@ -268,7 +274,9 @@ static void back_out(kst_port_t *p, uint8_t result)
     p->running = 0;
 }
 
-/** @brief End the running operation.  A frame on the wire is finished first; the
+/** @brief End the running operation.
+ *
+ * A frame on the wire is finished first; the
  * session ends at one of the next steps. */
 static void cut(kst_port_t *p)
 {
@@ -409,10 +417,11 @@ static link_kst_refusal_t plan_refusal(uint8_t plan_result)
 }
 
 /**
- * @brief A write to the servo.  The session plans it, from the image it read to
- * what is staged, one slice of the planner in each pass, and runs its own
- * plan.  This call checks the request and prepares the job: no search runs
- * in the command's frame.
+ * @brief A write to the servo.
+ *
+ * The session plans it, from the image it read to what is staged, one slice of
+ * the planner in each pass, and runs its own plan.  This call checks the
+ * request and prepares the job: no search runs in the command's frame.
  */
 static link_kst_refusal_t start_plan(kst_port_t *p, link_kst_op_t op,
                                      bool confirm)
@@ -739,8 +748,10 @@ static void start_session(kst_port_t *p)
     session_started(p, kst_session_enter(&p->session));
 }
 
-/** @brief The pin is the driver's: what the supply has to do before the servo is
- * spoken to.  The voltage of an output that is on is lowered or left, never
+/** @brief The pin is the driver's: what the supply has to do before the servo
+ *        is spoken to.
+ *
+ * The voltage of an output that is on is lowered or left, never
  * raised. */
 static void low_begin(kst_port_t *p)
 {
@@ -865,7 +876,9 @@ static void step_programming(kst_port_t *p, uint32_t now_ms)
     }
 }
 
-/** @brief A LEAVE waits with the line low.  The supply is read for one thing: a
+/** @brief A LEAVE waits with the line low.
+ *
+ * The supply is read for one thing: a
  * servo found without power ends as it does in PROGRAMMING. */
 static void step_leaving(kst_port_t *p, uint32_t now_ms)
 {

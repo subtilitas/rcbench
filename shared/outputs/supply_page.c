@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief The SUPPLY link page.  See supply_page.h.
+ * @brief The SUPPLY link page.
+ *
+ * See supply_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -86,7 +88,8 @@ static uint16_t wire_flags(const supply_page_t *p)
     return f;
 }
 
-/** @brief Bits 8, 9 and 11 onto the page as they change, not at the next step: a read
+/** @brief Bits 8, 9 and 11 onto the page as they change, not at the next step:
+ *        a read
  * between the two must not show a refusal already cleared, or no wait. */
 static void wire_publish(supply_page_t *p)
 {

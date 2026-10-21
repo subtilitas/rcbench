@@ -1,8 +1,9 @@
 /**
  * @file
  * @brief What sense_page.c and sense_map.c share: the SENSE set-up's checks and
- * its taking, and the map's own helpers the SENSE page calls.  Not for any
- * other module.
+ *        its taking, and the map's own helpers the SENSE page calls.
+ *
+ * Not for any other module.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -45,12 +46,15 @@ static inline uint16_t reg_u16(int64_t v)
 }
 
 /** @brief A SENSE set-up @p next (LINK_SN_CONFIG_COUNT registers) judged as a
- *  write is: values, pins, addresses and channels; 0 or the refusal.  Not
+ *        write is: values, pins, addresses and channels; 0 or the refusal.
+ *
+ * Not
  *  the bank's state: the caller asks that. */
 uint8_t sense_cfg_check(const sense_page_t *p, const uint16_t *next,
                         const outputs_t *o, uint64_t taken);
 
-/** @brief @p next in force: the generation moves, and every reading of the set-up
+/** @brief @p next in force: the generation moves, and every reading of the
+ *        set-up
  *  before it goes (sense_page_forget()). */
 void sense_cfg_take(sense_page_t *p, const uint16_t *next);
 
@@ -71,7 +75,8 @@ void sense_limit_judge(sense_page_t *p, const sense_snap_t *s);
 /** @brief The map's kept registers as the schedule's INA3221 set-up. */
 void sense_map_cfg(const uint16_t *map, sense_i3221_cfg_t *out);
 
-/** @brief The snapshot's per-part state into SENSE_MAP's read-only registers, and
+/** @brief The snapshot's per-part state into SENSE_MAP's read-only registers,
+ *        and
  *  every channel's window into SENSE_WIN_A and SENSE_WIN_B. */
 void sense_map_publish(sense_page_t *p, const sense_snap_t *s);
 

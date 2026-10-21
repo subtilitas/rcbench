@@ -1,7 +1,7 @@
 /**
  * @file
- * @brief What a record in the IOmcu's output store carries, and how a record
- * an earlier build wrote is read.
+ * @brief What a record in the IOmcu's output store carries, and how a record an
+ *        earlier build wrote is read.
  *
  * firmware/iomcu/src/out_store.c puts the record in flash; this file is the
  * part of it that has no flash in it -- the configuration's layout by
@@ -71,10 +71,12 @@ extern "C" {
 #define OUT_STORE_VERSION_V3 3u
 
 /** @brief What is kept: the two pages that describe the outputs; the PD mini's
- *  wiring -- SUPPLY's ENABLE to BAUD -- so a module left on can be switched
- *  off after a restart before any panel has written the page; and the
- *  current monitors' set-up; and the phase tap's set-up; and where the
- *  programming ports are and how their pulse is shaped.  The supply's
+ *        wiring -- SUPPLY's ENABLE to BAUD -- so a module left on can be
+ *        switched off after a restart before any panel has written the page;
+ *        and the current monitors' set-up; and the phase tap's set-up; and
+ *        where the programming ports are and how their pulse is shaped.
+ *
+ * The supply's
  *  command is not kept. */
 typedef struct {
     uint16_t slots[LINK_OS_COUNT];
@@ -118,10 +120,10 @@ typedef struct {
 } out_store_record_t;
 
 /**
- * @brief How many bytes of configuration a record of @p version carries, from the
- * start of an out_store_t: 128 for version 3, 136 for 4, 160 for 5, 176 for
- * 6 (two of them the word prog_func), 208 for 7, 288 for 8.  0 for a
- * version this build does not read.
+ * @brief How many bytes of configuration a record of @p version carries, from
+ *        the start of an out_store_t: 128 for version 3, 136 for 4, 160 for 5,
+ *        176 for 6 (two of them the word prog_func), 208 for 7, 288 for 8.  0
+ *        for a version this build does not read.
  */
 size_t out_store_cfg_size(uint16_t version);
 
@@ -142,11 +144,13 @@ bool out_store_rec_build(uint8_t *rec, size_t slot, uint16_t version,
 
 /**
  * @brief Whether the @p avail bytes at @p rec start with a whole record of a
- * version this build reads, from @p min_version to @p max_version: magic,
- * version, zero count and checksum.  On true, its version and sequence
- * number.  A record longer than @p avail is no record.  The two-page
- * layout takes version 8 alone: a version 7 record that happens to start a
- * two-page slot is the layout before's, read with the rest of its slots.
+ *        version this build reads, from @p min_version to @p max_version:
+ *        magic, version, zero count and checksum.
+ *
+ * On true, its version and sequence number.  A record longer than @p avail is
+ * no record.  The two-page layout takes version 8 alone: a version 7 record
+ * that happens to start a two-page slot is the layout before's, read with the
+ * rest of its slots.
  */
 bool out_store_rec_check(const uint8_t *rec, size_t avail,
                          uint16_t min_version, uint16_t max_version,
@@ -154,12 +158,13 @@ bool out_store_rec_check(const uint8_t *rec, size_t avail,
 
 /**
  * @brief A record's configuration, as @p version wrote it at @p cfg
- * (out_store_cfg_size() bytes), into @p out at the newest layout.  What the
- * version does not carry starts as its page does: the supply disabled at
- * the module's 19200 baud, both current monitors off at their defaults
+ *        (out_store_cfg_size() bytes), into @p out at the newest layout.
+ *
+ * What the version does not carry starts as its page does: the supply disabled
+ * at the module's 19200 baud, both current monitors off at their defaults
  * (sense_page_defaults()), the phase tap off at its defaults
- * (tone_page_defaults()), programming port 0 on PROG_PORT_DEFAULT_PIN and
- * the other ports without a pin (prog_port_defaults()).
+ * (tone_page_defaults()), programming port 0 on PROG_PORT_DEFAULT_PIN and the
+ * other ports without a pin (prog_port_defaults()).
  *
  * False for a version this build does not read, and @p out is untouched.
  */

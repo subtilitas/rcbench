@@ -1,8 +1,8 @@
 /**
  * @file
  * @brief A command of the SERVO screen as the panel's servo link takes it
- * (servo_link.h), and what the link reports back: the frame rate's state,
- * a pause let go of and where a sweep started.
+ *        (servo_link.h), and what the link reports back: the frame rate's
+ *        state, a pause let go of and where a sweep started.
  *
  * Below the screen, so the link module in shared/outputs takes the types
  * without the screen's header.  servo_screen.h includes it.
@@ -127,24 +127,28 @@ typedef enum {
 } servo_rate_state_t;
 
 /** @brief The state an acknowledged rate is shown in, by the IOmcu's protocol
- *  minor @p minor: SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE
- *  (4.19), where the rate reaches the PWM TARGET alone, and
+ *        minor @p minor: SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE
+ *        (4.19), where the rate reaches the PWM TARGET alone, and
  *  SERVO_RATE_IN_FORCE_SURFACES below it. */
 servo_rate_state_t servo_rate_in_force(uint16_t minor);
 
 /**
- * @brief Whether a command kept to be said again may still be said after the link
- * has gone and come back.  A sweep or a hold may not: both end with the
- * link, on the screen and at the far end, and said again they would start
- * motion nobody asked for.  A position is what the screen still shows.
+ * @brief Whether a command kept to be said again may still be said after the
+ *        link has gone and come back.
+ *
+ * A sweep or a hold may not: both end with the link, on the screen and at the
+ * far end, and said again they would start motion nobody asked for.  A position
+ * is what the screen still shows.
  */
 bool servo_cmd_survives_link_loss(const servo_cmd_t *c);
 
 /**
- * @brief The pause a HOLD @p c ends when the panel lets it go: the pause its chain
- * rests on (from_pause) when it was posted before an earlier pause's resume
- * was acknowledged, and otherwise its own.  What the panel records for
- * servo_cmd_stale() and hands to servo_screen_released().
+ * @brief The pause a HOLD @p c ends when the panel lets it go: the pause its
+ *        chain rests on (from_pause) when it was posted before an earlier
+ *        pause's resume was acknowledged, and otherwise its own.
+ *
+ * What the panel records for servo_cmd_stale() and hands to
+ * servo_screen_released().
  */
 uint16_t servo_cmd_pause_root(const servo_cmd_t *c);
 
@@ -155,12 +159,13 @@ typedef struct {
 } servo_pause_end_t;
 
 /**
- * @brief Whether the drive command @p c (a position, a centre, a sweep or a hold)
- * was asked during the pause @p e records as let go of, so is stale and is
- * not to be sent: the screen has ended that pause, and the command would
- * hold or move the servo somewhere it no longer shows.  The screen asks
- * nothing more of a pause it has left, and commands keep their order, so
- * the first drive command from after the pause retires @p e; a pause
+ * @brief Whether the drive command @p c (a position, a centre, a sweep or a
+ *        hold) was asked during the pause @p e records as let go of, so is
+ *        stale and is not to be sent: the screen has ended that pause, and the
+ *        command would hold or move the servo somewhere it no longer shows.
+ *
+ * The screen asks nothing more of a pause it has left, and commands keep their
+ * order, so the first drive command from after the pause retires @p e; a pause
  * number reused after 65535 more is then not mistaken for it.
  */
 bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c);

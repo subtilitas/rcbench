@@ -1,6 +1,8 @@
 /**
  * @file
- * @brief The programming ports and the PROG link page.  See prog_port.h.
+ * @brief The programming ports and the PROG link page.
+ *
+ * See prog_port.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,14 +29,16 @@ static uint16_t fn_of(const uint16_t *regs, unsigned port)
     return regs[LINK_PG_FUNC(port)];
 }
 
-/** @brief Whether the port's function is the servo pulse, which the PWM generator
+/** @brief Whether the port's function is the servo pulse, which the PWM
+ *        generator
  * renders and which the PWM-pin and slice rules hold. */
 static bool fn_pwm(const uint16_t *regs, unsigned port)
 {
     return fn_of(regs, port) == (uint16_t)LINK_PG_FN_SERVO_PWM;
 }
 
-/** @brief Whether the port's function is DShot (4.28): a PIO state machine renders
+/** @brief Whether the port's function is DShot (4.28): a PIO state machine
+ *        renders
  * it from the port's channel, a throttle. */
 static bool fn_dshot(const uint16_t *regs, unsigned port)
 {
