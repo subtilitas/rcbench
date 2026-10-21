@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Implementation of servo_sim.c.
+ * @brief Single-servo and two-servo models of a control surface.
  * SPDX-License-Identifier: MIT
  */
 
@@ -38,7 +38,12 @@ void servo_sim_init(servo_sim_t *s, const servo_sim_cfg_t *cfg)
     s->position_us = ((float)cfg->stop_lo_us + (float)cfg->stop_hi_us) / 2.0f;
 }
 
-/** @brief Deterministic, so a failing case reproduces. */
+/**
+ * @brief Deterministic, so a failing case reproduces.
+ *
+ * @param s Model state. Advances the noise generator.
+ * @return noise, A, within plus or minus half of noise_a.
+ */
 static float noise(servo_sim_t *s)
 {
     s->seed = s->seed * 1664525u + 1013904223u;
@@ -136,8 +141,8 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     return amps < 0.0f ? 0.0f : amps;
 }
 
-/**
- * @brief ------------------------------------------ two servos on one surface
+/*
+ * ------------------------------------------ two servos on one surface
  */
 
 void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t centre_us)
@@ -189,6 +194,11 @@ float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
 
 /**
  * @brief Move @p pos toward @p target by at most @p reach; true if it arrived.
+ *
+ * @param pos    Position to move, us. Updated in place.
+ * @param target Target position, us.
+ * @param reach  Largest move allowed, us.
+ * @return true when the position equals the target after the move.
  */
 static bool approach(float *pos, float target, float reach)
 {

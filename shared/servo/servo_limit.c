@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Implementation of servo_limit.c.
+ * @brief Search for a servo mechanical limit by current: the state machine.
  * SPDX-License-Identifier: MIT
  */
 
@@ -19,11 +19,26 @@
  */
 #define BASELINE_STEPS 3u
 
+/**
+ * @brief Tell whether a millisecond span has elapsed.
+ *
+ * @param now  Current time, ms.
+ * @param then Start of the span, ms.
+ * @param ms   Span length, ms.
+ * @return true when now - then is at least ms, across a counter wrap.
+ */
 static inline bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
 {
     return (uint32_t)(now - then) >= ms;
 }
 
+/**
+ * @brief Clamp a pulse width to the search travel and the pulse range.
+ *
+ * @param cfg Configuration whose centre_us and max_travel_us bound the travel.
+ * @param us  Pulse width to clamp, us.
+ * @return the clamped width, SERVO_LIMIT_MIN_US to SERVO_LIMIT_MAX_US.
+ */
 static uint16_t clamp_travel(const servo_limit_cfg_t *cfg, int32_t us)
 {
     const int32_t centre = (int32_t)cfg->centre_us;
@@ -97,7 +112,13 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg)
     }
 }
 
-/** @brief Finish the search with the surface returned to centre. */
+/**
+ * @brief Finish the search with the surface returned to centre.
+ *
+ * @param lf    Search state to update.
+ * @param state Final state to store.
+ * @param fault Fault code to store.
+ */
 static void finish(servo_limit_t *lf, servo_limit_state_t state,
                    servo_limit_fault_t fault)
 {
@@ -113,6 +134,9 @@ static void finish(servo_limit_t *lf, servo_limit_state_t state,
  * about, and that is reported as NO_LIMIT rather than as a mechanical limit.
  *
  * Returns false if the search ended here.
+ *
+ * @param lf Search state to advance.
+ * @return false if the search ended here, true if the command moved.
  */
 static bool advance(servo_limit_t *lf)
 {
@@ -144,7 +168,12 @@ static bool advance(servo_limit_t *lf)
     return true;
 }
 
-/** @brief One position's averaged current has arrived; decide what it means. */
+/**
+ * @brief One position's averaged current has arrived; decide what it means.
+ *
+ * @param lf    Search state to update.
+ * @param avg_a Current averaged over the measure phase at this position, A.
+ */
 static void judge(servo_limit_t *lf, float avg_a)
 {
     if (lf->baseline_steps < BASELINE_STEPS) {

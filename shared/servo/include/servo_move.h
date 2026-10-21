@@ -139,25 +139,54 @@ typedef struct {
                                  and the peak lack it                    */
 } servo_move_t;
 
-/** The standard deviation of @p n samples given as their sum and the sum
- *  of their squares; 0 for none. */
+/**
+ * @brief The standard deviation of @p n samples given as their sum and the sum
+ *  of their squares; 0 for none.
+ *
+ * @param n      Number of samples.
+ * @param sum    Sum of the samples, A.
+ * @param sum_sq Sum of the squares of the samples, A^2.
+ * @return standard deviation, A; 0 when n is 0 or the variance is not positive.
+ */
 float servo_move_noise_a(uint32_t n, float sum, float sum_sq);
 
-/** The threshold for a noise at rest of @p noise_a. */
+/**
+ * @brief The threshold for a noise at rest of @p noise_a.
+ *
+ * @param noise_a Noise at rest, A.
+ * @return threshold, A: the larger of SERVO_MOVE_MIN_A and SERVO_MOVE_NOISE_K
+ *        times noise_a.
+ */
 float servo_move_threshold_a(float noise_a);
 
-/** SERVO_MOVE_TIMEOUT_MS plus a meter's lag of @p lag_ms. */
+/**
+ * @brief SERVO_MOVE_TIMEOUT_MS plus a meter's lag of @p lag_ms.
+ *
+ * @param lag_ms Lag of the meter readings, ms.
+ * @return window length, ms: SERVO_MOVE_TIMEOUT_MS plus lag_ms.
+ */
 uint32_t servo_move_window_ms(uint32_t lag_ms);
 
-/** A move begins: commanded at cfg->cmd_t, from cfg->rise_a towards
+/**
+ * @brief A move begins: commanded at cfg->cmd_t, from cfg->rise_a towards
  *  cfg->ref_a.  settle_n below 2 is taken as 2; filter_n is held to 1 to
- *  SERVO_MOVE_FILTER_MAX. */
+ *  SERVO_MOVE_FILTER_MAX.
+ *
+ * @param m   Move state to initialise.
+ * @param cfg Configuration of the move.
+ */
 void servo_move_begin(servo_move_t *m, const servo_move_cfg_t *cfg);
 
-/** A sample taken before the move began, into the filter only, as the
+/**
+ * @brief A sample taken before the move began, into the filter only, as the
  *  newest so far: a caller that held samples before it knew the command's
  *  time hands them over oldest first.  Decides nothing; nothing with
- *  filter_n 1 or once the move is over. */
+ *  filter_n 1 or once the move is over.
+ *
+ * @param m    Move state.
+ * @param a    Sample, A.
+ * @param clip Clip state of the sample.
+ */
 void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip);
 
 /**
@@ -171,18 +200,40 @@ void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip);
 servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
                                      servo_move_clip_t clip);
 
-/** The time is @p now: a move still under way at window_t after its
+/**
+ * @brief The time is @p now: a move still under way at window_t after its
  *  command is over, late or unseen, with end_t at @p now.  A @p now before
- *  the command decides nothing. */
+ *  the command decides nothing.
+ *
+ * @param m   Move state.
+ * @param now Current time, in the caller time unit.
+ * @return state after the tick.
+ */
 servo_move_state_t servo_move_tick(servo_move_t *m, uint32_t now);
 
-/** Whether the move is over: arrived, settled, late or unseen. */
+/**
+ * @brief Whether the move is over: arrived, settled, late or unseen.
+ *
+ * @param m Move state.
+ * @return true when the state is not IDLE and the move is not WAITING or
+ *        MOVING.
+ */
 bool servo_move_over(const servo_move_t *m);
 
-/** Whether the move arrived: ARRIVED or SETTLED. */
+/**
+ * @brief Whether the move arrived: ARRIVED or SETTLED.
+ *
+ * @param m Move state.
+ * @return true when the state is ARRIVED or SETTLED.
+ */
 bool servo_move_arrived(const servo_move_t *m);
 
-/** Whether movement was seen. */
+/**
+ * @brief Whether movement was seen.
+ *
+ * @param m Move state.
+ * @return true when the state is MOVING, LATE, ARRIVED or SETTLED.
+ */
 bool servo_move_moved(const servo_move_t *m);
 
 #ifdef __cplusplus

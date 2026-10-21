@@ -80,20 +80,36 @@ typedef struct {
     bool     started;
 } servo_sim_t;
 
-/** A standard servo on a well-set-up surface, binding at 1150 and 1880 us. */
+/**
+ * @brief A standard servo on a well-set-up surface, binding at 1150 and 1880
+ *        us.
+ *
+ * @param cfg Configuration to fill. Does nothing when NULL.
+ */
 void servo_sim_defaults(servo_sim_cfg_t *cfg);
 
+/**
+ * @brief Start the single-servo model at the middle of its stops.
+ *
+ * @param s   Model state to initialise. Does nothing when NULL.
+ * @param cfg Configuration to copy. Does nothing when NULL.
+ */
 void servo_sim_init(servo_sim_t *s, const servo_sim_cfg_t *cfg);
 
 /**
  * @brief Advance the model to @p now_ms with the servo commanded to @p cmd_us,
  *        and
  * return the current its sensor would report.
+ *
+ * @param s      Model state.
+ * @param cmd_us Commanded pulse width, us.
+ * @param now_ms Current time, ms.
+ * @return current the sensor reports, A; 0 when s is NULL.
  */
 float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms);
 
-/**
- * @brief ------------------------------------------ two servos on one surface
+/*
+ * ------------------------------------------ two servos on one surface
  */
 
 /**
@@ -131,7 +147,19 @@ typedef struct {
     uint32_t seed;
 } servo_pair_t;
 
+/**
+ * @brief Defaults for two servos on one surface.
+ *
+ * @param cfg       Configuration to fill.
+ * @param centre_us Centre pulse width, us.
+ */
 void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t centre_us);
+/**
+ * @brief Start the two-servo model with both servos at the centre.
+ *
+ * @param p   Model state to initialise.
+ * @param cfg Configuration to copy.
+ */
 void servo_pair_init(servo_pair_t *p, const servo_pair_cfg_t *cfg);
 
 /**
@@ -142,11 +170,24 @@ void servo_pair_init(servo_pair_t *p, const servo_pair_cfg_t *cfg);
  * Both servos take time to arrive, which is why this takes a clock: a
  * reading taken before they have arrived is a reading of two servos in
  * transit, not of two servos disagreeing.  The settle time separates the two.
+ *
+ * @param p        Model state.
+ * @param cmd_a_us Commanded pulse width of servo A, us.
+ * @param cmd_b_us Commanded pulse width of servo B, us.
+ * @param now_ms   Current time, ms.
+ * @return total current the pair draws, A; 0 when p is NULL.
  */
 float servo_pair_step(servo_pair_t *p, uint16_t cmd_a_us, uint16_t cmd_b_us,
                       uint32_t now_ms);
 
-/** How far apart the two hold the surface, in microseconds.  Hardware
- *  cannot report this; the search is blind to it and a test may read it. */
+/**
+ * @brief How far apart the two hold the surface, in microseconds.  Hardware
+ *  cannot report this; the search is blind to it and a test may read it.
+ *
+ * @param p        Model state.
+ * @param cmd_a_us Commanded pulse width of servo A, us.
+ * @param cmd_b_us Commanded pulse width of servo B, us.
+ * @return distance between the two servos on the surface, us; 0 when p is NULL.
+ */
 float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
                               uint16_t cmd_b_us);

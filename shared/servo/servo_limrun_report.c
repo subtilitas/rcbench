@@ -12,8 +12,8 @@
 
 #include "servo_limrun_int.h"
 
-/**
- * @brief ------------------------------------------------------------ the
+/*
+ * ------------------------------------------------------------ the
  *        outbox
  */
 
@@ -61,8 +61,8 @@ bool servo_limrun_drained(const servo_limrun_t *r)
         || (r->state == SERVO_LIMRUN_DONE && r->out_done);
 }
 
-/**
- * @brief ------------------------------------------------------------ the
+/*
+ * ------------------------------------------------------------ the
  *        report
  */
 
@@ -389,8 +389,8 @@ bool servo_limrun_report_line(const servo_limrun_t *r, unsigned idx,
     return head_lines(r, &c) || prog_lines(r, &c) || tail_lines(r, &c);
 }
 
-/**
- * @brief -------------------------------------------------------------- the
+/*
+ * -------------------------------------------------------------- the
  *        words
  */
 

@@ -26,7 +26,13 @@ typedef enum {
     ST_DONE,          /* the final value is written                      */
 } limrun_stage_t;
 
-/** @brief servo_limrun_span(). */
+/**
+ * @brief servo_limrun_span().
+ *
+ * @param sv   Servo pulses, 0.1 us.
+ * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
+ * @return distance from NEUTRAL to the side pulse limit, 0.1 us.
+ */
 static inline int32_t limrun_span(const servo_limrun_servo_t *sv,
                                   uint8_t side)
 {
@@ -36,7 +42,12 @@ static inline int32_t limrun_span(const servo_limrun_servo_t *sv,
                : n - (int32_t)sv->pulse_dus[SERVO_LIMRUN_P_LOWER];
 }
 
-/** @brief servo_limrun_restore(). */
+/**
+ * @brief servo_limrun_restore().
+ *
+ * @param r Run state. NULL gives false.
+ * @return true when the run is DONE, programmed, and ended as FAIL or ABORTED.
+ */
 static inline bool limrun_restore(const servo_limrun_t *r)
 {
     return r != NULL && r->state == SERVO_LIMRUN_DONE && r->programmed
@@ -44,8 +55,14 @@ static inline bool limrun_restore(const servo_limrun_t *r)
             || r->verdict == SERVO_LIMRUN_ABORTED);
 }
 
-/** @brief The span from the pulses in force: after SERVO PULSES at 1000-2000
- * those written, not those read. */
+/**
+ * @brief The span from the pulses in force: after SERVO PULSES at 1000-2000
+ * those written, not those read.
+ *
+ * @param r    Run state holding pulse_now.
+ * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
+ * @return distance from NEUTRAL to the side pulse limit, 0.1 us.
+ */
 static inline int32_t span_now(const servo_limrun_t *r, uint8_t side)
 {
     servo_limrun_servo_t sv;

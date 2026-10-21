@@ -81,6 +81,12 @@ typedef struct {
     uint32_t period, quarter, dwell, cycle;
 } cycle_t;
 
+/**
+ * @brief Derive the cycle lengths of a sweep.
+ *
+ * @param c Configuration. mhz must not be 0.
+ * @return the cycle lengths, microseconds.
+ */
 static cycle_t cycle_of(const sweep_cfg_t *c)
 {
     cycle_t y;
@@ -91,12 +97,25 @@ static cycle_t cycle_of(const sweep_cfg_t *c)
     return y;
 }
 
+/**
+ * @brief Microseconds since the sweep started.
+ *
+ * @param w      Sweep state.
+ * @param now_ms Current time, ms; the difference wraps with the 32-bit clock.
+ * @return microseconds since the sweep started.
+ */
 static uint64_t elapsed_us(const sweep_t *w, uint32_t now_ms)
 {
     return (uint64_t)(uint32_t)(now_ms - w->start_ms) * 1000u;
 }
 
-/** @brief Ends reached by @p t microseconds into the sweep, with no limit. */
+/**
+ * @brief Ends reached by @p t microseconds into the sweep, with no limit.
+ *
+ * @param y Cycle lengths.
+ * @param t Time into the sweep, us.
+ * @return ends reached by t, with no limit.
+ */
 static uint64_t ends_by(const cycle_t *y, uint64_t t)
 {
     const uint64_t k = t / y->cycle;
@@ -105,7 +124,13 @@ static uint64_t ends_by(const cycle_t *y, uint64_t t)
            + (r >= 3u * (uint64_t)y->quarter + y->dwell ? 1u : 0u);
 }
 
-/** @brief When the dwell at the @p n-th end is over, @p n at least 1. */
+/**
+ * @brief When the dwell at the @p n-th end is over, @p n at least 1.
+ *
+ * @param y Cycle lengths.
+ * @param n Index of the end, 1 or more.
+ * @return time into the sweep, us, at which the dwell at the n-th end is over.
+ */
 static uint64_t done_at(const cycle_t *y, uint32_t n)
 {
     const uint64_t k = (uint64_t)(n - 1u) / 2u;
@@ -150,8 +175,14 @@ bool sweep_slew_limited(const sweep_cfg_t *cfg, uint16_t slew_per_s)
     }
 }
 
-/** @brief The curve's position, -1..1, a fraction @p x of the way through its
- * motion. */
+/**
+ * @brief The curve's position, -1..1, a fraction @p x of the way through its
+ * motion.
+ *
+ * @param kind Shape of the curve.
+ * @param x    Fraction of the motion, 0 to 1.
+ * @return position on the curve, -1 to 1; 0 for SWEEP_OFF and SWEEP_KIND_COUNT.
+ */
 static float shape(sweep_kind_t kind, float x)
 {
     switch (kind) {

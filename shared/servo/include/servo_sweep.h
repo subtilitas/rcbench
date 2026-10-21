@@ -68,15 +68,34 @@ typedef struct {
     uint32_t    paused_ms;   /**< how far into the sweep it was paused    */
 } sweep_t;
 
-/** Whether @p cfg is one a sweep can run: a curve, a speed and an amplitude
- *  in range, and a dwell no longer than SWEEP_DWELL_MAX_MS. */
+/**
+ * @brief Whether @p cfg is one a sweep can run: a curve, a speed and an
+ *        amplitude
+ *  in range, and a dwell no longer than SWEEP_DWELL_MAX_MS.
+ *
+ * @param cfg Configuration to check.
+ * @return true when cfg is not NULL, its kind is not SWEEP_OFF, mhz is
+ *        SWEEP_MHZ_MIN to SWEEP_MHZ_MAX, amplitude is at most
+ *        SWEEP_AMPLITUDE_MAX and dwell_ms at most SWEEP_DWELL_MAX_MS.
+ */
 bool sweep_cfg_valid(const sweep_cfg_t *cfg);
 
-/** Start @p cfg at @p now_ms.  False, and stopped, for a configuration
- *  sweep_cfg_valid() refuses. */
+/**
+ * @brief Start @p cfg at @p now_ms.  False, and stopped, for a configuration
+ *  sweep_cfg_valid() refuses.
+ *
+ * @param w      Sweep state. NULL gives false.
+ * @param cfg    Configuration to run, checked by sweep_cfg_valid().
+ * @param now_ms Start time, ms.
+ * @return true when the sweep started; false for a NULL w or an invalid cfg.
+ */
 bool sweep_start(sweep_t *w, const sweep_cfg_t *cfg, uint32_t now_ms);
 
-/** Stop, and forget any paused phase. */
+/**
+ * @brief Stop, and forget any paused phase.
+ *
+ * @param w Sweep state. NULL is ignored.
+ */
 void sweep_stop(sweep_t *w);
 
 /**
@@ -84,6 +103,9 @@ void sweep_stop(sweep_t *w);
  * sweep_resume() carries on from there: the same point of the curve, the
  * same dwell, the movements reached so far.  Nothing for a sweep that is not
  * running, finished included.
+ *
+ * @param w      Sweep state. NULL is ignored.
+ * @param now_ms Time of the pause, ms.
  */
 void sweep_pause(sweep_t *w, uint32_t now_ms);
 
@@ -91,6 +113,11 @@ void sweep_pause(sweep_t *w, uint32_t now_ms);
  * @brief Carry a paused sweep on at @p now_ms from where it was paused.  False,
  * and nothing changes, when nothing is paused: never paused, stopped or
  * started since.
+ *
+ * @param w      Sweep state. NULL gives false.
+ * @param now_ms Time of the resume, ms.
+ * @return true when a paused sweep was resumed; false for a NULL w or when
+ *        nothing is paused.
  */
 bool sweep_resume(sweep_t *w, uint32_t now_ms);
 
@@ -98,11 +125,24 @@ bool sweep_resume(sweep_t *w, uint32_t now_ms);
  * @brief The command at @p now_ms into @p command.  True while the sweep runs;
  * false once it has stopped or made its movements, with @p command at the
  * centre.  The clock may wrap.
+ *
+ * @param w       Sweep state. Stops the sweep once its moves are made.
+ * @param now_ms  Current time, ms.
+ * @param command Out: command in units, 0 to 2 x SWEEP_CENTRE. NULL to skip.
+ * @return true while the sweep runs; false for a NULL w, a stopped sweep or one
+ *        whose moves are made.
  */
 bool sweep_step(sweep_t *w, uint32_t now_ms, uint16_t *command);
 
-/** How many ends the sweep has reached by @p now_ms, the moves limit
- *  included once reached. */
+/**
+ * @brief How many ends the sweep has reached by @p now_ms, the moves limit
+ *  included once reached.
+ *
+ * @param w      Sweep state. NULL or an invalid sweep gives 0.
+ * @param now_ms Current time, ms.
+ * @return ends reached, at most the moves limit when moves is not 0; saturates
+ *        at UINT32_MAX.
+ */
 uint32_t sweep_moves(const sweep_t *w, uint32_t now_ms);
 
 /**
@@ -118,6 +158,11 @@ uint32_t sweep_moves(const sweep_t *w, uint32_t now_ms);
  * A slew of 0 is no limit, as on an output channel, and limits nothing.
  * False for a configuration sweep_cfg_valid() refuses and for an amplitude
  * of 0, which asks for no change.
+ *
+ * @param cfg        Configuration of the curve.
+ * @param slew_per_s Slew limit, command units a second. 0 is no limit.
+ * @return true when the slew limits the curve; false for an invalid cfg, a slew
+ *        of 0 or an amplitude of 0.
  */
 bool sweep_slew_limited(const sweep_cfg_t *cfg, uint16_t slew_per_s);
 

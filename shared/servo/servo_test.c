@@ -12,19 +12,37 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Add a reading to a mean.
+ *
+ * @param m Mean to add to.
+ * @param v Value to add.
+ */
 static void mean_add(servo_test_mean_t *m, float v)
 {
     m->sum += v;
     ++m->n;
 }
 
+/**
+ * @brief Mean of the readings added so far.
+ *
+ * @param m Mean to read.
+ * @return the mean, or 0 when no readings were added.
+ */
 static float mean_of(const servo_test_mean_t *m)
 {
     return (m->n > 0u) ? m->sum / (float)m->n : 0.0f;
 }
 
-/** @brief The angle in the commanded direction: with REVERSE on, the horn turns
- * the other way for the same command, and the angle is negated. */
+/**
+ * @brief The angle in the commanded direction: with REVERSE on, the horn turns
+ * the other way for the same command, and the angle is negated.
+ *
+ * @param t   Run state.
+ * @param raw Encoder count, 0 to 4095.
+ * @return angle in degrees, negated when reverse is on.
+ */
 static float enc_dir_deg(const servo_test_t *t, uint16_t raw)
 {
     const float d = servo_test_enc_deg(raw, t->cfg.enc_centre);
@@ -120,7 +138,13 @@ void servo_test_meter_ina3221(servo_test_meter_t *m, uint16_t shunt_dmohm)
     }
 }
 
-/** @brief A current in whole mA, held to a range every reading lies in. */
+/**
+ * @brief A current in whole mA, held to a range every reading lies in.
+ *
+ * @param a Current, A.
+ * @return the current in whole mA; a value beyond +-1000000 A is clamped to
+ *        +-1000000000 mA, and NaN gives 0.
+ */
 static long whole_ma(float a)
 {
     if (!(a > -1.0e6f)) {
@@ -157,6 +181,12 @@ bool servo_test_stall_unreachable(const servo_test_cfg_t *cfg,
     return limit || range;
 }
 
+/**
+ * @brief Tell whether the run reads the INA3221 windows.
+ *
+ * @param t Run state.
+ * @return true when the meter is the INA3221.
+ */
 static bool on_windows(const servo_test_t *t)
 {
     return t->cfg.meter.kind == (uint8_t)SERVO_TEST_METER_INA3221;
@@ -164,7 +194,10 @@ static bool on_windows(const servo_test_t *t)
 
 /**
  * @brief The step's threshold, once its idle readings are in: the larger of the
- * smallest and SERVO_TEST_NOISE_K times their standard deviation. */
+ * smallest and SERVO_TEST_NOISE_K times their standard deviation.
+ *
+ * @param s Step whose idle readings are in.
+ */
 static void set_threshold(servo_test_step_t *s)
 {
     s->noise_a = servo_move_noise_a(s->idle.n, s->idle.sum, s->idle_sq);
@@ -194,11 +227,19 @@ uint32_t servo_test_travel_window_ms(const servo_test_t *t)
                                             : 0u);
 }
 
-/**
- * @brief ------------------------------------------------------------ the
+/*
+ * ------------------------------------------------------------ the
  *        outbox
  */
 
+/**
+ * @brief Queue a line for the card; a CSV row is counted as lost when the
+ *        outbox is full.
+ *
+ * @param t    Run state.
+ * @param kind Kind of the line.
+ * @param text Line text.
+ */
 static void put_line(servo_test_t *t, servo_test_out_t kind, const char *text)
 {
     if (t->box_n >= SERVO_TEST_OUTBOX) {
@@ -275,17 +316,31 @@ bool servo_test_drained(const servo_test_t *t)
                          && t->ended);
 }
 
-/**
- * @brief --------------------------------------------------------------- the
+/*
+ * --------------------------------------------------------------- the
  *        run
  */
 
+/**
+ * @brief The step running.
+ *
+ * @param t Run state.
+ * @return the step running.
+ */
 static servo_test_step_t *cur(servo_test_t *t)
 {
     return &t->steps[t->step];
 }
 
-/** @brief The count at @p at_ms, by servo_test_enc_at()'s rule. */
+/**
+ * @brief The count at @p at_ms, by servo_test_enc_at()'s rule.
+ *
+ * @param t     Run state.
+ * @param at_ms Time of the row, ms.
+ * @param out   Out: count of the newest reading in reach.
+ * @return true when a kept reading no older than SERVO_TEST_ENC_STALE_MS was
+ *        taken at or before at_ms.
+ */
 static bool enc_raw_at(const servo_test_t *t, uint32_t at_ms, uint16_t *out)
 {
     bool     found = false;
@@ -310,7 +365,11 @@ static bool enc_raw_at(const servo_test_t *t, uint32_t at_ms, uint16_t *out)
     return true;
 }
 
-/** @brief The move the encoder was judging is over: counted into its step. */
+/**
+ * @brief The move the encoder was judging is over: counted into its step.
+ *
+ * @param t Run state.
+ */
 static void enc_close(servo_test_t *t)
 {
     if (!t->enc_open) {
@@ -345,7 +404,13 @@ static void enc_close(servo_test_t *t)
 
 /**
  * @brief A move to @p end is commanded at @p now_ms: the encoder judges it from
- * the angle read before. */
+ * the angle read before.
+ *
+ * @param t       Run state.
+ * @param end     0 for the low end, 1 for the high end.
+ * @param counted true when the move counts.
+ * @param now_ms  Time of the command, ms.
+ */
 static void enc_open(servo_test_t *t, uint8_t end, bool counted,
                      uint32_t now_ms)
 {
@@ -367,6 +432,10 @@ static void enc_open(servo_test_t *t, uint8_t end, bool counted,
 
 /**
  * @brief The run ends: the output off and the servo let go, whatever ended it.
+ *
+ * @param t      Run state.
+ * @param why    Reason for the end of the run.
+ * @param now_ms Time of the end, ms.
  */
 static void finish(servo_test_t *t, servo_test_abort_t why, uint32_t now_ms)
 {
@@ -412,6 +481,13 @@ void servo_test_meter_now(servo_test_t *t, const servo_test_meter_now_t *m,
     finish(t, why, now_ms);
 }
 
+/**
+ * @brief Command a pulse width.
+ *
+ * @param t      Run state.
+ * @param us     Pulse width to command, us.
+ * @param now_ms Time of the command, ms.
+ */
 static void command(servo_test_t *t, uint16_t us, uint32_t now_ms)
 {
     t->cmd_us = us;
@@ -423,7 +499,12 @@ static void command(servo_test_t *t, uint16_t us, uint32_t now_ms)
 /**
  * @brief The voltage step @p idx begins: its set point, the servo at its
  *        centre,
- * and on the first step the output on. */
+ * and on the first step the output on.
+ *
+ * @param t      Run state.
+ * @param idx    Index of the step to begin.
+ * @param now_ms Time of the start, ms.
+ */
 static void begin_step(servo_test_t *t, uint8_t idx, uint32_t now_ms)
 {
     enc_close(t);
@@ -449,8 +530,15 @@ static void begin_step(servo_test_t *t, uint8_t idx, uint32_t now_ms)
     t->phase_ms = now_ms;
 }
 
-/** @brief A move to end @p end: counted or not, measured against that end's
- * holding level, or the idle current while it is not known. */
+/**
+ * @brief A move to end @p end: counted or not, measured against that end's
+ * holding level, or the idle current while it is not known.
+ *
+ * @param t       Run state.
+ * @param end     0 for the low end, 1 for the high end.
+ * @param counted true when the move counts.
+ * @param now_ms  Time of the command, ms.
+ */
 static void begin_move(servo_test_t *t, uint8_t end, bool counted,
                        uint32_t now_ms)
 {
@@ -485,6 +573,12 @@ static void begin_move(servo_test_t *t, uint8_t end, bool counted,
     t->phase = SERVO_TEST_PH_MOVE;
 }
 
+/**
+ * @brief Begin holding at an end.
+ *
+ * @param t       Run state.
+ * @param from_ms Start of the hold, ms.
+ */
 static void begin_hold(servo_test_t *t, uint32_t from_ms)
 {
     t->phase        = SERVO_TEST_PH_HOLD;
@@ -492,7 +586,13 @@ static void begin_hold(servo_test_t *t, uint32_t from_ms)
     memset(&t->hold_now, 0, sizeof(t->hold_now));
 }
 
-/** @brief The move is over: arrived at @p at_ms, or timed out. */
+/**
+ * @brief The move is over: arrived at @p at_ms, or timed out.
+ *
+ * @param t       Run state.
+ * @param arrived true when the move arrived.
+ * @param at_ms   Time the move ended, ms.
+ */
 static void end_move(servo_test_t *t, bool arrived, uint32_t at_ms)
 {
     servo_test_step_t *s = cur(t);
@@ -533,13 +633,25 @@ static void end_move(servo_test_t *t, bool arrived, uint32_t at_ms)
     begin_hold(t, at_ms);
 }
 
+/**
+ * @brief Length of the hold at an end, ms.
+ *
+ * @param t Run state.
+ * @return hold time, ms: DWELL or SERVO_TEST_HOLD_MIN_MS, whichever is longer.
+ */
 static uint32_t hold_ms(const servo_test_t *t)
 {
     return (t->cfg.dwell_ms > SERVO_TEST_HOLD_MIN_MS) ? t->cfg.dwell_ms
                                                      : SERVO_TEST_HOLD_MIN_MS;
 }
 
-/** @brief Append the brown-out step at @p v and begin it. */
+/**
+ * @brief Append the brown-out step at @p v and begin it.
+ *
+ * @param t      Run state.
+ * @param v      Set voltage of the step, V.
+ * @param now_ms Time of the start, ms.
+ */
 static void begin_brownout(servo_test_t *t, float v, uint32_t now_ms)
 {
     if (t->step_count >= SERVO_TEST_STEP_SLOTS) {
@@ -554,6 +666,12 @@ static void begin_brownout(servo_test_t *t, float v, uint32_t now_ms)
     begin_step(t, (uint8_t)(t->step_count - 1u), now_ms);
 }
 
+/**
+ * @brief End the step: begin the next one, or finish the run.
+ *
+ * @param t      Run state.
+ * @param now_ms Time of the end, ms.
+ */
 static void end_step(servo_test_t *t, uint32_t now_ms)
 {
     servo_test_step_t *s = cur(t);
@@ -585,7 +703,11 @@ static void end_step(servo_test_t *t, uint32_t now_ms)
 
 /**
  * @brief The hold at an end is over: its level, and the next move or the step's
- * end. */
+ * end.
+ *
+ * @param t      Run state.
+ * @param now_ms Time of the end, ms.
+ */
 static void end_hold(servo_test_t *t, uint32_t now_ms)
 {
     if (t->hold_now.n > 0u) {
@@ -701,8 +823,17 @@ typedef struct {
     uint32_t from;      /* when it began: at, less the meter's span       */
 } sample_t;
 
-/** @brief One row of the CSV, for a reading: the columns every run has, the
- * encoder's two where it is on, and the meter's six in @p tail. */
+/**
+ * @brief One row of the CSV, for a reading: the columns every run has, the
+ * encoder's two where it is on, and the meter's six in @p tail.
+ *
+ * @param t           Run state.
+ * @param m           Reading.
+ * @param mode        Supply mode, 0 off, 1 CV, 2 CC; other values print no
+ *        mode.
+ * @param position_us Measured pulse width, us; 0 for none.
+ * @param tail        Columns after the meter word.
+ */
 static void log_row(servo_test_t *t, const sample_t *m, uint8_t mode,
                     uint16_t position_us, const char *tail)
 {
@@ -755,7 +886,12 @@ static void log_row(servo_test_t *t, const sample_t *m, uint8_t mode,
     put_line(t, SERVO_TEST_OUT_CSV, line);
 }
 
-/** @brief A new reading of the meter, measured by the phase it falls in. */
+/**
+ * @brief A new reading of the meter, measured by the phase it falls in.
+ *
+ * @param t Run state.
+ * @param m Reading of the meter.
+ */
 static void measure(servo_test_t *t, const sample_t *m)
 {
     servo_test_step_t *s = cur(t);
@@ -832,8 +968,14 @@ static void measure(servo_test_t *t, const sample_t *m)
     }
 }
 
-/** @brief A reading count that moved from @p was to @p now: what the meter took
- * since, and what of it never reached the run. */
+/**
+ * @brief A reading count that moved from @p was to @p now: what the meter took
+ * since, and what of it never reached the run.
+ *
+ * @param t   Run state.
+ * @param was Count before.
+ * @param now Count now.
+ */
 static void count_step(servo_test_t *t, uint16_t was, uint16_t now)
 {
     const uint16_t step = (uint16_t)(now - was);
@@ -1129,8 +1271,8 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
     memset(&t->pend, 0, sizeof(t->pend));
 }
 
-/**
- * @brief ----------------------------------------------------------- the
+/*
+ * ----------------------------------------------------------- the
  *        results
  */
 

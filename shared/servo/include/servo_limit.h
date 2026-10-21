@@ -99,7 +99,14 @@ typedef struct {
     uint16_t backoff_us;     /**< how far short of the bind to programme */
 } servo_limit_cfg_t;
 
-/** Defaults for a hobby servo on a control surface. */
+/**
+ * @brief Defaults for a hobby servo on a control surface.
+ *
+ * @param cfg       Configuration to fill. Does nothing when NULL.
+ * @param centre_us Centre pulse width, us.
+ * @param positive  true to step toward longer pulse widths, false toward
+ *        shorter ones; the step is 10 us either way.
+ */
 void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
                           bool positive);
 
@@ -127,6 +134,12 @@ typedef struct {
     bool     started;
 } servo_limit_t;
 
+/**
+ * @brief Start a limit search.
+ *
+ * @param lf  Search state to initialise. Does nothing when NULL.
+ * @param cfg Configuration to copy. Does nothing when NULL.
+ */
 void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg);
 
 /**
@@ -137,8 +150,20 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg);
  * Call it at the sampling rate of the current sensor.  Calling after the
  * search has finished is safe; the returned width then holds the servo at
  * centre, so a finished search leaves no surface deflected.
+ *
+ * @param lf        Search state. A NULL lf gives 0.
+ * @param current_a Current reading, A. At or above hard_limit_a, or NaN, aborts
+ *        the search.
+ * @param now_ms    Time of the reading, ms.
+ * @return pulse width to command, us; 0 when lf is NULL.
  */
 uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms);
 
-/** How far the search has gone, 0..1, for a progress bar. */
+/**
+ * @brief How far the search has gone, 0..1, for a progress bar.
+ *
+ * @param lf Search state.
+ * @return progress from 0.0 (centre) to 1.0; 1.0 when the state is not RUNNING,
+ *        0.0 when lf is NULL or max_travel_us is 0.
+ */
 float servo_limit_progress(const servo_limit_t *lf);

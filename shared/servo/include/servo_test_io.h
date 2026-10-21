@@ -19,8 +19,8 @@
 extern "C" {
 #endif
 
-/**
- * @brief ------------------------------------------------------- what it reads
+/*
+ * ------------------------------------------------------- what it reads
  */
 
 /** One reading of the supply, as SUPPLY has it (supply_state_t). */
@@ -82,12 +82,23 @@ typedef struct {
                                  not specified                          */
 } servo_test_enc_t;
 
-/** @p raw from @p centre on the circle, degrees, -180 to just under 180:
+/**
+ * @brief @p raw from @p centre on the circle, degrees, -180 to just under 180:
  *  360 / 4096 a count.  The difference of any two counts the shortest way
- *  round. */
+ *  round.
+ *
+ * @param raw    Encoder count, 0 to 4095.
+ * @param centre Centre count, 0 to 4095.
+ * @return angle, degrees, -180 up to just under 180.
+ */
 float servo_test_enc_deg(uint16_t raw, uint16_t centre);
 
-/** @p deg on the circle: -180 to just under 180. */
+/**
+ * @brief @p deg on the circle: -180 to just under 180.
+ *
+ * @param deg Angle, degrees.
+ * @return angle, degrees, -180 up to just under 180.
+ */
 float servo_test_enc_wrap(float deg);
 
 /** What the run wants done, from servo_test_step(). */
@@ -108,8 +119,8 @@ typedef struct {
                                  VOLTAGE MAX and the module's input clamp */
 } servo_test_in_t;
 
-/**
- * @brief --------------------------------------------------- what it hands out
+/*
+ * --------------------------------------------------- what it hands out
  */
 
 /** The longest line a log row or a report line takes, terminator included:
