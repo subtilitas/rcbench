@@ -83,6 +83,13 @@ typedef struct {
  * The sequence starts at 1 and counts saves; a sector pair of 32 slots at
  * 100,000 erase cycles a sector accepts about 3.2 million saves before the
  * part wears out, and a uint32_t counts to 4,294,967,295.
+ *
+ * @param recs The record slots, sectors * per_sector of them.
+ * @param sectors Number of sectors.
+ * @param per_sector Record slots per sector.
+ * @return Index of the live slot, 0 to sectors * per_sector - 1. -1 when no
+ *         slot is valid, or when the geometry is not usable: recs is NULL,
+ *         a count is 0, or the total is above 255.
  */
 int out_store_map_newest(const out_store_rec_t *recs, uint8_t sectors,
                          uint8_t per_sector);
@@ -98,6 +105,15 @@ int out_store_map_newest(const out_store_rec_t *recs, uint8_t sectors,
  *
  * False when @p out is NULL or the geometry is empty; the store is otherwise
  * always placeable, because a full store erases a sector to make room.
+ *
+ * @param recs The record slots, sectors * per_sector of them.
+ * @param sectors Number of sectors.
+ * @param per_sector Record slots per sector.
+ * @param out Receives the plan: the slot to program, its sequence number and
+ *        the sector to erase first, if any. Not changed when false is returned.
+ * @return true when the plan is in @p out. false when @p out is NULL or the
+ *         geometry is not usable (recs NULL, a count of 0, or a total above
+ *         255).
  */
 bool out_store_map_write(const out_store_rec_t *recs, uint8_t sectors,
                          uint8_t per_sector, out_store_write_t *out);
@@ -110,6 +126,16 @@ bool out_store_map_write(const out_store_rec_t *recs, uint8_t sectors,
  *
  * The first other sector is erased instead.  -1 keeps none, as
  * out_store_map_write().
+ *
+ * @param recs The record slots, sectors * per_sector of them.
+ * @param sectors Number of sectors.
+ * @param per_sector Record slots per sector.
+ * @param keep Sector to keep while no record is valid, or -1 to keep none.
+ *        With no valid record and no erased slot, the erase goes to sector 1
+ *        when keep is 0 and sectors is above 1, and to sector 0 otherwise.
+ * @param out Receives the plan. Not changed when the call returns false.
+ * @return true when the plan is in @p out, false when @p out is NULL or the
+ *         geometry is not usable (see out_store_map_write()).
  */
 bool out_store_map_write_keep(const out_store_rec_t *recs, uint8_t sectors,
                               uint8_t per_sector, int keep,
@@ -123,12 +149,27 @@ bool out_store_map_write_keep(const out_store_rec_t *recs, uint8_t sectors,
  * already erased.  Erasing it costs the same window as erasing it later; the
  * point of taking it early is that the caller chooses the moment, and that
  * the save which finds the sector ready costs a page program alone.
+ *
+ * @param recs The record slots, sectors * per_sector of them.
+ * @param sectors Number of sectors.
+ * @param per_sector Record slots per sector.
+ * @return Index of the sector to erase, 0 to sectors - 1. -1 when no sector
+ *         qualifies, or when the geometry is not usable (see
+ *         out_store_map_newest()).
  */
 int out_store_map_stale(const out_store_rec_t *recs, uint8_t sectors,
                         uint8_t per_sector);
 
-/** @brief The same, never offering sector @p keep while no record is valid (see
- *  out_store_map_write_keep()). */
+/**
+ * @brief The same, never offering sector @p keep while no record is valid (see
+ *        out_store_map_write_keep()).
+ *
+ * @param recs The record slots, sectors * per_sector of them.
+ * @param sectors Number of sectors.
+ * @param per_sector Record slots per sector.
+ * @param keep Sector never offered while no record is valid, or -1 for none.
+ * @return Index of the sector to erase, or -1 as out_store_map_stale() gives.
+ */
 int out_store_map_stale_keep(const out_store_rec_t *recs, uint8_t sectors,
                              uint8_t per_sector, int keep);
 
@@ -149,5 +190,11 @@ int out_store_map_stale_keep(const out_store_rec_t *recs, uint8_t sectors,
  * This is a stronger check than the record's checksum, and it answers a
  * different question.  The checksum says the bytes are the ones that were
  * meant; this says the write that put them there finished.
+ *
+ * @param zeros Number of 0 bits when the record was written.
+ * @param zeros_inv Complement of @p zeros, as written beside it.
+ * @param counted Number of 0 bits the record holds now.
+ * @return true when @p zeros_inv is the complement of @p zeros and @p counted
+ *         equals @p zeros, false otherwise.
  */
 bool out_store_intact(uint32_t zeros, uint32_t zeros_inv, uint32_t counted);
