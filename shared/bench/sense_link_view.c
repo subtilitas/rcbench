@@ -148,11 +148,12 @@ void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out)
         return;
     }
     out->page   = s->page;
-    /* FAST on CH1 only: the windows are taken as CH1's. */
+    /* With the map FAST on any channel; without, CH1 of the one part,
+     * the channel an older IOmcu reads at 1 kHz. */
     out->wanted = s->want_set && s->want_i3221 && !s->want_unwatched
-                  && !s->want_off_ch1
                   && (s->map
-                      || (s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u);
+                      || ((s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u
+                          && !s->want_off_ch1));
     uint16_t regs[FRAME_N];
     out->held = out->wanted && s->known
                 && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
@@ -340,6 +341,12 @@ uint8_t sense_link_clipped_channel(const sense_link_t *s)
 uint16_t sense_link_i3221_dmohm(const sense_link_t *s)
 {
     return (s != NULL) ? s->held[LINK_SN_I3221_SHUNT_DMOHM] : 0u;
+}
+
+uint8_t sense_link_i3221_addr(const sense_link_t *s)
+{
+    return (s != NULL && s->known) ? (uint8_t)s->held[LINK_SN_I3221_ADDR]
+                                   : 0u;
 }
 
 int sense_link_sda(const sense_link_t *s)

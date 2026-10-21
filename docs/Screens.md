@@ -520,6 +520,42 @@ clipped sample is left out of the figures. LOGS groups `ina voltage`,
 `ina current` and `esc current` under INA228 and ESC, and the window's
 columns under INA3221.
 
+With an IOmcu of protocol 4.25 whose sensor map the panel has read, the
+channel columns follow that map as it stands when the file opens, one group
+of three per channel that watches a target, named after the target:
+
+```
+window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source
+```
+
+- A channel takes a group while its part is fitted, its shunt is not 0 and
+  it watches an output, a programming port or the supply
+  ([SENSORS](#sensors-the-ina3221-parts)).
+- The channel watching the servo tester's target comes first, then the
+  others from 0x40 CH1 to 0x43 CH3.
+- Two channels on one target add the channel to the name:
+  `out 3 0x41 ch2 current (A)`.
+- At most 3 groups, 23 columns: the fourth watching channel and later are
+  in no file. LOGS draws at most 24 columns.
+- A file with fewer groups ends `source` earlier: 13 + 3 x groups + 1
+  columns. With no channel watching anything the file has no channel
+  column.
+
+The group of the channel watching the servo tester's target comes from
+the window ring, SERVO_WIN, and is on every row that has a `window`. The
+other groups come from SENSE_WIN_A and SENSE_WIN_B
+([Link](LinkSensors.md#sense_win_a-and-sense_win_b)), which hold each
+channel's last window only. The panel reads them on every poll, after
+SERVO_WIN, with a gate of 40 ms, while a part on the page is fitted. Such a
+group is on the row of its window when the last read of its page, or the
+read before it, holds that window number, and empty otherwise. A window
+that closed and was followed by the next one between two reads is in no
+row: at a 53 ms poll about 1 row in 17 (`test_sense_win_link`). The map
+counts once the IOmcu holds it in force; with the map derived from SENSE
+the file keeps `ch1` to `ch3`. The map takes no write while the bank
+drives, so the columns hold the whole run. LOGS groups `out`, `port` and `supply`
+columns under INA3221.
+
 ### MOTOR & ESC settings
 
 ![SETTINGS](img/motor-settings.png)
@@ -878,7 +914,7 @@ at once.
 
 | The servo rail's meter | Name on the line | CURRENT, the line and the plot show |
 | --- | --- | --- |
-| INA3221 CH1 | `INA3221 CH1` | CH1's last 50 ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
+| an INA3221 channel | `INA`, its part's address and channel: `INA 0x41 CH2` | the channel's last 50 ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
 | the PD mini | `PD MINI` | the supply's last sample. One point per sample |
 | the model, while no IOmcu answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SETUP INTERFACES enables the PD mini, which does not answer without the link |
 
@@ -890,8 +926,11 @@ then a SIMULATED pill (SIMULIERT in German), 20 px high and 24 px plus the word
 wide but at least 88 px (88 px for SIMULATED, 96 px for SIMULIERT), sits
 on the plot's top-left corner under the name, because the line beside the
 name holds the three readings. The pill comes and goes with the model,
-without a tap. With INA3221 CH1 as the meter the line names the INA3221 and
-carries no pill, the supply's model or not.
+without a tap. With an INA3221 channel as the meter the line names the
+channel, `INA 0x40 CH1` to `INA 0x43 CH3`, and carries no pill, the supply's model or
+not. The channel is the one watching the servo tester's target
+([SENSORS](#sensors-the-ina3221-parts)); on an IOmcu older than 4.25 that
+channel is CH1 of the one part SENSE reads.
 
 ![The panel's model as the supply](img/servo-model.png)
 
@@ -902,10 +941,11 @@ one fails.
 
 - A current is signed and shown in hundredths of an amp: `0.41 A`,
   `-0.02 A`, `-1.64 A`. A reading that rounds to zero is `0.00 A`. The
-  power on the line is signed in tenths of a watt. Beside `INA3221 CH1` the
-  three readings have 60, 64 and 56 px, 7, 8 and 7 characters: a power of
-  more than 7 characters in tenths, `-100.0 W` and beyond or `1000.0 W` and
-  beyond, is shown in whole watts.
+  power on the line is signed in tenths of a watt. Beside a channel's name the
+  three readings have 52, 64 and 56 px, 6, 8 and 7 characters, after the
+  name's 96 px: a voltage of 10 V or more is shown in tenths, `26.0 V`, and
+  a power of more than 7 characters in tenths, `-100.0 W` and beyond or
+  `1000.0 W` and beyond, in whole watts.
 - A reading that did not arrive is `---` in the CURRENT row, `--` on the
   line and a gap in the plot: no sample yet, a supply that does not answer,
   no window since the link came up, a window without samples of that
@@ -1105,7 +1145,7 @@ turns it off.
 TEST stays shown as the run starts, and the card's state line reads the
 step. LIVE shows the run's box at the top of the left card: its step and
 phase, with the meter the run reads beside STOP TEST: `PD mini`,
-`INA3221 CH1` or `SIMULATION`. It is the servo rail's meter at START TEST, and
+the INA3221 channel, `INA 0x41 CH2`, or `SIMULATION`. It is the servo rail's meter at START TEST, and
 the run reads it to its end ([The meter](Servo.md#the-meter)). The run owns
 the servo and SUPPLY's set points and switch until it ends. It ends early, the output switched off and the servo released
 to its centre, on STOP TEST (in LIVE's box or on the card), STOP, a
@@ -1148,7 +1188,8 @@ the bench is ARMED and the INA3221 is the servo rail's meter. Over it the
 card's summary names the mode, `SEARCH ONLY` or `SEARCH + PROGRAM`, and
 SERVO PULSES while the run reads the port. Under it a line names the
 output it drives and the meter, `OUTPUT PROG PORT 1 GP13, CURRENT
-INA3221 CH1` or `OUTPUT SERVO PWM GP2, CURRENT INA3221 CH1`, the next line says why
+INA3221 0x41 CH2` or `OUTPUT SERVO PWM GP2, CURRENT INA3221 0x40 CH1`
+(`CURRENT INA3221` while no channel watches the target), the next line says why
 it cannot start or what it does now, then the last result and its report.
 TEST stays shown as the run starts. Its box on LIVE's left card shows the
 values written of 8, the phase with the side and the pulse, and the output
@@ -2574,8 +2615,10 @@ While a monitor is enabled, the panel reads SENSE's 14 read-only registers
 every 50 ms; while the INA3221 is, SERVO_SENSE's channel windows every
 50 ms, each 50 ms window once. With an IOmcu of protocol 4.11 and CH1
 among the INA3221's channels it also reads SERVO_WIN every 50 ms, which
-holds CH1's last four windows, and SENSE to register 31
-([Link](Link.md#the-window-ring)).
+holds the meter channel's last four windows, and SENSE to register 31
+([Link](Link.md#the-window-ring)). With an IOmcu of protocol 4.25 it reads
+SENSE_WIN_A and SENSE_WIN_B on every poll, after SERVO_WIN and at most every 40 ms, while a part on the page is fitted,
+for the run log's columns ([TABLE](#table-and-what-the-esc-says)).
 
 The servo rail has one meter at a time: the INA3221 channel that watches
 the servo tester's target ([SENSORS](#sensors-the-ina3221-parts)) -- on an
@@ -2604,7 +2647,7 @@ both said. In order:
 | `INA228 is not responding at 0x45.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `A device responds at 0x44.` is added when the IOmcu's address scan found something where the part could be |
 | `0x40 reports 1408h, not an INA3221. Device not used.` | something answers at the part's address with another identity |
 | `INA228 current at its range limit. Reading shows only the limit.` | the INA228 read the end of its range in the last 50 ms window or since the switch to ARMED |
-| `INA3221 CH1 clipped at 1.64 A. Reading shows only the limit.` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
+| `INA3221 0x40 CH1 clipped at 1.64 A. Reading shows only the limit.` | a channel of the part SERVO_SENSE reads hit the top of its range; the current is its full scale |
 | `IOmcu storage unavailable. Settings will be lost at restart.` | STATUS fault bit 6: the IOmcu saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
 | `IOmcu firmware older than 4.11. Servo current is read from the PD mini.` | the INA3221 is on with CH1 and the IOmcu speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
 | `INA3221 has reset. Check its power supply.` | the IOmcu found the INA3221 on its power-on set-up and set it up again 1000 ms later; said once per reset. The windows of those 1000 ms hold no samples |
@@ -3547,7 +3590,7 @@ output of its own kind, no slot and no protocol
 | --- | --- |
 | PIN | a button: `PIN GP13`, `SET A PIN` for a port without one, `PIN GP14 REFUSED` for a pin the IOmcu does not hold, `NO PIN KNOWN` before the first read. A tap opens [PICK A PIN](#pick-a-pin) on this port |
 | FUNCTION | a choice face with what the pin carries while no programming session holds it. A tap opens the list over the rows under it: SERVO PWM, NONE, and on an IOmcu of protocol 4.28 or later DSHOT150, DSHOT300 and DSHOT600. A tap on an entry asks the IOmcu for it and shuts the list; a press beside the list shuts it and reaches nothing under it. The face is drawn sunk and dim, and takes no tap, while the row is locked |
-| WATCHED BY | the current channel that watches the port, `WATCHED BY NO CURRENT CHANNEL` until a sensor map names one |
+| WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`: the lowest channel with a shunt on a fitted part; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS \| PORT n: the tester's target ([the target](ServoProgrammer.md#the-target)) |
 | PORT PWM | ON \| OFF: the pulse of the port that is the tester's target |
 

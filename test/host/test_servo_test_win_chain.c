@@ -258,6 +258,7 @@ static void b_start(servo_test_cfg_t *c)
 {
     if (servo_source_id(&bench.src) == SERVO_SOURCE_INA3221) {
         servo_test_meter_ina3221(&c->meter, 1000u);
+        snprintf(c->meter.name, sizeof(c->meter.name), "INA3221 0x41 CH2");
         c->meter_changes = servo_source_changes(&bench.src);
     } else {
         servo_test_meter_pdmini(&c->meter);
@@ -395,7 +396,7 @@ TEST_CASE(a_full_run_on_the_ina3221_through_the_chain)
         CHECK_NEAR(per_s, 20.0f, 0.1f);
         CHECK_NEAR(mod_s, 20.0f, 0.1f);
         CHECK_EQ(every, 50u);
-        CHECK(strstr(bench.out.report, "Current:        INA3221 CH1, shunt "
+        CHECK(strstr(bench.out.report, "Current:        INA3221 0x41 CH2, shunt "
                                    "100.0 mOhm, range 1.638 A\n") != NULL);
         CHECK(strstr(bench.out.report, "Result:         PASS\n") != NULL);
         CHECK(strstr(bench.out.report, "STALL AT 1.50 A cannot be reached")

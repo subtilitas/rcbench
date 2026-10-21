@@ -81,7 +81,7 @@ The protocol list ends in one PROG PORT entry per programming port the IOmcu rep
 |---|---|
 | PIN | `PIN GP13`, `SET A PIN`, `PIN GP14 REFUSED` or `NO PIN KNOWN`; a tap opens [PICK A PIN](picker.md) on the port, where a tap on a pin sets it |
 | FUNCTION | what the pin carries while no programming session holds it; a tap opens the list. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin; DSHOT150, DSHOT300 and DSHOT600 (IOmcu 4.28 or later) send DShot from MOTOR & ESC's throttle, a frame every 1 ms while ARMED for the throttle, on any free pin |
-| WATCHED BY | the current channel that watches the port; `WATCHED BY NO CURRENT CHANNEL` until a sensor map names one |
+| WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port |
 | PORT PWM | ON or OFF: the pulse of the port that is the tester's target |
 

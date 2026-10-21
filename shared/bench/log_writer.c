@@ -15,13 +15,16 @@
  * separate units row as data, so a file in that shape reports its first row
  * as unreadable cells.
  */
-static const char *const k_header =
+static const char *const k_head =
     "time (s);voltage (V);current (A);power (W);rpm (rpm);"
     "esc (C);motor (C);charge (mAh);energy (Wh);"
-    "ina voltage (V);ina current (A);esc current (A);window;"
+    "ina voltage (V);ina current (A);esc current (A);window;";
+/* SERVO_SENSE's three channels, without SENSE_MAP. */
+static const char *const k_ch123 =
     "ch1 current (A);ch1 max (A);ch1 voltage (V);"
     "ch2 current (A);ch2 max (A);ch2 voltage (V);"
-    "ch3 current (A);ch3 max (A);ch3 voltage (V);source\n";
+    "ch3 current (A);ch3 max (A);ch3 voltage (V);";
+static const char *const k_tail = "source\n";
 
 /* The last column of both files: what produced the row's values. */
 static const char *source_word(bool modelled)
@@ -104,13 +107,55 @@ bool log_writer_commit(log_writer_t *w)
     return commit(w);
 }
 
+void log_writer_set_cols(log_writer_t *w, const log_cols_t *cols)
+{
+    if (w == NULL || w->header_done) {
+        return;
+    }
+    w->by_map = cols != NULL;
+    memset(&w->cols, 0, sizeof(w->cols));
+    if (cols == NULL) {
+        return;
+    }
+    /* At most LOG_COLS_MAX groups, each on a channel there is. */
+    const unsigned n = (cols->n > LOG_COLS_MAX) ? LOG_COLS_MAX : cols->n;
+    for (unsigned i = 0u; i < n; ++i) {
+        if (cols->ch[i] < BENCH_CHW_CHANNELS) {
+            w->cols.ch[w->cols.n] = cols->ch[i];
+            memcpy(w->cols.name[w->cols.n], cols->name[i],
+                   sizeof(w->cols.name[0]));
+            ++w->cols.n;
+        }
+    }
+}
+
 bool log_writer_header(log_writer_t *w)
 {
     if (w == NULL || w->header_done) {
         return w != NULL && !w->failed;
     }
     w->header_done = true;   /* set before the write: one attempt per file */
-    return put(w, k_header, strlen(k_header));
+    if (!put(w, k_head, strlen(k_head))) {
+        return false;
+    }
+    if (!w->by_map) {
+        return put(w, k_ch123, strlen(k_ch123))
+               && put(w, k_tail, strlen(k_tail));
+    }
+    static const char *const k_what[3] = { "current (A)", "max (A)",
+                                           "voltage (V)" };
+    for (unsigned i = 0u; i < w->cols.n; ++i) {
+        for (unsigned q = 0u; q < 3u; ++q) {
+            /* A name of LOG_COL_NAME_MAX - 1 and " voltage (V);" fit. */
+            char cell[LOG_COL_NAME_MAX + 16];
+            (void)snprintf(cell, sizeof(cell), "%s %s;", w->cols.name[i],
+                           k_what[q]);
+            if (!put(w, cell, strlen(cell))) {
+                return false;
+            }
+        }
+    }
+    return put(w, k_tail, strlen(k_tail));
 }
 
 /* A reading that is not finite is written as an empty cell, which the reader
@@ -319,14 +364,37 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
      */
     const bool win = b->servo_new;
     fits = fits && cell(line, cap, &n, win, (float)b->servo_window, 0);
-    for (unsigned c = 0u; c < 3u; ++c) {
-        const bool ch = win && (b->servo_ok & (1u << c)) != 0u;
-        const bool i  = ch && (b->servo_no_current & (1u << c)) == 0u;
-        const bool v  = ch && (b->servo_no_voltage & (1u << c)) == 0u;
+    /* With the map, each watched target's channel from the same window of
+     * SENSE_WIN_A or SENSE_WIN_B; without, SERVO_SENSE's three. */
+    const bool same = win && b->chw.window == b->servo_window;
+    const unsigned groups = w->by_map ? w->cols.n : 3u;
+    for (unsigned k = 0u; k < groups; ++k) {
+        bool i;
+        bool v;
+        float mean;
+        float max;
+        float min;
+        if (w->by_map) {
+            const unsigned c = w->cols.ch[k];
+            const uint16_t bit = (uint16_t)(1u << c);
+            const bool ch = same && (b->chw.ok & bit) != 0u;
+            i    = ch && (b->chw.no_current & bit) == 0u;
+            v    = ch && (b->chw.no_voltage & bit) == 0u;
+            mean = ch ? (float)b->chw.mean_ma[c] : 0.0f;
+            max  = ch ? (float)b->chw.max_ma[c] : 0.0f;
+            min  = ch ? (float)b->chw.min_mv[c] : 0.0f;
+        } else {
+            const bool ch = win && (b->servo_ok & (1u << k)) != 0u;
+            i    = ch && (b->servo_no_current & (1u << k)) == 0u;
+            v    = ch && (b->servo_no_voltage & (1u << k)) == 0u;
+            mean = (float)b->servo_mean_ma[k];
+            max  = (float)b->servo_max_ma[k];
+            min  = (float)b->servo_min_mv[k];
+        }
         fits = fits
-               && cell(line, cap, &n, i, (float)b->servo_mean_ma[c] / 1000.0f, 3)
-               && cell(line, cap, &n, i, (float)b->servo_max_ma[c] / 1000.0f, 3)
-               && cell(line, cap, &n, v, (float)b->servo_min_mv[c] / 1000.0f, 3);
+               && cell(line, cap, &n, i, mean / 1000.0f, 3)
+               && cell(line, cap, &n, i, max / 1000.0f, 3)
+               && cell(line, cap, &n, v, min / 1000.0f, 3);
     }
     fits = fits && text_cell(line, cap, &n,
                              source_word(bench_state_simulated(b)));

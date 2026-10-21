@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 
+#include "outputs_screen.h"
 #include "settings_screen.h"
 #include "settings_sensors.h"
 #include "ui_text.h"
@@ -121,5 +122,69 @@ const char *sensors_rows_why(setting_id_t id)
     case SENS_PART_SAME_ADDR: return TR(SET_SENS_SAME_ADDR);
     case SENS_PART_NO_BUS:    return TR(SET_SENS_NO_BUS);
     default:                  return TR(SET_UNHELD);
+    }
+}
+
+const char *sensors_rows_channel(int c, char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    if (c >= 0 && c < SET_INA_CHANNELS) {
+        snprintf(buf, n, "0x%02X CH%u",
+                 (unsigned)(LINK_SN_I3221_ADDR_MIN + (unsigned)c / 3u),
+                 (unsigned)c % 3u + 1u);
+    }
+    return buf;
+}
+
+const char *sensors_rows_meter(char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    char ch[12];
+    (void)sensors_rows_channel((int)settings_sensors_fast(), ch, sizeof(ch));
+    snprintf(buf, n, (ch[0] != '\0') ? "INA3221 %s" : "INA3221", ch);
+    return buf;
+}
+
+const char *sensors_rows_short(char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    char ch[12];
+    (void)sensors_rows_channel((int)settings_sensors_fast(), ch, sizeof(ch));
+    snprintf(buf, n, (ch[0] != '\0') ? "INA %s" : "INA3221", ch);
+    return buf;
+}
+
+int sensors_rows_watcher(uint16_t code)
+{
+    for (int c = 0; c < SET_INA_CHANNELS; ++c) {
+        if (fitted(c / 3) && settings_sensors_dmohm(c) != 0u
+            && settings_sensors_watch_code(settings_get_int(SET_INA_W(c)))
+                   == code) {
+            return c;
+        }
+    }
+    return -1;
+}
+
+void sensors_rows_publish_watch(void)
+{
+    for (unsigned port = 0u; port < LINK_PG_PORTS_MAX; ++port) {
+        const int c = sensors_rows_watcher(
+            (uint16_t)LINK_SM_WATCH_PORT(port));
+        char name[12];
+        char label[24];
+        label[0] = '\0';
+        if (c >= 0) {
+            snprintf(label, sizeof(label), "INA3221 %s",
+                     sensors_rows_channel(c, name, sizeof(name)));
+        }
+        outputs_screen_set_port_watch((uint8_t)port, label);
     }
 }

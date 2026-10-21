@@ -226,10 +226,10 @@ static const char *const k_str[SERVO_STR_COUNT] = {
                                    "window",
     [SERVO_STR_R_SUPPLY_PDMINI]  = "PD mini",
     [SERVO_STR_R_CURRENT]        = "Current:        %s",
-    [SERVO_STR_R_CURRENT_INA]    = "Current:        INA3221 CH1, shunt %.1f "
+    [SERVO_STR_R_CURRENT_INA]    = "Current:        %s, shunt %.1f "
                                    "mOhm, range %.3f A",
     [SERVO_STR_R_VOLTAGE]        = "Voltage:        %s",
-    [SERVO_STR_R_VOLTAGE_INA]    = "Voltage:        INA3221 CH1, load side "
+    [SERVO_STR_R_VOLTAGE_INA]    = "Voltage:        %s, load side "
                                    "of the shunt",
     [SERVO_STR_R_SHUNT]          = "Shunt:          up to %.3f V lost across "
                                    "it at the range; the set point is not "
@@ -263,11 +263,11 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_LIM_STALL_RANGE] = "STALL AT %.2f A cannot be reached: "
                                     "INA3221 range %.3f A",
     [SERVO_STR_R_UNM_POSITION_INA] = "Position: nothing measures the horn; "
-                                     "every result is the INA3221's current "
-                                     "on CH1.",
-    [SERVO_STR_R_UNM_PEAKS_INA]  = "Current between two 1 ms samples of CH1: "
-                                   "a window holds their mean, highest and "
-                                   "lowest.",
+                                     "every result is the current of the "
+                                     "INA3221 channel named above.",
+    [SERVO_STR_R_UNM_PEAKS_INA]  = "Current between two 1 ms samples of that "
+                                   "channel: a window holds their mean, "
+                                   "highest and lowest.",
     [SERVO_STR_R_METER_MODEL]    = "the panel's model",
 
     /* The limit run.  Its reasons are a line of the SERVO screen's box
@@ -313,7 +313,7 @@ static const char *const k_str[SERVO_STR_COUNT] = {
                                    "and %u us",
     [SERVO_STR_L_R_OUTPUT]       = "Output:         %s, %u Hz",
     [SERVO_STR_L_R_PULSE]        = "Pulse range:    centre %u us, %u-%u us",
-    [SERVO_STR_L_R_METER]        = "Current:        INA3221 CH1, 50 ms "
+    [SERVO_STR_L_R_METER]        = "Current:        %s, 50 ms "
                                    "windows, shunt %.1f mOhm",
     [SERVO_STR_L_R_RULE]         = "Search rule:    10 us steps, settle 120 "
                                    "ms, mean of 80 ms; bound above %.1f x "

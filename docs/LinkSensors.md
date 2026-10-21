@@ -173,7 +173,7 @@ version 8 record and starts as from an empty store.
 
 | Panel | IOmcu | SENSE_MAP, SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT |
 | --- | --- | --- |
-| 4.25 or later | 4.27 or later | served. The panel reads SENSE_MAP whole at every link-up, writes registers 0 to 25 in one write as SETUP > SENSORS sets them, and reads registers 26 to 30 every 500 ms while a part is fitted. It does not read SENSE_WIN_A or SENSE_WIN_B and reads and writes no limit |
+| 4.25 or later | 4.27 or later | served. The panel reads SENSE_MAP whole at every link-up, writes registers 0 to 25 in one write as SETUP > SENSORS sets them, and reads registers 26 to 30 every 500 ms while a part is fitted. After a write taken it reads SENSE and IDENTITY again: capability bit 3 can change with `WATCH` alone. It reads SENSE_WIN_A whole while 0x40 or 0x41 is fitted in the map in force, and SENSE_WIN_B while 0x42 or 0x43 is, each on every poll after SERVO_WIN and at most every 40 ms, ARMED or SAFE, for the run log's columns ([Screens](Screens.md#table-and-what-the-esc-says)). It reads and writes no limit |
 | 4.25 or later | 4.25 or 4.26 | SENSE_MAP as above; the IOmcu answers SENSE_LIMIT with BAD_PAGE and judges no limit |
 | 4.25 or later | 4.24 or older | the panel sends nothing to the four pages and sets SENSE's one INA3221 to one fitted part ([Screens](Screens.md)) |
 | 4.24 or older | 4.25 or later, map derived | the panel never reads or writes the four pages. SENSE runs as before. Kept limits are judged and `OVER` holds its bits until something reads it |

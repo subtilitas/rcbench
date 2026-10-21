@@ -64,6 +64,27 @@ bool sensors_rows_unheld(setting_id_t id);
 /** The line a marked row shows in place of its help. */
 const char *sensors_rows_why(setting_id_t id);
 
+/** Channel @p c (0 to 11) as the screens name it, "0x41 CH2", into @p buf;
+ *  "" for no channel. */
+const char *sensors_rows_channel(int c, char *buf, size_t n);
+
+/** The same over SERVO's plot and on the TEST card: "INA 0x41 CH2", or
+ *  "INA3221" with none; into @p buf. */
+const char *sensors_rows_short(char *buf, size_t n);
+
+/** The servo rail's INA3221 meter as the reports and the LIMIT RUN line
+ *  name it: the channel watching the tester's target, "INA3221 0x41 CH2",
+ *  or "INA3221" with none; into @p buf. */
+const char *sensors_rows_meter(char *buf, size_t n);
+
+/** The lowest channel with a shunt on a fitted part whose WATCH is the
+ *  page code @p code (LINK_SM_WATCH_*), 0 to 11; -1 for none. */
+int sensors_rows_watcher(uint16_t code);
+
+/** Each programming port's WATCHED BY line on OUTPUTS, from the settings
+ *  as they stand (outputs_screen_set_port_watch()). */
+void sensors_rows_publish_watch(void);
+
 #ifdef __cplusplus
 }
 #endif

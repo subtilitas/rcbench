@@ -3,7 +3,8 @@
 <sub>[English](Servo.md) · **Deutsch**</sub>
 
 Drei Verfahren am Servo. Das erste misst ein Servo im eingebauten Zustand:
-die Endlagensuche läuft auf dem SERVO-Bildschirm und liest INA3221 CH1, und
+die Endlagensuche läuft auf dem SERVO-Bildschirm und liest den INA3221-Kanal,
+der das Ziel des Servotesters überwacht, und
 bei einem KST- oder Chaservo-Servo am Programmierport kann sie die eigenen
 Weggrenzen des Servos senken. Das zweite, der Abgleich, braucht einen
 Stromsensor über ein Paar Ausgänge, der nicht bestückt ist, und läuft nur
@@ -43,7 +44,7 @@ die untere Seite, dann die obere. Wo, hängt vom Ziel ab:
 | PROG-PORT | eine Lesesitzung des [Programmierers](ServoProgrammer-de.md) | NEUTRAL des Servos bis zu seinem eigenen PULSE LOWER und PULSE UPPER, nie darüber hinaus |
 
 Der Abstand zu diesem Ende ersetzt die 600 µs. Der Strom sind die
-50-ms-Fenster von INA3221 CH1, jede Stellung dauert also 250 ms. Vor und
+50-ms-Fenster des überwachenden INA3221-Kanals, jede Stellung dauert also 250 ms. Vor und
 nach jeder Suche steht das Servo 1000 ms in der Mitte: der Rückweg von
 einem Ende, 600 µs bei 0,67 µs/ms, dauert 900 ms, und der Grundstrom soll
 ihn nicht sehen.
@@ -65,7 +66,7 @@ kürzeres Halten startet nichts.
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
 
 Die Zeile unter der Schaltfläche nennt die ganze Zeit, was der Lauf treibt
-und liest: `AUSGANG PROG-PORT 1 GP13, STROM INA3221 CH1`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GP2, STROM INA3221 CH1`. Während der Lauf
+und liest: `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSOREN das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während der Lauf
 geht, zeigt die linke Karte von LIVE sein Feld: die Phase, die Seite und den befohlenen
 Puls, und in der dritten Zeile wieder den Ausgang. Die Zeile ZIEL der
 Ausgangskarte bleibt ebenfalls sichtbar.
@@ -80,7 +81,7 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | --- | --- |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
 | `LETZTER BERICHT SCHREIBT NOCH` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
-| `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | INA3221 oder sein CH1 in SETUP aus, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
+| `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSOREN das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich bewegt |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist kürzer als 1000 ms gehalten, oder kein Fenster mit Strom in den letzten 200 ms |
 | `SERVOVERSORGUNG UNTER 3.0 V ODER NICHT AUSGELESEN` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). Ein ausgeschalteter Ausgang liest 0 V, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0 V liegen unter den 4,8 V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
@@ -380,7 +381,7 @@ Modus:           Suche, dann LEFT ANGLE und RIGHT ANGLE programmiert
 Ausgang:         PROG-PORT 1 GP13, 50 Hz
 Pulsbereich:     Mitte 1500 us, 1000-2000 us
 Gesucht:         von 1500 us bis 1000 us und 2000 us
-Strom:           INA3221 CH1, Fenster zu 50 ms, Shunt 100.0 mOhm
+Strom:           INA3221 0x40 CH1, Fenster zu 50 ms, Shunt 100.0 mOhm
 Suchregel:       Schritte zu 10 us, 120 ms warten, Mittel über 80 ms; angelaufen über 1.8 x frei und +0.15 A
 Schutz:          ein Messwert ab 3.0 A, über 1.0 A für 400 ms, 200 ms kein Fenster, 40 s je Suche
 Dauer:           85.6 s
@@ -480,8 +481,8 @@ abgelesen, das das Servo versorgt: am PD mini (WeAct PD
 Power Mini V1), wenn SETUP ANSCHLÜSSE ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
 sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
-Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen CH1
-des INA3221, in 50-ms-Fenstern: siehe
+Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen den
+INA3221-Kanal, der das Ziel des Testers überwacht, in 50-ms-Fenstern: siehe
 [Der Strommesser des Laufs](#der-strommesser-des-laufs).
 
 TEST STARTEN auf der Karte AUTOMATISCHER TEST der Aufgabe TEST von SERVO startet ihn;
@@ -682,12 +683,12 @@ Ein Lauf liest von TEST STARTEN bis zu seinem Ende ein Messgerät: das
 Messgerät der Servo-Schiene, wie das Panel es beim Start des Laufs nennt
 ([Link](Link-de.md#der-fenster-ring)).
 
-| | PD mini | INA3221 CH1 |
+| | PD mini | der INA3221-Kanal |
 | --- | --- | --- |
 | Der Lauf liest es, wenn | der INA3221 bei TEST STARTEN nicht das Messgerät der Schiene ist oder das Netzteil das Modell des Panels ist | der INA3221 bei TEST STARTEN das Messgerät der Schiene ist und das Netzteil der PD mini |
-| Ein Messwert | ein Messwert des Netzteils, alle 102 bis 106 ms | ein 50-ms-Fenster von CH1, 20 je Sekunde |
+| Ein Messwert | ein Messwert des Netzteils, alle 102 bis 106 ms | ein 50-ms-Fenster des Kanals, der das Ziel des Testers überwacht, 20 je Sekunde |
 | Strom | der Messwert | das Mittel des Fensters. Die Spitze ist der höchste oder der tiefste 1-ms-Messwert des Fensters, je nachdem, welcher weiter von null liegt |
-| Spannung | der Messwert am Ausgang des Netzteils | die Busspannung von CH1 an der Lastseite des Shunts: das Mittel des Fensters in `Ist V`, sein tiefster Messwert in `V min` |
+| Spannung | der Messwert am Ausgang des Netzteils | die Busspannung des Kanals an der Lastseite des Shunts: das Mittel des Fensters in `Ist V`, sein tiefster Messwert in `V min` |
 | RUHE und HOLD | die Messwerte, die in der Phase genommen wurden | die Fenster, die ganz in der Phase liegen; eines, das vor ihr begann, gehört zu keiner. Am modellierten Prüfstand der Host-Suite liegen in den 1000 ms von RUHE 19 bis 20 Fenster und in 600 ms Halten 11 bis 12 |
 | BEWEGEN | die Messwerte ab dem Befehl | die Fenster ab dem, das beim Befehl offen ist |
 | Stellzeit | bis zum Messwert, der die Ankunft zeigt: um bis zu einen Messwert und etwa 300 ms Verzögerung zu lang | bis zum Fenster, das die Ankunft zeigt: um bis zu zwei Fenster und den Poll, der sie liest, zu lang, 145 ms |
@@ -1008,7 +1009,7 @@ Prüfstands:
 | `command (us)` | us | der befohlene Impuls |
 | `position (us)` | us | die gemessene Stellung; leer, weil nichts sie misst |
 | `set (V)` | V | die Spannung der Stufe |
-| `voltage (V)` | V | die des Messgeräts: am Ausgang des Netzteils, oder die mittlere Busspannung von CH1 im Fenster |
+| `voltage (V)` | V | die des Messgeräts: am Ausgang des Netzteils, oder die mittlere Busspannung des Kanals im Fenster |
 | `limit (A)` | A | die Strombegrenzung |
 | `current (A)` | A | der des Messgeräts, mit Vorzeichen: der Messwert des Netzteils, oder das Mittel des Fensters |
 | `power (W)` | W | Spannung mal Strom |
@@ -1060,8 +1061,8 @@ modellierten Prüfstand der Host-Suite:
 ```
 Log:             die .CSV mit der Nummer dieser Datei, eine Zeile je Fenster des INA3221
 Netzteil:        PD mini
-Strom:           INA3221 CH1, Shunt 100.0 mOhm, Bereich 1.638 A
-Spannung:        INA3221 CH1, Lastseite des Shunts
+Strom:           INA3221 0x40 CH1, Shunt 100.0 mOhm, Bereich 1.638 A
+Spannung:        INA3221 0x40 CH1, Lastseite des Shunts
 Shunt:           bis 0.164 V fallen am Bereichsende an ihm ab; der Sollwert wird dafür nicht angehoben
 Messwerte:       20.0 /s Fenster vom INA3221 geschlossen, 20.0 /s erreichten den Test
 Übersprungen:    0 Fenster des INA3221 erreichten den Test nie
@@ -1069,8 +1070,8 @@ Auflösung:       ein Fenster alle 50 ms: eine Stellzeit ist um bis zu zwei Fens
 Verzögerung:     etwa 50 ms von einer Stromänderung bis zum Messwert, der sie zeigt
 Stellzeiten:     eine Obergrenze, nicht gegen die Grenze geprüft
 ...
-Position: nichts misst das Ruderhorn; jedes Ergebnis ist der Strom des INA3221 auf CH1.
-Strom zwischen zwei 1-ms-Messwerten von CH1: ein Fenster enthält deren Mittel, Höchst- und Tiefstwert.
+Position: nichts misst das Ruderhorn; jedes Ergebnis ist der Strom des oben genannten INA3221-Kanals.
+Strom zwischen zwei 1-ms-Messwerten dieses Kanals: ein Fenster enthält deren Mittel, Höchst- und Tiefstwert.
 ```
 
 ### Was nicht gemessen ist
@@ -1099,7 +1100,7 @@ INA3221 schloss, und einen Lauf am INA3221 an seiner ersten Lücke von mehr als
 50 Fenster und zählt die 5 Fensternummern, die vor dieser Lücke fehlen, als
 ausgelassen. Nicht am Prüfstand gemessen: wie weit ein Fenster hinter dem Horn
 liegt, ob das 50-ms-Mittel die Bewegungen eines Servos zeigt, die der PD mini
-nicht zeigt, was CH1 mit einem Servo am Anschlag liest, und die
+nicht zeigt, was der Kanal mit einem Servo am Anschlag liest, und die
 Konstantstrom-Regel an einem PD mini.
 
 ## Die befohlene Stellung folgt dem Zustand ARMED
@@ -1187,8 +1188,9 @@ erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 
 ## Voraussetzungen
 
-Die Strommessung an der Servoschiene. Die Endlagensuche liest INA3221 CH1,
-verdrahtet und in SETUP ANSCHLÜSSE freigegeben, und sonst nichts. Der
+Die Strommessung an der Servoschiene. Die Endlagensuche liest den
+INA3221-Kanal, der das Ziel des Testers überwacht, verdrahtet in SETUP
+ANSCHLÜSSE und bestückt in SETUP > SENSOREN, und sonst nichts. Der
 Abgleich braucht einen Sensor über das Paar der Ausgänge, der nicht bestückt
 ist. Der automatische Test liest den INA3221 oder den PD mini, oder läuft am
 Netzteilmodell des Panels. Das Programmieren von LEFT ANGLE und RIGHT ANGLE

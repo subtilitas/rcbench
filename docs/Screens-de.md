@@ -568,6 +568,44 @@ Messung bleibt aus den Werten heraus. LOGS
 gruppiert `ina voltage`, `ina current` und `esc current` unter INA228 und
 ESC und die Spalten des Fensters unter INA3221.
 
+Mit einem IOmcu mit Protokoll 4.25, dessen Sensor-Map das Panel gelesen
+hat, folgen die Kanalspalten dieser Map, wie sie beim Öffnen der Datei
+steht: eine Gruppe aus drei Spalten je Kanal, der ein Ziel überwacht, nach
+dem Ziel benannt:
+
+```
+window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source
+```
+
+- Ein Kanal bekommt eine Gruppe, solange sein Baustein bestückt ist, sein
+  Shunt nicht 0 ist und er einen Ausgang, einen Programmier-Port oder die
+  Versorgung überwacht ([SENSOREN](#sensoren-die-ina3221-bausteine)).
+- Der Kanal, der das Ziel des Servotesters überwacht, steht vorn, danach
+  die anderen von 0x40 CH1 bis 0x43 CH3.
+- Zwei Kanäle an einem Ziel tragen den Kanal im Namen:
+  `out 3 0x41 ch2 current (A)`.
+- Höchstens 3 Gruppen, 23 Spalten: der vierte überwachende Kanal und alle
+  weiteren stehen in keiner Datei. LOGS zeichnet höchstens 24 Spalten.
+- Eine Datei mit weniger Gruppen endet früher mit `source`: 13 + 3 x
+  Gruppen + 1 Spalten. Überwacht kein Kanal etwas, hat die Datei keine
+  Kanalspalte.
+
+Die Gruppe des Kanals, der das Ziel des Servotesters überwacht, stammt aus
+dem Fenster-Ring, SERVO_WIN, und steht in jeder Zeile mit `window`. Die
+anderen Gruppen stammen aus SENSE_WIN_A und SENSE_WIN_B
+([Link](LinkSensors-de.md#sense_win_a-und-sense_win_b)), die nur das letzte
+Fenster jedes Kanals halten. Das Panel liest sie in jedem Poll nach
+SERVO_WIN, mit einer Sperre von 40 ms, solange ein Baustein der Page
+bestückt ist. Eine solche Gruppe steht in der Zeile ihres Fensters, wenn das
+letzte Lesen ihrer Page oder das davor diese Fensternummer hält, und ist
+sonst leer. Ein Fenster, das zwischen zwei Lesezugriffen schloss und auf
+das schon das nächste folgte, steht in keiner Zeile: bei einem Poll von
+53 ms etwa 1 Zeile von 17 (`test_sense_win_link`). Die Map gilt, sobald der
+IOmcu sie in Kraft hält; mit der aus SENSE abgeleiteten Map behält die
+Datei `ch1` bis `ch3`. Die Map nimmt kein Schreiben an, solange die Bank
+treibt, also halten die Spalten den ganzen Lauf. LOGS gruppiert die Spalten `out`, `port` und
+`supply` unter INA3221.
+
 ### MOTOR & ESC, Optionen
 
 ![OPTIONEN](img/de/motor-settings.png)
@@ -959,7 +997,7 @@ erscheint sofort in der Zeile.
 
 | Messgerät der Servo-Schiene | Name in der Zeile | STROM, die Zeile und der Plot zeigen |
 | --- | --- | --- |
-| INA3221 CH1 | `INA3221 CH1` | das letzte 50-ms-Fenster von CH1: den mittleren Strom, die mittlere Busspannung auf der Lastseite des Shunts und ihr Produkt. Ein Punkt im Plot je Fenster, 20 in der Sekunde |
+| ein INA3221-Kanal | `INA`, die Adresse seines Bausteins und der Kanal: `INA 0x41 CH2` | das letzte 50-ms-Fenster des Kanals: den mittleren Strom, die mittlere Busspannung auf der Lastseite des Shunts und ihr Produkt. Ein Punkt im Plot je Fenster, 20 in der Sekunde |
 | der PD mini | `PD MINI` | das letzte Sample des Netzteils. Ein Punkt je Sample |
 | das Modell, solange kein IOmcu antwortet | `PD MINI` | das letzte Sample des Netzteils: das des Netzteilmodells unter dem SIMULATION-Watermark, und keinen Messwert, wo SETUP ANSCHLÜSSE den PD mini einschaltet, der ohne Link nicht antwortet |
 
@@ -971,9 +1009,12 @@ wie auf SUPPLY: dann sitzt eine Pille SIMULIERT (englisch MODELLED), 20 px
 hoch und 24 px plus das Wort breit, mindestens 88 px (88 px für MODELLED,
 96 px für SIMULIERT), auf der oberen linken Ecke des Plots unter dem Namen,
 weil die Zeile neben dem Namen die drei Messwerte trägt. Die Pille kommt und
-geht mit dem Modell, ohne Tippen. Mit INA3221 CH1 als Messgerät nennt die
-Zeile den INA3221 und trägt keine Pille, ob das Netzteil simuliert ist oder
-nicht.
+geht mit dem Modell, ohne Tippen. Mit einem INA3221-Kanal als Messgerät
+nennt die Zeile den Kanal, `INA 0x40 CH1` bis `INA 0x43 CH3`, und trägt keine Pille,
+ob das Netzteil simuliert ist oder nicht. Der Kanal ist der, der das Ziel
+des Servotesters überwacht
+([SENSOREN](#sensoren-die-ina3221-bausteine)); an einem IOmcu älter als
+4.25 ist es CH1 des einen Bausteins, den SENSE liest.
 
 ![Das Modell des Panels als Netzteil](img/de/servo-model.png)
 
@@ -985,9 +1026,10 @@ eine nicht gilt.
 - Ein Strom hat ein Vorzeichen und wird in Hundertstel Ampere gezeigt:
   `0.41 A`, `-0.02 A`, `-1.64 A`. Ein Messwert, der auf null rundet, ist
   `0.00 A`. Die Leistung in der Zeile hat ein Vorzeichen und Zehntel Watt.
-  Neben `INA3221 CH1` haben die drei Messwerte 60, 64 und 56 px, 7, 8 und
-  7 Zeichen: eine Leistung, die in Zehnteln mehr als 7 Zeichen braucht, ab
-  `-100.0 W` und ab `1000.0 W`, wird in ganzen Watt gezeigt.
+  Neben dem Namen eines Kanals, 96 px, haben die drei Messwerte 52, 64 und
+  56 px, 6, 8 und 7 Zeichen: eine Spannung ab 10 V wird in Zehnteln
+  gezeigt, `26.0 V`, und eine Leistung, die in Zehnteln mehr als 7 Zeichen
+  braucht, ab `-100.0 W` und ab `1000.0 W`, in ganzen Watt.
 - Ein Messwert, der nicht ankam, ist `---` in der Zeile STROM, `--` in der
   Zeile über dem Plot und eine Lücke im Plot: noch kein Sample, ein Netzteil,
   das nicht antwortet, kein Fenster seit dem Link-Aufbau, ein Fenster ohne
@@ -1210,7 +1252,7 @@ jeder Neustart schaltet es aus.
 
 TEST bleibt beim Start zu sehen, und die Zustandszeile der Karte nennt die
 Stufe. LIVE zeigt oben auf der linken Karte das Feld des Laufs: Stufe und
-Phase, neben TEST BEENDEN das Messgerät, das der Lauf liest: `PD mini`, `INA3221 CH1` oder `SIMULATION`. Es ist das Messgerät der
+Phase, neben TEST BEENDEN das Messgerät, das der Lauf liest: `PD mini`, der INA3221-Kanal, `INA 0x41 CH2`, oder `SIMULATION`. Es ist das Messgerät der
 Servo-Schiene bei TEST STARTEN, und der Lauf liest es bis zu seinem Ende
 ([Der Strommesser des Laufs](Servo-de.md#der-strommesser-des-laufs)). Der
 Lauf führt das Servo und die Sollwerte und den Schalter von SUPPLY, bis er
@@ -1262,8 +1304,9 @@ das Verfahren, die Schutzmechanismen und den Bericht. Es ist ein Halten von
 Servoschiene. Darüber nennt die Zusammenfassung der Karte die Betriebsart,
 `NUR SUCHE` oder `SUCHEN + PROGRAMMIEREN`, und SERVOPULSE, solange der Lauf
 den Port liest. Darunter nennt eine Zeile den Ausgang, den er treibt, und
-das Messgerät, `AUSGANG PROG-PORT 1 GP13, STROM INA3221 CH1` oder `AUSGANG
-SERVO PWM GP2, STROM INA3221 CH1`, die nächste sagt, warum er nicht starten
+das Messgerät, `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2` oder
+`AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1` (`STROM INA3221`, solange
+kein Kanal das Ziel überwacht), die nächste sagt, warum er nicht starten
 kann oder was er gerade tut, dann folgen das letzte Ergebnis und sein
 Bericht. TEST bleibt beim Start zu sehen. Sein Feld auf der linken Karte von
 LIVE zeigt die geschriebenen Werte
@@ -2837,8 +2880,11 @@ Nur-Lese-Register der SENSE-Page alle 50 ms; solange der INA3221
 eingeschaltet ist, die Kanalfenster der SERVO_SENSE-Page alle 50 ms, jedes 50-ms-Fenster
 einmal. Mit einem IOmcu mit Protokoll 4.11 und CH1 unter den Kanälen
 des INA3221 liest es außerdem alle 50 ms SERVO_WIN, das die letzten vier
-Fenster von CH1 hält, und SENSE bis Register 31
-([Link](Link-de.md#der-fenster-ring)).
+Fenster des Messkanals hält, und SENSE bis Register 31
+([Link](Link-de.md#der-fenster-ring)). Mit einem IOmcu mit Protokoll 4.25
+liest es SENSE_WIN_A und SENSE_WIN_B in jedem Poll, nach SERVO_WIN und höchstens alle 40 ms, solange ein Baustein der
+Page bestückt ist, für die Spalten des Lauf-Logs
+([TABELLE](#tabelle-und-was-der-esc-meldet)).
 
 Die Servo-Schiene hat zu jeder Zeit ein Messgerät: der Kanal des INA3221,
 der das Ziel des Servotesters misst ([SENSOREN](#sensoren-die-ina3221-bausteine))
@@ -2870,7 +2916,7 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | `INA228 antwortet nicht unter 0x45.` | eingeschaltet, und 2,5 s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `Ein Gerät antwortet unter 0x44.` wird angefügt, wenn der Adress-Scan des IOmcu dort etwas gefunden hat, wo das Bauteil sein könnte |
 | `0x40 meldet 1408h, kein INA3221. Gerät wird nicht verwendet.` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
 | `INA228-Strom am Messbereichsende. Anzeige zeigt nur den Grenzwert.` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Schalten auf ARMED das Ende seines Bereichs gelesen |
-| `INA3221 CH1 bei 1.64 A übersteuert. Anzeige zeigt nur den Grenzwert.` | ein Kanal, den der INA3221 liest, hat das obere Ende seines Bereichs erreicht; der Strom ist sein Vollausschlag |
+| `INA3221 0x40 CH1 bei 1.64 A übersteuert. Anzeige zeigt nur den Grenzwert.` | ein Kanal des Bausteins, den SERVO_SENSE liest, hat das obere Ende seines Bereichs erreicht; der Strom ist sein Vollausschlag |
 | `IOmcu-Speicher nicht verfügbar. Einstellungen gehen beim Neustart verloren.` | STATUS-Fehlerbit 6: der IOmcu speichert in diesem Boot nichts, die Einstellung, die Bindungen und die Verdrahtung des Netzteils sind bei seinem Neustart verloren; einmal je Link-Aufbau gesagt |
 | `IOmcu-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.` | der INA3221 ist mit CH1 eingeschaltet, und der IOmcu spricht Protokoll 4.7 bis 4.10: er hat keinen Fenster-Ring, und der PD mini ist das Messgerät der Servo-Schiene. Gesagt beim Link-Aufbau und wenn der INA3221 eingeschaltet wird, während er antwortet |
 | `INA3221 hat sich zurückgesetzt. Versorgung prüfen.` | der IOmcu fand den INA3221 mit seiner Einschalt-Konfiguration und hat ihn 1000 ms später neu eingestellt; einmal je Reset gesagt. Die Fenster dieser 1000 ms halten keine Messungen |
@@ -3880,7 +3926,7 @@ Zeilen:
 | --- | --- |
 | PIN | eine Taste: `PIN GP13`, `PIN WÄHLEN` für einen Port ohne Pin, `PIN GP14 ABGELEHNT` für einen Pin, den der IOmcu nicht hält, `KEIN PIN BEKANNT` vor dem ersten Lesen. Ein Tippen öffnet [PICK A PIN](#pin-auswählen) auf diesem Port |
 | FUNKTION | ein Auswahlfeld mit dem, was der Pin trägt, solange keine Programmiersitzung ihn hält. Ein Tippen öffnet die Liste über den Zeilen darunter: SERVO PWM, KEINE, und bei einem IOmcu ab Protokoll 4.28 DSHOT150, DSHOT300 und DSHOT600. Ein Tippen auf einen Eintrag erbittet ihn beim IOmcu und schließt die Liste; ein Druck neben die Liste schließt sie und erreicht nichts darunter. Das Feld ist vertieft und matt gezeichnet und nimmt kein Tippen an, solange die Zeile gesperrt ist |
-| ÜBERWACHT VON | der Stromkanal, der den Port überwacht, `VON KEINEM STROMKANAL ÜBERWACHT`, bis eine Sensorzuordnung einen nennt |
+| ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSOREN überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`: der niedrigste Kanal mit Shunt auf einem bestückten Baustein; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS \| PORT n: das Ziel des Testers ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
 | PORT-PWM | EIN \| AUS: der Puls des Ports, der das Ziel des Testers ist |
 

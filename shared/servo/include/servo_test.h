@@ -296,7 +296,8 @@ typedef struct {
                                  holds it; 0 for none stated            */
     uint16_t range_ma;      /**< the current at the end of its range; 0
                                  for none stated                        */
-    char     name[16];      /**< for the report: "PD mini"              */
+    /** For the report: "PD mini", "INA3221 0x41 CH2". */
+    char     name[20];
     uint16_t lag_ms;        /**< from a change of current to the first
                                  reading that shows it, typical; 0 for
                                  none stated                            */
@@ -317,8 +318,9 @@ void servo_test_meter_pdmini(servo_test_meter_t *m);
  *  its travel times held to what a run on the PD mini can check. */
 void servo_test_meter_model(servo_test_meter_t *m);
 
-/** The INA3221's CH1 on a shunt of @p shunt_dmohm, in 0.1 mOhm (1000 for
- *  0.1 Ohm, which ends the range at 1.638 A), read in 50 ms windows: a
+/** An INA3221 channel on a shunt of @p shunt_dmohm, in 0.1 mOhm (1000 for
+ *  0.1 Ohm, which ends the range at 1.638 A), named "INA3221" until the
+ *  caller names the channel, read in 50 ms windows: a
  *  change of current shows in the window that closes after it, up to 50 ms
  *  later, and the panel times a move from the windows, so travel times are
  *  an upper bound. */

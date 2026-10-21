@@ -50,6 +50,7 @@ void sense_map_link_lost(sense_map_link_t *s)
     s->up      = false;
     s->page    = false;
     s->known   = false;
+    s->forced  = false;
     s->refused = false;
     s->reread  = false;
     s->pending = SENSE_MAP_LINK_OP_NONE;
@@ -270,6 +271,7 @@ static void take_status(sense_map_link_t *s, const uint16_t *regs)
         s->ids[a] = regs[a];
     }
     s->flags = regs[LINK_SM_FLAGS - LINK_SM_ID_0];
+    s->forced = (s->flags & LINK_SM_IN_FORCE) != 0u;
     s->have_status = true;
 }
 
@@ -288,6 +290,7 @@ void sense_map_link_done(sense_map_link_t *s, int result,
         if (result == SENSE_MAP_LINK_ACK) {
             memcpy(s->held, s->want, sizeof(s->held));
             s->reread = true;
+            s->forced = true;
             forget_reads(s, now_ms);
         } else {
             s->refused = true;
@@ -321,6 +324,11 @@ bool sense_map_link_held(const sense_map_link_t *s)
 {
     return sense_map_link_page(s) && s->known && s->want_set && !s->refused
            && memcmp(s->want, s->held, sizeof(s->want)) == 0;
+}
+
+bool sense_map_link_in_force(const sense_map_link_t *s)
+{
+    return sense_map_link_page(s) && s->known && s->forced;
 }
 
 bool sense_map_link_take_reread(sense_map_link_t *s)

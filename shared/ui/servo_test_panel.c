@@ -20,6 +20,7 @@
 
 #include "log_name.h"
 #include "rcbench_version.h"
+#include "sensors_rows.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "settings_sensors.h"
@@ -182,12 +183,13 @@ static void test_cfg(servo_test_cfg_t *c)
     c->enc_cmd_deg[0] = us_to_deg(c->end_lo_us);
     c->enc_cmd_deg[1] = us_to_deg(c->end_hi_us);
     /* The meter the run reads to its end: the servo rail's as the panel
-     * last said it.  The INA3221's CH1 windows while it is the meter of a
+     * last said it.  The INA3221 channel's windows while it is the meter of a
      * measured supply; else the PD mini's own readings, whose travel times
      * are an upper bound; and with the supply modelled, the model, which
      * stands in for the PD mini with no lag of its own. */
     if (test_on_ina_now()) {
         servo_test_meter_ina3221(&c->meter, settings_sensors_meter_dmohm());
+        (void)sensors_rows_meter(c->meter.name, sizeof(c->meter.name));
         c->meter_changes = s.changes;
     } else if (c->model) {
         servo_test_meter_model(&c->meter);
@@ -561,6 +563,14 @@ void draw_test_box(gfx_canvas_t *c)
     const char *meter =
         (t->cfg.meter.kind == (uint8_t)SERVO_TEST_METER_MODEL)
             ? TR(SV_METER_MODEL) : t->cfg.meter.name;
+    /* An INA3221 channel as over the plot, "INA 0x41 CH2": the whole
+     * name passes the button. */
+    char shortname[sizeof(t->cfg.meter.name)];
+    if (t->cfg.meter.kind == (uint8_t)SERVO_TEST_METER_INA3221
+        && strncmp(meter, "INA3221 0x", 10u) == 0) {
+        snprintf(shortname, sizeof(shortname), "INA %s", meter + 8);
+        meter = shortname;
+    }
     const gfx_rect_t btn = test_btn_rect();
     const int mw = gfx_text_width(&gfx_font_8x16, meter, 1);
     gfx_text(c, b.x + b.w - 10 - mw, btn.y + 8, meter, &gfx_font_8x16,

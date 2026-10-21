@@ -127,6 +127,7 @@ void bench_state_log_row(const bench_state_t *b, bool whole,
     memcpy(out->servo_mean_ma, b->servo_mean_ma, sizeof(out->servo_mean_ma));
     memcpy(out->servo_max_ma, b->servo_max_ma, sizeof(out->servo_max_ma));
     memcpy(out->servo_min_mv, b->servo_min_mv, sizeof(out->servo_min_mv));
+    out->chw = b->chw;
 }
 
 void bench_state_reset_peaks(bench_state_t *b)

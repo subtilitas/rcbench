@@ -79,9 +79,9 @@ TEST_CASE(a_run_reads_the_windows_and_none_of_the_supplys_readings)
     CHECK(strstr(r, "Log:            the .CSV with this file's number, one "
                     "row per INA3221 window\n") != NULL);
     CHECK(strstr(r, "Supply:         PD mini\n") != NULL);
-    CHECK(strstr(r, "Current:        INA3221 CH1, shunt 100.0 mOhm, range "
+    CHECK(strstr(r, "Current:        INA3221, shunt 100.0 mOhm, range "
                     "1.638 A\n") != NULL);
-    CHECK(strstr(r, "Voltage:        INA3221 CH1, load side of the shunt\n")
+    CHECK(strstr(r, "Voltage:        INA3221, load side of the shunt\n")
           != NULL);
     CHECK(strstr(r, "Shunt:          up to 0.164 V lost across it at the "
                     "range") != NULL);
@@ -104,7 +104,8 @@ TEST_CASE(a_run_reads_the_windows_and_none_of_the_supplys_readings)
     CHECK(strstr(r, " 4.80    4.79  4.59   0.020  0.020  0.400  0.450  ")
           != NULL);
     CHECK(strstr(r, "Position: nothing measures the horn; every result is "
-                    "the INA3221's current on CH1.\n") != NULL);
+                    "the current of the INA3221 channel named above.\n")
+          != NULL);
     CHECK(strstr(r, "every result is the supply's current") == NULL);
     CHECK(strstr(r, "INA3221:        not used") == NULL);
 }
@@ -195,7 +196,7 @@ TEST_CASE(the_ina3221s_range_follows_its_shunt)
     servo_test_meter_t m;
     servo_test_meter_ina3221(&m, 1000u);        /* 0.1 Ohm */
     CHECK_EQ(m.kind, SERVO_TEST_METER_INA3221);
-    CHECK_STR_EQ(m.name, "INA3221 CH1");
+    CHECK_STR_EQ(m.name, "INA3221");     /* the caller names the channel */
     CHECK_EQ(m.span_ms, 50u);
     CHECK_EQ(m.lag_ms, 50u);
     CHECK(!m.repeats);

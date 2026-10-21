@@ -37,7 +37,9 @@
 #include "outputs.h"
 #include "servo_limrun.h"
 #include "servo_sweep.h"
+#include "sensors_rows.h"
 #include "settings.h"
+#include "settings_sensors.h"
 #include "supply_screen.h"
 #include "ui_keypad.h"
 #include "ui_pinlist.h"
@@ -128,13 +130,14 @@ static const ui_plot_series_t k_power[PS_COUNT] = {
 
 /*
  * The widths of the three readings on the line over the plot, in px of 8 px
- * cells.  Beside PD MINI 68 each.  Beside INA3221 CH1 60, 64 and 56, which
- * hold the widest reading of the part's registers: `65.54 V`, `-32.77 A`,
+ * cells.  Beside PD MINI 68 each.  Beside an INA3221 channel's 12-cell
+ * name, "INA 0x41 CH2", 52, 64 and 56, which hold the widest reading of the
+ * part's registers: a voltage of 6 cells, `9.99 V` or `65.5 V`, `-32.77 A`,
  * and a power of 7 cells, `-99.9 W` or `-2147 W`.
  */
 static const uint8_t k_line_w[2][PS_COUNT] = {
     { 68, 68, 68 },
-    { 60, 64, 56 },
+    { 52, 64, 56 },
 };
 
 /* The state, its type in servo_screen_int.h. */
@@ -2729,7 +2732,8 @@ static void fixed_text(char *out, size_t n, int32_t q, int places,
 }
 
 /* The servo rail's voltage, current and power, read and plotted, under the
- * name of its meter: the supply, or INA3221 CH1 while that is the meter. */
+ * name of its meter: the supply, or the INA3221 channel that watches the
+ * tester's target, "INA 0x41 CH2", while that is the meter. */
 static void draw_power(gfx_canvas_t *c)
 {
     const gfx_rect_t r = power_rect();
@@ -2738,15 +2742,24 @@ static void draw_power(gfx_canvas_t *c)
     /* The supply is the PD mini, named so in both languages, also while
      * the panel's model stands in for it; the model carries the pill
      * below. */
-    gfx_text(c, RC_X, PWR_TXT_Y, ina ? TR(SV_SOURCE_INA) : "PD MINI",
+    char src[16];
+    (void)sensors_rows_short(src, sizeof(src));
+    gfx_text(c, RC_X, PWR_TXT_Y, ina ? src : "PD MINI",
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
     const rail_t m = rail_now();
     char v[20], a[20], w[20];
-    if (m.v_ok) { snprintf(v, sizeof(v), "%.2f V", (double)m.v); }
-    else        { snprintf(v, sizeof(v), "-- V"); }
+    const uint8_t *fw = k_line_w[ina ? 1 : 0];
+    /* Hundredths of a volt, and tenths where those do not fit. */
+    if (m.v_ok) {
+        snprintf(v, sizeof(v), "%.2f V", (double)m.v);
+        if (gfx_text_width(UI_FONT_LABEL, v, 1) > fw[PS_V]) {
+            snprintf(v, sizeof(v), "%.1f V", (double)m.v);
+        }
+    } else {
+        snprintf(v, sizeof(v), "-- V");
+    }
     if (m.i_ok) { fixed_text(a, sizeof(a), m.q_a, 2, "A"); }
     else        { snprintf(a, sizeof(a), "-- A"); }
-    const uint8_t *fw = k_line_w[ina ? 1 : 0];
     if (m.v_ok && m.i_ok) {
         /* Tenths of a watt, and whole watts where those do not fit. */
         const float p = isfinite(m.p) ? m.p : 0.0f;

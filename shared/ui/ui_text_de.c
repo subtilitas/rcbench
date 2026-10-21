@@ -936,7 +936,6 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_COMMANDED]           = "SOLL-PULSBREITE",
     [TX_SV_MEASURED]            = "GEMESSEN",
     [TX_SV_CURRENT]             = "STROM",
-    [TX_SV_SOURCE_INA]          = "INA3221 CH1",
     [TX_SV_MODELLED]            = "SIMULIERT",
     [TX_SV_METER_MODEL]         = "SIMULATION",
     [TX_SV_SET]                 = "SOLL",
@@ -987,7 +986,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_LIM_PULSES_STD]      = "1000-2000",
     [TX_SV_LIM_START]           = "ENDLAGENLAUF STARTEN",
     [TX_SV_LIM_STOP]            = "LAUF BEENDEN",
-    [TX_SV_LIM_LINE]            = "AUSGANG %s, STROM INA3221 CH1",
+    [TX_SV_LIM_LINE]            = "AUSGANG %s, STROM %s",
     [TX_SV_LIM_RUNNING]         = "LÄUFT: %s",
     [TX_SV_LIM_INA_SETUP]       = "INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET",
     [TX_SV_LIM_INA_OFFLINE]     = "INA3221 NICHT ERREICHBAR",
@@ -1110,7 +1109,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ALERT_SENSE_WRONG]      = "0x%02X meldet %04Xh, kein %s. Gerät wird nicht verwendet.",
     [TX_ALERT_SENSE_STUCK]      = "Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.",
     [TX_ALERT_SENSE_I228_CLIPPED] = "INA228-Strom am Messbereichsende. Anzeige zeigt nur den Grenzwert.",
-    [TX_ALERT_SENSE_I3221_CLIPPED] = "INA3221 CH%u bei %u.%02u A übersteuert. Anzeige zeigt nur den Grenzwert.",
+    [TX_ALERT_SENSE_I3221_CLIPPED] = "INA3221 0x%02X CH%u bei %u.%02u A übersteuert. Anzeige zeigt nur den Grenzwert.",
     [TX_ALERT_ENC_OLD]          = "IOmcu-Firmware älter als 4.9. AS5600 nicht ausgelesen.",
     [TX_ALERT_SERVO_METER_OLD]  = "IOmcu-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.",
     [TX_ALERT_I3221_RESET]      = "INA3221 hat sich zurückgesetzt. Versorgung prüfen.",
@@ -2105,10 +2104,10 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
                                    "INA3221",
     [SERVO_STR_R_SUPPLY_PDMINI]  = "PD mini",
     [SERVO_STR_R_CURRENT]        = "Strom:           %s",
-    [SERVO_STR_R_CURRENT_INA]    = "Strom:           INA3221 CH1, Shunt %.1f "
+    [SERVO_STR_R_CURRENT_INA]    = "Strom:           %s, Shunt %.1f "
                                    "mOhm, Bereich %.3f A",
     [SERVO_STR_R_VOLTAGE]        = "Spannung:        %s",
-    [SERVO_STR_R_VOLTAGE_INA]    = "Spannung:        INA3221 CH1, Lastseite "
+    [SERVO_STR_R_VOLTAGE_INA]    = "Spannung:        %s, Lastseite "
                                    "des Shunts",
     [SERVO_STR_R_SHUNT]          = "Shunt:           bis %.3f V fallen am "
                                    "Bereichsende an ihm ab; der Sollwert "
@@ -2145,11 +2144,11 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_R_LIM_STALL_RANGE] = "BLOCKIERT AB %.2f A unerreichbar: "
                                     "INA3221-Bereich %.3f A",
     [SERVO_STR_R_UNM_POSITION_INA] = "Position: nichts misst das Ruderhorn; "
-                                     "jedes Ergebnis ist der Strom des "
-                                     "INA3221 auf CH1.",
-    [SERVO_STR_R_UNM_PEAKS_INA]  = "Strom zwischen zwei 1-ms-Messwerten von "
-                                   "CH1: ein Fenster enthält deren Mittel, "
-                                   "Höchst- und Tiefstwert.",
+                                     "jedes Ergebnis ist der Strom des oben "
+                                     "genannten INA3221-Kanals.",
+    [SERVO_STR_R_UNM_PEAKS_INA]  = "Strom zwischen zwei 1-ms-Messwerten "
+                                   "dieses Kanals: ein Fenster enthält deren "
+                                   "Mittel, Höchst- und Tiefstwert.",
     [SERVO_STR_R_METER_MODEL]    = "Modell des Panels",
 
     [SERVO_STR_L_FOUND]          = "GEFUNDEN",
@@ -2193,7 +2192,7 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
                                    "%u us",
     [SERVO_STR_L_R_OUTPUT]       = "Ausgang:         %s, %u Hz",
     [SERVO_STR_L_R_PULSE]        = "Pulsbereich:     Mitte %u us, %u-%u us",
-    [SERVO_STR_L_R_METER]        = "Strom:           INA3221 CH1, Fenster "
+    [SERVO_STR_L_R_METER]        = "Strom:           %s, Fenster "
                                    "zu 50 ms, Shunt %.1f mOhm",
     [SERVO_STR_L_R_RULE]         = "Suchregel:       Schritte zu 10 us, 120 "
                                    "ms warten, Mittel über 80 ms; angelaufen "

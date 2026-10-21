@@ -150,7 +150,7 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
     }
     if (here(c)) {
         if (ina) {
-            snprintf(b, n, S(R_CURRENT_INA),
+            snprintf(b, n, S(R_CURRENT_INA), meter,
                      (double)g->meter.shunt_dmohm / 10.0,
                      (double)g->meter.range_ma / 1000.0);
         } else {
@@ -160,7 +160,7 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
     }
     if (here(c)) {
         if (ina) {
-            snprintf(b, n, "%s", S(R_VOLTAGE_INA));
+            snprintf(b, n, S(R_VOLTAGE_INA), meter);
         } else {
             snprintf(b, n, S(R_VOLTAGE), meter);
         }

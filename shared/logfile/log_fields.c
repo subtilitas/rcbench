@@ -68,10 +68,14 @@ static const rule_t k_rules[] = {
     { M_EXACT,  "ina voltage",    "INA228", "V"    },
     { M_EXACT,  "ina current",    "INA228", "A"    },
     { M_EXACT,  "esc current",    "ESC",   "A"     },
-    /* And the INA3221's 50 ms window, once per window. */
+    /* And the INA3221's 50 ms window, once per window: CH1 to CH3, or with
+     * SENSE_MAP a group per watched target (log_cols.h). */
     { M_ANY_OF, "window|ch1 current|ch1 max|ch1 voltage|ch2 current|"
                 "ch2 max|ch2 voltage|ch3 current|ch3 max|ch3 voltage",
                 "INA3221", "" },
+    { M_PREFIX, "out ",           "INA3221", "" },
+    { M_PREFIX, "port ",          "INA3221", "" },
+    { M_PREFIX, "supply ",        "INA3221", "" },
 };
 
 static bool starts_with(const char *s, const char *prefix, bool fold)

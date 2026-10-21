@@ -40,7 +40,8 @@ history is in git.
   them is refused. With a map in force, IDENTITY's capability bit 3
   (`SERVO_SENSE`) is set while a channel it reads watches an output
   channel or a programming port. The panel writes SENSE_MAP from SETUP >
-  SENSORS (below) and does not read SENSE_WIN_A or SENSE_WIN_B yet.
+  SENSORS (below) and reads SENSE_WIN_A and SENSE_WIN_B for the run log
+  (below).
 - The IOmcu's store record is version 8, 308 bytes in a slot of two
   256-byte flash pages, 16 slots in the store; it keeps the map. Records
   of version 3 to 7 are read until the first version 8 save, and the
@@ -134,6 +135,26 @@ history is in git.
   0.21.
 - `INA3221 settings rejected. Check SETUP > SENSORS.` names SENSORS in
   place of INTERFACES.
+- The servo rail's INA3221 meter is the channel watching the servo
+  tester's target, any of the 12, with an IOmcu of protocol 4.25; CH1 of
+  the one part SENSE reads with an older IOmcu. SERVO names it over the
+  plot, `INA 0x41 CH2`, the TEST card beside STOP TEST likewise, the
+  LIMIT RUN line `CURRENT INA3221 0x41 CH2`, and both reports
+  `INA3221 0x41 CH2`. Beside the channel's 96 px name the voltage on that
+  line has 52 px and shows tenths from 10 V, `26.0 V`.
+- The run log's INA3221 columns follow the sensor map with an IOmcu of
+  protocol 4.25: one group of current, max and voltage per watching
+  channel, named after its target (`port 1 current (A)`, `out 3 max (A)`,
+  `supply voltage (V)`), the FAST channel first, at most 3 groups. FAST's
+  group comes from the window ring and is on every row; the others from
+  SENSE_WIN_A and SENSE_WIN_B, read on every poll after SERVO_WIN at most
+  every 40 ms while a part on the page is fitted, and miss about 1 row in
+  17 at a 53 ms poll. A fourth watching channel and later are not logged.
+  An older IOmcu, or a map derived from SENSE, keeps `ch1` to `ch3`.
+- OUTPUTS' PROG PORT entry names the channel watching the port,
+  `WATCHED BY INA3221 0x41 CH2`.
+- `INA3221 0x40 CH1 clipped at 1.64 A. Reading shows only the limit.`
+  names the part's address.
 - The IOmcu's sensor schedule reads up to 4 INA3221 at 0x40 to 0x43, 12
   channels, each with its own shunt. One channel, FAST, is read every 1 ms
   and carries the window ring and the move capture; the other channels

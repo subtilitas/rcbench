@@ -17,9 +17,12 @@
 #include "link_host.h"
 #include "link_pages.h"
 #include "panel.h"
+#include "log_cols.h"
 #include "sense_link.h"
 #include "sense_map_link.h"
+#include "sense_win_link.h"
 #include "settings.h"
+#include "sensors_rows.h"
 #include "settings_sensors.h"
 #include "ui_text.h"
 
@@ -77,6 +80,8 @@ void publish_sense(void)
     s_map_want   = mw;
     s_map_mirror = m.mirror;
     taskEXIT_CRITICAL(&s_sense_mux);
+    /* And OUTPUTS' WATCHED BY lines: app_main, as the screens. */
+    sensors_rows_publish_watch();
 }
 
 sense_setup_t sense_wanted(void)
@@ -176,6 +181,43 @@ static void map_alerts(void)
     }
 }
 
+/* SENSE_WIN_A and SENSE_WIN_B (4.25), for the log.  Control task only. */
+static sense_win_link_t s_sense_win;
+
+/* The log's INA3221 columns as the map the IOmcu holds makes them, for the
+ * log task's next file: s_cols_map false without a map read (an IOmcu
+ * older than 4.25, or not read yet), and CH1 to CH3 then.  Written by the
+ * control task, read by the log task, under s_sense_mux. */
+static log_cols_t s_cols;
+static bool       s_cols_map;
+
+bool sense_log_cols(log_cols_t *out)
+{
+    taskENTER_CRITICAL(&s_sense_mux);
+    const bool map = s_cols_map;
+    if (map && out != NULL) {
+        *out = s_cols;
+    }
+    taskEXIT_CRITICAL(&s_sense_mux);
+    return map;
+}
+
+/* The held map's columns and pages, after every SENSE_MAP exchange: only
+ * a map in force, as one derived from SENSE watches nothing and would give
+ * a file no INA3221 column, where SERVO_SENSE's CH1 to CH3 read. */
+static void publish_held(void)
+{
+    const bool map = sense_map_link_in_force(&s_sense_map);
+    log_cols_t cols;
+    log_cols_from_map(map ? s_sense_map.held : NULL, &cols);
+    taskENTER_CRITICAL(&s_sense_mux);
+    s_cols     = cols;
+    s_cols_map = map;
+    taskEXIT_CRITICAL(&s_sense_mux);
+    sense_win_link_want(&s_sense_win,
+                        map ? (uint8_t)s_sense_map.held[LINK_SM_ENABLE] : 0u);
+}
+
 void sense_map_came_up(uint16_t minor)
 {
     sense_map_want_t w;
@@ -186,11 +228,15 @@ void sense_map_came_up(uint16_t minor)
     sense_map_link_came_up(&s_sense_map, minor, now_ms());
     sense_link_set_map(&s_sense_link, sense_map_link_page(&s_sense_map));
     sense_link_set_map_held(&s_sense_link, false);
+    sense_win_link_came_up(&s_sense_win, minor);
+    publish_held();
 }
 
 void sense_map_lost(void)
 {
     sense_map_link_lost(&s_sense_map);
+    sense_win_link_lost(&s_sense_win);
+    publish_held();
     sense_link_set_map(&s_sense_link, false);
     sense_link_set_map_held(&s_sense_link, false);
     atomic_store(&s_sense_parts, 0u);
@@ -243,7 +289,50 @@ void sense_map_service(bool idle)
         sense_link_reread(&s_sense_link);
     }
     map_alerts();
+    publish_held();
     atomic_store(&s_sense_parts,
                  (unsigned)sense_map_link_status(&s_sense_map, &s_sense_link,
                                                  mirror, now_ms()));
+}
+
+/*
+ * SENSE_WIN_A and SENSE_WIN_B, from the poll on every pass, armed or not:
+ * the windows are readings and change nothing.  Each page due is read, two
+ * reads a call at most; an unanswered read ends the pass.  An IOmcu older
+ * than 4.25 is sent nothing.
+ */
+void sense_win_service(void)
+{
+    for (unsigned k = 0u; k < 2u; ++k) {
+        sense_win_link_op_t op;
+        if (!sense_win_link_next(&s_sense_win, now_ms(), &op)) {
+            return;
+        }
+        link_msg_t reply = { 0 };
+        const bool answered = read_regs(&s_host, op.page, 0u, op.n, &reply);
+        int result = SENSE_WIN_LINK_NO_ANSWER;
+        if (answered) {
+            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
+                                                : SENSE_WIN_LINK_ACK;
+        }
+        sense_win_link_done(&s_sense_win, result,
+                            (answered && reply.op == LINK_OP_DATA)
+                                ? reply.regs : NULL);
+        if (result == SENSE_WIN_LINK_NO_ANSWER) {
+            return;
+        }
+    }
+}
+
+void sense_win_attach(bench_state_t *b, bool ring)
+{
+    if (b == NULL) {
+        return;
+    }
+    (void)sense_win_link_window(&s_sense_win, b->servo_window, &b->chw);
+    /* FAST's group from the ring, which has every window of it; the ring
+     * is the held map's FAST only once the page holds the map asked. */
+    if (ring && sense_map_link_held(&s_sense_map)) {
+        sense_win_link_ring(&b->chw, s_sense_map.held[LINK_SM_FAST], b);
+    }
 }

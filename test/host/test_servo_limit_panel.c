@@ -193,6 +193,11 @@ TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
         lim_bench();
         lim_page();
         CHECK(lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+        /* The line names the output and the channel it reads. */
+        char meter_line[96];
+        snprintf(meter_line, sizeof(meter_line), TR(SV_LIM_LINE),
+                 "SERVO PWM GP2", "INA3221 0x40 CH1");
+        CHECK(lim_line_reads(0, meter_line, UI_C_TEXT_DIM));
         tap(START_X, START_Y);
         CHECK(!servo_screen_limit_running());
         close_settings();
@@ -202,6 +207,9 @@ TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
         lim_hold(2.3f);
         CHECK(servo_screen_limit_running());
         CHECK(!servo_screen_testing());
+        /* Running, the line names the channel the run reads. */
+        lim_page();
+        CHECK(lim_line_reads(0, meter_line, UI_C_TEXT_DIM));
         /* START TEST is busy while it runs. */
         hold_start(2.3f);
         CHECK(!servo_screen_testing());
@@ -339,7 +347,7 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     CHECK(strstr(bench.report, "RCBENCH SERVO LIMIT REPORT\n") == bench.report);
     CHECK(strstr(bench.report, "FOUND") != NULL);
     CHECK(strstr(bench.report, "search only, nothing written") != NULL);
-    CHECK(strstr(bench.report, "INA3221 CH1, 50 ms windows") != NULL);
+    CHECK(strstr(bench.report, "INA3221 0x40 CH1, 50 ms windows") != NULL);
     CHECK(strstr(bench.report, "Not run: search only.") != NULL);
     CHECK(strstr(bench.report, "RESTORE") == NULL);
     unsigned lo = 0u, hi = 0u;

@@ -3,7 +3,8 @@
 <sub>**English** · [Deutsch](Servo-de.md)</sub>
 
 Three procedures on a servo. The first measures a servo as installed: the
-limit search runs on the SERVO screen and reads INA3221 CH1, and for a KST
+limit search runs on the SERVO screen and reads the INA3221 channel that
+watches the servo tester's target, and for a KST
 or Chaservo servo on the programming port it can lower the servo's own
 travel limits. The second, the synchroniser, needs a current sensor across a
 pair of outputs, which is not fitted, and runs against a modelled servo only.
@@ -37,8 +38,8 @@ side first, then the high side. Where depends on the target:
 | a SERVO PWM pin on OUTPUTS | nothing | PULSE CENTRE out to PULSE MIN and PULSE MAX |
 | PROG PORT | a read session of the [programmer](ServoProgrammer.md) | the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
 
-The distance to that end replaces the 600 µs. The current is INA3221 CH1's
-50 ms windows, so each position takes 250 ms. The servo is held at the
+The distance to that end replaces the 600 µs. The current is the watching
+INA3221 channel's 50 ms windows, so each position takes 250 ms. The servo is held at the
 centre for 1000 ms before each search and after it: the return from an end,
 600 µs at 0.67 µs/ms, takes 900 ms, and the baseline is not to see it.
 
@@ -58,8 +59,10 @@ shorter hold starts nothing.
 ![The limit run, ready](img/servo-limrun-ready.png)
 
 The line under the button names what the run drives and reads, the whole
-time: `OUTPUT PROG PORT 1 GP13, CURRENT INA3221 CH1`, or
-`OUTPUT SERVO PWM GP2, CURRENT INA3221 CH1` while the tester drives the standard outputs. While
+time: `OUTPUT PROG PORT 1 GP13, CURRENT INA3221 0x41 CH2`, or
+`OUTPUT SERVO PWM GP2, CURRENT INA3221 0x40 CH1` while the tester drives the standard outputs.
+The channel is the one watching the tester's target in SETUP > SENSORS,
+the lowest with a shunt on a fitted part; `CURRENT INA3221` while none does. While
 the run goes on, LIVE's left card shows its box: the phase, the side and the pulse commanded, and the output
 again on its third line. The output card's TARGET row stays in sight as well.
 
@@ -73,7 +76,7 @@ and the line under it says why.
 | --- | --- |
 | `ARM FIRST` | the bench is SAFE |
 | `LAST REPORT STILL WRITING` | an automatic test or a limit run is under way, or its report is still going to the card |
-| `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | INA3221 or its CH1 off in SETUP, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
+| `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
 | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000 ms, or no window with current in the last 200 ms |
 | `SERVO SUPPLY BELOW 3.0 V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0 V, and a search there would find two free ends on a servo that never moved. 3.0 V lies under the 4.8 V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
@@ -346,7 +349,7 @@ Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
 Output:         PROG PORT 1 GP13, 50 Hz
 Pulse range:    centre 1500 us, 1000-2000 us
 Searched:       from 1500 us out to 1000 us and 2000 us
-Current:        INA3221 CH1, 50 ms windows, shunt 100.0 mOhm
+Current:        INA3221 0x40 CH1, 50 ms windows, shunt 100.0 mOhm
 Search rule:    10 us steps, settle 120 ms, mean of 80 ms; bound above 1.8 x free and +0.15 A
 Protections:    a sample at 3.0 A, above 1.0 A for 400 ms, no window for 200 ms, 40 s a search
 Duration:       85.6 s
@@ -439,8 +442,9 @@ horn unless the output encoder is on (see below), so every result is read from
 the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SETUP INTERFACES enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
 and its numbers are simulated. While the INA3221 is the servo rail's meter
-at START TEST and the supply is the PD mini, the run reads the INA3221's
-CH1 instead, in 50 ms windows: see [The meter](#the-meter).
+at START TEST and the supply is the PD mini, the run reads the INA3221
+channel that watches the tester's target instead, in 50 ms windows: see
+[The meter](#the-meter).
 
 START TEST on the AUTOMATIC TEST card of the SERVO screen's TEST task starts it:
 [Screens](Screens.md#servo) describes the controls. The engine is
@@ -627,12 +631,12 @@ A run reads one meter from START TEST to its end: the servo rail's meter as
 the panel names it when the run starts
 ([Link](Link.md#the-window-ring)).
 
-| | PD mini | INA3221 CH1 |
+| | PD mini | the INA3221 channel |
 | --- | --- | --- |
 | The run reads it when | the INA3221 is not the rail's meter at START TEST, or the supply is the panel's model | the INA3221 is the rail's meter at START TEST and the supply is the PD mini |
-| A reading | one reading of the supply, every 102 to 106 ms | one 50 ms window of CH1, 20 a second |
+| A reading | one reading of the supply, every 102 to 106 ms | one 50 ms window of the channel watching the tester's target, 20 a second |
 | Current | the reading | the window's mean. The peak is the window's highest or lowest 1 ms sample, whichever lies further from zero |
-| Voltage | the reading at the supply's output | CH1's bus voltage at the load side of the shunt: the window's mean in `Meas V`, its lowest sample in `V min` |
+| Voltage | the reading at the supply's output | the channel's bus voltage at the load side of the shunt: the window's mean in `Meas V`, its lowest sample in `V min` |
 | IDLE and HOLD | the readings taken in the phase | the windows that lie wholly in the phase; one that began before it is in neither. On the host suite's modelled bench IDLE's 1000 ms hold 19 to 20 windows and a hold of 600 ms 11 to 12 |
 | MOVE | the readings from the command on | the windows from the one open at the command on |
 | Travel time | to the reading that shows the arrival: late by up to one reading and about 300 ms of lag | to the window that shows the arrival: late by up to two windows and the poll that reads them, 145 ms |
@@ -935,7 +939,7 @@ writes:
 | `command (us)` | us | the pulse commanded |
 | `position (us)` | us | the measured position; empty, as nothing measures it |
 | `set (V)` | V | the step's voltage |
-| `voltage (V)` | V | the meter's: at the supply's output, or CH1's mean bus voltage in the window |
+| `voltage (V)` | V | the meter's: at the supply's output, or the channel's mean bus voltage in the window |
 | `limit (A)` | A | the current limit |
 | `current (A)` | A | the meter's, signed: the supply's reading, or the window's mean |
 | `power (W)` | W | voltage times current |
@@ -1046,8 +1050,8 @@ the host suite's modelled bench:
 ```
 Log:            the .CSV with this file's number, one row per INA3221 window
 Supply:         PD mini
-Current:        INA3221 CH1, shunt 100.0 mOhm, range 1.638 A
-Voltage:        INA3221 CH1, load side of the shunt
+Current:        INA3221 0x40 CH1, shunt 100.0 mOhm, range 1.638 A
+Voltage:        INA3221 0x40 CH1, load side of the shunt
 Shunt:          up to 0.164 V lost across it at the range; the set point is not raised for it
 Readings:       20.0 /s windows closed by the INA3221, 20.0 /s reached the test
 Skipped:        0 windows the INA3221 closed never reached the test
@@ -1055,8 +1059,8 @@ Resolution:     one window every 50 ms: a travel time is late by up to two windo
 Lag:            about 50 ms from a change of current to the reading that shows it
 Travel times:   an upper bound, not checked against the limit
 ...
-Position: nothing measures the horn; every result is the INA3221's current on CH1.
-Current between two 1 ms samples of CH1: a window holds their mean, highest and lowest.
+Position: nothing measures the horn; every result is the current of the INA3221 channel named above.
+Current between two 1 ms samples of that channel: a window holds their mean, highest and lowest.
 ```
 
 An aborted run reads `Result:
@@ -1091,7 +1095,7 @@ INA3221 closed and ends a run on the INA3221 at its first gap of more than
 200 ms: window 19804 is followed by 20409, 30.25 s later. The run reads 50
 windows and counts the 5 window numbers missing before that gap as skipped.
 Not measured on a bench: a window's lag behind the horn, whether the 50 ms
-mean shows the moves of a servo that the PD mini does not, what CH1 reads
+mean shows the moves of a servo that the PD mini does not, what the channel reads
 with a servo on a stop, and the constant-current rule against a PD mini.
 
 ## The commanded position follows ARMED
@@ -1174,8 +1178,9 @@ runs at the new rate.
 
 ## Prerequisites
 
-Current sensing on the servo rail. The limit search reads INA3221 CH1,
-wired and enabled in SETUP INTERFACES, and nothing else. The synchroniser
+Current sensing on the servo rail. The limit search reads the INA3221
+channel that watches the tester's target, wired in SETUP INTERFACES and
+fitted in SETUP > SENSORS, and nothing else. The synchroniser
 needs a sensor across the pair of outputs, which is not fitted. The
 automatic test reads the INA3221 or the PD mini, or runs on the panel's
 supply model. Programming LEFT ANGLE and RIGHT ANGLE needs the programming

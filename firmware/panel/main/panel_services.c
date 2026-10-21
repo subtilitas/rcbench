@@ -192,7 +192,11 @@ void sense_link_alerts(void)
             dmohm = sense_link_i3221_dmohm(&s_sense_link);
         }
         const uint32_t ca = (sense_i3221_full_scale_ma(dmohm) + 5u) / 10u;
-        snprintf(line, sizeof(line), TR(ALERT_SENSE_I3221_CLIPPED), ch,
+        unsigned addr = sense_link_i3221_addr(&s_sense_link);
+        if (addr == 0u) {
+            addr = LINK_SN_I3221_ADDR_MIN;
+        }
+        snprintf(line, sizeof(line), TR(ALERT_SENSE_I3221_CLIPPED), addr, ch,
                  (unsigned)(ca / 100u), (unsigned)(ca % 100u));
         s_sense_alert_gen = control_alert_numbered(line);
     }
