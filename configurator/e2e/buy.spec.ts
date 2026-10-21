@@ -177,8 +177,8 @@ for (const size of SIZES) {
       await expect(page.locator('#live')).toContainText('Moved to "You have".');
       await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=wire.dmm');
       // A second tick: the link names both in catalogue order.
-      await page.locator('#buy [data-h="panel"]').click();
-      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel,wire.dmm');
+      await page.locator('#buy [data-h="panel.p47b"]').click();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel.p47b,wire.dmm');
       await expect(page.locator('#have > li')).toHaveCount(2);
       await page.reload();
       await page.locator('#h-buy').waitFor();
@@ -191,8 +191,8 @@ for (const size of SIZES) {
       await expect(buyRow.nth(2)).toContainText('Digital multimeter');
       await expect(page.locator('#buy [data-h="wire.dmm"]')).not.toBeChecked();
       await expect(page.locator('#live')).toContainText('Back under "Parts to buy".');
-      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel');
-      await page.locator('#have [data-h="panel"]').click();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel.p47b');
+      await page.locator('#have [data-h="panel.p47b"]').click();
       await expect(page.locator('#have')).toHaveCount(0);
       await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow');
       await page.waitForLoadState('networkidle');
@@ -206,14 +206,14 @@ for (const size of SIZES) {
       // The tick follows the links of its row in the tab order.
       await page.locator('#buy > li[data-part="panel"] a.websearch').focus();
       await page.keyboard.press('Tab');
-      await expect(page.locator('#buy [data-h="panel"]')).toBeFocused();
+      await expect(page.locator('#buy [data-h="panel.p47b"]')).toBeFocused();
       await page.keyboard.press('Space');
       // The focus moves with the tick to "You have".
-      await expect(page.locator('#have [data-h="panel"]')).toBeFocused();
-      await expect(page.locator('#have [data-h="panel"]')).toBeChecked();
-      await expect.poll(() => hashOf(page)).toBe('#v=1&h=panel');
+      await expect(page.locator('#have [data-h="panel.p47b"]')).toBeFocused();
+      await expect(page.locator('#have [data-h="panel.p47b"]')).toBeChecked();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&h=panel.p47b');
       await page.keyboard.press('Space');
-      await expect(page.locator('#buy [data-h="panel"]')).toBeFocused();
+      await expect(page.locator('#buy [data-h="panel.p47b"]')).toBeFocused();
       await expect(page.locator('#have')).toHaveCount(0);
       await expect.poll(() => hashOf(page)).toBe('#v=1');
     });
@@ -229,8 +229,8 @@ for (const size of SIZES) {
       await open(page, '#v=1&f=escpow&o=xt90&h=ina228.matek,Panel,panel');
       await expect(page.locator('.msg.note')).toContainText('Panel, ina228.matek');
       await expect(page.locator('#have > li')).toHaveCount(1);
-      await expect(page.locator('#have [data-h="panel"]')).toBeChecked();
-      await expect(page.locator('p.printonly')).toContainText(/#v=1&f=escpow&o=xt90&h=panel$/);
+      await expect(page.locator('#have [data-h="panel.p47b"]')).toBeChecked();
+      await expect(page.locator('p.printonly')).toContainText(/#v=1&f=escpow&o=xt90&h=panel.p47b$/);
     });
 
     test('Copy as text, Copy as CSV and Copy link follow the "have it" ticks', async ({ page, context }) => {

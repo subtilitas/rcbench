@@ -155,7 +155,7 @@ const parts: Part[] = [
       buy('Waveshare', same('ESP32-P4-WIFI6-Touch-LCD-7B'), t(
         'The 7-inch touch board with 1024 × 600 pixels and the ESP32-P4. Ask for chip revision 3.2 in the order note: older stock may ship otherwise.',
         'Die 7-Zoll-Touch-Platine mit 1024 × 600 Pixeln und dem ESP32-P4. In der Bestellnotiz Chip-Revision 3.2 verlangen: Sonst kann ältere Ware kommen.',
-      ), { page: 'https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-7b.htm' }),
+      ), { id: 'p47b', page: 'https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-7b.htm' }),
     ],
     src: owner('2026-10-21'),
   },
@@ -231,7 +231,7 @@ const parts: Part[] = [
       buy(null, t('USB-C charger, 5 V, 3 A', 'USB-C-Ladegerät, 5 V, 3 A'), t(
         'At least 3 A at 5 V. It feeds the panel through a short cable.',
         'Mindestens 3 A bei 5 V. Es speist das Panel über ein kurzes Kabel.',
-      ), { id: 'charger' }),
+      ), { id: 'charger3a' }),
     ],
     src: guide('also-needed'),
   },

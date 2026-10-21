@@ -386,17 +386,17 @@ test('the address to copy, print and put in a document is the page address with 
 
 test('"have it" ticks: the key h survives format and parse, in catalogue order, each once', () => {
   const sel: Selection = { ...base(), functions: ['escpow'] };
-  const hash = formatHash(sel, 'en', 'en', CATALOGUE, ['ina228.matek', 'wire.dmm', 'panel', 'wire.dmm']);
-  assert.equal(hash, 'v=1&f=escpow&h=panel,wire.dmm,ina228.matek');
+  const hash = formatHash(sel, 'en', 'en', CATALOGUE, ['ina228.matek', 'wire.dmm', 'panel.p47b', 'wire.dmm']);
+  assert.equal(hash, 'v=1&f=escpow&h=panel.p47b,wire.dmm,ina228.matek');
   const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
-  assert.deepEqual(parsed.have, ['panel', 'wire.dmm', 'ina228.matek']);
+  assert.deepEqual(parsed.have, ['panel.p47b', 'wire.dmm', 'ina228.matek']);
   assert.deepEqual(parsed.unknown, []);
   assert.deepEqual(parsed.selection, sel);
   assert.equal(formatHash(parsed.selection, 'en', 'en', CATALOGUE, parsed.have), hash);
   // The key stands after the option tokens and before the language.
   assert.equal(formatHash({ ...sel, options: { ...DEFAULT_OPTIONS, ina228Board: 'xt90' } }, 'de', 'en', CATALOGUE, ['ina228.xt90']), 'v=1&f=escpow&o=xt90&h=ina228.xt90&l=de');
   // A token that names no row of the catalogue is not written.
-  assert.equal(formatHash(base(), 'en', 'en', CATALOGUE, ['wire.nope', 'warp', 'panel']), 'v=1&h=panel');
+  assert.equal(formatHash(base(), 'en', 'en', CATALOGUE, ['wire.nope', 'warp', 'panel.p47b']), 'v=1&h=panel.p47b');
 });
 
 test('a link without the key h opens the same setup with no "have it" tick', () => {
@@ -430,22 +430,22 @@ test('the key h without a version gives the base setup and the version notice', 
 test('the hash of a document holds the "have it" ticks the page shows', () => {
   const share = (hash: string, have?: string[]): string => shareHash(hash, DEFAULT_OPTIONS, CATALOGUE, have);
   // The ticks of the page are the ticks of the hash: the hash stays as it is.
-  assert.equal(share('#v=1&h=panel,wire.dmm', ['panel', 'wire.dmm']), '#v=1&h=panel,wire.dmm');
-  assert.equal(share('#v=1&h=panel,wire.dmm'), '#v=1&h=panel,wire.dmm');
+  assert.equal(share('#v=1&h=panel.p47b,wire.dmm', ['panel.p47b', 'wire.dmm']), '#v=1&h=panel.p47b,wire.dmm');
+  assert.equal(share('#v=1&h=panel.p47b,wire.dmm'), '#v=1&h=panel.p47b,wire.dmm');
   // A stale tick of the link leaves; the rest and the language stay.
   assert.equal(share('#v=1&f=escpow&o=xt90&h=wire.dmm,ina228.matek&l=de', ['wire.dmm']), '#v=1&f=escpow&o=xt90&h=wire.dmm&l=de');
   assert.equal(share('#v=1&h=wire.nope', []), '#v=1');
   // A malformed token beside a kept one leaves as well: the parser rejects it, the page drops it.
-  assert.equal(share('#v=1&h=Wire.DMM,panel', ['panel']), '#v=1&h=panel');
-  assert.equal(share('#v=1&f=servo&h=panel,wire.dmm.x&l=de', ['panel']), '#v=1&f=servo&h=panel&l=de');
+  assert.equal(share('#v=1&h=Wire.DMM,panel.p47b', ['panel.p47b']), '#v=1&h=panel.p47b');
+  assert.equal(share('#v=1&f=servo&h=panel.p47b,wire.dmm.x&l=de', ['panel.p47b']), '#v=1&f=servo&h=panel.p47b&l=de');
   // A repeated token is no dropped token: the hash stays as it is.
-  assert.equal(share('#v=1&h=panel,panel', ['panel']), '#v=1&h=panel,panel');
+  assert.equal(share('#v=1&h=panel.p47b,panel.p47b', ['panel.p47b']), '#v=1&h=panel.p47b,panel.p47b');
   // A hash of another version stays as it is.
   assert.equal(share('#v=2&h=Wire.DMM', []), '#v=2&h=Wire.DMM');
   // A test object leaves as before and the ticks stay.
-  assert.equal(share('#v=1&p=servo&h=panel', ['panel']), '#v=1&f=servo&h=panel');
+  assert.equal(share('#v=1&p=servo&h=panel.p47b', ['panel.p47b']), '#v=1&f=servo&h=panel.p47b');
   const page = 'https://subtilitas.github.io/rcbench/configurator/';
-  assert.equal(shareAddress(`${page}#v=1&h=pdmini,panel`, DEFAULT_OPTIONS, CATALOGUE, ['panel']), `${page}#v=1&h=panel`);
+  assert.equal(shareAddress(`${page}#v=1&h=pdmini,panel.p47b`, DEFAULT_OPTIONS, CATALOGUE, ['panel.p47b']), `${page}#v=1&h=panel.p47b`);
 });
 
 // The values of the motor simulator: key `m`.

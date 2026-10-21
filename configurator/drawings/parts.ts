@@ -209,8 +209,22 @@ function coproOsoyoo(d: Dwg): void {
 function panel(d: Dwg): void {
   d.add(d.board(24, 40, 320, 210, 'blue', 6));
   d.add(d.hole(40, 56, 4.5, '#70777e'), d.hole(328, 56, 4.5, '#70777e'), d.hole(40, 234, 4.5, '#70777e'), d.hole(328, 234, 4.5, '#70777e'));
-  // left edge: USB-C sockets; bottom left: the power switch, print ON OFF
-  d.add(d.usbc(14, 62, 30, 22, 'W'), d.usbc(14, 96, 30, 22, 'W'), d.usbc(14, 142, 30, 22, 'W'));
+  // left edge: 2 USB-C sockets (USB full speed, USB-to-UART) and the USB Type-A
+  // OTG socket; bottom left: the power switch, print ON OFF
+  /**
+   * Draws a USB Type-A socket with its opening on the west edge.
+   * @param x Left edge of the shell.
+   * @param y Top edge of the shell.
+   * @param w Shell length along the plug direction.
+   * @param h Shell width across the plug direction.
+   * @returns The SVG markup.
+   */
+  const usba = (x: number, y: number, w: number, h: number): string => {
+    const tongue = `<rect x="${x + 5}" y="${y + h * 0.36}" width="${w - 9}" height="${h * 0.28}" fill="#e9e6de"/>`;
+    const contacts = [0.1, 0.3, 0.5, 0.7].map((f) => `<rect x="${x + 6 + f * (w - 12)}" y="${y + h * 0.38}" width="3" height="${h * 0.24}" fill="${d.u('gold')}"/>`).join('');
+    return `<g filter="${d.u('s3')}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${d.u('tin')}"/></g><rect x="${x + 4}" y="${y + 3}" width="${w - 7}" height="${h - 6}" rx="1" fill="#2a2c31"/>${tongue}${contacts}`;
+  };
+  d.add(d.usbc(14, 62, 30, 22, 'W'), d.usbc(14, 96, 30, 22, 'W'), usba(14, 140, 30, 26));
   d.add(`<g filter="${d.u('s2')}"><rect x="66" y="206" width="22" height="10" rx="1.5" fill="#1b1c20"/></g><rect x="69" y="208" width="8" height="6" fill="#e9e6de"/>`);
   d.add(d.text(77, 230, 'ON OFF', { sz: 8, a: 'middle' }));
   // the processor, the radio module, the card slot and the display connector
