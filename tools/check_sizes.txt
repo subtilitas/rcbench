@@ -28,12 +28,6 @@ shared/ui/servo_settings_panel.c | none | row 20 created it; the drawers moved w
 
 # Screens left whole: one screen each, a cut is a design change.
 shared/ui/kst_panel.c | none | F9: no section over 913 lines
-shared/ui/log_viewer_screen.c | none | one screen
-shared/ui/supply_screen.c | none | one screen
-shared/ui/motor_screen.c | none | one screen
-shared/ui/picker_screen.c | none | one screen
-shared/ui/settings_screen.c | none | one screen
-shared/ui/wifi_screen.c | none | one screen; crossed 1,000 after the plan with the text rework (#422), not weighed by the plan
 
 # Tables left whole.
 shared/ui/include/ui_text.def | none | F10: a split needs check_docs.py and check_formats.py to follow includes

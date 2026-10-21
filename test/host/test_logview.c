@@ -3574,6 +3574,48 @@ TEST_CASE(a_cut_last_row_is_left_out_and_said)
     g_long[0] = '\0';
 }
 
+/*
+ * A file the reader refuses opens on the import view with no analysis and
+ * the reader's verdict as the message, in each language: a header cut off
+ * before its line feed, a header with no row under it, and a header of 25
+ * columns, one more than LOG_MAX_COLUMNS.
+ */
+TEST_CASE(a_file_the_reader_refuses_says_why)
+{
+    char wide[256];
+    size_t at = 0;
+    for (int i = 0; i <= LOG_MAX_COLUMNS; ++i) {
+        at += (size_t)snprintf(wide + at, sizeof(wide) - at, "%sc%d",
+                               (i > 0) ? "," : "", i);
+    }
+    snprintf(wide + at, sizeof(wide) - at, "\n");
+    const struct {
+        const char  *text;
+        ui_text_id_t why;
+    } k_refused[] = {
+        { "t,v", TX_LOG_ERR_NO_HEADER },
+        { "t,v\n", TX_LOG_ERR_NO_ROWS },
+        { wide, TX_LOG_ERR_COLUMNS },
+    };
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        for (size_t i = 0; i < sizeof(k_refused) / sizeof(k_refused[0]);
+             ++i) {
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            snprintf(g_long, sizeof(g_long), "%s", k_refused[i].text);
+            g_removed[0] = g_removed[1] = g_removed[2] = true;
+            log_viewer_refresh();
+            open_file(5);
+            draw();
+            CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+            CHECK(log_viewer_analysis() == NULL);
+            CHECK_STR_EQ(log_viewer_message(), ui_tr(k_refused[i].why));
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    g_long[0] = '\0';
+}
+
 /* Pixels of one colour in the rows y0 <= y < y1 of the detection panel. */
 static int panel_pixels(gfx_color_t color, int y0, int y1)
 {
@@ -4523,6 +4565,7 @@ int main(void)
     RUN(delete_needs_a_selected_file);
     RUN(re_reading_the_card_selects_the_newest_run);
     RUN(a_cut_last_row_is_left_out_and_said);
+    RUN(a_file_the_reader_refuses_says_why);
     RUN(a_cut_last_row_is_said_beside_a_convention_conflict);
     RUN(two_fingers_spread_zoom_in_and_the_view_stays);
     RUN(two_fingers_moved_together_pan_and_pinching_zooms_out);

@@ -330,7 +330,7 @@ on. The same definition sizes that array.
 The UI keeps its frames small where it is cheap. A page's drawer is a
 separate function, so only the page on screen holds its buffers: in ESC
 STICK, `esc_stick_panel_render()`'s frame is 32 bytes and the largest
-page's 464. MOTOR & ESC's `render()` takes 48 bytes and calls the session's
+page's 464. MOTOR & ESC's `mo_render()` takes 48 bytes and calls the session's
 way and its body's, 416 bytes, as two functions, so a session's pages do not
 sit on the body's frame. A
 line copied for display is copied without `snprintf()`, which reaches
