@@ -37,7 +37,7 @@ static float mean_of(const servo_test_mean_t *m)
 
 /**
  * @brief The angle in the commanded direction: with REVERSE on, the horn turns
- * the other way for the same command, and the angle is negated.
+ *        the other way for the same command, and the angle is negated.
  *
  * @param t   Run state.
  * @param raw Encoder count, 0 to 4095.
@@ -194,7 +194,7 @@ static bool on_windows(const servo_test_t *t)
 
 /**
  * @brief The step's threshold, once its idle readings are in: the larger of the
- * smallest and SERVO_TEST_NOISE_K times their standard deviation.
+ *        smallest and SERVO_TEST_NOISE_K times their standard deviation.
  *
  * @param s Step whose idle readings are in.
  */
@@ -227,10 +227,7 @@ uint32_t servo_test_travel_window_ms(const servo_test_t *t)
                                             : 0u);
 }
 
-/*
- * ------------------------------------------------------------ the
- *        outbox
- */
+/* ------------------------------------------------------------ the outbox */
 
 /**
  * @brief Queue a line for the card; a CSV row is counted as lost when the
@@ -316,10 +313,7 @@ bool servo_test_drained(const servo_test_t *t)
                          && t->ended);
 }
 
-/*
- * --------------------------------------------------------------- the
- *        run
- */
+/* --------------------------------------------------------------- the run */
 
 /**
  * @brief The step running.
@@ -404,7 +398,7 @@ static void enc_close(servo_test_t *t)
 
 /**
  * @brief A move to @p end is commanded at @p now_ms: the encoder judges it from
- * the angle read before.
+ *        the angle read before.
  *
  * @param t       Run state.
  * @param end     0 for the low end, 1 for the high end.
@@ -498,8 +492,7 @@ static void command(servo_test_t *t, uint16_t us, uint32_t now_ms)
 
 /**
  * @brief The voltage step @p idx begins: its set point, the servo at its
- *        centre,
- * and on the first step the output on.
+ *        centre, and on the first step the output on.
  *
  * @param t      Run state.
  * @param idx    Index of the step to begin.
@@ -532,7 +525,7 @@ static void begin_step(servo_test_t *t, uint8_t idx, uint32_t now_ms)
 
 /**
  * @brief A move to end @p end: counted or not, measured against that end's
- * holding level, or the idle current while it is not known.
+ *        holding level, or the idle current while it is not known.
  *
  * @param t       Run state.
  * @param end     0 for the low end, 1 for the high end.
@@ -703,7 +696,7 @@ static void end_step(servo_test_t *t, uint32_t now_ms)
 
 /**
  * @brief The hold at an end is over: its level, and the next move or the step's
- * end.
+ *        end.
  *
  * @param t      Run state.
  * @param now_ms Time of the end, ms.
@@ -825,7 +818,7 @@ typedef struct {
 
 /**
  * @brief One row of the CSV, for a reading: the columns every run has, the
- * encoder's two where it is on, and the meter's six in @p tail.
+ *        encoder's two where it is on, and the meter's six in @p tail.
  *
  * @param t           Run state.
  * @param m           Reading.
@@ -970,7 +963,7 @@ static void measure(servo_test_t *t, const sample_t *m)
 
 /**
  * @brief A reading count that moved from @p was to @p now: what the meter took
- * since, and what of it never reached the run.
+ *        since, and what of it never reached the run.
  *
  * @param t   Run state.
  * @param was Count before.
@@ -1271,10 +1264,7 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
     memset(&t->pend, 0, sizeof(t->pend));
 }
 
-/*
- * ----------------------------------------------------------- the
- *        results
- */
+/* ----------------------------------------------------------- the results */
 
 servo_test_verdict_t servo_test_verdict(const servo_test_t *t)
 {
@@ -1310,9 +1300,7 @@ servo_test_verdict_t servo_test_verdict(const servo_test_t *t)
             }
             continue;
         }
-        /**
-         * @brief A move that started and never came back to its holding level.
-         */
+        /* A move that started and never came back to its holding level. */
         if (s->timeouts > 0u) {
             fail = true;
         }

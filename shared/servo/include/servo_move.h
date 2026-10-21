@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief One servo move judged from the servo's current, sample by sample: when
- * it started moving and when it arrived, from a step command to one end.
+ *        it started moving and when it arrived, from a step command to one end.
  *
  * Nothing measures the horn.  Current rises while the motor drives and
  * falls back to the holding level as it stops, which can lead or lag the
@@ -67,22 +67,24 @@
 extern "C" {
 #endif
 
-/** The smallest threshold.  A sample more than the threshold from the
- *  level before a command is the servo moving, and more than it above an
- *  end's holding level is the move not yet there. */
+/** @brief The smallest threshold.
+ *
+ * A sample more than the threshold from the level before a command is the servo
+ * moving, and more than it above an end's holding level is the move not yet
+ * there. */
 #define SERVO_MOVE_MIN_A        0.020f
-/** The threshold in idle noises, where that is larger. */
+/** @brief The threshold in idle noises, where that is larger. */
 #define SERVO_MOVE_NOISE_K      3.0f
-/** Back within this of the holding level, and not above it by the
- *  threshold, is the move arrived. */
+/** @brief Back within this of the holding level, and not above it by the
+ *         threshold, is the move arrived. */
 #define SERVO_MOVE_BAND_A       0.05f
-/** A move not arrived this long after its command is late, or unseen; a
- *  meter's lag is added (servo_move_window_ms()). */
+/** @brief A move not arrived this long after its command is late, or unseen; a
+ *         meter's lag is added (servo_move_window_ms()). */
 #define SERVO_MOVE_TIMEOUT_MS   3000u
-/** The longest filter. */
+/** @brief The longest filter. */
 #define SERVO_MOVE_FILTER_MAX   8u
 
-/** Where a move stands. */
+/** @brief Where a move stands. */
 typedef enum {
     SERVO_MOVE_IDLE = 0,    /**< not begun                               */
     SERVO_MOVE_WAITING,     /**< begun, no movement yet                  */
@@ -94,7 +96,7 @@ typedef enum {
     SERVO_MOVE_UNSEEN,      /**< no movement in the window               */
 } servo_move_state_t;
 
-/** A sample at the end of the meter's range. */
+/** @brief A sample at the end of the meter's range. */
 typedef enum {
     SERVO_MOVE_CLIP_LOW  = -1,  /**< at or below the value given         */
     SERVO_MOVE_CLIP_NONE =  0,
@@ -118,15 +120,15 @@ typedef struct {
     servo_move_state_t state;
     bool     left;          /**< since movement, above ref_a by the
                                  threshold: not there yet                */
-    /** @brief The samples in a row near ref_a, after movement. */
+    /* The samples in a row near ref_a, after movement. */
     uint8_t  run_n;
     float    run_lo, run_hi;
     uint32_t run_t;         /**< the first of them                       */
-    /** @brief The filter. */
+    /* The filter. */
     float    fbuf[SERVO_MOVE_FILTER_MAX];
     int8_t   fclip[SERVO_MOVE_FILTER_MAX];
     uint8_t  f_n, f_head;
-    /** @brief What it measured. */
+    /* What it measured. */
     uint32_t moved_t;       /**< the first sample of the movement        */
     uint32_t end_t;         /**< the arrival, or when the window ran out */
     float    sum;           /**< valued samples from the command to the
@@ -141,7 +143,7 @@ typedef struct {
 
 /**
  * @brief The standard deviation of @p n samples given as their sum and the sum
- *  of their squares; 0 for none.
+ *        of their squares; 0 for none.
  *
  * @param n      Number of samples.
  * @param sum    Sum of the samples, A.
@@ -169,8 +171,8 @@ uint32_t servo_move_window_ms(uint32_t lag_ms);
 
 /**
  * @brief A move begins: commanded at cfg->cmd_t, from cfg->rise_a towards
- *  cfg->ref_a.  settle_n below 2 is taken as 2; filter_n is held to 1 to
- *  SERVO_MOVE_FILTER_MAX.
+ *        cfg->ref_a.  settle_n below 2 is taken as 2; filter_n is held to 1 to
+ *        SERVO_MOVE_FILTER_MAX.
  *
  * @param m   Move state to initialise.
  * @param cfg Configuration of the move.
@@ -179,9 +181,9 @@ void servo_move_begin(servo_move_t *m, const servo_move_cfg_t *cfg);
 
 /**
  * @brief A sample taken before the move began, into the filter only, as the
- *  newest so far: a caller that held samples before it knew the command's
- *  time hands them over oldest first.  Decides nothing; nothing with
- *  filter_n 1 or once the move is over.
+ *        newest so far: a caller that held samples before it knew the command's
+ *        time hands them over oldest first.  Decides nothing; nothing with
+ *        filter_n 1 or once the move is over.
  *
  * @param m    Move state.
  * @param a    Sample, A.
@@ -194,9 +196,9 @@ void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip);
  *        it is at or past.
  *
  * A sample taken before the command only fills the filter; one at or past
- * window_t after the command ends the move late or unseen, as
- * servo_move_tick() would, and is not judged.  Nothing once the move is over.
- * ARRIVED and SETTLED leave end_t at the arrival.
+ * window_t after the command ends the move late or unseen, as servo_move_tick()
+ * would, and is not judged.  Returns the state after it; ARRIVED and SETTLED
+ * leave end_t at the arrival.  Nothing once the move is over.
  *
  * @param m    Move state.
  * @param at   Time of the sample, in the caller time unit.
@@ -210,8 +212,8 @@ servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
 
 /**
  * @brief The time is @p now: a move still under way at window_t after its
- *  command is over, late or unseen, with end_t at @p now.  A @p now before
- *  the command decides nothing.
+ *        command is over, late or unseen, with end_t at @p now.  A @p now
+ *        before the command decides nothing.
  *
  * @param m   Move state.
  * @param now Current time, in the caller time unit.

@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief The limit run's outbox and report, and the words the screen and the
- * report name a verdict, a reason and a phase by: see servo_limrun.h.
+ *        report name a verdict, a reason and a phase by: see servo_limrun.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,10 +12,7 @@
 
 #include "servo_limrun_int.h"
 
-/*
- * ------------------------------------------------------------ the
- *        outbox
- */
+/* ------------------------------------------------------------ the outbox */
 
 servo_test_out_t servo_limrun_peek(servo_limrun_t *r, const char **text)
 {
@@ -61,17 +58,12 @@ bool servo_limrun_drained(const servo_limrun_t *r)
         || (r->state == SERVO_LIMRUN_DONE && r->out_done);
 }
 
-/*
- * ------------------------------------------------------------ the
- *        report
- */
+/* ------------------------------------------------------------ the report */
 
 /**
- * @brief Cursor that prints one report line, found by counting.
- *
- * The lines are numbered from 0, as the automatic test's report is
- * (servo_report.c): a cursor walks the lines in order and prints the one
- * asked for.
+ * @brief One line at a time, found by counting, as the automatic test's report
+ *        is (servo_report.c): a cursor walks the lines in order and prints the
+ *        one asked for.
  */
 typedef struct {
     unsigned want, at;      /**< index asked for; index of the next line */
@@ -481,10 +473,7 @@ bool servo_limrun_report_line(const servo_limrun_t *r, unsigned idx,
     return head_lines(r, &c) || prog_lines(r, &c) || tail_lines(r, &c);
 }
 
-/*
- * -------------------------------------------------------------- the
- *        words
- */
+/* -------------------------------------------------------------- the words */
 
 servo_str_t servo_limrun_verdict_str(servo_limrun_verdict_t v)
 {

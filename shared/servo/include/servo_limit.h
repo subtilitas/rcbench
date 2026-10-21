@@ -42,20 +42,25 @@ typedef enum {
 
 typedef enum {
     SERVO_LIMIT_FAULT_NONE = 0,
-    /** Current crossed the hard ceiling. The search stops where it stands. */
+    /** @brief Current crossed the hard ceiling.
+     *
+     * The search stops where it stands. */
     SERVO_LIMIT_FAULT_OVERCURRENT,
-    /** Current stayed above the knee for longer than the stall timeout. */
+    /** @brief Current stayed above the knee for longer than the stall
+     *         timeout. */
     SERVO_LIMIT_FAULT_STALL,
-    /** The whole permitted travel was covered without binding.  Either the
-     *  surface is free over that range or the sensor does not resolve the
-     *  bind; reported as such rather than as a limit. */
+    /** @brief The whole permitted travel was covered without binding.
+     *
+     * Either the surface is free over that range or the sensor does not resolve
+     * the bind; reported as such rather than as a limit. */
     SERVO_LIMIT_FAULT_NO_LIMIT,
-    /** step_us is 0: no step can reach a stop.  Set by servo_limit_init(),
-     *  which then commands nothing but the centre. */
+    /** @brief step_us is 0: no step can reach a stop.
+     *
+     * Set by servo_limit_init(), which then commands nothing but the centre. */
     SERVO_LIMIT_FAULT_BAD_CONFIG,
 } servo_limit_fault_t;
 
-/** The pulse widths the search commands stay within, microseconds. */
+/** @brief The pulse widths the search commands stay within, microseconds. */
 #define SERVO_LIMIT_MIN_US 500u
 #define SERVO_LIMIT_MAX_US 2500u
 
@@ -69,7 +74,7 @@ typedef struct {
 
     /**
      * @brief The knee.  Current must exceed the free-running baseline by both a
-     * ratio and an absolute margin before a step counts as bound.
+     *        ratio and an absolute margin before a step counts as bound.
      *
      * Either test alone misreads a common case.  A ratio alone is fooled by
      * a very low baseline, where sensor noise is a large multiple of almost
@@ -83,8 +88,7 @@ typedef struct {
 
     /**
      * @brief Working hard: above this the servo is doing real work, and it may
-     *        not
-     * do so for longer than stall_ms.
+     *        not do so for longer than stall_ms.
      *
      * A threshold of its own, independent of the knee test.  Armed from the
      * knee, the stall protection would depend on a tuning value: a knee set
@@ -122,7 +126,7 @@ typedef struct {
     float    baseline_a;     /**< free-running current, from the first steps */
     float    knee_a;         /**< the current measured at the bound position */
 
-    /** @brief Internals: the settle/measure cycle at each position. */
+    /* Internals: the settle/measure cycle at each position. */
     uint32_t phase_start_ms;
     bool     measuring;
     double   sum_a;
@@ -144,14 +148,13 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg);
 
 /**
  * @brief Advance the search with one current reading, and return the pulse
- *        width the
- * servo should be commanded to.
+ *        width the servo should be commanded to.
  *
  * Call it at the sampling rate of the current sensor.  Calling after the
  * search has finished is safe; the returned width then holds the servo at
  * centre, so a finished search leaves no surface deflected.
  *
- * @param lf        Search state. A NULL lf gives 0.
+ * @param lf        Search state.  A NULL lf gives 0.
  * @param current_a Current reading, A. At or above hard_limit_a, or NaN, aborts
  *        the search.
  * @param now_ms    Time of the reading, ms.

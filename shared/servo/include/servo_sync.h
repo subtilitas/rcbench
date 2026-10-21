@@ -45,11 +45,13 @@ typedef enum {
 
 typedef enum {
     SERVO_SYNC_FAULT_NONE = 0,
-    /** Current crossed the hard ceiling. Stops where it stands. */
+    /** @brief Current crossed the hard ceiling.
+     *
+     * Stops where it stands. */
     SERVO_SYNC_FAULT_OVERCURRENT,
     /**
      * @brief The scan found no minimum distinguishable from the noise, or none
-     * inside its window.
+     *        inside its window.
      *
      * A pair that is already synchronised still produces a minimum, at zero
      * correction, because the scan moves one servo away from agreement.  So
@@ -62,7 +64,7 @@ typedef enum {
     SERVO_SYNC_FAULT_NO_MINIMUM,
 } servo_sync_fault_t;
 
-/** Which of the three measurements the search is on. */
+/** @brief Which of the three measurements the search is on. */
 typedef enum {
     SERVO_SYNC_STAGE_CENTRE = 0,
     SERVO_SYNC_STAGE_HIGH,
@@ -70,7 +72,7 @@ typedef enum {
     SERVO_SYNC_STAGE_COUNT,
 } servo_sync_stage_t;
 
-/** The most points one round of a scan may have. */
+/** @brief The most points one round of a scan may have. */
 #define SERVO_SYNC_MAX_POINTS 9
 
 typedef struct {
@@ -102,8 +104,7 @@ typedef struct {
 
     /**
      * @brief How far the best reading of a scan must sit below the worst before
-     *        the
-     * minimum counts.
+     *        the minimum counts.
      *
      * Two servos that are already synchronised produce a flat scan, and the
      * argmin of a flat scan is wherever the noise dips.  Without this test
@@ -114,7 +115,7 @@ typedef struct {
     float    hard_limit_a;
 } servo_sync_cfg_t;
 
-/** The pulse widths the search commands stay within, microseconds. */
+/** @brief The pulse widths the search commands stay within, microseconds. */
 #define SERVO_SYNC_MIN_US 500u
 #define SERVO_SYNC_MAX_US 2500u
 
@@ -129,12 +130,14 @@ typedef struct {
     int16_t  travel_hi_us;  /**< B's throw when A is at +deflection */
     int16_t  travel_lo_us;  /**< B's throw when A is at -deflection */
 
-    /** What the pair draws at the best and the worst point of each stage.
-     *  The difference is the gain from the correction. */
+    /** @brief What the pair draws at the best and the worst point of each
+     *         stage.
+     *
+     * The difference is the gain from the correction. */
     float    best_a[SERVO_SYNC_STAGE_COUNT];
     float    worst_a[SERVO_SYNC_STAGE_COUNT];
 
-    /** @brief Internals. */
+    /* Internals. */
     servo_sync_stage_t stage;
     uint8_t  round;
     uint8_t  point;

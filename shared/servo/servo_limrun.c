@@ -96,7 +96,7 @@ int32_t servo_limrun_span(const servo_limrun_servo_t *sv, uint8_t side)
 
 /**
  * @brief The share's terms from the pulses in force: after SERVO PULSES at
- * 1000-2000 those written, not those read.
+ *        1000-2000 those written, not those read.
  *
  * @param r    Run state.
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
@@ -149,18 +149,16 @@ uint16_t servo_limrun_scaled(uint16_t v, int32_t d, int32_t span,
                      lo_raw > v ? v : lo_raw, v);
 }
 
-/*
- * ------------------------------------------------------------ the end
- */
+/* ------------------------------------------------------------ the end */
 
 /**
  * @brief The run is over.  It lets the servo go; aborted, it also asks the
- * supply's output off.  A run that ends between CONNECT and LEAVE with
- * nothing running gives the port back, unless it was aborted: the
- * programmer then holds the port for RESTORE, and a STOP or the supply
- * switched off ends its session by itself.  Aborted while it waits for
- * ARMED, it asks SAFE: the ARM it asked may not be taken yet, and a
- * release does not replace one (servo_screen.c, post()).
+ *        supply's output off.  A run that ends between CONNECT and LEAVE with
+ *        nothing running gives the port back, unless it was aborted: the
+ *        programmer then holds the port for RESTORE, and a STOP or the supply
+ *        switched off ends its session by itself.  Aborted while it waits for
+ *        ARMED, it asks SAFE: the ARM it asked may not be taken yet, and a
+ *        release does not replace one (servo_screen.c, post()).
  *
  * @param r      Run state.
  * @param v      Verdict to store.
@@ -225,9 +223,7 @@ void servo_limrun_abort(servo_limrun_t *r, servo_test_abort_t why,
     abort_why(r, SERVO_LIMRUN_WHY_TEST, now_ms);
 }
 
-/*
- * ------------------------------------------------------- the searches
- */
+/* ------------------------------------------------------- the searches */
 
 /**
  * @brief Start a limit search of one side, from the centre outward.
@@ -280,7 +276,7 @@ static servo_limrun_side_t side_result(const servo_limrun_t *r,
 
 /**
  * @brief How far @p now lies outward of @p was on @p side, us: positive further
- * from the centre.
+ *        from the centre.
  *
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
  * @param now  Result being compared.
@@ -323,8 +319,8 @@ static unsigned changes(const servo_limrun_t *r, const uint16_t *want)
 
 /**
  * @brief The search centre and ends: the servo's NEUTRAL, PULSE LOWER and PULSE
- * UPPER once read, rounded inward to whole microseconds so no command
- * passes a pulse limit; the bench's PULSE CENTRE, MIN and MAX before.
+ *        UPPER once read, rounded inward to whole microseconds so no command
+ *        passes a pulse limit; the bench's PULSE CENTRE, MIN and MAX before.
  *
  * @param r Run state.
  */
@@ -345,8 +341,9 @@ static void search_span(servo_limrun_t *r)
 
 /**
  * @brief A bound side's values worked out for register @p reg: the overset, or,
- * where it is left out, the final value at once (servo_limrun.h).  False
- * where the register holds the smallest value already: nothing lowers it.
+ *        where it is left out, the final value at once (servo_limrun.h).  False
+ *        where the register holds the smallest value already: nothing lowers
+ *        it.
  *
  * @param r    Run state.
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
@@ -411,10 +408,11 @@ static uint16_t stage_value(const servo_limrun_t *r, uint8_t side,
 
 /**
  * @brief The next session's values and the side searched after it (-1: both
- * ends, the final check).  Before the mapping is known: the first bound
- * side's value in the register tried, the other register at its own value.
- * After: each register at its side's stage.  Pure: called again at the
- * session's CONNECT it gives the same.
+ *        ends, the final check).
+ *
+ * Before the mapping is known: the first bound side's value in the register
+ * tried, the other register at its own value. After: each register at its
+ * side's stage.  Pure: called again at the session's CONNECT it gives the same.
  *
  * @param r      Run state.
  * @param want   Out: the two register values of the session.
@@ -443,7 +441,7 @@ static void plan(const servo_limrun_t *r, uint16_t *want, int8_t *search)
 
 /**
  * @brief A session next: the servo back to the centre first, SAFE asked once it
- * had SERVO_LIMRUN_RETURN_MS to get there (servo_limrun_step()).
+ *        had SERVO_LIMRUN_RETURN_MS to get there (servo_limrun_step()).
  *
  * @param r      Run state.
  * @param now_ms Time, ms.
@@ -489,7 +487,7 @@ static void next_step(servo_limrun_t *r, uint32_t now_ms)
 
 /**
  * @brief The first bound side's search after its first write: which register
- * limits it.  False where the run ended or tries the other register.
+ *        limits it.  False where the run ended or tries the other register.
  *
  * @param r      Run state.
  * @param now_ms Time, ms.
@@ -547,9 +545,7 @@ static void next_after_probe(servo_limrun_t *r, uint32_t now_ms)
     }
     if (r->stage[side] == ST_OVERSET_SEARCH) {
         if (!res->bound) {
-            /**
-             * @brief The stop the overset was to keep in reach is not there.
-             */
+            /* The stop the overset was to keep in reach is not there. */
             fail(r, SERVO_LIMRUN_WHY_NO_STOP, now_ms);
             return;
         }
@@ -615,7 +611,7 @@ static void after_first_search(servo_limrun_t *r, uint32_t now_ms)
 
 /**
  * @brief The final check is over: PASS with both ends free.  An end that binds
- * with its register at the smallest value fails as that.
+ *        with its register at the smallest value fails as that.
  *
  * @param r      Run state.
  * @param now_ms Time, ms.
@@ -653,9 +649,7 @@ static void search_done(servo_limrun_t *r, uint16_t bind_us, uint32_t now_ms)
         return;
     }
     r->probe = side_result(r, bind_us);
-    /**
-     * @brief Back to the centre from the end it reached, whatever comes next.
-     */
+    /* Back to the centre from the end it reached, whatever comes next. */
     r->cmd_us  = r->ctr_us;
     r->cmd_due = true;
     switch (r->phase) {
@@ -696,9 +690,7 @@ static bool searching(const servo_limrun_t *r)
         || r->phase == SERVO_LIMRUN_PH_CHECK;
 }
 
-/*
- * ------------------------------------------------------------- inputs
- */
+/* ------------------------------------------------------------- inputs */
 
 bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
                         uint32_t now_ms)
@@ -727,8 +719,8 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
 }
 
 /**
- * @brief A current's magnitude, mA.  Wider than the reading: -32768 mA is
- * 32768 mA, past every ceiling, not a negative value under them.
+ * @brief A current's magnitude, mA.  Wider than the reading: -32768 mA is 32768
+ *        mA, past every ceiling, not a negative value under them.
  *
  * @param ma Current, mA, signed.
  * @return absolute value, mA.
@@ -927,8 +919,8 @@ static bool pulses_ordered(const uint16_t *p)
 
 /**
  * @brief The read session's pulses stand: the search's ends, within the bench's
- * PULSE MIN and PULSE MAX, and the port given back.  The bench stays SAFE
- * where they are not.
+ *        PULSE MIN and PULSE MAX, and the port given back.  The bench stays
+ *        SAFE where they are not.
  *
  * @param r      Run state.
  * @param now_ms Time, ms.
@@ -978,9 +970,7 @@ static void first_read(servo_limrun_t *r, const servo_limrun_servo_t *sv,
         && (r->pulse_now[SERVO_LIMRUN_P_LOWER] != SERVO_LIMRUN_STD_LOWER_DUS
             || r->pulse_now[SERVO_LIMRUN_P_UPPER]
                    != SERVO_LIMRUN_STD_UPPER_DUS)) {
-        /**
-         * @brief SERVO PULSES 1000-2000: the pulse write before anything moves.
-         */
+        /* SERVO PULSES 1000-2000: the pulse write before anything moves. */
         r->pulse_op = true;
         r->phase    = SERVO_LIMRUN_PH_WRITE;
         r->phase_ms = now_ms;
@@ -1054,10 +1044,9 @@ static void mark_programmed(servo_limrun_t *r)
 
 /**
  * @brief A write that failed once sent -- no answer, or one the programmer did
- *        not
- * take: part of it may have landed, so the servo's values count as changed
- * and RESTORE is offered.  A write refused before it was sent is
- * servo_limrun_refused()'s.
+ *        not take: part of it may have landed, so the servo's values count as
+ *        changed and RESTORE is offered.  A write refused before it was sent is
+ *        servo_limrun_refused()'s.
  *
  * @param r      Run state.
  * @param now_ms Time, ms.
