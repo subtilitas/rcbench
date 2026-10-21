@@ -1,5 +1,6 @@
-/*
- * Fetching a board's drawing. See art_fetch.h.
+/**
+ * @file
+ * @brief Fetching a board's drawing.  See art_fetch.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -11,6 +12,13 @@
 
 #include "link_pages.h"
 
+/**
+ * @brief Mark a fetch failed, with the reason.
+ *
+ * @param f    Fetch state.
+ * @param why  Reason text; kept as the fetch's reason.
+ * @return     ART_FETCH_FAILED.
+ */
 static art_fetch_state_t fail(art_fetch_t *f, const char *why)
 {
     f->state = ART_FETCH_FAILED;
