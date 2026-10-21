@@ -17,8 +17,9 @@
  * each channel's window judged against its limit once, as it closes, at
  * the limit and 1 mA under it, a channel of a part not fitted never, the
  * counts running on across a set-up, a clipped window against the top of
- * the range on 5 mOhm (32,755 over, 32,760 not), a part that drops in the
- * tick that closes the window judged as online; and every snapshot field.
+ * the range on 5 mOhm (32,755 over, 32,760 not), a part judged by its
+ * state as the window rolled, also when it drops later in that tick; and
+ * every snapshot field.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -718,11 +719,12 @@ TEST_CASE(a_clipped_window_is_judged_against_the_top_of_the_range)
     }
 }
 
-TEST_CASE(a_part_online_at_the_close_is_judged_if_it_drops_in_that_tick)
+TEST_CASE(a_part_online_at_the_roll_is_judged_if_it_drops_after_it)
 {
     /* The bus fails from k ticks before a window closes: the part goes
      * offline in some tick near the close.  The closed window is judged
-     * by whether the part was online before the tick that rolled it. */
+     * by whether the part was online as the window rolled, which in the
+     * tick it drops can be after the roll. */
     bool dropped_in_closing_tick = false;
     for (unsigned k = 0; k < 6u; ++k) {
         rig();
@@ -749,8 +751,12 @@ TEST_CASE(a_part_online_at_the_close_is_judged_if_it_drops_in_that_tick)
         CHECK(snap.win[0].number != n);
         const bool online_after = ina3221_state(&svc.sched.i3221[0])
                                   == SENSE_PART_ONLINE;
-        dropped_in_closing_tick |= online_before && !online_after;
-        CHECK_EQ(snap.over_n[0], (uint16_t)(count + (online_before ? 1u : 0u)));
+        const bool at_roll = (svc.sched.last_online & 1u) != 0u;
+        /* Dropped in the closing tick after the roll: still counted. */
+        dropped_in_closing_tick |= online_before && !online_after && at_roll;
+        CHECK(online_after ? at_roll : true);
+        CHECK(online_before ? true : !at_roll);
+        CHECK_EQ(snap.over_n[0], (uint16_t)(count + (at_roll ? 1u : 0u)));
     }
     CHECK(dropped_in_closing_tick);
 }
@@ -774,6 +780,6 @@ int main(void)
     RUN(a_service_starts_closed);
     RUN(each_window_is_judged_against_its_limit_as_it_closes);
     RUN(a_clipped_window_is_judged_against_the_top_of_the_range);
-    RUN(a_part_online_at_the_close_is_judged_if_it_drops_in_that_tick);
+    RUN(a_part_online_at_the_roll_is_judged_if_it_drops_after_it);
     return test_summary("sense_svc");
 }

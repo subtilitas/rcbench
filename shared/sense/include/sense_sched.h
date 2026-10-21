@@ -422,6 +422,7 @@ typedef struct {
     sense_acc_t    acc[SENSE_SRC_COUNT];
     sense_window_t last[SENSE_SRC_COUNT];
     bool     have_last;
+    uint8_t  last_online;    /**< bit a: part a online as last[] closed  */
     /* FAST's last windows, newest first; ring_at numbers entry 0. */
     sense_ring_win_t ring[SENSE_WIN_RING];
     uint64_t ring_at;
