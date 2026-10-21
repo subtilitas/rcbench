@@ -1,6 +1,7 @@
-/*
- * The panel's half of the KST (0x32) link page, protocol 4.13 to 4.15:
- * the programming ports for KST and Chaservo servos.
+/**
+ * @file
+ * @brief The panel's half of the KST (0x32) link page, protocol 4.13 to 4.15:
+ *        the programming ports for KST and Chaservo servos.
  *
  * The session with the servo runs at the IOmcu
  * (shared/outputs/kst_port.h).  The panel names an operation, and for a
@@ -76,24 +77,28 @@
 extern "C" {
 #endif
 
-/** The protocol minor whose KST page names programming ports. */
+/** @brief The protocol minor whose KST page names programming ports. */
 #define KST_LINK_MINOR LINK_MINOR_PROG
 
-/** Registers 0 to 3 are due this long after the last read while an
- *  operation runs or the port is out of PWM. */
+/**
+ * @brief Registers 0 to 3 are due this long after the last read while an
+ *        operation runs or the port is out of PWM.
+ */
 #define KST_LINK_POLL_MS 50u
-/** And this long after it while the port is in PWM. */
+/** @brief And this long after it while the port is in PWM. */
 #define KST_LINK_IDLE_MS 500u
 
-/** Exchanges without an answer, in a row, after which an operation is
- *  given up. */
+/**
+ * @brief Exchanges without an answer, in a row, after which an operation is
+ *        given up.
+ */
 #define KST_LINK_RETRIES 3u
 
-/** What came of an exchange: ACK or DATA, a NACK's reason, or none. */
+/** @brief What came of an exchange: ACK or DATA, a NACK's reason, or none. */
 #define KST_LINK_NO_ANSWER (-1)
 #define KST_LINK_ACK       0
 
-/** Where the module is. */
+/** @brief Where the module is. */
 typedef enum {
     KST_LINK_DOWN = 0,   /**< no IOmcu answers                      */
     KST_LINK_NO_PAGE,    /**< the IOmcu has no KST page             */
@@ -107,7 +112,7 @@ typedef enum {
                               KST_LINK_RUNNING follows                    */
 } kst_link_phase_t;
 
-/** What kst_link_start() and kst_link_fetch() answer. */
+/** @brief What kst_link_start() and kst_link_fetch() answer. */
 typedef enum {
     KST_LINK_START_OK = 0,
     KST_LINK_START_DOWN,       /**< no IOmcu answers                */
@@ -121,7 +126,7 @@ typedef enum {
                                     the operation: a LEAVE below 4.15     */
 } kst_link_start_t;
 
-/** An operation as the screen asks for it. */
+/** @brief An operation as the screen asks for it. */
 typedef struct {
     link_kst_op_t op;          /**< ENTER, READ_ALL, WRITE, RESTORE,
                                     RELEASE, VERIFY, POWER_CYCLED, REBOOT
@@ -144,7 +149,7 @@ typedef struct {
                                     outcome of the operation carries it   */
 } kst_link_request_t;
 
-/** How an operation went. */
+/** @brief How an operation went. */
 typedef enum {
     KST_LINK_OUT_NONE = 0,
     KST_LINK_OUT_DONE,       /**< it ran; result says how it ended        */
@@ -160,6 +165,9 @@ typedef enum {
                                   the command; nothing of it ran */
 } kst_link_outcome_kind_t;
 
+/**
+ * @brief The outcome of an operation that ended, as the link module reports it.
+ */
 typedef struct {
     kst_link_outcome_kind_t kind;
     link_kst_op_t      op;
@@ -182,8 +190,10 @@ typedef struct {
     uint32_t bad_regs;            /**< bit n: register n has no 3 equal reads */
 } kst_link_outcome_t;
 
-/** The screen's copy: a plain value the control task fills and the
- *  renderer reads. */
+/**
+ * @brief The screen's copy: a plain value the control task fills and the
+ *        renderer reads.
+ */
 typedef struct {
     kst_link_phase_t phase;
     bool     known;            /**< the fields below were read            */
@@ -206,7 +216,7 @@ typedef struct {
     uint16_t delay_max_us;
 } kst_link_readout_t;
 
-/** One exchange for the caller to make. */
+/** @brief One exchange for the caller to make. */
 typedef struct {
     bool     write;            /**< a write of regs; otherwise a read     */
     uint8_t  page;             /**< link_page_id_t                        */
@@ -214,6 +224,9 @@ typedef struct {
     uint16_t regs[4];          /**< a write's registers                   */
 } kst_link_xfer_t;
 
+/**
+ * @brief The state of the KST link module.
+ */
 typedef struct {
     bool     up;
     bool     page;
@@ -273,22 +286,47 @@ typedef struct {
     kst_link_outcome_t outcome;
 } kst_link_t;
 
+/**
+ * @brief Sets up the link state for the KST link page.
+ *
+ * @param k The link state to set up.
+ */
 void kst_link_init(kst_link_t *k);
 
-/** The link went: an operation on its way ends as KST_LINK_OUT_NO_ANSWER
- *  and nothing is read or written until it comes up again.  The images
- *  stay. */
+/**
+ * @brief The link went: an operation on its way ends as KST_LINK_OUT_NO_ANSWER
+ *        and nothing is read or written until it comes up again.
+ *
+ * The images
+ *  stay.
+ *
+ * @param k The link state.
+ */
 void kst_link_lost(kst_link_t *k);
 
-/** An IOmcu answered with protocol minor @p minor.  Below
- *  KST_LINK_MINOR it has no page and nothing is sent to it. */
+/**
+ * @brief An IOmcu answered with protocol minor @p minor.
+ *
+ * Below
+ *  KST_LINK_MINOR it has no page and nothing is sent to it.
+ *
+ * @param k     The link state.
+ * @param minor The IOmcu's protocol minor version.
+ */
 void kst_link_came_up(kst_link_t *k, uint16_t minor);
 
-/** Whether the IOmcu has the page: false while none answers. */
+/**
+ * @brief Whether the IOmcu has the page: false while none answers.
+ *
+ * @param k The link state.
+ * @return true while the IOmcu answers and has the page.
+ */
 bool kst_link_has_page(const kst_link_t *k);
 
 /**
- * Start an operation.  Taken in KST_LINK_READY only; any other answer
+ * @brief Start an operation.
+ *
+ * Taken in KST_LINK_READY only; any other answer
  * than KST_LINK_START_OK means nothing is sent.
  *
  * A LEAVE with leave_ms above LINK_KST_LEAVE_MS_MAX is
@@ -298,14 +336,29 @@ bool kst_link_has_page(const kst_link_t *k);
  * read.  The request names the image the panel last fetched by its CRC
  * (cyclic redundancy check), and the IOmcu refuses with
  * LINK_KST_REF_START when it holds another.
+ *
+ * @param k The link state.
+ * @param r The request to start.
+ * @return KST_LINK_START_OK when the operation is started, else the reason it
+ *         is not.
  */
 kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r);
 
-/** Read the results and the images again without an operation: for a
- *  panel that started while the port is out of PWM.  No outcome. */
+/**
+ * @brief Read the results and the images again without an operation: for a
+ *        panel that started while the port is out of PWM.
+ *
+ * No outcome.
+ *
+ * @param k The link state.
+ * @return The start result, as kst_link_start() gives it.
+ */
 kst_link_start_t kst_link_fetch(kst_link_t *k);
 
-/** STOP, or the operator's cancel.  A request whose command has not gone
+/**
+ * @brief STOP, or the operator's cancel.
+ *
+ * A request whose command has not gone
  *  is dropped (KST_LINK_OUT_DROPPED).  A command that went without an
  *  answer is not sent again: a read of registers 0 to 3 follows.  A page
  *  at the SEQ before the command did not take it, which drops the request
@@ -327,32 +380,81 @@ kst_link_start_t kst_link_fetch(kst_link_t *k);
  *  the same checks: a page off the panel's SEQ, or with its operation back
  *  at NONE, ends the operation as KST_LINK_OUT_RESTARTED, never
  *  KST_LINK_OUT_DONE.  An ABORT refused with LINK_NACK_BAD_VALUE goes
- *  again after that read, with the page's SEQ. */
+ *  again after that read, with the page's SEQ.
+ *
+ * @param k The link state.
+ */
 void kst_link_abort(kst_link_t *k);
 
-/** The next exchange owed at @p now_ms, into @p x; false for none.  The
- *  caller makes the exchange and reports with kst_link_done(). */
+/**
+ * @brief The next exchange owed at @p now_ms, into @p x; false for none.
+ *
+ * The
+ *  caller makes the exchange and reports with kst_link_done().
+ *
+ * @param k      The link state.
+ * @param now_ms The time, in ms.
+ * @param x      Receives the exchange owed.
+ * @return true when an exchange is owed.
+ */
 bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x);
 
-/** How the exchange kst_link_next() gave went: KST_LINK_ACK with the
- *  registers read (@p regs, x.n of them; NULL for a write), a NACK reason,
- *  or KST_LINK_NO_ANSWER. */
+/**
+ * @brief How the exchange kst_link_next() gave went: KST_LINK_ACK with the
+ *        registers read (@p regs, x.n of them; NULL for a write), a NACK
+ *        reason,  or KST_LINK_NO_ANSWER.
+ *
+ * @param k      The link state.
+ * @param result The result: an acknowledgement, a NACK's reason or
+ *               KST_LINK_NO_ANSWER.
+ * @param regs   The registers read, or NULL for a write.
+ */
 void kst_link_done(kst_link_t *k, int result, const uint16_t *regs);
 
-/** Where the module is.  KST_LINK_PLANNING while the operation runs and
- *  the page last read says it plans. */
+/**
+ * @brief Where the module is.
+ *
+ * KST_LINK_PLANNING while the operation runs and
+ *  the page last read says it plans.
+ *
+ * @param k The link state.
+ * @return The phase of the module.
+ */
 kst_link_phase_t kst_link_phase(const kst_link_t *k);
 
-/** How the last operation went, once: false while there is nothing new. */
+/**
+ * @brief How the last operation went, once: false while there is nothing new.
+ *
+ * @param k   The link state.
+ * @param out Receives the outcome.
+ * @return true when a new outcome was written to out.
+ */
 bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out);
 
-/** The screen's copy of the page. */
+/**
+ * @brief The screen's copy of the page.
+ *
+ * @param k The link state.
+ * @param r Receives the copy of the page.
+ */
 void kst_link_readout(const kst_link_t *k, kst_link_readout_t *r);
 
-/** The servo's registers as last fetched; false while there are none. */
+/**
+ * @brief The servo's registers as last fetched; false while there are none.
+ *
+ * @param k   The link state.
+ * @param out Receives the servo's image.
+ * @return true when out holds the image.
+ */
 bool kst_link_image(const kst_link_t *k, kst_image_t *out);
 
-/** The backup the IOmcu's session holds, as last fetched. */
+/**
+ * @brief The backup the IOmcu's session holds, as last fetched.
+ *
+ * @param k   The link state.
+ * @param out Receives the backup image.
+ * @return true when out holds the backup.
+ */
 bool kst_link_backup(const kst_link_t *k, kst_image_t *out);
 
 #ifdef __cplusplus

@@ -1,5 +1,8 @@
-/*
- * A programmable supply and its model.  See supply.h.
+/**
+ * @file
+ * @brief A programmable supply and its model.
+ *
+ * See supply.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -135,11 +138,23 @@ void supply_trip_reset(supply_trip_t *t)
     }
 }
 
-/*
- * One reading against its threshold: true once it has been over for
- * @p hold_s, counted from the first reading seen over -- not from the one
- * before it, which was not over, so the first interval is not credited.  A
+/**
+ * @brief One reading against its threshold: true once it has been over for @p
+ *        hold_s, counted from the first reading seen over -- not from the one
+ *        before it, which was not over, so the first interval is not credited.
+ *
+ * A
  * threshold of 0 or less is off.
+ *
+ * @param over_s    The time over the threshold, in s.
+ * @param over      true while the reading is over.
+ * @param at        The threshold the count was made against.
+ * @param arrived   true when the reading arrived.
+ * @param value     The reading.
+ * @param threshold The threshold.
+ * @param hold_s    The time over the threshold that trips, in s.
+ * @param dt        The time since the last call, in s.
+ * @return true once the reading has been over for hold_s.
  */
 static bool over_for(float *over_s, bool *over, float *at, bool arrived,
                      float value, float threshold, float hold_s, float dt)

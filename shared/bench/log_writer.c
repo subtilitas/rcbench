@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Writes a run as CSV rows to a sink, see log_writer.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -26,7 +29,12 @@ static const char *const k_ch123 =
     "ch3 current (A);ch3 max (A);ch3 voltage (V);";
 static const char *const k_tail = "source\n";
 
-/* The last column of both files: what produced the row's values. */
+/**
+ * @brief The last column of both files: what produced the row's values.
+ *
+ * @param modelled true when the row's values are modelled.
+ * @return LOG_WRITER_SRC_MODEL or LOG_WRITER_SRC_MEASURED.
+ */
 static const char *source_word(bool modelled)
 {
     return modelled ? LOG_WRITER_SRC_MODEL : LOG_WRITER_SRC_MEASURED;
@@ -38,13 +46,20 @@ static const char *const k_supply_header =
     "time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;"
     "charge (mAh);energy (Wh);source\n";
 
-/*
- * A short write latches the writer, and the bytes the sink took stay in the
- * file: nothing takes them back out of a card.  Nothing is written after
+/**
+ * @brief A short write latches the writer, and the bytes the sink took stay in
+ *        the file: nothing takes them back out of a card.
+ *
+ * Nothing is written after
  * them either, a line feed least of all.  The row they start has no line
  * feed, and that is what the reader drops it by (log_reader_row()): a row
  * cut after "95" of "9554" has its fields and a number that parses, and only
  * the missing terminator tells it from a whole row.
+ *
+ * @param w The writer.
+ * @param s The bytes.
+ * @param n The number of bytes.
+ * @return true when the sink took all n bytes.
  */
 static bool put(log_writer_t *w, const char *s, size_t n)
 {
@@ -70,8 +85,8 @@ void log_writer_init(log_writer_t *w, const log_sink_t *sink)
     }
 }
 
-/*
- * Tell the sink to keep what it has been given.
+/**
+ * @brief Tell the sink to keep what it has been given.
  *
  * A writer that has already failed is refused before anything is attempted.
  * The file has a hole in it from the row that failed, and a flush that
@@ -81,6 +96,9 @@ void log_writer_init(log_writer_t *w, const log_sink_t *sink)
  *
  * Nothing to commit is success, not a transaction: on a card an empty commit
  * costs a directory write and buys nothing.
+ *
+ * @param w The writer.
+ * @return true on success or when nothing is pending.
  */
 static bool commit(log_writer_t *w)
 {
@@ -158,9 +176,19 @@ bool log_writer_header(log_writer_t *w)
     return put(w, k_tail, strlen(k_tail));
 }
 
-/* A reading that is not finite is written as an empty cell, which the reader
- * counts as absent.  "nan" is not a number to the reader, and 0 is a wrong
- * value. */
+/**
+ * @brief A reading that is not finite is written as an empty cell, which the
+ *        reader counts as absent.
+ *
+ * "nan" is not a number to the reader, and 0 is a wrong
+ * value.
+ *
+ * @param out      Receives the text.
+ * @param cap      The size of out, in bytes.
+ * @param v        The reading.
+ * @param decimals The digits after the point.
+ * @return The number of characters written; 0 for a value that is not finite.
+ */
 static int fmt(char *out, size_t cap, float v, int decimals)
 {
     if (!isfinite(v)) {
@@ -169,12 +197,20 @@ static int fmt(char *out, size_t cap, float v, int decimals)
     return snprintf(out, cap, "%.*f", decimals, (double)v);
 }
 
-/*
- * The end of every row, whichever kind: the line goes out, the counts move,
- * and the commit comes on rows or on the run's own clock, whichever is first.
+/**
+ * @brief The end of every row, whichever kind: the line goes out, the counts
+ *        move, and the commit comes on rows or on the run's own clock,
+ *        whichever is first.
+ *
  * The clock bound is what holds when rows arrive slower than 20 Hz -- the far
  * end answering every other poll, say -- where waiting for
  * LOG_WRITER_FLUSH_ROWS would leave more than a second of run at risk.
+ *
+ * @param w    The writer.
+ * @param t_s  The time of the row, in s.
+ * @param line The row text.
+ * @param n    The length of line, in bytes.
+ * @return true when the row is written.
  */
 static bool finish_row(log_writer_t *w, float t_s, char *line, int n)
 {
@@ -192,11 +228,21 @@ static bool finish_row(log_writer_t *w, float t_s, char *line, int n)
     return true;
 }
 
-/*
- * One cell of a row: the separator, then the value if @p present.  False
+/**
+ * @brief One cell of a row: the separator, then the value if @p present.
+ *
+ * False
  * once the row no longer fits, checked before anything is written past what
  * the last cell left: snprintf answers the length it wanted, not the one it
  * had, so an offset taken from it unchecked points past the line.
+ *
+ * @param line     The row text.
+ * @param cap      The size of line, in bytes.
+ * @param n        The length of the row so far; updated.
+ * @param present  true when v is written.
+ * @param v        The value.
+ * @param decimals The digits after the point.
+ * @return true when the cell fits.
  */
 static bool cell(char *line, size_t cap, int *n, bool present, float v,
                  int decimals)
@@ -215,6 +261,15 @@ static bool cell(char *line, size_t cap, int *n, bool present, float v,
     return true;
 }
 
+/**
+ * @brief Appends one text cell to a row.
+ *
+ * @param line The row text.
+ * @param cap  The size of line, in bytes.
+ * @param n    The length of the row so far; updated.
+ * @param text The text.
+ * @return true when the cell fits.
+ */
 static bool text_cell(char *line, size_t cap, int *n, const char *text)
 {
     if (*n < 0 || (size_t)*n + 2u >= cap) {

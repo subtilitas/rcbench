@@ -1,5 +1,8 @@
-/*
- * Which meter measures the servo rail.  See servo_source.h.
+/**
+ * @file
+ * @brief Which meter measures the servo rail.
+ *
+ * See servo_source.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,7 +21,14 @@ void servo_source_init(servo_source_t *s)
     }
 }
 
-/* The first of conditions 1 to 5 that fails, or NONE. */
+/**
+ * @brief The first of conditions 1 to 5 that fails, or NONE.
+ *
+ * @param now_ms The time, in ms.
+ * @param minor  The IOmcu's protocol minor version.
+ * @param m      The sense_link_meter() answer.
+ * @return The reason, or SERVO_SOURCE_WHY_NONE.
+ */
 static servo_source_why_t judge(uint32_t now_ms, uint16_t minor,
                                 const sense_link_meter_t *m)
 {
@@ -46,6 +56,16 @@ static servo_source_why_t judge(uint32_t now_ms, uint16_t minor,
     return SERVO_SOURCE_WHY_NONE;
 }
 
+/**
+ * @brief Carries out one poll of the source.
+ *
+ * @param s       The source state.
+ * @param now_ms  The time, in ms.
+ * @param link_up true while the IOmcu link is up.
+ * @param minor   The IOmcu's protocol minor version.
+ * @param m       The sense_link_meter() answer, or NULL.
+ * @return The meter after the poll.
+ */
 static servo_source_id_t step(servo_source_t *s, uint32_t now_ms,
                               bool link_up, uint16_t minor,
                               const sense_link_meter_t *m)

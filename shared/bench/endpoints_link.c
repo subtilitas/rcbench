@@ -1,5 +1,8 @@
-/*
- * The panel's half of the throttle's pulse endpoints.  See
+/**
+ * @file
+ * @brief The panel's half of the throttle's pulse endpoints.
+ *
+ * See
  * endpoints_link.h.
  *
  * SPDX-License-Identifier: MIT
@@ -59,7 +62,12 @@ bool endpoints_page_holds(const uint16_t *page, uint16_t min_us,
     return true;
 }
 
-/* What an answered payment leaves for the switch to ARMED. */
+/**
+ * @brief What an answered payment leaves for the switch to ARMED.
+ *
+ * @param outcome The outcome of the payment.
+ * @return The block reason for the outcome.
+ */
 static endpoints_block_t block_of(endpoints_outcome_t outcome)
 {
     switch (outcome) {

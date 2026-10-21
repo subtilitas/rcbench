@@ -1,5 +1,7 @@
-/*
- * The panel's half of the SENSE, SERVO_SENSE and SERVO_WIN link pages.
+/**
+ * @file
+ * @brief The panel's half of the SENSE, SERVO_SENSE and SERVO_WIN link pages.
+ *
  * See sense_link.h.
  *
  * SPDX-License-Identifier: MIT
@@ -20,11 +22,17 @@ void sense_link_init(sense_link_t *s)
     }
 }
 
-/* Everything read under one set-up, forgotten when another is taken or the
- * link goes: what was said about it is news again under the next.  Not
+/**
+ * @brief Everything read under one set-up, forgotten when another is taken or
+ *        the link goes: what was said about it is news again under the next.
+ *
+ * Not
  * the magnet: its bits are the part's and the shaft's, not the set-up's,
  * and a weak magnet said once is not said again for an edit of another
- * row (judge_enc()). */
+ * row (judge_enc()).
+ *
+ * @param s The link state.
+ */
 static void forget_reads(sense_link_t *s)
 {
     s->have_status  = false;
@@ -99,8 +107,15 @@ void sense_link_came_up(sense_link_t *s, uint16_t minor, uint32_t now_ms)
     }
 }
 
-/* Whether the INA228 at @p i228 shares an address with the INA3221: one
- * of the fitted parts @p parts, or with none given the one at @p i3221. */
+/**
+ * @brief Whether the INA228 at @p i228 shares an address with the INA3221: one
+ *        of the fitted parts @p parts, or with none given the one at @p i3221.
+ *
+ * @param i228  The INA228 address.
+ * @param i3221 The INA3221 address.
+ * @param parts The fitted INA3221 parts, one bit each, or 0.
+ * @return true when the addresses are the same.
+ */
 static bool one_address(uint16_t i228, uint16_t i3221, uint8_t parts)
 {
     if (parts != 0u) {
@@ -110,9 +125,16 @@ static bool one_address(uint16_t i228, uint16_t i3221, uint8_t parts)
     return i228 == i3221;
 }
 
-/* Whether @p w is a set-up SETUP can name: every value inside the page's
- * own range.  A zeroed one -- a snapshot nobody has published into -- is
- * not, and is no reason to write anything. */
+/**
+ * @brief Whether @p w is a set-up SETUP can name: every value inside the page's
+ *        own range.
+ *
+ * A zeroed one -- a snapshot nobody has published into -- is
+ * not, and is no reason to write anything.
+ *
+ * @param w The set-up.
+ * @return true when every value is inside the page's range.
+ */
 static bool setup_valid(const sense_setup_t *w)
 {
     return w->sda >= -1 && w->scl >= -1
@@ -224,9 +246,16 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
     s->events |= local;
 }
 
-/* The bus frame as it is to be written: the pins asked and the parts
- * whose own frames the page has not refused.  The encoder's bit goes only
- * to an IOmcu that has it. */
+/**
+ * @brief The bus frame as it is to be written: the pins asked and the parts
+ *        whose own frames the page has not refused.
+ *
+ * The encoder's bit goes only
+ * to an IOmcu that has it.
+ *
+ * @param s   The link state.
+ * @param out Receives the frame.
+ */
 static void bus_frame(const sense_link_t *s, uint16_t *out)
 {
     uint16_t en = s->want[LINK_SN_ENABLE];
@@ -250,6 +279,13 @@ static void bus_frame(const sense_link_t *s, uint16_t *out)
     out[3] = (uint16_t)LINK_SN_KHZ_BUS;
 }
 
+/**
+ * @brief Whether the wanted frame differs from the held one.
+ *
+ * @param s  The link state.
+ * @param at The first register of the frame.
+ * @return true when they differ.
+ */
 static bool frame_differs(const sense_link_t *s, uint8_t at)
 {
     return memcmp(&s->want[at], &s->held[at],
@@ -296,6 +332,15 @@ sense_link_op_kind_t sense_link_write_owed(const sense_link_t *s,
     return SENSE_LINK_OP_NONE;
 }
 
+/**
+ * @brief Sets up a read operation.
+ *
+ * @param op   Receives the operation.
+ * @param kind The operation kind.
+ * @param page The page number.
+ * @param off  The first register.
+ * @param n    The number of registers.
+ */
 static void read_op(sense_link_op_t *op, sense_link_op_kind_t kind,
                     uint8_t page, uint8_t off, uint8_t n)
 {
@@ -306,6 +351,15 @@ static void read_op(sense_link_op_t *op, sense_link_op_kind_t kind,
     op->n     = n;
 }
 
+/**
+ * @brief Whether a read is due.
+ *
+ * @param asked    true when a read was asked.
+ * @param asked_ms The time the read was asked, in ms.
+ * @param now_ms   The time, in ms.
+ * @param every    The period, in ms.
+ * @return true when the read is due.
+ */
 static bool due(bool asked, uint32_t asked_ms, uint32_t now_ms,
                 uint32_t every)
 {
@@ -429,8 +483,13 @@ bool sense_link_next(sense_link_t *s, uint32_t now_ms, bool idle,
     return false;
 }
 
-/* A set-up was taken, or first read: what was read and said under the old
- * one is gone, and the wait before "not answering" starts again. */
+/**
+ * @brief A set-up was taken, or first read: what was read and said under the
+ *        old one is gone, and the wait before "not answering" starts again.
+ *
+ * @param s      The link state.
+ * @param now_ms The time, in ms.
+ */
 static void new_setup(sense_link_t *s, uint32_t now_ms)
 {
     s->setup_ms = now_ms;
@@ -462,6 +521,14 @@ static void new_setup(sense_link_t *s, uint32_t now_ms)
     s->clip_pending = 0u;
 }
 
+/**
+ * @brief Handles the result of a write.
+ *
+ * @param s      The link state.
+ * @param w      The write.
+ * @param result The result: an acknowledgement, a NACK reason or no answer.
+ * @param now_ms The time, in ms.
+ */
 static void written(sense_link_t *s, sense_link_op_kind_t w, int result,
                     uint32_t now_ms)
 {
@@ -522,11 +589,19 @@ static const uint32_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
 static const uint32_t k_wrong_ev[2] = { SENSE_LINK_EV_I228_WRONG,
                                         SENSE_LINK_EV_I3221_WRONG };
 
-/* The encoder's part of a SENSE read: not answering, once until it does,
- * and a magnet that is missing, weak or strong, once while its bits stay
- * as they were said -- across set-ups, as an edit of another row on SETUP
- * is one.  A part said not to answer has its magnet said again when it
- * answers. */
+/**
+ * @brief The encoder's part of a SENSE read: not answering, once until it does,
+ *        and a magnet that is missing, weak or strong, once while its bits stay
+ *        as they were said -- across set-ups, as an edit of another row on
+ *        SETUP is one.
+ *
+ * A part said not to answer has its magnet said again when it
+ * answers.
+ *
+ * @param s      The link state.
+ * @param now_ms The time, in ms.
+ * @param waited true when the grace time has passed.
+ */
 static void judge_enc(sense_link_t *s, uint32_t now_ms, bool waited)
 {
     (void)now_ms;
@@ -578,7 +653,12 @@ static void judge_enc(sense_link_t *s, uint32_t now_ms, bool waited)
     }
 }
 
-/* What a SENSE read says that the operator is told. */
+/**
+ * @brief What a SENSE read says that the operator is told.
+ *
+ * @param s      The link state.
+ * @param now_ms The time, in ms.
+ */
 static void judge_status(sense_link_t *s, uint32_t now_ms)
 {
     const uint16_t f   = s->status[ST(LINK_SN_FLAGS)];
@@ -629,8 +709,12 @@ static void judge_status(sense_link_t *s, uint32_t now_ms)
     judge_enc(s, now_ms, waited);
 }
 
-/* What a SERVO_SENSE read says: a channel read newly clipped, of the
- * channels the page reads. */
+/**
+ * @brief What a SERVO_SENSE read says: a channel read newly clipped, of the
+ *        channels the page reads.
+ *
+ * @param s The link state.
+ */
 static void judge_servo(sense_link_t *s)
 {
     const uint16_t chans = s->held[LINK_SN_I3221_CHANNELS];
@@ -654,7 +738,15 @@ static void judge_servo(sense_link_t *s)
     s->was_clipped = clipped;
 }
 
-/* Entry @p k of a SERVO_WIN read, whose newest number is @p newest. */
+/**
+ * @brief Entry @p k of a SERVO_WIN read, whose newest number is @p newest.
+ *
+ * @param regs   The registers read.
+ * @param k      The entry index.
+ * @param newest The newest window number.
+ * @param now_ms The time, in ms.
+ * @param w      Receives the window.
+ */
 static void win_entry(const uint16_t *regs, unsigned k, uint16_t newest,
                       uint32_t now_ms, sense_link_win_t *w)
 {
@@ -677,11 +769,18 @@ static void win_entry(const uint16_t *regs, unsigned k, uint16_t newest,
     w->stamped  = true;
 }
 
-/*
- * A SERVO_WIN read of @p n registers from 0: the windows it owes into the
- * queue, oldest first, and the cursor after the last one taken.  A read
+/**
+ * @brief A SERVO_WIN read of @p n registers from 0: the windows it owes into
+ *        the queue, oldest first, and the cursor after the last one taken.
+ *
+ * A read
  * that owes an entry it does not carry takes nothing and asks for the
  * whole page.
+ *
+ * @param s      The link state.
+ * @param regs   The registers read.
+ * @param n      The number of registers read, from 0.
+ * @param now_ms The time, in ms.
  */
 static void judge_win(sense_link_t *s, const uint16_t *regs, unsigned n,
                       uint32_t now_ms)

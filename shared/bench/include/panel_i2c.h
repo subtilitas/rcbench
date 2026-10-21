@@ -1,7 +1,9 @@
-/*
- * The I2C (Inter-Integrated Circuit) addresses the panel board answers on
- * its own bus, board_i2c_bus(): GPIO8 (SDA) and GPIO9 (SCL) on the Waveshare
- * ESP32-S3-Touch-LCD-7, the bus the panel's 4-pin I2C terminal carries.
+/**
+ * @file
+ * @brief The I2C (Inter-Integrated Circuit) addresses the panel board answers
+ *        on its own bus, board_i2c_bus(): GPIO8 (SDA) and GPIO9 (SCL) on the
+ *        Waveshare ESP32-S3-Touch-LCD-7, the bus the panel's 4-pin I2C terminal
+ *        carries.
  *
  * A device added to that bus has to sit outside this table.  The CH422G I/O
  * expander takes the address byte as its command, so a transaction to one of
@@ -59,8 +61,10 @@ extern "C" {
 #endif
 
 /**
- * The table as a constant expression, for a _Static_assert on an address
- * fixed at build time.  panel_i2c_addr_reserved() gives the same answer for
+ * @brief The table as a constant expression, for a _Static_assert on an address
+ *        fixed at build time.
+ *
+ * panel_i2c_addr_reserved() gives the same answer for
  * every address; test_panel_i2c holds the two to each other.
  */
 #define PANEL_I2C_RESERVED(a)                                               \
@@ -70,22 +74,33 @@ extern "C" {
      ((unsigned)(a) >= 0x30u && (unsigned)(a) <= 0x3Fu) ||                  \
      (unsigned)(a) == 0x5Du || (unsigned)(a) >= 0x78u)
 
+/**
+ * @brief One range of the panel's I2C address table and its owner.
+ */
 typedef struct {
     uint8_t     first;  /**< lowest 7-bit address of the range */
     uint8_t     last;   /**< highest, inclusive */
     const char *owner;  /**< the chip that answers there */
 } panel_i2c_range_t;
 
-/** The ranges, in rising address order. */
+/** @brief The ranges, in rising address order. */
 extern const panel_i2c_range_t panel_i2c_reserved_table[];
 extern const unsigned panel_i2c_reserved_count;
 
-/** Whether @p addr belongs to the board, or is no 7-bit address at all. */
+/**
+ * @brief Whether @p addr belongs to the board, or is no 7-bit address at all.
+ *
+ * @param addr The 7-bit address.
+ * @return true when the board answers at addr, or addr is no 7-bit address.
+ */
 bool panel_i2c_addr_reserved(unsigned addr);
 
 /**
- * The owner of @p addr: "CH422G", "GT911" or "I2C reserved", "not a 7-bit
- * address" above 0x7F, NULL for a free address.
+ * @brief The owner of @p addr: "CH422G", "GT911" or "I2C reserved", "not a
+ *        7-bit address" above 0x7F, NULL for a free address.
+ *
+ * @param addr The address to name.
+ * @return The owner's name, or NULL for a free address.
  */
 const char *panel_i2c_owner(unsigned addr);
 

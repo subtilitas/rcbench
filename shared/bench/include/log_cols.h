@@ -1,8 +1,11 @@
-/*
- * The bench log's INA3221 columns with SENSE_MAP in force (protocol 4.25):
- * one group of three per channel that watches something, named after what
- * it watches: FAST's channel first, then the others in channel order, at
- * most LOG_COLS_GROUPS of them.  The reader takes 24 columns
+/**
+ * @file
+ * @brief The bench log's INA3221 columns with SENSE_MAP in force (protocol
+ *        4.25): one group of three per channel that watches something, named
+ *        after what it watches: FAST's channel first, then the others in
+ *        channel order, at most LOG_COLS_GROUPS of them.
+ *
+ * The reader takes 24 columns
  * (LOG_MAX_COLUMNS), and the bench file's other columns are 14 of them, so
  * a channel past the third watching one is not logged.
  *
@@ -28,20 +31,30 @@ extern "C" {
 #endif
 
 #define LOG_COLS_MAX     LINK_SM_CHANNELS
-/** The groups a file carries: its 14 other columns and 3 groups of 3 make
- *  23 of the 24 the reader takes. */
+/**
+ * @brief The groups a file carries: its 14 other columns and 3 groups of 3 make
+ *        23 of the 24 the reader takes.
+ */
 #define LOG_COLS_GROUPS  3u
-/** "supply 0x43 ch3" and its terminator. */
+/** @brief "supply 0x43 ch3" and its terminator. */
 #define LOG_COL_NAME_MAX 20u
 
+/**
+ * @brief The log's columns: their number, targets and names.
+ */
 typedef struct {
     uint8_t n;                               /**< groups                 */
     uint8_t ch[LOG_COLS_MAX];                /**< each group's channel   */
     char    name[LOG_COLS_MAX][LOG_COL_NAME_MAX];
 } log_cols_t;
 
-/** The groups SENSE_MAP registers 0 to 25 @p map make, into @p out; none
- *  for a NULL map. */
+/**
+ * @brief The groups SENSE_MAP registers 0 to 25 @p map make, into @p out; none
+ *        for a NULL map.
+ *
+ * @param map The SENSE_MAP registers 0 to 25, or NULL.
+ * @param out Receives the groups.
+ */
 void log_cols_from_map(const uint16_t *map, log_cols_t *out);
 
 #ifdef __cplusplus

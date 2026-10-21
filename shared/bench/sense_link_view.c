@@ -1,9 +1,12 @@
-/*
- * The panel's half of the SENSE, SERVO_SENSE and SERVO_WIN link pages:
- * what the last reads hold, handed to the screens, the log and the band --
- * the servo windows, the meter, the ESC figures and totals, the encoder and
- * the parts' addresses and identities -- and the rows of SETUP the page
- * does not hold.  The state machine that decides what
+/**
+ * @file
+ * @brief The panel's half of the SENSE, SERVO_SENSE and SERVO_WIN link pages:
+ *        what the last reads hold, handed to the screens, the log and the band
+ *        -- the servo windows, the meter, the ESC figures and totals, the
+ *        encoder and the parts' addresses and identities -- and the rows of
+ *        SETUP the page does not hold.
+ *
+ * The state machine that decides what
  * is read and written is in sense_link.c.  See sense_link.h.
  *
  * SPDX-License-Identifier: MIT
@@ -15,8 +18,13 @@
 #include <stddef.h>
 #include <string.h>
 
-/* SERVO_SENSE's last read: the channels whose window holds readings,
- * bit n-1 for CHn. */
+/**
+ * @brief SERVO_SENSE's last read: the channels whose window holds readings, bit
+ *        n-1 for CHn.
+ *
+ * @param s The link state.
+ * @return Bit n-1 set for CHn with readings.
+ */
 static uint8_t servo_ok(const sense_link_t *s)
 {
     uint8_t ok = 0u;
@@ -31,7 +39,12 @@ static uint8_t servo_ok(const sense_link_t *s)
     return ok;
 }
 
-/* Whether SERVO_SENSE's last read holds a window not taken yet. */
+/**
+ * @brief Whether SERVO_SENSE's last read holds a window not taken yet.
+ *
+ * @param s The link state.
+ * @return true when such a window is waiting.
+ */
 static bool servo_window_new(const sense_link_t *s)
 {
     return servo_ok(s) != 0u
@@ -49,7 +62,13 @@ unsigned sense_link_windows(const sense_link_t *s)
     return servo_window_new(s) ? 1u : 0u;
 }
 
-/* Channel index @p i of SERVO_SENSE's last read into @p b. */
+/**
+ * @brief Channel index @p i of SERVO_SENSE's last read into @p b.
+ *
+ * @param s The link state.
+ * @param i The channel index, from 0.
+ * @param b Receives the channel figures.
+ */
 static void servo_channel(const sense_link_t *s, size_t i, bench_state_t *b)
 {
     const uint16_t *c = &s->servo[i * (size_t)LINK_SS_CH_STRIDE];
@@ -121,9 +140,16 @@ bool sense_link_take_window(sense_link_t *s, bench_state_t *b)
     return true;
 }
 
-/* Whether the page holds what the panel asks of it.  With the map in
+/**
+ * @brief Whether the page holds what the panel asks of it.
+ *
+ * With the map in
  * force the INA3221's enable bit and frame are the map's mirror, which the
- * panel does not ask: they are left out. */
+ * panel does not ask: they are left out.
+ *
+ * @param s The link state.
+ * @return true when the page holds the set-up asked.
+ */
 static bool held_as_asked(const sense_link_t *s)
 {
     uint16_t want[LINK_SN_CONFIG_COUNT];
@@ -231,9 +257,16 @@ bool sense_link_enc_on(const sense_link_t *s)
            && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600) != 0u;
 }
 
-/* Whether the last SENSE read is fresh at @p now_ms and holds a reading
- * of the encoder's registers from a part that answers; its flags into
- * @p flags. */
+/**
+ * @brief Whether the last SENSE read is fresh at @p now_ms and holds a reading
+ *        of the encoder's registers from a part that answers; its flags into @p
+ *        flags.
+ *
+ * @param s      The link state.
+ * @param now_ms The time, in ms.
+ * @param flags  Receives the encoder flags.
+ * @return true when the reading is fresh and from a part that answers.
+ */
 static bool enc_read(const sense_link_t *s, uint32_t now_ms, uint16_t *flags)
 {
     if (!sense_link_enc_on(s) || !s->have_status

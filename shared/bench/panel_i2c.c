@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The panel board's I2C address table and its owner lookup, see
+ *        panel_i2c.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 
