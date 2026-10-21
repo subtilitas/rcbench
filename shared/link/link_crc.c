@@ -1,14 +1,14 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "link_crc.h"
 
-/*
- * Bitwise rather than table-driven: 8 iterations per byte, a few
+/**
+ * @brief Bitwise rather than table-driven: 8 iterations per byte, a few
  * microseconds for a 64-byte frame on either processor, against a 512-byte
- * table that would have to be identical in two firmwares and the test
- * binary.
+ * table that would have to be identical in two firmwares and the test binary.
  */
 uint16_t link_crc(uint16_t crc, const void *data, size_t len)
 {

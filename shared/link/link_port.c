@@ -1,5 +1,6 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "link_port.h"
@@ -8,6 +9,15 @@
 
 #include "link_can.h"
 
+/**
+ * @brief Check that a link exchange has everything it needs.
+ *
+ * @param h The host state.
+ * @param port The transport and clock.
+ * @param reply Where the answer goes.
+ * @return true when h, port, port->exchange, port->now_ms and reply are all
+ *       non-NULL.
+ */
 static bool usable(const link_host_t *h, const link_port_t *port,
                    const link_msg_t *reply)
 {

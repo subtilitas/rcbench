@@ -1,5 +1,6 @@
-/*
- * What crosses the link, independent of the transport: an op, a page, an
+/**
+ * @file
+ * @brief What crosses the link, independent of the transport: an op, a page, an
  * offset, a count and up to a page of registers.
  *
  * The dispatcher and the poller work on this struct; link_can.h maps it onto
@@ -17,9 +18,14 @@
 extern "C" {
 #endif
 
-/** Registers in a page, and therefore in the largest transfer. */
+/**
+ * @brief Registers in a page, and therefore in the largest transfer.
+ */
 #define LINK_MAX_REGS 32
 
+/**
+ * @brief The operation a link message carries.
+ */
 typedef enum {
     LINK_OP_READ  = 0x01, /**< host asks for COUNT registers from PAGE:OFFS  */
     LINK_OP_WRITE = 0x02, /**< host sets them                                */
@@ -28,7 +34,9 @@ typedef enum {
     LINK_OP_NACK  = 0x05, /**< IOmcu refused it; regs[0] says why      */
 } link_op_t;
 
-/** Reasons a NACK (negative acknowledge) carries. */
+/**
+ * @brief Reasons a NACK (negative acknowledge) carries.
+ */
 typedef enum {
     LINK_NACK_BAD_PAGE   = 1,
     LINK_NACK_BAD_RANGE  = 2, /**< offset + count runs off the end of a page */
@@ -42,6 +50,9 @@ typedef enum {
     LINK_NACK_BUSY       = 6,
 } link_nack_t;
 
+/**
+ * @brief One link message: the op, the register window and its values.
+ */
 typedef struct {
     uint8_t  op;     /**< a link_op_t                                       */
     uint8_t  page;

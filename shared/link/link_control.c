@@ -1,5 +1,8 @@
-/*
- * The CONTROL page's rules.  See link_control.h.
+/**
+ * @file
+ * @brief The CONTROL page's rules.
+ *
+ * See link_control.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -8,11 +11,12 @@
 #include "link_can.h"
 #include "link_pages.h"
 
-/*
- * The frame that arms is ARM, THROTTLE and MOTOR_POLES from offset 0, and it
- * fits one CAN (Controller Area Network) frame only while the three stay
- * contiguous from register 0 and no wider than a frame.  Renumbering them is
- * a protocol major, and this is where the build says so.
+/**
+ * @brief The frame that arms is ARM, THROTTLE and MOTOR_POLES from offset 0,
+ * and it fits one CAN (Controller Area Network) frame only while the three stay
+ * contiguous from register 0 and no wider than a frame.
+ *
+ * Renumbering them is a protocol major, and this is where the build says so.
  */
 _Static_assert(LINK_CT_ARM == 0 && LINK_CT_THROTTLE == 1
                && LINK_CT_MOTOR_POLES == 2,
@@ -24,6 +28,13 @@ _Static_assert(LINK_CT_ARM_FRAME <= LINK_CAN_REGS_PER_FRAME,
 _Static_assert(LINK_CT_CLEAR >= LINK_CT_ARM_FRAME,
                "CLEAR is its own transaction ahead of the arming frame");
 
+/**
+ * @brief Test whether a MOTOR_POLES value is one a motor comes in.
+ *
+ * @param poles The value to test.
+ * @return true for 0, and for an even count within LINK_POLES_MIN to
+ *       LINK_POLES_MAX.
+ */
 static bool poles_ok(uint16_t poles)
 {
     /* Zero means nobody has said; anything else is an even count in the

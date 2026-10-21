@@ -1,17 +1,17 @@
-/*
- * The panel's half of the IOmcu update: finding out whether the
- * IOmcu runs the image the panel carries, sending it, and buying it
- * once it has started.
+/**
+ * @file
+ * @brief The panel's half of the IOmcu update: finding out whether the IOmcu
+ * runs the image the panel carries, sending it, and buying it once it has
+ * started.
  *
- * Stepwise.  Each link_uph_step() does one thing -- one block of 64 bytes
- * (8 data frames and a COMMIT), one read, one command, or 8 KiB of a hash --
- * and returns, so the caller runs its own loop between steps.  The wire is
- * a link_port_t, so the host suite runs every step against a simulated
- * IOmcu over the real link layer.
+ * Stepwise.  Each link_uph_step() does one thing -- one block of 64 bytes (8
+ * data frames and a COMMIT), one read, one command, or 8 KiB of a hash -- and
+ * returns, so the caller runs its own loop between steps.  The wire is a
+ * link_port_t, so the host suite runs every step against a simulated IOmcu over
+ * the real link layer.
  *
- * Only the frozen registers are used: IDENTITY 0 to 6 and the two update
- * pages.  An IOmcu of another protocol major is checked and updated
- * the same way.
+ * Only the frozen registers are used: IDENTITY 0 to 6 and the two update pages.
+ * An IOmcu of another protocol major is checked and updated the same way.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,28 +31,48 @@
 extern "C" {
 #endif
 
-/** Image bytes hashed in one step. */
+/**
+ * @brief Image bytes hashed in one step.
+ */
 #define LINK_UPH_HASH_STEP   8192u
-/** How long exchanges may go unanswered in a row before the link counts
- *  as gone: an IOmcu that restarts answers again well inside it.  An
- *  unanswered exchange takes LINK_HOST_TIMEOUT_MS (1000 ms) at the panel. */
+/**
+ * @brief How long exchanges may go unanswered in a row before the link counts
+ * as gone: an IOmcu that restarts answers again well inside it.
+ *
+ * An unanswered exchange takes LINK_HOST_TIMEOUT_MS (1000 ms) at the panel.
+ */
 #define LINK_UPH_LOST_MS     4000u
-/** Starts from block 0 after the IOmcu lost the session (a restart,
- *  link silence) before the update gives up. */
+/**
+ * @brief Starts from block 0 after the IOmcu lost the session (a restart, link
+ * silence) before the update gives up.
+ */
 #define LINK_UPH_RESTARTS    3u
-/** Refusals of the same block before the update gives up. */
+/**
+ * @brief Refusals of the same block before the update gives up.
+ */
 #define LINK_UPH_BLOCK_TRIES 3u
-/** How long the store's gate may stay shut while a command waits for it. */
+/**
+ * @brief How long the store's gate may stay shut while a command waits for it.
+ */
 #define LINK_UPH_BUSY_MS     10000u
-/** How long a hash at the IOmcu may take: 2036 KiB at 1 KiB a pass. */
+/**
+ * @brief How long a hash at the IOmcu may take: 2036 KiB at 1 KiB a pass.
+ */
 #define LINK_UPH_HASH_MS     10000u
-/** After ACTIVATE: nothing asked for this long, so the old image has
- *  restarted before identity is read. */
+/**
+ * @brief After ACTIVATE: nothing asked for this long, so the old image has
+ * restarted before identity is read.
+ */
 #define LINK_UPH_SETTLE_MS   500u
-/** After ACTIVATE: the new image has to answer and be bought inside this,
- *  well inside the boot ROM's 16.7 s TBYB (try before you buy) watchdog. */
+/**
+ * @brief After ACTIVATE: the new image has to answer and be bought inside this,
+ * well inside the boot ROM's 16.7 s TBYB (try before you buy) watchdog.
+ */
 #define LINK_UPH_CONFIRM_MS  12000u
 
+/**
+ * @brief The phase the update is in; one per link_uph_step().
+ */
 typedef enum {
     LINK_UPH_IDLE = 0,
     LINK_UPH_CHECK_HASH,  /**< this end's build hash                     */
@@ -70,6 +90,9 @@ typedef enum {
     LINK_UPH_DONE,        /**< result says how it ended                   */
 } link_uph_phase_t;
 
+/**
+ * @brief How the update ended; held in link_uph_t.result.
+ */
 typedef enum {
     LINK_UPH_NONE = 0,     /**< not ended yet                             */
     LINK_UPH_SAME,         /**< check: it runs this end's build           */
@@ -85,6 +108,9 @@ typedef enum {
     LINK_UPH_UPDATED,      /**< the new image runs and is bought          */
 } link_uph_result_t;
 
+/**
+ * @brief The panel's state for one update run.
+ */
 typedef struct {
     const uint8_t *img;
     uint32_t       len;
@@ -118,41 +144,75 @@ typedef struct {
 } link_uph_t;
 
 /**
- * Find out whether the IOmcu runs the build in @p img: this end's
- * build hash, then the IOmcu's over its running slot.  Ends SAME,
- * DIFFERENT, TRIAL, NEEDS_USB, NO_ANSWER or REFUSED.
+ * @brief Find out whether the IOmcu runs the build in @p img: this end's build
+ * hash, then the IOmcu's over its running slot.
  *
- * A session found in the IOmcu -- this panel's own, from before it
- * restarted or lost the link -- is ended with ABORT first: nobody sends its
- * blocks any more, and it would hold ARM.  An ACTIVATE found is waited out
- * for LINK_UPH_HASH_MS: the restart it leads to ends it.
+ * Ends SAME, DIFFERENT, TRIAL, NEEDS_USB, NO_ANSWER or REFUSED.
+ *
+ * A session found in the IOmcu -- this panel's own, from before it restarted or
+ * lost the link -- is ended with ABORT first: nobody sends its blocks any more,
+ * and it would hold ARM.  An ACTIVATE found is waited out for LINK_UPH_HASH_MS:
+ * the restart it leads to ends it.
+ *
+ * @param u The update state.
+ * @param img The image to compare with the IOmcu's running slot.
+ * @param len Length of img in bytes.
+ * @param now_ms The current time, in ms.
  */
 void link_uph_check(link_uph_t *u, const uint8_t *img, uint32_t len,
                     uint32_t now_ms);
 
 /**
- * Send @p img to the slot that is not running, check it, start it and buy
- * it.  Ends UPDATED or with the reason it stopped.
+ * @brief Send @p img to the slot that is not running, check it, start it and
+ * buy it.
+ *
+ * Ends UPDATED or with the reason it stopped.
+ *
+ * @param u The update state.
+ * @param img The image to send.
+ * @param len Length of img in bytes.
+ * @param now_ms The current time, in ms.
  */
 void link_uph_update(link_uph_t *u, const uint8_t *img, uint32_t len,
                      uint32_t now_ms);
 
-/** Buy an image found on trial.  Ends UPDATED, NO_ANSWER or REFUSED. */
+/**
+ * @brief Buy an image found on trial.
+ *
+ * Ends UPDATED, NO_ANSWER or REFUSED.
+ *
+ * @param u The update state.
+ * @param now_ms The current time, in ms.
+ */
 void link_uph_confirm(link_uph_t *u, uint32_t now_ms);
 
-/** One step; returns the phase it leaves the update in. */
+/**
+ * @brief One step; returns the phase it leaves the update in.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @return The phase after the step.
+ */
 link_uph_phase_t link_uph_step(link_uph_t *u, link_host_t *h,
                                const link_port_t *port);
 
-/** Blocks committed, in thousandths of the image: 0 to 1000. */
+/**
+ * @brief Blocks committed, in thousandths of the image: 0 to 1000.
+ *
+ * @param u The update state; NULL or no blocks gives 0.
+ * @return Committed blocks times 1000 over all blocks.
+ */
 uint16_t link_uph_permille(const link_uph_t *u);
 
-/*
- * An IOmcu of another protocol major answers its identity while the
- * link stays down.  Its alert and its build check are owed once per
- * mismatch, not at every probe of the 1 s the link-down probe repeats at;
- * an update that ended owes the check again, since an IOmcu that kept
- * its old image gives no link-up edge to start one.
+/**
+ * @brief An IOmcu of another protocol major answers its identity while the link
+ * stays down.
+ *
+ * Its alert and its build check are owed once per mismatch, not at every probe
+ * of the 1 s the link-down probe repeats at; an update that ended owes the
+ * check again, since an IOmcu that kept its old image gives no link-up edge to
+ * start one.
  */
 typedef struct {
     bool told;   /**< a mismatched answer was reported, none other since */
@@ -160,17 +220,32 @@ typedef struct {
 } link_uph_mismatch_t;
 
 /**
- * One identity probe: @p mismatch whether an IOmcu of another
- * protocol major answered it.  True when the build check is owed now: the
- * first such answer since a probe nobody or a matching IOmcu
- * answered, or the first after link_uph_mismatch_rearm().
+ * @brief One identity probe: @p mismatch whether an IOmcu of another protocol
+ * major answered it.
+ *
+ * True when the build check is owed now: the first such answer since a probe
+ * nobody or a matching IOmcu answered, or the first after
+ * link_uph_mismatch_rearm().
+ *
+ * @param m The mismatch state.
+ * @param mismatch true when the answer came from an IOmcu of another major.
+ * @return true when the build check is owed now.
  */
 bool link_uph_mismatch_probe(link_uph_mismatch_t *m, bool mismatch);
 
-/** Whether the last probe was answered by a mismatched IOmcu. */
+/**
+ * @brief Whether the last probe was answered by a mismatched IOmcu.
+ *
+ * @param m The mismatch state; NULL gives false.
+ * @return true when the last probe was answered by a mismatched IOmcu.
+ */
 bool link_uph_mismatch_answers(const link_uph_mismatch_t *m);
 
-/** An update ended: the next mismatched answer owes the check again. */
+/**
+ * @brief An update ended: the next mismatched answer owes the check again.
+ *
+ * @param m The mismatch state; NULL is ignored.
+ */
 void link_uph_mismatch_rearm(link_uph_mismatch_t *m);
 
 #ifdef __cplusplus
