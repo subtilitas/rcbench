@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "sense_limit_link.h"
 #include "sense_map_link.h"
 #include "settings.h"
 
@@ -69,6 +70,16 @@ bool sensors_rows_unheld(setting_id_t id);
 
 /** The line a marked row shows in place of its help. */
 const char *sensors_rows_why(setting_id_t id);
+
+/**
+ * The band's line for SENSE_LIMIT's alert @p ev (sense_limit_link_event())
+ * into @p buf, in the panel's language: for EV_OVER channel @p ch, the
+ * limit @p ma it passed in hundredths of an ampere, and in brackets what
+ * the channel watches, WATCHES option @p watch, none for NONE.  "" for
+ * EV_NONE.
+ */
+const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
+                               unsigned ch, uint16_t ma, int watch);
 
 /** Channel @p c (0 to 11) as the screens name it, "0x41 CH2", into @p buf;
  *  "" for no channel. */

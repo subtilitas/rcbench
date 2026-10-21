@@ -156,6 +156,41 @@ const char *sensors_rows_why(setting_id_t id)
     return TR(SET_UNHELD);
 }
 
+const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
+                               unsigned ch, uint16_t ma, int watch)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    switch (ev) {
+    case SENSE_LIMIT_LINK_EV_OVER: {
+        if (ch >= (unsigned)SET_INA_CHANNELS) {
+            break;
+        }
+        char target[24] = "";
+        if (watch > SENS_W_NONE && watch < SENS_W_COUNT) {
+            snprintf(target, sizeof(target), " (%s)",
+                     ui_setting_option(SET_INA_W(ch), watch));
+        }
+        const unsigned ca = ((unsigned)ma + 5u) / 10u;
+        snprintf(buf, n, TR(ALERT_SENSE_OVER),
+                 (unsigned)(LINK_SN_I3221_ADDR_MIN + ch / 3u), ch % 3u + 1u,
+                 target, ca / 100u, ca % 100u);
+        break;
+    }
+    case SENSE_LIMIT_LINK_EV_LOST:
+        snprintf(buf, n, "%s", TR(ALERT_SENSE_OVER_LOST));
+        break;
+    case SENSE_LIMIT_LINK_EV_REFUSED:
+        snprintf(buf, n, "%s", TR(ALERT_SENSE_LIMITS));
+        break;
+    default:
+        break;
+    }
+    return buf;
+}
+
 const char *sensors_rows_channel(int c, char *buf, size_t n)
 {
     if (buf == NULL || n == 0u) {

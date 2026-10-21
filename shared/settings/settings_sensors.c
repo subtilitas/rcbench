@@ -92,6 +92,7 @@ static const setting_def_t k_kept[4] = {
 
 _Static_assert(SET_INA3221_CH - SET_INA3221_EN == 3,
                "the four kept keys are in a row");
+_Static_assert(LINK_SL_MA_MAX == 32767u, "LIMIT's top is the page's");
 _Static_assert(SET_INA_CH_ROWS == 3,
                "a channel's rows: WATCHES, SHUNT, LIMIT");
 _Static_assert(SET_INA_W(5) == SET_INA_W_13 && SET_INA_SH(6) == SET_INA_SH_21
@@ -200,10 +201,9 @@ uint16_t settings_sensors_limit_ma(int c)
     if (c < 0 || c >= SET_INA_CHANNELS) {
         return 0u;
     }
+    /* The row's range is the page's, 0 to 32767 mA (LINK_SL_MA_MAX). */
     const long ma = lrintf(settings_get(SET_INA_LIM(c)));
-    return (ma <= 0) ? 0u
-           : (ma > (long)LINK_SL_MA_MAX) ? (uint16_t)LINK_SL_MA_MAX
-                                         : (uint16_t)ma;
+    return (ma <= 0) ? 0u : (uint16_t)ma;
 }
 
 uint16_t settings_sensors_dmohm(int c)

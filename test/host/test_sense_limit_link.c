@@ -108,12 +108,20 @@ TEST_CASE(nothing_goes_to_an_iomcu_older_than_4_27)
     CHECK_EQ(sense_limit_link_status(&ll), SENSE_LIMIT_ST_OLD);
     /* SETUP marks the limits asked: none is judged. */
     CHECK_EQ(sense_limit_link_unheld(&ll), 0x0001u);
-    /* One that names 4.27 and refuses the page is left alone. */
+    /* One that names 4.27 and refuses the page is left alone, and that
+     * is a refusal: said once, its limits marked. */
     fresh(27u, 1000u);
+    want_one(0, 500u);
     minor = 26u;                        /* its pages are 4.26's */
     polls(40);
     CHECK_EQ(reads, 0u);
-    CHECK_EQ(sense_limit_link_status(&ll), SENSE_LIMIT_ST_OLD);
+    CHECK_EQ(sense_limit_link_status(&ll), SENSE_LIMIT_ST_REFUSED);
+    CHECK_EQ(sense_limit_link_unheld(&ll), 0x0001u);
+    unsigned ch = 99u;
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_REFUSED);
+    CHECK_EQ(sense_limit_link_event(&ll, now + SENSE_LIMIT_LINK_GAP_MS, &ch,
+                                    NULL), SENSE_LIMIT_LINK_EV_NONE);
     /* No link: nothing, and nothing known. */
     sense_limit_link_lost(&ll);
     CHECK_EQ(sense_limit_link_status(&ll), SENSE_LIMIT_ST_UNKNOWN);
@@ -199,9 +207,9 @@ TEST_CASE(a_refused_write_is_said_once_until_the_next_edit)
     CHECK_EQ(sense_limit_link_status(&ll), SENSE_LIMIT_ST_REFUSED);
     CHECK_EQ(sense_limit_link_unheld(&ll), 0x0001u);
     unsigned ch = 99u;
-    CHECK_EQ(sense_limit_link_event(&ll, now, &ch),
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
              SENSE_LIMIT_LINK_EV_REFUSED);
-    CHECK_EQ(sense_limit_link_event(&ll, now + 10000u, &ch),
+    CHECK_EQ(sense_limit_link_event(&ll, now + 10000u, &ch, NULL),
              SENSE_LIMIT_LINK_EV_NONE);
     polls(40);
     CHECK_EQ(writes, 1u);
@@ -224,18 +232,22 @@ TEST_CASE(each_channel_over_is_told_at_its_pace)
     sense_limit_link_want(&ll, w, now);
     polls(20);
     unsigned ch = 99u;
-    CHECK_EQ(sense_limit_link_event(&ll, now, &ch), SENSE_LIMIT_LINK_EV_NONE);
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_NONE);
     over(7);
     over(1);
     polls(5);
     CHECK_EQ(pg.limit[LINK_SL_OVER], 0u);         /* the read cleared it */
-    CHECK_EQ(sense_limit_link_event(&ll, now, &ch), SENSE_LIMIT_LINK_EV_OVER);
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_OVER);
     CHECK_EQ(ch, 1u);
-    CHECK_EQ(sense_limit_link_event(&ll, now, &ch), SENSE_LIMIT_LINK_EV_NONE);
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_NONE);
     const uint32_t t1 = now;
     CHECK_EQ(sense_limit_link_event(&ll, t1 + SENSE_LIMIT_LINK_GAP_MS - 1u,
-                                    &ch), SENSE_LIMIT_LINK_EV_NONE);
-    CHECK_EQ(sense_limit_link_event(&ll, t1 + SENSE_LIMIT_LINK_GAP_MS, &ch),
+                                    &ch, NULL), SENSE_LIMIT_LINK_EV_NONE);
+    CHECK_EQ(sense_limit_link_event(&ll, t1 + SENSE_LIMIT_LINK_GAP_MS, &ch,
+                                    NULL),
              SENSE_LIMIT_LINK_EV_OVER);
     CHECK_EQ(ch, 7u);
     /* Channel 1 passing on: not told again within REPEAT_MS. */
@@ -243,13 +255,16 @@ TEST_CASE(each_channel_over_is_told_at_its_pace)
         over(1);
         polls(1);
     }
-    CHECK_EQ(sense_limit_link_event(&ll, now, &ch), SENSE_LIMIT_LINK_EV_NONE);
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_NONE);
     now = t1 + SENSE_LIMIT_LINK_REPEAT_MS;
     over(1);
     polls(5);
-    CHECK_EQ(sense_limit_link_event(&ll, now, &ch), SENSE_LIMIT_LINK_EV_OVER);
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_OVER);
     CHECK_EQ(ch, 1u);
-    CHECK_EQ(sense_limit_link_event(NULL, now, &ch), SENSE_LIMIT_LINK_EV_NONE);
+    CHECK_EQ(sense_limit_link_event(NULL, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_NONE);
 }
 
 /* A reply lost with its bits: the next read finds OVER_COUNT moved and
@@ -264,14 +279,17 @@ TEST_CASE(bits_lost_on_the_link_are_said_as_lost)
     polls(10);                                    /* two reads */
     CHECK(!drop);
     unsigned ch = 99u;
-    CHECK_EQ(sense_limit_link_event(&ll, now, &ch), SENSE_LIMIT_LINK_EV_LOST);
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_LOST);
     CHECK_EQ(ch, 99u);
-    CHECK_EQ(sense_limit_link_event(&ll, now + SENSE_LIMIT_LINK_GAP_MS, &ch),
+    CHECK_EQ(sense_limit_link_event(&ll, now + SENSE_LIMIT_LINK_GAP_MS, &ch,
+                                    NULL),
              SENSE_LIMIT_LINK_EV_NONE);
     /* An answered read that shows its bit is no loss. */
     over(3);
     polls(5);
-    CHECK_EQ(sense_limit_link_event(&ll, now + SENSE_LIMIT_LINK_GAP_MS, &ch),
+    CHECK_EQ(sense_limit_link_event(&ll, now + SENSE_LIMIT_LINK_GAP_MS, &ch,
+                                    NULL),
              SENSE_LIMIT_LINK_EV_OVER);
     CHECK_EQ(ch, 3u);
 }
@@ -286,14 +304,16 @@ TEST_CASE(the_clocks_hold_across_the_wrap)
     want_one(0, 250u);
     polls(1);
     unsigned ch = 99u;
-    CHECK_EQ(sense_limit_link_event(&ll, now, &ch), SENSE_LIMIT_LINK_EV_OVER);
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_OVER);
     CHECK_EQ(ch, 0u);
     const unsigned r0 = reads;
     polls(20);                                    /* 1 s, over the wrap */
     CHECK(reads - r0 >= 4u && reads - r0 <= 6u);
     over(0);
     polls(5);
-    CHECK_EQ(sense_limit_link_event(&ll, now, &ch), SENSE_LIMIT_LINK_EV_NONE);
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_NONE);
     want_one(0, 260u);
     const unsigned w0 = writes;
     polls(9);
@@ -315,6 +335,115 @@ TEST_CASE(the_clocks_hold_across_the_wrap)
     sense_limit_link_done(NULL, 0, NULL, now);
 }
 
+/* An unanswered exchange takes the link down; the count is kept and the
+ * link-up read compares: moved with no bit is a lost reply; 0 with no bit
+ * an IOmcu that started again with nothing over; a restart with a window
+ * over names it. */
+TEST_CASE(a_reply_lost_with_the_link_is_said_at_the_link_up)
+{
+    unsigned ch = 99u;
+    uint16_t ma = 0u;
+    for (int k = 0; k < 3; ++k) {
+        fresh(27u, 1000u);
+        want_one(5, 600u);
+        polls(20);
+        over(5);
+        drop = true;                    /* the read clears OVER, unseen */
+        polls(5);
+        CHECK(!drop);
+        sense_limit_link_lost(&ll);     /* the link went with it */
+        if (k == 1) {                   /* the IOmcu started again */
+            const uint16_t keep = pg.limit[5];
+            sense_page_init(&pg);
+            pg.limit[5] = keep;
+        } else if (k == 2) {            /* ... and a window passed since */
+            const uint16_t keep = pg.limit[5];
+            sense_page_init(&pg);
+            pg.limit[5] = keep;
+            over(5);
+        }
+        sense_limit_link_came_up(&ll, 27u, now);
+        polls(1);
+        const sense_limit_link_ev_t ev =
+            sense_limit_link_event(&ll, now, &ch, &ma);
+        if (k == 0) {
+            CHECK_EQ(ev, SENSE_LIMIT_LINK_EV_LOST);
+        } else if (k == 1) {
+            CHECK_EQ(ev, SENSE_LIMIT_LINK_EV_NONE);
+        } else {
+            CHECK_EQ(ev, SENSE_LIMIT_LINK_EV_OVER);
+            CHECK_EQ(ch, 5u);
+            CHECK_EQ(ma, 600u);
+        }
+    }
+}
+
+/* Each bit is told with the limit it was judged by.  Before a write that
+ * changes the limits one OVER read goes out, so a window judged under the
+ * old limit is told with it, also when the write switches every limit
+ * off and so ends the OVER reads. */
+TEST_CASE(a_bit_is_told_with_the_limit_it_passed)
+{
+    fresh(27u, 1000u);
+    want_one(2, 500u);
+    polls(20);
+    over(2);                            /* judged under 500 mA */
+    want_one(2, 0u);                    /* OFF before the next read */
+    const unsigned r0 = reads;
+    const unsigned w0 = writes;
+    polls(11);                          /* the settle, then read, write */
+    CHECK_EQ(writes, w0 + 1u);
+    CHECK(reads > r0);
+    CHECK_EQ(pg.limit[2], 0u);
+    unsigned ch = 99u;
+    uint16_t ma = 0u;
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, &ma),
+             SENSE_LIMIT_LINK_EV_OVER);
+    CHECK_EQ(ch, 2u);
+    CHECK_EQ(ma, 500u);
+    /* No limit held: no more OVER reads. */
+    const unsigned r1 = reads;
+    polls(20);
+    CHECK_EQ(reads, r1);
+    /* A limit raised: the bit judged under the old one keeps it. */
+    want_one(2, 300u);
+    polls(11);
+    over(2);
+    want_one(2, 900u);
+    polls(11);
+    CHECK_EQ(pg.limit[2], 900u);
+    CHECK_EQ(sense_limit_link_event(&ll, now + SENSE_LIMIT_LINK_REPEAT_MS,
+                                    &ch, &ma), SENSE_LIMIT_LINK_EV_OVER);
+    CHECK_EQ(ma, 300u);
+}
+
+/* Twelve channels that keep passing take turns: each is told within
+ * twelve gaps, none starved by a lower one. */
+TEST_CASE(twelve_channels_over_each_get_their_turn)
+{
+    fresh(27u, 1000u);
+    uint16_t w[LINK_SL_KEPT];
+    for (unsigned c = 0u; c < LINK_SL_KEPT; ++c) {
+        w[c] = 100u;
+    }
+    sense_limit_link_want(&ll, w, now);
+    polls(20);
+    uint16_t told = 0u;
+    for (unsigned g = 0u; g < LINK_SL_KEPT; ++g) {
+        for (unsigned c = 0u; c < LINK_SL_KEPT; ++c) {
+            over(c);
+        }
+        polls(5);
+        unsigned ch = 99u;
+        CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+                 SENSE_LIMIT_LINK_EV_OVER);
+        CHECK(ch < LINK_SL_KEPT);
+        told = (uint16_t)(told | (1u << ch));
+        now += SENSE_LIMIT_LINK_GAP_MS - 250u;
+    }
+    CHECK_EQ(told, 0x0FFFu);
+}
+
 int main(void)
 {
     RUN(nothing_goes_to_an_iomcu_older_than_4_27);
@@ -324,5 +453,8 @@ int main(void)
     RUN(each_channel_over_is_told_at_its_pace);
     RUN(bits_lost_on_the_link_are_said_as_lost);
     RUN(the_clocks_hold_across_the_wrap);
+    RUN(a_reply_lost_with_the_link_is_said_at_the_link_up);
+    RUN(a_bit_is_told_with_the_limit_it_passed);
+    RUN(twelve_channels_over_each_get_their_turn);
     return test_summary("sense_limit_link");
 }

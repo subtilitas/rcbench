@@ -32,13 +32,13 @@ Each fitted part has a heading, `INA3221 0x40` to `INA3221 0x43`, and three rows
 
 ![A limit on an IOmcu older than 4.27](view:setup-sensors-limit)
 
-While a limit is set, the IOmcu judges each channel window of 50 ms, and the panel reads which channels passed every 200 ms. The band says, at most once every 5 s, and once every 30 s for a channel that keeps passing:
+While a limit is set, the IOmcu judges each channel window of 50 ms, and the panel reads which channels passed every 200 ms. The band says, at most once every 5 s, and once every 30 s for a channel that keeps passing. Channels over at the same time take turns: with all 12 over, each is said within 60 s.
 
 | Band | Meaning |
 |---|---|
-| `INA3221 0x41 CH2 (PORT 1) over its 0.80 A limit.` | a window passed the channel's limit; in brackets what the channel watches |
-| `An INA3221 channel passed its limit; which one was lost on the link.` | the reply that named the channel was lost |
-| `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the limits and keeps its own |
+| `INA3221 0x41 CH2 (PORT 1) over its 0.80 A limit.` | a window passed the channel's limit; in brackets what the channel watches; the limit the window was judged by |
+| `An INA3221 channel passed its limit; which one was lost on the link.` | the reply that named the channel was lost; said after the next link-up, not after an IOmcu restart |
+| `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the limits and keeps its own, or refused the page |
 
 A limit row the IOmcu does not hold is drawn in the warning colour: while its write waits, after a refusal, and on an IOmcu older than 4.27, which judges no limit (`IOmcu older than 4.27: no limit is judged.`).
 

@@ -9,7 +9,6 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stdatomic.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
@@ -18,9 +17,9 @@
 #include "link_pages.h"
 #include "panel.h"
 #include "sense_limit_link.h"
+#include "sensors_rows.h"
 #include "settings.h"
 #include "settings_sensors.h"
-#include "ui_text.h"
 
 /* The limits and what each channel watches as the settings stand, under
  * s_limit_mux both ways: written by the settings observer on app_main,
@@ -71,36 +70,20 @@ static void limit_alerts(void)
         return;
     }
     unsigned c = 0u;
+    uint16_t ma = 0u;
     const sense_limit_link_ev_t ev =
-        sense_limit_link_event(&s_sense_limit, now_ms(), &c);
-    char line[ALERT_MAX];
-    switch (ev) {
-    case SENSE_LIMIT_LINK_EV_OVER: {
-        taskENTER_CRITICAL(&s_limit_mux);
-        const int w = s_limit_watch[c];
-        taskEXIT_CRITICAL(&s_limit_mux);
-        /* What the channel watches, in the operator's language. */
-        char target[24] = "";
-        if (w != SENS_W_NONE) {
-            snprintf(target, sizeof(target), " (%s)",
-                     ui_setting_option(SET_INA_W(c), w));
-        }
-        const unsigned ma = sense_limit_link_held_ma(&s_sense_limit, c);
-        const unsigned ca = (ma + 5u) / 10u;   /* hundredths of an ampere */
-        snprintf(line, sizeof(line), TR(ALERT_SENSE_OVER),
-                 LINK_SN_I3221_ADDR_MIN + c / 3u, c % 3u + 1u, target,
-                 ca / 100u, ca % 100u);
-        break;
-    }
-    case SENSE_LIMIT_LINK_EV_LOST:
-        snprintf(line, sizeof(line), "%s", TR(ALERT_SENSE_OVER_LOST));
-        break;
-    case SENSE_LIMIT_LINK_EV_REFUSED:
-        snprintf(line, sizeof(line), "%s", TR(ALERT_SENSE_LIMITS));
-        break;
-    default:
+        sense_limit_link_event(&s_sense_limit, now_ms(), &c, &ma);
+    if (ev == SENSE_LIMIT_LINK_EV_NONE) {
         return;
     }
+    int watch = 0;
+    if (c < LINK_SL_KEPT) {
+        taskENTER_CRITICAL(&s_limit_mux);
+        watch = s_limit_watch[c];
+        taskEXIT_CRITICAL(&s_limit_mux);
+    }
+    char line[ALERT_MAX];
+    (void)sensors_rows_alert(line, sizeof(line), ev, c, ma, watch);
     (void)control_alert_numbered(line);
 }
 

@@ -61,10 +61,13 @@ history is in git.
   arrows. The panel writes the 12 limits to SENSE_LIMIT 500 ms after the
   last edit, in any bank state, and reads OVER and OVER_COUNT every 200 ms
   while a limit is held. The band says `INA3221 0x41 CH2 (PORT 1) over its
-  0.80 A limit.` at most once every 5 s, and once every 30 s for a channel
-  that keeps passing; `An INA3221 channel passed its limit; which one was
-  lost on the link.` when a reply with the bits did not arrive; and
-  `INA3221 limits rejected. Check SETUP > SENSORS.` on a refused write. A
+  0.80 A limit.` with the limit the window was judged by, at most once
+  every 5 s, and once every 30 s for a channel that keeps passing;
+  channels over at the same time take turns. `An INA3221 channel passed
+  its limit; which one was lost on the link.` follows the link-up after a
+  reply with the bits did not arrive, and not an IOmcu restart.
+  `INA3221 limits rejected. Check SETUP > SENSORS.` follows a refused write
+  or a BAD_PAGE answer from an IOmcu that names 4.27 or later. A
   LIMIT row the IOmcu does not hold is marked; on an IOmcu older than
   4.27 the line reads `IOmcu older than 4.27: no limit is judged.` and
   nothing is sent to the page.

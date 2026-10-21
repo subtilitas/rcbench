@@ -3020,7 +3020,8 @@ der Warnfarbe und eine Zeile statt der Hilfe. Bei einem IOmcu älter als
 
 Eine Zeile GRENZE ist ebenso markiert, solange der IOmcu ihre Grenze nicht
 hält: von der Änderung bis zum angenommenen Schreiben, nach einem
-abgelehnten Schreiben mit `Vom IOmcu nicht übernommen.` und bei einem IOmcu
+abgelehnten Schreiben oder einer abgelehnten Page mit
+`Vom IOmcu nicht übernommen.` und bei einem IOmcu
 älter als 4.27 für jede Grenze, die nicht AUS ist, mit
 `IOmcu älter als 4.27: keine Grenze wird geprüft.`:
 
@@ -3035,18 +3036,23 @@ OVER und OVER_COUNT, in ARMED wie in SAFE; dieses Lesen löscht OVER im
 IOmcu. Der IOmcu prüft jedes 50-ms-Fenster eines Kanals einmal, wenn es
 schließt: darüber, wenn der höchste Strom des Fensters über der Grenze
 liegt oder ein Messwert das Ende des Bereichs erreicht hat und dieses Ende
-über ihr liegt ([Link](LinkSensors-de.md#sense_limit)). Das Band sagt,
-höchstens einmal alle 5 s und für einen Kanal höchstens einmal alle 30 s,
-solange er sie weiter überschreitet:
+über ihr liegt ([Link](LinkSensors-de.md#sense_limit)). Bevor das Panel
+neue Grenzen über gehaltene schreibt, liest es OVER einmal; ein Fenster,
+das an der alten Grenze geprüft wurde, wird mit der alten Grenze gesagt.
+Das Band sagt, höchstens einmal alle 5 s und für einen Kanal höchstens
+einmal alle 30 s, solange er sie weiter überschreitet. Kanäle, die
+gleichzeitig darüber liegen, kommen reihum dran, ab dem Kanal nach dem
+zuletzt gesagten: sind alle 12 darüber, wird jeder innerhalb von 12
+Meldungen gesagt, 60 s.
 
 | Band | Wann |
 | --- | --- |
-| `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80 A.` | ein Fenster des Kanals hat seit dem letzten Lesen seine Grenze überschritten; in Klammern, was der Kanal misst, nichts bei KEINE |
-| `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | OVER_COUNT hat sich bewegt, und das Lesen mit den Bits kam nicht an |
-| `INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.` | der IOmcu hat das Schreiben abgelehnt; er behält die Grenzen, die er hielt, und das Panel schreibt erst wieder, wenn sich eine Grenze ändert |
+| `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80 A.` | ein Fenster des Kanals hat seit dem letzten Lesen seine Grenze überschritten; in Klammern, was der Kanal misst, nichts bei KEINE; die Grenze ist die, an der das Fenster geprüft wurde |
+| `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | OVER_COUNT hat sich ohne OVER-Bit bewegt: die Antwort mit den Bits kam nicht an. Eine Antwort, die nicht ankommt, beendet den Link; das sagt also das Lesen beim nächsten Link-Aufbau. Ein Zähler von 0 dort ist ein neu gestarteter IOmcu und wird nicht gesagt |
+| `INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.` | der IOmcu hat das Schreiben abgelehnt; er behält die Grenzen, die er hielt, und das Panel schreibt erst wieder, wenn sich eine Grenze ändert. Ebenso ein IOmcu, der Protokoll 4.27 oder neuer nennt und die Page mit BAD_PAGE beantwortet: das Panel schickt der Page bis zum nächsten Link-Aufbau nichts mehr |
 
-OVER-Bits, die der IOmcu von vor dem Link-Aufbau hält, sagt das erste
-Lesen.
+OVER-Bits, die der IOmcu von vor dem Link-Aufbau hält, auch die eines
+neu gestarteten IOmcu, sagt das erste Lesen mit ihrem Kanal.
 
 Das Panel schreibt die Zuordnung in die Page SENSE_MAP des IOmcu
 (Protokoll 4.25), in einem Schreiben von 26 Registern: die bestückten

@@ -32,13 +32,13 @@ Jeder bestückte Baustein hat eine Überschrift, `INA3221 0x40` bis `INA3221 0x4
 
 ![Eine Grenze bei einem IOmcu älter als 4.27](view:setup-sensors-limit)
 
-Solange eine Grenze gesetzt ist, prüft der IOmcu jedes 50-ms-Fenster eines Kanals, und das Panel liest alle 200 ms, welche Kanäle sie überschritten haben. Das Band sagt, höchstens einmal alle 5 s und einmal alle 30 s für einen Kanal, der sie weiter überschreitet:
+Solange eine Grenze gesetzt ist, prüft der IOmcu jedes 50-ms-Fenster eines Kanals, und das Panel liest alle 200 ms, welche Kanäle sie überschritten haben. Das Band sagt, höchstens einmal alle 5 s und einmal alle 30 s für einen Kanal, der sie weiter überschreitet. Kanäle, die gleichzeitig darüber liegen, kommen reihum dran: sind alle 12 darüber, wird jeder innerhalb von 60 s gesagt.
 
 | Band | Bedeutung |
 |---|---|
-| `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80 A.` | ein Fenster hat die Grenze des Kanals überschritten; in Klammern, was der Kanal misst |
-| `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | die Antwort, die den Kanal nannte, ging verloren |
-| `INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.` | der IOmcu hat die Grenzen abgelehnt und behält seine |
+| `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80 A.` | ein Fenster hat die Grenze des Kanals überschritten; in Klammern, was der Kanal misst; die Grenze, an der das Fenster geprüft wurde |
+| `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | die Antwort, die den Kanal nannte, ging verloren; gesagt nach dem nächsten Link-Aufbau, nicht nach einem Neustart des IOmcu |
+| `INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.` | der IOmcu hat die Grenzen abgelehnt und behält seine, oder er hat die Page abgelehnt |
 
 Eine Zeile GRENZE, die der IOmcu nicht hält, steht in der Warnfarbe: solange ihr Schreiben wartet, nach einer Ablehnung und bei einem IOmcu älter als 4.27, der keine Grenze prüft (`IOmcu älter als 4.27: keine Grenze wird geprüft.`).
 

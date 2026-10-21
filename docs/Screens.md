@@ -2745,8 +2745,8 @@ one INA3221, CH1 at 1 kHz.`:
 ![SENSORS on an IOmcu older than 4.25](img/setup-sensors-old.png)
 
 A LIMIT row is marked the same way while the IOmcu does not hold its
-limit: from the edit to the write taken, after a refused write with
-`Not accepted by the IOmcu.`, and on an IOmcu older than 4.27, for every
+limit: from the edit to the write taken, after a refused write or a
+refused page with `Not accepted by the IOmcu.`, and on an IOmcu older than 4.27, for every
 limit that is not OFF, with `IOmcu older than 4.27: no limit is judged.`:
 
 ![A limit on an IOmcu older than 4.27](img/setup-sensors-limit.png)
@@ -2759,18 +2759,21 @@ is not OFF, it reads OVER and OVER_COUNT every 200 ms, armed or not; that
 read clears OVER on the IOmcu. The IOmcu judges each channel's 50 ms
 window once as it closes: over when the window's highest current is above
 the limit, or when a sample read the top of the range and that top is
-above it ([Link](LinkSensors.md#sense_limit)). The band says, at most once
+above it ([Link](LinkSensors.md#sense_limit)). Before it writes new
+limits over held ones, the panel reads OVER once, so a window judged under
+the old limit is said with the old limit. The band says, at most once
 every 5 s and for one channel at most once every 30 s while it keeps
-passing:
+passing. Channels over at the same time take turns, starting after the
+channel said last: with all 12 over, each is said within 12 alerts, 60 s.
 
 | Band | When |
 | --- | --- |
-| `INA3221 0x41 CH2 (PORT 1) over its 0.80 A limit.` | a window of the channel passed its limit since the last read; the target in brackets is what the channel watches, none for NONE |
-| `An INA3221 channel passed its limit; which one was lost on the link.` | OVER_COUNT moved and the read that carried the bits did not arrive |
-| `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the write; it keeps the limits it held, and the panel does not write again until a limit changes |
+| `INA3221 0x41 CH2 (PORT 1) over its 0.80 A limit.` | a window of the channel passed its limit since the last read; the target in brackets is what the channel watches, none for NONE; the limit is the one the window was judged by |
+| `An INA3221 channel passed its limit; which one was lost on the link.` | OVER_COUNT moved with no OVER bit: the reply that carried the bits did not arrive. A reply that does not arrive takes the link down, so this is said after the read at the next link-up. A count of 0 there is an IOmcu that started again and is not said |
+| `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the write; it keeps the limits it held, and the panel does not write again until a limit changes. Also an IOmcu that names protocol 4.27 or later and answers the page with BAD_PAGE: the panel sends the page nothing more until the next link-up |
 
-OVER bits the IOmcu holds from before the link came up are said at the
-first read.
+OVER bits the IOmcu holds from before the link came up, also those of an
+IOmcu that started again, are said by channel at the first read.
 
 The panel writes the map to the IOmcu's SENSE_MAP page (protocol 4.25) in
 one write of 26 registers: the parts fitted, the channel read at 1 kHz,
