@@ -511,6 +511,44 @@ TEST_CASE(a_map_waits_for_the_pins_it_reads_on)
     CHECK(!sense_map_link_waits_for_pins(NULL, &sl));
 }
 
+/* A part's queued event goes with the part: taken out of the map before
+ * it is shown, it is dropped unseen. */
+TEST_CASE(a_queued_event_goes_with_a_part_taken_out)
+{
+    map_fresh(25u, 0x0Du);
+    map_polls(4);
+    fm[LINK_SM_FLAGS] = (uint16_t)(LINK_SM_IN_FORCE | LINK_SM_ID_WRONG(2)
+                                   | LINK_SM_ID_WRONG(3));
+    map_polls(12);
+    sense_map_want_t w = map_of(0x05u);
+    sense_map_link_want(&ml, &w, now);
+    uint8_t part = 9u;
+    CHECK_EQ(take_event(&part, NULL), SENSE_MAP_LINK_EV_WRONG);
+    CHECK_EQ(part, 2u);
+    CHECK_EQ(take_event(&part, NULL), 0u);
+}
+
+/* Another answering address names a part not fitted: a fitted INA3221
+ * answers where it is meant to, whichever of them SENSE mirrors. */
+TEST_CASE(a_fitted_part_is_no_other_address)
+{
+    fresh(25u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    w.i3221_parts = 0x03u;
+    want(&w);
+    polls(40);
+    pg.sense[LINK_SN_PRESENT] = (uint16_t)((1u << 1) | (1u << 2));
+    polls(2);
+    CHECK_EQ(sense_link_found(&sl, SENSE_LINK_INA228), 0x42u);
+    CHECK_EQ(sense_link_found(&sl, SENSE_LINK_INA3221), 0x42u);
+    pg.sense[LINK_SN_PRESENT] = (uint16_t)(1u << 1);
+    polls(2);
+    CHECK_EQ(sense_link_found(&sl, SENSE_LINK_INA228), 0u);
+    CHECK_EQ(sense_link_found(&sl, SENSE_LINK_INA3221), 0u);
+}
+
 /* Two parts not answering in one read: each has the band for the gap
  * before the next is handed out. */
 TEST_CASE(each_event_has_the_band_for_its_gap)
@@ -887,6 +925,8 @@ int main(void)
     RUN(a_part_on_the_ina228s_address_is_left_out);
     RUN(no_sensor_bus_takes_every_part_out);
     RUN(each_event_has_the_band_for_its_gap);
+    RUN(a_queued_event_goes_with_a_part_taken_out);
+    RUN(a_fitted_part_is_no_other_address);
     RUN(a_wrong_event_put_back_keeps_its_id);
     RUN(the_mirror_parts_shunt_is_the_held_maps);
     RUN(a_map_waits_for_the_pins_it_reads_on);

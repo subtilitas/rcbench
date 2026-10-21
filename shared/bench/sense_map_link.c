@@ -347,6 +347,18 @@ uint8_t sense_map_link_event(sense_map_link_t *s, uint32_t now_ms,
         while (a < LINK_SM_PARTS && (s->ev_parts[i] & (1u << a)) == 0u) {
             ++a;
         }
+        /* A part's event goes with the part: one no longer fitted on a
+         * live link is dropped unseen. */
+        while ((k_ev[i] == SENSE_MAP_LINK_EV_SILENT
+                || k_ev[i] == SENSE_MAP_LINK_EV_WRONG)
+               && a < LINK_SM_PARTS
+               && !sense_map_link_event_stands(s, k_ev[i], a)) {
+            s->ev_parts[i] &= (uint8_t)~(1u << a);
+            while (a < LINK_SM_PARTS
+                   && (s->ev_parts[i] & (1u << a)) == 0u) {
+                ++a;
+            }
+        }
         if (k_ev[i] == SENSE_MAP_LINK_EV_SILENT
             || k_ev[i] == SENSE_MAP_LINK_EV_WRONG) {
             if (a >= LINK_SM_PARTS) {

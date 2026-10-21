@@ -310,8 +310,11 @@ uint8_t sense_link_found(const sense_link_t *s, sense_link_part_t part)
     const unsigned mine = sense_link_addr(s, part);
     const unsigned theirs = sense_link_addr(s, other);
     for (unsigned a = 0x40u; a <= last; ++a) {
+        /* Every fitted INA3221 answers where it is meant to. */
+        const bool fitted = a <= LINK_SN_I3221_ADDR_MAX
+                            && ((s->want_parts >> (a - 0x40u)) & 1u) != 0u;
         if ((present & (1u << (a - 0x40u))) == 0u || a == mine
-            || (other_on && a == theirs)) {
+            || (other_on && a == theirs) || fitted) {
             continue;
         }
         return (uint8_t)a;
