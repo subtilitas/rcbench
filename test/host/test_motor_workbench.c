@@ -855,6 +855,8 @@ static void view_ports(uint8_t fn1, uint8_t fn2, uint8_t refused)
     v.pin[3] = PORT_VIEW_NO_PIN; v.func[3] = (uint8_t)LINK_PG_FN_NONE;
     v.refused = refused;
     port_view_set(&v);
+    /* As the panel hands OUTPUTS the view. */
+    outputs_screen_set_prog_ports(4u, v.pin);
 }
 
 TEST_CASE(the_target_names_the_dshot_ports_the_throttle_drives)
@@ -926,6 +928,42 @@ TEST_CASE(the_target_names_the_dshot_ports_the_throttle_drives)
     CHECK_EQ(motor_dshot_ports(), 0u);
 }
 
+/* A DShot port the throttle drives alone opens its PROG PORT entry; with
+ * slot pins beside it, or two ports, as without. */
+TEST_CASE(the_target_row_opens_the_entry_of_a_lone_dshot_port)
+{
+    const uint8_t none = (uint8_t)LINK_PG_FN_NONE;
+    const uint8_t d300 = (uint8_t)LINK_PG_FN_DSHOT300;
+    fresh();
+    view_ports(d300, none, 0u);
+    motor_screen_set_throttle_pins(0u, true);
+    motor_screen_set_throttle_protocol(0u);
+    feed_tap(FEED_LONE, TARGET_X, TARGET_Y);
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    CHECK_EQ(outputs_screen_port_shown(), 1);
+    home_tag();
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+    /* A slot pin beside it: the slot's protocol. */
+    motor_screen_set_throttle_pins(1u, true);
+    motor_screen_set_throttle_protocol(PROTO_DSHOT300);
+    feed_tap(FEED_LONE, TARGET_X, TARGET_Y);
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    CHECK_EQ(outputs_screen_port_shown(), -1);
+    CHECK_EQ((int)outputs_screen_binding()->proto, (int)PROTO_DSHOT300);
+    home_tag();
+    /* Two ports and no slot: the overview. */
+    view_ports(d300, d300, 0u);
+    motor_screen_set_throttle_pins(0u, true);
+    motor_screen_set_throttle_protocol(0u);
+    feed_tap(FEED_LONE, TARGET_X, TARGET_Y);
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    CHECK_EQ(outputs_screen_port_shown(), -1);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    port_view_t v;
+    port_view_unknown(&v);
+    port_view_set(&v);
+}
+
 int main(void)
 {
     RUN(the_strip_reads_live_program_settings_and_a_tile_opens_live);
@@ -944,6 +982,7 @@ int main(void)
     RUN(the_home_tag_closes_the_keypad_then_leaves);
     RUN(the_save_line_follows_the_store);
     RUN(the_target_names_the_dshot_ports_the_throttle_drives);
+    RUN(the_target_row_opens_the_entry_of_a_lone_dshot_port);
     free(fb);
     return test_summary("motor_workbench");
 }
