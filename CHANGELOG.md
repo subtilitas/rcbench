@@ -11,7 +11,10 @@ history is in git.
 - Four glyph tables for the 1024 x 600 panel: 10x20, 12x24 and 20x36 text
   faces and a 32x44 numeral face (20,400, 29,376, 73,440 and 38,016 bytes
   of flash), and the roles `UI_FONT_FINE` (8x16) and `UI_FONT_BODY`
-  (12x24). No screen draws with them yet.
+  (12x24). Cap heights are 12, 15, 23 and 40 px. The 32x44 numeral face
+  cuts `#` (5 px), `$` (16 px), `(` (12 px), `)` (12 px), `,` (23 px) and
+  `/` (6 px) at the cell edge; the three text faces cut nothing, which
+  `gen_font.py --check` verifies. No screen draws with the faces yet.
 - Hitec D series servos answer with no pull-up on the signal wire: SETUP >
   INTERFACES > Hitec D receive (PROG PORT, German `Hitec-D-Empfang`)
   chooses PULL-UP, the default, or PRECHARGE. With PRECHARGE the IOmcu

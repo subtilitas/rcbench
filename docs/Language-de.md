@@ -191,6 +191,12 @@ eine Zelle:
   Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6,
   U+00FC), je 102 Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
   Satzzeichen.
+- Die Fonts 10x20, 12x24 und 20x36 haben Versalhöhen von 12, 15 und 23 px und
+  zeichnen jedes Glyph innerhalb der Zelle; sonst schlägt
+  `gen_font.py --check` fehl. Der Ziffern-Font 32x44 (Versalhöhe 40 px)
+  schneidet am Zellenrand Tinte in sechs Zeichen ab: `#` 5 px, `$` 16 px,
+  `(` 12 px, `)` 12 px, `,` 23 px und `/` 6 px (Pixel mit Deckung ab 128
+  außerhalb der Zelle). `gen_font.py --check` gibt diese Zahlen aus.
 - Ein Codepoint, den ein Font nicht enthält, erscheint als `?`. Ein Byte,
   das keine gültige Folge beginnt, eine abgeschnittene Folge und eine
   überlange Form sind je ein `?`, und der Dekoder liest nie über das

@@ -1,8 +1,10 @@
-/*
- * Host unit tests for the four faces of the 1024 x 600 layout: 10x20, 12x24
- * and 20x36 text faces and the 32x44 numeral face.  Cell size, glyph
- * coverage, the German letters, cap height, baseline and the cut at the
- * canvas's right and bottom edge.
+/**
+ * @file
+ * @brief Host unit tests for the four faces of the 1024 x 600 layout.
+ *
+ * The faces are the 10x20, 12x24 and 20x36 text faces and the 32x44 numeral
+ * face.  The cases cover cell size, glyph coverage, the German letters, cap
+ * height, baseline and the cut at the canvas's right and bottom edge.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -39,11 +41,12 @@ typedef struct {
 } face_t;
 
 /* Cap top and baseline are the rows 'H' (text faces) and '0' (numerals)
- * occupy; the plan's cap heights are 12, 15, 24 and 40 px. */
+ * occupy; the measured cap heights are 12, 15, 23 and 40 px; the 20x36 face is
+ * generated at TrueType size 31 so that its descenders end inside the cell. */
 static const face_t k_faces[] = {
     { &gfx_font_10x20,     "10x20", 10, 20, false, 'H', 3, 15 },
     { &gfx_font_12x24,     "12x24", 12, 24, false, 'H', 4, 19 },
-    { &gfx_font_20x36,     "20x36", 20, 36, false, 'H', 7, 31 },
+    { &gfx_font_20x36,     "20x36", 20, 36, false, 'H', 6, 29 },
     { &gfx_font_num_32x44, "32x44", 32, 44, true,  '0', 1, 41 },
 };
 #define N_FACES (sizeof(k_faces) / sizeof(k_faces[0]))
@@ -221,7 +224,7 @@ TEST_CASE(new_text_faces_draw_the_german_letters)
 /* Cap height and baseline: the rows the reference glyph occupies. */
 TEST_CASE(new_faces_have_the_planned_cap_height_and_baseline)
 {
-    static const int k_cap[] = { 12, 15, 24, 40 };
+    static const int k_cap[] = { 12, 15, 23, 40 };
     for (size_t i = 0; i < N_FACES; ++i) {
         const face_t *f = &k_faces[i];
         const char s[2] = { f->ref, 0 };
@@ -243,8 +246,30 @@ TEST_CASE(new_faces_have_the_planned_cap_height_and_baseline)
         CHECK_EQ(top, f->cap_top);
         CHECK_EQ(bottom, f->baseline);
         CHECK_EQ(bottom - top, k_cap[i]);
-        /* Ink stays inside the cell. */
-        CHECK(bottom <= f->h);
+    }
+}
+
+/* The descenders end above the cell's last row: a stroke cut by the cell
+ * would leave ink on that row. */
+TEST_CASE(new_text_faces_end_descenders_inside_the_cell)
+{
+    for (size_t i = 0; i < N_FACES; ++i) {
+        const face_t *f = &k_faces[i];
+        if (f->numerals) {
+            continue;
+        }
+        for (const char *d = "gjpqy"; *d; ++d) {
+            const char s[2] = { *d, 0 };
+            fresh();
+            gfx_text(&s_c, 0, 0, s, f->font, GFX_RED, 1);
+            CHECK(ink() > 0);
+            for (int x = 0; x < f->w; ++x) {
+                if (s_pixels[(f->h - 1) * STRIDE + x] != 0) {
+                    T_FAIL("face %s '%c' has ink on the cell's last row",
+                           f->name, *d);
+                }
+            }
+        }
     }
 }
 
@@ -336,6 +361,7 @@ int main(void)
     RUN(new_faces_hold_every_glyph);
     RUN(new_text_faces_draw_the_german_letters);
     RUN(new_faces_have_the_planned_cap_height_and_baseline);
+    RUN(new_text_faces_end_descenders_inside_the_cell);
     RUN(new_faces_clip_at_the_right_edge);
     RUN(new_faces_clip_at_the_bottom_edge_and_in_a_box);
     RUN(font_roles_point_at_the_planned_faces);
