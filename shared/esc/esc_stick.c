@@ -1,10 +1,9 @@
 /**
  * @file
- * @brief Stick programming run: state machine over the supply readings.
+ * @brief Stick programming: the run.
  *
- * Stick programming: the run.  See esc_stick.h.  What can run is in
- * esc_stick_rules.c, the beep detector in esc_det.c, and the readouts of a
- * run in esc_stick_read.c.
+ * See esc_stick.h.  What can run is in esc_stick_rules.c, the beep detector in
+ * esc_det.c, and the readouts of a run in esc_stick_read.c.
  *
  * Three rules carry the safety of the count, because a beep missed between
  * two readings turns one number into another:
@@ -67,15 +66,14 @@ uint32_t esc_stick_read_max_ms(const esc_stick_timing_t *t)
     }
     return (t->beep_min_ms < t->gap_min_ms) ? t->beep_min_ms : t->gap_min_ms;
 }
-
 /* ------------------------------------------------------------ the run */
 
+
 /**
- * @brief Time from one instant to another.
+ * @brief The time from @p then to @p now, 0 when @p then is later.
  *
- * The time from @p then to @p now, 0 when @p then is later.  A reading is
- * stamped by the task that took it and the bench's time by the one that
- * steps the run, so a reading can carry a time a little after the step's.
+ * A reading is stamped by the task that took it and the bench's time by the one
+ * that steps the run, so a reading can carry a time a little after the step's.
  *
  * @param now   Later time, ms.
  * @param then  Earlier time, ms.
@@ -143,9 +141,7 @@ static void enter(esc_stick_t *e, esc_stick_phase_t ph)
 }
 
 /**
- * @brief End the run: throttle to rest, supply off, disarmed.
- *
- * The run is over: the throttle at its rest, the supply off, disarmed.
+ * @brief The run is over: the throttle at its rest, the supply off, disarmed.
  *
  * @param e    The run.
  * @param ph   The phase the run ends in.
@@ -193,10 +189,8 @@ static bool all_done(const esc_stick_t *e)
 }
 
 /**
- * @brief Set the lowest and highest number the loop sounds.
- *
- * The lowest and highest number a loop of items or of one item's values
- * sounds; @p item < 0 for every value of every item.
+ * @brief The lowest and highest number a loop of items or of one item's values
+ *        sounds; @p item < 0 for every value of every item.
  *
  * @param e      The run.
  * @param items  true for the item loop, false for a value loop.
@@ -242,11 +236,11 @@ static void listen(esc_stick_t *e, esc_stick_phase_t ph)
 }
 
 /**
- * @brief Position the next power-up enters from.
+ * @brief The menu begins: the stick to its rest, and the first loop.
  *
- * The position the next power-up enters from: the first change still to
- * make, which in a one-stage menu is the one this power-up makes, and in
- * any other is every change's (entry_refused()).
+ * The position the next power-up enters from: the first change still to make,
+ * which in a one-stage menu is the one this power-up makes, and in any other is
+ * every change's (entry_refused()).
  *
  * @param e  The run.
  * @return The entry position of the next change.
@@ -262,10 +256,8 @@ static esc_throttle_t next_entry(const esc_stick_t *e)
 }
 
 /**
- * @brief Stick position while the menu sounds.
- *
- * Where the stick rests while the menu sounds: the profile's listen move,
- * else where this power-up entered.
+ * @brief Where the stick rests while the menu sounds: the profile's listen
+ *        move, else where this power-up entered.
  *
  * @param e  The run.
  * @return The rest position.
@@ -303,13 +295,12 @@ static void begin_menu(esc_stick_t *e)
 }
 
 /**
- * @brief Find the first manual step due at this point of the run.
+ * @brief The first manual step from @p from that is due at this point of the
+ *        run, or -1.
  *
- * The first manual step from @p from that is due at this point of the run,
- * or -1.  Before a power-up: each at_power_up step, and the before_power
- * steps from the second power-up on -- the warning the run started from
- * asked for the first power-up's.  Once the ESC is powered and entered:
- * each before_menu step.
+ * Before a power-up: each at_power_up step, and the before_power steps from the
+ * second power-up on -- the warning the run started from asked for the first
+ * power-up's.  Once the ESC is powered and entered: each before_menu step.
  *
  * @param e        The run.
  * @param from     Index of the first manual step to consider.
@@ -361,13 +352,12 @@ static void power_on(esc_stick_t *e)
 }
 
 /**
- * @brief Switch the supply on once every step due before it is done.
+ * @brief The supply comes on once every step due before it is done.
  *
- * The supply comes on once every step due before it is done.  A step at an
- * unpowered ESC is asked for, and the supply switched on, only while the
- * supply itself reads off (off_seen): a run started with the output still
- * live, or a module that came on by itself, ends here with SUPPLY STAYS ON
- * rather than send a hand to a powered ESC.
+ * A step at an unpowered ESC is asked for, and the supply switched on, only
+ * while the supply itself reads off (off_seen): a run started with the output
+ * still live, or a module that came on by itself, ends here with SUPPLY STAYS
+ * ON rather than send a hand to a powered ESC.
  *
  * @param e     The run.
  * @param from  Index of the first manual step to consider.
@@ -392,18 +382,17 @@ static void before_power(esc_stick_t *e, unsigned from)
 }
 
 /**
- * @brief Start the menu once every step due before it is done.
+ * @brief The menu begins once every step due before it is done.
  *
- * The menu begins once every step due before it is done.  A step the
- * profile marks starts_menu is the action that starts the menu -- the
- * jumper pulled, the button pressed: the ESC answers with its tones and
- * sounds the series at once -- so the run listens from the moment it asks
- * for it, with the stick where the power-up left it, and DONE is only a
- * way to say so early.  Every other step waits for DONE.  The first group
- * the order rule finds in order with the one before it is the menu running,
- * and takes the step as done.  Where the menu rests elsewhere the stick
- * would move under the operator's hand, so the run waits for DONE before
- * listening, as for every earlier step.
+ * A step the profile marks starts_menu is the action that starts the menu --
+ * the jumper pulled, the button pressed: the ESC answers with its tones and
+ * sounds the series at once -- so the run listens from the moment it asks for
+ * it, with the stick where the power-up left it, and DONE is only a way to say
+ * so early.  Every other step waits for DONE.  The first group the order rule
+ * finds in order with the one before it is the menu running, and takes the step
+ * as done.  Where the menu rests elsewhere the stick would move under the
+ * operator's hand, so the run waits for DONE before listening, as for every
+ * earlier step.
  *
  * @param e     The run.
  * @param from  Index of the first manual step to consider.
@@ -544,11 +533,10 @@ esc_throttle_t esc_stick_store_move(const esc_stick_t *e, unsigned k)
 }
 
 /**
- * @brief Switch the supply off and wait for the output to report off.
+ * @brief The supply off, the stick where it is; see the top of this file.
  *
- * The supply off, the stick where it is; see the top of this file.  A
- * pulse under way is dropped with the group: no reading reaches the
- * detector until the next power-up starts it afresh.
+ * A pulse under way is dropped with the group: no reading reaches the detector
+ * until the next power-up starts it afresh.
  *
  * @param e  The run.
  */
@@ -565,11 +553,9 @@ static void supply_off(esc_stick_t *e)
 }
 
 /**
- * @brief Switch the supply off once every before_power_off step is done.
- *
- * The supply goes off once every before_power_off step from @p from is
- * done: each is asked with the ESC powered and the stick where the store
- * left it, and DONE goes on to the next or switches the supply off.
+ * @brief The supply goes off once every before_power_off step from @p from is
+ *        done: each is asked with the ESC powered and the stick where the store
+ *        left it, and DONE goes on to the next or switches the supply off.
  *
  * @param e     The run.
  * @param from  Index of the first manual step to consider.
@@ -615,10 +601,10 @@ bool esc_stick_lock_risk(const esc_stick_t *e)
 }
 
 /**
- * @brief Mark the action that starts the menu as done.
+ * @brief The action that starts the menu is done: by DONE, or by the menu heard
+ *        in order.
  *
- * The action that starts the menu is done: by DONE, or by the menu heard
- * in order.  SILENCE and TIMEOUT count from now.
+ * SILENCE and TIMEOUT count from now.
  *
  * @param e  The run.
  */
@@ -779,9 +765,16 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
 }
 
 /**
- * @brief Whether the supply is to be off in a phase.
+ * @brief One reading while the run waits for the output to go off.
  *
- * The phases in which the supply is to be off and its readings are
+ * Only a reading taken after the run asked it off counts -- a new count,
+ * stamped after the request -- and only one in which the supply itself reports
+ * the output off with the current at or under ESC_STICK_OFF_MA; such readings
+ * have to run on for ESC_STICK_OFF_SETTLE_MS.  The panel's own flag says only
+ * that it asked: the module switches off a link exchange and a module
+ * transaction later, and until then the ESC is powered and in its menu.
+ *
+ *  The phases in which the supply is to be off and its readings are
  * judged for it: before the first power-up, while a step at an unpowered
  * ESC is asked, and after the run asked the output off.
  *
@@ -796,12 +789,9 @@ static bool off_phase(esc_stick_phase_t ph)
 }
 
 /**
- * @brief Whether the stick is at the entry, or a step is asked, with the
- *        supply off.
- *
- * Whether the stick has gone to the entry position, or a step at the ESC
- * is asked, with the supply off: the moves made only on the supply read
- * off, and so the ones a live reading has to end at once.
+ * @brief Whether the stick has gone to the entry position, or a step at the ESC
+ *        is asked, with the supply off: the moves made only on the supply read
+ *        off, and so the ones a live reading has to end at once.
  *
  * @param e  The run.
  * @return true when such a move or step is under way.

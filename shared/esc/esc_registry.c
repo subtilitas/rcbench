@@ -1,9 +1,8 @@
 /**
  * @file
- * @brief Registry of the ESC profiles the bench offers, built in and card.
+ * @brief The profiles the bench offers: built in, with the card's in front.
  *
- * The profiles the bench offers: built in, with the card's in front.  See
- * esc_profile.h.
+ * See esc_profile.h.
  *
  * A card profile with a built-in id takes that profile's place in the list,
  * so an operator who corrects a default on the card sees one entry, not two.
@@ -86,10 +85,8 @@ bool esc_brand_same(const char *a, const char *b)
 }
 
 /**
- * @brief Count the models a maker would list.
- *
- * The models @p p's maker would list with @p p in place of the profile of
- * its id.
+ * @brief The models @p p's maker would list with @p p in place of the profile
+ *        of its id.
  *
  * @param p  The profile, as it would be registered.
  * @return The number of models the maker would list.
@@ -237,6 +234,8 @@ bool esc_profile_file_is(const char *file_name, const char *id)
 
 /* ------------------------------------------------------------- search */
 
+/* ------------------------------------------------------------- search */
+
 /**
  * @brief Fold an ASCII capital letter to lower case.
  *
@@ -249,11 +248,11 @@ static unsigned char fold(unsigned char c)
 }
 
 /**
- * @brief Byte of two texts read as one.
+ * @brief Byte @p i of @p a, a space and @p b read as one text of @p n bytes; @p
+ *        b NULL is @p a alone.
  *
- * Byte @p i of @p a, a space and @p b read as one text of @p n bytes; @p b
- * NULL is @p a alone.  No copy is made, since a card profile's strings have
- * no length limit short of the file's.
+ * No copy is made, since a card profile's strings have no length limit short of
+ * the file's.
  *
  * @param a   The first text.
  * @param na  Length of @p a, bytes.
@@ -271,12 +270,11 @@ static unsigned char joined_at(const char *a, size_t na, const char *b,
 }
 
 /**
- * @brief Wildcard match of a pattern against two texts read as one.
+ * @brief The wildcard match, with a "*" implied at either end.
  *
- * The wildcard match, with a "*" implied at either end.  On a mismatch the
- * last "*" takes one byte more and the rest of the pattern is tried again
- * from there: at most text times pattern comparisons, no recursion.  A
- * multi-byte character cannot match from its middle, because a UTF-8 lead
+ * On a mismatch the last "*" takes one byte more and the rest of the pattern is
+ * tried again from there: at most text times pattern comparisons, no recursion.
+ * A multi-byte character cannot match from its middle, because a UTF-8 lead
  * byte never equals a continuation byte.
  *
  * @param a        The first text.

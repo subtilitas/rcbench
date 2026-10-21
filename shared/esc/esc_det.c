@@ -1,10 +1,9 @@
 /**
  * @file
- * @brief Beep detector: turns supply readings into pulses and groups.
+ * @brief Stick programming: the beep detector.
  *
- * Stick programming: the beep detector.  It turns the supply readings into
- * pulses and the pulses into groups.  See esc_stick.h, and esc_stick.c for
- * the rules that make a count safe.
+ * It turns the supply readings into pulses and the pulses into groups.  See
+ * esc_stick.h, and esc_stick.c for the rules that make a count safe.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,8 +22,11 @@ void esc_det_init(esc_det_t *d, const esc_stick_timing_t *t,
     memset(d, 0, sizeof(*d));
     d->t = *t;
     d->long_equals_short = long_equals_short;
+/** Forget any group under way, as if the line had been silent. */
+/** Forget any group under way, as if the line had been silent. */
 }
 
+/** Forget any group under way, as if the line had been silent. */
 void esc_det_drop_group(esc_det_t *d)
 {
     d->high = false;
@@ -36,6 +38,7 @@ void esc_det_drop_group(esc_det_t *d)
     d->n_low = 0u;
     d->stuck_told = false;
 }
+/** Floor only: no pulses, no groups. */
 
 void esc_det_floor_only(esc_det_t *d)
 {
@@ -63,10 +66,8 @@ int32_t esc_det_floor_ma(const esc_det_t *d)
 }
 
 /**
- * @brief Readings a span must hold, at the longest interval seen.
- *
- * How many readings a span of @p ms must hold, at the longest interval seen
- * that was not late.  0 while no interval is known.
+ * @brief How many readings a span of @p ms must hold, at the longest interval
+ *        seen that was not late.  0 while no interval is known.
  *
  * @param d   The beep detector.
  * @param ms  Span, ms.

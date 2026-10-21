@@ -1,8 +1,8 @@
 /**
  * @file
- * @brief Decoder that reads one ESC profile from its JSON text.
+ * @brief Read one ESC profile from JSON.
  *
- * Read one ESC profile from JSON.  See esc_profile.h.
+ * See esc_profile.h.
  *
  * Two stages.  The text is first cut into tokens: one per value, each with
  * the index one past its last descendant, so a reader skips a subtree in
@@ -26,10 +26,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 /* ------------------------------------------------------------ decoding */
 
-/** @brief A model name and where it stands in the file. */
+
+/**
+ * @brief A model name and where it stands in the file.
+ */
 typedef struct {
     const char *name;   /**< the model name                                 */
     uint32_t    at;     /**< index of the model in the models array         */
@@ -50,11 +52,10 @@ typedef struct {
 } dec_t;
 
 /**
- * @brief Record the first failure reason and set the failed flag.
+ * @brief The first reason stands.
  *
- * The first reason stands.  A macro rather than a variadic function: the
- * arguments go straight to snprintf(), and there is no va_list to get
- * wrong.
+ * A macro rather than a variadic function: the arguments go straight to
+ * snprintf(), and there is no va_list to get wrong.
  */
 #define FAIL(d, ...)                                                      \
     do {                                                                  \
@@ -95,9 +96,7 @@ static void *take(dec_t *d, size_t n, size_t align)
 }
 
 /**
- * @brief Find the value of a key in an object.
- *
- * The value of @p key in the object at token @p obj, or -1.
+ * @brief The value of @p key in the object at token @p obj, or -1.
  *
  * @param d    The decoding state.
  * @param obj  Index of the object token.
@@ -121,10 +120,10 @@ static int64_t member(const dec_t *d, uint32_t obj, const char *key)
 }
 
 /**
- * @brief Decode a string token into the block.
+ * @brief A string token's text, decoded into the block.
  *
- * A string token's text, decoded into the block.  Never longer than the
- * text it came from: no escape decodes to more bytes than it is written in.
+ * Never longer than the text it came from: no escape decodes to more bytes than
+ * it is written in.
  *
  * @param d   The decoding state.
  * @param ti  Index of the string token.
@@ -151,10 +150,10 @@ static const char *copy_str(dec_t *d, uint32_t ti)
 }
 
 /**
- * @brief Length of a string token once decoded.
+ * @brief A string token's length once decoded, in bytes: UTF-8, as the
+ *        generator measures it.
  *
- * A string token's length once decoded, in bytes: UTF-8, as the generator
- * measures it.  The sizing pass has no copy to measure.
+ * The sizing pass has no copy to measure.
  *
  * @param d   The decoding state.
  * @param ti  Index of the string token.
@@ -205,9 +204,7 @@ static const char *get_str(dec_t *d, uint32_t obj, const char *key,
 }
 
 /**
- * @brief Read a whole number member in a range.
- *
- * A whole number in lo..hi; *out untouched for null when null_ok.
+ * @brief A whole number in lo..hi; *out untouched for null when null_ok.
  *
  * @param d        The decoding state.
  * @param obj      Index of the object token.
@@ -290,9 +287,7 @@ static bool get_bool(dec_t *d, uint32_t obj, const char *key,
 }
 
 /**
- * @brief Read a string member that must be one of a list.
- *
- * The index of @p key's string value in @p names, or -1 after a FAIL().
+ * @brief The index of @p key's string value in @p names, or -1 after a FAIL().
  *
  * @param d      The decoding state.
  * @param obj    Index of the object token.
@@ -519,11 +514,9 @@ static bool has_model(const dec_t *d, const char *name)
 }
 
 /**
- * @brief Stick position where a value's own moves begin.
- *
- * Where the stick is when a value's own moves (after_select) begin: the
- * profile's store move, else the move that stores the value; ESC_THR_NONE
- * for a profile with no select move.
+ * @brief Where the stick is when a value's own moves (after_select) begin: the
+ *        profile's store move, else the move that stores the value;
+ *        ESC_THR_NONE for a profile with no select move.
  *
  * @param p  The profile.
  * @return The position the moves start from.
@@ -749,10 +742,10 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
 }
 
 /**
- * @brief Decode the operator's steps at the ESC.
+ * @brief The operator's steps at the ESC: absent or null, none.
  *
- * The operator's steps at the ESC: absent or null, none.  Only an assisted
- * profile has them, 1 to ESC_MANUAL_MAX, in the order a run meets them.
+ * Only an assisted profile has them, 1 to ESC_MANUAL_MAX, in the order a run
+ * meets them.
  *
  * @param d     The decoding state.
  * @param root  Index of the root object token.

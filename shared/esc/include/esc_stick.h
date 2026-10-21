@@ -1,9 +1,8 @@
 /**
  * @file
- * @brief Stick programming engine for an ESC, counting beeps in the supply.
- *
- * Stick programming: an ESC (electronic speed controller) programmed through
- * its throttle-stick menu, with the beeps counted in the supply current.
+ * @brief Stick programming: an ESC (electronic speed controller) programmed
+ *        through its throttle-stick menu, with the beeps counted in the supply
+ *        current.
  *
  * The ESC is powered from the bench supply with a resistor load in place
  * of the motor, or a motor mounted solid with no propeller.  It sounds its
@@ -38,48 +37,62 @@
 extern "C" {
 #endif
 
-/** @brief The most selections one run makes. */
+/**
+ * @brief The most selections one run makes.
+ */
 #define ESC_STICK_MAX_CHANGES 16u
 
-/** @brief Throttle at the entry position before the supply comes on, ms.
- *
- *  The ESC has to see the signal when it starts. */
+/**
+ * @brief The throttle at the entry position before the supply comes on, ms: the
+ *        ESC has to see the signal when it starts.
+ */
 #define ESC_STICK_SIGNAL_MS 1000u
-/** @brief Time the bench is given to arm, and the supply to report its
- *  output on, ms. */
+/**
+ * @brief How long the bench is given to arm, and the supply to report its
+ *        output on, ms.
+ */
 #define ESC_STICK_ARM_WAIT_MS   3000u
 /** @brief Time the supply is given to report its output on, ms. */
 #define ESC_STICK_POWER_WAIT_MS 3000u
-/** @brief No new reading for this long ends the run, ms. */
+/**
+ * @brief No new reading for this long ends the run, ms.
+ */
 #define ESC_STICK_STALE_MS 1000u
-/** @brief Readings ignored for the floor after the output comes on, ms.
- *
- *  The ESC's input capacitors charge in this time. */
+/**
+ * @brief Readings ignored for the floor after the output comes on: the ESC's
+ *        input capacitors charging, ms.
+ */
 #define ESC_STICK_SETTLE_MS 500u
-/** @brief This many late readings in a row end the run.
- *
- *  The supply reads too slowly for the beeps the timing describes. */
+/**
+ * @brief This many late readings in a row end the run: the supply reads too
+ *        slowly for the beeps the timing describes.
+ */
 #define ESC_STICK_LATE_RUN 3u
-/** @brief A manual step not confirmed within this long ends the run, ms.
+/**
+ * @brief A manual step not confirmed within this long ends the run, ms.
  *
- *  No manual states how long an ESC waits for its jumper or button; this is
- *  the operator's time to reach the ESC, not the ESC's. */
+ * No manual states how long an ESC waits for its jumper or button; this is the
+ * operator's time to reach the ESC, not the ESC's.
+ */
 #define ESC_STICK_HAND_WAIT_MS 60000u
-/** @brief DONE counts only this long after its step is asked, ms.
- *
- *  One tap meant for the step before cannot confirm the next. */
+/**
+ * @brief DONE counts only this long after its step is asked, ms, so one tap
+ *        meant for the step before cannot confirm the next.
+ */
 #define ESC_STICK_HAND_MIN_MS 1000u
-/** @brief Current at or under which the output counts as off, mA.
- *
- *  The output counts as off only once the supply itself reports it off and
- *  the current has stayed at or under ESC_STICK_OFF_MA for
- *  ESC_STICK_OFF_SETTLE_MS, in readings taken after the run asked it off:
- *  the panel's own OFF is a request, and the module answers it later. */
+/**
+ * @brief The output counts as off only once the supply itself reports it off
+ *        and the current has stayed at or under ESC_STICK_OFF_MA for
+ *        ESC_STICK_OFF_SETTLE_MS, in readings taken after the run asked it off:
+ *        the panel's own OFF is a request, and the module answers it later.
+ */
 #define ESC_STICK_OFF_MA        20
 /** @brief Time the current must stay at or under ESC_STICK_OFF_MA, ms. */
 #define ESC_STICK_OFF_SETTLE_MS 200u
 
-/** @brief Throttle minimum, as the output's percentage of travel. */
+/**
+ * @brief Throttle positions as the output's percentage of travel.
+ */
 #define ESC_STICK_PCT_MIN 0.0f
 /** @brief Throttle middle, as the output's percentage of travel. */
 #define ESC_STICK_PCT_MID 50.0f
@@ -89,8 +102,8 @@ extern "C" {
 /**
  * @brief How the beeps are timed and told apart from the ESC's idle current.
  *
- * None of it is measured: the defaults are guesses, kept as settings so a
- * bench recording can replace them without a build.
+ * None of it is measured: the defaults are guesses, kept as settings so a bench
+ * recording can replace them without a build.
  */
 typedef struct {
     uint32_t beep_min_ms;    /**< shortest beep the ESC sounds            */
@@ -108,17 +121,16 @@ typedef struct {
 } esc_stick_timing_t;
 
 /**
- * @brief Set the defaults the settings start from.
+ * @brief The defaults the settings start from.
  *
  * @param t  Receives the default timing.
  */
 void esc_stick_timing_defaults(esc_stick_timing_t *t);
 
 /**
- * @brief Longest interval between two readings the timing allows, ms.
- *
- * The shorter of a beep and a gap, so every beep and every gap holds at
- * least one reading.
+ * @brief The longest interval between two readings the timing allows: the
+ *        shorter of a beep and a gap, so every beep and every gap holds at
+ *        least one reading.
  *
  * @param t  The timing.
  * @return The longest allowed interval between readings, ms.
@@ -127,7 +139,11 @@ uint32_t esc_stick_read_max_ms(const esc_stick_timing_t *t);
 
 /* ------------------------------------------------------- what can run */
 
-/** @brief Menu kind the engine runs for a profile. */
+/* ------------------------------------------------------- what can run */
+
+/**
+ * @brief Menu kind the engine runs for a profile.
+ */
 typedef enum {
     ESC_STICK_KIND_NONE = 0,  /**< the engine does not run this profile   */
     ESC_STICK_KIND_TWO_STAGE, /**< select picks an item, value_select
@@ -136,10 +152,8 @@ typedef enum {
 } esc_stick_kind_t;
 
 /**
- * @brief Which menu the engine runs for a profile.
- *
- * Which menu the engine runs for @p p, or ESC_STICK_KIND_NONE with the
- * reason in @p why (a static string; may be NULL).
+ * @brief Which menu the engine runs for @p p, or ESC_STICK_KIND_NONE with the
+ *        reason in @p why (a static string; may be NULL).
  *
  * An assisted profile runs only through its manual steps (esc_profile_t's
  * manual), and only when each can be waited for: no step during the menu,
@@ -154,10 +168,8 @@ typedef enum {
 esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why);
 
 /**
- * @brief Stick position while the menu sounds.
- *
- * Where the stick rests while the menu sounds: the profile's listen move,
- * else where the entry left it.
+ * @brief Where the stick rests while the menu sounds: the profile's listen
+ *        move, else where the entry left it.
  *
  * @param p  The profile.
  * @return The throttle position to hold.
@@ -165,7 +177,7 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why);
 esc_throttle_t esc_stick_listen(const esc_profile_t *p);
 
 /**
- * @brief Throttle position as the output's percentage.
+ * @brief A throttle position as the output's percentage.
  *
  * @param pos  The throttle position.
  * @return The output percentage of @p pos.
@@ -173,12 +185,11 @@ esc_throttle_t esc_stick_listen(const esc_profile_t *p);
 float esc_stick_pct(esc_throttle_t pos);
 
 /**
- * @brief Supply voltage a profile asks for, mV.
- *
- * The supply voltage a profile asks for, mV: the lowest stated cell count
- * among its models at 3800 mV a LiPo cell or 1200 mV a NiMH cell, which is
- * above that model's cut-off and under every model's maximum.  0 when no
- * model states a cell count.
+ * @brief The supply voltage a profile asks for, mV: the lowest stated cell
+ *        count among its models at 3800 mV a LiPo cell or 1200 mV a NiMH cell,
+ *        which is above that model's cut-off and under every model's maximum.
+ *        0
+ *        when no model states a cell count.
  *
  * @param p  The profile.
  * @return The supply voltage, mV, or 0 when no model states a cell count.
@@ -186,11 +197,9 @@ float esc_stick_pct(esc_throttle_t pos);
 uint32_t esc_stick_profile_mv(const esc_profile_t *p);
 
 /**
- * @brief Supply voltage for one model, mV.
- *
- * The supply voltage for model @p model of @p p, mV: its own lowest cell
- * count at the rates above, where it states one; else, and for -1, the
- * family's (esc_stick_profile_mv()).
+ * @brief The supply voltage for model @p model of @p p, mV: its own lowest cell
+ *        count at the rates above, where it states one; else, and for -1, the
+ *        family's (esc_stick_profile_mv()).
  *
  * @param p      The profile.
  * @param model  Index into the models, or -1 for the family.
@@ -199,12 +208,11 @@ uint32_t esc_stick_profile_mv(const esc_profile_t *p);
 uint32_t esc_stick_model_mv(const esc_profile_t *p, int model);
 
 /**
- * @brief Highest supply voltage a model is rated for, mV.
+ * @brief The highest supply voltage model @p model of @p p is rated for, mV:
+ *        its v_max_mv.
  *
- * The highest supply voltage model @p model of @p p is rated for, mV: its
- * v_max_mv.  For -1, the lowest of every model's, the one every model
- * takes.  0 where the data does not state it -- for -1, where a model
- * does not, or there is none.
+ * For -1, the lowest of every model's, the one every model takes.  0 where the
+ * data does not state it -- for -1, where a model does not, or there is none.
  *
  * @param p      The profile.
  * @param model  Index into the models, or -1 for the family.
@@ -213,11 +221,10 @@ uint32_t esc_stick_model_mv(const esc_profile_t *p, int model);
 uint32_t esc_stick_model_v_max(const esc_profile_t *p, int model);
 
 /**
- * @brief Continuous current a model is rated for, mA.
+ * @brief The continuous current model @p model of @p p is rated for, mA: its
+ *        current_a.
  *
- * The continuous current model @p model of @p p is rated for, mA: its
- * current_a.  For -1, the lowest stated among its models.  0 where none
- * is stated.
+ * For -1, the lowest stated among its models.  0 where none is stated.
  *
  * @param p      The profile.
  * @param model  Index into the models, or -1 for the family.
@@ -226,10 +233,9 @@ uint32_t esc_stick_model_v_max(const esc_profile_t *p, int model);
 uint32_t esc_stick_model_ma_max(const esc_profile_t *p, int model);
 
 /**
- * @brief Lowest input voltage a model takes, mV.
+ * @brief The lowest input model @p model of @p p takes, mV: its v_min_mv.
  *
- * The lowest input model @p model of @p p takes, mV: its v_min_mv.  For
- * -1, the highest stated among its models.  0 where none is stated.
+ * For -1, the highest stated among its models.  0 where none is stated.
  *
  * @param p      The profile.
  * @param model  Index into the models, or -1 for the family.
@@ -237,7 +243,9 @@ uint32_t esc_stick_model_ma_max(const esc_profile_t *p, int model);
  */
 uint32_t esc_stick_model_v_min(const esc_profile_t *p, int model);
 
-/** @brief What a supply's set points break of the ESC's ratings. */
+/**
+ * @brief What a supply's set points break of the ESC's ratings.
+ */
 typedef enum {
     ESC_STICK_RATING_OK = 0,
     ESC_STICK_RATING_V_OVER,     /**< @p mv over the rated voltage        */
@@ -246,15 +254,15 @@ typedef enum {
 } esc_stick_rating_t;
 
 /**
- * @brief Check a supply setting against a model's ratings.
+ * @brief Whether @p mv and @p ma suit model @p model of @p p (-1: every model
+ *        of the family).
  *
- * Whether @p mv and @p ma suit model @p model of @p p (-1: every model of
- * the family).  A voltage over the rated one (esc_stick_model_v_max()) is
- * refused, set by hand (@p by_hand) or taken from the cell count, and so
- * is one under the lowest input the model states (v_min_mv; for -1 the
- * highest of its models').  A current over the rated one, where stated,
- * is refused.  A rating the data does not state refuses nothing:
- * esc_stick_rating_unknown() says when the operator is to be told.
+ * A voltage over the rated one (esc_stick_model_v_max()) is refused, set by
+ * hand (@p by_hand) or taken from the cell count, and so is one under the
+ * lowest input the model states (v_min_mv; for -1 the highest of its models').
+ * A current over the rated one, where stated, is refused.  A rating the data
+ * does not state refuses nothing: esc_stick_rating_unknown() says when the
+ * operator is to be told.
  *
  * @param p        The profile.
  * @param model    Index into the models, or -1 for the family.
@@ -267,13 +275,12 @@ esc_stick_rating_t esc_stick_rating(const esc_profile_t *p, int model,
                                     uint32_t mv, uint32_t ma, bool by_hand);
 
 /**
- * @brief Whether the data cannot vouch for a supply voltage.
+ * @brief Whether the data cannot vouch for @p mv on model @p model: the rated
+ *        voltage is not stated, and the voltage is set by hand (@p by_hand) or
+ *        is not the model's own cell count's -- the family's lowest standing in
+ *        for a model that states none, or none at all.
  *
- * Whether the data cannot vouch for @p mv on model @p model: the rated
- * voltage is not stated, and the voltage is set by hand (@p by_hand) or is
- * not the model's own cell count's -- the family's lowest standing in for
- * a model that states none, or none at all.  The run goes ahead; the
- * screen says the ESC's rating is unknown.
+ * The run goes ahead; the screen says the ESC's rating is unknown.
  *
  * @param p        The profile.
  * @param model    Index into the models, or -1 for the family.
@@ -285,11 +292,10 @@ bool esc_stick_rating_unknown(const esc_profile_t *p, int model, uint32_t mv,
                               bool by_hand);
 
 /**
- * @brief Whether an item is an action rather than a setting.
+ * @brief Whether @p it is an action rather than a setting: keyed reset or exit.
  *
- * Whether @p it is an action rather than a setting: keyed reset or exit.
- * Selecting one makes the ESC act on the select move; it sounds no values,
- * and the engine does not offer it.
+ * Selecting one makes the ESC act on the select move; it sounds no values, and
+ * the engine does not offer it.
  *
  * @param it  The menu item.
  * @return true when the item is an action.
@@ -297,30 +303,29 @@ bool esc_stick_rating_unknown(const esc_profile_t *p, int model, uint32_t mv,
 bool esc_stick_is_action(const esc_item_t *it);
 
 /**
- * @brief Why an item is not offered as a change.
- *
- * Why @p it is not offered as a change, or NULL when it is: an action, or
- * an item with a single value, which is either the only setting there is
- * or a rule written as a value ("N beeps = N cells") -- nothing to choose
- * either way, and nothing the menu would sound in order.
+ * @brief Why @p it is not offered as a change, or NULL when it is: an action,
+ *        or an item with a single value, which is either the only setting there
+ *        is or a rule written as a value ("N beeps = N cells") -- nothing to
+ *        choose either way, and nothing the menu would sound in order.
  *
  * @param it  The menu item.
  * @return A static reason string, or NULL when the item is offered.
  */
 const char *esc_stick_not_offered(const esc_item_t *it);
 
-/** @brief One selection: the profile's item and value, as indices. */
+/**
+ * @brief One selection: the profile's item and value, as indices.
+ */
 typedef struct {
     uint8_t item;    /**< index into the profile's items                    */
     uint8_t value;   /**< index into the item's values                      */
 } esc_stick_change_t;
 
 /**
- * @brief Stick position a change is powered up from.
+ * @brief The stick position change @p c is powered up from: its value's
+ *        entry_throttle where the manual names one, else the profile's entry.
  *
- * The stick position change @p c is powered up from: its value's
- * entry_throttle where the manual names one, else the profile's entry.  A
- * run moves the stick there with the supply off and seen off, holds it
+ * A run moves the stick there with the supply off and seen off, holds it
  * ESC_STICK_SIGNAL_MS, and only then switches the supply on.
  *
  * @param p  The profile.
@@ -331,11 +336,11 @@ esc_throttle_t esc_stick_change_entry(const esc_profile_t *p,
                                       const esc_stick_change_t *c);
 
 /**
- * @brief Whether a run of changes can start on a profile.
+ * @brief Whether a run of @p n changes under @p t can start on @p p; the reason
+ *        in @p why when not.
  *
- * Whether a run of @p n changes under @p t can start on @p p; the reason in
- * @p why when not.  Refused, never adjusted: a timing that cannot fit the
- * profile's select window is a setting to change, not one to guess.
+ * Refused, never adjusted: a timing that cannot fit the profile's select window
+ * is a setting to change, not one to guess.
  *
  * @param p    The profile.
  * @param ch   The changes, in order.
@@ -349,7 +354,11 @@ bool esc_stick_check(const esc_profile_t *p, const esc_stick_change_t *ch,
 
 /* ---------------------------------------------------------- the beeps */
 
-/** @brief Event the beep detector reports for one reading. */
+/* ---------------------------------------------------------- the beeps */
+
+/**
+ * @brief Event the beep detector reports for one reading.
+ */
 typedef enum {
     ESC_DET_NONE = 0,
     ESC_DET_PULSE,     /**< a pulse ended                                */
@@ -358,10 +367,8 @@ typedef enum {
 } esc_det_event_t;
 
 /**
- * @brief Beep detector state.
- *
- * The beep detector: hysteresis on the current above its idle floor, pulse
- * and gap lengths judged in readings, groups split by silence.
+ * @brief The beep detector: hysteresis on the current above its idle floor,
+ *        pulse and gap lengths judged in readings, groups split by silence.
  *
  * Lengths come from readings, so they are known to one reading interval.
  * A pulse or gap is judged short when it holds fewer readings than the
@@ -418,19 +425,15 @@ void esc_det_init(esc_det_t *d, const esc_stick_timing_t *t,
                   uint8_t long_equals_short);
 
 /**
- * @brief Start counting pulses and groups.
- *
- * Pulses and groups from the next reading on; the floor is kept.
+ * @brief Pulses and groups from the next reading on; the floor is kept.
  *
  * @param d  The detector.
  */
 void esc_det_count(esc_det_t *d);
 
 /**
- * @brief Feed one current reading to the detector.
- *
- * One reading, at @p t_ms, of @p ma; @p late marks it as having come too
- * long after the one before.
+ * @brief One reading, at @p t_ms, of @p ma; @p late marks it as having come too
+ *        long after the one before.
  *
  * @param d     The detector.
  * @param t_ms  Time of the reading, ms.
@@ -442,7 +445,7 @@ esc_det_event_t esc_det_reading(esc_det_t *d, uint32_t t_ms, int32_t ma,
                                 bool late);
 
 /**
- * @brief Idle current floor, mA.
+ * @brief The idle floor, mA.
  *
  * @param d  The detector.
  * @return The idle floor, mA.
@@ -451,7 +454,11 @@ int32_t esc_det_floor_ma(const esc_det_t *d);
 
 /* ------------------------------------------------------------ the run */
 
-/** @brief Phase of a stick programming run. */
+/* ------------------------------------------------------------ the run */
+
+/**
+ * @brief Phase of a stick programming run.
+ */
 typedef enum {
     ESC_STICK_IDLE = 0,
     ESC_STICK_ARMING,     /**< waiting for the bench to arm             */
@@ -500,9 +507,7 @@ typedef enum {
 } esc_stick_reason_t;
 
 /**
- * @brief Short text for a run's end reason.
- *
- * A word or two for the screen.
+ * @brief A word or two for the screen.
  *
  * @param r  The reason.
  * @return A static text.
@@ -510,12 +515,10 @@ typedef enum {
 const char *esc_stick_reason_text(esc_stick_reason_t r);
 
 /**
- * @brief Reason for a run's end, from its stop counts.
- *
- * The end @p stops stops give, @p pressed of them pressed by an operator,
- * both counted over the same span: STOP when every one was pressed, BENCH
- * STOPPED when any was not, so a stop the bench raised is never hidden by
- * a press that came with it.
+ * @brief The end @p stops stops give, @p pressed of them pressed by an
+ *        operator, both counted over the same span: STOP when every one was
+ *        pressed, BENCH STOPPED when any was not, so a stop the bench raised is
+ *        never hidden by a press that came with it.
  *
  * @param stops    Stops counted over the span.
  * @param pressed  Of those, the ones an operator pressed.
@@ -524,13 +527,12 @@ const char *esc_stick_reason_text(esc_stick_reason_t r);
 esc_stick_reason_t esc_stick_stop_reason(uint32_t stops, uint32_t pressed);
 
 /**
- * @brief Whether a run ended because something was not as expected.
+ * @brief Whether a run that ended for @p r ended because something was not as
+ *        expected: a reading, the supply, the link, the arm, the ESC, or a stop
+ *        the bench raised itself.
  *
- * Whether a run that ended for @p r ended because something was not as
- * expected: a reading, the supply, the link, the arm, the ESC, or a stop
- * the bench raised itself.  False for the ends an operator chose (STOP
- * pressed, ABORT, leaving the screen) and for none.  The screen's red
- * light.
+ * False for the ends an operator chose (STOP pressed, ABORT, leaving the
+ * screen) and for none.  The screen's red light.
  *
  * @param r  The end reason.
  * @return true for a fault.
@@ -545,7 +547,9 @@ bool esc_stick_reason_is_fault(esc_stick_reason_t r);
  */
 const char *esc_stick_phase_text(esc_stick_phase_t ph);
 
-/** @brief What the bench is doing, each step. */
+/**
+ * @brief What the bench is doing, each step.
+ */
 typedef struct {
     uint32_t now_ms;         /**< time of this step, ms                    */
     bool     armed;          /**< the bench is armed                       */
@@ -556,14 +560,12 @@ typedef struct {
 } esc_stick_bench_t;
 
 /**
- * @brief One supply sample.
- *
- * @p seq is the supply's count of its own readings,
- * modulo 65536 (supply_state_t's samples): it moves when the reading is
- * new, and a step of more than one is a reading the panel never saw.
- * @p at_ms is when the panel first had the reading (taken_ms), so a supply
- * whose count stops is a supply whose readings stop, however often the
- * panel reads its page.
+ * @brief One supply sample.  @p seq is the supply's count of its own readings,
+ *        modulo 65536 (supply_state_t's samples): it moves when the reading is
+ *        new, and a step of more than one is a reading the panel never saw. @p
+ *        at_ms is when the panel first had the reading (taken_ms), so a supply
+ *        whose count stops is a supply whose readings stop, however often the
+ *        panel reads its page.
  */
 typedef struct {
     uint32_t seq;
@@ -576,7 +578,9 @@ typedef struct {
     bool     online;         /**< the supply answers                       */
 } esc_stick_sample_t;
 
-/** @brief What the bench is to do, after a step. */
+/**
+ * @brief What the bench is to do, after a step.
+ */
 typedef struct {
     bool     arm;            /**< arm the bench                            */
     float    throttle_pct;   /**< throttle, percent of travel              */
@@ -674,11 +678,10 @@ typedef struct {
 } esc_stick_t;
 
 /**
- * @brief Start a stick programming run.
+ * @brief Start a run.  @p mv and @p ma are the supply's set points, already
+ *        held to the caps by the caller.
  *
- * Start a run.  @p mv and @p ma are the supply's set points, already held
- * to the caps by the caller.  Refused with @p why when esc_stick_check()
- * refuses, and the run stays idle.
+ * Refused with @p why when esc_stick_check() refuses, and the run stays idle.
  *
  * @param e   The run to start.
  * @param p   The profile.
@@ -697,9 +700,7 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
                      const esc_stick_bench_t *b, const char **why);
 
 /**
- * @brief Feed one supply sample to the run.
- *
- * One supply sample, as it arrives.
+ * @brief One supply sample, as it arrives.
  *
  * @param e  The run.
  * @param s  The sample.
@@ -707,9 +708,7 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
 void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s);
 
 /**
- * @brief Advance the run and judge the bench.
- *
- * Advance to @p b->now_ms and judge the bench.
+ * @brief Advance to @p b->now_ms and judge the bench.
  *
  * @param e  The run.
  * @param b  The bench state.
@@ -717,10 +716,10 @@ void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s);
 void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b);
 
 /**
- * @brief End the run now.
+ * @brief End the run now, for @p why: throttle to its rest, supply off,
+ *        disarmed.
  *
- * End the run now, for @p why: throttle to its rest, supply off,
- * disarmed.  A run already over is left as it ended.
+ * A run already over is left as it ended.
  *
  * @param e    The run.
  * @param why  The end reason.
@@ -728,9 +727,7 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b);
 void esc_stick_abort(esc_stick_t *e, esc_stick_reason_t why);
 
 /**
- * @brief Whether the run is under way.
- *
- * Started and neither done nor aborted.
+ * @brief Whether the run is under way: started and neither done nor aborted.
  *
  * @param e  The run.
  * @return true while the run is under way.
@@ -738,7 +735,7 @@ void esc_stick_abort(esc_stick_t *e, esc_stick_reason_t why);
 bool esc_stick_running(const esc_stick_t *e);
 
 /**
- * @brief Output the bench is to take now.
+ * @brief What the bench is to do now.
  *
  * @param e  The run.
  * @return The bench's output for this step.
@@ -746,9 +743,7 @@ bool esc_stick_running(const esc_stick_t *e);
 const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
 
 /**
- * @brief Manual step the run waits for.
- *
- * The manual step the run waits for, or NULL when it waits for none.
+ * @brief The manual step the run waits for, or NULL when it waits for none.
  *
  * A run stops for a step a person does at the ESC where the profile says
  * it is due, and goes on only on esc_stick_confirm():
@@ -790,12 +785,10 @@ const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
 const esc_manual_t *esc_stick_hand(const esc_stick_t *e);
 
 /**
- * @brief Power-on to the menu for a change, ms.
- *
- * Power-on to the menu for change @p c, ms, as the run waits it: its
- * value's entry_hold_ms where the manual gives one (Kontronik SUN PLUS
- * modes 4 to 6, 5 s), else @p t's entry, and no less than the longest hold
- * of the profile's at_power_up steps.  @p c NULL: the entry's.
+ * @brief Power-on to the menu for change @p c, ms, as the run waits it: its
+ *        value's entry_hold_ms where the manual gives one (Kontronik SUN PLUS
+ *        modes 4 to 6, 5 s), else @p t's entry, and no less than the longest
+ *        hold of the profile's at_power_up steps.  @p c NULL: the entry's.
  *
  * @param p  The profile.
  * @param c  The change, or NULL for the entry.
@@ -807,9 +800,8 @@ uint32_t esc_stick_change_entry_ms(const esc_profile_t *p,
                                    const esc_stick_timing_t *t);
 
 /**
- * @brief Power-on to the menu at this power-up, ms.
- *
- * esc_stick_change_entry_ms() of the change it makes.
+ * @brief Power-on to the menu at this power-up, ms: esc_stick_change_entry_ms()
+ *        of the change it makes.
  *
  * @param e  The run.
  * @return The power-on to menu time, ms.
@@ -817,13 +809,13 @@ uint32_t esc_stick_change_entry_ms(const esc_profile_t *p,
 uint32_t esc_stick_entry_ms(const esc_stick_t *e);
 
 /**
- * @brief Whether the run was cut short before a value was stored.
+ * @brief Whether the run ended between a selection and the DONE of the
+ *        profile's before_power_off steps, or before the last of the moves that
+ *        store the value (esc_stick_store_move()) -- while the ESC stored or
+ *        confirmed: the value may not be stored.
  *
- * Whether the run ended between a selection and the DONE of the profile's
- * before_power_off steps, or before the last of the moves that store the
- * value (esc_stick_store_move()) -- while the ESC stored or confirmed:
- * the value may not be stored.  False while the run is under way, and
- * for a value stored by its selection on a profile without such a step.
+ * False while the run is under way, and for a value stored by its selection on
+ * a profile without such a step.
  *
  * @param e  The run.
  * @return true when the value may not be stored.
@@ -831,11 +823,9 @@ uint32_t esc_stick_entry_ms(const esc_stick_t *e);
 bool esc_stick_cut_short(const esc_stick_t *e);
 
 /**
- * @brief Whether a before_power_off step marks locks.
- *
- * Whether a before_power_off step of the run's profile marks locks: a
- * cut before every such step is confirmed may lock the ESC, whichever
- * step is asked.
+ * @brief Whether a before_power_off step of the run's profile marks locks: a
+ *        cut before every such step is confirmed may lock the ESC, whichever
+ *        step is asked.
  *
  * @param e  The run.
  * @return true when a cut may lock the ESC.
@@ -843,10 +833,8 @@ bool esc_stick_cut_short(const esc_stick_t *e);
 bool esc_stick_end_locks(const esc_stick_t *e);
 
 /**
- * @brief Whether the ESC may have locked itself.
- *
- * esc_stick_cut_short() and esc_stick_end_locks(): the ESC may have
- * locked itself.
+ * @brief esc_stick_cut_short() and esc_stick_end_locks(): the ESC may have
+ *        locked itself.
  *
  * @param e  The run.
  * @return true when the ESC may have locked itself.
@@ -854,10 +842,8 @@ bool esc_stick_end_locks(const esc_stick_t *e);
 bool esc_stick_lock_risk(const esc_stick_t *e);
 
 /**
- * @brief Whether DONE would count now.
- *
- * Whether DONE would count now: ESC_STICK_HAND_MIN_MS after the step was
- * asked.
+ * @brief Whether DONE would count now: ESC_STICK_HAND_MIN_MS after the step was
+ *        asked.
  *
  * @param e  The run.
  * @return true when DONE counts.
@@ -865,7 +851,7 @@ bool esc_stick_lock_risk(const esc_stick_t *e);
 bool esc_stick_hand_ready(const esc_stick_t *e);
 
 /**
- * @brief Time left to confirm the step asked, ms.
+ * @brief The time left to confirm the step asked, ms; 0 when none is.
  *
  * @param e  The run.
  * @return The time left, ms; 0 when no step is asked.
@@ -873,11 +859,11 @@ bool esc_stick_hand_ready(const esc_stick_t *e);
 uint32_t esc_stick_hand_left_ms(const esc_stick_t *e);
 
 /**
- * @brief Confirm the manual step asked (DONE).
+ * @brief DONE: the step asked is done.
  *
- * DONE: the step asked is done.  The run asks the next step due at the
- * same point, or goes on.  Ignored, returning false, when no step is asked
- * or the step was asked less than ESC_STICK_HAND_MIN_MS ago.
+ * The run asks the next step due at the same point, or goes on.  Ignored,
+ * returning false, when no step is asked or the step was asked less than
+ * ESC_STICK_HAND_MIN_MS ago.
  *
  * @param e  The run.
  * @return true when the step was confirmed.
@@ -885,13 +871,12 @@ uint32_t esc_stick_hand_left_ms(const esc_stick_t *e);
 bool esc_stick_confirm(esc_stick_t *e);
 
 /**
- * @brief Move after a selection, by its position.
+ * @brief The @p k-th move after a selection, from 0, or ESC_THR_NONE past the
+ *        last: the profile's store move, then the moves the stored value asks
+ *        for (esc_value_t's after: Kontronik's car modes go to the brake after
+ *        full throttle).
  *
- * The @p k-th move after a selection, from 0, or ESC_THR_NONE past the
- * last: the profile's store move, then the moves the stored value asks for
- * (esc_value_t's after: Kontronik's car modes go to the brake after full
- * throttle).  The run makes each STORE after the one before, then switches
- * the supply off.
+ * The run makes each STORE after the one before, then switches the supply off.
  *
  * @param e  The run.
  * @param k  Index of the move, from 0.
@@ -900,7 +885,7 @@ bool esc_stick_confirm(esc_stick_t *e);
 esc_throttle_t esc_stick_store_move(const esc_stick_t *e, unsigned k);
 
 /**
- * @brief Count the selections made.
+ * @brief How many selections have been made.
  *
  * @param e  The run.
  * @return The number of selections made.
@@ -908,11 +893,9 @@ esc_throttle_t esc_stick_store_move(const esc_stick_t *e, unsigned k);
 unsigned esc_stick_done_count(const esc_stick_t *e);
 
 /**
- * @brief Whether a selection was cut short before it was stored.
- *
- * Whether change @p i was selected, but the run was cut short before
- * the ESC stored or confirmed it (esc_stick_cut_short()): the selection
- * being stored when the run ended.
+ * @brief Whether change @p i was selected, but the run was cut short before the
+ *        ESC stored or confirmed it (esc_stick_cut_short()): the selection
+ *        being stored when the run ended.
  *
  * @param e  The run.
  * @param i  Index of the change.
@@ -921,9 +904,8 @@ unsigned esc_stick_done_count(const esc_stick_t *e);
 bool esc_stick_unsure(const esc_stick_t *e, unsigned i);
 
 /**
- * @brief Count the selections made for certain.
- *
- * esc_stick_done_count() less the one esc_stick_unsure() names.
+ * @brief The selections made for certain: esc_stick_done_count() less the one
+ *        esc_stick_unsure() names.
  *
  * @param e  The run.
  * @return The number of certain selections.
@@ -931,30 +913,30 @@ bool esc_stick_unsure(const esc_stick_t *e, unsigned i);
 unsigned esc_stick_made_count(const esc_stick_t *e);
 
 /**
- * @brief Count the beeps of the group under way.
+ * @brief The beeps of the group under way.
  *
  * @param e  The run.
  * @return The number of beeps.
  */
 unsigned esc_stick_beeps(const esc_stick_t *e);
 
-/** @brief Shortest time the green light shows a beep, ms.
- *
- *  A beep shown for less than this would fall between two frames: the
- *  green light stays on at least this long from the frame that first sees
- *  the pulse. */
+/**
+ * @brief A beep shown for less than this would fall between two frames, ms: the
+ *        green light stays on at least this long from the frame that first sees
+ *        the pulse.
+ */
 #define ESC_STICK_BEEP_LIGHT_MS 150u
 
 /**
- * @brief Green light state: on while the detector holds a pulse.
+ * @brief The green light: on while the detector holds a pulse, from the reading
+ *        that rose above the threshold to the one that fell below the release,
+ *        and for at least ESC_STICK_BEEP_LIGHT_MS from the first look that sees
+ *        a pulse begun, so a pulse that rises and falls between two looks still
+ *        shows.
  *
- * The green light: on while the detector holds a pulse, from the reading
- * that rose above the threshold to the one that fell below the release,
- * and for at least ESC_STICK_BEEP_LIGHT_MS from the first look that sees a
- * pulse begun, so a pulse that rises and falls between two looks still
- * shows.  Every pulse lights it, trusted group or not.  Off while the
- * supply is not on for the menu (outside ENTRY, HAND_ON, ITEMS, VALUES and
- * STORE) and while no run is under way.
+ * Every pulse lights it, trusted group or not.  Off while the supply is not on
+ * for the menu (outside ENTRY, HAND_ON, ITEMS, VALUES and STORE) and while no
+ * run is under way.
  */
 typedef struct {
     uint32_t pulses;    /**< the run's count at the last look */
@@ -963,9 +945,7 @@ typedef struct {
 } esc_stick_light_t;
 
 /**
- * @brief Start watching a run for the green light.
- *
- * Start watching @p e: pulses already counted do not light it.
+ * @brief Start watching @p e: pulses already counted do not light it.
  *
  * @param l  The light state.
  * @param e  The run.
@@ -973,7 +953,7 @@ typedef struct {
 void esc_stick_light_reset(esc_stick_light_t *l, const esc_stick_t *e);
 
 /**
- * @brief Whether the green light is on.
+ * @brief Whether the green light is on at @p now_ms.
  *
  * @param l       The light state.
  * @param e       The run.

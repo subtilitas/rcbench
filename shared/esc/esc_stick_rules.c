@@ -1,10 +1,10 @@
 /**
  * @file
- * @brief Rules of what the stick programming engine can run.
+ * @brief Stick programming: what can run.
  *
- * Stick programming: what can run.  Which profiles the engine runs, the
- * voltage and current set points a model is given, and the check a run's
- * changes and timing pass before it starts.  See esc_stick.h.
+ * Which profiles the engine runs, the voltage and current set points a model is
+ * given, and the check a run's changes and timing pass before it starts.  See
+ * esc_stick.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,7 +33,7 @@ float esc_stick_pct(esc_throttle_t pos)
 }
 
 /**
- * @brief Whether a value number appears in two items.
+ * @brief Whether any value number appears in two items.
  *
  * @param p  The profile.
  * @return true when a value number repeats across items.
@@ -56,15 +56,14 @@ static bool values_repeat(const esc_profile_t *p)
 }
 
 /**
- * @brief Whether every manual step of a profile can be waited for.
+ * @brief Whether every manual step can be waited for.
  *
- * Whether every manual step can be waited for.  A step during the menu has
- * no moment the run can know.  A hand at a powered ESC -- held while the
- * supply comes on, or after the entry -- is asked for with the stick where
- * the entry put it, so only for an entry at MIN, the motor-off position: a
- * person is not asked to reach for a powered ESC whose stick is at MID or
- * MAX.  A step before the supply goes off asks for no hand at all -- the
- * operator watches the ESC -- so any stick position holds it.
+ * A step during the menu has no moment the run can know.  A hand at a powered
+ * ESC -- held while the supply comes on, or after the entry -- is asked for
+ * with the stick where the entry put it, so only for an entry at MIN, the
+ * motor-off position: a person is not asked to reach for a powered ESC whose
+ * stick is at MID or MAX.  A step before the supply goes off asks for no hand
+ * at all -- the operator watches the ESC -- so any stick position holds it.
  *
  * @param p  The profile.
  * @return true when every manual step can be waited for.
@@ -92,10 +91,9 @@ static bool hand_fits(const esc_profile_t *p)
 }
 
 /**
- * @brief Whether a value states its own entry time.
- *
- * The profile-wide rest rule leaves such a profile to the per-change one
- * (entry_refused()), which sees the value's time.
+ * @brief Whether a value states its own entry time: the profile-wide rest rule
+ *        leaves such a profile to the per-change one (entry_refused()), which
+ *        sees the value's time.
  *
  * @param p  The profile.
  * @return true when a value has an entry_hold_ms.
@@ -113,7 +111,7 @@ static bool value_holds(const esc_profile_t *p)
 }
 
 /**
- * @brief Find the manual step that starts the menu.
+ * @brief The step that starts the menu, or NULL.
  *
  * @param p  The profile.
  * @return The step marked starts_menu, or NULL when none is.
@@ -394,7 +392,7 @@ esc_throttle_t esc_stick_change_entry(const esc_profile_t *p,
 }
 
 /**
- * @brief Whether a profile asks for a hand at a powered ESC.
+ * @brief Whether the profile asks for a hand at a powered ESC.
  *
  * @param p  The profile.
  * @return true when an at_power_up or before_menu step is due.
@@ -406,13 +404,13 @@ static bool hand_powered(const esc_profile_t *p)
 }
 
 /**
- * @brief Why a change cannot be powered up from its own entry position.
+ * @brief Why change @p i cannot be powered up from its own entry position, or
+ *        NULL.
  *
- * Why change @p i cannot be powered up from its own entry position, or
- * NULL.  The run powers each change up from the position its value is
- * programmed from (esc_stick_change_entry()): a Kontronik car mode from
- * the middle, the neutral the mode teaches.  The profile-wide rules of
- * esc_stick_kind() hold for that position as they hold for the profile's:
+ * The run powers each change up from the position its value is programmed from
+ * (esc_stick_change_entry()): a Kontronik car mode from the middle, the neutral
+ * the mode teaches.  The profile-wide rules of esc_stick_kind() hold for that
+ * position as they hold for the profile's:
  *
  *   - A power-up takes one position.  A two-stage menu, or one that takes
  *     several changes a power-up, makes its changes in the order the ESC

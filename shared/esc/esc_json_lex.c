@@ -1,10 +1,10 @@
 /**
  * @file
- * @brief First stage of reading an ESC profile: JSON text cut into tokens.
+ * @brief The first stage of reading an ESC profile from JSON: the text cut into
+ *        tokens.
  *
- * The first stage of reading an ESC profile from JSON: the text cut into
- * tokens.  See esc_json.c for the second stage, and esc_json_int.h for the
- * four functions this file gives it.
+ * See esc_json.c for the second stage, and esc_json_int.h for the four
+ * functions this file gives it.
  *
  * One token per value, each with the index one past its last descendant, so
  * a reader skips a subtree in one step and never recurses to find a key.
@@ -25,24 +25,25 @@
 #include <string.h>
 
 /**
- * @brief Deepest nesting the lexer follows, levels.
- *
- * Nesting deeper than any profile needs (five levels) is refused rather than
- * followed, so a hostile file cannot run the stack down.
+ * @brief Nesting deeper than any profile needs (five levels) is refused rather
+ *        than followed, so a hostile file cannot run the stack down.
  */
 #define MAX_DEPTH 16
 
 /**
- * @brief Most members one object may hold.
+ * @brief No profile object has more than 14 members.
  *
- * No profile object has more than 14 members.  The duplicate check compares
- * each key with those before it, so this bounds it at 64 x 63 / 2
- * comparisons an object rather than letting a 64 KiB file of short keys ask
- * for tens of millions.
+ * The duplicate check compares each key with those before it, so this bounds it
+ * at 64 x 63 / 2 comparisons an object rather than letting a 64 KiB file of
+ * short keys ask for tens of millions.
  */
 #define MAX_MEMBERS 64u
 
-/* ------------------------------------------------------------ the tokens */
+/* ------------------------------------------------------------ the */
+
+/* ------------------------------------------------------------ the */
+
+/* ------------------------------------------------------------ the */
 
 /**
  * @brief Skip white space.
@@ -119,7 +120,7 @@ static int hexval(char c)
 }
 
 /**
- * @brief Value of four hexadecimal digits.
+ * @brief The four hex digits at @p s, or -1.
  *
  * @param s  The text; four digits are read.
  * @return The 16-bit value, or -1 when a digit is not hexadecimal.
@@ -138,12 +139,12 @@ static int32_t hex4(const char *s)
 }
 
 /**
- * @brief Length of the well-formed UTF-8 sequence at a position.
+ * @brief The length of the well-formed UTF-8 sequence at @p s, or 0: no stray
+ *        continuation byte, no overlong form, no encoded surrogate, nothing
+ *        past U+10FFFF.
  *
- * The length of the well-formed UTF-8 sequence at @p s, or 0: no stray
- * continuation byte, no overlong form, no encoded surrogate, nothing past
- * U+10FFFF.  What Python's UTF-8 decoder takes, so a file the generator
- * would refuse to read is refused here too.
+ * What Python's UTF-8 decoder takes, so a file the generator would refuse to
+ * read is refused here too.
  *
  * @param s      The bytes, starting at the lead byte.
  * @param avail  Bytes available from @p s.
@@ -179,13 +180,13 @@ static uint32_t utf8_len(const unsigned char *s, uint32_t avail)
 }
 
 /**
- * @brief Lex a string token and check every escape in it.
+ * @brief A string, with every escape checked here, in the one pass that sees
+ *        every string -- including those in fields the panel never reads.
+ *        \u0000 is refused (it would end a C string early), and so is half a
+ *        surrogate pair: json.loads() keeps a lone half, which no UTF-8 can
+ *        carry.
  *
- * A string, with every escape checked here, in the one pass that sees every
- * string -- including those in fields the panel never reads.  \u0000 is
- * refused (it would end a C string early), and so is half a surrogate pair:
- * json.loads() keeps a lone half, which no UTF-8 can carry.  What passes is
- * what esc_json_decode_unit() decodes without looking again.
+ * What passes is what esc_json_decode_unit() decodes without looking again.
  *
  * @param l  The lexer state, at the opening quote; moves past the closing
  *           quote on success.
@@ -264,6 +265,14 @@ static bool lex_string(lex_t *l)
     return false;                               /* no closing quote */
 }
 
+/**
+ * @brief The UTF-8 bytes of the character at s[*i], into @p out; *i moves past
+ *        it.
+ *
+ * A raw byte is itself (UTF-8 in the file passes through a byte at a time); an
+ * escape is decoded, a surrogate pair into one four-byte character.  Only for
+ * text lex_string() accepted.
+ */
 unsigned esc_json_decode_unit(const char *s, uint32_t *i, uint8_t out[4])
 {
     const char c = s[*i];
@@ -313,11 +322,11 @@ unsigned esc_json_decode_unit(const char *s, uint32_t *i, uint8_t out[4])
 }
 
 /**
- * @brief Whether two string tokens decode to the same bytes.
+ * @brief Whether two string tokens' texts decode to the same bytes, so "schema"
+ *        and "sch\u0065ma" are one key, as json.loads() has them.
  *
- * So "schema" and "schema" are one key, as json.loads() has them.  The
- * two decoded streams are compared byte by byte, not unit by unit: a raw
- * "\xC3\xA9" comes a byte at a time and "é" as both bytes at once, and
+ * The two decoded streams are compared byte by byte, not unit by unit: a raw
+ * "\xC3\xA9" comes a byte at a time and "\u00e9" as both bytes at once, and
  * they are the same character.
  *
  * @param s  The text both tokens point into.
@@ -350,6 +359,9 @@ static bool same_text(const char *s, const tok_t *a, const tok_t *b)
     }
 }
 
+/**
+ * @brief Whether a string token's text decodes to the plain @p lit.
+ */
 bool esc_json_text_is(const char *s, const tok_t *a, const char *lit)
 {
     uint32_t i = a->start;
@@ -378,11 +390,9 @@ static bool is_digit(char c)
 }
 
 /**
- * @brief Lex a number token.
- *
- * -? (0 | [1-9][0-9]*) (. [0-9]+)? ([eE] [+-]? [0-9]+)?, as JSON has it and
- * as the generator's json.loads() takes it, so a file one refuses the other
- * refuses too, whichever field the number sits in.
+ * @brief -? (0 | [1-9][0-9]*) (. [0-9]+)? ([eE] [+-]? [0-9]+)?, as JSON has it
+ *        and as the generator's json.loads() takes it, so a file one refuses
+ *        the other refuses too, whichever field the number sits in.
  *
  * @param l  The lexer state, at the first character of the number.
  * @return true when a well-formed number was lexed.
@@ -458,13 +468,12 @@ static bool lex_word(lex_t *l, const char *w, ttype_t t)
 }
 
 /**
- * @brief Whether the key just read is already in its object.
+ * @brief Whether the key just read is one of the @p members before it in the
+ *        object at token @p obj.  json.loads() keeps the last of two and a
+ *        reader that stops at the first keeps the first, so a file with a key
+ *        twice is refused rather than read two ways.
  *
- * Whether the key just read is one of the @p members before it in the object
- * at token @p obj.  json.loads() keeps the last of two and a reader that
- * stops at the first keeps the first, so a file with a key twice is refused
- * rather than read two ways.  Only once the tokens exist: the counting pass
- * has nothing to compare.
+ * Only once the tokens exist: the counting pass has nothing to compare.
  *
  * @param l        The lexer state; the key is its newest token.
  * @param obj      Index of the object token.
@@ -575,6 +584,7 @@ static bool lex_value(lex_t *l, int depth)
     }
 }
 
+/* The whole text is one value with nothing after it but white space. */
 bool esc_json_lex_all(lex_t *l)
 {
     l->pos = 0;
