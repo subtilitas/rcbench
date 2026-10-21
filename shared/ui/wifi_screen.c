@@ -15,8 +15,8 @@
 #include "ui_widgets.h"
 
 /* The area below the band: 800 x 432 px. */
-#define W 800
-#define H 432
+#define W UI_PANEL_W
+#define H UI_BODY_H
 
 /* With the radio off: the buttons on the left, what is kept and what last
  * happened on the right. */
@@ -863,7 +863,7 @@ static struct {
     unsigned      drawn_mask;
 } u;
 
-#define U_CLOSE gfx_rect_make(24, 480 - 18 - 56, 240, 56)
+#define U_CLOSE gfx_rect_make(24, UI_PANEL_H - 18 - 56, 240, 56)
 
 static void u_reset(void)
 {
@@ -957,7 +957,7 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
     const bool failed = (u.v.state == UPDATE_FAILED
                          || u.v.state == UPDATE_FETCH_FAILED);
     const gfx_color_t head = failed ? UI_DANGER : UI_ACCENT;
-    gfx_fill_rect(c, 0, 0, 800, 56, head);
+    gfx_fill_rect(c, 0, 0, W, 56, head);
     char line[96];
     snprintf(line, sizeof(line), fetch ? TR(UPD_DL_TITLE) : TR(UP_TITLE),
              u.v.version);

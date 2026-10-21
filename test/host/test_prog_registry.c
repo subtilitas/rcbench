@@ -17,8 +17,8 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 static gfx_color_t *fb;
 static gfx_canvas_t cv;

@@ -141,7 +141,7 @@ and the panel refreshes at 39 Hz, so about every other frame has nothing new.
 The bench screen keeps the plot's push count and a control revision, each per
 framebuffer, and repaints the plot, the readouts and the controls only when the
 corresponding counter has moved. `each_framebuffer_is_updated_independently` in
-`test_motor` pins the per-buffer counters.
+`test_motor_draw` pins the per-buffer counters.
 
 ## Ceilings
 

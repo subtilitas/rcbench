@@ -17,7 +17,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define SCREEN_H (480 - UI_BAND_H)
+#define SCREEN_H UI_BODY_H
 #define MAX_FBS  3
 
 /* Why no pin can be ticked: two lines of 18 px under the counts. */

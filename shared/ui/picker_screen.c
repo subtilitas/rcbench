@@ -20,8 +20,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define SCREEN_W 800
-#define SCREEN_H (480 - UI_BAND_H)
+#define SCREEN_W UI_PANEL_W
+#define SCREEN_H UI_BODY_H
 #define MAX_FBS  3
 
 /*
@@ -64,7 +64,7 @@
  * face is the outputs screen's: 266 px holds the longest protocol name,
  * "DSHOT600 BIDIR", in the head face.  The reason takes a second line where
  * it needs one, above the PINS table: what is left of it, 17 cells at most
- * (test_picker_screen holds every reason to it), so it ends left of the
+ * (test_picker_screen_table holds every reason to it), so it ends left of the
  * widest board's edge at 150 px.
  */
 #define HEAD_X      6
