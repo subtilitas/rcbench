@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "ui_layout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -117,13 +118,10 @@ int ui_theme_contrast(void);
 #define UI_CHAMFER_SM    4
 
 /*
- * Corner radii, one scale for the whole interface, so a card, a button and a
- * track read as the same material.  UI_CHAMFER is the 45-degree cut ui_panel
- * and the home tag use.
+ * Corner radii (UI_R_CARD, UI_R_CTL, UI_R_CHIP, in ui_layout.h) are one scale
+ * for the whole interface, so a card, a button and a track read as the same
+ * material.  UI_CHAMFER is the 45-degree cut ui_panel and the home tag use.
  */
-#define UI_R_CARD  8
-#define UI_R_CTL   6
-#define UI_R_CHIP  4
 
 /*
  * The bench's numeral style, in one place: the four readings and the throttle

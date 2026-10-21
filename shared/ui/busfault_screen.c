@@ -13,8 +13,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /* The red bar across the top, and the verdict under it across the whole
  * width: 47 cells of the heading face. */

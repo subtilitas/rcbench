@@ -12,7 +12,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define PANEL_W 800
+#define PANEL_W UI_PANEL_W
 
 /*
  * STOP is 132 px wide at the right edge of the band, sized for a thumb rather

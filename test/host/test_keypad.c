@@ -16,8 +16,8 @@
 #include "ui_theme.h"
 #include "touch_feed.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 static const gfx_rect_t k_area = { 6, 24, 546, 402 };
 

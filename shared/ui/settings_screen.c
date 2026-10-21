@@ -39,9 +39,9 @@
 #include "ui_textkey.h"
 #include "ui_widgets.h"
 
-#define SCREEN_W 800
+#define SCREEN_W UI_PANEL_W
 /* The router owns the top 48 and the home tag; this screen gets the body. */
-#define SCREEN_H (480 - UI_BAND_H)
+#define SCREEN_H UI_BODY_H
 #define MAX_FBS  3
 
 /*
@@ -78,7 +78,7 @@
 #define ROW_PITCH (ROW_H + ROW_GAP)
 
 #define BTN_W    44
-#define BTN_H    36
+#define BTN_H    UI_BTN_H
 #define PLUS_X   (LIST_X + LIST_W - 14 - BTN_W)
 #define MINUS_X  (PLUS_X - 8 - 110 - 8 - BTN_W)
 #define VALUE_R  (PLUS_X - 8)

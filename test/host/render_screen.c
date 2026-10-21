@@ -71,8 +71,8 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /* MOTOR & ESC's PROGRAM tab, the second of the strip's (112 px a tab, 4 px
  * apart from x 9, 24 px high from y 6), and the STICK MENU row of its list,

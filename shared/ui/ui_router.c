@@ -28,8 +28,8 @@
 #include "ui_watermark.h"
 #include "ui_widgets.h"
 
-#define PANEL_W 800
-#define PANEL_H 480
+#define PANEL_W UI_PANEL_W
+#define PANEL_H UI_PANEL_H
 #define ALERT_H UI_ALERT_H    /* the alert band, across the bottom */
 
 static struct {

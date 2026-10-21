@@ -41,8 +41,8 @@
 
 #include "servo_spots.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /* The SERVO screen's left card, as servo_screen.c hands it over. */
 static const gfx_rect_t AREA = { 6, 6, 488, 420 };
