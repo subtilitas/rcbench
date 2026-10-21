@@ -352,7 +352,8 @@ Stable-Release. 0.22 ist die letzte Release-Linie für das ESP32-S3-Panel,
 und spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von
 Waveshare. Die Suche des Panels liest mit RELEASES auf STABLE unter SETUP >
 UPDATES, dem Standard, das Latest-Release von GitHub und mit TESTING die 10
-neuesten Releases. In beiden Stellungen bietet es nur ein Patch-Release
+neuesten Releases; STABLE liest diese 10 auch, wenn das Latest-Release
+hinter der Linie liegt und neuer als der laufende Build ist. In beiden Stellungen bietet es nur ein Patch-Release
 0.22.x an, das neuer ist als die Version, die es hat
 ([Bildschirme: Die Release-Linie](Screens-de.md#die-release-linie)). Ein
 Release lässt sich auch von Hand laden: seine

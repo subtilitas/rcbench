@@ -22,8 +22,9 @@
  * panel, and later releases are for the ESP32-P4 panel.  A check on either
  * channel offers a release of FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR only, a
  * 0.22.x patch release newer than the running build; 0.23.0 and later are
- * never offered.  STABLE reads one tag: a 0.22.x patch release is found
- * there only while it is GitHub's latest release.
+ * never offered.  Where STABLE's one tag is past the line and newer than
+ * the running build, the check reads the release list once more for the
+ * line's newest.
  *
  * And, for a download, two files of that release: SHA256SUMS and
  * rcbench-panel-vX.Y.Z.bin, each a redirect from github.com to a
@@ -207,10 +208,11 @@ fw_rel_err_t fw_release_parse_sums(const char *text, size_t n,
                                    uint8_t out[FW_SHA256_BYTES]);
 
 /**
- * The scan of the API's answer for the highest release: fed the body as it
- * comes, in pieces of any size, and nothing of it kept but the release
- * under way's tag, the highest so far and the highest of the panel's
- * release line so far.  84 bytes, on the caller's stack.
+ * @brief The scan of the API's answer for the highest release.
+ *
+ * Fed the body as it comes, in pieces of any size, and nothing of it kept
+ * but the release under way's tag, the highest so far and the highest of
+ * the panel's release line so far.  84 bytes, on the caller's stack.
  */
 typedef struct {
     uint32_t     seen;    /**< bytes fed                                 */
@@ -233,7 +235,7 @@ typedef struct {
     uint8_t      releases;   /**< read whole                             */
     fw_version_t cur;     /**< the release under way's tag                */
     fw_version_t best;    /**< the highest no-draft release so far        */
-    bool         have_line;
+    bool         have_line; /**< line holds a release of the line   */
     fw_version_t line;    /**< the highest no-draft one of the line so far */
     fw_rel_err_t err;     /**< once ended                                */
     fw_version_t found;   /**< once ended with FW_REL_OK                 */

@@ -45,6 +45,10 @@ typedef struct {
 static struct {
     answer_t a;
     bool     have;
+    answer_t api_a;       /* STABLE's second request, the API's, if set */
+    bool     have_api;
+    const answer_t *cur;  /* the answer of the request open now         */
+    unsigned api_opens;
     uint32_t sent;
     char     url[FW_REL_URL_MAX + 1u];
     bool     api;
@@ -62,20 +66,27 @@ static bool f_open(void *ctx, const char *url, uint32_t timeout_ms,
     ++g.opens;
     g.last_timeout = timeout_ms;
     g.api = api;
+    g.api_opens += api ? 1u : 0u;
     snprintf(g.url, sizeof(g.url), "%s", url);
-    g.now += g.a.open_ms;
-    if (!g.have || g.a.no_connect) {
+    const bool second = api && g.have_api;
+    const answer_t *a = second ? &g.api_a : &g.a;
+    if (second) {
+        g.sent = 0u;          /* a body of its own */
+    }
+    g.cur = a;
+    g.now += a->open_ms;
+    if (!(second || g.have) || a->no_connect) {
         return false;
     }
-    head->status = g.a.status;
-    head->length = g.a.length;
-    head->chunked = g.a.chunked;
+    head->status = a->status;
+    head->length = a->length;
+    head->chunked = a->chunked;
     head->loc_n = 0u;
     head->loc_cut = false;
-    if (g.a.loc != NULL) {
-        const size_t n = strlen(g.a.loc);
+    if (a->loc != NULL) {
+        const size_t n = strlen(a->loc);
         head->loc_n = (n > loc_cap) ? loc_cap : n;
-        memcpy(loc, g.a.loc, head->loc_n);
+        memcpy(loc, a->loc, head->loc_n);
     }
     return true;
 }
@@ -84,20 +95,21 @@ static int32_t f_read(void *ctx, uint8_t *dst, uint32_t n,
                       uint32_t timeout_ms)
 {
     (void)ctx;
+    const answer_t *a = (g.cur != NULL) ? g.cur : &g.a;
     ++g.reads;
     g.last_timeout = timeout_ms;
-    g.now += g.a.read_ms;
+    g.now += a->read_ms;
     if (g.stop_after_reads != 0u && g.reads >= g.stop_after_reads) {
         g.stop = true;
     }
-    if (g.a.read_breaks && g.sent > 0u) {
+    if (a->read_breaks && g.sent > 0u) {
         return -1;
     }
-    const uint32_t left = g.a.body_n - g.sent;
+    const uint32_t left = a->body_n - g.sent;
     const uint32_t k = (n < left) ? n : left;
-    memcpy(dst, g.a.body + g.sent, k);
+    memcpy(dst, a->body + g.sent, k);
     g.sent += k;
-    return (int32_t)k + ((g.a.overrun && k > 0u) ? 1 : 0);
+    return (int32_t)k + ((a->overrun && k > 0u) ? 1 : 0);
 }
 
 static void f_close(void *ctx)
@@ -252,6 +264,99 @@ TEST_CASE(stable_keeps_the_latest_redirect)
     CHECK_STR_EQ(g.url, FW_REL_LATEST_URL);
     CHECK(!g.api);
     CHECK_EQ(g.reads, 0u);
+}
+
+/* STABLE with the latest release at @p latest and, for its second
+ * request, the API's list @p list (NULL: that request does not connect). */
+static wa_fetch_res_t stable_with_list(const char *latest, const char *list,
+                                       fw_version_t running)
+{
+    fresh(0u);
+    latest_answer(latest);
+    g.have_api = true;
+    if (list != NULL) {
+        const uint32_t n = (uint32_t)strlen(list);
+        g.api_a = (answer_t){ .status = 200, .length = n, .body = list,
+                              .body_n = n };
+    } else {
+        g.api_a = (answer_t){ .no_connect = true };
+    }
+    return check(WA_CH_STABLE, running, true);
+}
+
+TEST_CASE(stable_past_the_line_reads_the_list_once_for_the_lines_newest)
+{
+    static const char list[] = "[{\"tag_name\":\"v0.24.0\"},"
+                               "{\"tag_name\":\"v0.23.1\"},"
+                               "{\"tag_name\":\"v0.22.1\"},"
+                               "{\"tag_name\":\"v0.22.0\"}]";
+    /* 0.24.0 latest, 0.22.1 in the list, running 0.22.0: offered. */
+    wa_fetch_res_t out = stable_with_list("v0.24.0", list, V(0, 22, 0));
+    CHECK_EQ(out.got, WA_GOT_NEWER);
+    CHECK_EQ(out.found.minor, 22u);
+    CHECK_EQ(out.found.patch, 1u);
+    CHECK_EQ(g.opens, 2u);
+    CHECK_EQ(g.api_opens, 1u);
+    CHECK_EQ(g.closes, 2u);
+    CHECK_STR_EQ(g.url, FW_REL_API_URL);
+    /* Running 0.22.1, 0.22.1 the line's newest: nothing newer on the line,
+     * the newest release named. */
+    out = stable_with_list("v0.24.0", list, V(0, 22, 1));
+    CHECK_EQ(out.got, WA_GOT_PAST_LINE);
+    CHECK_EQ(out.found.minor, 24u);
+    CHECK_EQ(g.api_opens, 1u);
+    /* 0.24.0 latest, no 0.22.x newer, or none at all: PAST_LINE. */
+    static const char older[] = "[{\"tag_name\":\"v0.24.0\"},"
+                                "{\"tag_name\":\"v0.22.0\"}]";
+    out = stable_with_list("v0.24.0", older, V(0, 22, 0));
+    CHECK_EQ(out.got, WA_GOT_PAST_LINE);
+    CHECK_EQ(out.found.minor, 24u);
+    static const char none[] = "[{\"tag_name\":\"v0.24.0\"},"
+                               "{\"tag_name\":\"v0.23.0\"}]";
+    out = stable_with_list("v0.24.0", none, V(0, 22, 0));
+    CHECK_EQ(out.got, WA_GOT_PAST_LINE);
+    CHECK_EQ(out.found.minor, 24u);
+    /* The list's request fails: as without it, no offer. */
+    out = stable_with_list("v0.24.0", NULL, V(0, 22, 0));
+    CHECK_EQ(out.got, WA_GOT_PAST_LINE);
+    CHECK_EQ(out.found.minor, 24u);
+    CHECK_EQ(g.api_opens, 1u);
+    out = stable_with_list("v0.24.0", "[{\"tag_name\":\"v0.22.1-rc1\"}]",
+                           V(0, 22, 0));
+    CHECK_EQ(out.got, WA_GOT_PAST_LINE);
+    CHECK_EQ(out.found.minor, 24u);
+    fresh(0u);
+    latest_answer("v0.24.0");
+    g.have_api = true;
+    g.api_a = (answer_t){ .status = 403, .length = 10 };
+    out = check(WA_CH_STABLE, V(0, 22, 0), true);
+    CHECK_EQ(out.got, WA_GOT_PAST_LINE);
+    CHECK_EQ(out.status, 0);
+    /* No time left for it: no request, as without it. */
+    fresh(0u);
+    latest_answer("v0.24.0");
+    g.a.open_ms = WA_FETCH_CHECK_MS;
+    g.have_api = true;
+    g.api_a = (answer_t){ .status = 200, .length = (int64_t)strlen(list),
+                          .body = list, .body_n = (uint32_t)strlen(list) };
+    out = check(WA_CH_STABLE, V(0, 22, 0), true);
+    CHECK_EQ(out.got, WA_GOT_PAST_LINE);
+    CHECK_EQ(g.api_opens, 0u);
+    /* Latest on the line, or not newer: no second request. */
+    out = stable_with_list("v0.22.1", list, V(0, 22, 0));
+    CHECK_EQ(out.got, WA_GOT_NEWER);
+    CHECK_EQ(g.api_opens, 0u);
+    out = stable_with_list("v0.21.2", list, V(0, 22, 0));
+    CHECK_EQ(out.got, WA_GOT_CURRENT);
+    CHECK_EQ(g.api_opens, 0u);
+    /* A running version that did not parse: no second request. */
+    fresh(0u);
+    latest_answer("v0.24.0");
+    g.have_api = true;
+    g.api_a = (answer_t){ .no_connect = true };
+    out = check(WA_CH_STABLE, V(0, 0, 0), false);
+    CHECK_EQ(out.got, WA_GOT_UNVERSIONED);
+    CHECK_EQ(g.api_opens, 0u);
 }
 
 /* One check of either channel: what it offers a panel on @p running; the
@@ -800,6 +905,7 @@ int main(void)
 {
     RUN(testing_asks_the_api_with_its_headers_and_stops_at_the_10th);
     RUN(stable_keeps_the_latest_redirect);
+    RUN(stable_past_the_line_reads_the_list_once_for_the_lines_newest);
     RUN(only_a_newer_release_of_the_line_is_offered_on_either_channel);
     RUN(the_request_limit_is_its_own_result);
     RUN(the_answers_size_is_announced_and_within_its_bound);

@@ -336,7 +336,8 @@ stable release. 0.22 is the last release line for the ESP32-S3 panel, and
 later releases are for the 7-inch ESP32-P4 display board from Waveshare.
 The panel's check reads GitHub's latest release with RELEASES set to
 STABLE on SETUP > UPDATES, the default, and the 10 newest releases with
-TESTING. On both settings it offers only a 0.22.x patch release newer than
+TESTING; STABLE reads those 10 as well when the latest release is past the
+line and newer than the running build. On both settings it offers only a 0.22.x patch release newer than
 the version it runs ([Screens: The release line](Screens.md#the-release-line)).
 A release also loads by hand: its
 `rcbench-panel-vX.Y.Z.bin` through the panel's browser page, or its

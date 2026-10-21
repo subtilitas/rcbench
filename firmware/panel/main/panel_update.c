@@ -818,10 +818,11 @@ static void upd_ver_text(fw_version_t v, char *out, size_t n)
     snprintf(out, n, "%s", t);
 }
 
-/*
- * Once a frame, after wifi_service(): the start-up check, what UPDATES and
- * the reminder ask for, the job's aborts, the download's screen, and what
- * UPDATES shows.  @p armed includes an arm waiting.
+/**
+ * @brief Once a frame, after wifi_service(): the start-up check, what
+ *        UPDATES and the reminder ask for, the job's aborts, the
+ *        download's screen, and what UPDATES shows.  @p armed includes an
+ *        arm waiting; panel.h names each parameter.
  */
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                  const cu_snap_t *cs)

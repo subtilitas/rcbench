@@ -63,10 +63,13 @@ and of the update over CAN is not measured.
   version: 0.22.0.` with `Latest release on GitHub: 0.23.0.`; it is not
   offered, and the reminder at start does not open for it. With TESTING,
   the highest release of the line among the 10 newest stands in for a
-  higher one past the line when it is newer than the running build. The
-  foot of the UPDATES card starts with `0.22 is the last release for the
-  ESP32-S3 panel. Later releases are for the 7-inch ESP32-P4 display board
-  from Waveshare.`.
+  higher one past the line when it is newer than the running build. With
+  STABLE, a latest release past the line and newer than the running build
+  is followed by one request of the release list, whose newest 0.22.x is
+  offered when it is newer; when that request fails, the result is as
+  without it. The foot of the UPDATES card starts with `0.22 is the last
+  release for the ESP32-S3 panel. Later releases are for the 7-inch
+  ESP32-P4 display board from Waveshare.`.
 - Hitec D series servos answer with no pull-up on the signal wire: SETUP >
   INTERFACES > Hitec D receive (PROG PORT, German `Hitec-D-Empfang`)
   chooses PULL-UP, the default, or PRECHARGE. With PRECHARGE the IOmcu

@@ -38,7 +38,7 @@ The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Sec
 
 | RELEASES | Request | What is read |
 |---|---|---|
-| STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | the tag from the `Location` header of the answer; GitHub's latest release is never a pre-release |
+| STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | the tag from the `Location` header of the answer; GitHub's latest release is never a pre-release; when it is past the release line and newer than the running build, the TESTING request follows once |
 | TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` of each of the 10 newest releases by date, testing or stable, from the JSON (JavaScript Object Notation) answer; the highest version among those that are no draft is taken, whatever their order; read in pieces of 4096 bytes, 262,144 bytes at most, and not stored; one release out of form refuses the whole answer |
 
 On both settings a release is offered only when it is of the release line, 0.22, and newer than the running build, see [The release line](#the-release-line).
@@ -49,8 +49,8 @@ On both settings a release is offered only when it is of the release line, 0.22,
 
 | Card | Meaning |
 |---|---|
-| `Version 0.20.0 is available.` | the newest release is newer than the running build; the hold appears |
-| `Up to date. Panel version: 0.19.0.` | the newest release is the running version or older |
+| `Version 0.22.1 is available.` | the newest release is newer than the running build; the hold appears |
+| `Up to date. Panel version: 0.22.0.` | the newest release is the running version or older |
 | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` | the newest release is newer than the running build and past the release line; it is not offered, and the reminder at start does not open for it |
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | the join failed, as on Files and update |
 | `No response within 30 s.` | the 30 s ran out |
@@ -77,7 +77,7 @@ The tag reads `v` and MAJOR.MINOR.PATCH, digits only, each number from 0 to 6553
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `No newer release for the ESP32-S3 panel.` |
 | a tag out of form, such as `v0.22.1-rc1` | `Unexpected answer from GitHub.` |
 
-With TESTING, when the highest of the 10 newest releases is past the line, the highest release of the line among them is offered in its place once it is newer than the running build.
+With TESTING, when the highest of the 10 newest releases is past the line, the highest release of the line among them is offered in its place once it is newer than the running build. With STABLE, when GitHub's latest release is past the line and newer than the running build, the panel sends the same request once more and offers the newest 0.22.x among those 10 when it is newer. When that request fails, the card reads as without it.
 
 ## The download
 
@@ -100,7 +100,7 @@ CANCEL ends the download. STOP, ARMED, the supply output, a log run, a board dra
 
 ![Another build on the IOmcu](view:updates-coproc)
 
-Under the buttons, UPDATES names the version the IOmcu runs (`Running: 0.17.0`) and the version of the image this panel carries (`Carried: 0.18.0`). HOLD 2 s: UPDATE IOMCU starts the update the link-up's question starts, with the same progress screen. When the update ends, or the START was spent, the screen returns to UPDATES.
+Under the buttons, UPDATES names the version the IOmcu runs (`Running: 0.21.2`) and the version of the image this panel carries (`Carried: 0.22.0`). HOLD 2 s: UPDATE IOMCU starts the update the link-up's question starts, with the same progress screen. When the update ends, or the START was spent, the screen returns to UPDATES.
 
 The hold takes what the question takes: an IOmcu that runs another build, the bench SAFE, the supply output off, the Wi-Fi radio wholly off and no panel install under way. Otherwise it is grey and the line above it says why, the first of these that holds:
 
@@ -125,6 +125,6 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 - How long the check and the download take on a real network is not measured.
 - TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
 - TESTING reads the 10 newest releases by date. A release older by date than those is not seen, however high its version.
-- STABLE reads GitHub's latest release only. Once a later stable release is published, a 0.22.x patch release is not GitHub's latest, and only TESTING finds it.
+- The release list holds the 10 newest releases by date (`per_page=10`). A 0.22.x patch release with 10 or more releases published after it is not found, on either setting.
 - No certificate's dates are checked: the panel has no clock.
 - A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and `SHA256SUMS` cannot be downloaded.

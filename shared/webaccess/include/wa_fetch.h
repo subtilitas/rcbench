@@ -8,7 +8,12 @@
  *   CHECK     join, then one HTTPS (HTTP over TLS, transport layer
  *             security) GET for the newest release of the job's channel.
  *             STABLE: FW_REL_LATEST_URL, whose redirect's Location names
- *             it (fw_release_parse_tag()).  TESTING: FW_REL_API_URL with
+ *             it (fw_release_parse_tag()); when that release is past the
+ *             panel's release line and newer than the running build, one
+ *             request of FW_REL_API_URL more, whose highest release of the
+ *             line is offered in its place when it is newer than the
+ *             running build, and which leaves the result as it was when it
+ *             fails.  TESTING: FW_REL_API_URL with
  *             GitHub's API headers, whose answer's 10 newest releases by
  *             date name it, the highest version among them that is no
  *             draft (fw_release_scan_feed()), read up to the 10th

@@ -2605,7 +2605,7 @@ startet neu.
 ![Geschrieben und geprüft](img/de/panel-update-done.png)
 
 Der Splash zeigt die neue Version, und das Band sagt
-`Panel-Firmware 0.19.0 installiert.`. Ein Schreiben, das fehlschlägt, ändert
+`Panel-Firmware 0.22.1 installiert.`. Ein Schreiben, das fehlschlägt, ändert
 nichts, was startet: Der laufende Build bleibt, und SCHLIESSEN geht zurück
 zu dem Bildschirm, der WI-FI geöffnet hat, SETUP oder LOGS, nach einem
 Download von GitHub dorthin, wo der Download begann.
@@ -2616,12 +2616,12 @@ Der erste Start eines neuen Builds ist ein Versuch. Der Build bleibt, sobald
 Display und Touch laufen. Ein Start, der nicht so weit kommt, durch einen
 Fehler, einen Neustart oder einen fehlenden Touch-Controller, geht zurück
 zum Build davor, der dann
-`Panel-Firmware 0.19.0 ist nicht gestartet. Version 0.18.0 läuft wieder.` im Band
+`Panel-Firmware 0.22.1 ist nicht gestartet. Version 0.22.0 läuft wieder.` im Band
 zeigt. Ein gescheiterter Start bleibt nie: Schlägt das Markieren als
 ungültig fehl, startet das Panel mit unbestätigtem Versuch neu, und der
 Bootloader geht trotzdem zurück. Schlägt das Behalten eines guten Starts
 fehl (otadata nicht geschrieben), sagt das Band
-`Panel-Firmware 0.19.0 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`;
+`Panel-Firmware 0.22.1 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`;
 der Build läuft bis dahin.
 
 Aktuelle Einschränkungen:
@@ -3513,7 +3513,7 @@ dann, wie es endete:
 
 | Alarm | Bedeutung |
 | --- | --- |
-| `IOmcu auf 0.18.0 aktualisiert.` | das neue Image läuft und bleibt |
+| `IOmcu auf 0.22.0 aktualisiert.` | das neue Image läuft und bleibt |
 | `IOmcu-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | 4 s lang hat nichts geantwortet |
 | `IOmcu-Update abgebrochen: abgelehnt, Fehler 6. Vorherige Firmware läuft.` | der IOmcu hat einen Schritt abgelehnt; die Fehlernummern stehen in [Link](Link-de.md#die-pages) |
 | `IOmcu-Update abgebrochen: Firmware-Prüfung fehlgeschlagen. Vorherige Firmware läuft.` | der SHA-256 des Slots ist nicht der des Images |
@@ -3579,7 +3579,7 @@ der Antwort. RELEASES legt die Anfrage fest:
 
 | RELEASES | Anfrage | Was gelesen wird |
 | --- | --- | --- |
-| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | Der `Location`-Header des Redirects, der den Tag nennt (`.../releases/tag/v0.20.0`). Den Body liest das Panel nicht. Das Latest-Release von GitHub ist nie ein Pre-Release. |
+| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | Der `Location`-Header des Redirects, der den Tag nennt (`.../releases/tag/v0.20.0`). Den Body liest das Panel nicht. Das Latest-Release von GitHub ist nie ein Pre-Release. Liegt dieses Release hinter der Release-Linie und ist neuer als der laufende Build, folgt einmal die Anfrage von `TESTING` ([Die Release-Linie](#die-release-linie)). |
 | `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge; das höchste Release der Release-Linie unter ihnen wird daneben gehalten. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
 
 Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen
@@ -3606,15 +3606,15 @@ Karte bis zur nächsten Suche:
 
 | Karte | Bedeutung |
 | --- | --- |
-| `Version 0.20.0 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
-| `Aktuell. Panel-Version: 0.19.0.` und `Neuestes Release auf GitHub: 0.19.0.` | Das neueste Release ist die laufende Version oder älter. |
+| `Version 0.22.1 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
+| `Aktuell. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.22.0.` | Das neueste Release ist die laufende Version oder älter. |
 | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.23.0.` | Das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie. Es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht. |
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf WI-FI. |
 | `Keine Antwort innerhalb von 30 s.` | Die 30 s sind abgelaufen. |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
 | `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine andere Antwort als ein Redirect (`STABLE`) oder als 200 (`TESTING`). |
 | `GitHub-Anfragelimit erreicht: HTTP 403.` und `GitHub erlaubt 60 API-Anfragen pro Stunde und Adresse.` | `TESTING`: GitHub antwortete mit 403 oder 429, seinem Limit für Anfragen ohne Konto. |
-| `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` und `Neuestes Release auf GitHub: 0.21.0.` | Die Version des laufenden Builds ist nicht lesbar. Kein Release wird angeboten. |
+| `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` und `Neuestes Release auf GitHub: 0.22.1.` | Die Version des laufenden Builds ist nicht lesbar. Kein Release wird angeboten. |
 | `Unerwartete Antwort von GitHub.` | Der `Location`-Header (`STABLE`) oder die Antwort der API (`TESTING`) fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabellen unten). |
 | `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang ein.`, `...: Aufzeichnungslauf gestartet.`, `...: STOP.` | Die Suche endete deshalb. |
 | `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` | WI-FI wurde geöffnet. |
@@ -3688,20 +3688,29 @@ als der laufende Build ist, mit `STABLE` und mit `TESTING` gleich
 Liegt mit `TESTING` das höchste der 10 neuesten Releases hinter der Linie,
 tritt das höchste Release der Linie unter ihnen an seine Stelle, sobald es
 neuer als der laufende Build ist: neben einem Pre-Release 0.23.0 wird einem
-Panel mit 0.22.0 das Release 0.22.1 angeboten. `STABLE` liest einen Tag,
-das Latest-Release von GitHub. Ein Stable-Release, das älter als ein
+Panel mit 0.22.0 das Release 0.22.1 angeboten. `STABLE` liest das
+Latest-Release von GitHub; ein Stable-Release, das älter als ein
 veröffentlichtes ist, wird nicht Latest
-([Bauen: Releases](Building-de.md#releases)); ist ein späteres
-Stable-Release veröffentlicht, findet `STABLE` kein Patch-Release 0.22.x
-mehr, und `TESTING` findet es unter den 10 nach Datum neuesten Releases.
+([Bauen: Releases](Building-de.md#releases)). Liegt das Latest-Release
+hinter der Linie und ist neuer als der laufende Build, sendet `STABLE` eine
+Anfrage mehr, die, die `TESTING` sendet, und bietet das neueste 0.22.x unter
+den 10 neuesten Releases an, wenn es neuer als der laufende Build ist. Diese
+Anfrage zählt gegen GitHubs Grenze von 60 API-Anfragen pro Stunde; scheitert
+sie, lautet die Karte wie ohne sie: `Kein neueres Release für das
+ESP32-S3-Panel.`. Ist auf der Linie nichts neuer als der laufende Build,
+enden beide Einstellungen mit dieser Zeile und nennen das neueste Release.
 Der IOmcu bekommt das Image, das dieses Panel mitbringt, aus demselben
 Release ([Der IOmcu](#der-iomcu)).
+
+Aktuelle Einschränkung: Die Liste enthält die 10 nach Datum neuesten
+Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr
+Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
 
 ### Der IOmcu
 
 Unter den Tasten zeigt UPDATES das Update des IOmcu: die Version, die
-der IOmcu laufen hat (`Läuft: 0.17.0`), die Version des Images, das
-dieses Panel mitbringt (`Auf diesem Panel: 0.18.0`), eine Zeile Zustand und
+der IOmcu laufen hat (`Läuft: 0.21.2`), die Version des Images, das
+dieses Panel mitbringt (`Auf diesem Panel: 0.22.0`), eine Zeile Zustand und
 `2 s HALTEN: IOMCU AKTUALISIEREN`. Das Halten startet das Update, das
 die Frage beim Link-up startet, mit demselben Fortschritt
 ([IOmcu-Update](#iomcu-update)). Es startet es auch, nachdem

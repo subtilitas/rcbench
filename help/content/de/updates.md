@@ -38,7 +38,7 @@ Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über
 
 | RELEASES | Anfrage | Was gelesen wird |
 |---|---|---|
-| STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | der Tag aus dem `Location`-Header der Antwort; das Latest-Release von GitHub ist nie ein Pre-Release |
+| STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | der Tag aus dem `Location`-Header der Antwort; das Latest-Release von GitHub ist nie ein Pre-Release; liegt es hinter der Release-Linie und ist neuer als der laufende Build, folgt einmal die Anfrage von TESTING |
 | TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` jedes der 10 nach Datum neuesten Releases, Testing oder Stable, aus der JSON-Antwort (JavaScript Object Notation); genommen wird die höchste Version unter denen, die kein Entwurf sind, gleich in welcher Reihenfolge; gelesen in Stücken von 4096 Bytes, höchstens 262 144 Bytes, und nicht gespeichert; ein ungültiges Release lehnt die ganze Antwort ab |
 
 In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Linie 0.22 gehört und neuer als der laufende Build ist, siehe [Die Release-Linie](#die-release-linie).
@@ -49,8 +49,8 @@ In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Lini
 
 | Karte | Bedeutung |
 |---|---|
-| `Version 0.20.0 ist verfügbar.` | das neueste Release ist neuer als der laufende Build; das Halten erscheint |
-| `Aktuell. Panel-Version: 0.19.0.` | das neueste Release ist die laufende Version oder älter |
+| `Version 0.22.1 ist verfügbar.` | das neueste Release ist neuer als der laufende Build; das Halten erscheint |
+| `Aktuell. Panel-Version: 0.22.0.` | das neueste Release ist die laufende Version oder älter |
 | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` | das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie; es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht |
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | das Verbinden scheiterte, wie unter Dateien und Update |
 | `Keine Antwort innerhalb von 30 s.` | die 30 s sind abgelaufen |
@@ -77,7 +77,7 @@ Der Tag lautet `v` und MAJOR.MINOR.PATCH, nur Ziffern, jede Zahl von 0 bis 65535
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `Kein neueres Release für das ESP32-S3-Panel.` |
 | ein ungültiger Tag, etwa `v0.22.1-rc1` | `Unerwartete Antwort von GitHub.` |
 
-Liegt mit TESTING das höchste der 10 neuesten Releases hinter der Linie, wird an seiner Stelle das höchste Release der Linie unter ihnen angeboten, sobald es neuer als der laufende Build ist.
+Liegt mit TESTING das höchste der 10 neuesten Releases hinter der Linie, wird an seiner Stelle das höchste Release der Linie unter ihnen angeboten, sobald es neuer als der laufende Build ist. Liegt mit STABLE das Latest-Release von GitHub hinter der Linie und ist neuer als der laufende Build, sendet das Panel diese Anfrage einmal mehr und bietet das neueste 0.22.x unter diesen 10 an, wenn es neuer ist. Scheitert diese Anfrage, lautet die Karte wie ohne sie.
 
 ## Der Download
 
@@ -100,7 +100,7 @@ ABBRECHEN beendet den Download. STOP, ARMED, der Netzteilausgang, ein Log-Lauf, 
 
 ![Ein anderer Build auf dem IOmcu](view:updates-coproc)
 
-Unter den Tasten nennt UPDATES die Version, die der IOmcu laufen hat (`Läuft: 0.17.0`), und die Version des Images, das dieses Panel mitbringt (`Auf diesem Panel: 0.18.0`). 2 s HALTEN: IOMCU AKTUALISIEREN startet das Update, das die Frage beim Link-up startet, mit demselben Fortschritt. Endet das Update, oder verfiel der START, kehrt der Bildschirm zu UPDATES zurück.
+Unter den Tasten nennt UPDATES die Version, die der IOmcu laufen hat (`Läuft: 0.21.2`), und die Version des Images, das dieses Panel mitbringt (`Auf diesem Panel: 0.22.0`). 2 s HALTEN: IOMCU AKTUALISIEREN startet das Update, das die Frage beim Link-up startet, mit demselben Fortschritt. Endet das Update, oder verfiel der START, kehrt der Bildschirm zu UPDATES zurück.
 
 Das Halten braucht, was die Frage braucht: einen IOmcu mit einem anderen Build, den Prüfstand SAFE, den Netzteilausgang aus, den WLAN-Funk ganz aus und keine Panel-Installation im Gang. Sonst ist es grau, und die Zeile darüber sagt, warum, das Erste davon, das gilt:
 
@@ -125,6 +125,6 @@ Ist das Halten aktiv, lautet die Zeile `Ausgänge bleiben aus. ARMED ist bis zum
 - Wie lange Suche und Download in einem echten Netz dauern, ist nicht gemessen.
 - TESTING: GitHub beantwortet ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, geteilt von allen Geräten dahinter. Das Panel wiederholt keine Anfrage.
 - TESTING liest die 10 nach Datum neuesten Releases. Ein Release, das nach Datum älter ist, sieht das Panel nicht, wie hoch seine Version auch ist.
-- STABLE liest nur das Latest-Release von GitHub. Ist ein späteres Stable-Release veröffentlicht, ist ein Patch-Release 0.22.x nicht mehr Latest, und nur TESTING findet es.
+- Die Release-Liste enthält die 10 nach Datum neuesten Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
 - Die Daten der Zertifikate werden nicht geprüft: Das Panel hat keine Uhr.
 - Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und `SHA256SUMS` heißen, lässt sich nicht laden.

@@ -2364,7 +2364,7 @@ the panel restarts.
 ![Written and checked](img/panel-update-done.png)
 
 The splash shows the new version, and the band says
-`Panel firmware 0.19.0 installed.`. A write that fails changes nothing that
+`Panel firmware 0.22.1 installed.`. A write that fails changes nothing that
 starts: the running build stays, and CLOSE goes back to the screen that
 opened WI-FI, SETUP or LOGS, or after a download from GitHub to where the
 download started.
@@ -2374,11 +2374,11 @@ download started.
 A new build's first start is a trial. The build is kept once the display and
 touch are up. A start that does not get there, by a fault, a restart or a
 missing touch controller, goes back to the build before it, which says
-`Panel firmware 0.19.0 failed to start. Version 0.18.0 is running again.` on the band.
+`Panel firmware 0.22.1 failed to start. Version 0.22.0 is running again.` on the band.
 A failed start is never kept: when marking it invalid fails, the panel
 restarts with the trial unconfirmed, and the bootloader goes back all the
 same. When keeping a good start fails (otadata not written), the band says
-`Panel firmware 0.19.0 was not kept. The next restart restores the previous version.`; the build
+`Panel firmware 0.22.1 was not kept. The next restart restores the previous version.`; the build
 runs until then.
 
 Current limitations:
@@ -3196,7 +3196,7 @@ UPDATES' hold started it. The alert band then says how it ended:
 
 | Alert | Meaning |
 | --- | --- |
-| `IOmcu updated to 0.18.0.` | the new image runs and is kept |
+| `IOmcu updated to 0.22.0.` | the new image runs and is kept |
 | `IOmcu update stopped: no response. Previous firmware is running.` | nothing answered for 4 s |
 | `IOmcu update stopped: refused, error 6. Previous firmware is running.` | the IOmcu refused a step; the error numbers are in [Link](Link.md#the-pages) |
 | `IOmcu update stopped: firmware check failed. Previous firmware is running.` | the SHA-256 of the slot is not the image's |
@@ -3260,7 +3260,7 @@ RELEASES sets the request:
 
 | RELEASES | Request | What is read |
 | --- | --- | --- |
-| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. |
+| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. When that release is past the release line and newer than the running build, the `TESTING` request follows once ([The release line](#the-release-line)). |
 | `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
 
 Then the radio goes off. The join, the address and the request take 30 s at
@@ -3286,15 +3286,15 @@ check:
 
 | Card | Meaning |
 | --- | --- |
-| `Version 0.20.0 is available.` | The newest release is newer than the running build. The hold appears. |
-| `Up to date. Panel version: 0.19.0.` and `Latest release on GitHub: 0.19.0.` | The newest release is the running version or older. |
+| `Version 0.22.1 is available.` | The newest release is newer than the running build. The hold appears. |
+| `Up to date. Panel version: 0.22.0.` and `Latest release on GitHub: 0.22.0.` | The newest release is the running version or older. |
 | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` and `Latest release on GitHub: 0.23.0.` | The newest release is newer than the running build and past the release line. It is not offered, and the reminder at start does not open for it. |
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
 | `No response within 30 s.` | The 30 s ran out. |
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
 | `GitHub rejected the request: HTTP 404.` | An answer other than a redirect (`STABLE`) or other than 200 (`TESTING`). |
 | `GitHub's request limit is reached: HTTP 403.` and `GitHub allows 60 API requests an hour per address.` | `TESTING`: GitHub answered 403 or 429, its limit for requests without an account. |
-| `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` and `Latest release on GitHub: 0.21.0.` | The running build's version does not parse. No release is offered. |
+| `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` and `Latest release on GitHub: 0.22.1.` | The running build's version does not parse. No release is offered. |
 | `Unexpected answer from GitHub.` | The `Location` (`STABLE`) or the API's answer (`TESTING`) is missing or out of form; a second line says which (tables below). |
 | `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
 | `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. |
@@ -3366,19 +3366,27 @@ running build, on `STABLE` and on `TESTING` alike (`FW_REL_LINE_MAJOR` and
 With `TESTING`, when the highest of the 10 newest releases is past the
 line, the highest release of the line among them stands in for it once it
 is newer than the running build: beside a 0.23.0 pre-release, 0.22.1 is
-offered to a panel on 0.22.0. `STABLE` reads one tag, GitHub's latest
-release. A stable release older than a published one is not marked latest
-([Building: Releases](Building.md#releases)), so once a later stable
-release is published, `STABLE` finds no 0.22.x patch release and
-`TESTING` finds one among the 10 newest releases by date. The IOmcu takes
-the image this panel carries, from the same release
-([The IOmcu](#the-iomcu)).
+offered to a panel on 0.22.0. `STABLE` reads GitHub's latest release; a
+stable release older than a published one is not marked latest
+([Building: Releases](Building.md#releases)). When the latest release is
+past the line and newer than the running build, `STABLE` sends one request
+more, the one `TESTING` sends, and offers the newest 0.22.x among the 10
+newest releases when it is newer than the running build. That request counts
+against GitHub's limit of 60 API requests an hour; when it fails, the card
+reads as without it: `No newer release for the ESP32-S3 panel.`. With
+nothing on the line newer than the running build, both settings end with
+that line and name the newest release. The IOmcu takes the image this panel
+carries, from the same release ([The IOmcu](#the-iomcu)).
+
+Current limitation: the list holds the 10 newest releases by date
+(`per_page=10`). A 0.22.x patch release with 10 or more releases published
+after it is not found, on either setting.
 
 ### The IOmcu
 
 Under the buttons, UPDATES shows the IOmcu's update: the version the
-IOmcu runs (`Running: 0.17.0`), the version of the image this panel
-carries (`Carried: 0.18.0`), one line of state, and
+IOmcu runs (`Running: 0.21.2`), the version of the image this panel
+carries (`Carried: 0.22.0`), one line of state, and
 `HOLD 2 s: UPDATE IOMCU`. The hold starts the update that the
 link-up's question starts, with the same progress screen
 ([IOmcu update](#iomcu-update)). It also starts it after that

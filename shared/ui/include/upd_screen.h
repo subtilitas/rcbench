@@ -201,9 +201,18 @@ unsigned upd_screen_take(void);
 bool upd_busy(const upd_view_t *v);
 
 /**
- * The line that says how the last job ended, or what it does now: into
- * @p out of @p n bytes; empty for none.  @p second gets the line under it,
- * or empty.  Both screens and the download's progress draw these.
+ * @brief The line that says how the last job ended, or what it does now,
+ *        and the line under it.
+ *
+ * Both screens and the download's progress draw these.  Nothing is
+ * written when @p out or @p second is NULL or has no room.
+ *
+ * @param v      the view; NULL gives two empty lines
+ * @param out    the first line, empty for none
+ * @param n      bytes of @p out
+ * @param second the line under it, or empty
+ * @param n2     bytes of @p second
+ * @return nothing; the lines are in @p out and @p second
  */
 void upd_result_text(const upd_view_t *v, char *out, size_t n,
                      char *second, size_t n2);

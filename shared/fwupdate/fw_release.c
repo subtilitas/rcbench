@@ -366,7 +366,14 @@ static void scan_begin_release(fw_rel_scan_t *s)
     s->st = SC_KEY0;
 }
 
-/* A release's '}': each needs its tag; a draft's is passed over. */
+/**
+ * @brief A release's '}': each needs its tag; a draft's is passed over.
+ *
+ * A no-draft release raises the highest so far and, when it is of the
+ * panel's release line, the line's highest so far.
+ *
+ * @param s the scan
+ */
 static void scan_end_release(fw_rel_scan_t *s)
 {
     --s->depth;
