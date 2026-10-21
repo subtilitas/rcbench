@@ -1,5 +1,8 @@
-/*
- * The panel's half of the KST link page.  See kst_link.h.
+/**
+ * @file
+ * @brief The panel's half of the KST link page.
+ *
+ * See kst_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,6 +37,12 @@ _Static_assert((STAGE_WINDOWS - 1u) * 4u + 1u == LINK_KS_W_STAGED,
                "stage windows");
 _Static_assert(KST_REG_COUNT == 2u * LINK_KS_IMAGE_REGS, "image registers");
 
+/**
+ * @brief Packs an image into registers, two bytes each, low byte first.
+ *
+ * @param img  The image.
+ * @param regs Receives the registers.
+ */
 static void image_to_regs(const kst_image_t *img, uint16_t *regs)
 {
     for (size_t i = 0; i < LINK_KS_IMAGE_REGS; ++i) {
@@ -42,6 +51,12 @@ static void image_to_regs(const kst_image_t *img, uint16_t *regs)
     }
 }
 
+/**
+ * @brief Unpacks registers into an image, low byte first.
+ *
+ * @param regs The registers.
+ * @param img  Receives the image.
+ */
 static void image_from_regs(const uint16_t *regs, kst_image_t *img)
 {
     for (size_t i = 0; i < LINK_KS_IMAGE_REGS; ++i) {
@@ -50,18 +65,36 @@ static void image_from_regs(const uint16_t *regs, kst_image_t *img)
     }
 }
 
+/**
+ * @brief Whether an operation writes the servo.
+ *
+ * @param op The operation.
+ * @return true for WRITE, RESTORE or RELEASE.
+ */
 static bool op_writes(link_kst_op_t op)
 {
     return op == LINK_KST_OP_WRITE || op == LINK_KST_OP_RESTORE
            || op == LINK_KST_OP_RELEASE;
 }
 
+/**
+ * @brief Whether an operation writes or verifies the servo.
+ *
+ * @param op The operation.
+ * @return true for a write-type operation or VERIFY.
+ */
 static bool op_staged(link_kst_op_t op)
 {
     return op_writes(op) || op == LINK_KST_OP_VERIFY;
 }
 
-/* The operation on its way ends here, as @p kind. */
+/**
+ * @brief The operation on its way ends here, as @p kind.
+ *
+ * @param k    The link state.
+ * @param kind The outcome kind.
+ * @param nack The NACK reason of the last answer, or 0.
+ */
 static void finish(kst_link_t *k, kst_link_outcome_kind_t kind, uint8_t nack)
 {
     if (k->active) {
@@ -145,6 +178,13 @@ bool kst_link_has_page(const kst_link_t *k)
     return k != NULL && k->up && k->page;
 }
 
+/**
+ * @brief Whether a start is allowed now.
+ *
+ * @param k The link state.
+ * @return KST_LINK_START_OK when a start is allowed, else the reason it is
+ *         refused.
+ */
 static kst_link_start_t ready(const kst_link_t *k)
 {
     if (!k->up) {
@@ -246,9 +286,14 @@ kst_link_start_t kst_link_fetch(kst_link_t *k)
     return s;
 }
 
-/* The request's command went and no answer came: it is not sent again.
+/**
+ * @brief The request's command went and no answer came: it is not sent again.
+ *
  * Whether the page took it, the next status read says (on_status()).  That
- * read has KST_LINK_RETRIES tries of its own. */
+ * read has KST_LINK_RETRIES tries of its own.
+ *
+ * @param k The link state.
+ */
 static void cmd_in_doubt(kst_link_t *k)
 {
     k->cmd_live = false;
@@ -277,6 +322,19 @@ void kst_link_abort(kst_link_t *k)
 
 /* --- the exchanges ------------------------------------------------------------ */
 
+/**
+ * @brief Sets up one exchange with the KST page.
+ *
+ * @param k     The link state.
+ * @param x     Receives the exchange.
+ * @param kind  The exchange kind.
+ * @param write true for a write.
+ * @param off   The first register on the page.
+ * @param n     The number of registers.
+ * @param regs  The registers to write, or NULL for a read.
+ *
+ * @return Always true.
+ */
 static bool ask(kst_link_t *k, kst_link_xfer_t *x, uint8_t kind, bool write,
                 uint8_t off, uint8_t n, const uint16_t *regs)
 {
@@ -292,6 +350,14 @@ static bool ask(kst_link_t *k, kst_link_xfer_t *x, uint8_t kind, bool write,
     return true;
 }
 
+/**
+ * @brief Sets up a status read of the KST page.
+ *
+ * @param k      The link state.
+ * @param now_ms The time, in ms.
+ * @param x      Receives the exchange.
+ * @return true when the read is set up.
+ */
 static bool ask_status(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
 {
     k->polled = true;
@@ -301,17 +367,42 @@ static bool ask_status(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
                (uint8_t)LINK_KS_W_CMD_FRAME, NULL);
 }
 
+/**
+ * @brief Whether a periodic read is due.
+ *
+ * @param k      The link state.
+ * @param now_ms The time, in ms.
+ * @param period The period, in ms.
+ * @return true when the read was never made or period has passed since the last
+ *         one.
+ */
 static bool due(const kst_link_t *k, uint32_t now_ms, uint32_t period)
 {
     return !k->polled || (uint32_t)(now_ms - k->status_ms) >= period;
 }
 
+/**
+ * @brief Sets up the write of the command to the KST page.
+ *
+ * @param k The link state.
+ * @param x Receives the exchange.
+ *
+ * @return Always true.
+ */
 static bool ask_cmd(kst_link_t *k, kst_link_xfer_t *x)
 {
     return ask(k, x, X_CMD, true, (uint8_t)LINK_KS_W_CMD,
                (uint8_t)LINK_KS_W_CMD_FRAME, k->cmd);
 }
 
+/**
+ * @brief Sets up the next fetch of the results or an image.
+ *
+ * @param k The link state.
+ * @param x Receives the exchange.
+ *
+ * @return The result of ask() for the fetch kind.
+ */
 static bool ask_fetch(kst_link_t *k, kst_link_xfer_t *x)
 {
     uint16_t view;
@@ -396,12 +487,22 @@ bool kst_link_next(kst_link_t *k, uint32_t now_ms, kst_link_xfer_t *x)
            && ask_status(k, now_ms, x);
 }
 
-/* Whether the page @p regs took the command that was not sent again.  A
+/**
+ * @brief Whether the page @p regs took the command that was not sent again.
+ *
+ * A
  * command taken leaves its SEQ, and either its operation in LINK_KS_OP or a
  * refusal in LINK_KS_RESULT's high byte.  A page that started again has SEQ
  * 0, operation NONE and no refusal: at SEQ 0, the command after 0xFFFF, the
  * SEQ alone does not tell the two apart.  The command's operation is never
- * NONE. */
+ * NONE.
+ *
+ * @param k    The link state.
+ * @param regs The registers of the page as read.
+ *
+ * @return true when the page's SEQ is the command's SEQ and the page shows the
+ *         command's operation or a refusal.
+ */
 static bool page_took_cmd(const kst_link_t *k, const uint16_t *regs)
 {
     return regs[LINK_KS_SEQ] == k->cmd[LINK_KS_W_SEQ]
@@ -409,12 +510,21 @@ static bool page_took_cmd(const kst_link_t *k, const uint16_t *regs)
                || LINK_KS_OP_OF(regs[LINK_KS_OP]) == k->op);
 }
 
-/* Whether the page @p regs is one that started again since the status last
- * read, whatever its SEQ.  The IOmcu names the operation it last
+/**
+ * @brief Whether the page @p regs is one that started again since the status
+ *        last read, whatever its SEQ.
+ *
+ * The IOmcu names the operation it last
  * started in LINK_KS_OP and keeps it until the next one; a refused command
  * leaves it.  Only a start of the IOmcu sets it back to NONE.  A
  * page that has started no operation yet reads NONE before and after a
- * start, and only its SEQ tells. */
+ * start, and only its SEQ tells.
+ *
+ * @param k    The link state.
+ * @param regs The registers of the page as read.
+ *
+ * @return true when the page names no operation after a status read named one.
+ */
 static bool op_went_back(const kst_link_t *k, const uint16_t *regs)
 {
     return k->known
@@ -423,6 +533,12 @@ static bool op_went_back(const kst_link_t *k, const uint16_t *regs)
            && LINK_KS_OP_OF(regs[LINK_KS_OP]) == (uint8_t)LINK_KST_OP_NONE;
 }
 
+/**
+ * @brief Takes a status read into the state.
+ *
+ * @param k    The link state.
+ * @param regs The registers of the page as read.
+ */
 static void on_status(kst_link_t *k, const uint16_t *regs)
 {
     const bool went_back = op_went_back(k, regs);
@@ -479,6 +595,11 @@ static void on_status(kst_link_t *k, const uint16_t *regs)
     }
 }
 
+/**
+ * @brief Ends a fetch and makes the module ready.
+ *
+ * @param k The link state.
+ */
 static void fetch_done(kst_link_t *k)
 {
     if (k->active) {
@@ -488,6 +609,13 @@ static void fetch_done(kst_link_t *k)
     k->poll_now = true;
 }
 
+/**
+ * @brief Handles an exchange the page refused.
+ *
+ * @param k    The link state.
+ * @param kind The exchange kind.
+ * @param nack The NACK reason.
+ */
 static void on_refused(kst_link_t *k, uint8_t kind, uint8_t nack)
 {
     switch (kind) {
@@ -629,8 +757,13 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
 
 /* --- what the screen reads ---------------------------------------------------- */
 
-/* The phase as the screen sees it: an operation that runs and has sent no
- * frame yet plans. */
+/**
+ * @brief The phase as the screen sees it: an operation that runs and has sent
+ *        no frame yet plans.
+ *
+ * @param k The link state.
+ * @return The phase the screen shows.
+ */
 static kst_link_phase_t phase_shown(const kst_link_t *k)
 {
     if (k->phase == (uint8_t)KST_LINK_RUNNING

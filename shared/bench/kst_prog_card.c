@@ -1,6 +1,9 @@
-/*
- * The programmer's files on the card: the save, the list and the load of
- * kst_prog.h as the state sends them and takes their answers back.  See
+/**
+ * @file
+ * @brief The programmer's files on the card: the save, the list and the load of
+ *        kst_prog.h as the state sends them and takes their answers back.
+ *
+ * See
  * kst_prog.h and kst_card.h.
  *
  * SPDX-License-Identifier: MIT
@@ -12,6 +15,12 @@
 
 /* -------------------------------------------------------------- servo files */
 
+/**
+ * @brief Whether the card can take a request now.
+ *
+ * @param p The programmer state.
+ * @return KST_PROG_MSG_NONE when it can, else the reason it cannot.
+ */
 static kst_prog_msg_id_t card_free(const kst_prog_t *p)
 {
     if (p->wait != W_NONE || p->cmd_ready || p->card_op != KST_PROG_CARD_IDLE) {
@@ -23,8 +32,14 @@ static kst_prog_msg_id_t card_free(const kst_prog_t *p)
     return KST_PROG_MSG_NONE;
 }
 
-/* What a load needs of the servo, when it is asked for and when the file
- * is there. */
+/**
+ * @brief What a load needs of the servo, when it is asked for and when the file
+ *        is there.
+ *
+ * @param p   The programmer state.
+ * @param arg Receives the argument of that message.
+ * @return The message for what is missing, or KST_PROG_MSG_NONE.
+ */
 static kst_prog_msg_id_t load_ready(const kst_prog_t *p, unsigned *arg)
 {
     *arg = 0;
@@ -192,12 +207,25 @@ bool kst_prog_card_take(kst_prog_t *p, kst_prog_card_req_t *out)
     return true;
 }
 
+/**
+ * @brief Copies a file name, at most KST_PROG_NAME_MAX - 1 characters.
+ *
+ * @param to   Receives the name.
+ * @param from The name to copy.
+ */
 static void name_copy(char *to, const char *from)
 {
     memcpy(to, from, KST_PROG_NAME_MAX);
     to[KST_PROG_NAME_MAX - 1u] = '\0';
 }
 
+/**
+ * @brief The message for a card result.
+ *
+ * @param result The card result.
+ * @param load   true for a load, false for a save or a list.
+ * @return The message id.
+ */
 static unsigned card_message(unsigned result, bool load)
 {
     switch (result) {
@@ -225,6 +253,12 @@ static unsigned card_message(unsigned result, bool load)
     }
 }
 
+/**
+ * @brief Takes the answer of a save.
+ *
+ * @param p The programmer state.
+ * @param d The answer of the card.
+ */
 static void save_done(kst_prog_t *p, const kst_prog_card_done_t *d)
 {
     const bool waited = p->card_auto && p->wait == W_SAVE;
@@ -261,6 +295,12 @@ static void save_done(kst_prog_t *p, const kst_prog_card_done_t *d)
     p->card_auto = false;
 }
 
+/**
+ * @brief Takes the answer of a list.
+ *
+ * @param p The programmer state.
+ * @param d The answer of the card.
+ */
 static void list_done(kst_prog_t *p, const kst_prog_card_done_t *d)
 {
     if (d->result != KST_PROG_CARD_OK) {
@@ -282,6 +322,12 @@ static void list_done(kst_prog_t *p, const kst_prog_card_done_t *d)
     }
 }
 
+/**
+ * @brief Takes the answer of a load.
+ *
+ * @param p The programmer state.
+ * @param d The answer of the card.
+ */
 static void load_done(kst_prog_t *p, const kst_prog_card_done_t *d)
 {
     unsigned arg = 0;
@@ -355,10 +401,15 @@ static void load_done(kst_prog_t *p, const kst_prog_card_done_t *d)
     kst_prog_load_take(p, &d->image);
 }
 
-/*
- * The card ends a save this model gave up at KST_PROG_CARD_MS.  The file
+/**
+ * @brief The card ends a save this model gave up at KST_PROG_CARD_MS.
+ *
+ * The file
  * is on the card: it is named, and it is the session's backup where a save
  * by hand would be, so that the write that follows makes no second one.
+ *
+ * @param p The programmer state.
+ * @param d The answer of the card.
  */
 static void save_late(kst_prog_t *p, const kst_prog_card_done_t *d)
 {

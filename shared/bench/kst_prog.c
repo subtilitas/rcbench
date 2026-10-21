@@ -1,5 +1,7 @@
-/*
- * The state of the programmer for KST and Chaservo servos: see kst_prog.h.
+/**
+ * @file
+ * @brief The state of the programmer for KST and Chaservo servos: see
+ *        kst_prog.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -11,8 +13,14 @@
 
 /* ----------------------------------------------------------------- helpers */
 
-/* The GPIO programming port @p port drives as the feed says, or
- * KST_PROG_NO_PIN. */
+/**
+ * @brief The GPIO programming port @p port drives as the feed says, or
+ *        KST_PROG_NO_PIN.
+ *
+ * @param p    The programmer state.
+ * @param port The programming port, from 0.
+ * @return The GPIO, or KST_PROG_NO_PIN.
+ */
 static uint8_t pin_of(const kst_prog_t *p, uint8_t port)
 {
     if (port >= LINK_PG_PORTS_MAX
@@ -38,6 +46,12 @@ bool kst_prog_same(const kst_image_t *a, const kst_image_t *b)
     return memcmp(a->r, b->r, sizeof(a->r)) == 0;
 }
 
+/**
+ * @brief Whether an operation writes the servo.
+ *
+ * @param op The operation.
+ * @return true for WRITE, RESTORE or RELEASE.
+ */
 static bool is_write(unsigned op)
 {
     return op == LINK_KST_OP_WRITE || op == LINK_KST_OP_RESTORE
@@ -64,6 +78,12 @@ unsigned kst_prog_ones(uint64_t set)
     return n;
 }
 
+/**
+ * @brief The level of a message.
+ *
+ * @param id The message id.
+ * @return The level, as kst_prog_level_t.
+ */
 static kst_prog_level_t level_of(unsigned id)
 {
     switch (id) {
@@ -112,9 +132,15 @@ kst_prog_msg_id_t kst_prog_say(kst_prog_t *p, unsigned id, unsigned arg)
     return kst_prog_say_reg(p, id, arg, 0xFFu);
 }
 
-/* The last message no longer describes what is shown: an edit was taken,
- * the switch went on, the pending values went.  A message of the danger
- * level stays until the next one. */
+/**
+ * @brief The last message no longer describes what is shown: an edit was taken,
+ *        the switch went on, the pending values went.
+ *
+ * A message of the danger
+ * level stays until the next one.
+ *
+ * @param p The programmer state.
+ */
 static void hush(kst_prog_t *p)
 {
     if (p->msg.id != KST_PROG_MSG_NONE && p->msg.level != KST_PROG_DANGER) {
@@ -126,6 +152,12 @@ static void hush(kst_prog_t *p)
     }
 }
 
+/**
+ * @brief Asks for a file before the next write.
+ *
+ * @param p    The programmer state.
+ * @param what The file step asked for.
+ */
 static void file_want(kst_prog_t *p, uint8_t what)
 {
     p->file_wanted = true;
@@ -134,6 +166,11 @@ static void file_want(kst_prog_t *p, uint8_t what)
     }
 }
 
+/**
+ * @brief Clears the journal record and its pin.
+ *
+ * @param p The programmer state.
+ */
 static void journal_clear(kst_prog_t *p)
 {
     if (p->journal) {
@@ -147,13 +184,24 @@ static void journal_clear(kst_prog_t *p)
     }
 }
 
+/**
+ * @brief Whether a flag of the status read is set.
+ *
+ * @param p The programmer state.
+ * @param f The flag bit.
+ * @return true when the flag is set in a known read.
+ */
 static bool flag(const kst_prog_t *p, uint16_t f)
 {
     return p->fed && p->f.rd.known && (p->f.rd.flags & f) != 0u;
 }
 
-/* The session no longer stands: the port is in PWM, the link went, or the
- * IOmcu started again. */
+/**
+ * @brief The session no longer stands: the port is in PWM, the link went, or
+ *        the IOmcu started again.
+ *
+ * @param p The programmer state.
+ */
 static void session_gone(kst_prog_t *p)
 {
     p->have_servo = false;
@@ -210,31 +258,55 @@ kst_rules_t kst_prog_hard_new(const kst_prog_t *p, const kst_image_t *target)
          & ~was;
 }
 
-/* The soft rules @p target breaks as a step from the servo as last read:
- * what a restore is checked with, which moves the servo back and is
- * warned of by where it moves from. */
+/**
+ * @brief The soft rules @p target breaks as a step from the servo as last read:
+ *        what a restore is checked with, which moves the servo back and is
+ *        warned of by where it moves from.
+ *
+ * @param p      The programmer state.
+ * @param target The image the step goes to.
+ * @return The soft rules.
+ */
 static kst_rules_t soft_new(const kst_prog_t *p, const kst_image_t *target)
 {
     return kst_limits_edit(&p->servo, target, 0, NULL) & ~KST_RULES_HARD;
 }
 
-/* The image the soft rules compare with: the servo as the session found
- * it, so that the writes of a session do not add up unseen.  The servo as
+/**
+ * @brief The image the soft rules compare with: the servo as the session found
+ *        it, so that the writes of a session do not add up unseen.
+ *
+ * The servo as
  * last read where the session's backup is not held or is another
- * servo's. */
+ * servo's.
+ */
 static const kst_image_t *soft_base(const kst_prog_t *p)
 {
     return p->fed && p->f.have_backup && !kst_prog_backup_other(p)
          ? &p->f.backup : &p->servo;
 }
 
+/**
+ * @brief The soft rules an image breaks against the soft base.
+ *
+ * @param p   The programmer state.
+ * @param img The image to check.
+ * @return The soft rules.
+ */
 static kst_rules_t soft_of(const kst_prog_t *p, const kst_image_t *img)
 {
     return kst_limits_edit(soft_base(p), img, 0, NULL) & ~KST_RULES_HARD;
 }
 
-/* The soft rules of @p img that field @p id is at fault for: the ones
- * that go when the field takes the base's value. */
+/**
+ * @brief The soft rules of @p img that field @p id is at fault for: the ones
+ *        that go when the field takes the base's value.
+ *
+ * @param p   The programmer state.
+ * @param img The image to check.
+ * @param id  The field.
+ * @return The soft rules the field is at fault for.
+ */
 static kst_rules_t soft_by(const kst_prog_t *p, const kst_image_t *img,
                            kst_field_id_t id)
 {
@@ -247,8 +319,15 @@ static kst_rules_t soft_by(const kst_prog_t *p, const kst_image_t *img,
     return soft_of(p, img) & ~soft_of(p, &t);
 }
 
-/* Whether @p raw is further from the base's value @p base than @p conf,
- * the value confirmed, or on its other side. */
+/**
+ * @brief Whether @p raw is further from the base's value @p base than @p conf,
+ *        the value confirmed, or on its other side.
+ *
+ * @param raw  The raw value.
+ * @param conf The confirmed raw value.
+ * @param base The base raw value.
+ * @return true when raw is further from base than conf, or on its other side.
+ */
 static bool further(uint16_t raw, uint16_t conf, uint16_t base)
 {
     const unsigned a = raw > base ? (unsigned)(raw - base)
@@ -262,8 +341,14 @@ static bool further(uint16_t raw, uint16_t conf, uint16_t base)
     return a > b;
 }
 
-/* The value of @p id the operator has confirmed a soft rule for; what the
- * servo holds where none was. */
+/**
+ * @brief The value of @p id the operator has confirmed a soft rule for; what
+ *        the servo holds where none was.
+ *
+ * @param p  The programmer state.
+ * @param id The field.
+ * @return The confirmed raw value, or the servo's value where none was.
+ */
 static uint16_t confirmed(const kst_prog_t *p, kst_field_id_t id)
 {
     return (p->conf_set & KST_FIELD_BIT(id)) != 0u ? p->conf_raw[id]
@@ -295,7 +380,13 @@ kst_rules_t kst_prog_soft_asks(const kst_prog_t *p, const kst_image_t *from,
     return ask;
 }
 
-/* The values of @p img that differ from @p from are confirmed. */
+/**
+ * @brief The values of @p img that differ from @p from are confirmed.
+ *
+ * @param p    The programmer state.
+ * @param from The image before the edit.
+ * @param img  The image whose values are confirmed.
+ */
 static void confirm(kst_prog_t *p, const kst_image_t *from,
                     const kst_image_t *img)
 {
@@ -335,6 +426,14 @@ kst_field_set_t kst_prog_soft_fields(const kst_prog_t *p,
     return set;
 }
 
+/**
+ * @brief Whether a raw value is taken for a field of the draft.
+ *
+ * @param p   The programmer state.
+ * @param id  The field.
+ * @param raw The raw value.
+ * @return true when no hard rule is broken.
+ */
 static bool raw_taken(const kst_prog_t *p, kst_field_id_t id, uint16_t raw)
 {
     kst_image_t trial = p->draft;
@@ -363,6 +462,13 @@ void kst_prog_send(kst_prog_t *p, const kst_link_request_t *req)
     p->op = (uint8_t)req->op;
 }
 
+/**
+ * @brief Builds the link request for an operation.
+ *
+ * @param p  The programmer state.
+ * @param op The operation.
+ * @return The request.
+ */
 static kst_link_request_t request(const kst_prog_t *p, link_kst_op_t op)
 {
     kst_link_request_t r;
@@ -381,6 +487,12 @@ static kst_link_request_t request(const kst_prog_t *p, link_kst_op_t op)
     return r;
 }
 
+/**
+ * @brief Whether the programmer waits on a card or a command that is not sent.
+ *
+ * @param p The programmer state.
+ * @return true when it waits.
+ */
 static bool waits_unsent(const kst_prog_t *p)
 {
     return p->wait == W_SAVE || p->wait == W_FILE
@@ -450,12 +562,18 @@ void kst_prog_write_go(kst_prog_t *p)
     }
 }
 
-/*
- * A write to the servo.  The first of a session to a servo whose image is
+/**
+ * @brief A write to the servo.
+ *
+ * The first of a session to a servo whose image is
  * known waits for that image in a file.  Without a card it goes with no
  * file, and the session's backup is the one copy of the servo as found.
  * A servo in doubt has no image worth a file: the session's restore, the
  * one write it takes, goes without.
+ *
+ * @param p      The programmer state.
+ * @param req    The request.
+ * @param target The image the write leaves.
  */
 static void send_write(kst_prog_t *p, const kst_link_request_t *req,
                        const kst_image_t *target)
@@ -481,7 +599,12 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
     }
 }
 
-/* Whether an operation may start now; the message when not. */
+/**
+ * @brief Whether an operation may start now; the message when not.
+ *
+ * @param p The programmer state.
+ * @return KST_PROG_MSG_NONE when it may, else the message why not.
+ */
 static kst_prog_msg_id_t idle(const kst_prog_t *p)
 {
     if (p->wait != W_NONE || p->cmd_ready || p->card_op != KST_PROG_CARD_IDLE) {
@@ -502,13 +625,24 @@ static kst_prog_msg_id_t idle(const kst_prog_t *p)
     }
 }
 
+/**
+ * @brief Whether the bench is armed.
+ *
+ * @param p The programmer state.
+ * @return true when the programmer or the feed says so.
+ */
 static bool bench_armed(const kst_prog_t *p)
 {
     return p->armed || (p->fed && p->f.armed);
 }
 
-/* The same for an operation that sends frames: not after STOP, and not on
- * an armed bench. */
+/**
+ * @brief The same for an operation that sends frames: not after STOP, and not
+ *        on an armed bench.
+ *
+ * @param p The programmer state.
+ * @return KST_PROG_MSG_NONE when it may, else the message why not.
+ */
 static kst_prog_msg_id_t idle_safe(const kst_prog_t *p)
 {
     const kst_prog_msg_id_t m = idle(p);
@@ -524,14 +658,24 @@ static kst_prog_msg_id_t idle_safe(const kst_prog_t *p)
 
 /* ---------------------------------------------------------------- outcomes */
 
-/* What the servo holds is not known until a read ends: nothing is written
- * to it, and the switch a write needs is off with what it was held for. */
+/**
+ * @brief What the servo holds is not known until a read ends: nothing is
+ *        written to it, and the switch a write needs is off with what it was
+ *        held for.
+ *
+ * @param p The programmer state.
+ */
 static void doubt(kst_prog_t *p)
 {
     p->need_read = true;
     p->write_enabled = false;
 }
 
+/**
+ * @brief Adopts the image the link read as the servo image.
+ *
+ * @param p The programmer state.
+ */
 static void adopt(kst_prog_t *p)
 {
     const bool had = p->have_servo;
@@ -565,9 +709,14 @@ static void adopt(kst_prog_t *p)
     }
 }
 
-/* The registers a plan of the record's write may set to a value that is
- * neither the record's nor the target's: the low register of every field
- * in two registers that the write changes (kst_plan.h, the extra write). */
+/**
+ * @brief The registers a plan of the record's write may set to a value that is
+ *        neither the record's nor the target's: the low register of every field
+ *        in two registers that the write changes (kst_plan.h, the extra write).
+ *
+ * @param p The programmer state.
+ * @return A bit mask of those registers.
+ */
 static uint32_t journal_detours(const kst_prog_t *p)
 {
     uint32_t regs = 0;
@@ -585,13 +734,19 @@ static uint32_t journal_detours(const kst_prog_t *p)
     return regs;
 }
 
-/*
- * Whether the servo read can be the one the journal records: on its port,
- * and holding in every register the record's value or the target's.  A
+/**
+ * @brief Whether the servo read can be the one the journal records: on its
+ *        port, and holding in every register the record's value or the
+ *        target's.
+ *
+ * A
  * register the write leaves alone holds the record's value then; a field
  * the write changes holds the one, the other, or a mix of their registers.
  * The registers of journal_detours() are exempt.  A servo of the same type
  * with other settings does not fit.
+ *
+ * @param p The programmer state.
+ * @return true when it can.
  */
 static bool journal_fits(const kst_prog_t *p)
 {
@@ -612,10 +767,15 @@ static bool journal_fits(const kst_prog_t *p)
     return true;
 }
 
-/* The record held and a servo read that holds the record's image or its
- * target, register for register: a servo of the same type with the same
- * settings holds them too, so the record stands until the operator says
- * that this is the servo of the write. */
+/**
+ * @brief The record held and a servo read that holds the record's image or its
+ *        target, register for register: a servo of the same type with the same
+ *        settings holds them too, so the record stands until the operator says
+ *        that this is the servo of the write.
+ *
+ * @param p The programmer state.
+ * @return The message id, or KST_PROG_MSG_NONE.
+ */
 static kst_prog_msg_id_t journal_asks(const kst_prog_t *p)
 {
     if (!p->journal || p->journal_other || !p->have_servo) {
@@ -650,6 +810,11 @@ bool kst_prog_journal_classify(kst_prog_t *p)
     return p->journal_other;
 }
 
+/**
+ * @brief Takes the result of a read of the servo.
+ *
+ * @param p The programmer state.
+ */
 static void read_done(kst_prog_t *p)
 {
     if (!p->f.have_image) {
@@ -682,6 +847,12 @@ static void read_done(kst_prog_t *p)
     }
 }
 
+/**
+ * @brief Takes the end of an operation that succeeded.
+ *
+ * @param p  The programmer state.
+ * @param op The operation.
+ */
 static void done_ok(kst_prog_t *p, unsigned op)
 {
     switch (op) {
@@ -799,8 +970,12 @@ kst_prog_res_t kst_prog_result_class(unsigned result)
     return KST_PROG_RES_DOUBT;
 }
 
-/* The pending values and the prompt as they are, for a write that ends
- * with nothing written. */
+/**
+ * @brief The pending values and the prompt as they are, for a write that ends
+ *        with nothing written.
+ *
+ * @param p The programmer state.
+ */
 static void keep_now(kst_prog_t *p)
 {
     p->keep = true;
@@ -809,7 +984,11 @@ static void keep_now(kst_prog_t *p)
     p->keep_soft_load = p->soft_load;
 }
 
-/* The pending values of before a write that wrote nothing. */
+/**
+ * @brief The pending values of before a write that wrote nothing.
+ *
+ * @param p The programmer state.
+ */
 static void keep_back(kst_prog_t *p)
 {
     if (p->keep) {
@@ -820,8 +999,16 @@ static void keep_back(kst_prog_t *p)
     }
 }
 
-/* A write that ended without the servo verified.  True when no register
- * was written. */
+/**
+ * @brief A write that ended without the servo verified.
+ *
+ * True when no register
+ * was written.
+ *
+ * @param p The programmer state.
+ * @param o The outcome.
+ * @return true when no register was written.
+ */
 static bool write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
 {
     bool nothing = false;   /* no register was written */
@@ -870,6 +1057,12 @@ static bool write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
     return nothing;
 }
 
+/**
+ * @brief Takes the outcome of an operation.
+ *
+ * @param p The programmer state.
+ * @param o The outcome.
+ */
 static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
 {
     const unsigned op = o->op;
@@ -967,12 +1160,18 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
     }
 }
 
-/*
- * Whether an outcome is taken.  The one of the operation awaited is, by
+/**
+ * @brief Whether an outcome is taken.
+ *
+ * The one of the operation awaited is, by
  * its number.  An IOmcu that started again ends whatever is awaited.
  * The late end of a write given up is taken while nothing else is on its
  * way; with another operation asked for, it is left out: the servo is in
  * doubt already, and the operation asked for is not that outcome's.
+ *
+ * @param p The programmer state.
+ * @param o The outcome.
+ * @return true when the outcome is taken.
  */
 static bool outcome_due(const kst_prog_t *p, const kst_link_outcome_t *o)
 {
@@ -1005,8 +1204,13 @@ void kst_prog_not_started(kst_prog_t *p, unsigned id, unsigned arg)
     (void)kst_prog_say(p, id, arg);
 }
 
-/* The START awaited is taken back at the gate: the link's task takes it
- * out of its queue and drops it, whenever that is. */
+/**
+ * @brief The START awaited is taken back at the gate: the link's task takes it
+ *        out of its queue and drops it, whenever that is.
+ *
+ * @param p The programmer state.
+ * @return true when the START was taken back before it was carried out.
+ */
 static bool taken_back(kst_prog_t *p)
 {
     if (p->gate == NULL || !kst_prog_gate_revoke(p->gate, p->wait_id)) {
@@ -1019,12 +1223,17 @@ static bool taken_back(kst_prog_t *p)
     return true;
 }
 
-/*
- * A START nobody answers.  One never handed out was not sent, and one taken
+/**
+ * @brief A START nobody answers.
+ *
+ * One never handed out was not sent, and one taken
  * back at the gate never is.  One whose pass the link's task took is
  * carried out, and its answer is waited for once more.  With no answer
  * then, or with no gate, it may have run: the outcome is the one of an
  * operation that did not answer, and an abort follows it.
+ *
+ * @param p  The programmer state.
+ * @param id The message id of the START.
  */
 static void unanswered(kst_prog_t *p, unsigned id)
 {
@@ -1055,13 +1264,17 @@ static void unanswered(kst_prog_t *p, unsigned id)
     }
 }
 
-/*
- * An IOmcu below link 4.15 has no LEAVE.  Its one command from
+/**
+ * @brief An IOmcu below link 4.15 has no LEAVE.
+ *
+ * Its one command from
  * PROGRAMMING to PWM is POWER_CYCLED, and with a PD mini answering the port
  * cycles the supply on it: it is sent only where no PD mini answers, where
  * it changes nothing but the port's state, and its end says that no wait
  * was applied.  With a PD mini the session stays and the message says what
  * ends it.
+ *
+ * @param p The programmer state.
  */
 static void leave_old(kst_prog_t *p)
 {
@@ -1102,7 +1315,13 @@ void kst_prog_gate_offer(kst_prog_gate_t *g, uint32_t id)
     atomic_store(&g->pass, id);
 }
 
-/* The pass of @p id, taken by whoever asks first. */
+/**
+ * @brief The pass of @p id, taken by whoever asks first.
+ *
+ * @param g  The gate.
+ * @param id The START id.
+ * @return true when the pass was taken.
+ */
 static bool gate_take(kst_prog_gate_t *g, uint32_t id)
 {
     uint32_t want = id;
@@ -1450,10 +1669,17 @@ bool kst_prog_no_file(const kst_prog_t *p)
     return p->no_file && !p->backed_up;
 }
 
-/* Whether the servo may hold other values than the session found: after
- * a write that went with no card, and in a session whose writes this model
- * did not all see, one the IOmcu kept over a link loss or a start of
- * the panel.  The session's backup holds the servo as found then. */
+/**
+ * @brief Whether the servo may hold other values than the session found: after
+ *        a write that went with no card, and in a session whose writes this
+ *        model did not all see, one the IOmcu kept over a link loss or a start
+ *        of the panel.
+ *
+ * The session's backup holds the servo as found then.
+ *
+ * @param p The programmer state.
+ * @return true when it may.
+ */
 static bool maybe_written(const kst_prog_t *p)
 {
     return p->no_file || !p->wrote_known;
@@ -1624,6 +1850,12 @@ const kst_image_t *kst_prog_soft_image(const kst_prog_t *p)
     return &p->soft_img;
 }
 
+/**
+ * @brief The message for a loaded file, by its kind.
+ *
+ * @param p The programmer state.
+ * @return The message id.
+ */
 static unsigned loaded_message(const kst_prog_t *p)
 {
     switch (p->load_kind) {
@@ -1688,7 +1920,13 @@ void kst_prog_discard(kst_prog_t *p)
 
 /* --------------------------------------------------------------- operations */
 
-/* What keeps the tester's port from an ENTER. */
+/**
+ * @brief What keeps the tester's port from an ENTER.
+ *
+ * @param p    The programmer state.
+ * @param port The port, from 0.
+ * @return The message id, or KST_PROG_MSG_NONE.
+ */
 static kst_prog_msg_id_t from_pwm(const kst_prog_t *p, uint8_t port)
 {
     if (p->f.stopped) {
@@ -1874,7 +2112,13 @@ kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on)
     return KST_PROG_MSG_NONE;
 }
 
-/* What a write of the draft needs, the switch left out. */
+/**
+ * @brief What a write of the draft needs, the switch left out.
+ *
+ * @param p   The programmer state.
+ * @param arg Receives the argument of the message.
+ * @return The message id; KST_PROG_MSG_NONE when it may go.
+ */
 static kst_prog_msg_id_t write_ready(const kst_prog_t *p, unsigned *arg)
 {
     const kst_prog_msg_id_t m = idle_safe(p);
@@ -1902,9 +2146,16 @@ static kst_prog_msg_id_t write_ready(const kst_prog_t *p, unsigned *arg)
     return KST_PROG_MSG_NONE;
 }
 
-/* The session's restore while the servo's image is in doubt: taken in a
- * locked session, where it is the one write, and after a read otherwise.
- * The record's question is answered first. */
+/**
+ * @brief The session's restore while the servo's image is in doubt: taken in a
+ *        locked session, where it is the one write, and after a read otherwise.
+ *
+ * The record's question is answered first.
+ *
+ * @param p   The programmer state.
+ * @param arg Receives the argument of the message.
+ * @return The message id; KST_PROG_MSG_NONE when it may go.
+ */
 static kst_prog_msg_id_t session_restore_ready(const kst_prog_t *p,
                                                unsigned *arg)
 {
@@ -1921,6 +2172,14 @@ static kst_prog_msg_id_t session_restore_ready(const kst_prog_t *p,
     return KST_PROG_MSG_NONE;
 }
 
+/**
+ * @brief The message for a plan result.
+ *
+ * @param r      The plan result.
+ * @param broken The rules the plan breaks.
+ * @param arg    Receives the argument of the message.
+ * @return The message id.
+ */
 static kst_prog_msg_id_t plan_message(kst_plan_result_t r, kst_rules_t broken,
                                       unsigned *arg)
 {
@@ -1944,6 +2203,13 @@ static kst_prog_msg_id_t plan_message(kst_plan_result_t r, kst_rules_t broken,
     }
 }
 
+/**
+ * @brief Checks whether a write may go.
+ *
+ * @param p   The programmer state.
+ * @param arg Receives the argument of the message.
+ * @return The message id; KST_PROG_MSG_NONE when it may.
+ */
 static kst_prog_msg_id_t write_check(kst_prog_t *p, unsigned *arg)
 {
     kst_rules_t broken = 0;
@@ -1974,6 +2240,13 @@ kst_prog_msg_id_t kst_prog_write_check(kst_prog_t *p)
     return write_check(p, &arg);
 }
 
+/**
+ * @brief Writes the draft to the servo.
+ *
+ * @param p    The programmer state.
+ * @param from The source of the write.
+ * @return The message id.
+ */
 static kst_prog_msg_id_t write_draft(kst_prog_t *p, kst_prog_from_t from)
 {
     kst_link_request_t r;
@@ -2000,6 +2273,13 @@ kst_prog_msg_id_t kst_prog_write(kst_prog_t *p)
     return write_draft(p, KST_PROG_FROM_NONE);
 }
 
+/**
+ * @brief Checks whether a release may go.
+ *
+ * @param p   The programmer state.
+ * @param arg Receives the argument of the message.
+ * @return The message id; KST_PROG_MSG_NONE when it may.
+ */
 static kst_prog_msg_id_t release_check(kst_prog_t *p, unsigned *arg)
 {
     kst_prog_msg_id_t m = write_ready(p, arg);
@@ -2064,7 +2344,13 @@ static const kst_image_t *source(const kst_prog_t *p, kst_prog_from_t from)
     }
 }
 
-/* Why source() gives none. */
+/**
+ * @brief Why source() gives none.
+ *
+ * @param p    The programmer state.
+ * @param from The source of the image.
+ * @return The message id.
+ */
 static kst_prog_msg_id_t from_none(const kst_prog_t *p, kst_prog_from_t from)
 {
     return from == KST_PROG_FROM_SESSION && kst_prog_backup_other(p)
@@ -2093,9 +2379,19 @@ bool kst_prog_restore_offered(const kst_prog_t *p, kst_prog_from_t from)
     return p->have_servo && !kst_prog_same(src, &p->servo);
 }
 
-/* What a restore from a record or a file writes: the servo's image with
- * the editable fields of @p src.  Returns the fields that change and gives
- * the ones that differ and stay in @p stay. */
+/**
+ * @brief What a restore from a record or a file writes: the servo's image with
+ *        the editable fields of @p src.
+ *
+ * Returns the fields that change and gives
+ * the ones that differ and stay in @p stay.
+ *
+ * @param p      The programmer state.
+ * @param src    The source image.
+ * @param target Receives the target image.
+ * @param stay   Receives the fields that stay.
+ * @return The count of fields the target differs in.
+ */
 static unsigned editable_target(const kst_prog_t *p, const kst_image_t *src,
                                 kst_image_t *target, unsigned *stay)
 {
@@ -2191,9 +2487,18 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
     return KST_PROG_MSG_NONE;
 }
 
-/* The confirmed restore from a record or a file: its values become the
- * pending ones and go out as an ordinary write.  A restore that does not
- * start leaves the pending values as they were. */
+/**
+ * @brief The confirmed restore from a record or a file: its values become the
+ *        pending ones and go out as an ordinary write.
+ *
+ * A restore that does not
+ * start leaves the pending values as they were.
+ *
+ * @param p    The programmer state.
+ * @param from The source of the image.
+ * @param src  The source image.
+ * @return The message id.
+ */
 static kst_prog_msg_id_t restore_editable(kst_prog_t *p, kst_prog_from_t from,
                                           const kst_image_t *src)
 {

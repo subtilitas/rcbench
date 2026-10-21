@@ -1,5 +1,8 @@
-/*
- * The panel's half of the SENSE_MAP page.  See sense_map_link.h.
+/**
+ * @file
+ * @brief The panel's half of the SENSE_MAP page.
+ *
+ * See sense_map_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -26,8 +29,13 @@ void sense_map_link_init(sense_map_link_t *s)
     }
 }
 
-/* What was read and said under the map in force: news again under the
- * next. */
+/**
+ * @brief What was read and said under the map in force: news again under the
+ *        next.
+ *
+ * @param s      The link state.
+ * @param now_ms The time, in ms.
+ */
 static void forget_reads(sense_map_link_t *s, uint32_t now_ms)
 {
     s->setup_ms    = now_ms;
@@ -73,6 +81,13 @@ void sense_map_link_came_up(sense_map_link_t *s, uint16_t minor,
     s->setup_ms = now_ms;
 }
 
+/**
+ * @brief Raises an event for the parts it is about.
+ *
+ * @param s     The link state.
+ * @param ev    The event bit.
+ * @param parts The parts the event is about, one bit each.
+ */
 static void raise(sense_map_link_t *s, uint8_t ev, uint8_t parts)
 {
     for (unsigned i = 0u; i < 4u; ++i) {
@@ -143,6 +158,12 @@ void sense_map_link_want(sense_map_link_t *s, const sense_map_want_t *w,
     }
 }
 
+/**
+ * @brief Whether any part is enabled by the map asked or held.
+ *
+ * @param s The link state.
+ * @return true when a part is enabled.
+ */
 static bool fitted_any(const sense_map_link_t *s)
 {
     return ((s->want_set ? s->want[LINK_SM_ENABLE] : 0u)
@@ -194,8 +215,13 @@ bool sense_map_link_next(sense_map_link_t *s, uint32_t now_ms, bool idle,
     return false;
 }
 
-/* The part SENSE reports on, by the map in force: FAST's, else the lowest
- * fitted; 4 for none. */
+/**
+ * @brief The part SENSE reports on, by the map in force: FAST's, else the
+ *        lowest fitted; 4 for none.
+ *
+ * @param s The link state.
+ * @return The part, 0 to 3; 4 for none.
+ */
 static unsigned held_mirror(const sense_map_link_t *s)
 {
     const uint16_t fast = s->held[LINK_SM_FAST];
@@ -230,7 +256,12 @@ bool sense_map_link_waits_for_pins(const sense_map_link_t *s,
                || (sense_link_unheld(sl) & SENSE_LINK_ROW_PINS) != 0u);
 }
 
-/* What a read of IDs and FLAGS says that the operator is told. */
+/**
+ * @brief What a read of IDs and FLAGS says that the operator is told.
+ *
+ * @param s      The link state.
+ * @param now_ms The time, in ms.
+ */
 static void judge(sense_map_link_t *s, uint32_t now_ms)
 {
     const bool waited = (uint32_t)(now_ms - s->setup_ms) >= SENSE_LINK_GRACE_MS;
@@ -265,6 +296,12 @@ static void judge(sense_map_link_t *s, uint32_t now_ms)
     s->was_flags = s->flags;
 }
 
+/**
+ * @brief Takes a status read: the IDs and the FLAGS.
+ *
+ * @param s    The link state.
+ * @param regs The registers read.
+ */
 static void take_status(sense_map_link_t *s, const uint16_t *regs)
 {
     for (unsigned a = 0u; a < LINK_SM_PARTS; ++a) {
@@ -431,7 +468,13 @@ void sense_map_link_event_back(sense_map_link_t *s, uint8_t ev,
     raise(s, ev, parts);
 }
 
-/* An IOmcu older than 4.25: the mirror part as SENSE reads it. */
+/**
+ * @brief An IOmcu older than 4.25: the mirror part as SENSE reads it.
+ *
+ * @param sl     The SENSE link.
+ * @param now_ms The time, in ms.
+ * @return What the mirror part is doing, as sens_part_t.
+ */
 static sens_part_t old_part(const sense_link_t *sl, uint32_t now_ms)
 {
     if (sl == NULL || !sl->up || !sl->page || !sl->known) {

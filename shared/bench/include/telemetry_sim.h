@@ -1,6 +1,7 @@
-/*
- * A pack, a motor and a propeller, modelled, so every screen runs without a
- * measurement front end.
+/**
+ * @file
+ * @brief A pack, a motor and a propeller, modelled, so every screen runs
+ *        without a measurement front end.
  *
  * It runs on the panel, and only while no IOmcu answers: an IOmcu
  * that is answering reports what it measures and leaves the rest empty, so a
@@ -24,6 +25,9 @@
 extern "C" {
 #endif
 
+/**
+ * @brief The configuration of the telemetry model: pack, motor and propeller.
+ */
 typedef struct {
     float cells;
     float cell_nominal_v;
@@ -47,6 +51,9 @@ typedef struct {
         .rpm_tau_s = 0.22f,              \
     }
 
+/**
+ * @brief The state of the telemetry model.
+ */
 typedef struct {
     telemetry_sim_cfg_t cfg;
     float rpm;             /**< the lagged state                  */
@@ -56,13 +63,24 @@ typedef struct {
     float temp_motor;
 } telemetry_sim_t;
 
+/**
+ * @brief Sets up the model from its configuration.
+ *
+ * @param s   The model to set up.
+ * @param cfg The configuration, or NULL for the default.
+ */
 void telemetry_sim_init(telemetry_sim_t *s, const telemetry_sim_cfg_t *cfg);
 
 /**
- * Advance by @p dt_s at @p throttle_pct and fill @p out.
+ * @brief Advance by @p dt_s at @p throttle_pct and fill @p out.
  *
  * Peaks are accumulated into @p out as the IOmcu accumulates them for
  * the BENCH page, so the screen sees the same behaviour from both sources.
+ *
+ * @param s            The model.
+ * @param throttle_pct The throttle, in percent.
+ * @param dt_s         The time step, in s.
+ * @param out          Receives the readings.
  */
 void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
                         bench_state_t *out);

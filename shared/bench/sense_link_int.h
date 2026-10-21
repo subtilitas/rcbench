@@ -1,7 +1,10 @@
-/*
- * What sense_link.c and sense_link_view.c share and nobody else sees: the
- * set-up's frame layout, the status register index, and three names the
- * two files cross.  Not part of the module's interface (sense_link.h).
+/**
+ * @file
+ * @brief What sense_link.c and sense_link_view.c share and nobody else sees:
+ *        the set-up's frame layout, the status register index, and three names
+ *        the two files cross.
+ *
+ * Not part of the module's interface (sense_link.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,11 +25,24 @@
 /* A status register by its page number. */
 #define ST(reg) ((unsigned)(reg) - (unsigned)LINK_SN_FLAGS)
 
-/* The write owed now, or NONE, with its registers in @p regs. */
+/**
+ * @brief The write owed now, or NONE, with its registers in @p regs.
+ *
+ * @param s    The link state.
+ * @param regs Receives the registers of the write.
+ * @return The write owed, or NONE, as sense_link_op_kind_t.
+ */
 sense_link_op_kind_t sense_link_write_owed(const sense_link_t *s,
                                            uint16_t *regs);
 
-/* The registers a SENSE status read takes. */
+/**
+ * @brief The registers a SENSE status read takes.
+ *
+ * @param s The link state.
+ * @return SENSE_LINK_STATUS_COUNT when the AS5600 part is enabled or the
+ *         INA3221 windows come from SERVO_WIN, else
+ *         SENSE_LINK_STATUS_COUNT_V48.
+ */
 unsigned sense_link_status_count(const sense_link_t *s);
 
 /* The ENABLE bit of each part, indexed by sense_link_part_t. */

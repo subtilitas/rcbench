@@ -1,5 +1,8 @@
-/*
- * The panel's half of the Hitec receive mode.  See hitec_rx_link.h.
+/**
+ * @file
+ * @brief The panel's half of the Hitec receive mode.
+ *
+ * See hitec_rx_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -52,6 +55,13 @@ void hitec_rx_link_lost(hitec_rx_link_t *l)
     }
 }
 
+/**
+ * @brief Whether the IOmcu has the HITEC RX register (LINK_MINOR_HITEC_RX or
+ *         later).
+ *
+ * @param l The link state.
+ * @return true when the IOmcu has the register.
+ */
 static bool knows_register(const hitec_rx_link_t *l)
 {
     return l->minor >= LINK_MINOR_HITEC_RX;

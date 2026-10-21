@@ -1,6 +1,9 @@
-/*
- * The programmer's journal file: the text of a write to the servo that
- * survives a restart of the panel, and the parse of it.  See kst_prog.h.
+/**
+ * @file
+ * @brief The programmer's journal file: the text of a write to the servo that
+ *        survives a restart of the panel, and the parse of it.
+ *
+ * See kst_prog.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,11 +19,25 @@ static const char k_head_1[] = "RCBENCH KST 1\n";
 
 /* ----------------------------------------------------- the journal's file */
 
+/**
+ * @brief The link CRC-16 of n bytes.
+ *
+ * @param s The bytes.
+ * @param n The number of bytes.
+ * @return The CRC-16 of the bytes at s.
+ */
 static uint16_t crc16(const char *s, size_t n)
 {
     return link_crc(LINK_CRC_INIT, s, n);
 }
 
+/**
+ * @brief Appends a string without its terminator.
+ *
+ * @param at Where the text goes.
+ * @param s  The text.
+ * @return The position after the text.
+ */
 static char *put(char *at, const char *s)
 {
     while (*s != '\0') {
@@ -29,6 +46,14 @@ static char *put(char *at, const char *s)
     return at;
 }
 
+/**
+ * @brief Appends v as upper-case hexadecimal digits.
+ *
+ * @param at     Where the digits go.
+ * @param v      The value.
+ * @param digits The number of hexadecimal digits written.
+ * @return The position after the digits.
+ */
 static char *put_hex(char *at, unsigned v, unsigned digits)
 {
     static const char k_hex[] = "0123456789ABCDEF";
@@ -39,6 +64,14 @@ static char *put_hex(char *at, unsigned v, unsigned digits)
     return at;
 }
 
+/**
+ * @brief Appends a line of a key and the image's registers in hexadecimal.
+ *
+ * @param at  Where the line goes.
+ * @param key The key of the line.
+ * @param img The image.
+ * @return The position after the line.
+ */
 static char *put_image(char *at, const char *key, const kst_image_t *img)
 {
     at = put(at, key);
@@ -125,6 +158,12 @@ void kst_prog_file_done(kst_prog_t *p, bool ok)
     }
 }
 
+/**
+ * @brief The value of one hexadecimal digit.
+ *
+ * @param c The character.
+ * @return The value 0 to 15, or -1 when c is no hexadecimal digit.
+ */
 static int hex(char c)
 {
     if (c >= '0' && c <= '9') {
@@ -136,7 +175,15 @@ static int hex(char c)
     return -1;
 }
 
-/* @p digits hexadecimal digits at @p s; -1 for anything else. */
+/**
+ * @brief Reads a number of hexadecimal digits.
+ *
+ * @p digits hexadecimal digits at @p s; -1 for anything else.
+ *
+ * @param s      The text.
+ * @param digits The number of digits to read.
+ * @return The value, or -1 for anything else.
+ */
 static long take_hex(const char *s, unsigned digits)
 {
     long v = 0;
@@ -152,7 +199,15 @@ static long take_hex(const char *s, unsigned digits)
     return v;
 }
 
-/* "key" + 64 digits + newline at @p s, @p left bytes there. */
+/**
+ * @brief "key" + 64 digits + newline at @p s, @p left bytes there.
+ *
+ * @param s    The text.
+ * @param left The bytes left at s.
+ * @param key  The key the line starts with.
+ * @param img  Receives the image.
+ * @return true when the line is read.
+ */
 static bool take_image(const char *s, size_t left, const char *key,
                        kst_image_t *img)
 {
@@ -172,6 +227,9 @@ static bool take_image(const char *s, size_t left, const char *key,
     return true;
 }
 
+/**
+ * @brief A parsed file: its journal record and its target image.
+ */
 typedef struct {
     bool journal;
     uint8_t journal_port;
@@ -180,6 +238,14 @@ typedef struct {
     kst_image_t journal_target;
 } loaded_t;
 
+/**
+ * @brief Parses a file text into the loaded state.
+ *
+ * @param into Receives the loaded file.
+ * @param text The file text.
+ * @param len  The length of the text, in bytes.
+ * @return true when the text is a valid file.
+ */
 static bool parse(loaded_t *into, const char *text, size_t len)
 {
     const size_t head = sizeof(k_head) - 1u;
