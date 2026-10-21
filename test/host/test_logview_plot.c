@@ -579,7 +579,7 @@ static int zoom_in_with_cursor(void)
 }
 
 /* One finger from x0 to x1 in steps of 25 px, then up. */
-/* The plot's width in pixels, as log_viewer_screen.c draws it. */
+/* The plot's width in pixels, PV_W in log_viewer_int.h. */
 #define PV_W_TEST 752
 
 static void drag(int x0, int x1)

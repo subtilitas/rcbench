@@ -83,8 +83,8 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
 /*
- * Geometry mirrored from supply_screen.c, screen-local: the router strips the
- * band before a screen sees an event.
+ * Geometry mirrored from supply_screen_int.h and supply_screen.c,
+ * screen-local: the router strips the band before a screen sees an event.
  */
 #define OUT_X     676          /* OUTPUT ON / OFF, right rail */
 #define OUT_Y     318
@@ -101,7 +101,8 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 
 /* The task strip, from ui_workbench.h: LIVE x 9..121, SETTINGS x 125..237,
  * y 6..30.  Then SETTINGS' value rows, the rail's cards, the set points'
- * values, and the question's two buttons, from supply_screen.c. */
+ * values, and the question's two buttons, from supply_screen_int.h and
+ * supply_screen.c. */
 #define LIVE_TAB_X 65
 #define SET_TAB_X 181
 #define STRIP_Y   18

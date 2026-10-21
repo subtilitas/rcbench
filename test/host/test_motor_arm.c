@@ -30,10 +30,11 @@
 #define H UI_PANEL_H
 
 /*
- * Geometry in panel coordinates, mirrored from motor_screen.c with the
- * band's height added: the throttle track x 72..485, y 384..423, with -1 at
- * x 12..65 and +1 at x 492..545; ARM at x 564..787, y 348..383; RESET PEAKS
- * under it; the hint line under the track.
+ * Geometry in panel coordinates, mirrored from motor_screen_int.h and
+ * motor_live_int.h with the band's height added: the throttle track
+ * x 72..485, y 384..423, with -1 at x 12..65 and +1 at x 492..545; ARM at
+ * x 564..787, y 348..383; RESET PEAKS under it; the hint line under the
+ * track.
  */
 #define P(y)      (UI_BAND_H + (y))
 #define TRACK_X   72

@@ -65,8 +65,9 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
 /*
- * Geometry mirrored from motor_screen.c; if the layout moves these move with
- * it, and the test names say what they aim at.  Screen-local coordinates:
+ * Geometry mirrored from motor_screen_int.h, motor_live_int.h and
+ * motor_screen.c; if the layout moves these move with it, and the test
+ * names say what they aim at.  Screen-local coordinates:
  * the router strips the band before a screen sees an event.
  */
 #define UP_Y     58
@@ -88,7 +89,7 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 /* The track itself: x 72..486, so half of it is half the travel. */
 #define TRACK_X  72
 
-/* Mirrored from motor_screen.c: arming is a hold, not a press. */
+/* Mirrored from motor_live_int.h: arming is a hold, not a press. */
 #define ARM_HOLD_S  2.0f
 #define TICK_S      0.05f
 /* Enough steps to pass the hold, derived rather than counted, so changing
