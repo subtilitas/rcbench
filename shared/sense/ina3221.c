@@ -1,5 +1,8 @@
-/*
- * The INA3221.  See ina3221.h; tables and sections are TI SBOS576C's.
+/**
+ * @file
+ * @brief The INA3221.
+ *
+ * See ina3221.h; tables and sections are TI SBOS576C's.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -8,8 +11,13 @@
 
 #include <string.h>
 
-/* Ends of the 13-bit range: 7FF8h and 8000h (§8.2.2). */
+/**
+ * @brief Ends of the 13-bit range: 7FF8h and 8000h (§8.2.2).
+ */
 #define CODE13_MAX   4095
+/**
+ * @brief Ends of the 13-bit code range.
+ */
 #define CODE13_MIN (-4096)
 
 uint16_t ina3221_config(uint8_t channels, uint8_t avg, uint8_t vbusct,
@@ -107,7 +115,7 @@ int32_t ina3221_bus_mv(int32_t code)
     return code * 8;
 }
 
-/* -------------------------------------------------------------- driver */
+/** @brief driver */
 
 ina3221_setup_err_t ina3221_init(ina3221_t *d, sense_bus_t *bus, uint8_t addr,
                                  uint32_t shunt_uohm, uint16_t config)
@@ -153,6 +161,14 @@ ina3221_setup_err_t ina3221_init_shunts(ina3221_t *d, sense_bus_t *bus,
     return INA3221_SETUP_OK;
 }
 
+/**
+ * @brief Read a 16-bit register.
+ *
+ * @param d The driver.
+ * @param reg Register address.
+ * @param v Receives the value.
+ * @return true when the read succeeded.
+ */
 static bool read16(ina3221_t *d, uint8_t reg, uint16_t *v)
 {
     uint8_t b[2];
@@ -163,6 +179,13 @@ static bool read16(ina3221_t *d, uint8_t reg, uint16_t *v)
     return true;
 }
 
+/**
+ * @brief Probe the part: identity, then the Configuration written and read back.
+ *
+ * @param d The driver.
+ * @return SENSE_PART_ABSENT, SENSE_PART_WRONG_ID, SENSE_PART_REFUSED or
+ *       SENSE_PART_ONLINE.
+ */
 static sense_state_t probe(ina3221_t *d)
 {
     if (!read16(d, INA3221_MANUFACTURER, &d->part.id_maker)
@@ -194,8 +217,18 @@ sense_state_t ina3221_state(const ina3221_t *d)
     return d->part.state;
 }
 
-/* Channel @p ch's register (shunt or bus, by @p first) when the set-up
- * converts it; 0 when it does not. */
+/**
+ * @brief Channel @p ch's register (shunt or bus, by @p first) when the set-up
+ * converts it; 0 when it does not.
+ *
+ * @param d The driver.
+ * @param ch Channel, 1 to 3.
+ * @param first Register of channel 1: the shunt or the bus register.
+ * @param mode_bit The Configuration mode bit that must be set: 1 for the shunt,
+ *       2 for the bus.
+ * @return The register address, or 0 when the channel is out of range, not
+ *       enabled, or its mode bit is clear.
+ */
 static uint8_t channel_reg(const ina3221_t *d, uint8_t ch, uint8_t first,
                            unsigned mode_bit)
 {
@@ -207,6 +240,14 @@ static uint8_t channel_reg(const ina3221_t *d, uint8_t ch, uint8_t first,
     return (uint8_t)(first + 2u * (ch - 1u));
 }
 
+/**
+ * @brief Read a 16-bit register value, 2 bytes.
+ *
+ * @param d The driver.
+ * @param reg Register address.
+ * @param raw Receives the value.
+ * @return SENSE_OK, or the bus error.
+ */
 static sense_err_t read_reg(ina3221_t *d, uint8_t reg, uint16_t *raw)
 {
     uint8_t b[2];
