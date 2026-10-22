@@ -108,11 +108,14 @@ The servo is held at PULSE CENTRE, the run switches the bench to SAFE,
 CONNECT reads every register, LEAVE gives the port back, and the run
 switches the bench to ARMED. Nothing is driven before that.
 
-- A read that fails ends the run before any search: ABORTED, `programming
-  port did not finish`, where CONNECT or its read does not complete; FAIL,
-  `no KST or Chaservo servo read`, where the servo read holds values the
-  hard rules do not take. A servo that is no KST or Chaservo is searched
-  with TARGET on a SERVO PWM pin.
+- A read that fails ends the run before any search: FAIL, `no KST or
+  Chaservo servo read`, where the first CONNECT finds no servo that answers
+  (a servo that is no KST or Chaservo does not) or the servo read holds
+  values the hard rules do not take; ABORTED, `programming port session
+  failed`, where the first CONNECT fails for another reason or its read
+  does not complete. A servo that is no KST or Chaservo is searched with
+  TARGET on a SERVO PWM pin. Any later CONNECT, a LEAVE or a step that
+  does not complete ends the run as ABORTED with the same reason.
 - NEUTRAL not between PULSE LOWER and PULSE UPPER ends it as FAIL,
   `NEUTRAL outside LOWER/UPPER`.
 - PULSE LOWER to PULSE UPPER not inside the bench's PULSE MIN to PULSE MAX

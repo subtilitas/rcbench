@@ -8,6 +8,11 @@ history is in git.
 
 ### Fixed
 
+- A limit run on PROG PORT whose first CONNECT finds no servo that answers
+  (a Hitec servo, for one) ends with `no KST or Chaservo servo read`, not
+  with `programming port did not finish`. Every other failed CONNECT,
+  LEAVE and timed-out step reads `programming port session failed`, in
+  German `PROG-PORT-Sitzung gescheitert`.
 - LOGS lists a report standing alone: a LIMIT RUN's `LIMITnnn.TXT` in
   `USER/LOGS`, and in the root a `SERVOnnn.TXT` with no `SERVOnnn.CSV`
   beside it, the limit run of firmware 0.21.0 and older. It ranks by its

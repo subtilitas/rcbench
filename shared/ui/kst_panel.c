@@ -2778,6 +2778,12 @@ kst_panel_run_t kst_panel_run_poll(void)
     return ok ? KST_PANEL_RUN_OK : KST_PANEL_RUN_FAILED;
 }
 
+bool kst_panel_run_no_servo(void)
+{
+    return kst_prog_message(&k.prog)->id
+           == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_NO_SERVO;
+}
+
 bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,
                          bool *reversion, unsigned *type,
                          uint16_t pulse_dus[3])

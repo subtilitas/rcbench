@@ -265,7 +265,13 @@ static void lim_poll(void)
     switch (s.lim.phase) {
     case SERVO_LIMRUN_PH_CONNECT:
         if (!ok) {
-            servo_limrun_refused(&s.lim, test_now());
+            /* The session ended: a CONNECT that no servo answered is the
+             * first read's NOT_KST, any other end a session failed. */
+            if (kst_panel_run_no_servo()) {
+                servo_limrun_no_servo(&s.lim, test_now());
+            } else {
+                servo_limrun_refused(&s.lim, test_now());
+            }
             break;
         }
         sv.ok = kst_panel_run_servo(sv.angle, &sv.lo_raw, &sv.hi_raw,
