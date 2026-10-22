@@ -50,9 +50,32 @@ Linker script and memory map
 """
 
 
+GOOD = FRAGMENT.replace("    picker_screen (noflash)\n", "")
+
+
 def test_the_fragment_names_the_objects_its_scheme_maps():
-    assert pb.named(FRAGMENT) == [("libui.a", "servo_screen"),
-                                  ("libbench.a", "kst_card")]
+    assert pb.named(GOOD) == ([("libui.a", "servo_screen"),
+                               ("libbench.a", "kst_card")], [])
+
+
+def test_an_entry_in_another_form_is_a_stray():
+    stray = GOOD.replace(
+        "    servo_screen (rcbench_extram_bss)\n",
+        "    servo_screen (rcbench_extram_bss)\n"
+        "    motor_screen (extram_bss)\n"
+        "    ui_band:s_para (rcbench_extram_bss)\n"
+        "    * (rcbench_extram_bss)\n")
+    names, strays = pb.named(stray)
+    assert names == [("libui.a", "servo_screen"), ("libbench.a", "kst_card")]
+    assert strays == [
+        "line 10: 'motor_screen (extram_bss)' is not "
+        "'<object> (rcbench_extram_bss)'",
+        "line 11: 'ui_band:s_para (rcbench_extram_bss)' is not "
+        "'<object> (rcbench_extram_bss)'",
+        "line 12: '* (rcbench_extram_bss)' is not "
+        "'<object> (rcbench_extram_bss)'"]
+    assert pb.problems(names, pb.bss_by_object(MAP), strays) == [
+        "psram_bss.lf " + s for s in strays]
 
 
 def test_the_map_sums_bss_and_common_per_section_and_object():
@@ -64,14 +87,14 @@ def test_the_map_sums_bss_and_common_per_section_and_object():
 
 
 def test_a_build_with_every_named_object_in_psram_passes():
-    assert pb.problems(pb.named(FRAGMENT), pb.bss_by_object(MAP)) == []
+    assert pb.problems(pb.named(GOOD)[0], pb.bss_by_object(MAP)) == []
 
 
 def test_an_object_left_in_internal_ram_fails():
     placed = pb.bss_by_object(MAP.replace(
         f" COMMON         0x48007388       0x10 {BENCH}\n", "").replace(
         " *(.bss .bss.*)\n", f" .bss.t         0x0 0x40 {BENCH}\n"))
-    assert pb.problems(pb.named(FRAGMENT), placed) == [
+    assert pb.problems(pb.named(GOOD)[0], placed) == [
         "libbench.a(kst_card) has no .bss in .ext_ram.bss: the object is "
         "gone, holds no .bss, or the mapping did not apply",
         "libbench.a(kst_card) keeps 64 bytes of .bss in .dram0.bss"]
@@ -80,13 +103,13 @@ def test_an_object_left_in_internal_ram_fails():
 def test_an_object_with_bss_on_both_sides_fails():
     placed = pb.bss_by_object(MAP)
     placed[".dram0.bss"][("libui.a", "servo_screen")] = 8
-    assert pb.problems(pb.named(FRAGMENT), placed) == [
+    assert pb.problems(pb.named(GOOD)[0], placed) == [
         "libui.a(servo_screen) keeps 8 bytes of .bss in .dram0.bss"]
 
 
 def test_a_fragment_on_another_scheme_names_nothing_and_fails():
-    other = FRAGMENT.replace("(rcbench_extram_bss)", "(extram_bss)")
-    assert pb.named(other) == []
+    other = GOOD.replace("(rcbench_extram_bss)", "(extram_bss)")
+    assert pb.named(other)[0] == []
     assert pb.problems([], pb.bss_by_object(MAP)) == [
         "the fragment maps no object with (rcbench_extram_bss)"]
 
@@ -98,11 +121,14 @@ def test_a_map_without_the_memory_map_places_nothing():
 def test_main_reads_a_build_directory(tmp_path, capsys, monkeypatch):
     (tmp_path / pb.MAP).write_text(MAP)
     fragment = tmp_path / "psram_bss.lf"
-    fragment.write_text(FRAGMENT)
+    fragment.write_text(GOOD)
     monkeypatch.setattr(pb, "FRAGMENT", fragment)
     assert pb.main(["psram_bss.py", "--list", "16", str(tmp_path)]) == 0
     out = capsys.readouterr().out
     assert "2 named objects, 29,592 bytes of .bss in .ext_ram.bss" in out
     assert "libui.a(picker_screen)" in out
     assert pb.main(["psram_bss.py", "--list"]) == 1
+    fragment.write_text(FRAGMENT)
+    assert pb.main(["psram_bss.py", str(tmp_path)]) == 1
+    assert "'picker_screen (noflash)'" in capsys.readouterr().err
     assert pb.main(["psram_bss.py", str(tmp_path / "none")]) == 1

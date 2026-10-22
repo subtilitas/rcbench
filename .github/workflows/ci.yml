@@ -480,6 +480,9 @@ jobs:
           path: 'firmware/panel'
           command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF build
 
+      - name: The objects psram_bss.lf names are in PSRAM without the injector
+        run: python3 tools/psram_bss.py firmware/panel/build-noinject
+
       - name: The injector code is not in the build without it
         run: |
           if grep -aqF -e touch_inject_ -e touch_merge_ \
