@@ -179,4 +179,4 @@ IOmcu. Die Umlaufzeit legt fest, was eine Pollperiode schaffen muss;
 die Zähler sagen, ob der Bus oder die Software die Grenze setzt.
 
 Bei beiden Platinen unter Spannung außerdem am Oszilloskop bestätigen, dass
-GPIO28 (`PANEL_HEARTBEAT_PIN`) mit der Rate flankt, die [Sicherheit](Safety-de.md) vorgibt. GPIO28 ist vorläufig, bis der Pin am ersten Muster festgelegt ist.
+GPIO28 (`PANEL_HEARTBEAT_PIN`) mit der Rate flankt, die [Sicherheit](Safety-de.md) vorgibt. GPIO28 ist IO28 des 12-poligen Headers P3.

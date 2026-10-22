@@ -35,7 +35,7 @@ does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
 4.28. [Reference](docs/Link.md).
 
-**Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, a placeholder) from the core that does
+**Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
 (`HEARTBEAT_PERIOD_MS`). The IOmcu's
 outputs are to be gated by a retriggerable monostable with a window of about

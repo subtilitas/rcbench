@@ -167,9 +167,6 @@ firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_DSI_
 firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_I2C_FREQ_HZ (macro definition) of file board_pins.h is not documented.
 firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_I2C_PIN_SCL (macro definition) of file board_pins.h is not documented.
 firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_I2C_PIN_SDA (macro definition) of file board_pins.h is not documented.
-firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_KNOB_I2C_FREQ_HZ (macro definition) of file board_pins.h is not documented.
-firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_KNOB_PIN_SCL (macro definition) of file board_pins.h is not documented.
-firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_KNOB_PIN_SDA (macro definition) of file board_pins.h is not documented.
 firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_LCD_HSYNC_BACK_PORCH (macro definition) of file board_pins.h is not documented.
 firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_LCD_HSYNC_FRONT_PORCH (macro definition) of file board_pins.h is not documented.
 firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_LCD_HSYNC_PULSE_WIDTH (macro definition) of file board_pins.h is not documented.
