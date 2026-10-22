@@ -194,10 +194,6 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 # look at a board
 idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON build
 
-# the radio: the ESP32-P4's is an ESP32-C6 beside it, which the panel does
-# not reach yet; RCBENCH_PANEL_WIFI defaults to OFF, and a panel built so
-# starts no Wi-Fi and checks for no release
-
 # panel carrying the IOmcu image it offers over CAN; build the
 # IOmcu first
 idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin build
@@ -282,6 +278,190 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 git and CMake as well, and `ci_gate.py` the `gh` command. `sense_trace.py`
 needs CMake and a C compiler: it builds `test/host/sense_trace_replay.c`
 into `build-trace/` unless `--replay` names a built one.
+
+## Wi-Fi through the ESP32-C6
+
+The ESP32-P4 has no radio. The 7-inch display board from Waveshare carries an
+ESP32-C6-MINI-1 module wired to the P4's SDMMC (SD/MMC host) slot 1 as an
+SDIO (Secure Digital input/output) device; the SD card is on slot 0. The
+panel's Wi-Fi code (`firmware/panel/components/wifi_access/`) calls the
+`esp_wifi` API; two components from the Espressif component registry carry
+each call and every network frame to the C6. lwIP (lightweight IP stack),
+the page's server and the TLS (transport layer security) client run on the
+P4; the C6 runs the radio.
+
+| Signal | P4 | C6 |
+| --- | --- | --- |
+| CLK | GPIO18 | IO19 |
+| CMD | GPIO19 | IO18 |
+| D0 to D3 | GPIO14 to GPIO17 | IO20 to IO23 |
+| EN (chip enable), low resets | GPIO54 | EN |
+
+SDIO runs 4 bits wide at 40 MHz. `components/board/include/board_pins.h`
+names the pins (`BOARD_C6_*`), `firmware/panel/sdkconfig.defaults` hands
+them to esp_hosted, and `wifi_radio.c` fails the build when the two differ.
+
+### The managed components
+
+| Component | Version | Licence | Role |
+| --- | --- | --- | --- |
+| `espressif/esp_wifi_remote` | 1.6.5 | Apache-2.0 | the `esp_wifi` API on a chip without a radio |
+| `espressif/esp_hosted` | 2.13.0 | Apache-2.0 | the SDIO transport and the calls to the C6 |
+| `espressif/wifi_remote_over_eppp` | 0.3.3 | Apache-2.0 | required by `esp_wifi_remote`; compiled, not linked |
+| `espressif/eppp_link` | 1.1.6 | Apache-2.0 | required by the one above; compiled, not linked |
+| `espressif/esp_serial_slave_link` | 1.1.2 | Apache-2.0 | required by the one above; compiled, not linked |
+
+esp_hosted 2.x: every file the panel compiles from the registry is
+Apache-2.0, except the protobuf-c runtime inside esp_hosted, BSD-2-Clause.
+esp_hosted's message code generated from its `.proto` file is Espressif's,
+Apache-2.0; `esp_wifi_remote`'s `dummy_src.c` is an empty file without a
+licence line. [NOTICE](https://github.com/subtilitas/rcbench/blob/main/NOTICE)
+carries the protobuf-c copyright and licence, which a panel image's
+distribution has to reproduce.
+
+`components/wifi_access/idf_component.yml` names the first two at exact
+versions. `firmware/panel/dependencies.lock` records all five with their
+hashes and is committed. The first build downloads them from
+`components.espressif.com` into `firmware/panel/managed_components/`, which
+git ignores, and checks each against its hash. A later build makes no
+request: with the folder filled, a build without network access completes.
+To move a version, change `idf_component.yml`, run
+`idf.py update-dependencies` and commit the new lock file.
+
+### The C6's firmware
+
+The C6 runs Espressif's esp_hosted co-processor firmware. The version the
+board ships with is not published and not known here. At the first Wi-Fi
+start after power-up esp_hosted resets the C6: GPIO54 (EN) goes low for
+10 ms, then esp_hosted waits a fixed 1,500 ms
+(`CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS`), starts the C6 as an SDIO card
+and polls for its start event every 200 ms. The panel then writes the C6's
+version to the console:
+
+```
+wifi: C6: esp_hosted firmware 2.13.0, host 2.13.0
+```
+
+A C6 firmware without the version request answers with
+`wifi: C6: firmware version not reported, host 2.13.0`, after up to 5 s.
+esp_hosted also logs `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`
+when the major or minor numbers differ. Espressif states that a host newer
+than its co-processor runs and may see request time-outs; the panel's
+behaviour with an older C6 firmware is not measured. The panel has no path
+that updates the C6. A C6 that answers is reset once per start of the
+panel; later Wi-Fi starts find the link up and reset nothing.
+
+### Failures
+
+`esp_hosted_connect_to_slave()` returns `ESP_OK` whether or not the C6
+came up (`esp_hosted_api.c` 177-192). The panel takes esp_hosted's
+`ESP_HOSTED_EVENT_TRANSPORT_UP` event as the answer, and waits for it at
+most 1,000 ms after that call has returned (`wifi_radio.c`).
+
+- A C6 that does not start as an SDIO card: esp_hosted gives up after the
+  card's start-up, at least 1,500 ms after the 1,520 ms reset; 1 reset.
+- A C6 that starts as a card and sends no start event: esp_hosted polls 100
+  times 200 ms apart and resets the C6 again after 50 and after 100 polls
+  (`transport_drv.c` 227-252); 3 resets, about 25 s.
+- Either way the start fails, WI-FI shows the failed start, and the panel
+  holds the C6 in reset (GPIO54 low) until it restarts. Later starts fail
+  at once, with no reset. The bench and the display run on meanwhile; the
+  radio's start runs on its own task.
+- A link that fails during a session: esp_hosted posts
+  `ESP_HOSTED_EVENT_TRANSPORT_FAILURE`. The panel logs
+  `wifi: C6 link failed: C6 held in reset, Wi-Fi is off until the panel
+  restarts` once, holds the C6 in reset, and the session ends as a failed
+  start. With the C6 in reset its SDIO lines are held high by their
+  51 kOhm pull-ups, so esp_hosted's read task, priority 23 on core 0, waits
+  instead of failing in a loop; this is not measured on a board. The panel
+  does not restart for it
+  (`CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n`): a restart would drop
+  the link to the IOmcu and the heartbeat.
+- From the failure to Wi-Fi off: the event loop delivers the event (not
+  measured), the radio's task sees it within 100 ms, and takes the radio
+  down without the two requests to the C6, `esp_wifi_stop()` and
+  `esp_wifi_deinit()`, which would each end at esp_hosted's 5 s response
+  time-out. Taking it down waits up to 1,500 ms for a GitHub fetch under way
+  and up to 20,000 ms for the fetch task to end. The time on a board is not
+  measured.
+
+Current limitations, all inside esp_hosted. Each stops the panel with an
+abort, which restarts it:
+
+- When the co-processor reports a chip other than the ESP32-C6 in its start
+  event (`transport_drv.c` 697-702), or an init event longer than 64 bytes
+  (`transport_drv.c` 875-881), or a streaming SDIO mode the host does not
+  run (`transport_drv.c` 944-947). The start event arrives at the first
+  Wi-Fi start after power-up.
+- When a CMD52 (single register) access to the C6 fails while esp_hosted
+  starts the card: `ESP_ERROR_CHECK` on the interrupt enable, the bus width
+  and the block size registers (`port_esp_hosted_host_sdio.c` 131-134,
+  195-217). A C6 that half answers during a Wi-Fi start can trigger it.
+- When the SDMMC controller or its slot 1 cannot be set up, or the memory
+  for esp_hosted's queues, buffer pools or tasks cannot be had, esp_hosted
+  stops the panel with an assertion during start-up, before `app_main()`
+  and before the display shows anything. It sets these up at every start,
+  with Wi-Fi off.
+
+The start-up release check starts the radio on its own: with SETUP >
+UPDATES' reminder on (`SET_UPD_REMIND`, on by default) and a kept home
+network, the panel checks GitHub for a release after each power-up. A
+persistent fault of the kinds above then restarts the panel at each
+power-up, until the reminder is switched off or the home network is
+forgotten.
+
+The SD card on slot 0 and the C6 on slot 1 share one SDMMC controller:
+
+- ESP-IDF's SDMMC driver does not hold a slot's set-up against a transfer
+  on the other slot. Starting a slot and starting a card set the
+  controller's clock divider, which both slots share, and send its clock
+  update commands outside the driver's request mutex
+  (`sdmmc_host_set_card_clk()`, `sdmmc_host.c` 301-351). When the card is
+  mounted while a Wi-Fi session moves data to or from the C6, the transfer
+  under way can fail; esp_hosted then reports a failed link and Wi-Fi stays
+  off until the panel restarts. The other way round, esp_hosted's start of
+  slot 1 at the first Wi-Fi start, and at each C6 reset it makes, can make a
+  card read or write under way fail. Not measured.
+- ESP-IDF's mount stops slot 0 on every failure after the controller's
+  init (`vfs_fat_sdmmc.c` 310-312), and stops the whole controller when
+  that leaves no slot counted (`sdmmc_host.c` 906-923). `storage.c` starts
+  slot 0 itself before the mount and gives up with no stop when it does not
+  start, so the count never drops to 0 under the C6's link.
+
+### Cores and memory
+
+On the ESP32-P4 a task created through `xTaskCreate()` or
+`xTaskCreatePinnedToCore()` without a core runs on core 0, and core 1
+belongs to the control task and the tasks pinned there. The panel links
+with `--wrap=xTaskCreatePinnedToCore` (`components/wifi_access/wifi_radio.c`)
+for it: esp_hosted creates 6 tasks at priority 23 without naming a core.
+`xTaskCreateStatic()` and the `xTaskCreate*WithCaps()` calls are not
+wrapped; esp_hosted uses `xTaskCreateStatic()` only with
+`CONFIG_ESP_HOSTED_DFLT_TASK_FROM_SPIRAM`, which fails the build. The
+console lists every task at start-up, `task <name> core <0|1|any> priority
+<n>`.
+
+The SD card and the C6 share ESP-IDF's SDMMC request mutex, which passes
+on priority. While the run log task on core 1 holds it for a card write and
+an esp_hosted task waits for it, the run log task runs at priority 23 on
+core 1, above the control task. The control task's longest period under
+that load is not measured.
+
+esp_hosted's memory, all of it internal RAM:
+
+| Part | Bytes | Source |
+| --- | ---: | --- |
+| static data | 1,637 | esp_hosted 1,576, esp_wifi_remote 61 (map file) |
+| task stacks | 20,480 | 4 x 3,072 and 2 x 4,096 |
+| SDIO buffer pool | 47,680 | 31 blocks of 1,536 bytes, 64-byte aligned (`sdio_drv.c` 246-262) |
+| common buffer pool | 38,464 | 25 blocks of 1,536 bytes, 64-byte aligned (`transport_drv.c` 298-316) |
+
+The two pools come from DMA-capable (direct memory access) internal RAM
+(`port_esp_hosted_host_os.c` 130-147) and are made before `app_main()`,
+with Wi-Fi off. `CONFIG_ESP_HOSTED_MEMPOOL_PREFER_SPIRAM` would move them
+to PSRAM; it is off, and the free internal RAM with it on is not measured.
+Other allocations of esp_hosted are not counted here. The console line
+`wifi: radio up` names the internal RAM free with the radio up.
 
 ## CI
 

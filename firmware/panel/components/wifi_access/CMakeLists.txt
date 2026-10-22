@@ -6,18 +6,20 @@
 # holds; this is the ESP-IDF (Espressif Internet-of-Things Development
 # Framework) end of them.
 #
-# RCBENCH_PANEL_WIFI (firmware/panel/CMakeLists.txt) OFF builds
-# wifi_access_off.c in place of the radio: the ESP32-P4's radio is an
-# ESP32-C6 that this build does not reach yet.
-if(RCBENCH_PANEL_WIFI)
-    set(srcs "wifi_access.c" "wifi_sock.c")
-else()
-    set(srcs "wifi_access_off.c")
-endif()
+# On the ESP32-P4 the radio is an ESP32-C6 on SDIO (Secure Digital
+# input/output), reached through the managed components esp_wifi_remote
+# and esp_hosted (idf_component.yml, wifi_radio.c).
 idf_component_register(
-    SRCS ${srcs}
+    SRCS "wifi_access.c" "wifi_radio.c" "wifi_sock.c"
     INCLUDE_DIRS include
-    REQUIRES webaccess fwupdate storage esp_wifi esp_netif esp_event
+    REQUIRES board webaccess fwupdate storage esp_wifi esp_netif esp_event
              esp_http_server esp_http_client esp-tls mbedtls esp_timer
-             nvs_flash lwip freertos esp_hw_support heap
+             nvs_flash lwip freertos esp_hw_support heap esp_driver_gpio
 )
+
+# A task created through xTaskCreatePinnedToCore() or xTaskCreate()
+# without a core runs on core 0; core 1 belongs to the control task and the
+# tasks pinned there (wifi_radio.c, __wrap_xTaskCreatePinnedToCore).
+idf_build_set_property(LINK_OPTIONS
+    "-Wl,--wrap=xTaskCreatePinnedToCore"
+    "-Wl,--undefined=__wrap_xTaskCreatePinnedToCore" APPEND)

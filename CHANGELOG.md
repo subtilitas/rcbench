@@ -18,6 +18,23 @@ history is in git.
   reach: a SENSORS shunt between 0 and 5.0 mOhm, a Sensor SDA pin the bus
   cannot have, the GPIO the other PD mini pin holds. A shunt of 44.4 mOhm
   from the 100.0 default is five keys, where `-` takes 556 steps.
+- ESP32-P4 panel: Wi-Fi through the board's ESP32-C6 on SDIO (Secure
+  Digital input/output) slot 1, CLK GPIO18, CMD GPIO19, D0 to D3 GPIO14 to
+  GPIO17, the C6's enable on GPIO54, 4 bits at 40 MHz. The `esp_wifi` calls
+  of the WI-FI session, the release check and the download reach the C6
+  through the managed components `esp_wifi_remote` 1.6.5 and `esp_hosted`
+  2.13.0 (Apache-2.0; esp_hosted carries the protobuf-c runtime,
+  BSD-2-Clause, in NOTICE), pinned in `firmware/panel/dependencies.lock`. The
+  first Wi-Fi start logs the C6's firmware version. A C6 that does not
+  answer at the first start, or an SDIO link that fails later, ends the
+  session, holds the C6 in reset (GPIO54 low) and leaves Wi-Fi off until
+  the next start; the panel does not restart for it. The card's mount
+  starts SDMMC slot 0 before ESP-IDF's mount, so a slot 0 that does not
+  start leaves the controller and the C6's link running. Every task created
+  through `xTaskCreate()` or `xTaskCreatePinnedToCore()` without a core
+  runs on core 0, so esp_hosted's 6 tasks at priority 23 stay off the
+  control task's core; the console lists every task's core and priority at
+  start-up.
 - Four glyph tables for the 1024 x 600 panel: 10x20, 12x24 and 20x36 text
   faces and a 32x44 numeral face (20,400, 29,376, 73,440 and 38,016 bytes
   of flash), and the roles `UI_FONT_FINE` (8x16) and `UI_FONT_BODY`
@@ -163,9 +180,8 @@ history is in git.
   mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
   (RX) from the 40 MHz crystal; the rotary knob has an I2C controller of its
   own. The heartbeat pin (GPIO28) and the knob pins (GPIO30, GPIO31) are
-  placeholders until the header pins are chosen. The panel starts no Wi-Fi:
-  its radio is an ESP32-C6, which this build does not reach
-  (`RCBENCH_PANEL_WIFI`), so it does not update itself.
+  placeholders until the header pins are chosen. Its Wi-Fi radio is the
+  board's ESP32-C6 on SDIO, listed under Added.
 - The four INA3221 rows leave SETUP > INTERFACES (23 settings now). A panel
   updated from 0.21 seeds SENSORS from them at start-up: the part at the old
   address fitted when the INA3221 was ON, its CH1 on the old shunt, CH2 and

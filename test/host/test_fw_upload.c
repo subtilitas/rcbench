@@ -18,6 +18,9 @@
 #include "fw_upload.h"
 
 #define SLOT 0x3E0000u
+/* The ESP32-P4 panel's application slot, ota_0 and ota_1 of
+ * firmware/panel/partitions.csv: 8,126,464 bytes. */
+#define SLOT_P4 0x7C0000u
 
 static uint8_t *g_img;
 static uint8_t *g_buf;
@@ -146,10 +149,35 @@ TEST_CASE(an_end_without_a_begin_changes_nothing)
     CHECK_EQ(fw_upload_percent(&g_up), 0u);
 }
 
+TEST_CASE(an_image_filling_the_p4_slot_is_staged_and_one_block_more_refused)
+{
+    /* The body is chosen so the image comes out at SLOT_P4 exactly, the
+     * way test_fw_image fills a slot to its last 16-byte block. */
+    fw_fix_t f = fw_fix_default();
+    f.segments = 1u;
+    f.body = SLOT_P4 - 24u - 8u - 256u - 32u - 16u;
+    CHECK_EQ(fw_fix_len(&f), SLOT_P4);
+    g_len = fw_fix_make(&f, g_img);
+    fw_upload_init(&g_up, g_buf, SLOT_P4, SLOT_P4);
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+    const uint32_t half = g_len / 2u;
+    CHECK_EQ(send(half, 1460u), FW_OK);
+    CHECK_EQ(fw_upload_percent(&g_up), 50u);
+    CHECK_EQ(fw_upload_add(&g_up, g_img + half, g_len - half), FW_OK);
+    CHECK_EQ(g_up.done, g_len);
+    CHECK_EQ(fw_upload_percent(&g_up), 100u);
+    CHECK_EQ(fw_upload_end(&g_up, true), FW_OK);
+    CHECK_EQ(g_up.state, FW_UP_STAGED);
+    /* One 16-byte block more than the slot: refused before a byte. */
+    fw_upload_discard(&g_up);
+    CHECK_EQ(fw_upload_begin(&g_up, SLOT_P4 + 16u), FW_ERR_TOO_BIG);
+    CHECK_EQ(g_up.state, FW_UP_IDLE);
+}
+
 int main(void)
 {
-    g_img = malloc(SLOT + 64u);
-    g_buf = malloc(SLOT);
+    g_img = malloc(SLOT_P4 + 64u);
+    g_buf = malloc(SLOT_P4);
     REQUIRE_ALLOC(g_img);
     REQUIRE_ALLOC(g_buf);
     RUN(a_whole_image_arrives_staged_and_checked);
@@ -159,6 +187,7 @@ int main(void)
     RUN(a_second_upload_waits_for_the_first_to_be_answered);
     RUN(a_damaged_image_arrives_refused_with_its_reason);
     RUN(an_end_without_a_begin_changes_nothing);
+    RUN(an_image_filling_the_p4_slot_is_staged_and_one_block_more_refused);
     free(g_img);
     free(g_buf);
     return test_summary("fw_upload");
