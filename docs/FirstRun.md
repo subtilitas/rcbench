@@ -400,7 +400,11 @@ What a 0.21.2 set-up meets on 0.22.1:
 A bench on 0.22.0 loads the panel over Wi-Fi and the IOmcu over CAN from
 the image the new panel carries. 0.22.1 reads the SD card's folders as
 0.22.0 does; nothing on the card moves. The link protocol, 4.28, and the
-IOmcu's store record, version 8, are the same on both releases.
+IOmcu's store record, version 8, are the same on both releases. The IOmcu
+image differs: it reports version 0.22.1 and carries the changed reason
+text of a limit run. The panel compares the SHA-256 (Secure Hash Algorithm)
+of the image the IOmcu runs with that of the image it carries, not the
+version numbers, so it finds another build and asks.
 
 1. **Check.** With a home network kept, the bench SAFE, the supply output
    off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`, with
@@ -425,7 +429,9 @@ current monitors' set-up. The time of the download and of the update over
 CAN is not measured.
 
 0.22.1 lists on LOGS a report that stands alone, such as `LIMITnnn.TXT` of
-a limit run, and opens it as text ([Screens: Logs](Screens.md#logs)).
+a limit run, and opens it as text ([Screens: Logs](Screens.md#logs)). The
+card's ZIP download sends each file at the size it had when the download
+started.
 
 ### The check on 0.21.0 and 0.21.1
 

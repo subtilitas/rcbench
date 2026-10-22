@@ -433,7 +433,11 @@ Eine Bench mit 0.22.0 lädt das Panel über WLAN und den IOmcu über CAN aus
 dem Image, das das neue Panel mitbringt. 0.22.1 liest die Ordner der
 SD-Karte wie 0.22.0; auf der Karte wird nichts verschoben. Das
 Link-Protokoll, 4.28, und der Store-Datensatz des IOmcu, Version 8, sind
-bei beiden Releases gleich.
+bei beiden Releases gleich. Das IOmcu-Image unterscheidet sich: es meldet
+die Version 0.22.1 und trägt den geänderten Begründungstext eines
+Limit-Laufs. Das Panel vergleicht das SHA-256 (Secure Hash Algorithm) des
+Images, das der IOmcu läuft, mit dem des Images, das es mitbringt, nicht
+die Versionsnummern; es findet einen anderen Build und fragt.
 
 1. **Prüfen.** Mit gespeichertem Heimnetz, der Bench SAFE, dem Ausgang der
    Versorgung aus und keinem offenen Log-Lauf: SETUP > UPDATES, `NACH
@@ -460,7 +464,8 @@ Dauer des Downloads und des Updates über CAN ist nicht gemessen.
 
 0.22.1 listet auf LOGS einen Bericht, der allein steht, wie `LIMITnnn.TXT`
 eines Limit-Laufs, und öffnet ihn als Text ([Bildschirme:
-Logs](Screens-de.md#logs)).
+Logs](Screens-de.md#logs)). Der ZIP-Download der Karte sendet jede Datei in
+der Größe, die sie beim Start des Downloads hatte.
 
 ### Die Prüfung auf 0.21.0 und 0.21.1
 

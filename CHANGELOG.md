@@ -10,8 +10,11 @@ history is in git.
 
 0.22.1 is a stable release: its minor number, 22, is even, and GitHub marks
 it as the latest release. It is a patch release of 0.22.0, the last release
-line for the ESP32-S3 panel, and fixes one defect: LOGS did not list a
-report that stands alone. The link protocol stays 4.28.
+line for the ESP32-S3 panel, and fixes three defects: LOGS did not list a
+report that stands alone, the card's ZIP download broke when a log grew
+during it, and a limit run on a servo that is not a KST or a Chaservo
+ended with a reason that did not name the cause. The link protocol stays
+4.28.
 
 A panel on 0.20.0 to 0.22.0 is offered 0.22.1 by CHECK FOR UPDATES with
 RELEASES: STABLE, which reads `releases/latest`; 0.20.0 has no RELEASES
