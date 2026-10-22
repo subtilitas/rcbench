@@ -166,8 +166,10 @@ TEST_CASE(every_row_fits_between_its_edge_and_its_keys_in_both_languages)
         }
     }
     ui_text_set_language(UI_LANG_EN);
-    /* Most values take the body face. */
-    CHECK(body > 10 * label);
+    /* Every value takes the body face, as docs/Screens.md says: a value
+     * that needs the label face changes the docs with this figure. */
+    CHECK(body > 0);
+    CHECK_EQ(label, 0);
 }
 
 /* Whether any pixel of the scroll bar's column, 1002 to 1013 px, over the

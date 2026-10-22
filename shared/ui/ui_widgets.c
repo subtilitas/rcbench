@@ -305,22 +305,24 @@ void ui_tile(gfx_canvas_t *c, gfx_rect_t r, const ui_tile_look_t *look,
              look->icon, UI_ACCENT);
     }
 
-    /* Clipped to the tile: centring a string wider than its tile puts the
-     * overhang on the neighbour. */
+    /* Clipped to the tile less its padding: centring a string wider than
+     * its tile puts the overhang on the neighbour. */
+    const int16_t tx = (int16_t)(r.x + UI_TILE_PAD);
+    const int16_t tw = (int16_t)(r.w - 2 * UI_TILE_PAD);
     const gfx_font_t *nf = look->name_f;
-    const gfx_rect_t nr = { r.x, (int16_t)(r.y + look->name_dy), r.w,
+    const gfx_rect_t nr = { tx, (int16_t)(r.y + look->name_dy), tw,
                             (int16_t)gfx_text_height(nf, 1) };
     gfx_text_in(c, nr, name ? name : "", nf, UI_TEXT, 1, GFX_ALIGN_CENTER);
 
-    /* A line wider than the tile breaks at the last space that fits and
-     * takes a second row line_pitch px under the first, where the tile has
-     * room for it; a line with no such space is clipped. */
+    /* A line wider than the padded tile breaks at the last space that fits
+     * and takes a second row line_pitch px under the first, where the tile
+     * has one; a line with no such space is clipped. */
     const gfx_font_t *lf = look->line_f;
     const int lh = gfx_text_height(lf, 1);
     const char *ln = (line != NULL) ? line : "";
-    const int cells = r.w / gfx_text_width(lf, "M", 1);
+    const int cells = tw / gfx_text_width(lf, "M", 1);
     size_t cut = strlen(ln);
-    if (gfx_text_cells(ln) > cells
+    if (gfx_text_cells(ln) > cells && look->line_pitch > 0
         && look->line_dy + look->line_pitch + lh <= r.h) {
         /* The prefix of a line that does not fit is shorter than the line:
          * i < cut keeps the scan inside it. */
@@ -335,11 +337,11 @@ void ui_tile(gfx_canvas_t *c, gfx_rect_t r, const ui_tile_look_t *look,
     const size_t k = (cut < sizeof(first)) ? cut : sizeof(first) - 1u;
     memcpy(first, ln, k);
     first[k] = '\0';
-    const gfx_rect_t lr = { r.x, (int16_t)(r.y + look->line_dy), r.w,
+    const gfx_rect_t lr = { tx, (int16_t)(r.y + look->line_dy), tw,
                             (int16_t)lh };
     gfx_text_in(c, lr, first, lf, UI_TEXT_DIM, 1, GFX_ALIGN_CENTER);
     if (ln[cut] != '\0') {
-        const gfx_rect_t lr2 = { r.x, (int16_t)(lr.y + look->line_pitch), r.w,
+        const gfx_rect_t lr2 = { tx, (int16_t)(lr.y + look->line_pitch), tw,
                                  (int16_t)lh };
         gfx_text_in(c, lr2, ln + cut + 1, lf, UI_TEXT_DIM, 1,
                     GFX_ALIGN_CENTER);

@@ -186,8 +186,8 @@ Instrument lässt den Build bei 4 Spalten scheitern
 (`shared/ui/overview_screen.c`). Das Programmieren hat keine Kachel: Es ist
 die Aufgabe PROGRAMMIEREN von MOTOR & ESC und von SERVO.
 
-Jede Kachel trägt unter ihrem Namen eine Zeile, 2 Reihen zu höchstens 24
-Zeichen:
+Jede Kachel trägt unter ihrem Namen eine Zeile, 2 Reihen zu höchstens 22
+Zeichen, 8 px frei von den Seiten der Kachel:
 
 | Kachel | Zeile |
 | --- | --- |
@@ -2712,7 +2712,8 @@ hoch: dem Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Eine
 Zeile ist 64 px hoch bei 70 px Zeilenabstand: der Name der Einstellung in der
 Schrift 20 x 36 px, ihre Hilfezeile darunter in der Schrift 10 x 20 px, ihr
 Wert in der Schrift 12 x 24 px. Ein Wert, der breiter ist als die Lücke
-zwischen den Tasten, etwa `BLHELI SERIAL`, nimmt die Schrift 10 x 20 px. Die Leiste endet bei y
+zwischen den Tasten, nähme die Schrift 10 x 20 px; kein Wert einer
+SETUP-Einstellung braucht sie, auf Englisch wie auf Deutsch. Die Leiste endet bei y
 552 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
 Ein Alert verdeckt damit weder eine Taste noch eine Zeile, KATEGORIE
 ZURÜCKSETZEN oder SPEICHERN, auf den Kacheln wie auf einer Liste.

@@ -31,15 +31,16 @@
 #define TH   ((H - (ROWS + 1) * M) / ROWS) /**< a tile's height, px: 255 */
 
 /**
- * @brief Inside a tile, from its top: the 40 px icon box at 52, the name
- *        in the head face (20 x 36) at 108, the line in the label face
- *        (10 x 20) at 152, a broken line's second row 24 px under it.  A
- *        row of the line holds 24 characters, 240 of the tile's 243 px.
+ * @brief Inside a tile, from its top: the 40 px icon box at 30, the name
+ *        in the head face (20 x 36) at 84, the line in the label face
+ *        (10 x 20) at 128, a broken line's second row 24 px under it.  A
+ *        row of the line holds 22 characters, 220 of the 227 px inside the
+ *        tile's UI_TILE_PAD.
  */
-#define T_ICON_DY  52 /**< the icon box's top, px */
+#define T_ICON_DY  30 /**< the icon box's top, px */
 #define T_ICON     40 /**< the icon box's side, px */
-#define T_NAME_DY  108 /**< the name's top, px */
-#define T_LINE_DY  152 /**< the line's top, px */
+#define T_NAME_DY  84 /**< the name's top, px */
+#define T_LINE_DY  128 /**< the line's top, px */
 #define T_LINE_PITCH 24 /**< a second row under the first, px */
 
 /** @brief The menu tile's look, from the figures above. */
@@ -50,19 +51,24 @@ static const ui_tile_look_t k_look = {
 };
 
 /**
- * @brief The SIMULATED mark: at least 120 x 32 px, its bottom 16 px above
- *        the tile's, its word in the label face (10 x 20) MARK_INSET px
- *        from its left edge, past the dot, and 8 px from its right edge.
+ * @brief The SIMULATED mark: at least 120 x 32 px, 184 px under the tile's
+ *        top, its word in the label face (10 x 20) MARK_INSET px from its
+ *        left edge, past the dot, and 8 px from its right edge.  On the
+ *        lower row it ends at panel y 551, 5 px above the alert band, so an
+ *        alert hides no mark.
  */
 #define MARK_W     120 /**< its least width, px */
 #define MARK_H     32 /**< its height, px */
 #define MARK_INSET UI_PILL_INSET /**< its word's start, past the dot, px */
-#define MARK_DY    (TH - 16 - MARK_H) /**< its top from the tile's, px */
+#define MARK_DY    184 /**< its top from the tile's, px */
 
 _Static_assert(T_ICON_DY + T_ICON <= T_NAME_DY,
                "the icon ends above the name");
 _Static_assert(T_LINE_DY + T_LINE_PITCH + 20 <= MARK_DY,
                "a line's second row ends above the SIMULATED mark");
+_Static_assert(UI_BAND_H + (ROWS - 1) * (TH + M) + M + MARK_DY + MARK_H
+                   < UI_ALERT_Y,
+               "the lower row's marks end above the alert band");
 
 typedef struct {
     ui_screen_id_t id;      /**< the screen the tile opens               */

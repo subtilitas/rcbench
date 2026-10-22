@@ -744,10 +744,10 @@ TEST_CASE(the_home_grid_is_four_by_two_by_kind)
 }
 
 /*
- * Every tile's name and line fit its 243 px in both languages: the name
- * on one row of the head face (20 x 36), 12 cells, the line in the label
- * face (10 x 20) on one row of 24 cells or, broken at a space, on two
- * (ui_tile()).
+ * Every tile's name and line fit its 243 px less UI_TILE_PAD on either
+ * side in both languages: the name on one row of the head face (20 x 36),
+ * the line in the label face (10 x 20) on one row of 22 cells or, broken
+ * at a space, on two (ui_tile()).
  */
 TEST_CASE(every_home_tile_text_fits_in_both_languages)
 {
@@ -761,10 +761,10 @@ TEST_CASE(every_home_tile_text_fits_in_both_languages)
                 T_FAIL("slot %d is empty", i);
                 continue;
             }
-            const int tw = overview_screen_tile_rect(i).w;
+            const int tw = overview_screen_tile_rect(i).w - 2 * UI_TILE_PAD;
             CHECK(gfx_text_width(&gfx_font_20x36, name, 1) <= tw);
             const int row = tw / 10;
-            CHECK_EQ(row, 24);
+            CHECK_EQ(row, 22);
             const int cells = gfx_text_cells(line);
             if (cells <= row) {
                 continue;
@@ -880,6 +880,117 @@ TEST_CASE(every_screen_renders_something_and_has_a_title)
     }
 }
 
+/**
+ * @brief Pixels other than @p bg in rows @p y0 to @p y1 - 1 of tile @p r,
+ *        clear of its rounded corners, and the leftmost and rightmost
+ *        column they lie in.
+ * @param r     The tile, in canvas coordinates.
+ * @param y0    The first row.
+ * @param y1    The row after the last.
+ * @param bg    The tile's fill.
+ * @param left  The leftmost inked column into, W when none.
+ * @param right The rightmost inked column into, -1 when none.
+ * @return The number of inked pixels.
+ */
+static int tile_ink(gfx_rect_t r, int y0, int y1, gfx_color_t bg, int *left,
+                    int *right)
+{
+    int n = 0;
+    *left = W;
+    *right = -1;
+    for (int y = y0; y < y1; ++y) {
+        for (int x = r.x + UI_R_CARD; x < r.x + r.w - UI_R_CARD; ++x) {
+            if (fb[y * W + x] != bg) {
+                ++n;
+                *left = (x < *left) ? x : *left;
+                *right = (x > *right) ? x : *right;
+            }
+        }
+    }
+    return n;
+}
+
+/*
+ * ui_tile()'s line, in the menu's look: one wider than the 22 cells inside
+ * the tile's padding breaks at its last space that fits onto a second row
+ * 24 px lower (German SUPPLY, 27 cells); a line of 24 cells with spaces
+ * breaks the same way and stays 8 px clear of the tile's sides; a line
+ * with no space stays on one row, clipped; a look with no second row
+ * (line_pitch 0, SETUP's) keeps a breakable line on one row.
+ */
+TEST_CASE(a_tile_line_breaks_at_a_space_inside_its_padding)
+{
+    fresh();
+    ui_tile_look_t look = {
+        .icon_dy = 30, .icon = 40, .name_dy = 84, .line_dy = 128,
+        .line_pitch = 24, .name_f = &gfx_font_20x36,
+        .line_f = &gfx_font_10x20,
+    };
+    const gfx_rect_t r = gfx_rect_make(10, 10, 243, 255);
+    const int row1 = r.y + look.line_dy;
+    const int row2 = row1 + look.line_pitch;
+    static const struct { const char *line; bool second; } k_case[] = {
+        { "V/A einstellen, aufzeichnen", true },
+        { "travel, current, program", true },
+        { "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD", false },
+        { "runs and files", false },
+    };
+    for (size_t i = 0; i < sizeof(k_case) / sizeof(k_case[0]); ++i) {
+        memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+        ui_tile(&cv, r, &look, NULL, "SUPPLY", k_case[i].line, false);
+        const gfx_color_t bg = fb[(r.y + 4) * W + r.x + r.w / 2];
+        int l1, r1, l2, r2;
+        CHECK(tile_ink(r, row1, row1 + 20, bg, &l1, &r1) > 0);
+        const int n2 = tile_ink(r, row2, row2 + 20, bg, &l2, &r2);
+        if ((n2 > 0) != k_case[i].second) {
+            T_FAIL("\"%s\": second row %s", k_case[i].line,
+                   n2 > 0 ? "inked" : "empty");
+        }
+        /* Nothing nearer the sides than the padding. */
+        CHECK(l1 >= r.x + UI_TILE_PAD && r1 < r.x + r.w - UI_TILE_PAD);
+        if (n2 > 0) {
+            CHECK(l2 >= r.x + UI_TILE_PAD && r2 < r.x + r.w - UI_TILE_PAD);
+        }
+    }
+    /* No second row in a look that has none. */
+    look.line_pitch = 0;
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_tile(&cv, r, &look, NULL, "SUPPLY", "V/A einstellen, aufzeichnen",
+            false);
+    const gfx_color_t bg = fb[(r.y + 4) * W + r.x + r.w / 2];
+    int l, rr;
+    CHECK(tile_ink(r, row1, row1 + 20, bg, &l, &rr) > 0);
+    CHECK_EQ(tile_ink(r, row2, row2 + 20, bg, &l, &rr), 0);
+}
+
+/*
+ * The menu's lower row ends 10 px above the panel's foot, under the alert
+ * band; its SIMULATED marks, names and lines end above the band, so an
+ * alert hides none of them.  With no IOmcu RECEIVER, BATTERY and BALANCE
+ * carry the mark (SETUP never does): ink between the line and the band,
+ * and on no lower tile from the band down.
+ */
+TEST_CASE(every_menu_mark_and_label_ends_above_the_alert_band)
+{
+    fresh();
+    to_overview();
+    ui_router_render(&cv, 0);
+    for (int i = 4; i < 8; ++i) {
+        gfx_rect_t r = overview_screen_tile_rect(i);
+        r.y = (int16_t)(r.y + UI_BAND_H);
+        const gfx_color_t bg = fb[(r.y + 4) * W + r.x + r.w / 2];
+        int l, rr;
+        CHECK(r.y + r.h > UI_ALERT_Y);
+        if (tile_ink(r, UI_ALERT_Y, r.y + r.h - 2, bg, &l, &rr) != 0) {
+            T_FAIL("tile %d inked under the alert band", i);
+        }
+        /* The mark, in the 40 px above the band. */
+        if (i < 7) {
+            CHECK(tile_ink(r, UI_ALERT_Y - 40, UI_ALERT_Y, bg, &l, &rr) > 0);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates);
@@ -891,6 +1002,8 @@ int main(void)
     RUN(the_home_grid_is_four_by_two_by_kind);
     RUN(every_home_tile_text_fits_in_both_languages);
     RUN(the_home_tiles_carry_the_planned_names_and_lines);
+    RUN(a_tile_line_breaks_at_a_space_inside_its_padding);
+    RUN(every_menu_mark_and_label_ends_above_the_alert_band);
     RUN(the_setup_hub_names_its_first_category_panel_in_both_languages);
     RUN(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves);
     RUN(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu);

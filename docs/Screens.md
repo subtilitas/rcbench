@@ -169,7 +169,8 @@ column LOGS over SETUP. A fourth workbench or a fourth instrument fails the
 build at 4 columns (`shared/ui/overview_screen.c`). Programming has no tile:
 it is the PROGRAM task of MOTOR & ESC and of SERVO.
 
-Each tile carries a line under its name, 2 rows of at most 24 characters:
+Each tile carries a line under its name, 2 rows of at most 22 characters,
+8 px clear of the tile's sides:
 
 | Tile | Line |
 | --- | --- |
@@ -2459,8 +2460,8 @@ A category's list is 984 px wide from the panel's left margin and shows
 category's name, RESET CATEGORY and SAVE. A row is 64 px tall at a 70 px
 pitch: the setting's name in the 20 x 36 px face, its help line under it in
 the 10 x 20 px face, its value in the 12 x 24 px face. A value wider than
-the gap between the keys, such as `BLHELI SERIAL`, takes the 10 x 20 px
-face. The strip ends at panel y 552, 4 px above the alert band
+the gap between the keys would take the 10 x 20 px face; no value of a
+SETUP setting needs it, in English or in German. The strip ends at panel y 552, 4 px above the alert band
 ([The alert band](#the-alert-band)), so an alert never covers a key, a row,
 RESET CATEGORY or SAVE, on the tiles or on a list.
 

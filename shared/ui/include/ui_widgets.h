@@ -74,10 +74,14 @@ typedef struct {
     int16_t icon;             /**< the icon box's side                    */
     int16_t name_dy;          /**< the name's top                         */
     int16_t line_dy;          /**< the line's top                         */
-    int16_t line_pitch;       /**< a broken line's second row, below the first */
+    int16_t line_pitch;       /**< a broken line's second row below the
+                               *   first; 0: no second row               */
     const gfx_font_t *name_f; /**< the name's face                        */
     const gfx_font_t *line_f; /**< the line's face                        */
 } ui_tile_look_t;
+
+/** @brief A tile's name and line keep this far from its sides, px. */
+#define UI_TILE_PAD 8
 
 /**
  * @brief A tile of a grid that opens what it names: the menu's, and
@@ -85,10 +89,11 @@ typedef struct {
  *
  * A rounded surface, @p icon in a square box placed by @p look, centred in
  * x, the name under it in the text colour and the line under the name in
- * the dim one, both centred and clipped to the tile.  A line wider than the
- * tile breaks at the last space that fits onto a second row
- * look->line_pitch px lower, where that row ends inside the tile; a line
- * with no such space or no such room is clipped.
+ * the dim one, both centred and clipped to the tile less UI_TILE_PAD px on
+ * either side.  A line wider than that breaks at the last space that fits
+ * onto a second row look->line_pitch px lower, where line_pitch is not 0
+ * and that row ends inside the tile; a line with no such space or no such
+ * row is clipped.
  *
  * @param c       Canvas.
  * @param r       The tile.

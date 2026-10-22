@@ -58,7 +58,8 @@ static void draw_save(gfx_canvas_t *c)
 /** @brief A hub tile's look: its icon, name and line (settings_screen_int.h). */
 static const ui_tile_look_t k_hub_look = {
     .icon_dy = HUB_ICON_DY, .icon = HUB_ICON, .name_dy = HUB_NAME_DY,
-    .line_dy = HUB_LINE_DY, .line_pitch = HUB_TH, /* no second row */
+    .line_dy = HUB_LINE_DY,
+    .line_pitch = 0,   /* no second row: the tile has no room for one */
     .name_f = STG_F_BODY, .line_f = STG_F_LABEL,
 };
 
@@ -197,9 +198,10 @@ static void draw_row(gfx_canvas_t *c, int index)
 
     /* Value, then the unit after it, both right-aligned against the + key
      * and centred in the row's height.  A value takes the body face, a
-     * number and a switch's or a choice's word alike; a word wider than
-     * the gap ("BLHELI SERIAL") takes the label face, because a clipped
-     * value is worse than a small one. */
+     * number and a switch's or a choice's word alike.  A value wider than
+     * the gap takes the label face, because a clipped value is worse than
+     * a small one; no value of the present schema needs it
+     * (test_settings_rows). */
     char buf[32];
     ui_setting_value(id, buf, sizeof(buf));
     int ux = VALUE_R;

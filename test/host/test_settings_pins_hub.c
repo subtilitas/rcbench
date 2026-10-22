@@ -902,10 +902,10 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         { ui_icon_chip, "INTERFACES" },   { ui_icon_list, "OUTPUTS" },
         { ui_icon_board, "PICK A PIN" },  { ui_icon_wifi, "WI-FI" },
     };
-    /* The menu's tile, 243 x 255 px: the 40 px icon 52 px down, the name
-     * in the head face at 108 (overview_screen.c). */
+    /* The menu's tile, 243 x 255 px: the 40 px icon 30 px down, the name
+     * in the head face at 84 (overview_screen.c). */
     static const ui_tile_look_t k_menu = {
-        .icon_dy = 52, .icon = 40, .name_dy = 108, .line_dy = 152,
+        .icon_dy = 30, .icon = 40, .name_dy = 84, .line_dy = 128,
         .line_pitch = 24, .name_f = &gfx_font_20x36,
         .line_f = &gfx_font_10x20,
     };
@@ -920,7 +920,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
      * down, the name in the body face at 60 (settings_screen_int.h). */
     static const ui_tile_look_t k_hub = {
         .icon_dy = 14, .icon = 36, .name_dy = 60, .line_dy = 94,
-        .line_pitch = 130, .name_f = &gfx_font_12x24,
+        .line_pitch = 0, .name_f = &gfx_font_12x24,
         .line_f = &gfx_font_10x20,
     };
     static const ui_screen_id_t screens[] = { SCREEN_OUTPUTS, SCREEN_PICKER,
