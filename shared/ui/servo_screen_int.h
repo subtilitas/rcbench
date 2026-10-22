@@ -203,8 +203,8 @@ _Static_assert(KST_PANEL_STD_MV == 6000,
 #define OV_TAB_Y  (CARD_Y + 8)    /**< SETTINGS' page tabs, px. */
 #define OV_TAB_H  40              /**< Their height, px. */
 #define OV_TAB_W  (OV_W - 20)     /**< Their row: three of 200 px. */
-#define OV_ROW0   (CARD_Y + 56)   /**< SETTINGS' first row, px. */
-#define OV_PITCH  56              /**< From row to row, px. */
+#define OV_ROW0   (CARD_Y + 52)   /**< SETTINGS' first row, px. */
+#define OV_PITCH  52              /**< From row to row, px. */
 #define OV_ROW_H  UI_TAP_MIN      /**< A row's height, px. */
 #define OV_COL_W  ((OV_W - 30) / 2) /**< A column of SETTINGS: 295 px. */
 #define OV_VAL_W  140             /**< A row's value, px. */
@@ -219,8 +219,11 @@ _Static_assert(KST_PANEL_STD_MV == 6000,
 /** @brief A run's note under its rows: the automatic test's stall note,
  *         4 px under the last value. */
 #define RL_NOTE_Y (RL_ROW0 + RL_ROWS * RL_PITCH + 2)
-_Static_assert(OV_NOTE_Y + 4 * NOTE_PITCH + 20 <= STOP_FLOOR,
-               "the OUTPUT page's five note lines end above the alert band");
+/** @brief The save line under SETTINGS' rows and notes, 20 px tall,
+ *         ending 4 px above the alert band. */
+#define OV_SAVE_Y (STOP_FLOOR - 20)
+_Static_assert(OV_NOTE_Y + 4 * NOTE_PITCH + 20 <= OV_SAVE_Y,
+               "the OUTPUT page's five note lines end above the save line");
 _Static_assert(RL_NOTE_Y + 20 <= STOP_FLOOR,
                "a run's note ends above the alert band");
 
@@ -1164,17 +1167,6 @@ static inline uint8_t save_state(void)
         return 1u;
     }
     return settings_dirty() ? 3u : 0u;
-}
-
-/**
- * @brief The save line along the bottom of a page of rows: the German
- *        "not saved" line is 37 cells, 370 px.
- * @return the line, 20 px tall
- */
-static inline gfx_rect_t save_line_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + OV_H - 22),
-                         (int16_t)(OV_W - 20), 20 };
 }
 
 /* --- helpers the screen and the limit run inline ------------------------- */

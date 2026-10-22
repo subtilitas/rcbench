@@ -499,9 +499,9 @@ TEST_CASE(the_supply_caps_show_read_only_with_their_home)
 
         open_settings();
         tap(TAB_X(PAGE_DUT), TAB_Y);
-        CHECK(caps_read(UI_MARGIN + 10, 370));
-        tap(60, 378);
-        CHECK(caps_read(UI_MARGIN + 10, 370));
+        CHECK(caps_read(UI_MARGIN + 10, 354));
+        tap(60, 362);
+        CHECK(caps_read(UI_MARGIN + 10, 354));
         CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 3.0f, 1e-4f);
     }
     ui_text_set_language(UI_LANG_EN);
@@ -895,19 +895,15 @@ static int stops_under_the_alert_band(void)
 
 /*
  * Buffer 0 drawn whole: the pixels of the left card from TEXT_FLOOR down to
- * its bottom edge that are not the page's fill.  With @p save the save line
- * of a page of rows (SV_SAVE_Y, 20 px) is left out.
+ * its bottom edge that are not the page's fill.
  */
-static int ink_under_the_alert_band(bool save)
+static int ink_under_the_alert_band(void)
 {
     servo_invalidate();
     scr->render(&cv, 0);
     const gfx_color_t fill = ui_theme_color(UI_C_PANEL);
     int n = 0;
     for (int y = TEXT_FLOOR; y < UI_BODY_H - UI_MARGIN - 1; ++y) {
-        if (save && y >= SV_SAVE_Y && y < SV_SAVE_Y + 20) {
-            continue;
-        }
         for (int x = UI_MARGIN + 1; x < UI_MARGIN + 620 - 1; ++x) {
             n += fb[(size_t)y * W + x] != fill;
         }
@@ -918,18 +914,21 @@ static int ink_under_the_alert_band(bool save)
 /*
  * In both languages the text at the foot of the left card ends above the
  * alert band: TEST's caps line, the AUTOMATIC TEST's stall note on its
- * settings (said as shipped: 2.00 A at a limit of 2.00 A), and the OUTPUT
- * page's notes at their longest, a refused or unsupported rate.
+ * settings (said as shipped: 2.00 A at a limit of 2.00 A), the OUTPUT
+ * page's notes at their longest, a refused or unsupported rate, and the
+ * save line at its longest, SETUP's changes not saved.
  */
 TEST_CASE(no_text_lies_under_the_alert_band)
 {
     for (int lang = 0; lang < 2; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         bench_fresh();
+        settings_set(SET_SERVO_DWELL_MS, 210.0f);   /* not saved */
+        CHECK(settings_dirty());
         open_test();
-        CHECK_EQ(ink_under_the_alert_band(false), 0);
+        CHECK_EQ(ink_under_the_alert_band(), 0);
         open_run_settings(0);
-        CHECK_EQ(ink_under_the_alert_band(true), 0);
+        CHECK_EQ(ink_under_the_alert_band(), 0);
         int warn = 0;
         for (int x = UI_MARGIN; x < UI_MARGIN + 620; ++x) {
             for (int y = TEXT_FLOOR - 20; y < TEXT_FLOOR; ++y) {
@@ -940,9 +939,9 @@ TEST_CASE(no_text_lies_under_the_alert_band)
         close_settings();
         open_settings();
         servo_screen_rate(SERVO_RATE_REFUSED, 50u);
-        CHECK_EQ(ink_under_the_alert_band(true), 0);
+        CHECK_EQ(ink_under_the_alert_band(), 0);
         servo_screen_rate(SERVO_RATE_UNSUPPORTED, 50u);
-        CHECK_EQ(ink_under_the_alert_band(true), 0);
+        CHECK_EQ(ink_under_the_alert_band(), 0);
     }
     ui_text_set_language(UI_LANG_EN);
 }

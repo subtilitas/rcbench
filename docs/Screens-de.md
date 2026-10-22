@@ -1438,7 +1438,7 @@ funktioniert. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
 Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
 Die Seitenreiter von OPTIONEN sind 197 x 40 px quer über die Karte. Ihre
-Zeilen stehen in zwei Spalten zu 295 px, jede Zeile 48 px hoch und 56 px
+Zeilen stehen in zwei Spalten zu 295 px, jede Zeile 48 px hoch und 52 px
 von der nächsten, der Name links und der Wert rechts, 140 px breit (TYP,
 PULSRATE und NAME belegen beide Spalten). Die Hinweise unter den Zeilen von
 AUSGANG sind Zeilen zu 60 Zeichen, 21 px Abstand. Die Einstellungen eines
@@ -1447,10 +1447,9 @@ Laufs stehen in drei Spalten zu 193 px, jede Zeile ihr Name über ihrem
 Tests zu fünf je Spalte, die Stufen mit HV-SERVO, die Grenzwerte mit
 BROWN-OUT, und Dauer und Zeiten. TESTDAUER NACH steht oben in der rechten
 Spalte, unter den OPTIONEN der Karte: ein zweites Tippen auf OPTIONEN
-öffnet ihre Liste und ändert keine Einstellung. Die Hinweise, der Hinweis
-zu BLOCKIERT AB und die Zeile der Grenzen unter den Karten von TEST enden
-4 px oder mehr über dem Alert-Band; die Speicherzeile unter einer Seite
-mit Zeilen nicht (y 510 bis 530 im Inhalt). Die Auswahl einer Liste steht
+öffnet ihre Liste und ändert keine Einstellung. Die Hinweise, die
+Speicherzeile, der Hinweis zu BLOCKIERT AB und die Zeile der Grenzen unter
+den Karten von TEST enden 4 px oder mehr über dem Alert-Band. Die Auswahl einer Liste steht
 in zwei Spalten zu fünf, 48 px hoch und 56 px Abstand; die Warnungen
 stehen in 12 x 24 px großen Buchstaben, 49 Zeichen je Zeile, mit HALTEN
 ZUM ÜBERNEHMEN und ABBRECHEN 56 px hoch, die 4 px über dem Alert-Band
@@ -1638,9 +1637,10 @@ Die AUSGANG-Einstellungen, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für
 die Sitzung; die Einstellungen von SWEEP, des automatischen Tests und von
 PRÜFLING und ZIEL liegen im NVS. Eine Änderung fordert das Schreiben sofort
 an; der Speicher nimmt es im ersten Frame, in dem der Prüfstand ruht
-([Werte behalten](#werte-behalten)). Die Speicherzeile unten auf
-jeder Seite sagt `GESPEICHERT`, `SPEICHERN AUSSTEHEND`, `NICHT GESPEICHERT`
-oder `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT`.
+([Werte behalten](#werte-behalten)). Die Speicherzeile sagt
+`GESPEICHERT`, `SPEICHERN AUSSTEHEND`, `NICHT GESPEICHERT` oder
+`ÄNDERUNGEN IN SETUP NICHT GESPEICHERT`: unten auf jeder Seite von OPTIONEN,
+und auf den Einstellungen eines Laufs unter seinem Namen.
 
 ![TEST mit seinen zwei Laufkarten](img/de/servo-test.png)
 ![Die Einstellungen des automatischen Tests](img/de/servo-test-settings.png)

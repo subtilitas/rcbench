@@ -270,7 +270,7 @@ void draw_rows_page(gfx_canvas_t *c)
     if (page < PG_COUNT) {
         ui_tabs_render(&s.tabs, c);
     } else {
-        gfx_text(c, OV_X + 10, CARD_Y + 18,
+        gfx_text(c, OV_X + 10, CARD_Y + RUN_PAGE_NAME_DY,
                  (page == PG_AUTO) ? TR(SV_AUTO_TEST) : TR(SV_ROW_LIM_MODE),
                  SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
         ui_button_font(c, run_close_rect(), TR(SUP_CLOSE),

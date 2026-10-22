@@ -188,6 +188,32 @@ static inline gfx_rect_t run_close_rect(void)
                          (int16_t)(CARD_Y + 4), 140, UI_TAP_MIN };
 }
 
+/** @brief A run's name on its settings, from the page's top. */
+#define RUN_PAGE_NAME_DY 4
+/** @brief The save line on a run's settings, under the name. */
+#define RUN_PAGE_SAVE_DY 28
+
+/**
+ * @brief The save line of a page of rows, 20 px tall.  On SETTINGS' pages
+ *        along the bottom, under the notes; on a run's settings under the
+ *        run's name, left of CLOSE, as the rows and the STALL AT note fill
+ *        the page down to the alert band.  The German "not saved" line is
+ *        37 cells, 370 px.
+ * @return the line
+ */
+static inline gfx_rect_t save_line_rect(void)
+{
+    if (rows_page() >= PG_COUNT) {
+        const int x = OV_X + 10;
+        return (gfx_rect_t){ (int16_t)x, (int16_t)(CARD_Y + RUN_PAGE_SAVE_DY),
+                             (int16_t)(run_close_rect().x - 10 - x), 20 };
+    }
+    return (gfx_rect_t){ (int16_t)(OV_X + 10), OV_SAVE_Y,
+                         (int16_t)(OV_W - 20), 20 };
+}
+_Static_assert(CARD_Y + RUN_PAGE_SAVE_DY + 20 <= RL_ROW0 - 4,
+               "a run's save line ends over its first row");
+
 /** @brief START TEST, on the AUTOMATIC TEST card. @return the button */
 static inline gfx_rect_t test_start_rect(void)
 {

@@ -1309,7 +1309,7 @@ value opens the keypad, a list opens a list, a switch flips on the tap, and
 the name opens a keyboard.
 
 SETTINGS' page tabs are 197 x 40 px across the card. Its rows are two
-columns of 295 px, each row 48 px tall and 56 px from the next, the label
+columns of 295 px, each row 48 px tall and 52 px from the next, the label
 left and the value right, 140 px wide (TYPE, FRAME RATE and NAME take both
 columns). The notes under OUTPUT's rows are lines of 60 characters, 21 px
 apart. A run's settings are three columns of 193 px, each row its label
@@ -1317,9 +1317,9 @@ over its 48 px value, 71 px from the next: the automatic test's 15 rows
 are five to a column, the steps with HV SERVO, the pass and fail limits
 with BROWN-OUT, and the length and timing. TEST LENGTH BY tops the right
 column, under the card's SETTINGS: a second tap on SETTINGS opens its list
-and changes no setting. The notes, the STALL AT note and the caps line
-under TEST's cards end 4 px or more above the alert band; the save line
-under a page of rows does not (body y 510 to 530). A list's choices are
+and changes no setting. The notes, the save line, the STALL AT note and
+the caps line under TEST's cards end 4 px or more above the alert band. A
+list's choices are
 two columns of five, 48 px tall and 56 px apart; the warnings read in
 12 x 24 px letters, 49 characters a line, with HOLD TO APPLY and CANCEL
 56 px tall ending 4 px above the alert band.
@@ -1495,8 +1495,9 @@ The OUTPUT settings, HV SERVO, LIMIT RUN and SERVO PULSES are kept for the
 session; SWEEP's, the automatic test's and DUT's settings and TARGET are
 kept in NVS. A change asks for the write at once; the store takes it at
 the first frame the bench is idle ([Keeping the values](#keeping-the-values)).
-The save line at the foot of each page says `SAVED`, `SAVE PENDING`,
-`NOT SAVED` or `SETUP CHANGES NOT SAVED`.
+The save line says `SAVED`, `SAVE PENDING`, `NOT SAVED` or `SETUP CHANGES
+NOT SAVED`: at the foot of each SETTINGS page, and under the run's name on
+a run's settings.
 
 ![TEST and its two run cards](img/servo-test.png)
 ![The automatic test's settings](img/servo-test-settings.png)

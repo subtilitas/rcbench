@@ -13,7 +13,7 @@
  *     px each and 40 px apart; the first row is the KST and Chaservo
  *     programmer;
  *   - SETTINGS' own page tabs OUTPUT, SWEEP, DUT from x 18, 197 px each,
- *     y 64 to 104, and their rows from y 112, 48 px tall and 56 px apart,
+ *     y 64 to 104, and their rows from y 108, 48 px tall and 52 px apart,
  *     the left column from x 18, the right from x 323;
  *   - TEST's two run cards from y 60 and 264, each with START and SETTINGS
  *     60 px down; a run's settings' rows in three columns of 193 px from x
@@ -49,7 +49,7 @@
 #define SV_PAGE_X(i)       (116 + 201 * (i))
 #define SV_PAGE_TAB_Y      84                 /**< Their row. */
 /** @brief SETTINGS' row @p r, either column. */
-#define SV_ROW_Y(r)        (136 + 56 * (r))
+#define SV_ROW_Y(r)        (132 + 52 * (r))
 
 #define SV_RUN_SET_X       528                /**< A run card's SETTINGS. */
 /** @brief Run card @p k's SETTINGS (0 AUTOMATIC TEST, 1 LIMIT RUN). */
@@ -74,9 +74,6 @@
 #define SV_BOX_BTN_Y       278                /**< Its row. */
 /** @brief The run's settings: the limit run's mode note, under row 2. */
 #define SV_LIM_NOTE_Y      260
-/** @brief The save line of a page of rows: OV_Y + OV_H - 22 of
- *         servo_screen_int.h, 20 px tall. */
-#define SV_SAVE_Y          510
 /** @brief A run's settings' column @p c, the middle of its value. */
 #define SV_LIST_X(c)       (114 + 203 * (c))
 /** @brief A run's settings' row @p r, the middle of its value. */
