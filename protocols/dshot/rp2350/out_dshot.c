@@ -1,5 +1,8 @@
-/*
- * DShot out and the reply back.  See out_dshot.h.
+/**
+ * @file
+ * @brief DShot out and the reply back.
+ *
+ * See out_dshot.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,17 +17,18 @@
 
 #include "dshot.pio.h"
 
-/*
- * Eight words is 256 samples at five to a reply bit, which is 51 bits against
- * a reply of 21.  The state machine stalls when the queue is full, so the
- * extra is idle line after the burst rather than anything that has to arrive
- * in time.
+/**
+ * @brief Eight words is 256 samples at five to a reply bit, which is 51 bits
+ *        against a reply of 21.
+ *
+ * The state machine stalls when the queue is full, so the extra is idle line
+ * after the burst rather than anything that has to arrive in time.
  */
 #define CAP_WORDS  8u
 
-/*
- * The fewest words that can hold a whole reply: one idle sample plus 21 bits
- * at five samples each is 106, which is four words.
+/**
+ * @brief The fewest words that can hold a whole reply: one idle sample plus 21
+ *        bits at five samples each is 106, which is four words.
  *
  * A poll that took less than this would take a reply that has not finished
  * arriving.  The loop turns over thousands of times in the 70 us a capture
@@ -33,23 +37,33 @@
  */
 #define CAP_MIN_WORDS  4u
 
+/**
+ * @brief One bound output: its pin, its mode and its state machines.
+ */
 typedef struct {
-    bool     used;
-    bool     bidir;
-    bool     running;        /* the transmitter is enabled                  */
-    bool     armed;          /* a reply is expected for the frame just sent */
-    uint8_t  pin;
-    uint32_t bits_per_second;
+    bool     used;           /**< the slot holds a binding                    */
+    bool     bidir;          /**< bidirectional: inverted line and a receiver */
+    bool     running;        /**< the transmitter is enabled                  */
+    bool     armed;          /**< a reply is expected for the frame just sent */
+    uint8_t  pin;            /**< GPIO number                                 */
+    uint32_t bits_per_second; /**< bit rate                                   */
 
-    PIO      pio;
-    uint     tx_sm;
-    uint     tx_offset;
-    uint     rx_sm;
-    uint     rx_offset;
+    PIO      pio;            /**< PIO block holding both state machines       */
+    uint     tx_sm;          /**< transmitter state machine                   */
+    uint     tx_offset;      /**< transmitter program offset in the block     */
+    uint     rx_sm;          /**< receiver state machine, bidirectional only  */
+    uint     rx_offset;      /**< receiver program offset in the block        */
 } dshot_out_t;
 
+/** @brief The bound outputs, one slot per pin up to OUT_DSHOT_MAX_PINS. */
 static dshot_out_t s_out[OUT_DSHOT_MAX_PINS];
 
+/**
+ * @brief Find the slot bound to a pin.
+ *
+ * @param pin  GPIO number.
+ * @return     The slot, or NULL when @p pin is not bound.
+ */
 static dshot_out_t *find(uint8_t pin)
 {
     for (unsigned i = 0; i < OUT_DSHOT_MAX_PINS; ++i) {
@@ -60,6 +74,12 @@ static dshot_out_t *find(uint8_t pin)
     return NULL;
 }
 
+/**
+ * @brief Pick the transmitter program for a mode.
+ *
+ * @param bidir  true for the bidirectional program.
+ * @return       The program to load.
+ */
 static const pio_program_t *tx_program(bool bidir)
 {
     return bidir ? &dshot_bidir_tx_program : &dshot_tx_program;
@@ -67,11 +87,16 @@ static const pio_program_t *tx_program(bool bidir)
 
 /* ---------------------------------------------------------------- binding */
 
-/*
- * The receiver has to sit on the state machine one above its transmitter, in
- * the same block: the transmitter raises a flag relative to its own number
- * and the receiver waits on the flag one below its own, so the pairing is
- * what keeps two ESCs on one block from starting each other's receivers.
+/**
+ * @brief The receiver has to sit on the state machine one above its
+ *        transmitter, in the same block: the transmitter raises a flag relative
+ *        to its own number and the receiver waits on the flag one below its
+ *        own, so the pairing is what keeps two ESCs on one block from starting
+ *        each other's receivers.
+ *
+ * @param s  Binding with its transmitter already loaded.
+ * @return   true when the receiver is claimed and loaded; false when that
+ *           state machine is taken or the program does not fit.
  */
 static bool claim_receiver(dshot_out_t *s)
 {
@@ -90,11 +115,14 @@ static bool claim_receiver(dshot_out_t *s)
     return true;
 }
 
-/*
- * Give the pad back exactly as it was at boot: no inversion, no pull, and a
- * plain input rather than a pin still muxed to a PIO block.  A pin left
- * muxed is one the next configuration cannot have and one a scope reads as
- * driven by something that no longer exists.
+/**
+ * @brief Give the pad back exactly as it was at boot: no inversion, no pull,
+ *        and a plain input rather than a pin still muxed to a PIO block.
+ *
+ * A pin left muxed is one the next configuration cannot have and one a scope
+ * reads as driven by something that no longer exists.
+ *
+ * @param pin  GPIO number.
  */
 static void release_pad(uint8_t pin)
 {
@@ -109,6 +137,11 @@ static void release_pad(uint8_t pin)
     gpio_set_dir(pin, GPIO_IN);
 }
 
+/**
+ * @brief Remove the programs, release the state machines and the pad.
+ *
+ * @param s  Binding to tear down; cleared to zero.
+ */
 static void teardown(dshot_out_t *s)
 {
     if (s->pio != NULL) {
@@ -260,7 +293,14 @@ void out_dshot_stop(uint8_t pin)
     s->armed = false;
 }
 
-/* Put a state machine back at the top of its program with nothing queued. */
+/**
+ * @brief Put a state machine back at the top of its program with nothing
+ *        queued.
+ *
+ * @param pio     PIO block.
+ * @param sm      State machine number in the block.
+ * @param offset  Program offset in the block.
+ */
 static void restart(PIO pio, uint sm, uint offset)
 {
     pio_sm_set_enabled(pio, sm, false);

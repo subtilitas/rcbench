@@ -1,5 +1,8 @@
-/*
- * SENSE_WIN_A and SENSE_WIN_B, read for the log.  See sense_win_link.h.
+/**
+ * @file
+ * @brief SENSE_WIN_A and SENSE_WIN_B, read for the log.
+ *
+ * See sense_win_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -117,7 +120,14 @@ void sense_win_link_done(sense_win_link_t *s, int result,
     }
 }
 
-/* Whether a read @p r kept as @p have holds window @p window. */
+/**
+ * @brief Whether a read @p r kept as @p have holds window @p window.
+ *
+ * @param have   true when the read was kept.
+ * @param r      The registers read.
+ * @param window The window number.
+ * @return true when the read holds window.
+ */
 static bool holds(bool have, const uint16_t *r, uint16_t window)
 {
     return have && (r[LINK_SX_FLAGS] & LINK_SX_HAVE) != 0u

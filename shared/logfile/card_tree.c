@@ -1,6 +1,9 @@
-/*
- * Making a folder of the card one level at a time, and checking a log
- * folder.  See card_tree.h.
+/**
+ * @file
+ * @brief Making a folder of the card one level at a time, and checking a log
+ *        folder.
+ *
+ * See card_tree.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,24 +38,43 @@ card_dir_t card_make_dirs(const char *dir, card_make_fn make, void *ctx)
     return CARD_DIR_OK;
 }
 
-/* The folders the bench keeps its own files in: the parent of each
- * programmer's CONF folder.  A log folder there, or below, is refused. */
+/**
+ * @brief The folders the bench keeps its own files in: the parent of each
+ *        programmer's CONF folder.
+ *
+ * A log folder there, or below, is refused.
+ */
 static const char *const k_bench_conf[] = {
     CARD_ESC_CONF,
     CARD_KST_CONF,
     CARD_HITEC_CONF,
 };
 
-/* The names FAT (File Allocation Table) volumes on Windows take for a
- * device, with or without an extension. */
+/**
+ * @brief The names FAT (File Allocation Table) volumes on Windows take for a
+ *        device, with or without an extension.
+ */
 static const char *const k_devices[] = { "CON", "PRN", "AUX", "NUL" };
 
+/**
+ * @brief Whether a character is allowed in a folder name.
+ *
+ * @param c  The upper-case character.
+ * @return true for A-Z, 0-9, "_" and "-".
+ */
 static bool folder_char(char c)
 {
     return (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_'
            || c == '-';
 }
 
+/**
+ * @brief Whether a folder name is a device name.
+ *
+ * @param name  The name; not NUL-terminated.
+ * @param len   Length of @p name, characters.
+ * @return true for CON, PRN, AUX, NUL, COM1 to COM9 and LPT1 to LPT9.
+ */
 static bool is_device(const char *name, size_t len)
 {
     for (size_t i = 0u; i < sizeof(k_devices) / sizeof(k_devices[0]); ++i) {
@@ -65,7 +87,12 @@ static bool is_device(const char *name, size_t len)
            && name[3] >= '1' && name[3] <= '9';
 }
 
-/* Whether @p path is a bench area folder or one below it. */
+/**
+ * @brief Whether @p path is a bench area folder or one below it.
+ *
+ * @param path  The upper-case path, folders separated by "/".
+ * @return true for BENCH/ESC, BENCH/KST, BENCH/HITEC and below.
+ */
 static bool is_bench(const char *path)
 {
     for (size_t i = 0u; i < sizeof(k_bench_conf) / sizeof(k_bench_conf[0]);

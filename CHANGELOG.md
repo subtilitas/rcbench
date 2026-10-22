@@ -150,6 +150,13 @@ history is in git.
 
 ### Changed
 
+- `tools/check_sizes.py` counts code lines: a line that is not blank and
+  not comment-only. Block and `//` comments, Doxygen blocks included, and in
+  Python `#` comments and docstrings do not count; a line with code and a
+  trailing comment does. The limits are 1,000 and 1,300 code lines. 26
+  entries of `tools/check_sizes.txt` whose files hold 1,000 code lines or
+  fewer are removed, and the figure recorded for `shared/bench/kst_prog.c`
+  is 1,938 code lines.
 - Every text the interface shows or writes in the operator's language is
   one entry of `shared/text/include/ui_text.def`, with its English and its
   German side by side: the screens' strings, the settings' labels, help

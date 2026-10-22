@@ -1,5 +1,8 @@
-/*
- * The SUPPLY link page.  See supply_page.h.
+/**
+ * @file
+ * @brief The SUPPLY link page.
+ *
+ * See supply_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -53,8 +56,15 @@ uint64_t supply_page_pins(const supply_page_t *p)
            | ((uint64_t)1u << p->regs[LINK_SP_RX_PIN]);
 }
 
-/* Whether @p pin may carry the supply: in the bank, not reserved unless it
- * is one this page already holds, and no output's. */
+/**
+ * @brief Whether @p pin may carry the supply: in the bank, not reserved unless
+ *        it is one this page already holds, and no output's.
+ *
+ * @param p The page state, for the pins it already holds.
+ * @param o The outputs bank.
+ * @param pin GPIO number to judge.
+ * @return true when the pin may be taken, false otherwise.
+ */
 static bool pin_free(const supply_page_t *p, const outputs_t *o, uint16_t pin)
 {
     if (pin > OUT_MAX_PIN) {
@@ -72,7 +82,13 @@ static bool pin_free(const supply_page_t *p, const outputs_t *o, uint16_t pin)
     return true;
 }
 
-/* FLAGS bits 8, 9 and 11, kept whether or not a driver runs. */
+/**
+ * @brief FLAGS bits 8, 9 and 11, kept whether or not a driver runs.
+ *
+ * @param p The page state.
+ * @return LINK_SP_PORT when held, LINK_SP_WIRE_WAIT while a change waits,
+ *         LINK_SP_WIRE_REFUSED after a refusal; the bits that are set.
+ */
 static uint16_t wire_flags(const supply_page_t *p)
 {
     uint16_t f = p->held ? LINK_SP_PORT : 0u;
@@ -85,8 +101,13 @@ static uint16_t wire_flags(const supply_page_t *p)
     return f;
 }
 
-/* Bits 8, 9 and 11 onto the page as they change, not at the next step: a read
- * between the two must not show a refusal already cleared, or no wait. */
+/**
+ * @brief Bits 8, 9 and 11 onto the page as they change, not at the next step:
+ *        a read between the two must not show a refusal already cleared, or no
+ *        wait.
+ *
+ * @param p The page state. Only those three FLAGS bits are replaced.
+ */
 static void wire_publish(supply_page_t *p)
 {
     p->regs[LINK_SP_FLAGS] = (uint16_t)((p->regs[LINK_SP_FLAGS]
@@ -96,8 +117,20 @@ static void wire_publish(supply_page_t *p)
                                         | wire_flags(p));
 }
 
-/* A write, judged whole; @p checked for the wiring a state read cleared,
- * which does not wait again. */
+/**
+ * @brief A write, judged whole; @p checked for the wiring a state read cleared,
+ *        which does not wait again.
+ *
+ * @param p The page state.
+ * @param off First register, 0 to LINK_SP_COUNT - 1.
+ * @param n Number of registers to write.
+ * @param in The @p n new register values.
+ * @param o The outputs bank.
+ * @param beat_alive Whether the panel's heartbeat is live.
+ * @param checked true when a state read of the driver has just cleared the
+ *        wiring, so a wiring change does not wait again.
+ * @return 0 when taken, or a NACK reason as supply_page_write() gives it.
+ */
 static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
                           const uint16_t *in, const outputs_t *o,
                           bool beat_alive, bool checked)
@@ -305,8 +338,13 @@ uint8_t supply_page_wire_write(supply_page_t *p, const outputs_t *o)
     return nack;
 }
 
-/* The wiring change waiting, followed: its read asked of @p drv, and its
- * answer taken. */
+/**
+ * @brief The wiring change waiting, followed: its read asked of @p drv, and its
+ *        answer taken.
+ *
+ * @param p The page state.
+ * @param drv The PD mini driver, or NULL.
+ */
 static void wire_step(supply_page_t *p, pdmini_t *drv)
 {
     if (p->wire != (uint8_t)SUPPLY_WIRE_WAIT) {

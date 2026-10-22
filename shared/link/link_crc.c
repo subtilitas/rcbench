@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief CRC-16, polynomial 0x1021, computed bit by bit; see link_crc.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 

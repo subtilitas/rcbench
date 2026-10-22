@@ -1,5 +1,6 @@
-/*
- * A programming port's pin held with no driver.  See port_park.h.
+/**
+ * @file
+ * @brief A programming port's pin held with no driver.  See port_park.h.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -1,5 +1,8 @@
-/*
- * A binding prepared beside the one in force.  See out_stage.h.
+/**
+ * @file
+ * @brief A binding prepared beside the one in force.
+ *
+ * See out_stage.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -49,6 +52,15 @@ uint8_t out_stage_slots_write(out_stage_t *st, uint8_t off, uint8_t n,
     return outputs_slots_write(st->slots, off, n, in);
 }
 
+/**
+ * @brief Copies n registers from off; an index at or past count reads 0.
+ *
+ * @param regs The page's registers.
+ * @param count Number of registers in the page.
+ * @param off First register index.
+ * @param n Number of registers to copy.
+ * @param out Receives the @p n values.
+ */
 static void read_window(const uint16_t *regs, unsigned count, uint8_t off,
                         uint8_t n, uint16_t *out)
 {
@@ -74,7 +86,15 @@ void out_stage_slots_read(const out_stage_t *st, uint8_t off, uint8_t n,
     }
 }
 
-/* Byte by byte, so the value does not depend on either processor's order. */
+/**
+ * @brief Byte by byte, so the value does not depend on either processor's
+ *        order.
+ *
+ * @param crc The running CRC-16 value.
+ * @param regs The registers to fold in, low byte first.
+ * @param count Number of registers.
+ * @return The CRC after the last register.
+ */
 static uint16_t crc_regs(uint16_t crc, const uint16_t *regs, unsigned count)
 {
     for (unsigned i = 0; i < count; ++i) {
@@ -100,7 +120,7 @@ uint16_t out_stage_held_crc(const out_stage_t *st)
     return (st != NULL) ? out_stage_crc(st->cfg, st->slots) : 0u;
 }
 
-/* The bank's channels from before a commit. */
+/** @brief The bank's channels from before a commit. */
 static out_channel_t s_held[OUT_MAX_CHANNELS];
 
 uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,

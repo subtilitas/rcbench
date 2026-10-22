@@ -46,31 +46,44 @@ extern "C" {
 #endif
 
 /**
- * The table as a constant expression, for a _Static_assert on an address
- * fixed at build time.  panel_i2c_addr_reserved() gives the same answer for
- * every address; test_panel_i2c holds the two to each other.
+ * @brief The table as a constant expression, for a _Static_assert on an
+ *        address fixed at build time.
+ *
+ * panel_i2c_addr_reserved() gives the same answer for every address;
+ * test_panel_i2c holds the two to each other.
  */
 #define PANEL_I2C_RESERVED(a)                                               \
     ((unsigned)(a) > 0x7Fu || (unsigned)(a) <= 0x03u ||                     \
      (unsigned)(a) == 0x14u || (unsigned)(a) == 0x5Du ||                    \
      (unsigned)(a) >= 0x78u)
 
+/**
+ * @brief One range of the panel's I2C address table and its owner.
+ */
 typedef struct {
     uint8_t     first;  /**< lowest 7-bit address of the range */
     uint8_t     last;   /**< highest, inclusive */
     const char *owner;  /**< the chip that answers there */
 } panel_i2c_range_t;
 
-/** The ranges, in rising address order. */
+/** @brief The ranges, in rising address order. */
 extern const panel_i2c_range_t panel_i2c_reserved_table[];
 extern const unsigned panel_i2c_reserved_count;
 
-/** Whether @p addr belongs to the board, or is no 7-bit address at all. */
+/**
+ * @brief Whether @p addr belongs to the board, or is no 7-bit address at all.
+ *
+ * @param addr The 7-bit address.
+ * @return true when the board answers at addr, or addr is no 7-bit address.
+ */
 bool panel_i2c_addr_reserved(unsigned addr);
 
 /**
- * The owner of @p addr: "GT911" or "I2C reserved", "not a 7-bit
- * address" above 0x7F, NULL for a free address.
+ * @brief The owner of @p addr: "GT911" or "I2C reserved", "not a 7-bit
+ *        address" above 0x7F, NULL for a free address.
+ *
+ * @param addr The address to name.
+ * @return The owner's name, or NULL for a free address.
  */
 const char *panel_i2c_owner(unsigned addr);
 

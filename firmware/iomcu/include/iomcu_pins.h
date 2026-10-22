@@ -1,7 +1,9 @@
-/*
- * IOmcu pin map for the module build: a Waveshare RP2350-CAN (RP2350A,
- * 4 MB flash) with its XL2515 CAN (Controller Area Network) controller.  The
- * final board is an RP2350B; this map moves with it.
+/**
+ * @file
+ * @brief IOmcu pin map for the module build: a Waveshare RP2350-CAN (RP2350A, 4
+ * MB flash) with its XL2515 CAN (Controller Area Network) controller.
+ *
+ * The final board is an RP2350B; this map moves with it.
  *
  * The constraint on the map is silicon: a PIO (programmable input/output)
  * block sees 32 pins with a base of 0 or 16 only, for all four of its state
@@ -22,8 +24,8 @@
 
 #include "out_bind.h"
 
-/*
- * Which board this image is built for.
+/**
+ * @brief Which board this image is built for.
  *
  * It is a build-time fact, not a runtime one: the pin map below is compiled
  * in, so an image knows what it is and says so on the identity page.  The
@@ -33,18 +35,21 @@
  */
 #define IOMCU_BOARD_ID  ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
 
-/*
- * The safety heartbeat from the panel's PANEL_HEARTBEAT_PIN, by a direct
- * wire: no board carries the retriggerable monostable (docs/Safety.md).  An
- * input here: the IOmcu gates its own outputs from it and checks the period
- * in firmware, because noise can fake a heartbeat.
+/**
+ * @brief The safety heartbeat from the panel's PANEL_HEARTBEAT_PIN, by a
+ * direct wire: no board carries the retriggerable monostable
+ * (docs/Safety.md).
+ *
+ * An input here: the IOmcu gates its own outputs from it and checks the
+ * period in firmware, because noise can fake a heartbeat.
  */
 #define IOMCU_HEARTBEAT_PIN  3
 
-/*
- * The CAN controller: the module's XL2515 (MCP2515-compatible) behind a
- * SIT65HVD230 transceiver, on the pins the vendor's driver uses.  They do
- * not collide with the safety line on GP3.
+/**
+ * @brief The CAN controller: the module's XL2515 (MCP2515-compatible) behind
+ * a SIT65HVD230 transceiver, on the pins the vendor's driver uses.
+ *
+ * They do not collide with the safety line on GP3.
  *
  * The crystal is 16 MHz, and the bandwidth budget rests on it: the part
  * halves its crystal before the prescaler and a bit needs 8 quanta, so an
@@ -59,19 +64,23 @@
 #define IOMCU_CAN_PIN_CS     9
 #define IOMCU_CAN_PIN_INT    8   /**< active low, wants a pull-up */
 #define IOMCU_CAN_CRYSTAL_HZ 16000000u
-/* The vendor's driver clocks SPI (Serial Peripheral Interface) at 10 MHz;
- * the part is rated to 10 MHz. */
+/**
+ * @brief The vendor's driver clocks SPI (Serial Peripheral Interface) at 10
+ * MHz; the part is rated to 10 MHz.
+ */
 #define IOMCU_CAN_SPI_HZ     10000000u
 
-/*
- * The bit rate both ends must agree on.  1 Mbit/s is what the 16 MHz crystal
+/**
+ * @brief The bit rate both ends must agree on.
+ *
+ * 1 Mbit/s is what the 16 MHz crystal
  * reaches exactly; docs/Link.md has the bus budget at that rate.
  */
 #define IOMCU_CAN_BITRATE    1000000u
 
-/*
- * The pins no output may be bound to, one bit per pin, handed to the output
- * bank at boot.
+/**
+ * @brief The pins no output may be bound to, one bit per pin, handed to the
+ * output bank at boot.
  *
  * The pin in an OUTPUTS-page slot is whatever an operator typed into the
  * panel's settings, so something has to hold the list of pins that are

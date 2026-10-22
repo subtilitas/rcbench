@@ -1,5 +1,8 @@
-/*
- * The output bank.  See outputs.h for the model.
+/**
+ * @file
+ * @brief The output bank.
+ *
+ * See outputs.h for the model.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,6 +12,7 @@
 #include <stddef.h>
 #include <string.h>
 
+/** @brief The driver table, indexed by out_driver_t. */
 static const out_driver_def_t k_drivers[OUT_DRIVER_COUNT] = {
     [OUT_DRIVER_NONE]  = { "none",  0, 0, 0, false, false,   0,     0 },
     /*
@@ -92,7 +96,15 @@ bool outputs_pin_available(const outputs_t *o, uint8_t pin)
     return (o->reserved & ((uint64_t)1u << pin)) == 0u;
 }
 
-/* Does [a0,a0+an) meet [b0,b0+bn)? */
+/**
+ * @brief Does [a0,a0+an) meet [b0,b0+bn)?
+ *
+ * @param a0 First index of the first range.
+ * @param an Length of the first range.
+ * @param b0 First index of the second range.
+ * @param bn Length of the second range.
+ * @return true when the two ranges share an index, false otherwise.
+ */
 static bool overlaps(unsigned a0, unsigned an, unsigned b0, unsigned bn)
 {
     return a0 < b0 + bn && b0 < a0 + an;

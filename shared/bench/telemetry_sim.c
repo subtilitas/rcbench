@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The modelled pack, motor and propeller, see telemetry_sim.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 

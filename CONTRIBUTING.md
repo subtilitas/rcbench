@@ -60,7 +60,7 @@ python3 tools/render_ui.py --check    # the committed screenshots match
 python3 tools/gen_font.py --check
 python3 tools/gen_board_drawing.py --check
 python3 tools/gen_esc_profiles.py --check
-python3 tools/check_sizes.py --check  # every file over 1,000 lines is in tools/check_sizes.txt
+python3 tools/check_sizes.py --check  # every file over 1,000 code lines is in tools/check_sizes.txt
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
 python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
@@ -126,8 +126,9 @@ A change fails if:
   its stack ([Performance](docs/Performance.md#stacks)), or a stack figure
   or a count of calls not followed that Performance or `STATUS.md` gives
   differs from the build;
-- a file over 1,000 lines is not in `tools/check_sizes.txt` with the reason
-  it stays whole, a listed file is at or under 1,000 lines, or a listed
+- a file over 1,000 code lines (lines that are not blank and not
+  comment-only) is not in `tools/check_sizes.txt` with the reason it stays
+  whole, a listed file is at or under 1,000 code lines, or a listed
   line count is outside its tolerance;
 - a string overflows where it is drawn, in English or in German, and is not
   one of the overflows `tools/render_ui.py` lists as known;

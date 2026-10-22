@@ -1,6 +1,9 @@
-/*
- * The PD mini's codec: the CRC8 (cyclic redundancy check, 8 bits) of a
- * frame and the framing of a reply.  See pdmini.h.
+/**
+ * @file
+ * @brief The PD mini's codec: the CRC8 (cyclic redundancy check, 8 bits) of a
+ *        frame and the framing of a reply.
+ *
+ * See pdmini.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,7 +26,13 @@ uint8_t pdmini_crc8(const uint8_t *p, size_t n)
     return crc;
 }
 
-/* A fixed-length reply's whole length, or 0 for one that is not. */
+/**
+ * @brief A fixed-length reply's whole length, or 0 for one that is not.
+ *
+ * @param cmd  Command byte the reply answers.
+ * @return     The reply length in bytes, or 0 for a command whose reply is not
+ *             fixed in length.
+ */
 static size_t fixed_len(uint8_t cmd)
 {
     switch (cmd) {

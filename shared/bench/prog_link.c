@@ -1,5 +1,8 @@
-/*
- * The panel's side of the programming ports' page.  See prog_link.h.
+/**
+ * @file
+ * @brief The panel's side of the programming ports' page.
+ *
+ * See prog_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -81,8 +84,13 @@ uint8_t prog_link_hitec_held(const prog_link_t *p)
     return (p != NULL && p->up && p->hitec) ? p->hitec_held : 0u;
 }
 
-/* The TARGET now known to be @p t: a change from the one known before
- * returned the SERVO rate to 0. */
+/**
+ * @brief The TARGET now known to be @p t: a change from the one known before
+ *        returned the SERVO rate to 0.
+ *
+ * @param p The link state.
+ * @param t The TARGET read or written.
+ */
 static void target_seen(prog_link_t *p, uint16_t t)
 {
     if (!p->target_rate) {
@@ -185,12 +193,24 @@ void prog_link_stale(prog_link_t *p)
     }
 }
 
+/**
+ * @brief Whether the page is known: the IOmcu has it and it is read.
+ *
+ * @param p The link state.
+ * @return true when the page is known.
+ */
 static bool known(const prog_link_t *p)
 {
     return p != NULL && p->page && p->known;
 }
 
-/* Whether an ask waits on port @p port. */
+/**
+ * @brief Whether an ask waits on port @p port.
+ *
+ * @param p    The link state.
+ * @param port The port.
+ * @return true when an ask waits on the port.
+ */
 static bool asking(const prog_link_t *p, unsigned port)
 {
     return p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING
@@ -255,7 +275,12 @@ prog_link_ask_state_t prog_link_ask_state(const prog_link_t *p,
     return (prog_link_ask_state_t)p->ask_state;
 }
 
-/* The register the ask waiting writes. */
+/**
+ * @brief The register the ask waiting writes.
+ *
+ * @param p The link state.
+ * @return The register number.
+ */
 static uint8_t ask_reg(const prog_link_t *p)
 {
     return (p->ask_kind == (uint8_t)PROG_LINK_ASK_FUNC)
@@ -311,8 +336,13 @@ bool prog_link_pwm(const prog_link_t *p)
            && (p->regs[LINK_PG_PWM] & (uint16_t)(1u << (t - 1u))) != 0u;
 }
 
-/* The pulse bits the page is to hold: the wanted port's while that port is
- * the target the page holds, no other. */
+/**
+ * @brief The pulse bits the page is to hold: the wanted port's while that port
+ *        is the target the page holds, no other.
+ *
+ * @param p The link state.
+ * @return The pulse bits: 1 << (target - 1) for the wanted port, else 0.
+ */
 static uint16_t pwm_wanted(const prog_link_t *p)
 {
     const uint8_t t = prog_link_wanted(p);

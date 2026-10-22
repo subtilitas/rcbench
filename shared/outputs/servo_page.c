@@ -1,5 +1,8 @@
-/*
- * The SERVO link page.  See servo_page.h.
+/**
+ * @file
+ * @brief The SERVO link page.
+ *
+ * See servo_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,6 +17,11 @@
 #include "outputs_pages.h"
 #include "prog_port.h"
 
+/*
+ * Clears the page: all registers, no sweep, no hold.
+ *
+ * @param p The page state, overwritten.
+ */
 void servo_page_init(servo_page_t *p)
 {
     if (p != NULL) {
@@ -21,6 +29,12 @@ void servo_page_init(servo_page_t *p)
     }
 }
 
+/**
+ * @brief The sweep curve the page's registers describe.
+ *
+ * @param r The page registers, LINK_SV_COUNT of them.
+ * @return The curve: kind, MHz, amplitude, dwell and movements.
+ */
 static sweep_cfg_t cfg_of(const uint16_t *r)
 {
     const sweep_cfg_t c = {
@@ -33,28 +47,53 @@ static sweep_cfg_t cfg_of(const uint16_t *r)
     return c;
 }
 
-/* Whether two sweeps trace the same curve; the movement count is not the
- * curve, and it applies to the next start. */
+/**
+ * @brief Whether two sweeps trace the same curve; the movement count is not
+ *        the curve, and it applies to the next start.
+ *
+ * @param a The first sweep.
+ * @param b The second sweep.
+ * @return true when kind, mhz, amplitude and dwell_ms are equal.
+ */
 static bool same_curve(const sweep_cfg_t *a, const sweep_cfg_t *b)
 {
     return a->kind == b->kind && a->mhz == b->mhz
            && a->amplitude == b->amplitude && a->dwell_ms == b->dwell_ms;
 }
 
-/* The channels the sweep and the hold command: the standard servo ports,
- * or the range servo_page_target() named. */
+/**
+ * @brief The channels the sweep and the hold command: the standard servo
+ *        ports, or the range servo_page_target() named.
+ *
+ * @param p The page state.
+ * @return The first channel index, 0 for the standard servo ports.
+ */
 static uint8_t target_first(const servo_page_t *p)
 {
     return (p->target_n != 0u) ? p->target_first : 0u;
 }
 
+/**
+ * @brief One past the last channel the sweep and the hold command.
+ *
+ * @param p The page state.
+ * @return target_first + target_n, or LINK_OUT_CHANNELS for the standard servo
+ *         ports.
+ */
 static uint8_t target_end(const servo_page_t *p)
 {
     return (p->target_n != 0u) ? (uint8_t)(p->target_first + p->target_n)
                                : (uint8_t)LINK_OUT_CHANNELS;
 }
 
-/* Every surface of the target commanded to @p cmd. */
+/**
+ * @brief Every surface of the target commanded to @p cmd.
+ *
+ * @param p The page state, for the target range.
+ * @param o The outputs bank. Only channels with role OUT_ROLE_SURFACE change.
+ * @param cmd The command for each surface.
+ * @param now_ms Current time in milliseconds, passed to outputs_set().
+ */
 static void command_surfaces(const servo_page_t *p, outputs_t *o,
                              uint16_t cmd, uint32_t now_ms)
 {
@@ -65,11 +104,15 @@ static void command_surfaces(const servo_page_t *p, outputs_t *o,
     }
 }
 
-/*
- * Every surface held where its output has got to.  The last command a sweep
- * left would otherwise be slewed towards for as long again as the channel's
- * own timeout, past the moment the sweep stopped.  The channel's clock is
- * left alone, so it rests when it would have.
+/**
+ * @brief Every surface held where its output has got to.
+ *
+ * The last command a sweep left would otherwise be slewed towards for as long
+ * again as the channel's own timeout, past the moment the sweep stopped.  The
+ * channel's clock is left alone, so it rests when it would have.
+ *
+ * @param p The page state, for the target range.
+ * @param o The outputs bank. Each surface's command becomes its actual value.
  */
 static void freeze_surfaces(const servo_page_t *p, outputs_t *o)
 {
@@ -80,10 +123,16 @@ static void freeze_surfaces(const servo_page_t *p, outputs_t *o)
     }
 }
 
-/*
- * Whether a RESUME can carry on the sweep held now: a phase kept by a hold
- * still in force and a page that still describes that sweep.  A curve
- * changed while held is a new sweep, which starts only whole.
+/**
+ * @brief Whether a RESUME can carry on the sweep held now: a phase kept by a
+ *        hold still in force and a page that still describes that sweep.
+ *
+ * A curve changed while held is a new sweep, which starts only whole.
+ *
+ * @param p The page state.
+ * @param next The page registers as the write would leave them.
+ * @return true when a hold is in force, a paused sweep is kept, and the
+ *         registers MHZ, SPAN, DWELL_MS and MOVES match that sweep.
  */
 static bool resumable(const servo_page_t *p, const uint16_t *next)
 {
@@ -97,16 +146,25 @@ static bool resumable(const servo_page_t *p, const uint16_t *next)
            && next[LINK_SV_SWEEP_MOVES] == k->moves;
 }
 
-/*
- * Whether the frame rate @p hz may be the target's.  The standard servo
- * ports: every PWM slot whose first channel is a surface, judged against the
- * slices it shares (outputs_servo_rate_check()) and against every PWM slot's
- * endpoints at the rate it runs at, 0 sending the surfaces back to their
- * own.  A programming port: its own pin alone, which shares no slice with a
- * slot; a pin that shares its slice with another port's stays at
- * PROG_PORT_RATE_HZ, and a port whose pulse is on takes no rate its
- * endpoints do not fit.  0 always fits: the port goes back to 50 Hz, whose
- * 19999 us frame holds every endpoint the pages take.
+/**
+ * @brief Whether the frame rate @p hz may be the target's.
+ *
+ * The standard servo ports: every PWM slot whose first channel is a surface,
+ * judged against the slices it shares (outputs_servo_rate_check()) and against
+ * every PWM slot's endpoints at the rate it runs at, 0 sending the surfaces
+ * back to their own.  A programming port: its own pin alone, which shares no
+ * slice with a slot; a pin that shares its slice with another port's stays at
+ * PROG_PORT_RATE_HZ, and a port whose pulse is on takes no rate its endpoints
+ * do not fit.  0 always fits: the port goes back to 50 Hz, whose 19999 us frame
+ * holds every endpoint the pages take.
+ *
+ * @param p The page state, for the target and the port masks.
+ * @param o The outputs bank, for the slots and the channels' endpoints.
+ * @param hz The frame rate in Hz to judge.
+ * @return 0 when @p hz fits. Otherwise the refusal of
+ *         outputs_servo_rate_check() or outputs_pulse_check() for the
+ *         standard servo ports, or LINK_NACK_BAD_VALUE for a programming port
+ *         whose range or endpoints do not fit @p hz.
  */
 static uint8_t rate_check(const servo_page_t *p, const outputs_t *o,
                           uint16_t hz)

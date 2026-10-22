@@ -1,5 +1,8 @@
-/*
- * The arithmetic of the Hitec PIO pin driver.  See include/hitec_pio.h.
+/**
+ * @file
+ * @brief The arithmetic of the Hitec PIO pin driver.
+ *
+ * See include/hitec_pio.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,8 +12,10 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The longest window, lead and level fit their fields at the fastest bit
- * rate, with the divider 0.05 % short. */
+/**
+ * @brief The longest window, lead and level fit their fields at the fastest bit
+ *        rate, with the divider 0.05 % short.
+ */
 _Static_assert((uint64_t)HITEC_TIME_MAX_US * HITEC_D_BIT_RATE
                    * HITEC_PIO_CYCLES_PER_BIT / HITEC_PIO_TICK_CYCLES
                    / 1000000u * 1001u / 1000u
@@ -21,12 +26,14 @@ _Static_assert((uint64_t)HITEC_TIME_MAX_US * HITEC_D_BIT_RATE
                < HITEC_PIO_MAX_LEAD,
                "the longest level does not fit the lead count");
 
-/* A bit time as the pad makes it: bit 0 the direction (1 drives), bit 1
- * the output level. */
+/**
+ * @brief A bit time as the pad makes it: bit 0 the direction (1 drives), bit 1
+ *        the output level.
+ */
 #define PAIR(dir, level) ((uint8_t)((dir) | ((level) << 1)))
 #define RELEASED PAIR(0u, 0u)
 
-/* Bit times of the longest SEND, padded. */
+/** @brief Bit times of the longest SEND, padded. */
 #define MAX_BITS ((HITEC_PIO_TX_WORDS - 3u) * 16u)
 
 bool hitec_pio_clock(uint32_t sys_hz, uint8_t family, hitec_pio_clock_t *out)
@@ -83,9 +90,13 @@ uint32_t hitec_pio_cycles_ns(const hitec_pio_clock_t *clock, uint64_t cycles)
     return ns > 0xFFFFFFFFu ? 0xFFFFFFFFu : (uint32_t)ns;
 }
 
-/* @p cycles state machine cycles of @p clock, in us, rounded up and held
- * at UINT32_MAX.  The seconds come apart from the rest, so no product
- * leaves 64 bits for any count a uint64_t holds times a divider. */
+/**
+ * @brief @p cycles state machine cycles of @p clock, in us, rounded up and held
+ *        at UINT32_MAX.
+ *
+ * The seconds come apart from the rest, so no product leaves 64 bits for any
+ * count a uint64_t holds times a divider.
+ */
 static uint32_t cycles_us_up(const hitec_pio_clock_t *clock, uint64_t cycles)
 {
     const uint64_t q = cycles * clock->div256;   /* system cycles x 256 */
@@ -96,8 +107,10 @@ static uint32_t cycles_us_up(const hitec_pio_clock_t *clock, uint64_t cycles)
     return us > 0xFFFFFFFFu ? 0xFFFFFFFFu : (uint32_t)us;
 }
 
-/* @p us as state machine cycles of @p clock, rounded to nearest, or up
- * with @p up. */
+/**
+ * @brief @p us as state machine cycles of @p clock, rounded to nearest, or up
+ *        with @p up.
+ */
 static uint64_t us_cycles(const hitec_pio_clock_t *clock, uint32_t us,
                           bool up)
 {
@@ -107,9 +120,13 @@ static uint64_t us_cycles(const hitec_pio_clock_t *clock, uint32_t us,
            / den;
 }
 
-/* The bit time of logical @p bit (1 the idle level) for @p family and
- * @p drive.  Classic: the wire carries the bit.  D series: the wire carries
- * it inverted.  Open drain drives a low wire and releases a high one. */
+/**
+ * @brief The bit time of logical @p bit (1 the idle level) for @p family and @p
+ *        drive.
+ *
+ * Classic: the wire carries the bit.  D series: the wire carries it inverted.
+ * Open drain drives a low wire and releases a high one.
+ */
 static uint8_t pair_of(uint8_t family, uint8_t drive, unsigned bit)
 {
     const unsigned wire = family == HITEC_D ? (bit ^ 1u) : bit;
@@ -120,7 +137,7 @@ static uint8_t pair_of(uint8_t family, uint8_t drive, unsigned bit)
     return wire != 0u ? RELEASED : PAIR(1u, 0u);
 }
 
-/* Start bit, 8 data bits least significant first, the stop bit. */
+/** @brief Start bit, 8 data bits least significant first, the stop bit. */
 static unsigned put_byte(uint8_t family, uint8_t drive, uint8_t value,
                          bool stop, uint8_t *pairs, unsigned at)
 {
@@ -134,7 +151,7 @@ static unsigned put_byte(uint8_t family, uint8_t drive, uint8_t value,
     return at;
 }
 
-/* 16 bit times from @p pairs as one word. */
+/** @brief 16 bit times from @p pairs as one word. */
 static uint32_t pair_word(const uint8_t *pairs)
 {
     uint32_t w = 0;
@@ -145,6 +162,10 @@ static uint32_t pair_word(const uint8_t *pairs)
     return w;
 }
 
+/**
+ * @brief Build the word of a lead: level, direction and count.
+ *
+ */
 static uint32_t lead_word(uint8_t pair, uint64_t count)
 {
     /* The program shifts the level out first, then the direction. */

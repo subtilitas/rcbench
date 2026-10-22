@@ -1,6 +1,8 @@
-/*
- * The IOmcu's half of the firmware update.  See link_update_dev.h and
- * the update section of link_pages.h.
+/**
+ * @file
+ * @brief The IOmcu's half of the firmware update.
+ *
+ * See link_update_dev.h and the update section of link_pages.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -54,25 +56,50 @@ void link_update_dev_init(link_update_dev_t *u, const link_update_io_t *io,
     }
 }
 
+/**
+ * @brief Test whether a state is inside an update session.
+ *
+ * @param state A link_upd_state_t value.
+ * @return true for RECEIVING, RECEIVED, VERIFYING and VERIFIED.
+ */
 static bool in_session(uint8_t state)
 {
     return state == LINK_UPD_RECEIVING || state == LINK_UPD_RECEIVED
            || state == LINK_UPD_VERIFYING || state == LINK_UPD_VERIFIED;
 }
 
+/**
+ * @brief Ask the callback whether flash may be written.
+ *
+ * @param u The update state; u->io must be set.
+ * @return true when there is no gate callback or it reports the gate open.
+ */
 static bool gate_open(const link_update_dev_t *u)
 {
     return u->io->gate == NULL || u->io->gate(u->io->ctx);
 }
 
-/* A refusal: the reason kept for LINK_UPD_ERROR, the code for the NACK. */
+/**
+ * @brief A refusal: the reason kept for LINK_UPD_ERROR, the code for the NACK.
+ *
+ * @param u The update state.
+ * @param err The reason, a link_upd_err_t, kept in u->error.
+ * @param nack The NACK code returned to the caller.
+ * @return nack.
+ */
 static uint8_t refuse(link_update_dev_t *u, uint8_t err, uint8_t nack)
 {
     u->error = err;
     return nack;
 }
 
-/* A failure that ends the session. */
+/**
+ * @brief A failure that ends the session.
+ *
+ * @param u The update state.
+ * @param err The reason, a link_upd_err_t.
+ * @return LINK_NACK_BAD_VALUE.
+ */
 static uint8_t fail(link_update_dev_t *u, uint8_t err)
 {
     u->state = LINK_UPD_FAILED;
@@ -81,11 +108,24 @@ static uint8_t fail(link_update_dev_t *u, uint8_t err)
     return LINK_NACK_BAD_VALUE;
 }
 
+/**
+ * @brief Read a 32-bit argument held in two registers, low word first.
+ *
+ * @param a The command registers; the argument is a[1] and a[2].
+ * @return The 32-bit value.
+ */
 static uint32_t arg32(const uint16_t *a)
 {
     return (uint32_t)a[1] | ((uint32_t)a[2] << 16);
 }
 
+/**
+ * @brief Handle HASH_RUNNING: start hashing the running slot's image.
+ *
+ * @param u The update state.
+ * @param a The command registers; the length is arg32(a).
+ * @return 0 when the hash starts, else the NACK reason.
+ */
 static uint8_t cmd_hash_running(link_update_dev_t *u, const uint16_t *a)
 {
     if (u->slot_bytes == 0u) {
@@ -107,6 +147,13 @@ static uint8_t cmd_hash_running(link_update_dev_t *u, const uint16_t *a)
     return 0u;
 }
 
+/**
+ * @brief Handle BEGIN: erase the first sector and open a receive session.
+ *
+ * @param u The update state.
+ * @param a The command registers; the image size is arg32(a).
+ * @return 0 when the session opens, else the NACK reason.
+ */
 static uint8_t cmd_begin(link_update_dev_t *u, const uint16_t *a)
 {
     if (u->slot_bytes == 0u) {
@@ -144,8 +191,13 @@ static uint8_t cmd_begin(link_update_dev_t *u, const uint16_t *a)
     return 0u;
 }
 
-/* The block staged in UPDATE_DATA as bytes, low byte of each register
- * first. */
+/**
+ * @brief The block staged in UPDATE_DATA as bytes, low byte of each register
+ * first.
+ *
+ * @param u The update state; its data registers are read.
+ * @param out Receives 2 * LINK_UPD_DATA_COUNT bytes.
+ */
 static void staged_bytes(const link_update_dev_t *u, uint8_t *out)
 {
     for (size_t i = 0; i < LINK_UPD_DATA_COUNT; ++i) {
@@ -154,6 +206,14 @@ static void staged_bytes(const link_update_dev_t *u, uint8_t *out)
     }
 }
 
+/**
+ * @brief Handle COMMIT: check one staged block and place it.
+ *
+ * @param u The update state.
+ * @param a The command registers: a[1] is the block, a[2] its CRC.
+ * @return 0 when the block is taken or is the repeat of the block before the
+ *       next one, else the NACK reason.
+ */
 static uint8_t cmd_commit(link_update_dev_t *u, const uint16_t *a)
 {
     const uint16_t block = a[1];
@@ -211,6 +271,12 @@ static uint8_t cmd_commit(link_update_dev_t *u, const uint16_t *a)
     return 0u;
 }
 
+/**
+ * @brief Handle FINISH: start hashing the bytes as written.
+ *
+ * @param u The update state; it must be RECEIVED.
+ * @return 0 when the hash starts, else the NACK reason.
+ */
 static uint8_t cmd_finish(link_update_dev_t *u)
 {
     if (u->state != LINK_UPD_RECEIVED) {
@@ -228,6 +294,12 @@ static uint8_t cmd_finish(link_update_dev_t *u)
     return 0u;
 }
 
+/**
+ * @brief Handle ACTIVATE: write the first sector and owe a restart.
+ *
+ * @param u The update state; it must be VERIFIED.
+ * @return 0 when the first sector is written, else the NACK reason.
+ */
 static uint8_t cmd_activate(link_update_dev_t *u)
 {
     if (u->state != LINK_UPD_VERIFIED) {
@@ -248,6 +320,12 @@ static uint8_t cmd_activate(link_update_dev_t *u)
     return 0u;
 }
 
+/**
+ * @brief Handle ABORT: return to idle.
+ *
+ * @param u The update state; refused once ACTIVATED.
+ * @return 0 when the session is dropped, else the NACK reason.
+ */
 static uint8_t cmd_abort(link_update_dev_t *u)
 {
     if (u->state == LINK_UPD_ACTIVATED) {
@@ -258,6 +336,13 @@ static uint8_t cmd_abort(link_update_dev_t *u)
     return 0u;
 }
 
+/**
+ * @brief Handle BUY: buy the image on trial and owe the other slot's erase.
+ *
+ * @param u The update state.
+ * @return 0 when the image is bought or was never on trial, else the NACK
+ *       reason.
+ */
 static uint8_t cmd_buy(link_update_dev_t *u)
 {
     if ((u->slot & LINK_UPD_SLOT_TRIAL) == 0u) {
@@ -376,15 +461,26 @@ uint8_t link_update_dev_write_data(link_update_dev_t *u, uint8_t offset,
     return 0u;
 }
 
-/* Where the byte at @p pos of the image being checked is read from: the
- * first sector from RAM, which ACTIVATE has not written yet. */
+/**
+ * @brief Where the byte at @p pos of the image being checked is read from: the
+ * first sector from RAM, which ACTIVATE has not written yet.
+ *
+ * @param u The update state.
+ * @param pos Byte offset within the image.
+ * @return Pointer to the byte.
+ */
 static const uint8_t *verify_src(const link_update_dev_t *u, uint32_t pos)
 {
     return (pos < LINK_UPD_SECTOR_BYTES) ? &u->first[pos] : &u->target[pos];
 }
 
-/* The owed erase of the other slot's first sector: outside a session and
- * a trial, with the gate open, once every LINK_UPD_SWEEP_MS. */
+/**
+ * @brief The owed erase of the other slot's first sector: outside a session and
+ * a trial, with the gate open, once every LINK_UPD_SWEEP_MS.
+ *
+ * @param u The update state.
+ * @param now_ms The current time, in ms.
+ */
 static void sweep(link_update_dev_t *u, uint32_t now_ms)
 {
     if (!u->sweep || in_session(u->state) || u->state == LINK_UPD_ACTIVATED

@@ -1,5 +1,8 @@
-/*
- * The AS5600 codec and driver.  See as5600.h.
+/**
+ * @file
+ * @brief The AS5600 codec and driver.
+ *
+ * See as5600.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -61,6 +64,13 @@ void as5600_init(as5600_t *d, sense_bus_t *bus)
     sense_part_init(&d->part, bus, AS5600_ADDR);
 }
 
+/**
+ * @brief Probe the part: read STATUS and classify the answer.
+ *
+ * @param d The driver.
+ * @return SENSE_PART_ABSENT when the read fails, SENSE_PART_WRONG_ID when ML
+ *       and MH are both set, else SENSE_PART_ONLINE.
+ */
 static sense_state_t probe(as5600_t *d)
 {
     uint8_t b[1];

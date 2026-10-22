@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The poll transactions and the angle steps of the rotary knob, see
+ *        knob.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 

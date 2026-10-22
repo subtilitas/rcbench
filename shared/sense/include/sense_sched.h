@@ -1,7 +1,8 @@
-/*
- * The IOmcu's sampling schedule for the sensor bus: what is read on
- * each 1 ms tick, the 50 ms windows made from it, the run's peaks and
- * totals, and the servo move capture on the FAST channel.
+/**
+ * @file
+ * @brief The IOmcu's sampling schedule for the sensor bus: what is read on each
+ * 1 ms tick, the 50 ms windows made from it, the run's peaks and totals, and
+ * the servo move capture on the FAST channel.
  *
  * Pure logic.  The wire is a sense_i2c_t and the time a callback, both
  * given at init, so the host suite runs it against fake_ina.h; the
@@ -185,60 +186,83 @@ extern "C" {
 #endif
 
 #define SENSE_WINDOW_MS      50u   /**< one window                        */
-/** Slots in the rotation; one is read every 2 ms, so a rotation is 40 ms.
- *  An item read at 50 Hz has two of them. */
+/**
+ * @brief Slots in the rotation; one is read every 2 ms, so a rotation is 40 ms.
+ *
+ * An item read at 50 Hz has two of them.
+ */
 #define SENSE_ROTATION       20u
-/** FAST windows the ring keeps: 200 ms. */
+/** @brief FAST windows the ring keeps: 200 ms. */
 #define SENSE_WIN_RING        4u
-/** The capture's filter: a moving mean of 4 samples, 4 ms.  A step shows
- *  half after 1.5 samples and whole after 3: a fall from a moving current
- *  far above the band arrives 3 ms late.  Chosen, not measured: the noise
- *  is not known. */
+/**
+ * @brief The capture's filter: a moving mean of 4 samples, 4 ms.
+ *
+ * A step shows half after 1.5 samples and whole after 3: a fall from a moving
+ * current far above the band arrives 3 ms late.  Chosen, not measured: the
+ * noise is not known.
+ */
 #define SENSE_CAP_FILTER_N    4u
-/** The encoder's tolerance for holding still: 12 counts, 1.05 degrees. */
+/**
+ * @brief The encoder's tolerance for holding still: 12 counts, 1.05 degrees.
+ */
 #define SENSE_ENC_STILL_TOL  12u
-/** One slot in this many reads AGC and MAGNITUDE besides the angle. */
+/** @brief One slot in this many reads AGC and MAGNITUDE besides the angle. */
 #define SENSE_ENC_MAG_EVERY  25u
-/** Samples in a row at an end held harder than the servo moves: 10 ms. */
+/**
+ * @brief Samples in a row at an end held harder than the servo moves: 10 ms.
+ */
 #define SENSE_CAP_SETTLE_N   10u
-/** The capture's lag, added to the window: the filter's 3 ms, up to 1 ms
- *  from a conversion to its read, and the 140 µs conversion, rounded
- *  up. */
+/**
+ * @brief The capture's lag, added to the window: the filter's 3 ms, up to 1 ms
+ * from a conversion to its read, and the 140 µs conversion, rounded up.
+ */
 #define SENSE_CAP_LAG_MS      5u
-/** The capture's time unit: 0.1 ms. */
+/** @brief The capture's time unit: 0.1 ms. */
 #define SENSE_CAP_T_PER_MS   10u
-/** An armed capture given no edge in this long ends lost: nothing renders
- *  the frame it waits for.  The panel writes the command straight after
- *  the arm, and a frame at the slowest PWM rate, 40 Hz, is 25 ms; the
- *  bound is the move's own window. */
+/**
+ * @brief An armed capture given no edge in this long ends lost: nothing renders
+ * the frame it waits for.
+ *
+ * The panel writes the command straight after the arm, and a frame at the
+ * slowest PWM rate, 40 Hz, is 25 ms; the bound is the move's own window.
+ */
 #define SENSE_CAP_EDGE_WAIT_MS SERVO_MOVE_TIMEOUT_MS
-/** sense_cap_arm_t.rise_ua: the level before the command taken from FAST's
- *  SENSE_WINDOW_MS before the edge. */
+/**
+ * @brief sense_cap_arm_t.rise_ua: the level before the command taken from
+ * FAST's SENSE_WINDOW_MS before the edge.
+ */
 #define SENSE_CAP_RISE_AUTO  INT32_MIN
-/** FAST samples kept for that level: one window at 1 kHz. */
+/** @brief FAST samples kept for that level: one window at 1 kHz. */
 #define SENSE_FAST_HISTORY   SENSE_WINDOW_MS
 
-/** INA3221 parts, at 0x40 to 0x43, and their channels. */
+/** @brief INA3221 parts, at 0x40 to 0x43, and their channels. */
 #define SENSE_I3221_PARTS   4u
 #define SENSE_CHANNELS      12u
 _Static_assert(SENSE_CHANNELS == SENSE_I3221_PARTS * INA3221_CHANNELS,
                "three channels a part");
-/** Channel @p ch (1 to 3) of part @p a (0 to 3): 0 to 11. */
+/**
+ * @brief Channel @p ch (1 to 3) of part @p a (0 to 3): 0 to 11.
+ *
+ * @param a Part index, 0 to 3.
+ * @param ch Channel of the part, 1 to 3.
+ * @return The channel index, 0 to 11.
+ */
 static inline unsigned sense_ch(unsigned a, unsigned ch)
 {
     return a * INA3221_CHANNELS + ch - 1u;
 }
 #define SENSE_CH(a, ch)     sense_ch((unsigned)(a), (unsigned)(ch))
-/** sense_i3221_cfg_t.fast: no channel is read every tick. */
+/** @brief sense_i3221_cfg_t.fast: no channel is read every tick. */
 #define SENSE_FAST_NONE     0xFFu
 
-/** Where a window's readings come from: channel c (0 to 11) is source c,
- *  the INA228 (the ESC's path, electronic speed controller) the one after
- *  them. */
+/**
+ * @brief Where a window's readings come from: channel c (0 to 11) is source c,
+ * the INA228 (the ESC's path, electronic speed controller) the one after them.
+ */
 #define SENSE_SRC_INA228    SENSE_CHANNELS
 #define SENSE_SRC_COUNT     (SENSE_CHANNELS + 1u)
 
-/** The wire, the clock and the bus recovery. */
+/** @brief The wire, the clock and the bus recovery. */
 typedef struct {
     sense_i2c_t i2c;
     uint64_t  (*now_us)(void *ctx);  /**< the IOmcu's µs timer     */
@@ -247,14 +271,14 @@ typedef struct {
     void       *ctx;
 } sense_sched_io_t;
 
-/** The INA3221s: which are fitted, each channel's shunt, and FAST. */
+/** @brief The INA3221s: which are fitted, each channel's shunt, and FAST. */
 typedef struct {
     uint8_t  fitted;                      /**< bit a: the part at 0x40 + a */
     uint32_t shunt_uohm[SENSE_CHANNELS];  /**< 0: the channel is off       */
     uint8_t  fast;                        /**< a channel, or SENSE_FAST_NONE */
 } sense_i3221_cfg_t;
 
-/** What is fitted and how; a part not enabled is never addressed. */
+/** @brief What is fitted and how; a part not enabled is never addressed. */
 typedef struct {
     bool     ina228_en;
     uint8_t  ina228_addr;
@@ -264,14 +288,24 @@ typedef struct {
     bool     as5600_en;            /**< the output encoder, at 0x36      */
 } sense_sched_cfg_t;
 
-/** One INA3221 as the SENSE page sets it up before protocol 4.25: the part
- *  at @p addr fitted when @p en and @p addr lies in 0x40 to 0x43, each
- *  channel in @p channels (bit 0 CH1) on @p shunt_uohm, FAST its CH1 when
- *  CH1 is one of them.  Anything else in @p m is cleared. */
+/**
+ * @brief One INA3221 as the SENSE page sets it up before protocol 4.25: the
+ * part at @p addr fitted when @p en and @p addr lies in 0x40 to 0x43, each
+ * channel in @p channels (bit 0 CH1) on @p shunt_uohm, FAST its CH1 when CH1 is
+ * one of them.
+ *
+ * Anything else in @p m is cleared.
+ *
+ * @param m The map entry to fill.
+ * @param en true when the part is fitted.
+ * @param addr I2C address of the part.
+ * @param shunt_uohm Shunt resistance, in µΩ, for each channel it has.
+ * @param channels Channels to read, bit 0 CH1.
+ */
 void sense_i3221_one(sense_i3221_cfg_t *m, bool en, uint8_t addr,
                      uint32_t shunt_uohm, uint8_t channels);
 
-/** One complete window of one source. */
+/** @brief One complete window of one source. */
 typedef struct {
     uint16_t number;      /**< window number, modulo 65536                */
     uint16_t n_i;         /**< current samples with a value               */
@@ -282,7 +316,7 @@ typedef struct {
     int32_t  v_mean_uv, v_min_uv;             /**< 0 with n_v 0           */
 } sense_window_t;
 
-/** A window being filled. */
+/** @brief A window being filled. */
 typedef struct {
     int64_t  i_sum, v_sum;
     uint16_t n_i, n_v;
@@ -291,7 +325,7 @@ typedef struct {
     int32_t  i_min, i_max, v_min;
 } sense_acc_t;
 
-/** One FAST window as the ring keeps it. */
+/** @brief One FAST window as the ring keeps it. */
 typedef struct {
     bool     closed;      /**< a window closed with this entry's number   */
     uint16_t n_i;         /**< current samples, clipped ones among them   */
@@ -304,7 +338,7 @@ typedef struct {
     int32_t  v_mean_uv, v_min_uv;             /**< 0 with n_v 0           */
 } sense_ring_win_t;
 
-/** The run since sense_sched_arm(), from the INA228. */
+/** @brief The run since sense_sched_arm(), from the INA228. */
 typedef struct {
     bool     have_v;      /**< v_min_uv holds a sample                    */
     bool     have_i;      /**< i_max_ua holds a sample                    */
@@ -319,8 +353,10 @@ typedef struct {
     int64_t  charge_uc;   /**< CHARGE as last read                        */
 } sense_run_t;
 
-/** The move capture's state, in the order a capture passes through; the
- *  numbers are link_cap_state_t's. */
+/**
+ * @brief The move capture's state, in the order a capture passes through; the
+ * numbers are link_cap_state_t's.
+ */
 typedef enum {
     SENSE_CAP_IDLE = 0,
     SENSE_CAP_ARMED,      /**< levels given, waiting for the edge         */
@@ -333,7 +369,7 @@ typedef enum {
     SENSE_CAP_LOST,       /**< the INA3221 stopped answering              */
 } sense_cap_state_t;
 
-/** A capture's levels, µA. */
+/** @brief A capture's levels, µA. */
 typedef struct {
     int32_t rise_ua;      /**< the level before the command, or
                                SENSE_CAP_RISE_AUTO                        */
@@ -342,18 +378,21 @@ typedef struct {
     int32_t band_ua;      /**< the arrival band                           */
 } sense_cap_arm_t;
 
-/** A FAST sample held while armed, for the filter. */
+/** @brief A FAST sample held while armed, for the filter. */
 typedef struct {
     float  a;
     int8_t clip;          /**< servo_move_clip_t                          */
 } sense_cap_pre_t;
 
-/** A FAST sample kept for the level before a command. */
+/** @brief A FAST sample kept for the level before a command. */
 typedef struct {
     uint32_t t;           /**< when it was read, 0.1 ms                   */
     int32_t  ua;          /**< its value; a clip at the end of the range  */
 } sense_fast_t;
 
+/**
+ * @brief The state of a capture of a FAST move.
+ */
 typedef struct {
     sense_cap_state_t state;
     uint16_t seq;         /**< captures ended, modulo 65536               */
@@ -377,7 +416,7 @@ typedef struct {
     servo_move_t mv;
 } sense_cap_t;
 
-/** The output encoder as last read. */
+/** @brief The output encoder as last read. */
 typedef struct {
     as5600_t dev;
     bool     have_angle;   /**< raw holds a reading of this set-up          */
@@ -393,6 +432,9 @@ typedef struct {
     bool     anchored;     /**< an anchor is set                            */
 } sense_enc_t;
 
+/**
+ * @brief The sampling schedule of the sensor bus: its parts, windows and captures.
+ */
 typedef struct {
     sense_sched_io_t    io;
     sense_sched_cfg_t   cfg;
@@ -443,49 +485,109 @@ typedef struct {
     uint8_t  hist_n, hist_head;
 } sense_sched_t;
 
-/** A schedule over @p io for the parts @p cfg enables.  A part whose
- *  set-up the driver refuses is left unset, never addressed, and its
- *  error kept in i228_setup or i3221_setup[a]; a FAST that names a channel
- *  off is taken as none.  The bus is the caller's to open at 400 kHz. */
+/**
+ * @brief A schedule over @p io for the parts @p cfg enables.
+ *
+ * A part whose set-up the driver refuses is left unset, never addressed, and
+ * its error kept in i228_setup or i3221_setup[a]; a FAST that names a channel
+ * off is taken as none.  The bus is the caller's to open at 400 kHz.
+ *
+ * @param s The schedule to set up.
+ * @param io The callbacks the schedule calls.
+ * @param cfg The parts to enable.
+ */
 void sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
                       const sense_sched_cfg_t *cfg);
 
-/** One tick: every 1 ms. */
+/**
+ * @brief One tick: every 1 ms.
+ *
+ * @param s The schedule.
+ */
 void sense_sched_tick(sense_sched_t *s);
 
-/** The edge into driving: the run's peaks start again and the INA228's
- *  totals are cleared on the next tick. */
+/**
+ * @brief The edge into driving: the run's peaks start again and the INA228's
+ * totals are cleared on the next tick.
+ *
+ * @param s The schedule.
+ */
 void sense_sched_arm(sense_sched_t *s);
 
-/** The last complete window of source @p src (a channel, or
- *  SENSE_SRC_INA228); false before one has closed. */
+/**
+ * @brief The last complete window of source @p src (a channel, or
+ * SENSE_SRC_INA228); false before one has closed.
+ *
+ * @param s The schedule.
+ * @param src The source: a channel, or SENSE_SRC_INA228.
+ * @param out Receives the window.
+ * @return true with a window; false before one has closed.
+ */
 bool sense_sched_window(const sense_sched_t *s, unsigned src,
                         sense_window_t *out);
 
-/** FAST's window numbered @p back before the newest complete one, @p back
- *  under SENSE_WIN_RING; false, and @p out not closed, for a number that
- *  was skipped, lies before the first window, or before one has closed. */
+/**
+ * @brief FAST's window numbered @p back before the newest complete one, @p back
+ * under SENSE_WIN_RING; false, and @p out not closed, for a number that was
+ * skipped, lies before the first window, or before one has closed.
+ *
+ * @param s The schedule.
+ * @param back How many windows before the newest complete one.
+ * @param out Receives the window.
+ * @return true with a window; false for a number that was skipped, lies before
+ *       the first window, or before one has closed.
+ */
 bool sense_sched_ring(const sense_sched_t *s, unsigned back,
                       sense_ring_win_t *out);
 
-/** Arm a capture on FAST with @p levels; rise_ua SENSE_CAP_RISE_AUTO takes
- *  the level before the command from FAST.  Refused, and nothing changed,
- *  with no FAST channel or while its INA3221 is not online. */
+/**
+ * @brief Arm a capture on FAST with @p levels; rise_ua SENSE_CAP_RISE_AUTO
+ * takes the level before the command from FAST.
+ *
+ * Refused, and nothing changed, with no FAST channel or while its INA3221 is
+ * not online.
+ *
+ * @param s The schedule.
+ * @param levels The capture levels.
+ * @return true when the capture is armed; false when refused.
+ */
 bool sense_sched_cap_arm(sense_sched_t *s, const sense_cap_arm_t *levels);
 
-/** The PWM frame carrying the new pulse starts at @p edge_us, on the clock
- *  now_us() reads; it may lie ahead.  The samples taken while armed seed
- *  the filter.  Nothing unless a capture is armed. */
+/**
+ * @brief The PWM frame carrying the new pulse starts at @p edge_us, on the
+ * clock now_us() reads; it may lie ahead.
+ *
+ * The samples taken while armed seed the filter.  Nothing unless a capture is
+ * armed.
+ *
+ * @param s The schedule.
+ * @param edge_us Start of the PWM frame carrying the new pulse, in µs.
+ */
 void sense_sched_cap_edge(sense_sched_t *s, uint64_t edge_us);
 
-/** Stop a capture; its count stays. */
+/**
+ * @brief Stop a capture; its count stays.
+ *
+ * @param s The schedule.
+ */
 void sense_sched_cap_disarm(sense_sched_t *s);
 
-/** FAST's INA3221, or NULL with no FAST channel. */
+/**
+ * @brief FAST's INA3221, or NULL with no FAST channel.
+ *
+ * @param s The schedule.
+ * @return FAST's INA3221, or NULL with no FAST channel.
+ */
 const ina3221_t *sense_sched_fast_part(const sense_sched_t *s);
 
-/** How long the encoder's angle has stayed within SENSE_ENC_STILL_TOL
- *  counts of its anchor, ms, saturating at 65535; 0 with no anchor. */
+/**
+ * @brief How long the encoder's angle has stayed within SENSE_ENC_STILL_TOL
+ * counts of its anchor, ms, saturating at 65535; 0 with no anchor.
+ *
+ * @param s The schedule.
+ * @return Time since the encoder angle was last anchored, in ms; 0 before an
+ *       anchor, 65535 at most.
+ */
 uint16_t sense_sched_enc_still_ms(const sense_sched_t *s);
 
 #ifdef __cplusplus

@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Cycle counts and divider of the PIO pin driver for the KST wire.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -7,13 +10,13 @@
 #include <stddef.h>
 #include <string.h>
 
-/* @p ns as cycles of @p hz, rounded to nearest. */
+/** @brief @p ns as cycles of @p hz, rounded to nearest. */
 static uint32_t cycles_of(uint32_t hz, uint32_t ns)
 {
     return (uint32_t)(((uint64_t)hz * ns + 500000000u) / 1000000000u);
 }
 
-/* @p cycles of @p hz as ns, rounded to nearest. */
+/** @brief @p cycles of @p hz as ns, rounded to nearest. */
 static uint32_t ns_of(uint32_t hz, uint64_t cycles)
 {
     return (uint32_t)((cycles * 1000000000u + hz / 2u) / hz);
@@ -60,8 +63,10 @@ uint32_t kst_pio_tick_ns(const kst_pio_clock_t *clock)
                        + clock->sys_hz - 1u) / clock->sys_hz);
 }
 
-/* Cycles from the last edge to the first sample of the pin, as the pin was
- * when the sample was taken. */
+/**
+ * @brief Cycles from the last edge to the first sample of the pin, as the pin
+ *        was when the sample was taken.
+ */
 static uint32_t first_sample_cycles(const kst_pio_clock_t *clock)
 {
     return clock->release_cycles + KST_PIO_SAMPLE_LEAD - KST_PIO_SYNC_CYCLES;
