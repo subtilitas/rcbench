@@ -323,6 +323,8 @@ static const struct {
     { { 8, 3, 546, 529 },     false, 126, 89 },  /* MOTOR & ESC SETTINGS */
     { { 352, 66, 664, 466 },  true,  59, 61 },   /* ESC STICK search    */
     { { 8, 40, 1008, 452 },   false, 242, 78 },  /* BALANCE             */
+    { { 10, 10, 1004, 482 },  false, 241, 85 },  /* SETUP               */
+    { { 10, 10, 1004, 482 },  true,  93, 70 },   /* SETUP folders       */
     { { 8, 8, 1008, 484 },    true,  93, 71 },   /* WI-FI               */
 };
 

@@ -39,25 +39,26 @@
 
 /* Geometry mirrored from settings_screen_int.h; if the layout moves these
  * move with it, and the test names say what they aim at.  The hub's tiles
- * come from settings_hub_slot(). */
-#define LIST_X   8
-#define LIST_Y   (6 + UI_BAND_H)
-#define LIST_H   (STRIP_Y - 6 - LIST_Y)
-#define ROW_PITCH 58
-#define ROW_H    54
-#define PLUS_X   726
-#define MINUS_X  556
-#define BTN_W    44
+ * come from settings_hub_slot(); test_settings_rows holds these figures to
+ * settings_screen_row_rect() and settings_screen_row_part(). */
+#define LIST_X   10
+#define LIST_Y   (8 + UI_BAND_H)
+#define LIST_H   (STRIP_Y - 8 - LIST_Y)
+#define ROW_PITCH 70
+#define ROW_H    64
+#define PLUS_X   926
+#define MINUS_X  704
+#define BTN_W    56
 /* The strip under the list and the tiles, 4 px above the alert band:
  * RESET CATEGORY under the second column of the hub's three, SAVE under
  * the third. */
-#define STRIP_H  34
+#define STRIP_H  48
 #define STRIP_Y  (UI_BODY_H - UI_ALERT_H - 4 - STRIP_H + UI_BAND_H)
-#define HUB_COL_W ((UI_PANEL_W - 4 * 8) / 3)
-#define RESET_X  (8 + HUB_COL_W + 8)
+#define HUB_COL_W ((UI_PANEL_W - 4 * 10) / 3)
+#define RESET_X  (10 + HUB_COL_W + 10)
 #define RESET_Y  STRIP_Y
 #define RESET_H  STRIP_H
-#define SAVE_X   (8 + 2 * (HUB_COL_W + 8))
+#define SAVE_X   (10 + 2 * (HUB_COL_W + 10))
 #define SAVE_Y   STRIP_Y
 #define SAVE_H   STRIP_H
 

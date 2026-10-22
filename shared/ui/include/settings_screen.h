@@ -64,10 +64,49 @@ bool settings_screen_unheld(setting_id_t id);
 const char *settings_screen_help(setting_id_t id);
 
 /**
- * How far the open category's list is scrolled, in px from its top; 0 to
- * @p max, which is 0 for a list that fits its 348 px.  @p max may be NULL.
+ * @brief How far the open category's list is scrolled.
+ * @param max Its scroll range into, when not NULL: 0 for a list that fits
+ *            its 428 px.
+ * @return The scroll, in px from the list's top: 0 to the range.
  */
 int settings_screen_scroll(int *max);
+
+/**
+ * @brief The open list's pane, in the screen's own coordinates (the body
+ *        under the band): the rows show inside it and nowhere else.
+ * @return The pane.
+ */
+gfx_rect_t settings_screen_list_rect(void);
+
+/**
+ * @brief Where list row @p row lies at the list's present scroll, in the
+ *        screen's own coordinates; partly or wholly outside the pane for a
+ *        row scrolled out of it.
+ * @param row The row, from 0.
+ * @return The row's rectangle.
+ */
+gfx_rect_t settings_screen_row_rect(int row);
+
+/**
+ * @brief The parts of list row @p row a tap acts on, in the screen's own
+ *        coordinates at the list's present scroll: the "-" key, the value
+ *        between the keys and the "+" key, each over the row's height.
+ */
+typedef enum {
+    SETTINGS_ROW_MINUS = 0,   /**< the "-" or "<" key                  */
+    SETTINGS_ROW_VALUE,       /**< the value: a tap opens the keypad    */
+    SETTINGS_ROW_PLUS,        /**< the "+" or ">" key                  */
+} settings_row_part_t;
+
+/**
+ * @brief Where @p part of list row @p row lies; settings_row_part_t says
+ *        which part.  Whether the row has keys or a keypad is the row's
+ *        own: the rectangle is where they are when it does.
+ * @param row  The row, from 0.
+ * @param part The part.
+ * @return The part's rectangle.
+ */
+gfx_rect_t settings_screen_row_part(int row, settings_row_part_t part);
 
 /**
  * The list row that shows the @p index-th setting of @p cat (as

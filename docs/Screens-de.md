@@ -177,16 +177,17 @@ ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
 
 ![Das Funktionsmenü](img/de/overview.png)
 
-Das Menü ist ein Raster aus 4 Spalten und 2 Reihen, jede Kachel 246 x 258 px
-mit 8 px Rand. Die erste Reihe hält die Werkbänke, MOTOR & ESC, SERVO und
+Das Menü ist ein Raster aus 4 Spalten und 2 Reihen, jede Kachel 243 x 255 px
+mit 10 px Rand. Eine Kachel trägt ein Symbol von 40 px, ihren Namen in der
+Schrift 20 x 36 px und eine Zeile in der Schrift 10 x 20 px. Die erste Reihe hält die Werkbänke, MOTOR & ESC, SERVO und
 SUPPLY; die zweite die Instrumente, RECEIVER, BATTERY und BALANCE; die
 letzte Spalte LOGS über SETUP. Eine vierte Werkbank oder ein viertes
 Instrument lässt den Build bei 4 Spalten scheitern
 (`shared/ui/overview_screen.c`). Das Programmieren hat keine Kachel: Es ist
 die Aufgabe PROGRAMMIEREN von MOTOR & ESC und von SERVO.
 
-Jede Kachel trägt unter ihrem Namen eine Zeile, 2 Reihen zu höchstens 23
-Zeichen:
+Jede Kachel trägt unter ihrem Namen eine Zeile, 2 Reihen zu höchstens 22
+Zeichen, 8 px frei von den Seiten der Kachel:
 
 | Kachel | Zeile |
 | --- | --- |
@@ -2740,8 +2741,9 @@ USB, um das Layout mit zwei Anwendungs-Slots zu bekommen:
 ## Setup
 
 Die SETUP-Kachel des Menüs öffnet eine Seite mit Kacheln, 3 mal 3, im Stil
-des Menüs. Jede Kachel ist 330 x 108 px groß, ihr Symbol mittig über ihrem
-Namen.
+des Menüs. Jede Kachel ist 328 x 130 px groß, mit 10 px Rand: ein Symbol
+von 36 px mittig über ihrem Namen in der Schrift 12 x 24 px, darunter eine
+Zeile in der Schrift 10 x 20 px.
 
 ![Setup](img/de/setup.png)
 
@@ -2767,9 +2769,14 @@ Dieselbe Seite im hellen Design:
 
 ![Setup im hellen Design](img/de/setup-light.png)
 
-Die Liste einer Kategorie ist 776 px breit, ab dem linken Rand des Panels, und
-zeigt 446 px davon, 7 Zeilen, über einer Leiste mit drei Spalten: dem Namen
-der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Die Leiste endet bei y
+Die Liste einer Kategorie ist 984 px breit, ab dem linken Rand des Panels, und
+zeigt 428 px davon, 6 ganze Zeilen, über einer Leiste mit drei Spalten, 48 px
+hoch: dem Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Eine
+Zeile ist 64 px hoch bei 70 px Zeilenabstand: der Name der Einstellung in der
+Schrift 20 x 36 px, ihre Hilfezeile darunter in der Schrift 10 x 20 px, ihr
+Wert in der Schrift 12 x 24 px. Ein Wert, der breiter ist als die Lücke
+zwischen den Tasten, nähme die Schrift 10 x 20 px; kein Wert einer
+SETUP-Einstellung braucht sie, auf Englisch wie auf Deutsch. Die Leiste endet bei y
 552 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
 Ein Alert verdeckt damit weder eine Taste noch eine Zeile, KATEGORIE
 ZURÜCKSETZEN oder SPEICHERN, auf den Kacheln wie auf einer Liste.
@@ -2823,13 +2830,15 @@ Auswahl springt vom letzten Wert auf den ersten.
   ist.
 - **Scrollen.** Ein senkrechter Drag von mehr als 8 px, der irgendwo auf der
   Liste beginnt, scrollt sie, die Tastenspalten eingeschlossen. Ein Scrollen
-  ändert keinen Wert. Der Balken am rechten Rand der Liste zeigt die Position
-  und nimmt keine Berührung an.
-- Eine Taste ist ihre Spalte, 44 px breit, über die 54 px ihrer Zeile. Die
-  4 px zwischen zwei Zeilen gehören zu keiner Taste.
-- **Tastenfeld.** Ein Tipp auf den Wert einer Zahl, die 126 px zwischen
+  ändert keinen Wert. Der Balken rechts der Liste, 12 px breit, zeigt die
+  Position und nimmt keine Berührung an. Eine Liste, die in ihre 428 px
+  passt, hat keinen Balken.
+- Eine Taste ist 56 x 48 px gezeichnet und nimmt ihre Spalte, 56 px breit,
+  über die 64 px ihrer Zeile. Die 6 px zwischen zwei Zeilen gehören zu keiner
+  Taste.
+- **Tastenfeld.** Ein Tipp auf den Wert einer Zahl, die 166 px zwischen
   ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste und der
-  Leiste: 1008 x 484 px, Tasten von 242 x 86 px, sein Fuß 4 px über dem
+  Leiste: 1004 x 482 px, Tasten von 241 x 85 px, sein Fuß 4 px über dem
   Alarmband. Es nennt die Einstellung, ihren Bereich und ihre Einheit, zeigt
   den Wert blass, bis eine Ziffer getippt ist, und nimmt so viele Stellen
   nach dem Punkt, wie der Schritt hat: eine für die 0,1 mΩ eines Shunts,
@@ -2947,7 +2956,7 @@ ANSCHLÜSSE listet seine 23 Einstellungen in fünf Abschnitten. Eine
 INA228, Sensor SDA und SCL und der AS5600), PHASENABGRIFF,
 BALANCE-SENSOREN (Vibration und Optischer Tacho), NETZTEIL (der PD mini) und
 PROG-PORT (Hitec-D-Empfang).
-Eine Überschrift ist eine eigene Zeile, 54 px hoch bei 58 px Zeilenabstand
+Eine Überschrift ist eine eigene Zeile, 64 px hoch bei 70 px Zeilenabstand
 der Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert:
 ein Tippen darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die
 Liste ist 28 Zeilen lang.
@@ -3508,12 +3517,15 @@ jeder Wert zurückgestellt ist.
 Das Home-Tag auf den Kacheln, der einzige Weg von SETUP zum Menü, wird
 gehalten, solange die Beschriftung `SPEICHERN` oder `NICHT GESPEICHERT`
 lautet. Stattdessen deckt eine Warnung den Inhalt ab: eine Karte von
-1008 x 442 px mit einem 3 px breiten Rand in der Warnfarbe, über der Leiste.
+1004 x 424 px mit einem 3 px breiten Rand in der Warnfarbe, über der Leiste.
+Ihr Titel steht in der Schrift 20 x 36 px, die zwei Zeilen dazu, was
+ungespeichert heißt, und die Hinweise in der Schrift 12 x 24 px.
 
 ![Ein ungespeicherter Wert, am Home-Tag](img/de/setup-leave.png)
 
 Sie nennt jeden Wert und jeden Text, der von der gespeicherten Kopie
-abweicht, eine Zeile von 22 px je Änderung, als `Name: gespeichert -> jetzt`.
+abweicht, eine Zeile von 24 px je Änderung in der Schrift 10 x 20 px, als
+`Name: gespeichert -> jetzt`.
 Ein Wert steht so da, wie die Liste ihn schreibt, mit Einheit; ein Text, der
 Name des Prüflings (DUT, device under test), so, wie er ist. Werte anderer
 Bildschirme, etwa die Einstellungen von SERVO, ESC STICK oder MOTOR & ESC,

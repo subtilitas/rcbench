@@ -3940,7 +3940,6 @@ shared/ui/include/settings_screen.h: warning: parameters of member settings_scre
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_opens are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_row_of are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_rows are not documented
-shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_scroll are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_set_hitec_rx are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_set_unheld are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_text_row are not documented
@@ -3953,7 +3952,6 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_scr
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_opens is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_row_of is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_rows is not documented
-shared/ui/include/settings_screen.h: warning: return type of member settings_screen_scroll is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_text_row is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_textkey is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_unheld is not documented
@@ -4136,7 +4134,6 @@ shared/ui/include/ui_watermark.h: warning: parameters of member ui_watermark are
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_MAX_CREDIT_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.h is not documented.
-shared/ui/include/ui_widgets.h: warning: Member ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon, const char *name, const char *line, bool pressed) (function) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_bar are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_button are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_card are not documented
@@ -4875,26 +4872,18 @@ shared/ui/outputs_screen.c: warning: Member touched(void) (function) of file out
 shared/ui/outputs_screen.c: warning: Member unbind_all(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen_int.h: file has no @file block
 shared/ui/overview_screen.c: warning: Compound tile_t is not documented.
-shared/ui/overview_screen.c: warning: Member COLS (macro definition) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member H (macro definition) of file overview_screen.c is not documented.
-shared/ui/overview_screen.c: warning: Member M (macro definition) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member N_OF(a) (macro definition) of file overview_screen.c is not documented.
-shared/ui/overview_screen.c: warning: Member ROWS (macro definition) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member SLOTS (macro definition) of file overview_screen.c is not documented.
-shared/ui/overview_screen.c: warning: Member TH (macro definition) of file overview_screen.c is not documented.
-shared/ui/overview_screen.c: warning: Member TW (macro definition) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member W (macro definition) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member cancel(void) (function) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
 shared/ui/overview_screen.c: warning: Member event(const touch_event_t *evt) (function) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member have_press (variable) of struct [struct].s is not documented.
-shared/ui/overview_screen.c: warning: Member icon (variable) of struct tile_t is not documented.
-shared/ui/overview_screen.c: warning: Member id (variable) of struct tile_t is not documented.
 shared/ui/overview_screen.c: warning: Member k_instruments[] (variable) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member k_last_column[] (variable) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member k_screen (variable) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member k_workbenches[] (variable) of file overview_screen.c is not documented.
-shared/ui/overview_screen.c: warning: Member line (variable) of struct tile_t is not documented.
 shared/ui/overview_screen.c: warning: Member overview_invalidate(void) (function) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member overview_screen(void) (function) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member overview_screen_tile_line(int slot) (function) of file overview_screen.c is not documented.
@@ -5546,47 +5535,18 @@ shared/ui/settings_screen.c: warning: parameters of member stg_row_rect are not 
 shared/ui/settings_screen.c: warning: return type of member stg_row_rect is not documented
 shared/ui/settings_screen_int.h: warning: Compound hub_tile_t is not documented.
 shared/ui/settings_screen_int.h: warning: Compound stg_state_t is not documented.
-shared/ui/settings_screen_int.h: warning: Member BTN_H (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member BTN_W (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member DRAG_SLOP (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member HUB_CATEGORY(cat_, icon_) (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member HUB_COLS (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member HUB_ICON_DY (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member HUB_M (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member HUB_ROWS (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member HUB_SCREEN(screen_, line_, icon_) (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member HUB_TH (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member HUB_TW (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member LIST_H (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member LIST_W (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member LIST_X (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member LIST_Y (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member MAX_FBS (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member MINUS_X (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member PLUS_X (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member REPEAT_DELAY_S (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member REPEAT_FAST_HZ (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member REPEAT_FAST_S (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member REPEAT_SLOW_HZ (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member ROW_GAP (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member ROW_H (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member ROW_PITCH (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member SCREEN_H (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member SCREEN_W (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member STRIP_H (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member STRIP_Y (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member TILE_COUNT (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member TK_AREA_H (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member VALUE_R (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member WARN_H (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member WARN_LINE_Y (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member WARN_NOTE_PITCH (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member WARN_NOTE_Y (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member WARN_PITCH (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member WARN_W (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member WARN_WHY_Y (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member WARN_X (macro definition) of file settings_screen_int.h is not documented.
-shared/ui/settings_screen_int.h: warning: Member WARN_Y (macro definition) of file settings_screen_int.h is not documented.
 shared/ui/settings_screen_int.h: warning: Member cat (variable) of struct stg_state_t is not documented.
 shared/ui/settings_screen_int.h: warning: Member chrome_valid[MAX_FBS] (variable) of struct stg_state_t is not documented.
 shared/ui/settings_screen_int.h: warning: Member dragging (variable) of struct stg_state_t is not documented.
@@ -5933,7 +5893,6 @@ shared/ui/ui_watermark.c: warning: Member s_cache (variable) of file ui_watermar
 shared/ui/ui_watermark.c: warning: Member w (variable) of struct [struct].s_cache is not documented.
 shared/ui/ui_widgets.c: warning: Member tag_width(const char *title, bool chevron) (function) of file ui_widgets.c is not documented.
 shared/ui/ui_widgets.c: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.c is not documented.
-shared/ui/ui_widgets.c: warning: Member ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon, const char *name, const char *line, bool pressed) (function) of file ui_widgets.c is not documented.
 shared/ui/ui_workbench.c: file has no @file block
 shared/ui/upd_screen.c: warning: Member BH (macro definition) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member BPITCH (macro definition) of file upd_screen.c is not documented.

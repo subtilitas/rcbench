@@ -356,6 +356,30 @@ gfx_rect_t stg_row_rect(int index)
     return gfx_rect_make(LIST_X, y, LIST_W, ROW_H);
 }
 
+gfx_rect_t settings_screen_list_rect(void)
+{
+    return gfx_rect_make(LIST_X, LIST_Y, LIST_W, LIST_H);
+}
+
+gfx_rect_t settings_screen_row_rect(int row)
+{
+    return stg_row_rect(row);
+}
+
+gfx_rect_t settings_screen_row_part(int row, settings_row_part_t part)
+{
+    const gfx_rect_t r = stg_row_rect(row);
+    switch (part) {
+    case SETTINGS_ROW_MINUS:
+        return gfx_rect_make(MINUS_X, r.y, BTN_W, ROW_H);
+    case SETTINGS_ROW_VALUE:
+        return gfx_rect_make(VALUE_X, r.y, VALUE_W, ROW_H);
+    case SETTINGS_ROW_PLUS:
+    default:
+        return gfx_rect_make(PLUS_X, r.y, BTN_W, ROW_H);
+    }
+}
+
 static int row_at(int x, int y)
 {
     if (x < LIST_X || x >= LIST_X + LIST_W || y < LIST_Y || y >= LIST_Y + LIST_H) {

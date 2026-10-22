@@ -12,7 +12,7 @@ The menu is the panel's home screen. It opens after the splash and holds one til
 
 ![The menu with the link up](view:overview)
 
-Eight tiles, 246 x 258 px each, in 4 columns and 2 rows: the workbenches in the first row, the instruments in the second, LOGS over SETUP in the last column.
+Eight tiles, 243 x 255 px each, in 4 columns and 2 rows: the workbenches in the first row, the instruments in the second, LOGS over SETUP in the last column.
 
 | Tile | Line under the name | Page |
 |---|---|---|
