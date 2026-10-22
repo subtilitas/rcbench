@@ -2517,7 +2517,8 @@ choice wraps round from its last value to its first.
   and names the range in the warning colour. A value inside the range that
   the keys never reach keeps it open too and names the reason in place of
   the range, in the warning colour: `0 or 5.0 to 1000.0 mOhm` for a shunt
-  between 0 and 5.0 mΩ, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a
+  between 0 and 5.0 mΩ, `0 or 10 to 32767 mA` for a current limit
+  between 0 and 10 mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a
   Sensor SDA pin the bus cannot have, and `The other PD mini pin holds this
   GPIO` for the GPIO the other PD mini pin holds. The pin list is built from
   `settings_sense_sda_valid()`, the check the row's keys step by. The next
@@ -2786,6 +2787,8 @@ A tap on a shunt's value opens the keypad ([Keys and the list](#keys-and-the-lis
 44.4 mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,
 where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused, and the keypad
 shows `0 or 5.0 to 1000.0 mOhm` in place of the range until the next key.
+A LIMIT row takes 0 (OFF) or 10 to 32767 mA; 1 to 9 is refused with
+`0 or 10 to 32767 mA`.
 
 ![The keypad of 0x40 CH1 shunt](img/setup-sensors-keypad.png)
 

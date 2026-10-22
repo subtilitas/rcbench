@@ -2776,6 +2776,7 @@ Auswahl springt vom letzten Wert auf den ersten.
   Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es
   ebenfalls offen und nennt statt des Bereichs den Grund in der Warnfarbe:
   `0 oder 5.0 bis 1000.0 mOhm` für einen Shunt zwischen 0 und 5,0 mΩ,
+  `0 oder 10 bis 32767 mA` für eine Stromgrenze zwischen 0 und 10 mA,
   `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26` für einen Pin für
   Sensor-SDA, den der Bus nicht haben kann, und `Diesen GPIO hält der andere
   PD-mini-Pin` für den GPIO, den der andere PD-mini-Pin hält. Die Pinliste
@@ -3070,6 +3071,8 @@ Ein Tipp auf den Wert eines Shunts öffnet das Tastenfeld
 sind fünf Tasten, `4`, `4`, `.`, `4` und OK, wo `-` 556 Schritte braucht.
 0 ist AUS; 0,1 bis 4,9 wird abgelehnt, und das Tastenfeld zeigt bis zur
 nächsten Taste `0 oder 5.0 bis 1000.0 mOhm` statt des Bereichs.
+Eine Zeile LIMIT nimmt 0 (AUS) oder 10 bis 32767 mA; 1 bis 9 wird mit
+`0 oder 10 bis 32767 mA` abgelehnt.
 
 ![Das Tastenfeld von 0x40 CH1 Shunt](img/de/setup-sensors-keypad.png)
 

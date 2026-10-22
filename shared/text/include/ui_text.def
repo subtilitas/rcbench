@@ -5660,7 +5660,7 @@ UI_SETTING_LABEL(SET_UPD_CHANNEL,
     "Releases",
     "Releases")
 UI_SETTING_HELP(SET_UPD_CHANNEL,
-    "Both offer 0.22.x only; TESTING also reads testing releases",
+    "STABLE offers stable releases only, TESTING also testing ones",
     "STABLE bietet nur Stable-Releases an, TESTING auch Testing-Releases")
 /* --- the SD card ----------------------------------------------------- */
 UI_SETTING_LABEL(SET_LOG_AUTO,

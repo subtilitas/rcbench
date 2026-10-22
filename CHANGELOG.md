@@ -17,7 +17,8 @@ history is in git.
   outside the range keeps the keypad open and names the range in the
   warning colour. One the keys never reach keeps it open with the reason
   in place of the range until the next key: `0 or 5.0 to 1000.0 mOhm` for
-  a SENSORS shunt between 0 and 5.0 mOhm, `Pins the bus takes: 0 4 6 14
+  a SENSORS shunt between 0 and 5.0 mOhm, `0 or 10 to 32767 mA` for a
+  LIMIT row between 0 and 10 mA, `Pins the bus takes: 0 4 6 14
   16 18 20 26` for a Sensor SDA pin the bus cannot have, listed from the
   check the row's keys use, and `The other PD mini pin holds this GPIO`.
   A shunt of 44.4 mOhm from the 100.0 default is five keys, where `-`
