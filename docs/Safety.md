@@ -25,15 +25,14 @@ acknowledge) from the IOmcu to either leaves the panel SAFE.
 
 ## Required external circuit: the monostable
 
-The safety line is panel GPIO28 (general-purpose input/output pin 28), a
-free header pin of the 7-inch ESP32-P4 display board. GPIO28 is a
-placeholder: the header pin that carries the line is not chosen yet
-(`PANEL_HEARTBEAT_PIN` in `board_pins.h`). It carries
-edges, not a level. The IOmcu's output enable and the servo and ESC
-(electronic speed controller) power path must be gated by a retriggerable
-monostable that stays energised only while edges keep arriving. A crash, a
-wedged task, a reset, a brown-out and an unplugged cable then all produce the
-same result: no edges, no output, independent of firmware at both ends.
+The safety line is panel GPIO28 (general-purpose input/output pin 28), a free
+pin of the 7-inch ESP32-P4 display board: IO28 of the 12-pin header P3
+(`PANEL_HEARTBEAT_PIN` in `board_pins.h`). It carries edges, not a level. The
+IOmcu's output enable and the servo and ESC (electronic speed controller)
+power path must be gated by a retriggerable monostable that stays energised
+only while edges keep arriving. A crash, a wedged task, a reset, a brown-out
+and an unplugged cable then all produce the same result: no edges, no output,
+independent of firmware at both ends.
 
 Monostable window: about 150 ms. The heartbeat comes from the panel's control
 task, which runs every 5 ms on the core that does not draw, so its period does

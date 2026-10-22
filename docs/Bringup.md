@@ -169,4 +169,4 @@ count. The round trip sets what a poll period has to clear; the counters say
 whether the bus or the software was the limit.
 
 With both boards powered, also confirm on a scope that GPIO28 (`PANEL_HEARTBEAT_PIN`) edges at the
-rate [Safety](Safety.md) specifies. GPIO28 is provisional until the pin is fixed on the first sample.
+rate [Safety](Safety.md) specifies. GPIO28 is IO28 of the 12-pin header P3.

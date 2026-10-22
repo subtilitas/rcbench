@@ -570,7 +570,7 @@ one:
 
 | | |
 |---|---|
-| Panel end | **GPIO28**, a free pin of the GPIO header of the 7-inch ESP32-P4 board (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). GPIO28 is provisional until the pin is fixed on the first sample. |
+| Panel end | **GPIO28**, IO28 of the 12-pin header P3 of the 7-inch ESP32-P4 board (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). |
 | IOmcu end | **GP3** |
 | Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the IOmcu is healthy: it switches to SAFE after 150 ms of silence. What is uncovered is a panel that stops beating while the IOmcu cannot act -- nothing then removes the outputs, and that is what the monostable would do without any firmware |
 

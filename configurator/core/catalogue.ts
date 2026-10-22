@@ -146,10 +146,9 @@ const parts: Part[] = [
       pin('CANH', same('CAN H'), P4_SCHEMATIC),
       pin('CANL', same('CAN L'), P4_SCHEMATIC),
       pin('CANG', same('CAN GND'), P4_SCHEMATIC),
-      // The heartbeat: PANEL_HEARTBEAT_PIN in board_pins.h, a placeholder
-      // until the owner picks the pin. Not confirmed; the check entry
-      // `panel-heartbeat-pin` says so.
-      pin('HB', same('IO28'), P4_SCHEMATIC, false),
+      // The heartbeat: IO28 of the 12-pin header P3, PANEL_HEARTBEAT_PIN in
+      // board_pins.h.
+      pin('HB', same('IO28'), P4_SCHEMATIC),
     ],
     buy: [
       buy('Waveshare', same('ESP32-P4-WIFI6-Touch-LCD-7B'), t(
@@ -1708,14 +1707,6 @@ const checks: Check[] = [
     when: null, src: P4_SCHEMATIC,
   },
   {
-    id: 'panel-heartbeat-pin', kind: 'unknown',
-    text: t(
-      'Heartbeat pin of the panel: not decided. IO28 is a placeholder of the firmware until the pin is chosen on a board. Check this page again before wiring the heartbeat.',
-      'Heartbeat-Pin des Panels: nicht entschieden. IO28 ist ein Platzhalter der Firmware, bis der Pin an einer Platine gewählt ist. Vor dem Verdrahten des Heartbeat diese Seite erneut prüfen.',
-    ),
-    when: null, src: owner('2026-10-21'),
-  },
-  {
     id: 'same-release', kind: 'note',
     text: t(
       'Both boards run the same release. With different protocol versions the panel shows "Protocol versions do not match. ARMED is blocked."',
@@ -2143,8 +2134,8 @@ const notInRelease: Catalogue['notInRelease'] = [
   {
     id: 'knob',
     text: t(
-      'Rotary knob on the panel: not in this data. Its pins on the 12-pin header P3 are not decided: IO30 (SDA) and IO31 (SCL) are placeholders of the firmware.',
-      'Drehknopf am Panel: nicht in diesen Daten. Seine Pins an der 12-poligen Buchse P3 sind nicht entschieden: IO30 (SDA) und IO31 (SCL) sind Platzhalter der Firmware.',
+      'Rotary knob on the panel: not in this data. Its pins are IO30 (SDA) and IO31 (SCL) on the 12-pin header P3, with 3V3 and GND from the same header.',
+      'Drehknopf am Panel: nicht in diesen Daten. Seine Pins sind IO30 (SDA) und IO31 (SCL) an der 12-poligen Buchse P3, dazu 3V3 und GND von derselben Buchse.',
     ),
     release: 'planned',
     src: owner('2026-10-21'),

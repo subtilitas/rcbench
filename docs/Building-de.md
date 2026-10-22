@@ -118,13 +118,13 @@ Der Drehknopf ist ein magnetischer Winkelsensor MT6701 an einem eigenen
 I2C-Bus (I2C: Inter-Integrated Circuit), dem zweiten I2C-Controller des
 ESP32-P4, auf zwei freien Header-Pins der 7-Zoll-ESP32-P4-Displayplatine:
 `BOARD_KNOB_PIN_SDA` und `BOARD_KNOB_PIN_SCL` in
-`firmware/panel/components/board/include/board_pins.h`. GPIO30 (SDA) und
-GPIO31 (SCL) sind dort Platzhalter; die Header-Pins sind noch nicht
-gewählt. Der Sensor nimmt 3,3 V und GND vom selben Header. Das Panel
-schaltet die internen Pull-ups des ESP32-P4 ein; ob sie allein 400 kHz auf
-den Leitungen des Knopfs halten, ist nicht gemessen, ein Sensor ohne eigene
-Pull-ups bekommt daher welche von 4,7 kOhm nach 3,3 V, wie die
-I2C-Schaltung des Datenblatts.
+`firmware/panel/components/board/include/board_pins.h`: GPIO30 (SDA) und
+GPIO31 (SCL), die Pins IO30 und IO31 des 12-poligen Headers P3 (3V3, GND, IO2
+bis IO5, IO28 bis IO31, IO34, IO36). Der Sensor nimmt 3,3 V und GND vom
+selben Header. Das Panel schaltet die internen Pull-ups des ESP32-P4 ein; ob
+sie allein 400 kHz auf den Leitungen des Knopfs halten, ist nicht gemessen,
+ein Sensor ohne eigene Pull-ups bekommt daher welche von 4,7 kOhm nach 3,3 V,
+wie die I2C-Schaltung des Datenblatts.
 
 Der Sensor muss in seinem I2C/SSI-Modus sein (SSI: Synchronous Serial
 Interface), MODE high. MODE low wählt die ABZ-Encoderausgänge, und der Sensor
