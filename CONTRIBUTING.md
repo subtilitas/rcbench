@@ -422,7 +422,8 @@ git diff tools/doc_check_baseline.txt    # removed lines only
 For Python, delete the fixed codes from the file's line in `ruff.toml`,
 and the line when no code is left, then run `ruff check .`.
 
-`doxygen` at the repository root writes the HTML to `build/doxygen/html/`;
+`mkdir -p build/doxygen && doxygen` at the repository root writes the HTML
+to `build/doxygen/html/`;
 GitHub Pages publishes it as the
 [C API (application programming interface) reference](https://subtilitas.github.io/rcbench/api/).
 

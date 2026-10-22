@@ -340,9 +340,11 @@ jobs:
           tools/install_doxygen.sh "$DOXYGEN_VERSION" "$DOXYGEN_SHA256" \
             "$RUNNER_TEMP/doxygen"
 
-      # The Doxyfile writes the HTML into build/doxygen/html.
+      # The Doxyfile writes the HTML into build/doxygen/html.  Doxygen
+      # creates one directory level of OUTPUT_DIRECTORY, not two.
       - name: Build the API reference
         run: |
+          mkdir -p build/doxygen
           "$RUNNER_TEMP/doxygen/bin/doxygen"
           du -sh build/doxygen/html
 

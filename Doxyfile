@@ -7,7 +7,9 @@
 # decides; Doxygen itself never fails the build.
 #
 #   python3 tools/doc_check.py --check    # the gate CI runs
-#   doxygen                               # the HTML alone, into build/doxygen
+#   mkdir -p build/doxygen && doxygen     # the HTML alone, into build/doxygen
+#                                         # (Doxygen creates one directory
+#                                         # level, not two)
 
 PROJECT_NAME           = rcbench
 PROJECT_BRIEF          = "Servo and ESC test bench: panel, IOmcu and shared C"
@@ -57,6 +59,9 @@ WARN_NO_PARAMDOC       = YES
 # and fails on a new one; Doxygen's own exit code stays 0.
 WARN_AS_ERROR          = NO
 WARN_FORMAT            = "$file:$line: $text"
+# A plain doxygen run writes its warnings here rather than to the
+# terminal; tools/doc_check.py names its own log.
+WARN_LOGFILE           = build/doxygen/warnings.log
 QUIET                  = YES
 
 # --- Output -----------------------------------------------------------------
