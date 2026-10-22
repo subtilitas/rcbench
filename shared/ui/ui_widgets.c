@@ -288,32 +288,40 @@ gfx_rect_t ui_home_tag_rect(const char *title)
     return gfx_rect_make(UI_TAG_X, UI_TAG_Y, tag_width(title, true), UI_TAG_H);
 }
 
-void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
-             const char *name, const char *line, bool pressed)
+void ui_tile(gfx_canvas_t *c, gfx_rect_t r, const ui_tile_look_t *look,
+             ui_icon_fn icon, const char *name, const char *line,
+             bool pressed)
 {
-    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 8,
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CARD,
                         pressed ? UI_PANEL_HI : UI_PANEL);
-    gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 8, UI_EDGE);
+    gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CARD, UI_EDGE);
+    if (look == NULL) {
+        return;
+    }
 
     if (icon != NULL) {
         /* Centred over the name and the line, its box's top at icon_dy. */
-        icon(c, r.x + r.w / 2, r.y + icon_dy + UI_TILE_ICON / 2, UI_TILE_ICON,
-             UI_ACCENT);
+        icon(c, r.x + r.w / 2, r.y + look->icon_dy + look->icon / 2,
+             look->icon, UI_ACCENT);
     }
 
     /* Clipped to the tile: centring a string wider than its tile puts the
      * overhang on the neighbour. */
-    const gfx_rect_t nr = { r.x, (int16_t)(r.y + icon_dy + 40), r.w, 22 };
-    gfx_text_in(c, nr, name ? name : "", &gfx_font_8x16, UI_TEXT, 1,
-                GFX_ALIGN_CENTER);
+    const gfx_font_t *nf = look->name_f;
+    const gfx_rect_t nr = { r.x, (int16_t)(r.y + look->name_dy), r.w,
+                            (int16_t)gfx_text_height(nf, 1) };
+    gfx_text_in(c, nr, name ? name : "", nf, UI_TEXT, 1, GFX_ALIGN_CENTER);
+
     /* A line wider than the tile breaks at the last space that fits and
-     * takes a second row 18 px under the first, where the tile has room
-     * for it; a line with no such space is clipped. */
+     * takes a second row line_pitch px under the first, where the tile has
+     * room for it; a line with no such space is clipped. */
+    const gfx_font_t *lf = look->line_f;
+    const int lh = gfx_text_height(lf, 1);
     const char *ln = (line != NULL) ? line : "";
-    const int cells = r.w / gfx_text_width(&gfx_font_8x16, "M", 1);
+    const int cells = r.w / gfx_text_width(lf, "M", 1);
     size_t cut = strlen(ln);
     if (gfx_text_cells(ln) > cells
-        && icon_dy + 64 + 18 + 20 <= r.h) {
+        && look->line_dy + look->line_pitch + lh <= r.h) {
         for (size_t i = gfx_text_prefix(ln, cells); i > 0u; --i) {
             if (ln[i] == ' ') {
                 cut = i;
@@ -325,12 +333,13 @@ void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
     const size_t k = (cut < sizeof(first)) ? cut : sizeof(first) - 1u;
     memcpy(first, ln, k);
     first[k] = '\0';
-    const gfx_rect_t lr = { r.x, (int16_t)(r.y + icon_dy + 64), r.w, 20 };
-    gfx_text_in(c, lr, first, &gfx_font_8x16, UI_TEXT_DIM, 1,
-                GFX_ALIGN_CENTER);
+    const gfx_rect_t lr = { r.x, (int16_t)(r.y + look->line_dy), r.w,
+                            (int16_t)lh };
+    gfx_text_in(c, lr, first, lf, UI_TEXT_DIM, 1, GFX_ALIGN_CENTER);
     if (ln[cut] != '\0') {
-        const gfx_rect_t lr2 = { r.x, (int16_t)(lr.y + 18), r.w, 20 };
-        gfx_text_in(c, lr2, ln + cut + 1, &gfx_font_8x16, UI_TEXT_DIM, 1,
+        const gfx_rect_t lr2 = { r.x, (int16_t)(lr.y + look->line_pitch), r.w,
+                                 (int16_t)lh };
+        gfx_text_in(c, lr2, ln + cut + 1, lf, UI_TEXT_DIM, 1,
                     GFX_ALIGN_CENTER);
     }
 }

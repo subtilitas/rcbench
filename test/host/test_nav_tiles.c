@@ -706,7 +706,7 @@ TEST_CASE(a_cancel_reaches_a_screen_left_during_the_frame)
  * The menu is 4 x 2, each tile in a fixed place by kind: the workbenches
  * MOTOR & ESC, SERVO and SUPPLY in row 1, the instruments RECEIVER, BATTERY
  * and BALANCE in row 2, LOGS over SETUP in the last column.  No tile is
- * PROGRAMMER.  Each tile is 246 x 258 px with 8 px margins, and a tap on
+ * PROGRAMMER.  Each tile is 243 x 255 px with 10 px margins, and a tap on
  * it opens its screen.
  */
 TEST_CASE(the_home_grid_is_four_by_two_by_kind)
@@ -721,10 +721,10 @@ TEST_CASE(the_home_grid_is_four_by_two_by_kind)
         CHECK_EQ(overview_screen_tile(i), k_want[i]);
         CHECK(strcmp(overview_screen_tile_name(i), "PROGRAMMER") != 0);
         const gfx_rect_t r = overview_screen_tile_rect(i);
-        CHECK_EQ(r.x, 8 + (i % 4) * 254);
-        CHECK_EQ(r.y, 8 + (i / 4) * 266);
-        CHECK_EQ(r.w, 246);
-        CHECK_EQ(r.h, 258);
+        CHECK_EQ(r.x, 10 + (i % 4) * 253);
+        CHECK_EQ(r.y, 10 + (i / 4) * 265);
+        CHECK_EQ(r.w, 243);
+        CHECK_EQ(r.h, 255);
     }
     /* Past the grid, and before it: no tile. */
     CHECK_EQ(overview_screen_tile(8), SCREEN_COUNT);
@@ -739,14 +739,15 @@ TEST_CASE(the_home_grid_is_four_by_two_by_kind)
     }
     /* The margin between two tiles is no tile's. */
     to_overview();
-    tap(8 + 246 + 4, UI_BAND_H + 100);
+    tap(10 + 243 + 5, UI_BAND_H + 100);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
 /*
- * Every tile's name and line fit its 190 px in both languages: the name
- * on one row of 23 cells, the line on one row or, broken at a space, on
- * two (ui_tile()).
+ * Every tile's name and line fit its 243 px in both languages: the name
+ * on one row of the head face (20 x 36), 12 cells, the line in the label
+ * face (10 x 20) on one row of 24 cells or, broken at a space, on two
+ * (ui_tile()).
  */
 TEST_CASE(every_home_tile_text_fits_in_both_languages)
 {
@@ -760,20 +761,23 @@ TEST_CASE(every_home_tile_text_fits_in_both_languages)
                 T_FAIL("slot %d is empty", i);
                 continue;
             }
-            CHECK(gfx_text_cells(name) <= 23);
+            const int tw = overview_screen_tile_rect(i).w;
+            CHECK(gfx_text_width(&gfx_font_20x36, name, 1) <= tw);
+            const int row = tw / 10;
+            CHECK_EQ(row, 24);
             const int cells = gfx_text_cells(line);
-            if (cells <= 23) {
+            if (cells <= row) {
                 continue;
             }
-            /* The last space in the first 23 cells breaks it. */
+            /* The last space in the first row's cells breaks it. */
             size_t cut = 0;
-            for (size_t k = gfx_text_prefix(line, 23); k > 0u; --k) {
+            for (size_t k = gfx_text_prefix(line, row); k > 0u; --k) {
                 if (line[k] == ' ') {
                     cut = k;
                     break;
                 }
             }
-            if (cut == 0u || gfx_text_cells(line + cut + 1) > 23) {
+            if (cut == 0u || gfx_text_cells(line + cut + 1) > row) {
                 T_FAIL("lang %d slot %d: \"%s\" takes more than two rows",
                        lang, i, line);
             }

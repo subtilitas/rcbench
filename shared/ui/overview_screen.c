@@ -18,23 +18,57 @@
 #define W UI_PANEL_W
 #define H UI_BODY_H   /* the router owns the band */
 
-/*
- * Four columns by two rows: eight 246 x 258 px tiles with 8 px margins
- * under the 60 px band.  A tile's line holds 30 characters of the 8 x 16
- * font, 240 of its 246 px, on each of two rows: the second ends above the
- * SIMULATED badge.
+/**
+ * @brief The grid: four columns by two rows of 243 x 255 px tiles (36.5 x
+ *        38.3 mm at 0.150 mm a pixel) with 10 px margins under the 60 px
+ *        band.  COLS and ROWS are the grid, M its margin, TW and TH a
+ *        tile's size.
  */
-#define COLS 4
-#define ROWS 2
-#define M    8
-#define TW   ((W - (COLS + 1) * M) / COLS)
-#define TH   ((H - (ROWS + 1) * M) / ROWS)
+#define COLS 4 /**< the grid's columns */
+#define ROWS 2 /**< the grid's rows */
+#define M    10 /**< the margin around and between tiles, px */
+#define TW   ((W - (COLS + 1) * M) / COLS) /**< a tile's width, px: 243 */
+#define TH   ((H - (ROWS + 1) * M) / ROWS) /**< a tile's height, px: 255 */
+
+/**
+ * @brief Inside a tile, from its top: the 40 px icon box at 52, the name
+ *        in the head face (20 x 36) at 108, the line in the label face
+ *        (10 x 20) at 152, a broken line's second row 24 px under it.  A
+ *        row of the line holds 24 characters, 240 of the tile's 243 px.
+ */
+#define T_ICON_DY  52 /**< the icon box's top, px */
+#define T_ICON     40 /**< the icon box's side, px */
+#define T_NAME_DY  108 /**< the name's top, px */
+#define T_LINE_DY  152 /**< the line's top, px */
+#define T_LINE_PITCH 24 /**< a second row under the first, px */
+
+/** @brief The menu tile's look, from the figures above. */
+static const ui_tile_look_t k_look = {
+    .icon_dy = T_ICON_DY, .icon = T_ICON, .name_dy = T_NAME_DY,
+    .line_dy = T_LINE_DY, .line_pitch = T_LINE_PITCH,
+    .name_f = &gfx_font_20x36, .line_f = &gfx_font_10x20,
+};
+
+/**
+ * @brief The SIMULATED mark: at least 120 x 32 px, its bottom 16 px above
+ *        the tile's, its word in the label face (10 x 20) MARK_INSET px
+ *        from its left edge, past the dot, and 8 px from its right edge.
+ */
+#define MARK_W     120 /**< its least width, px */
+#define MARK_H     32 /**< its height, px */
+#define MARK_INSET UI_PILL_INSET /**< its word's start, past the dot, px */
+#define MARK_DY    (TH - 16 - MARK_H) /**< its top from the tile's, px */
+
+_Static_assert(T_ICON_DY + T_ICON <= T_NAME_DY,
+               "the icon ends above the name");
+_Static_assert(T_LINE_DY + T_LINE_PITCH + 20 <= MARK_DY,
+               "a line's second row ends above the SIMULATED mark");
 
 typedef struct {
-    ui_screen_id_t id;
+    ui_screen_id_t id;      /**< the screen the tile opens               */
     const char    *name;    /**< the screen's title: English always     */
-    ui_text_id_t   line;
-    ui_icon_fn     icon;
+    ui_text_id_t   line;    /**< the line under the name                */
+    ui_icon_fn     icon;    /**< the icon over the name                 */
     uint16_t       needs;   /**< the hardware it needs, as link_cap_t     */
     /** Modelled on the panel whatever the IOmcu reports: no link
      *  capability names the hardware.  SUPPLY's holds only until SETUP
@@ -227,7 +261,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
         /* A screen whose hardware is missing is fully usable, so its icon
          * stays lit. */
-        ui_tile(c, r, 64, t->icon, t->name, ui_tr(t->line), down);
+        ui_tile(c, r, &k_look, t->icon, t->name, ui_tr(t->line), down);
 
         /*
          * Two states.  MODELLED: the hardware is not fitted, so the values
@@ -240,15 +274,16 @@ static void render(gfx_canvas_t *c, int buffer_index)
                             && ((t->needs == 0)
                                 || ((have & t->needs) == t->needs));
         if (!fitted) {
-            /* 88 px, or as wide as a longer word: the label starts 24 px
-             * in and runs to the end, as MODELLED does in 88. */
+            /* MARK_W, or as wide as a longer word needs. */
             const char *word = TR(OV_MODELLED);
-            int bw = 24 + gfx_text_width(&gfx_font_8x16, word, 1);
-            bw = (bw < 88) ? 88 : bw;
+            int bw = MARK_INSET + gfx_text_width(&gfx_font_10x20, word, 1) + 8;
+            bw = (bw < MARK_W) ? MARK_W : bw;
             const gfx_rect_t badge = { (int16_t)(r.x + (r.w - bw) / 2),
-                                       (int16_t)(r.y + r.h - 30),
-                                       (int16_t)bw, 20 };
-            ui_pill(c, badge, word, 0, ui_theme_color(UI_C_PANEL_SUNK));
+                                       (int16_t)(r.y + MARK_DY),
+                                       (int16_t)bw, MARK_H };
+            ui_pill_font(c, badge, word, 0,
+                         ui_theme_color(UI_C_PANEL_SUNK), MARK_INSET,
+                         &gfx_font_10x20);
         }
     }
 }

@@ -502,11 +502,36 @@ static void ktap(gfx_rect_t r)
 }
 
 /**
+ * @brief A tap on the value of SETUP's list row @p row, once the row is
+ *        dragged whole into the pane, so its keypad opens.  Exits with
+ *        status 1 for a row the list cannot bring into view in 20 drags.
+ * @param row The list row.
+ */
+static void setup_row_value(int row)
+{
+    const gfx_rect_t pane = settings_screen_list_rect();
+    const int y0 = UI_BAND_H + pane.y + pane.h - 8;
+    for (int k = 0; k < 20; ++k) {
+        const gfx_rect_t r = settings_screen_row_rect(row);
+        if (r.y >= pane.y && r.y + r.h <= pane.y + pane.h) {
+            const gfx_rect_t v =
+                settings_screen_row_part(row, SETTINGS_ROW_VALUE);
+            tap(v.x + v.w / 2, UI_BAND_H + v.y + v.h / 2);
+            return;
+        }
+        /* Up for a row under the pane, down for one over it. */
+        const int dy = (r.y > pane.y) ? -(pane.h / 2) : pane.h / 2;
+        drag(300, (dy < 0) ? y0 : UI_BAND_H + pane.y + 8,
+             ((dy < 0) ? y0 : UI_BAND_H + pane.y + 8) + dy);
+    }
+    fprintf(stderr, "render_screen: row %d not in view\n", row);
+    exit(1);
+}
+
+/**
  * @brief The value of @p id on SETUP's open @p cat list, scrolled into
- *        view and tapped, so its keypad opens.  The list is 348 px high
- *        and its rows 58 px apart, from 6 px under the band; the value
- *        sits at x 663.  Exits with status 1 for a row the list does not
- *        hold or cannot bring into view in 20 drags.
+ *        view and tapped, so its keypad opens.  Exits with status 1 for a
+ *        row the list does not hold.
  * @param cat The category whose list is open.
  * @param id The setting whose value is tapped.
  */
@@ -524,16 +549,22 @@ static void setup_value(setting_cat_t cat, setting_id_t id)
         fprintf(stderr, "render_screen: no row for setting %d\n", (int)id);
         exit(1);
     }
-    for (int k = 0; k < 20; ++k) {
-        const int top = 6 + row * 58 - settings_screen_scroll(NULL);
-        if (top >= 6 && top + 54 <= 6 + 348) {
-            tap(663, UI_BAND_H + top + 27);
-            return;
-        }
-        drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
-    }
-    fprintf(stderr, "render_screen: setting %d not in view\n", (int)id);
-    exit(1);
+    setup_row_value(row);
+}
+
+/**
+ * @brief SETUP's open list dragged up by @p rows rows and the 8 px the
+ *        finger travels before the screen takes it for a scroll, from
+ *        8 px above the pane's foot.
+ * @param rows The rows to scroll by, at most 5.
+ */
+static void setup_scroll_rows(int rows)
+{
+    const gfx_rect_t pane = settings_screen_list_rect();
+    const int pitch = settings_screen_row_rect(1).y
+                      - settings_screen_row_rect(0).y;
+    const int y0 = UI_BAND_H + pane.y + pane.h - 8;
+    drag(300, y0, y0 - (rows * pitch + 8));
 }
 
 /* @p text typed on keypad @p k, digit by digit; '.' is the point and '-'
@@ -3488,7 +3519,8 @@ int main(int argc, char **argv)
         setup_tile(SET_CAT_CARD);
         const int row = settings_screen_text_row(SET_CAT_CARD,
                                                  SET_TEXT_LOG_AUTO_DIR);
-        tap(400, UI_BAND_H + 6 + row * 58 + 27);
+        const gfx_rect_t rr = settings_screen_row_rect(row);
+        tap(400, UI_BAND_H + rr.y + rr.h / 2);
         static const char chars[] = "1234567890QWERTYUIOPASDFGHJKL-ZXCVBNM_.";
         const ui_textkey_t *k = settings_screen_textkey();
         ktap(ui_textkey_key_rect(k, UI_TK_DEL));
@@ -3514,16 +3546,14 @@ int main(int argc, char **argv)
         if (strcmp(view, "setup-unheld") == 0) {
             /* The pins refused: their two rows. */
             settings_screen_set_unheld(SENSE_LINK_ROW_PINS, 0u);
-            /* Five rows of 58 px, the I2C BUS heading and the four of the
-             * INA228, and the 8 px the finger travels before the screen
-             * takes it for a scroll. */
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
+            /* Five rows, the I2C BUS heading and the four of the INA228. */
+            setup_scroll_rows(5);
         } else if (strcmp(view, "setup-tap") == 0) {
             /* Past the 9 rows above the PHASE TAP heading (the I2C BUS
              * section and its heading): two drags, as one longer than the
              * list is high leaves the screen. */
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
+            setup_scroll_rows(4);
+            setup_scroll_rows(5);
         } else if (strncmp(view, "setup-prog", 10) == 0) {
             /* The list's end: PROG PORT and Hitec D receive at PRECHARGE,
              * marked as an IOmcu older than 4.24 (or 4.23) leaves it, or
@@ -3535,8 +3565,7 @@ int main(int argc, char **argv)
                     ? HITEC_RX_LINK_HELD
                     : HITEC_RX_LINK_NO_LINE);
             for (int k = 0; k < 6; ++k) {
-                drag(300, UI_BAND_H + 340,
-                     UI_BAND_H + 340 - (5 * 58 + 8));
+                setup_scroll_rows(5);
             }
         }
     }
@@ -3569,7 +3598,7 @@ int main(int argc, char **argv)
              * CH2's rows, two more. */
             const int drags = lim ? 5 : 3;
             for (int k = 0; k < drags; ++k) {
-                drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+                setup_scroll_rows(4);
             }
         } else {
             sensors_rows_set_status((uint16_t)(SENS_PART_ONLINE
@@ -3579,17 +3608,7 @@ int main(int argc, char **argv)
          * 44.4 mOhm typed, the station's value. */
         if (strcmp(view, "setup-sensors-keypad") == 0) {
             settings_set(SET_INA_FIT(0), 1.0f);
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (2 * 58 + 8));
-            setting_id_t ids[48];
-            const int n = settings_in_category(SET_CAT_SENSORS, ids, 48);
-            int row = -1;
-            for (int i = 0; i < n && i < 48; ++i) {
-                if (ids[i] == SET_INA_SH(0)) {
-                    row = settings_screen_row_of(SET_CAT_SENSORS, i);
-                }
-            }
-            tap(663, UI_BAND_H + 6 + row * 58 - settings_screen_scroll(NULL)
-                         + 27);
+            setup_value(SET_CAT_SENSORS, SET_INA_SH(0));
             kp_type(settings_screen_keypad(), "44.4");
         }
         /* The same shunt, 3 mOhm typed and refused: the reason in place
