@@ -395,10 +395,10 @@ Statische Zahlen des P4-Builds mit ESP-IDF v5.5.5, aus `idf.py size`:
 
 | Posten | Mit dem Fragment | Ohne es |
 | --- | ---: | ---: |
-| .bss im internen RAM (DIRAM) | 29 976 | 196 984 |
-| .bss im PSRAM (`.ext_ram.bss`) | 167 008 | 0 |
-| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, von 655 360 | 127 450 | 294 458 |
-| Anwendungs-Image, gebaut ohne `RCBENCH_IOMCU_BIN` (ohne IOmcu-Image) | 2 161 950 | 2 161 966 |
+| .bss im internen RAM (DIRAM) | 29 976 | 201 080 |
+| .bss im PSRAM (`.ext_ram.bss`) | 171 104 | 0 |
+| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, von 655 360 | 127 450 | 298 554 |
+| Anwendungs-Image, gebaut ohne `RCBENCH_IOMCU_BIN` (ohne IOmcu-Image) | 2 256 156 | 2 256 172 |
 
 Alle Zahlen sind Bytes. Die PSRAM-Einträge von ESP-IDF für lwIP
 (Lightweight IP Stack) und wpa_supplicant nutzen ein Schema, das nur das
