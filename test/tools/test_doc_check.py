@@ -152,6 +152,18 @@ def test_the_baseline_key_has_no_line_number():
     assert a.key == b.key == "a.h: warning: x"
 
 
+def test_a_line_naming_an_absolute_path_is_machine_bound():
+    """A checkout's place in the baseline fails on every other machine."""
+    root = pathlib.Path("/w/rcbench")
+    lines = [
+        "a.h: warning: x",
+        "a.h: warning: end of comment block (Probable start "
+        "'/home/u/rcbench/a.h' at line 40)",
+        "b.h: warning: found in /w/rcbench/b.h",
+    ]
+    assert dc.machine_bound(lines, root) == lines[1:]
+
+
 # --- the comparison ----------------------------------------------------------
 
 def test_a_warning_moved_to_another_line_passes():

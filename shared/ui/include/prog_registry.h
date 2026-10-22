@@ -1,6 +1,7 @@
-/*
- * The registry of programmers and runs: one static table that the PROGRAM
- * (and later TEST) lists of a workbench are built from.
+/**
+ * @file
+ * @brief The registry of programmers and runs: one static table that the
+ * PROGRAM (and later TEST) lists of a workbench are built from.
  *
  * A row is { device, task, name, group, transport, port, needs_capability,
  * page_set, full_width }:
@@ -96,7 +97,7 @@ typedef enum {
 #endif
 
 /*
- * A full-width session's layout, in the host's body coordinates (800 x 432
+ * A full-width session's layout, in the host's body coordinates (1024 x 540
  * px under the band): the output strip's line at the top, one line of the
  * 8 x 16 face from PROG_FULL_STRIP_Y, and the session's own area from
  * PROG_FULL_Y to the foot of the body.

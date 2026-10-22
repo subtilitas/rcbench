@@ -44,7 +44,9 @@
 
 #define PV_TOP_Y    76
 
-#define PV_BOTTOM_Y (76 + 241)
+/* PV_H of log_viewer_int.h: the panel from y 68 down to the time labels
+ * over the footer, less its 16 px. */
+#define PV_BOTTOM_Y (76 + (LV_FOOT_Y - 6 - 16 - 4 - 68 - 16) - 1)
 
 static int column_row(const log_analysis_t *a, const char *name)
 {

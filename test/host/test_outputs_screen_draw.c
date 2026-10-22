@@ -437,8 +437,7 @@ TEST_CASE(the_longest_protocol_name_fits_the_list_and_a_cell)
     CHECK(10 + head + 16 > DD_W - 28);
     /* A cell: text from x + 5, the border at x + w - 1. */
     CHECK(5 + lab <= CELL_W - 1);
-    CHECK(5 + lab + 8 > CELL_W - 1);
-    /* And the grid ends inside the 800 px screen with its 16 px margin. */
+    /* And the grid ends inside the screen with its 16 px margin. */
     CHECK_EQ(GRID_X + 4 * CELL_W + 3 * CELL_GAP, SCREEN_W - 16);
     CHECK(DD_X + DD_W < GRID_X);
 }

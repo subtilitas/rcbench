@@ -447,7 +447,7 @@ TEST_CASE(the_current_row_repaints_on_a_changed_digit_and_alone)
     /* The other buffer owes the row once and takes it once. */
     settle_drawn();                 /* ARM's flash after the arm is over */
     rail_window(500, 5980u);
-    CHECK(both_whole_in(502, 6, 292, 400));
+    CHECK(both_whole_in(SV_RCARD_X, 6, SV_RCARD_W, 400));
     CHECK(row_reads("0.50 A", UI_C_TEXT));
     scr->render(&cv1, 1);
     mark_all();
@@ -611,17 +611,17 @@ TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
     rail_window(-1640, 5000u);
     bench_frames(100u);
     CHECK(servo_screen_testing());
-    CHECK(both_whole_in(502, 6, 292, 400));
+    CHECK(both_whole_in(SV_RCARD_X, 6, SV_RCARD_W, 400));
     CHECK(row_reads("-1.64 A", UI_C_TEXT));
     meter(SERVO_SOURCE_PDMINI);
     bench_frames(200u);
     CHECK(servo_screen_testing());
-    CHECK(both_whole_in(502, 6, 292, 400));
+    CHECK(both_whole_in(SV_RCARD_X, 6, SV_RCARD_W, 400));
     CHECK(!row_reads("-1.64 A", UI_C_TEXT));
     meter(SERVO_SOURCE_MODEL);
     bench_frames(200u);
     CHECK(servo_screen_testing());
-    CHECK(both_whole_in(502, 6, 292, 400));
+    CHECK(both_whole_in(SV_RCARD_X, 6, SV_RCARD_W, 400));
     /* The link going ends the run and clears the INA3221's row. */
     meter(SERVO_SOURCE_INA3221);
     rail_window(700, 5000u);

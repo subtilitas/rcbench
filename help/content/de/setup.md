@@ -39,7 +39,7 @@ Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
 
 ![ANSCHLÜSSE, alles gespeichert](view:setup-interfaces)
 
-Die Liste reicht über den Bildschirm und zeigt 6 Zeilen. Darunter trägt eine Leiste den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4 px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
+Die Liste ist 776 px breit und zeigt 7 Zeilen. Darunter trägt eine Leiste den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4 px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
 
 Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Eine Zahl hat die Tasten `-` und `+`; ein Schalter oder eine Auswahl hat `<` und `>`.
 

@@ -35,12 +35,12 @@ extern "C" {
 #define BOARD_LCD_V_RES             600
 
 /**
- * @brief The area the UI (user interface) draws: 800 x 480 in the top-left corner
- * of the panel, the rest of the frame black.  Touches outside it are
- * dropped (touch.c).
+ * @brief The area the UI (user interface) draws: the whole panel, 1024 x
+ * 600.  Touches outside it are dropped (touch.c).
  */
-#define BOARD_UI_H_RES              800
-#define BOARD_UI_V_RES              480
+#define BOARD_UI_H_RES              1024
+/** @brief The UI area's height: the panel's 600 rows. */
+#define BOARD_UI_V_RES              600
 
 /**
  * @brief DPI (Display Pixel Interface) timing, in pixels and lines.  52 MHz is

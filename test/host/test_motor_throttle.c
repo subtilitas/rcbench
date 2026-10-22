@@ -373,11 +373,11 @@ TEST_CASE(every_arm_starts_from_zero)
 /*
  * The CONTROL card's TARGET row, mirrored from motor_screen_int.h: the
  * card's width less its 6 px padding at y 298, 22 px high; TARGET's 64 px,
- * then the value box from x 628 to 788.
+ * then the value box from x 630 to 1010.
  */
-#define TGT_X0 628
+#define TGT_X0 630
 
-#define TGT_X1 788
+#define TGT_X1 1010
 
 #define TGT_Y0 298
 
@@ -437,11 +437,12 @@ TEST_CASE(the_target_row_names_the_protocol_and_the_pins)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* The row's value box holds 18 cells: the pins give way to a count. */
+/* The row's value box holds 45 cells: 380 px less 8 px each side.  In a
+ * box of 18 cells the pins give way to a count. */
 TEST_CASE(many_throttle_pins_end_in_a_count_within_the_box)
 {
     char line[96];
-    CHECK_EQ(motor_target_cells(), 18u);
+    CHECK_EQ(motor_target_cells(), 45u);
     ui_text_set_language(UI_LANG_EN);
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0xFFu,
                                  true, 18u));

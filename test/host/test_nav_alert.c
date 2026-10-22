@@ -6,6 +6,7 @@
  * Cases:
  * - an_alert_survives_navigation
  * - a_two_row_alert_fits_two_rows_of_the_band
+ * - a_long_alert_draws_on_two_rows
  * - an_alert_clears_after_30_s_and_a_new_one_starts_again
  * - the_frame_an_alert_arrives_in_does_not_count
  * - an_alert_is_withdrawn_only_while_it_still_shows
@@ -42,8 +43,8 @@ TEST_CASE(an_alert_survives_navigation)
     CHECK(ui_router_alert() == NULL);
 }
 
-/* An alert given more than one row of the band's 94 cells fits the band's
- * two rows in each language, its %s filled with a version of 8 characters and
+/* An alert given more than the one-row budget of 94 cells (a row of the
+ * band holds 97) fits the band's two rows in each language, its %s filled with a version of 8 characters and
  * its %u with 65535, the longest each takes. */
 TEST_CASE(a_two_row_alert_fits_two_rows_of_the_band)
 {
@@ -429,7 +430,7 @@ TEST_CASE(a_cleared_alert_leaves_no_red_behind)
     CHECK(ui_router_alert() == NULL);
     ui_router_render(&cv, 0);
     int danger_bottom = 0;
-    for (int y = H - 34; y < H; ++y) {
+    for (int y = H - UI_ALERT_H; y < H; ++y) {
         for (int x = 0; x < W; ++x) {
             if (fb[(size_t)y * W + x] == ui_theme_color(UI_C_DANGER)) {
                 ++danger_bottom;
@@ -437,6 +438,44 @@ TEST_CASE(a_cleared_alert_leaves_no_red_behind)
         }
     }
     CHECK_EQ(danger_bottom, 0);
+}
+
+/* The text pixels of the alert band's rows from @p y0 to @p y1 (panel y),
+ * left of the "x". */
+static int alert_ink(int y0, int y1)
+{
+    int ink = 0;
+    for (int y = y0; y < y1; ++y) {
+        for (int x = 0; x < W - 40; ++x) {
+            if (fb[(size_t)y * W + x] == ui_theme_color(UI_C_TEXT)) {
+                ++ink;
+            }
+        }
+    }
+    return ink;
+}
+
+/* An alert longer than a row's 97 cells takes two rows of 20 px from 2 px
+ * under the band's top edge; one that fits a row is centred in the band. */
+TEST_CASE(a_long_alert_draws_on_two_rows)
+{
+    fresh();
+    to_overview();
+    static const char k_long[] =
+        "The IOmcu refused the binding written last: the pins it names are "
+        "held by another protocol. Choose other pins on OUTPUTS.";
+    CHECK_EQ(ui_router_alert_rows(k_long), 2);
+    ui_router_set_alert(k_long);
+    ui_router_render(&cv, 0);
+    const int top = H - UI_ALERT_H;
+    CHECK(alert_ink(top + 2, top + 22) > 0);
+    CHECK(alert_ink(top + 22, top + 42) > 0);
+
+    ui_router_set_alert("PD mini set points would not take");
+    CHECK_EQ(ui_router_alert_rows(ui_router_alert()), 1);
+    ui_router_render(&cv, 0);
+    CHECK(alert_ink(top + 12, top + 32) > 0);
+    CHECK_EQ(alert_ink(top, top + 12) + alert_ink(top + 32, H), 0);
 }
 
 /* The band's other states: armed, and a fault badge.  Rendered here rather
@@ -490,6 +529,7 @@ int main(void)
 {
     RUN(an_alert_survives_navigation);
     RUN(a_two_row_alert_fits_two_rows_of_the_band);
+    RUN(a_long_alert_draws_on_two_rows);
     RUN(an_alert_clears_after_30_s_and_a_new_one_starts_again);
     RUN(the_frame_an_alert_arrives_in_does_not_count);
     RUN(an_alert_is_withdrawn_only_while_it_still_shows);

@@ -421,19 +421,22 @@ static inline void draw(void)
 /* BR_ROWS: the file rows the list shows at once. */
 #define BR_ROWS_SEEN 6
 #define IM_ROW_Y(i) (36 + 30 + (i) * 36 + 14)
-#define IM_BTN_CY   (352 + 21)
+/* FOOT_Y of log_viewer_int.h: the footer's 42 px end 4 px above the alert
+ * band. */
+#define LV_FOOT_Y   (UI_BODY_H - UI_ALERT_H - 4 - 42)
+#define IM_BTN_CY   (LV_FOOT_Y + 21)
 #define SEP_X       110
 #define NUM_X       308
 #define BACK_X      500
 #define PLOT_X      690
-#define FOOT_CY     373
+#define FOOT_CY     (LV_FOOT_Y + 21)
 #define OPEN_X      724
 #define DELETE_X    596
 #define RESCAN_X    76
 /* The plot view: a point inside the plot, and the > button's centre. */
 #define PV_TAP_X    400
 #define NEXT_X      324
-#define FOOT_PLOT_CY (352 + 21)
+#define FOOT_PLOT_CY (LV_FOOT_Y + 21)
 /* The DELETE question's two buttons. */
 #define DQ_CY       282
 #define DQ_CANCEL_X 264

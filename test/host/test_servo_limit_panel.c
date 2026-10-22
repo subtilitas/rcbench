@@ -32,7 +32,8 @@
 /*
  * The LIMIT RUN card, mirrored from servo_limit_panel.c and
  * servo_screen_int.h: TEST's second card at y 224, its lines from 98 px
- * down, 18 px apart, their text 10 px into the card (x 26); the run's own
+ * down, 18 px apart, their text 10 px into the card (x UI_MARGIN + 20);
+ * the run's own
  * settings list with LIMIT RUN across row 0 and the mode's note 6 px under
  * the top of row 2 (y 154, servo_settings_panel.c).
  */
@@ -49,9 +50,10 @@ static bool lim_line_reads(int i, const char *text, ui_color_id_t col)
     want_fresh();
     const int y = LIM_LINE_Y(i);
     const gfx_color_t bg = fb[(size_t)y * W + 20u];
-    gfx_fill_rect(&want_cv, 18, (int16_t)y, 464, 16, bg);
-    gfx_text(&want_cv, 26, y, text, &gfx_font_8x16, ui_theme_color(col), 1);
-    return same_in(fb, want_fb, 18, y, 464, 16);
+    gfx_fill_rect(&want_cv, UI_MARGIN + 12, (int16_t)y, 464, 16, bg);
+    gfx_text(&want_cv, UI_MARGIN + 20, y, text, &gfx_font_8x16,
+             ui_theme_color(col), 1);
+    return same_in(fb, want_fb, UI_MARGIN + 12, y, 464, 16);
 }
 
 /* Buffer 0 drawn with the LIMIT RUN settings open, and whether the mode's
@@ -61,16 +63,17 @@ static bool lim_note_reads(const char *text, ui_color_id_t col)
     scr->render(&cv, 0);
     want_fresh();
     const int y = LIM_NOTE_Y;
-    const gfx_color_t bg = fb[(size_t)y * W + 12u];
-    gfx_fill_rect(&want_cv, 10, (int16_t)y, 478, 16, bg);
-    gfx_text(&want_cv, 16, y, text, &gfx_font_8x16, ui_theme_color(col), 1);
-    return same_in(fb, want_fb, 10, y, 478, 16);
+    const gfx_color_t bg = fb[(size_t)y * W + UI_MARGIN + 6];
+    gfx_fill_rect(&want_cv, UI_MARGIN + 4, (int16_t)y, 478, 16, bg);
+    gfx_text(&want_cv, UI_MARGIN + 10, y, text, &gfx_font_8x16,
+             ui_theme_color(col), 1);
+    return same_in(fb, want_fb, UI_MARGIN + 4, y, 478, 16);
 }
 
 /* Line @p i of the limit run's box on LIVE's left card: its text at the
  * box's left edge on the box's own fill, compared across the box.  It
  * opens LIVE, where the box is; a run started stays on TEST. */
-#define LIM_BOX_X 16
+#define LIM_BOX_X (UI_MARGIN + 10)
 #define LIM_BOX_Y 48
 static bool lim_box_reads(int i, const char *text, ui_color_id_t col)
 {

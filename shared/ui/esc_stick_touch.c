@@ -131,7 +131,7 @@ static gfx_rect_t sp_value_rect(int i)
 }
 
 /** @brief TIMING's keypad: from under the output strip to 4 px above the
- *         alert band, 788 x 368 px with keys of 188 x 62 px. */
+ *         alert band, 1008 x 466 px. */
 #define SP_KP_H (H - UI_ALERT_H - 4 - SP_PANEL_Y)
 
 /**

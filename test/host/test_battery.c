@@ -161,12 +161,12 @@ TEST_CASE(every_cell_count_draws)
         }
         /*
          * Nothing escapes the card it is drawn in.  The gutter is the seven
-         * columns 501 to 507 between the cards; the right card starts at
-         * 508.
+         * columns between the cards, 503 to 509; the right card starts at
+         * 510.
          */
         int stray = 0;
         for (int y = 0; y < H; ++y) {
-            for (int x = 501; x < 508; ++x) {
+            for (int x = UI_MARGIN + 494 + 1; x < UI_MARGIN + 494 + 8; ++x) {
                 if (fb[(size_t)y * W + x] != ui_theme_color(UI_C_BG)) {
                     ++stray;
                 }

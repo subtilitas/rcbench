@@ -1,5 +1,7 @@
-/*
- * The shared widgets every screen draws with: panels, cards, buttons, pills.
+/**
+ * @file
+ * @brief The shared widgets every screen draws with: panels, cards, buttons,
+ * pills.
  *
  * One place for the chrome, so every screen draws the same button.  The one
  * piece of logic here is ui_is_light(): a button picks its label colour from
@@ -66,6 +68,13 @@ bool ui_is_light(gfx_color_t c)
 void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled)
 {
+    ui_button_font(c, r, label, fill, pressed, enabled, UI_FONT_LABEL);
+}
+
+void ui_button_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                    gfx_color_t fill, bool pressed, bool enabled,
+                    const gfx_font_t *f)
+{
     gfx_color_t body = enabled ? fill : GFX_RGB(38, 46, 58);
     /* The label colour follows the luma of the fill: near-black on an
      * accent-coloured button, light on a panel-coloured one. */
@@ -87,7 +96,7 @@ void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
         gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, UI_EDGE);
     }
     if (label) {
-        gfx_text_in(c, r, label, UI_FONT_LABEL, text, 1, GFX_ALIGN_CENTER);
+        gfx_text_in(c, r, label, f, text, 1, GFX_ALIGN_CENTER);
     }
 }
 
@@ -157,22 +166,26 @@ int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
     return n;
 }
 
-void ui_pill_inset(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-                   gfx_color_t dot, gfx_color_t fill, int inset)
+void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                  gfx_color_t dot, gfx_color_t fill, int inset,
+                  const gfx_font_t *f)
 {
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, r.h / 2, fill);
-    int cy = r.y + r.h / 2;
-    gfx_fill_circle(c, r.x + inset / 2, cy, 4, dot);
-    gfx_draw_circle(c, r.x + inset / 2, cy, 6, gfx_lerp(dot, fill, 130));
+    const int cy = r.y + r.h / 2;
+    /* A 4 px dot in a 6 px ring; 5 in 7 on a pill 40 px tall or more. */
+    const int rd = (r.h >= 40) ? 5 : 4;
+    gfx_fill_circle(c, r.x + inset / 2, cy, rd, dot);
+    gfx_draw_circle(c, r.x + inset / 2, cy, rd + 2, gfx_lerp(dot, fill, 130));
     if (label) {
-        gfx_text(c, r.x + inset, cy - 8, label, UI_FONT_LABEL, UI_TEXT, 1);
+        gfx_text(c, r.x + inset, cy - gfx_text_height(f, 1) / 2, label, f,
+                 UI_TEXT, 1);
     }
 }
 
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
              gfx_color_t dot, gfx_color_t fill)
 {
-    ui_pill_inset(c, r, label, dot, fill, UI_PILL_INSET);
+    ui_pill_font(c, r, label, dot, fill, UI_PILL_INSET, UI_FONT_LABEL);
 }
 
 void ui_bar(gfx_canvas_t *c, gfx_rect_t r, float frac, float peak_frac,
@@ -255,10 +268,19 @@ void ui_chevron_left(gfx_canvas_t *c, int x, int cy, int size, gfx_color_t color
     }
 }
 
+/* The tag's text from its left edge: past the chevron, or 12 px in. */
+/** @brief A home tag's text from its left edge, past the chevron: 28 px. */
+#define TAG_TEXT_X_HOME 28
+/** @brief The wordmark's text from the tag's left edge: 12 px. */
+#define TAG_TEXT_X_MARK 12
+/** @brief The tag's text to its right edge: 12 px. */
+#define TAG_TEXT_PAD_R  12
+
 static int tag_width(const char *title, bool chevron)
 {
-    int tw = gfx_text_width(UI_FONT_HEAD, title ? title : "", 1);
-    return (chevron ? 30 : 12) + tw + 14;
+    int tw = gfx_text_width(UI_FONT_TAG, title ? title : "", 1);
+    return (chevron ? TAG_TEXT_X_HOME : TAG_TEXT_X_MARK) + tw
+           + TAG_TEXT_PAD_R;
 }
 
 gfx_rect_t ui_home_tag_rect(const char *title)
@@ -318,18 +340,22 @@ void ui_home_tag(gfx_canvas_t *c, const char *title, bool pressed)
     gfx_rect_t r = ui_home_tag_rect(title);
     gfx_color_t fill = pressed ? gfx_lerp(UI_ACCENT, GFX_WHITE, 120) : UI_ACCENT;
 
-    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 0, 8, 0, 8, fill);
-    ui_chevron_left(c, r.x + 10, r.y + r.h / 2, 7, UI_TEXT_ON_LIGHT);
-    gfx_text(c, r.x + 30, r.y + 1, title ? title : "", UI_FONT_HEAD,
-             UI_TEXT_ON_LIGHT, 1);
+    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 0, UI_CHAMFER, 0,
+                             UI_CHAMFER, fill);
+    ui_chevron_left(c, r.x + 8, r.y + r.h / 2, 9, UI_TEXT_ON_LIGHT);
+    gfx_text(c, r.x + TAG_TEXT_X_HOME,
+             r.y + (r.h - gfx_text_height(UI_FONT_TAG, 1)) / 2,
+             title ? title : "", UI_FONT_TAG, UI_TEXT_ON_LIGHT, 1);
 }
 
 void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill)
 {
     int w = tag_width(text, false);
-    gfx_fill_chamfer_rect_ex(c, UI_TAG_X, UI_TAG_Y, w, UI_TAG_H, 0, 8, 0, 8, fill);
-    gfx_text(c, UI_TAG_X + 12, UI_TAG_Y + 1, text ? text : "", UI_FONT_HEAD,
-             UI_TEXT_ON_LIGHT, 1);
+    gfx_fill_chamfer_rect_ex(c, UI_TAG_X, UI_TAG_Y, w, UI_TAG_H, 0,
+                             UI_CHAMFER, 0, UI_CHAMFER, fill);
+    gfx_text(c, UI_TAG_X + TAG_TEXT_X_MARK,
+             UI_TAG_Y + (UI_TAG_H - gfx_text_height(UI_FONT_TAG, 1)) / 2,
+             text ? text : "", UI_FONT_TAG, UI_TEXT_ON_LIGHT, 1);
 }
 
 void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color)
@@ -408,7 +434,8 @@ void ui_hold_reset(ui_hold_t *h)
     h->held_s = 0.0f;
     h->down = false;
     h->fired = false;
-    h->flash_left = 0;
+    h->flash_ms = 0;
+    h->flash_new = false;
 }
 
 float ui_hold_credit(float dt_s)
@@ -487,7 +514,8 @@ void ui_hold_reached(ui_hold_t *h)
     if (h == NULL) {
         return;
     }
-    h->flash_left = UI_HOLD_FLASH_FRAMES;
+    h->flash_ms = UI_HOLD_FLASH_MS;
+    h->flash_new = true;
     h->held_s = 0.0f;
 }
 
@@ -505,20 +533,45 @@ bool ui_hold_left(ui_hold_t *h)
     return true;
 }
 
-void ui_hold_flash_step(ui_hold_t *h)
+int ui_hold_flash_left(int ms_left, float dt_s)
 {
-    if (h != NULL && h->flash_left > 0) {
-        --h->flash_left;
+    if (ms_left <= 0) {
+        return 0;
     }
+    /* Rounded to the ms; a NaN or a negative step spends nothing. */
+    const float ms = dt_s * 1000.0f + 0.5f;
+    if (!(ms > 0.0f)) {
+        return ms_left;
+    }
+    /* No further than the start of the next phase: the phase now drawn
+     * ends at the next multiple of UI_HOLD_FLASH_PHASE_MS run. */
+    const int run = UI_HOLD_FLASH_MS - ms_left;
+    const int to_next = (run < 0) ? ms_left
+        : UI_HOLD_FLASH_PHASE_MS - run % UI_HOLD_FLASH_PHASE_MS;
+    const int spend = (ms >= (float)to_next) ? to_next : (int)ms;
+    return (spend >= ms_left) ? 0 : ms_left - spend;
 }
 
-gfx_color_t ui_hold_flash(gfx_color_t settled, int frames_left)
+void ui_hold_flash_step(ui_hold_t *h, float dt_s)
 {
-    if (frames_left <= 0) {
+    if (h == NULL) {
+        return;
+    }
+    if (h->flash_new) {
+        h->flash_new = false;
+        return;
+    }
+    h->flash_ms = ui_hold_flash_left(h->flash_ms, dt_s);
+}
+
+gfx_color_t ui_hold_flash(gfx_color_t settled, int ms_left)
+{
+    if (ms_left <= 0 || ms_left > UI_HOLD_FLASH_MS) {
         return settled;
     }
-    switch ((frames_left - 1) % UI_HOLD_FLASH_CYCLE) {
-    case 2:  return GFX_WHITE;
+    const int run = UI_HOLD_FLASH_MS - ms_left;
+    switch ((run / UI_HOLD_FLASH_PHASE_MS) % UI_HOLD_FLASH_CYCLE) {
+    case 0:  return GFX_WHITE;
     case 1:  return GFX_BLACK;
     default: return settled;
     }

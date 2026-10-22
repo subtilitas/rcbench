@@ -29,7 +29,7 @@ recovering does not clear a stop.
 ARM is at the bottom of a bench screen; STOP is at the top of the band.
 
 A touch belongs to what it came down on until it lifts. The band is the top
-48 px of the panel.
+60 px of the panel.
 
 - A touch that comes down on the band stays the band's. Sliding it down into
   the screen moves nothing there, and lifting it there presses nothing.
@@ -54,14 +54,15 @@ A touch belongs to what it came down on until it lifts. The band is the top
   while the first finger drags. After the home tag, the finger still on the
   glass moves nothing on the screen the tag leads to.
 
-Current limitation: the chips stand from STOP to the left. A row that would
-reach x 226, where the widest home tag (MOTOR & ESC) ends, starts each label
-16 px into its chip instead of 24 px. One row is still wider and reaches
-under MOTOR & ESC's home tag: ARMED with a FAULT code, down to x 224, in
-German down to x 216. A tap there acts on the home tag, not on the chip.
+STOP is 168 x 48 px at the right end of the band, from x 850. The chips
+stand from STOP to the left, 8 px from it and 6 px apart. Each chip is 44 px
+tall, with its label in the 10 x 20 px face, 28 px in from the chip's left
+edge. The widest row, a run clock of 10 hours, ARMED MOTOR, a FAULT code,
+BENCH and LINK in German, starts at x 276.
 
-The home tags end at x 226 (MOTOR & ESC) and at x 210 or less on the other
-screens.
+The home tag is 44 px tall at x 8, y 8, its name in the 20 x 36 px face. The
+home tags end at x 268 (MOTOR & ESC) and at x 248 or less on the other
+screens, so no chip row reaches under a home tag.
 
 ### Chip help
 
@@ -69,8 +70,9 @@ A tap on a chip of the band opens a box under the band that says what the
 chip's state means for the bench and what to do: LINK or NO LINK, the mode,
 FAULT, the arm chip and the run clock. The box opens 4 px under the band at
 the tapped chip's left edge, moved left as far as it needs to stay 8 px
-inside the panel. It is 520 px wide; FAULT's box spans the panel (784 px),
-with one paragraph per set bit. No box reaches into the band, so none covers
+inside the panel. It is 640 px wide, 60 characters of the 10 x 20 px face
+on 21 px lines; FAULT's box spans the panel (1008 px, 97 characters), with
+one paragraph per set bit. No box reaches into the band, so none covers
 STOP, and none reaches the alert band.
 
 - A tap opens it: press and lift on the same chip. A press that slides off
@@ -129,9 +131,11 @@ says to flash both boards from one release.
 
 ## The alert band
 
-A fault the screen itself does not show appears in a red band, 34 px high,
-across the bottom of every screen that has the status band. It covers the
-bottom of the screen, ARM included, while it shows.
+A fault the screen itself does not show appears in a red band, 44 px high,
+across the bottom of every screen that has the status band. Its text is in the
+10 x 20 px face, at most 97 characters a line on up to 2 lines. It covers the
+bottom 44 px of the screen while it shows; ARM and every control that stops
+the bench end above it.
 
 - It clears 30 s after the frame it arrived in. A new alert, even with the
   same text, starts the 30 s again.
@@ -140,13 +144,13 @@ bottom of the screen, ARM included, while it shows.
   nor a second finger's on the band; only the first finger's lift clears.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
-- A control under the band that stops what the bench drives acts on the
-  first press, and the press clears the band: DISARM, OUTPUT OFF, a stick
-  run's ABORT, STOP TEST and STOP RUN. The band covers the lower 22 px of
-  SERVO's DISARM (panel y 446 to 467), the lower 26 px of a stick run's
-  ABORT (y 446 to 471) and the lower 8 px of its ABORT on a manual step
-  (y 446 to 453). ARM and OUTPUT ON under the band are not pressed: the tap
-  clears the band and starts no hold.
+- The controls that stop what the bench drives end above the band, panel
+  y 556 to 599: DISARM, OUTPUT OFF, a stick run's ABORT (y 516 to 549),
+  its ABORT on a manual step (y 456 to 511), STOP TEST and STOP RUN. A press
+  on one with an alert showing is its own, and the alert stays. A stop
+  control a screen draws under the band acts on the first press, and the
+  press clears the band; ARM and OUTPUT ON under the band are not pressed:
+  the tap clears the band and starts no hold.
 - An alert that arrives while a finger is already down on a control leaves
   that press to the control: its release acts as with no alert.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays
@@ -157,7 +161,7 @@ bottom of the screen, ARM included, while it shows.
 
 ![The feature menu](img/overview.png)
 
-The menu is a grid of 4 columns by 2 rows, each tile 190 x 204 px with 8 px
+The menu is a grid of 4 columns by 2 rows, each tile 246 x 258 px with 8 px
 margins. The first row holds the workbenches, MOTOR & ESC, SERVO and
 SUPPLY; the second the instruments, RECEIVER, BATTERY and BALANCE; the last
 column LOGS over SETUP. A fourth workbench or a fourth instrument fails the
@@ -237,7 +241,7 @@ TABLE, as it was.
 | SETTINGS | the 8 ESC settings under PACK, MOTOR and THROTTLE OUTPUT ([Settings](#motor--esc-settings)) |
 
 Two columns. The page takes the left, the four readouts and the CONTROL card
-take a rail of 236 px on the right, so reading the numbers and working the
+take a rail of 456 px on the right, so reading the numbers and working the
 throttle do not compete for the same part of the screen. The rail is the same
 on LIVE, PROGRAM's list and SETTINGS, and ARM works on all three; a session
 opened from PROGRAM covers it. With the rotary knob on, turning it moves the
@@ -571,7 +575,7 @@ output (`SET_CAT_ESC` in the settings schema) in schema order, under three headi
 
 A row is 34 px: the label, the help line, and the value with its unit in a
 box of 100 x 28 px. A tap on the box opens the keypad over the left column
-and the strip, 546 x 423 px, so no tab switches the task under it; the rail
+and the strip, 546 x 529 px, so no tab switches the task under it; the rail
 stays in reach. The keypad names the setting, its range and its unit. OK
 takes a value inside the range and lands it on the setting's step, 4321 mAh
 as 4300 mAh; outside the range it keeps the keypad open and names the range
@@ -787,8 +791,8 @@ measured:
 
 A row's `-` and `+` step its value. A tap on the value, the 216 px column
 between the name and the keys, opens the keypad over the page, from under
-the output strip to 4 px above the alert band: 788 x 368 px, keys of
-188 x 62 px. It names the setting, its range and its unit and takes the
+the output strip to 4 px above the alert band: 1008 x 466 px, keys of
+243 x 86 px. It names the setting, its range and its unit and takes the
 step's digits after the point: one for Voltage's 0.1 V, two for Current
 limit's 0.05 A. OK sets the value as a step does, onto the nearer step (1.23 A is
 1.25 A); CLOSE asks for the save, as after a step. A value outside the
@@ -1948,10 +1952,11 @@ Peripheral Interface) clock, or 125 sectors, about 50 ms, with a report beside
 every run. Neither is measured on the panel. Each entry's size comes with the
 directory read, so a page costs one walk and the selection.
 
-The scroll bar along the list's right edge is 42 px wide, 8.1 mm on the
-panel's 0.194 mm pixels. Its thumb is the rows on screen against the rows on
-the page, and it scrolls within the page. A tap on the track brings the
-thumb's middle to the finger; a finger on the thumb drags it.
+The scroll bar along the list's right edge is 42 px wide, 6.3 mm at the 0.150
+mm a pixel assumed for the panel (not measured). Its thumb is the rows on
+screen against the rows on the page, and it scrolls within the page. A tap on
+the track brings the thumb's middle to the finger; a finger on the thumb drags
+it.
 
 LOGS reads the card each time it opens, from the menu or back from WI-FI:
 the first page of the tab's folder, its newest run selected, so a run
@@ -2421,7 +2426,7 @@ reach the layout with two application slots: [First run, §1](FirstRun.md#1-flas
 ## Setup
 
 The SETUP tile of the menu opens a page of tiles, 3 by 3, in the menu's
-style. Each tile is 256 x 108 px, its icon centred over its name.
+style. Each tile is 330 x 108 px, its icon centred over its name.
 
 ![Setup](img/setup.png)
 
@@ -2447,9 +2452,10 @@ The same page in the light theme:
 
 ![Setup in the light theme](img/setup-light.png)
 
-A category's list spans the panel's width, 776 px, and shows 348 px of it,
-6 rows, over a strip of three columns: the category's name, RESET CATEGORY
-and SAVE. The strip ends at panel y 442, 4 px above the alert band
+A category's list is 776 px wide from the panel's left margin and shows
+446 px of it, 7 rows, over a strip of three columns: the category's name,
+RESET CATEGORY and SAVE. The strip ends at panel y 552, 4 px above the alert
+band
 ([The alert band](#the-alert-band)), so an alert never covers a key, a row,
 RESET CATEGORY or SAVE, on the tiles or on a list.
 
@@ -2502,8 +2508,8 @@ choice wraps round from its last value to its first.
 - A key is its column, 44 px wide, over the 54 px of its row. The 4 px
   between two rows belong to no key.
 - **Keypad.** A tap on a number's value, the 126 px between its `-` and `+`
-  keys, opens the keypad over the list and the strip: 784 x 386 px, keys of
-  187 x 66 px, its foot 4 px above the alert band. It names the setting, its
+  keys, opens the keypad over the list and the strip: 1008 x 484 px, keys of
+  243 x 91 px, its foot 4 px above the alert band. It names the setting, its
   range and its unit, shows the value faint until a digit is typed, and
   takes as many digits after the point as the step has: one for a shunt's
   0.1 mΩ, none for a pin. OK sets the value as a step sets it: in force at
@@ -3130,7 +3136,7 @@ until a save succeeds, even with every value stepped back.
 
 The home tag on the tiles, the only way from SETUP to the menu, is held while
 the label reads `SAVE` or `NOT SAVED`. A warning covers the body instead: a
-card of 784 x 344 px with a 3 px edge in the warning colour, over the strip.
+card of 1008 x 442 px with a 3 px edge in the warning colour, over the strip.
 
 ![One value unsaved, at the home tag](img/setup-leave.png)
 
@@ -3957,7 +3963,7 @@ Outputs screen holds. The list answers "which GPIO is bound"; this answers
 
 ![The pin picker](img/picker.png)
 
-The keys are not the pads. At any size that fits a 480-pixel panel a pad is
+The keys are not the pads. At any size that fits a 1024 x 600 panel a pad is
 under 40 pixels across, which is smaller than a fingertip, so the pads are
 drawn where they are and the touching happens on two staggered rows of keys
 above the board and two below, 43 px wide, each on a straight trace to its
@@ -4061,10 +4067,10 @@ pin a 28 px line. When those run past the foot of the table, every pin line
 is 20 px with the GPIO in the smaller face, then 16 px, then the names 16 px
 too. The tallest table of protocols is OFF selected, the programming port
 listed and the 8 slots over the 6 protocols that take one channel a pin: 16
-lines, 320 px of the 360 px under the heading. With 4 programming ports and
-every interface on beside that binding, 27 lines do not fit at 16 px: the
-table holds the lines that fit, the ports and the interfaces first, and ends
-in `+N`, N the lines left out.
+lines, 392 px of the 468 px under the heading. With 4 programming ports and
+every interface on beside that binding, the table lists 27 lines, the ports
+and the interfaces first, in the smaller lines. A table that still runs past
+the foot holds the lines that fit and ends in `+N`, N the lines left out.
 
 ![The tallest IN USE table](img/picker-off.png)
 

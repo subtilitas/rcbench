@@ -256,12 +256,12 @@ static inline void bench_frames(uint32_t ms)
     }
 }
 
-/* Frames drawn as the panel draws them, so the flashes a hold or an
- * output switched on starts -- spent one a drawn frame -- are over. */
+/* Frames drawn as the panel draws them, 20 ms each, so the flashes a hold
+ * or an output switched on starts, 150 ms each, are over. */
 static inline void settle_drawn(void)
 {
     two_buffers();
-    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES; ++i) {
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 10; ++i) {
         scr->render((i & 1) ? &cv1 : &cv, i & 1);
         scr->tick(0.02f);
     }

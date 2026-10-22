@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The screen router: the band, the alert band, and the touches between
+ * them and the screens.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -742,38 +746,51 @@ const char *ui_router_alert(void)
     return s.has_held ? s.held : NULL;
 }
 
-/* The alert's text: from x 12, the panel's width less 12 px at the left and
- * 36 px at the right, which clears the "x" (752 px, 94 cells of 8 px, on the
- * 800 px panel).  Text wider than one line breaks at a space onto a second,
- * 16 px under the first: two rows of the 8x16 face fill 32 of the band's
- * 34 px. */
+/* The alert's text, in UI_FONT_BAND (10 x 20): from x 12, the panel's width
+ * less 12 px at the left and 36 px at the right, which clears the "x"
+ * (976 px, 97 cells of 10 px, on the 1024 px panel).  Text wider than one
+ * line breaks at a space onto a second, 20 px under the first: two rows
+ * fill 40 of the band's 44 px, 2 px from its top. */
+/** @brief The alert text's left edge: 12 px. */
 #define ALERT_TEXT_X 12
+/** @brief The alert text's width: 976 px, 97 cells, clear of the "x". */
 #define ALERT_TEXT_W (PANEL_W - 2 * ALERT_TEXT_X - 24)
-#define ALERT_PITCH  16
+/** @brief An alert row to the next: 20 px. */
+#define ALERT_PITCH  20
+/** @brief The alert's face: 10 x 20 px. */
+#define ALERT_FONT   UI_FONT_BAND
 
 int ui_router_alert_rows(const char *text)
 {
     return ui_text_wrap(NULL, gfx_rect_make(ALERT_TEXT_X, 0, ALERT_TEXT_W,
                                             ALERT_PITCH),
-                        ALERT_PITCH, text, &gfx_font_8x16, 0);
+                        ALERT_PITCH, text, ALERT_FONT, 0);
 }
 
+/**
+ * @brief Draw the alert band across the bottom of the panel.
+ * @param c        The canvas, the panel's.
+ * @param text     The alert, on one row centred or on two from the top.
+ * @param closable A tap closes it: the "x" at its right end shows.
+ */
 static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
 {
     const int y = PANEL_H - ALERT_H;
+    /* One row centred in the band's height. */
+    const int y1 = y + (ALERT_H - gfx_text_height(ALERT_FONT, 1)) / 2;
     gfx_fill_rect(c, 0, y, PANEL_W, ALERT_H, ui_theme_color(UI_C_DANGER));
     if (ui_router_alert_rows(text) <= 1) {
-        gfx_text(c, ALERT_TEXT_X, y + 9, text, &gfx_font_8x16,
+        gfx_text(c, ALERT_TEXT_X, y1, text, ALERT_FONT,
                  ui_theme_color(UI_C_TEXT), 1);
     } else {
-        (void)ui_text_wrap(c, gfx_rect_make(ALERT_TEXT_X, y + 1, ALERT_TEXT_W,
+        (void)ui_text_wrap(c, gfx_rect_make(ALERT_TEXT_X, y + 2, ALERT_TEXT_W,
                                             ALERT_PITCH),
-                           ALERT_PITCH, text, &gfx_font_8x16,
+                           ALERT_PITCH, text, ALERT_FONT,
                            ui_theme_color(UI_C_TEXT));
     }
     if (closable) {
-        gfx_text(c, PANEL_W - 12 - 8, y + 9, "x", &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT), 1);
+        gfx_text(c, PANEL_W - 12 - gfx_text_width(ALERT_FONT, "x", 1), y1,
+                 "x", ALERT_FONT, ui_theme_color(UI_C_TEXT), 1);
     }
 }
 
@@ -819,8 +836,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
      * A sub-canvas clipped to the body, so a screen cannot draw over the band
      * or STOP whatever offsets it uses.
      */
-    const gfx_rect_t body = { 0, UI_BAND_H, PANEL_W,
-                              (int16_t)(PANEL_H - UI_BAND_H) };
+    const gfx_rect_t body = { 0, UI_BAND_H, PANEL_W, UI_BODY_H };
     gfx_canvas_t sub;
     if (gfx_canvas_sub(c, body, &sub)) {
         scr->render(&sub, buffer_index);

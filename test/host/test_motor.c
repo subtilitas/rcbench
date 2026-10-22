@@ -53,6 +53,7 @@
  */
 
 #include "motor_rig.h"
+#include "ui_widgets.h"
 
 /* The same on a bench that reports itself armed: the throttle's controls
  * move it only there. */
@@ -64,7 +65,8 @@ static void fresh_armed(void)
 
 #define RESET_X  676
 
-#define RESET_Y  (LO_Y + 154 - 6 - BTN_H / 2)
+/* RESET PEAKS, 2 margins above the body's foot (motor_screen_int.h). */
+#define RESET_Y  (UI_BODY_H - 2 * UI_MARGIN - BTN_H / 2)
 
 #define TRACK_W  414
 
@@ -331,8 +333,8 @@ TEST_CASE(a_short_press_on_arm_does_nothing)
 
 /*
  * Arming flashes the whole button twice: white, black, the danger red, and
- * again, one drawn frame each. A fill that merely decayed towards the settled
- * colour would not read as a flash.
+ * again, 25 ms each. A fill that merely decayed towards the settled colour
+ * would not read as a flash.
  */
 TEST_CASE(arming_flashes_the_whole_button)
 {
@@ -340,8 +342,11 @@ TEST_CASE(arming_flashes_the_whole_button)
     scr->render(&cv, 0);
     motor_screen_set_armed(true);
 
+    /* As the panel runs a frame: the tick, then the render.  The tick
+     * after the bench's answer spends nothing, so the first frame is white. */
     gfx_color_t seen[7];
     for (int i = 0; i < 7; ++i) {
+        scr->tick((float)UI_HOLD_FLASH_PHASE_MS / 1000.0f);
         scr->render(&cv, 0);
         seen[i] = arm_px();
     }

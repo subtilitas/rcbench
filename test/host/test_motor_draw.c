@@ -238,9 +238,11 @@ TEST_CASE(the_arm_button_fades_across_the_hold)
 
     /* Armed, and past the flash: holding DISARM must not fade. */
     motor_screen_set_armed(true);
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 20; ++i) {           /* 150 ms in phase-sized steps */
         scr->render(&cv, 0);
+        scr->tick(0.02f);
     }
+    scr->render(&cv, 0);
     const gfx_color_t settled = arm_px();
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     tick_for(HOLD_TICKS);

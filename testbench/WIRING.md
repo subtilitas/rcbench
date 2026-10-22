@@ -376,7 +376,7 @@ still listening, nothing answers at 0x14.
 listens: GP4 and GP5 are inputs and it acknowledges nothing. With the panel
 running, open its port on the Pi and ask:
 
-    ping      ->  pong rcbench-touch 1 addr=0x14 res=800x480 state=listen
+    ping      ->  pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen
     wiring    ->  ok wiring
               ->  wiring ok scl=GP5 sda=GP4 tx=<n> named=<n> agree=<pct> rate=<Msps>
 

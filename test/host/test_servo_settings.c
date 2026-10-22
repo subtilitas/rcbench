@@ -362,7 +362,7 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
     tap(ROW_L_X, ROW_Y(0));                    /* NAME: the keyboard */
     ui_textkey_t probe;
     memset(&probe, 0, sizeof(probe));
-    ui_textkey_open(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "", 23);
+    ui_textkey_open(&probe, SV_OV_AREA, "", "", 23);
     const int seq[] = { UI_TK_CLR, 31 /* X */, 15 /* Y */, 0 /* 1 */,
                         UI_TK_OK };
     for (size_t i = 0; i < sizeof(seq) / sizeof(seq[0]); ++i) {
@@ -473,8 +473,9 @@ TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
             if (fb[y * W + x] == was[y * W + x]) {
                 continue;
             }
-            const bool in = x >= 514 && x < 514 + 268 && y >= 148 && y < 244;
-            const bool row = x >= 514 && x < 514 + 268 && y >= 92 && y < 116;
+            const bool rc = x >= SV_RC_X && x < SV_RC_X + SV_RC_W;
+            const bool in = rc && y >= 148 && y < 244;
+            const bool row = rc && y >= 92 && y < 116;
             if (in) { ++inside; } else if (row) { ++in_row; } else { ++outside; }
         }
     }
@@ -491,7 +492,7 @@ static void text_key(int k)
 {
     ui_textkey_t probe;
     memset(&probe, 0, sizeof(probe));
-    ui_textkey_open(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "", 23);
+    ui_textkey_open(&probe, SV_OV_AREA, "", "", 23);
     const gfx_rect_t r = ui_textkey_key_rect(&probe, k);
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
@@ -549,7 +550,7 @@ TEST_CASE(each_face_of_the_overlay_draws_as_a_full_redraw_would)
     tap(ROW_L_X, ROW_Y(0));
     tap(CH_X(3), CH_Y(3));                     /* HELI CYCLIC: the warning */
     CHECK(both_whole());
-    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_DANGER));
+    CHECK_EQ(fb[UI_MARGIN * W + UI_MARGIN], ui_theme_color(UI_C_DANGER));
     ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 39; ++i) {             /* a second of the two */
         scr->tick(1.0f / 39.0f);
@@ -612,12 +613,12 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
  */
 /* The rate note on the OUTPUT page, mirrored from servo_settings_panel.c:
  * its first line at OV_NOTE_Y + 2 * 18 (324), its second 18 px below,
- * each 16 px high, from x 16 to x 490, inside the overlay's border at
- * x 493. */
-#define NOTE_X    16
+ * each 16 px high, from 10 px into the overlay to 474 px further, inside
+ * the overlay's border 3 px on. */
+#define NOTE_X    (UI_MARGIN + 10)
 #define NOTE_L1_Y 324
 #define NOTE_L2_Y (NOTE_L1_Y + 18)
-#define NOTE_R    490
+#define NOTE_R    (UI_MARGIN + 484)
 
 /* Whether one line's 16 rows are the same in @p was as in the screen. */
 static bool note_rows_equal(const gfx_color_t *was, int y0)
@@ -963,7 +964,9 @@ TEST_CASE(a_refused_save_repaints_only_the_save_line)
     int outside = 0, warn = 0;
     for (int y = 0; y < H; ++y) {
         for (int x = 0; x < W; ++x) {
-            const bool in = x >= 16 && x < 16 + 244 && y >= 402 && y < 420;
+            const int sy = UI_BODY_H - UI_MARGIN - 24;  /* the save line */
+            const bool in = x >= UI_MARGIN + 10 && x < UI_MARGIN + 254
+                            && y >= sy && y < sy + 18;
             if (in && fb[y * W + x] == ui_theme_color(UI_C_WARN)) {
                 ++warn;
             }
@@ -987,8 +990,8 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
 {
     fresh_armed();
     two_buffers();
-    /* The arm's flash is spent a drawn frame at a time; past it. */
-    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES; ++i) {
+    /* Past the arm's flash, 150 ms: 15 frames of 26 ms. */
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 10; ++i) {
         scr->render((i % 2) ? &cv1 : &cv, i % 2);
         scr->tick(1.0f / 39.0f);
     }
@@ -1458,7 +1461,7 @@ TEST_CASE(the_set_lines_gestures_draw_and_end_as_they_should)
     tap(SUP_V_X, SUP_ROW_Y);
     keys("5.5");                                /* the question */
     scr->render(&cv, 0);
-    CHECK_EQ(fb[(6 + UI_BAND_H * 0) * W + 6], ui_theme_color(UI_C_WARN));
+    CHECK_EQ(fb[UI_MARGIN * W + UI_MARGIN], ui_theme_color(UI_C_WARN));
     tap(WARN_CANCEL_X, WARN_Y);
 
     tap(SUP_V_X, SUP_ROW_Y);

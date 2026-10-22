@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The feature menu: a grid of tiles under the band.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -16,10 +19,10 @@
 #define H UI_BODY_H   /* the router owns the band */
 
 /*
- * Four columns by two rows: eight 190 x 204 px tiles with 8 px margins
- * under the 48 px band.  A tile's line holds 23 characters of the 8 x 16
- * font, 184 of its 190 px, on each of two rows: the second ends 8 px above
- * the SIMULATED badge.
+ * Four columns by two rows: eight 246 x 258 px tiles with 8 px margins
+ * under the 60 px band.  A tile's line holds 30 characters of the 8 x 16
+ * font, 240 of its 246 px, on each of two rows: the second ends above the
+ * SIMULATED badge.
  */
 #define COLS 4
 #define ROWS 2

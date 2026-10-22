@@ -1,5 +1,6 @@
-/*
- * The visual language of the bench, resolved at runtime.
+/**
+ * @file
+ * @brief The visual language of the bench, resolved at runtime.
  *
  * Two palettes, dark and light.  In the dark palette the background is
  * near-black so the four telemetry colours run at full chroma; in both, every
@@ -114,8 +115,10 @@ int ui_theme_contrast(void);
 
 /* ----------------------------------------------------------------- metrics */
 
-#define UI_CHAMFER       8
-#define UI_CHAMFER_SM    4
+/** @brief A card's or a button's cut corner: 10 px. */
+#define UI_CHAMFER       10
+/** @brief A chip's or a small control's cut corner: 5 px. */
+#define UI_CHAMFER_SM    5
 
 /*
  * Corner radii (UI_R_CARD, UI_R_CTL, UI_R_CHIP, in ui_layout.h) are one scale
@@ -142,10 +145,16 @@ static inline gfx_seg_style_t ui_seg_hero(void)
 #define UI_FONT_NUM      (&gfx_font_num_24x30)
 
 /*
- * Roles of the faces the 1024 x 600 layout adds.  No screen draws with BODY
- * yet.  The layout switch points LABEL at gfx_font_10x20, HEAD at
- * gfx_font_20x36 and NUM at gfx_font_num_32x44.
+ * Roles of the faces of the 1024 x 600 type scale.  LABEL, HEAD and NUM
+ * above are the faces the screens are laid out in, 8 px cells.  The band,
+ * the home tag, the help bubbles and the alert band draw with the scale's
+ * faces: UI_FONT_BAND and UI_FONT_TAG.
  */
+/** @brief The band's chip labels, the help bubbles' text and the alert
+ *  band's text: 10 x 20. */
+#define UI_FONT_BAND     (&gfx_font_10x20)
+/** @brief The home tag and the wordmark: 20 x 36. */
+#define UI_FONT_TAG      (&gfx_font_20x36)
 /** @brief The 8x16 face for data columns: log table, analyser values, pad
  *  numbers. */
 #define UI_FONT_FINE     (&gfx_font_8x16)

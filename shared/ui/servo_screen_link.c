@@ -122,7 +122,7 @@ void servo_screen_set_armed(bool armed)
         svs_drop_motion();
         /* The flash says the bench armed; disarmed, it is over, so both
          * buffers end on ARM's own colour. */
-        s.arm.flash_left = 0;
+        s.arm.flash_ms = 0;
         if (ui_hold_left(&s.arm)) {
             /* The bench disarmed under a finger still down on the button, and
              * the hold ended with it; see ui_hold_left(). */

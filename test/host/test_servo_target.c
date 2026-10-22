@@ -71,8 +71,8 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
 static void measured_row(gfx_color_t *out)
 {
     for (int y = 0; y < 20; ++y) {
-        memcpy(out + y * 292, fb + (size_t)(64 + y) * W + 502,
-               292 * sizeof(gfx_color_t));
+        memcpy(out + y * SV_RCARD_W, fb + (size_t)(64 + y) * W + SV_RCARD_X,
+               SV_RCARD_W * sizeof(gfx_color_t));
     }
 }
 
@@ -81,9 +81,9 @@ static void measured_row(gfx_color_t *out)
 TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback)
 {
     fresh();
-    gfx_color_t *a = malloc(20 * 292 * sizeof(gfx_color_t));
+    gfx_color_t *a = malloc(20 * SV_RCARD_W * sizeof(gfx_color_t));
     REQUIRE_ALLOC(a);
-    gfx_color_t *row_b = malloc(20 * 292 * sizeof(gfx_color_t));
+    gfx_color_t *row_b = malloc(20 * SV_RCARD_W * sizeof(gfx_color_t));
     REQUIRE_ALLOC(row_b);
 
     /* Encoder off: the feedback's angle is on show and follows it. */
@@ -93,7 +93,7 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
     servo_screen_feedback(1300u, 0.2f, true);
     scr->render(&cv, 0);
     measured_row(row_b);
-    CHECK(memcmp(a, row_b, 20 * 292 * sizeof(gfx_color_t)) != 0);
+    CHECK(memcmp(a, row_b, 20 * SV_RCARD_W * sizeof(gfx_color_t)) != 0);
 
     /* Encoder on, no reading: dashes, whatever the feedback says. */
     settings_set(SET_ENC_EN, 1.0f);
@@ -104,14 +104,14 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
     servo_screen_feedback(1300u, 0.2f, true);
     scr->render(&cv, 0);
     measured_row(row_b);
-    CHECK_EQ(memcmp(a, row_b, 20 * 292 * sizeof(gfx_color_t)), 0);
+    CHECK_EQ(memcmp(a, row_b, 20 * SV_RCARD_W * sizeof(gfx_color_t)), 0);
 
     /* A reading puts the encoder's angle there. */
     const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false, false, false, false };
     servo_screen_encoder(&e);
     scr->render(&cv, 0);
     measured_row(row_b);
-    CHECK(memcmp(a, row_b, 20 * 292 * sizeof(gfx_color_t)) != 0);
+    CHECK(memcmp(a, row_b, 20 * SV_RCARD_W * sizeof(gfx_color_t)) != 0);
     free(a);
     free(row_b);
 }
@@ -310,7 +310,7 @@ static const char *const k_tgt_txt[2][TGT_N] = {
 
 /* The row a label and a value give, drawn over the screen's by the row
  * widget (ui_target_row.h, whose own pixels test_widgets holds) at the
- * row's place: the label at x 514, the value in the box from x 578, both in
+ * row's place: the label at SV_RC_X, the value in the box 64 px further, in
  * the warning colour for @p warn, the box drawn locked for @p locked. */
 static void target_reference_as(gfx_color_t *out, const char *label,
                                 const char *text, bool warn, bool locked)

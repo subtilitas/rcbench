@@ -6,7 +6,7 @@ order: 2
 
 # Status band and STOP
 
-The status band is the top 48 px of every screen except the splash, the bus-fault screen, PANEL UPDATE and the progress of an IOmcu update. It names the screen, shows the state of the bench and holds STOP.
+The status band is the top 60 px of every screen except the splash, the bus-fault screen, PANEL UPDATE and the progress of an IOmcu update. It names the screen, shows the state of the bench and holds STOP.
 
 ## What the band shows
 
@@ -47,7 +47,7 @@ STOP works on every screen that has the band. It switches the bench to SAFE, swi
 ![The box under the LINK chip](view:band-link)
 ![The box under the SAFE chip](view:band-safe)
 
-A tap on a chip opens a box under the band. It says what the chip's state means for the bench and what to do. The box is 520 px wide and opens 4 px under the band. A tap on another chip closes it and opens that chip's box. Any other tap closes it and does nothing else, except on DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST or STOP RUN: those act on the same press, as with no box. Leaving the screen closes it too. The text follows the state while the box is open.
+A tap on a chip opens a box under the band. It says what the chip's state means for the bench and what to do. The box is 640 px wide and opens 4 px under the band. A tap on another chip closes it and opens that chip's box. Any other tap closes it and does nothing else, except on DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST or STOP RUN: those act on the same press, as with no box. Leaving the screen closes it too. The text follows the state while the box is open.
 
 ![The box under ARMED MOTOR](view:band-armed)
 
@@ -59,7 +59,7 @@ While the IOmcu has refused link frames since its power-up, the LINK box ends wi
 
 ![The FAULT box with three bits set](view:band-fault)
 
-The FAULT box spans the panel, 784 px, with one paragraph per set bit:
+The FAULT box spans the panel, 1008 px, with one paragraph per set bit:
 
 | Code | Name | Set in this release when |
 |---|---|---|
@@ -77,11 +77,11 @@ For a bit this release never sets, the box says to flash both boards from one re
 
 ![An alert across the bottom of the menu](view:overview-alert)
 
-A fault the open screen does not show appears in a red band, 34 px high, across the bottom of the screen. It covers what is beneath it, ARM included.
+A fault the open screen does not show appears in a red band, 44 px high, across the bottom of the screen. It covers what is beneath it; ARM and the controls that stop the bench end above it.
 
 - It clears 30 s after it arrived. A new alert starts the 30 s again.
 - A tap on the band, marked `x` at its right end, clears it earlier. The screen beneath receives neither that tap nor a second finger on the band.
-- DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN act on the first press even where the band covers them, and the press clears the band. On SERVO the band covers the lower 22 px of DISARM. ARM and OUTPUT ON under the band are not pressed.
+- DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN end above the band: a press on one is its own, and the alert stays. ARM and OUTPUT ON under the band are not pressed.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays until restart and has no `x`.
 
 ## Touch near the band

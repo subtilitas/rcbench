@@ -112,13 +112,18 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define LROW_Y(r) SV_LIST_ROW_Y(r)
 #define TRIM_DN_X 399
 #define TRIM_UP_X 469
+/* OV_X, OV_Y, OV_W and OV_H of servo_screen_int.h: the left column. */
+#define OV_X0    UI_MARGIN
+#define OV_Y0    UI_MARGIN
+#define OV_W0    488
+#define OV_H0    (UI_BODY_H - 2 * UI_MARGIN)
 #define CH_X(i)  (130 + 239 * ((i) / 5))
-#define CH_Y(i)  (74 + 46 * ((i) % 5))
-#define CH_CANCEL_X 429
-#define CH_CANCEL_Y 398
-#define WARN_APPLY_X  146
-#define WARN_CANCEL_X 384
-#define WARN_Y        378
+#define CH_Y(i)  (OV_Y0 + 48 + 20 + 46 * ((i) % 5))
+#define CH_CANCEL_X (OV_X0 + OV_W0 - 10 - 55)
+#define CH_CANCEL_Y (OV_Y0 + OV_H0 - 46 + 18)
+#define WARN_APPLY_X  (OV_X0 + 20 + 120)
+#define WARN_CANCEL_X (OV_X0 + OV_W0 - 20 - 90)
+#define WARN_Y        (OV_Y0 + OV_H0 - 76 + 28)
 /* SETTINGS' pages. */
 #define PAGE_OUTPUT 0
 #define PAGE_SWEEP  1
@@ -178,8 +183,8 @@ static inline void key(ui_key_t k)
 {
     ui_keypad_t probe;
     memset(&probe, 0, sizeof(probe));
-    ui_keypad_open(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "", 0.0f,
-                   0.0f, 1.0f, 2);
+    ui_keypad_open(&probe, SV_OV_AREA, "",
+                   "", 0.0f, 0.0f, 1.0f, 2);
     const gfx_rect_t r = ui_keypad_key_rect(&probe, k);
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
@@ -234,10 +239,10 @@ static inline void acked(uint32_t age_ms, servo_sweep_from_t from,
 /* The ARM button, mirrored from servo_screen.c: full width of the right
  * card's inner column, under CENTRE and RELEASE. */
 /* The SPEED track, mirrored from the screen: x, w and y of the slider. */
-#define SPEED_X_HALF (508 + 12 + (UI_PANEL_W - 508 - UI_MARGIN - 24) / 2)
+#define SPEED_X_HALF (SV_RC_X + SV_RC_W / 2)
 #define SPEED_Y (296 + 11)
-#define ARM_X (508 + 12)
-#define ARM_W (UI_PANEL_W - 508 - UI_MARGIN - 24)
+#define ARM_X SV_RC_X
+#define ARM_W SV_RC_W
 #define ARM_Y 388
 #define ARM_H 32
 static inline void arm_press(void)   { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_DOWN, 1); }
@@ -281,10 +286,10 @@ static inline bool both_whole(void)
 
 /* The SET row on the right card: the voltage, the current limit, and the
  * output switch, in the body's coordinates. */
-#define SUP_ROW_Y   237
-#define SUP_V_X     579
-#define SUP_I_X     649
-#define SUP_OUT_X   733
+#define SUP_ROW_Y   SV_SUP_Y
+#define SUP_V_X     SV_SUP_V_X
+#define SUP_I_X     SV_SUP_I_X
+#define SUP_OUT_X   SV_SUP_OUT_X
 
 static inline bool supply_cmd(supply_cmd_t *out)
 {

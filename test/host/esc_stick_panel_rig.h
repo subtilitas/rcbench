@@ -46,15 +46,16 @@
 
 /* Mirrored from esc_stick_panel.c, as the rig's are from esc_stick_int.h:
  * the list's rows from 70, the crumb row's controls at 30 to 60, and the
- * panels' buttons from 362 to 406. */
+ * panels' buttons UI_BTN_H_TALL px tall, 20 px over the bottom margin. */
 #define SP_ROW_CY(n) (70 + (n) * 36 + 16)
-#define LIST_DN_X    761
+#define LIST_UP_X    (SP_RIGHT - 76 + 17)
+#define LIST_DN_X    (SP_RIGHT - 38 + 17)
 #define LIST_CY      45
-#define TIMING_X     698
+#define TIMING_X     (SP_RIGHT - 168 + 84)
 #define TIMING_Y     45
-#define HOLD_X       156
-#define HOLD_Y       384
-#define CANCEL_X     684
+#define HOLD_X       (UI_MARGIN + 20 + 130)
+#define HOLD_Y       (UI_BODY_H - UI_ALERT_H - 4 - 36 - 4 - UI_BTN_H_TALL / 2)
+#define CANCEL_X     (UI_PANEL_W - UI_MARGIN - 20 - 90)
 #define HOLD_ID      7
 
 /** @brief Hands the screen one touch event of the hold's finger at (@p x, @p y). */
@@ -117,7 +118,7 @@ static inline void tap_listed(int at)
     int top = 0;
     (void)esc_stick_panel_listed(&top);
     for (int g = 0; g < 64 && at < top; ++g) {
-        tap(723, LIST_CY);
+        tap(LIST_UP_X, LIST_CY);
         (void)esc_stick_panel_listed(&top);
     }
     for (int g = 0; g < 64 && at >= top + 9; ++g) {
@@ -310,10 +311,11 @@ static inline void rig_run(rig_t *r, uint32_t ms)
 
 /* Mirrored from esc_stick_panel.c: the field, its X, and the keyboard
  * docked right of SP_DOCK_X below the crumb row. */
-#define FIND_X     600
-#define FIND_CLR_X 682
+#define FIND_X     (SP_RIGHT - 182)
+#define FIND_CLR_X (SP_RIGHT - 100)
 #define FIND_Y     45
-static const gfx_rect_t k_dock __attribute__((unused)) = { 352, 68, 442, 358 };
+static const gfx_rect_t k_dock __attribute__((unused)) = {
+    352, 68, UI_PANEL_W - UI_MARGIN - 352, UI_BODY_H - UI_MARGIN - 68 };
 
 /** @brief One key of the docked search keyboard; "\n" is OK, "~" CANCEL, "<" DEL,
  * "#" CLR. */

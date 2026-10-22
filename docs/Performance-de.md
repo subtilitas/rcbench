@@ -114,10 +114,12 @@ anderen einen Frame zurück, was als Flackern erscheint.
 jedem Frame gezeichnet, sobald die Prüfstandswerte `LINK_BN_SIMULATED` tragen,
 also auch bei einem IOmcu, der mit simulierten Werten antwortet.
 Gedrehter Text scannt seine gedrehte Bounding-Box, von Ecke zu Ecke also die
-ganze Canvas, und rotiert und dividiert je Pixel, um die 3 439 Pixel zu
-schreiben, die das Watermark bedeckt: 0,9 % der Canvas. `ui_watermark` nimmt
-diese Punkte einmal auf und schreibt sie danach nur noch, mit 144 721
-Instruktionen je Frame statt 8 412 078.
+ganze Canvas, und rotiert und dividiert je Pixel, um die Pixel zu
+schreiben, die das Watermark bedeckt: 3 439 auf einer Canvas von
+800 x 480 px, 0,9 % davon, und 5 377 auf 1024 x 600 px. `ui_watermark` nimmt
+diese Punkte einmal auf, in eine Tabelle mit 6 144 Plätzen, und schreibt sie
+danach nur noch: bei 800 x 480 px mit 144 721 Instruktionen je Frame statt
+8 412 078. Die Zahl bei 1024 x 600 px ist nicht gemessen.
 
 **Eine Zahl von Fills ist keine Zahl von Zyklen.** Die Tabelle oben misst
 Cache-Line-Fills, und das Watermark kostet davon nur 1 586: es ist Arithmetik
@@ -154,14 +156,16 @@ Zähler je Buffer fest.
 
 ## Obergrenzen
 
-Kein CI-Schritt (Continuous Integration) hält einen Frame an eine
-Obergrenze. `tools/frame_cost.py` bildet den Cache und die Bandbreite des
-ESP32-S3 bei 800 x 480 px nach, und die Tabelle oben ist dieses Modell. Das
-7-Zoll-Panel mit dem ESP32-P4 gibt 1024 x 600 px über einen anderen Cache
-aus. Sein Profil und die Obergrenzen, die CI hält, kommen mit Messungen auf
-diesem Board. `frame_cost.py --check-doc` prüft die Tabelle oben gegen einen
-lokalen Build. `tools/check_docs.py` schlägt bei einer Obergrenzen-Tabelle
-auf dieser Seite fehl, solange `.github/workflows/ci.yml` keine hält.
+Kein CI-Schritt (Continuous Integration) hält einen Frame an eine Obergrenze.
+`tools/frame_cost.py` bildet den Cache und die Bandbreite des ESP32-S3 bei 800
+x 480 px nach, und die Tabelle oben ist dieses Modell. Das 7-Zoll-Panel mit
+dem ESP32-P4 gibt 1024 x 600 px über einen anderen Cache aus. Sein Profil und
+die Obergrenzen, die CI hält, kommen mit Messungen auf diesem Board. Der
+Host-Renderer zeichnet 1024 x 600 px, daher meldet `frame_cost.py --check-doc`
+die Tabelle als nicht geprüft, und `--update-doc` schreibt nichts, bis dieses
+Profil sie ersetzt. `tools/check_docs.py` schlägt bei einer
+Obergrenzen-Tabelle auf dieser Seite fehl, solange `.github/workflows/ci.yml`
+keine hält.
 
 Braucht ein künftiger Bereich mehr Platz, sind die verbleibenden Hebel vom
 gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das
@@ -392,10 +396,10 @@ Statische Zahlen des P4-Builds mit ESP-IDF v5.5.5, aus `idf.py size`:
 
 | Posten | Mit dem Fragment | Ohne es |
 | --- | ---: | ---: |
-| .bss im internen RAM (DIRAM) | 29 976 | 196 984 |
-| .bss im PSRAM (`.ext_ram.bss`) | 167 008 | 0 |
-| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, von 655 360 | 127 450 | 294 458 |
-| Anwendungs-Image, gebaut ohne `RCBENCH_IOMCU_BIN` (ohne IOmcu-Image) | 2 161 950 | 2 161 966 |
+| .bss im internen RAM (DIRAM) | 30 000 | 201 144 |
+| .bss im PSRAM (`.ext_ram.bss`) | 171 144 | 0 |
+| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, von 655 360 | 127 474 | 298 618 |
+| Anwendungs-Image, gebaut ohne `RCBENCH_IOMCU_BIN` (ohne IOmcu-Image) | 2 255 982 | 2 255 998 |
 
 Alle Zahlen sind Bytes. Die PSRAM-Einträge von ESP-IDF für lwIP
 (Lightweight IP Stack) und wpa_supplicant nutzen ein Schema, das nur das

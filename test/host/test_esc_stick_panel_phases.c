@@ -285,7 +285,7 @@ TEST_CASE(a_run_that_cannot_start_says_why)
     tap(BACK_X, BACK_Y);
     tap(LIST_DN_X, LIST_CY);
     tap(LIST_DN_X, LIST_CY);
-    tap(723, LIST_CY);                       /* ^: back a page */
+    tap(LIST_UP_X, LIST_CY);                 /* ^: back a page */
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);

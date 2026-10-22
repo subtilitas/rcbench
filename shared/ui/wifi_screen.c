@@ -1,5 +1,6 @@
-/*
- * WI-FI: wifi_screen.h says what the screen is for.  PANEL UPDATE, the
+/**
+ * @file
+ * @brief WI-FI: wifi_screen.h says what the screen is for.  PANEL UPDATE, the
  * screen the same header declares, is update_screen.c.
  *
  * SPDX-License-Identifier: MIT
@@ -15,7 +16,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* The area below the band: 800 x 432 px. */
+/* The area below the band: 1024 x 540 px. */
 #define W UI_PANEL_W
 #define H UI_BODY_H
 
@@ -431,9 +432,10 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     drop_hold_if_gone();
-    if (s.hold.down || s.hold.flash_left > 0) {
+    if (s.hold.down || s.hold.flash_ms > 0) {
         touched();             /* the fill follows the hold */
     }
+    ui_hold_flash_step(&s.hold, dt_s);
     if (install_allowed() && ui_hold_tick(&s.hold, dt_s)) {
         s.req |= WIFI_REQ_INSTALL;
         s.installing = true;
@@ -747,8 +749,8 @@ static void draw_scan(gfx_canvas_t *c)
 
 static gfx_color_t install_fill(void)
 {
-    if (s.hold.flash_left > 0) {
-        return ui_hold_flash(UI_OK, s.hold.flash_left);
+    if (s.hold.flash_ms > 0) {
+        return ui_hold_flash(UI_OK, s.hold.flash_ms);
     }
     return ui_hold_fill(UI_PANEL_HI, UI_OK, s.hold.held_s);
 }
@@ -830,8 +832,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         default:            draw_main(c);     break;
         }
     }
-    if (s.hold.flash_left > 0) {
-        ui_hold_flash_step(&s.hold);
+    if (s.hold.flash_ms > 0) {
         s.drawn_mask = 0u;
     } else {
         s.drawn_mask |= bit;

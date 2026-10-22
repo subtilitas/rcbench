@@ -392,6 +392,25 @@ def read_baseline(path: pathlib.Path) -> collections.Counter:
         if line and not line.startswith("#"))
 
 
+# An absolute path in single quotes, as Doxygen names the file a broken
+# block started in: it holds the checkout's place on one machine.
+ABSOLUTE_PATH = re.compile(r"'/[^']*'")
+
+
+def machine_bound(lines: list[str], root: pathlib.Path) -> list[str]:
+    """Find the baseline lines that only hold on one machine.
+
+    Args:
+        lines: Baseline lines, "file: message".
+        root: The checkout's root.
+
+    Returns:
+        The lines that name an absolute path, the checkout's or another.
+    """
+    return [line for line in lines
+            if str(root) in line or ABSOLUTE_PATH.search(line)]
+
+
 def write_baseline(path: pathlib.Path, warnings: list[DocWarning]) -> None:
     """Write the warnings as the baseline, sorted.
 
@@ -709,6 +728,13 @@ def main(argv: list[str] | None = None) -> int:
 
     warnings = collect(log_text, root)
     if args.update:
+        bound = machine_bound([w.key for w in warnings], root)
+        if bound:
+            print("doc_check: these warnings name an absolute path and "
+                  "cannot be baselined; fix the comment they come from:\n"
+                  + "".join(f"  {line}\n" for line in bound),
+                  file=sys.stderr)
+            return 1
         write_baseline(baseline_path, warnings)
         print(f"doc_check: {len(warnings)} warning(s) written to "
               f"{baseline_path.relative_to(root)}")
@@ -718,7 +744,14 @@ def main(argv: list[str] | None = None) -> int:
     touched = select_touched(warnings, diff, root)
     touched += block_brief_warnings(root, diff,
                                     read_doxyfile(root / "Doxyfile"))
-    result = compare(warnings, read_baseline(baseline_path), touched)
+    baseline = read_baseline(baseline_path)
+    bound = machine_bound(sorted(baseline), root)
+    if bound:
+        print(f"doc_check: {len(bound)} baseline line(s) name an absolute "
+              "path, which holds on one machine only:\n"
+              + "".join(f"  {line}\n" for line in bound))
+        return 1
+    result = compare(warnings, baseline, touched)
     if result.failed:
         print(report(result))
         return 1

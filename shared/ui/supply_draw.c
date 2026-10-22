@@ -38,8 +38,8 @@ static gfx_color_t out_fill(void)
      * fade previews the colour the switch is about to hold. */
     gfx_color_t fill = s.on ? ui_theme_color(UI_C_DANGER)
                             : ui_theme_color(UI_C_OK);
-    if (s.hold.flash_left > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.hold.flash_left);
+    if (s.hold.flash_ms > 0) {
+        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.hold.flash_ms);
     }
     if (!s.on && s.hold.held_s > 0.0f) {
         fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.hold.held_s);
@@ -47,20 +47,11 @@ static gfx_color_t out_fill(void)
     return fill;
 }
 
-static void out_flash_advance(void)
-{
-    if (s.hold.flash_left > 0) {
-        ui_hold_flash_step(&s.hold);
-        ++s.out_rev;
-    }
-}
-
 static void draw_out_button(gfx_canvas_t *c)
 {
     ui_button(c, s.out_rect, s.on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
               out_fill(),
               s.pressed == P_OUTPUT, s.on || !s.port_held);
-    out_flash_advance();
 }
 
 /* The bytes of the next row of @p at that fit @p cells: up to the last

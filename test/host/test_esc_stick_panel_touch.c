@@ -311,8 +311,9 @@ TEST_CASE(abort_acts_on_the_press)
 
 /*
  * The session names ABORT to its host while a run is under way, so the
- * router hands a press on it through the alert band, which covers ABORT's
- * lower 26 px (panel y 446 to 471).  Nothing before the run: the warning's
+ * router hands a press on it through its help bubble.  ABORT ends 4 px
+ * above the alert band (panel y 516 to 549), and nothing under the band is
+ * a stop.  Nothing before the run: the warning's
  * HOLD TO RUN and CANCEL are no stop.  On a manual step it is the prompt's
  * ABORT, and the foot row's place is not.  After the run, OK is not.
  */
@@ -331,7 +332,7 @@ TEST_CASE(abort_is_named_to_the_host_while_a_run_is_under_way)
     }
     CHECK(esc_stick_running(esc_stick_panel_stick()));
     CHECK(ps->safe_at(WRITE_X, BTN_CY));
-    CHECK(ps->safe_at(WRITE_X, UI_ALERT_Y - UI_BAND_H));
+    CHECK(!ps->safe_at(WRITE_X, UI_ALERT_Y - UI_BAND_H));
     CHECK(!ps->safe_at(BACK_X, BACK_Y));
     tap(WRITE_X, BTN_CY);                    /* ABORT */
     rig_run(&r, 1000u);

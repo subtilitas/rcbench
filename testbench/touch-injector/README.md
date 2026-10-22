@@ -114,7 +114,7 @@ one reply line; a gesture gets a second when it ends.
 
 | Command | Reply |
 | --- | --- |
-| `ping` | `pong rcbench-touch 1 addr=0x14 res=800x480 state=listen` (or `active`) |
+| `ping` | `pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen` (or `active`) |
 | `wiring` | `ok wiring`, then the verdict about 500 ms later |
 | `confirm scl=GP5` | `ok confirm`; the target answers from then on |
 | `status` | `status <state> reads= acks= last_read_ms= down= x= y=` |
@@ -123,8 +123,8 @@ one reply line; a gesture gets a second when it ends.
 | `swipe x0 y0 x1 y1 ms` | `ok swipe`, then `done swipe frames= ms= slowed=` |
 | `release` | `ok release`; a gesture under way first gets `fail <gesture> released` |
 
-Coordinates are panel pixels: x 0 to 799, y 0 to 479. `ms` is 1 to 30000.
-The panel takes injected points as pixels of its 800 x 480 UI (user
+Coordinates are panel pixels: x 0 to 1023, y 0 to 599. `ms` is 1 to 30000.
+The panel takes injected points as pixels of its 1024 x 600 UI (user
 interface) area, unmirrored, and lands each on the pixel named; a point
 past the area is clamped to its edge. The glass's own report (1024 x 600,
 mirrored in x and y) is mapped separately before the two are merged.

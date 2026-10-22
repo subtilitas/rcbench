@@ -243,11 +243,12 @@ TEST_CASE(a_press_left_behind_holds_nothing_on_the_way_back_in)
  * while an alert shows, and takes the touches there.  Nothing of the log
  * viewer that acts lies under it: with no alert showing, on each view and
  * on the DELETE question, a tap changes nothing and goes nowhere on every
- * 8th px of the band's top row, middle row and bottom row (body y 398, 415
- * and 431).  A control that reaches into the band from above crosses the
- * top row; one inside it at least 8 px wide and 17 px high crosses a row
- * and a column of the grid.  1,500 taps, each followed by a full frame:
- * a finer grid pushes gfx.c's fill loop past the 2^32 hits gcovr accepts.
+ * 16th px of the band's top row, middle row and bottom row (body y 496, 518
+ * and 539).  A control that reaches into the band from above crosses the
+ * top row; one inside it at least 16 px wide and 22 px high crosses a row
+ * and a column of the grid.  960 taps, each followed by a full frame of
+ * 1024 x 600: a finer grid pushes gfx.c's fill loop past the 2^32 hits
+ * gcovr accepts.
  */
 static void at_nocard(void)
 {
@@ -277,7 +278,7 @@ TEST_CASE(nothing_that_acts_is_under_the_alert_band)
         for (size_t r = 0; r < sizeof(rows) / sizeof(rows[0]) && acted_at < 0;
              ++r) {
             const int y = rows[r];
-            for (int x = 0; x < W; x += 8) {
+            for (int x = 0; x < W; x += 16) {
                 tap(x, y);
                 if (ui_router_navigations() != nav || look() != was) {
                     acted_at = y;

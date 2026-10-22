@@ -397,6 +397,45 @@ TEST_CASE(the_button_fills_towards_the_colour_it_settles_on)
     CHECK(half != target);
 }
 
+/* The acknowledge button's fill at its left end, clear of the label. */
+static gfx_color_t ack_face(void)
+{
+    scr()->render(&s_c, 0);
+    return s_px[ack_cy() * SCREEN_W + ACK_X + 20];
+}
+
+/*
+ * The hold that acknowledges ends in the 150 ms flash ARM gives, by time:
+ * white, black and the OK green for 25 ms each, twice, then the OK green.
+ */
+TEST_CASE(the_acknowledgement_flashes_for_150_ms)
+{
+    fresh();
+    down(ack_cx(), ack_cy());
+    /* Up to the tick that acknowledges, and no further. */
+    bool acked = false;
+    for (int i = 0; i < HOLD_TICKS && !acked; ++i) {
+        scr()->tick(TICK_S);
+        acked = busfault_screen_take_ack();
+    }
+    CHECK(acked);
+    const gfx_color_t ok = ui_theme_color(UI_C_OK);
+    /* 'W' white, 'B' black, 'G' the OK green. */
+    static const struct { int ms; char want; } k_steps[] = {
+        { 0, 'W' }, { 25, 'B' }, { 50, 'G' },
+        { 75, 'W' }, { 100, 'B' }, { 125, 'G' }, { 150, 'G' },
+    };
+    int at = 0;
+    for (size_t i = 0; i < sizeof(k_steps) / sizeof(k_steps[0]); ++i) {
+        for (; at < k_steps[i].ms; at += 25) {
+            scr()->tick(0.025f);
+        }
+        const gfx_color_t want = (k_steps[i].want == 'W') ? GFX_WHITE
+                               : (k_steps[i].want == 'B') ? GFX_BLACK : ok;
+        CHECK_EQ(ack_face(), want);
+    }
+}
+
 int main(void)
 {
     RUN(a_tap_acknowledges_nothing);
@@ -413,6 +452,7 @@ int main(void)
     RUN(a_lost_link_is_acknowledged_the_same_way);
     RUN(the_two_faults_do_not_share_a_heading);
     RUN(the_button_fills_towards_the_colour_it_settles_on);
+    RUN(the_acknowledgement_flashes_for_150_ms);
     RUN(one_late_frame_cannot_acknowledge_a_fault);
     RUN(a_cancelled_gesture_acknowledges_nothing);
     return test_summary("busfault_screen");

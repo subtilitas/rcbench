@@ -220,7 +220,7 @@ TEST_CASE(a_tab_switch_drops_a_start_hold)
 /* ----------------------------------------------------------- the TARGET row */
 
 /* The TARGET row's value box, mirrored from servo_screen_int.h. */
-static const gfx_rect_t k_tgt_box = { 578, 326, 204, 22 };
+static const gfx_rect_t k_tgt_box = { SV_RC_X + 64, 326, SV_RC_W - 64, 22 };
 
 static unsigned edge_ink(void)
 {
@@ -412,9 +412,10 @@ static bool card_line_reads(int k, int i, const char *text, ui_color_id_t col)
     want_fresh();
     const int y = 46 + 178 * k + 98 + 18 * i + (k == 1 ? 18 : 0);
     const gfx_color_t bg = fb[(size_t)y * W + 20u];
-    gfx_fill_rect(&want_cv, 18, (int16_t)y, 464, 16, bg);
-    gfx_text(&want_cv, 26, y, text, &gfx_font_8x16, ui_theme_color(col), 1);
-    return same_in(fb, want_fb, 18, y, 464, 16);
+    gfx_fill_rect(&want_cv, UI_MARGIN + 12, (int16_t)y, 464, 16, bg);
+    gfx_text(&want_cv, UI_MARGIN + 20, y, text, &gfx_font_8x16,
+             ui_theme_color(col), 1);
+    return same_in(fb, want_fb, UI_MARGIN + 12, y, 464, 16);
 }
 
 /* Each card's state line says ARM FIRST on a SAFE bench and HOLD 2 S TO
@@ -472,7 +473,7 @@ TEST_CASE(the_supply_caps_show_read_only_with_their_home)
         fresh();
         scr->enter();
         open_test();
-        CHECK(caps_read(16, 404));
+        CHECK(caps_read(UI_MARGIN + 10, 404));
         supply_caps_t caps = supply_screen_caps();
         CHECK_NEAR(caps.v_max, 21.0f, 1e-4f);
         settings_set(SET_SUPPLY_V_MAX, 12.0f);
@@ -481,16 +482,16 @@ TEST_CASE(the_supply_caps_show_read_only_with_their_home)
         servo_invalidate();
         caps = supply_screen_caps();
         CHECK_NEAR(caps.v_max, 12.0f, 1e-4f);
-        CHECK(caps_read(16, 404));
+        CHECK(caps_read(UI_MARGIN + 10, 404));
         tap(60, 412);
         CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 12.0f, 1e-4f);
-        CHECK(caps_read(16, 404));                      /* no keypad */
+        CHECK(caps_read(UI_MARGIN + 10, 404));                      /* no keypad */
 
         open_settings();
         tap(TAB_X(PAGE_DUT), TAB_Y);
-        CHECK(caps_read(16, 280));
+        CHECK(caps_read(UI_MARGIN + 10, 280));
         tap(60, 288);
-        CHECK(caps_read(16, 280));
+        CHECK(caps_read(UI_MARGIN + 10, 280));
         CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 3.0f, 1e-4f);
     }
     ui_text_set_language(UI_LANG_EN);
@@ -647,10 +648,10 @@ TEST_CASE(the_program_row_repaints_when_the_testers_port_moves)
     open_program();
     scr->tick(0.02f);
     scr->render(&cv, 0);
-    const gfx_color_t bg = fb[(SV_PROG_ROW_Y(0)) * W + 470];
+    const gfx_color_t bg = fb[(SV_PROG_ROW_Y(0)) * W + 480];
     unsigned before = 0u;
     for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
-        for (int x = 200; x < 484; ++x) {
+        for (int x = 200; x < UI_MARGIN + 488; ++x) {
             before += fb[y * W + x] != bg;
         }
     }
@@ -659,7 +660,7 @@ TEST_CASE(the_program_row_repaints_when_the_testers_port_moves)
     scr->render(&cv, 0);
     unsigned after = 0u;
     for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
-        for (int x = 200; x < 484; ++x) {
+        for (int x = 200; x < UI_MARGIN + 488; ++x) {
             after += fb[y * W + x] != bg;
         }
     }
@@ -696,7 +697,7 @@ static void search_key(int k)
 {
     ui_textkey_t probe;
     memset(&probe, 0, sizeof(probe));
-    ui_textkey_open_search(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "",
+    ui_textkey_open_search(&probe, SV_OV_AREA, "", "",
                            16);
     const gfx_rect_t r = ui_textkey_key_rect(&probe, k);
     tap(r.x + r.w / 2, r.y + r.h / 2);

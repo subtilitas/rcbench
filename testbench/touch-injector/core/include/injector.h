@@ -1,5 +1,6 @@
-/*
- * The touch injector: a GT911 emulator at 0x14 that presses where a USB
+/**
+ * @file
+ * @brief The touch injector: a GT911 emulator at 0x14 that presses where a USB
  * (Universal Serial Bus) command line tells it to.  Pure C; the RP2350
  * build (../rp2350) wires it to the I2C (Inter-Integrated Circuit) target,
  * the USB serial port and the status LED, and the host suite drives it as
@@ -15,22 +16,22 @@
  *
  * Commands (one line each, at most INJ_LINE_MAX characters, LF or CRLF):
  *
- *   ping                       pong rcbench-touch 1 addr=0x14 res=800x480
+ *   ping                       pong rcbench-touch 1 addr=0x14 res=1024x600
  *                              state=listen|active
  *   wiring                     ok wiring, then the verdict line
  *   confirm scl=GP5            ok confirm
- *   status                     status <state> reads= acks= last_read_ms=
+ *   status                     status \<state\> reads= acks= last_read_ms=
  *                              down= x= y=
  *   tap x y [ms]               ok tap, then done tap frames= ms=
  *   hold x y ms                ok hold, then done hold frames= ms=
  *   swipe x0 y0 x1 y1 ms       ok swipe, then done swipe frames= ms= slowed=
  *   release                    ok release (a gesture under way first gets
- *                              fail <gesture> released)
+ *                              fail \<gesture\> released)
  *
  * Coordinates are panel pixels, x 0..INJ_RES_X-1 and y 0..INJ_RES_Y-1;
- * ms is 1..INJ_MS_MAX.  Errors are one line, err <code> [detail], and the
+ * ms is 1..INJ_MS_MAX.  Errors are one line, err \<code\> [detail], and the
  * command is not run.  A gesture that fails after its ok gets fail
- * <gesture> no_master, panel_reset or released.
+ * \<gesture\> no_master, panel_reset or released.
  *
  * Concurrency: the byte functions of the emulator (gt911_emu.h) run in the
  * I2C interrupt.  injector_input() and injector_poll() read and change the
@@ -52,17 +53,22 @@
 extern "C" {
 #endif
 
+/** @brief The line protocol's version, in the ping's reply. */
 #define INJ_PROTOCOL        1
-#define INJ_RES_X           800u
-#define INJ_RES_Y           480u
-#define INJ_LINE_MAX        63u    /* characters, without the LF         */
-#define INJ_REPORT_MS       10u    /* least time between two frames      */
-#define INJ_ACK_TIMEOUT_MS  100u   /* a frame not acknowledged by then   */
-#define INJ_TAP_MS          100u   /* a tap's default length             */
-#define INJ_MS_MAX          30000u /* the longest gesture                */
-#define INJ_SWIPE_STEP_PX   100u   /* |dx|+|dy| between two swipe frames */
-#define INJ_LIVE_MS         100u   /* a read this recent: panel polling  */
+/** @brief The resolution the injector reports: the panel's 1024 columns. */
+#define INJ_RES_X           1024u
+/** @brief The resolution the injector reports: the panel's 600 rows. */
+#define INJ_RES_Y           600u
+#define INJ_LINE_MAX        63u    /**< characters, without the LF         */
+#define INJ_REPORT_MS       10u    /**< least time between two frames      */
+#define INJ_ACK_TIMEOUT_MS  100u   /**< a frame not acknowledged by then   */
+#define INJ_TAP_MS          100u   /**< a tap's default length             */
+#define INJ_MS_MAX          30000u /**< the longest gesture                */
+#define INJ_SWIPE_STEP_PX   100u   /**< |dx|+|dy| between two swipe frames */
+#define INJ_LIVE_MS         100u   /**< a read this recent: panel polling  */
+/** @brief A reply line's buffer: 128 characters. */
 #define INJ_REPLY_LEN       128u
+/** @brief The replies queued: 8. */
 #define INJ_REPLIES         8u
 
 typedef enum {

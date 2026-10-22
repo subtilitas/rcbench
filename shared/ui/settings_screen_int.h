@@ -33,7 +33,7 @@
 #define MAX_FBS  3
 
 /*
- * Coordinates are in the 432 px body the router hands this screen; the band
+ * Coordinates are in the 540 px body the router hands this screen; the band
  * and the home tag are above it.
  *
  * The hub: three columns by three rows of 256 x 108 px tiles with 8 px

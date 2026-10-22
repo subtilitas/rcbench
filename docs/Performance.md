@@ -110,9 +110,11 @@ buffer being drawn leaves the other one a frame behind, which reads as flicker.
 whenever the bench numbers carry `LINK_BN_SIMULATED`, which includes an
 IOmcu answering with simulated numbers. Rotated text scans its rotated
 bounding box, which corner to corner is the whole canvas, and rotates and
-divides per pixel to write the 3,439 pixels the mark covers, 0.9% of the
-canvas. `ui_watermark` records those points once and writes them thereafter:
-144,721 instructions per frame in place of 8,412,078.
+divides per pixel to write the pixels the mark covers: 3,439 on an
+800 x 480 px canvas, 0.9% of it, and 5,377 on 1024 x 600 px. `ui_watermark`
+records those points once, in a table of 6,144, and writes them thereafter:
+on 800 x 480 px, 144,721 instructions per frame in place of 8,412,078. The
+count on 1024 x 600 px is not measured.
 
 **A count of fills is not a count of cycles.** The table above measures
 cache-line fills, and the mark costs only 1,586 of them: it is arithmetic per
@@ -146,12 +148,14 @@ corresponding counter has moved. `each_framebuffer_is_updated_independently` in
 ## Ceilings
 
 No CI (continuous integration) step holds a frame to a ceiling.
-`tools/frame_cost.py` models the ESP32-S3's cache and bandwidth at
-800 x 480 px, and the table above is that model. The 7-inch ESP32-P4 panel
-scans 1024 x 600 px through a different cache. Its profile and the ceilings
-CI holds come with measurements on that board. `frame_cost.py --check-doc`
-checks the table above against a local build. `tools/check_docs.py` fails
-on a ceiling table in this page while `.github/workflows/ci.yml` holds none.
+`tools/frame_cost.py` models the ESP32-S3's cache and bandwidth at 800 x 480
+px, and the table above is that model. The 7-inch ESP32-P4 panel scans 1024 x
+600 px through a different cache. Its profile and the ceilings CI holds come
+with measurements on that board. The host renderer draws 1024 x 600 px, so
+`frame_cost.py --check-doc` reports the table as not checked and
+`--update-doc` writes nothing until that profile replaces it.
+`tools/check_docs.py` fails on a ceiling table in this page while
+`.github/workflows/ci.yml` holds none.
 
 If a future pane needs more room, the remaining levers in order of bluntness
 are the plot's height, its width, and clipping the simulation watermark to the
@@ -365,10 +369,10 @@ Static figures of the P4 build at ESP-IDF v5.5.5, from `idf.py size`:
 
 | Item | With the fragment | Without it |
 | --- | ---: | ---: |
-| .bss in internal RAM (DIRAM) | 29,976 | 196,984 |
-| .bss in PSRAM (`.ext_ram.bss`) | 167,008 | 0 |
-| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 127,450 | 294,458 |
-| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,161,950 | 2,161,966 |
+| .bss in internal RAM (DIRAM) | 30,000 | 201,144 |
+| .bss in PSRAM (`.ext_ram.bss`) | 171,144 | 0 |
+| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 127,474 | 298,618 |
+| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,255,982 | 2,255,998 |
 
 All figures are bytes. ESP-IDF's own PSRAM entries for lwIP (lightweight
 IP stack) and wpa_supplicant use a scheme that only `esp_wifi`'s fragment

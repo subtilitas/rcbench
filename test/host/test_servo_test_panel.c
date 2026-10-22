@@ -184,7 +184,7 @@ TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
     ev(START_X, START_Y, TOUCH_EVENT_UP, 1);      /* the warning, not a run */
     CHECK(!servo_screen_testing());
     scr->render(&cv, 0);
-    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_DANGER));
+    CHECK_EQ(fb[UI_MARGIN * W + UI_MARGIN], ui_theme_color(UI_C_DANGER));
     tap(WARN_APPLY_X, WARN_Y);
     CHECK(!servo_screen_testing());
     hold_apply(2.3f);
@@ -656,7 +656,7 @@ static bool box_meter_reads(const char *text)
     scr->render(&cv, 0);
     want_fresh();
     const int y = 48 + 92 + 8;
-    const int right = 16 + 270 - 10;
+    const int right = UI_MARGIN + 10 + 270 - 10;
     const int x = right - gfx_text_width(&gfx_font_8x16, text, 1);
     const gfx_color_t bg = fb[(size_t)y * W + right + 2];
     gfx_fill_rect(&want_cv, 160, (int16_t)y, (int16_t)(right - 160), 16, bg);
@@ -1144,7 +1144,7 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
 
 /* Line @p i of the run's box on LIVE's left card: its text at the box's
  * left edge on the box's own fill, compared across the box. */
-#define TBOX_X 16
+#define TBOX_X (UI_MARGIN + 10)
 #define TBOX_Y 48
 static bool test_box_reads(int i, const char *text, ui_color_id_t col)
 {

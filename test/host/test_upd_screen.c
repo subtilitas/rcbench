@@ -36,7 +36,7 @@
 #define R_HOLD_Y   352
 /* PANEL UPDATE's one button, on the whole panel. */
 #define U_BTN_X   144
-#define U_BTN_Y   434
+#define U_BTN_Y   (UI_PANEL_H - 18 - 28)
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)

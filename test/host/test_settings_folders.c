@@ -221,8 +221,10 @@ TEST_CASE(nothing_under_the_keyboard_presses)
     CHECK(!settings_get_bool(SET_LOG_AUTO));
     CHECK(kb()->open);
     const gfx_rect_t ok = ui_textkey_key_rect(kb(), UI_TK_OK);
-    CHECK(gfx_rect_contains(ok, SAVE_X + 100, SAVE_Y + SAVE_H / 2 - UI_BAND_H));
-    tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
+    /* 60 px inside SAVE's right end. */
+    const int on_save = SAVE_X + HUB_COL_W - 60;
+    CHECK(gfx_rect_contains(ok, on_save, SAVE_Y + SAVE_H / 2 - UI_BAND_H));
+    tap(on_save, SAVE_Y + SAVE_H / 2);
     CHECK(!kb()->open);                       /* the keyboard's OK */
     CHECK(!settings_save_asked());
     CHECK_STR_EQ(settings_text(SET_TEXT_LOG_USER_DIR), CARD_USER_LOGS);

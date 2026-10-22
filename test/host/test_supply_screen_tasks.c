@@ -328,9 +328,10 @@ TEST_CASE(the_page_tells_an_unsaved_setup_change_from_a_waiting_save)
     settings_request_save();
     supply_invalidate();
     scr->render(&cv2, 0);
-    /* The bottom line: x 16..300, y 400..420. */
+    /* The bottom line, 26 px over the overlay's foot: x 16..300. */
     int differ = 0;
-    for (int y = 400; y < 420; ++y) {
+    const int y0 = UI_BODY_H - UI_MARGIN - 26;
+    for (int y = y0; y < y0 + 20; ++y) {
         for (int x = 16; x < 300; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }

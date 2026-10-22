@@ -47,7 +47,7 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 - A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, then the files the bench did not write, and the rows of a page run the same way, the newest run at the top. With more than 48 files the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`.
 - Pages are cut from the top, 48 at a time. With fewer than 48 entries ahead of the page on screen, for example after a run was recorded, PREV shows the first page.
 - Runs recorded while a later page is open are on page 1. PREV back from page 3 or later then passes over as many entries as were recorded; NEXT from page 1 shows them, and the tab numbers show the shift.
-- The scroll bar at the right edge, 8.1 mm wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
+- The scroll bar at the right edge, 42 px (about 6.3 mm) wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
 - Opening LOGS reads the card: the first page, its newest run selected. A run recorded while LOGS was closed is listed without RESCAN.
 - On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.

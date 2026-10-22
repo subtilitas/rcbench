@@ -20,13 +20,19 @@
 
 #pragma once
 
-/** @brief The panel's width in pixels. */
-#define UI_PANEL_W 800
-/** @brief The panel's height in pixels. */
-#define UI_PANEL_H 480
+/**
+ * @brief The panel's width in pixels: the whole glass of the ESP32-P4 7B,
+ *        about 153.6 mm across, 0.150 mm a pixel (assumed, not measured).
+ */
+#define UI_PANEL_W 1024
+/** @brief The panel's height in pixels, about 90.0 mm. */
+#define UI_PANEL_H 600
 
-/** @brief The height of the band the router owns across the top, with STOP. */
-#define UI_BAND_H 48
+/**
+ * @brief The height of the band the router owns across the top, with STOP:
+ *        60 px, 9.0 mm.
+ */
+#define UI_BAND_H 60
 
 /**
  * @brief The alert band the router draws across the bottom of the panel
@@ -34,32 +40,36 @@
  *
  * UI_ALERT_H is its height and UI_ALERT_Y its top, in panel coordinates.
  */
-#define UI_ALERT_H 34
+#define UI_ALERT_H 44
 #define UI_ALERT_Y (UI_PANEL_H - UI_ALERT_H)
 
 /** @brief The height of the body below the band, the sub-canvas a screen gets. */
 #define UI_BODY_H (UI_PANEL_H - UI_BAND_H)
 
 /** @brief A screen's outer margin, in pixels. */
-#define UI_MARGIN 6
+#define UI_MARGIN 8
 
 /**
- * @brief Corner radii in pixels, one scale for cards, controls and chips.
+ * @brief Corner radii in pixels, one scale for cards, controls and chips:
+ *        a card's 10 px.
  */
-#define UI_R_CARD 8
-#define UI_R_CTL  6
-#define UI_R_CHIP 4
+#define UI_R_CARD 10
+/** @brief A control's corner radius: 8 px. */
+#define UI_R_CTL  8
+/** @brief A chip's corner radius: 5 px. */
+#define UI_R_CHIP 5
 
 /**
- * @brief The smallest touch target for a control, in pixels.
+ * @brief The smallest touch target for a control, in pixels: 48 px, 7.2 mm.
  *
- * No screen uses it yet; it is the figure later layouts size to.
+ * UI_BTN_H is this height; the screens' other controls size to it in
+ * their own layouts.
  */
 #define UI_TAP_MIN 48
 
 /**
- * @brief Button heights in pixels: the common button, and the taller one in
- *        the ESC panel.
+ * @brief The common button's height in pixels: UI_TAP_MIN, 48 px (7.2 mm).
  */
-#define UI_BTN_H      36
-#define UI_BTN_H_TALL 44
+#define UI_BTN_H      48
+/** @brief The taller button of the ESC panel: 56 px (8.4 mm). */
+#define UI_BTN_H_TALL 56

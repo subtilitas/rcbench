@@ -570,6 +570,7 @@ TEST_CASE(a_held_supply_is_drawn_dimmed_and_says_who_holds_it)
         /* Past the flash of an output that came on. */
         for (int f = 0; f < 40; ++f) {
             scr->render(&cv, 0);
+            scr->tick(0.02f);
         }
         supply_invalidate();
         scr->render(&cv, 0);

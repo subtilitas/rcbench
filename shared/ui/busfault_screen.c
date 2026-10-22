@@ -1,5 +1,6 @@
-/*
- * busfault_screen.h says what this screen is for.
+/**
+ * @file
+ * @brief busfault_screen.h says what this screen is for.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -61,7 +62,7 @@ static struct {
 
     float    held_s;      /**< how long the acknowledgement has been held */
     bool     fired;       /**< the hold completed; do not repeat it       */
-    int      flash_left;  /**< frames of the flash still to draw          */
+    int      flash_ms;    /**< ms of the flash still to run               */
     bool     ack;         /**< latched for the application                */
     bool     pressed;
     uint8_t  press_id;
@@ -88,7 +89,7 @@ void busfault_screen_set(const busfault_report_t *r)
     }
     s.held_s = 0.0f;
     s.fired = false;
-    s.flash_left = 0;
+    s.flash_ms = 0;
     s.drawn_mask = 0;
 }
 
@@ -290,8 +291,13 @@ static void event(const touch_event_t *evt)
     }
 }
 
+/**
+ * @brief Time passed: the acknowledge flash runs on by @p dt_s.
+ * @param dt_s The time since the last tick, in seconds.
+ */
 static void tick(float dt_s)
 {
+    s.flash_ms = ui_hold_flash_left(s.flash_ms, dt_s);
     if (s.pressed && !s.fired) {
         s.held_s += ui_hold_credit(dt_s);
         if (s.held_s >= UI_HOLD_S) {
@@ -302,7 +308,7 @@ static void tick(float dt_s)
             s.held_s     = UI_HOLD_S;
             s.fired      = true;
             s.ack        = true;
-            s.flash_left = UI_HOLD_FLASH_FRAMES;
+            s.flash_ms   = UI_HOLD_FLASH_MS;
         }
     }
 }
@@ -349,26 +355,22 @@ static int wrap_text(gfx_canvas_t *c, int x, int y, const char *text,
     return lines;
 }
 
-/*
+/**
+ * @brief The acknowledge button's fill.
+ *
  * Danger red while it is waiting to be held, fading to the OK green it
- * settles on, and the same two-frame flash ARM gives as the command goes.
+ * settles on, and the same 150 ms flash ARM gives as the command goes.
  * The direction is the other way round from ARM because what it does is the
  * other way round: this one leaves a fault behind rather than entering one.
+ * @return The fill for this frame.
  */
 static gfx_color_t ack_fill(void)
 {
-    if (s.flash_left > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_OK), s.flash_left);
+    if (s.flash_ms > 0) {
+        return ui_hold_flash(ui_theme_color(UI_C_OK), s.flash_ms);
     }
     return ui_hold_fill(ui_theme_color(UI_C_DANGER),
                         ui_theme_color(UI_C_OK), s.held_s);
-}
-
-static void flash_advance(void)
-{
-    if (s.flash_left > 0) {
-        --s.flash_left;
-    }
 }
 
 /* The right-hand column for a link that dropped: this end's controller, and
@@ -574,7 +576,6 @@ static void render(gfx_canvas_t *c, int buffer_index)
     ui_button(c, gfx_rect_make(ACK_X, ACK_Y, ACK_W, ACK_H),
               s.fired ? TR(BF_ACKNOWLEDGED) : TR(BF_HOLD),
               ack_fill(), false, true);
-    flash_advance();
 }
 
 /*

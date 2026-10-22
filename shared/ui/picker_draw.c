@@ -361,8 +361,9 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
                            ? USE_NAME_H : USE_PIN_H_D;
     /*
      * Still past the foot: the lines that fit, the last of them a "+N"
-     * line with the number of lines left out.  Only a binding beside 4
-     * ports and every interface reaches it (PICKER_USE_MAX).
+     * line with the number of lines left out.  No binding reaches it on
+     * the 1024 x 600 panel: the fullest, 4 ports and every interface
+     * beside the 8 slots, lists 27 lines in the 468 px under the heading.
      */
     if (names * name_h + pins_n * pin_h > room) {
         int y = 0;

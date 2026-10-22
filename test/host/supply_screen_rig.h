@@ -86,15 +86,19 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
  * Geometry mirrored from supply_screen_int.h and supply_screen.c,
  * screen-local: the router strips the band before a screen sees an event.
  */
+/* The left column the keypad covers: OV_X, OV_Y, OV_W and OV_H of
+ * supply_screen_int.h. */
+#define SU_OV_AREA \
+    ((gfx_rect_t){ UI_MARGIN, 38, 546, UI_BODY_H - 38 - UI_MARGIN })
 #define OUT_X     676          /* OUTPUT ON / OFF, right rail */
 #define OUT_Y     318
 #define RESET_X   676          /* RESET PEAKS */
-#define RESET_Y   402
+#define RESET_Y   (UI_BODY_H - 2 * UI_MARGIN - UI_BTN_H / 2)
 #define V_DOWN_X  39           /* the set points' fine steps */
 #define V_UP_X    519
 #define V_ROW_Y   335
 #define I_ROW_Y   397
-#define TRACK_X   72           /* both tracks: x 72..485 */
+#define TRACK_X   (UI_MARGIN + 66) /* both tracks, 414 px from it */
 #define TRACK_W   414
 #define OFF_X     300          /* the plot, clear of every control */
 #define OFF_Y     120
@@ -141,8 +145,7 @@ static inline void key(ui_key_t k)
 {
     ui_keypad_t probe;
     memset(&probe, 0, sizeof(probe));
-    ui_keypad_open(&probe, (gfx_rect_t){ 6, 38, 546, 388 }, "", "", 0.0f,
-                   0.0f, 1.0f, 2);
+    ui_keypad_open(&probe, SU_OV_AREA, "", "", 0.0f, 0.0f, 1.0f, 2);
     const gfx_rect_t r = ui_keypad_key_rect(&probe, k);
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
