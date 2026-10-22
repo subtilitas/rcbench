@@ -3321,8 +3321,8 @@ UPDATES asks GitHub which panel firmware release is the newest, and installs
 it. It opens from the UPDATES tile on SETUP, and its home tag leads back
 there. A reminder at start
 asks the same question once per start of the panel. 0.22 is the last
-release for the ESP32-S3 panel: the panel is offered 0.22.x patch releases
-only ([The release line](#the-release-line)).
+release for the ESP32-S3 panel; the ESP32-P4 panel is offered every newer
+release ([The release line](#the-release-line)).
 
 ![UPDATES](img/updates.png)
 
@@ -3365,8 +3365,8 @@ RELEASES sets the request:
 
 Then the radio goes off. The join, the address and the request take 30 s at
 most, together. On either setting a release is offered only when it is of
-the release line, 0.22, and newer than the running build
-([The release line](#the-release-line)).
+the panel's release line and newer than the running build. The ESP32-P4
+panel's line holds every release ([The release line](#the-release-line)).
 
 Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
 each public IP (Internet Protocol) address without an account, and the
@@ -3388,7 +3388,7 @@ check:
 | --- | --- |
 | `Version 0.22.1 is available.` | The newest release is newer than the running build. The hold appears. |
 | `Up to date. Panel version: 0.22.0.` and `Latest release on GitHub: 0.22.0.` | The newest release is the running version or older. |
-| `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` and `Latest release on GitHub: 0.23.0.` | The newest release is newer than the running build and past the release line. It is not offered, and the reminder at start does not open for it. |
+| `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` and `Latest release on GitHub: 0.23.0.` | A panel held to the 0.22 line only: the newest release is newer than the running build and past the release line. It is not offered, and the reminder at start does not open for it. |
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
 | `No response within 30 s.` | The 30 s ran out. |
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
@@ -3446,15 +3446,29 @@ why. An 11th release and anything after the 10th is not read.
 ### The release line
 
 0.22 is the last release for the ESP32-S3 panel. Later releases are for the
-7-inch ESP32-P4 display board from Waveshare. The card's foot says so in its
-first lines, `0.22 is the last release for the ESP32-S3 panel. Later
+7-inch ESP32-P4 display board from Waveshare.
+
+The ESP32-P4 panel's line holds every release: a check offers any release
+newer than the running build, on `STABLE` and on `TESTING` alike
+(`FW_REL_LINE_CAPPED` 0 in `shared/fwupdate/include/fw_release.h`). The
+card's foot is the reminder's and RELEASES' three lines, the last
+`TESTING also offers testing releases: odd minor numbers.`.
+
+| GitHub names | ESP32-P4 panel on 0.23.0 |
+| --- | --- |
+| `v0.24.0`, `v1.0.0` | offered: `Version 0.24.0 is available.` |
+| `v0.23.0` | `Up to date. Panel version: 0.23.0.` |
+| `v0.22.1` | `Up to date. Panel version: 0.23.0.`: an older release is never offered |
+
+The ESP32-S3 panel's line, 0.22 (release 0.22.0; in this tree
+`fw_release_set_line_capped(true)`, which the host suite sets and the
+ESP32-P4 build does not), offers a release of MAJOR 0 and MINOR 22 only,
+newer than the running build, on `STABLE` and on `TESTING` alike
+(`FW_REL_LINE_MAJOR` and `FW_REL_LINE_MINOR`). Its card's foot says so in
+its first lines, `0.22 is the last release for the ESP32-S3 panel. Later
 releases are for the 7-inch ESP32-P4 display board from Waveshare.`, and
 its last line reads `TESTING also reads testing releases. Both offer only
-0.22.x.`.
-
-A check offers a release of MAJOR 0 and MINOR 22 only, newer than the
-running build, on `STABLE` and on `TESTING` alike (`FW_REL_LINE_MAJOR` and
-`FW_REL_LINE_MINOR` in `shared/fwupdate/include/fw_release.h`):
+0.22.x.`:
 
 | GitHub names | Panel on 0.22.0 | Panel on 0.22.1 |
 | --- | --- | --- |
@@ -3478,9 +3492,9 @@ nothing on the line newer than the running build, both settings end with
 that line and name the newest release. The IOmcu takes the image this panel
 carries, from the same release ([The IOmcu](#the-iomcu)).
 
-Current limitation: the list holds the 10 newest releases by date
-(`per_page=10`). A 0.22.x patch release with 10 or more releases published
-after it is not found, on either setting.
+Current limitation of the 0.22 line: the list holds the 10 newest releases
+by date (`per_page=10`). A 0.22.x patch release with 10 or more releases
+published after it is not found, on either setting.
 
 ### The IOmcu
 

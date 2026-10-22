@@ -840,6 +840,7 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
     static upd_view_t v;     /* off the stack: the loop's is the display's */
     memset(&v, 0, sizeof(v));
     snprintf(v.running, sizeof(v.running), "%s", RCBENCH_VERSION_STRING);
+    v.line_capped = fw_release_line_capped();
     if (!s_wifi_ok) {
         (void)upd_screen_take();
         v.unavailable = true;

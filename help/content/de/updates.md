@@ -6,7 +6,7 @@ order: 64
 
 # Updates
 
-UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und installiert es. Der Bildschirm öffnet über die Taste UPDATES unter [Setup](setup.md). Eine [Erinnerung beim Start](upd_remind.md) stellt dieselbe Frage einmal pro Start des Panels. 0.22 ist das letzte Release für das ESP32-S3-Panel: dem Panel werden nur Patch-Releases 0.22.x angeboten, siehe [Die Release-Linie](#die-release-linie).
+UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und installiert es. Der Bildschirm öffnet über die Taste UPDATES unter [Setup](setup.md). Eine [Erinnerung beim Start](upd_remind.md) stellt dieselbe Frage einmal pro Start des Panels. 0.22 ist das letzte Release für das ESP32-S3-Panel; dem ESP32-P4-Panel wird jedes neuere Release angeboten, siehe [Die Release-Linie](#die-release-linie).
 
 ![UPDATES](view:updates)
 
@@ -41,7 +41,7 @@ Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über
 | STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | der Tag aus dem `Location`-Header der Antwort; das Latest-Release von GitHub ist nie ein Pre-Release; liegt es hinter der Release-Linie und ist neuer als der laufende Build, folgt einmal die Anfrage von TESTING |
 | TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` jedes der 10 nach Datum neuesten Releases, Testing oder Stable, aus der JSON-Antwort (JavaScript Object Notation); genommen wird die höchste Version unter denen, die kein Entwurf sind, gleich in welcher Reihenfolge; gelesen in Stücken von 4096 Bytes, höchstens 262 144 Bytes, und nicht gespeichert; ein ungültiges Release lehnt die ganze Antwort ab |
 
-In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Linie 0.22 gehört und neuer als der laufende Build ist, siehe [Die Release-Linie](#die-release-linie).
+In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Linie des Panels gehört und neuer als der laufende Build ist. Die Linie des ESP32-P4-Panels enthält jedes Release, siehe [Die Release-Linie](#die-release-linie).
 
 ![Ein neueres Release](view:updates-newer)
 ![Aktuell](view:updates-current)
@@ -51,7 +51,7 @@ In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Lini
 |---|---|
 | `Version 0.22.1 ist verfügbar.` | das neueste Release ist neuer als der laufende Build; das Halten erscheint |
 | `Aktuell. Panel-Version: 0.22.0.` | das neueste Release ist die laufende Version oder älter |
-| `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` | das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie; es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht |
+| `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` | nur auf einem Panel mit der Linie 0.22: das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie; es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht |
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | das Verbinden scheiterte, wie unter Dateien und Update |
 | `Keine Antwort innerhalb von 30 s.` | die 30 s sind abgelaufen |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten |
@@ -68,7 +68,17 @@ Der Tag lautet `v` und MAJOR.MINOR.PATCH, nur Ziffern, jede Zahl von 0 bis 65535
 
 ## Die Release-Linie
 
-0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare. Der Fuß der Karte sagt das in seinen ersten Zeilen.
+0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare.
+
+Die Linie des ESP32-P4-Panels enthält jedes Release: Eine Suche bietet in beiden Einstellungen jedes Release an, das neuer als der laufende Build ist.
+
+| GitHub nennt | ESP32-P4-Panel mit 0.23.0 |
+|---|---|
+| `v0.24.0`, `v1.0.0` | angeboten |
+| `v0.23.0` | aktuell |
+| `v0.22.1` | aktuell; ein älteres Release wird nie angeboten |
+
+Die Linie des ESP32-S3-Panels, 0.22, bietet nur 0.22.x an, und der Fuß ihrer Karte sagt das in seinen ersten Zeilen:
 
 | GitHub nennt | Panel mit 0.22.0 |
 |---|---|

@@ -144,6 +144,9 @@ typedef struct {
     upd_why_t   block;         /**< why a check may not start now          */
     upd_why_t   dl_block;      /**< why a download may not start now       */
     char        running[WIFI_VER_MAX + 1];
+    bool        line_capped;   /**< the release line ends at 0.22
+                                    (fw_release_line_capped()): the card's
+                                    foot says so                          */
 
     /* The last job. */
     upd_job_t   job;

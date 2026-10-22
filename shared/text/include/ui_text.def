@@ -4661,9 +4661,14 @@ UI_TEXT(UPD_ABOUT_2, 0,
     "Wi-Fi stays on for no more than 30 s.",
     "WLAN bleibt dabei höchstens 30 s eingeschaltet.")
 UI_TEXT(UPD_ABOUT_3, 0,
+    "TESTING also offers testing releases: odd minor numbers.",
+    "TESTING bietet auch Testing-Releases an: ungerade Minor-Nummern.")
+/* UPDATES' card with the panel's release line capped at 0.22
+ * (fw_release.h FW_REL_LINE_*, fw_release_line_capped()): the last line in
+ * place of UPD_ABOUT_3, and the line's end above the card's foot. */
+UI_TEXT(UPD_ABOUT_3_LINE, 0,
     "TESTING also reads testing releases. Both offer only 0.22.x.",
     "TESTING liest auch Testing-Releases. Beide bieten nur 0.22.x an.")
-/* UPDATES' card: the panel's release line (fw_release.h FW_REL_LINE_*). */
 UI_TEXT(UPD_LAST_LINE, 0,
     "0.22 is the last release for the ESP32-S3 panel. Later releases are for the 7-inch ESP32-P4 display board from Waveshare.",
     "0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare.")

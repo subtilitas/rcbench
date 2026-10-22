@@ -847,6 +847,7 @@ TEST_CASE(every_view_renders_inside_its_canvas)
                 base_view();
                 g_v.have_net = (net != 0);
                 g_v.unavailable = (net == 2);
+                g_v.line_capped = (net == 1);   /* the line's end drawn */
                 g_v.phase = (got == UPD_GOT_NONE) ? UPD_PH_IDLE
                                                   : UPD_PH_ENDED;
                 g_v.got = (upd_got_t)got;
@@ -909,6 +910,39 @@ TEST_CASE(every_view_renders_inside_its_canvas)
         }
     }
     ui_text_set_language(UI_LANG_EN);
+}
+
+/**
+ * @brief Draws UPDATES for the base view into @p px.
+ * @param px     UI_PANEL_W x UI_BODY_H pixels
+ * @param capped the view's line_capped
+ */
+static void draw_foot(gfx_color_t *px, bool capped)
+{
+    gfx_canvas_t c;
+    gfx_canvas_init(&c, px, UI_PANEL_W, UI_BODY_H, 0);
+    base_view();
+    g_v.line_capped = capped;
+    push();
+    upd_screen_invalidate();
+    upd()->render(&c, 0);
+}
+
+/* The card's foot says the release line ends only on a capped line (the
+ * ESP32-S3 panel's 0.22); the ESP32-P4 panel's card draws the three lines
+ * of the reminder and RELEASES alone.  The two feet differ on the canvas,
+ * and the same view draws the same pixels. */
+TEST_CASE(the_line_end_is_drawn_only_on_a_capped_line)
+{
+    static gfx_color_t open[UI_PANEL_W * UI_BODY_H];
+    static gfx_color_t again[UI_PANEL_W * UI_BODY_H];
+    static gfx_color_t capped[UI_PANEL_W * UI_BODY_H];
+    fresh();
+    draw_foot(open, false);
+    draw_foot(capped, true);
+    draw_foot(again, false);
+    CHECK(memcmp(open, capped, sizeof(open)) != 0);
+    CHECK(memcmp(open, again, sizeof(open)) == 0);
 }
 
 TEST_CASE(both_screens_carry_the_band_and_the_home_tag)
@@ -994,6 +1028,7 @@ int main(void)
     RUN(the_startup_check_gives_up_after_its_window_across_a_wrap);
     RUN(the_download_cancels_and_its_failure_closes);
     RUN(every_view_renders_inside_its_canvas);
+    RUN(the_line_end_is_drawn_only_on_a_capped_line);
     RUN(both_screens_carry_the_band_and_the_home_tag);
     RUN(every_card_text_takes_two_lines_at_most);
     return test_summary("upd_screen");

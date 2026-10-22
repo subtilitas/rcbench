@@ -20,11 +20,14 @@
  *            line: GitHub's order is by date, not by version.
  *
  * The panel's release line: 0.22 is the last release for the ESP32-S3
- * panel, and later releases are for the ESP32-P4 panel.  A check on either
- * channel offers a release of FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR only, a
- * 0.22.x patch release newer than the running build; 0.23.0 and later are
- * never offered.  Where STABLE's one tag is past the line and newer than
- * the running build, the check reads the release list once more for the
+ * panel, and later releases are for the ESP32-P4 panel.  The ESP32-P4
+ * panel's line holds every release: a check offers any release newer than
+ * the running build (FW_REL_LINE_CAPPED 0).  Held to the ESP32-S3 panel's
+ * line (fw_release_set_line_capped()), a check on either channel offers a
+ * release of FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR only, a 0.22.x patch
+ * release newer than the running build; 0.23.0 and later are never
+ * offered.  Where STABLE's one tag is past the line and newer than the
+ * running build, the check reads the release list once more for the
  * line's newest.
  *
  * And, for a download, two files of that release: SHA256SUMS and
@@ -92,13 +95,22 @@ extern "C" {
 
 /**
  * @name The panel's release line
- * @brief MAJOR and MINOR of the releases a check offers: 0.22, the last
- *        release line for the ESP32-S3 panel.
+ * @brief MAJOR and MINOR of the releases a check held to the line offers:
+ *        0.22, the last release line for the ESP32-S3 panel.
  * @{
  */
 #define FW_REL_LINE_MAJOR  0u    /**< the line's MAJOR */
 #define FW_REL_LINE_MINOR  22u   /**< the line's MINOR */
 /** @} */
+
+/**
+ * @brief Whether a check is held to FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR at
+ *        start: 0 for the ESP32-P4 panel, which is offered every release
+ *        newer than its build; 1 for the ESP32-S3 panel's 0.22 line.
+ */
+#ifndef FW_REL_LINE_CAPPED
+#define FW_REL_LINE_CAPPED 0
+#endif
 
 /** "v65535.65535.65535": the longest tag. */
 #define FW_REL_TAG_MAX     18u
@@ -273,10 +285,27 @@ bool fw_release_scan_line(const fw_rel_scan_t *s, fw_version_t *out);
 /**
  * @brief Whether a version is of the panel's release line.
  * @param v the version
- * @return true for MAJOR FW_REL_LINE_MAJOR and MINOR FW_REL_LINE_MINOR,
- *         any PATCH
+ * @return true for every version while the line is not capped
+ *         (fw_release_line_capped()); once capped, true for MAJOR
+ *         FW_REL_LINE_MAJOR and MINOR FW_REL_LINE_MINOR, any PATCH
  */
 bool fw_release_in_line(fw_version_t v);
+
+/**
+ * @brief Whether the panel's release line is capped at
+ *        FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR.
+ * @return FW_REL_LINE_CAPPED until fw_release_set_line_capped() sets it
+ */
+bool fw_release_line_capped(void);
+
+/**
+ * @brief Caps the panel's release line at
+ *        FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR, or lifts the cap.  The panel
+ *        keeps FW_REL_LINE_CAPPED; the host suite holds both lines.
+ * @param capped true for the ESP32-S3 panel's 0.22 line, false for every
+ *               release
+ */
+void fw_release_set_line_capped(bool capped);
 
 /**
  * @brief Whether a release is offered to the panel.

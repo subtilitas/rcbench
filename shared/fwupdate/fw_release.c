@@ -715,9 +715,23 @@ bool fw_release_scan_line(const fw_rel_scan_t *s, fw_version_t *out)
     return true;
 }
 
+/** @brief Whether the release line is capped; fw_release_line_capped(). */
+static bool s_line_capped = FW_REL_LINE_CAPPED;
+
+bool fw_release_line_capped(void)
+{
+    return s_line_capped;
+}
+
+void fw_release_set_line_capped(bool capped)
+{
+    s_line_capped = capped;
+}
+
 bool fw_release_in_line(fw_version_t v)
 {
-    return v.major == FW_REL_LINE_MAJOR && v.minor == FW_REL_LINE_MINOR;
+    return !s_line_capped
+           || (v.major == FW_REL_LINE_MAJOR && v.minor == FW_REL_LINE_MINOR);
 }
 
 bool fw_release_offered(fw_version_t found, fw_version_t running,

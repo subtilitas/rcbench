@@ -1024,6 +1024,9 @@ int main(void)
     g.alloc_buf = malloc(SLOT_P4);
     REQUIRE_ALLOC(g_img);
     REQUIRE_ALLOC(g.alloc_buf);
+    /* The ESP32-S3 panel's 0.22 line; test_wa_fetch_channel holds the
+     * ESP32-P4 panel's. */
+    fw_release_set_line_capped(true);
     RUN(a_newer_release_is_found);
     RUN(equal_and_older_releases_are_current);
     RUN(a_hostile_location_is_an_unexpected_answer);

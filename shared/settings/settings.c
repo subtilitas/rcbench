@@ -398,7 +398,8 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * Which releases a check reads.  STABLE: GitHub's latest release,
      * which is never a pre-release; a testing release (odd minor number) is
      * published as one.  TESTING: the newest release, testing or stable.
-     * Either way only a release of the panel's line, 0.22 (fw_release.h),
+     * Either way only a release of the panel's line (fw_release.h: every
+     * release on the ESP32-P4 panel, 0.22.x on the ESP32-S3 panel's line)
      * newer than the running build is offered.
      */
     [SET_UPD_CHANNEL] = {

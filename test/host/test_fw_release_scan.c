@@ -541,6 +541,33 @@ TEST_CASE(only_a_newer_release_of_the_line_is_offered)
     CHECK(!fw_release_in_line((fw_version_t){ 1u, 22u, 0u }));
 }
 
+/* The ESP32-P4 panel's line, as the panel starts: not capped, every
+ * release newer than the running build offered, 0.23.0 and later
+ * included; equal and older still not.  Run before the cap is set. */
+TEST_CASE(the_p4_panels_line_offers_every_newer_release)
+{
+    CHECK_EQ(FW_REL_LINE_CAPPED, 0);
+    CHECK(!fw_release_line_capped());
+    CHECK(offered(0, 23, 0, 0, 22, 0));
+    CHECK(offered(0, 24, 0, 0, 23, 0));
+    CHECK(offered(1, 0, 0, 0, 24, 0));
+    CHECK(offered(0, 22, 1, 0, 22, 0));
+    CHECK(offered(65535, 65535, 65535, 65535, 65535, 65534));
+    CHECK(!offered(0, 23, 0, 0, 23, 0));
+    CHECK(!offered(0, 22, 1, 0, 23, 0));
+    CHECK(!offered(0, 24, 0, 0, 24, 1));
+    CHECK(fw_release_in_line((fw_version_t){ 0u, 23u, 0u }));
+    CHECK(fw_release_in_line((fw_version_t){ 1u, 22u, 0u }));
+    CHECK(fw_release_in_line((fw_version_t){ 0u, 21u, 65535u }));
+    /* The cap goes on and off again. */
+    fw_release_set_line_capped(true);
+    CHECK(fw_release_line_capped());
+    CHECK(!offered(0, 23, 0, 0, 22, 0));
+    fw_release_set_line_capped(false);
+    CHECK(!fw_release_line_capped());
+    CHECK(offered(0, 23, 0, 0, 22, 0));
+}
+
 TEST_CASE(a_running_version_that_did_not_parse_is_offered_nothing)
 {
     const fw_version_t zero = { 0u, 0u, 0u };
@@ -651,6 +678,9 @@ TEST_CASE(the_lines_highest_release_is_kept_beside_the_highest)
 
 int main(void)
 {
+    RUN(the_p4_panels_line_offers_every_newer_release);
+    /* Every case after this one holds the ESP32-S3 panel's 0.22 line. */
+    fw_release_set_line_capped(true);
     RUN(the_first_releases_tag_name_is_read);
     RUN(a_tag_name_deeper_or_as_a_value_is_not_the_releases);
     RUN(a_release_without_a_tag_refuses_the_answer);

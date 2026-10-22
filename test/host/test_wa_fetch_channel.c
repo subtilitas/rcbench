@@ -436,6 +436,42 @@ TEST_CASE(only_a_newer_release_of_the_line_is_offered_on_either_channel)
     CHECK_EQ(u.found.minor, 20u);
 }
 
+/* The ESP32-P4 panel's line, as the panel starts: not capped.  0.23.0 and
+ * later are offered on either channel, STABLE asks GitHub once, and
+ * TESTING offers the highest release, a pre-release included.  Run
+ * before the cap is set. */
+TEST_CASE(the_p4_panel_is_offered_0_23_0_and_later_on_either_channel)
+{
+    CHECK(!fw_release_line_capped());
+    const wa_channel_t chs[] = { WA_CH_STABLE, WA_CH_TESTING };
+    for (size_t i = 0; i < 2u; ++i) {
+        const wa_channel_t ch = chs[i];
+        CHECK_EQ(offer(ch, "v0.23.0", V(0, 22, 0), true), WA_GOT_NEWER);
+        CHECK_EQ(offer(ch, "v0.24.0", V(0, 23, 0), true), WA_GOT_NEWER);
+        CHECK_EQ(offer(ch, "v1.0.0", V(0, 24, 0), true), WA_GOT_NEWER);
+        CHECK_EQ(offer(ch, "v0.23.0", V(0, 23, 0), true), WA_GOT_CURRENT);
+        CHECK_EQ(offer(ch, "v0.22.1", V(0, 23, 0), true), WA_GOT_CURRENT);
+    }
+    /* STABLE: one request, the latest redirect; the list is not read. */
+    fresh(0u);
+    latest_answer("v0.24.0");
+    wa_fetch_res_t u = check(WA_CH_STABLE, V(0, 23, 0), true);
+    CHECK_EQ(u.got, WA_GOT_NEWER);
+    CHECK_EQ(u.found.minor, 24u);
+    CHECK_EQ(g.api_opens, 0u);
+    /* TESTING: a 0.25.0 pre-release beside a later 0.22.1 patch release
+     * for the ESP32-S3 panel: the highest, 0.25.0, is offered. */
+    static const char pre[] = "[{\"tag_name\":\"v0.22.1\"},"
+                              "{\"tag_name\":\"v0.25.0\","
+                              "\"prerelease\":true},"
+                              "{\"tag_name\":\"v0.24.0\"}]";
+    fresh(0u);
+    api_answer(pre, (uint32_t)strlen(pre));
+    u = check(WA_CH_TESTING, V(0, 24, 0), true);
+    CHECK_EQ(u.got, WA_GOT_NEWER);
+    CHECK_EQ(u.found.minor, 25u);
+}
+
 /* ------------------------------------------------- the API's answer */
 
 TEST_CASE(the_request_limit_is_its_own_result)
@@ -903,6 +939,9 @@ TEST_CASE(an_offer_holds_only_for_the_channel_it_was_found_on)
 
 int main(void)
 {
+    RUN(the_p4_panel_is_offered_0_23_0_and_later_on_either_channel);
+    /* Every case after this one holds the ESP32-S3 panel's 0.22 line. */
+    fw_release_set_line_capped(true);
     RUN(testing_asks_the_api_with_its_headers_and_stops_at_the_10th);
     RUN(stable_keeps_the_latest_redirect);
     RUN(stable_past_the_line_reads_the_list_once_for_the_lines_newest);

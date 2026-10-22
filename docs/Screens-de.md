@@ -3653,8 +3653,8 @@ Link, und LOGS gehört der SD-Karte.
 UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist,
 und installiert es. Der Bildschirm öffnet über die Kachel UPDATES auf
 SETUP, und sein Home-Tag führt dorthin zurück. Eine Erinnerung beim Start stellt dieselbe Frage einmal
-pro Start des Panels. 0.22 ist das letzte Release für das ESP32-S3-Panel:
-dem Panel werden nur Patch-Releases 0.22.x angeboten
+pro Start des Panels. 0.22 ist das letzte Release für das ESP32-S3-Panel;
+dem ESP32-P4-Panel wird jedes neuere Release angeboten
 ([Die Release-Linie](#die-release-linie)).
 
 ![UPDATES](img/de/updates.png)
@@ -3699,7 +3699,8 @@ der Antwort. RELEASES legt die Anfrage fest:
 
 Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen
 höchstens 30 s. In beiden Einstellungen wird ein Release nur angeboten, wenn
-es zur Release-Linie 0.22 gehört und neuer als der laufende Build ist
+es zur Release-Linie des Panels gehört und neuer als der laufende Build ist.
+Die Linie des ESP32-P4-Panels enthält jedes Release
 ([Die Release-Linie](#die-release-linie)).
 
 Aktuelle Einschränkungen von `TESTING`: GitHub beantwortet ohne Konto 60
@@ -3723,7 +3724,7 @@ Karte bis zur nächsten Suche:
 | --- | --- |
 | `Version 0.22.1 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
 | `Aktuell. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.22.0.` | Das neueste Release ist die laufende Version oder älter. |
-| `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.23.0.` | Das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie. Es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht. |
+| `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.23.0.` | Nur auf einem Panel mit der Linie 0.22: Das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie. Es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht. |
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf WI-FI. |
 | `Keine Antwort innerhalb von 30 s.` | Die 30 s sind abgelaufen. |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
@@ -3782,16 +3783,30 @@ Release und alles nach dem 10. liest das Panel nicht.
 ### Die Release-Linie
 
 0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind
-für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare. Der Fuß der Karte
-sagt das in seinen ersten Zeilen, `0.22 ist das letzte Release für das
+für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare.
+
+Die Linie des ESP32-P4-Panels enthält jedes Release: Eine Suche bietet
+jedes Release an, das neuer als der laufende Build ist, mit `STABLE` und mit
+`TESTING` gleich (`FW_REL_LINE_CAPPED` 0 in
+`shared/fwupdate/include/fw_release.h`). Der Fuß der Karte sind die drei
+Zeilen zur Erinnerung und zu RELEASES, die letzte `TESTING bietet auch
+Testing-Releases an: ungerade Minor-Nummern.`.
+
+| GitHub nennt | ESP32-P4-Panel mit 0.23.0 |
+| --- | --- |
+| `v0.24.0`, `v1.0.0` | angeboten: `Version 0.24.0 ist verfügbar.` |
+| `v0.23.0` | `Aktuell. Panel-Version: 0.23.0.` |
+| `v0.22.1` | `Aktuell. Panel-Version: 0.23.0.`: ein älteres Release wird nie angeboten |
+
+Die Linie des ESP32-S3-Panels, 0.22 (Release 0.22.0; in diesem Baum
+`fw_release_set_line_capped(true)`, das die Host-Suite setzt und der
+ESP32-P4-Build nicht), bietet nur ein Release mit MAJOR 0 und MINOR 22 an,
+das neuer als der laufende Build ist, mit `STABLE` und mit `TESTING` gleich
+(`FW_REL_LINE_MAJOR` und `FW_REL_LINE_MINOR`). Der Fuß ihrer Karte sagt das
+in seinen ersten Zeilen, `0.22 ist das letzte Release für das
 ESP32-S3-Panel. Spätere Releases sind für das 7-Zoll-Display-Board mit
 ESP32-P4 von Waveshare.`, und seine letzte Zeile lautet `TESTING liest auch
-Testing-Releases. Beide bieten nur 0.22.x an.`.
-
-Eine Suche bietet nur ein Release mit MAJOR 0 und MINOR 22 an, das neuer
-als der laufende Build ist, mit `STABLE` und mit `TESTING` gleich
-(`FW_REL_LINE_MAJOR` und `FW_REL_LINE_MINOR` in
-`shared/fwupdate/include/fw_release.h`):
+Testing-Releases. Beide bieten nur 0.22.x an.`:
 
 | GitHub nennt | Panel mit 0.22.0 | Panel mit 0.22.1 |
 | --- | --- | --- |
@@ -3817,8 +3832,8 @@ enden beide Einstellungen mit dieser Zeile und nennen das neueste Release.
 Der IOmcu bekommt das Image, das dieses Panel mitbringt, aus demselben
 Release ([Der IOmcu](#der-iomcu)).
 
-Aktuelle Einschränkung: Die Liste enthält die 10 nach Datum neuesten
-Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr
+Aktuelle Einschränkung der Linie 0.22: Die Liste enthält die 10 nach Datum
+neuesten Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr
 Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
 
 ### Der IOmcu

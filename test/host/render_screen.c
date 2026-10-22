@@ -1929,8 +1929,11 @@ static void pose_upd(const char *view)
         v.got = UPD_GOT_UNVERSIONED;
         strcpy(v.found, EX_NEWER);
     } else if (strcmp(view, "updates-past-line") == 0) {
-        /* A release for the ESP32-P4 panel, past the panel's line. */
+        /* A release for the ESP32-P4 panel, past the ESP32-S3 panel's
+         * line, on a card whose line is capped: its foot says the line's
+         * end. */
         v.got = UPD_GOT_PAST_LINE;
+        v.line_capped = true;
         strcpy(v.found, "0.23.0");
         settings_set(SET_UPD_CHANNEL, 1.0f);
     } else if (strcmp(view, "updates-blocked") == 0) {

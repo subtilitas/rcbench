@@ -730,18 +730,27 @@ static void render(gfx_canvas_t *c, int buffer_index)
         }
     }
 
-    /* The release line's end, the reminder and RELEASES, at the card's
-     * foot: its last line ends 18 px above the card's bottom edge. */
-    static const ui_text_id_t k_about[] = { TX_UPD_LAST_LINE, TX_UPD_ABOUT_1,
-                                            TX_UPD_ABOUT_2, TX_UPD_ABOUT_3 };
+    /* The release line's end when it is capped, the reminder and RELEASES,
+     * at the card's foot: its last line ends 18 px above the card's bottom
+     * edge.  The line's end is drawn in UI_TEXT, the rest dim. */
+    static const ui_text_id_t k_capped[] = { TX_UPD_LAST_LINE, TX_UPD_ABOUT_1,
+                                             TX_UPD_ABOUT_2,
+                                             TX_UPD_ABOUT_3_LINE };
+    static const ui_text_id_t k_open[] = { TX_UPD_ABOUT_1, TX_UPD_ABOUT_2,
+                                           TX_UPD_ABOUT_3 };
+    const ui_text_id_t *about = s_v.line_capped ? k_capped : k_open;
+    const size_t n_about = s_v.line_capped
+                               ? sizeof(k_capped) / sizeof(k_capped[0])
+                               : sizeof(k_open) / sizeof(k_open[0]);
     int foot = 0;
-    for (size_t i = 0; i < sizeof(k_about) / sizeof(k_about[0]); ++i) {
+    for (size_t i = 0; i < n_about; ++i) {
         foot += ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 18), 20,
-                             ui_tr(k_about[i]), UI_FONT_LABEL, UI_TEXT);
+                             ui_tr(about[i]), UI_FONT_LABEL, UI_TEXT);
     }
     y = 16 + 400 - 16 - 20 * foot;
-    for (size_t i = 0; i < sizeof(k_about) / sizeof(k_about[0]); ++i) {
-        y = para(c, x, y, w, ui_tr(k_about[i]), i ? UI_TEXT_DIM : UI_TEXT);
+    for (size_t i = 0; i < n_about; ++i) {
+        const bool lit = s_v.line_capped && i == 0u;
+        y = para(c, x, y, w, ui_tr(about[i]), lit ? UI_TEXT : UI_TEXT_DIM);
     }
 
     if (s.hold.flash_left > 0 || s.cu_hold.flash_left > 0) {
