@@ -88,14 +88,13 @@ static void take_highest(const char *name, void *ctx)
 /**
  * @brief One level of the folder, through the caller's make_dir().
  *
- * A card_make_fn, so its context stays a plain pointer. cppcheck-suppress
- * constParameterCallback
+ * A card_make_fn, so its context stays a plain pointer.
  *
  * @param ctx    The log_take_io_t the caller passed.
  * @param level  The folder path to make.
  * @return CARD_DIR_OK when the folder is there, else CARD_DIR_FAILED.
-// cppcheck-suppress constParameterCallback
  */
+// cppcheck-suppress constParameterCallback
 static card_dir_t take_level(void *ctx, const char *level)
 {
     const log_take_io_t *io = (const log_take_io_t *)ctx;

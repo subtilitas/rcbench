@@ -14,14 +14,13 @@
 /**
  * @brief One level of BENCH, through the caller's make_dir().
  *
- * A card_make_fn, so its context stays a plain pointer. cppcheck-suppress
- * constParameterCallback
+ * A card_make_fn, so its context stays a plain pointer.
  *
  * @param ctx  The fault_log_io_t the caller passed.
  * @param dir  The folder path to make.
  * @return The result of make_dir().
-// cppcheck-suppress constParameterCallback
  */
+// cppcheck-suppress constParameterCallback
 static card_dir_t fault_level(void *ctx, const char *dir)
 {
     const fault_log_io_t *io = (const fault_log_io_t *)ctx;
