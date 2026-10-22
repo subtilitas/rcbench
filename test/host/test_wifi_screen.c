@@ -27,6 +27,11 @@
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_PANEL_H
 #define BODY_H   UI_BODY_H
+/* The keyboard's area, KEY_AREA of wifi_screen.c: the body less UI_MARGIN
+ * at its sides and top, ending 4 px above the alert band. */
+#define WF_KEY_AREA \
+    gfx_rect_make(UI_MARGIN, UI_MARGIN, UI_PANEL_W - 2 * UI_MARGIN, \
+                  UI_ALERT_Y - UI_BAND_H - 4 - UI_MARGIN)
 
 /* Mirrored from wifi_screen.c. */
 #define BTN_CX(i)    (16 + 180)
@@ -371,8 +376,7 @@ static void type_wifi(const char *s)
         }
         ui_textkey_t probe;
         memset(&probe, 0, sizeof(probe));
-        ui_textkey_open_wifi(&probe, gfx_rect_make(8, 8, 784, 416), "", "",
-                             true);
+        ui_textkey_open_wifi(&probe, WF_KEY_AREA, "", "", true);
         const gfx_rect_t r = ui_textkey_key_rect(&probe, (int)(p - lower));
         tap(r.x + r.w / 2, r.y + r.h / 2);
     }
@@ -382,7 +386,7 @@ static void key(int k)
 {
     ui_textkey_t probe;
     memset(&probe, 0, sizeof(probe));
-    ui_textkey_open_wifi(&probe, gfx_rect_make(8, 8, 784, 416), "", "", true);
+    ui_textkey_open_wifi(&probe, WF_KEY_AREA, "", "", true);
     const gfx_rect_t r = ui_textkey_key_rect(&probe, k);
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
@@ -472,6 +476,30 @@ TEST_CASE(a_hidden_network_is_typed_and_cancel_keeps_nothing)
     tap(SCAN_CANCEL_CX, SCAN_BY);
     tap(BTN_CX(0), BTN_CY(0));
     CHECK_EQ(wifi_screen_take(), WIFI_REQ_AP);
+}
+
+/*
+ * The keyboard over the whole body: every key at least 64 x UI_TAP_MIN px
+ * and above the alert band, so an alert covers no key.  The cases above
+ * type through the screen with these keys, so the area mirrored here is
+ * the screen's.
+ */
+TEST_CASE(the_keyboard_keys_are_large_and_end_above_the_alert_band)
+{
+    ui_textkey_t k;
+    memset(&k, 0, sizeof(k));
+    ui_textkey_open_wifi(&k, WF_KEY_AREA, "", "", true);
+    for (int i = 0; i <= UI_TK_SHOW; ++i) {
+        const gfx_rect_t r = ui_textkey_key_rect(&k, i);
+        CHECK(r.w >= 64);
+        CHECK(r.h >= UI_TAP_MIN);
+        CHECK(r.y + r.h <= UI_ALERT_Y - UI_BAND_H - 4);
+        CHECK(r.x >= UI_MARGIN && r.x + r.w <= UI_PANEL_W - UI_MARGIN);
+    }
+    /* A character key: 93 x 71 px on the 1024 x 600 panel. */
+    const gfx_rect_t q = ui_textkey_key_rect(&k, 10);
+    CHECK_EQ(q.w, 93);
+    CHECK_EQ(q.h, 71);
 }
 
 /*
@@ -815,6 +843,7 @@ int main(void)
     RUN(the_running_views_draw_and_wifi_off_asks_off);
     RUN(a_network_picked_from_the_scan_is_kept_with_its_password);
     RUN(a_hidden_network_is_typed_and_cancel_keeps_nothing);
+    RUN(the_keyboard_keys_are_large_and_end_above_the_alert_band);
     RUN(the_home_tag_climbs_from_the_list_to_the_buttons);
     RUN(the_home_tag_climbs_from_a_keyboard_to_the_list_keeping_nothing);
     RUN(the_home_tag_answers_the_image_question_cancel);

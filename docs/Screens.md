@@ -204,6 +204,48 @@ The menu in the light theme:
 
 ![The menu in the light theme](img/overview-light.png)
 
+## Keypad, keyboard and the shared controls
+
+The keypad, the keyboard, the choice lists, the tabs and the TARGET row look
+the same on every screen. Each screen gives them their area or their row;
+the faces and the spacing inside are theirs.
+
+- **Keypad.** A title row of 32 px, the entry of 60 px, then 4 x 4 keys
+  8 px apart, 8 px from the area's edge. Over an area of 620 x 476 px a key
+  is 145 x 84 px (21.8 x 12.6 mm). The title and the range are in the
+  10 x 20 face, or in 8 x 16 where the two do not fit side by side. The
+  entry is in the 32 x 44 numerals with the unit in 12 x 24; an entry that
+  does not fit takes the 24 x 30 numerals with the unit in 10 x 20. The
+  digits and the point are in 12 x 24. DEL, CLR, CANCEL, OK and `+/-` share
+  one face: the largest of 12 x 24, 10 x 20 and 8 x 16 in which all of them
+  fit their keys with 6 px each side. German `ABBRECHEN` needs a key of
+  120 px for 12 x 24 and 102 px for 10 x 20.
+- **Keyboard.** A title row of 32 px, the text field of 52 px, then 5 rows
+  of keys 6 px apart. The title and the count are in 10 x 20, or in 8 x 16
+  where the two do not fit side by side. The text is in the 20 x 36 face
+  when 23 characters and the caret fit the field, else in 16 x 28. The
+  letters, digits and marks are in 12 x 24. The word keys (the bottom row,
+  DEL, `ABC`, `abc`, `#+=`) share one face: the largest of 12 x 24, 10 x 20
+  and 8 x 16 in which all of them fit their keys with 4 px each side, HIDE
+  measured in place of SHOW too, so a press does not change it. On WI-FI the
+  keyboard takes the body above the alert band, 1008 x 484 px, with keys of
+  93 x 71 px (14.0 x 10.7 mm) and every word in 12 x 24.
+- **Choice list.** A face or a row 56 px tall or taller draws its text in
+  the 20 x 36 face, 12 px in, with an 11 px chevron 28 px from the face's
+  right edge. A shorter one draws in 16 x 28, 10 px in, with a 7 px chevron
+  22 px from the edge. OUTPUTS and PICK A PIN draw theirs under 56 px.
+- **Tabs.** A row of tabs 32 px tall or taller draws its labels in the
+  10 x 20 face when every label fits its tab with 6 px each side in the
+  language shown; another row draws them in 8 x 16. LOGS' ROOT, USER and
+  BENCH and the PROG PORT entry's segments on OUTPUTS are in 10 x 20. The
+  workbench strip is 24 px tall and keeps 8 x 16.
+- **TARGET row.** A row 40 px tall or taller draws its label and its value
+  in 10 x 20, with 88 px for the label, and counts the pins it names in
+  10 px cells. A shorter row draws in 8 x 16 with 64 px for the label and
+  counts in 8 px cells. SERVO and MOTOR & ESC draw theirs 22 px tall.
+- **Plot.** A plot keeps 1,024 samples a series, one for each pixel column
+  of a plot as wide as the panel: 51.2 s at 20 samples a second.
+
 ## Splash
 
 ![The splash](img/splash.png)
@@ -792,7 +834,7 @@ measured:
 A row's `-` and `+` step its value. A tap on the value, the 216 px column
 between the name and the keys, opens the keypad over the page, from under
 the output strip to 4 px above the alert band: 1008 x 466 px, keys of
-243 x 86 px. It names the setting, its range and its unit and takes the
+242 x 81 px. It names the setting, its range and its unit and takes the
 step's digits after the point: one for Voltage's 0.1 V, two for Current
 limit's 0.05 A. OK sets the value as a step does, onto the nearer step (1.23 A is
 1.25 A); CLOSE asks for the save, as after a step. A value outside the
@@ -2225,7 +2267,10 @@ for the password. SCAN AGAIN scans again; CANCEL goes back.
 The keyboard has three layers of the same grid: lower case, `ABC` for upper
 case, `#+=` for the 32 printable marks of ASCII (American Standard Code for
 Information Interchange). Each of the 95 printable ASCII characters is on
-one layer once; SPACE is the wide key. A name takes 1 to 32 bytes. A
+one layer once; SPACE is the wide key. The keyboard covers the body above
+the alert band, 1008 x 484 px, with keys of 93 x 71 px
+([Keypad, keyboard and the shared controls](#keypad-keyboard-and-the-shared-controls)).
+A name takes 1 to 32 bytes. A
 password takes 8 to 63 characters, the WPA2 and WPA3 personal range: the
 64th is refused, and OK under 8 says so.
 
@@ -2509,7 +2554,7 @@ choice wraps round from its last value to its first.
   between two rows belong to no key.
 - **Keypad.** A tap on a number's value, the 126 px between its `-` and `+`
   keys, opens the keypad over the list and the strip: 1008 x 484 px, keys of
-  243 x 91 px, its foot 4 px above the alert band. It names the setting, its
+  242 x 86 px, its foot 4 px above the alert band. It names the setting, its
   range and its unit, shows the value faint until a digit is typed, and
   takes as many digits after the point as the step has: one for a shunt's
   0.1 mΩ, none for a pin. OK sets the value as a step sets it: in force at

@@ -223,6 +223,52 @@ Das Menü im hellen Design:
 
 ![Das Menü im hellen Design](img/de/overview-light.png)
 
+## Tastenfeld, Tastatur und die gemeinsamen Bedienelemente
+
+Tastenfeld, Tastatur, Auswahllisten, Reiter und die ZIEL-Zeile sehen auf
+jedem Bildschirm gleich aus. Jeder Bildschirm gibt ihnen ihre Fläche oder
+ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
+
+- **Tastenfeld.** Eine Titelzeile von 32 px, die Eingabe von 60 px, dann
+  4 x 4 Tasten mit 8 px Abstand, 8 px vom Rand der Fläche. Über einer
+  Fläche von 620 x 476 px ist eine Taste 145 x 84 px groß (21,8 x 12,6 mm).
+  Titel und Bereich stehen im Font 10 x 20, oder in 8 x 16, wo beide nicht
+  nebeneinander passen. Die Eingabe steht in den Ziffern 32 x 44 mit der
+  Einheit in 12 x 24; eine Eingabe, die nicht passt, nimmt die Ziffern
+  24 x 30 mit der Einheit in 10 x 20. Ziffern und Punkt stehen in 12 x 24.
+  DEL, CLR, ABBRECHEN, OK und `+/-` teilen einen Font: den größten von
+  12 x 24, 10 x 20 und 8 x 16, in dem alle mit 6 px Rand je Seite auf ihre
+  Taste passen. `ABBRECHEN` braucht für 12 x 24 eine Taste von 120 px, für
+  10 x 20 eine von 102 px.
+- **Tastatur.** Eine Titelzeile von 32 px, das Textfeld von 52 px, dann 5
+  Tastenreihen mit 6 px Abstand. Titel und Zähler stehen in 10 x 20, oder
+  in 8 x 16, wo beide nicht nebeneinander passen. Der Text steht im Font
+  20 x 36, wenn 23 Zeichen und die Schreibmarke ins Feld passen, sonst in
+  16 x 28. Buchstaben, Ziffern und Zeichen stehen in 12 x 24. Die
+  Worttasten (die untere Reihe, DEL, `ABC`, `abc`, `#+=`) teilen einen
+  Font: den größten von 12 x 24, 10 x 20 und 8 x 16, in dem alle mit 4 px
+  Rand je Seite auf ihre Taste passen; VERBERGEN zählt dabei wie ANZEIGEN,
+  so ändert ein Tippen den Font nicht. Auf WI-FI nimmt die Tastatur den
+  Körper über dem Alarmband, 1008 x 484 px, mit Tasten von 93 x 71 px
+  (14,0 x 10,7 mm) und jedem Wort in 12 x 24.
+- **Auswahlliste.** Ein Feld oder eine Zeile ab 56 px Höhe zeigt den Text
+  im Font 20 x 36, 12 px eingerückt, mit einem 11 px breiten Winkel 28 px
+  vor dem rechten Rand. Ein niedrigeres zeigt ihn in 16 x 28, 10 px
+  eingerückt, mit einem 7 px breiten Winkel 22 px vor dem Rand. OUTPUTS und
+  PICK A PIN zeichnen ihre niedriger als 56 px.
+- **Reiter.** Eine Reiterzeile ab 32 px Höhe zeigt ihre Beschriftungen im
+  Font 10 x 20, wenn jede in der gezeigten Sprache mit 6 px Rand je Seite
+  auf ihren Reiter passt; sonst in 8 x 16. ROOT, USER und BENCH auf LOGS und
+  die Segmente des PROG-PORT-Eintrags auf OUTPUTS stehen in 10 x 20. Der
+  Streifen einer Werkbank ist 24 px hoch und bleibt bei 8 x 16.
+- **ZIEL-Zeile.** Eine Zeile ab 40 px Höhe zeigt Beschriftung und Wert in
+  10 x 20, mit 88 px für die Beschriftung, und zählt die genannten Pins in
+  Zellen von 10 px. Eine niedrigere zeigt sie in 8 x 16 mit 64 px für die
+  Beschriftung und zählt in Zellen von 8 px. SERVO und MOTOR & ESC zeichnen
+  ihre 22 px hoch.
+- **Plot.** Ein Plot hält 1.024 Werte je Reihe, einen je Pixelspalte eines
+  Plots so breit wie das Panel: 51,2 s bei 20 Werten je Sekunde.
+
 ## Splash
 
 ![Der Splash](img/de/splash.png)
@@ -859,7 +905,7 @@ davon ist gemessen:
 `-` und `+` einer Zeile stellen ihren Wert um einen Schritt. Ein Tipp auf
 den Wert, die 216 px breite Spalte zwischen dem Namen und den Tasten, öffnet
 das Tastenfeld über der Seite, von unter dem Ausgangsstreifen bis 4 px über
-dem Alarmband: 1008 x 466 px, Tasten von 243 x 86 px. Es nennt die
+dem Alarmband: 1008 x 466 px, Tasten von 242 x 81 px. Es nennt die
 Einstellung, ihren Bereich und ihre Einheit und nimmt die Stellen des
 Schritts nach dem Punkt: eine für die 0,1 V von Spannung, zwei für die
 0,05 A von Strombegrenzung. OK setzt den Wert wie ein Schritt auf den
@@ -2459,7 +2505,10 @@ Die Tastatur hat drei Ebenen desselben Rasters: Kleinbuchstaben, `ABC` für
 Großbuchstaben, `#+=` für die 32 druckbaren Zeichen von ASCII (American
 Standard Code for Information Interchange), die keine Buchstaben oder
 Ziffern sind. Jedes der 95 druckbaren ASCII-Zeichen liegt einmal auf einer
-Ebene; LEERZEICHEN ist die breite Taste. Ein Name hat 1 bis 32 Bytes. Ein
+Ebene; LEERZEICHEN ist die breite Taste. Die Tastatur deckt den Körper über
+dem Alarmband, 1008 x 484 px, mit Tasten von 93 x 71 px
+([Tastenfeld, Tastatur und die gemeinsamen Bedienelemente](#tastenfeld-tastatur-und-die-gemeinsamen-bedienelemente)).
+Ein Name hat 1 bis 32 Bytes. Ein
 Passwort hat 8 bis 63 Zeichen, den Bereich von WPA2 und WPA3 Personal: Das
 64. Zeichen wird abgewiesen, und OK unter 8 Zeichen sagt es.
 
@@ -2766,7 +2815,7 @@ Auswahl springt vom letzten Wert auf den ersten.
   4 px zwischen zwei Zeilen gehören zu keiner Taste.
 - **Tastenfeld.** Ein Tipp auf den Wert einer Zahl, die 126 px zwischen
   ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste und der
-  Leiste: 1008 x 484 px, Tasten von 243 x 91 px, sein Fuß 4 px über dem
+  Leiste: 1008 x 484 px, Tasten von 242 x 86 px, sein Fuß 4 px über dem
   Alarmband. Es nennt die Einstellung, ihren Bereich und ihre Einheit, zeigt
   den Wert blass, bis eine Ziffer getippt ist, und nimmt so viele Stellen
   nach dem Punkt, wie der Schritt hat: eine für die 0,1 mΩ eines Shunts,

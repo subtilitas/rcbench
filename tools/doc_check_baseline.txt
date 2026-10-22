@@ -4000,8 +4000,6 @@ shared/ui/include/ui_keypad.h: warning: parameters of member ui_keypad_event are
 shared/ui/include/ui_keypad.h: warning: parameters of member ui_keypad_open are not documented
 shared/ui/include/ui_keypad.h: warning: return type of member ui_keypad_event is not documented
 shared/ui/include/ui_layout.h: warning: Member UI_ALERT_Y (macro definition) of file ui_layout.h is not documented.
-shared/ui/include/ui_pinlist.h: file has no @file block
-shared/ui/include/ui_plot.h: file has no @file block
 shared/ui/include/ui_plot.h: warning: Compound ui_plot_series_t is not documented.
 shared/ui/include/ui_plot.h: warning: Compound ui_plot_t is not documented.
 shared/ui/include/ui_plot.h: warning: Member color (variable) of struct ui_plot_series_t is not documented.
@@ -4066,16 +4064,6 @@ shared/ui/include/ui_slider.h: warning: Member step (variable) of struct ui_slid
 shared/ui/include/ui_slider.h: warning: Member tap_to_set (variable) of struct ui_slider_t is not documented.
 shared/ui/include/ui_slider.h: warning: Member track (variable) of struct ui_slider_t is not documented.
 shared/ui/include/ui_slider.h: warning: Member value (variable) of struct ui_slider_t is not documented.
-shared/ui/include/ui_tabs.h: file has no @file block
-shared/ui/include/ui_tabs.h: warning: Compound ui_tabs_t is not documented.
-shared/ui/include/ui_tabs.h: warning: Member count (variable) of struct ui_tabs_t is not documented.
-shared/ui/include/ui_tabs.h: warning: Member label[UI_TABS_MAX] (variable) of struct ui_tabs_t is not documented.
-shared/ui/include/ui_tabs.h: warning: Member press_id (variable) of struct ui_tabs_t is not documented.
-shared/ui/include/ui_tabs.h: warning: Member rect[UI_TABS_MAX] (variable) of struct ui_tabs_t is not documented.
-shared/ui/include/ui_tabs.h: warning: Member selected (variable) of struct ui_tabs_t is not documented.
-shared/ui/include/ui_target_row.h: file has no @file block
-shared/ui/include/ui_target_row.h: warning: Compound ui_target_row_t is not documented.
-shared/ui/include/ui_target_row.h: warning: Member rect (variable) of struct ui_target_row_t is not documented.
 shared/ui/include/ui_text.h: warning: Member TR(id) (macro definition) of file ui_text.h is not documented.
 shared/ui/include/ui_text.h: warning: Member UI_TEXT(id, cells, en, de) (macro definition) of file ui_text.h is not documented.
 shared/ui/include/ui_text.h: warning: Member ui_setting_category(setting_cat_t cat) (function) of file ui_text.h is not documented.
@@ -4109,16 +4097,6 @@ shared/ui/include/ui_text.h: warning: return type of member ui_text_table is not
 shared/ui/include/ui_text.h: warning: return type of member ui_tr is not documented
 shared/ui/include/ui_text.h: warning: return type of member ui_tr_in is not documented
 shared/ui/include/ui_text.h: warning: return type of member ui_tr_pad is not documented
-shared/ui/include/ui_textkey.h: file has no @file block
-shared/ui/include/ui_textkey.h: warning: Compound ui_textkey_t is not documented.
-shared/ui/include/ui_textkey.h: warning: Member area (variable) of struct ui_textkey_t is not documented.
-shared/ui/include/ui_textkey.h: warning: Member layer (variable) of struct ui_textkey_t is not documented.
-shared/ui/include/ui_textkey.h: warning: Member len (variable) of struct ui_textkey_t is not documented.
-shared/ui/include/ui_textkey.h: warning: Member max_len (variable) of struct ui_textkey_t is not documented.
-shared/ui/include/ui_textkey.h: warning: Member open (variable) of struct ui_textkey_t is not documented.
-shared/ui/include/ui_textkey.h: warning: Member press_id (variable) of struct ui_textkey_t is not documented.
-shared/ui/include/ui_textkey.h: warning: Member text[UI_TEXTKEY_PASS_MAX+1] (variable) of struct ui_textkey_t is not documented.
-shared/ui/include/ui_textkey.h: warning: Member title[48] (variable) of struct ui_textkey_t is not documented.
 shared/ui/include/ui_theme.h: warning: Member UI_ACCENT (macro definition) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member UI_BG (macro definition) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member UI_CURR (macro definition) of file ui_theme.h is not documented.
@@ -5866,12 +5844,6 @@ shared/ui/ui_band.c: warning: Member s_line[400] (variable) of file ui_band.c is
 shared/ui/ui_band.c: warning: Member s_para[640] (variable) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member text (variable) of struct [struct].k_bits is not documented.
 shared/ui/ui_icons.c: file has no @file block
-shared/ui/ui_keypad.c: warning: Member KP_COLS (macro definition) of file ui_keypad.c is not documented.
-shared/ui/ui_keypad.c: warning: Member KP_ENTRY_H (macro definition) of file ui_keypad.c is not documented.
-shared/ui/ui_keypad.c: warning: Member KP_GAP (macro definition) of file ui_keypad.c is not documented.
-shared/ui/ui_keypad.c: warning: Member KP_HDR (macro definition) of file ui_keypad.c is not documented.
-shared/ui/ui_keypad.c: warning: Member KP_PAD (macro definition) of file ui_keypad.c is not documented.
-shared/ui/ui_keypad.c: warning: Member KP_ROWS (macro definition) of file ui_keypad.c is not documented.
 shared/ui/ui_keypad.c: warning: Member digits_after_point(const ui_keypad_t *k) (function) of file ui_keypad.c is not documented.
 shared/ui/ui_keypad.c: warning: Member k_labels[UI_KEY_COUNT] (variable) of file ui_keypad.c is not documented.
 shared/ui/ui_keypad.c: warning: Member ui_keypad_close(ui_keypad_t *k) (function) of file ui_keypad.c is not documented.
@@ -5926,8 +5898,6 @@ shared/ui/ui_router.c: warning: Member ui_router_title(ui_screen_id_t id) (funct
 shared/ui/ui_router.c: warning: Member x (variable) of struct [struct].s.owned is not documented.
 shared/ui/ui_router.c: warning: Member y (variable) of struct [struct].s.owned is not documented.
 shared/ui/ui_slider.c: file has no @file block
-shared/ui/ui_tabs.c: file has no @file block
-shared/ui/ui_target_row.c: file has no @file block
 shared/ui/ui_text.c: warning: Member UI_OPTION(en, de) (macro definition) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member UI_OPTIONS_END(name) (macro definition) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member UI_SERVO_TEXT(id, en, de) (macro definition) of file ui_text.c is not documented.
@@ -5945,7 +5915,6 @@ shared/ui/ui_text.c: warning: Member ui_setting_category(setting_cat_t cat) (fun
 shared/ui/ui_text.c: warning: Member ui_setting_help(setting_id_t id) (function) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member ui_setting_label(setting_id_t id) (function) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member ui_text_language(void) (function) of file ui_text.c is not documented.
-shared/ui/ui_textkey.c: file has no @file block
 shared/ui/ui_theme.c: file has no @file block
 shared/ui/ui_theme.c: warning: Compound ui_rgb_t is not documented.
 shared/ui/ui_theme.c: warning: Member b (variable) of struct ui_rgb_t is not documented.
@@ -6070,7 +6039,6 @@ shared/ui/wifi_screen.c: warning: Member BPITCH (macro definition) of file wifi_
 shared/ui/wifi_screen.c: warning: Member BW (macro definition) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member BX (macro definition) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member H (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member KEY_AREA (macro definition) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member LBL_W (macro definition) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member LBL_X (macro definition) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member OFF_W (macro definition) of file wifi_screen.c is not documented.
@@ -6104,7 +6072,6 @@ shared/ui/wifi_screen.c: warning: Member draw_main(gfx_canvas_t *c) (function) o
 shared/ui/wifi_screen.c: warning: Member draw_question(gfx_canvas_t *c) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member draw_running(gfx_canvas_t *c) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member draw_scan(gfx_canvas_t *c) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member drop_hold_if_gone(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member enter(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member event(const touch_event_t *evt) (function) of file wifi_screen.c is not documented.
@@ -6128,7 +6095,6 @@ shared/ui/wifi_screen.c: warning: Member para(gfx_canvas_t *c, int y, const char
 shared/ui/wifi_screen.c: warning: Member pick[WIFI_SSID_MAX+1] (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member press_id (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member q_cancel_rect(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member q_cancelled (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member radio_on(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member req (variable) of struct [struct].s is not documented.
@@ -6136,7 +6102,6 @@ shared/ui/wifi_screen.c: warning: Member rescan_rect(void) (function) of file wi
 shared/ui/wifi_screen.c: warning: Member reset(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member row(gfx_canvas_t *c, int i, const char *label, const char *value) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member row_rect(int i) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member s (variable) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member save_pass[WIFI_PASS_MAX+1] (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member save_ssid[WIFI_SSID_MAX+1] (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member scan_cancel_rect(void) (function) of file wifi_screen.c is not documented.

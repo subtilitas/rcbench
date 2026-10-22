@@ -21,7 +21,7 @@ measured angle into a blade reference ("between blades two and three") in
 addition to the angle.
 
 The count's `-` and `+` step it on the press. A tap on the count opens the
-keypad over both cards, 788 x 354 px with keys of 188 x 58 px, its foot
+keypad over both cards, 788 x 354 px with keys of 187 x 53 px, its foot
 4 px above the alert band. OK takes 2 to 6; any other count keeps the
 keypad open and names the range in the warning colour. CANCEL, OK with
 nothing typed, the home tag and a tab close it and change nothing.

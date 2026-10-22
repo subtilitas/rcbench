@@ -1,5 +1,6 @@
-/*
- * An on-screen keyboard for a short name: capitals, digits, space and the
+/**
+ * @file
+ * @brief An on-screen keyboard for a short name: capitals, digits, space and the
  * marks a name or a file needs, "-", "_" and ".".
  *
  * Unlike the numeric keypad it edits the text it was opened with: DEL takes
@@ -52,56 +53,63 @@
 extern "C" {
 #endif
 
-/** The longest name or search it takes, in characters. */
+/** @brief The longest name or search it takes, in characters. */
 #define UI_TEXTKEY_MAX 23
-/** The longest Wi-Fi password, and the shortest. */
+/** @brief The longest Wi-Fi password, in characters. */
 #define UI_TEXTKEY_PASS_MAX 63
+/** @brief The shortest Wi-Fi password, in characters. */
 #define UI_TEXTKEY_PASS_MIN 8
-/** The longest Wi-Fi network name, in bytes. */
+/** @brief The longest Wi-Fi network name, in bytes. */
 #define UI_TEXTKEY_SSID_MAX 32
 
-/** The keys: forty characters in four rows of ten, then SPACE, CLR, CANCEL
- *  and OK along the bottom. */
+/** @brief The keys: forty characters in four rows of ten, then SPACE, CLR,
+ *         CANCEL and OK along the bottom. */
 #define UI_TEXTKEY_CHARS 40
+/** @brief The bottom row's keys, numbered after the characters. */
 enum {
-    UI_TK_SPACE = UI_TEXTKEY_CHARS,
-    UI_TK_CLR,
-    UI_TK_CANCEL,
-    UI_TK_OK,
-    UI_TK_KEYS
+    UI_TK_SPACE = UI_TEXTKEY_CHARS,  /**< SPACE                          */
+    UI_TK_CLR,                       /**< CLR: the whole text            */
+    UI_TK_CANCEL,                    /**< CANCEL: closes, nothing taken  */
+    UI_TK_OK,                        /**< OK: takes the text             */
+    UI_TK_KEYS                       /**< the count of the keys above    */
 };
-/** SHOW, the password keyboard's sixth bottom key; zero size otherwise. */
+/** @brief SHOW, the password keyboard's sixth bottom key; zero size
+ *         otherwise. */
 #define UI_TK_SHOW UI_TK_KEYS
-/** The Wi-Fi keyboard's layer keys: capitals, and marks. */
+/** @brief The Wi-Fi keyboard's capitals key, left of Z. */
 #define UI_TK_SHIFT 30
+/** @brief The Wi-Fi keyboard's marks key, left of DEL. */
 #define UI_TK_LAYER 38
-/** The DEL key, last of the character rows. */
+/** @brief The DEL key, last of the character rows. */
 #define UI_TK_DEL (UI_TEXTKEY_CHARS - 1)
-/** The key that types "_", or "*" in a search. */
+/** @brief The key that types "_", or "*" in a search. */
 #define UI_TK_MARK (UI_TEXTKEY_CHARS - 3)
-/** The key that types ".", or "/" for a folder. */
+/** @brief The key that types ".", or "/" for a folder. */
 #define UI_TK_DOT (UI_TEXTKEY_CHARS - 2)
 
+/** @brief What an event on the keyboard came to. */
 typedef enum {
     UI_TEXTKEY_NONE = 0,   /**< still open, or the event was not its   */
     UI_TEXTKEY_OK,         /**< closed with a name                     */
     UI_TEXTKEY_CANCELLED,  /**< closed, the name as it was             */
 } ui_textkey_result_t;
 
-/** The Wi-Fi keyboard's layers. */
+/** @brief The Wi-Fi keyboard's layers. */
 typedef enum {
-    UI_TK_LOWER = 0,
-    UI_TK_UPPER,
-    UI_TK_MARKS,
+    UI_TK_LOWER = 0,       /**< lower case and the digits              */
+    UI_TK_UPPER,           /**< capitals and the digits                */
+    UI_TK_MARKS,           /**< the 32 marks                           */
 } ui_textkey_layer_t;
 
+/** @brief A keyboard: what it was opened for, what is typed, and the
+ *         press it holds. */
 typedef struct {
-    bool       open;
-    gfx_rect_t area;
-    char       title[48];
-    char       text[UI_TEXTKEY_PASS_MAX + 1];
-    int        len;
-    int        max_len;
+    bool       open;        /**< drawn and taking events              */
+    gfx_rect_t area;        /**< where it draws, screen coordinates   */
+    char       title[48];   /**< what is typed, top left              */
+    char       text[UI_TEXTKEY_PASS_MAX + 1]; /**< the text, '\0'-ended */
+    int        len;         /**< bytes in text                        */
+    int        max_len;     /**< the most it takes                    */
     bool       refused;     /**< OK on an empty name                  */
     bool       search;      /**< a search pattern: see the top        */
     bool       folder;      /**< a folder of the card: see the top    */
@@ -109,61 +117,136 @@ typedef struct {
     bool       wifi;        /**< a Wi-Fi name or password             */
     bool       secret;      /**< a password: masked, 8 at least       */
     bool       show;        /**< the password shown                   */
-    ui_textkey_layer_t layer;
+    ui_textkey_layer_t layer; /**< the Wi-Fi layer shown              */
     int        pressed;     /**< the key under the press, or -1       */
-    uint8_t    press_id;
+    uint8_t    press_id;    /**< the touch id of that press           */
     uint32_t   revision;    /**< bumped on every change a render shows */
 } ui_textkey_t;
 
-/** Open over @p area on @p text, taking up to @p max_len characters (at
- *  most UI_TEXTKEY_MAX). */
+/**
+ * @brief Open over @p area on @p text.
+ * @param k       The keyboard; NULL does nothing.
+ * @param area    Where it draws and takes presses.
+ * @param title   What is typed, top left.
+ * @param text    The text it starts with, cut to @p max_len.
+ * @param max_len The most characters it takes; 0, less, or more than
+ *                UI_TEXTKEY_MAX is UI_TEXTKEY_MAX.
+ */
 void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
                      const char *text, int max_len);
 
-/** Open for a search pattern; see the top of this file. */
+/**
+ * @brief Open for a search pattern; see the top of this file.
+ * @param k       The keyboard; NULL does nothing.
+ * @param area    Where it draws.
+ * @param title   What is searched for.
+ * @param text    The pattern it starts with.
+ * @param max_len The most characters, as ui_textkey_open() takes it.
+ */
 void ui_textkey_open_search(ui_textkey_t *k, gfx_rect_t area,
                             const char *title, const char *text,
                             int max_len);
 
-/** Open for a folder of the card; see the top of this file.  Up to
- *  UI_TEXTKEY_MAX characters. */
+/**
+ * @brief Open for a folder of the card; see the top of this file.  Up to
+ *        UI_TEXTKEY_MAX characters.
+ * @param k     The keyboard; NULL does nothing.
+ * @param area  Where it draws.
+ * @param title The setting's name.
+ * @param text  The folder in force.
+ */
 void ui_textkey_open_folder(ui_textkey_t *k, gfx_rect_t area,
                             const char *title, const char *text);
 
-/** Open for a Wi-Fi password (@p secret) or network name; see the top of
- *  this file.  Lower case first. */
+/**
+ * @brief Open for a Wi-Fi password or network name; see the top of this
+ *        file.  Lower case first.
+ * @param k      The keyboard; NULL does nothing.
+ * @param area   Where it draws.
+ * @param title  What is typed.
+ * @param text   The text it starts with.
+ * @param secret A password: masked, 8 to 63 characters; else a name of 1
+ *               to 32 bytes.
+ */
 void ui_textkey_open_wifi(ui_textkey_t *k, gfx_rect_t area,
                           const char *title, const char *text, bool secret);
 
+/**
+ * @brief Close, dropping a press under way.
+ * @param k The keyboard; NULL does nothing.
+ */
 void ui_textkey_close(ui_textkey_t *k);
 
-/** A press under way is dropped: the touch stream lost an event.  What was
- *  typed stays typed. */
+/**
+ * @brief A press under way is dropped: the touch stream lost an event.
+ *        What was typed stays typed.
+ * @param k The keyboard; NULL does nothing.
+ */
 void ui_textkey_cancel_press(ui_textkey_t *k);
 
 /**
- * One touch event.  A key acts on the release of the contact that pressed
- * it, over the same key; a second contact is ignored while one is down.
- * UI_TEXTKEY_OK writes the name, ends trimmed, into @p out; a search's
- * text as typed; a folder in upper case, as card_folder_check() writes
- * it (@p n of CARD_DIR_MAX or more).
+ * @brief One touch event.
+ *
+ * A key acts on the release of the contact that pressed it, over the same
+ * key; a second contact is ignored while one is down.
+ * @param k   The keyboard.
+ * @param evt The event, in the keyboard's coordinates.
+ * @param out Where OK writes the name, ends trimmed; a search's text as
+ *            typed; a folder in upper case, as card_folder_check() writes
+ *            it.
+ * @param n   The bytes at @p out: CARD_DIR_MAX or more for a folder.
+ * @return UI_TEXTKEY_OK or UI_TEXTKEY_CANCELLED when it closed,
+ *         UI_TEXTKEY_NONE otherwise and for a NULL or closed keyboard.
  */
 ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
                                      char *out, size_t n);
 
-/** Where a key is drawn and hit; zero size for one out of range. */
+/**
+ * @brief Where a key is drawn and hit.
+ * @param k   The keyboard.
+ * @param key The key: 0 to UI_TK_OK, or UI_TK_SHOW on a password.
+ * @return Its rectangle; zero size for one out of range.
+ */
 gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key);
 
-/** A key's label, or "" for one out of range; as a name keyboard shows
- *  it. */
+/**
+ * @brief A key's label as a name keyboard shows it.
+ * @param key The key.
+ * @return The label, or "" for one out of range.
+ */
 const char *ui_textkey_label(int key);
 
-/** A key's label as @p k shows it: "*" for UI_TK_MARK in a search, "/"
- *  for UI_TK_DOT for a folder, the
- *  layer's character on a Wi-Fi keyboard, "" for a blank key. */
+/**
+ * @brief A key's label as @p k shows it.
+ * @param k   The keyboard.
+ * @param key The key.
+ * @return "*" for UI_TK_MARK in a search, "/" for UI_TK_DOT for a folder,
+ *         the layer's character on a Wi-Fi keyboard, "" for a blank key,
+ *         else ui_textkey_label().
+ */
 const char *ui_textkey_key_label(const ui_textkey_t *k, int key);
 
-/** The whole keyboard over its area.  Nothing while it is closed. */
+/**
+ * @brief The face of the word keys (the bottom row, DEL, and the Wi-Fi
+ *        layer keys) in the language shown: the largest of 12 x 24,
+ *        10 x 20 and 8 x 16 in which every one of them fits its key with
+ *        4 px each side, in every state it can show (SHOW and HIDE, ABC,
+ *        abc and #+=), so the words of one keyboard share one face and a
+ *        press does not change it.  The character keys are always 12 x 24.
+ * @param k The keyboard, opened.
+ * @return The face; 8 x 16 for NULL.
+ */
+const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k);
+
+/**
+ * @brief The whole keyboard over its area: the title and the count in
+ *        10 x 20 (8 x 16 where they do not fit side by side), the text in
+ *        20 x 36 (16 x 28 in a field narrower than UI_TEXTKEY_MAX
+ *        characters and the caret), the character keys in 12 x 24 and the
+ *        word keys in ui_textkey_word_font().  Nothing while it is closed.
+ * @param k The keyboard.
+ * @param c Canvas.
+ */
 void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c);
 
 #ifdef __cplusplus

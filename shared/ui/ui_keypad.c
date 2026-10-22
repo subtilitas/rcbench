@@ -15,16 +15,24 @@
 #include "ui_widgets.h"
 
 /*
- * A title row, the entry, then four rows of keys.  Over the 534 x 402 px the
- * SUPPLY screen gives it, a key is 126 x 70 px, larger than a fingertip on
- * every side.
+ * A title row, the entry, then four rows of keys, 8 px apart.  Over an
+ * area of 620 x 476 px, a workbench's left card, a key is 145 x 84 px
+ * (21.8 x 12.6 mm at 0.150 mm a pixel).
  */
+/** @brief The room around the title, the entry and the keys: 8 px. */
 #define KP_PAD     8
-#define KP_HDR     30
-#define KP_ENTRY_H 52
-#define KP_GAP     6
+/** @brief The title row: the 10 x 20 face and 6 px above it. */
+#define KP_HDR     32
+/** @brief The entry: the 32 x 44 numerals and 8 px above and below. */
+#define KP_ENTRY_H 60
+/** @brief The gap between the entry and the keys, and between keys. */
+#define KP_GAP     8
+/** @brief The key grid: 4 columns ... */
 #define KP_COLS    4
+/** @brief ... and 4 rows. */
 #define KP_ROWS    4
+/** @brief The room a key keeps left and right of its label: 6 px. */
+#define KP_KEY_PAD 6
 
 /* DEL, CLR and +/- are the keys' legends in every language (the faces
  * hold no plus-minus glyph); CANCEL is translated, so it is looked up where
@@ -338,6 +346,88 @@ ui_keypad_result_t ui_keypad_event(ui_keypad_t *k, const touch_event_t *evt,
     return press(k, key, out);
 }
 
+/**
+ * @brief The face the title and the range share: 10 x 20 when both fit the
+ *        header side by side with 16 px between them, else 8 x 16.
+ * @param hdr   The header row.
+ * @param title The title.
+ * @param range The range, or the caller's reason.
+ * @return The face.
+ */
+static const gfx_font_t *header_face(gfx_rect_t hdr, const char *title,
+                                     const char *range)
+{
+    const int need = gfx_text_width(&gfx_font_10x20, title, 1) + 16
+                     + gfx_text_width(&gfx_font_10x20, range, 1);
+    return (need <= hdr.w) ? &gfx_font_10x20 : &gfx_font_8x16;
+}
+
+const gfx_font_t *ui_keypad_word_font(const ui_keypad_t *k)
+{
+    if (k == NULL) {
+        return &gfx_font_8x16;
+    }
+    static const ui_key_t words[] = { UI_KEY_DEL, UI_KEY_CLR, UI_KEY_CANCEL,
+                                      UI_KEY_OK, UI_KEY_SIGN };
+    static const gfx_font_t *const faces[] = { &gfx_font_12x24,
+                                               &gfx_font_10x20 };
+    for (size_t f = 0; f < sizeof(faces) / sizeof(faces[0]); ++f) {
+        bool fit = true;
+        for (size_t i = 0; i < sizeof(words) / sizeof(words[0]) && fit; ++i) {
+            const gfx_rect_t r = ui_keypad_key_rect(k, words[i]);
+            const char *label = (words[i] == UI_KEY_CANCEL)
+                                    ? TR(CANCEL) : k_labels[words[i]];
+            fit = r.w == 0 || ui_text_fits(faces[f], label, r.w, r.h,
+                                           KP_KEY_PAD);
+        }
+        if (fit) {
+            return faces[f];
+        }
+    }
+    return &gfx_font_8x16;
+}
+
+/**
+ * @brief The entry: @p number in the numeral face and @p unit beside it,
+ *        right-aligned 10 px inside @p box.  32 x 44 numerals with a
+ *        12 x 24 unit where they fit, else 24 x 30 with 10 x 20.
+ * @param c      Canvas.
+ * @param box    The entry's box.
+ * @param number The number: digits, a minus sign and a point.
+ * @param unit   The unit, or "".
+ * @param ink    The colour of both.
+ */
+static void entry_text(gfx_canvas_t *c, gfx_rect_t box, const char *number,
+                       const char *unit, gfx_color_t ink)
+{
+    const gfx_font_t *num  = &gfx_font_num_32x44;
+    const gfx_font_t *unf  = &gfx_font_12x24;
+    const int gap = (unit[0] != '\0') ? 10 : 0;
+    if (gfx_text_width(num, number, 1) + gap + gfx_text_width(unf, unit, 1)
+            + 20 > box.w
+        || gfx_text_height(num, 1) > box.h) {
+        num = &gfx_font_num_24x30;
+        unf = &gfx_font_10x20;
+    }
+    const int uw = gfx_text_width(unf, unit, 1);
+    const int nw = gfx_text_width(num, number, 1);
+    const int nh = gfx_text_height(num, 1);
+    const int x  = box.x + box.w - 10 - uw - gap - nw;
+    const int y  = box.y + (box.h - nh) / 2;
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)y, (int16_t)nw,
+                                 (int16_t)nh },
+                number, num, ink, 1, GFX_ALIGN_LEFT);
+    if (uw > 0) {
+        /* The unit's baseline on the numerals': both faces end their
+         * digits and capitals 2 px above the cell's foot or less. */
+        const int uh = gfx_text_height(unf, 1);
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + nw + gap),
+                                     (int16_t)(y + nh - uh), (int16_t)uw,
+                                     (int16_t)uh },
+                    unit, unf, ink, 1, GFX_ALIGN_LEFT);
+    }
+}
+
 void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
 {
     if (k == NULL || c == NULL || !k->open) {
@@ -351,9 +441,7 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
      * once a value outside it has been refused.  A value the caller refused
      * by its own rule shows the caller's reason there instead. */
     const gfx_rect_t hdr = { (int16_t)(a.x + KP_PAD), (int16_t)(a.y + 6),
-                             (int16_t)(a.w - 2 * KP_PAD), 18 };
-    gfx_text_in(c, hdr, k->title, &gfx_font_8x16, ui_theme_color(UI_C_TEXT),
-                1, GFX_ALIGN_LEFT);
+                             (int16_t)(a.w - 2 * KP_PAD), 22 };
     char range[64];
     if (k->refused && k->reason[0] != '\0') {
         snprintf(range, sizeof(range), "%s", k->reason);   /* why, instead */
@@ -361,7 +449,10 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
         snprintf(range, sizeof(range), TR(KEYPAD_RANGE), k->decimals,
                  (double)k->min, k->decimals, (double)k->max, k->unit);
     }
-    gfx_text_in(c, hdr, range, &gfx_font_8x16,
+    const gfx_font_t *hf = header_face(hdr, k->title, range);
+    gfx_text_in(c, hdr, k->title, hf, ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_LEFT);
+    gfx_text_in(c, hdr, range, hf,
                 k->refused ? ui_theme_color(UI_C_WARN)
                            : ui_theme_color(UI_C_TEXT_DIM),
                 1, GFX_ALIGN_RIGHT);
@@ -372,29 +463,33 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
                              (int16_t)(a.w - 2 * KP_PAD), KP_ENTRY_H };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h,
                   ui_theme_color(UI_C_PANEL_SUNK));
-    char text[32];
+    char number[32];
     if (k->len > 0) {
-        snprintf(text, sizeof(text), "%s %s", k->entry, k->unit);
+        snprintf(number, sizeof(number), "%s", k->entry);
     } else {
-        snprintf(text, sizeof(text), "%.*f %s", k->decimals,
-                 (double)k->value, k->unit);
+        snprintf(number, sizeof(number), "%.*f", k->decimals,
+                 (double)k->value);
     }
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(box.x + 10), box.y,
-                                 (int16_t)(box.w - 20), box.h },
-                text, &gfx_font_8x16,
-                (k->len > 0) ? ui_theme_color(UI_C_TEXT)
-                             : ui_theme_color(UI_C_TEXT_FAINT),
-                2, GFX_ALIGN_RIGHT);
+    entry_text(c, box, number, k->unit,
+               (k->len > 0) ? ui_theme_color(UI_C_TEXT)
+                            : ui_theme_color(UI_C_TEXT_FAINT));
 
+    /* Digits and the point in 12 x 24; the words in the face they all
+     * fit. */
+    const gfx_font_t *wf = ui_keypad_word_font(k);
     for (int key = 0; key < UI_KEY_COUNT; ++key) {
         if (key == UI_KEY_SIGN && !k->sign) {
             continue;                   /* an unsigned keypad has none */
         }
+        const bool word = key == UI_KEY_DEL || key == UI_KEY_CLR
+                          || key == UI_KEY_CANCEL || key == UI_KEY_OK
+                          || key == UI_KEY_SIGN;
         const gfx_color_t fill = (key == UI_KEY_OK)
                                      ? ui_theme_color(UI_C_ACCENT)
                                      : ui_theme_color(UI_C_PANEL_SUNK);
-        ui_button(c, ui_keypad_key_rect(k, (ui_key_t)key),
-                  (key == UI_KEY_CANCEL) ? TR(CANCEL) : k_labels[key],
-                  fill, k->pressed == key, true);
+        ui_button_font(c, ui_keypad_key_rect(k, (ui_key_t)key),
+                       (key == UI_KEY_CANCEL) ? TR(CANCEL) : k_labels[key],
+                       fill, k->pressed == key, true,
+                       word ? wf : &gfx_font_12x24);
     }
 }
