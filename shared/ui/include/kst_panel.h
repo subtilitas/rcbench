@@ -183,6 +183,12 @@ kst_prog_msg_id_t kst_panel_run_pulses(uint16_t lower_dus, uint16_t upper_dus);
 /** LEAVE. */
 kst_prog_msg_id_t kst_panel_run_leave(void);
 kst_panel_run_t kst_panel_run_poll(void);
+/** Whether the CONNECT of kst_panel_run_connect() ended with no servo
+ *  answering: the programmer's last message is KST_SES_ERR_NO_SERVO and was
+ *  said after that call.  A message left from before it does not count.
+ *  @return true for a CONNECT of a servo that is no KST or Chaservo, or not
+ *  powered; false otherwise. */
+bool kst_panel_run_no_servo(void);
 /** The servo as read: its two angles, the values both take by the hard
  *  rules, REVERSION, its type number, and NEUTRAL, PULSE LOWER and PULSE
  *  UPPER in 0.1 us (0 for one not shown).  False with none read, or one

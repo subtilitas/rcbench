@@ -8,6 +8,11 @@ history is in git.
 
 ### Fixed
 
+- A limit run on PROG PORT whose first CONNECT finds no servo that answers
+  (a Hitec servo, for one) ends with `no KST or Chaservo servo read`, not
+  with `programming port did not finish`. Every other failed CONNECT,
+  LEAVE and timed-out step reads `programming port session failed`, in
+  German `PROG-PORT-Sitzung gescheitert`.
 - The card's ZIP download stays whole while a log on the card grows: a file
   is sent at the size it had when the download started, a file added
   meanwhile is left out.

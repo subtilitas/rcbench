@@ -81,6 +81,8 @@ typedef struct {
     bool not_kst, prog_silent, leave_fails;
     unsigned leave_fail_at;      /* this LEAVE (1-based) does not end well */
     uint32_t prog_ms;
+    unsigned fail_at;            /* this CONNECT (1-based) ends in failure */
+    bool fail_no_servo;          /* ... with no servo answering, else not  */
     unsigned change_at;          /* this CONNECT (1-based) reads ...      */
     int change_kind;             /* ... another type, REVERSION or range  */
 
@@ -239,6 +241,15 @@ static inline void programmer(void)
     }
     const int op = g.op;
     g.op = OP_NONE;
+    if (op == OP_CONNECT && g.fail_at != 0u && g.connects + 1u == g.fail_at) {
+        ++g.connects;
+        if (g.fail_no_servo) {
+            servo_limrun_no_servo(&g.run, g.now);
+        } else {
+            servo_limrun_refused(&g.run, g.now);
+        }
+        return;
+    }
     if (op == OP_CONNECT) {
         servo_limrun_servo_t sv;
         memset(&sv, 0, sizeof(sv));
