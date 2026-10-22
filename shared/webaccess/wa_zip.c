@@ -311,15 +311,75 @@ static bool entry_of(const wa_walk_t *w, wa_walk_ev_t ev, size_t *len,
     return true;
 }
 
-wa_zip_err_t wa_zip_plan(const wa_fs_t *fs, wa_zip_plan_t *out)
+/**
+ * @brief FNV-1a hash of the path of the entry a walk is at.
+ * @param w   the walk, its path without a folder's "/"
+ * @param dir whether the entry is a folder, hashed as a "/" after the path
+ * @return The hash.
+ */
+static uint32_t path_hash(const wa_walk_t *w, bool dir)
+{
+    uint32_t h = 2166136261u;
+    for (const char *p = w->path; *p != '\0'; ++p) {
+        h = (h ^ (uint8_t)*p) * 16777619u;
+    }
+    return dir ? (h ^ (uint8_t)'/') * 16777619u : h;
+}
+
+/* The DOS range in seconds since 1970: 1980-01-01 00:00:00 to
+ * 2107-12-31 23:59:58, as wa_dos_time() clamps. */
+#define DOS_FIRST 315532800
+#define DOS_LAST  4354819198
+
+/**
+ * @brief A time as a slot keeps it: clamped to the DOS range, in seconds
+ *        since its start, which 32 bits hold.
+ * @param t seconds since 1970
+ * @return Seconds since 1980-01-01 00:00:00.
+ */
+static uint32_t mtime_pack(int64_t t)
+{
+    if (t < DOS_FIRST) {
+        t = DOS_FIRST;
+    }
+    if (t > DOS_LAST) {
+        t = DOS_LAST;
+    }
+    return (uint32_t)(t - DOS_FIRST);
+}
+
+/**
+ * @brief A slot's time back in seconds since 1970.
+ * @param m what mtime_pack() made
+ * @return Seconds since 1970, the same DOS time as the time packed.
+ */
+static int64_t mtime_unpack(uint32_t m)
+{
+    return (int64_t)m + DOS_FIRST;
+}
+
+/**
+ * @brief The first walk: add up the archive's length, and keep each entry's
+ *        size, time, name length and path hash when @p slot is given.
+ * @param w     the walk to use
+ * @param fs    the card
+ * @param out   the plan, filled
+ * @param slot  the slots, or NULL to keep nothing
+ * @param slots how many @p slot holds
+ * @return WA_ZIP_OK; WA_ZIP_NO_CARD or WA_ZIP_READ when the walk fails;
+ *         WA_ZIP_MEMORY when @p slot is given and the card has more entries
+ *         than @p slots.  Nothing is left open.
+ */
+static wa_zip_err_t plan_walk(wa_walk_t *w, const wa_fs_t *fs,
+                              wa_zip_plan_t *out, wa_zip_slot_t *slot,
+                              uint64_t slots)
 {
     memset(out, 0, sizeof(*out));
-    static wa_walk_t w;   /* 1.6 kB: off the calling task's stack */
-    wa_walk_begin(&w, fs);
+    wa_walk_begin(w, fs);
     wa_zip_len_t l;
     wa_zip_len_init(&l);
     for (;;) {
-        const wa_walk_ev_t ev = wa_walk_next(&w);
+        const wa_walk_ev_t ev = wa_walk_next(w);
         if (ev == WA_WALK_END) {
             break;
         }
@@ -331,10 +391,19 @@ wa_zip_err_t wa_zip_plan(const wa_fs_t *fs, wa_zip_plan_t *out)
         }
         size_t len;
         bool dir;
-        if (!entry_of(&w, ev, &len, &dir)) {
+        if (!entry_of(w, ev, &len, &dir)) {
             continue;
         }
-        const uint64_t size = dir ? 0u : w.ent.size;
+        const uint64_t size = dir ? 0u : w->ent.size;
+        if (slot != NULL) {
+            if (l.entries >= slots) {
+                wa_walk_end(w);
+                return WA_ZIP_MEMORY;
+            }
+            slot[l.entries] = (wa_zip_slot_t){
+                size, 0u, path_hash(w, dir), mtime_pack(w->ent.mtime),
+                (uint16_t)len, 0u };
+        }
         wa_zip_len_add(&l, len, size);
         if (!dir) {
             ++out->files;
@@ -344,23 +413,34 @@ wa_zip_err_t wa_zip_plan(const wa_fs_t *fs, wa_zip_plan_t *out)
     out->entries   = l.entries;
     out->cd_offset = l.at;
     out->bytes     = wa_zip_len_total(&l);
-    out->left_out  = w.left_out;
+    out->left_out  = w->left_out;
     return WA_ZIP_OK;
 }
 
-wa_zip_err_t wa_zip_begin(wa_zip_t *z, const wa_fs_t *fs,
-                          const wa_zip_plan_t *plan, uint32_t *crc,
+wa_zip_err_t wa_zip_plan(const wa_fs_t *fs, wa_zip_plan_t *out)
+{
+    static wa_walk_t w;   /* 1.6 kB: off the calling task's stack */
+    return plan_walk(&w, fs, out, NULL, 0u);
+}
+
+wa_zip_err_t wa_zip_begin(wa_zip_t *z, const wa_fs_t *fs, wa_zip_slot_t *slot,
                           uint64_t slots)
 {
     memset(z, 0, sizeof(*z));
     z->fs   = fs;
-    z->plan = *plan;
-    if (plan->entries > 0u && (crc == NULL || slots < plan->entries)) {
+    z->slot = slot;
+    const wa_zip_err_t e = plan_walk(&z->walk, fs, &z->plan, slot,
+                                     (slot != NULL) ? slots : 0u);
+    if (e == WA_ZIP_OK && slot == NULL && z->plan.entries > 0u) {
         z->phase = PH_FAILED;
         z->err   = WA_ZIP_MEMORY;
         return WA_ZIP_MEMORY;
     }
-    z->crc   = crc;
+    if (e != WA_ZIP_OK) {
+        z->phase = PH_FAILED;
+        z->err   = e;
+        return e;
+    }
     z->phase = PH_ENTRIES;
     wa_walk_begin(&z->walk, fs);
     return WA_ZIP_OK;
@@ -395,14 +475,38 @@ static void queue(wa_zip_t *z, size_t n)
     z->piece_off = 0u;
 }
 
-/* The next piece of the second walk: a header, or a file opened. */
+/**
+ * @brief The slot of the entry a later walk is at.
+ * @param z   the archive, its walk at a file or folder
+ * @param len the entry's name length, a folder's with its "/"
+ * @param dir whether the entry is a folder
+ * @return The next slot when the entry is the one the first walk found
+ *         there, by name length and path hash; NULL for an entry added
+ *         since, which the walk passes by.
+ */
+static wa_zip_slot_t *planned(wa_zip_t *z, size_t len, bool dir)
+{
+    if (z->index >= z->plan.entries || z->slot[z->index].len != len
+        || z->slot[z->index].path != path_hash(&z->walk, dir)) {
+        return NULL;
+    }
+    return &z->slot[z->index];
+}
+
+/**
+ * @brief The next piece of the second walk: a local header, a folder's
+ *        with its descriptor, and a file opened for its data.
+ * @param z the archive
+ * @return true with a piece queued or the third walk begun; false with
+ *         @p z->err set.
+ */
 static bool next_entry(wa_zip_t *z)
 {
     for (;;) {
         const wa_walk_ev_t ev = wa_walk_next(&z->walk);
         if (ev == WA_WALK_END) {
             if (z->index != z->plan.entries || z->at != z->plan.cd_offset) {
-                z->err = WA_ZIP_READ;   /* the card changed under it */
+                z->err = WA_ZIP_READ;   /* an entry of the first walk is gone */
                 return false;
             }
             z->phase = PH_CENTRAL;
@@ -418,21 +522,22 @@ static bool next_entry(wa_zip_t *z)
         if (!entry_of(&z->walk, ev, &len, &dir)) {
             continue;
         }
-        if (z->index >= z->plan.entries) {
-            z->err = WA_ZIP_READ;
-            return false;
+        wa_zip_slot_t *slot = planned(z, len, dir);
+        if (slot == NULL) {
+            continue;
         }
         char *name = z->walk.path;
         if (dir) {
             name[len - 1u] = '/';
         }
-        const uint64_t size = dir ? 0u : z->walk.ent.size;
-        size_t n = wa_zip_local(z->piece, name, len, size, z->walk.ent.mtime,
-                                dir);
+        const uint64_t size = slot->size;
+        size_t n = wa_zip_local(z->piece, name, len, size,
+                                mtime_unpack(slot->mtime), dir);
         if (dir) {
             name[len - 1u] = '\0';
             n += wa_zip_desc(z->piece + n, 0u, 0u);
-            z->crc[z->index++] = 0u;
+            slot->crc = 0u;
+            ++z->index;
             queue(z, n);
             return true;
         }
@@ -452,18 +557,25 @@ static bool next_entry(wa_zip_t *z)
     }
 }
 
-/* The next piece of the third walk: a central header, or the end. */
+/**
+ * @brief The next piece of the third walk: a central header, or the end.
+ * @param z the archive
+ * @return true with a piece queued; false with @p z->err set.
+ */
 static bool next_central(wa_zip_t *z)
 {
     for (;;) {
         const wa_walk_ev_t ev = wa_walk_next(&z->walk);
         if (ev == WA_WALK_END) {
-            if (z->index != z->plan.entries) {
+            const size_t n = wa_zip_end(z->piece, z->plan.entries,
+                                        z->cd_bytes, z->plan.cd_offset);
+            /* An end record closes only an archive of the announced
+             * length. */
+            if (z->index != z->plan.entries || z->at + n != z->plan.bytes) {
                 z->err = WA_ZIP_READ;
                 return false;
             }
-            queue(z, wa_zip_end(z->piece, z->plan.entries, z->cd_bytes,
-                                z->plan.cd_offset));
+            queue(z, n);
             z->phase = PH_END;
             return true;
         }
@@ -476,17 +588,17 @@ static bool next_central(wa_zip_t *z)
         if (!entry_of(&z->walk, ev, &len, &dir)) {
             continue;
         }
-        if (z->index >= z->plan.entries) {
-            z->err = WA_ZIP_READ;
-            return false;
+        const wa_zip_slot_t *slot = planned(z, len, dir);
+        if (slot == NULL) {
+            continue;
         }
         char *name = z->walk.path;
         if (dir) {
             name[len - 1u] = '/';
         }
-        const uint64_t size = dir ? 0u : z->walk.ent.size;
-        const size_t n = wa_zip_central(z->piece, name, len, size,
-                                        z->crc[z->index], z->cd_at, z->walk.ent.mtime,
+        const uint64_t size = slot->size;
+        const size_t n = wa_zip_central(z->piece, name, len, size, slot->crc,
+                                        z->cd_at, mtime_unpack(slot->mtime),
                                         dir);
         if (dir) {
             name[len - 1u] = '\0';
@@ -500,6 +612,21 @@ static bool next_central(wa_zip_t *z)
     }
 }
 
+/**
+ * @brief Fail the archive part way through a call of wa_zip_next().
+ * @param z   the archive
+ * @param e   why
+ * @param got bytes already in the caller's buffer
+ * @return @p got when there are some, all inside the announced length, as
+ *         wa_zip_next() never passes it: they are the archive's up to the
+ *         failure and go out, and the next call returns -1.  Otherwise -1.
+ */
+static int32_t fail_after(wa_zip_t *z, wa_zip_err_t e, uint32_t got)
+{
+    (void)fail(z, e);
+    return (got > 0u) ? (int32_t)got : -1;
+}
+
 int32_t wa_zip_next(wa_zip_t *z, uint8_t *buf, uint32_t cap)
 {
     if (z->phase == PH_FAILED) {
@@ -507,10 +634,16 @@ int32_t wa_zip_next(wa_zip_t *z, uint8_t *buf, uint32_t cap)
     }
     uint32_t got = 0u;
     while (got < cap) {
+        /* Nothing goes past the announced length: z->at stays at or under
+         * plan.bytes, and a piece or read that would pass it fails. */
+        const uint64_t room = z->plan.bytes - z->at;
         if (z->piece_off < z->piece_len) {
             size_t n = z->piece_len - z->piece_off;
             if (n > cap - got) {
                 n = cap - got;
+            }
+            if (n > room) {
+                return fail_after(z, WA_ZIP_READ, got);
             }
             memcpy(buf + got, z->piece + z->piece_off, n);
             z->piece_off += n;
@@ -518,19 +651,19 @@ int32_t wa_zip_next(wa_zip_t *z, uint8_t *buf, uint32_t cap)
             z->at += n;
             continue;
         }
-        if (z->at > z->plan.bytes) {
-            return fail(z, WA_ZIP_READ);
-        }
         if (z->in_file) {
             if (z->left > 0u) {
                 uint32_t want = cap - got;
                 if (want > z->left) {
                     want = (uint32_t)z->left;
                 }
+                if (want > room) {
+                    return fail_after(z, WA_ZIP_READ, got);
+                }
                 const int32_t r = z->fs->read(z->fs->ctx, z->file, buf + got,
                                               want);
                 if (r <= 0 || (uint32_t)r > want) {
-                    return fail(z, WA_ZIP_READ);
+                    return fail_after(z, WA_ZIP_READ, got);
                 }
                 z->file_crc = wa_crc32(z->file_crc, buf + got, (size_t)r);
                 got += (uint32_t)r;
@@ -543,13 +676,13 @@ int32_t wa_zip_next(wa_zip_t *z, uint8_t *buf, uint32_t cap)
                 z->file = NULL;
             }
             z->in_file = false;
-            z->crc[z->index++] = z->file_crc;
+            z->slot[z->index++].crc = z->file_crc;
             queue(z, wa_zip_desc(z->piece, z->file_crc, z->size));
             continue;
         }
         if (z->phase == PH_ENTRIES) {
             if (!next_entry(z)) {
-                return fail(z, z->err);
+                return fail_after(z, z->err, got);
             }
             if (z->phase == PH_CENTRAL) {
                 z->index = 0u;
@@ -558,15 +691,12 @@ int32_t wa_zip_next(wa_zip_t *z, uint8_t *buf, uint32_t cap)
         }
         if (z->phase == PH_CENTRAL) {
             if (!next_central(z)) {
-                return fail(z, z->err);
+                return fail_after(z, z->err, got);
             }
             continue;
         }
         if (z->phase == PH_END) {
             z->phase = PH_DONE;
-            if (z->at != z->plan.bytes) {
-                return fail(z, WA_ZIP_READ);
-            }
         }
         break;
     }

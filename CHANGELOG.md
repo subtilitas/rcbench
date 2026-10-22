@@ -13,6 +13,9 @@ history is in git.
   with `programming port did not finish`. Every other failed CONNECT,
   LEAVE and timed-out step reads `programming port session failed`, in
   German `PROG-PORT-Sitzung gescheitert`.
+- The card's ZIP download stays whole while a log on the card grows: a file
+  is sent at the size it had when the download started, a file added
+  meanwhile is left out.
 - LOGS lists a report standing alone: a LIMIT RUN's `LIMITnnn.TXT` in
   `USER/LOGS`, and in the root a `SERVOnnn.TXT` with no `SERVOnnn.CSV`
   beside it, the limit run of firmware 0.21.0 and older. It ranks by its
