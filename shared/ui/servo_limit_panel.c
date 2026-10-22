@@ -653,17 +653,15 @@ void draw_lim_mode_note(gfx_canvas_t *c, int x, int y)
 }
 
 /**
- * @brief The LIMIT RUN card's first line under START, 6 px higher than the
- *        AUTOMATIC TEST card's: its four lines at LIM_LINE_P end 4 px
- *        inside the card.
+ * @brief The LIMIT RUN card's first line, 2 px under START LIMIT RUN: its
+ *        four lines at LIM_LINE_P end 2 px inside the card, which is the
+ *        AUTOMATIC TEST card's size and holds three.
  */
-#define LIM_LINE_DY (RUN_LINE_DY - 6)
+#define LIM_LINE_DY (RUN_BTN_DY + RUN_BTN_H + 2)
 /** @brief The pitch of those lines in SV_FONT_LABEL, px. */
 #define LIM_LINE_P  20
-_Static_assert(LIM_LINE_DY + 3 * LIM_LINE_P + 20 + 4 <= RUN_CARD_H,
+_Static_assert(LIM_LINE_DY + 3 * LIM_LINE_P + 20 + 2 <= RUN_CARD_H,
                "the LIMIT RUN card's four lines end inside it");
-_Static_assert(LIM_LINE_DY >= RUN_BTN_DY + RUN_BTN_H + 4,
-               "the LIMIT RUN card's lines start under START LIMIT RUN");
 
 /**
  * @brief The LIMIT RUN card's lines: over START LIMIT RUN the mode, and

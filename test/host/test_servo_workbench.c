@@ -421,7 +421,7 @@ static bool card_line_reads(int k, int i, const char *text, ui_color_id_t col)
     scr->render(&cv, 0);
     want_fresh();
     const int y = SV_RUN_CARD_Y(k) + SV_RUN_LINE_DY
-                  + ((k == 0) ? 22 * i : 20 * i + 20 - 6);
+                  + ((k == 0) ? 22 * i : 20 * i + 20 - 2);
     const gfx_font_t *f = &gfx_font_10x20;
     const int h = f->height;
     const gfx_color_t bg = fb[(size_t)y * W + 20u];

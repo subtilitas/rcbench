@@ -43,17 +43,19 @@
 #define LIM_NOTE_Y  SV_LIM_NOTE_Y
 
 /* Buffer 0 drawn with TEST open, and whether the LIMIT RUN card's line
- * @p i reads @p text in @p col on the card's fill, and nothing else. */
+ * @p i reads @p text in @p col on the card's fill, and nothing else: from
+ * the text's left edge to 10 px inside the card's right, clear of its
+ * rounded corners beside the last line. */
 static bool lim_line_reads(int i, const char *text, ui_color_id_t col)
 {
     scr->render(&cv, 0);
     want_fresh();
     const int y = LIM_LINE_Y(i);
-    const gfx_color_t bg = fb[(size_t)y * W + 20u];
-    gfx_fill_rect(&want_cv, UI_MARGIN + 12, (int16_t)y, 596, 20, bg);
+    const gfx_color_t bg = fb[(size_t)y * W + UI_MARGIN + 20u];
+    gfx_fill_rect(&want_cv, UI_MARGIN + 20, (int16_t)y, 580, 20, bg);
     gfx_text(&want_cv, UI_MARGIN + 20, y, text, &gfx_font_10x20,
              ui_theme_color(col), 1);
-    return same_in(fb, want_fb, UI_MARGIN + 12, y, 596, 20);
+    return same_in(fb, want_fb, UI_MARGIN + 20, y, 580, 20);
 }
 
 /* Buffer 0 drawn with the LIMIT RUN settings open, and whether the mode's
