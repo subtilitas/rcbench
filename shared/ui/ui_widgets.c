@@ -376,6 +376,12 @@ const gfx_font_t *ui_choice_font(int h)
     return (h >= UI_CHOICE_ROW_H) ? UI_FONT_TAG : UI_FONT_HEAD;
 }
 
+const gfx_font_t *ui_choice_text_font(int h, int w, const char *text)
+{
+    const gfx_font_t *f = ui_choice_font(h);
+    return ui_text_fits(f, text, w, h, 0) ? f : UI_FONT_HEAD;
+}
+
 /**
  * @brief A choice face's text and chevron, as tall a face takes them.
  * @param c    Canvas.
@@ -388,10 +394,12 @@ static void choice_face_ink(gfx_canvas_t *c, gfx_rect_t r, const char *text,
                             gfx_color_t ink, gfx_color_t mark)
 {
     const bool tall = r.h >= UI_CHOICE_ROW_H;
-    const gfx_font_t *f = ui_choice_font(r.h);
-    /* A 7 px chevron 22 px from the right edge; 11 px and 28 px when tall. */
+    /* A 7 px chevron 22 px from the right edge; 11 px and 28 px when tall.
+     * The text ends 4 px before the chevron's first column. */
     const int span = tall ? 11 : 7;
     const int inset = tall ? 12 : 10;
+    const int room = r.w - inset - (tall ? 28 : 22) - span - 4;
+    const gfx_font_t *f = ui_choice_text_font(r.h, room, text);
     gfx_text(c, r.x + inset, r.y + (r.h - gfx_text_height(f, 1)) / 2,
              text ? text : "", f, ink, 1);
     const int cx = r.x + r.w - (tall ? 28 : 22), cy = r.y + r.h / 2;
@@ -438,7 +446,7 @@ void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
         gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 6, 0, 6, 0,
                                  chosen ? UI_ACCENT : UI_PANEL_HI);
     }
-    const gfx_font_t *f = ui_choice_font(r.h);
+    const gfx_font_t *f = ui_choice_text_font(r.h, r.w - 24, text);
     gfx_text(c, r.x + 12, r.y + (r.h - gfx_text_height(f, 1)) / 2,
              text ? text : "", f, chosen ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
 }

@@ -27,11 +27,8 @@
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_PANEL_H
 #define BODY_H   UI_BODY_H
-/* The keyboard's area, KEY_AREA of wifi_screen.c: the body less UI_MARGIN
- * at its sides and top, ending 4 px above the alert band. */
-#define WF_KEY_AREA \
-    gfx_rect_make(UI_MARGIN, UI_MARGIN, UI_PANEL_W - 2 * UI_MARGIN, \
-                  UI_ALERT_Y - UI_BAND_H - 4 - UI_MARGIN)
+/* The keyboard's area, as the screen opens it. */
+#define WF_KEY_AREA wifi_screen_key_area()
 
 /* Mirrored from wifi_screen.c. */
 #define BTN_CX(i)    (16 + 180)
@@ -480,12 +477,15 @@ TEST_CASE(a_hidden_network_is_typed_and_cancel_keeps_nothing)
 
 /*
  * The keyboard over the whole body: every key at least 64 x UI_TAP_MIN px
- * and above the alert band, so an alert covers no key.  The cases above
- * type through the screen with these keys, so the area mirrored here is
- * the screen's.
+ * and above the alert band, so an alert covers no key.
  */
 TEST_CASE(the_keyboard_keys_are_large_and_end_above_the_alert_band)
 {
+    const gfx_rect_t a = wifi_screen_key_area();
+    CHECK_EQ(a.x, UI_MARGIN);
+    CHECK_EQ(a.y, UI_MARGIN);
+    CHECK_EQ(a.w, UI_PANEL_W - 2 * UI_MARGIN);
+    CHECK_EQ(a.y + a.h, UI_ALERT_Y - UI_BAND_H - 4);
     ui_textkey_t k;
     memset(&k, 0, sizeof(k));
     ui_textkey_open_wifi(&k, WF_KEY_AREA, "", "", true);
@@ -500,6 +500,31 @@ TEST_CASE(the_keyboard_keys_are_large_and_end_above_the_alert_band)
     const gfx_rect_t q = ui_textkey_key_rect(&k, 10);
     CHECK_EQ(q.w, 93);
     CHECK_EQ(q.h, 71);
+}
+
+/*
+ * A tap at the centre of a key of wifi_screen_key_area() types that key on
+ * the screen's own keyboard: what the cases here and the renderer's views
+ * type is what they aim at.
+ */
+TEST_CASE(a_tap_on_a_key_of_the_screens_area_types_that_key)
+{
+    fresh();
+    tap(BTN_CX(2), BTN_CY(2));
+    (void)wifi_screen_take();
+    scan_result();
+    tap(HIDDEN_CX, SCAN_BY);
+    CHECK(wifi_screen_textkey()->open);
+    type_wifi("lab");
+    CHECK_STR_EQ(wifi_screen_textkey()->text, "lab");
+    /* CLR from the name keyboard's own row: its bottom row is not the
+     * password's that key() probes. */
+    const gfx_rect_t clr = ui_textkey_key_rect(wifi_screen_textkey(),
+                                               UI_TK_CLR);
+    tap(clr.x + clr.w / 2, clr.y + clr.h / 2);
+    key(UI_TK_OK);
+    CHECK_STR_EQ(wifi_screen_textkey()->text, "");
+    CHECK(wifi_screen_textkey()->refused);
 }
 
 /*
@@ -844,6 +869,7 @@ int main(void)
     RUN(a_network_picked_from_the_scan_is_kept_with_its_password);
     RUN(a_hidden_network_is_typed_and_cancel_keeps_nothing);
     RUN(the_keyboard_keys_are_large_and_end_above_the_alert_band);
+    RUN(a_tap_on_a_key_of_the_screens_area_types_that_key);
     RUN(the_home_tag_climbs_from_the_list_to_the_buttons);
     RUN(the_home_tag_climbs_from_a_keyboard_to_the_list_keeping_nothing);
     RUN(the_home_tag_answers_the_image_question_cancel);

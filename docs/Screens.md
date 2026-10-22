@@ -211,8 +211,9 @@ the same on every screen. Each screen gives them their area or their row;
 the faces and the spacing inside are theirs.
 
 - **Keypad.** A title row of 32 px, the entry of 60 px, then 4 x 4 keys
-  8 px apart, 8 px from the area's edge. Over an area of 620 x 476 px a key
-  is 145 x 84 px (21.8 x 12.6 mm). The title and the range are in the
+  8 px apart, 8 px from the area's edge. Over SERVO's left column,
+  488 x 524 px, a key is 112 x 96 px (16.8 x 14.4 mm); over SUPPLY's,
+  546 x 494 px, 126 x 88 px. The title and the range are in the
   10 x 20 face, or in 8 x 16 where the two do not fit side by side. The
   entry is in the 32 x 44 numerals with the unit in 12 x 24; an entry that
   does not fit takes the 24 x 30 numerals with the unit in 10 x 20. The
@@ -233,7 +234,10 @@ the faces and the spacing inside are theirs.
 - **Choice list.** A face or a row 56 px tall or taller draws its text in
   the 20 x 36 face, 12 px in, with an 11 px chevron 28 px from the face's
   right edge. A shorter one draws in 16 x 28, 10 px in, with a 7 px chevron
-  22 px from the edge. OUTPUTS and PICK A PIN draw theirs under 56 px.
+  22 px from the edge. A text that does not fit before the chevron in
+  20 x 36 draws in 16 x 28: `DSHOT600 BIDIR` on a face of 292 px. Each face
+  and row picks its own, so the rows of one list can differ. OUTPUTS and
+  PICK A PIN draw theirs under 56 px.
 - **Tabs.** A row of tabs 32 px tall or taller draws its labels in the
   10 x 20 face when every label fits its tab with 6 px each side in the
   language shown; another row draws them in 8 x 16. LOGS' ROOT, USER and
@@ -245,6 +249,15 @@ the faces and the spacing inside are theirs.
   counts in 8 px cells. SERVO and MOTOR & ESC draw theirs 22 px tall.
 - **Plot.** A plot keeps 1,024 samples a series, one for each pixel column
   of a plot as wide as the panel: 51.2 s at 20 samples a second.
+
+Current limitation: on SERVO, SUPPLY and ESC STICK the keypad's or the
+keyboard's bottom row reaches under the alert band, panel y 556 to 599.
+The bottom rows lie at body y 428 to 523 on SERVO's keypads, 444 to 522 on
+its keyboards, 434 to 521 on SUPPLY's keypad and 454 to 520 on the ESC
+STICK search keyboard; the band covers body y 496 to 539. While an alert
+shows, a tap on the covered part of a key
+clears the alert and presses no key. The other keypads and keyboards end
+4 px above the band.
 
 ## Splash
 
@@ -2270,7 +2283,8 @@ Information Interchange). Each of the 95 printable ASCII characters is on
 one layer once; SPACE is the wide key. The keyboard covers the body above
 the alert band, 1008 x 484 px, with keys of 93 x 71 px
 ([Keypad, keyboard and the shared controls](#keypad-keyboard-and-the-shared-controls)).
-A name takes 1 to 32 bytes. A
+A name takes 1 to 32 bytes; OK on an empty name keeps the keyboard open
+and says `Enter a network name.` A
 password takes 8 to 63 characters, the WPA2 and WPA3 personal range: the
 64th is refused, and OK under 8 says so.
 
@@ -2278,7 +2292,7 @@ password takes 8 to 63 characters, the WPA2 and WPA3 personal range: the
 ![SHOW](img/wifi-key-shown.png)
 ![Fewer than 8 characters](img/wifi-key-short.png)
 
-The password shows as dots until SHOW; HIDE hides it again. OK keeps the
+The password shows as `*` until SHOW; HIDE hides it again. OK keeps the
 network: its name and its password go to NVS (non-volatile storage), and the
 screen then offers JOIN HOME NETWORK.
 

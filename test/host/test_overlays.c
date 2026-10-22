@@ -120,10 +120,12 @@ TEST_CASE(the_longest_german_word_sets_the_keypads_word_face)
 }
 
 /* The entry, the faint value and the refusal draw inside the area at both
- * numeral faces: a value of 7 characters in a narrow keypad takes 24 x 30. */
+ * numeral faces: "-199.5 us" takes 32 x 44 down to a box of 264 px (an
+ * area of 280); at 260 it takes 24 x 30, and at 120 even that is cut at
+ * the box's right, the unit first. */
 TEST_CASE(the_keypad_draws_inside_its_area_at_either_numeral_face)
 {
-    static const int16_t k_w[] = { 620, 300 };
+    static const int16_t k_w[] = { 620, 300, 260, 120 };
     for (size_t i = 0; i < sizeof(k_w) / sizeof(k_w[0]); ++i) {
         canvas();
         const gfx_rect_t a = gfx_rect_make(100, 40, k_w[i], 420);
@@ -225,7 +227,11 @@ TEST_CASE(tabs_take_10x20_when_tall_and_every_label_fits)
     CHECK(ui_tabs_font(&t) == UI_FONT_LABEL);
     ui_tabs_init(&t, k_four, 4, gfx_rect_make(11, 8, 4 * 142 + 3 * 4, 40));
     CHECK(ui_tabs_font(&t) == &gfx_font_10x20);
-    /* A row under UI_TABS_LABEL_H keeps 8 x 16 whatever fits. */
+    /* Exactly UI_TABS_LABEL_H is tall enough; a row under it keeps 8 x 16
+     * whatever fits. */
+    ui_tabs_init(&t, k_four, 4,
+                 gfx_rect_make(11, 8, 4 * 150 + 3 * 4, UI_TABS_LABEL_H));
+    CHECK(ui_tabs_font(&t) == &gfx_font_10x20);
     ui_tabs_init(&t, k_four, 4,
                  gfx_rect_make(11, 8, 4 * 150 + 3 * 4, UI_TABS_LABEL_H - 1));
     CHECK(ui_tabs_font(&t) == UI_FONT_LABEL);
@@ -259,6 +265,87 @@ TEST_CASE(a_choice_takes_20x36_from_56_px)
     }
 }
 
+/* DSHOT600 BIDIR, the longest protocol name in either language, 14 cells:
+ * in 20 x 36 it needs 280 px before the chevron, so a 292 px face (238 px
+ * of text room) draws it in 16 x 28, and a row takes 20 x 36 from 304 px. */
+TEST_CASE(a_choice_text_that_does_not_fit_20x36_takes_16x28)
+{
+    static const char k_long[] = "DSHOT600 BIDIR";
+    CHECK_EQ(gfx_text_cells(k_long), 14);
+    CHECK(ui_choice_text_font(64, 292 - 12 - 28 - 11 - 4, k_long)
+          == UI_FONT_HEAD);
+    CHECK(ui_choice_text_font(64, 292 - 12 - 28 - 11 - 4, "SERVO PWM")
+          == UI_FONT_TAG);
+    CHECK(ui_choice_text_font(56, 304 - 24, k_long) == UI_FONT_TAG);
+    CHECK(ui_choice_text_font(56, 303 - 24, k_long) == UI_FONT_HEAD);
+    CHECK(ui_choice_text_font(55, 600, "OFF") == UI_FONT_HEAD);
+    CHECK(ui_choice_text_font(64, 600, NULL) == UI_FONT_TAG);
+    /* Drawn, the long name stays left of the chevron's first column. */
+    canvas();
+    const gfx_rect_t face = { 20, 20, 292, 64 };
+    ui_choice_face(&cv, face, k_long, false, false);
+    CHECK_EQ(ink_outside(face), 0);
+    const int chevron = face.x + face.w - 28 - 11 + 1;
+    int text_right = 0;
+    for (int y = face.y + 14; y < face.y + face.h - 14; ++y) {
+        for (int x = face.x + 12; x < chevron - 1; ++x) {
+            if (fb[y * W + x] == UI_TEXT) {
+                text_right = (x > text_right) ? x : text_right;
+            }
+        }
+    }
+    CHECK(text_right > 0);
+    CHECK(text_right < chevron - 4);
+}
+
+/* A face taller than the box fits nothing, whatever the width; a NULL face
+ * fits nothing; the box's own height is enough. */
+TEST_CASE(a_face_taller_than_its_box_does_not_fit)
+{
+    CHECK(!ui_text_fits(&gfx_font_12x24, "A", 200, 23, 0));
+    CHECK(ui_text_fits(&gfx_font_12x24, "A", 200, 24, 0));
+    CHECK(!ui_text_fits(NULL, "A", 200, 200, 0));
+    CHECK(ui_text_fits(&gfx_font_10x20, NULL, 0, 20, 0));
+    /* The padding counts on both sides: 3 cells of 10 px and 6 px each. */
+    CHECK(ui_text_fits(&gfx_font_10x20, "DEL", 42, 20, 6));
+    CHECK(!ui_text_fits(&gfx_font_10x20, "DEL", 41, 20, 6));
+}
+
+/* The hosts whose bottom row reaches under the alert band, as Screens.md
+ * states the limitation: the areas as SERVO, SUPPLY and ESC STICK give
+ * them at this head. */
+TEST_CASE(the_hosts_bottom_rows_are_where_the_limitation_says)
+{
+    ui_keypad_t kp;
+    memset(&kp, 0, sizeof(kp));
+    ui_keypad_open(&kp, gfx_rect_make(8, 8, 488, 524), "", "", 0.0f, 0.0f,
+                   1.0f, 0);
+    gfx_rect_t r = ui_keypad_key_rect(&kp, UI_KEY_0);
+    CHECK_EQ(r.y, 428);
+    CHECK_EQ(r.y + r.h, 524);
+    CHECK_EQ(r.w, 112);
+    CHECK_EQ(r.h, 96);
+    ui_keypad_open(&kp, gfx_rect_make(8, 38, 546, 494), "", "", 0.0f, 0.0f,
+                   1.0f, 0);
+    r = ui_keypad_key_rect(&kp, UI_KEY_0);
+    CHECK_EQ(r.y, 434);
+    CHECK_EQ(r.y + r.h, 522);
+    CHECK_EQ(r.w, 126);
+    CHECK_EQ(r.h, 88);
+    ui_textkey_t tk;
+    memset(&tk, 0, sizeof(tk));
+    ui_textkey_open(&tk, gfx_rect_make(8, 8, 488, 524), "", "", 23);
+    r = ui_textkey_key_rect(&tk, UI_TK_OK);
+    CHECK_EQ(r.y, 444);
+    CHECK_EQ(r.y + r.h, 523);
+    ui_textkey_open_search(&tk, gfx_rect_make(352, 66, 1016 - 352, 466), "",
+                           "", 16);
+    r = ui_textkey_key_rect(&tk, UI_TK_OK);
+    CHECK_EQ(r.y, 454);
+    CHECK_EQ(r.y + r.h, 521);
+    CHECK(r.y + r.h > UI_ALERT_Y - UI_BAND_H);
+}
+
 /* ----------------------------------------------------- TARGET and the pins */
 
 TEST_CASE(a_tall_target_row_counts_its_cells_in_10x20)
@@ -274,7 +361,11 @@ TEST_CASE(a_tall_target_row_counts_its_cells_in_10x20)
     /* "TARGET" and "ZIEL" fit the label's share with room to spare. */
     CHECK(gfx_text_width(&gfx_font_10x20, "TARGET", 1) + 16
           <= UI_TARGET_LABEL_W_TALL);
-    /* One pixel under UI_TARGET_TALL_H: 8 x 16 and the short label. */
+    /* Exactly UI_TARGET_TALL_H is tall; one pixel under it is 8 x 16 and
+     * the short label. */
+    ui_target_row_init(&t, gfx_rect_make(648, 400, 356, UI_TARGET_TALL_H));
+    CHECK(ui_target_row_font(&t) == &gfx_font_10x20);
+    CHECK_EQ(ui_target_row_value_rect(&t).x, 648 + UI_TARGET_LABEL_W_TALL);
     ui_target_row_init(&t, gfx_rect_make(648, 400, 356, UI_TARGET_TALL_H - 1));
     CHECK(ui_target_row_font(&t) == UI_FONT_LABEL);
     CHECK_EQ(ui_target_row_value_rect(&t).x, 648 + UI_TARGET_LABEL_W);
@@ -345,6 +436,9 @@ int main(void)
     RUN(the_keyboard_draws_inside_its_area_at_every_width);
     RUN(tabs_take_10x20_when_tall_and_every_label_fits);
     RUN(a_choice_takes_20x36_from_56_px);
+    RUN(a_choice_text_that_does_not_fit_20x36_takes_16x28);
+    RUN(a_face_taller_than_its_box_does_not_fit);
+    RUN(the_hosts_bottom_rows_are_where_the_limitation_says);
     RUN(a_tall_target_row_counts_its_cells_in_10x20);
     RUN(a_tall_target_rows_text_fits_its_box);
     RUN(the_plot_ring_holds_one_sample_per_panel_column);

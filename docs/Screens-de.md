@@ -230,8 +230,9 @@ jedem Bildschirm gleich aus. Jeder Bildschirm gibt ihnen ihre Fläche oder
 ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
 
 - **Tastenfeld.** Eine Titelzeile von 32 px, die Eingabe von 60 px, dann
-  4 x 4 Tasten mit 8 px Abstand, 8 px vom Rand der Fläche. Über einer
-  Fläche von 620 x 476 px ist eine Taste 145 x 84 px groß (21,8 x 12,6 mm).
+  4 x 4 Tasten mit 8 px Abstand, 8 px vom Rand der Fläche. Über der linken
+  Spalte von SERVO, 488 x 524 px, ist eine Taste 112 x 96 px groß
+  (16,8 x 14,4 mm); über der von SUPPLY, 546 x 494 px, 126 x 88 px.
   Titel und Bereich stehen im Font 10 x 20, oder in 8 x 16, wo beide nicht
   nebeneinander passen. Die Eingabe steht in den Ziffern 32 x 44 mit der
   Einheit in 12 x 24; eine Eingabe, die nicht passt, nimmt die Ziffern
@@ -254,8 +255,11 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
 - **Auswahlliste.** Ein Feld oder eine Zeile ab 56 px Höhe zeigt den Text
   im Font 20 x 36, 12 px eingerückt, mit einem 11 px breiten Winkel 28 px
   vor dem rechten Rand. Ein niedrigeres zeigt ihn in 16 x 28, 10 px
-  eingerückt, mit einem 7 px breiten Winkel 22 px vor dem Rand. OUTPUTS und
-  PICK A PIN zeichnen ihre niedriger als 56 px.
+  eingerückt, mit einem 7 px breiten Winkel 22 px vor dem Rand. Ein Text,
+  der in 20 x 36 nicht vor den Winkel passt, steht in 16 x 28:
+  `DSHOT600 BIDIR` auf einem Feld von 292 px. Jedes Feld und jede Zeile
+  wählt für sich, die Zeilen einer Liste können sich also unterscheiden.
+  OUTPUTS und PICK A PIN zeichnen ihre niedriger als 56 px.
 - **Reiter.** Eine Reiterzeile ab 32 px Höhe zeigt ihre Beschriftungen im
   Font 10 x 20, wenn jede in der gezeigten Sprache mit 6 px Rand je Seite
   auf ihren Reiter passt; sonst in 8 x 16. ROOT, USER und BENCH auf LOGS und
@@ -268,6 +272,16 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
   ihre 22 px hoch.
 - **Plot.** Ein Plot hält 1.024 Werte je Reihe, einen je Pixelspalte eines
   Plots so breit wie das Panel: 51,2 s bei 20 Werten je Sekunde.
+
+Derzeitige Einschränkung: Auf SERVO, SUPPLY und ESC STICK reicht die
+untere Tastenreihe des Tastenfelds oder der Tastatur unter das Alarmband,
+Panel-y 556 bis 599. Die unteren Reihen liegen bei Körper-y 428 bis 523 auf
+den Tastenfeldern von SERVO, 444 bis 522 auf seinen Tastaturen, 434 bis 521
+auf dem Tastenfeld von SUPPLY und 454 bis 520 auf der Suchtastatur von ESC
+STICK; das Band deckt Körper-y 496 bis 539. Solange ein
+Alert steht, löscht ein Tipp auf den verdeckten Teil einer Taste den Alert
+und drückt keine Taste. Die übrigen Tastenfelder und Tastaturen enden 4 px
+über dem Band.
 
 ## Splash
 
@@ -2508,7 +2522,8 @@ Ziffern sind. Jedes der 95 druckbaren ASCII-Zeichen liegt einmal auf einer
 Ebene; LEERZEICHEN ist die breite Taste. Die Tastatur deckt den Körper über
 dem Alarmband, 1008 x 484 px, mit Tasten von 93 x 71 px
 ([Tastenfeld, Tastatur und die gemeinsamen Bedienelemente](#tastenfeld-tastatur-und-die-gemeinsamen-bedienelemente)).
-Ein Name hat 1 bis 32 Bytes. Ein
+Ein Name hat 1 bis 32 Bytes; OK auf einem leeren Namen lässt die Tastatur
+offen und sagt `Gib einen Netzwerknamen ein.` Ein
 Passwort hat 8 bis 63 Zeichen, den Bereich von WPA2 und WPA3 Personal: Das
 64. Zeichen wird abgewiesen, und OK unter 8 Zeichen sagt es.
 
@@ -2516,7 +2531,7 @@ Passwort hat 8 bis 63 Zeichen, den Bereich von WPA2 und WPA3 Personal: Das
 ![ANZEIGEN](img/de/wifi-key-shown.png)
 ![Weniger als 8 Zeichen](img/de/wifi-key-short.png)
 
-Das Passwort steht als Punkte da bis ANZEIGEN; VERBERGEN verbirgt es wieder.
+Das Passwort steht als `*` da bis ANZEIGEN; VERBERGEN verbirgt es wieder.
 OK behält das Netz: Name und Passwort gehen in den NVS (Non-Volatile
 Storage), und der Bildschirm bietet dann MIT HEIMNETZ VERBINDEN an.
 

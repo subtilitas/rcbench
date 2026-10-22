@@ -15,9 +15,9 @@
 #include "ui_widgets.h"
 
 /*
- * A title row, the entry, then four rows of keys, 8 px apart.  Over an
- * area of 620 x 476 px, a workbench's left card, a key is 145 x 84 px
- * (21.8 x 12.6 mm at 0.150 mm a pixel).
+ * A title row, the entry, then four rows of keys, 8 px apart.  Over
+ * SERVO's left column, 488 x 524 px, a key is 112 x 96 px (16.8 x 14.4 mm
+ * at 0.150 mm a pixel); over SUPPLY's, 546 x 494 px, 126 x 88 px.
  */
 /** @brief The room around the title, the entry and the keys: 8 px. */
 #define KP_PAD     8
@@ -390,7 +390,8 @@ const gfx_font_t *ui_keypad_word_font(const ui_keypad_t *k)
 /**
  * @brief The entry: @p number in the numeral face and @p unit beside it,
  *        right-aligned 10 px inside @p box.  32 x 44 numerals with a
- *        12 x 24 unit where they fit, else 24 x 30 with 10 x 20.
+ *        12 x 24 unit where they fit, else 24 x 30 with 10 x 20; what
+ *        does not fit even then is cut at the box's right, the unit first.
  * @param c      Canvas.
  * @param box    The entry's box.
  * @param number The number: digits, a minus sign and a point.
@@ -412,12 +413,18 @@ static void entry_text(gfx_canvas_t *c, gfx_rect_t box, const char *number,
     const int uw = gfx_text_width(unf, unit, 1);
     const int nw = gfx_text_width(num, number, 1);
     const int nh = gfx_text_height(num, 1);
-    const int x  = box.x + box.w - 10 - uw - gap - nw;
+    /* Right-aligned 10 px inside the box, and never left of its 10 px:
+     * an entry wider than the box even at 24 x 30 is cut at the right. */
+    const int left  = box.x + 10;
+    const int right = box.x + box.w - 10;
+    int x = right - uw - gap - nw;
+    x = (x < left) ? left : x;
     const int y  = box.y + (box.h - nh) / 2;
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)y, (int16_t)nw,
+    const int shown = (x + nw <= right) ? nw : right - x;
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)y, (int16_t)shown,
                                  (int16_t)nh },
                 number, num, ink, 1, GFX_ALIGN_LEFT);
-    if (uw > 0) {
+    if (uw > 0 && x + nw + gap + uw <= right) {
         /* The unit's baseline on the numerals': both faces end their
          * digits and capitals 2 px above the cell's foot or less. */
         const int uh = gfx_text_height(unf, 1);

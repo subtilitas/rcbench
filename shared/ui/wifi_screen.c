@@ -107,6 +107,16 @@ static struct {
 
 static void touched(void) { s.drawn_mask = 0u; }
 
+gfx_rect_t wifi_screen_key_area(void)
+{
+    return KEY_AREA;
+}
+
+const ui_textkey_t *wifi_screen_textkey(void)
+{
+    return &s.tk;
+}
+
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));

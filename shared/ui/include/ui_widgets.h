@@ -198,12 +198,14 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
  * outputs screen's protocol list and the pin picker's are this one.
  *
  * A face or a row UI_CHOICE_ROW_H (56 px, 8.4 mm) tall or taller draws its
- * text in the type scale's head face, 20 x 36 (UI_FONT_TAG); a shorter one
- * in the 16 x 28 face (UI_FONT_HEAD), so a screen takes the larger face
- * with the row height its own layout gives.  The text is centred in the
- * face's and each row's height.  A face takes 10 px before its text and
- * 28 px after it for a 7 px chevron, 12 px and 36 px for an 11 px one when
- * tall; a row 12 px before its text.
+ * text in the type scale's head face, 20 x 36 (UI_FONT_TAG), when the text
+ * fits; a shorter one, and a text that does not fit, in the 16 x 28 face
+ * (UI_FONT_HEAD).  A screen takes the larger face with the row height its
+ * own layout gives.  The text is centred in the face's and each row's
+ * height.  A face takes 10 px before its text and 33 px after it for a
+ * 7 px chevron, 12 px and 43 px for an 11 px one when tall; a row 12 px
+ * before and after its text.  Each face and row picks its own face: the
+ * rows of one list can differ where one name does not fit.
  */
 /** @brief The row height from which a choice face or row draws in the
  *         20 x 36 face: 56 px (8.4 mm), the plan's choice row. */
@@ -216,6 +218,16 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
  *         (16 x 28) under it.
  */
 const gfx_font_t *ui_choice_font(int h);
+
+/**
+ * @brief The face a choice face or row draws @p text in.
+ * @param h    The face's or the row's height, in pixels.
+ * @param w    The width its text may take, in pixels.
+ * @param text The text; NULL is the empty text.
+ * @return ui_choice_font(@p h) when @p text fits @p w in it, else
+ *         UI_FONT_HEAD (16 x 28).
+ */
+const gfx_font_t *ui_choice_text_font(int h, int w, const char *text);
 
 void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
                     bool pressed, bool open);

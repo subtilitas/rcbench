@@ -4200,7 +4200,6 @@ shared/ui/include/upd_screen.h: warning: return type of member upd_screen_take i
 shared/ui/include/upd_screen.h: warning: return type of member upd_screen_take_coproc is not documented
 shared/ui/include/upd_screen.h: warning: return type of member upd_screen_view is not documented
 shared/ui/include/upd_screen.h: warning: return type of member upd_startup_due is not documented
-shared/ui/include/wifi_screen.h: file has no @file block
 shared/ui/include/wifi_screen.h: warning: Compound update_view_t is not documented.
 shared/ui/include/wifi_screen.h: warning: Compound wifi_view_t is not documented.
 shared/ui/include/wifi_screen.h: warning: Member block (variable) of struct wifi_view_t is not documented.
@@ -6027,9 +6026,6 @@ shared/ui/update_screen.c: warning: Member u_event(const touch_event_t *evt) (fu
 shared/ui/update_screen.c: warning: Member u_has_button(void) (function) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member u_render(gfx_canvas_t *c, int buffer_index) (function) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member u_reset(void) (function) of file update_screen.c is not documented.
-shared/ui/update_screen.c: warning: Member update_screen(void) (function) of file update_screen.c is not documented.
-shared/ui/update_screen.c: warning: Member update_screen_invalidate(void) (function) of file update_screen.c is not documented.
-shared/ui/update_screen.c: warning: Member update_screen_set(const update_view_t *v) (function) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member v (variable) of struct [struct].u is not documented.
 shared/ui/wifi_screen.c: warning: Member BH (macro definition) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member BPITCH (macro definition) of file wifi_screen.c is not documented.
@@ -6113,7 +6109,6 @@ shared/ui/wifi_screen.c: warning: Member v (variable) of struct [struct].s is no
 shared/ui/wifi_screen.c: warning: Member view_of(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member view_t (enumeration) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member why_text(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member wifi_screen(void) (function) of file wifi_screen.c is not documented.
 shared/webaccess/include/wa_fetch.h: warning: Compound wa_fetch_t is not documented.
 shared/webaccess/include/wa_fetch.h: warning: Compound wa_run_t is not documented.
 shared/webaccess/include/wa_fetch.h: warning: Member close(void *ctx) (variable) of struct wa_http_t is not documented.
