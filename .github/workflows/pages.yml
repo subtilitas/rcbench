@@ -266,7 +266,7 @@ jobs:
     needs: [changes, build]
     if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: configurator
@@ -288,10 +288,14 @@ jobs:
           name: configurator-dist
           path: configurator/dist
 
+      # The install fetches system packages and takes up to 12.5 min on a
+      # slow runner; it has its own limit, and the tests keep theirs.
       - name: Install Chromium
+        timeout-minutes: 15
         run: npx playwright install --with-deps chromium
 
       - name: Smoke test at 360 px and 1280 px
+        timeout-minutes: 15
         run: npm run e2e
 
       # 3 setups of the wiring picture as the browser draws them. The files
@@ -318,7 +322,7 @@ jobs:
     needs: [changes, build]
     if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -342,10 +346,14 @@ jobs:
           name: configurator-dist
           path: configurator/dist
 
+      # The install fetches system packages and takes up to 12.5 min on a
+      # slow runner; it has its own limit, and the tests keep theirs.
       - name: Install Chromium
+        timeout-minutes: 15
         run: npx playwright install --with-deps chromium
 
       - name: Matrix and corpus tests
+        timeout-minutes: 15
         run: npm run e2e:matrix -- --shard=${{ matrix.shard }}/4
 
       - name: Keep the traces and screenshots of failed tests
