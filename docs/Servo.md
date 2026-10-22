@@ -347,7 +347,7 @@ PULSE LOWER and PULSE UPPER are 1000.0 µs and 2000.0 µs:
 RCBENCH SERVO LIMIT REPORT
 Result:         PASS
 Device:         SERVO
-Firmware:       rcbench 0.22.0
+Firmware:       rcbench 0.22.1
 Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
 Output:         PROG PORT 1 GP13, 50 Hz
 Pulse range:    centre 1500 us, 1000-2000 us
@@ -971,7 +971,7 @@ TRAVEL TIME set to 800 ms:
 RCBENCH SERVO TEST REPORT
 Result:         PASS
 Device:         MG90S
-Firmware:       rcbench 0.22.0
+Firmware:       rcbench 0.22.1
 Log:            the .CSV with this file's number, one row per supply reading
 Supply:         PD mini
 Current:        PD mini
