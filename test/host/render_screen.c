@@ -1783,15 +1783,31 @@ static void pose_splash(void)
 
 /* ------------------------------------------------- WI-FI */
 
-/* A key of the Wi-Fi keyboard as WI-FI opens it, tapped. */
+/* A key of the keyboard WI-FI has open, tapped at its centre: the
+ * screen's own keyboard, so a name's bottom row and a password's each
+ * take the taps meant for them. */
 static void wifi_key(int key)
 {
-    ui_textkey_t probe;
-    memset(&probe, 0, sizeof(probe));
-    ui_textkey_open_wifi(&probe, gfx_rect_make(8, 8, 784, 416), "", "",
-                         true);
-    const gfx_rect_t r = ui_textkey_key_rect(&probe, key);
+    const gfx_rect_t r = ui_textkey_key_rect(wifi_screen_textkey(), key);
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
+/**
+ * @brief Stop the render when the keyboard does not hold @p text, refused
+ *        or not as @p refused says: a view that typed through keys at the
+ *        wrong place shows a scene no operator made.
+ * @param text    What the taps typed.
+ * @param refused Whether the last OK was refused.
+ */
+static void wifi_expect(const char *text, bool refused)
+{
+    const ui_textkey_t *k = wifi_screen_textkey();
+    if (strcmp(k->text, text) != 0 || k->refused != refused) {
+        fprintf(stderr, "wifi keyboard: \"%s\"%s, want \"%s\"%s\n",
+                k->text, k->refused ? " refused" : "", text,
+                refused ? " refused" : "");
+        exit(1);
+    }
 }
 
 /* @p text on the lower-case layer: letters, digits and "-". */
@@ -1930,11 +1946,13 @@ static void pose_wifi(const char *view)
             if (strcmp(view, "wifi-key-short") == 0) {
                 wifi_type("4");
                 wifi_key(UI_TK_OK);                         /* 7: refused */
+                wifi_expect("cedarQ4", true);
             } else {
                 wifi_type("42x");
                 if (strcmp(view, "wifi-key-shown") == 0) {
                     wifi_key(UI_TK_SHOW);
                 }
+                wifi_expect("cedarQ42x", false);
             }
         } else {
             tap(272 + 128, UI_BAND_H + 376 + 24);          /* HIDDEN */
@@ -1947,6 +1965,8 @@ static void pose_wifi(const char *view)
                 wifi_key(UI_TK_CLR);
                 wifi_key(UI_TK_OK);                         /* refused */
             }
+            wifi_expect(strcmp(view, "wifi-key-ssid") == 0 ? "" : "lab",
+                        strcmp(view, "wifi-key-ssid") == 0);
         }
     }
 }

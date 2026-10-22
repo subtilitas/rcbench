@@ -65,6 +65,14 @@ bool ui_is_light(gfx_color_t c)
     return luma >= 140u;
 }
 
+bool ui_text_fits(const gfx_font_t *f, const char *s, int w, int h, int pad)
+{
+    if (f == NULL || gfx_text_height(f, 1) > h) {
+        return false;
+    }
+    return gfx_text_width(f, (s != NULL) ? s : "", 1) + 2 * pad <= w;
+}
+
 void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled)
 {
@@ -376,6 +384,46 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color)
     gfx_hline(c, x, y, w, color);
 }
 
+const gfx_font_t *ui_choice_font(int h)
+{
+    return (h >= UI_CHOICE_ROW_H) ? UI_FONT_TAG : UI_FONT_HEAD;
+}
+
+const gfx_font_t *ui_choice_text_font(int h, int w, const char *text)
+{
+    const gfx_font_t *f = ui_choice_font(h);
+    return ui_text_fits(f, text, w, h, 0) ? f : UI_FONT_HEAD;
+}
+
+/**
+ * @brief A choice face's text and chevron, as tall a face takes them.
+ * @param c    Canvas.
+ * @param r    The face.
+ * @param text Its text, or NULL for none.
+ * @param ink  The text's colour.
+ * @param mark The chevron's colour.
+ */
+static void choice_face_ink(gfx_canvas_t *c, gfx_rect_t r, const char *text,
+                            gfx_color_t ink, gfx_color_t mark)
+{
+    const bool tall = r.h >= UI_CHOICE_ROW_H;
+    /* A 7 px chevron 22 px from the right edge; 11 px and 28 px when tall.
+     * The text ends 4 px before the chevron's first column. */
+    const int span = tall ? 11 : 7;
+    const int inset = tall ? 12 : 10;
+    const int room = r.w - inset - (tall ? 28 : 22) - span - 4;
+    const gfx_font_t *f = ui_choice_text_font(r.h, room, text);
+    gfx_text(c, r.x + inset, r.y + (r.h - gfx_text_height(f, 1)) / 2,
+             text ? text : "", f, ink, 1);
+    const int cx = r.x + r.w - (tall ? 28 : 22), cy = r.y + r.h / 2;
+    const int half = span / 2;
+    for (int i = 0; i < span; ++i) {
+        const int dy = (i <= half) ? i : span - 1 - i;
+        gfx_fill_rect(c, cx - span + 1 + i, cy - half + dy, 1, tall ? 3 : 2,
+                      mark);
+    }
+}
+
 void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
                     bool pressed, bool open)
 {
@@ -383,13 +431,7 @@ void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
                              pressed ? UI_PANEL_HI : UI_PANEL);
     gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0,
                              open ? UI_ACCENT : UI_EDGE);
-    gfx_text(c, r.x + 10, r.y + (r.h - 28) / 2, text ? text : "",
-             UI_FONT_HEAD, UI_TEXT, 1);
-    const int cx = r.x + r.w - 22, cy = r.y + r.h / 2;
-    for (int i = 0; i < 7; ++i) {
-        gfx_fill_rect(c, cx - 6 + i, cy - 3 + (i < 4 ? i : 6 - i), 1, 2,
-                      UI_TEXT_DIM);
-    }
+    choice_face_ink(c, r, text, UI_TEXT, UI_TEXT_DIM);
 }
 
 void ui_choice_face_locked(gfx_canvas_t *c, gfx_rect_t r, const char *text)
@@ -397,13 +439,7 @@ void ui_choice_face_locked(gfx_canvas_t *c, gfx_rect_t r, const char *text)
     gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0,
                              UI_PANEL_SUNK);
     gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, UI_EDGE);
-    gfx_text(c, r.x + 10, r.y + (r.h - 28) / 2, text ? text : "",
-             UI_FONT_HEAD, UI_TEXT_DIM, 1);
-    const int cx = r.x + r.w - 22, cy = r.y + r.h / 2;
-    for (int i = 0; i < 7; ++i) {
-        gfx_fill_rect(c, cx - 6 + i, cy - 3 + (i < 4 ? i : 6 - i), 1, 2,
-                      UI_EDGE);
-    }
+    choice_face_ink(c, r, text, UI_TEXT_DIM, UI_EDGE);
 }
 
 void ui_choice_list(gfx_canvas_t *c, gfx_rect_t r)
@@ -423,8 +459,9 @@ void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
         gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 6, 0, 6, 0,
                                  chosen ? UI_ACCENT : UI_PANEL_HI);
     }
-    gfx_text(c, r.x + 12, r.y + (r.h - 28) / 2, text ? text : "",
-             UI_FONT_HEAD, chosen ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
+    const gfx_font_t *f = ui_choice_text_font(r.h, r.w - 24, text);
+    gfx_text(c, r.x + 12, r.y + (r.h - gfx_text_height(f, 1)) / 2,
+             text ? text : "", f, chosen ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
 }
 
 gfx_color_t ui_hold_fill(gfx_color_t base, gfx_color_t target, float held_s)

@@ -1,5 +1,6 @@
-/*
- * The text keyboard.  See ui_textkey.h.
+/**
+ * @file
+ * @brief The text keyboard.  See ui_textkey.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,39 +16,53 @@
 #include "ui_widgets.h"
 
 /*
- * A title row, the text, then five rows of keys.  Over the 488 x 418 px the
- * SERVO screen gives it, a character key is 43 x 59 px.
+ * A title row, the text, then five rows of keys, 6 px apart.  Over the
+ * 1008 x 484 px the WI-FI screen gives it, a key is 93 x 71 px
+ * (14.0 x 10.7 mm at 0.150 mm a pixel).
  */
+/** @brief The room around the title, the text and the keys: 8 px. */
 #define TK_PAD     8
-#define TK_HDR     28
-#define TK_ENTRY_H 44
-#define TK_GAP     4
+/** @brief The title row: the 10 x 20 face and 6 px above it. */
+#define TK_HDR     32
+/** @brief The text: the 20 x 36 face and 8 px above and below. */
+#define TK_ENTRY_H 52
+/** @brief The gap between the text and the keys, and between keys. */
+#define TK_GAP     6
+/** @brief The key grid: 10 columns ... */
 #define TK_COLS    10
+/** @brief ... and 5 rows, the last the bottom row of words. */
 #define TK_ROWS    5
+/** @brief The room a key keeps left and right of its label: 4 px. */
+#define TK_KEY_PAD 4
 
-/* The character rows, in reading order; the last is DEL. */
+/** @brief The character rows, in reading order; the last is DEL. */
 static const char k_chars[UI_TEXTKEY_CHARS + 1] =
     "1234567890" "QWERTYUIOP" "ASDFGHJKL-" "ZXCVBNM_.";
 
-/* The Wi-Fi layers.  Key UI_TK_SHIFT and key UI_TK_LAYER switch them and
- * type nothing; a blank ("\0") types nothing either.  The marks are the 32
- * printable ASCII characters that are neither a letter, a digit nor a
- * space, in code order. */
+/** @brief The Wi-Fi layers.  Key UI_TK_SHIFT and key UI_TK_LAYER switch
+ *         them and type nothing; a blank ("\0") types nothing either.  The
+ *         marks are the 32 printable ASCII characters that are neither a
+ *         letter, a digit nor a space, in code order. */
 static const char k_wifi[3][UI_TEXTKEY_CHARS + 1] = {
     "1234567890" "qwertyuiop" "asdfghjkl-" " zxcvbnm  ",
     "1234567890" "QWERTYUIOP" "ASDFGHJKL-" " ZXCVBNM  ",
     "!\"#$%&'()*" "+,-./:;<=>" "?@[\\]^_`{|" "}~        ",
 };
 
-/* SPACE and CANCEL are translated; CLR and OK are legends. */
+/** @brief The bottom row's texts: SPACE and CANCEL are translated. */
 static const ui_text_id_t k_bottom_tx[] = { TX_SPACE, TX_COUNT, TX_CANCEL,
                                             TX_COUNT };
+/** @brief The bottom row's legends: CLR and OK, the same in every
+ *         language. */
 static const char *const k_bottom[] = { NULL, "CLR", NULL, "OK" };
-/* How many columns each bottom key spans, for a name and for a search. */
+/** @brief How many columns each bottom key spans, for a name. */
 static const int k_bottom_span[] = { 4, 2, 2, 2 };
+/** @brief How many columns each bottom key spans, for a search and a
+ *         Wi-Fi name. */
 static const int k_search_span[] = { 3, 2, 3, 2 };
-/* A password's bottom row, in key order SPACE, CLR, CANCEL, OK, SHOW:
- * where each starts, two columns each, SHOW second from the left. */
+/** @brief A password's bottom row, in key order SPACE, CLR, CANCEL, OK,
+ *         SHOW: where each starts, two columns each, SHOW second from the
+ *         left. */
 static const int k_secret_col[] = { 0, 4, 6, 8, 2 };
 
 void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
@@ -168,7 +183,13 @@ const char *ui_textkey_key_label(const ui_textkey_t *k, int key)
     return ui_textkey_label(key);
 }
 
-/* The character a Wi-Fi key types, or 0. */
+/**
+ * @brief The character a Wi-Fi key types.
+ * @param k   The keyboard.
+ * @param key The key.
+ * @return The character of the layer shown, or 0 for a layer key, a blank
+ *         and DEL.
+ */
 static char wifi_char(const ui_textkey_t *k, int key)
 {
     if (key < 0 || key >= UI_TK_DEL || key == UI_TK_LAYER
@@ -188,7 +209,10 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
     const int left   = k->area.x + TK_PAD;
     const int right  = k->area.x + k->area.w - TK_PAD;
     const int top    = k->area.y + TK_HDR + TK_ENTRY_H + 2 * TK_GAP;
-    const int bottom = k->area.y + k->area.h - TK_PAD;
+    /* The area's foot, or UI_KEYS_FOOT where the area reaches under the
+     * alert band. */
+    const int foot   = k->area.y + k->area.h - TK_PAD;
+    const int bottom = (foot < UI_KEYS_FOOT) ? foot : UI_KEYS_FOOT;
     const int kw = (right - left - (TK_COLS - 1) * TK_GAP) / TK_COLS;
     const int kh = (bottom - top - (TK_ROWS - 1) * TK_GAP) / TK_ROWS;
     int row, col, span;
@@ -216,6 +240,11 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
                          (int16_t)kh };
 }
 
+/**
+ * @brief @p ch after the text, while it is shorter than its most.
+ * @param k  The keyboard.
+ * @param ch The character.
+ */
 static void add(ui_textkey_t *k, char ch)
 {
     if (k->len < k->max_len) {
@@ -224,6 +253,15 @@ static void add(ui_textkey_t *k, char ch)
     }
 }
 
+/**
+ * @brief Key @p key pressed and released.
+ * @param k   The keyboard.
+ * @param key The key.
+ * @param out Where OK writes what it takes.
+ * @param n   The bytes at @p out.
+ * @return UI_TEXTKEY_OK or UI_TEXTKEY_CANCELLED when it closed,
+ *         UI_TEXTKEY_NONE otherwise, a refusal included.
+ */
 static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
                                  size_t n)
 {
@@ -358,7 +396,11 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
     return press(k, key, out, n);
 }
 
-/* Why a folder was refused, in the words of its line. */
+/**
+ * @brief Why a folder was refused, in the words of its line.
+ * @param why A card_folder_t.
+ * @return The line.
+ */
 static const char *folder_why(uint8_t why)
 {
     switch ((card_folder_t)why) {
@@ -372,6 +414,70 @@ static const char *folder_why(uint8_t why)
     }
 }
 
+/**
+ * @brief The face of the text field: 20 x 36 when UI_TEXTKEY_MAX
+ *        characters and the caret fit @p box with 10 px each side and the
+ *        face's height fits it, else 16 x 28.  A Wi-Fi text longer than the
+ *        field shows its end in either.
+ * @param box The field.
+ * @return The face.
+ */
+static const gfx_font_t *entry_face(gfx_rect_t box)
+{
+    const gfx_font_t *big = &gfx_font_20x36;
+    return ((UI_TEXTKEY_MAX + 1) * big->width + 20 <= box.w
+            && big->height <= box.h)
+               ? big : &gfx_font_16x28;
+}
+
+/**
+ * @brief Whether key @p key of @p k is a word rather than one character:
+ *        the bottom row, DEL, and the Wi-Fi layer keys (the capitals key
+ *        types "}" on the marks layer, a character there).
+ * @param k   The keyboard.
+ * @param key The key.
+ * @return True for a word key.
+ */
+static bool is_word(const ui_textkey_t *k, int key)
+{
+    return key >= UI_TK_DEL
+           || (k->wifi && (key == UI_TK_LAYER
+                           || (key == UI_TK_SHIFT
+                               && k->layer != UI_TK_MARKS)));
+}
+
+const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k)
+{
+    if (k == NULL) {
+        return &gfx_font_8x16;
+    }
+    static const gfx_font_t *const faces[] = { &gfx_font_12x24,
+                                               &gfx_font_10x20 };
+    for (size_t f = 0; f < sizeof(faces) / sizeof(faces[0]); ++f) {
+        bool fit = true;
+        for (int key = 0; key <= UI_TK_SHOW && fit; ++key) {
+            const gfx_rect_t r = ui_textkey_key_rect(k, key);
+            if (r.w == 0 || !is_word(k, key)) {
+                continue;
+            }
+            const char *label = ui_textkey_key_label(k, key);
+            if (key == UI_TK_SHOW) {
+                label = (gfx_text_cells(TR(TK_HIDE))
+                         > gfx_text_cells(TR(TK_SHOW))) ? TR(TK_HIDE)
+                                                        : TR(TK_SHOW);
+            } else if (k->wifi && (key == UI_TK_SHIFT
+                                   || key == UI_TK_LAYER)) {
+                label = "#+=";      /* as wide as "ABC" and "abc" */
+            }
+            fit = ui_text_fits(faces[f], label, r.w, r.h, TK_KEY_PAD);
+        }
+        if (fit) {
+            return faces[f];
+        }
+    }
+    return &gfx_font_8x16;
+}
+
 void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
 {
     if (k == NULL || c == NULL || !k->open) {
@@ -382,9 +488,7 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
 
     const gfx_rect_t hdr = { (int16_t)(a.x + TK_PAD), (int16_t)(a.y + 6),
-                             (int16_t)(a.w - 2 * TK_PAD), 18 };
-    gfx_text_in(c, hdr, k->title, &gfx_font_8x16, ui_theme_color(UI_C_TEXT),
-                1, GFX_ALIGN_LEFT);
+                             (int16_t)(a.w - 2 * TK_PAD), 22 };
     char room[64];
     if (k->refused && k->folder) {
         snprintf(room, sizeof(room), "%s", folder_why(k->why));
@@ -400,7 +504,14 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
     } else {
         snprintf(room, sizeof(room), TR(TEXTKEY_COUNT), k->len, k->max_len);
     }
-    gfx_text_in(c, hdr, room, &gfx_font_8x16,
+    /* 10 x 20 when the title and its line fit side by side, 16 px apart. */
+    const gfx_font_t *hf =
+        (gfx_text_width(&gfx_font_10x20, k->title, 1) + 16
+             + gfx_text_width(&gfx_font_10x20, room, 1) <= hdr.w)
+            ? &gfx_font_10x20 : &gfx_font_8x16;
+    gfx_text_in(c, hdr, k->title, hf, ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_LEFT);
+    gfx_text_in(c, hdr, room, hf,
                 k->refused ? ui_theme_color(UI_C_WARN)
                            : ui_theme_color(UI_C_TEXT_DIM),
                 1, GFX_ALIGN_RIGHT);
@@ -410,11 +521,14 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
                              (int16_t)(a.w - 2 * TK_PAD), TK_ENTRY_H };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h,
                   ui_theme_color(UI_C_PANEL_SUNK));
+    /* The text in 20 x 36, or in 16 x 28 where a name of UI_TEXTKEY_MAX
+     * characters and the caret would not fit the field. */
+    const gfx_font_t *ef = entry_face(box);
     char shown[UI_TEXTKEY_PASS_MAX + 2];
     if (k->wifi) {
         /* A password as "*" unless shown; the end of a text longer than
-         * the field, 16 px a character at scale 2. */
-        int fit = (box.w - 20) / 16 - 1;
+         * the field, a cell of the face a character. */
+        int fit = (box.w - 20) / ef->width - 1;
         fit = (fit < 1) ? 1 : fit;
         const int from = (k->len > fit) ? k->len - fit : 0;
         int n = 0;
@@ -428,9 +542,10 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
     }
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(box.x + 10), box.y,
                                  (int16_t)(box.w - 20), box.h },
-                shown, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 2,
-                GFX_ALIGN_LEFT);
+                shown, ef, ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_LEFT);
 
+    /* Characters in 12 x 24; the words in the face they all fit. */
+    const gfx_font_t *wf = ui_textkey_word_font(k);
     for (int key = 0; key <= UI_TK_SHOW; ++key) {
         const gfx_rect_t r = ui_textkey_key_rect(k, key);
         if (r.w == 0) {
@@ -443,6 +558,7 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
         const gfx_color_t fill = (key == UI_TK_OK)
                                      ? ui_theme_color(UI_C_ACCENT)
                                      : ui_theme_color(UI_C_PANEL_SUNK);
-        ui_button(c, r, label, fill, k->pressed == key, true);
+        ui_button_font(c, r, label, fill, k->pressed == key, true,
+                       is_word(k, key) ? wf : &gfx_font_12x24);
     }
 }
