@@ -2585,15 +2585,29 @@ und die Bytes der ZIP-Datei. Die Dateien liegen darin, wie sie sind, nicht
 komprimiert, mit ihren Ordnerpfaden ab der Wurzel der Karte, Namen in UTF-8
 und den Zeiten der Karte. Eine Datei über 4 GiB − 1 B, ein Archiv über
 4 GiB − 1 B und mehr als 65 535 Einträge nutzen ZIP64. Nichts wird dafür auf
-die Karte geschrieben, und das Panel hält 16 Bytes je Eintrag im Speicher,
-nicht das Archiv: Es wird gesendet, wie es gelesen wird.
+die Karte geschrieben. Das Panel hält 24 Bytes je Eintrag im PSRAM, nicht
+das Archiv: Es wird gesendet, wie es gelesen wird. Die Zahl der Einträge hat
+keine eigene Grenze; eine Karte, deren Einträge nicht in den freien PSRAM
+passen, bekommt 503 Service Unavailable.
 
-Eine Datei, die während des Downloads wächst, wird gesendet, wie sie beim
-Start des Downloads war: Ein Log, in das unterdessen geschrieben wird, endet
-in der ZIP-Datei bei der Größe, die es da hatte. Eine Datei oder ein Ordner,
-die während des Downloads hinzukommen, fehlen darin. Eine Datei, die während
-des Downloads gelöscht, umbenannt oder kürzer wird, beendet den Download zu
-kurz, und der Browser meldet ihn als fehlgeschlagen.
+Der Download zählt die Einträge, geht die Karte noch einmal durch, um die
+Größe jedes Eintrags festzulegen, und kommt dann zweimal an jedem Eintrag
+vorbei: einmal für seine Daten, einmal am Ende für das Verzeichnis der
+ZIP-Datei.
+
+- Eine Datei, die durch Anhängen wächst wie ein Log, wird gesendet, wie sie
+  beim Start des Downloads war: ihre ersten Bytes bis zur Größe, die sie da
+  hatte.
+- Eine Datei, die an Ort und Stelle neu geschrieben wird, wird mit ihren
+  ersten Bytes gesendet, wie der Download sie liest.
+- Eine Datei oder ein Ordner, die während des Downloads hinzukommen, fehlen
+  darin. Mehr als 16, die zwischen dem Zählen und dem zweiten Durchgang
+  hinzukommen, bekommen 503 Service Unavailable.
+- Eine Datei, die kürzer wird, bevor der Download sie liest, und eine Datei
+  oder ein Ordner, die gelöscht oder umbenannt werden, bevor der Download
+  zum letzten Mal an ihnen vorbeikommt, beenden den Download zu kurz; der
+  Browser meldet ihn als fehlgeschlagen. Das Rotieren von
+  `BENCH/RCBENCH.LOG` bei 1 MiB ist ein Umbenennen.
 
 Die Übertragungsrate ist nicht gemessen; [Performance](Performance-de.md#wlan-downloads)
 nennt, was sie begrenzt, erwartete 300 000 bis 1 000 000 B/s in einem

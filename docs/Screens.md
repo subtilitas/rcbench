@@ -2344,15 +2344,25 @@ page gives the number of files, their bytes and the ZIP file's bytes before
 the click. The files are stored as they are, not compressed, with their
 folder paths from the card's root, names in UTF-8 and the card's times. A
 file over 4 GiB − 1 B, an archive over 4 GiB − 1 B and more than 65,535
-entries use ZIP64. Nothing is written to the card to make it, and the panel
-keeps 16 bytes an entry in memory, not the archive: it is sent as it is
-read.
+entries use ZIP64. Nothing is written to the card to make it. The panel
+keeps 24 bytes per entry in PSRAM, not the archive: it is sent as it is
+read. The number of entries has no limit of its own; a card whose entries
+do not fit in the free PSRAM gets 503 Service Unavailable.
 
-A file that grows during the download is sent as it was when the download
-started: a log written to meanwhile ends in the ZIP file at the size it had
-then. A file or folder added during the download is not in it. A file
-removed, renamed or made shorter during the download ends the download
-short, and the browser reports it as failed.
+The download counts the entries, walks the card again to fix each one's
+size, and then passes each entry twice: once for its data, and once at the
+end for the ZIP file's directory.
+
+- A file that grows by appending, as a log does, is sent as it was when the
+  download started: its first bytes, up to the size it had then.
+- A file rewritten in place is sent with its first bytes as they are when
+  the download reads them.
+- A file or folder added during the download is not in it. More than 16
+  added between the count and the second walk get 503 Service Unavailable.
+- A file made shorter before the download reads it, and a file or folder
+  removed or renamed before the download's last pass over it, end the
+  download short; the browser reports it as failed. The rotation of
+  `BENCH/RCBENCH.LOG` at 1 MiB is a rename.
 
 The transfer rate is not measured; [Performance](Performance.md#wi-fi-downloads)
 gives what bounds it, an expected 300,000 to 1,000,000 B/s on a home

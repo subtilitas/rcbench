@@ -65,9 +65,6 @@ static const char *TAG = "wifi";
  * the heartbeat, and nothing of the radio's goes there. */
 #define NET_CORE      0
 #define IO_CHUNK      4096u
-/* ZIP slots beyond the entries counted: 16 entries may be added to the
- * card between the count and wa_zip_begin()'s walk. */
-#define ZIP_SPARE     16u
 #define SCAN_READ     24u
 /* The fetch task: TLS (transport layer security) needs the stack of the
  * page's server, which never runs beside it. */
@@ -752,9 +749,9 @@ static esp_err_t h_zip(httpd_req_t *r)
         res = refused(r, (z == NULL) ? "503 Service Unavailable"
                                      : "404 Not Found");
     } else {
-        /* A slot an entry counted, and ZIP_SPARE more for files added
+        /* A slot an entry counted, and WA_ZIP_SPARE more for files added
          * before wa_zip_begin() walks the card again. */
-        const uint64_t slots = plan.entries + ZIP_SPARE;
+        const uint64_t slots = plan.entries + WA_ZIP_SPARE;
         slot = (slots <= SIZE_MAX / sizeof(*slot))
                ? heap_caps_malloc((size_t)slots * sizeof(*slot),
                                   MALLOC_CAP_SPIRAM)
@@ -763,8 +760,8 @@ static esp_err_t h_zip(httpd_req_t *r)
                                 ? WA_ZIP_MEMORY
                                 : wa_zip_begin(z, &k_card, slot, slots);
         if (be != WA_ZIP_OK) {
-            res = refused(r, (be == WA_ZIP_MEMORY) ? "503 Service Unavailable"
-                                                   : "404 Not Found");
+            res = refused(r, (be == WA_ZIP_NO_CARD) ? "404 Not Found"
+                                                    : "503 Service Unavailable");
         } else {
             char zname[WA_NAME_MAX + 8u];
             snprintf(zname, sizeof(zname), "%s.zip", s.name);

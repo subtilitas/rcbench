@@ -115,7 +115,7 @@ Die Seite spricht die Sprache des Panels.
 
 - **Panel-Firmware**: die installierte Version, eine Dateiauswahl und Hochladen. Die Datei ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Eine Datei größer als 4.063.232 Bytes wird abgelehnt, bevor ein Byte gesendet ist.
 - **Dateien auf der Karte**: jede Datei mit Name, Größe in Bytes und Zeit; jeder Name lädt diese Datei herunter. Die Seite schreibt nichts auf die Karte.
-- **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die während des Downloads wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Die Übertragungsrate ist nicht gemessen; erwartet sind 300.000 bis 1.000.000 B/s in einem Heimnetz.
+- **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die durch Anhängen wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Eine Datei, die während des Downloads gelöscht oder umbenannt wird, beendet ihn als fehlgeschlagen; das Rotieren von `BENCH/RCBENCH.LOG` bei 1 MiB ist ein Umbenennen. Die Übertragungsrate ist nicht gemessen; erwartet sind 300.000 bis 1.000.000 B/s in einem Heimnetz.
 
 Die Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage während eines Downloads wartet auf dessen Ende. Ein Download, von dem der Browser 30 s lang nichts annimmt, endet, und der Browser meldet ihn als fehlgeschlagen.
 

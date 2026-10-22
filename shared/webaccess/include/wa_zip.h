@@ -14,17 +14,18 @@
  * entries.  The first, in wa_zip_begin(), adds up the archive's length,
  * which is known before a byte is read because stored sizes are the files'
  * sizes: the response announces it, and the browser shows progress.  It
- * keeps each entry's size and a hash of its path in a slot, 16 bytes an
- * entry.  The second sends the entries, the third the central directory;
- * both take each entry's size from its slot, and the third the CRC the
- * second kept there.
+ * keeps each entry's size, time, name length and a hash of its path in a
+ * slot, 24 bytes an entry.  The second sends the entries, the third the
+ * central directory; both take each entry's size and time from its slot,
+ * and the third the CRC the second kept there.
  *
  * A file that grows after the first walk is sent at the size the first
- * walk found, its first bytes: a file only added to, as a log is, is sent
- * as it was when the download started.  An entry whose path hash is not
- * the next slot's, a file or folder added after the first walk, is left
- * out of both later walks.  A walk can meet one anywhere, since a folder
- * lists its entries in the card's own order.
+ * walk found, its first bytes as they are when the second walk reads them:
+ * a file only added to, as a log is, is sent as it was when the download
+ * started.  An entry whose name length or path hash is not the next
+ * slot's, a file or folder added after the first walk, is left out of both
+ * later walks.  A walk can meet one anywhere, since a folder lists its
+ * entries in the card's own order.
  *
  * ZIP64 where the format runs out: an entry of 0xFFFFFFFF bytes or more, a
  * local header at or past that offset, 0xFFFF entries or more, and a central
@@ -135,12 +136,19 @@ typedef struct {
  */
 wa_zip_err_t wa_zip_plan(const wa_fs_t *fs, wa_zip_plan_t *out);
 
-/** One entry as the first walk found it. */
+/** One entry as the first walk found it, 24 bytes. */
 typedef struct {
     uint64_t size;    /**< bytes it is sent with; 0 for a folder          */
     uint32_t crc;     /**< CRC-32 of the bytes sent, kept by the second walk */
     uint32_t path;    /**< FNV-1a hash of its path, a folder's with "/"   */
+    uint32_t mtime;   /**< seconds since 1980-01-01, in the DOS range     */
+    uint16_t len;     /**< bytes of its name, a folder's with "/"         */
+    uint16_t spare;
 } wa_zip_slot_t;
+
+/** Slots to allocate beyond the entries wa_zip_plan() counted: entries
+ *  added to the card before wa_zip_begin() walks it again. */
+#define WA_ZIP_SPARE 16u
 
 typedef struct {
     const wa_fs_t *fs;

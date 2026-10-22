@@ -97,8 +97,8 @@ def main():
         print("unzip is not installed", file=sys.stderr)
         return 1
     names = sorted(folder.glob("*.zip"))
-    if len(names) < 23:
-        print(f"{len(names)} archives in {folder}; test_wa_zip writes 23",
+    if len(names) < 24:
+        print(f"{len(names)} archives in {folder}; test_wa_zip writes 24",
               file=sys.stderr)
         return 1
     failed = 0

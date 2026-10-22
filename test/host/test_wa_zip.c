@@ -48,7 +48,12 @@ static uint32_t crc_bitwise(uint32_t crc, uint8_t b)
     return crc;
 }
 
-/* CRC-32 of node @p node's first @p size bytes, bit by bit. */
+/**
+ * @brief CRC-32 of a fake file's first bytes, bit by bit.
+ * @param node the file's node
+ * @param size how many of its bytes
+ * @return The CRC-32 of fake_byte(node, 0) to fake_byte(node, size - 1).
+ */
 static uint32_t prefix_crc(int node, uint64_t size)
 {
     uint32_t c = 0xFFFFFFFFu;
@@ -58,6 +63,12 @@ static uint32_t prefix_crc(int node, uint64_t size)
     return ~c;
 }
 
+/**
+ * @brief CRC-32 of a fake file at its present size.
+ * @param fs   the card
+ * @param node the file's node
+ * @return The CRC-32 of its bytes.
+ */
 static uint32_t node_crc(const fake_fs_t *fs, int node)
 {
     return prefix_crc(node, fs->n[node].size);
@@ -97,9 +108,16 @@ static uint8_t g_buf[8192];
  * case changes the card there as a program writing to it would. */
 typedef void (*zip_hook_t)(fake_fs_t *fs, const wa_zip_t *z, uint64_t total);
 
-/* Stream @p fs as an archive into "<name>.zip" in pieces of @p piece bytes,
- * @p hook called after each; write the manifest of the card as it was when
- * the archive began.  Returns bytes produced, checks they are announced. */
+/**
+ * @brief Stream a card as an archive into "<name>.zip", and write the
+ *        manifest of the card as it was when the archive began; check the
+ *        archive ends whole at its announced length with nothing open.
+ * @param fs    the card
+ * @param name  the archive's name, without ".zip"
+ * @param piece bytes asked of wa_zip_next() at a time
+ * @param hook  called after each piece, or NULL
+ * @return The bytes produced.
+ */
 static uint64_t write_zip_with(fake_fs_t *fs, const char *name,
                                uint32_t piece, zip_hook_t hook)
 {
@@ -152,6 +170,13 @@ static uint64_t write_zip_with(fake_fs_t *fs, const char *name,
     return total;
 }
 
+/**
+ * @brief write_zip_with() on a card nothing changes.
+ * @param fs    the card
+ * @param name  the archive's name, without ".zip"
+ * @param piece bytes asked of wa_zip_next() at a time
+ * @return The bytes produced.
+ */
 static uint64_t write_zip(fake_fs_t *fs, const char *name, uint32_t piece)
 {
     return write_zip_with(fs, name, piece, NULL);
@@ -368,8 +393,13 @@ TEST_CASE(sizes_at_the_32_bit_limit_switch_to_zip64)
     fake_free(&fs);
 }
 
-/* Stream the card and break it part way as @p how says; the archive must
- * end failed and short of its announced length, with nothing left open. */
+/**
+ * @brief Stream a card and break it part way; the archive must end failed
+ *        and short of its announced length, with nothing left open.
+ * @param how 0 a read error, 1 and 2 the card pulled, 3 a short read,
+ *            4 a file that shrank, 5 a file removed during the second
+ *            walk, 6 a file removed during the third walk
+ */
 static void zip_breaks(int how)
 {
     fake_fs_t fs;
@@ -389,9 +419,12 @@ static void zip_breaks(int how)
     if (how == 3) {
         fs.n[b].end_at = 15000;          /* its data ends short of its size */
     }
+    /* Pieces of 64 bytes, so the third walk is still before d/b.csv when
+     * the loop below runs on its first central header. */
+    const uint32_t piece = (how == 6) ? 64u : 4096u;
     uint64_t total = 0u;
     int32_t n;
-    while ((n = wa_zip_next(z, g_buf, 4096u)) > 0) {
+    while ((n = wa_zip_next(z, g_buf, piece)) > 0) {
         total += (uint64_t)n;
         if (how == 1 && total >= 10000u) {
             fs.pulled = true;            /* pulled in the first file */
@@ -402,7 +435,8 @@ static void zip_breaks(int how)
         if (how == 4 && total == 4096u) {
             fs.n[b].size = 19999u;       /* a file shrank */
         }
-        if (how == 5 && total == 4096u) {
+        if ((how == 5 && total == 4096u)
+            || (how == 6 && total > plan.cd_offset)) {
             fs.n[d].first = fs.n[d].last = -1;   /* d/b.csv removed */
         }
     }
@@ -423,7 +457,7 @@ static void zip_breaks(int how)
 
 TEST_CASE(a_read_error_or_a_pulled_card_ends_the_archive_failed)
 {
-    for (int how = 0; how < 6; ++how) {
+    for (int how = 0; how < 7; ++how) {
         zip_breaks(how);
     }
     /* No card at all: said before a byte goes. */
@@ -465,6 +499,82 @@ TEST_CASE(too_few_slots_are_refused_before_a_byte)
     fake_free(&fs);
 }
 
+TEST_CASE(entries_added_before_the_first_walk_fit_the_spare_slots)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    fake_add(&fs, "a", false, 1u, 0);
+    const wa_fs_t w = fake_wa(&fs);
+    wa_zip_plan_t plan;
+    CHECK_EQ(wa_zip_plan(&w, &plan), WA_ZIP_OK);
+    const uint64_t slots = plan.entries + WA_ZIP_SPARE;
+    wa_zip_slot_t slot[1u + WA_ZIP_SPARE];
+    CHECK_EQ(slots, sizeof(slot) / sizeof(slot[0]));
+    char name[16];
+    for (unsigned i = 0; i < WA_ZIP_SPARE; ++i) {
+        snprintf(name, sizeof(name), "n%02u", i);
+        fake_add(&fs, name, false, 1u, 0);
+    }
+    wa_zip_t *z = malloc(sizeof(*z));
+    REQUIRE_ALLOC(z);
+    CHECK_EQ(wa_zip_begin(z, &w, slot, slots), WA_ZIP_OK);
+    CHECK_EQ(z->plan.entries, slots);
+    wa_zip_end_early(z);
+    fake_add(&fs, "one_more", false, 1u, 0);   /* 17 added: one too many */
+    CHECK_EQ(wa_zip_begin(z, &w, slot, slots), WA_ZIP_MEMORY);
+    CHECK_EQ(wa_zip_next(z, g_buf, 4096u), -1);
+    CHECK_EQ(fs.dirs_open, 0);
+    free(z);
+    fake_free(&fs);
+}
+
+/**
+ * @brief Stream a card under a plan whose length is not the archive's, as a
+ *        plan that no longer fits the card would be; nothing may go past
+ *        the length announced, and no end record may go out.
+ * @param bytes the announced length to hold the archive to
+ * @param want  the bytes that must go out before the failure
+ */
+static void zip_wrong_length(uint64_t bytes, uint64_t want)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    fake_add(&fs, "a.csv", false, 20000u, 0);
+    fake_add(&fs, "d", true, 0u, 0);
+    fake_add(&fs, "d/b.csv", false, 20000u, 0);
+    const wa_fs_t w = fake_wa(&fs);
+    wa_zip_slot_t slot[3];
+    wa_zip_t *z = malloc(sizeof(*z));
+    REQUIRE_ALLOC(z);
+    CHECK_EQ(wa_zip_begin(z, &w, slot, 3u), WA_ZIP_OK);
+    z->plan.bytes = bytes;
+    uint64_t total = 0u;
+    int32_t n;
+    while ((n = wa_zip_next(z, g_buf, 4096u)) > 0) {
+        total += (uint64_t)n;
+        CHECK(total <= bytes);
+    }
+    CHECK_EQ(n, -1);
+    CHECK_EQ(z->err, WA_ZIP_READ);
+    CHECK_EQ(total, want);
+    CHECK_EQ(fs.files_open, 0);
+    CHECK_EQ(fs.dirs_open, 0);
+    free(z);
+    fake_free(&fs);
+}
+
+TEST_CASE(nothing_goes_past_the_announced_length)
+{
+    /* a.csv 35 + 20000 + 16, "d/" 48, d/b.csv 37 + 20000 + 16: the
+     * central directory at 40152, 51 + 48 + 53 bytes of it, the end record
+     * 22 bytes. */
+    const uint64_t cd = 40152u + 51u + 48u + 53u;
+    zip_wrong_length(cd + 22u + 1u, cd);    /* one byte long: no end record */
+    zip_wrong_length(cd + 22u - 1u, cd);    /* one byte short: no end record */
+    zip_wrong_length(100u, 35u);            /* the file's data would pass it */
+    zip_wrong_length(20u, 0u);              /* the first header would */
+}
+
 TEST_CASE(the_bench_tree_keeps_its_folders_in_the_archive)
 {
     /* check_wa_zip.py holds bench_tree.zip to its manifest: every path,
@@ -484,23 +594,39 @@ TEST_CASE(the_bench_tree_keeps_its_folders_in_the_archive)
 
 /* ------------------------------------------------- a card written to */
 
+/**
+ * @brief A little-endian 16-bit field.
+ * @param p its first byte
+ * @return Its value.
+ */
 static uint32_t get16(const uint8_t *p)
 {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8);
 }
 
+/**
+ * @brief A little-endian 32-bit field.
+ * @param p its first byte
+ * @return Its value.
+ */
 static uint32_t get32(const uint8_t *p)
 {
     return get16(p) | (get16(p + 2) << 16);
 }
 
-/* Read "<name>.zip" back as an unzip program does, apart from the code
- * under test: the end record, each central header, the local header and
- * data descriptor it points to, the entries back to back from offset 0 up
- * to the central directory.  Each entry's CRC must be the CRC of its data
- * as it lies in the archive, its sizes the same in all three places.
- * Returns the entries; the size and CRC of the entry named @p want go to
- * @p size and @p crc. */
+/**
+ * @brief Read an archive back as an unzip program does, apart from the
+ *        code under test: the end record, each central header, the local
+ *        header and data descriptor it points to, the entries back to back
+ *        from offset 0 up to the central directory.  Each entry's CRC must
+ *        be the CRC of its data as it lies in the archive, its sizes the
+ *        same in all three places, its time the same in both headers.
+ * @param name the archive's name, without ".zip"
+ * @param want the name of the entry whose size and CRC are wanted
+ * @param size that entry's size, 0 when there is none
+ * @param crc  that entry's CRC, 0 when there is none
+ * @return The entries the end record counts; 0 when there is none.
+ */
 static uint64_t read_back(const char *name, const char *want, uint64_t *size,
                           uint32_t *crc)
 {
@@ -547,6 +673,8 @@ static uint64_t read_back(const char *name, const char *want, uint64_t *size,
         CHECK_EQ(get32(l), 0x04034b50u);
         CHECK_EQ(get16(l + 26), nl);
         CHECK(memcmp(l + 30, c + 46, nl) == 0);
+        CHECK_EQ(get16(l + 10), get16(c + 12));     /* time */
+        CHECK_EQ(get16(l + 12), get16(c + 14));     /* date */
         const uint64_t data = (uint64_t)lho + 30u + nl + get16(l + 28);
         CHECK(data + usize + 16u <= cd_at);
         if (data + usize + 16u > cd_at) {
@@ -578,10 +706,16 @@ static uint64_t g_grow_index;
 static int      g_grow_when;
 static bool     g_grown;
 
-/* Grow g_grow by 37 bytes: once on the first piece, before the second walk
- * comes to it (when 0); once when the second walk has taken it, so the
- * third walk finds it larger (when 1); after every piece of the download
- * (when 2). */
+/**
+ * @brief Grow g_grow by 37 bytes and move its time on by 1 h, as a log
+ *        written to: once on the first piece, before the second walk comes
+ *        to it (when 0); once when the second walk has taken it, so the
+ *        third walk finds it larger and newer (when 1); after every piece
+ *        of the download (when 2).
+ * @param fs    the card
+ * @param z     the archive
+ * @param total bytes taken so far
+ */
 static void grow_hook(fake_fs_t *fs, const wa_zip_t *z, uint64_t total)
 {
     (void)total;
@@ -590,6 +724,7 @@ static void grow_hook(fake_fs_t *fs, const wa_zip_t *z, uint64_t total)
     if (g_grow_when == 2 || (g_grow_when == 0 && !g_grown)
         || (g_grow_when == 1 && !g_grown && taken && z->cd_at == 0u)) {
         fs->n[g_grow].size += 37u;
+        fs->n[g_grow].mtime += 3600;
         g_grown = true;
     }
 }
@@ -628,9 +763,14 @@ TEST_CASE(a_file_that_grows_is_sent_at_its_size_when_the_archive_began)
     }
 }
 
-/* Move @p node, the last entry of folder @p parent, to its front: where a
- * FAT (file allocation table) folder puts a new entry in a slot a removed
- * one freed. */
+/**
+ * @brief Move a folder's last entry to its front: where a FAT (file
+ *        allocation table) folder puts a new entry in a slot a removed one
+ *        freed.
+ * @param fs     the card
+ * @param parent the folder's node
+ * @param node   the entry's node, the folder's last
+ */
 static void to_front(fake_fs_t *fs, int parent, int node)
 {
     int prev = fs->n[parent].first;
@@ -646,11 +786,17 @@ static void to_front(fake_fs_t *fs, int parent, int node)
 static int  g_add_when;
 static bool g_added;
 
-/* Add an entry once: a file in the root during the second walk (when 0), a
- * folder with a file in it during the second walk (when 1), a file in d
- * during the third walk (when 2), a file at the front of the root while
- * the second walk is in d, so the root's place is counted one short when
- * the walk comes back to it (when 3). */
+/**
+ * @brief Add an entry once: a file in the root during the second walk
+ *        (when 0), a folder with a file in it during the second walk
+ *        (when 1), a file in d during the third walk (when 2), a file at
+ *        the front of the root while the second walk is in d, so the
+ *        root's place is counted one short when the walk comes back to it
+ *        (when 3).
+ * @param fs    the card
+ * @param z     the archive
+ * @param total bytes taken so far
+ */
 static void add_hook(fake_fs_t *fs, const wa_zip_t *z, uint64_t total)
 {
     if (g_added) {
@@ -702,6 +848,48 @@ TEST_CASE(an_entry_added_during_the_download_is_left_out)
     }
 }
 
+/**
+ * @brief Once the second walk has taken F809493.LOG, add F1314000.LOG in
+ *        the root right after a.csv, where only the third walk meets it,
+ *        before F809493.LOG.  The two paths have the same FNV-1a hash,
+ *        0x3c13bed4, and names of 11 and 12 bytes.
+ * @param fs    the card
+ * @param z     the archive
+ * @param total bytes taken so far
+ */
+static void collide_hook(fake_fs_t *fs, const wa_zip_t *z, uint64_t total)
+{
+    (void)total;
+    if (g_added || z->index < 1u || (z->index == 1u && !z->in_file)) {
+        return;
+    }
+    const int y = fake_add(fs, "F1314000.LOG", false, 50u, 1760000009);
+    const int a = fs->n[0].first;
+    const int x = fs->n[a].next;         /* a.csv, F809493.LOG, the new */
+    fs->n[x].next = -1;
+    fs->n[0].last = x;
+    fs->n[y].next = x;
+    fs->n[a].next = y;
+    g_added = true;
+}
+
+TEST_CASE(an_added_entry_whose_path_hash_collides_is_left_out)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    fake_add(&fs, "a.csv", false, 20000u, 1760000000);
+    const int x = fake_add(&fs, "F809493.LOG", false, 100u, 1760000001);
+    g_added = false;
+    write_zip_with(&fs, "add_collision", 64u, collide_hook);
+    CHECK(g_added);
+    uint64_t size;
+    uint32_t crc;
+    CHECK_EQ(read_back("add_collision", "F809493.LOG", &size, &crc), 2u);
+    CHECK_EQ(size, 100u);
+    CHECK_EQ(crc, prefix_crc(x, 100u));
+    fake_free(&fs);
+}
+
 int main(void)
 {
     setup_dir();
@@ -714,7 +902,10 @@ int main(void)
     RUN(sizes_at_the_32_bit_limit_switch_to_zip64);
     RUN(a_read_error_or_a_pulled_card_ends_the_archive_failed);
     RUN(too_few_slots_are_refused_before_a_byte);
+    RUN(entries_added_before_the_first_walk_fit_the_spare_slots);
+    RUN(nothing_goes_past_the_announced_length);
     RUN(a_file_that_grows_is_sent_at_its_size_when_the_archive_began);
     RUN(an_entry_added_during_the_download_is_left_out);
+    RUN(an_added_entry_whose_path_hash_collides_is_left_out);
     return test_summary("wa_zip");
 }
