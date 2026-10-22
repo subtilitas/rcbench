@@ -7,6 +7,7 @@
  * - every_control_of_every_page_is_a_tap_target_above_the_alert_band
  * - no_two_controls_of_a_page_overlap
  * - the_fullest_list_ends_above_cancel
+ * - the_stretch_list_holds_every_factor_above_cancel
  * - the_fullest_write_page_ends_above_its_buttons_in_both_languages
  * - a_short_area_keeps_its_buttons_inside_it
  * - no_note_or_message_lies_under_the_alert_band
@@ -156,6 +157,24 @@ TEST_CASE(the_fullest_list_ends_above_cancel)
     show();
 }
 
+/* STRETCH on TUNE: a factor for every index the hard limit leaves, x1 to
+ * x32, each a tap target above CANCEL. */
+TEST_CASE(the_stretch_list_holds_every_factor_above_cancel)
+{
+    fresh();
+    connected();
+    tap(kst_panel_tab_rect(PG_TUNE));
+    tap(val(PG_TUNE, 2, 0));
+    CHECK_EQ(kst_panel_editor(), 2);
+    CHECK_EQ(choices(), (int)KST_STRETCH_INDEX_MAX + 1);
+    for (int i = 0; i < choices(); ++i) {
+        target(kst_panel_choice_rect(i));
+    }
+    CHECK(kst_panel_choice_rect(choices() - 1).y
+              + kst_panel_choice_rect(choices() - 1).h + 8
+          <= kst_panel_choice_cancel_rect().y);
+}
+
 /* The rows of the open warning page's lines. */
 static int page_rows(void)
 {
@@ -291,6 +310,7 @@ int main(void)
     RUN(every_control_of_every_page_is_a_tap_target_above_the_alert_band);
     RUN(no_two_controls_of_a_page_overlap);
     RUN(the_fullest_list_ends_above_cancel);
+    RUN(the_stretch_list_holds_every_factor_above_cancel);
     RUN(the_fullest_write_page_ends_above_its_buttons_in_both_languages);
     RUN(a_short_area_keeps_its_buttons_inside_it);
     RUN(no_note_or_message_lies_under_the_alert_band);
