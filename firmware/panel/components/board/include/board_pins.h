@@ -199,10 +199,10 @@ extern "C" {
 
 /* ----------------------------------------------------------------- safety */
 /**
- * @brief The heartbeat, on a free header GPIO: one of IO2-5, IO28-31, IO34, IO36
- * and IO46-52.  IO34 and IO36 are strapping pins.
+ * @brief The heartbeat: IO28 of the 12-pin header P3 (3V3, GND,
+ * IO2-5, IO28-31, IO34, IO36).
  */
-#define PANEL_HEARTBEAT_PIN   GPIO_NUM_28   /* placeholder: pending the owner's pick */
+#define PANEL_HEARTBEAT_PIN   GPIO_NUM_28
 
 /* ------------------------------------------------------------------- knob */
 /**
@@ -210,8 +210,11 @@ extern "C" {
  * the board shares its bus.
  */
 #define BOARD_KNOB_I2C_PORT     1
-#define BOARD_KNOB_PIN_SDA      GPIO_NUM_30   /* placeholder: pending the owner's pick */
-#define BOARD_KNOB_PIN_SCL      GPIO_NUM_31   /* placeholder: pending the owner's pick */
+/** @brief The knob's SDA line: IO30 of header P3. */
+#define BOARD_KNOB_PIN_SDA      GPIO_NUM_30
+/** @brief The knob's SCL line: IO31 of header P3. */
+#define BOARD_KNOB_PIN_SCL      GPIO_NUM_31
+/** @brief The knob's I2C clock in Hz. */
 #define BOARD_KNOB_I2C_FREQ_HZ  400000
 
 #ifdef __cplusplus

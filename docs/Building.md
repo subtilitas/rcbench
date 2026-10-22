@@ -116,12 +116,13 @@ The rotary knob is an MT6701 magnetic angle sensor on an I2C
 (Inter-Integrated Circuit) bus of its own, the ESP32-P4's second I2C
 controller, on two free header pins of the 7-inch ESP32-P4 display board:
 `BOARD_KNOB_PIN_SDA` and `BOARD_KNOB_PIN_SCL` in
-`firmware/panel/components/board/include/board_pins.h`. GPIO30 (SDA) and
-GPIO31 (SCL) there are placeholders; the header pins are not chosen yet.
-The sensor takes 3.3 V and GND from the same header. The panel switches
-on the ESP32-P4's internal pull-ups; whether they alone hold 400 kHz on the
-knob's wires is not measured, so a sensor without pull-ups of its own gets
-4.7 kOhm ones to 3.3 V, as the datasheet's I2C circuit has.
+`firmware/panel/components/board/include/board_pins.h`: GPIO30 (SDA) and
+GPIO31 (SCL), the pins IO30 and IO31 of the 12-pin header P3 (3V3, GND, IO2
+to IO5, IO28 to IO31, IO34, IO36). The sensor takes 3.3 V and GND from the
+same header. The panel switches on the ESP32-P4's internal pull-ups; whether
+they alone hold 400 kHz on the knob's wires is not measured, so a sensor
+without pull-ups of its own gets 4.7 kOhm ones to 3.3 V, as the datasheet's
+I2C circuit has.
 
 The sensor has to be in its I2C/SSI (synchronous serial interface) mode,
 MODE high. MODE low selects the ABZ encoder outputs, and the sensor then does

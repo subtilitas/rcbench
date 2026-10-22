@@ -3,8 +3,8 @@
 // A repository anchor reads its file at the release tag. The pin map of the
 // 7-inch ESP32-P4 board is newer than the tag the data names, so this test
 // reads `board_pins.h` of the working tree: the data and the firmware of one
-// commit name the same pins. A pin the firmware marks as a placeholder is
-// unconfirmed in the data and named as not decided.
+// commit name the same pins. The heartbeat and the knob pins are on header
+// P3; the heartbeat pin is confirmed and no check entry calls it unknown.
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -14,18 +14,18 @@ import { CATALOGUE } from '../catalogue.ts';
 const BOARD_PINS = 'firmware/panel/components/board/include/board_pins.h';
 const ROOT = new URL('../../../', import.meta.url);
 
-/** GPIOs on the 2 free headers P1 and P3 of the board (schematic page 1). */
-const HEADER_GPIOS = [2, 3, 4, 5, 28, 29, 30, 31, 34, 36, 46, 47, 48, 49, 50, 51, 52];
+/** GPIOs of the 12-pin header P3 of the board (schematic page 1), after 3V3 and GND. */
+const HEADER_GPIOS = [2, 3, 4, 5, 28, 29, 30, 31, 34, 36];
 /** GPIOs of the ESP32-P4 that the ESP32-C6 radio uses. */
 const C6_GPIOS = [6, 14, 15, 16, 17, 18, 19, 54];
 
-type Define = { gpio: number; placeholder: boolean };
+type Define = { gpio: number };
 
 /**
  * Reads `#define <name> GPIO_NUM_<n>` from the text of a C header.
  * @param header The text of the header.
  * @param name The name of the define.
- * @returns The GPIO number, and whether the line of the define holds the word "placeholder".
+ * @returns The GPIO number.
  * @throws Error when the header defines no `name`, or its value is no `GPIO_NUM_<n>`.
  */
 export function defineGpio(header: string, name: string): Define {
@@ -33,23 +33,23 @@ export function defineGpio(header: string, name: string): Define {
   if (line === undefined) throw new Error(`${name} is not defined`);
   const m = /GPIO_NUM_(\d+)\b/.exec(line);
   if (!m) throw new Error(`${name} names no GPIO_NUM_<n>`);
-  return { gpio: Number(m[1]), placeholder: /placeholder/i.test(line) };
+  return { gpio: Number(m[1]) };
 }
 
 const header = readFileSync(new URL(BOARD_PINS, ROOT), 'utf8');
 const panel = CATALOGUE.parts.find((p) => p.id === 'panel')!;
 const check = (id: string) => CATALOGUE.checks.find((k) => k.id === id);
 
-test('defineGpio reads a define, its placeholder mark, and refuses a missing or malformed one', () => {
+test('defineGpio reads a define and refuses a missing or malformed one', () => {
   const text = [
-    '#define A_PIN   GPIO_NUM_28   /* placeholder: pending */',
+    '#define A_PIN   GPIO_NUM_28   /* IO28 */',
     '#define B_PIN   GPIO_NUM_0',
     '#define C_PIN   28',
     '#define A_PIN_X GPIO_NUM_5',
   ].join('\n');
-  assert.deepEqual(defineGpio(text, 'A_PIN'), { gpio: 28, placeholder: true });
-  assert.deepEqual(defineGpio(text, 'B_PIN'), { gpio: 0, placeholder: false });
-  assert.deepEqual(defineGpio(text, 'A_PIN_X'), { gpio: 5, placeholder: false });
+  assert.deepEqual(defineGpio(text, 'A_PIN'), { gpio: 28 });
+  assert.deepEqual(defineGpio(text, 'B_PIN'), { gpio: 0 });
+  assert.deepEqual(defineGpio(text, 'A_PIN_X'), { gpio: 5 });
   assert.throws(() => defineGpio(text, 'C_PIN'), /names no GPIO_NUM/);
   assert.throws(() => defineGpio(text, 'D_PIN'), /is not defined/);
   assert.throws(() => defineGpio('', 'A_PIN'), /is not defined/);
@@ -80,9 +80,9 @@ test('the CAN pins are those of header H11, whose pin 1 takes no wire', () => {
     [[1, 'panel.CANH'], [2, 'panel.CANL'], [3, 'panel.CANG'], [4, 'panel.HB'], [5, 'panel.HB']]);
 });
 
-test('the heartbeat pin is PANEL_HEARTBEAT_PIN of the firmware, a free header GPIO, and pending while the firmware says placeholder', () => {
+test('the heartbeat pin is PANEL_HEARTBEAT_PIN of the firmware, a GPIO of header P3, and confirmed', () => {
   const hb = defineGpio(header, 'PANEL_HEARTBEAT_PIN');
-  assert.ok(HEADER_GPIOS.includes(hb.gpio), `GPIO${hb.gpio} is on no free header`);
+  assert.ok(HEADER_GPIOS.includes(hb.gpio), `GPIO${hb.gpio} is not on header P3`);
   assert.ok(!C6_GPIOS.includes(hb.gpio), `GPIO${hb.gpio} belongs to the ESP32-C6`);
   const pin = panel.pins.find((p) => p.id === 'HB')!;
   assert.equal(pin.label.en, `IO${hb.gpio}`);
@@ -90,25 +90,18 @@ test('the heartbeat pin is PANEL_HEARTBEAT_PIN of the firmware, a free header GP
   const steps = check('panel-terminals')!.text;
   assert.match(steps.en, new RegExp(`The heartbeat is the pin IO${hb.gpio} of`));
   assert.match(steps.de, new RegExp(`Der Heartbeat ist der Pin IO${hb.gpio} der`));
-  // Pending: unconfirmed and named by an entry of kind unknown in every setup.
-  // Once the firmware drops the mark, the data must confirm the pin.
-  assert.equal(pin.confirmed, !hb.placeholder);
-  const pending = check('panel-heartbeat-pin');
-  if (hb.placeholder) {
-    assert.equal(pending?.kind, 'unknown');
-    assert.equal(pending?.when, null);
-    assert.match(pending!.text.en, new RegExp(`not decided\\. IO${hb.gpio} is a placeholder`));
-    assert.match(pending!.text.de, new RegExp(`nicht entschieden\\. IO${hb.gpio} ist ein Platzhalter`));
-  } else {
-    assert.equal(pending, undefined);
-  }
+  // Confirmed by the schematic, and no entry of kind unknown names it.
+  assert.equal(pin.confirmed, true);
+  assert.equal(pin.src.kind, 'doc');
+  assert.equal(check('panel-heartbeat-pin'), undefined);
+  assert.ok(!CATALOGUE.checks.some((k) => k.kind === 'unknown' && /heartbeat/i.test(k.text.en)));
 });
 
-test('the knob pins of the firmware are named as placeholders, and neither is a pin of the ESP32-C6', () => {
+test('the knob pins of the firmware are named on header P3, and neither is a pin of the ESP32-C6', () => {
   const sda = defineGpio(header, 'BOARD_KNOB_PIN_SDA');
   const scl = defineGpio(header, 'BOARD_KNOB_PIN_SCL');
   for (const d of [sda, scl]) {
-    assert.ok(HEADER_GPIOS.includes(d.gpio), `GPIO${d.gpio} is on no free header`);
+    assert.ok(HEADER_GPIOS.includes(d.gpio), `GPIO${d.gpio} is not on header P3`);
     assert.ok(!C6_GPIOS.includes(d.gpio), `GPIO${d.gpio} belongs to the ESP32-C6`);
   }
   const heartbeat = defineGpio(header, 'PANEL_HEARTBEAT_PIN').gpio;
@@ -116,5 +109,8 @@ test('the knob pins of the firmware are named as placeholders, and neither is a 
   const knob = CATALOGUE.notInRelease.find((n) => n.id === 'knob')!;
   assert.match(knob.text.en, new RegExp(`IO${sda.gpio} \\(SDA\\) and IO${scl.gpio} \\(SCL\\)`));
   assert.match(knob.text.de, new RegExp(`IO${sda.gpio} \\(SDA\\) und IO${scl.gpio} \\(SCL\\)`));
-  if (sda.placeholder || scl.placeholder) assert.match(knob.text.en, /not decided/);
+  assert.match(knob.text.en, /12-pin header P3, with 3V3 and GND from the same header/);
+  assert.match(knob.text.de, /12-poligen Buchse P3, dazu 3V3 und GND von derselben Buchse/);
+  assert.doesNotMatch(knob.text.en, /placeholder|not decided/);
+  assert.doesNotMatch(knob.text.de, /Platzhalter|nicht entschieden/);
 });
