@@ -161,14 +161,16 @@ the bench end above it.
 
 ![The feature menu](img/overview.png)
 
-The menu is a grid of 4 columns by 2 rows, each tile 246 x 258 px with 8 px
-margins. The first row holds the workbenches, MOTOR & ESC, SERVO and
+The menu is a grid of 4 columns by 2 rows, each tile 243 x 255 px with
+10 px margins. A tile carries a 40 px icon, its name in the 20 x 36 px face
+and a line in the 10 x 20 px face. The first row holds the workbenches, MOTOR & ESC, SERVO and
 SUPPLY; the second the instruments, RECEIVER, BATTERY and BALANCE; the last
 column LOGS over SETUP. A fourth workbench or a fourth instrument fails the
 build at 4 columns (`shared/ui/overview_screen.c`). Programming has no tile:
 it is the PROGRAM task of MOTOR & ESC and of SERVO.
 
-Each tile carries a line under its name, 2 rows of at most 23 characters:
+Each tile carries a line under its name, 2 rows of at most 22 characters,
+8 px clear of the tile's sides:
 
 | Tile | Line |
 | --- | --- |
@@ -2426,7 +2428,8 @@ reach the layout with two application slots: [First run, §1](FirstRun.md#1-flas
 ## Setup
 
 The SETUP tile of the menu opens a page of tiles, 3 by 3, in the menu's
-style. Each tile is 330 x 108 px, its icon centred over its name.
+style. Each tile is 328 x 130 px with 10 px margins: a 36 px icon centred
+over its name in the 12 x 24 px face, and a line in the 10 x 20 px face.
 
 ![Setup](img/setup.png)
 
@@ -2452,10 +2455,13 @@ The same page in the light theme:
 
 ![Setup in the light theme](img/setup-light.png)
 
-A category's list is 776 px wide from the panel's left margin and shows
-446 px of it, 7 rows, over a strip of three columns: the category's name,
-RESET CATEGORY and SAVE. The strip ends at panel y 552, 4 px above the alert
-band
+A category's list is 984 px wide from the panel's left margin and shows
+428 px of it, 6 rows whole, over a strip of three columns, 48 px tall: the
+category's name, RESET CATEGORY and SAVE. A row is 64 px tall at a 70 px
+pitch: the setting's name in the 20 x 36 px face, its help line under it in
+the 10 x 20 px face, its value in the 12 x 24 px face. A value wider than
+the gap between the keys would take the 10 x 20 px face; no value of a
+SETUP setting needs it, in English or in German. The strip ends at panel y 552, 4 px above the alert band
 ([The alert band](#the-alert-band)), so an alert never covers a key, a row,
 RESET CATEGORY or SAVE, on the tiles or on a list.
 
@@ -2504,12 +2510,13 @@ choice wraps round from its last value to its first.
   press or outside the key.
 - **Scroll.** A vertical drag of more than 8 px that starts anywhere on the
   list scrolls it, the key columns included. A scroll changes no value. The
-  bar at the list's right edge shows the position and takes no touch.
-- A key is its column, 44 px wide, over the 54 px of its row. The 4 px
-  between two rows belong to no key.
-- **Keypad.** A tap on a number's value, the 126 px between its `-` and `+`
-  keys, opens the keypad over the list and the strip: 1008 x 484 px, keys of
-  243 x 91 px, its foot 4 px above the alert band. It names the setting, its
+  bar right of the list, 12 px wide, shows the position and takes no touch.
+  A list that fits its 428 px has no bar.
+- A key is drawn 56 x 48 px and takes its column, 56 px wide, over the
+  64 px of its row. The 6 px between two rows belong to no key.
+- **Keypad.** A tap on a number's value, the 166 px between its `-` and `+`
+  keys, opens the keypad over the list and the strip: 1004 x 482 px, keys of
+  242 x 90 px, its foot 4 px above the alert band. It names the setting, its
   range and its unit, shows the value faint until a digit is typed, and
   takes as many digits after the point as the step has: one for a shunt's
   0.1 mΩ, none for a pin. OK sets the value as a step sets it: in force at
@@ -2615,7 +2622,7 @@ INTERFACES lists its 23 settings in five sections. A heading above the first
 row of each names it: I2C BUS (the INA228, Sensor SDA and SCL, and the
 AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical tacho), SUPPLY
 (the PD mini) and PROG PORT (Hitec D receive). A heading is a row of its
-own, 54 px high at the list's 58 px pitch, in the accent colour over a rule,
+own, 64 px high at the list's 70 px pitch, in the accent colour over a rule,
 with no keys and no value: a tap or a drag on it changes nothing, and a drag
 scrolls the list. The list is 28 rows long.
 
@@ -3136,12 +3143,14 @@ until a save succeeds, even with every value stepped back.
 
 The home tag on the tiles, the only way from SETUP to the menu, is held while
 the label reads `SAVE` or `NOT SAVED`. A warning covers the body instead: a
-card of 1008 x 442 px with a 3 px edge in the warning colour, over the strip.
+card of 1004 x 424 px with a 3 px edge in the warning colour, over the strip.
+Its title is in the 20 x 36 px face, the two lines on what unsaved means and
+the notes in the 12 x 24 px face.
 
 ![One value unsaved, at the home tag](img/setup-leave.png)
 
 It lists each value and string that differs from the stored copy, one line
-of 22 px each, as `name: stored -> now`. A value is written as the list
+of 24 px each in the 10 x 20 px face, as `name: stored -> now`. A value is written as the list
 writes it, with its unit; a string, the DUT (device under test) name, as it
 is. Values set on other screens, such as SERVO's settings, ESC STICK's or
 MOTOR & ESC's, are listed too: they are in the same set and the same save

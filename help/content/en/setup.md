@@ -39,7 +39,7 @@ The home tag at the top left climbs one level at a time:
 
 ![INTERFACES, everything saved](view:setup-interfaces)
 
-The list is 776 px wide and shows 7 rows. Under it a strip holds the category's name, RESET CATEGORY and the save button. The strip ends 4 px above the band an alert shows across the bottom, so an alert covers no key, row or button.
+The list is 984 px wide and shows 6 rows of 64 px. Under it a strip, 48 px tall, holds the category's name, RESET CATEGORY and the save button. The strip ends 4 px above the band an alert shows across the bottom, so an alert covers no key, row or button.
 
 A row shows the setting, a help line and its value with its unit. A number has `-` and `+` keys; a switch or a choice has `<` and `>`.
 

@@ -65,19 +65,47 @@ int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
                  const gfx_font_t *f, gfx_color_t col);
 
 /**
- * A tile of a grid that opens what it names: the menu's, and SETUP's.
- *
- * A rounded surface, @p icon in a UI_TILE_ICON px box whose top is
- * @p icon_dy px from the tile's and whose centre is the tile's centre in x,
- * @p name 40 px under the box's top in the text colour and @p line 24 px
- * under the name in the dim one, both centred and clipped to the tile.
- * @p pressed lightens the surface.  The 30 px icon, the 22 px name and the
- * 20 px line take 76 px from @p icon_dy.  A line wider than the tile breaks
- * at a space onto a second row 18 px lower when the tile is tall enough.
+ * @brief Where a tile places its parts and in which faces: one look per
+ *        grid, the menu's and SETUP's.  Offsets are in pixels from the
+ *        tile's top edge.
  */
-#define UI_TILE_ICON 30
-void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
-             const char *name, const char *line, bool pressed);
+typedef struct {
+    int16_t icon_dy;          /**< the icon box's top                     */
+    int16_t icon;             /**< the icon box's side                    */
+    int16_t name_dy;          /**< the name's top                         */
+    int16_t line_dy;          /**< the line's top                         */
+    int16_t line_pitch;       /**< a broken line's second row below the
+                               *   first; 0: no second row               */
+    const gfx_font_t *name_f; /**< the name's face                        */
+    const gfx_font_t *line_f; /**< the line's face                        */
+} ui_tile_look_t;
+
+/** @brief A tile's name and line keep this far from its sides, px. */
+#define UI_TILE_PAD 8
+
+/**
+ * @brief A tile of a grid that opens what it names: the menu's, and
+ *        SETUP's.
+ *
+ * A rounded surface, @p icon in a square box placed by @p look, centred in
+ * x, the name under it in the text colour and the line under the name in
+ * the dim one, both centred and clipped to the tile less UI_TILE_PAD px on
+ * either side.  A line wider than that breaks at the last space that fits
+ * onto a second row look->line_pitch px lower, where line_pitch is not 0
+ * and that row ends inside the tile; a line with no such space or no such
+ * row is clipped.
+ *
+ * @param c       Canvas.
+ * @param r       The tile.
+ * @param look    Where its parts go and their faces.
+ * @param icon    Its icon, or NULL for none.
+ * @param name    Its name, or NULL for none.
+ * @param line    The line under the name, or NULL for none.
+ * @param pressed Lightens the surface.
+ */
+void ui_tile(gfx_canvas_t *c, gfx_rect_t r, const ui_tile_look_t *look,
+             ui_icon_fn icon, const char *name, const char *line,
+             bool pressed);
 
 /** Small status pill: a filled dot, then a label UI_PILL_INSET px from
  *  the pill's left edge, the dot centred half that from it. */
