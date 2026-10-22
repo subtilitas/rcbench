@@ -1,5 +1,6 @@
-/*
- * ESC STICK's private seam between esc_stick_pages.c, the page set MOTOR &
+/**
+ * @file
+ * @brief ESC STICK's private seam between esc_stick_pages.c, the page set MOTOR &
  * ESC opens from PROGRAM's list (the session's state, its tap walk and its
  * hooks), and esc_stick_panel.c, the stick programmer's pages: the layout
  * both draw on, the state both read and write, the tap walk, the text
@@ -308,40 +309,81 @@ SP_SHARED void sp_note(gfx_canvas_t *c, int x, int right, const char *text,
 
 /* --- the panel's side, in esc_stick_panel.c ----------------------------- */
 
-/* The page set's init: the panel's state cleared and its controls laid
- * out. */
+/**
+ * @brief The page set's init: the panel's state cleared and its controls
+ *        laid out, TIMING's keypad closed.
+ */
 void esc_stick_panel_reset(void);
 
-/* The host's entry, its leave, a frame and lost touches. */
+/** @brief The host's entry. */
 void esc_stick_panel_enter(void);
+/**
+ * @brief The host is left: a run ends, the warning, the search's keyboard
+ *        and TIMING's keypad close, and TIMING asks for a save of what it
+ *        changed.
+ */
 void esc_stick_panel_leave(void);
+/**
+ * @brief A frame.
+ * @param dt_s The frame's time, s.
+ */
 void esc_stick_panel_tick(float dt_s);
+/**
+ * @brief Touches were lost: a press that may become a tap ends, a hold
+ *        ends, a key held on the keyboard or the keypad is let go with what
+ *        was typed kept, and a run whose arm is not yet in force ends.
+ */
 void esc_stick_panel_cancel(void);
 
-/* A DOWN on the session's pages, in the walk of hit(). */
+/**
+ * @brief A DOWN on the session's pages, in the walk of hit().  TIMING's
+ *        keypad, while open, takes the DOWN and nothing under it does.
+ * @param evt The DOWN, or the press a tap replays.
+ * @return True: the pages take every DOWN.
+ */
 bool esc_stick_panel_down(const touch_event_t *evt);
 
 /** A DOWN at (x, y) lands on the ABORT of a run under way, which
  *  esc_stick_panel_down() acts on at the press. */
 bool esc_stick_panel_safe_at(int px, int py);
 
-/* The home tag in the session: true when it closed what covers the page,
- * ended a run or climbed a level, as BACK does; from the makers it closes
- * the session (STAGE_CLOSED). */
+/**
+ * @brief The home tag in the session: TIMING's keypad closes as CANCEL
+ *        does; otherwise what covers the page closes, a run ends or the
+ *        session climbs a level, as BACK does; from the makers it closes
+ *        the session (STAGE_CLOSED).
+ * @return True: it always acts.
+ */
 bool esc_stick_panel_back(void);
 
-/* A MOVE or an UP: the search's keys and the warning's hold follow it. */
+/**
+ * @brief A MOVE or an UP: the search's keys, TIMING's keypad and the
+ *        warning's hold follow it.
+ * @param evt The event.
+ */
 void esc_stick_panel_follow(const touch_event_t *evt);
 
-/* Whether contact @p id holds the warning's hold or a key of the search's
- * keyboard. */
+/**
+ * @brief Whether contact @p id holds the warning's hold, a key of the
+ *        search's keyboard or a key of TIMING's keypad.
+ * @param id The contact.
+ * @return True when it does.
+ */
 bool esc_stick_panel_holds_press(uint8_t id);
 
-/* The session opens on the makers, from the top, the search as typed. */
+/**
+ * @brief The session opens on the makers, from the top, the search as
+ *        typed; TIMING and its keypad closed.
+ */
 void esc_stick_panel_open(void);
 
-/* The panel's part of what decides which control lies under a point, hashed
- * on from @p h. */
+/**
+ * @brief The panel's part of what decides which control lies under a
+ *        point: the level, the pages' scrolls, what covers the page, the
+ *        keyboard and TIMING's keypad.
+ * @param h The hash so far.
+ * @return @p h hashed on with the panel's part.
+ */
 uint32_t esc_stick_panel_showing(uint32_t h);
 
 /* The session's pages, on a revision not yet drawn: everything under

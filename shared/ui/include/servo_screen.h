@@ -1,5 +1,6 @@
-/*
- * The servo bench: the outputs the binding marks as surfaces, commanded
+/**
+ * @file
+ * @brief The servo bench: the outputs the binding marks as surfaces, commanded
  * together by dragging one horn.
  *
  * A workbench (ui_workbench.h): the strip under the band shows LIVE (the
@@ -22,6 +23,7 @@
 #include "servo_source.h"
 #include "servo_test_io.h"
 #include "supply.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -141,6 +143,13 @@ void servo_screen_cancel_arm(void);
 
 /** Commanded pulse width, for the application and for tests. */
 uint16_t servo_screen_commanded(void);
+
+/**
+ * @brief The keypad over the left column: a set point's, a settings row's
+ *        or TRIM's, which is signed; for tests and the renderer.
+ * @return The keypad, open or closed.
+ */
+const ui_keypad_t *servo_screen_keypad(void);
 /** The value of the COMMANDED row as it is drawn: the pulse in us, and
  *  "---" while the servo programmer holds the port and no pulse is on it. */
 const char *servo_screen_commanded_text(void);

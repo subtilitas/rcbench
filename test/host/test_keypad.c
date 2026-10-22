@@ -178,7 +178,9 @@ TEST_CASE(the_keys_tile_the_area_and_ok_spans_two)
     CHECK(rok.w > 2 * r0.w);
     CHECK(rok.y == r0.y);
     CHECK(r9.y < r0.y);
-    for (int k = 0; k < UI_KEY_COUNT; ++k) {
+    /* An unsigned keypad has no +/- key. */
+    CHECK_EQ(ui_keypad_key_rect(&kp, UI_KEY_SIGN).w, 0);
+    for (int k = 0; k < UI_KEY_SIGN; ++k) {
         const gfx_rect_t r = ui_keypad_key_rect(&kp, (ui_key_t)k);
         CHECK(r.x >= k_area.x && r.x + r.w <= k_area.x + k_area.w);
         CHECK(r.y >= k_area.y && r.y + r.h <= k_area.y + k_area.h);

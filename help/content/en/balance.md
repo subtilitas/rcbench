@@ -17,7 +17,7 @@ A balance result is a magnitude and an angle. The right card sets the rotor and 
 | Control or row | What it does |
 |---|---|
 | PROPELLER, EDF | the rotor type; EDF is an EDF (electric ducted fan) |
-| BLADES, `-`, `+` | the blade count, 2 to 6 |
+| BLADES, `-`, `+` | the blade count, 2 to 6; a tap on the count opens the keypad |
 | VIBRATION | the vibration, in g |
 | ANGLE | the angle of the heavy spot, in deg |
 | ADD | the mass to add, in g |
@@ -28,6 +28,10 @@ No sensor is fitted in this release. VIBRATION, ANGLE and ADD are fixed values, 
 ![A five-blade ducted fan](view:balance-edf)
 
 For a ducted fan the correction is an angle on the hub, `hub, 265 deg`, because a blade tip inside a duct cannot be reached.
+
+![The blade count's keypad, 5 typed](view:balance-keypad)
+
+The keypad covers both cards. OK takes 2 to 6; any other count keeps it open and names the range in the warning colour. CANCEL, the home tag and a tab close it and change nothing.
 
 Without an index pulse, balancing takes four runs: a baseline, then a trial mass at 0, 120 and 240 deg. An index pulse halves that.
 

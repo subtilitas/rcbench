@@ -1,5 +1,6 @@
-/*
- * Settings: a hub of tiles, one per category and one per screen SETUP
+/**
+ * @file
+ * @brief Settings: a hub of tiles, one per category and one per screen SETUP
  * opens, and a category's entries in a list across the screen.  The rows
  * are rendered from the schema in shared/settings, so adding a setting is a
  * table row and not a screen change; adding a tile is a row of the screen's
@@ -15,6 +16,7 @@
 #include <stdint.h>
 
 #include "settings.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 #include "ui_textkey.h"
 
@@ -91,6 +93,20 @@ int settings_screen_rows(setting_cat_t cat);
  * the string as an edit; SAVE keeps it.
  */
 const ui_textkey_t *settings_screen_textkey(void);
+
+/**
+ * @brief The keypad a tap on a number's value opens: over the list and the
+ *        strip until OK sets the value (settings_set(), as a step does),
+ *        CANCEL or the home tag drops it, or SETUP is left.
+ * @return The keypad, open or closed.
+ */
+const ui_keypad_t *settings_screen_keypad(void);
+
+/**
+ * @brief The setting the open keypad types.
+ * @return Its setting_id_t, or -1 while the keypad is closed.
+ */
+int settings_screen_keypad_setting(void);
 
 /** The category whose list is open, or -1 while the hub's tiles show. */
 int settings_screen_category(void);

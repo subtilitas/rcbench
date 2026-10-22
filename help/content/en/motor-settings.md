@@ -20,7 +20,7 @@ A row shows the setting, a help line and its value with its unit. A tap on the v
 |---|---|---|---|---|
 | PACK | Cells | 1 to 14 S | 6 | stored; no screen uses it in this release |
 | PACK | Capacity | 0 to 30000 mAh, 100 mAh steps | 5000 | stored; no screen uses it in this release |
-| PACK | Internal R | 0 to 200 mOhm | 18.0 | stored; no screen uses it in this release |
+| PACK | Internal R | 0 to 200 mOhm | 18 | stored; no screen uses it in this release |
 | MOTOR | Motor poles | 2 to 42, steps of 2 | 14 | rpm is eRPM (electrical rpm) divided by poles/2 |
 | MOTOR | Rated kV | 0 to 10000 rpm/V, steps of 10 | 0 | the kV on [LIVE](motor.md#kv-rpm-v-and-eff); 0 leaves it empty |
 | THROTTLE OUTPUT | Idle pulse | 800 to 1600 us, steps of 10 | 1000 | the PWM (pulse-width modulation) width at 0 % throttle |

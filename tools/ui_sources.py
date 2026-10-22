@@ -54,6 +54,7 @@ SOURCES = [
     "shared/ui/supply_events.c",
     "shared/ui/supply_draw.c",
     "shared/ui/ui_keypad.c",
+    "shared/ui/ui_setting_keypad.c",
     "shared/ui/ui_textkey.c",
     "shared/ui/ui_pinlist.c",
     "shared/ui/servo_screen.c",

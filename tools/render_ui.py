@@ -107,6 +107,8 @@ SCREENS = {
     # SETTINGS' OUTPUT and SWEEP pages; TEST's run cards; the AUTOMATIC
     # TEST card's settings and the LIMIT RUN card's, one level down.
     "servo-settings": ("servo-settings.png", "servo", "dark"),
+    # TRIM's keypad, signed: the +/- key, -25 us typed.
+    "servo-trim-keypad": ("servo-trim-keypad.png", "servo", "dark"),
     "servo-sweep-page": ("servo-sweep-page.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
     "servo-test-settings": ("servo-test-settings.png", "servo", "dark"),
@@ -231,6 +233,9 @@ SCREENS = {
     "motor-stick": ("motor-stick.png", "motor", "dark"),
     "motor-stick-items": ("motor-stick-items.png", "motor", "dark"),
     "motor-stick-timing": ("motor-stick-timing.png", "motor", "dark"),
+    # TIMING's keypad: BEEP MIN's value tapped, 250 typed.
+    "motor-stick-timing-keypad": ("motor-stick-timing-keypad.png", "motor",
+                                  "dark"),
     "motor-stick-warning": ("motor-stick-warning.png", "motor", "dark"),
     "motor-stick-run": ("motor-stick-run.png", "motor", "dark"),
     # The run's page with the phase tap enabled and running, its readout
@@ -275,6 +280,14 @@ SCREENS = {
     # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
+    # The keypad of 0x40 CH1's shunt, 44.4 mOhm typed.
+    "setup-sensors-keypad": ("setup-sensors-keypad.png", "setup", "dark"),
+    # Values inside the range the steps never reach, refused with the
+    # reason in place of the range: a 3 mOhm shunt, GPIO 5 for Sensor SDA,
+    # and PD mini RX's GPIO 9 for PD mini TX.
+    "setup-sensors-why": ("setup-sensors-why.png", "setup", "dark"),
+    "setup-sda-why": ("setup-sda-why.png", "setup", "dark"),
+    "setup-pdmini-why": ("setup-pdmini-why.png", "setup", "dark"),
     # INTERFACES drawn on to the bus's pins, which the IOmcu has not taken:
     # the mark on Sensor SDA and Sensor SCL.
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
@@ -356,6 +369,8 @@ SCREENS = {
     "balance-rig": ("balance-rig.png", "balance", "dark"),
     "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
     "balance-edf": ("balance-edf.png", "balance", "dark"),
+    # The blade count's keypad, 5 typed.
+    "balance-keypad": ("balance-keypad.png", "balance", "dark"),
     # WI-FI from LOGS: the radio off with nothing kept; a home
     # network kept whose join failed, the access code off; the gate shut.
     "wifi": ("wifi.png", "wifi", "dark"),

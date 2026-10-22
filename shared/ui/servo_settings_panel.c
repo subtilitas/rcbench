@@ -1,5 +1,6 @@
-/*
- * The SERVO screen's pages of rows and the panels they open.  SETTINGS, a
+/**
+ * @file
+ * @brief The SERVO screen's pages of rows and the panels they open.  SETTINGS, a
  * task of the strip, holds three pages under its own tabs -- OUTPUT, SWEEP
  * and DUT: the servo's type, frame rate and pulse widths, the sweep's
  * curve, and the device under test.  Each run card on TEST opens its run's
@@ -304,7 +305,8 @@ static bool target_locked(const ov_row_t *r)
     return r->kind == R_SETTING && target_locked_for(r->id);
 }
 
-/* A settings row tapped: the editor its kind takes. */
+/** @brief A settings row tapped: the editor its kind takes; TRIM's keypad
+ *         is signed.  @param i The row. */
 static void edit_row(int i)
 {
     const ov_row_t *r = &k_rows[i];
@@ -369,6 +371,11 @@ static void edit_row(int i)
     case R_TRAVEL:
         open_keypad(KT_TRAVEL, TR(SV_ROW_TRAVEL), "deg", s.travel_deg, 10.0f,
                     90.0f, 0);
+        break;
+    case R_TRIM:                        /* -200 to +200 us: the +/- key */
+        ui_keypad_open_signed(&s.kp, overlay_area(), TR(SV_ROW_TRIM), "us",
+                              (float)s.trim_us, -200.0f, 200.0f, 0);
+        s.kp_target = KT_TRIM;
         break;
     case R_REVERSE:
         s.reverse = !s.reverse;
@@ -448,6 +455,8 @@ static void choose(int k)
     ++s.ctrl_rev;
 }
 
+/** @brief The keypad closed: @p v to its target on OK.
+ *  @param r How it closed.  @param v The value OK handed back. */
 static void keypad_done(ui_keypad_result_t r, float v)
 {
     if (r == UI_KEYPAD_NONE) {
@@ -485,6 +494,10 @@ static void keypad_done(ui_keypad_result_t r, float v)
         case KT_RATE:
             ask_profile(s.type, us);
             break;
+        case KT_TRIM:                   /* onto the 5 us steps of - and + */
+            s.trim_us = (int16_t)(5L * lroundf(v / 5.0f));
+            reissue();
+            break;
         case KT_SETTING:
             settings_set(s.kp_setting, v);
             settings_request_save();
@@ -496,7 +509,8 @@ static void keypad_done(ui_keypad_result_t r, float v)
     ++s.ctrl_rev;
 }
 
-/* A press on a page of rows or a panel: on whichever is up. */
+/** @brief A press on a page of rows or a panel: on whichever is up; on
+ *         TRIM, beside its steps, the row.  @param evt The DOWN. */
 void ov_down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
@@ -576,7 +590,6 @@ void ov_down(const touch_event_t *evt)
                 reissue();
                 return;
             }
-            continue;
         }
         if (gfx_rect_contains(row_rect(i), x, y)) {
             ov_take(evt, OP_ROW, i);

@@ -8,6 +8,28 @@ history is in git.
 
 ### Added
 
+- A tap on a number's value opens the keypad on every row that sets a
+  number: SETUP's PANEL, INTERFACES and SENSORS lists, ESC STICK's TIMING
+  and BALANCE's blade count, beside the `-` and `+` keys, which stay. The
+  keypad names the setting, its range and its unit and takes the step's
+  digits after the point. OK sets the value through the call a step ends
+  in, onto the nearer step, and SAVE keeps it as it keeps a step. A value
+  outside the range keeps the keypad open and names the range in the
+  warning colour. One the keys never reach keeps it open with the reason
+  in place of the range until the next key: `0 or 5.0 to 1000.0 mOhm` for
+  a SENSORS shunt between 0 and 5.0 mOhm, `Pins the bus takes: 0 4 6 14
+  16 18 20 26` for a Sensor SDA pin the bus cannot have, listed from the
+  check the row's keys use, and `The other PD mini pin holds this GPIO`.
+  A shunt of 44.4 mOhm from the 100.0 default is five keys, where `-`
+  takes 556 steps.
+- SERVO > SETTINGS > OUTPUT > TRIM opens a signed keypad: a `+/-` key
+  between the point and OK, -200 to +200 us, onto the 5 us steps of `-` and
+  `+`. Keypads of unsigned rows keep their keys where they were; a pin's
+  -1, not set, is still set with `-`.
+- A settings value with a step finer than 0.1 shows the step's digits after
+  the point, and one with a step of 1 none: ESC STICK's Current limit reads
+  1.25 A where it read 1.2 A, MOTOR & ESC's Internal R 18 mOhm where it
+  read 18.0.
 - ESP32-P4 panel: Wi-Fi through the board's ESP32-C6 on SDIO (Secure
   Digital input/output) slot 1, CLK GPIO18, CMD GPIO19, D0 to D3 GPIO14 to
   GPIO17, the C6's enable on GPIO54, 4 bits at 40 MHz. The `esp_wifi` calls

@@ -850,6 +850,22 @@ davon ist gemessen:
 
 ![Timing](img/de/motor-stick-timing.png)
 
+`-` und `+` einer Zeile stellen ihren Wert um einen Schritt. Ein Tipp auf
+den Wert, die 216 px breite Spalte zwischen dem Namen und den Tasten, öffnet
+das Tastenfeld über der Seite, von unter dem Ausgangsstreifen bis 4 px über
+dem Alarmband: 788 x 368 px, Tasten von 188 x 62 px. Es nennt die
+Einstellung, ihren Bereich und ihre Einheit und nimmt die Stellen des
+Schritts nach dem Punkt: eine für die 0,1 V von Spannung, zwei für die
+0,05 A von Strombegrenzung. OK setzt den Wert wie ein Schritt auf den
+näheren Schritt (1,23 A sind 1,25 A); SCHLIESSEN fordert das Speichern an,
+wie nach einem Schritt. Ein Wert außerhalb des Bereichs lässt das
+Tastenfeld offen und nennt den Bereich in der Warnfarbe. ABBRECHEN, OK ohne
+getippten Wert und das Home-Tag schließen es und ändern nichts; TIMING
+bleibt. Nichts darunter nimmt einen Druck an. Die Punkte eines Profils sind
+Listen der eigenen Werte des Reglers und öffnen kein Tastenfeld.
+
+![Das Tastenfeld von Piepton min](img/de/motor-stick-timing-keypad.png)
+
 ## Servo
 
 ![Servo](img/de/servo.png)
@@ -1404,7 +1420,7 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | OPTIONEN > AUSGANG | TYP | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
 | OPTIONEN > AUSGANG | PULSRATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder EIGENE EINSTELLUNG über die Tastatur |
 | OPTIONEN > AUSGANG | PULS MIN, PULS MITTE, PULS MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist MITTE, +90 Grad ist MAX, und FREIGEBEN ruht auf MITTE. Ein Ende liegt nicht weiter von MITTE entfernt als MITTE von 400 us oder 2500 us |
-| OPTIONEN > AUSGANG | TRIMMUNG | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
+| OPTIONEN > AUSGANG | TRIMMUNG | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung; `-` und `+` stellen sie, ein Tipp auf den Wert öffnet das Tastenfeld mit Vorzeichen |
 | OPTIONEN > AUSGANG | WEG | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
 | OPTIONEN > AUSGANG | UMKEHREN | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
 | OPTIONEN > SWEEP | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
@@ -1419,6 +1435,17 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | OPTIONEN > PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
 | OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
+
+Das Tastenfeld der TRIMMUNG ist das eine Tastenfeld mit Vorzeichen: Seine
+Taste `+/-`, zwischen dem Punkt und OK, setzt ein Minuszeichen vor die
+Eingabe oder nimmt es weg, vor oder nach den Ziffern. OK nimmt -200 bis
++200 us und legt den Wert auf den näheren der 5-us-Schritte von `-` und
+`+`: 13 wird 15, -12 wird -10, -0 ist 0. -201 lässt das Tastenfeld offen und
+nennt den Bereich in der Warnfarbe; das Vorzeichen allein ist nichts
+Getipptes. Die anderen Tastenfelder haben keine Taste `+/-`, und ihre Tasten
+bleiben, wo sie sind.
+
+![Das Tastenfeld der TRIMMUNG, -25 us getippt](img/de/servo-trim-keypad.png)
 
 AS5600, der Ausgangsencoder, wird nur auf SETUP > ANSCHLÜSSE ein- und
 ausgeschaltet ([der Ausgangsencoder](#anschlüsse-der-ausgangsencoder)); der
@@ -1891,7 +1918,9 @@ Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
 Baud -- steht in SETUP unter ANSCHLÜSSE. TX und RX sind GPIO-Nummern des
 IOmcu: TX geht zum DM des Moduls, RX kommt von seinem DP. Ihre Tasten `-`
 und `+` springen über den GPIO, den die andere Zeile hält, und tun am Ende
-des Bereichs nichts: mit RX auf GP47 bleibt TX auf GP46. Eine gespeicherte
+des Bereichs nichts: mit RX auf GP47 bleibt TX auf GP46. Das Tastenfeld
+lehnt den GPIO der anderen Zeile ab und zeigt statt des Bereichs `Diesen
+GPIO hält der andere PD-mini-Pin`. Eine gespeicherte
 Einstellung mit beiden auf einem GPIO wird so geladen: das Panel schreibt die
 Page abgeschaltet, der PD mini bleibt aus, und beide Zeilen sagen `TX und RX
 auf einem Pin. Der PD mini bleibt aus.`, bis eine verstellt wird. Der
@@ -1918,6 +1947,8 @@ oder 460800 Baud, oder AUTO. AUTO, die Vorgabe, lässt den IOmcu sie
 finden: er versucht jede der 7 Raten, eine pro Sekunde. Die Kopfzeile von
 SUPPLY zeigt die Rate in Gebrauch hinter ONLINE, z. B. `ONLINE 38400`, bei
 AUTO wie bei einer festen Rate.
+
+![GPIO 9 von RX für PD mini TX abgelehnt](img/de/setup-pdmini-why.png)
 
 ## Receiver
 
@@ -2726,6 +2757,35 @@ Auswahl springt vom letzten Wert auf den ersten.
   und nimmt keine Berührung an.
 - Eine Taste ist ihre Spalte, 44 px breit, über die 54 px ihrer Zeile. Die
   4 px zwischen zwei Zeilen gehören zu keiner Taste.
+- **Tastenfeld.** Ein Tipp auf den Wert einer Zahl, die 126 px zwischen
+  ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste und der
+  Leiste: 784 x 386 px, Tasten von 187 x 66 px, sein Fuß 4 px über dem
+  Alarmband. Es nennt die Einstellung, ihren Bereich und ihre Einheit, zeigt
+  den Wert blass, bis eine Ziffer getippt ist, und nimmt so viele Stellen
+  nach dem Punkt, wie der Schritt hat: eine für die 0,1 mΩ eines Shunts,
+  keine für einen Pin. OK setzt den Wert, wie ein Schritt ihn setzt: Er gilt
+  sofort, SPEICHERN behält ihn. Ein Wert zwischen zwei Schritten wird auf
+  den näheren Schritt gesetzt: 73 % Helligkeit sind 75 %. Ein Wert außerhalb
+  des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der
+  Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es
+  ebenfalls offen und nennt statt des Bereichs den Grund in der Warnfarbe:
+  `0 oder 5.0 bis 1000.0 mOhm` für einen Shunt zwischen 0 und 5,0 mΩ,
+  `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26` für einen Pin für
+  Sensor-SDA, den der Bus nicht haben kann, und `Diesen GPIO hält der andere
+  PD-mini-Pin` für den GPIO, den der andere PD-mini-Pin hält. Die Pinliste
+  entsteht aus `settings_sense_sda_valid()`, der Prüfung, nach der die
+  Tasten der Zeile gehen. Die nächste Taste bringt den Bereich zurück. Das
+  Tastenfeld eines
+  Pins hat keine Taste `+/-`: -1, ein nicht gesetzter Pin, wird mit `-`
+  gesetzt. Eine Zahl zeigt so viele Stellen nach dem Punkt, wie ihr Schritt
+  hat, damit die Zeile zeigt, was das Tastenfeld nimmt: 1.25 A, nicht
+  1.2 A.
+  ABBRECHEN, OK ohne getippten Wert und das Home-Tag schließen es und ändern
+  nichts; das Verlassen von SETUP schließt es ebenfalls. Nichts darunter
+  nimmt einen Druck an. Ein Schalter, eine Auswahl, INA228 Adresse und
+  Sensor-SCL öffnen kein Tastenfeld, und ein Drag, der auf einem Wert
+  beginnt, scrollt und öffnet nichts. Der Zustand des Prüfstands sperrt das
+  Tastenfeld nicht, so wie er die Tasten nicht sperrt.
 - Ein Finger zur Zeit. Solange einer drückt oder scrollt, bewirkt ein zweiter
   Finger auf diesem Bildschirm nichts.
 
@@ -2849,6 +2909,12 @@ IOmcu ein Schreiben beurteilt (`link_sn_pins_pair()`,
 Phasenabgriff hält, wird trotzdem angeboten, und der IOmcu lehnt ihn
 ab. Mit Sensor-SDA auf −1 schreibt das Panel ENABLE 0, SDA 0 und SCL 0 auf
 die Page.
+
+Das Tastenfeld lehnt einen Pin ab, den die Regel nicht nimmt, und zeigt
+statt des Bereichs die Pins, die sie nimmt, aus derselben Regel gelistet:
+GPIO 5 getippt zeigt `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26`.
+
+![GPIO 5 für Sensor-SDA abgelehnt](img/de/setup-sda-why.png)
 
 Gespeicherte Einstellungen: der Schlüssel `sns_scl` wird nicht gelesen.
 Sensor-SCL wird aus dem gespeicherten Sensor-SDA abgeleitet, und der
@@ -2991,6 +3057,16 @@ Baustein, der nicht bestückt ist, hat keine Überschrift und keine Zeilen.
 | --- | --- | --- | --- |
 | 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, KEINE für jeden anderen Kanal | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
 | 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | AUS: der Kanal wird nicht gelesen. Der R100 des DAOKAI misst bis 1,64 A |
+
+Ein Tipp auf den Wert eines Shunts öffnet das Tastenfeld
+([Tasten und Liste](#tasten-und-liste)). 44,4 mΩ vom Standardwert 100,0
+sind fünf Tasten, `4`, `4`, `.`, `4` und OK, wo `-` 556 Schritte braucht.
+0 ist AUS; 0,1 bis 4,9 wird abgelehnt, und das Tastenfeld zeigt bis zur
+nächsten Taste `0 oder 5.0 bis 1000.0 mOhm` statt des Bereichs.
+
+![Das Tastenfeld von 0x40 CH1 Shunt](img/de/setup-sensors-keypad.png)
+
+![3 mOhm abgelehnt, der Grund statt des Bereichs](img/de/setup-sensors-why.png)
 
 Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 

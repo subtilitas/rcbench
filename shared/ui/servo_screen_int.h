@@ -1,5 +1,6 @@
-/*
- * The SERVO screen's private seam between servo_screen*.c, the screen,
+/**
+ * @file
+ * @brief The SERVO screen's private seam between servo_screen*.c, the screen,
  * servo_workbench.c, its task strip, TEST page and TARGET row
  * (servo_workbench_int.h), servo_settings_panel.c, its settings pages and
  * the panels they open, servo_test_panel.c, its automatic test, and
@@ -175,7 +176,7 @@ enum { OP_NONE = 0, OP_TAB, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
 enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
-       KT_SETTING, KT_SUP_V, KT_SUP_I };
+       KT_SETTING, KT_SUP_V, KT_SUP_I, KT_TRIM };
 
 /* What the question or the HV warning applies: a typed set point, the
  * supply's output switched on, or the automatic test started with steps

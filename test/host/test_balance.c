@@ -10,6 +10,8 @@
 #include "greatest.h"
 
 #include "balance_screen.h"
+#include "ui_band.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -207,6 +209,198 @@ TEST_CASE(the_blade_count_clamps_two_to_six)
 
     tap(BLADE_DN_X, BLADE_Y);
     CHECK_EQ(balance_screen_blades(), 5);
+}
+
+/* ------------------------------------------------ the blade count keypad */
+
+/* The keypad's key @p key tapped. */
+static void kp_key(ui_key_t key)
+{
+    const gfx_rect_t r = ui_keypad_key_rect(balance_screen_keypad(), key);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/* A tap on the blade count: its keypad. */
+static void tap_count(void)
+{
+    const gfx_rect_t r = balance_screen_blades_rect();
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/* A tap on the count opens the keypad over both cards, above the alert
+ * band; the label beside it and the keys open nothing. */
+TEST_CASE(a_tap_on_the_blade_count_opens_its_keypad)
+{
+    fresh();
+    tap(CTRL_X + 10, BLADE_Y);                /* the label */
+    tap(BLADE_UP_X, BLADE_Y);
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 3);
+    tap_count();
+    const ui_keypad_t *k = balance_screen_keypad();
+    CHECK(k->open);
+    CHECK_STR_EQ(k->title, TR(BAL_BLADES));
+    CHECK_NEAR(k->min, 2.0f, 1e-6f);
+    CHECK_NEAR(k->max, 6.0f, 1e-6f);
+    CHECK_EQ(k->decimals, 0);
+    CHECK_NEAR(k->value, 3.0f, 1e-6f);
+    CHECK(k->area.y + k->area.h <= UI_BODY_H - UI_ALERT_H);
+    CHECK(k->area.y >= BODY_Y - 4);
+    /* The count sits between its label and the "-" key. */
+    const gfx_rect_t v = balance_screen_blades_rect();
+    CHECK(v.x + v.w < BLADE_DN_X - 17);
+    CHECK(v.x > CTRL_X + 56);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    balance_invalidate();
+    scr->render(&cv, 0);
+    const gfx_rect_t ok = ui_keypad_key_rect(k, UI_KEY_OK);
+    CHECK_EQ(fb[(ok.y + ok.h / 2) * W + ok.x + 4],
+             ui_theme_color(UI_C_ACCENT));
+}
+
+TEST_CASE(the_blade_keypad_takes_two_to_six_and_refuses_the_rest)
+{
+    fresh();
+    tap_count();
+    kp_key(UI_KEY_6);
+    kp_key(UI_KEY_OK);
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 6);
+    tap_count();
+    kp_key(UI_KEY_2);
+    kp_key(UI_KEY_OK);
+    CHECK_EQ(balance_screen_blades(), 2);
+    tap_count();
+    kp_key(UI_KEY_7);                         /* above the maximum */
+    kp_key(UI_KEY_OK);
+    CHECK(balance_screen_keypad()->open);
+    CHECK(balance_screen_keypad()->refused);
+    CHECK_EQ(balance_screen_blades(), 2);
+    kp_key(UI_KEY_CLR);
+    kp_key(UI_KEY_1);                         /* under the minimum */
+    kp_key(UI_KEY_OK);
+    CHECK(balance_screen_keypad()->refused);
+    /* A count takes no point: "4.5" is typed as 45, and refused. */
+    kp_key(UI_KEY_CLR);
+    kp_key(UI_KEY_4);
+    kp_key(UI_KEY_DOT);
+    kp_key(UI_KEY_5);
+    CHECK_STR_EQ(balance_screen_keypad()->entry, "45");
+    kp_key(UI_KEY_OK);
+    CHECK(balance_screen_keypad()->refused);
+    CHECK_EQ(balance_screen_blades(), 2);
+    kp_key(UI_KEY_CANCEL);
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 2);
+}
+
+/* The count typed is the count the steps reach. */
+TEST_CASE(a_typed_count_is_the_count_the_steps_reach)
+{
+    fresh();
+    tap(BLADE_UP_X, BLADE_Y);
+    tap(BLADE_UP_X, BLADE_Y);
+    const int stepped = balance_screen_blades();
+    fresh();
+    tap_count();
+    kp_key(UI_KEY_4);
+    kp_key(UI_KEY_OK);
+    CHECK_EQ(balance_screen_blades(), stepped);
+    CHECK_EQ(stepped, 4);
+}
+
+/* CANCEL, the home tag, leaving and a tab change nothing; the controls
+ * under the keypad press nothing while it is open. */
+TEST_CASE(the_blade_keypad_cancels_and_covers_what_is_under_it)
+{
+    fresh();
+    tap_count();
+    kp_key(UI_KEY_5);
+    CHECK(scr->back());                       /* the home tag: CANCEL */
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 2);
+    CHECK(!scr->back());                      /* then home */
+    tap_count();
+    kp_key(UI_KEY_5);
+    scr->leave();
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 2);
+    tap_count();
+    tap(ROTOR1_X, ROTOR_Y);                   /* under it */
+    CHECK(balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_rotor(), ROTOR_PROP);
+    kp_key(UI_KEY_5);
+    tap(204, 22);                             /* RIG's tab, above it */
+    CHECK(!balance_screen_keypad()->open);
+    CHECK(balance_screen_model_mark() == NULL);
+    CHECK_EQ(balance_screen_blades(), 2);
+    tap(74, 22);                              /* back to BALANCE */
+    tap_count();
+    /* A press the touch stream lost is let go; the entry stays. */
+    kp_key(UI_KEY_3);
+    const gfx_rect_t r = ui_keypad_key_rect(balance_screen_keypad(),
+                                            UI_KEY_4);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 2, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(r.y + r.h / 2),
+                                   .strength = 40 } };
+    scr->event(&e);
+    CHECK(balance_screen_keypad()->pressed >= 0);
+    scr->cancel();
+    CHECK(balance_screen_keypad()->pressed < 0);
+    CHECK_STR_EQ(balance_screen_keypad()->entry, "3");
+    /* A press on the count that slides off opens nothing. */
+    kp_key(UI_KEY_CANCEL);
+    const gfx_rect_t v = balance_screen_blades_rect();
+    e = (touch_event_t){ .type = TOUCH_EVENT_DOWN,
+                         .point = { .id = 1, .x = (int16_t)(v.x + 4),
+                                    .y = (int16_t)(v.y + 4),
+                                    .strength = 40 } };
+    scr->event(&e);
+    e.type = TOUCH_EVENT_UP;
+    e.point.y = (int16_t)(v.y + v.h + 40);
+    scr->event(&e);
+    CHECK(!balance_screen_keypad()->open);
+}
+
+/* STOP in the band works over the keypad; the keypad stays with what was
+ * typed and the count as it was. */
+TEST_CASE(stop_over_the_blade_keypad_sets_nothing)
+{
+    ui_router_init();
+    ui_router_goto(SCREEN_BALANCE);
+    const gfx_rect_t v = balance_screen_blades_rect();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(v.x + v.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + v.y + v.h / 2),
+                                   .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    CHECK(balance_screen_keypad()->open);
+    const gfx_rect_t k5 = ui_keypad_key_rect(balance_screen_keypad(),
+                                             UI_KEY_5);
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.x = (int16_t)(k5.x + k5.w / 2);
+    e.point.y = (int16_t)(UI_BAND_H + k5.y + k5.h / 2);
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    (void)ui_router_take_stop();
+    const gfx_rect_t r = ui_band_stop_rect();
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.x = (int16_t)(r.x + r.w / 2);
+    e.point.y = (int16_t)(r.y + r.h / 2);
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    CHECK(ui_router_take_stop());
+    CHECK(balance_screen_keypad()->open);
+    CHECK_STR_EQ(balance_screen_keypad()->entry, "5");
+    CHECK_EQ(balance_screen_blades(), 2);
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 2);
 }
 
 /* The rotor type toggles between propeller and ducted fan. */
@@ -420,5 +614,10 @@ int main(void)
     RUN(a_cancelled_tab_press_already_drawn_is_redrawn_released);
     RUN(both_rotor_types_draw_on_the_measure_pane);
     RUN(every_blade_count_draws);
+    RUN(a_tap_on_the_blade_count_opens_its_keypad);
+    RUN(the_blade_keypad_takes_two_to_six_and_refuses_the_rest);
+    RUN(a_typed_count_is_the_count_the_steps_reach);
+    RUN(the_blade_keypad_cancels_and_covers_what_is_under_it);
+    RUN(stop_over_the_blade_keypad_sets_nothing);
     return test_summary("balance");
 }

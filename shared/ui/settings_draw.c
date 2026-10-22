@@ -16,6 +16,7 @@
 #include "settings_rows_int.h"
 #include "settings_screen.h"
 #include "ui_icons.h"
+#include "ui_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_widgets.h"
@@ -115,6 +116,13 @@ static void draw_text_row(gfx_canvas_t *c, int index, gfx_rect_t r,
              UI_ACCENT, 1);
 }
 
+/**
+ * @brief List row @p index: a heading, a string, or a setting with its
+ *        value and its keys.  A setting's edge takes the accent while its
+ *        value is pressed.
+ * @param c The canvas.
+ * @param index The row.
+ */
 static void draw_row(gfx_canvas_t *c, int index)
 {
     gfx_rect_t r = stg_row_rect(index);
@@ -158,9 +166,13 @@ static void draw_row(gfx_canvas_t *c, int index)
     const bool same_pin = (id == SET_PDMINI_TX || id == SET_PDMINI_RX)
                           && settings_pdmini_same_pin();
     const bool unheld = settings_screen_unheld(id) || same_pin;
+    /* A press on the value, which opens the keypad on its release, lights
+     * the row's edge as a press on a string's row does. */
+    const bool value_down = (s.hit_kind == HIT_VALUE && s.hit_index == index);
     gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0, UI_PANEL);
     gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
-                             unheld ? UI_WARN : UI_EDGE);
+                             unheld ? UI_WARN
+                                    : value_down ? UI_ACCENT : UI_EDGE);
 
     /* Label and help are clipped short of the keys rather than allowed to
      * run under them. */
@@ -304,12 +316,17 @@ static void draw_warning(gfx_canvas_t *c)
 
 void stg_render(gfx_canvas_t *c, int buffer_index)
 {
-    /* The keyboard moves on its own events: every change bumps its
-     * revision, and a buffer drawn under another one is stale. */
+    /* The keyboard and the keypad move on their own events: every change
+     * bumps a revision, and a buffer drawn under another one is stale. */
     if (s.tk.revision != s.drawn_tk_rev || s.tk.open != s.drawn_tk) {
         settings_screen_invalidate();
         s.drawn_tk_rev = s.tk.revision;
         s.drawn_tk = s.tk.open;
+    }
+    if (s.kp.revision != s.drawn_kp_rev || s.kp.open != s.drawn_kp) {
+        settings_screen_invalidate();
+        s.drawn_kp_rev = s.kp.revision;
+        s.drawn_kp = s.kp.open;
     }
     bool stale = true;
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
@@ -321,7 +338,11 @@ void stg_render(gfx_canvas_t *c, int buffer_index)
     }
 
     gfx_clear(c, UI_BG);
-    if (s.warn) {
+    if (s.kp.open) {
+        /* The keypad covers the list and the strip: nothing under it is
+         * drawn, as nothing under it presses. */
+        ui_keypad_render(&s.kp, c);
+    } else if (s.warn) {
         draw_warning(c);
     } else {
         if (s.list) {

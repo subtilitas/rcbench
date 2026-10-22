@@ -785,6 +785,20 @@ measured:
 
 ![Timing](img/motor-stick-timing.png)
 
+A row's `-` and `+` step its value. A tap on the value, the 216 px column
+between the name and the keys, opens the keypad over the page, from under
+the output strip to 4 px above the alert band: 788 x 368 px, keys of
+188 x 62 px. It names the setting, its range and its unit and takes the
+step's digits after the point: one for Voltage's 0.1 V, two for Current
+limit's 0.05 A. OK sets the value as a step does, onto the nearer step (1.23 A is
+1.25 A); CLOSE asks for the save, as after a step. A value outside the
+range keeps the keypad open and names the range in the warning colour.
+CANCEL, OK with nothing typed and the home tag close it and change nothing;
+TIMING stays. Nothing under it takes a press. A profile's items are lists
+of the ESC's own values and open no keypad.
+
+![The keypad of Beep min](img/motor-stick-timing-keypad.png)
+
 ## Servo
 
 ![Servo](img/servo.png)
@@ -1281,7 +1295,7 @@ the name opens a keyboard.
 | SETTINGS > OUTPUT | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
 | SETTINGS > OUTPUT | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
 | SETTINGS > OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, 400 to 2500 us: -90 deg is MIN, 0 is CENTRE, +90 deg is MAX, and RELEASE rests at CENTRE. An end lies no further from CENTRE than CENTRE lies from 400 us or 2500 us |
-| SETTINGS > OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way |
+| SETTINGS > OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way; `-` and `+` step it, a tap on the value opens the signed keypad |
 | SETTINGS > OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
 | SETTINGS > OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
 | SETTINGS > SWEEP | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel. The automatic test moves in steps between the ends RANGE gives |
@@ -1296,6 +1310,16 @@ the name opens a keyboard.
 | SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
 | SETTINGS > DUT | REPORT | a text report beside each test's log |
 | SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
+
+TRIM's keypad is the one signed keypad: its `+/-` key, between the point
+and OK, puts a minus sign in front of the entry or takes it away, before or
+after the digits. OK takes -200 to +200 us and puts the value on the 5 us
+steps of `-` and `+`, the nearer one: 13 is 15, -12 is -10, -0 is 0. -201
+keeps the keypad open and names the range in the warning colour; the sign
+alone is nothing typed. The other keypads have no `+/-` key and their keys
+stay where they are.
+
+![TRIM's keypad, -25 us typed](img/servo-trim-keypad.png)
 
 AS5600, the output encoder, is switched on and off on SETUP > INTERFACES
 alone ([the output encoder](#interfaces-the-output-encoder)); DUT's note
@@ -1725,7 +1749,8 @@ The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
 on SETUP under INTERFACES. TX and RX are IOmcu GPIO numbers: TX goes to
 the module's DM, RX comes from its DP. Their `-` and `+` keys step over the
 GPIO the other row holds, and at the end of the range do nothing: with RX on
-GP47, TX stops at GP46. A set-up stored with both on one GPIO loads as
+GP47, TX stops at GP46. The keypad refuses the other row's GPIO and shows
+`The other PD mini pin holds this GPIO` in place of the range. A set-up stored with both on one GPIO loads as
 stored: the panel writes the page disabled, the PD mini stays off, and both
 rows say `TX and RX on one pin. The PD mini stays off.` until one is
 stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is
@@ -1748,6 +1773,8 @@ own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 IOmcu find it: it tries each of the 7 rates, one a second. The
 SUPPLY header shows the rate in use after ONLINE, e.g. `ONLINE 38400`, with
 AUTO and with a fixed rate alike.
+
+![RX's GPIO 9 refused for PD mini TX](img/setup-pdmini-why.png)
 
 ## Receiver
 
@@ -2474,6 +2501,30 @@ choice wraps round from its last value to its first.
   bar at the list's right edge shows the position and takes no touch.
 - A key is its column, 44 px wide, over the 54 px of its row. The 4 px
   between two rows belong to no key.
+- **Keypad.** A tap on a number's value, the 126 px between its `-` and `+`
+  keys, opens the keypad over the list and the strip: 784 x 386 px, keys of
+  187 x 66 px, its foot 4 px above the alert band. It names the setting, its
+  range and its unit, shows the value faint until a digit is typed, and
+  takes as many digits after the point as the step has: one for a shunt's
+  0.1 mΩ, none for a pin. OK sets the value as a step sets it: in force at
+  once, kept by SAVE. A value between two steps is set to the nearer step:
+  73 % brightness is 75 %. A value outside the range keeps the keypad open
+  and names the range in the warning colour. A value inside the range that
+  the keys never reach keeps it open too and names the reason in place of
+  the range, in the warning colour: `0 or 5.0 to 1000.0 mOhm` for a shunt
+  between 0 and 5.0 mΩ, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a
+  Sensor SDA pin the bus cannot have, and `The other PD mini pin holds this
+  GPIO` for the GPIO the other PD mini pin holds. The pin list is built from
+  `settings_sense_sda_valid()`, the check the row's keys step by. The next
+  key brings the range back. A pin's keypad has no `+/-`
+  key: -1, a pin not set, is set with `-`. A number shows as many digits
+  after the point as its step has, so the row reads what the keypad takes:
+  1.25 A, not 1.2 A. CANCEL, OK with nothing typed and the
+  home tag close it and change nothing; leaving SETUP closes it too. Nothing
+  under it takes a press. A switch, a choice, INA228 address and Sensor SCL
+  open no keypad, and a drag that starts on a value scrolls and opens
+  nothing. The bench's state does not lock the keypad, as it does not lock
+  the keys.
 - One finger at a time. While one presses or scrolls, a second finger does
   nothing on this screen.
 
@@ -2588,6 +2639,12 @@ the one the IOmcu's SENSE page judges a write by
 PD mini or the phase tap holds is offered all the same, and the IOmcu
 refuses it. With Sensor SDA at −1 the panel writes ENABLE 0, SDA 0 and SCL 0
 to the page.
+
+The keypad refuses a pin the rule does not take and shows the pins it
+takes in place of the range, listed from the same rule: GPIO 5 typed shows
+`Pins the bus takes: 0 4 6 14 16 18 20 26`.
+
+![GPIO 5 refused for Sensor SDA](img/setup-sda-why.png)
 
 Stored settings: the `sns_scl` key is not read. Sensor SCL is derived from
 the stored Sensor SDA, and the key is saved with the derived value. A stored
@@ -2718,6 +2775,15 @@ no heading and no rows.
 | --- | --- | --- | --- |
 | 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE for every other channel | what the channel's shunt is in: an output channel, a programming port, or the supply rail |
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | OFF: the channel is not read. The DAOKAI's R100 reads to 1.64 A |
+
+A tap on a shunt's value opens the keypad ([Keys and the list](#keys-and-the-list)).
+44.4 mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,
+where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused, and the keypad
+shows `0 or 5.0 to 1000.0 mOhm` in place of the range until the next key.
+
+![The keypad of 0x40 CH1 shunt](img/setup-sensors-keypad.png)
+
+![3 mOhm refused, the reason in place of the range](img/setup-sensors-why.png)
 
 The heading of a part shows on its right what the part is doing:
 

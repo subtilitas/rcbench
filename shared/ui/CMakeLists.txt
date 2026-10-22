@@ -16,6 +16,7 @@ set(SRCS
     ui_target_row.c
     prog_registry.c
     ui_keypad.c
+    ui_setting_keypad.c
     ui_textkey.c
     ui_pinlist.c
     ui_router.c

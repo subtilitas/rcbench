@@ -911,6 +911,27 @@ int settings_in_category(setting_cat_t cat, setting_id_t *out, int max)
     return n;
 }
 
+/** @brief The most digits after the point a step carries: 0.001 A, the
+ *         servo programmer's current. */
+#define DECIMALS_MAX 3
+
+int settings_decimals(setting_id_t id)
+{
+    const setting_def_t *d = settings_def(id);
+    if (d == NULL || !(d->step > 0.0f)) {
+        return 0;
+    }
+    float step = d->step;
+    int decimals = 0;
+    /* A step of 0.1 is 1.0000000149 once multiplied: whole within 0.1 %. */
+    while (decimals < DECIMALS_MAX
+           && fabsf(step - roundf(step)) > 1e-3f * step) {
+        step *= 10.0f;
+        ++decimals;
+    }
+    return decimals;
+}
+
 const char *settings_value_text(setting_id_t id, char *buf, size_t n)
 {
     return settings_value_text_of(id, settings_get(id), buf, n);
@@ -941,7 +962,7 @@ const char *settings_value_text_of(setting_id_t id, float v, char *buf,
         break;
     }
     case SET_TYPE_FLOAT:
-        snprintf(buf, n, "%.1f", (double)v);
+        snprintf(buf, n, "%.*f", settings_decimals(id), (double)v);
         break;
     case SET_TYPE_INT:
     default:

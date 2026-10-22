@@ -22,6 +22,7 @@
 #include "settings_rows_int.h"
 #include "settings_screen.h"
 #include "ui_icons.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -70,6 +71,12 @@ _Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
 #define PLUS_X   (LIST_X + LIST_W - 14 - BTN_W)
 #define MINUS_X  (PLUS_X - 8 - 110 - 8 - BTN_W)
 #define VALUE_R  (PLUS_X - 8)
+/* A number's value: the 126 px between its "-" and its "+" key, over the
+ * row's height.  A tap there opens the keypad. */
+/** @brief The left edge of a number's value, px. */
+#define VALUE_X  (MINUS_X + BTN_W)
+/** @brief The width of a number's value, px: 126. */
+#define VALUE_W  (PLUS_X - VALUE_X)
 
 /*
  * A "-" or "+" key is a tap: the press arms it and the release steps it
@@ -95,7 +102,8 @@ _Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
 #define DRAG_SLOP 8
 
 enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
-       HIT_SAVE, HIT_STAY, HIT_DISCARD, HIT_LEAVE_SAVE, HIT_TEXT };
+       HIT_SAVE, HIT_STAY, HIT_DISCARD, HIT_LEAVE_SAVE, HIT_TEXT,
+       HIT_VALUE };
 
 /*
  * The warning that holds a way out: a card over the body down to the
@@ -180,6 +188,14 @@ static const struct { ui_text_id_t label; ui_text_id_t help; }
  */
 #define TK_AREA_H (STRIP_Y + STRIP_H - WARN_Y)
 
+/**
+ * @brief The keypad a number's value opens: the keyboard's area, 784 x
+ *        386 px, keys of 187 x 66 px.  Nothing under it presses while it
+ *        is open; OK, CANCEL and the home tag close it as they close the
+ *        keyboard.
+ */
+#define KP_AREA gfx_rect_make(WARN_X, WARN_Y, WARN_W, TK_AREA_H)
+
 typedef struct {
     /* The list of cat is open; the hub shows while this is false. */
     bool     list;
@@ -228,6 +244,12 @@ typedef struct {
     setting_text_id_t tk_text;
     bool     drawn_tk;
     uint32_t drawn_tk_rev;
+
+    /* The keypad of number kp_id, and its revision as last drawn. */
+    ui_keypad_t  kp;            /**< the keypad a number's value opens */
+    setting_id_t kp_id;         /**< the number it types               */
+    bool     drawn_kp;          /**< whether it was open, as last drawn */
+    uint32_t drawn_kp_rev;      /**< its revision, as last drawn       */
 } stg_state_t;
 
 /* Defined in settings_screen.c. */
@@ -251,4 +273,10 @@ settings_row_t stg_row_entry(int index);
 
 /* --- settings_draw.c ---------------------------------------------------- */
 
+/**
+ * @brief SETUP drawn: the keypad alone while it is open, else the warning,
+ *        or the tiles or a list over the strip, and the keyboard over them.
+ * @param c The canvas.
+ * @param buffer_index The framebuffer, whose cached chrome it follows.
+ */
 void stg_render(gfx_canvas_t *c, int buffer_index);

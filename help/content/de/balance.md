@@ -17,7 +17,7 @@ Ein Wuchtergebnis ist ein Betrag und ein Winkel. Die rechte Karte stellt den Rot
 | Bedienelement oder Zeile | Was es tut |
 |---|---|
 | PROPELLER, EDF | der Rotortyp; EDF ist ein Impeller (Electric Ducted Fan) |
-| BLÄTTER, `-`, `+` | die Blattzahl, 2 bis 6 |
+| BLÄTTER, `-`, `+` | die Blattzahl, 2 bis 6; ein Tippen auf die Zahl öffnet das Tastenfeld |
 | VIBRATION | die Vibration, in g |
 | WINKEL | der Winkel der schweren Stelle, in deg |
 | HINZUFÜGEN | die zuzufügende Masse, in g |
@@ -28,6 +28,10 @@ In diesem Release ist kein Sensor angeschlossen. VIBRATION, WINKEL und HINZUFÜG
 ![Ein Impeller mit fünf Blättern](view:balance-edf)
 
 Bei einem Impeller ist die Korrektur ein Winkel auf der Nabe, `Nabe, 265 Grad`, weil eine Blattspitze im Mantel nicht erreichbar ist.
+
+![Das Tastenfeld der Blattzahl, 5 getippt](view:balance-keypad)
+
+Das Tastenfeld bedeckt beide Karten. OK nimmt 2 bis 6; jede andere Zahl lässt es offen und nennt den Bereich in der Warnfarbe. ABBRECHEN, das Home-Tag und ein Reiter schließen es und ändern nichts.
 
 Ohne Indexpuls braucht das Wuchten vier Läufe: eine Referenz, dann je eine Testmasse bei 0, 120 und 240 deg. Ein Indexpuls halbiert das.
 

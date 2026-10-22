@@ -24,8 +24,13 @@ Jeder bestückte Baustein hat eine Überschrift, `INA3221 0x40` bis `INA3221 0x4
 | 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0 mOhm, Schritte von 0,1 mOhm | 100,0 | AUS: der Kanal wird nicht gelesen; 100 mOhm misst bis 1,64 A |
 
 - `+` auf einem Shunt bei AUS gibt 5,0 mOhm, `-` bei 5,0 mOhm gibt AUS.
+- Ein Tippen auf den Wert eines Shunts öffnet das Tastenfeld: 44,4 mOhm vom Standardwert 100,0 sind `4`, `4`, `.`, `4` und OK, wo `-` 556 Schritte braucht. 0 ist AUS; 0,1 bis 4,9 wird abgelehnt: Das Tastenfeld bleibt offen und zeigt bis zur nächsten Taste `0 oder 5.0 bis 1000.0 mOhm` statt des Bereichs.
 - Der Kanal, der jede Millisekunde gelesen wird und dessen Strom der Bildschirm [SERVO](servo.md#das-messgerät-der-servoschiene) und der Servotest nutzen, ist der niedrigste Kanal mit Shunt an einem bestückten Baustein, der das Ziel des Servotesters misst: einen Ausgang, solange das Ziel OUTPUTS ist, PORT n, solange es Programmierport n ist.
 - Das Panel schreibt die Einstellung 500 ms nach der letzten Änderung, nur bei einem Prüfstand in SAFE.
+
+![Das Tastenfeld von 0x40 CH1 Shunt, 44,4 getippt](view:setup-sensors-keypad)
+
+![3 mOhm abgelehnt, der Grund statt des Bereichs](view:setup-sensors-why)
 
 ## Was ein Baustein tut
 

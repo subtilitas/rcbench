@@ -23,6 +23,7 @@
 #include "esc_profile.h"
 #include "esc_stick.h"
 #include "settings.h"
+#include "ui_keypad.h"
 #include "ui_textkey.h"
 
 #include "esc_stick_int.h"
@@ -120,6 +121,12 @@ typedef struct {
 
     bool timing;
     int  tscroll, tpicked;
+    /* TIMING's keypad, the row of sp_settings_list it types, and its
+     * revision as the page last followed it. */
+    ui_keypad_t kp;             /**< TIMING's keypad                    */
+    int         kp_idx;         /**< the row of sp_settings_list it types */
+    uint32_t    kp_rev;         /**< its revision as the page last
+                                     followed it                        */
 
     /* The run, and whether its result is still on screen. */
     esc_stick_t run;
@@ -287,6 +294,8 @@ int sp_rows_shown(int total, int scroll);
 gfx_rect_t sp_row(int i);
 /** @brief The keyboard closes; the search stays as typed. */
 void sp_find_close(void);
+/** @brief TIMING's keypad closes, with nothing typed taken. */
+void sp_kp_close(void);
 
 /* esc_stick_draw.c */
 

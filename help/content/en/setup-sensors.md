@@ -24,8 +24,13 @@ Each fitted part has a heading, `INA3221 0x40` to `INA3221 0x43`, and two rows f
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0 mOhm, 0.1 mOhm steps | 100.0 | OFF: the channel is not read; 100 mOhm reads to 1.64 A |
 
 - `+` on a shunt at OFF gives 5.0 mOhm, `-` at 5.0 mOhm gives OFF.
+- A tap on a shunt's value opens the keypad: 44.4 mOhm from the 100.0 default is `4`, `4`, `.`, `4` and OK, where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused: the keypad stays open and shows `0 or 5.0 to 1000.0 mOhm` in place of the range until the next key.
 - The channel read every millisecond, whose current the [SERVO](servo.md#the-servo-rail-s-meter) screen and the servo test use, is the lowest channel with a shunt on a fitted part that watches the servo tester's target: an output while the target is OUTPUTS, PORT n while it is programming port n.
 - The panel writes the set-up 500 ms after the last edit, only while the bench is SAFE.
+
+![The keypad of 0x40 CH1 shunt, 44.4 typed](view:setup-sensors-keypad)
+
+![3 mOhm refused, the reason in place of the range](view:setup-sensors-why)
 
 ## What a part is doing
 

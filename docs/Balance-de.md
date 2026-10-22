@@ -21,6 +21,15 @@ Blattzahl (2 bis 6) und Rotortyp einstellen. Der Bildschirm rechnet den
 gemessenen Winkel zusätzlich in eine Blattangabe um („zwischen Blatt zwei und
 drei“).
 
+`-` und `+` der Blattzahl stellen sie beim Aufsetzen. Ein Tipp auf die Zahl
+öffnet das Tastenfeld über beiden Karten, 788 x 354 px mit Tasten von
+188 x 58 px, sein Fuß 4 px über dem Alarmband. OK nimmt 2 bis 6; jede andere
+Zahl lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe.
+ABBRECHEN, OK ohne getippten Wert, das Home-Tag und ein Reiter schließen es
+und ändern nichts.
+
+![Das Tastenfeld der Blattzahl](img/de/balance-keypad.png)
+
 Die Anzeigewerte (Vibration 0,42 g, Winkel 265°, zuzufügende Masse 0,35 g) sind
 feste Werte und keine Messung. Eine Marke SIMULIERT und der Text „Nicht
 gemessen.“ stehen darunter, in derselben Pille wie im Menü. Nur der Reiter

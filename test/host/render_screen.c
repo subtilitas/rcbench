@@ -471,6 +471,57 @@ static void ktap(gfx_rect_t r)
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 
+/**
+ * @brief The value of @p id on SETUP's open @p cat list, scrolled into
+ *        view and tapped, so its keypad opens.  The list is 348 px high
+ *        and its rows 58 px apart, from 6 px under the band; the value
+ *        sits at x 663.  Exits with status 1 for a row the list does not
+ *        hold or cannot bring into view in 20 drags.
+ * @param cat The category whose list is open.
+ * @param id The setting whose value is tapped.
+ */
+static void setup_value(setting_cat_t cat, setting_id_t id)
+{
+    setting_id_t ids[64];
+    const int n = settings_in_category(cat, ids, 64);
+    int row = -1;
+    for (int i = 0; i < n && i < 64; ++i) {
+        if (ids[i] == id) {
+            row = settings_screen_row_of(cat, i);
+        }
+    }
+    if (row < 0) {
+        fprintf(stderr, "render_screen: no row for setting %d\n", (int)id);
+        exit(1);
+    }
+    for (int k = 0; k < 20; ++k) {
+        const int top = 6 + row * 58 - settings_screen_scroll(NULL);
+        if (top >= 6 && top + 54 <= 6 + 348) {
+            tap(663, UI_BAND_H + top + 27);
+            return;
+        }
+        drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+    }
+    fprintf(stderr, "render_screen: setting %d not in view\n", (int)id);
+    exit(1);
+}
+
+/* @p text typed on keypad @p k, digit by digit; '.' is the point and '-'
+ * the +/- key.  The key rectangles are in the screen's coordinates, as
+ * ktap() takes them. */
+static void kp_type(const ui_keypad_t *k, const char *text)
+{
+    static const ui_key_t k_digit[10] = {
+        UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3, UI_KEY_4,
+        UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8, UI_KEY_9,
+    };
+    for (const char *p = text; *p != '\0'; ++p) {
+        ktap(ui_keypad_key_rect(k, (*p == '.')   ? UI_KEY_DOT
+                                   : (*p == '-') ? UI_KEY_SIGN
+                                                 : k_digit[*p - '0']));
+    }
+}
+
 static void kkey(ui_key_t key)
 {
     ktap(ui_keypad_key_rect(kst_panel_keypad(), key));
@@ -2495,8 +2546,13 @@ int main(int argc, char **argv)
             }
         } else if (strcmp(view, "motor-stick") != 0) {
             stick_open("Hobbywing", "hobbywing-flyfun-8item");
-            if (strcmp(view, "motor-stick-timing") == 0) {
+            if (strncmp(view, "motor-stick-timing", 18) == 0) {
                 tap(698, UI_BAND_H + 45);       /* TIMING */
+                if (strcmp(view, "motor-stick-timing-keypad") == 0) {
+                    /* BEEP MIN's value, the third row, typed as 250. */
+                    tap(400 + 216 / 2, UI_BAND_H + 142 + 2 * 30 + 10);
+                    kp_type(esc_stick_panel_keypad(), "250");
+                }
             } else {
                 /* Cutoff mode to hard, startup mode to soft. */
                 for (int i = 0; i < 2; ++i) {
@@ -2694,6 +2750,11 @@ int main(int argc, char **argv)
             tap(200, UI_BAND_H + 22);
         } else if (strcmp(view, "balance-aircraft") == 0) {
             tap(330, UI_BAND_H + 22);
+        } else if (strcmp(view, "balance-keypad") == 0) {
+            /* The blade count tapped, 5 typed. */
+            const gfx_rect_t r = balance_screen_blades_rect();
+            tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+            kp_type(balance_screen_keypad(), "5");
         } else if (strcmp(view, "balance-edf") == 0) {
             /* A five-blade ducted fan: the duct, and a rotor whose blades
              * are not reachable. */
@@ -3238,6 +3299,7 @@ int main(int argc, char **argv)
                                  || strcmp(view, "servo-warning") == 0
                                  || strcmp(view, "servo-encoder") == 0
                                  || strcmp(view, "servo-name") == 0
+                                 || strcmp(view, "servo-trim-keypad") == 0
                                  || strncmp(view, "servo-rate-", 11) == 0;
         if (on_settings) {
             tap(SV_TAB_SETTINGS_X, UI_BAND_H + SV_TAB_Y);
@@ -3256,6 +3318,11 @@ int main(int argc, char **argv)
             tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_Y); /* SWEEP */
         } else if (strcmp(view, "servo-encoder") == 0) {
             tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y); /* DUT */
+        } else if (strcmp(view, "servo-trim-keypad") == 0) {
+            /* TRIM's value, between its steps: the signed keypad, -25 us
+             * typed. */
+            tap((399 + 469) / 2, UI_BAND_H + SV_ROW_Y(3));
+            kp_type(servo_screen_keypad(), "-25");
         } else if (strcmp(view, "servo-name") == 0) {
             tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y);
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* NAME */
@@ -3451,6 +3518,42 @@ int main(int argc, char **argv)
             sensors_rows_set_status((uint16_t)(SENS_PART_ONLINE
                                                | (SENS_PART_SILENT << 4)));
         }
+        /* 0x40 CH1's shunt, scrolled into view and its value tapped:
+         * 44.4 mOhm typed, the station's value. */
+        if (strcmp(view, "setup-sensors-keypad") == 0) {
+            settings_set(SET_INA_FIT(0), 1.0f);
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (2 * 58 + 8));
+            setting_id_t ids[48];
+            const int n = settings_in_category(SET_CAT_SENSORS, ids, 48);
+            int row = -1;
+            for (int i = 0; i < n && i < 48; ++i) {
+                if (ids[i] == SET_INA_SH(0)) {
+                    row = settings_screen_row_of(SET_CAT_SENSORS, i);
+                }
+            }
+            tap(663, UI_BAND_H + 6 + row * 58 - settings_screen_scroll(NULL)
+                         + 27);
+            kp_type(settings_screen_keypad(), "44.4");
+        }
+        /* The same shunt, 3 mOhm typed and refused: the reason in place
+         * of the range. */
+        if (strcmp(view, "setup-sensors-why") == 0) {
+            settings_set(SET_INA_FIT(0), 1.0f);
+            setup_value(SET_CAT_SENSORS, SET_INA_SH(0));
+            kp_type(settings_screen_keypad(), "3");
+            ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
+        }
+    }
+    /* INTERFACES: GPIO 5 typed for Sensor SDA, and PD mini RX's GPIO 9 for
+     * PD mini TX, each refused with its reason in place of the range. */
+    if (strcmp(view, "setup-sda-why") == 0
+        || strcmp(view, "setup-pdmini-why") == 0) {
+        const bool sda = strcmp(view, "setup-sda-why") == 0;
+        settings_set(SET_PDMINI_RX, 9.0f);
+        setup_tile(SET_CAT_IFACE);
+        setup_value(SET_CAT_IFACE, sda ? SET_SENSE_SDA : SET_PDMINI_TX);
+        kp_type(settings_screen_keypad(), sda ? "5" : "9");
+        ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
     }
 
     if (id == SCREEN_WIFI) {
