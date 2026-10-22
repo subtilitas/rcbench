@@ -8,6 +8,7 @@
  * - a_window_is_shown_under_the_meter_of_its_poll
  * - link_loss_clears_the_current_row
  * - the_current_row_repaints_on_a_changed_digit_and_alone
+ * - the_current_reading_paints_on_live_only
  * - the_plot_keeps_one_point_for_each_window
  * - a_run_reads_the_supply_while_the_meter_changes
  *
@@ -487,6 +488,29 @@ TEST_CASE(the_current_row_repaints_on_a_changed_digit_and_alone)
     CHECK(card_kept());
 }
 
+/* LIVE's CURRENT reading is LIVE's: a changed current paints nothing at its
+ * place on PROGRAM's page or TEST's, and LIVE shows it once it is back. */
+TEST_CASE(the_current_reading_paints_on_live_only)
+{
+    for (int task = 0; task < 2; ++task) {
+        fresh();
+        meter(SERVO_SOURCE_PDMINI);
+        rail_supply(6.0f, 0.402f);
+        if (task == 0) {
+            open_program();
+        } else {
+            open_test();
+        }
+        scr->render(&cv, 0);
+        mark(k_mark[MK_ROW].x, k_mark[MK_ROW].y);
+        rail_supply(6.0f, 0.73f);
+        scr->render(&cv, 0);
+        CHECK(mk(MK_ROW));
+        close_settings();
+        CHECK(row_reads("0.73 A", UI_C_TEXT));
+    }
+}
+
 /* The plot keeps one point for each window, however many a frame hands
  * over, in their order; a frame with none adds none and repaints nothing. */
 TEST_CASE(the_plot_keeps_one_point_for_each_window)
@@ -639,6 +663,7 @@ int main(void)
     RUN(a_window_is_shown_under_the_meter_of_its_poll);
     RUN(link_loss_clears_the_current_row);
     RUN(the_current_row_repaints_on_a_changed_digit_and_alone);
+    RUN(the_current_reading_paints_on_live_only);
     RUN(the_plot_keeps_one_point_for_each_window);
     RUN(a_run_reads_the_supply_while_the_meter_changes);
     return test_summary("servo_meter");

@@ -502,11 +502,36 @@ static void ktap(gfx_rect_t r)
 }
 
 /**
+ * @brief A tap on the value of SETUP's list row @p row, once the row is
+ *        dragged whole into the pane, so its keypad opens.  Exits with
+ *        status 1 for a row the list cannot bring into view in 20 drags.
+ * @param row The list row.
+ */
+static void setup_row_value(int row)
+{
+    const gfx_rect_t pane = settings_screen_list_rect();
+    const int y0 = UI_BAND_H + pane.y + pane.h - 8;
+    for (int k = 0; k < 20; ++k) {
+        const gfx_rect_t r = settings_screen_row_rect(row);
+        if (r.y >= pane.y && r.y + r.h <= pane.y + pane.h) {
+            const gfx_rect_t v =
+                settings_screen_row_part(row, SETTINGS_ROW_VALUE);
+            tap(v.x + v.w / 2, UI_BAND_H + v.y + v.h / 2);
+            return;
+        }
+        /* Up for a row under the pane, down for one over it. */
+        const int dy = (r.y > pane.y) ? -(pane.h / 2) : pane.h / 2;
+        drag(300, (dy < 0) ? y0 : UI_BAND_H + pane.y + 8,
+             ((dy < 0) ? y0 : UI_BAND_H + pane.y + 8) + dy);
+    }
+    fprintf(stderr, "render_screen: row %d not in view\n", row);
+    exit(1);
+}
+
+/**
  * @brief The value of @p id on SETUP's open @p cat list, scrolled into
- *        view and tapped, so its keypad opens.  The list is 348 px high
- *        and its rows 58 px apart, from 6 px under the band; the value
- *        sits at x 663.  Exits with status 1 for a row the list does not
- *        hold or cannot bring into view in 20 drags.
+ *        view and tapped, so its keypad opens.  Exits with status 1 for a
+ *        row the list does not hold.
  * @param cat The category whose list is open.
  * @param id The setting whose value is tapped.
  */
@@ -524,16 +549,22 @@ static void setup_value(setting_cat_t cat, setting_id_t id)
         fprintf(stderr, "render_screen: no row for setting %d\n", (int)id);
         exit(1);
     }
-    for (int k = 0; k < 20; ++k) {
-        const int top = 6 + row * 58 - settings_screen_scroll(NULL);
-        if (top >= 6 && top + 54 <= 6 + 348) {
-            tap(663, UI_BAND_H + top + 27);
-            return;
-        }
-        drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
-    }
-    fprintf(stderr, "render_screen: setting %d not in view\n", (int)id);
-    exit(1);
+    setup_row_value(row);
+}
+
+/**
+ * @brief SETUP's open list dragged up by @p rows rows and the 8 px the
+ *        finger travels before the screen takes it for a scroll, from
+ *        8 px above the pane's foot.
+ * @param rows The rows to scroll by, at most 5.
+ */
+static void setup_scroll_rows(int rows)
+{
+    const gfx_rect_t pane = settings_screen_list_rect();
+    const int pitch = settings_screen_row_rect(1).y
+                      - settings_screen_row_rect(0).y;
+    const int y0 = UI_BAND_H + pane.y + pane.h - 8;
+    drag(300, y0, y0 - (rows * pitch + 8));
 }
 
 /* @p text typed on keypad @p k, digit by digit; '.' is the point and '-'
@@ -860,7 +891,7 @@ static void kst_view(const char *view)
          * the programmer's voltage follows. */
         tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
         tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
-        tap(SV_LIST_X(2), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
+        tap(SV_LIST_X(0), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
         tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
     }
     tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);    /* PROGRAM */
@@ -1752,15 +1783,31 @@ static void pose_splash(void)
 
 /* ------------------------------------------------- WI-FI */
 
-/* A key of the Wi-Fi keyboard as WI-FI opens it, tapped. */
+/* A key of the keyboard WI-FI has open, tapped at its centre: the
+ * screen's own keyboard, so a name's bottom row and a password's each
+ * take the taps meant for them. */
 static void wifi_key(int key)
 {
-    ui_textkey_t probe;
-    memset(&probe, 0, sizeof(probe));
-    ui_textkey_open_wifi(&probe, gfx_rect_make(8, 8, 784, 416), "", "",
-                         true);
-    const gfx_rect_t r = ui_textkey_key_rect(&probe, key);
+    const gfx_rect_t r = ui_textkey_key_rect(wifi_screen_textkey(), key);
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
+/**
+ * @brief Stop the render when the keyboard does not hold @p text, refused
+ *        or not as @p refused says: a view that typed through keys at the
+ *        wrong place shows a scene no operator made.
+ * @param text    What the taps typed.
+ * @param refused Whether the last OK was refused.
+ */
+static void wifi_expect(const char *text, bool refused)
+{
+    const ui_textkey_t *k = wifi_screen_textkey();
+    if (strcmp(k->text, text) != 0 || k->refused != refused) {
+        fprintf(stderr, "wifi keyboard: \"%s\"%s, want \"%s\"%s\n",
+                k->text, k->refused ? " refused" : "", text,
+                refused ? " refused" : "");
+        exit(1);
+    }
 }
 
 /* @p text on the lower-case layer: letters, digits and "-". */
@@ -1899,11 +1946,13 @@ static void pose_wifi(const char *view)
             if (strcmp(view, "wifi-key-short") == 0) {
                 wifi_type("4");
                 wifi_key(UI_TK_OK);                         /* 7: refused */
+                wifi_expect("cedarQ4", true);
             } else {
                 wifi_type("42x");
                 if (strcmp(view, "wifi-key-shown") == 0) {
                     wifi_key(UI_TK_SHOW);
                 }
+                wifi_expect("cedarQ42x", false);
             }
         } else {
             tap(272 + 128, UI_BAND_H + 376 + 24);          /* HIDDEN */
@@ -1916,6 +1965,8 @@ static void pose_wifi(const char *view)
                 wifi_key(UI_TK_CLR);
                 wifi_key(UI_TK_OK);                         /* refused */
             }
+            wifi_expect(strcmp(view, "wifi-key-ssid") == 0 ? "" : "lab",
+                        strcmp(view, "wifi-key-ssid") == 0);
         }
     }
 }
@@ -3359,16 +3410,16 @@ int main(int argc, char **argv)
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* TYPE */
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */
         } else if (strcmp(view, "servo-sweep-page") == 0) {
-            tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_Y); /* SWEEP */
+            tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_TAB_Y); /* SWEEP */
         } else if (strcmp(view, "servo-encoder") == 0) {
-            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y); /* DUT */
+            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y); /* DUT */
         } else if (strcmp(view, "servo-trim-keypad") == 0) {
             /* TRIM's value, between its steps: the signed keypad, -25 us
              * typed. */
             tap((526 + 570) / 2, UI_BAND_H + SV_ROW_Y(3));
             kp_type(servo_screen_keypad(), "-25");
         } else if (strcmp(view, "servo-name") == 0) {
-            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y);
+            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y);
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* NAME */
         } else if (strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0
@@ -3488,7 +3539,8 @@ int main(int argc, char **argv)
         setup_tile(SET_CAT_CARD);
         const int row = settings_screen_text_row(SET_CAT_CARD,
                                                  SET_TEXT_LOG_AUTO_DIR);
-        tap(400, UI_BAND_H + 6 + row * 58 + 27);
+        const gfx_rect_t rr = settings_screen_row_rect(row);
+        tap(400, UI_BAND_H + rr.y + rr.h / 2);
         static const char chars[] = "1234567890QWERTYUIOPASDFGHJKL-ZXCVBNM_.";
         const ui_textkey_t *k = settings_screen_textkey();
         ktap(ui_textkey_key_rect(k, UI_TK_DEL));
@@ -3514,16 +3566,14 @@ int main(int argc, char **argv)
         if (strcmp(view, "setup-unheld") == 0) {
             /* The pins refused: their two rows. */
             settings_screen_set_unheld(SENSE_LINK_ROW_PINS, 0u);
-            /* Five rows of 58 px, the I2C BUS heading and the four of the
-             * INA228, and the 8 px the finger travels before the screen
-             * takes it for a scroll. */
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
+            /* Five rows, the I2C BUS heading and the four of the INA228. */
+            setup_scroll_rows(5);
         } else if (strcmp(view, "setup-tap") == 0) {
             /* Past the 9 rows above the PHASE TAP heading (the I2C BUS
              * section and its heading): two drags, as one longer than the
              * list is high leaves the screen. */
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
+            setup_scroll_rows(4);
+            setup_scroll_rows(5);
         } else if (strncmp(view, "setup-prog", 10) == 0) {
             /* The list's end: PROG PORT and Hitec D receive at PRECHARGE,
              * marked as an IOmcu older than 4.24 (or 4.23) leaves it, or
@@ -3535,8 +3585,7 @@ int main(int argc, char **argv)
                     ? HITEC_RX_LINK_HELD
                     : HITEC_RX_LINK_NO_LINE);
             for (int k = 0; k < 6; ++k) {
-                drag(300, UI_BAND_H + 340,
-                     UI_BAND_H + 340 - (5 * 58 + 8));
+                setup_scroll_rows(5);
             }
         }
     }
@@ -3569,7 +3618,7 @@ int main(int argc, char **argv)
              * CH2's rows, two more. */
             const int drags = lim ? 5 : 3;
             for (int k = 0; k < drags; ++k) {
-                drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+                setup_scroll_rows(4);
             }
         } else {
             sensors_rows_set_status((uint16_t)(SENS_PART_ONLINE
@@ -3579,17 +3628,7 @@ int main(int argc, char **argv)
          * 44.4 mOhm typed, the station's value. */
         if (strcmp(view, "setup-sensors-keypad") == 0) {
             settings_set(SET_INA_FIT(0), 1.0f);
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (2 * 58 + 8));
-            setting_id_t ids[48];
-            const int n = settings_in_category(SET_CAT_SENSORS, ids, 48);
-            int row = -1;
-            for (int i = 0; i < n && i < 48; ++i) {
-                if (ids[i] == SET_INA_SH(0)) {
-                    row = settings_screen_row_of(SET_CAT_SENSORS, i);
-                }
-            }
-            tap(663, UI_BAND_H + 6 + row * 58 - settings_screen_scroll(NULL)
-                         + 27);
+            setup_value(SET_CAT_SENSORS, SET_INA_SH(0));
             kp_type(settings_screen_keypad(), "44.4");
         }
         /* The same shunt, 3 mOhm typed and refused: the reason in place

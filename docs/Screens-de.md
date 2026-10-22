@@ -177,16 +177,17 @@ ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
 
 ![Das Funktionsmenü](img/de/overview.png)
 
-Das Menü ist ein Raster aus 4 Spalten und 2 Reihen, jede Kachel 246 x 258 px
-mit 8 px Rand. Die erste Reihe hält die Werkbänke, MOTOR & ESC, SERVO und
+Das Menü ist ein Raster aus 4 Spalten und 2 Reihen, jede Kachel 243 x 255 px
+mit 10 px Rand. Eine Kachel trägt ein Symbol von 40 px, ihren Namen in der
+Schrift 20 x 36 px und eine Zeile in der Schrift 10 x 20 px. Die erste Reihe hält die Werkbänke, MOTOR & ESC, SERVO und
 SUPPLY; die zweite die Instrumente, RECEIVER, BATTERY und BALANCE; die
 letzte Spalte LOGS über SETUP. Eine vierte Werkbank oder ein viertes
 Instrument lässt den Build bei 4 Spalten scheitern
 (`shared/ui/overview_screen.c`). Das Programmieren hat keine Kachel: Es ist
 die Aufgabe PROGRAMMIEREN von MOTOR & ESC und von SERVO.
 
-Jede Kachel trägt unter ihrem Namen eine Zeile, 2 Reihen zu höchstens 23
-Zeichen:
+Jede Kachel trägt unter ihrem Namen eine Zeile, 2 Reihen zu höchstens 22
+Zeichen, 8 px frei von den Seiten der Kachel:
 
 | Kachel | Zeile |
 | --- | --- |
@@ -222,6 +223,65 @@ IOmcu tragen MOTOR & ESC und SERVO die Marke ebenfalls.
 Das Menü im hellen Design:
 
 ![Das Menü im hellen Design](img/de/overview-light.png)
+
+## Tastenfeld, Tastatur und die gemeinsamen Bedienelemente
+
+Tastenfeld, Tastatur, Auswahllisten, Reiter und die ZIEL-Zeile sehen auf
+jedem Bildschirm gleich aus. Jeder Bildschirm gibt ihnen ihre Fläche oder
+ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
+
+- **Tastenfeld.** Eine Titelzeile von 32 px, die Eingabe von 60 px, dann
+  4 x 4 Tasten mit 8 px Abstand, 8 px vom Rand der Fläche; die Tasten enden
+  spätestens 4 px über dem Alarmband (unten). Über der linken Spalte von
+  SERVO, 488 x 524 px, ist eine Taste 112 x 88 px groß (16,8 x 13,2 mm);
+  über der von SUPPLY, 546 x 494 px, 126 x 80 px.
+  Titel und Bereich stehen im Font 10 x 20, oder in 8 x 16, wo beide nicht
+  nebeneinander passen. Die Eingabe steht in den Ziffern 32 x 44 mit der
+  Einheit in 12 x 24; eine Eingabe, die nicht passt, nimmt die Ziffern
+  24 x 30 mit der Einheit in 10 x 20. Ziffern und Punkt stehen in 12 x 24.
+  DEL, CLR, ABBRECHEN, OK und `+/-` teilen einen Font: den größten von
+  12 x 24, 10 x 20 und 8 x 16, in dem alle mit 6 px Rand je Seite auf ihre
+  Taste passen. `ABBRECHEN` braucht für 12 x 24 eine Taste von 120 px, für
+  10 x 20 eine von 102 px.
+- **Tastatur.** Eine Titelzeile von 32 px, das Textfeld von 52 px, dann 5
+  Tastenreihen mit 6 px Abstand. Titel und Zähler stehen in 10 x 20, oder
+  in 8 x 16, wo beide nicht nebeneinander passen. Der Text steht im Font
+  20 x 36, wenn 23 Zeichen und die Schreibmarke ins Feld passen, sonst in
+  16 x 28. Buchstaben, Ziffern und Zeichen stehen in 12 x 24. Die
+  Worttasten (die untere Reihe, DEL, `ABC`, `abc`, `#+=`) teilen einen
+  Font: den größten von 12 x 24, 10 x 20 und 8 x 16, in dem alle mit 4 px
+  Rand je Seite auf ihre Taste passen; VERBERGEN zählt dabei wie ANZEIGEN,
+  so ändert ein Tippen den Font nicht. Auf WI-FI nimmt die Tastatur den
+  Körper über dem Alarmband, 1008 x 484 px, mit Tasten von 93 x 71 px
+  (14,0 x 10,7 mm) und jedem Wort in 12 x 24.
+- **Auswahlliste.** Ein Feld oder eine Zeile ab 56 px Höhe zeigt den Text
+  im Font 20 x 36, 12 px eingerückt, mit einem 11 px breiten Winkel 28 px
+  vor dem rechten Rand. Ein niedrigeres zeigt ihn in 16 x 28, 10 px
+  eingerückt, mit einem 7 px breiten Winkel 22 px vor dem Rand. Ein Text,
+  der in 20 x 36 nicht vor den Winkel passt, steht in 16 x 28:
+  `DSHOT600 BIDIR` auf einem Feld von 292 px. Jedes Feld und jede Zeile
+  wählt für sich, die Zeilen einer Liste können sich also unterscheiden.
+  OUTPUTS und PICK A PIN zeichnen ihre niedriger als 56 px.
+- **Reiter.** Eine Reiterzeile ab 32 px Höhe zeigt ihre Beschriftungen im
+  Font 10 x 20, wenn jede in der gezeigten Sprache mit 6 px Rand je Seite
+  auf ihren Reiter passt; sonst in 8 x 16. ROOT, USER und BENCH auf LOGS und
+  die Segmente des PROG-PORT-Eintrags auf OUTPUTS stehen in 10 x 20. Der
+  Streifen einer Werkbank ist 24 px hoch und bleibt bei 8 x 16.
+- **ZIEL-Zeile.** Eine Zeile ab 40 px Höhe zeigt Beschriftung und Wert in
+  10 x 20, mit 88 px für die Beschriftung, und zählt die genannten Pins in
+  Zellen von 10 px. Eine niedrigere zeigt sie in 8 x 16 mit 64 px für die
+  Beschriftung und zählt in Zellen von 8 px. SERVO und MOTOR & ESC zeichnen
+  ihre 22 px hoch.
+- **Plot.** Ein Plot hält 1.024 Werte je Reihe, einen je Pixelspalte eines
+  Plots so breit wie das Panel: 51,2 s bei 20 Werten je Sekunde.
+
+Tastenraster enden auf jedem Bildschirm 4 px über dem Alarmband, bei
+Körper-y 492. Ein Tastenfeld oder eine Tastatur, deren Fläche weiter reicht,
+malt die ganze Fläche und lässt ihre Tasten dort enden, so verdeckt ein
+Alert keine Taste. Auf SERVO sind die Tasten der Tastenfelder dann
+112 x 88 px groß und die der Tastaturen 41 x 72 px; auf SUPPLY die des
+Tastenfelds 126 x 80 px; auf der Suchtastatur von ESC STICK 59 x 61 px; auf
+SETTINGS von MOTOR & ESC die des Tastenfelds 126 x 89 px.
 
 ## Splash
 
@@ -859,7 +919,7 @@ davon ist gemessen:
 `-` und `+` einer Zeile stellen ihren Wert um einen Schritt. Ein Tipp auf
 den Wert, die 216 px breite Spalte zwischen dem Namen und den Tasten, öffnet
 das Tastenfeld über der Seite, von unter dem Ausgangsstreifen bis 4 px über
-dem Alarmband: 1008 x 466 px, Tasten von 243 x 86 px. Es nennt die
+dem Alarmband: 1008 x 466 px, Tasten von 242 x 81 px. Es nennt die
 Einstellung, ihren Bereich und ihre Einheit und nimmt die Stellen des
 Schritts nach dem Punkt: eine für die 0,1 V von Spannung, zwei für die
 0,05 A von Strombegrenzung. OK setzt den Wert wie ein Schritt auf den
@@ -1265,7 +1325,7 @@ ab TEMPO 63 %, beim Dreieck ab 40 %.
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
-beschreibt das Verfahren und die Dateien. Die Karte, 600 x 220 px, trägt
+beschreibt das Verfahren und die Dateien. Die Karte, 600 x 200 px, trägt
 den Namen des Laufs, eine Zusammenfassung (`4.8 6.0 V BROWN-OUT, JE
 60 s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN (300 x 56 px) mit den
 OPTIONEN der Karte (160 x 48 px) daneben, die Zustandszeile, das
@@ -1466,17 +1526,22 @@ funktioniert. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
 Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
 Die Seitenreiter von OPTIONEN sind 197 x 40 px quer über die Karte. Ihre
-Zeilen stehen in zwei Spalten zu 295 px, jede Zeile 48 px hoch und 56 px
+Zeilen stehen in zwei Spalten zu 295 px, jede Zeile 48 px hoch und 52 px
 von der nächsten, der Name links und der Wert rechts, 140 px breit (TYP,
 PULSRATE und NAME belegen beide Spalten). Die Hinweise unter den Zeilen von
-AUSGANG sind Zeilen zu 60 Zeichen, 22 px Abstand. Die Einstellungen eines
+AUSGANG sind Zeilen zu 60 Zeichen, 21 px Abstand. Die Einstellungen eines
 Laufs stehen in drei Spalten zu 193 px, jede Zeile ihr Name über ihrem
-48 px hohen Wert, 74 px von der nächsten: die 15 Zeilen des automatischen
-Tests zu fünf je Spalte, Dauer und Zeiten, die Grenzwerte mit
-BROWN-OUT, und die Stufen mit HV-SERVO. Die Auswahl einer Liste steht in
-zwei Spalten zu fünf, 48 px hoch und 56 px Abstand; die Warnungen stehen
-in 12 x 24 px großen Buchstaben, 48 Zeichen je Zeile, mit HALTEN ZUM
-ÜBERNEHMEN und ABBRECHEN 56 px hoch, die 4 px über dem Alert-Band enden.
+48 px hohen Wert, 71 px von der nächsten: die 15 Zeilen des automatischen
+Tests zu fünf je Spalte, die Stufen mit HV-SERVO, die Grenzwerte mit
+BROWN-OUT, und Dauer und Zeiten. TESTDAUER NACH steht oben in der rechten
+Spalte, unter den OPTIONEN der Karte: ein zweites Tippen auf OPTIONEN
+öffnet ihre Liste und ändert keine Einstellung. Die Hinweise, die
+Speicherzeile, der Hinweis zu BLOCKIERT AB und die Zeile der Grenzen unter
+den Karten von TEST enden 4 px oder mehr über dem Alert-Band. Die Auswahl einer Liste steht
+in zwei Spalten zu fünf, 48 px hoch und 56 px Abstand; die Warnungen
+stehen in 12 x 24 px großen Buchstaben, 49 Zeichen je Zeile, mit HALTEN
+ZUM ÜBERNEHMEN und ABBRECHEN 56 px hoch, die 4 px über dem Alert-Band
+enden.
 
 ![Die Einstellungen des Servos](img/de/servo-settings.png)
 ![Die Seite SWEEP](img/de/servo-sweep-page.png)
@@ -1551,8 +1616,8 @@ also auch, während einer davon die linke Spalte bedeckt.
 SERVO-TESTER hält OUTPUTS, PORT 1, PORT 2, PORT 3 oder PORT 4. Mit
 OUTPUTS nennt die Zeile die GPIOs, die in der vom Tester getriebenen
 Bindung als SERVO PWM gebunden sind: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`;
-so viele Pins, wie in die 27 Zeichen des Werts passen, dann `+N`: 8 Pins ab
-GP40 lauten `SERVO PWM GP40 GP41 GP42 +5`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
+so viele Pins, wie in die 25 Zeichen des Werts passen, dann `+N`: 8 Pins ab
+GP40 lauten `SERVO PWM GP40 GP41 +6`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
 (`KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen wurde
 (`PINS NICHT AUSGELESEN`). Mit einem Programmierport lautet sie `PROG-PORT
 1 GP13` in der Warnfarbe, die Nummer des Ports und der GPIO, den der IOmcu
@@ -1660,9 +1725,10 @@ Die AUSGANG-Einstellungen, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für
 die Sitzung; die Einstellungen von SWEEP, des automatischen Tests und von
 PRÜFLING und ZIEL liegen im NVS. Eine Änderung fordert das Schreiben sofort
 an; der Speicher nimmt es im ersten Frame, in dem der Prüfstand ruht
-([Werte behalten](#werte-behalten)). Die Speicherzeile unten auf
-jeder Seite sagt `GESPEICHERT`, `SPEICHERN AUSSTEHEND`, `NICHT GESPEICHERT`
-oder `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT`.
+([Werte behalten](#werte-behalten)). Die Speicherzeile sagt
+`GESPEICHERT`, `SPEICHERN AUSSTEHEND`, `NICHT GESPEICHERT` oder
+`ÄNDERUNGEN IN SETUP NICHT GESPEICHERT`: unten auf jeder Seite von OPTIONEN,
+und auf den Einstellungen eines Laufs unter seinem Namen.
 
 ![TEST mit seinen zwei Laufkarten](img/de/servo-test.png)
 ![Die Einstellungen des automatischen Tests](img/de/servo-test-settings.png)
@@ -2519,7 +2585,11 @@ Die Tastatur hat drei Ebenen desselben Rasters: Kleinbuchstaben, `ABC` für
 Großbuchstaben, `#+=` für die 32 druckbaren Zeichen von ASCII (American
 Standard Code for Information Interchange), die keine Buchstaben oder
 Ziffern sind. Jedes der 95 druckbaren ASCII-Zeichen liegt einmal auf einer
-Ebene; LEERZEICHEN ist die breite Taste. Ein Name hat 1 bis 32 Bytes. Ein
+Ebene; LEERZEICHEN ist die breite Taste. Die Tastatur deckt den Körper über
+dem Alarmband, 1008 x 484 px, mit Tasten von 93 x 71 px
+([Tastenfeld, Tastatur und die gemeinsamen Bedienelemente](#tastenfeld-tastatur-und-die-gemeinsamen-bedienelemente)).
+Ein Name hat 1 bis 32 Bytes; OK auf einem leeren Namen lässt die Tastatur
+offen und sagt `Gib einen Netzwerknamen ein.` Ein
 Passwort hat 8 bis 63 Zeichen, den Bereich von WPA2 und WPA3 Personal: Das
 64. Zeichen wird abgewiesen, und OK unter 8 Zeichen sagt es.
 
@@ -2527,7 +2597,7 @@ Passwort hat 8 bis 63 Zeichen, den Bereich von WPA2 und WPA3 Personal: Das
 ![ANZEIGEN](img/de/wifi-key-shown.png)
 ![Weniger als 8 Zeichen](img/de/wifi-key-short.png)
 
-Das Passwort steht als Punkte da bis ANZEIGEN; VERBERGEN verbirgt es wieder.
+Das Passwort steht als `*` da bis ANZEIGEN; VERBERGEN verbirgt es wieder.
 OK behält das Netz: Name und Passwort gehen in den NVS (Non-Volatile
 Storage), und der Bildschirm bietet dann MIT HEIMNETZ VERBINDEN an.
 
@@ -2737,8 +2807,9 @@ USB, um das Layout mit zwei Anwendungs-Slots zu bekommen:
 ## Setup
 
 Die SETUP-Kachel des Menüs öffnet eine Seite mit Kacheln, 3 mal 3, im Stil
-des Menüs. Jede Kachel ist 330 x 108 px groß, ihr Symbol mittig über ihrem
-Namen.
+des Menüs. Jede Kachel ist 328 x 130 px groß, mit 10 px Rand: ein Symbol
+von 36 px mittig über ihrem Namen in der Schrift 12 x 24 px, darunter eine
+Zeile in der Schrift 10 x 20 px.
 
 ![Setup](img/de/setup.png)
 
@@ -2764,9 +2835,14 @@ Dieselbe Seite im hellen Design:
 
 ![Setup im hellen Design](img/de/setup-light.png)
 
-Die Liste einer Kategorie ist 776 px breit, ab dem linken Rand des Panels, und
-zeigt 446 px davon, 7 Zeilen, über einer Leiste mit drei Spalten: dem Namen
-der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Die Leiste endet bei y
+Die Liste einer Kategorie ist 984 px breit, ab dem linken Rand des Panels, und
+zeigt 428 px davon, 6 ganze Zeilen, über einer Leiste mit drei Spalten, 48 px
+hoch: dem Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Eine
+Zeile ist 64 px hoch bei 70 px Zeilenabstand: der Name der Einstellung in der
+Schrift 20 x 36 px, ihre Hilfezeile darunter in der Schrift 10 x 20 px, ihr
+Wert in der Schrift 12 x 24 px. Ein Wert, der breiter ist als die Lücke
+zwischen den Tasten, nähme die Schrift 10 x 20 px; kein Wert einer
+SETUP-Einstellung braucht sie, auf Englisch wie auf Deutsch. Die Leiste endet bei y
 552 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
 Ein Alert verdeckt damit weder eine Taste noch eine Zeile, KATEGORIE
 ZURÜCKSETZEN oder SPEICHERN, auf den Kacheln wie auf einer Liste.
@@ -2820,13 +2896,15 @@ Auswahl springt vom letzten Wert auf den ersten.
   ist.
 - **Scrollen.** Ein senkrechter Drag von mehr als 8 px, der irgendwo auf der
   Liste beginnt, scrollt sie, die Tastenspalten eingeschlossen. Ein Scrollen
-  ändert keinen Wert. Der Balken am rechten Rand der Liste zeigt die Position
-  und nimmt keine Berührung an.
-- Eine Taste ist ihre Spalte, 44 px breit, über die 54 px ihrer Zeile. Die
-  4 px zwischen zwei Zeilen gehören zu keiner Taste.
-- **Tastenfeld.** Ein Tipp auf den Wert einer Zahl, die 126 px zwischen
+  ändert keinen Wert. Der Balken rechts der Liste, 12 px breit, zeigt die
+  Position und nimmt keine Berührung an. Eine Liste, die in ihre 428 px
+  passt, hat keinen Balken.
+- Eine Taste ist 56 x 48 px gezeichnet und nimmt ihre Spalte, 56 px breit,
+  über die 64 px ihrer Zeile. Die 6 px zwischen zwei Zeilen gehören zu keiner
+  Taste.
+- **Tastenfeld.** Ein Tipp auf den Wert einer Zahl, die 166 px zwischen
   ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste und der
-  Leiste: 1008 x 484 px, Tasten von 243 x 91 px, sein Fuß 4 px über dem
+  Leiste: 1004 x 482 px, Tasten von 241 x 85 px, sein Fuß 4 px über dem
   Alarmband. Es nennt die Einstellung, ihren Bereich und ihre Einheit, zeigt
   den Wert blass, bis eine Ziffer getippt ist, und nimmt so viele Stellen
   nach dem Punkt, wie der Schritt hat: eine für die 0,1 mΩ eines Shunts,
@@ -2944,7 +3022,7 @@ ANSCHLÜSSE listet seine 23 Einstellungen in fünf Abschnitten. Eine
 INA228, Sensor SDA und SCL und der AS5600), PHASENABGRIFF,
 BALANCE-SENSOREN (Vibration und Optischer Tacho), NETZTEIL (der PD mini) und
 PROG-PORT (Hitec-D-Empfang).
-Eine Überschrift ist eine eigene Zeile, 54 px hoch bei 58 px Zeilenabstand
+Eine Überschrift ist eine eigene Zeile, 64 px hoch bei 70 px Zeilenabstand
 der Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert:
 ein Tippen darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die
 Liste ist 28 Zeilen lang.
@@ -3505,12 +3583,15 @@ jeder Wert zurückgestellt ist.
 Das Home-Tag auf den Kacheln, der einzige Weg von SETUP zum Menü, wird
 gehalten, solange die Beschriftung `SPEICHERN` oder `NICHT GESPEICHERT`
 lautet. Stattdessen deckt eine Warnung den Inhalt ab: eine Karte von
-1008 x 442 px mit einem 3 px breiten Rand in der Warnfarbe, über der Leiste.
+1004 x 424 px mit einem 3 px breiten Rand in der Warnfarbe, über der Leiste.
+Ihr Titel steht in der Schrift 20 x 36 px, die zwei Zeilen dazu, was
+ungespeichert heißt, und die Hinweise in der Schrift 12 x 24 px.
 
 ![Ein ungespeicherter Wert, am Home-Tag](img/de/setup-leave.png)
 
 Sie nennt jeden Wert und jeden Text, der von der gespeicherten Kopie
-abweicht, eine Zeile von 22 px je Änderung, als `Name: gespeichert -> jetzt`.
+abweicht, eine Zeile von 24 px je Änderung in der Schrift 10 x 20 px, als
+`Name: gespeichert -> jetzt`.
 Ein Wert steht so da, wie die Liste ihn schreibt, mit Einheit; ein Text, der
 Name des Prüflings (DUT, device under test), so, wie er ist. Werte anderer
 Bildschirme, etwa die Einstellungen von SERVO, ESC STICK oder MOTOR & ESC,

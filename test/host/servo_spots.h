@@ -13,12 +13,12 @@
  *     px each and 40 px apart; the first row is the KST and Chaservo
  *     programmer;
  *   - SETTINGS' own page tabs OUTPUT, SWEEP, DUT from x 18, 197 px each,
- *     y 64 to 104, and their rows from y 112, 48 px tall and 56 px apart,
+ *     y 64 to 104, and their rows from y 108, 48 px tall and 52 px apart,
  *     the left column from x 18, the right from x 323;
- *   - TEST's two run cards from y 60 and 284, each with START and SETTINGS
- *     74 px down; a run's settings' rows in three columns of 193 px from x
- *     18, 203 px apart, each its label over its 48 px value, 74 px apart
- *     from y 116; its CLOSE x 478 to 618, y 60 to 108;
+ *   - TEST's two run cards from y 60 and 264, each with START and SETTINGS
+ *     60 px down; a run's settings' rows in three columns of 193 px from x
+ *     18, 203 px apart, each its label over its 48 px value, 71 px apart
+ *     from y 112; its CLOSE x 478 to 618, y 60 to 108;
  *   - the output card from SV_RCARD_X, its inner column SV_RC_X and
  *     SV_RC_W; CENTRE, SWEEP and RELEASE a third of it each, y 366 to 414;
  *     the SET row's values and OUTPUT ON at y 174 to 222;
@@ -48,22 +48,22 @@
 
 /** @brief SETTINGS' page tab @p i: OUTPUT, SWEEP, DUT. */
 #define SV_PAGE_X(i)       (116 + 201 * (i))
-#define SV_PAGE_Y          84                 /**< Their row. */
+#define SV_PAGE_TAB_Y      84                 /**< Their row. */
 /** @brief SETTINGS' row @p r, either column. */
-#define SV_ROW_Y(r)        (136 + 56 * (r))
+#define SV_ROW_Y(r)        (132 + 52 * (r))
 
 #define SV_RUN_SET_X       528                /**< A run card's SETTINGS. */
 /** @brief Run card @p k's SETTINGS (0 AUTOMATIC TEST, 1 LIMIT RUN). */
-#define SV_RUN_SET_Y(k)    (162 + 224 * (k))
+#define SV_RUN_SET_Y(k)    (148 + 204 * (k))
 #define SV_RUN_CLOSE_X     548                /**< CLOSE on a run's page. */
 #define SV_RUN_CLOSE_Y     84                 /**< Its row. */
 #define SV_START_X         178                /**< A run card's START. */
 /** @brief Run card @p k's START. */
-#define SV_START_Y(k)      (162 + 224 * (k))
+#define SV_START_Y(k)      (148 + 204 * (k))
 /** @brief Run card @p k's top (0 AUTOMATIC TEST, 1 LIMIT RUN). */
-#define SV_RUN_CARD_Y(k)   (60 + 224 * (k))
+#define SV_RUN_CARD_Y(k)   (60 + 204 * (k))
 /** @brief The lines under a run card's START, from its top. */
-#define SV_RUN_LINE_DY     142
+#define SV_RUN_LINE_DY     120
 /** @brief The run's box on LIVE's card, left under ARM FIRST: 346 px wide, its lines
  *         24 px apart from 10 px in, its button 150 x 48 px 112 px down. */
 #define SV_BOX_X           18
@@ -74,11 +74,11 @@
 #define SV_BOX_BTN_X       103                /**< STOP TEST or CLOSE. */
 #define SV_BOX_BTN_Y       278                /**< Its row. */
 /** @brief The run's settings: the limit run's mode note, under row 2. */
-#define SV_LIM_NOTE_Y      270
+#define SV_LIM_NOTE_Y      260
 /** @brief A run's settings' column @p c, the middle of its value. */
 #define SV_LIST_X(c)       (114 + 203 * (c))
 /** @brief A run's settings' row @p r, the middle of its value. */
-#define SV_LIST_ROW_Y(r)   (162 + 74 * (r))
+#define SV_LIST_ROW_Y(r)   (157 + 71 * (r))
 
 /** @brief SPEED's label row over its track: y 232 to 252. */
 #define SV_SPEED_ROW_Y     232

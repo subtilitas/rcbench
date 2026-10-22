@@ -132,21 +132,24 @@ static inline gfx_rect_t page_area(void)
  */
 #define RUN_CARD_X  (PAD + 10)     /**< The run cards' left edge, px. */
 #define RUN_CARD_W  (LCARD_W - 20) /**< Their width: 600 px. */
-#define RUN_CARD_H  220            /**< A run card's height, px. */
+#define RUN_CARD_H  200            /**< A run card's height, px. */
 #define RUN_CARD_GAP 4             /**< Above and between the cards, px. */
 /** @brief Run card @p k's top (0 AUTOMATIC TEST, 1 LIMIT RUN). */
 #define RUN_CARD_Y(k) (CARD_Y + RUN_CARD_GAP + (k) * (RUN_CARD_H + RUN_CARD_GAP))
-#define RUN_SUM_DY  42             /**< A card's summary line, in it. */
-#define RUN_BTN_DY  74             /**< Its START's top, in it. */
+#define RUN_NAME_DY 8              /**< A card's name, from its top. */
+#define RUN_SUM_DY  32             /**< A card's summary line, in it. */
+#define RUN_BTN_DY  60             /**< Its START's top, in it. */
 #define RUN_BTN_W   300            /**< START's width, px. */
 #define RUN_BTN_H   56             /**< START's height, px. */
-#define RUN_LINE_DY 142            /**< The lines under START, in it. */
+#define RUN_LINE_DY 120            /**< The lines under START, in it. */
 #define RUN_LINE_P  22             /**< Their pitch in SV_FONT_LABEL. */
 #define RUN_SET_W   160            /**< A card's SETTINGS, px. */
 /** @brief The caps line under the two cards. */
 #define RUN_CAPS_Y  (RUN_CARD_Y(1) + RUN_CARD_H + RUN_CARD_GAP)
-_Static_assert(RUN_CAPS_Y + 20 <= CARD_Y + CARD_H - 1,
-               "the caps line ends inside the page area");
+_Static_assert(RUN_CAPS_Y + 20 <= STOP_FLOOR,
+               "the caps line ends above the alert band");
+_Static_assert(RUN_LINE_DY + 2 * RUN_LINE_P + 20 <= RUN_CARD_H,
+               "a card's three lines under START end inside it");
 
 /**
  * @brief Run card @p k.
@@ -184,6 +187,32 @@ static inline gfx_rect_t run_close_rect(void)
     return (gfx_rect_t){ (int16_t)(RUN_CARD_X + RUN_CARD_W - 140),
                          (int16_t)(CARD_Y + 4), 140, UI_TAP_MIN };
 }
+
+/** @brief A run's name on its settings, from the page's top. */
+#define RUN_PAGE_NAME_DY 4
+/** @brief The save line on a run's settings, under the name. */
+#define RUN_PAGE_SAVE_DY 28
+
+/**
+ * @brief The save line of a page of rows, 20 px tall.  On SETTINGS' pages
+ *        along the bottom, under the notes; on a run's settings under the
+ *        run's name, left of CLOSE, as the rows and the STALL AT note fill
+ *        the page down to the alert band.  The German "not saved" line is
+ *        37 cells, 370 px.
+ * @return the line
+ */
+static inline gfx_rect_t save_line_rect(void)
+{
+    if (rows_page() >= PG_COUNT) {
+        const int x = OV_X + 10;
+        return (gfx_rect_t){ (int16_t)x, (int16_t)(CARD_Y + RUN_PAGE_SAVE_DY),
+                             (int16_t)(run_close_rect().x - 10 - x), 20 };
+    }
+    return (gfx_rect_t){ (int16_t)(OV_X + 10), OV_SAVE_Y,
+                         (int16_t)(OV_W - 20), 20 };
+}
+_Static_assert(CARD_Y + RUN_PAGE_SAVE_DY + 20 <= RL_ROW0 - 4,
+               "a run's save line ends over its first row");
 
 /** @brief START TEST, on the AUTOMATIC TEST card. @return the button */
 static inline gfx_rect_t test_start_rect(void)

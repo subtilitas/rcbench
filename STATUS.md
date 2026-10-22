@@ -35,7 +35,7 @@ does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
 4.28. [Reference](docs/Link.md).
 
-**Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, a placeholder) from the core that does
+**Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
 (`HEARTBEAT_PERIOD_MS`). The IOmcu's
 outputs are to be gated by a retriggerable monostable with a window of about
@@ -212,7 +212,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 250 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_layout`, `test_touch_map`,
+The host suite is 252 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_inj_line_id`, `test_inj_emu`,
 `test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_bubble`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_pdmini`,
@@ -220,7 +220,7 @@ The host suite is 250 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_test_panel`, `test_servo_limit_panel`, `test_servo_workbench`, `test_servo_arm`, `test_safe_press`,
 `test_analyser`, `test_prog_models`, `test_esc_stick_panel`, `test_esc_stick_panel_phases`, `test_esc_stick_panel_list`, `test_esc_stick_panel_steps`, `test_esc_stick_panel_makers`, `test_esc_stick_panel_hold`, `test_esc_stick_panel_touch`, `test_esc_stick_panel_home`, `test_esc_stick_panel_keypad`, `test_balance`, `test_battery`,
 `test_settings`, `test_settings_screen`, `test_settings_gesture`,
-`test_settings_pins_hub`, `test_settings_leave`, `test_settings_folders`, `test_settings_sensors`, `test_settings_keypad`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`, `test_log_csv`, `test_link_crc`, `test_link_pages`,
+`test_settings_pins_hub`, `test_settings_leave`, `test_settings_folders`, `test_settings_sensors`, `test_settings_keypad`, `test_settings_rows`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`, `test_log_csv`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`, `test_outputs_hw_ports`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
@@ -354,21 +354,21 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_map.c` | 120 | 120 | 100.0% |
 | `shared/touch/touch_merge.c` | 101 | 101 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
-| `shared/ui/ui_widgets.c` | 321 | 308 | 96.0% |
+| `shared/ui/ui_widgets.c` | 343 | 336 | 98.0% |
 | `shared/ui/ui_icons.c` | 162 | 162 | 100.0% |
 | `shared/ui/ui_band.c` | 237 | 225 | 94.9% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
-| `shared/ui/ui_tabs.c` | 88 | 79 | 89.8% |
+| `shared/ui/ui_tabs.c` | 97 | 89 | 91.8% |
 | `shared/ui/ui_workbench.c` | 65 | 65 | 100.0% |
-| `shared/ui/ui_target_row.c` | 85 | 84 | 98.8% |
+| `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 412 | 409 | 99.3% |
 | `shared/ui/ui_text.c` | 106 | 105 | 99.1% |
 | `shared/ui/ui_router.c` | 364 | 357 | 98.1% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
-| `shared/ui/overview_screen.c` | 95 | 93 | 97.9% |
+| `shared/ui/overview_screen.c` | 96 | 94 | 97.9% |
 | `shared/ui/motor_screen.c` | 260 | 256 | 98.5% |
 | `shared/ui/motor_events.c` | 162 | 158 | 97.5% |
 | `shared/ui/motor_draw.c` | 352 | 342 | 97.2% |
@@ -378,27 +378,27 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/supply_screen.c` | 435 | 429 | 98.6% |
 | `shared/ui/supply_events.c` | 309 | 305 | 98.7% |
 | `shared/ui/supply_draw.c` | 403 | 390 | 96.8% |
-| `shared/ui/ui_keypad.c` | 218 | 216 | 99.1% |
+| `shared/ui/ui_keypad.c` | 266 | 264 | 99.2% |
 | `shared/ui/ui_setting_keypad.c` | 84 | 84 | 100.0% |
-| `shared/ui/ui_textkey.c` | 266 | 254 | 95.5% |
+| `shared/ui/ui_textkey.c` | 304 | 292 | 96.0% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
 | `shared/ui/servo_screen.c` | 360 | 352 | 97.8% |
 | `shared/ui/servo_screen_sweep.c` | 470 | 466 | 99.2% |
 | `shared/ui/servo_screen_link.c` | 372 | 367 | 98.7% |
 | `shared/ui/servo_screen_touch.c` | 242 | 230 | 95.0% |
-| `shared/ui/servo_screen_draw.c` | 467 | 455 | 97.4% |
+| `shared/ui/servo_screen_draw.c` | 469 | 457 | 97.4% |
 | `shared/ui/servo_settings_panel.c` | 510 | 495 | 97.1% |
 | `shared/ui/servo_settings_draw.c` | 340 | 333 | 97.9% |
 | `shared/ui/servo_test_panel.c` | 430 | 418 | 97.2% |
-| `shared/ui/servo_limit_panel.c` | 406 | 365 | 89.9% |
+| `shared/ui/servo_limit_panel.c` | 405 | 364 | 89.9% |
 | `shared/ui/servo_workbench.c` | 337 | 335 | 99.4% |
-| `shared/ui/kst_panel.c` | 335 | 329 | 98.2% |
+| `shared/ui/kst_panel.c` | 330 | 324 | 98.2% |
 | `shared/ui/kst_panel_text.c` | 160 | 160 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 268 | 265 | 98.9% |
 | `shared/ui/kst_panel_edit.c` | 329 | 322 | 97.9% |
 | `shared/ui/kst_panel_touch.c` | 216 | 213 | 98.6% |
 | `shared/ui/kst_panel_run.c` | 150 | 140 | 93.3% |
-| `shared/ui/kst_panel_draw.c` | 488 | 483 | 99.0% |
+| `shared/ui/kst_panel_draw.c` | 485 | 480 | 99.0% |
 | `shared/ui/analyser_screen.c` | 241 | 237 | 98.3% |
 | `shared/ui/balance_screen.c` | 379 | 379 | 100.0% |
 | `shared/ui/battery_screen.c` | 201 | 190 | 94.5% |
@@ -414,8 +414,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/log_viewer_draw.c` | 393 | 381 | 97.0% |
 | `shared/ui/log_viewer_events.c` | 438 | 426 | 97.3% |
 | `shared/ui/log_select.c` | 73 | 72 | 98.6% |
-| `shared/ui/settings_screen.c` | 481 | 475 | 98.8% |
-| `shared/ui/settings_draw.c` | 215 | 212 | 98.6% |
+| `shared/ui/settings_screen.c` | 494 | 488 | 98.8% |
+| `shared/ui/settings_draw.c` | 219 | 214 | 97.7% |
 | `shared/ui/settings_rows.c` | 58 | 57 | 98.3% |
 | `shared/ui/sensors_rows.c` | 128 | 128 | 100.0% |
 | `shared/ui/outputs_screen.c` | 484 | 480 | 99.2% |
@@ -429,7 +429,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/picker_port.c` | 121 | 121 | 100.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 319 | 312 | 97.8% |
-| `shared/ui/wifi_screen.c` | 495 | 479 | 96.8% |
+| `shared/ui/wifi_screen.c` | 499 | 483 | 96.8% |
 | `shared/ui/update_screen.c` | 114 | 114 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 264 | 263 | 99.6% |
 | `shared/ui/upd_screen.c` | 597 | 575 | 96.3% |
@@ -578,7 +578,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **52028** | **50849** | **97.7%** |
+| **total** | **52168** | **50994** | **97.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -652,7 +652,8 @@ TEST_CASE(a_button_carried_into_the_band_is_not_pressed)
     CHECK_EQ(changed(), 0);
 }
 
-/* The columns' outer edges, and the scroll bar 19 px right of "+". */
+/* The columns' outer edges, and the scroll bar, 1002 to 1013 px, 20 px
+ * right of "+" and outside the list. */
 TEST_CASE(a_drag_at_the_edge_of_the_plus_column_and_on_the_scroll_bar)
 {
     gesture_screen(SET_CAT_IFACE);
@@ -662,7 +663,7 @@ TEST_CASE(a_drag_at_the_edge_of_the_plus_column_and_on_the_scroll_bar)
     CHECK_EQ(settings_screen_scroll(NULL), 200);
 
     gesture_screen(SET_CAT_IFACE);
-    swipe(789, LIST_Y + LIST_H - 8, 789, LIST_Y + LIST_H - 208, 9);
+    swipe(1008, LIST_Y + LIST_H - 8, 1008, LIST_Y + LIST_H - 208, 9);
     CHECK_EQ(changed(), 0);
     CHECK_EQ(settings_screen_scroll(NULL), 0);
 }

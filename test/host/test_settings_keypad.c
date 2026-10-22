@@ -147,11 +147,11 @@ TEST_CASE(a_tap_on_a_value_opens_its_keypad)
     CHECK_NEAR(k->max, 300.0f, 1e-6f);
     CHECK_EQ(k->decimals, 1);
     CHECK_NEAR(k->value, settings_get(id), 1e-6f);
-    /* Over the list and the strip, above the alert band. */
-    CHECK_EQ(k->area.x, 8);
-    CHECK_EQ(k->area.y, 8);
-    CHECK_EQ(k->area.w, UI_PANEL_W - 16);
-    CHECK(k->area.y + k->area.h <= UI_BODY_H - UI_ALERT_H);
+    /* Over the list and the strip, its foot 4 px above the alert band. */
+    CHECK_EQ(k->area.x, 10);
+    CHECK_EQ(k->area.y, 10);
+    CHECK_EQ(k->area.w, UI_PANEL_W - 20);
+    CHECK_EQ(k->area.y + k->area.h, UI_BODY_H - UI_ALERT_H - 4);
     /* Drawn: the frame carries its OK key's accent. */
     ui_router_render(&s_c, 0);
     const gfx_rect_t ok = ui_keypad_key_rect(k, UI_KEY_OK);

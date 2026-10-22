@@ -35,11 +35,12 @@
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
-/* Mirrored from servo_screen.c; if the layout moves these move with it. */
+/* Mirrored from servo_screen_core_int.h (ARC_R, the dial's radius) and
+ * servo_spots.h; if the layout moves these move with it. */
 #define BODY_H  UI_BODY_H
 #define SHAFT_X SV_SHAFT_X
 #define SHAFT_Y SV_SHAFT_Y
-#define ARC_R   140
+#define ARC_R   150
 
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
@@ -105,7 +106,7 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
  * apart from y 64) and the warning's HOLD TO APPLY and CANCEL.
  */
 #define TAB_X(i) SV_PAGE_X(i)
-#define TAB_Y    SV_PAGE_Y
+#define TAB_Y    SV_PAGE_TAB_Y
 #define ROW_L_X  100
 #define ROW_R_X  330
 #define ROW_Y(r) SV_ROW_Y(r)

@@ -31,16 +31,15 @@
 
 /*
  * The LIMIT RUN card, mirrored from servo_limit_panel.c and
- * servo_workbench_int.h: TEST's second card, its lines from 136 px down,
- * 20 px apart in the 10 x 20 face, their text 10 px into the card
- * (x UI_MARGIN + 20);
- * the run's own
- * settings list with LIMIT RUN across row 0 and the mode's note 6 px under
- * the top of row 2 (y 270, servo_settings_draw.c).
+ * servo_workbench_int.h: TEST's second card at y 264 (SV_RUN_CARD_Y(1)),
+ * its lines from 116 px down, 2 px under START LIMIT RUN, 20 px apart in
+ * the 10 x 20 face, their text 10 px into the card (x UI_MARGIN + 20); the
+ * run's own settings list with LIMIT RUN across row 0 and the mode's note
+ * 6 px under the top of row 2 (y 260, SV_LIM_NOTE_Y, servo_settings_draw.c).
  */
 #define LIM_CARD    1
 #define LIM_MODE_Y  LROW_Y(0)
-#define LIM_LINE_Y(i) (SV_RUN_CARD_Y(1) + SV_RUN_LINE_DY - 6 + 20 * (i))
+#define LIM_LINE_Y(i) (SV_RUN_CARD_Y(1) + SV_RUN_LINE_DY - 2 + 20 * (i))
 #define LIM_NOTE_Y  SV_LIM_NOTE_Y
 
 /* Buffer 0 drawn with TEST open, and whether the LIMIT RUN card's line

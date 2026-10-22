@@ -567,8 +567,8 @@ void draw_test_page(gfx_canvas_t *c)
                             ui_theme_color(UI_C_PANEL_SUNK));
         gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 6,
                             ui_theme_color(UI_C_EDGE));
-        gfx_text(c, r.x + 10, r.y + 14, ui_tr(k_title[k]), SV_FONT_LABEL,
-                 ui_theme_color(UI_C_ACCENT), 1);
+        gfx_text(c, r.x + 10, r.y + RUN_NAME_DY, ui_tr(k_title[k]),
+                 SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
         ui_button_font(c, run_set_rect(k), TR(SUP_SETTINGS),
                        ui_theme_color(UI_C_PANEL_HI),
                        s.ov_have && s.ov_pressed == OP_RUN_SET
@@ -603,9 +603,12 @@ void draw_target(gfx_canvas_t *c)
 /* The protocol the SERVO PWM outputs are bound as: a name, the same in
  * every language. */
 #define TARGET_PROTOCOL "SERVO PWM"
-/** @brief Characters the TARGET row's value holds: its 292 px box less
- *         8 px each side, in cells of 10 px. */
-#define TARGET_CELLS 27u
+/** @brief Characters the TARGET row's value holds in the 10 x 20 face
+ *         ui_target_row draws a row UI_TARGET_TALL_H or taller in: the
+ *         column less the label, 268 px, less 8 px each side, 25 cells. */
+#define TARGET_CELLS ((unsigned)((RC_W - UI_TARGET_LABEL_W_TALL - 16) / 10))
+_Static_assert(TARGET_H >= UI_TARGET_TALL_H,
+               "the TARGET row is tall enough for the 10 x 20 face");
 
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known)

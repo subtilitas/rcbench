@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The pane selector: rows of tabs, their touch and their look.  See
+ *        ui_tabs.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -105,6 +109,20 @@ void ui_tabs_cancel(ui_tabs_t *t)
     t->pressed = -1;
 }
 
+const gfx_font_t *ui_tabs_font(const ui_tabs_t *t)
+{
+    if (t == NULL || t->count <= 0 || t->rect[0].h < UI_TABS_LABEL_H) {
+        return UI_FONT_LABEL;
+    }
+    for (int i = 0; i < t->count; ++i) {
+        if (!ui_text_fits(&gfx_font_10x20, ui_tabs_label(t, i), t->rect[i].w,
+                          t->rect[i].h, UI_TABS_PAD)) {
+            return UI_FONT_LABEL;
+        }
+    }
+    return &gfx_font_10x20;
+}
+
 void ui_tabs_render(const ui_tabs_t *t, gfx_canvas_t *c)
 {
     ui_tabs_render_locked(t, c, false);
@@ -134,6 +152,7 @@ void ui_tabs_render_locked(const ui_tabs_t *t, gfx_canvas_t *c, bool locked)
                             UI_EDGE);
     }
 
+    const gfx_font_t *f = ui_tabs_font(t);
     for (int i = 0; i < t->count; ++i) {
         const bool on = (t->selected == i);
         const gfx_rect_t r = t->rect[i];
@@ -150,7 +169,6 @@ void ui_tabs_render_locked(const ui_tabs_t *t, gfx_canvas_t *c, bool locked)
             ink = on ? ui_theme_color(UI_C_TEXT_DIM)
                      : ui_theme_color(UI_C_TEXT_FAINT);
         }
-        gfx_text_in(c, r, ui_tabs_label(t, i), UI_FONT_LABEL, ink, 1,
-                    GFX_ALIGN_CENTER);
+        gfx_text_in(c, r, ui_tabs_label(t, i), f, ink, 1, GFX_ALIGN_CENTER);
     }
 }

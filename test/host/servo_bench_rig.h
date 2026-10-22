@@ -40,7 +40,7 @@
 #define LIM_START_Y SV_START_Y(1)
 #define BOXBTN_X SV_BOX_BTN_X
 #define BOXBTN_Y SV_BOX_BTN_Y
-#define HV_ROW_X LROW_X(2)
+#define HV_ROW_X LROW_X(0)
 #define HV_ROW_Y LROW_Y(2)
 
 /* A bench for the screen's run: the servo model on the output, SUPPLY's
