@@ -164,6 +164,41 @@ TEST_CASE(a_callers_reason_takes_the_range_line_until_the_next_key)
     free(fb);
 }
 
+/* A reason past 63 bytes is cut at the start of a UTF-8 character: the
+ * DE PD mini line behind 49 bytes puts its 2-byte "ä" on bytes 62 and 63,
+ * so the cut falls before it, at 62.  One byte less of padding and the
+ * "ä" ends on byte 62 and is kept whole. */
+TEST_CASE(a_long_reason_is_cut_at_a_character_start)
+{
+    static const char k_de[] = "Diesen GPIO h\xc3\xa4lt der andere PD-mini-Pin";
+    char why[128];
+    memset(why, 'x', 49);
+    snprintf(why + 49, sizeof(why) - 49u, "%s", k_de);
+    open_v();
+    ui_keypad_refuse_why(&kp, why);
+    CHECK_EQ(strlen(kp.reason), 62u);
+    CHECK(strncmp(kp.reason + 49, "Diesen GPIO h", 13) == 0);
+    CHECK_EQ(kp.reason[61], 'h');
+
+    memset(why, 'x', 48);
+    snprintf(why + 48, sizeof(why) - 48u, "%s", k_de);
+    ui_keypad_refuse_why(&kp, why);
+    CHECK_EQ(strlen(kp.reason), 63u);
+    CHECK_EQ((unsigned char)kp.reason[61], 0xc3u);
+    CHECK_EQ((unsigned char)kp.reason[62], 0xa4u);
+
+    /* A 3-byte character across the cut goes whole, too. */
+    memset(why, 'x', 62);
+    snprintf(why + 62, sizeof(why) - 62u, "\xe2\x80\x93" "end");
+    ui_keypad_refuse_why(&kp, why);
+    CHECK_EQ(strlen(kp.reason), 62u);
+    /* Exactly 63 bytes fit as given. */
+    memset(why, 'x', 63);
+    why[63] = '\0';
+    ui_keypad_refuse_why(&kp, why);
+    CHECK_EQ(strlen(kp.reason), 63u);
+}
+
 /** @brief SERVO's TRIM: -200 to +200 us, whole microseconds, signed. */
 static void open_trim(void)
 {
@@ -270,6 +305,7 @@ int main(void)
 {
     RUN(a_caller_refusal_reopens_the_keypad_marked);
     RUN(a_callers_reason_takes_the_range_line_until_the_next_key);
+    RUN(a_long_reason_is_cut_at_a_character_start);
     RUN(a_signed_keypad_has_its_sign_key_beside_the_point);
     RUN(the_sign_key_takes_the_range_down_to_its_minimum);
     RUN(minus_zero_is_zero_and_a_lone_sign_is_nothing_typed);

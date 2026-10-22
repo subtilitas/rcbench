@@ -2,7 +2,8 @@
  * @file test_servo_trim_keypad.c
  * @brief SERVO > SETTINGS > OUTPUT > TRIM's keypad: a tap on TRIM's value
  *        opens a signed keypad of -200 to +200 us; OK puts the value on the
- *        5 us steps of "-" and "+" and sends it as a step does; a value past
+ *        5 us steps of "-" and "+" and sends the pulse at once, as a step
+ *        does, with the dial untouched; a value past
  *        the range is refused; CANCEL, the home tag and a STOP change
  *        nothing.
  *
@@ -115,6 +116,27 @@ TEST_CASE(minus_200_is_what_40_steps_send_and_minus_201_is_refused)
     CHECK_EQ(centre_us(), zero + 200);
 }
 
+/* OK on TRIM sends the pulse at once, as a step does: with the dial left
+ * at the centre, the last command is PULSE CENTRE plus the typed trim,
+ * before and after one "-" step. */
+TEST_CASE(ok_on_trim_sends_the_pulse_at_once)
+{
+    fresh_armed();
+    open_settings();
+    const int zero = centre_us();             /* the dial at the centre */
+    tap(TRIM_X, TRIM_Y);
+    ktype("-35");
+    kkey(UI_KEY_OK);
+    CHECK(!servo_screen_keypad()->open);
+    CHECK_EQ((int)last_cmd().value_us, zero - 35);
+    tap(TRIM_DN_X, TRIM_Y);                   /* one "-" step */
+    CHECK_EQ((int)last_cmd().value_us, zero - 40);
+    tap(TRIM_X, TRIM_Y);
+    ktype("60");
+    kkey(UI_KEY_OK);
+    CHECK_EQ((int)last_cmd().value_us, zero + 60);
+}
+
 /* A typed trim lands on the 5 us steps, the nearer one; -0 is 0. */
 TEST_CASE(a_typed_trim_lands_on_the_steps)
 {
@@ -168,6 +190,7 @@ int main(void)
 {
     RUN(a_tap_on_trim_opens_a_signed_keypad);
     RUN(minus_200_is_what_40_steps_send_and_minus_201_is_refused);
+    RUN(ok_on_trim_sends_the_pulse_at_once);
     RUN(a_typed_trim_lands_on_the_steps);
     RUN(cancel_home_and_stop_change_nothing);
     return test_summary("servo_trim_keypad");

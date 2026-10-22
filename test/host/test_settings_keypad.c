@@ -497,6 +497,46 @@ TEST_CASE(the_sda_reason_lists_the_pins_the_bus_takes)
                                 sizeof(why)) == NULL);
 }
 
+/* A buffer shorter than the whole reason takes the text and the pins that
+ * fit after it whole, in EN (20-byte text) and DE (25 bytes): 8 bytes of
+ * room hold "0 4 6", not "0 4 6 14" and its end. */
+TEST_CASE(a_short_sda_reason_keeps_whole_pins)
+{
+    static const struct {
+        ui_lang_t lang;
+        const char *text, *cut;
+    } k_lang[] = {
+        { UI_LANG_EN, "Pins the bus takes: ", "Pins the bus takes: 0 4 6" },
+        { UI_LANG_DE, "Pins, die der Bus nimmt: ",
+          "Pins, die der Bus nimmt: 0 4 6" },
+    };
+    for (size_t i = 0; i < sizeof(k_lang) / sizeof(k_lang[0]); ++i) {
+        ui_text_set_language(k_lang[i].lang);
+        const size_t fixed = strlen(k_lang[i].text);
+        char why[64];
+        CHECK_STR_EQ(ui_setting_keypad_why(SET_SENSE_SDA, 5.0f, why,
+                                           fixed + 8u), k_lang[i].cut);
+        /* One byte more holds "14" whole. */
+        char want[64];
+        snprintf(want, sizeof(want), "%s0 4 6 14", k_lang[i].text);
+        CHECK_STR_EQ(ui_setting_keypad_why(SET_SENSE_SDA, 5.0f, why,
+                                           fixed + 9u), want);
+        /* No room after the text: the text, no pin. */
+        CHECK_STR_EQ(ui_setting_keypad_why(SET_SENSE_SDA, 5.0f, why,
+                                           fixed + 1u), k_lang[i].text);
+        /* The keypad's 64 bytes hold the whole list. */
+        snprintf(want, sizeof(want), "%s0 4 6 14 16 18 20 26",
+                 k_lang[i].text);
+        CHECK_STR_EQ(ui_setting_keypad_why(SET_SENSE_SDA, 5.0f, why,
+                                           sizeof(why)), want);
+        /* A larger buffer holds no more: the list is the whole list. */
+        char big[128];
+        CHECK_STR_EQ(ui_setting_keypad_why(SET_SENSE_SDA, 5.0f, big,
+                                           sizeof(big)), want);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* The shunt reason is a fixed text: every row with an off gap is a shunt
  * of 0 or 5.0 to 1000.0 mOhm in 0.1 steps, as the text says. */
 TEST_CASE(the_shunt_reason_is_what_the_schema_holds)
@@ -689,6 +729,7 @@ int main(void)
     RUN(a_pin_the_row_does_not_take_is_refused);
     RUN(a_refusal_inside_the_range_says_why_until_the_next_key);
     RUN(the_sda_reason_lists_the_pins_the_bus_takes);
+    RUN(a_short_sda_reason_keeps_whole_pins);
     RUN(the_shunt_reason_is_what_the_schema_holds);
     RUN(armed_steps_and_keypad_alike_and_a_held_row_refuses_both);
     RUN(a_lost_press_keeps_what_was_typed);

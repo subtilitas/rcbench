@@ -20,7 +20,7 @@ Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Ei
 |---|---|---|---|---|
 | AKKU | Zellen | 1 bis 14 S | 6 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
 | AKKU | Kapazität | 0 bis 30000 mAh, Schritte von 100 mAh | 5000 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
-| AKKU | Innenwiderstand | 0 bis 200 mOhm | 18,0 | gespeichert; kein Bildschirm nutzt ihn in diesem Release |
+| AKKU | Innenwiderstand | 0 bis 200 mOhm | 18 | gespeichert; kein Bildschirm nutzt ihn in diesem Release |
 | MOTOR | Motorpole | 2 bis 42, Schritte von 2 | 14 | die Drehzahl ist eRPM (elektrische Drehzahl) geteilt durch Pole/2 |
 | MOTOR | Nenn-kV | 0 bis 10000 rpm/V, Schritte von 10 | 0 | der kV-Wert auf [LIVE](motor.md#kv-rpm-v-und-eff); 0 lässt ihn leer |
 | GASAUSGANG | Leerlaufpuls | 800 bis 1600 us, Schritte von 10 | 1000 | die PWM-Breite (Pulsweitenmodulation) bei 0 % Throttle |

@@ -92,9 +92,21 @@ void ui_keypad_refuse(ui_keypad_t *k)
 void ui_keypad_refuse_why(ui_keypad_t *k, const char *reason)
 {
     ui_keypad_refuse(k);
-    if (k != NULL && reason != NULL) {
-        snprintf(k->reason, sizeof(k->reason), "%s", reason);
+    if (k == NULL || reason == NULL) {
+        return;
     }
+    size_t len = strlen(reason);
+    if (len >= sizeof(k->reason)) {
+        /* Cut at the start of a UTF-8 character, never inside one: back
+         * over continuation bytes (10xxxxxx) to the byte that starts the
+         * character the cut would split. */
+        len = sizeof(k->reason) - 1u;
+        while (len > 0u && ((unsigned char)reason[len] & 0xC0u) == 0x80u) {
+            --len;
+        }
+    }
+    memcpy(k->reason, reason, len);
+    k->reason[len] = '\0';
 }
 
 void ui_keypad_cancel_press(ui_keypad_t *k)

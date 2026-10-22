@@ -123,13 +123,24 @@ const char *ui_setting_keypad_why(setting_id_t id, float v, char *buf,
     switch (why_refused(id, v)) {
     case WHY_OFF_GAP:
         return TR(KEYPAD_WHY_SHUNT);
-    case WHY_SDA:
+    case WHY_SDA: {
         if (buf == NULL || n == 0u) {
             return "";
         }
+        /* The text without the list, measured; the list is built into
+         * the room left after it, so only whole pins reach @p buf. */
+        const int fixed = snprintf(buf, n, TR(KEYPAD_WHY_SDA), "");
+        size_t room = 1u;
+        if (fixed >= 0 && (size_t)fixed < n) {
+            room = n - (size_t)fixed;
+        }
+        if (room > sizeof(pins)) {
+            room = sizeof(pins);
+        }
         snprintf(buf, n, TR(KEYPAD_WHY_SDA),
-                 ui_setting_keypad_sda_pins(pins, sizeof(pins)));
+                 ui_setting_keypad_sda_pins(pins, room));
         return buf;
+    }
     case WHY_PDMINI:
         return TR(KEYPAD_WHY_PDMINI);
     case WHY_NO_ROW:

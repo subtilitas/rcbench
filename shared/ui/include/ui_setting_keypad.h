@@ -96,7 +96,8 @@ const char *ui_setting_keypad_sda_pins(char *buf, size_t n);
  * @param id The setting.
  * @param v The value typed.
  * @param buf Where a text with numbers in it goes (the Sensor SDA pins).
- * @param n The size of @p buf in bytes; 64 holds every reason.
+ * @param n The size of @p buf in bytes; 64 holds every reason.  A
+ *        smaller @p buf holds the text and as many whole pins as fit.
  * @return NULL for a value ui_setting_keypad_takes() takes; otherwise
  *         KEYPAD_WHY_SHUNT for a value between 0 and off_below, @p buf
  *         holding KEYPAD_WHY_SDA with the pins for a Sensor SDA pin the bus

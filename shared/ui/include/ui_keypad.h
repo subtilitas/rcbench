@@ -121,8 +121,9 @@ void ui_keypad_refuse(ui_keypad_t *k);
  * @brief Refuse as ui_keypad_refuse() does, with the reason drawn in place
  *        of the range, in the warning colour, until the next key.
  * @param k The keypad that returned UI_KEYPAD_OK.
- * @param reason Why, one line of up to 63 bytes; NULL or "" draws the
- *        range.
+ * @param reason Why, one line; NULL or "" draws the range.  A reason of
+ *        64 bytes or more is cut to at most 63 at the start of a UTF-8
+ *        character, so no character is drawn half.
  */
 void ui_keypad_refuse_why(ui_keypad_t *k, const char *reason);
 

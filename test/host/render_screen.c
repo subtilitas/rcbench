@@ -471,9 +471,15 @@ static void ktap(gfx_rect_t r)
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 
-/* The value of @p id on SETUP's open @p cat list, scrolled into view and
- * tapped: its keypad opens.  The list is 348 px high and a row 58 px
- * apart, at 6 px under the band; the value sits at x 663. */
+/**
+ * @brief The value of @p id on SETUP's open @p cat list, scrolled into
+ *        view and tapped, so its keypad opens.  The list is 348 px high
+ *        and its rows 58 px apart, from 6 px under the band; the value
+ *        sits at x 663.  Exits with status 1 for a row the list does not
+ *        hold or cannot bring into view in 20 drags.
+ * @param cat The category whose list is open.
+ * @param id The setting whose value is tapped.
+ */
 static void setup_value(setting_cat_t cat, setting_id_t id)
 {
     setting_id_t ids[64];
