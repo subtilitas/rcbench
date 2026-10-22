@@ -473,10 +473,9 @@ TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
             if (fb[y * W + x] == was[y * W + x]) {
                 continue;
             }
-            const bool in = x >= SV_RC_X && x < SV_RC_X + SV_RC_W && y >= 148
-                            && y < 244;
-            const bool row = x >= SV_RC_X && x < SV_RC_X + SV_RC_W && y >= 92
-                             && y < 116;
+            const bool rc = x >= SV_RC_X && x < SV_RC_X + SV_RC_W;
+            const bool in = rc && y >= 148 && y < 244;
+            const bool row = rc && y >= 92 && y < 116;
             if (in) { ++inside; } else if (row) { ++in_row; } else { ++outside; }
         }
     }
@@ -965,9 +964,8 @@ TEST_CASE(a_refused_save_repaints_only_the_save_line)
     int outside = 0, warn = 0;
     for (int y = 0; y < H; ++y) {
         for (int x = 0; x < W; ++x) {
-            /* The save line, 24 px over the overlay's foot. */
-            const int sy = UI_BODY_H - UI_MARGIN - 24;
-            const bool in = x >= UI_MARGIN + 10 && x < UI_MARGIN + 10 + 244
+            const int sy = UI_BODY_H - UI_MARGIN - 24;  /* the save line */
+            const bool in = x >= UI_MARGIN + 10 && x < UI_MARGIN + 254
                             && y >= sy && y < sy + 18;
             if (in && fb[y * W + x] == ui_theme_color(UI_C_WARN)) {
                 ++warn;
