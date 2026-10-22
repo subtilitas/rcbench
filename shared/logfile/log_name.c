@@ -166,6 +166,35 @@ int log_name_number(const char *name)
     return (n >= 0) ? n : log_report_number(name);
 }
 
+/**
+ * @brief Read a run log's or a report's name apart.
+ * @param name    the name, case folded as log_run_number() folds it
+ * @param prefix  takes the writer's prefix; may be NULL
+ * @param report  takes whether it is the ".TXT" report; may be NULL
+ * @return the number, or -1 for a name that is neither: then @p prefix and
+ *         @p report are left as they were
+ */
+int log_name_parse(const char *name, log_prefix_t *prefix, bool *report)
+{
+    int k = -1;
+    bool txt = false;
+    int n = numbered(name, RUN_SUFFIX, &k);
+    if (n < 0) {
+        n = numbered(name, REPORT_SUFFIX, &k);
+        txt = true;
+    }
+    if (n < 0) {
+        return -1;
+    }
+    if (prefix != NULL) {
+        *prefix = (log_prefix_t)k;
+    }
+    if (report != NULL) {
+        *report = txt;
+    }
+    return n;
+}
+
 void log_name_form(char *out, size_t out_size, int number, int form)
 {
     if (out != NULL && out_size > 0u) {
@@ -227,8 +256,10 @@ int log_name_rank(const char *a, const char *b)
     if (b == NULL) {
         b = "";
     }
-    const int ra = log_run_number(a);
-    const int rb = log_run_number(b);
+    /* A report ranks by its number as its run does: LIMITnnn.TXT is a
+     * limit run's only file, and the folder's series dates it. */
+    const int ra = log_name_number(a);
+    const int rb = log_name_number(b);
     if (ra >= 0 || rb >= 0) {
         if (ra < 0) {
             return 1;

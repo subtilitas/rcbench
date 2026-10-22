@@ -99,6 +99,7 @@ TRACKED = [
     "shared/ui/esc_stick_panel.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/log_select.c",
+    "shared/ui/log_text.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_rows.c",
     "shared/ui/sensors_rows.c",

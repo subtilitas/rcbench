@@ -5,16 +5,20 @@
  * (list, open, close), so the firmware points it at the SD card while the
  * host tests and the screenshot renderer point it at a string in memory.
  *
- * Three views, in the order they are used:
+ * Four views, in the order they are used:
  *
  *   BROWSE  the files of one folder of the card, and DELETE for the selected
  *           one behind a confirmation that names it.  Three tabs choose the
  *           folder, left to right: ROOT (the card's root, where firmware
  *           0.21.0 and older wrote every run), USER (USER/LOGS, the tests
- *           a user starts) and BENCH (BENCH/LOGS, the automatic logs)
+ *           a user starts) and BENCH (BENCH/LOGS, the automatic logs).  The
+ *           list holds the CSV files and the reports standing alone
+ *           (log_select.h)
  *   IMPORT  what the CSV (comma-separated values) reader detected, and the
  *           controls to override it
  *   PLOT    the traces, on one time base with a scale each
+ *   TEXT    a report standing alone, LIMITnnn.TXT, as text (log_text.h):
+ *           OPEN on a report shows it in place of IMPORT
  *
  * The import view shows the detected delimiter and decimal convention before
  * anything is plotted: a decimal-comma file read as decimal-point turns
@@ -32,6 +36,7 @@
 
 #include "card_state.h"
 #include "log_csv.h"
+#include "log_text.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -163,7 +168,8 @@ typedef struct {
 typedef enum {
     LOG_VIEW_BROWSE = 0,
     LOG_VIEW_IMPORT,
-    LOG_VIEW_PLOT
+    LOG_VIEW_PLOT,
+    LOG_VIEW_TEXT       /**< a report's text */
 } log_viewer_view_t;
 
 void log_viewer_set_io(const log_viewer_io_t *io);
@@ -188,6 +194,18 @@ const log_analysis_t *log_viewer_analysis(void);
 
 /** The loaded traces, or NULL when nothing is plotted. */
 const log_data_t *log_viewer_data(void);
+
+/**
+ * @brief The report the TEXT view shows.
+ * @return its text and rows (log_text.h), or NULL with no report open
+ */
+const log_text_t *log_viewer_text(void);
+
+/**
+ * @brief The TEXT view's first row on screen.
+ * @return the row, 0 at the top and with no report open
+ */
+int log_viewer_text_first(void);
 
 /**
  * The samples the plot shows: the first in @p first and how many in

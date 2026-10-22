@@ -551,8 +551,11 @@ TEST_CASE(the_newest_run_ranks_first_across_prefixes)
     CHECK(log_name_rank("esc100.csv", "SERVO099.CSV") < 0);
     CHECK(log_name_rank("SERVO001.CSV", "SWEEP_920KV.CSV") < 0);
     CHECK(log_name_rank("SWEEP_920KV.CSV", "ESC001.CSV") > 0);
-    /* A report is not a run; it ranks with the files nobody can date. */
-    CHECK(log_name_rank("SERVO005.TXT", "BENCH001.CSV") > 0);
+    /* A report ranks by its number, as its run does: a limit run's report
+     * is its only file. */
+    CHECK(log_name_rank("SERVO005.TXT", "BENCH001.CSV") < 0);
+    CHECK(log_name_rank("SERVO005.TXT", "BENCH006.CSV") > 0);
+    CHECK(log_name_rank("NOTES.TXT", "SWEEP.CSV") < 0);
     /* One number under two names: by name, both ways round, and one file
      * in two cases is one file. */
     CHECK(log_name_rank("BENCH007.CSV", "SERVO007.CSV") < 0);
@@ -563,8 +566,8 @@ TEST_CASE(the_newest_run_ranks_first_across_prefixes)
     static const char *const k_order[] = {
         "SUPPL300.CSV", "MOTOR299.CSV", "LIMIT298.CSV", "ATEST297.CSV",
         "BENCH296.CSV", "ESC295.CSV",   "SERVO294.CSV", "ATEST100.CSV",
-        "BENCH100.CSV", "ESC100.CSV",   "LIMIT100.CSV", "MOTOR100.CSV",
-        "SERVO100.CSV", "SUPPL100.CSV", "LIMIT100.TXT", "SWEEP.CSV",
+        "BENCH100.CSV", "ESC100.CSV",   "LIMIT100.CSV", "LIMIT100.TXT",
+        "MOTOR100.CSV", "SERVO100.CSV", "SUPPL100.CSV", "SWEEP.CSV",
     };
     const int n = (int)(sizeof(k_order) / sizeof(k_order[0]));
     for (int i = 0; i < n; ++i) {

@@ -6,6 +6,18 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- LOGS lists a report standing alone: a LIMIT RUN's `LIMITnnn.TXT` in
+  `USER/LOGS`, and in the root a `SERVOnnn.TXT` with no `SERVOnnn.CSV`
+  beside it, the limit run of firmware 0.21.0 and older. It ranks by its
+  number among the runs, and the newest is selected when LOGS opens. OPEN
+  shows it as text: 14 rows of up to 86 characters, scrolled by a drag or
+  the scroll bar, the first 32 KiB of a file. A report beside its run's
+  CSV, `ATESTnnn.TXT`, stays off the list, and OPEN on the run reads the
+  CSV. The Wi-Fi page lists every file, these reports included, as a
+  download.
+
 ## 0.22.0 - 2026-10-21
 
 0.22.0 is the last release for the ESP32-S3 panel. Later releases are for

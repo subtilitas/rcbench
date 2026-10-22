@@ -572,7 +572,7 @@ UI_TEXT(LOG_NO_CSV_IN,             64, "No .csv files in %s.")
 /* What each tab's folder holds, under an empty list; AUTO and USER LOGS
  * switched off say where they are switched on. */
 UI_TEXT(LOG_RUNS_HERE,             64, "Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.")
-UI_TEXT(LOG_TESTS_HERE,            64, "Tests are saved as ATESTnnn.CSV.")
+UI_TEXT(LOG_TESTS_HERE,            64, "Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.")
 UI_TEXT(LOG_ROOT_HERE,             64, "Runs of firmware 0.21.0 and older.")
 UI_TEXT(LOG_AUTO_OFF,              64, "AUTO LOGS OFF in SETUP > SD CARD.")
 UI_TEXT(LOG_USER_OFF,              64, "USER LOGS OFF in SETUP > SD CARD.")
@@ -630,6 +630,11 @@ UI_TEXT(LOG_SUMMARY,                0, "%s   %d ROWS   %.2f s   %.0f Hz")
 UI_TEXT(LOG_AT_TIME,                0, "t = %.3f s   sample %d/%d")
 UI_TEXT(LOG_AT_ROW,                50, "row %d of %d   (no time column)")
 UI_TEXT(LOG_UNREADABLE_CELLS,      50, "%d CELLS UNREADABLE")
+/* The TEXT view's last row, under a report longer than LOG_TEXT_MAX: its
+ * size in kB.  A row of the view is 86 cells. */
+UI_TEXT(LOG_TEXT_CUT,              86, "Only the first %u kB are shown.")
+/* The TEXT view's one row for a report of 0 bytes. */
+UI_TEXT(LOG_TEXT_EMPTY,            86, "The file is empty.")
 
 /* --------------------------------------------- the modelled protocols */
 /* The parameter tables of prog_models.c, which no list shows: no transport
