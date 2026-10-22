@@ -142,7 +142,7 @@ TEST_CASE(every_message_fits_whole_beside_every_standing_pair)
     fresh();
     for (int lang = 0; lang < 2; ++lang) {
         const gfx_rect_t last = val(PG_SERVO, 4, 0);
-        const int fit = (AREA.y + AREA.h - 6 - (last.y + last.h)) / 18;
+        const int fit = (AREA.y + AREA.h - 6 - (last.y + last.h)) / 20;
         int held = 0;
         int text = 0;
 
@@ -187,11 +187,11 @@ TEST_CASE(every_message_fits_whole_beside_every_standing_pair)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* The overlay open in an area 420 px tall, where the notes of a servo in
+/* The overlay open in an area 522 px tall, where the notes of a servo in
  * doubt, in German, take two pages. */
 static void fresh_short(void)
 {
-    static const gfx_rect_t k_short = { UI_MARGIN, UI_MARGIN, 488, 420 };
+    static const gfx_rect_t k_short = { UI_MARGIN, UI_MARGIN, 620, 522 };
     fresh();
     kst_panel_init(k_short);
     kst_panel_open();

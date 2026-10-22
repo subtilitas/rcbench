@@ -3631,10 +3631,32 @@ shared/ui/include/esc_stick_panel.h: warning: return type of member esc_stick_pa
 shared/ui/include/esc_stick_panel.h: warning: return type of member esc_stick_panel_supply_reads_off is not documented
 shared/ui/include/esc_stick_panel.h: warning: return type of member esc_stick_panel_why_text is not documented
 shared/ui/include/esc_stick_panel.h: warning: return type of member esc_stick_panel_wrap_lines is not documented
-shared/ui/include/kst_panel.h: file has no @file block
+shared/ui/include/kst_panel.h: warning: Member KST_PANEL_LINE (macro definition) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_card_done(const kst_prog_card_done_t *done) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_choice_label(int i) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_feed(const kst_prog_feed_t *f) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_file_done(bool ok) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_file_load(const char *text, size_t len) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_file_take(char *out, size_t n) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_is_open(void) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_keypad(void) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_model(void) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_open(void) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_render(gfx_canvas_t *c) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_run_poll(void) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_run_t (enumeration) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_take(kst_prog_cmd_t *out) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_textkey(void) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: Member kst_panel_tick(float dt_s) (function) of file kst_panel.h is not documented.
+shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_bench_armed are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_button are not documented
+shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_card_take are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_event are not documented
+shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_file_late are not documented
+shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_gate are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_has_press are not documented
+shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_init are not documented
+shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_label are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_message_lines are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_pack_notes are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_row_live are not documented
@@ -3644,18 +3666,31 @@ shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_run_pulse
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_run_servo are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_run_write are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_safe_at are not documented
+shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_set_hv are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_shown_note are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_standing_line are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_status_line are not documented
+shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_warning_level are not documented
+shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_warning_line are not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_button is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_card_look is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_card_take is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_choice_title is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_editor is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_file_late is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_has_press is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_hold_revision is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_holds_port is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_label is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_message_lines is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_note_page is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_note_pages is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_notes_drawn is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_notes_rect is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_pack_notes is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_page is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_pin is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_revision is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_row_live is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_rule_text is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_run_backup is not documented
@@ -3670,6 +3705,8 @@ shared/ui/include/kst_panel.h: warning: return type of member kst_panel_shown_me
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_shown_note is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_standing_line is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_status_line is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_warning_level is not documented
+shared/ui/include/kst_panel.h: warning: return type of member kst_panel_warning_line is not documented
 shared/ui/include/log_select.h: file has no @file block
 shared/ui/include/log_select.h: warning: Member capacity (variable) of struct log_select_page_t is not documented.
 shared/ui/include/log_select.h: warning: Member dir (variable) of struct log_select_page_t is not documented.
@@ -3781,12 +3818,6 @@ shared/ui/include/prog_registry.h: warning: Member PROG_FULL_Y (macro definition
 shared/ui/include/prog_registry.h: warning: Member PROG_LIST_HEADINGS_OVER (macro definition) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member PROG_LIST_MAX (macro definition) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member PROG_ONE_CALL (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_VIEW_BAR_H (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_VIEW_HEAD_H (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_VIEW_HEAD_P (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_VIEW_PAD (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_VIEW_ROW_H (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_VIEW_ROW_P (macro definition) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member area (variable) of struct prog_view_t is not documented.
 shared/ui/include/prog_registry.h: warning: Member e[2 *PROG_LIST_MAX] (variable) of struct prog_list_t is not documented.
 shared/ui/include/prog_registry.h: warning: Member event(const touch_event_t *evt) (variable) of struct prog_page_set_t is not documented.
@@ -3818,10 +3849,8 @@ shared/ui/include/prog_registry.h: warning: Member prog_ps_safe_at(const prog_pa
 shared/ui/include/prog_registry.h: warning: Member prog_ps_tick(const prog_page_set_t *ps, float dt_s) (function) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member prog_reg_fault_t (enumeration) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member prog_row_state_t (enumeration) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member prog_view_down_rect(const prog_view_t *v, const prog_list_t *l) (function) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member prog_view_ev_t (enumeration) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member prog_view_init(prog_view_t *v, gfx_rect_t area) (function) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member prog_view_up_rect(const prog_view_t *v, const prog_list_t *l) (function) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member render(gfx_canvas_t *c) (variable) of struct prog_page_set_t is not documented.
 shared/ui/include/prog_registry.h: warning: Member tick(float dt_s) (variable) of struct prog_page_set_t is not documented.
 shared/ui/include/prog_registry.h: warning: Member transport (variable) of struct prog_reg_row_t is not documented.
@@ -3841,8 +3870,6 @@ shared/ui/include/prog_registry.h: warning: parameters of member prog_view_cance
 shared/ui/include/prog_registry.h: warning: parameters of member prog_view_entry_rect are not documented
 shared/ui/include/prog_registry.h: warning: parameters of member prog_view_event are not documented
 shared/ui/include/prog_registry.h: warning: parameters of member prog_view_has_bar are not documented
-shared/ui/include/prog_registry.h: warning: parameters of member prog_view_render are not documented
-shared/ui/include/prog_registry.h: warning: parameters of member prog_view_search_rect are not documented
 shared/ui/include/prog_registry.h: warning: parameters of member prog_view_shown are not documented
 shared/ui/include/prog_registry.h: warning: parameters of member prog_view_top are not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_reg_cap_name is not documented
@@ -3857,7 +3884,6 @@ shared/ui/include/prog_registry.h: warning: return type of member prog_registry 
 shared/ui/include/prog_registry.h: warning: return type of member prog_view_entry_rect is not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_view_event is not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_view_has_bar is not documented
-shared/ui/include/prog_registry.h: warning: return type of member prog_view_search_rect is not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_view_shown is not documented
 shared/ui/include/sensors_rows.h: warning: Member sensors_rows_state_color(int a) (function) of file sensors_rows.h is not documented.
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_channel are not documented
@@ -4257,11 +4283,31 @@ shared/ui/include/wifi_screen.h: warning: return type of member update_screen_ta
 shared/ui/include/wifi_screen.h: warning: return type of member wifi_screen_jobs_lines is not documented
 shared/ui/include/wifi_screen.h: warning: return type of member wifi_screen_take is not documented
 shared/ui/include/wifi_screen.h: warning: return type of member wifi_screen_view is not documented
-shared/ui/kst_panel.c: file has no @file block
+shared/ui/kst_panel.c: warning: Member card_state(void) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member control_rect(const row_t *r) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member holds_setting(setting_id_t id) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member k_pages[PG_COUNT] (variable) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kpn_rows[] (variable) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_card_done(const kst_prog_card_done_t *done) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_choice_label(int i) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_feed(const kst_prog_feed_t *f) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_file_done(bool ok) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_file_load(const char *text, size_t len) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_file_take(char *out, size_t n) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_is_open(void) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_keypad(void) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_open(void) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_take(kst_prog_cmd_t *out) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member kst_panel_textkey(void) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member model_moved(void) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member next_row(const char *s, size_t len) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member options_fresh(void) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member row_len(const char *s) (function) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member s_gate (variable) of file kst_panel.c is not documented.
+shared/ui/kst_panel.c: warning: Member signature(void) (function) of file kst_panel.c is not documented.
 shared/ui/kst_panel_draw.c: warning: Compound note_t is not documented.
 shared/ui/kst_panel_draw.c: warning: Compound notes_plan_t is not documented.
 shared/ui/kst_panel_draw.c: warning: Member NOTES_MAX (macro definition) of file kst_panel_draw.c is not documented.
-shared/ui/kst_panel_draw.c: warning: Member NOTE_Y (macro definition) of file kst_panel_draw.c is not documented.
 shared/ui/kst_panel_draw.c: warning: Member act_value(const row_t *r, char *out, size_t n) (function) of file kst_panel_draw.c is not documented.
 shared/ui/kst_panel_draw.c: warning: Member bottom (variable) of struct notes_plan_t is not documented.
 shared/ui/kst_panel_draw.c: warning: Member color (variable) of struct note_t is not documented.
@@ -4272,7 +4318,6 @@ shared/ui/kst_panel_draw.c: warning: Member draw_notes(gfx_canvas_t *c) (functio
 shared/ui/kst_panel_draw.c: warning: Member draw_page(gfx_canvas_t *c) (function) of file kst_panel_draw.c is not documented.
 shared/ui/kst_panel_draw.c: warning: Member draw_row(gfx_canvas_t *c, int i) (function) of file kst_panel_draw.c is not documented.
 shared/ui/kst_panel_draw.c: warning: Member draw_warning(gfx_canvas_t *c) (function) of file kst_panel_draw.c is not documented.
-shared/ui/kst_panel_draw.c: warning: Member k_warn_pitch[] (variable) of file kst_panel_draw.c is not documented.
 shared/ui/kst_panel_draw.c: warning: Member kst_panel_render(gfx_canvas_t *c) (function) of file kst_panel_draw.c is not documented.
 shared/ui/kst_panel_draw.c: warning: Member layout_notes(notes_plan_t *p) (function) of file kst_panel_draw.c is not documented.
 shared/ui/kst_panel_draw.c: warning: Member level_color(unsigned level) (function) of file kst_panel_draw.c is not documented.
@@ -4311,31 +4356,19 @@ shared/ui/kst_panel_edit.c: warning: Member name_open(unsigned why) (function) o
 shared/ui/kst_panel_edit.c: warning: Member std_mv(long mv) (function) of file kst_panel_edit.c is not documented.
 shared/ui/kst_panel_edit.c: warning: Member supply_max_mv(void) (function) of file kst_panel_edit.c is not documented.
 shared/ui/kst_panel_int.h: warning: Compound row_t is not documented.
-shared/ui/kst_panel_int.h: warning: Member CHOICE_MAX (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member FILES_NEXT (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member FILES_SAVE (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member FILE_VALUES (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member KP_CURRENT (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member KP_VOLTAGE (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member KP_WAIT (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member LINE_H (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member PITCH (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member REPEAT_DELAY_S (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member REPEAT_FAST_HZ (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member REPEAT_FAST_S (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member REPEAT_SLOW_HZ (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member RESTORE_FORGET (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member ROW0 (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member ROW_H (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member STEP_W (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member TAB_H (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member TAB_W (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member VAL_W (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member WARN_LINES (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member WARN_ROWS (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member WARN_RULES (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member WARN_TOP (macro definition) of file kst_panel_int.h is not documented.
-shared/ui/kst_panel_int.h: warning: Member WIDE_W (macro definition) of file kst_panel_int.h is not documented.
 shared/ui/kst_panel_int.h: warning: Member apply[64] (variable) of struct kst_panel_state_t::[struct].warn is not documented.
 shared/ui/kst_panel_int.h: warning: Member area (variable) of struct kst_panel_state_t is not documented.
 shared/ui/kst_panel_int.h: warning: Member card_look (variable) of struct kst_panel_state_t is not documented.
@@ -5036,7 +5069,41 @@ shared/ui/picker_screen_int.h: warning: Member view_rev (variable) of struct pk_
 shared/ui/port_mail.c: file has no @file block
 shared/ui/port_view.c: file has no @file block
 shared/ui/prog_models.c: file has no @file block
-shared/ui/prog_registry.c: file has no @file block
+shared/ui/prog_registry.c: warning: Member entry_h(const prog_list_t *l, int k) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member filled(ui_text_id_t id) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member hit(const prog_view_t *v, const prog_list_t *l, int x, int y) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member hooks_filled(const prog_page_set_t *p) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member k_cap_name[] (variable) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member k_rows[] (variable) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member list_y(const prog_view_t *v, const prog_list_t *l) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member page_up_top(const prog_view_t *v, const prog_list_t *l) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member pages(const prog_view_t *v, const prog_list_t *l) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_armed(const prog_page_set_t *ps, bool armed) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_back(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_cancel(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_entry(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_event(const prog_page_set_t *ps, const touch_event_t *evt) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_has_press(const prog_page_set_t *ps, uint8_t id) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_hold_rect(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_hold_revision(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_holds(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_init(const prog_page_set_t *ps, gfx_rect_t area) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_is_open(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_leave(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_open(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_pin(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_render(const prog_page_set_t *ps, gfx_canvas_t *c) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_revision(const prog_page_set_t *ps) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_safe_at(const prog_page_set_t *ps, int x, int y) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_ps_tick(const prog_page_set_t *ps, float dt_s) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member prog_view_init(prog_view_t *v, gfx_rect_t area) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member room(const prog_view_t *v, bool bar) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member s_count (variable) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member s_held (variable) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member s_rows (variable) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member s_tester_port (variable) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member same_list(const prog_reg_row_t *a, const prog_reg_row_t *b) (function) of file prog_registry.c is not documented.
+shared/ui/prog_registry.c: warning: Member shown_from(const prog_view_t *v, const prog_list_t *l, int top) (function) of file prog_registry.c is not documented.
 shared/ui/sensors_rows.c: warning: Member fitted(int a) (function) of file sensors_rows.c is not documented.
 shared/ui/sensors_rows.c: warning: Member s_status (variable) of file sensors_rows.c is not documented.
 shared/ui/sensors_rows.c: warning: Member sensors_rows_state_color(int a) (function) of file sensors_rows.c is not documented.

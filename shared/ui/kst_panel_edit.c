@@ -15,6 +15,7 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "kst_limits.h"
 #include "kst_port.h"
 #include "kst_reg.h"
 #include "link_pages.h"
@@ -52,6 +53,13 @@ static void choice_open(int kind, const char *title)
     k.ch.count = 0;
     snprintf(k.ch.title, sizeof(k.ch.title), "%s", title);
 }
+
+/* Every list is whole: FILES with the entries around its files, and
+ * STRETCH with every factor the hard limit leaves. */
+_Static_assert(KST_PROG_FILES_MAX + 2u <= CHOICE_MAX,
+               "the FILES list fits CHOICE_MAX entries");
+_Static_assert(KST_STRETCH_INDEX_MAX + 1u <= CHOICE_MAX,
+               "the STRETCH list fits CHOICE_MAX entries");
 
 static void choice_add(const char *label, int value)
 {

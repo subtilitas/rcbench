@@ -1259,6 +1259,12 @@ list holds 48 rows at most. With one row none of these is drawn. Modelled
 protocols without a transport on the IOmcu, the Hitec D-series servos among
 them, have no row ([PROGRAM](#program) on MOTOR & ESC).
 
+A row is 48 px tall with 8 px under it, a heading 28 px with 4 px under
+it, both in the 10 x 20 face. The bar over a paged list is 48 px tall:
+SEARCH 260 px wide on the left, `^` and `v` 56 px each on the right. On
+SERVO's left card 8 rows fit without the bar. MOTOR & ESC's list is the
+same list.
+
 The KST and Chaservo programmer takes the programming port the tester
 drives out of PWM (pulse-width modulation) and reads and writes the
 servo's settings on its signal wire. PROG PORT 1 is GP13 on pad 17 by
@@ -1277,6 +1283,23 @@ the SET row and of the SUPPLY screen are dimmed and take no press for as
 long; OUTPUT OFF works.
 It leaves programming without a cycle of the servo's supply. Whether a KST
 servo follows PWM while in programming mode is not measured.
+
+The programmer's layout on the 620 px left card, every control 48 px tall
+or more and ending 4 px above the alert band:
+
+| Part | Size |
+| --- | --- |
+| tabs and CLOSE | one row at the top, 48 px tall: five tabs of 95 px, CLOSE 120 px |
+| rows | 48 px tall at a 56 px pitch, up to 5 a tab, in two columns of 295 px; a wide row spans both |
+| values | 150 px (15 cells of the 10 x 20 face); a wide row's 260 px, with its `-` and `+` keys of 56 px inside it |
+| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20 px a row, to 6 px above the card's foot |
+| lists (FILES, RESTORE, MORE, a factor) | a title, then up to 7 entries 48 px tall at a 56 px pitch, CANCEL 150 x 48 px at the foot |
+| warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face, the hold button 300 x 56 px and CANCEL 180 x 56 px at the foot |
+
+The labels of the tabs are drawn in the 8 x 16 face. The alert band, while
+it shows, covers the card's last 36 px: the last row of a message there
+and half of the row above it, until the alert goes.
+
 [Servo programmer for KST and Chaservo servos](ServoProgrammer.md)
 describes it.
 

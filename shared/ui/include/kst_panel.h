@@ -1,4 +1,7 @@
-/*
+/**
+ * @file kst_panel.h
+ * @brief The KST and Chaservo programmer's overlay on SERVO: its interface.
+ *
  * The programmer for KST and Chaservo servos on the SERVO screen: a
  * session over the screen's left column, opened from its row on SERVO >
  * PROGRAM (prog_registry.h) one level down.
@@ -208,24 +211,64 @@ kst_prog_t *kst_panel_model(void);
 int kst_panel_message_lines(const kst_prog_msg_t *m,
                             char out[KST_PANEL_MSG_LINES][KST_PANEL_LINE]);
 
-/** The rows of 8 x 16 cells a line of a message, a note or a warning page
- *  takes, wrapped at a space to the overlay's width less 10 px a side, one
- *  cell a row at least (before kst_panel_init(), say). */
+/**
+ * @brief The rows of 10 x 20 cells a line of a message, a note or a
+ *        warning page takes, wrapped at a space to the overlay's width less
+ *        10 px a side, one cell a row at least (before kst_panel_init(),
+ *        say): 60 cells a row on SERVO's left card of 620 px.
+ * @param s the line
+ * @return its rows, 0 for an empty line
+ */
 int kst_panel_text_rows(const char *s);
 
 /** The line a rule's refusal or warning shows. */
 const char *kst_panel_rule_text(unsigned rule);
 
-/** Where things are, for a test's taps.  Rows by page, row and column.  A
- *  coordinate no row has gives an empty rectangle (value, step), false (live)
- *  or NULL (button, label). */
+/*
+ * Where things are, for a test's taps.  Rows by page, row and column.  A
+ * coordinate no row has gives an empty rectangle (value, step), false (live)
+ * or NULL (button, label).  Every control is UI_TAP_MIN (48 px) tall or
+ * more and a control at the foot ends 4 px above the alert band.
+ */
+/**
+ * @brief A tab, one fifth of the row left of CLOSE, 48 px tall.
+ * @param page the tab, PG_SERVO to PG_LOCKED; another is the first
+ * @return its rectangle
+ */
 gfx_rect_t kst_panel_tab_rect(int page);
+/** @brief CLOSE, 120 x 48 px at the top right.
+ *  @return its rectangle */
 gfx_rect_t kst_panel_close_rect(void);
+/**
+ * @brief A row's value: 150 px, a wide row's 260 px less its keys.
+ * @param page the tab
+ * @param row the row, from the top
+ * @param col the column, 0 or 1
+ * @return its rectangle; empty for no such row
+ */
 gfx_rect_t kst_panel_value_rect(int page, int row, int col);
+/**
+ * @brief A stepped row's minus or plus key, 56 x 48 px.
+ * @param page the tab
+ * @param row the row, from the top; column 0
+ * @param up the plus key; else the minus key
+ * @return its rectangle; empty for no such row
+ */
 gfx_rect_t kst_panel_step_rect(int page, int row, bool up);
+/**
+ * @brief A list's entry, 48 px tall at a 56 px pitch under the title.
+ * @param i the entry, from 0
+ * @return its rectangle
+ */
 gfx_rect_t kst_panel_choice_rect(int i);
+/** @brief A list's CANCEL, 150 x 48 px at the foot's right.
+ *  @return its rectangle */
 gfx_rect_t kst_panel_choice_cancel_rect(void);
+/** @brief A warning page's hold button, 300 x 56 px at the foot's left.
+ *  @return its rectangle */
 gfx_rect_t kst_panel_apply_rect(void);
+/** @brief A warning page's CANCEL, 180 x 56 px at the foot's right.
+ *  @return its rectangle */
 gfx_rect_t kst_panel_cancel_rect(void);
 ui_keypad_t *kst_panel_keypad(void);
 ui_textkey_t *kst_panel_textkey(void);
