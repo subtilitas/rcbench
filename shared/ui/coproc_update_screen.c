@@ -197,7 +197,7 @@ static void tick(float dt_s)
         s.step = CU_STEP_PREPARE;
         s.drawn_mask = 0;
     }
-    ui_hold_flash_step(&s.hold);
+    ui_hold_flash_step(&s.hold, dt_s);
 }
 
 /* Leaving the question any other way than START declines the offer. */
@@ -257,8 +257,8 @@ static void render_question(gfx_canvas_t *c, unsigned bit)
     /* The buttons every frame: START fades across its hold. */
     ui_button(c, Q_CANCEL, TR(CANCEL), UI_PANEL_HI, s.press_btn == 0, true);
     const gfx_color_t fill =
-        (s.hold.flash_left > 0)
-            ? ui_hold_flash(UI_ACCENT, s.hold.flash_left)
+        (s.hold.flash_ms > 0)
+            ? ui_hold_flash(UI_ACCENT, s.hold.flash_ms)
             : ui_hold_fill(UI_PANEL_HI, UI_ACCENT, s.hold.held_s);
     ui_button(c, Q_START, TR(CU_START), fill, false, true);
 }

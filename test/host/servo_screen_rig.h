@@ -110,11 +110,11 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 /*
  * The TARGET row of the right card, as the pixels of its box: the row at
  * y 326 to 348, between the SPEED slider, whose thumb and its shadow paint
- * down to y 324, and CENTRE (from y 350); the label at x 514 and the value
- * box from x 578.
+ * down to y 324, and CENTRE (from y 350); the label at the right card's
+ * column, SV_RC_X, and the value box 64 px further.
  */
-#define TGT_X 514
-#define TGT_W 268
+#define TGT_X SV_RC_X
+#define TGT_W SV_RC_W
 #define TGT_VAL_DX UI_TARGET_LABEL_W
 
 /* ------------------------------------------- the servo rail's meter */
@@ -125,8 +125,8 @@ static inline int sweep_btn_pixels(gfx_color_t col)
  * (PD MINI) or 88 px name (INA3221 CH1), and the line and plot together
  * (power_rect()).
  */
-#define RAIL_X     514
-#define RAIL_W     268
+#define RAIL_X     SV_RC_X
+#define RAIL_W     SV_RC_W
 #define CUR_ROW_Y  92
 #define CUR_ROW_H  24
 #define LINE_Y     150
@@ -180,7 +180,9 @@ static inline bool line_reads(const char *label, int lab_w, const char *v,
                     GFX_ALIGN_RIGHT);
         x += fw[k];
     }
-    return fits && x == RAIL_X + RAIL_W
+    /* The name and the readings take 268 px from the column's left edge;
+     * the rest of the column's line is empty. */
+    return fits && x == RAIL_X + 268 && x <= RAIL_X + RAIL_W
            && same_in(fb, want_fb, RAIL_X, LINE_Y, RAIL_W, LINE_H);
 }
 

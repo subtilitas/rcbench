@@ -15,11 +15,11 @@
 #define PANEL_W UI_PANEL_W
 
 /*
- * STOP is 132 px wide at the right edge of the band, sized for a thumb rather
- * than for its label.  It is the only control in the band, so no other control
- * can be hit on the way to it.
+ * STOP is 168 x 48 px (25.2 x 7.2 mm) at the right edge of the band, from
+ * x 850, sized for a thumb rather than for its label.  It is the only
+ * control in the band, so no other control can be hit on the way to it.
  */
-#define STOP_W 132
+#define STOP_W 168
 #define STOP_M 6
 
 gfx_rect_t ui_band_stop_rect(void)
@@ -105,21 +105,25 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
 }
 
 /*
- * Chips are laid out right to left from STOP, each placed at the right edge
- * the previous one leaves, so no chip needs another's width in advance and a
- * long mode string cannot push the clock under the ARMED badge.  One layout
- * for drawing and for hit-testing, so a tap finds the chip that is drawn.
- * Chips stand 6 px apart and each takes the 3 px beside it for a tap, so
- * the strips meet without overlapping.  A label starts UI_PILL_INSET px
- * into its chip and ends 4 px short of its right edge, LINK's 18 px.  A row
- * that would reach CHIPS_MIN_X, where MOTOR & ESC's home tag, the widest
- * (test_nav_bubble measures every screen's), ends, starts its labels 16 px in.
- * One row is wider than that still and reaches under MOTOR & ESC's tag:
- * ARMED with a FAULT code, down to x 224, in German to x 216.  Every other
- * tag ends at x 210 or less.
+ * Chips are laid out right to left from 8 px left of STOP, each placed at
+ * the right edge the previous one leaves, so no chip needs another's width
+ * in advance and a long mode string cannot push the clock under the ARMED
+ * badge.  One layout for drawing and for hit-testing, so a tap finds the
+ * chip that is drawn.  A chip is 44 px tall, 8 px from the band's top, its
+ * label in UI_FONT_BAND.  Chips stand CHIP_GAP (6) px apart and each takes
+ * the 3 px beside it for a tap, so the strips meet without overlapping.  A
+ * label starts CHIP_INSET (28) px into its chip and ends CHIP_PAD_R (4) px
+ * short of its right edge, LINK's 16 px.  The widest row, a clock of 10
+ * hours or more, ARMED MOTOR, FEHLER 7F, BENCH and LINK in German, is
+ * 566 px and starts at x 276, right of MOTOR & ESC's home tag, the widest
+ * (test_nav_bubble measures every screen's), which ends at x 268.
  */
-#define CHIPS_MIN_X    226
-#define CHIP_INSET_TIGHT 16
+#define CHIP_Y     8
+#define CHIP_H     44
+#define CHIP_GAP   6
+#define CHIP_INSET 28
+#define CHIP_PAD_R 4
+#define CHIP_DOT_W 12      /* more right of LINK's label */
 static const ui_band_chip_t k_order[] = {
     UI_BAND_CHIP_CLOCK, UI_BAND_CHIP_ARMED, UI_BAND_CHIP_FAULT,
     UI_BAND_CHIP_MODE, UI_BAND_CHIP_LINK,
@@ -128,15 +132,12 @@ static const ui_band_chip_t k_order[] = {
 typedef struct {
     bool       on[UI_BAND_CHIP_COUNT];
     gfx_rect_t r[UI_BAND_CHIP_COUNT];
-    int        inset;      /* the labels' start in their chips */
 } chips_t;
 
-static int chips_place(const ui_bench_status_t *st, chips_t *l, int inset)
+static void chips_layout(const ui_bench_status_t *st, chips_t *l)
 {
     memset(l, 0, sizeof(*l));
-    l->inset = inset;
-    int right = PANEL_W - STOP_W - STOP_M - 12;
-    int left = right;
+    int right = PANEL_W - STOP_W - STOP_M - 8;
     for (size_t i = 0; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
         const ui_band_chip_t chip = k_order[i];
         if (!chip_shown(st, chip)) {
@@ -145,21 +146,13 @@ static int chips_place(const ui_bench_status_t *st, chips_t *l, int inset)
         char buf[24];
         const char *label = chip_label(st, chip, buf, sizeof(buf));
         /* LINK alone carries a dot. */
-        const int w = inset + gfx_text_width(&gfx_font_8x16, label, 1) + 4
-                      + (chip == UI_BAND_CHIP_LINK ? 14 : 0);
+        const int w = CHIP_INSET + gfx_text_width(UI_FONT_BAND, label, 1)
+                      + CHIP_PAD_R
+                      + (chip == UI_BAND_CHIP_LINK ? CHIP_DOT_W : 0);
         l->on[chip] = true;
-        l->r[chip]  = (gfx_rect_t){ (int16_t)(right - w), 10, (int16_t)w,
-                                    (int16_t)(UI_BAND_H - 20) };
-        left = right - w;
-        right = left - 6;
-    }
-    return left;
-}
-
-static void chips_layout(const ui_bench_status_t *st, chips_t *l)
-{
-    if (chips_place(st, l, UI_PILL_INSET) < CHIPS_MIN_X) {
-        (void)chips_place(st, l, CHIP_INSET_TIGHT);
+        l->r[chip]  = (gfx_rect_t){ (int16_t)(right - w), CHIP_Y,
+                                    (int16_t)w, CHIP_H };
+        right = right - w - CHIP_GAP;
     }
 }
 
@@ -198,21 +191,20 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
 
 /*
  * The bubble is the DELETE question's box of LOGS: a panel with its border
- * and a title tab, the text in the label face.  It opens 4 px under the
- * band, 8 px in from the panel's edges at most.  A bubble is 520 px wide,
- * 61 cells of text; FAULT's spans the panel less 8 px each side and the
- * text's 16 px padding: 752 px, 94 cells on the 800 px panel, the width of
- * the alert band's text, so the seven bits and their advice fit above the
- * alert strip in either language.
+ * and a title tab, the text in UI_FONT_BAND (10 x 20).  It opens 4 px under
+ * the band, 8 px in from the panel's edges at most.  A bubble is 640 px
+ * wide, 60 cells of text; FAULT's spans the panel less 8 px each side and
+ * the text's 16 px padding: 976 px, 97 cells on the 1024 px panel, so the
+ * seven bits and their advice fit above the alert band in either language.
  */
-#define HELP_W       520
+#define HELP_W       640
 #define HELP_M       8
 #define HELP_GAP     4
 #define HELP_PAD     16     /* text from the bubble's sides            */
 #define HELP_TOP     30     /* the first line from the top: tab and 10 */
 #define HELP_BOTTOM  10
-#define HELP_PITCH   17
-#define HELP_PARA    3      /* more between two paragraphs             */
+#define HELP_PITCH   21
+#define HELP_PARA    4      /* more between two paragraphs             */
 
 /* One paragraph, and one line of it.  Static: the bubble is drawn by the
  * render loop alone, and the render task's stack is budgeted. */
@@ -380,7 +372,7 @@ static int help_body(gfx_canvas_t *c, const ui_bench_status_t *st,
                                                         : sizeof(s_line) - 1u;
                 memcpy(s_line, at, k);
                 s_line[k] = '\0';
-                gfx_text(c, x, y + h, s_line, UI_FONT_LABEL, UI_TEXT, 1);
+                gfx_text(c, x, y + h, s_line, UI_FONT_BAND, UI_TEXT, 1);
             }
             h += HELP_PITCH;
             at += len;
@@ -394,7 +386,7 @@ static int help_body(gfx_canvas_t *c, const ui_bench_status_t *st,
 
 static int help_cells(int w)
 {
-    return (w - 2 * HELP_PAD) / gfx_text_width(UI_FONT_LABEL, "M", 1);
+    return (w - 2 * HELP_PAD) / gfx_text_width(UI_FONT_BAND, "M", 1);
 }
 
 bool ui_band_help_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
@@ -461,8 +453,9 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
 
     /* STOP is drawn on every screen that carries the band and is always
      * live. */
-    ui_button(c, ui_band_stop_rect(), "STOP", ui_theme_color(UI_C_DANGER),
-              stop_pressed, true);
+    ui_button_font(c, ui_band_stop_rect(), "STOP",
+                   ui_theme_color(UI_C_DANGER), stop_pressed, true,
+                   UI_FONT_BAND);
 
     if (st == NULL) {
         return;
@@ -500,6 +493,6 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
         default:
             break;
         }
-        ui_pill_inset(c, l.r[chip], label, dot, fill, l.inset);
+        ui_pill_font(c, l.r[chip], label, dot, fill, CHIP_INSET, UI_FONT_BAND);
     }
 }

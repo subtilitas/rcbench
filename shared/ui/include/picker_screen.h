@@ -7,7 +7,7 @@
  * This screen answers the second one: a picture of the board with a straight
  * trace from each pad to a button large enough to press.
  *
- * The buttons are not the pads. At any size that fits a 480-pixel panel a pad
+ * The buttons are not the pads. At any size that fits a 1024 x 600 panel a pad
  * is under 40 pixels across, which is smaller than a fingertip; so the pads
  * are drawn where they are and the touching happens on staggered rows of
  * buttons beside the board, each wired to its own pad.

@@ -46,12 +46,13 @@
 #define DD_Y   44
 #define DD_W   266
 #define DD_H   54
-/* 41 px: the 8 protocols and 1 PROG PORT entry in the screen's height. */
-#define POP_ROW 41
+/* 46 px: the 8 protocols and 1 PROG PORT entry fit the screen's height at
+ * the full row. */
+#define POP_ROW 46
 #define GRID_X 288
 #define GRID_Y 16
 #define CELL_GAP 4
-#define CELL_W ((496 - 3 * CELL_GAP) / 4)
+#define CELL_W ((SCREEN_W - 16 - GRID_X - 3 * CELL_GAP) / 4)
 #define CELL_H 53
 #define GRID_ROWS 7
 

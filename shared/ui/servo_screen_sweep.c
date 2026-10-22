@@ -703,7 +703,8 @@ void svs_tick_body(float dt_s)
             post(SERVO_CMD_ARM, 0);
         }
     }
-    if (s.arm.flash_left > 0) {
+    if (s.arm.flash_ms > 0) {
+        ui_hold_flash_step(&s.arm, dt_s);
         ++s.arm_rev;   /* keep the frames coming while it flashes */
     }
 
@@ -716,7 +717,7 @@ void svs_tick_body(float dt_s)
         } else {
             /* The flash says the output came on; off, it is over, so both
              * buffers end on OUTPUT ON's own colour. */
-            s.out_hold.flash_left = 0;
+            s.out_hold.flash_ms = 0;
             if (ui_hold_left(&s.out_hold) && s.out_down) {
                 s.out_down = false;
             }
@@ -773,7 +774,8 @@ void svs_tick_body(float dt_s)
             }
         }
     }
-    if (s.out_hold.flash_left > 0) {
+    if (s.out_hold.flash_ms > 0) {
+        ui_hold_flash_step(&s.out_hold, dt_s);
         ++s.sup_rev;
     }
     if (supply_screen_set_v() != s.sup_v || supply_screen_set_i() != s.sup_i) {

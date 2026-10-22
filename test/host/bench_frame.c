@@ -276,14 +276,15 @@ int main(int argc, char **argv)
 
     if (servo) {
         /* A position is taken only on an armed bench.  The arm's flash
-         * repaints ARM for UI_HOLD_FLASH_FRAMES drawn frames, which are no
-         * part of a steady frame: it is spent here, before the warm renders. */
+         * repaints ARM for UI_HOLD_FLASH_MS, which is no part of a steady
+         * frame: it is spent here, before the warm renders. */
         servo_screen_set_armed(true);
         servo_screen_set_commanded(38.0f);
         if (strcmp(mode, "servo-current") == 0) {
             servo_screen_source(SERVO_SOURCE_INA3221, 1u);
         }
-        for (int f = 0; f < 2 * UI_HOLD_FLASH_FRAMES; ++f) {
+        ui_router_tick((float)UI_HOLD_FLASH_MS / 1000.0f);
+        for (int f = 0; f < 4; ++f) {
             ui_router_tick(0.0f);
             ui_router_render(&c, f & 1);
         }

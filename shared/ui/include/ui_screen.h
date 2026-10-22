@@ -1,8 +1,8 @@
 /*
  * Screen router.
  *
- * The router owns the top 48 px of the panel, the status band with STOP, and
- * hands each screen a sub-canvas of the remaining 800x432 px through
+ * The router owns the top 60 px of the panel, the status band with STOP, and
+ * hands each screen a sub-canvas of the remaining 1024 x 540 px through
  * gfx_canvas_sub, so a screen cannot draw over STOP.  The band is horizontal
  * because horizontal spans are the cheap direction on a panel whose frame
  * rate is bound by PSRAM (pseudo-static random-access memory) bandwidth.
@@ -124,10 +124,11 @@ typedef struct {
  */
 
 /**
- * The rows the alert band gives @p text: 1 for a text of up to 94 cells
- * (ALERT_TEXT_W in ui_router.c: 752 px of 8 px cells on the 800 px panel),
- * 2 when it breaks at a space onto a second row, more for a text the band
- * cannot hold.  The band draws two rows of the 8x16 face, 16 px apart.
+ * The rows the alert band gives @p text: 1 for a text of up to 97 cells
+ * (ALERT_TEXT_W in ui_router.c: 976 px of 10 px cells on the 1024 px
+ * panel), 2 when it breaks at a space onto a second row, more for a text
+ * the band cannot hold.  The band draws two rows of the 10 x 20 face
+ * (UI_FONT_BAND), 20 px apart.
  */
 int ui_router_alert_rows(const char *text);
 

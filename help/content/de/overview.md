@@ -12,7 +12,7 @@ Das Menü ist der Startbildschirm des Panels. Es öffnet nach dem Splash und hat
 
 ![Das Menü bei stehendem Link](view:overview)
 
-Acht Kacheln zu je 190 x 204 px, in 4 Spalten und 2 Reihen: die Werkbänke in der ersten Reihe, die Instrumente in der zweiten, LOGS über SETUP in der letzten Spalte.
+Acht Kacheln zu je 246 x 258 px, in 4 Spalten und 2 Reihen: die Werkbänke in der ersten Reihe, die Instrumente in der zweiten, LOGS über SETUP in der letzten Spalte.
 
 | Kachel | Zeile unter dem Namen | Seite |
 |---|---|---|
@@ -55,7 +55,7 @@ SETUP, PANEL, Design schaltet zwischen DUNKEL und HELL. Die Änderung gilt ab de
 
 ![Ein Alert über den unteren Rand des Menüs](view:overview-alert)
 
-Ein Fehler, den der offene Bildschirm nicht zeigt, erscheint in einem roten Band, 34 px hoch, über den unteren Rand jedes Bildschirms mit Statusband. Er verschwindet 30 s nach seinem Eintreffen oder bei einem Tipp auf das Band. Die Seite [Statusband](band.md#das-alert-band) beschreibt sein Verhalten.
+Ein Fehler, den der offene Bildschirm nicht zeigt, erscheint in einem roten Band, 44 px hoch, über den unteren Rand jedes Bildschirms mit Statusband. Er verschwindet 30 s nach seinem Eintreffen oder bei einem Tipp auf das Band. Die Seite [Statusband](band.md#das-alert-band) beschreibt sein Verhalten.
 
 ## Beim Start: der Splash
 

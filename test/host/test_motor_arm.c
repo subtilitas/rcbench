@@ -32,9 +32,9 @@
 /*
  * Geometry in panel coordinates, mirrored from motor_screen_int.h and
  * motor_live_int.h with the band's height added: the throttle track
- * x 72..485, y 384..423, with -1 at x 12..65 and +1 at x 492..545; ARM at
- * x 564..787, y 348..383; RESET PEAKS under it; the hint line under the
- * track.
+ * x 72..485, body y 336..375, with -1 at x 12..65 and +1 at x 492..545;
+ * ARM from body y 324, UI_BTN_H tall; RESET PEAKS 2 margins above the
+ * body's foot; the hint line under the track.
  */
 #define P(y)      (UI_BAND_H + (y))
 #define TRACK_X   72
@@ -42,9 +42,9 @@
 #define DOWN_X    33
 #define UP_X      519
 #define ARM_X     676
-#define ARM_Y     P(342)
+#define ARM_Y     P(324 + UI_BTN_H / 2)
 #define RESET_X   676
-#define RESET_Y   P(402)
+#define RESET_Y   P(UI_BODY_H - 2 * UI_MARGIN - UI_BTN_H / 2)
 #define HINT_Y    P(390)
 /* Throttle per px of travel on the track: 100 % over its 413 px. */
 #define PX_PCT    (100.0f / 413.0f)
@@ -95,11 +95,11 @@ static void frames(int n)
     }
 }
 
-/* Frames drawn into both buffers, so ARM's flash, spent one a drawn frame,
- * is over. */
+/* Frames drawn into both buffers, 26 ms each, so ARM's flash, 150 ms, is
+ * over. */
 static void settle(void)
 {
-    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES + 2; ++i) {
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 10 + 2; ++i) {
         ui_router_tick(0.026f);
         ui_router_render(&cv, i & 1);
     }
@@ -705,7 +705,7 @@ TEST_CASE(the_dimming_follows_the_arm_in_both_buffers)
         } else {
             CHECK(disarm());
         }
-        for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES + 2; ++i) {
+        for (int i = 0; i < UI_HOLD_FLASH_MS / 10 + 2; ++i) {
             ui_router_tick(0.026f);
             ui_router_render((i & 1) ? &cv1 : &cv, i & 1);
         }
@@ -734,7 +734,7 @@ TEST_CASE(a_disarm_during_the_arm_flash_leaves_the_button_green)
     ui_router_tick(0.026f);
     ui_router_render(&cv, 0);                   /* one frame of the flash */
     motor_screen_set_armed(false);
-    for (int i = 1; i < 2 * UI_HOLD_FLASH_FRAMES + 2; ++i) {
+    for (int i = 1; i < UI_HOLD_FLASH_MS / 10 + 2; ++i) {
         ui_router_tick(0.026f);
         ui_router_render((i & 1) ? &cv1 : &cv, i & 1);
     }

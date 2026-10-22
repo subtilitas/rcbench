@@ -22,10 +22,10 @@
  *         display_flip();          // c re-points at the new back buffer
  *     }
  *
- * The canvas is BOARD_UI_H_RES x BOARD_UI_V_RES (800 x 480) in the
- * top-left corner of each buffer, with the buffer's 1024-pixel stride.
- * The rest of each buffer is black from allocation and nothing draws
- * there.
+ * The canvas is BOARD_UI_H_RES x BOARD_UI_V_RES (1024 x 600), each
+ * buffer whole, with the buffer's 1024-pixel stride.  A UI area smaller
+ * than the panel sits in the top-left corner; the rest of each buffer is
+ * black from allocation and nothing draws there.
  *
  * Because the two buffers alternate, the back buffer after a flip holds the
  * frame from *two* flips ago, not the one just shown.  Redraw everything
@@ -102,14 +102,14 @@ esp_err_t display_flip(void);
 esp_err_t display_wait_vsync(uint32_t timeout_ms);
 
 /**
- * @brief The canvas's width: the UI's area, not the panel's.
- * @return BOARD_UI_H_RES, 800 pixels.
+ * @brief The canvas's width: the UI's area.
+ * @return BOARD_UI_H_RES, 1024 pixels.
  */
 int display_width(void);
 
 /**
- * @brief The canvas's height: the UI's area, not the panel's.
- * @return BOARD_UI_V_RES, 480 pixels.
+ * @brief The canvas's height: the UI's area.
+ * @return BOARD_UI_V_RES, 600 pixels.
  */
 int display_height(void);
 

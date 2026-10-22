@@ -43,11 +43,11 @@
 #define P(y)        (UI_BAND_H + (y))
 #define SHAFT_X     300
 #define SHAFT_Y     P((H - UI_BAND_H) / 2)
-#define CENTRE_X    556
-#define SWEEP_X     647
-#define RELEASE_X   739
+#define CENTRE_X    SV_CENTRE_X
+#define SWEEP_X     SV_SWEEP_X
+#define RELEASE_X   SV_RELEASE_X
 #define BTN_Y       P(366)
-#define ARM_X       648
+#define ARM_X       (SV_RC_X + SV_RC_W / 2)
 #define ARM_Y       P(404)
 #define SPEED_Y     P(307)
 #define SETB_X      SV_TAB_SETTINGS_X
@@ -58,7 +58,7 @@
 #define ROW_Y(r)    P(SV_ROW_Y(r))
 #define TRIM_UP_X   469
 #define CH_X(i)     (130 + 239 * ((i) / 5))
-#define CH_Y(i)     P(74 + 46 * ((i) % 5))
+#define CH_Y(i)     P(UI_MARGIN + 48 + 20 + 46 * ((i) % 5))
 
 static gfx_color_t *fb;
 static gfx_color_t *fb_was;
@@ -778,7 +778,7 @@ static gfx_color_t px(int x, int y) { return fb[(size_t)y * W + x]; }
 static int arm_first_px(void)
 {
     int n = 0;
-    for (int y = P(396); y < P(412); ++y) {
+    for (int y = P(UI_BODY_H - 36); y < P(UI_BODY_H - 20); ++y) {
         for (int x = 52; x < 200; ++x) {
             if (px(x, y) == ui_theme_color(UI_C_WARN)) {
                 ++n;
@@ -801,7 +801,7 @@ TEST_CASE(centre_and_the_horn_are_dimmed_while_disarmed)
     CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
     CHECK(arm_first_px() > 0);
     CHECK(arm());
-    frames(2 * UI_HOLD_FLASH_FRAMES);
+    frames(UI_HOLD_FLASH_MS / 10);
     picture(fb);
     CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), accent);
     CHECK_EQ(px(SHAFT_X + 22, SHAFT_Y), accent);
@@ -819,7 +819,7 @@ TEST_CASE(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
 {
     fresh();
     CHECK(arm());
-    frames(2 * UI_HOLD_FLASH_FRAMES);
+    frames(UI_HOLD_FLASH_MS / 10);
     const gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
     feed_tap(FEED_LONE, ARM_X, ARM_Y);          /* DISARM, not yet taken */
     for (int taken = 0; taken < 2; ++taken) {
@@ -838,7 +838,7 @@ TEST_CASE(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
     }
     servo_screen_set_armed(false);
     CHECK(arm());
-    frames(2 * UI_HOLD_FLASH_FRAMES);
+    frames(UI_HOLD_FLASH_MS / 10);
     picture(fb);
     CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), accent);
     CHECK_EQ(arm_first_px(), 0);
@@ -853,7 +853,7 @@ TEST_CASE(a_disarm_during_the_arm_flash_leaves_the_button_green)
     ui_router_tick(0.026f);
     ui_router_render(&cv, 0);                   /* one frame of the flash */
     servo_screen_set_armed(false);
-    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES; ++i) {
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 10; ++i) {
         ui_router_tick(0.026f);
         ui_router_render(&cv, 0);
     }

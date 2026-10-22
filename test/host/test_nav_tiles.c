@@ -136,10 +136,10 @@ TEST_CASE(the_band_titles_match_the_tiles)
 }
 
 /* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 144
- * to 263, body y 352 to 393. */
+ * to 263, 42 px tall, its foot 4 px above the alert band. */
 #define LOGS_WIFI_X 204
 
-#define LOGS_WIFI_Y (UI_BAND_H + 373)
+#define LOGS_WIFI_Y (UI_BAND_H + UI_BODY_H - UI_ALERT_H - 4 - 21)
 
 static void wifi_from_logs(void)
 {
@@ -706,7 +706,7 @@ TEST_CASE(a_cancel_reaches_a_screen_left_during_the_frame)
  * The menu is 4 x 2, each tile in a fixed place by kind: the workbenches
  * MOTOR & ESC, SERVO and SUPPLY in row 1, the instruments RECEIVER, BATTERY
  * and BALANCE in row 2, LOGS over SETUP in the last column.  No tile is
- * PROGRAMMER.  Each tile is 190 x 204 px with 8 px margins, and a tap on
+ * PROGRAMMER.  Each tile is 246 x 258 px with 8 px margins, and a tap on
  * it opens its screen.
  */
 TEST_CASE(the_home_grid_is_four_by_two_by_kind)
@@ -721,10 +721,10 @@ TEST_CASE(the_home_grid_is_four_by_two_by_kind)
         CHECK_EQ(overview_screen_tile(i), k_want[i]);
         CHECK(strcmp(overview_screen_tile_name(i), "PROGRAMMER") != 0);
         const gfx_rect_t r = overview_screen_tile_rect(i);
-        CHECK_EQ(r.x, 8 + (i % 4) * 198);
-        CHECK_EQ(r.y, 8 + (i / 4) * 212);
-        CHECK_EQ(r.w, 190);
-        CHECK_EQ(r.h, 204);
+        CHECK_EQ(r.x, 8 + (i % 4) * 254);
+        CHECK_EQ(r.y, 8 + (i / 4) * 266);
+        CHECK_EQ(r.w, 246);
+        CHECK_EQ(r.h, 258);
     }
     /* Past the grid, and before it: no tile. */
     CHECK_EQ(overview_screen_tile(8), SCREEN_COUNT);
@@ -739,7 +739,7 @@ TEST_CASE(the_home_grid_is_four_by_two_by_kind)
     }
     /* The margin between two tiles is no tile's. */
     to_overview();
-    tap(8 + 190 + 4, UI_BAND_H + 100);
+    tap(8 + 246 + 4, UI_BAND_H + 100);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 

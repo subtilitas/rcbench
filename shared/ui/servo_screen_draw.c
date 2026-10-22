@@ -365,8 +365,8 @@ static gfx_color_t arm_fill(void)
 {
     gfx_color_t fill = s.gate.armed ? ui_theme_color(UI_C_DANGER)
                                : ui_theme_color(UI_C_OK);
-    if (s.arm.flash_left > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_left);
+    if (s.arm.flash_ms > 0) {
+        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_ms);
     }
     if (!s.gate.armed && s.arm.held_s > 0.0f) {
         fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm.held_s);
@@ -501,9 +501,9 @@ static void draw_cur_value(gfx_canvas_t *c)
  * from, on the danger red it fades to. */
 static gfx_color_t out_fill(void)
 {
-    if (s.out_hold.flash_left > 0) {
+    if (s.out_hold.flash_ms > 0) {
         return ui_hold_flash(ui_theme_color(UI_C_DANGER),
-                             s.out_hold.flash_left);
+                             s.out_hold.flash_ms);
     }
     gfx_color_t fill = s.out_on ? ui_theme_color(UI_C_DANGER)
                                 : ui_theme_color(UI_C_OK);
@@ -544,9 +544,6 @@ static void draw_sup_row(gfx_canvas_t *c)
     ui_button(c, s.out_btn, s.out_on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
               out_fill(),
               s.out_down, s.out_on || !held);
-    if (s.out_hold.flash_left > 0) {
-        ui_hold_flash_step(&s.out_hold);
-    }
 }
 
 static gfx_rect_t tag_rect(void)
@@ -735,9 +732,6 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
             draw_test_page(c);
         }
         draw_right(c, power);
-        if (s.arm.flash_left > 0) {
-            ui_hold_flash_step(&s.arm);
-        }
         return;
     }
 
@@ -751,9 +745,6 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
     if (s.drawn_arm[buf] != s.arm_rev) {
         s.drawn_arm[buf] = s.arm_rev;
         clipped(c, s.arm_btn, draw_arm);
-        if (s.arm.flash_left > 0) {
-            ui_hold_flash_step(&s.arm);
-        }
     }
     if (s.drawn_power[buf] != s.power_rev) {
         s.drawn_power[buf] = s.power_rev;

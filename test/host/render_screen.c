@@ -75,6 +75,34 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
+/* The ESC STICK controls in body coordinates, as test/host/stick_rig.h and
+ * esc_stick_panel_rig.h find them: the crumb row's ^ and v, TIMING and the
+ * search field at the right edge, the foot row's RUN, the panels' HOLD TO
+ * RUN and OK at their foot, and a parameter row's + stepper. */
+#define RS_SP_RIGHT    (UI_PANEL_W - UI_MARGIN - 12)
+#define RS_LIST_UP_X   (RS_SP_RIGHT - 76 + 17)
+#define RS_LIST_DN_X   (RS_SP_RIGHT - 38 + 17)
+#define RS_CRUMB_CY    45
+#define RS_TIMING_X    (RS_SP_RIGHT - 168 + 84)
+#define RS_FIND_X      (RS_SP_RIGHT - 182)
+#define RS_RUN_X       (RS_SP_RIGHT - 168 + 84)
+#define RS_RUN_CY      (UI_BODY_H - UI_MARGIN - 36 + 17)
+#define RS_HOLD_X      (UI_MARGIN + 20 + 130)
+#define RS_OK_X        (UI_PANEL_W - UI_MARGIN - 20 - 90)
+#define RS_PBTN_CY     (UI_BODY_H - UI_MARGIN - 20 - UI_BTN_H_TALL / 2)
+#define RS_STEP_UP_X   765
+#define RS_STEP_CY(i)  (142 + (i) * 30 + 10)
+
+/* BALANCE's right card (test/host/test_balance.c): the rotor's EDF half and
+ * the blade count's + stepper. */
+#define RS_BAL_CTRL_X  (UI_MARGIN + 450 + 8 + 14)
+#define RS_BAL_CTRL_W  (UI_PANEL_W - 2 * UI_MARGIN - 450 - 8 - 28)
+#define RS_BAL_EDF_X   (RS_BAL_CTRL_X + (RS_BAL_CTRL_W / 2 + 4) \
+                        + (RS_BAL_CTRL_W / 2 - 4) / 2)
+#define RS_BAL_EDF_Y   (44 + 34 + 15)
+#define RS_BAL_UP_X    (RS_BAL_CTRL_X + RS_BAL_CTRL_W - 34 + 17)
+#define RS_BAL_UP_Y    (44 + 96 + 14)
+
 /* MOTOR & ESC's PROGRAM tab, the second of the strip's (112 px a tab, 4 px
  * apart from x 9, 24 px high from y 6), and the STICK MENU row of its list,
  * the first under its heading (prog_view.c). */
@@ -399,11 +427,12 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
     fclose(f);
 }
 
-/* IM_BTN_Y from log_viewer_int.h.  If the layout moves, this moves with
- * it; render_ui --check reports the drift. */
-#define IM_BTN_Y_LOCAL 352
+/* IM_BTN_Y from log_viewer_int.h, FOOT_Y: the footer's 42 px end 4 px
+ * above the alert band.  If the layout moves, this moves with it;
+ * render_ui --check reports the drift. */
+#define IM_BTN_Y_LOCAL (UI_BODY_H - UI_ALERT_H - 4 - 42)
 /* FOOT_Y and the DELETE button's x from the same file. */
-#define BR_FOOT_Y_LOCAL 352
+#define BR_FOOT_Y_LOCAL IM_BTN_Y_LOCAL
 #define BR_DELETE_CX    596
 /* NEXT in the header row, over OPEN. */
 #define BR_NEXT_CX      724
@@ -1451,8 +1480,8 @@ static void servo_sweep_view(bool pause)
     servo_screen_feedback(0u, 0.0f, false);
     uint32_t now = 100000u;
     servo_screen_clock(now);
-    tap(521, UI_BAND_H + 307);                      /* SPEED 12 % */
-    tap(651, UI_BAND_H + 366);                      /* SWEEP */
+    tap(SV_RC_X + (SV_RC_W - 1) * 2 / 90 + 1, UI_BAND_H + 307);                      /* SPEED 12 % */
+    tap(SV_SWEEP_X, UI_BAND_H + SV_BTN_Y);                      /* SWEEP */
     servo_cmd_t taken;
     uint16_t start_seq = 0u;
     while (servo_screen_take(&taken)) {
@@ -1463,7 +1492,7 @@ static void servo_sweep_view(bool pause)
     uint16_t hold_seq = 0u;
     for (int i = 0; i < 40 + (pause ? 20 : 0); ++i) {
         if (pause && i == 40) {
-            tap(651, UI_BAND_H + 366);              /* PAUSE */
+            tap(SV_SWEEP_X, UI_BAND_H + SV_BTN_Y);              /* PAUSE */
         }
         if (pause && i == 41) {
             /* The HOLD acknowledged a frame later, as the panel would. */
@@ -1564,7 +1593,7 @@ static void stick_step(stick_rig_t *r)
     const esc_stick_t *run = esc_stick_panel_stick();
     if (!r->no_watch && run->phase == ESC_STICK_HAND_END
         && esc_stick_hand_ready(run)) {
-        tap(156, UI_BAND_H + 384);
+        tap(RS_HOLD_X, UI_BAND_H + RS_PBTN_CY);
     }
     r->now++;
 }
@@ -1580,7 +1609,10 @@ static void stick_type(const char *text)
                                  "ZXCVBNM*.";
     ui_textkey_t k;
     memset(&k, 0, sizeof(k));
-    ui_textkey_open_search(&k, (gfx_rect_t){ 352, 68, 442, 358 }, "", "",
+    ui_textkey_open_search(&k,
+                           (gfx_rect_t){ 352, 68, UI_PANEL_W - UI_MARGIN - 352,
+                                         UI_BODY_H - UI_MARGIN - 68 },
+                           "", "",
                            UI_TEXTKEY_MAX);
     for (const char *p = text; *p != '\0'; ++p) {
         const char *at = strchr(k_keys, *p);
@@ -1613,17 +1645,17 @@ static void stick_supply_off(void)
 
 /* The ESC STICK list's row @p at, paged to first: the rows of
  * esc_stick_panel.c (SP_ROW_Y0 68, 36 px apart, 9 to a page) and its ^ and
- * v at 723 and 761 on the crumb row, y 28 to 58. */
+ * v at RS_LIST_UP_X and RS_LIST_DN_X on the crumb row, y 28 to 58. */
 static void stick_tap_row(int at)
 {
     int top = 0;
     (void)esc_stick_panel_listed(&top);
     for (int g = 0; g < 64 && at < top; ++g) {
-        tap(723, UI_BAND_H + 45);
+        tap(RS_LIST_UP_X, UI_BAND_H + RS_CRUMB_CY);
         (void)esc_stick_panel_listed(&top);
     }
     for (int g = 0; g < 64 && at >= top + 9; ++g) {
-        tap(761, UI_BAND_H + 45);
+        tap(RS_LIST_DN_X, UI_BAND_H + RS_CRUMB_CY);
         (void)esc_stick_panel_listed(&top);
     }
     tap(400, UI_BAND_H + 70 + (at - top) * 36 + 16);
@@ -1699,9 +1731,11 @@ static ui_screen_id_t id_of(const char *name)
  * every step answered, one of them with a warning. */
 static void pose_splash(void)
 {
+    /* BOARD_NAME_TEXT and BOARD_DISPLAY_TEXT of the panel's board_pins.h,
+     * as panel_boot.c writes them. */
     splash_screen_set(SPLASH_STEP_BOARD,    SPLASH_OK,
-                      "CH422G, panel fw " RCBENCH_VERSION_STRING);
-    splash_screen_set(SPLASH_STEP_DISPLAY,  SPLASH_OK,   "800x480 39Hz");
+                      "ESP32-P4 7B, panel fw " RCBENCH_VERSION_STRING);
+    splash_screen_set(SPLASH_STEP_DISPLAY,  SPLASH_OK,   "1024x600 DSI");
     splash_screen_set(SPLASH_STEP_TOUCH,    SPLASH_OK,   "GT911 5pt");
     splash_screen_set(SPLASH_STEP_STORAGE,  SPLASH_WARN, TR(SPLASH_NO_CARD));
     splash_screen_set(SPLASH_STEP_SETTINGS, SPLASH_OK,   "NVS");
@@ -2282,7 +2316,7 @@ int main(int argc, char **argv)
             tap(676, UI_BAND_H + 65);
             ui_keypad_t kp;
             memset(&kp, 0, sizeof(kp));
-            ui_keypad_open(&kp, (gfx_rect_t){ 6, 38, 546, 388 }, "", "",
+            ui_keypad_open(&kp, (gfx_rect_t){ UI_MARGIN, 38, 546, UI_BODY_H - 46 }, "", "",
                            0.0f, 0.0f, 1.0f, 2);
             const ui_key_t k[] = { UI_KEY_7, UI_KEY_DOT, UI_KEY_4 };
             for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -2371,10 +2405,10 @@ int main(int argc, char **argv)
             tap(66, UI_BAND_H + 45);            /* BACK, and the row again: */
             tap(MO_STICK_ROW_X, UI_BAND_H + MO_STICK_ROW_Y); /* with the card */
             stick_open("Example", "example-steps");
-            tap(684, UI_BAND_H + 384);          /* OK: the first opening */
-            tap(765, UI_BAND_H + 142 + 30 + 10);    /* timing: automatic */
+            tap(RS_OK_X, UI_BAND_H + RS_PBTN_CY);          /* OK: the first opening */
+            tap(RS_STEP_UP_X, UI_BAND_H + RS_STEP_CY(1));    /* timing: automatic */
             stick_supply_off();
-            tap(698, UI_BAND_H + 407);          /* RUN: the warning */
+            tap(RS_RUN_X, UI_BAND_H + RS_RUN_CY);          /* RUN: the warning */
         } else if (strcmp(view, "motor-stick-hand-after") == 0) {
             /*
              * An example card profile, maker "Example", with four long steps
@@ -2424,12 +2458,12 @@ int main(int argc, char **argv)
             tap(66, UI_BAND_H + 45);            /* BACK, and the row again: */
             tap(MO_STICK_ROW_X, UI_BAND_H + MO_STICK_ROW_Y); /* with the card */
             stick_open("Example", "example-after");
-            tap(684, UI_BAND_H + 384);          /* OK: the first opening */
-            tap(765, UI_BAND_H + 142 + 30 + 10);    /* timing: automatic */
-            tap(698, UI_BAND_H + 407);          /* RUN: the warning */
+            tap(RS_OK_X, UI_BAND_H + RS_PBTN_CY);          /* OK: the first opening */
+            tap(RS_STEP_UP_X, UI_BAND_H + RS_STEP_CY(1));    /* timing: automatic */
+            tap(RS_RUN_X, UI_BAND_H + RS_RUN_CY);          /* RUN: the warning */
             touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                                .point = { .id = 2, .x = 156,
-                                           .y = UI_BAND_H + 384,
+                                .point = { .id = 2, .x = RS_HOLD_X,
+                                           .y = UI_BAND_H + RS_PBTN_CY,
                                            .strength = 40 } };
             ui_router_event(&e);
             for (int i = 0; i < 9; ++i) {
@@ -2456,14 +2490,14 @@ int main(int argc, char **argv)
              * live.  -locked: no DONE, the result.
              */
             stick_open("Kontronik", "kontronik-kontrol-x");
-            tap(684, UI_BAND_H + 384);          /* OK: the first opening */
-            tap(765, UI_BAND_H + 142 + 10);     /* mode 1 */
-            tap(765, UI_BAND_H + 142 + 10);     /* mode 2 */
+            tap(RS_OK_X, UI_BAND_H + RS_PBTN_CY);          /* OK: the first opening */
+            tap(RS_STEP_UP_X, UI_BAND_H + RS_STEP_CY(0));     /* mode 1 */
+            tap(RS_STEP_UP_X, UI_BAND_H + RS_STEP_CY(0));     /* mode 2 */
             stick_supply_off();
-            tap(698, UI_BAND_H + 407);          /* RUN: the warning */
+            tap(RS_RUN_X, UI_BAND_H + RS_RUN_CY);          /* RUN: the warning */
             touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                                .point = { .id = 2, .x = 156,
-                                           .y = UI_BAND_H + 384,
+                                .point = { .id = 2, .x = RS_HOLD_X,
+                                           .y = UI_BAND_H + RS_PBTN_CY,
                                            .strength = 40 } };
             ui_router_event(&e);
             for (int i = 0; i < 9; ++i) {
@@ -2508,22 +2542,22 @@ int main(int argc, char **argv)
              */
             stick_open("Kontronik", "kontronik-jazz");
             if (strcmp(view, "motor-stick-hand-info") != 0) {
-                tap(684, UI_BAND_H + 384);      /* OK */
+                tap(RS_OK_X, UI_BAND_H + RS_PBTN_CY);      /* OK */
                 /* Mode 6, a car mode: powered up at MID. */
                 for (int i = 0; i < 6; ++i) {
-                    tap(765, UI_BAND_H + 142 + 10);
+                    tap(RS_STEP_UP_X, UI_BAND_H + RS_STEP_CY(0));
                 }
             }
             const bool prompt = strcmp(view, "motor-stick-hand-prompt")
                                 == 0;
             if (prompt || strcmp(view, "motor-stick-hand-warning") == 0) {
                 stick_supply_off();             /* the jumper on, unpowered */
-                tap(698, UI_BAND_H + 407);      /* RUN: the warning */
+                tap(RS_RUN_X, UI_BAND_H + RS_RUN_CY);      /* RUN: the warning */
             }
             if (prompt) {
                 touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                                    .point = { .id = 2, .x = 156,
-                                               .y = UI_BAND_H + 384,
+                                    .point = { .id = 2, .x = RS_HOLD_X,
+                                               .y = UI_BAND_H + RS_PBTN_CY,
                                                .strength = 40 } };
                 ui_router_event(&e);
                 for (int i = 0; i < 9; ++i) {
@@ -2548,7 +2582,7 @@ int main(int argc, char **argv)
             || strcmp(view, "motor-stick-found") == 0) {
             /* The search field, then typing: still typing for -find, OK
              * ("\n" is no key, so it lands on OK) for -found. */
-            tap(600, UI_BAND_H + 45);
+            tap(RS_FIND_X, UI_BAND_H + RS_CRUMB_CY);
             stick_type(strcmp(view, "motor-stick-find") == 0
                            ? "SKY*V2" : "FLYFUN\n");
             if (strcmp(view, "motor-stick-found") == 0) {
@@ -2557,17 +2591,17 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "motor-stick") != 0) {
             stick_open("Hobbywing", "hobbywing-flyfun-8item");
             if (strncmp(view, "motor-stick-timing", 18) == 0) {
-                tap(698, UI_BAND_H + 45);       /* TIMING */
+                tap(RS_TIMING_X, UI_BAND_H + RS_CRUMB_CY);       /* TIMING */
                 if (strcmp(view, "motor-stick-timing-keypad") == 0) {
                     /* BEEP MIN's value, the third row, typed as 250. */
-                    tap(400 + 216 / 2, UI_BAND_H + 142 + 2 * 30 + 10);
+                    tap(400 + 216 / 2, UI_BAND_H + RS_STEP_CY(2));
                     kp_type(esc_stick_panel_keypad(), "250");
                 }
             } else {
                 /* Cutoff mode to hard, startup mode to soft. */
                 for (int i = 0; i < 2; ++i) {
-                    tap(765, UI_BAND_H + 142 + 2 * 30 + 10);
-                    tap(765, UI_BAND_H + 142 + 4 * 30 + 10);
+                    tap(RS_STEP_UP_X, UI_BAND_H + RS_STEP_CY(2));
+                    tap(RS_STEP_UP_X, UI_BAND_H + RS_STEP_CY(4));
                 }
             }
             const bool runs = strcmp(view, "motor-stick-run") == 0
@@ -2576,13 +2610,13 @@ int main(int argc, char **argv)
                 || strcmp(view, "motor-stick-aborted") == 0
                 || strcmp(view, "motor-stick-failed") == 0;
             if (runs || strcmp(view, "motor-stick-warning") == 0) {
-                tap(698, UI_BAND_H + 407);      /* RUN: the warning */
+                tap(RS_RUN_X, UI_BAND_H + RS_RUN_CY);      /* RUN: the warning */
             }
             if (runs) {
                 /* HOLD TO RUN, held its two seconds. */
                 touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                                    .point = { .id = 2, .x = 156,
-                                               .y = UI_BAND_H + 384,
+                                    .point = { .id = 2, .x = RS_HOLD_X,
+                                               .y = UI_BAND_H + RS_PBTN_CY,
                                                .strength = 40 } };
                 ui_router_event(&e);
                 for (int i = 0; i < 9; ++i) {
@@ -2768,9 +2802,9 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "balance-edf") == 0) {
             /* A five-blade ducted fan: the duct, and a rotor whose blades
              * are not reachable. */
-            tap(719, UI_BAND_H + 93);
+            tap(RS_BAL_EDF_X, UI_BAND_H + RS_BAL_EDF_Y);
             for (int i = 0; i < 3; ++i) {
-                tap(763, UI_BAND_H + 154);
+                tap(RS_BAL_UP_X, UI_BAND_H + RS_BAL_UP_Y);
             }
         }
     }
@@ -3284,7 +3318,7 @@ int main(int argc, char **argv)
             tap(579, UI_BAND_H + 237);
             ui_keypad_t kp;
             memset(&kp, 0, sizeof(kp));
-            ui_keypad_open(&kp, (gfx_rect_t){ 6, 6, 488, 420 }, "", "", 0.0f,
+            ui_keypad_open(&kp, SV_OV_AREA, "", "", 0.0f,
                            0.0f, 1.0f, 2);
             const ui_key_t k[] = { UI_KEY_7, UI_KEY_DOT, UI_KEY_4, UI_KEY_OK };
             for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {

@@ -72,7 +72,6 @@
  * than pressed cannot come to look different from this one.
  */
 #define ARM_HOLD_S    UI_HOLD_S
-#define ARM_FLASH_FRAMES UI_HOLD_FLASH_FRAMES
 
 /* LIVE's views, PLOT and TABLE, at the left of the line under the strip. */
 #define TAB_Y     HDR_Y

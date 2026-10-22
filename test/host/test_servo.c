@@ -140,13 +140,13 @@ TEST_CASE(centre_and_release_post_their_own_commands)
     ev(x, y, TOUCH_EVENT_UP, 1);
     (void)last_cmd();
 
-    tap(578, 350 + 16);
+    tap(SV_CENTRE_X, SV_BTN_Y);
     const servo_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, SERVO_CMD_CENTRE);
     CHECK_EQ(c.value_us, 1500);
     CHECK_EQ(servo_screen_commanded(), 1500);
 
-    tap(716, 350 + 16);
+    tap(SV_RELEASE_X, SV_BTN_Y);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 }
 
@@ -311,13 +311,13 @@ TEST_CASE(the_arm_button_fades_across_the_hold_and_flashes_when_it_lands)
     }
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
 
-    /* Arriving flashes the whole button, one colour per drawn frame, and it
-     * settles on the danger red.  The finger comes off first: a press lerps
+    /* Arriving flashes the whole button, its colour by the time the flash
+     * has run, 25 ms a phase, and it settles on the danger red.  The finger comes off first: a press lerps
      * the fill towards white, and what is under test here is the flash. */
     servo_screen_set_armed(true);
     arm_release();
     bool saw_white = false, saw_black = false;
-    for (int i = 0; i < UI_HOLD_FLASH_FRAMES; ++i) {
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 25; ++i) {
         scr->render(&cv, 0);
         const gfx_color_t px = arm_px();
         if (px == GFX_WHITE) { saw_white = true; }

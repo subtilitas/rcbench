@@ -807,19 +807,19 @@ TEST_CASE(null_detach_calls_are_harmless)
  * The 7-inch ESP32-P4 board's two maps, as firmware/panel/components/gt911
  * builds them: the glass reports 1024 x 600 and is mirrored in x and y
  * (BOARD_TOUCH_MIRROR_X/Y); the injector sends panel pixels of the UI's
- * 800 x 480 area, unmirrored (touch_inject_map()).
+ * 1024 x 600 area, the whole glass, unmirrored (touch_inject_map()).
  */
 static const touch_map_t k_glass_map = {
     .src_w = 1024, .src_h = 600, .mirror_x = true, .mirror_y = true,
     .rotation = TOUCH_ROTATION_0,
 };
 static const touch_map_t k_inject_map = {
-    .src_w = 800, .src_h = 480, .mirror_x = false, .mirror_y = false,
+    .src_w = 1024, .src_h = 600, .mirror_x = false, .mirror_y = false,
     .rotation = TOUCH_ROTATION_0,
 };
 
 /* The touch task's order: each source mapped with its own map, merged,
- * then cropped to the UI's 800 x 480. */
+ * then cropped to the UI's 1024 x 600. */
 static int panel_frame(const touch_point_t *glass, int ng,
                        const touch_point_t *inj, int ni, touch_point_t *out)
 {
@@ -838,13 +838,13 @@ static int panel_frame(const touch_point_t *glass, int ng,
     touch_merge_glass(&m, g, ng);
     (void)touch_merge_inject(&m, i, ni, true, 0);
     const int n = touch_merge_frame(&m, out, TOUCH_MAX_POINTS);
-    return touch_map_crop(out, n, 800, 480);
+    return touch_map_crop(out, n, 1024, 600);
 }
 
 TEST_CASE(an_injected_point_lands_on_the_pixel_it_names)
 {
     static const int k[][2] = {
-        { 0, 0 }, { 799, 0 }, { 0, 479 }, { 799, 479 }, { 400, 240 },
+        { 0, 0 }, { 1023, 0 }, { 0, 599 }, { 1023, 599 }, { 512, 300 },
         { 100, 50 },
     };
     for (size_t c = 0; c < sizeof(k) / sizeof(k[0]); ++c) {
@@ -859,22 +859,23 @@ TEST_CASE(an_injected_point_lands_on_the_pixel_it_names)
 
 TEST_CASE(an_injected_point_past_the_ui_is_clamped_to_its_edge)
 {
-    const touch_point_t inj = pt(0, 800, 480);
+    const touch_point_t inj = pt(0, 1024, 600);
     touch_point_t out[TOUCH_MAX_POINTS];
     CHECK_EQ(panel_frame(NULL, 0, &inj, 1, out), 1);
-    CHECK_EQ(out[0].x, 799);
-    CHECK_EQ(out[0].y, 479);
+    CHECK_EQ(out[0].x, 1023);
+    CHECK_EQ(out[0].y, 599);
 }
 
 TEST_CASE(the_glass_lands_mirrored_on_the_ui_corners_and_centre)
 {
-    /* Raw glass -> panel pixel: x' = 1023 - x, y' = 599 - y. */
+    /* Raw glass -> panel pixel: x' = 1023 - x, y' = 599 - y.  The UI is
+     * the whole glass, so every corner of the glass is a corner of it. */
     static const int k[][4] = {
         { 1023, 599, 0, 0 },     /* the UI's top-left */
-        { 224, 599, 799, 0 },    /* top-right */
-        { 1023, 120, 0, 479 },   /* bottom-left */
-        { 224, 120, 799, 479 },  /* bottom-right */
-        { 623, 359, 400, 240 },  /* centre */
+        { 0, 599, 1023, 0 },     /* top-right */
+        { 1023, 0, 0, 599 },     /* bottom-left */
+        { 0, 0, 1023, 599 },     /* bottom-right */
+        { 511, 299, 512, 300 },  /* centre */
     };
     for (size_t c = 0; c < sizeof(k) / sizeof(k[0]); ++c) {
         const touch_point_t g = pt(3, k[c][0], k[c][1]);
@@ -886,24 +887,29 @@ TEST_CASE(the_glass_lands_mirrored_on_the_ui_corners_and_centre)
     }
 }
 
-TEST_CASE(the_glass_outside_the_ui_is_dropped)
+TEST_CASE(no_point_of_the_glass_is_dropped)
 {
-    /* Raw (0, 0) is panel pixel (1023, 599); raw (223, 359) is column 800. */
+    /* Raw (0, 0) is panel pixel (1023, 599); raw (223, 359) is (800, 240),
+     * a column the 800 x 480 area of a smaller UI would drop. */
     const touch_point_t g[2] = { pt(0, 0, 0), pt(1, 223, 359) };
     touch_point_t out[TOUCH_MAX_POINTS];
-    CHECK_EQ(panel_frame(g, 2, NULL, 0, out), 0);
+    CHECK_EQ(panel_frame(g, 2, NULL, 0, out), 2);
+    CHECK_EQ(out[0].x, 1023);
+    CHECK_EQ(out[0].y, 599);
+    CHECK_EQ(out[1].x, 800);
+    CHECK_EQ(out[1].y, 240);
 }
 
 TEST_CASE(both_sources_at_once_keep_their_own_maps)
 {
     /* The glass at the centre, the injector at (100, 50): each where it
-     * means, not the injector mirrored to (923, 549) and dropped. */
-    const touch_point_t g = pt(0, 623, 359);
+     * means, not the injector mirrored to (923, 549). */
+    const touch_point_t g = pt(0, 511, 299);
     const touch_point_t inj = pt(0, 100, 50);
     touch_point_t out[TOUCH_MAX_POINTS];
     CHECK_EQ(panel_frame(&g, 1, &inj, 1, out), 2);
-    CHECK_EQ(out[0].x, 400);
-    CHECK_EQ(out[0].y, 240);
+    CHECK_EQ(out[0].x, 512);
+    CHECK_EQ(out[0].y, 300);
     CHECK_EQ(out[1].x, 100);
     CHECK_EQ(out[1].y, 50);
     CHECK_EQ(out[1].id, 0x80);
@@ -955,7 +961,7 @@ int main(void)
     RUN(an_injected_point_lands_on_the_pixel_it_names);
     RUN(an_injected_point_past_the_ui_is_clamped_to_its_edge);
     RUN(the_glass_lands_mirrored_on_the_ui_corners_and_centre);
-    RUN(the_glass_outside_the_ui_is_dropped);
+    RUN(no_point_of_the_glass_is_dropped);
     RUN(both_sources_at_once_keep_their_own_maps);
     RUN(mapping_no_points_or_no_map_changes_nothing);
     return test_summary("touch_merge");

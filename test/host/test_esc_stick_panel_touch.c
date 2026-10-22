@@ -311,8 +311,8 @@ TEST_CASE(abort_acts_on_the_press)
 
 /*
  * The session names ABORT to its host while a run is under way, so the
- * router hands a press on it through the alert band, which covers ABORT's
- * lower 26 px (panel y 446 to 471).  Nothing before the run: the warning's
+ * router hands a press on it through the alert band, which covers ABORT
+ * whole (panel y 556 to 589).  Nothing before the run: the warning's
  * HOLD TO RUN and CANCEL are no stop.  On a manual step it is the prompt's
  * ABORT, and the foot row's place is not.  After the run, OK is not.
  */

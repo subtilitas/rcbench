@@ -356,11 +356,9 @@ static int chips_left(const ui_bench_status_t *st)
  * the bus-fault screen and the panel's own update, as in ui_router.c), every
  * row of chips the band can show, in each language: the row starts right of
  * the tag.  The link down means SIM, no fault and the arm local; a clock of
- * minutes, of hours, of 10 hours and of 99.  One kind of row is wider
- * than the room right of MOTOR & ESC's tag, the widest, and is held to the
- * x that docs/Screens.md states for it instead: ARMED with a FAULT code,
- * x 224 in English and x 216 in German.  Every other tag ends at x 210 or
- * less, the end of a 10-character title's, so that row clears them all.
+ * minutes, of hours, of 10 hours and of 99.  MOTOR & ESC's tag is the
+ * widest and ends at x 268; the widest row, ARMED with a FAULT code in
+ * German, starts at x 276.
  */
 TEST_CASE(the_widest_chip_row_clears_the_home_tag)
 {
@@ -399,12 +397,7 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
                                 st.faults      = fault ? 0x7Fu : 0u;
                                 st.run_seconds = runs[k];
                                 const int left = chips_left(&st);
-                                int floor = end;
-                                if (armed && fault) {
-                                    floor = (lang == UI_LANG_DE) ? 216 : 224;
-                                }
-                                floor = floor < end ? floor : end;
-                                if (left < floor) {
+                                if (left < end + 6) {
                                     T_FAIL("screen %d, language %d, link %d, "
                                            "armed %d roles %u, faults %d, "
                                            "run %lu s: chips from x %d, the "
@@ -419,9 +412,9 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
             }
         }
     }
-    /* MOTOR & ESC's tag is the widest, and the band's tight layout starts
-     * where it ends; every other ends at x 210 or less. */
-    CHECK_EQ(widest, 226);
+    /* MOTOR & ESC's tag is the widest; every other ends at x 248 or
+     * less. */
+    CHECK_EQ(widest, 268);
     CHECK_EQ(widest, ui_home_tag_rect(ui_router_title(SCREEN_MOTOR)).x
                      + ui_home_tag_rect(ui_router_title(SCREEN_MOTOR)).w);
     for (int id = SCREEN_MOTOR + 1; id < SCREEN_COUNT; ++id) {
@@ -430,7 +423,7 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
         }
         const gfx_rect_t tag = ui_home_tag_rect(
             ui_router_title((ui_screen_id_t)id));
-        if (tag.x + tag.w > 210) {
+        if (tag.x + tag.w > 248) {
             T_FAIL("screen %d: its tag ends at x %d", id, tag.x + tag.w);
         }
     }
@@ -540,14 +533,14 @@ TEST_CASE(the_link_bubble_follows_the_link)
  * INJECT, the mode a build with RCBENCH_TOUCH_INJECTOR names while a touch
  * injector is attached, has both its paragraphs under its title in both
  * languages; a mode string the band has no text for is its title alone.
- * The floor is each paragraph's cells over a line's 61, at 17 px a line
- * and 3 px between the two (ui_band.c's HELP_PITCH and HELP_PARA): a
+ * The floor is each paragraph's cells over a line's 60, at 21 px a line
+ * and 4 px between the two (ui_band.c's HELP_PITCH and HELP_PARA): a
  * bubble that drops either paragraph is shorter.
  */
 TEST_CASE(the_inject_bubble_explains_the_injector)
 {
     const int title_only = 30 + 10;   /* HELP_TOP + HELP_BOTTOM */
-    const int cells = 61, pitch = 17, para = 3;
+    const int cells = 60, pitch = 21, para = 4;
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         int floor_h = title_only + para;
@@ -649,7 +642,7 @@ TEST_CASE(the_link_bubble_carries_the_refused_frames)
         REQUIRE(ui_band_help_rect(&down, UI_BAND_CHIP_LINK, &rd));
         REQUIRE(ui_band_help_rect(&down_n, UI_BAND_CHIP_LINK, &rdn));
         /* One line more at 1, and the widest count still one line. */
-        CHECK_EQ(r1.h, r0.h + 17 + 3);
+        CHECK_EQ(r1.h, r0.h + 21 + 4);   /* HELP_PITCH, HELP_PARA */
         CHECK_EQ(rm.h, r1.h);
         /* None with the link down, whatever the count. */
         CHECK_EQ(rdn.h, rd.h);

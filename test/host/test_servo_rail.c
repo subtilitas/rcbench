@@ -23,7 +23,7 @@
  * "STANDARD PWM  50 Hz  1000-2000", two spaces between the three parts, the
  * range in microseconds without its unit.  The longest a profile and its
  * keypads allow, a 13-character type, a 3-digit rate and two 4-digit ends,
- * is 32 of the 33 cells the 268 px row holds.  A typed end reaches the row
+ * is 32 of the 61 cells the 488 px row holds.  A typed end reaches the row
  * at once.
  */
 #define TAG_BOX_Y 118
@@ -66,7 +66,7 @@ TEST_CASE(the_tag_row_carries_the_pulse_range)
     keys("2100");
     close_settings();
     CHECK(tag_reads("STANDARD PWM  50 Hz  1000-2100", false));
-    /* The widest the row can be asked to hold fits with 1 cell spare. */
+    /* The widest the row can be asked to hold fits. */
     CHECK(gfx_text_width(UI_FONT_LABEL, "HELI TAIL 760  560 Hz  2500-2500", 1)
           <= TGT_W - 8);
     /* The separate RANGE row is gone: its label is not on the card. */

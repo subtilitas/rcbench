@@ -15,7 +15,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* The area below the band: 800 x 432 px.  UPDATES lays out as FILES &
+/* The area below the band: 1024 x 540 px.  UPDATES lays out as FILES &
  * UPDATE does: the buttons on the left, what is kept and what last happened
  * on the right, each text broken into lines of the card's 44 cells, 20 px
  * apart.  Four rows of buttons, 48 px tall and 8 px apart: CHECK, the
@@ -423,8 +423,8 @@ static int para(gfx_canvas_t *c, int x, int y, int w, const char *t,
 
 static gfx_color_t hold_fill(const ui_hold_t *h)
 {
-    if (h->flash_left > 0) {
-        return ui_hold_flash(UI_OK, h->flash_left);
+    if (h->flash_ms > 0) {
+        return ui_hold_flash(UI_OK, h->flash_ms);
     }
     return ui_hold_fill(UI_PANEL_HI, UI_OK, h->held_s);
 }
@@ -552,10 +552,12 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     drop_holds_if_gone();
-    if (s.hold.down || s.hold.flash_left > 0 || s.cu_hold.down
-        || s.cu_hold.flash_left > 0) {
+    if (s.hold.down || s.hold.flash_ms > 0 || s.cu_hold.down
+        || s.cu_hold.flash_ms > 0) {
         touched();             /* the fill follows the hold */
     }
+    ui_hold_flash_step(&s.hold, dt_s);
+    ui_hold_flash_step(&s.cu_hold, dt_s);
     if (download_allowed() && ui_hold_tick(&s.hold, dt_s)) {
         s_req |= UPD_REQ_DOWNLOAD;
         ui_hold_reached(&s.hold);
@@ -753,9 +755,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         y = para(c, x, y, w, ui_tr(about[i]), lit ? UI_TEXT : UI_TEXT_DIM);
     }
 
-    if (s.hold.flash_left > 0 || s.cu_hold.flash_left > 0) {
-        ui_hold_flash_step(&s.hold);
-        ui_hold_flash_step(&s.cu_hold);
+    if (s.hold.flash_ms > 0 || s.cu_hold.flash_ms > 0) {
         s.drawn_mask = 0u;
     } else {
         s.drawn_mask |= bit;
@@ -856,9 +856,10 @@ static void r_event(const touch_event_t *evt)
 static void r_tick(float dt_s)
 {
     drop_holds_if_gone();
-    if (s_rem.hold.down || s_rem.hold.flash_left > 0) {
+    if (s_rem.hold.down || s_rem.hold.flash_ms > 0) {
         touched();
     }
+    ui_hold_flash_step(&s_rem.hold, dt_s);
     if (!s_rem.answered && download_allowed() && ui_hold_tick(&s_rem.hold, dt_s)) {
         s_req |= UPD_REQ_DOWNLOAD;
         s_rem.answered = true;
@@ -929,8 +930,7 @@ static void r_render(gfx_canvas_t *c, int buffer_index)
               s_rem.have_press && s_rem.hit == HIT_NEVER, true);
     ui_button(c, R_HOLD, TR(UPD_HOLD_DL), hold_fill(&s_rem.hold), false,
               download_allowed());
-    if (s_rem.hold.flash_left > 0) {
-        ui_hold_flash_step(&s_rem.hold);
+    if (s_rem.hold.flash_ms > 0) {
         s_rem.drawn_mask = 0u;
     } else {
         s_rem.drawn_mask |= bit;

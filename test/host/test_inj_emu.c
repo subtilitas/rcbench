@@ -182,10 +182,10 @@ TEST_CASE(the_register_file_answers_as_a_gt911)
 
     uint8_t res[4] = { 0 };
     m_read(0x8048, res, 4);
-    CHECK_EQ(res[0] | (res[1] << 8), 800);
-    CHECK_EQ(res[2] | (res[3] << 8), 480);
-    CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8146) | (gt911_emu_peek(&inj.emu, 0x8147) << 8), 800);
-    CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8148) | (gt911_emu_peek(&inj.emu, 0x8149) << 8), 480);
+    CHECK_EQ(res[0] | (res[1] << 8), 1024);
+    CHECK_EQ(res[2] | (res[3] << 8), 600);
+    CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8146) | (gt911_emu_peek(&inj.emu, 0x8147) << 8), 1024);
+    CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8148) | (gt911_emu_peek(&inj.emu, 0x8149) << 8), 600);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8047), 0x41);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x804C), 5);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8157), 0);
@@ -251,7 +251,7 @@ TEST_CASE(a_reset_listens_and_refuses_gestures)
 {
     fresh(0);
     send("ping");
-    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=800x480 state=listen");
+    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen");
     send("tap 10 10");
     CHECK_STR_EQ(last(), "err unconfirmed");
     send("hold 10 10 500");
@@ -304,7 +304,7 @@ TEST_CASE(confirm_needs_an_ok_verdict)
     }
     confirm_ok();
     send("ping");
-    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=800x480 state=active");
+    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=1024x600 state=active");
     send("confirm scl=GP5");
     CHECK_STR_EQ(last(), "err state");
     send("wiring");
@@ -407,8 +407,8 @@ TEST_CASE(gestures_check_every_field_at_its_limits)
         const char *cmd;
         const char *reply;
     } cases[] = {
-        { "tap 800 0", "err range x" },
-        { "tap 0 480", "err range y" },
+        { "tap 1024 0", "err range x" },
+        { "tap 0 600", "err range y" },
         { "tap -1 0", "err range x" },
         { "tap 0 0 0", "err range ms" },
         { "tap 0 0 30001", "err range ms" },
@@ -420,8 +420,8 @@ TEST_CASE(gestures_check_every_field_at_its_limits)
         { "tap x 0", "err syntax tap" },
         { "tap 1.5 0", "err syntax tap" },
         { "tap - 0", "err syntax tap" },
-        { "swipe 0 0 800 0 10", "err range x" },
-        { "swipe 0 0 0 480 10", "err range y" },
+        { "swipe 0 0 1024 0 10", "err range x" },
+        { "swipe 0 0 0 600 10", "err range y" },
         { "swipe 0 0 1 1", "err syntax swipe" },
         { "swipe 0 0 1 1 1 1", "err syntax swipe" },
         { "release now", "err syntax release" },
@@ -438,10 +438,10 @@ TEST_CASE(gestures_check_every_field_at_its_limits)
         }
     }
     /* The far corners and the longest gesture are taken. */
-    send("tap 799 479 30000");
+    send("tap 1023 599 30000");
     CHECK_STR_EQ(last(), "ok tap");
     send("release");
-    send("swipe 0 0 799 479 1");
+    send("swipe 0 0 1023 599 1");
     CHECK_STR_EQ(last(), "ok swipe");
 }
 

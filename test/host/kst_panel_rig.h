@@ -44,7 +44,8 @@
 #define H UI_PANEL_H
 
 /* The SERVO screen's left card, as servo_screen.c hands it over. */
-static const gfx_rect_t AREA = { 6, 6, 488, 420 };
+static const gfx_rect_t AREA = { UI_MARGIN, UI_MARGIN, 488,
+                                  UI_BODY_H - 2 * UI_MARGIN };
 
 /* The strip's PROGRAM, LIVE and SETTINGS tabs (servo_spots.h). */
 #define PROG_X SV_TAB_PROGRAM_X

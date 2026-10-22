@@ -38,7 +38,7 @@
  * the top: the crumb row (BACK, the trail, SEARCH or TIMING), the device
  * card, the parameter card with ROWS_MAX rows, the help lines, and the
  * foot row of buttons.  The foot is the body's: BTN_Y and HELP_Y are where
- * they are on an 800 x 432 px body whatever the top holds.
+ * they are on the 1024 x 540 px body whatever the top holds.
  */
 #define PAD       UI_MARGIN
 #define CRUMB_Y   (PROG_FULL_Y + 2)

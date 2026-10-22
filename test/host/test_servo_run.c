@@ -143,7 +143,7 @@ TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
     tap(START_X, START_Y);
     scr->tick(0.02f);
     scr->render(&cv, 0);
-    CHECK(fb[6 * W + 6] != ui_theme_color(UI_C_DANGER));
+    CHECK(fb[UI_MARGIN * W + UI_MARGIN] != ui_theme_color(UI_C_DANGER));
     close_settings();
     hold_start(2.3f);
     CHECK(!servo_screen_testing());
@@ -158,7 +158,7 @@ TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
     tap(START_X, START_Y);
     scr->tick(0.02f);
     scr->render(&cv, 0);
-    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_DANGER));
+    CHECK_EQ(fb[UI_MARGIN * W + UI_MARGIN], ui_theme_color(UI_C_DANGER));
     gfx_color_t *named = malloc(FB_BYTES);
     REQUIRE_ALLOC(named);
     memcpy(named, fb, FB_BYTES);

@@ -151,7 +151,7 @@ TEST_CASE(output_ons_hold_looks_at_the_set_point_again_as_it_completes)
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
     CHECK(!supply_cmd(NULL));
     scr->render(&cv, 0);
-    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_DANGER));   /* the warning */
+    CHECK_EQ(fb[UI_MARGIN * W + UI_MARGIN], ui_theme_color(UI_C_DANGER));   /* the warning */
     hold_apply(2.3f);
     supply_cmd_t c;
     CHECK(supply_cmd(&c));

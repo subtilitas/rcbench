@@ -37,18 +37,20 @@ static const ui_screen_t *scr;
 /* Mirrored from esc_stick_int.h and esc_stick_pages.c; if the layout moves
  * these move with it.  The session lays out from PROG_FULL_Y (26) down:
  * the crumb row at 30, the device card at 64, the parameter card at 108,
- * its rows from 142. */
+ * its rows from 142.  The page keys, READ and WRITE end SP_RIGHT, 12 px
+ * inside the right margin; the foot row is 36 px over the bottom margin. */
+#define SP_RIGHT   (UI_PANEL_W - UI_MARGIN - 12)
 #define BACK_X     66
 #define BACK_Y     45
 #define ROW_CX     400
 #define STEP_DN_X  653
 #define STEP_UP_X  765
 #define STEP_CY(i) (142 + (i) * 30 + 10)
-#define READ_X     516
-#define WRITE_X    698
-#define BTN_CY     407
-#define PAGE_UP_X  723
-#define PAGE_DN_X  761
+#define READ_X     (SP_RIGHT - 350 + 84)
+#define WRITE_X    (SP_RIGHT - 168 + 84)
+#define BTN_CY     (UI_BODY_H - UI_MARGIN - 36 + 17)
+#define PAGE_UP_X  (SP_RIGHT - 76 + 17)
+#define PAGE_DN_X  (SP_RIGHT - 38 + 17)
 #define PAGE_CY    126
 
 /* The page set behind the hooks the rig's tests call: a screen whose reset

@@ -6,7 +6,7 @@
  * Cases:
  * - the_in_use_table_lists_every_pin_of_the_fullest_binding
  * - an_interface_pin_is_held_named_in_use_and_takes_no_tap
- * - the_fullest_in_use_table_ends_in_a_count_of_the_lines_left_out
+ * - the_fullest_in_use_table_lists_every_line
  * - the_pins_table_names_each_pins_channel_and_pad
  * - every_state_renders_inside_its_canvas
  * - a_tall_board_is_drawn_to_scale_and_not_stretched
@@ -21,9 +21,9 @@
 
 /*
  * The tallest IN USE table a binding gives: OFF selected, so every bound pin
- * is another protocol's; the programming port listed, and then 4 of them on
- * distinct pins, in 16 px pin rows; and the 8 slots spread over the 6
- * protocols that take one channel a pin.  Every pin is listed
+ * is another protocol's; the programming port listed, in 28 px pin rows,
+ * and then 4 of them on distinct pins, in 20 px pin rows; and the 8 slots
+ * spread over the 6 protocols that take one channel a pin.  Every pin is listed
  * once under its own protocol, and every line is inside the table and the
  * canvas, clear of every other line, key, marker and text area, and drawn
  * on -- with the IOmcu's drawing and with the board drawn from its
@@ -113,9 +113,9 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
             const outbind_board_t *bd = outbind_board(BOARD);
             for (uint8_t k = 0; k < lines; ++k) {
                 const gfx_rect_t r = line[k].rect;
-                CHECK(line[k].compact);
+                CHECK_EQ(line[k].compact, ports);
                 if (line[k].kind == PICKER_USE_PIN) {
-                    CHECK_EQ(r.h, ports ? 16 : 20);
+                    CHECK_EQ(r.h, ports ? 20 : 28);
                 }
                 if (r.x < area.x || r.y < area.y
                     || r.x + r.w > area.x + area.w
@@ -345,12 +345,11 @@ TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
 
 /*
  * The fullest table: 4 ports, 8 slots over 6 protocols and every
- * interface on lists 27 lines, more than the 360 px under the heading hold
- * at 16 px.  The lines that fit are listed, inside the table and clear of
- * each other, and the last says how many are left out; the ports and the
- * interfaces come first.
+ * interface on lists 27 lines, which the 468 px under the heading hold at
+ * 16 px.  Every line is listed, inside the table and clear of the others,
+ * and none is left out; the ports and the interfaces come first.
  */
-TEST_CASE(the_fullest_in_use_table_ends_in_a_count_of_the_lines_left_out)
+TEST_CASE(the_fullest_in_use_table_lists_every_line)
 {
     static gfx_color_t px[GUARD_CANVAS_PIXELS(SCREEN_W, SCREEN_H)];
     static const uint8_t four[LINK_PG_PORTS_MAX] = { 13u, 26u, 27u, 28u };
@@ -385,12 +384,10 @@ TEST_CASE(the_fullest_in_use_table_ends_in_a_count_of_the_lines_left_out)
             return;
         }
         const picker_use_t *last = &line[lines - 1u];
-        CHECK_EQ(last->kind, PICKER_USE_MORE);
+        CHECK(last->kind != PICKER_USE_MORE);
         /* 5 port lines, 8 interface lines, 14 protocol lines. */
-        CHECK_EQ((unsigned)(lines - 1u) + last->gpio, 27u);
+        CHECK_EQ(lines, 27u);
         CHECK(lines <= PICKER_USE_MAX);
-        /* The ports and the interfaces whole. */
-        CHECK(lines - 1u >= 13u);
         CHECK_EQ(line[5].proto, PICKER_USE_IFACE(OUTPUTS_IFACE_SENSE));
         CHECK_EQ(line[12].proto, PICKER_USE_IFACE(OUTPUTS_IFACE_TAP));
 
@@ -623,7 +620,7 @@ int main(void)
 {
     RUN(the_in_use_table_lists_every_pin_of_the_fullest_binding);
     RUN(an_interface_pin_is_held_named_in_use_and_takes_no_tap);
-    RUN(the_fullest_in_use_table_ends_in_a_count_of_the_lines_left_out);
+    RUN(the_fullest_in_use_table_lists_every_line);
     RUN(the_pins_table_names_each_pins_channel_and_pad);
     RUN(every_state_renders_inside_its_canvas);
     RUN(a_tall_board_is_drawn_to_scale_and_not_stretched);

@@ -631,7 +631,7 @@ from the simulator.
 
 Injected coordinates go through the same mapping as the glass's, which
 scales from the resolution the glass reports. They are panel pixels when the
-glass reports 800 x 480; the resolution of the panel's GT911 is not measured.
+glass reports 1024 x 600; the resolution of the panel's GT911 is not measured.
 
 A recipe says "press at (612, 396), hold 2.1 s, release" and the panel
 handles it as a finger. With the

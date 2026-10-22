@@ -52,7 +52,9 @@
 #define ARM_Y       P(342)
 #define TRACK_X     72
 #define TRACK_Y     P(356)
-#define KP_AREA     ((gfx_rect_t){ 6, 3, 546, 423 })
+#define KP_AREA     ((gfx_rect_t){ UI_MARGIN, 3, 546, UI_BODY_H - 3 - UI_MARGIN })
+/* SETTINGS' save line, 24 px over the page's foot (motor_settings_page.c). */
+#define SAVE_LINE_Y (UI_BODY_H - UI_MARGIN - 24)
 /* LIVE's views, PLOT and TABLE, under the strip. */
 #define TABLE_X     99
 #define TABLE_Y     P(45)
@@ -822,7 +824,7 @@ TEST_CASE(the_save_line_follows_the_store)
     gfx_color_t before[24 * 120];
     for (int y = 0; y < 24; ++y) {
         for (int x = 0; x < 120; ++x) {
-            before[y * 120 + x] = fb[(size_t)P(402 + y) * W + 16 + x];
+            before[y * 120 + x] = fb[(size_t)P(SAVE_LINE_Y + y) * W + UI_MARGIN + 10 + x];
         }
     }
     CHECK(settings_save_tick(true));
@@ -830,7 +832,7 @@ TEST_CASE(the_save_line_follows_the_store)
     int differ = 0;
     for (int y = 0; y < 24; ++y) {
         for (int x = 0; x < 120; ++x) {
-            differ += before[y * 120 + x] != fb[(size_t)P(402 + y) * W + 16 + x];
+            differ += before[y * 120 + x] != fb[(size_t)P(SAVE_LINE_Y + y) * W + UI_MARGIN + 10 + x];
         }
     }
     CHECK(differ > 0);

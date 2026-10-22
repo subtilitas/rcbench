@@ -187,9 +187,19 @@ TEST_CASE(every_message_fits_whole_beside_every_standing_pair)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The overlay open in an area 420 px tall, where the notes of a servo in
+ * doubt, in German, take two pages. */
+static void fresh_short(void)
+{
+    static const gfx_rect_t k_short = { UI_MARGIN, UI_MARGIN, 488, 420 };
+    fresh();
+    kst_panel_init(k_short);
+    kst_panel_open();
+}
+
 TEST_CASE(a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page)
 {
-    fresh();
+    fresh_short();
     ui_text_set_language(UI_LANG_DE);
     g_rig.card = true;
     cut_write();
@@ -241,7 +251,7 @@ TEST_CASE(a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page)
 
 TEST_CASE(the_notes_start_on_their_first_page_again)
 {
-    fresh();
+    fresh_short();
     ui_text_set_language(UI_LANG_DE);
     g_rig.card = true;
     cut_write();

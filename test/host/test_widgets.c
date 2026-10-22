@@ -1049,7 +1049,7 @@ TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
     ui_hold_begin(&h);
     CHECK(hold_advance(&h, UI_HOLD_S));
     ui_hold_reached(&h);
-    CHECK_EQ(h.flash_left, UI_HOLD_FLASH_FRAMES);
+    CHECK_EQ(h.flash_ms, UI_HOLD_FLASH_MS);
     /* Reaching it keeps the firing: the finger is still down on the press
      * that fired, and its release consumes it. */
     CHECK(h.fired);
@@ -1061,10 +1061,50 @@ TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
     /* And with no press down there is nothing to end. */
     CHECK(!ui_hold_left(&h));
 
-    for (int i = 0; i < UI_HOLD_FLASH_FRAMES; ++i) { ui_hold_flash_step(&h); }
-    CHECK_EQ(h.flash_left, 0);
-    ui_hold_flash_step(&h);
-    CHECK_EQ(h.flash_left, 0);
+    for (int i = 0; i < 9; ++i) { ui_hold_flash_step(&h, 1.0f / 60.0f); }
+    CHECK_EQ(h.flash_ms, 0);
+    ui_hold_flash_step(&h, 1.0f / 60.0f);
+    CHECK_EQ(h.flash_ms, 0);
+}
+
+/* The flash runs by time: 25 ms a phase, white, black, settled, twice,
+ * 150 ms in all, whatever the frame rate. */
+TEST_CASE(the_flash_runs_by_time)
+{
+    const gfx_color_t settled = ui_theme_color(UI_C_DANGER);
+    CHECK_EQ(UI_HOLD_FLASH_MS, 150);
+    CHECK_EQ(ui_hold_flash(settled, 150), GFX_WHITE);
+    CHECK_EQ(ui_hold_flash(settled, 126), GFX_WHITE);
+    CHECK_EQ(ui_hold_flash(settled, 125), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 101), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 100), settled);
+    CHECK_EQ(ui_hold_flash(settled, 75), GFX_WHITE);
+    CHECK_EQ(ui_hold_flash(settled, 50), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 25), settled);
+    CHECK_EQ(ui_hold_flash(settled, 1), settled);
+    /* Over, and outside the flash at either end. */
+    CHECK_EQ(ui_hold_flash(settled, 0), settled);
+    CHECK_EQ(ui_hold_flash(settled, -1), settled);
+    CHECK_EQ(ui_hold_flash(settled, 151), settled);
+
+    /* 9 frames at 60 Hz spend it, 6 at 39 Hz; a late frame ends it. */
+    int at60 = 0, at39 = 0;
+    for (int ms = UI_HOLD_FLASH_MS; ms > 0; ++at60) {
+        ms = ui_hold_flash_left(ms, 1.0f / 60.0f);
+    }
+    for (int ms = UI_HOLD_FLASH_MS; ms > 0; ++at39) {
+        ms = ui_hold_flash_left(ms, 1.0f / 39.0f);
+    }
+    CHECK_EQ(at60, 9);
+    CHECK_EQ(at39, 6);
+    CHECK_EQ(ui_hold_flash_left(UI_HOLD_FLASH_MS, 1.0f), 0);
+    /* No time, a negative one or a NaN spends nothing; none is left of
+     * none. */
+    CHECK_EQ(ui_hold_flash_left(100, 0.0f), 100);
+    CHECK_EQ(ui_hold_flash_left(100, -0.5f), 100);
+    CHECK_EQ(ui_hold_flash_left(100, (float)NAN), 100);
+    CHECK_EQ(ui_hold_flash_left(0, 0.5f), 0);
+    CHECK_EQ(ui_hold_flash_left(-3, 0.5f), 0);
 }
 
 TEST_CASE(the_hold_refuses_a_null_rather_than_following_it)
@@ -1072,7 +1112,7 @@ TEST_CASE(the_hold_refuses_a_null_rather_than_following_it)
     ui_hold_reset(NULL);
     ui_hold_begin(NULL);
     ui_hold_reached(NULL);
-    ui_hold_flash_step(NULL);
+    ui_hold_flash_step(NULL, 1.0f);
     CHECK(!ui_hold_leave(NULL));
     CHECK(!ui_hold_end(NULL));
     CHECK(!ui_hold_tick(NULL, UI_HOLD_S));
@@ -1157,6 +1197,7 @@ int main(void)
     RUN(a_finger_that_leaves_the_control_ends_the_hold);
     RUN(one_late_frame_cannot_complete_a_hold);
     RUN(a_state_that_goes_away_under_a_press_ends_the_gesture);
+    RUN(the_flash_runs_by_time);
     RUN(the_hold_refuses_a_null_rather_than_following_it);
     RUN(a_release_the_tracker_makes_for_a_jump_picks_no_tab_and_no_preset);
     RUN(a_wrapped_text_breaks_at_spaces_and_measures_what_it_draws);

@@ -42,20 +42,22 @@
  * come from settings_hub_slot(). */
 #define LIST_X   8
 #define LIST_Y   (6 + UI_BAND_H)
-#define LIST_H   348
+#define LIST_H   (STRIP_Y - 6 - LIST_Y)
 #define ROW_PITCH 58
 #define ROW_H    54
 #define PLUS_X   726
 #define MINUS_X  556
 #define BTN_W    44
-/* The strip under the list and the tiles: RESET CATEGORY under the
- * second column, SAVE under the third. */
-#define STRIP_Y  (360 + UI_BAND_H)
+/* The strip under the list and the tiles, 4 px above the alert band:
+ * RESET CATEGORY under the second column of the hub's three, SAVE under
+ * the third. */
 #define STRIP_H  34
-#define RESET_X  272
+#define STRIP_Y  (UI_BODY_H - UI_ALERT_H - 4 - STRIP_H + UI_BAND_H)
+#define HUB_COL_W ((UI_PANEL_W - 4 * 8) / 3)
+#define RESET_X  (8 + HUB_COL_W + 8)
 #define RESET_Y  STRIP_Y
 #define RESET_H  STRIP_H
-#define SAVE_X   536
+#define SAVE_X   (8 + 2 * (HUB_COL_W + 8))
 #define SAVE_Y   STRIP_Y
 #define SAVE_H   STRIP_H
 

@@ -17,6 +17,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+#define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_BODY_H
 #define MAX_FBS  3
 
@@ -34,16 +35,17 @@
  * run of consecutive GPIOs.  Twenty-six pins leave the last two cells empty,
  * which is better than a grid that has to be read across.
  *
- * Seven rows of 53 plus their gaps is 407 of the 432 the router hands over.
- * Nine rows did not fit, and the cell has to be tall enough for the name and
- * what holds the pin underneath it.
+ * Seven rows of 53 plus their gaps is 407 of the 540 the router hands over,
+ * and the cell is tall enough for the name and what holds the pin
+ * underneath it.
  *
- * A cell is 121 px wide.  The line under the name starts 5 px in and is at
- * most the longest protocol name in the label face, 14 cells of 8 px
- * (112 px), so it ends 4 px inside the cell.
+ * The grid runs to 16 px from the screen's right edge: a cell is 177 px
+ * wide.  The line under the name starts 5 px in and is at most the longest
+ * protocol name in the label face, 14 cells of 8 px (112 px), so it ends
+ * inside the cell.
  */
 #define GRID_X   288
-#define GRID_W   496
+#define GRID_W   (SCREEN_W - 16 - GRID_X)
 #define GRID_Y   16
 #define GRID_COLS 4
 #define GRID_ROWS 7
@@ -55,7 +57,7 @@
 
 /* The dropdown, when it is open, covers the pins.  A row is POP_ROW tall,
  * or less where the protocols and the PROG PORT entries would run past
- * the screen: 41 px with the 8 protocols and 1 port. */
+ * the screen: the 8 protocols and 1 port take 46 px each. */
 #define POP_X    COL_X
 #define POP_W    300
 #define POP_Y    DD_Y

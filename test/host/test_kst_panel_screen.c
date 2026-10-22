@@ -426,13 +426,13 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
 
 /* The SET row of the SERVO screen's right card, as the screen lays it
  * out. */
-#define SUP_ROW_Y 237
+#define SUP_ROW_Y SV_SUP_Y
 
-#define SUP_V_X   579
+#define SUP_V_X   SV_SUP_V_X
 
-#define SUP_I_X   649
+#define SUP_I_X   SV_SUP_I_X
 
-#define SUP_OUT_X 733
+#define SUP_OUT_X SV_SUP_OUT_X
 
 /* A key of the SERVO screen's own keypad, where the screen opens it. */
 static void screen_key(ui_key_t key_id)
@@ -441,8 +441,7 @@ static void screen_key(ui_key_t key_id)
     gfx_rect_t r;
 
     memset(&probe, 0, sizeof(probe));
-    ui_keypad_open(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "", 0.0f,
-                   0.0f, 1.0f, 2);
+    ui_keypad_open(&probe, AREA, "", "", 0.0f, 0.0f, 1.0f, 2);
     r = ui_keypad_key_rect(&probe, key_id);
     screen_tap(cx(r), cy(r));
 }

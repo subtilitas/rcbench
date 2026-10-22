@@ -31,7 +31,7 @@ einen Stopp nicht auf.
 ARM sitzt unten auf einem Prüfstandsbildschirm; STOP sitzt oben im Band.
 
 Eine Berührung gehört dem, worauf sie aufgesetzt hat, bis sie abhebt. Das
-Band sind die oberen 48 px des Panels.
+Band sind die oberen 60 px des Panels.
 
 - Eine Berührung, die auf dem Band aufsetzt, bleibt beim Band. Rutscht sie
   nach unten in den Bildschirm, bewegt sie dort nichts, und hebt sie dort ab,
@@ -60,15 +60,17 @@ Band sind die oberen 48 px des Panels.
   bedient, während der erste zieht. Nach dem Home-Tag bewegt der Finger, der
   noch auf dem Glas liegt, auf dem Bildschirm, zu dem das Tag führt, nichts.
 
-Aktuelle Einschränkung: Die Chips stehen von STOP aus nach links. Eine
-Reihe, die x 226 erreichen würde, wo das breiteste Home-Tag (MOTOR & ESC)
-endet, beginnt jede Beschriftung 16 px statt 24 px im Chip. Eine Reihe ist
-trotzdem breiter und reicht unter das Home-Tag von MOTOR & ESC: ARMED mit
-einem FEHLER-Code, auf Englisch bis x 224, auf Deutsch bis x 216. Ein Tipp
-dort wirkt auf das Home-Tag, nicht auf den Chip.
+STOP ist 168 x 48 px groß und sitzt am rechten Ende des Bands, ab x 850.
+Die Chips stehen von STOP aus nach links, 8 px davon entfernt und 6 px
+auseinander. Jeder Chip ist 44 px hoch, seine Beschriftung in der Schrift
+10 x 20 px, 28 px von der linken Kante des Chips. Die breiteste Reihe, eine
+Laufzeituhr von 10 Stunden, ARMED MOTOR, ein FEHLER-Code, BENCH und LINK auf
+Deutsch, beginnt bei x 276.
 
-Die Home-Tags enden bei x 226 (MOTOR & ESC) und auf den anderen
-Bildschirmen bei x 210 oder weniger.
+Das Home-Tag ist 44 px hoch, bei x 8, y 8, sein Name in der Schrift
+20 x 36 px. Die Home-Tags enden bei x 268 (MOTOR & ESC) und auf den anderen
+Bildschirmen bei x 248 oder weniger, also reicht keine Chip-Reihe unter ein
+Home-Tag.
 
 ### Hilfe zu den Chips
 
@@ -77,8 +79,9 @@ sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun
 ist: LINK oder KEINE VERBINDUNG, der Modus, FEHLER, der Arm-Chip und die
 Laufzeituhr. Der Kasten öffnet 4 px unter dem Band an der linken Kante des
 getippten Chips, so weit nach links verschoben, dass er 8 px innerhalb des
-Panels bleibt. Er ist 520 px breit; der Kasten von FEHLER reicht über das
-Panel (784 px), mit einem Absatz pro gesetztem Bit. Kein Kasten reicht ins
+Panels bleibt. Er ist 640 px breit, 60 Zeichen der Schrift 10 x 20 px auf
+Zeilen von 21 px; der Kasten von FEHLER reicht über das Panel (1008 px,
+97 Zeichen), mit einem Absatz pro gesetztem Bit. Kein Kasten reicht ins
 Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
 
 - Ein Tipp öffnet ihn: Drücken und Abheben auf demselben Chip. Ein Druck,
@@ -141,7 +144,9 @@ kennt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
 ## Das Alert-Band
 
 Eine Störung, die der Bildschirm selbst nicht zeigt, erscheint in einem roten
-Band, 34 px hoch, unten über jedem Bildschirm mit Statusband. Solange es
+Band, 44 px hoch, unten über jedem Bildschirm mit Statusband. Sein Text
+steht in der Schrift 10 x 20 px, höchstens 97 Zeichen je Zeile auf bis zu
+2 Zeilen. Solange es
 steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 - Es verschwindet 30 s nach dem Frame, in dem es kam. Ein neuer Alert, auch
@@ -154,10 +159,11 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
   dieses Loslassen nicht gelöscht.
 - Ein Bedienelement unter dem Band, das anhält, was der Prüfstand treibt, wirkt
   beim ersten Druck, und der Druck löscht das Band: DISARM, AUSGANG AUS,
-  ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN. Das Band
-  verdeckt die unteren 22 px von DISARM auf SERVO (Panel-y 446 bis 467), die
-  unteren 26 px von ABBRECHEN eines Stick-Laufs (y 446 bis 471) und die
-  unteren 8 px von ABBRECHEN bei einem Handschritt (y 446 bis 453). ARM und
+  ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN. Das Band,
+  Panel-y 556 bis 599, verdeckt ABBRECHEN eines Stick-Laufs ganz (y 556 bis
+  589) und die unteren 16 px von ABBRECHEN bei einem Handschritt (y 556 bis
+  571). DISARM auf SERVO endet über dem Band (y 448 bis 479): Ein Druck
+  darauf bei angezeigtem Alert gehört DISARM, und der Alert bleibt. ARM und
   AUSGANG EIN unter dem Band werden nicht gedrückt: Der Tipp löscht das Band
   und startet kein Halten.
 - Ein Alert, der kommt, während ein Finger schon auf einem Bedienelement
@@ -171,7 +177,7 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 ![Das Funktionsmenü](img/de/overview.png)
 
-Das Menü ist ein Raster aus 4 Spalten und 2 Reihen, jede Kachel 190 x 204 px
+Das Menü ist ein Raster aus 4 Spalten und 2 Reihen, jede Kachel 246 x 258 px
 mit 8 px Rand. Die erste Reihe hält die Werkbänke, MOTOR & ESC, SERVO und
 SUPPLY; die zweite die Instrumente, RECEIVER, BATTERY und BALANCE; die
 letzte Spalte LOGS über SETUP. Eine vierte Werkbank oder ein viertes
@@ -250,7 +256,7 @@ LIVE, GRAFIK oder TABELLE, wie sie war.
 | OPTIONEN | die 8 ESC-Einstellungen unter AKKU, MOTOR und GASAUSGANG ([Optionen](#motor--esc-optionen)) |
 
 Zwei Spalten. Die Seite nimmt die linke, die vier Anzeigen und die Karte
-STEUERUNG eine Leiste von 236 px auf der rechten, damit das Ablesen der Werte
+STEUERUNG eine Leiste von 456 px auf der rechten, damit das Ablesen der Werte
 und das Bedienen des Gases nicht um denselben Teil des Bildschirms
 konkurrieren. Die rechte Leiste ist auf LIVE, der Liste von PROGRAMMIEREN
 und OPTIONEN dieselbe, und ARM wirkt auf allen dreien; eine Sitzung aus
@@ -621,7 +627,7 @@ OPTIONEN hält die 8 Einstellungen von Akku, Motor und Gasausgang
 
 Eine Zeile ist 34 px hoch: die Beschriftung, die Hilfezeile und der Wert mit
 Einheit in einem Feld von 100 x 28 px. Ein Tipp auf das Feld öffnet das
-Tastenfeld über der linken Spalte und der Leiste, 546 x 423 px, so dass kein
+Tastenfeld über der linken Spalte und der Leiste, 546 x 529 px, so dass kein
 Reiter die Aufgabe darunter wechselt; die rechte Leiste bleibt erreichbar.
 Das Tastenfeld nennt die Einstellung, ihren Bereich und ihre Einheit. OK
 übernimmt einen Wert im Bereich und legt ihn auf den Schritt der
@@ -853,7 +859,7 @@ davon ist gemessen:
 `-` und `+` einer Zeile stellen ihren Wert um einen Schritt. Ein Tipp auf
 den Wert, die 216 px breite Spalte zwischen dem Namen und den Tasten, öffnet
 das Tastenfeld über der Seite, von unter dem Ausgangsstreifen bis 4 px über
-dem Alarmband: 788 x 368 px, Tasten von 188 x 62 px. Es nennt die
+dem Alarmband: 1008 x 466 px, Tasten von 243 x 86 px. Es nennt die
 Einstellung, ihren Bereich und ihre Einheit und nimmt die Stellen des
 Schritts nach dem Punkt: eine für die 0,1 V von Spannung, zwei für die
 0,05 A von Strombegrenzung. OK setzt den Wert wie ein Schritt auf den
@@ -2145,8 +2151,8 @@ Serial Peripheral Interface) der Karte von 20 MHz, oder 125 Sektoren, etwa
 gemessen. Die Größe jedes Eintrags kommt mit dem Lesen des Verzeichnisses,
 eine Seite kostet also einen Durchlauf und die Auswahl.
 
-Der Rollbalken am rechten Rand der Liste ist 42 px breit, 8,1 mm bei 0,194 mm
-Pixelabstand. Die Länge des Griffs entspricht dem Anteil der sichtbaren Zeilen
+Der Rollbalken am rechten Rand der Liste ist 42 px breit, 6,3 mm bei den
+0,150 mm Pixelabstand, die für das Panel angenommen sind (nicht gemessen). Die Länge des Griffs entspricht dem Anteil der sichtbaren Zeilen
 an der Seite, und er rollt innerhalb der Seite. Ein Tippen auf die Bahn bringt
 die Mitte des Griffs unter den Finger; ein Finger auf dem Griff zieht ihn.
 
@@ -2670,7 +2676,7 @@ USB, um das Layout mit zwei Anwendungs-Slots zu bekommen:
 ## Setup
 
 Die SETUP-Kachel des Menüs öffnet eine Seite mit Kacheln, 3 mal 3, im Stil
-des Menüs. Jede Kachel ist 256 x 108 px groß, ihr Symbol mittig über ihrem
+des Menüs. Jede Kachel ist 330 x 108 px groß, ihr Symbol mittig über ihrem
 Namen.
 
 ![Setup](img/de/setup.png)
@@ -2697,10 +2703,10 @@ Dieselbe Seite im hellen Design:
 
 ![Setup im hellen Design](img/de/setup-light.png)
 
-Die Liste einer Kategorie reicht über die Breite des Panels, 776 px, und
-zeigt 348 px davon, 6 Zeilen, über einer Leiste mit drei Spalten: dem Namen
-der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Die Leiste endet bei
-y 442 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
+Die Liste einer Kategorie ist 776 px breit, ab dem linken Rand des Panels,
+und zeigt 446 px davon, 7 Zeilen, über einer Leiste mit drei Spalten: dem
+Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Die Leiste endet
+bei y 552 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
 Ein Alert verdeckt damit weder eine Taste noch eine Zeile, KATEGORIE
 ZURÜCKSETZEN oder SPEICHERN, auf den Kacheln wie auf einer Liste.
 
@@ -2759,7 +2765,7 @@ Auswahl springt vom letzten Wert auf den ersten.
   4 px zwischen zwei Zeilen gehören zu keiner Taste.
 - **Tastenfeld.** Ein Tipp auf den Wert einer Zahl, die 126 px zwischen
   ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste und der
-  Leiste: 784 x 386 px, Tasten von 187 x 66 px, sein Fuß 4 px über dem
+  Leiste: 1008 x 484 px, Tasten von 243 x 91 px, sein Fuß 4 px über dem
   Alarmband. Es nennt die Einstellung, ihren Bereich und ihre Einheit, zeigt
   den Wert blass, bis eine Ziffer getippt ist, und nimmt so viele Stellen
   nach dem Punkt, wie der Schritt hat: eine für die 0,1 mΩ eines Shunts,
@@ -3435,7 +3441,7 @@ jeder Wert zurückgestellt ist.
 Das Home-Tag auf den Kacheln, der einzige Weg von SETUP zum Menü, wird
 gehalten, solange die Beschriftung `SPEICHERN` oder `NICHT GESPEICHERT`
 lautet. Stattdessen deckt eine Warnung den Inhalt ab: eine Karte von
-784 x 344 px mit einem 3 px breiten Rand in der Warnfarbe, über der Leiste.
+1008 x 442 px mit einem 3 px breiten Rand in der Warnfarbe, über der Leiste.
 
 ![Ein ungespeicherter Wert, am Home-Tag](img/de/setup-leave.png)
 
@@ -4321,9 +4327,9 @@ gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
 
 ![Der Pin-Picker](img/de/picker.png)
 
-Die Tasten sind nicht die Pads. In jeder Größe, die auf ein 480-Pixel-Panel
-passt, ist ein Pad unter 40 Pixel breit und damit kleiner als eine
-Fingerkuppe. Also werden die Pads gezeichnet, wo sie sind, und berührt wird
+Die Tasten sind nicht die Pads. In jeder Größe, die auf ein Panel mit
+1024 x 600 Pixeln passt, ist ein Pad unter 40 Pixel breit und damit kleiner
+als eine Fingerkuppe. Also werden die Pads gezeichnet, wo sie sind, und berührt wird
 auf zwei versetzten Tastenreihen über der Platine und zwei darunter, 43 px
 breit, jede an einer geraden Leitung zu ihrem eigenen Pad.
 
@@ -4436,10 +4442,11 @@ Tabelle hinaus, ist jede Pin-Zeile 20 px hoch, mit dem GPIO in der kleineren
 Schrift, dann 16 px, dann auch die Namen 16 px. Die höchste Tabelle aus
 Protokollen ergibt sich mit OFF gewählt, dem Programmierport aufgeführt und
 den 8 Slots auf den 6 Protokollen, die einen Kanal je Pin nehmen: 16 Zeilen,
-320 px der 360 px unter der Überschrift. Mit 4 Programmierports und allen
-Anschlüssen EIN neben dieser Bindung passen 27 Zeilen auch mit 16 px nicht:
-Die Tabelle hält die Zeilen, die passen, die Ports und die Anschlüsse zuerst,
-und endet in `+N`, N die ausgelassenen Zeilen.
+392 px der 468 px unter der Überschrift. Mit 4 Programmierports und allen
+Anschlüssen EIN neben dieser Bindung führt die Tabelle 27 Zeilen, die Ports
+und die Anschlüsse zuerst, in den kleineren Zeilen. Eine Tabelle, die dann
+noch über den Fuß reicht, hält die Zeilen, die passen, und endet in `+N`,
+N die ausgelassenen Zeilen.
 
 ![Die höchste BELEGT-Tabelle](img/de/picker-off.png)
 

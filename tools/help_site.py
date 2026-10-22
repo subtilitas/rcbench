@@ -824,7 +824,7 @@ class Renderer:
                            "image's text alternative")
         alt = html.escape(text_of(cap))
         # The image links to itself: a row shows each at under half the
-        # column, and a tap opens the 800 x 480 px file.
+        # column, and a tap opens the 1024 x 600 px file.
         src = html.escape(src)
         return (f'<figure><a href="{src}"><img src="{src}" alt="{alt}"'
                 f'{dims} loading="lazy"></a><figcaption>{cap}</figcaption>'

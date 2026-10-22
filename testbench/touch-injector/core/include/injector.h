@@ -15,7 +15,7 @@
  *
  * Commands (one line each, at most INJ_LINE_MAX characters, LF or CRLF):
  *
- *   ping                       pong rcbench-touch 1 addr=0x14 res=800x480
+ *   ping                       pong rcbench-touch 1 addr=0x14 res=1024x600
  *                              state=listen|active
  *   wiring                     ok wiring, then the verdict line
  *   confirm scl=GP5            ok confirm
@@ -53,8 +53,8 @@ extern "C" {
 #endif
 
 #define INJ_PROTOCOL        1
-#define INJ_RES_X           800u
-#define INJ_RES_Y           480u
+#define INJ_RES_X           1024u
+#define INJ_RES_Y           600u
 #define INJ_LINE_MAX        63u    /* characters, without the LF         */
 #define INJ_REPORT_MS       10u    /* least time between two frames      */
 #define INJ_ACK_TIMEOUT_MS  100u   /* a frame not acknowledged by then   */

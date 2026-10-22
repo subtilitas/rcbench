@@ -46,7 +46,7 @@ static void ports(uint8_t count, uint8_t pin0)
 }
 
 /* The list's rows as the screen sizes them: 46 px, or less where the
- * protocols and the entries would pass the screen's 432 px. */
+ * protocols and the entries would pass the screen's 540 px. */
 static int row_h(void)
 {
     const int fit = (SCREEN_H - DD_Y - 16)

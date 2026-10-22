@@ -150,7 +150,7 @@ TEST_CASE(a_tap_on_a_value_opens_its_keypad)
     /* Over the list and the strip, above the alert band. */
     CHECK_EQ(k->area.x, 8);
     CHECK_EQ(k->area.y, 8);
-    CHECK_EQ(k->area.w, 784);
+    CHECK_EQ(k->area.w, UI_PANEL_W - 16);
     CHECK(k->area.y + k->area.h <= UI_BODY_H - UI_ALERT_H);
     /* Drawn: the frame carries its OK key's accent. */
     ui_router_render(&s_c, 0);

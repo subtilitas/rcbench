@@ -24,6 +24,9 @@ static int steps_off(setting_id_t id)
  * many changed a setting; *unscrolled counts those that stayed in the body,
  * moved as one contact and left the list where it was although it had room.
  */
+/* The start points down the list: from LIST_Y + 4, 29 px apart. */
+#define STARTS ((LIST_H - 4 + 28) / 29)
+
 static int swipe_matrix(const int *cols, int ncols, int *unscrolled,
                         int *total)
 {
@@ -46,7 +49,7 @@ static int swipe_matrix(const int *cols, int ncols, int *unscrolled,
                         const int from = settings_screen_scroll(&max);
                         int y1 = y0 + dir * 150;
                         if (y1 < 2)   { y1 = 2; }
-                        if (y1 > 479) { y1 = 479; }
+                        if (y1 > H - 1) { y1 = H - 1; }
                         swipe(cols[c], y0, cols[c], y1, speeds[sp]);
                         idle(0.5f);
                         ++*total;
@@ -73,7 +76,7 @@ TEST_CASE(a_swipe_that_starts_on_a_key_column_scrolls_and_changes_no_value)
                                 PLUS_X, XP, PLUS_X + BTN_W - 1 };
     int unscrolled = 0, total = 0;
     const int bad = swipe_matrix(cols, 6, &unscrolled, &total);
-    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 6 * 7 * 12 * 2);
+    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 6 * 7 * STARTS * 2);
     CHECK_EQ(bad, 0);
     CHECK_EQ(unscrolled, 0);
 }
@@ -86,7 +89,7 @@ TEST_CASE(a_swipe_beside_the_key_columns_scrolls_and_changes_no_value)
                                 PLUS_X + BTN_W, 783 };
     int unscrolled = 0, total = 0;
     const int bad = swipe_matrix(cols, 9, &unscrolled, &total);
-    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 9 * 7 * 12 * 2);
+    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 9 * 7 * STARTS * 2);
     CHECK_EQ(bad, 0);
     CHECK_EQ(unscrolled, 0);
 }

@@ -12,7 +12,7 @@ import pytest
 import help_site as hs
 
 PNG = (b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\x0dIHDR"
-       + (800).to_bytes(4, "big") + (480).to_bytes(4, "big")
+       + (1024).to_bytes(4, "big") + (600).to_bytes(4, "big")
        + b"\x08\x02\x00\x00\x00" + b"\x00" * 16)
 
 VIEWS = {"servo": "servo.png", "servo-ina": "servo-ina.png",
@@ -230,7 +230,7 @@ def test_one_image(tree):
     html = ok(tree, "![The **SERVO** screen](view:servo)\n")
     assert ('<div class="shot"><figure><a href="img/servo.png">'
             '<img src="img/servo.png"') in html
-    assert 'alt="The SERVO screen" width="800" height="480"' in html
+    assert 'alt="The SERVO screen" width="1024" height="600"' in html
     assert "<figcaption>The <strong>SERVO</strong> screen</figcaption>" \
         in html
 

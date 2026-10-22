@@ -12,7 +12,7 @@ The menu is the panel's home screen. It opens after the splash and holds one til
 
 ![The menu with the link up](view:overview)
 
-Eight tiles, 190 x 204 px each, in 4 columns and 2 rows: the workbenches in the first row, the instruments in the second, LOGS over SETUP in the last column.
+Eight tiles, 246 x 258 px each, in 4 columns and 2 rows: the workbenches in the first row, the instruments in the second, LOGS over SETUP in the last column.
 
 | Tile | Line under the name | Page |
 |---|---|---|
@@ -55,7 +55,7 @@ SETUP, PANEL, Theme switches between DARK and LIGHT. The change applies on the n
 
 ![An alert across the bottom of the menu](view:overview-alert)
 
-A fault that the open screen does not show appears in a red band, 34 px high, across the bottom of every screen with the status band. It clears 30 s after it arrived, or on a tap on the band. The [status band](band.md#the-alert-band) page lists how it behaves.
+A fault that the open screen does not show appears in a red band, 44 px high, across the bottom of every screen with the status band. It clears 30 s after it arrived, or on a tap on the band. The [status band](band.md#the-alert-band) page lists how it behaves.
 
 ## At start: the splash
 

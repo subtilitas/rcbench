@@ -524,7 +524,8 @@ void sup_tick(float dt_s)
             sup_post_on(SUPPLY_BY_SUPPLY);
         }
     }
-    if (s.hold.flash_left > 0) {
+    if (s.hold.flash_ms > 0) {
+        ui_hold_flash_step(&s.hold, dt_s);
         ++s.out_rev;
     }
 }

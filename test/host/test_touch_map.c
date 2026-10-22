@@ -136,9 +136,8 @@ TEST_CASE(map_point_updates_in_place)
 
 /*
  * The 7-inch ESP32-P4 board: the GT911 reports 1024 x 600, mirrored in x
- * and y, and the UI draws 800 x 480 in the top-left corner.  The glass's
- * corners land on the panel's opposite corners, and a touch outside the
- * UI's area is dropped.
+ * and y.  The glass's corners land on the panel's opposite corners; the
+ * pixels of an 800 x 480 area in the top-left corner end at (799, 479).
  */
 TEST_CASE(a_1024_by_600_glass_mirrored_lands_on_the_panels_corners)
 {
@@ -148,7 +147,7 @@ TEST_CASE(a_1024_by_600_glass_mirrored_lands_on_the_panels_corners)
     };
     expect(&m, 0, 0, 1023, 599);
     expect(&m, 1023, 599, 0, 0);
-    expect(&m, 224, 120, 799, 479);       /* the UI's last pixel */
+    expect(&m, 224, 120, 799, 479);       /* an 800 x 480 area's last */
     expect(&m, 223, 119, 800, 480);       /* just outside it */
     expect(&m, 1024, 600, 0, 0);          /* past the range: clamped */
     int16_t w = 0, h = 0;

@@ -174,7 +174,7 @@ TEST_CASE(a_withdrawal_does_not_touch_a_command_posted_after_the_knob)
 {
     fresh();
     servo_screen_knob(0.25f);
-    tap(716, 350 + 16);                 /* RELEASE, over the position */
+    tap(SV_RELEASE_X, SV_BTN_Y);        /* RELEASE, over the position */
     servo_screen_knob_cancel();
     CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 }
@@ -224,7 +224,7 @@ TEST_CASE(a_pending_release_is_not_overwritten_by_the_knob)
     fresh();
     servo_screen_knob(0.25f);
     (void)last_cmd();
-    tap(716, 350 + 16);                 /* RELEASE */
+    tap(SV_RELEASE_X, SV_BTN_Y);        /* RELEASE */
     const uint16_t before = servo_screen_commanded();
     servo_screen_knob(0.25f);
     CHECK_EQ(servo_screen_commanded(), before);

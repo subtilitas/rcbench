@@ -308,7 +308,8 @@ void mo_tick(float dt_s)
             ui_value_ask_arm(&s.gate);
         }
     }
-    if (s.arm.flash_left > 0) {
+    if (s.arm.flash_ms > 0) {
+        ui_hold_flash_step(&s.arm, dt_s);
         ++s.arm_rev;   /* keep the frames coming while it flashes */
     }
     /* The TARGET row follows the bench and the hold: drawn locked, or

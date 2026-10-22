@@ -40,29 +40,16 @@ static const ui_text_id_t k_extreme[S_COUNT] = { TX_HERO_MIN, TX_HERO_PEAK,
  * the flash as the arm takes effect.  With nothing held and nothing flashing
  * this is the plain OK or WARN the button has always carried.
  */
-/* One colour per frame actually drawn, so "a frame each" means a frame each
- * however the render paths are gated. */
-static void arm_flash_advance(void)
-{
-    if (s.arm.flash_left > 0) {
-        ui_hold_flash_step(&s.arm);
-        /* The next colour needs a frame of its own, and this screen only
-         * paints when a counter moves.  Asking for it here rather than in
-         * mo_tick() keeps the flash a property of the drawing. */
-        ++s.arm_rev;
-    }
-}
-
 static gfx_color_t arm_fill(void)
 {
     /* Armed is the danger red the press fades towards, so the fade previews
      * the colour the button is about to hold. */
     gfx_color_t fill = s.gate.armed ? ui_theme_color(UI_C_DANGER)
                                : ui_theme_color(UI_C_OK);
-    /* The flash is the whole button, one colour per drawn frame, and it
-     * overrides everything else while it runs. */
-    if (s.arm.flash_left > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_left);
+    /* The flash is the whole button, its colour by the time it has run, and
+     * it overrides everything else while it runs. */
+    if (s.arm.flash_ms > 0) {
+        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_ms);
     }
     if (!s.gate.armed && s.arm.held_s > 0.0f) {
         fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm.held_s);
@@ -708,7 +695,6 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
     if (arm_moved && !ctrl_moved && !thr_moved) {
         ui_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
                   s.pressed == 1, !mo_arm_locked());
-        arm_flash_advance();
         return;
     }
 
@@ -720,7 +706,6 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
     }
     ui_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
               s.pressed == 1, !mo_arm_locked());
-    arm_flash_advance();
     if (!ctrl_moved) {
         return;
     }

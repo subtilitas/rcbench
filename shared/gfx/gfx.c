@@ -253,7 +253,7 @@ void gfx_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1, gfx_color_t color
     }
     /* Two bounds, neither of which moves a visible line: a line entirely off
      * one side of the clip is not walked at all, and a coordinate outside the
-     * int16 range cannot belong to a line on an 800x480 panel, so it is
+     * int16 range cannot belong to a line on a 1024 x 600 panel, so it is
      * saturated.  Clamping to the clip instead would change the slope of
      * lines that are drawn. */
     if ((x0 < c->clip.x && x1 < c->clip.x) ||
@@ -307,7 +307,7 @@ void gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1,
     }
     /* Two bounds, neither of which moves a visible line: a line entirely off
      * one side of the clip is not walked at all, and a coordinate outside the
-     * int16 range cannot belong to a line on an 800x480 panel, so it is
+     * int16 range cannot belong to a line on a 1024 x 600 panel, so it is
      * saturated.  Clamping to the clip instead would change the slope of
      * lines that are drawn. */
     if ((x0 < c->clip.x && x1 < c->clip.x) ||

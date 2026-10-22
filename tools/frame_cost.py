@@ -41,6 +41,13 @@ DOCS = sorted((REPO / "docs").glob("Performance*.md"))
 DOC_START = "<!-- framecost:start -->"
 DOC_END = "<!-- framecost:end -->"
 
+# The canvas the table in docs/Performance.md models: the ESP32-S3 panel's
+# 800 x 480 px.  The renderer draws the size in ui_layout.h; while the two
+# differ, --check-doc reports the table as not checked and --update-doc
+# writes nothing.  The ESP32-P4 profile replaces both.
+DOC_MODEL = (800, 480)
+LAYOUT_H = REPO / "shared" / "ui" / "include" / "ui_layout.h"
+
 # The screens (ui_sources.py) and the bench frame that draws them.
 SOURCES = ["test/host/bench_frame.c", *ui_sources.SOURCES]
 INCLUDES = ui_sources.INCLUDES
@@ -171,6 +178,20 @@ def splice_doc(doc, block: str, write: bool) -> int:
     return 0
 
 
+def panel_size() -> tuple[int, int]:
+    """Read the panel size the renderer draws.
+
+    Returns:
+        UI_PANEL_W and UI_PANEL_H from shared/ui/include/ui_layout.h.
+    """
+    text = LAYOUT_H.read_text(encoding="utf-8")
+    w = re.search(r"#define\s+UI_PANEL_W\s+(\d+)", text)
+    h = re.search(r"#define\s+UI_PANEL_H\s+(\d+)", text)
+    if w is None or h is None:
+        sys.exit(f"{LAYOUT_H}: no UI_PANEL_W or UI_PANEL_H")
+    return int(w.group(1)), int(h.group(1))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("modes", nargs="*", default=None,
@@ -189,6 +210,13 @@ def main() -> int:
     if (args.update_doc or args.check_doc) and args.modes:
         sys.exit("--update-doc/--check-doc measure every mode; drop the "
                  "mode arguments")
+    if args.update_doc or args.check_doc:
+        size = panel_size()
+        if size != DOC_MODEL:
+            print(f"docs/Performance.md models {DOC_MODEL[0]} x "
+                  f"{DOC_MODEL[1]} px; the renderer draws {size[0]} x "
+                  f"{size[1]} px: the table is not checked or written")
+            return 1 if args.update_doc else 0
     worst = 0
     printed: list[str] = []
 

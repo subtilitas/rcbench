@@ -36,11 +36,11 @@
 /* ------------------------------------------------------------- browse ---- */
 
 /*
- * Layout in the 432 px body the router hands this screen (480 minus the
- * 48 px band).  Each view's footer row of buttons ends 4 px above the
- * router's alert band, which covers the bottom UI_ALERT_H (34) px of the
+ * Layout in the 540 px body the router hands this screen (600 minus the
+ * 60 px band).  Each view's footer row of buttons ends 4 px above the
+ * router's alert band, which covers the bottom UI_ALERT_H (44) px of the
  * body while an alert shows and takes the touches there: nothing that acts
- * sits under it.  The footer is body y 352 to 393; the band starts at 398.
+ * sits under it.  The footer is body y 450 to 491; the band starts at 496.
  */
 #define FOOT_H    42
 #define FOOT_Y    (SCREEN_H - UI_ALERT_H - 4 - FOOT_H)
@@ -52,19 +52,15 @@
 #define BR_LIST_Y 44
 #define BR_LIST   gfx_rect_make(16, BR_LIST_Y, 768, FOOT_Y - FOOT_GAP - BR_LIST_Y)
 #define BR_ROW_H  44
-/* (302 - 30) / 44 = 6 rows fit the list.  A seventh needs 338 px and would
- * cross the panel border into the footer. */
+/* The list is 400 px tall: six rows of 44 px under its 30 px heading take
+ * 294 px of it. */
 #define BR_ROWS   6
 
 /*
- * The scroll bar along the list's right edge, BR_BAR_W px wide: 8.1 mm on
- * the panel.  The Waveshare ESP32-S3-Touch-LCD-7 shows 800 x 480 px on a
- * 154.88 x 86.72 mm viewing area (CNX Software's listing of the board,
- * https://www.cnx-software.com/2024/05/30/7-inch-esp32-s3-touchscreen-display-rs485-can-bus-i2c-uart-analog-sensor-interfaces/;
- * Waveshare's pages give no active area), so a pixel is
- * 154.88 / 800 = 0.1936 mm across and 42 px is 8.13 mm.  The track runs the
- * height of the rows, and the thumb's share of it is the rows' share of the
- * page.
+ * The scroll bar along the list's right edge, BR_BAR_W px wide: 6.3 mm on
+ * the panel at the 0.150 mm a pixel ui_layout.h assumes (not measured).  The
+ * track runs the height of the rows, and the thumb's share of it is the
+ * rows' share of the page.
  */
 #define BR_BAR_W  42
 #define BR_BAR    gfx_rect_make(16 + 768 - 8 - BR_BAR_W, BR_LIST_Y + 30, \

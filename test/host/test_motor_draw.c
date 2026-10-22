@@ -240,7 +240,9 @@ TEST_CASE(the_arm_button_fades_across_the_hold)
     motor_screen_set_armed(true);
     for (int i = 0; i < 10; ++i) {
         scr->render(&cv, 0);
+        scr->tick(0.02f);
     }
+    scr->render(&cv, 0);
     const gfx_color_t settled = arm_px();
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     tick_for(HOLD_TICKS);

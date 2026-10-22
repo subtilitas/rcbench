@@ -766,7 +766,8 @@ TEST_CASE(the_write_screen_closes_only_after_a_failure)
     }
     CHECK(n > 10000);
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = 144, .y = 434 } };
+                        .point = { .id = 1, .x = 144,
+                                   .y = UI_PANEL_H - 18 - 28 } };
     u->event(&e);
     e.type = TOUCH_EVENT_UP;
     u->event(&e);

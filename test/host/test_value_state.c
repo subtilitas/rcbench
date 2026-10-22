@@ -28,6 +28,7 @@
 #include "gfx.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
+#include "servo_spots.h"
 #include "settings.h"
 #include "splash_screen.h"
 #include "ui_band.h"
@@ -82,11 +83,11 @@ static void frames(int n)
     }
 }
 
-/* Frames drawn into both buffers, so a flash, spent one a drawn frame, is
+/* Frames drawn into both buffers, 26 ms each, so a flash, 150 ms, is
  * over. */
 static void settle(void)
 {
-    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES + 2; ++i) {
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 10 + 2; ++i) {
         ui_router_tick(0.026f);
         ui_router_render(&cv, i & 1);
     }
@@ -499,13 +500,15 @@ TEST_CASE(motor_a_late_callback_changes_nothing)
 
 #define SHAFT_X     300
 #define SHAFT_Y     P((H - UI_BAND_H) / 2)
-#define CENTRE_X    556
-#define SWEEP_X     647
-#define RELEASE_X   739
+#define CENTRE_X    SV_CENTRE_X
+#define SWEEP_X     SV_SWEEP_X
+#define RELEASE_X   SV_RELEASE_X
 #define BTN_Y       P(366)
-#define S_ARM_X     648
+#define S_ARM_X     (SV_RC_X + SV_RC_W / 2)
 #define S_ARM_Y     P(404)
 #define SPEED_Y     P(307)
+/* ARM FIRST, 36 px over the left card's foot. */
+#define S_HINT_Y    P(UI_BODY_H - 36)
 
 enum { SC_DIAL = 0, SC_KNOB, SC_CENTRE, SC_SWEEP, SC_HOOK, SC_RELEASE,
        SC_COUNT };
@@ -641,7 +644,7 @@ static bool s_drawn_live(void)
 {
     picture(fb);
     return px(CENTRE_X - 36, BTN_Y - 10) == ui_theme_color(UI_C_ACCENT)
-           && count_px(52, 200, P(396), ui_theme_color(UI_C_WARN)) == 0;
+           && count_px(52, 200, S_HINT_Y, ui_theme_color(UI_C_WARN)) == 0;
 }
 
 static bool s_drawn_refused(void)
@@ -649,7 +652,7 @@ static bool s_drawn_refused(void)
     picture(fb);
     return px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_ACCENT)
            && px(SHAFT_X + 22, SHAFT_Y) != ui_theme_color(UI_C_ACCENT)
-           && count_px(52, 200, P(396), ui_theme_color(UI_C_WARN)) > 0;
+           && count_px(52, 200, S_HINT_Y, ui_theme_color(UI_C_WARN)) > 0;
 }
 
 /*

@@ -1,9 +1,11 @@
 /*
  * A press that stops what the bench drives acts on the first press, whatever
- * the router draws over it: the alert band across the bottom of the panel
- * and the band's help bubble.  The alert band covers the lower 22 px of
- * SERVO's DISARM (panel y 446 to 467); the bubble takes any press while it
- * is open.  Never the reverse: a press on ARM under either starts no hold.
+ * the router draws over it: the band's help bubble takes any press while it
+ * is open, and DISARM disarms through it.  Never the reverse: a press on ARM
+ * under the bubble starts no hold.  SERVO's ARM / DISARM ends above the
+ * alert band (panel y 448 to 479, the band from 556): a press on it with an
+ * alert showing is its own, and the alert stays; a press on the alert band
+ * closes the alert and reaches no screen.
  *
  * Touch is fed as the panel produces it, through the tracker and the router
  * (touch_feed.h), in panel coordinates.
@@ -19,6 +21,7 @@
 #include "gfx.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
+#include "servo_spots.h"
 #include "settings.h"
 #include "splash_screen.h"
 #include "supply_screen.h"
@@ -32,18 +35,17 @@
 #define P(y) (UI_BAND_H + (y))
 
 /* SERVO's ARM / DISARM in panel coordinates, mirrored from servo_screen.c:
- * x 514 to 781, y 436 to 467. */
-#define SV_ARM_L   514
-#define SV_ARM_R   781
+ * the right card's column (servo_spots.h), body y 388 to 419. */
+#define SV_ARM_L   SV_RC_X
+#define SV_ARM_R   (SV_RC_X + SV_RC_W - 1)
 #define SV_ARM_T   P(388)
 #define SV_ARM_B   P(419)
-#define SV_ARM_X   648
-#define SV_ARM_Y   452          /* the station's tap, under the alert band */
+#define SV_ARM_X   ((SV_ARM_L + SV_ARM_R) / 2)
+#define SV_ARM_Y   P(404)
 
-/* MOTOR & ESC's ARM / DISARM and RESET PEAKS, as test_motor_arm.c has them. */
+/* MOTOR & ESC's ARM / DISARM, as test_motor_arm.c has it. */
 #define MO_ARM_X   676
-#define MO_ARM_Y   P(342)
-#define MO_RESET_Y P(402)
+#define MO_ARM_Y   P(324 + UI_BTN_H / 2)
 
 #define FRAME_S    0.026f
 
@@ -121,9 +123,16 @@ static void alert(void)
 
 static bool alert_shows(void) { return ui_router_alert_number() != 0u; }
 
-/* The station's finding: DISARM tapped 1.0 s after the hold, under an alert
- * that arrived with the arm.  The tap disarms and the alert goes. */
-TEST_CASE(disarm_under_the_alert_disarms_at_once)
+/* DISARM ends above the alert band, so no alert covers it. */
+TEST_CASE(disarm_ends_above_the_alert_band)
+{
+    CHECK(SV_ARM_B < UI_ALERT_Y);
+    CHECK(MO_ARM_Y < UI_ALERT_Y);
+}
+
+/* DISARM tapped 1.0 s after the hold, with an alert that arrived with the
+ * arm: the tap disarms, and the alert stays. */
+TEST_CASE(disarm_beside_the_alert_disarms_at_once)
 {
     CHECK(sv_armed());
     alert();
@@ -131,11 +140,11 @@ TEST_CASE(disarm_under_the_alert_disarms_at_once)
     CHECK(alert_shows());
     feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_Y);
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
-    CHECK(!alert_shows());
+    CHECK(alert_shows());
 }
 
 /* The same in the frame the alert arrives in, and 15 s into its 30 s. */
-TEST_CASE(disarm_under_the_alert_from_its_arrival_to_its_end)
+TEST_CASE(disarm_beside_the_alert_from_its_arrival_to_its_end)
 {
     const int at[] = { 0, 1, (int)(15.0f / FRAME_S),
                        (int)(UI_ALERT_SHOW_S / FRAME_S) - 2 };
@@ -146,29 +155,29 @@ TEST_CASE(disarm_under_the_alert_from_its_arrival_to_its_end)
         CHECK(alert_shows());
         feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_Y);
         CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
-        CHECK(!alert_shows());
+        CHECK(alert_shows());
     }
 }
 
 /*
- * The edges.  On DISARM under the alert -- its top row (y 446), the
- * button's bottom row, its left and right columns -- the press disarms and
- * the alert goes.  On DISARM above the alert (y 445) the press is the
- * button's as always and the alert stays.  On the alert beside or below
- * DISARM the tap closes the alert and nothing else.
+ * The edges.  On DISARM -- its top and bottom rows, its left and right
+ * columns -- the press disarms and the alert stays.  Between DISARM and the
+ * alert band, and beside DISARM, the press is the screen's and asks
+ * nothing.  On the alert band's top row the tap closes the alert and
+ * reaches no screen.
  */
 TEST_CASE(disarm_at_the_alerts_edges)
 {
-    static const struct { int x, y; bool disarms, alert_stays; } k[] = {
-        { SV_ARM_X, UI_ALERT_Y,     true,  false },
-        { SV_ARM_X, SV_ARM_B,       true,  false },
-        { SV_ARM_L, SV_ARM_Y,       true,  false },
-        { SV_ARM_R, SV_ARM_Y,       true,  false },
-        { SV_ARM_X, UI_ALERT_Y - 1, true,  true  },
-        { SV_ARM_X, SV_ARM_T,       true,  true  },
-        { SV_ARM_X, SV_ARM_B + 1,   false, false },
-        { SV_ARM_L - 1, SV_ARM_Y,   false, false },
-        { SV_ARM_R + 1, SV_ARM_Y,   false, false },
+    static const struct { int x, y; bool disarms, alert_stays, alerts; } k[] = {
+        { SV_ARM_X, SV_ARM_T,       true,  true,  false },
+        { SV_ARM_X, SV_ARM_B,       true,  true,  false },
+        { SV_ARM_L, SV_ARM_Y,       true,  true,  false },
+        { SV_ARM_R, SV_ARM_Y,       true,  true,  false },
+        { SV_ARM_X, SV_ARM_B + 1,   false, true,  false },
+        { SV_ARM_X, UI_ALERT_Y - 1, false, true,  false },
+        { SV_ARM_L - 1, SV_ARM_Y,   false, true,  false },
+        { SV_ARM_R + 1, SV_ARM_Y,   false, true,  false },
+        { SV_ARM_X, UI_ALERT_Y,     false, false, true  },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         CHECK(sv_armed());
@@ -177,7 +186,7 @@ TEST_CASE(disarm_at_the_alerts_edges)
         feed_tap(FEED_LONE, k[i].x, k[i].y);
         CHECK_EQ(sv_took(), k[i].disarms ? SERVO_CMD_DISARM : SERVO_CMD_NONE);
         CHECK_EQ(alert_shows(), k[i].alert_stays);
-        if (!k[i].disarms) {
+        if (k[i].alerts) {
             CHECK_EQ(ui_router_dispatched(), handed);   /* the alert's tap */
         }
     }
@@ -196,32 +205,27 @@ TEST_CASE(an_alert_arriving_under_the_press_does_not_take_its_release)
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
 }
 
-/* ARM under the alert: the press is the alert's.  Held 3 s it starts no
- * hold and posts no ARM; its release closes the alert, and the next hold
- * arms. */
-TEST_CASE(arm_under_the_alert_starts_no_hold)
+/* ARM with an alert showing: the hold is ARM's, as without one, and the
+ * alert stays. */
+TEST_CASE(arm_beside_the_alert_holds_as_without_one)
 {
     sv_fresh();
     alert();
     finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
-    frames((int)(3.0f / FRAME_S));
-    CHECK_EQ(sv_took(), SERVO_CMD_NONE);
-    lift(FEED_LONE);
-    CHECK_EQ(sv_took(), SERVO_CMD_NONE);
-    CHECK(!alert_shows());
-    finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
     frames((int)(2.3f / FRAME_S));
     CHECK_EQ(sv_took(), SERVO_CMD_ARM);
     lift(FEED_LONE);
+    CHECK_EQ(sv_took(), SERVO_CMD_NONE);
+    CHECK(alert_shows());
 }
 
 /*
  * An ARM asked for and not yet answered -- refused by the IOmcu, or still
- * on its way -- leaves the button reading ARM, and a press there under the
- * alert is ARM's: it closes the alert and asks nothing.  There is nothing
- * to disarm.  An answer that arrives later makes the next press a DISARM.
+ * on its way -- leaves the button reading ARM, and a tap there is ARM's: a
+ * tap is no hold, and there is nothing to disarm.  An answer that arrives
+ * later makes the next press a DISARM.
  */
-TEST_CASE(an_arm_not_answered_is_no_disarm_under_the_alert)
+TEST_CASE(an_arm_not_answered_is_no_disarm)
 {
     sv_fresh();
     finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
@@ -231,22 +235,20 @@ TEST_CASE(an_arm_not_answered_is_no_disarm_under_the_alert)
     alert();
     feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_Y);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
-    CHECK(!alert_shows());
+    CHECK(alert_shows());
     servo_screen_set_armed(true);            /* the answer, late */
     sv_drain();
-    alert();
     feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_Y);
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
 }
 
-/* A tap on the alert away from any control that stops the bench closes the
- * alert and reaches no screen. */
-TEST_CASE(a_tap_on_the_alert_elsewhere_only_closes_it)
+/* A tap on the alert closes the alert and reaches no screen. */
+TEST_CASE(a_tap_on_the_alert_only_closes_it)
 {
     CHECK(sv_armed());
     alert();
     const uint32_t handed = ui_router_dispatched();
-    feed_tap(FEED_LONE, 100, 460);
+    feed_tap(FEED_LONE, 100, UI_ALERT_Y + UI_ALERT_H / 2);
     CHECK(!alert_shows());
     CHECK_EQ(ui_router_dispatched(), handed);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
@@ -255,10 +257,10 @@ TEST_CASE(a_tap_on_the_alert_elsewhere_only_closes_it)
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
 }
 
-/* A press on DISARM under the alert is DISARM's press like any other: one
- * that slides off and lifts away asks nothing, as with no alert, and one
- * that wanders over the button and lifts on it disarms. */
-TEST_CASE(a_disarm_press_under_the_alert_slides_as_without_one)
+/* A press on DISARM with an alert showing is DISARM's press like any
+ * other: one that slides off and lifts away asks nothing, and one that
+ * wanders over the button and lifts on it disarms. */
+TEST_CASE(a_disarm_press_beside_the_alert_slides_as_without_one)
 {
     CHECK(sv_armed());
     alert();
@@ -274,9 +276,9 @@ TEST_CASE(a_disarm_press_under_the_alert_slides_as_without_one)
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
 }
 
-/* Touch lost while a press on DISARM under the alert is down: the press
- * whose release went missing is a DISARM all the same. */
-TEST_CASE(touch_lost_under_a_disarm_press_through_the_alert_disarms)
+/* Touch lost while a press on DISARM is down: the press whose release went
+ * missing is a DISARM all the same. */
+TEST_CASE(touch_lost_under_a_disarm_press_disarms)
 {
     CHECK(sv_armed());
     alert();
@@ -335,16 +337,16 @@ TEST_CASE(servo_names_disarm_and_not_arm)
     CHECK(sv_armed());
     CHECK(scr->safe_at(SV_ARM_X, SV_ARM_Y - UI_BAND_H));
     CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_T - UI_BAND_H - 1));
-    CHECK(!scr->safe_at(556, 366));               /* CENTRE */
+    CHECK(!scr->safe_at(SV_CENTRE_X, SV_BTN_Y));  /* CENTRE */
     CHECK(!scr->safe_at(400, 216));               /* the dial */
     servo_screen_set_armed(false);
     CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_Y - UI_BAND_H));
     /* OUTPUT OFF while the output is on; OUTPUT ON is none. */
-    CHECK(!scr->safe_at(733, 237));
+    CHECK(!scr->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
     supply_screen_set_output(true);
-    CHECK(scr->safe_at(733, 237));
+    CHECK(scr->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
     supply_screen_set_output(false);
-    CHECK(!scr->safe_at(733, 237));
+    CHECK(!scr->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
 }
 
 /* ------------------------------------------------------------ MOTOR & ESC */
@@ -382,7 +384,7 @@ TEST_CASE(motor_disarm_acts_under_the_bubble_and_beside_the_alert)
 
     CHECK(mo_armed());
     alert();
-    feed_tap(FEED_LONE, MO_ARM_X, UI_ALERT_Y + 4);  /* RESET PEAKS */
+    feed_tap(FEED_LONE, MO_ARM_X, UI_ALERT_Y + 4);  /* RESET PEAKS, under it */
     CHECK_EQ(mo_took(), MOTOR_CMD_NONE);
     CHECK(!alert_shows());
     alert();
@@ -443,15 +445,16 @@ TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
 
 int main(void)
 {
-    RUN(disarm_under_the_alert_disarms_at_once);
-    RUN(disarm_under_the_alert_from_its_arrival_to_its_end);
+    RUN(disarm_ends_above_the_alert_band);
+    RUN(disarm_beside_the_alert_disarms_at_once);
+    RUN(disarm_beside_the_alert_from_its_arrival_to_its_end);
     RUN(disarm_at_the_alerts_edges);
     RUN(an_alert_arriving_under_the_press_does_not_take_its_release);
-    RUN(arm_under_the_alert_starts_no_hold);
-    RUN(an_arm_not_answered_is_no_disarm_under_the_alert);
-    RUN(a_tap_on_the_alert_elsewhere_only_closes_it);
-    RUN(a_disarm_press_under_the_alert_slides_as_without_one);
-    RUN(touch_lost_under_a_disarm_press_through_the_alert_disarms);
+    RUN(arm_beside_the_alert_holds_as_without_one);
+    RUN(an_arm_not_answered_is_no_disarm);
+    RUN(a_tap_on_the_alert_only_closes_it);
+    RUN(a_disarm_press_beside_the_alert_slides_as_without_one);
+    RUN(touch_lost_under_a_disarm_press_disarms);
     RUN(the_help_bubble_takes_no_disarm_and_starts_no_arm);
     RUN(servo_names_disarm_and_not_arm);
     RUN(motor_disarm_acts_under_the_bubble_and_beside_the_alert);
