@@ -436,6 +436,11 @@ jobs:
       - name: The image fits its update slot
         run: python3 tools/image_slot.py firmware/panel/build
 
+      # ldgen skips a mapping it cannot apply without a message; the linker
+      # map shows where the objects psram_bss.lf names are placed.
+      - name: The objects psram_bss.lf names are in PSRAM
+        run: python3 tools/psram_bss.py firmware/panel/build
+
       # The symbol target_add_binary_data() names the embedded image by.
       - name: The IOmcu image is carried
         run: |
@@ -475,6 +480,9 @@ jobs:
           target: esp32p4
           path: 'firmware/panel'
           command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF build
+
+      - name: The objects psram_bss.lf names are in PSRAM without the injector
+        run: python3 tools/psram_bss.py firmware/panel/build-noinject
 
       - name: The injector code is not in the build without it
         run: |

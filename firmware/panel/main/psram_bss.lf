@@ -1,22 +1,26 @@
-# The zero-initialised state of the screens and of the card and page
-# helpers, in PSRAM (pseudo-static random-access memory) instead of
-# internal RAM.
+# The zero-initialised state of the screens and of the card, page and
+# settings helpers, in PSRAM (pseudo-static random-access memory) instead
+# of internal RAM.
 #
 # SPDX-License-Identifier: MIT
 #
 # Internal RAM holds what must not live in PSRAM: interrupt handlers'
-# state, driver buffers and the FreeRTOS objects.  How much internal RAM
-# the panel uses on the ESP32-P4, and how much the radio's driver through
-# the ESP32-C6 will take, is not measured; no tool holds a budget for it.
+# state, driver buffers and the FreeRTOS objects.  The radio's driver runs
+# on the ESP32-C6; the internal RAM the panel leaves at run time is not
+# measured (docs/Performance.md, "Internal RAM").
 #
 # What moves is .bss only, object by object, and only an object whose state
 #
 # - no interrupt handler reads or writes: the panel's IRAM (instruction
 #   RAM) handlers are display.c's frame-done and VSYNC callbacks, and their
-#   state stays internal;
-# - no DMA (direct memory access) reads or writes: a DMA transfer from or
-#   to PSRAM needs the cache written back or invalidated around it, which
-#   the code that uses these objects does not do;
+#   state, display.c's s_disp, stays internal;
+# - no DMA (direct memory access) reads or writes without the cache written
+#   back or invalidated around the transfer.  The ESP32-P4 reaches internal
+#   RAM through the L1 cache as well, so this holds in either memory.  The
+#   one DMA path these objects reach is a card read or write through
+#   FatFs: ESP-IDF's SDMMC driver syncs the cache around each transfer
+#   (esp_driver_sdmmc/src/sdmmc_transaction.c) or moves the data through a
+#   buffer of its own;
 # - holds no atomic, spinlock, mutex or queue: those stay in internal RAM.
 #   Whether the ESP32-P4's atomic instructions work on PSRAM is not
 #   measured, and nothing here relies on it.
@@ -24,53 +28,81 @@
 # A flash write (OTA (over-the-air) update, NVS (non-volatile storage),
 # the drawing store) closes the cache, and PSRAM with it.  For its length
 # the writing task runs from IRAM and the other core waits in IRAM; no code
-# that reads these objects runs.
+# that reads these objects runs.  esp_flash_write() copies a source buffer
+# outside internal RAM to its stack, 32 bytes at a time, before it closes
+# the cache.
 #
-# CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY also puts in PSRAM the .bss
-# that ESP-IDF's own linker fragments name, lwIP's among them.
+# The scheme is this file's own.  ESP-IDF defines one of the same entries,
+# extram_bss, in esp_wifi/linker.lf, which the ESP32-P4 build does not take
+# in: the P4 has no radio of its own, and esp_wifi_remote gives the Wi-Fi
+# API.  ldgen skips a mapping whose scheme no fragment defines, and an
+# object the archive does not hold, without a message; the .bss then stays
+# internal.  tools/psram_bss.py reads the build's linker map, and CI fails
+# when a named object holds no .bss in .ext_ram.bss or keeps any in internal
+# RAM.  The same skip applies to ESP-IDF's own extram_bss entries for lwIP
+# and wpa_supplicant: on this build their .bss is in internal RAM.
+#
+# .sbss, the RISC-V small data of 8 bytes and less per variable, is not in
+# the bss section the scheme maps and stays internal.
+
+[scheme:rcbench_extram_bss]
+entries:
+    bss -> extern_ram
+    common -> extern_ram
 
 [mapping:rcbench_ui_psram]
 archive: libui.a
 entries:
-    log_viewer_screen (extram_bss)
-    servo_screen (extram_bss)
-    servo_screen_link (extram_bss)
-    ui_watermark (extram_bss)
-    supply_screen (extram_bss)
-    motor_screen (extram_bss)
-    motor_workbench (extram_bss)
-    motor_settings_page (extram_bss)
-    motor_program_page (extram_bss)
-    esc_stick_pages (extram_bss)
-    esc_stick_panel (extram_bss)
-    esc_stick_list (extram_bss)
-    esc_stick_draw (extram_bss)
-    esc_stick_draw_run (extram_bss)
-    kst_panel (extram_bss)
-    kst_panel_draw (extram_bss)
-    analyser_screen (extram_bss)
-    wifi_screen (extram_bss)
-    update_screen (extram_bss)
-    ui_band (extram_bss)
+    log_viewer_screen (rcbench_extram_bss)
+    servo_screen (rcbench_extram_bss)
+    servo_screen_link (rcbench_extram_bss)
+    ui_watermark (rcbench_extram_bss)
+    supply_screen (rcbench_extram_bss)
+    motor_screen (rcbench_extram_bss)
+    motor_workbench (rcbench_extram_bss)
+    motor_settings_page (rcbench_extram_bss)
+    motor_program_page (rcbench_extram_bss)
+    esc_stick_pages (rcbench_extram_bss)
+    esc_stick_panel (rcbench_extram_bss)
+    esc_stick_list (rcbench_extram_bss)
+    esc_stick_draw (rcbench_extram_bss)
+    esc_stick_draw_run (rcbench_extram_bss)
+    kst_panel (rcbench_extram_bss)
+    kst_panel_draw (rcbench_extram_bss)
+    analyser_screen (rcbench_extram_bss)
+    wifi_screen (rcbench_extram_bss)
+    update_screen (rcbench_extram_bss)
+    ui_band (rcbench_extram_bss)
+    splash_screen (rcbench_extram_bss)
+    ui_router (rcbench_extram_bss)
 
 [mapping:rcbench_bench_psram]
 archive: libbench.a
 entries:
-    kst_card (extram_bss)
+    kst_card (rcbench_extram_bss)
 
 [mapping:rcbench_logfile_psram]
 archive: liblogfile.a
 entries:
-    log_csv (extram_bss)
-    log_reader (extram_bss)
+    log_csv (rcbench_extram_bss)
 
 [mapping:rcbench_esc_psram]
 archive: libesc.a
 entries:
-    esc_registry (extram_bss)
+    esc_registry (rcbench_extram_bss)
 
 [mapping:rcbench_webaccess_psram]
 archive: libwebaccess.a
 entries:
-    wa_zip (extram_bss)
-    wa_page (extram_bss)
+    wa_zip (rcbench_extram_bss)
+    wa_page (rcbench_extram_bss)
+
+[mapping:rcbench_settings_psram]
+archive: libsettings.a
+entries:
+    settings (rcbench_extram_bss)
+
+[mapping:rcbench_outputs_psram]
+archive: liboutputs.a
+entries:
+    out_bind (rcbench_extram_bss)

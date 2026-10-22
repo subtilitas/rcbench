@@ -335,7 +335,7 @@ The ESP32-P4 has no radio. Wi-Fi runs on the ESP32-C6 of the 7-inch board,
 which the P4 reaches over SDIO (secure digital input output). The S3 build's
 estimate of the internal RAM the radio takes, 51,200 bytes of DMA-capable
 (direct memory access) internal RAM at `esp_wifi_init()`, does not apply to
-the P4. The internal RAM the P4 build leaves is not measured, and no tool or
+the P4. The internal RAM free at run time is not measured, and no tool or
 CI step estimates it. The panel prints the free memory at start-up:
 
 ```text
@@ -357,9 +357,23 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 `firmware/panel/main/psram_bss.lf` places the zero-initialised data (.bss)
-of the screens' large objects in PSRAM (pseudo-static random-access memory)
-and names each object. The sizes of those objects on the P4 build are not
-measured.
+of 29 objects in PSRAM (pseudo-static random-access memory): the screens'
+state and the card, page, settings and output helpers. The fragment names
+each object and the rules it meets. `tools/psram_bss.py` reads the build's
+linker map and fails CI when a named object keeps .bss in internal RAM.
+Static figures of the P4 build at ESP-IDF v5.5.5, from `idf.py size`:
+
+| Item | With the fragment | Without it |
+| --- | ---: | ---: |
+| .bss in internal RAM (DIRAM) | 29,408 | 195,880 |
+| .bss in PSRAM (`.ext_ram.bss`) | 166,472 | 0 |
+| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 126,882 | 293,354 |
+| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,151,376 | 2,151,376 |
+
+All figures are bytes. ESP-IDF's own PSRAM entries for lwIP (lightweight
+IP stack) and wpa_supplicant use a scheme that only `esp_wifi`'s fragment
+defines, which the P4 build does not include; lwIP's 3,551 bytes of .bss
+stay in internal RAM.
 
 ## Wi-Fi downloads
 
