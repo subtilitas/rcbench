@@ -22,9 +22,8 @@ von Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, 1024 x 600 Pixel, MIPI DSI
 - Der IOmcu, das IO-Board und der CAN-Link bleiben, wie sie sind.
 - Der Heartbeat-Pin und die Pins des Drehknopfs auf dem ESP32-P4-Board sind
   noch nicht festgelegt.
-- Die ESP32-P4-Arbeit liegt auf dem Branch
-  [`p4/redesign`](https://github.com/subtilitas/rcbench/tree/p4/redesign),
-  bis 0.22.0 getaggt ist.
+
+## Was rcbench ist
 
 Ein Motor-, ESC- (Electronic Speed Controller, Motorregler) und Servoprüfstand
 auf zwei Prozessoren: ein ESP32-S3-Touchpanel (Bedienoberfläche, Einstellungen,

@@ -22,9 +22,8 @@ DSI (Display Serial Interface), ESP32-C6 for Wi-Fi).
 - The IOmcu, the IO board and the CAN link stay as they are.
 - The heartbeat pin and the rotary knob pins on the ESP32-P4 board are not
   fixed yet.
-- The ESP32-P4 work is on the branch
-  [`p4/redesign`](https://github.com/subtilitas/rcbench/tree/p4/redesign)
-  until 0.22.0 is tagged.
+
+## What rcbench is
 
 A motor, ESC (electronic speed controller) and servo test bench on two
 processors: an ESP32-S3 touch panel (user interface, settings, SD card) and an
