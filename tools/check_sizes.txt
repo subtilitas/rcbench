@@ -20,6 +20,7 @@
 exclude hardware/research/* | the component research's run records, written by the research tool
 exclude *.json | data: drawings, anchors, profiles and the configurator's package lock
 exclude test/host/fixtures/* | recorded bench captures the host suite replays as they were taken
+exclude tools/doc_check_baseline.txt | data: the Doxygen warnings tools/doc_check.py --update writes and --check holds
 
 # What stays over 1,000 code lines after the plan.
 shared/bench/kst_prog.c | 1938 +-100 | row 7 moved the card and file parts out; the session engine stays one file
