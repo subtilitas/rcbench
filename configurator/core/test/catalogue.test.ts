@@ -836,42 +836,42 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
   );
 
   // A line that is present and holds another row: no text is named for it.
-  moved.functions[SERVO]!.src = at(762);
-  reports(checkSrc(moved, tree).findings, 'function.servo', /FirstRun\.md:762 names no text of 4 characters or more/);
-  reports(checkSrc(moved, null).findings, 'function.servo', /FirstRun\.md:762 names no text/);
+  moved.functions[SERVO]!.src = at(795);
+  reports(checkSrc(moved, tree).findings, 'function.servo', /FirstRun\.md:795 names no text of 4 characters or more/);
+  reports(checkSrc(moved, null).findings, 'function.servo', /FirstRun\.md:795 names no text/);
   reports(checkAll(moved, tree, true).findings, 'function.servo', /names no text/);
 
   // A named text that the line does not hold.
-  const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 762, has: '| SDA | GP16 (pad 21) |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:762 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.22\.0/);
+  const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 795, has: '| SDA | GP16 (pad 21) |' }];
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:795 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.22\.1/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
 
   // Every text named for the line is compared.
   const rows = fakeTree(CATALOGUE, (files) => {
-    lines(files, 'docs/FirstRun.md')[761] = '|  INA3221 power |   3V3 (pad 36), GND |';
+    lines(files, 'docs/FirstRun.md')[794] = '|  INA3221 power |   3V3 (pad 36), GND |';
   });
-  const power = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 762, has: '| INA3221 power | 3V3' }];
+  const power = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 795, has: '| INA3221 power | 3V3' }];
   assert.deepEqual(checkSrc(moved, rows, power).findings, []);
   reports(checkSrc(moved, rows, [...power, ...wrong]).findings, 'function.servo', /does not hold "\| SDA/);
 
   // A text under the shortest length names nothing.
   assert.equal(ANCHOR_TEXT_MIN, 4);
-  const short = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 762, has: ' |  I ' }];
+  const short = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 795, has: ' |  I ' }];
   reports(checkSrc(moved, rows, short).findings, 'function.servo', /names no text/);
-  const none = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 762 } as { path: string; line: number; has: string }];
+  const none = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 795 } as { path: string; line: number; has: string }];
   reports(checkSrc(moved, rows, none).findings, 'function.servo', /names no text/);
 
   // A row of the data moved off its line in the tree.
   const shifted = fakeTree(CATALOGUE, (files) => {
     const doc = lines(files, 'docs/FirstRun.md');
-    doc.splice(761, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
+    doc.splice(794, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'wire.26', /FirstRun\.md:763 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
-  reports(found, 'wire.27', /FirstRun\.md:764 does not hold/);
-  reports(found, 'check.ina3221-pullups', /FirstRun\.md:765 does not hold/);
+  reports(found, 'wire.26', /FirstRun\.md:796 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
+  reports(found, 'wire.27', /FirstRun\.md:797 does not hold/);
+  reports(found, 'check.ina3221-pullups', /FirstRun\.md:798 does not hold/);
 });
 
 test('src: every repository anchor of the data names a text of its own', () => {
@@ -882,14 +882,14 @@ test('src: every repository anchor of the data names a text of its own', () => {
     assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
     assert.ok(Object.isFrozen(text));
   }
-  // The sensor bus rows of docs/FirstRun.md at the tag: 763 SDA, 764 SCL,
-  // 765 the pull-ups.
+  // The sensor bus rows of docs/FirstRun.md at the tag: 796 SDA, 797 SCL,
+  // 798 the pull-ups.
   const sda = CATALOGUE.wires.find((w) => w.n === 26)?.src;
   const scl = CATALOGUE.wires.find((w) => w.n === 27)?.src;
-  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 763, tag: TAG });
-  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 764, tag: TAG });
+  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 796, tag: TAG });
+  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 797, tag: TAG });
   const pullups = CATALOGUE.checks.find((k) => k.id === 'ina3221-pullups')?.src;
-  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 765, tag: TAG });
+  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 798, tag: TAG });
   // The AS5600 board's OUT and GPO have no repository source at the tag:
   // docs/Building.md describes the panel's knob, an MT6701, since 0.21.0.
   const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
