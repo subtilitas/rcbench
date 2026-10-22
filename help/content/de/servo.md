@@ -163,9 +163,11 @@ Die Suche geht von der Mitte nach außen, zuerst die untere Seite, 10 us je Schr
 
 Die Lesesitzung hält das Servo auf PULS MITTE, schaltet den Prüfstand auf SAFE, liest das Servo mit VERBINDEN, gibt den Port mit VERLASSEN zurück und schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert. Der Lauf endet vor jeder Suche als NICHT BESTANDEN, wenn:
 
-- das Lesen scheitert (`kein KST- oder Chaservo-Servo` oder `Programmierport ohne Abschluss`): ein Servo, das kein KST oder Chaservo ist, an einem SERVO-PWM-Pin suchen;
+- kein KST- oder Chaservo-Servo gelesen wird (`kein KST- oder Chaservo-Servo`): ein Servo, das kein KST oder Chaservo ist, an einem SERVO-PWM-Pin suchen;
 - NEUTRAL nicht zwischen PULSE LOWER und PULSE UPPER liegt (`NEUTRAL außerhalb LOWER/UPPER`);
 - PULSE LOWER bis PULSE UPPER nicht innerhalb von PULS MIN bis PULS MAX liegt (`Servopulse außerhalb MIN/MAX`). Der Prüfstand bleibt SAFE, und der Kasten nennt beide Bereiche.
+
+Ein erstes VERBINDEN, das aus einem anderen Grund scheitert, oder ein Lesen, das nicht abschließt, beendet den Lauf als ABGEBROCHEN mit `PROG-PORT-Sitzung gescheitert`.
 
 ![Die Pulse des Servos außerhalb von PULS MIN und PULS MAX](view:servo-limrun-range)
 
@@ -175,7 +177,7 @@ SERVOPULSE auf 1000-2000 schreibt in der Lesesitzung PULSE LOWER 1000,0 us und P
 
 ### LEFT ANGLE und RIGHT ANGLE programmieren
 
-SUCHEN + PROGRAMMIEREN braucht ein KST- oder Chaservo-Servo am Programmierport: ZIEL auf PROG-PORT, den Port in PWM und 4,8 V oder mehr. Mit einem PD mini muss dessen Ausgang eingeschaltet sein, und sein Sollwert zählt; ohne ihn zählt die Servoschiene im letzten Fenster des INA3221. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und der Hinweis in den Optionen nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung: ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8 V hält die Schaltfläche auch für NUR SUCHE grau, und die Zustandszeile der Karte nennt die Bedingung.
+SUCHEN + PROGRAMMIEREN braucht ein KST- oder Chaservo-Servo am Programmierport: ZIEL auf PROG-PORT, den Port in PWM und 4,8 V oder mehr. Mit einem PD mini muss dessen Ausgang eingeschaltet sein, und sein Sollwert zählt; ohne ihn zählt die Servoschiene im letzten Fenster des INA3221. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und der Hinweis in den Optionen nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung, auch NUR SUCHE, und sie braucht ein KST- oder Chaservo-Servo: bei einem anderen Servo endet der Lauf mit `kein KST- oder Chaservo-Servo`. Ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8 V hält die Schaltfläche auch für NUR SUCHE grau, und die Zustandszeile der Karte nennt die Bedingung.
 
 ![Der Endlagenlauf beim Programmieren](view:servo-limrun)
 

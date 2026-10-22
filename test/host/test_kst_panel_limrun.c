@@ -8,6 +8,8 @@
  */
 #include "kst_panel_rig.h"
 #include "settings_sensors.h"
+/* kst_prog_say(): the test plants a message the programmer said earlier. */
+#include "../../shared/bench/kst_prog_int.h"
 
 /* ------------------------------------------------- the SERVO screen's limit run */
 
@@ -340,6 +342,100 @@ TEST_CASE(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max)
         CHECK(memcmp(was.r, now.r, sizeof(was.r)) == 0);
     }
     CHECK_EQ(lr.cmd, 1500u);
+}
+
+static void lr_pd_reading(bool on);
+
+/* SEARCH ONLY on a servo that nothing answers on the programming port, a
+ * Hitec servo for one: the first CONNECT finds no servo, and the run ends
+ * as FAIL with the reason of a read that is no KST or Chaservo servo, in
+ * both languages, and not with the session's failure.  Nothing is driven
+ * or written.  With a PD mini feeding the port the run's LEAVE keeps its
+ * output on: no supply is asked off. */
+TEST_CASE(a_limit_run_on_a_servo_that_does_not_answer_names_the_missing_kst_servo)
+{
+    for (int pd = 0; pd < 2; ++pd) {
+        for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+            lr_fresh(false);
+            ui_text_set_language((ui_lang_t)lang);
+            g_rig.sim.powered = false;
+            if (pd != 0) {
+                g_rig.rail = true;
+                lr_pd_reading(true);
+                lr_ms(200u);
+            }
+            lr_hold_start();
+            CHECK(servo_screen_limit_running());
+            lr_run_out();
+            CHECK(!servo_screen_limit_running());
+            CHECK(strstr(lr.report, servo_str_in(ui_servo_table(),
+                                                 SERVO_STR_L_WHY_NOT_KST))
+                  != NULL);
+            CHECK(strstr(lr.report, servo_str_in(ui_servo_table(),
+                                                 SERVO_STR_L_WHY_PROG))
+                  == NULL);
+            CHECK(strstr(lr.report, "Searched:") == NULL);
+            CHECK(!kst_panel_holds_port());
+            CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+            CHECK_EQ(g_rig.fc.saves, 0u);
+            CHECK_EQ(lr.cmd, 1500u);
+            if (pd != 0) {
+                CHECK(g_rig.sup_on);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* A NO_SERVO the programmer's screen left stands when the port is back in
+ * PWM (a supply gone off, STOP).  A CONNECT of a run that fails with no
+ * message of its own is no missing servo: the old message is not this
+ * CONNECT's, while a NO_SERVO said during it is. */
+TEST_CASE(a_no_servo_message_from_before_is_not_the_connects)
+{
+    const unsigned no_servo = KST_PROG_MSG_SES + KST_SES_ERR_NO_SERVO;
+
+    fresh();
+    link_up();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    (void)kst_prog_say(M, no_servo, 0u);
+    CHECK_EQ(msg(), no_servo);
+
+    kst_panel_run_begin();
+    CHECK_EQ(kst_panel_run_connect(false, 0u, 0u), KST_PROG_MSG_NONE);
+    /* The message stands, and it is older than the CONNECT: a step that
+     * ends with nothing new said is no missing servo. */
+    CHECK_EQ(msg(), no_servo);
+    CHECK(!kst_panel_run_no_servo());
+
+    /* The same message said after the CONNECT is its own. */
+    (void)kst_prog_say(M, no_servo, 0u);
+    CHECK(kst_panel_run_no_servo());
+}
+
+/* The same run where the wire's driver refuses the CONNECT's frames: a
+ * failure of the first CONNECT that is not a missing servo is the
+ * session's, in both languages. */
+TEST_CASE(a_limit_run_whose_first_connect_fails_otherwise_names_the_session)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        lr_fresh(false);
+        ui_text_set_language((ui_lang_t)lang);
+        sim_add_fault(&g_rig.sim, SIM_ANY, -1, 0, 1000, SIM_F_START_FAIL, 0);
+        lr_hold_start();
+        CHECK(servo_screen_limit_running());
+        lr_run_out();
+        CHECK(!servo_screen_limit_running());
+        CHECK(!kst_panel_run_no_servo());
+        CHECK(strstr(lr.report, servo_str_in(ui_servo_table(),
+                                             SERVO_STR_L_WHY_PROG)) != NULL);
+        CHECK(strstr(lr.report, servo_str_in(ui_servo_table(),
+                                             SERVO_STR_L_WHY_NOT_KST))
+              == NULL);
+        CHECK(!kst_panel_holds_port());
+        CHECK_EQ(g_rig.fc.saves, 0u);
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 /* A run that ends inside a session gives the port back with a LEAVE and
@@ -772,6 +868,9 @@ int main(void)
 {
     RUN(a_limit_run_programs_the_servo_on_the_programming_port);
     RUN(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max);
+    RUN(a_limit_run_on_a_servo_that_does_not_answer_names_the_missing_kst_servo);
+    RUN(a_limit_run_whose_first_connect_fails_otherwise_names_the_session);
+    RUN(a_no_servo_message_from_before_is_not_the_connects);
     RUN(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave);
     RUN(a_run_on_the_programming_port_needs_4_8_v_on_the_rail);
     RUN(a_run_on_the_programming_port_needs_the_pd_mini_on);

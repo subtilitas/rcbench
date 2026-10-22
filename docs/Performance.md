@@ -399,7 +399,7 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
-164,080 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+164,088 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
@@ -413,7 +413,7 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
 | `motor_screen` | ui | 20,088 |
 | `kst_card` | bench | 6,208 |
 | `esc_stick_panel` | ui | 6,096 |
-| `kst_panel` | ui | 5,185 |
+| `kst_panel` | ui | 5,193 |
 | `log_csv` | logfile | 4,904 |
 | `esc_registry` | esc | 4,228 |
 | `analyser_screen` | ui | 4,036 |
