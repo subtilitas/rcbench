@@ -1,7 +1,8 @@
-/*
- * The SUPPLY page and the PD mini behind it, and the current monitors'
- * pages SENSE, SERVO_SENSE and SERVO_WIN, which core 1 reads the parts
- * for; see iomcu.h for the other files.
+/**
+ * @file
+ * @brief The SUPPLY page and the PD mini behind it, and the current
+ * monitors' pages SENSE, SERVO_SENSE and SERVO_WIN, which core 1 reads the
+ * parts for; see iomcu.h for the other files.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -29,9 +30,8 @@ void capabilities_update(void)
 }
 
 /*
- * The supply's pins: reserved from the outputs while it holds them, and the
- * PIO UART claimed for them.  False when no PIO block can reach them or has
- * room.
+ * The supply's pins: reserved from the outputs while it holds them, and the PIO
+ * UART claimed for them.  False when no PIO block can reach them or has room.
  */
 bool supply_rewire(void)
 {

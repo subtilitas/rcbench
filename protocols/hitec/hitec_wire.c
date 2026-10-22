@@ -1,6 +1,9 @@
-/*
- * Hitec servo programming protocols: frames, transactions and the reply
- * decoders.  See include/hitec_wire.h.
+/**
+ * @file
+ * @brief Hitec servo programming protocols: frames, transactions and the reply
+ *        decoders.
+ *
+ * See include/hitec_wire.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -114,6 +117,10 @@ bool hitec_xfer_valid(const hitec_xfer_t *x)
     }
 }
 
+/**
+ * @brief Set up a SEND transaction with the given bytes and no receive window.
+ *
+ */
 static void send_xfer(uint8_t family, const uint8_t *bytes, uint8_t n,
                       hitec_xfer_t *out)
 {
@@ -221,8 +228,11 @@ bool hitec_c_expect_of(uint8_t cmd, hitec_c_expect_t *out)
     return true;
 }
 
-/* The checks every decoder starts with.  HITEC_RX_OK when the capture holds
- * at least one byte to look at. */
+/**
+ * @brief The checks every decoder starts with.
+ *
+ * HITEC_RX_OK when the capture holds at least one byte to look at.
+ */
 static hitec_rx_t common_checks(const hitec_capture_t *cap,
                                 hitec_reply_t *out)
 {
@@ -239,7 +249,7 @@ static hitec_rx_t common_checks(const hitec_capture_t *cap,
     return HITEC_RX_OK;
 }
 
-/* @p half half bit times of @p family in ns, rounded to nearest. */
+/** @brief @p half half bit times of @p family in ns, rounded to nearest. */
 static uint32_t half_bits_ns(uint8_t family, uint32_t half)
 {
     const uint32_t rate = hitec_bit_rate(family);
@@ -247,7 +257,10 @@ static uint32_t half_bits_ns(uint8_t family, uint32_t half)
     return (uint32_t)(((uint64_t)half * 1000000000u + rate) / (2ull * rate));
 }
 
-/* Bytes 1 to @p n - 1 each start 9.5 to 15 bit times after the one before. */
+/**
+ * @brief Bytes 1 to @p n - 1 each start 9.5 to 15 bit times after the one
+ *        before.
+ */
 static bool gaps_ok(const hitec_capture_t *cap, unsigned n)
 {
     const uint32_t lo = half_bits_ns(cap->family, HITEC_NEXT_MIN_HALF_BITS);
@@ -264,6 +277,10 @@ static bool gaps_ok(const hitec_capture_t *cap, unsigned n)
     return true;
 }
 
+/**
+ * @brief Check that the first n bytes of a capture have no bad stop bit.
+ *
+ */
 static bool framing_ok(const hitec_capture_t *cap, unsigned n)
 {
     for (unsigned i = 0; i < n; ++i) {

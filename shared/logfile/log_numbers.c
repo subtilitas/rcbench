@@ -1,5 +1,6 @@
-/*
- * Turning a text cell into a number, when "1,024" might be either.
+/**
+ * @file
+ * @brief Turning a text cell into a number, when "1,024" might be either.
  *
  * The hard problem in a locale-blind log reader is not splitting rows, it is
  * the decimal point: "1,024" is a thousand-and-twenty-four to an English
@@ -26,12 +27,12 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-
 /* ------------------------------------------------------------- scanning --- */
 
-/*
- * Two character classes that overlap, and the overlap is the whole reason this
- * is written by hand rather than with strtod():
+
+/**
+ * @brief Two character classes that overlap, and the overlap is the whole
+ *        reason this is written by hand rather than with strtod():
  *
  *   grouping-only  ' '  '\''  U+00A0  U+202F   -- never a decimal point
  *   whitespace     ASCII space and friends, plus U+00A0 and U+202F
@@ -40,8 +41,10 @@
  * with a unit.  What separates them is that the numeric body must end on a
  * digit: the scanner remembers where the last digit was and hands everything
  * after it to the unit.
+ *
+ * @param p  The text at the position.
+ * @return 1 for ASCII space or apostrophe, 2 for U+00A0, 3 for U+202F, else 0.
  */
-
 static int grouping_len(const char *p)
 {
     if (*p == ' ' || *p == '\'') {
@@ -57,6 +60,12 @@ static int grouping_len(const char *p)
     return 0;
 }
 
+/**
+ * @brief Length of a white-space character at a position.
+ *
+ * @param p  The text at the position.
+ * @return The byte length of the character, or 0 when it is not white space.
+ */
 static int space_len(const char *p)
 {
     if (*p != '\0' && *p != '\'' && isspace((unsigned char)*p)) {
@@ -72,6 +81,12 @@ static int space_len(const char *p)
     return 0;
 }
 
+/**
+ * @brief Skip white-space characters.
+ *
+ * @param p  The text.
+ * @return The first position that is not white space.
+ */
 static const char *skip_space(const char *p)
 {
     int n;
@@ -81,7 +96,15 @@ static const char *skip_space(const char *p)
     return p;
 }
 
-/* Copy [begin, end) into out, dropping grouping-only characters. */
+/**
+ * @brief Copy [begin, end) into out, dropping grouping-only characters.
+ *
+ * @param begin     First byte of the body.
+ * @param end       One past the last byte of the body.
+ * @param out       Receives the digits, NUL-terminated.
+ * @param out_size  Size of @p out, bytes.
+ * @return true when at least one byte was copied and it fits.
+ */
 static bool copy_digits(const char *begin, const char *end, char *out,
                         size_t out_size)
 {
@@ -101,13 +124,18 @@ static bool copy_digits(const char *begin, const char *end, char *out,
     return n > 0;
 }
 
-/* Truncate without splitting a UTF-8 sequence: half a ° is worse than none. */
-/*
+/**
+ * @brief Truncate without splitting a UTF-8 sequence: half a ° is worse than
+ *        none.
+ *
  * What is left after the numeric body, read as a unit.  A trailing decimal
  * separator belongs to the number ("1500," is 1500), and a residual carrying
  * a ':' or a signed number is the tail of something the scan stopped inside:
  * a clock time, an ISO 8601 date, a hyphenated part number.  Those are not
  * numbers with units, and accepting them makes a whole column look numeric.
+ *
+ * @param p  The text after the numeric body.
+ * @return The position of the unit text.
  */
 static const char *unit_begin(const char *p)
 {
@@ -117,6 +145,17 @@ static const char *unit_begin(const char *p)
     return p;
 }
 
+/**
+ * @brief Whether a unit text can be a unit.
+ *
+ * What is left after the numeric body, read as a unit.  A residual carrying
+ * a ':' or a signed number is the tail of something the scan stopped inside:
+ * a clock time, an ISO 8601 date, a hyphenated part number.  Those are not
+ * numbers with units, and accepting them makes a whole column look numeric.
+ *
+ * @param p  The unit text.
+ * @return false when the text holds a ':' or a sign before a digit.
+ */
 static bool unit_is_plausible(const char *p)
 {
     for (; *p != '\0'; ++p) {
@@ -130,6 +169,17 @@ static bool unit_is_plausible(const char *p)
     return true;
 }
 
+/**
+ * @brief Copy a range without surrounding white space.
+ *
+ * Truncate without splitting a UTF-8 sequence: half a degree sign is worse
+ * than none.
+ *
+ * @param begin     First byte of the range.
+ * @param end       One past the last byte of the range.
+ * @param out       Receives the text, NUL-terminated.
+ * @param out_size  Size of @p out, bytes.
+ */
 static void copy_trimmed(const char *begin, const char *end, char *out,
                          size_t out_size)
 {
@@ -238,11 +288,17 @@ bool log_split_value(const char *raw, log_value_t *out)
     copy_trimmed(p, p + strlen(p), out->unit, sizeof(out->unit));
     return true;
 }
-
 /* ------------------------------------------------------------- evidence --- */
 
-/* The integer part, read as a thousands group: 1-3 digits and no leading zero
- * (a bare "0" cannot be followed by a group either). */
+
+/**
+ * @brief The integer part, read as a thousands group: 1-3 digits and no leading
+ *        zero (a bare "0" cannot be followed by a group either).
+ *
+ * @param digits  Numeric text as log_split_value() gives it.
+ * @param sep     The separator that groups.
+ * @return true when the integer part is 1 to 3 digits without a leading zero.
+ */
 static bool leading_group_is_legal(const char *digits, char sep)
 {
     const char *end = strchr(digits, sep);
@@ -253,8 +309,14 @@ static bool leading_group_is_legal(const char *digits, char sep)
     return digits[0] != '0';
 }
 
-/* Every group of a repeated separator: leading 1-3 digits, the rest exactly
- * three, digits throughout. */
+/**
+ * @brief Every group of a repeated separator: leading 1-3 digits, the rest
+ *        exactly three, digits throughout.
+ *
+ * @param digits  Numeric text as log_split_value() gives it.
+ * @param sep     The separator that groups.
+ * @return true when the groups are legal.
+ */
 static bool grouping_is_legal(const char *digits, char sep)
 {
     if (!leading_group_is_legal(digits, sep)) {
@@ -395,9 +457,18 @@ log_conv_t log_votes_result(const log_votes_t *v, log_ambig_t fallback,
     }
     return conv;
 }
-
 /* ---------------------------------------------------------------- parse --- */
 
+
+
+
+/**
+ * @brief Whether a range holds only digits and is not empty.
+ *
+ * @param begin  First byte of the range.
+ * @param end    One past the last byte of the range.
+ * @return true when the range is non-empty and every byte is a digit.
+ */
 static bool all_digits(const char *begin, const char *end)
 {
     if (begin >= end) {
@@ -600,9 +671,12 @@ void log_unit_dominant(const log_unit_tally_t *t, char *out, size_t out_size,
     }
 }
 
-/* Units accepted after a space, e.g. "altitude m".  A list rather than a
- * shape test, because "power output" also has the shape of a name followed by
- * a short word. */
+/**
+ * @brief Units accepted after a space, e.g. "altitude m".
+ *
+ * A list rather than a shape test, because "power output" also has the shape of
+ * a name followed by a short word.
+ */
 static const char *const k_bare_units[] = {
     "m", "km", "cm", "mm", "s", "ms", "us", "min", "h", "A", "mA", "V", "mV",
     "W", "kW", "Wh", "mAh", "Hz", "kHz", "rpm", "g", "kg", "N", "Pa", "hPa",
@@ -614,6 +688,13 @@ static const char *const k_bare_units[] = {
     "deg/s",
 };
 
+/**
+ * @brief Compare two strings without regard to case.
+ *
+ * @param a  The first string.
+ * @param b  The second string.
+ * @return true when the strings are equal without regard to case.
+ */
 static bool ieq(const char *a, const char *b)
 {
     while (*a != '\0' && *b != '\0') {
@@ -626,6 +707,12 @@ static bool ieq(const char *a, const char *b)
     return *a == *b;
 }
 
+/**
+ * @brief Whether a text is a unit in the bare unit list.
+ *
+ * @param s  The text.
+ * @return true when @p s is in k_bare_units, in any case.
+ */
 static bool is_bare_unit(const char *s)
 {
     for (size_t i = 0; i < sizeof(k_bare_units) / sizeof(k_bare_units[0]); ++i) {
@@ -636,6 +723,14 @@ static bool is_bare_unit(const char *s)
     return false;
 }
 
+/**
+ * @brief Copy a range, cut without splitting a UTF-8 sequence.
+ *
+ * @param begin     First byte of the range.
+ * @param end       One past the last byte of the range.
+ * @param out       Receives the text, NUL-terminated.
+ * @param out_size  Size of @p out, bytes.
+ */
 static void copy_range(const char *begin, const char *end, char *out,
                        size_t out_size)
 {
@@ -747,7 +842,9 @@ void log_unit_from_header(const char *header, char *name, size_t name_size,
     copy_range(s, e, name, name_size);
 }
 
-/* Seconds per unit for the time units an exporter is likely to write. */
+/**
+ * @brief Seconds per unit for the time units an exporter is likely to write.
+ */
 static const struct {
     const char *name;
     double scale;

@@ -1,5 +1,8 @@
-/*
- * The bench log's columns per watched target.  See log_cols.h.
+/**
+ * @file
+ * @brief The bench log's columns per watched target.
+ *
+ * See log_cols.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,7 +12,14 @@
 #include <stdio.h>
 #include <string.h>
 
-/* What WATCH value @p w names, into @p out; false for none. */
+/**
+ * @brief What WATCH value @p w names, into @p out; false for none.
+ *
+ * @param w   The WATCH value.
+ * @param out Receives the name.
+ * @param n   The size of out, in bytes.
+ * @return true when w names a target; false for none.
+ */
 static bool target_name(uint16_t w, char *out, size_t n)
 {
     if (w >= LINK_SM_WATCH_OUT(0) && w <= LINK_SM_WATCH_OUT(7)) {
@@ -28,7 +38,13 @@ static bool target_name(uint16_t w, char *out, size_t n)
     return false;
 }
 
-/* Whether channel @p c of @p map reads something it names. */
+/**
+ * @brief Whether channel @p c of @p map reads something it names.
+ *
+ * @param map The SENSE_MAP registers.
+ * @param c   The channel.
+ * @return true when the channel is logged.
+ */
 static bool logged(const uint16_t *map, unsigned c)
 {
     char name[LOG_COL_NAME_MAX];

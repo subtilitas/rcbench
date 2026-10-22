@@ -1,5 +1,8 @@
-/*
- * The TONE link page.  See tone_page.h.
+/**
+ * @file
+ * @brief The TONE link page.
+ *
+ * See tone_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -10,7 +13,7 @@
 
 #include "link_msg.h"
 
-/* The beep numbers: 1 to 65535, then 1 again. */
+/** @brief The beep numbers: 1 to 65535, then 1 again. */
 #define SEQ_PERIOD 65535u
 
 void tone_page_defaults(uint16_t *cfg)
@@ -56,19 +59,36 @@ uint64_t tone_page_pins(const tone_page_t *p)
     return tone_page_wanted(p) ? ((uint64_t)1u << p->cfg[LINK_TN_PIN]) : 0u;
 }
 
-/* The pins that are ADC inputs on either part the image may run on: GP26 to
- * GP29 of the RP2350A, GP40 to GP47 of the RP2354B.  Rated IOVDD + 0.5 V,
- * not fault tolerant. */
+/**
+ * @brief The pins that are ADC inputs on either part the image may run on:
+ *        GP26 to GP29 of the RP2350A, GP40 to GP47 of the RP2354B.
+ *
+ * Rated IOVDD + 0.5 V, not fault tolerant.
+ *
+ * @param pin GPIO number.
+ * @return true for an ADC pin, false otherwise.
+ */
 static bool adc_pin(uint16_t pin)
 {
     return (pin >= 26u && pin <= 29u) || (pin >= 40u && pin <= 47u);
 }
 
-/* Why @p pin may not carry the tap, as the NACK says it, or 0 when it may.
+/**
+ * @brief Why @p pin may not carry the tap, as the NACK says it, or 0 when it
+ *        may.
+ *
  * BAD_VALUE for a pin no binding frees: past the bank, an ADC pin, or one
  * the board reserves.  BUSY for a pin something the panel sets up holds:
  * another page's (@p taken), or an output's.  The tap's own pin is not
- * reserved against it. */
+ * reserved against it.
+ *
+ * @param p The page state, for the tap's own pin.
+ * @param o The outputs bank.
+ * @param pin GPIO number to judge.
+ * @param taken Mask of the pins other pages hold, bit n for GPn.
+ * @return 0 when the pin may carry the tap. LINK_NACK_BAD_VALUE or
+ *         LINK_NACK_BUSY as described above.
+ */
 static uint8_t pin_refusal(const tone_page_t *p, const outputs_t *o,
                            uint16_t pin, uint64_t taken)
 {
@@ -91,6 +111,15 @@ static uint8_t pin_refusal(const tone_page_t *p, const outputs_t *o,
     return 0u;
 }
 
+/**
+ * @brief Whether @p pin passes pin_refusal() for the tap.
+ *
+ * @param p The page state.
+ * @param o The outputs bank.
+ * @param pin GPIO number to judge.
+ * @param taken Mask of the pins other pages hold.
+ * @return true when pin_refusal() returns 0, false otherwise.
+ */
 static bool pin_free(const tone_page_t *p, const outputs_t *o, uint16_t pin,
                      uint64_t taken)
 {
@@ -103,10 +132,19 @@ bool tone_page_pin_free(const tone_page_t *p, const outputs_t *o,
     return p != NULL && o != NULL && pin_free(p, o, p->cfg[LINK_TN_PIN], taken);
 }
 
-/* The values themselves, whatever is enabled: a set-up kept in flash is one
- * a later enable can take without another write.  The detector's own
- * verdict is the last word: tone_init() refuses a gap shorter than the
- * lowest tone's period and any range the tick clock cannot resolve. */
+/**
+ * @brief The values themselves, whatever is enabled: a set-up kept in flash is
+ *        one a later enable can take without another write.
+ *
+ * The detector's own verdict is the last word: tone_init() refuses a gap
+ * shorter than the lowest tone's period and any range the tick clock cannot
+ * resolve.
+ *
+ * @param p The page state; its scratch detector is set by tone_init().
+ * @param c The set-up to judge, LINK_TN_CONFIG_COUNT registers.
+ * @return true when every register is in range, register 7 is 0 and
+ *         tone_init() accepts the set-up, false otherwise.
+ */
 static bool values_ok(tone_page_t *p, const uint16_t *c)
 {
     if (c[LINK_TN_ENABLE] > LINK_TN_EN_TAP || c[LINK_TN_PIN] > OUT_MAX_PIN
@@ -134,9 +172,14 @@ static bool values_ok(tone_page_t *p, const uint16_t *c)
     return tone_init(&p->scratch, &cfg);
 }
 
-/* A new set-up: what core 1 said under the old one is gone, so no read
- * shows a tone or a flag before core 1 has run under the new one.  The
- * ring and the counters are the capture's and stay. */
+/**
+ * @brief A new set-up: what core 1 said under the old one is gone, so no read
+ *        shows a tone or a flag before core 1 has run under the new one.
+ *
+ * The ring and the counters are the capture's and stay.
+ *
+ * @param p The page state. The status and window fields are cleared.
+ */
 static void forget_status(tone_page_t *p)
 {
     p->running = false;
@@ -353,13 +396,24 @@ void tone_page_dropped(tone_page_t *p, uint32_t n)
     }
 }
 
-/* Beep index @p i (a count from 1) as the number the wire carries. */
+/**
+ * @brief Beep index @p i (a count from 1) as the number the wire carries.
+ *
+ * @param i Beep count, from 1 for the first beep.
+ * @return The wire number, 1 to SEQ_PERIOD, or 0 for @p i of 0.
+ */
 static uint16_t seq_of(uint64_t i)
 {
     return i == 0u ? 0u : (uint16_t)((i - 1u) % SEQ_PERIOD + 1u);
 }
 
-/* The ring's entry for beep number @p sel, or NULL if it is not there. */
+/**
+ * @brief The ring's entry for beep number @p sel, or NULL if it is not there.
+ *
+ * @param p The page state, read only.
+ * @param sel Wire beep number, as EVT_SEL carries it.
+ * @return The ring entry, or NULL for @p sel of 0 or a beep not in the ring.
+ */
 static const tone_rec_t *find(const tone_page_t *p, uint16_t sel)
 {
     if (sel == 0u) {

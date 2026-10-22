@@ -1,7 +1,8 @@
-/*
- * The CSV reader's byte layer: the sources behind the read/rewind function
- * pointers, the row splitter that handles quoting and line endings, and the
- * delimiter sniffer.
+/**
+ * @file
+ * @brief The CSV reader's byte layer: the sources behind the read/rewind
+ *        function pointers, the row splitter that handles quoting and line
+ *        endings, and the delimiter sniffer.
  *
  * A source is a string in memory (tests, the sniff sample) or a stdio file
  * (the card); the row splitter reads either through log_source_t and never
@@ -18,9 +19,20 @@
 
 #include "log_csv.h"
 #include "log_csv_int.h"
-
 /* -------------------------------------------------------------- source --- */
 
+
+/* -------------------------------------------------------------- source */
+
+
+/**
+ * @brief Read from a memory source.
+ *
+ * @param ctx  The log_mem_ctx_t.
+ * @param buf  Receives the bytes.
+ * @param max  Capacity of @p buf, bytes.
+ * @return Bytes copied; 0 at the end of the text.
+ */
 static size_t mem_read(void *ctx, char *buf, size_t max)
 {
     log_mem_ctx_t *m = (log_mem_ctx_t *)ctx;
@@ -33,18 +45,38 @@ static size_t mem_read(void *ctx, char *buf, size_t max)
     return n;
 }
 
+/**
+ * @brief Rewind a memory source to its start.
+ *
+ * @param ctx  The log_mem_ctx_t.
+ * @return true, always.
+ */
 static bool mem_rewind(void *ctx)
 {
     ((log_mem_ctx_t *)ctx)->pos = 0;
     return true;
 }
 
+/**
+ * @brief Length of a memory source.
+ *
+ * @param ctx    The log_mem_ctx_t.
+ * @param bytes  Receives the length, bytes.
+ * @return true, always.
+ */
 static bool mem_size(void *ctx, size_t *bytes)
 {
     *bytes = ((log_mem_ctx_t *)ctx)->len;
     return true;
 }
 
+/**
+ * @brief Move a memory source's read position.
+ *
+ * @param ctx     The log_mem_ctx_t.
+ * @param offset  New position, bytes from the start.
+ * @return false when @p offset is past the end.
+ */
 static bool mem_seek(void *ctx, size_t offset)
 {
     log_mem_ctx_t *m = (log_mem_ctx_t *)ctx;
@@ -69,24 +101,51 @@ void log_source_memory(log_source_t *src, log_mem_ctx_t *ctx, const char *text,
     src->seek = mem_seek;
 }
 
+/**
+ * @brief Read from a stdio file.
+ *
+ * @param ctx  The FILE *.
+ * @param buf  Receives the bytes.
+ * @param max  Capacity of @p buf, bytes.
+ * @return Bytes read; 0 at the end of the file or on an error.
+ */
 static size_t file_read(void *ctx, char *buf, size_t max)
 {
     return fread(buf, 1, max, (FILE *)ctx);
 }
 
+/**
+ * @brief Whether the last read of a stdio file failed.
+ *
+ * @param ctx  The FILE *.
+ * @return true when the stream has its error flag set.
+ */
 static bool file_error(void *ctx)
 {
     return ferror((FILE *)ctx) != 0;
 }
 
+/**
+ * @brief Rewind a stdio file to its start.
+ *
+ * @param ctx  The FILE *.
+ * @return true when the seek succeeded.
+ */
 static bool file_rewind(void *ctx)
 {
     clearerr((FILE *)ctx);
     return fseek((FILE *)ctx, 0, SEEK_SET) == 0;
 }
 
-/* fseek and ftell take a long: 2 GiB less 1 byte on the panel.  A file
- * longer than that answers false, and the analysis reads it on instead. */
+/**
+ * @brief fseek and ftell take a long: 2 GiB less 1 byte on the panel.
+ *
+ * A file longer than that answers false, and the analysis reads it on instead.
+ *
+ * @param ctx    The FILE *.
+ * @param bytes  Receives the length, bytes.
+ * @return true when the length was read.
+ */
 static bool file_size(void *ctx, size_t *bytes)
 {
     FILE *f = (FILE *)ctx;
@@ -102,6 +161,13 @@ static bool file_size(void *ctx, size_t *bytes)
     return true;
 }
 
+/**
+ * @brief Move a stdio file's read position.
+ *
+ * @param ctx     The FILE *.
+ * @param offset  New position, bytes from the start.
+ * @return true when the seek succeeded; false when @p offset exceeds LONG_MAX.
+ */
 static bool file_seek(void *ctx, size_t offset)
 {
     if (offset > (size_t)LONG_MAX) {
@@ -129,6 +195,14 @@ void log_reader_init(log_reader_t *r, log_source_t *src)
     r->src = src;
 }
 
+/**
+ * @brief Refill the read-ahead buffer when it is empty.
+ *
+ * Sets failed when the source reports an error at its end.
+ *
+ * @param r  The row splitter.
+ * @return 1 when bytes are buffered, 0 at the end of input.
+ */
 static int reader_fill(log_reader_t *r)
 {
     if (r->pos < r->len) {
@@ -151,6 +225,12 @@ static int reader_fill(log_reader_t *r)
     return 1;
 }
 
+/**
+ * @brief Read one byte, skipping a leading byte order mark.
+ *
+ * @param r  The row splitter.
+ * @return The byte, 0 to 255, or -1 at the end of input.
+ */
 static int reader_getc(log_reader_t *r)
 {
     if (reader_fill(r) == 0) {
@@ -172,6 +252,12 @@ static int reader_getc(log_reader_t *r)
     return (unsigned char)r->buf[r->pos++];
 }
 
+/**
+ * @brief Look at the next byte without taking it.
+ *
+ * @param r  The row splitter.
+ * @return The byte, 0 to 255, or -1 at the end of input.
+ */
 static int reader_peek(log_reader_t *r)
 {
     if (reader_fill(r) == 0) {
@@ -180,6 +266,7 @@ static int reader_peek(log_reader_t *r)
     return (unsigned char)r->buf[r->pos];
 }
 
+/** @brief Empty field text, for fields that did not fit the store. */
 static char s_empty[1] = "";
 
 int log_reader_row(log_reader_t *r, char delimiter, char *store,
@@ -293,6 +380,16 @@ const char *log_csv_delimiter_label(char delimiter)
     }
 }
 
+/**
+ * @brief Count the fields a delimiter makes in one line.
+ *
+ * Delimiters inside a quoted field are not counted.
+ *
+ * @param s          The line.
+ * @param len        Length of the line, bytes.
+ * @param delimiter  The candidate delimiter.
+ * @return The number of fields, at least 1.
+ */
 static int count_fields(const char *s, size_t len, char delimiter)
 {
     int n = 1;
@@ -316,6 +413,7 @@ static int count_fields(const char *s, size_t len, char delimiter)
     return n;
 }
 
+/** @brief Most non-blank lines the delimiter sniffer looks at. */
 #define SNIFF_LINES 25
 
 char log_csv_sniff(const char *sample, size_t len)

@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The IOmcu end of the link: page dispatch, the arm latch and the
+ *        failsafe tick.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -6,15 +10,27 @@
 
 #include <string.h>
 
-/*
- * Wrap-safe: `(uint32_t)(now - then) >= timeout` holds across the 32-bit
+/**
+ * @brief Wrap-safe: `(uint32_t)(now - then) >= timeout` holds across the 32-bit
  * millisecond wrap at 49.7 days; `now >= then + timeout` does not.
+ *
+ * @param now The current time, in ms.
+ * @param then The time the wait started, in ms.
+ * @param ms The timeout, in ms.
+ * @return true when at least ms milliseconds have passed since then.
  */
 static bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
 {
     return (uint32_t)(now - then) >= ms;
 }
 
+/**
+ * @brief Find the page with a given number.
+ *
+ * @param d The link state holding the page table.
+ * @param page The page number to find.
+ * @return The table entry, or NULL when the table has no such page.
+ */
 static const link_page_t *find_page(const link_dev_t *d, uint8_t page)
 {
     for (uint8_t i = 0; i < d->page_count; ++i) {
@@ -64,6 +80,13 @@ void link_dev_clear_failsafe(link_dev_t *d, uint32_t now_ms)
     d->last_request_ms = now_ms;
 }
 
+/**
+ * @brief Build a NACK for a request, with its reason in regs[0].
+ *
+ * @param reply Receives the NACK; cleared first.
+ * @param req The request being refused; its page and offset are echoed.
+ * @param why The reason, sent as regs[0].
+ */
 static void refuse(link_msg_t *reply, const link_msg_t *req, link_nack_t why)
 {
     memset(reply, 0, sizeof(*reply));

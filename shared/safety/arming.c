@@ -1,5 +1,6 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "arming.h"
@@ -23,13 +24,16 @@ void arming_set_line_wait(arming_t *a, uint32_t wait_ms)
     }
 }
 
-/* Wrap-safe: true from the millisecond `deadline` on, for half the range. */
+/**
+ * @brief Wrap-safe: true from the millisecond `deadline` on, for half the
+ *        range.
+ */
 static bool reached(uint32_t now_ms, uint32_t deadline_ms)
 {
     return (int32_t)(deadline_ms - now_ms) <= 0;
 }
 
-/* Wrap-safe: true from the millisecond after `deadline` on. */
+/** @brief Wrap-safe: true from the millisecond after `deadline` on. */
 static bool past(uint32_t now_ms, uint32_t deadline_ms)
 {
     return (int32_t)(deadline_ms - now_ms) < 0;

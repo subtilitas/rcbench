@@ -1,6 +1,7 @@
-/*
- * The IOmcu's sensor service: what core 1 does each 1 ms tick with
- * the orders core 0 gives it, and the snapshot of what it read that core 0
+/**
+ * @file
+ * @brief The IOmcu's sensor service: what core 1 does each 1 ms tick with the
+ * orders core 0 gives it, and the snapshot of what it read that core 0
  * publishes on the link.
  *
  * Core 0 owns the link pages and the outputs; core 1 owns the I2C
@@ -68,12 +69,16 @@
 extern "C" {
 #endif
 
-/** The first address a scan asks, and how many. */
+/** @brief The first address a scan asks, and how many. */
 #define SENSE_SCAN_FIRST 0x40u
 #define SENSE_SCAN_COUNT 16u
 
-/** What core 0 asks for.  Each generation moves when what it covers
- *  changes; core 1 acts on a generation it has not seen. */
+/**
+ * @brief What core 0 asks for.
+ *
+ * Each generation moves when what it covers changes; core 1 acts on a
+ * generation it has not seen.
+ */
 typedef struct {
     uint16_t cfg_gen;            /**< the bus's pins and the parts          */
     uint8_t  sda, scl;           /**< GPIO numbers, one I2C block's pair    */
@@ -90,7 +95,7 @@ typedef struct {
                                       with no new set-up                 */
 } sense_cmd_t;
 
-/** What core 1 hands back after each step. */
+/** @brief What core 1 hands back after each step. */
 typedef struct {
     uint16_t cfg_gen, run_gen, cap_gen;   /**< the generations taken     */
     bool     open;               /**< the bus runs on its pins              */
@@ -109,8 +114,10 @@ typedef struct {
     uint16_t diag;               /**< its DIAG_ALRT as last read            */
     bool     have_win;           /**< a window has closed                   */
     sense_window_t win[SENSE_SRC_COUNT];
-    /** FAST's last windows, newest first: entry k is the window numbered k
-     *  before the number of win[]. */
+    /**
+     * @brief FAST's last windows, newest first: entry k is the window numbered
+     * k before the number of win[].
+     */
     sense_ring_win_t ring[SENSE_WIN_RING];
     uint8_t  i228_resets;        /**< found reset under this set-up, mod 256 */
     uint8_t  i3221_resets[SENSE_I3221_PARTS];
@@ -138,19 +145,26 @@ typedef struct {
                                       started: across set-ups            */
 } sense_snap_t;
 
-/** The wire, the clock, the recovery and the pins. */
+/** @brief The wire, the clock, the recovery and the pins. */
 typedef struct {
     sense_sched_io_t sched;      /**< its ctx is passed to the three below */
-    /** The I2C block on @p sda and @p scl at 400 kHz; false when those
-     *  pins cannot carry it, and nothing is changed. */
+    /**
+     * @brief The I2C block on @p sda and @p scl at 400 kHz; false when those
+     * pins cannot carry it, and nothing is changed.
+     */
     bool        (*open)(void *ctx, uint8_t sda, uint8_t scl);
-    /** The block off and its pins let go. */
+    /** @brief The block off and its pins let go. */
     void        (*close)(void *ctx);
-    /** The address byte and one byte read back: SENSE_OK when @p addr
-     *  acknowledged, SENSE_NACK when it did not, or a fault. */
+    /**
+     * @brief The address byte and one byte read back: SENSE_OK when @p addr
+     * acknowledged, SENSE_NACK when it did not, or a fault.
+     */
     sense_err_t (*ask)(void *ctx, uint8_t addr);
 } sense_svc_io_t;
 
+/**
+ * @brief The sensor service: its schedule and the command state it acts on.
+ */
 typedef struct {
     sense_svc_io_t io;
     bool     started;            /**< a command has been taken             */
@@ -172,22 +186,38 @@ typedef struct {
     sense_sched_t sched;
 } sense_svc_t;
 
-/** A service with the bus closed; the first step takes its command
- *  whole. */
+/**
+ * @brief A service with the bus closed; the first step takes its command whole.
+ *
+ * @param v The service to set up.
+ * @param io The callbacks the service calls.
+ */
 void sense_svc_init(sense_svc_t *v, const sense_svc_io_t *io);
 
-/** One tick, every 1 ms: @p cmd acted on, the schedule ticked while the
- *  bus is open, and @p out filled. */
+/**
+ * @brief One tick, every 1 ms: @p cmd acted on, the schedule ticked while the
+ * bus is open, and @p out filled.
+ *
+ * @param v The service.
+ * @param cmd The command to act on.
+ * @param out Receives the snapshot.
+ */
 void sense_svc_step(sense_svc_t *v, const sense_cmd_t *cmd, sense_snap_t *out);
 
 /**
- * Whether window @p w of a channel passed @p limit_ma: its highest current
- * rounded to mA (as SENSE_WIN shows it) above the limit, or a sample
- * clipped at the top of the range when that top, @p clip_ua (the top
- * code's current, 163.8 mV across the shunt), is above the limit.  Never with a limit
- * of 0, and never for a negative current.  The service judges each
- * channel's window once, as it closes, on core 1, so no window is missed
- * however late core 0 takes the snapshot.
+ * @brief Whether window @p w of a channel passed @p limit_ma: its highest
+ * current rounded to mA (as SENSE_WIN shows it) above the limit, or a sample
+ * clipped at the top of the range when that top, @p clip_ua (the top code's
+ * current, 163.8 mV across the shunt), is above the limit.
+ *
+ * Never with a limit of 0, and never for a negative current.  The service
+ * judges each channel's window once, as it closes, on core 1, so no window is
+ * missed however late core 0 takes the snapshot.
+ *
+ * @param w The window to judge.
+ * @param clip_ua The current at the top code, in µA.
+ * @param limit_ma The limit, in mA.
+ * @return true when the window passed the limit.
  */
 bool sense_window_over(const sense_window_t *w, int32_t clip_ua,
                        uint16_t limit_ma);

@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The run log's cadence: which pass writes a row, see log_cadence.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 

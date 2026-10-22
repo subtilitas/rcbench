@@ -1,5 +1,8 @@
-/*
- * The sensor bus.  See sense_bus.h.
+/**
+ * @file
+ * @brief The sensor bus.
+ *
+ * See sense_bus.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,8 +17,14 @@ void sense_bus_init(sense_bus_t *b, const sense_i2c_t *io)
     b->io = *io;
 }
 
-/* Every transaction that reaches the wire comes back through here: the
- * failure count, and the stuck decision. */
+/**
+ * @brief Every transaction that reaches the wire comes back through here: the
+ * failure count, and the stuck decision.
+ *
+ * @param b The bus.
+ * @param e The result of the transaction.
+ * @return e, unchanged.
+ */
 static sense_err_t settle(sense_bus_t *b, sense_err_t e)
 {
     if (e != SENSE_OK) {
@@ -45,8 +54,14 @@ static sense_err_t settle(sense_bus_t *b, sense_err_t e)
     return e;
 }
 
-/* Whether a transaction may go out: not while stuck, except the one test
- * after a recovery. */
+/**
+ * @brief Whether a transaction may go out: not while stuck, except the one test
+ * after a recovery.
+ *
+ * @param b The bus.
+ * @return true when the bus is not stuck, or a recovery has run and the next
+ *       transaction is the test.
+ */
 static bool may_send(const sense_bus_t *b)
 {
     return !b->stuck || b->trial;
@@ -140,6 +155,13 @@ void sense_part_probed(sense_part_t *p, sense_state_t state)
     p->probe_at = p->now + SENSE_RETRY_MS;
 }
 
+/**
+ * @brief Count a part's transaction result against the failure limit.
+ *
+ * @param p The part.
+ * @param e The result of the transaction.
+ * @return e, unchanged.
+ */
 static sense_err_t count(sense_part_t *p, sense_err_t e)
 {
     if (e == SENSE_OK) {
@@ -213,8 +235,10 @@ uint64_t sense_be40(const uint8_t *b)
          | ((uint64_t)b[2] << 16) | ((uint64_t)b[3] << 8) | b[4];
 }
 
-/* Two's complement by subtraction rather than a signed shift, which C
- * leaves to the implementation for negative numbers. */
+/**
+ * @brief Two's complement by subtraction rather than a signed shift, which C
+ * leaves to the implementation for negative numbers.
+ */
 int32_t sense_sext32(uint32_t v, unsigned bits)
 {
     const uint32_t sign = 1u << (bits - 1u);

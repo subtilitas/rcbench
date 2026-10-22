@@ -787,7 +787,8 @@ def check_version(problems: list[str]) -> None:
     # wrong number in the comment above it changes nothing and compiles.  It
     # is the one place in that file a reader looks for the version, and it
     # was hand-bumped at every release until one was missed.
-    m = re.search(r'^/\*\* "(\d+\.\d+\.\d+)", for anything that prints it',
+    m = re.search(r'^/\*\* (?:@brief )?"(\d+\.\d+\.\d+)", for anything '
+                  r'that prints it',
                   text, re.MULTILINE)
     if m is None:
         problems.append(

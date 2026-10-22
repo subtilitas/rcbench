@@ -1,5 +1,6 @@
-/*
- * The panel's heartbeat input and the CAN bus: the controller and the
+/**
+ * @file
+ * @brief The panel's heartbeat input and the CAN bus: the controller and the
  * receive loop that answers the link's requests; see iomcu.h for the
  * other files.
  *
@@ -18,8 +19,8 @@
 
 /* ------------------------------------------------------------ the heartbeat */
 
-/*
- * The panel's safety line, watched in firmware as well as in hardware.
+/**
+ * @brief The panel's safety line, watched in firmware as well as in hardware.
  *
  * No board carries the retriggerable monostable that would gate the output
  * enable in hardware (docs/Safety.md), so this monitor is the whole check.
@@ -51,8 +52,8 @@ void heartbeat_init(void)
 
 /* ------------------------------------------------------------ the CAN bus */
 
-/*
- * Tried at boot, and not fatal if it fails.
+/**
+ * @brief Tried at boot, and not fatal if it fails.
  *
  * The controller either answers on SPI (Serial Peripheral Interface) or it
  * does not, and the datasheet guarantees the mode it wakes in, so this
@@ -67,8 +68,8 @@ bool     s_can_up;
 uint32_t s_can_echoes;
 uint32_t s_can_overflows;
 
-/*
- * When a frame was last taken out of the controller.
+/**
+ * @brief When a frame was last taken out of the controller.
  *
  * can_service() empties both receive buffers every pass, so where this is
  * read it is the age of the last frame on the bus rather than of the last one

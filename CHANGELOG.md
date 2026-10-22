@@ -150,6 +150,15 @@ history is in git.
 
 ### Fixed
 
+- ESP32-P4 panel: the .bss that `firmware/panel/main/psram_bss.lf` names
+  is in PSRAM (pseudo-static random-access memory): 29 objects, 166,472
+  bytes of `.ext_ram.bss`; internal .bss is 29,408 bytes instead of
+  195,880. The fragment
+  defines its own scheme, `rcbench_extram_bss`: the `extram_bss` scheme it
+  named is defined only in `esp_wifi`'s fragment, which the P4 build does
+  not include, and ldgen skipped the mappings without a message. CI fails
+  through `tools/psram_bss.py` when a named object keeps .bss in internal
+  RAM.
 - SERVO > TARGET reads the set programming port in SAFE within 500 ms after
   a programming session gives the port back and after an IOmcu restart,
   without waiting for the next ARM.
@@ -168,6 +177,13 @@ history is in git.
 
 ### Changed
 
+- `tools/check_sizes.py` counts code lines: a line that is not blank and
+  not comment-only. Block and `//` comments, Doxygen blocks included, and in
+  Python `#` comments and docstrings do not count; a line with code and a
+  trailing comment does. The limits are 1,000 and 1,300 code lines. 26
+  entries of `tools/check_sizes.txt` whose files hold 1,000 code lines or
+  fewer are removed, and the figure recorded for `shared/bench/kst_prog.c`
+  is 1,938 code lines.
 - Every text the interface shows or writes in the operator's language is
   one entry of `shared/text/include/ui_text.def`, with its English and its
   German side by side: the screens' strings, the settings' labels, help

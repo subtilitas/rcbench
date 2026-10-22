@@ -1,5 +1,8 @@
-/*
- * The PD mini's PIO UART.  See pd_uart.h.
+/**
+ * @file
+ * @brief The PD mini's PIO UART.
+ *
+ * See pd_uart.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -11,6 +14,7 @@
 #include "hardware/pio.h"
 #include "pd_uart.pio.h"
 
+/** @brief Driver state of the UART: the claimed machines and the pins. */
 static struct {
     bool    open;
     bool    attached;
@@ -20,7 +24,11 @@ static struct {
     uint8_t tx, rx;
 } s;
 
-/* A pin at rest: an input with a pull-down, driven by nothing here. */
+/**
+ * @brief A pin at rest: an input with a pull-down, driven by nothing here.
+ *
+ * @param pin  GPIO number.
+ */
 static void rest(uint8_t pin)
 {
     gpio_init(pin);
@@ -74,7 +82,9 @@ void pd_uart_close(void)
     s.open = false;
 }
 
-/* Both machines stopped, emptied and back at their first instruction. */
+/**
+ * @brief Both machines stopped, emptied and back at their first instruction.
+ */
 static void reset_machines(void)
 {
     pio_sm_set_enabled(s.tx_pio, s.tx_sm, false);

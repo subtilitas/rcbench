@@ -189,6 +189,11 @@ jobs:
             git diff --exit-code firmware/panel/dependencies.lock
           fi
 
+      # ldgen skips a mapping it cannot apply without a message; the linker
+      # map shows where the objects psram_bss.lf names are placed.
+      - name: The objects psram_bss.lf names are in PSRAM
+        run: python3 tools/psram_bss.py firmware/panel/build
+
       - uses: actions/upload-artifact@v7
         with:
           name: panel

@@ -1,6 +1,7 @@
-/*
- * The WeAct PD Power Mini V1 Buck on its UART: the codec and a driver that
- * talks to it one transaction at a time.
+/**
+ * @file
+ * @brief The WeAct PD Power Mini V1 Buck on its UART: the codec and a driver
+ *        that talks to it one transaction at a time.
  *
  * Implements the UART protocol of the WeAct PD Power Mini V1 Buck module.
  * WeAct is a name or trademark of its owner; it is used here only to say
@@ -130,26 +131,34 @@
 extern "C" {
 #endif
 
-/** The module's range, from the vendor's page; not measured here. */
+/** @brief The module's range, from the vendor's page; not measured here. */
 #define PDMINI_V_MIN_MV   1000u
 #define PDMINI_V_MAX_MV  20000u
 #define PDMINI_I_MIN_MA     50u
 #define PDMINI_I_MAX_MA   3000u
-/** The margin between the input the module reports and a live output's set
- *  point that the buck is taken to need: a buck cannot put out more than it
- *  is fed, and a module asked to shows ERR and needs a power cycle (seen on
- *  the bench, 2026-10-06, 5.88 V asked from a 4.88 V input).  A live output
- *  whose input reads under its set point and this is switched off
- *  (PDMINI_SAG_READS).  The margin the module needs is not measured; 4.00 V
- *  from 4.85 V worked. */
+/**
+ * @brief The margin between the input the module reports and a live output's
+ *        set point that the buck is taken to need: a buck cannot put out more
+ *        than it is fed, and a module asked to shows ERR and needs a power
+ *        cycle (seen on the bench, 2026-10-06, 5.88 V asked from a 4.88 V
+ *        input).
+ *
+ * A live output whose input reads under its set point and this is switched off
+ * (PDMINI_SAG_READS).  The margin the module needs is not measured; 4.00 V
+ * from 4.85 V worked.
+ */
 #define PDMINI_HEADROOM_MV  500u
-/** A voltage set point is kept this far under the input the module reports,
- *  rounded down to 10 mV, and no lower than PDMINI_V_MIN_MV.  200 mV above
- *  PDMINI_HEADROOM_MV, so a set point at the cap is not on the line its
- *  output is cut at: the input is read with the output off, and under load
- *  it drops by the current through the source and the cable.  200 mV is
- *  3000 mA, PDMINI_I_MAX_MA, through 1 m of 20 AWG copper out and back,
- *  2 x 33 mOhm.  The drop on a real source and cable is not measured. */
+/**
+ * @brief A voltage set point is kept this far under the input the module
+ *        reports, rounded down to 10 mV, and no lower than PDMINI_V_MIN_MV.
+ *        200 mV above  PDMINI_HEADROOM_MV, so a set point at the cap is not on
+ *        the line its output is cut at: the input is read with the output off,
+ *        and under load it drops by the current through the source and the
+ *        cable.  200 mV is  3000 mA, PDMINI_I_MAX_MA, through 1 m of 20 AWG
+ *        copper out and back,  2 x 33 mOhm.
+ *
+ * The drop on a real source and cable is not measured.
+ */
 #define PDMINI_CAP_MV       700u
 
 #ifdef __cplusplus
@@ -160,28 +169,31 @@ _Static_assert(PDMINI_CAP_MV > PDMINI_HEADROOM_MV,
                "a set point at the cap lies above the sag cut line");
 #endif
 
-/** What WHO_AM_I's reply holds from this module: "WeAct Studio PD Power
- *  Mini V1 BUCK" in the bench station's notes of its 2026-09-11 run.  A
- *  reply without it is another device, and nothing is written to it. */
+/**
+ * @brief What WHO_AM_I's reply holds from this module: "WeAct Studio PD Power
+ *        Mini V1 BUCK" in the bench station's notes of its 2026-09-11 run.
+ *
+ * A  reply without it is another device, and nothing is written to it.
+ */
 #define PDMINI_WHO "PD Power Mini"
 
-/** Commands this driver sends. */
+/** @brief Commands this driver sends. */
 enum {
-    PDMINI_OUTPUT_EN    = 0x02,
-    PDMINI_OUTPUT_DATA  = 0x04,
-    PDMINI_SYSTEM_RESET = 0x40,
-    PDMINI_WHO_AM_I     = 0x81,
-    PDMINI_READ_STATE   = 0x82,
-    PDMINI_READ_ID      = 0x83,
-    PDMINI_READ_DATA    = 0x84,
-    PDMINI_READ_DISPLAY = 0x85,
-    PDMINI_READ_INPUT   = 0x8A,
+    PDMINI_OUTPUT_EN    = 0x02,  /**< write the output on or off            */
+    PDMINI_OUTPUT_DATA  = 0x04,  /**< write the set points                  */
+    PDMINI_SYSTEM_RESET = 0x40,  /**< restart the module                    */
+    PDMINI_WHO_AM_I     = 0x81,  /**< identify the module                   */
+    PDMINI_READ_STATE   = 0x82,  /**< read the output state                 */
+    PDMINI_READ_ID      = 0x83,  /**< read the module ID                    */
+    PDMINI_READ_DATA    = 0x84,  /**< read back the set points              */
+    PDMINI_READ_DISPLAY = 0x85,  /**< read the terminal voltage and current */
+    PDMINI_READ_INPUT   = 0x8A,  /**< read the input state                  */
 };
 
-/** READ_OUTPUT_STATE's bits 2..1. */
+/** @brief READ_OUTPUT_STATE's bits 2..1. */
 enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 
-/** Timing, from the vendor's working driver; none of it measured. */
+/** @brief Timing, from the vendor's working driver; none of it measured. */
 #define PDMINI_ATTACH_MS     5u    /**< pins handed over before a request  */
 #define PDMINI_REPLY_MS    400u    /**< the window for a reply             */
 #define PDMINI_BYTE_MS      60u    /**< and longer by this on every byte   */
@@ -217,19 +229,35 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
                                         PDMINI_HEADROOM_MV that switch it
                                         off; chosen, not measured        */
 
-/** CRC8, polynomial 0x31, initial 0xFF, over @p n bytes. */
+/**
+ * @brief CRC8, polynomial 0x31, initial 0xFF, over @p n bytes.
+ *
+ * @param p  Bytes to check.
+ * @param n  Number of bytes in @p p.
+ * @return   The CRC8 of the bytes.
+ */
 uint8_t pdmini_crc8(const uint8_t *p, size_t n);
 
-/** Whether @p buf (@p n bytes received) holds a whole reply to @p cmd. */
+/**
+ * @brief Whether @p buf (@p n bytes received) holds a whole reply to @p cmd.
+ */
 typedef enum {
     PDMINI_MORE = 0,   /**< not yet                                     */
     PDMINI_DONE,       /**< a whole reply, its check passed             */
     PDMINI_BAD,        /**< a whole reply that fails its check, or junk */
 } pdmini_frame_t;
 
+/**
+ * @brief Checks the bytes received so far against a reply to @p cmd.
+ *
+ * @param cmd  Command byte the reply answers.
+ * @param buf  Bytes received so far.
+ * @param n    Number of bytes in @p buf.
+ * @return     PDMINI_MORE, PDMINI_DONE or PDMINI_BAD.
+ */
 pdmini_frame_t pdmini_reply_frame(uint8_t cmd, const uint8_t *buf, size_t n);
 
-/** What the driver needs from the hardware. */
+/** @brief What the driver needs from the hardware. */
 typedef struct {
     void (*attach)(void *ctx);                       /**< UART onto the pins */
     void (*detach)(void *ctx);                       /**< pins pulled down   */
@@ -237,7 +265,7 @@ typedef struct {
     void *ctx;
 } pdmini_io_t;
 
-/** What the module has said, read back rather than assumed. */
+/** @brief What the module has said, read back rather than assumed. */
 typedef struct {
     bool     online;      /**< it answered WHO_AM_I and has since        */
     bool     output;      /**< READ_OUTPUT_STATE says the output is on   */
@@ -256,48 +284,50 @@ typedef struct {
     uint32_t errors;      /**< transactions that failed                  */
 } pdmini_status_t;
 
+/** @brief Driver state: what is asked, what is known, and the transaction
+ *         under way. */
 typedef struct {
     pdmini_io_t     io;
     pdmini_status_t st;
 
     /* What is asked for. */
     bool     want_output;
-    bool     want_set;       /* set points named; none written before   */
+    bool     want_set;       /**< set points named; none written before   */
     uint16_t want_mv, want_ma;
 
     /* What is known. */
     bool     identified;
-    bool     answered;       /* identified once since pdmini_init()      */
-    bool     restored;       /* wiring from before a restart: maybe on   */
-    uint8_t  who_misses;     /* WHO_AM_I answered by not a byte, so far  */
+    bool     answered;       /**< identified once since pdmini_init()      */
+    bool     restored;       /**< wiring from before a restart: maybe on   */
+    uint8_t  who_misses;     /**< WHO_AM_I answered by not a byte, so far  */
     uint16_t who_failed;     /* WHO_AM_I without a valid answer: a count
                                 to compare for a change, wrapping from
                                 65535 to 0                              */
-    bool     state_known;    /* READ_OUTPUT_STATE answered since online */
-    int      slot;           /* the active slot, -1 until read           */
-    bool     data_known;     /* set_mv/set_ma read back from it          */
-    uint8_t  on_value;       /* OUTPUT_EN's argument for on; learnt      */
-    uint8_t  en_value;       /* the argument last written                */
-    bool     en_for;         /* the state it was written towards         */
-    bool     on_seen;        /* on_value seen to work once               */
-    bool     on_confirmed;   /* and twice: relied on                     */
-    bool     on_sent;        /* an ON went out, not yet settled by a read */
-    bool     reset_owed;     /* SYSTEM_RESET asked, not yet sent         */
+    bool     state_known;    /**< READ_OUTPUT_STATE answered since online */
+    int      slot;           /**< the active slot, -1 until read           */
+    bool     data_known;     /**< set_mv/set_ma read back from it          */
+    uint8_t  on_value;       /**< OUTPUT_EN's argument for on; learnt      */
+    uint8_t  en_value;       /**< the argument last written                */
+    bool     en_for;         /**< the state it was written towards         */
+    bool     on_seen;        /**< on_value seen to work once               */
+    bool     on_confirmed;   /**< and twice: relied on                     */
+    bool     on_sent;        /**< an ON went out, not yet settled by a read */
+    bool     reset_owed;     /**< SYSTEM_RESET asked, not yet sent         */
     bool     held_off;       /* switched off for set points that would not
                                 take; until an OFF is asked             */
-    bool     off_owed;       /* gone while on: an OFF is sent blind      */
-    bool     blind_due;      /* a WHO_AM_I went unanswered: OFF blind   */
-    uint8_t  en_tries;       /* OUTPUT_EN writes towards the wanted state */
-    bool     en_pending;     /* written, waiting for the confirming read */
+    bool     off_owed;       /**< gone while on: an OFF is sent blind      */
+    bool     blind_due;      /**< a WHO_AM_I went unanswered: OFF blind   */
+    uint8_t  en_tries;       /**< OUTPUT_EN writes towards the wanted state */
+    bool     en_pending;     /**< written, waiting for the confirming read */
     uint32_t en_at;
-    bool     data_pending;   /* OUTPUT_DATA written, not yet read back   */
-    uint8_t  data_tries;     /* OUTPUT_DATA writes towards the set points */
+    bool     data_pending;   /**< OUTPUT_DATA written, not yet read back   */
+    uint8_t  data_tries;     /**< OUTPUT_DATA writes towards the set points */
     uint32_t data_at;
-    uint8_t  fails;          /* consecutive                              */
-    uint8_t  state_fails;    /* READ_OUTPUT_STATE failed, consecutive    */
-    uint8_t  input_misses;   /* READ_INPUT_STATE unanswered, consecutive */
-    bool     input_known;    /* READ_INPUT_STATE answered, the last read */
-    bool     input_seen;     /* and this firmware has answered it at all */
+    uint8_t  fails;          /**< consecutive                              */
+    uint8_t  state_fails;    /**< READ_OUTPUT_STATE failed, consecutive    */
+    uint8_t  input_misses;   /**< READ_INPUT_STATE unanswered, consecutive */
+    bool     input_known;    /**< READ_INPUT_STATE answered, the last read */
+    bool     input_seen;     /**< and this firmware has answered it at all */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
     bool     polled_late;    /* the last job a reading that went before
@@ -305,25 +335,32 @@ typedef struct {
                                 input read before a set point or an ON  */
     uint8_t  sag_reads;      /* input reads in a row under a live output's
                                 set point and the headroom              */
-    uint8_t  check;          /* pdmini_check_t, PDMINI_CHECK_SENT between */
+    uint8_t  check;          /**< pdmini_check_t, PDMINI_CHECK_SENT between */
 
     /* The transaction under way. */
     enum { PD_IDLE, PD_ATTACH, PD_WAIT, PD_GAP } phase;
     uint8_t  req[8];
     size_t   req_n;
     uint8_t  cmd;
-    bool     write;          /* answered by nothing                     */
+    bool     write;          /**< answered by nothing                     */
     uint8_t  rx[72];
     size_t   rx_n;
-    uint32_t t;              /* when the phase began, or the deadline   */
+    uint32_t t;              /**< when the phase began, or the deadline   */
     uint32_t deadline;
 
     uint32_t last_display, last_state, last_input, last_identify, last_slot;
 } pdmini_t;
 
+/**
+ * @brief Set up a driver with nothing asked and nothing known.
+ *
+ * @param d       Driver state to initialise.
+ * @param io      Hardware callbacks; copied.
+ * @param now_ms  Current time, in milliseconds.
+ */
 void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
 
-/** What a state read asked for with pdmini_check_off() has shown. */
+/** @brief What a state read asked for with pdmini_check_off() has shown. */
 typedef enum {
     PDMINI_CHECK_NONE = 0,  /**< none asked                               */
     PDMINI_CHECK_ASKED,     /**< asked, no state read sent since          */
@@ -335,56 +372,119 @@ typedef enum {
                                  module was not identified to be read      */
 } pdmini_check_t;
 
-/** A state read sent from now on, ahead of the other readings: the
- *  answer is in pdmini_checked().  It waits for the transaction under way
- *  and for an OFF owed, so at most about two transactions, 1210 ms. */
+/**
+ * @brief A state read sent from now on, ahead of the other readings: the
+ *        answer is in pdmini_checked().
+ *
+ * It waits for the transaction under way and for an OFF owed, so at most about
+ * two transactions, 1210 ms.
+ *
+ * @param d  Driver state.
+ */
 void pdmini_check_off(pdmini_t *d);
 
+/**
+ * @brief The answer to the last pdmini_check_off().
+ *
+ * @param d  Driver state.
+ * @return   The state of the check.
+ */
 pdmini_check_t pdmini_checked(const pdmini_t *d);
 
-/** What the output is to be.  Set points are clamped to the module's range;
- *  switching off is the first thing done whatever else is waiting.  An
- *  output switched off because its set points would not take stays off,
- *  whatever is asked, until an OFF is asked -- and so does one the module
- *  switched off by itself while ON was asked (st.tripped), and one switched
- *  off for a sagging input (st.sagged). */
+/**
+ * @brief What the output is to be.
+ *
+ * Set points are clamped to the module's range;  switching off is the first
+ * thing done whatever else is waiting.  An output switched off because its set
+ * points would not take stays off, whatever is asked, until an OFF is asked --
+ * and so does one the module switched off by itself while ON was asked
+ * (st.tripped), and one switched off for a sagging input (st.sagged).
+ *
+ * @param d        Driver state.
+ * @param output   true to ask for the output on.
+ * @param set_mv   Voltage set point, in mV.
+ * @param set_ma   Current set point, in mA.
+ */
 void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
 
-/** Attached to a module whose state is not known -- wiring restored after
- *  a restart, or newly given: it may be on.  pdmini_may_be_on() says so
- *  until a state read shows it off, or until PDMINI_ABSENT_TRIES WHO_AM_I
- *  in a row go unanswered by a byte. */
+/**
+ * @brief Attached to a module whose state is not known -- wiring restored after
+ *        a restart, or newly given: it may be on.  pdmini_may_be_on() says so
+ *        until a state read shows it off, or until PDMINI_ABSENT_TRIES WHO_AM_I
+ *        in a row go unanswered by a byte.
+ *
+ * @param d  Driver state.
+ */
 void pdmini_restored(pdmini_t *d);
 
-/** Restart the module with SYSTEM_RESET: sent once it has answered, its
- *  output reads off and nothing else waits; it is then asked who it is
- *  again, PDMINI_IDENTIFY_MS on. */
+/**
+ * @brief Restart the module with SYSTEM_RESET: sent once it has answered, its
+ *        output reads off and nothing else waits; it is then asked who it is
+ *        again, PDMINI_IDENTIFY_MS on.
+ *
+ * @param d  Driver state.
+ */
 void pdmini_reset(pdmini_t *d);
 
-/** The output off, and no set points asked: the module's are left as
- *  they are until pdmini_want() names some. */
+/**
+ * @brief The output off, and no set points asked: the module's are left as
+ *        they are until pdmini_want() names some.
+ *
+ * @param d  Driver state.
+ */
 void pdmini_want_off(pdmini_t *d);
 
-/** A byte from the module. */
+/**
+ * @brief A byte from the module.
+ *
+ * @param d       Driver state.
+ * @param byte    Received byte.
+ * @param now_ms  Current time, in milliseconds.
+ */
 void pdmini_rx(pdmini_t *d, uint8_t byte, uint32_t now_ms);
 
-/** Every pass. */
+/**
+ * @brief Run one pass of the driver.
+ *
+ * Call every pass.
+ *
+ * @param d       Driver state.
+ * @param now_ms  Current time, in milliseconds.
+ */
 void pdmini_step(pdmini_t *d, uint32_t now_ms);
 
+/**
+ * @brief The driver's status, read back from the module.
+ *
+ * @param d  Driver state.
+ * @return   Pointer to the status inside @p d.
+ */
 const pdmini_status_t *pdmini_status(const pdmini_t *d);
 
-/** Whether the output is on or may be: it reads on, an ON waits to be sent
- *  or confirmed or went out unsettled, an OFF is owed to a module that went
- *  quiet with it on, or a module that has answered is not read off now.
- *  Its wiring is not to be taken from under it while this holds. */
+/**
+ * @brief Whether the output is on or may be: it reads on, an ON waits to be
+ *        sent or confirmed or went out unsettled, an OFF is owed to a module
+ *        that went quiet with it on, or a module that has answered is not read
+ *        off now.
+ *
+ * Its wiring is not to be taken from under it while this holds.
+ *
+ * @param d  Driver state.
+ * @return   true while the output is, or may be, on.
+ */
 bool pdmini_may_be_on(const pdmini_t *d);
 
-/** The highest voltage set point written for an input of vin_mv, as read:
- *  vin_mv - PDMINI_CAP_MV rounded down to 10 mV, at least PDMINI_V_MIN_MV
- *  (an input under PDMINI_V_MIN_MV + PDMINI_CAP_MV, 1700 mV, gets the
- *  1000 mV floor, and one under 1500 mV is held off), at most
- *  PDMINI_V_MAX_MV.  The caller treats an input not known as
- *  PDMINI_V_MAX_MV. */
+/**
+ * @brief The highest voltage set point written for an input of vin_mv, as read.
+ *
+ * vin_mv - PDMINI_CAP_MV rounded down to 10 mV, at least PDMINI_V_MIN_MV
+ * (an input under PDMINI_V_MIN_MV + PDMINI_CAP_MV, 1700 mV, gets the
+ * 1000 mV floor, and one under 1500 mV is held off), at most
+ * PDMINI_V_MAX_MV.  The caller treats an input not known as PDMINI_V_MAX_MV.
+ *
+ * @param vin_mv Input voltage as read, in mV.
+ * @return The highest voltage set point for that input, in mV.
+ */
 uint16_t pdmini_cap_mv(uint32_t vin_mv);
 
 #ifdef __cplusplus

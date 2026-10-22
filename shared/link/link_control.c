@@ -1,5 +1,8 @@
-/*
- * The CONTROL page's rules.  See link_control.h.
+/**
+ * @file
+ * @brief The CONTROL page's rules.
+ *
+ * See link_control.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,6 +27,13 @@ _Static_assert(LINK_CT_ARM_FRAME <= LINK_CAN_REGS_PER_FRAME,
 _Static_assert(LINK_CT_CLEAR >= LINK_CT_ARM_FRAME,
                "CLEAR is its own transaction ahead of the arming frame");
 
+/**
+ * @brief Test whether a MOTOR_POLES value is one a motor comes in.
+ *
+ * @param poles The value to test.
+ * @return true for 0, and for an even count within LINK_POLES_MIN to
+ *       LINK_POLES_MAX.
+ */
 static bool poles_ok(uint16_t poles)
 {
     /* Zero means nobody has said; anything else is an even count in the
