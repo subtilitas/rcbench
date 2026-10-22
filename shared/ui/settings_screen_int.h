@@ -28,54 +28,89 @@
 #include "ui_textkey.h"
 
 #define SCREEN_W UI_PANEL_W
-/* The router owns the top 48 and the home tag; this screen gets the body. */
+/* The router owns the top UI_BAND_H px and the home tag; this screen gets
+ * the body. */
 #define SCREEN_H UI_BODY_H
 #define MAX_FBS  3
 
-/*
- * Coordinates are in the 540 px body the router hands this screen; the band
- * and the home tag are above it.
+/**
+ * @brief The hub: three columns by three rows of 328 x 130 px tiles
+ *        (49.2 x 19.5 mm) with 10 px margins, and under them the strip
+ *        that holds SAVE.
  *
- * The hub: three columns by three rows of 256 x 108 px tiles with 8 px
- * margins, and under them the strip that holds SAVE.  The list has the same
- * strip, so SAVE stays where it is between the two.  The strip ends 4 px
- * above the router's alert band, which covers the bottom UI_ALERT_H px of
- * the body: nothing that acts sits under it.
+ * Coordinates are in the 540 px body the router hands this screen; the
+ * band and the home tag are above it.  The list has the same strip, so
+ * SAVE stays where it is between the two.  The strip ends 4 px above the
+ * router's alert band, which covers the bottom UI_ALERT_H px of the body:
+ * nothing that acts sits under it.
  */
-#define HUB_COLS 3
-#define HUB_ROWS 3
-#define HUB_M    8
-#define HUB_TW   ((SCREEN_W - (HUB_COLS + 1) * HUB_M) / HUB_COLS)
-#define HUB_TH   108
-/* The icon's top in a tile.  Icon, name and line take 76 px from it, which
- * leaves 16 px under the line. */
-#define HUB_ICON_DY 16
+#define HUB_COLS 3 /**< the hub's columns */
+#define HUB_ROWS 3 /**< the hub's rows */
+#define HUB_M 10 /**< the margin around and between tiles, px */
+#define HUB_TW ((SCREEN_W - (HUB_COLS + 1) * HUB_M) / HUB_COLS) /**< a tile's width, px: 328 */
+#define HUB_TH 130 /**< a tile's height, px */
 
-/* The strip under the grid and under the list: three columns, the hub's. */
-#define STRIP_H  34
-#define STRIP_Y  (SCREEN_H - UI_ALERT_H - 4 - STRIP_H)
+/**
+ * @brief Inside a hub tile, from its top: the 36 px icon box at 14, the
+ *        name in the body face (12 x 24) at 60, the line in the label face
+ *        (10 x 20) at 94, which leaves 16 px under the line.  A line holds
+ *        32 characters on one row; the tile has no room for a second.
+ */
+#define HUB_ICON_DY 14 /**< the icon box's top, px */
+#define HUB_ICON 36 /**< the icon box's side, px */
+#define HUB_NAME_DY 60 /**< the name's top, px */
+#define HUB_LINE_DY 94 /**< the line's top, px */
 
-/* The list: the body's width less the margins and the scroll bar, from
- * under the band to the strip. */
-#define LIST_X   8
-#define LIST_W   776
-#define LIST_Y   6
-#define LIST_H   (STRIP_Y - 6 - LIST_Y)
-#define ROW_H    54
-#define ROW_GAP  4
-#define ROW_PITCH (ROW_H + ROW_GAP)
+/** @brief The faces of the list and the strip: a row's name and a
+ *         heading in the head face (20 x 36); a value and the warning's
+ *         sentences in the body face (12 x 24); help lines, units, keys,
+ *         buttons and the warning's change lines in the label face
+ *         (10 x 20). */
+#define STG_F_HEAD (&gfx_font_20x36) /**< names and headings: 20 x 36 */
+#define STG_F_BODY (&gfx_font_12x24) /**< values and sentences: 12 x 24 */
+#define STG_F_LABEL (&gfx_font_10x20) /**< help, units, keys, buttons, change lines: 10 x 20 */
 
-#define BTN_W    44
-#define BTN_H    36
+/** @brief The strip under the grid and under the list: three columns,
+ *         the hub's, UI_BTN_H (48 px) tall. */
+#define STRIP_H UI_BTN_H /**< the strip's height, px */
+#define STRIP_Y (SCREEN_H - UI_ALERT_H - 4 - STRIP_H) /**< the strip's top, px: 444 */
+
+/**
+ * @brief The list: from the first column's left edge to the scroll bar,
+ *        from under the band to 8 px above the strip.  A row is 64 px
+ *        tall at a 70 px pitch: 6 rows show whole.  The scroll bar is
+ *        SCROLL_W px wide at the third column's right edge and takes no
+ *        touch.
+ */
+#define SCROLL_W 12 /**< the scroll bar's width, px */
+#define SCROLL_X (SCREEN_W - HUB_M - SCROLL_W) /**< the scroll bar's left edge, px: 1002 */
+#define LIST_X HUB_M /**< the list's left edge, px */
+#define LIST_W (SCROLL_X - 8 - LIST_X) /**< the list's width, px: 984 */
+#define LIST_Y 8 /**< the list's top, px */
+#define LIST_H (STRIP_Y - 8 - LIST_Y) /**< the list's height, px: 428 */
+#define ROW_H 64 /**< a row's height, px */
+#define ROW_GAP 6 /**< the gap between two rows, px */
+#define ROW_PITCH (ROW_H + ROW_GAP) /**< a row's pitch, px: 70 */
+#define ROW_NAME_DY 3 /**< the name's top, px */
+#define ROW_HELP_DY 40 /**< the help line's top, px */
+
+/**
+ * @brief A row's "-" and "+" keys: 56 x 48 px (8.4 x 7.2 mm), the "+" 12 px
+ *        in from the row's right edge, 166 px between them: the value's
+ *        150 px and 8 px on each side.
+ */
+#define BTN_W 56 /**< a key's width, px */
+#define BTN_H UI_TAP_MIN /**< a key's height, px: 48 */
 _Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
-#define PLUS_X   (LIST_X + LIST_W - 14 - BTN_W)
-#define MINUS_X  (PLUS_X - 8 - 110 - 8 - BTN_W)
-#define VALUE_R  (PLUS_X - 8)
-/* A number's value: the 126 px between its "-" and its "+" key, over the
- * row's height.  A tap there opens the keypad. */
-/** @brief The left edge of a number's value, px. */
+#define VALUE_FIELD 150 /**< the value's field, px */
+#define PLUS_X (LIST_X + LIST_W - 12 - BTN_W) /**< the "+" key's left edge, px: 926 */
+#define MINUS_X (PLUS_X - 8 - VALUE_FIELD - 8 - BTN_W) /**< the "-" key's left edge, px: 704 */
+#define VALUE_R (PLUS_X - 8) /**< the value's and its unit's right edge, px */
+/** @brief The left edge of a number's value, px: the 166 px between its
+ *         "-" and its "+" key, over the row's height, where a tap opens
+ *         the keypad. */
 #define VALUE_X  (MINUS_X + BTN_W)
-/** @brief The width of a number's value, px: 126. */
+/** @brief The width of a number's value, px: 166. */
 #define VALUE_W  (PLUS_X - VALUE_X)
 
 /*
@@ -105,23 +140,28 @@ enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
        HIT_SAVE, HIT_STAY, HIT_DISCARD, HIT_LEAVE_SAVE, HIT_TEXT,
        HIT_VALUE };
 
-/*
- * The warning that holds a way out: a card over the body down to the
- * strip, its title, up to two lines on what unsaved means, then one line
- * per change and up to two notes under them.  STAY, DISCARD and SAVE take
- * the strip's three columns, SAVE where SAVE is on the tiles.
- * SETTINGS_WARN_LINES lines of 21 px fit; more changes than that leave the
- * last line to their count.
+/**
+ * @brief The warning that holds a way out: a card over the body down to
+ *        the strip.
+ *
+ * Its title in the head face, up to two lines in the body face on what
+ * unsaved means, then one line per change in the label face and up to two
+ * notes in the body face under them.  STAY, DISCARD and SAVE take the
+ * strip's three columns, SAVE where SAVE is on the tiles.
+ * SETTINGS_WARN_LINES lines of WARN_PITCH px fit; more changes than that
+ * leave the last line to their count.  Offsets are from WARN_Y.
  */
-#define WARN_X      HUB_M
-#define WARN_Y      HUB_M
-#define WARN_W      (SCREEN_W - 2 * HUB_M)
-#define WARN_H      (STRIP_Y - HUB_M - WARN_Y)
-#define WARN_WHY_Y  46     /* from WARN_Y, 18 px a line */
-#define WARN_LINE_Y 96
-#define WARN_PITCH  21
-#define WARN_NOTE_Y (WARN_LINE_Y + SETTINGS_WARN_LINES * WARN_PITCH + 4)
-#define WARN_NOTE_PITCH 18
+#define WARN_X HUB_M /**< the card's left edge, px */
+#define WARN_Y HUB_M /**< the card's top, px */
+#define WARN_W (SCREEN_W - 2 * HUB_M) /**< the card's width, px: 1004 */
+#define WARN_H (STRIP_Y - HUB_M - WARN_Y) /**< the card's height, px: 424 */
+#define WARN_TITLE_Y 12 /**< the title's top */
+#define WARN_WHY_Y 56 /**< the first line on what unsaved means */
+#define WARN_WHY_PITCH 26 /**< those lines' pitch, px */
+#define WARN_LINE_Y 116 /**< the first change line */
+#define WARN_PITCH 24 /**< the change lines' pitch, px */
+#define WARN_NOTE_Y (WARN_LINE_Y + SETTINGS_WARN_LINES * WARN_PITCH + 4) /**< the first note */
+#define WARN_NOTE_PITCH 26 /**< the notes' pitch, px */
 
 /*
  * The hub's tiles, in their order on the grid, row by row.  A category's
@@ -169,8 +209,14 @@ _Static_assert(HUB_M + HUB_ROWS * (HUB_TH + HUB_M) <= STRIP_Y,
 _Static_assert(LIST_Y + LIST_H <= STRIP_Y, "the list ends above the strip");
 _Static_assert(STRIP_Y + STRIP_H <= SCREEN_H - UI_ALERT_H,
                "the strip ends above the alert band");
-_Static_assert(WARN_NOTE_Y + 2 * WARN_NOTE_PITCH <= WARN_Y + WARN_H - 4,
+_Static_assert(WARN_WHY_Y + 2 * WARN_WHY_PITCH <= WARN_LINE_Y,
+               "the warning's two lines on unsaved end above the changes");
+_Static_assert(WARN_NOTE_Y + 2 * WARN_NOTE_PITCH <= WARN_H - 4,
                "the warning's notes end inside its card");
+_Static_assert(HUB_ICON_DY + HUB_ICON <= HUB_NAME_DY
+               && HUB_NAME_DY + 24 <= HUB_LINE_DY
+               && HUB_LINE_DY + 20 <= HUB_TH,
+               "a hub tile's icon, name and line stack inside it");
 
 /* The strings' names, for the warning, a row and its keyboard's title,
  * and the help line of a row; the DUT name has no row on SETUP. */
@@ -189,8 +235,8 @@ static const struct { ui_text_id_t label; ui_text_id_t help; }
 #define TK_AREA_H (STRIP_Y + STRIP_H - WARN_Y)
 
 /**
- * @brief The keypad a number's value opens: the keyboard's area, 784 x
- *        386 px, keys of 187 x 66 px.  Nothing under it presses while it
+ * @brief The keypad a number's value opens: the keyboard's area, 1004 x
+ *        482 px, its foot 4 px above the alert band.  Nothing under it presses while it
  *        is open; OK, CANCEL and the home tag close it as they close the
  *        keyboard.
  */

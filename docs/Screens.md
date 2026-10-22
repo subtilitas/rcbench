@@ -161,14 +161,16 @@ the bench end above it.
 
 ![The feature menu](img/overview.png)
 
-The menu is a grid of 4 columns by 2 rows, each tile 246 x 258 px with 8 px
-margins. The first row holds the workbenches, MOTOR & ESC, SERVO and
+The menu is a grid of 4 columns by 2 rows, each tile 243 x 255 px with
+10 px margins. A tile carries a 40 px icon, its name in the 20 x 36 px face
+and a line in the 10 x 20 px face. The first row holds the workbenches, MOTOR & ESC, SERVO and
 SUPPLY; the second the instruments, RECEIVER, BATTERY and BALANCE; the last
 column LOGS over SETUP. A fourth workbench or a fourth instrument fails the
 build at 4 columns (`shared/ui/overview_screen.c`). Programming has no tile:
 it is the PROGRAM task of MOTOR & ESC and of SERVO.
 
-Each tile carries a line under its name, 2 rows of at most 23 characters:
+Each tile carries a line under its name, 2 rows of at most 22 characters,
+8 px clear of the tile's sides:
 
 | Tile | Line |
 | --- | --- |
@@ -203,6 +205,60 @@ answering, MOTOR & ESC and SERVO carry the mark too.
 The menu in the light theme:
 
 ![The menu in the light theme](img/overview-light.png)
+
+## Keypad, keyboard and the shared controls
+
+The keypad, the keyboard, the choice lists, the tabs and the TARGET row look
+the same on every screen. Each screen gives them their area or their row;
+the faces and the spacing inside are theirs.
+
+- **Keypad.** A title row of 32 px, the entry of 60 px, then 4 x 4 keys
+  8 px apart, 8 px from the area's edge, the keys ending 4 px above the
+  alert band at the latest (below). Over SERVO's left column, 488 x 524 px,
+  a key is 112 x 88 px (16.8 x 13.2 mm); over SUPPLY's, 546 x 494 px,
+  126 x 80 px. The title and the range are in the
+  10 x 20 face, or in 8 x 16 where the two do not fit side by side. The
+  entry is in the 32 x 44 numerals with the unit in 12 x 24; an entry that
+  does not fit takes the 24 x 30 numerals with the unit in 10 x 20. The
+  digits and the point are in 12 x 24. DEL, CLR, CANCEL, OK and `+/-` share
+  one face: the largest of 12 x 24, 10 x 20 and 8 x 16 in which all of them
+  fit their keys with 6 px each side. German `ABBRECHEN` needs a key of
+  120 px for 12 x 24 and 102 px for 10 x 20.
+- **Keyboard.** A title row of 32 px, the text field of 52 px, then 5 rows
+  of keys 6 px apart. The title and the count are in 10 x 20, or in 8 x 16
+  where the two do not fit side by side. The text is in the 20 x 36 face
+  when 23 characters and the caret fit the field, else in 16 x 28. The
+  letters, digits and marks are in 12 x 24. The word keys (the bottom row,
+  DEL, `ABC`, `abc`, `#+=`) share one face: the largest of 12 x 24, 10 x 20
+  and 8 x 16 in which all of them fit their keys with 4 px each side, HIDE
+  measured in place of SHOW too, so a press does not change it. On WI-FI the
+  keyboard takes the body above the alert band, 1008 x 484 px, with keys of
+  93 x 71 px (14.0 x 10.7 mm) and every word in 12 x 24.
+- **Choice list.** A face or a row 56 px tall or taller draws its text in
+  the 20 x 36 face, 12 px in, with an 11 px chevron 28 px from the face's
+  right edge. A shorter one draws in 16 x 28, 10 px in, with a 7 px chevron
+  22 px from the edge. A text that does not fit before the chevron in
+  20 x 36 draws in 16 x 28: `DSHOT600 BIDIR` on a face of 292 px. Each face
+  and row picks its own, so the rows of one list can differ. OUTPUTS and
+  PICK A PIN draw theirs under 56 px.
+- **Tabs.** A row of tabs 32 px tall or taller draws its labels in the
+  10 x 20 face when every label fits its tab with 6 px each side in the
+  language shown; another row draws them in 8 x 16. LOGS' ROOT, USER and
+  BENCH and the PROG PORT entry's segments on OUTPUTS are in 10 x 20. The
+  workbench strip is 24 px tall and keeps 8 x 16.
+- **TARGET row.** A row 40 px tall or taller draws its label and its value
+  in 10 x 20, with 88 px for the label, and counts the pins it names in
+  10 px cells. A shorter row draws in 8 x 16 with 64 px for the label and
+  counts in 8 px cells. SERVO and MOTOR & ESC draw theirs 22 px tall.
+- **Plot.** A plot keeps 1,024 samples a series, one for each pixel column
+  of a plot as wide as the panel: 51.2 s at 20 samples a second.
+
+Key grids end 4 px above the alert band, at body y 492, on every screen.
+A keypad or a keyboard whose area reaches further paints its whole area
+and stops its keys there, so an alert covers no key. On SERVO the keypads'
+keys are then 112 x 88 px and the keyboards' 41 x 72 px; on SUPPLY the
+keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 61 px; on
+MOTOR & ESC's SETTINGS the keypad's are 126 x 89 px.
 
 ## Splash
 
@@ -792,7 +848,7 @@ measured:
 A row's `-` and `+` step its value. A tap on the value, the 216 px column
 between the name and the keys, opens the keypad over the page, from under
 the output strip to 4 px above the alert band: 1008 x 466 px, keys of
-243 x 86 px. It names the setting, its range and its unit and takes the
+242 x 81 px. It names the setting, its range and its unit and takes the
 step's digits after the point: one for Voltage's 0.1 V, two for Current
 limit's 0.05 A. OK sets the value as a step does, onto the nearer step (1.23 A is
 1.25 A); CLOSE asks for the save, as after a step. A value outside the
@@ -1394,8 +1450,8 @@ left column.
 SERVO TESTER holds OUTPUTS, PORT 1, PORT 2, PORT 3 or PORT 4. With
 OUTPUTS the row names the GPIOs bound as SERVO PWM in the binding the
 tester drives: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`; as many pins as fit
-the 27 characters of the value, then `+N`: 8 pins from GP40 read
-`SERVO PWM GP40 GP41 GP42 +5`. The row is in the warning colour, label and
+the 25 characters of the value, then `+N`: 8 pins from GP40 read
+`SERVO PWM GP40 GP41 +6`. The row is in the warning colour, label and
 value, with no such pin (`NO SERVO PWM PIN`) and before a binding has been
 read (`PINS NOT READ`). With a programming port the row reads `PROG PORT 1
 GP13` in the warning colour, the port's number and the GPIO the IOmcu
@@ -2259,7 +2315,11 @@ for the password. SCAN AGAIN scans again; CANCEL goes back.
 The keyboard has three layers of the same grid: lower case, `ABC` for upper
 case, `#+=` for the 32 printable marks of ASCII (American Standard Code for
 Information Interchange). Each of the 95 printable ASCII characters is on
-one layer once; SPACE is the wide key. A name takes 1 to 32 bytes. A
+one layer once; SPACE is the wide key. The keyboard covers the body above
+the alert band, 1008 x 484 px, with keys of 93 x 71 px
+([Keypad, keyboard and the shared controls](#keypad-keyboard-and-the-shared-controls)).
+A name takes 1 to 32 bytes; OK on an empty name keeps the keyboard open
+and says `Enter a network name.` A
 password takes 8 to 63 characters, the WPA2 and WPA3 personal range: the
 64th is refused, and OK under 8 says so.
 
@@ -2267,7 +2327,7 @@ password takes 8 to 63 characters, the WPA2 and WPA3 personal range: the
 ![SHOW](img/wifi-key-shown.png)
 ![Fewer than 8 characters](img/wifi-key-short.png)
 
-The password shows as dots until SHOW; HIDE hides it again. OK keeps the
+The password shows as `*` until SHOW; HIDE hides it again. OK keeps the
 network: its name and its password go to NVS (non-volatile storage), and the
 screen then offers JOIN HOME NETWORK.
 
@@ -2460,7 +2520,8 @@ reach the layout with two application slots: [First run, §1](FirstRun.md#1-flas
 ## Setup
 
 The SETUP tile of the menu opens a page of tiles, 3 by 3, in the menu's
-style. Each tile is 330 x 108 px, its icon centred over its name.
+style. Each tile is 328 x 130 px with 10 px margins: a 36 px icon centred
+over its name in the 12 x 24 px face, and a line in the 10 x 20 px face.
 
 ![Setup](img/setup.png)
 
@@ -2486,10 +2547,13 @@ The same page in the light theme:
 
 ![Setup in the light theme](img/setup-light.png)
 
-A category's list is 776 px wide from the panel's left margin and shows
-446 px of it, 7 rows, over a strip of three columns: the category's name,
-RESET CATEGORY and SAVE. The strip ends at panel y 552, 4 px above the alert
-band
+A category's list is 984 px wide from the panel's left margin and shows
+428 px of it, 6 rows whole, over a strip of three columns, 48 px tall: the
+category's name, RESET CATEGORY and SAVE. A row is 64 px tall at a 70 px
+pitch: the setting's name in the 20 x 36 px face, its help line under it in
+the 10 x 20 px face, its value in the 12 x 24 px face. A value wider than
+the gap between the keys would take the 10 x 20 px face; no value of a
+SETUP setting needs it, in English or in German. The strip ends at panel y 552, 4 px above the alert band
 ([The alert band](#the-alert-band)), so an alert never covers a key, a row,
 RESET CATEGORY or SAVE, on the tiles or on a list.
 
@@ -2538,12 +2602,13 @@ choice wraps round from its last value to its first.
   press or outside the key.
 - **Scroll.** A vertical drag of more than 8 px that starts anywhere on the
   list scrolls it, the key columns included. A scroll changes no value. The
-  bar at the list's right edge shows the position and takes no touch.
-- A key is its column, 44 px wide, over the 54 px of its row. The 4 px
-  between two rows belong to no key.
-- **Keypad.** A tap on a number's value, the 126 px between its `-` and `+`
-  keys, opens the keypad over the list and the strip: 1008 x 484 px, keys of
-  243 x 91 px, its foot 4 px above the alert band. It names the setting, its
+  bar right of the list, 12 px wide, shows the position and takes no touch.
+  A list that fits its 428 px has no bar.
+- A key is drawn 56 x 48 px and takes its column, 56 px wide, over the
+  64 px of its row. The 6 px between two rows belong to no key.
+- **Keypad.** A tap on a number's value, the 166 px between its `-` and `+`
+  keys, opens the keypad over the list and the strip: 1004 x 482 px, keys of
+  241 x 85 px, its foot 4 px above the alert band. It names the setting, its
   range and its unit, shows the value faint until a digit is typed, and
   takes as many digits after the point as the step has: one for a shunt's
   0.1 mΩ, none for a pin. OK sets the value as a step sets it: in force at
@@ -2649,7 +2714,7 @@ INTERFACES lists its 23 settings in five sections. A heading above the first
 row of each names it: I2C BUS (the INA228, Sensor SDA and SCL, and the
 AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical tacho), SUPPLY
 (the PD mini) and PROG PORT (Hitec D receive). A heading is a row of its
-own, 54 px high at the list's 58 px pitch, in the accent colour over a rule,
+own, 64 px high at the list's 70 px pitch, in the accent colour over a rule,
 with no keys and no value: a tap or a drag on it changes nothing, and a drag
 scrolls the list. The list is 28 rows long.
 
@@ -3170,12 +3235,14 @@ until a save succeeds, even with every value stepped back.
 
 The home tag on the tiles, the only way from SETUP to the menu, is held while
 the label reads `SAVE` or `NOT SAVED`. A warning covers the body instead: a
-card of 1008 x 442 px with a 3 px edge in the warning colour, over the strip.
+card of 1004 x 424 px with a 3 px edge in the warning colour, over the strip.
+Its title is in the 20 x 36 px face, the two lines on what unsaved means and
+the notes in the 12 x 24 px face.
 
 ![One value unsaved, at the home tag](img/setup-leave.png)
 
 It lists each value and string that differs from the stored copy, one line
-of 22 px each, as `name: stored -> now`. A value is written as the list
+of 24 px each in the 10 x 20 px face, as `name: stored -> now`. A value is written as the list
 writes it, with its unit; a string, the DUT (device under test) name, as it
 is. Values set on other screens, such as SERVO's settings, ESC STICK's or
 MOTOR & ESC's, are listed too: they are in the same set and the same save

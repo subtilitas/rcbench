@@ -81,14 +81,19 @@ TEST_CASE(a_two_row_alert_fits_two_rows_of_the_band)
     CHECK(seen > 0);
 }
 
-/* A point on the alert band that, with no alert there, opens a screen from
- * the overview: the tap the band must keep from the screen beneath.  -1
- * when the overview has nothing there. */
+/** @brief The alert band's taps: 4 px under its top edge, over the menu's
+ *         lower tiles, which end 10 px above the panel's foot. */
+#define ALERT_TAP_Y (UI_ALERT_Y + 4)
+
+/* A point on the alert band, 4 px under its top edge, that, with no alert
+ * there, opens a screen from the overview: the tap the band must keep from
+ * the screen beneath.  The menu's tiles end 10 px above the panel's foot.
+ * -1 when the overview has nothing there. */
 static int alert_band_x_over_a_tile(void)
 {
     for (int x = 10; x < W; x += 20) {
         to_overview();
-        tap(x, H - 10);
+        tap(x, ALERT_TAP_Y);
         if (ui_router_current() != SCREEN_OVERVIEW) {
             return x;
         }
@@ -267,7 +272,7 @@ TEST_CASE(an_alert_is_withdrawn_only_while_it_still_shows)
     CHECK(!ui_router_withdraw_alert(third));
     ui_router_set_alert("IOmcu disarmed");
     const uint32_t fourth = ui_router_alert_number();
-    tap(400, H - 10);
+    tap(400, ALERT_TAP_Y);
     CHECK(ui_router_alert() == NULL);
     CHECK(!ui_router_withdraw_alert(fourth));
 
@@ -303,13 +308,13 @@ TEST_CASE(a_second_contact_cannot_take_the_alert)
     CHECK(x >= 0);
     to_overview();
     ui_router_set_alert("IOmcu refused the pulse range");
-    touch(400, H - 10, TOUCH_EVENT_DOWN, 1);
-    touch(x, H - 10, TOUCH_EVENT_DOWN, 2);
+    touch(400, ALERT_TAP_Y, TOUCH_EVENT_DOWN, 1);
+    touch(x, ALERT_TAP_Y, TOUCH_EVENT_DOWN, 2);
     touch(x, 200, TOUCH_EVENT_MOVE, 2);
     touch(x, 200, TOUCH_EVENT_UP, 2);           /* slid off: clears nothing */
     CHECK(ui_router_alert() != NULL);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
-    touch(400, H - 10, TOUCH_EVENT_UP, 1);
+    touch(400, ALERT_TAP_Y, TOUCH_EVENT_UP, 1);
     CHECK(ui_router_alert() == NULL);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
@@ -321,13 +326,13 @@ TEST_CASE(a_tap_on_the_alert_clears_it_and_reaches_no_screen)
     CHECK(x >= 0);
     to_overview();
     ui_router_set_alert("supply not answering -- output off");
-    tap(x, H - 10);
+    tap(x, ALERT_TAP_Y);
     CHECK(ui_router_alert() == NULL);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 
     /* Pressed on the band and lifted off it: a slip, not a tap. */
     ui_router_set_alert("supply not answering -- output off");
-    touch(x, H - 10, TOUCH_EVENT_DOWN, 1);
+    touch(x, ALERT_TAP_Y, TOUCH_EVENT_DOWN, 1);
     touch(x, 200, TOUCH_EVENT_MOVE, 1);
     touch(x, 200, TOUCH_EVENT_UP, 1);
     CHECK(ui_router_alert() != NULL);
@@ -342,9 +347,9 @@ TEST_CASE(a_lift_clears_only_the_alert_it_was_pressed_on)
     fresh();
     to_overview();
     ui_router_set_alert("IOmcu refused to arm");
-    touch(400, H - 10, TOUCH_EVENT_DOWN, 1);
+    touch(400, ALERT_TAP_Y, TOUCH_EVENT_DOWN, 1);
     ui_router_set_alert("IOmcu disarmed -- arm again");
-    touch(400, H - 10, TOUCH_EVENT_UP, 1);
+    touch(400, ALERT_TAP_Y, TOUCH_EVENT_UP, 1);
     CHECK_STR_EQ(ui_router_alert(), "IOmcu disarmed -- arm again");
     ui_router_set_alert(NULL);
 }
@@ -358,10 +363,10 @@ TEST_CASE(a_press_on_an_alert_that_expires_stays_off_the_screen)
     CHECK(x >= 0);
     to_overview();
     ui_router_set_alert("card full or unwritable -- run not recorded");
-    touch(x, H - 10, TOUCH_EVENT_DOWN, 1);
+    touch(x, ALERT_TAP_Y, TOUCH_EVENT_DOWN, 1);
     expire_alert();
     CHECK(ui_router_alert() == NULL);
-    touch(x, H - 10, TOUCH_EVENT_UP, 1);
+    touch(x, ALERT_TAP_Y, TOUCH_EVENT_UP, 1);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
@@ -372,9 +377,9 @@ TEST_CASE(cancelling_gestures_lets_go_of_the_alert)
     fresh();
     to_overview();
     ui_router_set_alert("touch lost while arming -- arm again");
-    touch(400, H - 10, TOUCH_EVENT_DOWN, 1);
+    touch(400, ALERT_TAP_Y, TOUCH_EVENT_DOWN, 1);
     ui_router_cancel_gestures();
-    touch(400, H - 10, TOUCH_EVENT_UP, 1);
+    touch(400, ALERT_TAP_Y, TOUCH_EVENT_UP, 1);
     CHECK(ui_router_alert() != NULL);
     ui_router_set_alert(NULL);
 }
@@ -390,7 +395,7 @@ TEST_CASE(a_held_alert_stays_and_lets_taps_through)
     ui_router_hold_alert("touch did not answer -- the bench will not arm");
     ui_router_tick(10.0f * UI_ALERT_SHOW_S);
     CHECK(ui_router_alert() != NULL);
-    tap(x, H - 10);
+    tap(x, ALERT_TAP_Y);
     CHECK(ui_router_alert() != NULL);
     CHECK(ui_router_current() != SCREEN_OVERVIEW);
     ui_router_set_alert(NULL);                  /* not the held one */
@@ -412,7 +417,7 @@ TEST_CASE(a_held_alert_returns_after_a_passing_one)
     CHECK_STR_EQ(ui_router_alert(),
                  "touch did not answer -- the bench will not arm");
     ui_router_set_alert("protocol mismatch -- will not arm");
-    tap(400, H - 10);
+    tap(400, ALERT_TAP_Y);
     CHECK_STR_EQ(ui_router_alert(),
                  "touch did not answer -- the bench will not arm");
     ui_router_hold_alert(NULL);

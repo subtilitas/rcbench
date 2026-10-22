@@ -149,15 +149,17 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
 
-    /* IDLE CURRENT's keypad over the list: the tag closes the keypad, the
-     * keypad's keys do nothing after it, and the list stays; the next tag
-     * climbs to TEST. */
+    /* IDLE CURRENT's keypad over the list: the tag closes the keypad
+     * without a value, and the list stays; the next tag climbs to TEST.
+     * The keypad's spots are the list's again: its keys over the rows
+     * would act on the rows. */
     const float idle = settings_get(SET_SERVO_IDLE_MAX);
     open_run_settings(0);
     tap(LROW_X(1), LROW_Y(1));
+    CHECK(servo_screen_keypad()->open);
     CHECK(home_tag());
+    CHECK(!servo_screen_keypad()->open);
     CHECK_EQ(servo_screen_run_settings(), 1);
-    keys("0.7");
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), idle, 1e-6f);
     CHECK(home_tag());
     CHECK_EQ(servo_screen_run_settings(), 0);

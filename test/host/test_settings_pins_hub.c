@@ -827,9 +827,9 @@ TEST_CASE(the_tiles_show_and_save_what_a_list_left_unsaved)
 }
 
 /*
- * Where ink is in rows y0 to y1 - 1 of @p r, inside its edge: the leftmost
- * and the rightmost column, and the first and the last row.  False when
- * nothing is drawn there.
+ * Where ink is in rows y0 to y1 - 1 of @p r, clear of its rounded corners
+ * (UI_R_CARD px from either side): the leftmost and the rightmost column,
+ * and the first and the last row.  False when nothing is drawn there.
  */
 typedef struct { int left, right, top, bottom; } ink_t;
 
@@ -837,7 +837,7 @@ static bool ink(gfx_rect_t r, int y0, int y1, gfx_color_t bg, ink_t *out)
 {
     *out = (ink_t){ W, -1, -1, -1 };
     for (int y = y0; y < y1; ++y) {
-        for (int x = r.x + 3; x < r.x + r.w - 3; ++x) {
+        for (int x = r.x + UI_R_CARD; x < r.x + r.w - UI_R_CARD; ++x) {
             if (gfx_pixel_get(&s_c, x, y) == bg) {
                 continue;
             }
@@ -854,23 +854,25 @@ static bool ink(gfx_rect_t r, int y0, int y1, gfx_color_t bg, ink_t *out)
  * A tile's icon sits over its name.  The icon's drawn ink, from its
  * leftmost to its rightmost pixel, is centred on the name's line of text,
  * which ui_tile() centres in the tile, to 1 px; the name's own ink lies in
- * that line (its glyphs leave up to 2 px of their 8 px cells blank, so the
- * ink of "MOTOR & ESC" is centred 1.5 px left of its line).  The icon's ink
- * stays in its 30 px box, clear of the name under it.  @p r and @p icon_dy
- * are in canvas coordinates, on a tile already drawn.
+ * that line (its glyphs leave blank columns in their cells, so the ink of
+ * "MOTOR & ESC" is centred left of its line).  The icon's ink stays in its
+ * box, clear of the name under it.  @p r is in canvas coordinates, on a
+ * tile already drawn with @p look.
  */
-static void icon_over_name(gfx_rect_t r, int icon_dy, const char *name,
-                           const char *what)
+static void icon_over_name(gfx_rect_t r, const ui_tile_look_t *look,
+                           const char *name, const char *what)
 {
     const gfx_color_t bg = gfx_pixel_get(&s_c, r.x + r.w / 2, r.y + 2);
+    const int name_h = gfx_text_height(look->name_f, 1);
     ink_t icon, label;
     /* Every row from under the edge to the name's top. */
-    if (!ink(r, r.y + 3, r.y + icon_dy + 40, bg, &icon)
-        || !ink(r, r.y + icon_dy + 40, r.y + icon_dy + 62, bg, &label)) {
+    if (!ink(r, r.y + 3, r.y + look->name_dy, bg, &icon)
+        || !ink(r, r.y + look->name_dy, r.y + look->name_dy + name_h, bg,
+                &label)) {
         T_FAIL("%s: no icon or no name drawn", what);
         return;
     }
-    const int tw = gfx_text_width(&gfx_font_8x16, name, 1);
+    const int tw = gfx_text_width(look->name_f, name, 1);
     const int line_x = r.x + (r.w - tw) / 2;
     if (abs((icon.left + icon.right + 1) - (2 * line_x + tw)) > 2) {
         T_FAIL("%s: icon centred at %.1f, its name's line at %.1f", what,
@@ -880,10 +882,11 @@ static void icon_over_name(gfx_rect_t r, int icon_dy, const char *name,
         T_FAIL("%s: name inked at %d to %d, its line %d to %d", what,
                label.left, label.right, line_x, line_x + tw - 1);
     }
-    if (icon.top < r.y + icon_dy
-        || icon.bottom >= r.y + icon_dy + UI_TILE_ICON) {
+    if (icon.top < r.y + look->icon_dy
+        || icon.bottom >= r.y + look->icon_dy + look->icon) {
         T_FAIL("%s: icon rows %d to %d, box %d to %d", what, icon.top,
-               icon.bottom, r.y + icon_dy, r.y + icon_dy + UI_TILE_ICON - 1);
+               icon.bottom, r.y + look->icon_dy,
+               r.y + look->icon_dy + look->icon - 1);
     }
 }
 
@@ -899,15 +902,27 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         { ui_icon_chip, "INTERFACES" },   { ui_icon_list, "OUTPUTS" },
         { ui_icon_board, "PICK A PIN" },  { ui_icon_wifi, "WI-FI" },
     };
-    /* The menu's tile: 190 x 204 px, the icon 64 px down. */
+    /* The menu's tile, 243 x 255 px: the 40 px icon 30 px down, the name
+     * in the head face at 84 (overview_screen.c). */
+    static const ui_tile_look_t k_menu = {
+        .icon_dy = 30, .icon = 40, .name_dy = 84, .line_dy = 128,
+        .line_pitch = 24, .name_f = &gfx_font_20x36,
+        .line_f = &gfx_font_10x20,
+    };
     for (size_t i = 0; i < sizeof(menu) / sizeof(menu[0]); ++i) {
-        const gfx_rect_t r = gfx_rect_make(8, 8, 190, 204);
+        const gfx_rect_t r = gfx_rect_make(10, 10, 243, 255);
         memset(s_fb, 0, (size_t)W * H * sizeof(gfx_color_t));
-        ui_tile(&s_c, r, 64, menu[i].icon, menu[i].name, "", false);
-        icon_over_name(r, 64, menu[i].name, menu[i].name);
+        ui_tile(&s_c, r, &k_menu, menu[i].icon, menu[i].name, "", false);
+        icon_over_name(r, &k_menu, menu[i].name, menu[i].name);
     }
     /* SETUP's, as the screen draws them: the categories, then OUTPUTS,
-     * PICK A PIN, WI-FI and UPDATES.  The icon's box starts 16 px down. */
+     * PICK A PIN, WI-FI and UPDATES.  The 36 px icon's box starts 14 px
+     * down, the name in the body face at 60 (settings_screen_int.h). */
+    static const ui_tile_look_t k_hub = {
+        .icon_dy = 14, .icon = 36, .name_dy = 60, .line_dy = 94,
+        .line_pitch = 0, .name_f = &gfx_font_12x24,
+        .line_f = &gfx_font_10x20,
+    };
     static const ui_screen_id_t screens[] = { SCREEN_OUTPUTS, SCREEN_PICKER,
                                               SCREEN_WIFI, SCREEN_UPDATES };
     CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + 4);
@@ -919,7 +934,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         const char *name = (i < SET_CAT_SETUP_COUNT)
             ? ui_setting_category((setting_cat_t)i)
             : ui_router_title(screens[i - SET_CAT_SETUP_COUNT]);
-        icon_over_name(r, 16, name, name);
+        icon_over_name(r, &k_hub, name, name);
     }
 }
 

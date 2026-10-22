@@ -12,7 +12,7 @@ Das Menü ist der Startbildschirm des Panels. Es öffnet nach dem Splash und hat
 
 ![Das Menü bei stehendem Link](view:overview)
 
-Acht Kacheln zu je 246 x 258 px, in 4 Spalten und 2 Reihen: die Werkbänke in der ersten Reihe, die Instrumente in der zweiten, LOGS über SETUP in der letzten Spalte.
+Acht Kacheln zu je 243 x 255 px, in 4 Spalten und 2 Reihen: die Werkbänke in der ersten Reihe, die Instrumente in der zweiten, LOGS über SETUP in der letzten Spalte.
 
 | Kachel | Zeile unter dem Namen | Seite |
 |---|---|---|

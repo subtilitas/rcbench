@@ -603,9 +603,12 @@ void draw_target(gfx_canvas_t *c)
 /* The protocol the SERVO PWM outputs are bound as: a name, the same in
  * every language. */
 #define TARGET_PROTOCOL "SERVO PWM"
-/** @brief Characters the TARGET row's value holds: its 292 px box less
- *         8 px each side, in cells of 10 px. */
-#define TARGET_CELLS 27u
+/** @brief Characters the TARGET row's value holds in the 10 x 20 face
+ *         ui_target_row draws a row UI_TARGET_TALL_H or taller in: the
+ *         column less the label, 268 px, less 8 px each side, 25 cells. */
+#define TARGET_CELLS ((unsigned)((RC_W - UI_TARGET_LABEL_W_TALL - 16) / 10))
+_Static_assert(TARGET_H >= UI_TARGET_TALL_H,
+               "the TARGET row is tall enough for the 10 x 20 face");
 
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known)

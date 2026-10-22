@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The TARGET row: its box, its touch, its look and its text.  See
+ *        ui_target_row.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -19,21 +23,38 @@ void ui_target_row_init(ui_target_row_t *t, gfx_rect_t row)
     t->rect = row;
 }
 
+/**
+ * @brief Whether the row is tall enough for the 10 x 20 face.
+ * @param t The row, not NULL.
+ * @return True from UI_TARGET_TALL_H on.
+ */
+static bool row_tall(const ui_target_row_t *t)
+{
+    return t->rect.h >= UI_TARGET_TALL_H;
+}
+
 gfx_rect_t ui_target_row_value_rect(const ui_target_row_t *t)
 {
-    if (t == NULL || t->rect.w <= UI_TARGET_LABEL_W) {
+    const int lw = (t != NULL && row_tall(t)) ? UI_TARGET_LABEL_W_TALL
+                                              : UI_TARGET_LABEL_W;
+    if (t == NULL || t->rect.w <= lw) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
-    return (gfx_rect_t){ (int16_t)(t->rect.x + UI_TARGET_LABEL_W), t->rect.y,
-                         (int16_t)(t->rect.w - UI_TARGET_LABEL_W),
-                         t->rect.h };
+    return (gfx_rect_t){ (int16_t)(t->rect.x + lw), t->rect.y,
+                         (int16_t)(t->rect.w - lw), t->rect.h };
+}
+
+const gfx_font_t *ui_target_row_font(const ui_target_row_t *t)
+{
+    return (t != NULL && row_tall(t)) ? &gfx_font_10x20 : UI_FONT_LABEL;
 }
 
 unsigned ui_target_row_cells(const ui_target_row_t *t)
 {
     const gfx_rect_t v = ui_target_row_value_rect(t);
+    const int cw = ui_target_row_font(t)->width;
     /* 8 px of padding each side, as a value box's text has. */
-    return (v.w > 16) ? (unsigned)((v.w - 16) / 8) : 0u;
+    return (v.w > 16) ? (unsigned)((v.w - 16) / cw) : 0u;
 }
 
 ui_target_ev_t ui_target_row_event(ui_target_row_t *t,
@@ -81,9 +102,11 @@ void ui_target_row_render(const ui_target_row_t *t, gfx_canvas_t *c,
     }
     const gfx_color_t ink = warn ? ui_theme_color(UI_C_WARN)
                                  : ui_theme_color(UI_C_TEXT_DIM);
+    const gfx_font_t *f = ui_target_row_font(t);
     if (label != NULL) {
-        gfx_text(c, t->rect.x, t->rect.y + (t->rect.h - 16) / 2, label,
-                 UI_FONT_LABEL, ink, 1);
+        gfx_text(c, t->rect.x,
+                 t->rect.y + (t->rect.h - gfx_text_height(f, 1)) / 2, label,
+                 f, ink, 1);
     }
     const gfx_rect_t v = ui_target_row_value_rect(t);
     gfx_color_t body = ui_theme_color(UI_C_PANEL_SUNK);
@@ -102,7 +125,7 @@ void ui_target_row_render(const ui_target_row_t *t, gfx_canvas_t *c,
         const gfx_color_t txt = warn     ? ui_theme_color(UI_C_WARN)
                                 : locked ? ui_theme_color(UI_C_TEXT_DIM)
                                          : ui_theme_color(UI_C_TEXT);
-        gfx_text_in(c, v, value, UI_FONT_LABEL, txt, 1, GFX_ALIGN_CENTER);
+        gfx_text_in(c, v, value, f, txt, 1, GFX_ALIGN_CENTER);
     }
 }
 

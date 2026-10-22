@@ -57,8 +57,13 @@
 #define Q_BY    (Q_Y + Q_H - 80)
 #define Q_BH    64
 
-/* The keyboard, over the whole area. */
-#define KEY_AREA gfx_rect_make(8, 8, 784, 416)
+/**
+ * @brief The keyboard, over the whole body, UI_MARGIN in from its sides and
+ *        top, and ending 4 px above the alert band: 1008 x 484 px, keys of
+ *        93 x 71 px.
+ */
+#define KEY_AREA gfx_rect_make(UI_MARGIN, UI_MARGIN, W - 2 * UI_MARGIN, \
+                               UI_ALERT_Y - UI_BAND_H - 4 - UI_MARGIN)
 
 typedef enum {
     SUB_MAIN = 0,
@@ -96,11 +101,21 @@ static struct {
     bool         have_press;
     ui_hold_t    hold;
     bool         installing;    /* INSTALL went: leaving keeps the image */
-    bool         q_cancelled;   /* the home tag answered the question */
-    unsigned     drawn_mask;
-} s;
+    bool         q_cancelled;   /**< the home tag answered the question */
+    unsigned     drawn_mask;    /**< the buffers drawn since a change   */
+} s;  /**< the screen's state: the view, the keyboard, the press */
 
 static void touched(void) { s.drawn_mask = 0u; }
+
+gfx_rect_t wifi_screen_key_area(void)
+{
+    return KEY_AREA;
+}
+
+const ui_textkey_t *wifi_screen_textkey(void)
+{
+    return &s.tk;
+}
 
 static void reset(void)
 {

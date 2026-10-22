@@ -51,6 +51,32 @@ void ui_button_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
 /** True when @p c is bright enough to need dark text on it. */
 bool ui_is_light(gfx_color_t c);
 
+/**
+ * @brief Whether @p s in face @p f fits a box @p w x @p h px with @p pad px
+ *        to spare at each side.
+ *
+ * The overlays pick the largest face of the type scale a label fits: a key
+ * of the keypad or the keyboard over a narrow host card takes a smaller
+ * face rather than overflow.
+ * @param f   The face; NULL fits nothing.
+ * @param s   The text; NULL is the empty text.
+ * @param w   The box's width, in pixels.
+ * @param h   The box's height, in pixels: at least the face's cell height.
+ * @param pad The room to keep left and right of the text, in pixels.
+ * @return True when the text's width plus 2 * @p pad is at most @p w and
+ *         the face's height at most @p h.
+ */
+bool ui_text_fits(const gfx_font_t *f, const char *s, int w, int h, int pad);
+
+/**
+ * @brief Where the key grid of the keypad and of the keyboard ends at the
+ *        latest, in body coordinates: 4 px above the alert band, y 492.
+ *
+ * An overlay paints its whole area; its keys end here when the area
+ * reaches further, so an alert covers no key on any screen.
+ */
+#define UI_KEYS_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
+
 /** A raised surface with a hairline edge: the base of every panel. */
 void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill);
 
@@ -65,19 +91,47 @@ int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
                  const gfx_font_t *f, gfx_color_t col);
 
 /**
- * A tile of a grid that opens what it names: the menu's, and SETUP's.
- *
- * A rounded surface, @p icon in a UI_TILE_ICON px box whose top is
- * @p icon_dy px from the tile's and whose centre is the tile's centre in x,
- * @p name 40 px under the box's top in the text colour and @p line 24 px
- * under the name in the dim one, both centred and clipped to the tile.
- * @p pressed lightens the surface.  The 30 px icon, the 22 px name and the
- * 20 px line take 76 px from @p icon_dy.  A line wider than the tile breaks
- * at a space onto a second row 18 px lower when the tile is tall enough.
+ * @brief Where a tile places its parts and in which faces: one look per
+ *        grid, the menu's and SETUP's.  Offsets are in pixels from the
+ *        tile's top edge.
  */
-#define UI_TILE_ICON 30
-void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
-             const char *name, const char *line, bool pressed);
+typedef struct {
+    int16_t icon_dy;          /**< the icon box's top                     */
+    int16_t icon;             /**< the icon box's side                    */
+    int16_t name_dy;          /**< the name's top                         */
+    int16_t line_dy;          /**< the line's top                         */
+    int16_t line_pitch;       /**< a broken line's second row below the
+                               *   first; 0: no second row               */
+    const gfx_font_t *name_f; /**< the name's face                        */
+    const gfx_font_t *line_f; /**< the line's face                        */
+} ui_tile_look_t;
+
+/** @brief A tile's name and line keep this far from its sides, px. */
+#define UI_TILE_PAD 8
+
+/**
+ * @brief A tile of a grid that opens what it names: the menu's, and
+ *        SETUP's.
+ *
+ * A rounded surface, @p icon in a square box placed by @p look, centred in
+ * x, the name under it in the text colour and the line under the name in
+ * the dim one, both centred and clipped to the tile less UI_TILE_PAD px on
+ * either side.  A line wider than that breaks at the last space that fits
+ * onto a second row look->line_pitch px lower, where line_pitch is not 0
+ * and that row ends inside the tile; a line with no such space or no such
+ * row is clipped.
+ *
+ * @param c       Canvas.
+ * @param r       The tile.
+ * @param look    Where its parts go and their faces.
+ * @param icon    Its icon, or NULL for none.
+ * @param name    Its name, or NULL for none.
+ * @param line    The line under the name, or NULL for none.
+ * @param pressed Lightens the surface.
+ */
+void ui_tile(gfx_canvas_t *c, gfx_rect_t r, const ui_tile_look_t *look,
+             ui_icon_fn icon, const char *name, const char *line,
+             bool pressed);
 
 /** Small status pill: a filled dot, then a label UI_PILL_INSET px from
  *  the pill's left edge, the dot centred half that from it. */
@@ -180,10 +234,38 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
  * steps, which is the difference between this and a settings row.  The
  * outputs screen's protocol list and the pin picker's are this one.
  *
- * Text is in the head face, 28 px tall, centred in the face's and each row's
- * height; the face takes 10 px before its text and 28 px after it for the
- * chevron, a row 12 px before its text.
+ * A face or a row UI_CHOICE_ROW_H (56 px, 8.4 mm) tall or taller draws its
+ * text in the type scale's head face, 20 x 36 (UI_FONT_TAG), when the text
+ * fits; a shorter one, and a text that does not fit, in the 16 x 28 face
+ * (UI_FONT_HEAD).  A screen takes the larger face with the row height its
+ * own layout gives.  The text is centred in the face's and each row's
+ * height.  A face takes 10 px before its text and 33 px after it for a
+ * 7 px chevron, 12 px and 43 px for an 11 px one when tall; a row 12 px
+ * before and after its text.  Each face and row picks its own face: the
+ * rows of one list can differ where one name does not fit.
  */
+/** @brief The row height from which a choice face or row draws in the
+ *         20 x 36 face: 56 px (8.4 mm), the plan's choice row. */
+#define UI_CHOICE_ROW_H 56
+
+/**
+ * @brief The face a choice face or row @p h px tall draws its text in.
+ * @param h The face's or the row's height, in pixels.
+ * @return UI_FONT_TAG (20 x 36) from UI_CHOICE_ROW_H on, UI_FONT_HEAD
+ *         (16 x 28) under it.
+ */
+const gfx_font_t *ui_choice_font(int h);
+
+/**
+ * @brief The face a choice face or row draws @p text in.
+ * @param h    The face's or the row's height, in pixels.
+ * @param w    The width its text may take, in pixels.
+ * @param text The text; NULL is the empty text.
+ * @return ui_choice_font(@p h) when @p text fits @p w in it, else
+ *         UI_FONT_HEAD (16 x 28).
+ */
+const gfx_font_t *ui_choice_text_font(int h, int w, const char *text);
+
 void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
                     bool pressed, bool open);
 
