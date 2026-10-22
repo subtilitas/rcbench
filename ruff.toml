@@ -14,6 +14,8 @@ select = [
     "W",    # pycodestyle warnings
     "F",    # pyflakes: undefined names, unused imports, dead assignments
     "B",    # bugbear: the shapes that are usually a bug
+    "D",    # pydocstyle: a Google-style docstring on every module, public
+            # function, class and method (CONTRIBUTING.md, "Comments")
 ]
 ignore = [
     # sys.exit(message) is how these tools report a fatal condition.
@@ -23,6 +25,66 @@ ignore = [
     "S603", "S607",
 ]
 
+[lint.pydocstyle]
+# A summary line, a blank line, then Args, Returns and Raises sections.
+convention = "google"
+
 [lint.per-file-ignores]
-# gen_font.py carries the glyph tables it emits as long literal strings.
-"tools/gen_font.py" = ["E501"]
+# gen_font.py carries the glyph tables it emits as long literal strings
+# (E501).
+#
+# The D codes below are the docstring baseline: 1225 findings in 51 files.
+# A file not listed passes every D rule.  Each listed file is excused the
+# codes on its line; delete a code when its file is fixed, and the line
+# when no code is left.
+"test/host/check_wa_page.py" = ["D103"]
+"test/host/check_wa_zip.py" = ["D103"]
+"test/host/fuzz_parity.py" = ["D103", "D205", "D209"]
+"test/host/test_sense_trace_tool.py" = ["D103", "D205", "D209", "D301"]
+"test/tools/conftest.py" = ["D103", "D205", "D209"]
+"test/tools/test_capture_sh.py" = ["D103", "D205", "D209"]
+"test/tools/test_check_docs.py" = ["D103", "D205", "D209"]
+"test/tools/test_check_protocols.py" = ["D103", "D205", "D209", "D301", "D403"]
+"test/tools/test_check_sanitizers.py" = ["D103"]
+"test/tools/test_check_sizes.py" = ["D103", "D205", "D209"]
+"test/tools/test_ci_gate.py" = ["D103", "D205"]
+"test/tools/test_coverage.py" = ["D103", "D205", "D209"]
+"test/tools/test_fuzz_parity.py" = ["D103"]
+"test/tools/test_gen_board_drawing.py" = ["D103", "D205", "D209"]
+"test/tools/test_gen_esc_profiles.py" = ["D103", "D205", "D209"]
+"test/tools/test_help_site.py" = ["D103", "D205", "D209"]
+"test/tools/test_home_grid.py" = ["D103", "D205", "D209", "D403"]
+"test/tools/test_image_slot.py" = ["D103", "D205"]
+"test/tools/test_mutate.py" = ["D103", "D205"]
+"test/tools/test_pinmap_and_wiki.py" = ["D103", "D205"]
+"test/tools/test_psram_bss.py" = ["D103", "D205"]
+"test/tools/test_release_kind.py" = ["D103", "D205"]
+"test/tools/test_render_ui.py" = ["D103", "D205"]
+"test/tools/test_security_parsers.py" = ["D103"]
+"test/tools/test_skip_or_fail.py" = ["D103"]
+"test/tools/test_stack_check.py" = ["D103", "D205", "D209", "D403"]
+"test/tools/test_stack_iomcu.py" = ["D102", "D103", "D107", "D205", "D209"]
+"test/tools/test_ui_sources.py" = ["D103", "D205"]
+"tools/check_docs.py" = ["D103", "D205", "D209", "D301"]
+"tools/check_formats.py" = ["D103"]
+"tools/check_protocols.py" = ["D103", "D205", "D209", "D301"]
+"tools/check_sanitizers.py" = ["D103", "D205", "D209"]
+"tools/check_sizes.py" = ["D103", "D205", "D209"]
+"tools/ci_gate.py" = ["D103", "D205", "D209"]
+"tools/coverage.py" = ["D103", "D205", "D209"]
+"tools/frame_cost.py" = ["D103"]
+"tools/gen_board_drawing.py" = ["D103", "D402"]
+"tools/gen_esc_profiles.py" = ["D101", "D103", "D205", "D209"]
+"tools/gen_font.py" = ["D103", "E501"]
+"tools/help_site.py" = ["D101", "D102", "D103", "D107", "D205", "D209"]
+"tools/jlc_stock.py" = ["D101", "D102", "D103", "D107", "D205", "D209"]
+"tools/mutate.py" = ["D101", "D102", "D103", "D107", "D205", "D209"]
+"tools/pinmap_check.py" = ["D103"]
+"tools/release_kind.py" = ["D103", "D205", "D209"]
+"tools/render_ui.py" = ["D101", "D102", "D103", "D107", "D205", "D209"]
+"tools/security_parsers.py" = ["D103"]
+"tools/sense_trace.py" = ["D102", "D103", "D107", "D205", "D209"]
+"tools/stack_check.py" = ["D101", "D103", "D107", "D205", "D209"]
+"tools/stack_elf.py" = ["D102", "D103", "D107", "D205", "D209", "D403"]
+"tools/stack_iomcu.py" = ["D101", "D103", "D107", "D205", "D209"]
+"tools/wiki_links.py" = ["D103", "D107", "D205", "D209", "D301"]

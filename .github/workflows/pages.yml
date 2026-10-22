@@ -1,15 +1,24 @@
 name: Configurator
 
 # Checks, builds and publishes the bench configurator under configurator/,
-# and the panel's web help under help/ of the same site.
+# the panel's web help under help/ and the C API (application programming
+# interface) reference under api/ of the same site.
 #
+# - changes: decides with tools/pages_changes.py whether the run is a full
+#   one.  A pull request or push that changes a path of its FULL_PATHS (the
+#   configurator, the help and their inputs, this file) runs every job.
+#   One that changes only the sources of the API reference (the C sources,
+#   the Doxyfile, tools/install_doxygen.sh) skips core, smoke, matrix and
+#   the checks of build: it builds the configurator page as it stands, the
+#   help and the API reference, and on main deploys them.
 # - core: type check, test suite, static checks on the data file against the
 #   tree at the release tag, the release of package.json against the firmware
 #   header rcbench_version.h, and the coverage figure in
 #   configurator/core/README.md.
 # - build: type check and unit tests of the page, the check of the part
 #   drawings against the data file, the Vite build, the size budget (250 kB
-#   initial, 1 MB total). The built page is an artifact of every run.
+#   initial, 1 MB total). The built page is an artifact of every run; a run
+#   that is not a full one builds it without the checks.
 # - smoke: Playwright against the built page at 360 px and 1280 px width.
 # - matrix: Playwright against the built page in 8 cells (360 x 740 px and
 #   1280 x 800 px, English and German, light and dark, reduced motion) and
@@ -18,10 +27,17 @@ name: Configurator
 # - help: builds the web help with tools/help_site.py from help/content/
 #   and the screenshots in docs/img/. The build runs every check of the
 #   help first and fails on one. The built help is an artifact of every run.
+# - api: builds the HTML reference of the C sources with Doxygen 1.18.0 and
+#   the Doxyfile at the repository root. Pass and fail of the comments are
+#   tools/doc_check.py's in ci.yml; this job publishes. The built reference
+#   is an artifact of every run.
 # - deploy: publishes the built page to GitHub Pages, with the help in its
-#   help/ folder. It runs on a push to main only. A pull request builds and
-#   tests and publishes nothing. The help is not part of the configurator's
-#   size budget: the budget is checked on the configurator's files alone.
+#   help/ folder and the API reference in its api/ folder. It runs on a
+#   push to main only, when every job that ran passed. A pull request
+#   builds and tests and publishes
+#   nothing. Neither the help nor the API reference is part of the
+#   configurator's size budget: the budget is checked on the
+#   configurator's files alone.
 #
 # The repository setting "Pages source: GitHub Actions" is a precondition of
 # the deploy job.
@@ -37,6 +53,8 @@ on:
       - 'tools/help_site.py'
       - 'tools/render_ui.py'
       - 'shared/ui/include/ui_screen.h'
+      - 'Doxyfile'
+      - 'tools/install_doxygen.sh'
   push:
     branches: [main]
     paths:
@@ -48,6 +66,15 @@ on:
       - 'tools/help_site.py'
       - 'tools/render_ui.py'
       - 'shared/ui/include/ui_screen.h'
+      # The sources of the API reference.  A pull request that changes them
+      # runs Doxygen in ci.yml; main publishes the reference again.
+      - 'Doxyfile'
+      - 'tools/install_doxygen.sh'
+      - 'shared/**'
+      - 'protocols/**'
+      - 'firmware/panel/**'
+      - 'firmware/iomcu/**'
+      - 'testbench/touch-injector/core/**'
 
 # A newer push to a pull request replaces the run in progress. A run on main
 # finishes, so a deployment is never cut off.
@@ -58,9 +85,53 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # The release ci.yml checks the comments with; the same pin.
+  DOXYGEN_VERSION: 1.18.0
+  DOXYGEN_SHA256: >-
+    14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
+
 jobs:
+  changes:
+    name: Full run or API only
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # actions: read for the list of earlier runs of this workflow.
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      full: ${{ steps.diff.outputs.full }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The commit changes are counted from has to be here.
+          fetch-depth: 0
+
+      # tools/pages_changes.py holds FULL_PATHS and the rule.  A push counts
+      # its changes from the head commit of the newest successful push run
+      # of this workflow on main, so a push after a failed or cancelled run
+      # is tested against what was last published.  No such run, or a
+      # commit that is not an ancestor of HEAD, makes a full run.
+      - id: diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          runs="$RUNNER_TEMP/runs.json"
+          query="branch=main&event=push&status=success&per_page=1"
+          api="repos/$GITHUB_REPOSITORY/actions/workflows/pages.yml/runs"
+          if [ "$EVENT" = push ]; then
+            gh api "$api?$query" > "$runs" || echo '{}' > "$runs"
+          fi
+          python3 tools/pages_changes.py --event "$EVENT" --base "$BASE" \
+            --runs "$runs" | tee -a "$GITHUB_OUTPUT"
+
   core:
     name: Configurator core
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -120,6 +191,7 @@ jobs:
 
   build:
     name: Configurator page
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -144,9 +216,11 @@ jobs:
       - run: npm ci
 
       - name: Type check
+        if: needs.changes.outputs.full == 'true'
         run: npm run typecheck
 
       - name: Unit tests and the geometry sweep
+        if: needs.changes.outputs.full == 'true'
         run: npm test
 
       # Fails when a pin of the data file has no anchor, an anchor has no
@@ -154,12 +228,14 @@ jobs:
       # a wire colour is below 3:1 on a page background, or a committed
       # drawing differs from the output of the generator.
       - name: Check the part drawings against the data file
+        if: needs.changes.outputs.full == 'true'
         run: npm run drawings:check
 
       - name: Build
         run: npm run build
 
       - name: Size budget
+        if: needs.changes.outputs.full == 'true'
         run: npm run size
 
       - name: Keep the built page
@@ -173,9 +249,11 @@ jobs:
       # 2 files of the PDF export for a look at the result: the setup with the
       # fewest wires in English and the setup with the most wires in German.
       - name: Write the PDF samples
+        if: needs.changes.outputs.full == 'true'
         run: node tools/pdf-samples.ts pdf-samples
 
       - name: Keep the PDF samples
+        if: needs.changes.outputs.full == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: configurator-pdf-samples
@@ -185,7 +263,8 @@ jobs:
 
   smoke:
     name: Configurator smoke test
-    needs: build
+    needs: [changes, build]
+    if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -236,7 +315,8 @@ jobs:
 
   matrix:
     name: Configurator matrix test (${{ matrix.shard }}/4)
-    needs: build
+    needs: [changes, build]
+    if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -305,10 +385,55 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  api:
+    name: API reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      # The archive is 115 MB; the cache holds it, and the script checks
+      # its SHA-256 on a hit as on a download.
+      - name: Restore the Doxygen archive
+        uses: actions/cache@v6
+        with:
+          path: ~/doxygen-archive
+          key: doxygen-${{ env.DOXYGEN_VERSION }}-${{ env.DOXYGEN_SHA256 }}
+
+      - name: Install Doxygen
+        run: |
+          tools/install_doxygen.sh "$DOXYGEN_VERSION" "$DOXYGEN_SHA256" \
+            "$RUNNER_TEMP/doxygen" ~/doxygen-archive
+
+      # The Doxyfile writes the HTML into build/doxygen/html.  Doxygen
+      # creates one directory level of OUTPUT_DIRECTORY, not two.
+      - name: Build the API reference
+        run: |
+          mkdir -p build/doxygen
+          "$RUNNER_TEMP/doxygen/bin/doxygen"
+          du -sh build/doxygen/html
+
+      - name: Keep the built reference
+        uses: actions/upload-artifact@v7
+        with:
+          name: api-reference
+          path: build/doxygen/html
+          if-no-files-found: error
+          retention-days: 14
+
   deploy:
     name: Publish to GitHub Pages
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [core, build, smoke, matrix, help]
+    # always(): core, smoke and matrix are skipped in a run that is not a
+    # full one, and a skipped need would skip the deploy.  A failed or
+    # cancelled job stops it.
+    if: >-
+      always() && github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.build.result == 'success' && needs.help.result == 'success' &&
+      needs.api.result == 'success' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    needs: [changes, core, build, smoke, matrix, help, api]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -332,6 +457,14 @@ jobs:
         with:
           name: help-site
           path: dist/help
+
+      - name: The configurator has no api folder
+        run: test ! -e dist/api
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: api-reference
+          path: dist/api
 
       - uses: actions/upload-pages-artifact@v5
         with:

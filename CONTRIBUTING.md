@@ -67,6 +67,7 @@ python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
 python3 -m pytest test/tools          # the tools' own tests
+python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
 python3 tools/mutate.py               # what the suite misses in the changed lines
 
 # After a panel build on ESP-IDF v5.5.5 for the ESP32-P4: the image against
@@ -95,7 +96,7 @@ cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
     | grep -v -e gfx_font -e /rp2350/ -e test/host/render_screen.c -e test/host/bench_frame.c \
     | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
-ruff check tools/ test/tools/ test/host/
+ruff check tools/ test/tools/ test/host/   # with the docstring (D) rules
 ```
 
 cppcheck also runs over `firmware/` and the pin drivers in
@@ -141,6 +142,10 @@ A change fails if:
   `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` and
   `-fno-omit-frame-pointer`;
 - a case under `test/tools/` fails;
+- a C file the pull request adds has a Doxygen warning, a line it changes
+  carries one, a C file it changes has no `@file` block, the tree has a
+  warning that `tools/doc_check_baseline.txt` does not list, or the
+  baseline lists one that no longer occurs ([Comments](#comments));
 - a source file has no SPDX (Software Package Data Exchange) line, a wiki page
   has no German counterpart, or a link goes nowhere;
 - the suite list or the module tree in `STATUS.md` or `docs/Building.md`
@@ -341,6 +346,105 @@ of the screen. The screens that do not meet it are listed in
 - Test names are sentences: `a_refused_write_changes_nothing`.
 - Comments state the constraint or decision the code depends on, in present
   tense. No history of how the code came to be.
+
+## Comments
+
+C files under `shared/`, `protocols/`, `firmware/panel/`, `firmware/iomcu/`
+and `testbench/touch-injector/core/` carry Doxygen comments. The generated
+tables (`gfx_font*`, `*_gen.c`, `board_drawing_*`) do not.
+
+- Each file opens with a `@file` block that has a `@brief`.
+- Each public function, type and macro group has a `/** */` block with
+  `@brief`, a `@param` for every parameter and a `@return` for a non-void
+  result.
+- Each file-scope variable, `static` ones too, has a block with a
+  `@brief`; a struct member has one or a trailing `/**< */`.
+- A `static` helper in a `.c` file has at least a `@brief`.
+- Every `/**` or `/*!` block has a `@brief`, except a member's trailing
+  `/**< */`, a group block (`@{`, `@}`, `@name`) and the `@file` block.
+- A brief is an explicit `@brief`. The first sentence of a block is not
+  one (`JAVADOC_AUTOBRIEF = NO`).
+
+```c
+/**
+ * @file
+ * @brief Clamp a servo pulse to the endpoints of its channel.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/**
+ * @brief Clamp a pulse width to a channel's endpoints.
+ * @param ch The channel, 0 to 15.
+ * @param us The requested pulse width, in microseconds.
+ * @return The pulse width the channel drives, in microseconds.
+ */
+uint16_t servo_clamp(uint8_t ch, uint16_t us);
+```
+
+Python modules, public functions, classes and methods carry a Google-style
+docstring: a summary line, a blank line, then `Args:`, `Returns:` and
+`Raises:` as they apply.
+
+```python
+def read_baseline(path):
+    """Read a baseline file.
+
+    Args:
+        path: The file; a missing file is an empty baseline.
+
+    Returns:
+        Each line with the number of times it occurs.
+    """
+```
+
+Two checks hold the rule. They apply to new and touched code and list
+the gaps of the rest of the tree, so an old gap does not fail a pull
+request and a new one does.
+
+- `tools/doc_check.py --check` runs Doxygen 1.18.0 with the `Doxyfile`
+  and compares its warnings with `tools/doc_check_baseline.txt`. A
+  baseline line is a file and a message without the line number; code
+  that moves inside a file changes no line. In a pull request CI passes
+  `--base origin/<base branch>`, and these warnings fail, listed or not:
+  - every warning in a C file the pull request adds;
+  - in a C file it changes, every warning on a line it adds or rewrites
+    (`git diff -U0`, new side). A warning stands for the line Doxygen
+    reports and the comment block next to it, so a rewritten `@brief`
+    or `@param` counts for the function below it;
+  - a missing `@file` block or `@brief` in a C file it changes. Doxygen
+    reports nothing inside a file without the block;
+  - a `/**` or `/*!` block without `@brief` in a new file or on a changed
+    line. Doxygen takes such a block as detailed text and warns about
+    nothing.
+
+  A renamed or moved file counts as new, so splitting a file documents
+  every function that moves. An old gap on a line the pull request does
+  not touch stays listed.
+- ruff's D rules (pydocstyle, Google convention) in `ruff.toml`. A file
+  not listed under `[lint.per-file-ignores]` passes every D rule; a listed
+  file is excused the codes on its line.
+
+`doc_check.py` and `tools/install_doxygen.sh` run on Linux on x86-64, as
+in CI. On Windows (Git Bash), `doc_check.py` runs with a Doxygen 1.18.0
+on PATH or named by `--doxygen`; `install_doxygen.sh` installs the Linux
+binary only.
+
+When a gap is fixed, its baseline line goes in the same pull request:
+
+```bash
+# Doxygen 1.18.0, as in CI (another release stops doc_check.py with exit 2)
+tools/install_doxygen.sh 1.18.0 <DOXYGEN_SHA256 from ci.yml> ~/doxygen-1.18.0
+python3 tools/doc_check.py --update --doxygen ~/doxygen-1.18.0/bin/doxygen
+git diff tools/doc_check_baseline.txt    # removed lines only
+```
+
+For Python, delete the fixed codes from the file's line in `ruff.toml`,
+and the line when no code is left, then run `ruff check .`.
+
+`mkdir -p build/doxygen && doxygen` at the repository root writes the
+HTML to `build/doxygen/html/`; GitHub Pages publishes it as the
+[C API (application programming interface) reference](https://subtilitas.github.io/rcbench/api/).
 
 ## Writing
 
