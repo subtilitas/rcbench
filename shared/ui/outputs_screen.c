@@ -1,5 +1,6 @@
-/*
- * Protocol on the left, pins on the right.  See outputs_screen.h.
+/**
+ * @file
+ * @brief Protocol on the left, pins on the right.  See outputs_screen.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,6 +18,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+/** @brief The screen's width: the panel's 1024 px. */
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_BODY_H
 #define MAX_FBS  3
@@ -45,6 +47,7 @@
  * inside the cell.
  */
 #define GRID_X   288
+/** @brief The pin grid's width, to 16 px from the right edge: 720 px. */
 #define GRID_W   (SCREEN_W - 16 - GRID_X)
 #define GRID_Y   16
 #define GRID_COLS 4

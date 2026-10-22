@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The screen router: the band, the alert band, and the touches between
+ * them and the screens.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -749,7 +753,9 @@ const char *ui_router_alert(void)
  * fill 40 of the band's 44 px, 2 px from its top. */
 #define ALERT_TEXT_X 12
 #define ALERT_TEXT_W (PANEL_W - 2 * ALERT_TEXT_X - 24)
+/** @brief An alert row to the next: 20 px. */
 #define ALERT_PITCH  20
+/** @brief The alert's face: 10 x 20 px. */
 #define ALERT_FONT   UI_FONT_BAND
 
 int ui_router_alert_rows(const char *text)

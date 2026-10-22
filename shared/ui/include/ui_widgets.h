@@ -1,5 +1,6 @@
-/*
- * Stateless drawing helpers shared by every screen.
+/**
+ * @file
+ * @brief Stateless drawing helpers shared by every screen.
  *
  * Every call takes explicit geometry and draws immediately.  There is no
  * retained widget tree: on this hardware the cost is in touching framebuffer
@@ -125,8 +126,11 @@ void ui_clock(char *out, size_t n, uint32_t seconds);
  * title in UI_FONT_TAG (20 x 36).  The router hit-tests it before the
  * screen sees the event.
  */
+/** @brief The home tag's left edge: 8 px. */
 #define UI_TAG_X 8
+/** @brief The home tag's top edge: 8 px. */
 #define UI_TAG_Y 8
+/** @brief The home tag's height: 44 px (6.6 mm). */
 #define UI_TAG_H 44
 
 gfx_rect_t ui_home_tag_rect(const char *title);
@@ -199,8 +203,11 @@ void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
  *        cycle twice, UI_HOLD_FLASH_MS (150 ms) in all: 9 frames at 60 Hz.
  */
 #define UI_HOLD_FLASH_PHASE_MS 25
+/** @brief The phases of one cycle: white, black, settled. */
 #define UI_HOLD_FLASH_CYCLE    3
+/** @brief The cycles of one flash. */
 #define UI_HOLD_FLASH_TIMES    2
+/** @brief The whole flash: 150 ms. */
 #define UI_HOLD_FLASH_MS \
     (UI_HOLD_FLASH_PHASE_MS * UI_HOLD_FLASH_CYCLE * UI_HOLD_FLASH_TIMES)
 

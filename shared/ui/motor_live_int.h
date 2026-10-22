@@ -59,8 +59,8 @@
 #define READOUT_W (LEFT_W - 2 * INNER)
 #define READOUT_H (CTRL_Y - ROW_Y - 4)
 
-/*
- * ARM is a hold, not a press: two seconds from the OK green to the danger
+/**
+ * @brief ARM is a hold, not a press: two seconds from the OK green to the danger
  * red, and the command goes when the fade completes.  A release before then
  * arms nothing, and neither does a finger that leaves the button: the
  * gesture is contact with the control, not with the panel.  A bench that

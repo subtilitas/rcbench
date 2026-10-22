@@ -1,5 +1,7 @@
-/*
- * The shared widgets every screen draws with: panels, cards, buttons, pills.
+/**
+ * @file
+ * @brief The shared widgets every screen draws with: panels, cards, buttons,
+ * pills.
  *
  * One place for the chrome, so every screen draws the same button.  The one
  * piece of logic here is ui_is_light(): a button picks its label colour from
@@ -267,8 +269,11 @@ void ui_chevron_left(gfx_canvas_t *c, int x, int cy, int size, gfx_color_t color
 }
 
 /* The tag's text from its left edge: past the chevron, or 12 px in. */
+/** @brief A home tag's text from its left edge, past the chevron: 28 px. */
 #define TAG_TEXT_X_HOME 28
+/** @brief The wordmark's text from the tag's left edge: 12 px. */
 #define TAG_TEXT_X_MARK 12
+/** @brief The tag's text to its right edge: 12 px. */
 #define TAG_TEXT_PAD_R  12
 
 static int tag_width(const char *title, bool chevron)

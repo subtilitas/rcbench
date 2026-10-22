@@ -1,5 +1,6 @@
-/*
- * WI-FI: wifi_screen.h says what the screen is for.  PANEL UPDATE, the
+/**
+ * @file
+ * @brief WI-FI: wifi_screen.h says what the screen is for.  PANEL UPDATE, the
  * screen the same header declares, is update_screen.c.
  *
  * SPDX-License-Identifier: MIT

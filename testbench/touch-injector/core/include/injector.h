@@ -1,5 +1,6 @@
-/*
- * The touch injector: a GT911 emulator at 0x14 that presses where a USB
+/**
+ * @file
+ * @brief The touch injector: a GT911 emulator at 0x14 that presses where a USB
  * (Universal Serial Bus) command line tells it to.  Pure C; the RP2350
  * build (../rp2350) wires it to the I2C (Inter-Integrated Circuit) target,
  * the USB serial port and the status LED, and the host suite drives it as
@@ -52,17 +53,22 @@
 extern "C" {
 #endif
 
+/** @brief The line protocol's version, in the ping's reply. */
 #define INJ_PROTOCOL        1
+/** @brief The resolution the injector reports: the panel's 1024 columns. */
 #define INJ_RES_X           1024u
+/** @brief The resolution the injector reports: the panel's 600 rows. */
 #define INJ_RES_Y           600u
-#define INJ_LINE_MAX        63u    /* characters, without the LF         */
-#define INJ_REPORT_MS       10u    /* least time between two frames      */
-#define INJ_ACK_TIMEOUT_MS  100u   /* a frame not acknowledged by then   */
-#define INJ_TAP_MS          100u   /* a tap's default length             */
-#define INJ_MS_MAX          30000u /* the longest gesture                */
-#define INJ_SWIPE_STEP_PX   100u   /* |dx|+|dy| between two swipe frames */
-#define INJ_LIVE_MS         100u   /* a read this recent: panel polling  */
+#define INJ_LINE_MAX        63u    /**< characters, without the LF         */
+#define INJ_REPORT_MS       10u    /**< least time between two frames      */
+#define INJ_ACK_TIMEOUT_MS  100u   /**< a frame not acknowledged by then   */
+#define INJ_TAP_MS          100u   /**< a tap's default length             */
+#define INJ_MS_MAX          30000u /**< the longest gesture                */
+#define INJ_SWIPE_STEP_PX   100u   /**< |dx|+|dy| between two swipe frames */
+#define INJ_LIVE_MS         100u   /**< a read this recent: panel polling  */
+/** @brief A reply line's buffer: 128 characters. */
 #define INJ_REPLY_LEN       128u
+/** @brief The replies queued: 8. */
 #define INJ_REPLIES         8u
 
 typedef enum {

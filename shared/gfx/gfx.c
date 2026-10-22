@@ -1,5 +1,7 @@
-/*
- * gfx: the RGB565 (16-bit red, green, blue) rasteriser.  See include/gfx.h.
+/**
+ * @file
+ * @brief gfx: the RGB565 (16-bit red, green, blue) rasteriser.  See
+ * include/gfx.h.
  *
  * SPDX-License-Identifier: MIT
  */

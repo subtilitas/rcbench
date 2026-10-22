@@ -1,5 +1,6 @@
-/*
- * busfault_screen.h says what this screen is for.
+/**
+ * @file
+ * @brief busfault_screen.h says what this screen is for.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -352,7 +353,7 @@ static int wrap_text(gfx_canvas_t *c, int x, int y, const char *text,
 
 /*
  * Danger red while it is waiting to be held, fading to the OK green it
- * settles on, and the same two-frame flash ARM gives as the command goes.
+ * settles on, and the same 150 ms flash ARM gives as the command goes.
  * The direction is the other way round from ARM because what it does is the
  * other way round: this one leaves a fault behind rather than entering one.
  */

@@ -1,5 +1,6 @@
-/*
- * The visual language of the bench, resolved at runtime.
+/**
+ * @file
+ * @brief The visual language of the bench, resolved at runtime.
  *
  * Two palettes, dark and light.  In the dark palette the background is
  * near-black so the four telemetry colours run at full chroma; in both, every
@@ -114,7 +115,9 @@ int ui_theme_contrast(void);
 
 /* ----------------------------------------------------------------- metrics */
 
+/** @brief A card's or a button's cut corner: 10 px. */
 #define UI_CHAMFER       10
+/** @brief A chip's or a small control's cut corner: 5 px. */
 #define UI_CHAMFER_SM    5
 
 /*

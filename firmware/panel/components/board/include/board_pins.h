@@ -39,6 +39,7 @@ extern "C" {
  * 600.  Touches outside it are dropped (touch.c).
  */
 #define BOARD_UI_H_RES              1024
+/** @brief The UI area's height: the panel's 600 rows. */
 #define BOARD_UI_V_RES              600
 
 /**

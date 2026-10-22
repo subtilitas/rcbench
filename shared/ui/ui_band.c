@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The status band: its chips, STOP and the chips' help boxes.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -19,6 +22,7 @@
  * x 850, sized for a thumb rather than for its label.  It is the only
  * control in the band, so no other control can be hit on the way to it.
  */
+/** @brief STOP's width: 168 px. */
 #define STOP_W 168
 #define STOP_M 6
 
@@ -118,22 +122,34 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
  * 566 px and starts at x 276, right of MOTOR & ESC's home tag, the widest
  * (test_nav_bubble measures every screen's), which ends at x 268.
  */
+/** @brief A chip's top, from the band's: 8 px. */
 #define CHIP_Y     8
+/** @brief A chip's height: 44 px. */
 #define CHIP_H     44
+/** @brief The gap between two chips: 6 px. */
 #define CHIP_GAP   6
+/** @brief A label's start from its chip's left edge: 28 px. */
 #define CHIP_INSET 28
+/** @brief A label's end from its chip's right edge: 4 px. */
 #define CHIP_PAD_R 4
+/** @brief LINK's dot: 12 px more right of its label. */
 #define CHIP_DOT_W 12      /* more right of LINK's label */
+/** @brief The chips from STOP leftwards. */
 static const ui_band_chip_t k_order[] = {
     UI_BAND_CHIP_CLOCK, UI_BAND_CHIP_ARMED, UI_BAND_CHIP_FAULT,
     UI_BAND_CHIP_MODE, UI_BAND_CHIP_LINK,
 };
 
 typedef struct {
-    bool       on[UI_BAND_CHIP_COUNT];
-    gfx_rect_t r[UI_BAND_CHIP_COUNT];
+    bool       on[UI_BAND_CHIP_COUNT];  /**< the chips the band shows   */
+    gfx_rect_t r[UI_BAND_CHIP_COUNT];   /**< each one's place, panel px */
 } chips_t;
 
+/**
+ * @brief Lay out the chips @p st shows, from STOP leftwards.
+ * @param st The bench status.
+ * @param l The layout, filled.
+ */
 static void chips_layout(const ui_bench_status_t *st, chips_t *l)
 {
     memset(l, 0, sizeof(*l));
@@ -197,13 +213,17 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
  * the text's 16 px padding: 976 px, 97 cells on the 1024 px panel, so the
  * seven bits and their advice fit above the alert band in either language.
  */
+/** @brief A help bubble's width: 640 px, 60 cells of text. */
 #define HELP_W       640
 #define HELP_M       8
 #define HELP_GAP     4
 #define HELP_PAD     16     /* text from the bubble's sides            */
-#define HELP_TOP     30     /* the first line from the top: tab and 10 */
+#define HELP_TOP     30     /**< the first line from the top: tab and 10 */
+/** @brief The last line to the bubble's bottom edge: 10 px. */
 #define HELP_BOTTOM  10
+/** @brief A bubble line to the next: 21 px. */
 #define HELP_PITCH   21
+/** @brief More between two paragraphs: 4 px. */
 #define HELP_PARA    4      /* more between two paragraphs             */
 
 /* One paragraph, and one line of it.  Static: the bubble is drawn by the

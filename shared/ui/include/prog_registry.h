@@ -1,6 +1,7 @@
-/*
- * The registry of programmers and runs: one static table that the PROGRAM
- * (and later TEST) lists of a workbench are built from.
+/**
+ * @file
+ * @brief The registry of programmers and runs: one static table that the
+ * PROGRAM (and later TEST) lists of a workbench are built from.
  *
  * A row is { device, task, name, group, transport, port, needs_capability,
  * page_set, full_width }:

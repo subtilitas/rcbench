@@ -1,6 +1,7 @@
-/*
- * The pin picker: the board itself, with a button on every pin an output may
- * have.
+/**
+ * @file
+ * @brief The pin picker: the board itself, with a button on every pin an output
+ * may have.
  *
  * The outputs screen lists pins in a grid, which answers "which GPIO
  * (general-purpose input/output) is bound" and not "where do I put the lead".

@@ -50,10 +50,13 @@
 #define UI_MARGIN 8
 
 /**
- * @brief Corner radii in pixels, one scale for cards, controls and chips.
+ * @brief Corner radii in pixels, one scale for cards, controls and chips:
+ *        a card's 10 px.
  */
 #define UI_R_CARD 10
+/** @brief A control's corner radius: 8 px. */
 #define UI_R_CTL  8
+/** @brief A chip's corner radius: 5 px. */
 #define UI_R_CHIP 5
 
 /**
@@ -68,4 +71,5 @@
  *        (6.6 mm), and the taller one, 56 px (8.4 mm), in the ESC panel.
  */
 #define UI_BTN_H      44
+/** @brief The taller button of the ESC panel: 56 px (8.4 mm). */
 #define UI_BTN_H_TALL 56

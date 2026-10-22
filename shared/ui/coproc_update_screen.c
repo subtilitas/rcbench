@@ -1,5 +1,6 @@
-/*
- * coproc_update_screen.h says what this screen is for.
+/**
+ * @file
+ * @brief coproc_update_screen.h says what this screen is for.
  *
  * SPDX-License-Identifier: MIT
  */

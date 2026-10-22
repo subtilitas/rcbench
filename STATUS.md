@@ -354,9 +354,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_map.c` | 120 | 120 | 100.0% |
 | `shared/touch/touch_merge.c` | 101 | 101 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
-| `shared/ui/ui_widgets.c` | 296 | 289 | 97.6% |
+| `shared/ui/ui_widgets.c` | 314 | 301 | 95.9% |
 | `shared/ui/ui_icons.c` | 162 | 162 | 100.0% |
-| `shared/ui/ui_band.c` | 241 | 229 | 95.0% |
+| `shared/ui/ui_band.c` | 237 | 225 | 94.9% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
@@ -365,28 +365,28 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_target_row.c` | 85 | 84 | 98.8% |
 | `shared/ui/prog_registry.c` | 412 | 409 | 99.3% |
 | `shared/ui/ui_text.c` | 106 | 105 | 99.1% |
-| `shared/ui/ui_router.c` | 363 | 354 | 97.5% |
+| `shared/ui/ui_router.c` | 364 | 354 | 97.2% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
 | `shared/ui/overview_screen.c` | 95 | 93 | 97.9% |
 | `shared/ui/motor_screen.c` | 260 | 256 | 98.5% |
-| `shared/ui/motor_events.c` | 161 | 157 | 97.5% |
-| `shared/ui/motor_draw.c` | 359 | 349 | 97.2% |
+| `shared/ui/motor_events.c` | 162 | 158 | 97.5% |
+| `shared/ui/motor_draw.c` | 352 | 342 | 97.2% |
 | `shared/ui/motor_workbench.c` | 155 | 148 | 95.5% |
 | `shared/ui/motor_settings_page.c` | 177 | 167 | 94.3% |
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
 | `shared/ui/supply_screen.c` | 435 | 429 | 98.6% |
-| `shared/ui/supply_events.c` | 308 | 304 | 98.7% |
-| `shared/ui/supply_draw.c` | 409 | 396 | 96.8% |
+| `shared/ui/supply_events.c` | 309 | 305 | 98.7% |
+| `shared/ui/supply_draw.c` | 403 | 390 | 96.8% |
 | `shared/ui/ui_keypad.c` | 218 | 216 | 99.1% |
 | `shared/ui/ui_setting_keypad.c` | 84 | 84 | 100.0% |
 | `shared/ui/ui_textkey.c` | 266 | 254 | 95.5% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
 | `shared/ui/servo_screen.c` | 357 | 349 | 97.8% |
-| `shared/ui/servo_screen_sweep.c` | 468 | 464 | 99.2% |
+| `shared/ui/servo_screen_sweep.c` | 470 | 466 | 99.2% |
 | `shared/ui/servo_screen_link.c` | 372 | 367 | 98.7% |
-| `shared/ui/servo_screen_touch.c` | 242 | 229 | 94.6% |
-| `shared/ui/servo_screen_draw.c` | 455 | 443 | 97.4% |
+| `shared/ui/servo_screen_touch.c` | 242 | 230 | 95.0% |
+| `shared/ui/servo_screen_draw.c` | 449 | 437 | 97.3% |
 | `shared/ui/servo_settings_panel.c` | 839 | 818 | 97.5% |
 | `shared/ui/servo_test_panel.c` | 429 | 417 | 97.2% |
 | `shared/ui/servo_limit_panel.c` | 405 | 364 | 89.9% |
@@ -400,7 +400,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/kst_panel_draw.c` | 485 | 480 | 99.0% |
 | `shared/ui/analyser_screen.c` | 241 | 237 | 98.3% |
 | `shared/ui/balance_screen.c` | 379 | 379 | 100.0% |
-| `shared/ui/battery_screen.c` | 201 | 196 | 97.5% |
+| `shared/ui/battery_screen.c` | 201 | 190 | 94.5% |
 | `shared/ui/prog_models.c` | 8 | 8 | 100.0% |
 | `shared/ui/esc_stick_pages.c` | 111 | 104 | 93.7% |
 | `shared/ui/esc_stick_panel.c` | 488 | 472 | 96.7% |
@@ -414,7 +414,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/log_viewer_events.c` | 438 | 426 | 97.3% |
 | `shared/ui/log_select.c` | 73 | 72 | 98.6% |
 | `shared/ui/settings_screen.c` | 481 | 475 | 98.8% |
-| `shared/ui/settings_draw.c` | 215 | 210 | 97.7% |
+| `shared/ui/settings_draw.c` | 215 | 212 | 98.6% |
 | `shared/ui/settings_rows.c` | 58 | 57 | 98.3% |
 | `shared/ui/sensors_rows.c` | 128 | 128 | 100.0% |
 | `shared/ui/outputs_screen.c` | 484 | 480 | 99.2% |
@@ -424,14 +424,14 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/port_mail.c` | 101 | 101 | 100.0% |
 | `shared/ui/picker_screen.c` | 316 | 314 | 99.4% |
 | `shared/ui/picker_geometry.c` | 138 | 134 | 97.1% |
-| `shared/ui/picker_draw.c` | 311 | 309 | 99.4% |
+| `shared/ui/picker_draw.c` | 311 | 294 | 94.5% |
 | `shared/ui/picker_port.c` | 121 | 121 | 100.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
-| `shared/ui/busfault_screen.c` | 323 | 320 | 99.1% |
-| `shared/ui/wifi_screen.c` | 495 | 478 | 96.6% |
+| `shared/ui/busfault_screen.c` | 319 | 311 | 97.5% |
+| `shared/ui/wifi_screen.c` | 495 | 479 | 96.8% |
 | `shared/ui/update_screen.c` | 114 | 114 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 264 | 263 | 99.6% |
-| `shared/ui/upd_screen.c` | 597 | 572 | 95.8% |
+| `shared/ui/upd_screen.c` | 597 | 575 | 96.3% |
 | `shared/settings/settings.c` | 361 | 354 | 98.1% |
 | `shared/settings/settings_sensors.c` | 128 | 127 | 99.2% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
@@ -577,7 +577,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **51970** | **50814** | **97.8%** |
+| **total** | **51966** | **50784** | **97.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

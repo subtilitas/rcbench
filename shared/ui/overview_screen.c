@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The feature menu: a grid of tiles under the band.
+ *
  * SPDX-License-Identifier: MIT
  */
 

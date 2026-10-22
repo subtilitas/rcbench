@@ -1,6 +1,7 @@
-/*
- * The status band: the bench state on every screen, and the STOP control that
- * works from every screen.
+/**
+ * @file
+ * @brief The status band: the bench state on every screen, and the STOP control
+ * that works from every screen.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -62,9 +63,14 @@ bool ui_band_chip_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
                        gfx_rect_t *out);
 
 /**
- * The chip a touch at (@p x, @p y) lands on, or UI_BAND_CHIP_NONE.  A chip
- * is hit across the band's whole height and 3 px either side, half the gap
- * to the next one; STOP and the home tag are not chips.
+ * @brief The chip a touch lands on.
+ *
+ * A chip is hit across the band's whole height and 3 px either side, half
+ * the gap to the next one; STOP and the home tag are not chips.
+ * @param st The bench status the band shows.
+ * @param x The touch's panel x.
+ * @param y The touch's panel y.
+ * @return The chip, or UI_BAND_CHIP_NONE.
  */
 ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y);
 

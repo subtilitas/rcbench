@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The SIMULATION watermark along the canvas diagonal.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -19,6 +22,7 @@
 
 /* 5,377 points on the 1024 x 600 px panel; the rest is headroom for another
  * canvas size.  A mark that does not fit is drawn by scanning instead. */
+/** @brief The point table's size: 6,144 points, 24 KB. */
 #define WM_MAX_POINTS 6144
 
 /*
