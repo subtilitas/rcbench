@@ -49,8 +49,8 @@
 
 /* ------------------------------------------------------------------ sweep */
 
-#define SWEEP_X (ARM_X + ARM_W / 2)
-#define BTN_Y   (350 + 16)
+#define SWEEP_X SV_SWEEP_X
+#define BTN_Y   SV_BTN_Y
 
 /** @brief Ticks the screen for @p secs seconds at the panel's 39 Hz frame rate. */
 static inline void frames(float secs)
@@ -108,9 +108,9 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 }
 
 /*
- * The TARGET row of the right card, as the pixels of its box: the row at
- * y 326 to 348, between the SPEED slider, whose thumb and its shadow paint
- * down to y 324, and CENTRE (from y 350); the label at the right card's
+ * The TARGET row of the output card, as the pixels of its box: the row at
+ * y 308 to 356, between the SPEED slider, whose thumb and its shadow paint
+ * down to y 303, and CENTRE (from y 366); the label at the output card's
  * column, SV_RC_X, and the value box 64 px further.
  */
 #define TGT_X SV_RC_X
@@ -120,35 +120,57 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 /* ------------------------------------------- the servo rail's meter */
 
 /*
- * Mirrored from servo_screen.c and servo_screen_int.h: the right card's
- * column, the CURRENT row, the line over the power plot with its 64 px name
- * (PD MINI) or 88 px name (INA3221 CH1), and the line and plot together
- * (power_rect()).
+ * Mirrored from servo_screen_draw.c and servo_screen_int.h: the output
+ * card's column, the line over the power plot with its 90 px name (PD
+ * MINI) or 134 px name (INA 0x40 CH1), the line and plot together
+ * (power_rect()), and LIVE's CURRENT reading, the numerals of the third
+ * column along the foot of the left card.
  */
 #define RAIL_X     SV_RC_X
 #define RAIL_W     SV_RC_W
-#define CUR_ROW_Y  92
-#define CUR_ROW_H  24
-#define LINE_Y     150
-#define LINE_H     16
-#define PWR_BOX_Y  148
-#define PWR_BOX_H  70
-#define LAB_SUPPLY 64
-#define LAB_INA    96
+#define CUR_X      (UI_MARGIN + 12 + 2 * 198)
+#define CUR_Y      476
+#define CUR_W      194
+#define CUR_H      44
+#define LINE_Y     72
+#define LINE_H     20
+#define PWR_BOX_Y  70
+#define PWR_BOX_H  96
+#define LAB_SUPPLY 90
+#define LAB_INA    134
 
-/** @brief Buffer 0 drawn, and whether its CURRENT row reads @p text in @p col. */
+/** @brief A reading's numerals as the screen draws them: in the 32 x 44
+ *  numerals, or the 20 x 36 face, or the 10 x 20 one, the largest in which
+ *  they fit the column. */
+static inline void hero_want(const char *t, gfx_color_t col)
+{
+    const gfx_font_t *f = &gfx_font_num_32x44;
+    if (gfx_text_width(f, t, 1) > CUR_W) {
+        f = &gfx_font_20x36;
+    }
+    if (gfx_text_width(f, t, 1) > CUR_W) {
+        f = &gfx_font_10x20;
+    }
+    gfx_text_in(&want_cv, (gfx_rect_t){ CUR_X, CUR_Y, CUR_W, CUR_H }, t, f,
+                col, 1, GFX_ALIGN_LEFT);
+}
+
+/** @brief Buffer 0 drawn, and whether LIVE's CURRENT reading shows
+ *  @p text, its unit left off, in @p col. */
 static inline bool row_reads(const char *text, ui_color_id_t col)
 {
     scr->render(&cv, 0);
     want_fresh();
-    gfx_fill_rect(&want_cv, RAIL_X, CUR_ROW_Y, RAIL_W, CUR_ROW_H,
+    gfx_fill_rect(&want_cv, CUR_X, CUR_Y, CUR_W, CUR_H,
                   ui_theme_color(UI_C_PANEL));
-    gfx_text(&want_cv, RAIL_X, CUR_ROW_Y + 5, "CURRENT", UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-    gfx_text_in(&want_cv, (gfx_rect_t){ RAIL_X + 80, CUR_ROW_Y + 5,
-                                        RAIL_W - 80, 16 },
-                text, UI_FONT_LABEL, ui_theme_color(col), 1, GFX_ALIGN_RIGHT);
-    return same_in(fb, want_fb, RAIL_X, CUR_ROW_Y, RAIL_W, CUR_ROW_H);
+    char num[24];
+    snprintf(num, sizeof(num), "%s", text);
+    char *sp = strchr(num, ' ');
+    if (sp != NULL) {
+        *sp = '\0';
+    }
+    hero_want(num, ui_theme_color(col));
+    return same_in(fb, want_fb, CUR_X, CUR_Y, CUR_W, CUR_H);
 }
 
 /** @brief Buffer 0 drawn, and whether the line over the plot reads the name
@@ -161,28 +183,27 @@ static inline bool line_reads(const char *label, int lab_w, const char *v,
     want_fresh();
     gfx_fill_rect(&want_cv, RAIL_X, LINE_Y, RAIL_W, LINE_H,
                   ui_theme_color(UI_C_PANEL));
-    gfx_text(&want_cv, RAIL_X, LINE_Y, label, UI_FONT_LABEL,
+    gfx_text(&want_cv, RAIL_X, LINE_Y, label, &gfx_font_10x20,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     const char *txt[3] = { v, a, w };
     const ui_color_id_t col[3] = { UI_C_VOLT, a_col, UI_C_POWER };
-    /* 68 px each beside PD MINI; 52, 64 and 56 px beside a channel. */
-    static const int k_fw[2][3] = { { 68, 68, 68 }, { 52, 64, 56 } };
+    /* 88, 88 and 90 px beside PD MINI; 64, 84 and 74 px beside a channel. */
+    static const int k_fw[2][3] = { { 88, 88, 90 }, { 64, 84, 74 } };
     const int *fw = k_fw[lab_w == LAB_INA ? 1 : 0];
     int x = RAIL_X + lab_w;
     bool fits = true;
     for (int k = 0; k < 3; ++k) {
         /* A reading wider than its field is cut at the left, and a cut
          * minus sign is a wrong reading. */
-        fits = fits && (int)strlen(txt[k]) * 8 <= fw[k];
+        fits = fits && (int)strlen(txt[k]) * 10 <= fw[k];
         gfx_text_in(&want_cv, (gfx_rect_t){ (int16_t)x, LINE_Y,
-                                            (int16_t)fw[k], 16 },
-                    txt[k], UI_FONT_LABEL, ui_theme_color(col[k]), 1,
+                                            (int16_t)fw[k], 20 },
+                    txt[k], &gfx_font_10x20, ui_theme_color(col[k]), 1,
                     GFX_ALIGN_RIGHT);
         x += fw[k];
     }
-    /* The name and the readings take 268 px from the column's left edge;
-     * the rest of the column's line is empty. */
-    return fits && x == RAIL_X + 268 && x <= RAIL_X + RAIL_W
+    /* The name and the readings take the column's 356 px. */
+    return fits && x == RAIL_X + RAIL_W
            && same_in(fb, want_fb, RAIL_X, LINE_Y, RAIL_W, LINE_H);
 }
 

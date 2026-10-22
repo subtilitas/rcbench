@@ -27,15 +27,15 @@ static bool marked(int x, int y)
     return fb[(size_t)y * W + x] == MARK_COLOUR;
 }
 
-/* Marks in the CURRENT row, the line, the plot, and around them on both
- * cards: the MEASURED row, the tag, the SET line, SPEED's row and the left
- * card away from the grip. */
+/* Marks in LIVE's CURRENT reading, the line, the plot, and around them on
+ * both cards: the MEASURED reading, the tag, the SET line, SPEED's row and
+ * the left card away from the grip. */
 enum { MK_ROW = 0, MK_LINE, MK_PLOT, MK_MEASURED, MK_TAG, MK_SET, MK_SPEED,
        MK_LEFT, MK_COUNT };
 
 static const struct { int x, y; } k_mark[MK_COUNT] = {
-    { 600, 100 }, { 600, 152 }, { 600, 190 }, { 600, 75 }, { 520, 125 },
-    { 518, 236 }, { 600, 270 }, { 40, 40 },
+    { 516, 496 }, { 950, 80 }, { 950, 130 }, { 318, 496 }, { 700, 40 },
+    { 700, 198 }, { 700, 240 }, { 40, 300 },
 };
 
 static void mark_all(void)
@@ -120,8 +120,9 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
                      (from_ina != to_ina) ? 1 : 4);
         }
     }
-    /* With the settings open over the left card the right card follows the
-     * meter all the same. */
+    /* With the settings open over the left card the output card's line
+     * follows the meter all the same, and LIVE's CURRENT reading shows the
+     * meter in force once LIVE is back. */
     fresh();
     two_buffers();
     open_settings();
@@ -130,10 +131,11 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
     meter(SERVO_SOURCE_INA3221);
     rail_window(1200, 5000u);
     CHECK(both_whole());
-    CHECK(row_reads("1.20 A", UI_C_TEXT));
     CHECK(line_ina("5.00 V", "1.20 A", "6.0 W"));
     meter(SERVO_SOURCE_PDMINI);
     CHECK(both_whole());
+    CHECK(line_supply("6.00 V", "0.40 A", "2.4 W"));
+    close_settings();
     CHECK(row_reads("0.40 A", UI_C_TEXT));
 }
 
@@ -599,12 +601,13 @@ TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
     CHECK_STR_EQ(bench.report, report);
     CHECK_EQ(servo_screen_power_points(), 0);
 
-    /* Mid-run, on each meter: the right card as a full redraw draws it,
-     * and the row the meter's. */
+    /* Mid-run, on each meter: the output card as a full redraw draws it,
+     * and LIVE's CURRENT reading the meter's. */
     bench_fresh();
     short_runs();
     hold_start(2.3f);
     CHECK(servo_screen_testing());
+    close_settings();                   /* LIVE: its CURRENT reading */
     bench_frames(2000u);
     settle_drawn();
     meter(SERVO_SOURCE_INA3221);

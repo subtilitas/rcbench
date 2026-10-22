@@ -36,13 +36,13 @@
 #define P(y) (UI_BAND_H + (y))
 
 /* SERVO's ARM / DISARM in panel coordinates, mirrored from servo_screen.c:
- * the right card's column (servo_spots.h), body y 388 to 419. */
+ * the output card's column (servo_spots.h), body y 424 to 483. */
 #define SV_ARM_L   SV_RC_X
 #define SV_ARM_R   (SV_RC_X + SV_RC_W - 1)
-#define SV_ARM_T   P(388)
-#define SV_ARM_B   P(419)
+#define SV_ARM_T   P(SV_ARM_Y)
+#define SV_ARM_B   P(SV_ARM_Y + SV_ARM_H - 1)
 #define SV_ARM_X   ((SV_ARM_L + SV_ARM_R) / 2)
-#define SV_ARM_Y   P(404)
+#define SV_ARM_MY  P(SV_ARM_Y + SV_ARM_H / 2)
 
 /* MOTOR & ESC's ARM / DISARM, as test_motor_arm.c has it. */
 #define MO_ARM_X   676
@@ -107,7 +107,7 @@ static void sv_fresh(void)
 static bool sv_armed(void)
 {
     sv_fresh();
-    finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     frames((int)(2.3f / FRAME_S));
     const servo_cmd_kind_t k = sv_took();
     lift(FEED_LONE);
@@ -139,7 +139,7 @@ TEST_CASE(disarm_beside_the_alert_disarms_at_once)
     alert();
     frames((int)(1.0f / FRAME_S));
     CHECK(alert_shows());
-    feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
     CHECK(alert_shows());
 }
@@ -154,7 +154,7 @@ TEST_CASE(disarm_beside_the_alert_from_its_arrival_to_its_end)
         alert();
         frames(at[i]);
         CHECK(alert_shows());
-        feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+        feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_MY);
         CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
         CHECK(alert_shows());
     }
@@ -172,12 +172,12 @@ TEST_CASE(disarm_at_the_alerts_edges)
     static const struct { int x, y; bool disarms, alert_stays, alerts; } k[] = {
         { SV_ARM_X, SV_ARM_T,       true,  true,  false },
         { SV_ARM_X, SV_ARM_B,       true,  true,  false },
-        { SV_ARM_L, SV_ARM_Y,       true,  true,  false },
-        { SV_ARM_R, SV_ARM_Y,       true,  true,  false },
+        { SV_ARM_L, SV_ARM_MY,      true,  true,  false },
+        { SV_ARM_R, SV_ARM_MY,      true,  true,  false },
         { SV_ARM_X, SV_ARM_B + 1,   false, true,  false },
         { SV_ARM_X, UI_ALERT_Y - 1, false, true,  false },
-        { SV_ARM_L - 1, SV_ARM_Y,   false, true,  false },
-        { SV_ARM_R + 1, SV_ARM_Y,   false, true,  false },
+        { SV_ARM_L - 1, SV_ARM_MY,  false, true,  false },
+        { SV_ARM_R + 1, SV_ARM_MY,  false, true,  false },
         { SV_ARM_X, UI_ALERT_Y,     false, false, true  },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -198,7 +198,7 @@ TEST_CASE(disarm_at_the_alerts_edges)
 TEST_CASE(an_alert_arriving_under_the_press_does_not_take_its_release)
 {
     CHECK(sv_armed());
-    finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     frames(10);
     alert();
     frames(10);
@@ -212,7 +212,7 @@ TEST_CASE(arm_beside_the_alert_holds_as_without_one)
 {
     sv_fresh();
     alert();
-    finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     frames((int)(2.3f / FRAME_S));
     CHECK_EQ(sv_took(), SERVO_CMD_ARM);
     lift(FEED_LONE);
@@ -229,17 +229,17 @@ TEST_CASE(arm_beside_the_alert_holds_as_without_one)
 TEST_CASE(an_arm_not_answered_is_no_disarm)
 {
     sv_fresh();
-    finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     frames((int)(2.3f / FRAME_S));
     CHECK_EQ(sv_took(), SERVO_CMD_ARM);
     lift(FEED_LONE);
     alert();
-    feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
     CHECK(alert_shows());
     servo_screen_set_armed(true);            /* the answer, late */
     sv_drain();
-    feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
 }
 
@@ -254,7 +254,7 @@ TEST_CASE(a_tap_on_the_alert_only_closes_it)
     CHECK_EQ(ui_router_dispatched(), handed);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
     /* Still armed: the next tap on DISARM disarms. */
-    feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
 }
 
@@ -265,13 +265,13 @@ TEST_CASE(a_disarm_press_beside_the_alert_slides_as_without_one)
 {
     CHECK(sv_armed());
     alert();
-    finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     glide(FEED_LONE, SV_ARM_X, P(300), 8);
     lift(FEED_LONE);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
 
     alert();
-    finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     glide(FEED_LONE, SV_ARM_R - 4, SV_ARM_B, 8);
     lift(FEED_LONE);
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
@@ -283,7 +283,7 @@ TEST_CASE(touch_lost_under_a_disarm_press_disarms)
 {
     CHECK(sv_armed());
     alert();
-    finger(FEED_LONE, SV_ARM_X, SV_ARM_Y);
+    finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     ui_router_cancel_gestures();
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
     lift(FEED_LONE);
@@ -311,13 +311,13 @@ TEST_CASE(the_help_bubble_takes_no_disarm_and_starts_no_arm)
 {
     CHECK(sv_armed());
     open_bubble(true);
-    feed_tap(FEED_LONE, SV_ARM_X, P(400));
+    feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
 
     sv_fresh();
     open_bubble(false);
-    finger(FEED_LONE, SV_ARM_X, P(400));
+    finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     frames((int)(3.0f / FRAME_S));
     lift(FEED_LONE);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
@@ -334,14 +334,14 @@ TEST_CASE(servo_names_disarm_and_not_arm)
         return;
     }
     sv_fresh();
-    CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_Y - UI_BAND_H));
+    CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_MY - UI_BAND_H));
     CHECK(sv_armed());
-    CHECK(scr->safe_at(SV_ARM_X, SV_ARM_Y - UI_BAND_H));
+    CHECK(scr->safe_at(SV_ARM_X, SV_ARM_MY - UI_BAND_H));
     CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_T - UI_BAND_H - 1));
     CHECK(!scr->safe_at(SV_CENTRE_X, SV_BTN_Y));  /* CENTRE */
     CHECK(!scr->safe_at(400, 216));               /* the dial */
     servo_screen_set_armed(false);
-    CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_Y - UI_BAND_H));
+    CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_MY - UI_BAND_H));
     /* OUTPUT OFF while the output is on; OUTPUT ON is none. */
     CHECK(!scr->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
     supply_screen_set_output(true);
@@ -466,7 +466,7 @@ TEST_CASE(no_stop_control_lies_under_the_alert_band)
 {
     CHECK(sv_armed());
     supply_screen_set_output(true);
-    CHECK(servo_screen()->safe_at(SV_ARM_X, SV_ARM_Y - UI_BAND_H));
+    CHECK(servo_screen()->safe_at(SV_ARM_X, SV_ARM_MY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(servo_screen()), 0);
     supply_screen_set_output(false);
 

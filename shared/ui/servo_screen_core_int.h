@@ -24,16 +24,32 @@
 #include "outputs.h"
 #include "servo_screen_int.h"
 
-/* The output shaft, which everything on the left is drawn around.  It sits
- * on the top face of the case, where a servo's output is. */
-#define SHAFT_X 300
-/* Integer division on purpose: this is a pixel row, and H is even. */
+/**
+ * @brief The output shaft, which everything on LIVE's card is drawn around.
+ *
+ * It sits on the top face of the case, where a servo's output is, 392 px
+ * into the card: the lead's left end, 298 px left of it, and the +45
+ * label's right edge, 200 px right of it, stay inside the card.  In y it is
+ * midway between the card's top and the readings' labels.
+ */
+#define SHAFT_X (PAD + 392)
+/* Integer division on purpose: this is a pixel row. */
 /* NOLINTNEXTLINE(bugprone-integer-division) */
-#define SHAFT_Y ((H) / 2)          /* centred in the card, not under it */
-#define ARC_R   140
-#define HORN_L  92
-#define BODY_W  260
-#define BODY_H  88
+#define SHAFT_Y ((CARD_Y + READ_LBL_Y) / 2) /**< The shaft's row, px. */
+#define ARC_R   150 /**< The dial's radius, px: 22.5 mm. */
+#define HORN_L  98  /**< The horn's length, shaft to tip, px. */
+#define BODY_W  260 /**< The case's length, px. */
+#define BODY_H  88  /**< The case's width, px. */
+_Static_assert(SHAFT_X - BODY_W + 24 - 62 >= PAD + 12,
+               "the servo's lead starts inside LIVE's card");
+_Static_assert(SHAFT_X + ARC_R + 26 + 24 <= PAD + LCARD_W - 12,
+               "the dial's labels end inside LIVE's card");
+_Static_assert(SHAFT_Y - ARC_R - 36 >= CARD_Y + 4,
+               "the dial's +90 label ends inside LIVE's card");
+_Static_assert(SHAFT_Y + ARC_R + 36 <= READ_LBL_Y - 4,
+               "the dial's -90 label ends above the readings");
+_Static_assert(PAD + 10 + BOX_W <= SHAFT_X - 36,
+               "the run's box stays clear of the horn and its rings");
 /*
  * The mounting flanges run the full width of the case end, as on a servo.
  *

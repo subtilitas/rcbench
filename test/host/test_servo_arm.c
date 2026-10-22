@@ -41,24 +41,24 @@
  * OUTPUT page's rows (servo_spots.h).
  */
 #define P(y)        (UI_BAND_H + (y))
-#define SHAFT_X     300
-#define SHAFT_Y     P((H - UI_BAND_H) / 2)
+#define SHAFT_X     SV_SHAFT_X
+#define SHAFT_Y     P(SV_SHAFT_Y)
 #define CENTRE_X    SV_CENTRE_X
 #define SWEEP_X     SV_SWEEP_X
 #define RELEASE_X   SV_RELEASE_X
-#define BTN_Y       P(366)
+#define BTN_Y       P(SV_BTN_Y)
 #define ARM_X       (SV_RC_X + SV_RC_W / 2)
-#define ARM_Y       P(404)
-#define SPEED_Y     P(307)
+#define ARM_Y       P(SV_ARM_Y + SV_ARM_H / 2)
+#define SPEED_Y     P(SV_SPEED_Y)
 #define SETB_X      SV_TAB_SETTINGS_X
 #define SETB_Y      P(SV_TAB_Y)
 #define CLOSE_X     SV_TAB_LIVE_X
 #define CLOSE_Y     P(SV_TAB_Y)
 #define ROW_L_X     100
 #define ROW_Y(r)    P(SV_ROW_Y(r))
-#define TRIM_UP_X   469
-#define CH_X(i)     (130 + 239 * ((i) / 5))
-#define CH_Y(i)     P(UI_MARGIN + 48 + 20 + 46 * ((i) % 5))
+#define TRIM_UP_X   594
+#define CH_X(i)     (165 + 305 * ((i) / 5))
+#define CH_Y(i)     P(UI_MARGIN + 56 + 24 + 56 * ((i) % 5))
 
 static gfx_color_t *fb;
 static gfx_color_t *fb_was;
@@ -499,7 +499,7 @@ TEST_CASE(the_first_dial_drag_after_an_arm_starts_from_the_rest)
     drain();
     frames(40);
     CHECK(disarm());
-    feed_tap(FEED_LONE, 521, SPEED_Y);  /* SPEED near its 10 % end */
+    feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);  /* SPEED near its 10 % end */
     CHECK(arm());
     CHECK_EQ(servo_screen_drawn(), 1500);
     int x, y;
@@ -730,7 +730,7 @@ TEST_CASE(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap)
         servo_screen_set_armed(true);           /* not yet answered */
         feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
         seen |= kinds_over(4);
-        feed_tap(FEED_LONE, 521, SPEED_Y);
+        feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);
         seen |= kinds_over(4);
         open_settings();
         feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
@@ -760,7 +760,7 @@ TEST_CASE(a_held_position_is_not_said_again_after_a_disarm_tap)
     drain();
     feed_tap(FEED_LONE, ARM_X, ARM_Y);
     CHECK_EQ(took().kind, SERVO_CMD_DISARM);
-    feed_tap(FEED_LONE, 521, SPEED_Y);
+    feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);
     unsigned seen = kinds_over(4);
     open_settings();
     feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
@@ -774,11 +774,11 @@ TEST_CASE(a_held_position_is_not_said_again_after_a_disarm_tap)
 static gfx_color_t px(int x, int y) { return fb[(size_t)y * W + x]; }
 
 /* Pixels of the warning colour where the left card says ARM FIRST, under
- * the angle. */
+ * the angle at its top. */
 static int arm_first_px(void)
 {
     int n = 0;
-    for (int y = P(UI_BODY_H - 36); y < P(UI_BODY_H - 20); ++y) {
+    for (int y = P(SV_HINT_Y); y < P(SV_HINT_Y + 20); ++y) {
         for (int x = 52; x < 200; ++x) {
             if (px(x, y) == ui_theme_color(UI_C_WARN)) {
                 ++n;
@@ -959,7 +959,7 @@ TEST_CASE(the_first_dial_drag_after_a_release_starts_from_the_rest)
     for (int profile = 0; profile < PROFILE_COUNT; ++profile) {
         const uint16_t driven = armed_and_driven(profile);
         CHECK(driven != 0u);
-        feed_tap(FEED_LONE, 521, SPEED_Y);  /* SPEED near its 10 % end */
+        feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);  /* SPEED near its 10 % end */
         drain();
         feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
         CHECK_EQ(took().kind, SERVO_CMD_RELEASE);

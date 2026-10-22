@@ -14,12 +14,12 @@ The strip under the band holds SERVO's tasks: LIVE, TEST, PROGRAM and SETTINGS. 
 
 | Task | Left card |
 |---|---|
-| LIVE | the dial, and a run's box over it |
+| LIVE | the horn's angle, the dial, the readings COMMANDED, MEASURED and CURRENT along its foot, and a run's box left of the dial |
 | TEST | the AUTOMATIC TEST and LIMIT RUN cards, each with its SETTINGS, a summary line, its start hold, the last result and its file; SUPPLY's caps, read-only |
 | PROGRAM | the list of programmers; a row opens its programmer over the left column ([Servo programmer](servo-programmer.md)) |
 | SETTINGS | the pages OUTPUT, SWEEP and DUT ([Servo settings](servo-settings.md)) |
 
-The right card is the output card, the same on every task: the readings, the supply line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. The rotary knob moves the horn on LIVE only.
+The right card is the output card, the same on every task: the type row, the meter line and plot, the supply line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. Every row tapped there is 48 px (7.2 mm) tall or taller, and ARM is 60 px. The rotary knob moves the horn on LIVE only.
 
 ## At rest
 
@@ -27,15 +27,20 @@ The right card is the output card, the same on every task: the readings, the sup
 
 While the bench is SAFE the horn is drawn dimmed and LIVE's left card reads `ARM FIRST`. The dial takes no position. The IOmcu writes a pulse of length zero to every servo PWM (pulse-width modulation) pin.
 
-The right card, from the top:
+LIVE's readings, along the foot of the left card:
 
-| Row | Shows |
+| Reading | Shows |
 |---|---|
 | COMMANDED | the pulse width the screen commands, in us |
 | MEASURED | the horn's angle from the AS5600 output encoder while it is on and sees its magnet, -180.0 to +179.9 deg; `---` otherwise |
 | CURRENT | the servo rail's current from its meter, in hundredths of an amp |
+
+The right card, from the top:
+
+| Row | Shows |
+|---|---|
 | type row | the servo type, frame rate and pulse range in force: `STANDARD PWM  50 Hz  1000-2000` |
-| meter line and plot | voltage, current and power of the rail, plotted over the last 13 s |
+| meter line and plot | voltage, current and power of the rail, plotted over the last 17.8 s |
 | SET | the supply's voltage and current limit, and its output switch |
 | SPEED | the rate the bench may move the output, 100 % passes the command straight through |
 | TARGET | what the tester drives, `protocol pins`: `SERVO PWM GP2`, `PROG PORT 1 GP13`, or a warning; a tap opens Outputs, where it is picked ([the TARGET row](servo-settings.md#the-target-row)) |
@@ -81,7 +86,7 @@ The INA3221 becomes the meter 1000 ms after its conditions hold: a channel of a 
 
 While the PD mini is disabled on SETUP, INTERFACES, the supply is the panel's model, and a SIMULATED pill sits on the plot. Its readings are simulated, not measured.
 
-A reading that did not arrive is `---` in the CURRENT row, `--` on the line and a gap in the plot.
+A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the line and a gap in the plot.
 
 ## The supply on SERVO
 
@@ -117,7 +122,7 @@ The card's summary line names the steps and the length of each, `4.8 6.0 V BROWN
 
 ![A test run](view:servo-run)
 
-TEST stays shown as the run starts, and the card's state line reads the step. LIVE shows its step and phase at the top of the left card, with the meter beside STOP TEST: `PD mini`, the channel, `INA 0x41 CH2`, or `SIMULATION`. The run ends early, the output off and the servo released, on STOP TEST, STOP, a switch to SAFE, a lost link, leaving the screen, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, or a change to the servo's settings. A run on the INA3221 also ends when the INA3221 stops being the meter, or when no window with both current and voltage arrives for 200 ms (4 windows of 50 ms): `no INA3221 window for 0.2 s`.
+TEST stays shown as the run starts, and the card's state line reads the step. LIVE shows its step and phase in a box left of the dial, under `ARM FIRST`, with the meter beside STOP TEST: `PD mini`, the channel, `INA 0x41 CH2`, or `SIMULATION`. The run ends early, the output off and the servo released, on STOP TEST, STOP, a switch to SAFE, a lost link, leaving the screen, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, or a change to the servo's settings. A run on the INA3221 also ends when the INA3221 stops being the meter, or when no window with both current and voltage arrives for 200 ms (4 windows of 50 ms): `no INA3221 window for 0.2 s`.
 
 ![A result](view:servo-result)
 ![A result read from the INA3221](view:servo-result-ina)

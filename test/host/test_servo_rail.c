@@ -16,19 +16,19 @@
 
 #include "servo_screen_rig.h"
 
-#define TGT_ROW_Y 322
+#define TGT_ROW_Y 308
 
 /*
  * The TAG row carries the pulse range after the type and the frame rate:
  * "STANDARD PWM  50 Hz  1000-2000", two spaces between the three parts, the
  * range in microseconds without its unit.  The longest a profile and its
  * keypads allow, a 13-character type, a 3-digit rate and two 4-digit ends,
- * is 32 of the 61 cells the 488 px row holds.  A typed end reaches the row
+ * is 32 of the 35 cells the 356 px pill holds.  A typed end reaches the row
  * at once.
  */
-#define TAG_BOX_Y 118
+#define TAG_BOX_Y 20
 
-#define TAG_BOX_H 24
+#define TAG_BOX_H 44
 
 static bool tag_reads(const char *text, bool danger)
 {
@@ -36,10 +36,10 @@ static bool tag_reads(const char *text, bool danger)
     want_fresh();
     const gfx_rect_t r = { TGT_X, TAG_BOX_Y, TGT_W, TAG_BOX_H };
     gfx_fill_rect(&want_cv, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    gfx_fill_round_rect(&want_cv, r.x, r.y, r.w, r.h, 4,
+    gfx_fill_round_rect(&want_cv, r.x, r.y, r.w, r.h, UI_R_CTL,
                         danger ? ui_theme_color(UI_C_DANGER)
                                : ui_theme_color(UI_C_PANEL_SUNK));
-    gfx_text_in(&want_cv, r, text, UI_FONT_LABEL,
+    gfx_text_in(&want_cv, r, text, &gfx_font_10x20,
                 danger ? GFX_WHITE : ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_CENTER);
     for (int y = r.y; y < r.y + r.h; ++y) {
@@ -67,8 +67,8 @@ TEST_CASE(the_tag_row_carries_the_pulse_range)
     close_settings();
     CHECK(tag_reads("STANDARD PWM  50 Hz  1000-2100", false));
     /* The widest the row can be asked to hold fits. */
-    CHECK(gfx_text_width(UI_FONT_LABEL, "HELI TAIL 760  560 Hz  2500-2500", 1)
-          <= TGT_W - 8);
+    CHECK(gfx_text_width(&gfx_font_10x20, "HELI TAIL 760  560 Hz  2500-2500",
+                         1) <= TGT_W - 8);
     /* The separate RANGE row is gone: its label is not on the card. */
     want_fresh();
     gfx_fill_rect(&want_cv, TGT_X, TGT_ROW_Y, 80, 24,
@@ -82,18 +82,17 @@ TEST_CASE(the_tag_row_carries_the_pulse_range)
 /*
  * The supply the rail's line names is the PD mini, or the panel's model of
  * it: then the SIMULATED (SIMULIERT) pill sits on the plot's top-left corner,
- * under the name, 88 px or as wide as a longer word and 20 px high, as the
- * overview's is.  A change of the model reaches it without a tap; with
+ * under the name, 110 px or as wide as a longer word and 26 px high.  A change of the model reaches it without a tap; with
  * INA3221 CH1 as the meter it is not shown.
  */
 #define PILL_X (RAIL_X + 2)
 
-#define PILL_Y (170 + 2)
+#define PILL_Y (96 + 2)
 
 static int pill_w(const char *word)
 {
-    const int w = 24 + gfx_text_width(UI_FONT_LABEL, word, 1);
-    return w < 88 ? 88 : w;
+    const int w = 30 + gfx_text_width(&gfx_font_10x20, word, 1);
+    return w < 110 ? 110 : w;
 }
 
 /* Whether buffer 0, drawn, carries the pill reading @p word: the area around
@@ -116,9 +115,10 @@ static bool pill_reads(const char *word)
     supply_screen_set_model(model);
     scr->tick(1.0f / 39.0f);
     const int w = pill_w(word);
-    ui_pill(&want_cv, (gfx_rect_t){ PILL_X, PILL_Y, (int16_t)w, 20 }, word,
-            ui_theme_color(UI_C_WARN), ui_theme_color(UI_C_PANEL_SUNK));
-    return same_in(fb, want_fb, PILL_X - 1, PILL_Y - 1, w + 2, 22);
+    ui_pill_font(&want_cv, (gfx_rect_t){ PILL_X, PILL_Y, (int16_t)w, 26 },
+                 word, ui_theme_color(UI_C_WARN),
+                 ui_theme_color(UI_C_PANEL_SUNK), 30, &gfx_font_10x20);
+    return same_in(fb, want_fb, PILL_X - 1, PILL_Y - 1, w + 2, 28);
 }
 
 TEST_CASE(the_rail_line_names_the_pd_mini_and_a_modelled_supply)
