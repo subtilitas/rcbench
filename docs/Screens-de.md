@@ -2584,9 +2584,16 @@ ZIP-Datei. Die Seite nennt vor dem Klick die Zahl der Dateien, ihre Bytes
 und die Bytes der ZIP-Datei. Die Dateien liegen darin, wie sie sind, nicht
 komprimiert, mit ihren Ordnerpfaden ab der Wurzel der Karte, Namen in UTF-8
 und den Zeiten der Karte. Eine Datei über 4 GiB − 1 B, ein Archiv über
-4 GiB − 1 B und mehr als 65 535 Einträge nutzen ZIP64. Nichts wird dafür im
-Speicher gehalten oder auf die Karte geschrieben: Es wird gesendet, wie es
-gelesen wird.
+4 GiB − 1 B und mehr als 65 535 Einträge nutzen ZIP64. Nichts wird dafür auf
+die Karte geschrieben, und das Panel hält 16 Bytes je Eintrag im Speicher,
+nicht das Archiv: Es wird gesendet, wie es gelesen wird.
+
+Eine Datei, die während des Downloads wächst, wird gesendet, wie sie beim
+Start des Downloads war: Ein Log, in das unterdessen geschrieben wird, endet
+in der ZIP-Datei bei der Größe, die es da hatte. Eine Datei oder ein Ordner,
+die während des Downloads hinzukommen, fehlen darin. Eine Datei, die während
+des Downloads gelöscht, umbenannt oder kürzer wird, beendet den Download zu
+kurz, und der Browser meldet ihn als fehlgeschlagen.
 
 Die Übertragungsrate ist nicht gemessen; [Performance](Performance-de.md#wlan-downloads)
 nennt, was sie begrenzt, erwartete 300 000 bis 1 000 000 B/s in einem

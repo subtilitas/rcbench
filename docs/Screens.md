@@ -2344,8 +2344,15 @@ page gives the number of files, their bytes and the ZIP file's bytes before
 the click. The files are stored as they are, not compressed, with their
 folder paths from the card's root, names in UTF-8 and the card's times. A
 file over 4 GiB − 1 B, an archive over 4 GiB − 1 B and more than 65,535
-entries use ZIP64. Nothing is held in memory or written to the card to make
-it: it is sent as it is read.
+entries use ZIP64. Nothing is written to the card to make it, and the panel
+keeps 16 bytes an entry in memory, not the archive: it is sent as it is
+read.
+
+A file that grows during the download is sent as it was when the download
+started: a log written to meanwhile ends in the ZIP file at the size it had
+then. A file or folder added during the download is not in it. A file
+removed, renamed or made shorter during the download ends the download
+short, and the browser reports it as failed.
 
 The transfer rate is not measured; [Performance](Performance.md#wi-fi-downloads)
 gives what bounds it, an expected 300,000 to 1,000,000 B/s on a home
