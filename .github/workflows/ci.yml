@@ -23,6 +23,11 @@ permissions:
 
 env:
   PICO_SDK_TAG: '2.3.0'
+  # Doxygen is the official Linux x86-64 release archive of this version;
+  # tools/install_doxygen.sh stops when the SHA-256 differs.  The baseline
+  # of tools/doc_check.py is this release's, and pages.yml pins the same.
+  DOXYGEN_VERSION: 1.18.0
+  DOXYGEN_SHA256: 14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
 
 jobs:
   host-tests:
@@ -318,7 +323,9 @@ jobs:
 
       # The tools in tools/ are held to the same standard as the C: each of
       # them can fail a build, so a bug in one is a bug in the gate.  Their
-      # tests are held to it too, and the script of the host suite.
+      # tests are held to it too, and the script of the host suite.  The D
+      # rules ask for a Google-style docstring; the files that broke them
+      # when they were switched on are listed in ruff.toml.
       - name: ruff
         run: ruff check tools/ test/tools/ test/host/
 
@@ -335,12 +342,46 @@ jobs:
       - name: Install pytest
         run: python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
 
+      # test/tools/test_doc_check.py runs Doxygen on a scratch tree.
+      - name: Install Doxygen
+        run: |
+          tools/install_doxygen.sh "$DOXYGEN_VERSION" "$DOXYGEN_SHA256" \
+            "$RUNNER_TEMP/doxygen"
+          echo "$RUNNER_TEMP/doxygen/bin" >> "$GITHUB_PATH"
+
       # The checks are a gate, so each rule of a check has a case that
       # breaks it: a flag taken out of the sanitizer build, a source left
       # out of the coverage measurement, a number in a page that differs
       # from its constant, an overflow that is not a known one.
       - name: pytest
         run: python3 -m pytest test/tools -q
+
+  # The Doxygen comments of the C sources (CONTRIBUTING.md, "Comments").
+  # Fails on a warning tools/doc_check_baseline.txt does not hold, on a
+  # baseline line that no longer occurs, and in a pull request on any
+  # warning in a C file it adds or changes.  The Python docstrings are
+  # ruff's D rules in the analysis job.
+  doc-comments:
+    name: Doxygen comments
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The base branch has to be here to diff against.
+          fetch-depth: 0
+
+      - name: Install Doxygen
+        run: |
+          tools/install_doxygen.sh "$DOXYGEN_VERSION" "$DOXYGEN_SHA256" \
+            "$RUNNER_TEMP/doxygen"
+          echo "$RUNNER_TEMP/doxygen/bin" >> "$GITHUB_PATH"
+
+      - name: Every new or changed C file is documented
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: |
+          python3 tools/doc_check.py --check ${BASE:+--base "$BASE"}
 
   # What the suite does not notice in the lines a pull request changes.  It
   # reports and does not fail on a survivor: the job fails only when the

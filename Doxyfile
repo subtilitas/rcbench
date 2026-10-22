@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: MIT
+#
+# Doxygen configuration for the C sources: the API (application programming
+# interface) reference that GitHub Pages publishes under api/.  Settings not
+# named here keep Doxygen's defaults.  CI (continuous integration) runs
+# Doxygen 1.18.0 through tools/doc_check.py, which reads the warnings and
+# decides; Doxygen itself never fails the build.
+#
+#   python3 tools/doc_check.py --check    # the gate CI runs
+#   doxygen                               # the HTML alone, into build/doxygen
+
+PROJECT_NAME           = rcbench
+PROJECT_BRIEF          = "Servo and ESC test bench: panel, IOmcu and shared C"
+OUTPUT_DIRECTORY       = build/doxygen
+
+# --- Input -----------------------------------------------------------------
+# The panel and IOmcu firmware, the shared core, the protocol modules (their
+# include/ headers, core C files and rp2350/ pin drivers) and the touch
+# injector's core.  Generated tables (fonts, the ESC profile tables, the
+# board drawings) are the generators' and are left out, as are build trees,
+# the ESP component registry's managed_components and the host suite.
+INPUT                  = shared \
+                         protocols \
+                         firmware/panel \
+                         firmware/iomcu \
+                         testbench/touch-injector/core
+FILE_PATTERNS          = *.c *.h
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */gfx_font* \
+                         *_gen.c \
+                         */board_drawing_* \
+                         */managed_components/* \
+                         */build/* \
+                         */build-*/* \
+                         */iomcu-image/* \
+                         */test/host/*
+FULL_PATH_NAMES        = YES
+# Attributes are read as nothing, so a function with one keeps its name.
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = "__attribute__(x)=" \
+                         IRAM_ATTR=
+OPTIMIZE_OUTPUT_FOR_C  = YES
+
+# --- What counts as documented ---------------------------------------------
+# A brief is an explicit @brief; the first sentence of a block is not one.
+JAVADOC_AUTOBRIEF      = NO
+# An item without a comment is left out of the HTML and warned about.
+EXTRACT_ALL            = NO
+# Static helpers in .c files are held to a @brief as well.
+EXTRACT_STATIC         = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = YES
+WARN_NO_PARAMDOC       = YES
+# tools/doc_check.py compares the warnings with tools/doc_check_baseline.txt
+# and fails on a new one; Doxygen's own exit code stays 0.
+WARN_AS_ERROR          = NO
+WARN_FORMAT            = "$file:$line: $text"
+QUIET                  = YES
+
+# --- Output -----------------------------------------------------------------
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+SEARCHENGINE           = YES
+HAVE_DOT               = NO
