@@ -27,41 +27,41 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame            7,623      953 KiB     25.0      39.0
-frame-idle        1,276      160 KiB      4.2      39.0
-held             4,194      524 KiB     13.8      39.0
-sim              8,639     1080 KiB     28.4      19.5
-throttle         9,346     1168 KiB     30.7      19.5
-chrome          31,564     3946 KiB    103.6       7.8
-overview           956      120 KiB      3.1      39.0
-servo           14,675     1834 KiB     48.2      19.5
-servo-grip        2,998      375 KiB      9.8      39.0
-servo-current        4,018      502 KiB     13.2      39.0
-supply           7,749      969 KiB     25.4      39.0
-supply-chrome       30,089     3761 KiB     98.8       9.8
-analyser           869      109 KiB      2.9      39.0
+frame            7,874      984 KiB     25.8      19.5
+frame-idle        1,280      160 KiB      4.2      39.0
+held             4,430      554 KiB     14.5      39.0
+sim              8,843     1105 KiB     29.0      19.5
+throttle         9,580     1198 KiB     31.4      19.5
+chrome          31,995     3999 KiB    105.0       7.8
+overview           968      121 KiB      3.2      39.0
+servo           14,674     1834 KiB     48.2      19.5
+servo-grip        2,985      373 KiB      9.8      39.0
+servo-current        4,010      501 KiB     13.2      39.0
+supply           8,036     1004 KiB     26.4      19.5
+supply-chrome       30,534     3817 KiB    100.2       9.8
+analyser           868      108 KiB      2.8      39.0
 logs               877      110 KiB      2.9      39.0
-settings           869      109 KiB      2.9      39.0
-settings-list          869      109 KiB      2.9      39.0
-battery            885      111 KiB      2.9      39.0
-balance            864      108 KiB      2.8      39.0
-motor-stick        1,018      127 KiB      3.3      39.0
-balance-sim        2,424      303 KiB      8.0      39.0
-settings-sim        2,405      301 KiB      7.9      39.0
-battery-sim        2,435      304 KiB      8.0      39.0
-analyser-chrome       38,002     4750 KiB    124.7       7.8
-logs-chrome       16,687     2086 KiB     54.8      13.0
-settings-chrome       20,718     2590 KiB     68.0      13.0
-settings-list-chrome       23,416     2927 KiB     76.9      13.0
-battery-chrome       36,614     4577 KiB    120.2       7.8
-balance-chrome       40,453     5057 KiB    132.8       6.5
-motor-stick-chrome       31,464     3933 KiB    103.3       7.8
-picker             902      113 KiB      3.0      39.0
-picker-chrome       22,218     2777 KiB     72.9      13.0
-wifi               873      109 KiB      2.9      39.0
-wifi-chrome       13,770     1721 KiB     45.2      19.5
-wifi-keys       23,050     2881 KiB     75.7      13.0
-clear           12,006     1501 KiB     39.4      19.5
+settings           876      110 KiB      2.9      39.0
+settings-list          876      110 KiB      2.9      39.0
+battery            889      111 KiB      2.9      39.0
+balance            876      110 KiB      2.9      39.0
+motor-stick        1,036      130 KiB      3.4      39.0
+balance-sim        2,379      297 KiB      7.8      39.0
+settings-sim        2,361      295 KiB      7.7      39.0
+battery-sim        2,387      298 KiB      7.8      39.0
+analyser-chrome       39,406     4926 KiB    129.3       6.5
+logs-chrome       16,466     2058 KiB     54.0      13.0
+settings-chrome       20,881     2610 KiB     68.5      13.0
+settings-list-chrome       23,791     2974 KiB     78.1       9.8
+battery-chrome       37,052     4632 KiB    121.6       7.8
+balance-chrome       40,552     5069 KiB    133.1       6.5
+motor-stick-chrome       31,195     3899 KiB    102.4       9.8
+picker             900      112 KiB      3.0      39.0
+picker-chrome       22,047     2756 KiB     72.4      13.0
+wifi               868      108 KiB      2.8      39.0
+wifi-chrome       13,704     1713 KiB     45.0      19.5
+wifi-keys       21,980     2748 KiB     72.1      13.0
+clear           12,007     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
 ```
@@ -233,7 +233,7 @@ bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  240 such
+  252 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -356,15 +356,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 130,264 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 295,720 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 130,272 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 295,712 |
 | `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 107,248 |
-| `before` | heap left with the panel up and the radio off | 188,472 |
+| `before` | heap left with the panel up and the radio off | 188,464 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 85,312 |
+| `left` | heap left with the largest mode up | 85,304 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every
@@ -399,14 +399,14 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
-164,024 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+164,080 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
 
 | Object | Component | .bss (bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35,984 |
+| `log_viewer_screen` | ui | 36,040 |
 | `servo_screen` | ui | 29,533 |
 | `ui_watermark` | ui | 20,504 |
 | `supply_screen` | ui | 20,508 |

@@ -271,11 +271,44 @@ typedef struct {
 } card_pick_t;
 
 /*
- * The notes of the folder's walks (log_lone_t), 1,750 bytes: the task
- * that renders' own, off its stack.
+ * The notes of the folder's walks (log_lone_t), 1,750 bytes in PSRAM
+ * (pseudo-static RAM), taken at the first listing and kept: the task that
+ * renders' own, off its stack and out of internal RAM.  NULL when the
+ * allocation failed: then the first walk lists the CSV files and the LIMIT
+ * reports, there is no second walk, and a SERVOnnn.TXT standing alone is
+ * not listed.
  */
-static log_lone_t s_card_lone;
+static log_lone_t *s_card_lone;
+static bool s_card_lone_tried;
 
+/**
+ * @brief The notes of the folder's walks, allocated from PSRAM once.
+ * @return the notes, or NULL when PSRAM did not give them
+ */
+static log_lone_t *card_lone(void)
+{
+    if (!s_card_lone_tried) {
+        s_card_lone_tried = true;
+        s_card_lone = heap_caps_malloc(sizeof(*s_card_lone),
+                                       MALLOC_CAP_SPIRAM);
+        if (s_card_lone == NULL) {
+            ESP_LOGW(TAG, "no PSRAM for the list's notes: reports other "
+                     "than LIMITnnn.TXT stay unlisted");
+        }
+    }
+    return s_card_lone;
+}
+
+/**
+ * @brief Offer one directory entry of a walk to the page.
+ *
+ * A folder, a name the walk does not list (log_lone_first() in the first
+ * walk, log_lone_second() in the second) and a file the logger has open
+ * are left out; the rest is counted and offered.
+ *
+ * @param entry  the entry, borrowed for the call
+ * @param ctx    the walk's card_pick_t
+ */
 static void card_take(const storage_entry_t *entry, void *ctx)
 {
     card_pick_t *pick = (card_pick_t *)ctx;
@@ -294,8 +327,8 @@ static void card_take(const storage_entry_t *entry, void *ctx)
      * before the busy check: a run's CSV the logger has open still says its
      * report is not alone. */
     const bool listed = pick->again
-                            ? log_lone_second(&s_card_lone, entry->name)
-                            : log_lone_first(&s_card_lone, entry->name);
+                            ? log_lone_second(s_card_lone, entry->name)
+                            : log_lone_first(s_card_lone, entry->name);
     if (!listed) {
         return;
     }
@@ -321,6 +354,21 @@ static void card_take(const storage_entry_t *entry, void *ctx)
     log_select_page_offer(&pick->sel, &f);
 }
 
+/**
+ * @brief The viewer's list(): the page @p page names of the folder the
+ *        viewer points at.
+ *
+ * One walk of ".csv .txt", and a second of ".txt" when the first found a
+ * report other than LIMITnnn.TXT without its CSV (log_select.h).  A walk
+ * that found another card mounted is walked again, both passes, once.
+ *
+ * @param out          takes the page's entries, in the order the list draws
+ * @param max_entries  room in @p out
+ * @param page         which page; its ahead and held are written
+ * @param ctx          unused
+ * @return the files the folder holds that the list shows, 0 for a folder
+ *         not made yet, -1 with no volume or a card that does not read
+ */
 static int card_list(log_viewer_file_t *out, int max_entries,
                      log_viewer_page_t *page, void *ctx)
 {
@@ -365,7 +413,7 @@ static int card_list(log_viewer_file_t *out, int max_entries,
          ++walks) {
         pick.files = 0;
         pick.again = false;
-        log_lone_begin(&s_card_lone);
+        log_lone_begin(card_lone());
         log_select_page_begin(&pick.sel, out, max_entries, page);
         /* The walk holds its volume, so one mount number on both sides of
          * it is the mount it read; another task's mount in between is a
@@ -376,7 +424,7 @@ static int card_list(log_viewer_file_t *out, int max_entries,
         /* The reports standing alone, when the first walk found one other
          * than a LIMIT report: a second walk of the folder, on the same
          * mount, the reports alone (log_select.h). */
-        if (total >= 0 && log_lone_again(&s_card_lone)) {
+        if (total >= 0 && log_lone_again(s_card_lone)) {
             pick.again = true;
             const int more = storage_walk(s_card_dir, CARD_REPORTS,
                                           card_take, &pick, NULL);

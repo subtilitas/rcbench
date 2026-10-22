@@ -2070,11 +2070,16 @@ stehender Bericht nach seiner eigenen Nummer: `LIMIT044.TXT`, dann
 Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 14
 Zeilen zu bis zu 86 Zeichen auf dem Bildschirm. Eine Zeile, die länger ist
 als eine Bildschirmzeile, bricht am letzten Leerzeichen darin um, und ein
-Wort, das länger ist, wird am Zeilenende abgeschnitten. Ein Tabulator wird
-zum Leerzeichen, ein Wagenrücklauf entfällt. Ziehen auf den Zeilen oder am
-Rollbalken rollt sie; ZURÜCK führt zur Liste. Die Ansicht fasst die ersten
-32 KiB einer Datei; eine längere zeigt diese und als letzte Zeile
-`Nur die ersten 32 kB werden gezeigt.` Ein Bericht, der sich nicht öffnen
+Wort, das länger ist, wird am Zeilenende abgeschnitten. Eine Zeile endet an
+einem Zeilenvorschub (LF), an einem Wagenrücklauf (CR) und an einem Paar
+CR LF, das ein Ende ist; ein Tabulator wird zum Leerzeichen. Ziehen auf den
+Zeilen oder am Rollbalken rollt sie. Ein Bild liest die 14 Zeilen, die es
+zeichnet, und höchstens 15 Zeilen davor, wohin der Text auch gerollt ist.
+ZURÜCK und das Home-Tag führen zur Liste und geben den Text frei; das
+Verlassen von LOGS gibt ihn auch frei, und LOGS öffnet wieder auf der
+Liste. Die Ansicht fasst die ersten 32 KiB einer Datei; eine längere zeigt
+diese und als letzte Zeile `Nur die ersten 32 kB werden gezeigt.` Eine
+leere Datei zeigt ein leeres Feld. Ein Bericht, der sich nicht öffnen
 lässt, bleibt in der Liste, und die Fußzeile sagt warum:
 `LIMIT044.TXT lässt sich nicht öffnen.` oder `Nicht genug Speicher.`
 
@@ -2138,7 +2143,11 @@ Bericht außer `LIMITnnn.TXT`, neben dem keine CSV-Datei mit seinem Namen und
 seiner Nummer liegt, etwa das Stammverzeichnis einer Karte von Firmware
 0.21.0 mit einem Endlagenlauf darauf, wird je Seite zweimal gelesen: Der
 erste Durchlauf findet, welche Berichte allein stehen, der zweite bietet sie
-an.
+an. Die Durchläufe halten ihre Notizen in 1 750 Bytes PSRAM (pseudo-static
+RAM), belegt beim ersten Lesen nach einem Start. Ohne sie enthält die Liste
+die CSV-Dateien und die Berichte `LIMITnnn.TXT`, ein allein stehendes
+`SERVOnnn.TXT` steht nicht darin, und die Konsole meldet
+`no PSRAM for the list's notes`.
 
 Der Rollbalken am rechten Rand der Liste ist 42 px breit, 8,1 mm bei 0,194 mm
 Pixelabstand. Die Länge des Griffs entspricht dem Anteil der sichtbaren Zeilen

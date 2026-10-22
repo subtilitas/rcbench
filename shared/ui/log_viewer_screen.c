@@ -545,8 +545,8 @@ static int list_once(log_page_dir_t dir, const char *key, int cap)
     return n;
 }
 
-/*
- * Read the page @p dir and @p key name, and select its newest run.
+/**
+ * @brief Read the page @p dir and @p key name, and select its newest run.
  *
  * Pages are cut from the top, LOG_VIEWER_MAX_FILES at a time.  A page
  * before the key that starts less than a page from the top is the first
@@ -556,7 +556,11 @@ static int list_once(log_page_dir_t dir, const char *key, int cap)
  * page past the end: the card has fewer entries than when the key was
  * read, after a DELETE or behind the screen's back.  The last page is read
  * instead, as the pages from the first one cut it: what is left of the
- * count after whole pages.
+ * count after whole pages.  The newest is the highest number on the page,
+ * a report standing alone included.
+ *
+ * @param dir  which side of @p key the page is on
+ * @param key  the name at the page's edge; "" or NULL for the top
  */
 static void read_page(log_page_dir_t dir, const char *key)
 {
@@ -1033,6 +1037,27 @@ static void open_text(void)
     s.view = VIEW_TEXT;
 }
 
+/**
+ * @brief Leave the TEXT view for the list and free the report's text.
+ *
+ * The text is up to 32 KiB of the file; the list does not need it, and
+ * OPEN reads it again.
+ */
+static void close_text(void)
+{
+    log_text_free(&s.text);
+    s.text_scroll = 0;
+    s.view = VIEW_BROWSE;
+}
+
+/**
+ * @brief OPEN on the selected row: a CSV file to the import view, a report
+ *        standing alone to the TEXT view (open_text()).
+ *
+ * A folder and a file over LOG_VIEWER_OPEN_MAX are not opened; the footer
+ * says why.  What the import, the plot and the text held was another
+ * file's and is dropped.
+ */
 static void open_selected(void)
 {
     if (s.sel < 0 || s.sel >= s.n_files) {
@@ -1137,7 +1162,11 @@ static void bar_thumb_of(int total, int visible, int scroll, int *y, int *h)
     *h = th;
 }
 
-/* The browse list's thumb. */
+/**
+ * @brief The browse list's thumb (bar_thumb_of()).
+ * @param y  takes the thumb's top
+ * @param h  takes its height
+ */
 static void bar_thumb(int *y, int *h)
 {
     bar_thumb_of(s.n_files, BR_ROWS, s.scroll, y, h);
@@ -1170,7 +1199,11 @@ static int bar_scroll_of(int total, int visible, int top)
     return (off * max + travel / 2) / travel;
 }
 
-/* The browse list's scroll for a thumb at @p top. */
+/**
+ * @brief The browse list's scroll for a thumb at @p top (bar_scroll_of()).
+ * @param top  the thumb's top the finger asks for
+ * @return the first row on screen
+ */
 static int bar_scroll_at(int top)
 {
     return bar_scroll_of(s.n_files, BR_ROWS, top);
@@ -1197,6 +1230,10 @@ static void render_bar_of(gfx_canvas_t *c, int total, int visible, int scroll)
                           col);
 }
 
+/**
+ * @brief Draw the browse list's scroll bar (render_bar_of()).
+ * @param c  the canvas
+ */
 static void render_bar(gfx_canvas_t *c)
 {
     render_bar_of(c, s.n_files, BR_ROWS, s.scroll);
@@ -1904,6 +1941,14 @@ static void ask_delete(void)
     s.message[0] = '\0';
 }
 
+/**
+ * @brief Delete the file the DELETE question named, and read the page
+ *        again.
+ *
+ * What the import, the plot and the text held is dropped when it was read
+ * from that file.  A refused delete leaves the list as it was and says so
+ * in the footer.
+ */
 static void delete_doomed(void)
 {
     char name[LOG_VIEWER_NAME_MAX];
@@ -2530,7 +2575,7 @@ static void text_event(const touch_event_t *e)
         s.tap_have = false;
         /* A press that slid off BACK is not a tap on it. */
         if (s.press_btn == 0 && tap_on(e, TX_BACK)) {
-            s.view = VIEW_BROWSE;
+            close_text();
         }
         s.pressing = false;
         s.bar_drag = false;
@@ -2640,6 +2685,11 @@ void log_viewer_set_tab(log_viewer_tab_t tab)
     read_page(LOG_PAGE_FROM, "");
 }
 
+/**
+ * @brief The screen as a start leaves it: the BENCH tab, nothing open,
+ *        nothing selected.  The I/O stays; the data, the analysis and a
+ *        report's text are freed.
+ */
 static void reset(void)
 {
     log_viewer_io_t io = s.io;
@@ -2700,12 +2750,15 @@ static void enter(void)
     log_viewer_invalidate();
 }
 
-/*
- * The home tag climbs one level, as each view's BACK: the plot to the
- * import, the import and a report's text to the file list.  Over the DELETE
- * question it is CANCEL: the file stays.  On the file list it leaves the
- * screen.  A press held, a drag, a pan and a pinch end with the view they
- * were made on.
+/**
+ * @brief The home tag: one level up, as each view's BACK.
+ *
+ * The plot to the import, the import and a report's text to the file list;
+ * the text is freed (close_text()).  Over the DELETE question it is CANCEL:
+ * the file stays.  On the file list it leaves the screen.  A press held, a
+ * drag, a pan and a pinch end with the view they were made on.
+ *
+ * @return true when it climbed inside the screen, false to leave it
  */
 static bool back(void)
 {
@@ -2718,18 +2771,33 @@ static bool back(void)
         s.view = VIEW_IMPORT;
         return true;
     }
-    if (s.view == VIEW_IMPORT || s.view == VIEW_TEXT) {
+    if (s.view == VIEW_TEXT) {
+        close_text();
+        return true;
+    }
+    if (s.view == VIEW_IMPORT) {
         s.view = VIEW_BROWSE;
         return true;
     }
     return false;
 }
 
+/**
+ * @brief Leaving LOGS: a report's text is freed, and LOGS opens on the
+ *        list next time.  The import and the plot stay as they were left.
+ */
+static void leave(void)
+{
+    if (s.view == VIEW_TEXT) {
+        close_text();
+    }
+}
+
 static const ui_screen_t s_screen = {
     .title = "LOGS",
     .reset = reset,
     .enter = enter,
-    .leave = NULL,
+    .leave = leave,
     .tick = NULL,
     .event = event,
     .cancel = cancel,

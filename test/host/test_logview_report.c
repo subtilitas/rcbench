@@ -7,9 +7,9 @@
  * card's root.  The failures under test: such a report missing from the
  * list, a run's report listed beside its CSV, a report sorted after the runs
  * it is newer than, a page that loses or doubles an entry when the reports
- * arrive in a second walk, a report opened in the CSV import, a text row
- * wider than the view or cut inside a character, and a report that stays
- * on screen after it is deleted.
+ * arrive in a second walk, a report opened in the CSV import, a frame that
+ * reads the whole text to draw its last rows, and a report's 32 KiB kept
+ * after its view is left.  The rows themselves are test_log_text.c's.
  *
  * The fake card offers each folder through the notes of log_select.h, as
  * the panel's lister does: the CSV files and the LIMIT reports in the first
@@ -591,13 +591,28 @@ TEST_CASE(opening_a_report_shows_its_rows_and_back_returns_to_the_list)
     CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
     tap(TX_BACK_X, FOOT_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    CHECK(log_viewer_text() == NULL);           /* freed with the view */
+    CHECK_STR_EQ(log_viewer_open_name(), "LIMIT005.TXT");
     draw();
-    /* The home tag climbs the same step. */
+    /* The home tag climbs the same step, and frees the text too. */
     tap(OPEN_X, FOOT_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
     CHECK(screen()->back());
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    CHECK(log_viewer_text() == NULL);
     CHECK(!screen()->back());
+    /* Leaving LOGS frees it; LOGS comes back on the list. */
+    tap(OPEN_X, FOOT_CY);
+    CHECK(log_viewer_text() != NULL);
+    screen()->leave();
+    CHECK(log_viewer_text() == NULL);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    screen()->enter();
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    draw();
+    /* Leaving from the list or the import keeps what is open. */
+    screen()->leave();
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
     /* A press that slides off BACK is not a tap on it. */
     tap(OPEN_X, FOOT_CY);
     send(TOUCH_EVENT_DOWN, TX_BACK_X, FOOT_CY);
@@ -667,6 +682,24 @@ TEST_CASE(a_report_that_does_not_open_stays_on_the_list_with_the_reason)
     draw();
 }
 
+/* An empty report opens on an empty panel: no row, nothing to scroll. */
+TEST_CASE(an_empty_report_opens_on_an_empty_panel)
+{
+    fresh();
+    add(CARD_USER_LOGS, "LIMIT001.TXT", "");
+    show(LOG_TAB_USER);
+    tap(OPEN_X, FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
+    const log_text_t *t = log_viewer_text();
+    CHECK(t != NULL && t->rows == 0 && !t->cut);
+    send(TOUCH_EVENT_DOWN, TX_PANEL_X, 300);
+    send(TOUCH_EVENT_MOVE, TX_PANEL_X, 100);
+    send(TOUCH_EVENT_UP, TX_PANEL_X, 100);
+    tap(BAR_X, BAR_TOP + BAR_H - 2);
+    CHECK_EQ(log_viewer_text_first(), 0);
+    draw();
+}
+
 TEST_CASE(deleting_a_report_removes_that_file_and_drops_its_text)
 {
     fresh();
@@ -699,7 +732,7 @@ TEST_CASE(deleting_a_report_removes_that_file_and_drops_its_text)
     CHECK(log_viewer_text() == NULL);
 }
 
-/* ------------------------------------------------------------ the rows --- */
+/* --------------------------------------------- the cap, the cost, failures --- */
 
 /** @brief Load @p text into @p t at @p cols cells a row.
  *  @param t     the text
@@ -714,107 +747,13 @@ static log_err_t load(log_text_t *t, const char *text, int cols)
     return log_text_load(t, &src, cols);
 }
 
-/** @brief Every row of @p t joined by '|' into @p out.
- *  @param t    the text
- *  @param out  takes the rows
- *  @param n    bytes of @p out */
-static void joined(log_text_t *t, char *out, size_t n)
-{
-    size_t at = 0u;
-    out[0] = '\0';
-    for (int i = 0; i < t->rows && at < n; ++i) {
-        char row[256];
-        CHECK(log_text_row(t, i, row, sizeof(row)));
-        at += (size_t)snprintf(out + at, n - at, "%s%s", (i > 0) ? "|" : "",
-                               row);
-    }
-}
-
-TEST_CASE(rows_break_at_spaces_and_cut_a_word_wider_than_a_row)
-{
-    log_text_t t;
-    memset(&t, 0, sizeof(t));
-    char got[512];
-    CHECK_EQ(load(&t, "one two three four\n", 9), LOG_OK);
-    joined(&t, got, sizeof(got));
-    CHECK_STR_EQ(got, "one two|three|four");
-    /* A row exactly full, the space after it the break. */
-    CHECK_EQ(load(&t, "abcdefghi jk", 9), LOG_OK);
-    joined(&t, got, sizeof(got));
-    CHECK_STR_EQ(got, "abcdefghi|jk");
-    /* A word wider than a row is cut at the row's end. */
-    CHECK_EQ(load(&t, "abcdefghijklmnopqrstu", 9), LOG_OK);
-    joined(&t, got, sizeof(got));
-    CHECK_STR_EQ(got, "abcdefghi|jklmnopqr|stu");
-    /* A leading space is no break. */
-    CHECK_EQ(load(&t, " abcdefghijk", 9), LOG_OK);
-    joined(&t, got, sizeof(got));
-    CHECK_STR_EQ(got, " abcdefgh|ijk");
-    /* CRLF, a tab, blank lines; no row after the last line feed. */
-    CHECK_EQ(load(&t, "a\r\n\r\n\tb\nc", 9), LOG_OK);
-    joined(&t, got, sizeof(got));
-    CHECK_STR_EQ(got, "a|| b|c");
-    CHECK_EQ(t.rows, 4);
-    /* A NUL byte is a space, so the rows after it are not lost. */
-    CHECK_EQ(load(&t, "", 9), LOG_OK);
-    CHECK_EQ(t.rows, 0);
-    CHECK(!t.cut);
-    {
-        static const char k_nul[] = "a\0b\nc";
-        log_mem_ctx_t ctx;
-        log_source_t src;
-        log_source_memory(&src, &ctx, k_nul, sizeof(k_nul) - 1u);
-        CHECK_EQ(log_text_load(&t, &src, 9), LOG_OK);
-        joined(&t, got, sizeof(got));
-        CHECK_STR_EQ(got, "a b|c");
-    }
-    /* One cell a row. */
-    CHECK_EQ(load(&t, "ab c", 1), LOG_OK);
-    joined(&t, got, sizeof(got));
-    CHECK_STR_EQ(got, "a|b|c");
-    log_text_free(&t);
-    log_text_free(&t);
-    log_text_free(NULL);
-}
-
-TEST_CASE(a_row_counts_characters_and_is_never_cut_inside_one)
-{
-    log_text_t t;
-    memset(&t, 0, sizeof(t));
-    char got[512];
-    /* "Größe" is 5 cells in 7 bytes; "µs" 2 cells in 3. */
-    CHECK_EQ(load(&t, "Größe 12 µs Länge", 8), LOG_OK);
-    joined(&t, got, sizeof(got));
-    CHECK_STR_EQ(got, "Größe 12|µs Länge");
-    for (int i = 0; i < t.rows; ++i) {
-        char row[64];
-        CHECK(log_text_row(&t, i, row, sizeof(row)));
-        CHECK(gfx_text_cells(row) <= 8);
-    }
-    /* A buffer too small for a row: cut between two characters. */
-    char small[4];
-    CHECK(log_text_row(&t, 0, small, sizeof(small)));
-    CHECK_STR_EQ(small, "Gr");
-    CHECK(log_text_row(&t, 1, small, sizeof(small)));
-    CHECK_STR_EQ(small, "µs");
-    /* Rows asked out of order, and outside the text. */
-    char row[64];
-    CHECK(log_text_row(&t, 1, row, sizeof(row)));
-    CHECK(log_text_row(&t, 0, row, sizeof(row)));
-    CHECK_STR_EQ(row, "Größe 12");
-    CHECK(!log_text_row(&t, 2, row, sizeof(row)));
-    CHECK_STR_EQ(row, "");
-    CHECK(!log_text_row(&t, -1, row, sizeof(row)));
-    CHECK(!log_text_row(&t, 0, row, 0u));
-    CHECK(!log_text_row(NULL, 0, row, sizeof(row)));
-    log_text_free(&t);
-    CHECK(!log_text_row(&t, 0, row, sizeof(row)));
-}
-
 static int g_alloc_refuse;
 static void *refusing_alloc(size_t n)
 {
-    return (g_alloc_refuse != 0) ? NULL : malloc(n);
+    if (g_alloc_refuse > 0 && --g_alloc_refuse == 0) {
+        return NULL;
+    }
+    return malloc(n);
 }
 
 static bool g_read_fails;
@@ -892,6 +831,70 @@ TEST_CASE(a_report_over_the_cap_is_cut_and_the_view_says_so)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * A frame draws 14 rows.  It reads those and at most LOG_TEXT_MARK - 1
+ * rows before them, wherever the text is scrolled to: the bottom of a
+ * 32 KiB report costs what its top does, not the 32 KiB above it.
+ */
+/** @brief Bytes the TEXT view's row lookups read to draw one frame.
+ *  @return the bytes, 0 with no report open */
+static size_t frame_reads(void)
+{
+    const log_text_t *t = log_viewer_text();
+    const size_t was = (t != NULL) ? t->walked : 0u;
+    draw();
+    t = log_viewer_text();
+    return (t != NULL) ? t->walked - was : 0u;
+}
+
+TEST_CASE(a_frame_reads_its_rows_and_not_the_text_above_them)
+{
+    static char big[LOG_TEXT_MAX + 64];
+    memset(big, 'a', sizeof(big) - 1u);
+    for (size_t i = 80u; i < sizeof(big) - 1u; i += 81u) {
+        big[i] = '\n';
+    }
+    big[sizeof(big) - 1u] = '\0';
+    fresh();
+    add(CARD_USER_LOGS, "LIMIT001.TXT", big);
+    show(LOG_TAB_USER);
+    tap(OPEN_X, FOOT_CY);
+    const log_text_t *v = log_viewer_text();
+    CHECK(v != NULL);
+    if (v == NULL) {
+        return;
+    }
+    CHECK(v->rows > 400);
+    /* 81 bytes a row read, the line feed counted. */
+    const size_t most = (size_t)(LOG_TEXT_MARK - 1 + TX_ROWS_SEEN) * 82u;
+    const size_t top = frame_reads();
+    CHECK(top > 0u && top <= most);
+    /* The bottom, and every scroll position on the way back up. */
+    send(TOUCH_EVENT_DOWN, TX_PANEL_X, 330);
+    send(TOUCH_EVENT_MOVE, TX_PANEL_X, -20000);
+    send(TOUCH_EVENT_UP, TX_PANEL_X, -20000);
+    CHECK_EQ(log_viewer_text_first(), v->rows + 1 - TX_ROWS_SEEN);
+    CHECK(frame_reads() <= most);
+    for (int y = 100; y <= 116; ++y) {
+        send(TOUCH_EVENT_DOWN, TX_PANEL_X, 100);
+        send(TOUCH_EVENT_MOVE, TX_PANEL_X, y + 18);
+        send(TOUCH_EVENT_UP, TX_PANEL_X, y + 18);
+        CHECK(frame_reads() <= most);
+    }
+    /* Rows asked in any order are the rows of a walk from the top. */
+    log_text_t t;
+    memset(&t, 0, sizeof(t));
+    CHECK_EQ(load(&t, numbered_lines(100), 86), LOG_OK);
+    for (int i = 99; i >= 0; i -= 7) {
+        char row[32];
+        char want[32];
+        CHECK(log_text_row(&t, i, row, sizeof(row)));
+        snprintf(want, sizeof(want), "line %d", i + 1);
+        CHECK_STR_EQ(row, want);
+    }
+    log_text_free(&t);
+}
+
 TEST_CASE(a_load_that_fails_holds_nothing)
 {
     log_text_t t;
@@ -904,6 +907,11 @@ TEST_CASE(a_load_that_fails_holds_nothing)
     log_text_set_allocator(refusing_alloc, NULL);
     CHECK_EQ(load(&t, "abc", 9), LOG_ERR_MEMORY);
     CHECK(t.buf == NULL);
+    /* The text's buffer given and the marks' not: nothing held, the
+     * buffer given back (the sanitizer build sees a leak). */
+    g_alloc_refuse = 2;
+    CHECK_EQ(load(&t, "abc", 9), LOG_ERR_MEMORY);
+    CHECK(t.buf == NULL && t.marks == NULL);
     g_alloc_refuse = 0;
     log_text_set_allocator(NULL, NULL);
     /* A read that fails after some bytes: nothing held. */
@@ -943,10 +951,10 @@ int main(void)
     RUN(opening_a_report_shows_its_rows_and_back_returns_to_the_list);
     RUN(a_long_report_scrolls_by_drag_and_by_its_bar_within_its_rows);
     RUN(a_report_that_does_not_open_stays_on_the_list_with_the_reason);
+    RUN(an_empty_report_opens_on_an_empty_panel);
     RUN(deleting_a_report_removes_that_file_and_drops_its_text);
-    RUN(rows_break_at_spaces_and_cut_a_word_wider_than_a_row);
-    RUN(a_row_counts_characters_and_is_never_cut_inside_one);
     RUN(a_report_over_the_cap_is_cut_and_the_view_says_so);
+    RUN(a_frame_reads_its_rows_and_not_the_text_above_them);
     RUN(a_load_that_fails_holds_nothing);
     free(s_fb);
     return test_summary("logview_report");

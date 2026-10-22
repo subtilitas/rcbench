@@ -107,7 +107,8 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 ÖFFNEN auf einem allein stehenden Bericht zeigt seinen Text: Der Dateiname steht über dem Feld, 14 Zeilen zu bis zu 86 Zeichen stehen auf einmal darin.
 
 - Eine Zeile, die länger ist als eine Bildschirmzeile, bricht am letzten Leerzeichen um; ein längeres Wort wird am Zeilenende abgeschnitten.
-- Ziehen auf den Zeilen oder am Rollbalken rollt sie. ZURÜCK führt zur Liste.
+- Ziehen auf den Zeilen oder am Rollbalken rollt sie. ZURÜCK führt zur Liste und gibt den Text frei; das Verlassen von LOGS gibt ihn auch frei.
+- Eine Zeile endet an einem Zeilenvorschub, an einem Wagenrücklauf und an einem Paar aus beiden.
 - Die Ansicht fasst die ersten 32 KiB einer Datei. Eine längere endet mit `Nur die ersten 32 kB werden gezeigt.`
 - Ein Bericht, der sich nicht öffnen lässt, bleibt in der Liste, und die Fußzeile sagt warum, zum Beispiel `LIMIT044.TXT lässt sich nicht öffnen.`
 

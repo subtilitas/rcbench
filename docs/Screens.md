@@ -1886,10 +1886,14 @@ OPEN on a report standing alone shows it as text in place of the import
 view: the file's name heads the panel, and its lines follow, 14 rows of up
 to 86 characters on screen. A line longer than a row breaks at its last
 space inside the row, and a word longer than a row is cut at the row's end.
-A tab reads as a space and a carriage return is dropped. A drag on the rows
-or on the scroll bar scrolls them; BACK returns to the list. The view holds
-the first 32 KiB of a file; a longer file shows those and a last row
-`Only the first 32 kB are shown.` A report that cannot be opened stays on
+A line ends at a line feed (LF), at a carriage return (CR) and at a CR LF
+pair, which is one end; a tab reads as a space. A drag on the rows or on
+the scroll bar scrolls them. A frame reads the 14 rows it draws and at most
+15 rows before them, wherever the text is scrolled to. BACK and the home
+tag return to the list and free the text; leaving LOGS frees it too, and
+LOGS opens on the list again. The view holds the first 32 KiB of a file; a
+longer file shows those and a last row `Only the first 32 kB are shown.` An
+empty file shows an empty panel. A report that cannot be opened stays on
 the list, and the footer says why: `Cannot open LIMIT044.TXT.` or
 `Not enough memory.`
 
@@ -1942,7 +1946,11 @@ directory read, so a page costs one walk and the selection. A folder with a
 report other than `LIMITnnn.TXT` and no CSV of its name and number beside it,
 the root of a card of firmware 0.21.0 with a limit run on it, is read twice
 per page: the first walk finds which reports stand alone, the second offers
-them.
+them. The walks keep their notes in 1,750 bytes of PSRAM (pseudo-static
+RAM), taken at the first listing after a start. Without them the list
+holds the CSV files and the `LIMITnnn.TXT` reports, a `SERVOnnn.TXT`
+standing alone is not listed, and the console says
+`no PSRAM for the list's notes`.
 
 The scroll bar along the list's right edge is 42 px wide, 8.1 mm on the
 panel's 0.194 mm pixels. Its thumb is the rows on screen against the rows on
