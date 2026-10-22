@@ -101,11 +101,15 @@ jobs:
       # Codecov annotates the diff in a pull request, so a change can be seen
       # to be tested rather than only measured in aggregate.  coverage.py
       # leaves an instrumented build behind, so nothing is rebuilt.
+      # gcovr takes a count of 2^32 or more for gcov's overflow bug; the
+      # suite's fills at 1024 x 600 px run gfx.c's fill_span loop 4.3e9 times,
+      # so the line holds at 2^40 (1,099,511,627,776).
       - name: Coverage report for Codecov
         run: |
           pipx install gcovr==8.6 || python3 -m pip install --quiet gcovr==8.6
           gcovr --root . --filter 'shared/' --filter 'protocols/' \
                 --exclude '.*font.*' \
+                --gcov-suspicious-hits-threshold 1099511627776 \
                 --cobertura coverage.xml --print-summary
 
       # A failed upload fails the job: the badge in the README is Codecov's,
