@@ -237,7 +237,9 @@ for (const size of SIZES) {
       await expect(battery).toHaveAttribute('aria-disabled', 'true');
       await battery.focus();
       await expect(battery).toBeFocused();
-      await battery.click({ force: true });
+      // The click goes to the element itself: a forced click at page
+      // coordinates lands on whatever a late layout shift put there.
+      await battery.dispatchEvent('click');
       await expect(battery).not.toBeChecked();
       await expect(page.locator('#o-escPower-pd')).toBeChecked();
       await expect(page).toHaveURL(/#v=1&f=stick$/);
