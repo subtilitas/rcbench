@@ -18,9 +18,9 @@ only.  Its missing `@brief` is still a warning.
                                                does not hold, and on a
                                                baseline entry that no longer
                                                occurs
-    tools/doc_check.py --check --base REF      also fail on any warning in a
-                                               C file that is new or changed
-                                               since the merge base with REF
+    tools/doc_check.py --check --base REF      also fail on the warnings of
+                                               new and changed code since
+                                               the merge base with REF (below)
     tools/doc_check.py --update                rewrite the baseline with the
                                                warnings of the tree
     --log FILE                                 read a Doxygen warning log
@@ -29,6 +29,21 @@ only.  Its missing `@brief` is still a warning.
                                                doxygen on PATH)
     --out DIR                                  Doxygen's output directory
                                                (default: build/doxygen)
+
+With --base, a warning fails, listed in the baseline or not, when
+
+- its file is new since the merge base (renamed files count as new);
+- its file changed and the warning's span overlaps a line range the change
+  adds or rewrites (`git diff -U0`, new side; a pure deletion covers the
+  lines on both sides of the cut).  The span is the line Doxygen reports,
+  widened by the comment block next to it: Doxygen reports a documented
+  item at the start of its block, so a block starting on that line adds
+  its lines and the declaration after it; it reports an undocumented item
+  at its declaration, so a block ending on the line above adds its lines.
+  A declaration over several lines counts by the reported line only;
+- its file changed and it is a missing `@file` block or brief.
+
+Old gaps on lines a change does not touch stay in the baseline.
 
 Doxygen's warnings differ between releases, so the baseline is written by
 DOXYGEN_VERSION only, the release CI installs with
@@ -375,23 +390,154 @@ def write_baseline(path: pathlib.Path, warnings: list[DocWarning]) -> None:
                     encoding="utf-8")
 
 
-def changed_files(root: pathlib.Path, base: str) -> set[str]:
-    """List the files that are new or changed since the merge base.
+class Changes(NamedTuple):
+    """What a pull request changes, against the merge base.
+
+    Attributes:
+        new: Files the merge base does not have, untracked ones included.
+        hunks: For each changed file, the line ranges of the new side that
+            the change adds or rewrites, first and last line inclusive.
+    """
+
+    new: set[str]
+    hunks: dict[str, list[tuple[int, int]]]
+
+
+_HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+
+
+def parse_hunks(diff: str) -> dict[str, list[tuple[int, int]]]:
+    """Read the new side's line ranges out of a `git diff -U0`.
+
+    A hunk that only deletes covers the lines on both sides of the cut.
+
+    Args:
+        diff: The output of `git diff -U0 --no-renames`.
+
+    Returns:
+        Each file of a `+++ b/` line mapped to its ranges.
+    """
+    hunks: dict[str, list[tuple[int, int]]] = {}
+    current = None
+    for line in diff.splitlines():
+        if line.startswith("+++ "):
+            path = line[4:]
+            current = path[2:] if path.startswith("b/") else None
+            if current is not None:
+                hunks.setdefault(current, [])
+            continue
+        match = _HUNK_RE.match(line)
+        if match and current is not None:
+            first = int(match.group(1))
+            count = 1 if match.group(2) is None else int(match.group(2))
+            if count == 0:
+                hunks[current].append((max(first, 1), first + 1))
+            else:
+                hunks[current].append((first, first + count - 1))
+    return hunks
+
+
+def changes(root: pathlib.Path, base: str) -> Changes:
+    """Find the new files and the changed lines since the merge base.
+
+    The working tree is compared with the merge base of base and HEAD, so
+    a commit not yet made counts too.  Renames count as new files.
 
     Args:
         root: The repository root.
         base: A git revision, for example origin/main.
 
     Returns:
-        Paths relative to root: changed against the merge base of base and
-        HEAD in the working tree, plus untracked files .gitignore keeps.
+        The new files and the changed line ranges of the other files.
     """
     merge_base = git_lines(root, "merge-base", base, "HEAD")[0]
-    files = set(git_lines(root, "diff", "--name-only", "--diff-filter=d",
-                          merge_base))
-    files |= set(git_lines(root, "ls-files", "--others",
-                           "--exclude-standard"))
-    return files
+    new = set(git_lines(root, "diff", "--name-only", "--no-renames",
+                        "--diff-filter=A", merge_base))
+    new |= set(git_lines(root, "ls-files", "--others",
+                         "--exclude-standard"))
+    diff = subprocess.run(
+        ["git", "diff", "-U0", "--no-renames", "--no-color", "--no-ext-diff",
+         "--diff-filter=M", merge_base],
+        cwd=root, check=True, capture_output=True, text=True).stdout
+    return Changes(new, parse_hunks(diff))
+
+
+def warning_span(warning: DocWarning, lines: list[str]) -> tuple[int, int]:
+    """Find the lines a warning stands for.
+
+    Doxygen reports an undocumented item at its declaration and a
+    documented one at the start of its comment block.  The span is the
+    reported line, widened by the comment block next to it:
+
+    - a block that starts on the reported line, through its end and on to
+      the first code line after it (the declaration it documents);
+    - a block that ends on the line above the reported line, from its
+      start (the comment of the declaration reported).
+
+    A declaration that runs over several lines counts by its reported
+    line only.
+
+    Args:
+        warning: A warning with a line.
+        lines: The file's lines.
+
+    Returns:
+        The first and last line of the span, inclusive.
+    """
+    first = last = warning.line
+    index = warning.line - 1
+    if 0 <= index < len(lines) and re.match(r"\s*/\*[*!]", lines[index]):
+        end = index
+        while end < len(lines) and "*/" not in lines[end]:
+            end += 1
+        end += 1
+        while end < len(lines) and not lines[end].strip():
+            end += 1
+        last = min(end, len(lines) - 1) + 1
+    elif 0 < index < len(lines) and lines[index - 1].rstrip().endswith("*/"):
+        start = index - 1
+        while start > 0 and not re.match(r"\s*/\*", lines[start]):
+            start -= 1
+        if re.match(r"\s*/\*[*!]", lines[start]):
+            first = start + 1
+    return first, last
+
+
+def select_touched(warnings: list[DocWarning], diff: Changes,
+                   root: pathlib.Path) -> list[DocWarning]:
+    """Pick the warnings that new or changed code carries.
+
+    Args:
+        warnings: The warnings of the run.
+        diff: The new files and changed lines.
+        root: The repository root.
+
+    Returns:
+        Every warning in a new file; in a changed file, every warning whose
+        span (warning_span) overlaps a changed range, and a missing @file
+        block or brief wherever the file changed.
+    """
+    touched = []
+    cache: dict[str, list[str]] = {}
+    for warning in warnings:
+        if warning.file in diff.new:
+            touched.append(warning)
+            continue
+        ranges = diff.hunks.get(warning.file)
+        if not ranges:
+            continue
+        if warning.message in (NO_FILE_BLOCK, NO_FILE_BRIEF):
+            touched.append(warning)
+            continue
+        if warning.file not in cache:
+            path = root / warning.file
+            cache[warning.file] = path.read_text(
+                encoding="utf-8", errors="replace").splitlines() \
+                if path.is_file() else []
+        first, last = warning_span(warning, cache[warning.file])
+        if any(a <= last and first <= b for a, b in ranges):
+            touched.append(warning)
+    return touched
 
 
 class Result(NamedTuple):
@@ -400,7 +546,7 @@ class Result(NamedTuple):
     Attributes:
         new: Warnings the baseline does not hold, in excess of its count.
         stale: Baseline lines that no longer occur, with their excess.
-        touched: Warnings in files that are new or changed.
+        touched: Warnings that new or changed code carries.
     """
 
     new: list[DocWarning]
@@ -414,17 +560,16 @@ class Result(NamedTuple):
 
 
 def compare(warnings: list[DocWarning], baseline: collections.Counter,
-            changed: set[str]) -> Result:
+            touched: list[DocWarning]) -> Result:
     """Compare the warnings of a run with the baseline.
 
     Args:
         warnings: The warnings of the run.
         baseline: The baseline's lines with their counts.
-        changed: Files whose every warning fails, baseline or not.
+        touched: Warnings that fail baseline or not (select_touched).
 
     Returns:
-        The new warnings, the stale baseline lines and the warnings in
-        changed files.
+        The new warnings, the stale baseline lines and the touched ones.
     """
     seen: collections.Counter = collections.Counter()
     new = []
@@ -433,8 +578,7 @@ def compare(warnings: list[DocWarning], baseline: collections.Counter,
         if seen[warning.key] > baseline[warning.key]:
             new.append(warning)
     stale = sorted((baseline - seen).elements())
-    touched = [w for w in warnings if w.file in changed]
-    return Result(new, stale, touched)
+    return Result(new, stale, list(touched))
 
 
 def report(result: Result) -> str:
@@ -448,8 +592,8 @@ def report(result: Result) -> str:
     """
     parts = []
     if result.touched:
-        parts.append(f"{len(result.touched)} warning(s) in new or changed "
-                     "files; document every item of a file you change:")
+        parts.append(f"{len(result.touched)} warning(s) in new files or on "
+                     "changed lines; document what you add or change:")
         parts += [f"  {w.file}:{w.line}: {w.message}"
                   for w in result.touched]
     touched = set(result.touched)
@@ -478,8 +622,9 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--update", action="store_true")
-    parser.add_argument("--base", help="fail on any warning in a C file "
-                        "changed since the merge base with this revision")
+    parser.add_argument("--base", help="also fail on any warning in a "
+                        "file new since the merge base with this revision "
+                        "and on changed lines")
     parser.add_argument("--log", type=pathlib.Path,
                         help="read this warning log instead of running "
                         "Doxygen")
@@ -517,13 +662,15 @@ def main(argv: list[str] | None = None) -> int:
               f"{baseline_path.relative_to(root)}")
         return 0
 
-    changed = changed_files(root, args.base) if args.base else set()
-    result = compare(warnings, read_baseline(baseline_path), changed)
+    diff = changes(root, args.base) if args.base else Changes(set(), {})
+    touched = select_touched(warnings, diff, root)
+    result = compare(warnings, read_baseline(baseline_path), touched)
     if result.failed:
         print(report(result))
         return 1
     print(f"doc_check: {len(warnings)} warning(s), all in the baseline; "
-          f"{len(changed)} changed file(s) clean")
+          f"{len(diff.new)} new and {len(diff.hunks)} changed file(s) "
+          "clean")
     return 0
 
 

@@ -4,13 +4,21 @@ name: Configurator
 # the panel's web help under help/ and the C API (application programming
 # interface) reference under api/ of the same site.
 #
+# - changes: decides whether the run is a full one.  A pull request or push
+#   that changes a path of FULL_PATHS below (the configurator, the help and
+#   their inputs, this file) runs every job.  One that changes only the
+#   sources of the API reference (the C sources, the Doxyfile,
+#   tools/install_doxygen.sh) skips core, smoke, matrix and the checks of
+#   build: it builds the configurator page as it stands, the help and the
+#   API reference, and on main deploys them.
 # - core: type check, test suite, static checks on the data file against the
 #   tree at the release tag, the release of package.json against the firmware
 #   header rcbench_version.h, and the coverage figure in
 #   configurator/core/README.md.
 # - build: type check and unit tests of the page, the check of the part
 #   drawings against the data file, the Vite build, the size budget (250 kB
-#   initial, 1 MB total). The built page is an artifact of every run.
+#   initial, 1 MB total). The built page is an artifact of every run; a run
+#   that is not a full one builds it without the checks.
 # - smoke: Playwright against the built page at 360 px and 1280 px width.
 # - matrix: Playwright against the built page in 8 cells (360 x 740 px and
 #   1280 x 800 px, English and German, light and dark, reduced motion) and
@@ -25,7 +33,7 @@ name: Configurator
 #   is an artifact of every run.
 # - deploy: publishes the built page to GitHub Pages, with the help in its
 #   help/ folder and the API reference in its api/ folder. It runs on a
-#   push to main only. A pull request builds and tests and publishes
+#   push to main only, when every job that ran passed. A pull request builds and tests and publishes
 #   nothing. Neither the help nor the API reference is part of the
 #   configurator's size budget: the budget is checked on the
 #   configurator's files alone.
@@ -82,8 +90,60 @@ env:
   DOXYGEN_SHA256: 14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
 
 jobs:
+  changes:
+    name: Full run or API only
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      full: ${{ steps.diff.outputs.full }}
+    env:
+      # The paths of a full run: the trigger paths of this workflow without
+      # the sources of the API reference.  A path ending in / is a folder.
+      FULL_PATHS: >-
+        configurator/
+        shared/link/include/rcbench_version.h
+        .github/workflows/pages.yml
+        help/
+        docs/img/
+        tools/help_site.py
+        tools/render_ui.py
+        shared/ui/include/ui_screen.h
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The commit before the push has to be here to diff against.
+          fetch-depth: 0
+
+      # A run whose range cannot be read (a new branch, a force push, a
+      # manual start) is a full one.
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          case "$EVENT" in
+            pull_request) from=$BASE; range="$BASE...HEAD" ;;
+            push) from=$BEFORE; range="$BEFORE..HEAD" ;;
+            *) from= ;;
+          esac
+          full=true
+          if [ -n "$from" ] && git cat-file -e "$from^{commit}" 2>/dev/null; then
+            full=false
+            while IFS= read -r file; do
+              for path in $FULL_PATHS; do
+                case "$file" in
+                  "$path"|"$path"*/*) full=true ;;
+                esac
+              done
+            done < <(git diff --name-only "$range")
+          fi
+          echo "full=$full" | tee -a "$GITHUB_OUTPUT"
+
   core:
     name: Configurator core
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -143,6 +203,7 @@ jobs:
 
   build:
     name: Configurator page
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -167,9 +228,11 @@ jobs:
       - run: npm ci
 
       - name: Type check
+        if: needs.changes.outputs.full == 'true'
         run: npm run typecheck
 
       - name: Unit tests and the geometry sweep
+        if: needs.changes.outputs.full == 'true'
         run: npm test
 
       # Fails when a pin of the data file has no anchor, an anchor has no
@@ -177,12 +240,14 @@ jobs:
       # a wire colour is below 3:1 on a page background, or a committed
       # drawing differs from the output of the generator.
       - name: Check the part drawings against the data file
+        if: needs.changes.outputs.full == 'true'
         run: npm run drawings:check
 
       - name: Build
         run: npm run build
 
       - name: Size budget
+        if: needs.changes.outputs.full == 'true'
         run: npm run size
 
       - name: Keep the built page
@@ -196,9 +261,11 @@ jobs:
       # 2 files of the PDF export for a look at the result: the setup with the
       # fewest wires in English and the setup with the most wires in German.
       - name: Write the PDF samples
+        if: needs.changes.outputs.full == 'true'
         run: node tools/pdf-samples.ts pdf-samples
 
       - name: Keep the PDF samples
+        if: needs.changes.outputs.full == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: configurator-pdf-samples
@@ -208,7 +275,8 @@ jobs:
 
   smoke:
     name: Configurator smoke test
-    needs: build
+    needs: [changes, build]
+    if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -259,7 +327,8 @@ jobs:
 
   matrix:
     name: Configurator matrix test (${{ matrix.shard }}/4)
-    needs: build
+    needs: [changes, build]
+    if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -358,8 +427,17 @@ jobs:
 
   deploy:
     name: Publish to GitHub Pages
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [core, build, smoke, matrix, help, api]
+    # always(): core, smoke and matrix are skipped in a run that is not a
+    # full one, and a skipped need would skip the deploy.  A failed or
+    # cancelled job stops it.
+    if: >-
+      always() && github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.build.result == 'success' && needs.help.result == 'success' &&
+      needs.api.result == 'success' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    needs: [changes, core, build, smoke, matrix, help, api]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

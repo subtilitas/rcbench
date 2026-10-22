@@ -34,6 +34,25 @@ DOCUMENTED_H = """\
 int twice(int a);
 """
 
+OLD_GAP_H = """\
+/**
+ * @file
+ * @brief A header with an old gap.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#pragma once
+
+int old_gap(int a);
+
+/**
+ * @brief Double a value.
+ * @param a The value.
+ * @return Twice a.
+ */
+int twice(int a);
+"""
+
 UNDOCUMENTED_FN_H = """\
 /**
  * @file
@@ -138,14 +157,14 @@ def test_the_baseline_key_has_no_line_number():
 def test_a_warning_moved_to_another_line_passes():
     """The baseline holds file and message, not the line."""
     baseline = collections.Counter(["a.h: warning: x"])
-    result = dc.compare([W("a.h", "warning: x", 40)], baseline, set())
+    result = dc.compare([W("a.h", "warning: x", 40)], baseline, [])
     assert not result.failed
 
 
 def test_a_warning_not_in_the_baseline_fails():
     """A new gap is new."""
     result = dc.compare([W("a.h", "warning: y")], collections.Counter(),
-                        set())
+                        [])
     assert result.new == [W("a.h", "warning: y")]
     assert result.failed
 
@@ -154,26 +173,91 @@ def test_a_second_copy_of_a_baselined_warning_fails():
     """The baseline counts: one entry covers one occurrence."""
     baseline = collections.Counter(["a.h: warning: x"])
     result = dc.compare([W("a.h", "warning: x"), W("a.h", "warning: x", 5)],
-                        baseline, set())
+                        baseline, [])
     assert result.new == [W("a.h", "warning: x", 5)]
 
 
 def test_a_baseline_line_that_no_longer_occurs_fails():
     """A fixed gap is taken out of the baseline with --update."""
     baseline = collections.Counter(["a.h: warning: x"])
-    result = dc.compare([], baseline, set())
+    result = dc.compare([], baseline, [])
     assert result.stale == ["a.h: warning: x"]
     assert "--update" in dc.report(result)
 
 
-def test_a_baselined_warning_in_a_changed_file_fails():
-    """A file that changes is held to every item, baseline or not."""
+def test_a_touched_warning_fails_although_the_baseline_holds_it():
+    """New or changed code is held to the rule, baseline or not."""
     baseline = collections.Counter(["a.h: warning: x", "b.h: warning: x"])
     result = dc.compare([W("a.h", "warning: x"), W("b.h", "warning: x")],
-                        baseline, {"a.h"})
+                        baseline, [W("a.h", "warning: x")])
     assert result.touched == [W("a.h", "warning: x")]
     assert result.new == []
     assert "a.h:1: warning: x" in dc.report(result)
+
+
+# --- what a change touches ---------------------------------------------------
+
+def test_the_hunks_are_the_new_sides_line_ranges():
+    """A hunk's range is the new side's lines it adds or rewrites.
+
+    A deletion covers the lines on both sides of the cut.
+    """
+    diff = ("diff --git a/x.h b/x.h\n--- a/x.h\n+++ b/x.h\n"
+            "@@ -3 +3 @@\n-a\n+b\n"
+            "@@ -10,0 +11,4 @@\n+c\n"
+            "@@ -20,2 +24,0 @@\n-d\n-e\n"
+            "diff --git a/y.c b/y.c\n--- a/y.c\n+++ /dev/null\n"
+            "@@ -1 +0,0 @@\n-f\n")
+    assert dc.parse_hunks(diff) == {"x.h": [(3, 3), (11, 14), (24, 25)]}
+
+
+SPAN_H = """\
+/** @file
+ *  @brief Spans. */
+
+int undocumented(int a);
+
+/**
+ * @brief Documented, parameters missing.
+ */
+int partly(int a);
+
+int far_below(int a);
+"""
+
+
+@pytest.mark.parametrize("line, span", [
+    (4, (4, 4)),    # an undocumented declaration: its line
+    (6, (6, 9)),    # a block start: the block and the declaration
+    (9, (6, 9)),    # a declaration under a block: the block too
+    (11, (11, 11)),
+])
+def test_a_warning_spans_its_line_and_the_comment_block_next_to_it(
+        line, span):
+    """The span of a warning is the reported line and its comment block."""
+    lines = SPAN_H.splitlines()
+    assert dc.warning_span(W("s.h", "warning: x", line), lines) == span
+
+
+def test_a_changed_line_selects_the_warnings_it_touches(tmp_path):
+    """A change selects the warnings of the lines it touches.
+
+    A new file fails whole; a changed file by the lines it changes and by
+    a missing @file block.
+    """
+    (tmp_path / "s.h").write_text(SPAN_H, encoding="utf-8")
+    (tmp_path / "bare.h").write_text("int b;\n", encoding="utf-8")
+    warnings = [W("s.h", "warning: undocumented", 4),
+                W("s.h", "warning: partly", 6),
+                W("s.h", "warning: far_below", 11),
+                W("bare.h", dc.NO_FILE_BLOCK, 1),
+                W("n.h", "warning: new", 30),
+                W("other.h", "warning: untouched", 2)]
+    diff = dc.Changes({"n.h"}, {"s.h": [(7, 7)], "bare.h": [(9, 9)]})
+    assert dc.select_touched(warnings, diff, tmp_path) == [
+        W("s.h", "warning: partly", 6),
+        W("bare.h", dc.NO_FILE_BLOCK, 1),
+        W("n.h", "warning: new", 30)]
 
 
 # --- the static helpers ------------------------------------------------------
@@ -355,11 +439,14 @@ def test_update_then_check_passes_and_a_new_warning_fails(tmp_path):
     assert dc.main(["--check", *args]) == 1
 
 
-def test_a_changed_file_fails_on_its_baselined_warnings(tmp_path, capsys):
-    """With --base, a changed file is held to every item."""
+def test_a_change_fails_on_the_warnings_of_its_lines_only(tmp_path, capsys):
+    """With --base, a warning on a changed line fails, baseline or not.
+
+    A baselined warning elsewhere in the same file does not.
+    """
     root = scratch_repo(tmp_path, {"a.h": DOCUMENTED_H})
     log = tmp_path / "w.log"
-    log.write_text(f"{root}/src/a.h:3: warning: x\n", encoding="utf-8")
+    log.write_text(f"{root}/src/a.h:14: warning: x\n", encoding="utf-8")
     args = ["--root", str(root), "--log", str(log)]
     assert dc.main(["--update", *args]) == 0
     git(root, "add", "-A")
@@ -368,9 +455,14 @@ def test_a_changed_file_fails_on_its_baselined_warnings(tmp_path, capsys):
     assert dc.main(["--check", "--base", "base", *args]) == 0
     with open(root / "src" / "a.h", "a", encoding="utf-8") as f:
         f.write("\n")
+    assert dc.main(["--check", "--base", "base", *args]) == 0
+    text = (root / "src" / "a.h").read_text(encoding="utf-8")
+    (root / "src" / "a.h").write_text(
+        text.replace("int twice(int a);", "int twice(int b);"),
+        encoding="utf-8")
     capsys.readouterr()
     assert dc.main(["--check", "--base", "base", *args]) == 1
-    assert "src/a.h:3: warning: x" in capsys.readouterr().out
+    assert "src/a.h:14: warning: x" in capsys.readouterr().out
 
 
 # --- Doxygen itself ----------------------------------------------------------
@@ -437,3 +529,73 @@ def test_the_pages_name_the_pinned_doxygen_release(page):
     text = (REPO / page).read_text(encoding="utf-8")
     stated = set(re.findall(r"Doxygen (\d+\.\d+\.\d+)", text))
     assert stated == {dc.DOXYGEN_VERSION}
+
+
+def baselined_repo(tmp_path, binary):
+    """Make a scratch repository whose baseline holds an old gap.
+
+    Args:
+        tmp_path: The directory to make it in.
+        binary: The Doxygen binary.
+
+    Returns:
+        The repository root and the arguments for doc_check.main.
+    """
+    root = scratch_repo(tmp_path, {"old.h": OLD_GAP_H})
+    args = ["--root", str(root), "--doxygen", binary,
+            "--out", str(tmp_path / "out")]
+    assert dc.main(["--update", *args]) == 0
+    baseline = (root / "tools" / "doc_check_baseline.txt").read_text()
+    assert "src/old.h: warning: Member old_gap(int a)" in baseline
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "baseline")
+    git(root, "checkout", "-q", "-b", "topic")
+    return root, args
+
+
+def test_an_unrelated_change_in_a_file_with_old_gaps_passes(
+        tmp_path, no_hang):
+    """Doxygen run: a brief reworded in a file with an old gap passes."""
+    binary = doxygen_or_skip()
+    root, args = baselined_repo(tmp_path, binary)
+    path = root / "src" / "old.h"
+    path.write_text(path.read_text().replace(
+        "@brief Double a value.", "@brief Double a value, wrapping."),
+        encoding="utf-8")
+    assert dc.main(["--check", "--base", "base", *args]) == 0
+
+
+def test_an_undocumented_function_on_a_changed_line_fails(
+        tmp_path, capsys, no_hang):
+    """Doxygen run: an undocumented function added to a file fails.
+
+    The file has an old gap; the new function is named, the gap is not.
+    """
+    binary = doxygen_or_skip()
+    root, args = baselined_repo(tmp_path, binary)
+    path = root / "src" / "old.h"
+    path.write_text(path.read_text() + "\nint added(int a);\n",
+                    encoding="utf-8")
+    capsys.readouterr()
+    assert dc.main(["--check", "--base", "base", *args]) == 1
+    out = capsys.readouterr().out
+    touched = out.split("not in the baseline")[0]
+    assert "Member added(int a) (function)" in touched
+    assert "old_gap" not in touched
+
+
+def test_a_full_pages_run_keeps_every_trigger_but_the_api_sources():
+    """FULL_PATHS of pages.yml is its trigger list less the API sources.
+
+    Every other path starts the configurator tests and the Playwright
+    matrix; a path missing from FULL_PATHS would skip them.
+    """
+    text = (REPO / ".github" / "workflows" / "pages.yml").read_text(
+        encoding="utf-8")
+    triggers = text.split("pull_request:", 1)[1].split("push:", 1)[0]
+    paths = {p.replace("/**", "/")
+             for p in re.findall(r"- '([^']+)'", triggers)}
+    full = text.split("FULL_PATHS: >-", 1)[1].split("steps:", 1)[0]
+    listed = {line.strip() for line in full.splitlines()
+              if line.strip() and not line.strip().startswith("#")}
+    assert listed == paths - {"Doxyfile", "tools/install_doxygen.sh"}

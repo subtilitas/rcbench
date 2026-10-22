@@ -142,10 +142,10 @@ A change fails if:
   `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` and
   `-fno-omit-frame-pointer`;
 - a case under `test/tools/` fails;
-- a C file the pull request adds or changes has a Doxygen warning or no
-  `@file` block, or the tree has a warning that
-  `tools/doc_check_baseline.txt` does not list, or the baseline lists one
-  that no longer occurs ([Comments](#comments));
+- a C file the pull request adds has a Doxygen warning, a line it changes
+  carries one, a C file it changes has no `@file` block, the tree has a
+  warning that `tools/doc_check_baseline.txt` does not list, or the
+  baseline lists one that no longer occurs ([Comments](#comments));
 - a source file has no SPDX (Software Package Data Exchange) line, a wiki page
   has no German counterpart, or a link goes nowhere;
 - the suite list or the module tree in `STATUS.md` or `docs/Building.md`
@@ -394,18 +394,24 @@ def read_baseline(path):
     """
 ```
 
-Two checks hold the rule. Both apply in full to new and changed files and
-list the gaps of the rest of the tree, so an old gap does not fail a pull
+Two checks hold the rule. They apply to new and touched code and list
+the gaps of the rest of the tree, so an old gap does not fail a pull
 request and a new one does.
 
 - `tools/doc_check.py --check` runs Doxygen 1.18.0 with the `Doxyfile`
   and compares its warnings with `tools/doc_check_baseline.txt`. A
   baseline line is a file and a message without the line number; code
   that moves inside a file changes no line. In a pull request CI passes
-  `--base origin/<base branch>`, and every warning in a C file the pull
-  request adds or changes fails, listed or not: a changed file is
-  documented whole. A file without a `@file` block fails as well: Doxygen
-  reports nothing inside such a file.
+  `--base origin/<base branch>`, and these warnings fail, listed or not:
+  - every warning in a C file the pull request adds;
+  - in a C file it changes, every warning on a line it adds or rewrites
+    (`git diff -U0`, new side). A warning stands for the line Doxygen
+    reports and the comment block next to it, so a rewritten `@brief`
+    or `@param` counts for the function below it;
+  - a missing `@file` block or `@brief` in a C file it changes. Doxygen
+    reports nothing inside a file without the block.
+
+  An old gap on a line the pull request does not touch stays listed.
 - ruff's D rules (pydocstyle, Google convention) in `ruff.toml`. A file
   not listed under `[lint.per-file-ignores]` passes every D rule; a listed
   file is excused the codes on its line.

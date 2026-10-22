@@ -359,7 +359,8 @@ jobs:
   # The Doxygen comments of the C sources (CONTRIBUTING.md, "Comments").
   # Fails on a warning tools/doc_check_baseline.txt does not hold, on a
   # baseline line that no longer occurs, and in a pull request on any
-  # warning in a C file it adds or changes.  The Python docstrings are
+  # warning in a C file it adds, on a line it changes, or for a missing
+  # @file block in a file it changes.  The Python docstrings are
   # ruff's D rules in the analysis job.
   doc-comments:
     name: Doxygen comments
