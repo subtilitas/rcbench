@@ -1,5 +1,6 @@
-/*
- * The servo bench screen.
+/**
+ * @file
+ * @brief The servo bench screen.
  *
  * The horn is the control: dragging the drawn arm commands the servo, and
  * the arm is drawn at the measured position, so a servo that is slow, stuck
@@ -499,6 +500,11 @@ void servo_invalidate(void)
     }
 }
 
+/**
+ * @brief The screen at its start: the state cleared, STANDARD PWM at 50 Hz,
+ *        and the output card's controls, the strip, the sessions, the plot
+ *        and SETTINGS' tabs laid out.
+ */
 static void reset(void)
 {
     if (s.lim_end_due) {
@@ -526,22 +532,25 @@ static void reset(void)
     s.max_us    = k_types[0].max_us;
     s.frame_hz  = k_types[0].default_hz;
 
-    ui_slider_init(&s.speed, (gfx_rect_t){ RC_X, 296, RC_W, 22 },
+    ui_slider_init(&s.speed, (gfx_rect_t){ RC_X, SLIDER_Y, RC_W, SLIDER_H },
                    10.0f, 100.0f, 0);
     s.speed.value = 100.0f;
     ui_slider_set_ticks(&s.speed, 0);
-    /* A sweep speed commands nothing on its own, and the track is 22 px: a
-     * tap is how it is used.  The throttle's rule is the throttle's. */
+    /* A sweep speed commands nothing on its own: a tap is how it is used.
+     * The throttle's rule is the throttle's. */
     ui_slider_set_tap_to_set(&s.speed, true);
 
-    s.centre_btn  = (gfx_rect_t){ RC_X, 350, (int16_t)(RC_W / 3 - 4), 32 };
-    s.sweep_btn   = (gfx_rect_t){ (int16_t)(RC_X + RC_W / 3 + 2), 350,
-                                  (int16_t)(RC_W / 3 - 4), 32 };
-    s.release_btn = (gfx_rect_t){ (int16_t)(RC_X + 2 * (RC_W / 3) + 4), 350,
-                                  (int16_t)(RC_W - 2 * (RC_W / 3) - 4), 32 };
+    /* CENTRE, SWEEP and RELEASE, a third of the column each. */
+    const int bw = (RC_W - 2 * BTN_GAP) / 3;
+    s.centre_btn  = (gfx_rect_t){ RC_X, BTN_Y, (int16_t)bw, BTN_H };
+    s.sweep_btn   = (gfx_rect_t){ (int16_t)(RC_X + bw + BTN_GAP), BTN_Y,
+                                  (int16_t)bw, BTN_H };
+    s.release_btn = (gfx_rect_t){ (int16_t)(RC_X + 2 * (bw + BTN_GAP)), BTN_Y,
+                                  (int16_t)(RC_W - 2 * (bw + BTN_GAP)),
+                                  BTN_H };
     /* Full width and last, under the three that only shape what is commanded:
      * this is the one that decides whether anything is driven at all. */
-    s.arm_btn     = (gfx_rect_t){ RC_X, 388, RC_W, 32 };
+    s.arm_btn     = (gfx_rect_t){ RC_X, ARM_Y, RC_W, ARM_H };
     s.out_btn     = (gfx_rect_t){ SUP_OUT_X, SUP_Y,
                                   (int16_t)(RC_X + RC_W - SUP_OUT_X), SUP_H };
     wb_init();

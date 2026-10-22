@@ -96,6 +96,7 @@ TRACKED = [
     "shared/ui/servo_screen_touch.c",
     "shared/ui/servo_screen_draw.c",
     "shared/ui/servo_settings_panel.c",
+    "shared/ui/servo_settings_draw.c",
     "shared/ui/servo_test_panel.c",
     "shared/ui/servo_limit_panel.c",
     "shared/ui/servo_workbench.c",

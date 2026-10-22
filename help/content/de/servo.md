@@ -14,12 +14,12 @@ Die Leiste unter dem Band trägt die Aufgaben von SERVO: LIVE, TEST, PROGRAMMIER
 
 | Aufgabe | Linke Karte |
 |---|---|
-| LIVE | das Zifferblatt, darüber der Kasten eines Laufs |
+| LIVE | der Winkel des Horns, das Zifferblatt, an seinem Fuß die Messwerte SOLL-PULSBREITE, GEMESSEN und STROM, und der Kasten eines Laufs links vom Zifferblatt |
 | TEST | die Karten AUTOMATISCHER TEST und ENDLAGENLAUF, jede mit ihren OPTIONEN, einer Zusammenfassung, ihrem Start-Halten, dem letzten Ergebnis und seiner Datei; die Grenzen von SUPPLY, nur lesbar |
 | PROGRAMMIEREN | die Liste der Programmierer; eine Zeile öffnet ihren Programmierer über der linken Spalte ([Servo-Programmierer](servo-programmer.md)) |
 | OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING ([Servo-Optionen](servo-settings.md)) |
 
-Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Messwerte, die Netzteilzeile, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. Der Drehknopf bewegt das Horn nur auf LIVE.
+Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Typzeile, die Messzeile mit der Grafik, die Netzteilzeile, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. Jede Zeile, die man dort antippt, ist 48 px (7,2 mm) hoch oder höher, und ARM ist 60 px hoch. Der Drehknopf bewegt das Horn nur auf LIVE.
 
 ## In Ruhe
 
@@ -27,15 +27,20 @@ Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Messwert
 
 Solange der Prüfstand SAFE ist, ist das Horn gedimmt gezeichnet, und die linke Karte von LIVE zeigt `ZUERST ARM`. Das Zifferblatt nimmt keine Position an. Der IOmcu schreibt auf jeden Servo-PWM-Pin (Pulsweitenmodulation) einen Puls der Länge null.
 
-Die rechte Karte, von oben:
+Die Messwerte von LIVE, am Fuß der linken Karte:
 
-| Zeile | Zeigt |
+| Messwert | Zeigt |
 |---|---|
 | SOLL-PULSBREITE | die Pulsbreite, die der Bildschirm befiehlt, in us |
 | GEMESSEN | den Winkel des Horns vom Winkelsensor AS5600, solange er eingeschaltet ist und seinen Magneten sieht, -180,0 bis +179,9 deg; sonst `---` |
 | STROM | den Strom der Servoschiene von ihrem Messgerät, in Hundertstel Ampere |
+
+Die rechte Karte, von oben:
+
+| Zeile | Zeigt |
+|---|---|
 | Typzeile | Servotyp, Frame Rate und Pulsbereich, die gelten: `STANDARD PWM  50 Hz  1000-2000` |
-| Messzeile und Grafik | Spannung, Strom und Leistung der Schiene, aufgetragen über die letzten 13 s |
+| Messzeile und Grafik | Spannung, Strom und Leistung der Schiene, aufgetragen über die letzten 17,8 s |
 | SOLL | Spannung und Strombegrenzung des Netzteils und sein Ausgangsschalter |
 | TEMPO | die Rate, mit der der Prüfstand den Ausgang bewegen darf; 100 % gibt den Befehl unverändert weiter |
 | ZIEL | was der Tester treibt, `Protokoll Pins`: `SERVO PWM GP2`, `PROG-PORT 1 GP13` oder eine Warnung; ein Tipp öffnet Ausgänge, wo es gewählt wird ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)) |
@@ -81,7 +86,7 @@ Der INA3221 wird 1000 ms, nachdem seine Bedingungen erfüllt sind, zum Messgerä
 
 Solange der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet ist, ist das Netzteil das Modell des Panels, und eine Marke SIMULIERT steht auf der Grafik. Seine Messwerte sind simuliert, nicht gemessen.
 
-Ein Messwert, der nicht angekommen ist, steht als `---` in der Zeile STROM, als `--` auf der Messzeile und als Lücke in der Grafik.
+Ein Messwert, der nicht angekommen ist, steht als `---` in STROM auf LIVE, als `--` auf der Messzeile und als Lücke in der Grafik.
 
 ## Das Netzteil auf SERVO
 
@@ -117,7 +122,7 @@ Die Zusammenfassung der Karte nennt die Stufen und die Länge jeder Stufe, `4.8 
 
 ![Ein Testlauf](view:servo-run)
 
-TEST bleibt beim Start des Laufs zu sehen, und die Zustandszeile der Karte nennt die Stufe. LIVE zeigt Stufe und Phase oben auf der linken Karte, das Messgerät neben TEST BEENDEN: `PD mini`, der Kanal, `INA 0x41 CH2`, oder `SIMULATION`. Der Lauf endet vorzeitig, mit abgeschaltetem Ausgang und freigegebenem Servo, bei TEST BEENDEN, STOP, einem Schalten auf SAFE, einem verlorenen Link, dem Verlassen des Bildschirms, einem Finger auf dem Zifferblatt, ZENTRIEREN, SWEEP, FREIGEBEN, einem Tipp auf einen Sollwert oder einer Änderung an den Servo-Optionen. Ein Lauf am INA3221 endet auch, wenn der INA3221 nicht mehr das Messgerät ist oder 200 ms lang (4 Fenster zu 50 ms) kein Fenster mit Strom und Spannung kommt: `0.2 s kein INA3221-Fenster`.
+TEST bleibt beim Start des Laufs zu sehen, und die Zustandszeile der Karte nennt die Stufe. LIVE zeigt Stufe und Phase in einem Kasten links vom Zifferblatt, unter `ZUERST ARM`, das Messgerät neben TEST BEENDEN: `PD mini`, der Kanal, `INA 0x41 CH2`, oder `SIMULATION`. Der Lauf endet vorzeitig, mit abgeschaltetem Ausgang und freigegebenem Servo, bei TEST BEENDEN, STOP, einem Schalten auf SAFE, einem verlorenen Link, dem Verlassen des Bildschirms, einem Finger auf dem Zifferblatt, ZENTRIEREN, SWEEP, FREIGEBEN, einem Tipp auf einen Sollwert oder einer Änderung an den Servo-Optionen. Ein Lauf am INA3221 endet auch, wenn der INA3221 nicht mehr das Messgerät ist oder 200 ms lang (4 Fenster zu 50 ms) kein Fenster mit Strom und Spannung kommt: `0.2 s kein INA3221-Fenster`.
 
 ![Ein Ergebnis](view:servo-result)
 ![Ein Ergebnis, vom INA3221 gemessen](view:servo-result-ina)

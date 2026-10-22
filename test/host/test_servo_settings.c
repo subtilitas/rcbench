@@ -189,7 +189,7 @@ TEST_CASE(each_side_of_centre_runs_to_its_own_end)
     CHECK_EQ(c.value_us, 2000);
     CHECK_EQ(c.min_us, 900);
     CHECK_EQ(c.max_us, 2140);                  /* 1520 +/- 620 */
-    tap(ARM_X + ARM_W - 40, 350 + 16);         /* RELEASE */
+    tap(SV_RELEASE_X, SV_BTN_Y);               /* RELEASE */
     const servo_cmd_t r = last_cmd();
     CHECK_EQ(r.kind, SERVO_CMD_RELEASE);
     CHECK_EQ(r.min_us, 900);
@@ -343,12 +343,12 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
 
     open_run_settings(0);                      /* AUTOMATIC TEST's */
     CHECK_EQ(servo_screen_run_settings(), 1);
-    tap(ROW_R_X, LROW_Y(0));                   /* STEP 4.8 V: a switch */
+    tap(LROW_X(2), LROW_Y(0));                 /* STEP 4.8 V: a switch */
     CHECK(!settings_get_bool(SET_SERVO_STEP_48));
-    tap(ROW_L_X, LROW_Y(6));                   /* IDLE CURRENT */
+    tap(LROW_X(1), LROW_Y(1));                 /* IDLE CURRENT */
     keys("0.3");
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), 0.3f, 1e-4f);
-    tap(ROW_L_X, LROW_Y(5));                   /* STALL AT */
+    tap(LROW_X(1), LROW_Y(0));                 /* STALL AT */
     keys("1.5");
     CHECK_NEAR(settings_get(SET_SERVO_STALL_A), 1.5f, 1e-4f);
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);
@@ -385,7 +385,7 @@ TEST_CASE(the_overlay_leaves_the_right_card_working)
     arm_release();
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
     servo_screen_set_armed(true);
-    tap(ARM_X + 40, 350 + 16);                 /* CENTRE */
+    tap(SV_CENTRE_X, SV_BTN_Y);                /* CENTRE */
     CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTRE);
     int x, y;
     dial_at(45.0f, ARC_R - 20, &x, &y);
@@ -398,11 +398,11 @@ TEST_CASE(the_tag_is_red_while_a_dangerous_profile_is_in_force)
 {
     fresh();
     scr->render(&cv, 0);
-    const gfx_color_t calm = fb[130 * W + 520];
+    const gfx_color_t calm = fb[40 * W + 700];        /* the tag */
     CHECK(calm != ui_theme_color(UI_C_DANGER));
     choose_type(3);
     scr->render(&cv, 0);
-    CHECK_EQ(fb[130 * W + 520], ui_theme_color(UI_C_DANGER));
+    CHECK_EQ(fb[40 * W + 700], ui_theme_color(UI_C_DANGER));
 }
 
 TEST_CASE(drags_and_samples_leave_both_buffers_as_a_full_redraw_would)
@@ -446,8 +446,8 @@ TEST_CASE(drags_and_samples_leave_both_buffers_as_a_full_redraw_would)
 }
 
 /* The supply is the servo rail's meter here: a sample whose current differs
- * in the digits shown repaints the line and the plot, and the CURRENT row
- * above them, and nothing else. */
+ * in the digits shown repaints the line and the plot, and LIVE's CURRENT
+ * reading at the foot of the left card, and nothing else. */
 TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
 {
     fresh();
@@ -474,8 +474,8 @@ TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
                 continue;
             }
             const bool rc = x >= SV_RC_X && x < SV_RC_X + SV_RC_W;
-            const bool in = rc && y >= 148 && y < 244;
-            const bool row = rc && y >= 92 && y < 116;
+            const bool in = rc && y >= 70 && y < 166;
+            const bool row = x >= 416 && x < 610 && y >= 476 && y < 520;
             if (in) { ++inside; } else if (row) { ++in_row; } else { ++outside; }
         }
     }
@@ -595,8 +595,8 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
         servo_screen_rate(bad[k], 50u);
         CHECK(both_whole());
         int warn = 0;
-        for (int y = 260; y < 400; ++y) {
-            for (int x = 6; x < 494; ++x) {
+        for (int y = 390; y < 510; ++y) {
+            for (int x = 8; x < 628; ++x) {
                 warn += fb[y * W + x] == ui_theme_color(UI_C_WARN);
             }
         }
@@ -611,19 +611,18 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
  * surface at it, whatever the target, and the note says that instead in
  * its first line.  Both are news, not a warning.
  */
-/* The rate note on the OUTPUT page, mirrored from servo_settings_panel.c:
- * its first line at OV_NOTE_Y + 2 * 18 (324), its second 18 px below,
- * each 16 px high, from 10 px into the overlay to 474 px further, inside
- * the overlay's border 3 px on. */
+/* The rate note on the OUTPUT page, mirrored from servo_settings_draw.c:
+ * its first line at OV_NOTE_Y + 2 * 22 (438), its second 22 px below,
+ * each 20 px high, from 10 px into the page to 600 px further. */
 #define NOTE_X    (UI_MARGIN + 10)
-#define NOTE_L1_Y 324
-#define NOTE_L2_Y (NOTE_L1_Y + 18)
-#define NOTE_R    (UI_MARGIN + 484)
+#define NOTE_L1_Y 438
+#define NOTE_L2_Y (NOTE_L1_Y + 22)
+#define NOTE_R    (UI_MARGIN + 610)
 
-/* Whether one line's 16 rows are the same in @p was as in the screen. */
+/* Whether one line's 20 rows are the same in @p was as in the screen. */
 static bool note_rows_equal(const gfx_color_t *was, int y0)
 {
-    for (int y = y0; y < y0 + 16; ++y) {
+    for (int y = y0; y < y0 + 20; ++y) {
         if (memcmp(fb + y * W, was + y * W, W * sizeof(gfx_color_t)) != 0) {
             return false;
         }
@@ -632,7 +631,7 @@ static bool note_rows_equal(const gfx_color_t *was, int y0)
 }
 
 /* Whether the note's two lines on the screen are the pixels of @p l1 and
- * @p l2 drawn as the screen draws them: the 8x16 face, faint, or in the
+ * @p l2 drawn as the screen draws them: the 10x20 face, faint, or in the
  * warning colour with @p warn. */
 static bool note_matches(const char *l1, const char *l2, bool warn)
 {
@@ -641,11 +640,11 @@ static bool note_matches(const char *l1, const char *l2, bool warn)
     memcpy(want, fb, sizeof(want));
     gfx_canvas_init(&c, want, W, H, W);
     const gfx_color_t bg = fb[NOTE_L1_Y * W + NOTE_X - 4];
-    gfx_fill_rect(&c, NOTE_X, NOTE_L1_Y, NOTE_R - NOTE_X, 34, bg);
+    gfx_fill_rect(&c, NOTE_X, NOTE_L1_Y, NOTE_R - NOTE_X, 42, bg);
     const gfx_color_t col = warn ? ui_theme_color(UI_C_WARN)
                                  : ui_theme_color(UI_C_TEXT_FAINT);
-    gfx_text(&c, NOTE_X, NOTE_L1_Y, l1, &gfx_font_8x16, col, 1);
-    gfx_text(&c, NOTE_X, NOTE_L2_Y, l2, &gfx_font_8x16, col, 1);
+    gfx_text(&c, NOTE_X, NOTE_L1_Y, l1, &gfx_font_10x20, col, 1);
+    gfx_text(&c, NOTE_X, NOTE_L2_Y, l2, &gfx_font_10x20, col, 1);
     return memcmp(want, fb, sizeof(want)) == 0;
 }
 
@@ -670,8 +669,8 @@ TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
     CHECK(both_whole());
     CHECK(memcmp(fb, target, FB_BYTES) != 0);
     int warn = 0;
-    for (int y = 260; y < 400; ++y) {
-        for (int x = 6; x < 494; ++x) {
+    for (int y = 390; y < 510; ++y) {
+        for (int x = 8; x < 628; ++x) {
             warn += fb[y * W + x] == ui_theme_color(UI_C_WARN);
         }
     }
@@ -691,7 +690,7 @@ TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
         }
     }
     CHECK(first >= NOTE_L1_Y);
-    CHECK(last < NOTE_L1_Y + 16);
+    CHECK(last < NOTE_L1_Y + 20);
     CHECK(note_rows_equal(target, NOTE_L2_Y));
 
     /* The rate is in the "every PWM surface" line: 50 Hz and 60 Hz read
@@ -1397,8 +1396,8 @@ TEST_CASE(the_hv_warning_redraws_when_the_output_changes)
     scr->tick(0.025f);
     scr->render(&cv, 0);
     int changed = 0;
-    for (int y = 0; y < 300; ++y) {             /* the warning's text */
-        for (int x = 0; x < 490; ++x) {
+    for (int y = 0; y < 430; ++y) {             /* the warning's text */
+        for (int x = 0; x < 628; ++x) {
             changed += (fb[(size_t)y * W + x] != before[(size_t)y * W + x]);
         }
     }

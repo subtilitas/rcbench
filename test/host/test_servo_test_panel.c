@@ -101,10 +101,10 @@ TEST_CASE(stop_test_is_named_to_the_router_while_a_run_is_under_way)
     CHECK(!scr->safe_at(START_X, LIM_START_Y));
     close_settings();                             /* LIVE: the result box */
     CHECK(servo_screen_testing());
-    CHECK(scr->safe_at(80, 156));                 /* STOP TEST */
-    tap(80, 156);
+    CHECK(scr->safe_at(BOXBTN_X, BOXBTN_Y));                 /* STOP TEST */
+    tap(BOXBTN_X, BOXBTN_Y);
     CHECK(!servo_screen_testing());
-    CHECK(!scr->safe_at(80, 156));                /* CLOSE */
+    CHECK(!scr->safe_at(BOXBTN_X, BOXBTN_Y));                /* CLOSE */
     open_test();
     CHECK(!scr->safe_at(START_X, START_Y));
 }
@@ -175,7 +175,7 @@ TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
     bench_fresh();
     short_runs();
     open_run_settings(0);
-    tap(ROW_R_X, HV_ROW_Y);                       /* HV SERVO on */
+    tap(HV_ROW_X, HV_ROW_Y);                       /* HV SERVO on */
     CHECK(home_tag());                            /* back to the cards */
     ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 120; ++i) {
@@ -634,13 +634,13 @@ static void run_out_bench(void)
     bench_frames(1000u);
 }
 
-/* Pixels of @p col in the rows @p y0 to @p y0 + 15 of the left card. */
+/* Pixels of @p col in the rows @p y0 to @p y0 + 19 of the left card. */
 static unsigned ink_in_row(int y0, ui_color_id_t col)
 {
     scr->render(&cv, 0);
     unsigned n = 0u;
-    for (int y = y0; y < y0 + 16; ++y) {
-        for (int x = 10; x < 495; ++x) {
+    for (int y = y0; y < y0 + 20; ++y) {
+        for (int x = 10; x < 627; ++x) {
             n += (fb[(size_t)y * W + (size_t)x] == ui_theme_color(col)) ? 1u
                                                                          : 0u;
         }
@@ -655,14 +655,14 @@ static bool box_meter_reads(const char *text)
     close_settings();
     scr->render(&cv, 0);
     want_fresh();
-    const int y = 48 + 92 + 8;
-    const int right = UI_MARGIN + 10 + 270 - 10;
-    const int x = right - gfx_text_width(&gfx_font_8x16, text, 1);
+    const int y = SV_BOX_Y + 112 + 14;
+    const int right = SV_BOX_X + SV_BOX_W - 10;
+    const int x = right - gfx_text_width(&gfx_font_10x20, text, 1);
     const gfx_color_t bg = fb[(size_t)y * W + right + 2];
-    gfx_fill_rect(&want_cv, 160, (int16_t)y, (int16_t)(right - 160), 16, bg);
-    gfx_text(&want_cv, x, y, text, &gfx_font_8x16,
+    gfx_fill_rect(&want_cv, 190, (int16_t)y, (int16_t)(right - 190), 20, bg);
+    gfx_text(&want_cv, x, y, text, &gfx_font_10x20,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    return same_in(fb, want_fb, 160, y, right - 160, 16);
+    return same_in(fb, want_fb, 190, y, right - 190, 20);
 }
 
 /* With the INA3221 as the rail's meter at START TEST the run reads its
@@ -1003,9 +1003,9 @@ TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
     bench_fresh();
     open_test();
     /* The AUTOMATIC TEST card's lines, mirrored from servo_test_panel.c:
-     * the card at y 46, its state line 98 px down and the note 36 px under
-     * that. */
-    const int y = 46 + 98 + 36;
+     * the card's state line SV_RUN_LINE_DY down and the note two lines of
+     * 22 px under that. */
+    const int y = SV_RUN_CARD_Y(0) + SV_RUN_LINE_DY + 44;
     /* As shipped: 2.00 A at a limit of 2.00 A. */
     CHECK(ink_in_row(y, UI_C_WARN) > 100u);
     /* One step of STALL AT's 0.05 A under the limit. */
@@ -1144,19 +1144,17 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
 
 /* Line @p i of the run's box on LIVE's left card: its text at the box's
  * left edge on the box's own fill, compared across the box. */
-#define TBOX_X (UI_MARGIN + 10)
-#define TBOX_Y 48
 static bool test_box_reads(int i, const char *text, ui_color_id_t col)
 {
     close_settings();
     scr->render(&cv, 0);
     want_fresh();
-    const int y = TBOX_Y + 8 + 20 * i;
-    const gfx_color_t bg = fb[(size_t)y * W + TBOX_X + 4];
-    gfx_fill_rect(&want_cv, TBOX_X + 2, (int16_t)y, 264, 16, bg);
-    gfx_text(&want_cv, TBOX_X + 10, y, text, &gfx_font_8x16,
+    const int y = SV_BOX_LINE_Y(i);
+    const gfx_color_t bg = fb[(size_t)y * W + SV_BOX_X + 4];
+    gfx_fill_rect(&want_cv, SV_BOX_X + 2, (int16_t)y, SV_BOX_W - 4, 20, bg);
+    gfx_text(&want_cv, SV_BOX_X + 10, y, text, &gfx_font_10x20,
              ui_theme_color(col), 1);
-    return same_in(fb, want_fb, TBOX_X + 2, y, 264, 16);
+    return same_in(fb, want_fb, SV_BOX_X + 2, y, SV_BOX_W - 4, 20);
 }
 
 /*

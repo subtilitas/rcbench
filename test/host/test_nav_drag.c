@@ -28,11 +28,11 @@
 
 #include "nav_rig.h"
 
-#define SV_SHAFT_X 300
+#define SV_SHAFT_P_X SV_SHAFT_X
 
-#define SV_SHAFT_Y (UI_BAND_H + (H - UI_BAND_H) / 2)
+#define SV_SHAFT_P_Y (UI_BAND_H + SV_SHAFT_Y)
 
-#define SV_SPEED_Y (UI_BAND_H + 306)
+#define SV_SPEED_P_Y (UI_BAND_H + SV_SPEED_Y)
 
 #define SU_TRACK_X 72
 
@@ -47,8 +47,8 @@
 static void dial_at(float deg, int r, int *x, int *y)
 {
     const float k = 3.14159265358979f / 180.0f;
-    *x = SV_SHAFT_X + (int)((float)r * cosf(deg * k) + 0.5f);
-    *y = SV_SHAFT_Y - (int)((float)r * sinf(deg * k) + 0.5f);
+    *x = SV_SHAFT_P_X + (int)((float)r * cosf(deg * k) + 0.5f);
+    *y = SV_SHAFT_P_Y - (int)((float)r * sinf(deg * k) + 0.5f);
 }
 
 /* What ends a throttle drag while the finger stays on the track. */
@@ -186,9 +186,9 @@ TEST_CASE(a_dial_drag_that_leaves_by_the_band_ends_at_the_edge)
     const uint16_t turned = servo_screen_commanded();
 
     /* 190 px right of the shaft: outside the arc, which ends at 174 px. */
-    finger(FEED_LONE, SV_SHAFT_X + 190, SV_SHAFT_Y);
+    finger(FEED_LONE, SV_SHAFT_P_X + 190, SV_SHAFT_P_Y);
     const servo_cmd_t d = servo_took();
-    glide(FEED_LONE, SV_SHAFT_X + 150, SV_SHAFT_Y, 8);
+    glide(FEED_LONE, SV_SHAFT_P_X + 150, SV_SHAFT_P_Y, 8);
     const servo_cmd_t c = servo_took();
     lift(FEED_LONE);
     CHECK_EQ(d.kind, SERVO_CMD_NONE);
@@ -202,8 +202,8 @@ TEST_CASE(a_slide_onto_the_dial_commands_nothing)
     on_screen(SCREEN_SERVO);
     servo_screen_set_armed(true);
     drain_servo();
-    finger(FEED_LONE, SV_SHAFT_X + 190, SV_SHAFT_Y);
-    glide(FEED_LONE, SV_SHAFT_X + 150, SV_SHAFT_Y, 8);
+    finger(FEED_LONE, SV_SHAFT_P_X + 190, SV_SHAFT_P_Y);
+    glide(FEED_LONE, SV_SHAFT_P_X + 150, SV_SHAFT_P_Y, 8);
     const servo_cmd_t c = servo_took();
     lift(FEED_LONE);
     CHECK_EQ(c.kind, SERVO_CMD_NONE);
@@ -224,11 +224,11 @@ TEST_CASE(a_speed_drag_that_leaves_by_the_band_ends_at_the_edge)
     feed_tap(FEED_LONE, x, y);
     CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
 
-    finger(FEED_LONE, 560, SV_SPEED_Y);
-    glide(FEED_LONE, 620, SV_SPEED_Y, 8);
+    finger(FEED_LONE, SV_RC_X + 44, SV_SPEED_P_Y);
+    glide(FEED_LONE, SV_RC_X + 104, SV_SPEED_P_Y, 8);
     const servo_cmd_t set = servo_took();
     CHECK_EQ(set.kind, SERVO_CMD_POSITION);
-    glide(FEED_LONE, 620, 30, 8);
+    glide(FEED_LONE, SV_RC_X + 104, 30, 8);
     lift(FEED_LONE);
     CHECK_EQ(servo_took().kind, SERVO_CMD_NONE);
 
@@ -249,8 +249,9 @@ TEST_CASE(a_speed_drag_that_leaves_by_the_band_ends_at_the_edge)
 /* ARM by touch: the button's place is found by holding each candidate. */
 static bool servo_arm_by_touch(uint8_t id)
 {
-    for (int yy = UI_BAND_H + 392; yy < UI_BAND_H + 418; yy += 8) {
-        finger(id, 650, yy);
+    for (int yy = UI_BAND_H + SV_ARM_Y + 4;
+         yy < UI_BAND_H + SV_ARM_Y + SV_ARM_H; yy += 8) {
+        finger(id, SV_RC_X + 40, yy);
         for (int i = 0; i < 50; ++i) {
             ui_router_tick(0.05f);
         }
@@ -296,8 +297,8 @@ TEST_CASE(home_under_a_dial_drag_ends_the_drag)
     servo_screen_knob(0.1f);
     CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
 
-    finger(FEED_LONE, SV_SHAFT_X + 190, SV_SHAFT_Y);
-    glide(FEED_LONE, SV_SHAFT_X + 150, SV_SHAFT_Y, 8);
+    finger(FEED_LONE, SV_SHAFT_P_X + 190, SV_SHAFT_P_Y);
+    glide(FEED_LONE, SV_SHAFT_P_X + 150, SV_SHAFT_P_Y, 8);
     const servo_cmd_t c = servo_took();
     lift(FEED_LONE);
     CHECK_EQ(c.kind, SERVO_CMD_NONE);

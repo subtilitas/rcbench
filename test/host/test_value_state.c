@@ -498,17 +498,17 @@ TEST_CASE(motor_a_late_callback_changes_nothing)
 
 /* ================================================================= SERVO */
 
-#define SHAFT_X     300
-#define SHAFT_Y     P((H - UI_BAND_H) / 2)
+#define SHAFT_X     SV_SHAFT_X
+#define SHAFT_Y     P(SV_SHAFT_Y)
 #define CENTRE_X    SV_CENTRE_X
 #define SWEEP_X     SV_SWEEP_X
 #define RELEASE_X   SV_RELEASE_X
-#define BTN_Y       P(366)
+#define BTN_Y       P(SV_BTN_Y)
 #define S_ARM_X     (SV_RC_X + SV_RC_W / 2)
-#define S_ARM_Y     P(404)
-#define SPEED_Y     P(307)
-/* ARM FIRST, 36 px over the left card's foot. */
-#define S_HINT_Y    P(UI_BODY_H - 36)
+#define S_ARM_Y     P(SV_ARM_Y + SV_ARM_H / 2)
+#define SPEED_Y     P(SV_SPEED_Y)
+/* ARM FIRST, under the horn's angle at the top of the left card. */
+#define S_HINT_Y    P(SV_HINT_Y + 10)
 
 enum { SC_DIAL = 0, SC_KNOB, SC_CENTRE, SC_SWEEP, SC_HOOK, SC_RELEASE,
        SC_COUNT };

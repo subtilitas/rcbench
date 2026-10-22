@@ -877,7 +877,8 @@ Listen der eigenen Werte des Reglers und öffnen kein Tastenfeld.
 ![Servo](img/de/servo.png)
 
 SERVO ist eine Werkbank. Die Leiste unter dem Band trägt ihre Aufgaben,
-**LIVE**, **TEST**, **PROGRAMMIEREN** und **OPTIONEN**, 112 px je Reiter.
+**LIVE**, **TEST**, **PROGRAMMIEREN** und **OPTIONEN**, 150 x 40 px je
+Reiter, 4 px Abstand, ab y 8 unter dem Band.
 Die Kachel öffnet LIVE. Ein Wechsel des Reiters ist keine Navigationsebene:
 das Home-Tag führt von jeder Aufgabe nach Hause und steigt nur aus den
 Einstellungen eines Laufs eine Ebene zurück zu TEST und aus einem
@@ -892,12 +893,26 @@ Prüfstand auf SAFE, aus jeder Aufgabe.
 | PROGRAMMIEREN | die Liste der Programmierer, eine Zeile je Programmierer; eine Zeile öffnet ihren Programmierer über der linken Spalte |
 | OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING |
 
-Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die
-Messwerte, die Zeile SOLL, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP,
-FREIGEBEN und ARM. Ein Feld -- ein Tastenfeld, die Buchstabentastatur,
-eine Liste, eine Warnung, die Frage oder ein Programmierer -- bedeckt die
-ganze linke Spalte samt den Reitern der Leiste und wird beantwortet oder
-geschlossen, bevor die Aufgabe wechselt.
+Die linke Karte ist 620 px breit und beginnt unter der Leiste, bei y 56.
+Die rechte Karte ist die Ausgangskarte, 380 px breit, vom oberen Rand bis
+zum unteren neben der Leiste, auf jeder Aufgabe dieselbe: der geltende
+Typ, die Zeile und der Plot der Servo-Schiene, die Zeile SOLL, TEMPO, die
+Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. Jede Zeile, die man dort
+antippt, ist 48 px hoch oder höher; ARM ist 60 px hoch und endet 4 px über
+dem Alert-Band, wie AUSGANG AUS. Ein Feld -- ein Tastenfeld, die
+Buchstabentastatur, eine Liste, eine Warnung, die Frage oder ein
+Programmierer -- bedeckt die ganze linke Spalte samt den Reitern der
+Leiste und wird beantwortet oder geschlossen, bevor die Aufgabe wechselt.
+
+Die Karte von LIVE trägt oben links den Winkel des Horns in den Ziffern
+des Prüfstands, darunter `ZUERST ARM`, solange der Prüfstand in SAFE ist,
+das Zifferblatt (Radius 150 px) mit dem Servo und an ihrem Fuß die drei
+Messwerte, je ein Drittel der Karte: SOLL-PULSBREITE in Mikrosekunden,
+GEMESSEN in Grad und STROM in Ampere, Name und Einheit über 44 px hohen
+Ziffern. Ziffern, die breiter als ihre Spalte von 198 px sind -- ein auf
+`-1000000.00` begrenzter Strom --, stehen in einer kleineren Schrift und
+bleiben so in ihr. Die Messwerte stehen nur auf LIVE; auf den anderen
+Aufgaben trägt die Zeile über dem Plot den Strom.
 
 Auf LIVE bei einem Prüfstand in ARMED an beliebiger Stelle auf dem Bogen ziehen, um
 eine Stellung zu befehlen. Der
@@ -1005,19 +1020,20 @@ wartet ein Kommando: Von einer Stellung und einem FREIGEBEN im selben Frame
 wird das spätere gesendet, und der gezeigte Wert ist dessen Wert. Eine
 Knopfdrehung in einem Frame, in dem FREIGEBEN wartet, wird verworfen.
 
-Die rechte Karte zeigt, was befohlen und gemessen ist, Typ, Bildwiederholrate
-und Pulsbereich, die gelten -- in der Gefahrenfarbe, solange sie ein Servo
-zerstören können, das nicht dafür gebaut ist -- und die Servo-Schiene, wie ihr
-Messgerät sie misst: Spannung, Strom und Leistung in der Zeile über dem Plot,
-über die letzten 13 s geplottet, und den Strom noch einmal in der Zeile STROM.
-Die Typzeile lautet `STANDARD PWM  50 Hz  1000-2000`: der Typ, die
+Die Ausgangskarte zeigt Typ, Bildwiederholrate und Pulsbereich, die
+gelten -- in der Gefahrenfarbe, solange sie ein Servo zerstören können, das
+nicht dafür gebaut ist -- und die Servo-Schiene, wie ihr Messgerät sie
+misst: Spannung, Strom und Leistung in der Zeile über dem Plot, über die
+letzten 17,8 s geplottet (356 px bei 20 Punkten je Sekunde). STROM auf LIVE
+zeigt den Strom noch einmal. Die Typzeile, 44 px hoch, lautet
+`STANDARD PWM  50 Hz  1000-2000`: der Typ, die
 Bildwiederholrate und PULS MIN bis PULS MAX in Mikrosekunden, mit je zwei
 Leerzeichen dazwischen. Die längste, ein Typ mit 13 Zeichen bei 560 Hz mit
-zwei vierstelligen Enden, belegt 32 der 33 Zeichen der Zeile; der Bereich
+zwei vierstelligen Enden, belegt 32 der 35 Zeichen der Zeile; der Bereich
 trägt deshalb keine Einheit. Eine in den Einstellungen eingetippte Pulsbreite
 erscheint sofort in der Zeile.
 
-| Messgerät der Servo-Schiene | Name in der Zeile | STROM, die Zeile und der Plot zeigen |
+| Messgerät der Servo-Schiene | Name in der Zeile | STROM auf LIVE, die Zeile und der Plot zeigen |
 | --- | --- | --- |
 | ein INA3221-Kanal | `INA`, die Adresse seines Bausteins und der Kanal: `INA 0x41 CH2` | das letzte 50-ms-Fenster des Kanals: den mittleren Strom, die mittlere Busspannung auf der Lastseite des Shunts und ihr Produkt. Ein Punkt im Plot je Fenster, 20 in der Sekunde |
 | der PD mini | `PD MINI` | das letzte Sample des Netzteils. Ein Punkt je Sample |
@@ -1027,9 +1043,9 @@ erscheint sofort in der Zeile.
 
 Der Name bleibt in beiden Sprachen `PD MINI`. Solange der PD mini in SETUP
 unter ANSCHLÜSSE abgeschaltet ist, ist das Netzteil das Modell des Panels,
-wie auf SUPPLY: dann sitzt eine Pille SIMULIERT (englisch MODELLED), 20 px
-hoch und 24 px plus das Wort breit, mindestens 88 px (88 px für MODELLED,
-96 px für SIMULIERT), auf der oberen linken Ecke des Plots unter dem Namen,
+wie auf SUPPLY: dann sitzt eine Pille SIMULIERT (englisch SIMULATED), 26 px
+hoch und 30 px plus das Wort breit, mindestens 110 px (120 px für SIMULATED
+und SIMULIERT), auf der oberen linken Ecke des Plots unter dem Namen,
 weil die Zeile neben dem Namen die drei Messwerte trägt. Die Pille kommt und
 geht mit dem Modell, ohne Tippen. Mit einem INA3221-Kanal als Messgerät
 nennt die Zeile den Kanal, `INA 0x40 CH1` bis `INA 0x43 CH3`, und trägt keine Pille,
@@ -1048,17 +1064,18 @@ eine nicht gilt.
 - Ein Strom hat ein Vorzeichen und wird in Hundertstel Ampere gezeigt:
   `0.41 A`, `-0.02 A`, `-1.64 A`. Ein Messwert, der auf null rundet, ist
   `0.00 A`. Die Leistung in der Zeile hat ein Vorzeichen und Zehntel Watt.
-  Neben dem Namen eines Kanals, 96 px, haben die drei Messwerte 52, 64 und
-  56 px, 6, 8 und 7 Zeichen: eine Spannung ab 10 V wird in Zehnteln
+  Neben dem Namen eines Kanals, 134 px, haben die drei Messwerte 64, 84 und
+  74 px, 6, 8 und 7 Zeichen zu 10 px; neben PD MINI, 90 px, 88, 88 und
+  90 px: eine Spannung ab 10 V wird in Zehnteln
   gezeigt, `26.0 V`, und eine Leistung, die in Zehnteln mehr als 7 Zeichen
   braucht, ab `-100.0 W` und ab `1000.0 W`, in ganzen Watt.
-- Ein Messwert, der nicht ankam, ist `---` in der Zeile STROM, `--` in der
+- Ein Messwert, der nicht ankam, ist `---` in STROM auf LIVE, `--` in der
   Zeile über dem Plot und eine Lücke im Plot: noch kein Sample, ein Netzteil,
   das nicht antwortet, kein Fenster seit dem Link-Aufbau, ein Fenster ohne
   Messungen dieser Größe.
 - Ein Fenster, in dem eine Messung ein Ende des Messbereichs des INA3221
   las, 1,638 A oder -1,638 A an einem Shunt von 0,1 Ω, zeigt seinen
-  Mittelwert, wie er ist, in der Warnfarbe in der Zeile STROM und in der
+  Mittelwert, wie er ist, in der Warnfarbe in STROM auf LIVE und in der
   Zeile über dem Plot. Die übersteuerten Messungen zählen in diesem
   Mittelwert mit dem Ende des Bereichs.
 
@@ -1074,8 +1091,8 @@ eine nicht gilt.
   kein Punkt der Kurve, und keiner von danach fehlt. Die Skala des Plots
   beginnt bei 0, und ein negativer Strom wird an seinem unteren Rand
   gezeichnet.
-- Der Wert der Zeile STROM wird neu gezeichnet, wenn sich seine Ziffern oder
-  seine Farbe ändern, und für sich allein.
+- Die Ziffern von STROM auf LIVE werden neu gezeichnet, wenn sich ihre
+  Ziffern oder ihre Farbe ändern, und für sich allein.
 
 Der automatische Test liest das Netzteil, welches Messgerät die Schiene auch
 hat.
@@ -1248,9 +1265,10 @@ ab TEMPO 63 %, beim Dreieck ab 40 %.
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
-beschreibt das Verfahren und die Dateien. Die Karte trägt den Namen des
-Laufs und seine OPTIONEN, eine Zusammenfassung (`4.8 6.0 V BROWN-OUT, JE
-60 s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN, die Zustandszeile, das
+beschreibt das Verfahren und die Dateien. Die Karte, 600 x 220 px, trägt
+den Namen des Laufs, eine Zusammenfassung (`4.8 6.0 V BROWN-OUT, JE
+60 s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN (300 x 56 px) mit den
+OPTIONEN der Karte (160 x 48 px) daneben, die Zustandszeile, das
 letzte Ergebnis mit seinen Dateien (`ZULETZT: BESTANDEN ATEST004.CSV +
 .TXT`) und den Hinweis zu BLOCKIERT AB. TEST STARTEN braucht einen Prüfstand
 in ARMED und ein Netzteil, das antwortet; die Zustandszeile sagt ZUERST ARM,
@@ -1273,7 +1291,8 @@ nachdem HALTEN ZUM ÜBERNEHMEN 2 s gehalten wurde. HV-SERVO gilt für die Sitzun
 jeder Neustart schaltet es aus.
 
 TEST bleibt beim Start zu sehen, und die Zustandszeile der Karte nennt die
-Stufe. LIVE zeigt oben auf der linken Karte das Feld des Laufs: Stufe und
+Stufe. LIVE zeigt links auf seiner Karte, unter `ZUERST ARM`, das Feld des
+Laufs, 346 px breit und in jedem Winkel neben dem Horn: Stufe und
 Phase, neben TEST BEENDEN das Messgerät, das der Lauf liest: `PD mini`, der INA3221-Kanal, `INA 0x41 CH2`, oder `SIMULATION`. Es ist das Messgerät der
 Servo-Schiene bei TEST STARTEN, und der Lauf liest es bis zu seinem Ende
 ([Der Strommesser des Laufs](Servo-de.md#der-strommesser-des-laufs)). Der
@@ -1418,6 +1437,19 @@ zeigt sie wieder. Die Ausgangskarte bleibt, wo sie ist, und
 funktioniert. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
 Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
+Die Seitenreiter von OPTIONEN sind 197 x 40 px quer über die Karte. Ihre
+Zeilen stehen in zwei Spalten zu 295 px, jede Zeile 48 px hoch und 56 px
+von der nächsten, der Name links und der Wert rechts, 140 px breit (TYP,
+PULSRATE und NAME belegen beide Spalten). Die Hinweise unter den Zeilen von
+AUSGANG sind Zeilen zu 60 Zeichen, 22 px Abstand. Die Einstellungen eines
+Laufs stehen in drei Spalten zu 193 px, jede Zeile ihr Name über ihrem
+48 px hohen Wert, 74 px von der nächsten: die 15 Zeilen des automatischen
+Tests zu fünf je Spalte, Dauer und Zeiten, die Grenzwerte mit
+BROWN-OUT, und die Stufen mit HV-SERVO. Die Auswahl einer Liste steht in
+zwei Spalten zu fünf, 48 px hoch und 56 px Abstand; die Warnungen stehen
+in 12 x 24 px großen Buchstaben, 48 Zeichen je Zeile, mit HALTEN ZUM
+ÜBERNEHMEN und ABBRECHEN 56 px hoch, die 4 px über dem Alert-Band enden.
+
 ![Die Einstellungen des Servos](img/de/servo-settings.png)
 ![Die Seite SWEEP](img/de/servo-sweep-page.png)
 
@@ -1491,8 +1523,8 @@ also auch, während einer davon die linke Spalte bedeckt.
 SERVO-TESTER hält OUTPUTS, PORT 1, PORT 2, PORT 3 oder PORT 4. Mit
 OUTPUTS nennt die Zeile die GPIOs, die in der vom Tester getriebenen
 Bindung als SERVO PWM gebunden sind: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`;
-so viele Pins, wie in die 23 Zeichen des Werts passen, dann `+N`: 8 Pins ab
-GP40 lauten `SERVO PWM GP40 GP41 +6`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
+so viele Pins, wie in die 27 Zeichen des Werts passen, dann `+N`: 8 Pins ab
+GP40 lauten `SERVO PWM GP40 GP41 GP42 +5`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
 (`KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen wurde
 (`PINS NICHT AUSGELESEN`). Mit einem Programmierport lautet sie `PROG-PORT
 1 GP13` in der Warnfarbe, die Nummer des Ports und der GPIO, den der IOmcu

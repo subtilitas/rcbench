@@ -411,8 +411,8 @@ TEST_CASE(a_withdrawal_after_an_arm_restores_no_drive_from_before_it)
     scr->cancel();
     while (last_cmd().kind != SERVO_CMD_NONE) { }
 
-    finger(FEED_LONE, 560, P(306));
-    glide(FEED_LONE, 620, P(306), 8);
+    finger(FEED_LONE, SV_RC_X + 44, P(SV_SPEED_Y));
+    glide(FEED_LONE, SV_RC_X + 104, P(SV_SPEED_Y), 8);
     lift(FEED_LONE);
     CHECK(last_cmd().kind != SERVO_CMD_POSITION);
 }
@@ -431,8 +431,8 @@ TEST_CASE(a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release)
     feed_tap(FEED_LONE, x, P(y));
     CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
 
-    finger(FEED_LONE, 560, P(306));
-    glide(FEED_LONE, 620, P(306), 8);
+    finger(FEED_LONE, SV_RC_X + 44, P(SV_SPEED_Y));
+    glide(FEED_LONE, SV_RC_X + 104, P(SV_SPEED_Y), 8);
     const servo_cmd_t set = last_cmd();
     CHECK_EQ(set.kind, SERVO_CMD_POSITION);
     feed_lose_next(1);
@@ -477,8 +477,8 @@ TEST_CASE(a_withdrawal_on_a_disarmed_bench_restores_no_drive)
     scr->cancel();
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
-    finger(FEED_LONE, 560, P(306));
-    glide(FEED_LONE, 620, P(306), 8);
+    finger(FEED_LONE, SV_RC_X + 44, P(SV_SPEED_Y));
+    glide(FEED_LONE, SV_RC_X + 104, P(SV_SPEED_Y), 8);
     lift(FEED_LONE);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
@@ -505,8 +505,8 @@ TEST_CASE(a_withdrawal_after_a_stop_restores_no_drive_before_the_disarm)
     scr->cancel();
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 
-    finger(FEED_LONE, 560, P(306));
-    glide(FEED_LONE, 620, P(306), 8);
+    finger(FEED_LONE, SV_RC_X + 44, P(SV_SPEED_Y));
+    glide(FEED_LONE, SV_RC_X + 104, P(SV_SPEED_Y), 8);
     lift(FEED_LONE);
     CHECK(last_cmd().kind != SERVO_CMD_POSITION);
 }
@@ -528,8 +528,8 @@ TEST_CASE(a_withdrawal_on_an_armed_bench_restores_the_drive)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), held);
 
-    finger(FEED_LONE, 560, P(306));
-    glide(FEED_LONE, 620, P(306), 8);
+    finger(FEED_LONE, SV_RC_X + 44, P(SV_SPEED_Y));
+    glide(FEED_LONE, SV_RC_X + 104, P(SV_SPEED_Y), 8);
     lift(FEED_LONE);
     const servo_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, SERVO_CMD_POSITION);
