@@ -2636,7 +2636,7 @@ startet neu.
 ![Geschrieben und geprüft](img/de/panel-update-done.png)
 
 Der Splash zeigt die neue Version, und das Band sagt
-`Panel-Firmware 0.19.0 installiert.`. Ein Schreiben, das fehlschlägt, ändert
+`Panel-Firmware 0.22.1 installiert.`. Ein Schreiben, das fehlschlägt, ändert
 nichts, was startet: Der laufende Build bleibt, und SCHLIESSEN geht zurück
 zu dem Bildschirm, der WI-FI geöffnet hat, SETUP oder LOGS, nach einem
 Download von GitHub dorthin, wo der Download begann.
@@ -2647,12 +2647,12 @@ Der erste Start eines neuen Builds ist ein Versuch. Der Build bleibt, sobald
 Display und Touch laufen. Ein Start, der nicht so weit kommt, durch einen
 Fehler, einen Neustart oder einen fehlenden Touch-Controller, geht zurück
 zum Build davor, der dann
-`Panel-Firmware 0.19.0 ist nicht gestartet. Version 0.18.0 läuft wieder.` im Band
+`Panel-Firmware 0.22.1 ist nicht gestartet. Version 0.22.0 läuft wieder.` im Band
 zeigt. Ein gescheiterter Start bleibt nie: Schlägt das Markieren als
 ungültig fehl, startet das Panel mit unbestätigtem Versuch neu, und der
 Bootloader geht trotzdem zurück. Schlägt das Behalten eines guten Starts
 fehl (otadata nicht geschrieben), sagt das Band
-`Panel-Firmware 0.19.0 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`;
+`Panel-Firmware 0.22.1 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`;
 der Build läuft bis dahin.
 
 Aktuelle Einschränkungen:
@@ -3050,13 +3050,14 @@ Die Liste beginnt mit der Überschrift INA3221-BAUSTEINE über vier Zeilen:
 | 0x40 bestückt bis 0x43 bestückt | EIN, AUS | AUS | ein INA3221 an dieser Adresse. Das DAOKAI-Modul nimmt 0x40 mit geschlossener A0-Lötbrücke nach GND. Ab Werk sind alle vier A0-Brücken offen, und die Adresse schwankt zwischen 0x40 und 0x41 |
 
 Jeder bestückte Baustein folgt unter einer eigenen Überschrift,
-`INA3221 0x40` bis `INA3221 0x43`, mit sechs Zeilen, zwei je Kanal. Ein
+`INA3221 0x40` bis `INA3221 0x43`, mit neun Zeilen, drei je Kanal. Ein
 Baustein, der nicht bestückt ist, hat keine Überschrift und keine Zeilen.
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
 | 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, KEINE für jeden anderen Kanal | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
 | 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0 mΩ, Schritte von 0,1 mΩ | 100,0 | AUS: der Kanal wird nicht gelesen. Der R100 des DAOKAI misst bis 1,64 A |
+| 0x40 CH1 Grenze | AUS, 10 bis 32767 mA, Schritte von 10 mA mit den Pfeilen | AUS | ein 50-ms-Fenster, dessen höchster Strom sie überschreitet, wird auf dem Band gesagt. Nur eine Meldung: nichts stoppt, schaltet auf SAFE oder treibt etwas. AUS: keine Grenze |
 
 Ein Tipp auf den Wert eines Shunts öffnet das Tastenfeld
 ([Tasten und Liste](#tasten-und-liste)). 44,4 mΩ vom Standardwert 100,0
@@ -3093,6 +3094,42 @@ der Warnfarbe und eine Zeile statt der Hilfe. Bei einem IOmcu älter als
 
 ![SENSOREN bei einem IOmcu älter als 4.25](img/de/setup-sensors-old.png)
 
+Eine Zeile GRENZE ist ebenso markiert, solange der IOmcu ihre Grenze nicht
+hält: von der Änderung bis zum angenommenen Schreiben, nach einem
+abgelehnten Schreiben oder einer abgelehnten Page mit
+`Vom IOmcu nicht übernommen.` und bei einem IOmcu
+älter als 4.27 für jede Grenze, die nicht AUS ist, mit
+`IOmcu älter als 4.27: keine Grenze wird geprüft.`:
+
+![Eine Grenze bei einem IOmcu älter als 4.27](img/de/setup-sensors-limit.png)
+
+Das Panel schreibt die Grenzen in die Page SENSE_LIMIT des IOmcu
+(Protokoll 4.27), in einem Schreiben von 12 Registern, LIMIT_MA in mA,
+500 ms nach der letzten Änderung, in jedem Zustand der Bank und nur, wo die
+Page etwas anderes hält. Bei jedem Link-Aufbau liest es die Page ganz.
+Solange die Page eine Grenze hält, die nicht AUS ist, liest es alle 200 ms
+OVER und OVER_COUNT, in ARMED wie in SAFE; dieses Lesen löscht OVER im
+IOmcu. Der IOmcu prüft jedes 50-ms-Fenster eines Kanals einmal, wenn es
+schließt: darüber, wenn der höchste Strom des Fensters über der Grenze
+liegt oder ein Messwert das Ende des Bereichs erreicht hat und dieses Ende
+über ihr liegt ([Link](LinkSensors-de.md#sense_limit)). Bevor das Panel
+neue Grenzen über gehaltene schreibt, liest es OVER einmal; ein Fenster,
+das an der alten Grenze geprüft wurde, wird mit der alten Grenze gesagt.
+Das Band sagt, höchstens einmal alle 5 s und für einen Kanal höchstens
+einmal alle 30 s, solange er sie weiter überschreitet. Kanäle, die
+gleichzeitig darüber liegen, kommen reihum dran, ab dem Kanal nach dem
+zuletzt gesagten: sind alle 12 darüber, wird jeder innerhalb von 12
+Meldungen gesagt, 60 s.
+
+| Band | Wann |
+| --- | --- |
+| `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80 A.` | ein Fenster des Kanals hat seit dem letzten Lesen seine Grenze überschritten; in Klammern, was der Kanal misst, nichts bei KEINE; die Grenze ist die, an der das Fenster geprüft wurde |
+| `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | OVER_COUNT hat sich ohne OVER-Bit bewegt: die Antwort mit den Bits kam nicht an. Eine Antwort, die nicht ankommt, beendet den Link; das sagt also das Lesen beim nächsten Link-Aufbau. Ein Zähler von 0 dort ist ein neu gestarteter IOmcu und wird nicht gesagt |
+| `INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.` | der IOmcu hat das Schreiben abgelehnt; er behält die Grenzen, die er hielt, und das Panel schreibt erst wieder, wenn sich eine Grenze ändert. Ebenso ein IOmcu, der Protokoll 4.27 oder neuer nennt und die Page mit BAD_PAGE beantwortet: das Panel schickt der Page bis zum nächsten Link-Aufbau nichts mehr |
+
+OVER-Bits, die der IOmcu von vor dem Link-Aufbau hält, auch die eines
+neu gestarteten IOmcu, sagt das erste Lesen mit ihrem Kanal.
+
 Das Panel schreibt die Zuordnung in die Page SENSE_MAP des IOmcu
 (Protokoll 4.25), in einem Schreiben von 26 Registern: die bestückten
 Bausteine, den Kanal, der mit 1 kHz gelesen wird, die zwölf Shunts und was
@@ -3113,9 +3150,10 @@ AUSGANG 1 bis AUSGANG 8, solange das Ziel OUTPUTS ist, und PORT n, solange
 es Programmierport n ist. Jeder andere Kanal mit Shunt wird reihum gelesen,
 einer je Millisekunde: 90,9 Hz je Kanal bei elf ([Link](Link-de.md)).
 
-Derzeitige Einschränkung: Der Servotest und der SERVO-Bildschirm nehmen den
-INA3221 nur als Messgerät der Servo-Schiene, solange dieser Kanal CH1 seines
-Bausteins ist. Liegt er auf CH2 oder CH3, ist das Messgerät der PD mini.
+An einem IOmcu älter als 4.25 nehmen der Servotest und der
+SERVO-Bildschirm den INA3221 nur als Messgerät der Servo-Schiene, solange
+dieser Kanal CH1 seines Bausteins ist: dieser IOmcu liest CH1 mit 1 kHz.
+Liegt er auf CH2 oder CH3, ist das Messgerät dort der PD mini.
 
 Ein IOmcu älter als 4.25 hat kein SENSE_MAP und liest einen INA3221 über
 SENSE: den Baustein des Kanals, der mit 1 kHz gelesen wird, sonst den
@@ -3132,7 +3170,8 @@ vier INA3221-Einstellungen, die 0.21 hielt: der Baustein an der alten
 Adresse bestückt, wenn der INA3221 EIN war, sein CH1 auf dem alten Shunt,
 CH2 und CH3 darauf bei CH1+2+3 und AUS bei CH1, und sein CH1 misst PORT 1,
 wenn das Ziel des Servotesters der Programmierport war, sonst AUSGANG 1;
-jeder andere Kanal 100,0 mΩ und KEINE. Die alten Einstellungen bleiben
+jeder andere Kanal 100,0 mΩ und KEINE; jede Grenze AUS. Die alten
+Einstellungen bleiben
 unverändert gespeichert, damit ein Panel, das auf 0.21 zurückgeht, seine
 Einstellung findet. Das nächste SPEICHERN schreibt jeden Schlüssel von
 SENSOREN.
@@ -3589,7 +3628,7 @@ dann, wie es endete:
 
 | Alarm | Bedeutung |
 | --- | --- |
-| `IOmcu auf 0.18.0 aktualisiert.` | das neue Image läuft und bleibt |
+| `IOmcu auf 0.22.0 aktualisiert.` | das neue Image läuft und bleibt |
 | `IOmcu-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | 4 s lang hat nichts geantwortet |
 | `IOmcu-Update abgebrochen: abgelehnt, Fehler 6. Vorherige Firmware läuft.` | der IOmcu hat einen Schritt abgelehnt; die Fehlernummern stehen in [Link](Link-de.md#die-pages) |
 | `IOmcu-Update abgebrochen: Firmware-Prüfung fehlgeschlagen. Vorherige Firmware läuft.` | der SHA-256 des Slots ist nicht der des Images |
@@ -3614,7 +3653,9 @@ Link, und LOGS gehört der SD-Karte.
 UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist,
 und installiert es. Der Bildschirm öffnet über die Kachel UPDATES auf
 SETUP, und sein Home-Tag führt dorthin zurück. Eine Erinnerung beim Start stellt dieselbe Frage einmal
-pro Start des Panels.
+pro Start des Panels. 0.22 ist das letzte Release für das ESP32-S3-Panel:
+dem Panel werden nur Patch-Releases 0.22.x angeboten
+([Die Release-Linie](#die-release-linie)).
 
 ![UPDATES](img/de/updates.png)
 
@@ -3622,7 +3663,7 @@ pro Start des Panels.
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
 | `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
-| `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche anbietet ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
+| `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche liest ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
 | `2 s HALTEN: LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
 | `2 s HALTEN: IOMCU AKTUALISIEREN` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 
@@ -3653,13 +3694,13 @@ der Antwort. RELEASES legt die Anfrage fest:
 
 | RELEASES | Anfrage | Was gelesen wird |
 | --- | --- | --- |
-| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | Der `Location`-Header des Redirects, der den Tag nennt (`.../releases/tag/v0.20.0`). Den Body liest das Panel nicht. Das Latest-Release von GitHub ist nie ein Pre-Release. |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
+| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | Der `Location`-Header des Redirects, der den Tag nennt (`.../releases/tag/v0.20.0`). Den Body liest das Panel nicht. Das Latest-Release von GitHub ist nie ein Pre-Release. Liegt dieses Release hinter der Release-Linie und ist neuer als der laufende Build, folgt einmal die Anfrage von `TESTING` ([Die Release-Linie](#die-release-linie)). |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge; das höchste Release der Release-Linie unter ihnen wird daneben gehalten. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
 
 Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen
-höchstens 30 s. In beiden Einstellungen wird nur ein Release angeboten, das
-neuer als der laufende Build ist: einem Panel mit Testing-Release 0.21.0 und
-`STABLE` wird das Stable-Release 0.20.0 nicht angeboten.
+höchstens 30 s. In beiden Einstellungen wird ein Release nur angeboten, wenn
+es zur Release-Linie 0.22 gehört und neuer als der laufende Build ist
+([Die Release-Linie](#die-release-linie)).
 
 Aktuelle Einschränkungen von `TESTING`: GitHub beantwortet ohne Konto 60
 API-Anfragen pro Stunde und öffentlicher IP-Adresse (Internet Protocol), und
@@ -3680,14 +3721,15 @@ Karte bis zur nächsten Suche:
 
 | Karte | Bedeutung |
 | --- | --- |
-| `Version 0.20.0 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
-| `Aktuell. Panel-Version: 0.19.0.` und `Neuestes Release auf GitHub: 0.19.0.` | Das neueste Release ist die laufende Version oder älter. |
+| `Version 0.22.1 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
+| `Aktuell. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.22.0.` | Das neueste Release ist die laufende Version oder älter. |
+| `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.23.0.` | Das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie. Es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht. |
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf WI-FI. |
 | `Keine Antwort innerhalb von 30 s.` | Die 30 s sind abgelaufen. |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
 | `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine andere Antwort als ein Redirect (`STABLE`) oder als 200 (`TESTING`). |
 | `GitHub-Anfragelimit erreicht: HTTP 403.` und `GitHub erlaubt 60 API-Anfragen pro Stunde und Adresse.` | `TESTING`: GitHub antwortete mit 403 oder 429, seinem Limit für Anfragen ohne Konto. |
-| `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` und `Neuestes Release auf GitHub: 0.21.0.` | Die Version des laufenden Builds ist nicht lesbar. Kein Release wird angeboten. |
+| `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` und `Neuestes Release auf GitHub: 0.22.1.` | Die Version des laufenden Builds ist nicht lesbar. Kein Release wird angeboten. |
 | `Unerwartete Antwort von GitHub.` | Der `Location`-Header (`STABLE`) oder die Antwort der API (`TESTING`) fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabellen unten). |
 | `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang ein.`, `...: Aufzeichnungslauf gestartet.`, `...: STOP.` | Die Suche endete deshalb. |
 | `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` | WI-FI wurde geöffnet. |
@@ -3737,11 +3779,53 @@ Release und alles nach dem 10. liest das Panel nicht.
 | `Die Releases enden nicht innerhalb von 262144 Bytes.` | Die eigene Grenze des Scans von 262 144 Bytes: eine Antwort mit Chunked-Kodierung, deren Array oder 10. Release nicht innerhalb davon endet. Eine Antwort innerhalb ihrer `Content-Length`-Grenze überschreitet sie nicht. |
 | `Der Versionstext hat ein ungültiges Format.` | Ein Tag verletzt die Regel oben. |
 
+### Die Release-Linie
+
+0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind
+für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare. Der Fuß der Karte
+sagt das in seinen ersten Zeilen, `0.22 ist das letzte Release für das
+ESP32-S3-Panel. Spätere Releases sind für das 7-Zoll-Display-Board mit
+ESP32-P4 von Waveshare.`, und seine letzte Zeile lautet `TESTING liest auch
+Testing-Releases. Beide bieten nur 0.22.x an.`.
+
+Eine Suche bietet nur ein Release mit MAJOR 0 und MINOR 22 an, das neuer
+als der laufende Build ist, mit `STABLE` und mit `TESTING` gleich
+(`FW_REL_LINE_MAJOR` und `FW_REL_LINE_MINOR` in
+`shared/fwupdate/include/fw_release.h`):
+
+| GitHub nennt | Panel mit 0.22.0 | Panel mit 0.22.1 |
+| --- | --- | --- |
+| `v0.22.1` | angeboten: `Version 0.22.1 ist verfügbar.` | `Aktuell. Panel-Version: 0.22.1.` |
+| `v0.22.0` | `Aktuell. Panel-Version: 0.22.0.` | `Aktuell. Panel-Version: 0.22.1.`: ein älteres Release wird nie angeboten |
+| `v0.23.0`, `v0.24.0`, `v1.0.0` | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.1.` |
+| ein ungültiger Tag, etwa `v0.22.1-rc1` | `Unerwartete Antwort von GitHub.` und `Der Versionstext hat ein ungültiges Format.` | dasselbe |
+
+Liegt mit `TESTING` das höchste der 10 neuesten Releases hinter der Linie,
+tritt das höchste Release der Linie unter ihnen an seine Stelle, sobald es
+neuer als der laufende Build ist: neben einem Pre-Release 0.23.0 wird einem
+Panel mit 0.22.0 das Release 0.22.1 angeboten. `STABLE` liest das
+Latest-Release von GitHub; ein Stable-Release, das älter als ein
+veröffentlichtes ist, wird nicht Latest
+([Bauen: Releases](Building-de.md#releases)). Liegt das Latest-Release
+hinter der Linie und ist neuer als der laufende Build, sendet `STABLE` eine
+Anfrage mehr, die, die `TESTING` sendet, und bietet das neueste 0.22.x unter
+den 10 neuesten Releases an, wenn es neuer als der laufende Build ist. Diese
+Anfrage zählt gegen GitHubs Grenze von 60 API-Anfragen pro Stunde; scheitert
+sie, lautet die Karte wie ohne sie: `Kein neueres Release für das
+ESP32-S3-Panel.`. Ist auf der Linie nichts neuer als der laufende Build,
+enden beide Einstellungen mit dieser Zeile und nennen das neueste Release.
+Der IOmcu bekommt das Image, das dieses Panel mitbringt, aus demselben
+Release ([Der IOmcu](#der-iomcu)).
+
+Aktuelle Einschränkung: Die Liste enthält die 10 nach Datum neuesten
+Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr
+Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
+
 ### Der IOmcu
 
 Unter den Tasten zeigt UPDATES das Update des IOmcu: die Version, die
-der IOmcu laufen hat (`Läuft: 0.17.0`), die Version des Images, das
-dieses Panel mitbringt (`Auf diesem Panel: 0.18.0`), eine Zeile Zustand und
+der IOmcu laufen hat (`Läuft: 0.21.2`), die Version des Images, das
+dieses Panel mitbringt (`Auf diesem Panel: 0.22.0`), eine Zeile Zustand und
 `2 s HALTEN: IOMCU AKTUALISIEREN`. Das Halten startet das Update, das
 die Frage beim Link-up startet, mit demselben Fortschritt
 ([IOmcu-Update](#iomcu-update)). Es startet es auch, nachdem

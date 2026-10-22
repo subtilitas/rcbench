@@ -1,7 +1,9 @@
-/*
- * What the panel's files share: firmware/panel/main/main.c and the files
- * cut from it.  One section per file, each holding what that file defines
- * and another file uses.  A file's own state stays static in that file.
+/**
+ * @file panel.h
+ * @brief What the panel's files share: firmware/panel/main/main.c and the
+ *        files cut from it.  One section per file, each holding what that
+ *        file defines and another file uses.  A file's own state stays static
+ *        in that file.
  *
  * Nothing in shared/ includes this header.
  *
@@ -635,6 +637,27 @@ void sense_link_service(bool idle, bench_state_t *bench);
  * s_sense_parts, which app_main reads. */
 extern sense_map_link_t s_sense_map;
 extern atomic_uint      s_sense_parts;
+/* SENSE_LIMIT (4.27, panel_limit.c): SETUP > SENSORS' LIMIT rows taken on
+ * app_main by publish_limits(), the page served by the control task, and
+ * s_sense_limits, sensors_rows_set_limits()'s word, for app_main. */
+
+/** @brief Takes the LIMIT and WATCHES rows for the control task; app_main,
+ *         from the SENSORS observer. */
+void publish_limits(void);
+/**
+ * @brief The link came up; control task.
+ * @param minor the IOmcu's protocol minor; below 27 nothing is sent to
+ *              SENSE_LIMIT.
+ */
+void sense_limit_came_up(uint16_t minor);
+/** @brief The link went; control task.  Clears s_sense_limits. */
+void sense_limit_lost(void);
+/** @brief Serves SENSE_LIMIT, at most 2 exchanges, and sends the next band
+ *         alert; control task, every poll. */
+void sense_limit_service(void);
+/** @brief sensors_rows_set_limits()'s word; control task writes, app_main
+ *         reads. */
+extern atomic_uint s_sense_limits;
 void sense_map_came_up(uint16_t minor);
 void sense_map_lost(void);
 void sense_map_service(bool idle);
@@ -948,6 +971,14 @@ bool cu_service(bool *link_up, bench_state_t *bench,
  * and the IOmcu update's screen. */
 void wifi_service(bool armed, uint32_t stops_now);
 void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
+/**
+ * @brief SETUP > UPDATES, the reminder and the download, once a frame.
+ * @param armed     ARMED, or an arm waiting
+ * @param unsafe    ARMED, an arm waiting, or the supply's output on or
+ *                  coming on
+ * @param stops_now STOP presses since the start; a change is a STOP
+ * @param cs        the IOmcu update's state this frame
+ */
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                  const cu_snap_t *cs);
 void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs);

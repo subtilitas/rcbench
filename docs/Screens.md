@@ -2391,7 +2391,7 @@ the panel restarts.
 ![Written and checked](img/panel-update-done.png)
 
 The splash shows the new version, and the band says
-`Panel firmware 0.19.0 installed.`. A write that fails changes nothing that
+`Panel firmware 0.22.1 installed.`. A write that fails changes nothing that
 starts: the running build stays, and CLOSE goes back to the screen that
 opened WI-FI, SETUP or LOGS, or after a download from GitHub to where the
 download started.
@@ -2401,11 +2401,11 @@ download started.
 A new build's first start is a trial. The build is kept once the display and
 touch are up. A start that does not get there, by a fault, a restart or a
 missing touch controller, goes back to the build before it, which says
-`Panel firmware 0.19.0 failed to start. Version 0.18.0 is running again.` on the band.
+`Panel firmware 0.22.1 failed to start. Version 0.22.0 is running again.` on the band.
 A failed start is never kept: when marking it invalid fails, the panel
 restarts with the trial unconfirmed, and the bootloader goes back all the
 same. When keeping a good start fails (otadata not written), the band says
-`Panel firmware 0.19.0 was not kept. The next restart restores the previous version.`; the build
+`Panel firmware 0.22.1 was not kept. The next restart restores the previous version.`; the build
 runs until then.
 
 Current limitations:
@@ -2768,13 +2768,14 @@ The list starts with the heading INA3221 PARTS over four rows:
 | 0x40 fitted to 0x43 fitted | ON, OFF | OFF | an INA3221 at this address. The DAOKAI module takes 0x40 with its A0 solder bridge closed to GND. As shipped all four A0 bridges are open and the address floats between 0x40 and 0x41 |
 
 Each fitted part follows under a heading of its own, `INA3221 0x40` to
-`INA3221 0x43`, with six rows, two a channel. A part that is not fitted has
-no heading and no rows.
+`INA3221 0x43`, with nine rows, three a channel. A part that is not fitted
+has no heading and no rows.
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE for every other channel | what the channel's shunt is in: an output channel, a programming port, or the supply rail |
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | OFF: the channel is not read. The DAOKAI's R100 reads to 1.64 A |
+| 0x40 CH1 limit | OFF, 10 to 32767 mA, 10 mA steps on the arrows | OFF | a 50 ms window whose highest current passes it is said on the band. An alert only: nothing stops, switches to SAFE or drives anything. OFF: no limit |
 
 A tap on a shunt's value opens the keypad ([Keys and the list](#keys-and-the-list)).
 44.4 mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,
@@ -2809,6 +2810,37 @@ one INA3221, CH1 at 1 kHz.`:
 
 ![SENSORS on an IOmcu older than 4.25](img/setup-sensors-old.png)
 
+A LIMIT row is marked the same way while the IOmcu does not hold its
+limit: from the edit to the write taken, after a refused write or a
+refused page with `Not accepted by the IOmcu.`, and on an IOmcu older than 4.27, for every
+limit that is not OFF, with `IOmcu older than 4.27: no limit is judged.`:
+
+![A limit on an IOmcu older than 4.27](img/setup-sensors-limit.png)
+
+The panel writes the limits to the IOmcu's SENSE_LIMIT page (protocol
+4.27) in one write of 12 registers, LIMIT_MA in mA, 500 ms after the last
+edit, in any bank state, and only where the page holds something else. It
+reads the page whole at every link-up. While the page holds a limit that
+is not OFF, it reads OVER and OVER_COUNT every 200 ms, armed or not; that
+read clears OVER on the IOmcu. The IOmcu judges each channel's 50 ms
+window once as it closes: over when the window's highest current is above
+the limit, or when a sample read the top of the range and that top is
+above it ([Link](LinkSensors.md#sense_limit)). Before it writes new
+limits over held ones, the panel reads OVER once, so a window judged under
+the old limit is said with the old limit. The band says, at most once
+every 5 s and for one channel at most once every 30 s while it keeps
+passing. Channels over at the same time take turns, starting after the
+channel said last: with all 12 over, each is said within 12 alerts, 60 s.
+
+| Band | When |
+| --- | --- |
+| `INA3221 0x41 CH2 (PORT 1) over its 0.80 A limit.` | a window of the channel passed its limit since the last read; the target in brackets is what the channel watches, none for NONE; the limit is the one the window was judged by |
+| `An INA3221 channel passed its limit; which one was lost on the link.` | OVER_COUNT moved with no OVER bit: the reply that carried the bits did not arrive. A reply that does not arrive takes the link down, so this is said after the read at the next link-up. A count of 0 there is an IOmcu that started again and is not said |
+| `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the write; it keeps the limits it held, and the panel does not write again until a limit changes. Also an IOmcu that names protocol 4.27 or later and answers the page with BAD_PAGE: the panel sends the page nothing more until the next link-up |
+
+OVER bits the IOmcu holds from before the link came up, also those of an
+IOmcu that started again, are said by channel at the first read.
+
 The panel writes the map to the IOmcu's SENSE_MAP page (protocol 4.25) in
 one write of 26 registers: the parts fitted, the channel read at 1 kHz,
 the twelve shunts and what each channel watches. As for SENSE it reads the
@@ -2826,9 +2858,10 @@ target is OUTPUTS, and PORT n while it is programming port n. Every other
 channel with a shunt is read in turn, one a millisecond: 90.9 Hz each with
 eleven ([Link](Link.md)).
 
-Current limitation: the servo test and the SERVO screen take the INA3221 as
-the servo rail's meter only while that channel is CH1 of its part. With it
-on CH2 or CH3 the rail's meter is the PD mini.
+On an IOmcu older than 4.25 the servo test and the SERVO screen take the
+INA3221 as the servo rail's meter only while that channel is CH1 of its
+part: that IOmcu reads CH1 at 1 kHz. With it on CH2 or CH3 the rail's meter
+is the PD mini there.
 
 An IOmcu older than 4.25 has no SENSE_MAP and reads one INA3221 from
 SENSE: the part of the channel read at 1 kHz, else the lowest fitted part,
@@ -2844,7 +2877,8 @@ it lacks is taken at start-up from the four INA3221 settings 0.21 kept:
 the part at the old address fitted when the INA3221 was ON, its CH1 on the
 old shunt, CH2 and CH3 on it with CH1+2+3 and OFF with CH1, and its CH1
 watching PORT 1 when the servo tester's target was the programming port,
-OUT 1 otherwise; every other channel 100.0 mΩ and NONE. The old settings
+OUT 1 otherwise; every other channel 100.0 mΩ and NONE; every limit OFF.
+The old settings
 stay stored, unchanged, so a panel taken back to 0.21 finds its set-up. The
 next SAVE writes every SENSORS key.
 
@@ -3262,7 +3296,7 @@ UPDATES' hold started it. The alert band then says how it ended:
 
 | Alert | Meaning |
 | --- | --- |
-| `IOmcu updated to 0.18.0.` | the new image runs and is kept |
+| `IOmcu updated to 0.22.0.` | the new image runs and is kept |
 | `IOmcu update stopped: no response. Previous firmware is running.` | nothing answered for 4 s |
 | `IOmcu update stopped: refused, error 6. Previous firmware is running.` | the IOmcu refused a step; the error numbers are in [Link](Link.md#the-pages) |
 | `IOmcu update stopped: firmware check failed. Previous firmware is running.` | the SHA-256 of the slot is not the image's |
@@ -3286,7 +3320,9 @@ the link, and LOGS is about the SD card.
 UPDATES asks GitHub which panel firmware release is the newest, and installs
 it. It opens from the UPDATES tile on SETUP, and its home tag leads back
 there. A reminder at start
-asks the same question once per start of the panel.
+asks the same question once per start of the panel. 0.22 is the last
+release for the ESP32-S3 panel: the panel is offered 0.22.x patch releases
+only ([The release line](#the-release-line)).
 
 ![UPDATES](img/updates.png)
 
@@ -3294,7 +3330,7 @@ asks the same question once per start of the panel.
 | --- | --- |
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
-| `RELEASES: STABLE` / `TESTING` | Sets which releases a check offers ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
+| `RELEASES: STABLE` / `TESTING` | Sets which releases a check reads ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
 | `HOLD 2 s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
 | `HOLD 2 s: UPDATE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 
@@ -3324,13 +3360,13 @@ RELEASES sets the request:
 
 | RELEASES | Request | What is read |
 | --- | --- | --- |
-| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
+| `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. When that release is past the release line and newer than the running build, the `TESTING` request follows once ([The release line](#the-release-line)). |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
 
 Then the radio goes off. The join, the address and the request take 30 s at
-most, together. On either setting only a release newer than the running
-build is offered: a panel on testing release 0.21.0 with `STABLE` is not
-offered stable release 0.20.0.
+most, together. On either setting a release is offered only when it is of
+the release line, 0.22, and newer than the running build
+([The release line](#the-release-line)).
 
 Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
 each public IP (Internet Protocol) address without an account, and the
@@ -3350,14 +3386,15 @@ check:
 
 | Card | Meaning |
 | --- | --- |
-| `Version 0.20.0 is available.` | The newest release is newer than the running build. The hold appears. |
-| `Up to date. Panel version: 0.19.0.` and `Latest release on GitHub: 0.19.0.` | The newest release is the running version or older. |
+| `Version 0.22.1 is available.` | The newest release is newer than the running build. The hold appears. |
+| `Up to date. Panel version: 0.22.0.` and `Latest release on GitHub: 0.22.0.` | The newest release is the running version or older. |
+| `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` and `Latest release on GitHub: 0.23.0.` | The newest release is newer than the running build and past the release line. It is not offered, and the reminder at start does not open for it. |
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
 | `No response within 30 s.` | The 30 s ran out. |
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
 | `GitHub rejected the request: HTTP 404.` | An answer other than a redirect (`STABLE`) or other than 200 (`TESTING`). |
 | `GitHub's request limit is reached: HTTP 403.` and `GitHub allows 60 API requests an hour per address.` | `TESTING`: GitHub answered 403 or 429, its limit for requests without an account. |
-| `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` and `Latest release on GitHub: 0.21.0.` | The running build's version does not parse. No release is offered. |
+| `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` and `Latest release on GitHub: 0.22.1.` | The running build's version does not parse. No release is offered. |
 | `Unexpected answer from GitHub.` | The `Location` (`STABLE`) or the API's answer (`TESTING`) is missing or out of form; a second line says which (tables below). |
 | `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
 | `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. |
@@ -3406,11 +3443,50 @@ why. An 11th release and anything after the 10th is not read.
 | `The releases do not end within 262144 bytes.` | The scan's own bound of 262,144 bytes: a chunked answer whose array or 10th release does not end within it. An answer within its `Content-Length` bound does not pass it. |
 | `The version text has an invalid format.` | A tag fails the rule above. |
 
+### The release line
+
+0.22 is the last release for the ESP32-S3 panel. Later releases are for the
+7-inch ESP32-P4 display board from Waveshare. The card's foot says so in its
+first lines, `0.22 is the last release for the ESP32-S3 panel. Later
+releases are for the 7-inch ESP32-P4 display board from Waveshare.`, and
+its last line reads `TESTING also reads testing releases. Both offer only
+0.22.x.`.
+
+A check offers a release of MAJOR 0 and MINOR 22 only, newer than the
+running build, on `STABLE` and on `TESTING` alike (`FW_REL_LINE_MAJOR` and
+`FW_REL_LINE_MINOR` in `shared/fwupdate/include/fw_release.h`):
+
+| GitHub names | Panel on 0.22.0 | Panel on 0.22.1 |
+| --- | --- | --- |
+| `v0.22.1` | offered: `Version 0.22.1 is available.` | `Up to date. Panel version: 0.22.1.` |
+| `v0.22.0` | `Up to date. Panel version: 0.22.0.` | `Up to date. Panel version: 0.22.1.`: an older release is never offered |
+| `v0.23.0`, `v0.24.0`, `v1.0.0` | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` | `No newer release for the ESP32-S3 panel. Panel version: 0.22.1.` |
+| a tag out of form, such as `v0.22.1-rc1` | `Unexpected answer from GitHub.` and `The version text has an invalid format.` | the same |
+
+With `TESTING`, when the highest of the 10 newest releases is past the
+line, the highest release of the line among them stands in for it once it
+is newer than the running build: beside a 0.23.0 pre-release, 0.22.1 is
+offered to a panel on 0.22.0. `STABLE` reads GitHub's latest release; a
+stable release older than a published one is not marked latest
+([Building: Releases](Building.md#releases)). When the latest release is
+past the line and newer than the running build, `STABLE` sends one request
+more, the one `TESTING` sends, and offers the newest 0.22.x among the 10
+newest releases when it is newer than the running build. That request counts
+against GitHub's limit of 60 API requests an hour; when it fails, the card
+reads as without it: `No newer release for the ESP32-S3 panel.`. With
+nothing on the line newer than the running build, both settings end with
+that line and name the newest release. The IOmcu takes the image this panel
+carries, from the same release ([The IOmcu](#the-iomcu)).
+
+Current limitation: the list holds the 10 newest releases by date
+(`per_page=10`). A 0.22.x patch release with 10 or more releases published
+after it is not found, on either setting.
+
 ### The IOmcu
 
 Under the buttons, UPDATES shows the IOmcu's update: the version the
-IOmcu runs (`Running: 0.17.0`), the version of the image this panel
-carries (`Carried: 0.18.0`), one line of state, and
+IOmcu runs (`Running: 0.21.2`), the version of the image this panel
+carries (`Carried: 0.22.0`), one line of state, and
 `HOLD 2 s: UPDATE IOMCU`. The hold starts the update that the
 link-up's question starts, with the same progress screen
 ([IOmcu update](#iomcu-update)). It also starts it after that

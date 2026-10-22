@@ -280,6 +280,7 @@ SCREENS = {
     # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
+    "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
     # The keypad of 0x40 CH1's shunt, 44.4 mOhm typed.
     "setup-sensors-keypad": ("setup-sensors-keypad.png", "setup", "dark"),
     # Values inside the range the steps never reach, refused with the
@@ -498,10 +499,11 @@ FIT_ONLY = {
     "updates-unexpected": (None, "updates", "dark"),
     "updates-nonet":    (None, "updates", "dark"),
     "updates-blocked":  (None, "updates", "dark"),
-    # TESTING at GitHub's request limit, and a running version that did
-    # not parse.
+    # TESTING at GitHub's request limit, a running version that did not
+    # parse, and a newer release past the panel's release line.
     "updates-limit":    (None, "updates", "dark"),
     "updates-unversioned": (None, "updates", "dark"),
+    "updates-past-line": (None, "updates", "dark"),
     # Every other state of UPDATES' IOmcu section.
     "updates-cu-older":    (None, "updates", "dark"),
     "updates-cu-rebuilt":  (None, "updates", "dark"),

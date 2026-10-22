@@ -8,8 +8,10 @@
  */
 #include "settings_rig.h"
 
+#include "sense_limit_link.h"
 #include "sensors_rows.h"
 #include "settings_sensors.h"
+#include "ui_screen.h"
 
 /* ------------------------------------------------------------ the rows */
 
@@ -473,8 +475,8 @@ TEST_CASE(sensors_lists_a_fitted_parts_rows_under_its_heading)
     CHECK_EQ(sensors_rows_heading(SET_INA_W(0)), -1);
     settings_set(SET_INA_FIT(0), 1.0f);
     settings_set(SET_INA_FIT(2), 1.0f);
-    /* Two parts: a heading and six rows each. */
-    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 5 + 2 * 7);
+    /* Two parts: a heading and nine rows each. */
+    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 5 + 2 * 10);
     CHECK_EQ(sensors_rows_heading(SET_INA_W(0)), 0);
     CHECK_EQ(sensors_rows_heading(SET_INA_SH(0)), -1);
     CHECK_EQ(sensors_rows_heading(SET_INA_W(6)), 2);
@@ -484,10 +486,10 @@ TEST_CASE(sensors_lists_a_fitted_parts_rows_under_its_heading)
     CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4), 6);
     /* By schema index: 0x42 CH1 WATCHES under its heading, 0x41's rows
      * not listed. */
-    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4 + 12), 13);
-    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4 + 6), -1);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4 + 18), 16);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4 + 9), -1);
     CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, -1), -1);
-    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 28), -1);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 40), -1);
     char buf[24];
     CHECK_STR_EQ(sensors_rows_title(2, buf, sizeof(buf)), "INA3221 0x42");
     CHECK_STR_EQ(sensors_rows_title(2, NULL, 0u), "");
@@ -528,6 +530,55 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
     CHECK(sensors_rows_unheld(SET_INA_SH(2)));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_SH(2)),
                  "Sensor SDA or SCL unset. Set both on INTERFACES.");
+    sensors_rows_set_status(0u);
+}
+
+/* A LIMIT row the IOmcu does not hold is marked, and only that row; on an
+ * IOmcu older than 4.27 the line says no limit is judged.  A part's own
+ * reason comes first. */
+TEST_CASE(a_limit_the_iomcu_does_not_hold_marks_its_row)
+{
+    fresh_model();
+    sensors_rows_set_status((uint16_t)SENS_PART_ONLINE);
+    sensors_rows_set_limits((uint16_t)((SENSE_LIMIT_ST_PENDING << 12)
+                                       | (1u << 1)));
+    CHECK(sensors_rows_unheld(SET_INA_LIM(1)));
+    CHECK(!sensors_rows_unheld(SET_INA_LIM(0)));
+    CHECK(!sensors_rows_unheld(SET_INA_SH(1)));
+    CHECK(!sensors_rows_unheld(SET_INA_W(2)));
+    CHECK_STR_EQ(sensors_rows_why(SET_INA_LIM(1)),
+                 "Not accepted by the IOmcu.");
+    sensors_rows_set_limits((uint16_t)((SENSE_LIMIT_ST_OLD << 12)
+                                       | (1u << 11)));
+    CHECK(sensors_rows_unheld(SET_INA_LIM(11)));
+    CHECK_STR_EQ(sensors_rows_why(SET_INA_LIM(11)),
+                 "IOmcu older than 4.27: no limit is judged.");
+    CHECK_STR_EQ(sensors_rows_why(SET_INA_W(11)),
+                 "Not accepted by the IOmcu.");
+    CHECK_STR_EQ(sensors_rows_why(SET_INA_FIT(0)),
+                 "Not accepted by the IOmcu.");
+    sensors_rows_set_status((uint16_t)(SENS_PART_DARK << 12));
+    CHECK_STR_EQ(sensors_rows_why(SET_INA_LIM(11)),
+                 "Every channel off. The IOmcu takes no such part.");
+    /* The row reads OFF at 0 and mA as the page takes them. */
+    settings_set(SET_INA_LIM(3), 1250.0f);
+    CHECK_EQ(settings_sensors_limit_ma(3), 1250u);
+    settings_set(SET_INA_LIM(3), 40000.0f);
+    CHECK_EQ(settings_sensors_limit_ma(3), 32767u);
+    settings_adjust(SET_INA_LIM(3), 1);
+    CHECK_EQ(settings_sensors_limit_ma(3), 32767u);
+    settings_set(SET_INA_LIM(3), 10.0f);
+    settings_adjust(SET_INA_LIM(3), -1);          /* the step below 10: OFF */
+    CHECK_EQ(settings_sensors_limit_ma(3), 0u);
+    settings_adjust(SET_INA_LIM(3), 1);
+    CHECK_EQ(settings_sensors_limit_ma(3), 10u);
+    settings_set(SET_INA_LIM(3), 0.0f);
+    CHECK_EQ(settings_sensors_limit_ma(12), 0u);
+    CHECK_EQ(settings_sensors_limit_ma(-1), 0u);
+    CHECK_EQ(settings_sensors_watch_option(LINK_SM_WATCH_PORT(2)),
+             SENS_W_PORT_1 + 2);
+    CHECK_EQ(settings_sensors_watch_option(0x7Fu), SENS_W_NONE);
+    sensors_rows_set_limits(0u);
     sensors_rows_set_status(0u);
 }
 
@@ -590,6 +641,72 @@ TEST_CASE(every_part_state_has_its_words_and_colour)
     sensors_rows_set_status(0u);
 }
 
+/* The band alert names the part, the channel, what it watches and the
+ * limit it passed in amperes, rounded to 10 mA, in both languages. */
+TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
+{
+    static const struct {
+        unsigned ch; uint16_t ma; int watch; const char *en;
+    } k[] = {
+        { 0u, 10u, SENS_W_NONE,
+          "INA3221 0x40 CH1 over its 0.01 A limit." },
+        { 4u, 990u, SENS_W_SUPPLY,
+          "INA3221 0x41 CH2 (SUPPLY) over its 0.99 A limit." },
+        { 8u, 32760u, SENS_W_PORT_1,
+          "INA3221 0x42 CH3 (PORT 1) over its 32.76 A limit." },
+        { 11u, 32767u, SENS_W_OUT_1 + 7,
+          "INA3221 0x43 CH3 (OUT 8) over its 32.77 A limit." },
+    };
+    char buf[UI_ALERT_MAX];
+    for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
+        CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                        SENSE_LIMIT_LINK_EV_OVER, k[i].ch,
+                                        k[i].ma, k[i].watch),
+                     k[i].en);
+    }
+    CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                    SENSE_LIMIT_LINK_EV_LOST, 0u, 0u, 0),
+                 "An INA3221 channel passed its limit; which one was lost "
+                 "on the link.");
+    CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                    SENSE_LIMIT_LINK_EV_REFUSED, 0u, 0u, 0),
+                 "INA3221 limits rejected. Check SETUP > SENSORS.");
+    /* No line for nothing, a channel past the twelfth or no buffer. */
+    CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                    SENSE_LIMIT_LINK_EV_NONE, 0u, 0u, 0), "");
+    CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                    SENSE_LIMIT_LINK_EV_OVER, 12u, 10u, 0),
+                 "");
+    CHECK_STR_EQ(sensors_rows_alert(NULL, 0u, SENSE_LIMIT_LINK_EV_OVER, 0u,
+                                    10u, 0), "");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                    SENSE_LIMIT_LINK_EV_OVER, 0u, 10u,
+                                    SENS_W_NONE),
+                 "INA3221 0x40 CH1 \xc3\xbc"
+                 "ber der Grenze von 0.01 A.");
+    CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                    SENSE_LIMIT_LINK_EV_OVER, 4u, 990u,
+                                    SENS_W_SUPPLY),
+                 "INA3221 0x41 CH2 (NETZTEIL) \xc3\xbc"
+                 "ber der Grenze von 0.99 A.");
+    CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                    SENSE_LIMIT_LINK_EV_OVER, 8u, 32760u,
+                                    SENS_W_PORT_1),
+                 "INA3221 0x42 CH3 (PORT 1) \xc3\xbc"
+                 "ber der Grenze von 32.76 A.");
+    CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                    SENSE_LIMIT_LINK_EV_OVER, 11u, 32767u,
+                                    SENS_W_SUPPLY),
+                 "INA3221 0x43 CH3 (NETZTEIL) \xc3\xbc"
+                 "ber der Grenze von 32.77 A.");
+    CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
+                                    SENSE_LIMIT_LINK_EV_REFUSED, 0u, 0u, 0),
+                 "INA3221-Grenzen abgelehnt. SETUP > SENSOREN pr"
+                 "\xc3\xbc" "fen.");
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(the_monitor_addresses_stop_at_their_ends);
@@ -607,7 +724,9 @@ int main(void)
     RUN(a_fitted_part_with_every_channel_off_is_dark);
     RUN(sensors_lists_a_fitted_parts_rows_under_its_heading);
     RUN(a_part_the_iomcu_does_not_read_marks_its_rows);
+    RUN(a_limit_the_iomcu_does_not_hold_marks_its_row);
     RUN(every_part_state_has_its_words_and_colour);
     RUN(the_scroll_follows_a_list_that_shortens);
+    RUN(an_over_alert_names_its_channel_target_and_limit);
     return test_summary("settings_sensors");
 }

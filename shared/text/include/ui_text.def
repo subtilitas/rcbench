@@ -239,12 +239,15 @@ UI_TEXT(KEYPAD_RANGE, 0,
     "%.*f to %.*f %s",
     "%.*f bis %.*f %s")
 /* Why a setting's keypad refused a value inside its range, in place of the
- * range (ui_setting_keypad.c): a SENSORS shunt between 0 and 5.0 mOhm, a
- * Sensor SDA pin the bus cannot have (the pins settings_sense_sda_valid()
- * takes, listed where it is drawn), the other PD mini pin's GPIO. */
-UI_TEXT(KEYPAD_WHY_SHUNT, 0,
-    "0 or 5.0 to 1000.0 mOhm",
-    "0 oder 5.0 bis 1000.0 mOhm")
+ * range (ui_setting_keypad.c): a value between 0 and the row's off_below
+ * (the row's off_below, maximum and unit, with its step's decimals: a
+ * SENSORS shunt's "0 or 5.0 to 1000.0 mOhm", a SENSORS limit's "0 or 10
+ * to 32767 mA"), a Sensor SDA pin the bus cannot have (the pins
+ * settings_sense_sda_valid() takes, listed where it is drawn), the other
+ * PD mini pin's GPIO. */
+UI_TEXT(KEYPAD_WHY_OFF, 0,
+    "0 or %.*f to %.*f %s",
+    "0 oder %.*f bis %.*f %s")
 UI_TEXT(KEYPAD_WHY_SDA, 0,
     "Pins the bus takes: %s",
     "Pins, die der Bus nimmt: %s")
@@ -1162,6 +1165,9 @@ UI_TEXT(SENS_ST_NO_BUS, 56,
 UI_TEXT(SET_SENS_OLD, 65,
     "IOmcu older than 4.25: one INA3221, CH1 at 1 kHz.",
     "IOmcu älter als 4.25: ein INA3221, CH1 mit 1 kHz.")
+UI_TEXT(SET_SENS_LIM_OLD, 65,
+    "IOmcu older than 4.27: no limit is judged.",
+    "IOmcu älter als 4.27: keine Grenze wird geprüft.")
 UI_TEXT(SET_SENS_DARK, 65,
     "Every channel off. The IOmcu takes no such part.",
     "Alle Kanäle aus. Der IOmcu nimmt so keinen Baustein.")
@@ -3315,6 +3321,15 @@ UI_TEXT(ALERT_SENSE_I228_CLIPPED, 94,
 UI_TEXT(ALERT_SENSE_I3221_CLIPPED, 94,
     "INA3221 0x%02X CH%u clipped at %u.%02u A. Reading shows only the limit.",
     "INA3221 0x%02X CH%u bei %u.%02u A übersteuert. Anzeige zeigt nur den Grenzwert.")
+UI_TEXT(ALERT_SENSE_OVER, 94,
+    "INA3221 0x%02X CH%u%s over its %u.%02u A limit.",
+    "INA3221 0x%02X CH%u%s über der Grenze von %u.%02u A.")
+UI_TEXT(ALERT_SENSE_OVER_LOST, 94,
+    "An INA3221 channel passed its limit; which one was lost on the link.",
+    "Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.")
+UI_TEXT(ALERT_SENSE_LIMITS, 94,
+    "INA3221 limits rejected. Check SETUP > SENSORS.",
+    "INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.")
 UI_TEXT(ALERT_ENC_OLD, 94,
     "IOmcu firmware older than 4.9. AS5600 not read.",
     "IOmcu-Firmware älter als 4.9. AS5600 nicht ausgelesen.")
@@ -4646,8 +4661,12 @@ UI_TEXT(UPD_ABOUT_2, 0,
     "Wi-Fi stays on for no more than 30 s.",
     "WLAN bleibt dabei höchstens 30 s eingeschaltet.")
 UI_TEXT(UPD_ABOUT_3, 0,
-    "TESTING also offers testing releases: odd minor numbers.",
-    "TESTING bietet auch Testing-Releases an: ungerade Minor-Nummern.")
+    "TESTING also reads testing releases. Both offer only 0.22.x.",
+    "TESTING liest auch Testing-Releases. Beide bieten nur 0.22.x an.")
+/* UPDATES' card: the panel's release line (fw_release.h FW_REL_LINE_*). */
+UI_TEXT(UPD_LAST_LINE, 0,
+    "0.22 is the last release for the ESP32-S3 panel. Later releases are for the 7-inch ESP32-P4 display board from Waveshare.",
+    "0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare.")
 UI_TEXT(UPD_ASKING, 0,
     "Checking GitHub.",
     "GitHub wird geprüft.")
@@ -4660,6 +4679,9 @@ UI_TEXT(UPD_NEWER, 0,
 UI_TEXT(UPD_CURRENT, 0,
     "Up to date. Panel version: %s.",
     "Aktuell. Panel-Version: %s.")
+UI_TEXT(UPD_PAST_LINE, 0,
+    "No newer release for the ESP32-S3 panel. Panel version: %s.",
+    "Kein neueres Release für das ESP32-S3-Panel. Panel-Version: %s.")
 UI_TEXT(UPD_LATEST, 0,
     "Latest release on GitHub: %s.",
     "Neuestes Release auf GitHub: %s.")
@@ -5139,6 +5161,12 @@ UI_SETTING_LABEL(SET_INA_SH_01,
 UI_SETTING_HELP(SET_INA_SH_01,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_01,
+    "0x40 CH1 limit",
+    "0x40 CH1 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_01,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_02,
     "0x40 CH2 watches",
     "0x40 CH2 misst")
@@ -5151,6 +5179,12 @@ UI_SETTING_LABEL(SET_INA_SH_02,
 UI_SETTING_HELP(SET_INA_SH_02,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_02,
+    "0x40 CH2 limit",
+    "0x40 CH2 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_02,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_03,
     "0x40 CH3 watches",
     "0x40 CH3 misst")
@@ -5163,6 +5197,12 @@ UI_SETTING_LABEL(SET_INA_SH_03,
 UI_SETTING_HELP(SET_INA_SH_03,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_03,
+    "0x40 CH3 limit",
+    "0x40 CH3 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_03,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_11,
     "0x41 CH1 watches",
     "0x41 CH1 misst")
@@ -5175,6 +5215,12 @@ UI_SETTING_LABEL(SET_INA_SH_11,
 UI_SETTING_HELP(SET_INA_SH_11,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_11,
+    "0x41 CH1 limit",
+    "0x41 CH1 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_11,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_12,
     "0x41 CH2 watches",
     "0x41 CH2 misst")
@@ -5187,6 +5233,12 @@ UI_SETTING_LABEL(SET_INA_SH_12,
 UI_SETTING_HELP(SET_INA_SH_12,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_12,
+    "0x41 CH2 limit",
+    "0x41 CH2 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_12,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_13,
     "0x41 CH3 watches",
     "0x41 CH3 misst")
@@ -5199,6 +5251,12 @@ UI_SETTING_LABEL(SET_INA_SH_13,
 UI_SETTING_HELP(SET_INA_SH_13,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_13,
+    "0x41 CH3 limit",
+    "0x41 CH3 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_13,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_21,
     "0x42 CH1 watches",
     "0x42 CH1 misst")
@@ -5211,6 +5269,12 @@ UI_SETTING_LABEL(SET_INA_SH_21,
 UI_SETTING_HELP(SET_INA_SH_21,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_21,
+    "0x42 CH1 limit",
+    "0x42 CH1 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_21,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_22,
     "0x42 CH2 watches",
     "0x42 CH2 misst")
@@ -5223,6 +5287,12 @@ UI_SETTING_LABEL(SET_INA_SH_22,
 UI_SETTING_HELP(SET_INA_SH_22,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_22,
+    "0x42 CH2 limit",
+    "0x42 CH2 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_22,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_23,
     "0x42 CH3 watches",
     "0x42 CH3 misst")
@@ -5235,6 +5305,12 @@ UI_SETTING_LABEL(SET_INA_SH_23,
 UI_SETTING_HELP(SET_INA_SH_23,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_23,
+    "0x42 CH3 limit",
+    "0x42 CH3 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_23,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_31,
     "0x43 CH1 watches",
     "0x43 CH1 misst")
@@ -5247,6 +5323,12 @@ UI_SETTING_LABEL(SET_INA_SH_31,
 UI_SETTING_HELP(SET_INA_SH_31,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_31,
+    "0x43 CH1 limit",
+    "0x43 CH1 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_31,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_32,
     "0x43 CH2 watches",
     "0x43 CH2 misst")
@@ -5259,6 +5341,12 @@ UI_SETTING_LABEL(SET_INA_SH_32,
 UI_SETTING_HELP(SET_INA_SH_32,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_32,
+    "0x43 CH2 limit",
+    "0x43 CH2 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_32,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 UI_SETTING_LABEL(SET_INA_W_33,
     "0x43 CH3 watches",
     "0x43 CH3 misst")
@@ -5271,6 +5359,12 @@ UI_SETTING_LABEL(SET_INA_SH_33,
 UI_SETTING_HELP(SET_INA_SH_33,
     "0 switches the channel off",
     "0 schaltet den Kanal ab")
+UI_SETTING_LABEL(SET_INA_LIM_33,
+    "0x43 CH3 limit",
+    "0x43 CH3 Grenze")
+UI_SETTING_HELP(SET_INA_LIM_33,
+    "Band alert above it; 0 none",
+    "Meldung im Band darüber; 0 keine")
 /* --- the programmable supply --------------------------------------- */
 UI_SETTING_LABEL(SET_SUPPLY_V_MAX,
     "Voltage max",
@@ -5561,7 +5655,7 @@ UI_SETTING_LABEL(SET_UPD_CHANNEL,
     "Releases",
     "Releases")
 UI_SETTING_HELP(SET_UPD_CHANNEL,
-    "STABLE offers stable releases only, TESTING also testing ones",
+    "Both offer 0.22.x only; TESTING also reads testing releases",
     "STABLE bietet nur Stable-Releases an, TESTING auch Testing-Releases")
 /* --- the SD card ----------------------------------------------------- */
 UI_SETTING_LABEL(SET_LOG_AUTO,

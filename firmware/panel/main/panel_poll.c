@@ -1,5 +1,6 @@
-/*
- * The poll of the far end, once a control pass: the bench page and the
+/**
+ * @file panel_poll.c
+ * @brief The poll of the far end, once a control pass: the bench page and the
  * services while the IOmcu answers, its identity while it does not,
  * the link-up and link-lost edges, the model and the log while nothing
  * answers, and the snapshot the screen reads.
@@ -135,6 +136,8 @@ static bool poll_bench(bench_state_t *bench)
          * SERVO_WIN, so the pages hold the ring's newest window or a newer
          * one, and a row of the ring finds its window on them. */
         sense_win_service();
+        /* And the channels' limits, armed or not: an alert only. */
+        sense_limit_service();
         /* And the phase tap's: an input, taken armed or not. */
         tone_link_service();
         iface_pins_publish(true);
@@ -451,6 +454,8 @@ static void link_came_up(const link_msg_t *reply)
                        now_ms());
     /* And the INA3221 parts' map (4.25), read before anything is written. */
     sense_map_came_up(reply->regs[LINK_ID_PROTOCOL_MINOR]);
+    /* And the channels' limits (4.27). */
+    sense_limit_came_up(reply->regs[LINK_ID_PROTOCOL_MINOR]);
     sense_link_alerts();
     /* And the phase tap's page (4.8), the same way. */
     {
@@ -657,6 +662,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
              * link comes back, and the ESC's figures go with the readings. */
             sense_link_lost(&s_sense_link);
             sense_map_lost();
+            sense_limit_lost();
             (void)servo_source_step(&s_servo_source, now_ms(), false, 0u,
                                     NULL);
             tone_link_lost(&s_tone_link);

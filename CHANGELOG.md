@@ -54,6 +54,117 @@ history is in git.
   cuts `#` (5 px), `$` (16 px), `(` (12 px), `)` (12 px), `,` (23 px) and
   `/` (6 px) at the cell edge; the three text faces cut nothing, which
   `gen_font.py --check` verifies. No screen draws with the faces yet.
+
+### Fixed
+
+- ESP32-P4 panel: the .bss that `firmware/panel/main/psram_bss.lf` names
+  is in PSRAM (pseudo-static random-access memory): 29 objects, 166,472
+  bytes of `.ext_ram.bss`; internal .bss is 29,408 bytes instead of
+  195,880. The fragment
+  defines its own scheme, `rcbench_extram_bss`: the `extram_bss` scheme it
+  named is defined only in `esp_wifi`'s fragment, which the P4 build does
+  not include, and ldgen skipped the mappings without a message. CI fails
+  through `tools/psram_bss.py` when a named object keeps .bss in internal
+  RAM.
+
+### Changed
+
+- `tools/check_sizes.py` counts code lines: a line that is not blank and
+  not comment-only. Block and `//` comments, Doxygen blocks included, and in
+  Python `#` comments and docstrings do not count; a line with code and a
+  trailing comment does. The limits are 1,000 and 1,300 code lines. 26
+  entries of `tools/check_sizes.txt` whose files hold 1,000 code lines or
+  fewer are removed, and the figure recorded for `shared/bench/kst_prog.c`
+  is 1,938 code lines.
+- Every text the interface shows or writes in the operator's language is
+  one entry of `shared/text/include/ui_text.def`, with its English and its
+  German side by side: the screens' strings, the settings' labels, help
+  lines, categories and options, the servo test's words and the Wi-Fi
+  page's. `shared/ui/ui_text_de.c` and the English in the settings schema,
+  `servo_str.c` and `wa_page.c` are gone; every string is unchanged.
+  `tools/merge_texts.py merge` carries text changes made in the old form
+  into the table ([Interface language](docs/Language.md#the-tables)).
+- The panel firmware targets the 7-inch ESP32-P4 display board from
+  Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, chip revision 3.2) and no longer
+  builds for the ESP32-S3-Touch-LCD-7. ESP-IDF v5.5.5, target `esp32p4`,
+  32 MB flash with two application slots of 7936 kB. The EK79007 panel runs
+  on 2 MIPI DSI (Display Serial Interface) lanes at 1000 Mbit/s each, 1024 x
+  600 RGB565 at 60.38 Hz (derived, not measured), two frame buffers in
+  PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
+  black. Touch is polled (the GT911's INT line does not reach the chip),
+  mirrored in x and y, and a touch outside 800 x 480 is dropped. The card
+  mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
+  (RX) from the 40 MHz crystal; the rotary knob has an I2C controller of its
+  own. The heartbeat pin (GPIO28) and the knob pins (GPIO30, GPIO31) are
+  placeholders until the header pins are chosen. Its Wi-Fi radio is the
+  board's ESP32-C6 on SDIO, listed under Added.
+
+## 0.22.0 - 2026-10-21
+
+0.22.0 is the last release for the ESP32-S3 panel. Later releases are for
+the 7-inch ESP32-P4 display board from Waveshare. A panel on 0.22.0 is
+offered 0.22.x patch releases only, with RELEASES on STABLE and on TESTING,
+and SETUP > UPDATES says so at the foot of its card
+([Screens: The release line](docs/Screens.md#the-release-line)). No
+0.22.x patch release is planned.
+
+0.22.0 is a stable release: its minor number, 22, is even, and GitHub marks
+it as the latest release. It reads up to four INA3221 current monitors at
+0x40 to 0x43, 12 channels, set up on the new SETUP > SENSORS tile with a
+shunt, a watch target and a current limit of 10 to 32767 mA for each
+channel, and logs them by target. A window above its channel's limit
+raises a band alert and nothing else; an IOmcu older than link protocol
+4.27 judges no limit. It drives four programming ports, PROG PORT 1 to
+4, each with a FUNCTION of SERVO PWM, DSHOT150 to DSHOT600 or NONE; the
+servo tester and the KST and Chaservo programmer run on any of them. Hitec D series servos answer
+without a pull-up with PRECHARGE receive. The link protocol is 4.28. It
+fixes defects of 0.21.2: SERVO's TARGET after a programming session, an SD
+card swapped while the panel runs, and Wi-Fi page downloads whose receiver
+stops reading.
+
+A panel on 0.20.0 to 0.21.2 is offered 0.22.0 by CHECK FOR UPDATES with
+RELEASES: STABLE, which reads `releases/latest`; 0.20.0 has no RELEASES
+setting and reads the same. The steps for each release are in
+[First run, §1](docs/FirstRun.md#1-flash-both-boards):
+
+1. SETUP > UPDATES, `CHECK FOR UPDATES`, with a home network kept, the
+   bench SAFE, the supply output off and no log run open. The card says
+   `Version 0.22.0 is available.`.
+2. Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel restarts and keeps 0.22.0
+   once the display and touch are up.
+3. At link-up the panel offers the IOmcu's update over CAN (Controller Area
+   Network). Hold START 2 s on the question on the menu, or `HOLD 2 s:
+   UPDATE IOMCU` on SETUP > UPDATES. The band then says `IOmcu updated to
+   0.22.0.`.
+
+The INA3221 rows of SETUP > INTERFACES seed SETUP > SENSORS at the first
+start ([From 0.21.2](docs/FirstRun.md#from-0212)). A card of 0.21.0 and
+older moves by hand as [From 0.21.0](docs/FirstRun.md#from-0210) states.
+The IOmcu's store record becomes version 8 at its first save; an IOmcu
+image older than 0.22.0 reads no version 8 record. 0.20.0 to 0.21.2 run
+link protocol 4.22 or 4.23, the same major as 4.28, so both boards link
+before and after the IOmcu's update. A panel older than 0.22.0 is offered
+any newer release GitHub names, also one for the ESP32-P4 panel, and its
+checks refuse an image built for another chip. The time of the download
+and of the update over CAN is not measured.
+
+### Added
+
+- The panel's release line, 0.22 (`FW_REL_LINE_MAJOR`,
+  `FW_REL_LINE_MINOR` in `shared/fwupdate/include/fw_release.h`): a check
+  offers a release of 0.22 only, newer than the running build, on
+  RELEASES: STABLE and TESTING. A newer release past the line, 0.23.0,
+  0.24.0 or 1.0.0, reads `No newer release for the ESP32-S3 panel. Panel
+  version: 0.22.0.` with `Latest release on GitHub: 0.23.0.`; it is not
+  offered, and the reminder at start does not open for it. With TESTING,
+  the highest release of the line among the 10 newest stands in for a
+  higher one past the line when it is newer than the running build. With
+  STABLE, a latest release past the line and newer than the running build
+  is followed by one request of the release list, whose newest 0.22.x is
+  offered when it is newer; when that request fails, the result is as
+  without it. The foot of the UPDATES card starts with `0.22 is the last
+  release for the ESP32-S3 panel. Later releases are for the 7-inch
+  ESP32-P4 display board from Waveshare.`.
 - Hitec D series servos answer with no pull-up on the signal wire: SETUP >
   INTERFACES > Hitec D receive (PROG PORT, German `Hitec-D-Empfang`)
   chooses PULL-UP, the default, or PRECHARGE. With PRECHARGE the IOmcu
@@ -101,7 +212,22 @@ history is in git.
   range above the limit -- sets the
   channel's bit in OVER, which a read of the register clears, and counts
   in OVER_COUNT. An alert only: nothing stops or switches to SAFE. The
-  panel writes no limit yet.
+  panel writes the limits from SETUP > SENSORS (below).
+- SETUP > SENSORS has a LIMIT row per channel, `0x40 CH1 limit` (German
+  `0x40 CH1 Grenze`): OFF, or 10 to 32767 mA in 10 mA steps on the
+  arrows. The panel writes the 12 limits to SENSE_LIMIT 500 ms after the
+  last edit, in any bank state, and reads OVER and OVER_COUNT every 200 ms
+  while a limit is held. The band says `INA3221 0x41 CH2 (PORT 1) over its
+  0.80 A limit.` with the limit the window was judged by, at most once
+  every 5 s, and once every 30 s for a channel that keeps passing;
+  channels over at the same time take turns. `An INA3221 channel passed
+  its limit; which one was lost on the link.` follows the link-up after a
+  reply with the bits did not arrive, and not an IOmcu restart.
+  `INA3221 limits rejected. Check SETUP > SENSORS.` follows a refused write
+  or a BAD_PAGE answer from an IOmcu that names 4.27 or later. A
+  LIMIT row the IOmcu does not hold is marked; on an IOmcu older than
+  4.27 the line reads `IOmcu older than 4.27: no limit is judged.` and
+  nothing is sent to the page.
 - The IOmcu console prints a third sensor line, `sense map`: the parts
   fitted, FAST, the map's flags, each channel's mean current in mA, and
   SENSE_LIMIT's OVER and OVER_COUNT.
@@ -151,21 +277,6 @@ history is in git.
   `prog_func` word; an image of 4.26 or 4.27 starts such a port at its
   default function. With an IOmcu older than 4.28 the panel offers SERVO
   PWM and NONE only.
-
-### Fixed
-
-- ESP32-P4 panel: the .bss that `firmware/panel/main/psram_bss.lf` names
-  is in PSRAM (pseudo-static random-access memory): 29 objects, 166,472
-  bytes of `.ext_ram.bss`; internal .bss is 29,408 bytes instead of
-  195,880. The fragment
-  defines its own scheme, `rcbench_extram_bss`: the `extram_bss` scheme it
-  named is defined only in `esp_wifi`'s fragment, which the P4 build does
-  not include, and ldgen skipped the mappings without a message. CI fails
-  through `tools/psram_bss.py` when a named object keeps .bss in internal
-  RAM.
-- SERVO > TARGET reads the set programming port in SAFE within 500 ms after
-  a programming session gives the port back and after an IOmcu restart,
-  without waiting for the next ARM.
 - SETUP > SENSORS (German `SENSOREN`), the eighth tile: up to four INA3221
   current monitors at 0x40 to 0x43. Per part `0x40 fitted`; per channel
   `0x40 CH1 watches` (NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY) and
@@ -179,84 +290,11 @@ history is in git.
   SENSORS.` for a fitted part with all three shunts OFF; no map is written
   then.
 
-### Changed
-
-- `tools/check_sizes.py` counts code lines: a line that is not blank and
-  not comment-only. Block and `//` comments, Doxygen blocks included, and in
-  Python `#` comments and docstrings do not count; a line with code and a
-  trailing comment does. The limits are 1,000 and 1,300 code lines. 26
-  entries of `tools/check_sizes.txt` whose files hold 1,000 code lines or
-  fewer are removed, and the figure recorded for `shared/bench/kst_prog.c`
-  is 1,938 code lines.
-- Every text the interface shows or writes in the operator's language is
-  one entry of `shared/text/include/ui_text.def`, with its English and its
-  German side by side: the screens' strings, the settings' labels, help
-  lines, categories and options, the servo test's words and the Wi-Fi
-  page's. `shared/ui/ui_text_de.c` and the English in the settings schema,
-  `servo_str.c` and `wa_page.c` are gone; every string is unchanged.
-  `tools/merge_texts.py merge` carries text changes made in the old form
-  into the table ([Interface language](docs/Language.md#the-tables)).
-- The panel firmware targets the 7-inch ESP32-P4 display board from
-  Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, chip revision 3.2) and no longer
-  builds for the ESP32-S3-Touch-LCD-7. ESP-IDF v5.5.5, target `esp32p4`,
-  32 MB flash with two application slots of 7936 kB. The EK79007 panel runs
-  on 2 MIPI DSI (Display Serial Interface) lanes at 1000 Mbit/s each, 1024 x
-  600 RGB565 at 60.38 Hz (derived, not measured), two frame buffers in
-  PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
-  black. Touch is polled (the GT911's INT line does not reach the chip),
-  mirrored in x and y, and a touch outside 800 x 480 is dropped. The card
-  mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
-  (RX) from the 40 MHz crystal; the rotary knob has an I2C controller of its
-  own. The heartbeat pin (GPIO28) and the knob pins (GPIO30, GPIO31) are
-  placeholders until the header pins are chosen. Its Wi-Fi radio is the
-  board's ESP32-C6 on SDIO, listed under Added.
-- The four INA3221 rows leave SETUP > INTERFACES (23 settings now). A panel
-  updated from 0.21 seeds SENSORS from them at start-up: the part at the old
-  address fitted when the INA3221 was ON, its CH1 on the old shunt, CH2 and
-  CH3 on it with CH1+2+3 and OFF with CH1, and CH1 watching PORT 1 when the
-  servo tester's target was the programming port, OUT 1 otherwise. The old
-  keys stay stored and unchanged for one release, for a panel taken back to
-  0.21.
-- `INA3221 settings rejected. Check SETUP > SENSORS.` names SENSORS in
-  place of INTERFACES.
-- The servo rail's INA3221 meter is the channel watching the servo
-  tester's target, any of the 12, with an IOmcu of protocol 4.25; CH1 of
-  the one part SENSE reads with an older IOmcu. SERVO names it over the
-  plot, `INA 0x41 CH2`, the TEST card beside STOP TEST likewise, the
-  LIMIT RUN line `CURRENT INA3221 0x41 CH2`, and both reports
-  `INA3221 0x41 CH2`. Beside the channel's 96 px name the voltage on that
-  line has 52 px and shows tenths from 10 V, `26.0 V`.
-- The run log's INA3221 columns follow the sensor map with an IOmcu of
-  protocol 4.25: one group of current, max and voltage per watching
-  channel, named after its target (`port 1 current (A)`, `out 3 max (A)`,
-  `supply voltage (V)`), the FAST channel first, at most 3 groups. FAST's
-  group comes from the window ring and is on every row; the others from
-  SENSE_WIN_A and SENSE_WIN_B, read on every poll after SERVO_WIN at most
-  every 40 ms while a part on the page is fitted, and miss about 1 row in
-  17 at a 53 ms poll. A fourth watching channel and later are not logged.
-  An older IOmcu, or a map derived from SENSE, keeps `ch1` to `ch3`.
-- OUTPUTS' PROG PORT entry names the channel watching the port,
-  `WATCHED BY INA3221 0x41 CH2`.
-- `INA3221 0x40 CH1 clipped at 1.64 A. Reading shows only the limit.`
-  names the part's address.
-- The IOmcu's sensor schedule reads up to 4 INA3221 at 0x40 to 0x43, 12
-  channels, each with its own shunt. One channel, FAST, is read every 1 ms
-  and carries the window ring and the move capture; the other channels
-  are read in turn beside it, one a tick (500 Hz each for CH2 and CH3 of
-  one part, 90.9 Hz each with 11); each bus voltage every 24 ms; each
-  part's Mask/Enable and Configuration at 25 Hz. SENSE's one INA3221 is
-  the part at its address with CH1 as FAST, so a bench set up today reads
-  CH1 as before. The longest tick is 742.5 us of bus time at 400 kHz;
-  4 parts, 12 channels, the INA228 and the AS5600 take 60.8 % of the bus.
-  At most one INA3221 is probed a tick. The schedule's pair option (CH2
-  and CH3 at 1000 Hz), which no link register switched on, is removed.
-- LOGS lists its tabs in the order ROOT (German STAMM), USER, BENCH, and
-  shows the card's name right-aligned at the end of the header row, with
-  the folder after the tabs. The tab ids, the remembered tab and the
-  folders are as before.
-
 ### Fixed
 
+- SERVO > TARGET reads the set programming port in SAFE within 500 ms after
+  a programming session gives the port back and after an IOmcu restart,
+  without waiting for the next ARM.
 - The bench console's Hitec section says what `flags=PRECHARGE` and the
   `rx=` of `hitec line` each read: register 23, the mode of the next OPEN,
   and the mode of the open line. They differ after register 23 is written
@@ -305,6 +343,57 @@ history is in git.
   unmounted only with no file or folder open on it from LOGS, the run log or
   the Wi-Fi access. The `runlog` task's stack is 6,656 bytes (5,632), for
   the mount it makes.
+
+### Changed
+
+- The last line of the UPDATES card reads `TESTING also reads testing
+  releases. Both offer only 0.22.x.` (German `TESTING liest auch
+  Testing-Releases. Beide bieten nur 0.22.x an.`), in place of `TESTING
+  also offers testing releases: odd minor numbers.`.
+- The four INA3221 rows leave SETUP > INTERFACES (23 settings now). A panel
+  updated from 0.21 seeds SENSORS from them at start-up: the part at the old
+  address fitted when the INA3221 was ON, its CH1 on the old shunt, CH2 and
+  CH3 on it with CH1+2+3 and OFF with CH1, and CH1 watching PORT 1 when the
+  servo tester's target was the programming port, OUT 1 otherwise. The old
+  keys stay stored and unchanged for one release, for a panel taken back to
+  0.21.
+- `INA3221 settings rejected. Check SETUP > SENSORS.` names SENSORS in
+  place of INTERFACES.
+- The servo rail's INA3221 meter is the channel watching the servo
+  tester's target, any of the 12, with an IOmcu of protocol 4.25; CH1 of
+  the one part SENSE reads with an older IOmcu. SERVO names it over the
+  plot, `INA 0x41 CH2`, the TEST card beside STOP TEST likewise, the
+  LIMIT RUN line `CURRENT INA3221 0x41 CH2`, and both reports
+  `INA3221 0x41 CH2`. Beside the channel's 96 px name the voltage on that
+  line has 52 px and shows tenths from 10 V, `26.0 V`.
+- The run log's INA3221 columns follow the sensor map with an IOmcu of
+  protocol 4.25: one group of current, max and voltage per watching
+  channel, named after its target (`port 1 current (A)`, `out 3 max (A)`,
+  `supply voltage (V)`), the FAST channel first, at most 3 groups. FAST's
+  group comes from the window ring and is on every row; the others from
+  SENSE_WIN_A and SENSE_WIN_B, read on every poll after SERVO_WIN at most
+  every 40 ms while a part on the page is fitted, and miss about 1 row in
+  17 at a 53 ms poll. A fourth watching channel and later are not logged.
+  An older IOmcu, or a map derived from SENSE, keeps `ch1` to `ch3`.
+- OUTPUTS' PROG PORT entry names the channel watching the port,
+  `WATCHED BY INA3221 0x41 CH2`.
+- `INA3221 0x40 CH1 clipped at 1.64 A. Reading shows only the limit.`
+  names the part's address.
+- The IOmcu's sensor schedule reads up to 4 INA3221 at 0x40 to 0x43, 12
+  channels, each with its own shunt. One channel, FAST, is read every 1 ms
+  and carries the window ring and the move capture; the other channels
+  are read in turn beside it, one a tick (500 Hz each for CH2 and CH3 of
+  one part, 90.9 Hz each with 11); each bus voltage every 24 ms; each
+  part's Mask/Enable and Configuration at 25 Hz. SENSE's one INA3221 is
+  the part at its address with CH1 as FAST, so a bench set up today reads
+  CH1 as before. The longest tick is 742.5 us of bus time at 400 kHz;
+  4 parts, 12 channels, the INA228 and the AS5600 take 60.8 % of the bus.
+  At most one INA3221 is probed a tick. The schedule's pair option (CH2
+  and CH3 at 1000 Hz), which no link register switched on, is removed.
+- LOGS lists its tabs in the order ROOT (German STAMM), USER, BENCH, and
+  shows the card's name right-aligned at the end of the header row, with
+  the folder after the tabs. The tab ids, the remembered tab and the
+  folders are as before.
 
 ## 0.21.2 - 2026-10-20
 
@@ -3371,6 +3460,7 @@ The log viewer's plot has a setting, SETUP → APPLICATION → One finger pans
 in, a finger that moves more than 10 px pans the view; a shorter touch still
 selects a value. With it off, one finger moves the cursor and two fingers pan,
 as before.
+
 ### Added
 
 - **A rotary knob on the panel.** An AS5600 magnetic angle sensor on the
@@ -3714,6 +3804,7 @@ run on hardware.
   the longest travel time and not checked: `upper bound, not checked against
   the limit`. The run is told what reads the current (`servo_test_meter_t`),
   so a faster current sensor can have it checked.
+
 ## 0.13.1 - 2026-10-07
 
 PROGRAMMER no longer restarts the panel: the panel's main task, which runs

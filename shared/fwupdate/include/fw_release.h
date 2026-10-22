@@ -1,5 +1,6 @@
-/*
- * What GitHub says about the panel's releases, read strictly.
+/**
+ * @file fw_release.h
+ * @brief What GitHub says about the panel's releases, read strictly.
  *
  * The panel asks GitHub two things over HTTPS (HTTP, hypertext transfer
  * protocol, over TLS, transport layer security).  Which release is the
@@ -15,7 +16,16 @@
  *            date, testing or stable.  fw_release_scan_feed() reads each
  *            one's "tag_name" and "draft", a byte at a time, without
  *            keeping the answer, and names the highest version among those
- *            that are no draft: GitHub's order is by date, not by version.
+ *            that are no draft, and the highest of the panel's release
+ *            line: GitHub's order is by date, not by version.
+ *
+ * The panel's release line: 0.22 is the last release for the ESP32-S3
+ * panel, and later releases are for the ESP32-P4 panel.  A check on either
+ * channel offers a release of FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR only, a
+ * 0.22.x patch release newer than the running build; 0.23.0 and later are
+ * never offered.  Where STABLE's one tag is past the line and newer than
+ * the running build, the check reads the release list once more for the
+ * line's newest.
  *
  * And, for a download, two files of that release: SHA256SUMS and
  * rcbench-panel-p4-vX.Y.Z.bin, each a redirect from github.com to a
@@ -79,6 +89,16 @@ extern "C" {
 /** The headers the API request carries besides the User-Agent. */
 #define FW_REL_API_ACCEPT  "application/vnd.github+json"
 #define FW_REL_API_VERSION "2022-11-28"
+
+/**
+ * @name The panel's release line
+ * @brief MAJOR and MINOR of the releases a check offers: 0.22, the last
+ *        release line for the ESP32-S3 panel.
+ * @{
+ */
+#define FW_REL_LINE_MAJOR  0u    /**< the line's MAJOR */
+#define FW_REL_LINE_MINOR  22u   /**< the line's MINOR */
+/** @} */
 
 /** "v65535.65535.65535": the longest tag. */
 #define FW_REL_TAG_MAX     18u
@@ -189,10 +209,11 @@ fw_rel_err_t fw_release_parse_sums(const char *text, size_t n,
                                    uint8_t out[FW_SHA256_BYTES]);
 
 /**
- * The scan of the API's answer for the highest release: fed the body as it
- * comes, in pieces of any size, and nothing of it kept but the release
- * under way's tag and the highest so far.  76 bytes, on the caller's
- * stack.
+ * @brief The scan of the API's answer for the highest release.
+ *
+ * Fed the body as it comes, in pieces of any size, and nothing of it kept
+ * but the release under way's tag, the highest so far and the highest of
+ * the panel's release line so far.  84 bytes, on the caller's stack.
  */
 typedef struct {
     uint32_t     seen;    /**< bytes fed                                 */
@@ -203,18 +224,20 @@ typedef struct {
     uint8_t      kn;      /**< key bytes kept                            */
     char         key[8];  /**< "tag_name" is the longest key read         */
     bool         klong;   /**< the key is longer, or escaped              */
-    bool         ended;
+    bool         ended;   /**< the scan has ended; err holds why          */
     uint8_t      tn;      /**< tag bytes kept                            */
-    char         tag[FW_REL_TAG_MAX];
+    char         tag[FW_REL_TAG_MAX]; /**< the tag under way's bytes       */
     uint8_t      dn;      /**< draft's value bytes, up to 255             */
     char         dval[5]; /**< "false" is the longest kept                */
     bool         have_tag;   /**< the release under way's               */
-    bool         have_draft;
-    bool         draft;
-    bool         have_best;
+    bool         have_draft; /**< the release under way's "draft" was read */
+    bool         draft;      /**< the release under way is a draft       */
+    bool         have_best;  /**< best holds a release                   */
     uint8_t      releases;   /**< read whole                             */
     fw_version_t cur;     /**< the release under way's tag                */
     fw_version_t best;    /**< the highest no-draft release so far        */
+    bool         have_line; /**< line holds a release of the line   */
+    fw_version_t line;    /**< the highest no-draft one of the line so far */
     fw_rel_err_t err;     /**< once ended                                */
     fw_version_t found;   /**< once ended with FW_REL_OK                 */
 } fw_rel_scan_t;
@@ -237,10 +260,36 @@ bool fw_release_scan_feed(fw_rel_scan_t *s, const uint8_t *d, size_t n);
 fw_rel_err_t fw_release_scan_end(const fw_rel_scan_t *s, fw_version_t *out);
 
 /**
- * Whether release @p found is offered to a panel that runs @p running:
- * only a strictly newer one, and none when the running version did not
- * parse (@p running_ok false).  Each part counts as a number: 0.10.0 is
- * newer than 0.9.0.
+ * @brief The highest no-draft release of the panel's release line among
+ *        those the scan read.
+ * @param s   the scan, ended; NULL reads as none
+ * @param out the release, when there is one; untouched otherwise; may be
+ *            NULL
+ * @return true once the scan ended with FW_REL_OK and read a no-draft
+ *         release of the line; false otherwise
+ */
+bool fw_release_scan_line(const fw_rel_scan_t *s, fw_version_t *out);
+
+/**
+ * @brief Whether a version is of the panel's release line.
+ * @param v the version
+ * @return true for MAJOR FW_REL_LINE_MAJOR and MINOR FW_REL_LINE_MINOR,
+ *         any PATCH
+ */
+bool fw_release_in_line(fw_version_t v);
+
+/**
+ * @brief Whether a release is offered to the panel.
+ *
+ * Only one of the panel's release line (fw_release_in_line()) and strictly
+ * newer than the running build.  Each part counts as a number: 0.22.10 is
+ * newer than 0.22.9.
+ *
+ * @param found      the release a check found
+ * @param running    the version the panel runs
+ * @param running_ok false when the running version did not parse
+ * @return true when @p found is offered; false always when @p running_ok
+ *         is false
  */
 bool fw_release_offered(fw_version_t found, fw_version_t running,
                         bool running_ok);

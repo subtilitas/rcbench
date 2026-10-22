@@ -1,5 +1,6 @@
-/*
- * upd_screen.h says what these two screens are for.
+/**
+ * @file upd_screen.c
+ * @brief upd_screen.h says what these two screens are for.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -320,7 +321,9 @@ void upd_result_text(const upd_view_t *v, char *out, size_t n, char *second,
         snprintf(out, n, TR(UPD_NEWER), v->found);
         break;
     case UPD_GOT_CURRENT:
-        snprintf(out, n, TR(UPD_CURRENT), v->running);
+    case UPD_GOT_PAST_LINE:
+        snprintf(out, n, v->got == UPD_GOT_PAST_LINE ? TR(UPD_PAST_LINE)
+                 : TR(UPD_CURRENT), v->running);
         snprintf(second, n2, TR(UPD_LATEST), v->found);
         break;
     case UPD_GOT_STAGED:
@@ -393,6 +396,7 @@ static gfx_color_t result_colour(void)
     switch (s_v.got) {
     case UPD_GOT_NEWER:   return UI_OK;
     case UPD_GOT_CURRENT:
+    case UPD_GOT_PAST_LINE:
     case UPD_GOT_STAGED:
     case UPD_GOT_NONE:    return UI_TEXT;
     case UPD_GOT_ABORTED:
@@ -726,10 +730,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
         }
     }
 
-    /* What the reminder and RELEASES do, at the card's foot: its last line
-     * ends 18 px above the card's bottom edge. */
-    static const ui_text_id_t k_about[] = { TX_UPD_ABOUT_1, TX_UPD_ABOUT_2,
-                                            TX_UPD_ABOUT_3 };
+    /* The release line's end, the reminder and RELEASES, at the card's
+     * foot: its last line ends 18 px above the card's bottom edge. */
+    static const ui_text_id_t k_about[] = { TX_UPD_LAST_LINE, TX_UPD_ABOUT_1,
+                                            TX_UPD_ABOUT_2, TX_UPD_ABOUT_3 };
     int foot = 0;
     for (size_t i = 0; i < sizeof(k_about) / sizeof(k_about[0]); ++i) {
         foot += ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 18), 20,
@@ -737,7 +741,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
     y = 16 + 400 - 16 - 20 * foot;
     for (size_t i = 0; i < sizeof(k_about) / sizeof(k_about[0]); ++i) {
-        y = para(c, x, y, w, ui_tr(k_about[i]), UI_TEXT_DIM);
+        y = para(c, x, y, w, ui_tr(k_about[i]), i ? UI_TEXT_DIM : UI_TEXT);
     }
 
     if (s.hold.flash_left > 0 || s.cu_hold.flash_left > 0) {
@@ -897,12 +901,9 @@ static void r_render(gfx_canvas_t *c, int buffer_index)
     char line[112];
     snprintf(line, sizeof(line), TR(UPD_R_VERSIONS), s_v.found, s_v.running);
     text_in(c, x, box.y + 48, w, line, UI_FONT_LABEL, UI_TEXT);
-    text_in(c, x, box.y + 80, w, TR(UPD_R_WHAT_1), UI_FONT_LABEL,
-            UI_TEXT_DIM);
-    text_in(c, x, box.y + 100, w, TR(UPD_R_WHAT_2), UI_FONT_LABEL,
-            UI_TEXT_DIM);
-    text_in(c, x, box.y + 128, w, TR(UPD_R_NEVER), UI_FONT_LABEL,
-            UI_TEXT_DIM);
+    text_in(c, x, box.y + 80, w, TR(UPD_R_WHAT_1), UI_FONT_LABEL, UI_TEXT_DIM);
+    text_in(c, x, box.y + 100, w, TR(UPD_R_WHAT_2), UI_FONT_LABEL, UI_TEXT_DIM);
+    text_in(c, x, box.y + 128, w, TR(UPD_R_NEVER), UI_FONT_LABEL, UI_TEXT_DIM);
     if (!download_allowed()) {
         char second[96];
         const upd_why_t why = (s_v.dl_block != UPD_WHY_NONE)

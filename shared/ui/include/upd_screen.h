@@ -1,5 +1,6 @@
-/*
- * Panel updates from GitHub: SETUP's UPDATES screen and the reminder.
+/**
+ * @file upd_screen.h
+ * @brief Panel updates from GitHub: SETUP's UPDATES screen and the reminder.
  *
  * UPDATES (SCREEN_UPDATES, from SETUP): CHECK FOR UPDATES asks GitHub once
  * which release is the newest, over the home network the panel keeps; the
@@ -92,6 +93,7 @@ typedef enum {
     UPD_GOT_MEMORY,
     UPD_GOT_LIMIT,
     UPD_GOT_UNVERSIONED,
+    UPD_GOT_PAST_LINE,
 } upd_got_t;
 
 /** wa_why_t */
@@ -152,8 +154,8 @@ typedef struct {
     upd_rel_t   rel;           /**< UNEXPECTED, SUMS                       */
     int         status;        /**< REFUSED, LIMIT, and SUMS by status     */
     uint32_t    budget_s;      /**< TIMEOUT: the budget that ran out       */
-    char        found[WIFI_VER_MAX + 1];   /**< NEWER, CURRENT, UNVERSIONED;
-                                                DOWNLOAD's                 */
+    char        found[WIFI_VER_MAX + 1];   /**< NEWER, CURRENT, UNVERSIONED,
+                                                PAST_LINE; DOWNLOAD's      */
     uint32_t    left_s;        /**< while busy                             */
     uint32_t    done;          /**< IMAGE: bytes received of total         */
     uint32_t    total;
@@ -200,9 +202,17 @@ unsigned upd_screen_take(void);
 bool upd_busy(const upd_view_t *v);
 
 /**
- * The line that says how the last job ended, or what it does now: into
- * @p out of @p n bytes; empty for none.  @p second gets the line under it,
- * or empty.  Both screens and the download's progress draw these.
+ * @brief The line that says how the last job ended, or what it does now,
+ *        and the line under it.
+ *
+ * Both screens and the download's progress draw these.  Nothing is
+ * written when @p out or @p second is NULL or has no room.
+ *
+ * @param v      the view; NULL gives two empty lines
+ * @param out    the first line, empty for none
+ * @param n      bytes of @p out
+ * @param second the line under it, or empty
+ * @param n2     bytes of @p second
  */
 void upd_result_text(const upd_view_t *v, char *out, size_t n,
                      char *second, size_t n2);

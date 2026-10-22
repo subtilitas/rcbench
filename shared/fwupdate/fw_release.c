@@ -1,5 +1,6 @@
-/*
- * fw_release.h says what is read and how strictly.
+/**
+ * @file fw_release.c
+ * @brief fw_release.h says what is read and how strictly.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -366,7 +367,14 @@ static void scan_begin_release(fw_rel_scan_t *s)
     s->st = SC_KEY0;
 }
 
-/* A release's '}': each needs its tag; a draft's is passed over. */
+/**
+ * @brief A release's '}': each needs its tag; a draft's is passed over.
+ *
+ * A no-draft release raises the highest so far and, when it is of the
+ * panel's release line, the line's highest so far.
+ *
+ * @param s the scan
+ */
 static void scan_end_release(fw_rel_scan_t *s)
 {
     --s->depth;
@@ -378,6 +386,11 @@ static void scan_end_release(fw_rel_scan_t *s)
         && (!s->have_best || fw_version_cmp(s->cur, s->best) > 0)) {
         s->best = s->cur;
         s->have_best = true;
+    }
+    if (!s->draft && fw_release_in_line(s->cur)
+        && (!s->have_line || fw_version_cmp(s->cur, s->line) > 0)) {
+        s->line = s->cur;
+        s->have_line = true;
     }
     if (++s->releases >= FW_REL_API_RELEASES) {
         scan_finish(s);
@@ -691,10 +704,27 @@ fw_rel_err_t fw_release_scan_end(const fw_rel_scan_t *s, fw_version_t *out)
     return s->err;
 }
 
+bool fw_release_scan_line(const fw_rel_scan_t *s, fw_version_t *out)
+{
+    if (s == NULL || !s->ended || s->err != FW_REL_OK || !s->have_line) {
+        return false;
+    }
+    if (out != NULL) {
+        *out = s->line;
+    }
+    return true;
+}
+
+bool fw_release_in_line(fw_version_t v)
+{
+    return v.major == FW_REL_LINE_MAJOR && v.minor == FW_REL_LINE_MINOR;
+}
+
 bool fw_release_offered(fw_version_t found, fw_version_t running,
                         bool running_ok)
 {
-    return running_ok && fw_version_cmp(found, running) > 0;
+    return running_ok && fw_release_in_line(found)
+           && fw_version_cmp(found, running) > 0;
 }
 
 void fw_release_version_text(fw_version_t v, char out[FW_REL_VER_TEXT])

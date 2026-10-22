@@ -535,11 +535,14 @@ python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=stable prerelease
 ```
 
 `https://github.com/subtilitas/rcbench/releases/latest` names the newest
-stable release. The panel offers a testing release only with RELEASES set
-to TESTING on SETUP > UPDATES; with STABLE, the default, it offers stable
-releases ([Screens: Updates](Screens.md#updates)). On both settings it
-offers only a version newer than the one it runs, so a panel on 0.21.0 is
-not offered 0.20.0. A testing release also loads by hand: its
+stable release. 0.22 is the last release line for the ESP32-S3 panel, and
+later releases are for the 7-inch ESP32-P4 display board from Waveshare.
+The panel's check reads GitHub's latest release with RELEASES set to
+STABLE on SETUP > UPDATES, the default, and the 10 newest releases with
+TESTING; STABLE reads those 10 as well when the latest release is past the
+line and newer than the running build. On both settings it offers only a 0.22.x patch release newer than
+the version it runs ([Screens: The release line](Screens.md#the-release-line)).
+A release also loads by hand: its
 `rcbench-panel-vX.Y.Z.bin` through the panel's browser page, or its
 archives over USB (Universal Serial Bus), as in
 [First run, §1](FirstRun.md#1-flash-both-boards). The release's

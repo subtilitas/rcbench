@@ -47,7 +47,7 @@ The screen returns to the menu when the update ends, or to [Updates](updates.md#
 
 | Alert | Meaning |
 |---|---|
-| `IOmcu updated to 0.18.0.` | the new image runs and is kept |
+| `IOmcu updated to 0.22.0.` | the new image runs and is kept |
 | `IOmcu update stopped: no response. Previous firmware is running.` | nothing answered for 4 s |
 | `IOmcu update stopped: refused, error 6. Previous firmware is running.` | the IOmcu refused a step |
 | `IOmcu update stopped: firmware check failed. Previous firmware is running.` | the slot's SHA-256 is not the image's |

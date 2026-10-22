@@ -187,7 +187,7 @@ static wa_run_t run_for(uint32_t start, uint32_t budget)
     r.start_ms = start;
     r.budget_ms = budget;
     r.slot = SLOT;
-    r.running = (fw_version_t){ 0u, 19u, 0u };
+    r.running = (fw_version_t){ 0u, 22u, 0u };
     r.running_ok = true;
     r.url = g_url;
     r.loc = g_loc;
@@ -224,12 +224,13 @@ static answer_t latest(const char *loc)
 TEST_CASE(a_newer_release_is_found)
 {
     fresh(1000u);
-    answer(latest(TAG "v0.20.0"));
+    answer(latest(TAG "v0.22.1"));
     const wa_run_t r = run_for(1000u, WA_FETCH_CHECK_MS);
     wa_fetch_res_t out;
     wa_run_check(&r, &out);
     CHECK_EQ(out.got, WA_GOT_NEWER);
-    CHECK_EQ(out.found.minor, 20u);
+    CHECK_EQ(out.found.minor, 22u);
+    CHECK_EQ(out.found.patch, 1u);
     CHECK_STR_EQ(g.urls[0], FW_REL_LATEST_URL);
     CHECK_EQ(g.api_opens, 0u);
     /* One request, closed; only its head was read. */
@@ -241,7 +242,8 @@ TEST_CASE(a_newer_release_is_found)
 
 TEST_CASE(equal_and_older_releases_are_current)
 {
-    const char *const locs[] = { TAG "v0.19.0", TAG "v0.18.9", TAG "v0.0.0" };
+    /* The panel runs 0.22.0, the last release for the ESP32-S3 panel. */
+    const char *const locs[] = { TAG "v0.22.0", TAG "v0.21.9", TAG "v0.0.0" };
     for (size_t i = 0; i < 3u; ++i) {
         fresh(0u);
         answer(latest(locs[i]));
@@ -250,16 +252,19 @@ TEST_CASE(equal_and_older_releases_are_current)
         wa_run_check(&r, &out);
         CHECK_EQ(out.got, WA_GOT_CURRENT);
     }
-    /* Each part counts: a patch, a minor, a major ahead. */
-    const char *const newer[] = { TAG "v0.19.1", TAG "v0.20.0",
+    /* Each part counts: a patch ahead is offered; a minor or a major
+     * ahead is past the panel's release line and is not. */
+    const char *const newer[] = { TAG "v0.22.1", TAG "v0.23.0",
                                   TAG "v1.0.0" };
+    const wa_got_t got[] = { WA_GOT_NEWER, WA_GOT_PAST_LINE,
+                             WA_GOT_PAST_LINE };
     for (size_t i = 0; i < 3u; ++i) {
         fresh(0u);
         answer(latest(newer[i]));
         const wa_run_t r = run_for(0u, WA_FETCH_CHECK_MS);
         wa_fetch_res_t out;
         wa_run_check(&r, &out);
-        CHECK_EQ(out.got, WA_GOT_NEWER);
+        CHECK_EQ(out.got, got[i]);
     }
 }
 
@@ -325,7 +330,7 @@ static void check_waits_within_the_budget(uint32_t t0)
 {
     /* The join took 25 s: the request waits 5 s at most. */
     fresh(t0 + 25000u);
-    answer(latest(TAG "v1.0.0"));
+    answer(latest(TAG "v0.22.1"));
     wa_run_t r = run_for(t0, WA_FETCH_CHECK_MS);
     wa_fetch_res_t out;
     wa_run_check(&r, &out);
@@ -333,12 +338,12 @@ static void check_waits_within_the_budget(uint32_t t0)
     CHECK_EQ(g.last_timeout, 5000u);
     /* One ms left: one ms. */
     fresh(t0 + 29999u);
-    answer(latest(TAG "v1.0.0"));
+    answer(latest(TAG "v0.22.1"));
     wa_run_check(&r, &out);
     CHECK_EQ(g.last_timeout, 1u);
     /* None left: no request at all. */
     fresh(t0 + 30000u);
-    answer(latest(TAG "v1.0.0"));
+    answer(latest(TAG "v0.22.1"));
     wa_run_check(&r, &out);
     CHECK_EQ(out.got, WA_GOT_TIMEOUT);
     CHECK_EQ(g.opens, 0u);

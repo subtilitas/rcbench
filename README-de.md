@@ -5,10 +5,34 @@
 [![CI](https://github.com/subtilitas/rcbench/actions/workflows/ci.yml/badge.svg)](https://github.com/subtilitas/rcbench/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/subtilitas/rcbench/branch/main/graph/badge.svg)](https://codecov.io/gh/subtilitas/rcbench)
 
+## Displaywechsel: ESP32-P4-Panel ab 0.23.0
+
+Das Panel wechselt vom 7-Zoll-ESP32-S3-Displayboard von Waveshare
+(ESP32-S3-Touch-LCD-7, 800 x 480 Pixel) auf das 7-Zoll-ESP32-P4-Displayboard
+von Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, 1024 x 600 Pixel, MIPI DSI
+(Display Serial Interface), ESP32-C6 für Wi-Fi).
+
+- 0.22.0 ist das letzte Release für das ESP32-S3-Panel. Die Unterstützung
+  dafür endet mit 0.22. Einem ESP32-S3-Panel werden nur noch
+  0.22.x-Patch-Releases angeboten.
+- 0.23.0 ist das erste Release für das ESP32-P4-Panel, ein Testing-Release.
+  Seine Bedienoberfläche ist für 1024 x 600 neu aufgeteilt; sie ist nicht
+  das hochskalierte 800-x-480-Layout.
+- Das ESP32-P4-Board braucht die Chip-Revision 3.2 (ESP-IDF v5.5.5).
+- Der IOmcu, das IO-Board und der CAN-Link bleiben, wie sie sind.
+- Der Heartbeat-Pin und die Pins des Drehknopfs auf dem ESP32-P4-Board sind
+  noch nicht festgelegt.
+
+## Was rcbench ist
+
 Ein Motor-, ESC- (Electronic Speed Controller, Motorregler) und Servoprüfstand
 auf zwei Prozessoren: ein ESP32-S3-Touchpanel (Bedienoberfläche, Einstellungen,
 SD-Karte) und ein RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
 Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1 Mbit/s.
+
+Release 0.22.0 läuft auf dem ESP32-S3-Panel. Was seine Update-Suche
+anbietet, steht in
+[Bildschirme: Die Release-Linie](docs/Screens-de.md#die-release-linie).
 
 **Stand: im Aufbau.** Das Projekt ist in Entwicklung, und seine Funktionen
 sind nicht auf Hardware verifiziert. Das Panel bootet, und jeder Bildschirm
@@ -106,7 +130,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,8 %**, 50 518 von 51 674 Zeilen in 228 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,8 %**, 50 814 von 51 970 Zeilen in 229 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
