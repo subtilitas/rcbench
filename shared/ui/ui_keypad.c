@@ -15,9 +15,10 @@
 #include "ui_widgets.h"
 
 /*
- * A title row, the entry, then four rows of keys, 8 px apart.  Over
- * SERVO's left column, 488 x 524 px, a key is 112 x 96 px (16.8 x 14.4 mm
- * at 0.150 mm a pixel); over SUPPLY's, 546 x 494 px, 126 x 88 px.
+ * A title row, the entry, then four rows of keys, 8 px apart, ending at
+ * UI_KEYS_FOOT at the latest.  Over SERVO's left column, 488 x 524 px, a
+ * key is 112 x 88 px (16.8 x 13.2 mm at 0.150 mm a pixel); over SUPPLY's,
+ * 546 x 494 px, 126 x 80 px.
  */
 /** @brief The room around the title, the entry and the keys: 8 px. */
 #define KP_PAD     8
@@ -134,7 +135,10 @@ gfx_rect_t ui_keypad_key_rect(const ui_keypad_t *k, ui_key_t key)
     const int left   = k->area.x + KP_PAD;
     const int right  = k->area.x + k->area.w - KP_PAD;
     const int top    = k->area.y + KP_HDR + KP_ENTRY_H + 2 * KP_GAP;
-    const int bottom = k->area.y + k->area.h - KP_PAD;
+    /* The area's foot, or UI_KEYS_FOOT where the area reaches under the
+     * alert band. */
+    const int foot   = k->area.y + k->area.h - KP_PAD;
+    const int bottom = (foot < UI_KEYS_FOOT) ? foot : UI_KEYS_FOOT;
     const int kw = (right - left - (KP_COLS - 1) * KP_GAP) / KP_COLS;
     const int kh = (bottom - top - (KP_ROWS - 1) * KP_GAP) / KP_ROWS;
     int row  = (int)key / KP_COLS;

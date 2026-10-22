@@ -230,9 +230,10 @@ jedem Bildschirm gleich aus. Jeder Bildschirm gibt ihnen ihre Fläche oder
 ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
 
 - **Tastenfeld.** Eine Titelzeile von 32 px, die Eingabe von 60 px, dann
-  4 x 4 Tasten mit 8 px Abstand, 8 px vom Rand der Fläche. Über der linken
-  Spalte von SERVO, 488 x 524 px, ist eine Taste 112 x 96 px groß
-  (16,8 x 14,4 mm); über der von SUPPLY, 546 x 494 px, 126 x 88 px.
+  4 x 4 Tasten mit 8 px Abstand, 8 px vom Rand der Fläche; die Tasten enden
+  spätestens 4 px über dem Alarmband (unten). Über der linken Spalte von
+  SERVO, 488 x 524 px, ist eine Taste 112 x 88 px groß (16,8 x 13,2 mm);
+  über der von SUPPLY, 546 x 494 px, 126 x 80 px.
   Titel und Bereich stehen im Font 10 x 20, oder in 8 x 16, wo beide nicht
   nebeneinander passen. Die Eingabe steht in den Ziffern 32 x 44 mit der
   Einheit in 12 x 24; eine Eingabe, die nicht passt, nimmt die Ziffern
@@ -273,15 +274,13 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
 - **Plot.** Ein Plot hält 1.024 Werte je Reihe, einen je Pixelspalte eines
   Plots so breit wie das Panel: 51,2 s bei 20 Werten je Sekunde.
 
-Derzeitige Einschränkung: Auf SERVO, SUPPLY und ESC STICK reicht die
-untere Tastenreihe des Tastenfelds oder der Tastatur unter das Alarmband,
-Panel-y 556 bis 599. Die unteren Reihen liegen bei Körper-y 428 bis 523 auf
-den Tastenfeldern von SERVO, 444 bis 522 auf seinen Tastaturen, 434 bis 521
-auf dem Tastenfeld von SUPPLY und 454 bis 520 auf der Suchtastatur von ESC
-STICK; das Band deckt Körper-y 496 bis 539. Solange ein
-Alert steht, löscht ein Tipp auf den verdeckten Teil einer Taste den Alert
-und drückt keine Taste. Die übrigen Tastenfelder und Tastaturen enden 4 px
-über dem Band.
+Tastenraster enden auf jedem Bildschirm 4 px über dem Alarmband, bei
+Körper-y 492. Ein Tastenfeld oder eine Tastatur, deren Fläche weiter reicht,
+malt die ganze Fläche und lässt ihre Tasten dort enden, so verdeckt ein
+Alert keine Taste. Auf SERVO sind die Tasten der Tastenfelder dann
+112 x 88 px groß und die der Tastaturen 41 x 72 px; auf SUPPLY die des
+Tastenfelds 126 x 80 px; auf der Suchtastatur von ESC STICK 59 x 61 px; auf
+SETTINGS von MOTOR & ESC die des Tastenfelds 126 x 89 px.
 
 ## Splash
 

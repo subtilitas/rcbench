@@ -68,6 +68,15 @@ bool ui_is_light(gfx_color_t c);
  */
 bool ui_text_fits(const gfx_font_t *f, const char *s, int w, int h, int pad);
 
+/**
+ * @brief Where the key grid of the keypad and of the keyboard ends at the
+ *        latest, in body coordinates: 4 px above the alert band, y 492.
+ *
+ * An overlay paints its whole area; its keys end here when the area
+ * reaches further, so an alert covers no key on any screen.
+ */
+#define UI_KEYS_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
+
 /** A raised surface with a hairline edge: the base of every panel. */
 void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill);
 

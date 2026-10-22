@@ -135,7 +135,9 @@ void ui_keypad_refuse(ui_keypad_t *k);
 void ui_keypad_refuse_why(ui_keypad_t *k, const char *reason);
 
 /**
- * @brief Where a key is drawn and hit.
+ * @brief Where a key is drawn and hit: the grid ends 8 px inside the
+ *        area, or at UI_KEYS_FOOT (4 px above the alert band, body
+ *        coordinates) where the area reaches further.
  * @param k The keypad.
  * @param key The key.
  * @return Its rectangle; an empty one for UI_KEY_SIGN on an unsigned keypad

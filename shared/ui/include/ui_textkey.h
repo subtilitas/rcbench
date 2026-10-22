@@ -202,7 +202,9 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
                                      char *out, size_t n);
 
 /**
- * @brief Where a key is drawn and hit.
+ * @brief Where a key is drawn and hit: the grid ends 8 px inside the
+ *        area, or at UI_KEYS_FOOT (4 px above the alert band, body
+ *        coordinates) where the area reaches further.
  * @param k   The keyboard.
  * @param key The key: 0 to UI_TK_OK, or UI_TK_SHOW on a password.
  * @return Its rectangle; zero size for one out of range.

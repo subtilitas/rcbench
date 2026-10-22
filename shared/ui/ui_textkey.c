@@ -209,7 +209,10 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
     const int left   = k->area.x + TK_PAD;
     const int right  = k->area.x + k->area.w - TK_PAD;
     const int top    = k->area.y + TK_HDR + TK_ENTRY_H + 2 * TK_GAP;
-    const int bottom = k->area.y + k->area.h - TK_PAD;
+    /* The area's foot, or UI_KEYS_FOOT where the area reaches under the
+     * alert band. */
+    const int foot   = k->area.y + k->area.h - TK_PAD;
+    const int bottom = (foot < UI_KEYS_FOOT) ? foot : UI_KEYS_FOOT;
     const int kw = (right - left - (TK_COLS - 1) * TK_GAP) / TK_COLS;
     const int kh = (bottom - top - (TK_ROWS - 1) * TK_GAP) / TK_ROWS;
     int row, col, span;

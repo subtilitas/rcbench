@@ -211,9 +211,10 @@ the same on every screen. Each screen gives them their area or their row;
 the faces and the spacing inside are theirs.
 
 - **Keypad.** A title row of 32 px, the entry of 60 px, then 4 x 4 keys
-  8 px apart, 8 px from the area's edge. Over SERVO's left column,
-  488 x 524 px, a key is 112 x 96 px (16.8 x 14.4 mm); over SUPPLY's,
-  546 x 494 px, 126 x 88 px. The title and the range are in the
+  8 px apart, 8 px from the area's edge, the keys ending 4 px above the
+  alert band at the latest (below). Over SERVO's left column, 488 x 524 px,
+  a key is 112 x 88 px (16.8 x 13.2 mm); over SUPPLY's, 546 x 494 px,
+  126 x 80 px. The title and the range are in the
   10 x 20 face, or in 8 x 16 where the two do not fit side by side. The
   entry is in the 32 x 44 numerals with the unit in 12 x 24; an entry that
   does not fit takes the 24 x 30 numerals with the unit in 10 x 20. The
@@ -250,14 +251,12 @@ the faces and the spacing inside are theirs.
 - **Plot.** A plot keeps 1,024 samples a series, one for each pixel column
   of a plot as wide as the panel: 51.2 s at 20 samples a second.
 
-Current limitation: on SERVO, SUPPLY and ESC STICK the keypad's or the
-keyboard's bottom row reaches under the alert band, panel y 556 to 599.
-The bottom rows lie at body y 428 to 523 on SERVO's keypads, 444 to 522 on
-its keyboards, 434 to 521 on SUPPLY's keypad and 454 to 520 on the ESC
-STICK search keyboard; the band covers body y 496 to 539. While an alert
-shows, a tap on the covered part of a key
-clears the alert and presses no key. The other keypads and keyboards end
-4 px above the band.
+Key grids end 4 px above the alert band, at body y 492, on every screen.
+A keypad or a keyboard whose area reaches further paints its whole area
+and stops its keys there, so an alert covers no key. On SERVO the keypads'
+keys are then 112 x 88 px and the keyboards' 41 x 72 px; on SUPPLY the
+keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 61 px; on
+MOTOR & ESC's SETTINGS the keypad's are 126 x 89 px.
 
 ## Splash
 

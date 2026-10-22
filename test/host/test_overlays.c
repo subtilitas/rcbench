@@ -311,39 +311,82 @@ TEST_CASE(a_face_taller_than_its_box_does_not_fit)
     CHECK(!ui_text_fits(&gfx_font_10x20, "DEL", 41, 20, 6));
 }
 
-/* The hosts whose bottom row reaches under the alert band, as Screens.md
- * states the limitation: the areas as SERVO, SUPPLY and ESC STICK give
- * them at this head. */
-TEST_CASE(the_hosts_bottom_rows_are_where_the_limitation_says)
+/* The overlays' areas on every host at this head, in body coordinates. */
+static const struct {
+    gfx_rect_t area;
+    bool       keyboard;
+    int        kw, kh;      /* a character key or a digit key */
+} k_hosts[] = {
+    { { 8, 8, 488, 524 },     false, 112, 88 },  /* SERVO, KST          */
+    { { 8, 8, 488, 524 },     true,  41, 72 },   /* SERVO, KST names    */
+    { { 8, 38, 546, 494 },    false, 126, 80 },  /* SUPPLY              */
+    { { 8, 3, 546, 529 },     false, 126, 89 },  /* MOTOR & ESC SETTINGS */
+    { { 352, 66, 664, 466 },  true,  59, 61 },   /* ESC STICK search    */
+    { { 8, 40, 1008, 452 },   false, 242, 78 },  /* BALANCE             */
+    { { 8, 8, 1008, 484 },    true,  93, 71 },   /* WI-FI               */
+};
+
+/* Every key of every host ends UI_KEYS_FOOT at the latest, 4 px above the
+ * alert band, and is UI_TAP_MIN or more tall and wide; the key sizes are
+ * the ones Screens.md names.  One host is narrower: SERVO's 488 px column
+ * gives the keyboard's 10 columns 41 px each, a width its own layout sets
+ * (the plan's 620 px column gives 55 px). */
+TEST_CASE(every_hosts_keys_end_above_the_alert_band)
 {
-    ui_keypad_t kp;
-    memset(&kp, 0, sizeof(kp));
-    ui_keypad_open(&kp, gfx_rect_make(8, 8, 488, 524), "", "", 0.0f, 0.0f,
+    CHECK_EQ(UI_KEYS_FOOT, 492);
+    CHECK_EQ(UI_KEYS_FOOT + 4, UI_ALERT_Y - UI_BAND_H);
+    for (size_t h = 0; h < sizeof(k_hosts) / sizeof(k_hosts[0]); ++h) {
+        const gfx_rect_t a = k_hosts[h].area;
+        int lowest = 0;
+        gfx_rect_t first;
+        if (k_hosts[h].keyboard) {
+            ui_textkey_t k;
+            memset(&k, 0, sizeof(k));
+            ui_textkey_open_wifi(&k, a, "", "", true);
+            for (int key = 0; key <= UI_TK_SHOW; ++key) {
+                const gfx_rect_t r = ui_textkey_key_rect(&k, key);
+                CHECK(r.w >= ((a.w < 560) ? 41 : UI_TAP_MIN));
+                CHECK(r.h >= UI_TAP_MIN);
+                lowest = (r.y + r.h > lowest) ? r.y + r.h : lowest;
+            }
+            first = ui_textkey_key_rect(&k, 0);
+        } else {
+            ui_keypad_t k;
+            memset(&k, 0, sizeof(k));
+            ui_keypad_open_signed(&k, a, "", "", 0.0f, -1.0f, 1.0f, 0);
+            for (int key = 0; key < UI_KEY_COUNT; ++key) {
+                const gfx_rect_t r = ui_keypad_key_rect(&k, (ui_key_t)key);
+                CHECK(r.w >= UI_TAP_MIN && r.h >= UI_TAP_MIN);
+                lowest = (r.y + r.h > lowest) ? r.y + r.h : lowest;
+            }
+            first = ui_keypad_key_rect(&k, UI_KEY_7);
+        }
+        CHECK(lowest <= UI_KEYS_FOOT);
+        CHECK(lowest <= a.y + a.h);
+        CHECK_EQ(first.w, k_hosts[h].kw);
+        CHECK_EQ(first.h, k_hosts[h].kh);
+    }
+}
+
+/* An area that ends above UI_KEYS_FOOT keeps its own foot, 8 px in; one
+ * that reaches past it stops its keys there and still paints all of it. */
+TEST_CASE(a_short_area_keeps_its_foot_and_a_long_one_paints_whole)
+{
+    ui_keypad_t k;
+    memset(&k, 0, sizeof(k));
+    ui_keypad_open(&k, gfx_rect_make(8, 8, 488, 400), "", "", 0.0f, 0.0f,
                    1.0f, 0);
-    gfx_rect_t r = ui_keypad_key_rect(&kp, UI_KEY_0);
-    CHECK_EQ(r.y, 428);
-    CHECK_EQ(r.y + r.h, 524);
-    CHECK_EQ(r.w, 112);
-    CHECK_EQ(r.h, 96);
-    ui_keypad_open(&kp, gfx_rect_make(8, 38, 546, 494), "", "", 0.0f, 0.0f,
-                   1.0f, 0);
-    r = ui_keypad_key_rect(&kp, UI_KEY_0);
-    CHECK_EQ(r.y, 434);
-    CHECK_EQ(r.y + r.h, 522);
-    CHECK_EQ(r.w, 126);
-    CHECK_EQ(r.h, 88);
-    ui_textkey_t tk;
-    memset(&tk, 0, sizeof(tk));
-    ui_textkey_open(&tk, gfx_rect_make(8, 8, 488, 524), "", "", 23);
-    r = ui_textkey_key_rect(&tk, UI_TK_OK);
-    CHECK_EQ(r.y, 444);
-    CHECK_EQ(r.y + r.h, 523);
-    ui_textkey_open_search(&tk, gfx_rect_make(352, 66, 1016 - 352, 466), "",
-                           "", 16);
-    r = ui_textkey_key_rect(&tk, UI_TK_OK);
-    CHECK_EQ(r.y, 454);
-    CHECK_EQ(r.y + r.h, 521);
-    CHECK(r.y + r.h > UI_ALERT_Y - UI_BAND_H);
+    gfx_rect_t r = ui_keypad_key_rect(&k, UI_KEY_0);
+    CHECK_EQ(r.y + r.h, 8 + 400 - 8);
+    canvas();
+    const gfx_rect_t a = gfx_rect_make(8, 8, 488, 524);
+    ui_keypad_open(&k, a, "", "", 0.0f, 0.0f, 1.0f, 0);
+    ui_keypad_render(&k, &cv);
+    CHECK_EQ(ink_outside(a), 0);
+    /* The area's last row is painted: the panel, not the black ground. */
+    CHECK(fb[(a.y + a.h - 2) * W + a.x + 20] != 0);
+    r = ui_keypad_key_rect(&k, UI_KEY_0);
+    CHECK_EQ(r.y + r.h, UI_KEYS_FOOT);
 }
 
 /* ----------------------------------------------------- TARGET and the pins */
@@ -438,7 +481,8 @@ int main(void)
     RUN(a_choice_takes_20x36_from_56_px);
     RUN(a_choice_text_that_does_not_fit_20x36_takes_16x28);
     RUN(a_face_taller_than_its_box_does_not_fit);
-    RUN(the_hosts_bottom_rows_are_where_the_limitation_says);
+    RUN(every_hosts_keys_end_above_the_alert_band);
+    RUN(a_short_area_keeps_its_foot_and_a_long_one_paints_whole);
     RUN(a_tall_target_row_counts_its_cells_in_10x20);
     RUN(a_tall_target_rows_text_fits_its_box);
     RUN(the_plot_ring_holds_one_sample_per_panel_column);
