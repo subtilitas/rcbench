@@ -6,10 +6,32 @@
 integration)](https://github.com/subtilitas/rcbench/actions/workflows/ci.yml/badge.svg)](https://github.com/subtilitas/rcbench/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/subtilitas/rcbench/branch/main/graph/badge.svg)](https://codecov.io/gh/subtilitas/rcbench)
 
+## Display change: ESP32-P4 panel from 0.23.0
+
+The panel moves from the 7-inch ESP32-S3 display board from Waveshare
+(ESP32-S3-Touch-LCD-7, 800 x 480 pixels) to the 7-inch ESP32-P4 display
+board from Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, 1024 x 600 pixels, MIPI
+DSI (Display Serial Interface), ESP32-C6 for Wi-Fi).
+
+- 0.22.0 is the last release for the ESP32-S3 panel. Support for it ends
+  with 0.22. An ESP32-S3 panel is offered 0.22.x patch releases only.
+- 0.23.0 is the first release for the ESP32-P4 panel, a testing release.
+  Its user interface is laid out for 1024 x 600; it is not the 800 x 480
+  layout scaled up.
+- The ESP32-P4 board needs chip revision 3.2 (ESP-IDF v5.5.5).
+- The IOmcu, the IO board and the CAN link stay as they are.
+- The heartbeat pin and the rotary knob pins on the ESP32-P4 board are not
+  fixed yet.
+
+## What rcbench is
+
 A motor, ESC (electronic speed controller) and servo test bench on two
 processors: an ESP32-S3 touch panel (user interface, settings, SD card) and an
 RP2350 IOmcu (IO microcontroller: measurement, outputs, and every
 protocol with timing requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
+
+Release 0.22.0 runs on the ESP32-S3 panel. What its update check offers
+is in [Screens: The release line](docs/Screens.md#the-release-line).
 
 **Status: under construction.** The project is under development and its
 functions are not verified on hardware. The panel boots and every screen
@@ -103,7 +125,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.8%**, 50,518 of 51,674 lines in 228 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.8%**, 50,814 of 51,970 lines in 229 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).

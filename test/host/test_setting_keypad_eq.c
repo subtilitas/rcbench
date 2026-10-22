@@ -11,7 +11,7 @@
  * typed key by key on a keypad opened by ui_setting_keypad_open() with the
  * setting first moved to the other end of its range, and taken with OK
  * through ui_setting_keypad_ok().  -1, a pin not set, is skipped: the
- * keypad of a pin has no sign.  149,555 values; the case runs in 0.4 s
+ * keypad of a pin has no sign.  188,891 values; the case runs in 0.7 s
  * on the host suite's Debug build.
  *
  * SPDX-License-Identifier: MIT
@@ -139,7 +139,9 @@ TEST_CASE(every_stepped_value_typed_is_the_stepped_value)
         }
     }
     printf("      %ld values, %d mismatches\n", checked, bad);
-    CHECK_EQ(checked, 149555);
+    /* 12 SENSORS LIMIT rows of 3,278 values each (0 to 32760 mA in 10 mA
+     * steps and 32767) are 39,336 of them. */
+    CHECK_EQ(checked, 188891);
     CHECK_EQ(bad, 0);
 }
 

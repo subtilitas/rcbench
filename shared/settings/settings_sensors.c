@@ -28,10 +28,12 @@
         SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0, 0.0f }
 
 /*
- * A channel's rows: WATCHES and SHUNT.  The shunt's range is the page's,
- * 5.0 to 1000.0 mOhm, and 0 switches the channel off; 100.0 mOhm is the
- * DAOKAI module's 0.1 Ohm, which reads to 1.638 A.  0x40 CH1 watches OUT 1
- * by default (owner decision 1, 2026-10-20).
+ * A channel's rows: WATCHES, SHUNT and LIMIT.  The shunt's range is the
+ * page's, 5.0 to 1000.0 mOhm, and 0 switches the channel off; 100.0 mOhm
+ * is the DAOKAI module's 0.1 Ohm, which reads to 1.638 A.  0x40 CH1
+ * watches OUT 1 by default (owner decision 1, 2026-10-20).  The limit's
+ * range is SENSE_LIMIT's, 10 to 32767 mA, in 10 mA steps on the arrows,
+ * 0 (OFF) for none.
  */
 #define CH_ROWS(a, ch, watch_def)                                          \
     [AT(SET_INA_W(3 * (a) + (ch) - 1))] = {                                \
@@ -41,7 +43,10 @@
     [AT(SET_INA_SH(3 * (a) + (ch) - 1))] = {                               \
         "ina_sh_" #a #ch, "mOhm",                                          \
         SET_CAT_SENSORS, SET_TYPE_FLOAT, 0.0f, 1000.0f, 0.1f, 100.0f,      \
-        NULL, 0, 5.0f }
+        NULL, 0, 5.0f },                                                   \
+    [AT(SET_INA_LIM(3 * (a) + (ch) - 1))] = {                              \
+        "ina_lim_" #a #ch, "mA",                                           \
+        SET_CAT_SENSORS, SET_TYPE_INT, 0, 32767, 10, 0, NULL, 0, 10.0f }
 
 #define PART_ROWS(a, w1)                                                   \
     CH_ROWS(a, 1, w1), CH_ROWS(a, 2, SENS_W_NONE), CH_ROWS(a, 3, SENS_W_NONE)
@@ -76,9 +81,13 @@ static const setting_def_t k_kept[4] = {
 
 _Static_assert(SET_INA3221_CH - SET_INA3221_EN == 3,
                "the four kept keys are in a row");
-_Static_assert(SET_INA_CH_ROWS == 2, "a channel's rows: WATCHES, SHUNT");
+_Static_assert(LINK_SL_MA_MAX == 32767u, "LIMIT's top is the page's");
+_Static_assert(SET_INA_CH_ROWS == 3,
+               "a channel's rows: WATCHES, SHUNT, LIMIT");
 _Static_assert(SET_INA_W(5) == SET_INA_W_13 && SET_INA_SH(6) == SET_INA_SH_21
-               && SET_INA_SH(11) == SET_INA_SH_33,
+               && SET_INA_SH(11) == SET_INA_SH_33
+               && SET_INA_LIM(0) == SET_INA_LIM_01
+               && SET_INA_LIM(11) == SET_INA_LIM_33,
                "the rows' numbers are the enum's names");
 _Static_assert(N_ROWS == SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS,
                "every SENSORS row has its schema row");
@@ -160,9 +169,30 @@ int settings_sensors_migrate(float *values)
             n += seed(values, SET_INA_W(c),
                       (a == part && ch == 0) ? (float)w1
                                              : (float)SENS_W_NONE);
+            n += seed(values, SET_INA_LIM(c), 0.0f);
         }
     }
     return n;
+}
+
+int settings_sensors_watch_option(uint16_t code)
+{
+    for (int k = 0; k < SENS_W_COUNT; ++k) {
+        if (settings_sensors_watch_code(k) == code) {
+            return k;
+        }
+    }
+    return SENS_W_NONE;
+}
+
+uint16_t settings_sensors_limit_ma(int c)
+{
+    if (c < 0 || c >= SET_INA_CHANNELS) {
+        return 0u;
+    }
+    /* The row's range is the page's, 0 to 32767 mA (LINK_SL_MA_MAX). */
+    const long ma = lrintf(settings_get(SET_INA_LIM(c)));
+    return (ma <= 0) ? 0u : (uint16_t)ma;
 }
 
 uint16_t settings_sensors_dmohm(int c)

@@ -17,7 +17,7 @@ SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACE
 | PANEL | `9 SETTINGS` | the list of PANEL |
 | INTERFACES | `23 SETTINGS` | the list of INTERFACES |
 | SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
-| SENSORS | `4 SETTINGS`, and 6 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
+| SENSORS | `4 SETTINGS`, and 9 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
@@ -46,7 +46,7 @@ A row shows the setting, a help line and its value with its unit. A number has `
 - **Tap**: a key steps once when the finger lifts within 8 px of the press, inside the key.
 - **Hold**: a held key steps first after 0.45 s, then 8 times a second, and 30 times a second from 2.25 s.
 - **Scroll**: a vertical drag of more than 8 px anywhere on the list scrolls it and changes no value.
-- **Keypad**: a tap on a number's value, between its `-` and `+`, opens the keypad over the list. It names the setting, its range and its unit, and takes as many digits after the point as the step has. OK sets the value as a step does, onto the nearer step: 73 % brightness is 75 %. A value outside the range keeps the keypad open and names the range in the warning colour. A value inside the range that the keys never reach keeps it open and names the reason there instead, in the warning colour: `0 or 5.0 to 1000.0 mOhm` for a shunt between 0 and 5.0 mOhm, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a Sensor SDA pin the bus cannot have, `The other PD mini pin holds this GPIO` for the other PD mini pin's GPIO. The next key brings the range back. CANCEL and the home tag change nothing. -1, a pin not set, is set with `-`: a pin's keypad has no `+/-` key.
+- **Keypad**: a tap on a number's value, between its `-` and `+`, opens the keypad over the list. It names the setting, its range and its unit, and takes as many digits after the point as the step has. OK sets the value as a step does, onto the nearer step: 73 % brightness is 75 %. A value outside the range keeps the keypad open and names the range in the warning colour. A value inside the range that the keys never reach keeps it open and names the reason there instead, in the warning colour: `0 or 5.0 to 1000.0 mOhm` for a shunt between 0 and 5.0 mOhm, `0 or 10 to 32767 mA` for a current limit between 0 and 10 mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a Sensor SDA pin the bus cannot have, `The other PD mini pin holds this GPIO` for the other PD mini pin's GPIO. The next key brings the range back. CANCEL and the home tag change nothing. -1, a pin not set, is set with `-`: a pin's keypad has no `+/-` key.
 - One finger at a time: a second finger does nothing while one presses or scrolls.
 
 A changed value is in force at once. RESET CATEGORY sets every value of the open category back to its default.

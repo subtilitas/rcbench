@@ -71,11 +71,11 @@ function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = (
     settings[line - 1] = `        "key", "Name", "Help", "GPIO",`;
     settings[line] = `        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, ${def}, NULL, 0 },`;
   };
-  entry(159, 'SET_SENSE_SDA', 16);
-  entry(162, 'SET_SENSE_SCL', 17);
-  entry(189, 'SET_TONE_PIN', 22);
-  entry(224, 'SET_PDMINI_TX', -1);
-  entry(227, 'SET_PDMINI_RX', -1);
+  entry(154, 'SET_SENSE_SDA', 16);
+  entry(157, 'SET_SENSE_SCL', 17);
+  entry(184, 'SET_TONE_PIN', 22);
+  entry(219, 'SET_PDMINI_TX', -1);
+  entry(222, 'SET_PDMINI_RX', -1);
 
   const iomcu = filler();
   iomcu[41] = '#define IOMCU_HEARTBEAT_PIN  3';
@@ -838,42 +838,42 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
   );
 
   // A line that is present and holds another row: no text is named for it.
-  moved.functions[SERVO]!.src = at(704);
-  reports(checkSrc(moved, tree).findings, 'function.servo', /FirstRun\.md:704 names no text of 4 characters or more/);
-  reports(checkSrc(moved, null).findings, 'function.servo', /FirstRun\.md:704 names no text/);
+  moved.functions[SERVO]!.src = at(762);
+  reports(checkSrc(moved, tree).findings, 'function.servo', /FirstRun\.md:762 names no text of 4 characters or more/);
+  reports(checkSrc(moved, null).findings, 'function.servo', /FirstRun\.md:762 names no text/);
   reports(checkAll(moved, tree, true).findings, 'function.servo', /names no text/);
 
   // A named text that the line does not hold.
-  const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 704, has: '| SDA | GP16 (pad 21) |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:704 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.21\.2/);
+  const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 762, has: '| SDA | GP16 (pad 21) |' }];
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:762 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.22\.0/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
 
   // Every text named for the line is compared.
   const rows = fakeTree(CATALOGUE, (files) => {
-    lines(files, 'docs/FirstRun.md')[703] = '|  INA3221 power |   3V3 (pad 36), GND |';
+    lines(files, 'docs/FirstRun.md')[761] = '|  INA3221 power |   3V3 (pad 36), GND |';
   });
-  const power = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 704, has: '| INA3221 power | 3V3' }];
+  const power = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 762, has: '| INA3221 power | 3V3' }];
   assert.deepEqual(checkSrc(moved, rows, power).findings, []);
   reports(checkSrc(moved, rows, [...power, ...wrong]).findings, 'function.servo', /does not hold "\| SDA/);
 
   // A text under the shortest length names nothing.
   assert.equal(ANCHOR_TEXT_MIN, 4);
-  const short = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 704, has: ' |  I ' }];
+  const short = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 762, has: ' |  I ' }];
   reports(checkSrc(moved, rows, short).findings, 'function.servo', /names no text/);
-  const none = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 704 } as { path: string; line: number; has: string }];
+  const none = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 762 } as { path: string; line: number; has: string }];
   reports(checkSrc(moved, rows, none).findings, 'function.servo', /names no text/);
 
   // A row of the data moved off its line in the tree.
   const shifted = fakeTree(CATALOGUE, (files) => {
     const doc = lines(files, 'docs/FirstRun.md');
-    doc.splice(703, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
+    doc.splice(761, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'wire.26', /FirstRun\.md:705 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
-  reports(found, 'wire.27', /FirstRun\.md:706 does not hold/);
-  reports(found, 'check.ina3221-pullups', /FirstRun\.md:707 does not hold/);
+  reports(found, 'wire.26', /FirstRun\.md:763 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
+  reports(found, 'wire.27', /FirstRun\.md:764 does not hold/);
+  reports(found, 'check.ina3221-pullups', /FirstRun\.md:765 does not hold/);
 });
 
 test('src: every repository anchor of the data names a text of its own', () => {
@@ -884,14 +884,14 @@ test('src: every repository anchor of the data names a text of its own', () => {
     assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
     assert.ok(Object.isFrozen(text));
   }
-  // The sensor bus rows of docs/FirstRun.md at the tag: 705 SDA, 706 SCL,
-  // 707 the pull-ups.
+  // The sensor bus rows of docs/FirstRun.md at the tag: 763 SDA, 764 SCL,
+  // 765 the pull-ups.
   const sda = CATALOGUE.wires.find((w) => w.n === 26)?.src;
   const scl = CATALOGUE.wires.find((w) => w.n === 27)?.src;
-  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 705, tag: TAG });
-  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 706, tag: TAG });
+  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 763, tag: TAG });
+  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 764, tag: TAG });
   const pullups = CATALOGUE.checks.find((k) => k.id === 'ina3221-pullups')?.src;
-  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 707, tag: TAG });
+  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 765, tag: TAG });
   // The AS5600 board's OUT and GPO have no repository source at the tag:
   // docs/Building.md describes the panel's knob, an MT6701, since 0.21.0.
   const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
@@ -1055,18 +1055,18 @@ test('tree: a data file that is stale against the firmware tables is reported', 
 
 test('tree: stale pin defaults are reported', () => {
   const sda = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[159] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+    lines(files, SETTINGS)[154] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, sda), 'pin.sda', /GP16 in the data and 18/);
 
   // The firmware has a default for a pin the data calls a proposal.
   const pd = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[224] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
+    lines(files, SETTINGS)[219] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, pd), 'pin.pd_tx', /proposal in the data/);
 
   const renamed = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[187] = '    [SET_TAP_PIN] = {';
+    lines(files, SETTINGS)[182] = '    [SET_TAP_PIN] = {';
   });
   reports(checkTree(CATALOGUE, renamed), 'pin.tap', /no SET_TONE_PIN/);
 
@@ -1086,10 +1086,10 @@ test('tree: stale pin defaults are reported', () => {
 });
 
 test('tree: a newer release tag is a warning, not an error', () => {
-  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.22.0' };
+  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.23.0' };
   const findings = checkTree(CATALOGUE, tree);
   assert.deepEqual(findings, [
-    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.22.0` },
+    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.23.0` },
   ]);
   assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: null }), []);
   // The release pull request before its tag: the newest tag is older than the data.
@@ -1189,8 +1189,8 @@ test('counts: a missing safety note, stage or pad is reported', () => {
   reports(checkCounts(gpio), 'pads', /GP1 is on two pads/);
 
   const release = copy();
-  release.release = '0.22.0';
-  reports(checkCounts(release), 'release', /0\.22\.0/);
+  release.release = '0.23.0';
+  reports(checkCounts(release), 'release', /0\.23\.0/);
   release.release = 'next';
   reports(checkCounts(release), 'release', /version number/);
 

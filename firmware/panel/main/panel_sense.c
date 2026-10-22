@@ -1,9 +1,10 @@
-/*
- * The current monitors' set-up on its way to the IOmcu: SETUP INTERFACES'
- * INA228, bus and encoder rows and SETUP > SENSORS' INA3221 parts,
- * published by the settings observer on app_main and taken by the control
- * task; and the SENSE_MAP page's service there (sense_map_link.h), with
- * what it tells the operator.
+/**
+ * @file panel_sense.c
+ * @brief The current monitors' set-up on its way to the IOmcu: SETUP
+ *        INTERFACES' INA228, bus and encoder rows and SETUP > SENSORS'
+ *        INA3221 parts, published by the settings observer on app_main and
+ *        taken by the control task; and the SENSE_MAP page's service there
+ *        (sense_map_link.h), with what it tells the operator.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -82,6 +83,8 @@ void publish_sense(void)
     taskEXIT_CRITICAL(&s_sense_mux);
     /* And OUTPUTS' WATCHED BY lines: app_main, as the screens. */
     sensors_rows_publish_watch();
+    /* And the channels' limits (panel_limit.c). */
+    publish_limits();
 }
 
 sense_setup_t sense_wanted(void)

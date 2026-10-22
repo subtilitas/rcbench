@@ -593,7 +593,6 @@ firmware/panel/main/main.c: warning: Member servo_ctx_disarm(void *ctx, bool lin
 firmware/panel/main/main.c: warning: Member servo_ctx_stop_count(void *ctx) (function) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member servo_ctx_stopped(void *ctx) (function) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member servo_testing_told(bool running) (function) of file main.c is not documented.
-firmware/panel/main/panel.h: file has no @file block
 firmware/panel/main/panel.h: warning: Compound cu_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Compound knob_turn_t is not documented.
 firmware/panel/main/panel.h: warning: Compound log_row_t is not documented.
@@ -603,9 +602,28 @@ firmware/panel/main/panel.h: warning: Compound servo_win_item_t is not documente
 firmware/panel/main/panel.h: warning: Compound supply_item_t is not documented.
 firmware/panel/main/panel.h: warning: Compound test_line_t is not documented.
 firmware/panel/main/panel.h: warning: Compound touch_item_t is not documented.
+firmware/panel/main/panel.h: warning: Member ALERT_MAX (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member CONTROL_PERIOD_MS (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member DRIVE_HELD_SHIFT (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member DRIVE_PWM_BIT (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member LOG_NOTE_MAX (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member LOG_NOTE_Q_LEN (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member LOG_Q_LEN (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member PANEL_CH_THROTTLE (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member PANEL_SAMPLE_HZ (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member PROG_PORTS_NONE (macro definition) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member TEST_Q_LEN (macro definition) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member active (variable) of struct cu_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member advance_model_and_log(bool link_up, float emitted, telemetry_sim_t *sim, bench_state_t *bench, bool *new_sample) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member alert (variable) of struct panel_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member apply_supply_cmd(const panel_cmd_t *pc) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member arm_watch_service(bool link_up) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member arm_write_failed(uint32_t quiet_before, const char *alert) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member armed (variable) of struct panel_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member art_begin(uint16_t board) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member art_keep_service(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member art_slice(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member art_stop(const char *why) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member bench (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member bench (variable) of union log_row_t::[union].u is not documented.
 firmware/panel/main/panel.h: warning: Member block (variable) of struct cu_snap_t is not documented.
@@ -614,29 +632,248 @@ firmware/panel/main/panel.h: warning: Member changes (variable) of struct servo_
 firmware/panel/main/panel.h: warning: Member changes (variable) of struct supply_item_t is not documented.
 firmware/panel/main/panel.h: warning: Member check (variable) of struct cu_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member consumed_seq (variable) of struct panel_cmd_t is not documented.
+firmware/panel/main/panel.h: warning: Member control_alert(const char *text) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member control_alert_numbered(const char *text) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member control_alert_withdraw(uint32_t gen) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member control_arm(link_msg_t *reply) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member control_clear_failsafe(link_msg_t *reply) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member control_pump(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member control_setup(telemetry_sim_t *sim, bench_state_t *bench) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member control_write(bool armed, link_msg_t *reply) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member cu (variable) of struct panel_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member cu_link_up(const link_msg_t *reply) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member cu_may_start(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member cu_service(bool *link_up, bench_state_t *bench, uint32_t *last_poll, uint32_t *last_status) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member disarm_here(bool link_up) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member drain_commands(bool link_up, bench_state_t *bench) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member drain_touch(uint32_t stops_now) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member drawing_follow(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member drawing_for_picker(uint16_t board) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member dropped (variable) of struct servo_win_item_t is not documented.
 firmware/panel/main/panel.h: warning: Member dropped (variable) of struct supply_item_t is not documented.
 firmware/panel/main/panel.h: warning: Member dropped_at (variable) of struct servo_win_item_t is not documented.
 firmware/panel/main/panel.h: warning: Member dropped_at (variable) of struct supply_item_t is not documented.
+firmware/panel/main/panel.h: warning: Member endpoints_service(bool far_disarmed) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member esc_profiles_load(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member evt (variable) of struct touch_item_t is not documented.
+firmware/panel/main/panel.h: warning: Member exchange(link_host_t *host, const link_msg_t *req, link_msg_t *reply) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member far_end_stop_here(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member far_line_trusted(bool *answered) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member faults (variable) of struct panel_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member flush_screen_commands(uint32_t stops_now) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member hitec_rx_service(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member k_card_io (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member k_port (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member kind (variable) of struct panel_cmd_t is not documented.
 firmware/panel/main/panel.h: warning: Member kind (variable) of struct test_line_t is not documented.
+firmware/panel/main/panel.h: warning: Member knob_apply(const knob_turn_t *turn, bool frame_lost) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member knob_take(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member kst (variable) of struct panel_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member kst_card_serve(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member kst_commands(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member kst_link_service(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member kst_port_look(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member kst_publish(kst_prog_feed_t *f) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member kst_record_load(bool late) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member kst_record_write(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member kst_ui_service(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member link_errors (variable) of struct panel_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member link_lost_report(busfault_report_t *r) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member link_report(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member link_up (variable) of struct panel_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member log_folder_t (enumeration) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member log_follow_runs(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member log_post(log_row_t *row) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member log_set_folder(log_folder_t kind, const char *dir) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member log_task(void *arg) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member mcu_temp_c (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member mismatch (variable) of struct cu_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member motor (variable) of struct panel_cmd_t is not documented.
 firmware/panel/main/panel.h: warning: Member navigations (variable) of struct knob_turn_t is not documented.
+firmware/panel/main/panel.h: warning: Member now_ms(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member offer_gen (variable) of struct cu_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member offered (variable) of struct cu_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member outputs_apply(const outbind_t *b) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member panel_card_make_dir(void *ctx, const char *level) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member panel_cmd_kind_t (enumeration) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member panel_throttle_ramp(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member pdmini_wiring(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member poles_service(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member poll_far_end(bool *link_up, bench_state_t *bench, uint32_t *last_poll, uint32_t *last_status) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member poll_page(link_host_t *host, uint8_t page, uint8_t count, link_msg_t *reply) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member port_between(void *ctx) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member port_now(void *ctx) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member post_no_reading(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member prog_drive_publish(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member prog_link_service(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member prog_ports_init_screens(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member prog_ports_lost(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member prog_ports_publish(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member prog_ports_to_screens(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member publish_sense(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member publish_snapshot(const bench_state_t *bench, bool link_up, bool new_sample) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member publish_supply_levels(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member publish_throttle_ramp(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member read_bench(link_host_t *host, bench_state_t *out) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member read_outputs_binding(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member read_regs(link_host_t *host, uint8_t page, uint8_t offset, uint8_t count, link_msg_t *reply) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member route (variable) of struct knob_turn_t is not documented.
 firmware/panel/main/panel.h: warning: Member run (variable) of struct log_row_t is not documented.
 firmware/panel/main/panel.h: warning: Member run_seconds (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member running (variable) of struct cu_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member s_arm (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_arm_ack (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_arm_gen (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_arm_take_drv (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_arm_take_gen (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_arm_value (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_arm_watch (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_artbusy (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_artflash (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_bind_read (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_board (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_bring (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_capabilities (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_card_written (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_card_written_tab (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_disarm_request (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_draw_lock (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_drawpub (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_drawshow (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_drive (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_drv_gaps (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_enc_held (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_endpoints (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_escsim_profile (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_escsim_runs (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_far_minor (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_fw_quiet_ack (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_fw_quiet_req (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_hitec_rx_link (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_hitec_rx_mark (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_hitec_rx_want (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_host (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_keeping (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_card_answered (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_card_done (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_card_mount (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_card_req (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_card_sent (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_file[KST_PROG_FILE_MAX] (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_file_done (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_file_len (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_file_mount (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_file_ok (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_file_sent (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_gate (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_link (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_kst_taken (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_lets_go (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_link_is_up (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_link_lost_ms (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_link_lost_shown (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_link_quiet (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_log_cad (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_log_kind (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_log_open_run (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_log_run_now (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_log_t (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_loss_gen (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_lost_notice_seq (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_mcu_c (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_mismatch (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_out (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_outputs_read (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_outputs_read_fresh (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_outputs_result (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_pdmini_edits (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_pdmini_wiring (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_poles_owed (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_poles_value (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_prog_link (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_prog_pin (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_prog_ports (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_prog_want_pwm (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_prog_want_target (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_pump_live (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_recoveries (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_recoveries_total (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_sense_link (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_sense_map (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_sense_parts (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_sense_unheld (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_servo_pins (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_servo_pins_known (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_servo_source (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_servo_testing (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_snap (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_snap_lock (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_stop_counted (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_stop_request (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_ack (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_adopt_done (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_adopt_gen (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_adopt_ma (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_adopt_mv (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_auto (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_baud (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_gen (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_imax_ma (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_is_real (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_link (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_live (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_ms (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_off_request (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_offs (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_ons_sent (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_ons_taken (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_page (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_real (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_set_ma (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_set_mv (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_sim (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_step_ms (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_stops_served (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_trip_ma (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_trip_ms (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_trip_mv (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_vin_mv (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_supply_vmax_mv (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_test_ends_done (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_test_ends_sent (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_test_file (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_test_open_run (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_test_open_txt (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_test_opens_done (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_test_opens_sent (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_test_report (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_throttle_hundredths (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_throttle_pins (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_throttle_pins_known (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_throttle_proto (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_throttle_ramp (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_tone_link (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_tone_unheld (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_totals (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_totals_ms (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_tq_lost (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_tq_published (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_unanswered (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member s_wifi_ok (variable) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member sense_link_alerts(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member sense_link_service(bool idle, bench_state_t *bench) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member sense_log_cols(log_cols_t *out) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member sense_map_came_up(uint16_t minor) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member sense_map_lost(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member sense_map_service(bool idle) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member sense_wanted(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member sense_win_attach(bench_state_t *b, bool ring) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member sense_win_service(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member seq (variable) of struct touch_item_t is not documented.
+firmware/panel/main/panel.h: warning: Member service_arming(bool link_up) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member servo (variable) of struct panel_cmd_t is not documented.
 firmware/panel/main/panel.h: warning: Member servo_source (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member servo_source_changes (variable) of struct panel_snap_t is not documented.
@@ -644,6 +881,8 @@ firmware/panel/main/panel.h: warning: Member servo_source_dropped (variable) of 
 firmware/panel/main/panel.h: warning: Member servo_source_dropped_at (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member servo_source_why (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member servo_win_lost (variable) of struct panel_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member snap_lock(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member snap_unlock(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member source (variable) of struct servo_win_item_t is not documented.
 firmware/panel/main/panel.h: warning: Member source (variable) of struct supply_item_t is not documented.
 firmware/panel/main/panel.h: warning: Member st (variable) of struct supply_item_t is not documented.
@@ -654,11 +893,28 @@ firmware/panel/main/panel.h: warning: Member stopped (variable) of struct panel_
 firmware/panel/main/panel.h: warning: Member stops (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member supply (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member supply (variable) of union log_row_t::[union].u is not documented.
+firmware/panel/main/panel.h: warning: Member supply_follow_set(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member supply_follow_stops(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member supply_link_service(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member supply_live_or_coming(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member supply_log_tail(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member supply_pump(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member supply_service(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member supply_switch(bool on) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member t_s (variable) of struct log_row_t is not documented.
+firmware/panel/main/panel.h: warning: Member test_lines_service(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member text[SERVO_TEST_LINE_MAX] (variable) of struct test_line_t is not documented.
+firmware/panel/main/panel.h: warning: Member throttle_to_zero(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member tone (variable) of struct panel_snap_t is not documented.
+firmware/panel/main/panel.h: warning: Member tone_link_alerts(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member tone_link_service(void) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member tone_wanted(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member u (variable) of struct log_row_t is not documented.
+firmware/panel/main/panel.h: warning: Member upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member win (variable) of struct servo_win_item_t is not documented.
+firmware/panel/main/panel.h: warning: Member wiring_of(unsigned word) (function) of file panel.h is not documented.
+firmware/panel/main/panel.h: warning: Member write_regs(link_host_t *host, uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs, link_msg_t *reply) (function) of file panel.h is not documented.
 firmware/panel/main/panel_arm.c: file has no @file block
 firmware/panel/main/panel_art.c: file has no @file block
 firmware/panel/main/panel_boot.c: warning: Member CAN_SELFTEST_MS (macro definition) of file panel_boot.c is not documented.
@@ -705,10 +961,52 @@ firmware/panel/main/panel_main.h: warning: Member publish_hitec_rx(void) (functi
 firmware/panel/main/panel_main.h: warning: Member publish_log_auto(void) (function) of file panel_main.h is not documented.
 firmware/panel/main/panel_main.h: warning: Member publish_pdmini(void) (function) of file panel_main.h is not documented.
 firmware/panel/main/panel_main.h: warning: Member publish_tone(void) (function) of file panel_main.h is not documented.
-firmware/panel/main/panel_poll.c: file has no @file block
+firmware/panel/main/panel_poll.c: warning: Member TAG (variable) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member advance_model_and_log(bool link_up, float emitted, telemetry_sim_t *sim, bench_state_t *bench, bool *new_sample) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member iface_pins_publish(bool up) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member learn_board_pins(void) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member link_came_up(const link_msg_t *reply) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member poll_bench(bench_state_t *bench) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member poll_far_end(bool *link_up, bench_state_t *bench, uint32_t *last_poll, uint32_t *last_status) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member post_no_reading(void) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member post_reading(const bind_reading_t *r) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member probe_identity(link_msg_t *reply) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member publish_snapshot(const bench_state_t *bench, bool link_up, bool new_sample) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member read_outputs_binding(void) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member read_status_counters(void) (function) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member s_dev_faults (variable) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member s_mismatch (variable) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member s_throttle_pins (variable) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member s_throttle_pins_known (variable) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member s_throttle_proto (variable) of file panel_poll.c is not documented.
+firmware/panel/main/panel_poll.c: warning: Member servo_window_take(bench_state_t *bench) (function) of file panel_poll.c is not documented.
 firmware/panel/main/panel_ports.c: file has no @file block
 firmware/panel/main/panel_render.c: file has no @file block
-firmware/panel/main/panel_sense.c: file has no @file block
+firmware/panel/main/panel_sense.c: warning: Member map_alerts(void) (function) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member publish_held(void) (function) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member publish_sense(void) (function) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_cols (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_cols_map (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_map_alert_ev (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_map_alert_gen (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_map_alert_part (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_map_mirror (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_map_setup_ev (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_map_setup_gen (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_map_setup_part (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_map_want (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_sense_map (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_sense_mux (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_sense_parts (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_sense_want (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member s_sense_win (variable) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member sense_log_cols(log_cols_t *out) (function) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member sense_map_came_up(uint16_t minor) (function) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member sense_map_lost(void) (function) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member sense_map_service(bool idle) (function) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member sense_wanted(void) (function) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member sense_win_attach(bench_state_t *b, bool ring) (function) of file panel_sense.c is not documented.
+firmware/panel/main/panel_sense.c: warning: Member sense_win_service(void) (function) of file panel_sense.c is not documented.
 firmware/panel/main/panel_services.c: file has no @file block
 firmware/panel/main/panel_settings.c: warning: Member publish_endpoints(void) (function) of file panel_settings.c is not documented.
 firmware/panel/main/panel_settings.c: warning: Member publish_hitec_rx(void) (function) of file panel_settings.c is not documented.
@@ -720,7 +1018,60 @@ firmware/panel/main/panel_settings.c: warning: Member s_tone_mux (variable) of f
 firmware/panel/main/panel_settings.c: warning: Member s_tone_want (variable) of file panel_settings.c is not documented.
 firmware/panel/main/panel_settings.c: warning: Member tone_wanted(void) (function) of file panel_settings.c is not documented.
 firmware/panel/main/panel_supply.c: file has no @file block
-firmware/panel/main/panel_update.c: file has no @file block
+firmware/panel/main/panel_update.c: warning: Member CU_IMG (macro definition) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member CU_LEN (macro definition) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member CU_SLICE_MS (macro definition) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member TAG (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member _binary_rcbench_iomcu_bin_end[] (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member _binary_rcbench_iomcu_bin_start[] (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_alert_failed(void) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_carried(void) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_checked(void) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_ended(void) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_enter(cu_state_t st) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_link_up(const link_msg_t *reply) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_may_start(void) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_port_exchange(void *ctx, link_host_t *host, const link_msg_t *req, link_msg_t *reply) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_publish_check(cu_check_t check) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_publish_offer(bool offered) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_publish_progress(bool active) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_service(bool *link_up, bench_state_t *bench, uint32_t *last_poll, uint32_t *last_status) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_state_t (enumeration) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member cu_step_of(uint8_t phase) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member fw_gate_now(bool armed) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member fw_install_run(void) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member k_cu_port (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member run_open_now(void) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_busy (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_declined (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_declined_for (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_declined_gen (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_missed (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_offer_gen (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_running (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_starts (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_starts_taken (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_state (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_cu_took_down (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_fw_installing (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_fw_quiet_ack (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_fw_quiet_req (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_upd (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_upd_boot_gen (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_upd_dl (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_update_back (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member s_wifi_ok (variable) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member upd_channel(void) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member upd_check_gate(bool armed) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member upd_feed_now(bool armed, bool unsafe, const cu_snap_t *cs, const wa_fetch_t *f, bool have_net) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member upd_ver_text(fw_version_t v, char *out, size_t n) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member update_frame(update_state_t st, const char *version, uint32_t written, uint32_t total) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member why_of_fw_gate(fw_gate_t g) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel_update.c is not documented.
+firmware/panel/main/panel_update.c: warning: Member wifi_unavailable_service(void) (function) of file panel_update.c is not documented.
 firmware/panel/main/selftest.c: file has no @file block
 firmware/panel/main/selftest.h: file has no @file block
 protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_CURRENT (macro definition) of file dshot_telem.c is not documented.
@@ -1533,7 +1884,26 @@ shared/esc/include/esc_stick.h: warning: Member valid (variable) of struct esc_d
 shared/fwupdate/fw_boot.c: file has no @file block
 shared/fwupdate/fw_image.c: file has no @file block
 shared/fwupdate/fw_install.c: file has no @file block
-shared/fwupdate/fw_release.c: file has no @file block
+shared/fwupdate/fw_release.c: warning: Member fw_release_scan_init(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member fw_release_status(int status) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member hex(char ch) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member json_scalar(uint8_t ch) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member json_space(uint8_t ch) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member name_char(char ch) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_array(fw_rel_scan_t *s, uint8_t ch) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_begin_release(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_byte(fw_rel_scan_t *s, uint8_t ch) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_close(fw_rel_scan_t *s, bool array) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_deep(fw_rel_scan_t *s, uint8_t ch) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_draft(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_end(fw_rel_scan_t *s, fw_rel_err_t e) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_finish(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_key(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_object(fw_rel_scan_t *s, uint8_t ch) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_open(fw_rel_scan_t *s, bool array) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_tag(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member scan_value(fw_rel_scan_t *s, uint8_t ch) (function) of file fw_release.c is not documented.
+shared/fwupdate/fw_release.c: warning: Member url_bytes(const char *s, size_t n) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_sha256.c: file has no @file block
 shared/fwupdate/fw_upload.c: file has no @file block
 shared/fwupdate/include/fw_boot.h: file has no @file block
@@ -1557,12 +1927,33 @@ shared/fwupdate/include/fw_install.h: warning: Member f (variable) of struct fw_
 shared/fwupdate/include/fw_install.h: warning: Member img (variable) of struct fw_install_t is not documented.
 shared/fwupdate/include/fw_install.h: warning: Member info (variable) of struct fw_install_t is not documented.
 shared/fwupdate/include/fw_install.h: warning: Member offer (variable) of struct fw_install_t is not documented.
-shared/fwupdate/include/fw_release.h: file has no @file block
-shared/fwupdate/include/fw_release.h: warning: Member draft (variable) of struct fw_rel_scan_t is not documented.
-shared/fwupdate/include/fw_release.h: warning: Member ended (variable) of struct fw_rel_scan_t is not documented.
-shared/fwupdate/include/fw_release.h: warning: Member have_best (variable) of struct fw_rel_scan_t is not documented.
-shared/fwupdate/include/fw_release.h: warning: Member have_draft (variable) of struct fw_rel_scan_t is not documented.
-shared/fwupdate/include/fw_release.h: warning: Member tag[FW_REL_TAG_MAX] (variable) of struct fw_rel_scan_t is not documented.
+shared/fwupdate/include/fw_release.h: warning: Member FW_REL_API_VERSION (macro definition) of file fw_release.h is not documented.
+shared/fwupdate/include/fw_release.h: warning: Member FW_REL_DL_PREFIX (macro definition) of file fw_release.h is not documented.
+shared/fwupdate/include/fw_release.h: warning: Member FW_REL_LATEST_URL (macro definition) of file fw_release.h is not documented.
+shared/fwupdate/include/fw_release.h: warning: Member FW_REL_REPO (macro definition) of file fw_release.h is not documented.
+shared/fwupdate/include/fw_release.h: warning: Member FW_REL_SUMS_NAME (macro definition) of file fw_release.h is not documented.
+shared/fwupdate/include/fw_release.h: warning: Member FW_REL_TAG_PREFIX (macro definition) of file fw_release.h is not documented.
+shared/fwupdate/include/fw_release.h: warning: Member fw_release_scan_init(fw_rel_scan_t *s) (function) of file fw_release.h is not documented.
+shared/fwupdate/include/fw_release.h: warning: Member fw_release_status(int status) (function) of file fw_release.h is not documented.
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_rel_err_str are not documented
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_release_length are not documented
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_release_parse_sums are not documented
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_release_parse_tag are not documented
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_release_parse_version are not documented
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_release_redirect are not documented
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_release_scan_end are not documented
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_release_scan_feed are not documented
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_release_url are not documented
+shared/fwupdate/include/fw_release.h: warning: parameters of member fw_release_version_text are not documented
+shared/fwupdate/include/fw_release.h: warning: return type of member fw_rel_err_str is not documented
+shared/fwupdate/include/fw_release.h: warning: return type of member fw_release_length is not documented
+shared/fwupdate/include/fw_release.h: warning: return type of member fw_release_parse_sums is not documented
+shared/fwupdate/include/fw_release.h: warning: return type of member fw_release_parse_tag is not documented
+shared/fwupdate/include/fw_release.h: warning: return type of member fw_release_parse_version is not documented
+shared/fwupdate/include/fw_release.h: warning: return type of member fw_release_redirect is not documented
+shared/fwupdate/include/fw_release.h: warning: return type of member fw_release_scan_end is not documented
+shared/fwupdate/include/fw_release.h: warning: return type of member fw_release_scan_feed is not documented
+shared/fwupdate/include/fw_release.h: warning: return type of member fw_release_url is not documented
 shared/fwupdate/include/fw_sha256.h: file has no @file block
 shared/fwupdate/include/fw_sha256.h: warning: Compound fw_sha256_t is not documented.
 shared/fwupdate/include/fw_sha256.h: warning: Member block[64] (variable) of struct fw_sha256_t is not documented.
@@ -1803,9 +2194,6 @@ shared/link/include/link_update_image.h: warning: Member pos (variable) of struc
 shared/link/include/link_update_image.h: warning: Member sha (variable) of struct link_image_hash_t is not documented.
 shared/link/include/rcbench_version.h: warning: Member RCBENCH_STRINGIFY(x) (macro definition) of file rcbench_version.h is not documented.
 shared/link/include/rcbench_version.h: warning: Member RCBENCH_STRINGIFY_(x) (macro definition) of file rcbench_version.h is not documented.
-shared/link/include/rcbench_version.h: warning: Member RCBENCH_VERSION_MAJOR (macro definition) of file rcbench_version.h is not documented.
-shared/link/include/rcbench_version.h: warning: Member RCBENCH_VERSION_MINOR (macro definition) of file rcbench_version.h is not documented.
-shared/link/include/rcbench_version.h: warning: Member RCBENCH_VERSION_PATCH (macro definition) of file rcbench_version.h is not documented.
 shared/link/link_bringup.c: warning: Member SHORTFALL_DEN (macro definition) of file link_bringup.c is not documented.
 shared/link/link_update_host.c: warning: Member read_regs(link_host_t *h, const link_port_t *port, uint8_t page, uint8_t offset, uint8_t count, link_msg_t *reply) (function) of file link_update_host.c is not documented.
 shared/link/link_update_host.c: warning: Member step_check_hash(link_uph_t *u) (function) of file link_update_host.c is not documented.
@@ -2506,9 +2894,6 @@ shared/servo/servo_test.c: warning: Member v (variable) of struct sample_t is no
 shared/servo/servo_test.c: warning: Member v_min (variable) of struct sample_t is not documented.
 shared/settings/include/settings.h: warning: Compound settings_store_t is not documented.
 shared/settings/include/settings.h: warning: Member SETTINGS_TEXT_MAX (macro definition) of file settings.h is not documented.
-shared/settings/include/settings.h: warning: Member SET_INA_CHANNELS (macro definition) of file settings.h is not documented.
-shared/settings/include/settings.h: warning: Member SET_INA_CH_ROWS (macro definition) of file settings.h is not documented.
-shared/settings/include/settings.h: warning: Member SET_INA_PARTS (macro definition) of file settings.h is not documented.
 shared/settings/include/settings.h: warning: Member cat (variable) of struct setting_def_t is not documented.
 shared/settings/include/settings.h: warning: Member def (variable) of struct setting_def_t is not documented.
 shared/settings/include/settings.h: warning: Member load(float *values, int count) (variable) of struct settings_store_t is not documented.
@@ -2519,7 +2904,6 @@ shared/settings/include/settings.h: warning: Member option_count (variable) of s
 shared/settings/include/settings.h: warning: Member save(const float *values, int count) (variable) of struct settings_store_t is not documented.
 shared/settings/include/settings.h: warning: Member save_text(const char(*texts)[SETTINGS_TEXT_MAX], int count) (variable) of struct settings_store_t is not documented.
 shared/settings/include/settings.h: warning: Member setting_cat_t (enumeration) of file settings.h is not documented.
-shared/settings/include/settings.h: warning: Member setting_id_t (enumeration) of file settings.h is not documented.
 shared/settings/include/settings.h: warning: Member setting_text_id_t (enumeration) of file settings.h is not documented.
 shared/settings/include/settings.h: warning: Member setting_type_t (enumeration) of file settings.h is not documented.
 shared/settings/include/settings.h: warning: Member settings_def(setting_id_t id) (function) of file settings.h is not documented.
@@ -2573,7 +2957,8 @@ shared/settings/include/settings.h: warning: return type of member settings_text
 shared/settings/include/settings.h: warning: return type of member settings_text_differs is not documented
 shared/settings/include/settings.h: warning: return type of member settings_text_key is not documented
 shared/settings/include/settings.h: warning: return type of member settings_texts_in_category is not documented
-shared/settings/include/settings_sensors.h: file has no @file block
+shared/settings/include/settings_sensors.h: warning: Member SET_INA_SH(c) (macro definition) of file settings_sensors.h is not documented.
+shared/settings/include/settings_sensors.h: warning: Member SET_INA_W(c) (macro definition) of file settings_sensors.h is not documented.
 shared/settings/include/settings_sensors.h: warning: Member one_addr (variable) of struct settings_sensors_map_t is not documented.
 shared/settings/include/settings_sensors.h: warning: Member one_ch (variable) of struct settings_sensors_map_t is not documented.
 shared/settings/include/settings_sensors.h: warning: Member one_dmohm (variable) of struct settings_sensors_map_t is not documented.
@@ -3223,7 +3608,28 @@ shared/ui/include/prog_registry.h: warning: Member page_set (variable) of struct
 shared/ui/include/prog_registry.h: warning: Member render(gfx_canvas_t *c) (variable) of struct prog_page_set_t is not documented.
 shared/ui/include/prog_registry.h: warning: Member tick(float dt_s) (variable) of struct prog_page_set_t is not documented.
 shared/ui/include/prog_registry.h: warning: Member transport (variable) of struct prog_reg_row_t is not documented.
-shared/ui/include/sensors_rows.h: file has no @file block
+shared/ui/include/sensors_rows.h: warning: Member sensors_rows_state_color(int a) (function) of file sensors_rows.h is not documented.
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_channel are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_heading are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_listed are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_meter are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_set_status are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_short are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_state are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_status are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_title are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_watcher are not documented
+shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_why are not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_channel is not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_heading is not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_listed is not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_meter is not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_short is not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_state is not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_status is not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_title is not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_watcher is not documented
+shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_why is not documented
 shared/ui/include/servo_screen.h: warning: Member servo_screen(void) (function) of file servo_screen.h is not documented.
 shared/ui/include/servo_screen.h: warning: Member servo_screen_power_sample(int series, int back) (function) of file servo_screen.h is not documented.
 shared/ui/include/servo_screen.h: warning: Member servo_screen_test_pop(void) (function) of file servo_screen.h is not documented.
@@ -3435,7 +3841,6 @@ shared/ui/include/ui_widgets.h: file has no @file block
 shared/ui/include/ui_workbench.h: file has no @file block
 shared/ui/include/ui_workbench.h: warning: Compound ui_wb_strip_t is not documented.
 shared/ui/include/ui_workbench.h: warning: Member tabs (variable) of struct ui_wb_strip_t is not documented.
-shared/ui/include/upd_screen.h: file has no @file block
 shared/ui/include/upd_screen.h: warning: Compound upd_driver_t is not documented.
 shared/ui/include/upd_screen.h: warning: Compound upd_view_t is not documented.
 shared/ui/include/upd_screen.h: warning: Member carried (variable) of struct upd_cu_view_t is not documented.
@@ -3450,6 +3855,20 @@ shared/ui/include/upd_screen.h: warning: Member running (variable) of struct upd
 shared/ui/include/upd_screen.h: warning: Member running[WIFI_VER_MAX+1] (variable) of struct upd_view_t is not documented.
 shared/ui/include/upd_screen.h: warning: Member sec (variable) of struct upd_cu_view_t is not documented.
 shared/ui/include/upd_screen.h: warning: Member total (variable) of struct upd_view_t is not documented.
+shared/ui/include/upd_screen.h: warning: Member upd_remind_screen(void) (function) of file upd_screen.h is not documented.
+shared/ui/include/upd_screen.h: warning: Member upd_screen(void) (function) of file upd_screen.h is not documented.
+shared/ui/include/upd_screen.h: warning: parameters of member upd_busy are not documented
+shared/ui/include/upd_screen.h: warning: parameters of member upd_cu_text are not documented
+shared/ui/include/upd_screen.h: warning: parameters of member upd_remind_drive are not documented
+shared/ui/include/upd_screen.h: warning: parameters of member upd_screen_set are not documented
+shared/ui/include/upd_screen.h: warning: parameters of member upd_screen_set_coproc are not documented
+shared/ui/include/upd_screen.h: warning: parameters of member upd_startup_due are not documented
+shared/ui/include/upd_screen.h: warning: return type of member upd_busy is not documented
+shared/ui/include/upd_screen.h: warning: return type of member upd_screen_coproc is not documented
+shared/ui/include/upd_screen.h: warning: return type of member upd_screen_take is not documented
+shared/ui/include/upd_screen.h: warning: return type of member upd_screen_take_coproc is not documented
+shared/ui/include/upd_screen.h: warning: return type of member upd_screen_view is not documented
+shared/ui/include/upd_screen.h: warning: return type of member upd_startup_due is not documented
 shared/ui/include/wifi_screen.h: file has no @file block
 shared/ui/include/wifi_screen.h: warning: Compound update_view_t is not documented.
 shared/ui/include/wifi_screen.h: warning: Compound wifi_view_t is not documented.
@@ -4182,7 +4601,9 @@ shared/ui/port_mail.c: file has no @file block
 shared/ui/port_view.c: file has no @file block
 shared/ui/prog_models.c: file has no @file block
 shared/ui/prog_registry.c: file has no @file block
-shared/ui/sensors_rows.c: file has no @file block
+shared/ui/sensors_rows.c: warning: Member fitted(int a) (function) of file sensors_rows.c is not documented.
+shared/ui/sensors_rows.c: warning: Member s_status (variable) of file sensors_rows.c is not documented.
+shared/ui/sensors_rows.c: warning: Member sensors_rows_state_color(int a) (function) of file sensors_rows.c is not documented.
 shared/ui/servo_limit_panel.c: file has no @file block
 shared/ui/servo_screen.c: file has no @file block
 shared/ui/servo_screen_core_int.h: warning: Compound rail_t is not documented.
@@ -4668,8 +5089,14 @@ shared/ui/settings_draw.c: warning: Member draw_list(gfx_canvas_t *c) (function)
 shared/ui/settings_draw.c: warning: Member draw_save(gfx_canvas_t *c) (function) of file settings_draw.c is not documented.
 shared/ui/settings_draw.c: warning: Member draw_text_row(gfx_canvas_t *c, int index, gfx_rect_t r, setting_text_id_t id) (function) of file settings_draw.c is not documented.
 shared/ui/settings_draw.c: warning: Member draw_warning(gfx_canvas_t *c) (function) of file settings_draw.c is not documented.
-shared/ui/settings_rows.c: file has no @file block
 shared/ui/settings_rows.c: warning: Compound heading_t is not documented.
+shared/ui/settings_rows.c: warning: Member MAX_ENTRIES (macro definition) of file settings_rows.c is not documented.
+shared/ui/settings_rows.c: warning: Member N_HEADINGS (macro definition) of file settings_rows.c is not documented.
+shared/ui/settings_rows.c: warning: Member entries(setting_cat_t cat, settings_row_t *out, int max) (function) of file settings_rows.c is not documented.
+shared/ui/settings_rows.c: warning: Member k_headings[] (variable) of file settings_rows.c is not documented.
+shared/ui/settings_rows.c: warning: Member settings_rows_entry(setting_cat_t cat, int index) (function) of file settings_rows.c is not documented.
+shared/ui/settings_rows.c: warning: Member settings_rows_heading_text(int heading) (function) of file settings_rows.c is not documented.
+shared/ui/settings_rows.c: warning: Member settings_rows_listed(setting_cat_t cat) (function) of file settings_rows.c is not documented.
 shared/ui/settings_rows.c: warning: Member text (variable) of struct heading_t is not documented.
 shared/ui/settings_rows_int.h: file has no @file block
 shared/ui/settings_rows_int.h: warning: Compound settings_row_t is not documented.
@@ -5076,19 +5503,81 @@ shared/ui/ui_watermark.c: warning: Member pt[WM_MAX_POINTS] (variable) of struct
 shared/ui/ui_watermark.c: warning: Member w (variable) of struct [struct].s_cache is not documented.
 shared/ui/ui_widgets.c: file has no @file block
 shared/ui/ui_workbench.c: file has no @file block
-shared/ui/upd_screen.c: file has no @file block
+shared/ui/upd_screen.c: warning: Member BH (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member BPITCH (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member BW (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member BX (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member CU_BTN (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member CU_CAR_Y (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member CU_HEAD_Y (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member CU_LINE_Y (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member CU_RUN_Y (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member DL_ROW (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member RW (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member RX (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member R_BOX (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member R_HOLD (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member R_IGNORE (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member R_NEVER (macro definition) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member aborted_text(upd_why_t why) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member act(int hit) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member answered (variable) of struct [struct].s_rem is not documented.
+shared/ui/upd_screen.c: warning: Member blocked_text(upd_why_t why, char *out, size_t n, char *second, size_t n2) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member btn(int row) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member cancel(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member cancel_allowed(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member check_allowed(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member coproc_allowed(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member cu_hold (variable) of struct [struct].s is not documented.
+shared/ui/upd_screen.c: warning: Member cu_version_text(char *out, size_t n, bool known, cu_version_t v) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member download_allowed(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
 shared/ui/upd_screen.c: warning: Member drawn_mask (variable) of struct [struct].s_rem is not documented.
+shared/ui/upd_screen.c: warning: Member drop_holds_if_gone(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member enter(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member event(const touch_event_t *evt) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member have_newer(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member have_press (variable) of struct [struct].s is not documented.
 shared/ui/upd_screen.c: warning: Member have_press (variable) of struct [struct].s_rem is not documented.
 shared/ui/upd_screen.c: warning: Member hit (variable) of struct [struct].s is not documented.
 shared/ui/upd_screen.c: warning: Member hit (variable) of struct [struct].s_rem is not documented.
+shared/ui/upd_screen.c: warning: Member hit_at(int x, int y) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member hold (variable) of struct [struct].s is not documented.
 shared/ui/upd_screen.c: warning: Member hold (variable) of struct [struct].s_rem is not documented.
+shared/ui/upd_screen.c: warning: Member hold_fill(const ui_hold_t *h) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member join_text(const upd_view_t *v) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member k_remind (variable) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member k_screen (variable) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member leave(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member para(gfx_canvas_t *c, int x, int y, int w, const char *t, gfx_color_t col) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member phase_text(upd_phase_t ph) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member press_id (variable) of struct [struct].s is not documented.
 shared/ui/upd_screen.c: warning: Member press_id (variable) of struct [struct].s_rem is not documented.
+shared/ui/upd_screen.c: warning: Member r_cancel(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member r_enter(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member r_event(const touch_event_t *evt) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member r_hit_at(int x, int y) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member r_leave(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member r_render(gfx_canvas_t *c, int buffer_index) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member r_reset(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member r_tick(float dt_s) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member rel_text(const upd_view_t *v) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member render_coproc(gfx_canvas_t *c) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member reset(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member result_colour(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member s (variable) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member s_cu (variable) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member s_cu_req (variable) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member s_rem (variable) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member s_req (variable) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member s_v (variable) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member testing_set(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member text_in(gfx_canvas_t *c, int x, int y, int w, const char *t, const gfx_font_t *f, gfx_color_t col) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member tick(float dt_s) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member touched(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member upd_remind_screen(void) (function) of file upd_screen.c is not documented.
+shared/ui/upd_screen.c: warning: Member upd_screen(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member yield (variable) of struct [struct].s_rem is not documented.
 shared/ui/update_screen.c: warning: Member U_CLOSE (macro definition) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member cancel (variable) of struct [struct].u is not documented.
@@ -5124,7 +5613,6 @@ shared/ui/wifi_screen.c: warning: Member save_ssid[WIFI_SSID_MAX+1] (variable) o
 shared/ui/wifi_screen.c: warning: Member sub (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member tk (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member v (variable) of struct [struct].s is not documented.
-shared/webaccess/include/wa_fetch.h: file has no @file block
 shared/webaccess/include/wa_fetch.h: warning: Compound wa_fetch_t is not documented.
 shared/webaccess/include/wa_fetch.h: warning: Compound wa_run_t is not documented.
 shared/webaccess/include/wa_fetch.h: warning: Member close(void *ctx) (variable) of struct wa_http_t is not documented.
@@ -5144,7 +5632,33 @@ shared/webaccess/include/wa_fetch.h: warning: Member running (variable) of struc
 shared/webaccess/include/wa_fetch.h: warning: Member running (variable) of struct wa_run_t is not documented.
 shared/webaccess/include/wa_fetch.h: warning: Member start_ms (variable) of struct wa_fetch_t is not documented.
 shared/webaccess/include/wa_fetch.h: warning: Member status (variable) of struct wa_fetch_res_t is not documented.
+shared/webaccess/include/wa_fetch.h: warning: Member wa_fetch_on_bytes(wa_fetch_t *f, uint32_t gen, uint32_t done, uint32_t total) (function) of file wa_fetch.h is not documented.
+shared/webaccess/include/wa_fetch.h: warning: Member wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r) (function) of file wa_fetch.h is not documented.
+shared/webaccess/include/wa_fetch.h: warning: Member wa_fetch_on_phase(wa_fetch_t *f, uint32_t gen, wa_phase_t ph) (function) of file wa_fetch.h is not documented.
+shared/webaccess/include/wa_fetch.h: warning: Member wa_job_t (enumeration) of file wa_fetch.h is not documented.
+shared/webaccess/include/wa_fetch.h: warning: Member wa_phase_t (enumeration) of file wa_fetch.h is not documented.
 shared/webaccess/include/wa_fetch.h: warning: Member why (variable) of struct wa_fetch_res_t is not documented.
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_abort are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_busy are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_gate are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_init are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_left are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_offers are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_stale are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_start are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_take_off are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_take_run are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_fetch_tick are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_run_check are not documented
+shared/webaccess/include/wa_fetch.h: warning: parameters of member wa_run_download are not documented
+shared/webaccess/include/wa_fetch.h: warning: return type of member wa_fetch_busy is not documented
+shared/webaccess/include/wa_fetch.h: warning: return type of member wa_fetch_gate is not documented
+shared/webaccess/include/wa_fetch.h: warning: return type of member wa_fetch_left is not documented
+shared/webaccess/include/wa_fetch.h: warning: return type of member wa_fetch_offers is not documented
+shared/webaccess/include/wa_fetch.h: warning: return type of member wa_fetch_stale is not documented
+shared/webaccess/include/wa_fetch.h: warning: return type of member wa_fetch_start is not documented
+shared/webaccess/include/wa_fetch.h: warning: return type of member wa_fetch_take_off is not documented
+shared/webaccess/include/wa_fetch.h: warning: return type of member wa_fetch_take_run is not documented
 shared/webaccess/include/wa_mdns.h: file has no @file block
 shared/webaccess/include/wa_mdns.h: warning: Compound wa_mdns_tries_t is not documented.
 shared/webaccess/include/wa_page.h: file has no @file block
@@ -5225,15 +5739,31 @@ shared/webaccess/include/wa_zip.h: warning: Member piece_off (variable) of struc
 shared/webaccess/include/wa_zip.h: warning: Member plan (variable) of struct wa_zip_t is not documented.
 shared/webaccess/include/wa_zip.h: warning: Member size (variable) of struct wa_zip_t is not documented.
 shared/webaccess/include/wa_zip.h: warning: Member walk (variable) of struct wa_zip_t is not documented.
-shared/webaccess/wa_fetch.c: file has no @file block
 shared/webaccess/wa_fetch.c: warning: Compound sink_t is not documented.
 shared/webaccess/wa_fetch.c: warning: Compound sums_t is not documented.
 shared/webaccess/wa_fetch.c: warning: Member add(const wa_run_t *r, void *ctx, const uint8_t *d, uint32_t n, uint32_t done, uint32_t total) (variable) of struct sink_t is not documented.
 shared/webaccess/wa_fetch.c: warning: Member bad (variable) of struct sink_t is not documented.
 shared/webaccess/wa_fetch.c: warning: Member begin(const wa_run_t *r, void *ctx, uint32_t bytes, wa_fetch_res_t *out) (variable) of struct sink_t is not documented.
+shared/webaccess/wa_fetch.c: warning: Member budget(const wa_fetch_t *f) (function) of file wa_fetch.c is not documented.
 shared/webaccess/wa_fetch.c: warning: Member cap (variable) of struct sink_t is not documented.
 shared/webaccess/wa_fetch.c: warning: Member ctx (variable) of struct sink_t is not documented.
+shared/webaccess/wa_fetch.c: warning: Member end(wa_fetch_t *f, wa_got_t got, wa_why_t why) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member failed(const wa_run_t *r, wa_fetch_res_t *out, wa_got_t got, fw_rel_err_t rel) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member fetch(const wa_run_t *r, const sink_t *k, wa_fetch_res_t *out) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member image_add(const wa_run_t *r, void *ctx, const uint8_t *d, uint32_t n, uint32_t done, uint32_t total) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member image_begin(const wa_run_t *r, void *ctx, uint32_t bytes, wa_fetch_res_t *out) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member mine(const wa_fetch_t *f, uint32_t gen) (function) of file wa_fetch.c is not documented.
 shared/webaccess/wa_fetch.c: warning: Member n (variable) of struct sums_t is not documented.
+shared/webaccess/wa_fetch.c: warning: Member op_ms(uint32_t left) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member report(const wa_run_t *r, wa_phase_t ph, uint32_t done, uint32_t total) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member res(wa_fetch_res_t *out, wa_got_t got, fw_rel_err_t rel) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member run_left(const wa_run_t *r) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member session_off(wa_fetch_t *f, const wa_t *w) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member sums_add(const wa_run_t *r, void *ctx, const uint8_t *d, uint32_t n, uint32_t done, uint32_t total) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member sums_begin(const wa_run_t *r, void *ctx, uint32_t bytes, wa_fetch_res_t *out) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_bytes(wa_fetch_t *f, uint32_t gen, uint32_t done, uint32_t total) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r) (function) of file wa_fetch.c is not documented.
+shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_phase(wa_fetch_t *f, uint32_t gen, wa_phase_t ph) (function) of file wa_fetch.c is not documented.
 shared/webaccess/wa_mdns.c: file has no @file block
 shared/webaccess/wa_page.c: warning: Member UI_WEB_TEXT(id, en, de) (macro definition) of file wa_page.c is not documented.
 shared/webaccess/wa_page.c: warning: Member UI_WEB_TEXT(id, en, de) (macro definition) of file wa_page.c is not documented.

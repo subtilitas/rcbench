@@ -365,10 +365,10 @@ Static figures of the P4 build at ESP-IDF v5.5.5, from `idf.py size`:
 
 | Item | With the fragment | Without it |
 | --- | ---: | ---: |
-| .bss in internal RAM (DIRAM) | 29,408 | 195,880 |
-| .bss in PSRAM (`.ext_ram.bss`) | 166,472 | 0 |
-| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 126,882 | 293,354 |
-| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,151,376 | 2,151,376 |
+| .bss in internal RAM (DIRAM) | 29,976 | 196,984 |
+| .bss in PSRAM (`.ext_ram.bss`) | 167,008 | 0 |
+| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 127,450 | 294,458 |
+| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,161,950 | 2,161,966 |
 
 All figures are bytes. ESP-IDF's own PSRAM entries for lwIP (lightweight
 IP stack) and wpa_supplicant use a scheme that only `esp_wifi`'s fragment

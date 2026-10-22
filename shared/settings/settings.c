@@ -395,10 +395,12 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "upd_remind", "",
         SET_CAT_UPDATE, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     /*
-     * Which releases a check offers.  STABLE: GitHub's latest release,
+     * Which releases a check reads.  STABLE: GitHub's latest release,
      * which is never a pre-release; a testing release (odd minor number) is
      * published as one.  TESTING: the newest release, testing or stable.
-     * Either way only a release newer than the running build.
+     * Either way only a release of the panel's line (fw_release.h: every
+     * release on the ESP32-P4 panel, 0.22.x on the ESP32-S3 panel's line)
+     * newer than the running build is offered.
      */
     [SET_UPD_CHANNEL] = {
         "upd_channel", "",

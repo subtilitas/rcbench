@@ -20,14 +20,17 @@
 #ifndef RCBENCH_VERSION_H
 #define RCBENCH_VERSION_H
 
+/** @brief The release's MAJOR number. */
 #define RCBENCH_VERSION_MAJOR 0
-#define RCBENCH_VERSION_MINOR 21
-#define RCBENCH_VERSION_PATCH 2
+/** @brief The release's MINOR number: odd testing, even stable. */
+#define RCBENCH_VERSION_MINOR 22
+/** @brief The release's PATCH number. */
+#define RCBENCH_VERSION_PATCH 0
 
 #define RCBENCH_STRINGIFY_(x) #x
 #define RCBENCH_STRINGIFY(x)  RCBENCH_STRINGIFY_(x)
 
-/** @brief "0.21.2", for anything that prints it rather than sends it. */
+/** @brief "0.22.0", for anything that prints it rather than sends it. */
 #define RCBENCH_VERSION_STRING              \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MAJOR) "." \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MINOR) "." \

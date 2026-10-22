@@ -173,6 +173,7 @@ TEST_CASE(the_enums_mirror_the_fetch_and_the_release_parser)
     CHECK_EQ((int)UPD_GOT_MEMORY, (int)WA_GOT_MEMORY);
     CHECK_EQ((int)UPD_GOT_LIMIT, (int)WA_GOT_LIMIT);
     CHECK_EQ((int)UPD_GOT_UNVERSIONED, (int)WA_GOT_UNVERSIONED);
+    CHECK_EQ((int)UPD_GOT_PAST_LINE, (int)WA_GOT_PAST_LINE);
 
     CHECK_EQ((int)UPD_WHY_NONE, (int)WA_WHY_NONE);
     CHECK_EQ((int)UPD_WHY_ARMED, (int)WA_WHY_ARMED);
@@ -400,7 +401,7 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
         ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
         base_view();
         g_v.phase = UPD_PH_ENDED;
-        for (int got = UPD_GOT_NEWER; got <= UPD_GOT_UNVERSIONED; ++got) {
+        for (int got = UPD_GOT_NEWER; got <= UPD_GOT_PAST_LINE; ++got) {
             for (int rel = 0; rel <= UPD_REL_SCAN_LONG; ++rel) {
                 for (int why = 0; why <= UPD_WHY_DRAWING; ++why) {
                     for (int job = 0; job < 2; ++job) {
@@ -467,6 +468,10 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
     CHECK_STR_EQ(a, "The panel's own version is not MAJOR.MINOR.PATCH: "
                     "no update offered.");
+    CHECK_STR_EQ(b, "Latest release on GitHub: 0.21.0.");
+    g_v.got = UPD_GOT_PAST_LINE;     /* a release for the ESP32-P4 panel */
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "No newer release for the ESP32-S3 panel. Panel version: 0.19.0.");
     CHECK_STR_EQ(b, "Latest release on GitHub: 0.21.0.");
 }
 
@@ -836,12 +841,13 @@ TEST_CASE(every_view_renders_inside_its_canvas)
     guard_canvas_t g;
     for (int lang = 0; lang < 2; ++lang) {
         ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
-        for (int got = UPD_GOT_NONE; got <= UPD_GOT_UNVERSIONED; ++got) {
+        for (int got = UPD_GOT_NONE; got <= UPD_GOT_PAST_LINE; ++got) {
             settings_set(SET_UPD_CHANNEL, (float)(got % 2));
             for (int net = 0; net < 3; ++net) {
                 base_view();
                 g_v.have_net = (net != 0);
                 g_v.unavailable = (net == 2);
+                g_v.line_capped = (net == 1);   /* the line's end drawn */
                 g_v.phase = (got == UPD_GOT_NONE) ? UPD_PH_IDLE
                                                   : UPD_PH_ENDED;
                 g_v.got = (upd_got_t)got;
@@ -904,6 +910,39 @@ TEST_CASE(every_view_renders_inside_its_canvas)
         }
     }
     ui_text_set_language(UI_LANG_EN);
+}
+
+/**
+ * @brief Draws UPDATES for the base view into @p px.
+ * @param px     UI_PANEL_W x UI_BODY_H pixels
+ * @param capped the view's line_capped
+ */
+static void draw_foot(gfx_color_t *px, bool capped)
+{
+    gfx_canvas_t c;
+    gfx_canvas_init(&c, px, UI_PANEL_W, UI_BODY_H, 0);
+    base_view();
+    g_v.line_capped = capped;
+    push();
+    upd_screen_invalidate();
+    upd()->render(&c, 0);
+}
+
+/* The card's foot says the release line ends only on a capped line (the
+ * ESP32-S3 panel's 0.22); the ESP32-P4 panel's card draws the three lines
+ * of the reminder and RELEASES alone.  The two feet differ on the canvas,
+ * and the same view draws the same pixels. */
+TEST_CASE(the_line_end_is_drawn_only_on_a_capped_line)
+{
+    static gfx_color_t open[UI_PANEL_W * UI_BODY_H];
+    static gfx_color_t again[UI_PANEL_W * UI_BODY_H];
+    static gfx_color_t capped[UI_PANEL_W * UI_BODY_H];
+    fresh();
+    draw_foot(open, false);
+    draw_foot(capped, true);
+    draw_foot(again, false);
+    CHECK(memcmp(open, capped, sizeof(open)) != 0);
+    CHECK(memcmp(open, again, sizeof(open)) == 0);
 }
 
 TEST_CASE(both_screens_carry_the_band_and_the_home_tag)
@@ -989,6 +1028,7 @@ int main(void)
     RUN(the_startup_check_gives_up_after_its_window_across_a_wrap);
     RUN(the_download_cancels_and_its_failure_closes);
     RUN(every_view_renders_inside_its_canvas);
+    RUN(the_line_end_is_drawn_only_on_a_capped_line);
     RUN(both_screens_carry_the_band_and_the_home_tag);
     RUN(every_card_text_takes_two_lines_at_most);
     return test_summary("upd_screen");

@@ -1,13 +1,18 @@
-/*
- * SETUP > SENSORS: up to four INA3221 parts on the sensor bus, at 0x40 to
- * 0x43, and per channel its shunt and what it watches.
+/**
+ * @file settings_sensors.h
+ * @brief SETUP > SENSORS: up to four INA3221 parts on the sensor bus, at 0x40
+ *        to 0x43, and per channel its shunt and what it watches.
  *
  * Rows, in schema order: 0x40 FITTED to 0x43 FITTED, then per channel c --
- * c = 3 a + ch - 1 for part a's channel ch, 0 to 11 -- its WATCHES and its
- * SHUNT.  A shunt of 0 switches the channel off; the next value up is
- * 5.0 mOhm (setting_def_t.off_below), and the top is 1000.0 mOhm.  What a
- * channel watches is one of NONE, OUT 1 to OUT 8, PORT 1 to PORT 4 and
- * SUPPLY: the output channels, the programming ports and the supply rail.
+ * c = 3 a + ch - 1 for part a's channel ch, 0 to 11 -- its WATCHES, its
+ * SHUNT and its LIMIT.  A shunt of 0 switches the channel off; the next
+ * value up is 5.0 mOhm (setting_def_t.off_below), and the top is
+ * 1000.0 mOhm.  What a channel watches is one of NONE, OUT 1 to OUT 8,
+ * PORT 1 to PORT 4 and SUPPLY: the output channels, the programming ports
+ * and the supply rail.  LIMIT is the current a 50 ms window's highest
+ * reading may reach before the band says so, 10 to 32767 mA in 10 mA steps
+ * on the arrows, 0 (OFF) for none: SENSE_LIMIT's LIMIT_MA (protocol 4.27),
+ * an alert only.
  *
  * The map the rows make (settings_sensors_map()) is what the panel writes
  * to the IOmcu's SENSE_MAP page (protocol 4.25), and the one INA3221 frame
@@ -25,7 +30,8 @@
  *     with CH1+2+3 and 0 (off) with CH1; every other channel 100.0 mOhm;
  *   - WATCHES: CH1 of the old part -- 0x40 while it was off -- PORT n
  *     while the servo tester's target is programming port n, else OUT 1;
- *     every other channel NONE.
+ *     every other channel NONE;
+ *   - LIMIT: OFF, which 0.21 and the builds up to 0.21 had none of.
  *
  * A fresh panel holds no key, and the old keys' defaults (off, 0x40,
  * 100.0 mOhm, CH1) seed the schema's defaults: nothing fitted, every shunt
@@ -48,10 +54,15 @@
 extern "C" {
 #endif
 
-/** The row ids: part @p a's FITTED, channel @p c's WATCHES and SHUNT. */
+/**
+ * @brief The row ids: part @p a's FITTED, channel @p c's WATCHES, SHUNT
+ *        and LIMIT.  @p a is 0 to 3, @p c 0 to 11.
+ */
 #define SET_INA_FIT(a) ((setting_id_t)(SET_INA_FIT_0 + (int)(a)))
 #define SET_INA_W(c)   ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS))
 #define SET_INA_SH(c)  ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS + 1))
+/** @brief Channel @p c's LIMIT row, 0 to 11. */
+#define SET_INA_LIM(c) ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS + 2))
 
 /** WATCHES' options, in their order. */
 enum {
@@ -79,6 +90,21 @@ int settings_sensors_part(setting_id_t id);
 /** The SENSE_MAP WATCH value of WATCHES option @p option; NONE for one out
  *  of range. */
 uint16_t settings_sensors_watch_code(int option);
+
+/**
+ * @brief The WATCHES option of a SENSE_MAP WATCH value.
+ * @param code a SENSE_MAP WATCH value.
+ * @return the option, SENS_W_*; SENS_W_NONE for a value no option has.
+ */
+int settings_sensors_watch_option(uint16_t code);
+
+/**
+ * @brief Channel @p c's LIMIT as SENSE_LIMIT's LIMIT_MA takes it.
+ * @param c the channel, 0 to 11.
+ * @return the limit, mA, at most 32767; 0 for none and for a @p c out of
+ *         range.
+ */
+uint16_t settings_sensors_limit_ma(int c);
 
 /**
  * Before the store is read: every SENSORS value set to NAN, a value no

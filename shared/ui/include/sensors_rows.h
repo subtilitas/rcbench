@@ -1,19 +1,21 @@
-/*
- * SETUP > SENSORS' list: which SENSORS rows show, the headings over them,
- * and what each fitted part is doing.  The list is SETUP's own list
- * renderer (settings_draw.c); this file decides its rows.
+/**
+ * @file sensors_rows.h
+ * @brief SETUP > SENSORS' list: which SENSORS rows show, the headings over
+ *        them, and what each fitted part is doing.  The list is SETUP's own
+ *        list renderer (settings_draw.c); this file decides its rows.
  *
  * The list: the heading INA3221 PARTS over 0x40 FITTED to 0x43 FITTED,
  * then per fitted part a heading "INA3221 0x4n" with the part's state on
- * its right, over its channels' WATCHES and SHUNT rows.  A part not fitted
- * has no heading and no rows.
+ * its right, over its channels' WATCHES, SHUNT and LIMIT rows.  A part
+ * not fitted has no heading and no rows.
  *
  * A row of a part the IOmcu does not read is marked as SETUP marks a value
  * the IOmcu does not hold: its edge and value in the warning colour and a
  * line in place of its help (sensors_rows_why()).  That is a part the
  * SENSE_MAP page refused, one with every channel off, one on the INA228's
  * address, and on an IOmcu older than 4.25 every fitted part but the one
- * SENSE reads.
+ * SENSE reads.  A LIMIT row is marked as well while the IOmcu does not hold
+ * its limit: owed, refused, or any limit on an IOmcu older than 4.27.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -25,6 +27,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "sense_limit_link.h"
 #include "sense_map_link.h"
 #include "settings.h"
 
@@ -42,6 +45,13 @@ void sensors_rows_set_status(uint16_t word);
 /** Part @p a's state as last set. */
 sens_part_t sensors_rows_status(int a);
 
+/**
+ * @brief Sets the LIMIT rows' marks.  A change repaints SETUP.
+ * @param word sense_limit_link_unheld()'s 12 bits in bits 0 to 11, and
+ *             sense_limit_link_status() in bits 12 to 15.
+ */
+void sensors_rows_set_limits(uint16_t word);
+
 /** Whether SETUP lists @p id: any id that is not a SENSORS row, a FITTED
  *  row, and the channel rows of a fitted part. */
 bool sensors_rows_listed(setting_id_t id);
@@ -57,12 +67,32 @@ const char *sensors_rows_title(int a, char *buf, size_t n);
 const char *sensors_rows_state(int a);
 gfx_color_t sensors_rows_state_color(int a);
 
-/** Whether the row of @p id is marked: a SENSORS row of a part the IOmcu
- *  does not read. */
+/**
+ * @brief Whether the row of @p id is marked.
+ * @param id a setting id.
+ * @return true for a SENSORS row of a part the IOmcu does not read, and
+ *         for a LIMIT row the IOmcu does not hold
+ *         (sensors_rows_set_limits()).
+ */
 bool sensors_rows_unheld(setting_id_t id);
 
 /** The line a marked row shows in place of its help. */
 const char *sensors_rows_why(setting_id_t id);
+
+/**
+ * @brief Builds the band's line for a SENSE_LIMIT alert, in the panel's
+ *        language.
+ * @param buf   where the line goes.
+ * @param n     the size of @p buf, bytes; UI_ALERT_MAX holds every line.
+ * @param ev    the alert, from sense_limit_link_event().
+ * @param ch    for EV_OVER the channel, 0 to 11.
+ * @param ma    for EV_OVER the limit it passed, mA, shown in A to 0.01 A.
+ * @param watch for EV_OVER the channel's WATCHES option, said in brackets;
+ *              none for SENS_W_NONE.
+ * @return @p buf; "" for EV_NONE, a channel past 11, or no buffer.
+ */
+const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
+                               unsigned ch, uint16_t ma, int watch);
 
 /** Channel @p c (0 to 11) as the screens name it, "0x41 CH2", into @p buf;
  *  "" for no channel. */

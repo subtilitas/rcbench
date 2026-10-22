@@ -1,5 +1,6 @@
-/*
- * SETUP > SENSORS' list.  See sensors_rows.h.
+/**
+ * @file sensors_rows.c
+ * @brief SETUP > SENSORS' list.  See sensors_rows.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,6 +10,7 @@
 #include <stdio.h>
 
 #include "outputs_screen.h"
+#include "sense_limit_link.h"
 #include "settings_screen.h"
 #include "settings_sensors.h"
 #include "ui_text.h"
@@ -24,6 +26,34 @@ void sensors_rows_set_status(uint16_t word)
         s_status = word;
         settings_screen_invalidate();
     }
+}
+
+/** @brief The limits' marks as the control task last said: bits 0 to 11
+ *         the channels, 12 to 15 sense_limit_st_t. */
+static uint16_t s_limits;
+
+void sensors_rows_set_limits(uint16_t word)
+{
+    if (word != s_limits) {
+        s_limits = word;
+        settings_screen_invalidate();
+    }
+}
+
+/**
+ * @brief Whether a row is a LIMIT row.
+ * @param id the row's setting
+ * @param c  its channel, 0 to 11, for a SENSORS channel row
+ * @return true for a LIMIT row
+ */
+static bool limit_row(setting_id_t id, int *c)
+{
+    if (id < SET_INA_CH_0 || id > SET_INA_CH_LAST) {
+        return false;
+    }
+    const int k = (int)id - (int)SET_INA_CH_0;
+    *c = k / SET_INA_CH_ROWS;
+    return k % SET_INA_CH_ROWS == SET_INA_CH_ROWS - 1;
 }
 
 sens_part_t sensors_rows_status(int a)
@@ -110,8 +140,10 @@ bool sensors_rows_unheld(setting_id_t id)
     case SENS_PART_NO_BUS:
         return true;
     default:
-        return false;
+        break;
     }
+    int c = 0;
+    return limit_row(id, &c) && (s_limits & (1u << c)) != 0u;
 }
 
 const char *sensors_rows_why(setting_id_t id)
@@ -121,8 +153,48 @@ const char *sensors_rows_why(setting_id_t id)
     case SENS_PART_DARK:      return TR(SET_SENS_DARK);
     case SENS_PART_SAME_ADDR: return TR(SET_SENS_SAME_ADDR);
     case SENS_PART_NO_BUS:    return TR(SET_SENS_NO_BUS);
-    default:                  return TR(SET_UNHELD);
+    default:                  break;
     }
+    int c = 0;
+    if (limit_row(id, &c) && (s_limits >> 12) == SENSE_LIMIT_ST_OLD) {
+        return TR(SET_SENS_LIM_OLD);
+    }
+    return TR(SET_UNHELD);
+}
+
+const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
+                               unsigned ch, uint16_t ma, int watch)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    switch (ev) {
+    case SENSE_LIMIT_LINK_EV_OVER: {
+        if (ch >= (unsigned)SET_INA_CHANNELS) {
+            break;
+        }
+        char target[24] = "";
+        if (watch > SENS_W_NONE && watch < SENS_W_COUNT) {
+            snprintf(target, sizeof(target), " (%s)",
+                     ui_setting_option(SET_INA_W(ch), watch));
+        }
+        const unsigned ca = ((unsigned)ma + 5u) / 10u;
+        snprintf(buf, n, TR(ALERT_SENSE_OVER),
+                 (unsigned)(LINK_SN_I3221_ADDR_MIN + ch / 3u), ch % 3u + 1u,
+                 target, ca / 100u, ca % 100u);
+        break;
+    }
+    case SENSE_LIMIT_LINK_EV_LOST:
+        snprintf(buf, n, "%s", TR(ALERT_SENSE_OVER_LOST));
+        break;
+    case SENSE_LIMIT_LINK_EV_REFUSED:
+        snprintf(buf, n, "%s", TR(ALERT_SENSE_LIMITS));
+        break;
+    default:
+        break;
+    }
+    return buf;
 }
 
 const char *sensors_rows_channel(int c, char *buf, size_t n)

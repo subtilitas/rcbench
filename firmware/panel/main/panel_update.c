@@ -1,5 +1,6 @@
-/*
- * The updates: the IOmcu's over CAN (Controller Area Network) from
+/**
+ * @file panel_update.c
+ * @brief The updates: the IOmcu's over CAN (Controller Area Network) from
  * the image this panel carries, the panel's own from WI-FI or
  * from GitHub, and the IOmcu update's screen on the render side.
  * cu_service() runs on the control task; the rest runs on app_main.
@@ -818,10 +819,11 @@ static void upd_ver_text(fw_version_t v, char *out, size_t n)
     snprintf(out, n, "%s", t);
 }
 
-/*
- * Once a frame, after wifi_service(): the start-up check, what UPDATES and
- * the reminder ask for, the job's aborts, the download's screen, and what
- * UPDATES shows.  @p armed includes an arm waiting.
+/**
+ * @brief Once a frame, after wifi_service(): the start-up check, what
+ *        UPDATES and the reminder ask for, the job's aborts, the
+ *        download's screen, and what UPDATES shows.  @p armed includes an
+ *        arm waiting; panel.h names each parameter.
  */
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                  const cu_snap_t *cs)
@@ -838,6 +840,7 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
     static upd_view_t v;     /* off the stack: the loop's is the display's */
     memset(&v, 0, sizeof(v));
     snprintf(v.running, sizeof(v.running), "%s", RCBENCH_VERSION_STRING);
+    v.line_capped = fw_release_line_capped();
     if (!s_wifi_ok) {
         (void)upd_screen_take();
         v.unavailable = true;
@@ -922,8 +925,7 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
         v.rel = (upd_rel_t)f.rel;
         v.status = f.status;
         v.budget_s = f.budget_ms / 1000u;
-        if (f.job == WA_JOB_DOWNLOAD || f.got == WA_GOT_NEWER
-            || f.got == WA_GOT_CURRENT || f.got == WA_GOT_UNVERSIONED) {
+        if (wa_fetch_has_found(&f)) {
             upd_ver_text(f.found, v.found, sizeof(v.found));
         }
     }
