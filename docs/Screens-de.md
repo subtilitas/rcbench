@@ -1349,7 +1349,10 @@ das Messgerät, `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2` oder
 `AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1` (`STROM INA3221`, solange
 kein Kanal das Ziel überwacht), die nächste sagt, warum er nicht starten
 kann oder was er gerade tut, dann folgen das letzte Ergebnis und sein
-Bericht. TEST bleibt beim Start zu sehen. Sein Feld auf der linken Karte von
+Bericht. Diese vier Zeilen stehen in der Schrift 10 x 20, 20 px
+auseinander, die erste 6 px unter ENDLAGENLAUF STARTEN, sodass die vierte
+4 px innerhalb der 220 px hohen Karte endet. TEST bleibt beim Start zu
+sehen. Sein Feld auf der linken Karte von
 LIVE zeigt die geschriebenen Werte
 von 8, die Phase mit Seite und Puls und den Ausgang, den er treibt, mit
 LAUF BEENDEN; nach dem Lauf bis SCHLIESSEN das Urteil, die Werte oder die

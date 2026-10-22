@@ -1,4 +1,8 @@
-/*
+/**
+ * @file servo_limit_panel.c
+ * @brief The SERVO screen's limit run: its checks, its steps, the
+ *        programmer's sessions it asks for, and its box, card and note.
+ *
  * The SERVO screen's limit run (servo_limrun.h).  START LIMIT RUN, on
  * TEST's LIMIT RUN card, starts it.  This file holds what that button checks first,
  * the run's steps done the way a finger does them (the servo's position,
@@ -476,11 +480,14 @@ static void lim_end_text(char *b, size_t n, const servo_limrun_side_t *e)
     }
 }
 
-/*
- * The limit run on the left card, in the automatic test's place: while it
- * runs, the values written, the phase with the end and the pulse, and the
- * output it drives; after it, the verdict, the ends or the values, and the
- * report.  Its button is STOP RUN while it runs and CLOSE after.
+/**
+ * @brief The limit run on the left card, in the automatic test's place:
+ *        while it runs, the values written, the phase with the end and the
+ *        pulse, and the output it drives; after it, the verdict, the ends
+ *        or the values, and the report.  Its button is STOP RUN while it
+ *        runs and CLOSE after.  The box, its lines and its button are the
+ *        automatic test's (test_box_rect()).
+ * @param c the canvas
  */
 void draw_lim_box(gfx_canvas_t *c)
 {
@@ -571,26 +578,36 @@ void draw_lim_box(gfx_canvas_t *c)
         }
         lim_file_name(f, sizeof(f));
     }
-    gfx_text(c, b.x + 10, b.y + 8, l1, &gfx_font_8x16, head, 1);
-    gfx_text(c, b.x + 10, b.y + 28, l2, &gfx_font_8x16,
+    /* The automatic test's box: four lines of BOX_CELLS cells, BOX_PITCH
+     * apart, over the button. */
+    gfx_text(c, b.x + 10, b.y + 10, l1, SV_FONT_LABEL, head, 1);
+    gfx_text(c, b.x + 10, b.y + 10 + BOX_PITCH, l2, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT), 1);
-    gfx_text(c, b.x + 10, b.y + 48, l3, &gfx_font_8x16, col3, 1);
+    gfx_text(c, b.x + 10, b.y + 10 + 2 * BOX_PITCH, l3, SV_FONT_LABEL, col3,
+             1);
     /* The report under the run's lines once it has ended. */
     if (!running) {
-        gfx_text(c, b.x + 10, b.y + 68, f, &gfx_font_8x16,
+        gfx_text(c, b.x + 10, b.y + 10 + 3 * BOX_PITCH, f, SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
-    ui_button(c, test_btn_rect(), running ? TR(SV_LIM_STOP) : TR(SUP_CLOSE),
-              running ? ui_theme_color(UI_C_DANGER)
-                      : ui_theme_color(UI_C_PANEL_HI), false, true);
-    /* The meter it reads, beside the button. */
+    ui_button_font(c, test_btn_rect(),
+                   running ? TR(SV_LIM_STOP) : TR(SUP_CLOSE),
+                   running ? ui_theme_color(UI_C_DANGER)
+                           : ui_theme_color(UI_C_PANEL_HI), false, true,
+                   SV_FONT_LABEL);
+    /* The meter it reads, beside the button, flush right. */
     const gfx_rect_t btn = test_btn_rect();
-    const int mw = gfx_text_width(&gfx_font_8x16, right, 1);
-    gfx_text(c, b.x + b.w - 10 - mw, btn.y + 8, right, &gfx_font_8x16,
+    const int mw = gfx_text_width(SV_FONT_LABEL, right, 1);
+    gfx_text(c, b.x + b.w - 10 - mw, btn.y + 14, right, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
-/* START LIMIT RUN, on the LIMIT RUN card under the AUTOMATIC TEST one. */
+/**
+ * @brief START LIMIT RUN, on the LIMIT RUN card under the AUTOMATIC TEST
+ *        one: green, fading to the danger red across its hold; STOP RUN in
+ *        red while the run is under way.
+ * @param c the canvas
+ */
 void draw_lim_start(gfx_canvas_t *c)
 {
     const bool running = servo_limrun_running(&s.lim);
@@ -601,14 +618,19 @@ void draw_lim_start(gfx_canvas_t *c)
         fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
                             s.lim_hold.held_s);
     }
-    ui_button(c, lim_start_rect(),
-              running ? TR(SV_LIM_STOP) : TR(SV_LIM_START), fill,
-              s.ov_have && s.ov_pressed == OP_LIM_START,
-              running || lim_blocked() == NULL);
+    ui_button_font(c, lim_start_rect(),
+                   running ? TR(SV_LIM_STOP) : TR(SV_LIM_START), fill,
+                   s.ov_have && s.ov_pressed == OP_LIM_START,
+                   running || lim_blocked() == NULL, SV_FONT_LABEL);
 }
 
-/* Why SEARCH+PROG is not offered, or what the mode does, at (@p x, @p y):
- * the LIMIT RUN settings' note. */
+/**
+ * @brief Why SEARCH+PROG is not offered, or what the mode does: the LIMIT
+ *        RUN settings' note, one line of SV_FONT_LABEL.
+ * @param c the canvas
+ * @param x the line's left edge
+ * @param y its top
+ */
 void draw_lim_mode_note(gfx_canvas_t *c, int x, int y)
 {
     const char *why = lim_prog_why();
@@ -616,7 +638,7 @@ void draw_lim_mode_note(gfx_canvas_t *c, int x, int y)
     const bool prog = running ? s.lim.cfg.program : lim_programs();
     if (why != NULL && !running) {
         /* Why SEARCH+PROG is not offered: the run searches only. */
-        gfx_text(c, x, y, why, &gfx_font_8x16,
+        gfx_text(c, x, y, why, SV_FONT_LABEL,
                  s.lim_prog ? ui_theme_color(UI_C_WARN)
                             : ui_theme_color(UI_C_TEXT_DIM), 1);
         return;
@@ -627,13 +649,28 @@ void draw_lim_mode_note(gfx_canvas_t *c, int x, int y)
              prog     ? TR(SV_LIM_PROG_NOTE)
              : pulses ? TR(SV_LIM_PULSES_NOTE)
                       : TR(SV_LIM_SEARCH_NOTE),
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
+             SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
-/*
- * The LIMIT RUN card's lines: over START LIMIT RUN the mode, and under it
- * what the run drives and reads, why it cannot start or what it does now,
- * the last result and its report, and the mode's note.
+/**
+ * @brief The LIMIT RUN card's first line under START, 6 px higher than the
+ *        AUTOMATIC TEST card's: its four lines at LIM_LINE_P end 4 px
+ *        inside the card.
+ */
+#define LIM_LINE_DY (RUN_LINE_DY - 6)
+/** @brief The pitch of those lines in SV_FONT_LABEL, px. */
+#define LIM_LINE_P  20
+_Static_assert(LIM_LINE_DY + 3 * LIM_LINE_P + 20 + 4 <= RUN_CARD_H,
+               "the LIMIT RUN card's four lines end inside it");
+_Static_assert(LIM_LINE_DY >= RUN_BTN_DY + RUN_BTN_H + 4,
+               "the LIMIT RUN card's lines start under START LIMIT RUN");
+
+/**
+ * @brief The LIMIT RUN card's lines: over START LIMIT RUN the mode, and
+ *        under it what the run drives and reads, why it cannot start or
+ *        what it does now, the last result and its report, and the mode's
+ *        note.
+ * @param c the canvas
  */
 void draw_lim_lines(gfx_canvas_t *c)
 {
@@ -651,10 +688,10 @@ void draw_lim_lines(gfx_canvas_t *c)
     } else {
         snprintf(line, sizeof(line), "%s", mode);
     }
-    gfx_text(c, x, k.y + 34, line, &gfx_font_8x16,
+    gfx_text(c, x, k.y + RUN_SUM_DY, line, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
-    const int y = k.y + RUN_LINE_DY;
+    const int y = k.y + LIM_LINE_DY;
     char out[32];
     (void)servo_target_line(out, sizeof(out), s.drive_target, s.drive_pin,
                             s.drive_pwm, s.pins, s.pins_known);
@@ -662,7 +699,7 @@ void draw_lim_lines(gfx_canvas_t *c)
     snprintf(line, sizeof(line), TR(SV_LIM_LINE), out,
              running ? s.lim.cfg.meter
                      : sensors_rows_meter(meter, sizeof(meter)));
-    gfx_text(c, x, y, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+    gfx_text(c, x, y, line, SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
 
     gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
     const char *blocked = running ? NULL : lim_blocked();
@@ -676,19 +713,19 @@ void draw_lim_lines(gfx_canvas_t *c)
     } else {
         snprintf(line, sizeof(line), "%s", TR(SV_HOLD_START));
     }
-    gfx_text(c, x, y + 18, line, &gfx_font_8x16, col, 1);
+    gfx_text(c, x, y + LIM_LINE_P, line, SV_FONT_LABEL, col, 1);
 
     if (s.lim.state == SERVO_LIMRUN_DONE && !running) {
         char f[LOG_RUN_NAME_MAX + 4];
         lim_file_name(f, sizeof(f));
         snprintf(line, sizeof(line), TR(SV_CARD_LAST),
                  ui_servo_str(servo_limrun_verdict_str(s.lim.verdict)), f);
-        gfx_text(c, x, y + 36, line, &gfx_font_8x16,
+        gfx_text(c, x, y + 2 * LIM_LINE_P, line, SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
     /* SEARCH+PROG chosen and not offered: why, in the warning colour. */
     if (!running && s.lim_prog && lim_prog_why() != NULL) {
-        gfx_text(c, x, y + 54, lim_prog_why(), &gfx_font_8x16,
+        gfx_text(c, x, y + 3 * LIM_LINE_P, lim_prog_why(), SV_FONT_LABEL,
                  ui_theme_color(UI_C_WARN), 1);
     }
 }

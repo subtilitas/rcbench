@@ -42,8 +42,9 @@
 #define SV_TAB_PROGRAM_X   392                /**< PROGRAM's tab. */
 #define SV_TAB_SETTINGS_X  546                /**< SETTINGS' tab. */
 #define SV_PROG_ROW_X      250                /**< PROGRAM's rows. */
-/** @brief PROGRAM's row @p r. */
-#define SV_PROG_ROW_Y(r)   (83 + 40 * (r))
+/** @brief PROGRAM's row @p r: 48 px tall at a 56 px pitch from the page
+ *         area's top, 56, and 10 px. */
+#define SV_PROG_ROW_Y(r)   (90 + 56 * (r))
 
 /** @brief SETTINGS' page tab @p i: OUTPUT, SWEEP, DUT. */
 #define SV_PAGE_X(i)       (116 + 201 * (i))

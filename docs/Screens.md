@@ -1226,6 +1226,8 @@ output it drives and the meter, `OUTPUT PROG PORT 1 GP13, CURRENT
 INA3221 0x41 CH2` or `OUTPUT SERVO PWM GP2, CURRENT INA3221 0x40 CH1`
 (`CURRENT INA3221` while no channel watches the target), the next line says why
 it cannot start or what it does now, then the last result and its report.
+These four lines are in the 10 x 20 face, 20 px apart, the first 6 px under
+START LIMIT RUN, so the fourth ends 4 px inside the 220 px card.
 TEST stays shown as the run starts. Its box on LIVE's left card shows the
 values written of 8, the phase with the side and the pulse, and the output
 it drives, with STOP RUN; after the run, the verdict, the values or the

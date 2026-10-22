@@ -5107,7 +5107,23 @@ shared/ui/prog_registry.c: warning: Member shown_from(const prog_view_t *v, cons
 shared/ui/sensors_rows.c: warning: Member fitted(int a) (function) of file sensors_rows.c is not documented.
 shared/ui/sensors_rows.c: warning: Member s_status (variable) of file sensors_rows.c is not documented.
 shared/ui/sensors_rows.c: warning: Member sensors_rows_state_color(int a) (function) of file sensors_rows.c is not documented.
-shared/ui/servo_limit_panel.c: file has no @file block
+shared/ui/servo_limit_panel.c: warning: Member lim_apply(const servo_limrun_do_t *d) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_begin(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_blocked(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_cfg(servo_limrun_cfg_t *c) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_end_now(servo_test_abort_t why) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_end_text(char *b, size_t n, const servo_limrun_side_t *e) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_ended(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_file_name(char *b, size_t n) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_leave_follow(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_meter_follow(servo_source_id_t id, uint32_t changes) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_meter_why(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_pd_answers(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_poll(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_prog_why(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_signature(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_step(void) (function) of file servo_limit_panel.c is not documented.
+shared/ui/servo_limit_panel.c: warning: Member lim_tick(void) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_screen.c: warning: Member RATES(a) (macro definition) of file servo_screen.c is not documented.
 shared/ui/servo_screen.c: warning: Member SAMPLE_HZ (macro definition) of file servo_screen.c is not documented.
 shared/ui/servo_screen.c: warning: Member apply_profile(int t, uint16_t hz) (function) of file servo_screen.c is not documented.
@@ -5241,10 +5257,6 @@ shared/ui/servo_screen_int.h: warning: Member dr (variable) of struct servo_scre
 shared/ui/servo_screen_int.h: warning: Member dr (variable) of struct servo_screen_state_t::[struct].undo is not documented.
 shared/ui/servo_screen_int.h: warning: Member drag_id (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member dragging (variable) of struct servo_screen_state_t is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_lim_box(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_lim_lines(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_lim_mode_note(gfx_canvas_t *c, int x, int y) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_lim_start(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member drawn_arm[2] (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member drawn_ask[2] (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member drawn_cover[2] (variable) of struct servo_screen_state_t is not documented.

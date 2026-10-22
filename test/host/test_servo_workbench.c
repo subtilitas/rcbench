@@ -413,8 +413,8 @@ static bool card_line_reads(int k, int i, const char *text, ui_color_id_t col)
     scr->render(&cv, 0);
     want_fresh();
     const int y = SV_RUN_CARD_Y(k) + SV_RUN_LINE_DY
-                  + ((k == 0) ? 22 * i : 18 * i + 18);
-    const gfx_font_t *f = (k == 0) ? &gfx_font_10x20 : &gfx_font_8x16;
+                  + ((k == 0) ? 22 * i : 20 * i + 20 - 6);
+    const gfx_font_t *f = &gfx_font_10x20;
     const int h = f->height;
     const gfx_color_t bg = fb[(size_t)y * W + 20u];
     gfx_fill_rect(&want_cv, UI_MARGIN + 12, (int16_t)y, 596, (int16_t)h, bg);
@@ -620,8 +620,8 @@ TEST_CASE(a_row_the_iomcu_lacks_is_dimmed_and_opens_nothing)
     /* The reason, in the warning colour, inside the row. */
     const gfx_color_t warn = ui_theme_color(UI_C_WARN);
     int warned = 0;
-    for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
-        for (int x = 16; x < 484; ++x) {
+    for (int y = SV_PROG_ROW_Y(0) - 24; y < SV_PROG_ROW_Y(0) + 24; ++y) {
+        for (int x = 18; x < UI_MARGIN + 610; ++x) {
             warned += fb[y * W + x] == warn;
         }
     }
@@ -654,7 +654,7 @@ TEST_CASE(the_program_row_repaints_when_the_testers_port_moves)
     scr->render(&cv, 0);
     const gfx_color_t bg = fb[(SV_PROG_ROW_Y(0)) * W + 400];
     unsigned before = 0u;
-    for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
+    for (int y = SV_PROG_ROW_Y(0) - 24; y < SV_PROG_ROW_Y(0) + 24; ++y) {
         for (int x = 200; x < UI_MARGIN + 612; ++x) {
             before += fb[y * W + x] != bg;
         }
@@ -663,7 +663,7 @@ TEST_CASE(the_program_row_repaints_when_the_testers_port_moves)
     scr->tick(0.02f);
     scr->render(&cv, 0);
     unsigned after = 0u;
-    for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
+    for (int y = SV_PROG_ROW_Y(0) - 24; y < SV_PROG_ROW_Y(0) + 24; ++y) {
         for (int x = 200; x < UI_MARGIN + 612; ++x) {
             after += fb[y * W + x] != bg;
         }
@@ -709,10 +709,10 @@ static void search_key(int k)
 
 /* SEARCH's box, a row under the bar, and a row under the bar and a
  * heading, in the page area. */
-#define SEARCH_X 126
-#define SEARCH_Y 81
-#define BARRED_ROW_Y(r) (121 + 40 * (r))
-#define HEADED_ROW_Y(r) (149 + 40 * (r))
+#define SEARCH_X 148
+#define SEARCH_Y 90
+#define BARRED_ROW_Y(r) (146 + 56 * (r))
+#define HEADED_ROW_Y(r) (178 + 56 * (r))
 
 /*
  * A list of more than 9 rows on the screen (a table handed in): SEARCH
