@@ -567,8 +567,8 @@ void draw_test_page(gfx_canvas_t *c)
                             ui_theme_color(UI_C_PANEL_SUNK));
         gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 6,
                             ui_theme_color(UI_C_EDGE));
-        gfx_text(c, r.x + 10, r.y + 14, ui_tr(k_title[k]), SV_FONT_LABEL,
-                 ui_theme_color(UI_C_ACCENT), 1);
+        gfx_text(c, r.x + 10, r.y + RUN_NAME_DY, ui_tr(k_title[k]),
+                 SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
         ui_button_font(c, run_set_rect(k), TR(SUP_SETTINGS),
                        ui_theme_color(UI_C_PANEL_HI),
                        s.ov_have && s.ov_pressed == OP_RUN_SET

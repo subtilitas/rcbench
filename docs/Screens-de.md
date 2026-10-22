@@ -1265,7 +1265,7 @@ ab TEMPO 63 %, beim Dreieck ab 40 %.
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
-beschreibt das Verfahren und die Dateien. Die Karte, 600 x 220 px, trägt
+beschreibt das Verfahren und die Dateien. Die Karte, 600 x 200 px, trägt
 den Namen des Laufs, eine Zusammenfassung (`4.8 6.0 V BROWN-OUT, JE
 60 s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN (300 x 56 px) mit den
 OPTIONEN der Karte (160 x 48 px) daneben, die Zustandszeile, das
@@ -1441,14 +1441,20 @@ Die Seitenreiter von OPTIONEN sind 197 x 40 px quer über die Karte. Ihre
 Zeilen stehen in zwei Spalten zu 295 px, jede Zeile 48 px hoch und 56 px
 von der nächsten, der Name links und der Wert rechts, 140 px breit (TYP,
 PULSRATE und NAME belegen beide Spalten). Die Hinweise unter den Zeilen von
-AUSGANG sind Zeilen zu 60 Zeichen, 22 px Abstand. Die Einstellungen eines
+AUSGANG sind Zeilen zu 60 Zeichen, 21 px Abstand. Die Einstellungen eines
 Laufs stehen in drei Spalten zu 193 px, jede Zeile ihr Name über ihrem
-48 px hohen Wert, 74 px von der nächsten: die 15 Zeilen des automatischen
-Tests zu fünf je Spalte, Dauer und Zeiten, die Grenzwerte mit
-BROWN-OUT, und die Stufen mit HV-SERVO. Die Auswahl einer Liste steht in
-zwei Spalten zu fünf, 48 px hoch und 56 px Abstand; die Warnungen stehen
-in 12 x 24 px großen Buchstaben, 48 Zeichen je Zeile, mit HALTEN ZUM
-ÜBERNEHMEN und ABBRECHEN 56 px hoch, die 4 px über dem Alert-Band enden.
+48 px hohen Wert, 71 px von der nächsten: die 15 Zeilen des automatischen
+Tests zu fünf je Spalte, die Stufen mit HV-SERVO, die Grenzwerte mit
+BROWN-OUT, und Dauer und Zeiten. TESTDAUER NACH steht oben in der rechten
+Spalte, unter den OPTIONEN der Karte: ein zweites Tippen auf OPTIONEN
+öffnet ihre Liste und ändert keine Einstellung. Die Hinweise, der Hinweis
+zu BLOCKIERT AB und die Zeile der Grenzen unter den Karten von TEST enden
+4 px oder mehr über dem Alert-Band; die Speicherzeile unter einer Seite
+mit Zeilen nicht (y 510 bis 530 im Inhalt). Die Auswahl einer Liste steht
+in zwei Spalten zu fünf, 48 px hoch und 56 px Abstand; die Warnungen
+stehen in 12 x 24 px großen Buchstaben, 49 Zeichen je Zeile, mit HALTEN
+ZUM ÜBERNEHMEN und ABBRECHEN 56 px hoch, die 4 px über dem Alert-Band
+enden.
 
 ![Die Einstellungen des Servos](img/de/servo-settings.png)
 ![Die Seite SWEEP](img/de/servo-sweep-page.png)

@@ -11,6 +11,7 @@
  *
  * Cases:
  * - a_touch_on_the_dial_points_the_horn_there
+ * - the_dial_reaches_184_px_from_the_shaft
  * - a_drag_keeps_commanding
  * - the_case_is_not_the_dial
  * - the_travel_limit_clamps_rather_than_refuses
@@ -104,6 +105,27 @@ TEST_CASE(the_case_is_not_the_dial)
     /* Nor is the middle of the boss, which is not a direction. */
     tap(SHAFT_X, SHAFT_Y);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+/* The dial takes a press out to 184 px from the shaft, ARC_R + 34: the
+ * arc, its labels and a finger landing past them; nothing further out. */
+TEST_CASE(the_dial_reaches_184_px_from_the_shaft)
+{
+    static const float k_deg[2] = { 0.0f, 45.0f };
+    for (int k = 0; k < 2; ++k) {
+        int x, y;
+        fresh_armed();
+        dial_at(k_deg[k], 183, &x, &y);
+        ev(x, y, TOUCH_EVENT_DOWN, 1);
+        CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+        ev(x, y, TOUCH_EVENT_UP, 1);
+
+        fresh_armed();
+        dial_at(k_deg[k], 186, &x, &y);
+        ev(x, y, TOUCH_EVENT_DOWN, 1);
+        CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+        ev(x, y, TOUCH_EVENT_UP, 1);
+    }
 }
 
 /* Dragging past the travel limit stops at the limit rather than being
@@ -639,6 +661,7 @@ int main(void)
     RUN(a_touch_on_the_dial_points_the_horn_there);
     RUN(a_drag_keeps_commanding);
     RUN(the_case_is_not_the_dial);
+    RUN(the_dial_reaches_184_px_from_the_shaft);
     RUN(the_travel_limit_clamps_rather_than_refuses);
     RUN(centre_and_release_post_their_own_commands);
     RUN(a_hold_on_arm_asks_to_arm_exactly_once);

@@ -132,21 +132,24 @@ static inline gfx_rect_t page_area(void)
  */
 #define RUN_CARD_X  (PAD + 10)     /**< The run cards' left edge, px. */
 #define RUN_CARD_W  (LCARD_W - 20) /**< Their width: 600 px. */
-#define RUN_CARD_H  220            /**< A run card's height, px. */
+#define RUN_CARD_H  200            /**< A run card's height, px. */
 #define RUN_CARD_GAP 4             /**< Above and between the cards, px. */
 /** @brief Run card @p k's top (0 AUTOMATIC TEST, 1 LIMIT RUN). */
 #define RUN_CARD_Y(k) (CARD_Y + RUN_CARD_GAP + (k) * (RUN_CARD_H + RUN_CARD_GAP))
-#define RUN_SUM_DY  42             /**< A card's summary line, in it. */
-#define RUN_BTN_DY  74             /**< Its START's top, in it. */
+#define RUN_NAME_DY 8              /**< A card's name, from its top. */
+#define RUN_SUM_DY  32             /**< A card's summary line, in it. */
+#define RUN_BTN_DY  60             /**< Its START's top, in it. */
 #define RUN_BTN_W   300            /**< START's width, px. */
 #define RUN_BTN_H   56             /**< START's height, px. */
-#define RUN_LINE_DY 142            /**< The lines under START, in it. */
+#define RUN_LINE_DY 120            /**< The lines under START, in it. */
 #define RUN_LINE_P  22             /**< Their pitch in SV_FONT_LABEL. */
 #define RUN_SET_W   160            /**< A card's SETTINGS, px. */
 /** @brief The caps line under the two cards. */
 #define RUN_CAPS_Y  (RUN_CARD_Y(1) + RUN_CARD_H + RUN_CARD_GAP)
-_Static_assert(RUN_CAPS_Y + 20 <= CARD_Y + CARD_H - 1,
-               "the caps line ends inside the page area");
+_Static_assert(RUN_CAPS_Y + 20 <= STOP_FLOOR,
+               "the caps line ends above the alert band");
+_Static_assert(RUN_LINE_DY + 2 * RUN_LINE_P + 20 <= RUN_CARD_H,
+               "a card's three lines under START end inside it");
 
 /**
  * @brief Run card @p k.

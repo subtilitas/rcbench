@@ -1154,7 +1154,7 @@ clears at SPEED 63 %, and for a triangle at 40 %.
 through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
-files. The card, 600 x 220 px, holds the run's name, a summary line
+files. The card, 600 x 200 px, holds the run's name, a summary line
 (`4.8 6.0 V BROWN-OUT, 60 s EACH`, or `..., 20 MOVEMENTS EACH`), START
 TEST (300 x 56 px) with the card's SETTINGS (160 x 48 px) beside it, the
 state line, the last result with its files
@@ -1311,14 +1311,18 @@ the name opens a keyboard.
 SETTINGS' page tabs are 197 x 40 px across the card. Its rows are two
 columns of 295 px, each row 48 px tall and 56 px from the next, the label
 left and the value right, 140 px wide (TYPE, FRAME RATE and NAME take both
-columns). The notes under OUTPUT's rows are lines of 60 characters, 22 px
+columns). The notes under OUTPUT's rows are lines of 60 characters, 21 px
 apart. A run's settings are three columns of 193 px, each row its label
-over its 48 px value, 74 px from the next: the automatic test's 15 rows
-are five to a column, the length and timing, the pass and fail limits with
-BROWN-OUT, and the steps with HV SERVO. A list's choices are two columns
-of five, 48 px tall and 56 px apart; the warnings read in 12 x 24 px
-letters, 48 characters a line, with HOLD TO APPLY and CANCEL 56 px tall
-ending 4 px above the alert band.
+over its 48 px value, 71 px from the next: the automatic test's 15 rows
+are five to a column, the steps with HV SERVO, the pass and fail limits
+with BROWN-OUT, and the length and timing. TEST LENGTH BY tops the right
+column, under the card's SETTINGS: a second tap on SETTINGS opens its list
+and changes no setting. The notes, the STALL AT note and the caps line
+under TEST's cards end 4 px or more above the alert band; the save line
+under a page of rows does not (body y 510 to 530). A list's choices are
+two columns of five, 48 px tall and 56 px apart; the warnings read in
+12 x 24 px letters, 49 characters a line, with HOLD TO APPLY and CANCEL
+56 px tall ending 4 px above the alert band.
 
 ![The servo's settings](img/servo-settings.png)
 ![The SWEEP page](img/servo-sweep-page.png)

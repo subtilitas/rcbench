@@ -860,7 +860,7 @@ static void kst_view(const char *view)
          * the programmer's voltage follows. */
         tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
         tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
-        tap(SV_LIST_X(2), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
+        tap(SV_LIST_X(0), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
         tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
     }
     tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);    /* PROGRAM */
@@ -3359,16 +3359,16 @@ int main(int argc, char **argv)
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* TYPE */
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */
         } else if (strcmp(view, "servo-sweep-page") == 0) {
-            tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_Y); /* SWEEP */
+            tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_TAB_Y); /* SWEEP */
         } else if (strcmp(view, "servo-encoder") == 0) {
-            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y); /* DUT */
+            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y); /* DUT */
         } else if (strcmp(view, "servo-trim-keypad") == 0) {
             /* TRIM's value, between its steps: the signed keypad, -25 us
              * typed. */
             tap((526 + 570) / 2, UI_BAND_H + SV_ROW_Y(3));
             kp_type(servo_screen_keypad(), "-25");
         } else if (strcmp(view, "servo-name") == 0) {
-            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y);
+            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y);
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* NAME */
         } else if (strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0

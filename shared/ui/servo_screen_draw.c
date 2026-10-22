@@ -558,7 +558,7 @@ static void draw_readings(gfx_canvas_t *c)
     static const char *const k_unit[3] = { "us", "deg", "A" };
     for (int k = 0; k < 3; ++k) {
         const gfx_rect_t lr = { (int16_t)READ_X(k), READ_LBL_Y,
-                                (int16_t)(READ_W - 24), 20 };
+                                (int16_t)(READ_W - 14), 20 };
         gfx_text(c, lr.x, lr.y, ui_tr(k_label[k]), SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         gfx_text_in(c, lr, k_unit[k], SV_FONT_LABEL,
@@ -877,6 +877,11 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
             clipped(c, test_start_rect(), draw_test_start);
             clipped(c, lim_start_rect(), draw_lim_start);
         }
+        return;
+    }
+
+    /* PROGRAM's page with no session open: none of LIVE's parts are on it. */
+    if (wb_task() != UI_WB_LIVE) {
         return;
     }
 

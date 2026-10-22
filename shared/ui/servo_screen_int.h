@@ -208,14 +208,21 @@ _Static_assert(KST_PANEL_STD_MV == 6000,
 #define OV_ROW_H  UI_TAP_MIN      /**< A row's height, px. */
 #define OV_COL_W  ((OV_W - 30) / 2) /**< A column of SETTINGS: 295 px. */
 #define OV_VAL_W  140             /**< A row's value, px. */
-/** @brief The OUTPUT page's notes, under its five rows. */
-#define OV_NOTE_Y (OV_ROW0 + 5 * OV_PITCH + 2)
-#define NOTE_PITCH 22             /**< A note's line pitch, px. */
-#define RL_ROW0   (CARD_Y + 60)   /**< A run's first row, px. */
-#define RL_PITCH  74              /**< From row to row: label and value. */
-#define RL_LBL_H  22              /**< A run's row's label over its value. */
+/** @brief The OUTPUT page's notes, 2 px under its fifth row. */
+#define OV_NOTE_Y (OV_ROW0 + 4 * OV_PITCH + OV_ROW_H + 2)
+#define NOTE_PITCH 21             /**< A note's line pitch, px. */
+#define RL_ROW0   (CARD_Y + 56)   /**< A run's first row, px. */
+#define RL_PITCH  71              /**< From row to row: label and value. */
+#define RL_LBL_H  21              /**< A run's row's label over its value. */
 #define RL_COL_W  ((OV_W - 40) / 3) /**< A column of a run's: 193 px. */
 #define RL_ROWS   5               /**< The rows a column holds. */
+/** @brief A run's note under its rows: the automatic test's stall note,
+ *         4 px under the last value. */
+#define RL_NOTE_Y (RL_ROW0 + RL_ROWS * RL_PITCH + 2)
+_Static_assert(OV_NOTE_Y + 4 * NOTE_PITCH + 20 <= STOP_FLOOR,
+               "the OUTPUT page's five note lines end above the alert band");
+_Static_assert(RL_NOTE_Y + 20 <= STOP_FLOOR,
+               "a run's note ends above the alert band");
 
 /*
  * A pulse needs a pause before the next frame.  STANDARD PWM, WIDE and

@@ -343,7 +343,7 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
 
     open_run_settings(0);                      /* AUTOMATIC TEST's */
     CHECK_EQ(servo_screen_run_settings(), 1);
-    tap(LROW_X(2), LROW_Y(0));                 /* STEP 4.8 V: a switch */
+    tap(LROW_X(0), LROW_Y(0));                 /* STEP 4.8 V: a switch */
     CHECK(!settings_get_bool(SET_SERVO_STEP_48));
     tap(LROW_X(1), LROW_Y(1));                 /* IDLE CURRENT */
     keys("0.3");
@@ -612,11 +612,11 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
  * its first line.  Both are news, not a warning.
  */
 /* The rate note on the OUTPUT page, mirrored from servo_settings_draw.c:
- * its first line at OV_NOTE_Y + 2 * 22 (438), its second 22 px below,
+ * its first line at OV_NOTE_Y + 2 * 21 (428), its second 21 px below,
  * each 20 px high, from 10 px into the page to 600 px further. */
 #define NOTE_X    (UI_MARGIN + 10)
-#define NOTE_L1_Y 438
-#define NOTE_L2_Y (NOTE_L1_Y + 22)
+#define NOTE_L1_Y 428
+#define NOTE_L2_Y (NOTE_L1_Y + 21)
 #define NOTE_R    (UI_MARGIN + 610)
 
 /* Whether one line's 20 rows are the same in @p was as in the screen. */

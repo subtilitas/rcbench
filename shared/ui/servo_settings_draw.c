@@ -332,7 +332,7 @@ void draw_rows_page(gfx_canvas_t *c)
         draw_note(c, nx, OV_NOTE_Y, lines, 2);
         draw_rate_note(c, nx, OV_NOTE_Y + 2 * NOTE_PITCH);
     } else if (page == PG_AUTO) {
-        draw_test_stall(c, nx, RL_ROW0 + RL_ROWS * RL_PITCH - 4);
+        draw_test_stall(c, nx, RL_NOTE_Y);
     } else if (page == PG_LIMRUN) {
         draw_lim_mode_note(c, nx, RL_ROW0 + 2 * RL_PITCH + 6);
     } else if (page == PG_DUT) {
@@ -395,9 +395,9 @@ void draw_warn_apply(gfx_canvas_t *c)
                    s.warn.down, true, SV_FONT_LABEL);
 }
 
-/** @brief A line of a warning: the left column less 20 px each side, in
- *         cells of SV_FONT_BODY, 48. */
-#define WARN_CELLS ((OV_W - 40) / 12)
+/** @brief A line of a warning: the left column less 20 px left and 12 px
+ *         right, in cells of SV_FONT_BODY, 49. */
+#define WARN_CELLS ((OV_W - 32) / 12)
 /** @brief A warning's title, what it is about, and its first line. */
 #define WARN_TITLE_DY 20
 #define WARN_WHAT_DY  76  /**< What it is about, under the title, px. */
