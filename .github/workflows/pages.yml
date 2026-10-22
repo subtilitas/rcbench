@@ -1,7 +1,8 @@
 name: Configurator
 
 # Checks, builds and publishes the bench configurator under configurator/,
-# and the panel's web help under help/ of the same site.
+# the panel's web help under help/ and the C API (application programming
+# interface) reference under api/ of the same site.
 #
 # - core: type check, test suite, static checks on the data file against the
 #   tree at the release tag, the release of package.json against the firmware
@@ -18,10 +19,16 @@ name: Configurator
 # - help: builds the web help with tools/help_site.py from help/content/
 #   and the screenshots in docs/img/. The build runs every check of the
 #   help first and fails on one. The built help is an artifact of every run.
+# - api: builds the HTML reference of the C sources with Doxygen 1.18.0 and
+#   the Doxyfile at the repository root. Pass and fail of the comments are
+#   tools/doc_check.py's in ci.yml; this job publishes. The built reference
+#   is an artifact of every run.
 # - deploy: publishes the built page to GitHub Pages, with the help in its
-#   help/ folder. It runs on a push to main only. A pull request builds and
-#   tests and publishes nothing. The help is not part of the configurator's
-#   size budget: the budget is checked on the configurator's files alone.
+#   help/ folder and the API reference in its api/ folder. It runs on a
+#   push to main only. A pull request builds and tests and publishes
+#   nothing. Neither the help nor the API reference is part of the
+#   configurator's size budget: the budget is checked on the
+#   configurator's files alone.
 #
 # The repository setting "Pages source: GitHub Actions" is a precondition of
 # the deploy job.
@@ -37,6 +44,8 @@ on:
       - 'tools/help_site.py'
       - 'tools/render_ui.py'
       - 'shared/ui/include/ui_screen.h'
+      - 'Doxyfile'
+      - 'tools/install_doxygen.sh'
   push:
     branches: [main]
     paths:
@@ -48,6 +57,15 @@ on:
       - 'tools/help_site.py'
       - 'tools/render_ui.py'
       - 'shared/ui/include/ui_screen.h'
+      # The sources of the API reference.  A pull request that changes them
+      # runs Doxygen in ci.yml; main publishes the reference again.
+      - 'Doxyfile'
+      - 'tools/install_doxygen.sh'
+      - 'shared/**'
+      - 'protocols/**'
+      - 'firmware/panel/**'
+      - 'firmware/iomcu/**'
+      - 'testbench/touch-injector/core/**'
 
 # A newer push to a pull request replaces the run in progress. A run on main
 # finishes, so a deployment is never cut off.
@@ -57,6 +75,11 @@ concurrency:
 
 permissions:
   contents: read
+
+env:
+  # The release ci.yml checks the comments with; the same pin.
+  DOXYGEN_VERSION: 1.18.0
+  DOXYGEN_SHA256: 14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
 
 jobs:
   core:
@@ -305,10 +328,36 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  api:
+    name: API reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Doxygen
+        run: |
+          tools/install_doxygen.sh "$DOXYGEN_VERSION" "$DOXYGEN_SHA256" \
+            "$RUNNER_TEMP/doxygen"
+
+      # The Doxyfile writes the HTML into build/doxygen/html.
+      - name: Build the API reference
+        run: |
+          "$RUNNER_TEMP/doxygen/bin/doxygen"
+          du -sh build/doxygen/html
+
+      - name: Keep the built reference
+        uses: actions/upload-artifact@v7
+        with:
+          name: api-reference
+          path: build/doxygen/html
+          if-no-files-found: error
+          retention-days: 14
+
   deploy:
     name: Publish to GitHub Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [core, build, smoke, matrix, help]
+    needs: [core, build, smoke, matrix, help, api]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -332,6 +381,14 @@ jobs:
         with:
           name: help-site
           path: dist/help
+
+      - name: The configurator has no api folder
+        run: test ! -e dist/api
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: api-reference
+          path: dist/api
 
       - uses: actions/upload-pages-artifact@v5
         with:
