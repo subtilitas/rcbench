@@ -38,14 +38,17 @@
  * the top: the crumb row (BACK, the trail, SEARCH or TIMING), the device
  * card, the parameter card with ROWS_MAX rows, the help lines, and the
  * foot row of buttons.  The foot is the body's: BTN_Y and HELP_Y are where
- * they are on the 1024 x 540 px body whatever the top holds.
+ * they are on the 1024 x 540 px body whatever the top holds, and the foot
+ * row ends 4 px above the alert band (UI_ALERT_H), so an alert covers none
+ * of its buttons: RUN, ABORT and OK are body y 456 to 489.
  */
 #define PAD       UI_MARGIN
 #define CRUMB_Y   (PROG_FULL_Y + 2)
 #define DEV_Y     (CRUMB_Y + 34)
 #define DEV_H     40
 #define PARM_Y    (DEV_Y + DEV_H + 4)
-#define BTN_Y     (H - PAD - 36)
+/** @brief The foot row's top: 4 px over the alert band, 36 px tall. */
+#define BTN_Y     (H - UI_ALERT_H - 4 - 36)
 #define HELP_Y    (BTN_Y - 32)
 #define PARM_H    (HELP_Y - 8 - PARM_Y)
 
@@ -54,12 +57,15 @@
 #define ROWS_MAX  7
 
 /* The panels over the pages -- the RUN warning, the manual steps and a
- * run's prompt -- from PROG_FULL_Y to the body's margin, and the two
- * buttons at their foot, which end above the foot row's labels. */
+ * run's prompt -- from PROG_FULL_Y to the body's margin, and the buttons at
+ * their foot, which end 4 px above the foot row's place (body y 396 to
+ * 451): a second tap on RUN's place lands on no button of the panel it
+ * opened, and the alert band covers none of them. */
 #define SP_PANEL_Y  PROG_FULL_Y
 #define SP_PANEL_H  (H - PAD - SP_PANEL_Y)
 #define SP_PBTN_H   UI_BTN_H_TALL
-#define SP_PBTN_Y   (H - PAD - 20 - SP_PBTN_H)
+/** @brief A panel's buttons' top: they end 4 px over the foot row. */
+#define SP_PBTN_Y   (BTN_Y - 4 - SP_PBTN_H)
 
 _Static_assert(ROW_Y0 + (ROWS_MAX - 1) * ROW_H + 24 <= PARM_Y + PARM_H - 4,
                "ROWS_MAX rows fit the parameter card");

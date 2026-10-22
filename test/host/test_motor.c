@@ -342,11 +342,13 @@ TEST_CASE(arming_flashes_the_whole_button)
     scr->render(&cv, 0);
     motor_screen_set_armed(true);
 
+    /* As the panel runs a frame: the tick, then the render.  The tick
+     * after the bench's answer spends nothing, so the first frame is white. */
     gfx_color_t seen[7];
     for (int i = 0; i < 7; ++i) {
+        scr->tick((float)UI_HOLD_FLASH_PHASE_MS / 1000.0f);
         scr->render(&cv, 0);
         seen[i] = arm_px();
-        scr->tick((float)UI_HOLD_FLASH_PHASE_MS / 1000.0f);
     }
 
     /* Twice through white, black, red, and then it stays on the red. */

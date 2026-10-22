@@ -62,14 +62,14 @@
 /**
  * @brief The smallest touch target for a control, in pixels: 48 px, 7.2 mm.
  *
- * No screen uses it yet; it is the figure later layouts size to.
+ * UI_BTN_H is this height; the screens' other controls size to it in
+ * their own layouts.
  */
 #define UI_TAP_MIN 48
 
 /**
- * @brief Button heights in pixels: the common button and row, 44 px
- *        (6.6 mm), and the taller one, 56 px (8.4 mm), in the ESC panel.
+ * @brief The common button's height in pixels: UI_TAP_MIN, 48 px (7.2 mm).
  */
-#define UI_BTN_H      44
+#define UI_BTN_H      48
 /** @brief The taller button of the ESC panel: 56 px (8.4 mm). */
 #define UI_BTN_H_TALL 56

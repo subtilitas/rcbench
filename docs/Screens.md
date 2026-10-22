@@ -132,9 +132,10 @@ says to flash both boards from one release.
 ## The alert band
 
 A fault the screen itself does not show appears in a red band, 44 px high,
-across the bottom of every screen that has the status band. Its text is in
-the 10 x 20 px face, at most 97 characters a line on up to 2 lines. It covers the
-bottom of the screen, ARM included, while it shows.
+across the bottom of every screen that has the status band. Its text is in the
+10 x 20 px face, at most 97 characters a line on up to 2 lines. It covers the
+bottom 44 px of the screen while it shows; ARM and every control that stops
+the bench end above it.
 
 - It clears 30 s after the frame it arrived in. A new alert, even with the
   same text, starts the 30 s again.
@@ -143,14 +144,13 @@ bottom of the screen, ARM included, while it shows.
   nor a second finger's on the band; only the first finger's lift clears.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
-- A control under the band that stops what the bench drives acts on the
-  first press, and the press clears the band: DISARM, OUTPUT OFF, a stick
-  run's ABORT, STOP TEST and STOP RUN. The band, panel y 556 to 599,
-  covers the whole of a stick run's ABORT (y 556 to 589) and the lower 16 px
-  of its ABORT on a manual step (y 556 to 571). SERVO's DISARM ends above
-  the band (y 448 to 479): a press on it with an alert showing is its own,
-  and the alert stays. ARM and OUTPUT ON under the band are not pressed: the
-  tap clears the band and starts no hold.
+- The controls that stop what the bench drives end above the band, panel
+  y 556 to 599: DISARM, OUTPUT OFF, a stick run's ABORT (y 516 to 549),
+  its ABORT on a manual step (y 456 to 511), STOP TEST and STOP RUN. A press
+  on one with an alert showing is its own, and the alert stays. A stop
+  control a screen draws under the band acts on the first press, and the
+  press clears the band; ARM and OUTPUT ON under the band are not pressed:
+  the tap clears the band and starts no hold.
 - An alert that arrives while a finger is already down on a control leaves
   that press to the control: its release acts as with no alert.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays
@@ -1952,10 +1952,11 @@ Peripheral Interface) clock, or 125 sectors, about 50 ms, with a report beside
 every run. Neither is measured on the panel. Each entry's size comes with the
 directory read, so a page costs one walk and the selection.
 
-The scroll bar along the list's right edge is 42 px wide, 6.3 mm at the
-0.150 mm a pixel assumed for the panel (not measured). Its thumb is the rows on screen against the rows on
-the page, and it scrolls within the page. A tap on the track brings the
-thumb's middle to the finger; a finger on the thumb drags it.
+The scroll bar along the list's right edge is 42 px wide, 6.3 mm at the 0.150
+mm a pixel assumed for the panel (not measured). Its thumb is the rows on
+screen against the rows on the page, and it scrolls within the page. A tap on
+the track brings the thumb's middle to the finger; a finger on the thumb drags
+it.
 
 LOGS reads the card each time it opens, from the menu or back from WI-FI:
 the first page of the tab's folder, its newest run selected, so a run

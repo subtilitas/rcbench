@@ -148,13 +148,14 @@ corresponding counter has moved. `each_framebuffer_is_updated_independently` in
 ## Ceilings
 
 No CI (continuous integration) step holds a frame to a ceiling.
-`tools/frame_cost.py` models the ESP32-S3's cache and bandwidth at
-800 x 480 px, and the table above is that model. The 7-inch ESP32-P4 panel
-scans 1024 x 600 px through a different cache. Its profile and the ceilings
-CI holds come with measurements on that board. The host renderer draws
-1024 x 600 px, so `frame_cost.py --check-doc` reports the table as not
-checked and `--update-doc` writes nothing until that profile replaces it. `tools/check_docs.py` fails
-on a ceiling table in this page while `.github/workflows/ci.yml` holds none.
+`tools/frame_cost.py` models the ESP32-S3's cache and bandwidth at 800 x 480
+px, and the table above is that model. The 7-inch ESP32-P4 panel scans 1024 x
+600 px through a different cache. Its profile and the ceilings CI holds come
+with measurements on that board. The host renderer draws 1024 x 600 px, so
+`frame_cost.py --check-doc` reports the table as not checked and
+`--update-doc` writes nothing until that profile replaces it.
+`tools/check_docs.py` fails on a ceiling table in this page while
+`.github/workflows/ci.yml` holds none.
 
 If a future pane needs more room, the remaining levers in order of bluntness
 are the plot's height, its width, and clipping the simulation watermark to the

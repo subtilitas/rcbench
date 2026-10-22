@@ -435,6 +435,7 @@ void ui_hold_reset(ui_hold_t *h)
     h->down = false;
     h->fired = false;
     h->flash_ms = 0;
+    h->flash_new = false;
 }
 
 float ui_hold_credit(float dt_s)
@@ -514,6 +515,7 @@ void ui_hold_reached(ui_hold_t *h)
         return;
     }
     h->flash_ms = UI_HOLD_FLASH_MS;
+    h->flash_new = true;
     h->held_s = 0.0f;
 }
 
@@ -541,17 +543,25 @@ int ui_hold_flash_left(int ms_left, float dt_s)
     if (!(ms > 0.0f)) {
         return ms_left;
     }
-    if (ms >= (float)ms_left) {
-        return 0;
-    }
-    return ms_left - (int)ms;
+    /* No further than the start of the next phase: the phase now drawn
+     * ends at the next multiple of UI_HOLD_FLASH_PHASE_MS run. */
+    const int run = UI_HOLD_FLASH_MS - ms_left;
+    const int to_next = (run < 0) ? ms_left
+        : UI_HOLD_FLASH_PHASE_MS - run % UI_HOLD_FLASH_PHASE_MS;
+    const int spend = (ms >= (float)to_next) ? to_next : (int)ms;
+    return (spend >= ms_left) ? 0 : ms_left - spend;
 }
 
 void ui_hold_flash_step(ui_hold_t *h, float dt_s)
 {
-    if (h != NULL) {
-        h->flash_ms = ui_hold_flash_left(h->flash_ms, dt_s);
+    if (h == NULL) {
+        return;
     }
+    if (h->flash_new) {
+        h->flash_new = false;
+        return;
+    }
+    h->flash_ms = ui_hold_flash_left(h->flash_ms, dt_s);
 }
 
 gfx_color_t ui_hold_flash(gfx_color_t settled, int ms_left)

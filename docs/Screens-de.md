@@ -146,8 +146,8 @@ kennt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
 Eine Störung, die der Bildschirm selbst nicht zeigt, erscheint in einem roten
 Band, 44 px hoch, unten über jedem Bildschirm mit Statusband. Sein Text
 steht in der Schrift 10 x 20 px, höchstens 97 Zeichen je Zeile auf bis zu
-2 Zeilen. Solange es
-steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
+2 Zeilen. Solange es steht, verdeckt es die unteren 44 px des Bildschirms;
+ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
 
 - Es verschwindet 30 s nach dem Frame, in dem es kam. Ein neuer Alert, auch
   mit demselben Text, startet die 30 s neu.
@@ -157,15 +157,15 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
   Loslassen des ersten Fingers löscht.
 - Ein Alert, der kommt, während ein Finger auf dem Band liegt, wird durch
   dieses Loslassen nicht gelöscht.
-- Ein Bedienelement unter dem Band, das anhält, was der Prüfstand treibt, wirkt
-  beim ersten Druck, und der Druck löscht das Band: DISARM, AUSGANG AUS,
-  ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN. Das Band,
-  Panel-y 556 bis 599, verdeckt ABBRECHEN eines Stick-Laufs ganz (y 556 bis
-  589) und die unteren 16 px von ABBRECHEN bei einem Handschritt (y 556 bis
-  571). DISARM auf SERVO endet über dem Band (y 448 bis 479): Ein Druck
-  darauf bei angezeigtem Alert gehört DISARM, und der Alert bleibt. ARM und
-  AUSGANG EIN unter dem Band werden nicht gedrückt: Der Tipp löscht das Band
-  und startet kein Halten.
+- Die Bedienelemente, die anhalten, was der Prüfstand treibt, enden über dem
+  Band, Panel-y 556 bis 599: DISARM, AUSGANG AUS, ABBRECHEN eines
+  Stick-Laufs (y 516 bis 549), ABBRECHEN bei einem Handschritt (y 456 bis
+  511), TEST BEENDEN und LAUF BEENDEN. Ein Druck darauf bei angezeigtem
+  Alert gehört dem Bedienelement, und der Alert bleibt. Ein solches
+  Bedienelement, das ein Bildschirm unter das Band zeichnet, wirkt beim
+  ersten Druck, und der Druck löscht das Band; ARM und AUSGANG EIN unter
+  dem Band werden nicht gedrückt: Der Tipp löscht das Band und startet kein
+  Halten.
 - Ein Alert, der kommt, während ein Finger schon auf einem Bedienelement
   liegt, lässt diesen Druck dem Bedienelement: Sein Loslassen wirkt wie ohne
   Alert.
@@ -2151,10 +2151,11 @@ Serial Peripheral Interface) der Karte von 20 MHz, oder 125 Sektoren, etwa
 gemessen. Die Größe jedes Eintrags kommt mit dem Lesen des Verzeichnisses,
 eine Seite kostet also einen Durchlauf und die Auswahl.
 
-Der Rollbalken am rechten Rand der Liste ist 42 px breit, 6,3 mm bei den
-0,150 mm Pixelabstand, die für das Panel angenommen sind (nicht gemessen). Die Länge des Griffs entspricht dem Anteil der sichtbaren Zeilen
-an der Seite, und er rollt innerhalb der Seite. Ein Tippen auf die Bahn bringt
-die Mitte des Griffs unter den Finger; ein Finger auf dem Griff zieht ihn.
+Der Rollbalken am rechten Rand der Liste ist 42 px breit, 6,3 mm bei den 0,150
+mm Pixelabstand, die für das Panel angenommen sind (nicht gemessen). Die Länge
+des Griffs entspricht dem Anteil der sichtbaren Zeilen an der Seite, und er
+rollt innerhalb der Seite. Ein Tippen auf die Bahn bringt die Mitte des Griffs
+unter den Finger; ein Finger auf dem Griff zieht ihn.
 
 LOGS liest die Karte bei jedem Öffnen, aus dem Menü oder zurück aus WLAN:
 die erste Seite des Ordners des Tabs, ihr neuester Lauf gewählt. Ein Lauf,
@@ -2703,10 +2704,10 @@ Dieselbe Seite im hellen Design:
 
 ![Setup im hellen Design](img/de/setup-light.png)
 
-Die Liste einer Kategorie ist 776 px breit, ab dem linken Rand des Panels,
-und zeigt 446 px davon, 7 Zeilen, über einer Leiste mit drei Spalten: dem
-Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Die Leiste endet
-bei y 552 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
+Die Liste einer Kategorie ist 776 px breit, ab dem linken Rand des Panels, und
+zeigt 446 px davon, 7 Zeilen, über einer Leiste mit drei Spalten: dem Namen
+der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Die Leiste endet bei y
+552 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
 Ein Alert verdeckt damit weder eine Taste noch eine Zeile, KATEGORIE
 ZURÜCKSETZEN oder SPEICHERN, auf den Kacheln wie auf einer Liste.
 
@@ -4330,9 +4331,9 @@ gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
 
 ![Der Pin-Picker](img/de/picker.png)
 
-Die Tasten sind nicht die Pads. In jeder Größe, die auf ein Panel mit
-1024 x 600 Pixeln passt, ist ein Pad unter 40 Pixel breit und damit kleiner
-als eine Fingerkuppe. Also werden die Pads gezeichnet, wo sie sind, und berührt wird
+Die Tasten sind nicht die Pads. In jeder Größe, die auf ein Panel mit 1024 x
+600 Pixeln passt, ist ein Pad unter 40 Pixel breit und damit kleiner als eine
+Fingerkuppe. Also werden die Pads gezeichnet, wo sie sind, und berührt wird
 auf zwei versetzten Tastenreihen über der Platine und zwei darunter, 43 px
 breit, jede an einer geraden Leitung zu ihrem eigenen Pad.
 

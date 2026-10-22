@@ -3202,7 +3202,6 @@ shared/ui/busfault_screen.c: warning: Member NUM_X (macro definition) of file bu
 shared/ui/busfault_screen.c: warning: Member VERDICT_Y (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member W (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member WRAP_PITCH (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member ack_fill(void) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member bus_checks(busfault_bus_t b, const char *out[LIST_MAX]) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member bus_meaning(busfault_bus_t b) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member bus_text(busfault_bus_t b) (function) of file busfault_screen.c is not documented.
@@ -3226,7 +3225,6 @@ shared/ui/busfault_screen.c: warning: Member r (variable) of struct [struct].s i
 shared/ui/busfault_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member reset(void) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member s (variable) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member tick(float dt_s) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member wrap_text(gfx_canvas_t *c, int x, int y, const char *text, int cells, gfx_color_t ink) (function) of file busfault_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member BAR_H (macro definition) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member COL_X (macro definition) of file coproc_update_screen.c is not documented.
@@ -3302,7 +3300,6 @@ shared/ui/esc_stick_draw_run.c: warning: Member sp_reason_text(esc_stick_reason_
 shared/ui/esc_stick_draw_run.c: warning: Member sp_tone_beep(const tone_beep_t *b, char *buf, size_t n) (function) of file esc_stick_draw_run.c is not documented.
 shared/ui/esc_stick_draw_run.c: warning: Member sp_tone_state(const tone_readout_t *r) (function) of file esc_stick_draw_run.c is not documented.
 shared/ui/esc_stick_int.h: warning: Compound stick_shared_t is not documented.
-shared/ui/esc_stick_int.h: warning: Member BTN_Y (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member CRUMB_Y (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member CTRL_W (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member CTRL_X (macro definition) of file esc_stick_int.h is not documented.
@@ -3320,7 +3317,6 @@ shared/ui/esc_stick_int.h: warning: Member ROW_Y0 (macro definition) of file esc
 shared/ui/esc_stick_int.h: warning: Member SP_PANEL_H (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member SP_PANEL_Y (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member SP_PBTN_H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member SP_PBTN_Y (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member SP_SHARED (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member STEP_W (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member TAP_SLOP (macro definition) of file esc_stick_int.h is not documented.
@@ -4165,9 +4161,6 @@ shared/ui/include/ui_watermark.h: warning: parameters of member ui_watermark are
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_MAX_CREDIT_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.h is not documented.
-shared/ui/include/ui_widgets.h: warning: Member ui_home_tag(gfx_canvas_t *c, const char *title, bool pressed) (function) of file ui_widgets.h is not documented.
-shared/ui/include/ui_widgets.h: warning: Member ui_home_tag_rect(const char *title) (function) of file ui_widgets.h is not documented.
-shared/ui/include/ui_widgets.h: warning: Member ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label, gfx_color_t dot, gfx_color_t fill) (function) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon, const char *name, const char *line, bool pressed) (function) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_bar are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_button are not documented
@@ -4193,7 +4186,6 @@ shared/ui/include/ui_widgets.h: warning: parameters of member ui_panel_header ar
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_rule are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_text_wrap are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_value are not documented
-shared/ui/include/ui_widgets.h: warning: parameters of member ui_wordmark are not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_credit is not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_end is not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_fill is not documented
@@ -5860,17 +5852,11 @@ shared/ui/supply_screen_int.h: warning: Member wb (variable) of struct sup_state
 shared/ui/supply_screen_int.h: warning: Member y (variable) of struct limit_row_t is not documented.
 shared/ui/ui_alert_slot.c: file has no @file block
 shared/ui/ui_band.c: warning: Compound chips_t is not documented.
-shared/ui/ui_band.c: warning: Member HELP_GAP (macro definition) of file ui_band.c is not documented.
-shared/ui/ui_band.c: warning: Member HELP_M (macro definition) of file ui_band.c is not documented.
-shared/ui/ui_band.c: warning: Member HELP_PAD (macro definition) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member PANEL_W (macro definition) of file ui_band.c is not documented.
-shared/ui/ui_band.c: warning: Member STOP_M (macro definition) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member bit (variable) of struct [struct].k_bits is not documented.
 shared/ui/ui_band.c: warning: Member chip_label(const ui_bench_status_t *st, ui_band_chip_t chip, char *buf, size_t n) (function) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip) (function) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member fault_para(uint16_t faults, int i) (function) of file ui_band.c is not documented.
-shared/ui/ui_band.c: warning: Member help_body(gfx_canvas_t *c, const ui_bench_status_t *st, ui_band_chip_t chip, int x, int y, int cells) (function) of file ui_band.c is not documented.
-shared/ui/ui_band.c: warning: Member help_cells(int w) (function) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member help_para(const ui_bench_status_t *st, ui_band_chip_t chip, int i) (function) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member k_bits[] (variable) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member line_len(const char *s, int cells) (function) of file ui_band.c is not documented.
@@ -5892,8 +5878,6 @@ shared/ui/ui_keypad.c: warning: Member ui_keypad_close(ui_keypad_t *k) (function
 shared/ui/ui_pinlist.c: file has no @file block
 shared/ui/ui_plot.c: file has no @file block
 shared/ui/ui_router.c: warning: Member ALERT_H (macro definition) of file ui_router.c is not documented.
-shared/ui/ui_router.c: warning: Member ALERT_TEXT_W (macro definition) of file ui_router.c is not documented.
-shared/ui/ui_router.c: warning: Member ALERT_TEXT_X (macro definition) of file ui_router.c is not documented.
 shared/ui/ui_router.c: warning: Member PANEL_H (macro definition) of file ui_router.c is not documented.
 shared/ui/ui_router.c: warning: Member PANEL_W (macro definition) of file ui_router.c is not documented.
 shared/ui/ui_router.c: warning: Member alert[UI_ALERT_MAX] (variable) of struct [struct].s is not documented.
@@ -5905,7 +5889,6 @@ shared/ui/ui_router.c: warning: Member band_id (variable) of struct [struct].s i
 shared/ui/ui_router.c: warning: Member band_press (variable) of struct [struct].s is not documented.
 shared/ui/ui_router.c: warning: Member clear_alert(void) (function) of file ui_router.c is not documented.
 shared/ui/ui_router.c: warning: Member current (variable) of struct [struct].s is not documented.
-shared/ui/ui_router.c: warning: Member draw_alert(gfx_canvas_t *c, const char *text, bool closable) (function) of file ui_router.c is not documented.
 shared/ui/ui_router.c: warning: Member has_alert (variable) of struct [struct].s is not documented.
 shared/ui/ui_router.c: warning: Member has_band(ui_screen_id_t id) (function) of file ui_router.c is not documented.
 shared/ui/ui_router.c: warning: Member has_held (variable) of struct [struct].s is not documented.
@@ -5985,9 +5968,6 @@ shared/ui/ui_watermark.c: warning: Member s_cache (variable) of file ui_watermar
 shared/ui/ui_watermark.c: warning: Member w (variable) of struct [struct].s_cache is not documented.
 shared/ui/ui_widgets.c: warning: Member tag_width(const char *title, bool chevron) (function) of file ui_widgets.c is not documented.
 shared/ui/ui_widgets.c: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.c is not documented.
-shared/ui/ui_widgets.c: warning: Member ui_home_tag(gfx_canvas_t *c, const char *title, bool pressed) (function) of file ui_widgets.c is not documented.
-shared/ui/ui_widgets.c: warning: Member ui_home_tag_rect(const char *title) (function) of file ui_widgets.c is not documented.
-shared/ui/ui_widgets.c: warning: Member ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label, gfx_color_t dot, gfx_color_t fill) (function) of file ui_widgets.c is not documented.
 shared/ui/ui_widgets.c: warning: Member ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon, const char *name, const char *line, bool pressed) (function) of file ui_widgets.c is not documented.
 shared/ui/ui_workbench.c: file has no @file block
 shared/ui/upd_screen.c: warning: Member BH (macro definition) of file upd_screen.c is not documented.
@@ -6409,10 +6389,6 @@ testbench/touch-injector/core/include/injector.h: warning: Member x0 (variable) 
 testbench/touch-injector/core/include/injector.h: warning: Member x1 (variable) of struct injector_t is not documented.
 testbench/touch-injector/core/include/injector.h: warning: Member y0 (variable) of struct injector_t is not documented.
 testbench/touch-injector/core/include/injector.h: warning: Member y1 (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Unsupported xml/html tag <gesture> found
-testbench/touch-injector/core/include/injector.h: warning: Unsupported xml/html tag <gesture> found
-testbench/touch-injector/core/include/injector.h: warning: Unsupported xml/html tag <state> found
-testbench/touch-injector/core/include/injector.h: warning: end of comment block while expecting command </code> (Probable start '/home/claude/github/rcbench-p4-wt/layout-1024/testbench/touch-injector/core/include/injector.h' at line 40)
 testbench/touch-injector/core/include/injector.h: warning: parameters of member inj_gesture_name are not documented
 testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_host_closed are not documented
 testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_input are not documented

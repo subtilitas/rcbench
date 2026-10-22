@@ -283,7 +283,10 @@ int main(int argc, char **argv)
         if (strcmp(mode, "servo-current") == 0) {
             servo_screen_source(SERVO_SOURCE_INA3221, 1u);
         }
-        ui_router_tick((float)UI_HOLD_FLASH_MS / 1000.0f);
+        /* One tick a phase, and the first spends nothing. */
+        for (int f = 0; f <= UI_HOLD_FLASH_MS / UI_HOLD_FLASH_PHASE_MS; ++f) {
+            ui_router_tick((float)UI_HOLD_FLASH_PHASE_MS / 1000.0f);
+        }
         for (int f = 0; f < 4; ++f) {
             ui_router_tick(0.0f);
             ui_router_render(&c, f & 1);

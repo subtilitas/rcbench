@@ -156,15 +156,16 @@ Zähler je Buffer fest.
 
 ## Obergrenzen
 
-Kein CI-Schritt (Continuous Integration) hält einen Frame an eine
-Obergrenze. `tools/frame_cost.py` bildet den Cache und die Bandbreite des
-ESP32-S3 bei 800 x 480 px nach, und die Tabelle oben ist dieses Modell. Das
-7-Zoll-Panel mit dem ESP32-P4 gibt 1024 x 600 px über einen anderen Cache
-aus. Sein Profil und die Obergrenzen, die CI hält, kommen mit Messungen auf
-diesem Board. Der Host-Renderer zeichnet 1024 x 600 px, daher meldet
-`frame_cost.py --check-doc` die Tabelle als nicht geprüft, und
-`--update-doc` schreibt nichts, bis dieses Profil sie ersetzt. `tools/check_docs.py` schlägt bei einer Obergrenzen-Tabelle
-auf dieser Seite fehl, solange `.github/workflows/ci.yml` keine hält.
+Kein CI-Schritt (Continuous Integration) hält einen Frame an eine Obergrenze.
+`tools/frame_cost.py` bildet den Cache und die Bandbreite des ESP32-S3 bei 800
+x 480 px nach, und die Tabelle oben ist dieses Modell. Das 7-Zoll-Panel mit
+dem ESP32-P4 gibt 1024 x 600 px über einen anderen Cache aus. Sein Profil und
+die Obergrenzen, die CI hält, kommen mit Messungen auf diesem Board. Der
+Host-Renderer zeichnet 1024 x 600 px, daher meldet `frame_cost.py --check-doc`
+die Tabelle als nicht geprüft, und `--update-doc` schreibt nichts, bis dieses
+Profil sie ersetzt. `tools/check_docs.py` schlägt bei einer
+Obergrenzen-Tabelle auf dieser Seite fehl, solange `.github/workflows/ci.yml`
+keine hält.
 
 Braucht ein künftiger Bereich mehr Platz, sind die verbleibenden Hebel vom
 gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das

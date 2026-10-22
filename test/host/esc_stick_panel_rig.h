@@ -54,7 +54,7 @@
 #define TIMING_X     (SP_RIGHT - 168 + 84)
 #define TIMING_Y     45
 #define HOLD_X       (UI_MARGIN + 20 + 130)
-#define HOLD_Y       (UI_BODY_H - UI_MARGIN - 20 - UI_BTN_H_TALL / 2)
+#define HOLD_Y       (UI_BODY_H - UI_ALERT_H - 4 - 36 - 4 - UI_BTN_H_TALL / 2)
 #define CANCEL_X     (UI_PANEL_W - UI_MARGIN - 20 - 90)
 #define HOLD_ID      7
 

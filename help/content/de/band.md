@@ -77,11 +77,11 @@ Bei einem Bit, das dieses Release nie setzt, sagt der Kasten, beide Platinen mit
 
 ![Ein Alert über den unteren Rand des Menüs](view:overview-alert)
 
-Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten Band, 44 px hoch, über den unteren Rand des Bildschirms. Es verdeckt, was darunter liegt, ARM eingeschlossen.
+Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten Band, 44 px hoch, über den unteren Rand des Bildschirms. Es verdeckt, was darunter liegt; ARM und die Bedienelemente, die den Prüfstand anhalten, enden darüber.
 
 - Es verschwindet 30 s nach seinem Eintreffen. Ein neuer Alert startet die 30 s neu.
 - Ein Tipp auf das Band, rechts mit einem `x` markiert, löscht es früher. Der Bildschirm darunter bekommt weder diesen Tipp noch einen zweiten Finger auf dem Band.
-- DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN wirken beim ersten Druck, auch wo das Band sie verdeckt, und der Druck löscht das Band. Das Band verdeckt ABBRECHEN eines Stick-Laufs; DISARM auf SERVO endet über ihm. ARM und AUSGANG EIN unter dem Band werden nicht gedrückt.
+- DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN enden über dem Band: Ein Druck darauf gehört dem Bedienelement, und der Alert bleibt. ARM und AUSGANG EIN unter dem Band werden nicht gedrückt.
 - "Touchscreen antwortet nicht. ARMED ist gesperrt.", beim Start gezeigt, bleibt bis zum Neustart und hat kein `x`.
 
 ## Berührungen nahe am Band

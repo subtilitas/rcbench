@@ -49,7 +49,8 @@ TEST_CASE(the_shared_metrics_fit_the_panel)
     CHECK(2 * UI_MARGIN < UI_PANEL_W);
     CHECK(2 * UI_MARGIN < UI_BODY_H);
     CHECK_EQ(UI_TAP_MIN, 48);
-    CHECK_EQ(UI_BTN_H, 44);
+    CHECK_EQ(UI_BTN_H, 48);
+    CHECK(UI_BTN_H >= UI_TAP_MIN);
     CHECK_EQ(UI_BTN_H_TALL, 56);
     CHECK(UI_BTN_H < UI_BTN_H_TALL);
     CHECK_EQ(UI_R_CARD, 10);

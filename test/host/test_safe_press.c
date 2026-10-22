@@ -20,6 +20,7 @@
 
 #include "gfx.h"
 #include "motor_screen.h"
+#include "prog_registry.h"
 #include "servo_screen.h"
 #include "servo_spots.h"
 #include "settings.h"
@@ -443,9 +444,138 @@ TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
 }
 
+/* ------------------------------------------------- under the alert band */
+
+/* The points of the body under the alert band that @p scr names as a stop,
+ * every 2 px. */
+static int stops_under_the_band(const ui_screen_t *scr)
+{
+    int n = 0;
+    for (int y = UI_ALERT_Y - UI_BAND_H; y < UI_BODY_H; y += 2) {
+        for (int x = 0; x < W; x += 2) {
+            n += scr->safe_at(x, y) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+/* Every stop control ends above the alert band, so an alert covers none:
+ * SERVO's DISARM and OUTPUT OFF, MOTOR & ESC's DISARM, SUPPLY's OUTPUT OFF.
+ * ESC STICK's ABORT is held in test_esc_stick_panel_touch. */
+TEST_CASE(no_stop_control_lies_under_the_alert_band)
+{
+    CHECK(sv_armed());
+    supply_screen_set_output(true);
+    CHECK(servo_screen()->safe_at(SV_ARM_X, SV_ARM_Y - UI_BAND_H));
+    CHECK_EQ(stops_under_the_band(servo_screen()), 0);
+    supply_screen_set_output(false);
+
+    CHECK(mo_armed());
+    CHECK(motor_screen()->safe_at(MO_ARM_X, MO_ARM_Y - UI_BAND_H));
+    CHECK_EQ(stops_under_the_band(motor_screen()), 0);
+
+    up_on(SCREEN_SUPPLY);
+    supply_screen_settings_loaded();
+    supply_screen_set_output(true);
+    CHECK(supply_screen()->safe_at(SU_OUT_X, SU_OUT_Y - UI_BAND_H));
+    CHECK_EQ(stops_under_the_band(supply_screen()), 0);
+    supply_screen_set_output(false);
+}
+
+/*
+ * A session on MOTOR & ESC's PROGRAM whose STOP lies under the alert band:
+ * no product control does, so this one holds the router's way through the
+ * band for a stop.  Its STOP is body x 400 to 599, y 500 to 535.
+ */
+static bool s_fake_open;
+static int  s_fake_stops;
+static int  s_fake_downs;
+static const gfx_rect_t k_fake_stop = { 400, 500, 200, 36 };
+
+static void fake_init(gfx_rect_t a)  { (void)a; s_fake_open = false; }
+static void fake_none(void)          { }
+static bool fake_is_open(void)       { return s_fake_open; }
+static void fake_back(void)          { s_fake_open = false; }
+static bool fake_false(void)         { return false; }
+static void fake_armed(bool a)       { (void)a; }
+static void fake_tick(float dt)      { (void)dt; }
+static bool fake_has_press(uint8_t id) { (void)id; return false; }
+static void fake_render(gfx_canvas_t *c) { (void)c; }
+static uint32_t fake_rev(void)       { return 0u; }
+static gfx_rect_t fake_hold(void)    { return (gfx_rect_t){ 0, 0, 0, 0 }; }
+static uint8_t fake_pin(void)        { return PROG_REG_NO_PIN; }
+static bool fake_safe_at(int x, int y)
+{
+    return s_fake_open && gfx_rect_contains(k_fake_stop, x, y);
+}
+static void fake_event(const touch_event_t *e)
+{
+    if (e->type != TOUCH_EVENT_DOWN) {
+        return;
+    }
+    ++s_fake_downs;
+    if (fake_safe_at(e->point.x, e->point.y)) {
+        ++s_fake_stops;
+    }
+}
+
+static const prog_page_set_t k_fake_pages = {
+    .init = fake_init, .entry = fake_none, .open = fake_none,
+    .is_open = fake_is_open, .back = fake_back, .holds_port = fake_false,
+    .armed = fake_armed, .tick = fake_tick, .has_press = fake_has_press,
+    .event = fake_event, .render = fake_render, .revision = fake_rev,
+    .hold_revision = fake_rev, .hold_rect = fake_hold, .leave = fake_none,
+    .cancel = fake_none, .pin = fake_pin, .safe_at = fake_safe_at,
+};
+
+/* MOTOR & ESC on PROGRAM with the fake session open over the whole body. */
+static void fake_session(void)
+{
+    static const prog_reg_row_t k_row = {
+        PROG_DEV_MOTOR, UI_WB_PROGRAM, TX_PL_STICK, TX_PL_GRP_STICK,
+        TX_MO_SET_THROTTLE, PROG_REG_NO_PORT, 0u, &k_fake_pages, true };
+    prog_registry_use(&k_row, 1);
+    up_on(SCREEN_MOTOR);
+    feed_tap(FEED_LONE, 181, P(18));                 /* the PROGRAM tab */
+    s_fake_open = true;
+    s_fake_stops = 0;
+    s_fake_downs = 0;
+}
+
+/* A stop under the alert band acts on the first press, and the press
+ * closes the alert; the same place is the alert's while it is no stop. */
+TEST_CASE(a_stop_under_the_alert_acts_and_closes_it)
+{
+    fake_session();
+    const int x = 500;
+    const int y = P(518);
+    CHECK(y >= UI_ALERT_Y);
+    CHECK(motor_screen()->safe_at(x, y - UI_BAND_H));
+    alert();
+    feed_tap(FEED_LONE, x, y);
+    CHECK_EQ(s_fake_stops, 1);
+    CHECK(!alert_shows());
+
+    /* Beside the stop, the press is the alert's and reaches no screen. */
+    alert();
+    feed_tap(FEED_LONE, x - 120, y);
+    CHECK_EQ(s_fake_downs, 1);
+    CHECK(!alert_shows());
+
+    /* Closed, the session names no stop: the alert takes the press. */
+    s_fake_open = false;
+    alert();
+    feed_tap(FEED_LONE, x, y);
+    CHECK_EQ(s_fake_stops, 1);
+    CHECK(!alert_shows());
+    prog_registry_use(NULL, 0);
+}
+
 int main(void)
 {
     RUN(disarm_ends_above_the_alert_band);
+    RUN(no_stop_control_lies_under_the_alert_band);
+    RUN(a_stop_under_the_alert_acts_and_closes_it);
     RUN(disarm_beside_the_alert_disarms_at_once);
     RUN(disarm_beside_the_alert_from_its_arrival_to_its_end);
     RUN(disarm_at_the_alerts_edges);

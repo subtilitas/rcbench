@@ -182,9 +182,10 @@ TEST_CASE(nothing_under_the_keypad_presses)
     at_timing_page();
     tap(STEP_UP_X, STEP_CY(2));              /* BEEP MIN 210 */
     tap(VALUE_X, STEP_CY(2));
-    /* DEFAULTS and CLOSE lie under the keypad's foot; BACK under its top. */
-    tap(READ_X, BTN_CY);
-    tap(WRITE_X, BTN_CY);
+    /* DEFAULTS and CLOSE lie under the keypad, its keys over them; BACK
+     * lies under its top. */
+    CHECK(gfx_rect_contains(esc_stick_panel_keypad()->area, READ_X, BTN_CY));
+    CHECK(gfx_rect_contains(esc_stick_panel_keypad()->area, WRITE_X, BTN_CY));
     tap(BACK_X, BACK_Y);
     CHECK(esc_stick_panel_keypad()->open);
     CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);

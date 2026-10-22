@@ -86,10 +86,10 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define RS_TIMING_X    (RS_SP_RIGHT - 168 + 84)
 #define RS_FIND_X      (RS_SP_RIGHT - 182)
 #define RS_RUN_X       (RS_SP_RIGHT - 168 + 84)
-#define RS_RUN_CY      (UI_BODY_H - UI_MARGIN - 36 + 17)
+#define RS_RUN_CY      (UI_BODY_H - UI_ALERT_H - 4 - 36 + 17)
 #define RS_HOLD_X      (UI_MARGIN + 20 + 130)
 #define RS_OK_X        (UI_PANEL_W - UI_MARGIN - 20 - 90)
-#define RS_PBTN_CY     (UI_BODY_H - UI_MARGIN - 20 - UI_BTN_H_TALL / 2)
+#define RS_PBTN_CY     (UI_BODY_H - UI_ALERT_H - 4 - 36 - 4 - UI_BTN_H_TALL / 2)
 #define RS_STEP_UP_X   765
 #define RS_STEP_CY(i)  (142 + (i) * 30 + 10)
 

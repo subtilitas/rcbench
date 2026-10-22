@@ -82,6 +82,14 @@ void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
 /** Small status pill: a filled dot, then a label UI_PILL_INSET px from
  *  the pill's left edge, the dot centred half that from it. */
 #define UI_PILL_INSET 24
+/**
+ * @brief A status pill in the label face, its label UI_PILL_INSET px in.
+ * @param c     The canvas.
+ * @param r     The pill.
+ * @param label Its label; NULL draws the dot alone.
+ * @param dot   The dot's colour.
+ * @param fill  The pill's fill.
+ */
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
              gfx_color_t dot, gfx_color_t fill);
 
@@ -133,10 +141,29 @@ void ui_clock(char *out, size_t n, uint32_t seconds);
 /** @brief The home tag's height: 44 px (6.6 mm). */
 #define UI_TAG_H 44
 
+/**
+ * @brief Where the home tag with @p title is drawn and hit.
+ * @param title The screen's name.
+ * @return The tag, panel coordinates: UI_TAG_X, UI_TAG_Y, UI_TAG_H tall
+ *         and as wide as its chevron and title.
+ */
 gfx_rect_t ui_home_tag_rect(const char *title);
+
+/**
+ * @brief Draw the home tag: a chevron and @p title in UI_FONT_TAG.
+ * @param c       The canvas, the panel's.
+ * @param title   The screen's name.
+ * @param pressed A press is on it: the fill lightens.
+ */
 void ui_home_tag(gfx_canvas_t *c, const char *title, bool pressed);
 
-/** The same shape without the chevron: an identity mark, not a control. */
+/**
+ * @brief The home tag's shape without the chevron: an identity mark, not a
+ *        control.
+ * @param c    The canvas, the panel's.
+ * @param text The mark's text, in UI_FONT_TAG.
+ * @param fill The mark's fill.
+ */
 void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill);
 
 /** Left-pointing solid triangle, apex at (x, cy). */
@@ -246,6 +273,7 @@ typedef struct {
     bool  down;        /**< a press is on the control                  */
     bool  fired;       /**< the hold completed; it does not repeat     */
     int   flash_ms;    /**< ms of the flash still to run               */
+    bool  flash_new;   /**< the flash started and no step has run yet  */
 } ui_hold_t;
 
 /** Nothing held, nothing fired, nothing flashing. */
@@ -303,14 +331,22 @@ bool ui_hold_left(ui_hold_t *h);
 
 /**
  * @brief Time passed for the flash.
+ *
+ * The first step after ui_hold_reached() spends nothing, so the frame the
+ * flash starts on draws its first phase whatever the order of the reach
+ * and the step in a tick.
  * @param h     The hold.
- * @param dt_s  The time, in seconds; the flash's time left falls by it to
- *              0 and no further.
+ * @param dt_s  The time, in seconds; the flash's time left falls by it as
+ *              ui_hold_flash_left() spends it.
  */
 void ui_hold_flash_step(ui_hold_t *h, float dt_s);
 
 /**
  * @brief The flash's time left, @p ms_left, after @p dt_s seconds.
+ *
+ * One step goes no further than the start of the next phase, so every
+ * phase is drawn on at least one frame at any frame rate: at 10 frames a
+ * second the flash takes 6 frames, 600 ms, instead of skipping phases.
  * @param ms_left The time left, in ms.
  * @param dt_s    The time passed, in seconds; under 0 counts as 0.
  * @return The time left, 0 at the least.

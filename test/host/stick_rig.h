@@ -48,7 +48,7 @@ static const ui_screen_t *scr;
 #define STEP_CY(i) (142 + (i) * 30 + 10)
 #define READ_X     (SP_RIGHT - 350 + 84)
 #define WRITE_X    (SP_RIGHT - 168 + 84)
-#define BTN_CY     (UI_BODY_H - UI_MARGIN - 36 + 17)
+#define BTN_CY     (UI_BODY_H - UI_ALERT_H - 4 - 36 + 17)
 #define PAGE_UP_X  (SP_RIGHT - 76 + 17)
 #define PAGE_DN_X  (SP_RIGHT - 38 + 17)
 #define PAGE_CY    126

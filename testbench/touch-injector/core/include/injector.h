@@ -20,18 +20,18 @@
  *                              state=listen|active
  *   wiring                     ok wiring, then the verdict line
  *   confirm scl=GP5            ok confirm
- *   status                     status <state> reads= acks= last_read_ms=
+ *   status                     status \<state\> reads= acks= last_read_ms=
  *                              down= x= y=
  *   tap x y [ms]               ok tap, then done tap frames= ms=
  *   hold x y ms                ok hold, then done hold frames= ms=
  *   swipe x0 y0 x1 y1 ms       ok swipe, then done swipe frames= ms= slowed=
  *   release                    ok release (a gesture under way first gets
- *                              fail <gesture> released)
+ *                              fail \<gesture\> released)
  *
  * Coordinates are panel pixels, x 0..INJ_RES_X-1 and y 0..INJ_RES_Y-1;
- * ms is 1..INJ_MS_MAX.  Errors are one line, err <code> [detail], and the
+ * ms is 1..INJ_MS_MAX.  Errors are one line, err \<code\> [detail], and the
  * command is not run.  A gesture that fails after its ok gets fail
- * <gesture> no_master, panel_reset or released.
+ * \<gesture\> no_master, panel_reset or released.
  *
  * Concurrency: the byte functions of the emulator (gt911_emu.h) run in the
  * I2C interrupt.  injector_input() and injector_poll() read and change the

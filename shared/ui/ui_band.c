@@ -24,6 +24,7 @@
  */
 /** @brief STOP's width: 168 px. */
 #define STOP_W 168
+/** @brief STOP's margin to the band's top, bottom and right edges: 6 px. */
 #define STOP_M 6
 
 gfx_rect_t ui_band_stop_rect(void)
@@ -215,9 +216,11 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
  */
 /** @brief A help bubble's width: 640 px, 60 cells of text. */
 #define HELP_W       640
+/** @brief A bubble's least distance to the panel's edges: 8 px. */
 #define HELP_M       8
+/** @brief A bubble's top under the band: 4 px. */
 #define HELP_GAP     4
-#define HELP_PAD     16     /* text from the bubble's sides            */
+#define HELP_PAD     16     /**< text from the bubble's sides            */
 #define HELP_TOP     30     /**< the first line from the top: tab and 10 */
 /** @brief The last line to the bubble's bottom edge: 10 px. */
 #define HELP_BOTTOM  10
@@ -368,10 +371,19 @@ static size_t line_len(const char *s, int cells)
     return max;
 }
 
-/*
- * The bubble's text from (@p x, @p y), each paragraph broken into lines of
- * @p cells.  Draws when @p c is not NULL; returns the height either way, so
- * the bubble is measured by the code that draws it.
+/**
+ * @brief The bubble's text from (@p x, @p y), each paragraph broken into
+ *        lines of @p cells.
+ *
+ * Draws when @p c is not NULL and measures either way, so the bubble is
+ * measured by the code that draws it.
+ * @param c     The canvas, or NULL to measure.
+ * @param st    The bench status the text follows.
+ * @param chip  The chip whose bubble it is.
+ * @param x     The text's left edge.
+ * @param y     Its top.
+ * @param cells The cells of a line.
+ * @return The text's height in pixels.
  */
 static int help_body(gfx_canvas_t *c, const ui_bench_status_t *st,
                      ui_band_chip_t chip, int x, int y, int cells)
@@ -404,6 +416,11 @@ static int help_body(gfx_canvas_t *c, const ui_bench_status_t *st,
     return h;
 }
 
+/**
+ * @brief The cells of a line of a bubble @p w px wide.
+ * @param w The bubble's width.
+ * @return Its width less the padding, in cells of UI_FONT_BAND.
+ */
 static int help_cells(int w)
 {
     return (w - 2 * HELP_PAD) / gfx_text_width(UI_FONT_BAND, "M", 1);

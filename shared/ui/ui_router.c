@@ -751,7 +751,9 @@ const char *ui_router_alert(void)
  * (976 px, 97 cells of 10 px, on the 1024 px panel).  Text wider than one
  * line breaks at a space onto a second, 20 px under the first: two rows
  * fill 40 of the band's 44 px, 2 px from its top. */
+/** @brief The alert text's left edge: 12 px. */
 #define ALERT_TEXT_X 12
+/** @brief The alert text's width: 976 px, 97 cells, clear of the "x". */
 #define ALERT_TEXT_W (PANEL_W - 2 * ALERT_TEXT_X - 24)
 /** @brief An alert row to the next: 20 px. */
 #define ALERT_PITCH  20
@@ -765,6 +767,12 @@ int ui_router_alert_rows(const char *text)
                         ALERT_PITCH, text, ALERT_FONT, 0);
 }
 
+/**
+ * @brief Draw the alert band across the bottom of the panel.
+ * @param c        The canvas, the panel's.
+ * @param text     The alert, on one row centred or on two from the top.
+ * @param closable A tap closes it: the "x" at its right end shows.
+ */
 static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
 {
     const int y = PANEL_H - ALERT_H;

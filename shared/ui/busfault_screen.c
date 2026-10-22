@@ -291,6 +291,10 @@ static void event(const touch_event_t *evt)
     }
 }
 
+/**
+ * @brief Time passed: the acknowledge flash runs on by @p dt_s.
+ * @param dt_s The time since the last tick, in seconds.
+ */
 static void tick(float dt_s)
 {
     s.flash_ms = ui_hold_flash_left(s.flash_ms, dt_s);
@@ -351,11 +355,14 @@ static int wrap_text(gfx_canvas_t *c, int x, int y, const char *text,
     return lines;
 }
 
-/*
+/**
+ * @brief The acknowledge button's fill.
+ *
  * Danger red while it is waiting to be held, fading to the OK green it
  * settles on, and the same 150 ms flash ARM gives as the command goes.
  * The direction is the other way round from ARM because what it does is the
  * other way round: this one leaves a fault behind rather than entering one.
+ * @return The fill for this frame.
  */
 static gfx_color_t ack_fill(void)
 {

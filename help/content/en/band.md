@@ -77,11 +77,11 @@ For a bit this release never sets, the box says to flash both boards from one re
 
 ![An alert across the bottom of the menu](view:overview-alert)
 
-A fault the open screen does not show appears in a red band, 44 px high, across the bottom of the screen. It covers what is beneath it, ARM included.
+A fault the open screen does not show appears in a red band, 44 px high, across the bottom of the screen. It covers what is beneath it; ARM and the controls that stop the bench end above it.
 
 - It clears 30 s after it arrived. A new alert starts the 30 s again.
 - A tap on the band, marked `x` at its right end, clears it earlier. The screen beneath receives neither that tap nor a second finger on the band.
-- DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN act on the first press even where the band covers them, and the press clears the band. The band covers a stick run's ABORT; SERVO's DISARM ends above it. ARM and OUTPUT ON under the band are not pressed.
+- DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN end above the band: a press on one is its own, and the alert stays. ARM and OUTPUT ON under the band are not pressed.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays until restart and has no `x`.
 
 ## Touch near the band
