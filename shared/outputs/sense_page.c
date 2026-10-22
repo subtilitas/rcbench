@@ -1,5 +1,8 @@
-/*
- * The SENSE, SERVO_SENSE and SERVO_WIN link pages.  See sense_page.h.
+/**
+ * @file
+ * @brief The SENSE, SERVO_SENSE and SERVO_WIN link pages.
+ *
+ * See sense_page.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -54,8 +57,14 @@ void sense_page_init(sense_page_t *p)
     }
 }
 
-/* Whether the driver can calibrate the INA228 for this shunt and maximum:
- * one rule, the driver's, so the page takes no set-up the part refuses. */
+/** @brief Whether the driver can calibrate the INA228 for this shunt and
+ *        maximum:
+ * one rule, the driver's, so the page takes no set-up the part refuses.
+ *
+ * @param shunt_uohm The shunt in micro-ohms.
+ * @param max_da     The maximum current in units of 10 mA.
+ * @return true when ina228_calibrate() accepts the set-up.
+ */
 static bool i228_calibrates(uint16_t shunt_uohm, uint16_t max_da)
 {
     ina228_cal_t cal;
@@ -107,8 +116,16 @@ uint64_t sense_page_held(const sense_page_t *p)
     return (p != NULL) ? (sense_page_pins(p) | p->held) : 0u;
 }
 
-/* Whether @p pin may carry the bus: in the bank, not another page's, not
- * reserved unless it is one this page already holds, and no output's. */
+/**
+ * @brief Whether @p pin may carry the bus: in the bank, not another page's, not
+ * reserved unless it is one this page already holds, and no output's.
+ *
+ * @param p     The page.
+ * @param o     The outputs model.
+ * @param pin   The pin to test.
+ * @param taken Bit n: pin n is held by another page.
+ * @return true when the pin may carry the bus.
+ */
 static bool pin_free(const sense_page_t *p, const outputs_t *o,
                      uint16_t pin, uint64_t taken)
 {
@@ -131,12 +148,18 @@ static bool pin_free(const sense_page_t *p, const outputs_t *o,
     return true;
 }
 
-/*
- * Whether the set-up's pins are ones the bus can ever open: one I2C block's
- * pair, link_sn_pins_pair().  Judged whatever is enabled, so the page holds
- * no pair a later enable is refused for.  One set-up that is not a pair
- * passes: nothing enabled and SDA or SCL 0, which is what a panel writes
- * for pins that are not set (sense_link.c writes 0 for a pin at -1).
+/**
+ * @brief Whether the set-up's pins are ones the bus can ever open: one I2C
+ *        block's pair, link_sn_pins_pair().
+ *
+ * Judged whatever is enabled, so the page holds no pair a later enable is
+ * refused for.  One set-up that is not a pair passes: nothing enabled and SDA
+ * or SCL 0, which is what a panel writes for pins that are not set
+ * (sense_link.c writes 0 for a pin at -1).
+ *
+ * @param c The set-up's registers.
+ * @return true when SDA and SCL are one I2C pair, or nothing is enabled and one
+ *         of them is 0.
  */
 static bool pins_ok(const uint16_t *c)
 {
@@ -148,8 +171,13 @@ static bool pins_ok(const uint16_t *c)
     return c[LINK_SN_ENABLE] == 0u && (sda == 0u || scl == 0u);
 }
 
-/* The values themselves, whatever is enabled: a set-up kept in flash is
- * one a later enable can take without another write. */
+/** @brief The values themselves, whatever is enabled: a set-up kept in flash is
+ * one a later enable can take without another write.
+ *
+ * @param c The set-up's registers.
+ * @return true when every value is in its range and the INA228 calibration
+ *         passes.
+ */
 static bool values_ok(const uint16_t *c)
 {
     if (c[LINK_SN_ENABLE] > LINK_SN_EN_ALL
@@ -180,13 +208,14 @@ static bool values_ok(const uint16_t *c)
 /*
  * A new set-up: everything read under the old one is gone -- FLAGS,
  * PRESENT, the IDs, ERRORS, the readings, the windows and a finished
- * capture's result -- so no read shows a part online, or a value scaled by
- * the old shunt, before core 1 has read under the new one.  The ESC's own
- * telemetry (registers 23 to 25) is not the bus's and stays; the output
- * encoder's (26 to 30) and RESETS (31) go with the rest, and so does the
- * window ring.  CAP_SEQ
- * counts on across set-ups.  A capture under way cannot meet this: a
- * set-up is refused while the bank drives, and a stopped bank ends it.
+ * capture's result -- so no read shows a part online, or a value scaled
+ * by the old shunt, before core 1 has read under the new one.
+ *
+ * The ESC's own telemetry (registers 23 to 25) is not the bus's and stays; the
+ * output encoder's (26 to 30) and RESETS (31) go with the rest, and so does the
+ * window ring.  CAP_SEQ counts on across set-ups.  A capture under way cannot
+ * meet this: a set-up is refused while the bank drives, and a stopped bank ends
+ * it.
  */
 void sense_page_forget(sense_page_t *p)
 {
@@ -299,8 +328,15 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
     }
 }
 
-/* Whether output channel @p ch is a surface a PWM slot renders: the one
- * kind of output whose pulse edge a capture can be timed from. */
+/**
+ * @brief Whether output channel @p ch is a surface a PWM slot renders: the one
+ * kind of output whose pulse edge a capture can be timed from.
+ *
+ * @param p  The page.
+ * @param o  The outputs model.
+ * @param ch Output channel.
+ * @return true when the channel is a surface that a bound PWM slot renders.
+ */
 static bool pwm_surface(const sense_page_t *p, const outputs_t *o, uint8_t ch)
 {
     if (o->channel[ch].role != OUT_ROLE_SURFACE) {
@@ -345,7 +381,14 @@ bool sense_page_port_gone(const sense_page_t *p)
            && (out >= LINK_PG_PORTS_MAX || (p->ports & (1u << out)) == 0u);
 }
 
-/* Whether the output a capture names renders a frame to time from. */
+/**
+ * @brief Whether the output a capture names renders a frame to time from.
+ *
+ * @param p   The page.
+ * @param o   The outputs model.
+ * @param arm The CAP_ARM register.
+ * @return true when the output the capture names renders a frame to time from.
+ */
 static bool arm_output(const sense_page_t *p, const outputs_t *o,
                        uint16_t arm)
 {
@@ -357,7 +400,14 @@ static bool arm_output(const sense_page_t *p, const outputs_t *o,
     return pwm_surface(p, o, out);
 }
 
-/* A capture's frame, CAP_ARM to CAP_BAND_MA, judged as an arm. */
+/**
+ * @brief A capture's frame, CAP_ARM to CAP_BAND_MA, judged as an arm.
+ *
+ * @param p The page.
+ * @param f The capture frame, LINK_SS_CAP_FRAME registers.
+ * @param o The outputs model.
+ * @return 0 when the arm is taken; otherwise a LINK_NACK_* refusal.
+ */
 static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
                          const outputs_t *o)
 {
@@ -546,15 +596,25 @@ void sense_page_cmd(const sense_page_t *p, sense_cmd_t *cmd)
     cmd->cap.band_ua  = (int32_t)v[LINK_SS_CAP_BAND_MA] * 1000;
 }
 
-/* A 32-bit value into two registers, low half first. */
+/**
+ * @brief A 32-bit value into two registers, low half first.
+ *
+ * @param r Two registers, written in place, low half first.
+ * @param v The 32-bit value.
+ */
 static void reg_32(uint16_t *r, uint32_t v)
 {
     r[0] = (uint16_t)(v & 0xFFFFu);
     r[1] = (uint16_t)(v >> 16);
 }
 
-/* The INA3221 SENSE names, 0 to 3: the part whose channels, identity and
- * resets the SENSE and SERVO_SENSE registers show. */
+/** @brief The INA3221 SENSE names, 0 to 3: the part whose channels, identity
+ *        and
+ * resets the SENSE and SERVO_SENSE registers show.
+ *
+ * @param p The page.
+ * @return The INA3221 part index, 0 to 3; 0 for an address out of range.
+ */
 static unsigned mirror_part(const sense_page_t *p)
 {
     const uint16_t addr = p->sense[LINK_SN_I3221_ADDR];
@@ -563,11 +623,27 @@ static unsigned mirror_part(const sense_page_t *p)
                ? (unsigned)(addr - INA3221_ADDR_MIN) : 0u;
 }
 
+/**
+ * @brief Whether a window clipped at either limit.
+ *
+ * @param w The window.
+ * @return true when either clip flag is set.
+ */
 static bool clipped(const sense_window_t *w)
 {
     return w->clip_hi || w->clip_lo;
 }
 
+/**
+ * @brief The flags of one part: online, a good identity, a wrong identity.
+ *
+ * @param st     The part's state.
+ * @param id_ok  true when the identity passes.
+ * @param online The flag for an online part.
+ * @param good   The flag for a good identity.
+ * @param wrong  The flag for a wrong identity.
+ * @return The flags the part sets.
+ */
 static uint16_t part_flags(sense_state_t st, bool id_ok, uint16_t online,
                            uint16_t good, uint16_t wrong)
 {
@@ -584,6 +660,14 @@ static uint16_t part_flags(sense_state_t st, bool id_ok, uint16_t online,
     return f;
 }
 
+/**
+ * @brief The FLAGS register of a snapshot: the bus, both parts and the INA228
+ *        clipped flag.
+ *
+ * @param s The snapshot.
+ * @param a The INA3221 part index, 0 to 3.
+ * @return The FLAGS register value.
+ */
 static uint16_t sense_flags(const sense_snap_t *s, unsigned a)
 {
     uint16_t f = 0u;
@@ -607,13 +691,28 @@ static uint16_t sense_flags(const sense_snap_t *s, unsigned a)
     return f;
 }
 
-/* Whether the snapshot's charge and energy are run @p run_gen's. */
+/**
+ * @brief Whether the snapshot's charge and energy are run @p run_gen's.
+ *
+ * @param s       The snapshot.
+ * @param run_gen The generation of the run the totals must belong to.
+ * @return true when the charge and energy are the totals of run_gen and the
+ *         INA228 is online.
+ */
 static bool totals_ok(const sense_snap_t *s, uint16_t run_gen)
 {
     return s->run_gen == run_gen && s->run.totals_ok
            && s->i228 == SENSE_PART_ONLINE;
 }
 
+/**
+ * @brief Publish the SENSE registers of a snapshot.
+ *
+ * @param r       The SENSE registers, LINK_SN_COUNT entries, filled in place.
+ * @param s       The snapshot.
+ * @param run_gen The generation of the current run.
+ * @param a       The INA3221 part index, 0 to 3.
+ */
 static void publish_sense(uint16_t *r, const sense_snap_t *s,
                           uint16_t run_gen, unsigned a)
 {
@@ -645,6 +744,13 @@ static void publish_sense(uint16_t *r, const sense_snap_t *s,
                                    | s->i228_resets);
 }
 
+/**
+ * @brief Publish each channel's last window into the SERVO_SENSE registers.
+ *
+ * @param r The SERVO_SENSE registers, filled in place.
+ * @param s The snapshot.
+ * @param a The INA3221 part index, 0 to 3.
+ */
 static void publish_channels(uint16_t *r, const sense_snap_t *s, unsigned a)
 {
     uint16_t flags = (uint16_t)(r[LINK_SS_CH_FLAGS] & LINK_SS_CAP_CLIPPED);
@@ -671,8 +777,14 @@ static void publish_channels(uint16_t *r, const sense_snap_t *s, unsigned a)
     r[LINK_SS_CH_FLAGS] = flags;
 }
 
-/* FAST's ring into SERVO_WIN: the newest window's number, then each entry.
- * The capture's registers are filled at the read (sense_win_read()). */
+/** @brief FAST's ring into SERVO_WIN: the newest window's number, then each
+ *        entry.
+ * The capture's registers are filled at the read (sense_win_read()).
+ *
+ * @param r The SERVO_WIN registers, filled in place.
+ * @param s The snapshot.
+ * @param a The INA3221 part index, 0 to 3.
+ */
 static void publish_ring(uint16_t *r, const sense_snap_t *s, unsigned a)
 {
     memset(r, 0, (size_t)LINK_SW_COUNT * sizeof(uint16_t));
@@ -711,6 +823,12 @@ static void publish_ring(uint16_t *r, const sense_snap_t *s, unsigned a)
     }
 }
 
+/**
+ * @brief Publish the snapshot's capture into the SERVO_SENSE registers.
+ *
+ * @param r The SERVO_SENSE registers, filled in place.
+ * @param s The snapshot.
+ */
 static void publish_capture(uint16_t *r, const sense_snap_t *s)
 {
     r[LINK_SS_CAP_STATE]    = (uint16_t)s->cap_state;
@@ -727,10 +845,16 @@ static void publish_capture(uint16_t *r, const sense_snap_t *s)
     }
 }
 
-/* The output encoder's registers 26 to 30.  The angle and its figures are
- * the snapshot's only for a part that is online or was: a part gone
- * offline keeps its last reading and loses ONLINE, and the still time
- * goes on counting from it. */
+/** @brief The output encoder's registers 26 to 30.
+ *
+ * The angle and its figures are the snapshot's only for a part that is online
+ * or was: a part gone offline keeps its last reading and loses ONLINE, and the
+ * still time
+ * goes on counting from it.
+ *
+ * @param r The SENSE registers, filled in place.
+ * @param s The snapshot.
+ */
 static void publish_enc(uint16_t *r, const sense_snap_t *s)
 {
     uint16_t f = 0u;
@@ -783,7 +907,13 @@ void sense_page_publish(sense_page_t *p, const sense_snap_t *s,
     }
 }
 
-/* Volts or amps in hundredths, rounded and held to a register. */
+/**
+ * @brief Volts or amps in hundredths, rounded and held to a register.
+ *
+ * @param x The value in volts or amps.
+ * @return The value in hundredths, rounded and held to 0 to 65535; 0 for a
+ *         negative value or NaN.
+ */
 static uint16_t hundredths(float x)
 {
     const float h = x * 100.0f + 0.5f;

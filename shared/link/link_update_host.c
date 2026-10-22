@@ -1,5 +1,8 @@
-/*
- * The panel's half of the IOmcu update.  See link_update_host.h.
+/**
+ * @file
+ * @brief The panel's half of the IOmcu update.
+ *
+ * See link_update_host.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,13 +15,22 @@
 #include "link_crc.h"
 #include "link_msg.h"
 
-/* How an exchange ended. */
+/** @brief How an exchange ended. */
 typedef enum {
     X_NONE = 0,   /* unanswered                       */
     X_OK,         /* DATA for a read, ACK for a write  */
     X_NACK,       /* refused: nack holds the reason    */
 } x_t;
 
+/**
+ * @brief Set up an update run: clear the state and record the image.
+ *
+ * @param u The update state.
+ * @param img The image, or NULL.
+ * @param len Length of img in bytes.
+ * @param phase The phase to start in.
+ * @param now_ms The current time, in ms; starts the phase's wait.
+ */
 static void start(link_uph_t *u, const uint8_t *img, uint32_t len,
                   link_uph_phase_t phase, uint32_t now_ms)
 {
@@ -30,6 +42,12 @@ static void start(link_uph_t *u, const uint8_t *img, uint32_t len,
     u->since_ms = now_ms;
 }
 
+/**
+ * @brief End the update with a result.
+ *
+ * @param u The update state.
+ * @param result The result, a link_uph_result_t.
+ */
 static void done(link_uph_t *u, uint8_t result)
 {
     u->phase = LINK_UPH_DONE;
@@ -98,6 +116,17 @@ static x_t read_regs(link_host_t *h, const link_port_t *port, uint8_t page,
     return (reply->op == LINK_OP_DATA) ? X_OK : X_NACK;
 }
 
+/**
+ * @brief Send a command to the UPDATE_CTL page and classify the answer.
+ *
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param cmd The command, an LINK_UPD_CMD_* value.
+ * @param a0 First argument.
+ * @param a1 Second argument.
+ * @param reply Receives the answer.
+ * @return X_NONE when unanswered, X_OK for ACK, X_NACK for a refusal.
+ */
 static x_t command(link_host_t *h, const link_port_t *port, uint16_t cmd,
                    uint16_t a0, uint16_t a1, link_msg_t *reply)
 {
@@ -109,8 +138,14 @@ static x_t command(link_host_t *h, const link_port_t *port, uint16_t cmd,
     return (reply->op == LINK_OP_ACK) ? X_OK : X_NACK;
 }
 
-/* An exchange went unanswered; true when the link has been silent for
- * LINK_UPH_LOST_MS and the update ends. */
+/**
+ * @brief An exchange went unanswered; true when the link has been silent for
+ * LINK_UPH_LOST_MS and the update ends.
+ *
+ * @param u The update state.
+ * @param port The transport and clock.
+ * @return true when the update ended (NO_ANSWER), else false.
+ */
 static bool missed(link_uph_t *u, const link_port_t *port)
 {
     /* Read after the exchange: an unanswered one took its timeout. */
@@ -126,13 +161,24 @@ static bool missed(link_uph_t *u, const link_port_t *port)
     return false;
 }
 
-/* An exchange was answered. */
+/**
+ * @brief An exchange was answered.
+ *
+ * @param u The update state.
+ */
 static void heard(link_uph_t *u)
 {
     u->missing = false;
 }
 
-/* The refusal's reason, read back; the result REFUSED. */
+/**
+ * @brief The refusal's reason, read back; the result REFUSED.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param nack The refusal.
+ */
 static void refused(link_uph_t *u, link_host_t *h, const link_port_t *port,
                     const link_msg_t *nack)
 {
@@ -148,9 +194,15 @@ static void refused(link_uph_t *u, link_host_t *h, const link_port_t *port,
     done(u, LINK_UPH_REFUSED);
 }
 
-/*
- * A command the store's gate refused: wait for it, up to LINK_UPH_BUSY_MS
- * from the first refusal.  True while still waiting.
+/**
+ * @brief A command the store's gate refused: wait for it, up to
+ * LINK_UPH_BUSY_MS from the first refusal.
+ *
+ * True while still waiting.
+ *
+ * @param u The update state.
+ * @param now_ms The current time, in ms.
+ * @return true while still waiting; false when the wait ended (BUSY).
  */
 static bool wait_gate(link_uph_t *u, uint32_t now_ms)
 {
@@ -165,7 +217,12 @@ static bool wait_gate(link_uph_t *u, uint32_t now_ms)
     return true;
 }
 
-/* The IOmcu lost the session: from block 0 again, or give up. */
+/**
+ * @brief The IOmcu lost the session: from block 0 again, or give up.
+ *
+ * @param u The update state.
+ * @param now_ms The current time, in ms.
+ */
 static void start_over(link_uph_t *u, uint32_t now_ms)
 {
     if (++u->restarts > LINK_UPH_RESTARTS) {
@@ -179,6 +236,12 @@ static void start_over(link_uph_t *u, uint32_t now_ms)
     u->since_ms = now_ms;
 }
 
+/**
+ * @brief Enter the RESYNC phase, remembering the phase it was entered from.
+ *
+ * @param u The update state.
+ * @param from The phase the resync is entered from.
+ */
 static void resync(link_uph_t *u, uint8_t from)
 {
     u->after_resync = from;
@@ -196,6 +259,14 @@ static void step_check_hash(link_uph_t *u)
     }
 }
 
+/**
+ * @brief CHECK_ASK step: read the IOmcu's slot and ask it to hash.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
+ */
 static void step_check_ask(link_uph_t *u, link_host_t *h,
                            const link_port_t *port, uint32_t now_ms)
 {
@@ -280,6 +351,14 @@ static void step_check_ask(link_uph_t *u, link_host_t *h,
     u->since_ms = now_ms;
 }
 
+/**
+ * @brief CHECK_WAIT step: read the IOmcu's digest of its running slot.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
+ */
 static void step_check_wait(link_uph_t *u, link_host_t *h,
                             const link_port_t *port, uint32_t now_ms)
 {
@@ -353,6 +432,14 @@ static void step_prepare(link_uph_t *u, link_host_t *h,
     u->since_ms = now_ms;
 }
 
+/**
+ * @brief BEGIN step: send the BEGIN command with the image length.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
+ */
 static void step_begin(link_uph_t *u, link_host_t *h, const link_port_t *port,
                        uint32_t now_ms)
 {
@@ -378,6 +465,14 @@ static void step_begin(link_uph_t *u, link_host_t *h, const link_port_t *port,
     u->phase = LINK_UPH_SEND;
 }
 
+/**
+ * @brief Build the registers and CRC of one block of the image as sent.
+ *
+ * @param u The update state.
+ * @param block Block number, 0 to blocks - 1.
+ * @param regs Receives LINK_UPD_DATA_COUNT registers.
+ * @param crc Receives the CRC-16 of the block's bytes.
+ */
 static void block_regs(const link_uph_t *u, uint16_t block, uint16_t *regs,
                        uint16_t *crc)
 {
@@ -398,6 +493,14 @@ static void block_regs(const link_uph_t *u, uint16_t block, uint16_t *regs,
     }
 }
 
+/**
+ * @brief SEND step: write one block to UPDATE_DATA, then COMMIT it.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
+ */
 static void step_send(link_uph_t *u, link_host_t *h, const link_port_t *port,
                       uint32_t now_ms)
 {
@@ -445,10 +548,15 @@ static void step_send(link_uph_t *u, link_host_t *h, const link_port_t *port,
     }
 }
 
-/*
- * Where the IOmcu stands, after an exchange went unanswered or a
- * command was refused: carry on from the block it expects, check what it
- * has, or start over from block 0 when it lost the session.
+/**
+ * @brief Where the IOmcu stands, after an exchange went unanswered or a command
+ * was refused: carry on from the block it expects, check what it has, or start
+ * over from block 0 when it lost the session.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
  */
 static void step_resync(link_uph_t *u, link_host_t *h, const link_port_t *port,
                         uint32_t now_ms)
@@ -513,6 +621,14 @@ static void step_resync(link_uph_t *u, link_host_t *h, const link_port_t *port,
     done(u, LINK_UPH_REFUSED);
 }
 
+/**
+ * @brief FINISH step: send the expected digest, then the FINISH command.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
+ */
 static void step_finish(link_uph_t *u, link_host_t *h, const link_port_t *port,
                         uint32_t now_ms)
 {
@@ -550,6 +666,14 @@ static void step_finish(link_uph_t *u, link_host_t *h, const link_port_t *port,
     u->since_ms = now_ms;
 }
 
+/**
+ * @brief VERIFY step: read the IOmcu's verdict on the image it received.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
+ */
 static void step_verify(link_uph_t *u, link_host_t *h, const link_port_t *port,
                         uint32_t now_ms)
 {
@@ -600,6 +724,14 @@ static void step_verify(link_uph_t *u, link_host_t *h, const link_port_t *port,
     done(u, LINK_UPH_REFUSED);
 }
 
+/**
+ * @brief ACTIVATE step: send the ACTIVATE command and wait for the restart.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
+ */
 static void step_activate(link_uph_t *u, link_host_t *h,
                           const link_port_t *port, uint32_t now_ms)
 {
@@ -623,6 +755,14 @@ static void step_activate(link_uph_t *u, link_host_t *h,
     u->since_ms = now_ms;
 }
 
+/**
+ * @brief RESTARTING step: read identity and slot until the new image shows.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
+ */
 static void step_restarting(link_uph_t *u, link_host_t *h,
                             const link_port_t *port, uint32_t now_ms)
 {
@@ -661,6 +801,13 @@ static void step_restarting(link_uph_t *u, link_host_t *h,
     done(u, LINK_UPH_UPDATED);   /* bought already */
 }
 
+/**
+ * @brief BUY step: send the BUY command and read back the slot.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ */
 static void step_buy(link_uph_t *u, link_host_t *h, const link_port_t *port)
 {
     link_msg_t r;

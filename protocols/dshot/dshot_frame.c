@@ -1,5 +1,8 @@
-/*
- * The outbound half of DShot: sixteen bits and the map from travel onto them.
+/**
+ * @file
+ * @brief The outbound half of DShot: sixteen bits and the map from travel onto
+ *        them.
+ *
  * See dshot.h for the model.
  *
  * SPDX-License-Identifier: MIT
@@ -7,12 +10,17 @@
 
 #include "dshot.h"
 
-/*
- * The checksum is three nibbles of the twelve-bit payload folded together.
- * It catches every single-bit error and every burst inside one nibble, which
- * is what a bit period misread as its neighbour looks like.  It is not a CRC
- * (cyclic redundancy check) in any useful sense and the protocol does not
- * claim one.
+/**
+ * @brief The checksum is three nibbles of the twelve-bit payload folded
+ *        together.
+ *
+ * It catches every single-bit error and every burst inside one nibble, which is
+ * what a bit period misread as its neighbour looks like.  It is not a CRC
+ * (cyclic redundancy check) in any useful sense and the protocol does not claim
+ * one.
+ *
+ * @param payload  The twelve-bit payload, value and telemetry bit.
+ * @return         The checksum, 0 to 15.
  */
 static uint16_t fold(uint16_t payload)
 {

@@ -1,5 +1,8 @@
-/*
- * When to ask an ESC (electronic speed controller) for extended telemetry.
+/**
+ * @file
+ * @brief When to ask an ESC (electronic speed controller) for extended
+ *        telemetry.
+ *
  * See dshot.h.
  *
  * SPDX-License-Identifier: MIT

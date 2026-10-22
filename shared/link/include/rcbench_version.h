@@ -1,5 +1,7 @@
-/*
- * The firmware version, as one number both images and the host suite agree on.
+/**
+ * @file
+ * @brief The firmware version, as one number both images and the host suite
+ * agree on.
  *
  * It lives beside the link because its only job is to travel: the IOmcu
  * publishes it on the identity page and the panel prints what came back, so
@@ -25,7 +27,7 @@
 #define RCBENCH_STRINGIFY_(x) #x
 #define RCBENCH_STRINGIFY(x)  RCBENCH_STRINGIFY_(x)
 
-/** "0.21.2", for anything that prints it rather than sends it. */
+/** @brief "0.21.2", for anything that prints it rather than sends it. */
 #define RCBENCH_VERSION_STRING              \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MAJOR) "." \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MINOR) "." \

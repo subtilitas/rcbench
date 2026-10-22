@@ -1,5 +1,7 @@
-/*
- * One servo move judged from its current.  See servo_move.h for the rules.
+/**
+ * @file
+ * @brief One servo move judged from its current.  See servo_move.h for the
+ *        rules.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -52,14 +54,26 @@ void servo_move_begin(servo_move_t *m, const servo_move_cfg_t *cfg)
     m->state = SERVO_MOVE_WAITING;
 }
 
+/**
+ * @brief Tell whether the move is still under way.
+ *
+ * @param m Move state.
+ * @return true in the WAITING and MOVING states.
+ */
 static bool under_way(const servo_move_t *m)
 {
     return m->state == SERVO_MOVE_WAITING || m->state == SERVO_MOVE_MOVING;
 }
 
-/* A move under way whose window has run out at @p now is over: late with
- * movement, unseen without, ended at @p now.  A @p now before the command
- * decides nothing.  Whether it ran out. */
+/**
+ * @brief A move under way whose window has run out at @p now is over: late with
+ *        movement, unseen without, ended at @p now.  A @p now before the
+ *        command decides nothing.  Whether it ran out.
+ *
+ * @param m   Move state. Updated when the window has run out.
+ * @param now Current time, in the caller time unit.
+ * @return true when the window has run out and the move is ended.
+ */
 static bool expired(servo_move_t *m, uint32_t now)
 {
     const uint32_t since = now - m->cfg.cmd_t;
@@ -72,7 +86,13 @@ static bool expired(servo_move_t *m, uint32_t now)
     return true;
 }
 
-/* A sample into the filter's window of the newest filter_n. */
+/**
+ * @brief A sample into the filter's window of the newest filter_n.
+ *
+ * @param m    Move state. Updates the filter ring.
+ * @param a    Sample, A.
+ * @param clip Clip state of the sample.
+ */
 static void filter_push(servo_move_t *m, float a, servo_move_clip_t clip)
 {
     const uint8_t len = m->cfg.filter_n;
@@ -91,8 +111,18 @@ void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip)
     }
 }
 
-/* The filtered sample, from the newest filter_n samples: false when the
- * window holds clips at both ends and so no bound. */
+/**
+ * @brief The filtered sample, from the newest filter_n samples: false when the
+ *        window holds clips at both ends and so no bound.
+ *
+ * @param m        Move state. Pushes the sample into the filter.
+ * @param a        Sample, A.
+ * @param clip     Clip state of the sample.
+ * @param out      Out: mean of the filter window, A.
+ * @param out_clip Out: clip state of the window.
+ * @return true when the window has a bound; false when it holds clips at both
+ *        ends.
+ */
 static bool filtered(servo_move_t *m, float a, servo_move_clip_t clip,
                      float *out, servo_move_clip_t *out_clip)
 {
@@ -114,8 +144,16 @@ static bool filtered(servo_move_t *m, float a, servo_move_clip_t clip,
     return true;
 }
 
-/* The samples in a row near the level with @p i added: their count, or 1
- * when @p i spreads them wider than the band and starts a new run. */
+/**
+ * @brief The samples in a row near the level with @p i added: their count, or 1
+ *        when @p i spreads them wider than the band and starts a new run.
+ *
+ * @param m  Move state holding the current run.
+ * @param i  Sample to add, A.
+ * @param lo Out: lowest value of the run, A.
+ * @param hi Out: highest value of the run, A.
+ * @return run length, 1 to UINT8_MAX.
+ */
 static uint8_t run_with(const servo_move_t *m, float i, float *lo, float *hi)
 {
     if (m->run_n > 0u) {

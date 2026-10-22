@@ -1,5 +1,8 @@
-/*
- * Hardware PWM (pulse-width modulation) servo outputs.  See out_pwm.h.
+/**
+ * @file
+ * @brief Hardware PWM (pulse-width modulation) servo outputs.
+ *
+ * See out_pwm.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,20 +19,26 @@
 #include "out_pwm_map.h"
 #include "outputs.h"
 
-/*
- * One microsecond per count (OUT_PWM_TICK_HZ).  The frame period then fits
+/**
+ * @brief One microsecond per count (OUT_PWM_TICK_HZ).
+ *
+ * The frame period then fits
  * the sixteen-bit counter down to 16 Hz, past the 40 Hz floor the driver
  * table sets, and a microsecond is the resolution every pulse in this
  * firmware is expressed in.
  */
 #define TICK_HZ  OUT_PWM_TICK_HZ
 
-/*
- * What is bound, so the sharing rules can be checked and a release can put
- * the pin back.  One entry per slot the bank can hold and one per
+/**
+ * @brief What is bound, so the sharing rules can be checked and a release
+ * can put the pin back.  One entry per slot the bank can hold and one per
  * programming port; nothing here has more outputs than that.
  */
 #define BINDINGS (OUT_MAX_SLOTS + LINK_PG_PORTS_MAX)
+/**
+ * @brief One pin binding: whether the entry is in use, its pin, its frame
+ * rate and the last count of its frame.
+ */
 typedef struct {
     bool     used;
     uint8_t  pin;
@@ -37,8 +46,17 @@ typedef struct {
     uint16_t wrap;      /**< the last count of the frame                  */
 } binding_t;
 
+/**
+ * @brief The pin bindings, one entry per bound pin.
+ */
 static binding_t s_bound[BINDINGS];
 
+/**
+ * @brief Finds the binding of a pin.
+ *
+ * @param pin  GPIO number to look up.
+ * @return The entry holding @p pin, or NULL when the pin is not bound.
+ */
 static binding_t *find(uint8_t pin)
 {
     for (unsigned i = 0; i < BINDINGS; ++i) {
@@ -49,8 +67,13 @@ static binding_t *find(uint8_t pin)
     return NULL;
 }
 
-/* The frame's last count, which is the longest pulse the output pages let
- * through at this rate: the same function answers both. */
+/**
+ * @brief The frame's last count, which is the longest pulse the output pages
+ * let through at this rate: the same function answers both.
+ *
+ * @param rate_hz  Frame rate in Hz.
+ * @return The last count of the frame, in microseconds.
+ */
 static uint16_t wrap_for(uint16_t rate_hz)
 {
     return out_pwm_pulse_max(rate_hz);
@@ -205,7 +228,9 @@ void out_pwm_write(uint8_t pin, uint16_t pulse_us)
     pwm_set_gpio_level(pin, (pulse_us > b->wrap) ? b->wrap : pulse_us);
 }
 
-/* Counts at the end of a frame in which a write may meet the wrap. */
+/**
+ * @brief Counts at the end of a frame in which a write may meet the wrap.
+ */
 #define STAMP_GUARD 2u
 
 bool out_pwm_write_stamped(uint8_t pin, uint16_t pulse_us, uint64_t *frame_us)

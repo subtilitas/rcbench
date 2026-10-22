@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Register image conversions and the field table.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -6,7 +9,7 @@
 
 #include <string.h>
 
-/* Conversions between a raw value and its displayed value. */
+/** @brief Conversions between a raw value and its displayed value. */
 enum {
     CONV_RAW = 0,     /* displayed as stored */
     CONV_DUTY,        /* round(raw x 100 / 255) % */
@@ -31,7 +34,7 @@ enum {
 #define LK KST_ACCESS_LOCKED
 #define NV KST_ACCESS_NEVER
 
-/* In the order of kst_field_id_t. */
+/** @brief In the order of kst_field_id_t. */
 static const kst_field_t k_fields[KST_F_COUNT] = {
     UNNAMED(0x00, 0, 8),
     ONE("", 0x01, 0, 8, NV, KST_UNIT_RAW, CONV_RAW),
@@ -89,11 +92,19 @@ const kst_field_t *kst_field(kst_field_id_t id)
     return &k_fields[id];
 }
 
+/**
+ * @brief Mask of a run of bits in one register.
+ *
+ */
 static unsigned part_mask(unsigned shift, unsigned bits)
 {
     return ((1u << bits) - 1u) << shift;
 }
 
+/**
+ * @brief Total width of a field in bits.
+ *
+ */
 static unsigned width(const kst_field_t *f)
 {
     return (unsigned)f->lo_bits + f->hi_bits;
@@ -174,7 +185,7 @@ bool kst_field_edit(kst_image_t *img, kst_field_id_t id, uint16_t raw)
     return true;
 }
 
-/* 1 bits upward from bit 0, up to the first 0. */
+/** @brief 1 bits upward from bit 0, up to the first 0. */
 static int32_t thermo(unsigned raw)
 {
     int32_t n = 0;
@@ -314,6 +325,9 @@ const char *kst_type_name(kst_type_t type)
 
 /* --- layout fingerprint --------------------------------------------------- */
 
+/**
+ * @brief Record a broken layout rule and the registers it concerns.
+ */
 static void fp_fail(kst_fingerprint_t *fp, kst_fp_rule_t rule, uint32_t regs)
 {
     fp->rules |= (uint16_t)(1u << (unsigned)rule);

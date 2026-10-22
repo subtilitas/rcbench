@@ -1,5 +1,6 @@
-/*
- * Finding a servo's installed mechanical limit by current.
+/**
+ * @file
+ * @brief Finding a servo's installed mechanical limit by current.
  *
  * A servo held against a mechanical stop draws stall current for as long as
  * it is commanded there.  The stop belongs to the linkage, the horn position
@@ -41,20 +42,25 @@ typedef enum {
 
 typedef enum {
     SERVO_LIMIT_FAULT_NONE = 0,
-    /** Current crossed the hard ceiling. The search stops where it stands. */
+    /** @brief Current crossed the hard ceiling.
+     *
+     * The search stops where it stands. */
     SERVO_LIMIT_FAULT_OVERCURRENT,
-    /** Current stayed above the knee for longer than the stall timeout. */
+    /** @brief Current stayed above the knee for longer than the stall
+     *         timeout. */
     SERVO_LIMIT_FAULT_STALL,
-    /** The whole permitted travel was covered without binding.  Either the
-     *  surface is free over that range or the sensor does not resolve the
-     *  bind; reported as such rather than as a limit. */
+    /** @brief The whole permitted travel was covered without binding.
+     *
+     * Either the surface is free over that range or the sensor does not resolve
+     * the bind; reported as such rather than as a limit. */
     SERVO_LIMIT_FAULT_NO_LIMIT,
-    /** step_us is 0: no step can reach a stop.  Set by servo_limit_init(),
-     *  which then commands nothing but the centre. */
+    /** @brief step_us is 0: no step can reach a stop.
+     *
+     * Set by servo_limit_init(), which then commands nothing but the centre. */
     SERVO_LIMIT_FAULT_BAD_CONFIG,
 } servo_limit_fault_t;
 
-/** The pulse widths the search commands stay within, microseconds. */
+/** @brief The pulse widths the search commands stay within, microseconds. */
 #define SERVO_LIMIT_MIN_US 500u
 #define SERVO_LIMIT_MAX_US 2500u
 
@@ -67,8 +73,8 @@ typedef struct {
     uint16_t measure_ms;     /**< average over this long once settled */
 
     /**
-     * The knee.  Current must exceed the free-running baseline by both a
-     * ratio and an absolute margin before a step counts as bound.
+     * @brief The knee.  Current must exceed the free-running baseline by both a
+     *        ratio and an absolute margin before a step counts as bound.
      *
      * Either test alone misreads a common case.  A ratio alone is fooled by
      * a very low baseline, where sensor noise is a large multiple of almost
@@ -81,8 +87,8 @@ typedef struct {
     float    hard_limit_a;   /**< abort at once, wherever it happens */
 
     /**
-     * Working hard: above this the servo is doing real work, and it may not
-     * do so for longer than stall_ms.
+     * @brief Working hard: above this the servo is doing real work, and it may
+     *        not do so for longer than stall_ms.
      *
      * A threshold of its own, independent of the knee test.  Armed from the
      * knee, the stall protection would depend on a tuning value: a knee set
@@ -97,7 +103,14 @@ typedef struct {
     uint16_t backoff_us;     /**< how far short of the bind to programme */
 } servo_limit_cfg_t;
 
-/** Defaults for a hobby servo on a control surface. */
+/**
+ * @brief Defaults for a hobby servo on a control surface.
+ *
+ * @param cfg       Configuration to fill. Does nothing when NULL.
+ * @param centre_us Centre pulse width, us.
+ * @param positive  true to step toward longer pulse widths, false toward
+ *        shorter ones; the step is 10 us either way.
+ */
 void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
                           bool positive);
 
@@ -125,17 +138,35 @@ typedef struct {
     bool     started;
 } servo_limit_t;
 
+/**
+ * @brief Start a limit search.
+ *
+ * @param lf  Search state to initialise. Does nothing when NULL.
+ * @param cfg Configuration to copy. Does nothing when NULL.
+ */
 void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg);
 
 /**
- * Advance the search with one current reading, and return the pulse width the
- * servo should be commanded to.
+ * @brief Advance the search with one current reading, and return the pulse
+ *        width the servo should be commanded to.
  *
  * Call it at the sampling rate of the current sensor.  Calling after the
  * search has finished is safe; the returned width then holds the servo at
  * centre, so a finished search leaves no surface deflected.
+ *
+ * @param lf        Search state.  A NULL lf gives 0.
+ * @param current_a Current reading, A. At or above hard_limit_a, or NaN, aborts
+ *        the search.
+ * @param now_ms    Time of the reading, ms.
+ * @return pulse width to command, us; 0 when lf is NULL.
  */
 uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms);
 
-/** How far the search has gone, 0..1, for a progress bar. */
+/**
+ * @brief How far the search has gone, 0..1, for a progress bar.
+ *
+ * @param lf Search state.
+ * @return progress from 0.0 (centre) to 1.0; 1.0 when the state is not RUNNING,
+ *        0.0 when lf is NULL or max_travel_us is 0.
+ */
 float servo_limit_progress(const servo_limit_t *lf);

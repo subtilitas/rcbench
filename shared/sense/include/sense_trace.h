@@ -1,9 +1,11 @@
-/*
- * A trace of INA3221 CH1's 1 ms samples as text lines, for a debug build
- * of the IOmcu (its SENSE_TRACE build option).  No released image
- * links this file.  CH1 here is the schedule's FAST channel
- * (sense_sched.h), CH1 of the one part on a bench set up through SENSE;
- * with no FAST channel nothing is traced but the set-up.
+/**
+ * @file
+ * @brief A trace of INA3221 CH1's 1 ms samples as text lines, for a debug build
+ * of the IOmcu (its SENSE_TRACE build option).
+ *
+ * No released image links this file.  CH1 here is the schedule's FAST channel
+ * (sense_sched.h), CH1 of the one part on a bench set up through SENSE; with no
+ * FAST channel nothing is traced but the set-up.
  *
  * Two sides, one on each core, with a ring of records between them:
  *
@@ -186,39 +188,49 @@ extern "C" {
 #endif
 
 #define SENSE_TRACE_FORMAT       3u
-/** The longest line, its CR LF included: the USB console's transmit
- *  buffer holds 64 bytes. */
+/**
+ * @brief The longest line, its CR LF included: the USB console's transmit
+ * buffer holds 64 bytes.
+ */
 #define SENSE_TRACE_LINE_MAX    64u
-/** Records kept from before a trigger: 64 ms of samples less the 3
- *  voltages read in that time. */
+/**
+ * @brief Records kept from before a trigger: 64 ms of samples less the 3
+ * voltages read in that time.
+ */
 #define SENSE_TRACE_PRE         64u
-/** A trace's length after a command or a capture edge, ms. */
+/** @brief A trace's length after a command or a capture edge, ms. */
 #define SENSE_TRACE_EDGE_MS   4000u
-/** A trace's length after the console command, ms. */
+/** @brief A trace's length after the console command, ms. */
 #define SENSE_TRACE_KEY_MS   10000u
-/** A slot's pulse changing this long after its last change is a command
- *  of its own, ms. */
+/**
+ * @brief A slot's pulse changing this long after its last change is a command
+ * of its own, ms.
+ */
 #define SENSE_TRACE_HOLD_MS     50u
-/** With the ring empty, a line that waits for core 1 to pass its time
- *  is written this long after that time at the latest, ms: 5 times the
- *  19 ms a flash write parks core 1 for. */
+/**
+ * @brief With the ring empty, a line that waits for core 1 to pass its time is
+ * written this long after that time at the latest, ms: 5 times the 19 ms a
+ * flash write parks core 1 for.
+ */
 #define SENSE_TRACE_STALL_MS   100u
-/** PWM slots watched for a changed pulse: OUT_MAX_SLOTS. */
+/** @brief PWM slots watched for a changed pulse: OUT_MAX_SLOTS. */
 #define SENSE_TRACE_SLOTS        8u
-/** Trigger lines waiting for the console. */
+/** @brief Trigger lines waiting for the console. */
 #define SENSE_TRACE_MARKS        8u
-/** The trace's time unit: 0.1 ms. */
+/** @brief The trace's time unit: 0.1 ms. */
 #define SENSE_TRACE_T_PER_MS    10u
-/** CH1's sample period, µs: the schedule's tick. */
+/** @brief CH1's sample period, µs: the schedule's tick. */
 #define SENSE_TRACE_PERIOD_US 1000u
-/** The most records a record's count of missing ones holds. */
+/** @brief The most records a record's count of missing ones holds. */
 #define SENSE_TRACE_LOST_MAX  0xFFFFFFu
-/** A trace whose end lies this far back, 0.1 ms, and whose lines the
- *  console has not taken is dropped as with no console: 29.8 h, half of
- *  what two times can lie apart and still be told which is the later. */
+/**
+ * @brief A trace whose end lies this far back, 0.1 ms, and whose lines the
+ * console has not taken is dropped as with no console: 29.8 h, half of what two
+ * times can lie apart and still be told which is the later.
+ */
 #define SENSE_TRACE_OWED_MAX_T (1u << 30)
 
-/** What a record holds. */
+/** @brief What a record holds. */
 typedef enum {
     SENSE_TRACE_CURRENT = 0,  /**< a CH1 sample, µA                        */
     SENSE_TRACE_BUS,          /**< CH1's bus voltage, mV                   */
@@ -229,7 +241,7 @@ typedef enum {
     SENSE_TRACE_SHUNT,        /**< CH1's shunt, µΩ                         */
 } sense_trace_kind_t;
 
-/** What started or extended a trace. */
+/** @brief What started or extended a trace. */
 typedef enum {
     SENSE_TRACE_TRIG_CMD = 0,
     SENSE_TRACE_TRIG_EDGE,
@@ -239,7 +251,7 @@ typedef enum {
                                    so far of a slewed command that waits   */
 } sense_trace_trig_t;
 
-/** Why a trace ended. */
+/** @brief Why a trace ended. */
 typedef enum {
     SENSE_TRACE_END_NONE = 0,
     SENSE_TRACE_END_TIME,
@@ -247,7 +259,7 @@ typedef enum {
     SENSE_TRACE_END_KEY,
 } sense_trace_end_t;
 
-/** One record: 12 bytes. */
+/** @brief One record: 12 bytes. */
 typedef struct {
     uint32_t t;      /**< 0.1 ms.  A sample's and its voltage's: when
                           the sample was read.  A set-up record's: the
@@ -259,7 +271,7 @@ typedef struct {
                           dropped just before this one, saturating        */
 } sense_trace_rec_t;
 
-/** Core 1's own. */
+/** @brief Core 1's own. */
 typedef struct {
     bool     have;        /**< head and t are a sample taken               */
     uint8_t  head;        /**< the history's head at it                    */
@@ -284,7 +296,7 @@ typedef struct {
     uint32_t kept_t;      /**< the time of the last record kept            */
 } sense_trace_src_t;
 
-/** A trigger line waiting. */
+/** @brief A trigger line waiting. */
 typedef struct {
     uint8_t  kind;        /**< sense_trace_trig_t                          */
     uint32_t t;
@@ -293,7 +305,7 @@ typedef struct {
     uint32_t cmd_t;       /**< a $D line's: its command's $C time          */
 } sense_trace_mark_t;
 
-/** One PWM slot's pulse as last seen. */
+/** @brief One PWM slot's pulse as last seen. */
 typedef struct {
     bool     have;        /**< pulse is one seen                           */
     uint16_t ch;          /**< of this output channel                      */
@@ -309,7 +321,7 @@ typedef struct {
     uint32_t cmd_t;       /**< its last command's trigger time, 0.1 ms     */
 } sense_trace_watch_t;
 
-/** Where the header stands. */
+/** @brief Where the header stands. */
 typedef enum {
     SENSE_TRACE_IDLE = 0,
     SENSE_TRACE_HEAD_T,   /**< the $T line is owed                         */
@@ -317,7 +329,7 @@ typedef enum {
     SENSE_TRACE_BODY,
 } sense_trace_stage_t;
 
-/** Core 0's own. */
+/** @brief Core 0's own. */
 typedef struct {
     sense_trace_stage_t stage;
     uint16_t id;          /**< traces started, modulo 65536                */
@@ -352,6 +364,9 @@ typedef struct {
     sense_trace_watch_t watch[SENSE_TRACE_SLOTS];
 } sense_trace_out_t;
 
+/**
+ * @brief A trace of the FAST channel's samples, shared between the two cores.
+ */
 typedef struct {
     sense_trace_rec_t *buf;
     uint32_t          mask;       /**< the size less 1                     */
@@ -368,57 +383,132 @@ typedef struct {
     sense_trace_out_t out;
 } sense_trace_t;
 
-/** A trace over @p buf of @p size records.  False, and nothing usable,
- *  unless @p size is a power of two from 2 to 2^24. */
+/**
+ * @brief A trace over @p buf of @p size records.
+ *
+ * False, and nothing usable, unless @p size is a power of two from 2 to 2^24.
+ *
+ * @param tr The trace to set up.
+ * @param buf The record buffer.
+ * @param size Number of records in buf.
+ * @return true when the trace is set up; false, and nothing usable, unless size
+ *       is a power of two from 2 to 2^24.
+ */
 bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
                       uint32_t size);
 
-/** Core 1, after each tick of @p s; NULL while no bus is open.
- *  @p tick_us is the time the caller read before the tick, on the clock
- *  the schedule reads: no time the tick's samples carry lies before it. */
+/**
+ * @brief Core 1, after each tick of @p s; NULL while no bus is open. @p tick_us
+ * is the time the caller read before the tick, on the clock the schedule reads:
+ * no time the tick's samples carry lies before it.
+ *
+ * @param tr The trace.
+ * @param s The schedule that has ticked.
+ * @param tick_us The time the caller read before the tick, in µs.
+ */
 void sense_trace_feed(sense_trace_t *tr, const sense_sched_t *s,
                       uint64_t tick_us);
 
-/** Core 0: a trigger of @p kind at @p at_us on the clock the schedule
- *  reads; @p ch and @p us are a cmd trigger's channel and pulse. */
+/**
+ * @brief Core 0: a trigger of @p kind at @p at_us on the clock the schedule
+ * reads; @p ch and @p us are a cmd trigger's channel and pulse.
+ *
+ * @param tr The trace.
+ * @param kind The trigger kind.
+ * @param at_us Time of the trigger, in µs.
+ * @param ch The channel of a cmd trigger.
+ * @param us The pulse of a cmd trigger, in µs.
+ */
 void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
                          uint64_t at_us, uint16_t ch, uint16_t us);
 
-/** The pulse a PWM slice renders when asked for @p pulse_us with its
- *  counter wrapping at @p top: the frame's length at most, as the driver
- *  clamps it. */
+/**
+ * @brief The pulse a PWM slice renders when asked for @p pulse_us with its
+ * counter wrapping at @p top: the frame's length at most, as the driver clamps
+ * it.
+ *
+ * @param pulse_us The requested pulse, in µs.
+ * @param top The counter's wrap value.
+ * @return The pulse the PWM slice renders, in µs.
+ */
 uint16_t sense_trace_rendered(uint16_t pulse_us, uint32_t top);
 
-/** Core 0, every pass, for each PWM slot: the output channel @p ch it
- *  renders and the pulse, 0 for none.  A slot seen with another channel
- *  than before is watched afresh.  True when this is a command: the caller then gives the time of
- *  the frame that carries it to sense_trace_trigger(), as a
- *  SENSE_TRACE_TRIG_CMD for every true return.  That trigger sets the
- *  command time the slot's later $D line carries; without it the line
- *  carries an earlier command's time, or 0 on a slot that has none. */
+/**
+ * @brief Core 0, every pass, for each PWM slot: the output channel @p ch it
+ * renders and the pulse, 0 for none.
+ *
+ * A slot seen with another channel than before is watched afresh.  True when
+ * this is a command: the caller then gives the time of the frame that carries
+ * it to sense_trace_trigger(), as a SENSE_TRACE_TRIG_CMD for every true return.
+ * That trigger sets the command time the slot's later $D line carries; without
+ * it the line carries an earlier command's time, or 0 on a slot that has none.
+ *
+ * @param tr The trace.
+ * @param slot The PWM slot.
+ * @param ch The output channel the slot renders.
+ * @param pulse_us The pulse, in µs; 0 for none.
+ * @param now_us The current time, in µs.
+ * @return true when this is a command.
+ */
 bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
                        uint16_t pulse_us, uint64_t now_us);
 
-/** Core 0: slot @p slot renders no PWM pulse of its own -- unbound, or
- *  another driver's: the next pulse seen on it starts its watch afresh. */
+/**
+ * @brief Core 0: slot @p slot renders no PWM pulse of its own -- unbound, or
+ * another driver's: the next pulse seen on it starts its watch afresh.
+ *
+ * @param tr The trace.
+ * @param slot The PWM slot.
+ */
 void sense_trace_unwatch(sense_trace_t *tr, unsigned slot);
 
-/** Core 0: a character from the console. */
+/**
+ * @brief Core 0: a character from the console.
+ *
+ * @param tr The trace.
+ * @param c The character from the console.
+ * @param now_us The current time, in µs.
+ */
 void sense_trace_key(sense_trace_t *tr, int c, uint64_t now_us);
 
-/** Core 0, every pass: up to @p room bytes of whole lines into @p out;
- *  returns their length.  @p connected false drops a trace under way. */
+/**
+ * @brief Core 0, every pass: up to @p room bytes of whole lines into @p out;
+ * returns their length.  @p connected false drops a trace under way.
+ *
+ * @param tr The trace.
+ * @param now_us The current time, in µs.
+ * @param connected false drops a trace under way.
+ * @param out Receives the lines.
+ * @param room Bytes that fit in out.
+ * @return The length of the lines written.
+ */
 size_t sense_trace_pump(sense_trace_t *tr, uint64_t now_us, bool connected,
                         char *out, size_t room);
 
-/** Whether a trace is under way. */
+/**
+ * @brief Whether a trace is under way.
+ *
+ * @param tr The trace.
+ * @return true while a trace is under way.
+ */
 bool sense_trace_active(const sense_trace_t *tr);
 
-/** Records the ring holds. */
+/**
+ * @brief Records the ring holds.
+ *
+ * @param tr The trace.
+ * @return The number of records held.
+ */
 uint32_t sense_trace_held(const sense_trace_t *tr);
 
-/** The shunt code of @p ua on a shunt of @p shunt_uohm: the inverse of
- *  ina3221_current_ua(), 0 for no shunt. */
+/**
+ * @brief The shunt code of @p ua on a shunt of @p shunt_uohm: the inverse of
+ * ina3221_current_ua(), 0 for no shunt.
+ *
+ * @param ua The current, in µA.
+ * @param shunt_uohm Shunt resistance, in µΩ.
+ * @return The shunt code of ua on a shunt of shunt_uohm; 0 for no shunt.
+ */
 int32_t sense_trace_code(int32_t ua, uint32_t shunt_uohm);
 
 #ifdef __cplusplus

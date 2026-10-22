@@ -1,5 +1,6 @@
-/*
- * The IOMCU_CONSOLE build's console; see console_hw.h.
+/**
+ * @file
+ * @brief The IOMCU_CONSOLE build's console; see console_hw.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,12 +15,16 @@
 
 #include "page_console.h"
 
-/* Characters taken in one pass: a pasted line of PAGE_CONSOLE_LINE_MAX
- * takes 3 passes at most. */
+/**
+ * @brief Characters taken in one pass: a pasted line of
+ * PAGE_CONSOLE_LINE_MAX takes 3 passes at most.
+ */
 #define CONSOLE_HW_KEYS_PER_PASS 64u
 
 static page_console_t s_console;
-/* The output of one pass, off the main loop's stack. */
+/**
+ * @brief The output of one pass, off the main loop's stack.
+ */
 static char s_out[PAGE_CONSOLE_OUT_LINE * 2u];
 
 void console_hw_init(const link_dev_t *dev)

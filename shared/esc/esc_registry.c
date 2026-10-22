@@ -1,6 +1,8 @@
-/*
- * The profiles the bench offers: built in, with the card's in front.  See
- * esc_profile.h.
+/**
+ * @file
+ * @brief The profiles the bench offers: built in, with the card's in front.
+ *
+ * See esc_profile.h.
  *
  * A card profile with a built-in id takes that profile's place in the list,
  * so an operator who corrects a default on the card sees one entry, not two.
@@ -19,15 +21,24 @@
 #include <stdlib.h>
 #include <string.h>
 
+/** @brief One card profile held by the registry. */
 typedef struct {
-    esc_profile_t p;
-    void         *block;
-    bool          replaces;     /* a built-in profile has this id */
+    esc_profile_t p;            /**< the parsed profile                    */
+    void         *block;        /**< the malloc() block that holds p       */
+    bool          replaces;     /**< a built-in profile has this id        */
 } slot_t;
 
+/** @brief Card profiles, in the order the card was read. */
 static slot_t s_over[ESC_PROFILE_MAX_OVERRIDES];
+/** @brief Number of card profiles held in s_over. */
 static size_t s_over_n;
 
+/**
+ * @brief Find a built-in profile by id.
+ *
+ * @param id  The profile id.
+ * @return The built-in profile, or NULL when no built-in profile has the id.
+ */
 static const esc_profile_t *builtin_find(const char *id)
 {
     for (size_t i = 0; i < esc_profiles_builtin_count; ++i) {
@@ -38,6 +49,12 @@ static const esc_profile_t *builtin_find(const char *id)
     return NULL;
 }
 
+/**
+ * @brief Find a card profile by id.
+ *
+ * @param id  The profile id.
+ * @return The card slot, or NULL when no card profile has the id.
+ */
 static slot_t *over_find(const char *id)
 {
     for (size_t i = 0; i < s_over_n; ++i) {
@@ -67,8 +84,13 @@ bool esc_brand_same(const char *a, const char *b)
     }
 }
 
-/* The models @p p's maker would list with @p p in place of the profile of
- * its id. */
+/**
+ * @brief The models @p p's maker would list with @p p in place of the profile
+ *        of its id.
+ *
+ * @param p  The profile, as it would be registered.
+ * @return The number of models the maker would list.
+ */
 static size_t maker_models_with(const esc_profile_t *p)
 {
     size_t n = p->model_count;
@@ -83,6 +105,14 @@ static size_t maker_models_with(const esc_profile_t *p)
     return n;
 }
 
+/**
+ * @brief Refuse a card profile: free its block and set the reason.
+ *
+ * @param block  The malloc() block that holds the profile, freed here.
+ * @param why    Receives @p text when not NULL.
+ * @param text   The static reason string.
+ * @return false, always.
+ */
 static bool refuse(void *block, const char **why, const char *text)
 {
     free(block);
@@ -204,15 +234,31 @@ bool esc_profile_file_is(const char *file_name, const char *id)
 
 /* ------------------------------------------------------------- search */
 
+/* ------------------------------------------------------------- search */
+
+/**
+ * @brief Fold an ASCII capital letter to lower case.
+ *
+ * @param c  The byte.
+ * @return The lower-case letter for A to Z; every other byte unchanged.
+ */
 static unsigned char fold(unsigned char c)
 {
     return (c >= 'A' && c <= 'Z') ? (unsigned char)(c - 'A' + 'a') : c;
 }
 
-/*
- * Byte @p i of @p a, a space and @p b read as one text of @p n bytes; @p b
- * NULL is @p a alone.  No copy is made, since a card profile's strings have
- * no length limit short of the file's.
+/**
+ * @brief Byte @p i of @p a, a space and @p b read as one text of @p n bytes; @p
+ *        b NULL is @p a alone.
+ *
+ * No copy is made, since a card profile's strings have no length limit short of
+ * the file's.
+ *
+ * @param a   The first text.
+ * @param na  Length of @p a, bytes.
+ * @param b   The second text, or NULL.
+ * @param i   Position in the joined text.
+ * @return The byte at @p i.
  */
 static unsigned char joined_at(const char *a, size_t na, const char *b,
                                size_t i)
@@ -223,12 +269,18 @@ static unsigned char joined_at(const char *a, size_t na, const char *b,
     return (i == na) ? (unsigned char)' ' : (unsigned char)b[i - na - 1u];
 }
 
-/*
- * The wildcard match, with a "*" implied at either end.  On a mismatch the
- * last "*" takes one byte more and the rest of the pattern is tried again
- * from there: at most text times pattern comparisons, no recursion.  A
- * multi-byte character cannot match from its middle, because a UTF-8 lead
+/**
+ * @brief The wildcard match, with a "*" implied at either end.
+ *
+ * On a mismatch the last "*" takes one byte more and the rest of the pattern is
+ * tried again from there: at most text times pattern comparisons, no recursion.
+ * A multi-byte character cannot match from its middle, because a UTF-8 lead
  * byte never equals a continuation byte.
+ *
+ * @param a        The first text.
+ * @param b        The second text, joined to @p a with a space; NULL for none.
+ * @param pattern  The pattern, with "*" as a wildcard; NULL counts as "".
+ * @return true when the pattern is found in the joined text.
  */
 static bool match_joined(const char *a, const char *b, const char *pattern)
 {

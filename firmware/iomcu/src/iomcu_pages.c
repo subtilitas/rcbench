@@ -1,7 +1,10 @@
-/*
- * The IOmcu's own pages and the output pages: IDENTITY, STATUS,
- * CONTROL, BENCH, CHANNELS, CHAN_CFG, OUTPUTS, SERVO and PROG, and the
- * glue that makes the silicon agree with the bank.  The rules are in
+/**
+ * @file
+ * @brief The IOmcu's own pages and the output pages: IDENTITY, STATUS,
+ * CONTROL, BENCH, CHANNELS, CHAN_CFG, OUTPUTS, SERVO and PROG, and the glue
+ * that makes the silicon agree with the bank.
+ *
+ * The rules are in
  * shared/outputs and shared/safety; see iomcu.h for the other files.
  *
  * SPDX-License-Identifier: MIT
@@ -128,10 +131,15 @@ uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
-/*
- * The tester's sweep pointed where the PROG page's TARGET says.  A change
- * returns the SERVO page's rate to 0 (servo_page_target()); true when that
- * moved the rate the slots run at, which then wants the slots bound again.
+/**
+ * @brief The tester's sweep pointed where the PROG page's TARGET says.
+ *
+ * A change returns the SERVO page's rate to 0 (servo_page_target()); true
+ * when that moved the rate the slots run at, which then wants the slots
+ * bound again.
+ *
+ * @return True when that moved the rate the slots run at, so the slots must
+ *         be bound again.
  */
 static bool target_sync(void)
 {
@@ -148,7 +156,9 @@ static bool target_sync(void)
     return servo_page_slots_hz(&s_servo) != slots_hz;
 }
 
-/* The slots bound now, at the rates they run at now. */
+/**
+ * @brief The slots bound now, at the rates they run at now.
+ */
 static void slots_rerate(void)
 {
     uint16_t rate[OUT_MAX_SLOTS];
@@ -157,13 +167,17 @@ static void slots_rerate(void)
     sense_page_bound(&s_sense, bound_slots());
 }
 
-/*
- * The programming ports' pins bound as the PROG page holds them: the TARGET
- * port at the SERVO rate while it names one, every other port at
- * PROG_PORT_RATE_HZ (prog_port_port_hz()).  Never the pin the wire driver
- * holds: it is the driver's until the KST or HITEC port gives it back, and the page
- * keeps the port's pulse switch and target meanwhile.  The pins the wire
- * driver holds, as a mask of ports.
+/**
+ * @brief The programming ports' pins bound as the PROG page holds them: the
+ * TARGET port at the SERVO rate while it names one, every other port at
+ * PROG_PORT_RATE_HZ (prog_port_port_hz()).
+ *
+ * Never the pin the wire driver holds: it is the driver's until the KST or
+ * HITEC port gives it back, and the page keeps the port's pulse switch and
+ * target meanwhile.  The pins the wire driver holds, as a mask of ports.
+ *
+ * @return The programming ports whose pins the wire driver holds, one bit
+ *         per port.
  */
 static uint8_t ports_bind(void)
 {
@@ -184,10 +198,9 @@ static uint8_t ports_bind(void)
 }
 
 /*
- * The programming ports' pins made to agree with the PROG page
- * (ports_bind()).  The tester's sweep is pointed where the page's TARGET
- * says before and after the binding, which can take the TARGET port's pin
- * away.
+ * The programming ports' pins made to agree with the PROG page (ports_bind()).
+ * The tester's sweep is pointed where the page's TARGET says before and after
+ * the binding, which can take the TARGET port's pin away.
  */
 void ports_apply(void)
 {
@@ -232,7 +245,12 @@ void hw_apply(void)
     hw_apply_only(0xFFu);
 }
 
-/* Armed, or asked to arm by a frame served earlier in this pass. */
+/**
+ * @brief Armed, or asked to arm by a frame served earlier in this pass.
+ *
+ * @param s  The state whose CONTROL page holds the ARM register.
+ * @return True when the bank is driving or the ARM register is set.
+ */
 static bool bank_armed(const iomcu_state_t *s)
 {
     return outputs_driving(&s_outputs) || s->control[LINK_CT_ARM] != 0u;
@@ -417,8 +435,8 @@ uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
 /*
  * A whole OUTPUTS page, judged and put in force: 0, or the reason with the
  * page, the bank and the silicon as they were.  The page with one window
- * replaced for an OUTPUTS write, the page prepared for a BIND commit, as
- * chan_cfg_take().
+ * replaced for an OUTPUTS write, the page prepared for a BIND commit,
+ * as chan_cfg_take().
  */
 uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
 {

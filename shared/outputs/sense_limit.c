@@ -1,5 +1,6 @@
-/*
- * The SENSE_LIMIT page: see sense_limit.h.
+/**
+ * @file
+ * @brief The SENSE_LIMIT page: see sense_limit.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,6 +18,13 @@ _Static_assert(LINK_SL_KEPT == LINK_SM_CHANNELS,
                "a limit for each of the map's channels");
 _Static_assert(LINK_SL_COUNT <= LINK_MAX_REGS, "SENSE_LIMIT fits a page");
 
+/**
+ * @brief Whether the registers off to off + n - 1 lie within the page.
+ *
+ * @param off First register index.
+ * @param n Number of registers.
+ * @return true when off + n is at most LINK_SL_COUNT, false otherwise.
+ */
 static bool on_page(uint8_t off, uint8_t n)
 {
     return (unsigned)off + (unsigned)n <= (unsigned)LINK_SL_COUNT;

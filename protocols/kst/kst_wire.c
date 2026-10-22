@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Frame building and reply decoding for the KST wire.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -8,11 +11,19 @@
 
 /* --- frames --------------------------------------------------------------- */
 
-/* The 10 bits after the start bit: `10 00000000` reads, `00 10000000`
- * writes.  No other prefix is known. */
+/**
+ * @brief The 10 bits after the start bit: `10 00000000` reads, `00 10000000`
+ *        writes.
+ *
+ * No other prefix is known.
+ */
 #define PREFIX_READ  0x200u
 #define PREFIX_WRITE 0x080u
 
+/**
+ * @brief Append one half-cell level to a frame.
+ *
+ */
 static void put_level(kst_frame_t *f, bool high)
 {
     if (high) {
@@ -21,10 +32,11 @@ static void put_level(kst_frame_t *f, bool high)
     f->n_half++;
 }
 
-/*
- * 27 bits, most significant first, as 54 half-cells.  The first half-cell is
- * the low half of the start bit and is left out; a trailing low is cut, so
- * the sequence ends on the frame's last high.
+/**
+ * @brief 27 bits, most significant first, as 54 half-cells.
+ *
+ * The first half-cell is the low half of the start bit and is left out; a
+ * trailing low is cut, so the sequence ends on the frame's last high.
  */
 static void build(uint32_t word, kst_frame_kind_t kind, kst_frame_t *out)
 {
@@ -44,6 +56,10 @@ static void build(uint32_t word, kst_frame_kind_t kind, kst_frame_t *out)
     out->n_half = last_high;
 }
 
+/**
+ * @brief Build the 27-bit word of a frame from its prefix, register and data.
+ *
+ */
 static uint32_t frame_word(uint32_t prefix, uint8_t reg, uint8_t data)
 {
     return ((uint32_t)1 << 26) | (prefix << 16) | ((uint32_t)reg << 8) | data;
@@ -100,11 +116,13 @@ uint32_t kst_reply_window_ns(kst_expect_t expect)
                                       : KST_READ_WINDOW_NS;
 }
 
-/*
- * The glitch rule: a level change counts once the new level has lasted
- * KST_GLITCH_NS.  On timestamps that is a pair of edges closer than that,
- * and both go.  An edge that follows a removed pair is compared with the
- * edge before the pair, so a burst of chatter ends on its last edge.
+/**
+ * @brief The glitch rule: a level change counts once the new level has lasted
+ *        KST_GLITCH_NS.
+ *
+ * On timestamps that is a pair of edges closer than that, and both go.  An edge
+ * that follows a removed pair is compared with the edge before the pair, so a
+ * burst of chatter ends on its last edge.
  */
 static unsigned filter(const kst_capture_t *cap, uint32_t *e, uint8_t *removed)
 {
@@ -123,7 +141,11 @@ static unsigned filter(const kst_capture_t *cap, uint32_t *e, uint8_t *removed)
     return n;
 }
 
-/* Edges at or before @p t.  The line starts low, so an odd count is high. */
+/**
+ * @brief Edges at or before @p t.
+ *
+ * The line starts low, so an odd count is high.
+ */
 static unsigned edges_upto(const uint32_t *e, unsigned n, uint32_t t)
 {
     unsigned count = 0;
@@ -134,7 +156,7 @@ static unsigned edges_upto(const uint32_t *e, unsigned n, uint32_t t)
     return count;
 }
 
-/* The two halves of the cell whose mid-cell edge is at @p t differ. */
+/** @brief The two halves of the cell whose mid-cell edge is at @p t differ. */
 static bool halves_differ(const uint32_t *e, unsigned n, uint32_t t)
 {
     const unsigned before = edges_upto(e, n, t - KST_RX_CONFIRM_NS);
@@ -143,9 +165,9 @@ static bool halves_differ(const uint32_t *e, unsigned n, uint32_t t)
     return ((after - before) % 2u) != 0u;
 }
 
-/*
- * Index of the edge after @p last nearest to @p pred and within
- * KST_RX_SEARCH_NS of it; @p n when there is none.
+/**
+ * @brief Index of the edge after @p last nearest to @p pred and within
+ *        KST_RX_SEARCH_NS of it; @p n when there is none.
  */
 static unsigned find_mid_edge(const uint32_t *e, unsigned n, unsigned last,
                               uint32_t pred)
@@ -164,6 +186,10 @@ static unsigned find_mid_edge(const uint32_t *e, unsigned n, unsigned last,
     return best;
 }
 
+/**
+ * @brief Track the mid-cell edges of a reply and decode its bits.
+ *
+ */
 static kst_rx_t track(const uint32_t *e, unsigned n, uint32_t window_ns,
                       kst_expect_t expect, kst_reply_t *out)
 {
@@ -234,6 +260,10 @@ static kst_rx_t track(const uint32_t *e, unsigned n, uint32_t window_ns,
     return KST_RX_OK;
 }
 
+/**
+ * @brief Run the checks of kst_reply_decode() in their order.
+ *
+ */
 static kst_rx_t decode(const kst_capture_t *cap, kst_expect_t expect,
                        kst_reply_t *out)
 {

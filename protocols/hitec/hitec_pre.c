@@ -1,6 +1,8 @@
-/*
- * Receive a D series answer by precharge and sample.  See
- * include/hitec_pre.h.
+/**
+ * @file
+ * @brief Receive a D series answer by precharge and sample.
+ *
+ * See include/hitec_pre.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,10 +14,12 @@
 
 #include "hitec_pio.h"
 
-/* Samples a second the period aims at. */
+/** @brief Samples a second the period aims at. */
 #define SAMPLE_RATE (HITEC_D_BIT_RATE * HITEC_PRE_SAMPLES_PER_BIT)
 
-/* PIO instruction words, without side-set: the delay in bits 8 to 12. */
+/**
+ * @brief PIO instruction words, without side-set: the delay in bits 8 to 12.
+ */
 #define PIO_DELAY(d)          ((uint16_t)((d) << 8))
 #define PIO_SET_PINDIRS(v, d) ((uint16_t)(0xE080u | (v) | PIO_DELAY(d)))
 #define PIO_IN_PINS_1(d)      ((uint16_t)(0x4001u | PIO_DELAY(d)))
@@ -24,7 +28,7 @@
 
 _Static_assert(HITEC_RX_MAX <= 16u, "framing is a 16-bit mask");
 
-/* @p ns at @p sys_hz in cycles, rounded to nearest. */
+/** @brief @p ns at @p sys_hz in cycles, rounded to nearest. */
 static uint32_t ns_cycles(uint32_t sys_hz, uint32_t ns)
 {
     return (uint32_t)(((uint64_t)ns * sys_hz + 500000000u) / 1000000000u);
@@ -145,13 +149,19 @@ void hitec_pre_dec_init(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
     d->phase = (uint8_t)HITEC_PRE_WAIT_REST;
 }
 
+/**
+ * @brief Mark the decoder done and record why it ended.
+ *
+ */
 static void dec_end(hitec_pre_dec_t *d, hitec_pre_end_t why)
 {
     d->phase = (uint8_t)HITEC_PRE_DEC_DONE;
     d->end = (uint8_t)why;
 }
 
-/* The byte whose start bit is at d->start[d->n], all of its samples in. */
+/**
+ * @brief The byte whose start bit is at d->start[d->n], all of its samples in.
+ */
 static void dec_byte(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
                      const uint32_t *words)
 {

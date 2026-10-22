@@ -1,5 +1,6 @@
-/*
- * KST servo programming protocol: the session with one servo.
+/**
+ * @file
+ * @brief KST servo programming protocol: the session with one servo.
  *
  * Implements the programming protocol of KST and Chaservo servos.  KST and
  * Chaservo are names or trademarks of their respective owners; they are used
@@ -55,29 +56,38 @@
 extern "C" {
 #endif
 
-/** Line low before the first frame of the entry sequence, 100 ms. */
+/** @brief Line low before the first frame of the entry sequence, 100 ms. */
 #define KST_ENTRY_LOW_US 100000u
-/** End of a reply window to the next frame, 3 ms. */
+/** @brief End of a reply window to the next frame, 3 ms. */
 #define KST_GAP_US 3000u
-/** The same after a window without a valid reply, 20 ms.  Inside the entry
- *  sequence the gap is KST_GAP_US: an unanswered read and an unanswered
- *  sync are its normal course. */
+/**
+ * @brief The same after a window without a valid reply, 20 ms.
+ *
+ * Inside the entry sequence the gap is KST_GAP_US: an unanswered read and an
+ * unanswered sync are its normal course.
+ */
 #define KST_GAP_AFTER_FAULT_US 20000u
-/** The driver has this long after the end of the reply window to hand over
- *  the capture, 5 ms. */
+/**
+ * @brief The driver has this long after the end of the reply window to hand
+ *        over the capture, 5 ms.
+ */
 #define KST_DRIVER_SLACK_US 5000u
 
-/** Passes of a read over 0x00 to 0x1F, and the passes after a
- *  disagreement. */
+/**
+ * @brief Passes of a read over 0x00 to 0x1F, and the passes after a
+ *        disagreement.
+ */
 #define KST_READ_PASSES     3u
+/** @brief Most passes one read takes: the 3 passes and 2 after a
+ *        disagreement. */
 #define KST_READ_PASSES_MAX 5u
-/** Equal reads a register needs. */
+/** @brief Equal reads a register needs. */
 #define KST_READ_EQUAL 3u
-/** Attempts for one write before the session gives the step up. */
+/** @brief Attempts for one write before the session gives the step up. */
 #define KST_WRITE_ATTEMPTS 3u
 
 /**
- * The driver: the only way to the wire.
+ * @brief The driver: the only way to the wire.
  *
  * Contract:
  *   - Outside a transaction the line is low.
@@ -94,17 +104,36 @@ extern "C" {
  * kst_session_step().
  */
 typedef struct {
-    void *ctx;
+    void *ctx;              /**< driver state, passed to each function */
+    /**
+     * @brief Clocks out @p frame and records the line up to @p window_ns; false
+     *        when it cannot start.
+     *
+     * @param ctx        Driver state, as in the struct.
+     * @param frame      Frame to send.
+     * @param window_ns  Time in ns to record after the frame's last edge.
+     * @return false when the call cannot start; true otherwise.
+     */
     bool (*start)(void *ctx, const kst_frame_t *frame, uint32_t window_ns);
+    /**
+     * @brief Reports the window's end: false while the transaction runs; true
+     *        once, with @p out filled.
+     *
+     * @param ctx  Driver state, as in the struct.
+     * @param out  Receives the capture when the window has ended.
+     * @return true once, after the window has ended; false while it runs.
+     */
     bool (*poll)(void *ctx, kst_capture_t *out);
-    uint32_t (*now_us)(void *ctx);
+    uint32_t (*now_us)(void *ctx);  /**< free-running microseconds, may wrap */
 } kst_driver_t;
 
+/** @brief Result of a session operation. */
 typedef enum {
-    KST_SES_OK = 0,
-    KST_SES_BUSY,              /**< the operation runs; call kst_session_step() */
+    KST_SES_OK = 0,            /**< the operation finished without error */
+    KST_SES_BUSY,              /**< the operation runs; call
+                                    kst_session_step() */
     KST_SES_ERR_BUSY,          /**< another operation runs */
-    KST_SES_ERR_ARG,
+    KST_SES_ERR_ARG,           /**< bad argument */
     KST_SES_ERR_NO_SERVO,      /**< no reply to read, sync and read */
     KST_SES_ERR_NOT_IN_MODE,   /**< kst_session_enter() has not succeeded */
     KST_SES_ERR_READ,          /**< a register without 3 equal reads in 5 */
@@ -115,7 +144,8 @@ typedef enum {
     KST_SES_ERR_UNCONFIRMED,   /**< an unchecked restore without confirmation */
     KST_SES_ERR_CHANGED,       /**< the servo differs from the plan's start,
                                     or is not the backup's servo */
-    KST_SES_ERR_WRITE_FAILED,  /**< a write did not take; nothing half written */
+    KST_SES_ERR_WRITE_FAILED,  /**< a write did not take; nothing half
+                                    written */
     KST_SES_ERR_ROLLED_BACK,   /**< a write did not take; the field is back at
                                     its old value */
     KST_SES_ERR_TORN,          /**< the roll-back failed too */
@@ -127,20 +157,25 @@ typedef enum {
                                     tells why */
 } kst_ses_t;
 
-/** Reply timing of the read frames since kst_session_init().  A drift is
- *  the early sign of a marginal line. */
+/**
+ * @brief Reply timing of the read frames since kst_session_init().
+ *
+ * A drift is the early sign of a marginal line.
+ */
 typedef struct {
     uint32_t replies;        /**< transactions with a valid reply */
     uint32_t faults;         /**< transactions without one */
     uint32_t delay_min_ns;   /**< reads only */
-    uint32_t delay_max_ns;
-    uint32_t half_min_ns;
-    uint32_t half_max_ns;
+    uint32_t delay_max_ns;   /**< longest reply delay, in ns */
+    uint32_t half_min_ns;    /**< shortest mean half-cell, in ns */
+    uint32_t half_max_ns;    /**< longest mean half-cell, in ns */
 } kst_stats_t;
 
+/** @brief The session with one servo: results and state of its operation. */
 typedef struct {
     /* --- for the caller to read ------------------------------------------- */
-    kst_image_t image;       /**< the servo as last known; valid with has_image */
+    kst_image_t image;       /**< the servo as last known; valid with
+                                  has_image */
     kst_image_t backup;      /**< the first image read, after
                                   kst_session_init() or the last
                                   kst_session_power_cycled(); valid with
@@ -161,9 +196,9 @@ typedef struct {
     uint8_t result;          /**< kst_ses_t of the last operation */
     uint8_t in_mode;         /**< the servo is in programming mode; the pin
                                   carries no PWM until the supply was off */
-    uint8_t has_image;
-    uint8_t has_backup;
-    uint8_t fingerprint_ok;
+    uint8_t has_image;       /**< 1: image is valid */
+    uint8_t has_backup;      /**< 1: backup is valid */
+    uint8_t fingerprint_ok;  /**< 1: the image passed the fingerprint */
     uint8_t locked;          /**< only a restore plan is accepted */
     uint8_t step_index;      /**< writes of the running plan that are done */
     uint8_t planning;        /**< 1: the operation plans; nothing is sent */
@@ -216,11 +251,21 @@ typedef struct {
     uint8_t confirm;         /**< the running restore may be unchecked */
 } kst_session_t;
 
-/** Prepare a session.  False when the driver lacks a function. */
+/**
+ * @brief Prepare a session.
+ *
+ * False when the driver lacks a function.
+ *
+ * @param s       Session to prepare.
+ * @param driver  Driver to use.
+ * @return false when the driver lacks a function.
+ */
 bool kst_session_init(kst_session_t *s, const kst_driver_t *driver);
 
 /**
- * Enter programming mode.  The caller has stopped PWM on the pin.
+ * @brief Enter programming mode.
+ *
+ * The caller has stopped PWM on the pin.
  *
  * Sequence: line low for KST_ENTRY_LOW_US; read 0x01; on no reply the sync
  * burst; on no acknowledge one more read of 0x01.  A servo already in the
@@ -228,24 +273,32 @@ bool kst_session_init(kst_session_t *s, const kst_driver_t *driver);
  * does not acknowledge a second sync.  No other bit rate is tried.
  *
  * The mode lasts until the servo's supply is removed.
+ *
+ * @param s  Session.
+ * @return KST_SES_BUSY while the sequence runs, then the result.
  */
 kst_ses_t kst_session_enter(kst_session_t *s);
 
 /**
- * Read all 32 registers: 3 passes, all 3 equal for every register.  On any
- * disagreement 2 more passes; a register without 3 equal reads in 5 fails
- * the read.  A pass without a single reply ends the read with
+ * @brief Read all 32 registers: 3 passes, all 3 equal for every register.
+ *
+ * On any disagreement 2 more passes; a register without 3 equal reads in 5
+ * fails the read.  A pass without a single reply ends the read with
  * KST_SES_ERR_NO_SERVO.
  *
  * The first image read in a session becomes the backup.  The result is
  * KST_SES_OK for a servo that fails the fingerprint too; fingerprint_ok and
  * fingerprint tell.
+ *
+ * @param s  Session.
+ * @return KST_SES_BUSY while the read runs, then the result.
  */
 kst_ses_t kst_session_read_all(kst_session_t *s);
 
 /**
- * Change the servo from image to @p target, which is copied before the
- * session's plan is cleared: it may be the target of kst_session_plan().
+ * @brief Change the servo from image to @p target, which is copied before the
+ *        session's plan is cleared: it may be the target of kst_session_plan().
+ *
  * @p unlocked is the unlock set of kst_plan_edit().
  *
  * Refused at once, before any planning and in this order: a running
@@ -268,15 +321,21 @@ kst_ses_t kst_session_read_all(kst_session_t *s);
  *
  * With plan_result KST_PLAN_OK the plan runs as kst_session_write()
  * describes from step 1.  kst_session_plan() gives the plan.
+ *
+ * @param s         Session.
+ * @param target    Image to reach.
+ * @param unlocked  Fields whose KST_ACCESS_LOCKED is lifted.
+ * @return KST_SES_BUSY while planning, then the result.
  */
 kst_ses_t kst_session_edit(kst_session_t *s, const kst_image_t *target,
                            kst_field_set_t unlocked);
 
 /**
- * Take the servo from image back to the backup, planned as
- * kst_session_edit() plans.  A locked session and an image that fails the
- * fingerprint do not refuse it.  KST_SES_ERR_NO_PLAN at once with
- * plan_result KST_PLAN_ERR_R00.
+ * @brief Take the servo from image back to the backup, planned as
+ *        kst_session_edit() plans.
+ *
+ * A locked session and an image that fails the fingerprint do not refuse it.
+ * KST_SES_ERR_NO_PLAN at once with plan_result KST_PLAN_ERR_R00.
  *
  * The backup goes to the servo it was read from only.  The read before the
  * first write ends the restore with KST_SES_ERR_CHANGED, nothing written,
@@ -290,29 +349,42 @@ kst_ses_t kst_session_edit(kst_session_t *s, const kst_image_t *target,
  * planning ends, before any frame; plan_result is KST_PLAN_OK and
  * kst_session_plan() gives the plan that waits for the confirmation.  The
  * second call plans again.
+ *
+ * @param s                 Session.
+ * @param confirm_unchecked  true to run a plan the planner marks unchecked.
+ * @return KST_SES_BUSY while planning, then the result.
  */
 kst_ses_t kst_session_restore(kst_session_t *s, bool confirm_unchecked);
 
 /**
- * Write 0x00 to register 0x1D, as kst_plan_release_pairing() plans it.
- * Refused like an edit.  The plan is 1 write or none and is built in the
- * call: planning stays 0.
+ * @brief Write 0x00 to register 0x1D, as kst_plan_release_pairing() plans it.
+ *
+ * Refused like an edit.  The plan is 1 write or none and is built in the call:
+ * planning stays 0.
+ *
+ * @param s  Session.
+ * @return The result.
  */
 kst_ses_t kst_session_release_pairing(kst_session_t *s);
 
 /**
- * The plan of the last kst_session_edit(), kst_session_restore() or
- * kst_session_release_pairing(), for a journal or a display.  It is the
- * planner's plan while planning is 0 and plan_result is KST_PLAN_OK, until
- * the next operation of these 3 or kst_session_write() starts.  NULL for a
- * NULL session.
+ * @brief The plan of the last kst_session_edit(), kst_session_restore() or
+ *        kst_session_release_pairing(), for a journal or a display.
+ *
+ * It is the planner's plan while planning is 0 and plan_result is KST_PLAN_OK,
+ * until the next operation of these 3 or kst_session_write() starts.  NULL for
+ * a NULL session.
+ *
+ * @param s  Session.
+ * @return The plan; NULL for a NULL session.
  */
 const kst_plan_t *kst_session_plan(const kst_session_t *s);
 
 /**
- * Run a plan the caller built.  The plan is copied.  @p plan must not be
- * the session's own copy or overlap it: that is answered with
- * KST_SES_ERR_ARG.
+ * @brief Run a plan the caller built.
+ *
+ * The plan is copied.  @p plan must not be the session's own copy or overlap
+ * it: that is answered with KST_SES_ERR_ARG.
  *
  * This call runs the planner a second time and to its end inside the call,
  * without a cap: its duration grows with the plan.  A caller that must not
@@ -352,30 +424,58 @@ const kst_plan_t *kst_session_plan(const kst_session_t *s);
  * KST_SES_ERR_VERIFY, or with a read, driver or abort result after its first
  * write frame, locks the session.  A restore plan that succeeds, or a verify
  * against the backup that succeeds, unlocks it.
+ *
+ * @param s                  Session.
+ * @param plan               Plan to run; copied.
+ * @param confirm_unchecked  true to run an unchecked restore.
+ * @return The result of the run.
  */
 kst_ses_t kst_session_write(kst_session_t *s, const kst_plan_t *plan,
                             bool confirm_unchecked);
 
-/** Read all and compare with @p expected, which is copied.  diff_regs names
- *  the registers that differ. */
+/**
+ * @brief Read all and compare with @p expected, which is copied.  diff_regs
+ *        names the registers that differ.
+ *
+ * @param s         Session.
+ * @param expected  Image to compare with; copied.
+ * @return KST_SES_BUSY while the read runs, then the result.
+ */
 kst_ses_t kst_session_verify(kst_session_t *s, const kst_image_t *expected);
 
-/** Advance the running operation.  KST_SES_BUSY while it runs, then its
- *  result; the result again on every later call.  A call that plans does
- *  one slice of KST_PLAN_SLICE_UNITS units and returns. */
+/**
+ * @brief Advance the running operation.
+ *
+ * KST_SES_BUSY while it runs, then its result; the result again on every later
+ * call.  A call that plans does one slice of KST_PLAN_SLICE_UNITS units and
+ * returns.
+ *
+ * @param s  Session.
+ * @return KST_SES_BUSY, or the result of the operation.
+ */
 kst_ses_t kst_session_step(kst_session_t *s);
 
-/** End the running operation with KST_SES_ERR_ABORTED.  A transaction on
- *  the wire is finished first: a frame is never cut.  An operation that
- *  plans ends at the next kst_session_step() call. */
+/**
+ * @brief End the running operation with KST_SES_ERR_ABORTED.
+ *
+ * A transaction on the wire is finished first: a frame is never cut.  An
+ * operation that plans ends at the next kst_session_step() call.
+ *
+ * @param s  Session.
+ */
 void kst_session_abort(kst_session_t *s);
 
-/** The servo's supply was off: it has left programming mode, and the
- *  servo on the line may be another one.  A running operation is aborted.
- *  The backup, wrote_regs and the lock are dropped, after the end of the
- *  running operation where one runs: an edit, a write and a restore are
- *  refused with KST_SES_ERR_NO_BACKUP until a kst_session_read_all() takes
- *  the servo as it then is for the new backup. */
+/**
+ * @brief The servo's supply was off: it has left programming mode, and the
+ *        servo on the line may be another one.
+ *
+ * A running operation is aborted. The backup, wrote_regs and the lock are
+ * dropped, after the end of the running operation where one runs: an edit, a
+ * write and a restore are refused with KST_SES_ERR_NO_BACKUP until a
+ * kst_session_read_all() takes the servo as it then is for the new backup.
+ *
+ * @param s  Session.
+ */
 void kst_session_power_cycled(kst_session_t *s);
 
 #ifdef __cplusplus

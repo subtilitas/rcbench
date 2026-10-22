@@ -1,5 +1,6 @@
-/*
- * Synchronising two servos that drive one control surface.
+/**
+ * @file
+ * @brief Synchronising two servos that drive one control surface.
  *
  * Dual ailerons, elevator halves, a rudder on two horns: two servos on one
  * surface settle any disagreement between them through the surface.  Nothing
@@ -44,11 +45,13 @@ typedef enum {
 
 typedef enum {
     SERVO_SYNC_FAULT_NONE = 0,
-    /** Current crossed the hard ceiling. Stops where it stands. */
+    /** @brief Current crossed the hard ceiling.
+     *
+     * Stops where it stands. */
     SERVO_SYNC_FAULT_OVERCURRENT,
     /**
-     * The scan found no minimum distinguishable from the noise, or none
-     * inside its window.
+     * @brief The scan found no minimum distinguishable from the noise, or none
+     *        inside its window.
      *
      * A pair that is already synchronised still produces a minimum, at zero
      * correction, because the scan moves one servo away from agreement.  So
@@ -61,7 +64,7 @@ typedef enum {
     SERVO_SYNC_FAULT_NO_MINIMUM,
 } servo_sync_fault_t;
 
-/** Which of the three measurements the search is on. */
+/** @brief Which of the three measurements the search is on. */
 typedef enum {
     SERVO_SYNC_STAGE_CENTRE = 0,
     SERVO_SYNC_STAGE_HIGH,
@@ -69,7 +72,7 @@ typedef enum {
     SERVO_SYNC_STAGE_COUNT,
 } servo_sync_stage_t;
 
-/** The most points one round of a scan may have. */
+/** @brief The most points one round of a scan may have. */
 #define SERVO_SYNC_MAX_POINTS 9
 
 typedef struct {
@@ -81,7 +84,7 @@ typedef struct {
     uint8_t  rounds;        /**< how many times the window narrows */
 
     /**
-     * How long to wait after a move before a reading counts.
+     * @brief How long to wait after a move before a reading counts.
      *
      * Two parts, because the moves differ in size.  Stepping to the next scan
      * point is a few microseconds of pulse width; changing stage swings a
@@ -100,8 +103,8 @@ typedef struct {
     uint16_t measure_ms;
 
     /**
-     * How far the best reading of a scan must sit below the worst before the
-     * minimum counts.
+     * @brief How far the best reading of a scan must sit below the worst before
+     *        the minimum counts.
      *
      * Two servos that are already synchronised produce a flat scan, and the
      * argmin of a flat scan is wherever the noise dips.  Without this test
@@ -112,7 +115,7 @@ typedef struct {
     float    hard_limit_a;
 } servo_sync_cfg_t;
 
-/** The pulse widths the search commands stay within, microseconds. */
+/** @brief The pulse widths the search commands stay within, microseconds. */
 #define SERVO_SYNC_MIN_US 500u
 #define SERVO_SYNC_MAX_US 2500u
 
@@ -127,8 +130,10 @@ typedef struct {
     int16_t  travel_hi_us;  /**< B's throw when A is at +deflection */
     int16_t  travel_lo_us;  /**< B's throw when A is at -deflection */
 
-    /** What the pair draws at the best and the worst point of each stage.
-     *  The difference is the gain from the correction. */
+    /** @brief What the pair draws at the best and the worst point of each
+     *         stage.
+     *
+     * The difference is the gain from the correction. */
     float    best_a[SERVO_SYNC_STAGE_COUNT];
     float    worst_a[SERVO_SYNC_STAGE_COUNT];
 
@@ -149,20 +154,43 @@ typedef struct {
     uint16_t cmd_b_us;
 } servo_sync_t;
 
+/**
+ * @brief Defaults for a sync search.
+ *
+ * @param cfg       Configuration to fill. Does nothing when NULL.
+ * @param centre_us Centre pulse width, us.
+ */
 void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t centre_us);
 
+/**
+ * @brief Start a sync search at the centre stage.
+ *
+ * @param sy  Search state to initialise. Does nothing when NULL.
+ * @param cfg Configuration to copy. Does nothing when NULL.
+ */
 void servo_sync_init(servo_sync_t *sy, const servo_sync_cfg_t *cfg);
 
 /**
- * Advance the search with one reading of the pair's total current.
+ * @brief Advance the search with one reading of the pair's total current.
  *
  * Total, not per servo: the quantity minimised is what the two draw
  * together, so one sensor across both outputs is enough.
  *
  * Writes the two pulse widths to command through @p cmd_a and @p cmd_b.
+ *
+ * @param sy      Search state.
+ * @param total_a Total current of the pair, A.
+ * @param now_ms  Time of the reading, ms.
+ * @param cmd_a   Out: pulse width for servo A, us. NULL to skip.
+ * @param cmd_b   Out: pulse width for servo B, us. NULL to skip.
  */
 void servo_sync_step(servo_sync_t *sy, float total_a, uint32_t now_ms,
                      uint16_t *cmd_a, uint16_t *cmd_b);
 
-/** 0..1 across all three stages. */
+/**
+ * @brief 0..1 across all three stages.
+ *
+ * @param sy Search state. NULL gives 0.0.
+ * @return 0.0 to 1.0; 1.0 once the search is not RUNNING.
+ */
 float servo_sync_progress(const servo_sync_t *sy);

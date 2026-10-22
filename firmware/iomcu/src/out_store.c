@@ -1,5 +1,8 @@
-/*
- * The output configuration in flash.  See out_store.h.
+/**
+ * @file
+ * @brief The output configuration in flash.
+ *
+ * See out_store.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,10 +19,12 @@
 
 #include "out_store_map.h"
 
-/*
- * Where it goes: the data partition "store" of partitions.json, two sectors
- * at 4 MiB - 16 KiB (0x3FC000), below the last 8 KiB the layout leaves
- * unused.  The build reads the offset out of that file (IOMCU_STORE_OFFSET).
+/**
+ * @brief Where it goes: the data partition "store" of partitions.json, two
+ * sectors at 4 MiB - 16 KiB (0x3FC000), below the last 8 KiB the layout
+ * leaves unused.
+ *
+ * The build reads the offset out of that file (IOMCU_STORE_OFFSET).
  *
  * Read by its storage address, through the XIP (execute in place) window
  * that neither translates nor caches.  The image runs from slot A or B and
@@ -41,18 +46,20 @@
 #define STORE_SLOT_BYTES  OUT_STORE_SLOT_BYTES
 #define STORE_RECORDS     (FLASH_SECTOR_SIZE / STORE_SLOT_BYTES)
 #define STORE_SLOTS       (STORE_SECTORS * STORE_RECORDS)
-/* The one-page slots of version 7 and older, read until the first version
- * 8 record is written (out_store_rec.h). */
+/**
+ * @brief The one-page slots of version 7 and older, read until the first
+ * version 8 record is written (out_store_rec.h).
+ */
 #define STORE_V7_BYTES    OUT_STORE_SLOT_BYTES_V7
 #define STORE_V7_RECORDS  (FLASH_SECTOR_SIZE / STORE_V7_BYTES)
 #define STORE_V7_SLOTS    (STORE_SECTORS * STORE_V7_RECORDS)
 #define STORE_OFFSET      IOMCU_STORE_OFFSET
 
-/*
- * Where a build without a partition table kept the store: the last two
- * sectors of the 4 MiB.  Read once, by out_store_load(), when the store holds
- * no record yet, so the bindings survive the USB load that installs the
- * partition table.  Never written.
+/**
+ * @brief Where a build without a partition table kept the store: the last
+ * two sectors of the 4 MiB.  Read once, by out_store_load(), when the store
+ * holds no record yet, so the bindings survive the USB load that installs
+ * the partition table.  Never written.
  */
 #define STORE_OLD_OFFSET  (STORE_FLASH_BYTES - STORE_SECTORS * FLASH_SECTOR_SIZE)
 
@@ -62,8 +69,8 @@
  * Held at compile time as well as in the paragraph above.
  *
  * This catches a board file with less flash than the store needs, and a
- * partition table whose store partition is not the two sectors this file
- * writes.
+ * partition table whose store partition is not the two sectors this
+ * file writes.
  */
 _Static_assert(STORE_FLASH_BYTES <= PICO_FLASH_SIZE_BYTES,
                "the output store is past the end of this board's flash");
@@ -82,9 +89,11 @@ _Static_assert(STORE_V7_BYTES == FLASH_PAGE_SIZE
  * phase tap's and the ports an earlier build saved survive the update
  * (out_store_rec.h). */
 
-/*
- * Two flash pages hold a version 8 record, and a save programs both in one
- * window.  The record's layout, its checksum and its zero count are
+/**
+ * @brief Two flash pages hold a version 8 record, and a save programs both
+ * in one window.
+ *
+ * The record's layout, its checksum and its zero count are
  * out_store_rec.c's (host-tested); the checksum is the link's, because a
  * half-written record and a corrupt frame are the same problem and there is
  * no reason for two answers to it.
@@ -113,22 +122,21 @@ static bool        s_have_saved;
 static out_store_t s_saved;
 static uint8_t     s_last_record;
 
-/*
- * How long the last erase and the last program each took, with interrupts
- * off.
+/**
+ * @brief How long the last erase and the last program each took, with
+ * interrupts off.
  *
  * Two numbers rather than one, because they answer different questions.  The
  * program is what every save costs; the erase is what one save in sixteen
- * costs, or none of them when out_store_reclaim() has been given a quiet
- * moment first.  Measured rather than compensated for: what a window does to
- * the link is decided by its length, and the length belongs to the flash
- * part.
+ * costs, or none of them when out_store_reclaim() has been given a quiet moment
+ * first.  Measured rather than compensated for: what a window does to the link
+ * is decided by its length, and the length belongs to the flash part.
  */
 static uint32_t    s_last_erase_us;
 static uint32_t    s_last_program_us;
 
-/*
- * Whether the store is worth looking at for a sector to erase.
+/**
+ * @brief Whether the store is worth looking at for a sector to erase.
  *
  * True at boot and after every record written, false once a look has found
  * nothing.  Without it out_store_reclaim() would read eight kilobytes of
@@ -137,41 +145,59 @@ static uint32_t    s_last_program_us;
  */
 static bool        s_reclaim_wanted = true;
 
-/*
- * The staged page, as a union rather than a byte array with a cast.  The
- * record has 32-bit fields and a bare uint8_t array carries no alignment, so
- * writing through a pointer to it is a store the compiler is entitled to
- * assume is aligned when it is not.
+/**
+ * @brief The staged page, as a union rather than a byte array with a cast.
+ *
+ * The record has 32-bit fields and a bare uint8_t array carries no
+ * alignment, so writing through a pointer to it is a store the compiler is
+ * entitled to assume is aligned when it is not.
  */
 static union {
     uint8_t  bytes[STORE_SLOT_BYTES];
     uint32_t align;
 } s_page;
 
-/*
- * The live record of the layout before version 8, by sector, while the
- * store holds no version 8 record: never erased until the first one is
- * written.  -1 for none.
+/**
+ * @brief The live record of the layout before version 8, by sector, while the
+ * store holds no version 8 record: never erased until the first one is written.
+ *
+ * -1 for none.
  */
 static int s_keep_sector = -1;
 
-/* The store read is at STORE_OFFSET, or at STORE_OLD_OFFSET while
- * out_store_load() looks there. */
+/**
+ * @brief The store read is at STORE_OFFSET, or at STORE_OLD_OFFSET while
+ * out_store_load() looks there.
+ */
 static uint32_t s_read_offset = STORE_OFFSET;
 
+/**
+ * @brief Returns the address of a record slot in the store, read through the
+ * uncached window.
+ *
+ * @param slot  Slot index.
+ * @param bytes  Bytes per slot.
+ * @return The address of the slot.
+ */
 static const uint8_t *slot_at(uint8_t slot, uint32_t bytes)
 {
     return (const uint8_t *)(STORE_READ_BASE + s_read_offset
                              + (uint32_t)slot * bytes);
 }
 
-/*
- * What is in the store, read out of flash rather than remembered: @p n
- * slots of @p bytes, a record of @p min_version to @p max_version taken.
+/**
+ * @brief What is in the store, read out of flash rather than remembered: @p
+ * n slots of @p bytes, a record of @p min_version to @p max_version taken.
  *
  * Eight kilobytes of uncached reads per call, and a call happens only when
  * something is about to be written.  Holding the answer in RAM instead would
  * be a second copy of the truth that a torn write could disagree with.
+ *
+ * @param recs  Receives one entry per slot.
+ * @param n  Number of slots.
+ * @param bytes  Bytes per slot.
+ * @param min_version  Lowest record version taken.
+ * @param max_version  Highest record version taken.
  */
 static void survey(out_store_rec_t *recs, uint8_t n, uint32_t bytes,
                    uint16_t min_version, uint16_t max_version)
@@ -194,7 +220,9 @@ static void survey(out_store_rec_t *recs, uint8_t n, uint32_t bytes,
     }
 }
 
-/*
+/**
+ * @brief One erase or one program, run inside a flash window.
+ *
  * One erase or one program: interrupts off on this core, and core 1 either
  * not launched yet or parked in RAM by the multicore lock-out
  * (flash_window()), for the whole operation.  The flash cannot be read while it is being written, and
@@ -220,6 +248,12 @@ typedef struct {
     void    *arg;
 } flash_op_t;
 
+/**
+ * @brief Runs the operation and records how long the window held
+ * interrupts off.
+ *
+ * @param arg  The flash_op_t to run.
+ */
 static void flash_op_run(void *arg)
 {
     flash_op_t *op = (flash_op_t *)arg;
@@ -235,12 +269,14 @@ static void flash_op_run(void *arg)
     op->done = true;
 }
 
-/* When core 1 last failed to stop, and whether that is recent. */
+/**
+ * @brief When core 1 last failed to stop, and whether that is recent.
+ */
 static bool     s_refused;
 static uint32_t s_refused_ms;
 
-/*
- * How a window opens, by where core 1 stands (out_store.h):
+/**
+ * @brief How a window opens, by where core 1 stands (out_store.h):
  *
  *   ALONE     core 1 has not been launched.  Interrupts off on this core
  *             and the operation run directly: nothing else executes from
@@ -281,11 +317,22 @@ bool out_store_is_off(void)
     return s_mode == STORE_OFF;
 }
 
+/**
+ * @brief Reads the clock in milliseconds since boot.
+ *
+ * @return The time since boot, in milliseconds.
+ */
 static uint32_t clock_ms(void)
 {
     return (uint32_t)to_ms_since_boot(get_absolute_time());
 }
 
+/**
+ * @brief Tells whether windows are refused because core 1 did not stop.
+ *
+ * @return True while a window is refused. The refusal lapses
+ *         after OUT_STORE_REFUSED_WAIT_MS.
+ */
 static bool refusing(void)
 {
     if (s_refused
@@ -295,10 +342,15 @@ static bool refusing(void)
     return s_refused;
 }
 
-/*
- * True when the operation ran.  flash_safe_execute() answers a timeout on
+/**
+ * @brief True when the operation ran.
+ *
+ * flash_safe_execute() answers a timeout on
  * the way in (nothing ran) and on the way out (it ran) with the same code,
  * so the operation says for itself.
+ *
+ * @param op  The operation. Its done field is set.
+ * @return True when the operation ran.
  */
 static bool flash_window(flash_op_t *op)
 {
@@ -323,6 +375,14 @@ static bool flash_window(flash_op_t *op)
     }
 }
 
+/**
+ * @brief Erases one sector of the store inside a flash window.
+ *
+ * @param sector  Sector index within the store.
+ * @param window_us  Receives how long the window held interrupts off, in
+ *                   microseconds. Written only when the erase ran.
+ * @return True when the erase ran.
+ */
 static bool erase_sector(uint8_t sector, uint32_t *window_us)
 {
     flash_op_t op = {
@@ -336,7 +396,14 @@ static bool erase_sector(uint8_t sector, uint32_t *window_us)
     return true;
 }
 
-/* The staged slot, both of its pages, in one window. */
+/**
+ * @brief The staged slot, both of its pages, in one window.
+ *
+ * @param slot  Slot index within the store.
+ * @param window_us  Receives how long the window held interrupts off, in
+ *                   microseconds. Written only when the program ran.
+ * @return True when the program ran.
+ */
 static bool program_record(uint8_t slot, uint32_t *window_us)
 {
     flash_op_t op = {
@@ -352,9 +419,19 @@ static bool program_record(uint8_t slot, uint32_t *window_us)
     return true;
 }
 
-/* The newest record of @p n slots of @p bytes, @p min_version to
- * @p max_version, into
- * @p out; its slot, or -1 when none is valid. */
+/**
+ * @brief The newest record of @p n slots of @p bytes, @p min_version to @p
+ * max_version, into @p out; its slot, or -1 when none is valid.
+ *
+ * @param recs  Receives the survey of the slots.
+ * @param n  Number of slots.
+ * @param per_sector  Slots per sector.
+ * @param bytes  Bytes per slot.
+ * @param min_version  Lowest record version taken.
+ * @param max_version  Highest record version taken.
+ * @param out  Receives the configuration.
+ * @return The slot the record was read from, or -1 when none is valid.
+ */
 static int load_from(out_store_rec_t *recs, uint8_t n, uint8_t per_sector,
                      uint32_t bytes, uint16_t min_version,
                      uint16_t max_version, out_store_t *out)

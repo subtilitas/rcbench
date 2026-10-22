@@ -1,7 +1,9 @@
-/*
- * The ams OSRAM AS5600: a 12-bit magnetic rotary position sensor on I2C
- * (Inter-Integrated Circuit).  The register codec and a driver that talks
- * to one part through sense_bus.h.
+/**
+ * @file
+ * @brief The ams OSRAM AS5600: a 12-bit magnetic rotary position sensor on I2C
+ * (Inter-Integrated Circuit).
+ *
+ * The register codec and a driver that talks to one part through sense_bus.h.
  *
  * Written from the datasheet, ams AS5600 DS000365 v1-06.  The part sits at
  * the fixed address 0x36 and sends the most significant byte first.  A
@@ -105,34 +107,81 @@ extern "C" {
 #define AS5600_STATUS_MH     0x08u
 #define AS5600_STATUS_ML     0x10u
 #define AS5600_STATUS_MD     0x20u
-/** The bits STATUS defines; the other five are not read. */
+/** @brief The bits STATUS defines; the other five are not read. */
 #define AS5600_STATUS_MASK   (AS5600_STATUS_MH | AS5600_STATUS_ML | AS5600_STATUS_MD)
 
-/** Counts in one turn: 12 bits. */
+/** @brief Counts in one turn: 12 bits. */
 #define AS5600_COUNTS        4096u
-/** Hundredths of a degree in one turn. */
+/** @brief Hundredths of a degree in one turn. */
 #define AS5600_CDEG_TURN     36000
 
-/** A 12-bit register pair, most significant byte first: RAW ANGLE, ANGLE or
- *  MAGNITUDE.  0 to 4095. */
+/**
+ * @brief A 12-bit register pair, most significant byte first: RAW ANGLE, ANGLE
+ * or MAGNITUDE.
+ *
+ * 0 to 4095.
+ *
+ * @param b The two bytes, high byte first.
+ * @return The 12-bit value, 0 to 4095.
+ */
 uint16_t as5600_u12(const uint8_t *b);
 
-/** Whether @p status is one an AS5600 can give: not ML and MH together.
- *  Bits 7, 6, 2, 1 and 0 are not looked at. */
+/**
+ * @brief Whether @p status is one an AS5600 can give: not ML and MH together.
+ *
+ * Bits 7, 6, 2, 1 and 0 are not looked at.
+ *
+ * @param status The STATUS byte.
+ * @return false when ML and MH are both set, else true.
+ */
 bool as5600_status_possible(uint8_t status);
 
-/** The magnet bits of @p status.  RAW ANGLE is a position only with MD. */
+/**
+ * @brief The magnet bits of @p status.
+ *
+ * RAW ANGLE is a position only with MD.
+ *
+ * @param status The STATUS byte.
+ * @return true when MD (magnet detected) is set.
+ */
 bool as5600_md(uint8_t status);
+/**
+ * @brief Read the ML bit of a STATUS value.
+ *
+ * @param status The STATUS byte.
+ * @return true when ML (magnet too weak) is set.
+ */
 bool as5600_ml(uint8_t status);
+/**
+ * @brief Read the MH bit of a STATUS value.
+ *
+ * @param status The STATUS byte.
+ * @return true when MH (magnet too strong) is set.
+ */
 bool as5600_mh(uint8_t status);
 
-/** @p a minus @p b on the circle, -2048 to 2047 counts: the shortest way
- *  from @p b to @p a.  Both are taken modulo 4096. */
+/**
+ * @brief @p a minus @p b on the circle, -2048 to 2047 counts: the shortest way
+ * from @p b to @p a.
+ *
+ * Both are taken modulo 4096.
+ *
+ * @param a An angle, in counts.
+ * @param b An angle, in counts.
+ * @return a - b in counts, -2048 to 2047.
+ */
 int16_t as5600_delta(uint16_t a, uint16_t b);
 
-/** @p counts in hundredths of a degree, rounded to the nearest, halves away
- *  from zero.  Any int32_t is accepted.  Above |counts| 244,335,917 the
- *  result saturates at +-2,147,483,647. */
+/**
+ * @brief @p counts in hundredths of a degree, rounded to the nearest, halves
+ * away from zero.
+ *
+ * Any int32_t is accepted.  Above |counts| 244,335,917 the result saturates at
+ * +-2,147,483,647.
+ *
+ * @param counts Angle in counts; 4096 counts make a turn.
+ * @return The angle in hundredths of a degree.
+ */
 int32_t as5600_cdeg(int32_t counts);
 
 /* -------------------------------------------------------------- driver */
@@ -141,34 +190,92 @@ typedef struct {
     sense_part_t part;
 } as5600_t;
 
-/** A part on @p bus at AS5600_ADDR, not yet probed. */
+/**
+ * @brief A part on @p bus at AS5600_ADDR, not yet probed.
+ *
+ * @param d The driver.
+ * @param bus The sensor bus the part sits on.
+ */
 void as5600_init(as5600_t *d, sense_bus_t *bus);
 
-/** Every tick: probes the part when it is due -- at the first call, and
- *  SENSE_RETRY_MS after it was found absent, wrong or offline.  Returns
- *  whether it is online. */
+/**
+ * @brief Every tick: probes the part when it is due -- at the first call, and
+ * SENSE_RETRY_MS after it was found absent, wrong or offline.
+ *
+ * Returns whether it is online.
+ *
+ * @param d The driver.
+ * @param now_ms The current time, in ms.
+ * @return true when the part is online.
+ */
 bool as5600_step(as5600_t *d, uint32_t now_ms);
 
+/**
+ * @brief The part's state as of the last probe.
+ *
+ * @param d The driver.
+ * @return The sense_state_t of the part.
+ */
 sense_state_t as5600_state(const as5600_t *d);
 
-/** STATUS: 1 byte from 0x0B.  On anything but SENSE_OK @p status is left as
- *  it was. */
+/**
+ * @brief STATUS: 1 byte from 0x0B.
+ *
+ * On anything but SENSE_OK @p status is left as it was.
+ *
+ * @param d The driver.
+ * @param status Receives the STATUS byte.
+ * @return SENSE_OK, or the bus error.
+ */
 sense_err_t as5600_read_status(as5600_t *d, uint8_t *status);
 
-/** RAW ANGLE: 2 bytes from 0x0C, 0 to 4095; the same rule. */
+/**
+ * @brief RAW ANGLE: 2 bytes from 0x0C, 0 to 4095; the same rule.
+ *
+ * @param d The driver.
+ * @param raw Receives the angle, 0 to 4095.
+ * @return SENSE_OK, or the bus error.
+ */
 sense_err_t as5600_read_raw(as5600_t *d, uint16_t *raw);
 
-/** AGC: 1 byte from 0x1A; the same rule. */
+/**
+ * @brief AGC: 1 byte from 0x1A; the same rule.
+ *
+ * @param d The driver.
+ * @param agc Receives the AGC byte.
+ * @return SENSE_OK, or the bus error.
+ */
 sense_err_t as5600_read_agc(as5600_t *d, uint8_t *agc);
 
-/** MAGNITUDE: 2 bytes from 0x1B, 0 to 4095; the same rule. */
+/**
+ * @brief MAGNITUDE: 2 bytes from 0x1B, 0 to 4095; the same rule.
+ *
+ * @param d The driver.
+ * @param magnitude Receives the magnitude, 0 to 4095.
+ * @return SENSE_OK, or the bus error.
+ */
 sense_err_t as5600_read_mag(as5600_t *d, uint16_t *magnitude);
 
-/** STATUS, then RAW ANGLE: two transactions.  On anything but SENSE_OK both
- *  are left as they were. */
+/**
+ * @brief STATUS, then RAW ANGLE: two transactions.
+ *
+ * On anything but SENSE_OK both are left as they were.
+ *
+ * @param d The driver.
+ * @param status Receives the STATUS byte.
+ * @param raw Receives the angle, 0 to 4095.
+ * @return SENSE_OK, or the bus error.
+ */
 sense_err_t as5600_read_angle(as5600_t *d, uint8_t *status, uint16_t *raw);
 
-/** AGC, then MAGNITUDE: two transactions; the same rule. */
+/**
+ * @brief AGC, then MAGNITUDE: two transactions; the same rule.
+ *
+ * @param d The driver.
+ * @param agc Receives the AGC byte.
+ * @param magnitude Receives the magnitude, 0 to 4095.
+ * @return SENSE_OK, or the bus error.
+ */
 sense_err_t as5600_read_magnitude(as5600_t *d, uint8_t *agc,
                                   uint16_t *magnitude);
 

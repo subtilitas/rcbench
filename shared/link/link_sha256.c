@@ -1,5 +1,6 @@
-/*
- * SHA-256, written from FIPS 180-4: the constants of section 4.2.2, the
+/**
+ * @file
+ * @brief SHA-256, written from FIPS 180-4: the constants of section 4.2.2, the
  * initial hash value of section 5.3.3, the padding of section 5.1.1 and the
  * computation of section 6.2.2.
  *
@@ -10,8 +11,10 @@
 
 #include <string.h>
 
-/* The first 32 bits of the fractional parts of the cube roots of the first
- * 64 primes (section 4.2.2). */
+/**
+ * @brief The first 32 bits of the fractional parts of the cube roots of the
+ * first 64 primes (section 4.2.2).
+ */
 static const uint32_t k_round[64] = {
     0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u,
     0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
@@ -31,12 +34,24 @@ static const uint32_t k_round[64] = {
     0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u,
 };
 
+/**
+ * @brief Rotate a 32-bit word right.
+ *
+ * @param x The word to rotate.
+ * @param n Bit count; the callers pass 2 to 25.
+ * @return The rotated word.
+ */
 static uint32_t rotr(uint32_t x, unsigned n)
 {
     return (x >> n) | (x << (32u - n));
 }
 
-/* One 512-bit block (section 6.2.2, steps 1 to 4). */
+/**
+ * @brief One 512-bit block (section 6.2.2, steps 1 to 4).
+ *
+ * @param h The eight 32-bit hash words, updated in place.
+ * @param block The 64 bytes of the block.
+ */
 static void compress(uint32_t h[8], const uint8_t block[64])
 {
     uint32_t w[64];

@@ -1,5 +1,8 @@
-/*
- * The panel's half of the TONE link page.  See tone_link.h.
+/**
+ * @file
+ * @brief The panel's half of the TONE link page.
+ *
+ * See tone_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,28 +36,57 @@
  * up is not a pace the link can fall to. */
 #define RESTART_BEHIND 1024u
 
+/**
+ * @brief The position of a beep number in the ring.
+ *
+ * @param n The beep number.
+ * @return n modulo CYCLE.
+ */
 static unsigned pos_of(uint16_t n)
 {
     return (unsigned)n % CYCLE;
 }
 
+/**
+ * @brief The beep number at a position in the ring.
+ *
+ * @param pos The position.
+ * @return The beep number; CYCLE for position 0.
+ */
 static uint16_t num_of(unsigned pos)
 {
     return (uint16_t)((pos == 0u) ? CYCLE : pos);
 }
 
-/* The number after @p n, and the one before. */
+/**
+ * @brief The number after @p n, and the one before.
+ *
+ * @param n The beep number.
+ * @return The beep number after n.
+ */
 static uint16_t succ_of(uint16_t n)
 {
     return num_of((pos_of(n) + 1u) % CYCLE);
 }
 
+/**
+ * @brief The number before a beep.
+ *
+ * @param n The beep number.
+ * @return The beep number before n.
+ */
 static uint16_t pred_of(uint16_t n)
 {
     return num_of((pos_of(n) + CYCLE - 1u) % CYCLE);
 }
 
-/* Beeps from @p from, the last one taken, to @p to, the newest. */
+/**
+ * @brief Beeps from @p from, the last one taken, to @p to, the newest.
+ *
+ * @param from The last beep taken.
+ * @param to   The newest beep.
+ * @return The number of beeps from from to to.
+ */
 static unsigned dist(uint16_t from, uint16_t to)
 {
     return (pos_of(to) + CYCLE - pos_of(from)) % CYCLE;
@@ -109,10 +141,17 @@ void tone_link_came_up(tone_link_t *t, uint16_t minor, uint32_t now_ms)
     }
 }
 
-/* Whether @p w is a set-up SETUP can name: every value inside the page's
- * own range.  A zeroed one -- a snapshot nobody has published into -- is
+/**
+ * @brief Whether @p w is a set-up SETUP can name: every value inside the page's
+ *        own range.
+ *
+ * A zeroed one -- a snapshot nobody has published into -- is
  * not, and is no reason to write anything.  F_MAX_HZ above F_MIN_HZ and a
- * GAP_MS as long as F_MIN_HZ's period are for the page to judge. */
+ * GAP_MS as long as F_MIN_HZ's period are for the page to judge.
+ *
+ * @param w The set-up.
+ * @return true when every value is inside the page's range.
+ */
 static bool setup_valid(const tone_setup_t *w)
 {
     return w->f_min_hz >= LINK_TN_F_MIN_LO && w->f_min_hz <= LINK_TN_F_MIN_HI
@@ -171,29 +210,55 @@ void tone_link_want(tone_link_t *t, const tone_setup_t *w, uint32_t now_ms)
     t->told     = 0u;
 }
 
-/* Whether a tone range and a gap are a set-up the page takes: the high
- * tone above the low one, and a silence at least one period of the low
- * tone long. */
+/**
+ * @brief Whether a tone range and a gap are a set-up the page takes: the high
+ *        tone above the low one, and a silence at least one period of the low
+ *        tone long.
+ *
+ * @param f_min  The low tone, in Hz.
+ * @param f_max  The high tone, in Hz.
+ * @param gap_ms The silence, in ms.
+ * @return true when the page takes the pair.
+ */
 static bool pair_valid(unsigned f_min, unsigned f_max, unsigned gap_ms)
 {
     return f_max > f_min && gap_ms * f_min >= 1000u;
 }
 
+/**
+ * @brief Whether the wanted first frame differs from the held one.
+ *
+ * @param t The link state.
+ * @return true when they differ.
+ */
 static bool frame0_differs(const tone_link_t *t)
 {
     return memcmp(&t->want[FRAME0_AT], &t->held[FRAME0_AT],
                   FRAME_N * sizeof(uint16_t)) != 0;
 }
 
+/**
+ * @brief Whether the wanted second frame differs from the held one.
+ *
+ * @param t The link state.
+ * @return true when they differ.
+ */
 static bool frame1_differs(const tone_link_t *t)
 {
     return memcmp(&t->want[FRAME1_AT], &t->held[FRAME1_AT],
                   FRAME1_CFG * sizeof(uint16_t)) != 0;
 }
 
-/* Whether the first frame is owed again for a pin something else holds: the
- * page's FLAGS say the saved tap met a busy pin at boot, the page holds
- * what is asked, and TONE_LINK_RETRY_MS have passed since the last try. */
+/**
+ * @brief Whether the first frame is owed again for a pin something else holds:
+ *        the page's FLAGS say the saved tap met a busy pin at boot, the page
+ *        holds what is asked, and TONE_LINK_RETRY_MS have passed since the last
+ *        try.
+ *
+ * @param t      The link state.
+ * @param now_ms The time, in ms.
+ * @return true when it is owed now.
+ */
 static bool pin_retry_due(const tone_link_t *t, uint32_t now_ms)
 {
     return t->have_status && !t->refused0
@@ -203,8 +268,17 @@ static bool pin_retry_due(const tone_link_t *t, uint32_t now_ms)
            && (uint32_t)(now_ms - t->retry_ms) >= TONE_LINK_RETRY_MS;
 }
 
-/* The write owed now, or NONE, with its registers in @p regs.  @p retry
- * counts a first frame owed again for a busy pin. */
+/**
+ * @brief The write owed now, or NONE, with its registers in @p regs.
+ *
+ * @p retry
+ * counts a first frame owed again for a busy pin.
+ *
+ * @param t     The link state.
+ * @param regs  Receives the registers of the write.
+ * @param retry true to count a first frame owed again for a busy pin.
+ * @return The write owed, or TONE_LINK_OP_NONE.
+ */
 static tone_link_op_kind_t write_owed(const tone_link_t *t, uint16_t *regs,
                                       bool retry)
 {
@@ -243,6 +317,14 @@ static tone_link_op_kind_t write_owed(const tone_link_t *t, uint16_t *regs,
     return TONE_LINK_OP_NONE;
 }
 
+/**
+ * @brief Sets up a read operation of the TONE page.
+ *
+ * @param op   Receives the operation.
+ * @param kind The operation kind.
+ * @param off  The first register.
+ * @param n    The number of registers.
+ */
 static void read_op(tone_link_op_t *op, tone_link_op_kind_t kind, uint8_t off,
                     uint8_t n)
 {
@@ -253,7 +335,12 @@ static void read_op(tone_link_op_t *op, tone_link_op_kind_t kind, uint8_t off,
     op->n     = n;
 }
 
-/* Beeps the page has that the panel has not taken, by the last status. */
+/**
+ * @brief Beeps the page has that the panel has not taken, by the last status.
+ *
+ * @param t The link state.
+ * @return The number of beeps owed.
+ */
 static unsigned owed(const tone_link_t *t)
 {
     if (!t->synced || !t->have_status) {
@@ -336,12 +423,19 @@ bool tone_link_next(tone_link_t *t, uint32_t now_ms, tone_link_op_t *op)
     return false;
 }
 
-/* Whether a first frame refused with @p result may pass later, unchanged:
- * the page said its pin is busy.  A 4.17 page says BUSY for that and
- * BAD_VALUE for a set-up no freed pin makes good.  An older page says
- * BAD_VALUE for both, so its refusal may pass later unless the panel sees
- * the frame's own values fail: a high tone not above the low one, or the
- * gap held too short for the low tone. */
+/**
+ * @brief Whether a first frame refused with @p result may pass later,
+ *        unchanged: the page said its pin is busy.
+ *
+ * A 4.17 page says BUSY for that and BAD_VALUE for a set-up no freed pin makes
+ * good.  An older page says BAD_VALUE for both, so its refusal may pass later
+ * unless the panel sees the frame's own values fail: a high tone not above the
+ * low one, or the gap held too short for the low tone.
+ *
+ * @param t      The link state.
+ * @param result The NACK reason.
+ * @return true when it may pass later.
+ */
 static bool may_pass_later(const tone_link_t *t, int result)
 {
     if (result == (int)LINK_NACK_BUSY) {
@@ -355,6 +449,14 @@ static bool may_pass_later(const tone_link_t *t, int result)
                       t->held[LINK_TN_GAP_MS]);
 }
 
+/**
+ * @brief Handles the result of a write.
+ *
+ * @param t      The link state.
+ * @param w      The write.
+ * @param result The result: an acknowledgement, a NACK reason or no answer.
+ * @param now_ms The time, in ms.
+ */
 static void written(tone_link_t *t, tone_link_op_kind_t w, int result,
                     uint32_t now_ms)
 {
@@ -411,8 +513,12 @@ static void written(tone_link_t *t, tone_link_op_kind_t w, int result,
     }
 }
 
-/* What a status read says that the operator is told: a pin that is not
- * free and an overrun, each on its edge. */
+/**
+ * @brief What a status read says that the operator is told: a pin that is not
+ *        free and an overrun, each on its edge.
+ *
+ * @param t The link state.
+ */
 static void judge_status(tone_link_t *t)
 {
     const uint16_t f   = t->status[ST(LINK_TN_FLAGS)];
@@ -427,10 +533,16 @@ static void judge_status(tone_link_t *t)
     t->was_flags = f;
 }
 
-/* When WINDOW last moved, after a status read.  A page that does not run
- * reads WINDOW 0 and is not judged by it: each such read counts as a move,
- * so a capture that starts has TONE_LINK_WINDOW_STALE_MS from the last read
- * that found it not running to show its first window. */
+/**
+ * @brief When WINDOW last moved, after a status read.
+ *
+ * A page that does not run reads WINDOW 0 and is not judged by it: each such
+ * read counts as a move, so a capture that starts has TONE_LINK_WINDOW_STALE_MS
+ * from the last read that found it not running to show its first window.
+ *
+ * @param t      The link state.
+ * @param now_ms The time, in ms.
+ */
 static void note_window(tone_link_t *t, uint32_t now_ms)
 {
     const uint16_t win = t->status[ST(LINK_TN_WINDOW)];
@@ -442,7 +554,11 @@ static void note_window(tone_link_t *t, uint32_t now_ms)
     t->win_seen = true;
 }
 
-/* Where the panel stands against BEEP_HEAD after a status read. */
+/**
+ * @brief Where the panel stands against BEEP_HEAD after a status read.
+ *
+ * @param t The link state.
+ */
 static void follow_head(tone_link_t *t)
 {
     const uint16_t head = t->status[ST(LINK_TN_BEEP_HEAD)];
@@ -487,6 +603,12 @@ static void follow_head(tone_link_t *t)
     }
 }
 
+/**
+ * @brief Takes the beep a read holds into the panel's history.
+ *
+ * @param t The link state.
+ * @param r The registers read.
+ */
 static void take_beep(tone_link_t *t, const uint16_t *r)
 {
     const uint16_t sel = t->sel_num;
@@ -699,10 +821,20 @@ uint16_t tone_link_flags(const tone_link_t *t)
     return (t != NULL && t->have_status) ? t->status[ST(LINK_TN_FLAGS)] : 0u;
 }
 
-/* What the tap is doing, as the screen words it; @p fresh says the last
- * status read is recent enough to speak for the page.  @p read, false on
+/**
+ * @brief What the tap is doing, as the screen words it; @p fresh says the last
+ *        status read is recent enough to speak for the page.
+ *
+ * @p read, false on
  * the call, is set when the state is the one that read gives, so its
- * values are current. */
+ * values are current.
+ *
+ * @param t     The link state.
+ * @param fresh true when the last status read is recent enough to speak for the
+ *              page.
+ * @param read  Set when the state comes from the page read; false on entry.
+ * @return The tap state.
+ */
 static tone_state_t state_of(const tone_link_t *t, bool fresh, bool *read)
 {
     if (!t->want_set || t->want[LINK_TN_ENABLE] == 0u) {

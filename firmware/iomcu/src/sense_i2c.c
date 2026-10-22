@@ -1,5 +1,8 @@
-/*
- * The sensor bus on the RP2350's I2C block.  See sense_i2c.h.
+/**
+ * @file
+ * @brief The sensor bus on the RP2350's I2C block.
+ *
+ * See sense_i2c.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,19 +21,31 @@ static uint8_t     s_sda;
 static uint8_t     s_scl;
 static bool        s_open;
 
-/* The block reset and set up again: a transaction that failed leaves it
- * part way through one, and restart_on_next as that one left it. */
+/**
+ * @brief The block reset and set up again: a transaction that failed leaves
+ * it part way through one, and restart_on_next as that one left it.
+ */
 static void block_init(void)
 {
     i2c_init(s_i2c, SENSE_I2C_HZ);
 }
 
+/**
+ * @brief Tells whether SDA and SCL both read high.
+ *
+ * @return True when both lines are high.
+ */
 static bool lines_high(void)
 {
     return gpio_get(s_sda) && gpio_get(s_scl);
 }
 
-/* Both lines high within @p us: the pull-ups have the bus. */
+/**
+ * @brief Both lines high within @p us: the pull-ups have the bus.
+ *
+ * @param us  Time to wait, in microseconds.
+ * @return True when both lines are high within @p us.
+ */
 static bool lines_rise(uint32_t us)
 {
     const uint64_t until = time_us_64() + us;
@@ -64,6 +79,11 @@ bool sense_i2c_open(uint8_t sda, uint8_t scl)
     return true;
 }
 
+/**
+ * @brief Returns a pin to a plain input with its pull-down, as at reset.
+ *
+ * @param pin  GPIO number.
+ */
 static void release(uint8_t pin)
 {
     gpio_set_function(pin, GPIO_FUNC_SIO);
@@ -82,13 +102,16 @@ void sense_i2c_close(void)
     s_open = false;
 }
 
-/*
- * Lines that stay low at idle, told apart: held by a part, or held by
- * nothing on a bus without pull-ups -- pins nothing is wired to.  The
- * pads' own pull-ups are switched on for at most SENSE_I2C_PROBE_US: a
- * line nothing holds rises on them, and one a part drives low does not.
- * They go off again either way.  SENSE_NACK for lines that rose: nothing
- * answers there, and no recovery is owed.  SENSE_BUS_LOW otherwise.
+/**
+ * @brief Lines that stay low at idle, told apart: held by a part, or held by
+ * nothing on a bus without pull-ups -- pins nothing is wired to.
+ *
+ * The pads' own pull-ups are switched on for at most SENSE_I2C_PROBE_US: a
+ * line nothing holds rises on them, and one a part drives low does not. They
+ * go off again either way.  SENSE_NACK for lines that rose: nothing answers
+ * there, and no recovery is owed.  SENSE_BUS_LOW otherwise.
+ *
+ * @return SENSE_NACK when the lines rose, SENSE_BUS_LOW otherwise.
  */
 static sense_err_t idle_low(void)
 {
@@ -100,18 +123,30 @@ static sense_err_t idle_low(void)
     return rose ? SENSE_NACK : SENSE_BUS_LOW;
 }
 
-/* Both lines high within SENSE_I2C_IDLE_US, as a transaction needs them:
- * SENSE_OK, or what idle_low() makes of them. */
+/**
+ * @brief Both lines high within SENSE_I2C_IDLE_US, as a transaction needs
+ * them: SENSE_OK, or what idle_low() makes of them.
+ *
+ * @return SENSE_OK when both lines are high within SENSE_I2C_IDLE_US, or what
+ *         idle_low() returns.
+ */
 static sense_err_t lines_idle(void)
 {
     return lines_rise(SENSE_I2C_IDLE_US) ? SENSE_OK : idle_low();
 }
 
-/* A pico-sdk result as the bus sees it: @p want bytes was success.  The
- * SDK reports a NACK of the address, an arbitration lost and any other
+/**
+ * @brief A pico-sdk result as the bus sees it: @p want bytes was success.
+ *
+ * The SDK reports a NACK of the address, an arbitration lost and any other
  * abort as one PICO_ERROR_GENERIC, so the lines tell them apart: back high
  * is a NACK on a working bus, held low is a part holding it, and low with
- * nothing holding them is a NACK on a bus without pull-ups. */
+ * nothing holding them is a NACK on a bus without pull-ups.
+ *
+ * @param rc  The pico-sdk result: a byte count, or a negative error.
+ * @param want  The byte count that is success.
+ * @return SENSE_OK, SENSE_TIMEOUT, SENSE_NACK, or what lines_idle() returns.
+ */
 static sense_err_t classify(int rc, size_t want)
 {
     if (rc == (int)want) {
@@ -127,7 +162,13 @@ static sense_err_t classify(int rc, size_t want)
     return (e == SENSE_OK) ? SENSE_NACK : e;
 }
 
-/* The end of every transaction: a failed one leaves the block reset. */
+/**
+ * @brief The end of every transaction: a failed one leaves the block reset.
+ *
+ * @param e  The transaction's result.
+ * @param irq  Interrupt state to restore.
+ * @return The value of @p e.
+ */
 static sense_err_t done(sense_err_t e, uint32_t irq)
 {
     if (e != SENSE_OK) {
@@ -201,15 +242,22 @@ sense_err_t sense_i2c_ask(uint8_t addr)
     return done(e, irq);
 }
 
-/* Open drain by hand: low is the pin driven 0, high is the pin let go to
- * its pull-up. */
+/**
+ * @brief Open drain by hand: low is the pin driven 0, high is the pin let go
+ * to its pull-up.
+ *
+ * @param pin  GPIO number.
+ * @param high  True to let the line go high, false to drive it low.
+ */
 static void line(uint8_t pin, bool high)
 {
     gpio_set_dir(pin, high ? GPIO_IN : GPIO_OUT);
 }
 
-/* SCL let go, and given SENSE_I2C_CLEAR_STRETCH_US to rise: a part may
- * hold it low a while. */
+/**
+ * @brief SCL let go, and given SENSE_I2C_CLEAR_STRETCH_US to rise: a part
+ * may hold it low a while.
+ */
 static void scl_release(void)
 {
     line(s_scl, true);

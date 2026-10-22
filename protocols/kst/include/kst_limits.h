@@ -1,5 +1,6 @@
-/*
- * KST servo programming protocol: limits on an edited image.
+/**
+ * @file
+ * @brief KST servo programming protocol: limits on an edited image.
  *
  * Implements the programming protocol of KST and Chaservo servos.  KST and
  * Chaservo are names or trademarks of their respective owners; they are used
@@ -36,7 +37,11 @@
 extern "C" {
 #endif
 
-/* Raw limits.  Pulse widths: 1 count is 0.8 us. */
+/**
+ * @brief Raw limits.
+ *
+ * Pulse widths: 1 count is 0.8 us.
+ */
 #define KST_DUTY_RAW_MAX        250u   /**< 98 % */
 #define KST_DUTY_RAW_MIN        26u    /**< 10 %, proposed */
 #define KST_DUTY_RAW_HALF       128u   /**< 50 %, proposed */
@@ -56,7 +61,11 @@ extern "C" {
 #define KST_UNCONT_TIME_RAW_SHORT 10u  /**< 1.0 s, proposed */
 #define KST_ANGLE_RAW_SMALL     50u    /**< proposed */
 
-/* Distances between pulse widths, in 0.1 us.  All proposed. */
+/**
+ * @brief Distances between pulse widths, in 0.1 us.
+ *
+ * All proposed.
+ */
 #define KST_MARGIN_HARD_TENTH_US   1000  /**< Neutral to an end point: 100 us */
 #define KST_MARGIN_SOFT_TENTH_US   3000  /**< Neutral to an end point: 300 us */
 #define KST_SPAN_MIN_TENTH_US      4000  /**< Upper less Lower: 400 us */
@@ -65,8 +74,10 @@ extern "C" {
 #define KST_UNCONT_FAR_TENTH_US    3000  /**< Uncontrolled Pos from Neutral: 300 us */
 
 /**
- * The rules.  Values are stable: a rule keeps its number, a new rule takes
- * the next free one.  KST_H_ rules are hard, KST_S_ rules are soft.
+ * @brief The rules.
+ *
+ * Values are stable: a rule keeps its number, a new rule takes the next free
+ * one.  KST_H_ rules are hard, KST_S_ rules are soft.
  */
 typedef enum {
     /* Hard, on an image alone. */
@@ -126,27 +137,31 @@ typedef enum {
     KST_RULE_COUNT = 49
 } kst_rule_t;
 
-/** A set of rules, bit n for rule n. */
+/** @brief A set of rules, bit n for rule n. */
 typedef uint64_t kst_rules_t;
 #define KST_RULE_BIT(rule) ((kst_rules_t)1 << (rule))
 
-/** The hard rules as a set. */
+/** @brief The hard rules as a set. */
 #define KST_RULES_HARD (KST_RULE_BIT(KST_S_DUTY_RAISED) - 1u)
 
 /**
- * The hard rules an image breaks on its own.  Pulse Lower, Upper and
- * Uncontrolled Pos are compared with Neutral in microseconds, because
- * Neutral's unit differs from theirs.
+ * @brief The hard rules an image breaks on its own.
+ *
+ * Pulse Lower, Upper and Uncontrolled Pos are compared with Neutral in
+ * microseconds, because Neutral's unit differs from theirs.
  *
  * An image in Gyro Servo mode breaks KST_H_GYRO_MODE: the vendor tool halves
  * every microsecond value there, and what a servo does with them is not
  * measured.
+ *
+ * @param img  Image to check.
+ * @return The hard rules the image breaks; KST_RULES_HARD for NULL.
  */
 kst_rules_t kst_limits_image(const kst_image_t *img);
 
 /**
- * The hard and soft rules the image @p target breaks as an edit of the
- * servo's image @p backup.
+ * @brief The hard and soft rules the image @p target breaks as an edit of the
+ *        servo's image @p backup.
  *
  * @p unlocked lifts KST_ACCESS_LOCKED for the fields in it.  Nothing lifts
  * KST_ACCESS_NEVER; register 01 may follow 02.  @p refused, when not NULL,
@@ -155,6 +170,12 @@ kst_rules_t kst_limits_image(const kst_image_t *img);
  * A soft rule about a value on its own (KST_S_DUTY_BELOW_HALF and the like)
  * is reported when the edit changes a field the rule reads, not for a state
  * the servo already has.
+ *
+ * @param backup    Image the edit starts from.
+ * @param target    Image after the edit.
+ * @param unlocked  Fields whose KST_ACCESS_LOCKED is lifted.
+ * @param refused   Receives the refused fields; may be NULL.
+ * @return The hard and soft rules the edit breaks.
  */
 kst_rules_t kst_limits_edit(const kst_image_t *backup,
                             const kst_image_t *target,

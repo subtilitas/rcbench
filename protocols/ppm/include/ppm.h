@@ -1,5 +1,7 @@
-/*
- * PPM (pulse-position modulation): several channels multiplexed onto one pin.
+/**
+ * @file
+ * @brief PPM (pulse-position modulation): several channels multiplexed onto one
+ *        pin.
  *
  * A frame is a run of marks.  The time from the start of one mark to the
  * start of the next is one channel's pulse width, so a channel is carried by
@@ -34,16 +36,24 @@
 extern "C" {
 #endif
 
-/** Eight in a 22.5 ms frame is the convention; more fits only by shortening
- *  the frame, which is what ppm_cfg_t.frame_us is for. */
+/**
+ * @brief Eight in a 22.5 ms frame is the convention; more fits only by
+ *        shortening the frame, which is what ppm_cfg_t.frame_us is for.
+ */
 #define PPM_MAX_CHANNELS   8u
 
-/** Runs a frame needs: a mark and a space per channel, plus the terminating
- *  mark and the sync gap. */
+/**
+ * @brief Runs a frame needs: a mark and a space per channel, plus the
+ *        terminating mark and the sync gap.
+ */
 #define PPM_MAX_RUNS       ((PPM_MAX_CHANNELS + 1u) * 2u)
 
-/** The range a channel is carried in, in microseconds, both ends included.
- *  A width outside it is refused, not clamped. */
+/**
+ * @brief The range a channel is carried in, in microseconds, both ends
+ *        included.
+ *
+ * A width outside it is refused, not clamped.
+ */
 #define PPM_CHANNEL_MIN_US       400u
 #define PPM_CHANNEL_MAX_US      2500u
 
@@ -51,7 +61,7 @@ extern "C" {
 #define PPM_DEFAULT_FRAME_US   22500u
 
 /**
- * The shortest gap that is unambiguously a gap.
+ * @brief The shortest gap that is unambiguously a gap.
  *
  * A receiver frames on the first interval longer than any channel can be.
  * The ceiling on a channel is PPM_CHANNEL_MAX_US (2500 us), so a gap under about
@@ -73,7 +83,7 @@ typedef struct {
     }
 
 /**
- * Lay a frame out as alternating run lengths in microseconds.
+ * @brief Lay a frame out as alternating run lengths in microseconds.
  *
  * @p runs receives mark, space, mark, space, ... and ends with the
  * terminating mark and the sync gap, so it always holds an even number of
@@ -84,18 +94,31 @@ typedef struct {
  * no channels or too many, a channel shorter than the mark it has to
  * contain, a channel outside PPM_CHANNEL_MIN_US..PPM_CHANNEL_MAX_US, or a sync gap
  * below @p cfg->sync_min_us once the channels have been paid for.
+ *
+ * @param channel_us  Pulse width of each channel, in us.
+ * @param channels    Number of channels in channel_us.
+ * @param cfg         Frame timing; NULL takes the defaults.
+ * @param runs        Receives the runs.
+ * @param max_runs    Capacity of runs, in entries.
+ * @return Number of runs written, or 0 when the frame cannot be built.
  */
 size_t ppm_frame(const uint16_t *channel_us, uint8_t channels,
                  const ppm_cfg_t *cfg, uint16_t *runs, size_t max_runs);
 
 /**
- * The shortest frame that can carry @p channels channels whatever they are
- * commanded to, in microseconds: every channel at PPM_CHANNEL_MAX_US, plus the
- * terminating mark, plus the smallest gap that is still a gap.
+ * @brief The shortest frame that can carry @p channels channels whatever they
+ *        are commanded to, in microseconds: every channel at
+ *        PPM_CHANNEL_MAX_US, plus the terminating mark, plus the smallest gap
+ *        that is still a gap.
  *
  * A configuration screen wants this before it offers a frame rate, so the
  * refusal above becomes a range the operator never leaves rather than an
  * error they hit.  Returns 0 for a channel count this module cannot carry.
+ *
+ * @param channels  Number of channels to carry.
+ * @param cfg       Frame timing; NULL takes the defaults.
+ * @return Frame length in us, or 0 when channels is 0 or above
+ *               PPM_MAX_CHANNELS.
  */
 uint32_t ppm_min_frame_us(uint8_t channels, const ppm_cfg_t *cfg);
 

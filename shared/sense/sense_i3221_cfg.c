@@ -1,6 +1,9 @@
-/*
- * The INA3221 map's helpers.  See sense_sched.h.  A file of its own so the
- * SENSE page links them without the schedule.
+/**
+ * @file
+ * @brief The INA3221 map's helpers.
+ *
+ * See sense_sched.h.  A file of its own so the SENSE page links them without
+ * the schedule.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -1,5 +1,8 @@
-/*
- * Reading a board drawing. See link_drawing.h.
+/**
+ * @file
+ * @brief Reading a board drawing.
+ *
+ * See link_drawing.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,11 +12,23 @@
 #include <stddef.h>
 #include <string.h>
 
+/**
+ * @brief Read a 16-bit little-endian value.
+ *
+ * @param p The two bytes, low byte first.
+ * @return The value.
+ */
 static uint16_t u16_at(const uint8_t *p)
 {
     return (uint16_t)((unsigned)p[0] | ((unsigned)p[1] << 8));
 }
 
+/**
+ * @brief Decode one pad record from its 8 bytes.
+ *
+ * @param p The record's bytes.
+ * @param out Receives the decoded pad.
+ */
 static void pad_of(const uint8_t *p, link_draw_pad_t *out)
 {
     out->pad   = p[0];
@@ -24,6 +39,12 @@ static void pad_of(const uint8_t *p, link_draw_pad_t *out)
     out->y     = u16_at(p + 6);
 }
 
+/**
+ * @brief Decode one shape record from its 12 bytes.
+ *
+ * @param p The record's bytes.
+ * @param out Receives the decoded shape.
+ */
 static void shape_of(const uint8_t *p, link_draw_shape_t *out)
 {
     out->kind   = p[0];
@@ -35,13 +56,28 @@ static void shape_of(const uint8_t *p, link_draw_shape_t *out)
     out->d      = u16_at(p + 10);
 }
 
-/* [lo, hi] lies inside [0, limit]: no part of it past either edge.  In 32
- * bits, so lo - r below zero is a negative number and not a wrap. */
+/**
+ * @brief [lo, hi] lies inside [0, limit]: no part of it past either edge.
+ *
+ * In 32 bits, so lo - r below zero is a negative number and not a wrap.
+ *
+ * @param lo Lower end of the interval, in 0.01 mm.
+ * @param hi Upper end of the interval, in 0.01 mm.
+ * @param limit The outline's width or height, in 0.01 mm.
+ * @return true when 0 <= lo and hi <= limit.
+ */
 static bool within(int32_t lo, int32_t hi, uint16_t limit)
 {
     return lo >= 0 && hi <= (int32_t)limit;
 }
 
+/**
+ * @brief Test a pad record against the format and the outline.
+ *
+ * @param d The parsed drawing, for the outline and ring radius.
+ * @param p The pad to test.
+ * @return true when the pad number, kind, value, flags and ring fit.
+ */
 static bool pad_ok(const link_drawing_t *d, const link_draw_pad_t *p)
 {
     if (p->pad == 0u || p->pad > 63u) {
@@ -65,6 +101,14 @@ static bool pad_ok(const link_drawing_t *d, const link_draw_pad_t *p)
            && within((int32_t)p->y - r, (int32_t)p->y + r, d->height);
 }
 
+/**
+ * @brief Test a shape record against the format and the outline.
+ *
+ * @param d The parsed drawing, for the outline.
+ * @param s The shape to test.
+ * @return true when the shape's kind and fields fit the format and lie inside
+ *       the outline.
+ */
 static bool shape_ok(const link_drawing_t *d, const link_draw_shape_t *s)
 {
     const int32_t a = s->a, b = s->b, c = s->c, e = s->d;
@@ -104,6 +148,14 @@ static bool shape_ok(const link_drawing_t *d, const link_draw_shape_t *s)
     }
 }
 
+/**
+ * @brief Zero the output, record the reason and report failure.
+ *
+ * @param out The drawing to zero.
+ * @param why Receives reason when not NULL.
+ * @param reason The text of the first fault found.
+ * @return false.
+ */
 static bool refuse(link_drawing_t *out, const char **why, const char *reason)
 {
     memset(out, 0, sizeof(*out));

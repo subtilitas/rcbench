@@ -1,5 +1,6 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "safety_gate.h"
