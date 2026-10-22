@@ -533,7 +533,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_NO_CSV]             = "Keine .csv-Dateien im Hauptverzeichnis.",
     [TX_LOG_NO_CSV_IN]          = "Keine .csv-Dateien in %s.",
     [TX_LOG_RUNS_HERE]          = "Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.",
-    [TX_LOG_TESTS_HERE]         = "Tests werden als ATESTnnn.CSV gespeichert.",
+    [TX_LOG_TESTS_HERE]         = "Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.",
     [TX_LOG_ROOT_HERE]          = "Läufe von Firmware 0.21.0 und älter.",
     [TX_LOG_AUTO_OFF]           = "AUTO-LOGS AUS unter SETUP > SD-KARTE.",
     [TX_LOG_USER_OFF]           = "USER-LOGS AUS unter SETUP > SD-KARTE.",
@@ -589,6 +589,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_AT_TIME]            = "t = %.3f s   Messpunkt %d/%d",
     [TX_LOG_AT_ROW]             = "Zeile %d von %d   (keine Zeitspalte)",
     [TX_LOG_UNREADABLE_CELLS]   = "%d ZELLEN UNLESBAR",
+    [TX_LOG_TEXT_CUT]           = "Nur die ersten %u kB werden gezeigt.",
 
     /* --------------------------------------- the modelled protocols */
     [TX_PG_GROUP_MOTOR]         = "MOTOR",

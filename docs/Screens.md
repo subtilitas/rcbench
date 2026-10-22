@@ -1793,9 +1793,9 @@ Browse the card, open a file, check what the import detected, then plot:
 ![The plot](img/logs-plot.png)
 
 The home tag climbs one level, as BACK does: the plot to the import view,
-the import view to the file list, the file list to the menu. Over the DELETE
-question it is CANCEL. WI-FI, in the bottom row beside RESCAN, opens
-[Wi-Fi](#wi-fi).
+the import view and a report's text to the file list, the file list to the
+menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
+RESCAN, opens [Wi-Fi](#wi-fi).
 
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
@@ -1869,10 +1869,29 @@ or `Cannot read the card. Servo test not recorded.` for a test. A folder that ca
 made, because a file holds its name or the card is write-protected or full,
 reads `Cannot make folder BENCH/LOGS. Run not recorded.` A failed run makes
 the panel walk the folder again next time, so a file deleted in between
-frees its number. The list shows the CSV files and not the reports, and
-DELETE on a run removes the report with the same name and number too.
-Runs are listed newest first by number, across all names in the folder:
-`MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
+frees its number. The list shows the CSV files and the reports standing
+alone, and DELETE on a run removes the report with the same name and number
+too. A report stands alone when no CSV of its name and number is in the
+folder: `LIMITnnn.TXT` always, and in the root `SERVOnnn.TXT` alone, the
+limit run of firmware 0.21.0 and older. `ATESTnnn.TXT` beside
+`ATESTnnn.CSV` is not listed: OPEN on the run reads the CSV. Other `.TXT`
+files are not listed. Runs are listed newest first by number, across all
+names in the folder, a report standing alone by its own number:
+`LIMIT044.TXT`, then `MOTOR043.CSV`, then `SERVO042.CSV`, then
+`SUPPL041.CSV`.
+
+![A LIMIT RUN's report opened as text](img/logs-report.png)
+
+OPEN on a report standing alone shows it as text in place of the import
+view: the file's name heads the panel, and its lines follow, 14 rows of up
+to 86 characters on screen. A line longer than a row breaks at its last
+space inside the row, and a word longer than a row is cut at the row's end.
+A tab reads as a space and a carriage return is dropped. A drag on the rows
+or on the scroll bar scrolls them; BACK returns to the list. The view holds
+the first 32 KiB of a file; a longer file shows those and a last row
+`Only the first 32 kB are shown.` A report that cannot be opened stays on
+the list, and the footer says why: `Cannot open LIMIT044.TXT.` or
+`Not enough memory.`
 
 ![The ROOT tab with the runs of an older firmware](img/logs-root.png)
 
@@ -1895,8 +1914,8 @@ hidden. A file opened from one tab stays that tab's file: its import view
 and plot read it from that folder whichever tab is chosen since.
 
 The list shows the folder a page of 48 entries at a time, and a folder holds
-up to 999 runs. Pages run newest run first: runs by number, highest first, then
-the files the bench did not write, by name. The rows of a page run the same
+up to 999 runs. Pages run newest run first: runs and reports standing alone by
+number, highest first, then the files the bench did not write, by name. The rows of a page run the same
 way, the newest run at the top. The number in the name is what newest means:
 the panel has no clock that survives a power cycle, so every file on the card
 is dated 1980-01-01.
@@ -1919,7 +1938,11 @@ measured); on the panel it is estimated at 20 to 40 ms, and the directory read
 at 63 sectors of 512 bytes, about 25 ms at the card's 20 MHz SPI (Serial
 Peripheral Interface) clock, or 125 sectors, about 50 ms, with a report beside
 every run. Neither is measured on the panel. Each entry's size comes with the
-directory read, so a page costs one walk and the selection.
+directory read, so a page costs one walk and the selection. A folder with a
+report other than `LIMITnnn.TXT` and no CSV of its name and number beside it,
+the root of a card of firmware 0.21.0 with a limit run on it, is read twice
+per page: the first walk finds which reports stand alone, the second offers
+them.
 
 The scroll bar along the list's right edge is 42 px wide, 8.1 mm on the
 panel's 0.194 mm pixels. Its thumb is the rows on screen against the rows on

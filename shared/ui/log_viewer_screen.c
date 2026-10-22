@@ -19,6 +19,10 @@
  * header row: ROOT, USER and BENCH, in that order (log_viewer_tab_t holds
  * the ids; the tabs' order on screen is k_tab_at).
  *
+ * A report standing alone, LIMITnnn.TXT, opens in a fourth view as text:
+ * the browse list's panel, scroll bar and BACK, with the file's rows in
+ * place of the files (log_text.h).
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -31,6 +35,7 @@
 
 #include "card_tree.h"
 #include "log_name.h"
+#include "log_text.h"
 #include "settings.h"
 #include "ui_screen.h"
 #include "ui_card_text.h"
@@ -112,6 +117,19 @@
  * and the file's name. */
 #define BR_MSG_X  272
 
+/*
+ * The TEXT view: the file's rows in the browse list's panel, 18 px apart
+ * under its 30 px heading, beside its scroll bar.  A row is 86 cells of the
+ * 8 px face, 688 px, from 8 px into the browse row's box.  The thumb is
+ * BR_BAR_MIN px at least: a report of 400 rows would make it 9.
+ */
+#define TX_ROW_H  18
+#define TX_ROWS   14
+#define TX_COLS   86
+#define TX_ROW_X  (BR_ROW_X + 8)
+#define TX_BACK   gfx_rect_make(16, FOOT_Y, 170, FOOT_H)
+#define BR_BAR_MIN 32
+
 /* The DELETE question, drawn in place of the list. */
 #define DQ_BOX    gfx_rect_make(120, 110, 560, 220)
 #define DQ_CANCEL gfx_rect_make(144, 258, 240, 48)
@@ -169,12 +187,16 @@ _Static_assert(BR_HEAD_X + 31 * 8 <= BR_HEAD_END + 8,
                "the header's text ends at PREV");
 _Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,
                "the scroll bar's thumb is 32 px or more on a full page");
+_Static_assert(TX_ROWS * TX_ROW_H <= BR_ROWS * BR_ROW_H - 4,
+               "the text's rows fit beside the scroll bar");
+_Static_assert(TX_COLS * 8 <= BR_ROW_W - 8,
+               "a text row fits the browse row's box");
 _Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - 36,
                "the column list's rows fit its panel");
 _Static_assert(PV_POS_Y + PV_POS_H <= 68 + PV_PANEL_H,
                "the position bar is inside the plot's panel");
 
-typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT } view_t;
+typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT, VIEW_TEXT } view_t;
 
 static const ui_color_id_t k_series_color[LOG_MAX_SERIES] = {
     UI_C_VOLT, UI_C_CURR, UI_C_POWER, UI_C_RPM,
@@ -239,6 +261,10 @@ static struct {
     log_data_t data;
     bool have_data;
     int cursor;
+
+    /* The report the TEXT view shows, and its first row on screen. */
+    log_text_t text;
+    int text_scroll;
 
     /*
      * The samples the plot shows: [win0, win0 + win_n).  The whole file
@@ -317,6 +343,16 @@ const log_analysis_t *log_viewer_analysis(void)
 const log_data_t *log_viewer_data(void)
 {
     return s.have_data ? &s.data : NULL;
+}
+
+const log_text_t *log_viewer_text(void)
+{
+    return (s.text.buf != NULL) ? &s.text : NULL;
+}
+
+int log_viewer_text_first(void)
+{
+    return (s.text.buf != NULL) ? s.text_scroll : 0;
 }
 
 void log_viewer_window(int *first, int *count)
@@ -576,14 +612,15 @@ static void read_page(log_page_dir_t dir, const char *key)
     s.listed = 1;
     /*
      * The run just recorded is the one an operator re-reads the card for, so
-     * the list opens on it: the highest run number on the page.  Runs rank
-     * ahead of everything the panel lists, so it is the top row and the
-     * scroll stays at 0.  A page with no numbered run keeps no selection.
+     * the list opens on it: the highest run number on the page, a limit
+     * run's report included.  Runs rank ahead of everything the panel lists,
+     * so it is the top row and the scroll stays at 0.  A page with no
+     * numbered run keeps no selection.
      */
     int best = -1;
     for (int i = 0; i < s.n_files; ++i) {
         if (!s.files[i].is_dir &&
-            log_run_number(s.files[i].name) >= 0 &&
+            log_name_number(s.files[i].name) >= 0 &&
             (best < 0 || log_name_rank(s.files[i].name,
                                        s.files[best].name) < 0)) {
             best = i;
@@ -963,6 +1000,39 @@ static void load_data(void)
     s.view = VIEW_PLOT;
 }
 
+/**
+ * @brief Read the report s.name names into the TEXT view and show it.
+ *
+ * The file is read once, whole, up to LOG_TEXT_MAX bytes; a file the I/O
+ * does not open, or one that fails to read, stays on the list with the
+ * reason in the footer.
+ */
+static void open_text(void)
+{
+    log_text_free(&s.text);
+    s.text_scroll = 0;
+    if (s.io.open == NULL) {
+        set_message("%s", TR(LOG_NO_SOURCE));
+        return;
+    }
+    log_source_t src;
+    point(s.open_tab);
+    if (!open_name(&src)) {
+        set_message(TR(LOG_CANNOT_OPEN), s.name);
+        return;
+    }
+    const log_err_t err = log_text_load(&s.text, &src, TX_COLS);
+    if (s.io.close != NULL) {
+        s.io.close(s.io.ctx);
+    }
+    if (err != LOG_OK) {
+        set_message("%s", err_text(err));
+        return;
+    }
+    s.message[0] = '\0';
+    s.view = VIEW_TEXT;
+}
+
 static void open_selected(void)
 {
     if (s.sel < 0 || s.sel >= s.n_files) {
@@ -984,6 +1054,15 @@ static void open_selected(void)
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
     s.open_mounts = s.mounts;
+    /* A report the list holds stands alone (log_select.h): its text, and
+     * no import.  What the import and the plot held was another file's. */
+    if (log_report_number(s.name) >= 0) {
+        s.have_analysis = false;
+        drop_data();
+        open_text();
+        return;
+    }
+    log_text_free(&s.text);
     s.delim_index = -1;
     s.conv = LOG_CONV_AUTO;
     run_analysis();
@@ -1033,32 +1112,51 @@ static void render_question(gfx_canvas_t *c)
     ui_button(c, DQ_DELETE, TR(LOG_DELETE), UI_DANGER, s.press_btn == 1, true);
 }
 
-/*
- * The thumb of the scroll bar: its top in @p y and its height in @p h.  The
- * whole track while every row of the page shows.
+/**
+ * @brief The thumb of the scroll bar: the whole track while every row shows.
+ * @param total    rows of the list
+ * @param visible  rows on screen
+ * @param scroll   the first row on screen
+ * @param y        takes the thumb's top
+ * @param h        takes its height, BR_BAR_MIN px at least
  */
-static void bar_thumb(int *y, int *h)
+static void bar_thumb_of(int total, int visible, int scroll, int *y, int *h)
 {
     const gfx_rect_t t = BR_BAR;
-    if (s.n_files <= BR_ROWS) {
+    if (total <= visible) {
         *y = t.y;
         *h = t.h;
         return;
     }
-    const int th = t.h * BR_ROWS / s.n_files;
-    const int max = s.n_files - BR_ROWS;
-    *y = t.y + (t.h - th) * s.scroll / max;
+    int th = t.h * visible / total;
+    if (th < BR_BAR_MIN) {
+        th = BR_BAR_MIN;
+    }
+    const int max = total - visible;
+    *y = t.y + (t.h - th) * scroll / max;
     *h = th;
 }
 
-/* The scroll that puts the thumb's top nearest @p top. */
-static int bar_scroll_at(int top)
+/* The browse list's thumb. */
+static void bar_thumb(int *y, int *h)
+{
+    bar_thumb_of(s.n_files, BR_ROWS, s.scroll, y, h);
+}
+
+/**
+ * @brief The scroll that puts the thumb's top nearest @p top.
+ * @param total    rows of the list
+ * @param visible  rows on screen
+ * @param top      the thumb's top the finger asks for
+ * @return the first row on screen, 0 to @p total - @p visible
+ */
+static int bar_scroll_of(int total, int visible, int top)
 {
     int ty;
     int th;
-    bar_thumb(&ty, &th);
+    bar_thumb_of(total, visible, 0, &ty, &th);
     const int travel = BR_BAR.h - th;
-    const int max = s.n_files - BR_ROWS;
+    const int max = total - visible;
     if (travel <= 0 || max <= 0) {
         return 0;
     }
@@ -1072,18 +1170,36 @@ static int bar_scroll_at(int top)
     return (off * max + travel / 2) / travel;
 }
 
-static void render_bar(gfx_canvas_t *c)
+/* The browse list's scroll for a thumb at @p top. */
+static int bar_scroll_at(int top)
+{
+    return bar_scroll_of(s.n_files, BR_ROWS, top);
+}
+
+/**
+ * @brief Draw the scroll bar.
+ * @param c        the canvas
+ * @param total    rows of the list
+ * @param visible  rows on screen
+ * @param scroll   the first row on screen
+ */
+static void render_bar_of(gfx_canvas_t *c, int total, int visible, int scroll)
 {
     const gfx_rect_t t = BR_BAR;
     gfx_fill_chamfer_rect(c, t.x, t.y, t.w, t.h, UI_CHAMFER_SM, UI_PANEL_SUNK);
     int ty;
     int th;
-    bar_thumb(&ty, &th);
+    bar_thumb_of(total, visible, scroll, &ty, &th);
     /* Accent while there is something to scroll, as the SETUP lists' bar;
      * the raised panel colour when the page shows whole. */
-    const gfx_color_t col = (s.n_files > BR_ROWS) ? UI_ACCENT : UI_PANEL_HI;
+    const gfx_color_t col = (total > visible) ? UI_ACCENT : UI_PANEL_HI;
     gfx_fill_chamfer_rect(c, t.x + 4, ty + 2, t.w - 8, th - 4, UI_CHAMFER_SM,
                           col);
+}
+
+static void render_bar(gfx_canvas_t *c)
+{
+    render_bar_of(c, s.n_files, BR_ROWS, s.scroll);
 }
 
 /* The tabs as the header row shows them, left to right: the id of each. */
@@ -1654,6 +1770,47 @@ static void render_plot(gfx_canvas_t *c)
     }
 }
 
+/* ---------------------------------------------------------------- text --- */
+
+/** @brief Rows the TEXT view scrolls through: the text's, and the line that
+ *  says it was cut.
+ *  @return the rows */
+static int text_total(void)
+{
+    return s.text.rows + (s.text.cut ? 1 : 0);
+}
+
+/**
+ * @brief Draw the TEXT view: the report's rows in the browse list's panel,
+ *        its name as the panel's title, the scroll bar and BACK.
+ * @param c  the canvas
+ */
+static void render_text(gfx_canvas_t *c)
+{
+    ui_panel(c, BR_LIST, s.name, UI_ACCENT);
+    render_bar_of(c, text_total(), TX_ROWS, s.text_scroll);
+    char row[TX_COLS * 4 + 1];
+    int y = BR_LIST.y + 30;
+    for (int r = 0; r < TX_ROWS; ++r) {
+        const int i = s.text_scroll + r;
+        const gfx_rect_t box = gfx_rect_make(TX_ROW_X, y, TX_COLS * 8,
+                                             TX_ROW_H);
+        if (log_text_row(&s.text, i, row, sizeof(row))) {
+            gfx_text_in(c, box, row, UI_FONT_LABEL, UI_TEXT, 1,
+                        GFX_ALIGN_LEFT);
+        } else if (s.text.cut && i == s.text.rows) {
+            snprintf(row, sizeof(row), TR(LOG_TEXT_CUT),
+                     (unsigned)(LOG_TEXT_MAX / 1024u));
+            gfx_text_in(c, box, row, UI_FONT_LABEL, UI_WARN, 1,
+                        GFX_ALIGN_LEFT);
+        } else {
+            break;
+        }
+        y += TX_ROW_H;
+    }
+    ui_button(c, TX_BACK, TR(LOG_BACK), UI_PANEL_HI, s.press_btn == 0, true);
+}
+
 /* --------------------------------------------------------------- events -- */
 
 static int hit_button(const gfx_rect_t *rects, int n, int x, int y)
@@ -1760,9 +1917,11 @@ static void delete_doomed(void)
         set_message(TR(LOG_CANNOT_DELETE), name);
         return;
     }
-    /* What the import and plot views hold was read from that file. */
+    /* What the import, plot and text views hold was read from that
+     * file. */
     if (strcmp(s.name, name) == 0 && s.open_tab == s.tab) {
         drop_data();
+        log_text_free(&s.text);
         s.have_analysis = false;
         s.name[0] = '\0';
     }
@@ -2305,6 +2464,82 @@ static void plot_event(const touch_event_t *e)
     }
 }
 
+/**
+ * @brief A touch on the TEXT view: a drag on the rows or on the scroll bar
+ *        scrolls them, a tap on BACK returns to the list.
+ * @param e  the event
+ */
+static void text_event(const touch_event_t *e)
+{
+    const int total = text_total();
+    switch (e->type) {
+    case TOUCH_EVENT_DOWN:
+        if (!tap_begin(e)) {
+            break;
+        }
+        s.press_btn = gfx_rect_contains(TX_BACK, e->point.x, e->point.y)
+                          ? 0 : -1;
+        s.pressing = false;
+        s.bar_drag = false;
+        if (s.press_btn < 0 && total > 0
+            && gfx_rect_contains(BR_BAR, e->point.x, e->point.y)) {
+            /* As the browse list's bar: the thumb where it is held, or its
+             * middle to the finger. */
+            int ty;
+            int th;
+            bar_thumb_of(total, TX_ROWS, s.text_scroll, &ty, &th);
+            s.bar_drag = true;
+            if (e->point.y >= ty && e->point.y < ty + th) {
+                s.bar_grab = e->point.y - ty;
+            } else {
+                s.bar_grab = th / 2;
+                s.text_scroll = bar_scroll_of(total, TX_ROWS,
+                                              e->point.y - s.bar_grab);
+            }
+        } else if (s.press_btn < 0
+                   && gfx_rect_contains(BR_LIST, e->point.x, e->point.y)) {
+            s.pressing = true;
+            s.press_y0 = e->point.y;
+            s.press_scroll0 = s.text_scroll;
+        }
+        log_viewer_invalidate();
+        break;
+
+    case TOUCH_EVENT_MOVE:
+        if (s.bar_drag && tap_mine(e)) {
+            const int scroll = bar_scroll_of(total, TX_ROWS,
+                                             e->point.y - s.bar_grab);
+            if (scroll != s.text_scroll) {
+                s.text_scroll = scroll;
+                log_viewer_invalidate();
+            }
+        } else if (s.pressing && tap_mine(e)) {
+            const int dy = e->point.y - s.press_y0;
+            if (dy > DRAG_SLOP || dy < -DRAG_SLOP) {
+                s.text_scroll = s.press_scroll0 - dy / TX_ROW_H;
+                clamp_scroll(&s.text_scroll, total, TX_ROWS);
+                log_viewer_invalidate();
+            }
+        }
+        break;
+
+    case TOUCH_EVENT_UP:
+        if (!tap_mine(e)) {
+            break;
+        }
+        s.tap_have = false;
+        /* A press that slid off BACK is not a tap on it. */
+        if (s.press_btn == 0 && tap_on(e, TX_BACK)) {
+            s.view = VIEW_BROWSE;
+        }
+        s.pressing = false;
+        s.bar_drag = false;
+        s.press_btn = -1;
+        log_viewer_invalidate();
+        break;
+    }
+}
+
 /* ---------------------------------------------------------------- screen -- */
 
 static void render(gfx_canvas_t *c, int buffer_index)
@@ -2325,6 +2560,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
         break;
     case VIEW_PLOT:
         render_plot(c);
+        break;
+    case VIEW_TEXT:
+        render_text(c);
         break;
     case VIEW_BROWSE:
     default:
@@ -2353,6 +2591,9 @@ static void event(const touch_event_t *e)
         break;
     case VIEW_PLOT:
         plot_event(e);
+        break;
+    case VIEW_TEXT:
+        text_event(e);
         break;
     case VIEW_BROWSE:
     default:
@@ -2403,6 +2644,7 @@ static void reset(void)
 {
     log_viewer_io_t io = s.io;
     drop_data();
+    log_text_free(&s.text);
     memset(&s, 0, sizeof(s));
     s.io = io;
     ui_tabs_init_text(&s.tabs, k_tab_text, LOG_TAB_COUNT, BR_TABS);
@@ -2460,9 +2702,10 @@ static void enter(void)
 
 /*
  * The home tag climbs one level, as each view's BACK: the plot to the
- * import, the import to the file list.  Over the DELETE question it is
- * CANCEL: the file stays.  On the file list it leaves the screen.  A press
- * held, a drag, a pan and a pinch end with the view they were made on.
+ * import, the import and a report's text to the file list.  Over the DELETE
+ * question it is CANCEL: the file stays.  On the file list it leaves the
+ * screen.  A press held, a drag, a pan and a pinch end with the view they
+ * were made on.
  */
 static bool back(void)
 {
@@ -2475,7 +2718,7 @@ static bool back(void)
         s.view = VIEW_IMPORT;
         return true;
     }
-    if (s.view == VIEW_IMPORT) {
+    if (s.view == VIEW_IMPORT || s.view == VIEW_TEXT) {
         s.view = VIEW_BROWSE;
         return true;
     }

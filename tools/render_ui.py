@@ -131,6 +131,7 @@ SOURCES = [
     "shared/ui/board_drawing.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/log_select.c",
+    "shared/ui/log_text.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_rows.c",
     "shared/ui/sensors_rows.c",
@@ -368,6 +369,8 @@ SCREENS = {
     "logs-delete":("logs-delete.png","logs",       "dark"),
     # LOGS' ROOT tab: the runs of firmware 0.21.0 and older.
     "logs-root":  ("logs-root.png",  "logs",       "dark"),
+    # LOGS' USER tab: a LIMIT RUN's report opened as text.
+    "logs-report": ("logs-report.png", "logs",     "dark"),
     # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
     # across the screen with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),

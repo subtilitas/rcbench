@@ -43,6 +43,7 @@ set(SRCS
     prog_models.c
     log_viewer_screen.c
     log_select.c
+    log_text.c
     settings_screen.c
     settings_rows.c
     sensors_rows.c

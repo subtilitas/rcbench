@@ -1966,7 +1966,8 @@ plotten:
 ![Der Plot](img/de/logs-plot.png)
 
 Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht,
-von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der
+von der Importansicht und vom Text eines Berichts zur Dateiliste, von der
+Dateiliste zum Menü. Über der
 Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
 AKTUALISIEREN, öffnet [WLAN](#wlan).
 
@@ -2052,10 +2053,30 @@ oder die Karte schreibgeschützt oder voll ist, meldet
 `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.` Nach einem
 gescheiterten Lauf liest das Panel den Ordner beim nächsten Mal neu, sodass
 eine inzwischen gelöschte Datei ihre Nummer freigibt. Die Liste zeigt die
-CSV-Dateien und nicht die Berichte, und LÖSCHEN auf einem Lauf löscht den
-Bericht mit demselben Namen und derselben Nummer mit. Die Läufe stehen nach
-Nummer, der neueste zuerst, über alle Namen im Ordner: `MOTOR043.CSV`, dann
-`SERVO042.CSV`, dann `SUPPL041.CSV`.
+CSV-Dateien und die allein stehenden Berichte, und LÖSCHEN auf einem Lauf
+löscht den Bericht mit demselben Namen und derselben Nummer mit. Ein Bericht
+steht allein, wenn keine CSV-Datei mit seinem Namen und seiner Nummer im
+Ordner liegt: `LIMITnnn.TXT` immer, und im Stammverzeichnis `SERVOnnn.TXT`
+allein, der Endlagenlauf von Firmware 0.21.0 und älter. `ATESTnnn.TXT` neben
+`ATESTnnn.CSV` steht nicht in der Liste: ÖFFNEN auf dem Lauf liest die
+CSV-Datei. Andere `.TXT`-Dateien stehen nicht in der Liste. Die Läufe stehen
+nach Nummer, der neueste zuerst, über alle Namen im Ordner, ein allein
+stehender Bericht nach seiner eigenen Nummer: `LIMIT044.TXT`, dann
+`MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
+
+![Der Bericht eines ENDLAGENLAUFS als Text](img/de/logs-report.png)
+
+ÖFFNEN auf einem allein stehenden Bericht zeigt ihn als Text an Stelle der
+Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 14
+Zeilen zu bis zu 86 Zeichen auf dem Bildschirm. Eine Zeile, die länger ist
+als eine Bildschirmzeile, bricht am letzten Leerzeichen darin um, und ein
+Wort, das länger ist, wird am Zeilenende abgeschnitten. Ein Tabulator wird
+zum Leerzeichen, ein Wagenrücklauf entfällt. Ziehen auf den Zeilen oder am
+Rollbalken rollt sie; ZURÜCK führt zur Liste. Die Ansicht fasst die ersten
+32 KiB einer Datei; eine längere zeigt diese und als letzte Zeile
+`Nur die ersten 32 kB werden gezeigt.` Ein Bericht, der sich nicht öffnen
+lässt, bleibt in der Liste, und die Fußzeile sagt warum:
+`LIMIT044.TXT lässt sich nicht öffnen.` oder `Nicht genug Speicher.`
 
 ![Der Tab STAMM mit den Läufen einer älteren Firmware](img/de/logs-root.png)
 
@@ -2083,9 +2104,9 @@ bleibt die Datei dieses Tabs: Ihre Importansicht und ihr Plot lesen sie aus
 diesem Ordner, gleich welcher Tab inzwischen gewählt ist.
 
 Die Liste zeigt den Ordner in Seiten zu 48 Einträgen, und ein Ordner fasst
-bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe nach
-Nummer, die höchste zuerst, dann die Dateien, die der Prüfstand nicht
-geschrieben hat, nach Namen. Die Zeilen einer Seite stehen in derselben
+bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe und
+die allein stehenden Berichte nach Nummer, die höchste zuerst, dann die
+Dateien, die der Prüfstand nicht geschrieben hat, nach Namen. Die Zeilen einer Seite stehen in derselben
 Reihenfolge, der neueste Lauf oben. Was neu heißt, steht in der Nummer im
 Namen: die Panel-Platine hat keine Uhr, die einen Stromausfall übersteht,
 deshalb trägt jede Datei auf der Karte das Datum 1980-01-01.
@@ -2112,7 +2133,12 @@ das Verzeichnis sind 63 Sektoren zu 512 Bytes, etwa 25 ms beim SPI-Takt (SPI:
 Serial Peripheral Interface) der Karte von 20 MHz, oder 125 Sektoren, etwa
 50 ms, mit einem Bericht neben jedem Lauf. Beides ist auf dem Panel nicht
 gemessen. Die Größe jedes Eintrags kommt mit dem Lesen des Verzeichnisses,
-eine Seite kostet also einen Durchlauf und die Auswahl.
+eine Seite kostet also einen Durchlauf und die Auswahl. Ein Ordner mit einem
+Bericht außer `LIMITnnn.TXT`, neben dem keine CSV-Datei mit seinem Namen und
+seiner Nummer liegt, etwa das Stammverzeichnis einer Karte von Firmware
+0.21.0 mit einem Endlagenlauf darauf, wird je Seite zweimal gelesen: Der
+erste Durchlauf findet, welche Berichte allein stehen, der zweite bietet sie
+an.
 
 Der Rollbalken am rechten Rand der Liste ist 42 px breit, 8,1 mm bei 0,194 mm
 Pixelabstand. Die Länge des Griffs entspricht dem Anteil der sichtbaren Zeilen

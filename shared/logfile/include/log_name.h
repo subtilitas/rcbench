@@ -155,6 +155,21 @@ int log_report_number(const char *name);
 int log_name_number(const char *name);
 
 /**
+ * @brief The writer, the kind and the number of a run log's or a report's
+ * name: "LIMIT004.TXT" is LOG_PREFIX_LIMIT, a report, 4.
+ *
+ * The same rules for the number and the case as log_run_number().
+ *
+ * @param name    the name to read
+ * @param prefix  takes the writer's prefix; may be NULL
+ * @param report  takes true for a ".TXT" report, false for a ".CSV" log;
+ *                may be NULL
+ * @return the number, LOG_RUN_FIRST to LOG_RUN_LAST, or -1 for a name that
+ *         is neither; then @p prefix and @p report are left as they were
+ */
+int log_name_parse(const char *name, log_prefix_t *prefix, bool *report);
+
+/**
  * Write the @p form'th of the LOG_NAME_FORMS names number @p number can be
  * carried by, 0 to LOG_NAME_FORMS - 1: form / 2 is the written prefix and
  * form % 2 the report.  An empty string for a form or a number outside
@@ -199,23 +214,31 @@ bool log_name_busy(const char *name, unsigned open_run, unsigned open_test,
 int log_name_case_cmp(const char *a, const char *b);
 
 /**
- * Order two listed names by which one a full list keeps.
+ * @brief Order two listed names by which one a full list keeps.
  *
  * Negative when @p a is kept ahead of @p b, positive when @p b is.  Runs
  * come first, by number, the newest first, whichever writer made them:
- * MOTOR043.CSV ranks ahead of SERVO042.CSV.  An operator opening a log is
- * almost always after a recent one, and a run is the only entry whose age is
- * known.  Everything else follows the runs by name, case folded.
+ * MOTOR043.CSV ranks ahead of SERVO042.CSV.  A report ranks by its number as
+ * a run does (log_name_number()), so LIMIT044.TXT, a limit run's only file,
+ * ranks ahead of MOTOR043.CSV.  An operator opening a log is almost always
+ * after a recent one, and a run is the only entry whose age is known.
+ * Everything else follows the runs by name, case folded.
  *
  * The order is strict: zero only for one name, compared with case folded
- * (log_name_case_cmp()).  Two runs with one number under different prefixes,
- * which only a card edited on a computer holds, follow by name: ATEST042.CSV,
- * then MOTOR042.CSV, then SERVO042.CSV.  Paging needs that (log_select.h): a
- * name that ranked equal to a page's edge would be on neither side of it.
+ * (log_name_case_cmp()).  Two names with one number, a run and its report
+ * or, on a card edited on a computer, two runs under different prefixes,
+ * follow by name: ATEST042.CSV, then ATEST042.TXT, then MOTOR042.CSV.
+ * Paging needs that (log_select.h): a name that ranked equal to a page's
+ * edge would be on neither side of it.
  *
  * A card holding as many runs as a page has room for therefore leaves no
  * room on the first page for a file the bench did not write; the browse
  * panel says how many entries the card holds.
+ *
+ * @param a  a name; NULL ranks as ""
+ * @param b  a name; NULL ranks as ""
+ * @return negative when @p a ranks ahead, positive when @p b does, 0 for
+ *         one name
  */
 int log_name_rank(const char *a, const char *b);
 
