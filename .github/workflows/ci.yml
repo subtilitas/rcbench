@@ -27,7 +27,8 @@ env:
   # tools/install_doxygen.sh stops when the SHA-256 differs.  The baseline
   # of tools/doc_check.py is this release's, and pages.yml pins the same.
   DOXYGEN_VERSION: 1.18.0
-  DOXYGEN_SHA256: 14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
+  DOXYGEN_SHA256: >-
+    14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
 
 jobs:
   host-tests:
@@ -324,8 +325,8 @@ jobs:
       # The tools in tools/ are held to the same standard as the C: each of
       # them can fail a build, so a bug in one is a bug in the gate.  Their
       # tests are held to it too, and the script of the host suite.  The D
-      # rules ask for a Google-style docstring; the files that broke them
-      # when they were switched on are listed in ruff.toml.
+      # rules ask for a Google-style docstring; ruff.toml lists the files
+      # excused some D codes, each with the codes on its line.
       - name: ruff
         run: ruff check tools/ test/tools/ test/host/
 
@@ -343,10 +344,18 @@ jobs:
         run: python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
 
       # test/tools/test_doc_check.py runs Doxygen on a scratch tree.
+      # The archive is 115 MB; the cache holds it, and the script checks
+      # its SHA-256 on a hit as on a download.
+      - name: Restore the Doxygen archive
+        uses: actions/cache@v6
+        with:
+          path: ~/doxygen-archive
+          key: doxygen-${{ env.DOXYGEN_VERSION }}-${{ env.DOXYGEN_SHA256 }}
+
       - name: Install Doxygen
         run: |
           tools/install_doxygen.sh "$DOXYGEN_VERSION" "$DOXYGEN_SHA256" \
-            "$RUNNER_TEMP/doxygen"
+            "$RUNNER_TEMP/doxygen" ~/doxygen-archive
           echo "$RUNNER_TEMP/doxygen/bin" >> "$GITHUB_PATH"
 
       # The checks are a gate, so each rule of a check has a case that
@@ -372,17 +381,30 @@ jobs:
           # The base branch has to be here to diff against.
           fetch-depth: 0
 
+      # The archive is 115 MB; the cache holds it, and the script checks
+      # its SHA-256 on a hit as on a download.
+      - name: Restore the Doxygen archive
+        uses: actions/cache@v6
+        with:
+          path: ~/doxygen-archive
+          key: doxygen-${{ env.DOXYGEN_VERSION }}-${{ env.DOXYGEN_SHA256 }}
+
       - name: Install Doxygen
         run: |
           tools/install_doxygen.sh "$DOXYGEN_VERSION" "$DOXYGEN_SHA256" \
-            "$RUNNER_TEMP/doxygen"
+            "$RUNNER_TEMP/doxygen" ~/doxygen-archive
           echo "$RUNNER_TEMP/doxygen/bin" >> "$GITHUB_PATH"
 
       - name: Every new or changed C file is documented
         env:
-          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          python3 tools/doc_check.py --check ${BASE:+--base "$BASE"}
+          if [ "$EVENT" = pull_request ]; then
+            python3 tools/doc_check.py --check --base "origin/$BASE_REF"
+          else
+            python3 tools/doc_check.py --check
+          fi
 
   # What the suite does not notice in the lines a pull request changes.  It
   # reports and does not fail on a survivor: the job fails only when the

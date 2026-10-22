@@ -35,13 +35,20 @@ With --base, a warning fails, listed in the baseline or not, when
 - its file is new since the merge base (renamed files count as new);
 - its file changed and the warning's span overlaps a line range the change
   adds or rewrites (`git diff -U0`, new side; a pure deletion covers the
-  lines on both sides of the cut).  The span is the line Doxygen reports,
+  line before the cut).  The span is the line Doxygen reports,
   widened by the comment block next to it: Doxygen reports a documented
   item at the start of its block, so a block starting on that line adds
   its lines and the declaration after it; it reports an undocumented item
   at its declaration, so a block ending on the line above adds its lines.
   A declaration over several lines counts by the reported line only;
-- its file changed and it is a missing `@file` block or brief.
+- its file changed and it is a missing `@file` block or brief;
+- it is a `/**` or `/*!` block without `@brief` in a new file or on a
+  changed line (NO_BLOCK_BRIEF); a member's trailing `/**<` block, a group
+  block (`@{`, `@}`, `@name`) and the `@file` block are exempt.  Doxygen
+  takes such a block as the item's detailed text and warns about nothing.
+
+Renamed and moved files count as new: code moved into a new file is held
+to the rule whole.
 
 Old gaps on lines a change does not touch stay in the baseline.
 
@@ -80,6 +87,7 @@ BASELINE_HEADER = """\
 
 NO_FILE_BLOCK = "file has no @file block"
 NO_FILE_BRIEF = "@file block has no @brief"
+NO_BLOCK_BRIEF = "comment block has no @brief"
 
 _WARNING_RE = re.compile(r"^(?P<file>.*?):(?P<line>\d+): (?P<text>.*)$")
 _HELPER_NOISE_RE = re.compile(
@@ -88,6 +96,13 @@ _HELPER_NOISE_RE = re.compile(
 _DOC_BLOCK_RE = re.compile(r"/\*[*!](?!/).*?\*/", re.DOTALL)
 _FILE_CMD_RE = re.compile(r"[@\\]file\b")
 _BRIEF_CMD_RE = re.compile(r"[@\\]brief\b")
+_GROUP_CMD_RE = re.compile(r"[@\\](?:\{|\}|name\b)")
+
+# Options for every git diff the tool runs: the a/ and b/ prefixes and
+# plain output whatever diff.noprefix, diff.mnemonicPrefix, color.diff or
+# an external diff driver in the user's configuration say.
+_DIFF_OPTIONS = ("--src-prefix=a/", "--dst-prefix=b/", "--no-color",
+                 "--no-ext-diff", "--no-renames")
 
 # How far below a warning's line the function it names may start: the
 # warning carries the line of the comment block above the function.
@@ -248,7 +263,7 @@ def parse_log(text: str, root: pathlib.Path) -> list[DocWarning]:
     Returns:
         The warnings in log order.
     """
-    prefix = str(root).rstrip("/") + "/"
+    prefix = root.as_posix().rstrip("/") + "/"
     warnings: list[DocWarning] = []
     for raw in text.splitlines():
         if not raw.strip():
@@ -409,7 +424,7 @@ _HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 def parse_hunks(diff: str) -> dict[str, list[tuple[int, int]]]:
     """Read the new side's line ranges out of a `git diff -U0`.
 
-    A hunk that only deletes covers the lines on both sides of the cut.
+    A hunk that only deletes covers the line before the cut.
 
     Args:
         diff: The output of `git diff -U0 --no-renames`.
@@ -431,7 +446,7 @@ def parse_hunks(diff: str) -> dict[str, list[tuple[int, int]]]:
             first = int(match.group(1))
             count = 1 if match.group(2) is None else int(match.group(2))
             if count == 0:
-                hunks[current].append((max(first, 1), first + 1))
+                hunks[current].append((max(first, 1), max(first, 1)))
             else:
                 hunks[current].append((first, first + count - 1))
     return hunks
@@ -451,13 +466,13 @@ def changes(root: pathlib.Path, base: str) -> Changes:
         The new files and the changed line ranges of the other files.
     """
     merge_base = git_lines(root, "merge-base", base, "HEAD")[0]
-    new = set(git_lines(root, "diff", "--name-only", "--no-renames",
+    new = set(git_lines(root, "diff", *_DIFF_OPTIONS, "--name-only",
                         "--diff-filter=A", merge_base))
     new |= set(git_lines(root, "ls-files", "--others",
                          "--exclude-standard"))
     diff = subprocess.run(
-        ["git", "diff", "-U0", "--no-renames", "--no-color", "--no-ext-diff",
-         "--diff-filter=M", merge_base],
+        ["git", "diff", *_DIFF_OPTIONS, "-U0", "--diff-filter=M",
+         merge_base],
         cwd=root, check=True, capture_output=True, text=True).stdout
     return Changes(new, parse_hunks(diff))
 
@@ -538,6 +553,43 @@ def select_touched(warnings: list[DocWarning], diff: Changes,
         if any(a <= last and first <= b for a, b in ranges):
             touched.append(warning)
     return touched
+
+
+def block_brief_warnings(root: pathlib.Path, diff: Changes,
+                         settings: dict[str, list[str]]) -> list[DocWarning]:
+    """Find the comment blocks without a brief that a change adds or edits.
+
+    Args:
+        root: The repository root.
+        diff: The new files and changed lines.
+        settings: The Doxyfile's settings; files Doxygen does not read are
+            skipped.
+
+    Returns:
+        One NO_BLOCK_BRIEF warning, at the block's first line, for each
+        `/**` or `/*!` block in a new file, or overlapping a changed range,
+        that holds no `@brief` and is not a `/**<` block, a group block or
+        the `@file` block.
+    """
+    found = []
+    for rel in sorted(diff.new | set(diff.hunks)):
+        path = root / rel
+        if not in_scope(rel, settings) or not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        ranges = diff.hunks.get(rel, [])
+        for block in _DOC_BLOCK_RE.finditer(text):
+            body = block.group(0)
+            if (body[3:4] == "<" or _BRIEF_CMD_RE.search(body)
+                    or _GROUP_CMD_RE.search(body)
+                    or _FILE_CMD_RE.search(body)):
+                continue
+            first = text.count("\n", 0, block.start()) + 1
+            last = first + body.count("\n")
+            if rel in diff.new or any(a <= last and first <= b
+                                      for a, b in ranges):
+                found.append(DocWarning(rel, first, NO_BLOCK_BRIEF))
+    return found
 
 
 class Result(NamedTuple):
@@ -664,6 +716,8 @@ def main(argv: list[str] | None = None) -> int:
 
     diff = changes(root, args.base) if args.base else Changes(set(), {})
     touched = select_touched(warnings, diff, root)
+    touched += block_brief_warnings(root, diff,
+                                    read_doxyfile(root / "Doxyfile"))
     result = compare(warnings, read_baseline(baseline_path), touched)
     if result.failed:
         print(report(result))

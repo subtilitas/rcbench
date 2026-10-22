@@ -33,10 +33,10 @@ convention = "google"
 # gen_font.py carries the glyph tables it emits as long literal strings
 # (E501).
 #
-# The D codes below are the docstring baseline: the codes each file broke
-# when the D rules were switched on, 1225 findings in 51 files.  A file not
-# listed passes every D rule.  A file whose gaps are fixed leaves its line;
-# a line whose codes no longer occur is deleted with the fix.
+# The D codes below are the docstring baseline: 1225 findings in 51 files.
+# A file not listed passes every D rule.  Each listed file is excused the
+# codes on its line; delete a code when its file is fixed, and the line
+# when no code is left.
 "test/host/check_wa_page.py" = ["D103"]
 "test/host/check_wa_zip.py" = ["D103"]
 "test/host/fuzz_parity.py" = ["D103", "D205", "D209"]

@@ -38,10 +38,31 @@ EXCLUDE_PATTERNS       = */gfx_font* \
                          */test/host/*
 FULL_PATH_NAMES        = YES
 # Attributes are read as nothing, so a function with one keeps its name.
+# The build flags are set as the firmware builds set them, with every
+# optional part on, so code behind #if and #ifdef is read and checked:
+# the panel (ESP_PLATFORM, RCBENCH_TOUCH_INJECTOR, RCBENCH_IOMCU_IMAGE,
+# RCBENCH_DISPLAY_BARS, exFAT, an 8192-byte main task), the IOmcu's
+# trace, console and sense bring-up, and the text trace of gfx.
+# Not set: WA_PAGE_DE (test_wa_page_de's stand-in), GFX_INL_FORCE (gfx.c
+# defines it), OUT_PPM_MAX_PINS and OUT_DSHOT_MAX_PINS (their #ifndef
+# default is the definition to read), ESP_IDF_VERSION and
+# CONFIG_ESP_HOSTED_DFLT_TASK_FROM_SPIRAM (#error guards only), and the
+# include guards.  ESP_PLATFORM hides the host-only code under
+# #ifndef ESP_PLATFORM: k_names in shared/ui/ui_text.c.
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 PREDEFINED             = "__attribute__(x)=" \
-                         IRAM_ATTR=
+                         IRAM_ATTR= \
+                         ESP_PLATFORM=1 \
+                         RCBENCH_TOUCH_INJECTOR=1 \
+                         RCBENCH_IOMCU_IMAGE=1 \
+                         RCBENCH_DISPLAY_BARS=1 \
+                         FF_FS_EXFAT=1 \
+                         CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192 \
+                         SENSE_TRACE=1 \
+                         IOMCU_CONSOLE=1 \
+                         IOMCU_SENSE_BRINGUP=1 \
+                         GFX_TEXT_TRACE=1
 OPTIMIZE_OUTPUT_FOR_C  = YES
 
 # --- What counts as documented ---------------------------------------------

@@ -226,6 +226,7 @@ firmware/panel/components/gt911/include/touch.h: warning: parameters of member t
 firmware/panel/components/gt911/include/touch.h: warning: parameters of member touch_wait_event are not documented
 firmware/panel/components/gt911/include/touch.h: warning: return type of member touch_age_ms is not documented
 firmware/panel/components/gt911/include/touch.h: warning: return type of member touch_i2c_address is not documented
+firmware/panel/components/gt911/include/touch.h: warning: return type of member touch_injector_attached is not documented
 firmware/panel/components/gt911/include/touch.h: warning: return type of member touch_pressed is not documented
 firmware/panel/components/gt911/include/touch.h: warning: return type of member touch_published is not documented
 firmware/panel/components/gt911/include/touch.h: warning: return type of member touch_snapshot is not documented
@@ -2560,6 +2561,7 @@ shared/settings/include/settings.h: warning: return type of member settings_dirt
 shared/settings/include/settings.h: warning: return type of member settings_discard is not documented
 shared/settings/include/settings.h: warning: return type of member settings_held is not documented
 shared/settings/include/settings.h: warning: return type of member settings_in_category is not documented
+shared/settings/include/settings.h: warning: return type of member settings_nvs_store is not documented
 shared/settings/include/settings.h: warning: return type of member settings_pdmini_same_pin is not documented
 shared/settings/include/settings.h: warning: return type of member settings_save is not documented
 shared/settings/include/settings.h: warning: return type of member settings_save_asked is not documented
@@ -3241,6 +3243,7 @@ shared/ui/include/ui_text.h: warning: parameters of member ui_text_has are not d
 shared/ui/include/ui_text.h: warning: parameters of member ui_text_name are not documented
 shared/ui/include/ui_text.h: warning: parameters of member ui_text_set_language are not documented
 shared/ui/include/ui_text.h: warning: parameters of member ui_text_table are not documented
+shared/ui/include/ui_text.h: warning: parameters of member ui_text_trace are not documented
 shared/ui/include/ui_text.h: warning: parameters of member ui_tr are not documented
 shared/ui/include/ui_text.h: warning: parameters of member ui_tr_in are not documented
 shared/ui/include/ui_text.h: warning: parameters of member ui_tr_pad are not documented
@@ -4690,7 +4693,6 @@ shared/ui/ui_text.c: warning: Member UI_SERVO_TEXT(id, en, de) (macro definition
 shared/ui/ui_text.c: warning: Member UI_SETTING_CATEGORY(id, en, de) (macro definition) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member UI_SETTING_HELP(id, en, de) (macro definition) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member UI_SETTING_LABEL(id, en, de) (macro definition) of file ui_text.c is not documented.
-shared/ui/ui_text.c: warning: Member UI_TEXT(id, cells, en, de) (macro definition) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member UI_TEXT(id, cells, en, de) (macro definition) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member UI_TEXT(id, cells, en, de) (macro definition) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member UI_TEXT(id, cells, en, de) (macro definition) of file ui_text.c is not documented.

@@ -200,7 +200,7 @@ def test_a_touched_warning_fails_although_the_baseline_holds_it():
 def test_the_hunks_are_the_new_sides_line_ranges():
     """A hunk's range is the new side's lines it adds or rewrites.
 
-    A deletion covers the lines on both sides of the cut.
+    A deletion covers the line before the cut.
     """
     diff = ("diff --git a/x.h b/x.h\n--- a/x.h\n+++ b/x.h\n"
             "@@ -3 +3 @@\n-a\n+b\n"
@@ -208,7 +208,7 @@ def test_the_hunks_are_the_new_sides_line_ranges():
             "@@ -20,2 +24,0 @@\n-d\n-e\n"
             "diff --git a/y.c b/y.c\n--- a/y.c\n+++ /dev/null\n"
             "@@ -1 +0,0 @@\n-f\n")
-    assert dc.parse_hunks(diff) == {"x.h": [(3, 3), (11, 14), (24, 25)]}
+    assert dc.parse_hunks(diff) == {"x.h": [(3, 3), (11, 14), (24, 24)]}
 
 
 SPAN_H = """\
@@ -389,6 +389,9 @@ def test_the_doxyfile_leaves_the_settings_to_the_check():
 
 # --- the pins ----------------------------------------------------------------
 
+SHA_RE = r"DOXYGEN_SHA256:\s*(?:>-\s*)?([0-9a-f]{64})"
+
+
 @pytest.mark.parametrize("workflow", ["ci.yml", "pages.yml"])
 def test_the_workflows_install_the_release_the_baseline_is_written_by(
         workflow):
@@ -400,11 +403,11 @@ def test_the_workflows_install_the_release_the_baseline_is_written_by(
     text = (REPO / ".github" / "workflows" / workflow).read_text(
         encoding="utf-8")
     versions = set(re.findall(r"DOXYGEN_VERSION: ([\d.]+)", text))
-    hashes = set(re.findall(r"DOXYGEN_SHA256: ([0-9a-f]{64})", text))
+    hashes = set(re.findall(SHA_RE, text))
     ci = (REPO / ".github" / "workflows" / "ci.yml").read_text(
         encoding="utf-8")
     assert versions == {dc.DOXYGEN_VERSION}
-    assert hashes == set(re.findall(r"DOXYGEN_SHA256: ([0-9a-f]{64})", ci))
+    assert hashes == set(re.findall(SHA_RE, ci))
     assert len(hashes) == 1
 
 
@@ -584,18 +587,146 @@ def test_an_undocumented_function_on_a_changed_line_fails(
     assert "old_gap" not in touched
 
 
-def test_a_full_pages_run_keeps_every_trigger_but_the_api_sources():
-    """FULL_PATHS of pages.yml is its trigger list less the API sources.
+# --- comment blocks without a brief ------------------------------------------
 
-    Every other path starts the configurator tests and the Playwright
-    matrix; a path missing from FULL_PATHS would skip them.
+BLOCKS_H = """\
+/** @file
+ *  @brief Blocks. */
+
+/** Counts, no brief. */
+int counts(void);
+
+typedef struct {
+    int a; /**< A member's trailing block. */
+} t;
+
+/** @name Limits
+ *  @{ */
+#define LIMIT 1
+/** @} */
+
+/**
+ * @brief Documented.
+ */
+int documented(void);
+"""
+
+
+@pytest.mark.parametrize("ranges, expected", [
+    ([(4, 4)], [4]),      # the block without a brief, changed
+    ([(5, 5)], []),       # the line below it only
+    ([(8, 8)], []),       # a member's /**< block
+    ([(11, 15)], []),     # the group blocks
+    ([(17, 20)], []),     # a block with a brief
+    ([(1, 2)], []),       # the @file block
+])
+def test_a_changed_block_without_a_brief_fails(tmp_path, ranges, expected):
+    """A /** block on a changed line needs a @brief.
+
+    A member's trailing block, a group block and the @file block are
+    exempt.
     """
-    text = (REPO / ".github" / "workflows" / "pages.yml").read_text(
-        encoding="utf-8")
-    triggers = text.split("pull_request:", 1)[1].split("push:", 1)[0]
-    paths = {p.replace("/**", "/")
-             for p in re.findall(r"- '([^']+)'", triggers)}
-    full = text.split("FULL_PATHS: >-", 1)[1].split("steps:", 1)[0]
-    listed = {line.strip() for line in full.splitlines()
-              if line.strip() and not line.strip().startswith("#")}
-    assert listed == paths - {"Doxyfile", "tools/install_doxygen.sh"}
+    (tmp_path / "Doxyfile").write_text("INPUT = src\nFILE_PATTERNS = *.h\n",
+                                       encoding="utf-8")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "b.h").write_text(BLOCKS_H, encoding="utf-8")
+    settings = dc.read_doxyfile(tmp_path / "Doxyfile")
+    diff = dc.Changes(set(), {"src/b.h": ranges})
+    found = dc.block_brief_warnings(tmp_path, diff, settings)
+    assert [w.line for w in found] == expected
+    assert all(w.message == dc.NO_BLOCK_BRIEF for w in found)
+
+
+def test_every_block_without_a_brief_in_a_new_file_fails(tmp_path):
+    """A new file is held whole: the one block without a brief fails."""
+    (tmp_path / "Doxyfile").write_text("INPUT = src\nFILE_PATTERNS = *.h\n",
+                                       encoding="utf-8")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "b.h").write_text(BLOCKS_H, encoding="utf-8")
+    settings = dc.read_doxyfile(tmp_path / "Doxyfile")
+    found = dc.block_brief_warnings(tmp_path, dc.Changes({"src/b.h"}, {}),
+                                    settings)
+    assert found == [W("src/b.h", dc.NO_BLOCK_BRIEF, 4)]
+
+
+def test_a_block_without_a_brief_on_a_changed_line_fails_the_check(
+        tmp_path, capsys):
+    """Through main: a brief removed from a block fails with --base."""
+    root = scratch_repo(tmp_path, {"a.h": DOCUMENTED_H})
+    log = tmp_path / "w.log"
+    log.write_text("", encoding="utf-8")
+    args = ["--root", str(root), "--log", str(log)]
+    assert dc.main(["--update", *args]) == 0
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "baseline")
+    path = root / "src" / "a.h"
+    path.write_text(path.read_text().replace(" * @brief Double a value.\n",
+                                             " * Double a value.\n"),
+                    encoding="utf-8")
+    capsys.readouterr()
+    assert dc.main(["--check", "--base", "base", *args]) == 1
+    assert f"src/a.h:9: {dc.NO_BLOCK_BRIEF}" in capsys.readouterr().out
+
+
+# --- git configuration -------------------------------------------------------
+
+def test_the_users_diff_configuration_does_not_blind_the_check(
+        tmp_path, monkeypatch):
+    """diff.noprefix, diff.mnemonicPrefix and color.diff change nothing."""
+    root = scratch_repo(tmp_path, {"a.h": DOCUMENTED_H})
+    git(root, "checkout", "-q", "-b", "topic")
+    path = root / "src" / "a.h"
+    path.write_text(path.read_text().replace("int twice(int a);",
+                                             "int twice(int b);"),
+                    encoding="utf-8")
+    (root / "src" / "n.h").write_text("int n;\n", encoding="utf-8")
+    settings = {"diff.noprefix": "true", "diff.mnemonicPrefix": "true",
+                "color.diff": "always", "color.ui": "always"}
+    monkeypatch.setenv("GIT_CONFIG_COUNT", str(len(settings)))
+    for index, (key, value) in enumerate(settings.items()):
+        monkeypatch.setenv(f"GIT_CONFIG_KEY_{index}", key)
+        monkeypatch.setenv(f"GIT_CONFIG_VALUE_{index}", value)
+    diff = dc.changes(root, "base")
+    assert diff.hunks == {"src/a.h": [(14, 14)]}
+    assert diff.new == {"src/n.h"}
+
+
+# --- build flags ----------------------------------------------------------
+
+GUARDED_H = """\
+/**
+ * @file
+ * @brief Declarations behind the build flags.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#pragma once
+
+#ifdef ESP_PLATFORM
+int on_the_panel(int a);
+#endif
+
+#if SENSE_TRACE
+int traced(int a);
+#endif
+"""
+
+
+def test_an_undocumented_function_behind_a_build_flag_fails(
+        tmp_path, capsys, no_hang):
+    """Doxygen run: a function behind a build flag is checked.
+
+    The Doxyfile sets the flags, so a function behind #ifdef ESP_PLATFORM
+    or #if SENSE_TRACE is read and warned about.
+    """
+    binary = doxygen_or_skip()
+    root = scratch_repo(tmp_path, {"a.h": DOCUMENTED_H})
+    args = ["--root", str(root), "--doxygen", binary,
+            "--out", str(tmp_path / "out")]
+    assert dc.main(["--update", *args]) == 0
+    (root / "src" / "guarded.h").write_text(GUARDED_H, encoding="utf-8")
+    capsys.readouterr()
+    assert dc.main(["--check", *args]) == 1
+    out = capsys.readouterr().out
+    assert "Member on_the_panel(int a) (function)" in out
+    assert "Member traced(int a) (function)" in out

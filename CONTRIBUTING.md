@@ -357,7 +357,11 @@ tables (`gfx_font*`, `*_gen.c`, `board_drawing_*`) do not.
 - Each public function, type and macro group has a `/** */` block with
   `@brief`, a `@param` for every parameter and a `@return` for a non-void
   result.
+- Each file-scope variable, `static` ones too, has a block with a
+  `@brief`; a struct member has one or a trailing `/**< */`.
 - A `static` helper in a `.c` file has at least a `@brief`.
+- Every `/**` or `/*!` block has a `@brief`, except a member's trailing
+  `/**< */`, a group block (`@{`, `@}`, `@name`) and the `@file` block.
 - A brief is an explicit `@brief`. The first sentence of a block is not
   one (`JAVADOC_AUTOBRIEF = NO`).
 
@@ -409,12 +413,22 @@ request and a new one does.
     reports and the comment block next to it, so a rewritten `@brief`
     or `@param` counts for the function below it;
   - a missing `@file` block or `@brief` in a C file it changes. Doxygen
-    reports nothing inside a file without the block.
+    reports nothing inside a file without the block;
+  - a `/**` or `/*!` block without `@brief` in a new file or on a changed
+    line. Doxygen takes such a block as detailed text and warns about
+    nothing.
 
-  An old gap on a line the pull request does not touch stays listed.
+  A renamed or moved file counts as new, so splitting a file documents
+  every function that moves. An old gap on a line the pull request does
+  not touch stays listed.
 - ruff's D rules (pydocstyle, Google convention) in `ruff.toml`. A file
   not listed under `[lint.per-file-ignores]` passes every D rule; a listed
   file is excused the codes on its line.
+
+`doc_check.py` and `tools/install_doxygen.sh` run on Linux on x86-64, as
+in CI. On Windows (Git Bash), `doc_check.py` runs with a Doxygen 1.18.0
+on PATH or named by `--doxygen`; `install_doxygen.sh` installs the Linux
+binary only.
 
 When a gap is fixed, its baseline line goes in the same pull request:
 
@@ -428,9 +442,8 @@ git diff tools/doc_check_baseline.txt    # removed lines only
 For Python, delete the fixed codes from the file's line in `ruff.toml`,
 and the line when no code is left, then run `ruff check .`.
 
-`mkdir -p build/doxygen && doxygen` at the repository root writes the HTML
-to `build/doxygen/html/`;
-GitHub Pages publishes it as the
+`mkdir -p build/doxygen && doxygen` at the repository root writes the
+HTML to `build/doxygen/html/`; GitHub Pages publishes it as the
 [C API (application programming interface) reference](https://subtilitas.github.io/rcbench/api/).
 
 ## Writing

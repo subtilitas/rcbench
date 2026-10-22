@@ -4,13 +4,13 @@ name: Configurator
 # the panel's web help under help/ and the C API (application programming
 # interface) reference under api/ of the same site.
 #
-# - changes: decides whether the run is a full one.  A pull request or push
-#   that changes a path of FULL_PATHS below (the configurator, the help and
-#   their inputs, this file) runs every job.  One that changes only the
-#   sources of the API reference (the C sources, the Doxyfile,
-#   tools/install_doxygen.sh) skips core, smoke, matrix and the checks of
-#   build: it builds the configurator page as it stands, the help and the
-#   API reference, and on main deploys them.
+# - changes: decides with tools/pages_changes.py whether the run is a full
+#   one.  A pull request or push that changes a path of its FULL_PATHS (the
+#   configurator, the help and their inputs, this file) runs every job.
+#   One that changes only the sources of the API reference (the C sources,
+#   the Doxyfile, tools/install_doxygen.sh) skips core, smoke, matrix and
+#   the checks of build: it builds the configurator page as it stands, the
+#   help and the API reference, and on main deploys them.
 # - core: type check, test suite, static checks on the data file against the
 #   tree at the release tag, the release of package.json against the firmware
 #   header rcbench_version.h, and the coverage figure in
@@ -33,7 +33,8 @@ name: Configurator
 #   is an artifact of every run.
 # - deploy: publishes the built page to GitHub Pages, with the help in its
 #   help/ folder and the API reference in its api/ folder. It runs on a
-#   push to main only, when every job that ran passed. A pull request builds and tests and publishes
+#   push to main only, when every job that ran passed. A pull request
+#   builds and tests and publishes
 #   nothing. Neither the help nor the API reference is part of the
 #   configurator's size budget: the budget is checked on the
 #   configurator's files alone.
@@ -87,58 +88,45 @@ permissions:
 env:
   # The release ci.yml checks the comments with; the same pin.
   DOXYGEN_VERSION: 1.18.0
-  DOXYGEN_SHA256: 14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
+  DOXYGEN_SHA256: >-
+    14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
 
 jobs:
   changes:
     name: Full run or API only
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # actions: read for the list of earlier runs of this workflow.
+    permissions:
+      contents: read
+      actions: read
     outputs:
       full: ${{ steps.diff.outputs.full }}
-    env:
-      # The paths of a full run: the trigger paths of this workflow without
-      # the sources of the API reference.  A path ending in / is a folder.
-      FULL_PATHS: >-
-        configurator/
-        shared/link/include/rcbench_version.h
-        .github/workflows/pages.yml
-        help/
-        docs/img/
-        tools/help_site.py
-        tools/render_ui.py
-        shared/ui/include/ui_screen.h
     steps:
       - uses: actions/checkout@v6
         with:
-          # The commit before the push has to be here to diff against.
+          # The commit changes are counted from has to be here.
           fetch-depth: 0
 
-      # A run whose range cannot be read (a new branch, a force push, a
-      # manual start) is a full one.
+      # tools/pages_changes.py holds FULL_PATHS and the rule.  A push counts
+      # its changes from the head commit of the newest successful push run
+      # of this workflow on main, so a push after a failed or cancelled run
+      # is tested against what was last published.  No such run, or a
+      # commit that is not an ancestor of HEAD, makes a full run.
       - id: diff
         env:
+          GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
           BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          case "$EVENT" in
-            pull_request) from=$BASE; range="$BASE...HEAD" ;;
-            push) from=$BEFORE; range="$BEFORE..HEAD" ;;
-            *) from= ;;
-          esac
-          full=true
-          if [ -n "$from" ] && git cat-file -e "$from^{commit}" 2>/dev/null; then
-            full=false
-            while IFS= read -r file; do
-              for path in $FULL_PATHS; do
-                case "$file" in
-                  "$path"|"$path"*/*) full=true ;;
-                esac
-              done
-            done < <(git diff --name-only "$range")
+          runs="$RUNNER_TEMP/runs.json"
+          query="branch=main&event=push&status=success&per_page=1"
+          api="repos/$GITHUB_REPOSITORY/actions/workflows/pages.yml/runs"
+          if [ "$EVENT" = push ]; then
+            gh api "$api?$query" > "$runs" || echo '{}' > "$runs"
           fi
-          echo "full=$full" | tee -a "$GITHUB_OUTPUT"
+          python3 tools/pages_changes.py --event "$EVENT" --base "$BASE" \
+            --runs "$runs" | tee -a "$GITHUB_OUTPUT"
 
   core:
     name: Configurator core
@@ -404,10 +392,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # The archive is 115 MB; the cache holds it, and the script checks
+      # its SHA-256 on a hit as on a download.
+      - name: Restore the Doxygen archive
+        uses: actions/cache@v6
+        with:
+          path: ~/doxygen-archive
+          key: doxygen-${{ env.DOXYGEN_VERSION }}-${{ env.DOXYGEN_SHA256 }}
+
       - name: Install Doxygen
         run: |
           tools/install_doxygen.sh "$DOXYGEN_VERSION" "$DOXYGEN_SHA256" \
-            "$RUNNER_TEMP/doxygen"
+            "$RUNNER_TEMP/doxygen" ~/doxygen-archive
 
       # The Doxyfile writes the HTML into build/doxygen/html.  Doxygen
       # creates one directory level of OUTPUT_DIRECTORY, not two.
