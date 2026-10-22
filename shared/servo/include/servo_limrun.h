@@ -484,7 +484,9 @@ void servo_limrun_refused(servo_limrun_t *r, uint32_t now_ms);
  *  (KST_SES_ERR_NO_SERVO).  The run's first CONNECT ends it as FAIL with
  *  SERVO_LIMRUN_WHY_NOT_KST, as a read that is no KST or Chaservo servo
  *  does; a later CONNECT ends it as servo_limrun_refused() does, with
- *  SERVO_LIMRUN_WHY_PROG.  Nothing at any other step. */
+ *  SERVO_LIMRUN_WHY_PROG.  Nothing at any other step.
+ *  @param r       the run; NULL, or one not running, is left as it is
+ *  @param now_ms  the clock, ms */
 void servo_limrun_no_servo(servo_limrun_t *r, uint32_t now_ms);
 
 /** Advance to @p now_ms: what to do comes back in @p out. */

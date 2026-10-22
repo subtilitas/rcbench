@@ -403,6 +403,7 @@ static struct {
         kst_field_id_t want_id[2]; /* the write's two fields */
         uint16_t want[2];       /* and their raw values */
         unsigned writes;        /* writes of the run that ended well */
+        uint32_t said;          /* the programmer's message count at CONNECT */
     } run;
 } k;
 
@@ -2637,6 +2638,7 @@ kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
                              (uint16_t)lroundf(caps.i_max * 1000.0f));
     }
     kst_prog_supply_floor(p, (uint16_t)KST_PORT_SUPPLY_MIN_MV);
+    k.run.said = kst_prog_message(p)->seq;
     m = kst_prog_connect(p, port_no());
     k.run.op = m == KST_PROG_MSG_NONE ? RUN_OP_CONNECT : RUN_OP_NONE;
     return m;
@@ -2780,8 +2782,10 @@ kst_panel_run_t kst_panel_run_poll(void)
 
 bool kst_panel_run_no_servo(void)
 {
-    return kst_prog_message(&k.prog)->id
-           == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_NO_SERVO;
+    const kst_prog_msg_t *m = kst_prog_message(&k.prog);
+
+    return m->id == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_NO_SERVO
+           && m->seq != k.run.said;
 }
 
 bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,

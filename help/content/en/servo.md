@@ -163,9 +163,11 @@ The search steps outward from the centre, the low side first, 10 us a step. Each
 
 The read session holds the servo at PULSE CENTRE, switches the bench to SAFE, reads the servo with CONNECT, gives the port back with LEAVE and switches the bench to ARMED. Nothing is driven before it. The run ends as FAIL before any search when:
 
-- the read fails (`no KST or Chaservo servo read`, or `programming port session failed`): search a servo that is no KST or Chaservo on a SERVO PWM pin;
+- no KST or Chaservo servo is read (`no KST or Chaservo servo read`): search a servo that is no KST or Chaservo on a SERVO PWM pin;
 - NEUTRAL is not between PULSE LOWER and PULSE UPPER (`NEUTRAL outside LOWER/UPPER`);
 - PULSE LOWER to PULSE UPPER is not inside PULSE MIN to PULSE MAX (`servo pulses outside MIN/MAX`). The bench stays SAFE, and the box names both ranges.
+
+A first CONNECT that fails for another reason, or a read that does not complete, ends the run as ABORTED with `programming port session failed`.
 
 ![The servo's pulses outside PULSE MIN and PULSE MAX](view:servo-limrun-range)
 

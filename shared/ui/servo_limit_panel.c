@@ -265,8 +265,10 @@ static void lim_poll(void)
     switch (s.lim.phase) {
     case SERVO_LIMRUN_PH_CONNECT:
         if (!ok) {
-            /* The session ended: a CONNECT that no servo answered is the
-             * first read's NOT_KST, any other end a session failed. */
+            /* The CONNECT failed.  One that no servo answered is the first
+             * read's NOT_KST; the port is held in programming mode then,
+             * and the LEAVE the run asks gives it back.  Any other end is
+             * a failed session. */
             if (kst_panel_run_no_servo()) {
                 servo_limrun_no_servo(&s.lim, test_now());
             } else {

@@ -163,9 +163,11 @@ Die Suche geht von der Mitte nach außen, zuerst die untere Seite, 10 us je Schr
 
 Die Lesesitzung hält das Servo auf PULS MITTE, schaltet den Prüfstand auf SAFE, liest das Servo mit VERBINDEN, gibt den Port mit VERLASSEN zurück und schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert. Der Lauf endet vor jeder Suche als NICHT BESTANDEN, wenn:
 
-- das Lesen scheitert (`kein KST- oder Chaservo-Servo` oder `PROG-PORT-Sitzung gescheitert`): ein Servo, das kein KST oder Chaservo ist, an einem SERVO-PWM-Pin suchen;
+- kein KST- oder Chaservo-Servo gelesen wird (`kein KST- oder Chaservo-Servo`): ein Servo, das kein KST oder Chaservo ist, an einem SERVO-PWM-Pin suchen;
 - NEUTRAL nicht zwischen PULSE LOWER und PULSE UPPER liegt (`NEUTRAL außerhalb LOWER/UPPER`);
 - PULSE LOWER bis PULSE UPPER nicht innerhalb von PULS MIN bis PULS MAX liegt (`Servopulse außerhalb MIN/MAX`). Der Prüfstand bleibt SAFE, und der Kasten nennt beide Bereiche.
+
+Ein erstes VERBINDEN, das aus einem anderen Grund scheitert, oder ein Lesen, das nicht abschließt, beendet den Lauf als ABGEBROCHEN mit `PROG-PORT-Sitzung gescheitert`.
 
 ![Die Pulse des Servos außerhalb von PULS MIN und PULS MAX](view:servo-limrun-range)
 
