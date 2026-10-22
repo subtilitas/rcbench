@@ -5060,7 +5060,6 @@ shared/ui/prog_registry.c: warning: Member prog_ps_revision(const prog_page_set_
 shared/ui/prog_registry.c: warning: Member prog_ps_safe_at(const prog_page_set_t *ps, int x, int y) (function) of file prog_registry.c is not documented.
 shared/ui/prog_registry.c: warning: Member prog_ps_tick(const prog_page_set_t *ps, float dt_s) (function) of file prog_registry.c is not documented.
 shared/ui/prog_registry.c: warning: Member prog_view_init(prog_view_t *v, gfx_rect_t area) (function) of file prog_registry.c is not documented.
-shared/ui/prog_registry.c: warning: Member room(const prog_view_t *v, bool bar) (function) of file prog_registry.c is not documented.
 shared/ui/prog_registry.c: warning: Member s_count (variable) of file prog_registry.c is not documented.
 shared/ui/prog_registry.c: warning: Member s_held (variable) of file prog_registry.c is not documented.
 shared/ui/prog_registry.c: warning: Member s_rows (variable) of file prog_registry.c is not documented.

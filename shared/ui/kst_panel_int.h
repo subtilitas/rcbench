@@ -127,7 +127,8 @@ enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
 #define WARN_LINES 12
 /** @brief The rows a page's lines take at most, wrapped to the page's
  *         width: 16 rows at LINE_H take 320 px of the 356 px from WARN_TOP
- *         to 8 px above the buttons on SERVO's left card. */
+ *         to 8 px above the buttons on SERVO's left card.  A shorter area
+ *         takes fewer (kpn_warn_room()). */
 #define WARN_ROWS 16
 /* The lines a page gives to the warnings of soft limits. */
 #define WARN_RULES 7
@@ -273,6 +274,13 @@ gfx_rect_t kpn_tabs_rect(void);
  *         alert band, in the area's coordinates (body pixels)
  */
 int kpn_foot(void);
+/**
+ * @brief Where the notes and the message under a page end.
+ * @return the lower of 6 px above the area's foot and FOOT_GAP above the
+ *         alert band, in the area's coordinates (body pixels): no text
+ *         lies under the band
+ */
+int kpn_notes_foot(void);
 /** @brief Row @p r, its label and its control. */
 gfx_rect_t kpn_row_rect(const row_t *r);
 /** @brief Row @p r's value, between its keys where it has them. */
@@ -304,6 +312,13 @@ void kpn_write_n(char *out, size_t size, unsigned n);
 
 /** @brief The rows the page's lines take. */
 int kpn_warn_rows(void);
+/**
+ * @brief The rows a warning page's lines may take in the area: those that
+ *        fit between WARN_TOP and 8 px above the buttons, WARN_ROWS at
+ *        most; 14 in an area 420 px tall.
+ * @return the rows
+ */
+int kpn_warn_room(void);
 /** @brief The page of an edit of row @p r that passes a soft limit. */
 void kpn_warn_soft(const row_t *r);
 /** @brief The page of ENABLE WRITE TO SERVO. */

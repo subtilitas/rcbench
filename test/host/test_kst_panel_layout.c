@@ -9,6 +9,7 @@
  * - the_fullest_list_ends_above_cancel
  * - the_fullest_write_page_ends_above_its_buttons_in_both_languages
  * - a_short_area_keeps_its_buttons_inside_it
+ * - no_note_or_message_lies_under_the_alert_band
  *
  * SPDX-License-Identifier: MIT
  */
@@ -166,6 +167,28 @@ static int page_rows(void)
     return rows;
 }
 
+/* Ten values changed, a first write with a card, in the current language:
+ * the write page open. */
+static void fullest_write_page(void)
+{
+    g_rig.card = true;
+    connected();
+    enable();
+    edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
+    edit(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 2u));
+    edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 3u));
+    edit(KST_F_SOFT_START, (uint16_t)(1u - servo(KST_F_SOFT_START)));
+    edit(KST_F_NEUTRAL, (uint16_t)(servo(KST_F_NEUTRAL) + 5u));
+    edit(KST_F_PULSE_LOWER, (uint16_t)(servo(KST_F_PULSE_LOWER) + 10u));
+    edit(KST_F_PULSE_UPPER, (uint16_t)(servo(KST_F_PULSE_UPPER) - 10u));
+    edit(KST_F_LEFT_ANGLE, (uint16_t)(servo(KST_F_LEFT_ANGLE) - 1u));
+    edit(KST_F_RIGHT_ANGLE, (uint16_t)(servo(KST_F_RIGHT_ANGLE) - 1u));
+    edit(KST_F_REVERSION, (uint16_t)(1u - servo(KST_F_REVERSION)));
+    tap(kst_panel_tab_rect(PG_SERVO));
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+}
+
 /* Ten values changed, a first write with a card: the page with the most
  * lines.  Its rows end 8 px above the buttons in English and German, and
  * both buttons are tap targets above the alert band. */
@@ -174,22 +197,7 @@ TEST_CASE(the_fullest_write_page_ends_above_its_buttons_in_both_languages)
     for (int lang = 0; lang < 2; ++lang) {
         fresh();
         ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
-        g_rig.card = true;
-        connected();
-        enable();
-        edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
-        edit(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 2u));
-        edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 3u));
-        edit(KST_F_SOFT_START, (uint16_t)(1u - servo(KST_F_SOFT_START)));
-        edit(KST_F_NEUTRAL, (uint16_t)(servo(KST_F_NEUTRAL) + 5u));
-        edit(KST_F_PULSE_LOWER, (uint16_t)(servo(KST_F_PULSE_LOWER) + 10u));
-        edit(KST_F_PULSE_UPPER, (uint16_t)(servo(KST_F_PULSE_UPPER) - 10u));
-        edit(KST_F_LEFT_ANGLE, (uint16_t)(servo(KST_F_LEFT_ANGLE) - 1u));
-        edit(KST_F_RIGHT_ANGLE, (uint16_t)(servo(KST_F_RIGHT_ANGLE) - 1u));
-        edit(KST_F_REVERSION, (uint16_t)(1u - servo(KST_F_REVERSION)));
-        tap(kst_panel_tab_rect(PG_SERVO));
-        tap(val(PG_SERVO, 4, 0));
-        CHECK_EQ(kst_panel_editor(), 3);
+        fullest_write_page();
         {
             const gfx_rect_t apply = kst_panel_apply_rect();
             const gfx_rect_t cancel = kst_panel_cancel_rect();
@@ -207,22 +215,75 @@ TEST_CASE(the_fullest_write_page_ends_above_its_buttons_in_both_languages)
 }
 
 /* An area that ends above the alert band: its buttons end 8 px above its
- * foot, the band does not move them. */
+ * foot, the band does not move them, and the fullest write page keeps its
+ * lines to the 14 rows above them in English and German. */
 TEST_CASE(a_short_area_keeps_its_buttons_inside_it)
 {
     static const gfx_rect_t k_short = { UI_MARGIN, UI_MARGIN, 620, 420 };
 
-    fresh();
-    kst_panel_init(k_short);
-    kst_panel_open();
-    CHECK_EQ(kst_panel_apply_rect().y + kst_panel_apply_rect().h,
-             k_short.y + k_short.h - 8);
-    CHECK_EQ(kst_panel_cancel_rect().y + kst_panel_cancel_rect().h,
-             k_short.y + k_short.h - 8);
-    CHECK_EQ(kst_panel_choice_cancel_rect().y
-                 + kst_panel_choice_cancel_rect().h,
-             k_short.y + k_short.h - 8);
-    CHECK(k_short.y + k_short.h - 8 < FOOT);
+    for (int lang = 0; lang < 2; ++lang) {
+        fresh();
+        ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
+        kst_panel_init(k_short);
+        kst_panel_open();
+        CHECK_EQ(kst_panel_choice_cancel_rect().y
+                     + kst_panel_choice_cancel_rect().h,
+                 k_short.y + k_short.h - 8);
+        CHECK(k_short.y + k_short.h - 8 < FOOT);
+        fullest_write_page();
+        CHECK_EQ(kst_panel_apply_rect().y + kst_panel_apply_rect().h,
+                 k_short.y + k_short.h - 8);
+        CHECK_EQ(kst_panel_cancel_rect().y + kst_panel_cancel_rect().h,
+                 k_short.y + k_short.h - 8);
+        CHECK(page_rows() <= 14);
+        CHECK(k_short.y + WARN_TOP_PX + page_rows() * ROW_PX + 8
+              <= kst_panel_apply_rect().y);
+        show();
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* Every message the model writes, with arguments of 1 to 5 digits, on the
+ * SERVO tab of a connected servo and of a servo in doubt with its two
+ * standing lines, in English and German: the notes and the message end
+ * 4 px above the alert band and under the tab's last row. */
+TEST_CASE(no_note_or_message_lies_under_the_alert_band)
+{
+    static const unsigned args[] = { 0u, 9u, 255u, 0xFFFFu };
+
+    for (int doubt = 0; doubt < 2; ++doubt) {
+        for (int lang = 0; lang < 2; ++lang) {
+            fresh();
+            ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
+            g_rig.card = true;
+            if (doubt != 0) {
+                cut_write();
+                come_back();
+                tap(kst_panel_tab_rect(PG_SERVO));
+                tap(val(PG_SERVO, 1, 0));      /* READ ALL */
+                settle();
+                CHECK(kst_panel_standing_line(1) != NULL);
+            } else {
+                connected();
+            }
+            for (unsigned id = 1u; id < 256u; ++id) {
+                for (size_t a = 0; a < sizeof(args) / sizeof(args[0]); ++a) {
+                    const gfx_rect_t last = val(PG_SERVO, 4, 0);
+                    gfx_rect_t drawn;
+
+                    M->msg = (kst_prog_msg_t){ .id = (uint8_t)id,
+                                               .level = KST_PROG_WARN,
+                                               .reg = 0x10u,
+                                               .arg = (uint16_t)args[a],
+                                               .seq = M->msg.seq + 1u };
+                    drawn = kst_panel_notes_drawn();
+                    CHECK(drawn.y + drawn.h <= FOOT);
+                    CHECK(drawn.h == 0 || drawn.y >= last.y + last.h);
+                }
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 int main(void)
@@ -232,5 +293,6 @@ int main(void)
     RUN(the_fullest_list_ends_above_cancel);
     RUN(the_fullest_write_page_ends_above_its_buttons_in_both_languages);
     RUN(a_short_area_keeps_its_buttons_inside_it);
+    RUN(no_note_or_message_lies_under_the_alert_band);
     return test_summary("kst_panel_layout");
 }

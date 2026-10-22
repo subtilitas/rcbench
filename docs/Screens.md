@@ -1336,9 +1336,9 @@ them, have no row ([PROGRAM](#program) on MOTOR & ESC).
 
 A row is 48 px tall with 8 px under it, a heading 28 px with 4 px under
 it, both in the 10 x 20 face. The bar over a paged list is 48 px tall:
-SEARCH 260 px wide on the left, `^` and `v` 56 px each on the right. On
-SERVO's left card 8 rows fit without the bar. MOTOR & ESC's list is the
-same list.
+SEARCH 260 px wide on the left, `^` and `v` 56 px each on the right.
+Every entry ends 4 px above the alert band: on SERVO's left card 7 rows
+fit without the bar, 6 under it. MOTOR & ESC's list is the same list.
 
 The KST and Chaservo programmer takes the programming port the tester
 drives out of PWM (pulse-width modulation) and reads and writes the
@@ -1367,13 +1367,17 @@ or more and ending 4 px above the alert band:
 | tabs and CLOSE | one row at the top, 48 px tall: five tabs of 95 px, CLOSE 120 px |
 | rows | 48 px tall at a 56 px pitch, up to 5 a tab, in two columns of 295 px; a wide row spans both |
 | values | 150 px (15 cells of the 10 x 20 face); a wide row's 260 px, with its `-` and `+` keys of 56 px inside it |
-| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20 px a row, to 6 px above the card's foot |
+| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20 px a row, to 4 px above the alert band: 7 rows under the SERVO tab |
 | lists (FILES, RESTORE, MORE, a factor) | a title, then up to 7 entries 48 px tall at a 56 px pitch, CANCEL 150 x 48 px at the foot |
-| warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face, the hold button 300 x 56 px and CANCEL 180 x 56 px at the foot |
+| warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face (fewer in a shorter area: the rows that fit 8 px above the buttons), the hold button 300 x 56 px and CANCEL 180 x 56 px at the foot |
 
-The labels of the tabs are drawn in the 8 x 16 face. The alert band, while
-it shows, covers the card's last 36 px: the last row of a message there
-and half of the row above it, until the alert goes.
+The tabs' labels are in the 10 x 20 face when every label fits its 95 px
+tab, as in English, and in the 8 x 16 face when one does not, as German
+`ABSTIMMEN` does. No note, message or control lies under the alert band.
+Where the two standing lines of the SERVO tab and the message need more
+than its 7 rows, the other notes wait for the message to go, and a
+message line that would pass the foot is not drawn: in German the tallest
+pair (4 rows) and the tallest message (5 rows) need 9.
 
 [Servo programmer for KST and Chaservo servos](ServoProgrammer.md)
 describes it.

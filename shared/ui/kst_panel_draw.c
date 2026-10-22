@@ -428,7 +428,7 @@ static void plan_notes(notes_plan_t *p)
     p->count = page_notes(p->n);
     p->lines = message_shown(s_msg);
     p->msg_rows = 0;
-    p->bottom = k.area.y + k.area.h - 6;
+    p->bottom = kpn_notes_foot();
     p->top = p->bottom;
     for (int i = 0; i < p->lines; ++i) {
         p->msg_rows += kst_panel_text_rows(s_msg[i]);
@@ -455,6 +455,25 @@ static void plan_notes(notes_plan_t *p)
     }
 }
 
+/**
+ * @brief The highest a note rises to: 4 px under the lowest row of the tab
+ *        shown, the area's top for a tab with none.
+ * @return the y, body pixels
+ */
+static int rows_foot(void)
+{
+    int y = k.area.y;
+
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        if (kpn_rows[i].page == k.tabs.selected) {
+            const gfx_rect_t r = kpn_row_rect(&kpn_rows[i]);
+
+            y = r.y + r.h + 4 > y ? r.y + r.h + 4 : y;
+        }
+    }
+    return y;
+}
+
 /*
  * The page's notes from the top, each at its place or under the one above,
  * and the last message from the area's last row up: three rows for one
@@ -463,14 +482,16 @@ static void plan_notes(notes_plan_t *p)
  * other notes page after them, the area's last notes row counts the pages,
  * and a tap on the notes shows the next.  Where the standing notes and the
  * message leave no row for the count, the other notes wait for the message
- * to go, and the standing notes rise into the gap above their place: the
- * tallest pair and the tallest message take 9 rows, which fit under the
- * SERVO tab's last row.  A message line that would still leave the area
- * is not drawn.
+ * to go, and the standing notes rise into the gap above their place, no
+ * higher than 4 px under the tab's last row.  Everything ends 4 px above
+ * the alert band (kpn_notes_foot()): 7 rows under the SERVO tab's last row
+ * on SERVO's left card.  The tallest pair and the tallest message take 7
+ * rows in English and 9 in German; a message line that would still pass
+ * the foot is not drawn.
  */
 static void layout_notes(notes_plan_t *p)
 {
-    int y = k.area.y;
+    int y = rows_foot();
 
     plan_notes(p);
     p->on = k.note_page < p->pages ? k.note_page : 0;
@@ -790,7 +811,8 @@ static void draw_warning(gfx_canvas_t *c)
     gfx_text(c, a.x + 12, a.y + 16, k.warn.title, KP_TITLE_FONT, edge, 1);
     {
         /* The widest pitch at which the lines end 8 px above the buttons;
-         * the builders keep them to WARN_ROWS, which fit at LINE_H. */
+         * the builders keep them to kpn_warn_room(), which fit at
+         * LINE_H. */
         const int rows = kpn_warn_rows();
         const int room = kst_panel_apply_rect().y - 8 - (a.y + WARN_TOP)
                        - LINE_H - (rows - k.warn.count) * LINE_H;

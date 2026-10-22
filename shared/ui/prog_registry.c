@@ -16,6 +16,7 @@
 #include "esc_stick_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
+#include "ui_layout.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -473,10 +474,25 @@ static int entry_h(const prog_list_t *l, int k)
                                                        : PROG_VIEW_ROW_P;
 }
 
-/* The height the entries take from the top of the area, bar aside. */
+/**
+ * @brief The pitches the entries may add up to under the bar, if any: to
+ *        PROG_VIEW_PAD above the area's foot or 4 px above the alert band,
+ *        whichever is higher, and a heading's 4 px gap, the smaller one, so
+ *        the last entry shown ends above that line.
+ * @param v the view
+ * @param bar with the bar
+ * @return the height, px
+ */
 static int room(const prog_view_t *v, bool bar)
 {
-    return v->area.h - 2 * PROG_VIEW_PAD + 6
+    const int band = UI_ALERT_Y - UI_BAND_H - 4;
+    int foot = v->area.y + v->area.h - PROG_VIEW_PAD;
+
+    if (foot > band) {
+        foot = band;
+    }
+    return foot - (v->area.y + PROG_VIEW_PAD)
+           + (PROG_VIEW_HEAD_P - PROG_VIEW_HEAD_H)
            - (bar ? PROG_VIEW_BAR_H + 8 : 0);
 }
 

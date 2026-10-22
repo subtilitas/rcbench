@@ -598,43 +598,55 @@ TEST_CASE(the_search_narrows_the_list_and_keeps_its_box)
 
 /* --------------------------------------------------------- the view */
 
-/* A page area of SERVO's left card: 620 x 476 px. */
-static const gfx_rect_t AREA = { 8, 48, 620, 476 };
+/* SERVO's page area (page_area(): PAD, SV_PAGE_Y, LCARD_W, CARD_H), 620 x
+ * 476 px from body y 56; its foot lies under the alert band. */
+static const gfx_rect_t AREA = { 8, 56, 620, 476 };
 
-/* Eight rows fit with no bar; the ninth brings a heading and pages, the
- * tenth SEARCH. */
-TEST_CASE(the_view_fits_eight_rows_and_pages_past_them)
+/* The lowest an entry may end: 4 px above the alert band. */
+#define LIST_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
+
+/* Seven rows fit above the alert band with no bar; the eighth brings
+ * pages, the tenth SEARCH and a heading. */
+TEST_CASE(the_view_fits_seven_rows_and_pages_past_them)
 {
     canvas();
     prog_view_t v;
     prog_view_init(&v, AREA);
     prog_list_t l;
 
-    size_t n = fake_list(9, 0);
+    size_t n = fake_list(8, 0);
     prog_list_build(&l, g_rows, n, PROG_DEV_SERVO, UI_WB_PROGRAM, NULL);
-    /* Nine rows under a heading: 9 x 56 + 32 overruns the 462 px, so the
-     * list pages and the bar holds "^" and "v" but no SEARCH. */
+    /* Eight rows: 8 x 56 - 8 overruns the 426 px from the list's top to
+     * 4 px above the alert band, so the list pages and the bar holds "^"
+     * and "v" but no SEARCH. */
     CHECK(prog_view_has_bar(&v, &l));
     CHECK_EQ(prog_view_search_rect(&v, &l).w, 0);
     CHECK(prog_view_up_rect(&v, &l).w > 0);
+    {
+        const int shown = prog_view_shown(&v, &l);
+        const gfx_rect_t last = prog_view_entry_rect(&v, &l, shown - 1);
 
-    n = fake_list(8, 0);
+        CHECK_EQ(shown, 6);
+        CHECK(last.y + last.h <= LIST_FOOT);
+    }
+
+    n = fake_list(7, 0);
     prog_list_build(&l, g_rows, n, PROG_DEV_SERVO, UI_WB_PROGRAM, NULL);
     CHECK(!prog_view_has_bar(&v, &l));
-    CHECK_EQ(prog_view_shown(&v, &l), 8);
+    CHECK_EQ(prog_view_shown(&v, &l), 7);
     CHECK_EQ(prog_view_up_rect(&v, &l).w, 0);
     const gfx_rect_t r0 = prog_view_entry_rect(&v, &l, 0);
     CHECK_EQ(r0.x, 18);
-    CHECK_EQ(r0.y, 58);
+    CHECK_EQ(r0.y, 66);
     CHECK_EQ(r0.w, 600);
     CHECK_EQ(r0.h, PROG_VIEW_ROW_H);
     CHECK(r0.h >= UI_TAP_MIN);
-    CHECK_EQ(prog_view_entry_rect(&v, &l, 1).y, 58 + PROG_VIEW_ROW_P);
-    CHECK_EQ(prog_view_entry_rect(&v, &l, 8).w, 0);
+    CHECK_EQ(prog_view_entry_rect(&v, &l, 1).y, 66 + PROG_VIEW_ROW_P);
+    CHECK_EQ(prog_view_entry_rect(&v, &l, 7).w, 0);
     {
-        /* The fullest list that needs no bar ends inside the area. */
-        const gfx_rect_t last = prog_view_entry_rect(&v, &l, 7);
-        CHECK(last.y + last.h <= AREA.y + AREA.h - PROG_VIEW_PAD);
+        /* The fullest list that needs no bar ends above the alert band. */
+        const gfx_rect_t last = prog_view_entry_rect(&v, &l, 6);
+        CHECK(last.y + last.h <= LIST_FOOT);
     }
 
     n = fake_list(10, 0);
@@ -642,7 +654,7 @@ TEST_CASE(the_view_fits_eight_rows_and_pages_past_them)
     CHECK(prog_view_has_bar(&v, &l));
     const gfx_rect_t sr = prog_view_search_rect(&v, &l);
     CHECK(sr.w > 0);
-    CHECK_EQ(sr.y, 58);
+    CHECK_EQ(sr.y, 66);
     CHECK(sr.h >= UI_TAP_MIN);
     CHECK(prog_view_up_rect(&v, &l).w >= UI_TAP_MIN);
     CHECK(prog_view_up_rect(&v, &l).h >= UI_TAP_MIN);
@@ -650,12 +662,12 @@ TEST_CASE(the_view_fits_eight_rows_and_pages_past_them)
           >= prog_view_up_rect(&v, &l).x + prog_view_up_rect(&v, &l).w + 8);
     /* Under the bar: a heading and as many rows as fit. */
     CHECK_EQ(prog_view_entry_rect(&v, &l, 0).y,
-             58 + PROG_VIEW_BAR_H + 8);
+             66 + PROG_VIEW_BAR_H + 8);
     const int shown = prog_view_shown(&v, &l);
     CHECK_EQ(shown, 7);
     CHECK(shown < l.count);
     const gfx_rect_t last = prog_view_entry_rect(&v, &l, shown - 1);
-    CHECK(last.y + last.h <= AREA.y + AREA.h - PROG_VIEW_PAD);
+    CHECK(last.y + last.h <= LIST_FOOT);
 
     /* "v" pages on, to the last entry; "^" back to the top. */
     const gfx_rect_t dn = prog_view_down_rect(&v, &l);
@@ -833,7 +845,7 @@ int main(void)
     RUN(search_comes_over_nine_rows_and_headings_over_eight);
     RUN(headings_group_the_rows_in_the_tables_order);
     RUN(the_search_narrows_the_list_and_keeps_its_box);
-    RUN(the_view_fits_eight_rows_and_pages_past_them);
+    RUN(the_view_fits_seven_rows_and_pages_past_them);
     RUN(the_view_reports_a_row_tap_and_nothing_else);
     RUN(a_dimmed_row_draws_its_reason_in_the_warning_colour);
     free(fb);

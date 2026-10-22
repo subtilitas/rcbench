@@ -344,6 +344,14 @@ int kpn_foot(void)
     return area < band ? area : band;
 }
 
+int kpn_notes_foot(void)
+{
+    const int area = k.area.y + k.area.h - 6;
+    const int band = UI_ALERT_Y - UI_BAND_H - FOOT_GAP;
+
+    return area < band ? area : band;
+}
+
 gfx_rect_t kpn_row_rect(const row_t *r)
 {
     const int col_w = (k.area.w - 30) / 2;

@@ -1471,8 +1471,9 @@ keine Zeile ([Programmieren](#programmieren) auf MOTOR & ESC).
 Eine Zeile ist 48 px hoch mit 8 px darunter, eine Überschrift 28 px mit
 4 px darunter, beide in der Schrift 10 x 20. Die Leiste über einer
 blätternden Liste ist 48 px hoch: SUCHE 260 px breit links, `^` und `v` je
-56 px rechts. Auf der linken Karte von SERVO passen 8 Zeilen ohne die
-Leiste. Die Liste von MOTOR & ESC ist dieselbe Liste.
+56 px rechts. Jeder Eintrag endet 4 px über dem Alert-Band: auf der linken
+Karte von SERVO passen 7 Zeilen ohne die Leiste, 6 unter ihr. Die Liste
+von MOTOR & ESC ist dieselbe Liste.
 
 Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport,
 den der Tester treibt, aus PWM (Pulsweitenmodulation) und liest und
@@ -1501,14 +1502,19 @@ Alert-Band:
 | Reiter und SCHLIESSEN | eine Zeile oben, 48 px hoch: fünf Reiter von 95 px, SCHLIESSEN 120 px |
 | Zeilen | 48 px hoch im Abstand von 56 px, bis zu 5 je Reiter, in zwei Spalten von 295 px; eine breite Zeile nimmt beide |
 | Werte | 150 px (15 Zeichen der Schrift 10 x 20); bei einer breiten Zeile 260 px, darin ihre Tasten `-` und `+` von 56 px |
-| Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20 px je Zeile, bis 6 px über dem Fuß der Karte |
+| Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20 px je Zeile, bis 4 px über dem Alert-Band: 7 Zeilen unter dem Reiter SERVO |
 | Listen (DATEIEN, ZURÜCKSPIELEN, WEITERES, ein Faktor) | ein Titel, dann bis zu 7 Einträge, 48 px hoch im Abstand von 56 px, ABBRECHEN 150 x 48 px am Fuß |
-| Warnseiten | der Titel in der Schrift 20 x 36, bis zu 16 Zeilen in der Schrift 10 x 20, die Halte-Taste 300 x 56 px und ABBRECHEN 180 x 56 px am Fuß |
+| Warnseiten | der Titel in der Schrift 20 x 36, bis zu 16 Zeilen in der Schrift 10 x 20 (in einem niedrigeren Bereich weniger: die Zeilen, die 8 px über den Tasten Platz haben), die Halte-Taste 300 x 56 px und ABBRECHEN 180 x 56 px am Fuß |
 
-Die Beschriftungen der Reiter sind in der Schrift 8 x 16 gezeichnet. Das
-Alert-Band deckt, solange es steht, die letzten 36 px der Karte: die
-letzte Zeile einer Meldung dort und die Hälfte der Zeile darüber, bis der
-Alert geht.
+Die Beschriftungen der Reiter stehen in der Schrift 10 x 20, wenn jede in
+ihren Reiter von 95 px passt, wie im Englischen, und in der Schrift
+8 x 16, wenn eine nicht passt, wie das deutsche `ABSTIMMEN`. Kein Hinweis,
+keine Meldung und kein Bedienelement liegt unter dem Alert-Band. Brauchen
+die beiden stehenden Zeilen des Reiters SERVO und die Meldung mehr als
+seine 7 Zeilen, warten die anderen Hinweise, bis die Meldung geht, und eine
+Meldungszeile, die über den Fuß reichen würde, wird nicht gezeichnet: im
+Deutschen brauchen das längste Paar (4 Zeilen) und die längste Meldung
+(5 Zeilen) 9.
 
 [Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md)
 beschreibt ihn.
