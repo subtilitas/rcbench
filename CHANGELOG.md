@@ -6,6 +6,32 @@ history is in git.
 
 ## Unreleased
 
+## 0.22.1 - 2026-10-22
+
+0.22.1 is a stable release: its minor number, 22, is even, and GitHub marks
+it as the latest release. It is a patch release of 0.22.0, the last release
+line for the ESP32-S3 panel, and fixes one defect: LOGS did not list a
+report that stands alone. The link protocol stays 4.28.
+
+A panel on 0.20.0 to 0.22.0 is offered 0.22.1 by CHECK FOR UPDATES with
+RELEASES: STABLE, which reads `releases/latest`; 0.20.0 has no RELEASES
+setting and reads the same. The steps for each release are in
+[First run, §1](docs/FirstRun.md#1-flash-both-boards):
+
+1. SETUP > UPDATES, `CHECK FOR UPDATES`, with a home network kept, the
+   bench SAFE, the supply output off and no log run open. The card says
+   `Version 0.22.1 is available.`.
+2. Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel restarts and keeps 0.22.1
+   once the display and touch are up.
+3. At link-up the panel offers the IOmcu's update over CAN (Controller Area
+   Network). Hold START 2 s on the question on the menu, or `HOLD 2 s:
+   UPDATE IOMCU` on SETUP > UPDATES. The band then says `IOmcu updated to
+   0.22.1.`.
+
+The SD card stays as 0.22.0 left it, and the settings, the Wi-Fi settings
+and the IOmcu's store record, version 8, are kept. The release line is
+unchanged: a panel on 0.22.1 is offered 0.22.x patch releases only.
+
 ### Fixed
 
 - LOGS lists a report standing alone: a LIMIT RUN's `LIMITnnn.TXT` in
