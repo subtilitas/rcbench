@@ -471,6 +471,35 @@ static void ktap(gfx_rect_t r)
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 
+/* The value of @p id on SETUP's open @p cat list, scrolled into view and
+ * tapped: its keypad opens.  The list is 348 px high and a row 58 px
+ * apart, at 6 px under the band; the value sits at x 663. */
+static void setup_value(setting_cat_t cat, setting_id_t id)
+{
+    setting_id_t ids[64];
+    const int n = settings_in_category(cat, ids, 64);
+    int row = -1;
+    for (int i = 0; i < n && i < 64; ++i) {
+        if (ids[i] == id) {
+            row = settings_screen_row_of(cat, i);
+        }
+    }
+    if (row < 0) {
+        fprintf(stderr, "render_screen: no row for setting %d\n", (int)id);
+        exit(1);
+    }
+    for (int k = 0; k < 20; ++k) {
+        const int top = 6 + row * 58 - settings_screen_scroll(NULL);
+        if (top >= 6 && top + 54 <= 6 + 348) {
+            tap(663, UI_BAND_H + top + 27);
+            return;
+        }
+        drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+    }
+    fprintf(stderr, "render_screen: setting %d not in view\n", (int)id);
+    exit(1);
+}
+
 /* @p text typed on keypad @p k, digit by digit; '.' is the point and '-'
  * the +/- key.  The key rectangles are in the screen's coordinates, as
  * ktap() takes them. */
@@ -3500,6 +3529,25 @@ int main(int argc, char **argv)
                          + 27);
             kp_type(settings_screen_keypad(), "44.4");
         }
+        /* The same shunt, 3 mOhm typed and refused: the reason in place
+         * of the range. */
+        if (strcmp(view, "setup-sensors-why") == 0) {
+            settings_set(SET_INA_FIT(0), 1.0f);
+            setup_value(SET_CAT_SENSORS, SET_INA_SH(0));
+            kp_type(settings_screen_keypad(), "3");
+            ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
+        }
+    }
+    /* INTERFACES: GPIO 5 typed for Sensor SDA, and PD mini RX's GPIO 9 for
+     * PD mini TX, each refused with its reason in place of the range. */
+    if (strcmp(view, "setup-sda-why") == 0
+        || strcmp(view, "setup-pdmini-why") == 0) {
+        const bool sda = strcmp(view, "setup-sda-why") == 0;
+        settings_set(SET_PDMINI_RX, 9.0f);
+        setup_tile(SET_CAT_IFACE);
+        setup_value(SET_CAT_IFACE, sda ? SET_SENSE_SDA : SET_PDMINI_TX);
+        kp_type(settings_screen_keypad(), sda ? "5" : "9");
+        ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
     }
 
     if (id == SCREEN_WIFI) {

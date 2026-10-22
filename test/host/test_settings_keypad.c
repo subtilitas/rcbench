@@ -4,7 +4,8 @@
  *        value through settings_set(), the call a "-" or "+" step ends in,
  *        so SAVE keeps what a step would have kept; a value outside the
  *        range, or one the steps never reach, is refused with the keypad
- *        open; CANCEL, the home tag and STOP change nothing.  The helper
+ *        open, the second with its reason in place of the range until the
+ *        next key; CANCEL, the home tag and STOP change nothing.  The helper
  *        every setting's keypad uses (ui_setting_keypad.h) is held here too.
  *
  * SPDX-License-Identifier: MIT
@@ -398,6 +399,130 @@ TEST_CASE(a_pin_the_row_does_not_take_is_refused)
     CHECK_EQ(settings_get_int(SET_PDMINI_TX), 8);
 }
 
+/* ------------------------------------------------ why a value is refused */
+
+/**
+ * @brief @p text typed on @p id's keypad and OK pressed, refused.
+ * @param id The setting, its list open.
+ * @param text The digits typed.
+ * @return The line the keypad shows in place of the range.
+ */
+static const char *refused_why(setting_id_t id, const char *text)
+{
+    open_on(id);
+    type(text);
+    key(UI_KEY_OK);
+    CHECK(settings_screen_keypad()->open);
+    CHECK(settings_screen_keypad()->refused);
+    return settings_screen_keypad()->reason;
+}
+
+/* Each value the steps never reach names its reason, in EN and DE, and the
+ * next key brings the range back.  A value outside the range names none. */
+TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
+{
+    static const struct {
+        ui_lang_t lang;
+        const char *shunt, *sda, *pdmini;
+    } k_why[] = {
+        { UI_LANG_EN, "0 or 5.0 to 1000.0 mOhm",
+          "Pins the bus takes: 0 4 6 14 16 18 20 26",
+          "The other PD mini pin holds this GPIO" },
+        { UI_LANG_DE, "0 oder 5.0 bis 1000.0 mOhm",
+          "Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26",
+          "Diesen GPIO hält der andere PD-mini-Pin" },
+    };
+    for (size_t i = 0; i < sizeof(k_why) / sizeof(k_why[0]); ++i) {
+        ui_text_set_language(k_why[i].lang);
+        list_of(SET_CAT_SENSORS);
+        settings_set(SET_INA_FIT(0), 1.0f);
+        ui_router_render(&s_c, 0);
+        CHECK_STR_EQ(refused_why(SET_INA_SH(0), "3"), k_why[i].shunt);
+        key(UI_KEY_DEL);                            /* the range again */
+        CHECK(!settings_screen_keypad()->refused);
+        CHECK_STR_EQ(settings_screen_keypad()->reason, "");
+        key(UI_KEY_CANCEL);
+
+        list_of(SET_CAT_IFACE);
+        CHECK_STR_EQ(refused_why(SET_SENSE_SDA, "5"), k_why[i].sda);
+        key(UI_KEY_1);
+        CHECK(!settings_screen_keypad()->refused);
+        CHECK_STR_EQ(settings_screen_keypad()->reason, "");
+        key(UI_KEY_CANCEL);
+        CHECK_EQ(settings_get_int(SET_SENSE_SDA), 16);
+
+        settings_set(SET_PDMINI_RX, 9.0f);
+        CHECK_STR_EQ(refused_why(SET_PDMINI_TX, "9"), k_why[i].pdmini);
+        key(UI_KEY_CLR);
+        CHECK_STR_EQ(settings_screen_keypad()->reason, "");
+        key(UI_KEY_CANCEL);
+        CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
+
+        /* Past the range: the range itself, no reason. */
+        list_of(SET_CAT_IFACE);
+        CHECK_STR_EQ(refused_why(SET_SENSE_SDA, "48"), "");
+        key(UI_KEY_CANCEL);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* The SDA list is built from settings_sense_sda_valid(): every GPIO it
+ * takes is listed, and no other. */
+TEST_CASE(the_sda_reason_lists_the_pins_the_bus_takes)
+{
+    char pins[64];
+    CHECK_STR_EQ(ui_setting_keypad_sda_pins(pins, sizeof(pins)),
+                 "0 4 6 14 16 18 20 26");
+    for (int gpio = 0; gpio < 64; ++gpio) {
+        char one[8];
+        snprintf(one, sizeof(one), " %d ", gpio);
+        char padded[70];
+        snprintf(padded, sizeof(padded), " %s ", pins);
+        CHECK_EQ(strstr(padded, one) != NULL, settings_sense_sda_valid(gpio));
+    }
+    /* A short buffer keeps whole pins only; none is nothing. */
+    char shortbuf[6];
+    CHECK_STR_EQ(ui_setting_keypad_sda_pins(shortbuf, sizeof(shortbuf)),
+                 "0 4 6");
+    CHECK_STR_EQ(ui_setting_keypad_sda_pins(NULL, 8), "");
+    CHECK_STR_EQ(ui_setting_keypad_sda_pins(pins, 0), "");
+    /* A pin the bus takes, and -1 (no bus), name no reason. */
+    char why[64];
+    CHECK(ui_setting_keypad_why(SET_SENSE_SDA, 14.0f, why, sizeof(why))
+          == NULL);
+    CHECK(ui_setting_keypad_why(SET_SENSE_SDA, -1.0f, why, sizeof(why))
+          == NULL);
+    CHECK_STR_EQ(ui_setting_keypad_why(SET_SENSE_SDA, 5.0f, NULL, 0), "");
+    CHECK(ui_setting_keypad_why((setting_id_t)SETTING_COUNT, 1.0f, why,
+                                sizeof(why)) == NULL);
+}
+
+/* The shunt reason is a fixed text: every row with an off gap is a shunt
+ * of 0 or 5.0 to 1000.0 mOhm in 0.1 steps, as the text says. */
+TEST_CASE(the_shunt_reason_is_what_the_schema_holds)
+{
+    int gapped = 0;
+    char why[64];
+    for (int i = 0; i < (int)SETTING_COUNT; ++i) {
+        const setting_id_t id = (setting_id_t)i;
+        const setting_def_t *d = settings_def(id);
+        if (d == NULL || d->off_below <= 0.0f) {
+            continue;
+        }
+        ++gapped;
+        CHECK_NEAR(d->off_below, 5.0f, 1e-6f);
+        CHECK_NEAR(d->min, 0.0f, 1e-6f);
+        CHECK_NEAR(d->max, 1000.0f, 1e-6f);
+        CHECK_STR_EQ(d->unit, "mOhm");
+        CHECK_EQ(settings_decimals(id), 1);
+        CHECK_STR_EQ(ui_setting_keypad_why(id, 4.9f, why, sizeof(why)),
+                     "0 or 5.0 to 1000.0 mOhm");
+        CHECK(ui_setting_keypad_why(id, 0.0f, why, sizeof(why)) == NULL);
+        CHECK(ui_setting_keypad_why(id, 5.0f, why, sizeof(why)) == NULL);
+    }
+    CHECK_EQ(gapped, SET_INA_CHANNELS);
+}
+
 /* ------------------------------------------------------ ARMED and held */
 
 static setting_id_t s_held = SETTING_COUNT;
@@ -562,6 +687,9 @@ int main(void)
     RUN(a_value_between_steps_takes_the_nearer_step);
     RUN(a_shunt_between_off_and_five_milliohm_is_refused);
     RUN(a_pin_the_row_does_not_take_is_refused);
+    RUN(a_refusal_inside_the_range_says_why_until_the_next_key);
+    RUN(the_sda_reason_lists_the_pins_the_bus_takes);
+    RUN(the_shunt_reason_is_what_the_schema_holds);
     RUN(armed_steps_and_keypad_alike_and_a_held_row_refuses_both);
     RUN(a_lost_press_keeps_what_was_typed);
     RUN(a_shunt_takes_1000_0_and_refuses_1000_1);

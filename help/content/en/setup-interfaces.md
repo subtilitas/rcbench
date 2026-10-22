@@ -26,6 +26,7 @@ The IOmcu reads a TI INA228 in the ESC's power path, set up here, and up to four
 | Sensor SCL | SDA + 1, or -1 | 17 | follows Sensor SDA; the row has no keys |
 
 - The bus runs at 400 kHz; that is not a setting.
+- The keypad refuses a Sensor SDA pin the bus cannot have and lists the pins it takes in place of the range: GPIO 5 typed shows `Pins the bus takes: 0 4 6 14 16 18 20 26`.
 - The address stops at the ends of its range: `-` at 0x40 and `+` at 0x4F change nothing.
 - Pins with nothing wired to them read as the monitors not answering, not as a blocked bus.
 - The IOmcu takes a change only while the bench is SAFE.
@@ -33,6 +34,8 @@ The IOmcu reads a TI INA228 in the ESC's power path, set up here, and up to four
 - With an INA3221 channel watching the servo tester's target on [Sensors](setup-sensors.md), [SERVO](servo.md#the-servo-rail-s-meter) reads the servo rail's current from it.
 - A reading at the top of the range is shown as clipped, never as a value: 163.8 mV across the INA3221's shunt.
 - A monitor that stops answering does not switch the bench to SAFE: nothing trips on the monitors' readings.
+
+![GPIO 5 refused for Sensor SDA](view:setup-sda-why)
 
 The band names what goes wrong, one message at a time, at most one every 5 s. For example: `Sensor SDA or SCL not set. Check SETUP > INTERFACES.`, `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.`, `INA228 is not responding at 0x45.`, `INA3221 0x40 CH1 clipped at 1.64 A. Reading shows only the limit.`. A message about the set-up -- pins not set, one address, a value rejected -- leaves the band as soon as the setting is right again and the IOmcu holds it.
 
@@ -94,7 +97,9 @@ These three are stored. No screen or IOmcu reads them in this release.
 | PD mini RX | -1 to 47 | -1 | the IOmcu GPIO from the module's DP |
 | PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | the module's UART (universal asynchronous receiver-transmitter) rate; AUTO tries each of the 7 rates, one a second |
 
-The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other row holds: with RX on GP18, TX steps from GP19 to GP17. At either end of the range the key then does nothing: with RX on GP47, TX stops at GP46. A set-up stored with both rows on one GPIO loads as stored; the PD mini stays off, the SUPPLY header says `PD MINI NO PINS`, and both rows say `TX and RX on one pin. The PD mini stays off.` until one of them is stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GP17 is refused while Sensor SCL is GP17. The message leaves the band once the pin is set back to one the IOmcu takes. A change to the pins, the baud rate or the enable switch switches the supply output off.
+The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other row holds: with RX on GP18, TX steps from GP19 to GP17. At either end of the range the key then does nothing: with RX on GP47, TX stops at GP46. The keypad refuses the other row's GPIO and shows `The other PD mini pin holds this GPIO` in place of the range. A set-up stored with both rows on one GPIO loads as stored; the PD mini stays off, the SUPPLY header says `PD MINI NO PINS`, and both rows say `TX and RX on one pin. The PD mini stays off.` until one of them is stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GP17 is refused while Sensor SCL is GP17. The message leaves the band once the pin is set back to one the IOmcu takes. A change to the pins, the baud rate or the enable switch switches the supply output off.
+
+![RX's GPIO 9 refused for PD mini TX](view:setup-pdmini-why)
 
 ## The programming port
 

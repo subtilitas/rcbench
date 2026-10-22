@@ -85,7 +85,16 @@ void ui_keypad_refuse(ui_keypad_t *k)
     k->open    = true;
     k->refused = true;
     k->pressed = -1;
+    k->reason[0] = '\0';
     ++k->revision;
+}
+
+void ui_keypad_refuse_why(ui_keypad_t *k, const char *reason)
+{
+    ui_keypad_refuse(k);
+    if (k != NULL && reason != NULL) {
+        snprintf(k->reason, sizeof(k->reason), "%s", reason);
+    }
 }
 
 void ui_keypad_cancel_press(ui_keypad_t *k)
@@ -229,6 +238,7 @@ static ui_keypad_result_t press(ui_keypad_t *k, ui_key_t key, float *out)
         '7', '8', '9', 0, '4', '5', '6', 0, '1', '2', '3', 0, '0', '.', 0,
     };
     k->refused = false;
+    k->reason[0] = '\0';           /* the range again */
     ++k->revision;
     switch (key) {
     case UI_KEY_DEL:
@@ -261,6 +271,7 @@ static ui_keypad_result_t press(ui_keypad_t *k, ui_key_t key, float *out)
         }
         if (v < k->min - slack || v > k->max + slack) {
             k->refused = true;
+            k->reason[0] = '\0';
             return UI_KEYPAD_NONE;
         }
         if (out != NULL) {
@@ -324,14 +335,19 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
 
     /* The title, and the range a value has to be in: in the warning colour
-     * once a value outside it has been refused. */
+     * once a value outside it has been refused.  A value the caller refused
+     * by its own rule shows the caller's reason there instead. */
     const gfx_rect_t hdr = { (int16_t)(a.x + KP_PAD), (int16_t)(a.y + 6),
                              (int16_t)(a.w - 2 * KP_PAD), 18 };
     gfx_text_in(c, hdr, k->title, &gfx_font_8x16, ui_theme_color(UI_C_TEXT),
                 1, GFX_ALIGN_LEFT);
-    char range[48];
-    snprintf(range, sizeof(range), TR(KEYPAD_RANGE), k->decimals,
-             (double)k->min, k->decimals, (double)k->max, k->unit);
+    char range[64];
+    if (k->refused && k->reason[0] != '\0') {
+        snprintf(range, sizeof(range), "%s", k->reason);   /* why, instead */
+    } else {
+        snprintf(range, sizeof(range), TR(KEYPAD_RANGE), k->decimals,
+                 (double)k->min, k->decimals, (double)k->max, k->unit);
+    }
     gfx_text_in(c, hdr, range, &gfx_font_8x16,
                 k->refused ? ui_theme_color(UI_C_WARN)
                            : ui_theme_color(UI_C_TEXT_DIM),

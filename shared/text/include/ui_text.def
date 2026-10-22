@@ -238,6 +238,19 @@ UI_TEXT(BH_F_FLASH, 0,
 UI_TEXT(KEYPAD_RANGE, 0,
     "%.*f to %.*f %s",
     "%.*f bis %.*f %s")
+/* Why a setting's keypad refused a value inside its range, in place of the
+ * range (ui_setting_keypad.c): a SENSORS shunt between 0 and 5.0 mOhm, a
+ * Sensor SDA pin the bus cannot have (the pins settings_sense_sda_valid()
+ * takes, listed where it is drawn), the other PD mini pin's GPIO. */
+UI_TEXT(KEYPAD_WHY_SHUNT, 0,
+    "0 or 5.0 to 1000.0 mOhm",
+    "0 oder 5.0 bis 1000.0 mOhm")
+UI_TEXT(KEYPAD_WHY_SDA, 0,
+    "Pins the bus takes: %s",
+    "Pins, die der Bus nimmt: %s")
+UI_TEXT(KEYPAD_WHY_PDMINI, 0,
+    "The other PD mini pin holds this GPIO",
+    "Diesen GPIO hält der andere PD-mini-Pin")
 UI_TEXT(TEXTKEY_COUNT, 0,
     "%d of %d",
     "%d von %d")

@@ -2,16 +2,20 @@
  * @file test_keypad_sign.c
  * @brief The numeric keypad's +/- key and a caller's refusal: a signed
  *        keypad's keys, -200 taken, -201 refused, -0 read as 0, the sign on
- *        an empty entry, and a value refused by the caller's own rule.
+ *        an empty entry, and a value refused by the caller's own rule,
+ *        with the caller's reason drawn in place of the range until the
+ *        next key.
  *
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "greatest.h"
 
 #include "ui_keypad.h"
+#include "ui_theme.h"
 
 static const gfx_rect_t k_area = { 6, 24, 546, 402 };
 
@@ -79,6 +83,85 @@ TEST_CASE(a_caller_refusal_reopens_the_keypad_marked)
     CHECK_EQ(press(UI_KEY_OK, &v), UI_KEYPAD_OK);
     CHECK_NEAR(v, 12.51f, 1e-4f);
     ui_keypad_refuse(NULL);
+}
+
+/**
+ * @brief @p k drawn on a cleared panel-sized canvas.
+ * @param k The keypad.
+ * @param fb The canvas's pixels, UI_PANEL_W x UI_PANEL_H.
+ * @return The pixels of the header line (the title and the range or the
+ *         reason) in the warning colour.
+ */
+static int draw_header(const ui_keypad_t *k, gfx_color_t *fb)
+{
+    gfx_canvas_t cv;
+    memset(fb, 0, (size_t)UI_PANEL_W * UI_PANEL_H * sizeof(gfx_color_t));
+    gfx_canvas_init(&cv, fb, UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
+    ui_keypad_render(k, &cv);
+    int warn = 0;
+    for (int y = k_area.y + 6; y < k_area.y + 24; ++y) {
+        for (int x = k_area.x; x < k_area.x + k_area.w; ++x) {
+            warn += (fb[(size_t)y * UI_PANEL_W + (size_t)x]
+                     == ui_theme_color(UI_C_WARN)) ? 1 : 0;
+        }
+    }
+    return warn;
+}
+
+/* A caller's reason takes the range line's place, in the warning colour,
+ * and the next key brings the range back; a range refusal names no
+ * reason. */
+TEST_CASE(a_callers_reason_takes_the_range_line_until_the_next_key)
+{
+    const size_t px = (size_t)UI_PANEL_W * UI_PANEL_H;
+    const size_t band = (size_t)18 * UI_PANEL_W;
+    const size_t row0 = (size_t)(k_area.y + 6) * UI_PANEL_W;
+    gfx_color_t *fb = calloc(px, sizeof(gfx_color_t));
+    gfx_color_t *range = calloc(px, sizeof(gfx_color_t));
+    REQUIRE_ALLOC(fb);
+    REQUIRE_ALLOC(range);
+
+    open_v();
+    type("12.5");
+    float v = 0.0f;
+    CHECK_EQ(press(UI_KEY_OK, &v), UI_KEYPAD_OK);
+    ui_keypad_refuse(&kp);                          /* no reason: the range */
+    CHECK_STR_EQ(kp.reason, "");
+    CHECK(draw_header(&kp, range) > 0);
+    ui_keypad_refuse_why(&kp, "0 or 5.0 to 1000.0 mOhm");
+    CHECK(kp.open);
+    CHECK(kp.refused);
+    CHECK_STR_EQ(kp.reason, "0 or 5.0 to 1000.0 mOhm");
+    CHECK_STR_EQ(kp.entry, "12.5");
+    CHECK(draw_header(&kp, fb) > 0);                /* warning colour */
+    CHECK(memcmp(fb + row0, range + row0, band * sizeof(gfx_color_t)) != 0);
+
+    /* One key: the mark and the reason go, the range is back, dim. */
+    (void)press(UI_KEY_DEL, NULL);
+    CHECK(!kp.refused);
+    CHECK_STR_EQ(kp.reason, "");
+    CHECK_EQ(draw_header(&kp, fb), 0);
+
+    /* A range refusal after a reason names the range. */
+    ui_keypad_refuse_why(&kp, "WHY");
+    (void)press(UI_KEY_CLR, NULL);
+    type("99");
+    CHECK_EQ(press(UI_KEY_OK, &v), UI_KEYPAD_NONE);
+    CHECK(kp.refused);
+    CHECK_STR_EQ(kp.reason, "");
+
+    /* A NULL reason is a plain refusal; a long one is cut at 63 bytes. */
+    ui_keypad_refuse_why(&kp, NULL);
+    CHECK(kp.refused);
+    CHECK_STR_EQ(kp.reason, "");
+    char longer[100];
+    memset(longer, 'x', sizeof(longer) - 1u);
+    longer[sizeof(longer) - 1u] = '\0';
+    ui_keypad_refuse_why(&kp, longer);
+    CHECK_EQ(strlen(kp.reason), sizeof(kp.reason) - 1u);
+    ui_keypad_refuse_why(NULL, "WHY");
+    free(range);
+    free(fb);
 }
 
 /** @brief SERVO's TRIM: -200 to +200 us, whole microseconds, signed. */
@@ -186,6 +269,7 @@ TEST_CASE(minus_zero_is_zero_and_a_lone_sign_is_nothing_typed)
 int main(void)
 {
     RUN(a_caller_refusal_reopens_the_keypad_marked);
+    RUN(a_callers_reason_takes_the_range_line_until_the_next_key);
     RUN(a_signed_keypad_has_its_sign_key_beside_the_point);
     RUN(the_sign_key_takes_the_range_down_to_its_minimum);
     RUN(minus_zero_is_zero_and_a_lone_sign_is_nothing_typed);

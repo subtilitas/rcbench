@@ -9,8 +9,10 @@
 #include "ui_setting_keypad.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
+#include "outputs.h"
 #include "ui_text.h"
 
 int ui_setting_keypad_decimals(setting_id_t id)
@@ -47,26 +49,94 @@ void ui_setting_keypad_open(ui_keypad_t *k, gfx_rect_t area, setting_id_t id)
     k->sign = ui_setting_keypad_signed(id);     /* the +/- key */
 }
 
-bool ui_setting_keypad_takes(setting_id_t id, float v)
+/** @brief Why ui_setting_keypad_takes() refuses @p v for @p id. */
+typedef enum {
+    WHY_NONE = 0,   /**< taken */
+    WHY_OFF_GAP,    /**< between 0 and off_below */
+    WHY_SDA,        /**< a Sensor SDA pin the bus cannot have */
+    WHY_PDMINI,     /**< the other PD mini pin's GPIO */
+    WHY_NO_ROW,     /**< no such setting */
+} why_t;
+
+/**
+ * @brief Sort @p v for @p id into taken or the rule that refuses it.
+ * @param id The setting.
+ * @param v The value typed.
+ * @return WHY_NONE for a value settings_set() takes as typed; the rule
+ *         that refuses it otherwise.
+ */
+static why_t why_refused(setting_id_t id, float v)
 {
     const setting_def_t *d = settings_def(id);
     if (d == NULL) {
-        return false;
+        return WHY_NO_ROW;
     }
     /* Off is 0 and the next value up is off_below: nothing between. */
     if (d->off_below > 0.0f && v > 0.0f && v < d->off_below) {
-        return false;
+        return WHY_OFF_GAP;
     }
     const int pin = (int)lrintf(v);
     if (id == SET_SENSE_SDA) {
-        return settings_sense_sda_valid(pin);
+        return settings_sense_sda_valid(pin) ? WHY_NONE : WHY_SDA;
     }
     if (id == SET_PDMINI_TX || id == SET_PDMINI_RX) {
         const setting_id_t other =
             (id == SET_PDMINI_TX) ? SET_PDMINI_RX : SET_PDMINI_TX;
-        return pin < 0 || pin != settings_get_int(other);
+        return (pin < 0 || pin != settings_get_int(other)) ? WHY_NONE
+                                                           : WHY_PDMINI;
     }
-    return true;
+    return WHY_NONE;
+}
+
+bool ui_setting_keypad_takes(setting_id_t id, float v)
+{
+    return why_refused(id, v) == WHY_NONE;
+}
+
+const char *ui_setting_keypad_sda_pins(char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    size_t at = 0u;
+    /* -1 (no bus) is not a pin; the list is the GPIOs the bus can have. */
+    for (int gpio = 0; gpio < (int)OUT_MAX_PIN; gpio++) {
+        if (!settings_sense_sda_valid(gpio)) {
+            continue;
+        }
+        const int w = snprintf(buf + at, n - at, (at == 0u) ? "%d" : " %d",
+                               gpio);
+        if (w < 0 || (size_t)w >= n - at) {
+            break;              /* cut at the last pin that fits whole */
+        }
+        at += (size_t)w;
+    }
+    buf[at] = '\0';
+    return buf;
+}
+
+const char *ui_setting_keypad_why(setting_id_t id, float v, char *buf,
+                                  size_t n)
+{
+    char pins[64];
+    switch (why_refused(id, v)) {
+    case WHY_OFF_GAP:
+        return TR(KEYPAD_WHY_SHUNT);
+    case WHY_SDA:
+        if (buf == NULL || n == 0u) {
+            return "";
+        }
+        snprintf(buf, n, TR(KEYPAD_WHY_SDA),
+                 ui_setting_keypad_sda_pins(pins, sizeof(pins)));
+        return buf;
+    case WHY_PDMINI:
+        return TR(KEYPAD_WHY_PDMINI);
+    case WHY_NO_ROW:
+    case WHY_NONE:
+    default:
+        return NULL;
+    }
 }
 
 ui_setkey_result_t ui_setting_keypad_ok(ui_keypad_t *k, setting_id_t id,
@@ -76,7 +146,9 @@ ui_setkey_result_t ui_setting_keypad_ok(ui_keypad_t *k, setting_id_t id,
         return UI_SETKEY_LOCKED;
     }
     if (!ui_setting_keypad_takes(id, v)) {
-        ui_keypad_refuse(k);
+        char why[sizeof(k->reason)];
+        const char *text = ui_setting_keypad_why(id, v, why, sizeof(why));
+        ui_keypad_refuse_why(k, (text != NULL) ? text : "");
         return UI_SETKEY_REFUSED;
     }
     settings_set(id, v);

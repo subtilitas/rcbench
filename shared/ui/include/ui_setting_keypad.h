@@ -8,17 +8,19 @@
  * settings_set() puts a value onto the setting's step inside its range,
  * so a typed value between two steps is set to the nearer one, as the
  * MOTOR & ESC and SUPPLY keypads set it.  A value the - and + keys never
- * reach is refused the way a value outside the range is: the keypad stays
- * open with the range in the warning colour.  That is a value between 0
- * and off_below (a SENSORS shunt of 0.1 to 4.9 mOhm), a Sensor SDA pin
- * settings_sense_sda_valid() refuses, and the GPIO the other PD mini pin
- * holds.
+ * reach is refused: the keypad stays open and shows, in the warning
+ * colour and in place of the range, why (ui_setting_keypad_why()).  That
+ * is a value between 0 and off_below (a SENSORS shunt of 0.1 to 4.9 mOhm:
+ * "0 or 5.0 to 1000.0 mOhm"), a Sensor SDA pin settings_sense_sda_valid()
+ * refuses (the pins it takes, listed), and the GPIO the other PD mini pin
+ * holds.  The next key brings the range back.
  *
  * SPDX-License-Identifier: MIT
  */
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "gfx.h"
 #include "settings.h"
@@ -78,10 +80,36 @@ void ui_setting_keypad_open(ui_keypad_t *k, gfx_rect_t area, setting_id_t id);
  */
 bool ui_setting_keypad_takes(setting_id_t id, float v);
 
+/**
+ * @brief The GPIOs Sensor SDA can have, from settings_sense_sda_valid().
+ * @param buf Where the list goes.
+ * @param n The size of @p buf in bytes.
+ * @return @p buf, holding the pins in rising order with one space between
+ *         ("0 4 6 14 16 18 20 26" for the Pico header), cut at the last pin
+ *         that fits whole; "" for a NULL or empty @p buf.
+ */
+const char *ui_setting_keypad_sda_pins(char *buf, size_t n);
+
+/**
+ * @brief The line a setting's keypad shows in place of the range after
+ *        refusing @p v inside it.
+ * @param id The setting.
+ * @param v The value typed.
+ * @param buf Where a text with numbers in it goes (the Sensor SDA pins).
+ * @param n The size of @p buf in bytes; 64 holds every reason.
+ * @return NULL for a value ui_setting_keypad_takes() takes; otherwise
+ *         KEYPAD_WHY_SHUNT for a value between 0 and off_below, @p buf
+ *         holding KEYPAD_WHY_SDA with the pins for a Sensor SDA pin the bus
+ *         cannot have, and KEYPAD_WHY_PDMINI for the other PD mini pin's
+ *         GPIO, in the panel's language.
+ */
+const char *ui_setting_keypad_why(setting_id_t id, float v, char *buf,
+                                  size_t n);
+
 /** @brief What an OK on a setting's keypad came to. */
 typedef enum {
     UI_SETKEY_SET = 0,    /**< set through settings_set(); keypad closed  */
-    UI_SETKEY_REFUSED,    /**< refused (ui_keypad_refuse()); keypad open  */
+    UI_SETKEY_REFUSED,    /**< refused (ui_keypad_refuse_why()); open   */
     UI_SETKEY_LOCKED,     /**< the row is held or derived now; nothing set,
                                keypad closed                              */
 } ui_setkey_result_t;
@@ -93,7 +121,8 @@ typedef enum {
  * @param v The value it handed back.
  * @return UI_SETKEY_SET after settings_set(@p id, @p v);
  *         UI_SETKEY_REFUSED for a value ui_setting_keypad_takes() refuses,
- *         with @p k open again and marked; UI_SETKEY_LOCKED for a row no
+ *         with @p k open again, marked and showing
+ *         ui_setting_keypad_why() in place of the range; UI_SETKEY_LOCKED for a row no
  *         longer offered (ui_setting_keypad_offered()).
  */
 ui_setkey_result_t ui_setting_keypad_ok(ui_keypad_t *k, setting_id_t id,

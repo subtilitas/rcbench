@@ -1749,7 +1749,8 @@ The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
 on SETUP under INTERFACES. TX and RX are IOmcu GPIO numbers: TX goes to
 the module's DM, RX comes from its DP. Their `-` and `+` keys step over the
 GPIO the other row holds, and at the end of the range do nothing: with RX on
-GP47, TX stops at GP46. A set-up stored with both on one GPIO loads as
+GP47, TX stops at GP46. The keypad refuses the other row's GPIO and shows
+`The other PD mini pin holds this GPIO` in place of the range. A set-up stored with both on one GPIO loads as
 stored: the panel writes the page disabled, the PD mini stays off, and both
 rows say `TX and RX on one pin. The PD mini stays off.` until one is
 stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is
@@ -1772,6 +1773,8 @@ own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 IOmcu find it: it tries each of the 7 rates, one a second. The
 SUPPLY header shows the rate in use after ONLINE, e.g. `ONLINE 38400`, with
 AUTO and with a fixed rate alike.
+
+![RX's GPIO 9 refused for PD mini TX](img/setup-pdmini-why.png)
 
 ## Receiver
 
@@ -2506,9 +2509,14 @@ choice wraps round from its last value to its first.
   0.1 mΩ, none for a pin. OK sets the value as a step sets it: in force at
   once, kept by SAVE. A value between two steps is set to the nearer step:
   73 % brightness is 75 %. A value outside the range keeps the keypad open
-  and names the range in the warning colour, and so does a value the keys
-  never reach: a shunt between 0 and 5.0 mΩ, a Sensor SDA pin the bus cannot
-  have, the GPIO the other PD mini pin holds. A pin's keypad has no `+/-`
+  and names the range in the warning colour. A value inside the range that
+  the keys never reach keeps it open too and names the reason in place of
+  the range, in the warning colour: `0 or 5.0 to 1000.0 mOhm` for a shunt
+  between 0 and 5.0 mΩ, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a
+  Sensor SDA pin the bus cannot have, and `The other PD mini pin holds this
+  GPIO` for the GPIO the other PD mini pin holds. The pin list is built from
+  `settings_sense_sda_valid()`, the check the row's keys step by. The next
+  key brings the range back. A pin's keypad has no `+/-`
   key: -1, a pin not set, is set with `-`. A number shows as many digits
   after the point as its step has, so the row reads what the keypad takes:
   1.25 A, not 1.2 A. CANCEL, OK with nothing typed and the
@@ -2516,9 +2524,7 @@ choice wraps round from its last value to its first.
   under it takes a press. A switch, a choice, INA228 address and Sensor SCL
   open no keypad, and a drag that starts on a value scrolls and opens
   nothing. The bench's state does not lock the keypad, as it does not lock
-  the keys. A current limitation: a value refused inside the range names
-  the range and not the reason. A shunt of 3.0 mΩ shows `0.0 to 1000.0
-  mOhm` in the warning colour, though 0.1 to 4.9 is what is refused.
+  the keys.
 - One finger at a time. While one presses or scrolls, a second finger does
   nothing on this screen.
 
@@ -2633,6 +2639,12 @@ the one the IOmcu's SENSE page judges a write by
 PD mini or the phase tap holds is offered all the same, and the IOmcu
 refuses it. With Sensor SDA at −1 the panel writes ENABLE 0, SDA 0 and SCL 0
 to the page.
+
+The keypad refuses a pin the rule does not take and shows the pins it
+takes in place of the range, listed from the same rule: GPIO 5 typed shows
+`Pins the bus takes: 0 4 6 14 16 18 20 26`.
+
+![GPIO 5 refused for Sensor SDA](img/setup-sda-why.png)
 
 Stored settings: the `sns_scl` key is not read. Sensor SCL is derived from
 the stored Sensor SDA, and the key is saved with the derived value. A stored
@@ -2766,9 +2778,12 @@ no heading and no rows.
 
 A tap on a shunt's value opens the keypad ([Keys and the list](#keys-and-the-list)).
 44.4 mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,
-where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused.
+where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused, and the keypad
+shows `0 or 5.0 to 1000.0 mOhm` in place of the range until the next key.
 
 ![The keypad of 0x40 CH1 shunt](img/setup-sensors-keypad.png)
+
+![3 mOhm refused, the reason in place of the range](img/setup-sensors-why.png)
 
 The heading of a part shows on its right what the part is doing:
 

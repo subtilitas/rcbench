@@ -282,6 +282,12 @@ SCREENS = {
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
     # The keypad of 0x40 CH1's shunt, 44.4 mOhm typed.
     "setup-sensors-keypad": ("setup-sensors-keypad.png", "setup", "dark"),
+    # Values inside the range the steps never reach, refused with the
+    # reason in place of the range: a 3 mOhm shunt, GPIO 5 for Sensor SDA,
+    # and PD mini RX's GPIO 9 for PD mini TX.
+    "setup-sensors-why": ("setup-sensors-why.png", "setup", "dark"),
+    "setup-sda-why": ("setup-sda-why.png", "setup", "dark"),
+    "setup-pdmini-why": ("setup-pdmini-why.png", "setup", "dark"),
     # INTERFACES drawn on to the bus's pins, which the IOmcu has not taken:
     # the mark on Sensor SDA and Sensor SCL.
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),

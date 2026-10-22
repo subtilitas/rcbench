@@ -62,7 +62,10 @@ typedef struct {
     int        decimals;   /**< digits it takes after the point        */
     char       entry[UI_KEYPAD_ENTRY_MAX + 1];
     int        len;
-    bool       refused;    /**< the last OK was outside the range      */
+    bool       refused;    /**< the last OK was refused: outside the range, or by the caller */
+    /** Why the caller refused the last OK, drawn in place of the range
+     *  while refused; "" for a value outside the range. */
+    char       reason[64];
     bool       sign;       /**< opened signed: the +/- key is there    */
     int        pressed;    /**< the key under the press, or -1         */
     uint8_t    press_id;
@@ -113,6 +116,15 @@ ui_keypad_result_t ui_keypad_event(ui_keypad_t *k, const touch_event_t *evt,
  * @param k The keypad that returned UI_KEYPAD_OK.
  */
 void ui_keypad_refuse(ui_keypad_t *k);
+
+/**
+ * @brief Refuse as ui_keypad_refuse() does, with the reason drawn in place
+ *        of the range, in the warning colour, until the next key.
+ * @param k The keypad that returned UI_KEYPAD_OK.
+ * @param reason Why, one line of up to 63 bytes; NULL or "" draws the
+ *        range.
+ */
+void ui_keypad_refuse_why(ui_keypad_t *k, const char *reason);
 
 /**
  * @brief Where a key is drawn and hit.

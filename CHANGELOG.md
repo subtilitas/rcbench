@@ -14,10 +14,14 @@ history is in git.
   keypad names the setting, its range and its unit and takes the step's
   digits after the point. OK sets the value through the call a step ends
   in, onto the nearer step, and SAVE keeps it as it keeps a step. A value
-  outside the range keeps the keypad open, and so does one the keys never
-  reach: a SENSORS shunt between 0 and 5.0 mOhm, a Sensor SDA pin the bus
-  cannot have, the GPIO the other PD mini pin holds. A shunt of 44.4 mOhm
-  from the 100.0 default is five keys, where `-` takes 556 steps.
+  outside the range keeps the keypad open and names the range in the
+  warning colour. One the keys never reach keeps it open with the reason
+  in place of the range until the next key: `0 or 5.0 to 1000.0 mOhm` for
+  a SENSORS shunt between 0 and 5.0 mOhm, `Pins the bus takes: 0 4 6 14
+  16 18 20 26` for a Sensor SDA pin the bus cannot have, listed from the
+  check the row's keys use, and `The other PD mini pin holds this GPIO`.
+  A shunt of 44.4 mOhm from the 100.0 default is five keys, where `-`
+  takes 556 steps.
 - SERVO > SETTINGS > OUTPUT > TRIM opens a signed keypad: a `+/-` key
   between the point and OK, -200 to +200 us, onto the 5 us steps of `-` and
   `+`. Keypads of unsigned rows keep their keys where they were; a pin's

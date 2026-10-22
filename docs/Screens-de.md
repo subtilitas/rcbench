@@ -1918,7 +1918,9 @@ Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
 Baud -- steht in SETUP unter ANSCHLÜSSE. TX und RX sind GPIO-Nummern des
 IOmcu: TX geht zum DM des Moduls, RX kommt von seinem DP. Ihre Tasten `-`
 und `+` springen über den GPIO, den die andere Zeile hält, und tun am Ende
-des Bereichs nichts: mit RX auf GP47 bleibt TX auf GP46. Eine gespeicherte
+des Bereichs nichts: mit RX auf GP47 bleibt TX auf GP46. Das Tastenfeld
+lehnt den GPIO der anderen Zeile ab und zeigt statt des Bereichs `Diesen
+GPIO hält der andere PD-mini-Pin`. Eine gespeicherte
 Einstellung mit beiden auf einem GPIO wird so geladen: das Panel schreibt die
 Page abgeschaltet, der PD mini bleibt aus, und beide Zeilen sagen `TX und RX
 auf einem Pin. Der PD mini bleibt aus.`, bis eine verstellt wird. Der
@@ -1945,6 +1947,8 @@ oder 460800 Baud, oder AUTO. AUTO, die Vorgabe, lässt den IOmcu sie
 finden: er versucht jede der 7 Raten, eine pro Sekunde. Die Kopfzeile von
 SUPPLY zeigt die Rate in Gebrauch hinter ONLINE, z. B. `ONLINE 38400`, bei
 AUTO wie bei einer festen Rate.
+
+![GPIO 9 von RX für PD mini TX abgelehnt](img/de/setup-pdmini-why.png)
 
 ## Receiver
 
@@ -2763,9 +2767,15 @@ Auswahl springt vom letzten Wert auf den ersten.
   sofort, SPEICHERN behält ihn. Ein Wert zwischen zwei Schritten wird auf
   den näheren Schritt gesetzt: 73 % Helligkeit sind 75 %. Ein Wert außerhalb
   des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der
-  Warnfarbe, ebenso ein Wert, den die Tasten nie erreichen: ein Shunt
-  zwischen 0 und 5,0 mΩ, ein Pin für Sensor-SDA, den der Bus nicht haben
-  kann, der GPIO, den der andere PD-mini-Pin hält. Das Tastenfeld eines
+  Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es
+  ebenfalls offen und nennt statt des Bereichs den Grund in der Warnfarbe:
+  `0 oder 5.0 bis 1000.0 mOhm` für einen Shunt zwischen 0 und 5,0 mΩ,
+  `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26` für einen Pin für
+  Sensor-SDA, den der Bus nicht haben kann, und `Diesen GPIO hält der andere
+  PD-mini-Pin` für den GPIO, den der andere PD-mini-Pin hält. Die Pinliste
+  entsteht aus `settings_sense_sda_valid()`, der Prüfung, nach der die
+  Tasten der Zeile gehen. Die nächste Taste bringt den Bereich zurück. Das
+  Tastenfeld eines
   Pins hat keine Taste `+/-`: -1, ein nicht gesetzter Pin, wird mit `-`
   gesetzt. Eine Zahl zeigt so viele Stellen nach dem Punkt, wie ihr Schritt
   hat, damit die Zeile zeigt, was das Tastenfeld nimmt: 1.25 A, nicht
@@ -2775,10 +2785,7 @@ Auswahl springt vom letzten Wert auf den ersten.
   nimmt einen Druck an. Ein Schalter, eine Auswahl, INA228 Adresse und
   Sensor-SCL öffnen kein Tastenfeld, und ein Drag, der auf einem Wert
   beginnt, scrollt und öffnet nichts. Der Zustand des Prüfstands sperrt das
-  Tastenfeld nicht, so wie er die Tasten nicht sperrt. Eine bestehende
-  Grenze: Ein innerhalb des Bereichs abgelehnter Wert nennt den Bereich und
-  nicht den Grund. Ein Shunt von 3,0 mΩ zeigt `0.0 bis 1000.0 mOhm` in der
-  Warnfarbe, obwohl 0,1 bis 4,9 das Abgelehnte ist.
+  Tastenfeld nicht, so wie er die Tasten nicht sperrt.
 - Ein Finger zur Zeit. Solange einer drückt oder scrollt, bewirkt ein zweiter
   Finger auf diesem Bildschirm nichts.
 
@@ -2902,6 +2909,12 @@ IOmcu ein Schreiben beurteilt (`link_sn_pins_pair()`,
 Phasenabgriff hält, wird trotzdem angeboten, und der IOmcu lehnt ihn
 ab. Mit Sensor-SDA auf −1 schreibt das Panel ENABLE 0, SDA 0 und SCL 0 auf
 die Page.
+
+Das Tastenfeld lehnt einen Pin ab, den die Regel nicht nimmt, und zeigt
+statt des Bereichs die Pins, die sie nimmt, aus derselben Regel gelistet:
+GPIO 5 getippt zeigt `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26`.
+
+![GPIO 5 für Sensor-SDA abgelehnt](img/de/setup-sda-why.png)
 
 Gespeicherte Einstellungen: der Schlüssel `sns_scl` wird nicht gelesen.
 Sensor-SCL wird aus dem gespeicherten Sensor-SDA abgeleitet, und der
@@ -3048,9 +3061,12 @@ Baustein, der nicht bestückt ist, hat keine Überschrift und keine Zeilen.
 Ein Tipp auf den Wert eines Shunts öffnet das Tastenfeld
 ([Tasten und Liste](#tasten-und-liste)). 44,4 mΩ vom Standardwert 100,0
 sind fünf Tasten, `4`, `4`, `.`, `4` und OK, wo `-` 556 Schritte braucht.
-0 ist AUS; 0,1 bis 4,9 wird abgelehnt.
+0 ist AUS; 0,1 bis 4,9 wird abgelehnt, und das Tastenfeld zeigt bis zur
+nächsten Taste `0 oder 5.0 bis 1000.0 mOhm` statt des Bereichs.
 
 ![Das Tastenfeld von 0x40 CH1 Shunt](img/de/setup-sensors-keypad.png)
+
+![3 mOhm abgelehnt, der Grund statt des Bereichs](img/de/setup-sensors-why.png)
 
 Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 
