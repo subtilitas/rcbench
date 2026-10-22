@@ -633,6 +633,8 @@ UI_TEXT(LOG_UNREADABLE_CELLS,      50, "%d CELLS UNREADABLE")
 /* The TEXT view's last row, under a report longer than LOG_TEXT_MAX: its
  * size in kB.  A row of the view is 86 cells. */
 UI_TEXT(LOG_TEXT_CUT,              86, "Only the first %u kB are shown.")
+/* The TEXT view's one row for a report of 0 bytes. */
+UI_TEXT(LOG_TEXT_EMPTY,            86, "The file is empty.")
 
 /* --------------------------------------------- the modelled protocols */
 /* The parameter tables of prog_models.c, which no list shows: no transport

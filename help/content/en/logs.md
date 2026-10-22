@@ -109,6 +109,7 @@ OPEN on a report standing alone shows its text: the file's name heads the panel,
 - A line longer than a row breaks at its last space; a word longer than a row is cut at the row's end.
 - A drag on the rows or on the scroll bar scrolls them. BACK returns to the list and frees the text; leaving LOGS frees it too.
 - A line ends at a line feed, at a carriage return and at a pair of both.
+- A file of 0 bytes shows `The file is empty.`
 - The view holds the first 32 KiB of a file. A longer file ends with `Only the first 32 kB are shown.`
 - A report that cannot be opened stays on the list, and the footer says why, for example `Cannot open LIMIT044.TXT.`
 

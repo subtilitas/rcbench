@@ -590,6 +590,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_AT_ROW]             = "Zeile %d von %d   (keine Zeitspalte)",
     [TX_LOG_UNREADABLE_CELLS]   = "%d ZELLEN UNLESBAR",
     [TX_LOG_TEXT_CUT]           = "Nur die ersten %u kB werden gezeigt.",
+    [TX_LOG_TEXT_EMPTY]         = "Die Datei ist leer.",
 
     /* --------------------------------------- the modelled protocols */
     [TX_PG_GROUP_MOTOR]         = "MOTOR",

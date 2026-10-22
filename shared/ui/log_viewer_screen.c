@@ -1828,6 +1828,13 @@ static void render_text(gfx_canvas_t *c)
     render_bar_of(c, text_total(), TX_ROWS, s.text_scroll);
     char row[TX_COLS * 4 + 1];
     int y = BR_LIST.y + 30;
+    if (s.text.rows == 0 && !s.text.cut) {
+        /* A file of 0 bytes: one row says so, so the panel is not taken
+         * for one that failed to draw. */
+        gfx_text_in(c, gfx_rect_make(TX_ROW_X, y, TX_COLS * 8, TX_ROW_H),
+                    TR(LOG_TEXT_EMPTY), UI_FONT_LABEL, UI_TEXT_DIM, 1,
+                    GFX_ALIGN_LEFT);
+    }
     for (int r = 0; r < TX_ROWS; ++r) {
         const int i = s.text_scroll + r;
         const gfx_rect_t box = gfx_rect_make(TX_ROW_X, y, TX_COLS * 8,

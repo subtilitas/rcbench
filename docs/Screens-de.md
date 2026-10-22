@@ -2079,8 +2079,8 @@ ZURÜCK und das Home-Tag führen zur Liste und geben den Text frei; das
 Verlassen von LOGS gibt ihn auch frei, und LOGS öffnet wieder auf der
 Liste. Die Ansicht fasst die ersten 32 KiB einer Datei; eine längere zeigt
 diese und als letzte Zeile `Nur die ersten 32 kB werden gezeigt.` Eine
-leere Datei zeigt ein leeres Feld. Ein Bericht, der sich nicht öffnen
-lässt, bleibt in der Liste, und die Fußzeile sagt warum:
+Datei von 0 Bytes zeigt eine Zeile, `Die Datei ist leer.` Ein Bericht, der
+sich nicht öffnen lässt, bleibt in der Liste, und die Fußzeile sagt warum:
 `LIMIT044.TXT lässt sich nicht öffnen.` oder `Nicht genug Speicher.`
 
 ![Der Tab STAMM mit den Läufen einer älteren Firmware](img/de/logs-root.png)

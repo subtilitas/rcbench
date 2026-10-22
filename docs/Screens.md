@@ -1887,14 +1887,14 @@ view: the file's name heads the panel, and its lines follow, 14 rows of up
 to 86 characters on screen. A line longer than a row breaks at its last
 space inside the row, and a word longer than a row is cut at the row's end.
 A line ends at a line feed (LF), at a carriage return (CR) and at a CR LF
-pair, which is one end; a tab reads as a space. A drag on the rows or on
-the scroll bar scrolls them. A frame reads the 14 rows it draws and at most
-15 rows before them, wherever the text is scrolled to. BACK and the home
-tag return to the list and free the text; leaving LOGS frees it too, and
-LOGS opens on the list again. The view holds the first 32 KiB of a file; a
-longer file shows those and a last row `Only the first 32 kB are shown.` An
-empty file shows an empty panel. A report that cannot be opened stays on
-the list, and the footer says why: `Cannot open LIMIT044.TXT.` or
+pair, which is one end; a tab reads as a space. A drag on the rows or on the
+scroll bar scrolls them. A frame reads the 14 rows it draws and at most 15
+rows before them, wherever the text is scrolled to. BACK and the home tag
+return to the list and free the text; leaving LOGS frees it too, and LOGS
+opens on the list again. The view holds the first 32 KiB of a file; a longer
+file shows those and a last row `Only the first 32 kB are shown.` A file of
+0 bytes shows one row, `The file is empty.` A report that cannot be opened
+stays on the list, and the footer says why: `Cannot open LIMIT044.TXT.` or
 `Not enough memory.`
 
 ![The ROOT tab with the runs of an older firmware](img/logs-root.png)

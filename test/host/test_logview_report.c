@@ -682,8 +682,23 @@ TEST_CASE(a_report_that_does_not_open_stays_on_the_list_with_the_reason)
     draw();
 }
 
-/* An empty report opens on an empty panel: no row, nothing to scroll. */
-TEST_CASE(an_empty_report_opens_on_an_empty_panel)
+/** @brief Pixels of @p col in the TEXT view's first row.
+ *  @param col  the colour
+ *  @return how many */
+static int first_row_pixels(gfx_color_t col)
+{
+    int n = 0;
+    for (int y = 74; y < 74 + 18; ++y) {
+        for (int x = 16 + 8 + 8; x < 16 + 8 + 8 + 86 * 8; ++x) {
+            n += (s_fb[y * W + x] == col) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+/* An empty report opens on one row that says so, nothing to scroll; a
+ * report with text draws its first row in the text colour instead. */
+TEST_CASE(an_empty_report_opens_on_one_row_that_says_so)
 {
     fresh();
     add(CARD_USER_LOGS, "LIMIT001.TXT", "");
@@ -697,7 +712,22 @@ TEST_CASE(an_empty_report_opens_on_an_empty_panel)
     send(TOUCH_EVENT_UP, TX_PANEL_X, 100);
     tap(BAR_X, BAR_TOP + BAR_H - 2);
     CHECK_EQ(log_viewer_text_first(), 0);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK(gfx_text_cells(ui_tr(TX_LOG_TEXT_EMPTY)) <= 86);
+        draw();
+        CHECK(first_row_pixels(UI_TEXT_DIM) > 0);
+        CHECK_EQ(first_row_pixels(UI_TEXT), 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    /* A report with text: its first row, and not the empty one. */
+    fresh();
+    add(CARD_USER_LOGS, "LIMIT001.TXT", "x\n");
+    show(LOG_TAB_USER);
+    tap(OPEN_X, FOOT_CY);
     draw();
+    CHECK(first_row_pixels(UI_TEXT) > 0);
+    CHECK_EQ(first_row_pixels(UI_TEXT_DIM), 0);
 }
 
 TEST_CASE(deleting_a_report_removes_that_file_and_drops_its_text)
@@ -951,7 +981,7 @@ int main(void)
     RUN(opening_a_report_shows_its_rows_and_back_returns_to_the_list);
     RUN(a_long_report_scrolls_by_drag_and_by_its_bar_within_its_rows);
     RUN(a_report_that_does_not_open_stays_on_the_list_with_the_reason);
-    RUN(an_empty_report_opens_on_an_empty_panel);
+    RUN(an_empty_report_opens_on_one_row_that_says_so);
     RUN(deleting_a_report_removes_that_file_and_drops_its_text);
     RUN(a_report_over_the_cap_is_cut_and_the_view_says_so);
     RUN(a_frame_reads_its_rows_and_not_the_text_above_them);
