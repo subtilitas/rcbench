@@ -31,20 +31,23 @@ setting and reads the same. The steps for each release are in
    UPDATE IOMCU` on SETUP > UPDATES. The band then says `IOmcu updated to
    0.22.1.`.
 
-The SD card stays as 0.22.0 left it, and the settings, the Wi-Fi settings
-and the IOmcu's store record, version 8, are kept. The release line is
+The SD card stays as 0.22.0 left it; a card of 0.21.0 and older moves as
+[From 0.21.0](docs/FirstRun.md#from-0210) states. The settings and the
+Wi-Fi settings are kept. The IOmcu's store record is kept; an IOmcu older
+than 0.22.0 writes record version 8 at its first save. The release line is
 unchanged: a panel on 0.22.1 is offered 0.22.x patch releases only.
 
 ### Fixed
 
 - A limit run on PROG PORT whose first CONNECT finds no servo that answers
-  (a Hitec servo, for one) ends with `no KST or Chaservo servo read`, not
-  with `programming port did not finish`. Every other failed CONNECT,
+  (a Hitec servo, for one) ends FAIL with `no KST or Chaservo servo read`,
+  not ABORTED with `programming port did not finish`. Every other failed CONNECT,
   LEAVE and timed-out step reads `programming port session failed`, in
   German `PROG-PORT-Sitzung gescheitert`.
 - The card's ZIP download stays whole while a log on the card grows: a file
   is sent at the size it had when the download started, a file added
-  meanwhile is left out.
+  meanwhile is left out. A file that shrinks, or an entry removed or
+  renamed during the download, still fails the archive.
 - LOGS lists a report standing alone: a LIMIT RUN's `LIMITnnn.TXT` in
   `USER/LOGS`, and in the root a `SERVOnnn.TXT` with no `SERVOnnn.CSV`
   beside it, the limit run of firmware 0.21.0 and older. It ranks by its

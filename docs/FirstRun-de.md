@@ -71,9 +71,10 @@ WLAN](Screens-de.md#wlan)) oder lädt es von GitHub
 ([Bildschirme: Updates](Screens-de.md#updates)), und der IOmcu bekommt
 sein Image vom Panel über CAN.
 
-0.22.1 ist ein Stable-Release ([Bauen: Releases](Building-de.md#releases))
-und das letzte Release für das ESP32-S3-Panel. Spätere Releases sind für
-das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare. NACH UPDATES SUCHEN
+0.22.1 ist ein Stable-Release ([Bauen: Releases](Building-de.md#releases)).
+0.22 ist die letzte Release-Linie für das ESP32-S3-Panel; ihr neuestes
+Release ist 0.22.1. Spätere Releases sind für das 7-Zoll-Display-Board
+mit ESP32-P4 von Waveshare. NACH UPDATES SUCHEN
 mit `RELEASES: STABLE` liest `releases/latest`, das das neueste
 Stable-Release nennt, v0.22.1; ein Panel mit 0.20.0, das keine Einstellung
 RELEASES hat, liest dasselbe. Einem Panel mit 0.22.0 oder später werden nur
@@ -433,9 +434,8 @@ Eine Bench mit 0.22.0 lädt das Panel über WLAN und den IOmcu über CAN aus
 dem Image, das das neue Panel mitbringt. 0.22.1 liest die Ordner der
 SD-Karte wie 0.22.0; auf der Karte wird nichts verschoben. Das
 Link-Protokoll, 4.28, und der Store-Datensatz des IOmcu, Version 8, sind
-bei beiden Releases gleich. Das IOmcu-Image unterscheidet sich: es meldet
-die Version 0.22.1 und trägt den geänderten Begründungstext eines
-Limit-Laufs. Das Panel vergleicht das SHA-256 (Secure Hash Algorithm) des
+bei beiden Releases gleich. Das IOmcu-Image unterscheidet sich nur in der
+Version, die es meldet, 0.22.1; es läuft wie 0.22.0. Das Panel vergleicht das SHA-256 (Secure Hash Algorithm) des
 Images, das der IOmcu läuft, mit dem des Images, das es mitbringt, nicht
 die Versionsnummern; es findet einen anderen Build und fragt.
 

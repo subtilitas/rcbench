@@ -13,8 +13,9 @@ The panel moves from the 7-inch ESP32-S3 display board from Waveshare
 board from Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, 1024 x 600 pixels, MIPI
 DSI (Display Serial Interface), ESP32-C6 for Wi-Fi).
 
-- 0.22.1 is the last release for the ESP32-S3 panel. Support for it ends
-  with 0.22. An ESP32-S3 panel is offered 0.22.x patch releases only.
+- 0.22 is the last release line for the ESP32-S3 panel; its newest
+  release is 0.22.1. Support for it ends with 0.22. An ESP32-S3 panel is
+  offered 0.22.x patch releases only.
 - 0.23.0 is the first release for the ESP32-P4 panel, a testing release.
   Its user interface is laid out for 1024 x 600; it is not the 800 x 480
   layout scaled up.
