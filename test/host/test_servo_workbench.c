@@ -132,9 +132,15 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
         ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_MOVE, 1);
         ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_UP, 1);
         CHECK_EQ(servo_screen_run_settings(), k + 1);
-        /* A second tap on the card's SETTINGS spot stays on the page. */
+        /* A second tap on the card's SETTINGS spot stays on the page: on
+         * the AUTOMATIC TEST's it opens the length rule's list, which the
+         * home tag closes first. */
         tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
         CHECK_EQ(servo_screen_run_settings(), k + 1);
+        if (k == 0) {
+            CHECK(home_tag());
+            CHECK_EQ(servo_screen_run_settings(), 1);
+        }
         CHECK(home_tag());
         CHECK_EQ(servo_screen_run_settings(), 0);
     }
@@ -143,15 +149,17 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
 
-    /* IDLE CURRENT's keypad over the list: the tag closes the keypad, the
-     * keypad's keys do nothing after it, and the list stays; the next tag
-     * climbs to TEST. */
+    /* IDLE CURRENT's keypad over the list: the tag closes the keypad
+     * without a value, and the list stays; the next tag climbs to TEST.
+     * The keypad's spots are the list's again: its keys over the rows
+     * would act on the rows. */
     const float idle = settings_get(SET_SERVO_IDLE_MAX);
     open_run_settings(0);
-    tap(ROW_L_X, LROW_Y(6));
+    tap(LROW_X(1), LROW_Y(1));
+    CHECK(servo_screen_keypad()->open);
     CHECK(home_tag());
+    CHECK(!servo_screen_keypad()->open);
     CHECK_EQ(servo_screen_run_settings(), 1);
-    keys("0.7");
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), idle, 1e-6f);
     CHECK(home_tag());
     CHECK_EQ(servo_screen_run_settings(), 0);
@@ -220,7 +228,7 @@ TEST_CASE(a_tab_switch_drops_a_start_hold)
 /* ----------------------------------------------------------- the TARGET row */
 
 /* The TARGET row's value box, mirrored from servo_screen_int.h. */
-static const gfx_rect_t k_tgt_box = { SV_RC_X + 64, 326, SV_RC_W - 64, 22 };
+static const gfx_rect_t k_tgt_box = { SV_RC_X + 64, 308, SV_RC_W - 64, 48 };
 
 static unsigned edge_ink(void)
 {
@@ -256,7 +264,7 @@ TEST_CASE(the_target_row_locks_for_each_condition)
     /* A sweep: locked, and still after its STOP until the bench is SAFE. */
     fresh_armed();
     servo_screen_set_sweep(true);
-    tap(ARM_X + ARM_W / 2, 350 + 16);                   /* SWEEP */
+    tap(SV_SWEEP_X, SV_BTN_Y);                   /* SWEEP */
     CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
     acked(0u, SERVO_SWEEP_FROM_REST, 0u);
     CHECK(servo_screen_sweeping());
@@ -405,17 +413,21 @@ TEST_CASE(the_target_row_opens_on_the_drive_not_the_setting)
 /* ----------------------------------------------------------- the run cards */
 
 /* Buffer 0 drawn, and whether line @p i of card @p k (its state line is
- * 0) reads @p text in @p col on the card's fill, and nothing else. */
+ * 0) reads @p text in @p col on the card's fill, and nothing else: the
+ * AUTOMATIC TEST card's lines in the 10 x 20 face 22 px apart, the LIMIT
+ * RUN card's in the 8 x 16 face 18 px apart under its output line. */
 static bool card_line_reads(int k, int i, const char *text, ui_color_id_t col)
 {
     scr->render(&cv, 0);
     want_fresh();
-    const int y = 46 + 178 * k + 98 + 18 * i + (k == 1 ? 18 : 0);
+    const int y = SV_RUN_CARD_Y(k) + SV_RUN_LINE_DY
+                  + ((k == 0) ? 22 * i : 18 * i + 18);
+    const gfx_font_t *f = (k == 0) ? &gfx_font_10x20 : &gfx_font_8x16;
+    const int h = f->height;
     const gfx_color_t bg = fb[(size_t)y * W + 20u];
-    gfx_fill_rect(&want_cv, UI_MARGIN + 12, (int16_t)y, 464, 16, bg);
-    gfx_text(&want_cv, UI_MARGIN + 20, y, text, &gfx_font_8x16,
-             ui_theme_color(col), 1);
-    return same_in(fb, want_fb, UI_MARGIN + 12, y, 464, 16);
+    gfx_fill_rect(&want_cv, UI_MARGIN + 12, (int16_t)y, 596, (int16_t)h, bg);
+    gfx_text(&want_cv, UI_MARGIN + 20, y, text, f, ui_theme_color(col), 1);
+    return same_in(fb, want_fb, UI_MARGIN + 12, y, 596, h);
 }
 
 /* Each card's state line says ARM FIRST on a SAFE bench and HOLD 2 S TO
@@ -438,7 +450,7 @@ TEST_CASE(the_run_cards_say_what_their_start_needs)
         CHECK(card_line_reads(0, 0, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
         settings_set(SET_SERVO_STEP_84, 1.0f);
         open_run_settings(0);
-        tap(ROW_R_X, HV_ROW_Y);                         /* HV SERVO on */
+        tap(HV_ROW_X, HV_ROW_Y);                         /* HV SERVO on */
         CHECK(home_tag());
         CHECK(card_line_reads(0, 0, TR(SV_TAP_HV), UI_C_TEXT_FAINT));
     }
@@ -457,10 +469,10 @@ static bool caps_read(int x, int y)
     scr->render(&cv, 0);
     want_fresh();
     const gfx_color_t bg = fb[(size_t)y * W + (size_t)(x - 2)];
-    gfx_fill_rect(&want_cv, (int16_t)(x - 4), (int16_t)y, 470, 16, bg);
-    gfx_text(&want_cv, x, y, line, &gfx_font_8x16,
+    gfx_fill_rect(&want_cv, (int16_t)(x - 4), (int16_t)y, 600, 20, bg);
+    gfx_text(&want_cv, x, y, line, &gfx_font_10x20,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    return same_in(fb, want_fb, x - 4, y, 470, 16);
+    return same_in(fb, want_fb, x - 4, y, 600, 20);
 }
 
 /* The caps line under TEST's cards and on SETTINGS > DUT reads SUPPLY's
@@ -473,7 +485,7 @@ TEST_CASE(the_supply_caps_show_read_only_with_their_home)
         fresh();
         scr->enter();
         open_test();
-        CHECK(caps_read(UI_MARGIN + 10, 404));
+        CHECK(caps_read(UI_MARGIN + 10, 468));
         supply_caps_t caps = supply_screen_caps();
         CHECK_NEAR(caps.v_max, 21.0f, 1e-4f);
         settings_set(SET_SUPPLY_V_MAX, 12.0f);
@@ -482,16 +494,16 @@ TEST_CASE(the_supply_caps_show_read_only_with_their_home)
         servo_invalidate();
         caps = supply_screen_caps();
         CHECK_NEAR(caps.v_max, 12.0f, 1e-4f);
-        CHECK(caps_read(UI_MARGIN + 10, 404));
-        tap(60, 412);
+        CHECK(caps_read(UI_MARGIN + 10, 468));
+        tap(60, 476);
         CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 12.0f, 1e-4f);
-        CHECK(caps_read(UI_MARGIN + 10, 404));                      /* no keypad */
+        CHECK(caps_read(UI_MARGIN + 10, 468));                      /* no keypad */
 
         open_settings();
         tap(TAB_X(PAGE_DUT), TAB_Y);
-        CHECK(caps_read(UI_MARGIN + 10, 280));
-        tap(60, 288);
-        CHECK(caps_read(UI_MARGIN + 10, 280));
+        CHECK(caps_read(UI_MARGIN + 10, 354));
+        tap(60, 362);
+        CHECK(caps_read(UI_MARGIN + 10, 354));
         CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 3.0f, 1e-4f);
     }
     ui_text_set_language(UI_LANG_EN);
@@ -564,7 +576,7 @@ TEST_CASE(the_knob_moves_the_horn_on_live_alone)
 
 /* ----------------------------------------------------------- PROGRAM */
 
-/* The strip reads LIVE, TEST, PROGRAM, SETTINGS from the left, 112 px a
+/* The strip reads LIVE, TEST, PROGRAM, SETTINGS from the left, 150 px a
  * tab; a tap on each selects it, and PROGRAM shows its list with no
  * session open. */
 TEST_CASE(the_strip_reads_live_test_program_settings)
@@ -583,9 +595,9 @@ TEST_CASE(the_strip_reads_live_test_program_settings)
         CHECK_EQ(servo_screen_task(), (int)k[i].task);
         CHECK(!kst_panel_is_open());
     }
-    /* The tabs in order, 116 px apart from x 9. */
+    /* The tabs in order, 154 px apart from x 9. */
     for (int t = 0; t < (int)UI_WB_TASKS; ++t) {
-        CHECK_EQ(SV_TAB_LIVE_X + 116 * t,
+        CHECK_EQ(SV_TAB_LIVE_X + 154 * t,
                  (t == 0) ? SV_TAB_LIVE_X : (t == 1) ? SV_TAB_TEST_X
                  : (t == 2) ? SV_TAB_PROGRAM_X : SV_TAB_SETTINGS_X);
     }
@@ -648,10 +660,10 @@ TEST_CASE(the_program_row_repaints_when_the_testers_port_moves)
     open_program();
     scr->tick(0.02f);
     scr->render(&cv, 0);
-    const gfx_color_t bg = fb[(SV_PROG_ROW_Y(0)) * W + 480];
+    const gfx_color_t bg = fb[(SV_PROG_ROW_Y(0)) * W + 400];
     unsigned before = 0u;
     for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
-        for (int x = 200; x < UI_MARGIN + 488; ++x) {
+        for (int x = 200; x < UI_MARGIN + 612; ++x) {
             before += fb[y * W + x] != bg;
         }
     }
@@ -660,7 +672,7 @@ TEST_CASE(the_program_row_repaints_when_the_testers_port_moves)
     scr->render(&cv, 0);
     unsigned after = 0u;
     for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
-        for (int x = 200; x < UI_MARGIN + 488; ++x) {
+        for (int x = 200; x < UI_MARGIN + 612; ++x) {
             after += fb[y * W + x] != bg;
         }
     }
@@ -706,9 +718,9 @@ static void search_key(int k)
 /* SEARCH's box, a row under the bar, and a row under the bar and a
  * heading, in the page area. */
 #define SEARCH_X 126
-#define SEARCH_Y 63
-#define BARRED_ROW_Y(r) (103 + 40 * (r))
-#define HEADED_ROW_Y(r) (131 + 40 * (r))
+#define SEARCH_Y 81
+#define BARRED_ROW_Y(r) (121 + 40 * (r))
+#define HEADED_ROW_Y(r) (149 + 40 * (r))
 
 /*
  * A list of more than 9 rows on the screen (a table handed in): SEARCH
@@ -779,8 +791,193 @@ TEST_CASE(program_offers_search_over_nine_rows_and_narrows_the_list)
     CHECK_EQ(n, 2u);        /* the shipped table: KST and the stick menu */
 }
 
+/* ------------------------------------------------- finger-sized controls */
+
+/* Whether the keypad is open over the left column, closed again by the
+ * home tag. */
+static bool keypad_opened(void)
+{
+    const bool open = servo_screen_keypad()->open;
+    if (open) {
+        CHECK(home_tag());
+    }
+    return open;
+}
+
+/*
+ * The rows a finger taps are UI_TAP_MIN tall: a SETTINGS row and a run's
+ * value take a press 1 px inside each edge, the 8 px between two SETTINGS
+ * rows and the 10 px between two of a run's columns take none, and the SET
+ * row's values take one at their edges as well.
+ */
+TEST_CASE(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing)
+{
+    fresh();
+    open_settings();
+    tap(ROW_L_X, SV_ROW_Y(2) - 23);            /* PULSE MIN, its top */
+    CHECK(keypad_opened());
+    tap(ROW_L_X, SV_ROW_Y(2) + 22);            /* its bottom */
+    CHECK(keypad_opened());
+    tap(ROW_L_X, SV_ROW_Y(2) + 27);            /* the gap under it */
+    CHECK(!keypad_opened());
+    close_settings();
+
+    open_run_settings(0);
+    tap(LROW_X(2), LROW_Y(3) - 23);            /* DWELL TIME's value */
+    CHECK(keypad_opened());
+    tap(LROW_X(2), LROW_Y(3) + 22);
+    CHECK(keypad_opened());
+    tap(LROW_X(0) + 102, LROW_Y(3));           /* between two columns */
+    CHECK(!keypad_opened());
+    CHECK(home_tag());
+
+    tap(SUP_V_X, SUP_ROW_Y - 23);              /* SET's voltage */
+    CHECK(keypad_opened());
+    tap(SUP_V_X, SUP_ROW_Y + 22);
+    CHECK(keypad_opened());
+}
+
+/*
+ * A second tap on the AUTOMATIC TEST card's SETTINGS lands on the run's
+ * settings under it: the length rule tops that column, and its list opens.
+ * No setting changes, as a step's switch under it would have changed one.
+ * The LIMIT RUN card's lands on no row at all.
+ */
+TEST_CASE(a_second_tap_on_a_run_cards_settings_changes_no_setting)
+{
+    static float before[SETTING_COUNT];
+    for (int k = 0; k < 2; ++k) {
+        fresh();
+        open_test();
+        for (int id = 0; id < SETTING_COUNT; ++id) {
+            before[id] = settings_get((setting_id_t)id);
+        }
+        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
+        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
+        int changed = 0;
+        for (int id = 0; id < SETTING_COUNT; ++id) {
+            changed += settings_get((setting_id_t)id) != before[id];
+        }
+        CHECK_EQ(changed, 0);
+        CHECK(!servo_screen_keypad()->open);
+        CHECK(home_tag());          /* the list, or the run's settings */
+    }
+}
+
+/* The rows of the body a stop at column @p x covers around row @p y:
+ * the height of the control safe_at() names there, in pixels. */
+static int stop_height(int x, int y)
+{
+    int top = y, bottom = y;
+    while (top > 0 && scr->safe_at(x, top - 1)) {
+        --top;
+    }
+    while (bottom < UI_BODY_H - 1 && scr->safe_at(x, bottom + 1)) {
+        ++bottom;
+    }
+    return bottom - top + 1;
+}
+
+/* The points of the body under the alert band the screen names as a stop,
+ * every 2 px. */
+static int stops_under_the_alert_band(void)
+{
+    int n = 0;
+    for (int y = UI_ALERT_Y - UI_BAND_H; y < UI_BODY_H; y += 2) {
+        for (int x = 0; x < UI_PANEL_W; x += 2) {
+            n += scr->safe_at(x, y) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+/* The body row 4 px over the alert band: no text of the left card
+ * reaches it. */
+#define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
+
+/*
+ * Buffer 0 drawn whole: the pixels of the left card from TEXT_FLOOR down to
+ * its bottom edge that are not the page's fill.
+ */
+static int ink_under_the_alert_band(void)
+{
+    servo_invalidate();
+    scr->render(&cv, 0);
+    const gfx_color_t fill = ui_theme_color(UI_C_PANEL);
+    int n = 0;
+    for (int y = TEXT_FLOOR; y < UI_BODY_H - UI_MARGIN - 1; ++y) {
+        for (int x = UI_MARGIN + 1; x < UI_MARGIN + 620 - 1; ++x) {
+            n += fb[(size_t)y * W + x] != fill;
+        }
+    }
+    return n;
+}
+
+/*
+ * In both languages the text at the foot of the left card ends above the
+ * alert band: TEST's caps line, the AUTOMATIC TEST's stall note on its
+ * settings (said as shipped: 2.00 A at a limit of 2.00 A), the OUTPUT
+ * page's notes at their longest, a refused or unsupported rate, and the
+ * save line at its longest, SETUP's changes not saved.
+ */
+TEST_CASE(no_text_lies_under_the_alert_band)
+{
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        bench_fresh();
+        settings_set(SET_SERVO_DWELL_MS, 210.0f);   /* not saved */
+        CHECK(settings_dirty());
+        open_test();
+        CHECK_EQ(ink_under_the_alert_band(), 0);
+        open_run_settings(0);
+        CHECK_EQ(ink_under_the_alert_band(), 0);
+        int warn = 0;
+        for (int x = UI_MARGIN; x < UI_MARGIN + 620; ++x) {
+            for (int y = TEXT_FLOOR - 20; y < TEXT_FLOOR; ++y) {
+                warn += fb[(size_t)y * W + x] == ui_theme_color(UI_C_WARN);
+            }
+        }
+        CHECK(warn > 100);          /* the stall note is there, above it */
+        close_settings();
+        open_settings();
+        servo_screen_rate(SERVO_RATE_REFUSED, 50u);
+        CHECK_EQ(ink_under_the_alert_band(), 0);
+        servo_screen_rate(SERVO_RATE_UNSUPPORTED, 50u);
+        CHECK_EQ(ink_under_the_alert_band(), 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/*
+ * While a run is under way its stops -- START TEST's place on TEST and STOP
+ * TEST in LIVE's box -- are UI_TAP_MIN tall or taller and end above the
+ * alert band, as DISARM and OUTPUT OFF do: on TEST, on LIVE, and on the
+ * run's settings.
+ */
+TEST_CASE(a_runs_stops_are_a_finger_tall_and_clear_of_the_alert_band)
+{
+    bench_fresh();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    CHECK(scr->safe_at(START_X, START_Y));
+    CHECK(stop_height(START_X, START_Y) >= UI_TAP_MIN);
+    CHECK_EQ(stops_under_the_alert_band(), 0);
+    close_settings();                             /* LIVE: the result box */
+    CHECK(scr->safe_at(BOXBTN_X, BOXBTN_Y));
+    CHECK(stop_height(BOXBTN_X, BOXBTN_Y) >= UI_TAP_MIN);
+    CHECK_EQ(stops_under_the_alert_band(), 0);
+    open_run_settings(0);
+    CHECK_EQ(stops_under_the_alert_band(), 0);
+    servo_screen_set_armed(false);
+    CHECK(!servo_screen_testing());
+}
+
 int main(void)
 {
+    RUN(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing);
+    RUN(a_runs_stops_are_a_finger_tall_and_clear_of_the_alert_band);
+    RUN(a_second_tap_on_a_run_cards_settings_changes_no_setting);
+    RUN(no_text_lies_under_the_alert_band);
     RUN(a_tile_opens_live_and_each_task_keeps_its_place);
     RUN(the_strip_reads_live_test_program_settings);
     RUN(a_row_the_iomcu_lacks_is_dimmed_and_opens_nothing);

@@ -317,8 +317,8 @@ static const struct {
     bool       keyboard;
     int        kw, kh;      /* a character key or a digit key */
 } k_hosts[] = {
-    { { 8, 8, 488, 524 },     false, 112, 88 },  /* SERVO, KST          */
-    { { 8, 8, 488, 524 },     true,  41, 72 },   /* SERVO, KST names    */
+    { { 8, 8, 620, 524 },     false, 145, 88 },  /* SERVO, KST          */
+    { { 8, 8, 620, 524 },     true,  55, 72 },   /* SERVO, KST names    */
     { { 8, 38, 546, 494 },    false, 126, 80 },  /* SUPPLY              */
     { { 8, 3, 546, 529 },     false, 126, 89 },  /* MOTOR & ESC SETTINGS */
     { { 352, 66, 664, 466 },  true,  59, 61 },   /* ESC STICK search    */
@@ -330,9 +330,7 @@ static const struct {
 
 /* Every key of every host ends UI_KEYS_FOOT at the latest, 4 px above the
  * alert band, and is UI_TAP_MIN or more tall and wide; the key sizes are
- * the ones Screens.md names.  One host is narrower: SERVO's 488 px column
- * gives the keyboard's 10 columns 41 px each, a width its own layout sets
- * (the plan's 620 px column gives 55 px). */
+ * the ones Screens.md names. */
 TEST_CASE(every_hosts_keys_end_above_the_alert_band)
 {
     CHECK_EQ(UI_KEYS_FOOT, 492);
@@ -347,7 +345,7 @@ TEST_CASE(every_hosts_keys_end_above_the_alert_band)
             ui_textkey_open_wifi(&k, a, "", "", true);
             for (int key = 0; key <= UI_TK_SHOW; ++key) {
                 const gfx_rect_t r = ui_textkey_key_rect(&k, key);
-                CHECK(r.w >= ((a.w < 560) ? 41 : UI_TAP_MIN));
+                CHECK(r.w >= UI_TAP_MIN);
                 CHECK(r.h >= UI_TAP_MIN);
                 lowest = (r.y + r.h > lowest) ? r.y + r.h : lowest;
             }

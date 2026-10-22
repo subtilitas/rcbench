@@ -1,5 +1,6 @@
-/*
- * The SERVO screen as a workbench (ui_workbench.h): the task strip under
+/**
+ * @file
+ * @brief The SERVO screen as a workbench (ui_workbench.h): the task strip under
  * the band, TEST's page of run cards, and the output card's TARGET row.
  *
  * The strip shows LIVE (the dial, SWEEP, CENTRE, RELEASE), TEST (the
@@ -280,10 +281,32 @@ void draw_prog_page(gfx_canvas_t *c)
  * the entry one navigation later is the way back. */
 static uint32_t s_outputs_nav;
 
+/**
+ * @brief The strip's tabs laid out again at SERVO's sizes, SV_TAB_W x
+ *        SV_STRIP_H from (SV_STRIP_X, SV_STRIP_Y): the tasks, their order
+ *        and their labels as ui_wb_strip_init() set them.
+ */
+static void strip_widen(void)
+{
+    ui_tabs_t *t = &s.wb.tabs;
+    const int n = t->count;
+    ui_text_id_t ids[UI_TABS_MAX] = { (ui_text_id_t)0 };
+    for (int i = 0; i < n; ++i) {
+        ids[i] = (ui_text_id_t)t->text[i];
+    }
+    ui_tabs_init_text(t, ids, n,
+                      (gfx_rect_t){ SV_STRIP_X, SV_STRIP_Y,
+                                    (int16_t)(n * SV_TAB_W
+                                              + (n - 1) * SV_TAB_GAP),
+                                    SV_STRIP_H });
+}
+
+/** @brief The strip, the TARGET row and PROGRAM's list laid out; LIVE. */
 void wb_init(void)
 {
     s_outputs_nav = 0u;
-    ui_wb_strip_init(&s.wb, SERVO_TASKS, UI_WB_STRIP_X, UI_WB_STRIP_Y);
+    ui_wb_strip_init(&s.wb, SERVO_TASKS, SV_STRIP_X, SV_STRIP_Y);
+    strip_widen();
     s.run_list = RL_NONE;
     ++s.strip_rev;
     ui_target_row_init(&s.trow, (gfx_rect_t){ RC_X, TARGET_Y, RC_W,
@@ -354,11 +377,16 @@ gfx_rect_t strip_area(void)
                          (int16_t)(r.w + 6), (int16_t)(r.h + 6) };
 }
 
+/**
+ * @brief START LIMIT RUN, on the LIMIT RUN card: START TEST's place on its
+ *        own card.
+ * @return the button
+ */
 gfx_rect_t lim_start_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(RUN_CARD_X + 10),
-                         (int16_t)(RUN_CARD_Y(1) + RUN_BTN_DY), 240,
-                         OV_ROW_H + 2 };
+                         (int16_t)(RUN_CARD_Y(1) + RUN_BTN_DY), RUN_BTN_W,
+                         RUN_BTN_H };
 }
 
 /*
@@ -506,18 +534,26 @@ void draw_strip(gfx_canvas_t *c)
     ui_wb_strip_render(&s.wb, c);
 }
 
-/* SUPPLY's caps in force, which a run's steps and a set point stay
- * inside, read-only here: their home is SUPPLY > SETTINGS. */
+/**
+ * @brief SUPPLY's caps in force, which a run's steps and a set point stay
+ *        inside, read-only here: their home is SUPPLY > SETTINGS.
+ * @param c the canvas
+ * @param x the line's left edge, px
+ * @param y its top, px
+ */
 void draw_caps_line(gfx_canvas_t *c, int x, int y)
 {
     const supply_caps_t caps = supply_screen_caps();
     char line[64];
     snprintf(line, sizeof(line), TR(SV_CAPS), (double)caps.v_max,
              (double)caps.i_max);
-    gfx_text(c, x, y, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+    gfx_text(c, x, y, line, SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
-/* TEST: the two run cards, then the caps. */
+/**
+ * @brief TEST: the two run cards, then the caps.
+ * @param c the canvas
+ */
 void draw_test_page(gfx_canvas_t *c)
 {
     const gfx_rect_t a = page_area();
@@ -531,19 +567,19 @@ void draw_test_page(gfx_canvas_t *c)
                             ui_theme_color(UI_C_PANEL_SUNK));
         gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 6,
                             ui_theme_color(UI_C_EDGE));
-        gfx_text(c, r.x + 10, r.y + 11, ui_tr(k_title[k]), &gfx_font_8x16,
-                 ui_theme_color(UI_C_ACCENT), 1);
-        ui_button(c, run_set_rect(k), TR(SUP_SETTINGS),
-                  ui_theme_color(UI_C_PANEL_HI),
-                  s.ov_have && s.ov_pressed == OP_RUN_SET && s.ov_row == k,
-                  true);
+        gfx_text(c, r.x + 10, r.y + RUN_NAME_DY, ui_tr(k_title[k]),
+                 SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
+        ui_button_font(c, run_set_rect(k), TR(SUP_SETTINGS),
+                       ui_theme_color(UI_C_PANEL_HI),
+                       s.ov_have && s.ov_pressed == OP_RUN_SET
+                           && s.ov_row == k,
+                       true, SV_FONT_LABEL);
     }
     draw_test_start(c);
     draw_test_lines(c);
     draw_lim_start(c);
     draw_lim_lines(c);
-    draw_caps_line(c, RUN_CARD_X,
-                   RUN_CARD_Y(1) + RUN_CARD_H + 8);
+    draw_caps_line(c, RUN_CARD_X, RUN_CAPS_Y);
 }
 
 /*
@@ -567,8 +603,12 @@ void draw_target(gfx_canvas_t *c)
 /* The protocol the SERVO PWM outputs are bound as: a name, the same in
  * every language. */
 #define TARGET_PROTOCOL "SERVO PWM"
-/* Characters the TARGET row's value holds: its box less its padding. */
-#define TARGET_CELLS 23u
+/** @brief Characters the TARGET row's value holds in the 10 x 20 face
+ *         ui_target_row draws a row UI_TARGET_TALL_H or taller in: the
+ *         column less the label, 268 px, less 8 px each side, 25 cells. */
+#define TARGET_CELLS ((unsigned)((RC_W - UI_TARGET_LABEL_W_TALL - 16) / 10))
+_Static_assert(TARGET_H >= UI_TARGET_TALL_H,
+               "the TARGET row is tall enough for the 10 x 20 face");
 
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known)

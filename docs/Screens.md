@@ -865,7 +865,8 @@ of the ESC's own values and open no keypad.
 
 SERVO is a workbench. The strip under the band holds its tasks, **LIVE**,
 **TEST**, **PROGRAM** and **SETTINGS** (German `LIVE`, `TEST`,
-`PROGRAMMIEREN`, `OPTIONEN`), 112 px a tab. The tile opens LIVE. A tab
+`PROGRAMMIEREN`, `OPTIONEN`), 150 x 40 px a tab, 4 px apart, from y 8
+under the band. The tile opens LIVE. A tab
 switch is no navigation level: the home tag goes home from every task, and
 climbs one level only from a run's settings back to TEST and from a
 programmer back to PROGRAM's list. Each task keeps its page and what is
@@ -879,11 +880,24 @@ SAFE, from any task.
 | PROGRAM | the list of programmers, one row each; a row opens its programmer over the left column |
 | SETTINGS | the pages OUTPUT, SWEEP and DUT |
 
-The right card is the output card, the same on every task: the readings,
-the SET line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. A
-panel -- a keypad, the keyboard, a list, a warning, the question or a
-programmer -- covers the whole left column, the strip's tabs with it, and
-is answered or closed before the task changes.
+The left card is 620 px wide and starts under the strip, at y 56. The
+right card is the output card, 380 px wide, from the top margin to the
+bottom one beside the strip, the same on every task: the type in force,
+the servo rail's line and plot, the SET line, SPEED, the TARGET row,
+CENTRE, SWEEP, RELEASE and ARM. Every row tapped there is 48 px tall or
+taller; ARM is 60 px and ends 4 px above the alert band, as OUTPUT OFF
+does. A panel -- a keypad, the keyboard, a list, a warning, the question
+or a programmer -- covers the whole left column, the strip's tabs with it,
+and is answered or closed before the task changes.
+
+LIVE's card holds the horn's angle in the bench's numerals top left, with
+`ARM FIRST` under it while the bench is SAFE, the dial (radius 150 px)
+with the servo, and along its foot the three readings, a third of the card
+each: COMMANDED in microseconds, MEASURED in degrees and CURRENT in amps,
+the label and unit over numerals 44 px tall. Numerals wider than their
+198 px column -- a current held at `-1000000.00` -- are drawn in a
+smaller face, so they stay inside it. The readings are on LIVE only; on
+the other tasks the line over the plot carries the current.
 
 On LIVE, while the bench is ARMED, drag anywhere on the sweep to command a position. The solid arm is the measured
 position; the faint arm is the commanded position. The gap between them is the
@@ -975,18 +989,18 @@ bench. One command waits for each frame: of a position and a RELEASE made in
 the same frame the later is sent, and the value shown is that one's. A knob
 turn in a frame in which RELEASE waits is dropped.
 
-The right card shows what is commanded and measured, the type, frame rate and
-pulse range in force -- in the danger colour while they are ones that can
-destroy a servo not made for them -- and the servo rail as its meter reads
-it: voltage, current and power on the line over the plot, plotted over the
-last 13 s, and the current again in the CURRENT row. The type row reads
-`STANDARD PWM  50 Hz  1000-2000`: the type, the frame rate and PULSE MIN to
-PULSE MAX in microseconds, two spaces apart. The longest, a 13-character type
-at 560 Hz with two 4-digit ends, takes 32 of the row's 33 characters, so the
-range carries no unit. A pulse width typed in the settings reaches the row
-at once.
+The output card shows the type, frame rate and pulse range in force -- in
+the danger colour while they are ones that can destroy a servo not made for
+them -- and the servo rail as its meter reads it: voltage, current and power
+on the line over the plot, plotted over the last 17.8 s (356 px at 20
+points a second). LIVE's CURRENT reading shows the current again. The type
+row, 44 px tall, reads `STANDARD PWM  50 Hz  1000-2000`: the type, the
+frame rate and PULSE MIN to PULSE MAX in microseconds, two spaces apart.
+The longest, a 13-character type at 560 Hz with two 4-digit ends, takes 32
+of the row's 35 characters, so the range carries no unit. A pulse width
+typed in the settings reaches the row at once.
 
-| The servo rail's meter | Name on the line | CURRENT, the line and the plot show |
+| The servo rail's meter | Name on the line | LIVE's CURRENT, the line and the plot show |
 | --- | --- | --- |
 | an INA3221 channel | `INA`, its part's address and channel: `INA 0x41 CH2` | the channel's last 50 ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
 | the PD mini | `PD MINI` | the supply's last sample. One point per sample |
@@ -996,8 +1010,8 @@ at once.
 
 The name stays `PD MINI` in both languages. While the PD mini is disabled on
 SETUP under INTERFACES, the supply is the panel's model of it, as on SUPPLY:
-then a SIMULATED pill (SIMULIERT in German), 20 px high and 24 px plus the word
-wide but at least 88 px (88 px for SIMULATED, 96 px for SIMULIERT), sits
+then a SIMULATED pill (SIMULIERT in German), 26 px high and 30 px plus the word
+wide but at least 110 px (120 px for SIMULATED and SIMULIERT), sits
 on the plot's top-left corner under the name, because the line beside the
 name holds the three readings. The pill comes and goes with the model,
 without a tap. With an INA3221 channel as the meter the line names the
@@ -1016,17 +1030,18 @@ one fails.
 - A current is signed and shown in hundredths of an amp: `0.41 A`,
   `-0.02 A`, `-1.64 A`. A reading that rounds to zero is `0.00 A`. The
   power on the line is signed in tenths of a watt. Beside a channel's name the
-  three readings have 52, 64 and 56 px, 6, 8 and 7 characters, after the
-  name's 96 px: a voltage of 10 V or more is shown in tenths, `26.0 V`, and
+  three readings have 64, 84 and 74 px, 6, 8 and 7 characters of 10 px,
+  after the name's 134 px; beside PD MINI 88, 88 and 90 px after its 90 px:
+  a voltage of 10 V or more is shown in tenths, `26.0 V`, and
   a power of more than 7 characters in tenths, `-100.0 W` and beyond or
   `1000.0 W` and beyond, in whole watts.
-- A reading that did not arrive is `---` in the CURRENT row, `--` on the
+- A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the
   line and a gap in the plot: no sample yet, a supply that does not answer,
   no window since the link came up, a window without samples of that
   quantity.
 - A window in which a sample read an end of the INA3221's range, 1.638 A or
   -1.638 A on a 0.1 Ω shunt, shows its mean as it is, in the warning colour
-  in the CURRENT row and on the line. The clipped samples count in that mean
+  in LIVE's CURRENT and on the line. The clipped samples count in that mean
   at the end of the range.
 
   ![A clipped window](img/servo-clipped.png)
@@ -1039,8 +1054,8 @@ one fails.
   reading taken before its meter became the rail's is no point of the
   trace, and none taken after is left out. The plot's scale starts at 0,
   and a negative current is drawn on its lower edge.
-- The CURRENT row's value is repainted when its digits or its colour change,
-  and by itself.
+- LIVE's CURRENT numerals are repainted when their digits or their colour
+  change, and by themselves.
 
 The automatic test reads the supply whichever meter the rail has.
 
@@ -1050,8 +1065,8 @@ tenths of a degree, -180.0 to +179.9, read 20 times a second. It is `---`
 while the sensor does not answer and while it reports no magnet (STATUS MD
 clear): its count is no angle then. A magnet reported too weak or too strong
 leaves the angle on show; the band says which. Where AS5600 is off the row
-shows the feedback's angle. The commanded position beside it is the
-pulse width in microseconds.
+shows the feedback's angle. COMMANDED beside it is the pulse width in
+microseconds.
 
 **The supply is set and switched here too.** The SET line under the plot
 holds SUPPLY's two set points, the voltage and the current limit, and its
@@ -1195,9 +1210,10 @@ clears at SPEED 63 %, and for a triangle at 40 %.
 through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
-files. The card holds the run's name and its SETTINGS, a summary line
+files. The card, 600 x 200 px, holds the run's name, a summary line
 (`4.8 6.0 V BROWN-OUT, 60 s EACH`, or `..., 20 MOVEMENTS EACH`), START
-TEST, the state line, the last result with its files
+TEST (300 x 56 px) with the card's SETTINGS (160 x 48 px) beside it, the
+state line, the last result with its files
 (`LAST: PASS ATEST004.CSV + .TXT`) and the STALL AT note. START TEST needs
 the bench in ARMED and a supply that answers; the state line says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
 SMALL (the ends RANGE and TRAVEL give land on PULSE CENTRE), A STEP IS
@@ -1217,7 +1233,8 @@ its HOLD TO APPLY is held for 2 s. HV SERVO is for the session: every restart
 turns it off.
 
 TEST stays shown as the run starts, and the card's state line reads the
-step. LIVE shows the run's box at the top of the left card: its step and
+step. LIVE shows the run's box on the left of its card, under `ARM FIRST`,
+346 px wide and clear of the horn at every angle: its step and
 phase, with the meter the run reads beside STOP TEST: `PD mini`,
 the INA3221 channel, `INA 0x41 CH2`, or `SIMULATION`. It is the servo rail's meter at START TEST, and
 the run reads it to its end ([The meter](Servo.md#the-meter)). The run owns
@@ -1347,6 +1364,22 @@ back to the cards. Another task hides the list, and TEST shows it again. The out
 value opens the keypad, a list opens a list, a switch flips on the tap, and
 the name opens a keyboard.
 
+SETTINGS' page tabs are 197 x 40 px across the card. Its rows are two
+columns of 295 px, each row 48 px tall and 52 px from the next, the label
+left and the value right, 140 px wide (TYPE, FRAME RATE and NAME take both
+columns). The notes under OUTPUT's rows are lines of 60 characters, 21 px
+apart. A run's settings are three columns of 193 px, each row its label
+over its 48 px value, 71 px from the next: the automatic test's 15 rows
+are five to a column, the steps with HV SERVO, the pass and fail limits
+with BROWN-OUT, and the length and timing. TEST LENGTH BY tops the right
+column, under the card's SETTINGS: a second tap on SETTINGS opens its list
+and changes no setting. The notes, the save line, the STALL AT note and
+the caps line under TEST's cards end 4 px or more above the alert band. A
+list's choices are
+two columns of five, 48 px tall and 56 px apart; the warnings read in
+12 x 24 px letters, 49 characters a line, with HOLD TO APPLY and CANCEL
+56 px tall ending 4 px above the alert band.
+
 ![The servo's settings](img/servo-settings.png)
 ![The SWEEP page](img/servo-sweep-page.png)
 
@@ -1417,7 +1450,7 @@ left column.
 SERVO TESTER holds OUTPUTS, PORT 1, PORT 2, PORT 3 or PORT 4. With
 OUTPUTS the row names the GPIOs bound as SERVO PWM in the binding the
 tester drives: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`; as many pins as fit
-the 23 characters of the value, then `+N`: 8 pins from GP40 read
+the 25 characters of the value, then `+N`: 8 pins from GP40 read
 `SERVO PWM GP40 GP41 +6`. The row is in the warning colour, label and
 value, with no such pin (`NO SERVO PWM PIN`) and before a binding has been
 read (`PINS NOT READ`). With a programming port the row reads `PROG PORT 1
@@ -1518,8 +1551,9 @@ The OUTPUT settings, HV SERVO, LIMIT RUN and SERVO PULSES are kept for the
 session; SWEEP's, the automatic test's and DUT's settings and TARGET are
 kept in NVS. A change asks for the write at once; the store takes it at
 the first frame the bench is idle ([Keeping the values](#keeping-the-values)).
-The save line at the foot of each page says `SAVED`, `SAVE PENDING`,
-`NOT SAVED` or `SETUP CHANGES NOT SAVED`.
+The save line says `SAVED`, `SAVE PENDING`, `NOT SAVED` or `SETUP CHANGES
+NOT SAVED`: at the foot of each SETTINGS page, and under the run's name on
+a run's settings.
 
 ![TEST and its two run cards](img/servo-test.png)
 ![The automatic test's settings](img/servo-test-settings.png)

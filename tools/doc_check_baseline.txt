@@ -5004,16 +5004,38 @@ shared/ui/sensors_rows.c: warning: Member fitted(int a) (function) of file senso
 shared/ui/sensors_rows.c: warning: Member s_status (variable) of file sensors_rows.c is not documented.
 shared/ui/sensors_rows.c: warning: Member sensors_rows_state_color(int a) (function) of file sensors_rows.c is not documented.
 shared/ui/servo_limit_panel.c: file has no @file block
-shared/ui/servo_screen.c: file has no @file block
+shared/ui/servo_screen.c: warning: Member RATES(a) (macro definition) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member SAMPLE_HZ (macro definition) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member apply_profile(int t, uint16_t hz) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member ask_profile(int t, uint16_t hz) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member back(void) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member cancel(void) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member enter(void) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member event(const touch_event_t *evt) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member half_travel_us(bool below) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member k_cyc_rates[] (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member k_pages[PG_COUNT] (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member k_power[PS_COUNT] (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member k_screen (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member k_std_rates[] (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member k_tail_rates[] (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member k_types[] (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member leave(void) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member post(servo_cmd_kind_t kind, uint16_t us) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member reissue(void) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member release(void) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member s (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member s_testing_last (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member s_testing_told(bool running) (variable) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member servo_screen(void) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member svs_cmd_to_us(float cmd) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member svs_deg_to_us(float deg) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member test_tell(void) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member tick(float dt_s) (function) of file servo_screen.c is not documented.
+shared/ui/servo_screen.c: warning: Member us_to_deg_f(float us) (function) of file servo_screen.c is not documented.
 shared/ui/servo_screen_core_int.h: warning: Compound rail_t is not documented.
-shared/ui/servo_screen_core_int.h: warning: Member ARC_R (macro definition) of file servo_screen_core_int.h is not documented.
-shared/ui/servo_screen_core_int.h: warning: Member BODY_H (macro definition) of file servo_screen_core_int.h is not documented.
-shared/ui/servo_screen_core_int.h: warning: Member BODY_W (macro definition) of file servo_screen_core_int.h is not documented.
 shared/ui/servo_screen_core_int.h: warning: Member CUR_KEY_NONE (macro definition) of file servo_screen_core_int.h is not documented.
-shared/ui/servo_screen_core_int.h: warning: Member HORN_L (macro definition) of file servo_screen_core_int.h is not documented.
 shared/ui/servo_screen_core_int.h: warning: Member PHI(a) (macro definition) of file servo_screen_core_int.h is not documented.
-shared/ui/servo_screen_core_int.h: warning: Member SHAFT_X (macro definition) of file servo_screen_core_int.h is not documented.
-shared/ui/servo_screen_core_int.h: warning: Member SHAFT_Y (macro definition) of file servo_screen_core_int.h is not documented.
 shared/ui/servo_screen_core_int.h: warning: Member SPEED_FULL_SPAN_S (macro definition) of file servo_screen_core_int.h is not documented.
 shared/ui/servo_screen_core_int.h: warning: Member TAB_H (macro definition) of file servo_screen_core_int.h is not documented.
 shared/ui/servo_screen_core_int.h: warning: Member TAB_HOLE_DY (macro definition) of file servo_screen_core_int.h is not documented.
@@ -5045,80 +5067,28 @@ shared/ui/servo_screen_draw.c: warning: Member arm_fill(void) (function) of file
 shared/ui/servo_screen_draw.c: warning: Member at(float deg, int r, int *x, int *y) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member clipped(gfx_canvas_t *c, gfx_rect_t box, void(*fn)(gfx_canvas_t *)) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member clipped_session(gfx_canvas_t *c, gfx_rect_t box, const prog_page_set_t *ps) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member cur_val_rect(void) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member cur_value(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member draw_arm(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_body(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_cur_value(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_dial(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member draw_left(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_power(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member draw_right(gfx_canvas_t *c, bool power) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_sup_row(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member draw_tag(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member fixed_text(char *out, size_t n, int32_t q, int places, const char *unit) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member k_line_w[2][PS_COUNT] (variable) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member out_fill(void) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member power_rect(void) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member ring_gap_deg(float r, float half_w, float dark_px) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member row(gfx_canvas_t *c, int y, const char *label, const char *value) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member row_in(gfx_canvas_t *c, int y, const char *label, gfx_color_t label_col, const char *value) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member sup_row_rect(void) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member tag_rect(void) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member wrap_text(gfx_canvas_t *c, int x, int y, int pitch, const char *text, int cells, gfx_color_t ink) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_int.h: warning: Compound ov_row_t is not documented.
 shared/ui/servo_screen_int.h: warning: Compound servo_map_t is not documented.
 shared/ui/servo_screen_int.h: warning: Compound servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Compound servo_type_t is not documented.
 shared/ui/servo_screen_int.h: warning: Compound start_rec_t is not documented.
 shared/ui/servo_screen_int.h: warning: Compound sweep_drain_t is not documented.
-shared/ui/servo_screen_int.h: warning: Member BOX_CELLS (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member CARD_H (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member CARD_Y (macro definition) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member CHOICE_MAX (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member CUR_Y (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member H (macro definition) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member HELI_MIN_PAUSE_US (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member LCARD_W (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_COL_W (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_H (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_NOTE_Y (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_PITCH (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_ROW0 (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_ROW_H (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_TAB_H (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_TAB_W (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_TAB_Y (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_VAL_W (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_W (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_X (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member OV_Y (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member PAD (macro definition) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member PWM_MIN_PAUSE_US (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member PWR_H (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member PWR_LAB_W (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member PWR_LAB_W_INA (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member PWR_TXT_Y (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member PWR_Y (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member RCARD_W (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member RCARD_X (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member RC_W (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member RC_X (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member RL_ROW0 (macro definition) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member SAFE_RATE_HZ (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member STD_SERVO_V_MAX (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member SUP_H (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member SUP_OUT_X (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member SUP_VAL_W (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member SUP_VAL_X (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member SUP_Y (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member TAG_H (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member TAG_Y (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member TARGET_H (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member TARGET_Y (macro definition) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member TYPE_COUNT (macro definition) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member W (macro definition) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member apply_profile(int t, uint16_t hz) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member arm (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member arm_btn (variable) of struct servo_screen_state_t is not documented.
@@ -5167,18 +5137,10 @@ shared/ui/servo_screen_int.h: warning: Member dr (variable) of struct servo_scre
 shared/ui/servo_screen_int.h: warning: Member dr (variable) of struct servo_screen_state_t::[struct].undo is not documented.
 shared/ui/servo_screen_int.h: warning: Member drag_id (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member dragging (variable) of struct servo_screen_state_t is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_ask_apply(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member draw_lim_box(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member draw_lim_lines(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member draw_lim_mode_note(gfx_canvas_t *c, int x, int y) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member draw_lim_start(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_overlay(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_save_line(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_test_box(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_test_lines(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_test_stall(gfx_canvas_t *c, int x, int y) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_test_start(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member draw_warn_apply(gfx_canvas_t *c) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member drawn_arm[2] (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member drawn_ask[2] (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member drawn_cover[2] (variable) of struct servo_screen_state_t is not documented.
@@ -5336,7 +5298,6 @@ shared/ui/servo_screen_int.h: warning: Member row (variable) of struct ov_row_t 
 shared/ui/servo_screen_int.h: warning: Member row_hidden(const ov_row_t *r) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member run_list (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member s (variable) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member save_line_rect(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member save_state(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member sent_speed[8] (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member seq (variable) of struct servo_screen_state_t::[struct].sent_speed is not documented.
@@ -5357,7 +5318,6 @@ shared/ui/servo_screen_int.h: warning: Member sup (variable) of struct servo_scr
 shared/ui/servo_screen_int.h: warning: Member sup_held (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member sup_rev (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member sup_v (variable) of struct servo_screen_state_t is not documented.
-shared/ui/servo_screen_int.h: warning: Member sup_val_rect(int k) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member surfaces (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member sw (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member sw (variable) of struct servo_screen_state_t::[struct].undo is not documented.
@@ -5376,8 +5336,6 @@ shared/ui/servo_screen_int.h: warning: Member test (variable) of struct servo_sc
 shared/ui/servo_screen_int.h: warning: Member test_abort_of(servo_source_why_t why) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member test_begin(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member test_blocked(void) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member test_box_rect(void) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member test_btn_rect(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member test_down (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member test_end_now(servo_test_abort_t why) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member test_ended(void) (function) of file servo_screen_int.h is not documented.
@@ -5417,11 +5375,9 @@ shared/ui/servo_screen_int.h: warning: Member value_edge(ui_value_edge_t edge, s
 shared/ui/servo_screen_int.h: warning: Member value_live(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member values[CHOICE_MAX] (variable) of struct servo_screen_state_t::[struct].ch is not documented.
 shared/ui/servo_screen_int.h: warning: Member warn (variable) of struct servo_screen_state_t is not documented.
-shared/ui/servo_screen_int.h: warning: Member warn_apply_rect(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member wb (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member wide (variable) of struct ov_row_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member win (variable) of struct servo_screen_state_t is not documented.
-shared/ui/servo_screen_int.h: warning: Member wrap_text(gfx_canvas_t *c, int x, int y, int pitch, const char *text, int cells, gfx_color_t ink) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_link.c: warning: Member cur_follow(void) (function) of file servo_screen_link.c is not documented.
 shared/ui/servo_screen_link.c: warning: Member cur_key_of(const rail_t *r) (function) of file servo_screen_link.c is not documented.
 shared/ui/servo_screen_link.c: warning: Member rail_plot(void) (function) of file servo_screen_link.c is not documented.
@@ -5443,46 +5399,101 @@ shared/ui/servo_screen_sweep.c: warning: Member stop_sweep(void) (function) of f
 shared/ui/servo_screen_sweep.c: warning: Member sweep_cfg_now(void) (function) of file servo_screen_sweep.c is not documented.
 shared/ui/servo_screen_sweep.c: warning: Member sweep_deg(uint16_t cmd) (function) of file servo_screen_sweep.c is not documented.
 shared/ui/servo_screen_touch.c: warning: Member on_the_dial(int px, int py, float *deg) (function) of file servo_screen_touch.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member NOTE_CELLS (macro definition) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member ROW_COUNT (macro definition) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member WARN_CELLS (macro definition) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member ask_apply(void) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member ask_hv_on(void) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member choice_add(const char *label, int value) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member choice_cancel_rect(void) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member choice_rect(int i) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member choose(int k) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member decimals_of(setting_id_t id) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_ask(gfx_canvas_t *c) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_ask_apply(gfx_canvas_t *c) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_choice(gfx_canvas_t *c) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_hv(gfx_canvas_t *c) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines, int count) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_overlay(gfx_canvas_t *c) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_rate_note(gfx_canvas_t *c, int x, int y) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_rows_page(gfx_canvas_t *c) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_save_line(gfx_canvas_t *c) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_warn_apply(gfx_canvas_t *c) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member draw_warning(gfx_canvas_t *c) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member k_rows[] (variable) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member max_pulse_for_rate(void) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member open_choice(int target, setting_id_t id, const char *title) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member open_keypad(int target, const char *title, const char *unit, float value, float lo, float hi, int decimals) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member open_set_point(int target) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member ov_rest(const touch_event_t *evt) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member row_rect(int i) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member row_unused(const ov_row_t *r) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member row_value(const ov_row_t *r, char *buf, size_t n) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member set_point_typed(int target, float typed) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member target_locked(const ov_row_t *r) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member target_locked_for(setting_id_t id) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member trim_rect(int i, bool up) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member value_rect(int i) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member warn_cancel_rect(void) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member warn_fill(void) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_test_panel.c: file has no @file block
-shared/ui/servo_workbench.c: file has no @file block
-shared/ui/servo_workbench_int.h: file has no @file block
+shared/ui/servo_test_panel.c: warning: Member ask_hv_test(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member servo_screen_test_pop(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_apply(const servo_test_do_t *d) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_begin(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_blocked(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_cfg(servo_test_cfg_t *c) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_end_now(servo_test_abort_t why) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_ends(uint16_t *end_lo, uint16_t *end_hi) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_file_name(char *b, size_t n) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_ina_why(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_meter_follow(servo_source_id_t id, uint32_t changes) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_on_ina_now(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_plan(char *plan, size_t size) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_restore_service(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_signature(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_steps(float *v) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_tick(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_test_panel.c: warning: Member test_top_v(void) (function) of file servo_test_panel.c is not documented.
+shared/ui/servo_workbench.c: warning: Member SERVO_TASKS (macro definition) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member TARGET_PROTOCOL (macro definition) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member caps_now(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member draw_prog_page(gfx_canvas_t *c) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member draw_strip(gfx_canvas_t *c) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member draw_target(gfx_canvas_t *c) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member open_outputs(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_armed(bool armed) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_cancel(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_entry(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_follow_hold(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_holds(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_init(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_leave(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_list_now(prog_list_t *l) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_page_down(const touch_event_t *evt) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_page_follow(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_page_rest(const touch_event_t *evt) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_row_open(uint8_t i) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_search_done(const char *text) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_shown_set(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_signature(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member prog_tick(float dt_s) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member s_outputs_nav (variable) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member servo_sets(const prog_page_set_t *out[PROG_LIST_MAX]) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member strip_area(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member task_changed(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member test_page_down(const touch_event_t *evt) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member wb_back(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member wb_cancel(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member wb_down(const touch_event_t *evt) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member wb_enter(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member wb_leave(void) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench.c: warning: Member wb_rest(const touch_event_t *evt) (function) of file servo_workbench.c is not documented.
+shared/ui/servo_workbench_int.h: warning: Member draw_prog_page(gfx_canvas_t *c) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member draw_strip(gfx_canvas_t *c) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member draw_target(gfx_canvas_t *c) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member live_shown(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member modal_open(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member ov_shown(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member page_area(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_armed(bool armed) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_cancel(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_entry(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_follow_hold(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_holds(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_init(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_leave(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_page_down(const touch_event_t *evt) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_page_follow(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_search_done(const char *text) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_shown(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_shown_set(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member prog_tick(float dt_s) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member rows_page(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member strip_area(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member target_locked_for(setting_id_t id) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member test_page_down(const touch_event_t *evt) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member wb_back(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member wb_cancel(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member wb_down(const touch_event_t *evt) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member wb_enter(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member wb_leave(void) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member wb_rest(const touch_event_t *evt) (function) of file servo_workbench_int.h is not documented.
+shared/ui/servo_workbench_int.h: warning: Member wb_task(void) (function) of file servo_workbench_int.h is not documented.
 shared/ui/settings_draw.c: warning: Member draw_hub(gfx_canvas_t *c) (function) of file settings_draw.c is not documented.
 shared/ui/settings_draw.c: warning: Member draw_list(gfx_canvas_t *c) (function) of file settings_draw.c is not documented.
 shared/ui/settings_draw.c: warning: Member draw_save(gfx_canvas_t *c) (function) of file settings_draw.c is not documented.

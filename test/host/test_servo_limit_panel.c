@@ -31,16 +31,16 @@
 
 /*
  * The LIMIT RUN card, mirrored from servo_limit_panel.c and
- * servo_screen_int.h: TEST's second card at y 224, its lines from 98 px
- * down, 18 px apart, their text 10 px into the card (x UI_MARGIN + 20);
- * the run's own
- * settings list with LIMIT RUN across row 0 and the mode's note 6 px under
- * the top of row 2 (y 154, servo_settings_panel.c).
+ * servo_workbench_int.h: TEST's second card at y 264 (SV_RUN_CARD_Y(1)),
+ * its lines from 120 px down (SV_RUN_LINE_DY), 18 px apart, their text
+ * 10 px into the card (x UI_MARGIN + 20); the run's own settings list with
+ * LIMIT RUN across row 0 and the mode's note 6 px under the top of row 2
+ * (y 260, SV_LIM_NOTE_Y, servo_settings_draw.c).
  */
 #define LIM_CARD    1
 #define LIM_MODE_Y  LROW_Y(0)
-#define LIM_LINE_Y(i) (224 + 98 + 18 * (i))
-#define LIM_NOTE_Y  154
+#define LIM_LINE_Y(i) (SV_RUN_CARD_Y(1) + SV_RUN_LINE_DY + 18 * (i))
+#define LIM_NOTE_Y  SV_LIM_NOTE_Y
 
 /* Buffer 0 drawn with TEST open, and whether the LIMIT RUN card's line
  * @p i reads @p text in @p col on the card's fill, and nothing else. */
@@ -50,10 +50,10 @@ static bool lim_line_reads(int i, const char *text, ui_color_id_t col)
     want_fresh();
     const int y = LIM_LINE_Y(i);
     const gfx_color_t bg = fb[(size_t)y * W + 20u];
-    gfx_fill_rect(&want_cv, UI_MARGIN + 12, (int16_t)y, 464, 16, bg);
+    gfx_fill_rect(&want_cv, UI_MARGIN + 12, (int16_t)y, 596, 16, bg);
     gfx_text(&want_cv, UI_MARGIN + 20, y, text, &gfx_font_8x16,
              ui_theme_color(col), 1);
-    return same_in(fb, want_fb, UI_MARGIN + 12, y, 464, 16);
+    return same_in(fb, want_fb, UI_MARGIN + 12, y, 596, 16);
 }
 
 /* Buffer 0 drawn with the LIMIT RUN settings open, and whether the mode's
@@ -64,17 +64,17 @@ static bool lim_note_reads(const char *text, ui_color_id_t col)
     want_fresh();
     const int y = LIM_NOTE_Y;
     const gfx_color_t bg = fb[(size_t)y * W + UI_MARGIN + 6];
-    gfx_fill_rect(&want_cv, UI_MARGIN + 4, (int16_t)y, 478, 16, bg);
+    gfx_fill_rect(&want_cv, UI_MARGIN + 4, (int16_t)y, 610, 16, bg);
     gfx_text(&want_cv, UI_MARGIN + 10, y, text, &gfx_font_8x16,
              ui_theme_color(col), 1);
-    return same_in(fb, want_fb, UI_MARGIN + 4, y, 478, 16);
+    return same_in(fb, want_fb, UI_MARGIN + 4, y, 610, 16);
 }
 
 /* Line @p i of the limit run's box on LIVE's left card: its text at the
  * box's left edge on the box's own fill, compared across the box.  It
  * opens LIVE, where the box is; a run started stays on TEST. */
 #define LIM_BOX_X (UI_MARGIN + 10)
-#define LIM_BOX_Y 48
+#define LIM_BOX_Y SV_BOX_Y
 static bool lim_box_reads(int i, const char *text, ui_color_id_t col)
 {
     close_settings();
@@ -319,7 +319,7 @@ TEST_CASE(stop_run_is_named_to_the_router_while_the_run_is_under_way)
     lim_hold(2.3f);
     CHECK(servo_screen_limit_running());
     close_settings();
-    CHECK(scr->safe_at(80, 156));                 /* STOP RUN */
+    CHECK(scr->safe_at(BOXBTN_X, BOXBTN_Y));                 /* STOP RUN */
     lim_page();
     CHECK(scr->safe_at(START_X, LIM_START_Y));
     CHECK(!scr->safe_at(START_X, START_Y));
@@ -327,7 +327,7 @@ TEST_CASE(stop_run_is_named_to_the_router_while_the_run_is_under_way)
     CHECK(!servo_screen_limit_running());
     CHECK(!scr->safe_at(START_X, LIM_START_Y));
     close_settings();
-    CHECK(!scr->safe_at(80, 156));                /* CLOSE */
+    CHECK(!scr->safe_at(BOXBTN_X, BOXBTN_Y));                /* CLOSE */
 }
 
 /* SEARCH ONLY on the INA3221: both ends found, the servo let go, nothing

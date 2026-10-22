@@ -278,11 +278,11 @@ TEST_CASE(hold_keeps_the_output_where_it_has_got_to)
     CHECK(at > 1500u && at < 1600u);           /* about 13 deg */
 }
 
-/* Pixels of @p col on SPEED's row of the right card. */
+/* Pixels of @p col on SPEED's row of the output card. */
 static int speed_row_pixels(gfx_color_t col)
 {
     int n = 0;
-    for (int y = 264 + 5; y < 264 + 21; ++y) {
+    for (int y = SV_SPEED_ROW_Y; y < SV_SPEED_ROW_Y + 20; ++y) {
         for (int x = ARM_X; x < ARM_X + ARM_W; ++x) {
             n += (fb[(size_t)y * W + x] == col) ? 1 : 0;
         }

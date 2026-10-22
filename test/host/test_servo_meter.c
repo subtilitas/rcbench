@@ -8,6 +8,7 @@
  * - a_window_is_shown_under_the_meter_of_its_poll
  * - link_loss_clears_the_current_row
  * - the_current_row_repaints_on_a_changed_digit_and_alone
+ * - the_current_reading_paints_on_live_only
  * - the_plot_keeps_one_point_for_each_window
  * - a_run_reads_the_supply_while_the_meter_changes
  *
@@ -27,15 +28,15 @@ static bool marked(int x, int y)
     return fb[(size_t)y * W + x] == MARK_COLOUR;
 }
 
-/* Marks in the CURRENT row, the line, the plot, and around them on both
- * cards: the MEASURED row, the tag, the SET line, SPEED's row and the left
- * card away from the grip. */
+/* Marks in LIVE's CURRENT reading, the line, the plot, and around them on
+ * both cards: the MEASURED reading, the tag, the SET line, SPEED's row and
+ * the left card away from the grip. */
 enum { MK_ROW = 0, MK_LINE, MK_PLOT, MK_MEASURED, MK_TAG, MK_SET, MK_SPEED,
        MK_LEFT, MK_COUNT };
 
 static const struct { int x, y; } k_mark[MK_COUNT] = {
-    { 600, 100 }, { 600, 152 }, { 600, 190 }, { 600, 75 }, { 520, 125 },
-    { 518, 236 }, { 600, 270 }, { 40, 40 },
+    { 516, 496 }, { 950, 80 }, { 950, 130 }, { 318, 496 }, { 700, 40 },
+    { 700, 198 }, { 700, 240 }, { 40, 300 },
 };
 
 static void mark_all(void)
@@ -120,8 +121,9 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
                      (from_ina != to_ina) ? 1 : 4);
         }
     }
-    /* With the settings open over the left card the right card follows the
-     * meter all the same. */
+    /* With the settings open over the left card the output card's line
+     * follows the meter all the same, and LIVE's CURRENT reading shows the
+     * meter in force once LIVE is back. */
     fresh();
     two_buffers();
     open_settings();
@@ -130,10 +132,11 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
     meter(SERVO_SOURCE_INA3221);
     rail_window(1200, 5000u);
     CHECK(both_whole());
-    CHECK(row_reads("1.20 A", UI_C_TEXT));
     CHECK(line_ina("5.00 V", "1.20 A", "6.0 W"));
     meter(SERVO_SOURCE_PDMINI);
     CHECK(both_whole());
+    CHECK(line_supply("6.00 V", "0.40 A", "2.4 W"));
+    close_settings();
     CHECK(row_reads("0.40 A", UI_C_TEXT));
 }
 
@@ -485,6 +488,29 @@ TEST_CASE(the_current_row_repaints_on_a_changed_digit_and_alone)
     CHECK(card_kept());
 }
 
+/* LIVE's CURRENT reading is LIVE's: a changed current paints nothing at its
+ * place on PROGRAM's page or TEST's, and LIVE shows it once it is back. */
+TEST_CASE(the_current_reading_paints_on_live_only)
+{
+    for (int task = 0; task < 2; ++task) {
+        fresh();
+        meter(SERVO_SOURCE_PDMINI);
+        rail_supply(6.0f, 0.402f);
+        if (task == 0) {
+            open_program();
+        } else {
+            open_test();
+        }
+        scr->render(&cv, 0);
+        mark(k_mark[MK_ROW].x, k_mark[MK_ROW].y);
+        rail_supply(6.0f, 0.73f);
+        scr->render(&cv, 0);
+        CHECK(mk(MK_ROW));
+        close_settings();
+        CHECK(row_reads("0.73 A", UI_C_TEXT));
+    }
+}
+
 /* The plot keeps one point for each window, however many a frame hands
  * over, in their order; a frame with none adds none and repaints nothing. */
 TEST_CASE(the_plot_keeps_one_point_for_each_window)
@@ -599,12 +625,13 @@ TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
     CHECK_STR_EQ(bench.report, report);
     CHECK_EQ(servo_screen_power_points(), 0);
 
-    /* Mid-run, on each meter: the right card as a full redraw draws it,
-     * and the row the meter's. */
+    /* Mid-run, on each meter: the output card as a full redraw draws it,
+     * and LIVE's CURRENT reading the meter's. */
     bench_fresh();
     short_runs();
     hold_start(2.3f);
     CHECK(servo_screen_testing());
+    close_settings();                   /* LIVE: its CURRENT reading */
     bench_frames(2000u);
     settle_drawn();
     meter(SERVO_SOURCE_INA3221);
@@ -636,6 +663,7 @@ int main(void)
     RUN(a_window_is_shown_under_the_meter_of_its_poll);
     RUN(link_loss_clears_the_current_row);
     RUN(the_current_row_repaints_on_a_changed_digit_and_alone);
+    RUN(the_current_reading_paints_on_live_only);
     RUN(the_plot_keeps_one_point_for_each_window);
     RUN(a_run_reads_the_supply_while_the_meter_changes);
     return test_summary("servo_meter");

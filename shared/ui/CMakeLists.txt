@@ -39,6 +39,7 @@ set(SRCS
     servo_screen_touch.c
     servo_screen_draw.c
     servo_settings_panel.c
+    servo_settings_draw.c
     servo_test_panel.c
     servo_limit_panel.c
     servo_workbench.c

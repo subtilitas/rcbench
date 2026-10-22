@@ -20,6 +20,7 @@
 #include "knob.h"
 #include "panel_i2c.h"
 #include "servo_screen.h"
+#include "servo_spots.h"
 #include "settings.h"
 #include "splash_screen.h"
 #include "ui_screen.h"
@@ -601,10 +602,10 @@ TEST_CASE(a_knob_command_withdrawn_after_a_stop_leaves_nothing_held)
     servo_screen_set_armed(true);
     while (servo_took().kind != SERVO_CMD_NONE) { }
 
-    /* The dial at 40 deg, 110 px from the shaft at (300, 264). */
+    /* The dial at 40 deg, 110 px from the shaft (servo_spots.h). */
     const float k = 3.14159265358979f / 180.0f;
-    const int x = 300 + (int)(110.0f * cosf(40.0f * k) + 0.5f);
-    const int y = UI_BAND_H + 216 - (int)(110.0f * sinf(40.0f * k) + 0.5f);
+    const int x = SV_SHAFT_X + (int)(110.0f * cosf(40.0f * k) + 0.5f);
+    const int y = UI_BAND_H + SV_SHAFT_Y - (int)(110.0f * sinf(40.0f * k) + 0.5f);
     feed_tap(FEED_LONE, x, y);
     CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
     const uint16_t held = servo_screen_commanded();
@@ -622,15 +623,15 @@ TEST_CASE(a_knob_command_withdrawn_after_a_stop_leaves_nothing_held)
     CHECK_EQ(servo_screen_commanded(), held);
 
     /* SPEED: track x 514..781, panel y 344..365. */
-    finger(FEED_LONE, 560, UI_BAND_H + 306);
-    glide(FEED_LONE, 620, UI_BAND_H + 306, 8);
+    finger(FEED_LONE, SV_RC_X + 44, UI_BAND_H + SV_SPEED_Y);
+    glide(FEED_LONE, SV_RC_X + 104, UI_BAND_H + SV_SPEED_Y, 8);
     lift(FEED_LONE);
     const servo_cmd_t c = servo_took();
     CHECK_EQ(c.kind, SERVO_CMD_NONE);
 
     servo_screen_set_armed(true);                /* the next arm */
     while (servo_took().kind != SERVO_CMD_NONE) { }
-    finger(FEED_LONE, 560, UI_BAND_H + 306);
+    finger(FEED_LONE, SV_RC_X + 44, UI_BAND_H + SV_SPEED_Y);
     glide(FEED_LONE, 660, UI_BAND_H + 306, 8);
     lift(FEED_LONE);
     CHECK(servo_took().kind != SERVO_CMD_POSITION);

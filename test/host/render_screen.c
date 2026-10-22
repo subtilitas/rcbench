@@ -891,7 +891,7 @@ static void kst_view(const char *view)
          * the programmer's voltage follows. */
         tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
         tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
-        tap(330, UI_BAND_H + SV_LIST_ROW_Y(2));        /* HV SERVO */
+        tap(SV_LIST_X(0), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
         tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
     }
     tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);    /* PROGRAM */
@@ -1511,7 +1511,7 @@ static void servo_sweep_view(bool pause)
     servo_screen_feedback(0u, 0.0f, false);
     uint32_t now = 100000u;
     servo_screen_clock(now);
-    tap(SV_RC_X + (SV_RC_W - 1) * 2 / 90 + 1, UI_BAND_H + 307);                      /* SPEED 12 % */
+    tap(SV_RC_X + (SV_RC_W - 1) * 2 / 90 + 1, UI_BAND_H + SV_SPEED_Y);              /* SPEED 12 % */
     tap(SV_SWEEP_X, UI_BAND_H + SV_BTN_Y);                      /* SWEEP */
     servo_cmd_t taken;
     uint16_t start_seq = 0u;
@@ -3366,7 +3366,7 @@ int main(int argc, char **argv)
                 supply_screen_set_output(true);
             }
             ui_router_goto(SCREEN_SERVO);
-            tap(579, UI_BAND_H + 237);
+            tap(SV_SUP_V_X, UI_BAND_H + SV_SUP_Y);
             ui_keypad_t kp;
             memset(&kp, 0, sizeof(kp));
             ui_keypad_open(&kp, SV_OV_AREA, "", "", 0.0f,
@@ -3408,18 +3408,18 @@ int main(int argc, char **argv)
                 UI_BAND_H + SV_RUN_SET_Y(strcmp(view, "servo-limits") == 0));
         } else if (strcmp(view, "servo-warning") == 0) {
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* TYPE */
-            tap(130, UI_BAND_H + 212);                /* HELI CYCLIC */
+            tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */
         } else if (strcmp(view, "servo-sweep-page") == 0) {
-            tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_Y); /* SWEEP */
+            tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_TAB_Y); /* SWEEP */
         } else if (strcmp(view, "servo-encoder") == 0) {
-            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y); /* DUT */
+            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y); /* DUT */
         } else if (strcmp(view, "servo-trim-keypad") == 0) {
             /* TRIM's value, between its steps: the signed keypad, -25 us
              * typed. */
-            tap((399 + 469) / 2, UI_BAND_H + SV_ROW_Y(3));
+            tap((526 + 570) / 2, UI_BAND_H + SV_ROW_Y(3));
             kp_type(servo_screen_keypad(), "-25");
         } else if (strcmp(view, "servo-name") == 0) {
-            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y);
+            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y);
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* NAME */
         } else if (strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0

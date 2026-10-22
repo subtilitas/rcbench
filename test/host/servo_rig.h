@@ -35,11 +35,12 @@
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
-/* Mirrored from servo_screen.c; if the layout moves these move with it. */
+/* Mirrored from servo_screen_core_int.h (ARC_R, the dial's radius) and
+ * servo_spots.h; if the layout moves these move with it. */
 #define BODY_H  UI_BODY_H
-#define SHAFT_X 300
-#define SHAFT_Y (BODY_H / 2)
-#define ARC_R   140
+#define SHAFT_X SV_SHAFT_X
+#define SHAFT_Y SV_SHAFT_Y
+#define ARC_R   150
 
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
@@ -98,32 +99,33 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 
 /*
  * The workbench, from servo_spots.h: the strip's tabs, SETTINGS' page tabs
- * and rows (left column at x 16, right at x 255, 40 px apart from y 82),
- * TEST's run cards and a run's settings' rows (from y 68); then the panels
- * over the left column, mirrored from servo_settings_panel.c: the list a
- * row opens (two columns of five, 46 px apart from y 54) and the warning's
- * HOLD TO APPLY and CANCEL.
+ * and rows (left column at x 18, right at x 323, 56 px apart from y 112),
+ * TEST's run cards and a run's settings' rows (three columns, from y 116);
+ * then the panels over the left column, mirrored from
+ * servo_settings_panel.c: the list a row opens (two columns of five, 56 px
+ * apart from y 64) and the warning's HOLD TO APPLY and CANCEL.
  */
 #define TAB_X(i) SV_PAGE_X(i)
-#define TAB_Y    SV_PAGE_Y
+#define TAB_Y    SV_PAGE_TAB_Y
 #define ROW_L_X  100
 #define ROW_R_X  330
 #define ROW_Y(r) SV_ROW_Y(r)
+#define LROW_X(c) SV_LIST_X(c)
 #define LROW_Y(r) SV_LIST_ROW_Y(r)
-#define TRIM_DN_X 399
-#define TRIM_UP_X 469
+#define TRIM_DN_X 502
+#define TRIM_UP_X 594
 /* OV_X, OV_Y, OV_W and OV_H of servo_screen_int.h: the left column. */
 #define OV_X0    UI_MARGIN
 #define OV_Y0    UI_MARGIN
-#define OV_W0    488
+#define OV_W0    620
 #define OV_H0    (UI_BODY_H - 2 * UI_MARGIN)
-#define CH_X(i)  (130 + 239 * ((i) / 5))
-#define CH_Y(i)  (OV_Y0 + 48 + 20 + 46 * ((i) % 5))
-#define CH_CANCEL_X (OV_X0 + OV_W0 - 10 - 55)
-#define CH_CANCEL_Y (OV_Y0 + OV_H0 - 46 + 18)
+#define CH_X(i)  (165 + 305 * ((i) / 5))
+#define CH_Y(i)  (OV_Y0 + 56 + 24 + 56 * ((i) % 5))
+#define CH_CANCEL_X (OV_X0 + OV_W0 - 10 - 80)
+#define CH_CANCEL_Y (UI_ALERT_Y - UI_BAND_H - 4 - 56 + 8 + 24)
 #define WARN_APPLY_X  (OV_X0 + 20 + 120)
 #define WARN_CANCEL_X (OV_X0 + OV_W0 - 20 - 90)
-#define WARN_Y        (OV_Y0 + OV_H0 - 76 + 28)
+#define WARN_Y        (UI_ALERT_Y - UI_BAND_H - 4 - 56 + 28)
 /* SETTINGS' pages. */
 #define PAGE_OUTPUT 0
 #define PAGE_SWEEP  1
@@ -240,11 +242,11 @@ static inline void acked(uint32_t age_ms, servo_sweep_from_t from,
  * card's inner column, under CENTRE and RELEASE. */
 /* The SPEED track, mirrored from the screen: x, w and y of the slider. */
 #define SPEED_X_HALF (SV_RC_X + SV_RC_W / 2)
-#define SPEED_Y (296 + 11)
+#define SPEED_Y SV_SPEED_Y
 #define ARM_X SV_RC_X
 #define ARM_W SV_RC_W
-#define ARM_Y 388
-#define ARM_H 32
+#define ARM_Y SV_ARM_Y
+#define ARM_H SV_ARM_H
 static inline void arm_press(void)   { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_DOWN, 1); }
 static inline void arm_release(void) { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_UP, 1); }
 static inline void hold_for(float s_total)
