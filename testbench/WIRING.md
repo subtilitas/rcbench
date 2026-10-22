@@ -480,8 +480,8 @@ bus-off. In order of what costs least to check:
 GP0, GP1 and GP2 for whatever OUTPUTS binds.
 
 **The heartbeat does not go straight from the panel to the IOmcu.** It
-leaves the panel at GPIO28 on its GPIO header (GPIO28 is provisional until the pin is fixed on the first sample.), drives the retriggerable monostable, and the
-monostable gates the IOmcu's output enable and the servo and ESC power
+leaves the panel at GPIO28, which is IO28 of the 12-pin header P3, drives the
+retriggerable monostable, and the monostable gates the IOmcu's output enable and the servo and ESC power
 path; GP3 sees the line as well so the firmware can judge it. `docs/Safety.md`
 sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
 

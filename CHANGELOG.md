@@ -96,8 +96,8 @@ history is in git.
   mirrored in x and y, and a touch outside 800 x 480 is dropped. The card
   mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
   (RX) from the 40 MHz crystal; the rotary knob has an I2C controller of its
-  own. The heartbeat pin (GPIO28) and the knob pins (GPIO30, GPIO31) are
-  placeholders until the header pins are chosen. Its Wi-Fi radio is the
+  own. The heartbeat pin is IO28 and the knob pins are IO30 (SDA) and
+  IO31 (SCL), all on the 12-pin header P3. Its Wi-Fi radio is the
   board's ESP32-C6 on SDIO, listed under Added.
 
 ## 0.22.0 - 2026-10-21
