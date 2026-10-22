@@ -47,12 +47,22 @@ int ui_setting_keypad_decimals(setting_id_t id);
 bool ui_setting_keypad_offered(setting_id_t id);
 
 /**
+ * @brief Whether the keypad of @p id carries the +/- key.
+ * @param id The setting.
+ * @return True for a number whose range reaches below 0, except a pin
+ *         (unit "GPIO"), whose one value below 0 is -1, not set, which "-"
+ *         reaches.  No setting of today's schema is signed; SERVO's TRIM,
+ *         -200 to +200 us, is a signed row of its own screen.
+ */
+bool ui_setting_keypad_signed(setting_id_t id);
+
+/**
  * @brief Open @p k over @p area for setting @p id.
  * @param k The keypad.
  * @param area Where it is drawn and hit, in the screen's coordinates.
  * @param id The setting: its label in the language showing as the title,
  *        its unit, its value faint behind the entry, its range and
- *        ui_setting_keypad_decimals().  Nothing opens for an id
+ *        ui_setting_keypad_decimals(); signed by ui_setting_keypad_signed().  Nothing opens for an id
  *        ui_setting_keypad_offered() refuses.
  */
 void ui_setting_keypad_open(ui_keypad_t *k, gfx_rect_t area, setting_id_t id);

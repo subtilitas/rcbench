@@ -356,9 +356,26 @@ void settings_reset_all(void);
 /** Ids in a category, in schema order.  Returns how many there are. */
 int settings_in_category(setting_cat_t cat, setting_id_t *out, int max);
 
-/** Render the value as it should appear on screen, unit excluded. */
+/**
+ * @brief The digits after the point a number of @p id is shown and typed
+ *        with: as many as its step has.
+ * @param id The setting.
+ * @return 0 for a step of 1 or more, 1 for 0.1, 2 for 0.05, 0.02 and 0.01,
+ *         3 for 0.001; 0 for an id out of range and a step of 0.
+ */
+int settings_decimals(setting_id_t id);
+
+/** Render the value as it should appear on screen, unit excluded: a float
+ *  with settings_decimals() digits after the point. */
 const char *settings_value_text(setting_id_t id, char *buf, size_t n);
-/** Render @p value as settings_value_text() renders the value of @p id. */
+/**
+ * @brief Render @p value as settings_value_text() renders the value of @p id.
+ * @param id The setting.
+ * @param value The value.
+ * @param buf Where the text goes.
+ * @param n Its size.
+ * @return @p buf; "" for no buffer.
+ */
 const char *settings_value_text_of(setting_id_t id, float value, char *buf,
                                    size_t n);
 

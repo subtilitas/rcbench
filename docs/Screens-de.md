@@ -853,7 +853,7 @@ davon ist gemessen:
 `-` und `+` einer Zeile stellen ihren Wert um einen Schritt. Ein Tipp auf
 den Wert, die 216 px breite Spalte zwischen dem Namen und den Tasten, öffnet
 das Tastenfeld über der Seite, von unter dem Ausgangsstreifen bis 4 px über
-dem Alarmband: 788 x 368 px, Tasten von 188 x 60 px. Es nennt die
+dem Alarmband: 788 x 368 px, Tasten von 188 x 62 px. Es nennt die
 Einstellung, ihren Bereich und ihre Einheit und nimmt die Stellen des
 Schritts nach dem Punkt: eine für die 0,1 V von Spannung, zwei für die
 0,05 A von Strombegrenzung. OK setzt den Wert wie ein Schritt auf den
@@ -1420,7 +1420,7 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | OPTIONEN > AUSGANG | TYP | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
 | OPTIONEN > AUSGANG | PULSRATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder EIGENE EINSTELLUNG über die Tastatur |
 | OPTIONEN > AUSGANG | PULS MIN, PULS MITTE, PULS MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist MITTE, +90 Grad ist MAX, und FREIGEBEN ruht auf MITTE. Ein Ende liegt nicht weiter von MITTE entfernt als MITTE von 400 us oder 2500 us |
-| OPTIONEN > AUSGANG | TRIMMUNG | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
+| OPTIONEN > AUSGANG | TRIMMUNG | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung; `-` und `+` stellen sie, ein Tipp auf den Wert öffnet das Tastenfeld mit Vorzeichen |
 | OPTIONEN > AUSGANG | WEG | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
 | OPTIONEN > AUSGANG | UMKEHREN | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
 | OPTIONEN > SWEEP | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
@@ -1435,6 +1435,17 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | OPTIONEN > PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
 | OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
+
+Das Tastenfeld der TRIMMUNG ist das eine Tastenfeld mit Vorzeichen: Seine
+Taste `+/-`, zwischen dem Punkt und OK, setzt ein Minuszeichen vor die
+Eingabe oder nimmt es weg, vor oder nach den Ziffern. OK nimmt -200 bis
++200 us und legt den Wert auf den näheren der 5-us-Schritte von `-` und
+`+`: 13 wird 15, -12 wird -10, -0 ist 0. -201 lässt das Tastenfeld offen und
+nennt den Bereich in der Warnfarbe; das Vorzeichen allein ist nichts
+Getipptes. Die anderen Tastenfelder haben keine Taste `+/-`, und ihre Tasten
+bleiben, wo sie sind.
+
+![Das Tastenfeld der TRIMMUNG, -25 us getippt](img/de/servo-trim-keypad.png)
 
 AS5600, der Ausgangsencoder, wird nur auf SETUP > ANSCHLÜSSE ein- und
 ausgeschaltet ([der Ausgangsencoder](#anschlüsse-der-ausgangsencoder)); der
@@ -2744,7 +2755,7 @@ Auswahl springt vom letzten Wert auf den ersten.
   4 px zwischen zwei Zeilen gehören zu keiner Taste.
 - **Tastenfeld.** Ein Tipp auf den Wert einer Zahl, die 126 px zwischen
   ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste und der
-  Leiste: 784 x 386 px, Tasten von 187 x 64 px, sein Fuß 4 px über dem
+  Leiste: 784 x 386 px, Tasten von 187 x 66 px, sein Fuß 4 px über dem
   Alarmband. Es nennt die Einstellung, ihren Bereich und ihre Einheit, zeigt
   den Wert blass, bis eine Ziffer getippt ist, und nimmt so viele Stellen
   nach dem Punkt, wie der Schritt hat: eine für die 0,1 mΩ eines Shunts,
@@ -2754,14 +2765,20 @@ Auswahl springt vom letzten Wert auf den ersten.
   des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der
   Warnfarbe, ebenso ein Wert, den die Tasten nie erreichen: ein Shunt
   zwischen 0 und 5,0 mΩ, ein Pin für Sensor-SDA, den der Bus nicht haben
-  kann, der GPIO, den der andere PD-mini-Pin hält. Das Tastenfeld hat kein
-  Minuszeichen: -1, ein nicht gesetzter Pin, wird mit `-` gesetzt.
+  kann, der GPIO, den der andere PD-mini-Pin hält. Das Tastenfeld eines
+  Pins hat keine Taste `+/-`: -1, ein nicht gesetzter Pin, wird mit `-`
+  gesetzt. Eine Zahl zeigt so viele Stellen nach dem Punkt, wie ihr Schritt
+  hat, damit die Zeile zeigt, was das Tastenfeld nimmt: 1.25 A, nicht
+  1.2 A.
   ABBRECHEN, OK ohne getippten Wert und das Home-Tag schließen es und ändern
   nichts; das Verlassen von SETUP schließt es ebenfalls. Nichts darunter
   nimmt einen Druck an. Ein Schalter, eine Auswahl, INA228 Adresse und
   Sensor-SCL öffnen kein Tastenfeld, und ein Drag, der auf einem Wert
   beginnt, scrollt und öffnet nichts. Der Zustand des Prüfstands sperrt das
-  Tastenfeld nicht, so wie er die Tasten nicht sperrt.
+  Tastenfeld nicht, so wie er die Tasten nicht sperrt. Eine bestehende
+  Grenze: Ein innerhalb des Bereichs abgelehnter Wert nennt den Bereich und
+  nicht den Grund. Ein Shunt von 3,0 mΩ zeigt `0.0 bis 1000.0 mOhm` in der
+  Warnfarbe, obwohl 0,1 bis 4,9 das Abgelehnte ist.
 - Ein Finger zur Zeit. Solange einer drückt oder scrollt, bewirkt ein zweiter
   Finger auf diesem Bildschirm nichts.
 

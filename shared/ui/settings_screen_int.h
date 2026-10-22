@@ -188,7 +188,7 @@ static const struct { ui_text_id_t label; ui_text_id_t help; }
 
 /*
  * The keypad a number's value opens: the keyboard's area, 784 x 386 px,
- * keys of 187 x 64 px.  Nothing under it presses while it is open; OK,
+ * keys of 187 x 66 px.  Nothing under it presses while it is open; OK,
  * CANCEL and the home tag close it as they close the keyboard.
  */
 #define KP_AREA gfx_rect_make(WARN_X, WARN_Y, WARN_W, TK_AREA_H)

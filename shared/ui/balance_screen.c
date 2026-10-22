@@ -43,7 +43,7 @@
 #define RCARD_W (W - RCARD_X - PAD)
 
 /* The blade count's keypad: over both cards, from the cards' top to 4 px
- * above the alert band, 788 x 354 px with keys of 188 x 56 px. */
+ * above the alert band, 788 x 354 px with keys of 188 x 58 px. */
 #define KP_Y    (BODY_Y - 4)
 #define KP_H    (H - UI_ALERT_H - 4 - KP_Y)
 #define BLADES_MIN 2

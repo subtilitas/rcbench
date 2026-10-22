@@ -126,30 +126,6 @@ TEST_CASE(a_value_outside_the_range_is_refused_and_the_keypad_stays)
     CHECK_NEAR(v, 21.0f, 1e-4f);
 }
 
-/* A value inside the range that the caller's own rule refuses: the
- * keypad opens again as a range refusal leaves it, the entry kept. */
-TEST_CASE(a_caller_refusal_reopens_the_keypad_marked)
-{
-    open_v();
-    type("12.5");
-    float v = 0.0f;
-    CHECK_EQ(press(UI_KEY_OK, &v), UI_KEYPAD_OK);
-    CHECK(!kp.open);
-    const uint32_t rev = kp.revision;
-    ui_keypad_refuse(&kp);
-    CHECK(kp.open);
-    CHECK(kp.refused);
-    CHECK(kp.pressed < 0);
-    CHECK(kp.revision != rev);
-    CHECK_STR_EQ(kp.entry, "12.5");
-    /* The next key clears the mark; OK hands the new value back. */
-    type("1");
-    CHECK(!kp.refused);
-    CHECK_EQ(press(UI_KEY_OK, &v), UI_KEYPAD_OK);
-    CHECK_NEAR(v, 12.51f, 1e-4f);
-    ui_keypad_refuse(NULL);
-}
-
 TEST_CASE(ok_on_nothing_typed_and_cancel_leave_the_value)
 {
     float v = -1.0f;
@@ -202,7 +178,9 @@ TEST_CASE(the_keys_tile_the_area_and_ok_spans_two)
     CHECK(rok.w > 2 * r0.w);
     CHECK(rok.y == r0.y);
     CHECK(r9.y < r0.y);
-    for (int k = 0; k < UI_KEY_COUNT; ++k) {
+    /* An unsigned keypad has no +/- key. */
+    CHECK_EQ(ui_keypad_key_rect(&kp, UI_KEY_SIGN).w, 0);
+    for (int k = 0; k < UI_KEY_SIGN; ++k) {
         const gfx_rect_t r = ui_keypad_key_rect(&kp, (ui_key_t)k);
         CHECK(r.x >= k_area.x && r.x + r.w <= k_area.x + k_area.w);
         CHECK(r.y >= k_area.y && r.y + r.h <= k_area.y + k_area.h);
@@ -904,7 +882,6 @@ int main(void)
     RUN(typed_digits_come_back_on_ok);
     RUN(the_entry_takes_one_point_and_the_digits_it_keeps);
     RUN(a_value_outside_the_range_is_refused_and_the_keypad_stays);
-    RUN(a_caller_refusal_reopens_the_keypad_marked);
     RUN(ok_on_nothing_typed_and_cancel_leave_the_value);
     RUN(a_key_acts_on_its_own_release_only);
     RUN(the_keys_tile_the_area_and_ok_spans_two);

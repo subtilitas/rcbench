@@ -25,13 +25,15 @@
 #define KP_COLS    4
 #define KP_ROWS    4
 
-/* DEL and CLR are the keys' legends in every language; CANCEL is
- * translated, so it is looked up where it is drawn. */
+/* DEL, CLR and +/- are the keys' legends in every language (the faces
+ * hold no plus-minus glyph); CANCEL is translated, so it is looked up where
+ * it is drawn. */
 static const char *const k_labels[UI_KEY_COUNT] = {
     "7", "8", "9", "DEL",
     "4", "5", "6", "CLR",
     "1", "2", "3", NULL,
     "0", ".", "OK",
+    "+/-",
 };
 
 void ui_keypad_open(ui_keypad_t *k, gfx_rect_t area, const char *title,
@@ -53,6 +55,16 @@ void ui_keypad_open(ui_keypad_t *k, gfx_rect_t area, const char *title,
     k->revision = rev + 1u;
     snprintf(k->title, sizeof(k->title), "%s", (title != NULL) ? title : "");
     snprintf(k->unit, sizeof(k->unit), "%s", (unit != NULL) ? unit : "");
+}
+
+void ui_keypad_open_signed(ui_keypad_t *k, gfx_rect_t area, const char *title,
+                           const char *unit, float value, float min,
+                           float max, int decimals)
+{
+    ui_keypad_open(k, area, title, unit, value, min, max, decimals);
+    if (k != NULL) {
+        k->sign = true;
+    }
 }
 
 void ui_keypad_close(ui_keypad_t *k)
@@ -95,24 +107,40 @@ gfx_rect_t ui_keypad_key_rect(const ui_keypad_t *k, ui_key_t key)
     const int bottom = k->area.y + k->area.h - KP_PAD;
     const int kw = (right - left - (KP_COLS - 1) * KP_GAP) / KP_COLS;
     const int kh = (bottom - top - (KP_ROWS - 1) * KP_GAP) / KP_ROWS;
-    const int row  = (int)key / KP_COLS;
-    const int col  = (int)key % KP_COLS;
-    const int span = (key == UI_KEY_OK) ? 2 : 1;
+    int row  = (int)key / KP_COLS;
+    int col  = (int)key % KP_COLS;
+    int span = (key == UI_KEY_OK) ? 2 : 1;
+    if (key == UI_KEY_SIGN) {
+        if (!k->sign) {
+            return (gfx_rect_t){ 0, 0, 0, 0 };
+        }
+        row = KP_ROWS - 1;          /* beside the point, OK's first column */
+        col = 2;
+    } else if (key == UI_KEY_OK && k->sign) {
+        col  = 3;
+        span = 1;
+    }
     return (gfx_rect_t){ (int16_t)(left + col * (kw + KP_GAP)),
                          (int16_t)(top + row * (kh + KP_GAP)),
                          (int16_t)(span * kw + (span - 1) * KP_GAP),
                          (int16_t)kh };
 }
 
-/* What has been typed, as a number.  The entry holds digits and at most one
- * point, so nothing here can fail. */
+/**
+ * @brief What has been typed, as a number.  The entry holds an optional
+ *        leading minus, digits and at most one point, so nothing here can
+ *        fail.
+ * @param s The entry.
+ * @return Its value; "-0" and "-0.0" are 0, never a negative zero.
+ */
 static float parse(const char *s)
 {
     float whole = 0.0f;
     float frac  = 0.0f;
     float place = 1.0f;
     bool  after = false;
-    for (const char *p = s; *p != '\0'; ++p) {
+    const bool minus = (*s == '-');
+    for (const char *p = minus ? s + 1 : s; *p != '\0'; ++p) {
         if (*p == '.') {
             after = true;
         } else if (!after) {
@@ -122,7 +150,35 @@ static float parse(const char *s)
             frac  += (float)(*p - '0') * place;
         }
     }
-    return whole + frac;
+    const float v = whole + frac;
+    return (minus && v != 0.0f) ? -v : v;
+}
+
+/**
+ * @brief Whether the entry holds a digit: "" and "-" are nothing typed.
+ * @param k The keypad.
+ * @return True when a digit has been typed.
+ */
+static bool typed(const ui_keypad_t *k)
+{
+    return k->len > ((k->entry[0] == '-') ? 1 : 0);
+}
+
+/**
+ * @brief The +/- key: a minus sign put in front of the entry, or taken
+ *        away.  An entry already UI_KEYPAD_ENTRY_MAX long takes none.
+ * @param k The keypad.
+ */
+static void toggle_sign(ui_keypad_t *k)
+{
+    if (k->entry[0] == '-') {
+        memmove(k->entry, k->entry + 1, (size_t)k->len);   /* with the NUL */
+        --k->len;
+    } else if (k->len < UI_KEYPAD_ENTRY_MAX) {
+        memmove(k->entry + 1, k->entry, (size_t)k->len + 1u);
+        k->entry[0] = '-';
+        ++k->len;
+    }
 }
 
 static int digits_after_point(const ui_keypad_t *k)
@@ -131,6 +187,14 @@ static int digits_after_point(const ui_keypad_t *k)
     return (dot != NULL) ? (int)strlen(dot + 1) : -1;
 }
 
+/**
+ * @brief A digit or the point added to the entry, if the entry has room
+ *        and the value keeps it: one point, none on a whole number, no
+ *        digit past the decimals.  A point on nothing typed, or after a
+ *        lone minus sign, puts a 0 before it.
+ * @param k The keypad.
+ * @param ch '0' to '9' or '.'.
+ */
 static void append(ui_keypad_t *k, char ch)
 {
     if (k->len >= UI_KEYPAD_ENTRY_MAX) {
@@ -141,7 +205,7 @@ static void append(ui_keypad_t *k, char ch)
         if (after >= 0 || k->decimals == 0) {
             return;                 /* one point, and only where it means one */
         }
-        if (k->len == 0) {
+        if (!typed(k)) {
             k->entry[k->len++] = '0';
         }
     } else if (after >= k->decimals) {
@@ -151,6 +215,14 @@ static void append(ui_keypad_t *k, char ch)
     k->entry[k->len] = '\0';
 }
 
+/**
+ * @brief Key @p key pressed and released.
+ * @param k The keypad.
+ * @param key The key.
+ * @param out Where OK writes a value inside the range.
+ * @return UI_KEYPAD_OK with a value, UI_KEYPAD_CANCEL on CANCEL and on OK
+ *         with nothing typed, UI_KEYPAD_NONE otherwise, a refusal included.
+ */
 static ui_keypad_result_t press(ui_keypad_t *k, ui_key_t key, float *out)
 {
     static const char k_digit[UI_KEY_COUNT] = {
@@ -171,8 +243,11 @@ static ui_keypad_result_t press(ui_keypad_t *k, ui_key_t key, float *out)
     case UI_KEY_CANCEL:
         ui_keypad_close(k);
         return UI_KEYPAD_CANCEL;
+    case UI_KEY_SIGN:
+        toggle_sign(k);
+        return UI_KEYPAD_NONE;
     case UI_KEY_OK: {
-        if (k->len == 0) {
+        if (!typed(k)) {
             /* Nothing typed: the value stays as it was. */
             ui_keypad_close(k);
             return UI_KEYPAD_CANCEL;
@@ -283,6 +358,9 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
                 2, GFX_ALIGN_RIGHT);
 
     for (int key = 0; key < UI_KEY_COUNT; ++key) {
+        if (key == UI_KEY_SIGN && !k->sign) {
+            continue;                   /* an unsigned keypad has none */
+        }
         const gfx_color_t fill = (key == UI_KEY_OK)
                                      ? ui_theme_color(UI_C_ACCENT)
                                      : ui_theme_color(UI_C_PANEL_SUNK);

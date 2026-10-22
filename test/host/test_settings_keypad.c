@@ -1,10 +1,11 @@
-/*
- * SETUP's keypad: a tap on a number's value opens it; OK sets the value
- * through settings_set(), the call a "-" or "+" step ends in, so SAVE keeps
- * what a step would have kept; a value outside the range, or one the steps
- * never reach, is refused with the keypad open; CANCEL and the home tag
- * change nothing.  The helper every setting's keypad uses
- * (ui_setting_keypad.h) is held here too.
+/**
+ * @file test_settings_keypad.c
+ * @brief SETUP's keypad: a tap on a number's value opens it; OK sets the
+ *        value through settings_set(), the call a "-" or "+" step ends in,
+ *        so SAVE keeps what a step would have kept; a value outside the
+ *        range, or one the steps never reach, is refused with the keypad
+ *        open; CANCEL, the home tag and STOP change nothing.  The helper
+ *        every setting's keypad uses (ui_setting_keypad.h) is held here too.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,14 +19,20 @@
 /* The value between a row's "-" and "+" keys, in panel coordinates. */
 #define XV ((MINUS_X + BTN_W + PLUS_X) / 2)
 
-/* The keypad's key @p key tapped, in panel coordinates. */
+/**
+ * @brief The keypad's key @p key tapped, in panel coordinates.
+ * @param key The key.
+ */
 static void key(ui_key_t key)
 {
     const gfx_rect_t r = ui_keypad_key_rect(settings_screen_keypad(), key);
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 
-/* @p text typed on the keypad, digit by digit; '.' is the point. */
+/**
+ * @brief @p text typed on the keypad, digit by digit.
+ * @param text Digits; '.' is the point.
+ */
 static void type(const char *text)
 {
     static const ui_key_t k_digit[10] = {
@@ -37,7 +44,10 @@ static void type(const char *text)
     }
 }
 
-/* A drag on the list by @p dy px, from the label column. */
+/**
+ * @brief A drag up the list by about @p dy px, from the label column.
+ * @param dy The drag, px; the first 8 px are the slop and scroll nothing.
+ */
 static void scroll_by(int dy)
 {
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
@@ -53,8 +63,12 @@ static void scroll_by(int dy)
     ui_router_event(&e);
 }
 
-/* The middle of the row of @p id in the open list, in panel coordinates,
- * scrolled into view; -1 for a row the list does not show. */
+/**
+ * @brief The row of @p id in the open list, scrolled into view.
+ * @param id The setting.
+ * @return The row's middle y in panel coordinates; -1 for a row the list
+ *         does not show.
+ */
 static int show(setting_id_t id)
 {
     const setting_cat_t cat = settings_def(id)->cat;
@@ -79,7 +93,10 @@ static int show(setting_id_t id)
     return -1;
 }
 
-/* SETUP on @p cat's list, at the defaults, with the memory store. */
+/**
+ * @brief SETUP on @p cat's list, at the defaults, with the memory store.
+ * @param cat The category, opened from its tile.
+ */
 static void list_of(setting_cat_t cat)
 {
     fresh_hub();
@@ -89,7 +106,10 @@ static void list_of(setting_cat_t cat)
     open_category(cat);
 }
 
-/* The keypad of @p id, opened by a tap on its value. */
+/**
+ * @brief The keypad of @p id, opened by a tap on its value.
+ * @param id The setting.
+ */
 static void open_on(setting_id_t id)
 {
     const int y = show(id);
@@ -97,6 +117,10 @@ static void open_on(setting_id_t id)
     tap(XV, y);
 }
 
+/**
+ * @brief The bench ARMED or SAFE, as the control task reports it.
+ * @param armed Whether it is ARMED.
+ */
 static void set_armed(bool armed)
 {
     ui_bench_status_t st = *ui_router_status();
@@ -378,6 +402,11 @@ TEST_CASE(a_pin_the_row_does_not_take_is_refused)
 
 static setting_id_t s_held = SETTING_COUNT;
 
+/**
+ * @brief The hold under test: one setting, s_held.
+ * @param id The setting asked about.
+ * @return Whether it is held.
+ */
 static bool hold_one(setting_id_t id)
 {
     return id == s_held;
@@ -437,6 +466,62 @@ TEST_CASE(a_lost_press_keeps_what_was_typed)
     CHECK_STR_EQ(settings_screen_keypad()->entry, "12");
 }
 
+/* The range's ends of a shunt: 1000.0 taken, 1000.1 refused. */
+TEST_CASE(a_shunt_takes_1000_0_and_refuses_1000_1)
+{
+    const setting_id_t id = SET_INA_SH(0);
+    list_of(SET_CAT_SENSORS);
+    settings_set(SET_INA_FIT(0), 1.0f);
+    ui_router_render(&s_c, 0);
+    open_on(id);
+    type("1000.1");
+    key(UI_KEY_OK);
+    CHECK(settings_screen_keypad()->refused);
+    CHECK_NEAR(settings_get(id), 100.0f, 1e-4f);
+    key(UI_KEY_DEL);
+    type("0");
+    CHECK_STR_EQ(settings_screen_keypad()->entry, "1000.0");
+    key(UI_KEY_OK);
+    CHECK(!settings_screen_keypad()->open);
+    CHECK_NEAR(settings_get(id), 1000.0f, 1e-3f);
+}
+
+/* A pin's -1 is "not set", not a sign: its keypad has no +/- key and
+ * takes 0, the lowest pin. */
+TEST_CASE(a_pin_from_minus_1_takes_0_on_an_unsigned_keypad)
+{
+    list_of(SET_CAT_IFACE);
+    CHECK_EQ(settings_get_int(SET_OPTICAL_PIN), -1);
+    open_on(SET_OPTICAL_PIN);
+    CHECK(!settings_screen_keypad()->sign);
+    CHECK_NEAR(settings_screen_keypad()->min, -1.0f, 1e-6f);
+    CHECK_EQ(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_SIGN).w, 0);
+    type("0");
+    key(UI_KEY_OK);
+    CHECK_EQ(settings_get_int(SET_OPTICAL_PIN), 0);
+    tap(MINUS_X + BTN_W / 2, show(SET_OPTICAL_PIN));     /* back to -1 */
+    CHECK_EQ(settings_get_int(SET_OPTICAL_PIN), -1);
+}
+
+/* STOP in the band works over the keypad, and the keypad stays as it was:
+ * open, what was typed kept, nothing set. */
+TEST_CASE(stop_over_the_keypad_stops_and_sets_nothing)
+{
+    list_of(SET_CAT_IFACE);
+    snap();
+    open_on(SET_INA228_UOHM);
+    type("123");
+    (void)ui_router_take_stop();
+    const gfx_rect_t r = ui_band_stop_rect();
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+    CHECK(ui_router_take_stop());
+    CHECK(settings_screen_keypad()->open);
+    CHECK_STR_EQ(settings_screen_keypad()->entry, "123");
+    CHECK_EQ(changed(), 0);
+    key(UI_KEY_CANCEL);
+    CHECK_EQ(changed(), 0);
+}
+
 /* ------------------------------------------------------------ the helper */
 
 TEST_CASE(the_helper_takes_its_decimals_from_the_step)
@@ -479,6 +564,9 @@ int main(void)
     RUN(a_pin_the_row_does_not_take_is_refused);
     RUN(armed_steps_and_keypad_alike_and_a_held_row_refuses_both);
     RUN(a_lost_press_keeps_what_was_typed);
+    RUN(a_shunt_takes_1000_0_and_refuses_1000_1);
+    RUN(a_pin_from_minus_1_takes_0_on_an_unsigned_keypad);
+    RUN(stop_over_the_keypad_stops_and_sets_nothing);
     RUN(the_helper_takes_its_decimals_from_the_step);
     return test_summary("settings_keypad");
 }

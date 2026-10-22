@@ -10,6 +10,7 @@
 #include "greatest.h"
 
 #include "balance_screen.h"
+#include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -362,6 +363,46 @@ TEST_CASE(the_blade_keypad_cancels_and_covers_what_is_under_it)
     CHECK(!balance_screen_keypad()->open);
 }
 
+/* STOP in the band works over the keypad; the keypad stays with what was
+ * typed and the count as it was. */
+TEST_CASE(stop_over_the_blade_keypad_sets_nothing)
+{
+    ui_router_init();
+    ui_router_goto(SCREEN_BALANCE);
+    const gfx_rect_t v = balance_screen_blades_rect();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(v.x + v.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + v.y + v.h / 2),
+                                   .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    CHECK(balance_screen_keypad()->open);
+    const gfx_rect_t k5 = ui_keypad_key_rect(balance_screen_keypad(),
+                                             UI_KEY_5);
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.x = (int16_t)(k5.x + k5.w / 2);
+    e.point.y = (int16_t)(UI_BAND_H + k5.y + k5.h / 2);
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    (void)ui_router_take_stop();
+    const gfx_rect_t r = ui_band_stop_rect();
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.x = (int16_t)(r.x + r.w / 2);
+    e.point.y = (int16_t)(r.y + r.h / 2);
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    CHECK(ui_router_take_stop());
+    CHECK(balance_screen_keypad()->open);
+    CHECK_STR_EQ(balance_screen_keypad()->entry, "5");
+    CHECK_EQ(balance_screen_blades(), 2);
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 2);
+}
+
 /* The rotor type toggles between propeller and ducted fan. */
 TEST_CASE(the_rotor_toggles)
 {
@@ -577,5 +618,6 @@ int main(void)
     RUN(the_blade_keypad_takes_two_to_six_and_refuses_the_rest);
     RUN(a_typed_count_is_the_count_the_steps_reach);
     RUN(the_blade_keypad_cancels_and_covers_what_is_under_it);
+    RUN(stop_over_the_blade_keypad_sets_nothing);
     return test_summary("balance");
 }

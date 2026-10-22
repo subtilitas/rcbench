@@ -788,7 +788,7 @@ measured:
 A row's `-` and `+` step its value. A tap on the value, the 216 px column
 between the name and the keys, opens the keypad over the page, from under
 the output strip to 4 px above the alert band: 788 x 368 px, keys of
-188 x 60 px. It names the setting, its range and its unit and takes the
+188 x 62 px. It names the setting, its range and its unit and takes the
 step's digits after the point: one for Voltage's 0.1 V, two for Current
 limit's 0.05 A. OK sets the value as a step does, onto the nearer step (1.23 A is
 1.25 A); CLOSE asks for the save, as after a step. A value outside the
@@ -1295,7 +1295,7 @@ the name opens a keyboard.
 | SETTINGS > OUTPUT | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
 | SETTINGS > OUTPUT | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
 | SETTINGS > OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, 400 to 2500 us: -90 deg is MIN, 0 is CENTRE, +90 deg is MAX, and RELEASE rests at CENTRE. An end lies no further from CENTRE than CENTRE lies from 400 us or 2500 us |
-| SETTINGS > OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way |
+| SETTINGS > OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way; `-` and `+` step it, a tap on the value opens the signed keypad |
 | SETTINGS > OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
 | SETTINGS > OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
 | SETTINGS > SWEEP | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel. The automatic test moves in steps between the ends RANGE gives |
@@ -1310,6 +1310,16 @@ the name opens a keyboard.
 | SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
 | SETTINGS > DUT | REPORT | a text report beside each test's log |
 | SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
+
+TRIM's keypad is the one signed keypad: its `+/-` key, between the point
+and OK, puts a minus sign in front of the entry or takes it away, before or
+after the digits. OK takes -200 to +200 us and puts the value on the 5 us
+steps of `-` and `+`, the nearer one: 13 is 15, -12 is -10, -0 is 0. -201
+keeps the keypad open and names the range in the warning colour; the sign
+alone is nothing typed. The other keypads have no `+/-` key and their keys
+stay where they are.
+
+![TRIM's keypad, -25 us typed](img/servo-trim-keypad.png)
 
 AS5600, the output encoder, is switched on and off on SETUP > INTERFACES
 alone ([the output encoder](#interfaces-the-output-encoder)); DUT's note
@@ -2490,7 +2500,7 @@ choice wraps round from its last value to its first.
   between two rows belong to no key.
 - **Keypad.** A tap on a number's value, the 126 px between its `-` and `+`
   keys, opens the keypad over the list and the strip: 784 x 386 px, keys of
-  187 x 64 px, its foot 4 px above the alert band. It names the setting, its
+  187 x 66 px, its foot 4 px above the alert band. It names the setting, its
   range and its unit, shows the value faint until a digit is typed, and
   takes as many digits after the point as the step has: one for a shunt's
   0.1 mΩ, none for a pin. OK sets the value as a step sets it: in force at
@@ -2498,13 +2508,17 @@ choice wraps round from its last value to its first.
   73 % brightness is 75 %. A value outside the range keeps the keypad open
   and names the range in the warning colour, and so does a value the keys
   never reach: a shunt between 0 and 5.0 mΩ, a Sensor SDA pin the bus cannot
-  have, the GPIO the other PD mini pin holds. The keypad has no minus sign:
-  -1, a pin not set, is set with `-`. CANCEL, OK with nothing typed and the
+  have, the GPIO the other PD mini pin holds. A pin's keypad has no `+/-`
+  key: -1, a pin not set, is set with `-`. A number shows as many digits
+  after the point as its step has, so the row reads what the keypad takes:
+  1.25 A, not 1.2 A. CANCEL, OK with nothing typed and the
   home tag close it and change nothing; leaving SETUP closes it too. Nothing
   under it takes a press. A switch, a choice, INA228 address and Sensor SCL
   open no keypad, and a drag that starts on a value scrolls and opens
   nothing. The bench's state does not lock the keypad, as it does not lock
-  the keys.
+  the keys. A current limitation: a value refused inside the range names
+  the range and not the reason. A shunt of 3.0 mΩ shows `0.0 to 1000.0
+  mOhm` in the warning colour, though 0.1 to 4.9 is what is refused.
 - One finger at a time. While one presses or scrolls, a second finger does
   nothing on this screen.
 

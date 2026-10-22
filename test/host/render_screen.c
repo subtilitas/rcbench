@@ -471,8 +471,9 @@ static void ktap(gfx_rect_t r)
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 
-/* @p text typed on keypad @p k, digit by digit; '.' is the point.  The
- * key rectangles are in the screen's coordinates, as ktap() takes them. */
+/* @p text typed on keypad @p k, digit by digit; '.' is the point and '-'
+ * the +/- key.  The key rectangles are in the screen's coordinates, as
+ * ktap() takes them. */
 static void kp_type(const ui_keypad_t *k, const char *text)
 {
     static const ui_key_t k_digit[10] = {
@@ -480,8 +481,9 @@ static void kp_type(const ui_keypad_t *k, const char *text)
         UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8, UI_KEY_9,
     };
     for (const char *p = text; *p != '\0'; ++p) {
-        ktap(ui_keypad_key_rect(k, (*p == '.') ? UI_KEY_DOT
-                                               : k_digit[*p - '0']));
+        ktap(ui_keypad_key_rect(k, (*p == '.')   ? UI_KEY_DOT
+                                   : (*p == '-') ? UI_KEY_SIGN
+                                                 : k_digit[*p - '0']));
     }
 }
 
@@ -3262,6 +3264,7 @@ int main(int argc, char **argv)
                                  || strcmp(view, "servo-warning") == 0
                                  || strcmp(view, "servo-encoder") == 0
                                  || strcmp(view, "servo-name") == 0
+                                 || strcmp(view, "servo-trim-keypad") == 0
                                  || strncmp(view, "servo-rate-", 11) == 0;
         if (on_settings) {
             tap(SV_TAB_SETTINGS_X, UI_BAND_H + SV_TAB_Y);
@@ -3280,6 +3283,11 @@ int main(int argc, char **argv)
             tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_Y); /* SWEEP */
         } else if (strcmp(view, "servo-encoder") == 0) {
             tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y); /* DUT */
+        } else if (strcmp(view, "servo-trim-keypad") == 0) {
+            /* TRIM's value, between its steps: the signed keypad, -25 us
+             * typed. */
+            tap((399 + 469) / 2, UI_BAND_H + SV_ROW_Y(3));
+            kp_type(servo_screen_keypad(), "-25");
         } else if (strcmp(view, "servo-name") == 0) {
             tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y);
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* NAME */

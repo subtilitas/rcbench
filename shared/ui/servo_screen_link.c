@@ -583,6 +583,11 @@ uint16_t servo_screen_commanded(void)
     return svs_deg_to_us(s.commanded_deg);
 }
 
+const ui_keypad_t *servo_screen_keypad(void)
+{
+    return &s.kp;
+}
+
 const char *servo_screen_commanded_text(void)
 {
     static char text[16];

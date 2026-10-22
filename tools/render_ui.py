@@ -107,6 +107,8 @@ SCREENS = {
     # SETTINGS' OUTPUT and SWEEP pages; TEST's run cards; the AUTOMATIC
     # TEST card's settings and the LIMIT RUN card's, one level down.
     "servo-settings": ("servo-settings.png", "servo", "dark"),
+    # TRIM's keypad, signed: the +/- key, -25 us typed.
+    "servo-trim-keypad": ("servo-trim-keypad.png", "servo", "dark"),
     "servo-sweep-page": ("servo-sweep-page.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
     "servo-test-settings": ("servo-test-settings.png", "servo", "dark"),

@@ -15,6 +15,8 @@
  * - nothing_under_the_keypad_presses
  * - an_armed_bench_takes_the_keypad_as_it_takes_the_steps
  * - a_lost_press_keeps_what_was_typed
+ * - a_scrolled_page_opens_the_row_shown_and_takes_six_digits
+ * - a_stop_over_the_keypad_sets_nothing
  *
  * SPDX-License-Identifier: MIT
  */
@@ -228,6 +230,49 @@ TEST_CASE(a_lost_press_keeps_what_was_typed)
     CHECK_STR_EQ(esc_stick_panel_keypad()->entry, "12");
 }
 
+/* Paged down to the last rows, a value opens the keypad of the row drawn
+ * there, not of the row at that place on the first page: Timeout, whose
+ * 600000 ms is a six-digit entry. */
+TEST_CASE(a_scrolled_page_opens_the_row_shown_and_takes_six_digits)
+{
+    at_timing_page();
+    for (int i = 0; i < 10; ++i) {
+        tap(PAGE_DN_X, PAGE_CY);             /* to the last page: 7 rows */
+    }
+    tap(VALUE_X, STEP_CY(4));                /* 7 + 4: Timeout */
+    CHECK_EQ(esc_stick_panel_keypad_setting(), (int)SET_STICK_TIMEOUT);
+    type("600001");
+    key(UI_KEY_OK);
+    CHECK(esc_stick_panel_keypad()->refused);
+    CHECK_EQ(settings_get_int(SET_STICK_TIMEOUT), 180000);
+    key(UI_KEY_DEL);
+    type("0");
+    CHECK_STR_EQ(esc_stick_panel_keypad()->entry, "600000");
+    key(UI_KEY_OK);
+    CHECK(!esc_stick_panel_keypad()->open);
+    CHECK_EQ(settings_get_int(SET_STICK_TIMEOUT), 600000);
+    /* The last row, Hysteresis, from the same page. */
+    tap(VALUE_X, STEP_CY(6));
+    CHECK_EQ(esc_stick_panel_keypad_setting(), (int)SET_STICK_HYST);
+    key(UI_KEY_CANCEL);
+}
+
+/* A STOP while the keypad is open leaves it open with what was typed and
+ * sets nothing. */
+TEST_CASE(a_stop_over_the_keypad_sets_nothing)
+{
+    at_timing_page();
+    tap(VALUE_X, STEP_CY(2));
+    type("300");
+    esc_stick_panel_bench(100u, false, 1u, 0u, true);    /* a STOP */
+    scr->tick(0.02f);
+    CHECK(esc_stick_panel_keypad()->open);
+    CHECK_STR_EQ(esc_stick_panel_keypad()->entry, "300");
+    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 200);
+    key(UI_KEY_CANCEL);
+    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 200);
+}
+
 int main(void)
 {
     RUN(a_tap_on_a_timing_value_opens_its_keypad);
@@ -238,5 +283,7 @@ int main(void)
     RUN(nothing_under_the_keypad_presses);
     RUN(an_armed_bench_takes_the_keypad_as_it_takes_the_steps);
     RUN(a_lost_press_keeps_what_was_typed);
+    RUN(a_scrolled_page_opens_the_row_shown_and_takes_six_digits);
+    RUN(a_stop_over_the_keypad_sets_nothing);
     return test_summary("esc_stick_panel_keypad");
 }

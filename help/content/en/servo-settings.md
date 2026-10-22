@@ -17,7 +17,7 @@ SETTINGS, the third tab of [SERVO](servo.md)'s strip, shows the servo's settings
 | TYPE | STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760 | the servo profile |
 | FRAME RATE | the type's list, or CUSTOM on the keypad | how often a pulse is sent |
 | PULSE MIN, CENTRE, MAX | 400 to 2500 us; each end at least 50 us from CENTRE | -90 deg is MIN, 0 is CENTRE, +90 deg is MAX |
-| TRIM | -200 to +200 us, 5 us a step | added to the centre |
+| TRIM | -200 to +200 us, 5 us a step | added to the centre; a tap on the value opens the keypad with a `+/-` key |
 | TRAVEL | 10 to 90 deg | how far the horn may go each way |
 | REVERSE | ON, OFF | the direction the angle maps onto the pulse |
 
@@ -32,6 +32,10 @@ SETTINGS, the third tab of [SERVO](servo.md)'s strip, shows the servo's settings
 A pulse needs a pause before the next frame: at least 1 ms for STANDARD PWM, NARROW 760 and WIDE, 0.5 ms for the heli types. A frame rate the pulses leave no pause for is refused.
 
 The OUTPUT settings are kept for the session. Every restart goes back to STANDARD PWM at 50 Hz.
+
+![TRIM's keypad, -25 us typed](view:servo-trim-keypad)
+
+TRIM's keypad has a `+/-` key between the point and OK: it puts a minus sign in front of the entry or takes it away. OK takes -200 to +200 us onto the nearer 5 us step: 13 is 15, -12 is -10. -201 keeps the keypad open and names the range in the warning colour.
 
 ## The warning for fast rates
 

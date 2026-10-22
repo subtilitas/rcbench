@@ -17,7 +17,7 @@ OPTIONEN, der dritte Reiter der Leiste von [SERVO](servo.md), zeigt die Optionen
 | TYP | STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760 | das Servoprofil |
 | PULSRATE | die Liste des Typs, oder EIGENE EINSTELLUNG über das Tastenfeld | wie oft ein Puls gesendet wird |
 | PULS MIN, PULS MITTE, PULS MAX | 400 bis 2500 us; jedes Ende mindestens 50 us von PULS MITTE entfernt | -90 deg ist MIN, 0 ist MITTE, +90 deg ist MAX |
-| TRIMMUNG | -200 bis +200 us, 5 us je Schritt | wird zur Mitte addiert |
+| TRIMMUNG | -200 bis +200 us, 5 us je Schritt | wird zur Mitte addiert; ein Tippen auf den Wert öffnet das Tastenfeld mit der Taste `+/-` |
 | WEG | 10 bis 90 deg | wie weit das Horn je Richtung gehen darf |
 | UMKEHREN | EIN, AUS | die Richtung, in der der Winkel auf den Puls abgebildet wird |
 
@@ -32,6 +32,10 @@ OPTIONEN, der dritte Reiter der Leiste von [SERVO](servo.md), zeigt die Optionen
 Ein Puls braucht eine Pause vor dem nächsten Frame: mindestens 1 ms bei STANDARD PWM, NARROW 760 und WIDE, 0,5 ms bei den Heli-Typen. Eine Frame Rate, die den Pulsen keine Pause lässt, wird abgelehnt.
 
 Die Optionen von AUSGANG gelten für die Sitzung. Jeder Neustart kehrt zu STANDARD PWM mit 50 Hz zurück.
+
+![Das Tastenfeld der TRIMMUNG, -25 us getippt](view:servo-trim-keypad)
+
+Das Tastenfeld der TRIMMUNG hat zwischen dem Punkt und OK eine Taste `+/-`: Sie setzt ein Minuszeichen vor die Eingabe oder nimmt es weg. OK nimmt -200 bis +200 us und legt den Wert auf den näheren 5-us-Schritt: 13 wird 15, -12 wird -10. -201 lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe.
 
 ## Die Warnung bei schnellen Raten
 
