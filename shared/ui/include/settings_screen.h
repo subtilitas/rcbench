@@ -1,5 +1,6 @@
-/*
- * Settings: a hub of tiles, one per category and one per screen SETUP
+/**
+ * @file
+ * @brief Settings: a hub of tiles, one per category and one per screen SETUP
  * opens, and a category's entries in a list across the screen.  The rows
  * are rendered from the schema in shared/settings, so adding a setting is a
  * table row and not a screen change; adding a tile is a row of the screen's

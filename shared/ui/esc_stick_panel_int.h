@@ -123,9 +123,10 @@ typedef struct {
     int  tscroll, tpicked;
     /* TIMING's keypad, the row of sp_settings_list it types, and its
      * revision as the page last followed it. */
-    ui_keypad_t kp;
-    int         kp_idx;
-    uint32_t    kp_rev;
+    ui_keypad_t kp;             /**< TIMING's keypad                    */
+    int         kp_idx;         /**< the row of sp_settings_list it types */
+    uint32_t    kp_rev;         /**< its revision as the page last
+                                     followed it                        */
 
     /* The run, and whether its result is still on screen. */
     esc_stick_t run;

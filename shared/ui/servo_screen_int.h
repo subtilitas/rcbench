@@ -1,5 +1,6 @@
-/*
- * The SERVO screen's private seam between servo_screen*.c, the screen,
+/**
+ * @file
+ * @brief The SERVO screen's private seam between servo_screen*.c, the screen,
  * servo_workbench.c, its task strip, TEST page and TARGET row
  * (servo_workbench_int.h), servo_settings_panel.c, its settings pages and
  * the panels they open, servo_test_panel.c, its automatic test, and

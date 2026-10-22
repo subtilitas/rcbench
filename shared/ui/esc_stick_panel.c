@@ -1,5 +1,6 @@
-/*
- * ESC STICK, the session MOTOR & ESC > PROGRAM opens: an ESC (electronic
+/**
+ * @file
+ * @brief ESC STICK, the session MOTOR & ESC > PROGRAM opens: an ESC (electronic
  * speed controller) with no wire to talk on, programmed through its
  * throttle-stick menu.  Its list is the ESC profiles (esc_profile.h), its
  * parameters are the profile's menu items, and its write is a run of the

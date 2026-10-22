@@ -73,7 +73,9 @@ _Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
 #define VALUE_R  (PLUS_X - 8)
 /* A number's value: the 126 px between its "-" and its "+" key, over the
  * row's height.  A tap there opens the keypad. */
+/** @brief The left edge of a number's value, px. */
 #define VALUE_X  (MINUS_X + BTN_W)
+/** @brief The width of a number's value, px: 126. */
 #define VALUE_W  (PLUS_X - VALUE_X)
 
 /*
@@ -186,10 +188,11 @@ static const struct { ui_text_id_t label; ui_text_id_t help; }
  */
 #define TK_AREA_H (STRIP_Y + STRIP_H - WARN_Y)
 
-/*
- * The keypad a number's value opens: the keyboard's area, 784 x 386 px,
- * keys of 187 x 66 px.  Nothing under it presses while it is open; OK,
- * CANCEL and the home tag close it as they close the keyboard.
+/**
+ * @brief The keypad a number's value opens: the keyboard's area, 784 x
+ *        386 px, keys of 187 x 66 px.  Nothing under it presses while it
+ *        is open; OK, CANCEL and the home tag close it as they close the
+ *        keyboard.
  */
 #define KP_AREA gfx_rect_make(WARN_X, WARN_Y, WARN_W, TK_AREA_H)
 
@@ -243,10 +246,10 @@ typedef struct {
     uint32_t drawn_tk_rev;
 
     /* The keypad of number kp_id, and its revision as last drawn. */
-    ui_keypad_t  kp;
-    setting_id_t kp_id;
-    bool     drawn_kp;
-    uint32_t drawn_kp_rev;
+    ui_keypad_t  kp;            /**< the keypad a number's value opens */
+    setting_id_t kp_id;         /**< the number it types               */
+    bool     drawn_kp;          /**< whether it was open, as last drawn */
+    uint32_t drawn_kp_rev;      /**< its revision, as last drawn       */
 } stg_state_t;
 
 /* Defined in settings_screen.c. */

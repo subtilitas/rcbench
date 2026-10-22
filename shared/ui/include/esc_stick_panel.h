@@ -1,5 +1,6 @@
-/*
- * ESC STICK: an ESC (electronic speed controller) programmed through its
+/**
+ * @file
+ * @brief ESC STICK: an ESC (electronic speed controller) programmed through its
  * throttle-stick menu, the session MOTOR & ESC > PROGRAM opens from the
  * STICK MENU row of its list (prog_registry.h).
  *

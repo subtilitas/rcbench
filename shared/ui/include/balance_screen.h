@@ -1,5 +1,6 @@
-/*
- * The balance screen: sensor placement guides and the correction readout.
+/**
+ * @file
+ * @brief The balance screen: sensor placement guides and the correction readout.
  *
  * SPDX-License-Identifier: MIT
  */

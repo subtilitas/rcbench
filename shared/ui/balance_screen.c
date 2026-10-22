@@ -1,5 +1,6 @@
-/*
- * The balance screen: sensor placement guides and the correction readout.
+/**
+ * @file
+ * @brief The balance screen: sensor placement guides and the correction readout.
  *
  * A balance answer is a magnitude and an angle, both derived from two
  * sensors whose placement decides whether the answer is valid.  A vibration
@@ -44,9 +45,13 @@
 
 /* The blade count's keypad: over both cards, from the cards' top to 4 px
  * above the alert band, 788 x 354 px with keys of 188 x 58 px. */
+/** @brief The keypad's top, px. */
 #define KP_Y    (BODY_Y - 4)
+/** @brief The keypad's height, px: 354. */
 #define KP_H    (H - UI_ALERT_H - 4 - KP_Y)
+/** @brief The fewest blades the count takes. */
 #define BLADES_MIN 2
+/** @brief The most blades the count takes. */
 #define BLADES_MAX 6
 
 /* The rig, drawn side on: a post, an arm, a motor, and the disc it turns. */
@@ -82,11 +87,12 @@ static struct {
     int   rotor;                 /* propeller or ducted fan       */
     gfx_rect_t rotor_btn[ROTOR_COUNT];
     gfx_rect_t blade_dn, blade_up;
-    ui_keypad_t kp;
-    bool      value_down;        /* a press on the count, opening on its
-                                    release                        */
-    uint8_t   value_id;
-    uint32_t  kp_rev;            /* the keypad's revision last seen */
+    ui_keypad_t kp;              /**< the blade count's keypad     */
+    bool      value_down;        /**< a press on the count, opening
+                                      on its release               */
+    uint8_t   value_id;          /**< that press's touch id        */
+    uint32_t  kp_rev;            /**< the keypad's revision last
+                                      seen                         */
     uint32_t  rev;
     uint32_t  drawn[2];
     unsigned  drawn_mask;

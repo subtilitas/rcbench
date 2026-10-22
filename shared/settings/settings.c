@@ -911,8 +911,8 @@ int settings_in_category(setting_cat_t cat, setting_id_t *out, int max)
     return n;
 }
 
-/** The most digits after the point a step carries: 0.001 A, the servo
- *  programmer's current. */
+/** @brief The most digits after the point a step carries: 0.001 A, the
+ *         servo programmer's current. */
 #define DECIMALS_MAX 3
 
 int settings_decimals(setting_id_t id)

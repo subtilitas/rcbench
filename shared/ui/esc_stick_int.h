@@ -1,5 +1,6 @@
-/*
- * ESC STICK's private seam between esc_stick_pages.c, the page set MOTOR &
+/**
+ * @file
+ * @brief ESC STICK's private seam between esc_stick_pages.c, the page set MOTOR &
  * ESC opens from PROGRAM's list (the session's state, its tap walk and its
  * hooks), and esc_stick_panel.c, the stick programmer's pages: the layout
  * both draw on, the state both read and write, the tap walk, the text

@@ -1,5 +1,6 @@
-/*
- * A numeric keypad over part of a screen, for a value a slider is too coarse
+/**
+ * @file
+ * @brief A numeric keypad over part of a screen, for a value a slider is too coarse
  * to place.
  *
  * Digits, a decimal point, DEL and CLR, CANCEL and OK.  The value is typed
@@ -30,13 +31,14 @@
 extern "C" {
 #endif
 
-/** Characters an entry holds, a minus sign included: "21.00" with room for
- *  a longer integer part, "-200". */
+/** @brief Characters an entry holds, a minus sign included: "21.00" with
+ *         room for a longer integer part, "-200". */
 #define UI_KEYPAD_ENTRY_MAX 7
 
-/** The keys, in reading order; OK spans the last two columns, or the last
- *  one on a signed keypad, where UI_KEY_SIGN takes the third.  An unsigned
- *  keypad has no UI_KEY_SIGN: its rectangle is empty. */
+/** @brief The keys, in reading order; OK spans the last two columns, or
+ *         the last one on a signed keypad, where UI_KEY_SIGN takes the
+ *         third.  An unsigned keypad has no UI_KEY_SIGN: its rectangle is
+ *         empty. */
 typedef enum {
     UI_KEY_7 = 0, UI_KEY_8, UI_KEY_9, UI_KEY_DEL,
     UI_KEY_4, UI_KEY_5, UI_KEY_6, UI_KEY_CLR,
@@ -46,30 +48,35 @@ typedef enum {
     UI_KEY_COUNT
 } ui_key_t;
 
+/** @brief What an event on the keypad came to. */
 typedef enum {
     UI_KEYPAD_NONE = 0,   /**< still open, or the event was not its    */
     UI_KEYPAD_OK,         /**< closed with a value inside the range    */
     UI_KEYPAD_CANCEL,     /**< closed, the value as it was             */
 } ui_keypad_result_t;
 
+/** @brief A numeric keypad: what it was opened with, what is typed, and
+ *         the press it holds. */
 typedef struct {
-    bool       open;
-    gfx_rect_t area;
-    char       title[48];
-    char       unit[6];
+    bool       open;       /**< drawn and taking events                */
+    gfx_rect_t area;       /**< where it draws, screen coordinates     */
+    char       title[48];  /**< the setting's name, top left           */
+    char       unit[6];    /**< beside the entry and the range         */
     float      value;      /**< shown faint while nothing is typed     */
-    float      min, max;
+    float      min,        /**< the lowest value OK hands back         */
+               max;        /**< the highest value OK hands back        */
     int        decimals;   /**< digits it takes after the point        */
+    /** @brief What has been typed, '\0'-ended. */
     char       entry[UI_KEYPAD_ENTRY_MAX + 1];
-    int        len;
+    int        len;        /**< bytes in entry                         */
     bool       refused;    /**< the last OK was refused: outside the range, or by the caller */
-    /** Why the caller refused the last OK, drawn in place of the range
-     *  while refused; "" for a value outside the range. */
+    /** @brief Why the caller refused the last OK, drawn in place of the
+     *         range while refused; "" for a value outside the range. */
     char       reason[64];
     bool       sign;       /**< opened signed: the +/- key is there    */
     int        pressed;    /**< the key under the press, or -1         */
-    uint8_t    press_id;
-    /** Bumped on every change a render would show. */
+    uint8_t    press_id;   /**< the touch id of that press             */
+    /** @brief Bumped on every change a render would show. */
     uint32_t   revision;
 } ui_keypad_t;
 

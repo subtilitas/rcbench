@@ -1,5 +1,6 @@
-/*
- * The SERVO screen's pages of rows and the panels they open.  SETTINGS, a
+/**
+ * @file
+ * @brief The SERVO screen's pages of rows and the panels they open.  SETTINGS, a
  * task of the strip, holds three pages under its own tabs -- OUTPUT, SWEEP
  * and DUT: the servo's type, frame rate and pulse widths, the sweep's
  * curve, and the device under test.  Each run card on TEST opens its run's

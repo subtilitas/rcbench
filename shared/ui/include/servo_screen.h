@@ -1,5 +1,6 @@
-/*
- * The servo bench: the outputs the binding marks as surfaces, commanded
+/**
+ * @file
+ * @brief The servo bench: the outputs the binding marks as surfaces, commanded
  * together by dragging one horn.
  *
  * A workbench (ui_workbench.h): the strip under the band shows LIVE (the

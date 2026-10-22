@@ -1,5 +1,6 @@
-/*
- * The numeric keypad.  See ui_keypad.h.
+/**
+ * @file
+ * @brief The numeric keypad.  See ui_keypad.h.
  *
  * SPDX-License-Identifier: MIT
  */

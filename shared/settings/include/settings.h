@@ -365,8 +365,14 @@ int settings_in_category(setting_cat_t cat, setting_id_t *out, int max);
  */
 int settings_decimals(setting_id_t id);
 
-/** Render the value as it should appear on screen, unit excluded: a float
- *  with settings_decimals() digits after the point. */
+/**
+ * @brief Render the value as it should appear on screen, unit excluded: a
+ *        float with settings_decimals() digits after the point.
+ * @param id The setting.
+ * @param buf Where the text goes.
+ * @param n The size of @p buf in bytes.
+ * @return @p buf; "" for a NULL @p buf or an @p n of 0.
+ */
 const char *settings_value_text(setting_id_t id, char *buf, size_t n);
 /**
  * @brief Render @p value as settings_value_text() renders the value of @p id.

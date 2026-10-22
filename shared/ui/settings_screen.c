@@ -1,5 +1,6 @@
-/*
- * The settings screen: a hub of tiles, and one renderer over the whole
+/**
+ * @file
+ * @brief The settings screen: a hub of tiles, and one renderer over the whole
  * schema.
  *
  * SETUP opens on a grid of tiles, the menu's kind: one per category it
