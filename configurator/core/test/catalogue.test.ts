@@ -151,7 +151,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
     ],
   );
   assert.equal(CATALOGUE.rules.length, 7);
-  assert.equal(CATALOGUE.checks.length, 44);
+  assert.equal(CATALOGUE.checks.length, 43);
   assert.deepEqual(
     CATALOGUE.powerSources.map((s) => [s.id, s.feeds]),
     [
@@ -273,12 +273,12 @@ test('a drawing is an SVG file without script, reference or raster', () => {
 test('every unknown of the data is a check entry of kind unknown', () => {
   const unknown = CATALOGUE.checks.filter((k) => k.kind === 'unknown').map((k) => k.id);
   assert.deepEqual(unknown, [
-    'panel-heartbeat-pin', 'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
+    'pd-shared', 'ina3221-pullups', 'ina228-xt90-pd', 'as5600-board',
     'osoyoo-labels', 'prog-level', 'servo-5v-pin', 'strip-supply', 'esc-programming-power',
   ]);
   const unconfirmed = CATALOGUE.parts.flatMap((part) =>
     part.pins.filter((p) => !p.confirmed).map((p) => `${part.id}.${p.id}`));
-  assert.deepEqual(unconfirmed, ['panel.HB', 'ina3221.LP', 'as5600.GPO']);
+  assert.deepEqual(unconfirmed, ['ina3221.LP', 'as5600.GPO']);
   // No entry states whether a part or a function has run on hardware: the page states that once, for the project.
   for (const entry of [...CATALOGUE.parts, ...CATALOGUE.functions]) assert.ok(!('hardware' in entry), entry.id);
   assert.deepEqual(CATALOGUE.checks.filter((k) => k.id.endsWith('-state')).map((k) => k.id), []);

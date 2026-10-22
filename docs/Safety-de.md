@@ -27,15 +27,14 @@ IOmcu auf eines von beiden lässt das Panel SAFE.
 ## Vorausgesetzte externe Schaltung: das Monoflop
 
 Die Sicherheitsleitung ist GPIO28 (General-Purpose Input/Output) des Panels,
-ein freier Header-Pin der 7-Zoll-ESP32-P4-Displayplatine. GPIO28 ist ein
-Platzhalter: Welcher Header-Pin die Leitung trägt, ist noch nicht gewählt
-(`PANEL_HEARTBEAT_PIN` in `board_pins.h`). Sie trägt Flanken, keinen Pegel. Das
-Output Enable des IOmcu und der Leistungspfad für Servos und ESC
-(Electronic Speed Controller, Motorregler) müssen hinter einem retriggerbaren
-Monoflop liegen, das nur angezogen bleibt, solange Flanken eintreffen.
-Absturz, hängender Task, Reset, Brown-out und abgestecktes Kabel führen dann
-zum selben Ergebnis: keine Flanken, kein Ausgang, unabhängig von der Firmware
-an beiden Enden.
+ein freier Pin der 7-Zoll-ESP32-P4-Displayplatine: IO28 des 12-poligen
+Headers P3 (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). Sie trägt Flanken,
+keinen Pegel. Das Output Enable des IOmcu und der Leistungspfad für Servos
+und ESC (Electronic Speed Controller, Motorregler) müssen hinter einem
+retriggerbaren Monoflop liegen, das nur angezogen bleibt, solange Flanken
+eintreffen. Absturz, hängender Task, Reset, Brown-out und abgestecktes Kabel
+führen dann zum selben Ergebnis: keine Flanken, kein Ausgang, unabhängig von
+der Firmware an beiden Enden.
 
 Fenster des Monoflops: etwa 150 ms. Der Heartbeat kommt aus dem Control-Task
 des Panels, der alle 5 ms auf dem Kern läuft, der nicht zeichnet, und dessen
