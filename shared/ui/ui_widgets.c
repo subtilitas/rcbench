@@ -322,7 +322,9 @@ void ui_tile(gfx_canvas_t *c, gfx_rect_t r, const ui_tile_look_t *look,
     size_t cut = strlen(ln);
     if (gfx_text_cells(ln) > cells
         && look->line_dy + look->line_pitch + lh <= r.h) {
-        for (size_t i = gfx_text_prefix(ln, cells); i > 0u; --i) {
+        /* The prefix of a line that does not fit is shorter than the line:
+         * i < cut keeps the scan inside it. */
+        for (size_t i = gfx_text_prefix(ln, cells); i > 0u && i < cut; --i) {
             if (ln[i] == ' ') {
                 cut = i;
                 break;
