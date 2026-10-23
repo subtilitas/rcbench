@@ -196,6 +196,15 @@ TEST_CASE(the_supply_model_stays_out_of_a_measured_row)
     line_of(1u, got, sizeof(got));
     CHECK_STR_EQ(got, "2.000;6.00;0.035;0.21;;;;;;;;;;;;;;;;;;;model");
 
+    /* A PD mini reading still fresh when the link drops: the bench row is
+     * the model's, and the measured supply is withheld from it. */
+    s.modelled = false;
+    log_rail_take(&r, &s, true);
+    CHECK(r.withheld);
+    CHECK_EQ(r.ok, 0u);
+    log_rail_take(&r, &s, false);
+    CHECK(!r.withheld);
+
     /* NULL takes nothing. */
     log_rail_take(&r, NULL, false);
     CHECK_EQ(r.ok, 0u);

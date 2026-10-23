@@ -504,7 +504,7 @@ void log_rail_take(log_rail_t *out, const supply_state_t *s,
     if (s == NULL) {
         return;
     }
-    if (s->modelled && !row_modelled) {
+    if (s->modelled != row_modelled) {
         out->withheld = true;
         return;
     }

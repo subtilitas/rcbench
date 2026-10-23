@@ -540,8 +540,11 @@ letzte Messwert des PD mini zu jedem Messwert des Laufs, Spannung und
 Leistung auf 0,01, Strom auf 0,001, und Ladung und Energie, die das Panel
 aus diesen Messwerten seit dem ARM zählt, auf 1mAh und 0,01Wh. Eine Zelle
 ist leer, solange das Netzteil diesen Messwert nicht geliefert hat. Alle
-fünf sind leer in einer Zeile gemessener Werte, solange das Netzteil das
-Modell des Panels ist (PD mini in SETUP ANSCHLÜSSE ausgeschaltet). Die
+fünf sind leer in einer Zeile, deren `source` nicht die des Netzteils ist:
+in einer `measured`-Zeile, solange das Netzteil das Modell des Panels ist
+(PD mini in SETUP ANSCHLÜSSE ausgeschaltet), und in einer `model`-Zeile,
+solange nach dem Verlust des Links noch der letzte Messwert des PD mini
+gezeigt wird. Die
 übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei. `source`
 ist `measured` in einer Zeile, deren Werte ein Messgerät geliefert hat, und
 `model` in einer Zeile, die das Modell des Panels geliefert hat (die Marke

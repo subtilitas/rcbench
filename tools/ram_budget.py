@@ -93,11 +93,11 @@ SIZEOF = {
     "touch_item_t": 24,
     "panel_cmd_t": 108,
     "kst_prog_cmd_t": 72,
-    "bench_state_t": 92,
+    "bench_state_t": 172,
     "supply_item_t": 84,
     "servo_test_enc_t": 16,
     "servo_win_item_t": 44,
-    "log_row_t": 104,
+    "log_row_t": 208,
     "test_line_t": 225,
     "queued_t": 20,
 }
