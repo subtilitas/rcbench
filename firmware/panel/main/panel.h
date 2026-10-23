@@ -39,6 +39,7 @@
 #include "link_update_host.h"
 #include "log_cadence.h"
 #include "log_take.h"
+#include "log_writer.h"
 #include "log_viewer_screen.h"
 #include "motor_screen.h"
 #include "out_bind.h"
@@ -374,8 +375,8 @@ void log_set_folder(log_folder_t kind, const char *dir);
  * and @p marks points into them. */
 void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir);
 
-/*
- * One sample on its way to the card, filled by the control task.
+/**
+ * @brief One sample on its way to the card, filled by the control task.
  *
  * It carries which run it belongs to, because that is the only thing that
  * says which file it goes in: a disarm and an arm inside one pass of the
@@ -383,14 +384,17 @@ void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir);
  * goes backwards halfway down.
  */
 typedef struct {
-    uint32_t       run;
-    float          t_s;
+    uint32_t       run;      /**< the run the row was sampled in */
+    float          t_s;      /**< the row's time since the run's start, s */
     log_run_kind_t kind;     /**< which of the two below: SUPPLY's or the
                                   bench's, for SERVO and MOTOR */
     union {
-        bench_state_t  bench;
-        supply_state_t supply;
-    } u;
+        bench_state_t  bench;   /**< a SERVO or MOTOR run's sample */
+        supply_state_t supply;  /**< a supply run's sample */
+    } u;                     /**< the sample, by kind */
+    /** @brief The supply's reading and the run's totals of it, on a SERVO
+     *         run's row that carries the sample; all 0 on any other row. */
+    log_rail_t     rail;
 } log_row_t;
 
 /*
@@ -899,6 +903,11 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench);
 /* The bench's totals, and when they last counted. */
 extern bench_totals_t s_totals;
 extern uint32_t       s_totals_ms;
+/** @brief The supply's last reading for a SERVO run's rows (log_rail_t).
+ *         Control task only. */
+extern log_rail_t     s_rail;
+/** @brief The run's totals of s_rail since the arm.  Control task only. */
+extern bench_totals_t s_rail_totals;
 void arm_watch_service(bool link_up);
 /* The latched stop, and the act the arming policy asks for. */
 void service_arming(bool link_up);

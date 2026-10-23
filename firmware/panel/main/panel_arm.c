@@ -117,11 +117,6 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
 }
 
 /*
- * An arm was applied: number it, and watch it until the render side has
- * seen it.  The snapshot carries the number; the render side acknowledges it
- * at the end of a frame that began with the bench armed and found no loss.
- */
-/*
  * The run's charge and energy, counted here from what is shown -- the ESC's
  * readings over the link, the model's while it is down -- so one count runs
  * through the whole run whatever the source does; see bench_totals_t.
@@ -129,11 +124,24 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
  */
 bench_totals_t s_totals;
 uint32_t       s_totals_ms;
+/*
+ * A SERVO run's voltage, current, power, charge and energy are the supply's:
+ * its reading at each sample, and the run's totals of it counted here over
+ * the same steps as s_totals.  Control task only.
+ */
+log_rail_t     s_rail;
+bench_totals_t s_rail_totals;
 
+/**
+ * @brief An arm was applied: number it, and watch it until the render side has
+ * seen it.  The snapshot carries the number; the render side acknowledges it
+ * at the end of a frame that began with the bench armed and found no loss.
+ */
 static void arm_applied(void)
 {
     /* A run starts with nothing counted. */
     bench_totals_reset(&s_totals);
+    bench_totals_reset(&s_rail_totals);
     s_totals_ms = now_ms();
     ++s_arm_gen;
     arm_watch_begin(&s_arm_watch, s_arm_take_gen, s_arm_take_drv, s_arm_gen);

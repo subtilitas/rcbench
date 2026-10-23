@@ -20,6 +20,12 @@ history is in git.
   tag, a chip or the alert band -- ends a dial or slider drag another finger
   makes, as a press on the screen does. A STOP pressed during a SERVO dial
   drag let the pulse follow the drag for the whole press.
+- A SERVO run's log, `SERVOnnn.CSV`, carries the supply's figures in
+  `voltage`, `current`, `power`, `charge` and `energy`: the PD mini's last
+  reading at each row, current to 0.001A, and charge and energy counted
+  from those readings since the switch to ARMED. These cells were empty on
+  a bench without an ESC or an INA228. The header and a MOTOR run's rows
+  stay as they are.
 
 ## 0.22.1 - 2026-10-22
 
