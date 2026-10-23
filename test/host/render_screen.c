@@ -59,6 +59,7 @@
 #include "supply_link.h"
 #include "kst_rig.h"
 #include "servo_spots.h"
+#include "logview_spots.h"
 #include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
@@ -427,17 +428,6 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
     }
     fclose(f);
 }
-
-/* IM_BTN_Y from log_viewer_int.h, FOOT_Y: the footer's 42 px end 4 px
- * above the alert band.  If the layout moves, this moves with it;
- * render_ui --check reports the drift. */
-#define IM_BTN_Y_LOCAL (UI_BODY_H - UI_ALERT_H - 4 - 42)
-/* FOOT_Y and the DELETE button's x from the same file. */
-#define BR_FOOT_Y_LOCAL IM_BTN_Y_LOCAL
-#define BR_DELETE_CX    596
-/* NEXT in the header row, over OPEN. */
-#define BR_NEXT_CX      724
-#define BR_PG_CY_LOCAL  21
 
 /* The ask hook of the outputs-port2 view: taken, and never answered. */
 static bool render_port_ask(uint8_t seq, uint8_t port,
@@ -3678,31 +3668,29 @@ int main(int argc, char **argv)
         g_pages_card = (strcmp(view, "logs-pages") == 0);
         log_viewer_refresh();
         /*
-         * BR_LIST starts at y = 44 in screen coordinates, its rows begin
-         * 30 px below that header, and a row is 44 px, so the first row's
-         * middle is 44 + 30 + 22.  The band offset is added because
-         * ui_router_event takes panel coordinates and strips it on the way
-         * in.
+         * LOGS' places from logview_spots.h, in the screen's coordinates.
+         * The band offset is added because ui_router_event takes panel
+         * coordinates and strips it on the way in.
          */
         if (nocard || nofat) {
             /* The browser as it opens: nothing to select. */
         } else if (strcmp(view, "logs-pages") == 0) {
             for (int p = 0; p < PAGES_NEXT; ++p) {
-                tap(BR_NEXT_CX, UI_BAND_H + BR_PG_CY_LOCAL);   /* NEXT */
+                tap(LV_NEXT_CX, UI_BAND_H + LV_HEAD_CY);   /* NEXT */
             }
         } else if (strcmp(view, "logs-delete") == 0) {
             /* The newest run is chosen as the list opens. */
-            tap(BR_DELETE_CX, UI_BAND_H + BR_FOOT_Y_LOCAL + 21);   /* DELETE */
+            tap(LV_DELETE_CX, UI_BAND_H + LV_FOOT_CY);   /* DELETE */
         } else if (strcmp(view, "logs-root") == 0) {
             /* ROOT, the first tab at the header row's left. */
-            tap(19 + 40, UI_BAND_H + BR_PG_CY_LOCAL);
+            tap(LV_TAB_CX(0), UI_BAND_H + LV_HEAD_CY);
         } else if (strcmp(view, "logs") != 0) {
             /* The newest run is chosen as the list opens: one tap opens
              * it. */
-            tap(400, UI_BAND_H + 44 + 30 + 22);   /* open */
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));   /* open */
         }
         if (strcmp(view, "logs-plot") == 0) {
-            tap(690, UI_BAND_H + IM_BTN_Y_LOCAL + 23);   /* PLOT */
+            tap(LV_IM_BTN_CX(3), UI_BAND_H + LV_FOOT_CY);   /* PLOT */
         }
     }
 

@@ -348,10 +348,7 @@ static void toggle_column(int i)
 static void import_event(const touch_event_t *e)
 {
     const gfx_rect_t btns[4] = {
-        gfx_rect_make(16, IM_BTN_Y, 190, IM_BTN_H),
-        gfx_rect_make(214, IM_BTN_Y, 190, IM_BTN_H),
-        gfx_rect_make(412, IM_BTN_Y, 180, IM_BTN_H),
-        gfx_rect_make(600, IM_BTN_Y, 184, IM_BTN_H),
+        IM_BTN(0), IM_BTN(1), IM_BTN(2), IM_BTN(3),
     };
 
     switch (e->type) {
@@ -563,9 +560,7 @@ static void pan_apply(int x)
 static void plot_event(const touch_event_t *e)
 {
     const gfx_rect_t btns[3] = {
-        gfx_rect_make(16, FOOT_Y, 170, FOOT_H),
-        gfx_rect_make(196, FOOT_Y, 80, FOOT_H),
-        gfx_rect_make(284, FOOT_Y, 80, FOOT_H),
+        PV_BACK, PV_PREV, PV_NEXT,
     };
 
     /* Two fingers on the plot own it until one lifts; a third is ignored. */

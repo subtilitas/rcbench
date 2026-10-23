@@ -45,15 +45,19 @@ static void render_question(gfx_canvas_t *c)
     char line[LOG_VIEWER_NAME_MAX + 24];
     log_viewer_size_text(size, sizeof(size), s.doomed_size);
     snprintf(line, sizeof(line), "%s   %s", s.doomed, size);
+    /* The file in the label face, the two sentences under it in the body
+     * face, 32 px apart. */
     gfx_text_in(c, gfx_rect_make(box.x + 24, box.y + 44, box.w - 48, 20), line,
-                UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
-    gfx_text(c, box.x + 24, box.y + 76, TR(LOG_DELETE_WHAT),
-             UI_FONT_LABEL, UI_TEXT_DIM, 1);
-    gfx_text(c, box.x + 24, box.y + 98, TR(LOG_DELETE_FINAL),
-             UI_FONT_LABEL, UI_TEXT_DIM, 1);
+                LV_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
+    gfx_text(c, box.x + 24, box.y + 88, TR(LOG_DELETE_WHAT),
+             LV_FONT_BODY, UI_TEXT_DIM, 1);
+    gfx_text(c, box.x + 24, box.y + 120, TR(LOG_DELETE_FINAL),
+             LV_FONT_BODY, UI_TEXT_DIM, 1);
 
-    ui_button(c, DQ_CANCEL, TR(CANCEL), UI_PANEL_HI, s.press_btn == 0, true);
-    ui_button(c, DQ_DELETE, TR(LOG_DELETE), UI_DANGER, s.press_btn == 1, true);
+    ui_button_font(c, DQ_CANCEL, TR(CANCEL), UI_PANEL_HI, s.press_btn == 0,
+                   true, LV_FONT_LABEL);
+    ui_button_font(c, DQ_DELETE, TR(LOG_DELETE), UI_DANGER, s.press_btn == 1,
+                   true, LV_FONT_LABEL);
 }
 
 static void render_bar(gfx_canvas_t *c)
@@ -105,11 +109,11 @@ static void render_browse(gfx_canvas_t *c)
     const char *dir = log_viewer_tab_dir(s.tab);
     const char *name = (vol[0] != '\0') ? vol : TR(LOG_SD_CARD);
     const int end = lv_paged() ? BR_HEAD_END : BR_HEAD_FAR;
-    const int dir_w = gfx_text_width(UI_FONT_LABEL, dir, 1);
-    gfx_text(c, BR_HEAD_X, 12, dir, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    const int dir_w = gfx_text_width(LV_FONT_LABEL, dir, 1);
+    gfx_text(c, BR_HEAD_X, BR_HEAD_TY, dir, LV_FONT_LABEL, UI_TEXT_DIM, 1);
     const int name_x = BR_HEAD_X + dir_w + 16;
-    gfx_text_in(c, gfx_rect_make(name_x, 2, end - name_x, BR_PG_H), name,
-                UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_RIGHT);
+    gfx_text_in(c, gfx_rect_make(name_x, BR_PG_Y, end - name_x, BR_PG_H), name,
+                LV_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_RIGHT);
 
     /*
      * The question replaces the list and the footer rather than sitting on
@@ -124,13 +128,13 @@ static void render_browse(gfx_canvas_t *c)
     ui_tabs_render(&s.tabs, c);
 
     if (s.listed != 1 || s.n_files == 0) {
-        gfx_rect_t box = gfx_rect_make(120, 160, 560, 160);
+        const gfx_rect_t box = BR_EMPTY;
         ui_panel(c, box, TR(LOG_NO_LOGS), UI_WARN);
         char why[96];
         const char *hint = "";
         empty_lines(why, sizeof(why), &hint);
-        gfx_text(c, box.x + 24, box.y + 52, why, UI_FONT_LABEL, UI_TEXT, 1);
-        gfx_text(c, box.x + 24, box.y + 76, hint, UI_FONT_LABEL,
+        gfx_text(c, box.x + 24, box.y + 52, why, LV_FONT_BODY, UI_TEXT, 1);
+        gfx_text(c, box.x + 24, box.y + 92, hint, LV_FONT_BODY,
                  UI_TEXT_FAINT, 1);
     } else {
         /*
@@ -159,57 +163,59 @@ static void render_browse(gfx_canvas_t *c)
             if (on) {
                 gfx_fill_rect(c, row.x, row.y, 4, row.h, UI_ACCENT);
             }
-            gfx_text(c, row.x + 16, row.y + 10, s.files[i].name, UI_FONT_LABEL,
-                     on ? UI_TEXT : UI_TEXT_DIM, 1);
+            gfx_text(c, row.x + 16, row.y + (row.h - 20) / 2, s.files[i].name,
+                     LV_FONT_LABEL, on ? UI_TEXT : UI_TEXT_DIM, 1);
 
             char size[16];
             log_viewer_size_text(size, sizeof(size), s.files[i].size);
-            gfx_rect_t sz = gfx_rect_make(row.x + row.w - 132, row.y, 120, row.h);
+            gfx_rect_t sz = gfx_rect_make(row.x + row.w - 16 - BR_SIZE_W, row.y,
+                                          BR_SIZE_W, row.h);
             gfx_text_in(c, sz, s.files[i].is_dir ? TR(LOG_DIR) : size,
-                        UI_FONT_LABEL,
+                        LV_FONT_LABEL,
                         UI_TEXT_FAINT, 1, GFX_ALIGN_RIGHT);
             y += BR_ROW_H;
         }
     }
 
     if (lv_paged()) {
-        ui_button(c, BR_PREV, TR(LOG_PREV), UI_PANEL_HI, s.press_btn == 4,
-                  lv_can_prev());
-        ui_button(c, BR_NEXT, TR(LOG_NEXT), UI_PANEL_HI, s.press_btn == 5,
-                  lv_can_next());
+        ui_button_font(c, BR_PREV, TR(LOG_PREV), UI_PANEL_HI, s.press_btn == 4,
+                       lv_can_prev(), LV_FONT_LABEL);
+        ui_button_font(c, BR_NEXT, TR(LOG_NEXT), UI_PANEL_HI, s.press_btn == 5,
+                       lv_can_next(), LV_FONT_LABEL);
     }
-    ui_button(c, BR_RESCAN, TR(LOG_RESCAN), UI_PANEL_HI, s.press_btn == 0,
-              true);
+    ui_button_font(c, BR_RESCAN, TR(LOG_RESCAN), UI_PANEL_HI,
+                   s.press_btn == 0, true, LV_FONT_LABEL);
     /* WI-FI: the card's files to a browser, over the panel's
      * Wi-Fi.  The screen there says when Wi-Fi may not start. */
-    ui_button(c, BR_WIFI, TR(LOG_WIFI), UI_PANEL_HI, s.press_btn == 3, true);
+    ui_button_font(c, BR_WIFI, TR(LOG_WIFI), UI_PANEL_HI, s.press_btn == 3,
+                   true, LV_FONT_LABEL);
     int msg_end = BR_OPEN.x;
     if (s.n_files > 0) {
-        ui_button(c, BR_OPEN, TR(LOG_OPEN), UI_ACCENT, s.press_btn == 1,
-                  s.sel >= 0);
+        ui_button_font(c, BR_OPEN, TR(LOG_OPEN), UI_ACCENT, s.press_btn == 1,
+                       s.sel >= 0, LV_FONT_LABEL);
         if (s.io.remove != NULL) {
-            ui_button(c, BR_DELETE, TR(LOG_DELETE), UI_DANGER,
-                      s.press_btn == 2,
-                      lv_can_delete());
+            ui_button_font(c, BR_DELETE, TR(LOG_DELETE), UI_DANGER,
+                           s.press_btn == 2, lv_can_delete(), LV_FONT_LABEL);
             msg_end = BR_DELETE.x;
         }
     }
     if (s.message[0] != '\0') {
-        /* In the gap between the buttons, on two 18 px lines of the 42 px
-         * footer when one is too short.  A message longer than two lines is
-         * one line clipped there: a long name runs out of room rather than
-         * over DELETE. */
+        /* In the gap between the buttons, on two BR_MSG_LH px lines of the
+         * 52 px footer when one is too short.  A message longer than two
+         * lines is one line clipped there: a long name runs out of room
+         * rather than over DELETE. */
         const gfx_color_t col = s.message_ok ? UI_TEXT_DIM : UI_DANGER;
-        const gfx_rect_t two = gfx_rect_make(BR_MSG_X, FOOT_Y + 3,
-                                             msg_end - 8 - BR_MSG_X, 18);
-        const int n = ui_text_wrap(NULL, two, 18, s.message, UI_FONT_LABEL,
-                                   col);
+        const gfx_rect_t two = gfx_rect_make(BR_MSG_X, FOOT_Y + 2,
+                                             msg_end - 8 - BR_MSG_X, BR_MSG_LH);
+        const int n = ui_text_wrap(NULL, two, BR_MSG_LH, s.message,
+                                   LV_FONT_BODY, col);
         if (n == 2) {
-            (void)ui_text_wrap(c, two, 18, s.message, UI_FONT_LABEL, col);
+            (void)ui_text_wrap(c, two, BR_MSG_LH, s.message, LV_FONT_BODY,
+                               col);
         } else {
             gfx_text_in(c, gfx_rect_make(BR_MSG_X, FOOT_Y,
                                          msg_end - 8 - BR_MSG_X, FOOT_H),
-                        s.message, UI_FONT_LABEL, col, 1, GFX_ALIGN_LEFT);
+                        s.message, LV_FONT_BODY, col, 1, GFX_ALIGN_LEFT);
         }
     }
 }
@@ -227,26 +233,26 @@ static const char *conv_label(log_conv_t v)
 
 static void render_import(gfx_canvas_t *c)
 {
-    gfx_text(c, 300, 12, s.name, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    gfx_text_in(c, gfx_rect_make(LV_L + 4, 0, LV_W - 8, IM_TOP - 4), s.name,
+                LV_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
 
     if (!s.have_analysis) {
-        /* 74 cells of text inside 24 px margins. */
-        gfx_rect_t box = gfx_rect_make(80, 160, 640, 150);
+        const gfx_rect_t box = IM_FAIL;
         ui_panel(c, box, TR(LOG_CANNOT_READ), UI_DANGER);
         gfx_text(c, box.x + 24, box.y + 52,
-                 s.message[0] ? s.message : TR(LOG_UNREADABLE), UI_FONT_LABEL,
+                 s.message[0] ? s.message : TR(LOG_UNREADABLE), LV_FONT_BODY,
                  UI_TEXT, 1);
-        gfx_text(c, box.x + 24, box.y + 76,
+        gfx_text(c, box.x + 24, box.y + 92,
                  TR(LOG_TRY_ANOTHER),
-                 UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+                 LV_FONT_BODY, UI_TEXT_FAINT, 1);
     } else {
         ui_panel(c, IM_LEFT, TR(LOG_DETECTED), UI_ACCENT);
 
-        /* Rows 20 px apart, so that under the evidence the warnings take
-         * up to four lines of 33 cells above the hints. */
+        /* Rows IM_KEY_LH px apart, so that under the evidence the warnings
+         * take up to four lines of 36 cells above the hints. */
         char line[64];
         int y = IM_LEFT.y + 34;
-        const int lh = 20;
+        const int lh = IM_KEY_LH;
 
         struct {
             const char *key;
@@ -307,12 +313,13 @@ static void render_import(gfx_canvas_t *c)
                                                                      : UI_TEXT;
         n++;
 
+        /* The key at the left, its value right-aligned in 20 cells. */
         for (int i = 0; i < n; ++i) {
-            gfx_text(c, IM_LEFT.x + 16, y, rows[i].key, UI_FONT_LABEL,
+            gfx_text(c, IM_LEFT.x + 16, y, rows[i].key, LV_FONT_LABEL,
                      UI_TEXT_FAINT, 1);
-            gfx_rect_t box = gfx_rect_make(IM_LEFT.x + 120, y - 2,
-                                           IM_LEFT.w - 136, 20);
-            gfx_text_in(c, box, rows[i].value, UI_FONT_LABEL, rows[i].color, 1,
+            gfx_rect_t box = gfx_rect_make(IM_LEFT.x + IM_LEFT.w - 16 - 200,
+                                           y, 200, 20);
+            gfx_text_in(c, box, rows[i].value, LV_FONT_LABEL, rows[i].color, 1,
                         GFX_ALIGN_RIGHT);
             y += lh;
         }
@@ -323,46 +330,47 @@ static void render_import(gfx_canvas_t *c)
         /* The evidence behind the detection. */
         snprintf(line, sizeof(line), TR(LOG_EVIDENCE),
                  s.an.votes.de, s.an.votes.en, s.an.votes.ambiguous);
-        gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
-        y += 18;
+        gfx_text(c, IM_LEFT.x + 16, y, line, LV_FONT_LABEL, UI_TEXT_FAINT, 1);
+        y += IM_KEY_LH;
 
-        /* A warning breaks onto a second line of 33 cells, 18 px lower. */
+        /* A warning breaks onto a second line of 36 cells, IM_WARN_LH px
+         * lower. */
         const gfx_rect_t warn = gfx_rect_make(IM_LEFT.x + 16, y,
-                                              IM_LEFT.w - 32, 18);
+                                              IM_LEFT.w - 32, IM_WARN_LH);
         int lines = 0;
         if (s.an.convention_conflict) {
-            lines = ui_text_wrap(c, warn, 18, TR(LOG_MIXED), UI_FONT_LABEL,
-                                 UI_DANGER);
+            lines = ui_text_wrap(c, warn, IM_WARN_LH, TR(LOG_MIXED),
+                                 LV_FONT_LABEL, UI_DANGER);
         } else if (s.an.long_rows > 0) {
             /* Those rows lost every cell after the overflow, and a lost cell
              * looks exactly like a blank one further down. */
             snprintf(line, sizeof(line), TR(LOG_TOO_LONG),
                      s.an.long_rows);
-            lines = ui_text_wrap(c, warn, 18, line, UI_FONT_LABEL,
+            lines = ui_text_wrap(c, warn, IM_WARN_LH, line, LV_FONT_LABEL,
                                  UI_DANGER);
         } else if (s.an.ragged_rows > 0) {
-            lines = ui_text_wrap(c, warn, 18, TR(LOG_ROWS_DIFFER),
-                                 UI_FONT_LABEL, UI_DANGER);
+            lines = ui_text_wrap(c, warn, IM_WARN_LH, TR(LOG_ROWS_DIFFER),
+                                 LV_FONT_LABEL, UI_DANGER);
         } else if (!s.an.convention_confident) {
-            lines = ui_text_wrap(c, warn, 18, TR(LOG_UNSETTLED),
-                                 UI_FONT_LABEL, UI_WARN);
+            lines = ui_text_wrap(c, warn, IM_WARN_LH, TR(LOG_UNSETTLED),
+                                 LV_FONT_LABEL, UI_WARN);
         }
         if (s.an.cut_row) {
             /* Independent of the lines above: the row left out has no other
              * place on screen.  It follows them when they are shown. */
             gfx_rect_t cut = warn;
-            cut.y = (int16_t)(warn.y + 18 * lines);
-            (void)ui_text_wrap(c, cut, 18, TR(LOG_LAST_CUT), UI_FONT_LABEL,
-                               UI_WARN);
+            cut.y = (int16_t)(warn.y + IM_WARN_LH * lines);
+            (void)ui_text_wrap(c, cut, IM_WARN_LH, TR(LOG_LAST_CUT),
+                               LV_FONT_LABEL, UI_WARN);
         }
 
         /* The override controls for the two detections above. */
-        int hy = IM_LEFT.y + IM_LEFT.h - 44;
+        int hy = IM_LEFT.y + IM_LEFT.h - 8 - 2 * IM_WARN_LH;
         ui_rule(c, IM_LEFT.x + 16, hy - 6, IM_LEFT.w - 32, UI_EDGE);
         gfx_text(c, IM_LEFT.x + 16, hy, TR(LOG_HINT_NUM),
-                 UI_FONT_LABEL, UI_TEXT_FAINT, 1);
-        gfx_text(c, IM_LEFT.x + 16, hy + 18, TR(LOG_HINT_SEP),
-                 UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+                 LV_FONT_LABEL, UI_TEXT_FAINT, 1);
+        gfx_text(c, IM_LEFT.x + 16, hy + IM_WARN_LH, TR(LOG_HINT_SEP),
+                 LV_FONT_LABEL, UI_TEXT_FAINT, 1);
 
         /* --- columns -------------------------------------------------- */
         char title[40];
@@ -395,13 +403,18 @@ static void render_import(gfx_canvas_t *c)
                                               : UI_PANEL;
             gfx_fill_rect(c, row.x, row.y, 5, row.h, mark);
 
+            /* The name in 20 cells from 16 px in, the first value in 12
+             * cells to x 344, and 12 px short of the row's end the range, a
+             * data figure, in the 140 px box of LOG_RANGE_CELLS glyphs of
+             * 8 x 16, or TIME or TEXT in 22 cells of 10 x 20. */
             gfx_color_t text = col->numeric ? UI_TEXT : UI_TEXT_FAINT;
-            gfx_text(c, row.x + 16, row.y + 8, col->name, UI_FONT_LABEL, text, 1);
+            gfx_text_in(c, gfx_rect_make(row.x + 16, row.y, 200, row.h),
+                        col->name, LV_FONT_LABEL, text, 1, GFX_ALIGN_LEFT);
 
             /* The file's own first value, next to what was made of it: the
              * cheapest way to see a mis-read before plotting it. */
-            gfx_rect_t sb = gfx_rect_make(row.x + 168, row.y, 110, row.h);
-            gfx_text_in(c, sb, col->sample[0], UI_FONT_LABEL, UI_TEXT_DIM, 1,
+            gfx_rect_t sb = gfx_rect_make(row.x + 224, row.y, 120, row.h);
+            gfx_text_in(c, sb, col->sample[0], LV_FONT_LABEL, UI_TEXT_DIM, 1,
                         GFX_ALIGN_RIGHT);
 
             char right[40];
@@ -413,9 +426,11 @@ static void render_import(gfx_canvas_t *c)
                 log_viewer_range_text(right, sizeof(right), col->min,
                                       col->max, col->unit);
             }
-            gfx_rect_t rb = gfx_rect_make(row.x + 288, row.y, row.w - 300,
+            const bool range = !is_time && col->numeric;
+            const int rw = range ? 140 : row.w - 364;
+            gfx_rect_t rb = gfx_rect_make(row.x + row.w - 12 - rw, row.y, rw,
                                           row.h);
-            gfx_text_in(c, rb, right, UI_FONT_LABEL,
+            gfx_text_in(c, rb, right, range ? LV_FONT_FINE : LV_FONT_LABEL,
                         is_time ? UI_TEAL : UI_TEXT_FAINT, 1, GFX_ALIGN_RIGHT);
             ry += IM_ROW_H;
         }
@@ -426,19 +441,18 @@ static void render_import(gfx_canvas_t *c)
     snprintf(btn, sizeof(btn), TR(LOG_BTN_SEP),
              (s.delim_index < 0) ? "AUTO"
                                  : lv_delim_text(log_csv_delimiters[s.delim_index]));
-    ui_button(c, gfx_rect_make(16, IM_BTN_Y, 190, IM_BTN_H), btn, UI_PANEL_HI,
-              s.press_btn == 0, true);
+    ui_button_font(c, IM_BTN(0), btn, UI_PANEL_HI, s.press_btn == 0, true,
+                   LV_FONT_LABEL);
 
     snprintf(btn, sizeof(btn), TR(LOG_BTN_NUM), conv_label(s.conv));
-    ui_button(c, gfx_rect_make(214, IM_BTN_Y, 190, IM_BTN_H), btn, UI_PANEL_HI,
-              s.press_btn == 1, true);
+    ui_button_font(c, IM_BTN(1), btn, UI_PANEL_HI, s.press_btn == 1, true,
+                   LV_FONT_LABEL);
 
-    ui_button(c, gfx_rect_make(412, IM_BTN_Y, 180, IM_BTN_H), TR(LOG_BACK),
-              UI_PANEL_HI, s.press_btn == 2, true);
+    ui_button_font(c, IM_BTN(2), TR(LOG_BACK), UI_PANEL_HI, s.press_btn == 2,
+                   true, LV_FONT_LABEL);
 
-    ui_button(c, gfx_rect_make(600, IM_BTN_Y, 184, IM_BTN_H), TR(LOG_PLOT),
-              UI_ACCENT,
-              s.press_btn == 3, s.have_analysis && s.n_picked > 0);
+    ui_button_font(c, IM_BTN(3), TR(LOG_PLOT), UI_ACCENT, s.press_btn == 3,
+                   s.have_analysis && s.n_picked > 0, LV_FONT_LABEL);
 }
 
 /* ---------------------------------------------------------------- plot --- */
@@ -488,17 +502,18 @@ static void render_plot(gfx_canvas_t *c)
     char line[160];
 
     if (!s.have_data) {
-        gfx_rect_t box = gfx_rect_make(120, 170, 560, 140);
+        const gfx_rect_t box = PV_NONE;
         ui_panel(c, box, TR(LOG_NOTHING_LOADED), UI_WARN);
         gfx_text(c, box.x + 24, box.y + 52,
                  s.message[0] ? s.message : TR(LOG_PICK_FIRST),
-                 UI_FONT_LABEL, UI_TEXT, 1);
+                 LV_FONT_BODY, UI_TEXT, 1);
         return;
     }
 
     snprintf(line, sizeof(line), TR(LOG_SUMMARY), s.name,
              s.data.count, s.data.duration_s, s.data.rate_hz);
-    gfx_text(c, 260, 12, line, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    gfx_text_in(c, gfx_rect_make(LV_L + 4, PV_SUM_Y, LV_W - 8, 20), line,
+                LV_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
 
     /* --- legend, doubling as the cursor readout ------------------------ */
     int ci = (s.cursor >= 0 && s.cursor < s.data.count) ? s.cursor : 0;
@@ -509,21 +524,24 @@ static void render_plot(gfx_canvas_t *c)
         gfx_fill_chamfer_rect(c, chip.x, chip.y, chip.w, chip.h, UI_CHAMFER_SM,
                               UI_PANEL);
         gfx_fill_rect(c, chip.x, chip.y, 5, chip.h, col);
-        gfx_text(c, chip.x + 12, chip.y + 3, s.data.field[k].name,
-                 UI_FONT_LABEL, UI_TEXT, 1);
+        /* The name over the range at the left, the value at the cursor
+         * right-aligned on the lower line: two lines of 20 px. */
+        gfx_text_in(c, gfx_rect_make(chip.x + 12, chip.y + 2, chip.w - 20, 20),
+                    s.data.field[k].name, LV_FONT_LABEL, UI_TEXT, 1,
+                    GFX_ALIGN_LEFT);
 
         char val[16];
         ui_fmt(val, sizeof(val), s.data.value[k][ci], 2);
         snprintf(line, sizeof(line), "%s%s", val, s.data.field[k].unit);
-        gfx_rect_t box = gfx_rect_make(chip.x + 12, chip.y + 18, chip.w - 24, 16);
-        gfx_text_in(c, box, line, UI_FONT_LABEL, col, 1, GFX_ALIGN_RIGHT);
+        gfx_rect_t box = gfx_rect_make(chip.x + 12, chip.y + 22, chip.w - 20, 20);
+        gfx_text_in(c, box, line, LV_FONT_LABEL, col, 1, GFX_ALIGN_RIGHT);
 
         char lo[10];
         char hi[10];
         ui_fmt(lo, sizeof(lo), lv_lo[k], 0);
         ui_fmt(hi, sizeof(hi), lv_hi[k], 0);
         snprintf(line, sizeof(line), "%s-%s", lo, hi);
-        gfx_text(c, chip.x + 12, chip.y + 19, line, UI_FONT_LABEL,
+        gfx_text(c, chip.x + 12, chip.y + 24, line, LV_FONT_FINE,
                  UI_TEXT_FAINT, 1);
     }
 
@@ -578,7 +596,7 @@ static void render_plot(gfx_canvas_t *c)
         char t[16];
         ui_fmt(t, sizeof(t), s.data.time[idx], 2);
         int x = PV_X + (PV_W - 1) * i / PV_DIV_X;
-        int w = gfx_text_width(UI_FONT_LABEL, t, 1);
+        int w = gfx_text_width(LV_FONT_FINE, t, 1);
         int tx = x - w / 2;
         if (tx < PV_X) {
             tx = PV_X;
@@ -586,18 +604,17 @@ static void render_plot(gfx_canvas_t *c)
         if (tx + w > PV_X + PV_W) {
             tx = PV_X + PV_W - w;
         }
-        gfx_text(c, tx, PV_PANEL.y + PV_PANEL.h + 4, t, UI_FONT_LABEL,
+        gfx_text(c, tx, PV_PANEL.y + PV_PANEL.h + 4, t, LV_FONT_FINE,
                  UI_TEXT_FAINT, 1);
     }
 
     /* --- footer --------------------------------------------------------- */
-    ui_button(c, gfx_rect_make(16, FOOT_Y, 170, FOOT_H), TR(LOG_BACK),
-              UI_PANEL_HI,
-              s.press_btn == 0, true);
-    ui_button(c, gfx_rect_make(196, FOOT_Y, 80, FOOT_H), "<", UI_PANEL_HI,
-              s.press_btn == 1, true);
-    ui_button(c, gfx_rect_make(284, FOOT_Y, 80, FOOT_H), ">", UI_PANEL_HI,
-              s.press_btn == 2, true);
+    ui_button_font(c, PV_BACK, TR(LOG_BACK), UI_PANEL_HI, s.press_btn == 0,
+                   true, LV_FONT_LABEL);
+    ui_button_font(c, PV_PREV, "<", UI_PANEL_HI, s.press_btn == 1, true,
+                   LV_FONT_LABEL);
+    ui_button_font(c, PV_NEXT, ">", UI_PANEL_HI, s.press_btn == 2, true,
+                   LV_FONT_LABEL);
 
     if (s.data.time_name[0] != '\0') {
         snprintf(line, sizeof(line), TR(LOG_AT_TIME),
@@ -608,12 +625,15 @@ static void render_plot(gfx_canvas_t *c)
         snprintf(line, sizeof(line), TR(LOG_AT_ROW), ci + 1,
                  s.data.count);
     }
-    gfx_text(c, 384, FOOT_Y + 13, line, UI_FONT_LABEL, UI_TEXT_DIM, 1);
-
-    if (s.data.unparsed_cells > 0) {
+    /* One line in the footer's middle, or two of 24 px with the cells
+     * that did not read under it. */
+    const bool two = s.data.unparsed_cells > 0;
+    gfx_text(c, PV_LINE_X, FOOT_Y + (two ? 4 : (FOOT_H - 20) / 2), line,
+             LV_FONT_LABEL, UI_TEXT_DIM, 1);
+    if (two) {
         snprintf(line, sizeof(line), TR(LOG_UNREADABLE_CELLS),
                  s.data.unparsed_cells);
-        gfx_text(c, 384, FOOT_Y + 27, line, UI_FONT_LABEL, UI_WARN, 1);
+        gfx_text(c, PV_LINE_X, FOOT_Y + 28, line, LV_FONT_LABEL, UI_WARN, 1);
     }
 }
 

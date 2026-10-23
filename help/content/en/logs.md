@@ -24,7 +24,7 @@ A card in the slot that holds NTFS (New Technology File System), a GPT (GUID par
 
 ![The file list](view:logs)
 
-The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and names the card by its volume label, `UNITEST`, at the right end of the row; a card without a label shows the name the card reports, or `SD CARD`. Each row is one file with its size.
+The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and names the card by its volume label, `UNITEST`, at the right end of the row; a card without a label shows the name the card reports, or `SD CARD`. The list shows 7 rows at a time, each 48 px (about 7.2 mm) of the glass to tap; each row is one file with its size.
 
 | Tab | Folder | Holds |
 |---|---|---|
@@ -47,7 +47,7 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 - A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, then the files the bench did not write, and the rows of a page run the same way, the newest run at the top. With more than 48 files the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`.
 - Pages are cut from the top, 48 at a time. With fewer than 48 entries ahead of the page on screen, for example after a run was recorded, PREV shows the first page.
 - Runs recorded while a later page is open are on page 1. PREV back from page 3 or later then passes over as many entries as were recorded; NEXT from page 1 shows them, and the tab numbers show the shift.
-- The scroll bar at the right edge, 42 px (about 6.3 mm) wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
+- The scroll bar at the right edge, 56 px (about 8.4 mm) wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
 - Opening LOGS reads the card: the first page, its newest run selected. A run recorded while LOGS was closed is listed without RESCAN.
 - On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.
