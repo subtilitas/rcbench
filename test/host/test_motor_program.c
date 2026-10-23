@@ -513,9 +513,10 @@ TEST_CASE(leaving_with_a_session_open_disarms_and_closes_it)
 
 /*
  * PROGRAM's list on an armed bench, the throttle at 40 %: a second finger
- * opens ESC STICK while the first holds DISARM.  The session covers DISARM
- * and takes the first finger's release, so the opening itself switches the
- * bench to SAFE; so does an opening with no finger on DISARM.
+ * opens ESC STICK while the first holds DISARM.  The press on DISARM has
+ * asked for SAFE, and the opening asks again while the bench has not
+ * answered; the session takes the first finger's release.  An opening with
+ * no finger on DISARM switches the bench to SAFE itself.
  */
 TEST_CASE(opening_a_session_on_an_armed_bench_disarms_it)
 {
@@ -528,7 +529,7 @@ TEST_CASE(opening_a_session_on_an_armed_bench_disarms_it)
         if (held) {
             finger(1, ARM_X, ARM_Y);        /* DISARM, pressed */
             frames(1);
-            CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+            CHECK_EQ(took().kind, MOTOR_CMD_DISARM);   /* on the press */
         }
         feed_tap(2, ROW_X, ROW_Y);
         frames(1);

@@ -208,6 +208,15 @@ void mo_event(const touch_event_t *evt)
             return;
         }
         if (gfx_rect_contains(s.arm_rect, x, y)) {
+            if (s.gate.armed) {
+                /* DISARM acts on the press: a stop never waits for a lift
+                 * that may not come.  The press takes no hold, so a finger
+                 * left on the button arms nothing when it reads ARM again. */
+                mo_post(MOTOR_CMD_DISARM, 0.0f);
+                ++s.arm_rev;
+                ++s.ctrl_rev;
+                return;
+            }
             if (s.pressed == 1) {
                 return;   /* the hold belongs to the contact that began it */
             }
@@ -232,10 +241,6 @@ void mo_event(const touch_event_t *evt)
          * A finger that leaves ARM abandons the hold -- see ui_hold_leave().
          * A press that starts on ARM and slides onto the plot would otherwise
          * arm the bench two seconds later.
-         *
-         * While the bench is armed the same press is a DISARM, whose release
-         * is already checked against the rectangle, so the hold is not asked
-         * about it.
          */
         if (s.pressed == 1 && !s.gate.armed && !gfx_rect_contains(s.arm_rect, x, y)
             && ui_hold_leave(&s.arm)) {
@@ -255,16 +260,11 @@ void mo_event(const touch_event_t *evt)
         if (was == 1) {
             /* Whatever was held is abandoned: the fade goes back to green,
              * and an arm that had not completed does not complete later. */
-            const bool fired = ui_hold_end(&s.arm);
+            /* Arming is a hold that has already sent its command by the
+             * time the finger lifts; a release that armed nothing sends
+             * nothing.  DISARM acted on its press. */
+            (void)ui_hold_end(&s.arm);
             ++s.arm_rev;
-            /*
-             * Disarming is a press; arming is a hold that has already sent
-             * its command by the time the finger lifts.  A release that
-             * armed nothing sends nothing.
-             */
-            if (s.gate.armed && !fired && gfx_rect_contains(s.arm_rect, x, y)) {
-                mo_post(MOTOR_CMD_DISARM, 0.0f);
-            }
         }
         if (was == 2 && touch_event_is_tap_up(evt)
             && gfx_rect_contains(s.reset_rect, x, y)) {

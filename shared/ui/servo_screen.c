@@ -383,7 +383,11 @@ void reissue(void)
             s.dr.on = false;
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
+        /* The held position said again under the new rate or range: the
+         * drag's filter, settling, goes on (svs_drag_on_post()). */
+        s.df.restating = true;
         post(SERVO_CMD_POSITION, svs_deg_to_us(s.commanded_deg));
+        s.df.restating = false;
     } else if (s.gate.armed || s.gate.arm_asked) {
         /*
          * Resting on an armed bench: the rest restated under the profile now
@@ -426,7 +430,7 @@ bool svs_command(float deg)
 void svs_drop_motion(void)
 {
     svs_knob_withdraw();
-    s.df.on = false;            /* and the drag's filter commands no more */
+    svs_drag_filter_end();      /* and the drag's filter commands no more */
     const servo_cmd_kind_t k = s.pending.kind;
     if (k == SERVO_CMD_POSITION || k == SERVO_CMD_CENTRE
         || k == SERVO_CMD_SWEEP || k == SERVO_CMD_HOLD) {
@@ -637,7 +641,7 @@ static void leave(void)
     /* No release arrives for a finger on the speed slider or on the dial as
      * the screen changes, and a latched drag outlives the gesture. */
     ui_slider_release(&s.speed);
-    s.dragging = false;
+    svs_drag_end();
     /* Disarm rather than release: navigating away from an armed bench must
      * not leave it armed behind a screen that is not visible, and the
      * disarm lets go of the output on its way. */
@@ -703,10 +707,11 @@ static void enter(void)
  */
 static void cancel(void)
 {
-    /* Disarming is a press, so its release is the whole command: one that
-     * went missing is a DISARM the operator made and the bench never saw.
-     * Arming has already sent its command by the time the finger lifts, so
-     * cancelling one part way asks for nothing, which is correct. */
+    /* DISARM acts on its press and takes no hold.  A press of ARM still
+     * down on a bench that reads armed without its hold having fired is a
+     * finger on DISARM all the same, and switches to SAFE.  Arming has
+     * already sent its command by the time the finger lifts, so cancelling
+     * one part way asks for nothing, which is correct. */
     if (s.gate.armed && s.arm_down && !s.arm.fired) {
         svs_ask_disarm();
     }
@@ -749,8 +754,7 @@ static void cancel(void)
      * on an armed bench moves the servo.  Its filter stops where it has
      * got to: the target it was settling on is the abandoned gesture's.
      */
-    s.dragging = false;
-    s.df.on = false;
+    svs_drag_end();
     /* And the overlay's press: the warning's hold above all, which must not
      * complete on a contact that may have gone. */
     prog_cancel();

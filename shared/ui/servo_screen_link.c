@@ -84,7 +84,7 @@ void servo_screen_set_armed(bool armed)
     /* A finger on the dial does not carry its drag across the edge: after
      * an arm the first input is a new press, and a disarmed dial takes
      * none. */
-    s.dragging = false;
+    svs_drag_end();
     /*
      * Nothing is being held across this edge, in either direction.  An arm
      * starts from nothing -- the panel drops the position and the slot on the
@@ -221,7 +221,7 @@ void servo_screen_cancel_arm(void)
     s.knob_had_driving = false;
     /* A position not yet taken would be sent after the stop. */
     svs_drop_motion();
-    s.dragging = false;
+    svs_drag_end();
     stop_sweep();
 }
 

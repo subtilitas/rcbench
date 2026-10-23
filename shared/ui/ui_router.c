@@ -475,7 +475,14 @@ static int owned_find(uint8_t id)
  * id the controller reuses, and takes a later contact's travel for its own.
  *
  * STOP and the home tag answer to a DOWN on them and to nothing else, so a
- * contact that slides onto STOP from the body presses nothing.
+ * contact that slides onto STOP from the body presses nothing.  STOP acts
+ * on that DOWN; the home tag on a tap.
+ *
+ * Every DOWN the screen is not handed -- on the band, on STOP, on a chip,
+ * on the alert band -- releases the contacts the screen owns as at the
+ * band's edge.  A screen ends a latched drag at any press it is handed, and
+ * the router does the same for the presses it keeps: a dial drag must not
+ * go on commanding while another finger presses STOP.
  *
  * A chip of the band opens its help bubble on a tap: a DOWN on it and a
  * release on the same chip.  While a bubble is open, a DOWN anywhere but on
@@ -540,6 +547,16 @@ void ui_router_event(const touch_event_t *evt)
             s.band_id    = evt->point.id;
             s.on_stop    = in_stop;
             s.on_chip    = (in_stop || in_home) ? UI_BAND_CHIP_NONE : chip;
+            /* A press the screen is not handed still ends what it holds:
+             * a drag left latched would go on commanding beside STOP. */
+            release_owned();
+            if (in_stop) {
+                /* On the press: a stop never waits for a lift that may not
+                 * come.  Latched rather than dispatched: the application
+                 * loop that drives the heartbeat drains it, so a stop also
+                 * stops the line. */
+                s.stop_latched = true;
+            }
             return;   /* consumed before the screen sees it */
         }
         if (safe && s.band_press && evt->point.id == s.band_id) {
@@ -551,21 +568,16 @@ void ui_router_event(const touch_event_t *evt)
         if (s.band_press && evt->point.id == s.band_id) {
             if (evt->type == TOUCH_EVENT_UP) {
                 s.band_press = false;
-                if (s.on_stop && in_stop) {
-                    /* Latched rather than dispatched: the application loop
-                     * that drives the heartbeat drains it, so a stop also
-                     * stops the line. */
-                    s.stop_latched = true;
+                if (s.on_stop) {
+                    /* STOP acted on the press; its release does nothing. */
                 } else if (s.on_chip != UI_BAND_CHIP_NONE) {
                     /* A chip answers a release the finger made on the
                      * chip it came down on. */
                     if (chip == s.on_chip && touch_event_is_tap_up(evt)) {
                         help_open(chip);
                     }
-                } else if (!s.on_stop && in_home
-                           && touch_event_is_tap_up(evt)) {
-                    /* STOP above takes any release over it; the home tag
-                     * takes one the finger made. */
+                } else if (in_home && touch_event_is_tap_up(evt)) {
+                    /* The home tag takes a release the finger made. */
                     router_back();
                 }
             }
@@ -617,6 +629,9 @@ void ui_router_event(const touch_event_t *evt)
          * negative y.  A contact the screen owns ends where the screen last
          * saw it, and is not handed back when it returns to the body. */
         if (slot < 0) {
+            if (evt->type == TOUCH_EVENT_DOWN) {
+                release_owned();   /* a press on the band, as above */
+            }
             return;
         }
         local.type    = TOUCH_EVENT_UP;
@@ -631,6 +646,9 @@ void ui_router_event(const touch_event_t *evt)
              * make a stop take two presses. */
             clear_alert();
         } else if (s.has_alert && band && in_alert(evt)) {
+            /* A press on the alert band ends what the screen holds, as a
+             * press anywhere on the screen does. */
+            release_owned();
             s.alert_ids[id >> 3] |= bit;
             if (!s.alert_press) {
                 s.alert_press     = true;

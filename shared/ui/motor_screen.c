@@ -579,12 +579,12 @@ static void cancel(void)
 {
     /*
      * Abandoning a gesture asks for nothing, and on an armed bench that is
-     * the wrong direction for one of them.  Disarming is a press: the
-     * release is the whole command, so a release that went missing is a
-     * DISARM the operator made and the bench never saw, and dropping it
-     * silently leaves the outputs driving until somebody notices.  Arming
-     * has already sent its command by the time the finger lifts, so an arm
-     * gesture cancelled part way asks for nothing, which is correct.
+     * the wrong direction for one of them.  DISARM acts on its press and
+     * takes no hold; a press of ARM still down on a bench that reads armed
+     * without its hold having fired is a finger on DISARM all the same, and
+     * switches to SAFE.  Arming has already sent its command by the time
+     * the finger lifts, so an arm gesture cancelled part way asks for
+     * nothing, which is correct.
      */
     if (s.gate.armed && s.pressed == 1 && !s.arm.fired) {
         mo_post(MOTOR_CMD_DISARM, 0.0f);
