@@ -122,6 +122,7 @@ TRACKED = [
     "shared/ui/log_viewer_draw.c",
     "shared/ui/log_viewer_events.c",
     "shared/ui/log_select.c",
+    "shared/ui/log_text.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_draw.c",
     "shared/ui/settings_rows.c",

@@ -1147,6 +1147,18 @@ void servo_limrun_refused(servo_limrun_t *r, uint32_t now_ms)
     }
 }
 
+void servo_limrun_no_servo(servo_limrun_t *r, uint32_t now_ms)
+{
+    if (!servo_limrun_running(r) || r->phase != SERVO_LIMRUN_PH_CONNECT) {
+        return;
+    }
+    if (!r->read_once) {
+        fail(r, SERVO_LIMRUN_WHY_NOT_KST, now_ms);
+    } else {
+        servo_limrun_refused(r, now_ms);
+    }
+}
+
 void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,
                        const servo_limrun_in_t *in, servo_limrun_do_t *out)
 {

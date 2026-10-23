@@ -203,6 +203,7 @@ typedef struct {
         kst_field_id_t want_id[2]; /* the write's two fields */
         uint16_t want[2];       /* and their raw values */
         unsigned writes;        /* writes of the run that ended well */
+        uint32_t said;          /**< programmer's message count at CONNECT */
     } run;
 } kst_panel_state_t;
 
