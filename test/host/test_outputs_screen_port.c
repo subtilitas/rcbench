@@ -44,19 +44,11 @@ static void ports(uint8_t count, uint8_t pin0)
     port_view_set(&v);
 }
 
-/* The list's rows as the screen sizes them: 56 px, or less where the
- * protocols and the entries would pass OU_FOOT, 4 px above the alert
- * band. */
-static int row_h(void)
-{
-    return OU_POP_ROW_N(outputs_screen_port_entries());
-}
-
+/* The list opened and PROG PORT entry @p n picked in its second column. */
 static void choose_port(int n)
 {
     tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
-    const int i = (int)OUTBIND_PROTOS + n;
-    tap(DD_X + 40, DD_Y + 4 + i * row_h() + row_h() / 2);
+    tap(OU_POP_X(1), OU_POP_ROW_Y(n));
 }
 
 static void fresh_port(void)
@@ -104,8 +96,7 @@ TEST_CASE(the_list_ends_in_one_prog_port_entry_per_port_reported)
         fresh_port();
         ports(k[i].count, 13u);
         CHECK_EQ(outputs_screen_port_entries(), k[i].entries);
-        CHECK(DD_Y + 8 + row_h() * ((int)OUTBIND_PROTOS + k[i].entries) + 4
-              <= OU_FOOT);
+        CHECK(DD_Y + 8 + OU_POP_ROW * (int)OUTBIND_PROTOS + 4 <= OU_FOOT);
         for (int n = 0; n < (int)k[i].entries; ++n) {
             choose_port(n);
             CHECK_EQ(outputs_screen_port_shown(), n);

@@ -123,38 +123,50 @@ _Static_assert(BTNW >= UI_TAP_MIN && KEY_H >= UI_TAP_MIN,
 /** @brief The head's height, px. */
 #define HEAD_H      (REASON_Y + REASON_PITCH + 20 - HEAD_Y)
 
-/* The open list covers the board, as it covers the pins on OUTPUTS: rows
- * of POP_ROW, or less where they would run past FOOT. */
-#define POP_W       300       /**< The open list's width, px. */
-#define POP_ROW     UI_CHOICE_ROW_H /**< Its tallest row, px. */
+/*
+ * The open list covers the board, as it covers the pins on OUTPUTS: the
+ * protocols in a column of 48 px rows from the face's top, the PROG PORT
+ * entries in a second column beside it.  With its margins and shadow it
+ * ends at body y 404.
+ */
+#define POP_W       300       /**< A column's width, px. */
+#define POP_ROW     UI_TAP_MIN /**< A row, px. */
+
+_Static_assert(HEAD_Y + (int)OUTBIND_PROTOS * POP_ROW + 8 + 4 <= FOOT,
+               "the protocol list ends above the alert band");
 
 /**
- * @brief The PINS table, left of the board: 184 px, "CH7" in the label
+ * @brief The PINS table, left of the board: 171 px, "CH7" in the label
  *        face, "GP28" in the head face from 40 px in, and the pad number
  *        right-aligned.
  *
  * It starts under the reason's second line; its 8 rows of 36 px, the
  * most a protocol holds, end at body y 484.  A row is read, not tapped.
- * It ends at x 192, left of the first key below the board.
+ * It ends at x 179, 8 px left of the leftmost a key can stand: half a key
+ * left of the widest board's edge (x 212), where a board that reports its
+ * own shape may put its first pad.
  */
 #define PINS_X      8         /**< The table's left edge. */
 #define PINS_Y      (HEAD_Y + HEAD_H + 10) /**< Its heading's top. */
-#define PINS_W      184       /**< Its width, px. */
+#define PINS_W      171       /**< Its width, px. */
 #define PINS_TOP    (PINS_Y + 48)   /**< The first row's top. */
 #define ROW_H       36        /**< A row, px. */
 
 _Static_assert(PINS_TOP + (int)LINK_OUT_SLOTS * ROW_H <= FOOT,
                "the PINS table holds 8 pins above the alert band");
+_Static_assert(PINS_X + PINS_W + 8 <= (SCREEN_W - BOARD_W) / 2 - BTNW / 2,
+               "the PINS table ends 8 px left of any key");
 
 /**
- * @brief The IN USE table, right of the board: 176 px from x 840.
+ * @brief The IN USE table, right of the board: 168 px from x 848, 8 px
+ *        right of the rightmost a key can stand (x 837).
  *
  * Its lines start under the heading, the rule and the BY OTHERS line and
  * end at FOOT.  A name is 20 px; a pin is 28 px with the GPIO in
  * PK_FONT_PIN, or 20 px with it in the label face when the 28 px rows run
  * past the foot, and 16 px in 8 x 16 when the 20 px rows do.
  */
-#define USE_W       176       /**< Its width, px. */
+#define USE_W       168       /**< Its width, px. */
 #define USE_X       (SCREEN_W - 8 - USE_W) /**< The table's left edge. */
 #define USE_Y       4         /**< Its heading's top. */
 #define USE_TOP     (USE_Y + 56) /**< Its first line. */
@@ -163,6 +175,9 @@ _Static_assert(PINS_TOP + (int)LINK_OUT_SLOTS * ROW_H <= FOOT,
 #define USE_PIN_H   28        /**< A pin's line, px. */
 #define USE_PIN_H_C 20        /**< A pin's line past the foot at 28. */
 #define USE_PIN_H_D 16        /**< And where 20 px does. */
+
+_Static_assert(USE_X >= (SCREEN_W + BOARD_W) / 2 + BTNW / 2 + 8,
+               "the IN USE table starts 8 px right of any key");
 
 /* With no interface on, every line fits at the 16 px pin rows: every port,
  * every protocol's name and every slot's pin. */

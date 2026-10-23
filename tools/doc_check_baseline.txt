@@ -4975,7 +4975,6 @@ shared/ui/outputs_screen.c: warning: Member outputs_screen(void) (function) of f
 shared/ui/outputs_screen.c: warning: Member outputs_screen_set_apply(outputs_apply_fn fn) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member outputs_screen_set_result(outputs_result_t r) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member pop_rect(void) (function) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member pop_row_h(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member pop_row_rect(int i) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member pop_rows(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member prog_taken(uint8_t index) (function) of file outputs_screen.c is not documented.
@@ -5056,7 +5055,6 @@ shared/ui/picker_geometry.c: warning: Member pk_pad_is_top(uint8_t pad) (functio
 shared/ui/picker_geometry.c: warning: Member pk_pad_xy(uint8_t pad, int *px, int *py) (function) of file picker_geometry.c is not documented.
 shared/ui/picker_geometry.c: warning: Member pk_pop_rect(void) (function) of file picker_geometry.c is not documented.
 shared/ui/picker_geometry.c: warning: Member pk_pop_rows(void) (function) of file picker_geometry.c is not documented.
-shared/ui/picker_geometry.c: warning: Member pop_row_h(void) (function) of file picker_geometry.c is not documented.
 shared/ui/picker_port.c: file has no @file block
 shared/ui/picker_port.h: file has no @file block
 shared/ui/picker_screen.c: file has no @file block

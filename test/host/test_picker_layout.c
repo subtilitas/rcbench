@@ -5,7 +5,8 @@
  *        table holds a protocol's 8 pins there; nothing is drawn under the
  *        alert band in English or German, with no pin bound, at the
  *        fullest tables, with the list open beside 4 ports and with no
- *        board to draw.
+ *        board to draw; the keys clear the tables on a board with no end
+ *        margin; 4 PROG PORT entries take a second column of 48 px rows.
  *
  * PICK A PIN drives no output and has no stop control: its safe_at is
  * NULL, so none lies under the alert band.
@@ -14,6 +15,8 @@
  * - every_key_is_the_same_finger_sized_key
  * - the_pins_table_holds_eight_pins_above_the_band
  * - nothing_is_drawn_under_the_alert_band
+ * - keys_clear_the_tables_on_a_board_with_no_end_margin
+ * - the_list_holds_four_ports_in_a_second_column
  *
  * SPDX-License-Identifier: MIT
  */
@@ -179,10 +182,116 @@ TEST_CASE(nothing_is_drawn_under_the_alert_band)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/** @brief A board that describes itself, as an IOmcu of another make
+ *  would. */
+#define LEARNED ((uint16_t)4242)
+
+/*
+ * A board that reports its own shape with no margin past its end pads:
+ * 20 pads a row at 2.54 mm, an outline of 48.26 x 19.00 mm, so it draws
+ * 600 px wide from x 212 and pad 1 sits on its left edge.  Pins on the
+ * four corner pads.  Every key stays 8 px clear of the PINS and IN USE
+ * tables and above the alert band, as on the boards this build knows.
+ */
+TEST_CASE(keys_clear_the_tables_on_a_board_with_no_end_margin)
+{
+    uint16_t cat[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { cat[i] = 0u; }
+    cat[0] = LINK_CAT_OF(0, 1, LINK_PIN_FREE);
+    cat[1] = LINK_CAT_OF(1, 20, LINK_PIN_FREE);
+    cat[2] = LINK_CAT_OF(2, 21, LINK_PIN_FREE);
+    cat[3] = LINK_CAT_OF(3, 40, LINK_PIN_FREE);
+    CHECK(outbind_learn_board(LEARNED, cat));
+    uint16_t sh[LINK_SH_COUNT];
+    sh[LINK_SH_WIDTH_CMM]  = 19u * 254u;
+    sh[LINK_SH_HEIGHT_CMM] = 1900u;
+    sh[LINK_SH_LAYOUT]     = LINK_SH_LAYOUT_OF(LINK_SH_BOTTOM_LEFT, 20);
+    sh[LINK_SH_PITCH_CMM]  = 254u;
+    sh[LINK_SH_INSET_CMM]  = 100u;
+    CHECK(outbind_learn_shape(LEARNED, sh));
+
+    for (int pass = 0; pass < 2; ++pass) {
+        fresh();
+        outbind_t b;
+        outbind_init(&b);
+        outbind_set_board(&b, LEARNED);
+        outbind_set_proto(&b, proto_named("SERVO PWM"));
+        if (pass == 1) {              /* the PINS table full of this board */
+            for (uint8_t i = 0; i < 4u; ++i) {
+                CHECK(outbind_toggle(&b, i));
+            }
+        }
+        picker_screen_set_binding(&b);
+        picker_screen_follow(b.proto, true);
+        CHECK(picker_screen_can_draw());
+        const gfx_rect_t pins = picker_screen_area(PICKER_AREA_PINS);
+        const gfx_rect_t use = picker_screen_area(PICKER_AREA_IN_USE);
+        int lo = SCREEN_W, hi = 0;
+        for (uint8_t i = 0; i < 4u; ++i) {
+            gfx_rect_t r;
+            CHECK(picker_screen_button_rect(i, &r));
+            lo = (r.x < lo) ? r.x : lo;
+            hi = (r.x + r.w > hi) ? r.x + r.w : hi;
+            CHECK(r.y + r.h <= PK_FOOT);
+            CHECK(r.x >= pins.x + pins.w + 8);
+            CHECK(r.x + r.w + 8 <= use.x);
+        }
+        CHECK_EQ(lo, 187);                 /* pad 1 on the board's edge */
+        CHECK_EQ(hi, 837);
+        CHECK_EQ(drawn_under_the_band(), 0u);
+    }
+    outbind_forget_learned();
+}
+
+/*
+ * With 4 PROG PORT entries (an IOmcu of protocol 4.26 or later) the list
+ * holds the protocols in one column and the entries in a second, every row
+ * UI_TAP_MIN tall, the rows apart and the list above the alert band, in
+ * English and German; the last entry's bottom row picks it.
+ */
+TEST_CASE(the_list_holds_four_ports_in_a_second_column)
+{
+    static const uint8_t four[LINK_PG_PORTS_MAX] = { 13u, 26u, 27u, 28u };
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        ui_text_set_language((ui_lang_t)l);
+        fresh();
+        picker_screen_set_prog_ports(4u, four);
+        outputs_screen_set_prog_ports(4u, four);
+        tap_rect(picker_screen_list_face());
+        CHECK(picker_screen_list_open());
+        const uint8_t rows = (uint8_t)(OUTBIND_PROTOS + 4u);
+        for (uint8_t i = 0; i < rows; ++i) {
+            const gfx_rect_t r = picker_screen_list_row(i);
+            CHECK(r.h >= UI_TAP_MIN);
+            CHECK(r.y + r.h + 8 <= PK_FOOT);
+            for (uint8_t o = (uint8_t)(i + 1u); o < rows; ++o) {
+                gfx_rect_t both;
+                CHECK(!gfx_rect_intersect(r, picker_screen_list_row(o),
+                                          &both));
+            }
+        }
+        /* The entries beside the protocols, from the same top. */
+        CHECK_EQ(picker_screen_list_row(OUTBIND_PROTOS).y,
+                 picker_screen_list_row(0).y);
+        CHECK(picker_screen_list_row(OUTBIND_PROTOS).x
+              > picker_screen_list_row(0).x);
+        CHECK_EQ(drawn_under_the_band(), 0u);
+        const gfx_rect_t last = picker_screen_list_row(
+            (uint8_t)(OUTBIND_PROTOS + 3u));
+        tap(last.x + 20, last.y + last.h - 1);
+        CHECK_EQ(picker_screen_port_shown(), 3);
+        picker_screen_set_prog_ports(0u, NULL);
+        outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, NULL);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(every_key_is_the_same_finger_sized_key);
     RUN(the_pins_table_holds_eight_pins_above_the_band);
     RUN(nothing_is_drawn_under_the_alert_band);
+    RUN(keys_clear_the_tables_on_a_board_with_no_end_margin);
+    RUN(the_list_holds_four_ports_in_a_second_column);
     return test_summary("picker_layout");
 }

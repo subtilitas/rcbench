@@ -90,14 +90,22 @@ _Static_assert(CELL_H >= UI_TAP_MIN && CELL_W >= UI_TAP_MIN,
 _Static_assert(CELL_PAD + CELL_CELLS * 8 < CELL_W - 8,
                "the sub-line ends inside the cell, left of its chamfer");
 
-/* The dropdown, when it is open, covers the pins.  A row is POP_ROW tall,
- * or less where the protocols and the PROG PORT entries, with the list's
- * 4 px margins and its 4 px shadow, would run past OU_FOOT: the 8
- * protocols take 54 px each, with 1 port 48 px. */
+/*
+ * The dropdown, when it is open, covers the pins: the protocols in a
+ * column of 48 px rows (UI_TAP_MIN) from the face's top, and the PROG PORT
+ * entries in a second column of the same rows beside it, the list
+ * 600 x 392 px with them.  With its 4 px margins and 4 px shadow the list
+ * ends at body y 440, above the alert band.
+ */
 #define POP_X    COL_X        /**< The open list's left edge. */
-#define POP_W    COL_W        /**< Its width, px. */
+#define POP_W    COL_W        /**< A column's width, px. */
 #define POP_Y    DD_Y         /**< Its top: the face's. */
-#define POP_ROW  UI_CHOICE_ROW_H /**< Its tallest row, px. */
+#define POP_ROW  UI_TAP_MIN   /**< A row, px. */
+
+_Static_assert(POP_Y + (int)OUTBIND_PROTOS * POP_ROW + 8 + 4 <= OU_FOOT,
+               "the protocol list ends above the alert band");
+_Static_assert(LINK_PG_PORTS_MAX <= OUTBIND_PROTOS,
+               "the PROG PORT column is no taller than the protocols'");
 
 enum { HIT_NONE = 0, HIT_DD, HIT_POP, HIT_CELL, HIT_CLEAR };
 
@@ -350,21 +358,22 @@ static int pop_rows(void)
     return (int)OUTBIND_PROTOS + (int)outputs_screen_port_entries();
 }
 
-static int pop_row_h(void)
-{
-    const int fit = (OU_FOOT - POP_Y - 8 - 4) / pop_rows();
-    return (fit < POP_ROW) ? fit : POP_ROW;
-}
-
+/* The list: one column of POP_W, two with PROG PORT entries. */
 static gfx_rect_t pop_rect(void)
 {
-    return gfx_rect_make(POP_X, POP_Y, POP_W, pop_rows() * pop_row_h() + 8);
+    const int cols = (outputs_screen_port_entries() > 0u) ? 2 : 1;
+    return gfx_rect_make(POP_X, POP_Y, cols * POP_W,
+                         (int)OUTBIND_PROTOS * POP_ROW + 8);
 }
 
+/* Row @p i: a protocol in the first column, PROG PORT entry
+ * i - OUTBIND_PROTOS in the second, from the same top. */
 static gfx_rect_t pop_row_rect(int i)
 {
-    return gfx_rect_make(POP_X + 4, POP_Y + 4 + i * pop_row_h(),
-                         POP_W - 8, pop_row_h());
+    const int col = (i < (int)OUTBIND_PROTOS) ? 0 : 1;
+    const int row = (col == 0) ? i : i - (int)OUTBIND_PROTOS;
+    return gfx_rect_make(POP_X + col * POP_W + 4, POP_Y + 4 + row * POP_ROW,
+                         POP_W - 8, POP_ROW);
 }
 
 static gfx_rect_t clear_rect(void)

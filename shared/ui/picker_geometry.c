@@ -275,28 +275,29 @@ gfx_rect_t picker_screen_list_face(void)
 }
 
 /* The list's rows: the protocols, then one PROG PORT entry a port, as on
- * OUTPUTS, each POP_ROW tall or less where they, the list's 4 px margins
- * and its 4 px shadow would run past FOOT. */
+ * OUTPUTS. */
 int pk_pop_rows(void)
 {
     return (int)OUTBIND_PROTOS + (int)outputs_screen_port_entries();
 }
 
-static int pop_row_h(void)
-{
-    const int fit = (FOOT - HEAD_Y - 8 - 4) / pk_pop_rows();
-    return (fit < POP_ROW) ? fit : POP_ROW;
-}
-
+/* The list: one column of POP_W, two with PROG PORT entries. */
 gfx_rect_t pk_pop_rect(void)
 {
-    return gfx_rect_make(HEAD_X, HEAD_Y, POP_W, pk_pop_rows() * pop_row_h() + 8);
+    const int cols = (outputs_screen_port_entries() > 0u) ? 2 : 1;
+    return gfx_rect_make(HEAD_X, HEAD_Y, cols * POP_W,
+                         (int)OUTBIND_PROTOS * POP_ROW + 8);
 }
 
+/* Row @p proto: a protocol in the first column, PROG PORT entry
+ * proto - OUTBIND_PROTOS in the second, from the same top. */
 gfx_rect_t picker_screen_list_row(uint8_t proto)
 {
-    return gfx_rect_make(HEAD_X + 4, HEAD_Y + 4 + (int)proto * pop_row_h(),
-                         POP_W - 8, pop_row_h());
+    const int col = (proto < OUTBIND_PROTOS) ? 0 : 1;
+    const int row = (col == 0) ? (int)proto
+                               : (int)proto - (int)OUTBIND_PROTOS;
+    return gfx_rect_make(HEAD_X + col * POP_W + 4,
+                         HEAD_Y + 4 + row * POP_ROW, POP_W - 8, POP_ROW);
 }
 
 bool picker_screen_list_open(void) { return s.open; }

@@ -1473,7 +1473,7 @@ static void tap(const ui_screen_t *scr, int x, int y)
 #define COL_W  OU_COL_W
 #define DD_Y   OU_DD_Y
 #define DD_H   OU_DD_H
-/* The 8 protocols and the 1 PROG PORT entry the screen starts with. */
+/* The protocols' column of the open list. */
 #define POP_ROW OU_POP_ROW
 #define CLR_Y  OU_CLR_Y
 #define CLR_H  OU_CLR_H

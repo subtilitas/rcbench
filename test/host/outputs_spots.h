@@ -9,10 +9,10 @@
  *
  *   - the left column x 16 to 316: PROTOCOL from y 16, the protocol
  *     list's face y 44 to 108;
- *   - the open list over it from y 44: rows of 48 px with the 8
- *     protocols and 1 PROG PORT entry, 54 px with the protocols alone,
- *     each 4 px in from the list's edge, the list's shadow ending above
- *     y 492;
+ *   - the open list over it from y 44: the 8 protocols in rows of 48 px
+ *     from x 20, the PROG PORT entries in a second column of the same rows
+ *     from x 320, each row 4 px in from its column's edge, the list and
+ *     its shadow ending at y 440;
  *   - UNBIND ALL PINS, while the pages describe no binding, y 218 to 274;
  *   - the grid of 4 x 7 cells of 167 x 64 px from x 324, y 8: 8 px between
  *     columns, 6 px between rows, the last row ending at y 492;
@@ -35,17 +35,15 @@
 /** @brief The lowest row the screen draws on: 4 px above the alert band. */
 #define OU_FOOT        (UI_ALERT_Y - UI_BAND_H - 4)
 
-/** @brief The open list's row height with @p n PROG PORT entries: 56 px,
- *         or what fits, with the list's margins and shadow, between the
- *         face's top and OU_FOOT. */
-#define OU_POP_ROW_N(n)                                                \
-    (((OU_FOOT - OU_DD_Y - 12) / (8 + (n)) < 56)                       \
-         ? (OU_FOOT - OU_DD_Y - 12) / (8 + (n)) : 56)
-/** @brief The row height with the one entry the screen starts with. */
-#define OU_POP_ROW     OU_POP_ROW_N(1)
-/** @brief The middle row of list row @p i with @p n entries. */
-#define OU_POP_ROW_Y(i, n)                                             \
-    (OU_DD_Y + 4 + (i) * OU_POP_ROW_N(n) + OU_POP_ROW_N(n) / 2)
+/** @brief The open list's row height: UI_TAP_MIN. */
+#define OU_POP_ROW     48
+/** @brief A column of the open list, px. */
+#define OU_POP_COL_W   300
+/** @brief The middle row of list row @p r of a column. */
+#define OU_POP_ROW_Y(r) (OU_DD_Y + 4 + (r) * OU_POP_ROW + OU_POP_ROW / 2)
+/** @brief A column a press lands in: 0 the protocols, 1 the PROG PORT
+ *         entries; 40 px into its row. */
+#define OU_POP_X(col)  (OU_COL_X + (col) * OU_POP_COL_W + 40)
 
 #define OU_CLR_Y       218           /**< UNBIND ALL PINS' top. */
 #define OU_CLR_H       56            /**< Its height, px. */

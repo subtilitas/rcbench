@@ -47,7 +47,7 @@
 #define DD_Y   OU_DD_Y
 #define DD_W   OU_COL_W
 #define DD_H   OU_DD_H
-/* The 8 protocols and the 1 PROG PORT entry the screen starts with. */
+/* The protocols' column of the open list. */
 #define POP_ROW OU_POP_ROW
 #define GRID_X OU_GRID_X
 #define GRID_Y OU_GRID_Y

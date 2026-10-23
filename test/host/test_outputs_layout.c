@@ -10,7 +10,8 @@
  *
  * Cases:
  * - a_cell_takes_a_press_to_its_edges_and_none_between
- * - the_protocol_list_rows_are_a_finger_tall_and_end_above_the_band
+ * - the_protocol_list_rows_are_a_finger_tall_and_end_above_the_band (with
+ *   4 PROG PORT entries in a second column)
  * - the_prog_port_entry_controls_are_a_finger_tall
  * - nothing_is_drawn_under_the_alert_band
  *
@@ -111,26 +112,44 @@ TEST_CASE(a_cell_takes_a_press_to_its_edges_and_none_between)
 }
 
 /*
- * The protocol list's rows: 54 px with the 8 protocols alone, 48 px
- * (UI_TAP_MIN) with the 1 PROG PORT entry the screen starts with, and the
- * list ending above the alert band with up to 4 entries.  The last row
- * takes a press on its bottom pixel.
+ * The protocol list with the 4 PROG PORT entries of an IOmcu of protocol
+ * 4.26 or later: the protocols in a column of UI_TAP_MIN rows, the entries
+ * in a second column beside it.  Every row picks its own entry on its top
+ * and its bottom pixel row, the rows UI_TAP_MIN apart, and the list with
+ * its shadow ends above the alert band, in English and German.
  */
 TEST_CASE(the_protocol_list_rows_are_a_finger_tall_and_end_above_the_band)
 {
-    CHECK_EQ(OU_POP_ROW_N(0), 54);
     CHECK_EQ(OU_POP_ROW, UI_TAP_MIN);
-    for (int n = 0; n <= (int)LINK_PG_PORTS_MAX; ++n) {
-        /* The rows, the list's 4 px margins and its 4 px shadow. */
-        CHECK(OU_DD_Y + 8 + OU_POP_ROW_N(n) * (8 + n) + 4 <= OU_FOOT);
+    /* The protocols' column, its 4 px margins and its 4 px shadow. */
+    CHECK(OU_DD_Y + 8 + (int)OUTBIND_PROTOS * OU_POP_ROW + 4 <= OU_FOOT);
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        ui_text_set_language((ui_lang_t)l);
+        fresh();
+        ports(4u, 13u);
+        CHECK_EQ(outputs_screen_port_entries(), 4u);
+        for (int n = 0; n < 4; ++n) {
+            const int top = OU_POP_ROW_Y(n) - OU_POP_ROW / 2;
+            for (int edge = 0; edge < 2; ++edge) {
+                choose_named("SERVO PWM");
+                CHECK_EQ(outputs_screen_port_shown(), -1);
+                tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
+                CHECK_EQ(drawn_under_the_band(), 0u);
+                tap(OU_POP_X(1), top + edge * (OU_POP_ROW - 1));
+                CHECK_EQ(outputs_screen_port_shown(), n);
+            }
+        }
+        /* The protocols' last row, DSHOT600 BIDIR, on its bottom row. */
+        tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
+        tap(OU_POP_X(0),
+            OU_POP_ROW_Y((int)OUTBIND_PROTOS - 1) + OU_POP_ROW / 2 - 1);
+        CHECK_EQ(outputs_screen_port_shown(), -1);
+        CHECK_EQ((int)outputs_screen_binding()->proto,
+                 proto_row("DSHOT600 BIDIR"));
+        CHECK_EQ(s_applied, 0);
+        ports_back();
     }
-    fresh();
-    ports(1u, 13u);
-    tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
-    tap(DD_X + 40, OU_DD_Y + 4 + 9 * OU_POP_ROW - 1);
-    CHECK_EQ(outputs_screen_port_shown(), 0);
-    CHECK_EQ(s_applied, 0);
-    ports_back();
+    ui_text_set_language(UI_LANG_EN);
 }
 
 /*

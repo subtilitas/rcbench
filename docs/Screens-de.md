@@ -4160,10 +4160,11 @@ liegen in einem Raster aus 4 Spalten zu 7 Zellen, je 167 x 64 px
 (25,1 x 9,6 mm), quer 8 px und längs 6 px auseinander, ab x 324. Eine Zelle
 hält ein Ankreuzfeld von 24 px, den GP-Namen in 20 x 36 und darunter, was
 den Pin hält, oder sein Pad in 8 x 16, höchstens 18 Zeichen. Die letzte
-Rasterzeile endet bei Körper-y 492, 4 px über dem Alarmband. Die Zeilen der
-offenen Protokoll-Liste sind höchstens 56 px hoch und werden kleiner, damit
-die Liste über dem Alarmband endet: 54 px mit den 8 Protokollen allein,
-48 px mit 1 Eintrag PROG-PORT, 36 px mit 4.
+Rasterzeile endet bei Körper-y 492, 4 px über dem Alarmband. Die offene
+Protokoll-Liste hält die 8 Protokolle in einer Spalte mit Zeilen von 48 px
+(7,2 mm) ab der Oberkante der Fläche und die Einträge PROG-PORT in einer
+zweiten Spalte mit denselben Zeilen daneben; mit 4 Einträgen ist die Liste
+600 x 392 px groß und endet bei Körper-y 436.
 
 Ein Pin-Satz je Protokoll, nicht acht unabhängige Slots: ein Prüfstand wird
 protokollweise verkabelt — vier Servokabel, dann ein ESC (Electronic Speed
@@ -4514,8 +4515,12 @@ maßstabsgetreu: der Umriss des RP2350-CAN, 51 x 21 mm, wird 582 x 240 px
 groß. Zwei Tasten einer Reihe stehen zwei Pads auseinander, 8 px frei
 voneinander, und die untere Reihe endet bei Körper-y 490, über dem
 Alarmband. Fläche der Protokoll-Liste (280 x 56 px), Anzahl und Grund
-stehen oben links; die Tabelle PINS darunter, Zeilen von 36 px mit dem
-GP-Namen in 20 x 36; BELEGT rechts, 176 px breit.
+stehen oben links; die Tabelle PINS darunter, 171 px breit, Zeilen von
+36 px mit dem GP-Namen in 20 x 36; BELEGT rechts, 168 px breit. Beide
+Tabellen stehen 8 px frei von der äußersten Taste, die eine 600 px breite
+Platine haben kann, auch bei einem Pad direkt an ihrer Kante. Die
+Protokoll-Liste öffnet wie auf Outputs: die Protokolle in einer Spalte mit
+Zeilen von 48 px, die Einträge PROG-PORT in einer zweiten Spalte daneben.
 
 Die Farbe einer Taste sagt, was ein Tippen auf sie tut:
 

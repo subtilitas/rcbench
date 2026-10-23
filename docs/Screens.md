@@ -3793,9 +3793,10 @@ grid of 4 columns of 7 cells, 167 x 64 px each (25.1 x 9.6 mm), 8 px apart
 across and 6 px apart down, from x 324. A cell holds a 24 px tick box, the
 GP name in 20 x 36 and, under them, what holds the pin or its pad in
 8 x 16, 18 characters at most. The grid's last row ends at body y 492,
-4 px above the alert band. The open protocol list's rows are 56 px tall at
-most and shrink so the list ends above the alert band: 54 px with the 8
-protocols alone, 48 px with 1 PROG PORT entry, 36 px with 4.
+4 px above the alert band. The open protocol list holds the 8 protocols in
+a column of 48 px rows (7.2 mm) from the face's top and the PROG PORT
+entries in a second column of the same rows beside it; with 4 entries the
+list is 600 x 392 px and ends at body y 436.
 
 A set of pins per protocol, not eight independent slots: a bench is wired a
 protocol at a time — four servo leads, then one ESC (electronic speed
@@ -4124,8 +4125,11 @@ straight trace to its own pad. The board is drawn 600 px wide and at most
 582 x 240 px. Two keys in one row stand two pads apart, 8 px clear of each
 other, and the lower row ends at body y 490, above the alert band. The
 protocol list's face (280 x 56 px), the count and the reason are top left;
-the PINS table is under them, rows of 36 px with the GP name in 20 x 36;
-IN USE is on the right, 176 px wide.
+the PINS table is under them, 171 px wide, rows of 36 px with the GP name
+in 20 x 36; IN USE is on the right, 168 px wide. Both tables stand 8 px
+clear of the outermost key a 600 px board can have, a pad on its very edge
+included. The protocol list opens as on Outputs: the protocols in a column
+of 48 px rows, the PROG PORT entries in a second column beside it.
 
 A key's colour says what a tap on it does:
 
