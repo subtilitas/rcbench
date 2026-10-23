@@ -19,12 +19,12 @@ rcbench/
     ui/                   Theme · Widgets · Icons · Router · Bildschirme
     settings/             typisiertes Schema und Werte
     logfile/              Zahlen- und CSV-Parsing
-    files/                Kern von Dateimanager und Editor: Textpuffer · Hervorhebung · Namen und Pfade
+    files/                Kern von Dateimanager und Editor: Textpuffer · Hervorhebung · Namen und Pfade · Kartentabelle · Fenster · Regeln · Aufträge
     link/                 Page-Protokoll · CAN-Framing · Watchdogs · Diagnose
     artwork/              Cache des Panels für Platinenzeichnungen
     bench/                bench_state · Telemetriesimulator · Log-Writer · Drehknopf-Decoder
     outputs/              Kanäle · Treibertabelle · Arming, Slew und Staleness
-    safety/               Heartbeat-Generator (Panel) und -Monitor (IOmcu)
+    safety/               Heartbeat-Generator (Panel) und -Monitor (IOmcu) · Reset-Ursache des IOmcu
     servo/                Endlagen- und Abgleichsuche · Servomodell
     can/                  Bit Timing für beide Controller · MCP2515-Register · Echo-Selbsttest
     esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry
@@ -80,11 +80,10 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 
 | Modul | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
-| `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
+| `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `ppm` | | ✔ | ✔ |
-| `files` | | | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ✔ | ✔ | ✔ |
 
 ## Toolchains

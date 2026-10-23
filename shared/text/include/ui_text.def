@@ -558,7 +558,7 @@ UI_TEXT(CU_Q_VERSIONS, 0,
 UI_TEXT(CU_Q_OLDER, 0,
     "The firmware on this panel is older.",
     "Die Firmware auf diesem Panel ist älter.")
-UI_TEXT(CU_Q_SAME, 64,
+UI_TEXT(CU_Q_SAME, 67,
     "Same version number, but a different build.",
     "Gleiche Versionsnummer, aber ein anderer Build.")
 UI_TEXT(CU_Q_WHAT, 0,
@@ -567,19 +567,19 @@ UI_TEXT(CU_Q_WHAT, 0,
 UI_TEXT(CU_START, 0,
     "HOLD 2 s TO START",
     "2 s HALTEN ZUM STARTEN")
-UI_TEXT(CU_P_PREPARE, 47,
+UI_TEXT(CU_P_PREPARE, 48,
     "Preparing firmware.",
     "Firmware wird vorbereitet.")
 UI_TEXT(CU_P_SEND, 0,
     "Sending firmware.",
     "Firmware wird gesendet.")
-UI_TEXT(CU_P_VERIFY, 47,
+UI_TEXT(CU_P_VERIFY, 48,
     "IOmcu is checking the firmware.",
     "IOmcu prüft die Firmware.")
-UI_TEXT(CU_P_RESTART, 47,
+UI_TEXT(CU_P_RESTART, 48,
     "IOmcu is starting the new firmware.",
     "IOmcu startet die neue Firmware.")
-UI_TEXT(CU_P_BUY, 47,
+UI_TEXT(CU_P_BUY, 48,
     "Keeping the new firmware.",
     "Neue Firmware wird dauerhaft übernommen.")
 UI_TEXT(CU_P_FROM_TO, 0,
@@ -3413,34 +3413,34 @@ UI_TEXT(CU_WHY_NOT_STARTED, 36,
     "neue Firmware ist nicht gestartet")
 
 /* --------------------- the splash's details, from the panel's start-up */
-UI_TEXT(SPLASH_NO_PANEL, 55,
+UI_TEXT(SPLASH_NO_PANEL, 47,
     "no panel",
     "kein Panel")
-UI_TEXT(SPLASH_NO_ANSWER, 55,
+UI_TEXT(SPLASH_NO_ANSWER, 47,
     "no response",
     "keine Antwort")
 UI_TEXT(SPLASH_NO_CARD, 0,
     "no card",
     "keine Karte")
-UI_TEXT(SPLASH_CARD_NO_FAT, 55,
+UI_TEXT(SPLASH_CARD_NO_FAT, 47,
     "not FAT32/exFAT",
     "nicht FAT32/exFAT")
-UI_TEXT(SPLASH_CARD_UNREADABLE, 55,
+UI_TEXT(SPLASH_CARD_UNREADABLE, 47,
     "unreadable",
     "nicht lesbar")
-UI_TEXT(SPLASH_NVS_MISSING, 55,
+UI_TEXT(SPLASH_NVS_MISSING, 47,
     "NVS unavailable",
     "NVS nicht verfügbar")
-UI_TEXT(SPLASH_NOT_OPENED, 55,
+UI_TEXT(SPLASH_NOT_OPENED, 47,
     "not opened",
     "nicht geöffnet")
-UI_TEXT(SPLASH_REFUSED, 55,
+UI_TEXT(SPLASH_REFUSED, 47,
     "refused",
     "abgelehnt")
-UI_TEXT(SPLASH_WRONG_REPLY, 55,
+UI_TEXT(SPLASH_WRONG_REPLY, 47,
     "unexpected response",
     "unerwartete Antwort")
-UI_TEXT(SPLASH_NO_LINK, 55,
+UI_TEXT(SPLASH_NO_LINK, 47,
     "no link",
     "keine Verbindung")
 
@@ -4699,55 +4699,55 @@ UI_TEXT(UPD_PAST_LINE, 0,
 UI_TEXT(UPD_LATEST, 0,
     "Latest release on GitHub: %s.",
     "Neuestes Release auf GitHub: %s.")
-UI_TEXT(UPD_STAGED, 88,
+UI_TEXT(UPD_STAGED, 81,
     "Download checked. Installing now.",
     "Download geprüft. Installation läuft.")
-UI_TEXT(UPD_WAIT_COPROC, 74,
+UI_TEXT(UPD_WAIT_COPROC, 67,
     "Waiting for the IOmcu update to finish.",
     "Wartet auf das Ende des IOmcu-Updates.")
-UI_TEXT(UPD_WAIT_DRAWING, 74,
+UI_TEXT(UPD_WAIT_DRAWING, 67,
     "Waiting: a board drawing is being downloaded or saved.",
     "Wartet: Eine Platinenzeichnung wird geladen oder gespeichert.")
-UI_TEXT(UPD_WAIT_BUSY, 74,
+UI_TEXT(UPD_WAIT_BUSY, 67,
     "Waiting: a check or installation is already running.",
     "Wartet: Eine Prüfung oder Installation läuft bereits.")
-UI_TEXT(UPD_STOP_FILES, 74,
+UI_TEXT(UPD_STOP_FILES, 67,
     "Stopped: the WI-FI screen is using Wi-Fi.",
     "Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.")
-UI_TEXT(UPD_STOP_CANCEL, 88,
+UI_TEXT(UPD_STOP_CANCEL, 81,
     "Cancelled.",
     "Abgebrochen.")
-UI_TEXT(UPD_STOP_COPROC, 88,
+UI_TEXT(UPD_STOP_COPROC, 81,
     "Stopped: the IOmcu update has started.",
     "Abgebrochen: IOmcu-Update gestartet.")
-UI_TEXT(UPD_STOP_INSTALL, 88,
+UI_TEXT(UPD_STOP_INSTALL, 81,
     "Stopped: panel firmware installation has started.",
     "Abgebrochen: Installation der Panel-Firmware gestartet.")
-UI_TEXT(UPD_STOP_DRAWING, 88,
+UI_TEXT(UPD_STOP_DRAWING, 81,
     "Stopped: a board drawing is being downloaded.",
     "Abgebrochen: Eine Platinenzeichnung wird geladen.")
 UI_TEXT(UPD_FAIL_TIMEOUT, 0,
     "No response within %u s.",
     "Keine Antwort innerhalb von %u s.")
-UI_TEXT(UPD_FAIL_CONNECT, 88,
+UI_TEXT(UPD_FAIL_CONNECT, 81,
     "No connection to GitHub.",
     "Keine Verbindung zu GitHub.")
-UI_TEXT(UPD_FAIL_REFUSED, 88,
+UI_TEXT(UPD_FAIL_REFUSED, 81,
     "GitHub rejected the request: HTTP %d.",
     "GitHub hat die Anfrage abgelehnt: HTTP %d.")
-UI_TEXT(UPD_FAIL_UNEXPECTED, 88,
+UI_TEXT(UPD_FAIL_UNEXPECTED, 81,
     "Unexpected answer from GitHub.",
     "Unerwartete Antwort von GitHub.")
-UI_TEXT(UPD_FAIL_SUMS, 88,
+UI_TEXT(UPD_FAIL_SUMS, 81,
     "Cannot use the SHA256SUMS file.",
     "SHA256SUMS-Datei nicht verwendbar.")
 UI_TEXT(UPD_FAIL_HASH, 0,
     "The SHA-256 checksum does not match SHA256SUMS.",
     "SHA-256-Prüfsumme stimmt nicht mit SHA256SUMS überein.")
-UI_TEXT(UPD_FAIL_IMAGE, 88,
+UI_TEXT(UPD_FAIL_IMAGE, 81,
     "The firmware did not pass the panel's checks.",
     "Die Firmware hat die Prüfungen des Panels nicht bestanden.")
-UI_TEXT(UPD_FAIL_MEMORY, 88,
+UI_TEXT(UPD_FAIL_MEMORY, 81,
     "Not enough memory for the firmware.",
     "Nicht genug Speicher für die Firmware.")
 UI_TEXT(UPD_FAIL_LIMIT, 0,
@@ -4759,67 +4759,67 @@ UI_TEXT(UPD_LIMIT_2, 0,
 UI_TEXT(UPD_UNVERSIONED, 0,
     "The panel's own version is not MAJOR.MINOR.PATCH: no update offered.",
     "Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.")
-UI_TEXT(UPD_REL_MISSING, 88,
+UI_TEXT(UPD_REL_MISSING, 81,
     "The response has no Location header.",
     "In der Antwort fehlt der Location-Header.")
-UI_TEXT(UPD_REL_LONG, 88,
+UI_TEXT(UPD_REL_LONG, 81,
     "The address is too long.",
     "Die Adresse ist zu lang.")
-UI_TEXT(UPD_REL_CHAR, 88,
+UI_TEXT(UPD_REL_CHAR, 81,
     "A byte is outside printable ASCII.",
     "Ein Byte liegt außerhalb von druckbarem ASCII.")
-UI_TEXT(UPD_REL_PLACE, 88,
+UI_TEXT(UPD_REL_PLACE, 81,
     "The address is in an unexpected location.",
     "Die Adresse steht an einer unerwarteten Stelle.")
-UI_TEXT(UPD_REL_VERSION, 88,
+UI_TEXT(UPD_REL_VERSION, 81,
     "The version text has an invalid format.",
     "Der Versionstext hat ein ungültiges Format.")
-UI_TEXT(UPD_REL_IMG_VERSION, 88,
+UI_TEXT(UPD_REL_IMG_VERSION, 81,
     "The firmware file specifies a different version.",
     "Die Firmware-Datei nennt eine andere Version.")
-UI_TEXT(UPD_REL_STATUS, 88,
+UI_TEXT(UPD_REL_STATUS, 81,
     "HTTP status %d.",
     "HTTP-Status %d.")
-UI_TEXT(UPD_REL_HOPS, 88,
+UI_TEXT(UPD_REL_HOPS, 81,
     "More than 3 redirects.",
     "Mehr als 3 Weiterleitungen.")
-UI_TEXT(UPD_REL_HOST, 88,
+UI_TEXT(UPD_REL_HOST, 81,
     "Redirect to a host that is not allowed.",
     "Weiterleitung zu einem nicht erlaubten Host.")
-UI_TEXT(UPD_REL_NO_LENGTH, 88,
+UI_TEXT(UPD_REL_NO_LENGTH, 81,
     "The response does not specify a size.",
     "Die Antwort enthält keine Größenangabe.")
-UI_TEXT(UPD_REL_EMPTY, 88,
+UI_TEXT(UPD_REL_EMPTY, 81,
     "The response is empty.",
     "Die Antwort ist leer.")
-UI_TEXT(UPD_REL_TOO_BIG, 88,
+UI_TEXT(UPD_REL_TOO_BIG, 81,
     "The download is too large for the panel.",
     "Der Download ist zu groß für das Panel.")
-UI_TEXT(UPD_REL_SHORT, 88,
+UI_TEXT(UPD_REL_SHORT, 81,
     "Received less data than expected.",
     "Weniger Daten als angekündigt empfangen.")
-UI_TEXT(UPD_REL_OVERRUN, 88,
+UI_TEXT(UPD_REL_OVERRUN, 81,
     "Received more data than expected.",
     "Mehr Daten als angekündigt empfangen.")
-UI_TEXT(UPD_REL_SUMS_BAD, 88,
+UI_TEXT(UPD_REL_SUMS_BAD, 81,
     "A checksum line has an invalid format.",
     "Eine Prüfsummenzeile hat ein ungültiges Format.")
-UI_TEXT(UPD_REL_SUMS_NONE, 88,
+UI_TEXT(UPD_REL_SUMS_NONE, 81,
     "No checksum entry for this firmware.",
     "Kein Prüfsummeneintrag für diese Firmware.")
-UI_TEXT(UPD_REL_SUMS_TWICE, 88,
+UI_TEXT(UPD_REL_SUMS_TWICE, 81,
     "Two checksum entries for this firmware.",
     "Zwei Prüfsummeneinträge für diese Firmware.")
-UI_TEXT(UPD_REL_TAG_NONE, 88,
+UI_TEXT(UPD_REL_TAG_NONE, 81,
     "The answer names no tag_name.",
     "Die Antwort nennt keinen tag_name.")
-UI_TEXT(UPD_REL_TAG_LONG, 88,
+UI_TEXT(UPD_REL_TAG_LONG, 81,
     "The tag_name is too long.",
     "Der tag_name ist zu lang.")
-UI_TEXT(UPD_REL_TAG_FORM, 88,
+UI_TEXT(UPD_REL_TAG_FORM, 81,
     "The answer is not in the expected JSON form.",
     "Die Antwort hat nicht die erwartete JSON-Form.")
-UI_TEXT(UPD_REL_SCAN_LONG, 88,
+UI_TEXT(UPD_REL_SCAN_LONG, 81,
     "The releases do not end within 262144 bytes.",
     "Die Releases enden nicht innerhalb von 262144 Bytes.")
 UI_TEXT(UPD_R_TITLE, 0,
@@ -4846,13 +4846,13 @@ UI_TEXT(UPD_NEVER, 0,
 UI_TEXT(UPD_DL_TITLE, 0,
     "DOWNLOADING PANEL FIRMWARE %s",
     "PANEL-FIRMWARE %s WIRD GELADEN")
-UI_TEXT(UPD_DL_SUMS, 47,
+UI_TEXT(UPD_DL_SUMS, 48,
     "Reading SHA256SUMS.",
     "SHA256SUMS wird gelesen.")
 UI_TEXT(UPD_DL_IMAGE, 0,
     "Downloading firmware.",
     "Firmware wird heruntergeladen.")
-UI_TEXT(UPD_DL_CHECKING, 47,
+UI_TEXT(UPD_DL_CHECKING, 48,
     "Checking the SHA-256 checksum and firmware.",
     "SHA-256-Prüfsumme und Firmware werden geprüft.")
 UI_TEXT(UPD_DL_NOTE_1, 0,

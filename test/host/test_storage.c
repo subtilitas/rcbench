@@ -161,6 +161,35 @@ TEST_CASE(a_walk_hands_on_sizes_past_4_gib_whole)
     CHECK_EQ(storage_walk("NONE", NULL, see, &v, NULL), STORAGE_WALK_NO_DIR);
 }
 
+TEST_CASE(a_counted_walk_counts_the_names_it_leaves_out)
+{
+    card_in(FS_EXFAT, 64ull * 1000u * 1000u * 1000u);
+    seen_t v = { 0 };
+    unsigned left = 99u;
+    /* .DS_Store and a name of 70 characters are left out and counted;
+     * the file manager calls such a folder not empty. */
+    CHECK_EQ(storage_walk_counted("HID", NULL, see, &v, NULL, &left), 1);
+    CHECK_EQ(left, 2u);
+    CHECK_EQ(v.n, 1u);
+    CHECK_STR_EQ(v.got[0].name, "KEEP.TXT");
+    /* What the suffix filter leaves out is not counted: the long name is a
+     * ".TXT", the dot name is counted before any suffix. */
+    memset(&v, 0, sizeof(v));
+    left = 99u;
+    CHECK_EQ(storage_walk_counted("HID", ".csv", see, &v, NULL, &left), 0);
+    CHECK_EQ(left, 1u);
+    left = 99u;
+    CHECK_EQ(storage_walk_counted("BIG", NULL, see, &v, NULL, &left),
+             (int)VOL_N);
+    CHECK_EQ(left, 0u);
+    CHECK_EQ(storage_walk_counted("HID", NULL, NULL, NULL, NULL, NULL), 1);
+    /* Nothing mounted: nothing read, nothing counted. */
+    slot_empty();
+    left = 99u;
+    CHECK_EQ(storage_walk_counted("HID", NULL, see, &v, NULL, &left), -1);
+    CHECK_EQ(left, 0u);
+}
+
 TEST_CASE(a_stat_reads_sizes_past_4_gib_whole)
 {
     card_in(FS_EXFAT, 64ull * 1000u * 1000u * 1000u);
@@ -502,6 +531,7 @@ int main(void)
     RUN(an_exfat_card_mounts_and_its_line_names_the_format);
     RUN(every_fat_format_is_named_and_an_unread_one_says_so);
     RUN(a_walk_hands_on_sizes_past_4_gib_whole);
+    RUN(a_counted_walk_counts_the_names_it_leaves_out);
     RUN(a_stat_reads_sizes_past_4_gib_whole);
     RUN(a_stat_of_what_it_cannot_reach_says_which);
     return test_summary("storage");

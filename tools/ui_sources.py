@@ -178,6 +178,7 @@ INCLUDES = [
     "shared/link/include",
     "shared/can/include",
     "shared/logfile/include",
+    "shared/files/include",
     "shared/settings/include",
     "shared/servo/include",
     "shared/esc/include",

@@ -54,6 +54,7 @@ SOURCES = [
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
     "shared/ui/log_select.c",
+    "shared/files/fm_select.c",
 ]
 
 # Every screen gets a committed screenshot; CI (continuous integration)

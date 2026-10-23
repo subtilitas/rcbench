@@ -50,17 +50,29 @@ static bool knob_read(uint8_t reg, uint8_t *byte)
                                        KNOB_I2C_TIMEOUT_MS) == ESP_OK;
 }
 
+/**
+ * @brief The polling task: one poll every KNOB_POLL_MS while the sensor
+ *        answers, every KNOB_POLL_IDLE_MS while it does not or the setting
+ *        is off.
+ *
+ * Logs one line when the sensor first answers and one when it stops
+ * answering after that: a change, not a poll.
+ *
+ * @param arg Unused.
+ */
 static void knob_task(void *arg)
 {
     (void)arg;
     knob_reset(&s_knob);
     uint32_t period_ms = KNOB_POLL_IDLE_MS;
+    bool found = false;     /* the last poll's answer, for the log lines */
 
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(period_ms));
         if (!atomic_load(&s_on)) {
             knob_reset(&s_knob);
             period_ms = KNOB_POLL_IDLE_MS;
+            found = false;
             continue;
         }
         uint8_t bytes[KNOB_POLL_READS] = { 0 };
@@ -78,6 +90,18 @@ static void knob_task(void *arg)
         const int d = knob_poll_done(&s_knob, answered, bytes);
         if (d != 0) {
             atomic_fetch_add(&s_steps, d);
+        }
+        if (answered != found) {
+            found = answered;
+            if (found) {
+                ESP_LOGI(TAG, "found at 0x%02x on I2C%d (GPIO%d/%d)",
+                         (unsigned)addr, (int)BOARD_KNOB_I2C_PORT,
+                         (int)BOARD_KNOB_PIN_SDA, (int)BOARD_KNOB_PIN_SCL);
+            } else {
+                ESP_LOGI(TAG, "lost at 0x%02x on I2C%d (GPIO%d/%d)",
+                         (unsigned)addr, (int)BOARD_KNOB_I2C_PORT,
+                         (int)BOARD_KNOB_PIN_SDA, (int)BOARD_KNOB_PIN_SCL);
+            }
         }
         /* A sensor that does not answer backs off to the idle period. */
         period_ms = answered ? KNOB_POLL_MS : KNOB_POLL_IDLE_MS;
