@@ -543,7 +543,6 @@ static fm_err_t one_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
                           size_t size)
 {
     size_t got = 0u;
-    fm_err_t err = FM_OK;
     if (job->kind == FM_JOB_SAVE) {
         if (job->done >= job->total) {
             job->step = STEP_SYNC;
@@ -556,7 +555,7 @@ static fm_err_t one_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
             return FM_ERR_ARG;          /* the text ended short */
         }
     } else {
-        err = io->read(io->ctx, job->in, chunk, size, &got);
+        const fm_err_t err = io->read(io->ctx, job->in, chunk, size, &got);
         if (err != FM_OK) {
             return err;
         }
@@ -571,7 +570,7 @@ static fm_err_t one_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
         }
         memcpy(job->buf + job->done, chunk, got);
     } else {
-        err = io->write(io->ctx, job->out, chunk, got);
+        const fm_err_t err = io->write(io->ctx, job->out, chunk, got);
         if (err != FM_OK) {
             return err;
         }

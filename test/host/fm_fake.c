@@ -29,6 +29,22 @@ static bool same(const char *a, const char *b)
 }
 
 /**
+ * @brief realloc() that ends the process when the block cannot grow, so
+ *        the old block is never lost behind a NULL.
+ * @param p      the block
+ * @param bytes  its new size
+ * @return the grown block
+ */
+static void *grow(void *p, size_t bytes)
+{
+    void *q = realloc(p, bytes);
+    if (q == NULL) {
+        abort();
+    }
+    return q;
+}
+
+/**
  * @brief Whether the first @p k characters of @p a and @p b are one, case
  *        folded.
  * @param a  a path of @p k characters or more
@@ -122,10 +138,7 @@ static int add(fk_card_t *c, const char *path, bool dir)
 {
     if (c->count == c->cap) {
         c->cap = (c->cap > 0) ? c->cap * 2 : 64;
-        c->n = realloc(c->n, (size_t)c->cap * sizeof(c->n[0]));
-        if (c->n == NULL) {
-            abort();
-        }
+        c->n = grow(c->n, (size_t)c->cap * sizeof(c->n[0]));
     }
     fk_node_t *e = &c->n[c->count];
     memset(e, 0, sizeof(*e));
@@ -468,10 +481,7 @@ static fm_err_t k_write(void *ctx, void *file, const uint8_t *buf,
     fk_node_t *e = &c->n[h->node];
     if (e->size + len > e->cap) {
         e->cap = (e->size + len) * 2u;
-        e->data = realloc(e->data, e->cap);
-        if (e->data == NULL) {
-            abort();
-        }
+        e->data = grow(e->data, e->cap);
     }
     memcpy(e->data + e->size, buf, len);
     e->size += len;

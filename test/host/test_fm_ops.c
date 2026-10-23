@@ -106,8 +106,10 @@ TEST_CASE(reads_pass_every_state_and_writes_only_safe_and_quiet)
         }
     }
     /* ARMED with a run open says ARMED. */
+    const log_marks_t open_run = { .run_dir = CARD_AUTO_LOGS, .run = 3u,
+                                   .test_dir = CARD_USER_LOGS };
     b.armed = true;
-    marks.run = 3u;
+    b.marks = &open_run;
     CHECK_EQ(fm_gate(FM_OP_DELETE, &b), FM_ERR_ARMED);
     CHECK(!fm_op_writes(FM_OP_COUNT));
     CHECK(!fm_logging(NULL));
@@ -803,6 +805,7 @@ static uint8_t g_text[3u * FM_CHUNK];
  * @param cap  room in @p dst
  * @return the bytes handed over
  */
+// cppcheck-suppress constParameterCallback
 static size_t fill_text(void *ctx, uint64_t at, uint8_t *dst, size_t cap)
 {
     const size_t have = *(const size_t *)ctx;
