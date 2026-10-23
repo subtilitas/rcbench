@@ -162,6 +162,52 @@ received and refused to decode since its power-up (`LINK_ST_REFUSED_LO` and
 `LINK_ST_REFUSED_HI`, protocol 4.21; 0 from an older IOmcu). See
 [Refused frames](Link.md#refused-frames).
 
+## Why the IOmcu last started
+
+At start-up and every 3 s after it, the IOmcu's console names why the IOmcu
+last started, with every raw value:
+
+    rcbench-iomcu: reset FLASH_UPDATE (chip_reset 0x00010000 reason 0x1 boot 0x010104FF params 0x101FD000 0x00000000 scratch 0x101FD000 0x00000000)
+
+The start-up line leaves before a host has the USB port open in most
+cases; the 3 s line repeats it. `chip_reset` is POWMAN CHIP_RESET, `reason`
+WATCHDOG REASON, `boot` the boot ROM's boot word (0xttppbbdd: TBYB flags,
+partition, boot type, diagnostic partition; `boot none` when the boot ROM
+gave none), `params` its reboot parameters, `scratch` WATCHDOG SCRATCH2 and
+SCRATCH3. The firmware reads them once at boot and then zeroes SCRATCH2 and
+SCRATCH3. The longest line is 153 bytes with its LF.
+
+CHIP_RESET changes only at a chip-level reset, and its bits are read-only
+(RP2350 datasheet, sections 7.3 and 7.4, table 489). The boot ROM's reboot
+resets the system through the power-on state machine, not the chip: after
+an update over CAN, CHIP_RESET still reads HAD_POR from the power-up, as in
+the line above. A chip-level reset resets the watchdog, so `reason 0x0`
+means CHIP_RESET belongs to this start. `reset_cause_decode()` in
+`shared/safety/reset_cause.c` picks the word; the first row that matches
+wins:
+
+| Word | Registers | Cause |
+| --- | --- | --- |
+| `FLASH_UPDATE` | boot type 4 | the update over CAN, a UF2 copied to the BOOTSEL drive, `picotool load -x` |
+| `RAM_IMAGE` | boot type 3 | an image loaded into SRAM |
+| `BOOTSEL_REBOOT` | boot type 2; or reason non-zero, boot type 0, scratch 0xFFFFFFFF 0x00000000 | back from BOOTSEL through `picotool reboot`, which picotool also sends after every command run with `-f`. The way into BOOTSEL is the 1200 baud request or picotool's reset request over USB |
+| `SW_RESET` | reason 0x2 | the watchdog triggered at once by software |
+| `WATCHDOG` | reason 0x1 | the watchdog counted down: the boot ROM's 16.7 s TBYB (try before you buy) timer after an update the panel did not buy, or a reboot with other parameters |
+| `POR` | reason 0, HAD_POR (bit 16) | power applied |
+| `BOR` | reason 0, HAD_BOR (bit 17) | brown-out detector |
+| `RUN_PIN` | reason 0, HAD_RUN_LOW (bit 18) | RUN pin held low: the reset button, or a host pulling RUN |
+| `GLITCH` | reason 0, HAD_GLITCH_DETECT (bit 26) | supply glitch detector |
+| `DEBUGGER` | reason 0, HAD_DP_RESET_REQ, HAD_RESCUE, HAD_HZD_SYS_RESET_REQ (bits 19, 21, 27) | a debugger reset |
+| `POWER_DOWN` | reason 0, HAD_SWCORE_PD (bit 25) | switched-core power-down |
+| `WATCHDOG` | reason 0, a HAD_WATCHDOG_* bit (22, 23, 24, 28) | a watchdog that POWMAN WDSEL lets reset the chip; this firmware sets none |
+| `UNKNOWN` | none of the above | no cause recorded |
+
+The boot ROM's reboot runs the watchdog in timer mode, so every reboot it
+performs reads `reason 0x1`. A debugger's warm reset of a core clears
+REASON without a chip-level reset, and the start after it reads as the
+chip-level reset before. The `BOOTSEL_REBOOT` and `WATCHDOG` rows follow the
+source of the RP2350 boot ROM and of picotool 2.x.
+
 ## What to record
 
 The round trip, both ends' error counters, and the IOmcu's overflow

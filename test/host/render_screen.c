@@ -43,6 +43,7 @@
 #include "balance_screen.h"
 #include "battery_screen.h"
 #include "analyser_screen.h"
+#include "instruments_spots.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
@@ -97,15 +98,6 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define RS_STEP_UP_X   ST_STEP_UP_X
 #define RS_STEP_CY(i)  ST_STEP_CY(i)
 
-/* BALANCE's right card (test/host/test_balance.c): the rotor's EDF half and
- * the blade count's + stepper. */
-#define RS_BAL_CTRL_X  (UI_MARGIN + 450 + 8 + 14)
-#define RS_BAL_CTRL_W  (UI_PANEL_W - 2 * UI_MARGIN - 450 - 8 - 28)
-#define RS_BAL_EDF_X   (RS_BAL_CTRL_X + (RS_BAL_CTRL_W / 2 + 4) \
-                        + (RS_BAL_CTRL_W / 2 - 4) / 2)
-#define RS_BAL_EDF_Y   (44 + 34 + 15)
-#define RS_BAL_UP_X    (RS_BAL_CTRL_X + RS_BAL_CTRL_W - 34 + 17)
-#define RS_BAL_UP_Y    (44 + 96 + 14)
 
 /* MOTOR & ESC's PROGRAM tab, the second of the strip's (150 px a tab, 4 px
  * apart from x 9, 40 px high from y 8), and the STICK MENU row of its list,
@@ -2923,9 +2915,9 @@ int main(int argc, char **argv)
     if (id == SCREEN_BALANCE && strcmp(view, "balance") != 0) {
         ui_router_goto(SCREEN_BALANCE);
         if (strcmp(view, "balance-rig") == 0) {
-            tap(200, UI_BAND_H + 22);
+            tap(IN_TAB_X(1), UI_BAND_H + IN_TAB_Y);
         } else if (strcmp(view, "balance-aircraft") == 0) {
-            tap(330, UI_BAND_H + 22);
+            tap(IN_TAB_X(2), UI_BAND_H + IN_TAB_Y);
         } else if (strcmp(view, "balance-keypad") == 0) {
             /* The blade count tapped, 5 typed. */
             const gfx_rect_t r = balance_screen_blades_rect();
@@ -2934,9 +2926,9 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "balance-edf") == 0) {
             /* A five-blade ducted fan: the duct, and a rotor whose blades
              * are not reachable. */
-            tap(RS_BAL_EDF_X, UI_BAND_H + RS_BAL_EDF_Y);
+            tap(BL_EDF_X, UI_BAND_H + BL_ROTOR_Y);
             for (int i = 0; i < 3; ++i) {
-                tap(RS_BAL_UP_X, UI_BAND_H + RS_BAL_UP_Y);
+                tap(BL_UP_X, UI_BAND_H + BL_BLADES_Y);
             }
         }
     }
@@ -2952,7 +2944,8 @@ int main(int argc, char **argv)
         sbus_decoder_reset(&dec);
         uint32_t us = 100000u;
 
-        for (unsigned t = 0; t < 132u; ++t) {
+        /* 212 frames: every lane's 200 samples filled. */
+        for (unsigned t = 0; t < 212u; ++t) {
             uint16_t ch[SBUS_CHANNELS];
             for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
                 ch[i] = 1024;                       /* neutral */
@@ -2961,11 +2954,11 @@ int main(int argc, char **argv)
             ch[1] = (uint16_t)(1024 + (int)(600.0f
                         * sinf((float)t * 0.06f)));
             /* A switch thrown a third of the way in. */
-            ch[4] = (t > 44u) ? 1811 : 172;
+            ch[4] = (t > 70u) ? 1811 : 172;
             /* A knob wound slowly. */
-            ch[7] = (uint16_t)(400 + t * 8u);
+            ch[7] = (uint16_t)(400 + t * 6u);
             /* One frame with a spike: the glitch a lane makes findable. */
-            if (t == 96u) {
+            if (t == 160u) {
                 ch[10] = 1811;
             }
 

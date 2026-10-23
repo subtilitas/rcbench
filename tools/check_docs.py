@@ -385,8 +385,8 @@ UI_DIR = REPO / "shared" / "ui"
 
 # Quotes on a German page that stay English although the screen translates
 # the same word: values of the servo test's CSV, which is English in every
-# language, values of an ESC profile's fields, and the register names of a
-# link page.
+# language, values of an ESC profile's fields, the register names of a
+# link page, and the words of the IOmcu's console.
 ENGLISH_QUOTES = {
     ("Link-de.md", "TARGET"),
     ("LinkKST-de.md", "TARGET"),
@@ -405,6 +405,7 @@ ENGLISH_QUOTES = {
     ("LinkHitec-de.md", "RANGE"),
     ("LinkSensors-de.md", "WATCH"),
     ("BenchConsole-de.md", "none"),
+    ("Bringup-de.md", "UNKNOWN"),
 }
 
 # A C string literal, and a run of adjacent ones the compiler joins.

@@ -1051,7 +1051,9 @@ void gfx_ring_aaf(gfx_canvas_t *c, float cx, float cy, float r,
         return;
     }
     const float out2 = outer * outer;
-    const float in2  = (inner > 0.0f) ? inner * inner : 0.0f;
+    /* A band thicker than 2r - 1 reaches over the centre: no hole. */
+    const bool  has_hole = inner > 0.0f;
+    const float in2  = has_hole ? inner * inner : 0.0f;
     ring_cut_t cut = { 0 };
     if (!whole) {
         cut = ring_cut(lo, span, inner, fade_deg);
@@ -1076,7 +1078,7 @@ void gfx_ring_aaf(gfx_canvas_t *c, float cx, float cy, float r,
             }
             const float dx = (float)x - cx;
             const float d2 = dx * dx + dy * dy;
-            if (d2 >= out2 || d2 <= in2) {
+            if (d2 >= out2 || (has_hole && d2 <= in2)) {
                 continue;               /* off the band: no root, no angle */
             }
             const float d = sqrtf(d2);

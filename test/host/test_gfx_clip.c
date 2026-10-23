@@ -176,13 +176,14 @@ static void ref_ring(gfx_canvas_t *c, float cx, float cy, float r,
         return;
     }
     const float out2 = outer * outer;
-    const float in2  = (inner > 0.0f) ? inner * inner : 0.0f;
+    const bool  has_hole = inner > 0.0f;
+    const float in2  = has_hole ? inner * inner : 0.0f;
     for (int y = y0; y < y1; ++y) {
         const float dy = (float)y - cy;
         for (int x = x0; x < x1; ++x) {
             const float dx = (float)x - cx;
             const float d2 = dx * dx + dy * dy;
-            if (d2 >= out2 || d2 <= in2) {
+            if (d2 >= out2 || (has_hole && d2 <= in2)) {
                 continue;
             }
             const float d = sqrtf(d2);

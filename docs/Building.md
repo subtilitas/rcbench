@@ -19,12 +19,12 @@ rcbench/
     ui/                   theme · widgets · icons · router · screens
     settings/             typed schema and values
     logfile/              number and CSV parsing
-    files/                file manager and editor core: text buffer · highlighting · names and paths
+    files/                file manager and editor core: text buffer · highlighting · names and paths · card table · panes · rules · jobs
     link/                 page protocol · CAN framing · watchdogs · diagnosis
     artwork/              the panel's cache of board drawings
     bench/                bench_state · telemetry simulator · log writer · rotary knob decode
     outputs/              channels · driver table · the ARMED state, slew and staleness
-    safety/               heartbeat generator (panel) and monitor (IOmcu)
+    safety/               heartbeat generator (panel) and monitor (IOmcu) · IOmcu reset cause
     servo/                limit and synchronisation searches · servo model
     can/                  bit timing for both controllers · MCP2515 registers · echo self-test
     esc/                  ESC programming profiles, their JSON reader and registry
@@ -79,11 +79,10 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
-| `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
+| `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `ppm` | | ✔ | ✔ |
-| `files` | | | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ✔ | ✔ | ✔ |
 
 ## Toolchains
