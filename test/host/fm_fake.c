@@ -6,23 +6,42 @@
  */
 #include "fm_fake.h"
 
-#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
 /**
- * @brief Whether two paths are one, case folded.
+ * @brief Byte @p i of @p s folded as FatFs folds long names: a to z, and
+ *        ä ö ü (C3 A4, C3 B6, C3 BC) onto Ä Ö Ü; ß stays.
+ * @param s  a string
+ * @param i  a byte offset
+ * @return the byte as compared
+ */
+static int fold(const char *s, size_t i)
+{
+    const unsigned char c = (unsigned char)s[i];
+    if (c >= 'a' && c <= 'z') {
+        return c - ('a' - 'A');
+    }
+    if (i > 0u && (unsigned char)s[i - 1u] == 0xC3u
+        && (c == 0xA4u || c == 0xB6u || c == 0xBCu)) {
+        return c - 0x20;
+    }
+    return c;
+}
+
+/**
+ * @brief Whether two paths are one, case folded as FatFs folds them.
  * @param a  a path
  * @param b  a path
  * @return true for one
  */
 static bool same(const char *a, const char *b)
 {
-    for (;; ++a, ++b) {
-        if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) {
+    for (size_t i = 0u;; ++i) {
+        if (fold(a, i) != fold(b, i)) {
             return false;
         }
-        if (*a == '\0') {
+        if (a[i] == '\0') {
             return true;
         }
     }
@@ -55,7 +74,7 @@ static void *grow(void *p, size_t bytes)
 static bool same_head(const char *a, const char *b, size_t k)
 {
     for (size_t i = 0u; i < k; ++i) {
-        if (tolower((unsigned char)a[i]) != tolower((unsigned char)b[i])) {
+        if (fold(a, i) != fold(b, i)) {
             return false;
         }
     }

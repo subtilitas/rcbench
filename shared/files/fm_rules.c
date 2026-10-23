@@ -8,7 +8,6 @@
 
 #include "fm_rules.h"
 
-#include <ctype.h>
 #include <string.h>
 
 #include "card_tree.h"
@@ -35,14 +34,49 @@ static const char *const k_fault[] = {
 };
 
 /**
- * @brief Whether two strings are one with case folded, ASCII only.
+ * @brief Byte @p i of @p s with case folded as FatFs compares long names:
+ *        ff_wtoupper() (ffunicode.c, ESP-IDF v5.5.5) maps a to z onto A to
+ *        Z, and its Latin-1 blocks U+00E0 to U+00F6 and U+00F8 to U+00FE
+ *        (shift -32) map ä ö ü onto Ä Ö Ü.  ß (U+00DF) is in neither
+ *        block and stays ß.  The UTF-8 forms of the three pairs differ in
+ *        their second byte alone (C3 A4 / C3 84), so the fold keeps the
+ *        length of every string.
+ * @param s  a UTF-8 string
+ * @param i  a byte offset in it
+ * @return the byte as compared
+ */
+static int fold_at(const char *s, size_t i)
+{
+    const unsigned char c = (unsigned char)s[i];
+    if (c >= 'a' && c <= 'z') {
+        return c - ('a' - 'A');
+    }
+    /* 0xC3 is a lead byte, never a continuation: s[i - 1] starts the
+     * letter c ends. */
+    if (i > 0u && (unsigned char)s[i - 1u] == 0xC3u
+        && (c == 0xA4u || c == 0xB6u || c == 0xBCu)) {
+        return c - 0x20;
+    }
+    return c;
+}
+
+/**
+ * @brief Whether two strings are one with case folded as FatFs folds it
+ *        (fold_at()).
  * @param a  a string
  * @param b  a string
  * @return true when they are one
  */
 static bool same_folded(const char *a, const char *b)
 {
-    return log_name_case_cmp(a, b) == 0;
+    for (size_t i = 0u;; ++i) {
+        if (fold_at(a, i) != fold_at(b, i)) {
+            return false;
+        }
+        if (a[i] == '\0') {
+            return true;
+        }
+    }
 }
 
 /**
@@ -131,8 +165,7 @@ bool fm_path_within(const char *outer, const char *inner)
         return false;
     }
     for (size_t i = 0u; i < n; ++i) {
-        if (tolower((unsigned char)outer[i])
-            != tolower((unsigned char)inner[i])) {
+        if (fold_at(outer, i) != fold_at(inner, i)) {
             return false;
         }
     }
@@ -305,16 +338,21 @@ fm_err_t fm_target_check(const fm_bench_t *bench, const char *dir,
         || fm_path_join(dir, tmp, false, path, sizeof(path)) != FM_PATH_OK) {
         return FM_ERR_NAME;
     }
-    switch (fm_place_of(bench, dir, name, false)) {
-    case FM_PLACE_LOCKED:
-        return FM_ERR_LOCKED;
-    case FM_PLACE_FAULT:
-        return FM_ERR_FIXED;
-    case FM_PLACE_FIXED:
-    case FM_PLACE_FREE:
-    default:
-        return FM_OK;
+    /* The name and the ".NEW" the job writes first: KST's ".NEW" is the
+     * programmer's journal, KST.NEW. */
+    const fm_place_t places[2] = {
+        fm_place_of(bench, dir, name, false),
+        fm_place_of(bench, dir, tmp, false),
+    };
+    for (size_t i = 0u; i < 2u; ++i) {
+        if (places[i] == FM_PLACE_LOCKED) {
+            return FM_ERR_LOCKED;
+        }
+        if (places[i] == FM_PLACE_FAULT) {
+            return FM_ERR_FIXED;
+        }
     }
+    return FM_OK;
 }
 
 fm_kind_t fm_kind_of(const char *dir, const char *name, bool is_dir)

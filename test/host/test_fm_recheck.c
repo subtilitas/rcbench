@@ -9,7 +9,9 @@
  *        and SAFE; a save whose absent target another writer made between
  *        two chunks; a report whose stat fails after its run went; a card
  *        swapped during a pane's fallback walk; a folder holding only a
- *        hidden file.  And fm_name.h with the core's headers in one unit.
+ *        hidden file; a copy or a save whose ".NEW" is the programmer's
+ *        journal; names whose case differs in an umlaut.  And fm_name.h
+ *        with the core's headers in one unit.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -396,6 +398,65 @@ TEST_CASE(a_folder_holding_only_a_hidden_file_is_not_empty)
     CHECK(clean());
 }
 
+TEST_CASE(a_copy_or_a_save_whose_new_is_the_journal_is_locked)
+{
+    fresh();
+    fk_file(&g_card, "KST", NULL, 10u);
+    fk_dir(&g_card, CARD_KST_CONF);
+    CHECK_EQ(fm_job_copy(&g_job, &g_bench, 1u, "", "KST", CARD_KST_CONF),
+             FM_ERR_LOCKED);
+    CHECK_EQ(step(), FM_JOB_FAILED);
+    CHECK_EQ(fm_job_save(&g_job, &g_bench, 1u, CARD_KST_CONF, "kst",
+                         sizeof(g_text), fill_text, NULL), FM_ERR_LOCKED);
+    CHECK_EQ(step(), FM_JOB_FAILED);
+    CHECK_EQ(fm_job_create(&g_job, &g_bench, 1u, CARD_KST_CONF, "KST"),
+             FM_ERR_LOCKED);
+    CHECK_EQ(g_card.calls[FK_OPEN] + g_card.calls[FK_STAT], 0);
+    CHECK(fk_get(&g_card, "BENCH/KST/CONF/KST.NEW") == NULL);
+    /* Elsewhere a file named KST is any file. */
+    fk_dir(&g_card, "OTHER");
+    CHECK_EQ(fm_job_copy(&g_job, &g_bench, 1u, "", "KST", "OTHER"), FM_OK);
+    CHECK_EQ(fm_target_check(NULL, CARD_KST_CONF, "KST", false),
+             FM_ERR_LOCKED);
+    CHECK_EQ(fm_target_check(NULL, CARD_KST_CONF, "KST1", false), FM_OK);
+}
+
+/** @brief Ä, ä, Ö, ö, Ü, ü and ß in UTF-8. */
+#define U_AE "\xC3\x84"
+#define L_AE "\xC3\xA4"
+#define U_OE "\xC3\x96"
+#define L_OE "\xC3\xB6"
+#define U_UE "\xC3\x9C"
+#define L_UE "\xC3\xBC"
+#define SZ   "\xC3\x9F"
+
+TEST_CASE(names_differing_in_an_umlauts_case_are_one_name)
+{
+    CHECK(fm_same_path(U_AE "RGER", L_AE "rger"));
+    CHECK(fm_same_path("M" U_OE "WE/" U_UE "BER", "m" L_OE "we/" L_UE "ber"));
+    CHECK(fm_path_within(U_AE "RGER", L_AE "rger/" U_UE ".TXT"));
+    CHECK(!fm_path_within(U_AE "RGER", L_AE "rgerX"));
+    /* ß has no upper case in FatFs's table: only ß matches it. */
+    CHECK(fm_same_path("STRA" SZ "E", "stra" SZ "e"));
+    CHECK(!fm_same_path("STRA" SZ "E", "STRASSE"));
+    CHECK(!fm_same_path(L_AE, "A"));
+    /* A rename that changes an umlaut's case is one entry, not an
+     * overwrite. */
+    fresh();
+    fk_file(&g_card, U_AE ".TXT", NULL, 6u);
+    CHECK_EQ(fm_job_rename(&g_job, &g_bench, 1u, "", U_AE ".TXT", false,
+                           L_AE ".txt"), FM_OK);
+    CHECK_EQ(step(), FM_JOB_DONE);
+    CHECK_STR_EQ(fk_get(&g_card, U_AE ".TXT")->path, L_AE ".txt");
+    /* Another letter is another name, and taken it is refused. */
+    fk_file(&g_card, U_OE ".TXT", NULL, 6u);
+    CHECK_EQ(fm_job_rename(&g_job, &g_bench, 1u, "", L_AE ".txt", false,
+                           L_OE ".txt"), FM_OK);
+    CHECK_EQ(step(), FM_JOB_FAILED);
+    CHECK_EQ(g_job.err, FM_ERR_EXISTS);
+    CHECK(clean());
+}
+
 int main(void)
 {
     RUN(the_link_dropping_before_the_open_stops_a_fault_log_copy);
@@ -410,6 +471,8 @@ int main(void)
     RUN(a_report_stat_that_fails_after_its_run_went_is_the_answer);
     RUN(a_card_swapped_during_the_fallback_walk_is_walked_again);
     RUN(a_folder_holding_only_a_hidden_file_is_not_empty);
+    RUN(a_copy_or_a_save_whose_new_is_the_journal_is_locked);
+    RUN(names_differing_in_an_umlauts_case_are_one_name);
     fk_free(&g_card);
     return test_summary("fm_recheck");
 }

@@ -30,7 +30,8 @@
  * RENAME or NEW either (fm_target_check()).
  *
  * Folders and names compare with case folded, as FAT (File Allocation
- * Table) compares them.
+ * Table) compares long names: a to z with A to Z, and ä ö ü with Ä Ö Ü;
+ * ß has no upper case there and matches only itself.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
@@ -179,8 +180,9 @@ fm_err_t fm_allowed(const fm_bench_t *bench, fm_op_t op, const char *dir,
  * A name a copy or a save carries over from the card is any name of 1 to
  * FM_NAME_MAX bytes without "/" that is not "." or "..": it may hold any
  * character a computer wrote, and only its ".NEW" has to stay listed
- * (fm_name_new()).  Either way the name is not a LOCKED or FAULT name, and
- * the paths of the name and of its ".NEW" fit fm_path_join().
+ * (fm_name_new()).  Either way neither the name nor its ".NEW" is a LOCKED
+ * or FAULT name (a file named KST in BENCH/KST/CONF would write the
+ * programmer's KST.NEW), and the paths of both fit fm_path_join().
  *
  * @param bench  the log folders in force; may be NULL
  * @param dir    the target folder
