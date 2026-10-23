@@ -2520,6 +2520,15 @@ A tap on a network opens the keyboard for its password. HIDDEN NETWORK
 opens it for the name of a network that does not announce itself, and then
 for the password. SCAN AGAIN scans again; CANCEL goes back.
 
+`No WPA2 or WPA3 network found.` means a scan completed and found no
+network the list keeps. A scan the radio reports failed runs again, 3 scans
+at most (`WA_SCAN_TRIES`) within the same 10s. A scan that fails each time,
+that the radio refuses or that does not end within the 10s leaves
+`Wi-Fi could not start.` in the list's place; a STOP, a switch to ARMED, the
+supply output coming on or a log run opening leaves its own line there.
+SCAN AGAIN tries again. CHOOSE HOME NETWORK is on the buttons only: with the
+access point up or the panel joined, the screen offers WI-FI OFF first.
+
 ![The network's name](img/wifi-key-ssid.png)
 ![Lower case](img/wifi-key-lower.png)
 ![ABC: upper case](img/wifi-key-upper.png)
