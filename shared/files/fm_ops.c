@@ -67,20 +67,33 @@ static fm_err_t run(fm_job_t *job)
 }
 
 /**
+ * @brief The path of @p name in folder @p dir (fm_path_join()).
+ * @param out     room for FM_PATH_SIZE bytes
+ * @param dir     the folder
+ * @param name    the entry's name
+ * @param is_dir  the entry is a folder: it counts in the depth
+ * @return FM_OK, or FM_ERR_NAME for a path too long or too deep
+ */
+static fm_err_t join(char *out, const char *dir, const char *name,
+                     bool is_dir)
+{
+    return fm_path_err(fm_path_join(dir, name, is_dir, out, FM_PATH_SIZE));
+}
+
+/**
  * @brief Write the path of @p name's ".NEW" in @p dir into @p out.
- * @param out   room for FM_PATH_MAX bytes
+ * @param out   room for FM_PATH_SIZE bytes
  * @param dir   the folder
  * @param name  the file's name
  * @return FM_OK, or FM_ERR_NAME when it does not fit
  */
 static fm_err_t tmp_path(char *out, const char *dir, const char *name)
 {
-    const size_t suffix = sizeof(FM_TMP_SUFFIX) - 1u;
-    const fm_err_t err = fm_join(out, FM_PATH_MAX - suffix, dir, name);
-    if (err == FM_OK) {
-        memcpy(out + strlen(out), FM_TMP_SUFFIX, suffix + 1u);
+    char tmp[FM_NAME_BUF];
+    if (!fm_name_new(name, tmp, sizeof(tmp))) {
+        return FM_ERR_NAME;
     }
-    return err;
+    return join(out, dir, tmp, false);
 }
 
 fm_err_t fm_job_copy(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
@@ -99,13 +112,13 @@ fm_err_t fm_job_copy(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
         err = FM_ERR_SAME;
     }
     if (err == FM_OK) {
-        err = fm_target_check(bench, dst_dir, name);
+        err = fm_target_check(bench, dst_dir, name, false);
     }
     if (err == FM_OK) {
-        err = fm_join(job->src, sizeof(job->src), src_dir, name);
+        err = join(job->src, src_dir, name, false);
     }
     if (err == FM_OK) {
-        err = fm_join(job->dst, sizeof(job->dst), dst_dir, name);
+        err = join(job->dst, dst_dir, name, false);
     }
     if (err == FM_OK) {
         err = tmp_path(job->tmp, dst_dir, name);
@@ -120,14 +133,17 @@ fm_err_t fm_job_copy(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
  * @param bench  the rules; may be NULL
  * @param dir    the target folder
  * @param name   the target name
+ * @param is_dir  the entry is a folder
  * @return FM_OK or the refusal
  */
 static fm_err_t target_path(fm_job_t *job, const fm_bench_t *bench,
-                            const char *dir, const char *name)
+                            const char *dir, const char *name, bool is_dir)
 {
+    /* The name stays as the card holds it, any length it lists: a move
+     * writes no ".NEW", so fm_target_check()'s length is not its rule. */
     if (name[0] == '\0' || strchr(name, '/') != NULL
         || strcmp(name, ".") == 0 || strcmp(name, "..") == 0
-        || strlen(name) >= FM_NAME_MAX) {
+        || strlen(name) > FM_LIST_NAME_MAX) {
         return FM_ERR_NAME;
     }
     switch (fm_place_of(bench, dir, name, false)) {
@@ -140,7 +156,7 @@ static fm_err_t target_path(fm_job_t *job, const fm_bench_t *bench,
     default:
         break;
     }
-    return fm_join(job->dst, sizeof(job->dst), dir, name);
+    return join(job->dst, dir, name, is_dir);
 }
 
 fm_err_t fm_job_move(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
@@ -156,7 +172,7 @@ fm_err_t fm_job_move(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
     }
     fm_err_t err = fm_allowed(bench, FM_OP_MOVE, src_dir, name, is_dir);
     if (err == FM_OK) {
-        err = fm_join(job->src, sizeof(job->src), src_dir, name);
+        err = join(job->src, src_dir, name, is_dir);
     }
     /* Into its own folder, or a folder into itself or below it. */
     if (err == FM_OK && (fm_same_path(src_dir, dst_dir)
@@ -164,7 +180,7 @@ fm_err_t fm_job_move(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
         err = FM_ERR_SAME;
     }
     if (err == FM_OK) {
-        err = target_path(job, bench, dst_dir, name);
+        err = target_path(job, bench, dst_dir, name, is_dir);
     }
     job->is_dir = is_dir;
     return (err != FM_OK) ? refuse(job, err) : run(job);
@@ -185,13 +201,13 @@ fm_err_t fm_job_rename(fm_job_t *job, const fm_bench_t *bench,
     job->is_dir = is_dir;
     fm_err_t err = fm_allowed(bench, FM_OP_RENAME, dir, name, is_dir);
     if (err == FM_OK) {
-        err = fm_target_check(bench, dir, new_name);
+        err = fm_target_check(bench, dir, new_name, true);
     }
     if (err == FM_OK) {
-        err = fm_join(job->src, sizeof(job->src), dir, name);
+        err = join(job->src, dir, name, is_dir);
     }
     if (err == FM_OK) {
-        err = fm_join(job->dst, sizeof(job->dst), dir, new_name);
+        err = join(job->dst, dir, new_name, is_dir);
     }
     return (err != FM_OK) ? refuse(job, err) : run(job);
 }
@@ -209,14 +225,14 @@ fm_err_t fm_job_delete(fm_job_t *job, const fm_bench_t *bench,
     }
     fm_err_t err = fm_allowed(bench, FM_OP_DELETE, dir, name, is_dir);
     if (err == FM_OK) {
-        err = fm_join(job->src, sizeof(job->src), dir, name);
+        err = join(job->src, dir, name, is_dir);
     }
     if (err == FM_OK && !is_dir) {
         /* A run's report goes with its log, as LOGS deletes it. */
-        char report[FM_NAME_MAX];
+        char report[FM_NAME_BUF];
         log_name_report_of(report, sizeof(report), name);
         if (report[0] != '\0'
-            && fm_join(job->tmp, sizeof(job->tmp), dir, report) != FM_OK) {
+            && join(job->tmp, dir, report, false) != FM_OK) {
             job->tmp[0] = '\0';
         }
     }
@@ -240,10 +256,10 @@ static fm_err_t start_new(fm_job_t *job, const fm_bench_t *bench,
     }
     fm_err_t err = fm_gate(FM_OP_NEW, bench);
     if (err == FM_OK) {
-        err = fm_target_check(bench, dir, name);
+        err = fm_target_check(bench, dir, name, true);
     }
     if (err == FM_OK) {
-        err = fm_join(job->dst, sizeof(job->dst), dir, name);
+        err = join(job->dst, dir, name, job->kind == FM_JOB_MKDIR);
     }
     return (err != FM_OK) ? refuse(job, err) : run(job);
 }
@@ -281,10 +297,10 @@ fm_err_t fm_job_save(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
     }
     fm_err_t err = fm_allowed(bench, FM_OP_SAVE, dir, name, false);
     if (err == FM_OK) {
-        err = fm_target_check(bench, dir, name);
+        err = fm_target_check(bench, dir, name, false);
     }
     if (err == FM_OK) {
-        err = fm_join(job->dst, sizeof(job->dst), dir, name);
+        err = join(job->dst, dir, name, false);
     }
     if (err == FM_OK) {
         err = tmp_path(job->tmp, dir, name);
@@ -309,7 +325,7 @@ fm_err_t fm_job_load(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
     }
     fm_err_t err = fm_allowed(bench, FM_OP_OPEN, dir, name, false);
     if (err == FM_OK) {
-        err = fm_join(job->src, sizeof(job->src), dir, name);
+        err = join(job->src, dir, name, false);
     }
     job->buf = buf;
     job->cap = cap;
@@ -453,8 +469,17 @@ static fm_err_t single(fm_job_t *job, const fm_io_t *io)
         if (err == FM_OK) {
             err = io->unlink(io->ctx, job->src);
         }
-        if (err == FM_OK && job->tmp[0] != '\0'
-            && there(io, job->tmp, false, &st) == FM_OK) {
+        fm_err_t report = FM_ERR_NOT_FOUND;
+        if (err == FM_OK && job->tmp[0] != '\0') {
+            report = there(io, job->tmp, false, &st);
+            /* No report, or a folder of its name: nothing to take along.
+             * A card that does not answer is the answer. */
+            if (report != FM_OK && report != FM_ERR_NOT_FOUND
+                && report != FM_ERR_ARG) {
+                return report;
+            }
+        }
+        if (report == FM_OK) {
             /* Left behind, it would be the only file of its number.  A
              * report that stays is the answer, with its run gone: the
              * caller reads the folder again. */
@@ -513,6 +538,7 @@ static fm_err_t open_files(fm_job_t *job, const fm_io_t *io)
     } else if (job->kind == FM_JOB_SAVE) {
         /* The file may be new, never a folder. */
         err = io->stat(io->ctx, job->dst, &st);
+        job->dst_was = (err == FM_OK);
         if (err == FM_OK && st.is_dir) {
             err = FM_ERR_ARG;
         } else if (err == FM_ERR_NOT_FOUND) {
@@ -626,7 +652,7 @@ static fm_err_t still_allowed(const fm_job_t *job, const fm_bench_t *bench)
     const fm_op_t op = op_of(job->kind);
     const bool in_dst = (job->kind == FM_JOB_SAVE || op == FM_OP_NEW);
     const char *path = in_dst ? job->dst : job->src;
-    char dir[FM_PATH_MAX];
+    char dir[FM_PATH_SIZE];
     const char *cut = strrchr(path, '/');
     const size_t k = (cut != NULL) ? (size_t)(cut - path) : 0u;
     memcpy(dir, path, k);
@@ -710,6 +736,17 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
         job->step = (job->kind == FM_JOB_SAVE) ? STEP_UNLINK : STEP_RENAME;
         return FM_JOB_RUNNING;
     case STEP_UNLINK:
+        if (!job->dst_was) {
+            /* Not there at the open: whatever stands there now is another
+             * writer's, never deleted.  The ".NEW" holds the text and
+             * stays listed for a RENAME. */
+            err = free_name(io, job->dst);
+            if (err != FM_OK) {
+                return finish(job, io, FM_JOB_FAILED, err, false);
+            }
+            job->step = STEP_RENAME;
+            return FM_JOB_RUNNING;
+        }
         err = io->unlink(io->ctx, job->dst);
         if (err != FM_OK && err != FM_ERR_NOT_FOUND) {
             /* The file stands as it was; the ".NEW" is not needed. */

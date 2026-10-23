@@ -24,7 +24,10 @@
  * the source is never written.
  *
  * SAVE is the servo programmer's journal pattern: write "<name>.NEW", sync,
- * close, delete "<name>", rename "<name>.NEW" to "<name>".  Between the
+ * close, delete "<name>", rename "<name>.NEW" to "<name>".  A "<name>" that
+ * was not there when the save opened its ".NEW" is never deleted: one that
+ * is there by the rename was made by someone else, and the save fails with
+ * FM_ERR_EXISTS, the ".NEW" kept and listed.  Between the
  * delete and the rename only "<name>.NEW" holds the text: a card pulled or
  * a power cut there leaves "<name>.NEW" whole and "<name>" gone, and the
  * next listing shows "<name>.NEW" for a RENAME.  A rename that fails there
@@ -125,12 +128,14 @@ typedef struct {
     int step;                /**< the step to run next (fm_ops.c)       */
     unsigned mount;          /**< the mount its names are from          */
     bool cancel;             /**< CANCEL was pressed                    */
-    bool is_dir;             /**< MOVE, DELETE: the entry is a folder   */
+    bool is_dir;             /**< MOVE, RENAME, DELETE: the entry is a
+                                  folder                                 */
+    bool dst_was;            /**< SAVE: the file was there at the open  */
     bool note_restart;       /**< a saved ESC profile: read at the next
                                   start (fm_read_at_start())             */
-    char src[FM_PATH_MAX];   /**< the source's path                     */
-    char dst[FM_PATH_MAX];   /**< the target's path                     */
-    char tmp[FM_PATH_MAX];   /**< the target's ".NEW", or the report a
+    char src[FM_PATH_SIZE];  /**< the source's path                     */
+    char dst[FM_PATH_SIZE];  /**< the target's path                     */
+    char tmp[FM_PATH_SIZE];  /**< the target's ".NEW", or the report a
                                   DELETE takes along                     */
     void *in;                /**< the open source, or NULL              */
     void *out;               /**< the open ".NEW", or NULL              */

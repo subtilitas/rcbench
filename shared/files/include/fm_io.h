@@ -28,22 +28,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "fm_name.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * @brief Room for a name and its terminator: 63 characters, as the panel's
- *        directory walk keeps them (STORAGE_NAME_MAX).  A longer name is not
- *        listed and is counted as unlisted.
+ * @brief Room for a listed name and its terminator: FM_LIST_NAME_MAX (63)
+ *        bytes, as the panel's directory walk keeps them
+ *        (STORAGE_NAME_MAX).  A longer name is not listed and is counted
+ *        as unlisted.  The limits of names and paths are fm_name.h's;
+ *        a path buffer is FM_PATH_SIZE.
  */
-#define FM_NAME_MAX 64
-
-/**
- * @brief Room for a path from the root and its terminator, 384 bytes: as
- *        many as the Wi-Fi page's walk takes (WA_PATH_MAX).
- */
-#define FM_PATH_MAX 384
+#define FM_NAME_BUF (FM_LIST_NAME_MAX + 1u)
 
 /**
  * @brief What a call of the core or of the card came to.  FM_OK is 0; every
@@ -145,15 +143,17 @@ typedef struct {
      * @brief Hand every entry of folder @p dir to @p visit, in the order the
      *        volume holds them.
      *
-     * Names starting with "." may be left out, as the panel's walk leaves
-     * out the files a Mac writes.  A name the walk cannot hand over whole,
-     * 64 characters and more on the panel, is counted in @p unlisted.
+     * Every entry is either handed to @p visit or counted in
+     * @p unlisted: a name the walk cannot hand over whole, over
+     * FM_LIST_NAME_MAX bytes, and a name starting with "." that the walk
+     * leaves out, as the panel's walk leaves out the files a Mac writes.
+     * A folder whose walk visits nothing and counts nothing is empty.
      *
      * @param ctx       the card's context
      * @param dir       the folder, a path from the root
      * @param visit     called per entry
      * @param vctx      passed to @p visit
-     * @param unlisted  takes the count of names not handed over; may be
+     * @param unlisted  takes the count of entries not handed over; may be
      *                  NULL
      * @return FM_OK at the folder's end; FM_ERR_NOT_FOUND for no such
      *         folder; FM_ERR_CARD_GONE when the card was found gone part

@@ -12,9 +12,10 @@
  * by the entry at the page's edge, not by a number: a page reads on from
  * the one before it after a file came or went.
  *
- * A name of FM_NAME_MAX characters or more is not listed: the panel's walk
+ * A name over FM_LIST_NAME_MAX bytes is not listed: the panel's walk
  * cannot hand it over whole, and a cut name opens nothing.  The pane counts
- * them (unlisted) so the screen can say so.
+ * them, and the entries the walk leaves out (names starting with "."), as
+ * unlisted, so the screen can say so.
  *
  * Every entry carries what the rules say of it (fm_rules.h) when the page
  * was read: its kind, its place and whether the logger writes it.  A job
@@ -50,7 +51,7 @@ extern "C" {
  * @brief One entry of a page.
  */
 typedef struct {
-    char name[FM_NAME_MAX];  /**< the entry's name                       */
+    char name[FM_NAME_BUF];  /**< the entry's name                       */
     uint64_t size;           /**< bytes; 0 for a folder                  */
     bool is_dir;             /**< a folder                               */
     bool busy;               /**< the logger writes it (fm_busy())       */
@@ -74,12 +75,12 @@ typedef enum {
  *        through the functions.
  */
 typedef struct {
-    char dir[FM_PATH_MAX];          /**< the folder, a path from the root */
+    char dir[FM_PATH_SIZE];         /**< the folder, a path from the root */
     fm_entry_t page[FM_PAGE_MAX];   /**< the page on show                 */
     int held;        /**< rows on the page                                */
     int ahead;       /**< entries of the folder ahead of the first row    */
     int total;       /**< entries of the folder listed; -1 with no card   */
-    unsigned unlisted; /**< names of FM_NAME_MAX characters and more       */
+    unsigned unlisted; /**< entries not listed: too long, or hidden       */
     int selected;    /**< the selected row, -1 for none                   */
     unsigned mount;  /**< the mount the page was read from                */
 } fm_tree_t;
@@ -88,7 +89,7 @@ typedef struct {
  * @brief Start a pane in folder @p dir, with nothing read yet.
  * @param tree  the pane
  * @param dir   the folder, a path from the root; NULL is the root.  A path
- *              that does not fit is the root.
+ *              fm_path_check() refuses is the root.
  */
 void fm_tree_init(fm_tree_t *tree, const char *dir);
 
@@ -120,7 +121,8 @@ fm_err_t fm_tree_page(fm_tree_t *tree, const fm_io_t *io,
  * @param bench  what the rules need; may be NULL
  * @param row    a row of the page
  * @return FM_OK; FM_ERR_ARG for a row that is not a folder;
- *         FM_ERR_NAME for a path over FM_PATH_MAX; what fm_tree_page()
+ *         FM_ERR_NAME for a path fm_path_join() refuses, too long or
+ *         too deep; what fm_tree_page()
  *         answers for the new folder
  */
 fm_err_t fm_tree_enter(fm_tree_t *tree, const fm_io_t *io,

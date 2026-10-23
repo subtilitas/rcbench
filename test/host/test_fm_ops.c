@@ -187,7 +187,7 @@ TEST_CASE(each_place_allows_what_it_allows)
     CHECK_EQ(fm_allowed(&g_bench, FM_OP_INFO, "", "BENCH", true), FM_OK);
 }
 
-TEST_CASE(a_new_name_takes_59_characters_and_no_bench_name)
+TEST_CASE(a_new_name_takes_59_bytes_and_no_bench_name)
 {
     char n59[64];
     char n60[64];
@@ -195,35 +195,41 @@ TEST_CASE(a_new_name_takes_59_characters_and_no_bench_name)
     memcpy(n59 + 55, ".TXT", 5u);
     memset(n60, 'N', 56u);
     memcpy(n60 + 56, ".TXT", 5u);
-    CHECK_EQ(FM_NAME_LEN_MAX, 59);
-    CHECK_EQ(fm_target_check(NULL, "", n59), FM_OK);
-    CHECK_EQ(fm_target_check(NULL, "", n60), FM_ERR_NAME);
-    CHECK_EQ(fm_target_check(NULL, "", ""), FM_ERR_NAME);
-    CHECK_EQ(fm_target_check(NULL, "", "A/B"), FM_ERR_NAME);
-    CHECK_EQ(fm_target_check(NULL, "", "."), FM_ERR_NAME);
-    CHECK_EQ(fm_target_check(NULL, "", ".."), FM_ERR_NAME);
-    CHECK_EQ(fm_target_check(NULL, CARD_KST_CONF, "kst.txt"), FM_ERR_LOCKED);
-    CHECK_EQ(fm_target_check(NULL, CARD_BENCH, "RCBENCH.TMP"), FM_ERR_FIXED);
-    CHECK_EQ(fm_target_check(NULL, "", "BENCH"), FM_OK);
-    CHECK_EQ(fm_target_check(NULL, NULL, "A"), FM_ERR_ARG);
-    /* A path whose ".NEW" does not fit in 384 bytes. */
-    char dir[FM_PATH_MAX];
-    memset(dir, 'D', 370u);
-    dir[370] = '\0';
-    CHECK_EQ(fm_target_check(NULL, dir, "ABCDEFGHI"), FM_ERR_NAME);
-    CHECK_EQ(fm_target_check(NULL, dir, "ABCDE"), FM_OK);
-    /* Paths, as the jobs build them. */
-    char out[8];
-    CHECK_EQ(fm_join(out, sizeof(out), "AB", "CDEF"), FM_OK);
-    CHECK_STR_EQ(out, "AB/CDEF");
-    CHECK_EQ(fm_join(out, sizeof(out), "AB", "CDEFG"), FM_ERR_NAME);
-    CHECK_STR_EQ(out, "");
-    CHECK_EQ(fm_join(out, sizeof(out), "", "CDEFGHI"), FM_OK);
-    CHECK_EQ(fm_join(out, sizeof(out), "AB", ""), FM_OK);
-    CHECK_STR_EQ(out, "AB");
-    CHECK_EQ(fm_join(NULL, 4u, "", ""), FM_ERR_ARG);
-    CHECK_EQ(fm_join(out, 0u, "", ""), FM_ERR_ARG);
-    CHECK_EQ(fm_join(out, sizeof(out), NULL, ""), FM_ERR_ARG);
+    CHECK_EQ(FM_NAME_MAX, 59);
+    for (int typed = 0; typed < 2; ++typed) {
+        const bool t = (typed != 0);
+        CHECK_EQ(fm_target_check(NULL, "", n59, t), FM_OK);
+        CHECK_EQ(fm_target_check(NULL, "", n60, t), FM_ERR_NAME);
+        CHECK_EQ(fm_target_check(NULL, "", "", t), FM_ERR_NAME);
+        CHECK_EQ(fm_target_check(NULL, "", "A/B", t), FM_ERR_NAME);
+        CHECK_EQ(fm_target_check(NULL, "", ".", t), FM_ERR_NAME);
+        CHECK_EQ(fm_target_check(NULL, "", "..", t), FM_ERR_NAME);
+        CHECK_EQ(fm_target_check(NULL, CARD_KST_CONF, "kst.txt", t),
+                 FM_ERR_LOCKED);
+        CHECK_EQ(fm_target_check(NULL, CARD_BENCH, "RCBENCH.TMP", t),
+                 FM_ERR_FIXED);
+        CHECK_EQ(fm_target_check(NULL, "", "BENCH", t), FM_OK);
+        CHECK_EQ(fm_target_check(NULL, NULL, "A", t), FM_ERR_ARG);
+    }
+    /* A typed name follows fm_name_check(); a name carried over from the
+     * card keeps the characters a computer gave it. */
+    CHECK_EQ(fm_target_check(NULL, "", "A:B.TXT", true), FM_ERR_NAME);
+    CHECK_EQ(fm_target_check(NULL, "", "A:B.TXT", false), FM_OK);
+    CHECK_EQ(fm_target_check(NULL, "", "CON.TXT", true), FM_ERR_NAME);
+    CHECK_EQ(fm_target_check(NULL, "", " A.TXT", true), FM_ERR_NAME);
+    /* A path whose ".NEW" does not fit in FM_PATH_MAX (120) bytes. */
+    char dir[FM_PATH_SIZE];
+    memset(dir, 'D', 110u);
+    dir[110] = '\0';
+    CHECK_EQ(fm_target_check(NULL, dir, "ABCDEFGHI", false), FM_ERR_NAME);
+    CHECK_EQ(fm_target_check(NULL, dir, "ABCDE", false), FM_OK);
+    CHECK_EQ(fm_target_check(NULL, "/A", "B", false), FM_ERR_NAME);
+    /* Path answers, as the jobs read them. */
+    CHECK_EQ(fm_path_err(FM_PATH_OK), FM_OK);
+    CHECK_EQ(fm_path_err(FM_PATH_ARG), FM_ERR_ARG);
+    CHECK_EQ(fm_path_err(FM_PATH_BAD), FM_ERR_NAME);
+    CHECK_EQ(fm_path_err(FM_PATH_LONG), FM_ERR_NAME);
+    CHECK_EQ(fm_path_err(FM_PATH_DEEP), FM_ERR_NAME);
     CHECK(fm_path_within("USER", "user/logs"));
     CHECK(fm_path_within("USER", "USER"));
     CHECK(!fm_path_within("USER", "USERS"));
@@ -1059,7 +1065,7 @@ int main(void)
 {
     RUN(reads_pass_every_state_and_writes_only_safe_and_quiet);
     RUN(each_place_allows_what_it_allows);
-    RUN(a_new_name_takes_59_characters_and_no_bench_name);
+    RUN(a_new_name_takes_59_bytes_and_no_bench_name);
     RUN(a_copy_of_every_size_arrives_whole_through_its_new);
     RUN(a_copy_cancelled_after_each_chunk_leaves_no_new);
     RUN(a_card_full_at_chunk_n_removes_the_new);

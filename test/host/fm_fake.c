@@ -117,7 +117,7 @@ static bool is_folder(const fk_card_t *c, const char *dir)
 static int entries_in(const fk_card_t *c, const char *dir)
 {
     int k = 0;
-    char up[FM_PATH_MAX];
+    char up[FK_PATH];
     for (int i = 0; i < c->count; ++i) {
         parent_of(up, sizeof(up), c->n[i].path);
         if (same(up, dir)) {
@@ -233,13 +233,15 @@ static fm_err_t k_walk(void *ctx, const char *dir, fm_visit_fn visit,
         return FM_ERR_NOT_FOUND;
     }
     int handed = 0;
-    char up[FM_PATH_MAX];
+    char up[FK_PATH];
     for (int i = 0; i < c->count; ++i) {
         parent_of(up, sizeof(up), c->n[i].path);
         if (!same(up, dir)) {
             continue;
         }
-        if (c->gone_at_entry >= 0 && handed == c->gone_at_entry) {
+        if ((c->gone_at_entry >= 0 && handed == c->gone_at_entry)
+            || (c->gone_walk > 0 && c->calls[FK_WALK] == c->gone_walk)) {
+            c->gone_walk = 0;
             /* Found gone part way and mounted again: the old card's. */
             c->gone_at_entry = -1;
             ++c->mount;
@@ -247,7 +249,8 @@ static fm_err_t k_walk(void *ctx, const char *dir, fm_visit_fn visit,
         }
         const char *slash = strrchr(c->n[i].path, '/');
         const char *name = (slash != NULL) ? slash + 1 : c->n[i].path;
-        if (strlen(name) >= FM_NAME_MAX && !c->hand_long) {
+        if ((strlen(name) > FM_LIST_NAME_MAX && !c->hand_long)
+            || (name[0] == '.' && !c->show_dots)) {
             if (unlisted != NULL) {
                 ++*unlisted;
             }
@@ -290,7 +293,7 @@ static fm_err_t room_for(const fk_card_t *c, const char *path)
     if (find(c, path) >= 0) {
         return FM_ERR_EXISTS;
     }
-    char up[FM_PATH_MAX];
+    char up[FK_PATH];
     parent_of(up, sizeof(up), path);
     if (!is_folder(c, up)) {
         return FM_ERR_NOT_FOUND;
@@ -535,7 +538,7 @@ fm_io_t fk_io(fk_card_t *c)
 
 void fk_dir(fk_card_t *c, const char *path)
 {
-    char p[FM_PATH_MAX * 2];
+    char p[FK_PATH];
     const size_t n = strlen(path);
     if (n >= sizeof(p)) {
         abort();
@@ -559,7 +562,7 @@ uint8_t fk_pattern(const char *path, size_t i)
 void fk_file(fk_card_t *c, const char *path, const uint8_t *data,
              size_t size)
 {
-    char up[FM_PATH_MAX];
+    char up[FK_PATH];
     parent_of(up, sizeof(up), path);
     if (up[0] != '\0') {
         fk_dir(c, up);
