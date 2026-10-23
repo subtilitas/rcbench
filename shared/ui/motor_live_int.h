@@ -31,33 +31,56 @@
 
 #include "motor_screen_int.h"
 
-/* Inside the upper row's readouts: four stacked on the right. */
-#define HERO_H    ((UP_H - 3 * HERO_GAP) / 4)
-#define HERO_GAP  4
+/*
+ * Inside the telemetry card: the title line, PLOT | TABLE with the poll
+ * rate beside them, the legend, then the plot.  The table takes the
+ * legend's and the plot's place.
+ */
+#define SUB_Y     (UP_Y + TITLE_H + 6)    /**< PLOT | TABLE, px. */
+#define SUB_H     40                      /**< Their height, px. */
+#define SUB_W     200                     /**< Their row: two of 98 px. */
+#define LEG_Y     (SUB_Y + SUB_H + 4)     /**< The legend, px. */
+#define LEG_H     20                      /**< Its height, px. */
+#define PLOT_X    (LEFT_X + INNER)        /**< The plot's left edge, px. */
+#define PLOT_W    (LEFT_W - 2 * INNER)    /**< Its width: 600 px. */
+#define PLOT_Y    (LEG_Y + LEG_H + 4)     /**< Its top, px. */
+#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y) /**< Its height: 184 px. */
+/** @brief The poll rate and the link's errors, right of PLOT | TABLE. */
+#define RATE_X    (PLOT_X + SUB_W + 14)
 
-/* Inside the telemetry panel: its title strip, the legend, then the plot. */
-#define LEG_Y     (UP_Y + TITLE_H + 4)
-#define LEG_H     30
-#define PLOT_X    (LEFT_X + INNER)
-#define PLOT_W    (LEFT_W - 2 * INNER)
-#define PLOT_Y    (LEG_Y + LEG_H + 4)
-#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y)
-
-/* Inside the throttle panel: the readout shares the title strip, then the
- * track with a fine adjustment at each end. */
-#define ROW_Y     (LO_Y + TITLE_H + 2)
-#define ROW_H     34
-#define NUDGE_W   54
-#define CTRL_Y    (ROW_Y + 42)
-#define TRACK_H   40
-#define TRACK_X   (LEFT_X + INNER + NUDGE_W + 6)
-#define TRACK_W   (LEFT_W - 2 * INNER - 2 * (NUDGE_W + 6))
-#define HINT_Y    (CTRL_Y + TRACK_H + 14)
-
-/* The readout's box: from the panel's left edge to where the numerals end.
- * The hero numerals are 32 px tall with 3 px of slant on a 34 px row. */
-#define READOUT_W (LEFT_W - 2 * INNER)
-#define READOUT_H (CTRL_Y - ROW_Y - 4)
+/*
+ * Inside the THROTTLE card: the readout on the title line's right, then
+ * the track with a step key at each end, then the hint, which ends above
+ * the alert band.
+ */
+#define ROW_Y     (LO_Y + 4)              /**< The readout's top, px. */
+#define READOUT_W 260                     /**< Its box, at the right, px. */
+#define READOUT_H 46                      /**< Its height, px. */
+#define READOUT_X (LEFT_X + LEFT_W - INNER - READOUT_W) /**< Its left. */
+#define NUDGE_W   72                      /**< A step key's width, px. */
+#define NUDGE_H   56                      /**< Its height, px. */
+#define CTRL_Y    (ROW_Y + READOUT_H + 4) /**< The step keys' top, px. */
+#define TRACK_H   48                      /**< The track's height, px. */
+#define TRACK_Y   (CTRL_Y + (NUDGE_H - TRACK_H) / 2) /**< Its top, px. */
+#define TRACK_X   (LEFT_X + INNER + NUDGE_W + 8) /**< Its left end, px. */
+/**
+ * @brief The right end of the step keys' row: UI_TAP_MIN left of the rail's
+ *        column, so a finger that misses DISARM to its left lands on no
+ *        throttle control.  +1 is x 528 to 599, DISARM from x 648.
+ */
+#define THR_R     (RC_X - UI_TAP_MIN)
+/** @brief The track's length: 422 px, between the two step keys. */
+#define TRACK_W   (THR_R - NUDGE_W - 8 - TRACK_X)
+#define HINT_Y    (CTRL_Y + NUDGE_H + 8)  /**< The hint's line, px. */
+/** @brief The hint's left edge, at the card's padding.  The hint draws in
+ *         MO_FONT_FINE: the German one is 61 cells, 488 px. */
+#define HINT_X    (LEFT_X + INNER)
+_Static_assert(TRACK_X + TRACK_W + 8 + NUDGE_W + UI_TAP_MIN <= RC_X,
+               "+1 ends a finger's width left of DISARM");
+_Static_assert(HINT_Y + 20 <= STOP_FLOOR,
+               "the throttle's hint ends above the alert band");
+_Static_assert(ROW_Y + READOUT_H <= CTRL_Y,
+               "the readout ends above the step keys");
 
 /**
  * @brief ARM is a hold, not a press: two seconds from the OK green to the danger
@@ -72,11 +95,6 @@
  * than pressed cannot come to look different from this one.
  */
 #define ARM_HOLD_S    UI_HOLD_S
-
-/* LIVE's views, PLOT and TABLE, at the left of the line under the strip. */
-#define TAB_Y     HDR_Y
-#define TAB_H     HDR_H
-#define TAB_W     124
 
 enum { S_VOLT = 0, S_CURR, S_POWER, S_RPM, S_COUNT };
 

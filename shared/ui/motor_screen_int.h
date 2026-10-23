@@ -1,5 +1,6 @@
-/*
- * The MOTOR & ESC screen's private seam between motor_screen.c, the screen
+/**
+ * @file
+ * @brief The MOTOR & ESC screen's private seam between motor_screen.c, the screen
  * and LIVE's page (with motor_events.c and motor_draw.c, which share its
  * state through motor_live_int.h), motor_workbench.c, its task strip and
  * the CONTROL card's TARGET row, motor_program_page.c, PROGRAM's list and
@@ -26,67 +27,124 @@
 #include "ui_screen.h"
 #include "ui_workbench.h"
 
-#define W UI_PANEL_W
-#define H UI_BODY_H   /* the router owns the band */
+#define W UI_PANEL_W /**< The panel's width, px: the screen's own. */
+#define H UI_BODY_H   /**< The body's height under the band, px. */
 
-/* Horizontal bands, not columns: seventeen full-height vertical lines cost
+/*
+ * Horizontal bands, not columns: seventeen full-height vertical lines cost
  * about 8,160 cache-line fills on this panel, and the same pixels drawn as
- * horizontal lines cost none. */
-#define PAD       UI_MARGIN                    /* the screen's outer margin */
-#define INNER     6                    /* a panel's own padding */
-
-/*
- * Two columns.  The page on the left, the readouts and the CONTROL card on
- * a rail on the right, so a glance at the numbers and a hand on the
- * throttle do not compete for the same part of the screen.  The rail is
- * the same on every task.
+ * horizontal lines cost none.
  */
-#define COL_GAP   6
-#define LEFT_X    PAD
-#define LEFT_W    546
-#define RIGHT_X   (LEFT_X + LEFT_W + COL_GAP)
-#define RIGHT_W   (W - PAD - RIGHT_X)
+#define PAD       UI_MARGIN /**< The screen's outer margin, px. */
+#define INNER     10        /**< A card's own padding, px. */
 
-/*
- * The task strip at the top (ui_workbench.h), LIVE | PROGRAM | SETTINGS.  Under it,
- * on LIVE, the line with PLOT | TABLE, the poll rate, the link's errors and
- * the temperatures; on SETTINGS the temperatures alone, over the rail.
+/**
+ * @brief The left column's width, px: SERVO's left card, 620 px.  The page
+ *        on the left, the readouts and the CONTROL card on a rail on the
+ *        right, so a glance at the numbers and a hand on the throttle do
+ *        not compete for the same part of the screen.  The rail is the
+ *        same on every task.
  */
-#define HDR_Y     36
-#define HDR_H     18
+#define LEFT_W    620
+#define LEFT_X    PAD                      /**< The left column, px. */
+#define RIGHT_X   (LEFT_X + LEFT_W + 8)    /**< The rail: x 636. */
+#define RIGHT_W   (W - PAD - RIGHT_X)      /**< The rail's width: 380 px. */
+/** @brief The rail's inner column, as SERVO's output card's: x 648. */
+#define RC_X      (RIGHT_X + 12)
+#define RC_W      (RIGHT_W - 24)           /**< Its width: 356 px. */
 
-/* Upper row: LIVE's plot on the left, the four readouts on the right. */
-#define UP_Y      58
-#define LO_Y      272
-#define UP_H      (LO_Y - 6 - UP_Y)
+/**
+ * @brief The task strip at the 1024 x 600 sizes, as SERVO's: tabs of 150 x
+ *        40 px, 4 px apart, from y 8, and the page from y 56.  LIVE |
+ *        PROGRAM | SETTINGS take 458 px of the left column.  The shared
+ *        UI_WB_ figures stay at their 24 px strip for SUPPLY until it is
+ *        laid out at the new sizes; these are MOTOR & ESC's own, the
+ *        shared figures plus the difference.
+ */
+#define MO_STRIP_X UI_WB_STRIP_X
+#define MO_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8 px. */
+#define MO_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40 px. */
+#define MO_TAB_W   (UI_WB_TAB_W + 38)   /**< A tab's width: 150 px. */
+#define MO_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4 px. */
+#define MO_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56 px. */
 
-/* Lower row: the throttle on the left, the CONTROL card on the right. */
-#define LO_H      (H - LO_Y - PAD)
+/**
+ * @brief The lowest row a control that stops what the bench drives, or a
+ *        line of text, may reach: 4 px above the alert band.
+ */
+#define STOP_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
-/* A panel's title strip. */
+/**
+ * @brief The faces of the 1024 x 600 type scale this screen draws in.
+ *
+ * MO_FONT_LABEL (10 x 20) for every label, button, row and value;
+ * MO_FONT_FINE (8 x 16) for the data lines: the legend's scales, the IOmcu's
+ * refusals and SETTINGS' help lines; MO_FONT_HEAD (20 x 36) for a reading
+ * wider than its place; MO_FONT_NUM (32 x 44, digits, sign, point and
+ * space only) for the four readings and the throttle.
+ */
+#define MO_FONT_LABEL (&gfx_font_10x20)
+#define MO_FONT_FINE  UI_FONT_FINE           /**< 8 x 16: data lines. */
+#define MO_FONT_HEAD  (&gfx_font_20x36)      /**< 20 x 36: a wide reading. */
+#define MO_FONT_NUM   (&gfx_font_num_32x44)  /**< 32 x 44: the readings. */
+
+/** @brief A panel's title strip, the accent tag on its top edge, px. */
 #define TITLE_H   20
 
 /*
- * The CONTROL card, top down: the TARGET row, ARM, the run's totals and
- * RESET PEAKS, 4 px apart.  The TARGET row is the card's width less its
- * padding: TARGET's 64 px, and a value box of 18 cells.
+ * The rail, top down: the temperatures over it on every task, four reading
+ * cards, and the CONTROL card with its totals on the title line, the
+ * TARGET row, RESET PEAKS and ARM.  The TARGET row, RESET PEAKS' row and
+ * ARM are where SERVO's output card has its TARGET row, CENTRE / SWEEP /
+ * RELEASE and ARM, so ARM and DISARM are in one place on both workbenches.
  */
-#define BTN_H     UI_BTN_H
-#define TARGET_Y  (LO_Y + TITLE_H + 6)
-#define TARGET_H  22
-#define ARM_Y     (TARGET_Y + TARGET_H + 4)
-#define TOTALS_Y  (ARM_Y + BTN_H + 4)
-#define RESET_Y   (LO_H + LO_Y - PAD - BTN_H)
+#define HDR_Y     (PAD + 4)               /**< The temperatures' line, px. */
+#define HDR_H     20                      /**< Its height, px. */
+#define HERO_Y0   (HDR_Y + HDR_H + 8)     /**< The first reading card, px. */
+#define HERO_H    56                      /**< A reading card's height. */
+#define HERO_GAP  4                       /**< Between two of them, px. */
+/** @brief The CONTROL card's top: under the fourth reading card. */
+#define CTL_Y     (HERO_Y0 + 4 * HERO_H + 4 * HERO_GAP)
+#define CTL_H     (H - PAD - CTL_Y)       /**< To the body's margin. */
+#define BTN_H     UI_TAP_MIN              /**< RESET PEAKS' height, px. */
+#define TARGET_Y  (CTL_Y + TITLE_H + 8)   /**< The TARGET row, px. */
+#define TARGET_H  UI_TAP_MIN              /**< Its height, px. */
+#define RESET_Y   (TARGET_Y + TARGET_H + 10) /**< RESET PEAKS, px. */
+#define ARM_Y     (RESET_Y + BTN_H + 10)  /**< ARM and DISARM, px. */
+#define ARM_H     60                      /**< ARM's height: 9.0 mm. */
+_Static_assert(ARM_Y + ARM_H <= STOP_FLOOR,
+               "DISARM ends above the alert band");
+_Static_assert(ARM_Y + ARM_H <= CTL_Y + CTL_H,
+               "ARM ends inside the CONTROL card");
+/* RESET PEAKS and TARGET are UI_TAP_MIN tall by their defines. */
+_Static_assert(ARM_H >= UI_TAP_MIN, "ARM is a finger tall");
+
+/*
+ * The left column on LIVE: the telemetry card, with its tag and the
+ * derived figures on the title line, PLOT | TABLE with the poll rate beside
+ * them, the legend and the plot or the table; under it the THROTTLE card,
+ * the readout on the title line, the track with a step key at each end and
+ * the hint under them, above the alert band.
+ */
+#define UP_Y      MO_PAGE_Y               /**< The telemetry card, px. */
+#define UP_H      288                     /**< Its height, px. */
+#define LO_Y      (UP_Y + UP_H + 8)       /**< The THROTTLE card, px. */
+#define LO_H      (H - PAD - LO_Y)        /**< To the body's margin. */
 
 /*
  * SETTINGS' and PROGRAM's page: the left column under the strip, down to
  * the screen's margin.  SETTINGS' keypad covers the strip as well, so no
  * tab switches the task under an open keypad.
  */
-#define PAGE_X    LEFT_X
-#define PAGE_Y    UI_WB_PAGE_Y
-#define PAGE_W    LEFT_W
-#define PAGE_H    (H - PAGE_Y - PAD)
+#define PAGE_X    LEFT_X                  /**< The page's left edge. */
+#define PAGE_Y    MO_PAGE_Y               /**< Its top: 56 px. */
+#define PAGE_W    LEFT_W                  /**< Its width: 620 px. */
+#define PAGE_H    (H - PAGE_Y - PAD)      /**< Its height: 476 px. */
+
+_Static_assert(MO_STRIP_X + 3 * MO_TAB_W + 2 * MO_TAB_GAP + 3 <= RIGHT_X,
+               "the strip ends left of the rail");
+_Static_assert(MO_STRIP_Y + MO_STRIP_H + 3 <= MO_PAGE_Y,
+               "the strip ends above its page");
 
 /* --- motor_workbench.c: the strip and the TARGET row ---------------------- */
 
@@ -175,4 +233,9 @@ bool msp_pressed(void);
 void msp_tick(bool safe);
 /* Bumped when the page's look changes. */
 uint32_t msp_revision(void);
+/**
+ * @brief SETTINGS' page in its two columns, or the keypad over it.
+ * @param c the canvas
+ * @param safe whether the pulse rows take a press
+ */
 void msp_render(gfx_canvas_t *c, bool safe);

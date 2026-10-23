@@ -289,12 +289,12 @@ TEST_CASE(an_armed_report_repeated_keeps_the_throttle)
     for (int i = 0; i < 3; ++i) {
         motor_screen_set_armed(true);
     }
-    CHECK_NEAR(motor_screen_throttle(), 100.0f * 100.0f / 413.0f, 0.01f);
+    CHECK_NEAR(motor_screen_throttle(), 100.0f * 100.0f / (float)(MO_TRACK_W - 1), 0.01f);
     glide(FEED_LONE, TRACK_X + 168, P(TRACK_Y), 8);
     motor_screen_set_armed(true);
     lift(FEED_LONE);
-    CHECK_NEAR(motor_screen_throttle(), 140.0f * 100.0f / 413.0f, 0.01f);
-    CHECK_NEAR(last_cmd().value, 140.0f * 100.0f / 413.0f, 0.01f);
+    CHECK_NEAR(motor_screen_throttle(), 140.0f * 100.0f / (float)(MO_TRACK_W - 1), 0.01f);
+    CHECK_NEAR(last_cmd().value, 140.0f * 100.0f / (float)(MO_TRACK_W - 1), 0.01f);
 }
 
 /*
@@ -323,7 +323,7 @@ TEST_CASE(a_press_on_the_disarmed_track_is_no_drag_after_the_arm)
     finger(0, TRACK_X + 236, P(TRACK_Y));
     glide(0, TRACK_X + 276, P(TRACK_Y), 8);
     lift(0);
-    CHECK_NEAR(motor_screen_throttle(), 40.0f * 100.0f / 413.0f, 0.01f);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f * 100.0f / (float)(MO_TRACK_W - 1), 0.01f);
 }
 
 /* And at the disarm, where the application returns the value to zero. */
@@ -333,7 +333,7 @@ TEST_CASE(a_drag_under_way_ends_at_the_disarm)
     motor_screen_set_armed(true);
     finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
     glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
-    CHECK(motor_screen_throttle() > 48.0f);
+    CHECK(motor_screen_throttle() > 45.0f);   /* 200 of 421 px */
 
     motor_screen_set_throttle(0.0f);    /* the panel's disarm edge */
     (void)last_cmd();
@@ -371,17 +371,16 @@ TEST_CASE(every_arm_starts_from_zero)
 /* ---------------------------------------------------- the TARGET row */
 
 /*
- * The CONTROL card's TARGET row, mirrored from motor_screen_int.h: the
- * card's width less its 6 px padding at y 298, 22 px high; TARGET's 64 px,
- * then the value box from x 630 to 1010.
+ * The CONTROL card's TARGET row, from motor_spots.h: the card's inner
+ * column, x 648 to 1004, y 308 to 356, TARGET and its value box.
  */
-#define TGT_X0 630
+#define TGT_X0 MO_RC_X
 
-#define TGT_X1 1010
+#define TGT_X1 (MO_RC_X + MO_RC_W)
 
-#define TGT_Y0 298
+#define TGT_Y0 MO_TARGET_T
 
-#define TGT_Y1 320
+#define TGT_Y1 (MO_TARGET_B + 1)
 
 /* How many pixels of one colour the TARGET row's value box holds. */
 static int target_pixels(gfx_color_t colour)
@@ -437,13 +436,18 @@ TEST_CASE(the_target_row_names_the_protocol_and_the_pins)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* The row's value box holds 45 cells: 380 px less 8 px each side.  In a
+/* The row's value box holds 25 cells of 10 px.  In a
  * box of 18 cells the pins give way to a count. */
 TEST_CASE(many_throttle_pins_end_in_a_count_within_the_box)
 {
     char line[96];
-    CHECK_EQ(motor_target_cells(), 45u);
+    CHECK_EQ(motor_target_cells(), 25u);
     ui_text_set_language(UI_LANG_EN);
+    /* The card's own 25 cells: three pins and the count of the rest. */
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0xFFu,
+                                 true, motor_target_cells()));
+    CHECK_STR_EQ(line, "DSHOT300 GP0 GP1 GP2 +5");
+    CHECK(strlen(line) <= motor_target_cells());
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0xFFu,
                                  true, 18u));
     CHECK_STR_EQ(line, "DSHOT300 GP0 +7");

@@ -30,6 +30,7 @@
 #include "ui_screen.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "motor_spots.h"
 
 #define W UI_PANEL_W
 #define H UI_PANEL_H
@@ -45,8 +46,8 @@
 #define SV_ARM_MY  P(SV_ARM_Y + SV_ARM_H / 2)
 
 /* MOTOR & ESC's ARM / DISARM, as test_motor_arm.c has it. */
-#define MO_ARM_X   676
-#define MO_ARM_Y   P(324 + UI_BTN_H / 2)
+#define MO_ARM_PX  MO_ARM_X
+#define MO_ARM_PY  P(MO_ARM_Y)
 
 #define FRAME_S    0.026f
 
@@ -128,7 +129,7 @@ static bool alert_shows(void) { return ui_router_alert_number() != 0u; }
 TEST_CASE(disarm_ends_above_the_alert_band)
 {
     CHECK(SV_ARM_B < UI_ALERT_Y);
-    CHECK(MO_ARM_Y < UI_ALERT_Y);
+    CHECK(P(MO_ARM_T + MO_ARM_H - 1) < UI_ALERT_Y);
 }
 
 /* DISARM tapped 1.0 s after the hold, with an alert that arrived with the
@@ -364,7 +365,7 @@ static bool mo_armed(void)
     up_on(SCREEN_MOTOR);
     motor_screen_set_armed(false);
     while (mo_took() != MOTOR_CMD_NONE) { }
-    finger(FEED_LONE, MO_ARM_X, MO_ARM_Y);
+    finger(FEED_LONE, MO_ARM_PX, MO_ARM_PY);
     frames((int)(2.3f / FRAME_S));
     const motor_cmd_kind_t k = mo_took();
     lift(FEED_LONE);
@@ -374,22 +375,22 @@ static bool mo_armed(void)
 }
 
 /* MOTOR & ESC's DISARM is above the alert band and acts under the help
- * bubble; RESET PEAKS under the alert is the alert's. */
+ * bubble; the CONTROL card under the alert is the alert's. */
 TEST_CASE(motor_disarm_acts_under_the_bubble_and_beside_the_alert)
 {
     CHECK(mo_armed());
     open_bubble(true);
-    feed_tap(FEED_LONE, MO_ARM_X, MO_ARM_Y);
+    feed_tap(FEED_LONE, MO_ARM_PX, MO_ARM_PY);
     CHECK_EQ(mo_took(), MOTOR_CMD_DISARM);
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
 
     CHECK(mo_armed());
     alert();
-    feed_tap(FEED_LONE, MO_ARM_X, UI_ALERT_Y + 4);  /* RESET PEAKS, under it */
+    feed_tap(FEED_LONE, MO_ARM_PX, UI_ALERT_Y + 4);  /* the card, under it */
     CHECK_EQ(mo_took(), MOTOR_CMD_NONE);
     CHECK(!alert_shows());
     alert();
-    feed_tap(FEED_LONE, MO_ARM_X, MO_ARM_Y);
+    feed_tap(FEED_LONE, MO_ARM_PX, MO_ARM_PY);
     CHECK_EQ(mo_took(), MOTOR_CMD_DISARM);
     CHECK(alert_shows());                          /* not under it */
 }
@@ -401,7 +402,7 @@ TEST_CASE(motor_arm_under_the_bubble_starts_no_hold)
     motor_screen_set_armed(false);
     while (mo_took() != MOTOR_CMD_NONE) { }
     open_bubble(false);
-    finger(FEED_LONE, MO_ARM_X, MO_ARM_Y);
+    finger(FEED_LONE, MO_ARM_PX, MO_ARM_PY);
     frames((int)(3.0f / FRAME_S));
     lift(FEED_LONE);
     CHECK_EQ(mo_took(), MOTOR_CMD_NONE);
@@ -460,7 +461,8 @@ static int stops_under_the_band(const ui_screen_t *scr)
 }
 
 /* Every stop control ends above the alert band, so an alert covers none:
- * SERVO's DISARM and OUTPUT OFF, MOTOR & ESC's DISARM, SUPPLY's OUTPUT OFF.
+ * SERVO's DISARM and OUTPUT OFF, MOTOR & ESC's DISARM on LIVE's PLOT and
+ * TABLE and on SETTINGS, SUPPLY's OUTPUT OFF.
  * ESC STICK's ABORT is held in test_esc_stick_panel_touch. */
 TEST_CASE(no_stop_control_lies_under_the_alert_band)
 {
@@ -471,7 +473,15 @@ TEST_CASE(no_stop_control_lies_under_the_alert_band)
     supply_screen_set_output(false);
 
     CHECK(mo_armed());
-    CHECK(motor_screen()->safe_at(MO_ARM_X, MO_ARM_Y - UI_BAND_H));
+    CHECK(motor_screen()->safe_at(MO_ARM_PX, MO_ARM_PY - UI_BAND_H));
+    CHECK_EQ(stops_under_the_band(motor_screen()), 0);
+    /* The same DISARM on TABLE and on SETTINGS: the rail stays. */
+    feed_tap(FEED_LONE, MO_TABLE_TAB_X, P(MO_PANE_Y));
+    CHECK(motor_screen()->safe_at(MO_ARM_PX, MO_ARM_PY - UI_BAND_H));
+    CHECK_EQ(stops_under_the_band(motor_screen()), 0);
+    feed_tap(FEED_LONE, MO_TAB_X(2), P(MO_TAB_Y));
+    CHECK_EQ(motor_screen_task(), (int)UI_WB_SETTINGS);
+    CHECK(motor_screen()->safe_at(MO_ARM_PX, MO_ARM_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(motor_screen()), 0);
 
     up_on(SCREEN_SUPPLY);

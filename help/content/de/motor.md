@@ -18,7 +18,7 @@ Die Leiste oben hält drei Aufgaben, LIVE, PROGRAMMIEREN und OPTIONEN. Ein Tipp 
 | PROGRAMMIEREN | die Liste der ESC-Programmierer ([Programmieren](#programmieren)) |
 | OPTIONEN | [Motor-Optionen](motor-settings.md): der Akku, der Motor und der Gasausgang |
 
-Die rechte Spalte ist auf den drei Aufgaben dieselbe: die Temperaturen, die vier Anzeigen und die Karte STEUERUNG mit ZIEL, ARM, den Summen und SPITZENWERTE ZURÜCKSETZEN. ARM wirkt auf jeder. Eine Sitzung aus PROGRAMMIEREN deckt sie ab.
+Die rechte Spalte ist auf den drei Aufgaben dieselbe: die Temperaturen, die vier Anzeigen und die Karte STEUERUNG mit den Summen in ihrer Titelzeile, ZIEL, SPITZENWERTE ZURÜCKSETZEN und ARM. ARM steht am Fuß der Karte, wo SERVO sein ARM hat, und wirkt auf jeder Aufgabe. Eine Sitzung aus PROGRAMMIEREN deckt sie ab.
 
 Das Home-Tag oben links steigt eine Ebene nach der anderen:
 
@@ -55,7 +55,7 @@ Solange ESC STICK offen ist, erreicht kein Druck ARM oder einen Reiter. Das Öff
 
 ## ZIEL
 
-Die Zeile ZIEL oben auf der Karte STEUERUNG nennt, was der Throttle treibt: das Protokoll, dann die Pins, `DSHOT300 GP0 GP1`. Es sind die Pins, die unter [Ausgänge](outputs.md) als MOTOR PWM oder mit einem DShot-Protokoll gebunden sind. Das Wertefeld fasst 18 Zeichen; Pins, die nicht passen, werden gezählt, `DSHOT300 GP0 +7`.
+Die Zeile ZIEL oben auf der Karte STEUERUNG nennt, was der Throttle treibt: das Protokoll, dann die Pins, `DSHOT300 GP0 GP1`. Es sind die Pins, die unter [Ausgänge](outputs.md) als MOTOR PWM oder mit einem DShot-Protokoll gebunden sind. Das Wertefeld fasst 25 Zeichen; Pins, die nicht passen, werden gezählt, `DSHOT300 GP0 GP1 GP2 +5`.
 
 | ZIEL lautet | Bedingung |
 |---|---|
@@ -102,13 +102,13 @@ Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer übe
 
 ![Die Grafik hält den Lauf nach dem Schalten auf SAFE](view:motor-held)
 
-Das Schalten auf SAFE hält die Grafik, wie sie stand: Das Tag lautet `LETZTE TELEMETRIE`, und am rechten Rand steht `ENDE`. Das nächste Schalten auf ARMED löscht sie. Die Grafik hat 534 Spalten bei 20 Messungen pro Sekunde, 26,7 s. Ein längerer Lauf zeigt seine letzten 26,7 s; der ganze Lauf steht in seiner CSV-Datei (Comma-Separated Values) auf der Karte.
+Das Schalten auf SAFE hält die Grafik, wie sie stand: Das Tag lautet `LETZTE TELEMETRIE`, und am rechten Rand steht `ENDE`. Das nächste Schalten auf ARMED löscht sie. Die Grafik hat 600 Spalten bei 20 Messungen pro Sekunde, 30,0 s. Ein längerer Lauf zeigt seine letzten 30,0 s; der ganze Lauf steht in seiner CSV-Datei (Comma-Separated Values) auf der Karte.
 
 Die Anzeigen, die Ansicht TABELLE, die Summen und der Temperaturstreifen bleiben immer live, ARMED oder nicht.
 
-## Die Zeile unter der Leiste
+## Die Abfragerate und die Temperaturen
 
-Auf LIVE trägt die Zeile unter der Leiste GRAFIK und TABELLE, die Abfragerate, die Fehlerzahl des Links und drei Temperaturen: ESC und MOT von der Prüfstandsseite des IOmcu, MCU vom Chip des ESP32-S3 im Panel. Hat der IOmcu seit seinem Einschalten Link-Frames abgelehnt, fügt die Zeile ihre Zahl an. Auf OPTIONEN hält die Zeile nur die Temperaturen, über der rechten Spalte.
+Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE und daneben die Abfragerate und die Fehlerzahl des Links. Hat der IOmcu seit seinem Einschalten Link-Frames abgelehnt, fügt die Zeile darunter ihre Zahl an. Die drei Temperaturen stehen auf jeder Aufgabe in der Zeile über der rechten Spalte: ESC und MOT von der Prüfstandsseite des IOmcu, MCU vom Chip des ESP32-S3 im Panel.
 
 ![37 abgelehnte Link-Frames in der Zeile](view:motor-refused)
 

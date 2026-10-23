@@ -36,6 +36,7 @@
 #include "ui_theme.h"
 #include "ui_value_gate.h"
 #include "ui_widgets.h"
+#include "motor_spots.h"
 
 #define W UI_PANEL_W
 #define H UI_PANEL_H
@@ -199,14 +200,14 @@ TEST_CASE(the_gate_moves_between_its_four_states)
 
 /* ============================================================ MOTOR & ESC */
 
-#define M_TRACK_X  72
-#define M_TRACK_Y  P(356)
-#define M_DOWN_X   33
-#define M_UP_X     519
-#define M_ARM_X    676
-#define M_ARM_Y    P(342)
-#define M_HINT_Y   P(390)
-#define M_PX_PCT   (100.0f / 413.0f)
+#define M_TRACK_X  MO_TRACK_X
+#define M_TRACK_Y  P(MO_TRACK_Y)
+#define M_DOWN_X   MO_DOWN_X
+#define M_UP_X     MO_UP_X
+#define M_ARM_X    MO_ARM_X
+#define M_ARM_Y    P(MO_ARM_Y)
+#define M_HINT_Y   P(MO_HINT_Y)
+#define M_PX_PCT   (100.0f / (float)(MO_TRACK_W - 1))
 
 enum { MC_TRACK = 0, MC_PLUS, MC_MINUS, MC_KNOB, MC_COUNT };
 

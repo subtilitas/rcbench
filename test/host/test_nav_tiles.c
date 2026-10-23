@@ -29,6 +29,7 @@
  */
 
 #include "nav_rig.h"
+#include "motor_spots.h"
 
 static void tap_tile(int index)
 {
@@ -319,13 +320,12 @@ TEST_CASE(the_home_tag_climbs_one_level_from_every_screen)
 /* MOTOR & ESC's PROGRAM tab and its list's first row, and ESC STICK's
  * list rows, in panel y (motor_workbench.c, motor_program_page.c,
  * esc_stick_panel.c). */
-#define MO_TAB_PROGRAM_X 181
+#define MO_TAB_PROGRAM_X MO_TAB_X(1)
 
-#define MO_TAB_Y         (UI_BAND_H + 18)
+#define MO_TAB_PY        (UI_BAND_H + MO_TAB_Y)
 
-#define MO_PROG_ROW_X    279
 
-#define MO_PROG_ROW_Y    (UI_BAND_H + 65)
+#define MO_PROG_ROW_PY   (UI_BAND_H + MO_PROG_ROW_Y)
 
 #define SP_ROW_Y(n)      (UI_BAND_H + 70 + (n) * 36 + 16)
 
@@ -354,10 +354,10 @@ TEST_CASE(the_home_tag_climbs_the_stick_session_one_level_at_a_time)
     fresh();
     to_overview();
     ui_router_goto(SCREEN_MOTOR);
-    tap(MO_TAB_PROGRAM_X, MO_TAB_Y);
+    tap(MO_TAB_PROGRAM_X, MO_TAB_PY);
     CHECK_EQ(motor_screen_task(), (int)UI_WB_PROGRAM);
     CHECK(!motor_screen_session_shown());
-    tap(MO_PROG_ROW_X, MO_PROG_ROW_Y);
+    tap(MO_PROG_ROW_X, MO_PROG_ROW_PY);
     CHECK(motor_screen_session_shown());
     CHECK_EQ(esc_stick_panel_level(), 0);
     const int dualsky = stick_maker_row("Dualsky");
@@ -399,7 +399,7 @@ TEST_CASE(the_home_tag_climbs_the_stick_session_one_level_at_a_time)
      * closed. */
     ui_router_goto(SCREEN_MOTOR);
     CHECK_EQ(motor_screen_task(), (int)UI_WB_LIVE);
-    tap(MO_TAB_PROGRAM_X, MO_TAB_Y);
+    tap(MO_TAB_PROGRAM_X, MO_TAB_PY);
     CHECK(!motor_screen_session_shown());
     CHECK_EQ(esc_stick_panel_stage(), 0);
 }

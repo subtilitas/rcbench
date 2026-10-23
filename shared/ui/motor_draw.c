@@ -57,6 +57,18 @@ static gfx_color_t arm_fill(void)
     return fill;
 }
 
+/**
+ * @brief ARM, or DISARM while the bench is armed, in its fill of the
+ *        moment, on the rail where SERVO has its ARM.
+ * @param c the canvas
+ */
+static void draw_arm(gfx_canvas_t *c)
+{
+    ui_button_font(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM",
+                   arm_fill(), s.pressed == 1, !mo_arm_locked(),
+                   MO_FONT_LABEL);
+}
+
 /* "44C", or "--" when nothing has answered. */
 static void temp_text(char *out, size_t n, const char *label, float v,
                       bool ok)
@@ -68,36 +80,40 @@ static void temp_text(char *out, size_t n, const char *label, float v,
     }
 }
 
-/*
- * The line under the strip: on LIVE, the poll rate and the link's errors on
- * the left of it, after PLOT and TABLE; on every task, how hot the three
- * things that get hot, on the right, over the rail.  MCU is the panel's own
- * die, not the IOmcu's.
+/**
+ * @brief On LIVE, the poll rate and the link's errors right of PLOT |
+ *        TABLE, and under them, while the IOmcu has refused a frame, how
+ *        many; on every task, how hot the three things that get hot, on
+ *        the line over the rail.  MCU is the panel's own die, not the
+ *        IOmcu's.
+ * @param c the canvas
+ * @param on_live whether LIVE is shown
  */
 static void draw_header(gfx_canvas_t *c, bool on_live)
 {
     const ui_bench_status_t *st = ui_router_status();
-    const int x0 = on_live ? LEFT_X + TAB_W + 10 : RIGHT_X;
-    gfx_fill_rect(c, x0, HDR_Y, W - PAD - x0, HDR_H,
-                  ui_theme_color(UI_C_BG));
 
-    /* The band already carries the output mode, so this strip does not
+    /* The band already carries the output mode, so this line does not
      * repeat it: what it adds is the poll rate and the link's error count,
      * and while the IOmcu has refused a frame, how many. */
     if (on_live) {
+        const int x0 = RATE_X;
+        const int w0 = PLOT_X + PLOT_W - x0;
+        gfx_fill_rect(c, x0, SUB_Y, w0, SUB_H, ui_theme_color(UI_C_PANEL));
         char line[64];
         snprintf(line, sizeof(line), TR(MO_RATE_ERR), (int)SAMPLE_HZ,
                  (unsigned long)st->link_errors);
-        gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        /* At its widest, a 10-digit count after a 3-digit error count in
-         * German, the label ends at x = 572: left of the temperatures while
-         * the panel's own MCU reads under 100 C. */
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, SUB_Y, (int16_t)w0, 20 },
+                    line, MO_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
+                    GFX_ALIGN_LEFT);
+        /* At its widest, a 10-digit count in German, 40 cells of 8 px:
+         * 320 of the line's 386 px. */
         char refused[48];
         if (ui_link_refused_label(st, refused, sizeof(refused))) {
-            gfx_text(c, x0 + gfx_text_width(&gfx_font_8x16, line, 1) + 16,
-                     HDR_Y + 1, refused, &gfx_font_8x16,
-                     ui_theme_color(UI_C_TEXT_DIM), 1);
+            gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, SUB_Y + 22,
+                                         (int16_t)w0, 16 },
+                        refused, MO_FONT_FINE,
+                        ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_LEFT);
         }
     }
 
@@ -119,9 +135,9 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
     temp_text(mcu, sizeof(mcu), "MCU", st->mcu_temp_c,
               isfinite(st->mcu_temp_c));
     snprintf(temps, sizeof(temps), "%s  %s  %s", esc, mot, mcu);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, HDR_Y + 1,
-                                 (int16_t)(W - PAD - x0), 16 },
-                temps, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1,
+    const gfx_rect_t t = { RIGHT_X, HDR_Y, (int16_t)(RIGHT_W - 4), HDR_H };
+    gfx_fill_rect(c, t.x, t.y, t.w, t.h, ui_theme_color(UI_C_BG));
+    gfx_text_in(c, t, temps, MO_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
                 GFX_ALIGN_RIGHT);
 }
 
@@ -150,9 +166,10 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
  */
 static void draw_derived(gfx_canvas_t *c)
 {
-    /* Right of the panel's tag: its 20 cells and the tab's 26 px. */
-    const gfx_rect_t box = { (int16_t)(LEFT_X + 186), UP_Y + 2,
-                             (int16_t)(LEFT_W - 192), 16 };
+    /* Right of the card's tag: its 18 cells of 8 px and the tab's 26 px,
+     * on the title line in the 10 x 20 face. */
+    const gfx_rect_t box = { (int16_t)(LEFT_X + 186), UP_Y + 1,
+                             (int16_t)(LEFT_W - 186 - INNER), 20 };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
 
     /* What the ESC says, or failing that what somebody typed in. */
@@ -195,17 +212,28 @@ static void draw_derived(gfx_canvas_t *c)
 
     char line[96];
     snprintf(line, sizeof(line), "%s  %s  %s", kv, rv, eff);
-    gfx_text_in(c, box, line, &gfx_font_8x16,
+    gfx_text_in(c, box, line, MO_FONT_LABEL,
                 ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_RIGHT);
 }
 
-/* The table's rows, 26 px apart from under its heading rule. */
-#define TABLE_ROW_Y(i) (LEG_Y + 34 + (i) * 26)
-/* The ESC's own figures under the four channels, two rows 22 px apart. */
-#define ESC_RULE_Y     (TABLE_ROW_Y(S_COUNT) - 8)
-#define ESC_ROW_Y(i)   (ESC_RULE_Y + 8 + (i) * 22)
-_Static_assert(ESC_ROW_Y(1) + 16 <= UP_Y + UP_H - INNER,
-               "the ESC's second row ends inside the telemetry panel");
+/*
+ * The table, in the legend's and the plot's place: its heading, a rule,
+ * the four channels 32 px apart and, while the INA228 is BENCH's source,
+ * the ESC's own figures in two rows 28 px apart.  Each row's columns: the
+ * name, the value from TBL_VAL_DX, its unit from TBL_UNIT_DX and the
+ * extreme from TBL_PK_DX, where the heading's NOW and PEAK stand.
+ */
+/** @brief Channel row @p i's top, px. */
+#define TABLE_ROW_Y(i) (LEG_Y + 30 + (i) * 32)
+/** @brief The rule over the ESC's rows, px. */
+#define ESC_RULE_Y     (TABLE_ROW_Y(S_COUNT) - 6)
+/** @brief The ESC's row @p i's top, px: 0 voltage, 1 current. */
+#define ESC_ROW_Y(i)   (ESC_RULE_Y + 8 + (i) * 28)
+#define TBL_VAL_DX     150  /**< The value's column, from the left, px. */
+#define TBL_UNIT_DX    250  /**< The unit's column, px. */
+#define TBL_PK_DX      300  /**< The extreme's column, under PEAK, px. */
+_Static_assert(ESC_ROW_Y(1) + 20 <= UP_Y + UP_H - INNER,
+               "the ESC's second row ends inside the telemetry card");
 
 /*
  * What the ESC says beside what the INA228 measures, while the INA228 is
@@ -236,16 +264,16 @@ static void draw_esc_says(gfx_canvas_t *c)
             snprintf(d, sizeof(d), "--");
         }
         if (i == 0) {
-            gfx_text(c, PLOT_X, y, TR(MO_ESC_SAYS), &gfx_font_8x16,
+            gfx_text(c, PLOT_X, y, TR(MO_ESC_SAYS), MO_FONT_LABEL,
                      ui_theme_color(UI_C_TEXT_DIM), 1);
         }
-        gfx_text(c, PLOT_X + 128, y, v, &gfx_font_8x16,
+        gfx_text(c, PLOT_X + TBL_VAL_DX, y, v, MO_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, PLOT_X + 248, y, mo_series[i].unit, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
+        gfx_text(c, PLOT_X + TBL_UNIT_DX, y, mo_series[i].unit,
+                 MO_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
         snprintf(line, sizeof(line), "%s %s %s", TR(MO_TABLE_DIFF), d,
                  mo_series[i].unit);
-        gfx_text(c, PLOT_X + 348, y, line, &gfx_font_8x16,
+        gfx_text(c, PLOT_X + TBL_PK_DX, y, line, MO_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
 }
@@ -267,16 +295,16 @@ static void draw_table(gfx_canvas_t *c)
     const bool sensed = s.bench.valid
                         && (s.bench.flags & LINK_BN_SENSED) != 0u;
 
-    gfx_text(c, PLOT_X, LEG_Y + 4, TR(MO_TABLE_HEAD),
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+    gfx_text(c, PLOT_X, LEG_Y, TR(MO_TABLE_HEAD),
+             MO_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
     if (sensed) {
         /* Where the numbers come from, and whether its current hit the end
          * of its range: then current and power are bounds. */
         char src[32];
         snprintf(src, sizeof(src), "INA228%s%s", s.bench.clipped ? " " : "",
                  s.bench.clipped ? TR(MO_TABLE_CLIPPED) : "");
-        gfx_text_in(c, (gfx_rect_t){ PLOT_X, LEG_Y + 4, PLOT_W, 16 }, src,
-                    &gfx_font_8x16,
+        gfx_text_in(c, (gfx_rect_t){ PLOT_X, LEG_Y, PLOT_W, 20 }, src,
+                    MO_FONT_LABEL,
                     ui_theme_color(s.bench.clipped ? UI_C_WARN
                                                    : UI_C_TEXT_DIM),
                     1, GFX_ALIGN_RIGHT);
@@ -292,15 +320,15 @@ static void draw_table(gfx_canvas_t *c)
         ui_fmt(v, sizeof(v), ok ? now[i] : NAN, mo_series[i].decimals);
         ui_fmt(p, sizeof(p), s.pk_ok[i] ? pk[i] : NAN,
                mo_series[i].decimals);
-        gfx_text(c, PLOT_X, y, ui_tr(rows[i]), &gfx_font_8x16,
+        gfx_text(c, PLOT_X, y, ui_tr(rows[i]), MO_FONT_LABEL,
                  s.plot.series[i].color, 1);
-        gfx_text(c, PLOT_X + 128, y, v, &gfx_font_8x16,
+        gfx_text(c, PLOT_X + TBL_VAL_DX, y, v, MO_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, PLOT_X + 248, y, mo_series[i].unit, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
+        gfx_text(c, PLOT_X + TBL_UNIT_DX, y, mo_series[i].unit,
+                 MO_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
         char line[40];
         snprintf(line, sizeof(line), "%s %s", ui_tr(pk_label[i]), p);
-        gfx_text(c, PLOT_X + 348, y, line, &gfx_font_8x16,
+        gfx_text(c, PLOT_X + TBL_PK_DX, y, line, MO_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
     if (sensed) {
@@ -308,10 +336,41 @@ static void draw_table(gfx_canvas_t *c)
     }
 }
 
-/*
- * One card of the right rail, 57 px high: the name and the extreme stacked
- * on the left, the live value in a numeral face that fits, right-aligned
- * with its unit.
+/**
+ * @brief A reading's numerals in the 32 x 44 face, the 20 x 36 one where
+ *        they are wider than @p w, right-aligned to @p right.
+ * @param c the canvas
+ * @param right their right edge, px
+ * @param y their top, px
+ * @param w the width they may take, px
+ * @param t the numerals
+ * @param col their colour
+ * @return their left edge, px
+ */
+static int num_text(gfx_canvas_t *c, int right, int y, int w, const char *t,
+                    gfx_color_t col)
+{
+    const gfx_font_t *f = MO_FONT_NUM;
+    int tw = gfx_text_width(f, t, 1);
+    int dy = 0;
+    if (tw > w) {
+        f = MO_FONT_HEAD;
+        tw = gfx_text_width(f, t, 1);
+        dy = 4;
+    }
+    gfx_text(c, right - tw, y + dy, t, f, col, 1);
+    return right - tw;
+}
+
+/**
+ * @brief One card of the rail, HERO_H px high: the name and the extreme
+ *        stacked on the left, the live value in the 32 x 44 numerals,
+ *        right-aligned with its unit.
+ * @param c the canvas
+ * @param r the card
+ * @param def the channel's name, unit, colour and decimals
+ * @param value the live value, NAN for none
+ * @param peak the extreme, NAN for none
  */
 static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
                            const ui_hero_def_t *def, float value, float peak)
@@ -319,8 +378,8 @@ static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
     ui_card(c, r, ui_theme_color(UI_C_PANEL));
     gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, def->color);
 
-    gfx_fill_round_rect(c, r.x + 8, r.y + 7, 3, 10, 1, def->color);
-    gfx_text(c, r.x + 16, r.y + 6, def->label, &gfx_font_8x16,
+    gfx_fill_round_rect(c, r.x + 10, r.y + 9, 4, 14, 1, def->color);
+    gfx_text(c, r.x + 20, r.y + 6, def->label, MO_FONT_LABEL,
              ui_theme_color(UI_C_TEXT), 1);
 
     if (isfinite(peak)) {
@@ -329,7 +388,7 @@ static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
         snprintf(line, sizeof(line), "%s %s",
                  (def->extreme_label != NULL) ? def->extreme_label
                                               : TR(HERO_PEAK), pk);
-        gfx_text(c, r.x + 8, r.y + 26, line, &gfx_font_8x16,
+        gfx_text(c, r.x + 10, r.y + 30, line, MO_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
 
@@ -339,21 +398,17 @@ static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
     } else {
         snprintf(number, sizeof(number), "---");
     }
-    /* Narrower and shorter than the hero face, so four of these stack in the
-     * height one hero card wants. */
-    const gfx_seg_style_t seg = { .digit_w = 15, .digit_h = 24,
-                                  .thickness = 3, .gap = 4, .slant = 2,
-                                  .ghost = true };
-    const int uw = gfx_text_width(&gfx_font_8x16, def->unit, 1);
-    const int nw = gfx_seg_width(number, &seg);
-    const int nx = r.x + r.w - 8 - uw - 6 - nw;
-    gfx_seg_text(c, nx, r.y + 16, number, &seg, def->color,
-                 gfx_lerp(ui_theme_color(UI_C_PANEL), def->color, 34));
-    gfx_text(c, nx + nw + 6, r.y + 30, def->unit, &gfx_font_8x16,
+    /* The unit at the card's right, the numerals right of the name and the
+     * extreme: those are 12 cells at most ("max 120000"). */
+    const int uw = gfx_text_width(MO_FONT_LABEL, def->unit, 1);
+    const int ux = r.x + r.w - 10 - uw;
+    gfx_text(c, ux, r.y + 30, def->unit, MO_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
+    (void)num_text(c, ux - 6, r.y + 6, ux - 6 - (r.x + 140), number,
+                   def->color);
 }
 
-/* The right rail: one card per channel, live value over its extreme. */
+/* The rail: one card per channel, live value over its extreme. */
 static void draw_heroes(gfx_canvas_t *c)
 {
     const float now[S_COUNT] = { s.bench.voltage, s.bench.current,
@@ -362,7 +417,7 @@ static void draw_heroes(gfx_canvas_t *c)
                                  s.bench.power_max, s.bench.rpm_max };
     for (int i = 0; i < S_COUNT; ++i) {
         const gfx_rect_t r = { RIGHT_X,
-                               (int16_t)(UP_Y + i * (HERO_H + HERO_GAP)),
+                               (int16_t)(HERO_Y0 + i * (HERO_H + HERO_GAP)),
                                RIGHT_W, HERO_H };
         gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_BG));
         const ui_hero_def_t def = { ui_tr(mo_names[i]), mo_series[i].unit,
@@ -376,11 +431,12 @@ static void draw_heroes(gfx_canvas_t *c)
     }
 }
 
-/* What the run has taken out of the pack, under the arming button. */
+/* What the run has taken out of the pack, on the CONTROL card's title
+ * line, right of its tag: STEUERUNG's 9 cells of 8 px and the tab's 26. */
 static void draw_totals(gfx_canvas_t *c)
 {
-    const gfx_rect_t box = { (int16_t)(RIGHT_X + INNER), TOTALS_Y,
-                             (int16_t)(RIGHT_W - 2 * INNER), 16 };
+    const gfx_rect_t box = { (int16_t)(RIGHT_X + 110), (int16_t)(CTL_Y + 1),
+                             (int16_t)(RIGHT_W - 110 - 12), 20 };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
     /* Each total only when the panel has counted it: a run with no current
      * to count has no consumption, and 0 mAh reads as a measurement. */
@@ -398,7 +454,7 @@ static void draw_totals(gfx_canvas_t *c)
     }
     char line[48];
     snprintf(line, sizeof(line), "%s mAh   %s Wh", mah, wh);
-    gfx_text_in(c, box, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1,
+    gfx_text_in(c, box, line, MO_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_RIGHT);
 }
 
@@ -429,15 +485,21 @@ static uint8_t telemetry_tag(void)
     return (uint8_t)((s.plot.filled > 0) ? TAG_HELD : TAG_IDLE);
 }
 
-/*
- * LIVE's throttle panel: the readout, the step buttons and the track.  A
- * throttle that moved on its own clears the readout's own box and the
- * slider's painted region, not the panel: a drag asks for it on every
- * frame.  The slider's region is what the widget reports rather than its
- * track, because the thumb and its shadow stand proud of the track.
+/**
+ * @brief LIVE's throttle card: the readout on the title line, the step keys
+ *        and the track.  A throttle that moved on its own clears the
+ *        readout's own box and the slider's painted region, not the card:
+ *        a drag asks for it on every frame.  The slider's region is what
+ *        the widget reports rather than its track, because the thumb and
+ *        its shadow stand proud of the track.
+ * @param c the canvas
+ * @param ctrl_moved whether a control changed its look: the card under
+ *        the title line is cleared whole
  */
 static void draw_throttle(gfx_canvas_t *c, bool ctrl_moved)
 {
+    gfx_fill_rect(c, READOUT_X, ROW_Y, READOUT_W, READOUT_H,
+                  ui_theme_color(UI_C_PANEL));
     if (ctrl_moved) {
         /*
          * Inside the chamfer, not inside the border.  ui_panel cuts the
@@ -452,36 +514,29 @@ static void draw_throttle(gfx_canvas_t *c, bool ctrl_moved)
                       LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
                       ui_theme_color(UI_C_PANEL));
     } else {
-        gfx_fill_rect(c, LEFT_X + INNER, ROW_Y, READOUT_W, READOUT_H,
-                      ui_theme_color(UI_C_PANEL));
         const gfx_rect_t sl = ui_slider_painted_rect(&s.slider);
         gfx_fill_rect(c, sl.x, sl.y, sl.w, sl.h, ui_theme_color(UI_C_PANEL));
     }
 
-    /* The throttle in the numeral face the readings use: it is a reading
-     * too, and the one the operator's hand is on. */
+    /* The throttle in the numerals the readings use: it is a reading too,
+     * and the one the operator's hand is on.  The per cent sign in the
+     * label face beside it, as the readings' units are. */
     char pct[16];
     snprintf(pct, sizeof(pct), "%.1f", (double)s.slider.value);
-    const gfx_seg_style_t seg = ui_seg_hero();
-    const int pw = gfx_seg_width(pct, &seg);
-    const int px = LEFT_X + LEFT_W - INNER - 20 - pw;
-    /* The unlit segments are a ghost of the lit ones against whatever they
-     * sit on.  That is the panel now, not the screen's background; against
-     * the wrong base they read as a dark block behind the digits. */
-    gfx_seg_text(c, px, ROW_Y, pct, &seg, ui_theme_color(UI_C_ACCENT),
-                 gfx_lerp(ui_theme_color(UI_C_PANEL),
-                          ui_theme_color(UI_C_ACCENT), 34));
-    gfx_text(c, LEFT_X + LEFT_W - INNER - 14, ROW_Y + 14, "%",
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+    const int ux = READOUT_X + READOUT_W - 12;
+    gfx_text(c, ux, ROW_Y + 24, "%", MO_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+    (void)num_text(c, ux - 4, ROW_Y, READOUT_W - 20, pct,
+                   ui_theme_color(UI_C_ACCENT));
 
     /* Dimmed while the value is not live, as a button that takes no press
-     * is: the track and its step buttons take none. */
-    ui_button(c, s.down_rect, "-1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 3, mo_value_live());
+     * is: the track and its step keys take none. */
+    ui_button_font(c, s.down_rect, "-1", ui_theme_color(UI_C_PANEL_SUNK),
+                   s.pressed == 3, mo_value_live(), MO_FONT_LABEL);
     s.slider.dim = !mo_value_live();
     ui_slider_render(&s.slider, c);
-    ui_button(c, s.up_rect, "+1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 4, mo_value_live());
+    ui_button_font(c, s.up_rect, "+1", ui_theme_color(UI_C_PANEL_SUNK),
+                   s.pressed == 4, mo_value_live(), MO_FONT_LABEL);
 }
 
 /*
@@ -563,7 +618,7 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
             ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
                      TR(MO_THROTTLE), ui_theme_color(UI_C_ACCENT));
         }
-        ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
+        ui_panel(c, (gfx_rect_t){ RIGHT_X, CTL_Y, RIGHT_W, CTL_H },
                  TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;
         s.drawn_title[buf] = tag;
@@ -652,14 +707,16 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
              * no idea what a run is, so the sentence belongs here. */
             if (!s.plot.running && s.plot.filled == 0) {
                 gfx_text_in(c, (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H },
-                            TR(MO_NO_RUN), &gfx_font_8x16,
+                            TR(MO_NO_RUN), MO_FONT_LABEL,
                             ui_theme_color(UI_C_TEXT_FAINT), 1,
                             GFX_ALIGN_CENTER);
             }
         }
     } else if (data_moved) {
-        gfx_fill_rect(c, LEFT_X + 1, UP_Y + TITLE_H, LEFT_W - 2,
-                      UP_H - TITLE_H - 1 - UI_CHAMFER,
+        /* From the legend's line down: PLOT | TABLE and the rate over
+         * it are drawn on their own counters. */
+        gfx_fill_rect(c, LEFT_X + 1, LEG_Y, LEFT_W - 2,
+                      UP_Y + UP_H - 1 - UI_CHAMFER - LEG_Y,
                       ui_theme_color(UI_C_PANEL));
         gfx_fill_rect(c, LEFT_X + 1, UP_Y + UP_H - 1 - UI_CHAMFER,
                       LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
@@ -693,8 +750,7 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
 
     /* ARM animating on its own repaints its own button and nothing else. */
     if (arm_moved && !ctrl_moved && !thr_moved) {
-        ui_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
-                  s.pressed == 1, !mo_arm_locked());
+        draw_arm(c);
         return;
     }
 
@@ -704,25 +760,24 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
     if (!ctrl_moved && !arm_moved) {
         return;
     }
-    ui_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
-              s.pressed == 1, !mo_arm_locked());
+    draw_arm(c);
     if (!ctrl_moved) {
         return;
     }
     /* How the throttle is moved; disarmed, why it is not, in the words
      * SERVO's dial uses. */
     if (on_live && mo_value_live()) {
-        gfx_text(c, LEFT_X + INNER, HINT_Y, TR(MO_HINT), &gfx_font_8x16,
+        gfx_text(c, HINT_X, HINT_Y + 2, TR(MO_HINT), MO_FONT_FINE,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     } else if (on_live) {
-        gfx_text(c, LEFT_X + INNER, HINT_Y,
-                 ui_servo_str(SERVO_STR_START_NOT_ARMED), &gfx_font_8x16,
+        gfx_text(c, HINT_X, HINT_Y,
+                 ui_servo_str(SERVO_STR_START_NOT_ARMED), MO_FONT_LABEL,
                  ui_theme_color(UI_C_WARN), 1);
     }
     draw_totals(c);
-    ui_button(c, s.reset_rect, TR(MO_RESET_PEAKS),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 2, true);
+    ui_button_font(c, s.reset_rect, TR(MO_RESET_PEAKS),
+                   ui_theme_color(UI_C_PANEL_SUNK), s.pressed == 2, true,
+                   MO_FONT_LABEL);
     /* What the throttle drives, on every task: `protocol pins`, in the
      * warning colour while no pin is bound or the binding is not read. */
     char line[32];

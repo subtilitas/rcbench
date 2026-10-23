@@ -1334,15 +1334,15 @@ UI_TEXT(MO_NO_RUN, 60,
 UI_TEXT(MO_HINT, 0,
     "DRAG THE BAR. TAP EITHER END TO CHANGE BY ONE POINT.",
     "BALKEN ZIEHEN. AN DEN ENDEN TIPPEN, UM EINEN PUNKT ZU ÄNDERN.")
-/* The CONTROL card's TARGET row: its value box holds 18 cells. */
-UI_TEXT(MO_TGT_NONE, 18,
+/* The CONTROL card's TARGET row: its value box holds 25 cells. */
+UI_TEXT(MO_TGT_NONE, 25,
     "NO MOTOR PIN",
     "KEIN MOTOR-PIN")
-UI_TEXT(MO_TGT_UNREAD, 18,
+UI_TEXT(MO_TGT_UNREAD, 25,
     "PINS NOT READ",
     "PINS NICHT GELESEN")
 /* Before the pins, for pins bound as more than one protocol. */
-UI_TEXT(MO_TGT_MIXED, 18,
+UI_TEXT(MO_TGT_MIXED, 25,
     "MIXED",
     "GEMISCHT")
 /* MOTOR & ESC > SETTINGS: the headings, and the help line of a pulse row

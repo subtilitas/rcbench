@@ -3723,6 +3723,35 @@ shared/ui/include/motor_screen.h: file has no @file block
 shared/ui/include/motor_screen.h: warning: Compound motor_cmd_t is not documented.
 shared/ui/include/motor_screen.h: warning: Member kind (variable) of struct motor_cmd_t is not documented.
 shared/ui/include/motor_screen.h: warning: Member value (variable) of struct motor_cmd_t is not documented.
+shared/ui/include/motor_screen.h: warning: parameters of member motor_endpoints_alert are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_knob are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_peak_shown are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_poll_cmd are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_push are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_set_armed are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_set_esc_kv are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_set_throttle are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_set_throttle_pins are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_set_throttle_protocol are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_settings_box are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_settings_heading are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_settings_rows are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_throttle_target are not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_dshot_ports is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_endpoints_alert is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_screen_keypad_setting is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_screen_pane is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_screen_peak_shown is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_screen_plot_samples is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_screen_poll_cmd is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_screen_session_shown is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_screen_target_locked is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_screen_task is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_settings_box is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_settings_heading is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_settings_rows is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_target_cells is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_throttle_target is not documented
 shared/ui/include/outputs_screen.h: file has no @file block
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_reason_of are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_cell are not documented
@@ -4693,17 +4722,11 @@ shared/ui/log_viewer_load.c: warning: Member lv_run_analysis(void) (function) of
 shared/ui/log_viewer_load.c: warning: Member lv_set_message(const char *fmt,...) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member open_name(log_source_t *src) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_screen.c: file has no @file block
-shared/ui/motor_draw.c: warning: Member ESC_ROW_Y(i) (macro definition) of file motor_draw.c is not documented.
-shared/ui/motor_draw.c: warning: Member ESC_RULE_Y (macro definition) of file motor_draw.c is not documented.
-shared/ui/motor_draw.c: warning: Member TABLE_ROW_Y(i) (macro definition) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member arm_fill(void) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member draw_derived(gfx_canvas_t *c) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member draw_esc_says(gfx_canvas_t *c) (function) of file motor_draw.c is not documented.
-shared/ui/motor_draw.c: warning: Member draw_header(gfx_canvas_t *c, bool on_live) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member draw_heroes(gfx_canvas_t *c) (function) of file motor_draw.c is not documented.
-shared/ui/motor_draw.c: warning: Member draw_rail_card(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def, float value, float peak) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member draw_table(gfx_canvas_t *c) (function) of file motor_draw.c is not documented.
-shared/ui/motor_draw.c: warning: Member draw_throttle(gfx_canvas_t *c, bool ctrl_moved) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member draw_totals(gfx_canvas_t *c) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member k_extreme[S_COUNT] (variable) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member k_tag[TAG_COUNT] (variable) of file motor_draw.c is not documented.
@@ -4720,28 +4743,7 @@ shared/ui/motor_events.c: warning: Member open_outputs(void) (function) of file 
 shared/ui/motor_events.c: warning: Member session_opened(void) (function) of file motor_events.c is not documented.
 shared/ui/motor_events.c: warning: Member task_changed(void) (function) of file motor_events.c is not documented.
 shared/ui/motor_live_int.h: warning: Compound mo_state_t is not documented.
-shared/ui/motor_live_int.h: warning: Member CTRL_Y (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member HERO_GAP (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member HERO_H (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member HINT_Y (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member LEG_H (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member LEG_Y (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member NUDGE_W (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member PLOT_H (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member PLOT_W (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member PLOT_X (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member PLOT_Y (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member READOUT_H (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member READOUT_W (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member ROW_H (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member ROW_Y (macro definition) of file motor_live_int.h is not documented.
 shared/ui/motor_live_int.h: warning: Member SAMPLE_HZ (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member TAB_H (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member TAB_W (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member TAB_Y (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member TRACK_H (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member TRACK_W (macro definition) of file motor_live_int.h is not documented.
-shared/ui/motor_live_int.h: warning: Member TRACK_X (macro definition) of file motor_live_int.h is not documented.
 shared/ui/motor_live_int.h: warning: Member arm_rect (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member arm_rev (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member bench (variable) of struct mo_state_t is not documented.
@@ -4800,22 +4802,106 @@ shared/ui/motor_program_page.c: file has no @file block
 shared/ui/motor_program_page.c: warning: Member rev (variable) of struct [struct].p is not documented.
 shared/ui/motor_program_page.c: warning: Member sig (variable) of struct [struct].p is not documented.
 shared/ui/motor_program_page.c: warning: Member view (variable) of struct [struct].p is not documented.
-shared/ui/motor_screen.c: file has no @file block
-shared/ui/motor_screen_int.h: file has no @file block
-shared/ui/motor_settings_page.c: file has no @file block
-shared/ui/motor_settings_page.c: warning: Member drawn_safe (variable) of struct [struct].p is not documented.
-shared/ui/motor_settings_page.c: warning: Member drawn_save (variable) of struct [struct].p is not documented.
+shared/ui/motor_screen.c: warning: Member back(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member cancel(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member enter(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member k_screen (variable) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member k_tab_labels[] (variable) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member leave(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_arm_locked(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_bench_safe(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_bind_colours(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_end_drag(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_endpoints_free(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_names[S_COUNT] (variable) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_ok[S_COUNT] (variable) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_post(motor_cmd_kind_t kind, float value) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_s (variable) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_series[S_COUNT] (variable) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_target_locked(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_throttle_from_zero(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member mo_value_live(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member motor_invalidate(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member motor_screen(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member motor_screen_plot_state(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member motor_screen_throttle(void) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen.c: warning: Member value_edge(ui_value_edge_t edge, ui_value_state_t before) (function) of file motor_screen.c is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_armed(bool armed) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_back(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_cancel(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_cancel_press(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_enter(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_event(const touch_event_t *evt) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_leave(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_pressed(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_render_page(gfx_canvas_t *c) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_render_strip(gfx_canvas_t *c, uint8_t proto, uint64_t pins, bool known, bool armed) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_reset(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_revision(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_shown(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_strip_signature(uint8_t proto, uint64_t pins, bool known, bool armed) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mpp_tick(float dt_s) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member msp_back(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member msp_cancel(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member msp_event(const touch_event_t *evt, bool safe) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member msp_leave(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member msp_modal(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member msp_pressed(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member msp_reset(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member msp_revision(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member msp_tick(bool safe) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_cancel(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_enter(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_ev_t (enumeration) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_event(const touch_event_t *evt, bool strip, bool locked) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_opened_outputs(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_pressed(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_render_strip(gfx_canvas_t *c) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_render_target(gfx_canvas_t *c, const char *value, bool warn, bool locked) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_revision(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_strip_area(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_target_rect(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_screen_int.h: warning: Member mwb_task(void) (function) of file motor_screen_int.h is not documented.
+shared/ui/motor_settings_page.c: warning: Member ROW_COUNT (macro definition) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member close_keypad(void) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member decimals_of(const setting_def_t *d) (function) of file motor_settings_page.c is not documented.
 shared/ui/motor_settings_page.c: warning: Member heading (variable) of struct [struct].k_rows is not documented.
 shared/ui/motor_settings_page.c: warning: Member id (variable) of struct [struct].k_rows is not documented.
-shared/ui/motor_settings_page.c: warning: Member kp (variable) of struct [struct].p is not documented.
-shared/ui/motor_settings_page.c: warning: Member kp_row (variable) of struct [struct].p is not documented.
-shared/ui/motor_settings_page.c: warning: Member press_id (variable) of struct [struct].p is not documented.
-shared/ui/motor_settings_page.c: warning: Member pressed (variable) of struct [struct].p is not documented.
-shared/ui/motor_settings_page.c: warning: Member rev (variable) of struct [struct].p is not documented.
-shared/ui/motor_workbench.c: file has no @file block
+shared/ui/motor_settings_page.c: warning: Member k_heading[HD_COUNT] (variable) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member k_rows[] (variable) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member msp_back(void) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member msp_cancel(void) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member msp_event(const touch_event_t *evt, bool safe) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member msp_leave(void) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member msp_modal(void) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member msp_pressed(void) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member msp_reset(void) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member msp_revision(void) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member msp_tick(bool safe) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member open_keypad(int i) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member row_locked(int i, bool safe) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member safe_only(int i) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_settings_page.c: warning: Member save_state(void) (function) of file motor_settings_page.c is not documented.
+shared/ui/motor_workbench.c: warning: Member MOTOR_TASKS (macro definition) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member bits(uint64_t m) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member item_text(unsigned i, uint64_t pins, uint8_t ports, char *buf, size_t cap) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_cancel(void) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_enter(void) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_event(const touch_event_t *evt, bool strip, bool locked) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_opened_outputs(void) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_pressed(void) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_render_strip(gfx_canvas_t *c) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_render_target(gfx_canvas_t *c, const char *value, bool warn, bool locked) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_revision(void) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_strip_area(void) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_target_rect(void) (function) of file motor_workbench.c is not documented.
+shared/ui/motor_workbench.c: warning: Member mwb_task(void) (function) of file motor_workbench.c is not documented.
 shared/ui/motor_workbench.c: warning: Member outputs_nav (variable) of struct [struct].w is not documented.
+shared/ui/motor_workbench.c: warning: Member put_item(char *out, size_t size, size_t *n, const char *item, unsigned cells, size_t reserve) (function) of file motor_workbench.c is not documented.
 shared/ui/motor_workbench.c: warning: Member rev (variable) of struct [struct].w is not documented.
+shared/ui/motor_workbench.c: warning: Member target_with_ports(char *out, size_t size, const char *name, uint64_t pins, uint8_t ports, unsigned cells) (function) of file motor_workbench.c is not documented.
 shared/ui/motor_workbench.c: warning: Member trow (variable) of struct [struct].w is not documented.
+shared/ui/motor_workbench.c: warning: Member w (variable) of file motor_workbench.c is not documented.
 shared/ui/motor_workbench.c: warning: Member wb (variable) of struct [struct].w is not documented.
 shared/ui/outputs_port.c: file has no @file block
 shared/ui/outputs_port_entry.c: file has no @file block

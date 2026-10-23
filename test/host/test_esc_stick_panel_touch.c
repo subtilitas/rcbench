@@ -18,6 +18,7 @@
  */
 
 #include "esc_stick_panel_rig.h"
+#include "motor_spots.h"
 
 /* ------------------------------------------------- taps, tracker-fed */
 
@@ -447,13 +448,12 @@ TEST_CASE(hold_to_run_keeps_its_two_seconds)
 
 /* MOTOR & ESC's PROGRAM tab and its STICK MENU row, in body coordinates
  * (motor_workbench.c's strip, motor_program_page.c's list). */
-#define MO_PROGRAM_TAB_X 181
+#define MO_PROGRAM_TAB_X MO_TAB_X(1)
 
-#define MO_TAB_Y         18
 
-#define MO_ROW_X         279
+#define MO_ROW_X         MO_PROG_ROW_X
 
-#define MO_ROW_Y         65
+#define MO_ROW_Y         MO_PROG_ROW_Y
 
 /* Through the router and MOTOR & ESC: a control carried into the band, or
  * ended by the tracker for a jump, is released for the screen and is not

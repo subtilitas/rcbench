@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "motor_spots.h"
 #include "touch_feed.h"
 
 #include "motor_screen.h"
@@ -65,29 +66,21 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
 /*
- * Geometry mirrored from motor_screen_int.h, motor_live_int.h and
- * motor_screen.c; if the layout moves these move with it, and the test
- * names say what they aim at.  Screen-local coordinates:
- * the router strips the band before a screen sees an event.
+ * Geometry from motor_spots.h, in screen-local coordinates: the router
+ * strips the band before a screen sees an event.  The test names say what
+ * they aim at.
  */
-#define UP_Y     58
-#define UP_H     208
-#define LO_Y     (UP_Y + UP_H + 6)        /* 272 */
-#define TITLE_H  20
 #define BTN_H    UI_BTN_H
-#define TRACK_H  40
-#define ROW_Y    (LO_Y + TITLE_H + 2)
-#define CTRL_Y   (ROW_Y + 42)             /* the throttle track */
-#define TRACK_Y  (CTRL_Y + TRACK_H / 2)
-/* ARM and RESET PEAKS live in the control panel on the right rail, ARM
- * under the TARGET row. */
-#define ARM_X    676
-#define ARM_Y    (LO_Y + TITLE_H + 6 + 22 + 4 + BTN_H / 2)
+#define TRACK_Y  MO_TRACK_Y
+/* ARM and RESET PEAKS live in the CONTROL card on the right rail, ARM
+ * at its foot, where SERVO has its ARM. */
+#define ARM_X    MO_ARM_X
+#define ARM_Y    MO_ARM_Y
 /* One percentage point at each end of the track. */
-#define DOWN_X   33
-#define UP_X     519
-/* The track itself: x 72..486, so half of it is half the travel. */
-#define TRACK_X  72
+#define DOWN_X   MO_DOWN_X
+#define UP_X     MO_UP_X
+/* The track itself: x 98..520, so half of it is half the travel. */
+#define TRACK_X  MO_TRACK_X
 
 /* Mirrored from motor_live_int.h: arming is a hold, not a press. */
 #define ARM_HOLD_S  2.0f
@@ -135,5 +128,5 @@ static inline motor_cmd_t last_cmd(void)
     while (motor_screen_poll_cmd(&c)) { }
     return c;
 }
-#define TGT_TAP_X 700
-#define TGT_TAP_Y 309
+#define TGT_TAP_X MO_TARGET_X
+#define TGT_TAP_Y MO_TARGET_Y

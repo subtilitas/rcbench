@@ -25,29 +25,29 @@
 #include "ui_screen.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "motor_spots.h"
 
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
 /*
- * Geometry in panel coordinates, mirrored from motor_screen_int.h and
- * motor_live_int.h with the band's height added: the throttle track
- * x 72..485, body y 336..375, with -1 at x 12..65 and +1 at x 492..545;
- * ARM from body y 324, UI_BTN_H tall; RESET PEAKS 2 margins above the
- * body's foot; the hint line under the track.
+ * Geometry in panel coordinates, from motor_spots.h with the band's height
+ * added: the throttle track x 98..520, with -1 left of it and +1 right of
+ * it; ARM at the CONTROL card's foot, RESET PEAKS over it; the hint line
+ * under the track.
  */
 #define P(y)      (UI_BAND_H + (y))
-#define TRACK_X   72
-#define TRACK_Y   P(356)
-#define DOWN_X    33
-#define UP_X      519
-#define ARM_X     676
-#define ARM_Y     P(324 + UI_BTN_H / 2)
-#define RESET_X   676
-#define RESET_Y   P(UI_BODY_H - 2 * UI_MARGIN - UI_BTN_H / 2)
-#define HINT_Y    P(390)
-/* Throttle per px of travel on the track: 100 % over its 413 px. */
-#define PX_PCT    (100.0f / 413.0f)
+#define TRACK_X   MO_TRACK_X
+#define TRACK_Y   P(MO_TRACK_Y)
+#define DOWN_X    MO_DOWN_X
+#define UP_X      MO_UP_X
+#define ARM_X     MO_ARM_X
+#define ARM_Y     P(MO_ARM_Y)
+#define RESET_X   MO_RESET_X
+#define RESET_Y   P(MO_RESET_Y)
+#define HINT_Y    P(MO_HINT_Y)
+/* Throttle per px of travel on the track: 100 % over its 421 px of travel. */
+#define PX_PCT    (100.0f / (float)(MO_TRACK_W - 1))
 
 static gfx_color_t *fb;
 static gfx_color_t *fb_was;
@@ -368,7 +368,7 @@ TEST_CASE(the_first_input_after_an_arm_starts_from_zero)
     for (int input = 0; input < 3; ++input) {
         fresh();
         CHECK(arm());
-        drag(28, 250);                  /* 60.5 % */
+        drag(28, 266);                  /* 60.6 % */
         CHECK(took().value > 60.0f);
         CHECK(disarm());
         CHECK(arm());
@@ -517,7 +517,7 @@ TEST_CASE(disarm_stop_link_loss_and_leaving_each_end_at_zero)
         CHECK_EQ(took().kind, MOTOR_CMD_NONE);
         feed_tap(FEED_LONE, UP_X, TRACK_Y);
         CHECK_NEAR(took().value, 1.0f, 0.001f);
-        drag(28, 100 + 40 * way);
+        drag(28, 110 + 40 * way);
         CHECK(took().value > 24.0f);
         switch (way) {
         case 0:
@@ -833,7 +833,7 @@ TEST_CASE(arm_reset_peaks_and_the_tabs_work_while_disarmed)
     feed_tap(FEED_LONE, RESET_X, RESET_Y);
     CHECK_EQ(took().kind, MOTOR_CMD_RESET_PEAKS);
     picture(fb_was);
-    feed_tap(FEED_LONE, 6 + 124 / 2 + 31, P(45));       /* TABLE */
+    feed_tap(FEED_LONE, MO_TABLE_TAB_X, P(MO_PANE_Y));  /* TABLE */
     CHECK(!picture_unchanged());
     CHECK(arm());
     CHECK(disarm());

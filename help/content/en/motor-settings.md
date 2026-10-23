@@ -6,11 +6,11 @@ order: 11
 
 # Motor settings
 
-SETTINGS, the third tab of [MOTOR & ESC](motor.md)'s strip, holds the bench's 8 ESC (electronic speed controller) settings in the left column under three headings: PACK, MOTOR and THROTTLE OUTPUT. The right column stays in place and works: the readouts, TARGET, ARM, the totals and RESET PEAKS.
+SETTINGS, the third tab of [MOTOR & ESC](motor.md)'s strip, holds the bench's 8 ESC (electronic speed controller) settings in the left column under three headings, in two columns: PACK and MOTOR on the left, THROTTLE OUTPUT on the right. The right column stays in place and works: the readouts, TARGET, ARM, the totals and RESET PEAKS.
 
 ![SETTINGS](view:motor-settings)
 
-A row shows the setting, a help line and its value with its unit. A tap on the value opens the keypad over the left column and the strip. The keypad names the setting and its range. OK takes a value inside the range; a value outside it keeps the keypad open and names the range in the warning colour. CANCEL, and the home tag, close the keypad and change nothing. A typed value lands on the setting's step: 4321 mAh becomes 4300 mAh.
+A row shows the setting and its value with its unit, 48 px tall, and a help line under them. A tap on the value opens the keypad over the left column and the strip. The keypad names the setting and its range. OK takes a value inside the range; a value outside it keeps the keypad open and names the range in the warning colour. CANCEL, and the home tag, close the keypad and change nothing. A typed value lands on the setting's step: 4321 mAh becomes 4300 mAh.
 
 ![The keypad for Capacity](view:motor-settings-keypad)
 
@@ -46,7 +46,7 @@ A binding written on OUTPUTS, and the IOmcu connecting again, also send the pair
 
 ## Keeping the values
 
-A changed value is in force at once and asks for a write. The panel writes on the first frame with the bench SAFE, the supply output off and no board drawing being fetched or kept. The settings are one store: the write keeps every unsaved value, those changed on SETUP included. The line under the rows says where the store stands:
+A changed value is in force at once and asks for a write. The panel writes on the first frame with the bench SAFE, the supply output off and no board drawing being fetched or kept. The settings are one store: the write keeps every unsaved value, those changed on SETUP included. The line at the foot of the page says where the store stands:
 
 | Line | Meaning |
 |---|---|

@@ -30,20 +30,21 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "ui_workbench.h"
+#include "motor_spots.h"
 
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 #define P(y) (UI_BAND_H + (y))
 
-/* Mirrored from motor_screen_int.h and ui_workbench.h: the strip's tabs,
- * 112 px a tab 4 px apart from x 9, 24 px high from y 6; the CONTROL
- * card's ARM; PROGRAM's first row, in the page from y 38. */
-#define TAB_Y       P(6 + 12)
-#define TAB_X(i)    (9 + (i) * 116 + 56)
-#define ARM_X       676
-#define ARM_Y       P(342)
-#define ROW_X       279
-#define ROW_Y       P(65)
+/* From motor_spots.h: the strip's tabs, 150 px a tab 4 px apart from x 9,
+ * 40 px high from y 8; the CONTROL card's ARM; PROGRAM's first row, in the
+ * page from y 56. */
+#define TAB_Y       P(MO_TAB_Y)
+#define TAB_X(i)    MO_TAB_X(i)
+#define ARM_X       MO_ARM_X
+#define ARM_Y       P(MO_ARM_Y)
+#define ROW_X       MO_PROG_ROW_X
+#define ROW_Y       P(MO_PROG_ROW_Y)
 /* The stick session's makers, from y 70 in rows of 36. */
 #define SP_ROW_Y(n) P(70 + (n) * 36 + 16)
 
