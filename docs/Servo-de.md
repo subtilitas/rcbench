@@ -116,12 +116,16 @@ Das Servo steht auf PULS MITTE, der Lauf schaltet den Prüfstand auf SAFE,
 VERBINDEN liest alle Register, VERLASSEN gibt den Port zurück, und der Lauf
 schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert.
 
-- Ein Lesen, das scheitert, beendet den Lauf vor jeder Suche: ABGEBROCHEN,
-  `Programmierport ohne Abschluss`, wenn VERBINDEN oder sein Lesen nicht
-  abschließt; NICHT BESTANDEN, `kein KST- oder Chaservo-Servo`, wenn das
-  gelesene Servo Werte hält, die die harten Regeln nicht annehmen. Ein
-  Servo, das kein KST oder Chaservo ist, wird mit ZIEL auf einem
-  SERVO-PWM-Pin gesucht.
+- Ein Lesen, das scheitert, beendet den Lauf vor jeder Suche: NICHT
+  BESTANDEN, `kein KST- oder Chaservo-Servo`, wenn das erste VERBINDEN kein
+  Servo findet, das antwortet (ein Servo, das kein KST oder Chaservo ist,
+  antwortet nicht), oder das gelesene Servo Werte hält, die die harten
+  Regeln nicht annehmen; ABGEBROCHEN, `PROG-PORT-Sitzung gescheitert`, wenn
+  das erste VERBINDEN aus einem anderen Grund scheitert oder sein Lesen
+  nicht abschließt. Ein Servo, das kein KST oder Chaservo ist, wird mit
+  ZIEL auf einem SERVO-PWM-Pin gesucht. Jedes spätere VERBINDEN, ein
+  VERLASSEN oder ein Schritt, der nicht abschließt, beendet den Lauf als
+  ABGEBROCHEN mit demselben Grund.
 - NEUTRAL nicht zwischen PULSE LOWER und PULSE UPPER beendet ihn als NICHT
   BESTANDEN, `NEUTRAL außerhalb LOWER/UPPER`.
 - PULSE LOWER bis PULSE UPPER nicht innerhalb von PULS MIN bis PULS MAX
@@ -376,7 +380,7 @@ sind:
 RCBENCH SERVO-ENDLAGEN-BERICHT
 Ergebnis:        BESTANDEN
 Prüfling:        SERVO
-Firmware:        rcbench 0.22.0
+Firmware:        rcbench 0.22.1
 Modus:           Suche, dann LEFT ANGLE und RIGHT ANGLE programmiert
 Ausgang:         PROG-PORT 1 GP13, 50 Hz
 Pulsbereich:     Mitte 1500 us, 1000-2000 us
