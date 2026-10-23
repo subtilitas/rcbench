@@ -31,6 +31,7 @@
 #include "ui_textkey.h"
 #include "upd_screen.h"
 #include "wifi_screen.h"
+#include "wifi_spots.h"
 #include "coproc_update_screen.h"
 #include "sense_link.h"
 #include "settings.h"
@@ -1975,7 +1976,7 @@ static void pose_wifi(const char *view)
     const bool keys = strncmp(view, "wifi-key", 8) == 0;
     if (strcmp(view, "wifi-scan") == 0 || strcmp(view, "wifi-scanning") == 0
         || keys) {
-        tap(16 + 180, UI_BAND_H + 16 + 2 * 68 + 28);       /* CHOOSE */
+        tap(WF_BTN_CX(2), UI_BAND_H + WF_BTN_CY(2));       /* CHOOSE */
         v.radio = WIFI_RADIO_SCANNING;
         wifi_screen_set(&v);
     }
@@ -2003,7 +2004,7 @@ static void pose_wifi(const char *view)
                           || strcmp(view, "wifi-key-shown") == 0
                           || strcmp(view, "wifi-key-short") == 0;
         if (pass) {
-            tap(16 + 100, UI_BAND_H + 16 + 20);             /* row 1 */
+            tap(WF_ROW_CX(0), UI_BAND_H + WF_ROW_CY(0));    /* row 1 */
             wifi_type("cedar");
             wifi_key(UI_TK_SHIFT);
             wifi_type("q");
@@ -2020,7 +2021,7 @@ static void pose_wifi(const char *view)
                 wifi_expect("cedarQ42x", false);
             }
         } else {
-            tap(272 + 128, UI_BAND_H + 376 + 24);          /* HIDDEN */
+            tap(WF_HIDDEN_CX, UI_BAND_H + WF_SCAN_CY);     /* HIDDEN */
             wifi_type("lab");
             if (strcmp(view, "wifi-key-upper") == 0) {
                 wifi_key(UI_TK_SHIFT);
