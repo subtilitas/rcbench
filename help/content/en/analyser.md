@@ -22,7 +22,7 @@ The pictures in this section come from the host renderer, which feeds the screen
 
 | Area | Shows |
 |---|---|
-| CH01 to CH16 | one lane per channel: about 1.7 s of history, 118 samples, a bar for the current value and the value in us |
+| CH01 to CH16 | one lane per channel: about 2.8 s of history at 71 frames a second, 200 samples, a bar for the current value and the value in us |
 | State block | NO SIGNAL, FRAME LOST, FAILSAFE or LIVE, with one line under it |
 | BUS | `S.BUS` |
 | RATE | frames a second, in Hz |

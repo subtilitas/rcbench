@@ -82,6 +82,11 @@ typedef struct {
 } vol_entry_t;
 extern const vol_entry_t k_vol[4];
 #define VOL_N (sizeof(k_vol) / sizeof(k_vol[0]))
+/* A second folder, "HID": one file the walk lists, a name starting with "."
+ * and a name of 70 characters, which it leaves out. */
+#define HID_DIR "0:/HID"
+extern const vol_entry_t k_hid[3];
+#define HID_N (sizeof(k_hid) / sizeof(k_hid[0]))
 /* 2024-05-17 12:34:56 as FAT stamps it: years from 1980, seconds / 2. */
 #define VOL_FDATE ((WORD)(((2024 - 1980) << 9) | (5 << 5) | 17))
 #define VOL_FTIME ((WORD)((12 << 11) | (34 << 5) | (56 / 2)))

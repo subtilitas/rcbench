@@ -246,7 +246,8 @@ the faces and the spacing inside are theirs.
   language shown; another row draws them in 8 x 16. LOGS' ROOT, USER and
   BENCH and the PROG PORT entry's segments on OUTPUTS are in 10 x 20. The
   strips of SERVO and MOTOR & ESC are 40 px tall and draw in 10 x 20;
-  SUPPLY's is 24 px tall and keeps 8 x 16.
+  SUPPLY's is 24 px tall and keeps 8 x 16. RECEIVER's and BALANCE's tabs
+  are 150 x 48 px and draw in 10 x 20.
 - **TARGET row.** A row 40 px tall or taller draws its label and its value
   in 10 x 20, with 88 px for the label, and counts the pins it names in
   10 px cells. A shorter row draws in 8 x 16 with 64 px for the label and
@@ -259,11 +260,19 @@ A keypad or a keyboard whose area reaches further paints its whole area
 and stops its keys there, so an alert covers no key. On SERVO the keypads'
 keys are then 112 x 88 px and the keyboards' 41 x 72 px; on SUPPLY the
 keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 57 px; on
-MOTOR & ESC's SETTINGS the keypad's are 145 x 89 px.
+MOTOR & ESC's SETTINGS the keypad's are 145 x 89 px; on BALANCE the blade
+count's keypad's are 242 x 72 px.
 
 ## Splash
 
 ![The splash](img/splash.png)
+
+The splash fills the panel, without the band. The mark `rcbench` is the
+20 x 36 px face at twice its size on an accent tag 88 px tall, centred at
+the top. The tagline sits under it in the 12 x 24 px face. Each step has a
+row of 40 px from y 200: its name, its mark (`OK`, `--`, `!!`, `..` while
+it runs) and its detail, all in the 12 x 24 px face. A detail starts at
+x 432 and is cut 24 px short of the right edge, after 47 characters.
 
 Each subsystem reports its result as it comes up: board, display, touch, SD
 card, settings, link, IOmcu. The board line carries the panel's own
@@ -1935,9 +1944,18 @@ AUTO and with a fixed rate alike.
 
 ![Receiver](img/analyser.png)
 
-Sixteen channels, each with about 1.7 s of history (118 samples) and a bar for its current value.
-CH17 and CH18 are the two digital channels. A glitch is a spike in one lane; a
-dropout is a notch across all sixteen at the same instant.
+Sixteen channels in two columns of eight lanes, 52 px each. A lane holds the
+channel's name in 10 x 20, its history, a bar 56 px wide for its current value
+and the value in us in 8 x 16. The history is 200 samples, one pixel each:
+about 2.8 s at 71 frames a second (one S.BUS frame every 14 ms). CH17 and
+CH18 are the two digital channels. A glitch is a spike in one lane; a dropout
+is a notch across all sixteen at the same instant.
+
+The state card on the right is 260 px wide: the state word in 20 x 36, its
+line in up to three lines of 12 x 24, BUS, RATE, FRAMES, RESYNC and BAD TAIL in
+rows of 32 px, and CH17 and CH18, 44 px tall, lit while set. CHANNELS and RAW
+DATA are tabs of 150 x 48 px. RAW DATA shows the last frame's bytes, eight to
+a row, and the decoder's counts in 8 x 16.
 
 No firmware feeds this screen yet (see [Receiver buses](Receivers.md)); it
 shows NO SIGNAL.
@@ -1959,6 +1977,12 @@ Cells are drawn as their departure from the pack's mean. The verdict follows
 the spread, the widest gap between any two cells: HEALTHY below 30 mV, WATCH
 from 30 mV, REPLACE from 60 mV. The scale follows the pack down to a floor of
 12 mV and is printed beside the plot.
+
+The plot card is 640 px wide, the right card 360 px. A bar is at most 48 px
+wide and reaches 164 px either side of the mean. Under each bar the cell's
+number and its voltage are in 12 x 24 up to 11 cells and in 10 x 20 from 12 to
+14. The verdict is in 20 x 36, its line in up to two lines of 12 x 24, the six
+rows 36 px each, the note in 10 x 20.
 
 Measure under load. At rest a weak cell reads like the others.
 
@@ -2622,7 +2646,9 @@ The hold switches the radio off first. Then the control task stops its polls
 and withholds the heartbeat on purpose, so the IOmcu holds its outputs
 in failsafe as it does at any restart of the panel. PANEL UPDATE takes the
 whole screen, with no band and no STOP: nothing can be switched to ARMED
-behind it. It writes the slot that is not running in pieces of 64 KiB and
+behind it. A 64 px bar holds the title; the bytes stand in the 20 x 36 px
+face over a bar 36 px tall and 976 px wide, and the lines under it are in
+the 12 x 24 px face. It writes the slot that is not running in pieces of 64 KiB and
 shows the bytes and the percentage. The display goes fully dark at each
 flash erase, about every 0.5 s (reported on 0.20.0; 0.21.x not measured),
 and is in place again from the first whole frame after each erase.
@@ -3443,6 +3469,15 @@ both look like a bench that shows no numbers. The verdict is the heading, the
 list is what to check in the order that costs least to check, and the right
 column is what both ends counted.
 
+The screen fills the panel. A red bar of 64 px holds the title, and the
+verdict stands under it, both in the 20 x 36 px face. The left column,
+712 px, holds the meaning in at most two lines and the list of checks in
+the 12 x 24 px face: a row of 32 px per check, and 28 px more for each line
+a check wraps onto. The three notes follow from y 432. The right column,
+240 px from x 760, holds the counts in the 10 x 20 px face.
+`HOLD 2 s TO ACKNOWLEDGE` runs 976 x 56 px across the foot, 16 px above the
+panel's edge.
+
 ![Nothing came back](img/busfault-silent.png)
 
 Leaving it takes a two-second hold, the ARM gesture and the same fade.
@@ -3516,6 +3551,10 @@ and the question opens again once both have ended.
 
 ![The IOmcu update question](img/coproc-update.png)
 
+The question is a box of 860 x 248 px in the body, its lines in the
+12 x 24 px face. CANCEL and START are 398 x 56 px each, side by side,
+START on the right; their middles are at panel x 305 and 719, y 376.
+
 The question names the version the IOmcu runs and the version this
 panel carries. CANCEL is a tap: the question closes, and the panel does not
 ask again for that IOmcu version until it restarts. Leaving the
@@ -3534,6 +3573,10 @@ no STOP, as the bus-fault screen has none: the bench cannot switch to ARMED
 behind it.
 
 ![The progress](img/coproc-update-progress.png)
+
+The progress has a 64 px title bar, the step in the 20 x 36 px face, the
+versions under it, a bar 36 px tall and 976 px wide from y 180, the block
+count, and three notes in the 12 x 24 px face, 28 px apart.
 
 | Step | Shown while |
 | --- | --- |
@@ -3577,6 +3620,12 @@ release for the ESP32-S3 panel; the ESP32-P4 panel is offered every newer
 release ([The release line](#the-release-line)).
 
 ![UPDATES](img/updates.png)
+
+The buttons are 460 x 56 px, 64 px apart, on the left. The card on the
+right is 532 px wide and ends 8 px above the alert band; its text runs in
+lines of 41 characters of the 12 x 24 px face, 28 px apart. Under the
+buttons the IOmcu section's lines are in the 10 x 20 px face, and its
+hold is a fifth button of the same size, from body y 428.
 
 | Control | Action |
 | --- | --- |
@@ -3789,6 +3838,10 @@ IOmcu too.
 ### The reminder
 
 ![The reminder](img/upd-remind.png)
+
+The reminder is a box of 860 x 480 px with its lines in the 12 x 24 px
+face. NOT NOW and NEVER REMIND ME are 398 x 56 px side by side; the hold is
+812 x 64 px under them.
 
 With REMINDER AT START on and a home network kept, the panel runs the check
 once after each start. It waits for a moment the bench allows: the splash
@@ -4462,6 +4515,13 @@ The BALANCE pane shows a fixed angle (265°) and two fixed readings (0.42 g
 vibration, 0.35 g mass to add) until a sensor is fitted. The SIMULATED pill and
 the words "Not measured." stand under the readings, 20 px high and 88 px wide.
 The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
+
+BALANCE, TEST RIG and AIRCRAFT are tabs of 150 x 48 px. The rotor's card is
+640 px wide, its disc 160 px in radius; the right card is 360 px wide.
+PROPELLER and EDF are 162 x 48 px, the blade count's `-` and `+` 56 x 48 px,
+the count's tap area 114 x 48 px, the four readings rows of 36 px. The notes
+and the rules' two lines are in 8 x 16; the rules' heads, the labels and the
+drawings' callouts in 10 x 20.
 
 ## Unknown screen ids
 
