@@ -12,7 +12,7 @@ PICK A PIN zeigt die Platine des IOmcu, wie sie auf dem Prüfstand liegt, und bi
 
 ![Die Pin-Auswahl mit drei als SERVO PWM gebundenen Pins](view:picker)
 
-Ein Pad misst unter 40 px, weniger als eine Fingerkuppe. Deshalb hat jeder Pin eine Taste, 43 px breit, an einer geraden Leiterbahn zu seinem Pad: zwei versetzte Reihen über der Platine und zwei darunter.
+Ein Pad misst unter 40 px, weniger als eine Fingerkuppe. Deshalb hat jeder Pin eine Taste, 50 x 56 px, an einer geraden Leiterbahn zu seinem Pad: zwei versetzte Reihen über der Platine und zwei darunter.
 
 | Taste | Pin | Ein Tipp |
 |---|---|---|

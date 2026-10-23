@@ -27,7 +27,7 @@
 
 /* The middle of a TIMING row's value, from esc_stick_int.h: the control
  * column at x 400, 216 px wide. */
-#define VALUE_X (400 + 216 / 2)
+#define VALUE_X ST_VALUE_X
 
 /* The keypad's key @p key tapped, in the screen's coordinates. */
 static void key(ui_key_t key)
@@ -238,9 +238,9 @@ TEST_CASE(a_scrolled_page_opens_the_row_shown_and_takes_six_digits)
 {
     at_timing_page();
     for (int i = 0; i < 10; ++i) {
-        tap(PAGE_DN_X, PAGE_CY);             /* to the last page: 7 rows */
+        tap(PAGE_DN_X, PAGE_CY);             /* to the last page: 8 on */
     }
-    tap(VALUE_X, STEP_CY(4));                /* 7 + 4: Timeout */
+    tap(VALUE_X, STEP_CY(3));                /* 8 + 3: Timeout */
     CHECK_EQ(esc_stick_panel_keypad_setting(), (int)SET_STICK_TIMEOUT);
     type("600001");
     key(UI_KEY_OK);
@@ -253,7 +253,7 @@ TEST_CASE(a_scrolled_page_opens_the_row_shown_and_takes_six_digits)
     CHECK(!esc_stick_panel_keypad()->open);
     CHECK_EQ(settings_get_int(SET_STICK_TIMEOUT), 600000);
     /* The last row, Hysteresis, from the same page. */
-    tap(VALUE_X, STEP_CY(6));
+    tap(VALUE_X, STEP_CY(5));
     CHECK_EQ(esc_stick_panel_keypad_setting(), (int)SET_STICK_HYST);
     key(UI_KEY_CANCEL);
 }

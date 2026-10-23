@@ -154,7 +154,7 @@ TEST_CASE(a_file_that_proves_both_conventions_is_flagged)
 TEST_CASE(a_ragged_file_is_flagged_without_a_convention_conflict)
 {
     fresh();
-    /* Eight files, six visible rows: scroll to the bottom first, so the last
+    /* Eight files, seven visible rows: scroll to the bottom first, so the last
      * file lands on the last visible row.  Pins: a row reached by scrolling
      * accepts a touch. */
     send(TOUCH_EVENT_DOWN, 400, BR_ROW_Y(4));
@@ -276,12 +276,13 @@ TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
      * carries the volume name, which is empty with no card; asserting on that
      * would pass with one message for both, which is the defect.
      *
-     * The panel is drawn at (120,160) 560x160 and the reason sits at
-     * box.y + 52, so the band below covers that line and nothing else.
+     * The panel is drawn at (104,150) 816x160 and the reason sits at
+     * box.y + 52, 24 px tall, so the band below covers that line and
+     * nothing else.
      */
     int differing = 0;
-    for (int y = 205; y < 226; ++y) {
-        for (int x = 140; x < 660; ++x) {
+    for (int y = LV_EMPTY_WHY_Y; y < LV_EMPTY_WHY_Y + 24; ++y) {
+        for (int x = LV_EMPTY_X0; x < LV_EMPTY_X1; ++x) {
             if (no_card[y * W + x] != s_fb[y * W + x]) {
                 ++differing;
             }
@@ -603,7 +604,7 @@ static int panel_pixels(gfx_color_t color, int y0, int y1)
 {
     int n = 0;
     for (int y = y0; y < y1; ++y) {
-        for (int x = 16; x < 316; ++x) {
+        for (int x = LV_WARN_X0; x < LV_WARN_X1; ++x) {
             if (s_fb[y * W + x] == color) {
                 ++n;
             }
@@ -614,8 +615,9 @@ static int panel_pixels(gfx_color_t color, int y0, int y1)
 
 /*
  * A cut last row is said even when another warning holds the first line: the
- * conflict banner (danger colour, y = 252) stays and the cut notice takes the
- * line below it (warning colour, y = 270).  Without the cut that line is empty.
+ * conflict banner (danger colour, its two lines from y = LV_WARN_Y) stays and
+ * the cut notice takes the line below it (warning colour).  Without the cut
+ * those lines hold no warning colour.
  */
 TEST_CASE(a_cut_last_row_is_said_beside_a_convention_conflict)
 {
@@ -629,7 +631,8 @@ TEST_CASE(a_cut_last_row_is_said_beside_a_convention_conflict)
     CHECK(a->convention_conflict);
     CHECK(!a->cut_row);
     CHECK(plain >= 0);
-    CHECK_EQ(panel_pixels(UI_WARN, 268, 290), 0);
+    CHECK_EQ(panel_pixels(UI_WARN, LV_WARN_Y + LV_WARN_LH,
+                          LV_WARN_Y + 4 * LV_WARN_LH), 0);
 
     (void)import_warn_pixels(
         "t;a;b\n0;10.23;1\n1;10,23;2\n2;11.5;3\n3;12.5");
@@ -640,8 +643,9 @@ TEST_CASE(a_cut_last_row_is_said_beside_a_convention_conflict)
     }
     CHECK(a->convention_conflict);
     CHECK(a->cut_row);
-    CHECK(panel_pixels(UI_DANGER, 250, 268) > 0);
-    CHECK(panel_pixels(UI_WARN, 268, 290) > 0);
+    CHECK(panel_pixels(UI_DANGER, LV_WARN_Y, LV_WARN_Y + LV_WARN_LH) > 0);
+    CHECK(panel_pixels(UI_WARN, LV_WARN_Y + LV_WARN_LH,
+                       LV_WARN_Y + 4 * LV_WARN_LH) > 0);
     g_long[0] = '\0';
 }
 

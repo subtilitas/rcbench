@@ -19,7 +19,7 @@ rcbench/
     ui/                   Theme · Widgets · Icons · Router · Bildschirme
     settings/             typisiertes Schema und Werte
     logfile/              Zahlen- und CSV-Parsing
-    files/                Kern des Dateimanagers: Kartentabelle · Fenster · Regeln · Aufträge
+    files/                Kern von Dateimanager und Editor: Textpuffer · Hervorhebung · Namen und Pfade · Kartentabelle · Fenster · Regeln · Aufträge
     link/                 Page-Protokoll · CAN-Framing · Watchdogs · Diagnose
     artwork/              Cache des Panels für Platinenzeichnungen
     bench/                bench_state · Telemetriesimulator · Log-Writer · Drehknopf-Decoder

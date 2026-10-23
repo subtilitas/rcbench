@@ -55,7 +55,7 @@ TEST_CASE(the_page_shows_the_entry_the_run_waits)
 }
 
 /* ALL STEPS, between HOLD TO RUN and CANCEL on the warning. */
-#define STEPS_X 437
+#define STEPS_X ST_STEPS_X
 
 /* Four long steps before the power-up do not fit the warning: it shows
  * none cut, HOLD TO RUN does not count until ALL STEPS has been opened and
@@ -237,7 +237,7 @@ TEST_CASE(every_step_after_programming_is_shown)
     tap(CANCEL_X, HOLD_Y);                   /* OK: the result */
     CHECK(!esc_stick_panel_hand_shown());
     draws();                                 /* the count, and the button */
-    tap(HAND_X, HAND_Y);
+    tap(HAND_RES_X, HAND_RES_Y);         /* on the result: the foot row */
     CHECK(esc_stick_panel_hand_shown());
     tap(CANCEL_X, HOLD_Y);
     tap(WRITE_X, BTN_CY);                    /* OK on the result */

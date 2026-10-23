@@ -18,7 +18,7 @@
  * A title row, the entry, then four rows of keys, 8 px apart, ending at
  * UI_KEYS_FOOT at the latest.  Over SERVO's left column, 488 x 524 px, a
  * key is 112 x 88 px (16.8 x 13.2 mm at 0.150 mm a pixel); over SUPPLY's,
- * 546 x 494 px, 126 x 80 px.
+ * 620 x 476 px, 145 x 76 px.
  */
 /** @brief The room around the title, the entry and the keys: 8 px. */
 #define KP_PAD     8

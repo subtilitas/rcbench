@@ -47,54 +47,16 @@ static gfx_color_t out_fill(void)
     return fill;
 }
 
+/**
+ * @brief OUTPUT ON / OFF at the CONTROL card's foot.
+ * @param c the canvas
+ */
 static void draw_out_button(gfx_canvas_t *c)
 {
-    ui_button(c, s.out_rect, s.on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
-              out_fill(),
-              s.pressed == P_OUTPUT, s.on || !s.port_held);
-}
-
-/* The bytes of the next row of @p at that fit @p cells: up to the last
- * space in it, or the whole width where no space falls after its start. */
-static size_t row_len(const char *at, int cells)
-{
-    if (gfx_text_cells(at) <= cells) {
-        return strlen(at);
-    }
-    const size_t len = gfx_text_prefix(at, cells);
-    size_t cut = len;
-    while (cut > 0u && at[cut] != ' ') {
-        --cut;
-    }
-    return (cut > 0u) ? cut : len;
-}
-
-/*
- * @p text in rows of at most @p cells of the label face, broken after a
- * space, from (x, y) down by @p pitch; with @p c NULL only counted.
- * Returns the rows.
- */
-static int wrap_rows(gfx_canvas_t *c, int x, int y, int pitch,
-                     const char *text, int cells, gfx_color_t ink)
-{
-    int rows = 0;
-    const char *at = text;
-    while (*at != '\0') {
-        const size_t len = row_len(at, cells);
-        if (c != NULL) {
-            char line[128];
-            const size_t n = (len < sizeof(line)) ? len : sizeof(line) - 1u;
-            memcpy(line, at, n);
-            line[n] = '\0';
-            gfx_text(c, x, y + rows * pitch, line, &gfx_font_8x16, ink, 1);
-        }
-        ++rows;
-        at += len;
-        while (*at == ' ') {
-            ++at;
-        }
-    }
-    return rows;
+    ui_button_font(c, s.out_rect,
+                   s.on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON), out_fill(),
+                   s.pressed == P_OUTPUT, s.on || !s.port_held,
+                   SU_FONT_LABEL);
 }
 
 static const char *mode_text(void)
@@ -151,8 +113,14 @@ void supply_screen_header_text(char *out, size_t size)
              s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING), rate);
 }
 
-/* The row right of the strip: where the numbers come from, and the range
- * the set points may take. */
+/**
+ * @brief The row right of the strip: where the numbers come from, and at
+ *        its right end the range the set points may take.  The longest,
+ *        `PD MINI TX GP12 RX GP13   ANTWORTET NICHT` and
+ *        `3.3-21.0 V  0.50-5.00 A`, are 41 and 23 cells of the 68 the row
+ *        holds.
+ * @param c the canvas
+ */
 static void draw_header(gfx_canvas_t *c)
 {
     const int x0 = INFO_X;
@@ -160,7 +128,7 @@ static void draw_header(gfx_canvas_t *c)
     gfx_fill_rect(c, x0, 0, W - x0, OV_Y - 1, ui_theme_color(UI_C_BG));
     char line[80];
     supply_screen_header_text(line, sizeof(line));
-    gfx_text(c, x0, INFO_Y, line, &gfx_font_8x16,
+    gfx_text(c, x0, INFO_Y, line, SU_FONT_LABEL,
              s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
                           : ui_theme_color(UI_C_WARN), 1);
     char range[64];
@@ -168,8 +136,8 @@ static void draw_header(gfx_canvas_t *c)
              (double)s.eff.v_min, (double)s.eff.v_max,
              (double)s.eff.i_min, (double)s.eff.i_max);
     gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, INFO_Y, (int16_t)(x1 - x0),
-                                 16 },
-                range, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1,
+                                 LINE_H },
+                range, SU_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
                 GFX_ALIGN_RIGHT);
 }
 
@@ -180,8 +148,51 @@ static void draw_strip(gfx_canvas_t *c)
     ui_wb_strip_render(&s.wb, c);
 }
 
-/* One card of the rail, as MOTOR & ESC draws them, with the set point in
- * brackets after the label when there is one. */
+/**
+ * @brief A reading's numerals in the 32 x 44 face, the 20 x 36 one where
+ *        they are wider than @p w, right-aligned to @p right.
+ * @param c the canvas
+ * @param right their right edge, px
+ * @param y their top, px
+ * @param w the width they may take, px
+ * @param t the numerals
+ * @param col their colour
+ */
+static void num_text(gfx_canvas_t *c, int right, int y, int w, const char *t,
+                     gfx_color_t col)
+{
+    const gfx_font_t *f = SU_FONT_NUM;
+    int tw = gfx_text_width(f, t, 1);
+    int dy = 0;
+    if (tw > w) {
+        f = SU_FONT_HEAD;
+        tw = gfx_text_width(f, t, 1);
+        dy = 4;
+    }
+    gfx_text(c, right - tw, y + dy, t, f, col, 1);
+}
+
+/** @brief A reading card's left part: its name and the set point in
+ *         brackets end by x + 170 ("SPANN. (21.00)", 14 cells). */
+#define CARD_NUM_DX 170
+
+/**
+ * @brief One card of the rail, CARD_H px high, as MOTOR & ESC draws them:
+ *        the name, with the set point in brackets after it when there is
+ *        one, over the extreme, and the live value in the 32 x 44 numerals,
+ *        right-aligned with its unit.
+ * @param c the canvas
+ * @param r the card
+ * @param label the reading's name
+ * @param set the set point in brackets, or NULL
+ * @param unit the unit
+ * @param color the reading's colour
+ * @param decimals the value's decimals
+ * @param value the live value, NAN for none
+ * @param extreme the extreme's name, or NULL for none
+ * @param peak the extreme, NAN for none
+ * @param pressed whether a press holds the card
+ */
 static void draw_card(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                       const char *set, const char *unit, gfx_color_t color,
                       int decimals, float value, const char *extreme,
@@ -191,18 +202,18 @@ static void draw_card(gfx_canvas_t *c, gfx_rect_t r, const char *label,
     ui_card(c, r, pressed ? ui_theme_color(UI_C_PANEL_HI)
                           : ui_theme_color(UI_C_PANEL));
     gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, color);
-    gfx_fill_round_rect(c, r.x + 8, r.y + 7, 3, 10, 1, color);
-    const int lw = gfx_text(c, r.x + 16, r.y + 6, label, &gfx_font_8x16,
+    gfx_fill_round_rect(c, r.x + 10, r.y + 11, 4, 14, 1, color);
+    const int lw = gfx_text(c, r.x + 20, r.y + 8, label, SU_FONT_LABEL,
                             ui_theme_color(UI_C_TEXT), 1);
     if (set != NULL) {
-        gfx_text(c, r.x + 16 + lw + 8, r.y + 6, set, &gfx_font_8x16,
+        gfx_text(c, r.x + 20 + lw + 10, r.y + 8, set, SU_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
     if (extreme != NULL && isfinite(peak)) {
         char pk[24], line[32];
         ui_fmt(pk, sizeof(pk), peak, decimals);
         snprintf(line, sizeof(line), "%s %s", extreme, pk);
-        gfx_text(c, r.x + 8, r.y + 26, line, &gfx_font_8x16,
+        gfx_text(c, r.x + 10, r.y + 36, line, SU_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
     char number[24];
@@ -211,16 +222,12 @@ static void draw_card(gfx_canvas_t *c, gfx_rect_t r, const char *label,
     } else {
         snprintf(number, sizeof(number), "---");
     }
-    const gfx_seg_style_t seg = { .digit_w = 15, .digit_h = 24,
-                                  .thickness = 3, .gap = 4, .slant = 2,
-                                  .ghost = true };
-    const int uw = gfx_text_width(&gfx_font_8x16, unit, 1);
-    const int nw = gfx_seg_width(number, &seg);
-    const int nx = r.x + r.w - 8 - uw - 6 - nw;
-    gfx_seg_text(c, nx, r.y + 16, number, &seg, color,
-                 gfx_lerp(ui_theme_color(UI_C_PANEL), color, 34));
-    gfx_text(c, nx + nw + 6, r.y + 30, unit, &gfx_font_8x16,
+    const int uw = gfx_text_width(SU_FONT_LABEL, unit, 1);
+    const int ux = r.x + r.w - 10 - uw;
+    gfx_text(c, ux, r.y + 34, unit, SU_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
+    num_text(c, ux - 6, r.y + 10, ux - 6 - (r.x + CARD_NUM_DX), number,
+             color);
 }
 
 /* The set points as the supply reports holding them, or as this screen holds
@@ -235,6 +242,11 @@ static float shown_set_i(void)
     return s.sup.online ? s.sup.set_i : s.ci;
 }
 
+/**
+ * @brief The rail's four cards: VOLT, CURR and PWR with their set points
+ *        and extremes, and MODE.
+ * @param c the canvas
+ */
 static void draw_cards(gfx_canvas_t *c)
 {
     const bool v_ok = s.sup.online && (s.sup.ok & SUPPLY_OK_VOLTAGE) != 0u;
@@ -270,34 +282,38 @@ static void draw_cards(gfx_canvas_t *c)
                                ? ui_theme_color(UI_C_WARN)
                                : ui_theme_color(UI_C_ACCENT);
     gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, mc);
-    gfx_fill_round_rect(c, r.x + 8, r.y + 7, 3, 10, 1, mc);
-    gfx_text(c, r.x + 16, r.y + 6, TR(SUP_MODE), &gfx_font_8x16,
+    gfx_fill_round_rect(c, r.x + 10, r.y + 11, 4, 14, 1, mc);
+    gfx_text(c, r.x + 20, r.y + 8, TR(SUP_MODE), SU_FONT_LABEL,
              ui_theme_color(UI_C_TEXT), 1);
+    /* The line under the label: why the supply holds what it holds, or
+     * why it tripped, in up to 36 cells ("Wegen Überspannung
+     * abgeschaltet." is 32). */
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 10), (int16_t)(r.y + 36),
+                                 (int16_t)(r.w - 20), LINE_H },
+                mode_line(), SU_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT),
+                1, GFX_ALIGN_LEFT);
     if (tripped) {
-        /*
-         * A trip says why in a sentence the card's width does not hold
-         * beside the mode in the double size: the mode goes on the label's
-         * row in the single size, and the sentence takes the card's width
-         * in up to two rows under it, which the card's 54 px hold.
-         */
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 8), (int16_t)(r.y + 6),
-                                     (int16_t)(r.w - 16), 16 },
-                    mode_text(), &gfx_font_8x16, mc, 1, GFX_ALIGN_RIGHT);
-        (void)wrap_rows(c, r.x + 8, r.y + 22, 16, mode_line(),
-                        (r.w - 16) / 8, ui_theme_color(UI_C_TEXT_FAINT));
+        /* A trip's word is too wide for the 20 x 36 face beside the label
+         * ("ABGESCHALTET", 12 cells): it goes on the label's row. */
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 10), (int16_t)(r.y + 8),
+                                     (int16_t)(r.w - 20), LINE_H },
+                    mode_text(), SU_FONT_LABEL, mc, 1, GFX_ALIGN_RIGHT);
         return;
     }
-    gfx_text(c, r.x + 8, r.y + 26, mode_line(), &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 8), (int16_t)(r.y + 12),
-                                 (int16_t)(r.w - 16), 32 },
-                mode_text(), &gfx_font_8x16, mc, 2, GFX_ALIGN_RIGHT);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 10), (int16_t)(r.y + 10),
+                                 (int16_t)(r.w - 20), 36 },
+                mode_text(), SU_FONT_HEAD, mc, 1, GFX_ALIGN_RIGHT);
 }
 
+/**
+ * @brief TABLE: each reading's set point and its value now, under the
+ *        header line, in the legend's and the plot's place.
+ * @param c the canvas
+ */
 static void draw_table(gfx_canvas_t *c)
 {
-    gfx_text(c, PLOT_X, LEG_Y + 4, TR(SUP_TABLE_HEAD),
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+    gfx_text(c, PLOT_X, LEG_Y, TR(SUP_TABLE_HEAD), SU_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
     ui_rule(c, PLOT_X, LEG_Y + 24, PLOT_W, ui_theme_color(UI_C_EDGE));
     const bool v_ok = s.sup.online && (s.sup.ok & SUPPLY_OK_VOLTAGE) != 0u;
     const bool i_ok = s.sup.online && (s.sup.ok & SUPPLY_OK_CURRENT) != 0u;
@@ -308,7 +324,7 @@ static void draw_table(gfx_canvas_t *c)
     const float now[S_READINGS] = { v_ok ? s.sup.v : NAN, i_ok ? s.sup.i : NAN,
                                     (v_ok && i_ok) ? s.sup.p : NAN };
     for (int i = 0; i < S_READINGS; ++i) {
-        const int y = LEG_Y + 34 + i * 30;
+        const int y = LEG_Y + 34 + i * TBL_PITCH;
         char a[24], b[24];
         if (isfinite(set[i])) {
             ui_fmt(a, sizeof(a), set[i], sup_series[i].decimals);
@@ -320,21 +336,27 @@ static void draw_table(gfx_canvas_t *c)
         } else {
             snprintf(b, sizeof(b), "--");
         }
-        gfx_text(c, PLOT_X, y, ui_tr(rows[i]), &gfx_font_8x16,
+        gfx_text(c, PLOT_X, y, ui_tr(rows[i]), SU_FONT_LABEL,
                  s.plot.series[i].color, 1);
-        gfx_text(c, PLOT_X + 128, y, a, &gfx_font_8x16,
+        gfx_text(c, PLOT_X + TBL_SET_DX, y, a, SU_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, PLOT_X + 248, y, b, &gfx_font_8x16,
+        gfx_text(c, PLOT_X + TBL_NOW_DX, y, b, SU_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, PLOT_X + 348, y, sup_series[i].unit, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
+        gfx_text(c, PLOT_X + TBL_UNIT_DX, y, sup_series[i].unit,
+                 SU_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
     }
 }
 
+/**
+ * @brief What the run has taken from the supply, on the CONTROL card's
+ *        title line, right of its tag: STEUERUNG's 9 cells and the tab's
+ *        26 px.
+ * @param c the canvas
+ */
 static void draw_totals(gfx_canvas_t *c)
 {
-    const gfx_rect_t box = { (int16_t)(RIGHT_X + INNER), TOTALS_Y,
-                             (int16_t)(RIGHT_W - 2 * INNER), 16 };
+    const gfx_rect_t box = { (int16_t)(RIGHT_X + 130), (int16_t)(CTL_Y + 1),
+                             (int16_t)(RIGHT_W - 130 - 12), LINE_H };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
     char mah[16], wh[16];
     if ((s.sup.counted & BENCH_COUNTED_CHARGE) != 0u) {
@@ -349,11 +371,17 @@ static void draw_totals(gfx_canvas_t *c)
     }
     char line[48];
     snprintf(line, sizeof(line), "%s mAh   %s Wh", mah, wh);
-    gfx_text_in(c, box, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1,
+    gfx_text_in(c, box, line, SU_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_RIGHT);
 }
 
-/* The two set points: label and value, then the step buttons and the track. */
+/**
+ * @brief The two set points: the label, the track, and the value in its
+ *        box at the right end of the controls, in the reading's colour.
+ *        Held by a programming port the value takes no press, and is drawn
+ *        faint, as SERVO's SET row draws it.
+ * @param c the canvas
+ */
 static void draw_setters(gfx_canvas_t *c)
 {
     static const ui_text_id_t label[2] = { TX_SUP_VOLTAGE,
@@ -364,22 +392,21 @@ static void draw_setters(gfx_canvas_t *c)
                                  ui_theme_color(UI_C_CURR) };
     for (int row = 0; row < 2; ++row) {
         const int y = SET_Y0 + row * SET_ROW_H;
-        gfx_fill_rect(c, LEFT_X + INNER, y - 2, LEFT_W - 2 * INNER,
-                      SET_TEXT_H + 2, ui_theme_color(UI_C_PANEL));
-        gfx_text(c, LEFT_X + INNER, y + 2, ui_tr(label[row]), &gfx_font_8x16,
+        gfx_fill_rect(c, LEFT_X + INNER, y, SET_UP_X - (LEFT_X + INNER),
+                      SET_TEXT_H, ui_theme_color(UI_C_PANEL));
+        gfx_text(c, LEFT_X + INNER, y, ui_tr(label[row]), SU_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char v[24];
         snprintf(v, sizeof(v), "%.2f %s", (double)value[row], unit[row]);
-        const bool pressed = s.pressed == ((row == 0) ? P_TEXT_V : P_TEXT_I);
-        const gfx_rect_t tr = sup_set_text_rect(row);
-        if (pressed) {
-            gfx_fill_rect(c, tr.x, tr.y, tr.w, tr.h,
-                          ui_theme_color(UI_C_PANEL_HI));
-        }
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(LEFT_X + INNER), (int16_t)y,
-                                     (int16_t)(LEFT_W - 2 * INNER),
-                                     SET_TEXT_H },
-                    v, &gfx_font_8x16, col[row], 1, GFX_ALIGN_RIGHT);
+        const bool pressed = s.pressed == ((row == 0) ? P_VALUE_V
+                                                      : P_VALUE_I);
+        const gfx_rect_t b = sup_set_value_rect(row);
+        gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, UI_R_CTL,
+                            pressed ? ui_theme_color(UI_C_PANEL_HI)
+                                    : ui_theme_color(UI_C_PANEL_SUNK));
+        gfx_text_in(c, b, v, SU_FONT_LABEL,
+                    s.port_held ? ui_theme_color(UI_C_TEXT_FAINT) : col[row],
+                    1, GFX_ALIGN_CENTER);
         const ui_slider_t *sl = (row == 0) ? &s.v_slider : &s.i_slider;
         const gfx_rect_t pr = ui_slider_painted_rect(sl);
         gfx_fill_rect(c, pr.x, pr.y, pr.w, pr.h, ui_theme_color(UI_C_PANEL));
@@ -387,17 +414,23 @@ static void draw_setters(gfx_canvas_t *c)
     }
 }
 
+/**
+ * @brief The fine steps at both ends of each track, dim while a
+ *        programming port holds the supply.
+ * @param c the canvas
+ */
 static void draw_steps(gfx_canvas_t *c)
 {
     const bool free = !s.port_held;
-    ui_button(c, s.v_down, "-0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_V_DOWN, free);
-    ui_button(c, s.v_up, "+0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_V_UP, free);
-    ui_button(c, s.i_down, "-0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_I_DOWN, free);
-    ui_button(c, s.i_up, "+0.1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_I_UP, free);
+    const gfx_color_t f = ui_theme_color(UI_C_PANEL_SUNK);
+    ui_button_font(c, s.v_down, "-0.1", f, s.pressed == P_V_DOWN, free,
+                   SU_FONT_LABEL);
+    ui_button_font(c, s.v_up, "+0.1", f, s.pressed == P_V_UP, free,
+                   SU_FONT_LABEL);
+    ui_button_font(c, s.i_down, "-0.1", f, s.pressed == P_I_DOWN, free,
+                   SU_FONT_LABEL);
+    ui_button_font(c, s.i_up, "+0.1", f, s.pressed == P_I_UP, free,
+                   SU_FONT_LABEL);
 }
 
 /*
@@ -431,8 +464,13 @@ static void row_value_text(int i, char *buf, size_t n)
     }
 }
 
-/* SETTINGS' page: the caps, the start values, the trips and the questions,
- * in the left column under the strip. */
+/**
+ * @brief SETTINGS' page in the left column under the strip: the caps and
+ *        the start values on the left with RESET PD MINI under them, the
+ *        trips, their help and the confirmations on the right, and the
+ *        save line at the foot.
+ * @param c the canvas
+ */
 static void draw_settings(gfx_canvas_t *c)
 {
     const gfx_rect_t a = sup_overlay_area();
@@ -441,36 +479,41 @@ static void draw_settings(gfx_canvas_t *c)
     if (!s.model) {
         /* A module in ERR -- a set point over its input -- comes back only
          * with a restart. */
-        ui_button(c, s.modreset_btn, TR(SUP_RESET_PDMINI),
-                  ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_MODRESET,
-                  true);
+        ui_button_font(c, s.modreset_btn, TR(SUP_RESET_PDMINI),
+                       ui_theme_color(UI_C_PANEL_SUNK),
+                       s.pressed == P_MODRESET, true, SU_FONT_LABEL);
     }
 
-    const int lx = a.x + 10;
+    const int lx = OV_COL0_X;
     const int rx = OV_COL1_X;
-    gfx_text(c, lx, a.y + 16, TR(SUP_CAPS), &gfx_font_8x16,
-             ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, lx, a.y + 134, TR(SUP_AFTER_RESTART), &gfx_font_8x16,
-             ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, rx, a.y + 16, TR(SUP_TRIPS), &gfx_font_8x16,
-             ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, rx, a.y + 238, TR(SUP_CONFIRM_ON), &gfx_font_8x16,
-             ui_theme_color(UI_C_ACCENT), 1);
+    const int head = (OV_HEAD_H - LINE_H) / 2;
+    const gfx_color_t acc = ui_theme_color(UI_C_ACCENT);
+    gfx_text(c, lx, a.y + OV_CAPS_DY + head, TR(SUP_CAPS), SU_FONT_LABEL,
+             acc, 1);
+    gfx_text(c, lx, a.y + OV_RESTART_DY + head, TR(SUP_AFTER_RESTART),
+             SU_FONT_LABEL, acc, 1);
+    gfx_text(c, rx, a.y + OV_CAPS_DY + head, TR(SUP_TRIPS), SU_FONT_LABEL,
+             acc, 1);
+    gfx_text(c, rx, a.y + OV_CONFIRM_DY + head, TR(SUP_CONFIRM_ON),
+             SU_FONT_LABEL, acc, 1);
     for (int i = 0; i < ROW_COUNT; ++i) {
         const gfx_rect_t r = sup_row_rect(i);
-        gfx_text(c, r.x, r.y + 10, ui_tr(k_rows[i].label), &gfx_font_8x16,
+        gfx_text(c, r.x, r.y + (OV_ROW_H - LINE_H) / 2,
+                 ui_tr(k_rows[i].label), SU_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char v[32];
         row_value_text(i, v, sizeof(v));
-        ui_button(c, sup_row_value_rect(i), v, ui_theme_color(UI_C_PANEL_SUNK),
-                  s.pressed == P_ROW && s.press_row == i, true);
+        ui_button_font(c, sup_row_value_rect(i), v,
+                       ui_theme_color(UI_C_PANEL_SUNK),
+                       s.pressed == P_ROW && s.press_row == i, true,
+                       SU_FONT_LABEL);
     }
     static const ui_text_id_t help[] = {
         TX_SUP_HELP_1, TX_SUP_HELP_2, TX_SUP_HELP_3,
     };
     for (size_t i = 0; i < sizeof(help) / sizeof(help[0]); ++i) {
-        gfx_text(c, rx, a.y + 174 + (int)i * 18, ui_tr(help[i]),
-                 &gfx_font_8x16,
+        gfx_text(c, rx, a.y + OV_HELP_DY + (int)i * OV_HELP_PITCH,
+                 ui_tr(help[i]), SU_FONT_FINE,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
     const uint8_t st = save_state();
@@ -478,25 +521,31 @@ static void draw_settings(gfx_canvas_t *c)
         TX_SUP_SAVED, TX_SUP_SAVE_WAITING, TX_SUP_NOT_SAVED,
         TX_SUP_SETUP_NOT_SAVED,
     };
-    gfx_text(c, lx, a.y + a.h - 26, ui_tr(k_save[st]), &gfx_font_8x16,
+    gfx_text(c, lx, OV_SAVE_Y, ui_tr(k_save[st]), SU_FONT_LABEL,
              (st == 2u) ? ui_theme_color(UI_C_WARN)
                         : ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
-/*
- * The question a change to a live output asks: what changes, from what to
- * what, and APPLY or CANCEL.  OUTPUT OFF and STOP stay where they are.
+/**
+ * @brief The question a change to a live output asks: what changes, from
+ *        what to what, and APPLY or CANCEL; where to turn it off at its
+ *        foot.  OUTPUT OFF and STOP stay where they are.
+ * @param c the canvas
  */
 static void draw_confirm(gfx_canvas_t *c)
 {
     const gfx_rect_t a = sup_overlay_area();
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
-    gfx_text(c, a.x + 20, a.y + 20, TR(SUP_OUTPUT_IS_ON), &gfx_font_8x16,
-             ui_theme_color(UI_C_WARN), 2);
-    gfx_text(c, a.x + 20, a.y + 70, TR(SUP_ASK_WHY),
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
-    int y = a.y + 120;
+    const int tx = a.x + 20;
+    const int tw = a.w - 40;
+    gfx_text(c, tx, a.y + 16, TR(SUP_OUTPUT_IS_ON), SU_FONT_HEAD,
+             ui_theme_color(UI_C_WARN), 1);
+    (void)ui_text_wrap(c, (gfx_rect_t){ (int16_t)tx, (int16_t)(a.y + 62),
+                                        (int16_t)tw, 24 },
+                       ASK_PITCH, TR(SUP_ASK_WHY), SU_FONT_BODY,
+                       ui_theme_color(UI_C_TEXT_DIM));
+    int y = a.y + 124;
     const struct { const char *label; float was, now; const char *unit;
                    gfx_color_t col; } k[] = {
         { TR(SUP_VOLTAGE), s.cv, s.pend_v, "V", ui_theme_color(UI_C_VOLT) },
@@ -507,23 +556,29 @@ static void draw_confirm(gfx_canvas_t *c)
         if (k[i].was == k[i].now) {
             continue;
         }
-        gfx_text(c, a.x + 20, y + 8, k[i].label, &gfx_font_8x16,
+        gfx_text(c, tx, y + 10, k[i].label, SU_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char line[48];
         snprintf(line, sizeof(line), "%.2f -> %.2f %s", (double)k[i].was,
                  (double)k[i].now, k[i].unit);
-        gfx_text(c, a.x + 150, y, line, &gfx_font_8x16, k[i].col, 2);
+        gfx_text(c, tx + 170, y, line, SU_FONT_HEAD, k[i].col, 1);
         y += 50;
     }
-    ui_button(c, s.apply_btn, TR(SUP_APPLY), ui_theme_color(UI_C_WARN),
-              s.pressed == P_APPLY, true);
-    ui_button(c, s.discard_btn, TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_DISCARD, true);
-    /* Under the buttons, its last row where a single one stands. */
-    const int cells = (a.w - 40) / 8;
-    const int rows = wrap_rows(NULL, 0, 0, 18, TR(SUP_ASK_OFF), cells, 0);
-    (void)wrap_rows(c, a.x + 20, a.y + a.h - 26 - (rows - 1) * 18, 18,
-                    TR(SUP_ASK_OFF), cells, ui_theme_color(UI_C_TEXT_FAINT));
+    ui_button_font(c, s.apply_btn, TR(SUP_APPLY), ui_theme_color(UI_C_WARN),
+                   s.pressed == P_APPLY, true, SU_FONT_LABEL);
+    ui_button_font(c, s.discard_btn, TR(CANCEL),
+                   ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_DISCARD,
+                   true, SU_FONT_LABEL);
+    /* At the foot: its last line ends 4 px above the alert band. */
+    const gfx_rect_t first = { (int16_t)tx, 0, (int16_t)tw, 24 };
+    const int rows = ui_text_wrap(NULL, first, ASK_PITCH, TR(SUP_ASK_OFF),
+                                  SU_FONT_BODY, 0);
+    (void)ui_text_wrap(c, (gfx_rect_t){ (int16_t)tx,
+                                        (int16_t)(STOP_FLOOR - 24
+                                                  - (rows - 1) * ASK_PITCH),
+                                        (int16_t)tw, 24 },
+                       ASK_PITCH, TR(SUP_ASK_OFF), SU_FONT_BODY,
+                       ui_theme_color(UI_C_TEXT_FAINT));
 }
 
 enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE, TAG_COUNT };
@@ -542,6 +597,12 @@ static uint8_t output_tag(void)
                          ? TAG_HELD : TAG_IDLE);
 }
 
+/**
+ * @brief A frame: the chrome once per framebuffer, then each part on its
+ *        own counter.
+ * @param c the canvas
+ * @param buffer_index the framebuffer drawn into, 0 or 1
+ */
 void sup_render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -563,7 +624,7 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
             ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
                      TR(SUP_SET_POINTS), ui_theme_color(UI_C_ACCENT));
         }
-        ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
+        ui_panel(c, (gfx_rect_t){ RIGHT_X, CTL_Y, RIGHT_W, CTL_H },
                  TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;
         s.drawn_title[buf] = tag;
@@ -620,14 +681,15 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
                            (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
             if (!s.plot.running && s.plot.filled == 0) {
                 gfx_text_in(c, (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H },
-                            TR(SUP_NOT_ON_YET), &gfx_font_8x16,
+                            TR(SUP_NOT_ON_YET), SU_FONT_LABEL,
                             ui_theme_color(UI_C_TEXT_FAINT), 1,
                             GFX_ALIGN_CENTER);
             }
         }
     } else if (data_moved || set_moved) {
-        gfx_fill_rect(c, LEFT_X + 1, UP_Y + TITLE_H, LEFT_W - 2,
-                      UP_H - TITLE_H - 1 - UI_CHAMFER,
+        /* From the legend's row down: PLOT | TABLE above it stay. */
+        gfx_fill_rect(c, LEFT_X + 1, LEG_Y, LEFT_W - 2,
+                      UP_Y + UP_H - 1 - UI_CHAMFER - LEG_Y,
                       ui_theme_color(UI_C_PANEL));
         gfx_fill_rect(c, LEFT_X + 1, UP_Y + UP_H - 1 - UI_CHAMFER,
                       LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
@@ -661,8 +723,9 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
         if (!covered) {
             draw_steps(c);
         }
-        ui_button(c, s.reset_rect, TR(MO_RESET_PEAKS),
-                  ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_RESET, true);
+        ui_button_font(c, s.reset_rect, TR(MO_RESET_PEAKS),
+                       ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_RESET,
+                       true, SU_FONT_LABEL);
     }
     if (ctrl_moved || out_moved) {
         draw_out_button(c);

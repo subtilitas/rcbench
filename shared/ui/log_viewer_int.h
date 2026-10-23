@@ -36,147 +36,264 @@
 
 /* ------------------------------------------------------------- browse ---- */
 
-/*
- * Layout in the 540 px body the router hands this screen (600 minus the
- * 60 px band).  Each view's footer row of buttons ends 4 px above the
- * router's alert band, which covers the bottom UI_ALERT_H (44) px of the
- * body while an alert shows and takes the touches there: nothing that acts
- * sits under it.  The footer is body y 450 to 491; the band starts at 496.
+/**
+ * @brief The faces of the 1024 x 600 type scale this screen draws in.
+ *
+ * LV_FONT_LABEL (10 x 20) for every label, button, row, value, warning and
+ * the cursor line; LV_FONT_BODY (12 x 24) for prose read at a distance: the
+ * empty list's lines, the DELETE question, the file messages in the footer
+ * and the boxes that say why nothing shows; LV_FONT_FINE (8 x 16) for the
+ * plot's data figures: the time axis and the series' ranges.
  */
-#define FOOT_H    42
+#define LV_FONT_LABEL (&gfx_font_10x20)
+#define LV_FONT_BODY  UI_FONT_BODY   /**< 12 x 24: prose. */
+#define LV_FONT_FINE  UI_FONT_FINE   /**< 8 x 16: the plot's figures. */
+
+/**
+ * @brief The screen's columns: UI_MARGIN (8 px) in from either edge, LV_W
+ *        (1008 px) between.
+ */
+#define LV_L  UI_MARGIN
+#define LV_R  (SCREEN_W - UI_MARGIN)  /**< The right edge, x 1016. */
+#define LV_W  (LV_R - LV_L)           /**< The width between, 1008 px. */
+
+/**
+ * @brief Each view's footer row of buttons: FOOT_H (52 px) tall, ending
+ *        4 px above the router's alert band.
+ *
+ * The alert band covers the bottom UI_ALERT_H (44) px of the 540 px body
+ * while an alert shows and takes the touches there: nothing that acts sits
+ * under it.  The footer is body y 440 to 491; the band starts at 496.
+ * FOOT_GAP is the room between what a view shows above the footer and the
+ * footer.
+ */
+#define FOOT_H    52
+/** @brief The footer's top. */
 #define FOOT_Y    (SCREEN_H - UI_ALERT_H - 4 - FOOT_H)
-/* What a view shows above the footer ends this far above it. */
-#define FOOT_GAP  6
+#define FOOT_GAP  8   /**< Above the footer, px. */
 
-/* The list starts under the header row, which holds the card's name and,
- * when the card holds more than one page, PREV and NEXT. */
-#define BR_LIST_Y 44
-#define BR_LIST   gfx_rect_make(16, BR_LIST_Y, 768, FOOT_Y - FOOT_GAP - BR_LIST_Y)
-#define BR_ROW_H  44
-/* The list is 400 px tall: six rows of 44 px under its 30 px heading take
- * 294 px of it. */
-#define BR_ROWS   6
-
-/*
- * The scroll bar along the list's right edge, BR_BAR_W px wide: 6.3 mm on
- * the panel at the 0.150 mm a pixel ui_layout.h assumes (not measured).  The
- * track runs the height of the rows, and the thumb's share of it is the
- * rows' share of the page.
+/**
+ * @brief The header row, body y 4 to 52: ROOT / USER / BENCH, the folder
+ *        and the card's name, and PREV and NEXT while the card holds more
+ *        than one page.
+ *
+ * PREV and NEXT are 140 x 48 px over DELETE and OPEN.  The tabs are 110 x
+ * 40 px, 4 px apart, centred on the row; ui_tabs draws its trough 3 px
+ * round them.  The folder follows from BR_HEAD_X and the card's name ends
+ * the row, right-aligned: at BR_HEAD_END with PREV and NEXT showing, at
+ * BR_HEAD_FAR without them.  BR_HEAD_X to BR_HEAD_END is 352 px, 35 cells
+ * of the 10 x 20 face: an 11-character volume label and a 17-character
+ * folder with the 16 px between them.
  */
-#define BR_BAR_W  42
-#define BR_BAR    gfx_rect_make(16 + 768 - 8 - BR_BAR_W, BR_LIST_Y + 30, \
+#define BR_PG_Y     4
+#define BR_PG_H     UI_TAP_MIN                /**< PREV and NEXT, 48 px. */
+#define BR_PG_W     140                       /**< Their width. */
+#define BR_TAB_W    110                       /**< A folder tab's width. */
+#define BR_TAB_H    40                        /**< Its height. */
+/** @brief ROOT, USER, BENCH. */
+#define BR_TABS     gfx_rect_make(LV_L + 3, BR_PG_Y + 4, \
+                                  3 * BR_TAB_W + 2 * 4, BR_TAB_H)
+#define BR_HEAD_X   368                       /**< The folder's left. */
+#define BR_HEAD_TY  (BR_PG_Y + (BR_PG_H - 20) / 2)  /**< Its text's top. */
+#define BR_PREV     gfx_rect_make(LV_R - 2 * BR_PG_W - 8, BR_PG_Y, BR_PG_W, \
+                                  BR_PG_H)  /**< PREV, over DELETE. */
+/** @brief NEXT, over OPEN. */
+#define BR_NEXT     gfx_rect_make(LV_R - BR_PG_W, BR_PG_Y, BR_PG_W, BR_PG_H)
+#define BR_HEAD_END (LV_R - 2 * BR_PG_W - 8 - 8)  /**< 8 px short of PREV. */
+#define BR_HEAD_FAR LV_R                      /**< The row's right end. */
+
+/**
+ * @brief The file list under the header row, BR_ROWS rows at a pitch of
+ *        BR_ROW_H under its 30 px heading.
+ *
+ * A row is drawn BR_ROW_H - 4 (44) px tall; the pitch, 48 px, is what a
+ * finger hits, UI_TAP_MIN.  The list is 372 px tall: seven rows under the
+ * heading take 366 px of it.  A row shows the file's name and, right-
+ * aligned, its size.
+ */
+#define BR_LIST_Y 60
+/** @brief The list's panel. */
+#define BR_LIST   gfx_rect_make(LV_L, BR_LIST_Y, LV_W, \
+                                FOOT_Y - FOOT_GAP - BR_LIST_Y)
+#define BR_ROW_H  48  /**< A row's pitch, UI_TAP_MIN. */
+#define BR_ROWS   7        /**< The rows the list shows at once. */
+
+/**
+ * @brief The scroll bar along the list's right edge, BR_BAR_W px wide:
+ *        8.4 mm on the panel at the 0.150 mm a pixel ui_layout.h assumes
+ *        (not measured).
+ *
+ * The track runs the height of the rows, and the thumb's share of it is
+ * the rows' share of the page.  A row runs from the list's left inset to
+ * 8 px short of the bar.
+ */
+#define BR_BAR_W  56
+/** @brief The track. */
+#define BR_BAR    gfx_rect_make(LV_R - 8 - BR_BAR_W, BR_LIST_Y + 30, \
                                 BR_BAR_W, BR_ROWS * BR_ROW_H - 4)
-/* A row runs from the list's left inset to 8 px short of the bar. */
-#define BR_ROW_X  (16 + 8)
-#define BR_ROW_W  (16 + 768 - 8 - BR_BAR_W - 8 - BR_ROW_X)
+#define BR_ROW_X  (LV_L + 8)                          /**< A row's left. */
+#define BR_ROW_W  (LV_R - 8 - BR_BAR_W - 8 - BR_ROW_X) /**< Its width. */
+/** @brief The size's box at a row's right end: LOG_DIR's 15 cells. */
+#define BR_SIZE_W 160
 
-/* PREV and NEXT, over DELETE and OPEN in the header row. */
-#define BR_PG_Y   2
-#define BR_PG_H   38
-/*
- * ROOT, USER and BENCH at the header row's left, 80 px a tab: ui_tabs draws
- * its trough 3 px round the tabs, so the trough is the header row, 2 to
- * 40 px, as PREV and NEXT are.  The folder follows from BR_HEAD_X and the
- * card's name ends the row, right-aligned: at BR_HEAD_END with PREV and NEXT
- * showing, at the list panel's right edge without them.  The two share
- * BR_HEAD_X to BR_HEAD_END, 248 px, 31 cells of the 8 px face: an
- * 11-character volume label, 2 spaces and a 17-character folder.
+/**
+ * @brief The footer's buttons, 140 x 52 px, in the order browse_event()
+ *        hit-tests them: DELETE and OPEN under PREV and NEXT.
  */
-#define BR_TABS   gfx_rect_make(19, BR_PG_Y + 3, 3 * 80 + 2 * 4, BR_PG_H - 6)
-#define BR_HEAD_X 280
-#define BR_HEAD_END (536 - 8)
-#define BR_HEAD_FAR (16 + 768)
-#define BR_PREV   gfx_rect_make(536, BR_PG_Y, 120, BR_PG_H)
-#define BR_NEXT   gfx_rect_make(664, BR_PG_Y, 120, BR_PG_H)
-
-/* Footer buttons, in the order browse_event() hit-tests them. */
-#define BR_RESCAN gfx_rect_make(16, FOOT_Y, 120, FOOT_H)
-#define BR_WIFI   gfx_rect_make(144, FOOT_Y, 120, FOOT_H)
-#define BR_OPEN   gfx_rect_make(664, FOOT_Y, 120, FOOT_H)
-#define BR_DELETE gfx_rect_make(536, FOOT_Y, 120, FOOT_H)
-/* Two lines of 32 cells to DELETE: the 28 a message about a file declares,
- * and the file's name. */
-#define BR_MSG_X  272
-
-/*
- * The TEXT view: the file's rows in the browse list's panel, 18 px apart
- * under its 30 px heading, beside its scroll bar.  A row is 86 cells of the
- * 8 px face, 688 px, from 8 px into the browse row's box.  The thumb is
- * BR_BAR_MIN px at least: a report of 400 rows would make it 9.
+#define BR_RESCAN gfx_rect_make(LV_L, FOOT_Y, BR_PG_W, FOOT_H)
+/** @brief WI-FI. */
+#define BR_WIFI   gfx_rect_make(LV_L + BR_PG_W + 8, FOOT_Y, BR_PG_W, FOOT_H)
+/** @brief OPEN. */
+#define BR_OPEN   gfx_rect_make(LV_R - BR_PG_W, FOOT_Y, BR_PG_W, FOOT_H)
+#define BR_DELETE gfx_rect_make(LV_R - 2 * BR_PG_W - 8, FOOT_Y, BR_PG_W, \
+                                FOOT_H)  /**< DELETE. */
+/**
+ * @brief A message's left edge in the footer: two lines of 33 cells of the
+ *        12 x 24 face to DELETE, the 28 a message about a file declares and
+ *        the file's name.  BR_MSG_LH is a line's pitch.
  */
-#define TX_ROW_H  18  /**< the pitch of a text row, px */
-#define TX_ROWS   14  /**< text rows on screen */
-#define TX_COLS   86  /**< cells a text row holds */
+#define BR_MSG_X  (LV_L + 2 * BR_PG_W + 8 + 16)
+#define BR_MSG_LH 24  /**< A line's pitch. */
+
+/** @brief The box an empty list shows in its place: two lines of 64 cells
+ *         of the 12 x 24 face inside 24 px margins. */
+#define BR_EMPTY  gfx_rect_make(104, 150, 816, 160)
+
+/**
+ * @brief The TEXT view: a report's rows in the browse list's panel,
+ *        TX_ROW_H px apart under its 30 px heading, beside its scroll bar.
+ *
+ * A row is TX_COLS cells of the 10 x 20 face, 920 px, from 8 px into the
+ * browse row's box to 8 px short of the bar.  The thumb is BR_BAR_MIN px
+ * at least: a report of 400 rows would make it 12.  BACK stands where the
+ * plot's BACK does.
+ */
+#define TX_ROW_H  22  /**< the pitch of a text row, px */
+#define TX_ROWS   15  /**< text rows on screen */
+#define TX_COLS   92  /**< cells a text row holds */
 #define TX_ROW_X  (BR_ROW_X + 8)  /**< a text row's left edge */
-/** @brief BACK under the text. */
-#define TX_BACK   gfx_rect_make(16, FOOT_Y, 170, FOOT_H)
+/** @brief BACK under the text, 140 x 52 px. */
+#define TX_BACK   gfx_rect_make(LV_L, FOOT_Y, 140, FOOT_H)
 #define BR_BAR_MIN 32  /**< the scroll bar thumb's least height, px */
 
-/* The DELETE question, drawn in place of the list. */
-#define DQ_BOX    gfx_rect_make(120, 110, 560, 220)
-#define DQ_CANCEL gfx_rect_make(144, 258, 240, 48)
-#define DQ_DELETE gfx_rect_make(416, 258, 240, 48)
+/**
+ * @brief The DELETE question, drawn in place of the list and the footer:
+ *        a box of 700 x 280 px, CANCEL and DELETE 300 x 56 px at its foot.
+ */
+#define DQ_BOX    gfx_rect_make(162, 100, 700, 280)
+#define DQ_CANCEL gfx_rect_make(186, 304, 300, 56)  /**< CANCEL. */
+#define DQ_DELETE gfx_rect_make(538, 304, 300, 56)  /**< DELETE. */
 
 /* ------------------------------------------------------------- import ---- */
 
-#define IM_LEFT   gfx_rect_make(16, 36, 300, FOOT_Y - FOOT_GAP - 36)
-#define IM_RIGHT  gfx_rect_make(328, 36, 456, FOOT_Y - FOOT_GAP - 36)
-#define IM_ROW_H  36
-/* (310 - 30) / 36 = 7 rows fit the column list. */
-#define IM_ROWS   7
-#define IM_BTN_Y  FOOT_Y
-#define IM_BTN_H  FOOT_H
+/**
+ * @brief The import: the file's name over two panels, DETECTED 400 px wide
+ *        and the column list 600 px, and four footer buttons of 246 px.
+ *
+ * DETECTED holds a 16-character key and a 20-cell value on one row of the
+ * 10 x 20 face, and its warnings break into lines of 36 cells.  The column
+ * list shows IM_ROWS rows at a pitch of IM_ROW_H, drawn 4 px shorter.
+ */
+#define IM_TOP    44
+/** @brief DETECTED. */
+#define IM_LEFT   gfx_rect_make(LV_L, IM_TOP, 400, FOOT_Y - FOOT_GAP - IM_TOP)
+/** @brief The column list. */
+#define IM_RIGHT  gfx_rect_make(LV_L + 408, IM_TOP, LV_W - 408, \
+                                FOOT_Y - FOOT_GAP - IM_TOP)
+#define IM_ROW_H  48  /**< A column row's pitch. */
+#define IM_ROWS   7        /**< (388 - 30) / 48: seven rows. */
+#define IM_KEY_LH 24       /**< DETECTED's key rows' pitch. */
+#define IM_WARN_LH 22      /**< A warning line's pitch. */
+#define IM_BTN_Y  FOOT_Y  /**< The footer's top. */
+#define IM_BTN_H  FOOT_H  /**< Its height. */
+#define IM_BTN_W  ((LV_W - 3 * 8) / 4)   /**< 246 px. */
+/** @brief The import's footer button @p i: 0 SEP, 1 NUM, 2 BACK, 3 PLOT. */
+#define IM_BTN(i) gfx_rect_make(LV_L + (i) * (IM_BTN_W + 8), IM_BTN_Y, \
+                                IM_BTN_W, IM_BTN_H)
+/** @brief The box a file that cannot be read shows: 74 cells of the
+ *         12 x 24 face inside 24 px margins. */
+#define IM_FAIL   gfx_rect_make(44, 150, 936, 160)
 
 /* --------------------------------------------------------------- plot ---- */
 
-/* The plot's panel, and under it a 16 px row of time labels 4 px down,
- * above the footer. */
-#define PV_PANEL_H (FOOT_Y - FOOT_GAP - 16 - 4 - 68)
-#define PV_PANEL  gfx_rect_make(16, 68, 768, PV_PANEL_H)
-#define PV_X      24
-#define PV_Y      76
-#define PV_W      752
-#define PV_H      (PV_PANEL_H - 16)
-#define PV_BAND   10
-#define PV_DIV_X  6
-#define PV_DIV_Y  4
-/* The bar under the plot that shows where a zoomed view sits. */
-#define PV_POS_Y  (PV_Y + PV_H + 2)
-#define PV_POS_H  4
-/* The narrowest window two fingers can zoom to, in samples. */
+/**
+ * @brief The plot: the summary line, the series' chips, the plot's panel
+ *        and under it a 16 px row of time labels 4 px down, above the
+ *        footer.
+ *
+ * The chips are CHIP_W x CHIP_H (240 x 44) px, CHIP_GAP apart, from y
+ * CHIP_Y.  The plot is PV_W x PV_H (992 x 316) px inside its panel; PV_BAND
+ * rows of it are drawn at a time.
+ */
+#define PV_SUM_Y   4  /**< The summary line's top. */
+#define CHIP_Y     28  /**< The chips' top. */
+#define CHIP_H     44  /**< A chip's height. */
+#define CHIP_X     LV_L  /**< The first chip's left. */
+#define CHIP_W     240  /**< A chip's width. */
+#define CHIP_GAP   16  /**< Between two chips. */
+#define PV_TOP     (CHIP_Y + CHIP_H + 8)  /**< The plot's panel's top. */
+#define PV_PANEL_H (FOOT_Y - FOOT_GAP - 16 - 4 - PV_TOP)  /**< Its height. */
+/** @brief The panel. */
+#define PV_PANEL   gfx_rect_make(LV_L, PV_TOP, LV_W, PV_PANEL_H)
+#define PV_X       (LV_L + 8)  /**< The plot's left column. */
+#define PV_Y       (PV_TOP + 8)  /**< Its top row. */
+#define PV_W       (LV_W - 16)  /**< Its width, 992 px. */
+#define PV_H       (PV_PANEL_H - 16)  /**< Its height, 316 px. */
+#define PV_BAND    10  /**< Rows drawn at a time. */
+#define PV_DIV_X   6  /**< Grid columns. */
+#define PV_DIV_Y   4  /**< Grid rows. */
+/** @brief The bar under the plot that shows where a zoomed view sits. */
+#define PV_POS_Y   (PV_Y + PV_H + 2)
+#define PV_POS_H   4  /**< Its height. */
+/** @brief The narrowest window two fingers can zoom to, in samples. */
 #define PV_MIN_WIN 8
-/* With SET_PLOT_PAN on, a finger that moves further than this many pixels
- * from where it touched down pans the zoomed view instead of selecting. */
+/** @brief With SET_PLOT_PAN on, a finger that moves further than this many
+ *         pixels from where it touched down pans the zoomed view instead of
+ *         selecting. */
 #define PV_PAN_SLOP 10
-/* A pixel column with no number in it: drawn as nothing. */
+/** @brief A pixel column with no number in it: drawn as nothing. */
 #define PV_EMPTY   (-1)
-
-#define CHIP_Y    26
-#define CHIP_H    36
-#define CHIP_X    8
-#define CHIP_W    190
-#define CHIP_GAP  6
+/**
+ * @brief The plot's footer: BACK, then < and >, 52 px tall; the cursor's
+ *        line in 10 x 20 from PV_LINE_X.
+ */
+#define PV_BACK    gfx_rect_make(LV_L, FOOT_Y, 140, FOOT_H)
+#define PV_PREV    gfx_rect_make(LV_L + 148, FOOT_Y, 96, FOOT_H)  /**< <. */
+#define PV_NEXT    gfx_rect_make(LV_L + 252, FOOT_Y, 96, FOOT_H)  /**< >. */
+#define PV_LINE_X  (LV_L + 364)  /**< The cursor's line. */
+/** @brief The box the plot shows with nothing loaded: 64 cells of the
+ *         12 x 24 face inside 24 px margins. */
+#define PV_NONE    gfx_rect_make(104, 150, 816, 120)
 
 _Static_assert(FOOT_Y + FOOT_H + 4 <= SCREEN_H - UI_ALERT_H,
                "the footer ends 4 px above the alert band");
+_Static_assert(FOOT_H >= UI_TAP_MIN, "the footer's buttons are a finger tall");
+_Static_assert(BR_ROW_H >= UI_TAP_MIN, "a file row is a finger tall");
+_Static_assert(IM_ROW_H >= UI_TAP_MIN, "a column row is a finger tall");
 _Static_assert(30 + BR_ROWS * BR_ROW_H <= FOOT_Y - FOOT_GAP - BR_LIST_Y,
                "the file list's rows fit its panel");
-_Static_assert(BR_PG_Y + BR_PG_H + 4 <= BR_LIST_Y,
-               "PREV and NEXT end above the list");
-_Static_assert(19 + 3 * 80 + 2 * 4 + 3 + 8 <= BR_HEAD_X,
+_Static_assert(BR_PG_Y + BR_PG_H + 8 <= BR_LIST_Y,
+               "PREV and NEXT end 8 px above the list");
+_Static_assert(LV_L + 3 + 3 * BR_TAB_W + 2 * 4 + 3 + 16 <= BR_HEAD_X,
                "the tabs end before the header's text");
-_Static_assert(BR_HEAD_X + 31 * 8 <= BR_HEAD_END + 8,
+_Static_assert(BR_HEAD_X + (11 + 17) * 10 + 16 <= BR_HEAD_END,
                "the header's text ends at PREV");
+_Static_assert(BR_MSG_X + 33 * 12 + 8 <= LV_R - 2 * BR_PG_W - 8,
+               "a footer message's 33 cells stand between WI-FI and DELETE");
+_Static_assert(BR_SIZE_W >= 15 * 10 + 8,
+               "a row's size box holds LOG_DIR's 15 cells");
 _Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,
                "the scroll bar's thumb is 32 px or more on a full page");
 _Static_assert(TX_ROWS * TX_ROW_H <= BR_ROWS * BR_ROW_H - 4,
                "the text's rows fit beside the scroll bar");
-_Static_assert(TX_COLS * 8 <= BR_ROW_W - 8,
+_Static_assert(TX_COLS * 10 <= BR_ROW_W - 8,
                "a text row fits the browse row's box");
-_Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - 36,
+_Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - IM_TOP,
                "the column list's rows fit its panel");
-_Static_assert(PV_POS_Y + PV_POS_H <= 68 + PV_PANEL_H,
+_Static_assert(PV_POS_Y + PV_POS_H <= PV_TOP + PV_PANEL_H,
                "the position bar is inside the plot's panel");
+_Static_assert(CHIP_X + 4 * CHIP_W + 3 * CHIP_GAP <= LV_R,
+               "the four chips stand in the screen's width");
 
 /** @brief The view on screen. */
 typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT, VIEW_TEXT } view_t;

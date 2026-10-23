@@ -271,16 +271,16 @@ TEST_CASE(a_count_above_the_list_does_not_reach_past_it)
     g_card_runs = 200;
     log_viewer_refresh();
 
-    /* Two drags: one press scrolls by its own travel and the bottom of a
-     * 48-row list is further down than that. */
-    for (int i = 0; i < 2; ++i) {
+    /* Three drags: one press scrolls by its own travel, 1000 px or 20 rows,
+     * and the bottom of a 48-row list is further down than that. */
+    for (int i = 0; i < 3; ++i) {
         send(TOUCH_EVENT_DOWN, 400, 300);
         send(TOUCH_EVENT_MOVE, 400, -700);
         send(TOUCH_EVENT_UP, 400, -700);
     }
     draw();
 
-    /* The top row is now six from the end of what was written, and the last
+    /* The top row is now seven from the end of what was written, and the last
      * run written is the oldest one on the page, the newest at the top. */
     char want[LOG_RUN_NAME_MAX];
     log_run_name(want, sizeof(want),

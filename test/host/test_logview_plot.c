@@ -38,15 +38,15 @@
 
 /* The plot area: left edge, width in columns, the row a constant trace runs
  * along (the middle grid line) and the bottom row. */
-#define PV_X0       24
+#define PV_X0       LV_PV_X0
 
-#define PV_COLS     752
+#define PV_COLS     LV_PV_COLS
 
-#define PV_TOP_Y    76
+#define PV_TOP_Y    LV_PV_TOP
 
-/* PV_H of log_viewer_int.h: the panel from y 68 down to the time labels
- * over the footer, less its 16 px. */
-#define PV_BOTTOM_Y (76 + (LV_FOOT_Y - 6 - 16 - 4 - 68 - 16) - 1)
+/* PV_Y + PV_H - 1 of log_viewer_int.h: the panel from y 80 down to the
+ * time labels over the footer, less its 16 px. */
+#define PV_BOTTOM_Y LV_PV_BOTTOM
 
 static int column_row(const log_analysis_t *a, const char *name)
 {
@@ -582,7 +582,7 @@ static int zoom_in_with_cursor(void)
 
 /* One finger from x0 to x1 in steps of 25 px, then up. */
 /* The plot's width in pixels, PV_W in log_viewer_int.h. */
-#define PV_W_TEST 752
+#define PV_W_TEST LV_PV_COLS
 
 static void drag(int x0, int x1)
 {

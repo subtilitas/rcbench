@@ -30,7 +30,7 @@ TEST_CASE(timing_steps_the_settings_and_closing_asks_for_a_save)
     for (int i = 0; i < 10; ++i) {
         tap(PAGE_DN_X, PAGE_CY);
     }
-    tap(STEP_DN_X, STEP_CY(6));              /* the last: HYSTERESIS */
+    tap(STEP_DN_X, STEP_CY(ST_PARM_ROWS - 1)); /* the last: HYSTERESIS */
     CHECK_EQ(settings_get_int(SET_STICK_HYST), 30);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
@@ -40,7 +40,7 @@ TEST_CASE(timing_steps_the_settings_and_closing_asks_for_a_save)
     CHECK_EQ(settings_get_int(SET_STICK_HYST), 40);
     /* The defaults are the values loaded at start: nothing to write. */
     CHECK(!settings_dirty());
-    tap(STEP_DN_X, STEP_CY(6));              /* HYSTERESIS again */
+    tap(STEP_DN_X, STEP_CY(ST_PARM_ROWS - 1)); /* HYSTERESIS again */
     CHECK_EQ(settings_get_int(SET_STICK_HYST), 30);
     tap(WRITE_X, BTN_CY);                    /* CLOSE */
     CHECK(settings_save_asked());
@@ -74,7 +74,8 @@ TEST_CASE(an_item_steps_from_keep_and_stops_at_its_ends)
     CHECK_EQ(esc_stick_panel_runs(), 0u);
     /* Paging reaches item 8, and BACK climbs to the list. */
     tap(PAGE_DN_X, PAGE_CY);
-    tap(STEP_UP_X, STEP_CY(6));
+    tap(PAGE_DN_X, PAGE_CY);                 /* items 3 to 8 */
+    tap(STEP_UP_X, STEP_CY(ST_PARM_ROWS - 1));
     tap(BACK_X, BACK_Y);
     tap(BACK_X, BACK_Y);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));

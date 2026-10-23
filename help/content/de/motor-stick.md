@@ -49,9 +49,9 @@ SUCHE filtert die angezeigte Ebene. Ihre Tastatur dockt rechts an, und jede Tast
 
 ![Zwei Werte gewählt: START 2](view:motor-stick-items)
 
-Die Seite eines Profils listet seine Menüpunkte. Jeder beginnt bei BEHALTEN, das den Punkt lässt, wie er ist. `-` und `+` gehen durch die Werte des Punkts und halten an beiden Enden. AKTION, KEINE EINSTELLUNG kennzeichnet einen Punkt, der eine Aktion ist, etwa ein Zurücksetzen; KEINE AUSWAHL einen Punkt mit einem Wert. Die Zeile unter der Liste nennt die Werte des gewählten Punkts und die Vorgabe. START zählt die gewählten Werte.
+Die Seite eines Profils listet seine Menüpunkte. Jeder beginnt bei BEHALTEN, das den Punkt lässt, wie er ist. `-` und `+` gehen durch die Werte des Punkts und halten an beiden Enden. AKTION, KEINE EINSTELLUNG kennzeichnet einen Punkt, der eine Aktion ist, etwa ein Zurücksetzen; KEINE AUSWAHL einen Punkt mit einem Wert. Eine Seite zeigt 6 Punkte. Die Spalte rechts hält ÄNDERN mit den gezeigten Punkten und `^` und `v`, die sie blättern; MANUELLER EINGRIFF NÖTIG, wo das Profil manuelle Schritte hat; die Art des Menüs, Spannung und Strom des Netzteils für den Lauf und die Einstiegszeit; und die Werte des gewählten Punkts und die Vorgabe. START zählt die gewählten Werte.
 
-Der Kopf zeigt die Art des Menüs, Spannung und Strom des Netzteils für den Lauf und die Einstiegszeit. TIMING öffnet die Pieptonzeiten und die Netzteileinstellungen:
+TIMING öffnet die Pieptonzeiten und die Netzteileinstellungen, ebenso angeordnet:
 
 ![Die Timing-Einstellungen](view:motor-stick-timing)
 

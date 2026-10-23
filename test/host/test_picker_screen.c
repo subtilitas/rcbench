@@ -513,11 +513,11 @@ TEST_CASE(a_ground_is_marked_and_is_not_a_button)
     for (uint8_t i = 0; i < n; ++i) {
         uint16_t xc, yc;
         if (!outbind_pad_xy(bd->shape, pads[i].pad, &xc, &yc)) { continue; }
-        const int bw = 500;
-        const int bh = (int)(((uint32_t)bw * bd->shape->height_cmm)
-                             / bd->shape->width_cmm);
+        int bw = 0, bh = 0;
+        picker_board_fit(bd->shape->width_cmm, bd->shape->height_cmm, &bw,
+                         &bh);
         const int bx = (SCREEN_W - bw) / 2;
-        const int by = (SCREEN_H - bh) / 2;
+        const int by = (PK_FOOT - bh) / 2;
         const int px = bx + (int)(((uint32_t)xc * (uint32_t)bw)
                                  / bd->shape->width_cmm);
         const int py = by + (int)(((uint32_t)yc * (uint32_t)bh)

@@ -145,8 +145,8 @@ the bench end above it.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
 - The controls that stop what the bench drives end above the band, panel
-  y 556 to 599: DISARM, OUTPUT OFF, a stick run's ABORT (y 516 to 549),
-  its ABORT on a manual step (y 456 to 511), STOP TEST and STOP RUN. A press
+  y 556 to 599: DISARM, OUTPUT OFF, a stick run's ABORT (y 496 to 551),
+  its ABORT on a manual step (y 444 to 491), STOP TEST and STOP RUN. A press
   on one with an alert showing is its own, and the alert stays. A stop
   control a screen draws under the band acts on the first press, and the
   press clears the band; ARM and OUTPUT ON under the band are not pressed:
@@ -258,7 +258,7 @@ Key grids end 4 px above the alert band, at body y 492, on every screen.
 A keypad or a keyboard whose area reaches further paints its whole area
 and stops its keys there, so an alert covers no key. On SERVO the keypads'
 keys are then 112 x 88 px and the keyboards' 41 x 72 px; on SUPPLY the
-keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 61 px; on
+keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 57 px; on
 MOTOR & ESC's SETTINGS the keypad's are 145 x 89 px.
 
 ## Splash
@@ -697,7 +697,7 @@ session: it covers the left column, the rail and the strip's tabs, and no
 press reaches ARM or a tab while it is open. Opening it on a bench that is
 not SAFE switches the bench to SAFE, a DISARM held by another finger
 included. The strip row holds the output
-strip in their place, one line of 16 px from x 12:
+strip in their place, one line in the 10 x 20 face from x 12, y 4:
 
 ![ESC STICK under the output strip](img/motor-stick.png)
 
@@ -711,8 +711,8 @@ TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE
 | `SUPPLY` (German `NETZTEIL`) | the PD mini's output as it reads: `SUPPLY 7.60 V  1.00 A`; `SUPPLY ON` while it is on without a voltage and a current reading; `SUPPLY OFF`; `SUPPLY --` while the supply does not answer |
 | `SAFE` or `ARMED` | the bench; ARMED in the danger colour |
 
-The strip is at most 97 characters, 776 px, in English and in German. It is
-repainted when its text changes.
+The strip is at most 100 characters, 1000 px, in English and in German. It
+is repainted when its text changes.
 
 From ESC STICK's makers the home tag closes the session to PROGRAM's list;
 from the list it leaves for the menu. Leaving MOTOR & ESC from any level ends
@@ -743,6 +743,19 @@ control. Three controls act on the press:
   stops a motor, so it does not wait for the lift, and it answers a second
   finger.
 - The keys of the search keyboard, which follow their own press and lift.
+
+ESC STICK lays out on the body under the output strip, from body y 28,
+with its labels, rows and buttons in the 10 x 20 face:
+
+| Part | Place and size |
+| --- | --- |
+| crumb row | y 30 to 78: BACK 120 x 48 px, the trail in the 12 x 24 face, and at the right the search field (260 px, its X 48 px), `^` and `v` (56 px each) on the list or TIMING (168 px) on a profile's page |
+| list | 7 rows a page, 48 px tall at a 56 px pitch from y 84, 984 px wide; a model's name in 30 characters; the footer line ends 4 px above the alert band |
+| profile's page and TIMING | the parameter card on the left, 660 px: 6 rows a page, 48 px tall at a 56 px pitch, each with its number, its name (up to 23 characters), its value in a 250 px column and `-` and `+` of 48 x 48 px, 8 px between any two |
+| side column | 340 px right of the parameter card: CHANGE (TIMING's title on TIMING), the rows shown and `^` and `v` of 48 x 48 px; MANUAL INTERVENTION REQUIRED, 310 x 48 px; then how the profile's menu works, the supply and the entry time, and the picked row's help, wrapped to 31 characters a line |
+| foot row | y 436 to 492, 4 px above the alert band: the note at the left on up to 2 lines, DEFAULTS and RUN, ABORT, OK or CLOSE, 168 x 56 px each |
+| run and result | the device card across the body from y 84 with its two lines, the run's card under it from y 136 with the stack light at its right, two help lines from y 390, and the foot row; a result's MANUAL INTERVENTION REQUIRED, 330 x 56 px, left of OK |
+| warning, manual steps, prompt | a panel over the pages from y 28, its title in the 20 x 36 face, its lines at a 22 px pitch, its buttons 48 px tall ending 4 px above the foot row, so a second tap on RUN's place lands on none of them |
 
 BACK and the band's home tag climb one level at a time: a stick profile's
 page to the list, a maker's models to the makers, the makers to PROGRAM's
@@ -854,9 +867,9 @@ measured:
 
 ![Timing](img/motor-stick-timing.png)
 
-A row's `-` and `+` step its value. A tap on the value, the 216 px column
+A row's `-` and `+` step its value. A tap on the value, the 250 px column
 between the name and the keys, opens the keypad over the page, from under
-the output strip to 4 px above the alert band: 1008 x 466 px, keys of
+the output strip to 4 px above the alert band: 1008 x 464 px, keys of
 242 x 81 px. It names the setting, its range and its unit and takes the
 step's digits after the point: one for Voltage's 0.1 V, two for Current
 limit's 0.05 A. OK sets the value as a step does, onto the nearer step (1.23 A is
@@ -1626,11 +1639,11 @@ both on one GPIO, the header says `PD MINI NO PINS`. With the PD mini disabled, 
 says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
 
 SUPPLY is a workbench: a strip of tasks at the top, LIVE and SETTINGS
-(German `LIVE`, `OPTIONEN`), each 112 x 24 px, and a page under it. The
+(German `LIVE`, `OPTIONEN`), each 150 x 40 px, and a page under it. The
 menu's tile always opens LIVE. A tap on a tab switches the task; a switch
 is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 
-| Task | The left column, 546 px |
+| Task | The left column, 620 px |
 | --- | --- |
 | LIVE | the plot or the table over the set points |
 | SETTINGS | the 9 supply settings under LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)) |
@@ -1638,11 +1651,17 @@ is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 The header is the row right of the strip: the module and its pins, ONLINE
 or NOT ANSWERING, and at the right end the range the set points may take,
 for example `3.3-8.4 V  0.50-5.00 A`. It stays in sight on both tasks and
-under the keypad and the question. The rail on the right, the readings,
-OUTPUT ON and RESET PEAKS, is the same on both tasks.
+under the keypad and the question. The rail on the right, 380 px, is the
+same on both tasks: four reading cards of 64 px, VOLT, CURR, PWR and MODE,
+and the CONTROL card with the run's mAh and Wh on its title line, RESET
+PEAKS (48 px) and OUTPUT ON / OFF (60 px) at its foot, where SERVO and
+MOTOR & ESC have ARM and DISARM.
 
-The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
-power over the last 27 s. The rail shows the readings, the run's lowest
+The layout is the one MOTOR & ESC uses. On LIVE the left column holds the
+output card, PLOT | TABLE under its title, and SET POINTS under it. Each
+set point is a row: its label, then the `-0.1` key (72 x 48 px), the track
+(312 x 48 px), the `+0.1` key and the value in a 120 x 48 px box. The plot
+shows voltage, current and power over the last 30 s. The rail shows the readings, the run's lowest
 voltage and its highest current and power. MODE says which set point the
 supply holds: CV (constant voltage) at the set voltage, or CC (constant
 current) at the current limit. CC is drawn in the warning colour: a supply in
@@ -1674,8 +1693,8 @@ cap is cut. Both are narrowed by the caps in SETTINGS, and
 the sliders follow the supply in use. A tap on a track sets the value under
 the finger.
 
-**A tap on the VOLT or CURR card, or on a set point's value, opens a keypad**
-over the left column. It shows the range in the title row and the current
+**A tap on the VOLT or CURR card, or on a set point's value box, opens a
+keypad** over the left column, under the strip, with keys of 145 x 76 px. It shows the range in the title row and the current
 value faint until a digit is typed. OK takes a value inside the range,
 rounded to the supply's step; a value outside it is refused and the range
 turns to the warning colour. OK with nothing typed, and CANCEL, leave the set
@@ -1805,7 +1824,9 @@ second finger does nothing anywhere on the screen.
 ### Supply settings
 
 SETTINGS, the strip's second tab, shows the supply's settings in the left
-column. Each is kept in the panel's NVS (non-volatile storage) and survives
+column: the caps and the start values on the left, the trips and the
+confirmations on the right, each a 48 px row with its value in a 120 x
+48 px box, and the save line at the foot. Each is kept in the panel's NVS (non-volatile storage) and survives
 a restart. A value opens the keypad over the page; a switch flips on the
 tap. A tap on LIVE while the keypad is open closes it, and the setting keeps
 its value, as CANCEL leaves it. The same holds for a set point's keypad and
@@ -1854,8 +1875,8 @@ protocol 4.4 has no reset: the output goes off and the band says so.
 ### The log
 
 A run is one switch-on of the output. The plot clears when the output comes on
-and holds the run after it goes off. The mAh and Wh under the switch count the
-run from the readings shown, each step capped at 1 s. RESET PEAKS starts the
+and holds the run after it goes off. The mAh and Wh on the CONTROL card's
+title line count the run from the readings shown, each step capped at 1 s. RESET PEAKS starts the
 lowest and highest values again from the current reading.
 
 A run is recorded to a `SUPPLnnn.CSV` of its own in `BENCH/LOGS`, one row
@@ -1958,6 +1979,27 @@ the import view and a report's text to the file list, the file list to the
 menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
 RESCAN, opens [Wi-Fi](#wi-fi).
 
+The file list takes the body in three parts. The header row, body y 4 to
+52, holds ROOT, USER and BENCH (110 x 40 px each), the folder and the
+card's name, and PREV and NEXT (140 x 48 px) while the folder holds more
+than one page. The list under it is 1008 px wide and shows 7 rows of 44 px
+at a pitch of 48 px: each row takes a tap anywhere in its 48 px. A row
+shows the file's name and, right-aligned, its size; the file's date, kind
+and length are not shown. The footer, body y 440 to 492, holds RESCAN and
+WI-FI at the left and DELETE and OPEN at the right, 140 x 52 px each, and
+ends 4 px above the alert band. A message about a file stands between
+WI-FI and DELETE on up to two lines of 33 characters.
+
+The import view shows DETECTED (400 px wide) beside the column list (600 px,
+7 rows at a pitch of 48 px), with four buttons of 246 x 52 px under them.
+The plot is 992 x 316 px under four series chips of 240 x 44 px; under it
+run the time labels, then BACK (140 x 52 px), `<` and `>` (96 x 52 px) and
+the cursor's line. The DELETE question is a box of 700 x 280 px with CANCEL
+and DELETE of 300 x 56 px. Labels, rows, buttons and the import's warnings
+draw in the 10 x 20 face; the sentences of the empty list, the question,
+the boxes that say why nothing shows and the file messages in 12 x 24; the
+plot's time labels and the ranges of the columns and the chips in 8 x 16.
+
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
 before the file is plotted. Each numeric column shows its range, lowest to
@@ -2044,12 +2086,13 @@ names in the folder, a report standing alone by its own number:
 ![A LIMIT RUN's report opened as text](img/logs-report.png)
 
 OPEN on a report standing alone shows it as text in place of the import
-view: the file's name heads the panel, and its lines follow, 14 rows of up
-to 86 characters on screen. A line longer than a row breaks at its last
+view: the file's name heads the panel, and its lines follow, 15 rows of up
+to 92 characters in the 10 x 20 face on screen, 22 px apart. BACK is
+140 x 52 px at the footer's left. A line longer than a row breaks at its last
 space inside the row, and a word longer than a row is cut at the row's end.
 A line ends at a line feed (LF), at a carriage return (CR) and at a CR LF
 pair, which is one end; a tab reads as a space. A drag on the rows or on the
-scroll bar scrolls them. A frame reads the 14 rows it draws and at most 15
+scroll bar scrolls them. A frame reads the 15 rows it draws and at most 15
 rows before them, wherever the text is scrolled to. BACK and the home tag
 return to the list and free the text; leaving LOGS frees it too, and LOGS
 opens on the list again. The view holds the first 32 KiB of a file; a longer
@@ -2113,7 +2156,7 @@ holds the CSV files and the `LIMITnnn.TXT` reports, a `SERVOnnn.TXT`
 standing alone is not listed, and the console says
 `no PSRAM for the list's notes`.
 
-The scroll bar along the list's right edge is 42 px wide, 6.3 mm at the 0.150
+The scroll bar along the list's right edge is 56 px wide, 8.4 mm at the 0.150
 mm a pixel assumed for the panel (not measured). Its thumb is the rows on
 screen against the rows on the page, and it scrolls within the page. A tap on
 the track brings the thumb's middle to the finger; a finger on the thumb drags
@@ -2317,6 +2360,17 @@ this screen is open, and for the release check and the download of
 [Updates](#updates). It is off at every start of the panel, and it goes off
 when the screen is left, before an install writes the flash, and after
 10 min without a request.
+
+Every view of WI-FI ends 4 px above the alert band, at body y 492, so an
+alert covers no control. Rows, buttons and keys are 48 px or taller.
+
+| View | Layout |
+| --- | --- |
+| Radio off | five buttons of 460 x 60 px (69.0 x 9.0 mm), 8 px apart, on the left; on the right a card of 524 px with lines of 49 characters in 10 x 20, 24 px apart |
+| Radio on | rows of 56 px: the label in 10 x 20 in 240 px, the value in 20 x 36 in 740 px, where a network name of 32 characters takes 640 px; the lines under the rows in 12 x 24, 28 px apart; WI-FI OFF 460 x 60 px from body y 424 |
+| Network list | two columns of eight rows of 492 x 48 px, 52 px apart: the name in 12 x 24 (32 characters are 384 px), the signal in 10 x 20; SCAN AGAIN, HIDDEN NETWORK and CANCEL 328 x 56 px each |
+| Question about an image | a card of 1008 x 484 px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2 s: INSTALL 460 x 72 px |
+| Keyboard | 1008 x 484 px, keys of 93 x 71 px ([Keyboard](#keypad-keyboard-and-the-shared-controls)) |
 
 The radio starts only with the bench SAFE, the supply output off and no log
 run open. Otherwise the buttons that start it are grey and the card says what
@@ -3834,6 +3888,18 @@ it opens on what that workbench drives:
 
 ![Outputs](img/outputs.png)
 
+The left column is 300 px wide: the PROTOCOL label, the protocol list's
+face (300 x 64 px), the count and the reason under it in 10 x 20, and
+LAST WRITE at the column's foot with the result in 20 x 36. The pins take a
+grid of 4 columns of 7 cells, 167 x 64 px each (25.1 x 9.6 mm), 8 px apart
+across and 6 px apart down, from x 324. A cell holds a 24 px tick box, the
+GP name in 20 x 36 and, under them, what holds the pin or its pad in
+8 x 16, 18 characters at most. The grid's last row ends at body y 492,
+4 px above the alert band. The open protocol list holds the 8 protocols in
+a column of 48 px rows (7.2 mm) from the face's top and the PROG PORT
+entries in a second column of the same rows beside it; with 4 entries the
+list is 600 x 392 px and ends at body y 436.
+
 A set of pins per protocol, not eight independent slots: a bench is wired a
 protocol at a time — four servo leads, then one ESC (electronic speed
 controller) — and asking for the protocol and then for its pins is the shape
@@ -4155,8 +4221,17 @@ Outputs screen holds. The list answers "which GPIO is bound"; this answers
 The keys are not the pads. At any size that fits a 1024 x 600 panel a pad is
 under 40 pixels across, which is smaller than a fingertip, so the pads are
 drawn where they are and the touching happens on two staggered rows of keys
-above the board and two below, 43 px wide, each on a straight trace to its
-own pad.
+above the board and two below, 50 x 56 px (7.5 x 8.4 mm), each on a
+straight trace to its own pad. The board is drawn 600 px wide and at most
+240 px tall, to scale: the RP2350-CAN's 51 x 21 mm outline draws at
+582 x 240 px. Two keys in one row stand two pads apart, 8 px clear of each
+other, and the lower row ends at body y 490, above the alert band. The
+protocol list's face (280 x 56 px), the count and the reason are top left;
+the PINS table is under them, 171 px wide, rows of 36 px with the GP name
+in 20 x 36; IN USE is on the right, 168 px wide. Both tables stand 8 px
+clear of the outermost key a 600 px board can have, a pad on its very edge
+included. The protocol list opens as on Outputs: the protocols in a column
+of 48 px rows, the PROG PORT entries in a second column beside it.
 
 A key's colour says what a tap on it does:
 
@@ -4256,7 +4331,7 @@ pin a 28 px line. When those run past the foot of the table, every pin line
 is 20 px with the GPIO in the smaller face, then 16 px, then the names 16 px
 too. The tallest table of protocols is OFF selected, the programming port
 listed and the 8 slots over the 6 protocols that take one channel a pin: 16
-lines, 392 px of the 468 px under the heading. With 4 programming ports and
+lines, 392 px of the 432 px under the heading. With 4 programming ports and
 every interface on beside that binding, the table lists 27 lines, the ports
 and the interfaces first, in the smaller lines. A table that still runs past
 the foot holds the lines that fit and ends in `+N`, N the lines left out.
@@ -4315,7 +4390,7 @@ marked on the board itself, on a short trace in from the pad:
 
 The marks go inside the outline because that is the only room left: the
 space beside the board belongs to the keys, and a mark on the pad itself
-would be as small as the pad. Rails sit on neighbouring pads, 25 px apart,
+would be as small as the pad. Rails sit on neighbouring pads, 29 px apart,
 so a rail's marker is 30 px or 78 px in from its pad, alternating along the
 row; the deeper one clears the marker of a ground on the pad beside it.
 
