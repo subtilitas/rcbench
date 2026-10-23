@@ -401,7 +401,9 @@ typedef struct {
     unsigned      auth_drops; /**< auth-class drops in a row in this join */
     uint32_t      ip;         /**< the address, network byte order       */
     unsigned      scan_runs;  /**< scans started in this scan session     */
-    bool          scan_busy;  /**< one of them not reported done yet      */
+    uint32_t      scan_tok;   /**< the scan under way, 0 for none         */
+    uint32_t      scan_seq;   /**< the last scan token given; kept by
+                                   wa_start(), so no two scans share one  */
     char          pass[WA_SECRET_LEN + 1u];   /**< the access point's    */
     char          code[WA_SECRET_LEN + 1u];   /**< the page's access code */
 } wa_t;
@@ -516,8 +518,8 @@ void wa_on_join_failed(wa_t *w, wa_join_err_t why);
 bool wa_on_drop(wa_t *w, bool auth);
 
 /**
- * @brief The radio could not be started, or refused a scan: off
- *        WA_OFF_FAILED.
+ * @brief The radio could not be started: off WA_OFF_FAILED.
+ *        A refused scan is wa_scan_refused().
  * @param w The session.
  */
 void wa_on_failed(wa_t *w);
@@ -529,7 +531,7 @@ void wa_on_failed(wa_t *w);
  *        (wa_on_scan_end()).
  */
 typedef enum {
-    WA_SCAN_IGNORE = 0, /**< no scan of this session under way: read nothing */
+    WA_SCAN_IGNORE = 0, /**< not the scan under way: nothing changed       */
     WA_SCAN_TAKE,       /**< keep the list read; the session ended, off
                              WA_OFF_NONE                                    */
     WA_SCAN_AGAIN,      /**< start the next scan of the session now         */
@@ -537,53 +539,82 @@ typedef enum {
 } wa_scan_step_t;
 
 /**
- * @brief The radio's station started in a scan session: whether the
- *        platform starts the scan now.
+ * @brief The radio's station started in a scan session: the token of the
+ *        scan the platform starts now, or 0 for none.
  *
  * One scan at a time: a second report of the station's start while a scan
  * runs starts none, as a second esp_wifi_scan_start() would replace the
- * first and report it done with nothing found.
+ * first and report it done with nothing found.  Each scan has its own
+ * token, never 0, which the platform carries through the calls that run
+ * outside its lock: a refusal (wa_scan_refused()), a done report
+ * (wa_on_scan_end()) and a retry (wa_scan_is()) act only on the scan under
+ * way, never on a session started after it.
  *
  * @param w The session.
- * @return true once per scan session, with the session scanning and no
- *         scan under way; false otherwise.
+ * @return The scan's token, once per scan session, with the session
+ *         scanning and no scan under way; 0 otherwise.
  */
-bool wa_scan_begin(wa_t *w);
+uint32_t wa_scan_begin(wa_t *w);
 
 /**
- * @brief Whether a scan of this session is under way, its done report
- *        still owed.
+ * @brief The scan of this session under way, its done report still owed.
  * @param w The session.
- * @return true while scanning with a scan started and not reported done.
+ * @return Its token, or 0 for none.
  */
-bool wa_scan_pending(const wa_t *w);
+uint32_t wa_scan_pending(const wa_t *w);
+
+/**
+ * @brief Whether the scan of @p tok is the one under way.
+ * @param w   The session.
+ * @param tok A token wa_scan_begin() or wa_on_scan_end() gave.
+ * @return true for the scan under way; false for 0, for a scan that
+ *         ended and for one of an earlier session.
+ */
+bool wa_scan_is(const wa_t *w, uint32_t tok);
+
+/**
+ * @brief The radio refused to start the scan of @p tok: off
+ *        WA_OFF_FAILED when it is the scan under way.
+ * @param w   The session.
+ * @param tok The scan's token.
+ * @return Whether the session ended; false for a scan no longer under way.
+ */
+bool wa_scan_refused(wa_t *w, uint32_t tok);
 
 /**
  * @brief Whether a scan reported done counts as done.
+ *
+ * The read holds what the report counts, or fills the buffer when the
+ * report counts more than fit.
  *
  * @param status   The done report's status: 0 success, other a failure.
  * @param reported The networks the done report counts.
  * @param read_ok  The list was read (esp_wifi_scan_get_ap_records()).
  * @param read     The networks read.
- * @return true for a status of 0 and a list read that holds a network, or
- *         that holds none with none reported.
+ * @param room     The records the read had room for.
+ * @return true for a status of 0 and @p read equal to the smaller of
+ *         @p reported and @p room.
  */
 bool wa_scan_read_ok(uint32_t status, unsigned reported, bool read_ok,
-                     unsigned read);
+                     unsigned read, unsigned room);
 
 /**
- * @brief A scan of the session reported done; @p ok as wa_scan_read_ok()
+ * @brief The scan of @p tok reported done; @p ok as wa_scan_read_ok()
  *        says.
  *
- * A done report with no scan of this session under way changes nothing.
- * A failed scan is started again while WA_SCAN_TRIES allows; the last one
+ * A report for a scan that is not the one under way changes nothing.  A
+ * failed scan is started again while WA_SCAN_TRIES allows; the last one
  * failed ends the session WA_OFF_FAILED, never as an empty list.
  *
- * @param w  The session.
- * @param ok The scan worked and its list was read.
+ * @param w    The session.
+ * @param tok  The token of the scan the report was read for.
+ * @param ok   The scan worked and its list was read.
+ * @param next Receives the token of the scan to start with WA_SCAN_AGAIN,
+ *             0 otherwise.
  * @return What the platform does next.
  */
-wa_scan_step_t wa_on_scan_end(wa_t *w, bool ok);
+wa_scan_step_t wa_on_scan_end(wa_t *w, uint32_t tok, bool ok,
+                              uint32_t *next);
 
 /**
  * @brief Once a frame: the gate, STOP and the time-outs.

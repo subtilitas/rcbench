@@ -6,8 +6,9 @@
  * third scan that finds nothing after one that listed networks; a second
  * report of the station's start that starts a second scan, which replaces
  * the first; a done report of no scan under way, a failed scan or a list
- * that cannot be read, each shown as an empty list; and a scan that never
- * ends.
+ * that cannot be read or holds part of the list, each shown as an empty
+ * list; a refusal or a retry of a scan that ended, applied to the session
+ * started after it; and a scan that never ends.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -115,6 +116,9 @@ TEST_CASE(a_scan_runs_the_radio_and_ends_off)
     CHECK_EQ(g_w.off, WA_OFF_FAILED);
 }
 
+/* The token of the scan the platform runs, as wa_scan_begin() gave it. */
+static uint32_t g_tok;
+
 /* One scan session as the platform runs it: the station starts (twice, as
  * esp_hosted can report it), the scan ends with @p ok. */
 static wa_scan_step_t scan_once(uint32_t now, bool ok)
@@ -122,77 +126,167 @@ static wa_scan_step_t scan_once(uint32_t now, bool ok)
     CHECK_EQ(wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, now, counter_rand,
                       NULL),
              WA_OFF_NONE);
-    CHECK(wa_scan_begin(&g_w));
-    CHECK(!wa_scan_begin(&g_w));        /* a second station start */
-    CHECK(wa_scan_pending(&g_w));
-    return wa_on_scan_end(&g_w, ok);
+    g_tok = wa_scan_begin(&g_w);
+    CHECK(g_tok != 0u);
+    CHECK_EQ(wa_scan_begin(&g_w), 0u);  /* a second station start */
+    CHECK_EQ(wa_scan_pending(&g_w), g_tok);
+    return wa_on_scan_end(&g_w, g_tok, ok, &g_tok);
 }
 
 TEST_CASE(a_second_and_a_third_scan_after_a_completed_one_list_again)
 {
     wa_init(&g_w);
+    uint32_t last = 0u;
     for (uint32_t i = 0; i < 3u; ++i) {
         CHECK_EQ(scan_once(i * 5000u, true), WA_SCAN_TAKE);
         CHECK(!wa_radio(&g_w));
         CHECK_EQ(g_w.off, WA_OFF_NONE);
         CHECK_EQ(g_w.scan_runs, 1u);
-        CHECK(!wa_scan_pending(&g_w));
+        CHECK_EQ(wa_scan_pending(&g_w), 0u);
+        CHECK(g_w.scan_seq != last);    /* each scan its own token */
+        last = g_w.scan_seq;
     }
 }
 
 TEST_CASE(a_scan_done_with_no_scan_of_the_session_under_way_is_ignored)
 {
+    uint32_t next = 0u;
     wa_init(&g_w);
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_IGNORE);     /* radio off */
-    CHECK_EQ(g_w.off, WA_OFF_NONE);
+    CHECK_EQ(wa_on_scan_end(&g_w, 0u, true, &next), WA_SCAN_IGNORE);
+    CHECK_EQ(g_w.off, WA_OFF_NONE);                       /* radio off */
     (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
-    CHECK(!wa_scan_pending(&g_w));
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_IGNORE);  /* none started */
-    CHECK_EQ(g_w.state, WA_ST_SCANNING);
-    CHECK(wa_scan_begin(&g_w));
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_TAKE);
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_IGNORE);  /* a second done */
-    CHECK_EQ(g_w.off, WA_OFF_NONE);
+    CHECK_EQ(wa_scan_pending(&g_w), 0u);
+    CHECK_EQ(wa_on_scan_end(&g_w, 0u, true, &next), WA_SCAN_IGNORE);
+    CHECK_EQ(g_w.state, WA_ST_SCANNING);                  /* none started */
+    const uint32_t t = wa_scan_begin(&g_w);
+    CHECK_EQ(wa_on_scan_end(&g_w, t, true, &next), WA_SCAN_TAKE);
+    CHECK_EQ(wa_on_scan_end(&g_w, t, true, &next), WA_SCAN_IGNORE);
+    CHECK_EQ(g_w.off, WA_OFF_NONE);                       /* a second done */
     /* Ended by CANCEL, the gate or STOP: a done after it reads nothing. */
     (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
-    CHECK(wa_scan_begin(&g_w));
+    const uint32_t u = wa_scan_begin(&g_w);
     wa_close(&g_w, WA_OFF_ASKED);
-    CHECK(!wa_scan_pending(&g_w));
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_IGNORE);
+    CHECK_EQ(wa_scan_pending(&g_w), 0u);
+    CHECK_EQ(wa_on_scan_end(&g_w, u, true, &next), WA_SCAN_IGNORE);
     CHECK_EQ(g_w.off, WA_OFF_ASKED);
-    CHECK(!wa_scan_begin(&g_w));
+    CHECK_EQ(wa_scan_begin(&g_w), 0u);
 }
 
 TEST_CASE(a_failed_scan_runs_again_and_the_last_failure_is_a_failure)
 {
     wa_init(&g_w);
+    const uint32_t first = g_w.scan_seq + 1u;
     CHECK_EQ(scan_once(0u, false), WA_SCAN_AGAIN);
     CHECK_EQ(g_w.state, WA_ST_SCANNING);
-    CHECK(wa_scan_pending(&g_w));       /* the next one is started */
+    CHECK(g_tok != first);              /* the next one has its own token */
+    CHECK_EQ(wa_scan_pending(&g_w), g_tok);
     CHECK_EQ(g_w.scan_runs, 2u);
     for (unsigned i = 2u; i < WA_SCAN_TRIES; ++i) {
-        CHECK_EQ(wa_on_scan_end(&g_w, false), WA_SCAN_AGAIN);
+        CHECK_EQ(wa_on_scan_end(&g_w, g_tok, false, &g_tok), WA_SCAN_AGAIN);
     }
     CHECK_EQ(g_w.scan_runs, WA_SCAN_TRIES);
-    CHECK_EQ(wa_on_scan_end(&g_w, false), WA_SCAN_FAILED);
+    CHECK_EQ(wa_on_scan_end(&g_w, g_tok, false, &g_tok), WA_SCAN_FAILED);
+    CHECK_EQ(g_tok, 0u);
     CHECK(!wa_radio(&g_w));
     CHECK_EQ(g_w.off, WA_OFF_FAILED);   /* not an empty list */
     /* A failure, then a scan that works: the list. */
     CHECK_EQ(scan_once(0u, false), WA_SCAN_AGAIN);
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_TAKE);
+    CHECK_EQ(wa_on_scan_end(&g_w, g_tok, true, &g_tok), WA_SCAN_TAKE);
     CHECK_EQ(g_w.off, WA_OFF_NONE);
+}
+
+TEST_CASE(a_late_done_report_of_a_replaced_scan_changes_nothing)
+{
+    wa_init(&g_w);
+    CHECK_EQ(scan_once(0u, false), WA_SCAN_AGAIN);
+    const uint32_t old = g_tok - 1u;    /* the scan the retry replaced */
+    uint32_t next = 0u;
+    CHECK_EQ(wa_on_scan_end(&g_w, old, true, &next), WA_SCAN_IGNORE);
+    CHECK_EQ(wa_scan_pending(&g_w), g_tok);
+    CHECK_EQ(g_w.state, WA_ST_SCANNING);
+    CHECK_EQ(wa_on_scan_end(&g_w, g_tok, true, &next), WA_SCAN_TAKE);
 }
 
 TEST_CASE(a_scan_the_radio_refuses_is_a_failure_not_an_empty_list)
 {
+    uint32_t next = 0u;
     wa_init(&g_w);
     (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
-    CHECK(wa_scan_begin(&g_w));
-    wa_on_failed(&g_w);                 /* esp_wifi_scan_start() refused */
+    const uint32_t t = wa_scan_begin(&g_w);
+    CHECK(wa_scan_refused(&g_w, t));    /* esp_wifi_scan_start() refused */
     CHECK(!wa_radio(&g_w));
     CHECK_EQ(g_w.off, WA_OFF_FAILED);
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_IGNORE);
+    CHECK_EQ(wa_on_scan_end(&g_w, t, true, &next), WA_SCAN_IGNORE);
     CHECK_EQ(g_w.off, WA_OFF_FAILED);
+    CHECK(!wa_scan_refused(&g_w, t));   /* once */
+}
+
+/* esp_wifi_scan_start() waits for the C6; the session can end and another
+ * start meanwhile.  The old call's refusal belongs to the old scan. */
+TEST_CASE(a_refusal_after_the_session_changed_leaves_the_new_session)
+{
+    wa_init(&g_w);
+    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
+    const uint32_t t = wa_scan_begin(&g_w);
+    /* CANCEL and ACCESS POINT while the call waits. */
+    CHECK_EQ(wa_start(&g_w, WA_MODE_AP, WA_OFF_NONE, 10u, counter_rand, NULL),
+             WA_OFF_NONE);
+    CHECK(!wa_scan_refused(&g_w, t));
+    CHECK_EQ(g_w.state, WA_ST_STARTING);
+    CHECK_EQ(g_w.off, WA_OFF_NONE);
+    /* SCAN AGAIN while the call waits: the new scan stays under way. */
+    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
+    const uint32_t a = wa_scan_begin(&g_w);
+    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 20u, counter_rand, NULL);
+    const uint32_t b = wa_scan_begin(&g_w);
+    CHECK(a != b);
+    CHECK(!wa_scan_refused(&g_w, a));
+    CHECK_EQ(wa_scan_pending(&g_w), b);
+    CHECK_EQ(g_w.state, WA_ST_SCANNING);
+    /* A join started in its place: likewise. */
+    (void)wa_start(&g_w, WA_MODE_JOIN, WA_OFF_NONE, 30u, counter_rand, NULL);
+    CHECK(!wa_scan_refused(&g_w, b));
+    CHECK_EQ(g_w.state, WA_ST_JOINING);
+}
+
+/* A retry is started outside the lock; a request in between ends the
+ * session, and the retry is then not started and its refusal is not the new
+ * session's. */
+TEST_CASE(a_retry_after_the_session_changed_is_not_started)
+{
+    wa_init(&g_w);
+    CHECK_EQ(scan_once(0u, false), WA_SCAN_AGAIN);
+    const uint32_t retry = g_tok;
+    CHECK(wa_scan_is(&g_w, retry));
+    CHECK_EQ(wa_start(&g_w, WA_MODE_AP, WA_OFF_NONE, 10u, counter_rand, NULL),
+             WA_OFF_NONE);
+    CHECK(!wa_scan_is(&g_w, retry));    /* the platform does not start it */
+    CHECK(!wa_scan_refused(&g_w, retry));
+    CHECK_EQ(g_w.state, WA_ST_STARTING);
+    /* Nor in a new scan session, whose own scan has not started yet. */
+    CHECK_EQ(scan_once(40u, false), WA_SCAN_AGAIN);
+    const uint32_t r2 = g_tok;
+    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 50u, counter_rand, NULL);
+    CHECK(!wa_scan_is(&g_w, r2));
+    CHECK(!wa_scan_refused(&g_w, r2));
+    CHECK_EQ(g_w.state, WA_ST_SCANNING);
+    CHECK(wa_scan_begin(&g_w) != 0u);
+    CHECK(!wa_scan_is(&g_w, 0u));
+}
+
+TEST_CASE(tokens_hold_across_a_new_session_and_never_read_as_none)
+{
+    wa_init(&g_w);
+    g_w.scan_seq = 0xFFFFFFFFu;         /* the counter at its wrap */
+    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
+    CHECK_EQ(g_w.scan_seq, 0xFFFFFFFFu);
+    const uint32_t t = wa_scan_begin(&g_w);
+    CHECK(t != 0u);
+    CHECK_EQ(wa_scan_pending(&g_w), t);
+    uint32_t next = 0u;
+    CHECK_EQ(wa_on_scan_end(&g_w, t, false, &next), WA_SCAN_AGAIN);
+    CHECK(next != 0u);
+    CHECK(next != t);
 }
 
 TEST_CASE(the_scans_of_a_session_end_at_the_start_time_out)
@@ -202,11 +296,12 @@ TEST_CASE(the_scans_of_a_session_end_at_the_start_time_out)
     CHECK(!wa_tick(&g_w, 1000u + WA_START_MS - 1u, WA_OFF_NONE, false));
     CHECK(wa_tick(&g_w, 1000u + WA_START_MS, WA_OFF_NONE, false));
     CHECK_EQ(g_w.off, WA_OFF_FAILED);
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_IGNORE);
+    CHECK_EQ(wa_on_scan_end(&g_w, g_tok, true, &g_tok), WA_SCAN_IGNORE);
 }
 
 TEST_CASE(a_scan_with_the_access_point_up_or_joined_ends_that_session_first)
 {
+    uint32_t next = 0u;
     up_ap(0u);
     CHECK_EQ(wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 100u, counter_rand,
                       NULL),
@@ -214,8 +309,9 @@ TEST_CASE(a_scan_with_the_access_point_up_or_joined_ends_that_session_first)
     CHECK_EQ(g_w.state, WA_ST_SCANNING);
     CHECK(!wa_serving(&g_w));
     CHECK_EQ(g_w.scan_runs, 0u);
-    CHECK(wa_scan_begin(&g_w));
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_TAKE);
+    uint32_t t = wa_scan_begin(&g_w);
+    CHECK(t != 0u);
+    CHECK_EQ(wa_on_scan_end(&g_w, t, true, &next), WA_SCAN_TAKE);
     CHECK(!wa_radio(&g_w));
 
     wa_init(&g_w);
@@ -228,23 +324,29 @@ TEST_CASE(a_scan_with_the_access_point_up_or_joined_ends_that_session_first)
              WA_OFF_NONE);
     CHECK_EQ(g_w.state, WA_ST_SCANNING);
     CHECK_EQ(g_w.ip, 0u);
-    CHECK(wa_scan_begin(&g_w));
-    CHECK_EQ(wa_on_scan_end(&g_w, true), WA_SCAN_TAKE);
+    t = wa_scan_begin(&g_w);
+    CHECK_EQ(wa_on_scan_end(&g_w, t, true, &next), WA_SCAN_TAKE);
     /* A station start in another mode starts no scan. */
     up_ap(0u);
-    CHECK(!wa_scan_begin(&g_w));
+    CHECK_EQ(wa_scan_begin(&g_w), 0u);
 }
 
-TEST_CASE(a_scan_counts_as_done_only_with_its_list_read)
+TEST_CASE(a_scan_counts_as_done_only_with_its_whole_list_read)
 {
-    /* status 0, the list read, as many as reported or none reported */
-    CHECK(wa_scan_read_ok(0u, 6u, true, 6u));
-    CHECK(wa_scan_read_ok(0u, 0u, true, 0u));   /* nothing in reach */
-    CHECK(wa_scan_read_ok(0u, 30u, true, 24u)); /* more than fit */
-    CHECK(!wa_scan_read_ok(1u, 0u, true, 0u));  /* the scan failed */
-    CHECK(!wa_scan_read_ok(1u, 6u, true, 6u));
-    CHECK(!wa_scan_read_ok(0u, 6u, false, 0u)); /* the read refused */
-    CHECK(!wa_scan_read_ok(0u, 6u, true, 0u));  /* reported, not read */
+    /* status 0 and as many read as reported, or a full buffer */
+    CHECK(wa_scan_read_ok(0u, 6u, true, 6u, 24u));
+    CHECK(wa_scan_read_ok(0u, 0u, true, 0u, 24u));   /* nothing in reach */
+    CHECK(wa_scan_read_ok(0u, 24u, true, 24u, 24u)); /* just fits */
+    CHECK(wa_scan_read_ok(0u, 30u, true, 24u, 24u)); /* more than fit */
+    CHECK(!wa_scan_read_ok(1u, 0u, true, 0u, 24u));  /* the scan failed */
+    CHECK(!wa_scan_read_ok(1u, 6u, true, 6u, 24u));
+    CHECK(!wa_scan_read_ok(0u, 6u, false, 0u, 24u)); /* the read refused */
+    CHECK(!wa_scan_read_ok(0u, 6u, true, 0u, 24u));  /* reported, not read */
+    CHECK(!wa_scan_read_ok(0u, 12u, true, 1u, 24u)); /* part of a list */
+    CHECK(!wa_scan_read_ok(0u, 30u, true, 23u, 24u));
+    CHECK(!wa_scan_read_ok(0u, 3u, true, 6u, 24u));  /* another list */
+    CHECK(!wa_scan_read_ok(0u, 0u, true, 6u, 24u));
+    CHECK(!wa_scan_read_ok(0u, 30u, true, 30u, 24u)); /* past the buffer */
 }
 
 int main(void)
@@ -255,9 +357,13 @@ int main(void)
     RUN(a_second_and_a_third_scan_after_a_completed_one_list_again);
     RUN(a_scan_done_with_no_scan_of_the_session_under_way_is_ignored);
     RUN(a_failed_scan_runs_again_and_the_last_failure_is_a_failure);
+    RUN(a_late_done_report_of_a_replaced_scan_changes_nothing);
     RUN(a_scan_the_radio_refuses_is_a_failure_not_an_empty_list);
+    RUN(a_refusal_after_the_session_changed_leaves_the_new_session);
+    RUN(a_retry_after_the_session_changed_is_not_started);
+    RUN(tokens_hold_across_a_new_session_and_never_read_as_none);
     RUN(the_scans_of_a_session_end_at_the_start_time_out);
     RUN(a_scan_with_the_access_point_up_or_joined_ends_that_session_first);
-    RUN(a_scan_counts_as_done_only_with_its_list_read);
+    RUN(a_scan_counts_as_done_only_with_its_whole_list_read);
     return test_summary("wa_scan");
 }

@@ -1209,27 +1209,37 @@ static bool auth_refused(uint8_t reason)
 }
 
 /**
- * @brief Start a scan of the session, all channels, the driver's default
- *        times; a refusal ends the session WA_OFF_FAILED.
+ * @brief Start the scan of @p tok, all channels, the driver's default
+ *        times, while it is still the scan under way; a refusal ends the
+ *        session WA_OFF_FAILED only while it still is.
  *
  * Called with the lock not held, from the event loop: the request goes to
- * the C6 and waits for its answer.
+ * the C6 and waits for its answer, and a session can end and another start
+ * meanwhile (wa_scan_begin()).
  *
- * @param gen The session's number, s.gen, for the log.
+ * @param tok The scan's token.
  * @param run The scan's number in the session, from 1.
  */
-static void scan_start(uint32_t gen, unsigned run)
+static void scan_start(uint32_t tok, unsigned run)
 {
+    lock();
+    const bool mine = wa_scan_is(&s.w, tok);
+    unlock();
+    if (!mine) {
+        ESP_LOGI(TAG, "scan %u: the session ended, not started",
+                 (unsigned)tok);
+        return;
+    }
     wifi_scan_config_t sc = { 0 };
-    ESP_LOGI(TAG, "scan %u: start, try %u of %u", (unsigned)gen, run,
+    ESP_LOGI(TAG, "scan %u: start, try %u of %u", (unsigned)tok, run,
              WA_SCAN_TRIES);
     const esp_err_t e = esp_wifi_scan_start(&sc, false);
     if (e != ESP_OK) {
-        ESP_LOGW(TAG, "scan %u: refused: %s", (unsigned)gen,
-                 esp_err_to_name(e));
         lock();
-        wa_on_failed(&s.w);
+        const bool ended = wa_scan_refused(&s.w, tok);
         unlock();
+        ESP_LOGW(TAG, "scan %u: refused: %s%s", (unsigned)tok,
+                 esp_err_to_name(e), ended ? "" : "; the session had ended");
     }
 }
 
@@ -1239,9 +1249,10 @@ static void scan_start(uint32_t gen, unsigned run)
  *
  * A done report with no scan of this session under way reads nothing: its
  * list, if any, goes with the driver at the radio's stop.  A failed scan, a
- * list that cannot be read and a report that counts networks the read does
- * not find each count as a failure (wa_scan_read_ok()), never as an empty
- * list.
+ * list that cannot be read and a read that does not hold what the report
+ * counts each count as a failure (wa_scan_read_ok()), never as an empty
+ * list.  The scan's token carries the report through the read, which runs
+ * without the lock.
  *
  * @param d The event's data; NULL reads as a success that counts nothing.
  */
@@ -1250,13 +1261,12 @@ static void on_scan_done(const wifi_event_sta_scan_done_t *d)
     const uint32_t status = (d != NULL) ? d->status : 0u;
     const unsigned reported = (d != NULL) ? d->number : 0u;
     lock();
-    const bool mine = wa_scan_pending(&s.w);
-    const uint32_t gen = s.gen;
+    const uint32_t tok = wa_scan_pending(&s.w);
     unlock();
-    if (!mine) {
-        ESP_LOGW(TAG, "scan %u: done report with no scan under way, "
-                 "status %u, %u counted: ignored", (unsigned)gen,
-                 (unsigned)status, reported);
+    if (tok == 0u) {
+        ESP_LOGW(TAG, "scan: done report with no scan under way, "
+                 "status %u, %u counted: ignored", (unsigned)status,
+                 reported);
         return;
     }
     uint16_t n = SCAN_READ;
@@ -1271,13 +1281,11 @@ static void on_scan_done(const wifi_event_sta_scan_done_t *d)
         n = 0u;
         (void)esp_wifi_clear_ap_list();
     }
-    const bool ok = wa_scan_read_ok(status, reported, read_ok, n);
+    const bool ok = wa_scan_read_ok(status, reported, read_ok, n, SCAN_READ);
+    uint32_t next = 0u;
     lock();
     const unsigned run = s.w.scan_runs;
-    /* A session ended and another started while the list was read: the
-     * report was the old session's. */
-    const wa_scan_step_t step = (s.gen == gen) ? wa_on_scan_end(&s.w, ok)
-                                               : WA_SCAN_IGNORE;
+    const wa_scan_step_t step = wa_on_scan_end(&s.w, tok, ok, &next);
     unsigned listed = 0u;
     unsigned dropped = 0u;
     if (step == WA_SCAN_TAKE) {
@@ -1300,13 +1308,14 @@ static void on_scan_done(const wifi_event_sta_scan_done_t *d)
     unlock();
     heap_caps_free(rec);
     ESP_LOGI(TAG, "scan %u: done, try %u, status %u, %u counted, %u read%s; "
-             "%u listed, %u left off", (unsigned)gen, run, (unsigned)status,
-             reported, (unsigned)n, read_ok ? "" : " (list not read)",
-             listed, dropped);
+             "%u listed, %u left off%s", (unsigned)tok, run,
+             (unsigned)status, reported, (unsigned)n,
+             read_ok ? "" : " (list not read)", listed, dropped,
+             (step == WA_SCAN_IGNORE) ? "; the session had ended" : "");
     if (step == WA_SCAN_AGAIN) {
-        scan_start(gen, run + 1u);
+        scan_start(next, run + 1u);
     } else if (step == WA_SCAN_FAILED) {
-        ESP_LOGW(TAG, "scan %u: failed after %u tries", (unsigned)gen, run);
+        ESP_LOGW(TAG, "scan %u: failed after %u tries", (unsigned)tok, run);
     }
 }
 
@@ -1327,15 +1336,13 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
                  * twice, and a second esp_wifi_scan_start() replaces the
                  * first, which then reports done with nothing found. */
                 lock();
-                const bool go = wa_scan_begin(&s.w);
-                const uint32_t gen = s.gen;
+                const uint32_t tok = wa_scan_begin(&s.w);
                 const unsigned run = s.w.scan_runs;
                 unlock();
-                if (go) {
-                    scan_start(gen, run);
+                if (tok != 0u) {
+                    scan_start(tok, run);
                 } else {
-                    ESP_LOGI(TAG, "scan %u: station start again, no new "
-                             "scan", (unsigned)gen);
+                    ESP_LOGI(TAG, "scan: station start again, no new scan");
                 }
             } else {
                 retry = true;

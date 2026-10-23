@@ -71,9 +71,11 @@ history is in git.
   list. A scan session starts one scan, however often the station's start
   is reported: esp_hosted 2.13.0 sends it from `req_wifi_start()` and from
   its event handler, and a second `esp_wifi_scan_start()` replaces the
-  first, which then reports done with nothing found. A done report with no
-  scan of the session under way reads nothing. A failed scan, a list that cannot be read and a report that
-  counts networks the read does not find run the scan again, 3 scans at
+  first, which then reports done with nothing found. Each scan has a token
+  that the refusal, the done report and the retry carry: a call of a scan
+  that ended acts on nothing of the session started after it. A failed
+  scan, a list that cannot be read and a read that does not hold what the
+  report counts (or a full buffer of 24) run the scan again, 3 scans at
   most (`WA_SCAN_TRIES`) within the 10s; then the list's place says
   `Wi-Fi could not start.` instead of `No WPA2 or WPA3 network found.`, as
   it does for a scan the radio refuses. The console logs each scan's start,
