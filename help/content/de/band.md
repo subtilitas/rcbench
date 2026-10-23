@@ -38,8 +38,8 @@ Ein Kanal ohne Befehl seit 500 ms steht bei ARMED in Ruhe: ein Throttle auf 0 %,
 
 STOP wirkt auf jedem Bildschirm mit Band. Es schaltet den Prüfstand auf SAFE, schaltet den Ausgang des Netzteils ab und rastet ein: Der Prüfstand bleibt SAFE, bis er erneut auf ARMED geschaltet wird. Ein Bildschirmwechsel, ein ablaufender Alert oder ein zurückkehrender Link hebt einen Stopp nicht auf.
 
-- STOP reagiert auf einen Druck, der auf ihm aufsetzt. Ein Finger, der vom Bildschirm auf STOP rutscht, stoppt nichts.
-- Ein zweiter Finger auf STOP wird bedient, während der erste zieht.
+- STOP reagiert auf einen Druck, der auf ihm aufsetzt, beim Aufsetzen. Ein Finger, der vom Bildschirm auf STOP rutscht, stoppt nichts. Ein Finger, der auf STOP aufsetzt und wegrutscht, stoppt trotzdem.
+- Ein zweiter Finger auf STOP wird bedient, während der erste zieht, und der Drag endet bei diesem Druck.
 - Ist der Kasten eines Chips offen, schließt ein Druck auf STOP den Kasten und stoppt sofort.
 
 ## Hilfe zu den Chips
@@ -88,4 +88,5 @@ Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten B
 
 - Eine Berührung, die auf dem Band aufsetzt, bleibt beim Band. Rutscht sie in den Bildschirm, bewegt sie dort nichts.
 - Eine Berührung, die auf dem Bildschirm aufsetzt und nach oben ins Band rutscht, wird an ihrer letzten Stelle auf dem Bildschirm losgelassen. Ein Schieberegler oder das SERVO-Zifferblatt behält den Wert von dort. Ein Halten auf ARM oder AUSGANG EIN ist abgebrochen.
-- DISARM, AUSGANG AUS und START TEST, solange ein Servotest läuft, nehmen ein solches Loslassen an, weil sie etwas anhalten.
+- AUSGANG AUS und START TEST, solange ein Servotest läuft, nehmen ein solches Loslassen an, weil sie etwas anhalten. DISARM hat schon beim Aufsetzen gewirkt.
+- Ein Druck auf das Band, auf STOP oder auf das Alert-Band beendet einen Drag, den ein anderer Finger auf einem Schieberegler oder dem SERVO-Zifferblatt macht.

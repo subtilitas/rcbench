@@ -1,5 +1,6 @@
-/*
- * The bench's arm on the control task: the state the loop starts from, the
+/**
+ * @file
+ * @brief The bench's arm on the control task: the state the loop starts from, the
  * watch on an arm until the render side has seen it, the run's totals, the
  * latched stop and the act the arming policy asks for, the OUTPUTS screen's
  * binding onto the IOmcu's output pages, disarming wherever it was
@@ -228,6 +229,13 @@ static void service_disarm(bool link_up)
     }
 }
 
+/**
+ * @brief The latched stop and the act the arming policy asks for, once a
+ *        pass of the control task: the router's backstop STOP unless the
+ *        pump counted the same press, the let-go every stop owes, the
+ *        supply, then the arm or the disarm.
+ * @param link_up whether the link to the IOmcu answers
+ */
 void service_arming(bool link_up)
 {
     /*
@@ -239,7 +247,7 @@ void service_arming(bool link_up)
      * missed; a press it saw has already been applied there.
      */
     if (atomic_exchange(&s_stop_request, false)
-        && !atomic_exchange(&s_stop_counted, false)) {
+        && atomic_exchange(&s_stop_counted, 0u) == 0u) {
         arming_stop_pressed(&s_arm);        /* the band's STOP, pressed */
     }
 

@@ -401,11 +401,17 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   der Tracker für einen Kontakt erzeugt, der mehr als 120 px von der Stelle
   des vorigen Reports entfernt liegt. Ein markiertes Release beendet einen
   Druck oder einen Drag und löst kein Bedienelement aus: Der Finger hat dort
-  nicht abgehoben. Vier Bedienelemente nehmen es trotzdem an, weil sie etwas
-  anhalten: STOP, DISARM auf MOTOR & ESC und auf SERVO, AUSGANG AUS und
-  START TEST, solange ein Servotest läuft.
+  nicht abgehoben. Zwei Bedienelemente nehmen es trotzdem an, weil sie etwas
+  anhalten: AUSGANG AUS und START TEST, solange ein Servotest läuft. STOP
+  und DISARM auf MOTOR & ESC und auf SERVO haben schon beim Aufsetzen
+  gewirkt, und ihr Release tut nichts.
   STOP und das Home-Tag reagieren auf einen Druck, der auf ihnen aufsetzt:
-  Ein Kontakt, der vom Bildschirm auf STOP rutscht, drückt nichts. Die
+  Ein Kontakt, der vom Bildschirm auf STOP rutscht, drückt nichts. Ein Druck,
+  den der Router der Seite vorenthält -- auf dem Band, auf STOP, dem Home-Tag,
+  einem Chip oder dem Alert-Band --, lässt die Kontakte der Seite ebenso los,
+  an ihrer letzten Stelle im Bildschirm und markiert: Ein laufender Drag auf
+  dem Zifferblatt oder einem Schieberegler endet bei diesem Druck, und nichts,
+  was er getrieben hat, wird danach kommandiert. Die
   Tabelle fasst 5 Kontakte, so viele meldet der GT911; ein sechster erreicht
   keine Seite.
 - Ein Bedienelement, das eine Einstellung ändert, wirkt auf ein Tippen und
@@ -416,8 +422,11 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   gehaltene Taste stellt ab 0,45 s nach dem Aufsetzen. Die Bedienelemente von
   ESC STICK folgen derselben Regel, VORGABEN und die Tasten des Stick-Timings
   eingeschlossen. ABBRECHEN eines Stick-Laufs wirkt beim Aufsetzen, ebenso
-  jedes Anhalten auf den Prüfstandsbildschirmen: Anhalten wartet nie auf ein
-  Abheben, das ausbleiben kann.
+  jedes Anhalten auf den Prüfstandsbildschirmen, STOP und DISARM
+  eingeschlossen: Anhalten wartet nie auf ein Abheben, das ausbleiben kann.
+  Ein Druck auf DISARM startet kein Halten, also schaltet ein Finger, der auf
+  der Taste bleibt, nichts auf ARMED, wenn sie wieder ARM zeigt; ARM bleibt
+  ein Halten von 2s.
 - Die Seiten verlassen sich dafür nicht auf den Router. Jeder Druck beendet
   einen Drag auf einem Schieberegler oder dem SERVO-Zifferblatt, der noch
   hängt, wo auch immer der Druck landet, und das Verlassen von SERVO beendet
@@ -426,21 +435,18 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   gehaltene Druck wird verworfen, wie ein Touch-Verlust ihn verwirft. Nicht
   am Panel gemessen: ob der GT911 einem einzelnen Finger bei
   aufeinanderfolgenden Berührungen dieselbe Track-ID gibt.
-- Bricht der Touch-Strom ab, während STOP gehalten wird, wird gestoppt. Der
-  Control-Task besitzt diesen Druck unabhängig von den Seiten, und das
-  Release, das den Prüfstand gestoppt hätte, kann genau das verlorene Event
-  sein -- oder es kommt an und passt zu keinem der beiden Besitzer, weil die
-  Render-Seite den Druck des Bands beim selben Verlust abbricht. Sonst würde
-  nichts stoppen, und der Bediener hat STOP bereits gedrückt. Was das aufgibt:
-  Ein Druck, der auf STOP begann und vor dem Abheben davon weggeführt worden
-  wäre, kommandiert heute nichts und stoppt stattdessen.
-- Wird bei einem Prüfstand in ARMED ein DISARM abgebrochen, wird trotzdem
-  auf SAFE geschaltet. Eine Geste abzubrechen kommandiert nichts, und bei einem
-  Prüfstand in ARMED ist das für eine von ihnen die falsche Richtung: Das
-  Schalten auf SAFE ist ein Druck, sein Release ist also das ganze Kommando, und
-  ein Release, das eine volle Queue verschluckt hat, ist ein Schalten auf SAFE,
-  das der Bediener gemacht und der Prüfstand nie gesehen hat. Das
-  Schalten auf ARMED hat sein Kommando schon abgesetzt, wenn der Finger abhebt,
+- Der Control-Task prüft das Rechteck von STOP bei jedem Aufsetzen selbst,
+  unabhängig von den Seiten und vom Frame, und stoppt den Prüfstand beim
+  Aufsetzen: Der Heartbeat fällt im selben Durchlauf weg, und der IOmcu
+  geht innerhalb von 150ms in den sicheren Zustand. Ein Druck, der auf STOP
+  aufsetzt und vor dem Abheben davon weggeführt wird, stoppt trotzdem. Bricht
+  der Touch-Strom ab, während STOP gehalten wird, kommandiert das nichts
+  weiter: Der Druck hat den Prüfstand schon gestoppt.
+- Ein Druck auf DISARM schaltet beim Aufsetzen auf SAFE, also verliert ein
+  Release, das eine volle Queue verschluckt, nichts. Ein Abbruch in ARMED,
+  während ein Druck auf ARM noch liegt, dessen Halten nicht ausgelöst hat,
+  schaltet ebenfalls auf SAFE: Die Taste unter diesem Finger zeigt DISARM.
+  Das Schalten auf ARMED hat sein Kommando schon abgesetzt, wenn der Finger abhebt,
   ein halb abgebrochenes Schalten auf ARMED kommandiert also nichts, und das ist
   richtig so. Ein Abbruch verwirft außerdem ein Schalten auf ARMED, das die
   Seite bereits abgesetzt hat und die Anwendung noch nicht abgeholt hat --

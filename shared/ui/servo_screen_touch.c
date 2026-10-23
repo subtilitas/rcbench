@@ -156,6 +156,17 @@ static void drag_follow(float deg)
     s.df.goal = clamp_travel(deg);
 }
 
+void svs_drag_filter_end(void)
+{
+    s.df.on = false;
+}
+
+void svs_drag_end(void)
+{
+    s.dragging = false;
+    svs_drag_filter_end();
+}
+
 void svs_drag_on_post(servo_cmd_kind_t kind, uint16_t us)
 {
     (void)kind;
@@ -166,7 +177,7 @@ void svs_drag_on_post(servo_cmd_kind_t kind, uint16_t us)
     if (!s.df.on || s.df.posting || s.df.restating) {
         return;
     }
-    s.df.on = false;
+    svs_drag_filter_end();
 }
 
 void svs_drag_tick(float dt_s)
@@ -176,7 +187,7 @@ void svs_drag_tick(float dt_s)
     }
     /* A disarm, a stop or SAFE: nothing more is commanded. */
     if (!value_live()) {
-        s.df.on = false;
+        svs_drag_filter_end();
         return;
     }
     if (!(dt_s > 0.0f)) {
@@ -196,7 +207,7 @@ void svs_drag_tick(float dt_s)
         s.df.posting = false;
     }
     if (!s.dragging && s.df.out == s.df.goal) {
-        s.df.on = false;        /* there: the finger's last angle */
+        svs_drag_filter_end();  /* there: the finger's last angle */
     }
 }
 
@@ -280,8 +291,10 @@ void svs_event_body(const touch_event_t *evt)
          */
         if (s.dragging) {
             s.knob_finger = true;
+            /* The drag's filter ends with it, where it has got to: no
+             * command follows the press (svs_drag_tick()). */
+            svs_drag_end();
         }
-        s.dragging = false;
         ui_slider_release(&s.speed);
         if (wb_down(evt)) {
             return;
@@ -421,6 +434,14 @@ void svs_event_body(const touch_event_t *evt)
             stop_sweep();
             release();
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
+            if (s.gate.armed) {
+                /* DISARM acts on the press: a stop never waits for a lift
+                 * that may not come.  The press takes no hold, so a finger
+                 * left on the button arms nothing when it reads ARM again. */
+                svs_ask_disarm();
+                ++s.arm_rev;
+                return;
+            }
             if (svs_arm_locked()) {
                 /* Programming and an armed bench are exclusive. */
                 return;
@@ -471,8 +492,7 @@ void svs_event_body(const touch_event_t *evt)
     if (s.arm_down && evt->point.id == s.arm_id) {
         if (evt->type == TOUCH_EVENT_MOVE) {
             /* A finger that leaves ARM abandons the hold -- see
-             * ui_hold_leave().  While the bench is armed the same press is a
-             * disarm, whose release is checked against the rectangle. */
+             * ui_hold_leave(). */
             if (!s.gate.armed && !gfx_rect_contains(s.arm_btn, px, py)
                 && ui_hold_leave(&s.arm)) {
                 s.arm_down = false;
@@ -481,16 +501,11 @@ void svs_event_body(const touch_event_t *evt)
             return;
         }
         if (evt->type == TOUCH_EVENT_UP) {
-            const bool fired = ui_hold_end(&s.arm);
+            /* Arming is a hold that has already sent its command by the
+             * time the finger lifts; disarming acted on its press. */
+            (void)ui_hold_end(&s.arm);
             s.arm_down = false;
             ++s.arm_rev;
-            /*
-             * Disarming is a press; arming is a hold that has already sent
-             * its command by the time the finger lifts.
-             */
-            if (s.gate.armed && !fired && gfx_rect_contains(s.arm_btn, px, py)) {
-                svs_ask_disarm();
-            }
             return;
         }
     }
@@ -505,8 +520,15 @@ void svs_event_body(const touch_event_t *evt)
             return;
         }
         if (evt->type == TOUCH_EVENT_UP) {
-            /* The target goes on to the last angle the finger gave. */
-            s.dragging = false;
+            /* The target goes on to the last angle the finger gave, when
+             * the finger lifted.  A release the router or the tracker made
+             * (TOUCH_FLAG_NO_TAP) is no lift: the filter stops where it is,
+             * and nothing is commanded after it. */
+            if (touch_event_is_tap_up(evt)) {
+                s.dragging = false;
+            } else {
+                svs_drag_end();
+            }
             return;
         }
     }
