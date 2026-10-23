@@ -257,15 +257,87 @@ static const log_fake_t k_bench[] = {
     { "MOTOR011.CSV", 39100 },
 };
 static const log_fake_t k_user[] = {
+    { "LIMIT006.TXT", 1873 },
     { "ATEST005.CSV", 15104 },
+    { "ATEST005.TXT", 2210 },
     { "ATEST004.CSV", 14980 },
+    { "ATEST004.TXT", 2187 },
 };
+/* The root of a card of firmware 0.21.0: a servo test's SERVO042.CSV with
+ * its report, which the list leaves out, and a limit run's SERVO043.TXT
+ * alone, which it lists. */
 static const log_fake_t k_card[] = {
+    { "SERVO043.TXT", 1702 },
+    { "SERVO042.CSV", 16310 },
+    { "SERVO042.TXT", 2054 },
     { "BENCH041.CSV", 18422 },
     { "ESC040.CSV", 9210 },
     { "SWEEP_1200KV.CSV", 15104 },
     { "SWEEP_920KV.CSV", 4096 },
+    { "NOTES.TXT", 512 },
 };
+
+/* logs-report: LIMIT006.TXT as a limit run writes it, in English. */
+static const char k_limit_report[] =
+    "RCBENCH SERVO LIMIT REPORT\n"
+    "Result:         PASS\n"
+    "Device:         KST X20-830\n"
+    "Firmware:       rcbench 0.22.0\n"
+    "Mode:           search only, nothing written to the servo\n"
+    "Output:         S1, 333 Hz\n"
+    "Pulse range:    centre 1500 us, 900-2100 us\n"
+    "Searched:       from 1500 us out to 900 us and 2100 us\n"
+    "Current:        INA3221, 50 ms windows, shunt 100.0 mOhm\n"
+    "Search rule:    10 us steps, settle 120 ms, mean of 80 ms; bound above "
+    "2.0 x free and +0.15 A\n"
+    "Protections:    a sample at 4.0 A, above 2.5 A for 300 ms, no window "
+    "for 500 ms, 60 s a search\n"
+    "Duration:       38.4 s\n"
+    "\n"
+    "ENDS (the search before programming)\n"
+    "Low end:        bound at 960 us, endpoint 970 us; free 0.112 A, bound "
+    "0.391 A\n"
+    "High end:       free to 2100 us; free 0.108 A\n"
+    "AS5600:         not fitted, no angles\n"
+    "\n"
+    "PROGRAMMING (LEFT ANGLE and RIGHT ANGLE, unit not known)\n"
+    "Not run: search only.\n"
+    "\n"
+    "Bench: the ends found are not applied to PULSE MIN and PULSE MAX.\n";
+static log_mem_ctx_t g_report_ctx;
+
+/*
+ * Offer a folder's names to the page as the panel's lister does: through
+ * the notes of log_select.h, the CSV files and the LIMIT reports at once
+ * and the reports standing alone in a second pass when there are any.
+ */
+static int offer_folder(log_select_page_t *sel, const log_fake_t *set,
+                        size_t count)
+{
+    static log_lone_t lone;
+    log_lone_begin(&lone);
+    log_viewer_file_t f;
+    memset(&f, 0, sizeof(f));
+    int n = 0;
+    for (int pass = 0; pass < 2; ++pass) {
+        if (pass == 1 && !log_lone_again(&lone)) {
+            break;
+        }
+        for (size_t i = 0; i < count; ++i) {
+            const bool listed = (pass == 0)
+                                    ? log_lone_first(&lone, set[i].name)
+                                    : log_lone_second(&lone, set[i].name);
+            if (!listed) {
+                continue;
+            }
+            snprintf(f.name, sizeof(f.name), "%s", set[i].name);
+            f.size = set[i].size;
+            log_select_page_offer(sel, &f);
+            ++n;
+        }
+    }
+    return n;
+}
 
 /* The folder LOGS pointed the calls at last. */
 static char g_fake_dir[CARD_DIR_MAX] = CARD_AUTO_LOGS;
@@ -316,11 +388,7 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
             set = k_user;
             count = sizeof(k_user) / sizeof(k_user[0]);
         }
-        for (size_t i = 0; i < count; ++i, ++n) {
-            snprintf(f.name, sizeof(f.name), "%s", set[i].name);
-            f.size = set[i].size;
-            log_select_page_offer(&sel, &f);
-        }
+        n = offer_folder(&sel, set, count);
     }
     (void)log_select_page_end(&sel, page);
     return n;
@@ -329,7 +397,11 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
 static bool fake_open(const char *name, log_source_t *src, void *ctx)
 {
     (void)ctx;
-    (void)name;
+    if (log_report_number(name) >= 0) {
+        log_source_memory(src, &g_report_ctx, k_limit_report,
+                          strlen(k_limit_report));
+        return true;
+    }
     log_source_memory(src, &g_csv_ctx, g_csv, strlen(g_csv));
     return true;
 }
@@ -3684,6 +3756,11 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "logs-root") == 0) {
             /* ROOT, the first tab at the header row's left. */
             tap(LV_TAB_CX(0), UI_BAND_H + LV_HEAD_CY);
+        } else if (strcmp(view, "logs-report") == 0) {
+            /* USER, the second tab: LIMIT006.TXT is the newest and chosen
+             * as the list opens, so a tap on it opens it. */
+            tap(LV_TAB_CX(1), UI_BAND_H + LV_HEAD_CY);
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));
         } else if (strcmp(view, "logs") != 0) {
             /* The newest run is chosen as the list opens: one tap opens
              * it. */

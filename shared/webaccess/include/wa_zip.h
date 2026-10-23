@@ -1,5 +1,6 @@
-/*
- * The whole card as one ZIP archive, written as it is sent.
+/**
+ * @file wa_zip.h
+ * @brief The whole card as one ZIP archive, written as it is sent.
  *
  * Stored, not compressed (method 0): deflate would cost the panel's cores
  * and time, and log files are what the card mostly holds.  No temporary
@@ -10,20 +11,32 @@
  * entry of its own ending in "/", times the files' own as DOS (Disk
  * Operating System) date and time, 1980-01-01 00:00:00 for anything older.
  *
- * Three walks of the card (wa_walk.h).  The first adds up the archive's
- * length, which is known before a byte is read because stored sizes are
- * the files' sizes: the response announces it, and the browser shows
- * progress.  The second sends the entries.  The third sends the central
- * directory, with the CRCs the second kept, 4 bytes an entry.
+ * Three walks of the card (wa_walk.h), after wa_zip_plan() has counted its
+ * entries.  The first, in wa_zip_begin(), adds up the archive's length,
+ * which is known before a byte is read because stored sizes are the files'
+ * sizes: the response announces it, and the browser shows progress.  It
+ * keeps each entry's size, time, name length and a hash of its path in a
+ * slot, 24 bytes an entry.  The second sends the entries, the third the
+ * central directory; both take each entry's size and time from its slot,
+ * and the third the CRC the second kept there.
+ *
+ * A file that grows after the first walk is sent at the size the first
+ * walk found, its first bytes as they are when the second walk reads them:
+ * a file only added to, as a log is, is sent as it was when the download
+ * started.  An entry whose name length or path hash is not the next
+ * slot's, a file or folder added after the first walk, is left out of both
+ * later walks.  A walk can meet one anywhere, since a folder lists its
+ * entries in the card's own order.
  *
  * ZIP64 where the format runs out: an entry of 0xFFFFFFFF bytes or more, a
  * local header at or past that offset, 0xFFFF entries or more, and a central
  * directory that large or that far in.  The value itself is the format's
  * "see ZIP64" mark, so it counts as past the limit.
  *
- * A read error, a card pulled, or a card that no longer walks as it did
- * ends the archive as failed; the response is cut off and the browser
- * reports the download failed.
+ * A read error, a card pulled, a file that shrank, and an entry removed or
+ * renamed after the first walk end the archive as failed; the response is
+ * cut off after the bytes made up to the failure, and the browser reports
+ * the download failed.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
@@ -102,7 +115,7 @@ typedef enum {
     WA_ZIP_OK = 0,
     WA_ZIP_NO_CARD,
     WA_ZIP_READ,       /**< a read failed, or the card changed under it */
-    WA_ZIP_MEMORY,     /**< too few CRC slots for the entries            */
+    WA_ZIP_MEMORY,     /**< too few slots for the entries                */
 } wa_zip_err_t;
 
 typedef struct {
@@ -114,42 +127,77 @@ typedef struct {
     unsigned long left_out;    /**< see wa_walk.h                    */
 } wa_zip_plan_t;
 
-/** The first walk.  WA_ZIP_OK with @p out filled, or why not. */
+/**
+ * @brief Walk the card and add up the archive it makes, keeping nothing per
+ *        entry: the counts the page shows, and the slots wa_zip_begin()
+ *        needs.
+ * @param fs  the card
+ * @param out the plan, filled
+ * @return WA_ZIP_OK with @p out filled, WA_ZIP_NO_CARD or WA_ZIP_READ.
+ */
 wa_zip_err_t wa_zip_plan(const wa_fs_t *fs, wa_zip_plan_t *out);
 
+/** @brief One entry as the first walk found it, 24 bytes. */
 typedef struct {
-    const wa_fs_t *fs;
-    wa_zip_plan_t  plan;
-    uint32_t      *crc;
+    uint64_t size;    /**< bytes it is sent with; 0 for a folder          */
+    uint32_t crc;     /**< CRC-32 of the bytes sent, kept by the second walk */
+    uint32_t path;    /**< FNV-1a hash of its path, a folder's with "/"   */
+    uint32_t mtime;   /**< seconds since 1980-01-01, in the DOS range     */
+    uint16_t len;     /**< bytes of its name, a folder's with "/"         */
+    uint16_t spare;   /**< unused; pads the slot to 24 bytes            */
+} wa_zip_slot_t;
+
+/** @brief Slots to allocate beyond the entries wa_zip_plan() counted: entries
+ *  added to the card before wa_zip_begin() walks it again. */
+#define WA_ZIP_SPARE 16u
+
+/** @brief One archive being sent.  The fields are wa_zip.c's. */
+typedef struct {
+    const wa_fs_t *fs;        /**< the card                               */
+    wa_zip_plan_t  plan;      /**< what the first walk counted            */
+    wa_zip_slot_t *slot;      /**< one an entry, in walk order            */
     uint64_t       index;     /**< the entry being sent                   */
     uint64_t       at;        /**< bytes of archive produced              */
     uint64_t       cd_at;     /**< the third walk's local header offset   */
-    uint64_t       cd_bytes;
-    int            phase;
-    bool           in_file;
-    void          *file;
+    uint64_t       cd_bytes;  /**< bytes of the central directory sent    */
+    int            phase;     /**< the part of the archive being sent     */
+    bool           in_file;   /**< a file is open and being sent          */
+    void          *file;      /**< the open file                          */
     uint64_t       left;      /**< bytes of the open file still to send   */
-    uint64_t       size;
-    uint32_t       file_crc;
-    uint8_t        piece[WA_ZIP_PIECE_MAX];
-    size_t         piece_len;
-    size_t         piece_off;
-    wa_zip_err_t   err;
-    wa_walk_t      walk;
+    uint64_t       size;      /**< bytes the open file is sent with       */
+    uint32_t       file_crc;  /**< CRC-32 of the open file's bytes sent   */
+    uint8_t        piece[WA_ZIP_PIECE_MAX]; /**< a header or descriptor */
+    size_t         piece_len; /**< bytes in @c piece                      */
+    size_t         piece_off; /**< bytes of @c piece sent                 */
+    wa_zip_err_t   err;       /**< the failure the archive ended with     */
+    wa_walk_t      walk;      /**< the walk of the card under way         */
 } wa_zip_t;
 
 /**
- * Begin the archive @p plan describes, with @p crc slots for its entries,
- * @p slots of them.  WA_ZIP_MEMORY when that is fewer than the entries.
+ * @brief Begin the archive: the first walk, which fills @p z->plan and a
+ *        slot for each entry.  Nothing is sent; the response announces
+ *        @p z->plan.bytes.
+ * @param z     the archive
+ * @param fs    the card
+ * @param slot  @p slots slots, or NULL for none
+ * @param slots how many @p slot holds
+ * @return WA_ZIP_OK; WA_ZIP_MEMORY when the card has more entries than
+ *         @p slots; WA_ZIP_NO_CARD or WA_ZIP_READ when the walk fails.  On
+ *         anything but WA_ZIP_OK nothing is left open and wa_zip_next()
+ *         returns -1.
  */
-wa_zip_err_t wa_zip_begin(wa_zip_t *z, const wa_fs_t *fs,
-                          const wa_zip_plan_t *plan, uint32_t *crc,
+wa_zip_err_t wa_zip_begin(wa_zip_t *z, const wa_fs_t *fs, wa_zip_slot_t *slot,
                           uint64_t slots);
 
 /**
- * The next bytes into @p buf of @p cap: how many, 0 when the archive is
- * whole, -1 when it failed (wa_zip_t.err).  The bytes add up to
- * plan.bytes exactly, or the archive fails.
+ * @brief The next bytes of the archive.
+ * @param z   the archive
+ * @param buf where they go
+ * @param cap how many @p buf holds
+ * @return How many, 0 when the archive is whole, -1 when it failed
+ *         (wa_zip_t.err).  A failure part way through @p buf returns the
+ *         bytes before it first, and -1 on the next call.  The bytes add
+ *         up to plan.bytes exactly, or the archive fails.
  */
 int32_t wa_zip_next(wa_zip_t *z, uint8_t *buf, uint32_t cap);
 

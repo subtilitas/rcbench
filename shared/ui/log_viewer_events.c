@@ -114,6 +114,14 @@ static void ask_delete(void)
     s.message[0] = '\0';
 }
 
+/**
+ * @brief Delete the file the DELETE question named, and read the page
+ *        again.
+ *
+ * What the import, the plot and the text held is dropped when it was read
+ * from that file.  A refused delete leaves the list as it was and says so
+ * in the footer.
+ */
 static void delete_doomed(void)
 {
     char name[LOG_VIEWER_NAME_MAX];
@@ -127,9 +135,11 @@ static void delete_doomed(void)
         lv_set_message(TR(LOG_CANNOT_DELETE), name);
         return;
     }
-    /* What the import and plot views hold was read from that file. */
+    /* What the import, plot and text views hold was read from that
+     * file. */
     if (strcmp(s.name, name) == 0 && s.open_tab == s.tab) {
         lv_drop_data();
+        log_text_free(&s.text);
         s.have_analysis = false;
         s.name[0] = '\0';
     }
@@ -667,6 +677,83 @@ static void plot_event(const touch_event_t *e)
     }
 }
 
+/**
+ * @brief A touch on the TEXT view: a drag on the rows or on the scroll bar
+ *        scrolls them, a tap on BACK returns to the list.
+ *
+ * @param e  The event.
+ */
+static void text_event(const touch_event_t *e)
+{
+    const int total = lv_text_total();
+    switch (e->type) {
+    case TOUCH_EVENT_DOWN:
+        if (!tap_begin(e)) {
+            break;
+        }
+        s.press_btn = gfx_rect_contains(TX_BACK, e->point.x, e->point.y)
+                          ? 0 : -1;
+        s.pressing = false;
+        s.bar_drag = false;
+        if (s.press_btn < 0 && total > 0
+            && gfx_rect_contains(BR_BAR, e->point.x, e->point.y)) {
+            /* As the browse list's bar: the thumb where it is held, or its
+             * middle to the finger. */
+            int ty;
+            int th;
+            lv_bar_thumb_of(total, TX_ROWS, s.text_scroll, &ty, &th);
+            s.bar_drag = true;
+            if (e->point.y >= ty && e->point.y < ty + th) {
+                s.bar_grab = e->point.y - ty;
+            } else {
+                s.bar_grab = th / 2;
+                s.text_scroll = lv_bar_scroll_of(total, TX_ROWS,
+                                                 e->point.y - s.bar_grab);
+            }
+        } else if (s.press_btn < 0
+                   && gfx_rect_contains(BR_LIST, e->point.x, e->point.y)) {
+            s.pressing = true;
+            s.press_y0 = e->point.y;
+            s.press_scroll0 = s.text_scroll;
+        }
+        log_viewer_invalidate();
+        break;
+
+    case TOUCH_EVENT_MOVE:
+        if (s.bar_drag && tap_mine(e)) {
+            const int scroll = lv_bar_scroll_of(total, TX_ROWS,
+                                                e->point.y - s.bar_grab);
+            if (scroll != s.text_scroll) {
+                s.text_scroll = scroll;
+                log_viewer_invalidate();
+            }
+        } else if (s.pressing && tap_mine(e)) {
+            const int dy = e->point.y - s.press_y0;
+            if (dy > DRAG_SLOP || dy < -DRAG_SLOP) {
+                s.text_scroll = s.press_scroll0 - dy / TX_ROW_H;
+                clamp_scroll(&s.text_scroll, total, TX_ROWS);
+                log_viewer_invalidate();
+            }
+        }
+        break;
+
+    case TOUCH_EVENT_UP:
+        if (!tap_mine(e)) {
+            break;
+        }
+        s.tap_have = false;
+        /* A press that slid off BACK is not a tap on it. */
+        if (s.press_btn == 0 && tap_on(e, TX_BACK)) {
+            lv_close_text();
+        }
+        s.pressing = false;
+        s.bar_drag = false;
+        s.press_btn = -1;
+        log_viewer_invalidate();
+        break;
+    }
+}
+
 void lv_event(const touch_event_t *e)
 {
     if (e == NULL) {
@@ -683,6 +770,9 @@ void lv_event(const touch_event_t *e)
         break;
     case VIEW_PLOT:
         plot_event(e);
+        break;
+    case VIEW_TEXT:
+        text_event(e);
         break;
     case VIEW_BROWSE:
     default:

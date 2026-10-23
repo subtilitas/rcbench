@@ -60,18 +60,36 @@ static void render_question(gfx_canvas_t *c)
                    true, LV_FONT_LABEL);
 }
 
-static void render_bar(gfx_canvas_t *c)
+/**
+ * @brief Draw the scroll bar on BR_BAR.
+ *
+ * @param c        The canvas.
+ * @param total    Rows of the list.
+ * @param visible  Rows on screen.
+ * @param scroll   The first row on screen.
+ */
+static void render_bar_of(gfx_canvas_t *c, int total, int visible, int scroll)
 {
     const gfx_rect_t t = BR_BAR;
     gfx_fill_chamfer_rect(c, t.x, t.y, t.w, t.h, UI_CHAMFER_SM, UI_PANEL_SUNK);
     int ty;
     int th;
-    lv_bar_thumb(&ty, &th);
+    lv_bar_thumb_of(total, visible, scroll, &ty, &th);
     /* Accent while there is something to scroll, as the SETUP lists' bar;
      * the raised panel colour when the page shows whole. */
-    const gfx_color_t col = (s.n_files > BR_ROWS) ? UI_ACCENT : UI_PANEL_HI;
+    const gfx_color_t col = (total > visible) ? UI_ACCENT : UI_PANEL_HI;
     gfx_fill_chamfer_rect(c, t.x + 4, ty + 2, t.w - 8, th - 4, UI_CHAMFER_SM,
                           col);
+}
+
+/**
+ * @brief Draw the browse list's scroll bar (render_bar_of()).
+ *
+ * @param c  The canvas.
+ */
+static void render_bar(gfx_canvas_t *c)
+{
+    render_bar_of(c, s.n_files, BR_ROWS, s.scroll);
 }
 
 /* The empty list's two lines: why it is empty, and what the folder holds
@@ -637,6 +655,50 @@ static void render_plot(gfx_canvas_t *c)
     }
 }
 
+/* ---------------------------------------------------------------- text --- */
+
+/**
+ * @brief Draw the TEXT view: the report's rows in the browse list's panel,
+ *        its name as the panel's title, the scroll bar and BACK.
+ *
+ * The rows are in the 10 x 20 face, TX_COLS cells each.
+ *
+ * @param c  The canvas.
+ */
+static void render_text(gfx_canvas_t *c)
+{
+    ui_panel(c, BR_LIST, s.name, UI_ACCENT);
+    render_bar_of(c, lv_text_total(), TX_ROWS, s.text_scroll);
+    char row[TX_COLS * 4 + 1];
+    int y = BR_LIST.y + 30;
+    if (s.text.rows == 0 && !s.text.cut) {
+        /* A file of 0 bytes: one row says so, so the panel is not taken
+         * for one that failed to draw. */
+        gfx_text_in(c, gfx_rect_make(TX_ROW_X, y, TX_COLS * 10, TX_ROW_H),
+                    TR(LOG_TEXT_EMPTY), LV_FONT_LABEL, UI_TEXT_DIM, 1,
+                    GFX_ALIGN_LEFT);
+    }
+    for (int r = 0; r < TX_ROWS; ++r) {
+        const int i = s.text_scroll + r;
+        const gfx_rect_t box = gfx_rect_make(TX_ROW_X, y, TX_COLS * 10,
+                                             TX_ROW_H);
+        if (log_text_row(&s.text, i, row, sizeof(row))) {
+            gfx_text_in(c, box, row, LV_FONT_LABEL, UI_TEXT, 1,
+                        GFX_ALIGN_LEFT);
+        } else if (s.text.cut && i == s.text.rows) {
+            snprintf(row, sizeof(row), TR(LOG_TEXT_CUT),
+                     (unsigned)(LOG_TEXT_MAX / 1024u));
+            gfx_text_in(c, box, row, LV_FONT_LABEL, UI_WARN, 1,
+                        GFX_ALIGN_LEFT);
+        } else {
+            break;
+        }
+        y += TX_ROW_H;
+    }
+    ui_button_font(c, TX_BACK, TR(LOG_BACK), UI_PANEL_HI, s.press_btn == 0,
+                   true, LV_FONT_LABEL);
+}
+
 void lv_render(gfx_canvas_t *c, int buffer_index)
 {
     bool stale = true;
@@ -655,6 +717,9 @@ void lv_render(gfx_canvas_t *c, int buffer_index)
         break;
     case VIEW_PLOT:
         render_plot(c);
+        break;
+    case VIEW_TEXT:
+        render_text(c);
         break;
     case VIEW_BROWSE:
     default:

@@ -3,7 +3,8 @@
  *
  * Under test: the report, line by line; a start refused and the calls
  * that take NULL; the words of every reason and phase; the share, the
- * overset and the final value as arithmetic.
+ * overset and the final value as arithmetic; the reason of a CONNECT that
+ * no servo answers, the first one and a later one.
  *
  * The rig is servo_limrun_rig.h.
  *
@@ -167,11 +168,80 @@ TEST_CASE(the_share_the_overset_and_the_final_value)
     CHECK_EQ(servo_limrun_overset(255u, 6000, 6000, 1u), 255u);
 }
 
+/* --- the CONNECT that no servo answers ---------------------------------- */
+
+/* The first CONNECT of a run that no servo answers names the missing KST
+ * or Chaservo servo, in the result and in the report; the port is given
+ * back and nothing is driven or written. */
+TEST_CASE(a_first_connect_no_servo_answers_ends_as_not_kst)
+{
+    rig_init(0u, false);
+    g.fail_at = 1u;
+    g.fail_no_servo = true;
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK_EQ(g.run.state, SERVO_LIMRUN_DONE);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_FAIL);
+    CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_NOT_KST);
+    CHECK_EQ(g.connects, 1u);
+    CHECK_EQ(g.write_ops, 0u);
+    CHECK(!g.driven);
+    CHECK(strstr(g.report, "no KST or Chaservo servo read") != NULL);
+    CHECK(strstr(g.report, "programming port session failed") == NULL);
+}
+
+/* Any other end of the first CONNECT is the session's failure. */
+TEST_CASE(a_first_connect_that_fails_otherwise_ends_as_a_session_failure)
+{
+    rig_init(0u, false);
+    g.fail_at = 1u;
+    g.fail_no_servo = false;
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+    CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_PROG);
+    CHECK(!g.driven);
+    CHECK(strstr(g.report, "programming port session failed") != NULL);
+    CHECK(strstr(g.report, "no KST or Chaservo servo read") == NULL);
+}
+
+/* A later CONNECT is a session failure, with no servo answering or not:
+ * the servo was read, so it is no missing KST servo. */
+TEST_CASE(a_later_connect_that_fails_ends_as_a_session_failure)
+{
+    for (int no_servo = 0; no_servo < 2; ++no_servo) {
+        rig_init(0u, false);
+        g.fail_at = 2u;
+        g.fail_no_servo = no_servo != 0;
+        CHECK(start());
+        run_for(RUN_MS);
+        CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+        CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_PROG);
+        CHECK_EQ(g.connects, 2u);
+        CHECK(strstr(g.report, "programming port session failed") != NULL);
+        CHECK(strstr(g.report, "no KST or Chaservo servo read") == NULL);
+    }
+}
+
+/* No servo answering is nothing outside a CONNECT. */
+TEST_CASE(no_servo_answering_outside_a_connect_ends_nothing)
+{
+    rig_init(0u, false);
+    CHECK(start());
+    servo_limrun_no_servo(&g.run, g.now);   /* the run is not at CONNECT */
+    CHECK_EQ(g.run.state, SERVO_LIMRUN_RUNNING);
+    servo_limrun_no_servo(NULL, g.now);
+}
+
 int main(void)
 {
     RUN(the_report_holds_the_run);
     RUN(a_start_with_its_centre_outside_min_and_max_is_refused);
     RUN(every_reason_and_phase_has_its_words);
     RUN(the_share_the_overset_and_the_final_value);
+    RUN(a_first_connect_no_servo_answers_ends_as_not_kst);
+    RUN(a_first_connect_that_fails_otherwise_ends_as_a_session_failure);
+    RUN(a_later_connect_that_fails_ends_as_a_session_failure);
+    RUN(no_servo_answering_outside_a_connect_ends_nothing);
     return test_summary("servo_limrun_report");
 }
