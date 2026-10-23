@@ -440,6 +440,68 @@ TEST_CASE(a_network_picked_from_the_scan_is_kept_with_its_password)
     CHECK_EQ(wifi_screen_take(), WIFI_REQ_JOIN);
 }
 
+/* SCAN AGAIN three times in a row: each asks for a scan, and each list
+ * shows. */
+TEST_CASE(scan_again_three_times_asks_three_scans_and_shows_each_list)
+{
+    fresh();
+    tap(BTN_CX(2), BTN_CY(2));
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    for (int i = 0; i < 3; ++i) {
+        v.radio = WIFI_RADIO_SCANNING;
+        v.scanned = false;
+        v.scan_n = 0;
+        show();
+        const uint32_t searching = render_hash();
+        scan_result();
+        CHECK(render_hash() != searching);
+        tap(RESCAN_CX, SCAN_BY);
+        CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    }
+}
+
+/* A scan that failed, or that the radio refused, says so: neither the
+ * empty list's sentence nor the search's; SCAN AGAIN and HIDDEN NETWORK
+ * stay. */
+TEST_CASE(a_failed_scan_says_so_and_not_that_none_was_found)
+{
+    fresh();
+    tap(BTN_CX(2), BTN_CY(2));
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    v.radio = WIFI_RADIO_OFF;
+    v.off = WIFI_WHY_NONE;
+    v.scanned = false;
+    show();
+    const uint32_t searching = render_hash();
+    v.scanned = true;                         /* done, nothing usable */
+    show();
+    const uint32_t none = render_hash();
+    CHECK(none != searching);
+    v.scanned = false;
+    v.off = WIFI_WHY_FAILED;
+    show();
+    const uint32_t failed = render_hash();
+    CHECK(failed != searching);
+    CHECK(failed != none);
+    tap(RESCAN_CX, SCAN_BY);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    tap(HIDDEN_CX, SCAN_BY);
+    CHECK(render_lit() > 2000);               /* the keyboard */
+    /* Each reason the radio went off draws in the list's place, the
+     * longest German one included. */
+    ui_text_set_language(UI_LANG_DE);
+    for (int why = WIFI_WHY_ARMED; why <= WIFI_WHY_JOIN; ++why) {
+        fresh();
+        ui_text_set_language(UI_LANG_DE);
+        tap(BTN_CX(2), BTN_CY(2));
+        (void)wifi_screen_take();
+        v.off = (wifi_why_t)why;
+        show();
+        CHECK(render_lit() > 1000);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* A hidden network: its name typed first, then its password; CANCEL goes
  * back to the list and keeps nothing. */
 TEST_CASE(a_hidden_network_is_typed_and_cancel_keeps_nothing)
@@ -867,6 +929,8 @@ int main(void)
     RUN(every_reason_and_join_failure_draws);
     RUN(the_running_views_draw_and_wifi_off_asks_off);
     RUN(a_network_picked_from_the_scan_is_kept_with_its_password);
+    RUN(scan_again_three_times_asks_three_scans_and_shows_each_list);
+    RUN(a_failed_scan_says_so_and_not_that_none_was_found);
     RUN(a_hidden_network_is_typed_and_cancel_keeps_nothing);
     RUN(the_keyboard_keys_are_large_and_end_above_the_alert_band);
     RUN(a_tap_on_a_key_of_the_screens_area_types_that_key);

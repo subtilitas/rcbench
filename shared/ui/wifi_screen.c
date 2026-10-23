@@ -877,9 +877,16 @@ static void draw_scan(gfx_canvas_t *c)
         text_in(c, 16, SC_Y, W - 32, ROW_P, TR(WF_SCANNING), WF_FONT_HEAD,
                 UI_TEXT);
     } else if (s.v.scan_n == 0) {
-        text_in(c, 16, SC_Y, W - 32, ROW_P,
-                s.v.scanned ? TR(WF_SCAN_NONE) : TR(WF_SCANNING),
-                WF_FONT_BODY, UI_TEXT_DIM);
+        /* A scan that ended without a list says why the radio went off:
+         * a failure is not an empty list. */
+        const char *why = s.v.scanned ? NULL : why_text();
+        if (why != NULL) {
+            text_in(c, 16, SC_Y, W - 32, ROW_P, why, WF_FONT_LABEL, UI_WARN);
+        } else {
+            text_in(c, 16, SC_Y, W - 32, ROW_P,
+                    s.v.scanned ? TR(WF_SCAN_NONE) : TR(WF_SCANNING),
+                    WF_FONT_BODY, UI_TEXT_DIM);
+        }
     }
     if (s.v.radio != WIFI_RADIO_SCANNING) {
         /* The list's ground under each column that has rows. */

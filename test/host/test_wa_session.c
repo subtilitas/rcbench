@@ -6,7 +6,7 @@
  * it; a password or access code that can be guessed from the last one, or
  * that still opens the page after the screen was closed and opened again;
  * a home network kept that the radio would refuse; and a join that fails
- * without saying why.
+ * without saying why.  The scan: test_wa_scan.c.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -452,58 +452,6 @@ TEST_CASE(retry_times_hold_across_the_millisecond_wrap)
     CHECK(!p.failed);
 }
 
-/* ------------------------------------------------------- the scan list */
-
-static void add(wa_scan_t *s, const char *name, int rssi, bool usable)
-{
-    wa_scan_add(s, (const uint8_t *)name, strlen(name), (int8_t)rssi, usable);
-}
-
-TEST_CASE(the_scan_list_holds_each_usable_network_once_strongest_first)
-{
-    wa_scan_t s;
-    wa_scan_clear(&s);
-    add(&s, "weak", -80, true);
-    add(&s, "strong", -40, true);
-    add(&s, "open cafe", -30, false);        /* no WPA2/WPA3 personal */
-    add(&s, "", -35, true);                  /* hidden */
-    add(&s, "weak", -60, true);              /* a second access point */
-    add(&s, "mid", -60, true);
-    CHECK_EQ(s.n, 3u);
-    CHECK_EQ(s.dropped, 2u);
-    CHECK_STR_EQ(wa_scan_pick(&s, 0u), "strong");
-    /* Equal signals keep the order they came in. */
-    CHECK_STR_EQ(wa_scan_pick(&s, 1u), "weak");
-    CHECK_EQ(s.net[1].rssi, -60);
-    CHECK_STR_EQ(wa_scan_pick(&s, 2u), "mid");
-    CHECK(wa_scan_pick(&s, 3u) == NULL);
-    CHECK(wa_scan_pick(NULL, 0u) == NULL);
-}
-
-TEST_CASE(a_full_scan_list_keeps_the_strongest)
-{
-    wa_scan_t s;
-    wa_scan_clear(&s);
-    char name[8];
-    for (int i = 0; i < 20; ++i) {
-        snprintf(name, sizeof(name), "n%02d", i);
-        add(&s, name, -90 + i, true);        /* each stronger than the last */
-    }
-    CHECK_EQ(s.n, WA_SCAN_MAX);
-    CHECK_EQ(s.dropped, 4u);
-    CHECK_STR_EQ(wa_scan_pick(&s, 0u), "n19");
-    CHECK_STR_EQ(wa_scan_pick(&s, WA_SCAN_MAX - 1u), "n04");
-    add(&s, "weakest", -95, true);
-    CHECK_EQ(s.dropped, 5u);
-    CHECK_STR_EQ(wa_scan_pick(&s, WA_SCAN_MAX - 1u), "n04");
-    /* A 32-byte name is listed whole, a 33-byte one is not a name. */
-    memset(g_long, 'z', 33u);
-    wa_scan_add(&s, (const uint8_t *)g_long, 32u, -10, true);
-    CHECK_EQ(strlen(wa_scan_pick(&s, 0u)), 32u);
-    wa_scan_add(&s, (const uint8_t *)g_long, 33u, -10, true);
-    CHECK_EQ(s.dropped, 7u);
-}
-
 /* ------------------------------------------------------- the session */
 
 static wa_t g_w;
@@ -861,24 +809,6 @@ TEST_CASE(a_drop_on_the_network_is_lost_and_off_it_asks_nothing)
     CHECK_EQ(g_w.state, WA_ST_SCANNING);
 }
 
-TEST_CASE(a_scan_runs_the_radio_and_ends_off)
-{
-    wa_init(&g_w);
-    CHECK_EQ(wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand,
-                      NULL),
-             WA_OFF_NONE);
-    CHECK_EQ(g_w.state, WA_ST_SCANNING);
-    CHECK(wa_radio(&g_w));
-    CHECK(!wa_serving(&g_w));
-    wa_on_scan_done(&g_w);
-    CHECK(!wa_radio(&g_w));
-    CHECK_EQ(g_w.off, WA_OFF_NONE);
-    /* One that never ends is ended. */
-    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
-    CHECK(wa_tick(&g_w, WA_START_MS, WA_OFF_NONE, false));
-    CHECK_EQ(g_w.off, WA_OFF_FAILED);
-}
-
 TEST_CASE(a_fetch_joins_and_serves_no_page)
 {
     wa_init(&g_w);
@@ -1003,8 +933,6 @@ int main(void)
     RUN(an_erase_that_worked_is_not_repeated_for_a_save_that_failed);
     RUN(a_change_during_a_write_is_not_lost);
     RUN(retry_times_hold_across_the_millisecond_wrap);
-    RUN(the_scan_list_holds_each_usable_network_once_strongest_first);
-    RUN(a_full_scan_list_keeps_the_strongest);
     RUN(the_radio_does_not_start_armed_with_the_supply_on_or_a_run_open);
     RUN(arm_stop_the_supply_and_a_run_each_switch_it_off);
     RUN(ten_minutes_without_a_request_switch_it_off);
@@ -1018,7 +946,6 @@ int main(void)
     RUN(a_join_time_out_after_another_drop_or_none_is_not_found);
     RUN(the_auth_count_starts_again_with_each_join);
     RUN(a_drop_on_the_network_is_lost_and_off_it_asks_nothing);
-    RUN(a_scan_runs_the_radio_and_ends_off);
     RUN(a_fetch_joins_and_serves_no_page);
     RUN(with_the_code_on_the_page_answers_only_the_right_code);
     RUN(with_the_code_off_every_request_passes);
