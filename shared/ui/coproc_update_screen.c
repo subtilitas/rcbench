@@ -15,21 +15,63 @@
 #include "ui_widgets.h"
 #include "upd_screen.h"
 
-/* The question, in the body under the band: the box and the buttons of
- * LOGS' DELETE question. */
-#define Q_BOX    gfx_rect_make(120, 110, 560, 220)
-#define Q_CANCEL gfx_rect_make(144, 258, 240, 48)
-#define Q_START  gfx_rect_make(416, 258, 240, 48)
+/*
+ * The faces of the type scale this screen draws in:
+ * CU_FONT_HEAD (20 x 36) for the title and the step, CU_FONT_BODY (12 x 24)
+ * for every line read at a distance, CU_FONT_LABEL (10 x 20) for the
+ * buttons.
+ */
+/** @brief The title and the step: 20 x 36. */
+#define CU_FONT_HEAD  (&gfx_font_20x36)
+/** @brief The lines read at a distance: 12 x 24. */
+#define CU_FONT_BODY  UI_FONT_BODY
+/** @brief The buttons: 10 x 20. */
+#define CU_FONT_LABEL (&gfx_font_10x20)
 
-/* The progress, on the whole panel. */
+/*
+ * The question, in the body under the band:
+ * A box 860 x 248 px, its lines in CU_FONT_BODY 36 px apart from 44 px
+ * under its top edge, CANCEL and START side by side under them, 398 x 56 px
+ * each, 16 px apart.  START's foot is body y 344, 152 px above the alert
+ * band.  On the panel CANCEL's middle is (305, 376) and START's (719, 376).
+ */
+/** @brief The question's box, in the body. */
+#define Q_BOX    gfx_rect_make(82, 120, 860, 248)
+#define Q_TEXT_X (82 + 24)          /**< the lines' left edge */
+#define Q_TEXT_W (860 - 48)         /**< 67 cells of CU_FONT_BODY */
+/** @brief CANCEL, in the body. */
+#define Q_CANCEL gfx_rect_make(106, 288, 398, 56)
+/** @brief START, in the body. */
+#define Q_START  gfx_rect_make(520, 288, 398, 56)
+
+/*
+ * The progress, on the whole panel:
+ * A 64 px title bar; the step in CU_FONT_HEAD and the versions under it;
+ * the bar 36 px tall across the panel less 24 px each side; the block count
+ * under it; the three notes in CU_FONT_BODY, 28 px apart.
+ */
+/** @brief The panel's width, px. */
 #define W        UI_PANEL_W
-#define BAR_H    56
+/** @brief The progress's title bar's height, px. */
+#define BAR_H    64
+/** @brief The progress's left edge. */
 #define COL_X    24
-#define STEP_Y   (BAR_H + 16)
-#define FROM_Y   (STEP_Y + 38)
-#define PBAR     gfx_rect_make(COL_X, 170, W - 2 * COL_X, 28)
-#define COUNT_Y  210
-#define NOTE_Y   280
+#define COL_W    (W - 2 * COL_X)    /**< 976 px: 81 cells of CU_FONT_BODY */
+#define PITCH    28                 /**< a CU_FONT_BODY line's pitch */
+/** @brief The step's top. */
+#define STEP_Y   (BAR_H + 20)
+/** @brief The versions' top. */
+#define FROM_Y   (STEP_Y + 48)
+/** @brief The progress bar, 36 px tall. */
+#define PBAR     gfx_rect_make(COL_X, 180, COL_W, 36)
+/** @brief The block count's top. */
+#define COUNT_Y  228
+/** @brief The first note's top. */
+#define NOTE_Y   288
+
+_Static_assert(56 >= UI_TAP_MIN, "CANCEL and START are a finger tall");
+_Static_assert(288 + 56 + 4 <= UI_ALERT_Y - UI_BAND_H,
+               "the question's buttons end above the alert band");
 
 static struct {
     cu_view_t    view;
@@ -42,14 +84,14 @@ static struct {
 
     ui_hold_t hold;          /**< START                                    */
     int       press_btn;     /**< 0 CANCEL, 1 START, -1 none               */
-    bool      have_press;
-    uint8_t   press_id;
+    bool      have_press;    /**< a contact owns the press               */
+    uint8_t   press_id;      /**< the contact that owns it               */
 
     bool      start;         /**< latched for the application             */
-    bool      cancel;
+    bool      cancel;        /**< latched for the application             */
 
     unsigned  drawn_mask;    /**< the static half, per framebuffer         */
-} s = { .press_btn = -1 };
+} s = { .press_btn = -1 };  /**< the question's or the progress's state */
 
 void coproc_update_screen_invalidate(void) { s.drawn_mask = 0; }
 
@@ -228,9 +270,16 @@ static void fmt_version(char *out, size_t n, cu_version_t v)
              (unsigned)v.patch);
 }
 
+/**
+ * @brief The question: the box and its lines once per framebuffer, the two
+ *        buttons every frame.
+ * @param c   Canvas, the body under the band.
+ * @param bit The framebuffer's bit in the drawn mask.
+ */
 static void render_question(gfx_canvas_t *c, unsigned bit)
 {
     const gfx_rect_t box = Q_BOX;
+    const int lh = gfx_text_height(CU_FONT_BODY, 1);
     if ((s.drawn_mask & bit) == 0u) {
         gfx_clear(c, UI_BG);
         ui_panel(c, box, TR(CU_TITLE), UI_ACCENT);
@@ -239,29 +288,35 @@ static void render_question(gfx_canvas_t *c, unsigned bit)
         fmt_version(run, sizeof(run), s.running);
         fmt_version(car, sizeof(car), s.carried);
         snprintf(line, sizeof(line), TR(CU_Q_VERSIONS), run, car);
-        gfx_text(c, box.x + 24, box.y + 44, line, UI_FONT_LABEL, UI_TEXT, 1);
+        gfx_text_in(c, gfx_rect_make(Q_TEXT_X, box.y + 44, Q_TEXT_W, lh),
+                    line, CU_FONT_BODY, UI_TEXT, 1, GFX_ALIGN_LEFT);
 
         /* An older image is said in its own colour: it is the way back, and
          * a step back taken by mistake costs a second update. */
+        const gfx_rect_t second =
+            gfx_rect_make(Q_TEXT_X, box.y + 80, Q_TEXT_W, lh);
         if (coproc_update_older(s.running, s.carried)) {
-            gfx_text(c, box.x + 24, box.y + 70, TR(CU_Q_OLDER),
-                     UI_FONT_LABEL, UI_WARN, 1);
+            gfx_text_in(c, second, TR(CU_Q_OLDER), CU_FONT_BODY, UI_WARN, 1,
+                        GFX_ALIGN_LEFT);
         } else if (same_version()) {
-            gfx_text(c, box.x + 24, box.y + 70, TR(CU_Q_SAME),
-                     UI_FONT_LABEL, UI_TEXT_DIM, 1);
+            gfx_text_in(c, second, TR(CU_Q_SAME), CU_FONT_BODY, UI_TEXT_DIM,
+                        1, GFX_ALIGN_LEFT);
         }
-        gfx_text(c, box.x + 24, box.y + 98, TR(CU_Q_WHAT),
-                 UI_FONT_LABEL, UI_TEXT_DIM, 1);
+        gfx_text_in(c, gfx_rect_make(Q_TEXT_X, box.y + 116, Q_TEXT_W, lh),
+                    TR(CU_Q_WHAT), CU_FONT_BODY, UI_TEXT_DIM, 1,
+                    GFX_ALIGN_LEFT);
         s.drawn_mask |= bit;
     }
 
     /* The buttons every frame: START fades across its hold. */
-    ui_button(c, Q_CANCEL, TR(CANCEL), UI_PANEL_HI, s.press_btn == 0, true);
+    ui_button_font(c, Q_CANCEL, TR(CANCEL), UI_PANEL_HI, s.press_btn == 0,
+                   true, CU_FONT_LABEL);
     const gfx_color_t fill =
         (s.hold.flash_ms > 0)
             ? ui_hold_flash(UI_ACCENT, s.hold.flash_ms)
             : ui_hold_fill(UI_PANEL_HI, UI_ACCENT, s.hold.held_s);
-    ui_button(c, Q_START, TR(CU_START), fill, false, true);
+    ui_button_font(c, Q_START, TR(CU_START), fill, false, true,
+                   CU_FONT_LABEL);
 }
 
 static const char *step_text(cu_step_t step)
@@ -276,28 +331,44 @@ static const char *step_text(cu_step_t step)
     }
 }
 
+/**
+ * @brief The progress on the whole panel: the bar, the step and the notes
+ *        once per framebuffer, the bar and the block count every frame.
+ * @param c   Canvas, the whole panel.
+ * @param bit The framebuffer's bit in the drawn mask.
+ */
 static void render_progress(gfx_canvas_t *c, unsigned bit)
 {
+    const int lh = gfx_text_height(CU_FONT_BODY, 1);
     if ((s.drawn_mask & bit) == 0u) {
         gfx_clear(c, UI_BG);
         gfx_fill_rect(c, 0, 0, W, BAR_H, UI_ACCENT);
-        gfx_text(c, COL_X, 14, TR(CU_TITLE), UI_FONT_HEAD,
-                 ui_is_light(UI_ACCENT) ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
-        gfx_text(c, COL_X, STEP_Y, step_text(s.step), UI_FONT_HEAD, UI_TEXT,
-                 1);
+        const int hh = gfx_text_height(CU_FONT_HEAD, 1);
+        gfx_text_in(c, gfx_rect_make(COL_X, (BAR_H - hh) / 2, COL_W, hh),
+                    TR(CU_TITLE), CU_FONT_HEAD,
+                    ui_is_light(UI_ACCENT) ? UI_TEXT_ON_LIGHT : UI_TEXT, 1,
+                    GFX_ALIGN_LEFT);
+        gfx_text_in(c, gfx_rect_make(COL_X, STEP_Y, COL_W, hh),
+                    step_text(s.step), CU_FONT_HEAD, UI_TEXT, 1,
+                    GFX_ALIGN_LEFT);
 
         char run[20], car[20], line[112];
         fmt_version(run, sizeof(run), s.running);
         fmt_version(car, sizeof(car), s.carried);
         snprintf(line, sizeof(line), TR(CU_P_FROM_TO), run, car);
-        gfx_text(c, COL_X, FROM_Y, line, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+        gfx_text_in(c, gfx_rect_make(COL_X, FROM_Y, COL_W, lh), line,
+                    CU_FONT_BODY, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
 
-        gfx_text(c, COL_X, NOTE_Y, TR(CU_P_NOTE_OFF), UI_FONT_LABEL,
-                 UI_TEXT, 1);
-        gfx_text(c, COL_X, NOTE_Y + 24, TR(CU_P_NOTE_POWER), UI_FONT_LABEL,
-                 UI_TEXT_DIM, 1);
-        gfx_text(c, COL_X, NOTE_Y + 48, TR(CU_P_NOTE_PANEL), UI_FONT_LABEL,
-                 UI_TEXT_DIM, 1);
+        /* The notes, each as many lines as it takes at the pitch. */
+        int y = NOTE_Y;
+        y += PITCH * ui_text_wrap(c, gfx_rect_make(COL_X, y, COL_W, lh),
+                                  PITCH, TR(CU_P_NOTE_OFF), CU_FONT_BODY,
+                                  UI_TEXT);
+        y += PITCH * ui_text_wrap(c, gfx_rect_make(COL_X, y, COL_W, lh),
+                                  PITCH, TR(CU_P_NOTE_POWER), CU_FONT_BODY,
+                                  UI_TEXT_DIM);
+        (void)ui_text_wrap(c, gfx_rect_make(COL_X, y, COL_W, lh), PITCH,
+                           TR(CU_P_NOTE_PANEL), CU_FONT_BODY, UI_TEXT_DIM);
         s.drawn_mask |= bit;
     }
 
@@ -306,13 +377,14 @@ static void render_progress(gfx_canvas_t *c, unsigned bit)
     const float frac = (s.blocks == 0u) ? 0.0f
                                         : (float)s.block / (float)s.blocks;
     ui_bar(c, PBAR, frac, -1.0f, UI_ACCENT);
-    gfx_fill_rect(c, COL_X, COUNT_Y, W - 2 * COL_X, 20, UI_BG);
+    gfx_fill_rect(c, COL_X, COUNT_Y, COL_W, lh, UI_BG);
     if (s.blocks != 0u) {
         char count[64];
         snprintf(count, sizeof(count), TR(CU_P_BLOCKS), (unsigned)s.block,
                  (unsigned)s.blocks,
                  (unsigned)((uint32_t)s.block * 100u / s.blocks));
-        gfx_text(c, COL_X, COUNT_Y, count, UI_FONT_LABEL, UI_TEXT, 1);
+        gfx_text_in(c, gfx_rect_make(COL_X, COUNT_Y, COL_W, lh), count,
+                    CU_FONT_BODY, UI_TEXT, 1, GFX_ALIGN_LEFT);
     }
 }
 

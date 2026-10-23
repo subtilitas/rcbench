@@ -137,6 +137,67 @@ void svs_knob_withdraw(void)
     }
 }
 
+/* ------------------------------------------------------------ the drag */
+
+/**
+ * @brief The finger moved on the dial to @p deg: the filter's new goal,
+ *        held to TRAVEL.  A drag whose filter another command ended starts
+ *        it again from the commanded angle, so the horn moves on from where
+ *        it is.  The frame commands it, and only while the value is live
+ *        (svs_drag_tick()).
+ * @param deg the finger's angle, degrees
+ */
+static void drag_follow(float deg)
+{
+    if (!s.df.on) {
+        s.df.on  = true;
+        s.df.out = s.commanded_deg;
+    }
+    s.df.goal = clamp_travel(deg);
+}
+
+void svs_drag_on_post(servo_cmd_kind_t kind, uint16_t us)
+{
+    if (!s.df.on || s.df.posting) {
+        return;
+    }
+    if (kind == SERVO_CMD_POSITION && us == svs_deg_to_us(s.df.out)) {
+        return;
+    }
+    s.df.on = false;
+}
+
+void svs_drag_tick(float dt_s)
+{
+    if (!s.df.on) {
+        return;
+    }
+    /* A disarm, a stop or SAFE: nothing more is commanded. */
+    if (!value_live()) {
+        s.df.on = false;
+        return;
+    }
+    if (!(dt_s > 0.0f)) {
+        return;
+    }
+    /* By the frame's own length, so the target follows the finger at the
+     * same pace at 30, 60 or 120 frames a second. */
+    const float share = 1.0f - expf(-dt_s * 1000.0f / SV_DRAG_TAU_MS);
+    float next = s.df.out + (s.df.goal - s.df.out) * share;
+    if (fabsf(s.df.goal - next) < SV_DRAG_SNAP_DEG) {
+        next = s.df.goal;
+    }
+    if (next != s.df.out) {
+        s.df.out     = next;
+        s.df.posting = true;
+        (void)svs_command(next);
+        s.df.posting = false;
+    }
+    if (!s.dragging && s.df.out == s.df.goal) {
+        s.df.on = false;        /* there: the finger's last angle */
+    }
+}
+
 void servo_screen_knob_cancel(void)
 {
     svs_knob_withdraw();
@@ -331,7 +392,13 @@ void svs_event_body(const touch_event_t *evt)
             s.dragging = true;
             s.knob_finger = true;
             s.drag_id  = evt->point.id;
-            (void)svs_command(deg);
+            /* The press is commanded at once, as a tap; the drag after it
+             * through the filter, from here. */
+            if (svs_command(deg)) {
+                s.df = (svs_drag_filter_t){ .on = true,
+                                            .goal = s.commanded_deg,
+                                            .out = s.commanded_deg };
+            }
             return;
         }
         if (gfx_rect_contains(s.centre_btn, px, py)) {
@@ -431,11 +498,12 @@ void svs_event_body(const touch_event_t *evt)
         if (evt->type == TOUCH_EVENT_MOVE) {
             float deg;
             if (on_the_dial(px, py, &deg)) {
-                (void)svs_command(deg);
+                drag_follow(deg);
             }
             return;
         }
         if (evt->type == TOUCH_EVENT_UP) {
+            /* The target goes on to the last angle the finger gave. */
             s.dragging = false;
             return;
         }

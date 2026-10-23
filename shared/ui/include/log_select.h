@@ -18,6 +18,9 @@
  * read to its end: directories first, then log_name_rank() order, so the
  * rows of a page run the same way as the pages, newest run at the top.
  *
+ * The page keeping is the file manager's (fm_select.h) with log_name_rank()
+ * as its order; the file manager's panes keep theirs in name order.
+ *
  * Paging needs log_name_rank() to be a strict order: zero only for the same
  * file.  Two names that tie fall on the key's side of every page edge, and
  * one of them is shown on no page.
@@ -31,6 +34,7 @@
 
 #include <stdint.h>
 
+#include "fm_select.h"
 #include "log_name.h"
 #include "log_viewer_screen.h"
 
@@ -39,52 +43,68 @@ extern "C" {
 #endif
 
 /**
- * Offer @p cand to a set that holds @p count entries of at most @p capacity,
- * in log_name_rank() order, and return the count after the offer.
+ * @brief Offer @p cand to a set in log_name_rank() order.
  *
  * The count is the same one that came back from the last call, so a set never
  * drifts past its capacity.  A candidate that ranks below a full set is
  * dropped and the count does not move.
+ *
+ * @param set       the entries, in log_name_rank() order
+ * @param count     entries in @p set
+ * @param capacity  room in @p set
+ * @param cand      the entry offered; copied when it is kept
+ * @return the count after the offer
  */
 int log_select_keep(log_viewer_file_t *set, int count, int capacity,
                     const log_viewer_file_t *cand);
 
 /**
- * One page being chosen while a directory is read.  Filled by
- * log_select_page_begin(); the fields are the walk's, not the caller's.
+ * @brief One page being chosen while a directory is read.  Filled by
+ *        log_select_page_begin(); the fields are the walk's, not the
+ *        caller's.  Not copied while a walk runs: its page keeping points
+ *        at its own key.
  */
 typedef struct {
-    log_viewer_file_t *set;
-    int capacity;
-    log_page_dir_t dir;
-    const char *key;     /* borrowed from the page, "" for none */
-    int held;            /* entries in @p set                   */
-    int inside;          /* offered entries on @p key's page side */
-    int outside;         /* offered entries ahead of @p key (FROM, AFTER) */
+    fm_select_t sel;          /**< the page keeping, in log_name_rank() order */
+    log_viewer_file_t key;    /**< the page's key; "" for none */
 } log_select_page_t;
 
 /**
- * Start choosing @p page into @p set, which has room for @p capacity.  A
- * @p page of NULL is the first page.  @p page has to outlive the walk.
+ * @brief Start choosing @p page into @p set.
+ *
+ * The key is copied, so @p page may change while the walk runs.
+ *
+ * @param sel       the walk's state
+ * @param set       room for @p capacity entries
+ * @param capacity  entries @p set takes
+ * @param page      which page; NULL for the first
  */
 void log_select_page_begin(log_select_page_t *sel, log_viewer_file_t *set,
                            int capacity, const log_viewer_page_t *page);
 
-/** Offer one directory entry; it is copied if it is kept. */
+/**
+ * @brief Offer one directory entry; it is copied if it is kept.
+ * @param sel   the walk's state
+ * @param cand  the entry
+ */
 void log_select_page_offer(log_select_page_t *sel,
                            const log_viewer_file_t *cand);
 
 /**
- * End the walk: put the set into the order the browse list draws
- * (log_select_sort()), write @p page's ahead and held, and return held.
- * @p page may be NULL.
+ * @brief End the walk: put the set into the order the browse list draws
+ *        (log_select_sort()) and write @p page's ahead and held.
+ * @param sel   the walk's state
+ * @param page  takes ahead and held; may be NULL
+ * @return the entries held
  */
 int log_select_page_end(log_select_page_t *sel, log_viewer_page_t *page);
 
 /**
- * Put @p count entries into the order the browse list draws them in:
- * directories first, then log_name_rank() order -- runs newest first, then
- * the other names, case-insensitively.
+ * @brief Put @p count entries into the order the browse list draws them in:
+ *        directories first, then log_name_rank() order -- runs newest
+ *        first, then the other names, case-insensitively.
+ * @param set    the entries
+ * @param count  how many
  */
 void log_select_sort(log_viewer_file_t *set, int count);
 

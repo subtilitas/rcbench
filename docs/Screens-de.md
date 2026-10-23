@@ -267,7 +267,8 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
   auf ihren Reiter passt; sonst in 8 x 16. ROOT, USER und BENCH auf LOGS und
   die Segmente des PROG-PORT-Eintrags auf OUTPUTS stehen in 10 x 20. Die
   Streifen von SERVO und MOTOR & ESC sind 40 px hoch und zeigen 10 x 20;
-  der von SUPPLY ist 24 px hoch und bleibt bei 8 x 16.
+  der von SUPPLY ist 24 px hoch und bleibt bei 8 x 16. Die Reiter von
+  RECEIVER und BALANCE sind 150 x 48 px groß und zeigen 10 x 20.
 - **ZIEL-Zeile.** Eine Zeile ab 40 px Höhe zeigt Beschriftung und Wert in
   10 x 20, mit 88 px für die Beschriftung, und zählt die genannten Pins in
   Zellen von 10 px. Eine niedrigere zeigt sie in 8 x 16 mit 64 px für die
@@ -282,11 +283,20 @@ malt die ganze Fläche und lässt ihre Tasten dort enden, so verdeckt ein
 Alert keine Taste. Auf SERVO sind die Tasten der Tastenfelder dann
 112 x 88 px groß und die der Tastaturen 41 x 72 px; auf SUPPLY die des
 Tastenfelds 126 x 80 px; auf der Suchtastatur von ESC STICK 59 x 57 px; auf
-SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89 px.
+SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89 px; auf BALANCE die
+des Tastenfelds der Blattzahl 242 x 72 px.
 
 ## Splash
 
 ![Der Splash](img/de/splash.png)
+
+Der Splash füllt das Panel, ohne Band. Die Marke `rcbench` steht in der
+Schrift 20 x 36 px in doppelter Größe auf einem Akzent-Tag von 88 px Höhe,
+oben mittig. Die Unterzeile steht darunter in der Schrift 12 x 24 px. Jeder
+Schritt hat ab y 200 eine Zeile von 40 px: seinen Namen, sein Zeichen
+(`OK`, `--`, `!!`, `..` solange er läuft) und sein Detail, alles in der
+Schrift 12 x 24 px. Ein Detail beginnt bei x 432 und endet 24 px vor dem
+rechten Rand, nach 47 Zeichen.
 
 Jedes Subsystem meldet beim Hochfahren sein Ergebnis: Platine, Display,
 Touch, SD-Karte, Einstellungen, Link, IOmcu. Die Zeile der Platine
@@ -999,6 +1009,14 @@ Ziffern. Ziffern, die breiter als ihre Spalte von 198 px sind -- ein auf
 bleiben so in ihr. Die Messwerte stehen nur auf LIVE; auf den anderen
 Aufgaben trägt die Zeile über dem Plot den Strom.
 
+Das Horn wird in Bruchteilen eines Pixels gezeichnet: Seine Spitze, 98px
+von der Welle, bewegt sich 1,7px pro Grad und steht bei jedem Schritt
+höchstens 0,1px neben ihrem Winkel. Ein Horn, das sich bewegt, malt die
+Kästen um sich neu, wie jeder Bildpuffer es zuletzt zeichnete und wie es
+jetzt steht, etwa 160px breit, und die Ziffern des Winkels, von
+SOLL-PULSBREITE und von GEMESSEN; die beiden Karten werden dafür nicht neu
+gemalt.
+
 Auf LIVE bei einem Prüfstand in ARMED an beliebiger Stelle auf dem Bogen ziehen, um
 eine Stellung zu befehlen. Der
 kräftige Arm ist die gemessene Stellung, der blasse Arm die befohlene. Der
@@ -1020,8 +1038,23 @@ bewegt.
 
 Ein Finger zieht das Zifferblatt. Ein Druck eines zweiten Fingers irgendwo
 auf dem Bildschirm beendet den Drag, wie er einen Drag auf TEMPO beendet: Das
-Horn bleibt, wo es befohlen wurde, und das Zifferblatt folgt wieder nach
-einem neuen Druck darauf.
+Ziel läuft weiter bis zum letzten Winkel, den der Finger gab, und das
+Zifferblatt folgt wieder nach einem neuen Druck darauf.
+
+Der Druck auf das Zifferblatt befiehlt seinen Winkel sofort. Der Drag danach
+läuft durch einen einpoligen Filter mit einer Zeitkonstante von 20ms
+(`SV_DRAG_TAU_MS`), gerechnet nach der Länge jedes Frames, und ist damit bei
+30, 60 und 120 Frames pro Sekunde derselbe. Das Horn und der Puls, den das
+Servo bekommt, folgen beide dem gefilterten Winkel, 1,8° hinter einem
+Finger, der sich mit 90°/s bewegt. Der Filter gleicht den Takt zwischen den
+Abfragen des Touch-Controllers, alle 10,5ms, und den Frames, alle 16,6ms,
+aus: Bei 90°/s macht das Horn Schritte von 1,0° bis 1,8° pro Frame, die
+Abfragen allein ergeben 0,5° bis 2,1°. Hebt sich der Finger, läuft das Ziel
+weiter bis zum letzten Winkel des Fingers, 99% des Wegs in 100ms. Jeder
+andere Befehl beendet den Filter sofort: ein Schalten auf SAFE, DISARM,
+STOP, FREIGEBEN, ZENTRIEREN, SWEEP oder der Drehknopf. Bei SAFE bewegt er
+nichts, und ein ARM beginnt in der Ruhestellung, ohne etwas von einem Drag
+davor.
 
 Der Bildschirm treibt die Kanäle, die die Bindung als Ruderflächen markiert,
 und weder einen festen Pin noch ein festes Protokoll. Die acht Kanäle von PPM
@@ -2129,10 +2162,19 @@ AUTO wie bei einer festen Rate.
 
 ![Receiver](img/de/analyser.png)
 
-Sechzehn Kanäle, jeder mit etwa 1,7 s Verlauf (118 Werte) und einem Balken für den aktuellen
-Wert. CH17 und CH18 sind die beiden Digitalkanäle. Ein Glitch ist eine Spitze
-in einer Spur; ein Dropout ist eine Kerbe durch alle sechzehn im selben
-Moment.
+Sechzehn Kanäle in zwei Spalten mit je acht Spuren von 52 px. Eine Spur zeigt
+den Namen des Kanals in 10 x 20, seinen Verlauf, einen Balken von 56 px Breite
+für den aktuellen Wert und den Wert in us in 8 x 16. Der Verlauf sind 200
+Werte, je einer pro Pixel: etwa 2,8 s bei 71 Frames je Sekunde (ein
+S.BUS-Frame alle 14 ms). CH17 und CH18 sind die beiden Digitalkanäle. Ein
+Glitch ist eine Spitze in einer Spur; ein Dropout ist eine Kerbe durch alle
+sechzehn im selben Moment.
+
+Die Zustandskarte rechts ist 260 px breit: das Zustandswort in 20 x 36, seine
+Zeile in bis zu drei Zeilen 12 x 24, BUS, RATE, FRAMES, RESYNC und BAD TAIL in
+Zeilen von 32 px, und CH17 und CH18, 44 px hoch, hell, solange gesetzt. KANÄLE
+und ROHDATEN sind Reiter von 150 x 48 px. ROHDATEN zeigt die Bytes des
+letzten Frames, acht je Zeile, und die Zähler des Decoders in 8 x 16.
 
 Keine Firmware speist diesen Bildschirm bisher (siehe
 [Empfängerbusse](Receivers-de.md)); er zeigt KEIN SIGNAL.
@@ -2155,6 +2197,13 @@ Die Zellen werden als Abweichung vom Mittelwert des Packs gezeichnet. Das
 Urteil folgt der Spreizung, dem größten Abstand zwischen zwei beliebigen
 Zellen: GUT unter 30 mV, BEOBACHTEN ab 30 mV, ERSETZEN ab 60 mV. Die Skala folgt
 dem Pack bis hinunter zu einer Untergrenze von 12 mV und steht neben dem Plot.
+
+Die Plotkarte ist 640 px breit, die rechte Karte 360 px. Ein Balken ist
+höchstens 48 px breit und reicht 164 px zu jeder Seite des Mittelwerts. Unter
+jedem Balken stehen Nummer und Spannung der Zelle in 12 x 24 bis 11 Zellen und
+in 10 x 20 von 12 bis 14. Das Urteil steht in 20 x 36, seine Zeile in bis zu
+zwei Zeilen 12 x 24, die sechs Zeilen sind je 36 px hoch, der Hinweis in
+10 x 20.
 
 Unter Last messen. In Ruhe liest sich eine schwache Zelle wie die anderen.
 
@@ -2908,7 +2957,10 @@ Das Halten schaltet zuerst den Funk aus. Dann stoppt der Control-Task seine
 Abfragen und hält den Heartbeat absichtlich zurück, sodass der IOmcu
 seine Ausgänge im Failsafe hält, wie bei jedem Neustart des Panels.
 PANEL UPDATE nimmt den ganzen Bildschirm, ohne Band und ohne STOP: Nichts
-kann dahinter auf ARMED geschaltet werden. Es schreibt den Slot, der nicht
+kann dahinter auf ARMED geschaltet werden. Ein Balken von 64 px trägt den
+Titel; die Bytes stehen in der Schrift 20 x 36 px über einem Balken von
+36 px Höhe und 976 px Breite, die Zeilen darunter in der Schrift
+12 x 24 px. Es schreibt den Slot, der nicht
 läuft, in Stücken von 64 KiB und zeigt die Bytes und den Prozentwert. Die
 Anzeige wird bei jedem Flash-Löschen ganz dunkel, etwa alle 0,5 s (gemeldet
 auf 0.20.0; 0.21.x nicht gemessen), und sitzt ab dem ersten ganzen Bild nach
@@ -3807,6 +3859,15 @@ Zahlen zeigt. Das Urteil ist die Überschrift, die Liste ist das, was der
 Reihe nach zu prüfen ist, und die rechte Spalte ist das, was beide Enden
 gezählt haben.
 
+Der Bildschirm füllt das Panel. Ein roter Balken von 64 px trägt den Titel,
+das Urteil steht darunter, beide in der Schrift 20 x 36 px. Die linke
+Spalte, 712 px, trägt die Bedeutung in höchstens zwei Zeilen und die Liste
+der Prüfungen in der Schrift 12 x 24 px: 32 px je Prüfung und 28 px mehr
+für jede Zeile, auf die eine Prüfung umbricht. Ab y 432 folgen die drei
+Hinweise. Die rechte Spalte, 240 px ab x 760, trägt die Zähler in der
+Schrift 10 x 20 px. `2 s HALTEN ZUM BESTÄTIGEN` läuft 976 x 56 px über den
+Fuß, 16 px über dem Rand des Panels.
+
 ![Es kam nichts zurück](img/de/busfault-silent.png)
 
 Verlassen kostet zwei Sekunden Halten — die ARM-Geste und dieselbe
@@ -3890,6 +3951,10 @@ ist.
 
 ![Die Frage zum IOmcu-Update](img/de/coproc-update.png)
 
+Die Frage ist ein Kasten von 860 x 248 px im Körper, ihre Zeilen in der
+Schrift 12 x 24 px. ABBRECHEN und START sind je 398 x 56 px, nebeneinander,
+START rechts; ihre Mitten liegen auf dem Panel bei x 305 und 719, y 376.
+
 Die Frage nennt die Version, die der IOmcu laufen hat, und die Version,
 die dieses Panel mitbringt. CANCEL ist ein Tippen: die Frage schließt sich,
 und das Panel fragt für diese IOmcu-Version nicht noch einmal, bis es
@@ -3910,6 +3975,11 @@ Bildschirm. Er hat kein Band und kein STOP, wie der Bus-Fehler-Bildschirm:
 hinter ihm kann der Prüfstand nicht auf ARMED schalten.
 
 ![Der Fortschritt](img/de/coproc-update-progress.png)
+
+Der Fortschritt hat einen Titelbalken von 64 px, den Schritt in der Schrift
+20 x 36 px, darunter die Versionen, einen Balken von 36 px Höhe und 976 px
+Breite ab y 180, die Blockzahl und drei Hinweise in der Schrift 12 x 24 px,
+28 px auseinander.
 
 | Schritt | Gezeigt, während |
 | --- | --- |
@@ -3955,6 +4025,12 @@ dem ESP32-P4-Panel wird jedes neuere Release angeboten
 ([Die Release-Linie](#die-release-linie)).
 
 ![UPDATES](img/de/updates.png)
+
+Die Tasten sind 460 x 56 px, 64 px auseinander, links. Die Karte rechts ist
+532 px breit und endet 8 px über dem Alarmband; ihr Text läuft in Zeilen
+von 41 Zeichen der Schrift 12 x 24 px, 28 px auseinander. Unter den Tasten
+stehen die Zeilen des IOmcu-Abschnitts in der Schrift 10 x 20 px, und sein
+Halten ist eine fünfte Taste derselben Größe, ab y 428 im Körper.
 
 | Bedienelement | Wirkung |
 | --- | --- |
@@ -4175,6 +4251,10 @@ Update trotzdem, wie die Frage es auch ihm anbietet.
 ### Die Erinnerung
 
 ![Die Erinnerung](img/de/upd-remind.png)
+
+Die Erinnerung ist ein Kasten von 860 x 480 px mit ihren Zeilen in der
+Schrift 12 x 24 px. JETZT NICHT und NICHT MEHR ERINNERN sind 398 x 56 px
+nebeneinander; das Halten ist 812 x 64 px darunter.
 
 Mit ERINNERUNG BEIM START an und einem gespeicherten Heimnetz sucht das
 Panel einmal nach jedem Start. Die Suche wartet auf einen Moment, den der
@@ -4899,6 +4979,14 @@ Der Reiter WUCHTEN zeigt einen festen Winkel (265°) und zwei feste Werte
 Die Pille SIMULIERT und der Text „Nicht gemessen.“ stehen unter den Werten,
 20 px hoch und 88 px breit. Die Reiter PRÜFGESTELL und FLUGMODELL zeigen
 Platzierungshilfen und tragen keine Marke.
+
+WUCHTEN, PRÜFGESTELL und FLUGMODELL sind Reiter von 150 x 48 px. Die
+Rotorkarte ist 640 px breit, ihre Scheibe hat 160 px Radius; die rechte Karte
+ist 360 px breit. PROPELLER und EDF sind 162 x 48 px groß, `-` und `+` der
+Blattzahl 56 x 48 px, die Tippfläche der Zahl 114 x 48 px, die vier Werte
+Zeilen von 36 px. Die Hinweise und die zwei Zeilen der Regeln stehen in
+8 x 16; die Köpfe der Regeln und die Beschriftungen, auch die der
+Zeichnungen, in 10 x 20.
 
 ## Unbekannte Bildschirm-IDs
 

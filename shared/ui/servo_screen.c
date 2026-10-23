@@ -250,6 +250,8 @@ void post(servo_cmd_kind_t kind, uint16_t us)
         && kind != SERVO_CMD_ARM) {
         return;
     }
+    /* Any other command takes the horn from the drag's filter. */
+    svs_drag_on_post(kind, us);
     /* A resume not yet taken stays one when the sweep is said again. */
     const bool resume = kind == SERVO_CMD_SWEEP
                         && s.pending.kind == SERVO_CMD_SWEEP
@@ -410,7 +412,7 @@ bool svs_command(float deg)
     }
     s.commanded_deg = clamp_travel(deg);
     post(SERVO_CMD_POSITION, svs_deg_to_us(s.commanded_deg));
-    ++s.ctrl_rev;
+    ++s.dial_rev;
     return true;
 }
 
@@ -424,6 +426,7 @@ bool svs_command(float deg)
 void svs_drop_motion(void)
 {
     svs_knob_withdraw();
+    s.df.on = false;            /* and the drag's filter commands no more */
     const servo_cmd_kind_t k = s.pending.kind;
     if (k == SERVO_CMD_POSITION || k == SERVO_CMD_CENTRE
         || k == SERVO_CMD_SWEEP || k == SERVO_CMD_HOLD) {
@@ -743,9 +746,11 @@ static void cancel(void)
      * And the dial.  A drag left latched owns its track id, and the GT911
      * reuses ids: a later contact that began somewhere else would satisfy
      * the drag path and command a position with no press on the dial, which
-     * on an armed bench moves the servo.
+     * on an armed bench moves the servo.  Its filter stops where it has
+     * got to: the target it was settling on is the abandoned gesture's.
      */
     s.dragging = false;
+    s.df.on = false;
     /* And the overlay's press: the warning's hold above all, which must not
      * complete on a contact that may have gone. */
     prog_cancel();

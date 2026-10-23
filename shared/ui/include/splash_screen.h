@@ -1,5 +1,6 @@
-/*
- * The splash: the self-test report.
+/**
+ * @file
+ * @brief The splash: the self-test report.
  *
  * Each subsystem reports its result as it initialises: board, display, touch,
  * storage, settings, link, IOmcu.  A missing card or an IOmcu with
@@ -15,6 +16,7 @@
 extern "C" {
 #endif
 
+/** @brief The steps the splash reports, in the order it lists them. */
 typedef enum {
     SPLASH_STEP_BOARD = 0,
     SPLASH_STEP_DISPLAY,
@@ -26,6 +28,7 @@ typedef enum {
     SPLASH_STEP_COUNT
 } splash_step_t;
 
+/** @brief A step's result. */
 typedef enum {
     SPLASH_PENDING = 0,
     SPLASH_OK,
@@ -34,15 +37,22 @@ typedef enum {
 } splash_result_t;
 
 /**
- * Bytes a step's detail keeps, terminator included.  The detail is drawn
- * from x 360 to the panel's edge, 55 cells; a German letter takes two
- * bytes, so the CAN self-test's longest verdict (48 bytes) fits whole.
+ * @brief Bytes a step's detail keeps, terminator included.
+ *
+ * The detail is drawn
+ * from x 432 to 24 px short of the panel's edge, 47 cells of 12 x 24; a
+ * German letter takes two bytes, so the CAN self-test's longest verdict
+ * (48 bytes, 46 cells) fits whole.
  */
 #define SPLASH_DETAIL_MAX 64
 
 void splash_screen_set(splash_step_t step, splash_result_t result,
                        const char *detail);
-/** True once every step has answered and the hold has expired. */
+/**
+ * @brief Whether the splash may hand over.
+ * @return true once every step has answered and the hold has expired, or
+ *         a tap skipped the hold.
+ */
 bool splash_screen_done(void);
 void splash_invalidate(void);
 

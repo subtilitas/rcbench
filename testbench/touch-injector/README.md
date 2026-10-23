@@ -125,11 +125,19 @@ one reply line; a gesture gets a second when it ends.
 | `release [id=N]` | `ok release`; each gesture under way first gets `fail <gesture> released` |
 
 Coordinates are panel pixels: x 0 to 1023, y 0 to 599, the 60px status
-band at y 0 to 59 included. `ms` is 1 to 30000. The panel takes injected
-points as pixels of its 1024 x 600 UI (user interface) area, unmirrored,
-and lands each on the pixel named; a point past the area is clamped to its
-edge. The glass's own report (1024 x 600, mirrored in x and y) is mapped
-separately before the two are merged.
+band at y 0 to 59 included. `ms` is 1 to 30000. They are not screen-body
+coordinates, which start 60px lower down (`UI_BAND_H`). The boot question
+that offers the IOmcu update has its START button at panel (719, 376) and
+its CANCEL button at panel (305, 376). Their body coordinates, panel y minus
+60px, are (719, 316) and (305, 316), the centres of the rectangles `Q_START`
+and `Q_CANCEL` in `shared/ui/coproc_update_screen.c` (398x56px each). A tap
+at y 316 lands at body y 256, inside the question box above the buttons, and
+misses both.
+
+The panel takes injected points as pixels of its 1024 x 600 UI (user
+interface) area, unmirrored, and lands each on the pixel named; a point past
+the area is clamped to its edge. The glass's own report (1024 x 600,
+mirrored in x and y) is mapped separately before the two are merged.
 
 A tap or a hold is two frames: one puts the contact down, one lifts it at
 the end of `ms`. The panel keeps a contact down while the controller has
@@ -309,6 +317,11 @@ reaches is not measured; the verdict line reports it as `rate=`.
    `confirm`, and `INJECT` shows again.
 7. `tap 890 462` presses the SETUP tile. The reply is
    `done tap frames=2 ms=<100 to 110>`.
+
+The IOmcu's update question, which opens on the menu when the IOmcu runs
+another build, has CANCEL at panel (305, 376) and START at (719, 376).
+`tap 305 376` declines it; `hold 719 376 2500` starts the update after the
+2 s hold.
 
 ## LED
 
