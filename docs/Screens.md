@@ -562,9 +562,10 @@ shows. In a SERVO file, from a switch to ARMED on SERVO, `voltage`,
 mini's last reading at each sample, voltage and power to 0.01, current to
 0.001, and the charge and energy the panel counts from those readings since
 the switch to ARMED, to 1mAh and 0.01Wh. A cell is empty while the supply
-has not delivered that reading. All five are empty on a row of measured
-readings while the supply is the panel's model (PD mini disabled on SETUP
-under INTERFACES). The other columns of a SERVO file are a MOTOR file's.
+has not delivered that reading. All five are empty on a row whose `source`
+is not the supply's: a `measured` row while the supply is the panel's model
+(PD mini disabled on SETUP under INTERFACES), and a `model` row while the PD
+mini's last reading is still shown after the link went down. The other columns of a SERVO file are a MOTOR file's.
 `source` is
 `measured` on a row whose values a meter produced and `model` on a row the
 panel's model produced (the SIMULATED mark); a supply file has the same last

@@ -179,9 +179,10 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
  * Bit SUPPLY_OK_VOLTAGE of ok says v is a reading, SUPPLY_OK_CURRENT that i
  * is one, and both that p is one; counted (BENCH_COUNTED_*) says which of
  * charge_mah and energy_wh the run has counted.  All 0 is a row with no
- * supply reading: its five cells are empty.  withheld marks the supply's
- * model on a measured row, whose five cells are empty whatever the run has
- * counted.
+ * supply reading: its five cells are empty.  withheld marks a supply
+ * whose source is not the row's -- the supply's model on a measured row, a
+ * measured supply on a modelled row -- whose five cells are empty whatever
+ * the run has counted.
  */
 typedef struct {
     float   v;           /**< at the supply's output, V */
@@ -191,17 +192,18 @@ typedef struct {
     float   energy_wh;   /**< since the switch to ARMED, Wh */
     uint8_t ok;          /**< SUPPLY_OK_* of the readings taken */
     uint8_t counted;     /**< BENCH_COUNTED_* of the totals */
-    bool    withheld;    /**< the supply's model on a measured row */
+    bool    withheld;    /**< the supply's source is not the row's */
 } log_rail_t;
 
 /**
  * @brief The supply's reading for a SERVO run's row, into @p out, with
  *        nothing counted.
  *
- * The readings that arrived, by @p s's ok bits.  None from a supply that is
- * the panel's model (supply_state_t.modelled) unless @p row_modelled: a row
- * of measured bench readings carries no modelled supply figures, and
- * out->withheld says so.  @p s NULL takes none.
+ * The readings that arrived, by @p s's ok bits, when the supply's source
+ * is the row's: a supply that is the panel's model (supply_state_t.modelled)
+ * on a modelled row, a measured one on a measured row.  Otherwise none, and
+ * out->withheld says so: a row's source names all its figures.  @p s NULL
+ * takes none.
  *
  * @param out          Receives the reading.
  * @param s            The supply's state, or NULL.
