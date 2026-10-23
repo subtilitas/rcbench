@@ -49,9 +49,9 @@ SEARCH filters the level showing. Its keyboard docks on the right and every key 
 
 ![Two values picked: RUN 2](view:motor-stick-items)
 
-A profile's page lists its menu items. Each starts at KEEP, which leaves the item as it is. `-` and `+` move through the item's values and stop at either end. ACTION, NOT A SETTING marks an item that is an action, such as a reset; NO OPTIONS an item with one value. The line under the list names the selected item's values and the default. RUN counts the values picked.
+A profile's page lists its menu items. Each starts at KEEP, which leaves the item as it is. `-` and `+` move through the item's values and stop at either end. ACTION, NOT A SETTING marks an item that is an action, such as a reset; NO OPTIONS an item with one value. A page shows 6 items. The column at the right holds CHANGE with the items shown and `^` and `v`, which scroll them; MANUAL INTERVENTION REQUIRED where the profile has manual steps; the menu's kind, the supply's voltage and current for the run and the entry time; and the selected item's values and the default. RUN counts the values picked.
 
-The header shows the menu's kind, the supply's voltage and current for the run, and the entry time. TIMING opens the beep timings and the supply settings:
+TIMING opens the beep timings and the supply settings, laid out the same way:
 
 ![The timing settings](view:motor-stick-timing)
 

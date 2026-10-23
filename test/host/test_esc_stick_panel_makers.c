@@ -64,7 +64,7 @@ TEST_CASE(makers_are_alphabetical_and_count_their_models)
     tap(BACK_X, BACK_Y);
     int top = 0;
     (void)esc_stick_panel_listed(&top);
-    CHECK_EQ(top, 9);
+    CHECK_EQ(top, 2 * ST_LIST_ROWS);        /* Robbe's page, the third */
     CHECK_STR_EQ(esc_stick_panel_maker(), "");
 }
 

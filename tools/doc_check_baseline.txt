@@ -3308,7 +3308,6 @@ shared/ui/coproc_update_screen.c: warning: Member tick(float dt_s) (function) of
 shared/ui/coproc_update_screen.c: warning: Member view (variable) of struct [struct].s is not documented.
 shared/ui/esc_stick_draw.c: warning: Member esc_stick_panel_render(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_amps(char *out, size_t n, const esc_model_t *m) (function) of file esc_stick_draw.c is not documented.
-shared/ui/esc_stick_draw.c: warning: Member sp_draw_card(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_crumb(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_find(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_items(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
@@ -3317,7 +3316,6 @@ shared/ui/esc_stick_draw.c: warning: Member sp_draw_maker(gfx_canvas_t *c, gfx_r
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_model(gfx_canvas_t *c, gfx_rect_t r, const sp_row_t *row, bool dock) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_tag(gfx_canvas_t *c, int right, int y) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_timing(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
-shared/ui/esc_stick_draw.c: warning: Member sp_mark(ui_text_id_t id) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_mark_runs(gfx_canvas_t *c, gfx_rect_t r, bool runs) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_setting_text(setting_id_t id, char *out, size_t n) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_tag_w(void) (function) of file esc_stick_draw.c is not documented.
@@ -3339,30 +3337,13 @@ shared/ui/esc_stick_draw_run.c: warning: Member sp_reason_text(esc_stick_reason_
 shared/ui/esc_stick_draw_run.c: warning: Member sp_tone_beep(const tone_beep_t *b, char *buf, size_t n) (function) of file esc_stick_draw_run.c is not documented.
 shared/ui/esc_stick_draw_run.c: warning: Member sp_tone_state(const tone_readout_t *r) (function) of file esc_stick_draw_run.c is not documented.
 shared/ui/esc_stick_int.h: warning: Compound stick_shared_t is not documented.
-shared/ui/esc_stick_int.h: warning: Member CRUMB_Y (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member CTRL_W (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member CTRL_X (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member DEV_H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member DEV_Y (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member DRAWER (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member HELP_Y (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member PAD (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member PARM_H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member PARM_Y (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member ROWS_MAX (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member ROW_H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member ROW_Y0 (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member SP_PANEL_H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member SP_PANEL_Y (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member SP_PBTN_H (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member SP_SHARED (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member STEP_W (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member TAP_SLOP (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member W (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member back (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member down[ROWS_MAX] (variable) of struct stick_shared_t is not documented.
-shared/ui/esc_stick_int.h: warning: Member draw_crumb(gfx_canvas_t *c, const char *trail) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member esc_stick_panel_render(gfx_canvas_t *c) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member found (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member found_rect (variable) of struct stick_shared_t is not documented.
@@ -3382,13 +3363,11 @@ shared/ui/esc_stick_int.h: warning: Member showing (variable) of struct stick_sh
 shared/ui/esc_stick_int.h: warning: Member sp_copy(char *dst, size_t n, const char *src) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member sp_cut(char *buf, size_t n, int max_chars) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member sp_line_len(const char *at, int cells) (function) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member sp_note(gfx_canvas_t *c, int x, int right, const char *text, gfx_color_t ink) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member sp_wrap(gfx_canvas_t *c, int x, int y, int pitch, const char *text, int cells, int max_lines, gfx_color_t ink) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member sp_wrap_lines(const char *text, int cells, int max_lines) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member stage (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member tap (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member up[ROWS_MAX] (variable) of struct stick_shared_t is not documented.
-shared/ui/esc_stick_int.h: warning: Member widget_enum(gfx_canvas_t *c, int y, const char *text, gfx_color_t ink) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member write_btn (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member x (variable) of struct stick_shared_t::[struct].tap is not documented.
 shared/ui/esc_stick_int.h: warning: Member y (variable) of struct stick_shared_t::[struct].tap is not documented.
@@ -3402,7 +3381,27 @@ shared/ui/esc_stick_list.c: warning: Member sp_by_model(const void *a, const voi
 shared/ui/esc_stick_list.c: warning: Member sp_casecmp(const char *a, const char *b) (function) of file esc_stick_list.c is not documented.
 shared/ui/esc_stick_list.c: warning: Member sp_key_cmp(uint32_t a, uint32_t b) (function) of file esc_stick_list.c is not documented.
 shared/ui/esc_stick_list.c: warning: Member text (variable) of struct [struct].k_why is not documented.
-shared/ui/esc_stick_pages.c: file has no @file block
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_armed(bool armed) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_back(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_cancel(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_entry(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_event(const touch_event_t *evt) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_has_press(uint8_t id) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_hold_rect(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_hold_revision(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_holds(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_is_open(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_leave(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_open(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_pin(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_render(gfx_canvas_t *c) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_revision(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_safe_at(int x, int y) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_tick(float dt_s) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member pg (variable) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member press_at(const touch_event_t *evt) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member showing(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member tap_follow(const touch_event_t *evt) (function) of file esc_stick_pages.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_maker(void) (function) of file esc_stick_panel.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_maker_at(int i) (function) of file esc_stick_panel.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_model(void) (function) of file esc_stick_panel.c is not documented.
@@ -3419,32 +3418,14 @@ shared/ui/esc_stick_panel.c: warning: Member sp_start(void) (function) of file e
 shared/ui/esc_stick_panel_int.h: warning: Compound sp_maker_t is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Compound sp_row_t is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Compound stick_t is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_AMPS_X (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_COUNT_W (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_DOCK_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FAMILY_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FIND_MAX (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FIND_W (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FIND_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FOOT_Y (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_LINE_CELLS (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_MAX (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_MODELS (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_NOTE (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_QUEUE (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_ROWS (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_ROW_H (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_ROW_Y0 (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_BASE (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_CAP (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_LENS (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_RING (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_W (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_Y (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_TRAIL_CELLS (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_VOLTS_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_WHY_CELLS (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member armed (variable) of struct stick_t is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member bind_read (variable) of struct stick_t is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member bscroll (variable) of struct stick_t is not documented.
@@ -3793,6 +3774,7 @@ shared/ui/include/motor_screen.h: warning: Compound motor_cmd_t is not documente
 shared/ui/include/motor_screen.h: warning: Member kind (variable) of struct motor_cmd_t is not documented.
 shared/ui/include/motor_screen.h: warning: Member value (variable) of struct motor_cmd_t is not documented.
 shared/ui/include/motor_screen.h: warning: parameters of member motor_endpoints_alert are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_output_strip are not documented
 shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_knob are not documented
 shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_peak_shown are not documented
 shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_poll_cmd are not documented
@@ -3808,6 +3790,7 @@ shared/ui/include/motor_screen.h: warning: parameters of member motor_settings_r
 shared/ui/include/motor_screen.h: warning: parameters of member motor_throttle_target are not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_dshot_ports is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_endpoints_alert is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_output_strip is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_screen_keypad_setting is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_screen_pane is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_screen_peak_shown is not documented
@@ -3904,10 +3887,6 @@ shared/ui/include/prog_models.h: warning: Member unit (variable) of struct prog_
 shared/ui/include/prog_registry.h: warning: Compound prog_list_t is not documented.
 shared/ui/include/prog_registry.h: warning: Compound prog_reg_row_t is not documented.
 shared/ui/include/prog_registry.h: warning: Compound prog_view_t is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_FULL_STRIP_H (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_FULL_STRIP_X (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_FULL_STRIP_Y (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_FULL_Y (macro definition) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member PROG_LIST_HEADINGS_OVER (macro definition) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member PROG_LIST_MAX (macro definition) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member PROG_ONE_CALL (macro definition) of file prog_registry.h is not documented.
@@ -4889,9 +4868,30 @@ shared/ui/motor_live_int.h: warning: Member thr_pins_known (variable) of struct 
 shared/ui/motor_live_int.h: warning: Member thr_ports_rev (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member thr_proto (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member thr_rev (variable) of struct mo_state_t is not documented.
-shared/ui/motor_program_page.c: file has no @file block
+shared/ui/motor_program_page.c: warning: Member STRIP_TARGET_CELLS (macro definition) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member caps_now(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member full_area(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member list_now(prog_list_t *l) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_armed(bool armed) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_back(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_cancel(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_cancel_press(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_enter(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_event(const touch_event_t *evt) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_leave(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_pressed(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_render_page(gfx_canvas_t *c) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_reset(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_revision(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_shown(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_strip_signature(uint8_t proto, uint64_t pins, bool known, bool armed) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_tick(float dt_s) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member p (variable) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member prog_signature(void) (function) of file motor_program_page.c is not documented.
 shared/ui/motor_program_page.c: warning: Member rev (variable) of struct [struct].p is not documented.
+shared/ui/motor_program_page.c: warning: Member row_open(uint8_t i) (function) of file motor_program_page.c is not documented.
 shared/ui/motor_program_page.c: warning: Member sig (variable) of struct [struct].p is not documented.
+shared/ui/motor_program_page.c: warning: Member supply_text(char *out, size_t size) (function) of file motor_program_page.c is not documented.
 shared/ui/motor_program_page.c: warning: Member view (variable) of struct [struct].p is not documented.
 shared/ui/motor_screen.c: warning: Member back(void) (function) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member cancel(void) (function) of file motor_screen.c is not documented.
@@ -4926,7 +4926,6 @@ shared/ui/motor_screen_int.h: warning: Member mpp_event(const touch_event_t *evt
 shared/ui/motor_screen_int.h: warning: Member mpp_leave(void) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_pressed(void) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_render_page(gfx_canvas_t *c) (function) of file motor_screen_int.h is not documented.
-shared/ui/motor_screen_int.h: warning: Member mpp_render_strip(gfx_canvas_t *c, uint8_t proto, uint64_t pins, bool known, bool armed) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_reset(void) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_revision(void) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_shown(void) (function) of file motor_screen_int.h is not documented.

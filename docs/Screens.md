@@ -145,8 +145,8 @@ the bench end above it.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
 - The controls that stop what the bench drives end above the band, panel
-  y 556 to 599: DISARM, OUTPUT OFF, a stick run's ABORT (y 516 to 549),
-  its ABORT on a manual step (y 456 to 511), STOP TEST and STOP RUN. A press
+  y 556 to 599: DISARM, OUTPUT OFF, a stick run's ABORT (y 496 to 551),
+  its ABORT on a manual step (y 444 to 491), STOP TEST and STOP RUN. A press
   on one with an alert showing is its own, and the alert stays. A stop
   control a screen draws under the band acts on the first press, and the
   press clears the band; ARM and OUTPUT ON under the band are not pressed:
@@ -258,7 +258,7 @@ Key grids end 4 px above the alert band, at body y 492, on every screen.
 A keypad or a keyboard whose area reaches further paints its whole area
 and stops its keys there, so an alert covers no key. On SERVO the keypads'
 keys are then 112 x 88 px and the keyboards' 41 x 72 px; on SUPPLY the
-keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 61 px; on
+keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 57 px; on
 MOTOR & ESC's SETTINGS the keypad's are 145 x 89 px.
 
 ## Splash
@@ -697,7 +697,7 @@ session: it covers the left column, the rail and the strip's tabs, and no
 press reaches ARM or a tab while it is open. Opening it on a bench that is
 not SAFE switches the bench to SAFE, a DISARM held by another finger
 included. The strip row holds the output
-strip in their place, one line of 16 px from x 12:
+strip in their place, one line in the 10 x 20 face from x 12, y 4:
 
 ![ESC STICK under the output strip](img/motor-stick.png)
 
@@ -711,8 +711,8 @@ TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE
 | `SUPPLY` (German `NETZTEIL`) | the PD mini's output as it reads: `SUPPLY 7.60 V  1.00 A`; `SUPPLY ON` while it is on without a voltage and a current reading; `SUPPLY OFF`; `SUPPLY --` while the supply does not answer |
 | `SAFE` or `ARMED` | the bench; ARMED in the danger colour |
 
-The strip is at most 97 characters, 776 px, in English and in German. It is
-repainted when its text changes.
+The strip is at most 100 characters, 1000 px, in English and in German. It
+is repainted when its text changes.
 
 From ESC STICK's makers the home tag closes the session to PROGRAM's list;
 from the list it leaves for the menu. Leaving MOTOR & ESC from any level ends
@@ -743,6 +743,19 @@ control. Three controls act on the press:
   stops a motor, so it does not wait for the lift, and it answers a second
   finger.
 - The keys of the search keyboard, which follow their own press and lift.
+
+ESC STICK lays out on the body under the output strip, from body y 28,
+with its labels, rows and buttons in the 10 x 20 face:
+
+| Part | Place and size |
+| --- | --- |
+| crumb row | y 30 to 78: BACK 120 x 48 px, the trail in the 12 x 24 face, and at the right the search field (260 px, its X 48 px), `^` and `v` (56 px each) on the list or TIMING (168 px) on a profile's page |
+| list | 7 rows a page, 48 px tall at a 56 px pitch from y 84, 984 px wide; a model's name in 30 characters; the footer line ends 4 px above the alert band |
+| profile's page and TIMING | the parameter card on the left, 660 px: 6 rows a page, 48 px tall at a 56 px pitch, each with its number, its name (up to 23 characters), its value in a 250 px column and `-` and `+` of 48 x 48 px, 8 px between any two |
+| side column | 340 px right of the parameter card: CHANGE (TIMING's title on TIMING), the rows shown and `^` and `v` of 48 x 48 px; MANUAL INTERVENTION REQUIRED, 310 x 48 px; then how the profile's menu works, the supply and the entry time, and the picked row's help, wrapped to 31 characters a line |
+| foot row | y 436 to 492, 4 px above the alert band: the note at the left on up to 2 lines, DEFAULTS and RUN, ABORT, OK or CLOSE, 168 x 56 px each |
+| run and result | the device card across the body from y 84 with its two lines, the run's card under it from y 136 with the stack light at its right, two help lines from y 390, and the foot row; a result's MANUAL INTERVENTION REQUIRED, 330 x 56 px, left of OK |
+| warning, manual steps, prompt | a panel over the pages from y 28, its title in the 20 x 36 face, its lines at a 22 px pitch, its buttons 48 px tall ending 4 px above the foot row, so a second tap on RUN's place lands on none of them |
 
 BACK and the band's home tag climb one level at a time: a stick profile's
 page to the list, a maker's models to the makers, the makers to PROGRAM's
@@ -854,9 +867,9 @@ measured:
 
 ![Timing](img/motor-stick-timing.png)
 
-A row's `-` and `+` step its value. A tap on the value, the 216 px column
+A row's `-` and `+` step its value. A tap on the value, the 250 px column
 between the name and the keys, opens the keypad over the page, from under
-the output strip to 4 px above the alert band: 1008 x 466 px, keys of
+the output strip to 4 px above the alert band: 1008 x 464 px, keys of
 242 x 81 px. It names the setting, its range and its unit and takes the
 step's digits after the point: one for Voltage's 0.1 V, two for Current
 limit's 0.05 A. OK sets the value as a step does, onto the nearer step (1.23 A is

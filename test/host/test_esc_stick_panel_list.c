@@ -68,9 +68,10 @@ TEST_CASE(reset_and_exit_rows_offer_no_value)
 {
     fresh();
     descend_to_hobbywing();
-    tap(PAGE_DN_X, PAGE_CY);                 /* items 2 to 8 */
-    tap(STEP_UP_X, STEP_CY(5));              /* item 7: set all to default */
-    tap(STEP_UP_X, STEP_CY(6));              /* item 8: exit */
+    tap(PAGE_DN_X, PAGE_CY);
+    tap(PAGE_DN_X, PAGE_CY);                 /* items 3 to 8 */
+    tap(STEP_UP_X, STEP_CY(4));              /* item 7: set all to default */
+    tap(STEP_UP_X, STEP_CY(5));              /* item 8: exit */
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
@@ -313,7 +314,7 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
     tap(LIST_DN_X, LIST_CY);                 /* a page down first */
     int top = 0;
     (void)esc_stick_panel_listed(&top);
-    CHECK_EQ(top, 9);
+    CHECK_EQ(top, ST_LIST_ROWS);
 
     tap(FIND_X, FIND_Y);
     CHECK(esc_stick_panel_typing());
@@ -498,7 +499,7 @@ TEST_CASE(the_header_fits_at_the_registrys_most)
     }
     int top = 0;
     (void)esc_stick_panel_listed(&top);
-    CHECK(top + 9 >= makers && top < makers);
+    CHECK(top + ST_LIST_ROWS >= makers && top < makers);
     for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
         static const ui_text_id_t k[] = {
             TX_SP_MAKERS_FOUND, TX_SP_MAKERS_COUNT, TX_SP_LIST_FOUND,

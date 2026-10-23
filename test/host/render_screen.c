@@ -59,6 +59,7 @@
 #include "supply_link.h"
 #include "kst_rig.h"
 #include "servo_spots.h"
+#include "stick_spots.h"
 #include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
@@ -75,23 +76,22 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
-/* The ESC STICK controls in body coordinates, as test/host/stick_rig.h and
- * esc_stick_panel_rig.h find them: the crumb row's ^ and v, TIMING and the
- * search field at the right edge, the foot row's RUN, the panels' HOLD TO
- * RUN and OK at their foot, and a parameter row's + stepper. */
-#define RS_SP_RIGHT    (UI_PANEL_W - UI_MARGIN - 12)
-#define RS_LIST_UP_X   (RS_SP_RIGHT - 76 + 17)
-#define RS_LIST_DN_X   (RS_SP_RIGHT - 38 + 17)
-#define RS_CRUMB_CY    45
-#define RS_TIMING_X    (RS_SP_RIGHT - 168 + 84)
-#define RS_FIND_X      (RS_SP_RIGHT - 182)
-#define RS_RUN_X       (RS_SP_RIGHT - 168 + 84)
-#define RS_RUN_CY      (UI_BODY_H - UI_ALERT_H - 4 - 36 + 17)
-#define RS_HOLD_X      (UI_MARGIN + 20 + 130)
-#define RS_OK_X        (UI_PANEL_W - UI_MARGIN - 20 - 90)
-#define RS_PBTN_CY     (UI_BODY_H - UI_ALERT_H - 4 - 36 - 4 - UI_BTN_H_TALL / 2)
-#define RS_STEP_UP_X   765
-#define RS_STEP_CY(i)  (142 + (i) * 30 + 10)
+/* The ESC STICK controls in body coordinates (stick_spots.h): the crumb
+ * row's ^ and v, TIMING and the search field at the right edge, the foot
+ * row's RUN, the panels' HOLD TO RUN and OK at their foot, and a parameter
+ * row's + stepper. */
+#define RS_LIST_UP_X   ST_LIST_UP_X
+#define RS_LIST_DN_X   ST_LIST_DN_X
+#define RS_CRUMB_CY    ST_CRUMB_CY
+#define RS_TIMING_X    ST_TIMING_X
+#define RS_FIND_X      ST_FIND_X
+#define RS_RUN_X       ST_WRITE_X
+#define RS_RUN_CY      ST_BTN_CY
+#define RS_HOLD_X      ST_HOLD_X
+#define RS_OK_X        ST_CANCEL_X
+#define RS_PBTN_CY     ST_PBTN_CY
+#define RS_STEP_UP_X   ST_STEP_UP_X
+#define RS_STEP_CY(i)  ST_STEP_CY(i)
 
 /* BALANCE's right card (test/host/test_balance.c): the rotor's EDF half and
  * the blade count's + stepper. */
@@ -1714,8 +1714,8 @@ static void stick_type(const char *text)
     ui_textkey_t k;
     memset(&k, 0, sizeof(k));
     ui_textkey_open_search(&k,
-                           (gfx_rect_t){ 352, 68, UI_PANEL_W - UI_MARGIN - 352,
-                                         UI_BODY_H - UI_MARGIN - 68 },
+                           (gfx_rect_t){ ST_DOCK_X, ST_DOCK_Y, ST_DOCK_W,
+                                         ST_DOCK_H },
                            "", "",
                            UI_TEXTKEY_MAX);
     for (const char *p = text; *p != '\0'; ++p) {
@@ -1748,8 +1748,8 @@ static void stick_supply_off(void)
 }
 
 /* The ESC STICK list's row @p at, paged to first: the rows of
- * esc_stick_panel.c (SP_ROW_Y0 68, 36 px apart, 9 to a page) and its ^ and
- * v at RS_LIST_UP_X and RS_LIST_DN_X on the crumb row, y 28 to 58. */
+ * esc_stick_panel.c (stick_spots.h: from y 84, 56 px apart, 7 to a page)
+ * and its ^ and v at RS_LIST_UP_X and RS_LIST_DN_X on the crumb row. */
 static void stick_tap_row(int at)
 {
     int top = 0;
@@ -1758,11 +1758,11 @@ static void stick_tap_row(int at)
         tap(RS_LIST_UP_X, UI_BAND_H + RS_CRUMB_CY);
         (void)esc_stick_panel_listed(&top);
     }
-    for (int g = 0; g < 64 && at >= top + 9; ++g) {
+    for (int g = 0; g < 64 && at >= top + ST_LIST_ROWS; ++g) {
         tap(RS_LIST_DN_X, UI_BAND_H + RS_CRUMB_CY);
         (void)esc_stick_panel_listed(&top);
     }
-    tap(400, UI_BAND_H + 70 + (at - top) * 36 + 16);
+    tap(400, UI_BAND_H + ST_ROW_CY(at - top));
 }
 
 /* On the makers, the one named @p name; on its models, the first of

@@ -30,35 +30,60 @@
 
 /* ------------------------------------------------------- the stick class */
 
-/* The profile list: rows of SP_ROW_H from SP_ROW_Y0, SP_ROWS to a page. */
+/**
+ * @brief The profile list: SP_ROWS rows to a page, UI_TAP_MIN tall at an
+ *        SP_ROW_P pitch from SP_ROW_Y0, as wide as the body less 20 px a
+ *        side; the footer's line under them ends 4 px above the alert
+ *        band.
+ */
 #define SP_MAX     (128)
-#define SP_ROWS    9
-#define SP_ROW_Y0  (CRUMB_Y + 40)
-#define SP_ROW_H   36
-#define SP_QUEUE   8
-#define SP_NOTE    160
+#define SP_ROWS    7                          /**< rows to a page      */
+#define SP_ROW_Y0  CARD_Y                     /**< the first row's top */
+#define SP_ROW_H   UI_TAP_MIN                 /**< a row, 48 px        */
+#define SP_ROW_P   56                         /**< its pitch           */
+#define SP_ROW_X   (PAD + 12)                 /**< a row's left        */
+#define SP_ROW_TY  ((SP_ROW_H - 20) / 2)      /**< its text, from its top */
+#define SP_QUEUE   8                          /**< commands queued     */
+#define SP_NOTE    160                        /**< a note's bytes      */
 
-/* A model's row, from its left edge: the name in 26 cells from 12 px, the
- * current and the voltage right-aligned in 48 and 56 px, and the family.
- * Right of the family, what the profile is or why it does not run: 220 px,
- * or up to SP_WHY_CELLS where a reason needs them, the family giving way. */
-#define SP_AMPS_X   224
-#define SP_VOLTS_X  276
-#define SP_FAMILY_X 344
-#define SP_WHY_CELLS ((W - 2 * PAD - 24 - 12 - SP_FAMILY_X) / 8)
+/**
+ * @brief A model's row, from its left edge: the name in SP_NAME_CELLS
+ *        cells from 12 px, the current and the voltage right-aligned in
+ *        56 and 64 px, and the family.  Right of the family, what the
+ *        profile is or why it does not run: 260 px, or up to SP_WHY_CELLS
+ *        where a reason needs them, the family giving way.
+ */
+#define SP_NAME_CELLS 30    /**< a model's name, cells          */
+#define SP_AMPS_X   320     /**< its current's column           */
+#define SP_VOLTS_X  384     /**< its voltage's column           */
+#define SP_FAMILY_X 460     /**< its family's column            */
+/** @brief The cells right of the family's column. */
+#define SP_WHY_CELLS ((W - 2 * PAD - 24 - 12 - SP_FAMILY_X) / SP_CELL)
+/** @brief A maker's count of models, right-aligned at its row's end. */
+#define SP_MAKER_RIGHT_W 370
 
-/* The search field in the crumb row, and the keyboard docked to the right
- * of SP_DOCK_X below it while the field is typed in. */
+/**
+ * @brief The search field in the crumb row, X at its right end, and the
+ *        page keys right of it; the keyboard docks right of SP_DOCK_X
+ *        below them while the field is typed in.
+ */
 #define SP_FIND_MAX 16
-#define SP_FIND_X   (W - PAD - 12 - 76 - 8 - SP_FIND_W)
-#define SP_FIND_W   172
-#define SP_DOCK_X   352
-/* The trail left of the field, from the crumb's text: 48 cells. */
-#define SP_TRAIL_CELLS ((SP_FIND_X - 8 - (PAD + 12 + 96 + 16)) / 8)
-/* The footer under the rows: the count at its right, 45 cells, or at its
- * left beside the docked keyboard. */
-#define SP_FOOT_Y   (SP_ROW_Y0 + SP_ROWS * SP_ROW_H + 6)
+#define SP_KEY_W    56                        /**< "^" and "v", px     */
+#define SP_LIST_DN_X (W - PAD - 12 - SP_KEY_W)     /**< "v"               */
+#define SP_LIST_UP_X (SP_LIST_DN_X - 8 - SP_KEY_W) /**< "^"               */
+#define SP_FIND_W   260                           /**< the field's width */
+#define SP_FIND_X   (SP_LIST_UP_X - 8 - SP_FIND_W) /**< its left          */
+#define SP_CLR_W    UI_TAP_MIN                /**< X in the field      */
+#define SP_DOCK_X   352                       /**< the keyboard's left */
+/** @brief The trail left of the field, in SP_FONT_CRUMB's cells. */
+#define SP_TRAIL_CELLS ((SP_FIND_X - 8 - (PAD + 12 + BACK_W + 16)) \
+                        / SP_CRUMB_CELL)
+/** @brief The footer under the rows: the count at its right, or at its
+ *         left beside the docked keyboard. */
+#define SP_FOOT_Y   (SP_ROW_Y0 + (SP_ROWS - 1) * SP_ROW_P + SP_ROW_H + 4)
 #define SP_COUNT_W  360
+_Static_assert(SP_FOOT_Y + 20 <= SP_FOOT, "the list's footer ends above "
+               "the alert band");
 /* The most models one maker's list holds: as many as the registry lets a
  * maker have, so the count and the rows always agree. */
 #define SP_MODELS   ((int)ESC_MAKER_MODELS_MAX)
@@ -67,13 +92,21 @@
  * green lens, each with a collar under it, and the base, px. */
 #define SP_TOWER_W     44
 #define SP_TOWER_X     (W - PAD - 16 - SP_TOWER_W)
-#define SP_TOWER_Y     (PARM_Y + 14)
+#define SP_TOWER_Y     (RUN_Y + 14)   /**< the stack light's top */
 #define SP_TOWER_CAP   8
 #define SP_TOWER_LENS  58
 #define SP_TOWER_RING  3
 #define SP_TOWER_BASE  26
-/* What the run's and the result's lines may take beside it, in cells. */
-#define SP_LINE_CELLS  86
+/** @brief What the run's and the result's lines may take left of the
+ *         stack light, in SP_CELL cells: 92. */
+#define SP_LINE_CELLS  ((SP_TOWER_X - 12 - (PAD + 12)) / SP_CELL)
+/** @brief What a result's lines under the stack light may take, from its
+ *         seventh line on, in SP_CELL cells: 98. */
+#define SP_WIDE_CELLS  ((W - 2 * PAD - 24) / SP_CELL)
+_Static_assert(SP_TOWER_Y + SP_TOWER_CAP + 2 * (SP_TOWER_LENS + SP_TOWER_RING)
+                   + SP_TOWER_BASE + 4 <= RUN_L0 + 6 * LINE_P,
+               "a result's lines from its seventh pass under the stack "
+               "light");
 
 /** @brief The settings the TIMING page shows, in esc_stick_panel.c, and
  *         their count. */
@@ -182,6 +215,10 @@ typedef struct {
 
     gfx_rect_t rows[SP_ROWS], list_up, list_dn;
     gfx_rect_t hold_btn, cancel_btn, hand_btn, steps_btn, timing_btn;
+    /** @brief MANUAL INTERVENTION REQUIRED on a run's result: in the
+     *         foot row, left of OK; hand_btn is its place on the
+     *         profile's page. */
+    gfx_rect_t hand_res;
 } stick_t;
 
 /** @brief The panel's state: the stick class's, and the phase tap's. */

@@ -66,9 +66,11 @@ TEST_CASE(a_result_of_many_changes_counts_the_rest)
     fresh();
     /* hobbywing-flyfun-v5: twelve items. */
     open_profile("hobbywing-flyfun-v5");
-    for (int i = 0; i < 7; ++i) {
-        tap(STEP_UP_X, STEP_CY(i));
+    for (int i = 0; i < ST_PARM_ROWS; ++i) {
+        tap(STEP_UP_X, STEP_CY(i));          /* items 1 to 6 */
     }
+    tap(PAGE_DN_X, PAGE_CY);
+    tap(STEP_UP_X, STEP_CY(ST_PARM_ROWS - 1)); /* item 7 */
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
     CHECK_EQ(esc_stick_panel_runs(), 1u);
