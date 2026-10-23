@@ -62,6 +62,13 @@ const vol_entry_t k_vol[4] = {
     { "SUB",       0u,             true  },
 };
 
+const vol_entry_t k_hid[3] = {
+    { ".DS_Store", 6148u, false },
+    { "KEEP.TXT",  10u,   false },
+    { "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL.TXT",
+      1u, false },
+};
+
 const char *esp_err_to_name(esp_err_t err)
 {
     switch (err) {
@@ -412,11 +419,14 @@ FRESULT f_getfree(const char *path, DWORD *nclst, FATFS **fatfs)
 FRESULT f_opendir(FF_DIR *dp, const char *path)
 {
     dp->pos = 0;
+    dp->folder = (strcmp(path, HID_DIR) == 0) ? 1 : 0;
     const FRESULT fr = card_read();
     if (fr != FR_OK) {
         return fr;
     }
-    return (strcmp(path, VOL_DIR) == 0) ? FR_OK : FR_NO_PATH;
+    return (strcmp(path, VOL_DIR) == 0 || strcmp(path, HID_DIR) == 0)
+               ? FR_OK
+               : FR_NO_PATH;
 }
 
 static void vol_fill(FILINFO *fno, const vol_entry_t *e)
@@ -439,11 +449,13 @@ FRESULT f_readdir(FF_DIR *dp, FILINFO *fno)
     if (fr != FR_OK) {
         return fr;
     }
-    if ((size_t)dp->pos >= VOL_N) {
+    const vol_entry_t *list = (dp->folder == 1) ? k_hid : k_vol;
+    const size_t n = (dp->folder == 1) ? HID_N : VOL_N;
+    if ((size_t)dp->pos >= n) {
         fno->fname[0] = '\0';
         return FR_OK;
     }
-    vol_fill(fno, &k_vol[dp->pos++]);
+    vol_fill(fno, &list[dp->pos++]);
     return FR_OK;
 }
 

@@ -218,6 +218,28 @@ int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
                  void *ctx, storage_tick_fn tick);
 
 /**
+ * @brief storage_walk(), and the count of the entries its name filters
+ *        left out: names starting with "." and names of STORAGE_NAME_MAX
+ *        characters or more.  Entries the suffix filter leaves out are not
+ *        counted.
+ *
+ * The file manager's walk (fm_io.h) reads a folder with no suffix filter
+ * and needs every entry either visited or counted: a folder holding only
+ * .DS_Store is not empty, and is neither moved nor deleted as one.
+ *
+ * @param dir       as storage_walk()
+ * @param suffixes  as storage_walk()
+ * @param visit     as storage_walk()
+ * @param ctx       as storage_walk()
+ * @param tick      as storage_walk()
+ * @param left_out  takes the count; may be NULL.  0 when nothing is read.
+ * @return as storage_walk()
+ */
+int storage_walk_counted(const char *dir, const char *suffixes,
+                         storage_visit_fn visit, void *ctx,
+                         storage_tick_fn tick, unsigned *left_out);
+
+/**
  * The size, kind and time of one file or folder, by its full path under
  * STORAGE_MOUNT_POINT, e.g. "/sdcard/BENCH/RCBENCH.LOG".
  *

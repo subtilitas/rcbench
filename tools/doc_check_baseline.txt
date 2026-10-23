@@ -305,7 +305,6 @@ firmware/panel/components/storage/storage.c: warning: Member storage_free_bytes(
 firmware/panel/components/storage/storage.c: warning: Member unlock(void) (function) of file storage.c is not documented.
 firmware/panel/components/storage/storage.c: warning: Member usable (variable) of struct [struct].s is not documented.
 firmware/panel/components/storage/storage.c: warning: Member volume_format(void) (function) of file storage.c is not documented.
-firmware/panel/components/storage/storage_list.c: file has no @file block
 firmware/panel/components/storage/storage_list.c: warning: Compound walk_buf_t is not documented.
 firmware/panel/components/storage/storage_list.c: warning: Member dir (variable) of struct walk_buf_t is not documented.
 firmware/panel/components/storage/storage_list.c: warning: Member info (variable) of struct walk_buf_t is not documented.
@@ -492,7 +491,6 @@ firmware/panel/components/wifi_access/wifi_sock.h: warning: Member abort (variab
 firmware/panel/components/wifi_access/wifi_sock.h: warning: Member fd (variable) of struct wifi_sock_t is not documented.
 firmware/panel/main/knob_task.c: warning: Member TAG (variable) of file knob_task.c is not documented.
 firmware/panel/main/knob_task.c: warning: Member knob_read(uint8_t reg, uint8_t *byte) (function) of file knob_task.c is not documented.
-firmware/panel/main/knob_task.c: warning: Member knob_task(void *arg) (function) of file knob_task.c is not documented.
 firmware/panel/main/knob_task.c: warning: Member s_dev (variable) of file knob_task.c is not documented.
 firmware/panel/main/knob_task.c: warning: Member s_knob (variable) of file knob_task.c is not documented.
 firmware/panel/main/knob_task.c: warning: Member s_on (variable) of file knob_task.c is not documented.
@@ -3118,7 +3116,6 @@ shared/touch/include/touch_map.h: warning: Compound touch_tracker_t is not docum
 shared/touch/include/touch_map.h: warning: Member prev[TOUCH_MAX_POINTS] (variable) of struct touch_tracker_t is not documented.
 shared/touch/include/touch_map.h: warning: Member prev_count (variable) of struct touch_tracker_t is not documented.
 shared/touch/touch_map.c: file has no @file block
-shared/ui/analyser_screen.c: file has no @file block
 shared/ui/analyser_screen.c: warning: Member dec (variable) of struct [struct].s is not documented.
 shared/ui/analyser_screen.c: warning: Member drawn[2] (variable) of struct [struct].s is not documented.
 shared/ui/analyser_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
@@ -3141,41 +3138,20 @@ shared/ui/balance_screen.c: warning: Member ARM_H (macro definition) of file bal
 shared/ui/balance_screen.c: warning: Member ARM_Y (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member BASE_Y (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member BLADE_L (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member BODY_Y (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member DISC_CX (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member DISC_CY (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member DISC_R (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member H (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member HUB_R (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member LCARD_W (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member MARK_DY (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member MOTOR_W (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member MOTOR_X (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member PAD (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member POST_W (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member POST_X (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member RCARD_W (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member RCARD_X (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member RIG_RULES (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member SHAFT_Y (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member SPIN_X (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member TAB_H (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member TAB_Y (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member W (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member balance_screen(void) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member balance_screen_angle(void) (function) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member blade_dn (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member blade_up (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member blades (variable) of struct [struct].s is not documented.
 shared/ui/balance_screen.c: warning: Member callout(gfx_canvas_t *c, int px, int py, int lx, int ly, const char *text, gfx_color_t ink) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member disc_at(float deg, int r, int *x, int *y) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member draw_aircraft(gfx_canvas_t *c) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member draw_measure(gfx_canvas_t *c) (function) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member draw_readings(gfx_canvas_t *c) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member draw_rig(gfx_canvas_t *c) (function) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member draw_rules(gfx_canvas_t *c, const rule_t *rules, int count) (function) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member drawn[2] (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
 shared/ui/balance_screen.c: warning: Member head (variable) of struct rule_t is not documented.
 shared/ui/balance_screen.c: warning: Member k_air_rules[] (variable) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member k_rig_rules[] (variable) of file balance_screen.c is not documented.
@@ -3183,42 +3159,19 @@ shared/ui/balance_screen.c: warning: Member k_screen (variable) of file balance_
 shared/ui/balance_screen.c: warning: Member k_tabs[] (variable) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member line1 (variable) of struct rule_t is not documented.
 shared/ui/balance_screen.c: warning: Member line2 (variable) of struct rule_t is not documented.
-shared/ui/balance_screen.c: warning: Member rev (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member rotor (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member rotor_btn[ROTOR_COUNT] (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member s (variable) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member tabs (variable) of struct [struct].s is not documented.
-shared/ui/battery_screen.c: file has no @file block
 shared/ui/battery_screen.c: warning: Member b (variable) of struct [struct].s is not documented.
 shared/ui/battery_screen.c: warning: Member drawn[2] (variable) of struct [struct].s is not documented.
 shared/ui/battery_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
 shared/ui/battery_screen.c: warning: Member rev (variable) of struct [struct].s is not documented.
 shared/ui/board_drawing.c: file has no @file block
-shared/ui/busfault_screen.c: warning: Member ACK_H (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member ACK_W (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member ACK_X (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member ACK_Y (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member BAR_H (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member COLS_Y (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member COL_CELLS (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member COL_W (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member COL_X (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member H (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member HEAD_Y (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member LIST_CELLS (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member LIST_MAX (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member LIST_PITCH (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member LIST_Y (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member MEANING_LINES (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member NOTE_Y (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member NUM_GAP (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member NUM_HEAD (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member NUM_PITCH (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member NUM_W (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member NUM_X (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member VERDICT_Y (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member W (macro definition) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member WRAP_PITCH (macro definition) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member bus_checks(busfault_bus_t b, const char *out[LIST_MAX]) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member bus_meaning(busfault_bus_t b) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member bus_text(busfault_bus_t b) (function) of file busfault_screen.c is not documented.
@@ -3227,37 +3180,17 @@ shared/ui/busfault_screen.c: warning: Member busfault_screen(void) (function) of
 shared/ui/busfault_screen.c: warning: Member busfault_screen_invalidate(void) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member cancel(void) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member checks_for(can_selftest_verdict_t v, const char *out[LIST_MAX]) (function) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member draw_link_numbers(gfx_canvas_t *c) (function) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member draw_numbers(gfx_canvas_t *c) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member event(const touch_event_t *evt) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member have (variable) of struct [struct].s is not documented.
-shared/ui/busfault_screen.c: warning: Member have_press (variable) of struct [struct].s is not documented.
 shared/ui/busfault_screen.c: warning: Member in_ack(int16_t x, int16_t y) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member k_screen (variable) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member line_len(const char *at, int cells) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member meaning_of(can_selftest_verdict_t v) (function) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member press_id (variable) of struct [struct].s is not documented.
-shared/ui/busfault_screen.c: warning: Member pressed (variable) of struct [struct].s is not documented.
 shared/ui/busfault_screen.c: warning: Member r (variable) of struct [struct].s is not documented.
-shared/ui/busfault_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member reset(void) (function) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member s (variable) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member wrap_text(gfx_canvas_t *c, int x, int y, const char *text, int cells, gfx_color_t ink) (function) of file busfault_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member BAR_H (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member COL_X (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member COUNT_Y (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member FROM_Y (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member NOTE_Y (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member PBAR (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member Q_BOX (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member Q_CANCEL (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member Q_START (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member STEP_Y (macro definition) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member W (macro definition) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member block (variable) of struct [struct].s is not documented.
 shared/ui/coproc_update_screen.c: warning: Member blocks (variable) of struct [struct].s is not documented.
 shared/ui/coproc_update_screen.c: warning: Member button_at(int16_t x, int16_t y) (function) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member cancel (variable) of struct [struct].s is not documented.
 shared/ui/coproc_update_screen.c: warning: Member cancel(void) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member carried (variable) of struct [struct].s is not documented.
 shared/ui/coproc_update_screen.c: warning: Member coproc_update_screen(void) (function) of file coproc_update_screen.c is not documented.
@@ -3267,17 +3200,12 @@ shared/ui/coproc_update_screen.c: warning: Member drop_press(void) (function) of
 shared/ui/coproc_update_screen.c: warning: Member enter(void) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member event(const touch_event_t *evt) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member fmt_version(char *out, size_t n, cu_version_t v) (function) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member have_press (variable) of struct [struct].s is not documented.
 shared/ui/coproc_update_screen.c: warning: Member k_screen (variable) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member leave(void) (function) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member press_id (variable) of struct [struct].s is not documented.
 shared/ui/coproc_update_screen.c: warning: Member progress_done(const cu_driver_t *d) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member render_progress(gfx_canvas_t *c, unsigned bit) (function) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member render_question(gfx_canvas_t *c, unsigned bit) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member reset(void) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member running (variable) of struct [struct].s is not documented.
-shared/ui/coproc_update_screen.c: warning: Member s (variable) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member same_version(void) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member start_from_updates(const cu_feed_t *f) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member step (variable) of struct [struct].s is not documented.
@@ -3540,7 +3468,6 @@ shared/ui/esc_stick_touch.c: warning: Member sp_list_up(void) (function) of file
 shared/ui/esc_stick_touch.c: warning: Member sp_timing_close(void) (function) of file esc_stick_touch.c is not documented.
 shared/ui/esc_stick_touch.c: warning: Member sp_to_list(void) (function) of file esc_stick_touch.c is not documented.
 shared/ui/esc_stick_touch.c: warning: Member sp_track(const touch_event_t *evt) (function) of file esc_stick_touch.c is not documented.
-shared/ui/include/analyser_screen.h: file has no @file block
 shared/ui/include/balance_screen.h: warning: Member balance_pane_t (enumeration) of file balance_screen.h is not documented.
 shared/ui/include/balance_screen.h: warning: Member balance_rotor_t (enumeration) of file balance_screen.h is not documented.
 shared/ui/include/balance_screen.h: warning: Member balance_screen(void) (function) of file balance_screen.h is not documented.
@@ -3549,10 +3476,6 @@ shared/ui/include/balance_screen.h: warning: return type of member balance_scree
 shared/ui/include/balance_screen.h: warning: return type of member balance_screen_model_mark is not documented
 shared/ui/include/balance_screen.h: warning: return type of member balance_screen_model_note is not documented
 shared/ui/include/balance_screen.h: warning: return type of member balance_screen_rotor is not documented
-shared/ui/include/battery_screen.h: file has no @file block
-shared/ui/include/battery_screen.h: warning: Compound battery_state_t is not documented.
-shared/ui/include/battery_screen.h: warning: Member capacity_mah (variable) of struct battery_state_t is not documented.
-shared/ui/include/battery_screen.h: warning: Member drawn_mah (variable) of struct battery_state_t is not documented.
 shared/ui/include/board_drawing.h: file has no @file block
 shared/ui/include/busfault_screen.h: file has no @file block
 shared/ui/include/busfault_screen.h: warning: Member bus_errors (variable) of struct busfault_report_t is not documented.
@@ -3703,20 +3626,6 @@ shared/ui/include/kst_panel.h: warning: return type of member kst_panel_standing
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_status_line is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_warning_level is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_warning_line is not documented
-shared/ui/include/log_select.h: warning: Member capacity (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member dir (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member held (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member inside (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member key (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member outside (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member set (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: parameters of member log_select_keep are not documented
-shared/ui/include/log_select.h: warning: parameters of member log_select_page_begin are not documented
-shared/ui/include/log_select.h: warning: parameters of member log_select_page_end are not documented
-shared/ui/include/log_select.h: warning: parameters of member log_select_page_offer are not documented
-shared/ui/include/log_select.h: warning: parameters of member log_select_sort are not documented
-shared/ui/include/log_select.h: warning: return type of member log_select_keep is not documented
-shared/ui/include/log_select.h: warning: return type of member log_select_page_end is not documented
 shared/ui/include/log_viewer_screen.h: warning: Compound log_viewer_file_t is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Compound log_viewer_io_t is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Compound log_viewer_page_t is not documented.
@@ -4040,7 +3949,6 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_scr
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_unheld is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warn_line is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warning is not documented
-shared/ui/include/splash_screen.h: file has no @file block
 shared/ui/include/supply_screen.h: file has no @file block
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_adopt are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_ask_on are not documented
@@ -4586,8 +4494,6 @@ shared/ui/kst_panel_warn.c: warning: Member warn_room(int i, int n, int rows, in
 shared/ui/kst_panel_warn.c: warning: Member warn_rules(kst_rules_t rules, int room, int room_rows) (function) of file kst_panel_warn.c is not documented.
 shared/ui/kst_panel_warn.c: warning: Member warn_text(kst_prog_level_t level, const char *s) (function) of file kst_panel_warn.c is not documented.
 shared/ui/kst_panel_warn.c: warning: Member warn_values(const kst_image_t *to, int room, int room_rows) (function) of file kst_panel_warn.c is not documented.
-shared/ui/log_select.c: warning: Member by_display_order(const void *a, const void *b) (function) of file log_select.c is not documented.
-shared/ui/log_select.c: warning: Member keep_ranked(log_viewer_file_t *set, int count, int capacity, const log_viewer_file_t *cand, int sign) (function) of file log_select.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member conv_label(log_conv_t v) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member cursor_x(void) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member draw_grid_band(gfx_canvas_t *band, int band_y0, int rows) (function) of file log_viewer_draw.c is not documented.
@@ -5794,11 +5700,6 @@ shared/ui/settings_screen_int.h: warning: Member tk (variable) of struct stg_sta
 shared/ui/settings_screen_int.h: warning: Member tk_text (variable) of struct stg_state_t is not documented.
 shared/ui/settings_screen_int.h: warning: Member warn (variable) of struct stg_state_t is not documented.
 shared/ui/settings_screen_int.h: warning: Member warn_to (variable) of struct stg_state_t is not documented.
-shared/ui/splash_screen.c: file has no @file block
-shared/ui/splash_screen.c: warning: Member detail[SPLASH_STEP_COUNT][SPLASH_DETAIL_MAX] (variable) of struct [struct].s is not documented.
-shared/ui/splash_screen.c: warning: Member held_s (variable) of struct [struct].s is not documented.
-shared/ui/splash_screen.c: warning: Member result[SPLASH_STEP_COUNT] (variable) of struct [struct].s is not documented.
-shared/ui/splash_screen.c: warning: Member skipped (variable) of struct [struct].s is not documented.
 shared/ui/supply_draw.c: warning: Member draw_strip(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member k_tag[TAG_COUNT] (variable) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member mode_line(void) (function) of file supply_draw.c is not documented.
@@ -6051,27 +5952,10 @@ shared/ui/ui_watermark.c: warning: Member w (variable) of struct [struct].s_cach
 shared/ui/ui_widgets.c: warning: Member tag_width(const char *title, bool chevron) (function) of file ui_widgets.c is not documented.
 shared/ui/ui_widgets.c: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.c is not documented.
 shared/ui/ui_workbench.c: file has no @file block
-shared/ui/upd_screen.c: warning: Member BH (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member BPITCH (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member BW (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member BX (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member CU_BTN (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member CU_CAR_Y (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member CU_HEAD_Y (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member CU_LINE_Y (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member CU_RUN_Y (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member DL_ROW (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member RW (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member RX (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member R_BOX (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member R_HOLD (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member R_IGNORE (macro definition) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member R_NEVER (macro definition) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member aborted_text(upd_why_t why) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member act(int hit) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member answered (variable) of struct [struct].s_rem is not documented.
 shared/ui/upd_screen.c: warning: Member blocked_text(upd_why_t why, char *out, size_t n, char *second, size_t n2) (function) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member btn(int row) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member cancel(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member cancel_allowed(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member check_allowed(void) (function) of file upd_screen.c is not documented.
@@ -6097,7 +5981,6 @@ shared/ui/upd_screen.c: warning: Member join_text(const upd_view_t *v) (function
 shared/ui/upd_screen.c: warning: Member k_remind (variable) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member k_screen (variable) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member leave(void) (function) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member para(gfx_canvas_t *c, int x, int y, int w, const char *t, gfx_color_t col) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member phase_text(upd_phase_t ph) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member press_id (variable) of struct [struct].s is not documented.
 shared/ui/upd_screen.c: warning: Member press_id (variable) of struct [struct].s_rem is not documented.
@@ -6106,12 +5989,9 @@ shared/ui/upd_screen.c: warning: Member r_enter(void) (function) of file upd_scr
 shared/ui/upd_screen.c: warning: Member r_event(const touch_event_t *evt) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member r_hit_at(int x, int y) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member r_leave(void) (function) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member r_render(gfx_canvas_t *c, int buffer_index) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member r_reset(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member r_tick(float dt_s) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member rel_text(const upd_view_t *v) (function) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member render_coproc(gfx_canvas_t *c) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member reset(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member result_colour(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member s (variable) of file upd_screen.c is not documented.
@@ -6121,13 +6001,11 @@ shared/ui/upd_screen.c: warning: Member s_rem (variable) of file upd_screen.c is
 shared/ui/upd_screen.c: warning: Member s_req (variable) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member s_v (variable) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member testing_set(void) (function) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member text_in(gfx_canvas_t *c, int x, int y, int w, const char *t, const gfx_font_t *f, gfx_color_t col) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member tick(float dt_s) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member touched(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member upd_remind_screen(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member upd_screen(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member yield (variable) of struct [struct].s_rem is not documented.
-shared/ui/update_screen.c: warning: Member U_CLOSE (macro definition) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member cancel (variable) of struct [struct].u is not documented.
 shared/ui/update_screen.c: warning: Member close (variable) of struct [struct].u is not documented.
 shared/ui/update_screen.c: warning: Member drawn_mask (variable) of struct [struct].u is not documented.
@@ -6140,7 +6018,6 @@ shared/ui/update_screen.c: warning: Member u (variable) of file update_screen.c 
 shared/ui/update_screen.c: warning: Member u_cancel(void) (function) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member u_event(const touch_event_t *evt) (function) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member u_has_button(void) (function) of file update_screen.c is not documented.
-shared/ui/update_screen.c: warning: Member u_render(gfx_canvas_t *c, int buffer_index) (function) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member u_reset(void) (function) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member v (variable) of struct [struct].u is not documented.
 shared/ui/wifi_screen.c: warning: Member H (macro definition) of file wifi_screen.c is not documented.

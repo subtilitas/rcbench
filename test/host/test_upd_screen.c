@@ -23,20 +23,9 @@
 #include "wa_fetch.h"
 #include "wifi_screen.h"
 
-/* Mirrored from upd_screen.c, in the body's coordinates. */
-#define BTN_X     196
-#define CHECK_Y   40
-#define REMIND_Y  96
-#define CHAN_Y    152
-#define DL_Y      208
-#define R_IGNORE_X 244
-#define R_NEVER_X  556
-#define R_ROW_Y    276
-#define R_HOLD_X   400
-#define R_HOLD_Y   352
-/* PANEL UPDATE's one button, on the whole panel. */
-#define U_BTN_X   144
-#define U_BTN_Y   (UI_PANEL_H - 18 - 28)
+/* Where a finger lands: UPDATES and the reminder in the body's
+ * coordinates, PANEL UPDATE on the whole panel. */
+#include "upd_spots.h"
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -216,15 +205,15 @@ TEST_CASE(the_enums_mirror_the_fetch_and_the_release_parser)
 TEST_CASE(check_asks_once_with_a_home_network_and_the_gate_open)
 {
     fresh();
-    tap(upd(), BTN_X, CHECK_Y);
+    tap(upd(), UP_BTN_X, UP_CHECK_Y);
     CHECK_EQ(upd_screen_take(), UPD_REQ_CHECK);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* A release off the button, or a press that was no tap, asks nothing. */
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, CHECK_Y, 0);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, CHECK_Y + 200, 0);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, CHECK_Y, 0);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, CHECK_Y, TOUCH_FLAG_NO_TAP);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CHECK_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_CHECK_Y + 200, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CHECK_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_CHECK_Y, TOUCH_FLAG_NO_TAP);
     CHECK_EQ(upd_screen_take(), 0u);
 }
 
@@ -237,20 +226,20 @@ TEST_CASE(check_is_grey_without_a_network_wifi_or_the_gate)
     fresh();
     g_v.have_net = false;
     push();
-    tap(upd(), BTN_X, CHECK_Y);
+    tap(upd(), UP_BTN_X, UP_CHECK_Y);
     CHECK_EQ(upd_screen_take(), 0u);
 
     fresh();
     g_v.unavailable = true;
     push();
-    tap(upd(), BTN_X, CHECK_Y);
+    tap(upd(), UP_BTN_X, UP_CHECK_Y);
     CHECK_EQ(upd_screen_take(), 0u);
 
     for (size_t i = 0; i < sizeof(k_blocks) / sizeof(k_blocks[0]); ++i) {
         fresh();
         g_v.block = k_blocks[i];
         push();
-        tap(upd(), BTN_X, CHECK_Y);
+        tap(upd(), UP_BTN_X, UP_CHECK_Y);
         CHECK_EQ(upd_screen_take(), 0u);
     }
 }
@@ -267,7 +256,7 @@ TEST_CASE(a_running_check_turns_the_button_into_cancel)
         g_v.block = UPD_WHY_BUSY;
         push();
         CHECK(upd_busy(&g_v));
-        tap(upd(), BTN_X, CHECK_Y);
+        tap(upd(), UP_BTN_X, UP_CHECK_Y);
         CHECK_EQ(upd_screen_take(), UPD_REQ_CANCEL);
     }
     CHECK(!upd_busy(NULL));
@@ -277,11 +266,11 @@ TEST_CASE(the_reminder_switch_flips_the_setting_and_asks_for_the_save)
 {
     fresh();
     CHECK(settings_get_bool(SET_UPD_REMIND));    /* on by default */
-    tap(upd(), BTN_X, REMIND_Y);
+    tap(upd(), UP_BTN_X, UP_REMIND_Y);
     CHECK(!settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_asked());
     CHECK(settings_save_tick(true));
-    tap(upd(), BTN_X, REMIND_Y);
+    tap(upd(), UP_BTN_X, UP_REMIND_Y);
     CHECK(settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_tick(true));
     /* It asks the application for nothing: the setting is the request. */
@@ -290,7 +279,7 @@ TEST_CASE(the_reminder_switch_flips_the_setting_and_asks_for_the_save)
      * needs none. */
     g_v.have_net = false;
     push();
-    tap(upd(), BTN_X, REMIND_Y);
+    tap(upd(), UP_BTN_X, UP_REMIND_Y);
     CHECK(!settings_get_bool(SET_UPD_REMIND));
 }
 
@@ -298,18 +287,18 @@ TEST_CASE(the_releases_switch_flips_the_channel_and_asks_for_the_save)
 {
     fresh();
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);    /* STABLE */
-    tap(upd(), BTN_X, CHAN_Y);
+    tap(upd(), UP_BTN_X, UP_CHAN_Y);
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);    /* TESTING */
     CHECK(settings_save_asked());
     CHECK(settings_save_tick(true));
-    tap(upd(), BTN_X, CHAN_Y);
+    tap(upd(), UP_BTN_X, UP_CHAN_Y);
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);
     CHECK(settings_save_tick(true));
     /* Without a home network, and during a check, too. */
     g_v.have_net = false;
     g_v.phase = UPD_PH_ASKING;
     push();
-    tap(upd(), BTN_X, CHAN_Y);
+    tap(upd(), UP_BTN_X, UP_CHAN_Y);
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);
     CHECK_EQ(upd_screen_take(), 0u);
 }
@@ -318,9 +307,9 @@ TEST_CASE(the_download_hold_is_there_only_for_a_newer_release)
 {
     fresh();
     /* No result: the row is empty and holds nothing. */
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* Up to date: none either. */
@@ -328,28 +317,28 @@ TEST_CASE(the_download_hold_is_there_only_for_a_newer_release)
     g_v.phase = UPD_PH_ENDED;
     g_v.got = UPD_GOT_CURRENT;
     push();
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* Newer: the whole hold asks once; a tap or half of it nothing. */
     set_newer();
     push();
-    tap(upd(), BTN_X, DL_Y);
+    tap(upd(), UP_BTN_X, UP_DL_Y);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), UPD_REQ_DOWNLOAD);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
 }
 
 TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
@@ -362,7 +351,7 @@ TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
         fresh();
         set_newer();
         push();
-        ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+        ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
         ticks(upd(), HOLD_TICKS / 2);
         g_v.dl_block = k_blocks[i];
         push();
@@ -371,21 +360,21 @@ TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
         g_v.dl_block = UPD_WHY_NONE;
         push();
         ticks(upd(), HOLD_TICKS);
-        ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+        ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
         CHECK_EQ(upd_screen_take(), 0u);
     }
     /* Sliding off abandons it too; and a lost gesture. */
     fresh();
     set_newer();
     push();
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
-    ev(upd(), TOUCH_EVENT_MOVE, 1, BTN_X, DL_Y + 120, 0);
-    ev(upd(), TOUCH_EVENT_MOVE, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_BTN_X, UP_DL_Y + 120, 0);
+    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
     upd()->cancel();
     ticks(upd(), HOLD_TICKS);
@@ -596,7 +585,7 @@ TEST_CASE(ignore_now_closes_it_for_this_start_only)
 {
     drive_fresh();
     frame();
-    tap(rem(), R_IGNORE_X, R_ROW_Y);
+    tap(rem(), UP_R_IGNORE_X, UP_R_ROW_Y);
     frame();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
     CHECK(g_drv.dismissed);
@@ -620,7 +609,7 @@ TEST_CASE(never_remind_me_switches_it_off_across_a_restart)
 {
     drive_fresh();
     frame();
-    tap(rem(), R_NEVER_X, R_ROW_Y);
+    tap(rem(), UP_R_NEVER_X, UP_R_ROW_Y);
     CHECK(!settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_asked());
     frame();
@@ -639,7 +628,7 @@ TEST_CASE(never_remind_me_switches_it_off_across_a_restart)
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 
     /* SETUP > UPDATES turns it back on, and the start after that checks. */
-    tap(upd(), BTN_X, REMIND_Y);
+    tap(upd(), UP_BTN_X, UP_REMIND_Y);
     CHECK(settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_tick(true));
     settings_init();
@@ -668,23 +657,23 @@ TEST_CASE(the_reminders_hold_asks_for_the_download_once)
 {
     drive_fresh();
     frame();
-    tap(rem(), R_HOLD_X, R_HOLD_Y);
+    tap(rem(), UP_R_HOLD_X, UP_R_HOLD_Y);
     ticks(rem(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(rem(), TOUCH_EVENT_DOWN, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_DOWN, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     ticks(rem(), HOLD_TICKS / 2);
-    ev(rem(), TOUCH_EVENT_MOVE, 1, R_HOLD_X, R_HOLD_Y - 150, 0);
-    ev(rem(), TOUCH_EVENT_MOVE, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_MOVE, 1, UP_R_HOLD_X, UP_R_HOLD_Y - 150, 0);
+    ev(rem(), TOUCH_EVENT_MOVE, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     ticks(rem(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(rem(), TOUCH_EVENT_UP, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_UP, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
 
-    ev(rem(), TOUCH_EVENT_DOWN, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_DOWN, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     ticks(rem(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), UPD_REQ_DOWNLOAD);
     ticks(rem(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(rem(), TOUCH_EVENT_UP, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_UP, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     frame();
     CHECK(g_drv.dismissed);
     CHECK(settings_get_bool(SET_UPD_REMIND));
@@ -697,12 +686,12 @@ TEST_CASE(the_reminders_hold_is_grey_while_the_download_may_not_start)
     push();
     frame();
     CHECK_EQ(ui_router_current(), SCREEN_UPD_REMIND);
-    ev(rem(), TOUCH_EVENT_DOWN, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_DOWN, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     ticks(rem(), HOLD_TICKS);
-    ev(rem(), TOUCH_EVENT_UP, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_UP, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
     /* The taps still answer. */
-    tap(rem(), R_IGNORE_X, R_ROW_Y);
+    tap(rem(), UP_R_IGNORE_X, UP_R_ROW_Y);
     frame();
     CHECK(g_drv.dismissed);
 }
@@ -808,27 +797,27 @@ TEST_CASE(the_download_cancels_and_its_failure_closes)
     update_screen()->reset();
     v.state = UPDATE_FETCHING;
     update_screen_set(&v);
-    u_tap(U_BTN_X, U_BTN_Y);
+    u_tap(UP_U_BTN_X, UP_U_BTN_Y);
     CHECK(update_screen_take_cancel());
     CHECK(!update_screen_take_cancel());
     CHECK(!update_screen_take_close());
 
     v.state = UPDATE_FETCH_FAILED;
     update_screen_set(&v);
-    u_tap(U_BTN_X, U_BTN_Y);
+    u_tap(UP_U_BTN_X, UP_U_BTN_Y);
     CHECK(update_screen_take_close());
     CHECK(!update_screen_take_cancel());
 
     /* The write takes no touch: nothing stops a flash write half way. */
     v.state = UPDATE_WRITING;
     update_screen_set(&v);
-    u_tap(U_BTN_X, U_BTN_Y);
+    u_tap(UP_U_BTN_X, UP_U_BTN_Y);
     CHECK(!update_screen_take_close());
     CHECK(!update_screen_take_cancel());
     /* Nor a tap off the button. */
     v.state = UPDATE_FETCHING;
     update_screen_set(&v);
-    u_tap(U_BTN_X, 200);
+    u_tap(UP_U_BTN_X, 200);
     CHECK(!update_screen_take_cancel());
 }
 
