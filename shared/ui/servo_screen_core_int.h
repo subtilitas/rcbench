@@ -201,6 +201,20 @@ void svs_knob_note_owner(void);
  *         replaced put back. */
 void svs_knob_withdraw(void);
 /**
+ * @brief The drag's frame: the filtered target moves towards the finger's
+ *        by the share a frame of @p dt_s takes of SV_DRAG_TAU_MS, and is
+ *        commanded; nothing while the value is not live.
+ * @param dt_s the time since the last frame, seconds
+ */
+void svs_drag_tick(float dt_s);
+/**
+ * @brief A post of @p kind at @p us ends the drag's filter, unless it is
+ *        the filter's own or the position it holds said again (reissue()).
+ * @param kind the command posted
+ * @param us its pulse, us
+ */
+void svs_drag_on_post(servo_cmd_kind_t kind, uint16_t us);
+/**
  * @brief A touch event on the screen's own controls and pages.
  * @param evt the event
  */

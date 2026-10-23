@@ -322,6 +322,38 @@ typedef struct {
     int         speed_pct;
 } start_rec_t;
 
+/**
+ * @brief The drag's time constant, ms: the dial's target follows the finger
+ *        through a one-pole filter this slow.
+ *
+ * The GT911 is read every 10.5ms and the panel draws every 16.6ms, so a
+ * finger moving at a steady 90deg a second reaches the screen as 0.5
+ * to 2.1deg a frame where 1.5 is right; the servo is sent the same
+ * beat.  20ms is about one touch read and one frame: the steps even out,
+ * and the command lags a steady drag by 20ms, 1.8deg at 90deg
+ * a second.
+ */
+#define SV_DRAG_TAU_MS 20.0f
+
+/** @brief How close the filtered target comes to the finger's before it
+ *         is set to it, degrees: well under a pulse's microsecond. */
+#define SV_DRAG_SNAP_DEG 0.01f
+
+/**
+ * @brief The drag's filtered target (svs_drag_tick()).
+ *
+ * On from the press on the dial while the value is live, through the drag
+ * and after the finger lifts until the target has reached the finger's
+ * last angle.  Any other command, a stop, a disarm or a value that is no
+ * longer live ends it at once: it never outlasts an arm cycle.
+ */
+typedef struct {
+    bool  on;      /**< the filter commands the dial               */
+    bool  posting; /**< the filter's own post is under way          */
+    float goal;    /**< the finger's angle, held to TRAVEL, degrees  */
+    float out;     /**< the filtered target last commanded, degrees  */
+} svs_drag_filter_t;
+
 /* The screen's state, the pages' with it. */
 typedef struct {
     /* The profile in force, for this session only: STANDARD PWM at 50 Hz
@@ -708,6 +740,19 @@ typedef struct {
     bool     pins_known;   /* a binding was read                       */
     uint32_t drawn_ctrl[2];
     unsigned drawn_mask;
+    /**
+     * @brief The dial's own count of changes: the horn's angle, the
+     * commanded angle and the MEASURED reading, which move every frame of a
+     * sweep or a drag.  On LIVE with nothing over the card a change repaints the
+     * horns' boxes, as the buffer drew them and as they are now, and the
+     * numerals that follow them -- not the two cards (svs_render()).
+     */
+    uint32_t dial_rev;
+    uint32_t drawn_dial[2];  /**< dial_rev as each buffer drew it        */
+    float    drawn_deg[2];   /**< the horn's angle as each buffer drew it */
+    float    drawn_cmd[2];   /**< the commanded one behind it            */
+    bool     drawn_ghost[2]; /**< and whether that one was drawn         */
+    svs_drag_filter_t df;    /**< the drag's filtered target, svs_drag_tick() */
 } servo_screen_state_t;
 
 /* The state, in servo_screen.c. */

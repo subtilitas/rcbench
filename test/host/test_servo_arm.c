@@ -132,7 +132,12 @@ static void dial_at(float deg, int *x, int *y)
     *y = SHAFT_Y - (int)(110.0f * sinf(deg * k) + 0.5f);
 }
 
-/* A press on the dial at @p deg, dragged to @p to and lifted. */
+/* Frames enough for the drag's filtered target to reach the finger's:
+ * 312ms, over 15 of its 20ms time constants. */
+#define DRAG_SETTLE 12
+
+/* A press on the dial at @p deg, dragged to @p to and lifted, and the
+ * frames the target takes to get there. */
 static void drag(float deg, float to)
 {
     int x, y, x2, y2;
@@ -141,6 +146,7 @@ static void drag(float deg, float to)
     finger(FEED_LONE, x, y);
     glide(FEED_LONE, x2, y2, 8);
     lift(FEED_LONE);
+    frames(DRAG_SETTLE);
 }
 
 /*
@@ -292,6 +298,7 @@ TEST_CASE(a_press_on_the_disarmed_dial_is_no_drag_after_the_arm)
     CHECK_EQ(took().kind, SERVO_CMD_ARM);
     servo_screen_set_armed(true);
     glide(1, x2, y2, 8);
+    frames(DRAG_SETTLE);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     lift(1);
@@ -318,6 +325,7 @@ TEST_CASE(a_drag_does_not_cross_a_disarm_and_the_next_arm)
     servo_screen_set_armed(true);
     drain();
     glide(1, x2, y2, 8);
+    frames(DRAG_SETTLE);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     lift(1);
@@ -1005,6 +1013,7 @@ TEST_CASE(the_first_dial_drag_after_a_release_starts_from_the_rest)
         const uint16_t early = servo_screen_drawn();
         CHECK(early >= k_rest[profile] && early < c.value_us);
         glide(FEED_LONE, x2, y2, 8);
+        frames(DRAG_SETTLE);
         CHECK(took().value_us > c.value_us);
         lift(FEED_LONE);
     }
@@ -1025,6 +1034,7 @@ TEST_CASE(a_release_ends_a_drag_under_way)
     CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     glide(1, x2, y2, 8);
+    frames(DRAG_SETTLE);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     lift(1);
