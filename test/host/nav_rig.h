@@ -30,6 +30,7 @@
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "motor_screen.h"
+#include "motor_spots.h"
 #include "out_bind.h"
 #include "outputs_screen.h"
 #include "overview_screen.h"
@@ -110,12 +111,13 @@ static inline void hub_point(int index, int *x, int *y)
 /*
  * Geometry in panel coordinates, mirrored from the screens (their own
  * suites carry the screen-local values).
- * MOTOR & ESC: the throttle track x 72..485, y 384..423; + at x 492..547.
+ * MOTOR & ESC: the throttle track x 98..538, y 470..518 (motor_spots.h).
  * SERVO: the shaft; SPEED's track x 514..781, y 344..365.
  * SUPPLY: both tracks x 72..485; OUTPUT ON / OFF on the right rail.
  */
-#define M_TRACK_Y  (336 + UI_BAND_H + 20)
-#define M_PX_PCT   (100.0f / 413.0f)     /* throttle per px of travel */
+#define M_TRACK_Y  (MO_TRACK_Y + UI_BAND_H)
+/** @brief Throttle per px of travel. */
+#define M_PX_PCT   (100.0f / (float)(MO_TRACK_W - 1))
 #define UNDER_STOP_Y 44
 
 /** @brief Takes the next motor command into @p c when given and returns whether one was queued. */

@@ -540,11 +540,11 @@ static uint32_t panel_look(void)
  * any: disarming is not held back by how the release came about. */
 TEST_CASE(reset_peaks_needs_the_fingers_release_and_disarm_does_not)
 {
-    /* Mirrored from motor_screen_int.h: the right rail's two buttons, ARM
-     * from body y 324 and RESET PEAKS 2 margins above the body's foot. */
-    const int rail_x = 676;
-    const int arm_y   = UI_BAND_H + 324 + UI_BTN_H / 2;
-    const int reset_y = UI_BAND_H + UI_BODY_H - 2 * UI_MARGIN - UI_BTN_H / 2;
+    /* From motor_spots.h: the CONTROL card's two buttons, RESET PEAKS
+     * over ARM. */
+    const int rail_x = MO_ARM_X;
+    const int arm_y   = UI_BAND_H + MO_ARM_Y;
+    const int reset_y = UI_BAND_H + MO_RESET_Y;
     fresh();
     to_overview();
     ui_router_goto(SCREEN_MOTOR);

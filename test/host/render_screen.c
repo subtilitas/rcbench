@@ -103,15 +103,16 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define RS_BAL_UP_X    (RS_BAL_CTRL_X + RS_BAL_CTRL_W - 34 + 17)
 #define RS_BAL_UP_Y    (44 + 96 + 14)
 
-/* MOTOR & ESC's PROGRAM tab, the second of the strip's (112 px a tab, 4 px
- * apart from x 9, 24 px high from y 6), and the STICK MENU row of its list,
+/* MOTOR & ESC's PROGRAM tab, the second of the strip's (150 px a tab, 4 px
+ * apart from x 9, 40 px high from y 8), and the STICK MENU row of its list,
  * the first under its heading (prog_view.c). */
-#define MO_TAB_PROGRAM_X 181
-#define MO_TAB_Y         18
+#define MO_TAB_PROGRAM_X 234
+#define MO_TAB_Y         28
 #define MO_STICK_ROW_X   279
 /* SUPPLY's SETTINGS tab, the second of its strip, LIVE | SETTINGS. */
 #define SU_TAB_SETTINGS_X 181
-#define MO_STICK_ROW_Y   65
+#define SU_TAB_Y          18
+#define MO_STICK_ROW_Y   83
 
 static gfx_color_t fb[W * H];
 
@@ -2356,7 +2357,7 @@ int main(int argc, char **argv)
          */
         if (strcmp(view, "supply-settings") == 0) {
             ui_router_goto(SCREEN_SUPPLY);
-            tap(SU_TAB_SETTINGS_X, UI_BAND_H + MO_TAB_Y);
+            tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
         } else if (strcmp(view, "supply-confirm") == 0) {
             /* +0.1 V on a live output: the question, as the settings'
              * default asks it. */
@@ -3499,13 +3500,13 @@ int main(int argc, char **argv)
         ui_router_set_alert(TR(ALERT_COPRO_DISARMED));
     }
     if (strcmp(view, "motor-table") == 0) {
-        tap(6 + 93, UI_BAND_H + 45);                    /* TABLE */
+        tap(18 + 150, UI_BAND_H + 82 + 20);             /* TABLE */
     }
     /* MOTOR & ESC > SETTINGS: the strip's third tab; the keypad of
      * Capacity, the second row; ARMED, the pulse rows locked and a save
      * asked for that waits for a SAFE bench. */
     if (strncmp(view, "motor-settings", 14) == 0) {
-        tap(9 + 2 * (112 + 4) + 56, UI_BAND_H + 6 + 12);    /* SETTINGS */
+        tap(9 + 2 * (150 + 4) + 75, UI_BAND_H + 8 + 20);    /* SETTINGS */
         if (strcmp(view, "motor-settings-keypad") == 0) {
             const gfx_rect_t box = motor_settings_box(1);
             tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
@@ -3726,13 +3727,14 @@ int main(int argc, char **argv)
 #endif
 
     /*
-     * Arming flashes the ARM button for a few drawn frames, and it advances
-     * per frame rendered rather than per second elapsed, so ticking does not
-     * clear it.  Drawn after the frame above, which has already painted
-     * everything else, so these repaint the button and nothing more.
+     * Arming flashes the ARM button for UI_HOLD_FLASH_MS, which runs by
+     * time: ten frames of 50 ms end it.  Drawn after the frame above, which
+     * has already painted everything else, so these repaint the button and
+     * nothing more.
      */
     if (id == SCREEN_MOTOR) {
         for (int f = 0; f < 10; ++f) {
+            ui_router_tick(0.05f);
             ui_router_render(&c, 0);
         }
     }

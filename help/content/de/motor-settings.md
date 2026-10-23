@@ -6,11 +6,11 @@ order: 11
 
 # Motor-Optionen
 
-OPTIONEN, der dritte Reiter der Leiste von [MOTOR & ESC](motor.md), hält die 8 ESC-Einstellungen (Electronic Speed Controller) des Prüfstands in der linken Spalte unter drei Überschriften: AKKU, MOTOR und GASAUSGANG. Die rechte Spalte bleibt an ihrem Platz und wirkt: die Anzeigen, ZIEL, ARM, die Summen und SPITZENWERTE ZURÜCKSETZEN.
+OPTIONEN, der dritte Reiter der Leiste von [MOTOR & ESC](motor.md), hält die 8 ESC-Einstellungen (Electronic Speed Controller) des Prüfstands in der linken Spalte unter drei Überschriften, in zwei Spalten: AKKU und MOTOR links, GASAUSGANG rechts. Die rechte Spalte bleibt an ihrem Platz und wirkt: die Anzeigen, ZIEL, ARM, die Summen und SPITZENWERTE ZURÜCKSETZEN.
 
 ![OPTIONEN](view:motor-settings)
 
-Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Ein Tipp auf den Wert öffnet das Tastenfeld über der linken Spalte und der Leiste. Das Tastenfeld nennt die Einstellung und ihren Bereich. OK übernimmt einen Wert im Bereich; ein Wert außerhalb hält das Tastenfeld offen und nennt den Bereich in der Warnfarbe. ABBRECHEN und das Home-Tag schließen das Tastenfeld und ändern nichts. Ein getippter Wert landet auf dem Schritt der Einstellung: 4321 mAh werden 4300 mAh.
+Eine Zeile zeigt die Einstellung und ihren Wert mit Einheit, 48 px hoch, und darunter eine Hilfezeile. Ein Tipp auf den Wert öffnet das Tastenfeld über der linken Spalte und der Leiste. Das Tastenfeld nennt die Einstellung und ihren Bereich. OK übernimmt einen Wert im Bereich; ein Wert außerhalb hält das Tastenfeld offen und nennt den Bereich in der Warnfarbe. ABBRECHEN und das Home-Tag schließen das Tastenfeld und ändern nichts. Ein getippter Wert landet auf dem Schritt der Einstellung: 4321 mAh werden 4300 mAh.
 
 ![Das Tastenfeld für Kapazität](view:motor-settings-keypad)
 
@@ -46,7 +46,7 @@ Eine auf OUTPUTS geschriebene Zuordnung und ein erneutes Verbinden des IOmcu sen
 
 ## Die Werte behalten
 
-Ein geänderter Wert gilt sofort und fordert das Schreiben an. Das Panel schreibt im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne Platinenzeichnung, die geladen oder gespeichert wird. Die Einstellungen sind ein Speicher: Das Schreiben behält jeden ungespeicherten Wert, auch die unter SETUP geänderten. Die Zeile unter den Einstellungen sagt, wo der Speicher steht:
+Ein geänderter Wert gilt sofort und fordert das Schreiben an. Das Panel schreibt im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne Platinenzeichnung, die geladen oder gespeichert wird. Die Einstellungen sind ein Speicher: Das Schreiben behält jeden ungespeicherten Wert, auch die unter SETUP geänderten. Die Zeile am Fuß der Seite sagt, wo der Speicher steht:
 
 | Zeile | Bedeutung |
 |---|---|

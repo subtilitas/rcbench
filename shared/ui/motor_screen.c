@@ -1,5 +1,6 @@
-/*
- * The motor and ESC (electronic speed controller) bench screen, a
+/**
+ * @file
+ * @brief The motor and ESC (electronic speed controller) bench screen, a
  * workbench (ui_workbench.h) with the tasks LIVE, PROGRAM and SETTINGS.
  *
  * This file is the screen and LIVE's page: the plot or the table, the
@@ -105,6 +106,10 @@ void mo_bind_colours(void)
     }
 }
 
+/**
+ * @brief The screen laid out afresh: the strip, the pages, the plot, PLOT |
+ *        TABLE, the throttle's track and step keys, ARM and RESET PEAKS.
+ */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
@@ -120,9 +125,9 @@ static void reset(void)
      * front of it, so the trace does not advance until one arms. */
     ui_plot_set_running(&s.plot, false);
     ui_tabs_init_text(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
-                 (gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H });
+                      (gfx_rect_t){ PLOT_X, SUB_Y, SUB_W, SUB_H });
 
-    const gfx_rect_t track = { TRACK_X, CTRL_Y, TRACK_W, TRACK_H };
+    const gfx_rect_t track = { TRACK_X, TRACK_Y, TRACK_W, TRACK_H };
     ui_slider_init(&s.slider, track, 0.0f, 100.0f, 0);
     ui_slider_set_ticks(&s.slider, 4);   /* tick marks at the quarters */
 
@@ -132,14 +137,12 @@ static void reset(void)
      * thing to hit by accident on a bench that is about to spin something.
      */
     s.down_rect = (gfx_rect_t){ (int16_t)(LEFT_X + INNER), CTRL_Y,
-                                NUDGE_W, TRACK_H };
-    s.up_rect   = (gfx_rect_t){ (int16_t)(TRACK_X + TRACK_W + 6), CTRL_Y,
-                                NUDGE_W, TRACK_H };
+                                NUDGE_W, NUDGE_H };
+    s.up_rect   = (gfx_rect_t){ (int16_t)(TRACK_X + TRACK_W + 8), CTRL_Y,
+                                NUDGE_W, NUDGE_H };
 
-    s.arm_rect   = (gfx_rect_t){ (int16_t)(RIGHT_X + INNER), ARM_Y,
-                                 (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
-    s.reset_rect = (gfx_rect_t){ (int16_t)(RIGHT_X + INNER), RESET_Y,
-                                 (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
+    s.arm_rect   = (gfx_rect_t){ RC_X, ARM_Y, RC_W, ARM_H };
+    s.reset_rect = (gfx_rect_t){ RC_X, RESET_Y, RC_W, BTN_H };
     mo_bind_colours();
 }
 

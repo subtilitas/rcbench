@@ -245,11 +245,12 @@ the faces and the spacing inside are theirs.
   10 x 20 face when every label fits its tab with 6 px each side in the
   language shown; another row draws them in 8 x 16. LOGS' ROOT, USER and
   BENCH and the PROG PORT entry's segments on OUTPUTS are in 10 x 20. The
-  workbench strip is 24 px tall and keeps 8 x 16.
+  strips of SERVO and MOTOR & ESC are 40 px tall and draw in 10 x 20;
+  SUPPLY's is 24 px tall and keeps 8 x 16.
 - **TARGET row.** A row 40 px tall or taller draws its label and its value
   in 10 x 20, with 88 px for the label, and counts the pins it names in
   10 px cells. A shorter row draws in 8 x 16 with 64 px for the label and
-  counts in 8 px cells. SERVO and MOTOR & ESC draw theirs 22 px tall.
+  counts in 8 px cells. SERVO and MOTOR & ESC draw theirs 48 px tall.
 - **Plot.** A plot keeps 1,024 samples a series, one for each pixel column
   of a plot as wide as the panel: 51.2 s at 20 samples a second.
 
@@ -258,7 +259,7 @@ A keypad or a keyboard whose area reaches further paints its whole area
 and stops its keys there, so an alert covers no key. On SERVO the keypads'
 keys are then 112 x 88 px and the keyboards' 41 x 72 px; on SUPPLY the
 keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 61 px; on
-MOTOR & ESC's SETTINGS the keypad's are 126 x 89 px.
+MOTOR & ESC's SETTINGS the keypad's are 145 x 89 px.
 
 ## Splash
 
@@ -285,20 +286,25 @@ of 1.6 s; a tap skips the hold.
 ![Motor and ESC](img/motor.png)
 
 MOTOR & ESC is a workbench: a strip of tasks at the top, LIVE, PROGRAM and
-SETTINGS (German `LIVE`, `PROGRAMMIEREN`, `OPTIONEN`), each 112 x 24 px, and
-a page under it. The menu's tile always opens LIVE. A tap on a tab switches
+SETTINGS (German `LIVE`, `PROGRAMMIEREN`, `OPTIONEN`), each 150 x 40 px from
+y 8 of the body, and a page under it from y 56. The menu's tile always opens LIVE. A tap on a tab switches
 the task; a switch is no navigation level and leaves LIVE's view, PLOT or
 TABLE, as it was.
 
-| Task | The left column, 546 px |
+| Task | The left column, 620 px |
 | --- | --- |
 | LIVE | the plot or the table over the throttle |
 | PROGRAM | the list of ESC programmers; a row opens its session over the whole body ([PROGRAM](#program)) |
 | SETTINGS | the 8 ESC settings under PACK, MOTOR and THROTTLE OUTPUT ([Settings](#motor--esc-settings)) |
 
-Two columns. The page takes the left, the four readouts and the CONTROL card
-take a rail of 456 px on the right, so reading the numbers and working the
-throttle do not compete for the same part of the screen. The rail is the same
+Two columns, as on SERVO. The page takes the left 620 px, the rail the right
+380 px, so reading the numbers and working the throttle do not compete for
+the same part of the screen. The rail holds, top down, the three
+temperatures, the four readouts, 56 px each in 32 x 44 numerals, and the
+CONTROL card: its title line with the run's mAh and Wh, the TARGET row
+(48 px), RESET PEAKS (48 px) and ARM (60 px). The TARGET row and ARM sit
+where SERVO's output card has its TARGET row and ARM: ARM from body y 424 to
+484, 8 px above the alert band. The rail is the same
 on LIVE, PROGRAM's list and SETTINGS, and ARM works on all three; a session
 opened from PROGRAM covers it. With the rotary knob on, turning it moves the
 throttle on LIVE ([the knob](#panel-the-rotary-knob)); on PROGRAM and
@@ -314,18 +320,17 @@ The home tag climbs one level at a time:
 
 ### TARGET names the protocol and the pins
 
-The CONTROL card opens with the TARGET row: the label, 64 px, and a value box
-of 18 characters that names what the throttle drives, the protocol and then
+The CONTROL card opens with the TARGET row: the label, 88 px, and a value box
+of 25 characters that names what the throttle drives, the protocol and then
 the pins, `DSHOT300 GP0 GP1`. They are the pins bound as MOTOR PWM or as a
 DShot protocol, read from the same SETUP > OUTPUTS pages the IOmcu's throttle
 role reads. The pins are in pin order; those that do not fit are counted.
-With GP0 to GP7 bound as DSHOT300 it reads `DSHOT300 GP0 +7`.
+With GP0 to GP7 bound as DSHOT300 it reads `DSHOT300 GP0 GP1 GP2 +5`.
 
 A programming port whose FUNCTION is DSHOT150, DSHOT300 or DSHOT600 and whose
 pin the IOmcu holds follows the pins as `PORT n`, and counts with them. A
 port alone is named in full where it fits, `DSHOT300 PROG PORT 2 GP14` (25
-characters, on the PROGRAM page's strip), and `DSHOT300 PORT 2` in the 18 of
-the card.
+characters), and as `DSHOT300 PORT 2` in a shorter field.
 
 | TARGET reads | Condition |
 | --- | --- |
@@ -339,8 +344,8 @@ With DShot programming ports:
 
 | TARGET reads | Condition |
 | --- | --- |
-| `DSHOT300 PORT 2` | a DSHOT300 programming port drives the throttle and no pin is bound as a motor |
-| `DSHOT300 GP0 +1` | GP0 bound as DSHOT300 and a DSHOT300 port: the port does not fit in 18 characters |
+| `DSHOT300 PROG PORT 2 GP14` | a DSHOT300 programming port on GP14 drives the throttle and no pin is bound as a motor |
+| `DSHOT300 GP0 PORT 2` | GP0 bound as DSHOT300 and a DSHOT300 port |
 | `MIXED GP0 PORT 2` | the pins and the ports run at different rates, or the pins at a rate no catalogue protocol has |
 
 ![TARGET names PROG PORT 2 as DSHOT300](img/motor-port.png)
@@ -374,8 +379,9 @@ The right-hand axis label reads `NOW` while it advances and `END` where a held
 one stopped. The readouts, the TABLE pane, the totals and the temperature
 strip are live at all times, ARMED or not.
 
-The window is 534 columns at 20 samples per second, 26.7 s. A longer run holds
-its last 26.7 s; what came before is in the CSV file and not on the screen.
+The plot is 600 x 184 px. The window is 600 columns at 20 samples per second,
+30.0 s. A longer run holds its last 30.0 s; what came before is in the CSV
+file and not on the screen.
 
 The trace ends at the switch to SAFE, not when the motor stops. Switching to SAFE commands
 zero throttle and the propeller coasts down after it. That coast-down is on
@@ -386,16 +392,16 @@ Switching to ARMED clears the plot, and a latched stop is cleared by switching t
 of a run a STOP ended does not survive making the bench usable again. One
 switching to ARMED writes one CSV file, and LOGS plots it.
 
-On LIVE the line under the strip carries PLOT and TABLE, the poll rate, the
-link's error count (cyclic redundancy check failures and resyncs added
-together) and three temperatures. ESC and MOT come from the bench page. MCU
-is the panel's own die, read from the ESP32-S3's sensor: it is the display
-board's temperature, not the IOmcu's. While the link is up and the IOmcu has
-refused link frames since its power-up, the line shows how many after the
-error count: `Rejected link frames: 37`. An IOmcu older than protocol 4.21
-sends no count, and the line shows none
-([Refused frames](Link.md#refused-frames)). On SETTINGS the line holds the
-temperatures alone, over the rail.
+On LIVE the telemetry card carries PLOT and TABLE under its title, two tabs
+in 200 x 40 px, and beside them the poll rate and the link's error count
+(cyclic redundancy check failures and resyncs added together). While the
+link is up and the IOmcu has refused link frames since its power-up, the
+line under them shows how many, in 8 x 16: `Rejected link frames: 37`. An
+IOmcu older than protocol 4.21 sends no count, and the line shows none
+([Refused frames](Link.md#refused-frames)). The three temperatures are on
+the line over the rail on every task. ESC and MOT come from the bench page.
+MCU is the panel's own die, read from the ESP32-S3's sensor: it is the
+display board's temperature, not the IOmcu's.
 
 ![MOTOR & ESC with 37 refused link frames](img/motor-refused.png)
 
@@ -507,7 +513,7 @@ not fall back to the ESC's figures. The peaks it measured in that run stay
 shown, here and on the rail. Without the INA228, the channels are the
 ESC's telemetry and `ESC SAYS` is not shown.
 
-The mAh and Wh under ARM are the INA228's own while BENCH flag bit 6 is
+The mAh and Wh on the CONTROL card's title line are the INA228's own while BENCH flag bit 6 is
 set: its charge and energy since the switch to ARMED, accumulated in the part at every
 conversion and read in 0.01 mAh and 0.01 Wh steps. The IOmcu takes
 the last run's totals and bit 6 off the bench page on the switch to ARMED, and the panel
@@ -629,9 +635,11 @@ output (`SET_CAT_ESC` in the settings schema) in schema order, under three headi
 | MOTOR | Motor poles, Rated kV |
 | THROTTLE OUTPUT | Idle pulse, Full pulse, Ramp limit |
 
-A row is 34 px: the label, the help line, and the value with its unit in a
-box of 100 x 28 px. A tap on the box opens the keypad over the left column
-and the strip, 546 x 529 px, so no tab switches the task under it; the rail
+The rows stand in two columns of 295 px: PACK and MOTOR on the left,
+THROTTLE OUTPUT on the right. A row is 68 px: the label and, right of it,
+the value with its unit in a box of 120 x 48 px, and under them the help
+line in 8 x 16. A tap on the box opens the keypad over the left column and
+the strip, 620 x 529 px, so no tab switches the task under it; the rail
 stays in reach. The keypad names the setting, its range and its unit. OK
 takes a value inside the range and lands it on the setting's step, 4321 mAh
 as 4300 mAh; outside the range it keeps the keypad open and names the range
@@ -661,7 +669,8 @@ kept, the same write SETUP's SAVE asks for ([Keeping the
 values](#keeping-the-values)). A value left unsaved on SETUP is written with
 it, so SETUP has nothing left to warn about. A refused write leaves every
 value unsaved, and SETUP's warning on leaving lists the ESC rows with its
-own. The line under the rows names the store's state:
+own. The line at the page's foot, ending 4 px above the alert band, names
+the store's state:
 
 | Line | State |
 | --- | --- |
@@ -1621,7 +1630,7 @@ SUPPLY is a workbench: a strip of tasks at the top, LIVE and SETTINGS
 menu's tile always opens LIVE. A tap on a tab switches the task; a switch
 is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 
-| Task | The left column, 546 px |
+| Task | The left column, 620 px |
 | --- | --- |
 | LIVE | the plot or the table over the set points |
 | SETTINGS | the 9 supply settings under LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)) |

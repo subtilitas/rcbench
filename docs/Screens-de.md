@@ -265,13 +265,14 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
 - **Reiter.** Eine Reiterzeile ab 32 px Höhe zeigt ihre Beschriftungen im
   Font 10 x 20, wenn jede in der gezeigten Sprache mit 6 px Rand je Seite
   auf ihren Reiter passt; sonst in 8 x 16. ROOT, USER und BENCH auf LOGS und
-  die Segmente des PROG-PORT-Eintrags auf OUTPUTS stehen in 10 x 20. Der
-  Streifen einer Werkbank ist 24 px hoch und bleibt bei 8 x 16.
+  die Segmente des PROG-PORT-Eintrags auf OUTPUTS stehen in 10 x 20. Die
+  Streifen von SERVO und MOTOR & ESC sind 40 px hoch und zeigen 10 x 20;
+  der von SUPPLY ist 24 px hoch und bleibt bei 8 x 16.
 - **ZIEL-Zeile.** Eine Zeile ab 40 px Höhe zeigt Beschriftung und Wert in
   10 x 20, mit 88 px für die Beschriftung, und zählt die genannten Pins in
   Zellen von 10 px. Eine niedrigere zeigt sie in 8 x 16 mit 64 px für die
   Beschriftung und zählt in Zellen von 8 px. SERVO und MOTOR & ESC zeichnen
-  ihre 22 px hoch.
+  ihre 48 px hoch.
 - **Plot.** Ein Plot hält 1.024 Werte je Reihe, einen je Pixelspalte eines
   Plots so breit wie das Panel: 51,2 s bei 20 Werten je Sekunde.
 
@@ -281,7 +282,7 @@ malt die ganze Fläche und lässt ihre Tasten dort enden, so verdeckt ein
 Alert keine Taste. Auf SERVO sind die Tasten der Tastenfelder dann
 112 x 88 px groß und die der Tastaturen 41 x 72 px; auf SUPPLY die des
 Tastenfelds 126 x 80 px; auf der Suchtastatur von ESC STICK 59 x 61 px; auf
-SETTINGS von MOTOR & ESC die des Tastenfelds 126 x 89 px.
+SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89 px.
 
 ## Splash
 
@@ -304,21 +305,27 @@ Prüfstand schaltet nicht auf ARMED. Wenn alle Schritte geantwortet haben,
 ![Motor und ESC](img/de/motor.png)
 
 MOTOR & ESC ist eine Werkbank: oben eine Leiste mit Aufgaben, LIVE,
-PROGRAMMIEREN und OPTIONEN, je 112 x 24 px, und darunter eine Seite. Die
+PROGRAMMIEREN und OPTIONEN, je 150 x 40 px ab Körper-y 8, und darunter ab
+y 56 eine Seite. Die
 Kachel im Menü öffnet immer LIVE. Ein Tipp auf einen Reiter wechselt die
 Aufgabe; ein Wechsel ist keine Navigationsebene und lässt die Ansicht von
 LIVE, GRAFIK oder TABELLE, wie sie war.
 
-| Aufgabe | Die linke Spalte, 546 px |
+| Aufgabe | Die linke Spalte, 620 px |
 | --- | --- |
 | LIVE | der Plot oder die Tabelle über dem Gas |
 | PROGRAMMIEREN | die Liste der ESC-Programmierer; eine Zeile öffnet ihre Sitzung über den ganzen Körper ([Programmieren](#programmieren)) |
 | OPTIONEN | die 8 ESC-Einstellungen unter AKKU, MOTOR und GASAUSGANG ([Optionen](#motor--esc-optionen)) |
 
-Zwei Spalten. Die Seite nimmt die linke, die vier Anzeigen und die Karte
-STEUERUNG eine Leiste von 456 px auf der rechten, damit das Ablesen der Werte
-und das Bedienen des Gases nicht um denselben Teil des Bildschirms
-konkurrieren. Die rechte Leiste ist auf LIVE, der Liste von PROGRAMMIEREN
+Zwei Spalten, wie auf SERVO. Die Seite nimmt die linken 620 px, die rechte
+Leiste 380 px, damit das Ablesen der Werte und das Bedienen des Gases nicht
+um denselben Teil des Bildschirms konkurrieren. Die Leiste hält von oben
+nach unten die drei Temperaturen, die vier Anzeigen, je 56 px mit Ziffern
+in 32 x 44, und die Karte STEUERUNG: ihre Titelzeile mit mAh und Wh des
+Laufs, die Zeile ZIEL (48 px), SPITZENWERTE ZURÜCKSETZEN (48 px) und ARM
+(60 px). Die Zeile ZIEL und ARM liegen dort, wo die Ausgangskarte von SERVO
+ihre Zeile ZIEL und ARM hat: ARM von Körper-y 424 bis 484, 8 px über dem
+Alarmband. Die rechte Leiste ist auf LIVE, der Liste von PROGRAMMIEREN
 und OPTIONEN dieselbe, und ARM wirkt auf allen dreien; eine Sitzung aus
 PROGRAMMIEREN deckt sie ab. Bei eingeschaltetem Drehknopf bewegt dessen
 Drehung auf LIVE das Gas ([der Knopf](#panel-der-drehknopf)); auf
@@ -334,20 +341,19 @@ Das Home-Tag steigt eine Ebene nach der anderen:
 
 ### ZIEL nennt das Protokoll und die Pins
 
-Die Karte STEUERUNG beginnt mit der Zeile ZIEL: der Beschriftung, 64 px, und
-einem Wertefeld von 18 Zeichen, das nennt, was das Gas treibt, das Protokoll
+Die Karte STEUERUNG beginnt mit der Zeile ZIEL: der Beschriftung, 88 px, und
+einem Wertefeld von 25 Zeichen, das nennt, was das Gas treibt, das Protokoll
 und dann die Pins, `DSHOT300 GP0 GP1`. Es sind die Pins, die als MOTOR PWM
 oder als DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
 SETUP > OUTPUTS, die auch die Gas-Rolle des IOmcu liest. Die Pins stehen in
 Pin-Reihenfolge; die nicht passen, werden gezählt. Sind GP0 bis GP7 als
-DSHOT300 gebunden, steht dort `DSHOT300 GP0 +7`.
+DSHOT300 gebunden, steht dort `DSHOT300 GP0 GP1 GP2 +5`.
 
 Ein Programmierport, dessen
 FUNKTION DSHOT150, DSHOT300 oder DSHOT600 ist und dessen Pin der IOmcu hält,
 folgt den Pins als `PORT n` und zählt mit ihnen. Ein Port allein wird
-vollständig genannt, wo das passt, `DSHOT300 PROG-PORT 2 GP14` (25 Zeichen,
-im Streifen der Seite PROGRAMMIEREN), und `DSHOT300 PORT 2` in den 18 der
-Karte.
+vollständig genannt, wo das passt, `DSHOT300 PROG-PORT 2 GP14` (25 Zeichen),
+und als `DSHOT300 PORT 2` in einem kürzeren Feld.
 
 | ZIEL lautet | Bedingung |
 | --- | --- |
@@ -361,8 +367,8 @@ Mit DShot-Programmierports:
 
 | ZIEL lautet | Bedingung |
 | --- | --- |
-| `DSHOT300 PORT 2` | ein DSHOT300-Programmierport treibt das Gas, und kein Pin ist als Motor gebunden |
-| `DSHOT300 GP0 +1` | GP0 als DSHOT300 gebunden und ein DSHOT300-Port: der Port passt nicht in 18 Zeichen |
+| `DSHOT300 PROG-PORT 2 GP14` | ein DSHOT300-Programmierport an GP14 treibt das Gas, und kein Pin ist als Motor gebunden |
+| `DSHOT300 GP0 PORT 2` | GP0 als DSHOT300 gebunden und ein DSHOT300-Port |
 | `GEMISCHT GP0 PORT 2` | die Pins und die Ports laufen mit verschiedenen Raten, oder die Pins mit einer Rate, die kein Protokoll des Katalogs hat |
 
 ![ZIEL nennt PROG-PORT 2 als DSHOT300](img/de/motor-port.png)
@@ -399,9 +405,10 @@ sie läuft, und `ENDE` dort, wo eine gehaltene stehen geblieben ist. Die
 Anzeigen, die TABELLE-Seite, die Summen und die Temperaturleiste sind
 jederzeit live, ob ARMED oder SAFE.
 
-Das Fenster ist 534 Spalten breit bei 20 Abtastungen je Sekunde, also 26,7 s.
-Ein längerer Lauf hält seine letzten 26,7 s; was davor liegt, steht in der
-CSV-Datei und nicht auf dem Bildschirm.
+Der Plot ist 600 x 184 px. Das Fenster ist 600 Spalten breit bei 20
+Abtastungen je Sekunde, also 30,0 s. Ein längerer Lauf hält seine letzten
+30,0 s; was davor liegt, steht in der CSV-Datei und nicht auf dem
+Bildschirm.
 
 Die Kurve endet beim Schalten auf SAFE, nicht wenn der Motor steht. Das Schalten auf SAFE
 kommandiert null Gas, und die Luftschraube läuft danach aus. Dieses Auslaufen
@@ -414,17 +421,18 @@ Schalten auf ARMED gelöst -- die Kurve eines Laufs, den ein STOP beendet hat,
 Schalten auf ARMED schreibt eine CSV-Datei, und LOGS stellt sie dar.
 
 
-Auf LIVE trägt die Zeile unter der Leiste GRAFIK und TABELLE, die
-Abfragerate, die Fehlerzahl des Links (CRC-Fehler und Resyncs
-zusammengezählt; CRC: Cyclic Redundancy Check) und drei Temperaturen. ESC
-und MOT kommen von der Bench-Page. MCU ist der eigene Die des Panels,
-gelesen vom Sensor des ESP32-S3: die Temperatur der Displayplatine, nicht
-die des IOmcu. Solange der Link steht und der IOmcu seit dem Einschalten
-Link-Frames abgelehnt hat, zeigt die Zeile nach der Fehlerzahl, wie viele:
+Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE,
+zwei Reiter in 200 x 40 px, und daneben die Abfragerate und die Fehlerzahl
+des Links (CRC-Fehler und Resyncs zusammengezählt; CRC: Cyclic Redundancy
+Check). Solange der Link steht und der IOmcu seit dem Einschalten
+Link-Frames abgelehnt hat, zeigt die Zeile darunter in 8 x 16, wie viele:
 `Abgelehnte Verbindungsframes: 37`. Ein IOmcu älter als Protokoll 4.21
 sendet keine Zahl, und die Zeile zeigt keine
-([Abgelehnte Frames](Link-de.md#abgelehnte-frames)). Auf OPTIONEN hält die
-Zeile nur die Temperaturen, über der rechten Leiste.
+([Abgelehnte Frames](Link-de.md#abgelehnte-frames)). Die drei Temperaturen
+stehen auf jeder Aufgabe in der Zeile über der rechten Leiste. ESC und MOT
+kommen von der Bench-Page. MCU ist der eigene Die des Panels, gelesen vom
+Sensor des ESP32-S3: die Temperatur der Displayplatine, nicht die des
+IOmcu.
 
 ![MOTOR & ESC mit 37 abgelehnten Link-Frames](img/de/motor-refused.png)
 
@@ -550,7 +558,8 @@ nicht auf die Werte des ESC zurück. Die Spitzen, die er in diesem Lauf
 gemessen hat, bleiben sichtbar, hier und in der Leiste. Ohne INA228 sind die
 Kanäle die Telemetrie des ESC, und `ESC MELDET` wird nicht gezeigt.
 
-Die mAh und Wh unter ARM sind die eigenen des INA228, solange BENCH-Flag
+Die mAh und Wh in der Titelzeile der Karte STEUERUNG sind die eigenen des
+INA228, solange BENCH-Flag
 Bit 6 gesetzt ist: seine Ladung und Energie seit dem Schalten auf ARMED, im
 Bauteil bei jeder Wandlung aufsummiert und in Schritten von 0,01 mAh und
 0,01 Wh gelesen. Der IOmcu nimmt die Summen des letzten Laufs und
@@ -685,9 +694,11 @@ OPTIONEN hält die 8 Einstellungen von Akku, Motor und Gasausgang
 | MOTOR | Motorpole, Nenn-kV |
 | GASAUSGANG | Leerlaufpuls, Vollpuls, Rampengrenze |
 
-Eine Zeile ist 34 px hoch: die Beschriftung, die Hilfezeile und der Wert mit
-Einheit in einem Feld von 100 x 28 px. Ein Tipp auf das Feld öffnet das
-Tastenfeld über der linken Spalte und der Leiste, 546 x 529 px, so dass kein
+Die Zeilen stehen in zwei Spalten von 295 px: AKKU und MOTOR links,
+GASAUSGANG rechts. Eine Zeile ist 68 px hoch: die Beschriftung und rechts
+davon der Wert mit Einheit in einem Feld von 120 x 48 px, darunter die
+Hilfezeile in 8 x 16. Ein Tipp auf das Feld öffnet das Tastenfeld über der
+linken Spalte und der Leiste, 620 x 529 px, so dass kein
 Reiter die Aufgabe darunter wechselt; die rechte Leiste bleibt erreichbar.
 Das Tastenfeld nennt die Einstellung, ihren Bereich und ihre Einheit. OK
 übernimmt einen Wert im Bereich und legt ihn auf den Schritt der
@@ -723,7 +734,8 @@ SPEICHERN in SETUP anfordert ([Werte behalten](#werte-behalten)). Ein
 in SETUP ungespeicherter Wert wird mitgeschrieben, so dass SETUP nichts mehr
 zu warnen hat. Ein abgelehntes Schreiben lässt jeden Wert ungespeichert, und
 die Warnung von SETUP beim Verlassen nennt die ESC-Zeilen mit ihren eigenen.
-Die Zeile unter den Einstellungen nennt den Stand des Speichers:
+Die Zeile am Fuß der Seite, die 4 px über dem Alarmband endet, nennt den
+Stand des Speichers:
 
 | Zeile | Stand |
 | --- | --- |
@@ -1776,7 +1788,7 @@ LIVE. Ein Tipp auf einen Reiter wechselt die Aufgabe; ein Wechsel ist keine
 Navigationsebene und lässt die Ansicht von LIVE, GRAFIK oder TABELLE, wie
 sie war.
 
-| Aufgabe | Die linke Spalte, 546 px |
+| Aufgabe | Die linke Spalte, 620 px |
 | --- | --- |
 | LIVE | der Plot oder die Tabelle über den Sollwerten |
 | OPTIONEN | die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |

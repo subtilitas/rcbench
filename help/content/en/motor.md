@@ -18,7 +18,7 @@ The strip at the top holds three tasks, LIVE, PROGRAM and SETTINGS. A tap switch
 | PROGRAM | the list of ESC programmers ([PROGRAM](#program)) |
 | SETTINGS | [Motor settings](motor-settings.md): the pack, the motor and the throttle output |
 
-The right column is the same on the three tasks: the temperatures, the four readouts and the CONTROL card with TARGET, ARM, the totals and RESET PEAKS. ARM works on each. A session opened from PROGRAM covers it.
+The right column is the same on the three tasks: the temperatures, the four readouts and the CONTROL card with the totals on its title line, TARGET, RESET PEAKS and ARM. ARM is at the foot of the card, where SERVO has its ARM, and works on each task. A session opened from PROGRAM covers it.
 
 The home tag at the top left climbs one level at a time:
 
@@ -55,7 +55,7 @@ No press reaches ARM or a tab while ESC STICK is open. Opening it on a bench tha
 
 ## TARGET
 
-The TARGET row at the top of the CONTROL card names what the throttle drives: the protocol, then the pins, `DSHOT300 GP0 GP1`. They are the pins bound as MOTOR PWM or as a DShot protocol on [Outputs](outputs.md). The value box holds 18 characters; pins that do not fit are counted, `DSHOT300 GP0 +7`.
+The TARGET row at the top of the CONTROL card names what the throttle drives: the protocol, then the pins, `DSHOT300 GP0 GP1`. They are the pins bound as MOTOR PWM or as a DShot protocol on [Outputs](outputs.md). The value box holds 25 characters; pins that do not fit are counted, `DSHOT300 GP0 GP1 GP2 +5`.
 
 | TARGET reads | Condition |
 |---|---|
@@ -102,13 +102,13 @@ While no IOmcu answers, the band shows SIM and SIMULATION is drawn across the sc
 
 ![The plot holds the run after the switch to SAFE](view:motor-held)
 
-Switching to SAFE holds the plot as it stood: the tag reads `LAST TELEMETRY` and the right edge reads `END`. The next switch to ARMED clears it. The plot is 534 columns at 20 samples per second, 26.7 s. A longer run keeps its last 26.7 s on screen; the whole run is in its CSV (comma-separated values) file on the card.
+Switching to SAFE holds the plot as it stood: the tag reads `LAST TELEMETRY` and the right edge reads `END`. The next switch to ARMED clears it. The plot is 600 columns at 20 samples per second, 30.0 s. A longer run keeps its last 30.0 s on screen; the whole run is in its CSV (comma-separated values) file on the card.
 
 The readouts, the TABLE pane, the totals and the temperature strip stay live at all times, ARMED or not.
 
-## The line under the strip
+## The rate line and the temperatures
 
-On LIVE the line under the strip carries PLOT and TABLE, the poll rate, the link's error count and three temperatures: ESC and MOT from the IOmcu's bench page, MCU from the panel's own ESP32-S3 die. While the IOmcu has refused link frames since its power-up, the line adds the count. On SETTINGS the line holds the temperatures alone, over the right column.
+On LIVE the telemetry card carries PLOT and TABLE under its title, and beside them the poll rate and the link's error count. While the IOmcu has refused link frames since its power-up, the line under them adds the count. The three temperatures are on the line over the right column on every task: ESC and MOT from the IOmcu's bench page, MCU from the panel's own ESP32-S3 die.
 
 ![37 refused link frames on the line](view:motor-refused)
 

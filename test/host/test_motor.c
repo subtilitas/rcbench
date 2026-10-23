@@ -63,12 +63,12 @@ static void fresh_armed(void)
     motor_screen_set_armed(true);
 }
 
-#define RESET_X  676
+#define RESET_X  MO_RESET_X
 
-/* RESET PEAKS, 2 margins above the body's foot (motor_screen_int.h). */
-#define RESET_Y  (UI_BODY_H - 2 * UI_MARGIN - BTN_H / 2)
+/* RESET PEAKS, over ARM on the CONTROL card (motor_spots.h). */
+#define RESET_Y  MO_RESET_Y
 
-#define TRACK_W  414
+#define TRACK_W  MO_TRACK_W
 
 /* Somewhere well clear of the ARM button: the plot, half the screen away. */
 #define OFF_X 300

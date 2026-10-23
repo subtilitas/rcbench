@@ -46,7 +46,7 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     REQUIRE_ALLOC(plot);
     memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
 
-    tap(99, 45);                        /* the TABLE tab */
+    tap(MO_TABLE_TAB_X, MO_PANE_Y);         /* the TABLE tab */
     scr->render(&cv, 0);
 
     int differ = 0;
@@ -61,7 +61,7 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     }
 
     /* And back again lands on what it started as. */
-    tap(37, 45);
+    tap(MO_PLOT_TAB_X, MO_PANE_Y);
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
     free(plot);
@@ -412,14 +412,14 @@ TEST_CASE(a_cancelled_tab_press_does_not_switch_the_pane)
     REQUIRE_ALLOC(plot);
     memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
 
-    ev(99, 45, TOUCH_EVENT_DOWN, 1);    /* the TABLE tab */
+    ev(MO_TABLE_TAB_X, MO_PANE_Y, TOUCH_EVENT_DOWN, 1); /* TABLE */
     scr->cancel();
-    ev(99, 45, TOUCH_EVENT_UP, 1);      /* a recycled id, lifting there */
+    ev(MO_TABLE_TAB_X, MO_PANE_Y, TOUCH_EVENT_UP, 1); /* a recycled id */
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
 
     /* And the row is not stuck: a fresh tap switches as usual. */
-    tap(99, 45);
+    tap(MO_TABLE_TAB_X, MO_PANE_Y);
     scr->render(&cv, 0);
     CHECK(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
     free(plot);
