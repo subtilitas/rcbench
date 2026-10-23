@@ -18,7 +18,7 @@
 /** @brief The journal's name, KST.TXT, as the panel writes it. */
 #define JOURNAL_TXT KST_STORE_RECORD ".TXT"
 /** @brief The journal's name while it is written, KST.NEW. */
-#define JOURNAL_NEW KST_STORE_RECORD FM_TMP_SUFFIX
+#define JOURNAL_NEW KST_STORE_RECORD FM_NEW_SUFFIX
 
 /**
  * @brief The bench's deepest folders: each of them and every folder above
@@ -98,28 +98,19 @@ fm_err_t fm_gate(fm_op_t op, const fm_bench_t *bench)
     return FM_OK;
 }
 
-fm_err_t fm_join(char *out, size_t n, const char *dir, const char *name)
+fm_err_t fm_path_err(fm_path_t r)
 {
-    if (out == NULL || n == 0u) {
+    switch (r) {
+    case FM_PATH_OK:
+        return FM_OK;
+    case FM_PATH_ARG:
         return FM_ERR_ARG;
-    }
-    out[0] = '\0';
-    if (dir == NULL || name == NULL) {
-        return FM_ERR_ARG;
-    }
-    const size_t d = strlen(dir);
-    const size_t k = strlen(name);
-    const size_t sep = (d > 0u && k > 0u) ? 1u : 0u;
-    if (d + sep + k + 1u > n) {
+    case FM_PATH_BAD:
+    case FM_PATH_LONG:
+    case FM_PATH_DEEP:
+    default:
         return FM_ERR_NAME;
     }
-    memcpy(out, dir, d);
-    if (sep != 0u) {
-        out[d] = '/';
-    }
-    memcpy(out + d + sep, name, k);
-    out[d + sep + k] = '\0';
-    return FM_OK;
 }
 
 bool fm_same_path(const char *a, const char *b)
@@ -180,9 +171,10 @@ static bool fixed_dir(const fm_bench_t *bench, const char *path)
 fm_place_t fm_place_of(const fm_bench_t *bench, const char *dir,
                        const char *name, bool is_dir)
 {
-    char path[FM_PATH_MAX];
+    char path[FM_PATH_SIZE];
     if (name == NULL || name[0] == '\0'
-        || fm_join(path, sizeof(path), dir, name) != FM_OK) {
+        || fm_path_join(dir, name, is_dir, path, sizeof(path))
+               != FM_PATH_OK) {
         return FM_PLACE_FREE;
     }
     if (is_dir) {
@@ -290,24 +282,27 @@ fm_err_t fm_allowed(const fm_bench_t *bench, fm_op_t op, const char *dir,
 }
 
 fm_err_t fm_target_check(const fm_bench_t *bench, const char *dir,
-                         const char *name)
+                         const char *name, bool typed)
 {
     if (dir == NULL || name == NULL) {
         return FM_ERR_ARG;
     }
-    const size_t n = strlen(name);
-    if (n == 0u || n > (size_t)FM_NAME_LEN_MAX || strchr(name, '/') != NULL
-        || strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
+    if (typed) {
+        if (fm_name_check(name) != FM_NAME_OK) {
+            return FM_ERR_NAME;
+        }
+    } else if (strchr(name, '/') != NULL || strcmp(name, ".") == 0
+               || strcmp(name, "..") == 0) {
+        /* Carried over from the card: any characters; fm_name_new() below
+         * holds the length. */
         return FM_ERR_NAME;
     }
-    char path[FM_PATH_MAX];
-    if (fm_join(path, sizeof(path), dir, name) != FM_OK) {
-        return FM_ERR_NAME;
-    }
-    /* The ".NEW" a copy or a save writes first has to fit as well. */
-    char tmp[FM_PATH_MAX];
-    if (fm_join(tmp, sizeof(tmp) - (sizeof(FM_TMP_SUFFIX) - 1u), dir, name)
-        != FM_OK) {
+    /* The ".NEW" a copy or a save writes first has to be listed and its
+     * path has to fit; the name's own path is shorter. */
+    char tmp[FM_NAME_BUF];
+    char path[FM_PATH_SIZE];
+    if (!fm_name_new(name, tmp, sizeof(tmp))
+        || fm_path_join(dir, tmp, false, path, sizeof(path)) != FM_PATH_OK) {
         return FM_ERR_NAME;
     }
     switch (fm_place_of(bench, dir, name, false)) {
@@ -331,8 +326,9 @@ fm_kind_t fm_kind_of(const char *dir, const char *name, bool is_dir)
         return FM_KIND_OTHER;
     }
     if (dir != NULL) {
-        char path[FM_PATH_MAX];
-        if (fm_join(path, sizeof(path), dir, name) == FM_OK) {
+        char path[FM_PATH_SIZE];
+        if (fm_path_join(dir, name, false, path, sizeof(path))
+            == FM_PATH_OK) {
             for (size_t i = 0u; i < sizeof(k_fault) / sizeof(k_fault[0]);
                  ++i) {
                 if (fm_same_path(path, k_fault[i])) {

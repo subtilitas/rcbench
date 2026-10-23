@@ -43,23 +43,12 @@
 #include <stddef.h>
 
 #include "fm_io.h"
+#include "fm_name.h"
 #include "log_take.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @brief The suffix a copy or a save writes first; the file takes its own
- *        name once the card holds it whole.
- */
-#define FM_TMP_SUFFIX ".NEW"
-
-/**
- * @brief The longest name a copy, a save, a RENAME or a NEW takes: 59
- *        characters, so that the name and FM_TMP_SUFFIX are still listed.
- */
-#define FM_NAME_LEN_MAX (FM_NAME_MAX - 1 - (int)(sizeof(FM_TMP_SUFFIX) - 1u))
 
 /**
  * @brief What a person asks of a name.
@@ -183,22 +172,32 @@ fm_err_t fm_allowed(const fm_bench_t *bench, fm_op_t op, const char *dir,
                     const char *name, bool is_dir);
 
 /**
- * @brief Whether a COPY, MOVE, RENAME or NEW may make @p name in folder
- *        @p dir: not a LOCKED or FAULT name, a name of 1 to
- *        FM_NAME_LEN_MAX characters without "/", not "." or "..", and a
- *        path that fits FM_PATH_MAX.
+ * @brief Whether a COPY, a SAVE, a RENAME or a NEW may make @p name in
+ *        folder @p dir.
  *
- * The name rules of the keyboard (characters, device names, spaces at the
- * ends) are the caller's to check before; these are the ones a path and a
- * ".NEW" need.
+ * A name a person types (@p typed: RENAME, NEW) follows fm_name_check().
+ * A name a copy or a save carries over from the card is any name of 1 to
+ * FM_NAME_MAX bytes without "/" that is not "." or "..": it may hold any
+ * character a computer wrote, and only its ".NEW" has to stay listed
+ * (fm_name_new()).  Either way the name is not a LOCKED or FAULT name, and
+ * the paths of the name and of its ".NEW" fit fm_path_join().
  *
  * @param bench  the log folders in force; may be NULL
  * @param dir    the target folder
  * @param name   the name to make
+ * @param typed  the name is typed by a person
  * @return FM_OK, FM_ERR_LOCKED, FM_ERR_FIXED, FM_ERR_NAME or FM_ERR_ARG
  */
 fm_err_t fm_target_check(const fm_bench_t *bench, const char *dir,
-                         const char *name);
+                         const char *name, bool typed);
+
+/**
+ * @brief The answer of a path call (fm_name.h) as the core's.
+ * @param r  what fm_path_join() or fm_path_check() said
+ * @return FM_OK; FM_ERR_ARG for FM_PATH_ARG; FM_ERR_NAME for a path that
+ *         is bad, too long or too deep
+ */
+fm_err_t fm_path_err(fm_path_t r);
 
 /**
  * @brief The kind of @p name in folder @p dir.
@@ -217,18 +216,6 @@ fm_kind_t fm_kind_of(const char *dir, const char *name, bool is_dir);
  * @return true for a ".json" in BENCH/ESC/CONF
  */
 bool fm_read_at_start(const char *dir, const char *name);
-
-/**
- * @brief Write the path of @p name in folder @p dir into @p out: "dir/name",
- *        or "name" in the root.  An empty @p name writes the folder.
- * @param out   takes the path; "" on a refusal
- * @param n     room in @p out
- * @param dir   the folder, a path from the root
- * @param name  one level's name
- * @return FM_OK; FM_ERR_NAME for a path that does not fit; FM_ERR_ARG for
- *         a NULL
- */
-fm_err_t fm_join(char *out, size_t n, const char *dir, const char *name);
 
 /**
  * @brief Whether two paths name one place, case folded.

@@ -8,7 +8,9 @@
  * order they were made.  The card can be pulled and another put in (a new
  * mount number); a chosen call can fail with a chosen answer, and a
  * CARD_GONE answer pulls the card with it; the card can fill up, and a
- * folder can take a fixed number of entries.  What a pulled card holds
+ * folder can take a fixed number of entries.  The walk leaves out names
+ * starting with "." and counts them, as the panel's walk does, unless the
+ * test asks for them.  What a pulled card holds
  * stays readable to the test, so a ".NEW" left behind can be looked at.
  *
  * SPDX-License-Identifier: MIT
@@ -57,6 +59,10 @@ typedef struct {
     bool write;          /**< opened FM_OPEN_NEW                     */
 } fk_file_t;
 
+/** @brief Room for a path in the fake: more than any the core builds, so a
+ *         test can make the paths the core refuses. */
+#define FK_PATH 512
+
 /** @brief Most files open at once. */
 #define FK_FILES 4
 
@@ -77,6 +83,12 @@ typedef struct {
     int dir_cap;                /**< entries a folder takes; 0 any       */
     bool hand_long;             /**< the walk hands over names of 64
                                      characters and more                 */
+    bool show_dots;             /**< the walk hands over names starting
+                                     with "."; false counts them as
+                                     unlisted, as the panel's walk       */
+    long gone_walk;             /**< the walk of this count finds the card
+                                     gone at its first entry and mounts
+                                     it again, once; 0 never             */
     int gone_at_entry;          /**< the walk finds the card gone after
                                      this many entries and mounts it
                                      again, once; -1 never               */

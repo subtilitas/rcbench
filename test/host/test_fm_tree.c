@@ -50,7 +50,7 @@ static void fill(const char *dir, int n)
     if (dir[0] != '\0') {
         fk_dir(&g_card, dir);
     }
-    char path[FM_PATH_MAX];
+    char path[FK_PATH];
     for (int i = 0; i < n; ++i) {
         /* 7 is prime to 1000: every number once, out of order. */
         const int k = (i * 7) % 1000;
@@ -157,7 +157,7 @@ TEST_CASE(entries_999_page_forward_and_back_to_every_edge)
     CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
     int pages = 1;
     int rows = 0;
-    char last[FM_NAME_MAX] = "";
+    char last[FM_NAME_BUF] = "";
     for (;;) {
         CHECK_EQ(g_tree.total, 999);
         CHECK_EQ(g_tree.ahead, rows);
@@ -292,6 +292,7 @@ TEST_CASE(dot_entries_are_no_rows)
     fresh("");
     fk_file(&g_card, "REAL.TXT", NULL, 1u);
     /* A card that hands over "." and ".." lists neither. */
+    g_card.show_dots = true;
     fk_dir(&g_card, "..");
     fk_dir(&g_card, ".");
     CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
@@ -310,7 +311,7 @@ TEST_CASE(every_bench_folder_is_fixed_and_others_free)
         CARD_USER_LOGS,
     };
     for (size_t i = 0u; i < sizeof(fixed) / sizeof(fixed[0]); ++i) {
-        char dir[FM_PATH_MAX];
+        char dir[FK_PATH];
         const char *cut = strrchr(fixed[i], '/');
         const size_t k = (cut != NULL) ? (size_t)(cut - fixed[i]) : 0u;
         memcpy(dir, fixed[i], k);
@@ -477,25 +478,18 @@ TEST_CASE(a_folder_not_made_yet_is_an_empty_page)
     CHECK_EQ(g_tree.total, 0);
 }
 
-TEST_CASE(a_path_past_384_bytes_is_not_entered)
+TEST_CASE(a_path_past_120_bytes_or_16_folders_is_not_entered)
 {
     fresh("");
-    /* 5 folders of 60 characters and one of 25: 330 bytes. */
-    char dir[FM_PATH_MAX];
-    size_t at = 0u;
-    for (int i = 0; i < 6; ++i) {
-        if (i > 0) {
-            dir[at++] = '/';
-        }
-        const size_t k = (i < 5) ? 60u : 25u;
-        memset(dir + at, 'D', k);
-        at += k;
-    }
-    dir[at] = '\0';
-    CHECK_EQ(strlen(dir), 330);
-    char deep[FM_PATH_MAX + 80];
-    snprintf(deep, sizeof(deep), "%s/%.62s", dir,
-             "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+    /* 2 folders of 50 characters: 101 bytes; a folder of 30 below them
+     * makes 132. */
+    char dir[FM_PATH_SIZE];
+    memset(dir, 'D', 101u);
+    dir[50] = '/';
+    dir[101] = '\0';
+    char deep[FK_PATH];
+    snprintf(deep, sizeof(deep), "%s/%s", dir,
+             "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
     fk_dir(&g_card, deep);
     fm_tree_init(&g_tree, dir);
     CHECK_STR_EQ(g_tree.dir, dir);
@@ -503,11 +497,30 @@ TEST_CASE(a_path_past_384_bytes_is_not_entered)
     CHECK_EQ(g_tree.held, 1);
     CHECK_EQ(fm_tree_enter(&g_tree, &g_io, NULL, 0), FM_ERR_NAME);
     CHECK_STR_EQ(g_tree.dir, dir);
-    /* A start folder that does not fit is the root. */
-    char huge[FM_PATH_MAX + 2];
+    /* 16 folders deep is the deepest. */
+    fresh("");
+    char d16[FK_PATH] = "A";
+    for (int i = 1; i < 16; ++i) {
+        strcat(d16, "/A");
+    }
+    char d17[FK_PATH];
+    memcpy(d17, d16, strlen(d16) + 1u);
+    strcat(d17, "/A");
+    fk_dir(&g_card, d17);
+    fm_tree_init(&g_tree, d16);
+    CHECK_STR_EQ(g_tree.dir, d16);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(g_tree.held, 1);
+    CHECK_EQ(fm_tree_enter(&g_tree, &g_io, NULL, 0), FM_ERR_NAME);
+    fm_tree_init(&g_tree, d17);
+    CHECK_STR_EQ(g_tree.dir, "");
+    /* A start folder fm_path_check() refuses is the root. */
+    char huge[FM_PATH_SIZE + 1];
     memset(huge, 'H', sizeof(huge) - 1u);
     huge[sizeof(huge) - 1u] = '\0';
     fm_tree_init(&g_tree, huge);
+    CHECK_STR_EQ(g_tree.dir, "");
+    fm_tree_init(&g_tree, "/USER");
     CHECK_STR_EQ(g_tree.dir, "");
     fm_tree_init(&g_tree, NULL);
     CHECK_STR_EQ(g_tree.dir, "");
@@ -677,7 +690,7 @@ int main(void)
     RUN(enter_and_up_walk_the_tree_and_stop_at_the_root);
     RUN(a_folder_gone_before_entering_leaves_the_pane_where_it_was);
     RUN(a_folder_not_made_yet_is_an_empty_page);
-    RUN(a_path_past_384_bytes_is_not_entered);
+    RUN(a_path_past_120_bytes_or_16_folders_is_not_entered);
     RUN(the_selection_stays_on_its_name_and_goes_with_it);
     RUN(a_card_gone_during_a_walk_is_walked_again_once);
     RUN(a_card_that_fails_or_goes_at_both_walks_is_no_page);
