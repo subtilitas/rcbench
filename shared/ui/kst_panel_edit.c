@@ -53,6 +53,12 @@ static void choice_open(int kind, const char *title)
     snprintf(k.ch.title, sizeof(k.ch.title), "%s", title);
 }
 
+/* The FILES list is whole, with the entries around its files.  STRETCH's
+ * list of every factor the hard limit leaves is held to CHOICE_MAX by
+ * test_kst_panel_layout. */
+_Static_assert(KST_PROG_FILES_MAX + 2u <= CHOICE_MAX,
+               "the FILES list fits CHOICE_MAX entries");
+
 static void choice_add(const char *label, int value)
 {
     if (k.ch.count < CHOICE_MAX) {

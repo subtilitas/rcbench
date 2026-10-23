@@ -1,4 +1,8 @@
-/*
+/**
+ * @file kst_panel.c
+ * @brief The overlay of the programmer for KST and Chaservo servos: its
+ *        state, rows, shared helpers, geometry and the caller's side.
+ *
  * The overlay of the programmer for KST and Chaservo servos.  See
  * kst_panel.h.
  *
@@ -259,11 +263,11 @@ bool kpn_changed(kst_field_id_t id)
 
 /* --------------------------------------------------------------- wrapping */
 
-/* The cells of the 8 x 16 face a line of text has: the area less 10 px on
- * each side, 58 on the 488 px card. */
+/** @brief The cells of KP_FONT a line of text has: the area less 10 px on
+ *         each side, 60 on SERVO's left card of 620 px. */
 static int text_cells(void)
 {
-    return (k.area.w - 20) / 8;
+    return (k.area.w - 20) / KP_CELL;
 }
 
 /* The bytes of @p s its first row takes: all of it where it fits, else up
@@ -316,7 +320,7 @@ int kpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
         const size_t len = row_len(s);
 
         snprintf(row, sizeof(row), "%.*s", (int)len, s);
-        gfx_text(c, x, y, row, &gfx_font_8x16, color, 1);
+        gfx_text(c, x, y, row, KP_FONT, color, 1);
         s = next_row(s, len);
         y += LINE_H;
     }
@@ -327,8 +331,25 @@ int kpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
 
 gfx_rect_t kpn_tabs_rect(void)
 {
-    return (gfx_rect_t){ (int16_t)(k.area.x + 8), (int16_t)(k.area.y + 8),
-                         TAB_W, TAB_H };
+    /* The row less 8 px each side, CLOSE and 8 px before it. */
+    return (gfx_rect_t){ (int16_t)(k.area.x + 8), (int16_t)(k.area.y + TAB_Y),
+                         (int16_t)(k.area.w - 16 - CLOSE_W - 8), TAB_H };
+}
+
+int kpn_foot(void)
+{
+    const int area = k.area.y + k.area.h - 8;
+    const int band = UI_ALERT_Y - UI_BAND_H - FOOT_GAP;
+
+    return area < band ? area : band;
+}
+
+int kpn_notes_foot(void)
+{
+    const int area = k.area.y + k.area.h - 6;
+    const int band = UI_ALERT_Y - UI_BAND_H - FOOT_GAP;
+
+    return area < band ? area : band;
 }
 
 gfx_rect_t kpn_row_rect(const row_t *r)
@@ -388,8 +409,8 @@ gfx_rect_t kst_panel_tab_rect(int page)
 
 gfx_rect_t kst_panel_close_rect(void)
 {
-    return (gfx_rect_t){ (int16_t)(k.area.x + k.area.w - 8 - 90),
-                         (int16_t)(k.area.y + 6), 90, 30 };
+    return (gfx_rect_t){ (int16_t)(k.area.x + k.area.w - 8 - CLOSE_W),
+                         (int16_t)(k.area.y + TAB_Y), CLOSE_W, TAB_H };
 }
 
 gfx_rect_t kst_panel_value_rect(int page, int row, int col)
@@ -408,27 +429,31 @@ gfx_rect_t kst_panel_step_rect(int page, int row, bool up)
 
 gfx_rect_t kst_panel_choice_rect(int i)
 {
+    /* Under the title, 48 px tall at a 56 px pitch: the 7 entries of the
+     * fullest list, FILES, end 8 px above CANCEL. */
     return (gfx_rect_t){ (int16_t)(k.area.x + 10),
-                         (int16_t)(k.area.y + 48 + i * 46),
-                         (int16_t)(k.area.w - 20), 40 };
+                         (int16_t)(k.area.y + 44 + i * PITCH),
+                         (int16_t)(k.area.w - 20), ROW_H };
 }
 
 gfx_rect_t kst_panel_choice_cancel_rect(void)
 {
-    return (gfx_rect_t){ (int16_t)(k.area.x + k.area.w - 10 - 110),
-                         (int16_t)(k.area.y + k.area.h - 46), 110, 36 };
+    return (gfx_rect_t){ (int16_t)(k.area.x + k.area.w - 10 - 150),
+                         (int16_t)(kpn_foot() - UI_BTN_H), 150, UI_BTN_H };
 }
 
 gfx_rect_t kst_panel_apply_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(k.area.x + 20),
-                         (int16_t)(k.area.y + k.area.h - 76), 260, 56 };
+                         (int16_t)(kpn_foot() - UI_BTN_H_TALL), 300,
+                         UI_BTN_H_TALL };
 }
 
 gfx_rect_t kst_panel_cancel_rect(void)
 {
-    return (gfx_rect_t){ (int16_t)(k.area.x + k.area.w - 20 - 160),
-                         (int16_t)(k.area.y + k.area.h - 76), 160, 56 };
+    return (gfx_rect_t){ (int16_t)(k.area.x + k.area.w - 20 - 180),
+                         (int16_t)(kpn_foot() - UI_BTN_H_TALL), 180,
+                         UI_BTN_H_TALL };
 }
 
 ui_keypad_t *kst_panel_keypad(void)

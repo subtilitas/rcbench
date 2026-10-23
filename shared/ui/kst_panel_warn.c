@@ -101,6 +101,14 @@ static void value_line(kst_field_id_t id, const kst_image_t *to,
              name != NULL ? name : kst_field(id)->name, was, now);
 }
 
+int kpn_warn_room(void)
+{
+    const int fit = (kst_panel_apply_rect().y - 8 - (k.area.y + WARN_TOP))
+                  / LINE_H;
+
+    return fit < WARN_ROWS ? fit : WARN_ROWS;
+}
+
 /* The rows the page's lines take. */
 int kpn_warn_rows(void)
 {
@@ -199,7 +207,7 @@ void kpn_warn_soft(const row_t *r)
     /* From the servo's value, not from an edit before this one. */
     value_line(id, kst_prog_soft_image(&k.prog), 0u);
     warn_rules(kst_prog_soft_rules(&k.prog), WARN_RULES - 1,
-               WARN_ROWS - kpn_warn_rows());
+               kpn_warn_room() - kpn_warn_rows());
 }
 
 void kpn_warn_enable(void)
@@ -307,7 +315,7 @@ void kpn_warn_file(void)
     }
     warn_values(kst_prog_soft_image(p), FILE_VALUES, FILE_VALUES);
     warn_rules(kst_prog_soft_rules(p), WARN_LINES - k.warn.count,
-               WARN_ROWS - kpn_warn_rows());
+               kpn_warn_room() - kpn_warn_rows());
 }
 
 void kpn_warn_write(void)
@@ -329,7 +337,7 @@ void kpn_warn_write(void)
 
     kpn_write_n(title, sizeof(title), kst_prog_changes(&k.prog));
     warn_open(W_WRITE, true, title, TR(KP_HOLD_WRITE));
-    warn_values(to, WARN_LINES - fixed, WARN_ROWS - fixed_rows);
+    warn_values(to, WARN_LINES - fixed, kpn_warn_room() - fixed_rows);
     warn_horn(moves);
     if (!no_card()) {
         warn_text(KST_PROG_INFO, TR(KP_WRITE_1));
@@ -380,7 +388,7 @@ void kpn_warn_check(const kst_prog_restore_t *plan)
     k.warn.plan = *plan;
     warn_text(KST_PROG_INFO, ui_tr(kpn_from_text(plan->from)));
     warn_text(KST_PROG_INFO, TR(KP_CHECK_1));
-    warn_rules(plan->soft, WARN_RULES - 2, WARN_ROWS - kpn_warn_rows());
+    warn_rules(plan->soft, WARN_RULES - 2, kpn_warn_room() - kpn_warn_rows());
 }
 
 void kpn_warn_release(void)

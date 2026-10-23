@@ -1,4 +1,9 @@
-/*
+/**
+ * @file prog_registry.c
+ * @brief The programmers' registry: the rows of SERVO's and MOTOR & ESC's
+ *        PROGRAM lists, the list built from them and the view that draws
+ *        it.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -11,6 +16,7 @@
 #include "esc_stick_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
+#include "ui_layout.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -468,10 +474,25 @@ static int entry_h(const prog_list_t *l, int k)
                                                        : PROG_VIEW_ROW_P;
 }
 
-/* The height the entries take from the top of the area, bar aside. */
+/**
+ * @brief The pitches the entries may add up to under the bar, if any: to
+ *        PROG_VIEW_PAD above the area's foot or 4 px above the alert band,
+ *        whichever is higher, and a heading's 4 px gap, the smaller one, so
+ *        the last entry shown ends above that line.
+ * @param v the view
+ * @param bar with the bar
+ * @return the height, px
+ */
 static int room(const prog_view_t *v, bool bar)
 {
-    return v->area.h - 2 * PROG_VIEW_PAD + 6
+    const int band = UI_ALERT_Y - UI_BAND_H - 4;
+    int foot = v->area.y + v->area.h - PROG_VIEW_PAD;
+
+    if (foot > band) {
+        foot = band;
+    }
+    return foot - (v->area.y + PROG_VIEW_PAD)
+           + (PROG_VIEW_HEAD_P - PROG_VIEW_HEAD_H)
            - (bar ? PROG_VIEW_BAR_H + 8 : 0);
 }
 
@@ -537,15 +558,16 @@ gfx_rect_t prog_view_entry_rect(const prog_view_t *v, const prog_list_t *l,
                                          : PROG_VIEW_ROW_H };
 }
 
-/* The bar: SEARCH from the left, "^" and "v" 38 px each at the right. */
+/* The bar: SEARCH from the left, "^" and "v" PROG_VIEW_KEY_W each at the
+ * right. */
 gfx_rect_t prog_view_search_rect(const prog_view_t *v, const prog_list_t *l)
 {
     if (v == NULL || l == NULL || !l->search) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
     return (gfx_rect_t){ (int16_t)(v->area.x + PROG_VIEW_PAD),
-                         (int16_t)(v->area.y + PROG_VIEW_PAD), 220,
-                         PROG_VIEW_BAR_H };
+                         (int16_t)(v->area.y + PROG_VIEW_PAD),
+                         PROG_VIEW_SEARCH_W, PROG_VIEW_BAR_H };
 }
 
 static bool pages(const prog_view_t *v, const prog_list_t *l)
@@ -559,8 +581,8 @@ gfx_rect_t prog_view_up_rect(const prog_view_t *v, const prog_list_t *l)
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
     return (gfx_rect_t){ (int16_t)(v->area.x + v->area.w - PROG_VIEW_PAD
-                                   - 76 - 4),
-                         (int16_t)(v->area.y + PROG_VIEW_PAD), 38,
+                                   - 2 * PROG_VIEW_KEY_W - 8),
+                         (int16_t)(v->area.y + PROG_VIEW_PAD), PROG_VIEW_KEY_W,
                          PROG_VIEW_BAR_H };
 }
 
@@ -570,8 +592,8 @@ gfx_rect_t prog_view_down_rect(const prog_view_t *v, const prog_list_t *l)
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
     return (gfx_rect_t){ (int16_t)(v->area.x + v->area.w - PROG_VIEW_PAD
-                                   - 38),
-                         (int16_t)(v->area.y + PROG_VIEW_PAD), 38,
+                                   - PROG_VIEW_KEY_W),
+                         (int16_t)(v->area.y + PROG_VIEW_PAD), PROG_VIEW_KEY_W,
                          PROG_VIEW_BAR_H };
 }
 
@@ -689,19 +711,21 @@ void prog_view_render(const prog_view_t *v, const prog_list_t *l,
                             ui_theme_color(UI_C_EDGE));
         const gfx_rect_t in = { (int16_t)(sr.x + 10), sr.y,
                                 (int16_t)(sr.w - 20), sr.h };
-        gfx_text_in(c, in, typed ? query : TR(SP_FIND), UI_FONT_LABEL,
+        gfx_text_in(c, in, typed ? query : TR(SP_FIND), PROG_VIEW_FONT,
                     typed ? ui_theme_color(UI_C_TEXT)
                           : ui_theme_color(UI_C_TEXT_DIM),
                     1, GFX_ALIGN_LEFT);
     }
     const gfx_rect_t up = prog_view_up_rect(v, l);
     if (up.w > 0) {
-        ui_button(c, up, "^", ui_theme_color(UI_C_PANEL_HI),
-                  v->pressed == PROG_VIEW_P_UP, v->top > 0);
-        ui_button(c, prog_view_down_rect(v, l), "v",
-                  ui_theme_color(UI_C_PANEL_HI),
-                  v->pressed == PROG_VIEW_P_DOWN,
-                  v->top + prog_view_shown(v, l) < l->count);
+        ui_button_font(c, up, "^", ui_theme_color(UI_C_PANEL_HI),
+                       v->pressed == PROG_VIEW_P_UP, v->top > 0,
+                       PROG_VIEW_FONT);
+        ui_button_font(c, prog_view_down_rect(v, l), "v",
+                       ui_theme_color(UI_C_PANEL_HI),
+                       v->pressed == PROG_VIEW_P_DOWN,
+                       v->top + prog_view_shown(v, l) < l->count,
+                       PROG_VIEW_FONT);
     }
     const int end = v->top + prog_view_shown(v, l);
     for (int k = (v->top > 0) ? v->top : 0; k < end && k < l->count; ++k) {
@@ -711,8 +735,8 @@ void prog_view_render(const prog_view_t *v, const prog_list_t *l,
             continue;
         }
         if (l->e[k].heading) {
-            gfx_text(c, r.x, r.y + (r.h - 16) / 2, ui_tr(rows[i].group),
-                     UI_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
+            gfx_text(c, r.x, r.y + (r.h - 20) / 2, ui_tr(rows[i].group),
+                     PROG_VIEW_FONT, ui_theme_color(UI_C_ACCENT), 1);
             continue;
         }
         char detail[48];
@@ -727,18 +751,18 @@ void prog_view_render(const prog_view_t *v, const prog_list_t *l,
             gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL,
                                 ui_theme_color(UI_C_EDGE));
         }
-        const int ty = r.y + (r.h - 16) / 2;
-        gfx_text(c, r.x + 12, ty, ui_tr(rows[i].name), UI_FONT_LABEL,
+        const int ty = r.y + (r.h - 20) / 2;
+        gfx_text(c, r.x + 12, ty, ui_tr(rows[i].name), PROG_VIEW_FONT,
                  dim ? ui_theme_color(UI_C_TEXT_DIM)
                      : ui_theme_color(UI_C_TEXT), 1);
         const gfx_rect_t d = { (int16_t)(r.x + r.w / 2 - 20), r.y,
                                (int16_t)(r.w / 2 + 20 - 30), r.h };
-        gfx_text_in(c, d, detail, UI_FONT_LABEL,
+        gfx_text_in(c, d, detail, PROG_VIEW_FONT,
                     dim ? ui_theme_color(UI_C_WARN)
                         : ui_theme_color(UI_C_TEXT_DIM),
                     1, GFX_ALIGN_RIGHT);
         if (!dim) {
-            gfx_text(c, r.x + r.w - 20, ty, ">", UI_FONT_LABEL,
+            gfx_text(c, r.x + r.w - 22, ty, ">", PROG_VIEW_FONT,
                      ui_theme_color(UI_C_ACCENT), 1);
         }
     }

@@ -29,7 +29,25 @@
  * names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
-static const uint8_t k_warn_pitch[] = { 24, 22, 20, LINE_H };
+/** @brief A warning page's pitches between its lines, the widest that
+ *         fits first: a line of one row at 28 px leaves 8 px under a row
+ *         of KP_FONT. */
+static const uint8_t k_warn_pitch[] = { 28, 26, 24, 22, LINE_H };
+
+/**
+ * @brief A button of the overlay, its label in KP_FONT.
+ * @param c the canvas
+ * @param r the button
+ * @param label its label
+ * @param fill its colour
+ * @param pressed lightens the fill
+ * @param enabled false dims it
+ */
+static void kp_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                      gfx_color_t fill, bool pressed, bool enabled)
+{
+    ui_button_font(c, r, label, fill, pressed, enabled, KP_FONT);
+}
 
 /* --------------------------------------------------------------------- draw */
 
@@ -51,7 +69,8 @@ typedef struct {
 } note_t;
 
 #define NOTES_MAX 5
-#define NOTE_Y    (ROW0 + 5 * PITCH + 6)
+/** @brief The notes' first place: 8 px under the SERVO tab's fifth row. */
+#define NOTE_Y    (ROW0 + 4 * PITCH + ROW_H + 8)
 
 static int note(note_t *n, int i, int slot, const char *s, gfx_color_t color)
 {
@@ -350,12 +369,29 @@ int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
         return 1;
     }
     /* The standing notes take the first page before any other.  With no
-     * row left beside them for the page count, the other notes wait. */
+     * row left beside them for the page count, they yield to the message:
+     * every note pages in pages of room - 1 rows, the standing ones first,
+     * and a note taller than a page waits for the message to go. */
     if (held > 0 && held > room - 1) {
-        for (int i = 0; i < count; ++i) {
-            page[i] = standing[i] ? 0 : -1;
+        used = 0;
+        for (int pass = 0; pass < 2; ++pass) {
+            for (int i = 0; i < count; ++i) {
+                if (standing[i] != (pass == 0)) {
+                    continue;
+                }
+                if (rows[i] > room - 1) {
+                    page[i] = -1;
+                    continue;
+                }
+                if (used > 0 && used + rows[i] > room - 1) {
+                    ++pages;
+                    used = 0;
+                }
+                page[i] = pages - 1;
+                used += rows[i];
+            }
         }
-        return 1;
+        return pages;
     }
     /* A page keeps its last row for the page count. */
     used = held;
@@ -409,7 +445,7 @@ static void plan_notes(notes_plan_t *p)
     p->count = page_notes(p->n);
     p->lines = message_shown(s_msg);
     p->msg_rows = 0;
-    p->bottom = k.area.y + k.area.h - 6;
+    p->bottom = kpn_notes_foot();
     p->top = p->bottom;
     for (int i = 0; i < p->lines; ++i) {
         p->msg_rows += kst_panel_text_rows(s_msg[i]);
@@ -436,6 +472,25 @@ static void plan_notes(notes_plan_t *p)
     }
 }
 
+/**
+ * @brief The highest a note rises to: 4 px under the lowest row of the tab
+ *        shown, the area's top for a tab with none.
+ * @return the y, body pixels
+ */
+static int rows_foot(void)
+{
+    int y = k.area.y;
+
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        if (kpn_rows[i].page == k.tabs.selected) {
+            const gfx_rect_t r = kpn_row_rect(&kpn_rows[i]);
+
+            y = r.y + r.h + 4 > y ? r.y + r.h + 4 : y;
+        }
+    }
+    return y;
+}
+
 /*
  * The page's notes from the top, each at its place or under the one above,
  * and the last message from the area's last row up: three rows for one
@@ -444,14 +499,16 @@ static void plan_notes(notes_plan_t *p)
  * other notes page after them, the area's last notes row counts the pages,
  * and a tap on the notes shows the next.  Where the standing notes and the
  * message leave no row for the count, the other notes wait for the message
- * to go, and the standing notes rise into the gap above their place: the
- * tallest pair and the tallest message take 9 rows, which fit under the
- * SERVO tab's last row.  A message line that would still leave the area
- * is not drawn.
+ * to go.  Where the standing notes leave no row for the count beside the
+ * message, they yield to it: they page with the others, first, and one
+ * taller than a page waits for the message to go.  Every line of the
+ * message is drawn: the longest takes 5 rows of the 7 under the SERVO
+ * tab's last row on SERVO's left card, which end 4 px above the alert band
+ * (kpn_notes_foot()).  No note rises above 4 px under the tab's last row.
  */
 static void layout_notes(notes_plan_t *p)
 {
-    int y = k.area.y;
+    int y = rows_foot();
 
     plan_notes(p);
     p->on = k.note_page < p->pages ? k.note_page : 0;
@@ -530,7 +587,7 @@ static void draw_notes(gfx_canvas_t *c)
                  (unsigned)(uint8_t)p->pages);
         gfx_text_in(c, gfx_rect_make(k.area.x + 10, p->count_y,
                                      k.area.w - 20, LINE_H),
-                    count, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT),
+                    count, KP_FONT, ui_theme_color(UI_C_TEXT_FAINT),
                     1, GFX_ALIGN_RIGHT);
     }
     y = p->msg_y;
@@ -671,7 +728,7 @@ static void draw_row(gfx_canvas_t *c, int i)
     gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
     char v[40];
 
-    gfx_text(c, rr.x, rr.y + 9, kpn_row_label(r), &gfx_font_8x16,
+    gfx_text(c, rr.x, rr.y + (ROW_H - LINE_H) / 2, kpn_row_label(r), KP_FONT,
              live || r->kind == K_LOCKED ? ui_theme_color(UI_C_TEXT_DIM)
                                          : ui_theme_color(UI_C_TEXT_FAINT),
              1);
@@ -682,11 +739,11 @@ static void draw_row(gfx_canvas_t *c, int i)
         } else if (r->what == A_WRITE && live) {
             fill = ui_theme_color(UI_C_ACCENT);
         }
-        ui_button(c, vr, v, fill, pressed, live);
+        kp_button(c, vr, v, fill, pressed, live);
         return;
     }
     if (!kst_prog_have_servo(p)) {
-        ui_button(c, vr, "--", fill, false, false);
+        kp_button(c, vr, "--", fill, false, false);
         return;
     }
     {
@@ -711,13 +768,13 @@ static void draw_row(gfx_canvas_t *c, int i)
         } else if (skipped) {
             fill = ui_theme_color(UI_C_WARN);
         }
-        ui_button(c, vr, v, fill, pressed, live);
+        kp_button(c, vr, v, fill, pressed, live);
         if (r->kind != K_STEP) {
             return;
         }
-        ui_button(c, kpn_step_rect(r, false), "-", ui_theme_color(UI_C_PANEL_HI),
+        kp_button(c, kpn_step_rect(r, false), "-", ui_theme_color(UI_C_PANEL_HI),
                   k.have && k.pressed == P_MINUS && k.row == i, live);
-        ui_button(c, kpn_step_rect(r, true), "+", ui_theme_color(UI_C_PANEL_HI),
+        kp_button(c, kpn_step_rect(r, true), "+", ui_theme_color(UI_C_PANEL_HI),
                   k.have && k.pressed == P_PLUS && k.row == i, live);
     }
 }
@@ -725,7 +782,7 @@ static void draw_row(gfx_canvas_t *c, int i)
 static void draw_page(gfx_canvas_t *c)
 {
     ui_tabs_render(&k.tabs, c);
-    ui_button(c, kst_panel_close_rect(), TR(SUP_CLOSE),
+    kp_button(c, kst_panel_close_rect(), TR(SUP_CLOSE),
               ui_theme_color(UI_C_PANEL_SUNK),
               k.have && k.pressed == P_CLOSE,
               !kst_panel_holds_port() || kpn_programming());
@@ -741,7 +798,7 @@ static void draw_choice(gfx_canvas_t *c)
 {
     const row_t *r = &kpn_rows[k.kp_row >= 0 ? k.kp_row : 0];
 
-    gfx_text(c, k.area.x + 10, k.area.y + 16, k.ch.title, &gfx_font_8x16,
+    gfx_text(c, k.area.x + 10, k.area.y + 14, k.ch.title, KP_FONT,
              ui_theme_color(UI_C_TEXT), 1);
     for (int i = 0; i < k.ch.count; ++i) {
         const bool current = k.ch.kind == C_STRETCH
@@ -749,12 +806,12 @@ static void draw_choice(gfx_canvas_t *c)
                == (int)kst_field_get(kst_prog_draft(&k.prog),
                                      (kst_field_id_t)r->what);
 
-        ui_button(c, kst_panel_choice_rect(i), k.ch.labels[i],
+        kp_button(c, kst_panel_choice_rect(i), k.ch.labels[i],
                   current ? ui_theme_color(UI_C_ACCENT)
                           : ui_theme_color(UI_C_PANEL_SUNK),
                   k.have && k.pressed == P_CHOICE && k.row == i, true);
     }
-    ui_button(c, kst_panel_choice_cancel_rect(), TR(CANCEL),
+    kp_button(c, kst_panel_choice_cancel_rect(), TR(CANCEL),
               ui_theme_color(UI_C_PANEL_SUNK),
               k.have && k.pressed == P_CHOICE_CANCEL, true);
 }
@@ -768,13 +825,14 @@ static void draw_warning(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, edge);
     gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, edge);
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, edge);
-    gfx_text(c, a.x + 12, a.y + 20, k.warn.title, &gfx_font_8x16, edge, 2);
+    gfx_text(c, a.x + 12, a.y + 16, k.warn.title, KP_TITLE_FONT, edge, 1);
     {
         /* The widest pitch at which the lines end 8 px above the buttons;
-         * the builders keep them to WARN_ROWS, which fit at LINE_H. */
+         * the builders keep them to kpn_warn_room(), which fit at
+         * LINE_H. */
         const int rows = kpn_warn_rows();
         const int room = kst_panel_apply_rect().y - 8 - (a.y + WARN_TOP)
-                       - 16 - (rows - k.warn.count) * LINE_H;
+                       - LINE_H - (rows - k.warn.count) * LINE_H;
         int pitch = LINE_H;
         int y = a.y + WARN_TOP;
 
@@ -790,11 +848,11 @@ static void draw_warning(gfx_canvas_t *c)
               + pitch - LINE_H;
         }
     }
-    ui_button(c, kst_panel_apply_rect(), k.warn.apply,
+    kp_button(c, kst_panel_apply_rect(), k.warn.apply,
               ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), edge,
                            k.warn.hold.held_s),
               k.warn.down, true);
-    ui_button(c, kst_panel_cancel_rect(), TR(CANCEL),
+    kp_button(c, kst_panel_cancel_rect(), TR(CANCEL),
               ui_theme_color(UI_C_PANEL_SUNK),
               k.have && k.pressed == P_CANCEL, true);
 }

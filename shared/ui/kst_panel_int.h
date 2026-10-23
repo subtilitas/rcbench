@@ -27,6 +27,7 @@
 #include "touch_types.h"
 #include "ui_card_text.h"
 #include "ui_keypad.h"
+#include "ui_layout.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -34,15 +35,40 @@
 
 /* ------------------------------------------------------------------ geometry */
 
-#define TAB_H    26
-#define TAB_W    376          /* five tabs of 72 px, 9 cells each */
-#define ROW0     48           /* below the area's top */
-#define PITCH    42
-#define ROW_H    34
-#define VAL_W    116          /* 14 cells of a button */
-#define WIDE_W   200          /* a wide row's value */
-#define STEP_W   44           /* its minus and plus keys */
-#define LINE_H   18
+/**
+ * @brief The overlay's layout, in pixels from the area's top left.  Every
+ *        width that is not a control's own comes from the area's width.
+ *
+ * On SERVO's left card of 620 px: five tabs of 95 px and CLOSE of 120 px
+ * in one row 48 px tall, rows 48 px tall at a 56 px pitch, two columns of
+ * 295 px, a value of 150 px (15 cells of KP_FONT), a wide row's of 260 px
+ * with minus and plus keys of 56 px.  Every control ends at kpn_foot().
+ */
+#define TAB_Y    8            /**< the tabs' and CLOSE's top */
+#define TAB_H    UI_TAP_MIN   /**< their height, 48 px, as every row's */
+#define CLOSE_W  120          /**< CLOSE's width */
+#define ROW0     64           /**< the first row's top: the tabs and 8 px */
+#define PITCH    56           /**< a row's pitch: 8 px between two */
+#define ROW_H    UI_TAP_MIN   /**< a row's height, 48 px */
+#define VAL_W    150          /**< a value, 15 cells of KP_FONT */
+#define WIDE_W   260          /**< a wide row's value, keys included */
+#define STEP_W   56           /**< a stepped row's minus and plus keys */
+
+/**
+ * @brief The faces: KP_FONT, the type scale's LABEL face (10 x 20), for
+ *        the labels, the buttons, the notes and the warning pages' lines;
+ *        KP_TITLE_FONT, the HEAD face (20 x 36), for a warning page's
+ *        title.  LINE_H is a wrapped row's pitch in KP_FONT and KP_CELL
+ *        its cell's width.
+ */
+#define KP_FONT       (&gfx_font_10x20) /**< labels, buttons, lines */
+#define KP_TITLE_FONT (&gfx_font_20x36) /**< a warning page's title    */
+#define KP_CELL       10                /**< KP_FONT's cell, px        */
+#define LINE_H        20                /**< a wrapped row's pitch, px */
+
+/** @brief The space between the bottom of a control at the foot and the
+ *         alert band's top: 4 px, as every screen's footer. */
+#define FOOT_GAP 4
 
 /* The plus and minus keys repeat as SETUP's do. */
 #define REPEAT_DELAY_S 0.45f
@@ -93,19 +119,24 @@ enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
 #define KP_VOLTAGE (-1)
 #define KP_CURRENT (-2)
 #define KP_WAIT    (-3)
-#define CHOICE_MAX 8
+/** @brief The entries a list holds: the fullest, FILES, has
+ *         KST_PROG_FILES_MAX files between the entry that saves and the one
+ *         that pages on; 7 rows of ROW_H at PITCH fit above CANCEL on
+ *         SERVO's left card. */
+#define CHOICE_MAX 7
 #define WARN_LINES 12
-/* The rows a page's lines take at most, wrapped to the page's width: 14
- * rows at LINE_H take 250 px of the 268 px from WARN_TOP to 8 px above
- * the buttons. */
-#define WARN_ROWS 14
+/** @brief The rows a page's lines take at most, wrapped to the page's
+ *         width: 16 rows at LINE_H take 320 px of the 356 px from WARN_TOP
+ *         to 8 px above the buttons on SERVO's left card.  A shorter area
+ *         takes fewer (kpn_warn_room()). */
+#define WARN_ROWS 16
 /* The lines a page gives to the warnings of soft limits. */
 #define WARN_RULES 7
 /* The lines the page of a file gives to its values. */
 #define FILE_VALUES 4
-/* The page's first line, under its title; the pitch of its lines, the
- * widest of these that fits, and the rows of a wrapped line at LINE_H. */
-#define WARN_TOP 68
+/** @brief A warning page's first line under the area's top: the title in
+ *         KP_TITLE_FONT from 16 px, 36 px tall, and 12 px. */
+#define WARN_TOP 64
 
 /** @brief The overlay's state. */
 typedef struct {
@@ -237,6 +268,19 @@ int kpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
                   gfx_color_t color);
 /** @brief The tabs. */
 gfx_rect_t kpn_tabs_rect(void);
+/**
+ * @brief Where a control at the area's foot ends.
+ * @return the lower of 8 px above the area's foot and FOOT_GAP above the
+ *         alert band, in the area's coordinates (body pixels)
+ */
+int kpn_foot(void);
+/**
+ * @brief Where the notes and the message under a page end.
+ * @return the lower of 6 px above the area's foot and FOOT_GAP above the
+ *         alert band, in the area's coordinates (body pixels): no text
+ *         lies under the band
+ */
+int kpn_notes_foot(void);
 /** @brief Row @p r, its label and its control. */
 gfx_rect_t kpn_row_rect(const row_t *r);
 /** @brief Row @p r's value, between its keys where it has them. */
@@ -268,6 +312,13 @@ void kpn_write_n(char *out, size_t size, unsigned n);
 
 /** @brief The rows the page's lines take. */
 int kpn_warn_rows(void);
+/**
+ * @brief The rows a warning page's lines may take in the area: those that
+ *        fit between WARN_TOP and 8 px above the buttons, WARN_ROWS at
+ *        most; 14 in an area 420 px tall.
+ * @return the rows
+ */
+int kpn_warn_room(void);
 /** @brief The page of an edit of row @p r that passes a soft limit. */
 void kpn_warn_soft(const row_t *r);
 /** @brief The page of ENABLE WRITE TO SERVO. */

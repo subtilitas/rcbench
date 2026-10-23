@@ -1409,7 +1409,10 @@ das Messgerät, `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2` oder
 `AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1` (`STROM INA3221`, solange
 kein Kanal das Ziel überwacht), die nächste sagt, warum er nicht starten
 kann oder was er gerade tut, dann folgen das letzte Ergebnis und sein
-Bericht. TEST bleibt beim Start zu sehen. Sein Feld auf der linken Karte von
+Bericht. Diese vier Zeilen stehen in der Schrift 10 x 20, 20 px
+auseinander, die erste 2 px unter ENDLAGENLAUF STARTEN, sodass die vierte
+2 px innerhalb der 200 px hohen Karte endet. TEST bleibt beim Start zu
+sehen. Sein Feld auf der linken Karte von
 LIVE zeigt die geschriebenen Werte
 von 8, die Phase mit Seite und Puls und den Ausgang, den er treibt, mit
 LAUF BEENDEN; nach dem Lauf bis SCHLIESSEN das Urteil, die Werte oder die
@@ -1465,6 +1468,13 @@ Zeilen. Mit einer Zeile ist nichts davon gezeichnet. Modellierte Protokolle
 ohne Transport auf dem IOmcu, die Hitec-Servos der D-Serie darunter, haben
 keine Zeile ([Programmieren](#programmieren) auf MOTOR & ESC).
 
+Eine Zeile ist 48 px hoch mit 8 px darunter, eine Überschrift 28 px mit
+4 px darunter, beide in der Schrift 10 x 20. Die Leiste über einer
+blätternden Liste ist 48 px hoch: SUCHE 260 px breit links, `^` und `v` je
+56 px rechts. Jeder Eintrag endet 4 px über dem Alert-Band: auf der linken
+Karte von SERVO passen 7 Zeilen ohne die Leiste, 6 unter ihr. Die Liste
+von MOTOR & ESC ist dieselbe Liste.
+
 Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport,
 den der Tester treibt, aus PWM (Pulsweitenmodulation) und liest und
 schreibt die Einstellungen des Servos über dessen Signalleitung. PROG-PORT 1
@@ -1482,6 +1492,32 @@ Die Sollwerte und AUSGANG EIN der Zeile SOLL und des SUPPLY-Bildschirms sind
 so lange gedimmt und nehmen keinen Druck; AUSGANG AUS funktioniert. Er verlässt das Programmieren, ohne die Versorgung
 des Servos aus- und einzuschalten. Ob ein KST-Servo im Programmiermodus PWM
 folgt, ist nicht gemessen.
+
+Das Layout des Programmierers auf der linken Karte von 620 px; jedes
+Bedienelement ist 48 px hoch oder höher und endet 4 px über dem
+Alert-Band:
+
+| Teil | Größe |
+| --- | --- |
+| Reiter und SCHLIESSEN | eine Zeile oben, 48 px hoch: fünf Reiter von 95 px, SCHLIESSEN 120 px |
+| Zeilen | 48 px hoch im Abstand von 56 px, bis zu 5 je Reiter, in zwei Spalten von 295 px; eine breite Zeile nimmt beide |
+| Werte | 150 px (15 Zeichen der Schrift 10 x 20); bei einer breiten Zeile 260 px, darin ihre Tasten `-` und `+` von 56 px |
+| Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20 px je Zeile, bis 4 px über dem Alert-Band: 7 Zeilen unter dem Reiter SERVO |
+| Listen (DATEIEN, ZURÜCKSPIELEN, WEITERES, ein Faktor) | ein Titel, dann bis zu 7 Einträge, 48 px hoch im Abstand von 56 px, ABBRECHEN 150 x 48 px am Fuß |
+| Warnseiten | der Titel in der Schrift 20 x 36, bis zu 16 Zeilen in der Schrift 10 x 20 (in einem niedrigeren Bereich weniger: die Zeilen, die 8 px über den Tasten Platz haben), die Halte-Taste 300 x 56 px und ABBRECHEN 180 x 56 px am Fuß |
+
+Die Beschriftungen der Reiter stehen in der Schrift 10 x 20, wenn jede in
+ihren Reiter von 95 px passt, wie im Englischen, und in der Schrift
+8 x 16, wenn eine nicht passt, wie das deutsche `ABSTIMMEN`. Kein Hinweis,
+keine Meldung und kein Bedienelement liegt unter dem Alert-Band. Jede Zeile
+einer Meldung wird gezeichnet: die längste nimmt 5 der 7 Zeilen unter dem
+Reiter SERVO. Lassen die beiden stehenden Zeilen neben der Meldung keine
+Zeile für die Seitenzahl frei, weichen sie ihr: sie blättern mit den
+anderen Hinweisen, zuerst, und eine Zeile, die höher ist als eine Seite,
+wartet, bis die Meldung geht. Im Deutschen brauchen das längste Paar
+(4 Zeilen) und die längste Meldung (5 Zeilen) 9 Zeilen; dort wartet das
+Paar.
+
 [Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md)
 beschreibt ihn.
 
