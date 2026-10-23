@@ -585,24 +585,58 @@ static fm_err_t one_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
 }
 
 /**
- * @brief Whether the rules let the job's file go on: fm_allowed() of the
- *        source of a copy or a load, or of the file a save writes, as the
- *        bench stands now.
+ * @brief The operation the rules are asked about for a job's kind.
+ * @param kind  the job's kind
+ * @return its fm_op_t
+ */
+static fm_op_t op_of(fm_job_kind_t kind)
+{
+    switch (kind) {
+    case FM_JOB_COPY:
+        return FM_OP_COPY;
+    case FM_JOB_MOVE:
+        return FM_OP_MOVE;
+    case FM_JOB_RENAME:
+        return FM_OP_RENAME;
+    case FM_JOB_DELETE:
+        return FM_OP_DELETE;
+    case FM_JOB_MKDIR:
+    case FM_JOB_CREATE:
+        return FM_OP_NEW;
+    case FM_JOB_SAVE:
+        return FM_OP_SAVE;
+    case FM_JOB_LOAD:
+    case FM_JOB_NONE:
+    default:
+        return FM_OP_OPEN;
+    }
+}
+
+/**
+ * @brief Whether the rules let the job go on as the bench stands now:
+ *        fm_allowed() of the source of a copy, a load, a move, a rename or
+ *        a delete, of the file a save writes, or of the folder NEW makes
+ *        something in.
  * @param job    the job
  * @param bench  the bench now
- * @param op     FM_OP_COPY, FM_OP_SAVE or FM_OP_OPEN
  * @return FM_OK or the refusal
  */
-static fm_err_t still_allowed(const fm_job_t *job, const fm_bench_t *bench,
-                              fm_op_t op)
+static fm_err_t still_allowed(const fm_job_t *job, const fm_bench_t *bench)
 {
-    const char *path = (job->kind == FM_JOB_SAVE) ? job->dst : job->src;
+    const fm_op_t op = op_of(job->kind);
+    const bool in_dst = (job->kind == FM_JOB_SAVE || op == FM_OP_NEW);
+    const char *path = in_dst ? job->dst : job->src;
     char dir[FM_PATH_MAX];
     const char *cut = strrchr(path, '/');
     const size_t k = (cut != NULL) ? (size_t)(cut - path) : 0u;
     memcpy(dir, path, k);
     dir[k] = '\0';
-    return fm_allowed(bench, op, dir, (cut != NULL) ? cut + 1 : path, false);
+    if (op == FM_OP_NEW) {
+        /* NEW asks about the folder it makes something in: the gate. */
+        return fm_allowed(bench, op, dir, "", true);
+    }
+    return fm_allowed(bench, op, dir, (cut != NULL) ? cut + 1 : path,
+                      job->is_dir);
 }
 
 /**
@@ -618,9 +652,6 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
                                 const fm_bench_t *bench, uint8_t *chunk,
                                 size_t size)
 {
-    const fm_op_t op = (job->kind == FM_JOB_SAVE) ? FM_OP_SAVE
-                     : (job->kind == FM_JOB_COPY) ? FM_OP_COPY
-                                                  : FM_OP_OPEN;
     const bool writes = (job->kind != FM_JOB_LOAD);
     fm_err_t err = FM_OK;
     switch (job->step) {
@@ -633,7 +664,7 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
         /* The gate, and what the source's place allows now: the fault log
          * is copied only while the link is up, and the link can drop
          * between two chunks. */
-        const fm_err_t gate = still_allowed(job, bench, op);
+        const fm_err_t gate = still_allowed(job, bench);
         if (gate != FM_OK) {
             return finish(job, io, FM_JOB_STOPPED, gate,
                           job->step == STEP_DATA && writes);
@@ -728,7 +759,11 @@ fm_job_state_t fm_job_step(fm_job_t *job, const fm_io_t *io,
     } else if (job->cancel) {
         state = finish(job, io, FM_JOB_STOPPED, FM_ERR_CANCELLED, false);
     } else {
-        const fm_err_t err = single(job, io);
+        /* Queued while SAFE, run now: the gate, the place, the link and
+         * the logger's files are asked again before the one call, and a
+         * refusal changes nothing on the card. */
+        const fm_err_t allowed = still_allowed(job, bench);
+        const fm_err_t err = (allowed != FM_OK) ? allowed : single(job, io);
         state = finish(job, io, (err == FM_OK) ? FM_JOB_DONE : FM_JOB_FAILED,
                        err, false);
     }

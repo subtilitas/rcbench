@@ -510,7 +510,7 @@ TEST_CASE(a_full_folder_takes_no_copy_and_no_new_entry)
     CHECK(clean());
 }
 
-TEST_CASE(the_gate_stops_a_copy_at_its_next_chunk_and_lets_a_rename_finish)
+TEST_CASE(the_gate_stops_a_copy_at_its_next_chunk_and_a_queued_rename)
 {
     for (int why = 0; why < 2; ++why) {
         fresh();
@@ -542,16 +542,17 @@ TEST_CASE(the_gate_stops_a_copy_at_its_next_chunk_and_lets_a_rename_finish)
     g_bench.armed = true;
     CHECK_EQ(step(), FM_JOB_STOPPED);
     CHECK_EQ(g_card.calls[FK_OPEN], 0);
-    /* A rename started SAFE is one call and finishes. */
+    /* A rename queued SAFE and run ARMED is refused before its call;
+     * started ARMED, refused at once. */
     fresh();
     fk_file(&g_card, "OLD.TXT", NULL, 10u);
     CHECK_EQ(fm_job_rename(&g_job, &g_bench, 1u, "", "OLD.TXT", false,
                            "NEW.TXT"), FM_OK);
     g_bench.armed = true;
-    CHECK_EQ(step(), FM_JOB_DONE);
-    CHECK(fk_get(&g_card, "NEW.TXT") != NULL);
-    /* Started ARMED, refused. */
-    CHECK_EQ(fm_job_rename(&g_job, &g_bench, 1u, "", "NEW.TXT", false,
+    CHECK_EQ(step(), FM_JOB_FAILED);
+    CHECK_EQ(g_job.err, FM_ERR_ARMED);
+    CHECK(fk_get(&g_card, "OLD.TXT") != NULL);
+    CHECK_EQ(fm_job_rename(&g_job, &g_bench, 1u, "", "OLD.TXT", false,
                            "B.TXT"), FM_ERR_ARMED);
     CHECK_EQ(step(), FM_JOB_FAILED);
 }
@@ -1068,7 +1069,7 @@ int main(void)
     RUN(a_copy_overwrites_nothing);
     RUN(a_copy_is_refused_where_the_rules_refuse_it);
     RUN(a_full_folder_takes_no_copy_and_no_new_entry);
-    RUN(the_gate_stops_a_copy_at_its_next_chunk_and_lets_a_rename_finish);
+    RUN(the_gate_stops_a_copy_at_its_next_chunk_and_a_queued_rename);
     RUN(move_goes_across_folders_and_never_onto_a_name);
     RUN(a_moved_name_of_63_characters_keeps_it);
     RUN(a_refused_rename_leaves_both_names_as_they_were);
