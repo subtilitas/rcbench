@@ -179,7 +179,9 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
  * Bit SUPPLY_OK_VOLTAGE of ok says v is a reading, SUPPLY_OK_CURRENT that i
  * is one, and both that p is one; counted (BENCH_COUNTED_*) says which of
  * charge_mah and energy_wh the run has counted.  All 0 is a row with no
- * supply reading: its five cells are empty.
+ * supply reading: its five cells are empty.  withheld marks the supply's
+ * model on a measured row, whose five cells are empty whatever the run has
+ * counted.
  */
 typedef struct {
     float   v;           /**< at the supply's output, V */
@@ -189,6 +191,7 @@ typedef struct {
     float   energy_wh;   /**< since the switch to ARMED, Wh */
     uint8_t ok;          /**< SUPPLY_OK_* of the readings taken */
     uint8_t counted;     /**< BENCH_COUNTED_* of the totals */
+    bool    withheld;    /**< the supply's model on a measured row */
 } log_rail_t;
 
 /**
@@ -197,8 +200,8 @@ typedef struct {
  *
  * The readings that arrived, by @p s's ok bits.  None from a supply that is
  * the panel's model (supply_state_t.modelled) unless @p row_modelled: a row
- * of measured bench readings carries no modelled supply figures.  @p s NULL
- * takes none.
+ * of measured bench readings carries no modelled supply figures, and
+ * out->withheld says so.  @p s NULL takes none.
  *
  * @param out          Receives the reading.
  * @param s            The supply's state, or NULL.
@@ -216,7 +219,9 @@ void log_rail_take(log_rail_t *out, const supply_state_t *s,
  * bench_totals_count() counts them: a step over BENCH_TOTALS_MAX_STEP_S
  * (1.0s) counts 1.0s, a step that is not positive counts nothing, and
  * nothing is counted unless @p driving.  bench_totals_reset() starts a run.
- * Either pointer NULL does nothing.
+ * A withheld reading counts nothing and takes no totals: its row carries
+ * none, the model's totals of an earlier stretch included.  Either pointer
+ * NULL does nothing.
  *
  * @param t       The run's totals.
  * @param r       The reading; its charge_mah, energy_wh and counted are set.
