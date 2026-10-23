@@ -18,6 +18,7 @@
  * - a_protocol_index_from_outside_cannot_run_off_the_table
  * - null_events_are_refused_rather_than_dereferenced
  * - every_two_line_string_of_the_column_breaks_into_two
+ * - a_number_goes_down_with_the_word_before_it
  *
  * SPDX-License-Identifier: MIT
  */
@@ -551,6 +552,68 @@ TEST_CASE(every_two_line_string_of_the_column_breaks_into_two)
     }
 }
 
+/**
+ * @brief The rightmost inked column of line @p line, -1 for none.
+ *
+ * @param px     The canvas's pixels, @p w wide.
+ * @param w      The canvas's width, px.
+ * @param line   The line, 0 the first, on a 22px pitch of 20px lines.
+ * @return The column, or -1 when the line has no ink.
+ */
+static int last_ink(const gfx_color_t *px, int w, int line)
+{
+    int last = -1;
+    for (int y = line * 22; y < line * 22 + 20; ++y) {
+        for (int x = 0; x < w; ++x) {
+            if (px[(size_t)y * (size_t)w + (size_t)x] != 0u && x > last) {
+                last = x;
+            }
+        }
+    }
+    return last;
+}
+
+/*
+ * The port reason is 31 cells in English and 32 in German, the column 30:
+ * a break at the last space would leave the port's number alone on the
+ * second line.  The number goes down with PORT, and the second line holds
+ * more than one cell; a word that is not digits alone breaks as before.
+ */
+TEST_CASE(a_number_goes_down_with_the_word_before_it)
+{
+    enum { W = 300, H = 44 };
+    static gfx_color_t px[W * H];
+    gfx_canvas_t c;
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        for (unsigned port = 1u; port <= 4u; ++port) {
+            char s[96];
+            snprintf(s, sizeof(s), ui_tr_in((ui_lang_t)l,
+                                            TX_OUT_PORT_TESTER_ON), port);
+            memset(px, 0, sizeof(px));
+            gfx_canvas_init(&c, px, W, H, W);
+            CHECK_EQ(outputs_wrap(&c, gfx_rect_make(0, 0, W, 20), 22, s, 3,
+                                  &gfx_font_10x20, 0xFFFFu, false),
+                     2);
+            /* "PORT 1" or "PROG-PORT 1": at least 6 cells of 10px. */
+            CHECK(last_ink(px, W, 1) >= 50);
+        }
+    }
+    /* Not digits alone: "PORTS" and "1A" break at the last space. */
+    CHECK_EQ(outputs_wrap(NULL, gfx_rect_make(0, 0, 50, 20), 22,
+                          "ABC PORTS", 3, &gfx_font_10x20, 0, false),
+             2);
+    memset(px, 0, sizeof(px));
+    gfx_canvas_init(&c, px, W, H, W);
+    CHECK_EQ(outputs_wrap(&c, gfx_rect_make(0, 0, 60, 20), 22, "AB CD 1A",
+                          3, &gfx_font_10x20, 0xFFFFu, false),
+             2);
+    CHECK(last_ink(px, W, 1) < 20);   /* "1A" alone, 2 cells */
+    /* A number after the line's only word cannot go down with it. */
+    CHECK_EQ(outputs_wrap(NULL, gfx_rect_make(0, 0, 40, 20), 22, "PORT 1",
+                          3, &gfx_font_10x20, 0, false),
+             2);
+}
+
 int main(void)
 {
     RUN(the_longest_protocol_name_fits_the_list_and_a_cell);
@@ -567,5 +630,6 @@ int main(void)
     RUN(a_protocol_index_from_outside_cannot_run_off_the_table);
     RUN(null_events_are_refused_rather_than_dereferenced);
     RUN(every_two_line_string_of_the_column_breaks_into_two);
+    RUN(a_number_goes_down_with_the_word_before_it);
     return test_summary("outputs_screen_draw");
 }
