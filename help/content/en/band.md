@@ -38,8 +38,8 @@ A channel with no command for 500 ms sits at rest while ARMED: a throttle at 0 %
 
 STOP works on every screen that has the band. It switches the bench to SAFE, switches the supply output off and latches: the bench stays SAFE until it is switched to ARMED again. Leaving the screen, an alert that clears or a link that comes back does not clear a stop.
 
-- STOP acts on a press that lands on it. A finger that slides onto STOP from the screen stops nothing.
-- A second finger on STOP is answered while the first finger drags.
+- STOP acts on a press that lands on it, at the press. A finger that slides onto STOP from the screen stops nothing. A finger that lands on STOP and slides off stops all the same.
+- A second finger on STOP is answered while the first finger drags, and the drag ends at that press.
 - With a chip's box open, a press on STOP closes the box and stops at once.
 
 ## Chip help
@@ -88,4 +88,5 @@ A fault the open screen does not show appears in a red band, 34 px high, across 
 
 - A touch that comes down on the band stays the band's. Sliding it into the screen moves nothing there.
 - A touch that comes down on the screen and slides up into the band is released at its last point on the screen. A slider or the SERVO dial keeps the value it had there. A hold on ARM or OUTPUT ON is abandoned.
-- DISARM, OUTPUT OFF and START TEST while a servo test runs still act on such a release, because they stop something.
+- OUTPUT OFF and START TEST while a servo test runs still act on such a release, because they stop something. DISARM has acted on its press already.
+- A press on the band, on STOP or on the alert band ends a drag another finger makes on a slider or the SERVO dial.

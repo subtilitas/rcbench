@@ -800,7 +800,7 @@ extern QueueHandle_t s_supply_q;  /**< control task -> app_main */
 
 /* STOP's request and its count; the let-goes asked for. */
 extern atomic_bool s_stop_request;
-extern atomic_bool s_stop_counted;
+extern atomic_uint s_stop_counted;  /**< s_touch_q number of a counted STOP, 0 none */
 extern atomic_uint s_lets_go;
 
 /* The supply's switch and set points, from the render side. */

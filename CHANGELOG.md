@@ -8,6 +8,18 @@ history is in git.
 
 ### Fixed
 
+- STOP and DISARM on MOTOR & ESC and on SERVO act on the press, not on the
+  release. On an ESP32-P4 panel, whose router and screens act the same, a
+  STOP held 600ms stopped the pulses 0.62s after the press, at the lift,
+  and a DISARM held 600ms 0.618s after it; not measured on an ESP32-S3
+  panel. The
+  control task's own STOP test and the router's both act at the press; a
+  press on DISARM takes no hold, so a finger left on it arms nothing. ARM
+  stays a 2s hold.
+- A press the router keeps from the screen -- on the band, STOP, the home
+  tag, a chip or the alert band -- ends a dial or slider drag another finger
+  makes, as a press on the screen does. A STOP pressed during a SERVO dial
+  drag let the pulse follow the drag for the whole press.
 - A SERVO run's log, `SERVOnnn.CSV`, carries the supply's figures in
   `voltage`, `current`, `power`, `charge` and `energy`: the PD mini's last
   reading at each row, current to 0.001A, and charge and energy counted

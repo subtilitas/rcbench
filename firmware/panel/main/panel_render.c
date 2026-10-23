@@ -1,5 +1,6 @@
-/*
- * The render side's services, once a frame on app_main: the programmer's
+/**
+ * @file
+ * @brief The render side's services, once a frame on app_main: the programmer's
  * model, the supply's levels, the servo test's lines, the rotary knob, the
  * touch drain and the screens' commands on their way to the control task.
  *
@@ -397,8 +398,8 @@ void flush_screen_commands(uint32_t stops_now)
     }
 }
 
-/*
- * The screens' record of the glass is stale: an event between the last one
+/**
+ * @brief The screens' record of the glass is stale: an event between the last one
  * they saw and the next never reached them.  Every gesture in progress is
  * dropped, which asks for nothing -- what letting go early already does --
  * except where abandoning is itself the failure (a disarm press; see
@@ -406,18 +407,28 @@ void flush_screen_commands(uint32_t stops_now)
  * the frame: a lost event is what a stalled renderer produces, and a DISARM
  * must not wait behind the render and the flip.
  *
- * The STOP marker goes too, unless a request is already raised.  The marker
- * says the router will latch a stop the control task already applied, and
- * the router's press of the band was just cancelled, so no request follows
- * to consume it; one left standing would swallow the next stop that
- * genuinely needs the backstop.  A request the router latched before the
+ * The STOP marker goes too, unless a request is already raised or the
+ * marked press is still to come.  The marker says the router will latch a
+ * stop the control task already applied.  A marked press the router has
+ * taken was cancelled with its gestures, and one among the lost never
+ * reaches it, so no request follows to consume the marker; one left
+ * standing would swallow the next stop that genuinely needs the backstop.
+ * A marked press queued after the item at @p cur, or the event at @p cur
+ * itself, is dispatched after the cancel and latches, so its marker stays
+ * (stop_mark_keeps()).  A request the router latched before the
  * loss will consume it as it should -- including one still in the router's
  * own latch, which this frame would hand over only later: it is handed over
  * here first, the same way, so the marker is kept for it.  The residual is
  * a request raised by the backstop between the load and the store, which
  * resolves to a stop applied twice, and that latches the same way one does.
+ *
+ * @param stops_now the stop count the commands flushed here carry
+ * @param cur the s_touch_q number of the item that showed the loss, or the
+ *        last published number for a loss at the end of a drain
+ * @param cur_is_event whether that item is an event dispatched next
  */
-static void touch_stream_broke(uint32_t stops_now)
+static void touch_stream_broke(uint32_t stops_now, uint32_t cur,
+                               bool cur_is_event)
 {
     /* A throttle or position the knob posted last frame and the flush below
      * would send is not sent: this frame lost touch. */
@@ -428,14 +439,21 @@ static void touch_stream_broke(uint32_t stops_now)
         atomic_store(&s_stop_request, true);
     }
     if (!atomic_load(&s_stop_request)) {
-        atomic_store(&s_stop_counted, false);
+        unsigned mark = atomic_load(&s_stop_counted);
+        if (mark != 0u && !stop_mark_keeps(mark, cur, cur_is_event)) {
+            /* Only this marker: one the control task wrote meanwhile is a
+             * later press's. */
+            (void)atomic_compare_exchange_strong(&s_stop_counted, &mark, 0u);
+        }
     }
     flush_screen_commands(stops_now);
 }
 
-/*
- * Hand the screens what the control task saw of the panel.  Returns whether
- * the stream was found broken.  Render loop only.
+/**
+ * @brief Hand the screens what the control task saw of the panel.  Render
+ *        loop only.
+ * @param stops_now the stop count the commands flushed here carry
+ * @return whether the stream was found broken
  */
 bool drain_touch(uint32_t stops_now)
 {
@@ -462,7 +480,7 @@ bool drain_touch(uint32_t stops_now)
         const uint32_t missed = touch_seq_take(&s_tq_rx, item.seq);
         s_tq_lost += missed;
         if (missed > 0u || item.lost) {
-            touch_stream_broke(stops_now);
+            touch_stream_broke(stops_now, item.seq, !item.lost);
             lost = true;
         }
         if (item.lost) {
@@ -500,7 +518,7 @@ bool drain_touch(uint32_t stops_now)
         const uint32_t tail = touch_seq_tail(&s_tq_rx, tq_published);
         if (tail > 0u) {
             s_tq_lost += tail;
-            touch_stream_broke(stops_now);
+            touch_stream_broke(stops_now, tq_published, false);
             lost = true;
         }
     }    return lost;

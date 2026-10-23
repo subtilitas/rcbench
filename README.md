@@ -54,7 +54,7 @@ the bench is ARMED.
 
 Switching to ARMED is deliberate: a two-second hold on ARM, with the command sent when the
 hold completes rather than when the finger lifts. DISARM and STOP are a
-single press.
+single press and act when the finger comes down, not when it lifts.
 
 Three stop mechanisms are designed in: a heartbeat whose absence removes the
 outputs, the IOmcu's own link watchdog, and a STOP command over the link.
@@ -124,7 +124,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.8%**, 50,882 of 52,046 lines in 203 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.8%**, 50,893 of 52,062 lines in 203 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).
