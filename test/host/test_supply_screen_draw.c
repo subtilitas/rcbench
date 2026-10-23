@@ -33,13 +33,13 @@
 
 #include "supply_screen_rig.h"
 
-#define TABLE_X   99           /* the TABLE tab */
+#define TABLE_X   SU_TABLE_TAB_X /* the TABLE tab */
 
-#define PLOT_TAB_X 37          /* the PLOT tab */
+#define PLOT_TAB_X SU_PLOT_TAB_X /* the PLOT tab */
 
-#define TABLE_Y   47
+#define TABLE_Y   SU_PANE_Y
 
-#define MODRESET_Y 316         /* RESET PD MINI, left column, SETTINGS */
+#define MODRESET_Y SU_MODRESET_Y /* RESET PD MINI, left column, SETTINGS */
 
 /* A whole frame drawn from nothing, so two screens can be compared by their
  * pixels: the trace, the readouts and the panel's title tag. */
@@ -64,10 +64,10 @@ TEST_CASE(the_heading_says_what_the_output_does_on_either_pane)
     supply_screen_push(&st);
     supply_invalidate();
     scr->render(&cv2, 0);
-    /* The upper panel's title tag: x 6..130, y 60..80. */
+    /* The upper panel's title tag: x 8..130, y 56..76. */
     int differ = 0;
-    for (int y = 60; y < 80; ++y) {
-        for (int x = 6; x < 130; ++x) {
+    for (int y = SU_TAG_Y; y < SU_TAG_Y + 20; ++y) {
+        for (int x = 8; x < 130; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
     }
@@ -79,8 +79,8 @@ TEST_CASE(the_heading_says_what_the_output_does_on_either_pane)
     supply_invalidate();
     scr->render(&cv2, 0);                /* TABLE, after the run */
     int same = 0, total = 0;
-    for (int y = 60; y < 80; ++y) {
-        for (int x = 6; x < 130; ++x) {
+    for (int y = SU_TAG_Y; y < SU_TAG_Y + 20; ++y) {
+        for (int x = 8; x < 130; ++x) {
             same += (fb[y * W + x] == fb2[y * W + x]) ? 1 : 0;
             ++total;
         }
@@ -90,8 +90,8 @@ TEST_CASE(the_heading_says_what_the_output_does_on_either_pane)
     supply_invalidate();
     scr->render(&cv2, 0);                /* PLOT, holding the run */
     differ = 0;
-    for (int y = 60; y < 80; ++y) {
-        for (int x = 6; x < 130; ++x) {
+    for (int y = SU_TAG_Y; y < SU_TAG_Y + 20; ++y) {
+        for (int x = 8; x < 130; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
     }

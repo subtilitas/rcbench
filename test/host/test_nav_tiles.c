@@ -30,6 +30,7 @@
 
 #include "nav_rig.h"
 #include "motor_spots.h"
+#include "supply_spots.h"
 
 static void tap_tile(int index)
 {
@@ -515,15 +516,21 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
  * What the four tool screens open over themselves, in panel coordinates
  * (supply_screen.c, wifi_screen.c, outputs_screen.c, picker_screen.c).
  */
-static void open_supply_settings(void) { tap(181, UI_BAND_H + 18); }
+static void open_supply_settings(void)
+{
+    tap(SU_TAB_X(1), UI_BAND_H + SU_TAB_Y);
+}
 
-static void open_supply_keypad(void)   { tap(676, UI_BAND_H + 65); }
+static void open_supply_keypad(void)
+{
+    tap(SU_CARD_X, UI_BAND_H + SU_CARD_Y(0));
+}
 
 /* SETTINGS, then VOLTAGE MAX's keypad over its page. */
 static void open_supply_settings_keypad(void)
 {
     open_supply_settings();
-    tap(144, UI_BAND_H + 94);
+    tap(SU_ROW_L_X, UI_BAND_H + SU_VMAX_Y);
 }
 
 static void open_wifi_list(void)       { tap(196, UI_BAND_H + 180); }
@@ -573,8 +580,9 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
         settings_set(SET_SUPPLY_CONFIRM_SLIDE, ask ? 1.0f : 0.0f);
         ui_router_goto(SCREEN_SUPPLY);
         supply_screen_set_output(live);
-        touch(82, UI_BAND_H + 335, TOUCH_EVENT_DOWN, 1);
-        touch(282, UI_BAND_H + 335, TOUCH_EVENT_MOVE, 1);
+        touch(SU_TRACK_X + 10, UI_BAND_H + SU_V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+        touch(SU_TRACK_X + 210, UI_BAND_H + SU_V_ROW_Y, TOUCH_EVENT_MOVE,
+              1);
         const gfx_rect_t home = ui_home_tag_rect("SUPPLY");
         touch(home.x + home.w / 2, home.y + home.h / 2, TOUCH_EVENT_DOWN, 2);
         touch(home.x + home.w / 2, home.y + home.h / 2, TOUCH_EVENT_UP, 2);
@@ -582,7 +590,7 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
             T_FAIL("ask %d live %d: the home tag led to %d", ask, live,
                    ui_router_current());
         }
-        touch(282, UI_BAND_H + 335, TOUCH_EVENT_UP, 1);
+        touch(SU_TRACK_X + 210, UI_BAND_H + SU_V_ROW_Y, TOUCH_EVENT_UP, 1);
         settings_cancel_save();
     }
 }

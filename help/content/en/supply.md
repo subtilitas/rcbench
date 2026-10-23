@@ -17,7 +17,7 @@ The strip at the top holds two tasks, LIVE and SETTINGS. A tap switches the task
 | LIVE | the plot or the table, and the set points |
 | SETTINGS | the caps, the start values, the trips and the questions ([SETTINGS](#settings)) |
 
-The right column is the same on both tasks: the readings, OUTPUT ON and RESET PEAKS. The header is the row right of the strip: the supply, its state and the range the set points may take. It stays in sight on both tasks and under the keypad and the question. The home tag climbs one level at a time: over the question it drops the change, as CANCEL does; over a keypad it closes the keypad and keeps the value. A switch of task is no level: from LIVE or SETTINGS with nothing open it goes to the menu.
+The right column is the same on both tasks: the readings, and the CONTROL card with RESET PEAKS and OUTPUT ON at its foot, where SERVO and MOTOR & ESC have ARM. The header is the row right of the strip: the supply, its state and the range the set points may take. It stays in sight on both tasks and under the keypad and the question. The home tag climbs one level at a time: over the question it drops the change, as CANCEL does; over a keypad it closes the keypad and keeps the value. A switch of task is no level: from LIVE or SETTINGS with nothing open it goes to the menu.
 
 ## The supply model
 
@@ -47,7 +47,7 @@ Before the first switch-on the plot reads `Output has not been switched on yet.`
 | PWR | the output power and the run's peak |
 | MODE | CV (constant voltage) at the set voltage, CC (constant current) at the current limit, TRIPPED after a trip; CC is drawn in the warning colour |
 
-The plot shows voltage, current and power over the last 27 s, with each set point as a dashed line. TABLE lists the same values. The bracketed value is the set point the supply reports; while it does not answer, the one the screen holds.
+The plot shows voltage, current and power over the last 30 s, with each set point as a dashed line. TABLE lists the same values. The bracketed value is the set point the supply reports; while it does not answer, the one the screen holds.
 
 ## Set points
 
@@ -60,7 +60,7 @@ The PD mini's ranges are from the vendor's page, not measured. The PD mini gives
 
 - Drag a slider, or tap its track to set the value under the finger.
 - `-0.1` and `+0.1` step the value.
-- A tap on the VOLT or CURR card, or on a set point's value, opens the keypad.
+- A tap on the VOLT or CURR card, or on a set point's value at the right end of its row, opens the keypad.
 
 ![The keypad over the left column](view:supply-keypad)
 
@@ -114,7 +114,7 @@ With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It switches 
 
 ## The log of a run
 
-A run is one switch-on of the output. The plot clears when the output comes on and holds the run after it goes off. The mAh and Wh under OUTPUT ON count the run. RESET PEAKS starts the lowest and highest values again from the current reading.
+A run is one switch-on of the output. The plot clears when the output comes on and holds the run after it goes off. The mAh and Wh on the CONTROL card's title line count the run. RESET PEAKS starts the lowest and highest values again from the current reading.
 
 Each run is written to its own `SUPPLnnn.CSV` in `BENCH/LOGS` on the SD (Secure Digital) card, while Auto logs on [SETUP](setup.md#sd-card) > SD CARD is ON, one row every 50 ms, with the set point, voltage, limit, current, power, mode, charge, energy and source, `measured` or `model`. [Logs](logs.md) opens it.
 
