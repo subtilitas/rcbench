@@ -82,6 +82,12 @@ static const char *TAG = "wifi";
 /* And the task's end is waited for this long at most after it. */
 #define FETCH_EXIT_MS  20000u
 #define FETCH_AGENT    "rcbench-panel"
+/** @brief How long the worker waits for the event loop to pass the radio's
+ *         last events at its stop (drain()), ms. */
+#define DRAIN_MS       2000u
+
+/** @brief The worker's marker in the default event loop (drain()). */
+ESP_EVENT_DEFINE_BASE(WA_DRAIN_EVENT);
 
 static struct {
     SemaphoreHandle_t lock;
@@ -131,6 +137,7 @@ static struct {
      * sees a start that has not reached the radio as a radio off. */
     atomic_bool     asked;
     atomic_bool     de;
+    SemaphoreHandle_t drained;    /**< the event loop passed the marker */
 
     /* The fetch task's.  fetch_alive from its creation to its last touch
      * of anything shared; fetch_stop asks it to end. */
@@ -1208,31 +1215,115 @@ static bool auth_refused(uint8_t reason)
     }
 }
 
-static void on_scan_done(void)
+/**
+ * @brief Start the scan of @p tok, all channels, the driver's default
+ *        times, while it is still the scan under way; a refusal ends the
+ *        session WA_OFF_FAILED only while it still is.
+ *
+ * Called with the lock not held, from the event loop: the request goes to
+ * the C6 and waits for its answer, and a session can end and another start
+ * meanwhile (wa_scan_begin()).
+ *
+ * @param tok The scan's token.
+ * @param run The scan's number in the session, from 1.
+ */
+static void scan_start(uint32_t tok, unsigned run)
 {
+    lock();
+    const bool mine = wa_scan_is(&s.w, tok);
+    unlock();
+    if (!mine) {
+        ESP_LOGI(TAG, "scan %u: the session ended, not started",
+                 (unsigned)tok);
+        return;
+    }
+    wifi_scan_config_t sc = { 0 };
+    ESP_LOGI(TAG, "scan %u: start, try %u of %u", (unsigned)tok, run,
+             WA_SCAN_TRIES);
+    const esp_err_t e = esp_wifi_scan_start(&sc, false);
+    if (e != ESP_OK) {
+        lock();
+        const bool ended = wa_scan_refused(&s.w, tok);
+        unlock();
+        ESP_LOGW(TAG, "scan %u: refused: %s%s", (unsigned)tok,
+                 esp_err_to_name(e), ended ? "" : "; the session had ended");
+    }
+}
+
+/**
+ * @brief WIFI_EVENT_SCAN_DONE in a scan session: read the list of the scan
+ *        under way, or start it again, or end the session.
+ *
+ * A done report with no scan of this session under way reads nothing: its
+ * list, if any, goes with the driver at the radio's stop.  A failed scan, a
+ * list that cannot be read and a read that does not hold what the report
+ * counts each count as a failure (wa_scan_read_ok()), never as an empty
+ * list.  The scan's token carries the report through the read, which runs
+ * without the lock.
+ *
+ * @param d The event's data; NULL reads as a success that counts nothing.
+ */
+static void on_scan_done(const wifi_event_sta_scan_done_t *d)
+{
+    const uint32_t status = (d != NULL) ? d->status : 0u;
+    const unsigned reported = (d != NULL) ? d->number : 0u;
+    lock();
+    const uint32_t tok = wa_scan_pending(&s.w);
+    unlock();
+    if (tok == 0u) {
+        ESP_LOGW(TAG, "scan: done report with no scan under way, "
+                 "status %u, %u counted: ignored", (unsigned)status,
+                 reported);
+        return;
+    }
     uint16_t n = SCAN_READ;
-    wifi_ap_record_t *rec = heap_caps_malloc(n * sizeof(*rec),
-                                             MALLOC_CAP_SPIRAM);
-    if (rec == NULL || esp_wifi_scan_get_ap_records(&n, rec) != ESP_OK) {
+    bool read_ok = false;
+    wifi_ap_record_t *rec = NULL;
+    if (status == 0u) {
+        rec = heap_caps_malloc(n * sizeof(*rec), MALLOC_CAP_SPIRAM);
+        read_ok = (rec != NULL
+                   && esp_wifi_scan_get_ap_records(&n, rec) == ESP_OK);
+    }
+    if (!read_ok) {
         n = 0u;
         (void)esp_wifi_clear_ap_list();
     }
+    const bool ok = wa_scan_read_ok(status, reported, read_ok, n, SCAN_READ);
+    uint32_t next = 0u;
     lock();
-    wa_scan_clear(&s.scan);
-    for (uint16_t i = 0; i < n; ++i) {
-        const wifi_auth_mode_t m = rec[i].authmode;
-        const bool usable = (m == WIFI_AUTH_WPA2_PSK
-                             || m == WIFI_AUTH_WPA_WPA2_PSK
-                             || m == WIFI_AUTH_WPA3_PSK
-                             || m == WIFI_AUTH_WPA2_WPA3_PSK);
-        wa_scan_add(&s.scan, rec[i].ssid,
-                    strnlen((const char *)rec[i].ssid, sizeof(rec[i].ssid)),
-                    rec[i].rssi, usable);
+    const unsigned run = s.w.scan_runs;
+    const wa_scan_step_t step = wa_on_scan_end(&s.w, tok, ok, &next);
+    unsigned listed = 0u;
+    unsigned dropped = 0u;
+    if (step == WA_SCAN_TAKE) {
+        wa_scan_clear(&s.scan);
+        for (uint16_t i = 0; i < n; ++i) {
+            const wifi_auth_mode_t m = rec[i].authmode;
+            const bool usable = (m == WIFI_AUTH_WPA2_PSK
+                                 || m == WIFI_AUTH_WPA_WPA2_PSK
+                                 || m == WIFI_AUTH_WPA3_PSK
+                                 || m == WIFI_AUTH_WPA2_WPA3_PSK);
+            wa_scan_add(&s.scan, rec[i].ssid,
+                        strnlen((const char *)rec[i].ssid,
+                                sizeof(rec[i].ssid)),
+                        rec[i].rssi, usable);
+        }
+        s.scanned = true;
+        listed = s.scan.n;
+        dropped = s.scan.dropped;
     }
-    s.scanned = true;
-    wa_on_scan_done(&s.w);
     unlock();
     heap_caps_free(rec);
+    ESP_LOGI(TAG, "scan %u: done, try %u, status %u, %u counted, %u read%s; "
+             "%u listed, %u left off%s", (unsigned)tok, run,
+             (unsigned)status, reported, (unsigned)n,
+             read_ok ? "" : " (list not read)", listed, dropped,
+             (step == WA_SCAN_IGNORE) ? "; the session had ended" : "");
+    if (step == WA_SCAN_AGAIN) {
+        scan_start(next, run + 1u);
+    } else if (step == WA_SCAN_FAILED) {
+        ESP_LOGW(TAG, "scan %u: failed after %u tries", (unsigned)tok, run);
+    }
 }
 
 static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
@@ -1248,11 +1339,17 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             break;
         case WIFI_EVENT_STA_START:
             if (s.up_mode == WA_MODE_SCAN) {
-                wifi_scan_config_t sc = { 0 };
-                if (esp_wifi_scan_start(&sc, false) != ESP_OK) {
-                    lock();
-                    wa_on_failed(&s.w);
-                    unlock();
+                /* One scan at a time: esp_hosted can report one start
+                 * twice, and a second esp_wifi_scan_start() replaces the
+                 * first, which then reports done with nothing found. */
+                lock();
+                const uint32_t tok = wa_scan_begin(&s.w);
+                const unsigned run = s.w.scan_runs;
+                unlock();
+                if (tok != 0u) {
+                    scan_start(tok, run);
+                } else {
+                    ESP_LOGI(TAG, "scan: station start again, no new scan");
                 }
             } else {
                 retry = true;
@@ -1260,7 +1357,7 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             break;
         case WIFI_EVENT_SCAN_DONE:
             if (s.up_mode == WA_MODE_SCAN) {
-                on_scan_done();
+                on_scan_done(data);
             }
             break;
         case WIFI_EVENT_STA_CONNECTED:
@@ -1313,12 +1410,56 @@ static void start_failed(const char *step, esp_err_t e)
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
 }
 
+/**
+ * @brief The marker drain() posts: every event posted before it is handled.
+ * @param arg  Unused.
+ * @param base WA_DRAIN_EVENT.
+ * @param id   Unused.
+ * @param data Unused.
+ */
+static void on_drain(void *arg, esp_event_base_t base, int32_t id,
+                     void *data)
+{
+    (void)arg;
+    (void)base;
+    (void)id;
+    (void)data;
+    (void)xSemaphoreGive(s.drained);
+}
+
+/**
+ * @brief Wait, DRAIN_MS at most, until the event loop has handled every
+ *        event the radio posted before its stop.
+ *
+ * Binds each scan's done report to its radio: the next radio's station
+ * start, which starts its scan (wa_scan_begin()), comes after the marker,
+ * so a done report of the radio taken down is never read as the next
+ * one's.
+ */
+static void drain(void)
+{
+    (void)xSemaphoreTake(s.drained, 0);
+    if (esp_event_post(WA_DRAIN_EVENT, 0, NULL, 0, pdMS_TO_TICKS(DRAIN_MS))
+            != ESP_OK
+        || xSemaphoreTake(s.drained, pdMS_TO_TICKS(DRAIN_MS)) != pdTRUE) {
+        ESP_LOGW(TAG, "radio off: events not drained within %ums",
+                 (unsigned)DRAIN_MS);
+    }
+}
+
 /* The network interface layer, the default event loop and the handlers,
  * once.  A step that fails is tried again at the next start. */
 static bool net_once(void)
 {
     if (s.net_ready) {
         return true;
+    }
+    if (s.drained == NULL) {
+        s.drained = xSemaphoreCreateBinary();
+        if (s.drained == NULL) {
+            start_failed("drain semaphore", ESP_ERR_NO_MEM);
+            return false;
+        }
     }
     esp_err_t e = esp_netif_init();
     if (e != ESP_OK) {
@@ -1342,6 +1483,16 @@ static bool net_once(void)
         (void)esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,
                                            on_event);
         start_failed("esp_event_handler_register IP_EVENT", e);
+        return false;
+    }
+    e = esp_event_handler_register(WA_DRAIN_EVENT, ESP_EVENT_ANY_ID,
+                                   on_drain, NULL);
+    if (e != ESP_OK) {
+        (void)esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,
+                                           on_event);
+        (void)esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP,
+                                           on_event);
+        start_failed("esp_event_handler_register WA_DRAIN_EVENT", e);
         return false;
     }
     s.net_ready = true;
@@ -1387,6 +1538,7 @@ static void radio_down(void)
         if (!wifi_radio_failed()) {
             (void)esp_wifi_stop();
             (void)esp_wifi_deinit();
+            drain();
         }
         if (s.netif != NULL) {
             esp_netif_destroy_default_wifi(s.netif);

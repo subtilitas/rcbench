@@ -71,6 +71,8 @@ The panel can join a WPA2 or WPA3 personal network instead. CHOOSE HOME NETWORK 
 - HIDDEN NETWORK asks for the name of a network that does not announce itself, then for its password.
 - SCAN AGAIN scans again. CANCEL goes back.
 
+`No WPA2 or WPA3 network found.` means the scan completed and found no network to list. A failed scan runs again, 3 scans at most within the 10s. `Wi-Fi could not start.` in the list's place means no scan completed: SCAN AGAIN tries again.
+
 ## The keyboard
 
 ![The network's name](view:wifi-key-ssid)
