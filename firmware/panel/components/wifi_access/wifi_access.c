@@ -82,6 +82,12 @@ static const char *TAG = "wifi";
 /* And the task's end is waited for this long at most after it. */
 #define FETCH_EXIT_MS  20000u
 #define FETCH_AGENT    "rcbench-panel"
+/** @brief How long the worker waits for the event loop to pass the radio's
+ *         last events at its stop (drain()), ms. */
+#define DRAIN_MS       2000u
+
+/** @brief The worker's marker in the default event loop (drain()). */
+ESP_EVENT_DEFINE_BASE(WA_DRAIN_EVENT);
 
 static struct {
     SemaphoreHandle_t lock;
@@ -131,6 +137,7 @@ static struct {
      * sees a start that has not reached the radio as a radio off. */
     atomic_bool     asked;
     atomic_bool     de;
+    SemaphoreHandle_t drained;    /**< the event loop passed the marker */
 
     /* The fetch task's.  fetch_alive from its creation to its last touch
      * of anything shared; fetch_stop asks it to end. */
@@ -1403,12 +1410,56 @@ static void start_failed(const char *step, esp_err_t e)
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
 }
 
+/**
+ * @brief The marker drain() posts: every event posted before it is handled.
+ * @param arg  Unused.
+ * @param base WA_DRAIN_EVENT.
+ * @param id   Unused.
+ * @param data Unused.
+ */
+static void on_drain(void *arg, esp_event_base_t base, int32_t id,
+                     void *data)
+{
+    (void)arg;
+    (void)base;
+    (void)id;
+    (void)data;
+    (void)xSemaphoreGive(s.drained);
+}
+
+/**
+ * @brief Wait, DRAIN_MS at most, until the event loop has handled every
+ *        event the radio posted before its stop.
+ *
+ * Binds each scan's done report to its radio: the next radio's station
+ * start, which starts its scan (wa_scan_begin()), comes after the marker,
+ * so a done report of the radio taken down is never read as the next
+ * one's.
+ */
+static void drain(void)
+{
+    (void)xSemaphoreTake(s.drained, 0);
+    if (esp_event_post(WA_DRAIN_EVENT, 0, NULL, 0, pdMS_TO_TICKS(DRAIN_MS))
+            != ESP_OK
+        || xSemaphoreTake(s.drained, pdMS_TO_TICKS(DRAIN_MS)) != pdTRUE) {
+        ESP_LOGW(TAG, "radio off: events not drained within %ums",
+                 (unsigned)DRAIN_MS);
+    }
+}
+
 /* The network interface layer, the default event loop and the handlers,
  * once.  A step that fails is tried again at the next start. */
 static bool net_once(void)
 {
     if (s.net_ready) {
         return true;
+    }
+    if (s.drained == NULL) {
+        s.drained = xSemaphoreCreateBinary();
+        if (s.drained == NULL) {
+            start_failed("drain semaphore", ESP_ERR_NO_MEM);
+            return false;
+        }
     }
     esp_err_t e = esp_netif_init();
     if (e != ESP_OK) {
@@ -1432,6 +1483,16 @@ static bool net_once(void)
         (void)esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,
                                            on_event);
         start_failed("esp_event_handler_register IP_EVENT", e);
+        return false;
+    }
+    e = esp_event_handler_register(WA_DRAIN_EVENT, ESP_EVENT_ANY_ID,
+                                   on_drain, NULL);
+    if (e != ESP_OK) {
+        (void)esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,
+                                           on_event);
+        (void)esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP,
+                                           on_event);
+        start_failed("esp_event_handler_register WA_DRAIN_EVENT", e);
         return false;
     }
     s.net_ready = true;
@@ -1477,6 +1538,7 @@ static void radio_down(void)
         if (!wifi_radio_failed()) {
             (void)esp_wifi_stop();
             (void)esp_wifi_deinit();
+            drain();
         }
         if (s.netif != NULL) {
             esp_netif_destroy_default_wifi(s.netif);

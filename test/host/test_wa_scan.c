@@ -207,6 +207,30 @@ TEST_CASE(a_late_done_report_of_a_replaced_scan_changes_nothing)
     CHECK_EQ(wa_on_scan_end(&g_w, g_tok, true, &next), WA_SCAN_TAKE);
 }
 
+/* CANCEL, then CHOOSE HOME NETWORK, with the first scan still running: the
+ * old radio's done report is handled before the new radio's station start
+ * (the platform drains the event loop at the radio's stop), so it finds no
+ * scan under way, and the new scan's own report is the one that lists. */
+TEST_CASE(a_done_report_of_the_radio_taken_down_is_not_the_next_scans)
+{
+    uint32_t next = 0u;
+    wa_init(&g_w);
+    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
+    const uint32_t old = wa_scan_begin(&g_w);
+    wa_close(&g_w, WA_OFF_ASKED);                         /* CANCEL */
+    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 10u, counter_rand, NULL);
+    CHECK_EQ(wa_scan_pending(&g_w), 0u);
+    /* The old report, read as the platform reads it: no scan under way. */
+    CHECK_EQ(wa_on_scan_end(&g_w, wa_scan_pending(&g_w), true, &next),
+             WA_SCAN_IGNORE);
+    CHECK_EQ(wa_on_scan_end(&g_w, old, false, &next), WA_SCAN_IGNORE);
+    CHECK_EQ(g_w.state, WA_ST_SCANNING);
+    CHECK_EQ(g_w.scan_runs, 0u);                          /* no try spent */
+    const uint32_t t = wa_scan_begin(&g_w);
+    CHECK(t != old);
+    CHECK_EQ(wa_on_scan_end(&g_w, t, true, &next), WA_SCAN_TAKE);
+}
+
 TEST_CASE(a_scan_the_radio_refuses_is_a_failure_not_an_empty_list)
 {
     uint32_t next = 0u;
@@ -358,6 +382,7 @@ int main(void)
     RUN(a_scan_done_with_no_scan_of_the_session_under_way_is_ignored);
     RUN(a_failed_scan_runs_again_and_the_last_failure_is_a_failure);
     RUN(a_late_done_report_of_a_replaced_scan_changes_nothing);
+    RUN(a_done_report_of_the_radio_taken_down_is_not_the_next_scans);
     RUN(a_scan_the_radio_refuses_is_a_failure_not_an_empty_list);
     RUN(a_refusal_after_the_session_changed_leaves_the_new_session);
     RUN(a_retry_after_the_session_changed_is_not_started);

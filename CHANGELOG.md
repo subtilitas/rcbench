@@ -73,7 +73,10 @@ history is in git.
   its event handler, and a second `esp_wifi_scan_start()` replaces the
   first, which then reports done with nothing found. Each scan has a token
   that the refusal, the done report and the retry carry: a call of a scan
-  that ended acts on nothing of the session started after it. A failed
+  that ended acts on nothing of the session started after it. At the
+  radio's stop the worker waits, 2000ms at most (`DRAIN_MS`), until the
+  event loop has handled the radio's last events, so a done report of a
+  radio taken down is never read as the next radio's. A failed
   scan, a list that cannot be read and a read that does not hold what the
   report counts (or a full buffer of 24) run the scan again, 3 scans at
   most (`WA_SCAN_TRIES`) within the 10s; then the list's place says
