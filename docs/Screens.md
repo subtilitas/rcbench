@@ -383,7 +383,8 @@ A bench that switches to SAFE under a finger still held on the button ends the g
 too — otherwise the contact made to stop it would switch it to ARMED again two seconds
 later. The switch to ARMED flashes the
 whole button twice: white, black, red, and again, one drawn frame each. While ARMED, the button carries the danger red, and DISARM is a press rather than a hold:
-stopping never needs a hold. DISARM and STOP stop the output immediately, with
+stopping never needs a hold, and DISARM acts at the press, not at the lift.
+DISARM and STOP stop the output immediately, with
 no ramp. RESET PEAKS clears the peak markers and leaves the live readings.
 
 ### EFF is a guessimetric

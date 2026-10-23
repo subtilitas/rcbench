@@ -414,7 +414,8 @@ endet die Geste ebenfalls — sonst würde genau der Kontakt, mit dem angehalten
 wurde, zwei Sekunden später wieder auf ARMED schalten. Das Schalten auf ARMED lässt den ganzen Button
 zweimal aufblitzen: weiss, schwarz, rot, und noch einmal, je ein gezeichneter
 Frame. Ein Prüfstand in ARMED trägt das Gefahrenrot, und DISARM ist ein Druck
-und kein Halten: Anhalten braucht nie ein Halten. DISARM und STOP halten den
+und kein Halten: Anhalten braucht nie ein Halten, und DISARM wirkt beim
+Aufsetzen, nicht beim Abheben. DISARM und STOP halten den
 Ausgang sofort an, ohne Rampe. SPITZENWERTE ZURÜCKSETZEN löscht die Spitzenwertmarken und
 lässt die Live-Anzeigen unverändert.
 

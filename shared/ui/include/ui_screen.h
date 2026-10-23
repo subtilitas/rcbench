@@ -297,10 +297,13 @@ bool ui_router_stop_live(void);
 const ui_bench_status_t *ui_router_status(void);
 
 /**
- * True once after STOP was released, then clears when read.
+ * @brief Whether a press came down on STOP since the last call; clears it.
  *
- * A latch rather than a callback: the application drains it in the loop that
- * drives the heartbeat, so the UI (user interface) never calls into hardware.
+ * The press acts at once; its release does nothing.  A latch rather than a
+ * callback: the application drains it in the loop that drives the
+ * heartbeat, so the UI (user interface) never calls into hardware.
+ *
+ * @return true once after each press on STOP
  */
 bool ui_router_take_stop(void);
 

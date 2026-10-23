@@ -234,9 +234,9 @@ TEST_CASE(stop_works_from_every_screen_that_has_a_band)
     }
 }
 
-/* A press that begins on STOP and slides off is not a stop, and neither is it
- * a tap on whatever it slid onto. */
-TEST_CASE(a_press_that_slides_off_stop_does_nothing)
+/* A press on STOP stops at the press.  Sliding off and lifting elsewhere
+ * takes nothing back and taps nothing it slid onto. */
+TEST_CASE(a_press_on_stop_stops_wherever_it_lifts)
 {
     fresh();
     to_overview();
@@ -244,6 +244,7 @@ TEST_CASE(a_press_that_slides_off_stop_does_nothing)
     const gfx_rect_t r = ui_band_stop_rect();
 
     touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
+    CHECK(ui_router_take_stop());
     touch(20, 300, TOUCH_EVENT_MOVE, 1);
     touch(20, 300, TOUCH_EVENT_UP, 1);
     CHECK(!ui_router_take_stop());
@@ -270,19 +271,20 @@ TEST_CASE(the_overview_has_no_home_tag)
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
-/* A second finger, or a palm, must not steal the release the first is waiting
- * for; otherwise the throttle drag latches to whatever moves next. */
-TEST_CASE(a_second_contact_cannot_steal_the_release)
+/* A STOP press stops once, at its press.  Neither a second contact's
+ * release nor its own stops the bench again. */
+TEST_CASE(a_stop_press_stops_once)
 {
     fresh();
     to_overview();
     const gfx_rect_t r = ui_band_stop_rect();
 
     touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
+    CHECK(ui_router_take_stop());
     touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 2);   /* not ours */
     CHECK(!ui_router_take_stop());
     touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 1);
-    CHECK(ui_router_take_stop());
+    CHECK(!ui_router_take_stop());
 }
 
 /* The middle of SETUP's tile @p index, in panel coordinates. */
@@ -2031,13 +2033,15 @@ TEST_CASE(cancelling_gestures_lets_go_of_the_band)
     const gfx_rect_t stop = ui_band_stop_rect();
     const int sx = stop.x + stop.w / 2, sy = stop.y + stop.h / 2;
 
-    /* A press on STOP, and then the events stop arriving. */
+    /* A press on STOP, which stops at the press, and then the events stop
+     * arriving. */
     touch(sx, sy, TOUCH_EVENT_DOWN, 7);
+    CHECK(ui_router_take_stop());
     ui_router_cancel_gestures();
 
     /* The release the router never saw arrives on a reused id, over a tile.
      * With the band press cleared it is not the band's, so it neither stops
-     * the bench nor navigates from a press nobody made. */
+     * the bench again nor navigates from a press nobody made. */
     const ui_screen_id_t before = ui_router_current();
     touch(sx, sy, TOUCH_EVENT_UP, 7);
     CHECK_EQ(ui_router_current(), before);
@@ -2333,9 +2337,9 @@ TEST_CASE(no_later_contact_continues_a_drag_that_left_by_the_band)
 }
 
 /*
- * STOP answers a second finger while the first drags, and the drag goes on:
- * the stop is the application's to act on, and the bench's disarm is what
- * ends the run.
+ * STOP answers a second finger while the first drags, at the press, and
+ * the press ends the drag: the first finger's travel after it moves
+ * nothing.
  */
 TEST_CASE(stop_answers_a_second_finger_during_a_drag)
 {
@@ -2348,15 +2352,14 @@ TEST_CASE(stop_answers_a_second_finger_during_a_drag)
     finger(0, 300, M_TRACK_Y);
     glide(0, 340, M_TRACK_Y, 8);
     finger(1, sx, sy);
-    CHECK(!ui_router_take_stop());      /* on the release, not the press */
+    CHECK(ui_router_take_stop());       /* on the press */
     lift(1);
-    CHECK(ui_router_take_stop());
     CHECK(!ui_router_take_stop());
 
     glide(0, 380, M_TRACK_Y, 8);
-    CHECK_NEAR(motor_screen_throttle(), 80.0f * M_PX_PCT, 0.01f);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f * M_PX_PCT, 0.01f);
     lift(0);
-    CHECK_NEAR(motor_screen_throttle(), 80.0f * M_PX_PCT, 0.01f);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f * M_PX_PCT, 0.01f);
 }
 
 /*
@@ -2398,7 +2401,7 @@ TEST_CASE(sliding_onto_stop_or_home_presses_neither)
     glide(FEED_LONE, 400, M_TRACK_Y, 8);
     lift(FEED_LONE);
     CHECK_EQ(ui_router_dispatched(), d0);
-    CHECK(!ui_router_take_stop());      /* it lifted off the button */
+    CHECK(ui_router_take_stop());       /* the press on STOP stopped */
     CHECK_NEAR(motor_screen_throttle(), before, 0.001f);
     CHECK(!motor_posted(NULL));
     CHECK(before > dragged - 30.0f);    /* and the first drag ended sanely */
@@ -2471,9 +2474,11 @@ TEST_CASE(home_under_a_setup_scroll_leaves_the_contact_to_no_screen)
     CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
 }
 
-/* The alert strip answers a second finger during a drag, and the drag goes
- * on.  A press on the strip that wanders to the band and lifts there clears
- * nothing and leaves the strip answering the next tap. */
+/* The alert strip answers a second finger during a drag, and its press
+ * ends the drag as a press anywhere does: the screen is handed the drag's
+ * release and nothing of the strip's press.  A press on the strip that
+ * wanders to the band and lifts there clears nothing and leaves the strip
+ * answering the next tap. */
 TEST_CASE(the_alert_strip_answers_a_second_finger_during_a_drag)
 {
     on_screen(SCREEN_MOTOR);
@@ -2486,10 +2491,11 @@ TEST_CASE(the_alert_strip_answers_a_second_finger_during_a_drag)
     const uint32_t d0 = ui_router_dispatched();
     feed_tap(1, 600, H - 10);
     CHECK(ui_router_alert() == NULL);
-    CHECK_EQ(ui_router_dispatched(), d0);
+    CHECK_EQ(ui_router_dispatched(), d0 + 1u);   /* the drag's release */
     glide(0, 380, M_TRACK_Y, 8);
     lift(0);
-    CHECK_NEAR(motor_screen_throttle(), 80.0f * M_PX_PCT, 0.01f);
+    CHECK_EQ(ui_router_dispatched(), d0 + 1u);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f * M_PX_PCT, 0.01f);
 
     ui_router_set_alert("again");
     const uint32_t d1 = ui_router_dispatched();
@@ -3904,10 +3910,10 @@ int main(void)
     RUN(no_screen_can_draw_over_the_band);
     RUN(stop_latches_and_clears_when_read);
     RUN(stop_works_from_every_screen_that_has_a_band);
-    RUN(a_press_that_slides_off_stop_does_nothing);
+    RUN(a_press_on_stop_stops_wherever_it_lifts);
     RUN(the_home_tag_returns_to_the_overview);
     RUN(the_overview_has_no_home_tag);
-    RUN(a_second_contact_cannot_steal_the_release);
+    RUN(a_stop_press_stops_once);
     RUN(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates);
     RUN(the_band_titles_match_the_tiles);
     RUN(wifi_returns_to_the_screen_that_opened_it);
