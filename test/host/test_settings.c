@@ -987,7 +987,7 @@ TEST_CASE(screen_rotation_starts_normal_on_panel_and_offers_two_choices)
     CHECK_EQ(d->type, SET_TYPE_ENUM);
     CHECK_EQ(d->option_count, 2);
     CHECK_STR_EQ(d->options[0], "NORMAL");
-    CHECK_STR_EQ(d->options[1], "180");
+    CHECK_STR_EQ(d->options[1], "180\xc2\xb0");
     CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
     CHECK(settings_cycles(SET_SCREEN_ROT));
     CHECK(settings_safe_only(SET_SCREEN_ROT));

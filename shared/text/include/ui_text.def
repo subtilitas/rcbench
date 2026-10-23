@@ -33,9 +33,9 @@
  * A format string's conversions are part of its contract: a translation
  * converts the same arguments in the same order (test_text checks).
  *
- * The text faces hold printable ASCII (0x20 to 0x7E) and the German
- * letters Ä Ö Ü ä ö ü ß; any other code point draws as '?'.  test_text
- * holds every string the panel draws to that set.  Text is UTF-8.
+ * The text faces hold printable ASCII (0x20 to 0x7E), the degree sign °
+ * and the German letters Ä Ö Ü ä ö ü ß; any other code point draws as
+ * '?'.  test_text holds every string the panel draws to that set.  Text is UTF-8.
  *
  * What stays English in every language is not in the table and is written
  * where it is drawn: ARM, DISARM, STOP, the screen titles, protocol and
@@ -5732,7 +5732,7 @@ UI_OPTIONS_END(theme)
 
 UI_OPTIONS(screen_rot)
 UI_OPTION("NORMAL", NULL)
-UI_OPTION("180", NULL)
+UI_OPTION("180°", NULL)
 UI_OPTIONS_END(screen_rot)
 
 UI_OPTIONS(language)

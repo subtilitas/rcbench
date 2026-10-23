@@ -3088,7 +3088,9 @@ eingebaut ist.
 
 | Einstellung | Werte | Standard |
 | --- | --- | --- |
-| `Bilddrehung` | NORMAL, 180 | NORMAL |
+| `Bilddrehung` | NORMAL, 180° | NORMAL |
+
+![Bilddrehung auf 180°, während der Prüfstand ARMED ist: die Zeile hat keine Tasten](img/de/setup-rotation.png)
 
 - Der eigene Scan des Panels dreht das Bild. Der Display-Controller EK79007
   bekommt den Address Mode 0x01 statt 0x02 (DCS-Befehl 0x36, DCS: Display
@@ -3096,7 +3098,7 @@ eingebaut ist.
   Bildschirm, das Teil-Neuzeichnen und das Band zeichnen in beiden
   Einstellungen dieselben Pixel, und ein Frame braucht gleich lang.
 - Die Kontakte des Glases drehen sich mit dem Bild. Ein Kontakt, den das
-  Glas bei NORMAL am logischen Pixel (x, y) meldet, meldet es bei 180 an
+  Glas bei NORMAL am logischen Pixel (x, y) meldet, meldet es bei 180° an
   (1023 - x, 599 - y). Jeder Bildschirm, das Band, STOP und die
   Sicherheitsregeln sehen in beiden Einstellungen logische Pixel.
 - Kontakte des Touch-Injectors sind in beiden Einstellungen logische Pixel

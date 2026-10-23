@@ -106,7 +106,7 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Theme | DARK, LIGHT | DARK | the colour theme, from the next frame |
 | Brightness | 20 to 100 %, steps of 5 | 100 | scales the palette |
 | Contrast | 60 to 140 %, steps of 5 | 100 | pushes colours away from mid grey |
-| Screen rotation | NORMAL, 180 | NORMAL | turns picture and touch by 180°, from the next frame; locked while ARMED |
+| Screen rotation | NORMAL, 180° | NORMAL | turns picture and touch by 180°, from the next frame; locked while ARMED |
 | Language | ENGLISH, DEUTSCH | ENGLISH | the interface language, from the next frame, without a restart |
 | Units | METRIC, IMPERIAL | METRIC | stored; no screen uses it in this release |
 | Dim after | 0 to 60 min, steps of 5 | 0 | stored; no screen uses it in this release |
@@ -116,7 +116,9 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 
 The backlight is on while the panel runs. No setting switches it.
 
-Screen rotation turns the picture by the panel's own scan and turns touch with it, so every control stays under the finger. A contact at (x, y) in NORMAL is at (1023 - x, 599 - y) in 180. Touch injector contacts do not turn. The row has no keys while the bench is ARMED.
+Screen rotation turns the picture by the panel's own scan and turns touch with it, so every control stays under the finger. A contact at (x, y) in NORMAL is at (1023 - x, 599 - y) in 180°. Touch injector contacts do not turn. The row has no keys while the bench is ARMED.
+
+![Screen rotation at 180° while ARMED](view:setup-rotation)
 
 ![SETUP in the light theme](view:setup-light)
 

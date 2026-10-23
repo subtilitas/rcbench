@@ -182,9 +182,9 @@ source to the TXT report on the card. `gfx` decodes it, and one code point
 is one cell:
 
 - The five text faces hold printable ASCII (American Standard Code for
-  Information Interchange, 0x20 to 0x7E) and the seven German letters
-  Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6, U+00FC),
-  102 glyphs each. The two numeral faces hold digits and punctuation only.
+  Information Interchange, 0x20 to 0x7E), the degree sign ° (U+00B0) and
+  the seven German letters Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF,
+  U+00E4, U+00F6, U+00FC), 103 glyphs each. The two numeral faces hold digits and punctuation only.
 - The 10x20, 12x24 and 20x36 faces have cap heights of 12, 15 and 23 px and
   draw every glyph inside the cell; `gen_font.py --check` fails otherwise.
   The 32x44 numeral face (cap height 40 px) cuts ink at the cell edge in six
@@ -249,8 +249,8 @@ fails on any other entry under a condition.
 | `shared/servo/servo_str.c` | the servo test's English, which the CSV also uses |
 | `shared/webaccess/wa_page.c` | the Wi-Fi page's English and German |
 
-The five text faces hold printable ASCII (0x20 to 0x7E) and the 7 German
-letters Ä Ö Ü ä ö ü ß. Any other code point draws as `?`, and so does a
+The five text faces hold printable ASCII (0x20 to 0x7E), the degree sign °
+and the 7 German letters Ä Ö Ü ä ö ü ß. Any other code point draws as `?`, and so does a
 byte that starts no valid UTF-8 sequence.
 `every_drawn_string_has_its_glyphs` in `test_text` holds every string of
 the table the panel draws, in every language, to that set and to valid
@@ -295,7 +295,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 293 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 294 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,

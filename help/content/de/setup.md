@@ -106,7 +106,7 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Design | DUNKEL, HELL | DUNKEL | das Farbschema, ab dem nächsten Frame |
 | Helligkeit | 20 bis 100 %, Schritte von 5 | 100 | skaliert die Palette |
 | Kontrast | 60 bis 140 %, Schritte von 5 | 100 | drückt Farben weg vom Mittelgrau |
-| Bilddrehung | NORMAL, 180 | NORMAL | dreht Bild und Touch um 180°, ab dem nächsten Frame; gesperrt bei ARMED |
+| Bilddrehung | NORMAL, 180° | NORMAL | dreht Bild und Touch um 180°, ab dem nächsten Frame; gesperrt bei ARMED |
 | Sprache | ENGLISH, DEUTSCH | ENGLISH | die Sprache der Oberfläche, ab dem nächsten Frame, ohne Neustart |
 | Einheiten | METRISCH, IMPERIAL | METRISCH | gespeichert; kein Bildschirm nutzt sie in diesem Release |
 | Dimmen nach | 0 bis 60 min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
@@ -116,7 +116,9 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
 
-Bilddrehung dreht das Bild mit dem eigenen Scan des Panels und den Touch mit ihm, so dass jedes Bedienelement unter dem Finger bleibt. Ein Kontakt bei (x, y) unter NORMAL liegt unter 180 bei (1023 - x, 599 - y). Kontakte des Touch-Injectors drehen sich nicht. Solange der Prüfstand ARMED ist, hat die Zeile keine Tasten.
+Bilddrehung dreht das Bild mit dem eigenen Scan des Panels und den Touch mit ihm, so dass jedes Bedienelement unter dem Finger bleibt. Ein Kontakt bei (x, y) unter NORMAL liegt unter 180° bei (1023 - x, 599 - y). Kontakte des Touch-Injectors drehen sich nicht. Solange der Prüfstand ARMED ist, hat die Zeile keine Tasten.
+
+![Bilddrehung auf 180° bei ARMED](view:setup-rotation)
 
 ![SETUP im hellen Design](view:setup-light)
 

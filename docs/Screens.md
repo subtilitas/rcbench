@@ -2793,7 +2793,9 @@ mounted upside down.
 
 | Setting | Values | Default |
 | --- | --- | --- |
-| Screen rotation | NORMAL, 180 | NORMAL |
+| Screen rotation | NORMAL, 180° | NORMAL |
+
+![Screen rotation at 180° while the bench is ARMED: the row has no keys](img/setup-rotation.png)
 
 - The panel's own scan turns the picture. The EK79007 display controller
   takes address mode 0x01 in place of 0x02 (DCS (Display Command Set)
@@ -2801,7 +2803,7 @@ mounted upside down.
   screen, the partial repaint and the band draw the same pixels in both
   settings, and a frame takes the same time.
 - The glass's contacts turn with the picture. A contact the glass reports
-  at logical pixel (x, y) in NORMAL reports at (1023 - x, 599 - y) in 180.
+  at logical pixel (x, y) in NORMAL reports at (1023 - x, 599 - y) in 180°.
   Every screen, the band, STOP and the safety rules see logical pixels in
   both settings.
 - Touch injector contacts are logical pixels in both settings and do not
