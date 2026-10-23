@@ -449,7 +449,7 @@ A bench that switches to SAFE under a finger still held on the button ends the g
 too — otherwise the contact made to stop it would switch it to ARMED again two seconds
 later. The switch to ARMED flashes the
 whole button twice: white, black, red, and again, one drawn frame each. While ARMED, the button carries the danger red, and DISARM is a press rather than a hold:
-stopping never needs a hold. DISARM and STOP stop the output immediately, with
+stopping never needs a hold, and DISARM acts at the press, not at the lift. DISARM and STOP stop the output immediately, with
 no ramp. RESET PEAKS clears the peak markers and leaves the live readings.
 
 ### EFF is a guessimetric
@@ -954,7 +954,11 @@ frames, every 16.6ms: at 90°/s the horn steps 1.0° to 1.8° a frame, where
 the reads alone give 0.5° to 2.1°. After the finger lifts, the target goes
 on to the finger's last angle, 99% of the way in 100ms. Any other command
 ends the filter at once: a switch to SAFE, DISARM, STOP, RELEASE, CENTRE,
-SWEEP or the knob. It moves nothing while the bench is SAFE, and an ARM
+SWEEP or the knob, even a knob turn that comes to the pulse the filter last
+sent. So does any press that ends the drag before the finger lifts: a
+second finger anywhere on the screen, on the band, on STOP or on the alert
+band, and the dragging finger carried onto the band. The filter then stops
+where it has got to and commands nothing more. It moves nothing while the bench is SAFE, and an ARM
 starts from the rest with nothing of a drag before it.
 
 The screen drives the channels the binding marks as surfaces, not a fixed pin

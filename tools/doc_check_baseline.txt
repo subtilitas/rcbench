@@ -973,8 +973,6 @@ firmware/panel/main/panel_control.c: warning: Member drv_lost(uint32_t n) (funct
 firmware/panel/main/panel_control.c: warning: Member s_beat (variable) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member s_drv_rx (variable) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member s_mcu_c (variable) of file panel_control.c is not documented.
-firmware/panel/main/panel_control.c: warning: Member s_stop_id (variable) of file panel_control.c is not documented.
-firmware/panel/main/panel_control.c: warning: Member s_stop_press (variable) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member s_tq_seq (variable) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member s_tsens (variable) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member touch_q_put(const touch_event_t *evt, bool lost) (function) of file panel_control.c is not documented.
@@ -4153,7 +4151,6 @@ shared/ui/include/ui_screen.h: warning: return type of member ui_router_help_rec
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_navigations is not documented
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_parent is not documented
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_stop_live is not documented
-shared/ui/include/ui_screen.h: warning: return type of member ui_router_take_stop is not documented
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_withdraw_alert is not documented
 shared/ui/include/ui_slider.h: file has no @file block
 shared/ui/include/ui_slider.h: warning: Compound ui_slider_t is not documented.

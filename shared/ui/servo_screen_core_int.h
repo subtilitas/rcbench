@@ -209,7 +209,8 @@ void svs_knob_withdraw(void);
 void svs_drag_tick(float dt_s);
 /**
  * @brief A post of @p kind at @p us ends the drag's filter, unless it is
- *        the filter's own or the position it holds said again (reissue()).
+ *        the filter's own or reissue() saying the held position again.
+ *        A knob command ends it even at the pulse the filter last sent.
  * @param kind the command posted
  * @param us its pulse, us
  */

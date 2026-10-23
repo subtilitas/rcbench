@@ -488,7 +488,8 @@ endet die Geste ebenfalls — sonst würde genau der Kontakt, mit dem angehalten
 wurde, zwei Sekunden später wieder auf ARMED schalten. Das Schalten auf ARMED lässt den ganzen Button
 zweimal aufblitzen: weiss, schwarz, rot, und noch einmal, je ein gezeichneter
 Frame. Ein Prüfstand in ARMED trägt das Gefahrenrot, und DISARM ist ein Druck
-und kein Halten: Anhalten braucht nie ein Halten. DISARM und STOP halten den
+und kein Halten: Anhalten braucht nie ein Halten, und DISARM wirkt beim
+Aufsetzen, nicht beim Abheben. DISARM und STOP halten den
 Ausgang sofort an, ohne Rampe. SPITZENWERTE ZURÜCKSETZEN löscht die Spitzenwertmarken und
 lässt die Live-Anzeigen unverändert.
 
@@ -1042,7 +1043,12 @@ aus: Bei 90°/s macht das Horn Schritte von 1,0° bis 1,8° pro Frame, die
 Abfragen allein ergeben 0,5° bis 2,1°. Hebt sich der Finger, läuft das Ziel
 weiter bis zum letzten Winkel des Fingers, 99% des Wegs in 100ms. Jeder
 andere Befehl beendet den Filter sofort: ein Schalten auf SAFE, DISARM,
-STOP, FREIGEBEN, ZENTRIEREN, SWEEP oder der Drehknopf. Bei SAFE bewegt er
+STOP, FREIGEBEN, ZENTRIEREN, SWEEP oder der Drehknopf, auch eine
+Drehknopf-Bewegung, die auf den Puls kommt, den der Filter zuletzt gesendet
+hat. Ebenso jeder Druck, der den Drag vor dem Abheben beendet: ein zweiter
+Finger irgendwo auf dem Bildschirm, auf dem Band, auf STOP oder auf dem
+Alert-Band, und der ziehende Finger, der aufs Band geführt wird. Der Filter
+bleibt dann stehen, wo er ist, und kommandiert nichts mehr. Bei SAFE bewegt er
 nichts, und ein ARM beginnt in der Ruhestellung, ohne etwas von einem Drag
 davor.
 

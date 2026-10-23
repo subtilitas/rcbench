@@ -13,6 +13,7 @@
  * - test_nav_mark.c
  * - test_nav_contact.c
  * - test_nav_drag.c
+ * - test_nav_stop.c
  * - test_nav_bubble.c
  *
  * SPDX-License-Identifier: MIT

@@ -106,9 +106,6 @@ static void beat(bool alive)
     gpio_set_level(PANEL_HEARTBEAT_PIN, level ? 1 : 0);
 }
 
-/* The STOP press this task owns, from its DOWN on STOP to its UP. */
-static bool      s_stop_press;
-static uint8_t   s_stop_id;
 /* Whether a STOP is drawn to press; set by the render loop
  * (panel_frame.c). */
 atomic_bool s_stop_live;
@@ -176,34 +173,15 @@ static bool touch_q_put(const touch_event_t *evt, bool lost)
  * followed the gap, so it drops the screens' gestures before it handles any
  * of them.
  *
- * And this task's own record of a STOP press is answered here.  It owns
- * s_stop_press independently of the screens, and the driver can drop that
- * press's release: the controller then reuses the track id, and a contact
- * that begins elsewhere and lifts over STOP would satisfy the release branch
- * and stop a run nobody asked to stop.  A press standing when the stream
- * broke stops the bench instead.  Dropping the ownership on its own is the
- * wrong direction: for every other gesture abandoning it asks for nothing,
- * and for this one abandoning it is the failure.  The release that would
- * have stopped the bench may be the event that went missing, and the render
- * side cancels the band's press for the same loss, so nothing else would
- * stop it, and the operator has already pressed STOP.  What this gives up: a
- * press that began on STOP and would have been carried off it before
- * lifting, which asks for nothing, stops the bench instead.  That is the
- * direction to be wrong in.
- *
- * Losses in s_touch_q itself cannot orphan this press: this task evicts from
- * that queue only after the event has been through the STOP branch.
+ * A STOP press needs nothing here: it stopped the bench at its DOWN, and
+ * its release does nothing.  Losses in s_touch_q itself cannot lose a STOP
+ * either: this task evicts from that queue only after the event has been
+ * through the STOP branch.
  */
 static void drv_lost(uint32_t n)
 {
     atomic_fetch_add(&s_drv_gaps, (unsigned)n);
     (void)touch_q_put(NULL, true);
-    if (!s_stop_press) {
-        return;
-    }
-    s_stop_press = false;
-    arming_stop(&s_arm);
-    control_alert(TR(ALERT_TOUCH_LOST_STOP));
 }
 
 void control_pump(void)
@@ -221,11 +199,8 @@ void control_pump(void)
     while (touch_wait_event(&evt, &seq, 0)) {
         saw_touch = true;
         /*
-         * A gap is answered before this event is looked at.  The events after
-         * it were captured around the one that went missing: a contact
-         * reusing the track id of a STOP press whose release the driver
-         * dropped would otherwise lift over STOP below and abort a run nobody
-         * asked to abort.
+         * A gap is answered before this event is looked at, so the render
+         * loop learns of it ahead of the events that followed it.
          */
         const uint32_t missed = touch_seq_take(&s_drv_rx, seq);
         if (missed > 0u) {
@@ -241,34 +216,31 @@ void control_pump(void)
             && gfx_rect_contains(ui_band_stop_rect(), evt.point.x,
                                  evt.point.y);
         if (evt.type == TOUCH_EVENT_DOWN && in_stop) {
-            s_stop_press = true;
-            s_stop_id    = evt.point.id;
-        } else if (s_stop_press && evt.point.id == s_stop_id
-                   && evt.type == TOUCH_EVENT_UP) {
-            s_stop_press = false;
-            if (in_stop) {
-                /*
-                 * Applied here, not recorded for later.
-                 *
-                 * This runs inside the link's wait as well as at the top of
-                 * the loop, and a servo command makes up to three exchanges
-                 * of up to LINK_HOST_TIMEOUT_MS (1000 ms) each.  A stop that
-                 * only set a flag would wait all of that out with the far end
-                 * driving, because the policy that acts on the flag is what
-                 * is blocked.  arming_stop() takes effect in the same pass:
-                 * arming_heartbeat() is false while stopped, so the beat at
-                 * the end of this function stops asserting the line and the
-                 * IOmcu fails safe within HEARTBEAT_MAX_GAP_MS
-                 * (150 ms) whatever this task is waiting for.
-                 *
-                 * The rest of a stop -- the bank, the throttle, the servo's
-                 * slot, telling the far end -- follows when the loop is free.
-                 * Counted as pressed: an operator's STOP, which a stick run
-                 * tells apart from the bench's own.
-                 */
-                arming_stop_pressed(&s_arm);
-                counted_here = true;
-            }
+            /*
+             * Applied at the press, not at the release: a stop never waits
+             * for a lift that may not come, and a release lost to a full
+             * queue or a dropped read would otherwise be a STOP the
+             * operator made and the bench never saw.
+             *
+             * Applied here, not recorded for later.  This runs inside the
+             * link's wait as well as at the top of the loop, and a servo
+             * command makes up to three exchanges of up to
+             * LINK_HOST_TIMEOUT_MS (1000ms) each.  A stop that only set a
+             * flag would wait all of that out with the far end driving,
+             * because the policy that acts on the flag is what is blocked.
+             * arming_stop() takes effect in the same pass:
+             * arming_heartbeat() is false while stopped, so the beat at the
+             * end of this function stops asserting the line and the IOmcu
+             * fails safe within HEARTBEAT_MAX_GAP_MS (150ms) whatever this
+             * task is waiting for.
+             *
+             * The rest of a stop -- the bank, the throttle, the servo's
+             * slot, telling the far end -- follows when the loop is free.
+             * Counted as pressed: an operator's STOP, which a stick run
+             * tells apart from the bench's own.
+             */
+            arming_stop_pressed(&s_arm);
+            counted_here = true;
         }
         /*
          * The screen still sees every event: it draws the press.
@@ -278,7 +250,7 @@ void control_pump(void)
          * resting on the glass reaches it in about 90 ms of undrained
          * frame.  What happens when it does fill is touch_q_put()'s.
          *
-         * The router will latch this same release and the backstop would
+         * The router will latch this same press and the backstop would
          * then stop the bench a second time, so a stop applied here is
          * marked -- before the event is offered, so the render loop cannot
          * take the release and find a loss ahead of it (which clears the
