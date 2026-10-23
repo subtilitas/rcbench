@@ -2047,8 +2047,6 @@ shared/gfx/gfx.c: warning: Member gfx_u32_alias (typedef) of file gfx.c is not d
 shared/gfx/gfx.c: warning: Member gfx_vline(gfx_canvas_t *c, int x, int y, int h, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member s_trace_hold (variable) of file gfx.c is not documented.
 shared/gfx/gfx_int.h: file has no @file block
-shared/gfx/gfx_seg.c: file has no @file block
-shared/gfx/gfx_text.c: file has no @file block
 shared/gfx/include/gfx.h: file has no @file block
 shared/gfx/include/gfx.h: warning: Compound gfx_canvas_t is not documented.
 shared/gfx/include/gfx.h: warning: Compound gfx_font_t is not documented.
@@ -2064,18 +2062,41 @@ shared/gfx/include/gfx.h: warning: parameters of member gfx_blit_1bpp are not do
 shared/gfx/include/gfx.h: warning: parameters of member gfx_blit_key are not documented
 shared/gfx/include/gfx.h: warning: parameters of member gfx_canvas_init are not documented
 shared/gfx/include/gfx.h: warning: parameters of member gfx_canvas_sub are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_char are not documented
 shared/gfx/include/gfx.h: warning: parameters of member gfx_clip_intersect are not documented
 shared/gfx/include/gfx.h: warning: parameters of member gfx_clip_set are not documented
 shared/gfx/include/gfx.h: warning: parameters of member gfx_fill_rect_gradient are not documented
 shared/gfx/include/gfx.h: warning: parameters of member gfx_lerp are not documented
 shared/gfx/include/gfx.h: warning: parameters of member gfx_pixel_get are not documented
 shared/gfx/include/gfx.h: warning: parameters of member gfx_rect_intersect are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_seg_text are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_seg_width are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_text are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_text_bg are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_text_cells are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_text_height are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_text_in are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_text_prefix are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_text_rotated_points are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_text_width are not documented
+shared/gfx/include/gfx.h: warning: parameters of member gfx_utf8_next are not documented
 shared/gfx/include/gfx.h: warning: return type of member gfx_canvas_sub is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_char is not documented
 shared/gfx/include/gfx.h: warning: return type of member gfx_clip_intersect is not documented
 shared/gfx/include/gfx.h: warning: return type of member gfx_clip_set is not documented
 shared/gfx/include/gfx.h: warning: return type of member gfx_lerp is not documented
 shared/gfx/include/gfx.h: warning: return type of member gfx_pixel_get is not documented
 shared/gfx/include/gfx.h: warning: return type of member gfx_rect_intersect is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_seg_text is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_seg_width is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_text is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_text_bg is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_text_cells is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_text_height is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_text_prefix is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_text_rotated_points is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_text_width is not documented
+shared/gfx/include/gfx.h: warning: return type of member gfx_utf8_next is not documented
 shared/link/include/link_artxfer.h: warning: Member begun (variable) of struct link_artxfer_t is not documented.
 shared/link/include/link_artxfer.h: warning: Member blocks (variable) of struct link_art_meta_t is not documented.
 shared/link/include/link_artxfer.h: warning: Member bytes (variable) of struct link_art_meta_t is not documented.

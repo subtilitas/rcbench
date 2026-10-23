@@ -849,14 +849,19 @@ static gfx_rect_t horn_box(float deg)
 }
 
 /**
- * @brief The horn's angle in the bench's numerals and DEG after them, at
- *        their widest, -888.8.
+ * @brief The horn's angle @p deg in the bench's numerals and DEG after
+ *        them, as draw_left() writes it, and never narrower than -888.8.
+ * @param deg the angle, degrees
  * @return the box draw_left() draws them in
  */
-static gfx_rect_t angle_box(void)
+static gfx_rect_t angle_box(float deg)
 {
     const gfx_seg_style_t seg = ui_seg_hero();
-    const int w = gfx_seg_width("-888.8", &seg) + 6
+    char text[16];
+    snprintf(text, sizeof(text), "%+.1f", (double)deg);
+    const int nw = gfx_seg_width(text, &seg);
+    const int widest = gfx_seg_width("-888.8", &seg);
+    const int w = ((nw > widest) ? nw : widest) + 6
                   + gfx_text_width(SV_FONT_LABEL, "DEG", 1);
     return (gfx_rect_t){ (int16_t)(SEG_X - 2), (int16_t)(SEG_Y - 2),
                          (int16_t)(w + 4), (int16_t)(seg.digit_h + 8) };
@@ -907,7 +912,8 @@ static void draw_dial_part(gfx_canvas_t *c, int buf)
         box = rect_union(box, horn_box(s.commanded_deg));
     }
     clipped(c, box, draw_left);
-    clipped(c, angle_box(), draw_left);
+    clipped(c, rect_union(angle_box(s.drawn_deg[buf]),
+                          angle_box(s.shown_deg)), draw_left);
     clipped(c, (gfx_rect_t){ (int16_t)READ_X(0), READ_NUM_Y,
                              (int16_t)(2 * READ_W), READ_NUM_H },
             draw_left);
