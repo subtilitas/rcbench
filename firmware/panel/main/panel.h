@@ -198,6 +198,17 @@ static inline void snap_unlock(void) { xSemaphoreGive(s_snap_lock); }
  * slot holds one alert; a later one replaces it.  Returns its number. */
 uint32_t control_alert_numbered(const char *text);
 
+/**
+ * @brief The canvas the next frame is drawn on (display_canvas()), after
+ *        what Screen rotation asks of the UI: a whole repaint when the
+ *        canvas changed between a logical buffer and a frame buffer, and
+ *        the band's alert when 180° fell back to NORMAL.  Every loop that
+ *        renders takes its canvas here, on the task that flips
+ *        (panel_frame.c).
+ * @return the canvas
+ */
+gfx_canvas_t *panel_canvas(void);
+
 /* Take back alert number @p gen, whose cause is over: one not yet taken
  * by a frame is dropped, and the last one a frame took is cleared from the
  * band if it is still showing (ui_router_withdraw_alert()).  An older

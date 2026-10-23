@@ -4,6 +4,10 @@
  *        panel's coordinates, crops them to the UI's area and publishes
  *        snapshots and events.
  *
+ * Screen rotation 180° turns the glass's contacts with the picture: the
+ * task reads the one flag the display's flush sets once a turned frame is
+ * on the glass (gfx_turn_shown()), once per report.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -20,6 +24,7 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "gfx_turn.h"
 #include "gt911.h"
 #ifdef RCBENCH_TOUCH_INJECTOR
 #include "touch_inject.h"
@@ -35,6 +40,9 @@ typedef struct {
     gt911_handle_t gt911;
     touch_config_t cfg;
     touch_map_t map;
+    /** @brief The glass's map is the touch injector's (0x14 took the
+     *  glass's place): its contacts are logical pixels and never turn. */
+    bool map_is_injector;
 
     TaskHandle_t task;
     QueueHandle_t events;
@@ -159,7 +167,11 @@ static void touch_task(void *arg)
         /* The glass's report into panel pixels before any merge: the
          * injector's contacts are panel pixels already (touch_inject.c). */
         if (fresh) {
-            touch_map_points(&s_touch.map, raw, count);
+            /* The picture's turn, read once per report, so one report is
+             * mapped whole one way.  The injector's map never turns. */
+            const touch_map_t glass = touch_map_turned(
+                &s_touch.map, gfx_turn_shown() && !s_touch.map_is_injector);
+            touch_map_points(&glass, raw, count);
         }
 #ifdef RCBENCH_TOUCH_INJECTOR
         /* The glass's report goes out before the injector is read, so a
@@ -235,6 +247,7 @@ esp_err_t touch_init(const touch_config_t *cfg)
          * there is taken as the injector and not as the glass: panel
          * pixels of the UI's area, unmirrored. */
         s_touch.map = touch_inject_map();
+        s_touch.map_is_injector = true;
         ESP_LOGW(TAG, "0x14 refused as the glass: it is the touch "
                       "injector's address in this build; touch is the "
                       "injector alone");

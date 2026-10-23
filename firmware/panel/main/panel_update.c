@@ -508,7 +508,7 @@ static void update_frame(update_state_t st, const char *version,
     update_view_t v = { .state = st, .written = written, .total = total };
     snprintf(v.version, sizeof(v.version), "%s", version);
     update_screen_set(&v);
-    gfx_canvas_t *c = display_canvas();
+    gfx_canvas_t *c = panel_canvas();
     if (c != NULL) {
         ui_router_render(c, display_back_index());
         display_flip();

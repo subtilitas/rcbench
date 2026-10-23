@@ -204,6 +204,9 @@ static int draw_glyph(gfx_canvas_t *c, int x, int y, uint32_t cp,
     }
     int stride = font->bytes_per_row ? font->bytes_per_row : 1;
     GFX_VISIT(font->width * font->height);
+    /* The cell once, for the edge pixels below, which are not reported one
+     * by one. */
+    GFX_DAMAGE_CLIP(c, x, y, font->width * scale, font->height * scale);
     for (int row = 0; row < font->height; ++row) {
         const uint8_t *bits = rows + (size_t)row * stride;
         int col = 0;
@@ -224,9 +227,10 @@ static int draw_glyph(gfx_canvas_t *c, int x, int y, uint32_t cp,
                     for (int sx = 0; sx < scale; ++sx) {
                         const int px = x + col * scale + sx;
                         const int py = y + row * scale + sy;
-                        gfx_pixel_inl(c, px, py,
-                                      gfx_lerp(gfx_pixel_get_inl(c, px, py),
-                                               fg, cov));
+                        gfx_pixel_put_inl(c, px, py,
+                                          gfx_lerp(gfx_pixel_get_inl(c, px,
+                                                                     py),
+                                                   fg, cov));
                     }
                 }
                 ++col;

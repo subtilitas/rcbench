@@ -4,7 +4,9 @@
 # into the test suite.
 set(SRCS
     gfx.c
+    gfx_damage.c
     gfx_text.c
+    gfx_turn.c
     gfx_seg.c
     gfx_font8x16.c
     gfx_font16x28.c

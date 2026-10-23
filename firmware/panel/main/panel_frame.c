@@ -42,6 +42,7 @@
 #include "touch.h"
 #include "ui_band.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 
 static const char *TAG = "rcbench";
 
@@ -57,6 +58,17 @@ static const char *TAG = "rcbench";
  * that took over on every blip would be a screen operators learn to dismiss.
  */
 #define LINK_LOST_SCREEN_MS 4000u
+
+gfx_canvas_t *panel_canvas(void)
+{
+    if (display_take_repaint()) {
+        ui_router_invalidate();
+    }
+    if (display_take_turn_alert()) {
+        ui_router_set_alert(TR(ALERT_ROTATION_OFF));
+    }
+    return display_canvas();
+}
 
 /** @brief The render loop (panel_main.h).  Does not return. */
 void panel_frame_loop(void)
@@ -667,7 +679,7 @@ void panel_frame_loop(void)
          * task to read on its next pump. */
         publish_throttle_ramp();
 
-        gfx_canvas_t *c = display_canvas();
+        gfx_canvas_t *c = panel_canvas();
         const int64_t draw_start = esp_timer_get_time();
         ui_router_render(c, display_back_index());
         const uint32_t draw_us = (uint32_t)(esp_timer_get_time() - draw_start);
@@ -679,9 +691,10 @@ void panel_frame_loop(void)
 
         /*
          * DRAW is the paint time of the frame; WAIT is how long the flip
-         * blocked afterwards.  A healthy frame is mostly WAIT, the loop
-         * paced by the panel.  DRAW climbing until WAIT reaches zero is the
-         * frame budget being spent.  VSYNC is the panel's refresh as
+         * blocked afterwards, TURN the part of WAIT Screen rotation 180°
+         * spent copying the frame turned (0 in NORMAL).  A healthy frame
+         * is mostly WAIT, the loop paced by the panel.  DRAW climbing
+         * until WAIT reaches zero is the frame budget being spent.  VSYNC is the panel's refresh as
          * measured here, FLIP TIMEOUTS the flips since start-up that waited
          * 200 ms for a frame-done event in vain.  Printed every 300 frames.
          */
@@ -697,10 +710,11 @@ void panel_frame_loop(void)
             last_vs = vs;
             last_vs_us = vs_us;
             ESP_LOGI(TAG,
-                     "%.1f fps  DRAW %u us  WAIT %u us  VSYNC %.2f Hz  "
-                     "FLIP TIMEOUTS %u  TOUCHLOST %u/%u",
+                     "%.1f fps  DRAW %u us  WAIT %u us  TURN %u us  "
+                     "VSYNC %.2f Hz  FLIP TIMEOUTS %u  TOUCHLOST %u/%u",
                      (double)display_fps(), (unsigned)draw_us,
-                     (unsigned)display_last_wait_us(), (double)vsync_hz,
+                     (unsigned)display_last_wait_us(),
+                     (unsigned)display_last_turn_us(), (double)vsync_hz,
                      (unsigned)flip_timeouts, s_tq_lost,
                      atomic_load(&s_drv_gaps));
         }
