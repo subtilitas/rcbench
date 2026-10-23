@@ -4,6 +4,10 @@
  *        panel's coordinates, crops them to the UI's area and publishes
  *        snapshots and events.
  *
+ * Screen rotation 180° turns the glass's contacts with the picture: the
+ * task reads the one flag the display's flush sets once a turned frame is
+ * on the glass (gfx_turn_shown()), once per report.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -20,6 +24,7 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "gfx_turn.h"
 #include "gt911.h"
 #ifdef RCBENCH_TOUCH_INJECTOR
 #include "touch_inject.h"
@@ -86,14 +91,6 @@ static uint32_t now_ms(void)
 }
 
 static touch_state_t s_touch;
-
-/**
- * @brief The picture turned by 180 degrees (touch_set_turned()).  Outside
- *        s_touch: it is set before touch_init() from the stored setting
- *        and survives touch_deinit().  Written by app_main, read once per
- *        poll by the touch task; one aligned byte.
- */
-static atomic_bool s_turned;
 
 /** @brief Run the tracker over @p pts and queue its events, numbered. */
 static void publish(const touch_point_t *pts, int count)
@@ -170,11 +167,10 @@ static void touch_task(void *arg)
         /* The glass's report into panel pixels before any merge: the
          * injector's contacts are panel pixels already (touch_inject.c). */
         if (fresh) {
-            /* The turn is read once per report, so one report is mapped
-             * whole one way.  The injector's map never turns. */
+            /* The picture's turn, read once per report, so one report is
+             * mapped whole one way.  The injector's map never turns. */
             const touch_map_t glass = touch_map_turned(
-                &s_touch.map,
-                atomic_load(&s_turned) && !s_touch.map_is_injector);
+                &s_touch.map, gfx_turn_shown() && !s_touch.map_is_injector);
             touch_map_points(&glass, raw, count);
         }
 #ifdef RCBENCH_TOUCH_INJECTOR
@@ -286,10 +282,10 @@ esp_err_t touch_init(const touch_config_t *cfg)
     s_touch.last_ok_ms = now_ms();
     s_touch.initialised = true;
     ESP_LOGI(TAG, "GT911 ready at 0x%02x, %ux%u, mirror x %d y %d, "
-                  "rotation %d, turned %d, polled every %u ms",
+                  "rotation %d, polled every %u ms",
              gt911_address(s_touch.gt911), x_max, y_max,
              (int)s_touch.cfg.mirror_x, (int)s_touch.cfg.mirror_y,
-             (int)s_touch.cfg.rotation * 90, (int)touch_turned(),
+             (int)s_touch.cfg.rotation * 90,
              (unsigned)s_touch.cfg.poll_interval_ms);
     return ESP_OK;
 }
@@ -370,16 +366,6 @@ void touch_flush_events(void)
     if (s_touch.events) {
         xQueueReset(s_touch.events);
     }
-}
-
-void touch_set_turned(bool turned)
-{
-    atomic_store(&s_turned, turned);
-}
-
-bool touch_turned(void)
-{
-    return atomic_load(&s_turned);
 }
 
 uint16_t touch_i2c_address(void)

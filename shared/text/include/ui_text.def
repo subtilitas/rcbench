@@ -3127,6 +3127,11 @@ UI_TEXT(ALERT_TOUCH_LOST_STOP, 94,
 UI_TEXT(ALERT_TOUCH_LOST_ARMING, 94,
     "Touch signal lost while switching to ARMED. Stopped.",
     "Touch-Signal beim Wechsel zu ARMED verloren. Gestoppt.")
+/* Screen rotation 180° fell back: the copy into the frame buffer timed out
+ * or failed (gfx_turn.h).  Raised by the render loop. */
+UI_TEXT(ALERT_ROTATION_OFF, 94,
+    "Screen rotation 180° failed. NORMAL until restart.",
+    "Bilddrehung 180° fehlgeschlagen. NORMAL bis zum Neustart.")
 UI_TEXT(ALERT_NO_CARD_RUN, 94,
     "No card. This run is not being recorded.",
     "Keine Karte. Dieser Lauf wird nicht aufgezeichnet.")

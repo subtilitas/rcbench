@@ -73,7 +73,7 @@ static void pump(void)
 {
     /* Draw between init steps so the splash fills in as it happens, rather
      * than appearing complete at the end. */
-    gfx_canvas_t *c = display_canvas();
+    gfx_canvas_t *c = panel_canvas();
     if (c != NULL) {
         ui_router_render(c, display_back_index());
         display_flip();

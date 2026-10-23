@@ -116,7 +116,7 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 
 The backlight is on while the panel runs. No setting switches it.
 
-Screen rotation turns the picture by the panel's own scan and turns touch with it, so every control stays under the finger. A contact at (x, y) in NORMAL is at (1023 - x, 599 - y) in 180°. Touch injector contacts do not turn. The row has no keys while the bench is ARMED.
+Screen rotation turns the picture as each frame goes out, through the ESP32-P4's PPA (pixel-processing accelerator), and turns touch with it, so every control stays under the finger. A contact at (x, y) in NORMAL is at (1023 - x, 599 - y) in 180°. Touch injector contacts do not turn. The row has no keys while the bench is ARMED. When a frame's copy takes longer than 50ms, picture and touch go back to NORMAL together and the band says so; the setting stays 180°, and the next start turns again.
 
 ![Screen rotation at 180° while ARMED](view:setup-rotation)
 

@@ -48,5 +48,9 @@ option(RCBENCH_DISPLAY_BARS "Show the DSI host's colour bars at start-up" OFF)
 # and the mechanism are in the file.
 include("${CMAKE_CURRENT_LIST_DIR}/fatfs_exfat.cmake")
 
+# ESP-IDF's esp_driver_ppa with the DIG-734 workaround always on, for Screen
+# rotation 180; the reason and the mechanism are in the file.
+include("${CMAKE_CURRENT_LIST_DIR}/ppa_dig734.cmake")
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(rcbench-panel)

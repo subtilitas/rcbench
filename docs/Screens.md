@@ -2842,26 +2842,47 @@ mounted upside down.
 
 ![Screen rotation at 180° while the bench is ARMED: the row has no keys](img/setup-rotation.png)
 
-- The panel's own scan turns the picture. The EK79007 display controller
-  takes address mode 0x01 in place of 0x02 (DCS (Display Command Set)
-  command 0x36). The frame buffers keep the upright picture, so every
-  screen, the partial repaint and the band draw the same pixels in both
-  settings, and a frame takes the same time.
+- The flush turns the picture. In 180° every screen draws the upright
+  picture into a logical buffer, one beside each of the two frame buffers
+  (2 x 1,228,800 bytes of PSRAM, pseudo-static RAM, allocated at start-up
+  in both settings). Each flip copies what the frame drew, as at most 8
+  rectangles of 16-row bands, into the frame buffer the panel scans,
+  turned by 180°, through the ESP32-P4's PPA (pixel-processing
+  accelerator). NORMAL draws straight into the frame buffer and copies
+  nothing. The EK79007's own scan direction (DCS (Display Command Set)
+  command 0x36) cannot turn the picture on this board: the strap on its
+  PINCTL pin holds the scan direction, at start-up as while the video
+  runs.
+- The copy runs on the render loop, inside the flip. The control task,
+  which owns STOP, never waits on it. Its time per flip is the console's
+  `TURN` figure; on the board it is not measured. On the host, SERVO LIVE
+  sweeping copies 77,093 px a frame on average, MOTOR & ESC LIVE ARMED
+  192,911 px, a screen at rest 0 px (`test_gfx_turn`).
 - The glass's contacts turn with the picture. A contact the glass reports
   at logical pixel (x, y) in NORMAL reports at (1023 - x, 599 - y) in 180°.
-  Every screen, the band, STOP and the safety rules see logical pixels in
-  both settings.
+  Both read one flag: the one the flip sets once the turned frame is on the
+  glass. Every screen, the band, STOP and the safety rules see logical
+  pixels in both settings.
 - Touch injector contacts are logical pixels in both settings and do not
   turn. Station scripts and the coordinates of the injector's README hold
   in both.
-- A step applies on the next frame, without a restart. SAVE keeps it, and
-  the next start draws its first frame, the splash, turned.
+- A step applies on the next frame, without a restart, with one whole
+  repaint and two whole copies. SAVE keeps it, and the next start draws its
+  first frame, the splash, turned.
+- A flip whose copies take longer than 50ms, or that the PPA refuses, sends
+  its frame out unturned. Picture and touch are NORMAL from that frame on,
+  the band says `Screen rotation 180° failed. NORMAL until restart.`, and
+  the console says `rotation 180 off: PPA timeout` (or `PPA error`). The
+  stored setting stays 180°, and the next start turns again. A copy the PPA
+  ends after its timeout writes its block once more: that block shows
+  turned until its screen repaints it.
+- The PPA's SRM (scale, rotate, mirror) engine runs with Espressif's
+  workaround for hardware bug DIG-734 on for every copy, as Espressif's
+  esp_lvgl_adapter 0.6.4 patches it (`firmware/panel/ppa_dig734.cmake`).
 - Locked while ARMED: the row has no keys, and RESET CATEGORY and DISCARD
   leave it. A turn moves every control away from the finger, STOP
   included. The rule is the one Idle pulse and Full pulse on MOTOR & ESC,
   SETTINGS follow: a value for a SAFE bench only.
-- Whether the EK79007 takes command 0x36 while the video stream runs is
-  not measured. At start-up the command goes out before the stream.
 
 ### PANEL: the rotary knob
 

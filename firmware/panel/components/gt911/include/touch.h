@@ -95,25 +95,6 @@ uint32_t touch_published(void);
 /** Drop any queued events (useful after a screen change). */
 void touch_flush_events(void);
 
-/**
- * @brief Turn the glass's contacts by 180 degrees with the picture, or
- *        back: a contact mapped to (x, y) maps to (1023 - x, 599 - y).
- *
- * The panel turns its picture by its scan direction (display_set_turned()),
- * so every screen, the router, the band and STOP keep logical pixels.  The
- * touch injector's contacts are logical pixels already and never turn.
- * Taken from the next report on; may be called before touch_init().
- *
- * @param turned True for turned by 180 degrees.
- */
-void touch_set_turned(bool turned);
-
-/**
- * @brief Whether the glass's contacts are turned (touch_set_turned()).
- * @return True when turned by 180 degrees.
- */
-bool touch_turned(void);
-
 /** I2C address the controller answered on, or 0 before init. */
 uint16_t touch_i2c_address(void);
 

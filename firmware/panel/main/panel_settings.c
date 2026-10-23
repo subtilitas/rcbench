@@ -7,8 +7,8 @@
  * under a spinlock, beside the debt its write to the IOmcu is, and the
  * control task reads it from there.  settings_changed() is the settings
  * model's observer; bring_up() (panel_boot.c) publishes every value once.
- * Screen rotation is the one value applied on app_main itself: the display
- * and the touch map take it there (apply_rotation()).
+ * Screen rotation goes to the display (apply_rotation()), whose flush
+ * turns picture and touch together from the next frame.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,7 +23,6 @@
 #include "settings.h"
 #include "settings_sensors.h"
 #include "tone_link.h"
-#include "touch.h"
 
 /*
  * A setting the far end keeps a copy of has changed.
@@ -163,20 +162,14 @@ void publish_hitec_rx(void)
 }
 
 /**
- * @brief Screen rotation to the panel's scan and the glass's map, on
- *        app_main, the task that flips the display.
- *
- * The picture turns first and touch follows only when the command went
- * out, so a refused command leaves picture and touch agreeing.  At the
- * load, before display_init() and touch_init(), both keep the choice for
- * their start (display.h, touch.h).
+ * @brief Screen rotation to the display.  The next flip takes it: the
+ *        picture turns in the flush, and touch follows the frame on the
+ *        glass (display.h).  At the load, before display_init(), the
+ *        display keeps it for its start.
  */
 static void apply_rotation(void)
 {
-    const bool turned = settings_get_int(SET_SCREEN_ROT) != 0;
-    if (display_set_turned(turned) == ESP_OK) {
-        touch_set_turned(turned);
-    }
+    display_set_turned(settings_get_int(SET_SCREEN_ROT) != 0);
 }
 
 void settings_changed(setting_id_t id)

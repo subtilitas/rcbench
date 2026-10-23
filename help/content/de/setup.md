@@ -116,7 +116,7 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
 
-Bilddrehung dreht das Bild mit dem eigenen Scan des Panels und den Touch mit ihm, so dass jedes Bedienelement unter dem Finger bleibt. Ein Kontakt bei (x, y) unter NORMAL liegt unter 180° bei (1023 - x, 599 - y). Kontakte des Touch-Injectors drehen sich nicht. Solange der Prüfstand ARMED ist, hat die Zeile keine Tasten.
+Bilddrehung dreht das Bild, während jeder Frame hinausgeht, über die PPA (Pixel-Processing Accelerator) des ESP32-P4, und den Touch mit ihm, so dass jedes Bedienelement unter dem Finger bleibt. Ein Kontakt bei (x, y) unter NORMAL liegt unter 180° bei (1023 - x, 599 - y). Kontakte des Touch-Injectors drehen sich nicht. Solange der Prüfstand ARMED ist, hat die Zeile keine Tasten. Braucht die Kopie eines Frames länger als 50ms, gehen Bild und Touch gemeinsam auf NORMAL zurück, und das Band sagt es; die Einstellung bleibt 180°, und der nächste Start dreht wieder.
 
 ![Bilddrehung auf 180° bei ARMED](view:setup-rotation)
 
