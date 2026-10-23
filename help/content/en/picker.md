@@ -12,7 +12,7 @@ PICK A PIN shows the IOmcu board as it lies on the bench and binds a pin by a ke
 
 ![The picker with three pins bound as SERVO PWM](view:picker)
 
-A pad is under 40 px across, smaller than a fingertip. So each pin has a key, 43 px wide, on a straight trace to its pad: two staggered rows above the board and two below.
+A pad is under 40 px across, smaller than a fingertip. So each pin has a key, 50 x 56 px, on a straight trace to its pad: two staggered rows above the board and two below.
 
 | Key | Pin | A tap |
 |---|---|---|

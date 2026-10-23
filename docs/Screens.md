@@ -3786,6 +3786,17 @@ it opens on what that workbench drives:
 
 ![Outputs](img/outputs.png)
 
+The left column is 300 px wide: the PROTOCOL label, the protocol list's
+face (300 x 64 px), the count and the reason under it in 10 x 20, and
+LAST WRITE at the column's foot with the result in 20 x 36. The pins take a
+grid of 4 columns of 7 cells, 167 x 64 px each (25.1 x 9.6 mm), 8 px apart
+across and 6 px apart down, from x 324. A cell holds a 24 px tick box, the
+GP name in 20 x 36 and, under them, what holds the pin or its pad in
+8 x 16, 18 characters at most. The grid's last row ends at body y 492,
+4 px above the alert band. The open protocol list's rows are 56 px tall at
+most and shrink so the list ends above the alert band: 54 px with the 8
+protocols alone, 48 px with 1 PROG PORT entry, 36 px with 4.
+
 A set of pins per protocol, not eight independent slots: a bench is wired a
 protocol at a time — four servo leads, then one ESC (electronic speed
 controller) — and asking for the protocol and then for its pins is the shape
@@ -4107,8 +4118,14 @@ Outputs screen holds. The list answers "which GPIO is bound"; this answers
 The keys are not the pads. At any size that fits a 1024 x 600 panel a pad is
 under 40 pixels across, which is smaller than a fingertip, so the pads are
 drawn where they are and the touching happens on two staggered rows of keys
-above the board and two below, 43 px wide, each on a straight trace to its
-own pad.
+above the board and two below, 50 x 56 px (7.5 x 8.4 mm), each on a
+straight trace to its own pad. The board is drawn 600 px wide and at most
+240 px tall, to scale: the RP2350-CAN's 51 x 21 mm outline draws at
+582 x 240 px. Two keys in one row stand two pads apart, 8 px clear of each
+other, and the lower row ends at body y 490, above the alert band. The
+protocol list's face (280 x 56 px), the count and the reason are top left;
+the PINS table is under them, rows of 36 px with the GP name in 20 x 36;
+IN USE is on the right, 176 px wide.
 
 A key's colour says what a tap on it does:
 
@@ -4208,7 +4225,7 @@ pin a 28 px line. When those run past the foot of the table, every pin line
 is 20 px with the GPIO in the smaller face, then 16 px, then the names 16 px
 too. The tallest table of protocols is OFF selected, the programming port
 listed and the 8 slots over the 6 protocols that take one channel a pin: 16
-lines, 392 px of the 468 px under the heading. With 4 programming ports and
+lines, 392 px of the 432 px under the heading. With 4 programming ports and
 every interface on beside that binding, the table lists 27 lines, the ports
 and the interfaces first, in the smaller lines. A table that still runs past
 the foot holds the lines that fit and ends in `+N`, N the lines left out.
@@ -4267,7 +4284,7 @@ marked on the board itself, on a short trace in from the pad:
 
 The marks go inside the outline because that is the only room left: the
 space beside the board belongs to the keys, and a mark on the pad itself
-would be as small as the pad. Rails sit on neighbouring pads, 25 px apart,
+would be as small as the pad. Rails sit on neighbouring pads, 29 px apart,
 so a rail's marker is 30 px or 78 px in from its pad, alternating along the
 row; the deeper one clears the marker of a ground on the pad beside it.
 

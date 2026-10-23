@@ -4153,6 +4153,18 @@ einer Zeile ZIEL aus öffnet er auf dem, was diese Werkbank treibt:
 
 ![Outputs](img/de/outputs.png)
 
+Die linke Spalte ist 300 px breit: das Label PROTOKOLL, die Fläche der
+Protokoll-Liste (300 x 64 px), darunter Anzahl und Grund in 10 x 20 und am
+Fuß der Spalte LETZTER SCHREIBVORGANG mit dem Ergebnis in 20 x 36. Die Pins
+liegen in einem Raster aus 4 Spalten zu 7 Zellen, je 167 x 64 px
+(25,1 x 9,6 mm), quer 8 px und längs 6 px auseinander, ab x 324. Eine Zelle
+hält ein Ankreuzfeld von 24 px, den GP-Namen in 20 x 36 und darunter, was
+den Pin hält, oder sein Pad in 8 x 16, höchstens 18 Zeichen. Die letzte
+Rasterzeile endet bei Körper-y 492, 4 px über dem Alarmband. Die Zeilen der
+offenen Protokoll-Liste sind höchstens 56 px hoch und werden kleiner, damit
+die Liste über dem Alarmband endet: 54 px mit den 8 Protokollen allein,
+48 px mit 1 Eintrag PROG-PORT, 36 px mit 4.
+
 Ein Pin-Satz je Protokoll, nicht acht unabhängige Slots: ein Prüfstand wird
 protokollweise verkabelt — vier Servokabel, dann ein ESC (Electronic Speed
 Controller) — und erst nach dem Protokoll und dann nach seinen Pins zu fragen
@@ -4495,8 +4507,15 @@ gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
 Die Tasten sind nicht die Pads. In jeder Größe, die auf ein Panel mit 1024 x
 600 Pixeln passt, ist ein Pad unter 40 Pixel breit und damit kleiner als eine
 Fingerkuppe. Also werden die Pads gezeichnet, wo sie sind, und berührt wird
-auf zwei versetzten Tastenreihen über der Platine und zwei darunter, 43 px
-breit, jede an einer geraden Leitung zu ihrem eigenen Pad.
+auf zwei versetzten Tastenreihen über der Platine und zwei darunter,
+50 x 56 px (7,5 x 8,4 mm), jede an einer geraden Leitung zu ihrem eigenen
+Pad. Die Platine ist 600 px breit und höchstens 240 px hoch gezeichnet,
+maßstabsgetreu: der Umriss des RP2350-CAN, 51 x 21 mm, wird 582 x 240 px
+groß. Zwei Tasten einer Reihe stehen zwei Pads auseinander, 8 px frei
+voneinander, und die untere Reihe endet bei Körper-y 490, über dem
+Alarmband. Fläche der Protokoll-Liste (280 x 56 px), Anzahl und Grund
+stehen oben links; die Tabelle PINS darunter, Zeilen von 36 px mit dem
+GP-Namen in 20 x 36; BELEGT rechts, 176 px breit.
 
 Die Farbe einer Taste sagt, was ein Tippen auf sie tut:
 
@@ -4607,7 +4626,7 @@ Tabelle hinaus, ist jede Pin-Zeile 20 px hoch, mit dem GPIO in der kleineren
 Schrift, dann 16 px, dann auch die Namen 16 px. Die höchste Tabelle aus
 Protokollen ergibt sich mit OFF gewählt, dem Programmierport aufgeführt und
 den 8 Slots auf den 6 Protokollen, die einen Kanal je Pin nehmen: 16 Zeilen,
-392 px der 468 px unter der Überschrift. Mit 4 Programmierports und allen
+392 px der 432 px unter der Überschrift. Mit 4 Programmierports und allen
 Anschlüssen EIN neben dieser Bindung führt die Tabelle 27 Zeilen, die Ports
 und die Anschlüsse zuerst, in den kleineren Zeilen. Eine Tabelle, die dann
 noch über den Fuß reicht, hält die Zeilen, die passen, und endet in `+N`,
@@ -4674,7 +4693,7 @@ vom Pad nach innen:
 Die Markierungen liegen innerhalb des Umrisses, weil dort der einzige
 verbleibende Platz ist: der Raum neben der Platine gehört den Tasten, und eine
 Markierung auf dem Pad selbst wäre so klein wie das Pad. Versorgungen sitzen
-auf benachbarten Pads, 25 px auseinander, also liegt die Marke einer
+auf benachbarten Pads, 29 px auseinander, also liegt die Marke einer
 Versorgung 30 px oder 78 px vom Pad nach innen, abwechselnd entlang der Reihe;
 die tiefere liegt frei von der Marke einer Masse auf dem Nachbarpad.
 

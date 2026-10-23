@@ -21,6 +21,7 @@
 #include "guard_canvas.h"
 
 #include "link_pages.h"
+#include "outputs_spots.h"
 #include "outputs_pages.h"
 #include "outputs_screen.h"
 #include "port_view.h"
@@ -39,22 +40,22 @@
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_BODY_H
 
-/* Geometry the screen draws to; a test that hard-codes it is a test that
- * notices when the layout moves under the hit testing. */
-#define COL_X  16
-#define DD_X   16
-#define DD_Y   44
-#define DD_W   266
-#define DD_H   54
-/* 46 px: the 8 protocols and 1 PROG PORT entry fit the screen's height at
- * the full row. */
-#define POP_ROW 46
-#define GRID_X 288
-#define GRID_Y 16
-#define CELL_GAP 4
-#define CELL_W ((SCREEN_W - 16 - GRID_X - 3 * CELL_GAP) / 4)
-#define CELL_H 53
-#define GRID_ROWS 7
+/* Geometry the screen draws to (outputs_spots.h); a test that hard-codes
+ * it is a test that notices when the layout moves under the hit testing. */
+#define COL_X  OU_COL_X
+#define DD_X   OU_COL_X
+#define DD_Y   OU_DD_Y
+#define DD_W   OU_COL_W
+#define DD_H   OU_DD_H
+/* The 8 protocols and the 1 PROG PORT entry the screen starts with. */
+#define POP_ROW OU_POP_ROW
+#define GRID_X OU_GRID_X
+#define GRID_Y OU_GRID_Y
+#define CELL_GAP OU_CELL_GAP
+#define ROW_GAP OU_ROW_GAP
+#define CELL_W OU_CELL_W
+#define CELL_H OU_CELL_H
+#define GRID_ROWS OU_GRID_ROWS
 
 static int s_applied __attribute__((unused));
 static outbind_t s_last __attribute__((unused));
@@ -114,7 +115,7 @@ static inline void cell_centre(uint8_t gpio, int *x, int *y)
     const uint8_t i = outbind_index_of(OUTBIND_BOARD_PICO_HEADER, gpio);
     const int col = i / GRID_ROWS, row = i % GRID_ROWS;
     *x = GRID_X + col * (CELL_W + CELL_GAP) + CELL_W / 2;
-    *y = GRID_Y + row * (CELL_H + CELL_GAP) + CELL_H / 2;
+    *y = GRID_Y + row * (CELL_H + ROW_GAP) + CELL_H / 2;
 }
 
 /** @brief Opens the protocol list and taps entry @p index. */

@@ -20,51 +20,84 @@
 
 /** @brief The screen's width: the panel's 1024 px. */
 #define SCREEN_W UI_PANEL_W
-#define SCREEN_H UI_BODY_H
-#define MAX_FBS  3
+#define SCREEN_H UI_BODY_H    /**< The body under the band: 540 px. */
+#define MAX_FBS  3     /**< Framebuffers the chrome is cached for. */
 
-/* Why no pin can be ticked: two lines of 18 px under the counts. */
-#define REASON_Y (DD_Y + DD_H + 60)
+/** @brief The count under the protocol list ("4 OF 8 PINS"), and under it
+ *  the channels a pin carries, for a protocol of more than one. */
+#define COUNT_Y  (DD_Y + DD_H + 8)
+#define CHAN_Y   (COUNT_Y + 24) /**< The channels line. */
 
-/* Shown only while the pages read describe no binding: held for UI_HOLD_S,
- * it writes a binding with no pin.  Below the reason's second line; its
- * label on two lines where it needs them. */
-#define CLR_Y    (DD_Y + DD_H + 100)
-#define CLR_H    48
+/** @brief Why no pin can be ticked: two lines OU_LINE apart under the
+ *  counts. */
+#define REASON_Y (CHAN_Y + 26)
+
+/**
+ * @brief UNBIND ALL PINS, shown only while the pages read describe no
+ *        binding: held for UI_HOLD_S, it writes a binding with no pin.
+ *        Below the reason's second line, 300 x 56 px; its label on two
+ *        lines where it needs them.
+ */
+#define CLR_Y    (REASON_Y + 2 * OU_LINE + 8)
+#define CLR_H    UI_BTN_H_TALL /**< Its height, px (8.4 mm). */
+
+/** @brief LAST WRITE, and under it the result in OU_FONT_HEAD on one line,
+ *  or two RESULT_PITCH apart where it is wider than the column; the last
+ *  ends at OU_FOOT.  LAST_Y is the label's top over two lines, the
+ *  highest it goes. */
+#define RESULT_PITCH 40       /**< The result's line pitch, px. */
+/** @brief The result's first of two lines. */
+#define RESULT_Y (OU_FOOT - RESULT_PITCH - 36)
+#define LAST_ABOVE 26  /**< LAST WRITE's top over the result's. */
+#define LAST_Y   (RESULT_Y - LAST_ABOVE) /**< LAST WRITE over two lines. */
+
+_Static_assert(CLR_Y + CLR_H + 8 <= LAST_Y,
+               "UNBIND ALL PINS ends above LAST WRITE");
 
 /*
  * The pins: four columns of seven, filled down each column so a column is a
  * run of consecutive GPIOs.  Twenty-six pins leave the last two cells empty,
  * which is better than a grid that has to be read across.
  *
- * Seven rows of 53 plus their gaps is 407 of the 540 the router hands over,
- * and the cell is tall enough for the name and what holds the pin
- * underneath it.
- *
- * The grid runs to 16 px from the screen's right edge: a cell is 177 px
- * wide.  The line under the name starts 5 px in and is at most the longest
- * protocol name in the label face, 14 cells of 8 px (112 px), so it ends
- * inside the cell.
+ * A cell is 167 x 64 px (25.1 x 9.6 mm): seven rows 6 px apart from y 8
+ * end at body y 492, 4 px above the alert band; four columns 8 px apart
+ * from x 324 end 8 px from the screen's right edge.  The tick box is
+ * 24 px, the GP name beside it in OU_FONT_HEAD, and the line under them
+ * in OU_FONT_FINE from 8 px in holds 18 cells (144 px) inside the cell:
+ * "PWM CH OF GP0", "SLICE VON GP13" and "DSHOT600 BIDIR" whole.
  */
-#define GRID_X   288
-/** @brief The pin grid's width, to 16 px from the right edge: 720 px. */
-#define GRID_W   (SCREEN_W - 16 - GRID_X)
-#define GRID_Y   16
-#define GRID_COLS 4
-#define GRID_ROWS 7
-#define CELL_GAP 4
+#define GRID_X   (COL_X + COL_W + 8) /**< The grid's left edge. */
+/** @brief The pin grid's width, to 8 px from the right edge: 692 px. */
+#define GRID_W   (SCREEN_W - 8 - GRID_X)
+#define GRID_Y   8            /**< Its top. */
+#define GRID_COLS 4           /**< Columns of cells. */
+#define GRID_ROWS 7           /**< Cells down a column. */
+#define CELL_GAP 8     /**< Between columns, px. */
+#define ROW_GAP  6     /**< Between rows, px. */
+/** @brief A cell's width: 167 px. */
 #define CELL_W   ((GRID_W - (GRID_COLS - 1) * CELL_GAP) / GRID_COLS)
-#define CELL_H   53
-#define BOX      20
-#define CELL_LABEL_X 5
+#define CELL_H   64           /**< Its height, px (9.6 mm). */
+#define BOX      24           /**< The tick box, px. */
+#define CELL_PAD 8     /**< The tick box and the sub-line from the edge. */
+#define CELL_LABEL_Y 44 /**< The sub-line's top in the cell. */
+#define CELL_CELLS 18  /**< The sub-line's cells of OU_FONT_FINE. */
+
+_Static_assert(GRID_Y + GRID_ROWS * CELL_H + (GRID_ROWS - 1) * ROW_GAP
+                   <= OU_FOOT,
+               "the grid's last row ends above the alert band");
+_Static_assert(CELL_H >= UI_TAP_MIN && CELL_W >= UI_TAP_MIN,
+               "a cell is a finger wide and tall");
+_Static_assert(CELL_PAD + CELL_CELLS * 8 < CELL_W - 8,
+               "the sub-line ends inside the cell, left of its chamfer");
 
 /* The dropdown, when it is open, covers the pins.  A row is POP_ROW tall,
- * or less where the protocols and the PROG PORT entries would run past
- * the screen: the 8 protocols and 1 port take 46 px each. */
-#define POP_X    COL_X
-#define POP_W    300
-#define POP_Y    DD_Y
-#define POP_ROW  46
+ * or less where the protocols and the PROG PORT entries, with the list's
+ * 4 px margins and its 4 px shadow, would run past OU_FOOT: the 8
+ * protocols take 54 px each, with 1 port 48 px. */
+#define POP_X    COL_X        /**< The open list's left edge. */
+#define POP_W    COL_W        /**< Its width, px. */
+#define POP_Y    DD_Y         /**< Its top: the face's. */
+#define POP_ROW  UI_CHOICE_ROW_H /**< Its tallest row, px. */
 
 enum { HIT_NONE = 0, HIT_DD, HIT_POP, HIT_CELL, HIT_CLEAR };
 
@@ -319,7 +352,7 @@ static int pop_rows(void)
 
 static int pop_row_h(void)
 {
-    const int fit = (SCREEN_H - POP_Y - 16) / pop_rows();
+    const int fit = (OU_FOOT - POP_Y - 8 - 4) / pop_rows();
     return (fit < POP_ROW) ? fit : POP_ROW;
 }
 
@@ -350,7 +383,7 @@ static gfx_rect_t cell_rect(int i)
 {
     const int col = i / GRID_ROWS, row = i % GRID_ROWS;
     return gfx_rect_make(GRID_X + col * (CELL_W + CELL_GAP),
-                         GRID_Y + row * (CELL_H + CELL_GAP),
+                         GRID_Y + row * (CELL_H + ROW_GAP),
                          CELL_W, CELL_H);
 }
 
@@ -577,10 +610,9 @@ int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
             len = (cut > 0u) ? cut : fit;
         }
         if (c != NULL) {
+            /* The line, cut to the buffer where it is longer. */
             char buf[96];
-            const size_t n = (len < sizeof(buf)) ? len : sizeof(buf) - 1u;
-            memcpy(buf, at, n);
-            buf[n] = '\0';
+            snprintf(buf, sizeof(buf), "%.*s", (int)len, at);
             const int x = centre
                               ? box.x + (box.w
                                          - gfx_text_width(font, buf, 1)) / 2
@@ -766,7 +798,7 @@ static void draw_left(gfx_canvas_t *c)
     }
     const outbind_proto_t *p = chosen_proto();
 
-    gfx_text(c, COL_X, COL_Y, TR(OUT_PROTOCOL), UI_FONT_LABEL, UI_TEXT_FAINT,
+    gfx_text(c, COL_X, COL_Y, TR(OUT_PROTOCOL), OU_FONT_LABEL, UI_TEXT_FAINT,
              1);
 
     ui_choice_face(c, dd_rect(), p->name, s.hit_kind == HIT_DD, s.open);
@@ -779,20 +811,18 @@ static void draw_left(gfx_canvas_t *c)
                                 ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
         snprintf(buf, sizeof(buf), TR(OUT_PINS_OF), (unsigned)n,
                  (unsigned)cap);
-        gfx_text(c, COL_X, DD_Y + DD_H + 16, buf, UI_FONT_LABEL, UI_TEXT_DIM,
-                 1);
+        gfx_text(c, COL_X, COUNT_Y, buf, OU_FONT_LABEL, UI_TEXT_DIM, 1);
     }
 
     if (p->channels > 1u) {
         snprintf(buf, sizeof(buf), TR(OUT_CHANNELS_ON_PIN),
                  (unsigned)p->channels);
-        gfx_text(c, COL_X, DD_Y + DD_H + 38, buf, UI_FONT_LABEL,
-                 UI_TEXT_FAINT, 1);
+        gfx_text(c, COL_X, CHAN_Y, buf, OU_FONT_LABEL, UI_TEXT_FAINT, 1);
     }
 
     if (outputs_screen_reason(buf, sizeof(buf))) {
-        (void)outputs_wrap(c, gfx_rect_make(COL_X, REASON_Y, COL_W, 16), 18,
-                           buf, 2, UI_FONT_LABEL, UI_WARN, false);
+        (void)outputs_wrap(c, gfx_rect_make(COL_X, REASON_Y, COL_W, 20),
+                           OU_LINE, buf, 2, OU_FONT_LABEL, UI_WARN, false);
     }
 
     if (s.read == BIND_READ_ODD) {
@@ -804,25 +834,32 @@ static void draw_left(gfx_canvas_t *c)
         gfx_fill_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, fill);
         gfx_draw_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0,
                                  UI_DANGER);
-        /* One line in the middle, or two 20 px apart about it, 8 px in
+        /* One line in the middle, or two 22 px apart about it, 10 px in
          * from either end. */
         const char *label = TR(OUT_HOLD_UNBIND);
-        const gfx_rect_t in = gfx_rect_make(k.x + 8, k.y, k.w - 16, 16);
-        const int lines = outputs_wrap(NULL, in, 20, label, 2, UI_FONT_LABEL,
-                                   UI_TEXT, true);
+        const gfx_rect_t in = gfx_rect_make(k.x + 10, k.y, k.w - 20, 20);
+        const int lines = outputs_wrap(NULL, in, OU_LINE, label, 2,
+                                       OU_FONT_LABEL, UI_TEXT, true);
         (void)outputs_wrap(c,
-                           gfx_rect_make(in.x, k.y + (k.h - 16) / 2
-                                                   - (lines - 1) * 10,
-                                         in.w, 16),
-                           20, label, 2, UI_FONT_LABEL, UI_TEXT, true);
+                           gfx_rect_make(in.x, k.y + (k.h - 20) / 2
+                                                   - (lines - 1)
+                                                         * (OU_LINE / 2),
+                                         in.w, 20),
+                           OU_LINE, label, 2, OU_FONT_LABEL, UI_TEXT, true);
     }
 
-    gfx_text(c, COL_X, SCREEN_H - 92, TR(OUT_LAST_WRITE), UI_FONT_LABEL,
+    /* The result in the head face, on a second line where it is wider
+     * than the column, its last line ending on the column's foot; LAST
+     * WRITE right above its first. */
+    const int lines = outputs_wrap(NULL, gfx_rect_make(COL_X, 0, COL_W, 36),
+                                   RESULT_PITCH, result_text(), 2,
+                                   OU_FONT_HEAD, result_color(), false);
+    const int ry = RESULT_Y + (2 - lines) * RESULT_PITCH;
+    gfx_text(c, COL_X, ry - LAST_ABOVE, TR(OUT_LAST_WRITE), OU_FONT_LABEL,
              UI_TEXT_FAINT, 1);
-    /* In the head face, on a second line where it is wider than the
-     * column. */
-    (void)outputs_wrap(c, gfx_rect_make(COL_X, SCREEN_H - 70, COL_W, 28), 30,
-                       result_text(), 2, UI_FONT_HEAD, result_color(), false);
+    (void)outputs_wrap(c, gfx_rect_make(COL_X, ry, COL_W, 36), RESULT_PITCH,
+                       result_text(), 2, OU_FONT_HEAD, result_color(),
+                       false);
 }
 
 static void draw_cell(gfx_canvas_t *c, int i)
@@ -863,20 +900,20 @@ static void draw_cell(gfx_canvas_t *c, int i)
     /* The box: filled when chosen, hollow when free, and struck through when
      * the pin is spoken for.  It sits beside the name, above the line that
      * says what holds the pin. */
-    const int bx = r.x + 7, by = r.y + 7;
+    const int bx = r.x + CELL_PAD, by = r.y + CELL_PAD;
     gfx_color_t edge = reserved ? UI_DANGER
                                      : ((lit || can) ? UI_ACCENT : UI_EDGE_HI);
     gfx_draw_chamfer_rect_ex(c, bx, by, BOX, BOX, 4, 0, 4, 0, edge);
     if (lit) {
-        gfx_fill_chamfer_rect_ex(c, bx + 4, by + 4, BOX - 8, BOX - 8,
+        gfx_fill_chamfer_rect_ex(c, bx + 5, by + 5, BOX - 10, BOX - 10,
                                  3, 0, 3, 0, UI_ACCENT);
     } else if (elsewhere || on) {
         /* Filled, so it reads as taken rather than free, and dim, so it does
          * not read as this protocol's. */
-        gfx_fill_chamfer_rect_ex(c, bx + 4, by + 4, BOX - 8, BOX - 8,
+        gfx_fill_chamfer_rect_ex(c, bx + 5, by + 5, BOX - 10, BOX - 10,
                                  3, 0, 3, 0, UI_EDGE_HI);
     } else if (reserved) {
-        for (int k = 4; k < BOX - 4; ++k) {
+        for (int k = 5; k < BOX - 5; ++k) {
             gfx_fill_rect(c, bx + k, by + k, 2, 2, UI_DANGER);
         }
     }
@@ -885,10 +922,10 @@ static void draw_cell(gfx_canvas_t *c, int i)
     snprintf(name, sizeof(name), "GP%u", (unsigned)pin->gpio);
     gfx_color_t ink = reserved ? UI_TEXT_FAINT
                                     : ((lit || can) ? UI_TEXT : UI_TEXT_DIM);
-    gfx_text(c, bx + BOX + 8, r.y + 3, name, UI_FONT_HEAD, ink, 1);
+    gfx_text(c, bx + BOX + 10, r.y + 4, name, OU_FONT_HEAD, ink, 1);
 
-    /* Under the box and the name, from the cell's left edge: the longest
-     * protocol name is 112 px of the cell's 121. */
+    /* Under the box and the name, from the box's left edge: 18 cells,
+     * 144 px of the cell's 167. */
     char label[32];
     gfx_color_t lc = UI_TEXT_FAINT;
     switch (outputs_screen_cell((uint8_t)i, label, sizeof(label))) {
@@ -902,7 +939,8 @@ static void draw_cell(gfx_canvas_t *c, int i)
     default:
         break;
     }
-    gfx_text(c, r.x + CELL_LABEL_X, r.y + 33, label, UI_FONT_LABEL, lc, 1);
+    gfx_text(c, r.x + CELL_PAD, r.y + CELL_LABEL_Y, label, OU_FONT_FINE, lc,
+             1);
 }
 
 static void draw_popup(gfx_canvas_t *c)

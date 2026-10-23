@@ -18,6 +18,8 @@
 
 #include "servo_screen_rig.h"
 
+#include "outputs_spots.h"
+
 /* ------------------------------------------------- the output encoder */
 
 /* The DUT page's rows: AS5600 on row 2 and ENC CENTRE on row 3 of the left
@@ -121,15 +123,14 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
 
 /*
  * SETUP > OUTPUTS' PROG PORT entry, which the TARGET row opens: its SERVO
- * TESTER segment (OUTPUTS | PROG PORT, left column x 19 to 279, y 204 to
- * 240) and its PORT PWM segment (ON | OFF, y 274 to 310), two tabs of
- * 128 px 4 px apart.  Mirrored from outputs_screen.c.
+ * TESTER segment (OUTPUTS | PROG PORT) and its PORT PWM segment (ON |
+ * OFF), two tabs of 145 px 4 px apart from x 19 (outputs_spots.h).
  */
-#define OSEG_X(i)      (19 + 64 + (i) * 132)
+#define OSEG_X(i)      OU_SEG_X(i)
 
-#define OSEG_TESTER_Y  (242 + 20 + 18)
+#define OSEG_TESTER_Y  OU_TESTER_Y
 
-#define OSEG_PWM_Y     (306 + 20 + 18)
+#define OSEG_PWM_Y     OU_PWM_Y
 
 static void out_ev(int x, int y, touch_event_type_t type)
 {

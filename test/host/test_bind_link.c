@@ -34,6 +34,7 @@
 #include "out_stage.h"
 #include "outputs_pages.h"
 #include "outputs_screen.h"
+#include "outputs_spots.h"
 #include "picker_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -1467,29 +1468,21 @@ static void tap(const ui_screen_t *scr, int x, int y)
     scr->event(&u);
 }
 
-/* The outputs screen's geometry, as outputs_screen_rig.h holds it. */
-#define COL_X  16
-#define COL_W  266
-#define DD_Y   44
-#define DD_H   54
-/* 46 px: the 8 protocols and 1 PROG PORT entry fit the screen's height at
- * the full row. */
-#define POP_ROW 46
-#define CLR_Y  (DD_Y + DD_H + 100)
-#define CLR_H  48
-#define GRID_X 288
-#define GRID_Y 16
-#define CELL_GAP 4
-#define CELL_W ((UI_PANEL_W - 16 - GRID_X - 3 * CELL_GAP) / 4)
-#define CELL_H 53
-#define GRID_ROWS 7
+/* The outputs screen's geometry, as outputs_spots.h holds it. */
+#define COL_X  OU_COL_X
+#define COL_W  OU_COL_W
+#define DD_Y   OU_DD_Y
+#define DD_H   OU_DD_H
+/* The 8 protocols and the 1 PROG PORT entry the screen starts with. */
+#define POP_ROW OU_POP_ROW
+#define CLR_Y  OU_CLR_Y
+#define CLR_H  OU_CLR_H
 
 static void tap_pin(uint8_t gpio)
 {
     const uint8_t i = idx(gpio);
-    tap(outputs_screen(),
-        GRID_X + (i / GRID_ROWS) * (CELL_W + CELL_GAP) + CELL_W / 2,
-        GRID_Y + (i % GRID_ROWS) * (CELL_H + CELL_GAP) + CELL_H / 2);
+    tap(outputs_screen(), OU_CELL_X(i) + OU_CELL_W / 2,
+        OU_CELL_Y(i) + OU_CELL_H / 2);
 }
 
 static void pick(const char *name)
@@ -1917,13 +1910,13 @@ static bool picker_button(uint8_t gpio, int *bx, int *by)
         || !outbind_pad_xy(bd->shape, bd->pins[idx(gpio)].pad, &xc, &yc)) {
         return false;
     }
-    const int bw = 500;
-    const int bh = (int)(((uint32_t)bw * bd->shape->height_cmm)
-                         / bd->shape->width_cmm);
+    int bw = 0, bh = 0;
+    picker_board_fit(bd->shape->width_cmm, bd->shape->height_cmm, &bw, &bh);
     const int px = (SCREEN_W - bw) / 2
                    + (int)(((uint32_t)xc * (uint32_t)bw)
                            / bd->shape->width_cmm);
-    const int py = (SCREEN_H - bh) / 2
+    /* The board centred between the body's top and OU_FOOT. */
+    const int py = (OU_FOOT - bh) / 2
                    + (int)(((uint32_t)yc * (uint32_t)bh)
                            / bd->shape->height_cmm);
     const int dir = (py < SCREEN_H / 2) ? -1 : 1;
