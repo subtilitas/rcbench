@@ -4,9 +4,10 @@
  *        memory behind the host card task (files_host_io.h), posed by taps
  *        through the router as a person reaches each state.
  *
- * The card: BENCH with its fault log and its log, ESC and KST folders,
- * USER/LOGS with a test's CSV and report and a limit run's report, and in
- * the root a note, a CSV, a JSON file, a picture and a hidden file.
+ * The card: BENCH with its fault log, a hidden file beside it and its
+ * LOGS, ESC and KST folders, USER/LOGS with a test's CSV and report and a
+ * limit run's report, and in the root a note, a CSV, a JSON file, a
+ * picture and a hidden file.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -126,6 +127,7 @@ static void card(void)
     fk_file(c, "BENCH/LOGS/SERVO001.CSV", NULL, 48213u);
     fk_file(c, "BENCH/LOGS/MOTOR002.CSV", NULL, 1310720u);
     fk_file(c, "BENCH/RCBENCH.LOG", NULL, 812u);
+    fk_file(c, "BENCH/._RCBENCH.LOG", NULL, 4096u);
     fk_file(c, "BENCH/ESC/CONF/YGE-135.JSON", NULL, 2140u);
     fk_file(c, "BENCH/KST/CONF/KST.TXT", NULL, 1200u);
     fk_file(c, "BENCH/KST/CONF/MG90S.TXT", NULL, 1873u);
@@ -172,8 +174,11 @@ void render_files_prepare(const char *view)
     if (is(view, "files-empty") || is(view, "files-delete-folder")) {
         fk_dir(&s_fh.card, "OLD");
     }
+    if (is(view, "files-hidden")) {
+        fk_file(&s_fh.card, "OLD/.DS_Store", NULL, 6148u);
+    }
     s_fh.armed = is(view, "files-armed");
-    s_fh.volume = "RCBENCH";
+    s_fh.volume = nocard ? NULL : "RCBENCH";
     if (is(view, "files-logging")) {
         s_fh.marks.test = 5u;       /* USER/LOGS/ATEST005.CSV is open */
     }
@@ -216,7 +221,7 @@ void render_files_pose(const char *view)
     } else if (is(view, "files-info")) {
         foot(FS_SPOT_INFO);
     } else if (is(view, "files-info-folder")) {
-        pick(0, "USER");
+        pick(0, "BENCH");
         foot(FS_SPOT_INFO);
     } else if (is(view, "files-rename")) {
         foot(FS_SPOT_RENAME);
@@ -226,7 +231,7 @@ void render_files_pose(const char *view)
     } else if (is(view, "files-delete-folder")) {
         pick(0, "OLD");
         foot(FS_SPOT_DELETE);
-    } else if (is(view, "files-empty")) {
+    } else if (is(view, "files-empty") || is(view, "files-hidden")) {
         enter_dir(0, "OLD");
     } else if (is(view, "files-copy")) {
         enter_dir(0, "BENCH");

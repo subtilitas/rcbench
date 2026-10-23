@@ -306,7 +306,7 @@ extern atomic_bool   s_enc_held;
 
 /* ----------------------------------------------------------- panel_files.c */
 
-/* FILES' way to the card: its requests run on the task cardjob. */
+/** @brief FILES' way to the card: its requests run on the task cardjob. */
 extern const files_io_t k_files_io;
 
 /* ------------------------------------------------------------ panel_card.c */

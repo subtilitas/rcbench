@@ -289,9 +289,9 @@ UI_TEXT(TEXTKEY_DIR_BENCH, 40,
 /* A file name the keyboard refused (fm_name_check()), right of its title
  * on FILES' keyboard; an empty name is TEXTKEY_NEEDED and a device name
  * TEXTKEY_DIR_RESERVED. */
-UI_TEXT(TEXTKEY_NAME_LONG, 0,
-    "59 bytes at most; Ä Ö Ü ä ö ü ß take 2",
-    "Höchstens 59 Bytes; Ä Ö Ü ä ö ü ß zählen 2")
+UI_TEXT(TEXTKEY_NAME_LONG, 40,
+    "59 bytes at most; ÄÖÜäöüß take 2",
+    "Höchstens 59 Bytes; ÄÖÜäöüß zählen 2")
 UI_TEXT(TEXTKEY_NAME_CHAR, 40,
     "None of \" * / : < > ? \\ |",
     "Keines von \" * / : < > ? \\ |")
@@ -1830,6 +1830,9 @@ UI_TEXT(FM_NEW_FILE, 0,
 UI_TEXT(FM_ENTRIES, 0,
     "%d ENTRIES",
     "%d EINTRÄGE")
+UI_TEXT(FM_ENTRY_ONE, 0,
+    "1 ENTRY",
+    "1 EINTRAG")
 UI_TEXT(FM_ENTRIES_OF, 0,
     "ENTRIES %d TO %d OF %d",
     "EINTRÄGE %d BIS %d VON %d")
@@ -1849,8 +1852,8 @@ UI_TEXT(FM_NO_FOLDER, 0,
     "This folder is not on the card.",
     "Dieser Ordner ist nicht auf der Karte.")
 UI_TEXT(FM_HIDDEN, 0,
-    "Hidden entries or names over 63 bytes.",
-    "Versteckte Einträge oder Namen über 63 Bytes.")
+    "Only hidden entries or names over 63 bytes.",
+    "Nur versteckte Einträge oder Namen über 63 Bytes.")
 /* What an entry is, on its row's second line (8 x 16) and in INFO. */
 UI_TEXT(FM_KIND_FOLDER, 0,
     "FOLDER",

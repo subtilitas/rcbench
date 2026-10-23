@@ -1,5 +1,7 @@
-/*
- * The menu icons, drawn from primitives rather than stored as bitmaps.
+/**
+ * @file ui_icons.c
+ * @brief The menu icons, drawn from primitives rather than stored as
+ *        bitmaps.
  *
  * Each icon is a few rings, capsules and strokes scaled to the requested
  * size.  A drawn icon is sharp at any size and needs no image data in flash.
@@ -15,6 +17,15 @@
 
 #include "ui_theme.h"
 
+/**
+ * @brief A ring of @p thick circles inward from radius @p outer.
+ * @param c      the canvas
+ * @param cx     the centre, x
+ * @param cy     the centre, y
+ * @param outer  the outer radius, px
+ * @param thick  the ring's width, px
+ * @param color  the colour
+ */
 static void ring(gfx_canvas_t *c, int cx, int cy, int outer, int thick,
                  gfx_color_t color)
 {

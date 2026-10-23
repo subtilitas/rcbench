@@ -56,6 +56,7 @@
 #include "storage.h"
 #include "ui_screen.h"
 
+/** @brief The log tag of the panel's lines. */
 static const char *TAG = "rcbench";
 
 /** @brief cardjob's stack, bytes: the logger's figure for the deepest card
@@ -452,22 +453,31 @@ static const fm_io_t k_io = {
 
 /* ------------------------------------------------------------- cardjob */
 
-/* The request handed over, cardjob's from the count up to its answer. */
+/** @brief The request handed over, cardjob's from the count up to its
+ *         answer. */
 static fm_req_t *s_req;
-/* Requests handed over and answered: equal while none is under way. */
+/** @brief Requests handed over: equal to s_done while none is under way. */
 static atomic_uint s_sent;
+/** @brief Requests answered. */
 static atomic_uint s_done;
-/* CANCEL, set by the render task, read by cardjob before each step. */
+/** @brief CANCEL, set by the render task, read by cardjob before each
+ *         step. */
 static atomic_bool s_cancel;
-/* The job's bytes done and to do, 64-bit: under s_prog_mux. */
+/** @brief Guards s_prog_done and s_prog_total, 64-bit each. */
 static portMUX_TYPE s_prog_mux = portMUX_INITIALIZER_UNLOCKED;
+/** @brief The job's bytes done, under s_prog_mux. */
 static uint64_t s_prog_done;
+/** @brief The job's bytes to do, under s_prog_mux. */
 static uint64_t s_prog_total;
+/** @brief cardjob, NULL until the first request starts it. */
 static TaskHandle_t s_task;
+/** @brief cardjob's copy buffer, FM_CHUNK bytes of internal DMA RAM. */
 static uint8_t *s_chunk;
-/* The logger's open files as cardjob last read them, and their folders. */
+/** @brief The logger's open files as cardjob last read them. */
 static log_marks_t s_job_marks;
+/** @brief The folder of s_job_marks' run. */
 static char s_job_run_dir[CARD_DIR_MAX];
+/** @brief The folder of s_job_marks' test. */
 static char s_job_test_dir[CARD_DIR_MAX];
 
 /**
@@ -658,10 +668,12 @@ static void fio_cancel(void *ctx)
     atomic_store(&s_cancel, true);
 }
 
-/* The logger's open files as the screen last read them: the task that
- * renders' own. */
+/** @brief The logger's open files as the screen last read them: the task
+ *         that renders' own. */
 static log_marks_t s_ui_marks;
+/** @brief The folder of s_ui_marks' run. */
 static char s_ui_run_dir[CARD_DIR_MAX];
+/** @brief The folder of s_ui_marks' test. */
 static char s_ui_test_dir[CARD_DIR_MAX];
 
 /**
@@ -704,6 +716,7 @@ static card_state_t fio_card(void *ctx)
     return storage_card_state();
 }
 
+/** @brief FILES' way to the card: its requests run on cardjob. */
 const files_io_t k_files_io = {
     .submit = fio_submit, .idle = fio_idle, .progress = fio_progress,
     .cancel = fio_cancel, .bench = fio_bench, .volume = fio_volume,

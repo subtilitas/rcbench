@@ -140,9 +140,9 @@ TEST_CASE(the_band_titles_match_the_tiles)
     }
 }
 
-/* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 144
- * to 263, 42 px tall, its foot 4 px above the alert band. */
-#define LOGS_WIFI_X 204
+/* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 156
+ * to 255, 52 px tall, its foot 4 px above the alert band. */
+#define LOGS_WIFI_X 206
 
 #define LOGS_WIFI_Y (UI_BAND_H + UI_BODY_H - UI_ALERT_H - 4 - 21)
 

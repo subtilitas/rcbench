@@ -32,7 +32,7 @@
 
 #include "files_int.h"
 
-/* The screen's state; files_int.h names it s. */
+/** @brief The screen's state; files_int.h names it s. */
 fs_state_t fs_s;
 
 /** @brief A pane's request waiting for the card's task. */
@@ -507,9 +507,7 @@ bool fs_foot_live(fs_foot_t b, fm_err_t *why)
     const bool card = s.read[s.active] && here->total >= 0;
     switch (b) {
     case FS_OPEN:
-        if (e == NULL) {
-            err = FM_ERR_ARG;
-        } else if (!e->is_dir && !logs_shows(here->dir, e)) {
+        if (e == NULL || (!e->is_dir && !logs_shows(here->dir, e))) {
             err = FM_ERR_ARG;
         }
         break;
@@ -615,6 +613,9 @@ void fs_foot(fs_foot_t b)
             say_err(why, name);
         }
         return;
+    }
+    if (e == NULL && b != FS_NEW) {
+        return;                    /* fs_foot_live() asked for one */
     }
     fm_tree_t *here = &s.pane[s.active];
     const fm_tree_t *there = &s.pane[1 - s.active];
@@ -993,6 +994,7 @@ static bool back(void)
     return true;
 }
 
+/** @brief The screen's table for the router. */
 static const ui_screen_t s_screen = {
     .title = "FILES",
     .reset = reset,

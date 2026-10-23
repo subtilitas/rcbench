@@ -582,11 +582,13 @@ FIT_ONLY = {
     "servo-limrun-card": (None, "servo", "dark"),
     "servo-limrun-settings": (None, "servo", "dark"),
     # FILES' other states: the bench's folders, a pane reading, an empty
-    # folder, no USER LOG FOLDER, each refusal of the message line, a folder
-    # made, RENAME's keyboard and the question of a folder.
+    # folder and one of a hidden file only, no USER LOG FOLDER, each
+    # refusal of the message line, a folder made, RENAME's keyboard and the
+    # question of a folder.
     "files-bench": (None, "files", "dark"),
     "files-reading": (None, "files", "dark"),
     "files-empty": (None, "files", "dark"),
+    "files-hidden": (None, "files", "dark"),
     "files-nofolder": (None, "files", "dark"),
     "files-exists": (None, "files", "dark"),
     "files-busy": (None, "files", "dark"),

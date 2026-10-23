@@ -2230,7 +2230,8 @@ Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht,
 von der Importansicht und vom Text eines Berichts zur Dateiliste, von der
 Dateiliste zum Menü. Über der
 Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
-AKTUALISIEREN, öffnet [WLAN](#wlan).
+AKTUALISIEREN, öffnet [WLAN](#wlan), und DATEIEN daneben öffnet
+[Files](#files).
 
 Die Dateiliste teilt den Körper in drei Teile. Die Kopfzeile, Körper-y 4 bis
 52, trägt STAMM, USER und BENCH (je 110 x 40 px), den Ordner und den Namen
@@ -2239,10 +2240,10 @@ NÄCHSTE (140 x 48 px). Die Liste darunter ist 1008 px breit und zeigt 7
 Zeilen von 44 px im Abstand von 48 px: Jede Zeile nimmt einen Tipp auf ihren
 ganzen 48 px an. Eine Zeile zeigt den Namen der Datei und rechtsbündig ihre
 Größe; Datum, Art und Länge der Datei zeigt sie nicht. Die Fußzeile,
-Körper-y 440 bis 492, trägt links AKTUALISIEREN und WLAN, rechts LÖSCHEN und
-ÖFFNEN, je 140 x 52 px, und endet 4 px über dem Alarmband. Eine Meldung zu
-einer Datei steht zwischen WLAN und LÖSCHEN auf bis zu zwei Zeilen von 33
-Zeichen.
+Körper-y 440 bis 492, trägt links AKTUALISIEREN (140 x 52 px), WLAN und
+DATEIEN (100 x 52 px), rechts LÖSCHEN und ÖFFNEN (140 x 52 px), und endet
+4 px über dem Alarmband. Eine Meldung zu einer Datei steht zwischen DATEIEN
+und LÖSCHEN auf bis zu zwei Zeilen von 28 Zeichen.
 
 Die Importansicht zeigt ERKANNT (400 px breit) neben der Spaltenliste
 (600 px, 7 Zeilen im Abstand von 48 px), darunter vier Tasten von 246 x
@@ -2648,6 +2649,179 @@ Liste sind binär: 1 kB sind 1024 Bytes, 1 MB 1024 kB und 1 GB 1024 MB.
 [WLAN](#wlan) listet und lädt eine Datei jeder Größe herunter, die die Karte
 trägt.
 
+## Files
+
+FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten und kopiert,
+verschiebt, benennt um und löscht ihre Dateien; er legt Ordner und leere
+Textdateien an. Er öffnet über DATEIEN in der unteren Reihe von
+[Logs](#logs) und über die Kachel FILES auf [Setup](#setup). Das Home-Tag
+schließt zuerst eine Box oder die Tastatur und führt dann zu dem
+Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
+
+![FILES](img/de/files.png)
+
+Jede Spalte ist ein Ordner der Karte, 500 px breit, bei x 8 und x 516. Die
+linke Spalte öffnet im Stammverzeichnis der Karte, die rechte im Ordner
+User-Logs (vorgegeben `USER/LOGS`). Die Spalte mit der farbigen Überschrift
+ist die aktive: ÖFFNEN, UMBENENNEN, LÖSCHEN, NEU und INFO wirken in ihr,
+KOPIEREN und VERSCHIEBEN bringen ihren gewählten Eintrag in den Ordner der
+anderen Spalte. Ein Tipp auf eine Zeile wählt sie und macht ihre Spalte
+zur aktiven; ein zweiter Tipp auf die gewählte Zeile ist ÖFFNEN.
+
+Die Kopfzeile einer Spalte, Körper-y 4 bis 52, trägt den Pfad des Ordners
+auf einer 312 px breiten Taste, die einen Ordner höher geht; im
+Stammverzeichnis zeigt sie den Volumennamen der Karte oder `SD-KARTE` und
+führt nirgendwohin. VORIGE und NÄCHSTE, 88 x 48 px, stehen am rechten Ende
+der Spalte, solange der Ordner mehr als 48 Einträge hält:
+
+![Die zweite Seite eines Ordners mit 120 Einträgen](img/de/files-paged.png)
+
+Die Überschrift über den Zeilen zählt die Einträge: `6 EINTRÄGE`, oder
+`EINTRÄGE 49 BIS 96 VON 120` bei einem Ordner mit mehr als einer Seite.
+Einträge, die das Panel nicht listet, zählt sie dahinter,
+`+ 1 NICHT GELISTET`: Namen, die mit einem Punkt beginnen (`.DS_Store`,
+`._RCBENCH.LOG`), und Namen über 63 Bytes. Ein Ordner, der nur solche
+Einträge hält, ist nicht leer, und LÖSCHEN lehnt ihn ab.
+
+Die Liste zeigt 6 Zeilen im Abstand von 48 px, 44 px hoch gezeichnet; ein
+Ziehen auf der Liste oder auf dem 56 px breiten Rollbalken bewegt sie.
+Zuerst kommen die Ordner, dann die Dateien, jede Gruppe nach Namen
+geordnet. Eine Zeile zeigt ein Symbol, den Namen, rechtsbündig die Größe
+(`512B`, `14kB`, `7.0MB`, `8.00GB`; binäre Einheiten, 1kB sind 1.024 Bytes)
+und unter dem Namen die Art und ein Zustandswort:
+
+| Art | Eintrag |
+|---|---|
+| ORDNER | ein Ordner |
+| AUFZEICHNUNG | eine CSV-Datei im Ordner Auto-Logs oder User-Logs |
+| BERICHT | ein `.TXT`-Bericht in einem der beiden Log-Ordner |
+| SERVODATEI | eine Datei in `BENCH/KST/CONF` |
+| ESC-PROFIL | eine `.JSON`-Datei in `BENCH/ESC/CONF` |
+| FEHLERPROTOKOLL | `BENCH/RCBENCH.LOG` und seine ältere und seine vorläufige Kopie |
+| CSV, JSON, TEXT | eine `.CSV`-, `.JSON`- oder `.TXT`-Datei anderswo |
+| DATEI | jede andere Datei |
+
+| Zustand | Bedeutung |
+|---|---|
+| FEST | ein Ordner, den der Prüfstand führt: die beiden Log-Ordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` und die Ordner auf dem Weg dorthin, darunter `BENCH` und `USER`. Kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN |
+| GESPERRT | der Vermerk der Servoprogrammierung, `BENCH/KST/CONF/KST.TXT`, und sein `KST.NEW`, solange er geschrieben wird. Nur INFO |
+| WIRD GESCHRIEBEN | eine Datei, die der Logger offen hat. Nur INFO |
+
+Das Fehlerprotokoll nimmt KOPIEREN und LÖSCHEN nur bei bestehender
+Verbindung zur IOmcu an: Ohne Verbindung schreibt das Panel alle 5s
+hinein.
+
+Die Fußzeile, Körper-y 440 bis 492, trägt ÖFFNEN, KOPIEREN, VERSCHIEBEN,
+UMBENENNEN, LÖSCHEN, NEU und INFO, 118 x 52 px, und AKTUALISIEREN,
+140 x 52 px, 6 px auseinander; sie endet 4 px über dem Alarmband. Eine
+Taste, die abgelehnt würde, ist gedimmt; ein Tipp darauf nennt den Grund in
+der Meldungszeile, zwei Zeilen in der Schrift 12 x 24 über der Fußzeile.
+
+| Taste | Was sie tut |
+|---|---|
+| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein allein stehender Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs). Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
+| KOPIEREN | kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert |
+| VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte |
+| UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
+| LÖSCHEN | fragt zuerst. Die CSV-Datei eines Laufs nimmt ihren Bericht mit; ein Ordner wird nur gelöscht, wenn er leer ist |
+| NEU | ORDNER oder TEXTDATEI, dann die Tastatur für den Namen; eine Textdatei wird leer angelegt |
+| INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel des Eintrags |
+| AKTUALISIEREN | sieht in den Steckplatz und liest beide Spalten ab ihrer ersten Seite |
+
+Ein vorhandener Name wird nie überschrieben: KOPIEREN, VERSCHIEBEN,
+UMBENENNEN und NEU lehnen ihn ab mit `NOTES.TXT gibt es dort schon.` Eine
+Kopie wird unter dem Namen mit angehängtem `.NEW` geschrieben und erst
+umbenannt, wenn sie vollständig ist; eine abgebrochene Kopie hinterlässt
+also keine halbe Datei unter dem richtigen Namen. KOPIEREN und VERSCHIEBEN
+in den Ordner, in dem der Eintrag liegt, oder eines Ordners in sich selbst
+werden abgelehnt:
+`Beide Seiten zeigen diesen Ordner, oder das Ziel liegt darin.`
+
+### Die Schreibsperre
+
+FILES schreibt nur, solange der Prüfstand SAFE ist und keine Log-Datei
+offen ist. Solange der Prüfstand ARMED ist oder ein Lauf aufgezeichnet
+wird, sind alle Tasten außer INFO und AKTUALISIEREN gedimmt, und die
+Meldungszeile zeigt `Prüfstand ARMED. Die Karte ist nur lesbar.` oder
+`Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.` Durchsehen und
+INFO gehen in jedem Zustand.
+
+![FILES, während der Prüfstand ARMED ist](img/de/files-armed.png)
+![FILES, während ein Test aufgezeichnet wird](img/de/files-logging.png)
+
+Eine Kopie, die läuft, wenn der Prüfstand auf ARMED schaltet oder ein Lauf
+die Aufzeichnung beginnt, hält vor ihrem nächsten Block von 16KiB an und
+meldet `Gestoppt: Der Prüfstand ist ARMED.` oder
+`Gestoppt: Ein Lauf wird aufgezeichnet.` Die halbe Kopie wird entfernt.
+
+### Die Boxen
+
+![Die Rückfrage zu LÖSCHEN](img/de/files-delete.png)
+
+Die Rückfrage zu LÖSCHEN ist eine Box von 700 x 280 px mit ABBRECHEN und
+LÖSCHEN von 300 x 56 px. Sie nennt den Eintrag und seine Größe; bei der
+CSV-Datei eines Laufs mit einem Bericht derselben Nummer nennt sie den
+Bericht, der mitgelöscht wird.
+
+![Eine laufende Kopie](img/de/files-copy.png)
+
+Ein Kopieren, Verschieben, Umbenennen, Löschen oder Anlegen, das länger als
+0.25s dauert, zeigt seinen Fortschritt in derselben Box. Eine Kopie zeigt
+einen Balken und die kopierten von den zu kopierenden Bytes, und ABBRECHEN
+hält sie vor ihrem nächsten Block an: `Mit ABBRECHEN gestoppt.`
+
+![INFO zu einer Datei](img/de/files-info.png)
+![INFO zu einem Ordner](img/de/files-info-folder.png)
+
+INFO ist eine Box von 800 x 420 px mit SCHLIESSEN von 300 x 56 px. Eine
+Datei zeigt Name, Ordner, Art, Größe, Zeit und Regel; ein Ordner zeigt
+seine Einträge, die Bytes der Dateien direkt in ihm, die nicht gelisteten
+Einträge, seine Zeit und seine Regel. Die Zeit ist die Änderungszeit, die
+die Karte führt, gelesen als UTC (Coordinated Universal Time),
+`2024-05-17 12:34`; das Panel kennt keine Zeitzone. Die Zeiten der Dateien,
+die das Panel schreibt, sind auf einem Panel nicht geprüft.
+
+![Die Auswahl von NEU](img/de/files-new.png)
+
+NEU öffnet über NEU eine Liste mit zwei Zeilen von 56 px: ORDNER und
+TEXTDATEI. Ein Druck neben die Liste schließt sie.
+
+### Die Tastatur für Namen
+
+![Die Tastatur für eine neue Textdatei](img/de/files-name.png)
+
+UMBENENNEN und NEU nehmen den Namen auf der Tastatur von [WLAN](#wlan)
+über den ganzen Körper auf. Sie fasst bis zu 59 Bytes; Ä Ö Ü ä ö ü ß zählen
+je 2, und DEL entfernt ein ganzes Zeichen. OK lehnt einen Namen ab, den
+die Karte nicht fassen kann, und nennt den Grund rechts neben dem Titel:
+einen leeren Namen (`Gib einen Namen ein.`), eines von
+`" * / : < > ? \ |`, ein Leerzeichen oder einen Punkt an einem Ende oder
+einen Gerätenamen wie `CON`, `NUL`, `COM1` allein oder vor einem Punkt.
+ABBRECHEN schließt die Tastatur und ändert nichts.
+
+### Keine Karte
+
+![FILES ohne Karte](img/de/files-nocard.png)
+
+Ohne Karte zeigen beide Spalten
+`Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`, und alle
+Tasten außer AKTUALISIEREN sind gedimmt. Eine entnommene oder getauschte
+Karte findet die nächste Anfrage oder AKTUALISIEREN: Beide Spalten gehen
+zurück zum Stammverzeichnis und zum Ordner User-Logs der Karte im
+Steckplatz.
+
+### Die Kartenaufgabe
+
+FILES ruft die Karte nicht selbst auf. Jede Liste, jedes INFO und jede
+Operation ist eine Anfrage an die Aufgabe `cardjob` (Priorität 1, Kern 0,
+ein Stack von 6656B und ein Kopierpuffer von 16KiB internem RAM), die mit
+der ersten Anfrage von FILES startet. Der Bildschirm zeichnet weiter,
+während die Karte arbeitet. Nach jeder Kopie schreibt das Panel ihre Rate
+auf die Konsole,
+`files: copy of <bytes>B in <time>ms: <rate>kB/s, done; cardjob stack <bytes>B unused`,
+`not done` für eine angehaltene Kopie. Die Rate auf einer Karte ist nicht
+gemessen.
+
 ## WLAN
 
 ![WI-FI, kein Heimnetz gespeichert](img/de/wifi.png)
@@ -3023,11 +3197,12 @@ Zeile in der Schrift 10 x 20 px.
   Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
-- Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-  ([Pin auswählen](#pin-auswählen)), WI-FI ([WLAN](#wlan)) und UPDATES
-  ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn wie seine
-  Kachel, und das Band dieser Seite zeigt SETUP.
-- Ein Platz ist frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
+- Fünf eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
+  ([Pin auswählen](#pin-auswählen)), WI-FI ([WLAN](#wlan)), UPDATES
+  ([Updates](#updates)) und FILES ([Files](#files)). Das Band jedes
+  Bildschirms nennt ihn wie seine Kachel, und das Band dieser Seite zeigt
+  SETUP.
+- Kein Platz ist frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
   fasst 9, und der Build scheitert am zehnten.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -3059,7 +3234,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [Pin auswählen](#pin-auswählen), [WLAN](#wlan)) |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES, FILES | den Kacheln; WI-FI und FILES, aus LOGS geöffnet, führen zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [Pin auswählen](#pin-auswählen), [WLAN](#wlan)) |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -3841,8 +4016,8 @@ Die Warnung hält nur das Home-Tag:
 
 - Nichts ungespeichert oder ein Speichern angefordert (`BEI STILLSTAND`):
   keine Warnung, das Menü öffnet.
-- OUTPUTS, PICK A PIN, WI-FI und UPDATES öffnen von einer Kachel und kehren
-  zu SETUP zurück: keine Warnung auf dem Hin- oder Rückweg.
+- OUTPUTS, PICK A PIN, WI-FI, UPDATES und FILES öffnen von einer Kachel
+  und kehren zu SETUP zurück: keine Warnung auf dem Hin- oder Rückweg.
 - Das Home-Tag über der Warnung ist BLEIBEN.
 - STOP stoppt den Prüfstand und lässt die Warnung, wie sie ist.
 - Ein Bildschirm, den das Panel selbst öffnet, etwa der Bus-Fehler-Bildschirm

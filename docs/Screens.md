@@ -2024,7 +2024,7 @@ Browse the card, open a file, check what the import detected, then plot:
 The home tag climbs one level, as BACK does: the plot to the import view,
 the import view and a report's text to the file list, the file list to the
 menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
-RESCAN, opens [Wi-Fi](#wi-fi).
+RESCAN, opens [Wi-Fi](#wi-fi), and FILES beside it opens [Files](#files).
 
 The file list takes the body in three parts. The header row, body y 4 to
 52, holds ROOT, USER and BENCH (110 x 40 px each), the folder and the
@@ -2032,10 +2032,11 @@ card's name, and PREV and NEXT (140 x 48 px) while the folder holds more
 than one page. The list under it is 1008 px wide and shows 7 rows of 44 px
 at a pitch of 48 px: each row takes a tap anywhere in its 48 px. A row
 shows the file's name and, right-aligned, its size; the file's date, kind
-and length are not shown. The footer, body y 440 to 492, holds RESCAN and
-WI-FI at the left and DELETE and OPEN at the right, 140 x 52 px each, and
-ends 4 px above the alert band. A message about a file stands between
-WI-FI and DELETE on up to two lines of 33 characters.
+and length are not shown. The footer, body y 440 to 492, holds RESCAN
+(140 x 52 px), WI-FI and FILES (100 x 52 px) at the left and DELETE and
+OPEN (140 x 52 px) at the right, and ends 4 px above the alert band. A
+message about a file stands between FILES and DELETE on up to two lines of
+28 characters.
 
 The import view shows DETECTED (400 px wide) beside the column list (600 px,
 7 rows at a pitch of 48 px), with four buttons of 246 x 52 px under them.
@@ -2387,6 +2388,166 @@ on the list are binary: 1 kB is 1,024 bytes, 1 MB 1,024 kB and 1 GB
 1,024 MB. [WI-FI](#wi-fi) lists and downloads a file of any size the card
 holds.
 
+## Files
+
+FILES shows the SD (Secure Digital) card in two panes and copies, moves,
+renames and deletes its files, and makes folders and empty text files. It
+opens from FILES in the bottom row of [Logs](#logs) and from the FILES tile
+of [Setup](#setup). The home tag closes a box or the keyboard
+first, then leads back to the screen that opened FILES. FILES drives no
+output.
+
+![FILES](img/files.png)
+
+Each pane is one folder of the card, 500 px wide, at x 8 and x 516. The
+left pane opens on the card's root, the right one on the User log folder
+(`USER/LOGS` by default). The pane with the accent heading is the active
+one: OPEN, RENAME, DELETE, NEW and INFO act in it, and COPY and MOVE take
+its selected entry to the other pane's folder. A tap on a row selects it
+and makes its pane the active one; a second tap on the selected row is
+OPEN.
+
+A pane's header row, body y 4 to 52, holds the folder's path on a button
+312 px wide that goes up one folder; the root shows the card's volume
+label, or `SD CARD`, and goes nowhere. PREV and NEXT, 88 x 48 px, stand at
+the pane's right end while the folder holds more than 48 entries:
+
+![The second page of a folder of 120 entries](img/files-paged.png)
+
+The heading over the rows counts the entries: `6 ENTRIES`, or
+`ENTRIES 49 TO 96 OF 120` on a folder of more than one page. Entries the
+panel does not list are counted after it, `+ 1 NOT LISTED`: names that start
+with a full stop (`.DS_Store`, `._RCBENCH.LOG`) and names over 63 bytes. A
+folder that holds only such entries is not empty, and DELETE refuses it.
+
+The list shows 6 rows at a pitch of 48 px, drawn 44 px tall; a drag on the
+list or on the 56 px scroll bar moves it. Folders come first, then files,
+each group in name order. A row shows an icon, the name, the size
+right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
+1,024 bytes) and, under the name, the kind and a state word:
+
+| Kind | Entry |
+|---|---|
+| FOLDER | a folder |
+| LOG | a CSV file in the Auto or the User log folder |
+| REPORT | a `.TXT` report in either log folder |
+| SERVO FILE | a file in `BENCH/KST/CONF` |
+| ESC PROFILE | a `.JSON` file in `BENCH/ESC/CONF` |
+| FAULT LOG | `BENCH/RCBENCH.LOG` and its older and temporary copies |
+| CSV, JSON, TEXT | a `.CSV`, `.JSON` or `.TXT` file elsewhere |
+| FILE | any other file |
+
+| State | Meaning |
+|---|---|
+| FIXED | a folder the bench keeps: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` and the folders on the way to them, `BENCH` and `USER` among them. No RENAME, MOVE or DELETE |
+| LOCKED | the servo programmer's record, `BENCH/KST/CONF/KST.TXT`, and its `KST.NEW` while it is written. INFO only |
+| WRITING | a file the logger has open. INFO only |
+
+The fault log takes COPY and DELETE only while the IOmcu link is up: with
+the link down the panel writes to it every 5s.
+
+The footer, body y 440 to 492, holds OPEN, COPY, MOVE, RENAME, DELETE, NEW
+and INFO, 118 x 52 px, and RESCAN, 140 x 52 px, 6 px apart; it ends 4 px
+above the alert band. A button that would be refused is drawn dimmed; a tap
+on it says why in the message line, two lines of the 12 x 24 face over the
+footer.
+
+| Button | What it does |
+|---|---|
+| OPEN | enters a folder; a CSV file or a report standing alone in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs). Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
+| COPY | copies the selected file into the other pane's folder. Folders are not copied |
+| MOVE | moves the selected file or folder into the other pane's folder |
+| RENAME | opens the keyboard with the entry's name |
+| DELETE | asks first. A run's CSV takes its report along; a folder is deleted only when empty |
+| NEW | FOLDER or TEXT FILE, then the keyboard for its name; a text file is made empty |
+| INFO | the entry's name, folder, kind, size or entries, time and rule |
+| RESCAN | looks at the slot and reads both panes from their first pages |
+
+An existing name is never overwritten: COPY, MOVE, RENAME and NEW refuse
+it with `NOTES.TXT exists there already.` A copy is written under the
+name with `.NEW` added and renamed when it is complete, so a copy that
+stops leaves no part file under the real name. COPY and MOVE into the
+folder the entry is in, or a folder into itself, are refused:
+`Both panes show this folder, or the target is inside it.`
+
+### The write gate
+
+FILES writes only while the bench is SAFE and no log file is open. While
+the bench is ARMED or a run is being logged, every button but INFO and
+RESCAN is dimmed and the message line reads
+`Bench ARMED. The card is read-only.` or
+`A run is being logged. The card is read-only.` Browsing and INFO work in
+every state.
+
+![FILES while the bench is ARMED](img/files-armed.png)
+![FILES while a test is logged](img/files-logging.png)
+
+A copy that runs when the bench switches to ARMED or a run starts logging
+stops before its next chunk of 16KiB and says
+`Stopped: the bench switched to ARMED.` or
+`Stopped: a run is being logged.` The part copy is removed.
+
+### The boxes
+
+![The DELETE question](img/files-delete.png)
+
+The DELETE question is a box of 700 x 280 px with CANCEL and DELETE of
+300 x 56 px. It names the entry and its size; for a run's CSV with a report
+of the same number it names the report that goes with it.
+
+![A copy under way](img/files-copy.png)
+
+A copy, a move, a rename, a delete or a new entry that takes longer than
+0.25s shows its progress in the same box. A copy shows a bar and the bytes
+done of the bytes to copy, and CANCEL stops it before its next chunk:
+`Stopped by CANCEL.`
+
+![INFO on a file](img/files-info.png)
+![INFO on a folder](img/files-info-folder.png)
+
+INFO is a box of 800 x 420 px with CLOSE of 300 x 56 px. A file shows its
+name, folder, kind, size, time and rule; a folder shows its entries, the
+bytes of the files directly in it, the entries not listed, its time and its
+rule. The time is the modification time the card holds, read as UTC
+(Coordinated Universal Time), `2024-05-17 12:34`; the panel keeps no time
+zone. The times of files the panel writes are not checked on a panel.
+
+![NEW's choice](img/files-new.png)
+
+NEW opens a list of two rows of 56 px above NEW: FOLDER and TEXT FILE. A
+press beside the list closes it.
+
+### The name keyboard
+
+![The keyboard for a new text file](img/files-name.png)
+
+RENAME and NEW type the name on the keyboard of [Wi-Fi](#wi-fi), across the
+body. It takes up to 59 bytes; Ä Ö Ü ä ö ü ß take 2 each, and DEL removes a
+whole character. OK refuses a name the card cannot hold and says why right
+of the title: an empty name (`Enter a name.`), one of `" * / : < > ? \ |`,
+a space or a full stop at either end, or a device name such as `CON`,
+`NUL`, `COM1` alone or before a full stop. CANCEL closes the keyboard and
+changes nothing.
+
+### No card
+
+![FILES with no card](img/files-nocard.png)
+
+With no card, both panes read `No card. Insert one and tap RESCAN.` and
+every button but RESCAN is dimmed. A card taken out or swapped is found by
+the next request or by RESCAN: both panes go back to the root and the User
+log folder of the card in the slot.
+
+### The card task
+
+FILES makes no card call itself. Every listing, INFO and operation is a
+request to the task `cardjob` (priority 1, core 0, a stack of 6656B and a
+copy buffer of 16KiB of internal RAM), started at FILES' first request. The
+screen keeps drawing while the card works. After each copy the panel logs
+its rate on the console,
+`files: copy of <bytes>B in <time>ms: <rate>kB/s, done; cardjob stack <bytes>B unused`,
+`not done` for a copy that stopped. The rate on a card is not measured.
+
 ## Wi-Fi
 
 ![WI-FI, no home network kept](img/wifi.png)
@@ -2731,12 +2892,12 @@ over its name in the 12 x 24 px face, and a line in the 10 x 20 px face.
   The settings of the pack, the motor and the throttle output are on
   MOTOR & ESC > SETTINGS
   ([MOTOR & ESC settings](#motor--esc-settings)).
-- Four screens of their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-  ([Pick a pin](#pick-a-pin)), WI-FI ([Wi-Fi](#wi-fi)) and UPDATES
-  ([Updates](#updates)). The band of each names it as its tile does, and
-  the band of this page reads SETUP.
-- One slot is free. A tenth entry has no slot: the page holds 9, and
-  the build fails at the tenth.
+- Five screens of their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
+  ([Pick a pin](#pick-a-pin)), WI-FI ([Wi-Fi](#wi-fi)), UPDATES
+  ([Updates](#updates)) and FILES ([Files](#files)). The band of each
+  names it as its tile does, and the band of this page reads SETUP.
+- No slot is free. A tenth entry has no slot: the page holds 9, and the
+  build fails at the tenth.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
   category shows here too:
@@ -2765,7 +2926,7 @@ The home tag climbs one level at a time:
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Pick a pin](#pick-a-pin), [Wi-Fi](#wi-fi)) |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES, FILES | the tiles; WI-FI and FILES opened from LOGS go back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Pick a pin](#pick-a-pin), [Wi-Fi](#wi-fi)) |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
@@ -3479,8 +3640,8 @@ the danger colour after a refused save.
 The warning holds only the home tag:
 
 - Nothing unsaved, or a save asked (`WHEN IDLE`): no warning, the menu opens.
-- OUTPUTS, PICK A PIN, WI-FI and UPDATES open from a tile and return to
-  SETUP: no warning on the way out or back.
+- OUTPUTS, PICK A PIN, WI-FI, UPDATES and FILES open from a tile and
+  return to SETUP: no warning on the way out or back.
 - The home tag over the warning is STAY.
 - STOP stops the bench and leaves the warning as it is.
 - A screen the panel opens by itself, such as the bus-fault screen after a

@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder and the reports standing alone, shows what the import found in a CSV file, plots up to 4 of its columns, and shows a report as text. Three tabs at the top left choose the folder, in this order: ROOT (the card's root), USER (User log folder, `USER/LOGS` by default) and BENCH (Auto log folder, `BENCH/LOGS` by default). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view and a report's text to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
+LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder and the reports standing alone, shows what the import found in a CSV file, plots up to 4 of its columns, and shows a report as text. Three tabs at the top left choose the folder, in this order: ROOT (the card's root), USER (User log folder, `USER/LOGS` by default) and BENCH (Auto log folder, `BENCH/LOGS` by default). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md), and FILES beside it opens [Files](files.md): copy, move, rename and delete on the card. The home tag climbs one level, as BACK does: the plot to the import view, the import view and a report's text to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
 
 ## No card
 
@@ -39,6 +39,7 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 | RESCAN | reads the page on screen again and selects its newest run |
 | PREV, NEXT | the page before and after; shown with more than 48 files on the card |
 | WI-FI | opens [Wi-Fi](wifi.md) |
+| FILES | opens [Files](files.md) |
 | DELETE | asks, then removes the selected file; grey with nothing selected |
 | OPEN | opens the selected CSV file in the import view, a report as text; grey with nothing selected |
 

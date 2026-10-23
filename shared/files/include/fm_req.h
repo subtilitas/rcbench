@@ -73,8 +73,9 @@ typedef struct {
  */
 typedef struct {
     fm_req_kind_t kind;           /**< what is asked                       */
-    /** The slot is looked at before the request: a card put in, taken
-     *  out or swapped since the last look is found (fm_runner_t look). */
+    /** @brief The slot is looked at before the request: a card put in,
+     *         taken out or swapped since the last look is found
+     *         (fm_runner_t look). */
     bool look;
     fm_tree_t tree;               /**< PAGE, ENTER, UP: the pane, read and
                                        written in place                    */

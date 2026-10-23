@@ -141,7 +141,8 @@ static void heading(int i, char *out, size_t n)
         used = snprintf(out, n, TR(FM_ENTRIES_OF), t->ahead + 1,
                         t->ahead + t->held, t->total);
     } else {
-        used = snprintf(out, n, TR(FM_ENTRIES), t->total);
+        used = (t->total == 1) ? snprintf(out, n, "%s", TR(FM_ENTRY_ONE))
+                               : snprintf(out, n, TR(FM_ENTRIES), t->total);
     }
     if (t->unlisted > 0u && used >= 0 && (size_t)used < n) {
         snprintf(out + used, n - (size_t)used, TR(FM_UNLISTED), t->unlisted);
@@ -160,7 +161,6 @@ static void draw_empty(gfx_canvas_t *c, int i)
         return;
     }
     const char *a;
-    const char *b = "";
     if (t->total < 0) {
         const card_state_t st = (s.have_io && s.io.card != NULL)
                                     ? s.io.card(s.io.ctx) : CARD_STATE_NONE;
@@ -168,19 +168,14 @@ static void draw_empty(gfx_canvas_t *c, int i)
     } else if (s.pane_err[i] == FM_ERR_NOT_FOUND) {
         a = TR(FM_NO_FOLDER);
     } else {
-        a = TR(FM_EMPTY);
-        b = (t->unlisted > 0u) ? TR(FM_HIDDEN) : "";
+        /* A folder of only hidden entries is not empty: DELETE refuses
+         * it, and the line says what it holds. */
+        a = (t->unlisted > 0u) ? TR(FM_HIDDEN) : TR(FM_EMPTY);
     }
     const gfx_rect_t list = FS_LIST(i);
     const gfx_rect_t first = gfx_rect_make(list.x + 16, list.y + FS_HEAD_H + 24,
                                            FS_ROW_W, 24);
-    const int lines = ui_text_wrap(c, first, 26, a, FS_FONT_BODY, UI_TEXT);
-    if (b[0] != '\0') {
-        const gfx_rect_t second = gfx_rect_make(first.x,
-                                                first.y + lines * 26 + 8,
-                                                first.w, 24);
-        (void)ui_text_wrap(c, second, 26, b, FS_FONT_BODY, UI_TEXT_FAINT);
-    }
+    (void)ui_text_wrap(c, first, 26, a, FS_FONT_BODY, UI_TEXT);
 }
 
 /**

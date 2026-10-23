@@ -200,11 +200,15 @@ static void panes_move(const touch_event_t *e)
  */
 static void panes_up(const touch_event_t *e)
 {
+    static const fs_foot_t k_foot[FOOT_N] = {
+        FS_OPEN, FS_COPY, FS_MOVE, FS_RENAME, FS_DELETE, FS_NEW, FS_INFO,
+        FS_RESCAN,
+    };
     const int hit = s.press;
     s.press = FS_HIT_NONE;
     if (hit >= 0 && hit < FOOT_N) {
         if (tap_on(e, FS_FOOT(hit))) {
-            fs_foot((fs_foot_t)hit);
+            fs_foot(k_foot[hit]);
         }
     } else if (hit == FS_HIT_UP || hit == FS_HIT_UP + 1) {
         const int i = hit - FS_HIT_UP;

@@ -29,10 +29,11 @@
 #include "ui_textkey.h"
 #include "ui_widgets.h"
 
-#define SCREEN_W UI_PANEL_W
-/* The router owns the band and hands this screen the body. */
+#define SCREEN_W UI_PANEL_W  /**< The body's width, 1024 px. */
+/** @brief The body's height, 540 px: the router owns the band and hands
+ *         this screen the body. */
 #define SCREEN_H UI_BODY_H
-#define MAX_FBS  3
+#define MAX_FBS  3           /**< The framebuffers the panel turns over. */
 
 /**
  * @brief The faces: FS_FONT_LABEL (10 x 20) for names, sizes, buttons and
@@ -141,6 +142,7 @@ typedef enum {
  */
 #define FS_BOX_Y      100       /**< The box's top. */
 #define FS_BOX_H      280       /**< Its height. */
+/** @brief The box, 700 x 280 px. */
 #define FS_BOX        gfx_rect_make(162, FS_BOX_Y, 700, FS_BOX_H)
 #define FS_Q_CANCEL   gfx_rect_make(186, 304, 300, 56)  /**< CANCEL. */
 #define FS_Q_DELETE   gfx_rect_make(538, 304, 300, 56)  /**< DELETE. */
@@ -156,6 +158,7 @@ typedef enum {
  */
 #define FS_INFO_Y     20        /**< The box's top. */
 #define FS_INFO_H     420       /**< Its height. */
+/** @brief The box, 800 x 420 px. */
 #define FS_INFO_BOX   gfx_rect_make(112, FS_INFO_Y, 800, FS_INFO_H)
 #define FS_INFO_LH    32        /**< A row's pitch. */
 #define FS_INFO_KEY_W 160       /**< The key's column: 16 cells. */
@@ -165,8 +168,8 @@ typedef enum {
  * @brief NEW's choice: a list of two rows of 56 px (UI_CHOICE_ROW_H) over
  *        the panes, its right edge NEW's, its foot 8 px above the footer.
  */
-#define FS_NEW_W      300
-#define FS_NEW_ROW_H  UI_CHOICE_ROW_H
+#define FS_NEW_W      300                             /**< Its width. */
+#define FS_NEW_ROW_H  UI_CHOICE_ROW_H                 /**< A row, 56 px. */
 #define FS_NEW_H      (2 * FS_NEW_ROW_H + 8)          /**< Its height. */
 /** @brief Its left edge: NEW's right edge less its width. */
 #define FS_NEW_X      (FS_L + 6 * (FOOT_W + FOOT_GAP) - FOOT_GAP - FS_NEW_W)
@@ -188,8 +191,8 @@ typedef enum {
  *         is done at once shows no box. */
 #define FS_JOB_BOX_S 0.25f
 
-/* A press that moves further than this, in x or in y, is not a tap; on a
- * list, vertical travel past it is a scroll. */
+/** @brief A press that moves further than this, px, in x or in y, is not
+ *         a tap; on a list, vertical travel past it is a scroll. */
 #define DRAG_SLOP 8
 
 /** @brief What a name is typed for. */
@@ -273,8 +276,8 @@ typedef struct {
     uint64_t prog_total;      /**< and to do                             */
     bool cancel_asked;        /**< CANCEL was pressed on the job         */
 
-    /* The name a pane selects once its next page is read: a new folder,
-     * a new file, a renamed entry. */
+    /** @brief The name a pane selects once its next page is read: a new
+     *         folder, a new file, a renamed entry. */
     char select_after[2][FM_NAME_BUF];
 
     /* The DELETE question: the entry it names, copied, and its pane. */
@@ -317,9 +320,9 @@ typedef struct {
     bool valid[MAX_FBS];      /**< each framebuffer holds the last frame */
 } fs_state_t;
 
-/* Defined in files_screen.c. */
+/** @brief The screen's state, defined in files_screen.c. */
 extern fs_state_t fs_s;
-#define s fs_s
+#define s fs_s   /**< The state by its short name. */
 
 /* --- files_screen.c ----------------------------------------------------- */
 
