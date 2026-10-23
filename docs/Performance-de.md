@@ -161,9 +161,35 @@ Anzeigen und Bedienelemente nur neu, wenn der zugehörige Zähler sich bewegt
 hat. `each_framebuffer_is_updated_independently` in `test_motor_draw` hält die
 Zähler je Buffer fest.
 
+**Ein geclippter Repaint läuft nur über das, was in seinem Clip liegt.** Ein
+Clip begrenzt, was ein Primitiv schreibt, nicht was es rechnet. Die SERVO-Karte
+zeichnet ihren atmenden Griff durch eine Box von 73px Seitenlänge neu und ein
+bewegtes Horn durch Boxen von etwa 170px, jeweils indem sie die ganze Karte
+unter dem Clip zeichnet. Deshalb überspringt der Rasterizer eine Glyphe oder
+eine Siebensegment-Ziffer, deren Zelle ausserhalb des Clips liegt, läuft einen
+Bogen nur in den Richtungen ab, in denen der Clip liegt, läuft Kreisscheibe,
+Kapsel und Ring mit Antialiasing je Zeile nur über die Pixel, die sie dort
+bedecken können, und rechnet den Winkel eines Teilrings je Pixel nur nahe
+seinen Enden und seiner Blende. `test_gfx_clip` hält jede Abkürzung Pixel für
+Pixel an der Schleife über die ganze Box fest.
+
+**Das Band wird neu gezeichnet, wenn es sich ändert.** Ganz gezeichnet kostet
+das Band 102 288 Pixelbesuche SAFE und 114 281 ARMED, mit rotem Chip und
+Laufuhr. Der Router merkt sich je Framebuffer `ui_band_key()` des zuletzt
+gezeichneten Bands und zeichnet es nur neu, wenn sich der Schlüssel bewegt: die
+Laufuhr einmal je Sekunde, solange der Prüfstand ARMED ist, ein Chip, ein Druck
+auf STOP oder auf den Home-Tag. Über einem simulierten Prüfstand wird es jeden
+Frame gezeichnet, unter dem Watermark. `test_frame_work` zählt die Pixel, die
+der Rasterizer je Frame besucht (`gfx_work()`, nur in die Host-Suite gebaut),
+und hält ARMED in Ruhe bei SAFE in Ruhe plus dem Band einmal je Sekunde, eine
+gehaltene Position bei SAFE plus sechs Lagen der Box des Griffs, ein gesweeptes
+oder gezogenes Horn bei 140 000 Besuchen je Frame und MOTOR & ESC LIVE ARMED in
+Ruhe bei 300 000.
+
 ## Obergrenzen
 
-Kein CI-Schritt (Continuous Integration) hält einen Frame an eine Obergrenze.
+Kein CI-Schritt (Continuous Integration) hält einen Frame an eine Obergrenze in
+Cache-Lines; `test_frame_work` hält Budgets in Pixelbesuchen, wie oben.
 `tools/frame_cost.py` bildet den Cache und die Bandbreite des ESP32-S3 bei 800
 x 480 px nach, und die Tabelle oben ist dieses Modell. Das 7-Zoll-Panel mit
 dem ESP32-P4 gibt 1024 x 600 px über einen anderen Cache aus. Sein Profil und

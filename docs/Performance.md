@@ -152,9 +152,32 @@ framebuffer, and repaints the plot, the readouts and the controls only when the
 corresponding counter has moved. `each_framebuffer_is_updated_independently` in
 `test_motor_draw` pins the per-buffer counters.
 
+**A clipped repaint walks only what lies in its clip.** A clip limits what a
+primitive writes, not what it computes. The SERVO card repaints its breathing
+grip through a box 73px square and a moving horn through boxes of about 170px
+square, each by drawing the whole card under the clip. So the rasteriser skips
+a glyph or a seven-segment digit whose cell lies outside the clip, walks an arc
+only in the directions in which the clip lies, walks the antialiased disc,
+capsule and ring over the pixels each row of them can cover, and works out a
+partial ring's angle per pixel only near its ends and its fade.
+`test_gfx_clip` holds each shortcut to the loop over the whole box, pixel for
+pixel.
+
+**The band is repainted when it changes.** Drawn whole, the band costs 102,288
+pixel visits SAFE and 114,281 ARMED, with its red chip and run clock. The
+router keeps `ui_band_key()` of the band each framebuffer last got and repaints
+it only when the key moves: the run clock once a second while the bench is
+ARMED, a chip, a press of STOP or the home tag. Over a simulated bench it is
+drawn every frame, under the watermark. `test_frame_work` counts the pixels the
+rasteriser visits per frame (`gfx_work()`, built into the host suite only) and
+holds ARMED at rest to SAFE at rest plus the band once a second, a held
+position to SAFE plus six layers of the grip's box, a swept or dragged horn to
+140,000 visits a frame and MOTOR & ESC LIVE ARMED at rest to 300,000.
+
 ## Ceilings
 
-No CI (continuous integration) step holds a frame to a ceiling.
+No CI (continuous integration) step holds a frame to a ceiling in cache lines;
+`test_frame_work` holds budgets in pixel visits, as above.
 `tools/frame_cost.py` models the ESP32-S3's cache and bandwidth at 800 x 480
 px, and the table above is that model. The 7-inch ESP32-P4 panel scans 1024 x
 600 px through a different cache. Its profile and the ceilings CI holds come

@@ -1,5 +1,6 @@
-/*
- * gfx text: UTF-8 (Unicode Transformation Format, 8-bit) decoding, glyph
+/**
+ * @file
+ * @brief gfx text: UTF-8 (Unicode Transformation Format, 8-bit) decoding, glyph
  * drawing, string measuring and the rotated dither stencil.  See
  * include/gfx.h and gfx_int.h.
  *
@@ -7,6 +8,7 @@
  */
 
 #include "gfx_int.h"
+#include "gfx_work.h"
 
 #include <math.h>
 
@@ -86,8 +88,9 @@ size_t gfx_text_prefix(const char *s, int cells)
     return (size_t)(p - s);
 }
 
-/* The glyph index of code point @p cp, or -1 when the font has none.  The
- * extra list is a handful long, so a scan costs less than a table would. */
+/** @brief The glyph index of code point @p cp, or -1 when the font has
+ *         none.  The extra list is a handful long, so a scan costs less
+ *         than a table would. */
 static int glyph_index(const gfx_font_t *font, uint32_t cp)
 {
     if (cp >= font->first && cp <= font->last) {
@@ -101,6 +104,8 @@ static int glyph_index(const gfx_font_t *font, uint32_t cp)
     return -1;
 }
 
+/** @brief The rows of @p cp's glyph, or of '?' when the font has none;
+ *         NULL when it has neither. */
 static const uint8_t *glyph_rows(const gfx_font_t *font, uint32_t cp)
 {
     int idx = glyph_index(font, cp);
@@ -114,8 +119,8 @@ static const uint8_t *glyph_rows(const gfx_font_t *font, uint32_t cp)
     return font->glyphs + (size_t)idx * font->height * stride;
 }
 
-/*
- * One glyph pixel's coverage, 0 transparent to 255 solid.
+/**
+ * @brief One glyph pixel's coverage, 0 transparent to 255 solid.
  *
  * Both formats go through here so the blitters below do not each carry a
  * branch on the font's depth: a 1bpp face answers 0 or 255 and an 8bpp one
@@ -152,9 +157,39 @@ int gfx_text_width(const gfx_font_t *font, const char *s, int scale)
 }
 
 /* One glyph by code point; gfx_char() and gfx_text() both come here. */
+/**
+ * @brief Whether a glyph's cell at (@p x, @p y), @p w by @p h px, reaches
+ *        the clip of @p c.  A cell wholly outside it draws nothing, so its
+ *        rows are not walked: a repaint clipped to a box pays for the
+ *        glyphs in the box, not for every glyph of the card.
+ * @param c the canvas, or NULL
+ * @param x the cell's left edge, px
+ * @param y its top, px
+ * @param w its width, px
+ * @param h its height, px
+ * @return true when some of the cell is inside the clip
+ */
+static bool cell_meets_clip(const gfx_canvas_t *c, int x, int y, int w, int h)
+{
+    if (c == NULL) {
+        return false;
+    }
+    const gfx_rect_t k = c->clip;
+    return x < k.x + k.w && x + w > k.x && y < k.y + k.h && y + h > k.y;
+}
+
+/**
+ * @brief The glyph of @p cp at (@p x, @p y) in @p fg, @p scale times its
+ *        size; a cell wholly outside the clip is not walked.
+ * @return the advance, px
+ */
 static int draw_glyph(gfx_canvas_t *c, int x, int y, uint32_t cp,
                       const gfx_font_t *font, gfx_color_t fg, int scale)
 {
+    if (!cell_meets_clip(c, x, y, font->width * scale,
+                         font->height * scale)) {
+        return font->width * scale;
+    }
     const uint8_t *rows = glyph_rows(font, cp);
     if (!rows) {
         /* '?' is the documented fallback, but the numeric face does not
@@ -168,6 +203,7 @@ static int draw_glyph(gfx_canvas_t *c, int x, int y, uint32_t cp,
         return gw;
     }
     int stride = font->bytes_per_row ? font->bytes_per_row : 1;
+    GFX_VISIT(font->width * font->height);
     for (int row = 0; row < font->height; ++row) {
         const uint8_t *bits = rows + (size_t)row * stride;
         int col = 0;
@@ -230,7 +266,7 @@ int gfx_char(gfx_canvas_t *c, int x, int y, char ch, const gfx_font_t *font,
                       scale);
 }
 
-/* The string, decoded; the public calls below trace it first. */
+/** @brief The string, decoded; the public calls below trace it first. */
 static int text_run(gfx_canvas_t *c, int x, int y, const char *s,
                     const gfx_font_t *font, gfx_color_t fg, int scale)
 {
@@ -308,9 +344,7 @@ void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
 
 /* ------------------------------------------------------------- rotated text */
 
-/*
- * An 8x8 ordered-dither threshold, used by gfx_text_rotated below.
- */
+/** @brief An 8x8 ordered-dither threshold, used by gfx_text_rotated below. */
 static const uint8_t k_bayer8[64] = {
      0, 32,  8, 40,  2, 34, 10, 42,
     48, 16, 56, 24, 50, 18, 58, 26,
@@ -322,8 +356,8 @@ static const uint8_t k_bayer8[64] = {
     63, 31, 55, 23, 61, 29, 53, 21,
 };
 
-/*
- * One scan of the rotated stencil.  With `out` NULL the covered pixels are
+/**
+ * @brief One scan of the rotated stencil.  With `out` NULL the covered pixels are
  * written; otherwise they are recorded as packed y:x and nothing is drawn,
  * and the return is the count, or -1 when more than `max_out` are covered.
  *
@@ -447,6 +481,20 @@ static int rotated_stencil(gfx_canvas_t *c, int cx, int cy, const char *s,
     return n;
 }
 
+/**
+ * @brief @p s rotated by @p angle_deg about (@p cx, @p cy), stencilled onto
+ *        the share @p alpha of its pixels by an ordered dither
+ *        (include/gfx.h).
+ * @param c the canvas
+ * @param cx the centre's column, px
+ * @param cy the centre's row, px
+ * @param s the text, UTF-8
+ * @param font the face
+ * @param fg the colour
+ * @param scale the glyphs' size, a whole multiple
+ * @param alpha the share of pixels drawn, 0 to 255
+ * @param angle_deg the rotation, degrees
+ */
 void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
                       const gfx_font_t *font, gfx_color_t fg, int scale,
                       uint8_t alpha, float angle_deg)
