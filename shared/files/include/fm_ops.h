@@ -32,10 +32,14 @@
  * removes "<name>.NEW" and leaves "<name>" as it was.
  *
  * MOVE, RENAME, DELETE, NEW and the end of a copy or a save are single
- * calls and finish once started.  The write gate is asked again before
- * every chunk of a copy or a save: a bench switched to ARMED, or a log run
- * opened, stops the job there (FM_ERR_ARMED, FM_ERR_LOGGING), as CANCEL
- * does (FM_ERR_CANCELLED).
+ * calls and finish once started.  The rules are asked again before the
+ * files are opened and before every chunk of a copy, a save or a load
+ * (fm_allowed()): a bench switched to ARMED, a log run opened, or the
+ * IOmcu link gone while the fault log is copied stops the job there
+ * (FM_ERR_ARMED, FM_ERR_LOGGING, FM_ERR_BUSY), as CANCEL does
+ * (FM_ERR_CANCELLED).  MOVE, RENAME and DELETE find the entry as the kind
+ * it was listed as, or refuse with FM_ERR_ARG: a file listed that is a
+ * folder now was never asked about as a folder.
  *
  * A job runs on the mount its names were listed from (fm_io.h hold()): on
  * another card it fails with FM_ERR_CARD_GONE and writes nothing.  A card
@@ -43,7 +47,9 @@
  * far stays on that card.
  *
  * DELETE of a run's log takes its report with it, as LOGS' DELETE does:
- * ATEST042.CSV takes ATEST042.TXT (log_name_report_of()).  A folder is
+ * ATEST042.CSV takes ATEST042.TXT (log_name_report_of()).  A report that
+ * cannot be deleted fails the job with the card's answer, the log gone
+ * and the report there; the caller reads the folder again.  A folder is
  * moved or deleted only when it is empty.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).

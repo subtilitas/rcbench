@@ -182,6 +182,7 @@ fm_err_t fm_job_rename(fm_job_t *job, const fm_bench_t *bench,
         || strcmp(name, new_name) == 0) {
         return refuse(job, FM_ERR_ARG);
     }
+    job->is_dir = is_dir;
     fm_err_t err = fm_allowed(bench, FM_OP_RENAME, dir, name, is_dir);
     if (err == FM_OK) {
         err = fm_target_check(bench, dir, new_name);
@@ -429,7 +430,9 @@ static fm_err_t single(fm_job_t *job, const fm_io_t *io)
         if (err != FM_OK) {
             return err;
         }
-        if (job->kind == FM_JOB_MOVE && st.is_dir != is_dir) {
+        /* The kind the rules were asked about: a file listed that is a
+         * folder now, a fixed one perhaps, is not renamed or moved. */
+        if (st.is_dir != is_dir) {
             return FM_ERR_ARG;
         }
         /* A change of case is the entry itself, not another one. */
@@ -452,8 +455,10 @@ static fm_err_t single(fm_job_t *job, const fm_io_t *io)
         }
         if (err == FM_OK && job->tmp[0] != '\0'
             && there(io, job->tmp, false, &st) == FM_OK) {
-            /* Left behind, it would be the only file of its number. */
-            (void)io->unlink(io->ctx, job->tmp);
+            /* Left behind, it would be the only file of its number.  A
+             * report that stays is the answer, with its run gone: the
+             * caller reads the folder again. */
+            err = io->unlink(io->ctx, job->tmp);
         }
         return err;
     case FM_JOB_MKDIR:
@@ -580,6 +585,27 @@ static fm_err_t one_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
 }
 
 /**
+ * @brief Whether the rules let the job's file go on: fm_allowed() of the
+ *        source of a copy or a load, or of the file a save writes, as the
+ *        bench stands now.
+ * @param job    the job
+ * @param bench  the bench now
+ * @param op     FM_OP_COPY, FM_OP_SAVE or FM_OP_OPEN
+ * @return FM_OK or the refusal
+ */
+static fm_err_t still_allowed(const fm_job_t *job, const fm_bench_t *bench,
+                              fm_op_t op)
+{
+    const char *path = (job->kind == FM_JOB_SAVE) ? job->dst : job->src;
+    char dir[FM_PATH_MAX];
+    const char *cut = strrchr(path, '/');
+    const size_t k = (cut != NULL) ? (size_t)(cut - path) : 0u;
+    memcpy(dir, path, k);
+    dir[k] = '\0';
+    return fm_allowed(bench, op, dir, (cut != NULL) ? cut + 1 : path, false);
+}
+
+/**
  * @brief One step of a copy, a save or a load.
  * @param job    the job
  * @param io     the card, held
@@ -604,7 +630,10 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
             return finish(job, io, FM_JOB_STOPPED, FM_ERR_CANCELLED,
                           job->step == STEP_DATA && writes);
         }
-        const fm_err_t gate = fm_gate(op, bench);
+        /* The gate, and what the source's place allows now: the fault log
+         * is copied only while the link is up, and the link can drop
+         * between two chunks. */
+        const fm_err_t gate = still_allowed(job, bench, op);
         if (gate != FM_OK) {
             return finish(job, io, FM_JOB_STOPPED, gate,
                           job->step == STEP_DATA && writes);
