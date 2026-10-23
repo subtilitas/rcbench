@@ -252,19 +252,25 @@ void control_pump(void)
          *
          * The router will latch this same press and the backstop would
          * then stop the bench a second time, so a stop applied here is
-         * marked -- before the event is offered, so the render loop cannot
-         * take the release and find a loss ahead of it (which clears the
-         * marker) before the marker exists.  Taken back if the queue did not
-         * keep the event: a marker left standing for an event nobody saw is
-         * consumed by the next stop the backstop really does have to apply,
-         * and that stop would be ignored.
+         * marked with the number the press takes in s_touch_q -- this task
+         * alone numbers it, so the number is known before the offer.
+         * Marked before the event is offered, so the render loop cannot
+         * take the press and find a loss ahead of it before the marker
+         * exists.  The number keeps the marker for this press across a loss
+         * notice queued ahead of it (stop_mark_keeps()).  Taken back if the
+         * queue did not keep the event: a marker left standing for an event
+         * nobody saw is consumed by the next stop the backstop really does
+         * have to apply, and that stop would be ignored.
          */
+        const uint32_t mark = s_tq_seq + 1u;
         if (counted_here) {
-            atomic_store(&s_stop_counted, true);
+            atomic_store(&s_stop_counted, (unsigned)mark);
         }
         const bool routed = touch_q_put(&evt, false);
         if (counted_here && !routed) {
-            atomic_store(&s_stop_counted, false);
+            unsigned expect = (unsigned)mark;
+            (void)atomic_compare_exchange_strong(&s_stop_counted, &expect,
+                                                 0u);
         }
     }
     /* And a loss at the end of the stream, with no later event to show it. */

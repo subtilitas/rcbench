@@ -335,9 +335,10 @@ uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 atomic_bool        s_stop_request;
 /* A disarm, and the servo screen's own release, as flags rather than queue
  * entries: neither may be lost to an eviction.  See send_cmd(). */
-/* Set when the pump applied a stop for a press the router will also latch,
- * so the backstop does not stop the bench twice for one press. */
-atomic_bool        s_stop_counted;
+/* The s_touch_q number of a press the pump applied a stop for and the
+ * router will also latch, so the backstop does not stop the bench twice for
+ * one press; 0 for none (stop_mark_keeps()). */
+atomic_uint        s_stop_counted;
 atomic_bool        s_disarm_request;
 /*
  * How many times the panel has been told to let go: a disarm, or an explicit
