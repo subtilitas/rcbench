@@ -19,7 +19,7 @@ rcbench/
     ui/                   theme · widgets · icons · router · screens
     settings/             typed schema and values
     logfile/              number and CSV parsing
-    files/                file manager and editor core: text buffer · highlighting · names and paths
+    files/                file manager and editor core: text buffer · highlighting · names and paths · card table · panes · rules · jobs
     link/                 page protocol · CAN framing · watchdogs · diagnosis
     artwork/              the panel's cache of board drawings
     bench/                bench_state · telemetry simulator · log writer · rotary knob decode
@@ -79,7 +79,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
-| `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
+| `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `ppm` | | ✔ | ✔ |
