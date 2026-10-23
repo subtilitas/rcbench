@@ -67,6 +67,18 @@ history is in git.
   not include, and ldgen skipped the mappings without a message. CI fails
   through `tools/psram_bss.py` when a named object keeps .bss in internal
   RAM.
+- WI-FI > CHOOSE HOME NETWORK: a failed scan no longer reads as an empty
+  list. A scan session starts one scan, however often the station's start
+  is reported: esp_hosted 2.13.0 sends it from `req_wifi_start()` and from
+  its event handler, and a second `esp_wifi_scan_start()` replaces the
+  first, which then reports done with nothing found. A done report with no
+  scan of the session under way reads nothing. A failed scan, a list that cannot be read and a report that
+  counts networks the read does not find run the scan again, 3 scans at
+  most (`WA_SCAN_TRIES`) within the 10s; then the list's place says
+  `Wi-Fi could not start.` instead of `No WPA2 or WPA3 network found.`, as
+  it does for a scan the radio refuses. The console logs each scan's start,
+  its done report (status, counted, read, listed, left off) and an ignored
+  report.
 
 ### Changed
 

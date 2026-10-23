@@ -1208,31 +1208,106 @@ static bool auth_refused(uint8_t reason)
     }
 }
 
-static void on_scan_done(void)
+/**
+ * @brief Start a scan of the session, all channels, the driver's default
+ *        times; a refusal ends the session WA_OFF_FAILED.
+ *
+ * Called with the lock not held, from the event loop: the request goes to
+ * the C6 and waits for its answer.
+ *
+ * @param gen The session's number, s.gen, for the log.
+ * @param run The scan's number in the session, from 1.
+ */
+static void scan_start(uint32_t gen, unsigned run)
 {
+    wifi_scan_config_t sc = { 0 };
+    ESP_LOGI(TAG, "scan %u: start, try %u of %u", (unsigned)gen, run,
+             WA_SCAN_TRIES);
+    const esp_err_t e = esp_wifi_scan_start(&sc, false);
+    if (e != ESP_OK) {
+        ESP_LOGW(TAG, "scan %u: refused: %s", (unsigned)gen,
+                 esp_err_to_name(e));
+        lock();
+        wa_on_failed(&s.w);
+        unlock();
+    }
+}
+
+/**
+ * @brief WIFI_EVENT_SCAN_DONE in a scan session: read the list of the scan
+ *        under way, or start it again, or end the session.
+ *
+ * A done report with no scan of this session under way reads nothing: its
+ * list, if any, goes with the driver at the radio's stop.  A failed scan, a
+ * list that cannot be read and a report that counts networks the read does
+ * not find each count as a failure (wa_scan_read_ok()), never as an empty
+ * list.
+ *
+ * @param d The event's data; NULL reads as a success that counts nothing.
+ */
+static void on_scan_done(const wifi_event_sta_scan_done_t *d)
+{
+    const uint32_t status = (d != NULL) ? d->status : 0u;
+    const unsigned reported = (d != NULL) ? d->number : 0u;
+    lock();
+    const bool mine = wa_scan_pending(&s.w);
+    const uint32_t gen = s.gen;
+    unlock();
+    if (!mine) {
+        ESP_LOGW(TAG, "scan %u: done report with no scan under way, "
+                 "status %u, %u counted: ignored", (unsigned)gen,
+                 (unsigned)status, reported);
+        return;
+    }
     uint16_t n = SCAN_READ;
-    wifi_ap_record_t *rec = heap_caps_malloc(n * sizeof(*rec),
-                                             MALLOC_CAP_SPIRAM);
-    if (rec == NULL || esp_wifi_scan_get_ap_records(&n, rec) != ESP_OK) {
+    bool read_ok = false;
+    wifi_ap_record_t *rec = NULL;
+    if (status == 0u) {
+        rec = heap_caps_malloc(n * sizeof(*rec), MALLOC_CAP_SPIRAM);
+        read_ok = (rec != NULL
+                   && esp_wifi_scan_get_ap_records(&n, rec) == ESP_OK);
+    }
+    if (!read_ok) {
         n = 0u;
         (void)esp_wifi_clear_ap_list();
     }
+    const bool ok = wa_scan_read_ok(status, reported, read_ok, n);
     lock();
-    wa_scan_clear(&s.scan);
-    for (uint16_t i = 0; i < n; ++i) {
-        const wifi_auth_mode_t m = rec[i].authmode;
-        const bool usable = (m == WIFI_AUTH_WPA2_PSK
-                             || m == WIFI_AUTH_WPA_WPA2_PSK
-                             || m == WIFI_AUTH_WPA3_PSK
-                             || m == WIFI_AUTH_WPA2_WPA3_PSK);
-        wa_scan_add(&s.scan, rec[i].ssid,
-                    strnlen((const char *)rec[i].ssid, sizeof(rec[i].ssid)),
-                    rec[i].rssi, usable);
+    const unsigned run = s.w.scan_runs;
+    /* A session ended and another started while the list was read: the
+     * report was the old session's. */
+    const wa_scan_step_t step = (s.gen == gen) ? wa_on_scan_end(&s.w, ok)
+                                               : WA_SCAN_IGNORE;
+    unsigned listed = 0u;
+    unsigned dropped = 0u;
+    if (step == WA_SCAN_TAKE) {
+        wa_scan_clear(&s.scan);
+        for (uint16_t i = 0; i < n; ++i) {
+            const wifi_auth_mode_t m = rec[i].authmode;
+            const bool usable = (m == WIFI_AUTH_WPA2_PSK
+                                 || m == WIFI_AUTH_WPA_WPA2_PSK
+                                 || m == WIFI_AUTH_WPA3_PSK
+                                 || m == WIFI_AUTH_WPA2_WPA3_PSK);
+            wa_scan_add(&s.scan, rec[i].ssid,
+                        strnlen((const char *)rec[i].ssid,
+                                sizeof(rec[i].ssid)),
+                        rec[i].rssi, usable);
+        }
+        s.scanned = true;
+        listed = s.scan.n;
+        dropped = s.scan.dropped;
     }
-    s.scanned = true;
-    wa_on_scan_done(&s.w);
     unlock();
     heap_caps_free(rec);
+    ESP_LOGI(TAG, "scan %u: done, try %u, status %u, %u counted, %u read%s; "
+             "%u listed, %u left off", (unsigned)gen, run, (unsigned)status,
+             reported, (unsigned)n, read_ok ? "" : " (list not read)",
+             listed, dropped);
+    if (step == WA_SCAN_AGAIN) {
+        scan_start(gen, run + 1u);
+    } else if (step == WA_SCAN_FAILED) {
+        ESP_LOGW(TAG, "scan %u: failed after %u tries", (unsigned)gen, run);
+    }
 }
 
 static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
@@ -1248,11 +1323,19 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             break;
         case WIFI_EVENT_STA_START:
             if (s.up_mode == WA_MODE_SCAN) {
-                wifi_scan_config_t sc = { 0 };
-                if (esp_wifi_scan_start(&sc, false) != ESP_OK) {
-                    lock();
-                    wa_on_failed(&s.w);
-                    unlock();
+                /* One scan at a time: esp_hosted can report one start
+                 * twice, and a second esp_wifi_scan_start() replaces the
+                 * first, which then reports done with nothing found. */
+                lock();
+                const bool go = wa_scan_begin(&s.w);
+                const uint32_t gen = s.gen;
+                const unsigned run = s.w.scan_runs;
+                unlock();
+                if (go) {
+                    scan_start(gen, run);
+                } else {
+                    ESP_LOGI(TAG, "scan %u: station start again, no new "
+                             "scan", (unsigned)gen);
                 }
             } else {
                 retry = true;
@@ -1260,7 +1343,7 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             break;
         case WIFI_EVENT_SCAN_DONE:
             if (s.up_mode == WA_MODE_SCAN) {
-                on_scan_done();
+                on_scan_done(data);
             }
             break;
         case WIFI_EVENT_STA_CONNECTED:

@@ -71,6 +71,8 @@ Das Panel kann stattdessen einem WPA2- oder WPA3-Personal-Netz beitreten. HEIMNE
 - VERSTECKTES NETZWERK fragt nach dem Namen eines Netzes, das sich nicht ankündigt, dann nach seinem Passwort.
 - NEU SUCHEN sucht erneut. ABBRECHEN führt zurück.
 
+`Kein WPA2- oder WPA3-Netzwerk gefunden.` heißt: Die Suche ist fertig und hat kein Netz für die Liste gefunden. Eine gescheiterte Suche läuft erneut, höchstens 3 Suchen in den 10s. `WLAN konnte nicht starten.` an der Stelle der Liste heißt: Keine Suche wurde fertig; NEU SUCHEN versucht es erneut.
+
 ## Die Tastatur
 
 ![Der Name des Netzes](view:wifi-key-ssid)
