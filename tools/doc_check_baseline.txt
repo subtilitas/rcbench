@@ -308,7 +308,6 @@ firmware/panel/components/storage/storage.c: warning: Member storage_free_bytes(
 firmware/panel/components/storage/storage.c: warning: Member unlock(void) (function) of file storage.c is not documented.
 firmware/panel/components/storage/storage.c: warning: Member usable (variable) of struct [struct].s is not documented.
 firmware/panel/components/storage/storage.c: warning: Member volume_format(void) (function) of file storage.c is not documented.
-firmware/panel/components/storage/storage_list.c: file has no @file block
 firmware/panel/components/storage/storage_list.c: warning: Compound walk_buf_t is not documented.
 firmware/panel/components/storage/storage_list.c: warning: Member dir (variable) of struct walk_buf_t is not documented.
 firmware/panel/components/storage/storage_list.c: warning: Member info (variable) of struct walk_buf_t is not documented.

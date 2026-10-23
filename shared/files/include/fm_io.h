@@ -144,10 +144,13 @@ typedef struct {
      *        volume holds them.
      *
      * Every entry is either handed to @p visit or counted in
-     * @p unlisted: a name the walk cannot hand over whole, over
-     * FM_LIST_NAME_MAX bytes, and a name starting with "." that the walk
-     * leaves out, as the panel's walk leaves out the files a Mac writes.
-     * A folder whose walk visits nothing and counts nothing is empty.
+     * @p unlisted, with no third way: an implementation that leaves an
+     * entry out (a name over FM_LIST_NAME_MAX bytes, which it cannot hand
+     * over whole; a name starting with ".", the files a Mac writes)
+     * counts it.  The panel's walk is storage_walk_counted() with no
+     * suffix filter, its left_out the count.  A folder whose walk visits
+     * nothing and counts nothing is empty, and only such a folder is
+     * moved or deleted (fm_ops.h).
      *
      * @param ctx       the card's context
      * @param dir       the folder, a path from the root
