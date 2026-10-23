@@ -23,6 +23,7 @@
  */
 
 #include "outputs_screen_rig.h"
+#include "ui_widgets.h"
 
 /* The programming port on GP13, for the clash lines. */
 static const uint8_t k_gp13[1] = { 13u };
@@ -414,32 +415,46 @@ TEST_CASE(a_protocol_named_from_outside_lands_over_the_one_on_screen)
 
 /*
  * The longest protocol names inside what they are drawn in: the closed list
- * in the head face (16 px a cell) between its 10 px inset and the chevron's
- * column, and the line under a pin in the label face (8 px a cell) inside
- * the cell.  One cell more than the longest name does not fit either.
+ * in the 16 x 28 face between its 12 px inset and the chevron's 11 px
+ * column 28 px from its right edge, 4 px clear of it; every shorter name
+ * in 20 x 36 there; and the line under a pin in 8 x 16 inside the cell,
+ * left of its 8 px chamfer.  One cell more than the longest name does not
+ * fit the face.
  */
 TEST_CASE(the_longest_protocol_name_fits_the_list_and_a_cell)
 {
     int longest = 0;
+    int second = 0;
     for (unsigned i = 0; i < OUTBIND_PROTOS; ++i) {
         const int n = (int)strlen(outbind_protos()[i].name);
         if (n > longest) {
+            second = longest;
             longest = n;
+        } else if (n > second) {
+            second = n;
         }
     }
     CHECK_EQ(longest, 14);                      /* "DSHOT600 BIDIR" */
+    CHECK_EQ(second, 14);                       /* "DSHOT300 BIDIR" */
     const int head = gfx_text_width(UI_FONT_HEAD, "DSHOT600 BIDIR", 1);
-    const int lab  = gfx_text_width(UI_FONT_LABEL, "DSHOT600 BIDIR", 1);
+    const int fine = gfx_text_width(&gfx_font_8x16, "DSHOT600 BIDIR", 1);
     CHECK_EQ(head, 224);
-    CHECK_EQ(lab, 112);
-    /* The list: text from x + 10, the chevron's column from x + w - 28. */
-    CHECK(10 + head <= DD_W - 28);
-    CHECK(10 + head + 16 > DD_W - 28);
-    /* A cell: text from x + 5, the border at x + w - 1. */
-    CHECK(5 + lab <= CELL_W - 1);
-    /* And the grid ends inside the screen with its 16 px margin. */
-    CHECK_EQ(GRID_X + 4 * CELL_W + 3 * CELL_GAP, SCREEN_W - 16);
-    CHECK(DD_X + DD_W < GRID_X);
+    CHECK_EQ(fine, 112);
+    /* The face: text from x + 12, 4 px clear of the chevron's column. */
+    const int room = DD_W - 12 - 28 - 11 - 4;
+    CHECK(head <= room);
+    /* "MOTOR PWM" and "PROG PORT 4" in the 20 x 36 face. */
+    CHECK(ui_choice_text_font(DD_H, room, "PROG PORT 4") == UI_FONT_TAG);
+    CHECK(ui_choice_text_font(DD_H, room, "DSHOT600 BIDIR") == UI_FONT_HEAD);
+    /* A cell: 18 cells of 8 x 16 from x + 8, left of the chamfer at
+     * x + w - 8. */
+    CHECK(OU_CELL_PAD + 18 * 8 <= CELL_W - 8);
+    CHECK(OU_CELL_PAD + fine <= CELL_W - 8);
+    /* And the grid ends inside the screen with its 8 px margin, 8 px right
+     * of the column, and above the alert band. */
+    CHECK_EQ(GRID_X + 4 * CELL_W + 3 * CELL_GAP, SCREEN_W - 8);
+    CHECK_EQ(DD_X + DD_W + 8, GRID_X);
+    CHECK_EQ(GRID_Y + 7 * CELL_H + 6 * ROW_GAP, OU_FOOT);
 }
 
 /* The two entry points the pin picker uses: a selection from outside goes
@@ -483,10 +498,12 @@ TEST_CASE(a_selection_from_the_picker_is_a_pick)
 
 /*
  * The column's lines that break onto a second line where they need it: the
- * reason under the protocol (266 px), the label of the button that unbinds
- * every pin (250 px inside it) and the last write in the head face
- * (266 px).  ui_text.def holds each to both lines' cells; each has to break
- * into the two, in every language, a pin number at its widest.
+ * reason under the protocol (300 px, 30 cells of 10 x 20), the label of
+ * the button that unbinds every pin (280 px inside it) and the last write
+ * in 20 x 36 (300 px, 15 cells) into two; the PROG PORT entry's reason
+ * (300 px) into three.  Each has to break into its lines in every
+ * language, a pin number at its widest, its last line inside the width
+ * as well.
  */
 TEST_CASE(every_two_line_string_of_the_column_breaks_into_two)
 {
@@ -494,33 +511,39 @@ TEST_CASE(every_two_line_string_of_the_column_breaks_into_two)
         ui_text_id_t id;
         int w;
         bool head;
+        int lines;
     } k[] = {
-        { TX_OUT_OFF_VIEW, 266, false },    { TX_OUT_NOT_READ, 266, false },
-        { TX_OUT_NOT_MAPPED, 266, false },  { TX_OUT_SLICE_WHY, 266, false },
-        { TX_OUT_COMPARE_WHY, 266, false }, { TX_OUT_HOLD_UNBIND, 250, false },
-        { TX_OUT_WRITTEN, 266, true },      { TX_OUT_REFUSED, 266, true },
-        { TX_OUT_NOT_WRITTEN, 266, true },  { TX_OUT_NO_LINK, 266, true },
-        { TX_OUT_PORT_HELD, 266, false },   { TX_OUT_PORT_LOCKED, 266, false },
-        { TX_OUT_PORT_PWM_NEEDS, 266, false },
-        { TX_OUT_PORT_NOT_READ, 266, false },
-        { TX_OUT_PORT_FN_OLD, 266, false },
-        { TX_OUT_PORT_ASK_WAIT, 266, false },
-        { TX_OUT_PORT_ASK_REFUSED, 266, false },
-        { TX_OUT_PORT_ASK_LOST, 266, false },
-        { TX_OUT_PORT_TESTER_PWM, 266, false },
-        { TX_OUT_PORT_TESTER_ON, 266, false },
+        { TX_OUT_OFF_VIEW, 300, false, 2 },
+        { TX_OUT_NOT_READ, 300, false, 2 },
+        { TX_OUT_NOT_MAPPED, 300, false, 2 },
+        { TX_OUT_SLICE_WHY, 300, false, 2 },
+        { TX_OUT_COMPARE_WHY, 300, false, 2 },
+        { TX_OUT_HOLD_UNBIND, 280, false, 2 },
+        { TX_OUT_WRITTEN, 300, true, 2 },
+        { TX_OUT_REFUSED, 300, true, 2 },
+        { TX_OUT_NOT_WRITTEN, 300, true, 2 },
+        { TX_OUT_NO_LINK, 300, true, 2 },
+        { TX_OUT_PORT_HELD, 300, false, 3 },
+        { TX_OUT_PORT_LOCKED, 300, false, 3 },
+        { TX_OUT_PORT_PWM_NEEDS, 300, false, 3 },
+        { TX_OUT_PORT_NOT_READ, 300, false, 3 },
+        { TX_OUT_PORT_FN_OLD, 300, false, 3 },
+        { TX_OUT_PORT_ASK_WAIT, 300, false, 3 },
+        { TX_OUT_PORT_ASK_REFUSED, 300, false, 3 },
+        { TX_OUT_PORT_ASK_LOST, 300, false, 3 },
+        { TX_OUT_PORT_TESTER_PWM, 300, false, 3 },
+        { TX_OUT_PORT_TESTER_ON, 300, false, 3 },
     };
     for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
         for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
             char s[96];
             snprintf(s, sizeof(s), ui_tr_in((ui_lang_t)l, k[i].id), 28u,
                      13u);
-            const int n = outputs_wrap(NULL, gfx_rect_make(0, 0, k[i].w, 16),
-                                       18, s, 3,
-                                       k[i].head ? UI_FONT_HEAD
-                                                 : UI_FONT_LABEL,
-                                       0, false);
-            if (n > 2) {
+            const gfx_font_t *f = k[i].head ? &gfx_font_20x36
+                                            : &gfx_font_10x20;
+            const int n = outputs_wrap(NULL, gfx_rect_make(0, 0, k[i].w, 20),
+                                       22, s, k[i].lines + 1, f, 0, false);
+            if (n > k[i].lines) {
                 T_FAIL("%s in language %d takes %d lines",
                        ui_text_name(k[i].id), l, n);
             }

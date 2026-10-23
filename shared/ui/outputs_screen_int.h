@@ -1,6 +1,8 @@
-/*
- * What the OUTPUTS screen (outputs_screen.c) and its PROG PORT entry
- * (outputs_port.c) share: the left column's layout and the entry's hooks.
+/**
+ * @file outputs_screen_int.h
+ * @brief What the OUTPUTS screen (outputs_screen.c) and its PROG PORT entry
+ *        (outputs_port_entry.c, outputs_port.c) share: the left column's
+ *        layout, the faces they draw in and the entry's hooks.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,20 +14,45 @@
 
 #include "gfx.h"
 #include "touch_types.h"
+#include "ui_layout.h"
 
-/*
- * Left column: the protocol and what the choice adds up to.
+/**
+ * @brief The faces of the 1024 x 600 type scale OUTPUTS draws in.
  *
- * 266 px is the longest protocol name in the head face, 14 cells of 16 px
- * ("DSHOT600 BIDIR", 224 px), with 10 px before it and the chevron's 28 px
- * column and a 4 px gap after it.
+ * OU_FONT_LABEL (10 x 20) for every label, count, reason and the PIN
+ * button; OU_FONT_FINE (8 x 16) for the line under a pin's name in its
+ * cell, a data line; OU_FONT_HEAD (20 x 36) for a pin's GP name and the
+ * last write.  The protocol list's face and rows pick their own face
+ * (ui_choice_font()).
+ */
+#define OU_FONT_LABEL (&gfx_font_10x20)
+#define OU_FONT_FINE  (&gfx_font_8x16)   /**< 8 x 16: a cell's sub-line. */
+#define OU_FONT_HEAD  (&gfx_font_20x36)  /**< 20 x 36: GP names, result. */
+#define OU_CELL       10 /**< OU_FONT_LABEL's cell width, px. */
+#define OU_LINE       22 /**< The pitch of a two-line reason, px. */
+
+/**
+ * @brief The lowest row the screen draws or takes a press on, in the
+ *        screen's coordinates: 4 px above the alert band, body y 492.
+ */
+#define OU_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
+
+/**
+ * @brief The left column: the protocol and what the choice adds up to.
+ *
+ * 300 px from x 16, so 30 cells of OU_FONT_LABEL: the longest reason
+ * breaks into two lines of 30 cells at most in every language
+ * (test_outputs_screen_draw).  The protocol list's face is 300 x 64 px
+ * under the PROTOCOL label; the longest protocol name, "DSHOT600 BIDIR",
+ * draws in the 16 x 28 face there (224 px of the 245 px left of the
+ * chevron), every other name in 20 x 36.
  */
 #define COL_X    16
-#define COL_W    266
-#define COL_Y    16
+#define COL_W    300   /**< The column's width, px. */
+#define COL_Y    16    /**< The PROTOCOL label's top. */
 
-#define DD_Y     44
-#define DD_H     54
+#define DD_Y     44    /**< The protocol list's face: its top. */
+#define DD_H     64    /**< Its height, px (9.6 mm). */
 
 /* The entry's state laid out and dropped, as the screen's reset() does:
  * no entry shown. */

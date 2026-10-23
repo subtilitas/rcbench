@@ -75,7 +75,7 @@ Eine gespeicherte Bindung, die GP13 hält, behält ihn: Der Programmierport hat 
 
 ![Der Eintrag PROG-PORT](view:outputs-port)
 
-Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport, den der IOmcu meldet: 4 ab Protokoll 4.26, 1 bei einem älteren Build, und einer für Port 1, solange die Anzahl nicht bekannt ist. Ein IOmcu älter als Protokoll 4.13 hat keinen Programmierport und keinen Eintrag. Ein Programmierport ist ein Ausgang eigener Art, kein Protokoll und kein Slot. Jeder Eintrag hat dieselben Zeilen:
+Die offene Protokollliste zeigt einen Eintrag PROG-PORT je Programmierport, den der IOmcu meldet, in einer zweiten Spalte neben den Protokollen: 4 ab Protokoll 4.26, 1 bei einem älteren Build, und einer für Port 1, solange die Anzahl nicht bekannt ist. Ein IOmcu älter als Protokoll 4.13 hat keinen Programmierport und keinen Eintrag. Ein Programmierport ist ein Ausgang eigener Art, kein Protokoll und kein Slot. Jeder Eintrag hat dieselben Zeilen:
 
 | Zeile | Zeigt und tut |
 |---|---|

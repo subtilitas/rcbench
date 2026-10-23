@@ -310,10 +310,23 @@ TEST_CASE(abort_acts_on_the_press)
     }
 }
 
+/* The points of the body under the alert band the session names as a
+ * stop, every 2 px. */
+static int stops_under_the_band(const prog_page_set_t *ps)
+{
+    int n = 0;
+    for (int y = UI_ALERT_Y - UI_BAND_H; y < UI_BODY_H; y += 2) {
+        for (int x = 0; x < UI_PANEL_W; x += 2) {
+            n += ps->safe_at(x, y) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
 /*
  * The session names ABORT to its host while a run is under way, so the
  * router hands a press on it through its help bubble.  ABORT ends 4 px
- * above the alert band (panel y 516 to 549), and nothing under the band is
+ * above the alert band (panel y 496 to 551), and nothing under the band is
  * a stop.  Nothing before the run: the warning's
  * HOLD TO RUN and CANCEL are no stop.  On a manual step it is the prompt's
  * ABORT, and the foot row's place is not.  After the run, OK is not.
@@ -334,6 +347,7 @@ TEST_CASE(abort_is_named_to_the_host_while_a_run_is_under_way)
     CHECK(esc_stick_running(esc_stick_panel_stick()));
     CHECK(ps->safe_at(WRITE_X, BTN_CY));
     CHECK(!ps->safe_at(WRITE_X, UI_ALERT_Y - UI_BAND_H));
+    CHECK_EQ(stops_under_the_band(ps), 0);
     CHECK(!ps->safe_at(BACK_X, BACK_Y));
     tap(WRITE_X, BTN_CY);                    /* ABORT */
     rig_run(&r, 1000u);
@@ -357,6 +371,7 @@ TEST_CASE(abort_is_named_to_the_host_while_a_run_is_under_way)
     CHECK(run->hand_menu);
     CHECK(ps->safe_at(CANCEL_X, HOLD_Y));
     CHECK(!ps->safe_at(HOLD_X, HOLD_Y));     /* DONE */
+    CHECK_EQ(stops_under_the_band(ps), 0);
     CHECK(!ps->safe_at(WRITE_X, BTN_CY));
     tap(CANCEL_X, HOLD_Y);
     rig_run(&r, 1000u);

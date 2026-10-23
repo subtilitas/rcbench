@@ -96,18 +96,21 @@ typedef enum {
 #define PROG_ONE_CALL __attribute__((noinline))
 #endif
 
-/*
- * A full-width session's layout, in the host's body coordinates (1024 x 540
- * px under the band): the output strip's line at the top, one line of the
- * 8 x 16 face from PROG_FULL_STRIP_Y, and the session's own area from
- * PROG_FULL_Y to the foot of the body.
+/**
+ * @brief A full-width session's layout, in the host's body coordinates
+ *        (1024 x 540 px under the band): the output strip's line at the
+ *        top, one line of PROG_FULL_STRIP_FONT, the type scale's LABEL face
+ *        (10 x 20), from PROG_FULL_STRIP_Y, and the session's own area from
+ *        PROG_FULL_Y to the foot of the body.
  */
-#define PROG_FULL_STRIP_X 12
-#define PROG_FULL_STRIP_Y 6
-#define PROG_FULL_STRIP_H 16
-#define PROG_FULL_Y       26
-/** The cells the output strip's line holds: 776 px of 8 px cells. */
-#define PROG_FULL_STRIP_CELLS 97
+#define PROG_FULL_STRIP_X    12  /**< the strip's left, px            */
+#define PROG_FULL_STRIP_Y    4   /**< its top, px                     */
+#define PROG_FULL_STRIP_H    20  /**< its line's height, px           */
+#define PROG_FULL_Y          28  /**< the session's area's top, px    */
+#define PROG_FULL_STRIP_FONT (&gfx_font_10x20) /**< the strip's face  */
+/** @brief The cells the output strip's line holds: 1000 px of 10 px
+ *         cells. */
+#define PROG_FULL_STRIP_CELLS 100
 
 /** The list rules (see the top of this file). */
 #define PROG_LIST_SEARCH_OVER   9

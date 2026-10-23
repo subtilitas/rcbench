@@ -1,8 +1,9 @@
-/*
- * The SUPPLY screen.  See supply_screen.h.  This file holds the state, the
- * commands and the screen's interface; supply_events.c takes the touch
- * events and frames, supply_draw.c draws, and supply_screen_int.h is what
- * the three share.
+/**
+ * @file supply_screen.c
+ * @brief The SUPPLY screen.  See supply_screen.h.  This file holds the
+ *        state, the commands and the screen's interface; supply_events.c
+ *        takes the touch events and frames, supply_draw.c draws, and
+ *        supply_screen_int.h is what the three share.
  *
  * MOTOR & ESC's frame and its rules for what repaints when: chrome once per
  * framebuffer, the numbers when a sample arrives, the plot when it moves,
@@ -79,29 +80,50 @@ void sup_bind_colours(void)
     s.i_slider.color = ui_theme_color(UI_C_CURR);
 }
 
+/**
+ * @brief The top of set point @p row's controls.
+ * @param row 0 the voltage, 1 the current limit
+ * @return their top, px
+ */
+static int16_t set_ctrl_y(int row)
+{
+    return (int16_t)(SET_Y0 + row * SET_ROW_H + SET_CTRL_DY);
+}
+
+/**
+ * @brief Set point @p row's track, between its two step keys.
+ * @param row 0 the voltage, 1 the current limit
+ * @return the track
+ */
 static gfx_rect_t set_track(int row)
 {
-    return (gfx_rect_t){ SET_TRACK_X,
-                         (int16_t)(SET_Y0 + row * SET_ROW_H + SET_CTRL_DY),
-                         SET_TRACK_W, SET_CTRL_H };
+    return (gfx_rect_t){ SET_TRACK_X, set_ctrl_y(row), SET_TRACK_W,
+                         SET_CTRL_H };
 }
 
+/**
+ * @brief Set point @p row's fine step key, down at the track's left end or
+ *        up at its right.
+ * @param row 0 the voltage, 1 the current limit
+ * @param up the step up
+ * @return the key
+ */
 static gfx_rect_t nudge_rect(int row, bool up)
 {
-    const int16_t y = (int16_t)(SET_Y0 + row * SET_ROW_H + SET_CTRL_DY);
-    return up ? (gfx_rect_t){ (int16_t)(SET_TRACK_X + SET_TRACK_W + 6), y,
-                              NUDGE_W, SET_CTRL_H }
-              : (gfx_rect_t){ (int16_t)(LEFT_X + INNER), y, NUDGE_W,
-                              SET_CTRL_H };
+    return (gfx_rect_t){ (int16_t)(up ? SET_UP_X : LEFT_X + INNER),
+                         set_ctrl_y(row), NUDGE_W, SET_CTRL_H };
 }
 
-/* A set point's value, at the right of its label line: tapped, the keypad. */
-gfx_rect_t sup_set_text_rect(int row)
+/**
+ * @brief A set point's value, at the right end of its controls: tapped, the
+ *        keypad.
+ * @param row 0 the voltage, 1 the current limit
+ * @return the value's box
+ */
+gfx_rect_t sup_set_value_rect(int row)
 {
-    const int half = (LEFT_W - 2 * INNER) / 2;
-    return (gfx_rect_t){ (int16_t)(LEFT_X + INNER + half),
-                         (int16_t)(SET_Y0 + row * SET_ROW_H - 2),
-                         (int16_t)half, SET_TEXT_H + 2 };
+    return (gfx_rect_t){ SET_VAL_X, set_ctrl_y(row), SET_VAL_W,
+                         SET_CTRL_H };
 }
 
 gfx_rect_t sup_card_rect(int i)
@@ -110,12 +132,35 @@ gfx_rect_t sup_card_rect(int i)
                          RIGHT_W, CARD_H };
 }
 
-/* The strip's row with its trough's 3 px around it. */
+/**
+ * @brief The strip's row with its trough's 3 px around it.
+ * @return the row, px
+ */
 gfx_rect_t sup_strip_area(void)
 {
     const gfx_rect_t r = ui_wb_strip_rect(&s.wb);
     return (gfx_rect_t){ (int16_t)(r.x - 3), (int16_t)(r.y - 3),
                          (int16_t)(r.w + 6), (int16_t)(r.h + 6) };
+}
+
+/**
+ * @brief The strip's tabs laid out again at SUPPLY's sizes, SU_TAB_W x
+ *        SU_STRIP_H from (SU_STRIP_X, SU_STRIP_Y): the tasks, their order
+ *        and their labels as ui_wb_strip_init() set them.
+ */
+static void strip_widen(void)
+{
+    ui_tabs_t *t = &s.wb.tabs;
+    const int n = t->count;
+    ui_text_id_t ids[UI_TABS_MAX] = { (ui_text_id_t)0 };
+    for (int i = 0; i < n; ++i) {
+        ids[i] = (ui_text_id_t)t->text[i];
+    }
+    ui_tabs_init_text(t, ids, n,
+                      (gfx_rect_t){ SU_STRIP_X, SU_STRIP_Y,
+                                    (int16_t)(n * SU_TAB_W
+                                              + (n - 1) * SU_TAB_GAP),
+                                    SU_STRIP_H });
 }
 
 bool sup_on_live(void)
@@ -128,14 +173,25 @@ gfx_rect_t sup_overlay_area(void)
     return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
 }
 
+/**
+ * @brief SETTINGS' row @p i: its label and its value, in its column.
+ * @param i the row, an index of k_rows
+ * @return the row, px
+ */
 gfx_rect_t sup_row_rect(int i)
 {
     const bool left = (k_rows[i].col == 0);
-    return (gfx_rect_t){ (int16_t)(left ? OV_X + 10 : OV_COL1_X),
+    return (gfx_rect_t){ (int16_t)(left ? OV_COL0_X : OV_COL1_X),
                          (int16_t)(OV_Y + k_rows[i].y),
                          (int16_t)(left ? OV_COL_W : OV_COL1_W), OV_ROW_H };
 }
 
+/**
+ * @brief The value of SETTINGS' row @p i, at the row's right end: tapped,
+ *        the keypad or a switch's flip.
+ * @param i the row, an index of k_rows
+ * @return the value's box, px
+ */
 gfx_rect_t sup_row_value_rect(int i)
 {
     const gfx_rect_t r = sup_row_rect(i);
@@ -215,6 +271,8 @@ void sup_refresh_limits(void)
     ++s.ov_rev;
 }
 
+/** @brief The screen at its start: the state cleared, every control laid
+ *         out, the model's set points. */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
@@ -227,9 +285,10 @@ static void reset(void)
     s.eff = supply_caps_limited(&s.caps, &s.lim);
     ui_plot_init(&s.plot, sup_series, S_COUNT, (float)PLOT_W / SAMPLE_HZ);
     ui_plot_set_running(&s.plot, false);
-    ui_wb_strip_init(&s.wb, TASKS, UI_WB_STRIP_X, UI_WB_STRIP_Y);
+    ui_wb_strip_init(&s.wb, TASKS, SU_STRIP_X, SU_STRIP_Y);
+    strip_widen();
     ui_tabs_init_text(&s.tabs, k_tab_labels, SUPPLY_PANE_COUNT,
-                 (gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H });
+                      (gfx_rect_t){ TAB_X, TAB_Y, TAB_W, TAB_H });
     /* Where the panel's model starts, so a screen and its model agree before
      * anything has been set. */
     s.cv = 6.0f;
@@ -239,18 +298,16 @@ static void reset(void)
     s.v_up   = nudge_rect(0, true);
     s.i_down = nudge_rect(1, false);
     s.i_up   = nudge_rect(1, true);
-    s.out_rect   = (gfx_rect_t){ (int16_t)(RIGHT_X + INNER), OUT_Y,
-                                 (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
-    s.reset_rect = (gfx_rect_t){ (int16_t)(RIGHT_X + INNER), RESET_Y,
-                                 (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
-    s.modreset_btn = (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + 260),
-                                   (int16_t)OV_COL_W, 36 };
-    /* The question's buttons stand clear of its last line: SUP_ASK_OFF
-     * takes two rows in German, from OV_H - 44. */
-    s.apply_btn   = (gfx_rect_t){ (int16_t)(OV_X + 40), (int16_t)(OV_Y + 270),
-                                  210, 60 };
-    s.discard_btn = (gfx_rect_t){ (int16_t)(OV_X + OV_W - 40 - 210),
-                                  (int16_t)(OV_Y + 270), 210, 60 };
+    s.out_rect   = (gfx_rect_t){ RC_X, OUT_Y, RC_W, OUT_H };
+    s.reset_rect = (gfx_rect_t){ RC_X, RESET_Y, RC_W, BTN_H };
+    s.modreset_btn = (gfx_rect_t){ OV_COL0_X, (int16_t)(OV_Y + OV_MODRESET_DY),
+                                   OV_COL_W, OV_ROW_H };
+    /* The question's buttons stand clear of its last lines, which end 4 px
+     * above the alert band. */
+    s.apply_btn   = (gfx_rect_t){ (int16_t)(OV_X + 40), ASK_BTN_Y,
+                                  ASK_BTN_W, ASK_BTN_H };
+    s.discard_btn = (gfx_rect_t){ (int16_t)(OV_X + OV_W - 40 - ASK_BTN_W),
+                                  ASK_BTN_Y, ASK_BTN_W, ASK_BTN_H };
     s.pressed = P_NONE;
     s.kp.pressed = -1;
     sup_bind_colours();
@@ -550,8 +607,8 @@ void supply_screen_set_port_held(bool held)
         if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER
             || (s.pressed == P_OUTPUT && !s.press_on)
             || s.pressed == P_APPLY || s.pressed == P_CARD_V
-            || s.pressed == P_CARD_I || s.pressed == P_TEXT_V
-            || s.pressed == P_TEXT_I) {
+            || s.pressed == P_CARD_I || s.pressed == P_VALUE_V
+            || s.pressed == P_VALUE_I) {
             sup_let_go();
         }
         ui_slider_release(&s.v_slider);

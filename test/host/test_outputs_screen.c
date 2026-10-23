@@ -200,7 +200,8 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_picks_nothing)
     feed_tap(FEED_LONE, DD_X + DD_W / 2, DD_Y + DD_H / 2 + UI_BAND_H);
     finger(FEED_LONE, DD_X + 40,
            DD_Y + 4 + POP_ROW / 2 + UI_BAND_H);         /* row 0: off */
-    finger(FEED_LONE, DD_X + 40 + 300, DD_Y + 4 + POP_ROW / 2 + UI_BAND_H);
+    finger(FEED_LONE, DD_X + 40 + 2 * OU_POP_COL_W,
+           DD_Y + 4 + POP_ROW / 2 + UI_BAND_H);            /* off the list */
     lift(FEED_LONE);
     CHECK_EQ(outputs_screen_binding()->proto, proto_row("SERVO PWM"));
 }

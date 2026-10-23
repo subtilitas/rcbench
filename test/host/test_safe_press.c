@@ -31,6 +31,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "motor_spots.h"
+#include "supply_spots.h"
 
 #define W UI_PANEL_W
 #define H UI_PANEL_H
@@ -411,8 +412,9 @@ TEST_CASE(motor_arm_under_the_bubble_starts_no_hold)
 
 /* ----------------------------------------------------------------- SUPPLY */
 
-#define SU_OUT_X 676
-#define SU_OUT_Y P(318)
+/* SUPPLY's OUTPUT ON / OFF in panel coordinates (supply_spots.h). */
+#define SU_OUT_PX SU_OUT_X
+#define SU_OUT_PY P(SU_OUT_Y)
 
 static bool su_took(supply_cmd_t *c)
 {
@@ -430,7 +432,7 @@ TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
     while (su_took(&c)) { }
     supply_screen_set_output(true);
     open_bubble(false);
-    feed_tap(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    feed_tap(FEED_LONE, SU_OUT_PX, SU_OUT_PY);
     CHECK(su_took(&c));
     CHECK(c.off);
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
@@ -438,7 +440,7 @@ TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
     supply_screen_set_output(false);
     while (su_took(&c)) { }
     open_bubble(false);
-    finger(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    finger(FEED_LONE, SU_OUT_PX, SU_OUT_PY);
     frames((int)(3.0f / FRAME_S));
     lift(FEED_LONE);
     CHECK(!su_took(&c));
@@ -462,7 +464,7 @@ static int stops_under_the_band(const ui_screen_t *scr)
 
 /* Every stop control ends above the alert band, so an alert covers none:
  * SERVO's DISARM and OUTPUT OFF, MOTOR & ESC's DISARM on LIVE's PLOT and
- * TABLE and on SETTINGS, SUPPLY's OUTPUT OFF.
+ * TABLE and on SETTINGS, SUPPLY's OUTPUT OFF on LIVE and on SETTINGS.
  * ESC STICK's ABORT is held in test_esc_stick_panel_touch. */
 TEST_CASE(no_stop_control_lies_under_the_alert_band)
 {
@@ -487,7 +489,12 @@ TEST_CASE(no_stop_control_lies_under_the_alert_band)
     up_on(SCREEN_SUPPLY);
     supply_screen_settings_loaded();
     supply_screen_set_output(true);
-    CHECK(supply_screen()->safe_at(SU_OUT_X, SU_OUT_Y - UI_BAND_H));
+    CHECK(supply_screen()->safe_at(SU_OUT_PX, SU_OUT_PY - UI_BAND_H));
+    CHECK_EQ(stops_under_the_band(supply_screen()), 0);
+    /* The same OUTPUT OFF on SETTINGS: the rail stays. */
+    feed_tap(FEED_LONE, SU_TAB_X(1), P(SU_TAB_Y));
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    CHECK(supply_screen()->safe_at(SU_OUT_PX, SU_OUT_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(supply_screen()), 0);
     supply_screen_set_output(false);
 }

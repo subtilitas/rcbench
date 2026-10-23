@@ -24,7 +24,7 @@ Eine Karte im Steckplatz mit NTFS (New Technology File System), einer GPT (GUID-
 
 ![Die Dateiliste](view:logs)
 
-Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die Karte mit ihrer Datenträgerbezeichnung, `UNITEST`, am rechten Ende der Zeile; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD-KARTE`. Jede Zeile ist eine Datei mit ihrer Größe.
+Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die Karte mit ihrer Datenträgerbezeichnung, `UNITEST`, am rechten Ende der Zeile; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD-KARTE`. Die Liste zeigt 7 Zeilen auf einmal, jede 48 px (etwa 7,2 mm) des Glases zum Tippen; jede Zeile ist eine Datei mit ihrer Größe.
 
 | Tab | Ordner | Enthält |
 |---|---|---|
@@ -47,7 +47,7 @@ LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und n
 - Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, ein allein stehender Bericht nach seiner eigenen Nummer, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat, und die Zeilen einer Seite stehen in derselben Reihenfolge, der neueste Lauf oben. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 145 BIS 192 VON 1000`.
 - Die Seiten werden von oben zu je 48 geschnitten. Stehen vor der gezeigten Seite weniger als 48 Einträge, etwa nachdem ein Lauf aufgezeichnet wurde, zeigt VORIGE die erste Seite.
 - Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist, stehen auf Seite 1. VORIGE überspringt dann auf dem Rückweg ab Seite 3 so viele Einträge, wie aufgezeichnet wurden; NÄCHSTE von Seite 1 zeigt sie, und die Zahlen im Reiter zeigen die Verschiebung.
-- Der Rollbalken am rechten Rand, 42 px (etwa 6,3 mm) breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
+- Der Rollbalken am rechten Rand, 56 px (etwa 8,4 mm) breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
 - Das Öffnen von LOGS liest die Karte: die erste Seite, ihr neuester Lauf gewählt. Ein Lauf, der aufgezeichnet wurde, während LOGS geschlossen war, steht ohne AKTUALISIEREN in der Liste.
 - Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; enthält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite.
 - Nach LÖSCHEN wird die Seite neu gelesen, und die Rollposition bleibt; nichts ist gewählt, LÖSCHEN und ÖFFNEN sind grau, bis eine Zeile gewählt ist.
@@ -104,7 +104,7 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 
 ![Der Bericht eines ENDLAGENLAUFS als Text](view:logs-report)
 
-ÖFFNEN auf einem allein stehenden Bericht zeigt seinen Text: Der Dateiname steht über dem Feld, 14 Zeilen zu bis zu 86 Zeichen stehen auf einmal darin.
+ÖFFNEN auf einem allein stehenden Bericht zeigt seinen Text: Der Dateiname steht über dem Feld, 15 Zeilen zu bis zu 92 Zeichen stehen auf einmal darin.
 
 - Eine Zeile, die länger ist als eine Bildschirmzeile, bricht am letzten Leerzeichen um; ein längeres Wort wird am Zeilenende abgeschnitten.
 - Ziehen auf den Zeilen oder am Rollbalken rollt sie. ZURÜCK führt zur Liste und gibt den Text frei; das Verlassen von LOGS gibt ihn auch frei.

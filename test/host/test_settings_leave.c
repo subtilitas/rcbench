@@ -6,6 +6,7 @@
 #include "settings_rig.h"
 
 #include "outputs_screen.h"
+#include "outputs_spots.h"
 
 /* -------------------------------------------- the stored copy and leaving */
 
@@ -690,7 +691,8 @@ TEST_CASE(the_outputs_overview_leaves_nothing_unsaved)
     CHECK(!settings_dirty());
     /* GP4, column 0 row 4 of the grid: no protocol, no write.  The same
      * tap with SERVO PWM picked ticks it, so the tap is on the pin. */
-    const int gp4_x = 288 + 60, gp4_y = UI_BAND_H + 16 + 4 * 57 + 26;
+    const int gp4_x = OU_CELL_X(4) + 60;
+    const int gp4_y = UI_BAND_H + OU_CELL_Y(4) + 26;
     tap(gp4_x, gp4_y);
     CHECK_EQ(s_out_applied, 0);
     CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);
