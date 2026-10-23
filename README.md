@@ -21,14 +21,15 @@ DSI (Display Serial Interface), ESP32-C6 for Wi-Fi).
   layout scaled up.
 - The ESP32-P4 board needs chip revision 3.2 (ESP-IDF v5.5.5).
 - The IOmcu, the IO board and the CAN link stay as they are.
-- The heartbeat pin and the rotary knob pins on the ESP32-P4 board are not
-  fixed yet.
+- On the ESP32-P4 board the heartbeat is IO28 and the rotary knob is IO30
+  (SDA) and IO31 (SCL), all on the 12-pin header P3.
 
 ## What rcbench is
 
 A motor, ESC (electronic speed controller) and servo test bench on two
-processors: an ESP32-S3 touch panel (user interface, settings, SD card) and an
-RP2350 IOmcu (IO microcontroller: measurement, outputs, and every
+processors: an ESP32-P4 touch panel, the Waveshare ESP32-P4 7B (user
+interface on a 1024x600 MIPI DSI display, settings, SD card, Wi-Fi through its
+ESP32-C6), and an RP2350 IOmcu (IO microcontroller: measurement, outputs, and every
 protocol with timing requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
 
 Release 0.22.1 runs on the ESP32-S3 panel. What its update check offers
@@ -73,7 +74,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 | Screen | Function | State |
 | --- | --- | --- |
 | Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; speed, voltage, current and ESC temperature from an ESC's bidirectional DShot telemetry; simulated values while no IOmcu answers |
-| Servo | commanded and measured position; installed-limit search; two-servo synchronisation; servo types with their frame rates, a warning for those that can destroy a servo; a sweep through a square, sine or triangle run by the IOmcu; the supply's live power; an automatic test stepping the supply's voltage, with a CSV and a text report; a [programmer for KST and Chaservo servos](docs/ServoProgrammer.md) with backup, limit checks and a write switch | screen built and commanding over the link; drives the pins bound as surfaces, timing unmeasured; the limit search and the synchronisation are host-tested against a modelled servo and run on no board; the programmer is host-tested, no frame sent to a servo |
+| Servo | commanded and measured position; installed-limit search; two-servo synchronisation; servo types with their frame rates, a warning for those that can destroy a servo; a sweep through a square, sine or triangle run by the IOmcu; the supply's live power; an automatic test stepping the supply's voltage, with a CSV and a text report; a [programmer for KST and Chaservo servos](docs/ServoProgrammer.md) with backup, limit checks and a write switch | screen built and commanding over the link; drives the pins bound as surfaces, timing unmeasured; the limit search, the synchronisation and the programmer are host-tested against a modelled servo |
 | Supply | the PD mini, a USB-PD (USB Power Delivery) supply: voltage and current limit set, output switched, V, A and W plotted and logged | screen built; the IOmcu drives the PD mini on a PIO (programmable input/output) UART (universal asynchronous receiver-transmitter) when SETUP enables it, and the panel runs a model otherwise |
 | Receiver | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / NO SIGNAL | S.BUS decoder built; PIO (programmable input/output) receiver not written |
 | Motor & ESC > Program | [ESC programming profiles](docs/EscProfiles.md) for throttle-stick menus: 72 families, 451 models; parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware and for Hitec servos | task built. Profiles built in and read from `/BENCH/ESC/CONF/` on the card. [Stick programming](docs/StickProgramming.md) runs 24 of them from ESC STICK, asking for a Kontronik ESC's jumper or button at its moment, against the panel's simulated ESC. The parameter tables are data: no protocol on a wire, no row on a PROGRAM list |
@@ -125,7 +126,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 53,538 of 54,714 lines in 239 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 53,550 of 54,726 lines in 239 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).

@@ -43,10 +43,11 @@ extern "C" {
 #define BOARD_UI_V_RES              600
 
 /**
- * @brief DPI (Display Pixel Interface) timing, in pixels and lines.  52 MHz is
- * requested; the 240 MHz DPI clock divided by 5 delivers 48 MHz, which
- * gives 60.38 Hz over 1250 x 636 (derived, not measured).  The EK79007
- * accepts 44.9 to 70.3 MHz at 60 Hz.
+ * @brief DPI (Display Pixel Interface) timing, in pixels and lines.  52MHz is
+ * requested; ESP-IDF rounds 240MHz / 52MHz to a divider of 5, which
+ * delivers 48MHz.  A frame is 1354 x 636 clocks (1024 + 10 + 160 + 160 by
+ * 600 + 1 + 23 + 12), so 48MHz gives 55.74Hz (derived, not measured).
+ * The EK79007 accepts 44.9 to 70.3MHz at 60Hz.
  */
 #define BOARD_LCD_DPI_CLOCK_MHZ     52.0f
 #define BOARD_LCD_HSYNC_PULSE_WIDTH 10
