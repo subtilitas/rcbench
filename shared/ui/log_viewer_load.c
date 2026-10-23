@@ -3,7 +3,8 @@
  * @brief The log viewer's loading: a file the browse view opens is analysed
  *        (its delimiter, decimal convention and time column, see
  *        shared/logfile), its chosen columns are read, and lv_compute_spans()
- *        turns them into the plot's scaled traces.  log_viewer_screen.c holds
+ *        turns them into the plot's scaled traces; a report standing alone
+ *        is read whole into the TEXT view.  log_viewer_screen.c holds
  *        the state, the card's listing and paging and the screen's interface
  *        (log_viewer_screen.h); log_viewer_int.h is what the screen's four
  *        files share.
@@ -16,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "log_name.h"
 #include "log_viewer_screen.h"
 #include "settings.h"
 #include "ui_screen.h"
@@ -325,6 +327,45 @@ void lv_load_data(void)
     s.view = VIEW_PLOT;
 }
 
+/**
+ * @brief Read the report s.name names into the TEXT view and show it.
+ *
+ * The file is read once, whole, up to LOG_TEXT_MAX bytes; a file the I/O
+ * does not open, or one that fails to read, stays on the list with the
+ * reason in the footer.
+ */
+static void open_text(void)
+{
+    log_text_free(&s.text);
+    s.text_scroll = 0;
+    if (s.io.open == NULL) {
+        lv_set_message("%s", TR(LOG_NO_SOURCE));
+        return;
+    }
+    log_source_t src;
+    lv_point(s.open_tab);
+    if (!open_name(&src)) {
+        lv_set_message(TR(LOG_CANNOT_OPEN), s.name);
+        return;
+    }
+    const log_err_t err = log_text_load(&s.text, &src, TX_COLS);
+    if (s.io.close != NULL) {
+        s.io.close(s.io.ctx);
+    }
+    if (err != LOG_OK) {
+        lv_set_message("%s", err_text(err));
+        return;
+    }
+    s.message[0] = '\0';
+    s.view = VIEW_TEXT;
+}
+
+/*
+ * OPEN on the selected row: a CSV file to the import view, a report
+ * standing alone to the TEXT view (open_text()).  A folder and a file over
+ * LOG_VIEWER_OPEN_MAX are not opened; the footer says why.  What the
+ * import, the plot and the text held was another file's and is dropped.
+ */
 void lv_open_selected(void)
 {
     if (s.sel < 0 || s.sel >= s.n_files) {
@@ -346,6 +387,15 @@ void lv_open_selected(void)
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
     s.open_mounts = s.mounts;
+    /* A report the list holds stands alone (log_select.h): its text, and
+     * no import.  What the import and the plot held was another file's. */
+    if (log_report_number(s.name) >= 0) {
+        s.have_analysis = false;
+        lv_drop_data();
+        open_text();
+        return;
+    }
+    log_text_free(&s.text);
     s.delim_index = -1;
     s.conv = LOG_CONV_AUTO;
     lv_run_analysis();

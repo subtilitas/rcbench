@@ -21,6 +21,7 @@
 
 #include "card_state.h"
 #include "gfx.h"
+#include "log_text.h"
 #include "log_viewer_screen.h"
 #include "touch_types.h"
 #include "ui_screen.h"
@@ -97,6 +98,20 @@
  * and the file's name. */
 #define BR_MSG_X  272
 
+/*
+ * The TEXT view: the file's rows in the browse list's panel, 18 px apart
+ * under its 30 px heading, beside its scroll bar.  A row is 86 cells of the
+ * 8 px face, 688 px, from 8 px into the browse row's box.  The thumb is
+ * BR_BAR_MIN px at least: a report of 400 rows would make it 9.
+ */
+#define TX_ROW_H  18  /**< the pitch of a text row, px */
+#define TX_ROWS   14  /**< text rows on screen */
+#define TX_COLS   86  /**< cells a text row holds */
+#define TX_ROW_X  (BR_ROW_X + 8)  /**< a text row's left edge */
+/** @brief BACK under the text. */
+#define TX_BACK   gfx_rect_make(16, FOOT_Y, 170, FOOT_H)
+#define BR_BAR_MIN 32  /**< the scroll bar thumb's least height, px */
+
 /* The DELETE question, drawn in place of the list. */
 #define DQ_BOX    gfx_rect_make(120, 110, 560, 220)
 #define DQ_CANCEL gfx_rect_make(144, 258, 240, 48)
@@ -154,12 +169,17 @@ _Static_assert(BR_HEAD_X + 31 * 8 <= BR_HEAD_END + 8,
                "the header's text ends at PREV");
 _Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,
                "the scroll bar's thumb is 32 px or more on a full page");
+_Static_assert(TX_ROWS * TX_ROW_H <= BR_ROWS * BR_ROW_H - 4,
+               "the text's rows fit beside the scroll bar");
+_Static_assert(TX_COLS * 8 <= BR_ROW_W - 8,
+               "a text row fits the browse row's box");
 _Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - 36,
                "the column list's rows fit its panel");
 _Static_assert(PV_POS_Y + PV_POS_H <= 68 + PV_PANEL_H,
                "the position bar is inside the plot's panel");
 
-typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT } view_t;
+/** @brief The view on screen. */
+typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT, VIEW_TEXT } view_t;
 
 typedef struct {
     view_t view;
@@ -220,6 +240,9 @@ typedef struct {
     log_data_t data;
     bool have_data;
     int cursor;
+
+    log_text_t text;      /**< the report the TEXT view shows */
+    int text_scroll;      /**< the TEXT view's first row on screen */
 
     /*
      * The samples the plot shows: [win0, win0 + win_n).  The whole file
@@ -300,6 +323,44 @@ void lv_drop_data(void);
 bool lv_can_delete(void);
 void lv_bar_thumb(int *y, int *h);
 int lv_bar_scroll_at(int top);
+
+/**
+ * @brief The thumb of a scroll bar on BR_BAR: the whole track while every
+ *        row shows.
+ *
+ * @param total    Rows of the list.
+ * @param visible  Rows on screen.
+ * @param scroll   The first row on screen.
+ * @param y        Takes the thumb's top.
+ * @param h        Takes its height, BR_BAR_MIN px at least.
+ */
+void lv_bar_thumb_of(int total, int visible, int scroll, int *y, int *h);
+
+/**
+ * @brief The scroll that puts a thumb's top on BR_BAR nearest @p top.
+ *
+ * @param total    Rows of the list.
+ * @param visible  Rows on screen.
+ * @param top      The thumb's top the finger asks for.
+ * @return The first row on screen, 0 to @p total - @p visible.
+ */
+int lv_bar_scroll_of(int total, int visible, int top);
+
+/**
+ * @brief Rows the TEXT view scrolls through: the text's, and the line that
+ *        says it was cut.
+ *
+ * @return The rows.
+ */
+int lv_text_total(void);
+
+/**
+ * @brief Leave the TEXT view for the list and free the report's text.
+ *
+ * The text is up to 32 KiB of the file; the list does not need it, and OPEN
+ * reads it again.
+ */
+void lv_close_text(void);
 
 /* --- log_viewer_load.c -------------------------------------------------- */
 

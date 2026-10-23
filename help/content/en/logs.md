@@ -6,13 +6,13 @@ order: 50
 
 # Logs
 
-LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder, shows what the import found in one, and plots up to 4 of its columns. Three tabs at the top left choose the folder, in this order: ROOT (the card's root), USER (User log folder, `USER/LOGS` by default) and BENCH (Auto log folder, `BENCH/LOGS` by default). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
+LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder and the reports standing alone, shows what the import found in a CSV file, plots up to 4 of its columns, and shows a report as text. Three tabs at the top left choose the folder, in this order: ROOT (the card's root), USER (User log folder, `USER/LOGS` by default) and BENCH (Auto log folder, `BENCH/LOGS` by default). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view and a report's text to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
 
 ## No card
 
 ![LOGS with no card in the slot](view:logs-nocard)
 
-With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF in SETUP > SD CARD.` or `USER LOGS OFF in SETUP > SD CARD.` instead. RESCAN reads the card again. With no card the tabs switch as with one, and each tap on a tab looks for a card again.
+With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF in SETUP > SD CARD.` or `USER LOGS OFF in SETUP > SD CARD.` instead. RESCAN reads the card again. With no card the tabs switch as with one, and each tap on a tab looks for a card again.
 
 ## A card that does not mount
 
@@ -40,11 +40,11 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 | PREV, NEXT | the page before and after; shown with more than 48 files on the card |
 | WI-FI | opens [Wi-Fi](wifi.md) |
 | DELETE | asks, then removes the selected file; grey with nothing selected |
-| OPEN | opens the selected file in the import view; grey with nothing selected |
+| OPEN | opens the selected CSV file in the import view, a report as text; grey with nothing selected |
 
 ![The fourth page of a full card](view:logs-pages)
 
-- A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, then the files the bench did not write, and the rows of a page run the same way, the newest run at the top. With more than 48 files the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`.
+- A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, a report standing alone by its own number, then the files the bench did not write, and the rows of a page run the same way, the newest run at the top. With more than 48 files the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`.
 - Pages are cut from the top, 48 at a time. With fewer than 48 entries ahead of the page on screen, for example after a run was recorded, PREV shows the first page.
 - Runs recorded while a later page is open are on page 1. PREV back from page 3 or later then passes over as many entries as were recorded; NEXT from page 1 shows them, and the tab numbers show the shift.
 - The scroll bar at the right edge, 42 px (about 6.3 mm) wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
@@ -68,6 +68,7 @@ One file is one run, in the folder of its kind. Its name says what started it:
 | `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
 | `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
 | root | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | runs of firmware 0.21.0 and older; in the root, `SERVOnnn` is a servo test |
+| root | `SERVOnnn.TXT` alone | a limit run of firmware 0.21.0 and older |
 
 The name follows the screen whose ARM armed the bench, also on an IOmcu older than protocol 4.18, which arms the throttle outputs with every switch to ARMED.
 
@@ -77,7 +78,7 @@ Auto log folder and User log folder on [SETUP > SD CARD](setup.md#sd-card) set o
 
 The panel makes each folder the first time it writes there, one level at a time. A file named `BENCH` or `USER` in the root stops that: the band reads `Cannot make folder BENCH/LOGS. Run not recorded.`
 
-Each folder has its own series: a new run takes one above the highest number in its folder, whichever name carries it, the names of firmware 0.21.0 included. A gap left by a deleted file is not filled. A folder holding a number 999 takes no further run, with lower numbers free or not. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list shows runs newest first by number, across all names: `MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
+Each folder has its own series: a new run takes one above the highest number in its folder, whichever name carries it, the names of firmware 0.21.0 included. A gap left by a deleted file is not filled. A folder holding a number 999 takes no further run, with lower numbers free or not. The list shows a report standing alone, `LIMITnnn.TXT` or, in the root, `SERVOnnn.TXT` with no `SERVOnnn.CSV` beside it. A report beside its run's CSV, `ATESTnnn.TXT`, is not listed, and DELETE on the run removes it too. The list shows runs newest first by number, across all names: `MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
 
 Firmware 0.21.0 and older writes to the root and does not read `BENCH/LOGS` or `USER/LOGS`.
 
@@ -98,6 +99,21 @@ The band reports what the card did to a run:
 | `The last write to the card failed. Recording incomplete.` | the rows since the last commit are not in the file |
 
 The first five leave no file. The last four leave a file that stops early.
+
+## A report
+
+![A LIMIT RUN's report as text](view:logs-report)
+
+OPEN on a report standing alone shows its text: the file's name heads the panel, 14 rows of up to 86 characters show at once.
+
+- A line longer than a row breaks at its last space; a word longer than a row is cut at the row's end.
+- A drag on the rows or on the scroll bar scrolls them. BACK returns to the list and frees the text; leaving LOGS frees it too.
+- A line ends at a line feed, at a carriage return and at a pair of both.
+- A file of 0 bytes shows `The file is empty.`
+- The view holds the first 32 KiB of a file. A longer file ends with `Only the first 32 kB are shown.`
+- A report that cannot be opened stays on the list, and the footer says why, for example `Cannot open LIMIT044.TXT.`
+
+[Wi-Fi](wifi.md) downloads every report, the ones beside a CSV file included.
 
 ## The import view
 
