@@ -59,14 +59,14 @@ cmake -S . -B build -G Ninja -DPICO_BOARD=waveshare_rp2350_zero \
 cmake --build build
 ```
 
-Output: `build/rcbench-touch-injector.uf2`, about 75 KiB.
+Output: `build/rcbench-touch-injector.uf2`, about 79KiB.
 
 Tested with arm-none-eabi-gcc 14.2.1 (Debian), CMake 3.31.6 and Ninja 1.12.1
 on the Pi, and with Arm GNU Toolchain 14.2.rel1 on x86-64. The CI (continuous
 integration) workflow builds it on every push.
 
 The pure-C core in `core/` also builds for the host. Its suites are
-`test_inj_line_id` and `test_inj_emu` in `test/host`.
+`test_inj_line_id`, `test_inj_emu` and `test_inj_multi` in `test/host`.
 
 ## Flash
 
@@ -115,36 +115,111 @@ one reply line; a gesture gets a second when it ends.
 | Command | Reply |
 | --- | --- |
 | `ping` | `pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen` (or `active`) |
-| `wiring` | `ok wiring`, then the verdict about 500 ms later |
+| `wiring` | `ok wiring`, then the verdict about 500ms later |
 | `confirm scl=GP5` | `ok confirm`; the target answers from then on |
-| `status` | `status <state> reads= acks= last_read_ms= down= x= y=` |
-| `tap x y [ms]` | `ok tap`, then `done tap frames= ms=`; ms defaults to 100 |
-| `hold x y ms` | `ok hold`, then `done hold frames= ms=` |
-| `swipe x0 y0 x1 y1 ms` | `ok swipe`, then `done swipe frames= ms= slowed=` |
-| `release` | `ok release`; a gesture under way first gets `fail <gesture> released` |
+| `status` | `status <state> reads= acks= last_read_ms= down= x= y=`; state, down, x and y are contact 0's |
+| `contacts` | `contacts n=<k>`, then `<id>=<gesture>,<down>,<x>,<y>` for each contact id in use, lowest first |
+| `tap x y [ms] [id=N]` | `ok tap`, then `done tap frames= ms=`; ms defaults to 100 |
+| `hold x y ms [id=N]` | `ok hold`, then `done hold frames= ms=` |
+| `swipe x0 y0 x1 y1 ms [id=N]` | `ok swipe`, then `done swipe frames= ms= slowed=` |
+| `release [id=N]` | `ok release`; each gesture under way first gets `fail <gesture> released` |
 
-Coordinates are panel pixels: x 0 to 1023, y 0 to 599. `ms` is 1 to 30000.
-The panel takes injected points as pixels of its 1024 x 600 UI (user
-interface) area, unmirrored, and lands each on the pixel named; a point
-past the area is clamped to its edge. The glass's own report (1024 x 600,
-mirrored in x and y) is mapped separately before the two are merged.
+Coordinates are panel pixels: x 0 to 1023, y 0 to 599, the 60px status
+band at y 0 to 59 included. `ms` is 1 to 30000. The panel takes injected
+points as pixels of its 1024 x 600 UI (user interface) area, unmirrored,
+and lands each on the pixel named; a point past the area is clamped to its
+edge. The glass's own report (1024 x 600, mirrored in x and y) is mapped
+separately before the two are merged.
 
 A tap or a hold is two frames: one puts the contact down, one lifts it at
 the end of `ms`. The panel keeps a contact down while the controller has
 nothing new to report, as it does for the glass.
 
-A swipe moves at most 100 px (|dx| + |dy|) between two frames, under the
-panel's 120 px jump split; `slowed=1` says that limit stretched it.
+A swipe moves at most 100px (|dx| + |dy|) between two frames, under the
+panel's 120px jump split; `slowed=1` says that limit stretched it.
+
+### Contacts
+
+Up to 5 contacts are down at once, the GT911's 5 points. Each has a
+contact id from 0 to 15, sent as its GT911 track ID; the panel reads it as
+track id `0x80 + id` (`TOUCH_MERGE_INJECT_ID`), never one of the glass's.
+
+- A command without `id=` drives contact 0. Its replies carry no id, word
+  for word as with one contact: `ok tap`, `done tap frames=2 ms=<100 to 110>`,
+  `err busy`.
+- `id=N` is the last argument. A gesture started with it names its
+  contact in every reply about it: `ok hold id=1`,
+  `done hold id=1 frames=2 ms=<2000 to 2010>`, `fail hold id=1 released`.
+- An id is in use from its `ok` until the panel has read the frame that
+  lifts it. A gesture on an id in use gets `err busy`; a sixth id while 5
+  are in use gets `err full`.
+- `release` without `id=` releases every contact: one `fail` line per
+  gesture under way, lowest id first, then `ok release`. `release id=N`
+  releases contact N alone and answers `ok release id=N`; the others go on.
+- A frame carries every contact that is down, lowest id first. A
+  contact's `frames=` counts the frames that put it down, moved it or
+  lifted it, not the frames other contacts needed.
+- Frames go out at most one per 10ms, each after the panel acknowledged
+  the one before. A tap's or a hold's lift that falls due while another
+  contact's frame is out goes in the next frame: the host suite holds it to
+  20ms after its deadline beside a swipe.
+- Lines that arrive in one USB read start in the same frame. The main loop
+  reads up to 64 characters before it runs the gestures, so write the
+  lines of a pinch in one write of at most 64 characters. A line that
+  arrives later starts in a later frame, 10ms or more after.
+- `no_master` and `panel_reset` end every contact, each gesture under way
+  with its own `fail` line.
+- `ping` reports protocol 1 as before. An injector built before contacts
+  answers `contacts` with `err unknown contacts`.
+
+```text
+swipe 495 258 495 368 4000       -> ok swipe
+tap 826 514 id=1                 -> ok tap id=1
+contacts                         -> contacts n=2 0=swipe,1,495,286 1=tap,1,826,514
+                                 -> done tap id=1 frames=2 ms=110
+                                 -> done swipe frames=403 ms=4020 slowed=0
+```
+
+A two-finger pinch, both lines in one write of 62 characters:
+
+```text
+swipe 400 300 200 300 500 id=1
+swipe 600 300 800 300 500 id=2   -> ok swipe id=1
+                                 -> ok swipe id=2
+                                 -> done swipe id=1 frames=53 ms=520 slowed=0
+                                 -> done swipe id=2 frames=53 ms=520 slowed=0
+```
+
+The `frames=` and `ms=` figures in these examples come from the host
+suite's panel, which reads every 10ms; on the bench they are not measured.
+
+### On the panel
+
+- The glass's contacts come first. When the glass and the injector
+  together have more than 5, an injected contact is left out: one that came
+  down last first, then the last one in the injector's report. It stays
+  out until the injector lifts it, so a finger lifting from the glass never
+  brings it back as a new press. Its UP carries `TOUCH_FLAG_NO_TAP`: only a
+  control that stops what the bench drives acts on it.
+- A finger and an injected contact on the same pixel are two contacts with
+  two track ids.
+- A touch event the panel loses aborts what it would abort for the glass
+  (`shared/safety/touch_loss.h`). 5 contacts that all jump more than 120px
+  in one report make 10 events, which the touch task's event buffer of
+  `TOUCH_MAX_POINTS * 2` holds.
+
+### Errors
 
 Errors are one line and the command is not run:
 
 | Reply | Cause |
 | --- | --- |
-| `err syntax <cmd>` | missing, extra or non-numeric argument |
-| `err range <field>` | a coordinate or `ms` out of range |
+| `err syntax <cmd>` | missing, extra or non-numeric argument, or an `id=` not last |
+| `err range <field>` | a coordinate, `ms` or `id` out of range |
 | `err unknown <cmd>` | no such command |
 | `err toolong` | line over 63 characters |
-| `err busy` | a gesture or a `wiring` check is under way |
+| `err busy` | the contact's gesture (contact 0 without `id=`) or a `wiring` check is under way |
+| `err full` | 5 contact ids are in use |
 | `err unconfirmed` | a gesture in LISTEN |
 | `err state` | `wiring` or `confirm` in ACTIVE |
 | `err swapped` | `confirm` after a `swapped` verdict |
@@ -154,11 +229,40 @@ A gesture that fails after its `ok` gets one of:
 
 | Reply | Cause |
 | --- | --- |
-| `fail <gesture> no_master` | the panel did not read a frame within 100 ms, or stopped reading for 100 ms while a contact was down |
-| `fail <gesture> panel_reset` | the panel read the product ID again: it restarted, or it re-attached the injector; the contact is withdrawn |
+| `fail <gesture> no_master` | the panel did not read a frame within 100ms, or stopped reading for 100ms while a contact was down; every contact ends |
+| `fail <gesture> panel_reset` | the panel read the product ID again: it restarted, or it re-attached the injector; every contact is withdrawn |
 | `fail <gesture> released` | `release` arrived |
 
-Closing the port lifts a contact that is down, without a reply.
+With `id=N` the gesture reads `<gesture> id=N`: `fail swipe id=2 no_master`.
+Closing the port lifts every contact that is down, without a reply.
+
+## Station check: DISARM and STOP during a drag
+
+The check that a second finger stops the bench while a drag drives the
+output. The points are the SERVO screen's (`test/host/servo_spots.h`), in
+panel pixels: ARM and DISARM at 826, 514; the band's STOP at 934, 30; the
+dial drag at x 495 from 30 degrees above the shaft (y 258) to 30 degrees
+below (y 368). The host suite runs the same check
+(`a_second_contact_disarms_a_drag_under_way` in `test_servo_arm`).
+
+1. Bring the injector up (below) until the mode chip shows `INJECT`.
+2. `tap 384 197` opens SERVO from OVERVIEW. Connect a servo, or a scope,
+   to the output the output card names.
+3. `hold 826 514 2500` arms: `done hold frames=2 ms=<2500 to 2510>`, the
+   band reads ARMED.
+4. `swipe 495 258 495 368 4000`: `ok swipe`. The output follows the drag.
+5. About 1s later, `tap 826 514 id=1`: `ok tap id=1`, then
+   `done tap id=1 frames=2 ms=<100 to 120>`. The band reads SAFE, and the
+   output stops following the drag while the swipe goes on.
+6. Wait for `done swipe ...`. `contacts` reads `contacts n=0`.
+7. `hold 826 514 2500` re-arms from rest: ARMED, and the output stands at
+   its rest until the next press.
+8. `swipe 495 258 495 368 4000`, and about 1s later `tap 934 30 id=1`: the
+   band's STOP. The band reads SAFE and the output stops following.
+9. Wait for `done swipe ...`, then repeat step 7.
+
+A `fail` line in any step, or a step whose band does not read as written,
+fails the check. `release` lifts every contact at once.
 
 ## Wiring check
 
@@ -203,7 +307,7 @@ reaches is not measured; the verdict line reports it as `rate=`.
    the injector at start-up) detached the
    silent injector after 1000 ms and re-attaches it within about 1 s of
    `confirm`, and `INJECT` shows again.
-7. `tap 83 370` presses the SETUP tile. The reply is
+7. `tap 890 462` presses the SETUP tile. The reply is
    `done tap frames=2 ms=<100 to 110>`.
 
 ## LED
@@ -221,12 +325,14 @@ reaches is not measured; the verdict line reports it as `rate=`.
 
 | Item | Value |
 | --- | --- |
-| frame interval | at least 10 ms |
-| frame acknowledge timeout | 100 ms |
-| default tap | 100 ms |
-| longest gesture | 30 000 ms |
+| frame interval | at least 10ms |
+| frame acknowledge timeout | 100ms |
+| default tap | 100ms |
+| longest gesture | 30000ms |
+| contacts down at once | 5 |
+| contact ids | 0 to 15 |
 | reply queue | 8 lines; when full the oldest is dropped |
-| watchdog | 200 ms |
-| USB write timeout | 10 ms per line |
+| watchdog | 200ms |
+| USB write timeout | 10ms per line |
 
 Licence: MIT (`SPDX-License-Identifier: MIT` in every source file).
