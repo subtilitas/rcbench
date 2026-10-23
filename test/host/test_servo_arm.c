@@ -132,7 +132,12 @@ static void dial_at(float deg, int *x, int *y)
     *y = SHAFT_Y - (int)(110.0f * sinf(deg * k) + 0.5f);
 }
 
-/* A press on the dial at @p deg, dragged to @p to and lifted. */
+/* Frames enough for the drag's filtered target to reach the finger's:
+ * 312ms, over 15 of its 20ms time constants. */
+#define DRAG_SETTLE 12
+
+/* A press on the dial at @p deg, dragged to @p to and lifted, and the
+ * frames the target takes to get there. */
 static void drag(float deg, float to)
 {
     int x, y, x2, y2;
@@ -141,6 +146,7 @@ static void drag(float deg, float to)
     finger(FEED_LONE, x, y);
     glide(FEED_LONE, x2, y2, 8);
     lift(FEED_LONE);
+    frames(DRAG_SETTLE);
 }
 
 /*
@@ -292,6 +298,7 @@ TEST_CASE(a_press_on_the_disarmed_dial_is_no_drag_after_the_arm)
     CHECK_EQ(took().kind, SERVO_CMD_ARM);
     servo_screen_set_armed(true);
     glide(1, x2, y2, 8);
+    frames(DRAG_SETTLE);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     lift(1);
@@ -318,6 +325,7 @@ TEST_CASE(a_drag_does_not_cross_a_disarm_and_the_next_arm)
     servo_screen_set_armed(true);
     drain();
     glide(1, x2, y2, 8);
+    frames(DRAG_SETTLE);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     lift(1);
@@ -325,9 +333,10 @@ TEST_CASE(a_drag_does_not_cross_a_disarm_and_the_next_arm)
 
 /*
  * The touch injector's station check (testbench/touch-injector/README.md),
- * with its track ids: a dial drag under way on one contact, DISARM tapped
- * by a second.  The disarm is taken, the drag's moves before the bench's
- * answer command nothing, and a hold on ARM from rest arms again.
+ * with its track ids: a dial drag under way on one contact, DISARM pressed
+ * by a second.  The disarm is taken at the press, the drag's moves before
+ * the bench's answer command nothing, and a hold on ARM from rest arms
+ * again.
  */
 TEST_CASE(a_second_contact_disarms_a_drag_under_way)
 {
@@ -339,8 +348,11 @@ TEST_CASE(a_second_contact_disarms_a_drag_under_way)
     finger(0x80, x, y);
     CHECK_EQ(took().kind, SERVO_CMD_POSITION);
     drain();
-    feed_tap(0x81, ARM_X, ARM_Y);
-    CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+    finger(0x81, ARM_X, ARM_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_DISARM);    /* at the press */
+    frames(23);                                 /* held 600ms */
+    lift(0x81);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
     glide(0x80, x2, y2, 8);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     servo_screen_set_armed(false);
@@ -350,6 +362,37 @@ TEST_CASE(a_second_contact_disarms_a_drag_under_way)
     finger(0x80, x2, y2);
     CHECK_EQ(took().kind, SERVO_CMD_POSITION);
     lift(0x80);
+}
+
+/*
+ * The same with STOP pressed by the second contact: the stop is latched at
+ * the press, the press ends the drag, and neither the drag's moves nor its
+ * filter command anything while the press is held 600ms or after.
+ */
+TEST_CASE(a_second_contact_on_stop_ends_a_drag_under_way)
+{
+    fresh();
+    CHECK(arm());
+    int x, y, x2, y2;
+    dial_at(30.0f, &x, &y);
+    dial_at(-30.0f, &x2, &y2);
+    finger(0x80, x, y);
+    glide(0x80, x2, y2, 8);     /* no frame: the filter is behind */
+    drain();
+    const uint16_t held = servo_screen_commanded();
+    const gfx_rect_t r = ui_band_stop_rect();
+    finger(0x81, r.x + r.w / 2, r.y + r.h / 2);
+    CHECK(ui_router_take_stop());               /* at the press */
+    frames(23);
+    glide(0x80, x, y, 8);
+    frames(DRAG_SETTLE);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), held);
+    lift(0x81);
+    lift(0x80);
+    CHECK(!ui_router_take_stop());
+    frames(DRAG_SETTLE);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
 }
 
 /* Under a disarm waiting to be taken every position is dropped, so the
@@ -1005,6 +1048,7 @@ TEST_CASE(the_first_dial_drag_after_a_release_starts_from_the_rest)
         const uint16_t early = servo_screen_drawn();
         CHECK(early >= k_rest[profile] && early < c.value_us);
         glide(FEED_LONE, x2, y2, 8);
+        frames(DRAG_SETTLE);
         CHECK(took().value_us > c.value_us);
         lift(FEED_LONE);
     }
@@ -1025,6 +1069,7 @@ TEST_CASE(a_release_ends_a_drag_under_way)
     CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     glide(1, x2, y2, 8);
+    frames(DRAG_SETTLE);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     lift(1);
@@ -1171,6 +1216,7 @@ int main(void)
     RUN(a_press_on_the_disarmed_dial_is_no_drag_after_the_arm);
     RUN(a_drag_does_not_cross_a_disarm_and_the_next_arm);
     RUN(a_second_contact_disarms_a_drag_under_way);
+    RUN(a_second_contact_on_stop_ends_a_drag_under_way);
     RUN(nothing_moves_the_value_under_a_disarm_not_yet_taken);
     RUN(nothing_moves_the_value_between_a_disarm_and_its_answer);
     RUN(an_arm_sets_the_value_to_the_channels_rest);

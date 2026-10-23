@@ -8,6 +8,7 @@
 
 #define GFX_INL_FORCE   /* gfx_int.h: force the primitives inline (see there) */
 #include "gfx_int.h"
+#include "gfx_subpixel.h"
 
 #include <limits.h>
 #include <math.h>
@@ -290,6 +291,17 @@ void gfx_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1, gfx_color_t color
     }
 }
 
+/**
+ * @brief A line @p thickness px wide: a disc of half that radius stamped
+ *        at each pixel of the line from (@p x0, @p y0) to (@p x1, @p y1).
+ * @param c the canvas
+ * @param x0 one end's column, px
+ * @param y0 its row, px
+ * @param x1 the other end's column, px
+ * @param y1 its row, px
+ * @param thickness the width, px; 1 or less is gfx_line()
+ * @param color the colour
+ */
 void gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1,
                     int thickness, gfx_color_t color)
 {
@@ -307,15 +319,18 @@ void gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1,
     if (!canvas_ok(c)) {
         return;
     }
-    /* Two bounds, neither of which moves a visible line: a line entirely off
-     * one side of the clip is not walked at all, and a coordinate outside the
-     * int16 range cannot belong to a line on a 1024 x 600 panel, so it is
-     * saturated.  Clamping to the clip instead would change the slope of
-     * lines that are drawn. */
-    if ((x0 < c->clip.x && x1 < c->clip.x) ||
-        (y0 < c->clip.y && y1 < c->clip.y) ||
-        (x0 >= c->clip.x + c->clip.w && x1 >= c->clip.x + c->clip.w) ||
-        (y0 >= c->clip.y + c->clip.h && y1 >= c->clip.y + c->clip.h)) {
+    /* Two bounds, neither of which moves a visible line: a line further
+     * off one side of the clip than its stamp reaches is not walked at all,
+     * and a coordinate outside the int16 range cannot belong to a line on a
+     * 1024 x 600 panel, so it is saturated.  Clamping to the clip instead
+     * would change the slope of lines that are drawn.  The stamp's reach
+     * counts: a line just outside a clip still lays its edge inside it, and
+     * a repaint clipped to a box must draw what the whole frame draws
+     * there. */
+    if ((x0 < c->clip.x - r && x1 < c->clip.x - r) ||
+        (y0 < c->clip.y - r && y1 < c->clip.y - r) ||
+        (x0 >= c->clip.x + c->clip.w + r && x1 >= c->clip.x + c->clip.w + r) ||
+        (y0 >= c->clip.y + c->clip.h + r && y1 >= c->clip.y + c->clip.h + r)) {
         return;
     }
     x0 = gfx_i16(x0); x1 = gfx_i16(x1);
@@ -716,40 +731,55 @@ static bool cov_box(const gfx_canvas_t *c, float cx, float cy, float reach,
     return (hi_x > lo_x) && (hi_y > lo_y);
 }
 
-void gfx_fill_circle_aa(gfx_canvas_t *c, int cx, int cy, int r,
-                        gfx_color_t col)
+void gfx_fill_circle_aaf(gfx_canvas_t *c, float cx, float cy, float r,
+                         gfx_color_t col)
 {
-    if (!canvas_ok(c) || r <= 0) {
+    if (!canvas_ok(c) || !(r > 0.0f)) {
         return;
     }
-    const float fx = (float)cx, fy = (float)cy, fr = (float)r;
     int x0, y0, x1, y1;
-    if (!cov_box(c, fx, fy, fr + 1.0f, &x0, &y0, &x1, &y1)) {
+    if (!cov_box(c, cx, cy, r + 1.0f, &x0, &y0, &x1, &y1)) {
         return;
     }
     for (int y = y0; y < y1; ++y) {
-        const float dy = (float)y - fy;
+        const float dy = (float)y - cy;
         for (int x = x0; x < x1; ++x) {
-            const float dx = (float)x - fx;
+            const float dx = (float)x - cx;
             const float d  = sqrtf(dx * dx + dy * dy);
-            cov_blend(c, x, y, col, fr + 0.5f - d);
+            cov_blend(c, x, y, col, r + 0.5f - d);
         }
     }
 }
 
-void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
-                    int thickness, gfx_color_t col)
+/**
+ * @brief gfx_fill_circle_aaf() on whole pixels.
+ * @param c the canvas
+ * @param cx the centre's column, px
+ * @param cy the centre's row, px
+ * @param r the radius, px; 0 or less draws nothing
+ * @param col the colour
+ */
+void gfx_fill_circle_aa(gfx_canvas_t *c, int cx, int cy, int r,
+                        gfx_color_t col)
 {
-    if (!canvas_ok(c) || thickness <= 0) {
+    if (r <= 0) {
         return;
     }
-    const float hw = (float)thickness / 2.0f;
-    const float pax = (float)ax, pay = (float)ay;
-    const float ex = (float)(bx - ax), ey = (float)(by - ay);
+    gfx_fill_circle_aaf(c, (float)cx, (float)cy, (float)r, col);
+}
+
+void gfx_capsule_aaf(gfx_canvas_t *c, float ax, float ay, float bx, float by,
+                     float thickness, gfx_color_t col)
+{
+    if (!canvas_ok(c) || !(thickness > 0.0f)) {
+        return;
+    }
+    const float hw = thickness / 2.0f;
+    const float ex = bx - ax, ey = by - ay;
     const float len2 = ex * ex + ey * ey;
 
-    const float midx = (float)(ax + bx) / 2.0f;
-    const float midy = (float)(ay + by) / 2.0f;
+    const float midx = (ax + bx) / 2.0f;
+    const float midy = (ay + by) / 2.0f;
     const float reach = sqrtf(len2) / 2.0f + hw + 1.0f;
     int x0, y0, x1, y1;
     if (!cov_box(c, midx, midy, reach, &x0, &y0, &x1, &y1)) {
@@ -758,7 +788,7 @@ void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
 
     for (int y = y0; y < y1; ++y) {
         for (int x = x0; x < x1; ++x) {
-            const float px = (float)x - pax, py = (float)y - pay;
+            const float px = (float)x - ax, py = (float)y - ay;
             /* How far along the segment the nearest point is, clamped to its
              * ends -- which is what turns the sides and the caps into one
              * distance. */
@@ -768,6 +798,108 @@ void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
             const float qx = px - t * ex, qy = py - t * ey;
             const float d  = sqrtf(qx * qx + qy * qy);
             cov_blend(c, x, y, col, hw + 0.5f - d);
+        }
+    }
+}
+
+/**
+ * @brief gfx_capsule_aaf() on whole pixels.
+ * @param c the canvas
+ * @param ax one end's column, px
+ * @param ay its row, px
+ * @param bx the other end's column, px
+ * @param by its row, px
+ * @param thickness the width, px; 0 or less draws nothing
+ * @param col the colour
+ */
+void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
+                    int thickness, gfx_color_t col)
+{
+    if (thickness <= 0) {
+        return;
+    }
+    gfx_capsule_aaf(c, (float)ax, (float)ay, (float)bx, (float)by,
+                    (float)thickness, col);
+}
+
+/**
+ * @brief How far into the arc from @p a0_deg over @p span degrees the
+ *        direction @p ang_deg lies, in degrees: positive inside, from the
+ *        nearer end; negative outside, to the nearer end.
+ * @param ang_deg the pixel's direction, -180 to 180deg
+ * @param a0_deg where the arc starts
+ * @param span its length, 0 to 360deg
+ * @return the signed distance in degrees
+ */
+static float arc_depth(float ang_deg, float a0_deg, float span)
+{
+    float u = fmodf(ang_deg - a0_deg, 360.0f);
+    if (u < 0.0f) {
+        u += 360.0f;
+    }
+    if (u <= span) {
+        return fminf(u, span - u);
+    }
+    return -fminf(u - span, 360.0f - u);
+}
+
+void gfx_ring_aaf(gfx_canvas_t *c, float cx, float cy, float r,
+                  float thickness, float a0_deg, float a1_deg,
+                  gfx_color_t col, gfx_color_t into, float fade_deg)
+{
+    if (!canvas_ok(c) || !(r > 0.0f) || !(thickness > 0.0f)) {
+        return;
+    }
+    const float k     = 3.14159265358979f / 180.0f;
+    const float half  = thickness / 2.0f;
+    const float outer = r + half + 0.5f;    /* where the coverage is 0 */
+    const float inner = r - half - 0.5f;
+    const float lo = (a0_deg < a1_deg) ? a0_deg : a1_deg;
+    const float span = fabsf(a1_deg - a0_deg);
+    const bool whole = span >= 360.0f;
+    int x0, y0, x1, y1;
+    if (!cov_box(c, cx, cy, outer + 0.5f, &x0, &y0, &x1, &y1)) {
+        return;
+    }
+    const float out2 = outer * outer;
+    /* A band thicker than 2r - 1 reaches over the centre: no hole. */
+    const bool  hole = inner > 0.0f;
+    const float in2  = hole ? inner * inner : 0.0f;
+    for (int y = y0; y < y1; ++y) {
+        const float dy = (float)y - cy;
+        for (int x = x0; x < x1; ++x) {
+            const float dx = (float)x - cx;
+            const float d2 = dx * dx + dy * dy;
+            if (d2 >= out2 || (hole && d2 <= in2)) {
+                continue;               /* off the band: no root, no angle */
+            }
+            const float d = sqrtf(d2);
+            float cov = half + 0.5f - fabsf(d - r);
+            if (cov > 1.0f) {
+                cov = 1.0f;
+            }
+            gfx_color_t here = col;
+            if (!whole) {
+                /* Up the screen is +y in the arc's angles. */
+                const float e = arc_depth(atan2f(-dy, dx) / k, lo, span);
+                /* The end blended over half a pixel either side of it,
+                 * measured along the arc at this radius. */
+                const float end = 0.5f + e * k * d;
+                if (end <= 0.0f) {
+                    continue;
+                }
+                if (end < 1.0f) {
+                    cov *= end;
+                }
+                if (fade_deg > 0.0f) {
+                    float lit = (e > 0.0f ? e : 0.0f) / fade_deg;
+                    if (lit > 1.0f) {
+                        lit = 1.0f;
+                    }
+                    here = gfx_lerp(into, col, (uint8_t)(lit * 255.0f));
+                }
+            }
+            cov_blend(c, x, y, here, cov);
         }
     }
 }

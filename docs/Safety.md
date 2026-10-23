@@ -357,11 +357,16 @@ reads the state and shows the alert, is not in the coverage figure.
   mark (`TOUCH_FLAG_NO_TAP`), and so does the release the tracker makes for a
   contact that is more than 120 px from where the previous report had it.
   A marked release ends a press or a drag and activates no control: the
-  finger did not lift there. Four controls take it all the same, because
-  they stop something: STOP, DISARM on MOTOR & ESC and on SERVO, OUTPUT OFF,
-  and START TEST while a servo test runs. STOP and the home tag
+  finger did not lift there. Two controls take it all the same, because
+  they stop something: OUTPUT OFF, and START TEST while a servo test runs.
+  STOP and DISARM on MOTOR & ESC and on SERVO have acted on the press
+  already, and their release does nothing. STOP and the home tag
   answer to a press that lands on them: a contact that slides onto STOP from
-  the body presses nothing. The table holds 5 contacts, the number the GT911
+  the body presses nothing. A press the router keeps from the screen -- on
+  the band, STOP, the home tag, a chip or the alert band -- releases the
+  contacts the screen owns in the same way, at their last point in the body,
+  marked: a dial or slider drag under way ends at that press, and nothing
+  it drove is commanded after it. The table holds 5 contacts, the number the GT911
   reports; a sixth is handed to no screen.
 - A control that changes a setting acts on a tap, not on the press. On SETUP
   a `-` or `+` key steps when the finger that pressed it lifts inside it, no
@@ -369,8 +374,10 @@ reads the state and shows the alert, is not in the coverage figure.
   anywhere, the keys included, and a scroll changes no value. A key held
   steps from 0.45 s after the press. ESC STICK's controls follow the same
   rule, DEFAULTS and the stick timing's keys included. ABORT of a stick run
-  acts on the press, and so does every stop on the bench screens: stopping
-  never waits for a lift that may not come.
+  acts on the press, and so does every stop on the bench screens, STOP and
+  DISARM included: stopping never waits for a lift that may not come. A
+  press on DISARM takes no hold, so a finger left on the button arms nothing
+  when it reads ARM again; ARM stays a 2s hold.
 - The screens do not rely on the router for it. Every press ends a drag on a
   slider or on the SERVO dial that is still latched, wherever the press
   lands, and leaving SERVO ends a dial drag. SUPPLY holds one press at a
@@ -378,19 +385,16 @@ reads the state and shows the alert, is not in the coverage figure.
   gone, and the held press is dropped as a touch loss drops it. Not measured
   on a panel: whether the GT911 gives a lone finger the same track id on
   successive touches.
-- A touch stream that breaks while STOP is held stops the bench. The control
-  task owns that press independently of the screens, and the release that
-  would have stopped the bench may be the event that went missing -- or it may
-  arrive and satisfy neither owner, because the render side cancels the band's
-  press for the same loss. Nothing else would stop it, and the operator has
-  already pressed STOP. What this gives up: a press that began on STOP and
-  would have been carried off it before lifting, which asks for nothing today,
-  stops the bench instead.
-- Cancelling a DISARM while the bench is ARMED still switches it to SAFE. Abandoning a gesture asks
-  for nothing, and while ARMED that is the wrong direction for one of
-  them: DISARM is a press, so its release is the whole command, and a
-  release lost to a full queue is a switch to SAFE the operator made and the bench
-  never saw. ARM has already sent its command by the time the finger
+- The control task tests STOP's rectangle on every press itself,
+  independently of the screens and of the frame, and stops the bench at the
+  press: the heartbeat drops in the same pass and the IOmcu fails safe within
+  150ms. A press that lands on STOP and is carried off it before lifting
+  stops the bench all the same. A touch stream that breaks while STOP is held
+  asks nothing more: the press has stopped the bench.
+- A press on DISARM switches to SAFE at the press, so a release lost to a
+  full queue loses nothing. A cancel while ARMED with a press of ARM still
+  down whose hold did not fire switches to SAFE as well: the button under
+  that finger reads DISARM. ARM has already sent its command by the time the finger
   lifts, so an ARM cancelled part way asks for nothing, which is correct. A
   cancel also drops an ARM the screen has posted and the application has not
   yet collected. An ARM already handed to the control task carries how many
