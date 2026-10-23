@@ -288,6 +288,14 @@ SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89 px.
 
 ![Der Splash](img/de/splash.png)
 
+Der Splash füllt das Panel, ohne Band. Die Marke `rcbench` steht in der
+Schrift 20 x 36 px in doppelter Größe auf einem Akzent-Tag von 88 px Höhe,
+oben mittig. Die Unterzeile steht darunter in der Schrift 12 x 24 px. Jeder
+Schritt hat ab y 200 eine Zeile von 40 px: seinen Namen, sein Zeichen
+(`OK`, `--`, `!!`, `..` solange er läuft) und sein Detail, alles in der
+Schrift 12 x 24 px. Ein Detail beginnt bei x 432 und endet 24 px vor dem
+rechten Rand, nach 47 Zeichen.
+
 Jedes Subsystem meldet beim Hochfahren sein Ergebnis: Platine, Display,
 Touch, SD-Karte, Einstellungen, Link, IOmcu. Die Zeile der Platine
 trägt die Firmware-Version des Panels selbst, die Zeile des IOmcu die
@@ -2838,7 +2846,10 @@ Das Halten schaltet zuerst den Funk aus. Dann stoppt der Control-Task seine
 Abfragen und hält den Heartbeat absichtlich zurück, sodass der IOmcu
 seine Ausgänge im Failsafe hält, wie bei jedem Neustart des Panels.
 PANEL UPDATE nimmt den ganzen Bildschirm, ohne Band und ohne STOP: Nichts
-kann dahinter auf ARMED geschaltet werden. Es schreibt den Slot, der nicht
+kann dahinter auf ARMED geschaltet werden. Ein Balken von 64 px trägt den
+Titel; die Bytes stehen in der Schrift 20 x 36 px über einem Balken von
+36 px Höhe und 976 px Breite, die Zeilen darunter in der Schrift
+12 x 24 px. Es schreibt den Slot, der nicht
 läuft, in Stücken von 64 KiB und zeigt die Bytes und den Prozentwert. Die
 Anzeige wird bei jedem Flash-Löschen ganz dunkel, etwa alle 0,5 s (gemeldet
 auf 0.20.0; 0.21.x nicht gemessen), und sitzt ab dem ersten ganzen Bild nach
@@ -3737,6 +3748,15 @@ Zahlen zeigt. Das Urteil ist die Überschrift, die Liste ist das, was der
 Reihe nach zu prüfen ist, und die rechte Spalte ist das, was beide Enden
 gezählt haben.
 
+Der Bildschirm füllt das Panel. Ein roter Balken von 64 px trägt den Titel,
+das Urteil steht darunter, beide in der Schrift 20 x 36 px. Die linke
+Spalte, 712 px, trägt die Bedeutung in höchstens zwei Zeilen und die Liste
+der Prüfungen in der Schrift 12 x 24 px: 32 px je Prüfung und 28 px mehr
+für jede Zeile, auf die eine Prüfung umbricht. Ab y 432 folgen die drei
+Hinweise. Die rechte Spalte, 240 px ab x 760, trägt die Zähler in der
+Schrift 10 x 20 px. `2 s HALTEN ZUM BESTÄTIGEN` läuft 976 x 56 px über den
+Fuß, 16 px über dem Rand des Panels.
+
 ![Es kam nichts zurück](img/de/busfault-silent.png)
 
 Verlassen kostet zwei Sekunden Halten — die ARM-Geste und dieselbe
@@ -3820,6 +3840,10 @@ ist.
 
 ![Die Frage zum IOmcu-Update](img/de/coproc-update.png)
 
+Die Frage ist ein Kasten von 860 x 248 px im Körper, ihre Zeilen in der
+Schrift 12 x 24 px. ABBRECHEN und START sind je 398 x 56 px, nebeneinander,
+START rechts; ihre Mitten liegen auf dem Panel bei x 305 und 719, y 376.
+
 Die Frage nennt die Version, die der IOmcu laufen hat, und die Version,
 die dieses Panel mitbringt. CANCEL ist ein Tippen: die Frage schließt sich,
 und das Panel fragt für diese IOmcu-Version nicht noch einmal, bis es
@@ -3840,6 +3864,11 @@ Bildschirm. Er hat kein Band und kein STOP, wie der Bus-Fehler-Bildschirm:
 hinter ihm kann der Prüfstand nicht auf ARMED schalten.
 
 ![Der Fortschritt](img/de/coproc-update-progress.png)
+
+Der Fortschritt hat einen Titelbalken von 64 px, den Schritt in der Schrift
+20 x 36 px, darunter die Versionen, einen Balken von 36 px Höhe und 976 px
+Breite ab y 180, die Blockzahl und drei Hinweise in der Schrift 12 x 24 px,
+28 px auseinander.
 
 | Schritt | Gezeigt, während |
 | --- | --- |
@@ -3885,6 +3914,12 @@ dem ESP32-P4-Panel wird jedes neuere Release angeboten
 ([Die Release-Linie](#die-release-linie)).
 
 ![UPDATES](img/de/updates.png)
+
+Die Tasten sind 460 x 56 px, 64 px auseinander, links. Die Karte rechts ist
+532 px breit und endet 8 px über dem Alarmband; ihr Text läuft in Zeilen
+von 41 Zeichen der Schrift 12 x 24 px, 28 px auseinander. Unter den Tasten
+stehen die Zeilen des IOmcu-Abschnitts in der Schrift 10 x 20 px, und sein
+Halten ist eine fünfte Taste derselben Größe, ab y 428 im Körper.
 
 | Bedienelement | Wirkung |
 | --- | --- |
@@ -4105,6 +4140,10 @@ Update trotzdem, wie die Frage es auch ihm anbietet.
 ### Die Erinnerung
 
 ![Die Erinnerung](img/de/upd-remind.png)
+
+Die Erinnerung ist ein Kasten von 860 x 480 px mit ihren Zeilen in der
+Schrift 12 x 24 px. JETZT NICHT und NICHT MEHR ERINNERN sind 398 x 56 px
+nebeneinander; das Halten ist 812 x 64 px darunter.
 
 Mit ERINNERUNG BEIM START an und einem gespeicherten Heimnetz sucht das
 Panel einmal nach jedem Start. Die Suche wartet auf einen Moment, den der

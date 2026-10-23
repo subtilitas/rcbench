@@ -265,6 +265,13 @@ MOTOR & ESC's SETTINGS the keypad's are 145 x 89 px.
 
 ![The splash](img/splash.png)
 
+The splash fills the panel, without the band. The mark `rcbench` is the
+20 x 36 px face at twice its size on an accent tag 88 px tall, centred at
+the top. The tagline sits under it in the 12 x 24 px face. Each step has a
+row of 40 px from y 200: its name, its mark (`OK`, `--`, `!!`, `..` while
+it runs) and its detail, all in the 12 x 24 px face. A detail starts at
+x 432 and is cut 24 px short of the right edge, after 47 characters.
+
 Each subsystem reports its result as it comes up: board, display, touch, SD
 card, settings, link, IOmcu. The board line carries the panel's own
 firmware version, and the IOmcu line carries the protocol version and
@@ -2568,7 +2575,9 @@ The hold switches the radio off first. Then the control task stops its polls
 and withholds the heartbeat on purpose, so the IOmcu holds its outputs
 in failsafe as it does at any restart of the panel. PANEL UPDATE takes the
 whole screen, with no band and no STOP: nothing can be switched to ARMED
-behind it. It writes the slot that is not running in pieces of 64 KiB and
+behind it. A 64 px bar holds the title; the bytes stand in the 20 x 36 px
+face over a bar 36 px tall and 976 px wide, and the lines under it are in
+the 12 x 24 px face. It writes the slot that is not running in pieces of 64 KiB and
 shows the bytes and the percentage. The display goes fully dark at each
 flash erase, about every 0.5 s (reported on 0.20.0; 0.21.x not measured),
 and is in place again from the first whole frame after each erase.
@@ -3389,6 +3398,15 @@ both look like a bench that shows no numbers. The verdict is the heading, the
 list is what to check in the order that costs least to check, and the right
 column is what both ends counted.
 
+The screen fills the panel. A red bar of 64 px holds the title, and the
+verdict stands under it, both in the 20 x 36 px face. The left column,
+712 px, holds the meaning in at most two lines and the list of checks in
+the 12 x 24 px face: a row of 32 px per check, and 28 px more for each line
+a check wraps onto. The three notes follow from y 432. The right column,
+240 px from x 760, holds the counts in the 10 x 20 px face.
+`HOLD 2 s TO ACKNOWLEDGE` runs 976 x 56 px across the foot, 16 px above the
+panel's edge.
+
 ![Nothing came back](img/busfault-silent.png)
 
 Leaving it takes a two-second hold, the ARM gesture and the same fade.
@@ -3462,6 +3480,10 @@ and the question opens again once both have ended.
 
 ![The IOmcu update question](img/coproc-update.png)
 
+The question is a box of 860 x 248 px in the body, its lines in the
+12 x 24 px face. CANCEL and START are 398 x 56 px each, side by side,
+START on the right; their middles are at panel x 305 and 719, y 376.
+
 The question names the version the IOmcu runs and the version this
 panel carries. CANCEL is a tap: the question closes, and the panel does not
 ask again for that IOmcu version until it restarts. Leaving the
@@ -3480,6 +3502,10 @@ no STOP, as the bus-fault screen has none: the bench cannot switch to ARMED
 behind it.
 
 ![The progress](img/coproc-update-progress.png)
+
+The progress has a 64 px title bar, the step in the 20 x 36 px face, the
+versions under it, a bar 36 px tall and 976 px wide from y 180, the block
+count, and three notes in the 12 x 24 px face, 28 px apart.
 
 | Step | Shown while |
 | --- | --- |
@@ -3523,6 +3549,12 @@ release for the ESP32-S3 panel; the ESP32-P4 panel is offered every newer
 release ([The release line](#the-release-line)).
 
 ![UPDATES](img/updates.png)
+
+The buttons are 460 x 56 px, 64 px apart, on the left. The card on the
+right is 532 px wide and ends 8 px above the alert band; its text runs in
+lines of 41 characters of the 12 x 24 px face, 28 px apart. Under the
+buttons the IOmcu section's lines are in the 10 x 20 px face, and its
+hold is a fifth button of the same size, from body y 428.
 
 | Control | Action |
 | --- | --- |
@@ -3735,6 +3767,10 @@ IOmcu too.
 ### The reminder
 
 ![The reminder](img/upd-remind.png)
+
+The reminder is a box of 860 x 480 px with its lines in the 12 x 24 px
+face. NOT NOW and NEVER REMIND ME are 398 x 56 px side by side; the hold is
+812 x 64 px under them.
 
 With REMINDER AT START on and a home network kept, the panel runs the check
 once after each start. It waits for a moment the bench allows: the splash

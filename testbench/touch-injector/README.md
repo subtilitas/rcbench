@@ -206,6 +206,11 @@ reaches is not measured; the verdict line reports it as `rate=`.
 7. `tap 83 370` presses the SETUP tile. The reply is
    `done tap frames=2 ms=<100 to 110>`.
 
+The IOmcu's update question, which opens on the menu when the IOmcu runs
+another build, has CANCEL at panel (305, 376) and START at (719, 376).
+`tap 305 376` declines it; `hold 719 376 2500` starts the update after the
+2 s hold.
+
 ## LED
 
 | Colour | State |
