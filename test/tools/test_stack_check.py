@@ -1,5 +1,6 @@
-"""stack_check.py: the panel's decoder, the task table in the docs, and
-the build trees it does not read.
+"""stack_check.py: the task table in the docs, the call graph, the
+tables of callbacks followed by name, the build trees it does not read and
+the machine it reads.  The decoder's tests are in test_stack_riscv.py.
 
 SPDX-License-Identifier: MIT
 """
@@ -9,11 +10,7 @@ import re
 import pytest
 
 import stack_check as sc
-
-
-def test_the_panel_decoder_reads_an_entry():
-    # entry a1, 48
-    assert sc.decode(0x42000000, 0x006136, 3) == ("entry", 48)
+import stack_riscv as sr
 
 
 EN = sc.PERFORMANCE[0][1]
@@ -70,6 +67,7 @@ def test_both_pages_carry_the_task_table_and_the_count():
     ("main/main.c", False),
     ("components/gt911/touch_inject.c", False),
     ("components/builder/x.c", False),
+    ("managed_components/espressif__esp_hosted/host/x.c", True),
 ])
 def test_build_trees_are_not_read_as_source(rel, inside):
     assert sc.in_build_dir(sc.Path(rel)) is inside
@@ -135,7 +133,7 @@ def graph(frames: dict, calls: dict) -> sc.Graph:
     """A call graph of {address: frame} and {address: [callee]}."""
     funcs = {}
     for addr, frame in frames.items():
-        f = sc.Func(addr, f"f{addr}")
+        f = sr.RvFunc(addr, f"f{addr}")
         f.frame = frame
         f.calls = set(calls.get(addr, ()))
         funcs[addr] = f
@@ -415,18 +413,18 @@ def elf_of_machine(path, machine):
     path.write_bytes(bytes(head))
 
 
-def test_a_risc_v_panel_build_is_refused(tmp_path, monkeypatch):
-    elf_of_machine(tmp_path / sc.ELF_NAME, 243)          # EM_RISCV
+def test_an_xtensa_panel_build_is_refused(tmp_path, monkeypatch):
+    elf_of_machine(tmp_path / sc.ELF_NAME, 94)           # EM_XTENSA
     monkeypatch.setattr("sys.argv", ["stack_check.py", str(tmp_path)])
     with pytest.raises(SystemExit) as stop:
         sc.main()
-    assert "machine 243, not Xtensa (94)" in str(stop.value)
-    assert "builds RISC-V" in str(stop.value)
+    assert "machine 94, not RISC-V (243)" in str(stop.value)
 
 
-def test_an_xtensa_header_passes_the_machine_check(tmp_path, monkeypatch):
-    elf_of_machine(tmp_path / sc.ELF_NAME, 94)
+def test_a_risc_v_header_passes_the_machine_check(tmp_path, monkeypatch):
+    elf_of_machine(tmp_path / sc.ELF_NAME, 243)
     monkeypatch.setattr("sys.argv", ["stack_check.py", str(tmp_path)])
     with pytest.raises(SystemExit) as stop:
-        sc.main()                    # on to the tables, which this ELF lacks
-    assert "not Xtensa" not in str(stop.value)
+        sc.main()                    # on to the symbols, which this ELF lacks
+    assert "not RISC-V" not in str(stop.value)
+    assert "_thread_local_data_start" in str(stop.value)

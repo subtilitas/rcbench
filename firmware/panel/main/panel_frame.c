@@ -4,9 +4,11 @@
  *
  * What the control task published goes into the screens; touch, into the
  * router; the screens' commands, back to the control task; then one frame
- * is drawn and flipped.  Every 300 frames the console line gives the frame
- * rate, the draw and wait times, the panel's own refresh and the touch
- * losses.  panel_frame_loop() does not return.
+ * is drawn and flipped.  Every 300 frames two console lines give the frame
+ * rate, the panel's own refresh and the touch losses, then the draw and
+ * wait times on the screen shown, and every stack and the internal heap
+ * whose lowest figure fell (panel_perf.c).  panel_frame_loop() does not
+ * return.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,7 +32,9 @@
 #include "overview_screen.h"
 #include "panel.h"
 #include "panel_main.h"
+#include "panel_perf.h"
 #include "pdmini.h"
+#include "perf_watch.h"
 #include "picker_screen.h"
 #include "sensors_rows.h"
 #include "servo_link.h"
@@ -68,6 +72,8 @@ void panel_frame_loop(void)
     uint32_t last_vs_us = last_us;
     bool     was_armed = false;
     uint32_t last_stops = 0;
+    perf_window_t window;           /* DRAW and WAIT since the last line */
+    perf_window_start(&window, (int)ui_router_current());
 
     for (;;) {
         const uint32_t us = (uint32_t)esp_timer_get_time();
@@ -668,6 +674,7 @@ void panel_frame_loop(void)
         publish_throttle_ramp();
 
         gfx_canvas_t *c = display_canvas();
+        const ui_screen_id_t shown = ui_router_current();
         const int64_t draw_start = esp_timer_get_time();
         ui_router_render(c, display_back_index());
         const uint32_t draw_us = (uint32_t)(esp_timer_get_time() - draw_start);
@@ -676,16 +683,20 @@ void panel_frame_loop(void)
         if (display_flip() == ESP_ERR_TIMEOUT) {
             ++flip_timeouts;
         }
+        perf_window_add(&window, (int)shown, draw_us, display_last_wait_us());
 
         /*
-         * DRAW is the paint time of the frame; WAIT is how long the flip
-         * blocked afterwards.  A healthy frame is mostly WAIT, the loop
-         * paced by the panel.  DRAW climbing until WAIT reaches zero is the
-         * frame budget being spent.  VSYNC is the panel's refresh as
-         * measured here, FLIP TIMEOUTS the flips since start-up that waited
-         * 200 ms for a frame-done event in vain.  Printed every 300 frames.
+         * Every PERF_WINDOW_FRAMES frames, 5 s.  The first line: the frame
+         * rate, VSYNC, the panel's refresh as measured here, FLIP TIMEOUTS,
+         * the flips since start-up that waited 200 ms for a frame-done
+         * event in vain, and TOUCHLOST.  The second: DRAW, the paint time
+         * of a frame, and WAIT, how long the flip blocked afterwards, as
+         * minimum, mean and maximum over the frames on the screen shown
+         * since the last line, fewer than 300 when the screen changed.  A
+         * healthy frame is mostly WAIT, the loop paced by the panel.  DRAW
+         * climbing until WAIT reaches zero is the frame budget being spent.
          */
-        if (++frames % 300u == 0u) {
+        if (++frames % PERF_WINDOW_FRAMES == 0u) {
             /* And the panel's own refresh, from its VSYNC (vertical sync)
              * events over the same frames. */
             const uint32_t vs = display_vsync_count();
@@ -697,12 +708,25 @@ void panel_frame_loop(void)
             last_vs = vs;
             last_vs_us = vs_us;
             ESP_LOGI(TAG,
-                     "%.1f fps  DRAW %u us  WAIT %u us  VSYNC %.2f Hz  "
-                     "FLIP TIMEOUTS %u  TOUCHLOST %u/%u",
-                     (double)display_fps(), (unsigned)draw_us,
-                     (unsigned)display_last_wait_us(), (double)vsync_hz,
+                     "%.1f fps  VSYNC %.2f Hz  FLIP TIMEOUTS %u  "
+                     "TOUCHLOST %u/%u",
+                     (double)display_fps(), (double)vsync_hz,
                      (unsigned)flip_timeouts, s_tq_lost,
                      atomic_load(&s_drv_gaps));
+            const char *title = ui_router_title((ui_screen_id_t)window.screen);
+            ESP_LOGI(TAG,
+                     "frames %u on %s (screen %d): DRAW %u/%u/%u us  "
+                     "WAIT %u/%u/%u us (min/mean/max)",
+                     (unsigned)window.frames,
+                     (title != NULL) ? title : "-", window.screen,
+                     (unsigned)window.draw_min_us,
+                     (unsigned)perf_window_draw_mean_us(&window),
+                     (unsigned)window.draw_max_us,
+                     (unsigned)window.wait_min_us,
+                     (unsigned)perf_window_wait_mean_us(&window),
+                     (unsigned)window.wait_max_us);
+            perf_window_start(&window, window.screen);
+            perf_report_lows();
         }
     }
 }

@@ -176,6 +176,58 @@ jobs:
           python3 tools/wiki_links.py /tmp/wikicheck
           python3 tools/wiki_links.py --verify /tmp/wikicheck
 
+      # Frame rate on this panel is bandwidth-bound, so the regression guard
+      # is cache-line traffic per frame under the ESP32-P4's two caches, not
+      # wall-clock on a runner that shares nothing with the board.  Each
+      # ceiling sits 10 to 35% above its mode in docs/Performance.md and
+      # catches the model drawing more.  The bench frame (frame, sim,
+      # supply) has no ceiling: a frame per 20 Hz sample needs the effective
+      # PSRAM bandwidth, which is not measured (PROBE_CLEAR_US).
+      - name: The chrome-cached screens have not started repainting
+        run: python3 tools/frame_cost.py overview --max-lines 2000
+
+      # The servo card draws its arm and grip from coverage; 30,000 catches
+      # that growing.  A breath repaints a clipped box and nothing else, and
+      # 6,000 catches one that repaints the card.  A changed current repaints
+      # the CURRENT row's value, the line and the plot beside the grip, each
+      # clipped; 9,000 catches a changed digit that repaints the card.
+      - name: The servo card is drawn, and its grip is only breathed on
+        run: python3 tools/frame_cost.py servo --max-lines 30000
+             && python3 tools/frame_cost.py servo-grip --max-lines 6000
+             && python3 tools/frame_cost.py servo-current --max-lines 9000
+
+      # Every screen caches its chrome, so a steady frame is a few hundred
+      # fills; 1,000 catches one that has started repainting.  ESC STICK's
+      # steady frame is 3,316 and is held apart at 4,000.
+      - name: Every screen still idles on a cached frame
+        run: python3 tools/frame_cost.py analyser logs settings battery balance
+             picker wifi --max-lines 1000
+             && python3 tools/frame_cost.py settings-list --max-lines 1000
+             && python3 tools/frame_cost.py motor-stick --max-lines 4000
+
+      - name: The SIMULATION watermark has not grown
+        run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
+             --max-lines 3600
+
+      # A theme change or a change of the SIMULATED flag invalidates every
+      # screen, which costs one full repaint.  68,000 catches that growing.
+      - name: A full repaint of every screen stays bounded
+        run: python3 tools/frame_cost.py analyser-chrome balance-chrome
+             battery-chrome motor-stick-chrome logs-chrome settings-chrome
+             settings-list-chrome picker-chrome supply-chrome wifi-chrome
+             --max-lines 68000
+
+      # A key typed on the Wi-Fi keyboard repaints the whole WI-FI
+      # screen, about 36,400 fills; 40,000 catches a key that repaints more.
+      - name: A key of the Wi-Fi keyboard costs one repaint
+        run: python3 tools/frame_cost.py wifi-keys --max-lines 40000
+
+      # The fills of every mode against the block in docs/Performance.md,
+      # the profile's line, and the table of the board against
+      # PROBE_CLEAR_US.
+      - name: The frame-cost tables in the docs are current
+        run: python3 tools/frame_cost.py --check-doc
+
       # The screens are rendered by the code the panel runs, so a golden image
       # checks what they look like; the unit tests cover what they decide.
       - name: The committed screenshots match the current render
@@ -509,6 +561,13 @@ jobs:
       - name: The objects psram_bss.lf names are in PSRAM
         run: python3 tools/psram_bss.py firmware/panel/build
 
+      # tools/stack_check.py decodes the ESP32-P4's RISC-V code itself
+      # (tools/stack_riscv.py) and holds every panel task's deepest call
+      # chain, a margin of 1024 bytes on top, to its stack; and the task
+      # table in docs/Performance.md to this build.
+      - name: Every task's stack holds its deepest call chain
+        run: python3 tools/stack_check.py firmware/panel/build --check-doc
+
       # The symbol target_add_binary_data() names the embedded image by.
       - name: The IOmcu image is carried
         run: |
@@ -551,6 +610,9 @@ jobs:
 
       - name: The objects psram_bss.lf names are in PSRAM without the injector
         run: python3 tools/psram_bss.py firmware/panel/build-noinject
+
+      - name: Every task's stack holds its deepest call chain without the injector
+        run: python3 tools/stack_check.py firmware/panel/build-noinject
 
       - name: The injector code is not in the build without it
         run: |

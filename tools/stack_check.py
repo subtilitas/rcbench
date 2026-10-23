@@ -6,51 +6,42 @@ A task that runs past the end of its stack trips FreeRTOS's stack check and
 restarts the panel.  Neither the host build nor the size report shows how
 deep a task goes, so this reads it out of the firmware the panel runs.
 
-On the Xtensa windowed ABI (application binary interface) every function
-opens with `entry a1, N`, and N is its whole frame.  A task's depth is the
-largest sum of frames along any chain of calls from its entry point.
-
-The panel half reads Xtensa code, the ESP32-S3's.  It stops on an ELF of
-another machine: the ESP32-P4 builds RISC-V, which the tool does not
-decode, so the P4 panel's stack depths are not measured by it.  The IOmcu
-half is unaffected.
-
-The tool reads the panel ELF (Executable and Linkable Format) file and
-decodes the instructions it needs itself.  A linear disassembly, objdump's,
-loses its place on the alignment padding the assembler leaves after an
-unconditional jump, and reads the real instructions that follow as other
-ones.  Against the call graph GCC reported for one v0.13.0 build
-(-fcallgraph-info), objdump's listing missed 133 of 6228 direct calls,
-log_task's call to log_writer_row among them; this decoder misses 16 of
-6274, calls to ROM arithmetic and from interrupt and start-up code.  After
-an unconditional jump it restarts at the branch target within the next 3
-bytes, or where none is known, at the first of those addresses whose
-instructions run on exactly to the next known target.  A branch target it
-still does not land on is counted.
+The panel is an ESP32-P4: RISC-V code.  tools/stack_riscv.py decodes each
+function from its symbol's address to its end: the frame is the lowest
+point its stack pointer reaches, and the calls are its jal, its auipc and
+jalr pairs, and its jumps out of the function.  A task's depth is the
+largest sum of frames along any chain of calls from its entry point.  On
+one build at ESP-IDF v5.5.5 the decoder finds every one of the 11,903
+direct calls objdump lists in the panel's functions, and the frame of
+every function but two equals its largest `addi sp, sp, -N`: one sizes a
+buffer at run time, and one opens a second frame after an early return,
+which the decoder counts on top of the first.
 
 Calls the tool follows:
 
-- direct calls: call0, call4, call8 and call12;
-- tail calls: a j, a branch, or a jx through an l32r-loaded address, out of
-  the function, each counted as a call (see analyse() for why that is the
-  safe sum);
-- an address loaded with l32r and called with callx in the same basic
-  block, with the register untouched in between: the far call the compiler
-  emits from flash into IRAM (instruction RAM) and into ROM;
+- direct calls and the far calls of an auipc and jalr pair;
+- tail calls: a jump or a branch out of the function, each counted as a
+  call (see stack_riscv.py for why that is the safe sum);
 - the router's calls into a screen: ui_router.c calls the screen on top
   through its ui_screen_t, and SCREEN_CALLS below names the callbacks each
   router function reaches.  The callbacks themselves are read out of every
   screen's table in the ELF, or out of the table's source where the
-  compiler folded the table into code.
+  compiler folded the table into code;
+- the callbacks the tables below name: the link port's, the drawing store's,
+  the start check's, the SERVO screen link's, the programmers' and the card
+  functions'.
 
 What it cannot follow it counts and names, and never drops quietly:
 
 - any other call through a function pointer;
-- a call into the ESP32-S3's ROM (read-only memory), which is not in the
+- a jump through a register: a switch table, which stays inside the
+  function, or a tail call through a pointer;
+- a call into the ESP32-P4's ROM (read-only memory), which is not in the
   ELF, so its frame is unknown;
-- a call or tail jump to an address where no function starts;
-- a function that opens with no entry: hand-written or call0 code, whose
-  frame is not read;
+- a call or tail jump to an address where no function starts, such as a
+  hand-written function with no size in the symbol table;
+- a function that moves its stack pointer by an amount known only at run
+  time, whose frame is the part the constants give;
 - recursion: a function already on the chain is not entered again, so a
   chain runs round a cycle at most once, and the depth is the deepest of
   every chain with no function on it twice (Graph in tools/stack_elf.py).
@@ -58,13 +49,24 @@ What it cannot follow it counts and names, and never drops quietly:
 A task with any of these has a depth that is a lower bound, and the result
 says so.  The margin is what covers them.
 
-The margin is 1024 bytes.  528 of it every task spends outside its frames on
-the ESP32-S3 under ESP-IDF v5.4: 320 for the FPU (floating-point unit) and
-PIE (processor instruction extensions) state saved at the top of the stack
-(XT_CP_SIZE, 316, rounded to 16), 192 for the exception
-frame an interrupt pushes before it moves to the interrupt stack
-(XT_STK_FRMSZ), and 16 for the base save area below the deepest frame.  The
-other 496 bytes are for what the graph does not follow.
+The margin is 1024 bytes.  OUTSIDE_FRAMES of it every task spends outside
+its frames on the ESP32-P4 under ESP-IDF v5.5.5 (rvruntime-frames.h and
+port.c of the RISC-V port):
+
+- 128 for the registers an interrupt saves on the task's stack before it
+  moves to the interrupt stack (SAVE_REGS, 32 words, in vectors.S);
+- 32 for the coprocessor save area's header at the top of the stack
+  (RvCoprocSaveArea, 24 bytes, aligned down to 16);
+- 384 for the coprocessor contexts the port takes from the bottom of the
+  stack the first time a task uses the unit: the FPU (floating-point unit)
+  132, the hardware loops 24, the vector unit 216, and up to 12 of
+  alignment;
+- 16 for FreeRTOS's canary at the bottom of the stack
+  (CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY).
+
+The thread-local storage at the top of each stack is read from the ELF
+(_thread_local_*) and charged on top; the panel's build has none.  The rest
+of the margin is for what the graph does not follow.
 
 The stacks: the main task's is CONFIG_ESP_MAIN_TASK_STACK_SIZE from the
 build's config/sdkconfig.h; every other task's is the size its
@@ -126,9 +128,10 @@ import struct
 import sys
 from pathlib import Path
 
-from stack_elf import (EM_XTENSA, ROOT, STT_FUNC, STT_OBJECT, Elf, Graph,
-                       call_args, die, doc_rows, sext)
+from stack_elf import (ROOT, STT_FUNC, STT_OBJECT, Elf, Graph, call_args,
+                       die, doc_rows)
 from stack_iomcu import IOMCU_DIR, IOMCU_ELF, check_iomcu_doc, iomcu_check
+from stack_riscv import EM_RISCV, analyse_riscv
 
 PANEL_DIR = ROOT / "firmware" / "panel"
 # The FreeRTOS calls that create a task with a stack from the heap; the
@@ -137,11 +140,18 @@ TASK_CREATE = ("xTaskCreatePinnedToCore", "xTaskCreate")
 SCREEN_H = ROOT / "shared" / "ui" / "include" / "ui_screen.h"
 UI_DIR = ROOT / "shared" / "ui"
 ELF_NAME = "rcbench-panel.elf"
-# The ESP32-S3's mask ROM, where a call leaves the ELF.
-ROM_LO, ROM_HI = 0x40000000, 0x40060000
+# The ESP32-P4's mask ROM, where a call leaves the ELF
+# (SOC_IROM_MASK_LOW and _HIGH in ESP-IDF's soc.h).
+ROM_LO, ROM_HI = 0x4FC00000, 0x4FC20000
 
 MARGIN = 1024
-OUTSIDE_FRAMES = 320 + 192 + 16
+# The interrupt's saved registers, the coprocessor save area's header, the
+# three coprocessor contexts with their alignment, and the canary; the
+# module docstring derives each.
+OUTSIDE_FRAMES = 128 + 32 + (132 + 24 + 216 + 12) + 16
+# The linker's bounds of the thread-local storage each stack carries.
+TLS_SYMBOLS = ("_thread_local_data_start", "_thread_local_data_end",
+               "_thread_local_bss_start", "_thread_local_bss_end")
 
 # ESP-IDF's main task.  It calls app_main, which runs the UI.
 MAIN_TASK = "main_task"
@@ -274,214 +284,6 @@ BOOT_CALLS = {
 }
 
 
-# ------------------------------------------------------------ the decoder --
-
-def length(b0: int) -> int:
-    """An ESP32-S3 instruction's length from its first byte: op0 0 to 7 is
-    24 bits, 8 to 13 the 16-bit density forms, 14 and 15 the 32-bit PIE
-    forms."""
-    op0 = b0 & 0xF
-    return 3 if op0 < 8 else (2 if op0 < 14 else 4)
-
-
-def decode(pc: int, w: int, n: int) -> tuple:
-    """What one instruction does to control flow:
-    (kind, target or register), kind one of
-    "entry" (frame), "call" (target, window), "callx" (register, window),
-    "l32r" (register, literal address), "branch" (target), "jump" (target),
-    "jx" (register), "end" (nothing falls through), or None."""
-    op0 = w & 0xF
-    if n == 2:
-        if op0 == 0xC and (w >> 6) & 3 >= 2:          # beqz.n, bnez.n
-            imm6 = ((w >> 4) & 3) << 4 | (w >> 12) & 0xF
-            return ("branch", pc + 4 + imm6)
-        if op0 == 0xD and (w >> 12) & 0xF == 0xF and (w >> 4) & 0xF in (0, 1):
-            return ("end", None)                       # ret.n, retw.n
-        return (None, None)
-    if n != 3:
-        return (None, None)
-    t, s, r = (w >> 4) & 0xF, (w >> 8) & 0xF, (w >> 12) & 0xF
-    op1, op2 = (w >> 16) & 0xF, (w >> 20) & 0xF
-    if op0 == 0 and op1 == 0 and op2 == 0:
-        if r == 0:
-            m, nn = t >> 2, t & 3
-            if m == 3:
-                return ("callx", (s, 4 * nn))
-            if m == 2 and nn == 2:
-                return ("jx", s)
-            if m == 2:
-                return ("end", None)                   # ret, retw
-        if r == 3:
-            return ("end", None)                       # rfe, rfi and kin
-        return (None, None)
-    if op0 == 1:
-        imm16 = w >> 8
-        return ("l32r", (t, ((pc + 3) & ~3) + ((imm16 - 0x10000) << 2)))
-    if op0 == 5:
-        return ("call", (((pc & ~3) + (sext(w >> 6, 18) << 2) + 4),
-                         4 * ((w >> 4) & 3)))
-    if op0 == 6:
-        nn, m = (w >> 4) & 3, (w >> 6) & 3
-        if nn == 0:
-            return ("jump", pc + 4 + sext(w >> 6, 18))
-        if nn == 1:
-            return ("branch", pc + 4 + sext(w >> 12, 12))
-        if nn == 2:
-            return ("branch", pc + 4 + sext(w >> 16, 8))
-        if m == 0:
-            return ("entry", (w >> 12) << 3)
-        if m == 1 and r in (0, 1):                     # bf, bt
-            return ("branch", pc + 4 + sext(w >> 16, 8))
-        if m == 1 and r in (8, 9, 10):                 # loop ends
-            return ("branch", pc + 4 + (w >> 16))
-        if m >= 2:                                     # bltui, bgeui
-            return ("branch", pc + 4 + sext(w >> 16, 8))
-        return (None, None)
-    if op0 == 7:
-        return ("branch", pc + 4 + sext(w >> 16, 8))
-    return (None, None)
-
-
-def sweep(code: bytes, base: int, targets: set) -> tuple:
-    """Instruction starts over @p code, restarting after every unconditional
-    transfer at the next known branch target within the 3 bytes of padding
-    the assembler may leave, or else at the first address that fits."""
-    starts = []
-    found = set()
-    pc, end = base, base + len(code)
-    while pc < end:
-        b0 = code[pc - base]
-        n = length(b0)
-        if pc + n > end:
-            break
-        w = int.from_bytes(code[pc - base: pc - base + n], "little")
-        starts.append((pc, w, n))
-        kind, arg = decode(pc, w, n)
-        if kind in ("branch", "jump"):
-            found.add(arg)
-        pc += n
-        if kind in ("jump", "jx", "end"):
-            known = targets | found
-            near = [a for a in known if pc <= a <= pc + 3]
-            if near:
-                pc = min(near)
-                continue
-            # No branch lands here: code a jump table reaches, or none.
-            # The first start whose instructions run on to the next known
-            # target, or to the end, exactly.
-            ahead = [a for a in known if a > pc + 3]
-            stop = min(ahead) if ahead else end
-            for c in range(pc, min(pc + 4, end)):
-                if lands(code, base, c, stop):
-                    pc = c
-                    break
-    return starts, found
-
-
-def lands(code: bytes, base: int, pc: int, stop: int) -> bool:
-    """Whether instructions from @p pc end exactly at @p stop."""
-    while pc < stop:
-        pc += length(code[pc - base])
-    return pc == stop
-
-
-class Func:
-    __slots__ = ("addr", "name", "frame", "calls", "callx", "rom", "stray",
-                 "lost", "tails")
-
-    def __init__(self, addr: int, name: str) -> None:
-        self.addr = addr
-        self.name = name
-        self.frame = 0          # 0: the function opens with no entry
-        self.calls = set()      # addresses called or tail-jumped to
-        self.callx = 0          # calls through a register not followed
-        self.rom = set()        # ROM functions called, by name
-        self.stray = 0          # calls to an address no function starts at
-        self.lost = 0           # branch targets the decode does not land on
-        self.tails = 0          # jumps out of the function, taken as calls
-
-
-def analyse(elf: Elf, addr: int, size: int, name: str) -> Func:
-    f = Func(addr, name)
-    code = elf.read(addr, size)
-    if code is None:
-        return f
-    def inside(a: int) -> bool:
-        return addr <= a < addr + size
-
-    # A second pass knows the targets of backward branches; more settle a
-    # restart that moved a target.
-    targets = set()
-    for _ in range(6):
-        starts, found = sweep(code, addr, targets)
-        found = {a for a in found if inside(a)}
-        if found == targets:
-            break
-        targets = found
-    at = {pc for pc, _, _ in starts}
-    f.lost = len(found - at)
-    targets = found
-    windowed = bool(starts) and decode(*starts[0])[0] == "entry"
-    regs = {}        # register -> address an l32r loaded, this block only
-    for pc, w, n in starts:
-        if pc in targets:
-            regs = {}
-        kind, arg = decode(pc, w, n)
-        if kind in ("jump", "branch") and not inside(arg):
-            # A tail call: a jump, or a branch, out of the function.  Its
-            # target's depth is added to this function's frame, as for a
-            # call.  Under the call0 ABI the jumping function has already
-            # released its frame, so the sum is an upper bound.  Under the
-            # windowed ABI no tail jump is valid -- the target's entry would
-            # rotate the window by the caller's CALLINC a second time -- and
-            # GCC 14 for the ESP32-S3 emits none: a call in tail position
-            # compiles to call8 and retw.n.  One found here is hand-written
-            # and counted the same way.  A target where no function starts
-            # is reported, as a call to one is.
-            f.calls.add(arg)
-            f.tails += 1
-        if kind == "entry" and pc == addr:
-            f.frame = arg
-        elif kind == "jx":
-            # Through a loaded address and out of the function: a tail call.
-            # Unresolved in a windowed function: a jump table, which stays
-            # inside it.  Unresolved in a call0 function: perhaps a tail
-            # call, not followed.
-            if arg in regs and not inside(regs[arg]):
-                f.calls.add(regs[arg])
-                f.tails += 1
-            elif arg not in regs and not windowed:
-                f.callx += 1
-            regs = {}
-        elif kind == "call":
-            f.calls.add(arg[0])
-            regs = {k: v for k, v in regs.items() if arg[1] == 0
-                    or k < arg[1]}
-        elif kind == "callx":
-            reg, window = arg
-            if reg in regs:
-                f.calls.add(regs[reg])
-            else:
-                f.callx += 1
-            regs = {k: v for k, v in regs.items() if window == 0
-                    or k < window}
-        elif kind == "l32r":
-            lit = elf.read(arg[1], 4)
-            if lit is None:
-                regs.pop(arg[0], None)
-            else:
-                regs[arg[0]] = int.from_bytes(lit, "little")
-        elif kind in ("jump", "end"):
-            regs = {}
-        else:
-            # Anything else that names a register may have written it.
-            fields = ({(w >> s) & 0xF for s in range(4, 16, 4)} if n < 4
-                      else {(w >> s) & 0xF for s in range(0, 32, 4)})
-            for k in fields & set(regs):
-                del regs[k]
-    return f
-
-
 # ------------------------------------------------------- the screen tables --
 
 def screen_slots() -> list:
@@ -547,9 +349,21 @@ def screen_tables(elf: Elf) -> tuple:
 # ----------------------------------------------------------------- tasks --
 
 def in_build_dir(rel: Path) -> bool:
-    """Whether @p rel, relative to firmware/panel, lies in a build tree:
-    build/, or a second one such as build-noinject/ (docs/Building.md)."""
-    return any(p == "build" or p.startswith("build-") for p in rel.parts)
+    """Whether @p rel, relative to firmware/panel, is not the panel's own
+    source.
+
+    Args:
+        rel: A path relative to firmware/panel.
+
+    Returns:
+        True inside a build tree, build/ or a second one such as
+        build-noinject/ (docs/Building.md), and inside managed_components/,
+        where the build puts the components it fetches from the registry:
+        their tasks are ESP-IDF's kind, created by code the panel does not
+        own, and not in the table.
+    """
+    return any(p == "build" or p.startswith("build-")
+               or p == "managed_components" for p in rel.parts)
 
 
 def task_stacks() -> tuple:
@@ -614,6 +428,28 @@ def main_stack(build: Path) -> int:
     return int(m.group(1))
 
 
+def tls_bytes(elf: Elf) -> int:
+    """The thread-local storage the port puts at the top of every stack.
+
+    Args:
+        elf: The panel image.
+
+    Returns:
+        The data and bss between the linker's _thread_local_* bounds,
+        rounded up to 16 bytes as port.c rounds them.
+
+    Raises:
+        SystemExit: A bound is not in the ELF.
+    """
+    at = {s[3]: s[0] for s in elf.symbols if s[3] in TLS_SYMBOLS}
+    missing = [n for n in TLS_SYMBOLS if n not in at]
+    if missing:
+        die(f"no {', '.join(missing)} in the ELF")
+    size = (at["_thread_local_data_end"] - at["_thread_local_data_start"]
+            + at["_thread_local_bss_end"] - at["_thread_local_bss_start"])
+    return (size + 15) & ~15
+
+
 # ------------------------------------------------- the tables in the docs --
 
 # The panel's task table in each language, and the sentence that counts the
@@ -666,6 +502,92 @@ def check_panel_doc(rows: dict, pointer_calls: int) -> list:
     return out
 
 
+class Reach:
+    """What a task's call graph holds that the depth does not follow.
+
+    Attributes:
+        indirect: (function, count) of the calls through a pointer.
+        jumps: (function, count) of the jumps through a register.
+        rom: The ROM functions called, by name.
+        stray: The calls or tail jumps to no function's start.
+        dynamic: The functions that size a frame at run time.
+        cycles: The recursive groups, one line each.
+        tails: The jumps out of a function, followed as calls.
+    """
+
+    def __init__(self, funcs: dict, seen: set, cycles: list) -> None:
+        """Collect what @p seen, the functions a task reaches, holds.
+
+        Args:
+            funcs: Every function, by address.
+            seen: The addresses the task reaches.
+            cycles: Graph.recursion() of @p seen.
+        """
+        self.indirect = sorted((funcs[a].name, funcs[a].callx) for a in seen
+                               if funcs[a].callx)
+        self.jumps = sorted((funcs[a].name, funcs[a].jumpx) for a in seen
+                            if funcs[a].jumpx)
+        self.rom = sorted({r for a in seen for r in funcs[a].rom})
+        self.stray = sum(funcs[a].stray for a in seen)
+        self.dynamic = sorted(funcs[a].name for a in seen
+                              if funcs[a].dynamic)
+        self.cycles = cycles
+        self.tails = sum(funcs[a].tails for a in seen)
+
+    def unknown(self) -> list:
+        """One phrase for each kind of thing not followed.
+
+        Returns:
+            The phrases; empty when the depth is exact.
+        """
+        out = []
+        if self.indirect:
+            out.append(f"{sum(n for _, n in self.indirect)} calls through a "
+                       f"pointer in {len(self.indirect)} functions")
+        if self.jumps:
+            out.append(f"{sum(n for _, n in self.jumps)} jumps through a "
+                       f"register in {len(self.jumps)} functions")
+        if self.rom:
+            out.append(f"{len(self.rom)} ROM functions")
+        if self.stray:
+            out.append(f"{self.stray} calls or tail jumps to no function's "
+                       f"start")
+        if self.dynamic:
+            out.append(f"{len(self.dynamic)} functions sizing a frame at "
+                       f"run time")
+        if self.cycles:
+            out.append(f"{len(self.cycles)} recursive groups, each function "
+                       f"entered once per chain")
+        return out
+
+    def print_detail(self) -> None:
+        """Print every item unknown() counts, by name."""
+        if self.indirect:
+            print("   calls through a pointer, not followed:")
+            for fn, n in self.indirect:
+                print(f"     {fn} x{n}")
+        if self.jumps:
+            print("   jumps through a register (switch tables or tail calls "
+                  "through a pointer), not followed:")
+            for fn, n in self.jumps:
+                print(f"     {fn} x{n}")
+        if self.rom:
+            print("   ROM functions, frame unknown:")
+            print("     " + ", ".join(self.rom))
+        if self.stray:
+            print(f"   {self.stray} calls or tail jumps to an address no "
+                  f"function starts at")
+        if self.dynamic:
+            print("   functions sizing a frame at run time, frame counted "
+                  "in part:")
+            print("     " + ", ".join(self.dynamic))
+        if self.cycles:
+            print("   recursive groups, each function entered once per "
+                  "chain:")
+            for c in self.cycles:
+                print(f"     {c}")
+
+
 def main() -> int:
     """Run the check the command line names.
 
@@ -673,7 +595,7 @@ def main() -> int:
         0 when every stack holds its deepest chain, 1 when one does not.
 
     Raises:
-        SystemExit: The build is missing, or the panel ELF is not Xtensa.
+        SystemExit: The build is missing, or the panel ELF is not RISC-V.
     """
     ap = argparse.ArgumentParser(
         description=__doc__.split("\n")[0],
@@ -709,10 +631,10 @@ def main() -> int:
         die(f"{path} not found; build the panel first")
     sys.setrecursionlimit(20000)
     elf = Elf(path)
-    if elf.machine != EM_XTENSA:
-        die(f"{path} is ELF machine {elf.machine}, not Xtensa ({EM_XTENSA}): "
-            "the panel decoder reads Xtensa code only, and the ESP32-P4 "
-            "builds RISC-V")
+    if elf.machine != EM_RISCV:
+        die(f"{path} is ELF machine {elf.machine}, not RISC-V ({EM_RISCV}): "
+            "the panel decoder reads the ESP32-P4's RISC-V code only")
+    outside = OUTSIDE_FRAMES + tls_bytes(elf)
 
     # Where several names share an address, the alphabetically first.
     sizes, names, rom = {}, {}, {}
@@ -724,7 +646,7 @@ def main() -> int:
             names.setdefault(addr, name)
             sizes[addr] = max(sizes.get(addr, 0), size)
     names.update(rom)
-    funcs = {a: analyse(elf, a, n, names[a]) for a, n in sizes.items()
+    funcs = {a: analyse_riscv(elf, a, n, names[a]) for a, n in sizes.items()
              if n > 0}
     by_name = {}
     for f in funcs.values():
@@ -740,13 +662,13 @@ def main() -> int:
                          f"in the ELF, not 1")
             continue
         f = funcs[addrs[0]]
-        if f.callx == 0:
+        if f.callx + f.jumpx == 0:
             fails.append(f"SCREEN_CALLS: {router} makes no indirect call; "
                          f"the table no longer matches the router")
             continue
         for slot in slots:
             f.calls |= tables.get(slot, set())
-        f.callx = 0
+        f.callx = f.jumpx = 0
 
     for table, home, calls in (("PORT_CALLS", "shared/link", PORT_CALLS),
                                ("FLASH_CALLS", "shared/artwork",
@@ -770,7 +692,7 @@ def main() -> int:
                              f"in the ELF, not 1")
                 continue
             f = funcs[addrs[0]]
-            if f.callx == 0:
+            if f.callx + f.jumpx == 0:
                 fails.append(f"{table}: {caller} makes no indirect call; "
                              f"the table no longer matches {home}")
                 continue
@@ -782,7 +704,7 @@ def main() -> int:
                                  f"not 1")
                     continue
                 f.calls.add(targets[0])
-            f.callx = 0
+            f.callx = f.jumpx = 0
 
     for f in funcs.values():
         for c in f.calls:
@@ -800,12 +722,14 @@ def main() -> int:
     tasks += found_tasks
 
     g = Graph(funcs, names)
+    tls = outside - OUTSIDE_FRAMES
     print(f"stack_check: {path}")
     src_note = (f", {len(from_src)} from source ({', '.join(from_src)})"
                 if from_src else "")
     print(f"screen tables: {from_elf} from the ELF{src_note}")
     print(f"margin: {MARGIN} bytes, {OUTSIDE_FRAMES} of them outside the "
-          f"frames and {MARGIN - OUTSIDE_FRAMES} for what is not followed")
+          f"frames and {MARGIN - OUTSIDE_FRAMES} for what is not followed; "
+          f"{tls} of thread-local storage on top")
     print(f"{'task':<8} {'entry':<14} {'stack':>6} {'limit':>6} "
           f"{'depth':>6} {'spare':>6}  result")
     detail = []
@@ -818,38 +742,14 @@ def main() -> int:
             continue
         depth, chain = g.depth(addrs[0])
         seen = g.reach(addrs[0])
-        cycles = g.recursion(seen)
-        indirect = sorted((funcs[a].name, funcs[a].callx) for a in seen
-                          if funcs[a].callx)
-        called_rom = sorted({r for a in seen for r in funcs[a].rom})
-        stray = sum(funcs[a].stray for a in seen)
-        lost = sorted((funcs[a].name, funcs[a].lost) for a in seen
-                      if funcs[a].lost)
-        tails = sum(funcs[a].tails for a in seen)
-        no_entry = sorted(funcs[a].name for a in seen if funcs[a].frame == 0)
-        limit = stack - MARGIN
+        r = Reach(funcs, seen, g.recursion(seen))
+        limit = stack - MARGIN - tls
         over = depth > limit
         if over:
             fails.append(f"{name}: {depth} bytes deep, over its limit of "
-                         f"{limit} ({stack} from {src} less {MARGIN})")
-        unknown = []
-        if indirect:
-            unknown.append(f"{sum(n for _, n in indirect)} calls through a "
-                           f"pointer in {len(indirect)} functions")
-        if called_rom:
-            unknown.append(f"{len(called_rom)} ROM functions")
-        if stray:
-            unknown.append(f"{stray} calls or tail jumps to no function's "
-                           f"start")
-        if no_entry:
-            unknown.append(f"{len(no_entry)} functions with no entry, frame "
-                           f"unknown")
-        if lost:
-            unknown.append(f"{sum(n for _, n in lost)} branch targets not "
-                           f"decoded in {len(lost)} functions")
-        if cycles:
-            unknown.append(f"{len(cycles)} recursive groups, each function "
-                           f"entered once per chain")
+                         f"{limit} ({stack} from {src} less {MARGIN} and "
+                         f"{tls} of thread-local storage)")
+        unknown = r.unknown()
         if over:
             result = "OVER"
         elif unknown:
@@ -860,43 +760,20 @@ def main() -> int:
               f"{limit - depth:>6}  {result}")
         measured[name] = (stack, depth, limit - depth)
         if entry == MAIN_TASK:
-            pointer_calls = sum(n for _, n in indirect)
+            pointer_calls = sum(n for _, n in r.indirect)
         if unknown:
             print(f"{'':<8} not followed: " + "; ".join(unknown))
-        if tails:
-            print(f"{'':<8} followed as calls: {tails} tail jumps")
-        detail.append((name, depth, chain, indirect, called_rom, stray,
-                       lost, cycles, no_entry))
+        if r.tails:
+            print(f"{'':<8} followed as calls: {r.tails} tail jumps")
+        detail.append((name, depth, chain, r))
 
     if args.verbose:
-        for (name, depth, chain, indirect, called_rom, stray, lost,
-             cycles, no_entry) in detail:
+        for name, depth, chain, r in detail:
             print(f"\n== {name}: {depth} bytes; frame, depth from here, "
                   f"function")
             for own, total, addr in chain:
                 print(f"   {own:5d} {total:6d}  {g.label(addr)}")
-            if indirect:
-                print("   calls through a pointer, not followed:")
-                for fn, n in indirect:
-                    print(f"     {fn} x{n}")
-            if called_rom:
-                print("   ROM functions, frame unknown:")
-                print("     " + ", ".join(called_rom))
-            if stray:
-                print(f"   {stray} calls or tail jumps to an address no "
-                      f"function starts at")
-            if no_entry:
-                print("   functions with no entry, frame unknown:")
-                print("     " + ", ".join(no_entry))
-            if lost:
-                print("   branch targets the decode does not land on:")
-                for fn, n in lost:
-                    print(f"     {fn} x{n}")
-            if cycles:
-                print("   recursive groups, each function entered once per "
-                      "chain:")
-                for c in cycles:
-                    print(f"     {c}")
+            r.print_detail()
 
     if args.check_doc:
         fails += check_panel_doc(measured, pointer_calls)
