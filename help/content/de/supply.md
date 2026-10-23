@@ -17,7 +17,7 @@ Die Leiste oben trägt zwei Aufgaben, LIVE und OPTIONEN. Ein Tipp wechselt die A
 | LIVE | die Grafik oder die Tabelle und die Sollwerte |
 | OPTIONEN | die Obergrenzen, die Startwerte, die Abschaltungen und die Rückfragen ([OPTIONEN](#optionen)) |
 
-Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN. Die Kopfzeile ist die Zeile rechts neben der Leiste: das Netzteil, sein Zustand und der Bereich, den die Sollwerte annehmen können. Sie bleibt auf beiden Aufgaben und unter dem Tastenfeld und der Rückfrage sichtbar. Das Home-Tag führt eine Ebene nach der anderen zurück: Über der Rückfrage verwirft es die Änderung, wie ABBRECHEN; über einem Tastenfeld schließt es das Tastenfeld und behält den Wert. Ein Wechsel der Aufgabe ist keine Ebene: Von LIVE oder OPTIONEN führt es, wenn nichts offen ist, zum Menü.
+Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Messwerte und die Karte STEUERUNG mit SPITZENWERTE ZURÜCKSETZEN und AUSGANG EIN an ihrem Fuß, wo SERVO und MOTOR & ESC ARM haben. Die Kopfzeile ist die Zeile rechts neben der Leiste: das Netzteil, sein Zustand und der Bereich, den die Sollwerte annehmen können. Sie bleibt auf beiden Aufgaben und unter dem Tastenfeld und der Rückfrage sichtbar. Das Home-Tag führt eine Ebene nach der anderen zurück: Über der Rückfrage verwirft es die Änderung, wie ABBRECHEN; über einem Tastenfeld schließt es das Tastenfeld und behält den Wert. Ein Wechsel der Aufgabe ist keine Ebene: Von LIVE oder OPTIONEN führt es, wenn nichts offen ist, zum Menü.
 
 ## Das Netzteilmodell
 
@@ -47,7 +47,7 @@ Vor dem ersten Einschalten zeigt die Grafik `Ausgang wurde noch nicht eingeschal
 | LEIST. | die Ausgangsleistung und die Spitze des Laufs |
 | MODUS | CV (Constant Voltage) an der eingestellten Spannung, CC (Constant Current) an der Strombegrenzung, ABGESCHALTET nach einer Abschaltung; CC steht in der Warnfarbe |
 
-Die Grafik zeigt Spannung, Strom und Leistung über die letzten 27 s, jeden Sollwert als gestrichelte Linie. TABELLE listet dieselben Werte. Der Wert in Klammern ist der Sollwert, den das Netzteil meldet; solange es nicht antwortet, der, den der Bildschirm hält.
+Die Grafik zeigt Spannung, Strom und Leistung über die letzten 30 s, jeden Sollwert als gestrichelte Linie. TABELLE listet dieselben Werte. Der Wert in Klammern ist der Sollwert, den das Netzteil meldet; solange es nicht antwortet, der, den der Bildschirm hält.
 
 ## Sollwerte
 
@@ -60,7 +60,7 @@ Die Bereiche des PD mini stammen von der Seite des Herstellers und sind nicht ge
 
 - Einen Schieberegler ziehen oder auf seine Spur tippen, um den Wert unter dem Finger zu setzen.
 - `-0.1` und `+0.1` ändern den Wert schrittweise.
-- Ein Tipp auf die Karte SPANN. oder STROM oder auf den Wert eines Sollwerts öffnet das Tastenfeld.
+- Ein Tipp auf die Karte SPANN. oder STROM oder auf den Wert am rechten Ende einer Sollwertzeile öffnet das Tastenfeld.
 
 ![Das Tastenfeld über der linken Spalte](view:supply-keypad)
 
@@ -114,7 +114,7 @@ Mit dem PD mini als Netzteil bieten die OPTIONEN zusätzlich PD MINI ZURÜCKSETZ
 
 ## Das Log eines Laufs
 
-Ein Lauf ist ein Einschalten des Ausgangs. Die Grafik leert sich, wenn der Ausgang einschaltet, und hält den Lauf, wenn er ausgeht. Die mAh und Wh unter AUSGANG EIN zählen den Lauf. SPITZENWERTE ZURÜCKSETZEN startet die niedrigsten und höchsten Werte neu ab dem aktuellen Messwert.
+Ein Lauf ist ein Einschalten des Ausgangs. Die Grafik leert sich, wenn der Ausgang einschaltet, und hält den Lauf, wenn er ausgeht. Die mAh und Wh in der Titelzeile von STEUERUNG zählen den Lauf. SPITZENWERTE ZURÜCKSETZEN startet die niedrigsten und höchsten Werte neu ab dem aktuellen Messwert.
 
 Jeder Lauf wird in eine eigene `SUPPLnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital) geschrieben, solange Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE EIN ist, eine Zeile alle 50 ms, mit Sollwert, Spannung, Grenze, Strom, Leistung, Modus, Ladung, Energie und Quelle, `measured` oder `model`. [Logs](logs.md) öffnet sie.
 

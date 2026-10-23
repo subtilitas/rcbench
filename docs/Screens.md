@@ -1639,11 +1639,11 @@ both on one GPIO, the header says `PD MINI NO PINS`. With the PD mini disabled, 
 says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
 
 SUPPLY is a workbench: a strip of tasks at the top, LIVE and SETTINGS
-(German `LIVE`, `OPTIONEN`), each 112 x 24 px, and a page under it. The
+(German `LIVE`, `OPTIONEN`), each 150 x 40 px, and a page under it. The
 menu's tile always opens LIVE. A tap on a tab switches the task; a switch
 is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 
-| Task | The left column, 546 px |
+| Task | The left column, 620 px |
 | --- | --- |
 | LIVE | the plot or the table over the set points |
 | SETTINGS | the 9 supply settings under LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)) |
@@ -1651,11 +1651,17 @@ is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 The header is the row right of the strip: the module and its pins, ONLINE
 or NOT ANSWERING, and at the right end the range the set points may take,
 for example `3.3-8.4 V  0.50-5.00 A`. It stays in sight on both tasks and
-under the keypad and the question. The rail on the right, the readings,
-OUTPUT ON and RESET PEAKS, is the same on both tasks.
+under the keypad and the question. The rail on the right, 380 px, is the
+same on both tasks: four reading cards of 64 px, VOLT, CURR, PWR and MODE,
+and the CONTROL card with the run's mAh and Wh on its title line, RESET
+PEAKS (48 px) and OUTPUT ON / OFF (60 px) at its foot, where SERVO and
+MOTOR & ESC have ARM and DISARM.
 
-The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
-power over the last 27 s. The rail shows the readings, the run's lowest
+The layout is the one MOTOR & ESC uses. On LIVE the left column holds the
+output card, PLOT | TABLE under its title, and SET POINTS under it. Each
+set point is a row: its label, then the `-0.1` key (72 x 48 px), the track
+(312 x 48 px), the `+0.1` key and the value in a 120 x 48 px box. The plot
+shows voltage, current and power over the last 30 s. The rail shows the readings, the run's lowest
 voltage and its highest current and power. MODE says which set point the
 supply holds: CV (constant voltage) at the set voltage, or CC (constant
 current) at the current limit. CC is drawn in the warning colour: a supply in
@@ -1687,8 +1693,8 @@ cap is cut. Both are narrowed by the caps in SETTINGS, and
 the sliders follow the supply in use. A tap on a track sets the value under
 the finger.
 
-**A tap on the VOLT or CURR card, or on a set point's value, opens a keypad**
-over the left column. It shows the range in the title row and the current
+**A tap on the VOLT or CURR card, or on a set point's value box, opens a
+keypad** over the left column, under the strip, with keys of 145 x 76 px. It shows the range in the title row and the current
 value faint until a digit is typed. OK takes a value inside the range,
 rounded to the supply's step; a value outside it is refused and the range
 turns to the warning colour. OK with nothing typed, and CANCEL, leave the set
@@ -1818,7 +1824,9 @@ second finger does nothing anywhere on the screen.
 ### Supply settings
 
 SETTINGS, the strip's second tab, shows the supply's settings in the left
-column. Each is kept in the panel's NVS (non-volatile storage) and survives
+column: the caps and the start values on the left, the trips and the
+confirmations on the right, each a 48 px row with its value in a 120 x
+48 px box, and the save line at the foot. Each is kept in the panel's NVS (non-volatile storage) and survives
 a restart. A value opens the keypad over the page; a switch flips on the
 tap. A tap on LIVE while the keypad is open closes it, and the setting keeps
 its value, as CANCEL leaves it. The same holds for a set point's keypad and
@@ -1867,8 +1875,8 @@ protocol 4.4 has no reset: the output goes off and the band says so.
 ### The log
 
 A run is one switch-on of the output. The plot clears when the output comes on
-and holds the run after it goes off. The mAh and Wh under the switch count the
-run from the readings shown, each step capped at 1 s. RESET PEAKS starts the
+and holds the run after it goes off. The mAh and Wh on the CONTROL card's
+title line count the run from the readings shown, each step capped at 1 s. RESET PEAKS starts the
 lowest and highest values again from the current reading.
 
 A run is recorded to a `SUPPLnnn.CSV` of its own in `BENCH/LOGS`, one row

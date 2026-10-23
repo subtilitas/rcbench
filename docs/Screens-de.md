@@ -1796,12 +1796,12 @@ Netzteils: die Kopfzeile sagt SIMULIERTES NETZTEIL, und die Kachel im Menü trä
 SIMULIERT.
 
 SUPPLY ist eine Werkbank: oben eine Leiste mit Aufgaben, LIVE und OPTIONEN,
-je 112 x 24 px, und darunter eine Seite. Die Kachel im Menü öffnet immer
+je 150 x 40 px, und darunter eine Seite. Die Kachel im Menü öffnet immer
 LIVE. Ein Tipp auf einen Reiter wechselt die Aufgabe; ein Wechsel ist keine
 Navigationsebene und lässt die Ansicht von LIVE, GRAFIK oder TABELLE, wie
 sie war.
 
-| Aufgabe | Die linke Spalte, 546 px |
+| Aufgabe | Die linke Spalte, 620 px |
 | --- | --- |
 | LIVE | der Plot oder die Tabelle über den Sollwerten |
 | OPTIONEN | die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |
@@ -1810,11 +1810,18 @@ Die Kopfzeile ist die Zeile rechts neben der Leiste: das Modul und seine
 Pins, ONLINE oder ANTWORTET NICHT und am rechten Ende der Bereich, den die
 Sollwerte annehmen können, zum Beispiel `3.3-8.4 V  0.50-5.00 A`. Sie bleibt
 auf beiden Aufgaben und unter der Tastatur und der Frage sichtbar. Die
-Leiste rechts, die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN, ist
-auf beiden Aufgaben dieselbe.
+Leiste rechts, 380 px, ist auf beiden Aufgaben dieselbe: vier Messwertkarten
+von 64 px, SPANN., STROM, LEIST. und MODUS, und die Karte STEUERUNG mit mAh
+und Wh des Laufs in ihrer Titelzeile, SPITZENWERTE ZURÜCKSETZEN (48 px) und
+AUSGANG EIN / AUS (60 px) an ihrem Fuß, wo SERVO und MOTOR & ESC ARM und
+DISARM haben.
 
-Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
-Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die
+Das Layout ist das von MOTOR & ESC. Auf LIVE trägt die linke Spalte die
+Karte des Ausgangs, GRAFIK | TABELLE unter ihrem Titel, und darunter
+SOLLWERTE. Jeder Sollwert ist eine Zeile: sein Name, dann die Taste `-0.1`
+(72 x 48 px), die Spur (312 x 48 px), die Taste `+0.1` und der Wert in einem
+Feld von 120 x 48 px. Der Plot zeigt Spannung, Strom und Leistung der
+letzten 30 s. Die Leiste rechts zeigt die Messwerte, die
 niedrigste Spannung des Laufs und seinen höchsten Strom und seine höchste
 Leistung. MODUS sagt, welchen Sollwert das Netzteil hält: CV (constant voltage)
 bei der eingestellten Spannung oder CC (constant current) an der
@@ -1845,8 +1852,9 @@ Last um 0,2 V sinken, bevor ein Sollwert an der Grenze abgeschaltet wird. Beide 
 die Grenzen unter OPTIONEN ein, und die Schieber folgen dem Netzteil, das
 in Gebrauch ist. Ein Tippen auf eine Spur setzt den Wert unter dem Finger.
 
-**Ein Tippen auf die Karte SPANN. oder STROM oder auf den Wert eines Sollwerts
-öffnet eine Tastatur** über der linken Spalte. Sie zeigt den Bereich in der
+**Ein Tippen auf die Karte SPANN. oder STROM oder auf das Wertfeld eines
+Sollwerts öffnet eine Tastatur** über der linken Spalte, unter der Leiste,
+mit Tasten von 145 x 76 px. Sie zeigt den Bereich in der
 Titelzeile und den aktuellen Wert blass, bis eine Ziffer getippt ist. OK
 übernimmt einen Wert im Bereich, gerundet auf den Schritt des Netzteils; ein
 Wert außerhalb wird abgelehnt, und der Bereich wechselt in die Warnfarbe. OK
@@ -1993,7 +2001,9 @@ etwas.
 ### Netzteil, Optionen
 
 OPTIONEN, der zweite Reiter der Leiste, zeigt die Einstellungen des
-Netzteils in der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
+Netzteils in der linken Spalte: die Obergrenzen und die Startwerte links,
+die Abschaltungen und die Rückfragen rechts, jede eine Zeile von 48 px mit
+ihrem Wert in einem Feld von 120 x 48 px, und die Speicherzeile am Fuß. Jede liegt im NVS (Non-Volatile Storage)
 des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur über
 der Seite, ein Schalter kippt beim Tippen. Ein Tipp auf LIVE bei offener
 Tastatur schließt sie, und die Einstellung behält ihren Wert, wie ABBRECHEN
@@ -2050,8 +2060,8 @@ der Ausgang geht aus, und das Band sagt es.
 ### Das Log
 
 Ein Lauf ist ein Einschalten des Ausgangs. Der Plot leert sich, wenn der
-Ausgang angeht, und hält den Lauf, nachdem er ausgeht. mAh und Wh unter dem
-Schalter zählen den Lauf aus den angezeigten Messwerten, jeder Schritt auf 1 s
+Ausgang angeht, und hält den Lauf, nachdem er ausgeht. mAh und Wh in der
+Titelzeile von STEUERUNG zählen den Lauf aus den angezeigten Messwerten, jeder Schritt auf 1 s
 begrenzt. SPITZENWERTE ZURÜCKSETZEN beginnt die niedrigsten und höchsten Werte neu ab dem
 aktuellen Messwert.
 

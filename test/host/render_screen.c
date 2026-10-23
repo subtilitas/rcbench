@@ -60,6 +60,7 @@
 #include "kst_rig.h"
 #include "servo_spots.h"
 #include "stick_spots.h"
+#include "supply_spots.h"
 #include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
@@ -109,9 +110,9 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define MO_TAB_PROGRAM_X 234
 #define MO_TAB_Y         28
 #define MO_STICK_ROW_X   279
-/* SUPPLY's SETTINGS tab, the second of its strip, LIVE | SETTINGS. */
-#define SU_TAB_SETTINGS_X 181
-#define SU_TAB_Y          18
+/* SUPPLY's SETTINGS tab, the second of its strip, LIVE | SETTINGS
+ * (supply_spots.h, with SU_TAB_Y). */
+#define SU_TAB_SETTINGS_X SU_TAB_X(1)
 #define MO_STICK_ROW_Y   83
 
 static gfx_color_t fb[W * H];
@@ -2372,7 +2373,7 @@ int main(int argc, char **argv)
         }
     }
 
-    if (id == SCREEN_SUPPLY && strcmp(view, "supply-offline") == 0) {
+    if (id == SCREEN_SUPPLY && strncmp(view, "supply-offline", 14) == 0) {
         /*
          * The PD mini enabled on GP12 and GP13 and not answering, the
          * output never switched on: the header in the warning colour, the
@@ -2389,6 +2390,14 @@ int main(int argc, char **argv)
         st.set_i  = 2.0f;
         st.online = false;
         supply_screen_push(&st);
+        if (strcmp(view, "supply-offline-settings") == 0) {
+            /* The fit check's: SETTINGS with the PD mini, RESET PD MINI
+             * under the start values, and the longest save line, a change
+             * on SETUP nobody asked to keep. */
+            ui_router_goto(SCREEN_SUPPLY);
+            tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
+            settings_set(SET_SUPPLY_TRIP_MS, 300.0f);
+        }
     } else if (id == SCREEN_SUPPLY) {
         /* A run of the panel's model, as the panel drives it: the output on
          * at 6 V and a 2 A limit, the load's bursts holding the limit, the
@@ -2434,14 +2443,13 @@ int main(int argc, char **argv)
             /* +0.1 V on a live output: the question, as the settings'
              * default asks it. */
             ui_router_goto(SCREEN_SUPPLY);
-            tap(519, UI_BAND_H + 335);
+            tap(SU_UP_X, UI_BAND_H + SU_V_ROW_Y);
         } else if (strcmp(view, "supply-keypad") == 0) {
             ui_router_goto(SCREEN_SUPPLY);
-            tap(676, UI_BAND_H + 65);
+            tap(SU_CARD_X, UI_BAND_H + SU_CARD_Y(0));
             ui_keypad_t kp;
             memset(&kp, 0, sizeof(kp));
-            ui_keypad_open(&kp, (gfx_rect_t){ UI_MARGIN, 38, 546, UI_BODY_H - 46 }, "", "",
-                           0.0f, 0.0f, 1.0f, 2);
+            ui_keypad_open(&kp, SU_OV_AREA, "", "", 0.0f, 0.0f, 1.0f, 2);
             const ui_key_t k[] = { UI_KEY_7, UI_KEY_DOT, UI_KEY_4 };
             for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
                 const gfx_rect_t r = ui_keypad_key_rect(&kp, k[i]);
@@ -2454,6 +2462,14 @@ int main(int argc, char **argv)
                                         : SUPPLY_TRIP_VOLTAGE;
             supply_screen_set_output(false);
             supply_screen_push(&st);
+        } else if (strcmp(view, "supply-table") == 0) {
+            /* The fit check's: LIVE's TABLE, every row with a reading. */
+            ui_router_goto(SCREEN_SUPPLY);
+            tap(SU_TABLE_TAB_X, UI_BAND_H + SU_PANE_Y);
+        } else if (strcmp(view, "supply-port") == 0) {
+            /* The fit check's: a servo programming port holds the
+             * supply, the set points faint and MODE's line saying why. */
+            supply_screen_set_port_held(true);
         }
     }
 

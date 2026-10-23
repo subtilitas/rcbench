@@ -1415,13 +1415,13 @@ UI_TEXT(SUP_LINE_TRIP_I, 0,
 UI_TEXT(SUP_LINE_TRIP_V, 0,
     "Overvoltage trip.",
     "Wegen Überspannung abgeschaltet.")
-UI_TEXT(SUP_LINE_CC, 22,
+UI_TEXT(SUP_LINE_CC, 36,
     "Current limit active.",
     "Strombegrenzung aktiv.")
 UI_TEXT(SUP_LINE_CV, 0,
     "At the set voltage.",
     "Sollspannung erreicht.")
-UI_TEXT(SUP_LINE_PORT, 22,
+UI_TEXT(SUP_LINE_PORT, 0,
     "Servo programmer.",
     "Servoprogrammierung.")
 UI_TEXT(SUP_MODEL, 0,
@@ -1445,13 +1445,13 @@ UI_TEXT(SUP_SETTINGS, 0,
 UI_TEXT(SUP_MODE, 0,
     "MODE",
     "MODUS")
-UI_TEXT(SUP_TABLE_HEAD, 46,
+UI_TEXT(SUP_TABLE_HEAD, 0,
     "CHANNEL        SET            NOW",
     "KANAL          SOLL           JETZT")
 UI_TEXT(SUP_CLOSE, 0,
     "CLOSE",
     "SCHLIESSEN")
-UI_TEXT(SUP_RESET_PDMINI, 24,
+UI_TEXT(SUP_RESET_PDMINI, 0,
     "RESET PD MINI",
     "PD MINI ZURÜCKSETZEN")
 UI_TEXT(SUP_CAPS, 0,
@@ -1475,16 +1475,16 @@ UI_TEXT(SUP_HELP_2, 0,
 UI_TEXT(SUP_HELP_3, 0,
     "the set trip time.",
     "über seiner Abschaltgrenze liegt.")
-UI_TEXT(SUP_SAVED, 64,
+UI_TEXT(SUP_SAVED, 60,
     "SAVED",
     "GESPEICHERT")
 UI_TEXT(SUP_SAVE_WAITING, 0,
     "SAVE PENDING",
     "SPEICHERN AUSSTEHEND")
-UI_TEXT(SUP_NOT_SAVED, 64,
+UI_TEXT(SUP_NOT_SAVED, 60,
     "NOT SAVED",
     "NICHT GESPEICHERT")
-UI_TEXT(SUP_SETUP_NOT_SAVED, 64,
+UI_TEXT(SUP_SETUP_NOT_SAVED, 0,
     "SETUP CHANGES NOT SAVED",
     "ÄNDERUNGEN IN SETUP NICHT GESPEICHERT")
 UI_TEXT(SUP_OUTPUT_IS_ON, 0,

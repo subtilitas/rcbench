@@ -4060,7 +4060,35 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_scr
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warning is not documented
 shared/ui/include/splash_screen.h: file has no @file block
 shared/ui/include/supply_screen.h: file has no @file block
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_adopt are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_ask_on are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_claim are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_entered are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_header_text are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_left are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_poll_cmd are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_push are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_put are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_baud are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_caps are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_model are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_on_coming are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_output are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_pins are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_port_held are not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_caps is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_limits is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_off_count is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_off_owed is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_off_pending is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_output_held is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_output_live is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_owner is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_poll_cmd is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_reading is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_set_v is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_task is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_typed_asks is not documented
 shared/ui/include/ui_alert_slot.h: file has no @file block
 shared/ui/include/ui_alert_slot.h: warning: Compound ui_alert_slot_t is not documented.
 shared/ui/include/ui_alert_slot.h: warning: Member text[UI_ALERT_MAX] (variable) of struct ui_alert_slot_t is not documented.
@@ -5861,30 +5889,16 @@ shared/ui/splash_screen.c: warning: Member detail[SPLASH_STEP_COUNT][SPLASH_DETA
 shared/ui/splash_screen.c: warning: Member held_s (variable) of struct [struct].s is not documented.
 shared/ui/splash_screen.c: warning: Member result[SPLASH_STEP_COUNT] (variable) of struct [struct].s is not documented.
 shared/ui/splash_screen.c: warning: Member skipped (variable) of struct [struct].s is not documented.
-shared/ui/supply_draw.c: warning: Member draw_card(gfx_canvas_t *c, gfx_rect_t r, const char *label, const char *set, const char *unit, gfx_color_t color, int decimals, float value, const char *extreme, float peak, bool pressed) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_cards(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_confirm(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_header(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_out_button(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_setters(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_settings(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_steps(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member draw_strip(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_table(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_totals(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member k_tag[TAG_COUNT] (variable) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member mode_line(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member mode_text(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member out_fill(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member output_tag(void) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member row_len(const char *at, int cells) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member row_value_text(int i, char *buf, size_t n) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member save_state(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member shown_set_i(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member shown_set_v(void) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member sup_render(gfx_canvas_t *c, int buffer_index) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member wrap_rows(gfx_canvas_t *c, int x, int y, int pitch, const char *text, int cells, gfx_color_t ink) (function) of file supply_draw.c is not documented.
-shared/ui/supply_events.c: warning: Member down(const touch_event_t *evt) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member keypad_done(ui_keypad_result_t r, float v) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member nudge(float dv, float di) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member open_keypad(int target, setting_id_t id) (function) of file supply_events.c is not documented.
@@ -5895,65 +5909,40 @@ shared/ui/supply_events.c: warning: Member sup_safe_at(int x, int y) (function) 
 shared/ui/supply_events.c: warning: Member sup_tick(float dt_s) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member take(const touch_event_t *evt, int code) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member task_changed(void) (function) of file supply_events.c is not documented.
-shared/ui/supply_screen.c: file has no @file block
+shared/ui/supply_screen.c: warning: Member apply_caps(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member back(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member cancel(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member enter(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member forget_drawn(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member k_screen (variable) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member k_tab_labels[] (variable) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member leave(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member limits_from_settings(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_bind_colours(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_card_rect(int i) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_confirm_close(bool apply) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_confirm_needed(int from) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_confirm_stands(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_let_go(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_on_live(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_overlay_area(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_owner_settle(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_post_off(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_post_on(supply_by_t by) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_propose(int from) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_refresh_limits(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_s (variable) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_series[S_COUNT] (variable) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_invalidate(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen_model(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen_output_on(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen_port_held(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen_set_i(void) (function) of file supply_screen.c is not documented.
 shared/ui/supply_screen_int.h: warning: Compound limit_row_t is not documented.
 shared/ui/supply_screen_int.h: warning: Compound sup_state_t is not documented.
-shared/ui/supply_screen_int.h: warning: Member BTN_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member CARD_GAP (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member CARD_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member COL_GAP (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member HDR_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member HDR_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member INFO_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member INFO_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member INNER (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LEFT_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LEFT_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LEG_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LEG_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LO_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LO_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member NUDGE_I (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member NUDGE_V (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member NUDGE_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OUT_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_COL1_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_COL1_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_COL_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_ROW_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_VAL_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PAD (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PLOT_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PLOT_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PLOT_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PLOT_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member RAIL_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member RESET_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member RIGHT_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member RIGHT_X (macro definition) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member ROW_COUNT (macro definition) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member SAMPLE_HZ (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_CTRL_DY (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_CTRL_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_ROW_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_TEXT_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_TRACK_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_TRACK_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_Y0 (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TAB_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TAB_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TAB_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TASKS (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TITLE_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TOTALS_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member UP_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member UP_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member W (macro definition) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member apply_btn (variable) of struct sup_state_t is not documented.
 shared/ui/supply_screen_int.h: warning: Member baud (variable) of struct sup_state_t is not documented.
 shared/ui/supply_screen_int.h: warning: Member caps (variable) of struct sup_state_t is not documented.
@@ -6031,14 +6020,9 @@ shared/ui/supply_screen_int.h: warning: Member sup_post_off(void) (function) of 
 shared/ui/supply_screen_int.h: warning: Member sup_post_on(supply_by_t by) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_propose(int from) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_refresh_limits(void) (function) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_render(gfx_canvas_t *c, int buffer_index) (function) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_row_rect(int i) (function) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_row_value_rect(int i) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_s (variable) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_safe_at(int x, int y) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_series[S_COUNT] (variable) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_set_text_rect(int row) (function) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_strip_area(void) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_tick(float dt_s) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member tabs (variable) of struct sup_state_t is not documented.
 shared/ui/supply_screen_int.h: warning: Member tx1 (variable) of struct sup_state_t is not documented.

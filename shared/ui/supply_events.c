@@ -133,6 +133,11 @@ static void take(const touch_event_t *evt, int code)
     ++s.ov_rev;
 }
 
+/**
+ * @brief A contact coming down: the control under it takes the press,
+ *        the output and the peaks first, whatever covers the left column.
+ * @param evt the DOWN event
+ */
 static void down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
@@ -208,7 +213,7 @@ static void down(const touch_event_t *evt)
     }
 
     /* LIVE, nothing over the left column: its own controls. */
-    if (gfx_rect_contains((gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H }, x, y)) {
+    if (gfx_rect_contains((gfx_rect_t){ TAB_X, TAB_Y, TAB_W, TAB_H }, x, y)) {
         take(evt, P_TABS);
         (void)ui_tabs_event(&s.tabs, evt);
         return;
@@ -244,10 +249,10 @@ static void down(const touch_event_t *evt)
             return;
         }
     }
-    if (gfx_rect_contains(sup_set_text_rect(0), x, y)) {
-        take(evt, P_TEXT_V);
-    } else if (gfx_rect_contains(sup_set_text_rect(1), x, y)) {
-        take(evt, P_TEXT_I);
+    if (gfx_rect_contains(sup_set_value_rect(0), x, y)) {
+        take(evt, P_VALUE_V);
+    } else if (gfx_rect_contains(sup_set_value_rect(1), x, y)) {
+        take(evt, P_VALUE_I);
     }
 }
 
@@ -270,13 +275,13 @@ static void released(int was, int row, int x, int y)
             open_keypad(KP_SET_I, SETTING_COUNT);
         }
         break;
-    case P_TEXT_V:
-        if (gfx_rect_contains(sup_set_text_rect(0), x, y)) {
+    case P_VALUE_V:
+        if (gfx_rect_contains(sup_set_value_rect(0), x, y)) {
             open_keypad(KP_SET_V, SETTING_COUNT);
         }
         break;
-    case P_TEXT_I:
-        if (gfx_rect_contains(sup_set_text_rect(1), x, y)) {
+    case P_VALUE_I:
+        if (gfx_rect_contains(sup_set_value_rect(1), x, y)) {
             open_keypad(KP_SET_I, SETTING_COUNT);
         }
         break;
