@@ -2014,7 +2014,6 @@ shared/gfx/gfx.c: warning: Member cov_box(const gfx_canvas_t *c, float cx, float
 shared/gfx/gfx.c: warning: Member fill_span(gfx_color_t *p, int n, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness, float a0_deg, float a1_deg, gfx_color_t col) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_arc_fade(gfx_canvas_t *c, int cx, int cy, int r, int thickness, float a0_deg, float a1_deg, gfx_color_t col, gfx_color_t into, float fade_deg) (function) of file gfx.c is not documented.
-shared/gfx/gfx.c: warning: Member gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by, int thickness, gfx_color_t col) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_clear(gfx_canvas_t *c, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_clip_reset(gfx_canvas_t *c) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_draw_chamfer_rect(gfx_canvas_t *c, int x, int y, int w, int h, int cut, gfx_color_t color) (function) of file gfx.c is not documented.
@@ -2025,13 +2024,11 @@ shared/gfx/gfx.c: warning: Member gfx_draw_round_rect(gfx_canvas_t *c, int x, in
 shared/gfx/gfx.c: warning: Member gfx_fill_chamfer_rect(gfx_canvas_t *c, int x, int y, int w, int h, int cut, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_fill_chamfer_rect_ex(gfx_canvas_t *c, int x, int y, int w, int h, int tl, int tr, int br, int bl, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_fill_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color) (function) of file gfx.c is not documented.
-shared/gfx/gfx.c: warning: Member gfx_fill_circle_aa(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t col) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_fill_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_fill_round_rect(gfx_canvas_t *c, int x, int y, int w, int h, int r, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_hline(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_pixel(gfx_canvas_t *c, int x, int y, gfx_color_t color) (function) of file gfx.c is not documented.
-shared/gfx/gfx.c: warning: Member gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1, int thickness, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_u32_alias (typedef) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member gfx_vline(gfx_canvas_t *c, int x, int y, int h, gfx_color_t color) (function) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member s_trace_hold (variable) of file gfx.c is not documented.
@@ -5321,13 +5318,11 @@ shared/ui/servo_screen_core_int.h: warning: return type of member svs_slew_of is
 shared/ui/servo_screen_core_int.h: warning: return type of member svs_speed_limits_sweep is not documented
 shared/ui/servo_screen_core_int.h: warning: return type of member svs_us_to_cmd is not documented
 shared/ui/servo_screen_draw.c: warning: Member arm_fill(void) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member at(float deg, int r, int *x, int *y) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member clipped(gfx_canvas_t *c, gfx_rect_t box, void(*fn)(gfx_canvas_t *)) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member clipped_session(gfx_canvas_t *c, gfx_rect_t box, const prog_page_set_t *ps) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_body(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_cur_value(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_dial(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
-shared/ui/servo_screen_draw.c: warning: Member draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_power(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member draw_sup_row(gfx_canvas_t *c) (function) of file servo_screen_draw.c is not documented.
 shared/ui/servo_screen_draw.c: warning: Member out_fill(void) (function) of file servo_screen_draw.c is not documented.

@@ -17,6 +17,8 @@
  * - test_servo_target.c
  * - test_servo_rail.c
  * - test_servo_meter.c
+ * - test_servo_drag.c
+ * - test_servo_repaint.c
  *
  * SPDX-License-Identifier: MIT
  */
