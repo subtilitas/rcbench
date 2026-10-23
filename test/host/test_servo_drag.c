@@ -276,6 +276,23 @@ TEST_CASE(disarm_stop_and_safe_end_the_drag_at_once)
     }
 }
 
+/* The touch stream broke mid-step (cancel(), as touch_stream_broke()
+ * calls it on an armed bench): the drag is abandoned where its target has
+ * got to, and no frame after it commands a position. */
+TEST_CASE(a_cancelled_gesture_ends_the_drag_at_once)
+{
+    held_then_moved(-40.0f, 40.0f);
+    at_hz(60.0f, 1.0f / 60.0f);
+    const uint16_t part = servo_screen_commanded();
+    CHECK(part > 1500 - 230 && part < 1500 + 220);
+    servo_cmd_t junk;
+    while (servo_screen_take(&junk)) { }
+    scr->cancel();
+    at_hz(60.0f, 0.5f);
+    CHECK(no_position_posted());
+    CHECK_EQ(servo_screen_commanded(), part);
+}
+
 /* Disarmed mid-step and armed again, at once or 0.2s later: the value is
  * the rest the arm sets, the horn is drawn there, and nothing of the drag
  * before is posted. */
@@ -338,6 +355,7 @@ int main(int argc, char **argv)
     RUN(another_command_takes_the_horn_from_the_filter);
     RUN(a_speed_change_leaves_the_filter_running);
     RUN(disarm_stop_and_safe_end_the_drag_at_once);
+    RUN(a_cancelled_gesture_ends_the_drag_at_once);
     RUN(an_arm_after_a_drag_starts_from_the_rest);
     RUN(travel_holds_the_filtered_target);
     return test_summary("servo_drag");

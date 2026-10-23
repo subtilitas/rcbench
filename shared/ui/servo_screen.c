@@ -746,9 +746,11 @@ static void cancel(void)
      * And the dial.  A drag left latched owns its track id, and the GT911
      * reuses ids: a later contact that began somewhere else would satisfy
      * the drag path and command a position with no press on the dial, which
-     * on an armed bench moves the servo.
+     * on an armed bench moves the servo.  Its filter stops where it has
+     * got to: the target it was settling on is the abandoned gesture's.
      */
     s.dragging = false;
+    s.df.on = false;
     /* And the overlay's press: the warning's hold above all, which must not
      * complete on a contact that may have gone. */
     prog_cancel();
