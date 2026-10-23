@@ -6,8 +6,8 @@
  * Cases:
  * - notes_that_do_not_fit_take_pages_and_none_is_lost
  * - standing_notes_are_on_the_first_page_whole
- * - every_message_fits_whole_beside_every_standing_pair
- * - a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page
+ * - every_message_fits_whole_under_the_servo_tab
+ * - a_servo_in_doubt_keeps_every_line_of_its_message
  * - the_notes_start_on_their_first_page_again
  * - a_text_before_the_area_is_set_still_ends
  *
@@ -65,12 +65,21 @@ TEST_CASE(standing_notes_are_on_the_first_page_whole)
     CHECK(kst_panel_pack_notes(rows, held, 5, 6, page) == 2);
     CHECK(page[0] == 0 && page[1] == 1 && page[2] == 0 && page[3] == 0
           && page[4] == 1);
-    /* No row beside the pair for a count: the pair alone, the rest on no
-     * page. */
-    for (int room = 2; room <= 4; ++room) {
-        CHECK(kst_panel_pack_notes(rows, held, 5, room, page) == 1);
-        CHECK(page[0] == -1 && page[1] == -1 && page[2] == 0
-              && page[3] == 0 && page[4] == -1);
+    /* No row beside the pair for a count: the pair yields, every note
+     * pages in pages of room - 1 rows, the pair first. */
+    CHECK(kst_panel_pack_notes(rows, held, 5, 4, page) == 3);
+    CHECK(page[2] == 0 && page[3] == 1 && page[0] == 1 && page[1] == 2
+          && page[4] == 2);
+    CHECK(kst_panel_pack_notes(rows, held, 5, 3, page) == 4);
+    CHECK(page[2] == 0 && page[3] == 1 && page[0] == 2 && page[1] == 2
+          && page[4] == 3);
+    /* A note taller than a page waits for the room to grow. */
+    CHECK(kst_panel_pack_notes(rows, held, 5, 2, page) == 3);
+    CHECK(page[2] == -1 && page[3] == -1 && page[0] == 0 && page[1] == 1
+          && page[4] == 2);
+    CHECK(kst_panel_pack_notes(rows, held, 5, 1, page) == 1);
+    for (int i = 0; i < 5; ++i) {
+        CHECK_EQ(page[i], -1);
     }
 }
 
@@ -135,11 +144,10 @@ static int max_int(int a, int b)
 
 /* The standing lines take up to two rows each and every message up to
  * three lines.  Between the SERVO tab's last row and 4 px above the alert
- * band there are 7 rows: the tallest pair and the tallest message fit
- * whole in English.  In German they take 9: the pair stays whole with 3
- * rows for the message under it, and the message's last 2 rows at most
- * are not drawn.  No note reaches into a value row. */
-TEST_CASE(every_message_fits_whole_beside_every_standing_pair)
+ * band there are 7 rows: the tallest message fits whole in them in both
+ * languages, and in English the tallest pair fits beside it.  In German
+ * they take 9; the pair yields to the message (kst_panel_pack_notes()). */
+TEST_CASE(every_message_fits_whole_under_the_servo_tab)
 {
     static const unsigned args[] = { 0u, 1u, 2u, 9u, 10u, 99u, 255u, 256u,
                                      0x0101u, 0x0F0Fu, 0xFFFFu };
@@ -189,11 +197,9 @@ TEST_CASE(every_message_fits_whole_beside_every_standing_pair)
         CHECK(held > 0);
         CHECK(text > 0);
         CHECK_EQ(fit, 7);
+        CHECK(text <= fit);
         if (lang == 0) {
             CHECK(held + text <= fit);
-        } else {
-            CHECK(held + KST_PANEL_MSG_LINES <= fit);
-            CHECK(held + text <= fit + 2);
         }
     }
     ui_text_set_language(UI_LANG_EN);
@@ -202,12 +208,28 @@ TEST_CASE(every_message_fits_whole_beside_every_standing_pair)
 /* An area 460 px tall: 6 rows of notes under the SERVO tab. */
 static const gfx_rect_t k_short = { UI_MARGIN, UI_MARGIN, 620, 460 };
 
+/* Every line of the message shown is drawn, and nothing passes 4 px above
+ * the alert band. */
+static void message_whole(void)
+{
+    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    const gfx_rect_t drawn = kst_panel_notes_drawn();
+    const gfx_rect_t last = val(PG_SERVO, 4, 0);
+
+    CHECK_EQ(kst_panel_shown_message_lines(),
+             kst_panel_message_lines(kst_prog_message(M), t));
+    CHECK(drawn.h > 0);
+    CHECK(drawn.y >= last.y + last.h);
+    CHECK(drawn.y + drawn.h <= NOTES_FOOT);
+}
+
 /* A servo in doubt, in German, after READ ALL: the standing pair (4 rows)
- * and the message (3 rows) fill the 7 rows above the alert band, so the
- * other notes wait on page 0 for the message to go.  A taller message
- * keeps the pair whole and loses its last lines; with no message every
- * note fits. */
-TEST_CASE(a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page)
+ * and the message (3 rows) leave no row for the count, so the pair yields:
+ * its lines page with the other notes, first, and the message stays
+ * whole.  The tallest message, 5 rows, beside the pair: the pair's lines,
+ * 2 rows each, wait, and every line of the message is drawn.  With no
+ * message every note fits. */
+TEST_CASE(a_servo_in_doubt_keeps_every_line_of_its_message)
 {
     fresh();
     ui_text_set_language(UI_LANG_DE);
@@ -217,18 +239,15 @@ TEST_CASE(a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page)
     tap(kst_panel_tab_rect(PG_SERVO));
     tap(val(PG_SERVO, 1, 0));          /* READ ALL */
     settle();
-    CHECK_EQ(kst_panel_note_pages(), 1);
-    standing_shown();
-    CHECK(!on_page(kst_panel_status_line(0)));
-    {
-        char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    CHECK(kst_panel_standing_line(1) != NULL);
+    message_whole();
+    CHECK(kst_panel_note_pages() > 1);
+    CHECK(on_page(kst_panel_standing_line(0)));
+    tap(kst_panel_notes_rect());
+    CHECK_EQ(kst_panel_note_page(), 1);
+    CHECK(on_page(kst_panel_standing_line(1)));
+    message_whole();
 
-        CHECK_EQ(kst_panel_shown_message_lines(),
-                 kst_panel_message_lines(kst_prog_message(M), t));
-    }
-
-    /* A message of 4 rows, then one of 5: the pair stays on page 0, the
-     * message's lines that pass the foot are not drawn. */
     {
         const kst_prog_msg_t four = { .id = KST_PROG_MSG_BACKUP_OTHER,
                                       .level = KST_PROG_DANGER,
@@ -242,13 +261,13 @@ TEST_CASE(a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page)
         CHECK_EQ(message_rows(&four), 4);
         M->msg = four;
         show();
-        standing_shown();
-        CHECK_EQ(kst_panel_shown_message_lines(), 1);
+        message_whole();
         CHECK_EQ(message_rows(&five), 5);
         M->msg = five;
         show();
-        standing_shown();
-        CHECK(kst_panel_shown_message_lines() >= 1);
+        message_whole();
+        CHECK(!on_page(kst_panel_standing_line(0)));
+        CHECK(!on_page(kst_panel_standing_line(1)));
     }
 
     /* No message: on SERVO's left card every note fits on one page. */
@@ -329,8 +348,8 @@ int main(void)
 {
     RUN(notes_that_do_not_fit_take_pages_and_none_is_lost);
     RUN(standing_notes_are_on_the_first_page_whole);
-    RUN(every_message_fits_whole_beside_every_standing_pair);
-    RUN(a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page);
+    RUN(every_message_fits_whole_under_the_servo_tab);
+    RUN(a_servo_in_doubt_keeps_every_line_of_its_message);
     RUN(the_notes_start_on_their_first_page_again);
     RUN(a_text_before_the_area_is_set_still_ends);
     return test_summary("kst_panel_notes");

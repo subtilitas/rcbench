@@ -1374,10 +1374,12 @@ or more and ending 4 px above the alert band:
 The tabs' labels are in the 10 x 20 face when every label fits its 95 px
 tab, as in English, and in the 8 x 16 face when one does not, as German
 `ABSTIMMEN` does. No note, message or control lies under the alert band.
-Where the two standing lines of the SERVO tab and the message need more
-than its 7 rows, the other notes wait for the message to go, and a
-message line that would pass the foot is not drawn: in German the tallest
-pair (4 rows) and the tallest message (5 rows) need 9.
+Every line of a message is drawn: the longest takes 5 of the 7 rows under
+the SERVO tab. Where the two standing lines leave no row beside the
+message for a page count, they yield to it: they page with the other
+notes, first, and a line taller than a page waits for the message to go.
+In German the tallest pair (4 rows) and the tallest message (5 rows) need
+9 rows; there the pair waits.
 
 [Servo programmer for KST and Chaservo servos](ServoProgrammer.md)
 describes it.

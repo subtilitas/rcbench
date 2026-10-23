@@ -369,12 +369,29 @@ int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
         return 1;
     }
     /* The standing notes take the first page before any other.  With no
-     * row left beside them for the page count, the other notes wait. */
+     * row left beside them for the page count, they yield to the message:
+     * every note pages in pages of room - 1 rows, the standing ones first,
+     * and a note taller than a page waits for the message to go. */
     if (held > 0 && held > room - 1) {
-        for (int i = 0; i < count; ++i) {
-            page[i] = standing[i] ? 0 : -1;
+        used = 0;
+        for (int pass = 0; pass < 2; ++pass) {
+            for (int i = 0; i < count; ++i) {
+                if (standing[i] != (pass == 0)) {
+                    continue;
+                }
+                if (rows[i] > room - 1) {
+                    page[i] = -1;
+                    continue;
+                }
+                if (used > 0 && used + rows[i] > room - 1) {
+                    ++pages;
+                    used = 0;
+                }
+                page[i] = pages - 1;
+                used += rows[i];
+            }
         }
-        return 1;
+        return pages;
     }
     /* A page keeps its last row for the page count. */
     used = held;
@@ -482,12 +499,12 @@ static int rows_foot(void)
  * other notes page after them, the area's last notes row counts the pages,
  * and a tap on the notes shows the next.  Where the standing notes and the
  * message leave no row for the count, the other notes wait for the message
- * to go, and the standing notes rise into the gap above their place, no
- * higher than 4 px under the tab's last row.  Everything ends 4 px above
- * the alert band (kpn_notes_foot()): 7 rows under the SERVO tab's last row
- * on SERVO's left card.  The tallest pair and the tallest message take 7
- * rows in English and 9 in German; a message line that would still pass
- * the foot is not drawn.
+ * to go.  Where the standing notes leave no row for the count beside the
+ * message, they yield to it: they page with the others, first, and one
+ * taller than a page waits for the message to go.  Every line of the
+ * message is drawn: the longest takes 5 rows of the 7 under the SERVO
+ * tab's last row on SERVO's left card, which end 4 px above the alert band
+ * (kpn_notes_foot()).  No note rises above 4 px under the tab's last row.
  */
 static void layout_notes(notes_plan_t *p)
 {

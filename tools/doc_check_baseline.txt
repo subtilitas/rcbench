@@ -3655,7 +3655,6 @@ shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_has_press
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_init are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_label are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_message_lines are not documented
-shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_pack_notes are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_row_live are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_rule_text are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_run_connect are not documented
@@ -3684,7 +3683,6 @@ shared/ui/include/kst_panel.h: warning: return type of member kst_panel_note_pag
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_note_pages is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_notes_drawn is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_notes_rect is not documented
-shared/ui/include/kst_panel.h: warning: return type of member kst_panel_pack_notes is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_page is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_pin is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_revision is not documented

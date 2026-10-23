@@ -1509,12 +1509,14 @@ Alert-Band:
 Die Beschriftungen der Reiter stehen in der Schrift 10 x 20, wenn jede in
 ihren Reiter von 95 px passt, wie im Englischen, und in der Schrift
 8 x 16, wenn eine nicht passt, wie das deutsche `ABSTIMMEN`. Kein Hinweis,
-keine Meldung und kein Bedienelement liegt unter dem Alert-Band. Brauchen
-die beiden stehenden Zeilen des Reiters SERVO und die Meldung mehr als
-seine 7 Zeilen, warten die anderen Hinweise, bis die Meldung geht, und eine
-Meldungszeile, die über den Fuß reichen würde, wird nicht gezeichnet: im
-Deutschen brauchen das längste Paar (4 Zeilen) und die längste Meldung
-(5 Zeilen) 9.
+keine Meldung und kein Bedienelement liegt unter dem Alert-Band. Jede Zeile
+einer Meldung wird gezeichnet: die längste nimmt 5 der 7 Zeilen unter dem
+Reiter SERVO. Lassen die beiden stehenden Zeilen neben der Meldung keine
+Zeile für die Seitenzahl frei, weichen sie ihr: sie blättern mit den
+anderen Hinweisen, zuerst, und eine Zeile, die höher ist als eine Seite,
+wartet, bis die Meldung geht. Im Deutschen brauchen das längste Paar
+(4 Zeilen) und die längste Meldung (5 Zeilen) 9 Zeilen; dort wartet das
+Paar.
 
 [Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md)
 beschreibt ihn.

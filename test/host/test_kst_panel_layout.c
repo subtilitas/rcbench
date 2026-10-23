@@ -264,8 +264,9 @@ TEST_CASE(a_short_area_keeps_its_buttons_inside_it)
 
 /* Every message the model writes, with arguments of 1 to 5 digits, on the
  * SERVO tab of a connected servo and of a servo in doubt with its two
- * standing lines, in English and German: the notes and the message end
- * 4 px above the alert band and under the tab's last row. */
+ * standing lines (the tallest pair in German, 4 rows), in English and
+ * German: every line of the message is drawn, and the notes and the
+ * message end 4 px above the alert band and under the tab's last row. */
 TEST_CASE(no_note_or_message_lies_under_the_alert_band)
 {
     static const unsigned args[] = { 0u, 9u, 255u, 0xFFFFu };
@@ -288,14 +289,24 @@ TEST_CASE(no_note_or_message_lies_under_the_alert_band)
             for (unsigned id = 1u; id < 256u; ++id) {
                 for (size_t a = 0; a < sizeof(args) / sizeof(args[0]); ++a) {
                     const gfx_rect_t last = val(PG_SERVO, 4, 0);
+                    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
                     gfx_rect_t drawn;
+                    bool repeat;
+                    int n;
 
                     M->msg = (kst_prog_msg_t){ .id = (uint8_t)id,
                                                .level = KST_PROG_WARN,
                                                .reg = 0x10u,
                                                .arg = (uint16_t)args[a],
                                                .seq = M->msg.seq + 1u };
+                    n = kst_panel_message_lines(kst_prog_message(M), t);
+                    /* A message that repeats the first standing line is
+                     * left out; every other one is drawn whole. */
+                    repeat = n > 0 && kst_panel_standing_line(0) != NULL
+                             && strcmp(t[0], kst_panel_standing_line(0)) == 0;
                     drawn = kst_panel_notes_drawn();
+                    CHECK_EQ(kst_panel_shown_message_lines(),
+                             repeat ? 0 : n);
                     CHECK(drawn.y + drawn.h <= FOOT);
                     CHECK(drawn.h == 0 || drawn.y >= last.y + last.h);
                 }

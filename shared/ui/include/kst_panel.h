@@ -303,13 +303,21 @@ const char *kst_panel_choice_label(int i);
 const char *kst_panel_choice_title(void);
 
 /**
- * The page each of @p count notes of @p rows rows takes in @p room rows:
- * every note on page 0 when they fit, else pages that keep their last row
- * for the page count, a note never split.  A note marked in @p standing is
- * on page 0, and the others fill the rows left after the standing ones;
- * with no row left beside the standing notes for the count, the others
- * get page -1, shown on no page.  Writes @p page and returns the number of
- * pages.
+ * @brief The page each of @p count notes takes in @p room rows.
+ *
+ * Every note is on page 0 when they fit, else on pages that keep their
+ * last row for the page count, a note never split.  A note marked in
+ * @p standing is on page 0, and the others fill the rows left after the
+ * standing ones.  With no row left beside the standing notes for the
+ * count, they yield: every note pages in pages of @p room - 1 rows, the
+ * standing ones first, and a note taller than that gets page -1, shown on
+ * no page until the room grows.
+ * @param rows each note's rows
+ * @param standing whether each note stands
+ * @param count the notes
+ * @param room the rows they have
+ * @param page out: each note's page, -1 for none
+ * @return the number of pages
  */
 int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
                          int room, int *page);
