@@ -1979,6 +1979,27 @@ the import view and a report's text to the file list, the file list to the
 menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
 RESCAN, opens [Wi-Fi](#wi-fi).
 
+The file list takes the body in three parts. The header row, body y 4 to
+52, holds ROOT, USER and BENCH (110 x 40 px each), the folder and the
+card's name, and PREV and NEXT (140 x 48 px) while the folder holds more
+than one page. The list under it is 1008 px wide and shows 7 rows of 44 px
+at a pitch of 48 px: each row takes a tap anywhere in its 48 px. A row
+shows the file's name and, right-aligned, its size; the file's date, kind
+and length are not shown. The footer, body y 440 to 492, holds RESCAN and
+WI-FI at the left and DELETE and OPEN at the right, 140 x 52 px each, and
+ends 4 px above the alert band. A message about a file stands between
+WI-FI and DELETE on up to two lines of 33 characters.
+
+The import view shows DETECTED (400 px wide) beside the column list (600 px,
+7 rows at a pitch of 48 px), with four buttons of 246 x 52 px under them.
+The plot is 992 x 316 px under four series chips of 240 x 44 px; under it
+run the time labels, then BACK (140 x 52 px), `<` and `>` (96 x 52 px) and
+the cursor's line. The DELETE question is a box of 700 x 280 px with CANCEL
+and DELETE of 300 x 56 px. Labels, rows, buttons and the import's warnings
+draw in the 10 x 20 face; the sentences of the empty list, the question,
+the boxes that say why nothing shows and the file messages in 12 x 24; the
+plot's time labels and the ranges of the columns and the chips in 8 x 16.
+
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
 before the file is plotted. Each numeric column shows its range, lowest to
@@ -2065,12 +2086,13 @@ names in the folder, a report standing alone by its own number:
 ![A LIMIT RUN's report opened as text](img/logs-report.png)
 
 OPEN on a report standing alone shows it as text in place of the import
-view: the file's name heads the panel, and its lines follow, 14 rows of up
-to 86 characters on screen. A line longer than a row breaks at its last
+view: the file's name heads the panel, and its lines follow, 15 rows of up
+to 92 characters in the 10 x 20 face on screen, 22 px apart. BACK is
+140 x 52 px at the footer's left. A line longer than a row breaks at its last
 space inside the row, and a word longer than a row is cut at the row's end.
 A line ends at a line feed (LF), at a carriage return (CR) and at a CR LF
 pair, which is one end; a tab reads as a space. A drag on the rows or on the
-scroll bar scrolls them. A frame reads the 14 rows it draws and at most 15
+scroll bar scrolls them. A frame reads the 15 rows it draws and at most 15
 rows before them, wherever the text is scrolled to. BACK and the home tag
 return to the list and free the text; leaving LOGS frees it too, and LOGS
 opens on the list again. The view holds the first 32 KiB of a file; a longer
@@ -2134,7 +2156,7 @@ holds the CSV files and the `LIMITnnn.TXT` reports, a `SERVOnnn.TXT`
 standing alone is not listed, and the console says
 `no PSRAM for the list's notes`.
 
-The scroll bar along the list's right edge is 42 px wide, 6.3 mm at the 0.150
+The scroll bar along the list's right edge is 56 px wide, 8.4 mm at the 0.150
 mm a pixel assumed for the panel (not measured). Its thumb is the rows on
 screen against the rows on the page, and it scrolls within the page. A tap on
 the track brings the thumb's middle to the finger; a finger on the thumb drags

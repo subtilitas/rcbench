@@ -2177,6 +2177,29 @@ Dateiliste zum Menü. Über der
 Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
 AKTUALISIEREN, öffnet [WLAN](#wlan).
 
+Die Dateiliste teilt den Körper in drei Teile. Die Kopfzeile, Körper-y 4 bis
+52, trägt STAMM, USER und BENCH (je 110 x 40 px), den Ordner und den Namen
+der Karte und, solange der Ordner mehr als eine Seite hält, VORIGE und
+NÄCHSTE (140 x 48 px). Die Liste darunter ist 1008 px breit und zeigt 7
+Zeilen von 44 px im Abstand von 48 px: Jede Zeile nimmt einen Tipp auf ihren
+ganzen 48 px an. Eine Zeile zeigt den Namen der Datei und rechtsbündig ihre
+Größe; Datum, Art und Länge der Datei zeigt sie nicht. Die Fußzeile,
+Körper-y 440 bis 492, trägt links AKTUALISIEREN und WLAN, rechts LÖSCHEN und
+ÖFFNEN, je 140 x 52 px, und endet 4 px über dem Alarmband. Eine Meldung zu
+einer Datei steht zwischen WLAN und LÖSCHEN auf bis zu zwei Zeilen von 33
+Zeichen.
+
+Die Importansicht zeigt ERKANNT (400 px breit) neben der Spaltenliste
+(600 px, 7 Zeilen im Abstand von 48 px), darunter vier Tasten von 246 x
+52 px. Der Plot ist 992 x 316 px groß, über ihm vier Chips der Reihen von
+240 x 44 px; unter ihm stehen die Zeitmarken, dann ZURÜCK (140 x 52 px),
+`<` und `>` (96 x 52 px) und die Zeile des Cursors. Die Rückfrage zu LÖSCHEN
+ist ein Kasten von 700 x 280 px mit ABBRECHEN und LÖSCHEN von 300 x 56 px.
+Beschriftungen, Zeilen, Tasten und die Warnungen des Imports stehen in der
+Schrift 10 x 20; die Sätze der leeren Liste, der Rückfrage, der Kästen, die
+sagen, warum nichts erscheint, und die Meldungen zu Dateien in 12 x 24; die
+Zeitmarken des Plots und die Bereiche der Spalten und der Chips in 8 x 16.
+
 Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
@@ -2273,13 +2296,14 @@ stehender Bericht nach seiner eigenen Nummer: `LIMIT044.TXT`, dann
 ![Der Bericht eines ENDLAGENLAUFS als Text](img/de/logs-report.png)
 
 ÖFFNEN auf einem allein stehenden Bericht zeigt ihn als Text an Stelle der
-Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 14
-Zeilen zu bis zu 86 Zeichen auf dem Bildschirm. Eine Zeile, die länger ist
+Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 15
+Zeilen zu bis zu 92 Zeichen in der Schrift 10 x 20 auf dem Bildschirm, 22 px
+auseinander. ZURÜCK ist 140 x 52 px groß, links in der Fußzeile. Eine Zeile, die länger ist
 als eine Bildschirmzeile, bricht am letzten Leerzeichen darin um, und ein
 Wort, das länger ist, wird am Zeilenende abgeschnitten. Eine Zeile endet an
 einem Zeilenvorschub (LF), an einem Wagenrücklauf (CR) und an einem Paar
 CR LF, das ein Ende ist; ein Tabulator wird zum Leerzeichen. Ziehen auf den
-Zeilen oder am Rollbalken rollt sie. Ein Bild liest die 14 Zeilen, die es
+Zeilen oder am Rollbalken rollt sie. Ein Bild liest die 15 Zeilen, die es
 zeichnet, und höchstens 15 Zeilen davor, wohin der Text auch gerollt ist.
 ZURÜCK und das Home-Tag führen zur Liste und geben den Text frei; das
 Verlassen von LOGS gibt ihn auch frei, und LOGS öffnet wieder auf der
@@ -2355,7 +2379,7 @@ die CSV-Dateien und die Berichte `LIMITnnn.TXT`, ein allein stehendes
 `SERVOnnn.TXT` steht nicht darin, und die Konsole meldet
 `no PSRAM for the list's notes`.
 
-Der Rollbalken am rechten Rand der Liste ist 42 px breit, 6,3 mm bei den 0,150
+Der Rollbalken am rechten Rand der Liste ist 56 px breit, 8,4 mm bei den 0,150
 mm Pixelabstand, die für das Panel angenommen sind (nicht gemessen). Die Länge
 des Griffs entspricht dem Anteil der sichtbaren Zeilen an der Seite, und er
 rollt innerhalb der Seite. Ein Tippen auf die Bahn bringt die Mitte des Griffs
