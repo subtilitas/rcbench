@@ -6,6 +6,15 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- A SERVO run's log, `SERVOnnn.CSV`, carries the supply's figures in
+  `voltage`, `current`, `power`, `charge` and `energy`: the PD mini's last
+  reading at each row, current to 0.001A, and charge and energy counted
+  from those readings since the switch to ARMED. These cells were empty on
+  a bench without an ESC or an INA228. The header and a MOTOR run's rows
+  stay as they are.
+
 ## 0.22.1 - 2026-10-22
 
 0.22.1 is a stable release: its minor number, 22, is even, and GitHub marks

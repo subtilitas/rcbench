@@ -804,6 +804,9 @@ void log_task(void *arg)
         if (got && s_log_file != NULL) {
             if (row.kind == LOG_RUN_SUPPLY) {
                 (void)log_writer_supply_row(&s_log, row.t_s, &row.u.supply);
+            } else if (row.kind == LOG_RUN_SERVO) {
+                (void)log_writer_servo_row(&s_log, row.t_s, &row.u.bench,
+                                           &row.rail);
             } else {
                 (void)log_writer_row(&s_log, row.t_s, &row.u.bench);
             }
