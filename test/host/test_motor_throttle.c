@@ -333,7 +333,7 @@ TEST_CASE(a_drag_under_way_ends_at_the_disarm)
     motor_screen_set_armed(true);
     finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
     glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
-    CHECK(motor_screen_throttle() > 45.0f);   /* 200 of 439 px */
+    CHECK(motor_screen_throttle() > 45.0f);   /* 200 of 421 px */
 
     motor_screen_set_throttle(0.0f);    /* the panel's disarm edge */
     (void)last_cmd();

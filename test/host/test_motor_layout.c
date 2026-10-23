@@ -8,6 +8,7 @@
  * Cases:
  * - disarm_acts_where_it_is_drawn_and_is_a_finger_tall
  * - the_controls_stand_apart_and_above_the_alert_band
+ * - a_finger_that_misses_disarm_to_the_left_moves_no_throttle
  * - no_text_lies_under_the_alert_band
  *
  * SPDX-License-Identifier: MIT
@@ -122,6 +123,32 @@ TEST_CASE(the_controls_stand_apart_and_above_the_alert_band)
     CHECK(MO_TRACK_Y + 28 <= TEXT_FLOOR);
 }
 
+/*
+ * Between +1 and DISARM lies a finger's width, UI_TAP_MIN, on the rows
+ * they share: armed, a tap anywhere in it commands nothing and is no stop,
+ * while +1's right column steps the throttle.
+ */
+TEST_CASE(a_finger_that_misses_disarm_to_the_left_moves_no_throttle)
+{
+    fresh();
+    motor_screen_set_armed(true);
+    tick_for(10);
+    (void)last_cmd();
+    const int y = MO_ARM_T + 10;                  /* +1's rows and DISARM's */
+    CHECK(y < MO_TRACK_Y + 28);
+    CHECK(MO_RC_X - (MO_UP_R + 1) >= UI_TAP_MIN);
+    CHECK(scr->safe_at(MO_RC_X, y));
+    CHECK(!scr->safe_at(MO_RC_X - 1, y));
+    for (int x = MO_UP_R + 1; x < MO_RC_X; ++x) {
+        tap(x, y);
+        CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    }
+    tap(MO_UP_R, y);
+    const motor_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+    CHECK_NEAR(c.value, 1.0f, 0.001f);
+}
+
 /** @brief The pixels of the cards from TEXT_FLOOR down to the bodies'
  *         foot, clear of the cards' edges and chamfers, that are not the
  *         cards' fill.  Buffer 0 drawn whole first.
@@ -205,6 +232,7 @@ int main(void)
 {
     RUN(disarm_acts_where_it_is_drawn_and_is_a_finger_tall);
     RUN(the_controls_stand_apart_and_above_the_alert_band);
+    RUN(a_finger_that_misses_disarm_to_the_left_moves_no_throttle);
     RUN(no_text_lies_under_the_alert_band);
     return test_summary("motor_layout");
 }

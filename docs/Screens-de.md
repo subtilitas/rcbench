@@ -1788,7 +1788,7 @@ LIVE. Ein Tipp auf einen Reiter wechselt die Aufgabe; ein Wechsel ist keine
 Navigationsebene und lässt die Ansicht von LIVE, GRAFIK oder TABELLE, wie
 sie war.
 
-| Aufgabe | Die linke Spalte, 620 px |
+| Aufgabe | Die linke Spalte, 546 px |
 | --- | --- |
 | LIVE | der Plot oder die Tabelle über den Sollwerten |
 | OPTIONEN | die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |

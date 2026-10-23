@@ -79,7 +79,7 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 /* One percentage point at each end of the track. */
 #define DOWN_X   MO_DOWN_X
 #define UP_X     MO_UP_X
-/* The track itself: x 98..538, so half of it is half the travel. */
+/* The track itself: x 98..520, so half of it is half the travel. */
 #define TRACK_X  MO_TRACK_X
 
 /* Mirrored from motor_live_int.h: arming is a hold, not a press. */

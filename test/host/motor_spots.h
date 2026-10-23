@@ -12,7 +12,7 @@
  *   - LIVE's telemetry card from y 56: PLOT | TABLE from x 18, 200 px for
  *     the two, y 82 to 122;
  *   - the THROTTLE card from y 352: the step keys 72 x 56 px at x 18 and
- *     546, y 406 to 462, the track x 98 to 538, y 410 to 458, the hint's
+ *     528, y 406 to 462, the track x 98 to 520, y 410 to 458, the hint's
  *     line y 470 to 490;
  *   - the rail's CONTROL card from y 280: the TARGET row x 648 to 1004,
  *     y 308 to 356; RESET PEAKS y 366 to 414; ARM y 424 to 484, both as
@@ -35,10 +35,11 @@
 #define MO_TABLE_TAB_X    168           /**< TABLE. */
 
 #define MO_TRACK_X        98            /**< The track's left end. */
-#define MO_TRACK_W        440           /**< Its length, px. */
+#define MO_TRACK_W        422           /**< Its length, px. */
 #define MO_TRACK_Y        434           /**< Its middle row. */
 #define MO_DOWN_X         54            /**< The -1 key. */
-#define MO_UP_X           582           /**< The +1 key. */
+#define MO_UP_X           564           /**< The +1 key. */
+#define MO_UP_R           599           /**< Its right column. */
 #define MO_HINT_Y         480           /**< The hint's line. */
 
 #define MO_RC_X           648           /**< The CONTROL card's column. */

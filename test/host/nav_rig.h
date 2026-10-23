@@ -111,7 +111,7 @@ static inline void hub_point(int index, int *x, int *y)
 /*
  * Geometry in panel coordinates, mirrored from the screens (their own
  * suites carry the screen-local values).
- * MOTOR & ESC: the throttle track x 98..538, y 470..518 (motor_spots.h).
+ * MOTOR & ESC: the throttle track x 98..520, y 470..518 (motor_spots.h).
  * SERVO: the shaft; SPEED's track x 514..781, y 344..365.
  * SUPPLY: both tracks x 72..485; OUTPUT ON / OFF on the right rail.
  */

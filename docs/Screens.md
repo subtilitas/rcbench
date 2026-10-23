@@ -1630,7 +1630,7 @@ SUPPLY is a workbench: a strip of tasks at the top, LIVE and SETTINGS
 menu's tile always opens LIVE. A tap on a tab switches the task; a switch
 is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 
-| Task | The left column, 620 px |
+| Task | The left column, 546 px |
 | --- | --- |
 | LIVE | the plot or the table over the set points |
 | SETTINGS | the 9 supply settings under LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)) |

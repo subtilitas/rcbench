@@ -60,13 +60,14 @@ static const ui_text_id_t k_heading[HD_COUNT] = {
 
 /*
  * Two columns, PACK and MOTOR on the left, THROTTLE OUTPUT on the right,
- * 295 px each.  Down a column: a heading 28 px, then each row 68 px: its
+ * 295 px each.  Down a column: a heading 28 px, 8 px more under a row, then each row 68 px: its
  * label left of its 120 x 48 px value box, and its help line of up to 36
  * cells of 8 px under them.  The save line runs along the page's foot,
  * ending 4 px above the alert band.
  */
 #define TOP_Y      (PAGE_Y + 8)          /**< The first heading, px. */
 #define HEAD_H     28                    /**< A heading's line, px. */
+#define HEAD_GAP   8                     /**< Over a heading under a row. */
 #define ROW_PITCH  68                    /**< From row to row, px. */
 #define BOX_H      UI_TAP_MIN            /**< A value box's height, px. */
 #define BOX_W      120                   /**< Its width, px. */
@@ -77,7 +78,7 @@ static const ui_text_id_t k_heading[HD_COUNT] = {
 #define SAVE_Y     (STOP_FLOOR - 20)     /**< The save line, px. */
 #define MS_FONT    (&gfx_font_10x20)     /**< Labels, values, headings. */
 #define MS_FINE    UI_FONT_FINE          /**< The help lines: 8 x 16. */
-_Static_assert(TOP_Y + 2 * HEAD_H + 4 * ROW_PITCH + HELP_DY + 16 + 4
+_Static_assert(TOP_Y + 2 * HEAD_H + HEAD_GAP + 4 * ROW_PITCH + HELP_DY + 16 + 4
                    <= SAVE_Y,
                "the left column's fifth row and its help end over the save "
                "line");
@@ -131,8 +132,9 @@ static int row_y(int i)
             continue;
         }
         if ((int)k_rows[k].heading != head) {
+            /* A heading under a row stands HEAD_GAP clear of its help. */
+            y += (head >= 0) ? HEAD_H + HEAD_GAP : HEAD_H;
             head = (int)k_rows[k].heading;
-            y += HEAD_H;
         }
         if (k < i) {
             y += ROW_PITCH;

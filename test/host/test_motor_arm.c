@@ -32,7 +32,7 @@
 
 /*
  * Geometry in panel coordinates, from motor_spots.h with the band's height
- * added: the throttle track x 98..538, with -1 left of it and +1 right of
+ * added: the throttle track x 98..520, with -1 left of it and +1 right of
  * it; ARM at the CONTROL card's foot, RESET PEAKS over it; the hint line
  * under the track.
  */
@@ -46,7 +46,7 @@
 #define RESET_X   MO_RESET_X
 #define RESET_Y   P(MO_RESET_Y)
 #define HINT_Y    P(MO_HINT_Y)
-/* Throttle per px of travel on the track: 100 % over its 439 px. */
+/* Throttle per px of travel on the track: 100 % over its 421 px of travel. */
 #define PX_PCT    (100.0f / (float)(MO_TRACK_W - 1))
 
 static gfx_color_t *fb;

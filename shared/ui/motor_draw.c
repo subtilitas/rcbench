@@ -767,7 +767,7 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
     /* How the throttle is moved; disarmed, why it is not, in the words
      * SERVO's dial uses. */
     if (on_live && mo_value_live()) {
-        gfx_text(c, HINT_X, HINT_Y, TR(MO_HINT), MO_FONT_LABEL,
+        gfx_text(c, HINT_X, HINT_Y + 2, TR(MO_HINT), MO_FONT_FINE,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     } else if (on_live) {
         gfx_text(c, HINT_X, HINT_Y,

@@ -63,10 +63,20 @@
 #define TRACK_H   48                      /**< The track's height, px. */
 #define TRACK_Y   (CTRL_Y + (NUDGE_H - TRACK_H) / 2) /**< Its top, px. */
 #define TRACK_X   (LEFT_X + INNER + NUDGE_W + 8) /**< Its left end, px. */
-#define TRACK_W   (LEFT_W - 2 * INNER - 2 * (NUDGE_W + 8)) /**< 440 px. */
+/**
+ * @brief The right end of the step keys' row: UI_TAP_MIN left of the rail's
+ *        column, so a finger that misses DISARM to its left lands on no
+ *        throttle control.  +1 is x 528 to 599, DISARM from x 648.
+ */
+#define THR_R     (RC_X - UI_TAP_MIN)
+/** @brief The track's length: 422 px, between the two step keys. */
+#define TRACK_W   (THR_R - NUDGE_W - 8 - TRACK_X)
 #define HINT_Y    (CTRL_Y + NUDGE_H + 8)  /**< The hint's line, px. */
-/** @brief The hint's left edge: the German hint is 61 cells, 610 px. */
-#define HINT_X    (LEFT_X + 5)
+/** @brief The hint's left edge, at the card's padding.  The hint draws in
+ *         MO_FONT_FINE: the German one is 61 cells, 488 px. */
+#define HINT_X    (LEFT_X + INNER)
+_Static_assert(TRACK_X + TRACK_W + 8 + NUDGE_W + UI_TAP_MIN <= RC_X,
+               "+1 ends a finger's width left of DISARM");
 _Static_assert(HINT_Y + 20 <= STOP_FLOOR,
                "the throttle's hint ends above the alert band");
 _Static_assert(ROW_Y + READOUT_H <= CTRL_Y,
