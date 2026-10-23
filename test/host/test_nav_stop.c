@@ -20,6 +20,7 @@
  * - a_motor_disarm_press_switches_to_safe_at_the_press
  * - a_stop_press_ends_a_throttle_drag_at_the_press
  * - arm_is_still_a_hold_of_2s
+ * - a_plain_drag_settles_on_the_fingers_pulse
  *
  * SPDX-License-Identifier: MIT
  */
@@ -355,6 +356,63 @@ TEST_CASE(arm_is_still_a_hold_of_2s)
     CHECK(arm_posts_after(UI_HOLD_S + 0.2f, MO_ARM_P_X, MO_ARM_P_Y, false));
 }
 
+/** @brief The last position waiting, or 0 when none; everything taken. */
+static uint16_t servo_last_position(void)
+{
+    uint16_t us = 0u;
+    servo_cmd_t c;
+    while (servo_screen_take(&c)) {
+        if (c.kind == SERVO_CMD_POSITION) {
+            us = c.value_us;
+        }
+    }
+    return us;
+}
+
+/*
+ * The station's plain drag: one contact down the dial from (495, 258) to
+ * (495, 368), a report every 10ms and a frame every 16.6ms, then the lift.
+ * The last command, and the horn drawn, is the pulse a tap at the lift's
+ * point commands: the filter lands on it and stops nowhere short.
+ */
+TEST_CASE(a_plain_drag_settles_on_the_fingers_pulse)
+{
+    on_screen(SCREEN_SERVO);
+    servo_screen_set_armed(true);
+    drain_servo();
+    feed_tap(FEED_LONE, 495, 368);
+    const uint16_t want = servo_last_position();
+    /* 95px right of the shaft and 55px under it: -30.07deg, 1333us on
+     * STANDARD PWM (1500us + deg * 500us / 90deg, rounded). */
+    CHECK_EQ(want, 1333u);
+
+    on_screen(SCREEN_SERVO);
+    servo_screen_set_armed(true);
+    drain_servo();
+    float t_frame = 0.0f;
+    finger(FEED_LONE, 495, 258);
+    for (int y = 259; y <= 368; ++y) {
+        finger(FEED_LONE, 495, y);
+        t_frame += 0.010f;
+        while (t_frame >= FRAME_S) {
+            t_frame -= FRAME_S;
+            ui_router_tick(FRAME_S);
+        }
+    }
+    lift(FEED_LONE);
+    uint16_t last = servo_last_position();
+    for (int i = 0; i < 60; ++i) {
+        ui_router_tick(FRAME_S);
+        const uint16_t us = servo_last_position();
+        if (us != 0u) {
+            last = us;
+        }
+    }
+    CHECK_EQ(last, want);
+    CHECK_EQ(servo_screen_commanded(), want);
+    CHECK_EQ(servo_screen_drawn(), want);
+}
+
 int main(void)
 {
     RUN(a_stop_press_stops_at_the_press_with_no_drag);
@@ -365,5 +423,6 @@ int main(void)
     RUN(a_motor_disarm_press_switches_to_safe_at_the_press);
     RUN(a_stop_press_ends_a_throttle_drag_at_the_press);
     RUN(arm_is_still_a_hold_of_2s);
+    RUN(a_plain_drag_settles_on_the_fingers_pulse);
     return test_summary("nav_stop");
 }
