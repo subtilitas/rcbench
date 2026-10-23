@@ -1,6 +1,7 @@
-/*
- * The OUTPUTS screen's PROG PORT entry: the left column under the list
- * when a programming port is picked.  See outputs_screen.h.
+/**
+ * @file outputs_port_entry.c
+ * @brief The OUTPUTS screen's PROG PORT entry: the left column under the
+ *        list when a programming port is picked.  See outputs_screen.h.
  *
  * Every port's entry has the same rows:
  *
@@ -42,40 +43,51 @@
 
 #include "outputs_screen_int.h"
 
-/*
- * The column under the dropdown, 334 px to the band: the PIN button, each
- * segment under its label, the WATCHED BY line, and two lines of reason
- * above the band.
+/**
+ * @brief The column under the dropdown, from body y 112 to OU_FOOT: the
+ *        PIN button, each segment row under its label, the WATCHED BY
+ *        line, and up to three lines of reason.
+ *
+ * The PIN button and the segment rows are 48 px (UI_TAP_MIN) tall; a
+ * label is 10 x 20 with its segment row 22 px under its top.  The
+ * FUNCTION list opens under its face: 5 rows of 48 px with its 4 px
+ * margins end at body y 488, its shadow at OU_FOOT.
  */
-#define PIN_Y        (DD_Y + DD_H + 8)
-#define PIN_H        40
-#define FN_Y         (PIN_Y + PIN_H + 8)
-#define WATCH_Y      (FN_Y + SEG_DY + SEG_H + 8)
-#define TESTER_Y     (WATCH_Y + 24)
-#define PWM_Y        (TESTER_Y + SEG_DY + SEG_H + 8)
+#define PIN_Y        (DD_Y + DD_H + 4) /**< The PIN button's top. */
+#define PIN_H        UI_TAP_MIN /**< Its height, px. */
+#define FN_Y         (PIN_Y + PIN_H + 6) /**< FUNCTION's label. */
+#define WATCH_Y      (FN_Y + SEG_DY + SEG_H + 8) /**< The WATCHED BY line. */
+#define TESTER_Y     (WATCH_Y + 26) /**< SERVO TESTER's label. */
+#define PWM_Y        (TESTER_Y + SEG_DY + SEG_H + 8) /**< PORT PWM's label. */
+/** @brief The reason's first line. */
 #define WHY_Y        (PWM_Y + SEG_DY + SEG_H + 8)
-#define SEG_DY       20     /* label to segment */
-#define SEG_H        36
-#define WATCH_LEN    24
-/* The FUNCTION list under its face: 5 rows of 40 px, 208 px with its
- * margin, ending 10 px above the column's 432. */
-#define FN_ROW_H     40
-#define FN_ROWS_MAX  5
+#define SEG_DY       22     /**< label to segment */
+#define SEG_H        UI_TAP_MIN /**< A segment row's height, px. */
+#define WATCH_LEN    24       /**< A watch label's bytes. */
+/** @brief The FUNCTION list's rows under its face. */
+#define FN_ROW_H     UI_TAP_MIN
+#define FN_ROWS_MAX  5        /**< The functions the list can hold. */
+
+_Static_assert(FN_Y + SEG_DY + SEG_H + 4 + FN_ROWS_MAX * FN_ROW_H + 8 + 4
+                   <= OU_FOOT,
+               "the FUNCTION list and its shadow end above the alert band");
+_Static_assert(WHY_Y + 2 * OU_LINE + 20 <= OU_FOOT,
+               "the reason's third line ends above the alert band");
 
 static struct {
-    int       port;         /* the entry shown, or -1 for a protocol      */
-    bool      fn_open;      /* the FUNCTION list is open                  */
-    int       fn_hit;       /* pressed: -1 none, 0 the face, 1 + row      */
-    int       fn_id;
-    ui_tabs_t tester;       /* SERVO TESTER: OUTPUTS | PORT n             */
-    ui_tabs_t pwm;          /* PORT PWM: ON | OFF                         */
-    char      tester_port[16];   /* PORT n, the tester's second tab */
-    bool      pin_down;     /* the PIN button is pressed                  */
-    int       pin_id;
-    uint32_t  sig;          /* what the column last showed                */
-    uint32_t  view_rev;     /* port_view_revision() last drawn            */
-    uint32_t  rev;
-} p = { .port = -1 };
+    int       port;         /**< the entry shown, or -1 for a protocol    */
+    bool      fn_open;      /**< the FUNCTION list is open                */
+    int       fn_hit;       /**< pressed: -1 none, 0 the face, 1 + row    */
+    int       fn_id;        /**< the touch id of that press               */
+    ui_tabs_t tester;       /**< SERVO TESTER: OUTPUTS | PORT n           */
+    ui_tabs_t pwm;          /**< PORT PWM: ON | OFF                       */
+    char      tester_port[16];   /**< PORT n, the tester's second tab */
+    bool      pin_down;     /**< the PIN button is pressed                */
+    int       pin_id;       /**< the touch id of that press               */
+    uint32_t  sig;          /**< what the column last showed              */
+    uint32_t  view_rev;     /**< port_view_revision() last drawn          */
+    uint32_t  rev;          /**< bumped by every change it draws          */
+} p = { .port = -1 };  /**< The entry's state. */
 
 /* The label of the channel that watches each port, "" for none. */
 static char g_watch[LINK_PG_PORTS_MAX][WATCH_LEN];
@@ -519,16 +531,17 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
         return;
     }
     char buf[96];
-    gfx_text(c, COL_X, COL_Y, TR(OUT_PROTOCOL), UI_FONT_LABEL, UI_TEXT_FAINT,
+    gfx_text(c, COL_X, COL_Y, TR(OUT_PROTOCOL), OU_FONT_LABEL, UI_TEXT_FAINT,
              1);
     outputs_port_name((uint8_t)p.port, buf, sizeof(buf));
     ui_choice_face(c, dd, buf, pressed, open);
     sync_tabs();
 
     pin_label(buf, sizeof(buf));
-    ui_button(c, pin_rect(), buf, UI_PANEL_HI, p.pin_down, true);
+    ui_button_font(c, pin_rect(), buf, UI_PANEL_HI, p.pin_down, true,
+                   OU_FONT_LABEL);
 
-    gfx_text(c, COL_X, FN_Y, TR(OUT_PORT_FUNCTION), UI_FONT_LABEL,
+    gfx_text(c, COL_X, FN_Y, TR(OUT_PORT_FUNCTION), OU_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     const uint8_t fn = port_view_func((uint8_t)p.port);
     const char *fn_name = known() ? port_view_fn_name(fn) : "?";
@@ -543,17 +556,25 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
     } else {
         snprintf(buf, sizeof(buf), "%s", TR(OUT_PORT_WATCH_NONE));
     }
-    gfx_text(c, COL_X, WATCH_Y, buf, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    /* In the label face where it fits the column, else in 8 x 16: "VON
+     * KEINEM STROMKANAL ÜBERWACHT" is 31 cells. */
+    const gfx_font_t *wf = (gfx_text_width(OU_FONT_LABEL, buf, 1) <= COL_W)
+                               ? OU_FONT_LABEL : OU_FONT_FINE;
+    gfx_text(c, COL_X, WATCH_Y + ((wf == OU_FONT_LABEL) ? 0 : 2), buf, wf,
+             UI_TEXT_DIM, 1);
 
-    gfx_text(c, COL_X, TESTER_Y, TR(OUT_PORT_TESTER), UI_FONT_LABEL,
+    gfx_text(c, COL_X, TESTER_Y, TR(OUT_PORT_TESTER), OU_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     ui_tabs_render_locked(&p.tester, c, tester_locked());
-    gfx_text(c, COL_X, PWM_Y, TR(OUT_PORT_PWM), UI_FONT_LABEL,
+    gfx_text(c, COL_X, PWM_Y, TR(OUT_PORT_PWM), OU_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     ui_tabs_render_locked(&p.pwm, c, pwm_locked());
     if (outputs_screen_port_reason(buf, sizeof(buf))) {
-        (void)outputs_wrap(c, gfx_rect_make(COL_X, WHY_Y, COL_W, 16), 18,
-                           buf, 2, UI_FONT_LABEL, UI_WARN, false);
+        /* Three lines where it needs them: "GESPERRT: DER
+         * SERVO-PROGRAMMIERER BELEGT DEN PORT" breaks into three of 30
+         * cells. */
+        (void)outputs_wrap(c, gfx_rect_make(COL_X, WHY_Y, COL_W, 20),
+                           OU_LINE, buf, 3, OU_FONT_LABEL, UI_WARN, false);
     }
     /* Last: the open list lies over the rows under the face. */
     if (p.fn_open && !fn_locked()) {

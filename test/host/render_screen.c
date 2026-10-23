@@ -58,6 +58,7 @@
 #include "supply_screen.h"
 #include "supply_link.h"
 #include "kst_rig.h"
+#include "outputs_spots.h"
 #include "servo_spots.h"
 #include "stick_spots.h"
 #include "supply_spots.h"
@@ -3157,11 +3158,13 @@ int main(int argc, char **argv)
         }
         if (strcmp(view, "outputs-prog") == 0) {
             /* GP28 tapped: slice 6 is the port's, so the line under the
-             * protocol says why the cell is held.  Its cell is column 3,
-             * row 4 of the grid (288 + 3 * 125, 16 + 4 * 57). */
+             * protocol says why the cell is held.  Its cell from
+             * outputs_spots.h, by its catalogue entry. */
+            const int gp28 = (int)outbind_index_of(brd, 28u);
             touch_event_t d = { TOUCH_EVENT_DOWN,
-                                { 0, 288 + 3 * 125 + 60,
-                                  UI_BAND_H + 16 + 4 * 57 + 26, 40 }, 0u };
+                                { 0, (int16_t)(OU_CELL_X(gp28) + 60),
+                                  (int16_t)(UI_BAND_H + OU_CELL_Y(gp28)
+                                            + 26), 40 }, 0u };
             touch_event_t u = d;
             u.type = TOUCH_EVENT_UP;
             ui_router_event(&d);
