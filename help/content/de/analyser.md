@@ -22,7 +22,7 @@ Die Bilder dieses Abschnitts stammen aus dem Host-Renderer, der den Bildschirm m
 
 | Bereich | Zeigt |
 |---|---|
-| CH01 bis CH16 | eine Spur je Kanal: etwa 1,7 s Verlauf, 118 Werte, ein Balken für den aktuellen Wert und den Wert in us |
+| CH01 bis CH16 | eine Spur je Kanal: etwa 2,8 s Verlauf bei 71 Frames je Sekunde, 200 Werte, ein Balken für den aktuellen Wert und den Wert in us |
 | Zustandsblock | KEIN SIGNAL, FRAME LOST, FAILSAFE oder LIVE, mit einer Zeile darunter |
 | BUS | `S.BUS` |
 | RATE | Frames pro Sekunde, in Hz |
