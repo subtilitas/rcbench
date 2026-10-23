@@ -23,7 +23,7 @@ rcbench/
     artwork/              Cache des Panels für Platinenzeichnungen
     bench/                bench_state · Telemetriesimulator · Log-Writer · Drehknopf-Decoder
     outputs/              Kanäle · Treibertabelle · Arming, Slew und Staleness
-    safety/               Heartbeat-Generator (Panel) und -Monitor (IOmcu)
+    safety/               Heartbeat-Generator (Panel) und -Monitor (IOmcu) · Reset-Ursache des IOmcu
     servo/                Endlagen- und Abgleichsuche · Servomodell
     can/                  Bit Timing für beide Controller · MCP2515-Register · Echo-Selbsttest
     esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry

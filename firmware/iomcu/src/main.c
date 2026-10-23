@@ -317,6 +317,8 @@ static bool flash_busy(void)
 int main(void)
 {
     stdio_init_all();
+    /* Why this start happened, before anything else runs. */
+    reset_start();
 
     s_state.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     s_state.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;

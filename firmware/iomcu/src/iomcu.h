@@ -7,7 +7,7 @@
  *
  * main.c         boot, the main loop and the page table; defines most of
  *                the state declared below
- * iomcu_report.c the console report every 3 s
+ * iomcu_report.c the console report every 3 s, and why this start
  * iomcu_pages.c  IDENTITY, STATUS, CONTROL, BENCH, CHANNELS, CHAN_CFG,
  *                OUTPUTS, SERVO and PROG, and the glue that binds the outputs
  * iomcu_kst.c    the KST page and the port's hardware
@@ -916,6 +916,16 @@ void can_service(uint32_t now);
  * @param now  The pass's clock in ms.
  */
 void can_report(uint32_t now);
+
+/**
+ * @brief Reads why this start happened, once at boot, and prints it.
+ *
+ * Reads POWMAN CHIP_RESET, WATCHDOG REASON, SCRATCH2 and SCRATCH3 and the
+ * boot ROM's boot info, then zeroes SCRATCH2 and SCRATCH3 (reset_cause.h).
+ * The SDK's start-up code writes none of them.  can_report() repeats the
+ * word every 3 s.
+ */
+void reset_start(void);
 
 /* ------------------------------------------------------ the inline helpers */
 

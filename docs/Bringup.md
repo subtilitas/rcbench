@@ -162,6 +162,47 @@ received and refused to decode since its power-up (`LINK_ST_REFUSED_LO` and
 `LINK_ST_REFUSED_HI`, protocol 4.21; 0 from an older IOmcu). See
 [Refused frames](Link.md#refused-frames).
 
+## Why the IOmcu last started
+
+Every 3 s the IOmcu's console names the running slot and why the IOmcu last
+started, for example:
+
+    rcbench-iomcu: running from slot A, reset POR (chip_reset 0x00010000)
+
+Without a partition table the word ends the `no partition table` line
+instead. At start-up, before a host has opened the USB port in most cases,
+one line carries every raw value:
+
+    rcbench-iomcu: reset <word> (chip_reset 0x… reason 0x… boot 0x… params 0x… 0x… scratch 0x… 0x…)
+
+`chip_reset` is POWMAN CHIP_RESET, `reason` WATCHDOG REASON, `boot` the boot
+ROM's boot word (0xttppbbdd: TBYB flags, partition, boot type, diagnostic
+partition; `boot none` when the boot ROM gave none), `params` its reboot
+parameters, `scratch` WATCHDOG SCRATCH2 and SCRATCH3. The firmware reads
+them once at boot and then zeroes SCRATCH2 and SCRATCH3.
+`reset_cause_decode()` in `shared/safety/reset_cause.c` picks the word; the
+first row that matches wins:
+
+| Word | Registers | Cause |
+| --- | --- | --- |
+| `POR` | HAD_POR, bit 16 | power applied |
+| `BOR` | HAD_BOR, bit 17 | brown-out detector |
+| `RUN_PIN` | HAD_RUN_LOW, bit 18 | RUN pin held low: the reset button, or a host pulling RUN |
+| `GLITCH` | HAD_GLITCH_DETECT, bit 26 | supply glitch detector |
+| `DEBUGGER` | HAD_DP_RESET_REQ, HAD_RESCUE, HAD_HZD_SYS_RESET_REQ, bits 19, 21, 27 | a debugger reset |
+| `POWER_DOWN` | HAD_SWCORE_PD, bit 25 | switched-core power-down |
+| `FLASH_UPDATE` | watchdog, boot type 4 | the update over CAN, a UF2 copied to the BOOTSEL drive, `picotool load -x` |
+| `RAM_IMAGE` | watchdog, boot type 3 | an image loaded into SRAM |
+| `BOOTSEL_REBOOT` | watchdog, boot type 0, scratch 0xFFFFFFFF 0x00000000 | back from BOOTSEL through `picotool reboot`, which picotool also sends after every command run with `-f`. The way into BOOTSEL is the 1200 baud request or picotool's reset request over USB |
+| `SW_RESET` | watchdog, reason 0x2 | the watchdog triggered at once by software |
+| `WATCHDOG` | any other watchdog reset | the watchdog counted down: the boot ROM's 16.7 s TBYB (try before you buy) timer after an update the panel did not buy, or a reboot with other parameters |
+| `UNKNOWN` | none of the above | no cause bit set |
+
+"Watchdog" is a HAD_WATCHDOG_* bit (bits 22, 23, 24, 28) or a non-zero
+REASON. The boot ROM's reboot runs the watchdog in timer mode, so every
+reboot it performs reads `reason 0x1`. The `BOOTSEL_REBOOT` and `WATCHDOG`
+rows follow the source of the RP2350 boot ROM and of picotool 2.x.
+
 ## What to record
 
 The round trip, both ends' error counters, and the IOmcu's overflow
