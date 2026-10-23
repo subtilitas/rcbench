@@ -3,6 +3,10 @@
  * @brief Writes a run as CSV (comma-separated values) in the format
  *        shared/logfile reads.
  *
+ * Three kinds of row: a bench run's (log_writer_row()), the same row with the
+ * supply's figures for a run ARMED from SERVO (log_writer_servo_row()), and a
+ * supply run's (log_writer_supply_row()).
+ *
  * The sink is injected: the host suite writes into memory and the panel
  * writes into a FILE.  Nothing here depends on the card, so the writer is
  * tested against the reader by writing a run and parsing it back.
@@ -167,6 +171,82 @@ bool log_writer_header(log_writer_t *w);
  *         log_writer_failed()).
  */
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
+
+/**
+ * @brief The servo rail's supply on a SERVO run's row: the supply's last
+ *        reading and the run's totals of it, for log_writer_servo_row().
+ *
+ * Bit SUPPLY_OK_VOLTAGE of ok says v is a reading, SUPPLY_OK_CURRENT that i
+ * is one, and both that p is one; counted (BENCH_COUNTED_*) says which of
+ * charge_mah and energy_wh the run has counted.  All 0 is a row with no
+ * supply reading: its five cells are empty.
+ */
+typedef struct {
+    float   v;           /**< at the supply's output, V */
+    float   i;           /**< out of it, A */
+    float   p;           /**< v * i, W */
+    float   charge_mah;  /**< since the switch to ARMED, mAh */
+    float   energy_wh;   /**< since the switch to ARMED, Wh */
+    uint8_t ok;          /**< SUPPLY_OK_* of the readings taken */
+    uint8_t counted;     /**< BENCH_COUNTED_* of the totals */
+} log_rail_t;
+
+/**
+ * @brief The supply's reading for a SERVO run's row, into @p out, with
+ *        nothing counted.
+ *
+ * The readings that arrived, by @p s's ok bits.  None from a supply that is
+ * the panel's model (supply_state_t.modelled) unless @p row_modelled: a row
+ * of measured bench readings carries no modelled supply figures.  @p s NULL
+ * takes none.
+ *
+ * @param out          Receives the reading.
+ * @param s            The supply's state, or NULL.
+ * @param row_modelled true when the row is the panel's model
+ *                     (bench_state_simulated()).
+ */
+void log_rail_take(log_rail_t *out, const supply_state_t *s,
+                   bool row_modelled);
+
+/**
+ * @brief Count @p r's readings into the run's totals @p t over @p dt_s, and
+ *        put the totals on @p r.
+ *
+ * Charge from a current reading, energy from a power reading, as
+ * bench_totals_count() counts them: a step over BENCH_TOTALS_MAX_STEP_S
+ * (1.0s) counts 1.0s, a step that is not positive counts nothing, and
+ * nothing is counted unless @p driving.  bench_totals_reset() starts a run.
+ * Either pointer NULL does nothing.
+ *
+ * @param t       The run's totals.
+ * @param r       The reading; its charge_mah, energy_wh and counted are set.
+ * @param dt_s    The time since the last count, in s.
+ * @param driving true while the bank is ARMED.
+ */
+void log_rail_count(bench_totals_t *t, log_rail_t *r, float dt_s,
+                    bool driving);
+
+/**
+ * @brief Append one sample of a run ARMED from SERVO: log_writer_row()'s row
+ *        with voltage, current, power, charge and energy from @p rail.
+ *
+ * The header is the motor run's, so both files read by one rule.  The
+ * supply's cells are written as a supply file writes them: voltage and power
+ * to 0.01, current to 0.001, charge to 1mAh, energy to 0.01Wh; a cell rail
+ * has no reading or total of is empty, and so are all five with @p rail
+ * NULL.  rpm, the temperatures, the INA228's and the ESC's columns, the
+ * INA3221 window and source are @p b's, as log_writer_row() writes them.
+ * Same returns, commits and latch as log_writer_row().
+ *
+ * @param w    The writer.
+ * @param t_s  The time of the row, in s.
+ * @param b    The bench sample.
+ * @param rail The supply's reading and totals, or NULL.
+ * @return true on success; false when refused or failed (see
+ *         log_writer_failed()).
+ */
+bool log_writer_servo_row(log_writer_t *w, float t_s, const bench_state_t *b,
+                          const log_rail_t *rail);
 
 /**
  * @brief Append one supply sample, for a run that is the supply's output being

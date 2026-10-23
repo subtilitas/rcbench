@@ -67,6 +67,12 @@ history is in git.
   not include, and ldgen skipped the mappings without a message. CI fails
   through `tools/psram_bss.py` when a named object keeps .bss in internal
   RAM.
+- A SERVO run's log, `SERVOnnn.CSV`, carries the supply's figures in
+  `voltage`, `current`, `power`, `charge` and `energy`: the PD mini's last
+  reading at each row, current to 0.001A, and charge and energy counted
+  from those readings since the switch to ARMED. These cells were empty on
+  a bench without an ESC or an INA228. The header and a MOTOR run's rows
+  stay as they are.
 
 ### Changed
 
