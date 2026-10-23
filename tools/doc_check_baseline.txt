@@ -227,7 +227,6 @@ firmware/panel/components/gt911/include/touch.h: warning: return type of member 
 firmware/panel/components/gt911/include/touch.h: warning: return type of member touch_published is not documented
 firmware/panel/components/gt911/include/touch.h: warning: return type of member touch_snapshot is not documented
 firmware/panel/components/gt911/include/touch.h: warning: return type of member touch_wait_event is not documented
-firmware/panel/components/gt911/include/touch_inject.h: file has no @file block
 firmware/panel/components/gt911/touch.c: warning: Compound queued_t is not documented.
 firmware/panel/components/gt911/touch.c: warning: Compound touch_state_t is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member TAG (variable) of file touch.c is not documented.
@@ -242,7 +241,6 @@ firmware/panel/components/gt911/touch.c: warning: Member map (variable) of struc
 firmware/panel/components/gt911/touch.c: warning: Member now_ms(void) (function) of file touch.c is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member point_count (variable) of struct touch_state_t is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member points[TOUCH_MAX_POINTS] (variable) of struct touch_state_t is not documented.
-firmware/panel/components/gt911/touch.c: warning: Member publish(const touch_point_t *pts, int count) (function) of file touch.c is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member published (variable) of struct touch_state_t is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member s_touch (variable) of file touch.c is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member seq (variable) of struct queued_t is not documented.
@@ -251,7 +249,6 @@ firmware/panel/components/gt911/touch.c: warning: Member stop (variable) of stru
 firmware/panel/components/gt911/touch.c: warning: Member task (variable) of struct touch_state_t is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member touch_task(void *arg) (function) of file touch.c is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member tracker (variable) of struct touch_state_t is not documented.
-firmware/panel/components/gt911/touch_inject.c: file has no @file block
 firmware/panel/components/settings_nvs/settings_nvs.c: file has no @file block
 firmware/panel/components/storage/include/storage.h: warning: Compound storage_entry_t is not documented.
 firmware/panel/components/storage/include/storage.h: warning: Member STORAGE_MOUNT_POINT (macro definition) of file storage.h is not documented.
@@ -3123,19 +3120,6 @@ shared/touch/include/touch_map.h: warning: Compound touch_map_t is not documente
 shared/touch/include/touch_map.h: warning: Compound touch_tracker_t is not documented.
 shared/touch/include/touch_map.h: warning: Member prev[TOUCH_MAX_POINTS] (variable) of struct touch_tracker_t is not documented.
 shared/touch/include/touch_map.h: warning: Member prev_count (variable) of struct touch_tracker_t is not documented.
-shared/touch/include/touch_merge.h: file has no @file block
-shared/touch/include/touch_merge.h: warning: Compound touch_merge_t is not documented.
-shared/touch/include/touch_merge.h: warning: Member glass[TOUCH_MAX_POINTS] (variable) of struct touch_merge_t is not documented.
-shared/touch/include/touch_merge.h: warning: Member glass_n (variable) of struct touch_merge_t is not documented.
-shared/touch/include/touch_merge.h: warning: Member inject[TOUCH_MAX_POINTS] (variable) of struct touch_merge_t is not documented.
-shared/touch/include/touch_merge.h: warning: Member inject_n (variable) of struct touch_merge_t is not documented.
-shared/touch/include/touch_types.h: file has no @file block
-shared/touch/include/touch_types.h: warning: Compound touch_event_t is not documented.
-shared/touch/include/touch_types.h: warning: Compound touch_point_t is not documented.
-shared/touch/include/touch_types.h: warning: Member point (variable) of struct touch_event_t is not documented.
-shared/touch/include/touch_types.h: warning: Member type (variable) of struct touch_event_t is not documented.
-shared/touch/include/touch_types.h: warning: Member x (variable) of struct touch_point_t is not documented.
-shared/touch/include/touch_types.h: warning: Member y (variable) of struct touch_point_t is not documented.
 shared/touch/touch_map.c: file has no @file block
 shared/touch/touch_merge.c: file has no @file block
 shared/ui/analyser_screen.c: warning: Member dec (variable) of struct [struct].s is not documented.
@@ -6284,24 +6268,6 @@ shared/webaccess/wa_zip.c: warning: Member wa_zip_len_init(wa_zip_len_t *l) (fun
 shared/webaccess/wa_zip.c: warning: Member wa_zip_local(uint8_t *out, const char *name, size_t name_len, uint64_t size, int64_t mtime, bool dir) (function) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member wa_zip_local_bytes(size_t name_len, uint64_t size) (function) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member walk_err(wa_walk_ev_t ev) (function) of file wa_zip.c is not documented.
-testbench/touch-injector/core/gt911_emu.c: file has no @file block
-testbench/touch-injector/core/include/gt911_emu.h: file has no @file block
-testbench/touch-injector/core/include/gt911_emu.h: warning: Compound gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member acks (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member busy (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member command[2] (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member down (variable) of struct gt911_emu_frame_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member point[8] (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member product_reads (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member ptr (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member reading (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member reads (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member res_x (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member res_y (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member status (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member wbytes (variable) of struct gt911_emu_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member x (variable) of struct gt911_emu_frame_t is not documented.
-testbench/touch-injector/core/include/gt911_emu.h: warning: Member y (variable) of struct gt911_emu_frame_t is not documented.
 testbench/touch-injector/core/include/inj_line_id.h: file has no @file block
 testbench/touch-injector/core/include/inj_line_id.h: warning: Compound inj_line_result_t is not documented.
 testbench/touch-injector/core/include/inj_line_id.h: warning: Member agree_pct (variable) of struct inj_line_result_t is not documented.
@@ -6314,63 +6280,6 @@ testbench/touch-injector/core/include/inj_line_id.h: warning: Member rate_ksps (
 testbench/touch-injector/core/include/inj_line_id.h: warning: Member state (variable) of struct inj_edge_t is not documented.
 testbench/touch-injector/core/include/inj_line_id.h: warning: Member tx (variable) of struct inj_line_result_t is not documented.
 testbench/touch-injector/core/include/inj_line_id.h: warning: Member verdict (variable) of struct inj_line_result_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Compound injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member any_read (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member attach_wanted (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member down_published (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member emu (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member end_acked (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member end_published (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member failed (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member first_acked (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member frames (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member inj_gesture_t (enumeration) of file injector.h is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member inj_led_t (enumeration) of file injector.h is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member inj_state_t (enumeration) of file injector.h is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member injector_init(injector_t *in) (function) of file injector.h is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member kind (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member len (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member line[INJ_LINE_MAX+1u] (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member ms (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member overflow (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member pending (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member published (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member px (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member py (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member r_count (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member r_head (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member releasing (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member replies[INJ_REPLIES][INJ_REPLY_LEN] (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member seen_acks (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member seen_product (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member seen_reads (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member slowed (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member state (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member t_first (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member t_last_read (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member t_pub (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member wiring (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member wiring_running (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member wiring_wanted (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member withdraw_due (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member x0 (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member x1 (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member y0 (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: Member y1 (variable) of struct injector_t is not documented.
-testbench/touch-injector/core/include/injector.h: warning: parameters of member inj_gesture_name are not documented
-testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_host_closed are not documented
-testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_input are not documented
-testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_led are not documented
-testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_poll are not documented
-testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_take_attach are not documented
-testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_take_reply are not documented
-testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_take_wiring are not documented
-testbench/touch-injector/core/include/injector.h: warning: parameters of member injector_wiring_done are not documented
-testbench/touch-injector/core/include/injector.h: warning: return type of member inj_gesture_name is not documented
-testbench/touch-injector/core/include/injector.h: warning: return type of member injector_led is not documented
-testbench/touch-injector/core/include/injector.h: warning: return type of member injector_take_attach is not documented
-testbench/touch-injector/core/include/injector.h: warning: return type of member injector_take_reply is not documented
-testbench/touch-injector/core/include/injector.h: warning: return type of member injector_take_wiring is not documented
 testbench/touch-injector/core/inj_line_id.c: file has no @file block
 testbench/touch-injector/core/inj_line_id.c: warning: Compound cls_t is not documented.
 testbench/touch-injector/core/inj_line_id.c: warning: Compound pend_t is not documented.
@@ -6389,7 +6298,3 @@ testbench/touch-injector/core/inj_line_id.c: warning: Member s (variable) of str
 testbench/touch-injector/core/inj_line_id.c: warning: Member start_at (variable) of struct cls_t is not documented.
 testbench/touch-injector/core/inj_line_id.c: warning: Member start_line (variable) of struct cls_t is not documented.
 testbench/touch-injector/core/inj_line_id.c: warning: Member tx (variable) of struct cls_t is not documented.
-testbench/touch-injector/core/injector.c: file has no @file block
-testbench/touch-injector/core/injector.c: warning: Compound field_t is not documented.
-testbench/touch-injector/core/injector.c: warning: Member max (variable) of struct field_t is not documented.
-testbench/touch-injector/core/injector.c: warning: Member name (variable) of struct field_t is not documented.

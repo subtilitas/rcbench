@@ -323,6 +323,35 @@ TEST_CASE(a_drag_does_not_cross_a_disarm_and_the_next_arm)
     lift(1);
 }
 
+/*
+ * The touch injector's station check (testbench/touch-injector/README.md),
+ * with its track ids: a dial drag under way on one contact, DISARM tapped
+ * by a second.  The disarm is taken, the drag's moves before the bench's
+ * answer command nothing, and a hold on ARM from rest arms again.
+ */
+TEST_CASE(a_second_contact_disarms_a_drag_under_way)
+{
+    fresh();
+    CHECK(arm());
+    int x, y, x2, y2;
+    dial_at(30.0f, &x, &y);
+    dial_at(-30.0f, &x2, &y2);
+    finger(0x80, x, y);
+    CHECK_EQ(took().kind, SERVO_CMD_POSITION);
+    drain();
+    feed_tap(0x81, ARM_X, ARM_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+    glide(0x80, x2, y2, 8);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    servo_screen_set_armed(false);
+    lift(0x80);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    CHECK(arm());
+    finger(0x80, x2, y2);
+    CHECK_EQ(took().kind, SERVO_CMD_POSITION);
+    lift(0x80);
+}
+
 /* Under a disarm waiting to be taken every position is dropped, so the
  * value does not move either. */
 TEST_CASE(nothing_moves_the_value_under_a_disarm_not_yet_taken)
@@ -1141,6 +1170,7 @@ int main(void)
     RUN(no_position_control_moves_the_value_after_a_disarm);
     RUN(a_press_on_the_disarmed_dial_is_no_drag_after_the_arm);
     RUN(a_drag_does_not_cross_a_disarm_and_the_next_arm);
+    RUN(a_second_contact_disarms_a_drag_under_way);
     RUN(nothing_moves_the_value_under_a_disarm_not_yet_taken);
     RUN(nothing_moves_the_value_between_a_disarm_and_its_answer);
     RUN(an_arm_sets_the_value_to_the_channels_rest);

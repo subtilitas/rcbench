@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The glass's contacts and a touch injector's, merged (touch_merge.h).
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -6,6 +9,7 @@
 
 #include <string.h>
 
+/** @brief @p n held to 0..TOUCH_MAX_POINTS. */
 static int clamp_count(int n)
 {
     if (n < 0) {
@@ -14,6 +18,7 @@ static int clamp_count(int n)
     return n > TOUCH_MAX_POINTS ? TOUCH_MAX_POINTS : n;
 }
 
+/** @brief The same contact at the same place and strength. */
 static bool same_point(const touch_point_t *a, const touch_point_t *b)
 {
     return a->id == b->id && a->x == b->x && a->y == b->y
@@ -97,6 +102,33 @@ bool touch_merge_probe(touch_merge_t *m, bool answered, uint32_t now_ms)
     return true;
 }
 
+/**
+ * @brief Decide which injected contacts the frame has room for.
+ *
+ * The room is what the glass leaves.  A contact shown before keeps its
+ * place before a new one gets any, in report order; a cut one stays cut.
+ *
+ * @param m The merge.
+ */
+static void recut(touch_merge_t *m)
+{
+    int room = TOUCH_MAX_POINTS - (int)m->glass_n;
+    for (int pass = 0; pass < 2; ++pass) {
+        for (int i = 0; i < m->inject_n; ++i) {
+            if (m->cut[i] || (pass == 0) != m->shown[i]) {
+                continue;
+            }
+            if (room > 0) {
+                --room;
+                m->shown[i] = true;
+            } else {
+                m->shown[i] = false;
+                m->cut[i] = true;
+            }
+        }
+    }
+}
+
 void touch_merge_glass(touch_merge_t *m, const touch_point_t *pts, int n)
 {
     if (m == NULL) {
@@ -107,6 +139,7 @@ void touch_merge_glass(touch_merge_t *m, const touch_point_t *pts, int n)
         m->glass[i] = pts[i];
     }
     m->glass_n = (uint8_t)n;
+    recut(m);
 }
 
 bool touch_merge_inject_due(const touch_merge_t *m, uint32_t now_ms)
@@ -118,6 +151,21 @@ bool touch_merge_inject_due(const touch_merge_t *m, uint32_t now_ms)
         return true;
     }
     return (uint32_t)(now_ms - m->last_try_ms) >= TOUCH_MERGE_RETRY_MS;
+}
+
+/** @brief Whether two merged sets differ. */
+static bool frames_differ(const touch_point_t *a, int na,
+                          const touch_point_t *b, int nb)
+{
+    if (na != nb) {
+        return true;
+    }
+    for (int i = 0; i < na; ++i) {
+        if (!same_point(&a[i], &b[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool touch_merge_inject(touch_merge_t *m, const touch_point_t *pts, int n,
@@ -132,18 +180,35 @@ bool touch_merge_inject(touch_merge_t *m, const touch_point_t *pts, int n,
     if (!fresh) {
         return false;
     }
+    touch_point_t before[TOUCH_MAX_POINTS];
+    const int nb = touch_merge_frame(m, before, TOUCH_MAX_POINTS);
+
     n = (pts != NULL) ? clamp_count(n) : 0;
-    bool changed = (n != m->inject_n);
+    bool cut[TOUCH_MAX_POINTS] = { false };
+    bool shown[TOUCH_MAX_POINTS] = { false };
     for (int i = 0; i < n; ++i) {
-        touch_point_t p = pts[i];
-        p.id = (uint8_t)(p.id | TOUCH_MERGE_INJECT_ID);
-        if (!changed && !same_point(&p, &m->inject[i])) {
-            changed = true;
+        const uint8_t id = (uint8_t)(pts[i].id | TOUCH_MERGE_INJECT_ID);
+        /* The same track id in the last report: the same contact. */
+        for (int k = 0; k < m->inject_n; ++k) {
+            if (m->inject[k].id == id) {
+                cut[i] = m->cut[k];
+                shown[i] = m->shown[k];
+                break;
+            }
         }
-        m->inject[i] = p;
+    }
+    for (int i = 0; i < n; ++i) {
+        m->inject[i] = pts[i];
+        m->inject[i].id = (uint8_t)(pts[i].id | TOUCH_MERGE_INJECT_ID);
+        m->cut[i] = cut[i];
+        m->shown[i] = shown[i];
     }
     m->inject_n = (uint8_t)n;
-    return changed;
+    recut(m);
+
+    touch_point_t after[TOUCH_MAX_POINTS];
+    const int na = touch_merge_frame(m, after, TOUCH_MAX_POINTS);
+    return frames_differ(before, nb, after, na);
 }
 
 bool touch_merge_inject_failed(touch_merge_t *m, uint32_t now_ms)
@@ -172,7 +237,31 @@ int touch_merge_frame(const touch_merge_t *m, touch_point_t *out, int max)
         out[n++] = m->glass[i];
     }
     for (int i = 0; i < m->inject_n && n < max; ++i) {
-        out[n++] = m->inject[i];
+        if (m->shown[i]) {
+            out[n++] = m->inject[i];
+        }
     }
     return n;
+}
+
+int touch_merge_mark_cut(const touch_merge_t *m, touch_event_t *evts, int n)
+{
+    if (m == NULL || evts == NULL) {
+        return 0;
+    }
+    int marked = 0;
+    for (int e = 0; e < n; ++e) {
+        if (evts[e].type != TOUCH_EVENT_UP
+            || (evts[e].point.id & TOUCH_MERGE_INJECT_ID) == 0u) {
+            continue;
+        }
+        for (int i = 0; i < m->inject_n; ++i) {
+            if (m->cut[i] && m->inject[i].id == evts[e].point.id) {
+                evts[e].flags = (uint8_t)(evts[e].flags | TOUCH_FLAG_NO_TAP);
+                ++marked;
+                break;
+            }
+        }
+    }
+    return marked;
 }
