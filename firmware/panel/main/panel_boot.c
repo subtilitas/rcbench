@@ -216,6 +216,9 @@ bool bring_up(void)
     /* And the viewer is told how to reach it.  Without this it has no way to
      * list anything and reports no card whatever is mounted. */
     log_viewer_set_io(&k_card_io);
+    /* FILES reaches the card through its own task, started at its first
+     * request. */
+    files_screen_set_io(&k_files_io);
     /* Before anything can ask for a profile; with no card, the built-in
      * ones alone. */
     esc_profiles_load();

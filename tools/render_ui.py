@@ -54,7 +54,11 @@ SOURCES = [
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
     "shared/ui/log_select.c",
-    "shared/files/fm_select.c",
+    # FILES' views run its requests on a card in memory, behind the host
+    # card task.
+    "test/host/render_files.c",
+    "test/host/files_host_io.c",
+    "test/host/fm_fake.c",
 ]
 
 # Every screen gets a committed screenshot; CI (continuous integration)
@@ -266,6 +270,21 @@ SCREENS = {
     "logs-root":  ("logs-root.png",  "logs",       "dark"),
     # LOGS' USER tab: a LIMIT RUN's report opened as text.
     "logs-report": ("logs-report.png", "logs",     "dark"),
+    # FILES: the card in two panes, ARMED and logging, each box, the
+    # keyboard, no card, the second page of a big folder, the ESC and KST
+    # folders.
+    "files": ("files.png", "files", "dark"),
+    "files-armed": ("files-armed.png", "files", "dark"),
+    "files-logging": ("files-logging.png", "files", "dark"),
+    "files-delete": ("files-delete.png", "files", "dark"),
+    "files-copy": ("files-copy.png", "files", "dark"),
+    "files-info": ("files-info.png", "files", "dark"),
+    "files-info-folder": ("files-info-folder.png", "files", "dark"),
+    "files-new": ("files-new.png", "files", "dark"),
+    "files-name": ("files-name.png", "files", "dark"),
+    "files-nocard": ("files-nocard.png", "files", "dark"),
+    "files-paged": ("files-paged.png", "files", "dark"),
+    "files-conf": ("files-conf.png", "files", "dark"),
     # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
     # across the screen with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),
@@ -562,6 +581,20 @@ FIT_ONLY = {
     "servo-test-done":  (None, "servo", "dark"),
     "servo-limrun-card": (None, "servo", "dark"),
     "servo-limrun-settings": (None, "servo", "dark"),
+    # FILES' other states: the bench's folders, a pane reading, an empty
+    # folder, no USER LOG FOLDER, each refusal of the message line, a folder
+    # made, RENAME's keyboard and the question of a folder.
+    "files-bench": (None, "files", "dark"),
+    "files-reading": (None, "files", "dark"),
+    "files-empty": (None, "files", "dark"),
+    "files-nofolder": (None, "files", "dark"),
+    "files-exists": (None, "files", "dark"),
+    "files-busy": (None, "files", "dark"),
+    "files-fixed": (None, "files", "dark"),
+    "files-locked": (None, "files", "dark"),
+    "files-made": (None, "files", "dark"),
+    "files-rename": (None, "files", "dark"),
+    "files-delete-folder": (None, "files", "dark"),
 }
 
 # Views that open a drop-down, a chip's help bubble or the alert band over

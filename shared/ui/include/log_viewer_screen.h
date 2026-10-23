@@ -187,6 +187,18 @@ log_viewer_tab_t log_viewer_tab(void);
  */
 void log_viewer_set_tab(log_viewer_tab_t tab);
 
+/**
+ * @brief Show @p tab with file @p name open, as a tap on the tab, a tap on
+ *        the file's row and OPEN do: FILES' OPEN on a file of one of the
+ *        three folders.  The page read is the one that starts at the name.
+ * @param tab   the folder's tab
+ * @param name  the file's name in that folder
+ * @return true when the file is open in IMPORT or TEXT; false for a tab
+ *         outside the three, a name the list does not hold (a file other
+ *         than a .csv or a report standing alone), or a file OPEN refuses
+ */
+bool log_viewer_show(log_viewer_tab_t tab, const char *name);
+
 /** The file currently open, or "" -- the overview header shows this. */
 const char *log_viewer_open_name(void);
 

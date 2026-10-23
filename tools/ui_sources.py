@@ -111,6 +111,18 @@ SOURCES = [
     "shared/ui/update_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
+    # FILES, and the file manager's core it starts its jobs and keeps its
+    # panes with (shared/files), the logger's open-file rule with it.
+    "shared/ui/files_screen.c",
+    "shared/ui/files_draw.c",
+    "shared/ui/files_events.c",
+    "shared/files/fm_name.c",
+    "shared/files/fm_select.c",
+    "shared/files/fm_rules.c",
+    "shared/files/fm_tree.c",
+    "shared/files/fm_ops.c",
+    "shared/files/fm_req.c",
+    "shared/logfile/log_take.c",
     # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's
     # ESC STICK session lists and runs.
     "shared/esc/esc_profiles_gen.c",

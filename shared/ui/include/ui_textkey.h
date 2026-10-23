@@ -35,6 +35,14 @@
  * included, and refuses a password under 8 characters or an empty name.
  * A text longer than the field shows its end.
  *
+ * Opened for a file name (ui_textkey_open_file()) it is the Wi-Fi keyboard
+ * with its three layers, for a name of up to FM_NAME_MAX (59) bytes: OK
+ * takes the name only when fm_name_check() (fm_name.h) does, as typed.  A
+ * refused OK keeps the keyboard open, and its line says why: an empty
+ * name, over 59 bytes, one of  " * / : < > ? \ |  , a space or a full
+ * stop at an end, a device name.  DEL takes the last character, also one
+ * of two bytes.
+ *
  * The screen routes events to it while it is open and draws it last, as it
  * does the keypad.
  *
@@ -113,7 +121,9 @@ typedef struct {
     bool       refused;     /**< OK on an empty name                  */
     bool       search;      /**< a search pattern: see the top        */
     bool       folder;      /**< a folder of the card: see the top    */
-    uint8_t    why;         /**< a folder's refusal, card_folder_t    */
+    bool       file;        /**< a file name: see the top             */
+    uint8_t    why;         /**< a folder's refusal, card_folder_t; a
+                                 file name's, fm_name_t              */
     bool       wifi;        /**< a Wi-Fi name or password             */
     bool       secret;      /**< a password: masked, 8 at least       */
     bool       show;        /**< the password shown                   */
@@ -170,6 +180,18 @@ void ui_textkey_open_folder(ui_textkey_t *k, gfx_rect_t area,
  */
 void ui_textkey_open_wifi(ui_textkey_t *k, gfx_rect_t area,
                           const char *title, const char *text, bool secret);
+
+/**
+ * @brief Open for a file name; see the top of this file.  Lower case
+ *        first.
+ * @param k     The keyboard; NULL does nothing.
+ * @param area  Where it draws.
+ * @param title What is typed.
+ * @param text  The name it starts with, cut to FM_NAME_MAX bytes between
+ *              two characters.
+ */
+void ui_textkey_open_file(ui_textkey_t *k, gfx_rect_t area,
+                          const char *title, const char *text);
 
 /**
  * @brief Close, dropping a press under way.

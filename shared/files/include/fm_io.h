@@ -87,6 +87,8 @@ typedef struct {
 typedef struct {
     uint64_t size;      /**< bytes; 0 for a folder                      */
     bool is_dir;        /**< a folder                                   */
+    int64_t mtime;      /**< the time FAT stamped, in seconds as mktime()
+                             reads it; -1 when the card gives none      */
 } fm_stat_t;
 
 /**

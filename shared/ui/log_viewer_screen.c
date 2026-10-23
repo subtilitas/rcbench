@@ -575,6 +575,29 @@ void log_viewer_set_tab(log_viewer_tab_t tab)
     lv_read_page(LOG_PAGE_FROM, "");
 }
 
+bool log_viewer_show(log_viewer_tab_t tab, const char *name)
+{
+    if ((unsigned)tab >= (unsigned)LOG_TAB_COUNT || name == NULL
+        || name[0] == '\0') {
+        return false;
+    }
+    s.tab = tab;
+    s.tabs.selected = tab_pos(tab);
+    s.message[0] = '\0';
+    /* The page that starts at the name: the file is its first row when
+     * the list holds it. */
+    lv_read_page(LOG_PAGE_FROM, name);
+    for (int i = 0; i < s.n_files; ++i) {
+        if (strcmp(s.files[i].name, name) == 0) {
+            s.sel = i;
+            s.scroll = (i < BR_ROWS) ? 0 : i - BR_ROWS + 1;
+            lv_open_selected();
+            return s.view != VIEW_BROWSE;
+        }
+    }
+    return false;
+}
+
 /**
  * @brief The screen as a start leaves it: the BENCH tab, nothing open,
  *        nothing selected.

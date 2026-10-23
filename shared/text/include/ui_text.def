@@ -286,6 +286,18 @@ UI_TEXT(TEXTKEY_DIR_RESERVED, 40,
 UI_TEXT(TEXTKEY_DIR_BENCH, 40,
     "Folder of the bench's own files",
     "Ordner der Prüfstand-Dateien")
+/* A file name the keyboard refused (fm_name_check()), right of its title
+ * on FILES' keyboard; an empty name is TEXTKEY_NEEDED and a device name
+ * TEXTKEY_DIR_RESERVED. */
+UI_TEXT(TEXTKEY_NAME_LONG, 0,
+    "59 bytes at most; Ä Ö Ü ä ö ü ß take 2",
+    "Höchstens 59 Bytes; Ä Ö Ü ä ö ü ß zählen 2")
+UI_TEXT(TEXTKEY_NAME_CHAR, 40,
+    "None of \" * / : < > ? \\ |",
+    "Keines von \" * / : < > ? \\ |")
+UI_TEXT(TEXTKEY_NAME_EDGE, 40,
+    "No space or full stop at an end",
+    "Kein Leerzeichen oder Punkt am Rand")
 UI_TEXT(TK_SHOW, 0,
     "SHOW",
     "ANZEIGEN")
@@ -1106,6 +1118,9 @@ UI_TEXT(SET_HUB_WIFI, 0,
 UI_TEXT(SET_HUB_UPDATES, 0,
     "RELEASES ON GITHUB",
     "VERSIONEN AUF GITHUB")
+UI_TEXT(SET_HUB_FILES, 0,
+    "FOLDERS AND FILES",
+    "ORDNER UND DATEIEN")
 /* INTERFACES' section headings, in the order of its rows.  A heading is
  * drawn in a list row of 776 px, 16 px a character less the margins. */
 UI_TEXT(SET_HD_I2C, 40,
@@ -1783,6 +1798,278 @@ UI_TEXT(LOG_TEXT_CUT, 92,
 UI_TEXT(LOG_TEXT_EMPTY, 92,
     "The file is empty.",
     "Die Datei ist leer.")
+
+/* --------------------------------------------------------------- FILES */
+/* The footer's buttons, 118 px of the 10 x 20 face: 11 cells at most.
+ * OPEN, DELETE and RESCAN are LOGS' (LOG_OPEN, LOG_DELETE, LOG_RESCAN). */
+UI_TEXT(FM_COPY, 0,
+    "COPY",
+    "KOPIEREN")
+UI_TEXT(FM_MOVE, 0,
+    "MOVE",
+    "VERSCHIEBEN")
+UI_TEXT(FM_RENAME, 0,
+    "RENAME",
+    "UMBENENNEN")
+UI_TEXT(FM_NEW, 0,
+    "NEW",
+    "NEU")
+UI_TEXT(FM_INFO, 0,
+    "INFO",
+    "INFO")
+UI_TEXT(FM_CLOSE, 0,
+    "CLOSE",
+    "SCHLIESSEN")
+/* NEW's choice; its folder is FM_KIND_FOLDER. */
+UI_TEXT(FM_NEW_FILE, 0,
+    "TEXT FILE",
+    "TEXTDATEI")
+/* A pane's heading: what the folder holds, and which part of it the page
+ * shows when it holds more than one page; the entries a walk left out
+ * after it. */
+UI_TEXT(FM_ENTRIES, 0,
+    "%d ENTRIES",
+    "%d EINTRÄGE")
+UI_TEXT(FM_ENTRIES_OF, 0,
+    "ENTRIES %d TO %d OF %d",
+    "EINTRÄGE %d BIS %d VON %d")
+UI_TEXT(FM_UNLISTED, 0,
+    " + %u NOT LISTED",
+    " + %u NICHT GELISTET")
+/* A pane read for the first time and not answered yet. */
+UI_TEXT(FM_READING, 0,
+    "READING THE CARD",
+    "LESE DIE KARTE")
+/* A pane with no rows, in the pane's 420 px: 35 cells of the 12 x 24
+ * face a line, two lines. */
+UI_TEXT(FM_EMPTY, 0,
+    "Empty folder.",
+    "Leerer Ordner.")
+UI_TEXT(FM_NO_FOLDER, 0,
+    "This folder is not on the card.",
+    "Dieser Ordner ist nicht auf der Karte.")
+UI_TEXT(FM_HIDDEN, 0,
+    "Hidden entries or names over 63 bytes.",
+    "Versteckte Einträge oder Namen über 63 Bytes.")
+/* What an entry is, on its row's second line (8 x 16) and in INFO. */
+UI_TEXT(FM_KIND_FOLDER, 0,
+    "FOLDER",
+    "ORDNER")
+UI_TEXT(FM_KIND_RUN, 0,
+    "LOG",
+    "AUFZEICHNUNG")
+UI_TEXT(FM_KIND_REPORT, 0,
+    "REPORT",
+    "BERICHT")
+UI_TEXT(FM_KIND_KST, 0,
+    "SERVO FILE",
+    "SERVODATEI")
+UI_TEXT(FM_KIND_PROFILE, 0,
+    "ESC PROFILE",
+    "ESC-PROFIL")
+UI_TEXT(FM_KIND_FAULT, 0,
+    "FAULT LOG",
+    "FEHLERPROTOKOLL")
+UI_TEXT(FM_KIND_CSV, 0,
+    "CSV",
+    "CSV")
+UI_TEXT(FM_KIND_JSON, 0,
+    "JSON",
+    "JSON")
+UI_TEXT(FM_KIND_TEXT, 0,
+    "TEXT",
+    "TEXT")
+UI_TEXT(FM_KIND_OTHER, 0,
+    "FILE",
+    "DATEI")
+/* After the kind, in the warning colour: the logger writes the file, the
+ * servo programmer's record, a folder the bench keeps. */
+UI_TEXT(FM_WRITING, 0,
+    "WRITING",
+    "WIRD GESCHRIEBEN")
+UI_TEXT(FM_LOCKED, 0,
+    "LOCKED",
+    "GESPERRT")
+UI_TEXT(FM_FIXED, 0,
+    "FIXED",
+    "FEST")
+/* The message line while the write gate is shut (fm_gate()). */
+UI_TEXT(FM_GATE_ARMED, 0,
+    "Bench ARMED. The card is read-only.",
+    "Prüfstand ARMED. Die Karte ist nur lesbar.")
+UI_TEXT(FM_GATE_LOGGING, 0,
+    "A run is being logged. The card is read-only.",
+    "Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.")
+/* The message line after a job; two lines of 84 cells of the 12 x 24
+ * face.  A deletion is LOG_DELETED. */
+UI_TEXT(FM_COPIED, 84,
+    "%s copied.",
+    "%s kopiert.")
+UI_TEXT(FM_MOVED, 84,
+    "%s moved.",
+    "%s verschoben.")
+UI_TEXT(FM_RENAMED, 84,
+    "%s renamed to %s.",
+    "%s umbenannt in %s.")
+UI_TEXT(FM_MADE, 0,
+    "%s made.",
+    "%s angelegt.")
+/* Why a job was refused, failed or stopped (fm_err_t), on the message
+ * line. */
+UI_TEXT(FM_E_NO_CARD, 84,
+    "No card. Insert one and tap RESCAN.",
+    "Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.")
+UI_TEXT(FM_E_CARD_GONE, 84,
+    "The card was taken out or swapped. Tap RESCAN.",
+    "Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.")
+UI_TEXT(FM_E_NOT_FOUND, 84,
+    "%s is not on the card. Tap RESCAN.",
+    "%s ist nicht auf der Karte. Tippe auf AKTUALISIEREN.")
+UI_TEXT(FM_E_EXISTS, 0,
+    "%s exists there already.",
+    "%s gibt es dort schon.")
+UI_TEXT(FM_E_FULL, 84,
+    "The card or the folder is full.",
+    "Die Karte oder der Ordner ist voll.")
+UI_TEXT(FM_E_DENIED, 84,
+    "The card takes no writes: write-protected.",
+    "Die Karte nimmt nichts an: schreibgeschützt.")
+UI_TEXT(FM_E_BUSY, 0,
+    "%s is being written.",
+    "%s wird gerade geschrieben.")
+UI_TEXT(FM_E_FIXED, 0,
+    "%s is kept by the bench.",
+    "%s gehört dem Prüfstand.")
+UI_TEXT(FM_E_LOCKED, 0,
+    "%s is the servo programmer's record.",
+    "%s ist der Vermerk der Servoprogrammierung.")
+UI_TEXT(FM_E_NAME, 84,
+    "The name or the path does not fit the card.",
+    "Name oder Pfad passt nicht auf die Karte.")
+UI_TEXT(FM_E_ARG, 84,
+    "Not possible for %s.",
+    "Für %s nicht möglich.")
+UI_TEXT(FM_E_IO, 84,
+    "The card did not read or write.",
+    "Die Karte hat nicht gelesen oder geschrieben.")
+UI_TEXT(FM_E_NOT_EMPTY, 84,
+    "%s is not empty.",
+    "%s ist nicht leer.")
+UI_TEXT(FM_E_SAME, 84,
+    "Both panes show this folder, or the target is inside it.",
+    "Beide Seiten zeigen diesen Ordner, oder das Ziel liegt darin.")
+UI_TEXT(FM_E_CANCELLED, 84,
+    "Stopped by CANCEL.",
+    "Mit ABBRECHEN gestoppt.")
+UI_TEXT(FM_E_STOP_ARMED, 84,
+    "Stopped: the bench switched to ARMED.",
+    "Gestoppt: Der Prüfstand ist ARMED.")
+UI_TEXT(FM_E_STOP_LOGGING, 84,
+    "Stopped: a run is being logged.",
+    "Gestoppt: Ein Lauf wird aufgezeichnet.")
+UI_TEXT(FM_SELECT_FIRST, 84,
+    "Select an entry first.",
+    "Wähle zuerst einen Eintrag.")
+/* OPEN on a file LOGS does not show. */
+UI_TEXT(FM_OPEN_WHERE, 84,
+    "LOGS opens .csv files and reports in ROOT, USER and BENCH.",
+    "LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.")
+/* The DELETE question of a folder, and of a run with its report.  The
+ * title and the file's sentence are LOGS' (LOG_DELETE_TITLE,
+ * LOG_DELETE_WHAT, LOG_DELETE_FINAL). */
+UI_TEXT(FM_DELETE_FOLDER, 0,
+    "This deletes the empty folder from the card.",
+    "Der leere Ordner wird von der Karte gelöscht.")
+UI_TEXT(FM_DELETE_REPORT, 52,
+    "Its report %s goes with it.",
+    "Sein Bericht %s wird mitgelöscht.")
+/* The progress box's title, the job's name after it. */
+UI_TEXT(FM_JOB_COPY, 0,
+    "COPYING",
+    "KOPIERE")
+UI_TEXT(FM_JOB_MOVE, 50,
+    "MOVING",
+    "VERSCHIEBE")
+UI_TEXT(FM_JOB_RENAME, 50,
+    "RENAMING",
+    "BENENNE UM")
+UI_TEXT(FM_JOB_DELETE, 50,
+    "DELETING",
+    "LÖSCHE")
+UI_TEXT(FM_JOB_MAKE, 50,
+    "MAKING",
+    "LEGE AN")
+/* Under the bar: the bytes done of the bytes to do, and the target. */
+UI_TEXT(FM_JOB_OF, 0,
+    "%s of %s",
+    "%s von %s")
+UI_TEXT(FM_JOB_TO, 0,
+    "To %s",
+    "Nach %s")
+/* INFO: the box's title for a file (a folder's is FM_KIND_FOLDER), the
+ * keys of its rows in 16 cells, and the values that are words. */
+UI_TEXT(FM_INFO_FILE, 0,
+    "FILE",
+    "DATEI")
+UI_TEXT(FM_INFO_NAME, 0,
+    "Name",
+    "Name")
+UI_TEXT(FM_INFO_FOLDER, 0,
+    "Folder",
+    "Ordner")
+UI_TEXT(FM_INFO_KIND, 0,
+    "Kind",
+    "Art")
+UI_TEXT(FM_INFO_SIZE, 0,
+    "Size",
+    "Größe")
+UI_TEXT(FM_INFO_TIME, 0,
+    "Modified",
+    "Geändert")
+UI_TEXT(FM_INFO_ENTRIES, 0,
+    "Entries",
+    "Einträge")
+UI_TEXT(FM_INFO_RULE, 0,
+    "Rule",
+    "Regel")
+UI_TEXT(FM_INFO_COUNT, 0,
+    "%u, their files %s",
+    "%u, ihre Dateien %s")
+UI_TEXT(FM_INFO_UNLISTED, 0,
+    "%u not listed",
+    "%u nicht gelistet")
+UI_TEXT(FM_INFO_NO_TIME, 62,
+    "not known",
+    "nicht bekannt")
+UI_TEXT(FM_INFO_READING, 62,
+    "reading the card",
+    "lese die Karte")
+/* INFO's Rule row: what the bench keeps an entry from. */
+UI_TEXT(FM_RULE_FREE, 0,
+    "none",
+    "keine")
+UI_TEXT(FM_RULE_FIXED, 0,
+    "A folder of the bench: no RENAME, MOVE or DELETE.",
+    "Ordner des Prüfstands: kein UMBENENNEN, VERSCHIEBEN, LÖSCHEN.")
+UI_TEXT(FM_RULE_LOCKED, 62,
+    "The servo programmer's record: INFO only.",
+    "Vermerk der Servoprogrammierung: nur INFO.")
+UI_TEXT(FM_RULE_FAULT, 62,
+    "COPY and DELETE while the IOmcu link is up.",
+    "KOPIEREN und LÖSCHEN bei Verbindung zur IOmcu.")
+UI_TEXT(FM_RULE_BUSY, 62,
+    "The logger writes it: INFO only.",
+    "Wird aufgezeichnet: nur INFO.")
+/* The keyboard's title for a name. */
+UI_TEXT(FM_TK_FOLDER, 0,
+    "NEW FOLDER",
+    "NEUER ORDNER")
+UI_TEXT(FM_TK_FILE, 0,
+    "NEW TEXT FILE",
+    "NEUE TEXTDATEI")
+UI_TEXT(FM_TK_RENAME, 0,
+    "NEW NAME",
+    "NEUER NAME")
 
 /* --------------------------------------------- the modelled protocols */
 /* The parameter tables of prog_models.c, which no list shows: no transport

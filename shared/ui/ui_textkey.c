@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "card_tree.h"
+#include "fm_name.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -117,6 +118,35 @@ void ui_textkey_open_wifi(ui_textkey_t *k, gfx_rect_t area,
     snprintf(k->text, (size_t)k->max_len + 1u, "%s",
              (text != NULL) ? text : "");
     k->len = (int)strlen(k->text);
+}
+
+void ui_textkey_open_file(ui_textkey_t *k, gfx_rect_t area,
+                          const char *title, const char *text)
+{
+    if (k == NULL) {
+        return;
+    }
+    ui_textkey_open_wifi(k, area, title, NULL, false);
+    k->file    = true;
+    k->max_len = (int)FM_NAME_MAX;
+    /* Whole characters only: a name a computer wrote can hold more bytes
+     * than the keyboard takes, and a cut in a German letter would leave
+     * half of it. */
+    const char *at = (text != NULL) ? text : "";
+    size_t keep = 0u;
+    while (*at != '\0') {
+        const char *next = at;
+        (void)gfx_utf8_next(&next);
+        const size_t step = (size_t)(next - at);
+        if (keep + step > (size_t)k->max_len) {
+            break;
+        }
+        keep += step;
+        at = next;
+    }
+    memcpy(k->text, (text != NULL) ? text : "", keep);
+    k->text[keep] = '\0';
+    k->len = (int)keep;
 }
 
 void ui_textkey_close(ui_textkey_t *k)
@@ -268,6 +298,11 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
     k->refused = false;
     ++k->revision;
     if (key == UI_TK_DEL) {
+        /* A file name's last character, also one of two bytes. */
+        while (k->file && k->len > 1
+               && ((unsigned char)k->text[k->len - 1] & 0xC0u) == 0x80u) {
+            k->text[--k->len] = '\0';
+        }
         if (k->len > 0) {
             k->text[--k->len] = '\0';
         }
@@ -308,6 +343,19 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
         ui_textkey_close(k);
         return UI_TEXTKEY_CANCELLED;
     default: {                       /* OK */
+        if (k->file) {               /* as fm_name_check() takes it */
+            const fm_name_t r = fm_name_check(k->text);
+            if (r != FM_NAME_OK) {
+                k->refused = true;
+                k->why     = (uint8_t)r;
+                return UI_TEXTKEY_NONE;
+            }
+            if (out != NULL && n > 0u) {
+                snprintf(out, n, "%s", k->text);
+            }
+            ui_textkey_close(k);
+            return UI_TEXTKEY_OK;
+        }
         if (k->wifi && k->len < (k->secret ? UI_TEXTKEY_PASS_MIN : 1)) {
             k->refused = true;       /* the radio would refuse it */
             return UI_TEXTKEY_NONE;
@@ -415,6 +463,24 @@ static const char *folder_why(uint8_t why)
 }
 
 /**
+ * @brief Why a file name was refused, in the words of its line.
+ * @param why An fm_name_t.
+ * @return The line.
+ */
+static const char *file_why(uint8_t why)
+{
+    switch ((fm_name_t)why) {
+    case FM_NAME_LONG:     return TR(TEXTKEY_NAME_LONG);
+    case FM_NAME_CHAR:     return TR(TEXTKEY_NAME_CHAR);
+    case FM_NAME_EDGE:     return TR(TEXTKEY_NAME_EDGE);
+    case FM_NAME_RESERVED: return TR(TEXTKEY_DIR_RESERVED);
+    case FM_NAME_EMPTY:
+    case FM_NAME_OK:
+    default:               return TR(TEXTKEY_NEEDED);
+    }
+}
+
+/**
  * @brief The face of the text field: 20 x 36 when UI_TEXTKEY_MAX
  *        characters and the caret fit @p box with 10 px each side and the
  *        face's height fits it, else 16 x 28.  A Wi-Fi text longer than the
@@ -492,6 +558,8 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
     char room[64];
     if (k->refused && k->folder) {
         snprintf(room, sizeof(room), "%s", folder_why(k->why));
+    } else if (k->refused && k->file) {
+        snprintf(room, sizeof(room), "%s", file_why(k->why));
     } else if (k->refused && k->wifi) {
         if (k->secret) {
             snprintf(room, sizeof(room), TR(TEXTKEY_SHORT),

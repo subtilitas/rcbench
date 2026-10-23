@@ -227,9 +227,9 @@ static void browse_event(const touch_event_t *e)
     }
 
     /* PREV and NEXT are buttons only while they show. */
-    const gfx_rect_t btns[6] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI,
-                                 BR_PREV, BR_NEXT };
-    const int n_btns = lv_paged() ? 6 : 4;
+    const gfx_rect_t btns[7] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI,
+                                 BR_FILES, BR_PREV, BR_NEXT };
+    const int n_btns = lv_paged() ? 7 : 5;
 
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
@@ -307,11 +307,11 @@ static void browse_event(const touch_event_t *e)
         const bool on = btn >= 0 && tap_on(e, btns[btn]);
         if (on && btn == 0) {
             lv_rescan();
-        } else if (on && btn == 4) {
+        } else if (on && btn == 5) {
             if (lv_can_prev()) {
                 lv_read_page(LOG_PAGE_BEFORE, lv_page_edge(1));
             }
-        } else if (on && btn == 5) {
+        } else if (on && btn == 6) {
             if (lv_can_next()) {
                 lv_read_page(LOG_PAGE_AFTER, lv_page_edge(-1));
             }
@@ -319,6 +319,9 @@ static void browse_event(const touch_event_t *e)
             lv_open_selected();
         } else if (on && btn == 3) {
             ui_router_goto(SCREEN_WIFI);
+            return;
+        } else if (on && btn == 4) {
+            ui_router_goto(SCREEN_FILES);
             return;
         } else if (on) {
             ask_delete();
