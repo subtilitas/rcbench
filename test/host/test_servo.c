@@ -70,7 +70,8 @@ TEST_CASE(a_touch_on_the_dial_points_the_horn_there)
 }
 
 /* A drag keeps commanding, because the servo is meant to follow the finger
- * rather than jump when it lifts. */
+ * rather than jump when it lifts: the target follows the finger through
+ * the frames after a move. */
 TEST_CASE(a_drag_keeps_commanding)
 {
     fresh_armed();
@@ -81,10 +82,12 @@ TEST_CASE(a_drag_keeps_commanding)
 
     dial_at(60.0f, ARC_R - 30, &x, &y);
     ev(x, y, TOUCH_EVENT_MOVE, 1);
+    frames(0.3f);
     const uint16_t at_sixty = servo_screen_commanded();
     CHECK(at_sixty > at_zero);
 
     ev(x, y, TOUCH_EVENT_UP, 1);
+    frames(0.3f);
     /* And the release does not move it again. */
     CHECK_EQ(servo_screen_commanded(), at_sixty);
 }
