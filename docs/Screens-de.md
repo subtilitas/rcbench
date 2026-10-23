@@ -2162,7 +2162,8 @@ plotten:
 ![Der Plot](img/de/logs-plot.png)
 
 Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht,
-von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der
+von der Importansicht und vom Text eines Berichts zur Dateiliste, von der
+Dateiliste zum Menü. Über der
 Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
 AKTUALISIEREN, öffnet [WLAN](#wlan).
 
@@ -2248,10 +2249,35 @@ oder die Karte schreibgeschützt oder voll ist, meldet
 `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.` Nach einem
 gescheiterten Lauf liest das Panel den Ordner beim nächsten Mal neu, sodass
 eine inzwischen gelöschte Datei ihre Nummer freigibt. Die Liste zeigt die
-CSV-Dateien und nicht die Berichte, und LÖSCHEN auf einem Lauf löscht den
-Bericht mit demselben Namen und derselben Nummer mit. Die Läufe stehen nach
-Nummer, der neueste zuerst, über alle Namen im Ordner: `MOTOR043.CSV`, dann
-`SERVO042.CSV`, dann `SUPPL041.CSV`.
+CSV-Dateien und die allein stehenden Berichte, und LÖSCHEN auf einem Lauf
+löscht den Bericht mit demselben Namen und derselben Nummer mit. Ein Bericht
+steht allein, wenn keine CSV-Datei mit seinem Namen und seiner Nummer im
+Ordner liegt: `LIMITnnn.TXT` immer, und im Stammverzeichnis `SERVOnnn.TXT`
+allein, der Endlagenlauf von Firmware 0.21.0 und älter. `ATESTnnn.TXT` neben
+`ATESTnnn.CSV` steht nicht in der Liste: ÖFFNEN auf dem Lauf liest die
+CSV-Datei. Andere `.TXT`-Dateien stehen nicht in der Liste. Die Läufe stehen
+nach Nummer, der neueste zuerst, über alle Namen im Ordner, ein allein
+stehender Bericht nach seiner eigenen Nummer: `LIMIT044.TXT`, dann
+`MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
+
+![Der Bericht eines ENDLAGENLAUFS als Text](img/de/logs-report.png)
+
+ÖFFNEN auf einem allein stehenden Bericht zeigt ihn als Text an Stelle der
+Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 14
+Zeilen zu bis zu 86 Zeichen auf dem Bildschirm. Eine Zeile, die länger ist
+als eine Bildschirmzeile, bricht am letzten Leerzeichen darin um, und ein
+Wort, das länger ist, wird am Zeilenende abgeschnitten. Eine Zeile endet an
+einem Zeilenvorschub (LF), an einem Wagenrücklauf (CR) und an einem Paar
+CR LF, das ein Ende ist; ein Tabulator wird zum Leerzeichen. Ziehen auf den
+Zeilen oder am Rollbalken rollt sie. Ein Bild liest die 14 Zeilen, die es
+zeichnet, und höchstens 15 Zeilen davor, wohin der Text auch gerollt ist.
+ZURÜCK und das Home-Tag führen zur Liste und geben den Text frei; das
+Verlassen von LOGS gibt ihn auch frei, und LOGS öffnet wieder auf der
+Liste. Die Ansicht fasst die ersten 32 KiB einer Datei; eine längere zeigt
+diese und als letzte Zeile `Nur die ersten 32 kB werden gezeigt.` Eine
+Datei von 0 Bytes zeigt eine Zeile, `Die Datei ist leer.` Ein Bericht, der
+sich nicht öffnen lässt, bleibt in der Liste, und die Fußzeile sagt warum:
+`LIMIT044.TXT lässt sich nicht öffnen.` oder `Nicht genug Speicher.`
 
 ![Der Tab STAMM mit den Läufen einer älteren Firmware](img/de/logs-root.png)
 
@@ -2279,9 +2305,9 @@ bleibt die Datei dieses Tabs: Ihre Importansicht und ihr Plot lesen sie aus
 diesem Ordner, gleich welcher Tab inzwischen gewählt ist.
 
 Die Liste zeigt den Ordner in Seiten zu 48 Einträgen, und ein Ordner fasst
-bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe nach
-Nummer, die höchste zuerst, dann die Dateien, die der Prüfstand nicht
-geschrieben hat, nach Namen. Die Zeilen einer Seite stehen in derselben
+bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe und
+die allein stehenden Berichte nach Nummer, die höchste zuerst, dann die
+Dateien, die der Prüfstand nicht geschrieben hat, nach Namen. Die Zeilen einer Seite stehen in derselben
 Reihenfolge, der neueste Lauf oben. Was neu heißt, steht in der Nummer im
 Namen: die Panel-Platine hat keine Uhr, die einen Stromausfall übersteht,
 deshalb trägt jede Datei auf der Karte das Datum 1980-01-01.
@@ -2308,7 +2334,16 @@ das Verzeichnis sind 63 Sektoren zu 512 Bytes, etwa 25 ms beim SPI-Takt (SPI:
 Serial Peripheral Interface) der Karte von 20 MHz, oder 125 Sektoren, etwa
 50 ms, mit einem Bericht neben jedem Lauf. Beides ist auf dem Panel nicht
 gemessen. Die Größe jedes Eintrags kommt mit dem Lesen des Verzeichnisses,
-eine Seite kostet also einen Durchlauf und die Auswahl.
+eine Seite kostet also einen Durchlauf und die Auswahl. Ein Ordner mit einem
+Bericht außer `LIMITnnn.TXT`, neben dem keine CSV-Datei mit seinem Namen und
+seiner Nummer liegt, etwa das Stammverzeichnis einer Karte von Firmware
+0.21.0 mit einem Endlagenlauf darauf, wird je Seite zweimal gelesen: Der
+erste Durchlauf findet, welche Berichte allein stehen, der zweite bietet sie
+an. Die Durchläufe halten ihre Notizen in 1 750 Bytes PSRAM (pseudo-static
+RAM), belegt beim ersten Lesen nach einem Start. Ohne sie enthält die Liste
+die CSV-Dateien und die Berichte `LIMITnnn.TXT`, ein allein stehendes
+`SERVOnnn.TXT` steht nicht darin, und die Konsole meldet
+`no PSRAM for the list's notes`.
 
 Der Rollbalken am rechten Rand der Liste ist 42 px breit, 6,3 mm bei den 0,150
 mm Pixelabstand, die für das Panel angenommen sind (nicht gemessen). Die Länge
@@ -2750,9 +2785,30 @@ ZIP-Datei. Die Seite nennt vor dem Klick die Zahl der Dateien, ihre Bytes
 und die Bytes der ZIP-Datei. Die Dateien liegen darin, wie sie sind, nicht
 komprimiert, mit ihren Ordnerpfaden ab der Wurzel der Karte, Namen in UTF-8
 und den Zeiten der Karte. Eine Datei über 4 GiB − 1 B, ein Archiv über
-4 GiB − 1 B und mehr als 65 535 Einträge nutzen ZIP64. Nichts wird dafür im
-Speicher gehalten oder auf die Karte geschrieben: Es wird gesendet, wie es
-gelesen wird.
+4 GiB − 1 B und mehr als 65 535 Einträge nutzen ZIP64. Nichts wird dafür auf
+die Karte geschrieben. Das Panel hält 24 Bytes je Eintrag im PSRAM, nicht
+das Archiv: Es wird gesendet, wie es gelesen wird. Die Zahl der Einträge hat
+keine eigene Grenze; eine Karte, deren Einträge nicht in den freien PSRAM
+passen, bekommt 503 Service Unavailable.
+
+Der Download zählt die Einträge, geht die Karte noch einmal durch, um die
+Größe jedes Eintrags festzulegen, und kommt dann zweimal an jedem Eintrag
+vorbei: einmal für seine Daten, einmal am Ende für das Verzeichnis der
+ZIP-Datei.
+
+- Eine Datei, die durch Anhängen wächst wie ein Log, wird gesendet, wie sie
+  beim Start des Downloads war: ihre ersten Bytes bis zur Größe, die sie da
+  hatte.
+- Eine Datei, die an Ort und Stelle neu geschrieben wird, wird mit ihren
+  ersten Bytes gesendet, wie der Download sie liest.
+- Eine Datei oder ein Ordner, die während des Downloads hinzukommen, fehlen
+  darin. Mehr als 16, die zwischen dem Zählen und dem zweiten Durchgang
+  hinzukommen, bekommen 503 Service Unavailable.
+- Eine Datei, die kürzer wird, bevor der Download sie liest, und eine Datei
+  oder ein Ordner, die gelöscht oder umbenannt werden, bevor der Download
+  zum letzten Mal an ihnen vorbeikommt, beenden den Download zu kurz; der
+  Browser meldet ihn als fehlgeschlagen. Das Rotieren von
+  `BENCH/RCBENCH.LOG` bei 1 MiB ist ein Umbenennen.
 
 Die Übertragungsrate ist nicht gemessen; [Performance](Performance-de.md#wlan-downloads)
 nennt, was sie begrenzt, erwartete 300 000 bis 1 000 000 B/s in einem

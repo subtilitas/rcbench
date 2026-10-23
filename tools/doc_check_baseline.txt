@@ -405,7 +405,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member h_open(void
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member h_read(void *ctx, uint8_t *dst, uint32_t n, uint32_t timeout_ms) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member h_root(httpd_req_t *r) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member h_update(httpd_req_t *r) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member h_zip(httpd_req_t *r) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member head[WA_NAME_BYTES *3u+64u+192u] (variable) of struct bufs_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member httpd (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member httpd_up(void) (function) of file wifi_access.c is not documented.
@@ -919,13 +918,56 @@ firmware/panel/main/panel_boot.c: warning: Member TAG (variable) of file panel_b
 firmware/panel/main/panel_boot.c: warning: Member poll_identity(link_host_t *host, link_msg_t *reply) (function) of file panel_boot.c is not documented.
 firmware/panel/main/panel_boot.c: warning: Member pump(void) (function) of file panel_boot.c is not documented.
 firmware/panel/main/panel_boot.c: warning: Member s_busfault (variable) of file panel_boot.c is not documented.
-firmware/panel/main/panel_card.c: file has no @file block
 firmware/panel/main/panel_card.c: warning: Compound card_pick_t is not documented.
 firmware/panel/main/panel_card.c: warning: Compound esc_card_t is not documented.
+firmware/panel/main/panel_card.c: warning: Member CARD_PATH_MAX (macro definition) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member ESC_CARD_DIR (macro definition) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member ESC_CARD_MAX (macro definition) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member KST_FILE_NAME (macro definition) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member KST_FILE_NEW (macro definition) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member TAG (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member card_busy(const char *name) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member card_close(void *ctx) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member card_folder(const char *dir, void *ctx) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member card_mounts(void *ctx) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member card_open(const char *name, log_source_t *src, void *ctx) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member card_remove(const char *name, void *ctx) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member card_state(void *ctx) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member card_volume(void *ctx) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member card_written(log_viewer_tab_t *tab, void *ctx) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member esc_card_take(const storage_entry_t *entry, void *ctx) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member esc_profiles_load(void) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member esc_profiles_read(void) (function) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member files (variable) of struct card_pick_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member files (variable) of struct esc_card_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member held (variable) of struct esc_card_t is not documented.
+firmware/panel/main/panel_card.c: warning: Member k_card_io (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member kst_card_serve(void) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member kst_record_load(bool late) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member kst_record_load_held(bool late) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member kst_record_read(const char *path, size_t *len) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member kst_record_use(bool late, size_t len) (function) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member kst_record_write(void) (function) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member name[ESC_CARD_MAX][STORAGE_NAME_MAX] (variable) of struct esc_card_t is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_card_dir[CARD_DIR_MAX] (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_card_file (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_card_mount (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_card_answered (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_card_done (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_card_mount (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_card_req (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_card_sent (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_file[KST_PROG_FILE_MAX] (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_file_done (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_file_len (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_file_mount (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_file_ok (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_file_sent (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_path[64] (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_kst_path_new[64] (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_log_open_run (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_test_open_run (variable) of file panel_card.c is not documented.
+firmware/panel/main/panel_card.c: warning: Member s_test_open_txt (variable) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member sel (variable) of struct card_pick_t is not documented.
 firmware/panel/main/panel_control.c: warning: Member TAG (variable) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member beat(bool alive) (function) of file panel_control.c is not documented.
@@ -3683,7 +3725,6 @@ shared/ui/include/kst_panel.h: warning: return type of member kst_panel_standing
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_status_line is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_warning_level is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_warning_line is not documented
-shared/ui/include/log_select.h: file has no @file block
 shared/ui/include/log_select.h: warning: Member capacity (variable) of struct log_select_page_t is not documented.
 shared/ui/include/log_select.h: warning: Member dir (variable) of struct log_select_page_t is not documented.
 shared/ui/include/log_select.h: warning: Member held (variable) of struct log_select_page_t is not documented.
@@ -3691,15 +3732,43 @@ shared/ui/include/log_select.h: warning: Member inside (variable) of struct log_
 shared/ui/include/log_select.h: warning: Member key (variable) of struct log_select_page_t is not documented.
 shared/ui/include/log_select.h: warning: Member outside (variable) of struct log_select_page_t is not documented.
 shared/ui/include/log_select.h: warning: Member set (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_viewer_screen.h: file has no @file block
+shared/ui/include/log_select.h: warning: parameters of member log_select_keep are not documented
+shared/ui/include/log_select.h: warning: parameters of member log_select_page_begin are not documented
+shared/ui/include/log_select.h: warning: parameters of member log_select_page_end are not documented
+shared/ui/include/log_select.h: warning: parameters of member log_select_page_offer are not documented
+shared/ui/include/log_select.h: warning: parameters of member log_select_sort are not documented
+shared/ui/include/log_select.h: warning: return type of member log_select_keep is not documented
+shared/ui/include/log_select.h: warning: return type of member log_select_page_end is not documented
 shared/ui/include/log_viewer_screen.h: warning: Compound log_viewer_file_t is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Compound log_viewer_io_t is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Compound log_viewer_page_t is not documented.
+shared/ui/include/log_viewer_screen.h: warning: Member LOG_VIEWER_MAX_FILES (macro definition) of file log_viewer_screen.h is not documented.
+shared/ui/include/log_viewer_screen.h: warning: Member LOG_VIEWER_NAME_MAX (macro definition) of file log_viewer_screen.h is not documented.
+shared/ui/include/log_viewer_screen.h: warning: Member LOG_VIEWER_OPEN_MAX (macro definition) of file log_viewer_screen.h is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Member ctx (variable) of struct log_viewer_io_t is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Member is_dir (variable) of struct log_viewer_file_t is not documented.
+shared/ui/include/log_viewer_screen.h: warning: Member log_viewer_invalidate(void) (function) of file log_viewer_screen.h is not documented.
+shared/ui/include/log_viewer_screen.h: warning: Member log_viewer_range_text(char *out, size_t n, double lo, double hi, const char *unit) (function) of file log_viewer_screen.h is not documented.
+shared/ui/include/log_viewer_screen.h: warning: Member log_viewer_screen(void) (function) of file log_viewer_screen.h is not documented.
+shared/ui/include/log_viewer_screen.h: warning: Member log_viewer_set_io(const log_viewer_io_t *io) (function) of file log_viewer_screen.h is not documented.
+shared/ui/include/log_viewer_screen.h: warning: Member log_viewer_view_t (enumeration) of file log_viewer_screen.h is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Member name[LOG_VIEWER_NAME_MAX] (variable) of struct log_viewer_file_t is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Member size (variable) of struct log_viewer_file_t is not documented.
+shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_browse_title are not documented
+shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_series_color are not documented
+shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_set_tab are not documented
 shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_size_text are not documented
+shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_tab_dir are not documented
+shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_window are not documented
+shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_analysis is not documented
+shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_cursor is not documented
+shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_data is not documented
+shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_message is not documented
+shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_open_name is not documented
+shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_series_color is not documented
+shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_tab is not documented
+shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_tab_dir is not documented
+shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_view is not documented
 shared/ui/include/motor_screen.h: file has no @file block
 shared/ui/include/motor_screen.h: warning: Compound motor_cmd_t is not documented.
 shared/ui/include/motor_screen.h: warning: Member kind (variable) of struct motor_cmd_t is not documented.
@@ -4508,14 +4577,14 @@ shared/ui/kst_panel_warn.c: warning: Member warn_room(int i, int n, int rows, in
 shared/ui/kst_panel_warn.c: warning: Member warn_rules(kst_rules_t rules, int room, int room_rows) (function) of file kst_panel_warn.c is not documented.
 shared/ui/kst_panel_warn.c: warning: Member warn_text(kst_prog_level_t level, const char *s) (function) of file kst_panel_warn.c is not documented.
 shared/ui/kst_panel_warn.c: warning: Member warn_values(const kst_image_t *to, int room, int room_rows) (function) of file kst_panel_warn.c is not documented.
-shared/ui/log_select.c: file has no @file block
+shared/ui/log_select.c: warning: Member by_display_order(const void *a, const void *b) (function) of file log_select.c is not documented.
+shared/ui/log_select.c: warning: Member keep_ranked(log_viewer_file_t *set, int count, int capacity, const log_viewer_file_t *cand, int sign) (function) of file log_select.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member conv_label(log_conv_t v) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member cursor_x(void) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member draw_grid_band(gfx_canvas_t *band, int band_y0, int rows) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member draw_trace_band(gfx_canvas_t *band, int k, int band_y0, int rows) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member empty_lines(char *why, size_t n, const char **hint) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member lv_render(gfx_canvas_t *c, int buffer_index) (function) of file log_viewer_draw.c is not documented.
-shared/ui/log_viewer_draw.c: warning: Member render_bar(gfx_canvas_t *c) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member render_browse(gfx_canvas_t *c) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member render_import(gfx_canvas_t *c) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member render_plot(gfx_canvas_t *c) (function) of file log_viewer_draw.c is not documented.
@@ -4524,7 +4593,6 @@ shared/ui/log_viewer_events.c: warning: Member DRAG_SLOP (macro definition) of f
 shared/ui/log_viewer_events.c: warning: Member ask_delete(void) (function) of file log_viewer_events.c is not documented.
 shared/ui/log_viewer_events.c: warning: Member browse_event(const touch_event_t *e) (function) of file log_viewer_events.c is not documented.
 shared/ui/log_viewer_events.c: warning: Member clamp_scroll(int *scroll, int total, int visible) (function) of file log_viewer_events.c is not documented.
-shared/ui/log_viewer_events.c: warning: Member delete_doomed(void) (function) of file log_viewer_events.c is not documented.
 shared/ui/log_viewer_events.c: warning: Member follow_cursor(void) (function) of file log_viewer_events.c is not documented.
 shared/ui/log_viewer_events.c: warning: Member hit_button(const gfx_rect_t *rects, int n, int x, int y) (function) of file log_viewer_events.c is not documented.
 shared/ui/log_viewer_events.c: warning: Member import_event(const touch_event_t *e) (function) of file log_viewer_events.c is not documented.
@@ -4619,8 +4687,6 @@ shared/ui/log_viewer_int.h: warning: Member have_data (variable) of struct lv_st
 shared/ui/log_viewer_int.h: warning: Member io (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member listed (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_band[PV_W *PV_BAND] (variable) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member lv_bar_scroll_at(int top) (function) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member lv_bar_thumb(int *y, int *h) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_can_delete(void) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_can_next(void) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_can_prev(void) (function) of file log_viewer_int.h is not documented.
@@ -4636,7 +4702,6 @@ shared/ui/log_viewer_int.h: warning: Member lv_open_selected(void) (function) of
 shared/ui/log_viewer_int.h: warning: Member lv_page_edge(int sign) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_paged(void) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_point(log_viewer_tab_t tab) (function) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member lv_read_page(log_page_dir_t dir, const char *key) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_render(gfx_canvas_t *c, int buffer_index) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_rescan(void) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_run_analysis(void) (function) of file log_viewer_int.h is not documented.
@@ -4687,7 +4752,6 @@ shared/ui/log_viewer_int.h: warning: Member tap_x0 (variable) of struct lv_state
 shared/ui/log_viewer_int.h: warning: Member tap_y0 (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member valid[MAX_FBS] (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member view (variable) of struct lv_state_t is not documented.
-shared/ui/log_viewer_int.h: warning: Member view_t (enumeration) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member volume[LOG_VIEWER_NAME_MAX] (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member win0 (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member win_n (variable) of struct lv_state_t is not documented.
@@ -4700,7 +4764,34 @@ shared/ui/log_viewer_load.c: warning: Member lv_open_selected(void) (function) o
 shared/ui/log_viewer_load.c: warning: Member lv_run_analysis(void) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_set_message(const char *fmt,...) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member open_name(log_source_t *src) (function) of file log_viewer_load.c is not documented.
-shared/ui/log_viewer_screen.c: file has no @file block
+shared/ui/log_viewer_screen.c: warning: Member cancel(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member enter(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member k_tab_text[LOG_TAB_COUNT] (variable) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member list_once(log_page_dir_t dir, const char *key, int cap) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member log_viewer_invalidate(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member log_viewer_range_text(char *out, size_t n, double lo, double hi, const char *unit) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member log_viewer_screen(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member log_viewer_set_io(const log_viewer_io_t *io) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_band[PV_W *PV_BAND] (variable) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_can_delete(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_can_next(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_can_prev(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_drop_data(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_hi[LOG_MAX_SERIES] (variable) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_lo[LOG_MAX_SERIES] (variable) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_mounts_now(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_page_edge(int sign) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_paged(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_point(log_viewer_tab_t tab) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_rescan(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_s (variable) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_series_color[LOG_MAX_SERIES] (variable) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_span[LOG_MAX_SERIES][PV_W][2] (variable) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_tab_at[LOG_TAB_COUNT] (variable) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member lv_volume_now(void) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member s_screen (variable) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member tab_pos(log_viewer_tab_t tab) (function) of file log_viewer_screen.c is not documented.
+shared/ui/log_viewer_screen.c: warning: Member volume_changed(void) (function) of file log_viewer_screen.c is not documented.
 shared/ui/motor_draw.c: warning: Member arm_fill(void) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member draw_derived(gfx_canvas_t *c) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member draw_esc_says(gfx_canvas_t *c) (function) of file motor_draw.c is not documented.
@@ -6347,25 +6438,32 @@ shared/webaccess/include/wa_walk.h: warning: Member opendir(void *ctx, const cha
 shared/webaccess/include/wa_walk.h: warning: Member over (variable) of struct wa_walk_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member path[WA_PATH_MAX+1u] (variable) of struct wa_walk_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member started (variable) of struct wa_walk_t is not documented.
-shared/webaccess/include/wa_zip.h: file has no @file block
 shared/webaccess/include/wa_zip.h: warning: Compound wa_zip_plan_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Compound wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member cd_bytes (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member crc (variable) of struct wa_zip_t is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member WA_ZIP_MAX16 (macro definition) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member WA_ZIP_MAX32 (macro definition) of file wa_zip.h is not documented.
 shared/webaccess/include/wa_zip.h: warning: Member entries (variable) of struct wa_zip_len_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member err (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member file (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member file_crc (variable) of struct wa_zip_t is not documented.
 shared/webaccess/include/wa_zip.h: warning: Member files (variable) of struct wa_zip_plan_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member fs (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member in_file (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member phase (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member piece[WA_ZIP_PIECE_MAX] (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member piece_len (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member piece_off (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member plan (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member size (variable) of struct wa_zip_t is not documented.
-shared/webaccess/include/wa_zip.h: warning: Member walk (variable) of struct wa_zip_t is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_central(uint8_t *out, const char *name, size_t name_len, uint64_t size, uint32_t crc, uint64_t offset, int64_t mtime, bool dir) (function) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_central_bytes(size_t name_len, uint64_t size, uint64_t offset) (function) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_desc(uint8_t *out, uint32_t crc, uint64_t size) (function) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_desc_bytes(uint64_t size) (function) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_end(uint8_t *out, uint64_t entries, uint64_t cd_bytes, uint64_t cd_offset) (function) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_end_bytes(uint64_t entries, uint64_t cd_bytes, uint64_t cd_offset) (function) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_err_t (enumeration) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_len_init(wa_zip_len_t *l) (function) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_local(uint8_t *out, const char *name, size_t name_len, uint64_t size, int64_t mtime, bool dir) (function) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: Member wa_zip_local_bytes(size_t name_len, uint64_t size) (function) of file wa_zip.h is not documented.
+shared/webaccess/include/wa_zip.h: warning: parameters of member wa_crc32 are not documented
+shared/webaccess/include/wa_zip.h: warning: parameters of member wa_dos_time are not documented
+shared/webaccess/include/wa_zip.h: warning: parameters of member wa_zip_end64 are not documented
+shared/webaccess/include/wa_zip.h: warning: parameters of member wa_zip_end_early are not documented
+shared/webaccess/include/wa_zip.h: warning: parameters of member wa_zip_entry64 are not documented
+shared/webaccess/include/wa_zip.h: warning: parameters of member wa_zip_len_add are not documented
+shared/webaccess/include/wa_zip.h: warning: parameters of member wa_zip_len_total are not documented
+shared/webaccess/include/wa_zip.h: warning: return type of member wa_crc32 is not documented
+shared/webaccess/include/wa_zip.h: warning: return type of member wa_zip_end64 is not documented
+shared/webaccess/include/wa_zip.h: warning: return type of member wa_zip_entry64 is not documented
+shared/webaccess/include/wa_zip.h: warning: return type of member wa_zip_len_total is not documented
 shared/webaccess/wa_fetch.c: warning: Compound sink_t is not documented.
 shared/webaccess/wa_fetch.c: warning: Compound sums_t is not documented.
 shared/webaccess/wa_fetch.c: warning: Member add(const wa_run_t *r, void *ctx, const uint8_t *d, uint32_t n, uint32_t done, uint32_t total) (variable) of struct sink_t is not documented.
@@ -6403,7 +6501,37 @@ shared/webaccess/wa_send.c: file has no @file block
 shared/webaccess/wa_session.c: file has no @file block
 shared/webaccess/wa_text.c: file has no @file block
 shared/webaccess/wa_walk.c: file has no @file block
-shared/webaccess/wa_zip.c: file has no @file block
+shared/webaccess/wa_zip.c: warning: Member ATTR_DIR (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member FLAGS (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member SIG_CENTRAL (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member SIG_DESC (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member SIG_END (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member SIG_END64 (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member SIG_LOC64 (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member SIG_LOCAL (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member VERSION_20 (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member VERSION_45 (macro definition) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member central_fields(uint64_t size, uint64_t offset) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member central_sizes64(uint64_t size, uint64_t offset) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member clamp32(uint64_t v) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member entry_of(const wa_walk_t *w, wa_walk_ev_t ev, size_t *len, bool *dir) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member fail(wa_zip_t *z, wa_zip_err_t e) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member put16(uint8_t *p, uint32_t v) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member put32(uint8_t *p, uint32_t v) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member put64(uint8_t *p, uint64_t v) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member queue(wa_zip_t *z, size_t n) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member s_table[256] (variable) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member s_table_made (variable) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member wa_zip_central(uint8_t *out, const char *name, size_t name_len, uint64_t size, uint32_t crc, uint64_t offset, int64_t mtime, bool dir) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member wa_zip_central_bytes(size_t name_len, uint64_t size, uint64_t offset) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member wa_zip_desc(uint8_t *out, uint32_t crc, uint64_t size) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member wa_zip_desc_bytes(uint64_t size) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member wa_zip_end(uint8_t *out, uint64_t entries, uint64_t cd_bytes, uint64_t cd_offset) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member wa_zip_end_bytes(uint64_t entries, uint64_t cd_bytes, uint64_t cd_offset) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member wa_zip_len_init(wa_zip_len_t *l) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member wa_zip_local(uint8_t *out, const char *name, size_t name_len, uint64_t size, int64_t mtime, bool dir) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member wa_zip_local_bytes(size_t name_len, uint64_t size) (function) of file wa_zip.c is not documented.
+shared/webaccess/wa_zip.c: warning: Member walk_err(wa_walk_ev_t ev) (function) of file wa_zip.c is not documented.
 testbench/touch-injector/core/gt911_emu.c: file has no @file block
 testbench/touch-injector/core/include/gt911_emu.h: file has no @file block
 testbench/touch-injector/core/include/gt911_emu.h: warning: Compound gt911_emu_t is not documented.

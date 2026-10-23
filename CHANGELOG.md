@@ -100,6 +100,58 @@ history is in git.
   IO31 (SCL), all on the 12-pin header P3. Its Wi-Fi radio is the
   board's ESP32-C6 on SDIO, listed under Added.
 
+## 0.22.1 - 2026-10-22
+
+0.22.1 is a stable release: its minor number, 22, is even, and GitHub marks
+it as the latest release. It is a patch release of 0.22.0, the last release
+line for the ESP32-S3 panel, and fixes three defects: LOGS did not list a
+report that stands alone, the card's ZIP download broke when a log grew
+during it, and a limit run on a servo that is not a KST or a Chaservo
+ended with a reason that did not name the cause. The link protocol stays
+4.28.
+
+A panel on 0.20.0 to 0.22.0 is offered 0.22.1 by CHECK FOR UPDATES with
+RELEASES: STABLE, which reads `releases/latest`; 0.20.0 has no RELEASES
+setting and reads the same. The steps for each release are in
+[First run, §1](docs/FirstRun.md#1-flash-both-boards):
+
+1. SETUP > UPDATES, `CHECK FOR UPDATES`, with a home network kept, the
+   bench SAFE, the supply output off and no log run open. The card says
+   `Version 0.22.1 is available.`.
+2. Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel restarts and keeps 0.22.1
+   once the display and touch are up.
+3. At link-up the panel offers the IOmcu's update over CAN (Controller Area
+   Network). Hold START 2 s on the question on the menu, or `HOLD 2 s:
+   UPDATE IOMCU` on SETUP > UPDATES. The band then says `IOmcu updated to
+   0.22.1.`.
+
+The SD card stays as 0.22.0 left it; a card of 0.21.0 and older moves as
+[From 0.21.0](docs/FirstRun.md#from-0210) states. The settings and the
+Wi-Fi settings are kept. The IOmcu's store record is kept; an IOmcu older
+than 0.22.0 writes record version 8 at its first save. The release line is
+unchanged: a panel on 0.22.1 is offered 0.22.x patch releases only.
+
+### Fixed
+
+- A limit run on PROG PORT whose first CONNECT finds no servo that answers
+  (a Hitec servo, for one) ends FAIL with `no KST or Chaservo servo read`,
+  not ABORTED with `programming port did not finish`. Every other failed CONNECT,
+  LEAVE and timed-out step reads `programming port session failed`, in
+  German `PROG-PORT-Sitzung gescheitert`.
+- The card's ZIP download stays whole while a log on the card grows: a file
+  is sent at the size it had when the download started, a file added
+  meanwhile is left out. A file that shrinks, or an entry removed or
+  renamed during the download, still fails the archive.
+- LOGS lists a report standing alone: a LIMIT RUN's `LIMITnnn.TXT` in
+  `USER/LOGS`, and in the root a `SERVOnnn.TXT` with no `SERVOnnn.CSV`
+  beside it, the limit run of firmware 0.21.0 and older. It ranks by its
+  number among the runs, and the newest is selected when LOGS opens. OPEN
+  shows it as text: 14 rows of up to 86 characters, scrolled by a drag or
+  the scroll bar, the first 32 KiB of a file. A report beside its run's
+  CSV, `ATESTnnn.TXT`, stays off the list, and OPEN on the run reads the
+  CSV. The Wi-Fi page lists every file, these reports included, as a
+  download.
+
 ## 0.22.0 - 2026-10-21
 
 0.22.0 is the last release for the ESP32-S3 panel. Later releases are for

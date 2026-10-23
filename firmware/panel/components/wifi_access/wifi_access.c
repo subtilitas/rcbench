@@ -724,6 +724,15 @@ static esp_err_t h_file(httpd_req_t *r)
                                  : wifi_sock_drop(httpd_req_to_sockfd(r));
 }
 
+/**
+ * @brief GET /card.zip: the whole card as one ZIP archive, its length
+ *        announced before the first byte.
+ * @param r the request
+ * @return ESP_OK when the archive went out whole.  A failure part way sends
+ *         the bytes wa_zip_next() made up to it, then resets the connection
+ *         (ESP_FAIL): the browser has fewer bytes than announced and reports
+ *         the download failed.
+ */
 static esp_err_t h_zip(httpd_req_t *r)
 {
     if (!req_begin()) {
@@ -735,7 +744,7 @@ static esp_err_t h_zip(httpd_req_t *r)
     }
     wa_zip_t *z = heap_caps_malloc(sizeof(*z), MALLOC_CAP_SPIRAM);
     wa_zip_plan_t plan;
-    uint32_t *crc = NULL;
+    wa_zip_slot_t *slot = NULL;
     esp_err_t res = ESP_FAIL;
     /* One volume from the plan's sizes to the last file: held across the
      * whole archive, as h_file() holds one file. */
@@ -744,18 +753,23 @@ static esp_err_t h_zip(httpd_req_t *r)
         res = refused(r, (z == NULL) ? "503 Service Unavailable"
                                      : "404 Not Found");
     } else {
-        const uint64_t slots = (plan.entries > 0u) ? plan.entries : 1u;
-        crc = (slots <= SIZE_MAX / sizeof(uint32_t))
-              ? heap_caps_malloc((size_t)slots * sizeof(uint32_t),
-                                 MALLOC_CAP_SPIRAM)
-              : NULL;
-        if (crc == NULL
-            || wa_zip_begin(z, &k_card, &plan, crc, slots) != WA_ZIP_OK) {
-            res = refused(r, "503 Service Unavailable");
+        /* A slot an entry counted, and WA_ZIP_SPARE more for files added
+         * before wa_zip_begin() walks the card again. */
+        const uint64_t slots = plan.entries + WA_ZIP_SPARE;
+        slot = (slots <= SIZE_MAX / sizeof(*slot))
+               ? heap_caps_malloc((size_t)slots * sizeof(*slot),
+                                  MALLOC_CAP_SPIRAM)
+               : NULL;
+        const wa_zip_err_t be = (slot == NULL)
+                                ? WA_ZIP_MEMORY
+                                : wa_zip_begin(z, &k_card, slot, slots);
+        if (be != WA_ZIP_OK) {
+            res = refused(r, (be == WA_ZIP_NO_CARD) ? "404 Not Found"
+                                                    : "503 Service Unavailable");
         } else {
             char zname[WA_NAME_MAX + 8u];
             snprintf(zname, sizeof(zname), "%s.zip", s.name);
-            bool ok = raw_head(r, plan.bytes, zname) == WA_SEND_DONE;
+            bool ok = raw_head(r, z->plan.bytes, zname) == WA_SEND_DONE;
             while (ok) {
                 const int32_t got = wa_zip_next(z, b->io, sizeof(b->io));
                 if (got == 0) {
@@ -776,7 +790,7 @@ static esp_err_t h_zip(httpd_req_t *r)
             res = ok ? ESP_OK : wifi_sock_drop(httpd_req_to_sockfd(r));
         }
     }
-    heap_caps_free(crc);
+    heap_caps_free(slot);
     heap_caps_free(z);
     if (held) {
         storage_release();
