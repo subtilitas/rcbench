@@ -159,8 +159,8 @@ ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
   dieses Loslassen nicht gelöscht.
 - Die Bedienelemente, die anhalten, was der Prüfstand treibt, enden über dem
   Band, Panel-y 556 bis 599: DISARM, AUSGANG AUS, ABBRECHEN eines
-  Stick-Laufs (y 516 bis 549), ABBRECHEN bei einem Handschritt (y 456 bis
-  511), TEST BEENDEN und LAUF BEENDEN. Ein Druck darauf bei angezeigtem
+  Stick-Laufs (y 496 bis 551), ABBRECHEN bei einem Handschritt (y 444 bis
+  491), TEST BEENDEN und LAUF BEENDEN. Ein Druck darauf bei angezeigtem
   Alert gehört dem Bedienelement, und der Alert bleibt. Ein solches
   Bedienelement, das ein Bildschirm unter das Band zeichnet, wirkt beim
   ersten Druck, und der Druck löscht das Band; ARM und AUSGANG EIN unter
@@ -281,7 +281,7 @@ Körper-y 492. Ein Tastenfeld oder eine Tastatur, deren Fläche weiter reicht,
 malt die ganze Fläche und lässt ihre Tasten dort enden, so verdeckt ein
 Alert keine Taste. Auf SERVO sind die Tasten der Tastenfelder dann
 112 x 88 px groß und die der Tastaturen 41 x 72 px; auf SUPPLY die des
-Tastenfelds 126 x 80 px; auf der Suchtastatur von ESC STICK 59 x 61 px; auf
+Tastenfelds 126 x 80 px; auf der Suchtastatur von ESC STICK 59 x 57 px; auf
 SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89 px.
 
 ## Splash
@@ -762,7 +762,7 @@ eine Sitzung über die volle Breite: Sie deckt die linke Spalte, die Leiste
 und die Reiter ab, und solange sie offen ist, erreicht kein Druck ARM oder
 einen Reiter. Das Öffnen auf einem Prüfstand, der nicht SAFE ist, schaltet
 ihn auf SAFE, auch bei einem DISARM, den ein anderer Finger hält. In der Zeile der Reiter steht an ihrer Stelle der
-Ausgangsstreifen, eine Zeile von 16 px ab x 12:
+Ausgangsstreifen, eine Zeile in der Schrift 10 x 20 ab x 12, y 4:
 
 ![ESC STICK unter dem Ausgangsstreifen](img/de/motor-stick.png)
 
@@ -776,7 +776,7 @@ ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60 V  1.00 A   SAFE
 | `NETZTEIL` | den Ausgang des PD mini, wie er liest: `NETZTEIL 7.60 V  1.00 A`; `NETZTEIL EIN`, solange er ohne Spannungs- und Stromwert an ist; `NETZTEIL AUS`; `NETZTEIL --`, solange das Netzteil nicht antwortet |
 | `SAFE` oder `ARMED` | der Prüfstand; ARMED in der Gefahrenfarbe |
 
-Der Streifen ist höchstens 97 Zeichen breit, 776 px, auf Englisch und auf
+Der Streifen ist höchstens 100 Zeichen breit, 1000 px, auf Englisch und auf
 Deutsch. Er wird neu gezeichnet, wenn sich sein Text ändert. Seine Werte
 stehen mit Dezimalpunkt, wie auf dem Panel.
 
@@ -813,6 +813,19 @@ schon beim Aufsetzen:
   das Abheben und reagiert auch auf einen zweiten Finger.
 - Die Tasten der Such-Tastatur, die ihrem eigenen Aufsetzen und Abheben
   folgen.
+
+ESC STICK liegt auf dem Körper unter dem Ausgangsstreifen, ab Körper-y 28,
+mit Beschriftungen, Zeilen und Schaltflächen in der Schrift 10 x 20:
+
+| Teil | Ort und Größe |
+| --- | --- |
+| Pfadzeile | y 30 bis 78: ZURÜCK 120 x 48 px, der Pfad in der Schrift 12 x 24 und rechts das Suchfeld (260 px, sein X 48 px), `^` und `v` (je 56 px) auf der Liste oder TIMING (168 px) auf der Seite eines Profils |
+| Liste | 7 Zeilen je Seite, 48 px hoch im Abstand von 56 px ab y 84, 984 px breit; der Name eines Modells in 30 Zeichen; die Fußzeile endet 4 px über dem Alarmband |
+| Seite eines Profils und TIMING | links die Parameterkarte, 660 px: 6 Zeilen je Seite, 48 px hoch im Abstand von 56 px, jede mit ihrer Nummer, ihrem Namen (bis 23 Zeichen), ihrem Wert in einer 250 px breiten Spalte und `-` und `+` von 48 x 48 px, 8 px zwischen je zweien |
+| Seitenspalte | 340 px rechts der Parameterkarte: ÄNDERN (auf TIMING dessen Titel), die gezeigten Zeilen und `^` und `v` von 48 x 48 px; MANUELLER EINGRIFF NÖTIG, 310 x 48 px; darunter, wie das Menü des Profils arbeitet, Netzteil und Einstiegszeit und die Hilfe der gewählten Zeile, umbrochen auf 31 Zeichen je Zeile |
+| Fußzeile | y 436 bis 492, 4 px über dem Alarmband: links der Hinweis auf bis zu 2 Zeilen, VORGABEN und START, ABBRECHEN, OK oder SCHLIESSEN, je 168 x 56 px |
+| Lauf und Ergebnis | die Gerätekarte über die Breite ab y 84 mit ihren zwei Zeilen, darunter ab y 136 die Karte des Laufs mit der Signalsäule rechts, zwei Hilfezeilen ab y 390 und die Fußzeile; MANUELLER EINGRIFF NÖTIG eines Ergebnisses, 330 x 56 px, links von OK |
+| Warnung, manuelle Schritte, Abfrage | eine Tafel über den Seiten ab y 28, ihr Titel in der Schrift 20 x 36, ihre Zeilen im Abstand von 22 px, ihre Schaltflächen 48 px hoch und 4 px über der Fußzeile endend, sodass ein zweites Tippen auf die Stelle von START keine davon trifft |
 
 ZURÜCK und das Home-Tag im Band gehen eine Ebene auf einmal zurück: die
 Seite eines Stick-Profils zur Liste, die Modelle eines Herstellers zu den
@@ -929,9 +942,9 @@ davon ist gemessen:
 ![Timing](img/de/motor-stick-timing.png)
 
 `-` und `+` einer Zeile stellen ihren Wert um einen Schritt. Ein Tipp auf
-den Wert, die 216 px breite Spalte zwischen dem Namen und den Tasten, öffnet
+den Wert, die 250 px breite Spalte zwischen dem Namen und den Tasten, öffnet
 das Tastenfeld über der Seite, von unter dem Ausgangsstreifen bis 4 px über
-dem Alarmband: 1008 x 466 px, Tasten von 242 x 81 px. Es nennt die
+dem Alarmband: 1008 x 464 px, Tasten von 242 x 81 px. Es nennt die
 Einstellung, ihren Bereich und ihre Einheit und nimmt die Stellen des
 Schritts nach dem Punkt: eine für die 0,1 V von Spannung, zwei für die
 0,05 A von Strombegrenzung. OK setzt den Wert wie ein Schritt auf den

@@ -30,6 +30,7 @@
 
 #include "nav_rig.h"
 #include "motor_spots.h"
+#include "stick_spots.h"
 
 static void tap_tile(int index)
 {
@@ -327,7 +328,7 @@ TEST_CASE(the_home_tag_climbs_one_level_from_every_screen)
 
 #define MO_PROG_ROW_PY   (UI_BAND_H + MO_PROG_ROW_Y)
 
-#define SP_ROW_Y(n)      (UI_BAND_H + 70 + (n) * 36 + 16)
+#define SP_ROW_Y(n)      (UI_BAND_H + ST_ROW_CY(n))
 
 /* The makers' row of @p name, or -1. */
 static int stick_maker_row(const char *name)
