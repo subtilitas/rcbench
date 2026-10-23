@@ -6,7 +6,8 @@
  * The filter moves nothing while the value is not live, a DISARM, a STOP
  * or SAFE ends it at once, an ARM starts from the rest with nothing of a
  * drag before it, and TRAVEL holds the filtered target.  A finger that
- * lifts leaves the target to reach its last angle.
+ * lifts leaves the target to reach its last angle; any other command, the
+ * knob's included, ends it, and reissue()'s restatement does not.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -239,6 +240,26 @@ TEST_CASE(a_speed_change_leaves_the_filter_running)
     CHECK_EQ(servo_screen_commanded(), want);
 }
 
+/* The knob turned while the target settles after the lift, by less than
+ * a microsecond: its command comes to the pulse the filter last sent, and
+ * still takes the horn from the filter, which commands nothing more. */
+TEST_CASE(a_knob_turn_at_the_filters_pulse_ends_the_settle)
+{
+    held_then_moved(-40.0f, 40.0f);
+    on_dial(40.0f, TOUCH_EVENT_UP, 1);
+    at_hz(60.0f, 1.0f / 60.0f);
+    const uint16_t settling = servo_screen_commanded();
+    servo_cmd_t junk;
+    while (servo_screen_take(&junk)) { }
+    servo_screen_knob_frame();
+    servo_screen_knob(1.0e-6f);
+    CHECK_EQ(servo_screen_commanded(), settling);
+    while (servo_screen_take(&junk)) { }
+    at_hz(60.0f, 0.5f);
+    CHECK(no_position_posted());
+    CHECK_EQ(servo_screen_commanded(), settling);
+}
+
 /* ------------------------------------------------- disarm, stop and SAFE */
 
 /** @brief The three ways out of driving, mid-step. */
@@ -354,6 +375,7 @@ int main(int argc, char **argv)
     RUN(a_release_settles_on_the_last_finger_angle);
     RUN(another_command_takes_the_horn_from_the_filter);
     RUN(a_speed_change_leaves_the_filter_running);
+    RUN(a_knob_turn_at_the_filters_pulse_ends_the_settle);
     RUN(disarm_stop_and_safe_end_the_drag_at_once);
     RUN(a_cancelled_gesture_ends_the_drag_at_once);
     RUN(an_arm_after_a_drag_starts_from_the_rest);

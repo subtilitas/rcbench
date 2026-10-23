@@ -277,6 +277,7 @@ TEST_CASE(a_press_that_disarmed_the_bench_does_not_then_arm_it)
     fresh();
     servo_screen_set_armed(true);
     arm_press();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);   /* on the press */
     servo_screen_set_armed(false);
     hold_for(UI_HOLD_S + 0.5f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);

@@ -333,10 +333,10 @@ TEST_CASE(an_injected_stop_stops)
     const touch_point_t stop[1] = { stop_point() };
     (void)touch_merge_inject(&mg, stop, 1, true, 0);
     publish();
-    CHECK(!ui_router_take_stop());
+    CHECK(ui_router_take_stop());       /* on the press */
     (void)touch_merge_inject(&mg, NULL, 0, true, 10);
     publish();
-    CHECK(ui_router_take_stop());
+    CHECK(!ui_router_take_stop());
 }
 
 /* ---------------------------------------- injector silence is SAFE */

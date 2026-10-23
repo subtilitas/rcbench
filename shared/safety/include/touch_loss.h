@@ -86,6 +86,30 @@ uint32_t touch_seq_take(touch_seq_rx_t *rx, uint32_t seq);
  */
 uint32_t touch_seq_tail(touch_seq_rx_t *rx, uint32_t published);
 
+/* ------------------------------------------------------------ the STOP mark */
+
+/**
+ * @brief Whether the mark of a STOP the control task applied stays across a
+ *        loss the render loop has found.
+ *
+ * The control task applies a STOP at its press and marks the press with the
+ * number it gives it in the render loop's queue, so the router's latch of
+ * the same press does not stop the bench a second time.  A loss cancels the
+ * router's gestures.  A press the router has yet to take still latches after
+ * that, and needs the mark: one queued after the item that shows the loss,
+ * or the event whose arrival showed it, which is dispatched after the
+ * cancel.  A press numbered before that item was taken already or is among
+ * the lost, and the cancel decides it.  The numbers wrap.
+ *
+ * @param mark The marked press's number; 0 for none.
+ * @param cur The number of the item that showed the loss: the notice or the
+ *        event after a gap, or the last published number for a loss at the
+ *        end of a drain.
+ * @param cur_is_event Whether that item is an event the router takes next.
+ * @return True to keep the mark.
+ */
+bool stop_mark_keeps(uint32_t mark, uint32_t cur, bool cur_is_event);
+
 /* --------------------------------------------------------- the arm watch */
 
 /**

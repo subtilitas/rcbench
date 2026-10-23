@@ -261,33 +261,37 @@ TEST_CASE(a_tap_on_the_alert_only_closes_it)
 }
 
 /* A press on DISARM with an alert showing is DISARM's press like any
- * other: one that slides off and lifts away asks nothing, and one that
- * wanders over the button and lifts on it disarms. */
+ * other: it disarms at the press, and sliding off, or across the button,
+ * and lifting asks nothing more. */
 TEST_CASE(a_disarm_press_beside_the_alert_slides_as_without_one)
 {
     CHECK(sv_armed());
     alert();
     finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
+    CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
     glide(FEED_LONE, SV_ARM_X, P(300), 8);
     lift(FEED_LONE);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
 
+    CHECK(sv_armed());
     alert();
     finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
+    CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
     glide(FEED_LONE, SV_ARM_R - 4, SV_ARM_B, 8);
     lift(FEED_LONE);
-    CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
+    CHECK_EQ(sv_took(), SERVO_CMD_NONE);
 }
 
-/* Touch lost while a press on DISARM is down: the press whose release went
- * missing is a DISARM all the same. */
+/* Touch lost while a press on DISARM is down: the press has disarmed, and
+ * neither the loss nor the lift asks anything more. */
 TEST_CASE(touch_lost_under_a_disarm_press_disarms)
 {
     CHECK(sv_armed());
     alert();
     finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
-    ui_router_cancel_gestures();
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
+    ui_router_cancel_gestures();
+    CHECK_EQ(sv_took(), SERVO_CMD_NONE);
     lift(FEED_LONE);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
 }
