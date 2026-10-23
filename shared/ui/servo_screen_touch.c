@@ -156,6 +156,17 @@ static void drag_follow(float deg)
     s.df.goal = clamp_travel(deg);
 }
 
+void svs_drag_filter_end(void)
+{
+    s.df.on = false;
+}
+
+void svs_drag_end(void)
+{
+    s.dragging = false;
+    svs_drag_filter_end();
+}
+
 void svs_drag_on_post(servo_cmd_kind_t kind, uint16_t us)
 {
     (void)kind;
@@ -166,7 +177,7 @@ void svs_drag_on_post(servo_cmd_kind_t kind, uint16_t us)
     if (!s.df.on || s.df.posting || s.df.restating) {
         return;
     }
-    s.df.on = false;
+    svs_drag_filter_end();
 }
 
 void svs_drag_tick(float dt_s)
@@ -176,7 +187,7 @@ void svs_drag_tick(float dt_s)
     }
     /* A disarm, a stop or SAFE: nothing more is commanded. */
     if (!value_live()) {
-        s.df.on = false;
+        svs_drag_filter_end();
         return;
     }
     if (!(dt_s > 0.0f)) {
@@ -196,7 +207,7 @@ void svs_drag_tick(float dt_s)
         s.df.posting = false;
     }
     if (!s.dragging && s.df.out == s.df.goal) {
-        s.df.on = false;        /* there: the finger's last angle */
+        svs_drag_filter_end();  /* there: the finger's last angle */
     }
 }
 
@@ -282,9 +293,8 @@ void svs_event_body(const touch_event_t *evt)
             s.knob_finger = true;
             /* The drag's filter ends with it, where it has got to: no
              * command follows the press (svs_drag_tick()). */
-            s.df.on = false;
+            svs_drag_end();
         }
-        s.dragging = false;
         ui_slider_release(&s.speed);
         if (wb_down(evt)) {
             return;
@@ -514,9 +524,10 @@ void svs_event_body(const touch_event_t *evt)
              * the finger lifted.  A release the router or the tracker made
              * (TOUCH_FLAG_NO_TAP) is no lift: the filter stops where it is,
              * and nothing is commanded after it. */
-            s.dragging = false;
-            if (!touch_event_is_tap_up(evt)) {
-                s.df.on = false;
+            if (touch_event_is_tap_up(evt)) {
+                s.dragging = false;
+            } else {
+                svs_drag_end();
             }
             return;
         }

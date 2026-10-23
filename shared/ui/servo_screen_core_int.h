@@ -208,6 +208,18 @@ void svs_knob_withdraw(void);
  */
 void svs_drag_tick(float dt_s);
 /**
+ * @brief The drag's filter ends where it has got to and commands nothing
+ *        more.  The one way it ends: a command, a value no longer live,
+ *        its arrival, and every way the drag ends (svs_drag_end()).
+ */
+void svs_drag_filter_end(void);
+/**
+ * @brief The dial's drag ends before its finger lifted -- a press, a
+ *        release the router or the tracker made, a touch loss, leaving,
+ *        an arm edge -- and its filter with it (svs_drag_filter_end()).
+ */
+void svs_drag_end(void);
+/**
  * @brief A post of @p kind at @p us ends the drag's filter, unless it is
  *        the filter's own or reissue() saying the held position again.
  *        A knob command ends it even at the pulse the filter last sent.

@@ -430,7 +430,7 @@ bool svs_command(float deg)
 void svs_drop_motion(void)
 {
     svs_knob_withdraw();
-    s.df.on = false;            /* and the drag's filter commands no more */
+    svs_drag_filter_end();      /* and the drag's filter commands no more */
     const servo_cmd_kind_t k = s.pending.kind;
     if (k == SERVO_CMD_POSITION || k == SERVO_CMD_CENTRE
         || k == SERVO_CMD_SWEEP || k == SERVO_CMD_HOLD) {
@@ -641,7 +641,7 @@ static void leave(void)
     /* No release arrives for a finger on the speed slider or on the dial as
      * the screen changes, and a latched drag outlives the gesture. */
     ui_slider_release(&s.speed);
-    s.dragging = false;
+    svs_drag_end();
     /* Disarm rather than release: navigating away from an armed bench must
      * not leave it armed behind a screen that is not visible, and the
      * disarm lets go of the output on its way. */
@@ -751,11 +751,10 @@ static void cancel(void)
      * And the dial.  A drag left latched owns its track id, and the GT911
      * reuses ids: a later contact that began somewhere else would satisfy
      * the drag path and command a position with no press on the dial, which
-     * on an armed bench moves the servo.  The drag's filter stops where it
-     * has got to.
+     * on an armed bench moves the servo.  Its filter stops where it has
+     * got to: the target it was settling on is the abandoned gesture's.
      */
-    s.dragging = false;
-    s.df.on = false;
+    svs_drag_end();
     /* And the overlay's press: the warning's hold above all, which must not
      * complete on a contact that may have gone. */
     prog_cancel();
