@@ -75,7 +75,14 @@ TEST_CASE(a_full_frame_drops_injected_points_never_glass)
         CHECK(out[k].id < 0x80);
     }
 
+    /* Cut, they stay out when the glass makes room, until the injector
+     * lifts them; reported again after that, they are new contacts. */
     touch_merge_glass(&m, g, 1);
+    CHECK_EQ(touch_merge_frame(&m, out, TOUCH_MAX_POINTS), 1);
+    (void)touch_merge_inject(&m, inj, TOUCH_MAX_POINTS, true, 0);
+    CHECK_EQ(touch_merge_frame(&m, out, TOUCH_MAX_POINTS), 1);
+    (void)touch_merge_inject(&m, inj, 0, true, 0);
+    CHECK(touch_merge_inject(&m, inj, TOUCH_MAX_POINTS, true, 0));
     CHECK_EQ(touch_merge_frame(&m, out, TOUCH_MAX_POINTS), 5);
     CHECK_EQ(out[0].y, 10);
     for (int k = 1; k < TOUCH_MAX_POINTS; ++k) {
@@ -199,7 +206,9 @@ TEST_CASE(counts_are_clamped_to_the_frame)
     CHECK_EQ(m.glass_n, TOUCH_MAX_POINTS);
     touch_merge_glass(&m, six, -1);
     CHECK_EQ(m.glass_n, 0);
-    CHECK(touch_merge_inject(&m, six, -1, true, 10));
+    /* All five were cut for the glass's five: their lift changes the
+     * injector's set and not the merged one. */
+    CHECK(!touch_merge_inject(&m, six, -1, true, 10));
     CHECK_EQ(m.inject_n, 0);
 }
 
