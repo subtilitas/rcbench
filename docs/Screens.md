@@ -566,15 +566,40 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 ```
 
 In a MOTOR file `voltage`, `current` and `power` are what MOTOR & ESC
-shows. In a SERVO file, from a switch to ARMED on SERVO, `voltage`,
-`current`, `power`, `charge` and `energy` are the supply's instead: the PD
-mini's last reading at each sample, voltage and power to 0.01, current to
-0.001, and the charge and energy the panel counts from those readings since
-the switch to ARMED, to 1mAh and 0.01Wh. A cell is empty while the supply
-has not delivered that reading. All five are empty on a row whose `source`
-is not the supply's: a `measured` row while the supply is the panel's model
-(PD mini disabled on SETUP under INTERFACES), and a `model` row while the PD
-mini's last reading is still shown after the link went down. The other columns of a SERVO file are a MOTOR file's.
+shows. A SERVO file, from a switch to ARMED on SERVO, has two more
+columns before `source`:
+
+```
+...;ch3 voltage (V);pulse (us);angle (deg);source
+```
+
+- `voltage`, `current`, `power`, `charge` and `energy` are the servo rail's
+  meter's ([the meter](#servo)):
+  - while an INA3221 channel is the meter, its newest 50ms window at the
+    sample: the mean bus voltage, the mean current and their product;
+  - otherwise the PD mini's last reading at the sample.
+  - Voltage and power are written to 0.01, current to 0.001.
+  - Charge and energy are counted by the panel from those readings since the
+    switch to ARMED, to 1mAh and 0.01Wh.
+- `pulse` is the pulse COMMANDED shows, in whole us. It is empty while a
+  programming session holds the port.
+- `angle` is the AS5600's angle MEASURED shows, to 0.1deg. It is empty while
+  AS5600 is off in SETUP, the sensor gives no valid reading or the link is
+  down.
+- A cell is empty while its meter has not delivered that reading.
+- A row takes a figure only from a source that is the row's `source`:
+  - all five meter cells are empty on a `measured` row while the supply is
+    the panel's model (PD mini disabled on SETUP under INTERFACES);
+  - they are empty on a `model` row while the PD mini's last reading is
+    still shown after the link went down;
+  - a `model` row has no INA3221 figure and no `angle`, which read through
+    the IOmcu. `pulse` is the panel's own command and is on rows of both
+    sources.
+- The meter's figures, `pulse` and `angle` are on the last row of a sample.
+  The rows before it in one poll hold the window and the channel columns
+  only.
+- The other columns of a SERVO file are a MOTOR file's.
+
 `source` is
 `measured` on a row whose values a meter produced and `model` on a row the
 panel's model produced (the SIMULATED mark); a supply file has the same last
@@ -620,10 +645,11 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   others from 0x40 CH1 to 0x43 CH3.
 - Two channels on one target add the channel to the name:
   `out 3 0x41 ch2 current (A)`.
-- At most 3 groups, 23 columns: the fourth watching channel and later are
-  in no file. LOGS draws at most 24 columns.
+- At most 3 groups, 23 columns in a MOTOR file and 25 in a SERVO file: the
+  fourth watching channel and later are in no file. LOGS reads at most 25
+  columns.
 - A file with fewer groups ends `source` earlier: 13 + 3 x groups + 1
-  columns. With no channel watching anything the file has no channel
+  columns, and 2 more in a SERVO file. With no channel watching anything the file has no channel
   column.
 
 The group of the channel watching the servo tester's target comes from
@@ -2008,6 +2034,8 @@ Browse the card, open a file, check what the import detected, then plot:
 ![The import view](img/logs-import.png)
 ![The plot](img/logs-plot.png)
 
+![A SERVO run as it opens: pulse, angle, current and voltage](img/logs-servo-plot.png)
+
 The home tag climbs one level, as BACK does: the plot to the import view,
 the import view and a report's text to the file list, the file list to the
 menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
@@ -2036,7 +2064,10 @@ plot's time labels and the ranges of the columns and the chips in 8 x 16.
 
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
-before the file is plotted. Each numeric column shows its range, lowest to
+before the file is plotted. A file opens with up to 4 columns chosen: in a
+SERVO file `pulse`, `angle`, `current` and `voltage`, each where it holds
+numbers, then the next numeric columns; in any other file its first 4
+numeric columns. Each numeric column shows its range, lowest to
 highest: one decimal while both ends are below 1000, none from 1000 on
 (`11.9..12.6 V`, `2392..14639 rpm`). A range wider than the 17 glyphs of
 its box drops the decimal, then the space before the unit

@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- A SERVO run's log, `SERVOnnn.CSV`, has `pulse (us)` and `angle (deg)`
+  before `source`: the pulse COMMANDED shows and the AS5600 angle MEASURED
+  shows, empty without one. While an INA3221 channel is the servo rail's
+  meter, `voltage`, `current` and `power` are its newest 50ms window's,
+  otherwise the supply's. A MOTOR run's header and rows stay as they are.
+  LOGS reads up to 25 columns, the fullest SERVO file, and opens a SERVO
+  file with `pulse`, `angle`, `current` and `voltage` chosen.
+
 - The IOmcu says why it last started. A console line at start-up and every
   3 s names the cause and carries every raw value it was read from:
   `reset FLASH_UPDATE (chip_reset 0x00010000 reason 0x1 boot ... params ...

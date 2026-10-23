@@ -348,6 +348,17 @@ void panel_frame_loop(void)
             servo_screen_source_dropped(win.dropped, win.dropped_at);
             servo_screen_window(&win.win, win.source, win.changes);
         }
+        /* The pulse COMMANDED shows and the angle MEASURED shows, for a
+         * SERVO run's rows: one word, so the control task reads the two as
+         * one. */
+        {
+            uint16_t us  = 0u;
+            float    deg = 0.0f;
+            const bool have_us  = servo_screen_log_pulse(&us);
+            const bool have_deg = servo_screen_log_angle(&deg);
+            atomic_store(&s_servo_log,
+                         log_servo_pack(have_us, us, have_deg, deg));
+        }
         supply_item_t sup_item;
         while (xQueueReceive(s_supply_q, &sup_item, 0) == pdTRUE) {
             const supply_state_t sup = sup_item.st;

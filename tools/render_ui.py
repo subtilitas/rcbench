@@ -261,6 +261,8 @@ SCREENS = {
                                 "motor", "dark"),
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
+    # A SERVO run opened: pulse, angle, current and voltage chosen.
+    "logs-servo-plot": ("logs-servo-plot.png", "logs", "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
     # LOGS' ROOT tab: the runs of firmware 0.21.0 and older.
     "logs-root":  ("logs-root.png",  "logs",       "dark"),

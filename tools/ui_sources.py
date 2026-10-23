@@ -147,6 +147,8 @@ SOURCES = [
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",
+    # LOGS' SERVO run, written by the logger itself.
+    "shared/bench/log_writer.c",
     "shared/servo/servo_sim.c",
     "shared/servo/servo_sweep.c",
     "shared/servo/servo_move.c",

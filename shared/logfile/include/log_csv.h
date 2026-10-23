@@ -33,10 +33,11 @@ extern "C" {
 /**
  * @brief Ceilings.
  *
- * The screen cannot draw more than 24 channels, and reporting the limit beats a
- * silent truncation.
+ * 25 columns: the fullest file the bench writes, a SERVO run's with three
+ * INA3221 groups (log_writer.h); the import view scrolls its list.  A wider
+ * file is refused, and reporting the limit beats a silent truncation.
  */
-#define LOG_MAX_COLUMNS 24
+#define LOG_MAX_COLUMNS 25
 /** @brief Most series the build materialises. */
 #define LOG_MAX_SERIES  4
 /** @brief Room for a column name, bytes, with its terminator. */

@@ -157,7 +157,19 @@ void log_writer_set_cols(log_writer_t *w, const log_cols_t *cols)
     }
 }
 
-bool log_writer_header(log_writer_t *w)
+/** @brief A SERVO run's file: the commanded pulse and the measured angle,
+ *         before source. */
+static const char *const k_servo_cols = "pulse (us);angle (deg);";
+
+/**
+ * @brief The header of a bench file: a motor run's, or with @p servo a
+ *        SERVO run's, which adds k_servo_cols before source.
+ *
+ * @param w     The writer.
+ * @param servo true for a SERVO run's file.
+ * @return true on success; false when a write failed.
+ */
+static bool header(log_writer_t *w, bool servo)
 {
     if (w == NULL || w->header_done) {
         return w != NULL && !w->failed;
@@ -166,8 +178,10 @@ bool log_writer_header(log_writer_t *w)
     if (!put(w, k_head, strlen(k_head))) {
         return false;
     }
+    const char *const tail_servo = servo ? k_servo_cols : "";
     if (!w->by_map) {
         return put(w, k_ch123, strlen(k_ch123))
+               && put(w, tail_servo, strlen(tail_servo))
                && put(w, k_tail, strlen(k_tail));
     }
     static const char *const k_what[3] = { "current (A)", "max (A)",
@@ -183,7 +197,13 @@ bool log_writer_header(log_writer_t *w)
             }
         }
     }
-    return put(w, k_tail, strlen(k_tail));
+    return put(w, tail_servo, strlen(tail_servo))
+           && put(w, k_tail, strlen(k_tail));
+}
+
+bool log_writer_header(log_writer_t *w)
+{
+    return header(w, false);
 }
 
 /**
@@ -385,15 +405,17 @@ static bool rail_figure(const log_rail_t *r, unsigned which, float *v)
  * @param b     The bench sample.
  * @param servo true for a SERVO run's row.
  * @param rail  The supply's figures on a SERVO run's row, or NULL.
+ * @param sv    The pulse and angle on a SERVO run's row, or NULL.
  * @return true when the row is written.
  */
 static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
-                      bool servo, const log_rail_t *rail)
+                      bool servo, const log_rail_t *rail,
+                      const log_servo_t *sv)
 {
     if (w == NULL || b == NULL) {
         return false;
     }
-    if (!w->header_done && !log_writer_header(w)) {
+    if (!w->header_done && !header(w, servo)) {
         return false;
     }
 
@@ -439,7 +461,7 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
              RAIL_E, 2 },
     };
 
-    /* In the writer, not on the stack: 23 cells, every one checked
+    /* In the writer, not on the stack: up to 25 cells, every one checked
      * against the end. */
     char *line = w->line;
     const size_t cap = sizeof(w->line);
@@ -528,6 +550,14 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
                && cell(line, cap, &n, i, max / 1000.0f, 3)
                && cell(line, cap, &n, v, min / 1000.0f, 3);
     }
+    /* A SERVO run's pulse and angle, empty where there is none. */
+    if (servo) {
+        fits = fits
+               && cell(line, cap, &n, sv != NULL && sv->pulse_ok,
+                       (sv != NULL) ? (float)sv->pulse_us : 0.0f, 0)
+               && cell(line, cap, &n, sv != NULL && sv->angle_ok,
+                       (sv != NULL) ? sv->angle_deg : 0.0f, 1);
+    }
     fits = fits && text_cell(line, cap, &n,
                              source_word(bench_state_simulated(b)));
     if (!fits || (size_t)n + 2u >= cap) {
@@ -539,13 +569,67 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
 
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
 {
-    return bench_row(w, t_s, b, false, NULL);
+    return bench_row(w, t_s, b, false, NULL, NULL);
 }
 
 bool log_writer_servo_row(log_writer_t *w, float t_s, const bench_state_t *b,
-                          const log_rail_t *rail)
+                          const log_rail_t *rail, const log_servo_t *sv)
 {
-    return bench_row(w, t_s, b, true, rail);
+    return bench_row(w, t_s, b, true, rail, sv);
+}
+
+void log_rail_take_ina(log_rail_t *out, const sense_link_win_t *win,
+                       bool row_modelled)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    if (win == NULL) {
+        return;
+    }
+    if (row_modelled) {
+        out->withheld = true;   /* the part reads through the IOmcu */
+        return;
+    }
+    out->v = (float)win->mean_mv / 1000.0f;
+    out->i = (float)win->mean_ma / 1000.0f;
+    out->p = out->v * out->i;
+    out->ok = (uint8_t)((win->voltage ? SUPPLY_OK_VOLTAGE : 0u)
+                        | (win->current ? SUPPLY_OK_CURRENT : 0u));
+}
+
+/** @brief The packed angle that is no angle (log_servo_pack()). */
+#define LOG_SERVO_NO_ANGLE 0x8000u
+
+uint32_t log_servo_pack(bool pulse_ok, uint16_t pulse_us, bool angle_ok,
+                        float angle_deg)
+{
+    const uint32_t us = pulse_ok ? (uint32_t)pulse_us : 0u;
+    uint32_t angle = LOG_SERVO_NO_ANGLE;
+    if (angle_ok && isfinite(angle_deg)) {
+        const long cdeg = lroundf(angle_deg * 100.0f);
+        if (cdeg >= -32767L && cdeg <= 32767L) {
+            angle = (uint32_t)(uint16_t)(int16_t)cdeg;
+        }
+    }
+    return (us << 16) | angle;
+}
+
+void log_servo_unpack(uint32_t packed, bool row_modelled, log_servo_t *out)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    out->pulse_us = (uint16_t)(packed >> 16);
+    out->pulse_ok = out->pulse_us != 0u;
+    const uint16_t angle = (uint16_t)(packed & 0xFFFFu);
+    /* The encoder reads through the IOmcu: a modelled row has no angle. */
+    if (angle != LOG_SERVO_NO_ANGLE && !row_modelled) {
+        out->angle_deg = (float)(int16_t)angle / 100.0f;
+        out->angle_ok  = true;
+    }
 }
 
 void log_rail_take(log_rail_t *out, const supply_state_t *s,

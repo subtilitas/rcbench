@@ -18,6 +18,8 @@
 
 #include <stdbool.h>
 
+#include "log_csv.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,6 +39,21 @@ typedef struct {
  * @return The group and unit of the channel.
  */
 log_field_meta_t log_field_meta(const char *name);
+
+/**
+ * @brief The columns LOGS plots in a file before the operator picks any.
+ *
+ * In a file with a numeric `pulse` column, a SERVO run's, its `pulse`,
+ * `angle`, `current` and `voltage` first, each where it is numeric; then,
+ * and in any other file, the first numeric columns in file order.  Never
+ * the time axis, and no column twice.
+ *
+ * @param an  The file's analysis.
+ * @param out Receives the column indices.
+ * @param max The most columns to pick.
+ * @return The number of columns picked; 0 with @p an or @p out NULL.
+ */
+int log_fields_picks(const log_analysis_t *an, int *out, int max);
 
 #ifdef __cplusplus
 }

@@ -619,18 +619,44 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 ```
 
 In einer MOTOR-Datei sind `voltage`, `current` und `power`, was MOTOR & ESC
-zeigt. In einer SERVO-Datei, nach einem ARM auf SERVO, sind `voltage`,
-`current`, `power`, `charge` und `energy` stattdessen die des Netzteils: der
-letzte Messwert des PD mini zu jedem Messwert des Laufs, Spannung und
-Leistung auf 0,01, Strom auf 0,001, und Ladung und Energie, die das Panel
-aus diesen Messwerten seit dem ARM zählt, auf 1mAh und 0,01Wh. Eine Zelle
-ist leer, solange das Netzteil diesen Messwert nicht geliefert hat. Alle
-fünf sind leer in einer Zeile, deren `source` nicht die des Netzteils ist:
-in einer `measured`-Zeile, solange das Netzteil das Modell des Panels ist
-(PD mini in SETUP ANSCHLÜSSE ausgeschaltet), und in einer `model`-Zeile,
-solange nach dem Verlust des Links noch der letzte Messwert des PD mini
-gezeigt wird. Die
-übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei. `source`
+zeigt. Eine SERVO-Datei, nach einem ARM auf SERVO, hat zwei Spalten mehr vor
+`source`:
+
+```
+...;ch3 voltage (V);pulse (us);angle (deg);source
+```
+
+- `voltage`, `current`, `power`, `charge` und `energy` sind die des
+  Messgeräts der Servoschiene ([das Messgerät](#servo)):
+  - solange ein INA3221-Kanal das Messgerät ist, sein neuestes
+    50ms-Fenster zum Messwert: die mittlere Busspannung, der mittlere Strom
+    und ihr Produkt;
+  - sonst der letzte Messwert des PD mini zum Messwert.
+  - Spannung und Leistung stehen auf 0,01, Strom auf 0,001.
+  - Ladung und Energie zählt das Panel aus diesen Messwerten seit dem ARM,
+    auf 1mAh und 0,01Wh.
+- `pulse` ist der Puls, den COMMANDED zeigt, in ganzen us. Leer, solange
+  eine Programmiersitzung den Port hält.
+- `angle` ist der Winkel des AS5600, den MEASURED zeigt, auf 0,1deg. Leer,
+  solange AS5600 in SETUP aus ist, der Sensor keinen gültigen Messwert
+  liefert oder der Link fehlt.
+- Eine Zelle ist leer, solange ihr Messgerät diesen Wert nicht geliefert
+  hat.
+- Eine Zeile nimmt einen Wert nur aus einer Quelle, die ihre `source` ist:
+  - alle fünf Zellen des Messgeräts sind leer in einer `measured`-Zeile,
+    solange das Netzteil das Modell des Panels ist (PD mini in SETUP
+    ANSCHLÜSSE ausgeschaltet);
+  - sie sind leer in einer `model`-Zeile, solange nach dem Verlust des Links
+    noch der letzte Messwert des PD mini gezeigt wird;
+  - eine `model`-Zeile hat keinen Wert des INA3221 und kein `angle`, die über
+    den IOmcu gelesen werden. `pulse` ist der eigene Befehl des Panels und
+    steht in Zeilen beider Quellen.
+- Die Werte des Messgeräts, `pulse` und `angle` stehen in der letzten Zeile
+  eines Messwerts. Die Zeilen davor in einem Poll halten nur das Fenster und
+  die Kanalspalten.
+- Die übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei.
+
+`source`
 ist `measured` in einer Zeile, deren Werte ein Messgerät geliefert hat, und
 `model` in einer Zeile, die das Modell des Panels geliefert hat (die Marke
 SIMULIERT); eine Netzteil-Datei hat dieselbe letzte Spalte. Eine Datei ohne
@@ -681,10 +707,11 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   die anderen von 0x40 CH1 bis 0x43 CH3.
 - Zwei Kanäle an einem Ziel tragen den Kanal im Namen:
   `out 3 0x41 ch2 current (A)`.
-- Höchstens 3 Gruppen, 23 Spalten: der vierte überwachende Kanal und alle
-  weiteren stehen in keiner Datei. LOGS zeichnet höchstens 24 Spalten.
+- Höchstens 3 Gruppen, 23 Spalten in einer MOTOR-Datei und 25 in einer
+  SERVO-Datei: der vierte überwachende Kanal und alle weiteren stehen in
+  keiner Datei. LOGS liest höchstens 25 Spalten.
 - Eine Datei mit weniger Gruppen endet früher mit `source`: 13 + 3 x
-  Gruppen + 1 Spalten. Überwacht kein Kanal etwas, hat die Datei keine
+  Gruppen + 1 Spalten, in einer SERVO-Datei 2 mehr. Überwacht kein Kanal etwas, hat die Datei keine
   Kanalspalte.
 
 Die Gruppe des Kanals, der das Ziel des Servotesters überwacht, stammt aus
@@ -2209,6 +2236,8 @@ plotten:
 ![Die Importansicht](img/de/logs-import.png)
 ![Der Plot](img/de/logs-plot.png)
 
+![Ein SERVO-Lauf, wie er öffnet: pulse, angle, current und voltage](img/de/logs-servo-plot.png)
+
 Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht,
 von der Importansicht und vom Text eines Berichts zur Dateiliste, von der
 Dateiliste zum Menü. Über der
@@ -2241,7 +2270,10 @@ Zeitmarken des Plots und die Bereiche der Spalten und der Chips in 8 x 16.
 Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
-Jede numerische Spalte zeigt ihren Bereich vom kleinsten zum größten Wert:
+Eine Datei öffnet mit bis zu 4 gewählten Spalten: in einer SERVO-Datei
+`pulse`, `angle`, `current` und `voltage`, jede, wo sie Zahlen hält, dann
+die nächsten Zahlenspalten; in jeder anderen Datei ihre ersten 4
+Zahlenspalten. Jede numerische Spalte zeigt ihren Bereich vom kleinsten zum größten Wert:
 mit einer Nachkommastelle, solange beide Enden unter 1000 liegen, ab 1000
 ohne (`11.9..12.6 V`, `2392..14639 rpm`). Ein Bereich breiter als die 17
 Zeichen seines Felds verliert die Nachkommastelle, dann das Leerzeichen vor
