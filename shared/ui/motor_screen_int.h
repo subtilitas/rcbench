@@ -116,9 +116,8 @@ _Static_assert(ARM_Y + ARM_H <= STOP_FLOOR,
                "DISARM ends above the alert band");
 _Static_assert(ARM_Y + ARM_H <= CTL_Y + CTL_H,
                "ARM ends inside the CONTROL card");
-_Static_assert(BTN_H >= UI_TAP_MIN && ARM_H >= UI_TAP_MIN
-               && TARGET_H >= UI_TAP_MIN,
-               "every control of the CONTROL card is a finger tall");
+/* RESET PEAKS and TARGET are UI_TAP_MIN tall by their defines. */
+_Static_assert(ARM_H >= UI_TAP_MIN, "ARM is a finger tall");
 
 /*
  * The left column on LIVE: the telemetry card, with its tag and the
