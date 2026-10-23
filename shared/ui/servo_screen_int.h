@@ -350,6 +350,7 @@ typedef struct {
 typedef struct {
     bool  on;      /**< the filter commands the dial               */
     bool  posting; /**< the filter's own post is under way          */
+    bool  restating; /**< reissue() says the held position again    */
     float goal;    /**< the finger's angle, held to TRAVEL, degrees  */
     float out;     /**< the filtered target last commanded, degrees  */
 } svs_drag_filter_t;

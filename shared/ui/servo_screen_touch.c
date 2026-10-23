@@ -158,10 +158,12 @@ static void drag_follow(float deg)
 
 void svs_drag_on_post(servo_cmd_kind_t kind, uint16_t us)
 {
-    if (!s.df.on || s.df.posting) {
-        return;
-    }
-    if (kind == SERVO_CMD_POSITION && us == svs_deg_to_us(s.df.out)) {
+    (void)kind;
+    (void)us;
+    /* Only the filter's own post and reissue()'s restatement leave it
+     * running.  Every other command ends it, the knob's included, even one
+     * that comes to the pulse the filter last sent. */
+    if (!s.df.on || s.df.posting || s.df.restating) {
         return;
     }
     s.df.on = false;

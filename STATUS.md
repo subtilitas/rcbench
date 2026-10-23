@@ -390,10 +390,10 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_setting_keypad.c` | 84 | 84 | 100.0% |
 | `shared/ui/ui_textkey.c` | 304 | 293 | 96.4% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
-| `shared/ui/servo_screen.c` | 363 | 355 | 97.8% |
+| `shared/ui/servo_screen.c` | 365 | 357 | 97.8% |
 | `shared/ui/servo_screen_sweep.c` | 471 | 468 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 372 | 369 | 99.2% |
-| `shared/ui/servo_screen_touch.c` | 276 | 262 | 94.9% |
+| `shared/ui/servo_screen_touch.c` | 274 | 260 | 94.9% |
 | `shared/ui/servo_screen_draw.c` | 531 | 519 | 97.7% |
 | `shared/ui/servo_settings_panel.c` | 510 | 495 | 97.1% |
 | `shared/ui/servo_settings_draw.c` | 340 | 333 | 97.9% |

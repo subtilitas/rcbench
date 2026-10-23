@@ -383,7 +383,11 @@ void reissue(void)
             s.dr.on = false;
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
+        /* The held position said again under the new rate or range: the
+         * drag's filter, settling, goes on (svs_drag_on_post()). */
+        s.df.restating = true;
         post(SERVO_CMD_POSITION, svs_deg_to_us(s.commanded_deg));
+        s.df.restating = false;
     } else if (s.gate.armed || s.gate.arm_asked) {
         /*
          * Resting on an armed bench: the rest restated under the profile now
