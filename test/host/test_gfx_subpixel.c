@@ -265,6 +265,30 @@ TEST_CASE(a_ring_of_nothing_draws_nothing)
     CHECK(coverage(NULL, NULL) == 0.0);
 }
 
+/* A band thick enough to reach the centre (thickness over 2r - 1) covers
+ * the centre pixel as it covers any other: by half the thickness and half a
+ * pixel less the radius, at most whole.  At 2r - 1 it reaches the centre
+ * with no coverage left. */
+TEST_CASE(a_ring_over_its_centre_covers_the_centre)
+{
+    static const struct { float r, t; } k_rings[] = {
+        { 1.0f, 4.0f }, { 2.0f, 5.0f }, { 3.0f, 6.5f }, { 0.5f, 1.2f },
+        { 4.0f, 7.0f },
+    };
+    for (size_t k = 0; k < sizeof(k_rings) / sizeof(k_rings[0]); ++k) {
+        fresh();
+        const float r = k_rings[k].r, t = k_rings[k].t;
+        gfx_ring_aaf(&s_c, 24.0f, 24.0f, r, t, 0.0f, 360.0f, GFX_WHITE,
+                     GFX_WHITE, 0.0f);
+        const double want = fmin(1.0, fmax(0.0, (double)(t / 2.0f + 0.5f - r)));
+        const double got = cov_at(24 * W + 24);
+        if (fabs(got - want) > 1.5 / 63.0) {
+            T_FAIL("r %.1f, thickness %.1f: centre %.3f, want %.3f",
+                   (double)r, (double)t, got, want);
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     (void)argc;
@@ -279,5 +303,6 @@ int main(int argc, char **argv)
     RUN(an_arc_is_the_same_either_way_round);
     RUN(a_ring_keeps_to_the_clip);
     RUN(a_ring_of_nothing_draws_nothing);
+    RUN(a_ring_over_its_centre_covers_the_centre);
     return test_summary("gfx_subpixel");
 }
