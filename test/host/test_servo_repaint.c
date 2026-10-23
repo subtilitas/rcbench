@@ -238,6 +238,26 @@ TEST_CASE(the_horn_moves_by_fractions_of_a_pixel)
     }
 }
 
+/* A reading past three digits, +1000.0deg and over from a pulse far off
+ * the profile, draws wider numerals than -888.8: the repaint of the angle
+ * covers what each buffer drew last and what it draws now, so the wide
+ * numerals go when the reading comes back. */
+TEST_CASE(a_wide_angle_is_cleared_when_it_narrows)
+{
+    fresh_armed();
+    two_buffers();
+    servo_screen_feedback(1500u, 0.2f, true);
+    CHECK(both_whole());
+    servo_screen_feedback(9000u, 0.2f, true);
+    CHECK(both_whole());
+    servo_screen_feedback(1500u, 0.2f, true);
+    CHECK(both_whole());
+    servo_screen_feedback(60000u, 0.2f, true);
+    CHECK(both_whole());
+    servo_screen_feedback(1000u, 0.2f, true);
+    CHECK(both_whole());
+}
+
 int main(int argc, char **argv)
 {
     (void)argc;
@@ -245,5 +265,6 @@ int main(int argc, char **argv)
     RUN(the_horn_repainted_in_its_boxes_is_the_whole_frame);
     RUN(a_moving_horn_leaves_the_cards_alone);
     RUN(the_horn_moves_by_fractions_of_a_pixel);
+    RUN(a_wide_angle_is_cleared_when_it_narrows);
     return test_summary("servo_repaint");
 }

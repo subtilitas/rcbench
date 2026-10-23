@@ -5,6 +5,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdlib.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -222,6 +223,41 @@ TEST_CASE(the_router_draws_the_band_over_the_question_only)
     CHECK(!ui_router_stop_live());
     ui_router_goto(SCREEN_OVERVIEW);
     CHECK(ui_router_stop_live());
+}
+
+/* The question after the progress, on the same screen: the band comes back
+ * in both buffers as a frame drawn whole draws it, though the router
+ * repaints a buffer's band only when it changed there. */
+TEST_CASE(the_band_comes_back_over_a_question_after_the_progress)
+{
+    const size_t n = (size_t)UI_PANEL_W * UI_PANEL_H;
+    gfx_color_t *px[3];
+    gfx_canvas_t cv[3];
+    for (int b = 0; b < 3; ++b) {
+        px[b] = calloc(n, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(px[b]);
+        gfx_canvas_init(&cv[b], px[b], UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
+    }
+    ui_router_init();
+    fresh(k_old, k_new);
+    ui_router_goto(SCREEN_COPROC_UPDATE);
+    ui_router_render(&cv[0], 0);
+    ui_router_render(&cv[1], 1);
+    coproc_update_screen_progress(CU_STEP_SEND, 0u, 2994u);
+    ui_router_render(&cv[0], 0);
+    ui_router_render(&cv[1], 1);
+    coproc_update_screen_offer(k_old, k_new);
+    CHECK_EQ(coproc_update_screen_view(), CU_VIEW_QUESTION);
+    ui_router_render(&cv[0], 0);
+    ui_router_render(&cv[1], 1);
+    ui_router_invalidate();
+    ui_router_render(&cv[2], 0);
+    const size_t band = (size_t)UI_PANEL_W * UI_BAND_H;
+    CHECK(memcmp(px[0], px[2], band * sizeof(gfx_color_t)) == 0);
+    CHECK(memcmp(px[1], px[2], band * sizeof(gfx_color_t)) == 0);
+    for (int b = 0; b < 3; ++b) {
+        free(px[b]);
+    }
 }
 
 /* ------------------------------------------------------------ the driver */
@@ -465,6 +501,7 @@ int main(void)
     RUN(the_progress_view_takes_no_touch);
     RUN(a_new_offer_returns_to_the_question_with_clear_latches);
     RUN(the_router_draws_the_band_over_the_question_only);
+    RUN(the_band_comes_back_over_a_question_after_the_progress);
     RUN(every_view_renders_inside_its_canvas);
     RUN(an_offer_opens_the_question_once_on_a_safe_menu);
     RUN(cancel_declines_once_and_the_question_stays_shut);
