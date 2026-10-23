@@ -441,7 +441,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member nvs_conf_sa
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member offer (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member on_event(void *arg, esp_event_base_t base, int32_t id, void *data) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member on_http(esp_http_client_event_t *e) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member on_scan_done(void) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member out (variable) of struct bufs_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member page_info(wa_page_info_t *pi) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member path[WA_PATH_MAX+1u] (variable) of struct bufs_t is not documented.
@@ -6141,23 +6140,6 @@ shared/webaccess/include/wa_send.h: warning: Member failed (variable) of struct 
 shared/webaccess/include/wa_send.h: warning: Member file (variable) of struct wa_send_t is not documented.
 shared/webaccess/include/wa_send.h: warning: Member fs (variable) of struct wa_send_t is not documented.
 shared/webaccess/include/wa_send.h: warning: Member sent (variable) of struct wa_send_t is not documented.
-shared/webaccess/include/wa_session.h: file has no @file block
-shared/webaccess/include/wa_session.h: warning: Compound wa_conf_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Compound wa_net_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Compound wa_pending_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Compound wa_scan_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Compound wa_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member ctx (variable) of struct wa_store_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member join_err (variable) of struct wa_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member mode (variable) of struct wa_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member n (variable) of struct wa_scan_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member net[WA_SCAN_MAX] (variable) of struct wa_scan_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member off (variable) of struct wa_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member pass[WA_PASS_MAX+1u] (variable) of struct wa_conf_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member save(void *ctx, const wa_conf_t *c) (variable) of struct wa_store_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member ssid[WA_SSID_MAX+1u] (variable) of struct wa_conf_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member ssid[WA_SSID_MAX+1u] (variable) of struct wa_net_t is not documented.
-shared/webaccess/include/wa_session.h: warning: Member state (variable) of struct wa_t is not documented.
 shared/webaccess/include/wa_text.h: file has no @file block
 shared/webaccess/include/wa_text.h: warning: Member buf[WA_OUT_BUF] (variable) of struct wa_out_t is not documented.
 shared/webaccess/include/wa_text.h: warning: Member ctx (variable) of struct wa_out_t is not documented.
@@ -6247,7 +6229,6 @@ shared/webaccess/wa_page.c: warning: Member firmware(wa_out_t *o, const wa_page_
 shared/webaccess/wa_page.c: warning: Member folder(wa_out_t *o, const wa_page_info_t *pi, const char *path) (function) of file wa_page.c is not documented.
 shared/webaccess/wa_page.c: warning: Member head(wa_out_t *o, const wa_page_info_t *pi) (function) of file wa_page.c is not documented.
 shared/webaccess/wa_send.c: file has no @file block
-shared/webaccess/wa_session.c: file has no @file block
 shared/webaccess/wa_text.c: file has no @file block
 shared/webaccess/wa_walk.c: file has no @file block
 shared/webaccess/wa_zip.c: warning: Member ATTR_DIR (macro definition) of file wa_zip.c is not documented.
