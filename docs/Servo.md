@@ -108,11 +108,14 @@ The servo is held at PULSE CENTRE, the run switches the bench to SAFE,
 CONNECT reads every register, LEAVE gives the port back, and the run
 switches the bench to ARMED. Nothing is driven before that.
 
-- A read that fails ends the run before any search: ABORTED, `programming
-  port did not finish`, where CONNECT or its read does not complete; FAIL,
-  `no KST or Chaservo servo read`, where the servo read holds values the
-  hard rules do not take. A servo that is no KST or Chaservo is searched
-  with TARGET on a SERVO PWM pin.
+- A read that fails ends the run before any search: FAIL, `no KST or
+  Chaservo servo read`, where the first CONNECT finds no servo that answers
+  (a servo that is no KST or Chaservo does not) or the servo read holds
+  values the hard rules do not take; ABORTED, `programming port session
+  failed`, where the first CONNECT fails for another reason or its read
+  does not complete. A servo that is no KST or Chaservo is searched with
+  TARGET on a SERVO PWM pin. Any later CONNECT, a LEAVE or a step that
+  does not complete ends the run as ABORTED with the same reason.
 - NEUTRAL not between PULSE LOWER and PULSE UPPER ends it as FAIL,
   `NEUTRAL outside LOWER/UPPER`.
 - PULSE LOWER to PULSE UPPER not inside the bench's PULSE MIN to PULSE MAX
@@ -344,7 +347,7 @@ PULSE LOWER and PULSE UPPER are 1000.0 µs and 2000.0 µs:
 RCBENCH SERVO LIMIT REPORT
 Result:         PASS
 Device:         SERVO
-Firmware:       rcbench 0.22.0
+Firmware:       rcbench 0.22.1
 Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
 Output:         PROG PORT 1 GP13, 50 Hz
 Pulse range:    centre 1500 us, 1000-2000 us
@@ -968,7 +971,7 @@ TRAVEL TIME set to 800 ms:
 RCBENCH SERVO TEST REPORT
 Result:         PASS
 Device:         MG90S
-Firmware:       rcbench 0.22.0
+Firmware:       rcbench 0.22.1
 Log:            the .CSV with this file's number, one row per supply reading
 Supply:         PD mini
 Current:        PD mini

@@ -1,6 +1,7 @@
-/*
- * Which of a card's entries a bounded list keeps, and the order it draws them
- * in.
+/**
+ * @file log_select.h
+ * @brief Which of a card's entries a bounded list keeps, and the order it
+ *        draws them in.
  *
  * The browse list holds a page of LOG_VIEWER_MAX_FILES entries and a card
  * takes up to LOG_RUN_LAST runs, so a listing of a full card is a choice.
@@ -28,6 +29,9 @@
 
 #pragma once
 
+#include <stdint.h>
+
+#include "log_name.h"
 #include "log_viewer_screen.h"
 
 #ifdef __cplusplus
@@ -83,6 +87,73 @@ int log_select_page_end(log_select_page_t *sel, log_viewer_page_t *page);
  * the other names, case-insensitively.
  */
 void log_select_sort(log_viewer_file_t *set, int count);
+
+/*
+ * Which names of a folder the list holds: every CSV file, and a report
+ * standing alone.
+ *
+ * A run's report, ATESTnnn.TXT beside ATESTnnn.CSV, is not an entry of its
+ * own: OPEN on the run reads its CSV, and DELETE on it takes the report
+ * along.  A report with no CSV of its prefix and number beside it is the
+ * only file of its run, and is listed: LIMITnnn.TXT always, a LIMIT RUN
+ * writes no CSV, and SERVOnnn.TXT alone, the limit run of firmware 0.21.0
+ * and older, in the root.  Any other ".TXT" is not listed.
+ *
+ * Whether a report stands alone is known once the whole folder is read, and
+ * a page is chosen while it is read.  So a folder is walked once, and a
+ * second time only when a report other than LIMITnnn.TXT was found without
+ * its CSV: the first walk offers the CSV files and the LIMIT reports and
+ * notes the rest, the second offers the reports noted alone.  The page
+ * selection takes entries in any order, so the two walks choose the page
+ * one walk of both would.  A folder written by this firmware, whose ATEST
+ * reports stand beside their CSV files, is walked once.  The notes are two
+ * bits per prefix and number: 1,750 bytes.
+ */
+
+/** @brief Bytes of one prefix's bit per number, LOG_RUN_FIRST to
+ *         LOG_RUN_LAST. */
+#define LOG_LONE_BYTES ((LOG_RUN_LAST + 8) / 8)
+
+/** @brief The notes of one folder's walks.  The fields are the walks'. */
+typedef struct {
+    /** @brief A run log of the prefix and number is in the folder. */
+    uint8_t csv[LOG_PREFIX_COUNT][LOG_LONE_BYTES];
+    /** @brief A report of the prefix and number waits for the second walk. */
+    uint8_t txt[LOG_PREFIX_COUNT][LOG_LONE_BYTES];
+} log_lone_t;
+
+/**
+ * @brief Start the notes of a folder's walks.
+ * @param l  the notes; nothing happens for NULL
+ */
+void log_lone_begin(log_lone_t *l);
+
+/**
+ * @brief The first walk's word on one name, which it notes.
+ * @param l     the notes; NULL lists the CSV files and the LIMIT reports
+ * @param name  a file's name in the folder
+ * @return true when the list holds @p name and the first walk offers it: a
+ *         name ending in ".csv", any case, or a LIMIT report; false for
+ *         everything else, a report noted for the second walk included
+ */
+bool log_lone_first(log_lone_t *l, const char *name);
+
+/**
+ * @brief Whether the folder needs the second walk.
+ * @param l  the notes after the first walk
+ * @return true when a report was noted with no CSV of its prefix and
+ *         number in the folder
+ */
+bool log_lone_again(const log_lone_t *l);
+
+/**
+ * @brief The second walk's word on one name.
+ * @param l     the notes after the first walk
+ * @param name  a file's name in the folder
+ * @return true when @p name is a report the first walk noted and found no
+ *         CSV for: the second walk offers it
+ */
+bool log_lone_second(const log_lone_t *l, const char *name);
 
 #ifdef __cplusplus
 }

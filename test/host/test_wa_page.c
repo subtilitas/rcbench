@@ -23,6 +23,7 @@
 #include "fw_fixture.h"
 #include "wa_fakefs.h"
 #include "wa_page.h"
+#include "wa_send.h"
 #include "wa_zip.h"
 
 /* Where the pages are written for check_wa_page.py, which hands each
@@ -452,11 +453,66 @@ TEST_CASE(the_bench_tree_lists_every_file_under_its_folder)
     fake_free(&fs);
 }
 
+/*
+ * A report standing alone, a LIMIT RUN's LIMITnnn.TXT or the SERVOnnn.TXT
+ * alone of a card of firmware 0.21.0, is offered as a run's report is: a
+ * row of its folder's table whose link downloads it, and the link serves
+ * every byte of it.  A card of such reports alone lists each of them.
+ */
+TEST_CASE(a_report_standing_alone_is_a_download_as_a_runs_report_is)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    fake_add(&fs, "SERVO043.TXT", false, 1702u, 315532800);
+    fake_add(&fs, CARD_USER, true, 0u, 0);
+    fake_add(&fs, CARD_USER_LOGS, true, 0u, 0);
+    const int limit = fake_add(&fs, CARD_USER_LOGS "/LIMIT001.TXT", false,
+                               1873u, 315532800);
+    fake_add(&fs, CARD_USER_LOGS "/LIMIT002.TXT", false, 1940u, 315532800);
+    const wa_fs_t w = fake_wa(&fs);
+    begin(-1);
+    wa_page_main(&g_o, &k_en, &w);
+    CHECK(wa_out_flush(&g_o));
+    CHECK_EQ(links(g_p.buf, g_found, 16), 3);
+    CHECK_STR_EQ(g_found[0], "SERVO043.TXT");
+    CHECK_STR_EQ(g_found[1], CARD_USER_LOGS "/LIMIT001.TXT");
+    CHECK_STR_EQ(g_found[2], CARD_USER_LOGS "/LIMIT002.TXT");
+    /* The row a run's report has: name, bytes, date. */
+    CHECK(strstr(g_p.buf, "<tr><td><a href=\"/card/USER/LOGS/LIMIT001.TXT\" "
+                          "download>LIMIT001.TXT</a></td><td class=\"n\">"
+                          "1873</td>") != NULL);
+    CHECK(strstr(g_p.buf, "3 files") != NULL);
+    /* The link serves the file whole. */
+    wa_send_t snd;
+    CHECK(wa_send_begin(&snd, &w, g_found[1], 1873u));
+    uint8_t buf[512];
+    uint64_t at = 0u;
+    bool same = true;
+    for (;;) {
+        const int32_t n = wa_send_next(&snd, buf, sizeof(buf));
+        CHECK(n >= 0);
+        if (n <= 0) {
+            break;
+        }
+        for (int32_t i = 0; i < n; ++i) {
+            same = same && buf[i] == fake_byte(limit, at + (uint64_t)i);
+        }
+        at += (uint64_t)n;
+    }
+    wa_send_end(&snd);
+    CHECK(same);
+    CHECK_EQ(at, 1873u);
+    CHECK_EQ(fs.files_open, 0);
+    CHECK_EQ(fs.dirs_open, 0);
+    fake_free(&fs);
+}
+
 int main(void)
 {
     RUN(the_code_form_asks_for_the_code_and_shows_nothing_else);
     RUN(every_file_is_listed_with_a_link_back_to_it);
     RUN(the_bench_tree_lists_every_file_under_its_folder);
+    RUN(a_report_standing_alone_is_a_download_as_a_runs_report_is);
     RUN(without_a_card_the_page_says_so_and_still_takes_an_upload);
     RUN(an_empty_card_and_names_left_out_are_said);
     RUN(a_long_listing_streams_and_stops_when_the_browser_goes);

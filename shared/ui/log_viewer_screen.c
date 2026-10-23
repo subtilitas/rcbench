@@ -1,5 +1,6 @@
-/*
- * The log viewer: browse the card, review the import, plot the file.
+/**
+ * @file log_viewer_screen.c
+ * @brief The log viewer: browse the card, review the import, plot the file.
  *
  * Three views behind one tile: a file browser, an import view that shows
  * what the CSV (comma-separated values) reader made of the file, and the
@@ -13,7 +14,7 @@
  *
  * This file holds the state, the card's listing and paging and the
  * screen's interface; log_viewer_load.c opens a file, log_viewer_draw.c
- * draws the three views, log_viewer_events.c takes their touch events, and
+ * draws the four views, log_viewer_events.c takes their touch events, and
  * log_viewer_int.h is what the four share.
  *
  * DELETE in the browse view asks before it acts: a second panel names the
@@ -23,6 +24,10 @@
  * The browse view lists one folder at a time, chosen by three tabs in its
  * header row: ROOT, USER and BENCH, in that order (log_viewer_tab_t holds
  * the ids; the tabs' order on screen is lv_tab_at).
+ *
+ * A report standing alone, LIMITnnn.TXT, opens in a fourth view as text:
+ * the browse list's panel, scroll bar and BACK, with the file's rows in
+ * place of the files (log_text.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -76,6 +81,16 @@ const log_analysis_t *log_viewer_analysis(void)
 const log_data_t *log_viewer_data(void)
 {
     return s.have_data ? &s.data : NULL;
+}
+
+const log_text_t *log_viewer_text(void)
+{
+    return (s.text.buf != NULL) ? &s.text : NULL;
+}
+
+int log_viewer_text_first(void)
+{
+    return (s.text.buf != NULL) ? s.text_scroll : 0;
 }
 
 void log_viewer_window(int *first, int *count)
@@ -268,8 +283,8 @@ static int list_once(log_page_dir_t dir, const char *key, int cap)
     return n;
 }
 
-/*
- * Read the page @p dir and @p key name, and select its newest run.
+/**
+ * @brief Read the page @p dir and @p key name, and select its newest run.
  *
  * Pages are cut from the top, LOG_VIEWER_MAX_FILES at a time.  A page
  * before the key that starts less than a page from the top is the first
@@ -279,7 +294,11 @@ static int list_once(log_page_dir_t dir, const char *key, int cap)
  * page past the end: the card has fewer entries than when the key was
  * read, after a DELETE or behind the screen's back.  The last page is read
  * instead, as the pages from the first one cut it: what is left of the
- * count after whole pages.
+ * count after whole pages.  The newest is the highest number on the page,
+ * a report standing alone included.
+ *
+ * @param dir  Which side of @p key the page is on.
+ * @param key  The name at the page's edge; "" or NULL for the top.
  */
 void lv_read_page(log_page_dir_t dir, const char *key)
 {
@@ -335,14 +354,15 @@ void lv_read_page(log_page_dir_t dir, const char *key)
     s.listed = 1;
     /*
      * The run just recorded is the one an operator re-reads the card for, so
-     * the list opens on it: the highest run number on the page.  Runs rank
-     * ahead of everything the panel lists, so it is the top row and the
-     * scroll stays at 0.  A page with no numbered run keeps no selection.
+     * the list opens on it: the highest run number on the page, a limit
+     * run's report included.  Runs rank ahead of everything the panel lists,
+     * so it is the top row and the scroll stays at 0.  A page with no
+     * numbered run keeps no selection.
      */
     int best = -1;
     for (int i = 0; i < s.n_files; ++i) {
         if (!s.files[i].is_dir &&
-            log_run_number(s.files[i].name) >= 0 &&
+            log_name_number(s.files[i].name) >= 0 &&
             (best < 0 || log_name_rank(s.files[i].name,
                                        s.files[best].name) < 0)) {
             best = i;
@@ -423,32 +443,41 @@ bool lv_can_delete(void)
            && !s.files[s.sel].is_dir;
 }
 
-/*
- * The thumb of the scroll bar: its top in @p y and its height in @p h.  The
- * whole track while every row of the page shows.
- */
-void lv_bar_thumb(int *y, int *h)
+void lv_bar_thumb_of(int total, int visible, int scroll, int *y, int *h)
 {
     const gfx_rect_t t = BR_BAR;
-    if (s.n_files <= BR_ROWS) {
+    if (total <= visible) {
         *y = t.y;
         *h = t.h;
         return;
     }
-    const int th = t.h * BR_ROWS / s.n_files;
-    const int max = s.n_files - BR_ROWS;
-    *y = t.y + (t.h - th) * s.scroll / max;
+    int th = t.h * visible / total;
+    if (th < BR_BAR_MIN) {
+        th = BR_BAR_MIN;
+    }
+    const int max = total - visible;
+    *y = t.y + (t.h - th) * scroll / max;
     *h = th;
 }
 
-/* The scroll that puts the thumb's top nearest @p top. */
-int lv_bar_scroll_at(int top)
+/**
+ * @brief The browse list's thumb (lv_bar_thumb_of()).
+ *
+ * @param y  Takes the thumb's top.
+ * @param h  Takes its height.
+ */
+void lv_bar_thumb(int *y, int *h)
+{
+    lv_bar_thumb_of(s.n_files, BR_ROWS, s.scroll, y, h);
+}
+
+int lv_bar_scroll_of(int total, int visible, int top)
 {
     int ty;
     int th;
-    lv_bar_thumb(&ty, &th);
+    lv_bar_thumb_of(total, visible, 0, &ty, &th);
     const int travel = BR_BAR.h - th;
-    const int max = s.n_files - BR_ROWS;
+    const int max = total - visible;
     if (travel <= 0 || max <= 0) {
         return 0;
     }
@@ -460,6 +489,29 @@ int lv_bar_scroll_at(int top)
         off = travel;
     }
     return (off * max + travel / 2) / travel;
+}
+
+/**
+ * @brief The browse list's scroll for a thumb at @p top (lv_bar_scroll_of()).
+ *
+ * @param top  The thumb's top the finger asks for.
+ * @return The first row on screen.
+ */
+int lv_bar_scroll_at(int top)
+{
+    return lv_bar_scroll_of(s.n_files, BR_ROWS, top);
+}
+
+int lv_text_total(void)
+{
+    return s.text.rows + (s.text.cut ? 1 : 0);
+}
+
+void lv_close_text(void)
+{
+    log_text_free(&s.text);
+    s.text_scroll = 0;
+    s.view = VIEW_BROWSE;
 }
 
 /* The tabs as the header row shows them, left to right: the id of each. */
@@ -523,10 +575,17 @@ void log_viewer_set_tab(log_viewer_tab_t tab)
     lv_read_page(LOG_PAGE_FROM, "");
 }
 
+/**
+ * @brief The screen as a start leaves it: the BENCH tab, nothing open,
+ *        nothing selected.
+ *
+ * The I/O stays; the data, the analysis and a report's text are freed.
+ */
 static void reset(void)
 {
     log_viewer_io_t io = s.io;
     lv_drop_data();
+    log_text_free(&s.text);
     memset(&s, 0, sizeof(s));
     s.io = io;
     ui_tabs_init_text(&s.tabs, k_tab_text, LOG_TAB_COUNT, BR_TABS);
@@ -582,11 +641,15 @@ static void enter(void)
     log_viewer_invalidate();
 }
 
-/*
- * The home tag climbs one level, as each view's BACK: the plot to the
- * import, the import to the file list.  Over the DELETE question it is
+/**
+ * @brief The home tag: one level up, as each view's BACK.
+ *
+ * The plot to the import, the import and a report's text to the file list;
+ * the text is freed (lv_close_text()).  Over the DELETE question it is
  * CANCEL: the file stays.  On the file list it leaves the screen.  A press
  * held, a drag, a pan and a pinch end with the view they were made on.
+ *
+ * @return True when it climbed inside the screen, false to leave it.
  */
 static bool back(void)
 {
@@ -599,6 +662,10 @@ static bool back(void)
         s.view = VIEW_IMPORT;
         return true;
     }
+    if (s.view == VIEW_TEXT) {
+        lv_close_text();
+        return true;
+    }
     if (s.view == VIEW_IMPORT) {
         s.view = VIEW_BROWSE;
         return true;
@@ -606,11 +673,22 @@ static bool back(void)
     return false;
 }
 
+/**
+ * @brief Leaving LOGS: a report's text is freed, and LOGS opens on the list
+ *        next time.  The import and the plot stay as they were left.
+ */
+static void leave(void)
+{
+    if (s.view == VIEW_TEXT) {
+        lv_close_text();
+    }
+}
+
 static const ui_screen_t s_screen = {
     .title = "LOGS",
     .reset = reset,
     .enter = enter,
-    .leave = NULL,
+    .leave = leave,
     .tick = NULL,
     .event = lv_event,
     .cancel = cancel,

@@ -527,6 +527,20 @@ TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
                  32.76);
         CHECK(cells_of(line) <= 58);
     }
+    /* Every reason of a limit run, in every language: SERVO_STR_L_WHY_HARD
+     * to SERVO_STR_L_WHY_RANGE are the run's. */
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        const ui_language_t *t = ui_text_table((ui_lang_t)l);
+        const char *const *table = (t != NULL) ? t->servo : NULL;
+        for (int why = SERVO_STR_L_WHY_HARD; why <= SERVO_STR_L_WHY_RANGE;
+             ++why) {
+            const char *s = servo_str_in(table, (servo_str_t)why);
+            if (s[0] == '\0' || cells_of(s) > 31) {
+                T_FAIL("language %d: limit run reason %d \"%s\" is %d cells",
+                       l, why, s, cells_of(s));
+            }
+        }
+    }
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_CC),
                  "constant current for 1 s");
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_INA_METER),
