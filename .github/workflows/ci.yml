@@ -589,19 +589,26 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # The .deb files are cached because the Azure mirror serves at about
+      # 50 kB/s at times: gcc-arm-none-eabi (57.5 MB) took 19 min on one run.
+      # The key carries the runner image version, so a new image saves a fresh
+      # entry that starts from the previous one.
+      - name: Key for the toolchain packages
+        id: arm-keys
+        run: tools/install_arm_toolchain.sh cache-keys >> "$GITHUB_OUTPUT"
+
+      - name: Cache the toolchain packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-arm/*.deb
+          key: ${{ steps.arm-keys.outputs.key }}
+          restore-keys: ${{ steps.arm-keys.outputs.restore }}
+
       # Ubuntu's packaged toolchain rather than ARM's tarball: one line, and
       # the RP2350's Cortex-M33 needs nothing newer.  Fallback if the package
       # fails: ARM's 14.2 release, unpacked and put on PATH.
       - name: Install the ARM toolchain
-        run: |
-          # Third-party lists this build never installs from; one serving a
-          # stale index fails the whole step.  See the note in the host job.
-          sudo rm -fv /etc/apt/sources.list.d/*google* \
-                      /etc/apt/sources.list.d/*microsoft* || true
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
-            libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev
+        run: tools/install_arm_toolchain.sh install "$HOME/apt-arm"
 
       # Pinned, and cached on the tag: the SDK (software development kit) is
       # 400 MB of checkout and does not change between runs unless this pin
@@ -704,16 +711,23 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # The .deb files are cached because the Azure mirror serves at about
+      # 50 kB/s at times: gcc-arm-none-eabi (57.5 MB) took 19 min on one run.
+      # The key carries the runner image version, so a new image saves a fresh
+      # entry that starts from the previous one.
+      - name: Key for the toolchain packages
+        id: arm-keys
+        run: tools/install_arm_toolchain.sh cache-keys >> "$GITHUB_OUTPUT"
+
+      - name: Cache the toolchain packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-arm/*.deb
+          key: ${{ steps.arm-keys.outputs.key }}
+          restore-keys: ${{ steps.arm-keys.outputs.restore }}
+
       - name: Install the ARM toolchain
-        run: |
-          # Third-party lists this build never installs from; one serving a
-          # stale index fails the whole step.  See the note in the host job.
-          sudo rm -fv /etc/apt/sources.list.d/*google* \
-                      /etc/apt/sources.list.d/*microsoft* || true
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
-            libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev
+        run: tools/install_arm_toolchain.sh install "$HOME/apt-arm"
 
       # The same key as the IOmcu job: one SDK checkout for both.
       - name: Cache the pico-sdk
