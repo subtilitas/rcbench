@@ -124,6 +124,15 @@ one reply line; a gesture gets a second when it ends.
 | `release` | `ok release`; a gesture under way first gets `fail <gesture> released` |
 
 Coordinates are panel pixels: x 0 to 1023, y 0 to 599. `ms` is 1 to 30000.
+They include the 60 px status band across the top of the 1024 x 600 panel
+(`UI_BAND_H`); they are not screen-body coordinates, which start 60 px lower
+down. The boot question that offers the IOmcu update has its START button
+at panel (536, 342) and its CANCEL button at panel (264, 342). Their body
+coordinates, body y plus 60 px, are (536, 282) and (264, 282), the centres of
+the rectangles at `shared/ui/coproc_update_screen.c:21-22` (240 x 48 px).
+A tap at y 282 lands at body y 222, inside the question box above the
+buttons, and misses both.
+
 The panel takes injected points as pixels of its 1024 x 600 UI (user
 interface) area, unmirrored, and lands each on the pixel named; a point
 past the area is clamped to its edge. The glass's own report (1024 x 600,
