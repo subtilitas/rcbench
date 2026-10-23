@@ -84,7 +84,7 @@ void servo_screen_set_armed(bool armed)
     /* A finger on the dial does not carry its drag across the edge: after
      * an arm the first input is a new press, and a disarmed dial takes
      * none. */
-    s.dragging = false;
+    svs_drag_end();
     /*
      * Nothing is being held across this edge, in either direction.  An arm
      * starts from nothing -- the panel drops the position and the slot on the
@@ -221,7 +221,7 @@ void servo_screen_cancel_arm(void)
     s.knob_had_driving = false;
     /* A position not yet taken would be sent after the stop. */
     svs_drop_motion();
-    s.dragging = false;
+    svs_drag_end();
     stop_sweep();
 }
 
@@ -272,13 +272,13 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
             const uint16_t was = svs_deg_to_us(s.commanded_deg);
             s.commanded_deg = clamp_travel(deg);
             if (svs_deg_to_us(s.commanded_deg) != was) {
-                ++s.ctrl_rev;       /* COMMANDED shows it */
+                ++s.dial_rev;       /* COMMANDED shows it */
             }
         }
     }
     if (!same) {
         s.shown_q_deg = q_deg;
-        ++s.ctrl_rev;
+        ++s.dial_rev;
     }
 }
 
@@ -303,7 +303,7 @@ void servo_screen_encoder(const servo_test_enc_t *e)
     const int q = e->valid ? (int)lroundf(enc_deg_now() * 10.0f) : 0x7FFF;
     if (q != s.shown_q_enc) {
         s.shown_q_enc = q;
-        ++s.ctrl_rev;
+        ++s.dial_rev;           /* MEASURED shows it */
     }
 }
 

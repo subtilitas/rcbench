@@ -648,6 +648,8 @@ void svs_tick_body(float dt_s)
         s.clock_ms += whole;
         s.clock_frac_ms -= (float)whole;
     }
+    /* The drag's filtered target, before the horn is moved towards it. */
+    svs_drag_tick(dt_s);
     if (s.sweeping) {
         /* A sweep whose curve a setting or the profile changed starts over,
          * as the IOmcu's does when it is written. */
@@ -659,7 +661,7 @@ void svs_tick_body(float dt_s)
         if (s.sweeping && !s.awaiting
             && sweep_step(&s.sw, s.clock_ms, &cmd)) {
             s.commanded_deg = clamp_travel(sweep_deg(cmd));
-            ++s.ctrl_rev;
+            ++s.dial_rev;
         }
     }
     if (s.dr.on) {
@@ -690,7 +692,7 @@ void svs_tick_body(float dt_s)
             }
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
-        ++s.ctrl_rev;
+        ++s.dial_rev;
     }
     if (s.arm_down && svs_arm_locked() && ui_hold_leave(&s.arm)) {
         /* The port was found held under a hold of ARM: no arm is sent. */
@@ -867,13 +869,13 @@ void svs_tick_body(float dt_s)
         s.shown_cmd = want;
         if (s.shown_deg != s.commanded_deg) {
             s.shown_deg = s.commanded_deg;
-            ++s.ctrl_rev;
+            ++s.dial_rev;
         }
         remember_shown();
         return;
     }
     s.shown_cmd = next;
     s.shown_deg = us_to_deg_f(svs_cmd_to_us(s.shown_cmd));
-    ++s.ctrl_rev;
+    ++s.dial_rev;
     remember_shown();
 }

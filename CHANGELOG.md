@@ -66,6 +66,20 @@ history is in git.
 
 ### Fixed
 
+- STOP and DISARM on MOTOR & ESC and on SERVO act on the press, not on the
+  release. On the panel a STOP held 600ms stopped the pulses 0.62s after
+  the press, at the lift, and a DISARM held 600ms 0.618s after it. The
+  control task's own STOP test and the router's both act at the press; a
+  press on DISARM takes no hold, so a finger left on it arms nothing. ARM
+  stays a 2s hold.
+- A press the router keeps from the screen -- on the band, STOP, the home
+  tag, a chip or the alert band -- ends a dial or slider drag another finger
+  makes, as a press on the screen does. A STOP pressed during a SERVO dial
+  drag let the pulse follow the drag for the whole press.
+- The SERVO dial's drag filter stops where it is when a press, a release
+  at the band's edge or a touch loss ends the drag, and at every command
+  other than its own and a restated position, the knob's included when it
+  comes to the filter's last pulse.
 - ESP32-P4 panel: the .bss that `firmware/panel/main/psram_bss.lf` names
   is in PSRAM (pseudo-static random-access memory): 29 objects, 166,472
   bytes of `.ext_ram.bss`; internal .bss is 29,408 bytes instead of
