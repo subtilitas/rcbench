@@ -1,5 +1,6 @@
-/*
- * Wi-Fi access. See wa_session.h.
+/**
+ * @file
+ * @brief Wi-Fi access. See wa_session.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -50,6 +51,14 @@ void wa_conf_defaults(wa_conf_t *c)
     c->code_on = true;
 }
 
+/**
+ * @brief The checks of wa_conf_set_net().
+ * @param ssid     The name, not terminated.
+ * @param ssid_len Its bytes.
+ * @param pass     The passphrase, not terminated.
+ * @param pass_len Its characters.
+ * @return WA_CONF_OK, or what is wrong with the pair.
+ */
 static wa_conf_err_t check_net(const char *ssid, size_t ssid_len,
                                const char *pass, size_t pass_len)
 {
@@ -128,6 +137,10 @@ void wa_pending_init(wa_pending_t *p)
     memset(p, 0, sizeof(*p));
 }
 
+/**
+ * @brief A change: a new generation, the failure and its tries reset.
+ * @param p The writes owed.
+ */
 static void pending_touched(wa_pending_t *p)
 {
     ++p->gen;
@@ -217,6 +230,10 @@ void wa_scan_clear(wa_scan_t *s)
     memset(s, 0, sizeof(*s));
 }
 
+/**
+ * @brief Sort the list strongest first.
+ * @param s The list.
+ */
 static void scan_sort(wa_scan_t *s)
 {
     /* Insertion sort, strongest first; stable, so equal signals keep the
@@ -288,6 +305,12 @@ wa_off_t wa_gate(bool armed, bool supply, bool run)
     return run ? WA_OFF_RUN : WA_OFF_NONE;
 }
 
+/**
+ * @brief Enter @p st at @p now_ms.
+ * @param w      The session.
+ * @param st     The state.
+ * @param now_ms Now.
+ */
 static void enter(wa_t *w, wa_state_t st, uint32_t now_ms)
 {
     w->state    = st;
@@ -305,8 +328,11 @@ wa_off_t wa_start(wa_t *w, wa_mode_t mode, wa_off_t gate, uint32_t now_ms,
         return gate;
     }
     /* Everything of the last session goes: a code shown then opens
-     * nothing now. */
+     * nothing now.  The scan tokens count on, so a call of the last
+     * session's scan acts on nothing of this one. */
+    const uint32_t seq = w->scan_seq;
     wa_init(w);
+    w->scan_seq = seq;
     w->mode     = mode;
     w->last_ms  = now_ms;
     wa_secret_make(w->pass, rand, ctx);
@@ -359,6 +385,68 @@ void wa_on_scan_done(wa_t *w)
     if (w->state == WA_ST_SCANNING) {
         wa_close(w, WA_OFF_NONE);
     }
+}
+
+uint32_t wa_scan_begin(wa_t *w)
+{
+    if (w->state != WA_ST_SCANNING || w->scan_tok != 0u
+        || w->scan_runs >= WA_SCAN_TRIES) {
+        return 0u;
+    }
+    if (++w->scan_seq == 0u) {
+        w->scan_seq = 1u;        /* 0 is none */
+    }
+    w->scan_tok = w->scan_seq;
+    ++w->scan_runs;
+    return w->scan_tok;
+}
+
+uint32_t wa_scan_pending(const wa_t *w)
+{
+    return (w->state == WA_ST_SCANNING) ? w->scan_tok : 0u;
+}
+
+bool wa_scan_is(const wa_t *w, uint32_t tok)
+{
+    return tok != 0u && wa_scan_pending(w) == tok;
+}
+
+bool wa_scan_refused(wa_t *w, uint32_t tok)
+{
+    if (!wa_scan_is(w, tok)) {
+        return false;
+    }
+    wa_close(w, WA_OFF_FAILED);
+    return true;
+}
+
+bool wa_scan_read_ok(uint32_t status, unsigned reported, bool read_ok,
+                     unsigned read, unsigned room)
+{
+    /* Fewer than reported is part of a list, more is another list: a report
+     * of a list gone, another scan's or one already read. */
+    const unsigned want = (reported < room) ? reported : room;
+    return status == 0u && read_ok && read == want;
+}
+
+wa_scan_step_t wa_on_scan_end(wa_t *w, uint32_t tok, bool ok,
+                              uint32_t *next)
+{
+    *next = 0u;
+    if (!wa_scan_is(w, tok)) {
+        return WA_SCAN_IGNORE;
+    }
+    w->scan_tok = 0u;
+    if (ok) {
+        wa_close(w, WA_OFF_NONE);
+        return WA_SCAN_TAKE;
+    }
+    *next = wa_scan_begin(w);
+    if (*next != 0u) {
+        return WA_SCAN_AGAIN;
+    }
+    wa_close(w, WA_OFF_FAILED);
+    return WA_SCAN_FAILED;
 }
 
 void wa_on_associated(wa_t *w, uint32_t now_ms)

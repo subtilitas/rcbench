@@ -26,6 +26,20 @@ history is in git.
   from those readings since the switch to ARMED. These cells were empty on
   a bench without an ESC or an INA228. The header and a MOTOR run's rows
   stay as they are.
+- WI-FI > CHOOSE HOME NETWORK: a failed scan no longer reads as an empty
+  list. A scan session starts one scan, however often the station's start
+  is reported. Each scan has a token that the refusal, the done report and
+  the retry carry: a call of a scan that ended acts on nothing of the
+  session started after it. At the radio's stop the worker waits, 2000ms
+  at most (`DRAIN_MS`), until the event loop has handled the radio's last
+  events, so a done report of a radio taken down is never read as the next
+  radio's. A failed scan, a list that cannot be read and a read that does
+  not hold what the report counts (or a full buffer of 24) run the scan again, 3 scans at most (`WA_SCAN_TRIES`) within the 10s;
+  then the list's place says `Wi-Fi could not start.` instead of
+  `No WPA2 or WPA3 network found.`, as it does for a scan the radio
+  refuses, where it said `Searching for networks.` until the screen closed.
+  The console logs each scan's start, its done report (status, counted,
+  read, listed, left off) and an ignored report.
 
 ## 0.22.1 - 2026-10-22
 

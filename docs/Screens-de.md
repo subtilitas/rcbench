@@ -2460,6 +2460,17 @@ VERSTECKTES NETZWERK öffnet sie für den Namen eines Netzes, das sich nicht
 ankündigt, und danach für das Passwort. NEU SUCHEN sucht erneut; ABBRECHEN
 geht zurück.
 
+`Kein WPA2- oder WPA3-Netzwerk gefunden.` heißt: Eine Suche ist fertig und
+hat kein Netz gefunden, das die Liste behält. Eine Suche, die das Funkmodul
+als gescheitert meldet, läuft erneut, höchstens 3 Suchen (`WA_SCAN_TRIES`)
+in denselben 10s. Scheitert jede, lehnt das Funkmodul die Suche ab oder endet
+sie nicht in den 10s, steht an der Stelle der Liste
+`WLAN konnte nicht starten.`; ein STOP, ein Wechsel nach ARMED, der
+eingeschaltete Netzteilausgang oder ein geöffneter Aufzeichnungslauf
+hinterlässt dort seine eigene Zeile. NEU SUCHEN versucht es erneut.
+HEIMNETZ WÄHLEN steht nur auf den Tasten: Mit laufendem Access Point oder
+verbundenem Panel bietet der Bildschirm zuerst WLAN AUS an.
+
 ![Der Netzname](img/de/wifi-key-ssid.png)
 ![Kleinbuchstaben](img/de/wifi-key-lower.png)
 ![ABC: Großbuchstaben](img/de/wifi-key-upper.png)
