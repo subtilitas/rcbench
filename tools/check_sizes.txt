@@ -46,7 +46,7 @@ shared/servo/servo_test.c | none | one state machine; 14 of its 24 statics cross
 shared/outputs/kst_port.c | none | check_protocols.py holds the path
 protocols/kst/kst_file.c | none | stays in protocols/kst (owner answer)
 shared/settings/settings.c | none | F19: 21 lines over; 3 check_docs.py paths, and a move edits Research.md
-firmware/panel/components/wifi_access/wifi_access.c | none | one state struct used 275 times; macros read by path
+firmware/panel/components/wifi_access/wifi_access.c | 1906 +-100 | one state struct used 275 times; macros read by path; owner 2026-10-23: accepted as is, no split planned
 shared/outputs/out_bind.c | none | row 18 cuts out_board.c out right after the next release (F12)
 shared/outputs/page_console.c | none | one console; crossed 1,000 after the plan with the Hitec receive mode, not weighed by the plan; its HITEC section, about 540 lines, can go to its own file later
 
