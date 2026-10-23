@@ -205,8 +205,8 @@ abzüglich 1024 Bytes überschreitet.
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 184 | 1 984 |
-| `control` | `control_task` | 6 144 | 4 512 | 608 |
-| `runlog` | `log_task` | 6 656 | 4 576 | 1 056 |
+| `control` | `control_task` | 6 144 | 4 544 | 576 |
+| `runlog` | `log_task` | 6 656 | 4 592 | 1 040 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 328 | 720 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 680 | 1 392 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 5 120 | 3 360 | 736 |
@@ -229,8 +229,8 @@ nicht mehr antwortet (`storage_read_end()`, `esp_vfs_fat_sdspi_mount()`).
 Das Werkzeug folgt jedem Aufruf, den das Einbinden machen kann, darunter
 `f_mkfs()`, das ein Einbinden ohne Formatieren nie erreicht. Der Start
 eines Laufs bindet die Karte ebenfalls auf diesem Task ein
-(`storage_check()`). Die Kette braucht 4 576 Bytes; der Stack von 6 656
-Bytes lässt 1 056 über der Marge von 1 024 Bytes.
+(`storage_check()`). Die Kette braucht 4 592 Bytes; der Stack von 6 656
+Bytes lässt 1 040 über der Marge von 1 024 Bytes.
 
 Gemessen mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb
 der Frames auf: 320 für den gesicherten Zustand von FPU (Floating-Point Unit)

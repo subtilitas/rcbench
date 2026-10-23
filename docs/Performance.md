@@ -190,8 +190,8 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,184 | 1,984 |
-| `control` | `control_task` | 6,144 | 4,512 | 608 |
-| `runlog` | `log_task` | 6,656 | 4,576 | 1,056 |
+| `control` | `control_task` | 6,144 | 4,544 | 576 |
+| `runlog` | `log_task` | 6,656 | 4,592 | 1,040 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,328 | 720 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,680 | 1,392 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,360 | 736 |
@@ -213,8 +213,8 @@ the mount again of a card found gone (`storage_read_end()`,
 `esp_vfs_fat_sdspi_mount()`). The tool follows every call the mount can
 make, `f_mkfs()` among them, which a mount that never formats does not
 reach. A run's start mounts the card on this task as well
-(`storage_check()`). The chain needs 4,576 bytes; the stack of 6,656
-bytes leaves 1,056 above the 1,024-byte margin.
+(`storage_check()`). The chain needs 4,592 bytes; the stack of 6,656
+bytes leaves 1,040 above the 1,024-byte margin.
 
 Measured on ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
 the frames: 320 for the FPU (floating-point unit) and vector-unit state saved
