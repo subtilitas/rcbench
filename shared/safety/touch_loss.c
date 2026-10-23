@@ -58,6 +58,18 @@ bool arm_watch_take_ok(uint32_t loss_gen_stamp, uint32_t loss_gen_now,
     return ahead == 0u || ahead >= HALF_RANGE;
 }
 
+bool stop_mark_keeps(uint32_t mark, uint32_t cur, bool cur_is_event)
+{
+    if (mark == 0u) {
+        return false;
+    }
+    const uint32_t ahead = mark - cur;
+    if (ahead == 0u) {
+        return cur_is_event;
+    }
+    return ahead < HALF_RANGE;
+}
+
 void arm_watch_begin(arm_watch_t *w, uint32_t loss_gen_stamp,
                      uint32_t drv_gaps_at_take, uint32_t arm_gen)
 {
