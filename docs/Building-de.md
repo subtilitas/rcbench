@@ -19,6 +19,7 @@ rcbench/
     ui/                   Theme · Widgets · Icons · Router · Bildschirme
     settings/             typisiertes Schema und Werte
     logfile/              Zahlen- und CSV-Parsing
+    files/                Kern des Dateimanagers: Kartentabelle · Fenster · Regeln · Aufträge
     link/                 Page-Protokoll · CAN-Framing · Watchdogs · Diagnose
     artwork/              Cache des Panels für Platinenzeichnungen
     bench/                bench_state · Telemetriesimulator · Log-Writer · Drehknopf-Decoder
@@ -79,7 +80,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 
 | Modul | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
-| `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
+| `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `ppm` | | ✔ | ✔ |

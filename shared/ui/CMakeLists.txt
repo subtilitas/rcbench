@@ -89,11 +89,11 @@ set(SRCS
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
                            REQUIRES gfx touch bench logfile settings sbus link outputs servo can esc
-                                    text)
+                                    text files)
     # RCBENCH_TOUCH_INJECTOR comes with component text (shared/text).
 else()
     add_library(rcbench_ui STATIC ${SRCS})
     target_include_directories(rcbench_ui PUBLIC include "${CMAKE_CURRENT_LIST_DIR}/../link/include" "${CMAKE_CURRENT_LIST_DIR}/../can/include")
     # RCBENCH_TOUCH_INJECTOR comes with rcbench_text (shared/text).
-    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc rcbench_servo rcbench_text)
+    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc rcbench_servo rcbench_text rcbench_files)
 endif()
