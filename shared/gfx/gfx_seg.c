@@ -1,5 +1,6 @@
-/*
- * Seven-segment numerals, drawn rather than stored.
+/**
+ * @file
+ * @brief Seven-segment numerals, drawn rather than stored.
  *
  * A bitmap face cannot show the segments that are off, and a segment display
  * has all seven in the glass whether they are lit or not; the faint ghost of
@@ -22,15 +23,20 @@
  *     e    c
  *      dddd
  */
-#define SEG_A 0x01u
-#define SEG_B 0x02u
-#define SEG_C 0x04u
-#define SEG_D 0x08u
-#define SEG_E 0x10u
-#define SEG_F 0x20u
-#define SEG_G 0x40u
-#define SEG_ALL 0x7Fu
+#define SEG_A 0x01u     /**< the top bar */
+#define SEG_B 0x02u     /**< the upper right bar */
+#define SEG_C 0x04u     /**< the lower right bar */
+#define SEG_D 0x08u     /**< the bottom bar */
+#define SEG_E 0x10u     /**< the lower left bar */
+#define SEG_F 0x20u     /**< the upper left bar */
+#define SEG_G 0x40u     /**< the middle bar */
+#define SEG_ALL 0x7Fu   /**< all seven: an 8 */
 
+/**
+ * @brief The bars @p ch lights: a digit or '-'; 0 for anything else.
+ * @param ch the character
+ * @return the bars, SEG_A to SEG_G
+ */
 static uint8_t mask_for(char ch)
 {
     switch (ch) {
@@ -49,8 +55,8 @@ static uint8_t mask_for(char ch)
     }
 }
 
-/*
- * One antialiased scanline.
+/**
+ * @brief One antialiased scanline from @p x0 to @p x1 on row @p y.
  *
  * The interior goes through gfx_hline unchanged (whole pixels, nothing to
  * blend) and only the two ends, where a fractional edge lands, read the
@@ -82,16 +88,19 @@ static void span_aa(gfx_canvas_t *c, float x0, float x1, int y,
     }
 }
 
-/* The lean, as a fraction of a pixel rather than a whole one -- an integer
- * slant is a staircase down the side of every digit, which is exactly the
- * artefact the tapers below are being smoothed to avoid. */
+/** @brief The lean @p y_from_foot px above the foot, as a fraction of a
+ *         pixel rather than a whole one -- an integer slant is a staircase
+ *         down the side of every digit, which is exactly the artefact the
+ *         tapers below are being smoothed to avoid. */
 static float slant_at(const gfx_seg_style_t *st, float y_from_foot)
 {
     return (st->digit_h > 0)
                ? (float)st->slant * y_from_foot / (float)st->digit_h : 0.0f;
 }
 
-/*
+/**
+ * @brief A horizontal bar from @p x, @p w long, @p t thick, from row @p y.
+ *
  * Both bar shapes are hexagons: square ends would butt into each other at the
  * corners and read as a rectangle with a notch.  The taper is half the
  * thickness at each end, so two bars meeting at a corner leave a clean
@@ -113,6 +122,8 @@ static void bar_h(gfx_canvas_t *c, float x, int y, float w, int t,
     }
 }
 
+/** @brief A vertical bar at @p x, @p h tall, @p t thick, from row @p y;
+ *         the same hexagon as bar_h() stood on its end. */
 static void bar_v(gfx_canvas_t *c, float x, int y, int h, int t,
                   const gfx_seg_style_t *st, int foot, gfx_color_t col)
 {
@@ -126,9 +137,34 @@ static void bar_v(gfx_canvas_t *c, float x, int y, int h, int t,
     }
 }
 
+/**
+ * @brief Whether a digit's cell at (@p x, @p y) reaches the clip of @p c:
+ *        the cell, its slant either way and the pixel a blended edge
+ *        spills into.  A cell wholly outside draws nothing, so its bars are
+ *        not walked.
+ * @param c the canvas
+ * @param x the cell's left edge, px
+ * @param y its top, px
+ * @param st the style
+ * @return true when some of the cell is inside the clip
+ */
+static bool digit_meets_clip(const gfx_canvas_t *c, int x, int y,
+                             const gfx_seg_style_t *st)
+{
+    const int lean = (st->slant < 0) ? -st->slant : st->slant;
+    const gfx_rect_t k = c->clip;
+    return x - lean - 1 < k.x + k.w && x + st->digit_w + lean + 1 > k.x
+           && y < k.y + k.h && y + st->digit_h > k.y;
+}
+
+/** @brief The bars @p segs of a digit's cell at (@p x, @p y) in @p col;
+ *         nothing when the cell lies outside the clip. */
 static void digit(gfx_canvas_t *c, int x, int y, const gfx_seg_style_t *st,
                   uint8_t segs, gfx_color_t col)
 {
+    if (!digit_meets_clip(c, x, y, st)) {
+        return;
+    }
     const int w = st->digit_w, h = st->digit_h, t = st->thickness;
     const int mid = (h - t) / 2;          /* the middle bar's top edge   */
     /*
@@ -151,9 +187,10 @@ static void digit(gfx_canvas_t *c, int x, int y, const gfx_seg_style_t *st,
     if (segs & SEG_C) { bar_v(c, fx + (float)(w - t), y + mid + t - 1, vh, t, st, by, col); }
 }
 
-/* A dot and a colon are not segments, so they get their own cells and their
- * own narrower advance -- a full digit cell of whitespace around a decimal
- * point is what makes rendered numbers look spaced by accident. */
+/** @brief The cell of a dot or a colon, px.  They are not segments, so
+ *         they get their own cells and their own narrower advance -- a full
+ *         digit cell of whitespace around a decimal point is what makes
+ *         rendered numbers look spaced by accident. */
 static int punct_w(const gfx_seg_style_t *st)
 {
     return st->thickness + st->thickness / 2;

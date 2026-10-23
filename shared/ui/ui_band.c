@@ -475,6 +475,89 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
 
 /* ----------------------------------------------------------- the band */
 
+/**
+ * @brief How @p chip is drawn for @p st: its dot, 0 for none, and its fill.
+ * @param st the bench's status
+ * @param chip the chip
+ * @param dot its dot's colour, 0 for none
+ * @param fill its fill
+ */
+static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
+                      gfx_color_t *dot, gfx_color_t *fill)
+{
+    *dot  = 0;
+    *fill = ui_theme_color(UI_C_PANEL_SUNK);
+    switch (chip) {
+    case UI_BAND_CHIP_ARMED:
+        /* ARMED is a filled badge rather than a coloured dot, so the
+         * armed state is readable by shape at arm's length, not by
+         * colour alone.  It names the role an arm covers when it
+         * covers one: an arm on MOTOR leaves the servos without a
+         * pulse, and one on SERVO the motor. */
+        if (st->armed) {
+            *fill = ui_theme_color(UI_C_DANGER);
+        }
+        break;
+    case UI_BAND_CHIP_FAULT:
+        *fill = ui_theme_color(UI_C_WARN);
+        break;
+    case UI_BAND_CHIP_LINK:
+        *dot = st->link_up ? ui_theme_color(UI_C_OK)
+                           : ui_theme_color(UI_C_DANGER);
+        break;
+    default:
+        break;
+    }
+}
+
+/** @brief One step of the 32-bit FNV-1a hash over @p n bytes at @p p. */
+static uint32_t fnv(uint32_t h, const void *p, size_t n)
+{
+    const uint8_t *b = (const uint8_t *)p;
+    for (size_t i = 0; i < n; ++i) {
+        h = (h ^ b[i]) * 16777619u;
+    }
+    return h;
+}
+
+uint32_t ui_band_key(const char *title, bool show_home,
+                     const ui_bench_status_t *st, bool stop_pressed,
+                     bool home_pressed)
+{
+    uint32_t h = 2166136261u;
+    const uint8_t flags[4] = {
+        (uint8_t)(title != NULL), (uint8_t)show_home, (uint8_t)stop_pressed,
+        (uint8_t)home_pressed,
+    };
+    h = fnv(h, flags, sizeof(flags));
+    const int theme = (int)ui_theme_get();
+    h = fnv(h, &theme, sizeof(theme));
+    if (title != NULL) {
+        h = fnv(h, title, strlen(title) + 1u);
+    }
+    if (st == NULL) {
+        return h;
+    }
+    chips_t l;
+    chips_layout(st, &l);
+    for (size_t i = 0; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
+        const ui_band_chip_t chip = k_order[i];
+        if (!l.on[chip]) {
+            continue;
+        }
+        char buf[24];
+        const char *label = chip_label(st, chip, buf, sizeof(buf));
+        gfx_color_t look[2];
+        chip_look(st, chip, &look[0], &look[1]);
+        const int16_t box[5] = { (int16_t)chip, l.r[chip].x, l.r[chip].y,
+                                 l.r[chip].w, l.r[chip].h };
+        h = fnv(h, box, sizeof(box));
+        h = fnv(h, look, sizeof(look));
+        h = fnv(h, label, strlen(label) + 1u);
+    }
+    return h;
+}
+
 void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
                     const ui_bench_status_t *st, bool stop_pressed,
                     bool home_pressed)
@@ -507,29 +590,8 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
         }
         char buf[24];
         const char *label = chip_label(st, chip, buf, sizeof(buf));
-        gfx_color_t dot  = 0;
-        gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
-        switch (chip) {
-        case UI_BAND_CHIP_ARMED:
-            /* ARMED is a filled badge rather than a coloured dot, so the
-             * armed state is readable by shape at arm's length, not by
-             * colour alone.  It names the role an arm covers when it
-             * covers one: an arm on MOTOR leaves the servos without a
-             * pulse, and one on SERVO the motor. */
-            if (st->armed) {
-                fill = ui_theme_color(UI_C_DANGER);
-            }
-            break;
-        case UI_BAND_CHIP_FAULT:
-            fill = ui_theme_color(UI_C_WARN);
-            break;
-        case UI_BAND_CHIP_LINK:
-            dot = st->link_up ? ui_theme_color(UI_C_OK)
-                              : ui_theme_color(UI_C_DANGER);
-            break;
-        default:
-            break;
-        }
+        gfx_color_t dot, fill;
+        chip_look(st, chip, &dot, &fill);
         ui_pill_font(c, l.r[chip], label, dot, fill, CHIP_INSET, UI_FONT_BAND);
     }
 }

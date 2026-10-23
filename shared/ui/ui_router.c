@@ -85,6 +85,16 @@ static struct {
     gfx_rect_t     help_rect;
 
     /*
+     * What each framebuffer holds of the band: ui_band_key() of the band
+     * it last drew, valid where band_drawn has the buffer's bit.  The band
+     * is drawn whole in 102,288 pixel visits SAFE and 114,281 ARMED
+     * (test_frame_work) and changes once a second while the bench runs,
+     * so a frame repaints it only when it changed in that buffer.
+     */
+    uint32_t band_key[2];   /**< ui_band_key() of each buffer's band */
+    uint8_t  band_drawn;    /**< the buffers whose band_key holds, a bit each */
+
+    /*
      * The contacts the screen on top owns: each one whose DOWN it was
      * handed, with the last point it was handed, in panel coordinates.  A
      * screen is handed a MOVE or an UP only for a contact in this table, so
@@ -221,6 +231,7 @@ uint32_t ui_router_dispatched(void) { return s.dispatched; }
 
 void ui_router_invalidate(void)
 {
+    s.band_drawn = 0u;
     splash_invalidate();
     overview_invalidate();
     motor_invalidate();
@@ -802,6 +813,10 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     }
 
     if (!has_band(s.current)) {
+        /* The screen draws where the band goes: this buffer has no band
+         * any more, for when the band comes back on the same screen (the
+         * IOmcu update's question after its progress). */
+        s.band_drawn &= (uint8_t)~(1u << ((unsigned)buffer_index & 1u));
         scr->render(c, buffer_index);
         if (s.status.simulated) {
             ui_watermark(c);
@@ -809,10 +824,27 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
         return;
     }
 
-    ui_band_render(c, ui_router_title(s.current), has_home(s.current),
-                   &s.status, s.band_press && s.on_stop,
-                   s.band_press && !s.on_stop
-                   && s.on_chip == UI_BAND_CHIP_NONE);
+    /*
+     * The band when it changed in this buffer, or the buffer has not got
+     * it.  Over a simulated bench the watermark is laid over it every
+     * frame, so it is drawn every frame, as the screens under it are.
+     */
+    {
+        const char *title = ui_router_title(s.current);
+        const bool home = has_home(s.current);
+        const bool stop_down = s.band_press && s.on_stop;
+        const bool home_down = s.band_press && !s.on_stop
+                               && s.on_chip == UI_BAND_CHIP_NONE;
+        const unsigned buf = (unsigned)buffer_index & 1u;
+        const uint32_t key = ui_band_key(title, home, &s.status, stop_down,
+                                         home_down);
+        if (s.status.simulated || (s.band_drawn & (1u << buf)) == 0u
+            || s.band_key[buf] != key) {
+            ui_band_render(c, title, home, &s.status, stop_down, home_down);
+            s.band_key[buf] = key;
+            s.band_drawn |= (uint8_t)(1u << buf);
+        }
+    }
 
     /*
      * The bubble as this frame draws it.  One that closed, moved or changed
