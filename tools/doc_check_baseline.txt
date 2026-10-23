@@ -3121,7 +3121,6 @@ shared/touch/include/touch_map.h: warning: Compound touch_tracker_t is not docum
 shared/touch/include/touch_map.h: warning: Member prev[TOUCH_MAX_POINTS] (variable) of struct touch_tracker_t is not documented.
 shared/touch/include/touch_map.h: warning: Member prev_count (variable) of struct touch_tracker_t is not documented.
 shared/touch/touch_map.c: file has no @file block
-shared/touch/touch_merge.c: file has no @file block
 shared/ui/analyser_screen.c: warning: Member dec (variable) of struct [struct].s is not documented.
 shared/ui/analyser_screen.c: warning: Member drawn[2] (variable) of struct [struct].s is not documented.
 shared/ui/analyser_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
