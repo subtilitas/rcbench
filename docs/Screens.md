@@ -246,7 +246,8 @@ the faces and the spacing inside are theirs.
   language shown; another row draws them in 8 x 16. LOGS' ROOT, USER and
   BENCH and the PROG PORT entry's segments on OUTPUTS are in 10 x 20. The
   strips of SERVO and MOTOR & ESC are 40 px tall and draw in 10 x 20;
-  SUPPLY's is 24 px tall and keeps 8 x 16.
+  SUPPLY's is 24 px tall and keeps 8 x 16. RECEIVER's and BALANCE's tabs
+  are 150 x 48 px and draw in 10 x 20.
 - **TARGET row.** A row 40 px tall or taller draws its label and its value
   in 10 x 20, with 88 px for the label, and counts the pins it names in
   10 px cells. A shorter row draws in 8 x 16 with 64 px for the label and
@@ -259,7 +260,8 @@ A keypad or a keyboard whose area reaches further paints its whole area
 and stops its keys there, so an alert covers no key. On SERVO the keypads'
 keys are then 112 x 88 px and the keyboards' 41 x 72 px; on SUPPLY the
 keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 61 px; on
-MOTOR & ESC's SETTINGS the keypad's are 145 x 89 px.
+MOTOR & ESC's SETTINGS the keypad's are 145 x 89 px; on BALANCE the blade
+count's keypad's are 242 x 72 px.
 
 ## Splash
 
@@ -1914,9 +1916,18 @@ AUTO and with a fixed rate alike.
 
 ![Receiver](img/analyser.png)
 
-Sixteen channels, each with about 1.7 s of history (118 samples) and a bar for its current value.
-CH17 and CH18 are the two digital channels. A glitch is a spike in one lane; a
-dropout is a notch across all sixteen at the same instant.
+Sixteen channels in two columns of eight lanes, 52 px each. A lane holds the
+channel's name in 10 x 20, its history, a bar 56 px wide for its current value
+and the value in us in 8 x 16. The history is 200 samples, one pixel each:
+about 2.8 s at 71 frames a second (one S.BUS frame every 14 ms). CH17 and
+CH18 are the two digital channels. A glitch is a spike in one lane; a dropout
+is a notch across all sixteen at the same instant.
+
+The state card on the right is 260 px wide: the state word in 20 x 36, its
+line in up to three lines of 12 x 24, BUS, RATE, FRAMES, RESYNC and BAD TAIL in
+rows of 32 px, and CH17 and CH18, 44 px tall, lit while set. CHANNELS and RAW
+DATA are tabs of 150 x 48 px. RAW DATA shows the last frame's bytes, eight to
+a row, and the decoder's counts in 8 x 16.
 
 No firmware feeds this screen yet (see [Receiver buses](Receivers.md)); it
 shows NO SIGNAL.
@@ -1938,6 +1949,12 @@ Cells are drawn as their departure from the pack's mean. The verdict follows
 the spread, the widest gap between any two cells: HEALTHY below 30 mV, WATCH
 from 30 mV, REPLACE from 60 mV. The scale follows the pack down to a floor of
 12 mV and is printed beside the plot.
+
+The plot card is 640 px wide, the right card 360 px. A bar is at most 48 px
+wide and reaches 164 px either side of the mean. Under each bar the cell's
+number and its voltage are in 12 x 24 up to 11 cells and in 10 x 20 from 12 to
+14. The verdict is in 20 x 36, its line in up to two lines of 12 x 24, the six
+rows 36 px each, the note in 10 x 20.
 
 Measure under load. At rest a weak cell reads like the others.
 
@@ -4387,6 +4404,13 @@ The BALANCE pane shows a fixed angle (265°) and two fixed readings (0.42 g
 vibration, 0.35 g mass to add) until a sensor is fitted. The SIMULATED pill and
 the words "Not measured." stand under the readings, 20 px high and 88 px wide.
 The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
+
+BALANCE, TEST RIG and AIRCRAFT are tabs of 150 x 48 px. The rotor's card is
+640 px wide, its disc 160 px in radius; the right card is 360 px wide.
+PROPELLER and EDF are 162 x 48 px, the blade count's `-` and `+` 56 x 48 px,
+the count's tap area 114 x 48 px, the four readings rows of 36 px. The notes
+and the rules' two lines are in 8 x 16; the rules' heads, the labels and the
+drawings' callouts in 10 x 20.
 
 ## Unknown screen ids
 

@@ -3140,7 +3140,6 @@ shared/touch/include/touch_types.h: warning: Member x (variable) of struct touch
 shared/touch/include/touch_types.h: warning: Member y (variable) of struct touch_point_t is not documented.
 shared/touch/touch_map.c: file has no @file block
 shared/touch/touch_merge.c: file has no @file block
-shared/ui/analyser_screen.c: file has no @file block
 shared/ui/analyser_screen.c: warning: Member dec (variable) of struct [struct].s is not documented.
 shared/ui/analyser_screen.c: warning: Member drawn[2] (variable) of struct [struct].s is not documented.
 shared/ui/analyser_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
@@ -3163,41 +3162,20 @@ shared/ui/balance_screen.c: warning: Member ARM_H (macro definition) of file bal
 shared/ui/balance_screen.c: warning: Member ARM_Y (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member BASE_Y (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member BLADE_L (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member BODY_Y (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member DISC_CX (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member DISC_CY (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member DISC_R (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member H (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member HUB_R (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member LCARD_W (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member MARK_DY (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member MOTOR_W (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member MOTOR_X (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member PAD (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member POST_W (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member POST_X (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member RCARD_W (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member RCARD_X (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member RIG_RULES (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member SHAFT_Y (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member SPIN_X (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member TAB_H (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member TAB_Y (macro definition) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member W (macro definition) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member balance_screen(void) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member balance_screen_angle(void) (function) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member blade_dn (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member blade_up (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member blades (variable) of struct [struct].s is not documented.
 shared/ui/balance_screen.c: warning: Member callout(gfx_canvas_t *c, int px, int py, int lx, int ly, const char *text, gfx_color_t ink) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member disc_at(float deg, int r, int *x, int *y) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member draw_aircraft(gfx_canvas_t *c) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member draw_measure(gfx_canvas_t *c) (function) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member draw_readings(gfx_canvas_t *c) (function) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member draw_rig(gfx_canvas_t *c) (function) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member draw_rules(gfx_canvas_t *c, const rule_t *rules, int count) (function) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member drawn[2] (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
 shared/ui/balance_screen.c: warning: Member head (variable) of struct rule_t is not documented.
 shared/ui/balance_screen.c: warning: Member k_air_rules[] (variable) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member k_rig_rules[] (variable) of file balance_screen.c is not documented.
@@ -3205,12 +3183,6 @@ shared/ui/balance_screen.c: warning: Member k_screen (variable) of file balance_
 shared/ui/balance_screen.c: warning: Member k_tabs[] (variable) of file balance_screen.c is not documented.
 shared/ui/balance_screen.c: warning: Member line1 (variable) of struct rule_t is not documented.
 shared/ui/balance_screen.c: warning: Member line2 (variable) of struct rule_t is not documented.
-shared/ui/balance_screen.c: warning: Member rev (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member rotor (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member rotor_btn[ROTOR_COUNT] (variable) of struct [struct].s is not documented.
-shared/ui/balance_screen.c: warning: Member s (variable) of file balance_screen.c is not documented.
-shared/ui/balance_screen.c: warning: Member tabs (variable) of struct [struct].s is not documented.
-shared/ui/battery_screen.c: file has no @file block
 shared/ui/battery_screen.c: warning: Member b (variable) of struct [struct].s is not documented.
 shared/ui/battery_screen.c: warning: Member drawn[2] (variable) of struct [struct].s is not documented.
 shared/ui/battery_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.
@@ -3581,7 +3553,6 @@ shared/ui/esc_stick_touch.c: warning: Member sp_list_up(void) (function) of file
 shared/ui/esc_stick_touch.c: warning: Member sp_timing_close(void) (function) of file esc_stick_touch.c is not documented.
 shared/ui/esc_stick_touch.c: warning: Member sp_to_list(void) (function) of file esc_stick_touch.c is not documented.
 shared/ui/esc_stick_touch.c: warning: Member sp_track(const touch_event_t *evt) (function) of file esc_stick_touch.c is not documented.
-shared/ui/include/analyser_screen.h: file has no @file block
 shared/ui/include/balance_screen.h: warning: Member balance_pane_t (enumeration) of file balance_screen.h is not documented.
 shared/ui/include/balance_screen.h: warning: Member balance_rotor_t (enumeration) of file balance_screen.h is not documented.
 shared/ui/include/balance_screen.h: warning: Member balance_screen(void) (function) of file balance_screen.h is not documented.
@@ -3590,10 +3561,6 @@ shared/ui/include/balance_screen.h: warning: return type of member balance_scree
 shared/ui/include/balance_screen.h: warning: return type of member balance_screen_model_mark is not documented
 shared/ui/include/balance_screen.h: warning: return type of member balance_screen_model_note is not documented
 shared/ui/include/balance_screen.h: warning: return type of member balance_screen_rotor is not documented
-shared/ui/include/battery_screen.h: file has no @file block
-shared/ui/include/battery_screen.h: warning: Compound battery_state_t is not documented.
-shared/ui/include/battery_screen.h: warning: Member capacity_mah (variable) of struct battery_state_t is not documented.
-shared/ui/include/battery_screen.h: warning: Member drawn_mah (variable) of struct battery_state_t is not documented.
 shared/ui/include/board_drawing.h: file has no @file block
 shared/ui/include/busfault_screen.h: file has no @file block
 shared/ui/include/busfault_screen.h: warning: Member bus_errors (variable) of struct busfault_report_t is not documented.
