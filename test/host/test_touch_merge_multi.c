@@ -333,7 +333,7 @@ static void panel_fresh(void)
 
 /* The station's STOP check: an injected contact held on the body while a
  * second injected contact taps STOP.  The router latches the stop on the
- * second's lift, with the first still down. */
+ * second's press, with the first still down, and not again at its lift. */
 TEST_CASE(an_injected_stop_mid_hold_stops)
 {
     panel_fresh();
@@ -343,9 +343,9 @@ TEST_CASE(an_injected_stop_mid_hold_stops)
     p[0] = pt(0, 516, 402);
     p[1] = pt(1, r.x + r.w / 2, r.y + r.h / 2);
     inject(p, 2);
-    CHECK(!ui_router_take_stop());
-    inject(p, 1);
     CHECK(ui_router_take_stop());
+    inject(p, 1);
+    CHECK(!ui_router_take_stop());
     inject(NULL, 0);
     CHECK(!ui_router_take_stop());
 }
