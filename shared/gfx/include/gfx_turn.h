@@ -30,6 +30,7 @@
  */
 #pragma once
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -91,6 +92,48 @@ typedef struct {
     uint32_t (*now_us)(void *ctx);
     void *ctx;   /**< passed to both */
 } gfx_turn_ops_t;
+
+/**
+ * @brief One block as the copy engine takes it: where it is read, where it
+ *        lands turned, and the context the engine's done callback gets.
+ */
+typedef struct {
+    const gfx_color_t *in;  /**< the logical buffer, width x height, packed */
+    gfx_color_t *out;       /**< the frame buffer, of the same size        */
+    int16_t width;          /**< both pictures' width, pixels              */
+    int16_t height;         /**< their height, rows                        */
+    gfx_rect_t src;         /**< the block in @c in                        */
+    int16_t dst_x;          /**< its left edge in @c out, turned           */
+    int16_t dst_y;          /**< its top edge in @c out, turned            */
+    void *user_data;        /**< what the done callback receives: the
+                                 engine's done_ctx, never NULL from
+                                 gfx_turn_engine_copy()                    */
+} gfx_turn_job_t;
+
+/**
+ * @brief An engine that takes a job, ends it later in an interrupt that
+ *        calls its done callback with the job's user_data, and is waited
+ *        for: the PPA's shape.
+ */
+typedef struct {
+    /**
+     * @brief Start @p job.
+     * @param engine the engine
+     * @param job the block; its user_data goes to the done callback
+     * @return false when the engine refuses it
+     */
+    bool (*submit)(void *engine, const gfx_turn_job_t *job);
+    /**
+     * @brief Wait for the job's done callback.
+     * @param engine the engine
+     * @param budget_us the longest wait, us
+     * @return true when it came in time
+     */
+    bool (*wait)(void *engine, uint32_t budget_us);
+    void *engine;    /**< passed to both                                  */
+    void *done_ctx;  /**< every job's user_data: what the done callback
+                          needs, the display's state on the panel         */
+} gfx_turn_engine_t;
 
 /** @brief The rotation's state. */
 typedef struct {
@@ -199,6 +242,51 @@ bool gfx_turn_take_repaint(gfx_turn_t *t);
  * @return true once per start that falls back while 180° is asked for
  */
 bool gfx_turn_take_alert(gfx_turn_t *t);
+
+/**
+ * @brief One block through @p e: the job built from @p r with
+ *        @p e->done_ctx as its user_data, submitted and waited for.  The
+ *        copy function of a gfx_turn_ops_t calls it.
+ * @param e the engine
+ * @param src the logical buffer
+ * @param dst the frame buffer of the same index
+ * @param r the block, in @p src's coordinates
+ * @param width both pictures' width, pixels
+ * @param height their height, rows
+ * @param budget_us the longest wait, us
+ * @return GFX_TURN_COPY_ERROR when @p e, its done_ctx or a callback is
+ *         missing or the engine refuses the job; GFX_TURN_COPY_TIMEOUT
+ *         when the done callback does not come in time
+ */
+gfx_turn_copy_t gfx_turn_engine_copy(const gfx_turn_engine_t *e,
+                                     const gfx_color_t *src,
+                                     gfx_color_t *dst, gfx_rect_t r,
+                                     int width, int height,
+                                     uint32_t budget_us);
+
+/** @brief Done callbacks that came with a NULL context; gfx_turn.c. */
+extern atomic_uint gfx_turn_stray;
+
+/**
+ * @brief The done callback's first step: the context it was given, or
+ *        NULL, counted in gfx_turn_stray_dones(), when it was given none.
+ *        Inline and one atomic add: callable from the engine's interrupt.
+ * @param user_data what the engine passed
+ * @return @p user_data
+ */
+static inline void *gfx_turn_done_ctx(void *user_data)
+{
+    if (user_data == NULL) {
+        atomic_fetch_add(&gfx_turn_stray, 1u);
+    }
+    return user_data;
+}
+
+/**
+ * @brief Done callbacks that came with a NULL context since start-up.
+ * @return the count; it wraps at 2^32
+ */
+uint32_t gfx_turn_stray_dones(void);
 
 /**
  * @brief What the panel shows: the one flag picture and touch turn by.

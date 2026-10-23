@@ -15,6 +15,8 @@
  *         flips, read by the touch task. */
 static atomic_bool s_shown;
 
+atomic_uint gfx_turn_stray;
+
 void gfx_turn_init(gfx_turn_t *t, int width, int height)
 {
     if (t == NULL) {
@@ -182,4 +184,38 @@ bool gfx_turn_take_alert(gfx_turn_t *t)
 bool gfx_turn_shown(void)
 {
     return atomic_load(&s_shown);
+}
+
+gfx_turn_copy_t gfx_turn_engine_copy(const gfx_turn_engine_t *e,
+                                     const gfx_color_t *src,
+                                     gfx_color_t *dst, gfx_rect_t r,
+                                     int width, int height,
+                                     uint32_t budget_us)
+{
+    /* No context, no job: its done callback would have nothing to wake. */
+    if (e == NULL || e->submit == NULL || e->wait == NULL
+        || e->done_ctx == NULL || src == NULL || dst == NULL) {
+        return GFX_TURN_COPY_ERROR;
+    }
+    const gfx_rect_t o = gfx_damage_turn(r, width, height);
+    const gfx_turn_job_t job = {
+        .in = src,
+        .out = dst,
+        .width = (int16_t)width,
+        .height = (int16_t)height,
+        .src = r,
+        .dst_x = o.x,
+        .dst_y = o.y,
+        .user_data = e->done_ctx,
+    };
+    if (!e->submit(e->engine, &job)) {
+        return GFX_TURN_COPY_ERROR;
+    }
+    return e->wait(e->engine, budget_us) ? GFX_TURN_COPY_DONE
+                                         : GFX_TURN_COPY_TIMEOUT;
+}
+
+uint32_t gfx_turn_stray_dones(void)
+{
+    return atomic_load(&gfx_turn_stray);
 }

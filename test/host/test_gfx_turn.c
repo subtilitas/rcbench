@@ -15,6 +15,11 @@
  * - a slow engine that spends the 50ms over several copies, and one that
  *   refuses a block, fall back the same way;
  * - no engine at the start and 180° asked for: NORMAL, the alert once;
+ * - a fake PPA shaped like the driver, which ends a job by calling its
+ *   done callback with the job's user_data: the callback receives the
+ *   display's state and wakes the wait; an engine that hands it NULL, as
+ *   a job built without its user_data does, is caught, counted, and the
+ *   flush falls back instead of the callback dereferencing NULL;
  * - the screens drawn through the panel's loop, switched to 180° and back
  *   while they run: every turned frame buffer is its logical picture
  *   turned pixel for pixel, and every logical picture is the picture of a
@@ -392,6 +397,218 @@ TEST_CASE(a_null_state_does_nothing)
     CHECK(!t.failed);
 }
 
+/* ------------------------------------------- the engine's done callback */
+
+/** @brief The display's state as the done callback needs it: a fake
+ *         semaphore. */
+typedef struct {
+    int given;               /**< tokens the done callback gave           */
+    int taken;               /**< tokens the wait took                    */
+} fake_disp_t;
+
+/** @brief How the fake driver ends a job. */
+typedef enum {
+    DRV_DONE,        /**< done callback with the job's user_data          */
+    DRV_DROPS_CTX,   /**< done callback with NULL, as a job whose
+                          user_data was left unset                        */
+    DRV_NEVER,       /**< no done callback                                */
+    DRV_REFUSE,      /**< the submit fails                                */
+} drv_mode_t;
+
+/** @brief A fake PPA driver: ends a job in its "interrupt", the done
+ *         callback. */
+typedef struct {
+    drv_mode_t mode;            /**< how it ends a job                    */
+    int submits;                /**< jobs submitted                       */
+    void *last_ctx;             /**< what the done callback got last      */
+    fake_disp_t *disp;          /**< the state the wait reads             */
+} fake_drv_t;
+
+/**
+ * @brief The done callback, as the panel's on_ppa_done(): the context
+ *        first, then the semaphore given.
+ * @param user_data what the driver passed
+ * @return true when it woke the wait
+ */
+static bool fake_on_done(void *user_data)
+{
+    fake_disp_t *st = gfx_turn_done_ctx(user_data);
+    if (st == NULL) {
+        return false;
+    }
+    ++st->given;
+    return true;
+}
+
+/** @brief The fake driver's submit: copies the block turned, then ends it
+ *         as its mode says. */
+static bool fake_submit(void *engine, const gfx_turn_job_t *job)
+{
+    fake_drv_t *d = engine;
+    ++d->submits;
+    if (d->mode == DRV_REFUSE) {
+        return false;
+    }
+    for (int y = 0; y < job->src.h; ++y) {
+        for (int x = 0; x < job->src.w; ++x) {
+            job->out[(size_t)(job->dst_y + job->src.h - 1 - y) * job->width
+                     + (size_t)(job->dst_x + job->src.w - 1 - x)] =
+                job->in[(size_t)(job->src.y + y) * job->width
+                        + (size_t)(job->src.x + x)];
+        }
+    }
+    if (d->mode == DRV_DONE) {
+        d->last_ctx = job->user_data;
+        (void)fake_on_done(job->user_data);
+    } else if (d->mode == DRV_DROPS_CTX) {
+        d->last_ctx = NULL;
+        (void)fake_on_done(NULL);
+    }
+    return true;
+}
+
+/** @brief The fake wait: a token the done callback gave. */
+static bool fake_wait(void *engine, uint32_t budget_us)
+{
+    (void)budget_us;
+    fake_drv_t *d = engine;
+    if (d->disp->given > d->disp->taken) {
+        ++d->disp->taken;
+        return true;
+    }
+    return false;
+}
+
+/** @brief The engine over @p d, its done context @p disp. */
+static gfx_turn_engine_t fake_engine(fake_drv_t *d, fake_disp_t *disp)
+{
+    d->disp = disp;
+    const gfx_turn_engine_t e = { fake_submit, fake_wait, d, disp };
+    return e;
+}
+
+/** @brief The engine a frame's copies go through. */
+static gfx_turn_engine_t s_eng;
+
+/** @brief gfx_turn_ops_t's copy over s_eng, as the panel's ppa_copy(). */
+static gfx_turn_copy_t eng_job_copy(void *ctx, const gfx_color_t *src,
+                                    gfx_color_t *dst, gfx_rect_t r,
+                                    uint32_t budget_us)
+{
+    (void)ctx;
+    return gfx_turn_engine_copy(&s_eng, src, dst, r, SW, SH, budget_us);
+}
+
+TEST_CASE(the_done_callback_receives_the_display_state)
+{
+    fake_drv_t d = { .mode = DRV_DONE };
+    fake_disp_t disp = { 0, 0 };
+    s_eng = fake_engine(&d, &disp);
+    for (size_t i = 0; i < (size_t)SW * SH; ++i) {
+        s_lg[0][i] = (gfx_color_t)(i * 7u);
+    }
+    const gfx_rect_t r = gfx_rect_make(3, 5, 10, 7);
+    CHECK_EQ(gfx_turn_engine_copy(&s_eng, s_lg[0], s_fb[0], r, SW, SH,
+                                  GFX_TURN_BUDGET_US),
+             GFX_TURN_COPY_DONE);
+    CHECK(d.last_ctx == &disp);
+    CHECK_EQ(disp.given, 1);
+    CHECK_EQ(disp.taken, 1);
+    /* The block landed turned. */
+    CHECK_EQ(s_fb[0][(size_t)(SH - 1 - 5) * SW + (size_t)(SW - 1 - 3)],
+             s_lg[0][(size_t)5 * SW + 3u]);
+    CHECK_EQ(s_fb[0][(size_t)(SH - 1 - 11) * SW + (size_t)(SW - 1 - 12)],
+             s_lg[0][(size_t)11 * SW + 12u]);
+}
+
+TEST_CASE(a_done_callback_without_its_context_is_caught)
+{
+    gfx_turn_t t;
+    engine_t clock = engine(SW, SH);
+    turned_and_settled(&t, &clock);
+    fake_drv_t d = { .mode = DRV_DROPS_CTX };
+    fake_disp_t disp = { 0, 0 };
+    s_eng = fake_engine(&d, &disp);
+    const uint32_t stray = gfx_turn_stray_dones();
+    const gfx_turn_ops_t o = { eng_job_copy, eng_now, &clock };
+    gfx_canvas_t c;
+    gfx_canvas_init(&c, s_lg[0], SW, SH, SW);
+    gfx_turn_begin(&t, &c);
+    scribble(&c, 41);
+    /* The callback got NULL, counted it and gave nothing: the wait times
+     * out and the frame goes out as drawn. */
+    CHECK_EQ(gfx_turn_flush(&t, s_lg[0], s_fb[0], &o),
+             GFX_TURN_SHOW_FALLBACK);
+    CHECK_EQ(gfx_turn_stray_dones(), stray + 1u);
+    CHECK_EQ(disp.given, 0);
+    CHECK_EQ(t.why, GFX_TURN_FAIL_TIMEOUT);
+    CHECK(memcmp(s_lg[0], s_fb[0], sizeof(s_lg[0])) == 0);
+    (void)gfx_turn_presented(&t, GFX_TURN_SHOW_FALLBACK);
+    CHECK(!gfx_turn_shown());
+}
+
+TEST_CASE(an_engine_without_a_done_context_takes_no_job)
+{
+    fake_drv_t d = { .mode = DRV_DONE };
+    fake_disp_t disp = { 0, 0 };
+    gfx_turn_engine_t e = fake_engine(&d, &disp);
+    e.done_ctx = NULL;
+    const gfx_rect_t r = gfx_rect_make(0, 0, 4, 4);
+    CHECK_EQ(gfx_turn_engine_copy(&e, s_lg[0], s_fb[0], r, SW, SH, 1000u),
+             GFX_TURN_COPY_ERROR);
+    CHECK_EQ(d.submits, 0);
+    CHECK_EQ(gfx_turn_engine_copy(NULL, s_lg[0], s_fb[0], r, SW, SH, 1000u),
+             GFX_TURN_COPY_ERROR);
+    e = fake_engine(&d, &disp);
+    CHECK_EQ(gfx_turn_engine_copy(&e, NULL, s_fb[0], r, SW, SH, 1000u),
+             GFX_TURN_COPY_ERROR);
+    /* Refused and never ended. */
+    fake_drv_t refuse = { .mode = DRV_REFUSE };
+    const gfx_turn_engine_t er = fake_engine(&refuse, &disp);
+    CHECK_EQ(gfx_turn_engine_copy(&er, s_lg[0], s_fb[0], r, SW, SH, 1000u),
+             GFX_TURN_COPY_ERROR);
+    fake_drv_t never = { .mode = DRV_NEVER };
+    const gfx_turn_engine_t en = fake_engine(&never, &disp);
+    CHECK_EQ(gfx_turn_engine_copy(&en, s_lg[0], s_fb[0], r, SW, SH, 1000u),
+             GFX_TURN_COPY_TIMEOUT);
+    CHECK(gfx_turn_done_ctx(&disp) == &disp);
+}
+
+/* Frames through the job layer and the fake driver: turned, every frame
+ * buffer its picture turned. */
+TEST_CASE(frames_through_the_driver_shape_turn)
+{
+    gfx_turn_t t;
+    engine_t clock = engine(SW, SH);
+    gfx_turn_init(&t, SW, SH);
+    fake_drv_t d = { .mode = DRV_DONE };
+    fake_disp_t disp = { 0, 0 };
+    s_eng = fake_engine(&d, &disp);
+    const gfx_turn_ops_t o = { eng_job_copy, eng_now, &clock };
+    for (int i = 0; i < 8; ++i) {
+        const int b = i & 1;
+        gfx_canvas_t c;
+        gfx_canvas_init(&c, gfx_turn_drawing(&t) ? s_lg[b] : s_fb[b], SW, SH,
+                        SW);
+        if (gfx_turn_take_repaint(&t)) {
+            gfx_fill_rect(&c, 0, 0, SW, SH, 0x2104u);
+        }
+        gfx_turn_begin(&t, &c);
+        scribble(&c, 60 + i);
+        const gfx_turn_show_t show = gfx_turn_flush(&t, s_lg[b], s_fb[b], &o);
+        if (i >= 1) {
+            CHECK_EQ(show, GFX_TURN_SHOW_TURNED);
+            CHECK(is_turned(s_lg[b], s_fb[b], SW, SH));
+        }
+        (void)gfx_turn_presented(&t, show);
+        gfx_turn_request(&t, true);
+        gfx_turn_next(&t);
+    }
+    CHECK_EQ(disp.given, disp.taken);
+    CHECK(d.submits >= 7);
+    CHECK(d.last_ctx == &disp);
+}
+
 /* ------------------------------------------------- the screens, turned */
 
 static gfx_color_t *s_logical[2];
@@ -677,6 +894,10 @@ int main(int argc, char **argv)
     RUN(no_engine_at_the_start_stays_normal_with_one_alert);
     RUN(a_flush_without_ops_presents_normal_and_falls_back);
     RUN(a_null_state_does_nothing);
+    RUN(the_done_callback_receives_the_display_state);
+    RUN(a_done_callback_without_its_context_is_caught);
+    RUN(an_engine_without_a_done_context_takes_no_job);
+    RUN(frames_through_the_driver_shape_turn);
     RUN(the_screens_turn_and_come_back_pixel_for_pixel);
     RUN(the_screens_fall_back_when_the_engine_stops);
     for (int b = 0; b < 2; ++b) {

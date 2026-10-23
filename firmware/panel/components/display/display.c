@@ -196,7 +196,18 @@ static void rebind_canvas(void)
 }
 
 /**
- * @brief PPA transaction done: wake ppa_copy().  ISR context.
+ * @brief PPA transaction done: wake ppa_wait().  ISR (interrupt service
+ *        routine) context, from the 2D-DMA's interrupt, which is not
+ *        IRAM-safe in this build (CONFIG_DMA2D_ISR_IRAM_SAFE off) and so
+ *        never runs while the flash cache is off.  It touches the
+ *        semaphore alone.
+ *
+ * The driver passes each transaction's user_data, which ppa_submit()
+ * sets from the job (gfx_turn_engine_copy() fills it with &s_disp).  A
+ * NULL context, or a semaphore already deleted, is counted
+ * (gfx_turn_stray_dones()) or skipped; the wait then times out and the
+ * flush falls back to NORMAL.
+ *
  * @param client Unused.
  * @param edata Unused.
  * @param user_ctx The display_state_t.
@@ -207,16 +218,87 @@ static IRAM_ATTR bool on_ppa_done(ppa_client_handle_t client,
 {
     (void)client;
     (void)edata;
-    display_state_t *st = (display_state_t *)user_ctx;
+    display_state_t *st = (display_state_t *)gfx_turn_done_ctx(user_ctx);
+    if (st == NULL || st->ppa_sem == NULL) {
+        return false;
+    }
     BaseType_t woken = pdFALSE;
     xSemaphoreGiveFromISR(st->ppa_sem, &woken);
     return woken == pdTRUE;
 }
 
 /**
+ * @brief Start one job on the PPA: SRM (scale, rotate, mirror) at 180°,
+ *        RGB565, non-blocking, its user_data the job's.
+ * @param engine The display_state_t.
+ * @param job The block (gfx_turn_engine_copy()).
+ * @return false when the driver refuses it.
+ */
+static bool ppa_submit(void *engine, const gfx_turn_job_t *job)
+{
+    display_state_t *st = (display_state_t *)engine;
+    const ppa_srm_oper_config_t op = {
+        .in = {
+            .buffer = job->in,
+            .pic_w = (uint32_t)job->width,
+            .pic_h = (uint32_t)job->height,
+            .block_w = (uint32_t)job->src.w,
+            .block_h = (uint32_t)job->src.h,
+            .block_offset_x = (uint32_t)job->src.x,
+            .block_offset_y = (uint32_t)job->src.y,
+            .srm_cm = PPA_SRM_COLOR_MODE_RGB565,
+        },
+        .out = {
+            .buffer = job->out,
+            .buffer_size = FB_BYTES,
+            .pic_w = (uint32_t)job->width,
+            .pic_h = (uint32_t)job->height,
+            .block_offset_x = (uint32_t)job->dst_x,
+            .block_offset_y = (uint32_t)job->dst_y,
+            .srm_cm = PPA_SRM_COLOR_MODE_RGB565,
+        },
+        .rotation_angle = PPA_SRM_ROTATION_ANGLE_180,
+        .scale_x = 1.0f,
+        .scale_y = 1.0f,
+        .mode = PPA_TRANS_MODE_NON_BLOCKING,
+        /* on_ppa_done()'s context: the driver passes each transaction's
+         * user_data, not the client's. */
+        .user_data = job->user_data,
+    };
+    /* A token left from an earlier copy is not this one's end. */
+    (void)xSemaphoreTake(st->ppa_sem, 0);
+    return ppa_do_scale_rotate_mirror(st->ppa, &op) == ESP_OK;
+}
+
+/**
+ * @brief Wait for on_ppa_done(), at most @p budget_us, in whole
+ *        milliseconds up and at least one tick (CONFIG_FREERTOS_HZ 1000).
+ * @param engine The display_state_t.
+ * @param budget_us The longest wait, us.
+ * @return true when the transaction ended in time.
+ */
+static bool ppa_wait(void *engine, uint32_t budget_us)
+{
+    display_state_t *st = (display_state_t *)engine;
+    TickType_t ticks = pdMS_TO_TICKS((budget_us + 999u) / 1000u);
+    if (ticks == 0) {
+        ticks = 1;
+    }
+    return xSemaphoreTake(st->ppa_sem, ticks) == pdTRUE;
+}
+
+/** @brief The PPA as a gfx_turn engine; its done callback gets s_disp. */
+static const gfx_turn_engine_t k_ppa_engine = {
+    .submit = ppa_submit,
+    .wait = ppa_wait,
+    .engine = &s_disp,
+    .done_ctx = &s_disp,
+};
+
+/**
  * @brief One block of the logical buffer into the frame buffer, turned by
- *        180°, through the PPA; waits at most @p budget_us for it.
- * @param ctx The display_state_t.
+ *        180°, through the PPA (gfx_turn_engine_copy()).
+ * @param ctx Unused: k_ppa_engine holds the state.
  * @param src The logical buffer.
  * @param dst The frame buffer of the same index.
  * @param r The block, in logical coordinates.
@@ -227,46 +309,9 @@ static gfx_turn_copy_t ppa_copy(void *ctx, const gfx_color_t *src,
                                 gfx_color_t *dst, gfx_rect_t r,
                                 uint32_t budget_us)
 {
-    display_state_t *st = (display_state_t *)ctx;
-    const gfx_rect_t o = gfx_damage_turn(r, BOARD_LCD_H_RES, BOARD_LCD_V_RES);
-    const ppa_srm_oper_config_t op = {
-        .in = {
-            .buffer = src,
-            .pic_w = BOARD_LCD_H_RES,
-            .pic_h = BOARD_LCD_V_RES,
-            .block_w = (uint32_t)r.w,
-            .block_h = (uint32_t)r.h,
-            .block_offset_x = (uint32_t)r.x,
-            .block_offset_y = (uint32_t)r.y,
-            .srm_cm = PPA_SRM_COLOR_MODE_RGB565,
-        },
-        .out = {
-            .buffer = dst,
-            .buffer_size = FB_BYTES,
-            .pic_w = BOARD_LCD_H_RES,
-            .pic_h = BOARD_LCD_V_RES,
-            .block_offset_x = (uint32_t)o.x,
-            .block_offset_y = (uint32_t)o.y,
-            .srm_cm = PPA_SRM_COLOR_MODE_RGB565,
-        },
-        .rotation_angle = PPA_SRM_ROTATION_ANGLE_180,
-        .scale_x = 1.0f,
-        .scale_y = 1.0f,
-        .mode = PPA_TRANS_MODE_NON_BLOCKING,
-    };
-    /* A token left from an earlier copy is not this one's end. */
-    (void)xSemaphoreTake(st->ppa_sem, 0);
-    if (ppa_do_scale_rotate_mirror(st->ppa, &op) != ESP_OK) {
-        return GFX_TURN_COPY_ERROR;
-    }
-    /* Whole milliseconds up, at least one tick: CONFIG_FREERTOS_HZ is
-     * 1000. */
-    TickType_t ticks = pdMS_TO_TICKS((budget_us + 999u) / 1000u);
-    if (ticks == 0) {
-        ticks = 1;
-    }
-    return (xSemaphoreTake(st->ppa_sem, ticks) == pdTRUE)
-               ? GFX_TURN_COPY_DONE : GFX_TURN_COPY_TIMEOUT;
+    (void)ctx;
+    return gfx_turn_engine_copy(&k_ppa_engine, src, dst, r, BOARD_LCD_H_RES,
+                                BOARD_LCD_V_RES, budget_us);
 }
 
 /**
@@ -284,7 +329,7 @@ static uint32_t turn_now_us(void *ctx)
 static const gfx_turn_ops_t k_turn_ops = {
     .copy = ppa_copy,
     .now_us = turn_now_us,
-    .ctx = &s_disp,
+    .ctx = NULL,
 };
 
 /**
@@ -323,13 +368,18 @@ static void turn_up(void)
     }
 }
 
-/** @brief Free what turn_up() got. */
+/**
+ * @brief Free what turn_up() got.  A client the driver will not let go,
+ *        because a transaction is still pending, keeps its semaphore, so
+ *        a late on_ppa_done() never gives a deleted one.
+ */
 static void turn_down(void)
 {
+    bool pending = false;
     if (s_disp.ppa != NULL) {
-        (void)ppa_unregister_client(s_disp.ppa);
+        pending = ppa_unregister_client(s_disp.ppa) != ESP_OK;
     }
-    if (s_disp.ppa_sem != NULL) {
+    if (s_disp.ppa_sem != NULL && !pending) {
         vSemaphoreDelete(s_disp.ppa_sem);
     }
     for (int b = 0; b < DISPLAY_NUM_FBS; ++b) {
