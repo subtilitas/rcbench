@@ -111,7 +111,6 @@ test/host/test_picker_screen.c | none | F14: one screen; the head's cases call i
 test/host/test_widgets.c | none | F14: the optional 4-way cut is not taken
 test/host/test_servo_page.c | none | F14: one source, servo_page.c; no section markers
 test/host/test_servo_arm.c | none | F14: keeps its own fixture; taking servo_rig.h rewrites it (#436)
-test/host/test_wa_session.c | none | F14: one source, wa_session.c
 test/host/test_wa_fetch.c | none | F14: one source, wa_fetch.c
 test/host/test_bench.c | none | crossed 1,000 after the plan with row 3's cases, not weighed by the plan
 test/host/test_sense_link.c | none | F14: one source, sense_link.c; crossed 1,000 after the plan, not weighed by the plan

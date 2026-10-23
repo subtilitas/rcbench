@@ -6,6 +6,20 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- WI-FI > CHOOSE HOME NETWORK: a failed scan no longer reads as an empty
+  list. A scan session starts one scan, however often the station's start
+  is reported. A done report with no scan of the session under way reads
+  nothing. A failed scan, a list that cannot be read and a report that
+  counts networks the read does not find run the scan again, 3 scans at
+  most (`WA_SCAN_TRIES`) within the 10s; then the list's place says
+  `Wi-Fi could not start.` instead of `No WPA2 or WPA3 network found.`, as
+  it does for a scan the radio refuses, where it said
+  `Searching for networks.` until the screen closed. The console logs each
+  scan's start, its done report (status, counted, read, listed, left off)
+  and an ignored report.
+
 ## 0.22.1 - 2026-10-22
 
 0.22.1 is a stable release: its minor number, 22, is even, and GitHub marks

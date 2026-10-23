@@ -1,5 +1,6 @@
-/*
- * Wi-Fi access. See wa_session.h.
+/**
+ * @file
+ * @brief Wi-Fi access. See wa_session.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -50,6 +51,14 @@ void wa_conf_defaults(wa_conf_t *c)
     c->code_on = true;
 }
 
+/**
+ * @brief The checks of wa_conf_set_net().
+ * @param ssid     The name, not terminated.
+ * @param ssid_len Its bytes.
+ * @param pass     The passphrase, not terminated.
+ * @param pass_len Its characters.
+ * @return WA_CONF_OK, or what is wrong with the pair.
+ */
 static wa_conf_err_t check_net(const char *ssid, size_t ssid_len,
                                const char *pass, size_t pass_len)
 {
@@ -128,6 +137,10 @@ void wa_pending_init(wa_pending_t *p)
     memset(p, 0, sizeof(*p));
 }
 
+/**
+ * @brief A change: a new generation, the failure and its tries reset.
+ * @param p The writes owed.
+ */
 static void pending_touched(wa_pending_t *p)
 {
     ++p->gen;
@@ -217,6 +230,10 @@ void wa_scan_clear(wa_scan_t *s)
     memset(s, 0, sizeof(*s));
 }
 
+/**
+ * @brief Sort the list strongest first.
+ * @param s The list.
+ */
 static void scan_sort(wa_scan_t *s)
 {
     /* Insertion sort, strongest first; stable, so equal signals keep the
@@ -288,6 +305,12 @@ wa_off_t wa_gate(bool armed, bool supply, bool run)
     return run ? WA_OFF_RUN : WA_OFF_NONE;
 }
 
+/**
+ * @brief Enter @p st at @p now_ms.
+ * @param w      The session.
+ * @param st     The state.
+ * @param now_ms Now.
+ */
 static void enter(wa_t *w, wa_state_t st, uint32_t now_ms)
 {
     w->state    = st;
@@ -359,6 +382,47 @@ void wa_on_scan_done(wa_t *w)
     if (w->state == WA_ST_SCANNING) {
         wa_close(w, WA_OFF_NONE);
     }
+}
+
+bool wa_scan_begin(wa_t *w)
+{
+    if (w->state != WA_ST_SCANNING || w->scan_busy
+        || w->scan_runs >= WA_SCAN_TRIES) {
+        return false;
+    }
+    w->scan_busy = true;
+    ++w->scan_runs;
+    return true;
+}
+
+bool wa_scan_pending(const wa_t *w)
+{
+    return w->state == WA_ST_SCANNING && w->scan_busy;
+}
+
+bool wa_scan_read_ok(uint32_t status, unsigned reported, bool read_ok,
+                     unsigned read)
+{
+    /* A report that counts networks with none in the list read is a report
+     * of a list gone: another scan's, or one already read. */
+    return status == 0u && read_ok && (read > 0u || reported == 0u);
+}
+
+wa_scan_step_t wa_on_scan_end(wa_t *w, bool ok)
+{
+    if (!wa_scan_pending(w)) {
+        return WA_SCAN_IGNORE;
+    }
+    w->scan_busy = false;
+    if (ok) {
+        wa_close(w, WA_OFF_NONE);
+        return WA_SCAN_TAKE;
+    }
+    if (wa_scan_begin(w)) {
+        return WA_SCAN_AGAIN;
+    }
+    wa_close(w, WA_OFF_FAILED);
+    return WA_SCAN_FAILED;
 }
 
 void wa_on_associated(wa_t *w, uint32_t now_ms)
