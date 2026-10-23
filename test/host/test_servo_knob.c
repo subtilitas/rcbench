@@ -441,6 +441,7 @@ TEST_CASE(a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release)
     finger(FEED_LONE, x, P(y));
     CHECK_EQ(last_cmd().slew_per_s, set.slew_per_s);
     glide(FEED_LONE, x2, P(y2), 8);
+    frames(0.3f);           /* the drag's target follows the finger */
     CHECK_EQ(last_cmd().slew_per_s, set.slew_per_s);
     lift(FEED_LONE);
 
