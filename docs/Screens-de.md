@@ -267,7 +267,8 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
   auf ihren Reiter passt; sonst in 8 x 16. ROOT, USER und BENCH auf LOGS und
   die Segmente des PROG-PORT-Eintrags auf OUTPUTS stehen in 10 x 20. Die
   Streifen von SERVO und MOTOR & ESC sind 40 px hoch und zeigen 10 x 20;
-  der von SUPPLY ist 24 px hoch und bleibt bei 8 x 16.
+  der von SUPPLY ist 24 px hoch und bleibt bei 8 x 16. Die Reiter von
+  RECEIVER und BALANCE sind 150 x 48 px groß und zeigen 10 x 20.
 - **ZIEL-Zeile.** Eine Zeile ab 40 px Höhe zeigt Beschriftung und Wert in
   10 x 20, mit 88 px für die Beschriftung, und zählt die genannten Pins in
   Zellen von 10 px. Eine niedrigere zeigt sie in 8 x 16 mit 64 px für die
@@ -282,7 +283,8 @@ malt die ganze Fläche und lässt ihre Tasten dort enden, so verdeckt ein
 Alert keine Taste. Auf SERVO sind die Tasten der Tastenfelder dann
 112 x 88 px groß und die der Tastaturen 41 x 72 px; auf SUPPLY die des
 Tastenfelds 126 x 80 px; auf der Suchtastatur von ESC STICK 59 x 57 px; auf
-SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89 px.
+SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89 px; auf BALANCE die
+des Tastenfelds der Blattzahl 242 x 72 px.
 
 ## Splash
 
@@ -2129,10 +2131,19 @@ AUTO wie bei einer festen Rate.
 
 ![Receiver](img/de/analyser.png)
 
-Sechzehn Kanäle, jeder mit etwa 1,7 s Verlauf (118 Werte) und einem Balken für den aktuellen
-Wert. CH17 und CH18 sind die beiden Digitalkanäle. Ein Glitch ist eine Spitze
-in einer Spur; ein Dropout ist eine Kerbe durch alle sechzehn im selben
-Moment.
+Sechzehn Kanäle in zwei Spalten mit je acht Spuren von 52 px. Eine Spur zeigt
+den Namen des Kanals in 10 x 20, seinen Verlauf, einen Balken von 56 px Breite
+für den aktuellen Wert und den Wert in us in 8 x 16. Der Verlauf sind 200
+Werte, je einer pro Pixel: etwa 2,8 s bei 71 Frames je Sekunde (ein
+S.BUS-Frame alle 14 ms). CH17 und CH18 sind die beiden Digitalkanäle. Ein
+Glitch ist eine Spitze in einer Spur; ein Dropout ist eine Kerbe durch alle
+sechzehn im selben Moment.
+
+Die Zustandskarte rechts ist 260 px breit: das Zustandswort in 20 x 36, seine
+Zeile in bis zu drei Zeilen 12 x 24, BUS, RATE, FRAMES, RESYNC und BAD TAIL in
+Zeilen von 32 px, und CH17 und CH18, 44 px hoch, hell, solange gesetzt. KANÄLE
+und ROHDATEN sind Reiter von 150 x 48 px. ROHDATEN zeigt die Bytes des
+letzten Frames, acht je Zeile, und die Zähler des Decoders in 8 x 16.
 
 Keine Firmware speist diesen Bildschirm bisher (siehe
 [Empfängerbusse](Receivers-de.md)); er zeigt KEIN SIGNAL.
@@ -2155,6 +2166,13 @@ Die Zellen werden als Abweichung vom Mittelwert des Packs gezeichnet. Das
 Urteil folgt der Spreizung, dem größten Abstand zwischen zwei beliebigen
 Zellen: GUT unter 30 mV, BEOBACHTEN ab 30 mV, ERSETZEN ab 60 mV. Die Skala folgt
 dem Pack bis hinunter zu einer Untergrenze von 12 mV und steht neben dem Plot.
+
+Die Plotkarte ist 640 px breit, die rechte Karte 360 px. Ein Balken ist
+höchstens 48 px breit und reicht 164 px zu jeder Seite des Mittelwerts. Unter
+jedem Balken stehen Nummer und Spannung der Zelle in 12 x 24 bis 11 Zellen und
+in 10 x 20 von 12 bis 14. Das Urteil steht in 20 x 36, seine Zeile in bis zu
+zwei Zeilen 12 x 24, die sechs Zeilen sind je 36 px hoch, der Hinweis in
+10 x 20.
 
 Unter Last messen. In Ruhe liest sich eine schwache Zelle wie die anderen.
 
@@ -4888,6 +4906,14 @@ Der Reiter WUCHTEN zeigt einen festen Winkel (265°) und zwei feste Werte
 Die Pille SIMULIERT und der Text „Nicht gemessen.“ stehen unter den Werten,
 20 px hoch und 88 px breit. Die Reiter PRÜFGESTELL und FLUGMODELL zeigen
 Platzierungshilfen und tragen keine Marke.
+
+WUCHTEN, PRÜFGESTELL und FLUGMODELL sind Reiter von 150 x 48 px. Die
+Rotorkarte ist 640 px breit, ihre Scheibe hat 160 px Radius; die rechte Karte
+ist 360 px breit. PROPELLER und EDF sind 162 x 48 px groß, `-` und `+` der
+Blattzahl 56 x 48 px, die Tippfläche der Zahl 114 x 48 px, die vier Werte
+Zeilen von 36 px. Die Hinweise und die zwei Zeilen der Regeln stehen in
+8 x 16; die Köpfe der Regeln und die Beschriftungen, auch die der
+Zeichnungen, in 10 x 20.
 
 ## Unbekannte Bildschirm-IDs
 
