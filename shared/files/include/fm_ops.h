@@ -31,13 +31,17 @@
  * keeps "<name>.NEW" for the same reason.  A failure before the delete
  * removes "<name>.NEW" and leaves "<name>" as it was.
  *
- * MOVE, RENAME, DELETE, NEW and the end of a copy or a save are single
- * calls and finish once started.  The rules are asked again before the
- * files are opened and before every chunk of a copy, a save or a load
- * (fm_allowed()): a bench switched to ARMED, a log run opened, or the
- * IOmcu link gone while the fault log is copied stops the job there
- * (FM_ERR_ARMED, FM_ERR_LOGGING, FM_ERR_BUSY), as CANCEL does
- * (FM_ERR_CANCELLED).  MOVE, RENAME and DELETE find the entry as the kind
+ * The rules (fm_allowed(): the write gate, the place, the IOmcu link and
+ * the logger's files) are asked again as the job runs, with the bench as
+ * fm_job_step() is handed it.  A MOVE, RENAME, DELETE or NEW asks them
+ * once more right before its single call: queued while SAFE and run once
+ * the bench is ARMED or a log is open, it fails (FM_JOB_FAILED) with the
+ * refusal and changes nothing.  A copy, a save or a load asks before its
+ * files are opened and before every chunk: a bench switched to ARMED, a
+ * log run opened, or the IOmcu link gone while the fault log is copied
+ * stops it there (FM_JOB_STOPPED: FM_ERR_ARMED, FM_ERR_LOGGING,
+ * FM_ERR_BUSY), as CANCEL does (FM_ERR_CANCELLED).  A single call that has
+ * started, and the end of a copy or a save (sync, close, rename), finish.  MOVE, RENAME and DELETE find the entry as the kind
  * it was listed as, or refuse with FM_ERR_ARG: a file listed that is a
  * folder now was never asked about as a folder.
  *
