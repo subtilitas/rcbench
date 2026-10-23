@@ -24,7 +24,7 @@ rcbench/
     artwork/              the panel's cache of board drawings
     bench/                bench_state · telemetry simulator · log writer · rotary knob decode
     outputs/              channels · driver table · the ARMED state, slew and staleness
-    safety/               heartbeat generator (panel) and monitor (IOmcu)
+    safety/               heartbeat generator (panel) and monitor (IOmcu) · IOmcu reset cause
     servo/                limit and synchronisation searches · servo model
     can/                  bit timing for both controllers · MCP2515 registers · echo self-test
     esc/                  ESC programming profiles, their JSON reader and registry
