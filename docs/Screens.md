@@ -2318,6 +2318,17 @@ this screen is open, and for the release check and the download of
 when the screen is left, before an install writes the flash, and after
 10 min without a request.
 
+Every view of WI-FI ends 4 px above the alert band, at body y 492, so an
+alert covers no control. Rows, buttons and keys are 48 px or taller.
+
+| View | Layout |
+| --- | --- |
+| Radio off | five buttons of 460 x 60 px (69.0 x 9.0 mm), 8 px apart, on the left; on the right a card of 524 px with lines of 49 characters in 10 x 20, 24 px apart |
+| Radio on | rows of 56 px: the label in 10 x 20 in 240 px, the value in 20 x 36 in 740 px, where a network name of 32 characters takes 640 px; the lines under the rows in 12 x 24, 28 px apart; WI-FI OFF 460 x 60 px from body y 424 |
+| Network list | two columns of eight rows of 492 x 48 px, 52 px apart: the name in 12 x 24 (32 characters are 384 px), the signal in 10 x 20; SCAN AGAIN, HIDDEN NETWORK and CANCEL 328 x 56 px each |
+| Question about an image | a card of 1008 x 484 px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2 s: INSTALL 460 x 72 px |
+| Keyboard | 1008 x 484 px, keys of 93 x 71 px ([Keyboard](#keypad-keyboard-and-the-shared-controls)) |
+
 The radio starts only with the bench SAFE, the supply output off and no log
 run open. Otherwise the buttons that start it are grey and the card says what
 is missing:

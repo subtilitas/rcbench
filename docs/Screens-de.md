@@ -2568,6 +2568,18 @@ ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
 verlassen wird, bevor eine Installation den Flash schreibt und nach 10 min
 ohne Anfrage.
 
+Jede Ansicht von WI-FI endet 4 px über dem Alarmband, bei Körper-y 492,
+damit ein Alarm keine Taste verdeckt. Zeilen, Tasten und Tastaturtasten
+sind 48 px hoch oder höher.
+
+| Ansicht | Aufbau |
+| --- | --- |
+| Funk aus | fünf Tasten von 460 x 60 px (69,0 x 9,0 mm), 8 px Abstand, links; rechts eine Karte von 524 px mit Zeilen von 49 Zeichen in 10 x 20, 24 px Abstand |
+| Funk an | Zeilen von 56 px: die Bezeichnung in 10 x 20 auf 240 px, der Wert in 20 x 36 auf 740 px, wo ein Netzwerkname von 32 Zeichen 640 px braucht; die Zeilen darunter in 12 x 24, 28 px Abstand; WLAN AUS 460 x 60 px ab Körper-y 424 |
+| Netzwerkliste | zwei Spalten mit je acht Zeilen von 492 x 48 px, 52 px Abstand: der Name in 12 x 24 (32 Zeichen sind 384 px), das Signal in 10 x 20; NEU SUCHEN, VERSTECKTES NETZWERK und ABBRECHEN je 328 x 56 px |
+| Frage zu einem Image | eine Karte von 1008 x 484 px: Titel und Versionen in 20 x 36, die Sätze in 12 x 24, umbrochen bei 80 Zeichen; ABBRECHEN und 2 s HALTEN: INSTALLIEREN 460 x 72 px |
+| Tastatur | 1008 x 484 px, Tasten von 93 x 71 px ([Tastatur](#tastenfeld-tastatur-und-die-gemeinsamen-bedienelemente)) |
+
 Der Funk startet nur, wenn der Prüfstand SAFE ist, der Netzteilausgang aus
 und kein Log-Lauf offen. Sonst sind die Tasten, die ihn starten, grau, und
 die Karte sagt, was fehlt:

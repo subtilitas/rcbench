@@ -4480,7 +4480,7 @@ UI_TEXT(WF_STARTING, 48,
 UI_TEXT(WF_JOINING, 0,
     "Connecting to %s",
     "Verbindung mit %s wird aufgebaut")
-UI_TEXT(WF_WAIT_ADDRESS, 96,
+UI_TEXT(WF_WAIT_ADDRESS, 82,
     "Waiting for an IP address.",
     "Wartet auf eine IP-Adresse.")
 UI_TEXT(WF_NETWORK, 0,
@@ -4513,7 +4513,7 @@ UI_TEXT(WF_IDLE, 0,
 UI_TEXT(WF_RECEIVING, 0,
     "Receiving %lu of %lu bytes (%u %%)",
     "Empfang: %lu von %lu Bytes (%u %%)")
-UI_TEXT(WF_UP_REFUSED, 96,
+UI_TEXT(WF_UP_REFUSED, 82,
     "The last upload was rejected. The web page shows why.",
     "Der letzte Upload wurde abgelehnt. Der Grund steht auf der Webseite.")
 UI_TEXT(WF_OFF, 0,
@@ -4522,7 +4522,7 @@ UI_TEXT(WF_OFF, 0,
 UI_TEXT(WF_SCANNING, 0,
     "Searching for networks.",
     "Netzwerke werden gesucht.")
-UI_TEXT(WF_SCAN_NONE, 96,
+UI_TEXT(WF_SCAN_NONE, 82,
     "No WPA2 or WPA3 network found.",
     "Kein WPA2- oder WPA3-Netzwerk gefunden.")
 UI_TEXT(WF_RESCAN, 0,

@@ -30,6 +30,7 @@
 
 #include "nav_rig.h"
 #include "motor_spots.h"
+#include "wifi_spots.h"
 
 static void tap_tile(int index)
 {
@@ -526,12 +527,15 @@ static void open_supply_settings_keypad(void)
     tap(144, UI_BAND_H + 94);
 }
 
-static void open_wifi_list(void)       { tap(196, UI_BAND_H + 180); }
+static void open_wifi_list(void)
+{
+    tap(WF_BTN_CX(2), UI_BAND_H + WF_BTN_CY(2));   /* CHOOSE */
+}
 
 static void open_wifi_keyboard(void)
 {
     open_wifi_list();
-    tap(400, UI_BAND_H + 400);                   /* HIDDEN: the name */
+    tap(WF_HIDDEN_CX, UI_BAND_H + WF_SCAN_CY);   /* HIDDEN: the name */
 }
 
 static void open_outputs_list(void)    { tap(149, UI_BAND_H + 71); }

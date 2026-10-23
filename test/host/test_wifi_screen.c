@@ -23,6 +23,7 @@
 #include "ui_widgets.h"
 #include "wa_session.h"
 #include "wifi_screen.h"
+#include "wifi_spots.h"
 
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_PANEL_H
@@ -31,20 +32,19 @@
 #define WF_KEY_AREA wifi_screen_key_area()
 
 /* Mirrored from wifi_screen.c. */
-#define BTN_CX(i)    (16 + 180)
-#define BTN_CY(i)    (16 + (i) * 68 + 28)
-#define OFF_CX       (16 + 120)
-#define OFF_CY       (360 + 28)
-#define Q_BY         (12 + 408 - 80)
-#define Q_CANCEL_CX  (32 + 120)
-#define INSTALL_CX   (408 + 180)
-#define Q_CY         (Q_BY + 32)
-#define ROW_CX(i)    (((i) < 8 ? 16 : 408) + 100)
-#define ROW_CY(i)    (16 + ((i) % 8) * 44 + 20)
-#define RESCAN_CX    (16 + 120)
-#define HIDDEN_CX    (272 + 128)
-#define SCAN_CANCEL_CX (544 + 120)
-#define SCAN_BY      (376 + 24)
+#define BTN_CX(i)    WF_BTN_CX(i)
+#define BTN_CY(i)    WF_BTN_CY(i)
+#define OFF_CX       WF_OFF_CX
+#define OFF_CY       WF_OFF_CY
+#define Q_CANCEL_CX  WF_Q_CANCEL_CX
+#define INSTALL_CX   WF_INSTALL_CX
+#define Q_CY         WF_Q_CY
+#define ROW_CX(i)    WF_ROW_CX(i)
+#define ROW_CY(i)    WF_ROW_CY(i)
+#define RESCAN_CX    WF_RESCAN_CX
+#define HIDDEN_CX    WF_HIDDEN_CX
+#define SCAN_CANCEL_CX WF_SCAN_CANCEL_CX
+#define SCAN_BY      WF_SCAN_CY
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -843,7 +843,7 @@ TEST_CASE(the_write_screen_closes_only_after_a_failure)
 }
 
 /* WF_JOBS_1 and WF_JOBS_2 are one sentence: wrapped as one, it takes the
- * card's 44 cells twice, with no line of one word between its parts. */
+ * card's 49 cells twice, with no line of one word between its parts. */
 TEST_CASE(the_first_sentence_is_wrapped_once_in_two_lines)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
