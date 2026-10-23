@@ -84,11 +84,16 @@ static uint32_t now_ms(void)
 
 static touch_state_t s_touch;
 
+/** @brief Run the tracker over @p pts and queue its events, numbered. */
 static void publish(const touch_point_t *pts, int count)
 {
     touch_event_t evts[TOUCH_MAX_POINTS * 2];
     int n = touch_tracker_update(&s_touch.tracker, pts, count,
                                  evts, (int)(sizeof(evts) / sizeof(evts[0])));
+#ifdef RCBENCH_TOUCH_INJECTOR
+    /* An injected contact cut for a finger on the glass did not lift. */
+    touch_inject_mark(evts, n);
+#endif
 
     xSemaphoreTake(s_touch.lock, portMAX_DELAY);
     if (count > 0) {

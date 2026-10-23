@@ -1,5 +1,6 @@
-/*
- * The touch injector's side of the touch task, in a build with
+/**
+ * @file
+ * @brief The touch injector's side of the touch task, in a build with
  * RCBENCH_TOUCH_INJECTOR, the default (idf.py -D RCBENCH_TOUCH_INJECTOR=OFF
  * build leaves it out).
  *
@@ -39,14 +40,19 @@
 extern "C" {
 #endif
 
-/** The injector's I2C address: the GT911's second strap address. */
+/** @brief The injector's I2C address: the GT911's second strap address. */
 #define TOUCH_INJECT_ADDR 0x14
 
 /**
- * Look for the injector on @p bus.  @p glass_addr is the address the glass's
- * controller answered on: when it is TOUCH_INJECT_ADDR, the glass's
+ * @brief Look for the injector on @p bus.
+ *
+ * When the glass's controller answered on TOUCH_INJECT_ADDR, the glass's
  * controller is absent and the injector answered in its place, so no second
  * handle is made.  Never fails touch: an absent injector is the normal case.
+ *
+ * @param bus The touch bus.
+ * @param glass_addr The address the glass's controller answered on.
+ * @param now_ms The clock.
  */
 void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
                          uint32_t now_ms);
@@ -60,23 +66,38 @@ void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
 touch_map_t touch_inject_map(void);
 
 /**
- * The glass reported (@p fresh) or did not.  Merges its set with the
- * injector's last one into @p pts / @p count, and returns whether there is
- * a new merged frame.  No bus traffic.
+ * @brief Merge the glass's set with the injector's last one.  No bus traffic.
+ * @param pts The glass's points in, the merged set out.
+ * @param count Their count in and out.
+ * @param fresh Whether the glass reported.
+ * @return Whether there is a new merged frame.
  */
 bool touch_inject_glass(touch_point_t *pts, int *count, bool fresh);
 
 /**
- * Read the injector when it is attached and due, detach it when it has been
- * silent too long, and probe it when it is detached and due.  Returns true,
- * with the merged set in @p pts / @p count, when its contacts changed or it
- * was detached.
+ * @brief Read the injector when it is attached and due, detach it when it
+ *        has been silent too long, and probe it when it is detached and due.
+ * @param pts The merged set, written when this returns true.
+ * @param count Its count.
+ * @param now_ms The clock.
+ * @return True when its contacts changed or it was detached.
  */
 bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms);
 
 /**
- * Milliseconds since the injector last answered; 0 when none is attached,
- * and from TOUCH_MERGE_DETACH_MS on, when it counts as detached.
+ * @brief Mark the UP of every injected contact the merge cut to make room
+ *        for the glass's TOUCH_FLAG_NO_TAP (touch_merge_mark_cut()).
+ * @param evts The tracker's events for the frame just published.
+ * @param n How many.
+ */
+void touch_inject_mark(touch_event_t *evts, int n);
+
+/**
+ * @brief How old the injector's share of touch is.
+ * @param now_ms The clock.
+ * @return Milliseconds since the injector last answered; 0 when none is
+ *         attached, and from TOUCH_MERGE_DETACH_MS on, when it counts as
+ *         detached.
  */
 uint32_t touch_inject_age_ms(uint32_t now_ms);
 
