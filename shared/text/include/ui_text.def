@@ -1605,8 +1605,8 @@ UI_TEXT(LOG_RUNS_HERE, 64,
     "Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.",
     "Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.")
 UI_TEXT(LOG_TESTS_HERE, 64,
-    "Tests are saved as ATESTnnn.CSV.",
-    "Tests werden als ATESTnnn.CSV gespeichert.")
+    "Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.",
+    "Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.")
 UI_TEXT(LOG_ROOT_HERE, 64,
     "Runs of firmware 0.21.0 and older.",
     "Läufe von Firmware 0.21.0 und älter.")
@@ -1774,6 +1774,15 @@ UI_TEXT(LOG_AT_ROW, 50,
 UI_TEXT(LOG_UNREADABLE_CELLS, 50,
     "%d CELLS UNREADABLE",
     "%d ZELLEN UNLESBAR")
+/* The TEXT view's last row, under a report longer than LOG_TEXT_MAX: its
+ * size in kB.  A row of the view is 86 cells. */
+UI_TEXT(LOG_TEXT_CUT, 86,
+    "Only the first %u kB are shown.",
+    "Nur die ersten %u kB werden gezeigt.")
+/* The TEXT view's one row for a report of 0 bytes. */
+UI_TEXT(LOG_TEXT_EMPTY, 86,
+    "The file is empty.",
+    "Die Datei ist leer.")
 
 /* --------------------------------------------- the modelled protocols */
 /* The parameter tables of prog_models.c, which no list shows: no transport
@@ -6541,8 +6550,8 @@ UI_SERVO_TEXT(SERVO_STR_L_WHY_NOT_KST,
     "no KST or Chaservo servo read",
     "kein KST- oder Chaservo-Servo")
 UI_SERVO_TEXT(SERVO_STR_L_WHY_PROG,
-    "programming port did not finish",
-    "Programmierport ohne Abschluss")
+    "programming port session failed",
+    "PROG-PORT-Sitzung gescheitert")
 UI_SERVO_TEXT(SERVO_STR_L_WHY_WRITE,
     "a write refused or lost",
     "Schreiben abgelehnt/verloren")

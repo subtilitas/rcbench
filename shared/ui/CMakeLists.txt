@@ -65,6 +65,7 @@ set(SRCS
     log_viewer_draw.c
     log_viewer_events.c
     log_select.c
+    log_text.c
     settings_screen.c
     settings_draw.c
     settings_rows.c
