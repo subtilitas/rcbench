@@ -495,7 +495,6 @@ firmware/panel/components/wifi_access/wifi_sock.h: warning: Member abort (variab
 firmware/panel/components/wifi_access/wifi_sock.h: warning: Member fd (variable) of struct wifi_sock_t is not documented.
 firmware/panel/main/knob_task.c: warning: Member TAG (variable) of file knob_task.c is not documented.
 firmware/panel/main/knob_task.c: warning: Member knob_read(uint8_t reg, uint8_t *byte) (function) of file knob_task.c is not documented.
-firmware/panel/main/knob_task.c: warning: Member knob_task(void *arg) (function) of file knob_task.c is not documented.
 firmware/panel/main/knob_task.c: warning: Member s_dev (variable) of file knob_task.c is not documented.
 firmware/panel/main/knob_task.c: warning: Member s_knob (variable) of file knob_task.c is not documented.
 firmware/panel/main/knob_task.c: warning: Member s_on (variable) of file knob_task.c is not documented.
