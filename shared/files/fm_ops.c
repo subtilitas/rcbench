@@ -738,14 +738,16 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
     case STEP_UNLINK:
         if (!job->dst_was) {
             /* Not there at the open: whatever stands there now is another
-             * writer's, never deleted.  The ".NEW" holds the text and
-             * stays listed for a RENAME. */
+             * writer's, never deleted.  Checked and renamed in one step,
+             * and FAT renames over no name, so the ".NEW" either takes a
+             * free name or stays listed for a RENAME. */
             err = free_name(io, job->dst);
-            if (err != FM_OK) {
-                return finish(job, io, FM_JOB_FAILED, err, false);
+            if (err == FM_OK) {
+                err = io->rename(io->ctx, job->tmp, job->dst);
             }
-            job->step = STEP_RENAME;
-            return FM_JOB_RUNNING;
+            return (err != FM_OK)
+                       ? finish(job, io, FM_JOB_FAILED, err, false)
+                       : finish(job, io, FM_JOB_DONE, FM_OK, false);
         }
         err = io->unlink(io->ctx, job->dst);
         if (err != FM_OK && err != FM_ERR_NOT_FOUND) {

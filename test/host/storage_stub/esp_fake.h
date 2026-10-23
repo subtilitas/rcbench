@@ -122,7 +122,7 @@ typedef enum {
     FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM,
     FR_MKFS_ABORTED, FR_TIMEOUT,
 } FRESULT;
-typedef struct { int pos; } FF_DIR;
+typedef struct { int pos; int folder; } FF_DIR;
 typedef struct {
     FSIZE_t fsize;
     WORD fdate;
