@@ -175,6 +175,15 @@ TEST_CASE(a_file_of_the_cap_loads_and_one_byte_more_does_not)
     CHECK(text_buf_delete_after(&g_tb));
     CHECK_EQ(text_buf_insert(&g_tb, 'b'), TEXT_BUF_OK);
     CHECK_EQ(text_buf_insert(&g_tb, 'b'), TEXT_BUF_FULL);
+    /* One byte of room takes an LF, not a CR LF. */
+    CHECK(text_buf_delete_after(&g_tb));
+    CHECK_EQ(text_buf_insert_eol(&g_tb), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_size(&g_tb), CAP);
+    CHECK_EQ(text_buf_insert_eol(&g_tb), TEXT_BUF_FULL);
+    CHECK_EQ(load("a\r\n", 3u), TEXT_BUF_OK);
+    fresh(4u, 4u);
+    CHECK_EQ(text_buf_load(&g_tb, "a\r\n", 3u), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_insert_eol(&g_tb), TEXT_BUF_FULL);
 
     CHECK_EQ(load(big, CAP + 1u), TEXT_BUF_TOO_LARGE);
     CHECK_EQ(text_buf_len(&g_tb), 0u);
@@ -552,9 +561,15 @@ TEST_CASE(the_german_letters_are_typed)
     text_buf_cell_of(&g_tb, text_buf_len(&g_tb), 0u, NULL, &cell);
     CHECK_EQ(cell, 7u);
     CHECK_EQ(gfx_text_cells((const char *)g_out), 7);
-    CHECK_EQ(text_buf_insert(&g_tb, 0x10FFFFu), TEXT_BUF_OK);
-    CHECK_EQ(text_buf_insert(&g_tb, 0x800u), TEXT_BUF_OK);
-    CHECK_EQ(text_buf_insert(&g_tb, '\t'), TEXT_BUF_OK);
+    /* The edges of each encoded length. */
+    CHECK_EQ(load(NULL, 0u), TEXT_BUF_OK);
+    static const uint32_t k_edge[] = {0x7Eu, 0xA0u, 0x7FFu, 0x800u, 0xFFFFu,
+                                      0x10000u, 0x10FFFFu, '\t'};
+    for (size_t i = 0u; i < sizeof(k_edge) / sizeof(k_edge[0]); ++i) {
+        CHECK_EQ(text_buf_insert(&g_tb, k_edge[i]), TEXT_BUF_OK);
+    }
+    CHECK(same("\x7E\xC2\xA0\xDF\xBF\xE0\xA0\x80\xEF\xBF\xBF"
+               "\xF0\x90\x80\x80\xF4\x8F\xBF\xBF\t"));
 }
 
 TEST_CASE(a_code_point_no_text_holds_is_refused)
@@ -581,7 +596,8 @@ TEST_CASE(a_malformed_byte_is_one_cell)
     static const char *const k[] = {
         "\xFF", "\x80", "\xC3", "\xC0\x80", "\xED\xA0\x80", "\xF5\x80\x80\x80",
         "\xE2\x82", "\xF0\x9F\x98", "\xC3\xC3\xA4", "a\x80\x80\xC3\xA4\xBF",
-        "\xF4\x90\x80\x80", "\xE0\x80\xAF",
+        "\xF4\x90\x80\x80", "\xE0\x80\xAF", "\xF0\x80\x80\x80",
+        "\xF0\x8F\xBF\xBF",
     };
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
         CHECK_EQ(loads(k[i]), TEXT_BUF_OK);
@@ -593,6 +609,14 @@ TEST_CASE(a_malformed_byte_is_one_cell)
         }
         CHECK(same(k[i]));
     }
+    /* An overlong form reads as '?', one byte at a time. */
+    size_t n = 0u;
+    CHECK_EQ(loads("\xE0\x80\xAF"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_cp(&g_tb, 0u, &n), '?');
+    CHECK_EQ(n, 1u);
+    CHECK_EQ(loads("\xF0\x80\x80\x80"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_cp(&g_tb, 0u, &n), '?');
+    CHECK_EQ(n, 1u);
     CHECK_EQ(loads("\xC3\xC3\xA4"), TEXT_BUF_OK);
     CHECK_EQ(text_buf_cp(&g_tb, 0u, NULL), '?');
     text_buf_set_cursor(&g_tb, 1u);

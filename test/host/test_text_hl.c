@@ -184,6 +184,8 @@ TEST_CASE(a_label_is_at_column_0_and_ends_at_its_mark)
     CHECK(hl_span_is(n, 0u, 10u, TEXT_HL_LABEL));
     n = hl_line("Result:", 3u, TEXT_HL_KIND_TEXT);
     CHECK(hl_span_is(n, 0u, 7u, TEXT_HL_LABEL));
+    n = hl_line(":", 3u, TEXT_HL_KIND_TEXT);
+    CHECK(hl_span_is(n, 0u, 1u, TEXT_HL_LABEL));
     /* The mark in the 24th cell is a label's, in the 25th not. */
     n = hl_line("abcdefghijklmnopqrstuvw: x", 3u, TEXT_HL_KIND_TEXT);
     CHECK(hl_span_is(n, 0u, 24u, TEXT_HL_LABEL));
@@ -218,6 +220,12 @@ TEST_CASE(a_verdict_word_matches_whole_and_in_its_case)
     n = hl_line("x PASSED y", 3u, TEXT_HL_KIND_TEXT);
     CHECK(n == 1u && hl_spans[0].cls == TEXT_HL_TEXT);
     n = hl_line("x XPASS y", 3u, TEXT_HL_KIND_TEXT);
+    CHECK(n == 1u && hl_spans[0].cls == TEXT_HL_TEXT);
+    n = hl_line("xPASS y", 3u, TEXT_HL_KIND_TEXT);
+    CHECK(n == 1u && hl_spans[0].cls == TEXT_HL_TEXT);
+    n = hl_line("x PASSz", 3u, TEXT_HL_KIND_TEXT);
+    CHECK(n == 1u && hl_spans[0].cls == TEXT_HL_TEXT);
+    n = hl_line("x zPASS", 3u, TEXT_HL_KIND_TEXT);
     CHECK(n == 1u && hl_spans[0].cls == TEXT_HL_TEXT);
     n = hl_line("x pass y", 3u, TEXT_HL_KIND_TEXT);
     CHECK(n == 1u && hl_spans[0].cls == TEXT_HL_TEXT);
@@ -260,6 +268,12 @@ TEST_CASE(a_verdict_word_matches_whole_and_in_its_case)
     n = text_hl_line("x PASS ()", 9u, 3u, TEXT_HL_KIND_TEXT, &w, hl_spans,
                      HL_SPANS);
     CHECK(n == 1u && hl_spans[0].cls == TEXT_HL_TEXT);
+    /* A word of one byte. */
+    const char *const one[] = {"X"};
+    const text_hl_words_t w1 = {one, 1u, NULL, 0u, NULL, 0u};
+    n = text_hl_line("a X b", 5u, 3u, TEXT_HL_KIND_TEXT, &w1, hl_spans,
+                     HL_SPANS);
+    CHECK(n == 3u && hl_spans[1].cls == TEXT_HL_OK && hl_spans[1].len == 1u);
 }
 
 TEST_CASE(a_word_core_is_the_word_itself)
@@ -376,7 +390,7 @@ TEST_CASE(register_checksum_and_journal_lines_are_hex)
         }
     }
     static const char *const k_no[] = {
-        "00: 1A 2", "00: 1G", "0: 1A", "00:1A 2B", "checksum FE83",
+        "00: 1A 2", "00: 1G", "00: 1", "00: ", "0: 1A", "00:1A 2B", "checksum FE83",
         "checksumFE83C002", "checksum FE83C00G", "Journal=00", "journal=",
         "journal=xyz", "=00", "registers 32",
     };
