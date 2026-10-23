@@ -37,6 +37,34 @@ reset_cause_t reset_cause_decode(const reset_regs_t *r)
     if (r == NULL) {
         return RESET_CAUSE_UNKNOWN;
     }
+    /* A boot type other than NORMAL follows a reboot() vector only. */
+    const int type = reset_cause_boot_type(r);
+    if (type == (int)RESET_BOOT_TYPE_FLASH_UPDATE) {
+        return RESET_CAUSE_FLASH_UPDATE;
+    }
+    if (type == (int)RESET_BOOT_TYPE_RAM_IMAGE) {
+        return RESET_CAUSE_RAM_IMAGE;
+    }
+    if (type == (int)RESET_BOOT_TYPE_BOOTSEL) {
+        return RESET_CAUSE_BOOTSEL_REBOOT;
+    }
+    /*
+     * A watchdog system reset: it leaves CHIP_RESET as the last chip-level
+     * reset set it, so CHIP_RESET is not read here (datasheet 7.3.3, 7.4).
+     */
+    const uint32_t why = r->wd_reason
+                         & (RESET_WD_REASON_TIMER | RESET_WD_REASON_FORCE);
+    if (why != 0u) {
+        if (type == (int)RESET_BOOT_TYPE_NORMAL
+            && r->wd_scratch2 == RESET_PICOTOOL_P0
+            && r->wd_scratch3 == RESET_PICOTOOL_P1) {
+            return RESET_CAUSE_BOOTSEL_REBOOT;
+        }
+        return (why & RESET_WD_REASON_FORCE) != 0u ? RESET_CAUSE_SW_RESET
+                                                   : RESET_CAUSE_WATCHDOG;
+    }
+    /* REASON 0: a chip-level reset reset the watchdog, and CHIP_RESET
+     * names it. */
     const uint32_t c = r->chip_reset;
     if ((c & RESET_CHIP_HAD_POR) != 0u) {
         return RESET_CAUSE_POR;
@@ -57,29 +85,10 @@ reset_cause_t reset_cause_decode(const reset_regs_t *r)
     if ((c & RESET_CHIP_HAD_SWCORE_PD) != 0u) {
         return RESET_CAUSE_POWER_DOWN;
     }
-    const uint32_t why = r->wd_reason
-                         & (RESET_WD_REASON_TIMER | RESET_WD_REASON_FORCE);
-    if ((c & RESET_CHIP_HAD_WATCHDOG_ANY) == 0u && why == 0u) {
-        return RESET_CAUSE_UNKNOWN;
+    if ((c & RESET_CHIP_HAD_WATCHDOG_ANY) != 0u) {
+        return RESET_CAUSE_WATCHDOG;
     }
-    /* A watchdog reset: the boot that followed says what asked for it. */
-    const int type = reset_cause_boot_type(r);
-    if (type == (int)RESET_BOOT_TYPE_FLASH_UPDATE) {
-        return RESET_CAUSE_FLASH_UPDATE;
-    }
-    if (type == (int)RESET_BOOT_TYPE_RAM_IMAGE) {
-        return RESET_CAUSE_RAM_IMAGE;
-    }
-    if (type == (int)RESET_BOOT_TYPE_BOOTSEL
-        || (type == (int)RESET_BOOT_TYPE_NORMAL
-            && r->wd_scratch2 == RESET_PICOTOOL_P0
-            && r->wd_scratch3 == RESET_PICOTOOL_P1)) {
-        return RESET_CAUSE_BOOTSEL_REBOOT;
-    }
-    if ((why & RESET_WD_REASON_FORCE) != 0u) {
-        return RESET_CAUSE_SW_RESET;
-    }
-    return RESET_CAUSE_WATCHDOG;
+    return RESET_CAUSE_UNKNOWN;
 }
 
 const char *reset_cause_word(reset_cause_t c)
@@ -99,14 +108,6 @@ const char *reset_cause_word(reset_cause_t c)
 static size_t as_len(int len)
 {
     return len < 0 ? 0u : (size_t)len;
-}
-
-size_t reset_cause_short(const reset_regs_t *r, char *out, size_t n)
-{
-    const reset_cause_t c = reset_cause_decode(r);
-    const unsigned long chip = r != NULL ? (unsigned long)r->chip_reset : 0ul;
-    return as_len(snprintf(out, n, "%s (chip_reset 0x%08lX)",
-                           reset_cause_word(c), chip));
 }
 
 size_t reset_cause_full(const reset_regs_t *r, char *out, size_t n)

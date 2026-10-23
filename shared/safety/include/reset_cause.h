@@ -3,12 +3,29 @@
  * @brief Why the IOmcu last started, named from the registers its boot
  *        leaves behind.
  *
- * An RP2350 records the cause of its last chip reset in POWMAN CHIP_RESET
- * and WATCHDOG REASON, and the boot ROM records the type of the boot that
- * followed (rom_get_boot_info()).  The boot ROM's reboot() writes its two
- * parameters to WATCHDOG SCRATCH2 and SCRATCH3 for every reboot type but
- * PC_SP and starts the watchdog in timer mode, so a reboot it performs reads
- * as REASON TIMER.  This file turns those raw values into one fixed word.
+ * Three records survive a restart, and each is cleared by a different reset
+ * (RP2350 datasheet, sections 7.3, 7.4, 12.9.4 and 12.9.5):
+ *
+ * - POWMAN CHIP_RESET latches the source of the last chip-level reset: POR,
+ *   BOR, the RUN pin, a debugger, a glitch, a switched-core power-down, or a
+ *   watchdog that POWMAN WDSEL lets reset the chip.  Its HAD_* bits are RO
+ *   (table 489), so software cannot clear them.  A watchdog reset through
+ *   PSM WDSEL alone is a system reset, not a chip-level one, and leaves
+ *   CHIP_RESET as it was: after the boot ROM's reboot(), which sets
+ *   PSM WDSEL = ~PROC_COLD and leaves POWMAN WDSEL at 0, CHIP_RESET still
+ *   reads HAD_POR from the power-up before.
+ * - WATCHDOG REASON names the last watchdog trigger, TIMER or FORCE.  Every
+ *   chip-level reset resets the watchdog, so REASON reads 0 after one.  The
+ *   boot ROM's reboot() runs the watchdog in timer mode, so a reboot it
+ *   performs reads TIMER.
+ * - WATCHDOG SCRATCH2 and SCRATCH3 hold p0 and p1 of the last reboot() of
+ *   any type but PC_SP.  A chip-level reset by the watchdog and the RUN pin
+ *   or DVDD (digital core supply) cycling reset them.
+ *
+ * The boot ROM's boot info (rom_get_boot_info()) gives the type of this
+ * boot; a type other than NORMAL comes only from a reboot() vector in the
+ * watchdog scratch registers.  This file turns these raw values into one
+ * fixed word.
  *
  * Pure C with no pico-sdk: the firmware reads the registers once at boot
  * (firmware/iomcu/src/iomcu_report.c) and holds the bit values below equal
@@ -32,7 +49,7 @@
 extern "C" {
 #endif
 
-/* POWMAN CHIP_RESET: the cause of the last chip reset, one bit a cause. */
+/* POWMAN CHIP_RESET: the source of the last chip-level reset. */
 #define RESET_CHIP_HAD_POR                  0x00010000u /**< bit 16 */
 #define RESET_CHIP_HAD_BOR                  0x00020000u /**< bit 17 */
 #define RESET_CHIP_HAD_RUN_LOW              0x00040000u /**< bit 18 */
@@ -91,18 +108,18 @@ typedef struct {
 } reset_regs_t;
 
 /**
- * @brief The causes, in the order reset_cause_decode() tests them.
+ * @brief The causes reset_cause_decode() names.
  */
 typedef enum {
-    RESET_CAUSE_UNKNOWN = 0,   /**< no cause bit set */
+    RESET_CAUSE_UNKNOWN = 0,   /**< no cause recorded */
     RESET_CAUSE_POR,           /**< power-on reset */
     RESET_CAUSE_BOR,           /**< brown-out detector */
     RESET_CAUSE_RUN_PIN,       /**< RUN pin held low */
     RESET_CAUSE_GLITCH,        /**< supply glitch detector */
     RESET_CAUSE_DEBUGGER,      /**< Arm debugger, rescue or hazard debugger */
     RESET_CAUSE_POWER_DOWN,    /**< switched-core power-down */
-    RESET_CAUSE_FLASH_UPDATE,  /**< watchdog, then a FLASH_UPDATE boot */
-    RESET_CAUSE_RAM_IMAGE,     /**< watchdog, then a RAM image boot */
+    RESET_CAUSE_FLASH_UPDATE,  /**< a reboot() into a FLASH_UPDATE boot */
+    RESET_CAUSE_RAM_IMAGE,     /**< a reboot() into a RAM image boot */
     RESET_CAUSE_BOOTSEL_REBOOT, /**< back from BOOTSEL by picotool */
     RESET_CAUSE_SW_RESET,      /**< watchdog triggered at once */
     RESET_CAUSE_WATCHDOG,      /**< watchdog counted down, NORMAL boot */
@@ -114,27 +131,30 @@ typedef enum {
  *
  * First match wins:
  *
- * 1. CHIP_RESET HAD_POR, HAD_BOR, HAD_RUN_LOW, HAD_GLITCH_DETECT, in that
- *    order; then HAD_DP_RESET_REQ, HAD_RESCUE or HAD_HZD_SYS_RESET_REQ as
- *    DEBUGGER; then HAD_SWCORE_PD as POWER_DOWN.
- * 2. A watchdog reset (a HAD_WATCHDOG_* bit, or REASON non-zero), by the boot
- *    that followed: FLASH_UPDATE (this firmware's update over CAN, a UF2
+ * 1. The boot type: FLASH_UPDATE (this firmware's update over CAN, a UF2
  *    copied to the BOOTSEL drive, `picotool load -x`), RAM_IMAGE, BOOTSEL
- *    (the boot ROM reports this type only while it stays in BOOTSEL; decoded
- *    for completeness).
- * 3. A NORMAL boot with SCRATCH2/SCRATCH3 at RESET_PICOTOOL_P0/P1:
- *    BOOTSEL_REBOOT.  The 1200 baud request and picotool's `-f` enter
- *    BOOTSEL through reboot() with p0 = interface flags and p1 = the
- *    activity LED pin (0xFFFFFFFF for none); the reboot out of BOOTSEL
- *    overwrites both.  The firmware zeroes both registers after it reads
- *    them, so a later reset that writes neither does not match again.
- * 4. REASON FORCE: SW_RESET (the SDK's watchdog_reboot() with no delay).
- * 5. Any other watchdog reset: WATCHDOG.  The watchdog counted down: the
- *    boot ROM's 16.7 s TBYB (try before you buy) timer after an update that
- *    was not bought, a reboot() with type NORMAL and another p0, or the
- *    SDK's watchdog_reboot() with a delay (the USB reset interface's
- *    reset to flash).
- * 6. Nothing set: UNKNOWN.
+ *    (the boot ROM reports this type only while it stays in BOOTSEL;
+ *    decoded for completeness).
+ * 2. REASON TIMER or FORCE: a watchdog system reset, and CHIP_RESET is the
+ *    record of an older reset.  SCRATCH2/SCRATCH3 at RESET_PICOTOOL_P0/P1
+ *    with a NORMAL boot: BOOTSEL_REBOOT.  The 1200 baud request and
+ *    picotool's `-f` enter BOOTSEL through reboot() with p0 = interface
+ *    flags and p1 = the activity LED pin (0xFFFFFFFF for none); the reboot
+ *    out of BOOTSEL overwrites both.  The firmware zeroes both registers
+ *    after it reads them.  Else FORCE: SW_RESET (the SDK's
+ *    watchdog_reboot() with no delay).  Else WATCHDOG: the boot ROM's 16.7 s
+ *    TBYB (try before you buy) timer after an update that was not bought, a
+ *    reboot() with type NORMAL and other parameters, or the SDK's
+ *    watchdog_reboot() with a delay.
+ * 3. REASON 0, so CHIP_RESET holds this start's chip-level reset:
+ *    HAD_POR, HAD_BOR, HAD_RUN_LOW, HAD_GLITCH_DETECT, in that order; then
+ *    HAD_DP_RESET_REQ, HAD_RESCUE or HAD_HZD_SYS_RESET_REQ as DEBUGGER;
+ *    HAD_SWCORE_PD as POWER_DOWN; a HAD_WATCHDOG_* bit as WATCHDOG.
+ * 4. Nothing set: UNKNOWN.
+ *
+ * A debugger's warm reset of a core clears REASON (datasheet, WATCHDOG
+ * REASON) without a chip-level reset; the start after one reads as the
+ * chip-level reset before it.
  *
  * @param r  The raw values; NULL reads as UNKNOWN.
  * @return The cause.
@@ -160,18 +180,8 @@ const char *reset_cause_word(reset_cause_t c);
 int reset_cause_boot_type(const reset_regs_t *r);
 
 /**
- * @brief The short form for the 3 s report:
- *        `POR (chip_reset 0x00010000)`.
- *
- * @param r    The raw values.
- * @param out  Receives the text, NUL-terminated and cut to fit.
- * @param n    Size of @p out in bytes; RESET_CAUSE_SHORT_MAX holds it.
- * @return The length the whole text needs, without the NUL, as snprintf().
- */
-size_t reset_cause_short(const reset_regs_t *r, char *out, size_t n);
-
-/**
- * @brief The full form for the start-up line, every raw value in hex:
+ * @brief The text of the start-up line and the 3 s line, every raw value in
+ *        hex:
  *        `POR (chip_reset 0x00010000 reason 0x0 boot 0x00000000
  *        params 0x00000000 0x00000000 scratch 0x00000000 0x00000000)`,
  *        with `boot none` in place of the boot word and the params when
@@ -184,8 +194,6 @@ size_t reset_cause_short(const reset_regs_t *r, char *out, size_t n);
  */
 size_t reset_cause_full(const reset_regs_t *r, char *out, size_t n);
 
-/** @brief Bytes that hold the longest short form with its NUL. */
-#define RESET_CAUSE_SHORT_MAX 48u
 /** @brief Bytes that hold the longest full form with its NUL. */
 #define RESET_CAUSE_FULL_MAX 144u
 

@@ -8,13 +8,13 @@ history is in git.
 
 ### Added
 
-- The IOmcu says why it last started. The 3 s console line that names the
-  running slot ends in a reset word, `running from slot A, reset POR
-  (chip_reset 0x00010000)`, and a line at start-up carries every raw value:
-  POWMAN CHIP_RESET, WATCHDOG REASON, the boot ROM's boot word and reboot
-  parameters, and WATCHDOG SCRATCH2 and SCRATCH3. The words are POR, BOR,
-  RUN_PIN, GLITCH, DEBUGGER, POWER_DOWN, FLASH_UPDATE, RAM_IMAGE,
-  BOOTSEL_REBOOT, SW_RESET, WATCHDOG and UNKNOWN
+- The IOmcu says why it last started. A console line at start-up and every
+  3 s names the cause and carries every raw value it was read from:
+  `reset FLASH_UPDATE (chip_reset 0x00010000 reason 0x1 boot ... params ...
+  scratch ...)`, from POWMAN CHIP_RESET, WATCHDOG REASON, the boot ROM's
+  boot word and reboot parameters, and WATCHDOG SCRATCH2 and SCRATCH3. The
+  words are POR, BOR, RUN_PIN, GLITCH, DEBUGGER, POWER_DOWN, FLASH_UPDATE,
+  RAM_IMAGE, BOOTSEL_REBOOT, SW_RESET, WATCHDOG and UNKNOWN
   ([Bring-up](docs/Bringup.md#why-the-iomcu-last-started)).
 - A tap on a number's value opens the keypad on every row that sets a
   number: SETUP's PANEL, INTERFACES and SENSORS lists, ESC STICK's TIMING

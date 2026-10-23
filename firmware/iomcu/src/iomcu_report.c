@@ -89,6 +89,9 @@ static reset_regs_t s_reset;
 
 void reset_start(void)
 {
+    /* CHIP_RESET's HAD_* bits are RO (datasheet table 489) and change only
+     * at a chip-level reset, so they are read and not cleared; reason
+     * decides whether they belong to this start (reset_cause.h). */
     s_reset.chip_reset  = powman_hw->chip_reset;
     s_reset.wd_reason   = watchdog_hw->reason;
     s_reset.wd_scratch2 = watchdog_hw->scratch[2];
@@ -107,8 +110,8 @@ void reset_start(void)
 
     char text[RESET_CAUSE_FULL_MAX];
     (void)reset_cause_full(&s_reset, text, sizeof(text));
-    /* Before the console exists, like can_start()'s line: read by a host
-     * that holds the port open across the restart. */
+    /* Before the console exists, like can_start()'s line; can_report()
+     * repeats it every 3 s. */
     printf("rcbench-iomcu: reset %s\n", text);
 }
 
@@ -186,20 +189,21 @@ void can_report(uint32_t now)
                   "are lost at restart\n");
     }
     /* Which slot runs: a bench without the partition table takes its
-     * next image over USB only.  And why this start happened, on the same
-     * line, so a restart is read from any 3 s report after it. */
-    char why[RESET_CAUSE_SHORT_MAX];
-    (void)reset_cause_short(&s_reset, why, sizeof(why));
+     * next image over USB only. */
     if (update_hw_slot() < 0) {
         IOMCU_SAY("rcbench-iomcu: no partition table -- firmware updates over "
-                  "CAN need one USB load of rcbench-iomcu-install.uf2; "
-                  "reset %s\n", why);
+                  "CAN need one USB load of rcbench-iomcu-install.uf2\n");
     } else {
-        IOMCU_SAY("rcbench-iomcu: running from slot %c%s, reset %s\n",
+        IOMCU_SAY("rcbench-iomcu: running from slot %c%s\n",
                   update_hw_slot() == 0 ? 'A' : 'B',
                   update_hw_on_trial() ? ", on trial until the panel buys it"
-                                       : "", why);
+                                       : "");
     }
+    /* Why this start happened, with every raw value: the start-up line
+     * leaves before a host has the port open, so it is repeated here. */
+    char why[RESET_CAUSE_FULL_MAX];
+    (void)reset_cause_full(&s_reset, why, sizeof(why));
+    IOMCU_SAY("rcbench-iomcu: reset %s\n", why);
     if (!s_can_up) {
         IOMCU_SAY("rcbench-iomcu: CAN did not answer on SPI -- module fitted? "
                   "wiring on GP9-12?\n");

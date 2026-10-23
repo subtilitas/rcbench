@@ -1,7 +1,9 @@
 /*
  * Why the IOmcu last started: one case per pattern of POWMAN CHIP_RESET,
  * WATCHDOG REASON, the boot ROM's boot word and WATCHDOG SCRATCH2/3, and
- * the two texts the console prints.
+ * the text the console prints.  A watchdog system reset leaves CHIP_RESET
+ * as the last chip-level reset set it, so HAD_POR is still set after a
+ * reboot() on a board that was powered up.
  *
  * The boot word is 0xttppbbdd: tt TBYB and update flags, pp the partition
  * booted, bb the boot type, dd the diagnostic partition.
@@ -195,8 +197,10 @@ TEST_CASE(two_bits_at_once_take_the_first_in_order)
     r = chip_only(RESET_CHIP_HAD_BOR | RESET_CHIP_HAD_RUN_LOW);
     CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_BOR);
     r = chip_only(RESET_CHIP_HAD_RUN_LOW | RESET_CHIP_HAD_WATCHDOG_RESET_PSM);
-    r.wd_reason = RESET_WD_REASON_TIMER;
     CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_RUN_PIN);
+    /* With REASON set the watchdog decides, whatever CHIP_RESET holds. */
+    r.wd_reason = RESET_WD_REASON_TIMER;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_WATCHDOG);
     r = chip_only(RESET_CHIP_HAD_GLITCH_DETECT | RESET_CHIP_HAD_DP_RESET_REQ);
     CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_GLITCH);
     r = chip_only(RESET_CHIP_HAD_DP_RESET_REQ | RESET_CHIP_HAD_SWCORE_PD);
@@ -216,25 +220,59 @@ TEST_CASE(every_cause_has_a_short_word)
     }
 }
 
-TEST_CASE(the_short_form_prints_the_word_and_chip_reset)
+/*
+ * The station's pattern: powered up, then the update over CAN.  reboot()
+ * resets the system through PSM WDSEL, not the chip, so CHIP_RESET still
+ * holds HAD_POR from the power-up, REASON reads TIMER, and the boot is
+ * FLASH_UPDATE.
+ */
+TEST_CASE(a_sticky_por_after_a_flash_update_reads_flash_update)
 {
-    char buf[RESET_CAUSE_SHORT_MAX];
+    reset_regs_t r = chip_only(RESET_CHIP_HAD_POR);
+    r.wd_reason = RESET_WD_REASON_TIMER;
+    r.boot_word = boot_word(0x01u, 1, RESET_BOOT_TYPE_FLASH_UPDATE);
+    r.reboot_params[0] = SLOT_B_XIP;
+    r.wd_scratch2 = SLOT_B_XIP;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_FLASH_UPDATE);
+    r.wd_reason = RESET_WD_REASON_FORCE;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_FLASH_UPDATE);
+    /* The boot type alone decides, REASON or not. */
+    r.wd_reason = 0u;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_FLASH_UPDATE);
+}
+
+/* HAD_POR from the power-up, then the TBYB timer: a NORMAL boot. */
+TEST_CASE(a_sticky_por_with_a_watchdog_timer_reads_watchdog)
+{
+    reset_regs_t r = chip_only(RESET_CHIP_HAD_POR);
+    r.wd_reason = RESET_WD_REASON_TIMER;
+    r.wd_scratch2 = SLOT_B_XIP;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_WATCHDOG);
+    r.wd_reason = RESET_WD_REASON_FORCE;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_SW_RESET);
+}
+
+/* HAD_POR from the power-up, then picotool -f and its reboot out of
+ * BOOTSEL. */
+TEST_CASE(a_sticky_por_with_picotool_scratch_reads_bootsel_reboot)
+{
+    reset_regs_t r = chip_only(RESET_CHIP_HAD_POR);
+    r.wd_reason = RESET_WD_REASON_TIMER;
+    r.wd_scratch2 = RESET_PICOTOOL_P0;
+    r.wd_scratch3 = RESET_PICOTOOL_P1;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_BOOTSEL_REBOOT);
+    /* picotool's values with REASON 0 cannot follow a reboot(): a
+     * chip-level reset clears the scratch registers, and HAD_POR names it. */
+    r.wd_reason = 0u;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_POR);
+}
+
+/* A fresh power-up: REASON 0, the scratch registers 0. */
+TEST_CASE(a_fresh_por_reads_por)
+{
     const reset_regs_t r = chip_only(RESET_CHIP_HAD_POR);
-    CHECK_EQ(reset_cause_short(&r, buf, sizeof(buf)), strlen(buf));
-    CHECK_STR_EQ(buf, "POR (chip_reset 0x00010000)");
-    /* The longest word and every bit set fit. */
-    reset_regs_t w = watchdog(RESET_WD_REASON_TIMER, RESET_BOOT_TYPE_NORMAL,
-                              RESET_PICOTOOL_P0, RESET_PICOTOOL_P1);
-    w.chip_reset = 0x10000000u;
-    CHECK_EQ(reset_cause_short(&w, buf, sizeof(buf)), strlen(buf));
-    CHECK_STR_EQ(buf, "BOOTSEL_REBOOT (chip_reset 0x10000000)");
-    CHECK(strlen(buf) < RESET_CAUSE_SHORT_MAX);
-    /* Cut to fit, with the length it needs. */
-    char small[8];
-    CHECK_EQ(reset_cause_short(&r, small, sizeof(small)), 27u);
-    CHECK_STR_EQ(small, "POR (ch");
-    CHECK_EQ(reset_cause_short(NULL, buf, sizeof(buf)), strlen(buf));
-    CHECK_STR_EQ(buf, "UNKNOWN (chip_reset 0x00000000)");
+    CHECK_EQ(r.wd_reason, 0u);
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_POR);
 }
 
 TEST_CASE(the_full_form_prints_every_raw_value)
@@ -284,7 +322,10 @@ int main(void)
     RUN(nothing_set_reads_unknown);
     RUN(two_bits_at_once_take_the_first_in_order);
     RUN(every_cause_has_a_short_word);
-    RUN(the_short_form_prints_the_word_and_chip_reset);
+    RUN(a_sticky_por_after_a_flash_update_reads_flash_update);
+    RUN(a_sticky_por_with_a_watchdog_timer_reads_watchdog);
+    RUN(a_sticky_por_with_picotool_scratch_reads_bootsel_reboot);
+    RUN(a_fresh_por_reads_por);
     RUN(the_full_form_prints_every_raw_value);
     return test_summary("reset_cause");
 }

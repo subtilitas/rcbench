@@ -923,7 +923,7 @@ void can_report(uint32_t now);
  * Reads POWMAN CHIP_RESET, WATCHDOG REASON, SCRATCH2 and SCRATCH3 and the
  * boot ROM's boot info, then zeroes SCRATCH2 and SCRATCH3 (reset_cause.h).
  * The SDK's start-up code writes none of them.  can_report() repeats the
- * word every 3 s.
+ * line every 3 s.
  */
 void reset_start(void);
 
