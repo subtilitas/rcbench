@@ -414,7 +414,8 @@ endet die Geste ebenfalls — sonst würde genau der Kontakt, mit dem angehalten
 wurde, zwei Sekunden später wieder auf ARMED schalten. Das Schalten auf ARMED lässt den ganzen Button
 zweimal aufblitzen: weiss, schwarz, rot, und noch einmal, je ein gezeichneter
 Frame. Ein Prüfstand in ARMED trägt das Gefahrenrot, und DISARM ist ein Druck
-und kein Halten: Anhalten braucht nie ein Halten. DISARM und STOP halten den
+und kein Halten: Anhalten braucht nie ein Halten, und DISARM wirkt beim
+Aufsetzen, nicht beim Abheben. DISARM und STOP halten den
 Ausgang sofort an, ohne Rampe. SPITZENWERTE ZURÜCKSETZEN löscht die Spitzenwertmarken und
 lässt die Live-Anzeigen unverändert.
 
@@ -533,7 +534,19 @@ INA3221 eingeschaltet ist.
 time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
-`voltage`, `current` und `power` sind, was der Bildschirm zeigt. `source`
+In einer MOTOR-Datei sind `voltage`, `current` und `power`, was MOTOR & ESC
+zeigt. In einer SERVO-Datei, nach einem ARM auf SERVO, sind `voltage`,
+`current`, `power`, `charge` und `energy` stattdessen die des Netzteils: der
+letzte Messwert des PD mini zu jedem Messwert des Laufs, Spannung und
+Leistung auf 0,01, Strom auf 0,001, und Ladung und Energie, die das Panel
+aus diesen Messwerten seit dem ARM zählt, auf 1mAh und 0,01Wh. Eine Zelle
+ist leer, solange das Netzteil diesen Messwert nicht geliefert hat. Alle
+fünf sind leer in einer Zeile, deren `source` nicht die des Netzteils ist:
+in einer `measured`-Zeile, solange das Netzteil das Modell des Panels ist
+(PD mini in SETUP ANSCHLÜSSE ausgeschaltet), und in einer `model`-Zeile,
+solange nach dem Verlust des Links noch der letzte Messwert des PD mini
+gezeigt wird. Die
+übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei. `source`
 ist `measured` in einer Zeile, deren Werte ein Messgerät geliefert hat, und
 `model` in einer Zeile, die das Modell des Panels geliefert hat (die Marke
 SIMULIERT); eine Netzteil-Datei hat dieselbe letzte Spalte. Eine Datei ohne

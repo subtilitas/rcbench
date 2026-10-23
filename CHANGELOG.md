@@ -8,6 +8,24 @@ history is in git.
 
 ### Fixed
 
+- STOP and DISARM on MOTOR & ESC and on SERVO act on the press, not on the
+  release. On an ESP32-P4 panel, whose router and screens act the same, a
+  STOP held 600ms stopped the pulses 0.62s after the press, at the lift,
+  and a DISARM held 600ms 0.618s after it; not measured on an ESP32-S3
+  panel. The
+  control task's own STOP test and the router's both act at the press; a
+  press on DISARM takes no hold, so a finger left on it arms nothing. ARM
+  stays a 2s hold.
+- A press the router keeps from the screen -- on the band, STOP, the home
+  tag, a chip or the alert band -- ends a dial or slider drag another finger
+  makes, as a press on the screen does. A STOP pressed during a SERVO dial
+  drag let the pulse follow the drag for the whole press.
+- A SERVO run's log, `SERVOnnn.CSV`, carries the supply's figures in
+  `voltage`, `current`, `power`, `charge` and `energy`: the PD mini's last
+  reading at each row, current to 0.001A, and charge and energy counted
+  from those readings since the switch to ARMED. These cells were empty on
+  a bench without an ESC or an INA228. The header and a MOTOR run's rows
+  stay as they are.
 - WI-FI > CHOOSE HOME NETWORK: a failed scan no longer reads as an empty
   list. A scan session starts one scan, however often the station's start
   is reported. Each scan has a token that the refusal, the done report and
@@ -15,9 +33,8 @@ history is in git.
   session started after it. At the radio's stop the worker waits, 2000ms
   at most (`DRAIN_MS`), until the event loop has handled the radio's last
   events, so a done report of a radio taken down is never read as the next
-  radio's. A failed scan, a list that cannot be read and
-  a read that does not hold what the report counts (or a full buffer of
-  24) run the scan again, 3 scans at most (`WA_SCAN_TRIES`) within the 10s;
+  radio's. A failed scan, a list that cannot be read and a read that does
+  not hold what the report counts (or a full buffer of 24) run the scan again, 3 scans at most (`WA_SCAN_TRIES`) within the 10s;
   then the list's place says `Wi-Fi could not start.` instead of
   `No WPA2 or WPA3 network found.`, as it does for a scan the radio
   refuses, where it said `Searching for networks.` until the screen closed.

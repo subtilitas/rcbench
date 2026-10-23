@@ -322,6 +322,41 @@ TEST_CASE(a_disarm_ends_the_watch)
     CHECK(!arm_watch_lost(NULL, 0u, 0u, 0u));
 }
 
+/* ------------------------------------------------------- the STOP mark */
+
+/*
+ * The control task applied a STOP at the press it numbered @c mark; the
+ * render loop finds a loss at item @c cur.  The mark stays for the press the
+ * router has yet to latch: one queued after the loss notice, or the event
+ * whose arrival showed the gap, which the router takes after the cancel.
+ */
+TEST_CASE(the_stop_mark_stays_for_a_press_still_to_come)
+{
+    CHECK(stop_mark_keeps(12u, 11u, false));    /* notice, then the press */
+    CHECK(stop_mark_keeps(12u, 11u, true));
+    CHECK(stop_mark_keeps(12u, 12u, true));     /* the gap showed on it */
+    CHECK(stop_mark_keeps(40u, 12u, true));
+}
+
+/* A press numbered at or before a notice, or before the event that showed
+ * the gap, was taken or lost: the cancel decides it, not the mark. */
+TEST_CASE(the_stop_mark_goes_for_a_press_taken_or_lost)
+{
+    CHECK(!stop_mark_keeps(12u, 12u, false));   /* the tail: lost */
+    CHECK(!stop_mark_keeps(11u, 12u, true));
+    CHECK(!stop_mark_keeps(11u, 12u, false));
+    CHECK(!stop_mark_keeps(0u, 12u, true));     /* none */
+    CHECK(!stop_mark_keeps(0u, 0u, true));
+}
+
+/* The numbers wrap: 3 is after 0xFFFFFFFE, and 0xFFFFFFFE before 3. */
+TEST_CASE(the_stop_mark_follows_the_wrap)
+{
+    CHECK(stop_mark_keeps(3u, 0xFFFFFFFEu, true));
+    CHECK(!stop_mark_keeps(0xFFFFFFFEu, 3u, true));
+    CHECK(stop_mark_keeps(0xFFFFFFFFu, 0xFFFFFFFEu, false));
+}
+
 int main(void)
 {
     RUN(an_unbroken_stream_reports_nothing);
@@ -338,5 +373,8 @@ int main(void)
     RUN(the_acknowledgement_ends_the_watch);
     RUN(a_loss_arriving_with_the_acknowledgement_still_undoes_the_arm);
     RUN(a_disarm_ends_the_watch);
+    RUN(the_stop_mark_stays_for_a_press_still_to_come);
+    RUN(the_stop_mark_goes_for_a_press_taken_or_lost);
+    RUN(the_stop_mark_follows_the_wrap);
     return test_summary("touch_loss");
 }

@@ -2277,6 +2277,14 @@ static void event_body(const touch_event_t *evt)
             stop_sweep();
             release();
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
+            if (s.gate.armed) {
+                /* DISARM acts on the press: a stop never waits for a lift
+                 * that may not come.  The press takes no hold, so a finger
+                 * left on the button arms nothing when it reads ARM again. */
+                ask_disarm();
+                ++s.arm_rev;
+                return;
+            }
             if (arm_locked()) {
                 /* Programming and an armed bench are exclusive. */
                 return;
@@ -2327,8 +2335,7 @@ static void event_body(const touch_event_t *evt)
     if (s.arm_down && evt->point.id == s.arm_id) {
         if (evt->type == TOUCH_EVENT_MOVE) {
             /* A finger that leaves ARM abandons the hold -- see
-             * ui_hold_leave().  While the bench is armed the same press is a
-             * disarm, whose release is checked against the rectangle. */
+             * ui_hold_leave(). */
             if (!s.gate.armed && !gfx_rect_contains(s.arm_btn, px, py)
                 && ui_hold_leave(&s.arm)) {
                 s.arm_down = false;
@@ -2337,16 +2344,11 @@ static void event_body(const touch_event_t *evt)
             return;
         }
         if (evt->type == TOUCH_EVENT_UP) {
-            const bool fired = ui_hold_end(&s.arm);
+            /* Arming is a hold that has already sent its command by the
+             * time the finger lifts; disarming acted on its press. */
+            (void)ui_hold_end(&s.arm);
             s.arm_down = false;
             ++s.arm_rev;
-            /*
-             * Disarming is a press; arming is a hold that has already sent
-             * its command by the time the finger lifts.
-             */
-            if (s.gate.armed && !fired && gfx_rect_contains(s.arm_btn, px, py)) {
-                ask_disarm();
-            }
             return;
         }
     }
@@ -3527,10 +3529,11 @@ static void enter(void)
  */
 static void cancel(void)
 {
-    /* Disarming is a press, so its release is the whole command: one that
-     * went missing is a DISARM the operator made and the bench never saw.
-     * Arming has already sent its command by the time the finger lifts, so
-     * cancelling one part way asks for nothing, which is correct. */
+    /* DISARM acts on its press and takes no hold.  A press of ARM still
+     * down on a bench that reads armed without its hold having fired is a
+     * finger on DISARM all the same, and switches to SAFE.  Arming has
+     * already sent its command by the time the finger lifts, so cancelling
+     * one part way asks for nothing, which is correct. */
     if (s.gate.armed && s.arm_down && !s.arm.fired) {
         ask_disarm();
     }
