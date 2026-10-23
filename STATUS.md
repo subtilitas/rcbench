@@ -457,7 +457,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/files/text_hl.c` | 328 | 326 | 99.4% |
 | `shared/files/fm_name.c` | 116 | 116 | 100.0% |
 | `shared/files/fm_select.c` | 76 | 76 | 100.0% |
-| `shared/files/fm_rules.c` | 160 | 159 | 99.4% |
+| `shared/files/fm_rules.c` | 173 | 172 | 99.4% |
 | `shared/files/fm_tree.c` | 165 | 164 | 99.4% |
 | `shared/files/fm_ops.c` | 401 | 395 | 98.5% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
