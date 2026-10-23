@@ -202,6 +202,42 @@ TEST_CASE(the_supply_model_stays_out_of_a_measured_row)
     CHECK_EQ(r.counted, 0u);
 }
 
+TEST_CASE(a_measured_row_after_a_modelled_stretch_takes_no_model_totals)
+{
+    /* The PD mini disabled and the link lost mid-run: the model's rows
+     * count the model's supply.  The link back, the measured rows withhold
+     * all five cells, the totals of the stretch before included, and those
+     * totals stand for the next modelled row. */
+    supply_state_t s = pd_mini();
+    s.modelled = true;
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    log_rail_t r;
+    log_rail_take(&r, &s, true);
+    CHECK(!r.withheld);
+    log_rail_count(&t, &r, 1.0f, true);
+    CHECK_EQ(r.counted,
+             (uint8_t)(BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY));
+    const float mah = t.mah;
+
+    log_rail_take(&r, &s, false);
+    CHECK(r.withheld);
+    log_rail_count(&t, &r, 1.0f, true);
+    CHECK_EQ(r.counted, 0u);
+    CHECK_NEAR(t.mah, mah, 1e-6f);
+    const bench_state_t b = bench_empty();
+    log_writer_t w = writer();
+    CHECK(log_writer_servo_row(&w, 3.0f, &b, &r));
+    char got[LOG_WRITER_LINE_MAX];
+    line_of(1u, got, sizeof(got));
+    CHECK_STR_EQ(got, "3.000;;;;;;;;;;;;;;;;;;;;;;measured");
+
+    log_rail_take(&r, &s, true);
+    log_rail_count(&t, &r, 0.0f, true);
+    CHECK_NEAR(r.charge_mah, mah, 1e-6f);
+    CHECK(r.counted != 0u);
+}
+
 TEST_CASE(a_servo_row_keeps_the_bench_columns)
 {
     /* An INA228 as BENCH's source and an ESC answering on a servo run: the
@@ -356,6 +392,7 @@ int main(void)
     RUN(a_servo_row_without_a_supply_reading_has_empty_supply_cells);
     RUN(a_supply_reading_with_one_half_writes_only_that_half);
     RUN(the_supply_model_stays_out_of_a_measured_row);
+    RUN(a_measured_row_after_a_modelled_stretch_takes_no_model_totals);
     RUN(a_servo_row_keeps_the_bench_columns);
     RUN(the_supply_totals_count_from_the_arm_while_driving);
     RUN(a_motor_row_is_unchanged);

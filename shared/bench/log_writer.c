@@ -501,7 +501,11 @@ void log_rail_take(log_rail_t *out, const supply_state_t *s,
         return;
     }
     memset(out, 0, sizeof(*out));
-    if (s == NULL || (s->modelled && !row_modelled)) {
+    if (s == NULL) {
+        return;
+    }
+    if (s->modelled && !row_modelled) {
+        out->withheld = true;
         return;
     }
     out->v  = s->v;
@@ -514,6 +518,12 @@ void log_rail_count(bench_totals_t *t, log_rail_t *r, float dt_s,
                     bool driving)
 {
     if (t == NULL || r == NULL) {
+        return;
+    }
+    if (r->withheld) {
+        r->charge_mah = 0.0f;
+        r->energy_wh  = 0.0f;
+        r->counted    = 0u;
         return;
     }
     float dt = dt_s;
