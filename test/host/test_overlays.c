@@ -321,7 +321,7 @@ static const struct {
     { { 8, 8, 620, 524 },     true,  55, 72 },   /* SERVO, KST names    */
     { { 8, 38, 546, 494 },    false, 126, 80 },  /* SUPPLY              */
     { { 8, 3, 546, 529 },     false, 126, 89 },  /* MOTOR & ESC SETTINGS */
-    { { 352, 66, 664, 466 },  true,  59, 61 },   /* ESC STICK search    */
+    { { 352, 84, 664, 448 },  true,  59, 57 },   /* ESC STICK search    */
     { { 8, 40, 1008, 452 },   false, 242, 78 },  /* BALANCE             */
     { { 10, 10, 1004, 482 },  false, 241, 85 },  /* SETUP               */
     { { 10, 10, 1004, 482 },  true,  93, 70 },   /* SETUP folders       */

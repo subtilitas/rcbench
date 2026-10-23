@@ -31,6 +31,7 @@
 #include "log_select.h"
 #include "log_take.h"
 #include "log_viewer_screen.h"
+#include "logview_spots.h"
 #include "settings.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -415,32 +416,30 @@ static inline void draw(void)
     screen()->render(&s_c, 0);
 }
 
-/* Geometry mirrored from the screen; if it moves, these move with it.  Panel
- * coordinates: the band is UI_BAND_H rows tall and the screen starts below. */
-#define BR_ROW_Y(i) (44 + 30 + (i) * 44 + 18)
+/* Geometry mirrored from the screen (logview_spots.h); if it moves, these
+ * move with it.  The screen's own coordinates: the cases hand it events
+ * directly, under the band. */
+#define BR_ROW_Y(i)  LV_ROW_CY(i)
 /* BR_ROWS: the file rows the list shows at once. */
-#define BR_ROWS_SEEN 6
-#define IM_ROW_Y(i) (36 + 30 + (i) * 36 + 14)
-/* FOOT_Y of log_viewer_int.h: the footer's 42 px end 4 px above the alert
- * band. */
-#define LV_FOOT_Y   (UI_BODY_H - UI_ALERT_H - 4 - 42)
-#define IM_BTN_CY   (LV_FOOT_Y + 21)
-#define SEP_X       110
-#define NUM_X       308
-#define BACK_X      500
-#define PLOT_X      690
-#define FOOT_CY     (LV_FOOT_Y + 21)
-#define OPEN_X      724
-#define DELETE_X    596
-#define RESCAN_X    76
+#define BR_ROWS_SEEN LV_ROWS
+#define IM_ROW_Y(i)  LV_IM_ROW_CY(i)
+#define IM_BTN_CY    LV_FOOT_CY
+#define SEP_X        LV_IM_BTN_CX(0)
+#define NUM_X        LV_IM_BTN_CX(1)
+#define BACK_X       LV_IM_BTN_CX(2)
+#define PLOT_X       LV_IM_BTN_CX(3)
+#define FOOT_CY      LV_FOOT_CY
+#define OPEN_X       LV_OPEN_CX
+#define DELETE_X     LV_DELETE_CX
+#define RESCAN_X     LV_RESCAN_CX
 /* The plot view: a point inside the plot, and the > button's centre. */
-#define PV_TAP_X    400
-#define NEXT_X      324
-#define FOOT_PLOT_CY (LV_FOOT_Y + 21)
+#define PV_TAP_X     LV_PV_CX
+#define NEXT_X       LV_PV_NEXT_CX
+#define FOOT_PLOT_CY LV_FOOT_CY
 /* The DELETE question's two buttons. */
-#define DQ_CY       282
-#define DQ_CANCEL_X 264
-#define DQ_DELETE_X 536
+#define DQ_CY        LV_DQ_CY
+#define DQ_CANCEL_X  LV_DQ_CANCEL_CX
+#define DQ_DELETE_X  LV_DQ_DELETE_CX
 
 /** @brief Selects row @p index of the file list with one tap and opens it with a second. */
 static inline void open_file(int index)
@@ -474,8 +473,8 @@ static inline int first_diff(const gfx_color_t *a, const gfx_color_t *b, int *co
  * of accent pixels along it measures the title.  Cheaper than reading pixels
  * back as letters, and it fails when the title stops saying what it should.
  */
-#define BR_TAB_X 16
-#define BR_TAB_Y 44
+#define BR_TAB_X LV_LIST_X
+#define BR_TAB_Y LV_LIST_Y
 
 /** @brief Width in px of the active folder tab, read off the canvas. */
 static inline int browse_tab_width(void)
@@ -502,8 +501,8 @@ static inline void ask_to_delete(int row)
     tap(400, BR_ROW_Y(row));
     tap(DELETE_X, FOOT_CY);
 }
-#define NEXT_X_PG 724
-#define PG_CY   21
+#define NEXT_X_PG LV_NEXT_CX
+#define PG_CY     LV_HEAD_CY
 
 /** @brief Taps NEXT. */
 static inline void next_page(void)

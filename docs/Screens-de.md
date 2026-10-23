@@ -159,8 +159,8 @@ ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
   dieses Loslassen nicht gelöscht.
 - Die Bedienelemente, die anhalten, was der Prüfstand treibt, enden über dem
   Band, Panel-y 556 bis 599: DISARM, AUSGANG AUS, ABBRECHEN eines
-  Stick-Laufs (y 516 bis 549), ABBRECHEN bei einem Handschritt (y 456 bis
-  511), TEST BEENDEN und LAUF BEENDEN. Ein Druck darauf bei angezeigtem
+  Stick-Laufs (y 496 bis 551), ABBRECHEN bei einem Handschritt (y 444 bis
+  491), TEST BEENDEN und LAUF BEENDEN. Ein Druck darauf bei angezeigtem
   Alert gehört dem Bedienelement, und der Alert bleibt. Ein solches
   Bedienelement, das ein Bildschirm unter das Band zeichnet, wirkt beim
   ersten Druck, und der Druck löscht das Band; ARM und AUSGANG EIN unter
@@ -281,7 +281,7 @@ Körper-y 492. Ein Tastenfeld oder eine Tastatur, deren Fläche weiter reicht,
 malt die ganze Fläche und lässt ihre Tasten dort enden, so verdeckt ein
 Alert keine Taste. Auf SERVO sind die Tasten der Tastenfelder dann
 112 x 88 px groß und die der Tastaturen 41 x 72 px; auf SUPPLY die des
-Tastenfelds 126 x 80 px; auf der Suchtastatur von ESC STICK 59 x 61 px; auf
+Tastenfelds 126 x 80 px; auf der Suchtastatur von ESC STICK 59 x 57 px; auf
 SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89 px.
 
 ## Splash
@@ -762,7 +762,7 @@ eine Sitzung über die volle Breite: Sie deckt die linke Spalte, die Leiste
 und die Reiter ab, und solange sie offen ist, erreicht kein Druck ARM oder
 einen Reiter. Das Öffnen auf einem Prüfstand, der nicht SAFE ist, schaltet
 ihn auf SAFE, auch bei einem DISARM, den ein anderer Finger hält. In der Zeile der Reiter steht an ihrer Stelle der
-Ausgangsstreifen, eine Zeile von 16 px ab x 12:
+Ausgangsstreifen, eine Zeile in der Schrift 10 x 20 ab x 12, y 4:
 
 ![ESC STICK unter dem Ausgangsstreifen](img/de/motor-stick.png)
 
@@ -776,7 +776,7 @@ ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60 V  1.00 A   SAFE
 | `NETZTEIL` | den Ausgang des PD mini, wie er liest: `NETZTEIL 7.60 V  1.00 A`; `NETZTEIL EIN`, solange er ohne Spannungs- und Stromwert an ist; `NETZTEIL AUS`; `NETZTEIL --`, solange das Netzteil nicht antwortet |
 | `SAFE` oder `ARMED` | der Prüfstand; ARMED in der Gefahrenfarbe |
 
-Der Streifen ist höchstens 97 Zeichen breit, 776 px, auf Englisch und auf
+Der Streifen ist höchstens 100 Zeichen breit, 1000 px, auf Englisch und auf
 Deutsch. Er wird neu gezeichnet, wenn sich sein Text ändert. Seine Werte
 stehen mit Dezimalpunkt, wie auf dem Panel.
 
@@ -813,6 +813,19 @@ schon beim Aufsetzen:
   das Abheben und reagiert auch auf einen zweiten Finger.
 - Die Tasten der Such-Tastatur, die ihrem eigenen Aufsetzen und Abheben
   folgen.
+
+ESC STICK liegt auf dem Körper unter dem Ausgangsstreifen, ab Körper-y 28,
+mit Beschriftungen, Zeilen und Schaltflächen in der Schrift 10 x 20:
+
+| Teil | Ort und Größe |
+| --- | --- |
+| Pfadzeile | y 30 bis 78: ZURÜCK 120 x 48 px, der Pfad in der Schrift 12 x 24 und rechts das Suchfeld (260 px, sein X 48 px), `^` und `v` (je 56 px) auf der Liste oder TIMING (168 px) auf der Seite eines Profils |
+| Liste | 7 Zeilen je Seite, 48 px hoch im Abstand von 56 px ab y 84, 984 px breit; der Name eines Modells in 30 Zeichen; die Fußzeile endet 4 px über dem Alarmband |
+| Seite eines Profils und TIMING | links die Parameterkarte, 660 px: 6 Zeilen je Seite, 48 px hoch im Abstand von 56 px, jede mit ihrer Nummer, ihrem Namen (bis 23 Zeichen), ihrem Wert in einer 250 px breiten Spalte und `-` und `+` von 48 x 48 px, 8 px zwischen je zweien |
+| Seitenspalte | 340 px rechts der Parameterkarte: ÄNDERN (auf TIMING dessen Titel), die gezeigten Zeilen und `^` und `v` von 48 x 48 px; MANUELLER EINGRIFF NÖTIG, 310 x 48 px; darunter, wie das Menü des Profils arbeitet, Netzteil und Einstiegszeit und die Hilfe der gewählten Zeile, umbrochen auf 31 Zeichen je Zeile |
+| Fußzeile | y 436 bis 492, 4 px über dem Alarmband: links der Hinweis auf bis zu 2 Zeilen, VORGABEN und START, ABBRECHEN, OK oder SCHLIESSEN, je 168 x 56 px |
+| Lauf und Ergebnis | die Gerätekarte über die Breite ab y 84 mit ihren zwei Zeilen, darunter ab y 136 die Karte des Laufs mit der Signalsäule rechts, zwei Hilfezeilen ab y 390 und die Fußzeile; MANUELLER EINGRIFF NÖTIG eines Ergebnisses, 330 x 56 px, links von OK |
+| Warnung, manuelle Schritte, Abfrage | eine Tafel über den Seiten ab y 28, ihr Titel in der Schrift 20 x 36, ihre Zeilen im Abstand von 22 px, ihre Schaltflächen 48 px hoch und 4 px über der Fußzeile endend, sodass ein zweites Tippen auf die Stelle von START keine davon trifft |
 
 ZURÜCK und das Home-Tag im Band gehen eine Ebene auf einmal zurück: die
 Seite eines Stick-Profils zur Liste, die Modelle eines Herstellers zu den
@@ -929,9 +942,9 @@ davon ist gemessen:
 ![Timing](img/de/motor-stick-timing.png)
 
 `-` und `+` einer Zeile stellen ihren Wert um einen Schritt. Ein Tipp auf
-den Wert, die 216 px breite Spalte zwischen dem Namen und den Tasten, öffnet
+den Wert, die 250 px breite Spalte zwischen dem Namen und den Tasten, öffnet
 das Tastenfeld über der Seite, von unter dem Ausgangsstreifen bis 4 px über
-dem Alarmband: 1008 x 466 px, Tasten von 242 x 81 px. Es nennt die
+dem Alarmband: 1008 x 464 px, Tasten von 242 x 81 px. Es nennt die
 Einstellung, ihren Bereich und ihre Einheit und nimmt die Stellen des
 Schritts nach dem Punkt: eine für die 0,1 V von Spannung, zwei für die
 0,05 A von Strombegrenzung. OK setzt den Wert wie ein Schritt auf den
@@ -1783,12 +1796,12 @@ Netzteils: die Kopfzeile sagt SIMULIERTES NETZTEIL, und die Kachel im Menü trä
 SIMULIERT.
 
 SUPPLY ist eine Werkbank: oben eine Leiste mit Aufgaben, LIVE und OPTIONEN,
-je 112 x 24 px, und darunter eine Seite. Die Kachel im Menü öffnet immer
+je 150 x 40 px, und darunter eine Seite. Die Kachel im Menü öffnet immer
 LIVE. Ein Tipp auf einen Reiter wechselt die Aufgabe; ein Wechsel ist keine
 Navigationsebene und lässt die Ansicht von LIVE, GRAFIK oder TABELLE, wie
 sie war.
 
-| Aufgabe | Die linke Spalte, 546 px |
+| Aufgabe | Die linke Spalte, 620 px |
 | --- | --- |
 | LIVE | der Plot oder die Tabelle über den Sollwerten |
 | OPTIONEN | die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |
@@ -1797,11 +1810,18 @@ Die Kopfzeile ist die Zeile rechts neben der Leiste: das Modul und seine
 Pins, ONLINE oder ANTWORTET NICHT und am rechten Ende der Bereich, den die
 Sollwerte annehmen können, zum Beispiel `3.3-8.4 V  0.50-5.00 A`. Sie bleibt
 auf beiden Aufgaben und unter der Tastatur und der Frage sichtbar. Die
-Leiste rechts, die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN, ist
-auf beiden Aufgaben dieselbe.
+Leiste rechts, 380 px, ist auf beiden Aufgaben dieselbe: vier Messwertkarten
+von 64 px, SPANN., STROM, LEIST. und MODUS, und die Karte STEUERUNG mit mAh
+und Wh des Laufs in ihrer Titelzeile, SPITZENWERTE ZURÜCKSETZEN (48 px) und
+AUSGANG EIN / AUS (60 px) an ihrem Fuß, wo SERVO und MOTOR & ESC ARM und
+DISARM haben.
 
-Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
-Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die
+Das Layout ist das von MOTOR & ESC. Auf LIVE trägt die linke Spalte die
+Karte des Ausgangs, GRAFIK | TABELLE unter ihrem Titel, und darunter
+SOLLWERTE. Jeder Sollwert ist eine Zeile: sein Name, dann die Taste `-0.1`
+(72 x 48 px), die Spur (312 x 48 px), die Taste `+0.1` und der Wert in einem
+Feld von 120 x 48 px. Der Plot zeigt Spannung, Strom und Leistung der
+letzten 30 s. Die Leiste rechts zeigt die Messwerte, die
 niedrigste Spannung des Laufs und seinen höchsten Strom und seine höchste
 Leistung. MODUS sagt, welchen Sollwert das Netzteil hält: CV (constant voltage)
 bei der eingestellten Spannung oder CC (constant current) an der
@@ -1832,8 +1852,9 @@ Last um 0,2 V sinken, bevor ein Sollwert an der Grenze abgeschaltet wird. Beide 
 die Grenzen unter OPTIONEN ein, und die Schieber folgen dem Netzteil, das
 in Gebrauch ist. Ein Tippen auf eine Spur setzt den Wert unter dem Finger.
 
-**Ein Tippen auf die Karte SPANN. oder STROM oder auf den Wert eines Sollwerts
-öffnet eine Tastatur** über der linken Spalte. Sie zeigt den Bereich in der
+**Ein Tippen auf die Karte SPANN. oder STROM oder auf das Wertfeld eines
+Sollwerts öffnet eine Tastatur** über der linken Spalte, unter der Leiste,
+mit Tasten von 145 x 76 px. Sie zeigt den Bereich in der
 Titelzeile und den aktuellen Wert blass, bis eine Ziffer getippt ist. OK
 übernimmt einen Wert im Bereich, gerundet auf den Schritt des Netzteils; ein
 Wert außerhalb wird abgelehnt, und der Bereich wechselt in die Warnfarbe. OK
@@ -1980,7 +2001,9 @@ etwas.
 ### Netzteil, Optionen
 
 OPTIONEN, der zweite Reiter der Leiste, zeigt die Einstellungen des
-Netzteils in der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
+Netzteils in der linken Spalte: die Obergrenzen und die Startwerte links,
+die Abschaltungen und die Rückfragen rechts, jede eine Zeile von 48 px mit
+ihrem Wert in einem Feld von 120 x 48 px, und die Speicherzeile am Fuß. Jede liegt im NVS (Non-Volatile Storage)
 des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur über
 der Seite, ein Schalter kippt beim Tippen. Ein Tipp auf LIVE bei offener
 Tastatur schließt sie, und die Einstellung behält ihren Wert, wie ABBRECHEN
@@ -2037,8 +2060,8 @@ der Ausgang geht aus, und das Band sagt es.
 ### Das Log
 
 Ein Lauf ist ein Einschalten des Ausgangs. Der Plot leert sich, wenn der
-Ausgang angeht, und hält den Lauf, nachdem er ausgeht. mAh und Wh unter dem
-Schalter zählen den Lauf aus den angezeigten Messwerten, jeder Schritt auf 1 s
+Ausgang angeht, und hält den Lauf, nachdem er ausgeht. mAh und Wh in der
+Titelzeile von STEUERUNG zählen den Lauf aus den angezeigten Messwerten, jeder Schritt auf 1 s
 begrenzt. SPITZENWERTE ZURÜCKSETZEN beginnt die niedrigsten und höchsten Werte neu ab dem
 aktuellen Messwert.
 
@@ -2154,6 +2177,29 @@ Dateiliste zum Menü. Über der
 Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
 AKTUALISIEREN, öffnet [WLAN](#wlan).
 
+Die Dateiliste teilt den Körper in drei Teile. Die Kopfzeile, Körper-y 4 bis
+52, trägt STAMM, USER und BENCH (je 110 x 40 px), den Ordner und den Namen
+der Karte und, solange der Ordner mehr als eine Seite hält, VORIGE und
+NÄCHSTE (140 x 48 px). Die Liste darunter ist 1008 px breit und zeigt 7
+Zeilen von 44 px im Abstand von 48 px: Jede Zeile nimmt einen Tipp auf ihren
+ganzen 48 px an. Eine Zeile zeigt den Namen der Datei und rechtsbündig ihre
+Größe; Datum, Art und Länge der Datei zeigt sie nicht. Die Fußzeile,
+Körper-y 440 bis 492, trägt links AKTUALISIEREN und WLAN, rechts LÖSCHEN und
+ÖFFNEN, je 140 x 52 px, und endet 4 px über dem Alarmband. Eine Meldung zu
+einer Datei steht zwischen WLAN und LÖSCHEN auf bis zu zwei Zeilen von 33
+Zeichen.
+
+Die Importansicht zeigt ERKANNT (400 px breit) neben der Spaltenliste
+(600 px, 7 Zeilen im Abstand von 48 px), darunter vier Tasten von 246 x
+52 px. Der Plot ist 992 x 316 px groß, über ihm vier Chips der Reihen von
+240 x 44 px; unter ihm stehen die Zeitmarken, dann ZURÜCK (140 x 52 px),
+`<` und `>` (96 x 52 px) und die Zeile des Cursors. Die Rückfrage zu LÖSCHEN
+ist ein Kasten von 700 x 280 px mit ABBRECHEN und LÖSCHEN von 300 x 56 px.
+Beschriftungen, Zeilen, Tasten und die Warnungen des Imports stehen in der
+Schrift 10 x 20; die Sätze der leeren Liste, der Rückfrage, der Kästen, die
+sagen, warum nichts erscheint, und die Meldungen zu Dateien in 12 x 24; die
+Zeitmarken des Plots und die Bereiche der Spalten und der Chips in 8 x 16.
+
 Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
@@ -2250,13 +2296,14 @@ stehender Bericht nach seiner eigenen Nummer: `LIMIT044.TXT`, dann
 ![Der Bericht eines ENDLAGENLAUFS als Text](img/de/logs-report.png)
 
 ÖFFNEN auf einem allein stehenden Bericht zeigt ihn als Text an Stelle der
-Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 14
-Zeilen zu bis zu 86 Zeichen auf dem Bildschirm. Eine Zeile, die länger ist
+Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 15
+Zeilen zu bis zu 92 Zeichen in der Schrift 10 x 20 auf dem Bildschirm, 22 px
+auseinander. ZURÜCK ist 140 x 52 px groß, links in der Fußzeile. Eine Zeile, die länger ist
 als eine Bildschirmzeile, bricht am letzten Leerzeichen darin um, und ein
 Wort, das länger ist, wird am Zeilenende abgeschnitten. Eine Zeile endet an
 einem Zeilenvorschub (LF), an einem Wagenrücklauf (CR) und an einem Paar
 CR LF, das ein Ende ist; ein Tabulator wird zum Leerzeichen. Ziehen auf den
-Zeilen oder am Rollbalken rollt sie. Ein Bild liest die 14 Zeilen, die es
+Zeilen oder am Rollbalken rollt sie. Ein Bild liest die 15 Zeilen, die es
 zeichnet, und höchstens 15 Zeilen davor, wohin der Text auch gerollt ist.
 ZURÜCK und das Home-Tag führen zur Liste und geben den Text frei; das
 Verlassen von LOGS gibt ihn auch frei, und LOGS öffnet wieder auf der
@@ -2332,7 +2379,7 @@ die CSV-Dateien und die Berichte `LIMITnnn.TXT`, ein allein stehendes
 `SERVOnnn.TXT` steht nicht darin, und die Konsole meldet
 `no PSRAM for the list's notes`.
 
-Der Rollbalken am rechten Rand der Liste ist 42 px breit, 6,3 mm bei den 0,150
+Der Rollbalken am rechten Rand der Liste ist 56 px breit, 8,4 mm bei den 0,150
 mm Pixelabstand, die für das Panel angenommen sind (nicht gemessen). Die Länge
 des Griffs entspricht dem Anteil der sichtbaren Zeilen an der Seite, und er
 rollt innerhalb der Seite. Ein Tippen auf die Bahn bringt die Mitte des Griffs
@@ -2567,6 +2614,18 @@ und für die Release-Suche und den Download unter [Updates](#updates). Er
 ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
 verlassen wird, bevor eine Installation den Flash schreibt und nach 10 min
 ohne Anfrage.
+
+Jede Ansicht von WI-FI endet 4 px über dem Alarmband, bei Körper-y 492,
+damit ein Alarm keine Taste verdeckt. Zeilen, Tasten und Tastaturtasten
+sind 48 px hoch oder höher.
+
+| Ansicht | Aufbau |
+| --- | --- |
+| Funk aus | fünf Tasten von 460 x 60 px (69,0 x 9,0 mm), 8 px Abstand, links; rechts eine Karte von 524 px mit Zeilen von 49 Zeichen in 10 x 20, 24 px Abstand |
+| Funk an | Zeilen von 56 px: die Bezeichnung in 10 x 20 auf 240 px, der Wert in 20 x 36 auf 740 px, wo ein Netzwerkname von 32 Zeichen 640 px braucht; die Zeilen darunter in 12 x 24, 28 px Abstand; WLAN AUS 460 x 60 px ab Körper-y 424 |
+| Netzwerkliste | zwei Spalten mit je acht Zeilen von 492 x 48 px, 52 px Abstand: der Name in 12 x 24 (32 Zeichen sind 384 px), das Signal in 10 x 20; NEU SUCHEN, VERSTECKTES NETZWERK und ABBRECHEN je 328 x 56 px |
+| Frage zu einem Image | eine Karte von 1008 x 484 px: Titel und Versionen in 20 x 36, die Sätze in 12 x 24, umbrochen bei 80 Zeichen; ABBRECHEN und 2 s HALTEN: INSTALLIEREN 460 x 72 px |
+| Tastatur | 1008 x 484 px, Tasten von 93 x 71 px ([Tastatur](#tastenfeld-tastatur-und-die-gemeinsamen-bedienelemente)) |
 
 Der Funk startet nur, wenn der Prüfstand SAFE ist, der Netzteilausgang aus
 und kein Log-Lauf offen. Sonst sind die Tasten, die ihn starten, grau, und
@@ -4209,6 +4268,19 @@ einer Zeile ZIEL aus öffnet er auf dem, was diese Werkbank treibt:
 
 ![Outputs](img/de/outputs.png)
 
+Die linke Spalte ist 300 px breit: das Label PROTOKOLL, die Fläche der
+Protokoll-Liste (300 x 64 px), darunter Anzahl und Grund in 10 x 20 und am
+Fuß der Spalte LETZTER SCHREIBVORGANG mit dem Ergebnis in 20 x 36. Die Pins
+liegen in einem Raster aus 4 Spalten zu 7 Zellen, je 167 x 64 px
+(25,1 x 9,6 mm), quer 8 px und längs 6 px auseinander, ab x 324. Eine Zelle
+hält ein Ankreuzfeld von 24 px, den GP-Namen in 20 x 36 und darunter, was
+den Pin hält, oder sein Pad in 8 x 16, höchstens 18 Zeichen. Die letzte
+Rasterzeile endet bei Körper-y 492, 4 px über dem Alarmband. Die offene
+Protokoll-Liste hält die 8 Protokolle in einer Spalte mit Zeilen von 48 px
+(7,2 mm) ab der Oberkante der Fläche und die Einträge PROG-PORT in einer
+zweiten Spalte mit denselben Zeilen daneben; mit 4 Einträgen ist die Liste
+600 x 392 px groß und endet bei Körper-y 436.
+
 Ein Pin-Satz je Protokoll, nicht acht unabhängige Slots: ein Prüfstand wird
 protokollweise verkabelt — vier Servokabel, dann ein ESC (Electronic Speed
 Controller) — und erst nach dem Protokoll und dann nach seinen Pins zu fragen
@@ -4551,8 +4623,19 @@ gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
 Die Tasten sind nicht die Pads. In jeder Größe, die auf ein Panel mit 1024 x
 600 Pixeln passt, ist ein Pad unter 40 Pixel breit und damit kleiner als eine
 Fingerkuppe. Also werden die Pads gezeichnet, wo sie sind, und berührt wird
-auf zwei versetzten Tastenreihen über der Platine und zwei darunter, 43 px
-breit, jede an einer geraden Leitung zu ihrem eigenen Pad.
+auf zwei versetzten Tastenreihen über der Platine und zwei darunter,
+50 x 56 px (7,5 x 8,4 mm), jede an einer geraden Leitung zu ihrem eigenen
+Pad. Die Platine ist 600 px breit und höchstens 240 px hoch gezeichnet,
+maßstabsgetreu: der Umriss des RP2350-CAN, 51 x 21 mm, wird 582 x 240 px
+groß. Zwei Tasten einer Reihe stehen zwei Pads auseinander, 8 px frei
+voneinander, und die untere Reihe endet bei Körper-y 490, über dem
+Alarmband. Fläche der Protokoll-Liste (280 x 56 px), Anzahl und Grund
+stehen oben links; die Tabelle PINS darunter, 171 px breit, Zeilen von
+36 px mit dem GP-Namen in 20 x 36; BELEGT rechts, 168 px breit. Beide
+Tabellen stehen 8 px frei von der äußersten Taste, die eine 600 px breite
+Platine haben kann, auch bei einem Pad direkt an ihrer Kante. Die
+Protokoll-Liste öffnet wie auf Outputs: die Protokolle in einer Spalte mit
+Zeilen von 48 px, die Einträge PROG-PORT in einer zweiten Spalte daneben.
 
 Die Farbe einer Taste sagt, was ein Tippen auf sie tut:
 
@@ -4663,7 +4746,7 @@ Tabelle hinaus, ist jede Pin-Zeile 20 px hoch, mit dem GPIO in der kleineren
 Schrift, dann 16 px, dann auch die Namen 16 px. Die höchste Tabelle aus
 Protokollen ergibt sich mit OFF gewählt, dem Programmierport aufgeführt und
 den 8 Slots auf den 6 Protokollen, die einen Kanal je Pin nehmen: 16 Zeilen,
-392 px der 468 px unter der Überschrift. Mit 4 Programmierports und allen
+392 px der 432 px unter der Überschrift. Mit 4 Programmierports und allen
 Anschlüssen EIN neben dieser Bindung führt die Tabelle 27 Zeilen, die Ports
 und die Anschlüsse zuerst, in den kleineren Zeilen. Eine Tabelle, die dann
 noch über den Fuß reicht, hält die Zeilen, die passen, und endet in `+N`,
@@ -4730,7 +4813,7 @@ vom Pad nach innen:
 Die Markierungen liegen innerhalb des Umrisses, weil dort der einzige
 verbleibende Platz ist: der Raum neben der Platine gehört den Tasten, und eine
 Markierung auf dem Pad selbst wäre so klein wie das Pad. Versorgungen sitzen
-auf benachbarten Pads, 25 px auseinander, also liegt die Marke einer
+auf benachbarten Pads, 29 px auseinander, also liegt die Marke einer
 Versorgung 30 px oder 78 px vom Pad nach innen, abwechselnd entlang der Reihe;
 die tiefere liegt frei von der Marke einer Masse auf dem Nachbarpad.
 

@@ -260,9 +260,10 @@ static bool label_inked(const gfx_canvas_t *c, uint8_t gpio, gfx_color_t ink)
 {
     int x, y;
     cell_centre(gpio, &x, &y);
-    const int x0 = x - CELL_W / 2 + 5, y0 = y - CELL_H / 2 + 33;
+    const int x0 = x - CELL_W / 2 + OU_CELL_PAD;
+    const int y0 = y - CELL_H / 2 + OU_CELL_LABEL_Y;
     for (int yy = y0; yy < y0 + 16; ++yy) {
-        for (int xx = x0; xx < x0 + 112; ++xx) {
+        for (int xx = x0; xx < x0 + 144; ++xx) {
             if (c->pixels[yy * c->stride + xx] == ink) {
                 return true;
             }
@@ -274,8 +275,8 @@ static bool label_inked(const gfx_canvas_t *c, uint8_t gpio, gfx_color_t ink)
 /* Whether any pixel of @p ink lies in the row the pin count is drawn on. */
 static bool count_row_inked(const gfx_canvas_t *c, gfx_color_t ink)
 {
-    const int y0 = DD_Y + DD_H + 16;
-    for (int yy = y0; yy < y0 + 14; ++yy) {
+    const int y0 = DD_Y + DD_H + 8;
+    for (int yy = y0; yy < y0 + 20; ++yy) {
         for (int xx = DD_X; xx < DD_X + DD_W; ++xx) {
             if (c->pixels[yy * c->stride + xx] == ink) {
                 return true;

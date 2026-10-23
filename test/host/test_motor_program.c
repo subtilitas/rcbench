@@ -272,7 +272,8 @@ TEST_CASE(a_full_width_session_shows_the_strip_not_the_card)
     /* The strip: TARGET dim from x 12 in the strip row, the bench's SAFE in
      * the OK colour after it. */
     int dim = 0, ok = 0;
-    for (int y = P(PROG_FULL_STRIP_Y); y < P(PROG_FULL_STRIP_Y + 16); ++y) {
+    for (int y = P(PROG_FULL_STRIP_Y);
+         y < P(PROG_FULL_STRIP_Y + PROG_FULL_STRIP_H); ++y) {
         for (int x = 0; x < W; ++x) {
             if (px(x, y) == ui_theme_color(UI_C_TEXT_DIM)) {
                 ++dim;
@@ -407,7 +408,12 @@ TEST_CASE(the_widest_strip_fits_the_row_in_both_languages)
             }
         }
     }
-    CHECK(PROG_FULL_STRIP_X + PROG_FULL_STRIP_CELLS * 8 <= W - 12);
+    /* The strip's line in PROG_FULL_STRIP_FONT, 10 px cells, ends 12 px
+     * inside the body's right edge, and above the session's area. */
+    CHECK(PROG_FULL_STRIP_X + PROG_FULL_STRIP_CELLS * 10 <= W - 12);
+    CHECK_EQ(PROG_FULL_STRIP_FONT->width, 10);
+    CHECK_EQ(PROG_FULL_STRIP_FONT->height, PROG_FULL_STRIP_H);
+    CHECK(PROG_FULL_STRIP_Y + PROG_FULL_STRIP_H <= PROG_FULL_Y);
     CHECK(widest > 40);
     ui_text_set_language(UI_LANG_EN);
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 99.994f,

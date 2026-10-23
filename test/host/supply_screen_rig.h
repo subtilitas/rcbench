@@ -21,6 +21,7 @@
 
 #include "greatest.h"
 #include "touch_feed.h"
+#include "supply_spots.h"
 
 #include "settings.h"
 #include "supply.h"
@@ -83,48 +84,42 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
 /*
- * Geometry mirrored from supply_screen_int.h and supply_screen.c,
- * screen-local: the router strips the band before a screen sees an event.
+ * Geometry from supply_spots.h, screen-local: the router strips the band
+ * before a screen sees an event.  The short names the suites use.
  */
-/* The left column the keypad covers: OV_X, OV_Y, OV_W and OV_H of
- * supply_screen_int.h. */
-#define SU_OV_AREA \
-    ((gfx_rect_t){ UI_MARGIN, 38, 546, UI_BODY_H - 38 - UI_MARGIN })
-#define OUT_X     676          /* OUTPUT ON / OFF, right rail */
-#define OUT_Y     318
-#define RESET_X   676          /* RESET PEAKS */
-#define RESET_Y   (UI_BODY_H - 2 * UI_MARGIN - UI_BTN_H / 2)
-#define V_DOWN_X  39           /* the set points' fine steps */
-#define V_UP_X    519
-#define V_ROW_Y   335
-#define I_ROW_Y   397
-#define TRACK_X   (UI_MARGIN + 66) /* both tracks, 414 px from it */
-#define TRACK_W   414
-#define OFF_X     300          /* the plot, clear of every control */
-#define OFF_Y     120
+#define OUT_X     SU_OUT_X     /* OUTPUT ON / OFF, the CONTROL card's foot */
+#define OUT_Y     SU_OUT_Y
+#define RESET_X   SU_RESET_X   /* RESET PEAKS */
+#define RESET_Y   SU_RESET_Y
+#define V_DOWN_X  SU_DOWN_X    /* the set points' fine steps */
+#define V_UP_X    SU_UP_X
+#define V_ROW_Y   SU_V_ROW_Y
+#define I_ROW_Y   SU_I_ROW_Y
+#define TRACK_X   SU_TRACK_X   /* both tracks, TRACK_W px from it */
+#define TRACK_W   SU_TRACK_W
+#define OFF_X     SU_PLOT_X    /* the plot, clear of every control */
+#define OFF_Y     SU_PLOT_Y
 
-/* The task strip, from ui_workbench.h: LIVE x 9..121, SETTINGS x 125..237,
- * y 6..30.  Then SETTINGS' value rows, the rail's cards, the set points'
- * values, and the question's two buttons, from supply_screen_int.h and
- * supply_screen.c. */
-#define LIVE_TAB_X 65
-#define SET_TAB_X 181
-#define STRIP_Y   18
-#define ROW_L_X   144          /* the left column's rows */
-#define ROW_R_X   413          /* the right column's */
-#define VMAX_Y    94
-#define ISTART_Y  254
-#define TRIPI_Y   94
-#define CONF_SL_Y 316
-#define CARD_X    676
-#define CARD_V_Y  65
-#define CARD_I_Y  123
-#define TEXT_X    412
-#define TEXT_V_Y  305
-#define TEXT_I_Y  367
-#define APPLY_X   151
-#define DISCARD_X 407
-#define ASK_Y     353          /* inside both, and on no LIVE control */
+/* The task strip, SETTINGS' value rows, the rail's cards, the set points'
+ * values, and the question's two buttons. */
+#define LIVE_TAB_X SU_TAB_X(0)
+#define SET_TAB_X SU_TAB_X(1)
+#define STRIP_Y   SU_TAB_Y
+#define ROW_L_X   SU_ROW_L_X   /* the left column's rows */
+#define ROW_R_X   SU_ROW_R_X   /* the right column's */
+#define VMAX_Y    SU_VMAX_Y
+#define ISTART_Y  SU_ISTART_Y
+#define TRIPI_Y   SU_TRIPI_Y
+#define CONF_SL_Y SU_CONF_SL_Y
+#define CARD_X    SU_CARD_X
+#define CARD_V_Y  SU_CARD_Y(0)
+#define CARD_I_Y  SU_CARD_Y(1)
+#define TEXT_X    SU_VAL_X     /* the set points' values */
+#define TEXT_V_Y  SU_V_ROW_Y
+#define TEXT_I_Y  SU_I_ROW_Y
+#define APPLY_X   SU_APPLY_X
+#define DISCARD_X SU_DISCARD_X
+#define ASK_Y     SU_ASK_Y     /* inside both, and on no LIVE control */
 
 static inline int header_differs(void);
 static inline supply_state_t reading(float v, float i);
@@ -171,13 +166,13 @@ static inline void hold_on(void)
     ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
 }
 
-/** @brief Pixels that differ in the header, right of the task strip, y 0..33,
- * between the two buffers. */
+/** @brief Pixels that differ in the header, right of the task strip, above
+ * the page, between the two buffers. */
 static inline int header_differs(void)
 {
     int differ = 0;
-    for (int y = 0; y < 34; ++y) {
-        for (int x = 240; x < W; ++x) {
+    for (int y = 0; y < SU_INFO_B; ++y) {
+        for (int x = SU_INFO_X; x < W; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
     }

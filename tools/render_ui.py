@@ -536,9 +536,14 @@ FIT_ONLY = {
     # BATTERY's two other verdicts, whose reasons wrap in the right card.
     "battery-healthy":  (None, "battery", "dark"),
     "battery-replace":  (None, "battery", "dark"),
-    # SUPPLY's MODE card after either trip, its line wrapped in the card.
+    # SUPPLY's MODE card after either trip, its line under the label.
     "supply-trip-i":    (None, "supply", "dark"),
     "supply-trip-v":    (None, "supply", "dark"),
+    # SUPPLY's TABLE; LIVE with a programming port holding the supply; and
+    # SETTINGS with the PD mini's RESET PD MINI and the longest save line.
+    "supply-table":     (None, "supply", "dark"),
+    "supply-port":      (None, "supply", "dark"),
+    "supply-offline-settings": (None, "supply", "dark"),
     # The SERVO PROGRAMMER's notes turned to their second page, where they
     # take more rows than there are above the message.
     "servo-kst-file-locked-p2": (None, "servo", "dark"),

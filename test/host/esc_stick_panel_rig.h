@@ -44,18 +44,17 @@
 
 /* ------------------------------------------------------- ESC STICK */
 
-/* Mirrored from esc_stick_panel.c, as the rig's are from esc_stick_int.h:
- * the list's rows from 70, the crumb row's controls at 30 to 60, and the
- * panels' buttons UI_BTN_H_TALL px tall, 20 px over the bottom margin. */
-#define SP_ROW_CY(n) (70 + (n) * 36 + 16)
-#define LIST_UP_X    (SP_RIGHT - 76 + 17)
-#define LIST_DN_X    (SP_RIGHT - 38 + 17)
-#define LIST_CY      45
-#define TIMING_X     (SP_RIGHT - 168 + 84)
-#define TIMING_Y     45
-#define HOLD_X       (UI_MARGIN + 20 + 130)
-#define HOLD_Y       (UI_BODY_H - UI_ALERT_H - 4 - 36 - 4 - UI_BTN_H_TALL / 2)
-#define CANCEL_X     (UI_PANEL_W - UI_MARGIN - 20 - 90)
+/* The list's rows, the crumb row's controls and the panels' buttons
+ * (stick_spots.h). */
+#define SP_ROW_CY(n) ST_ROW_CY(n)
+#define LIST_UP_X    ST_LIST_UP_X
+#define LIST_DN_X    ST_LIST_DN_X
+#define LIST_CY      ST_CRUMB_CY
+#define TIMING_X     ST_TIMING_X
+#define TIMING_Y     ST_CRUMB_CY
+#define HOLD_X       ST_HOLD_X
+#define HOLD_Y       ST_PBTN_CY
+#define CANCEL_X     ST_CANCEL_X
 #define HOLD_ID      7
 
 /** @brief Hands the screen one touch event of the hold's finger at (@p x, @p y). */
@@ -121,7 +120,7 @@ static inline void tap_listed(int at)
         tap(LIST_UP_X, LIST_CY);
         (void)esc_stick_panel_listed(&top);
     }
-    for (int g = 0; g < 64 && at >= top + 9; ++g) {
+    for (int g = 0; g < 64 && at >= top + ST_LIST_ROWS; ++g) {
         tap(LIST_DN_X, LIST_CY);
         (void)esc_stick_panel_listed(&top);
     }
@@ -309,13 +308,13 @@ static inline void rig_run(rig_t *r, uint32_t ms)
 
 /* ------------------------------------------------------------ the search */
 
-/* Mirrored from esc_stick_panel.c: the field, its X, and the keyboard
- * docked right of SP_DOCK_X below the crumb row. */
-#define FIND_X     (SP_RIGHT - 182)
-#define FIND_CLR_X (SP_RIGHT - 100)
-#define FIND_Y     45
+/* The field, its X, and the keyboard docked right of ST_DOCK_X below the
+ * crumb row (stick_spots.h). */
+#define FIND_X     ST_FIND_X
+#define FIND_CLR_X ST_FIND_CLR_X
+#define FIND_Y     ST_CRUMB_CY
 static const gfx_rect_t k_dock __attribute__((unused)) = {
-    352, 68, UI_PANEL_W - UI_MARGIN - 352, UI_BODY_H - UI_MARGIN - 68 };
+    ST_DOCK_X, ST_DOCK_Y, ST_DOCK_W, ST_DOCK_H };
 
 /** @brief One key of the docked search keyboard; "\n" is OK, "~" CANCEL, "<" DEL,
  * "#" CLR. */
@@ -352,9 +351,12 @@ static inline int listed(void)
 
 /* ------------------------------------------------------ manual steps */
 
-/* MANUAL INTERVENTION REQUIRED, in the item list's header. */
-#define HAND_X 264
-#define HAND_Y 124
+/* MANUAL INTERVENTION REQUIRED, in the side column; on a result, in the
+ * foot row (stick_spots.h). */
+#define HAND_X     ST_HAND_X
+#define HAND_Y     ST_HAND_Y
+#define HAND_RES_X ST_HAND_RES_X
+#define HAND_RES_Y ST_BTN_CY
 
 /** @brief The stick class, page two, row five: kontronik-jazz, the fifth of the
  * Kontronik profiles that run. */
@@ -416,7 +418,7 @@ static inline void at_models(void)
     at_makers();
     open_maker("Hobbywing");
     s_model_y = SP_ROW_CY(0);
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < ST_LIST_ROWS; ++i) {
         int m = -1;
         const esc_profile_t *p = esc_stick_panel_row(i, &m);
         if (p != NULL && esc_stick_panel_row_why(i) == NULL) {

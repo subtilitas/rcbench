@@ -75,7 +75,7 @@ A stored binding that holds GP13 keeps it: the programming port then has no pin,
 
 ![The PROG PORT entry](view:outputs-port)
 
-The protocol list ends in one PROG PORT entry per programming port the IOmcu reports: 4 from protocol 4.26, 1 on an older build, and one for port 1 while the count is not known. An IOmcu older than protocol 4.13 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Every entry has the same rows:
+The open protocol list shows one PROG PORT entry per programming port the IOmcu reports, in a second column beside the protocols: 4 from protocol 4.26, 1 on an older build, and one for port 1 while the count is not known. An IOmcu older than protocol 4.13 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Every entry has the same rows:
 
 | Row | Shows and does |
 |---|---|

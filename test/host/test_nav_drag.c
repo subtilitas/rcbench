@@ -27,6 +27,7 @@
  */
 
 #include "nav_rig.h"
+#include "supply_spots.h"
 
 #define SV_SHAFT_P_X SV_SHAFT_X
 
@@ -34,15 +35,16 @@
 
 #define SV_SPEED_P_Y (UI_BAND_H + SV_SPEED_Y)
 
-#define SU_TRACK_X 72
+/* SUPPLY's tracks and OUTPUT in panel coordinates (supply_spots.h). */
+#define SU_TRACK_P_X SU_TRACK_X
 
-#define SU_V_Y     (335 + UI_BAND_H)
+#define SU_V_P_Y     (UI_BAND_H + SU_V_ROW_Y)
 
-#define SU_I_Y     (397 + UI_BAND_H)
+#define SU_I_P_Y     (UI_BAND_H + SU_I_ROW_Y)
 
-#define SU_OUT_X   676
+#define SU_OUT_P_X   SU_OUT_X
 
-#define SU_OUT_Y   (318 + UI_BAND_H)
+#define SU_OUT_P_Y   (UI_BAND_H + SU_OUT_Y)
 
 static void dial_at(float deg, int r, int *x, int *y)
 {
@@ -338,19 +340,19 @@ TEST_CASE(a_touch_loss_ends_a_dial_drag)
  */
 TEST_CASE(a_set_point_drag_that_leaves_by_the_band_ends_at_the_edge)
 {
-    static const int rows[] = { SU_V_Y, SU_I_Y };
+    static const int rows[] = { SU_V_P_Y, SU_I_P_Y };
     for (int r = 0; r < 2; ++r) {
         on_screen(SCREEN_SUPPLY);
-        finger(FEED_LONE, SU_TRACK_X + 60, rows[r]);
-        glide(FEED_LONE, SU_TRACK_X + 80, rows[r], 8);
+        finger(FEED_LONE, SU_TRACK_P_X + 60, rows[r]);
+        glide(FEED_LONE, SU_TRACK_P_X + 80, rows[r], 8);
         const float set_v = supply_screen_set_v();
         const float set_i = supply_screen_set_i();
-        glide(FEED_LONE, SU_TRACK_X + 80, 30, 8);
+        glide(FEED_LONE, SU_TRACK_P_X + 80, 30, 8);
         lift(FEED_LONE);
         CHECK_NEAR(supply_screen_set_v(), set_v, 0.001f);
         CHECK_NEAR(supply_screen_set_i(), set_i, 0.001f);
 
-        finger(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+        finger(FEED_LONE, SU_OUT_P_X, SU_OUT_P_Y);
         for (int i = 0; i < 50; ++i) {
             ui_router_tick(0.05f);
         }
@@ -371,12 +373,12 @@ TEST_CASE(output_off_answers_the_first_tap_after_a_drag_left_by_the_band)
     supply_screen_set_output(true);
     const float set = supply_screen_set_v();
 
-    finger(FEED_LONE, SU_TRACK_X + 60, SU_V_Y);
-    glide(FEED_LONE, SU_TRACK_X + 80, SU_V_Y, 8);
-    glide(FEED_LONE, SU_TRACK_X + 80, 30, 8);
+    finger(FEED_LONE, SU_TRACK_P_X + 60, SU_V_P_Y);
+    glide(FEED_LONE, SU_TRACK_P_X + 80, SU_V_P_Y, 8);
+    glide(FEED_LONE, SU_TRACK_P_X + 80, 30, 8);
     lift(FEED_LONE);
 
-    feed_tap(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    feed_tap(FEED_LONE, SU_OUT_P_X, SU_OUT_P_Y);
     supply_cmd_t c1 = { 0 };
     const bool p1 = supply_screen_poll_cmd(&c1);
     CHECK(p1 && c1.off);
@@ -390,12 +392,12 @@ TEST_CASE(an_output_off_press_that_leaves_by_the_band_asks_for_nothing)
     on_screen(SCREEN_SUPPLY);
     supply_screen_set_output(true);
 
-    finger(FEED_LONE, SU_OUT_X, SU_OUT_Y);
-    glide(FEED_LONE, SU_OUT_X, 30, 8);
+    finger(FEED_LONE, SU_OUT_P_X, SU_OUT_P_Y);
+    glide(FEED_LONE, SU_OUT_P_X, 30, 8);
     lift(FEED_LONE);
     CHECK(!supply_screen_poll_cmd(NULL));
 
-    feed_tap(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    feed_tap(FEED_LONE, SU_OUT_P_X, SU_OUT_P_Y);
     supply_cmd_t c1 = { 0 };
     const bool p1 = supply_screen_poll_cmd(&c1);
     CHECK(p1 && c1.off);
@@ -406,8 +408,8 @@ TEST_CASE(an_output_off_press_that_leaves_by_the_band_asks_for_nothing)
 TEST_CASE(an_output_on_hold_that_leaves_by_the_band_switches_nothing_on)
 {
     on_screen(SCREEN_SUPPLY);
-    finger(FEED_LONE, SU_OUT_X, SU_OUT_Y);
-    glide(FEED_LONE, SU_OUT_X, 30, 8);
+    finger(FEED_LONE, SU_OUT_P_X, SU_OUT_P_Y);
+    glide(FEED_LONE, SU_OUT_P_X, 30, 8);
     for (int i = 0; i < 80; ++i) {
         ui_router_tick(0.05f);
     }
@@ -422,8 +424,8 @@ TEST_CASE(leaving_or_a_touch_loss_ends_a_set_point_drag)
 {
     for (int how = 0; how < 2; ++how) {
         on_screen(SCREEN_SUPPLY);
-        finger(0, SU_TRACK_X + 60, SU_V_Y);
-        glide(0, SU_TRACK_X + 80, SU_V_Y, 8);
+        finger(0, SU_TRACK_P_X + 60, SU_V_P_Y);
+        glide(0, SU_TRACK_P_X + 80, SU_V_P_Y, 8);
         if (how == 0) {
             const gfx_rect_t home =
                 ui_home_tag_rect(ui_router_title(SCREEN_SUPPLY));
@@ -434,12 +436,12 @@ TEST_CASE(leaving_or_a_touch_loss_ends_a_set_point_drag)
             ui_router_cancel_gestures();
         }
         const float set = supply_screen_set_v();
-        glide(0, SU_TRACK_X + 200, SU_V_Y, 8);
+        glide(0, SU_TRACK_P_X + 200, SU_V_P_Y, 8);
         lift(0);
         CHECK_NEAR(supply_screen_set_v(), set, 0.001f);
 
         /* And the screen answers the next press. */
-        finger(0, SU_OUT_X, SU_OUT_Y);
+        finger(0, SU_OUT_P_X, SU_OUT_P_Y);
         for (int i = 0; i < 50; ++i) {
             ui_router_tick(0.05f);
         }

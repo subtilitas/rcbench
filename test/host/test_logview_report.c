@@ -27,6 +27,7 @@
 #include "log_select.h"
 #include "log_text.h"
 #include "log_viewer_screen.h"
+#include "logview_spots.h"
 #include "settings.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -245,21 +246,24 @@ static void draw(void)
     screen()->render(&s_c, 0);
 }
 
-/* Geometry mirrored from the screen, in its own coordinates. */
-#define BR_ROW_Y(i) (44 + 30 + (i) * 44 + 18)
-#define FOOT_CY     (UI_BODY_H - UI_ALERT_H - 4 - 42 + 21)
-#define OPEN_X      724
-#define DELETE_X    596
-#define TX_BACK_X   100
-#define DQ_CY       282
-#define DQ_DELETE_X 536
-/* The text view: its rows' panel, 18 px a row, 14 rows; the scroll bar. */
-#define TX_ROWS_SEEN 14
-#define TX_PANEL_X  300
+/* Geometry mirrored from the screen (logview_spots.h), in its own
+ * coordinates. */
+#define BR_ROW_Y(i) LV_ROW_CY(i)
+#define FOOT_CY     LV_FOOT_CY
+#define OPEN_X      LV_OPEN_CX
+#define DELETE_X    LV_DELETE_CX
+#define TX_BACK_X   LV_TX_BACK_CX
+#define DQ_CY       LV_DQ_CY
+#define DQ_DELETE_X LV_DQ_DELETE_CX
+/* The text view: its rows' panel, LV_TX_PITCH px a row, LV_TX_ROWS rows;
+ * the scroll bar. */
+#define TX_ROWS_SEEN LV_TX_ROWS
+#define TX_PITCH    LV_TX_PITCH
+#define TX_PANEL_X  LV_ROW_CX
 #define TX_PANEL_Y  200
-#define BAR_X       (16 + 768 - 8 - 42 + 21)
-#define BAR_TOP     74
-#define BAR_H       260
+#define BAR_X       LV_BAR_CX
+#define BAR_TOP     LV_BAR_TOP
+#define BAR_H       LV_BAR_H
 
 /** @brief The names on the page in the order the list draws them, joined
  *  by spaces, into @p out.
@@ -576,7 +580,7 @@ TEST_CASE(opening_a_report_shows_its_rows_and_back_returns_to_the_list)
     if (t == NULL) {
         return;
     }
-    CHECK_EQ(t->rows, 6);       /* the long line breaks once at 86 cells */
+    CHECK_EQ(t->rows, 6);       /* the long line breaks once at 92 cells */
     CHECK(!t->cut);
     char row[128];
     CHECK(log_text_row((log_text_t *)t, 0, row, sizeof(row)));
@@ -584,7 +588,7 @@ TEST_CASE(opening_a_report_shows_its_rows_and_back_returns_to_the_list)
     CHECK(log_text_row((log_text_t *)t, 3, row, sizeof(row)));
     CHECK_STR_EQ(row, "");
     CHECK(log_text_row((log_text_t *)t, 5, row, sizeof(row)));
-    CHECK_STR_EQ(row, "a search");
+    CHECK_STR_EQ(row, "search");
     draw();
     /* A tap on a row does nothing; BACK returns to the list as it was. */
     tap(TX_PANEL_X, TX_PANEL_Y);
@@ -629,16 +633,16 @@ TEST_CASE(a_long_report_scrolls_by_drag_and_by_its_bar_within_its_rows)
     tap(OPEN_X, FOOT_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
     CHECK_EQ(log_viewer_text_first(), 0);
-    /* Up by 5 rows of 18 px. */
+    /* Up by 5 rows of TX_PITCH px. */
     send(TOUCH_EVENT_DOWN, TX_PANEL_X, 300);
-    send(TOUCH_EVENT_MOVE, TX_PANEL_X, 300 - 5 * 18);
-    send(TOUCH_EVENT_UP, TX_PANEL_X, 300 - 5 * 18);
+    send(TOUCH_EVENT_MOVE, TX_PANEL_X, 300 - 5 * TX_PITCH);
+    send(TOUCH_EVENT_UP, TX_PANEL_X, 300 - 5 * TX_PITCH);
     CHECK_EQ(log_viewer_text_first(), 5);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-    /* Past the end it stops at the last screen: 40 - 14. */
+    /* Past the end it stops at the last screen: 40 - 15. */
     send(TOUCH_EVENT_DOWN, TX_PANEL_X, 330);
-    send(TOUCH_EVENT_MOVE, TX_PANEL_X, 330 - 40 * 18);
-    send(TOUCH_EVENT_UP, TX_PANEL_X, 330 - 40 * 18);
+    send(TOUCH_EVENT_MOVE, TX_PANEL_X, 330 - 40 * TX_PITCH);
+    send(TOUCH_EVENT_UP, TX_PANEL_X, 330 - 40 * TX_PITCH);
     CHECK_EQ(log_viewer_text_first(), 40 - TX_ROWS_SEEN);
     draw();
     /* The bar: a tap at its top end is the first row, at its foot the
@@ -688,8 +692,8 @@ TEST_CASE(a_report_that_does_not_open_stays_on_the_list_with_the_reason)
 static int first_row_pixels(gfx_color_t col)
 {
     int n = 0;
-    for (int y = 74; y < 74 + 18; ++y) {
-        for (int x = 16 + 8 + 8; x < 16 + 8 + 8 + 86 * 8; ++x) {
+    for (int y = LV_TX_TOP; y < LV_TX_TOP + TX_PITCH; ++y) {
+        for (int x = LV_TX_ROW_X; x < LV_TX_ROW_X + LV_TX_COLS * 10; ++x) {
             n += (s_fb[y * W + x] == col) ? 1 : 0;
         }
     }
@@ -714,7 +718,7 @@ TEST_CASE(an_empty_report_opens_on_one_row_that_says_so)
     CHECK_EQ(log_viewer_text_first(), 0);
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
-        CHECK(gfx_text_cells(ui_tr(TX_LOG_TEXT_EMPTY)) <= 86);
+        CHECK(gfx_text_cells(ui_tr(TX_LOG_TEXT_EMPTY)) <= LV_TX_COLS);
         draw();
         CHECK(first_row_pixels(UI_TEXT_DIM) > 0);
         CHECK_EQ(first_row_pixels(UI_TEXT), 0);
@@ -855,14 +859,14 @@ TEST_CASE(a_report_over_the_cap_is_cut_and_the_view_says_so)
         char line[128];
         snprintf(line, sizeof(line), ui_tr(TX_LOG_TEXT_CUT),
                  (unsigned)(LOG_TEXT_MAX / 1024u));
-        CHECK(gfx_text_cells(line) <= 86);
+        CHECK(gfx_text_cells(line) <= LV_TX_COLS);
         draw();
     }
     ui_text_set_language(UI_LANG_EN);
 }
 
 /*
- * A frame draws 14 rows.  It reads those and at most LOG_TEXT_MARK - 1
+ * A frame draws 15 rows.  It reads those and at most LOG_TEXT_MARK - 1
  * rows before them, wherever the text is scrolled to: the bottom of a
  * 32 KiB report costs what its top does, not the 32 KiB above it.
  */
@@ -907,8 +911,8 @@ TEST_CASE(a_frame_reads_its_rows_and_not_the_text_above_them)
     CHECK(frame_reads() <= most);
     for (int y = 100; y <= 116; ++y) {
         send(TOUCH_EVENT_DOWN, TX_PANEL_X, 100);
-        send(TOUCH_EVENT_MOVE, TX_PANEL_X, y + 18);
-        send(TOUCH_EVENT_UP, TX_PANEL_X, y + 18);
+        send(TOUCH_EVENT_MOVE, TX_PANEL_X, y + TX_PITCH);
+        send(TOUCH_EVENT_UP, TX_PANEL_X, y + TX_PITCH);
         CHECK(frame_reads() <= most);
     }
     /* Rows asked in any order are the rows of a walk from the top. */

@@ -143,9 +143,9 @@ static void draw_pads_that_are_not_pins(gfx_canvas_t *c)
             gfx_line(c, px + o, py, px + o, edge, face);
         }
         disc(c, mx, my, r, face);
-        const gfx_font_t *font = ground ? UI_FONT_HEAD : UI_FONT_LABEL;
+        const gfx_font_t *font = ground ? PK_FONT_PIN : PK_FONT_FINE;
         const int lw = gfx_text_width(font, label, 1);
-        const int lh = ground ? 28 : 16;
+        const int lh = gfx_text_height(font, 1);
         gfx_text(c, mx - lw / 2, my - lh / 2, label, font, INK, 1);
     }
 }
@@ -210,9 +210,10 @@ static void draw_buttons(gfx_canvas_t *c)
 
         char nm[6];
         snprintf(nm, sizeof(nm), "%u", (unsigned)pins[i].gpio);
-        const int lw = gfx_text_width(UI_FONT_HEAD, nm, 1);
-        gfx_text(c, r.x + (r.w - lw) / 2, r.y + (r.h - 28) / 2, nm,
-                 UI_FONT_HEAD, ink, 1);
+        const int lw = gfx_text_width(PK_FONT_HEAD, nm, 1);
+        gfx_text(c, r.x + (r.w - lw) / 2,
+                 r.y + (r.h - gfx_text_height(PK_FONT_HEAD, 1)) / 2, nm,
+                 PK_FONT_HEAD, ink, 1);
     }
 }
 
@@ -228,10 +229,11 @@ static void draw_head(gfx_canvas_t *c)
     ui_choice_face(c, picker_screen_list_face(), buf, s.hit_kind == HIT_FACE,
                    s.open);
     picker_screen_count(buf, sizeof(buf));
-    gfx_text(c, HEAD_X, COUNT_Y, buf, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    gfx_text(c, HEAD_X, COUNT_Y, buf, PK_FONT_LABEL, UI_TEXT_DIM, 1);
     if (picker_screen_reason(buf, sizeof(buf))) {
-        (void)outputs_wrap(c, gfx_rect_make(HEAD_X, REASON_Y, HEAD_W, 16), 18,
-                           buf, 2, UI_FONT_LABEL, UI_WARN, false);
+        (void)outputs_wrap(c, gfx_rect_make(HEAD_X, REASON_Y, HEAD_W, 20),
+                           REASON_PITCH, buf, 2, PK_FONT_LABEL, UI_WARN,
+                           false);
     }
 }
 
@@ -247,33 +249,34 @@ static void draw_mine(gfx_canvas_t *c)
     const int tx = PINS_X;
     int ty = PINS_Y;
 
-    gfx_text(c, tx, ty, TR(PK_PINS), UI_FONT_HEAD, UI_ACCENT, 1);
+    gfx_text(c, tx, ty, TR(PK_PINS), PK_FONT_HEAD, UI_ACCENT, 1);
     /* PAD once, as the head of its column: "GP13" and "PAD 17" together are
      * wider than the column beside the board. */
     const char *pad = TR(PK_PAD);
-    gfx_text(c, tx + PINS_W - gfx_text_width(UI_FONT_LABEL, pad, 1), ty + 10,
-             pad, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
-    ty += 30;
-    gfx_fill_rect(c, tx, ty, PINS_W, 2, UI_EDGE_HI);
-    ty += 14;
+    gfx_text(c, tx + PINS_W - gfx_text_width(PK_FONT_LABEL, pad, 1), ty + 12,
+             pad, PK_FONT_LABEL, UI_TEXT_FAINT, 1);
+    gfx_fill_rect(c, tx, ty + 38, PINS_W, 2, UI_EDGE_HI);
+    ty = PINS_TOP;
 
+    /* A row's label-face text 8 px down, level with the GP name's
+     * capitals. */
     picker_row_t row;
     uint8_t k = 0;
-    for (; ty < SCREEN_H - 24 && picker_screen_row(k, &row); ++k) {
+    for (; ty + ROW_H <= FOOT && picker_screen_row(k, &row); ++k) {
         char buf[8];
         if (row.channel >= 0) {
             snprintf(buf, sizeof(buf), "CH%d", row.channel);
-            gfx_text(c, tx, ty, buf, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+            gfx_text(c, tx, ty + 8, buf, PK_FONT_LABEL, UI_TEXT_DIM, 1);
         }
         snprintf(buf, sizeof(buf), "GP%u", (unsigned)row.gpio);
-        gfx_text(c, tx + 40, ty - 6, buf, UI_FONT_HEAD, UI_ACCENT, 1);
+        gfx_text(c, tx + 40, ty, buf, PK_FONT_HEAD, UI_ACCENT, 1);
         snprintf(buf, sizeof(buf), "%u", (unsigned)row.pad);
-        gfx_text(c, tx + PINS_W - gfx_text_width(UI_FONT_LABEL, buf, 1), ty,
-                 buf, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+        gfx_text(c, tx + PINS_W - gfx_text_width(PK_FONT_LABEL, buf, 1),
+                 ty + 8, buf, PK_FONT_LABEL, UI_TEXT_FAINT, 1);
         ty += ROW_H;
     }
     if (k == 0u) {
-        gfx_text(c, tx, ty, TR(PK_NONE_YET), UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+        gfx_text(c, tx, ty, TR(PK_NONE_YET), PK_FONT_LABEL, UI_TEXT_FAINT, 1);
     }
 }
 
@@ -363,7 +366,7 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
      * Still past the foot: the lines that fit, the last of them a "+N"
      * line with the number of lines left out.  No binding reaches it on
      * the 1024 x 600 panel: the fullest, 4 ports and every interface
-     * beside the 8 slots, lists 27 lines in the 468 px under the heading.
+     * beside the 8 slots, lists 27 lines in the 432 px under the heading.
      */
     if (names * name_h + pins_n * pin_h > room) {
         int y = 0;
@@ -411,11 +414,12 @@ static void draw_theirs(gfx_canvas_t *c)
     int ty = USE_Y;
     const gfx_color_t grey = GFX_RGB(150, 154, 162);
 
-    gfx_text(c, tx, ty, TR(PK_IN_USE), UI_FONT_HEAD, grey, 1);
-    ty += 30;
-    gfx_fill_rect(c, tx, ty, USE_W, 2, UI_EDGE_HI);
-    ty += 8;
-    gfx_text(c, tx, ty, TR(PK_BY_OTHERS), UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+    gfx_text(c, tx, ty, TR(PK_IN_USE), PK_FONT_HEAD, grey, 1);
+    /* The rule under the heading's 36 px, BY OTHERS in 8 x 16 under it,
+     * ending at USE_TOP: the fullest table needs every row under it. */
+    gfx_fill_rect(c, tx, ty + 36, USE_W, 2, UI_EDGE_HI);
+    gfx_text(c, tx, ty + 39, TR(PK_BY_OTHERS), PK_FONT_FINE, UI_TEXT_FAINT,
+             1);
 
     picker_use_t t[PICKER_USE_MAX];
     const uint8_t lines = in_use(t);
@@ -424,13 +428,13 @@ static void draw_theirs(gfx_canvas_t *c)
         const gfx_rect_t r = t[i].rect;
         if (t[i].kind == PICKER_USE_MORE) {
             snprintf(row, sizeof(row), "+%u", (unsigned)t[i].gpio);
-            gfx_text(c, r.x + 4, r.y, row, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+            gfx_text(c, r.x + 4, r.y, row, PK_FONT_FINE, UI_TEXT_FAINT, 1);
             continue;
         }
         if (t[i].kind == PICKER_USE_NAME) {
             /* PROG PORT and the interfaces in red, as a pin no protocol
-             * may take; a protocol in teal.  A 16 px name row holds the
-             * label face's 16 px from its top. */
+             * may take; a protocol in teal.  A 20 px name row holds the
+             * label face, a 16 px one 8 x 16. */
             const bool port = (t[i].proto == PICKER_USE_PROG);
             const bool iface = PICKER_USE_IS_IFACE(t[i].proto);
             const char *name =
@@ -438,27 +442,29 @@ static void draw_theirs(gfx_canvas_t *c)
                 : iface ? outputs_iface_name(
                               (outputs_iface_t)(t[i].proto - 0xF0u))
                         : outbind_protos()[t[i].proto].name;
-            gfx_text(c, r.x, r.y + ((r.h > 16) ? 2 : 0), name, UI_FONT_LABEL,
+            gfx_text(c, r.x, r.y, name,
+                     (r.h > 16) ? PK_FONT_LABEL : PK_FONT_FINE,
                      (port || iface) ? UI_DANGER : UI_TEAL, 1);
             continue;
         }
-        /* The port has no channel, so no CH. */
-        /* The label face's 16 px centred in a 20 or 16 px row. */
-        const int label_y = t[i].compact ? (r.y + (r.h - 16) / 2) : (r.y + 6);
+        /* The port has no channel, so no CH.  A 28 px row: CH in the
+         * label face level with the GPIO's capitals in PK_FONT_PIN; a
+         * 20 px row both in the label face, a 16 px one in 8 x 16. */
+        const gfx_font_t *lf = (r.h > 16) ? PK_FONT_LABEL : PK_FONT_FINE;
+        const int label_y = t[i].compact ? r.y : (r.y + 5);
         if (t[i].channel >= 0) {
             snprintf(row, sizeof(row), "CH%d", t[i].channel);
-            gfx_text(c, r.x + 4, label_y, row, UI_FONT_LABEL, UI_TEXT_FAINT,
-                     1);
+            gfx_text(c, r.x + 4, label_y, row, lf, UI_TEXT_FAINT, 1);
         }
         snprintf(row, sizeof(row), "GP%u", (unsigned)t[i].gpio);
         if (t[i].compact) {
-            gfx_text(c, r.x + 44, label_y, row, UI_FONT_LABEL, grey, 1);
+            gfx_text(c, r.x + 44, label_y, row, lf, grey, 1);
         } else {
-            gfx_text(c, r.x + 44, r.y, row, UI_FONT_HEAD, grey, 1);
+            gfx_text(c, r.x + 44, r.y, row, PK_FONT_PIN, grey, 1);
         }
     }
     if (lines == 0u) {
-        gfx_text(c, tx, USE_TOP, TR(PK_NONE), UI_FONT_LABEL, UI_TEXT_FAINT,
+        gfx_text(c, tx, USE_TOP, TR(PK_NONE), PK_FONT_LABEL, UI_TEXT_FAINT,
                  1);
     }
 }
@@ -513,21 +519,23 @@ void pk_render(gfx_canvas_t *c, int buffer_index)
          * as a screen that failed, and this one is working -- it is saying
          * what it does not know, and where the pins are still to be had.
          */
-        const int pw = 520, ph = 150;
-        const int px = (SCREEN_W - pw) / 2, py = (SCREEN_H - ph) / 2;
+        /* 640 x 180 px: the title in the head face, the three lines of
+         * prose in 12 x 24, 52 cells inside the panel's 8 px margins. */
+        const int pw = 640, ph = 180;
+        const int px = (SCREEN_W - pw) / 2, py = (FOOT - ph) / 2;
         gfx_fill_chamfer_rect_ex(c, px, py, pw, ph, 12, 0, 12, 0, UI_PANEL);
         gfx_draw_chamfer_rect_ex(c, px, py, pw, ph, 12, 0, 12, 0, UI_EDGE);
         const char *const lines[] = {
             TR(PK_NO_ART_1), TR(PK_NO_ART_2), TR(PK_NO_ART_3),
             TR(PK_NO_ART_4),
         };
-        int ty = py + 26;
+        int ty = py + 24;
         for (unsigned i = 0; i < sizeof(lines) / sizeof(lines[0]); ++i) {
-            const gfx_font_t *font = (i == 0u) ? UI_FONT_HEAD : UI_FONT_LABEL;
+            const gfx_font_t *font = (i == 0u) ? PK_FONT_HEAD : UI_FONT_BODY;
             const gfx_color_t ink = (i == 0u) ? UI_TEXT : UI_TEXT_FAINT;
             const int w = gfx_text_width(font, lines[i], 1);
             gfx_text(c, px + (pw - w) / 2, ty, lines[i], font, ink, 1);
-            ty += (i == 0u) ? 40 : 24;
+            ty += (i == 0u) ? 48 : 30;
         }
     } else {
         draw_board(c);

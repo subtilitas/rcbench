@@ -31,6 +31,7 @@
 #include "ui_textkey.h"
 #include "upd_screen.h"
 #include "wifi_screen.h"
+#include "wifi_spots.h"
 #include "coproc_update_screen.h"
 #include "sense_link.h"
 #include "settings.h"
@@ -58,7 +59,11 @@
 #include "supply_screen.h"
 #include "supply_link.h"
 #include "kst_rig.h"
+#include "outputs_spots.h"
 #include "servo_spots.h"
+#include "stick_spots.h"
+#include "supply_spots.h"
+#include "logview_spots.h"
 #include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
@@ -75,23 +80,22 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
-/* The ESC STICK controls in body coordinates, as test/host/stick_rig.h and
- * esc_stick_panel_rig.h find them: the crumb row's ^ and v, TIMING and the
- * search field at the right edge, the foot row's RUN, the panels' HOLD TO
- * RUN and OK at their foot, and a parameter row's + stepper. */
-#define RS_SP_RIGHT    (UI_PANEL_W - UI_MARGIN - 12)
-#define RS_LIST_UP_X   (RS_SP_RIGHT - 76 + 17)
-#define RS_LIST_DN_X   (RS_SP_RIGHT - 38 + 17)
-#define RS_CRUMB_CY    45
-#define RS_TIMING_X    (RS_SP_RIGHT - 168 + 84)
-#define RS_FIND_X      (RS_SP_RIGHT - 182)
-#define RS_RUN_X       (RS_SP_RIGHT - 168 + 84)
-#define RS_RUN_CY      (UI_BODY_H - UI_ALERT_H - 4 - 36 + 17)
-#define RS_HOLD_X      (UI_MARGIN + 20 + 130)
-#define RS_OK_X        (UI_PANEL_W - UI_MARGIN - 20 - 90)
-#define RS_PBTN_CY     (UI_BODY_H - UI_ALERT_H - 4 - 36 - 4 - UI_BTN_H_TALL / 2)
-#define RS_STEP_UP_X   765
-#define RS_STEP_CY(i)  (142 + (i) * 30 + 10)
+/* The ESC STICK controls in body coordinates (stick_spots.h): the crumb
+ * row's ^ and v, TIMING and the search field at the right edge, the foot
+ * row's RUN, the panels' HOLD TO RUN and OK at their foot, and a parameter
+ * row's + stepper. */
+#define RS_LIST_UP_X   ST_LIST_UP_X
+#define RS_LIST_DN_X   ST_LIST_DN_X
+#define RS_CRUMB_CY    ST_CRUMB_CY
+#define RS_TIMING_X    ST_TIMING_X
+#define RS_FIND_X      ST_FIND_X
+#define RS_RUN_X       ST_WRITE_X
+#define RS_RUN_CY      ST_BTN_CY
+#define RS_HOLD_X      ST_HOLD_X
+#define RS_OK_X        ST_CANCEL_X
+#define RS_PBTN_CY     ST_PBTN_CY
+#define RS_STEP_UP_X   ST_STEP_UP_X
+#define RS_STEP_CY(i)  ST_STEP_CY(i)
 
 /* BALANCE's right card (test/host/test_balance.c): the rotor's EDF half and
  * the blade count's + stepper. */
@@ -109,9 +113,9 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define MO_TAB_PROGRAM_X 234
 #define MO_TAB_Y         28
 #define MO_STICK_ROW_X   279
-/* SUPPLY's SETTINGS tab, the second of its strip, LIVE | SETTINGS. */
-#define SU_TAB_SETTINGS_X 181
-#define SU_TAB_Y          18
+/* SUPPLY's SETTINGS tab, the second of its strip, LIVE | SETTINGS
+ * (supply_spots.h, with SU_TAB_Y). */
+#define SU_TAB_SETTINGS_X SU_TAB_X(1)
 #define MO_STICK_ROW_Y   83
 
 static gfx_color_t fb[W * H];
@@ -499,17 +503,6 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
     }
     fclose(f);
 }
-
-/* IM_BTN_Y from log_viewer_int.h, FOOT_Y: the footer's 42 px end 4 px
- * above the alert band.  If the layout moves, this moves with it;
- * render_ui --check reports the drift. */
-#define IM_BTN_Y_LOCAL (UI_BODY_H - UI_ALERT_H - 4 - 42)
-/* FOOT_Y and the DELETE button's x from the same file. */
-#define BR_FOOT_Y_LOCAL IM_BTN_Y_LOCAL
-#define BR_DELETE_CX    596
-/* NEXT in the header row, over OPEN. */
-#define BR_NEXT_CX      724
-#define BR_PG_CY_LOCAL  21
 
 /* The ask hook of the outputs-port2 view: taken, and never answered. */
 static bool render_port_ask(uint8_t seq, uint8_t port,
@@ -1714,8 +1707,8 @@ static void stick_type(const char *text)
     ui_textkey_t k;
     memset(&k, 0, sizeof(k));
     ui_textkey_open_search(&k,
-                           (gfx_rect_t){ 352, 68, UI_PANEL_W - UI_MARGIN - 352,
-                                         UI_BODY_H - UI_MARGIN - 68 },
+                           (gfx_rect_t){ ST_DOCK_X, ST_DOCK_Y, ST_DOCK_W,
+                                         ST_DOCK_H },
                            "", "",
                            UI_TEXTKEY_MAX);
     for (const char *p = text; *p != '\0'; ++p) {
@@ -1748,8 +1741,8 @@ static void stick_supply_off(void)
 }
 
 /* The ESC STICK list's row @p at, paged to first: the rows of
- * esc_stick_panel.c (SP_ROW_Y0 68, 36 px apart, 9 to a page) and its ^ and
- * v at RS_LIST_UP_X and RS_LIST_DN_X on the crumb row, y 28 to 58. */
+ * esc_stick_panel.c (stick_spots.h: from y 84, 56 px apart, 7 to a page)
+ * and its ^ and v at RS_LIST_UP_X and RS_LIST_DN_X on the crumb row. */
 static void stick_tap_row(int at)
 {
     int top = 0;
@@ -1758,11 +1751,11 @@ static void stick_tap_row(int at)
         tap(RS_LIST_UP_X, UI_BAND_H + RS_CRUMB_CY);
         (void)esc_stick_panel_listed(&top);
     }
-    for (int g = 0; g < 64 && at >= top + 9; ++g) {
+    for (int g = 0; g < 64 && at >= top + ST_LIST_ROWS; ++g) {
         tap(RS_LIST_DN_X, UI_BAND_H + RS_CRUMB_CY);
         (void)esc_stick_panel_listed(&top);
     }
-    tap(400, UI_BAND_H + 70 + (at - top) * 36 + 16);
+    tap(400, UI_BAND_H + ST_ROW_CY(at - top));
 }
 
 /* On the makers, the one named @p name; on its models, the first of
@@ -1983,7 +1976,7 @@ static void pose_wifi(const char *view)
     const bool keys = strncmp(view, "wifi-key", 8) == 0;
     if (strcmp(view, "wifi-scan") == 0 || strcmp(view, "wifi-scanning") == 0
         || keys) {
-        tap(16 + 180, UI_BAND_H + 16 + 2 * 68 + 28);       /* CHOOSE */
+        tap(WF_BTN_CX(2), UI_BAND_H + WF_BTN_CY(2));       /* CHOOSE */
         v.radio = WIFI_RADIO_SCANNING;
         wifi_screen_set(&v);
     }
@@ -2011,7 +2004,7 @@ static void pose_wifi(const char *view)
                           || strcmp(view, "wifi-key-shown") == 0
                           || strcmp(view, "wifi-key-short") == 0;
         if (pass) {
-            tap(16 + 100, UI_BAND_H + 16 + 20);             /* row 1 */
+            tap(WF_ROW_CX(0), UI_BAND_H + WF_ROW_CY(0));    /* row 1 */
             wifi_type("cedar");
             wifi_key(UI_TK_SHIFT);
             wifi_type("q");
@@ -2028,7 +2021,7 @@ static void pose_wifi(const char *view)
                 wifi_expect("cedarQ42x", false);
             }
         } else {
-            tap(272 + 128, UI_BAND_H + 376 + 24);          /* HIDDEN */
+            tap(WF_HIDDEN_CX, UI_BAND_H + WF_SCAN_CY);     /* HIDDEN */
             wifi_type("lab");
             if (strcmp(view, "wifi-key-upper") == 0) {
                 wifi_key(UI_TK_SHIFT);
@@ -2372,7 +2365,7 @@ int main(int argc, char **argv)
         }
     }
 
-    if (id == SCREEN_SUPPLY && strcmp(view, "supply-offline") == 0) {
+    if (id == SCREEN_SUPPLY && strncmp(view, "supply-offline", 14) == 0) {
         /*
          * The PD mini enabled on GP12 and GP13 and not answering, the
          * output never switched on: the header in the warning colour, the
@@ -2389,6 +2382,14 @@ int main(int argc, char **argv)
         st.set_i  = 2.0f;
         st.online = false;
         supply_screen_push(&st);
+        if (strcmp(view, "supply-offline-settings") == 0) {
+            /* The fit check's: SETTINGS with the PD mini, RESET PD MINI
+             * under the start values, and the longest save line, a change
+             * on SETUP nobody asked to keep. */
+            ui_router_goto(SCREEN_SUPPLY);
+            tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
+            settings_set(SET_SUPPLY_TRIP_MS, 300.0f);
+        }
     } else if (id == SCREEN_SUPPLY) {
         /* A run of the panel's model, as the panel drives it: the output on
          * at 6 V and a 2 A limit, the load's bursts holding the limit, the
@@ -2434,14 +2435,13 @@ int main(int argc, char **argv)
             /* +0.1 V on a live output: the question, as the settings'
              * default asks it. */
             ui_router_goto(SCREEN_SUPPLY);
-            tap(519, UI_BAND_H + 335);
+            tap(SU_UP_X, UI_BAND_H + SU_V_ROW_Y);
         } else if (strcmp(view, "supply-keypad") == 0) {
             ui_router_goto(SCREEN_SUPPLY);
-            tap(676, UI_BAND_H + 65);
+            tap(SU_CARD_X, UI_BAND_H + SU_CARD_Y(0));
             ui_keypad_t kp;
             memset(&kp, 0, sizeof(kp));
-            ui_keypad_open(&kp, (gfx_rect_t){ UI_MARGIN, 38, 546, UI_BODY_H - 46 }, "", "",
-                           0.0f, 0.0f, 1.0f, 2);
+            ui_keypad_open(&kp, SU_OV_AREA, "", "", 0.0f, 0.0f, 1.0f, 2);
             const ui_key_t k[] = { UI_KEY_7, UI_KEY_DOT, UI_KEY_4 };
             for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
                 const gfx_rect_t r = ui_keypad_key_rect(&kp, k[i]);
@@ -2454,6 +2454,14 @@ int main(int argc, char **argv)
                                         : SUPPLY_TRIP_VOLTAGE;
             supply_screen_set_output(false);
             supply_screen_push(&st);
+        } else if (strcmp(view, "supply-table") == 0) {
+            /* The fit check's: LIVE's TABLE, every row with a reading. */
+            ui_router_goto(SCREEN_SUPPLY);
+            tap(SU_TABLE_TAB_X, UI_BAND_H + SU_PANE_Y);
+        } else if (strcmp(view, "supply-port") == 0) {
+            /* The fit check's: a servo programming port holds the
+             * supply, the set points faint and MODE's line saying why. */
+            supply_screen_set_port_held(true);
         }
     }
 
@@ -3141,11 +3149,13 @@ int main(int argc, char **argv)
         }
         if (strcmp(view, "outputs-prog") == 0) {
             /* GP28 tapped: slice 6 is the port's, so the line under the
-             * protocol says why the cell is held.  Its cell is column 3,
-             * row 4 of the grid (288 + 3 * 125, 16 + 4 * 57). */
+             * protocol says why the cell is held.  Its cell from
+             * outputs_spots.h, by its catalogue entry. */
+            const int gp28 = (int)outbind_index_of(brd, 28u);
             touch_event_t d = { TOUCH_EVENT_DOWN,
-                                { 0, 288 + 3 * 125 + 60,
-                                  UI_BAND_H + 16 + 4 * 57 + 26, 40 }, 0u };
+                                { 0, (int16_t)(OU_CELL_X(gp28) + 60),
+                                  (int16_t)(UI_BAND_H + OU_CELL_Y(gp28)
+                                            + 26), 40 }, 0u };
             touch_event_t u = d;
             u.type = TOUCH_EVENT_UP;
             ui_router_event(&d);
@@ -3750,36 +3760,34 @@ int main(int argc, char **argv)
         g_pages_card = (strcmp(view, "logs-pages") == 0);
         log_viewer_refresh();
         /*
-         * BR_LIST starts at y = 44 in screen coordinates, its rows begin
-         * 30 px below that header, and a row is 44 px, so the first row's
-         * middle is 44 + 30 + 22.  The band offset is added because
-         * ui_router_event takes panel coordinates and strips it on the way
-         * in.
+         * LOGS' places from logview_spots.h, in the screen's coordinates.
+         * The band offset is added because ui_router_event takes panel
+         * coordinates and strips it on the way in.
          */
         if (nocard || nofat) {
             /* The browser as it opens: nothing to select. */
         } else if (strcmp(view, "logs-pages") == 0) {
             for (int p = 0; p < PAGES_NEXT; ++p) {
-                tap(BR_NEXT_CX, UI_BAND_H + BR_PG_CY_LOCAL);   /* NEXT */
+                tap(LV_NEXT_CX, UI_BAND_H + LV_HEAD_CY);   /* NEXT */
             }
         } else if (strcmp(view, "logs-delete") == 0) {
             /* The newest run is chosen as the list opens. */
-            tap(BR_DELETE_CX, UI_BAND_H + BR_FOOT_Y_LOCAL + 21);   /* DELETE */
+            tap(LV_DELETE_CX, UI_BAND_H + LV_FOOT_CY);   /* DELETE */
         } else if (strcmp(view, "logs-root") == 0) {
             /* ROOT, the first tab at the header row's left. */
-            tap(19 + 40, UI_BAND_H + BR_PG_CY_LOCAL);
+            tap(LV_TAB_CX(0), UI_BAND_H + LV_HEAD_CY);
         } else if (strcmp(view, "logs-report") == 0) {
             /* USER, the second tab: LIMIT006.TXT is the newest and chosen
              * as the list opens, so a tap on it opens it. */
-            tap(19 + 84 + 40, UI_BAND_H + BR_PG_CY_LOCAL);
-            tap(400, UI_BAND_H + 44 + 30 + 22);
+            tap(LV_TAB_CX(1), UI_BAND_H + LV_HEAD_CY);
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));
         } else if (strcmp(view, "logs") != 0) {
             /* The newest run is chosen as the list opens: one tap opens
              * it. */
-            tap(400, UI_BAND_H + 44 + 30 + 22);   /* open */
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));   /* open */
         }
         if (strcmp(view, "logs-plot") == 0) {
-            tap(690, UI_BAND_H + IM_BTN_Y_LOCAL + 23);   /* PLOT */
+            tap(LV_IM_BTN_CX(3), UI_BAND_H + LV_FOOT_CY);   /* PLOT */
         }
     }
 

@@ -82,14 +82,15 @@ static const control_t k_controls[] = {
     { "RESCAN",          at_list,     RESCAN_X, FOOT_CY },
     { "OPEN",            at_list,     OPEN_X, FOOT_CY },
     { "DELETE",          at_list,     DELETE_X, FOOT_CY },
-    { "file row",        at_list,     400, BR_ROW_Y(3) },
+    { "file row",        at_list,     LV_ROW_CX, BR_ROW_Y(3) },
+    { "file row 7",      at_list,     LV_ROW_CX, BR_ROW_Y(BR_ROWS_SEEN - 1) },
     { "separator",       at_import,   SEP_X, IM_BTN_CY },
     { "number format",   at_import,   NUM_X, IM_BTN_CY },
     { "BACK",            at_import,   BACK_X, IM_BTN_CY },
     { "PLOT",            at_import,   PLOT_X, IM_BTN_CY },
-    { "column row",      at_import,   560, IM_ROW_Y(2) },
-    { "FIELDS",          at_plot,     100, FOOT_PLOT_CY },
-    { "previous sample", at_plot,     236, FOOT_PLOT_CY },
+    { "column row",      at_import,   LV_IM_ROW_CX, IM_ROW_Y(2) },
+    { "FIELDS",          at_plot,     LV_PV_BACK_CX, FOOT_PLOT_CY },
+    { "previous sample", at_plot,     LV_PV_PREV_CX, FOOT_PLOT_CY },
     { "next sample",     at_plot,     NEXT_X, FOOT_PLOT_CY },
     { "question CANCEL", at_question, DQ_CANCEL_X, DQ_CY },
     { "question DELETE", at_question, DQ_DELETE_X, DQ_CY },
@@ -137,9 +138,11 @@ TEST_CASE(a_button_or_a_row_acts_on_a_tap_and_on_nothing_less)
         f_to(c->x - 9, c->y, 1);
         f_lift();
         moved += (look() != was) ? 16 : 0;
-        /* The contact next reported 300 px away: the tracker's release. */
+        /* The contact next reported 300 px away, in the header row right
+         * of the tabs (x 368 on), where nothing acts: the tracker's
+         * release. */
         f_at(c->x, c->y);
-        f_at((c->x < 400) ? c->x + 300 : c->x - 300, 20);
+        f_at((c->x < 500) ? c->x + 300 : c->x - 300, 20);
         f_lift();
         moved += (look() != was) ? 32 : 0;
         if (moved != 0) {
@@ -293,11 +296,12 @@ TEST_CASE(nothing_that_acts_is_under_the_alert_band)
 }
 
 /*
- * The import's warnings break into lines of DETECTED's 268 px, 33 cells,
- * and its file messages into the footer's 248 px between WI-FI and DELETE:
- * ui_text.def declares two of those lines, 66 cells, for each warning, and
- * this holds each to the two lines as the screen breaks it, the longest
- * count and file name included.
+ * The import's warnings break into lines of DETECTED's 368 px, 36 cells of
+ * the 10 x 20 face, and its file messages into the footer's 400 px between
+ * WI-FI and DELETE, 33 cells of the 12 x 24 face: ui_text.def declares two
+ * lines of 33 cells, 66 cells, for each warning, and this holds each to the
+ * two lines as the screen breaks it, the longest count and file name
+ * included, in every language.
  */
 TEST_CASE(every_warning_and_file_message_takes_two_lines_at_most)
 {
@@ -308,23 +312,23 @@ TEST_CASE(every_warning_and_file_message_takes_two_lines_at_most)
         TX_LOG_CANNOT_OPEN, TX_LOG_IS_FOLDER, TX_LOG_CANNOT_DELETE,
         TX_LOG_DELETED, TX_LOG_TOO_BIG,
     };
-    const gfx_rect_t warn = gfx_rect_make(32, 0, 268, 18);
-    const gfx_rect_t foot = gfx_rect_make(272, 0, 248, 18);
+    const gfx_rect_t warn = gfx_rect_make(24, 0, LV_WARN_W, LV_WARN_LH);
+    const gfx_rect_t foot = gfx_rect_make(312, 0, LV_MSG_W, LV_MSG_LH);
     char line[96];
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         for (size_t i = 0; i < sizeof(k_warn) / sizeof(k_warn[0]); ++i) {
-            CHECK(ui_text_wrap(NULL, warn, 18, ui_tr(k_warn[i]),
-                               UI_FONT_LABEL, UI_TEXT) <= 2);
+            CHECK(ui_text_wrap(NULL, warn, LV_WARN_LH, ui_tr(k_warn[i]),
+                               &gfx_font_10x20, UI_TEXT) <= 2);
         }
         snprintf(line, sizeof(line), ui_tr(TX_LOG_TOO_LONG), 2147483647);
-        CHECK(ui_text_wrap(NULL, warn, 18, line, UI_FONT_LABEL, UI_TEXT)
-              <= 2);
+        CHECK(ui_text_wrap(NULL, warn, LV_WARN_LH, line, &gfx_font_10x20,
+                           UI_TEXT) <= 2);
         for (size_t i = 0; i < sizeof(k_file) / sizeof(k_file[0]); ++i) {
             /* A run's name, as the logger writes it. */
             snprintf(line, sizeof(line), ui_tr(k_file[i]), "BENCH999.CSV");
-            CHECK(ui_text_wrap(NULL, foot, 18, line, UI_FONT_LABEL, UI_TEXT)
-                  <= 2);
+            CHECK(ui_text_wrap(NULL, foot, LV_MSG_LH, line, UI_FONT_BODY,
+                               UI_TEXT) <= 2);
         }
     }
     ui_text_set_language(UI_LANG_EN);

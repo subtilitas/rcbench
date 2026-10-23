@@ -50,6 +50,7 @@ add_subdirectory("${SHARED}/text"     text)
 add_subdirectory("${SHARED}/ui"       ui)
 add_subdirectory("${SHARED}/settings" settings)
 add_subdirectory("${SHARED}/logfile"  logfile)
+add_subdirectory("${SHARED}/files"    files)
 add_subdirectory("${SHARED}/link"     link)
 add_subdirectory("${SHARED}/artwork"  artwork)
 add_subdirectory("${SHARED}/bench"    bench)
@@ -80,6 +81,7 @@ set(UNDER_TEST
     rcbench_ui
     rcbench_settings
     rcbench_logfile
+    rcbench_files
     rcbench_link
     rcbench_bench
     rcbench_outputs
@@ -120,7 +122,7 @@ set(FAKES "")
 set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
 include(CTest)
 
-foreach(suite gfx gfx_faces layout touch_map overlays nav nav_tiles nav_alert nav_mark nav_contact nav_drag nav_bubble widgets workbench prog_registry keypad keypad_sign pinlist bench supply supply_screen supply_screen_tasks supply_screen_home supply_screen_draw pdmini motor motor_draw motor_throttle motor_arm motor_workbench motor_program motor_layout value_state logview logview_report log_text logview_plot logview_rank logview_pages logview_tabs logview_delete logview_touch log_name log_take card_tree fault_log logwriter log_cadence log_cols settings settings_screen settings_gesture settings_pins_hub settings_leave settings_folders settings_sensors settings_keypad settings_rows setting_keypad_eq log_numbers log_reader log_csv link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outputs_hw outputs_hw_ports outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm safe_press servo_limit servo_sync servo_sweep servo_move servo_test servo_test_judge servo_test_replay servo_test_enc servo_test_win servo_test_win_read servo_test_win_chain servo_page supply_page sense_page supply_link sense_link sense_link_view sense_map_link sense_win_link sense_limit_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen outputs_screen_draw outputs_screen_off outputs_screen_port picker_screen picker_screen_hold picker_screen_table port_screens board_drawing busfault_screen text servo servo_knob servo_dial_sweep servo_letgo servo_curve servo_supply servo_run servo_target servo_rail servo_meter servo_settings servo_trim_keypad servo_test_panel servo_limit_panel servo_workbench analyser prog_models esc_stick_panel esc_stick_panel_phases esc_stick_panel_list esc_stick_panel_steps esc_stick_panel_makers esc_stick_panel_hold esc_stick_panel_touch esc_stick_panel_home esc_stick_panel_keypad balance battery esc_profiles esc_det esc_stick_rules esc_stick esc_stick_hand esc_stick_entry ina228 ina3221 as5600 sense_sched sense_parts sense_map sense_limit sense_svc sense_trace sense_trace_feed sense_trace_next sense_trace_setup sense_trace_lines tone edge_ring tone_svc tone_page tone_pio tone_link endpoints_link hitec_rx_link knob panel_i2c bind_link servo_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port prog_port_fn kst_file kst_store kst_card prog_link prog_link_ask port_mail kst_prog kst_prog_card kst_panel kst_panel_leave kst_panel_edit kst_panel_write kst_panel_texts kst_panel_writepage kst_panel_screen kst_panel_notes kst_panel_files kst_panel_nocard kst_panel_limrun kst_panel_ports kst_panel_layout hitec_wire hitec_pio hitec_pre hitec_port hitec_port_stop hitec_port_rx page_console wifi_screen fw_image fw_install fw_upload fw_release fw_release_scan wa_session wa_fetch wa_fetch_channel upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_page_de wa_mdns link_sha256 link_update coproc_update_screen upd_coproc touch_merge inj_line_id inj_emu servo_limrun servo_limrun_abort servo_limrun_report sense_i2c storage storage_swap)
+foreach(suite gfx gfx_faces layout touch_map overlays nav nav_tiles nav_alert nav_mark nav_contact nav_drag nav_bubble widgets workbench prog_registry keypad keypad_sign pinlist bench supply supply_screen supply_screen_tasks supply_screen_home supply_screen_draw supply_layout pdmini motor motor_draw motor_throttle motor_arm motor_workbench motor_program motor_layout value_state logview logview_report log_text logview_plot logview_rank logview_pages logview_tabs logview_delete logview_touch logview_layout log_name log_take card_tree fault_log logwriter log_cadence log_cols settings settings_screen settings_gesture settings_pins_hub settings_leave settings_folders settings_sensors settings_keypad settings_rows setting_keypad_eq log_numbers log_reader log_csv link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outputs_hw outputs_hw_ports outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm safe_press servo_limit servo_sync servo_sweep servo_move servo_test servo_test_judge servo_test_replay servo_test_enc servo_test_win servo_test_win_read servo_test_win_chain servo_page supply_page sense_page supply_link sense_link sense_link_view sense_map_link sense_win_link sense_limit_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen outputs_screen_draw outputs_screen_off outputs_screen_port outputs_layout picker_screen picker_screen_hold picker_screen_table picker_layout port_screens board_drawing busfault_screen text servo servo_knob servo_dial_sweep servo_letgo servo_curve servo_supply servo_run servo_target servo_rail servo_meter servo_settings servo_trim_keypad servo_test_panel servo_limit_panel servo_workbench analyser prog_models esc_stick_panel esc_stick_panel_phases esc_stick_panel_list esc_stick_panel_steps esc_stick_panel_makers esc_stick_panel_hold esc_stick_panel_touch esc_stick_panel_home esc_stick_panel_keypad esc_stick_layout balance battery esc_profiles esc_det esc_stick_rules esc_stick esc_stick_hand esc_stick_entry ina228 ina3221 as5600 sense_sched sense_parts sense_map sense_limit sense_svc sense_trace sense_trace_feed sense_trace_next sense_trace_setup sense_trace_lines tone edge_ring tone_svc tone_page tone_pio tone_link endpoints_link hitec_rx_link knob panel_i2c bind_link servo_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port prog_port_fn kst_file kst_store kst_card prog_link prog_link_ask port_mail kst_prog kst_prog_card kst_panel kst_panel_leave kst_panel_edit kst_panel_write kst_panel_texts kst_panel_writepage kst_panel_screen kst_panel_notes kst_panel_files kst_panel_nocard kst_panel_limrun kst_panel_ports kst_panel_layout hitec_wire hitec_pio hitec_pre hitec_port hitec_port_stop hitec_port_rx page_console wifi_screen wifi_layout fw_image fw_install fw_upload fw_release fw_release_scan wa_session wa_fetch wa_fetch_channel upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_page_de wa_mdns link_sha256 link_update coproc_update_screen upd_coproc touch_merge inj_line_id inj_emu servo_limrun servo_limrun_abort servo_limrun_report sense_i2c storage storage_swap text_buf text_hl text_hl_limrun fm_name)
     add_executable(test_${suite} test_${suite}.c)
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -144,12 +146,16 @@ endforeach()
 set(BOARD_DRAWING
     "${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/src/board_drawing_rp2350_can.c")
 foreach(suite board_drawing picker_screen picker_screen_hold picker_screen_table
-              port_screens)
+              picker_layout port_screens)
     target_sources(test_${suite} PRIVATE "${BOARD_DRAWING}")
 endforeach()
 # test_port_screens holds picker_port.c and the OUTPUTS entry's guards
 # through their screen-private headers.
 target_include_directories(test_port_screens PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
+# test_esc_stick_layout holds ESC STICK's controls through the session's
+# private seam, esc_stick_panel_int.h.
+target_include_directories(test_esc_stick_layout PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
 # The IOmcu's output layer, built from its firmware source over fake
 # pin drivers (in the suite) and the two clocks of pico_stub/pico/stdlib.h,
@@ -188,6 +194,10 @@ foreach(suite storage storage_swap)
         "${CMAKE_CURRENT_SOURCE_DIR}/storage_stub"
         "${PANEL_STORAGE}" "${PANEL_STORAGE}/include")
 endforeach()
+# test_fm_name holds the file manager's name and path limits to the
+# storage component's walk (STORAGE_NAME_MAX), from its own header.
+target_include_directories(test_fm_name PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/storage_stub" "${PANEL_STORAGE}/include")
 # The pins the IOmcu reserves at boot, from its own header, so
 # test_settings_pins_hub holds Sensor SDA's values to the page as the
 # firmware starts it.  settings_rig.h includes the header, so every
@@ -207,6 +217,9 @@ target_compile_definitions(test_servo_test_win PRIVATE
 # The profiles of record, by an absolute path, so test_esc_profiles reads
 # them from whatever directory it is started in.
 target_compile_definitions(test_esc_profiles PRIVATE
+    "PROFILE_DIR=\"${SHARED}/esc/profiles\"")
+# test_text_hl classes a profile of record as JSON, from the same folder.
+target_compile_definitions(test_text_hl PRIVATE
     "PROFILE_DIR=\"${SHARED}/esc/profiles\"")
 # The phase tap's PIO program, assembled from its source by the test and
 # held to the words pioasm gives (the firmware build checks the same file).

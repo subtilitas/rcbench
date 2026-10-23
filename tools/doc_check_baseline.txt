@@ -3308,7 +3308,6 @@ shared/ui/coproc_update_screen.c: warning: Member tick(float dt_s) (function) of
 shared/ui/coproc_update_screen.c: warning: Member view (variable) of struct [struct].s is not documented.
 shared/ui/esc_stick_draw.c: warning: Member esc_stick_panel_render(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_amps(char *out, size_t n, const esc_model_t *m) (function) of file esc_stick_draw.c is not documented.
-shared/ui/esc_stick_draw.c: warning: Member sp_draw_card(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_crumb(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_find(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_items(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
@@ -3317,7 +3316,6 @@ shared/ui/esc_stick_draw.c: warning: Member sp_draw_maker(gfx_canvas_t *c, gfx_r
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_model(gfx_canvas_t *c, gfx_rect_t r, const sp_row_t *row, bool dock) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_tag(gfx_canvas_t *c, int right, int y) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_draw_timing(gfx_canvas_t *c) (function) of file esc_stick_draw.c is not documented.
-shared/ui/esc_stick_draw.c: warning: Member sp_mark(ui_text_id_t id) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_mark_runs(gfx_canvas_t *c, gfx_rect_t r, bool runs) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_setting_text(setting_id_t id, char *out, size_t n) (function) of file esc_stick_draw.c is not documented.
 shared/ui/esc_stick_draw.c: warning: Member sp_tag_w(void) (function) of file esc_stick_draw.c is not documented.
@@ -3339,30 +3337,13 @@ shared/ui/esc_stick_draw_run.c: warning: Member sp_reason_text(esc_stick_reason_
 shared/ui/esc_stick_draw_run.c: warning: Member sp_tone_beep(const tone_beep_t *b, char *buf, size_t n) (function) of file esc_stick_draw_run.c is not documented.
 shared/ui/esc_stick_draw_run.c: warning: Member sp_tone_state(const tone_readout_t *r) (function) of file esc_stick_draw_run.c is not documented.
 shared/ui/esc_stick_int.h: warning: Compound stick_shared_t is not documented.
-shared/ui/esc_stick_int.h: warning: Member CRUMB_Y (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member CTRL_W (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member CTRL_X (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member DEV_H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member DEV_Y (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member DRAWER (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member HELP_Y (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member PAD (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member PARM_H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member PARM_Y (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member ROWS_MAX (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member ROW_H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member ROW_Y0 (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member SP_PANEL_H (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member SP_PANEL_Y (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member SP_PBTN_H (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member SP_SHARED (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member STEP_W (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member TAP_SLOP (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member W (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member back (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member down[ROWS_MAX] (variable) of struct stick_shared_t is not documented.
-shared/ui/esc_stick_int.h: warning: Member draw_crumb(gfx_canvas_t *c, const char *trail) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member esc_stick_panel_render(gfx_canvas_t *c) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member found (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member found_rect (variable) of struct stick_shared_t is not documented.
@@ -3382,13 +3363,11 @@ shared/ui/esc_stick_int.h: warning: Member showing (variable) of struct stick_sh
 shared/ui/esc_stick_int.h: warning: Member sp_copy(char *dst, size_t n, const char *src) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member sp_cut(char *buf, size_t n, int max_chars) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member sp_line_len(const char *at, int cells) (function) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member sp_note(gfx_canvas_t *c, int x, int right, const char *text, gfx_color_t ink) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member sp_wrap(gfx_canvas_t *c, int x, int y, int pitch, const char *text, int cells, int max_lines, gfx_color_t ink) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member sp_wrap_lines(const char *text, int cells, int max_lines) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member stage (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member tap (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member up[ROWS_MAX] (variable) of struct stick_shared_t is not documented.
-shared/ui/esc_stick_int.h: warning: Member widget_enum(gfx_canvas_t *c, int y, const char *text, gfx_color_t ink) (function) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member write_btn (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member x (variable) of struct stick_shared_t::[struct].tap is not documented.
 shared/ui/esc_stick_int.h: warning: Member y (variable) of struct stick_shared_t::[struct].tap is not documented.
@@ -3402,7 +3381,27 @@ shared/ui/esc_stick_list.c: warning: Member sp_by_model(const void *a, const voi
 shared/ui/esc_stick_list.c: warning: Member sp_casecmp(const char *a, const char *b) (function) of file esc_stick_list.c is not documented.
 shared/ui/esc_stick_list.c: warning: Member sp_key_cmp(uint32_t a, uint32_t b) (function) of file esc_stick_list.c is not documented.
 shared/ui/esc_stick_list.c: warning: Member text (variable) of struct [struct].k_why is not documented.
-shared/ui/esc_stick_pages.c: file has no @file block
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_armed(bool armed) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_back(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_cancel(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_entry(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_event(const touch_event_t *evt) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_has_press(uint8_t id) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_hold_rect(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_hold_revision(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_holds(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_is_open(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_leave(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_open(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_pin(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_render(gfx_canvas_t *c) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_revision(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_safe_at(int x, int y) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member esc_stick_ps_tick(float dt_s) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member pg (variable) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member press_at(const touch_event_t *evt) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member showing(void) (function) of file esc_stick_pages.c is not documented.
+shared/ui/esc_stick_pages.c: warning: Member tap_follow(const touch_event_t *evt) (function) of file esc_stick_pages.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_maker(void) (function) of file esc_stick_panel.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_maker_at(int i) (function) of file esc_stick_panel.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_model(void) (function) of file esc_stick_panel.c is not documented.
@@ -3419,32 +3418,14 @@ shared/ui/esc_stick_panel.c: warning: Member sp_start(void) (function) of file e
 shared/ui/esc_stick_panel_int.h: warning: Compound sp_maker_t is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Compound sp_row_t is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Compound stick_t is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_AMPS_X (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_COUNT_W (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_DOCK_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FAMILY_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FIND_MAX (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FIND_W (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FIND_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_FOOT_Y (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_LINE_CELLS (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_MAX (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_MODELS (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_NOTE (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_QUEUE (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_ROWS (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_ROW_H (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_ROW_Y0 (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_BASE (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_CAP (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_LENS (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_RING (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_W (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_TOWER_Y (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_TRAIL_CELLS (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_VOLTS_X (macro definition) of file esc_stick_panel_int.h is not documented.
-shared/ui/esc_stick_panel_int.h: warning: Member SP_WHY_CELLS (macro definition) of file esc_stick_panel_int.h is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member armed (variable) of struct stick_t is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member bind_read (variable) of struct stick_t is not documented.
 shared/ui/esc_stick_panel_int.h: warning: Member bscroll (variable) of struct stick_t is not documented.
@@ -3793,6 +3774,7 @@ shared/ui/include/motor_screen.h: warning: Compound motor_cmd_t is not documente
 shared/ui/include/motor_screen.h: warning: Member kind (variable) of struct motor_cmd_t is not documented.
 shared/ui/include/motor_screen.h: warning: Member value (variable) of struct motor_cmd_t is not documented.
 shared/ui/include/motor_screen.h: warning: parameters of member motor_endpoints_alert are not documented
+shared/ui/include/motor_screen.h: warning: parameters of member motor_output_strip are not documented
 shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_knob are not documented
 shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_peak_shown are not documented
 shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_poll_cmd are not documented
@@ -3808,6 +3790,7 @@ shared/ui/include/motor_screen.h: warning: parameters of member motor_settings_r
 shared/ui/include/motor_screen.h: warning: parameters of member motor_throttle_target are not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_dshot_ports is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_endpoints_alert is not documented
+shared/ui/include/motor_screen.h: warning: return type of member motor_output_strip is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_screen_keypad_setting is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_screen_pane is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_screen_peak_shown is not documented
@@ -3824,15 +3807,20 @@ shared/ui/include/motor_screen.h: warning: return type of member motor_throttle_
 shared/ui/include/outputs_screen.h: file has no @file block
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_reason_of are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_cell are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_port_reason are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_reason are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_select are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_select_port are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_binding are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_port_watch are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_reading are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_wrap are not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_reason_of is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_binding is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_cell is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_editable is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_reason is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_shown is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_read_state is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_reason is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_wrap is not documented
@@ -3855,7 +3843,6 @@ shared/ui/include/picker_screen.h: warning: Member picker_screen_list_row(uint8_
 shared/ui/include/picker_screen.h: warning: Member picker_screen_set_apply(picker_apply_fn fn) (function) of file picker_screen.h is not documented.
 shared/ui/include/picker_screen.h: warning: Member picker_screen_set_drawing_source(picker_drawing_fn fn) (function) of file picker_screen.h is not documented.
 shared/ui/include/picker_screen.h: warning: Member picker_screen_set_select(picker_select_fn fn) (function) of file picker_screen.h is not documented.
-shared/ui/include/picker_screen.h: warning: parameters of member picker_board_fit are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_button_rect are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_count are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_follow are not documented
@@ -3904,10 +3891,6 @@ shared/ui/include/prog_models.h: warning: Member unit (variable) of struct prog_
 shared/ui/include/prog_registry.h: warning: Compound prog_list_t is not documented.
 shared/ui/include/prog_registry.h: warning: Compound prog_reg_row_t is not documented.
 shared/ui/include/prog_registry.h: warning: Compound prog_view_t is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_FULL_STRIP_H (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_FULL_STRIP_X (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_FULL_STRIP_Y (macro definition) of file prog_registry.h is not documented.
-shared/ui/include/prog_registry.h: warning: Member PROG_FULL_Y (macro definition) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member PROG_LIST_HEADINGS_OVER (macro definition) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member PROG_LIST_MAX (macro definition) of file prog_registry.h is not documented.
 shared/ui/include/prog_registry.h: warning: Member PROG_ONE_CALL (macro definition) of file prog_registry.h is not documented.
@@ -4081,7 +4064,35 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_scr
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warning is not documented
 shared/ui/include/splash_screen.h: file has no @file block
 shared/ui/include/supply_screen.h: file has no @file block
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_adopt are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_ask_on are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_claim are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_entered are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_header_text are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_left are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_poll_cmd are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_push are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_put are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_baud are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_caps are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_model are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_on_coming are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_output are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_pins are not documented
+shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_port_held are not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_caps is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_limits is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_off_count is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_off_owed is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_off_pending is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_output_held is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_output_live is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_owner is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_poll_cmd is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_reading is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_set_v is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_task is not documented
+shared/ui/include/supply_screen.h: warning: return type of member supply_screen_typed_asks is not documented
 shared/ui/include/ui_alert_slot.h: file has no @file block
 shared/ui/include/ui_alert_slot.h: warning: Compound ui_alert_slot_t is not documented.
 shared/ui/include/ui_alert_slot.h: warning: Member text[UI_ALERT_MAX] (variable) of struct ui_alert_slot_t is not documented.
@@ -4634,59 +4645,7 @@ shared/ui/log_viewer_events.c: warning: Member tap_mine(const touch_event_t *e) 
 shared/ui/log_viewer_events.c: warning: Member tap_on(const touch_event_t *e, gfx_rect_t r) (function) of file log_viewer_events.c is not documented.
 shared/ui/log_viewer_events.c: warning: Member toggle_column(int i) (function) of file log_viewer_events.c is not documented.
 shared/ui/log_viewer_int.h: warning: Compound lv_state_t is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_BAR (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_BAR_W (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_DELETE (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_HEAD_END (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_HEAD_FAR (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_HEAD_X (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_LIST (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_LIST_Y (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_MSG_X (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_NEXT (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_OPEN (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_PG_H (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_PG_Y (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_PREV (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_RESCAN (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_ROWS (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_ROW_H (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_ROW_W (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_ROW_X (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_TABS (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member BR_WIFI (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member CHIP_GAP (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member CHIP_H (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member CHIP_W (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member CHIP_X (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member CHIP_Y (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member DQ_BOX (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member DQ_CANCEL (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member DQ_DELETE (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member FOOT_GAP (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member FOOT_H (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member FOOT_Y (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member IM_BTN_H (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member IM_BTN_Y (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member IM_LEFT (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member IM_RIGHT (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member IM_ROWS (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member IM_ROW_H (macro definition) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member MAX_FBS (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_BAND (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_DIV_X (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_DIV_Y (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_EMPTY (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_H (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_MIN_WIN (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_PANEL (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_PANEL_H (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_PAN_SLOP (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_POS_H (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_POS_Y (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_W (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_X (macro definition) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member PV_Y (macro definition) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member SCREEN_H (macro definition) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member SCREEN_W (macro definition) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member an (variable) of struct lv_state_t is not documented.
@@ -4889,9 +4848,30 @@ shared/ui/motor_live_int.h: warning: Member thr_pins_known (variable) of struct 
 shared/ui/motor_live_int.h: warning: Member thr_ports_rev (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member thr_proto (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member thr_rev (variable) of struct mo_state_t is not documented.
-shared/ui/motor_program_page.c: file has no @file block
+shared/ui/motor_program_page.c: warning: Member STRIP_TARGET_CELLS (macro definition) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member caps_now(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member full_area(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member list_now(prog_list_t *l) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_armed(bool armed) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_back(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_cancel(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_cancel_press(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_enter(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_event(const touch_event_t *evt) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_leave(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_pressed(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_render_page(gfx_canvas_t *c) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_reset(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_revision(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_shown(void) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_strip_signature(uint8_t proto, uint64_t pins, bool known, bool armed) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member mpp_tick(float dt_s) (function) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member p (variable) of file motor_program_page.c is not documented.
+shared/ui/motor_program_page.c: warning: Member prog_signature(void) (function) of file motor_program_page.c is not documented.
 shared/ui/motor_program_page.c: warning: Member rev (variable) of struct [struct].p is not documented.
+shared/ui/motor_program_page.c: warning: Member row_open(uint8_t i) (function) of file motor_program_page.c is not documented.
 shared/ui/motor_program_page.c: warning: Member sig (variable) of struct [struct].p is not documented.
+shared/ui/motor_program_page.c: warning: Member supply_text(char *out, size_t size) (function) of file motor_program_page.c is not documented.
 shared/ui/motor_program_page.c: warning: Member view (variable) of struct [struct].p is not documented.
 shared/ui/motor_screen.c: warning: Member back(void) (function) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member cancel(void) (function) of file motor_screen.c is not documented.
@@ -4926,7 +4906,6 @@ shared/ui/motor_screen_int.h: warning: Member mpp_event(const touch_event_t *evt
 shared/ui/motor_screen_int.h: warning: Member mpp_leave(void) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_pressed(void) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_render_page(gfx_canvas_t *c) (function) of file motor_screen_int.h is not documented.
-shared/ui/motor_screen_int.h: warning: Member mpp_render_strip(gfx_canvas_t *c, uint8_t proto, uint64_t pins, bool known, bool armed) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_reset(void) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_revision(void) (function) of file motor_screen_int.h is not documented.
 shared/ui/motor_screen_int.h: warning: Member mpp_shown(void) (function) of file motor_screen_int.h is not documented.
@@ -4995,37 +4974,38 @@ shared/ui/motor_workbench.c: warning: Member trow (variable) of struct [struct].
 shared/ui/motor_workbench.c: warning: Member w (variable) of file motor_workbench.c is not documented.
 shared/ui/motor_workbench.c: warning: Member wb (variable) of struct [struct].w is not documented.
 shared/ui/outputs_port.c: file has no @file block
-shared/ui/outputs_port_entry.c: file has no @file block
-shared/ui/outputs_port_entry.c: warning: Member fn_hit (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member fn_id (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member fn_open (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member pin_down (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member pin_id (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member port (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member pwm (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member rev (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member sig (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member tester (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member tester_port[16] (variable) of struct [struct].p is not documented.
-shared/ui/outputs_port_entry.c: warning: Member view_rev (variable) of struct [struct].p is not documented.
-shared/ui/outputs_screen.c: warning: Member BOX (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member CELL_GAP (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member CELL_H (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member CELL_LABEL_X (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member CELL_W (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member CLR_H (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member CLR_Y (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member GRID_COLS (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member GRID_ROWS (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member GRID_X (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member GRID_Y (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member MAX_FBS (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member POP_ROW (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member POP_W (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member POP_X (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member POP_Y (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member REASON_Y (macro definition) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member SCREEN_H (macro definition) of file outputs_screen.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member fn_close(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member fn_event(const touch_event_t *evt) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member fn_face(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member fn_list(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member fn_locked(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member fn_pwm(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member fn_row(int i) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member fn_rows(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member g_watch[LINK_PG_PORTS_MAX][WATCH_LEN] (variable) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member held(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member known(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_back(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_cancel(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed, bool open) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_event(const touch_event_t *evt) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_fn_open(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_hide(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_name(uint8_t port, char *buf, size_t cap) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_reset(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_revision(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_tick(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member outputs_port_touched(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member pin_event(const touch_event_t *evt) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member pin_label(char *buf, size_t cap) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member pin_rect(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member pwm_locked(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member seg_event(ui_tabs_t *t, const touch_event_t *evt, bool locked, bool *took) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member seg_row(int label_y) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member signature(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member sync_tabs(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member target(void) (function) of file outputs_port_entry.c is not documented.
+shared/ui/outputs_port_entry.c: warning: Member tester_locked(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_screen.c: warning: Member apply (variable) of struct [struct].s is not documented.
 shared/ui/outputs_screen.c: warning: Member back(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member bind (variable) of struct [struct].s is not documented.
@@ -5061,7 +5041,6 @@ shared/ui/outputs_screen.c: warning: Member outputs_screen(void) (function) of f
 shared/ui/outputs_screen.c: warning: Member outputs_screen_set_apply(outputs_apply_fn fn) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member outputs_screen_set_result(outputs_result_t r) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member pop_rect(void) (function) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member pop_row_h(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member pop_row_rect(int i) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member pop_rows(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member prog_taken(uint8_t index) (function) of file outputs_screen.c is not documented.
@@ -5078,7 +5057,23 @@ shared/ui/outputs_screen.c: warning: Member shown_port_pin(void) (function) of f
 shared/ui/outputs_screen.c: warning: Member tick(float dt_s) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member touched(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member unbind_all(void) (function) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen_int.h: file has no @file block
+shared/ui/outputs_screen_int.h: warning: Member outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT]) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_back(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_cancel(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed, bool open) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_event(const touch_event_t *evt) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_fn_open(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_forget_open(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_hide(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_holds(uint8_t gpio) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_name(uint8_t port, char *buf, size_t cap) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_open(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_pins(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_reset(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_revision(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_tick(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_port_touched(void) (function) of file outputs_screen_int.h is not documented.
+shared/ui/outputs_screen_int.h: warning: Member outputs_pwm_pins(const uint8_t *pins) (function) of file outputs_screen_int.h is not documented.
 shared/ui/overview_screen.c: warning: Compound tile_t is not documented.
 shared/ui/overview_screen.c: warning: Member H (macro definition) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member N_OF(a) (macro definition) of file overview_screen.c is not documented.
@@ -5126,53 +5121,20 @@ shared/ui/picker_geometry.c: warning: Member pk_pad_is_top(uint8_t pad) (functio
 shared/ui/picker_geometry.c: warning: Member pk_pad_xy(uint8_t pad, int *px, int *py) (function) of file picker_geometry.c is not documented.
 shared/ui/picker_geometry.c: warning: Member pk_pop_rect(void) (function) of file picker_geometry.c is not documented.
 shared/ui/picker_geometry.c: warning: Member pk_pop_rows(void) (function) of file picker_geometry.c is not documented.
-shared/ui/picker_geometry.c: warning: Member pop_row_h(void) (function) of file picker_geometry.c is not documented.
 shared/ui/picker_port.c: file has no @file block
 shared/ui/picker_port.h: file has no @file block
 shared/ui/picker_screen.c: file has no @file block
 shared/ui/picker_screen_int.h: warning: Compound pk_state_t is not documented.
-shared/ui/picker_screen_int.h: warning: Member BOARD_MAX_H (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member BOARD_W (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member BTNW (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member COUNT_Y (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member EBONY (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member FACE_H (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member FACE_W (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member GAP (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member GND_DROP (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member GND_R (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member HALO (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member HEAD_H (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member HEAD_W (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member HEAD_X (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member HEAD_Y (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member INK (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member IVORY (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member MAX_FBS (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member PINS_W (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member PINS_X (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member PINS_Y (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member POP_ROW (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member POP_W (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member RAIL_DROP_0 (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member RAIL_DROP_1 (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member RAIL_R (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member REASON_Y (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member RING (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member ROW_H (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member SCREEN_H (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member SCREEN_W (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member TGAP (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member TIERS (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member USE_FOOT (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member USE_NAME_H (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member USE_PIN_H (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member USE_PIN_H_C (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member USE_PIN_H_D (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member USE_TOP (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member USE_W (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member USE_X (macro definition) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member USE_Y (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member apply (variable) of struct pk_state_t is not documented.
 shared/ui/picker_screen_int.h: warning: Member bind (variable) of struct pk_state_t is not documented.
 shared/ui/picker_screen_int.h: warning: Member chrome_valid[MAX_FBS] (variable) of struct pk_state_t is not documented.
@@ -5862,30 +5824,16 @@ shared/ui/splash_screen.c: warning: Member detail[SPLASH_STEP_COUNT][SPLASH_DETA
 shared/ui/splash_screen.c: warning: Member held_s (variable) of struct [struct].s is not documented.
 shared/ui/splash_screen.c: warning: Member result[SPLASH_STEP_COUNT] (variable) of struct [struct].s is not documented.
 shared/ui/splash_screen.c: warning: Member skipped (variable) of struct [struct].s is not documented.
-shared/ui/supply_draw.c: warning: Member draw_card(gfx_canvas_t *c, gfx_rect_t r, const char *label, const char *set, const char *unit, gfx_color_t color, int decimals, float value, const char *extreme, float peak, bool pressed) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_cards(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_confirm(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_header(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_out_button(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_setters(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_settings(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_steps(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member draw_strip(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_table(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member draw_totals(gfx_canvas_t *c) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member k_tag[TAG_COUNT] (variable) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member mode_line(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member mode_text(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member out_fill(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member output_tag(void) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member row_len(const char *at, int cells) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member row_value_text(int i, char *buf, size_t n) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member save_state(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member shown_set_i(void) (function) of file supply_draw.c is not documented.
 shared/ui/supply_draw.c: warning: Member shown_set_v(void) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member sup_render(gfx_canvas_t *c, int buffer_index) (function) of file supply_draw.c is not documented.
-shared/ui/supply_draw.c: warning: Member wrap_rows(gfx_canvas_t *c, int x, int y, int pitch, const char *text, int cells, gfx_color_t ink) (function) of file supply_draw.c is not documented.
-shared/ui/supply_events.c: warning: Member down(const touch_event_t *evt) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member keypad_done(ui_keypad_result_t r, float v) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member nudge(float dv, float di) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member open_keypad(int target, setting_id_t id) (function) of file supply_events.c is not documented.
@@ -5896,65 +5844,40 @@ shared/ui/supply_events.c: warning: Member sup_safe_at(int x, int y) (function) 
 shared/ui/supply_events.c: warning: Member sup_tick(float dt_s) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member take(const touch_event_t *evt, int code) (function) of file supply_events.c is not documented.
 shared/ui/supply_events.c: warning: Member task_changed(void) (function) of file supply_events.c is not documented.
-shared/ui/supply_screen.c: file has no @file block
+shared/ui/supply_screen.c: warning: Member apply_caps(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member back(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member cancel(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member enter(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member forget_drawn(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member k_screen (variable) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member k_tab_labels[] (variable) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member leave(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member limits_from_settings(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_bind_colours(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_card_rect(int i) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_confirm_close(bool apply) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_confirm_needed(int from) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_confirm_stands(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_let_go(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_on_live(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_overlay_area(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_owner_settle(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_post_off(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_post_on(supply_by_t by) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_propose(int from) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_refresh_limits(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_s (variable) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member sup_series[S_COUNT] (variable) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_invalidate(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen_model(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen_output_on(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen_port_held(void) (function) of file supply_screen.c is not documented.
+shared/ui/supply_screen.c: warning: Member supply_screen_set_i(void) (function) of file supply_screen.c is not documented.
 shared/ui/supply_screen_int.h: warning: Compound limit_row_t is not documented.
 shared/ui/supply_screen_int.h: warning: Compound sup_state_t is not documented.
-shared/ui/supply_screen_int.h: warning: Member BTN_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member CARD_GAP (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member CARD_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member COL_GAP (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member HDR_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member HDR_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member INFO_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member INFO_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member INNER (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LEFT_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LEFT_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LEG_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LEG_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LO_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member LO_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member NUDGE_I (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member NUDGE_V (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member NUDGE_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OUT_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_COL1_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_COL1_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_COL_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_ROW_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_VAL_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member OV_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PAD (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PLOT_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PLOT_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PLOT_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member PLOT_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member RAIL_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member RESET_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member RIGHT_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member RIGHT_X (macro definition) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member ROW_COUNT (macro definition) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member SAMPLE_HZ (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_CTRL_DY (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_CTRL_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_ROW_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_TEXT_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_TRACK_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_TRACK_X (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member SET_Y0 (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TAB_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TAB_W (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TAB_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TASKS (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TITLE_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member TOTALS_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member UP_H (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member UP_Y (macro definition) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member W (macro definition) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member apply_btn (variable) of struct sup_state_t is not documented.
 shared/ui/supply_screen_int.h: warning: Member baud (variable) of struct sup_state_t is not documented.
 shared/ui/supply_screen_int.h: warning: Member caps (variable) of struct sup_state_t is not documented.
@@ -6032,14 +5955,9 @@ shared/ui/supply_screen_int.h: warning: Member sup_post_off(void) (function) of 
 shared/ui/supply_screen_int.h: warning: Member sup_post_on(supply_by_t by) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_propose(int from) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_refresh_limits(void) (function) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_render(gfx_canvas_t *c, int buffer_index) (function) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_row_rect(int i) (function) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_row_value_rect(int i) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_s (variable) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_safe_at(int x, int y) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_series[S_COUNT] (variable) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_set_text_rect(int row) (function) of file supply_screen_int.h is not documented.
-shared/ui/supply_screen_int.h: warning: Member sup_strip_area(void) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member sup_tick(float dt_s) (function) of file supply_screen_int.h is not documented.
 shared/ui/supply_screen_int.h: warning: Member tabs (variable) of struct sup_state_t is not documented.
 shared/ui/supply_screen_int.h: warning: Member tx1 (variable) of struct sup_state_t is not documented.
@@ -6250,49 +6168,15 @@ shared/ui/update_screen.c: warning: Member u_has_button(void) (function) of file
 shared/ui/update_screen.c: warning: Member u_render(gfx_canvas_t *c, int buffer_index) (function) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member u_reset(void) (function) of file update_screen.c is not documented.
 shared/ui/update_screen.c: warning: Member v (variable) of struct [struct].u is not documented.
-shared/ui/wifi_screen.c: warning: Member BH (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member BPITCH (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member BW (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member BX (macro definition) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member H (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member LBL_W (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member LBL_X (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member OFF_W (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member OFF_Y (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member Q_BH (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member Q_BY (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member Q_H (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member Q_W (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member Q_X (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member Q_Y (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member ROW_P (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member ROW_Y (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member RW (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member RX (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member SC_BH (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member SC_BY (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member SC_H (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member SC_P (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member SC_ROWS (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member SC_W (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member SC_X0 (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member SC_X1 (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member VAL_W (macro definition) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member VAL_X (macro definition) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member W (macro definition) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member act(int hit) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member back(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member btn(int row) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member cancel(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member draw_main(gfx_canvas_t *c) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member draw_question(gfx_canvas_t *c) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member draw_running(gfx_canvas_t *c) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member draw_scan(gfx_canvas_t *c) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member drop_hold_if_gone(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member enter(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member event(const touch_event_t *evt) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member have_press (variable) of struct [struct].s is not documented.
-shared/ui/wifi_screen.c: warning: Member hidden_rect(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member hit (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member hit_at(int x, int y) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member hit_rect(int hit) (function) of file wifi_screen.c is not documented.
@@ -6300,31 +6184,21 @@ shared/ui/wifi_screen.c: warning: Member hold (variable) of struct [struct].s is
 shared/ui/wifi_screen.c: warning: Member in(gfx_rect_t r, int x, int y) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member install_allowed(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member install_fill(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member install_rect(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member installing (variable) of struct [struct].s is not documented.
-shared/ui/wifi_screen.c: warning: Member jobs_text(char *out, size_t n) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member k_screen (variable) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member key_event(const touch_event_t *evt) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member leave(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member off_rect(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member para(gfx_canvas_t *c, int y, const char *t, gfx_color_t col) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member pick[WIFI_SSID_MAX+1] (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member press_id (variable) of struct [struct].s is not documented.
-shared/ui/wifi_screen.c: warning: Member q_cancel_rect(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member radio_on(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member req (variable) of struct [struct].s is not documented.
-shared/ui/wifi_screen.c: warning: Member rescan_rect(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member reset(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member row(gfx_canvas_t *c, int i, const char *label, const char *value) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member row_rect(int i) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member save_pass[WIFI_PASS_MAX+1] (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member save_ssid[WIFI_SSID_MAX+1] (variable) of struct [struct].s is not documented.
-shared/ui/wifi_screen.c: warning: Member scan_cancel_rect(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member staged(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member sub (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member sub_t (enumeration) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member text_in(gfx_canvas_t *c, int x, int y, int w, const char *t, const gfx_font_t *f, gfx_color_t col) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member tick(float dt_s) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member tk (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member touched(void) (function) of file wifi_screen.c is not documented.
