@@ -3744,20 +3744,6 @@ shared/ui/include/kst_panel.h: warning: return type of member kst_panel_standing
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_status_line is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_warning_level is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_warning_line is not documented
-shared/ui/include/log_select.h: warning: Member capacity (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member dir (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member held (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member inside (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member key (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member outside (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: Member set (variable) of struct log_select_page_t is not documented.
-shared/ui/include/log_select.h: warning: parameters of member log_select_keep are not documented
-shared/ui/include/log_select.h: warning: parameters of member log_select_page_begin are not documented
-shared/ui/include/log_select.h: warning: parameters of member log_select_page_end are not documented
-shared/ui/include/log_select.h: warning: parameters of member log_select_page_offer are not documented
-shared/ui/include/log_select.h: warning: parameters of member log_select_sort are not documented
-shared/ui/include/log_select.h: warning: return type of member log_select_keep is not documented
-shared/ui/include/log_select.h: warning: return type of member log_select_page_end is not documented
 shared/ui/include/log_viewer_screen.h: warning: Compound log_viewer_file_t is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Compound log_viewer_io_t is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Compound log_viewer_page_t is not documented.
@@ -4598,8 +4584,6 @@ shared/ui/kst_panel_warn.c: warning: Member warn_room(int i, int n, int rows, in
 shared/ui/kst_panel_warn.c: warning: Member warn_rules(kst_rules_t rules, int room, int room_rows) (function) of file kst_panel_warn.c is not documented.
 shared/ui/kst_panel_warn.c: warning: Member warn_text(kst_prog_level_t level, const char *s) (function) of file kst_panel_warn.c is not documented.
 shared/ui/kst_panel_warn.c: warning: Member warn_values(const kst_image_t *to, int room, int room_rows) (function) of file kst_panel_warn.c is not documented.
-shared/ui/log_select.c: warning: Member by_display_order(const void *a, const void *b) (function) of file log_select.c is not documented.
-shared/ui/log_select.c: warning: Member keep_ranked(log_viewer_file_t *set, int count, int capacity, const log_viewer_file_t *cand, int sign) (function) of file log_select.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member conv_label(log_conv_t v) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member cursor_x(void) (function) of file log_viewer_draw.c is not documented.
 shared/ui/log_viewer_draw.c: warning: Member draw_grid_band(gfx_canvas_t *band, int band_y0, int rows) (function) of file log_viewer_draw.c is not documented.

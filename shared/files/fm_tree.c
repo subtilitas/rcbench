@@ -23,7 +23,7 @@ typedef struct {
     const char *dir;           /**< the folder walked                    */
     int listed;                /**< entries offered                      */
     unsigned long_names;       /**< names too long to list               */
-} walk_t;
+} pane_walk_t;
 
 int fm_tree_rank(const void *a, const void *b)
 {
@@ -40,11 +40,11 @@ int fm_tree_rank(const void *a, const void *b)
  * @brief Offer one entry of a walk to the page: every name that fits, with
  *        what the rules say of it; a longer one is counted.
  * @param e     the entry, borrowed for the call
- * @param vctx  the walk's walk_t
+ * @param vctx  the walk's pane_walk_t
  */
 static void take(const fm_dirent_t *e, void *vctx)
 {
-    walk_t *w = (walk_t *)vctx;
+    pane_walk_t *w = (pane_walk_t *)vctx;
     if (e == NULL || e->name == NULL || e->name[0] == '\0'
         || strcmp(e->name, ".") == 0 || strcmp(e->name, "..") == 0) {
         return;
@@ -102,7 +102,7 @@ static fm_err_t walk_once(fm_tree_t *tree, const fm_io_t *io,
     if (!io->hold(io->ctx, mount)) {
         return FM_ERR_CARD_GONE;
     }
-    walk_t w;
+    pane_walk_t w;
     memset(&w, 0, sizeof(w));
     w.bench = bench;
     w.dir = tree->dir;

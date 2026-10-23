@@ -40,14 +40,15 @@ extern "C" {
  * @brief Which side of the key a page holds.
  */
 typedef enum {
-    /** The first entries that rank with the key or behind it.  With no key,
-     *  the first page. */
+    /** @brief The first entries that rank with the key or behind it.  With
+     *         no key, the first page. */
     FM_PAGE_FROM = 0,
-    /** The first entries that rank behind the key: the next page.  With no
-     *  key, the first page. */
+    /** @brief The first entries that rank behind the key: the next page.
+     *         With no key, the first page. */
     FM_PAGE_AFTER,
-    /** The last entries that rank ahead of the key: the page before.  With
-     *  no key, the last entries of all: the last page. */
+    /** @brief The last entries that rank ahead of the key: the page
+     *         before.  With no key, the last entries of all: the last
+     *         page. */
     FM_PAGE_BEFORE
 } fm_page_dir_t;
 
