@@ -59,7 +59,7 @@ void gfx_capsule_aaf(gfx_canvas_t *c, float ax, float ay, float bx, float by,
  * gfx_arc_fade() walks its arc and rounds each step to a pixel.  This one
  * blends the band's two edges and the arc's two ends over half a pixel
  * either side, the ends measured along the arc at each pixel's radius.  A
- * span of 360 degrees or more is the whole ring.  A pixel whose centre lies
+ * span of 360deg or more is the whole ring.  A pixel whose centre lies
  * half a pixel or more beyond the band or past an end is not touched.
  * @param c the canvas
  * @param cx the centre's column, px

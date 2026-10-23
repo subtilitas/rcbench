@@ -133,7 +133,7 @@ static void dial_at(float deg, int *x, int *y)
 }
 
 /* Frames enough for the drag's filtered target to reach the finger's:
- * 312 ms, over 15 of its 20 ms time constants. */
+ * 312ms, over 15 of its 20ms time constants. */
 #define DRAG_SETTLE 12
 
 /* A press on the dial at @p deg, dragged to @p to and lifted, and the

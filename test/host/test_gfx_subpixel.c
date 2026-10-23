@@ -89,7 +89,7 @@ TEST_CASE(at_whole_pixels_the_float_shapes_are_the_int_ones)
 /* ------------------------------------------------------------ the disc */
 
 /* A disc moved by tenths of a pixel moves its picture by tenths: the
- * centroid of its coverage is its centre to 0.02 px at every step, where
+ * centroid of its coverage is its centre to 0.02px at every step, where
  * a disc on whole pixels stands still and then jumps a pixel. */
 TEST_CASE(a_disc_moves_by_fractions_of_a_pixel)
 {
@@ -146,7 +146,7 @@ TEST_CASE(a_capsule_of_no_width_draws_nothing)
 /* ------------------------------------------------------------- the ring */
 
 /* A whole ring has its band's area, 2 pi r t, and its centroid is its
- * centre to 0.05 px, wherever between pixels the centre sits. */
+ * centre to 0.05px, wherever between pixels the centre sits. */
 TEST_CASE(a_ring_has_its_bands_area_and_centre)
 {
     for (int k = 0; k <= 4; ++k) {
@@ -163,7 +163,7 @@ TEST_CASE(a_ring_has_its_bands_area_and_centre)
     }
 }
 
-/* An arc keeps to its span: from 0 to 90 degrees, up being +90, it lights
+/* An arc keeps to its span: from 0 to 90deg, up being +90, it lights
  * the upper right quarter and nothing past half a pixel beyond its ends;
  * its middle is the full colour. */
 TEST_CASE(an_arc_keeps_to_its_span)
@@ -181,7 +181,7 @@ TEST_CASE(an_arc_keeps_to_its_span)
             CHECK((float)y <= cy + 1.0f);
         }
     }
-    /* 45 degrees on the band: x = cx + 9.9, y = cy - 9.9. */
+    /* 45deg on the band: x = cx + 9.9, y = cy - 9.9. */
     CHECK_EQ(s_pixels[16 * W + 30], GFX_WHITE);
     /* And the area is a quarter of the ring's, to the half pixel of each
      * blended end. */
@@ -195,9 +195,9 @@ TEST_CASE(an_arc_fades_from_its_ends)
     fresh();
     gfx_ring_aaf(&s_c, 24.0f, 24.0f, 15.0f, 3.0f, 0.0f, 180.0f, GFX_WHITE,
                  GFX_RED, 60.0f);
-    /* The top of the arc, 90 degrees, 30 past the fade: white. */
+    /* The top of the arc, 90deg, 30 past the fade: white. */
     CHECK_EQ(s_pixels[9 * W + 24], GFX_WHITE);
-    /* Four degrees in from the end at 0 degrees: nearly the red. */
+    /* Four degrees in from the end at 0deg: nearly the red. */
     const gfx_color_t near_end = s_pixels[(24 - 1) * W + 39];
     CHECK(((near_end >> 11) & 31u) == 31u);
     CHECK(((near_end >> 5) & 63u) < 8u);

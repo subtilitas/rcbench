@@ -803,10 +803,10 @@ static void clipped_session(gfx_canvas_t *c, gfx_rect_t box,
 
 /* ---------------------------------------------------------- the dial's part */
 
-/** @brief How far a horn reaches from its tip, px: the outer ring's 33 px
- *         radius, its 1 px half width, its blended edge and a pixel more. */
+/** @brief How far a horn reaches from its tip, px: the outer ring's 33px
+ *         radius, its 1px half width, its blended edge and a pixel more. */
 #define HORN_TIP_REACH   36.0f
-/** @brief And from the shaft: the boss's 25 px disc, its edge and a pixel. */
+/** @brief And from the shaft: the boss's 25px disc, its edge and a pixel. */
 #define HORN_SHAFT_REACH 27.0f
 
 /**
@@ -1056,8 +1056,8 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
     }
 
     /*
-     * The horn when it moved: boxes about 160 px across, where the two
-     * cards are 620 and 380 px wide.  A sweep or a drag moves it every
+     * The horn when it moved: boxes about 160px across, where the two
+     * cards are 620 and 380px wide.  A sweep or a drag moves it every
      * frame, and the cards whole at that rate would cost most of the
      * panel's bandwidth.
      */

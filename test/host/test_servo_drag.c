@@ -1,6 +1,6 @@
 /*
  * The SERVO screen's drag filter: the dial's target follows the finger
- * through a one-pole filter of SV_DRAG_TAU_MS (20 ms), by the frame's own
+ * through a one-pole filter of SV_DRAG_TAU_MS (20ms), by the frame's own
  * length, and the horn and the posted pulse both follow the target.
  *
  * The filter moves nothing while the value is not live, a DISARM, a STOP
@@ -70,9 +70,9 @@ static void held_then_moved(float from, float to)
 /* ------------------------------------------------------------- the step */
 
 /*
- * A finger that jumps from -40 to +40 degrees: the target covers
- * 1 - e^(-t / 20 ms) of the way, the same at 30, 60 and 120 frames a
- * second -- 81.1 % after 33.3 ms, 99.3 % after 100 ms -- and the horn is
+ * A finger that jumps from -40 to +40deg: the target covers
+ * 1 - e^(-t / 20ms) of the way, the same at 30, 60 and 120 frames a
+ * second -- 81.1% after 33.3ms, 99.3% after 100ms -- and the horn is
  * drawn where the pulse is.  A move alone commands nothing until a frame.
  */
 TEST_CASE(the_step_follows_the_time_constant_at_any_frame_rate)
@@ -99,7 +99,7 @@ TEST_CASE(the_step_follows_the_time_constant_at_any_frame_rate)
         got1[i] = (double)(p1 - a) / (double)(b - a);
         const double f2 = (double)(p2 - a) / (double)(b - a);
         if (fabs(got1[i] - want1) > 0.01 || fabs(f2 - want2) > 0.01) {
-            T_FAIL("%.0f Hz: %.4f after 33 ms, %.4f after 100 ms; "
+            T_FAIL("%.0f Hz: %.4f after 33ms, %.4f after 100ms; "
                    "wanted %.4f and %.4f", (double)hz, got1[i], f2, want1,
                    want2);
         }
@@ -108,10 +108,10 @@ TEST_CASE(the_step_follows_the_time_constant_at_any_frame_rate)
 }
 
 /*
- * A finger at a steady 90 degrees a second, read every 10.5 ms, with the
- * frames at 60.4 Hz: the horn steps 1.49 degrees a frame on average, and
- * the steps' standard deviation is under 20 % of that.  Taken straight
- * from the touch reads it is 34 %, the steps 0.46 to 2.13 degrees.
+ * A finger at a steady 90deg a second, read every 10.5ms, with the
+ * frames at 60.4Hz: the horn steps 1.49deg a frame on average, and
+ * the steps' standard deviation is under 20% of that.  Taken straight
+ * from the touch reads it is 34%, the steps 0.46 to 2.13deg.
  */
 TEST_CASE(a_steady_drag_steps_evenly)
 {
@@ -146,7 +146,7 @@ TEST_CASE(a_steady_drag_steps_evenly)
     }
     const double mean = sum / n;
     const double sd = sqrt(sum2 / n - mean * mean);
-    /* 1.49 degrees a frame at 500 us over 90 degrees: 8.3 us. */
+    /* 1.49deg a frame at 500us over 90deg: 8.3us. */
     CHECK(mean > 7.8 && mean < 8.8);
     if (sd / mean > 0.20) {
         T_FAIL("steps of %.2f us, sd %.2f us (%.0f %%)", mean, sd,
@@ -182,7 +182,7 @@ TEST_CASE(a_drag_after_another_command_moves_on_from_it)
     on_dial(40.0f, TOUCH_EVENT_MOVE, 1);
     at_hz(60.0f, 1.0f / 60.0f);
     const uint16_t first = servo_screen_commanded();
-    /* 56 % of the 222 us to +40 degrees in one frame of 16.7 ms. */
+    /* 56% of the 222us to +40deg in one frame of 16.7ms. */
     CHECK(first > at_zero + 100 && first < at_zero + 150);
     at_hz(60.0f, 0.5f);
     CHECK_EQ(servo_screen_commanded(), want);
@@ -276,7 +276,7 @@ TEST_CASE(disarm_stop_and_safe_end_the_drag_at_once)
     }
 }
 
-/* Disarmed mid-step and armed again, at once or 0.2 s later: the value is
+/* Disarmed mid-step and armed again, at once or 0.2s later: the value is
  * the rest the arm sets, the horn is drawn there, and nothing of the drag
  * before is posted. */
 TEST_CASE(an_arm_after_a_drag_starts_from_the_rest)
@@ -304,8 +304,8 @@ TEST_CASE(an_arm_after_a_drag_starts_from_the_rest)
 
 /* ------------------------------------------------------------ the limits */
 
-/* A finger past TRAVEL, 90 degrees each way, at the dial's 100: every
- * frame's pulse stays inside 1000 to 2000 us, and the target settles on
+/* A finger past TRAVEL, 90deg each way, at the dial's 100: every
+ * frame's pulse stays inside 1000 to 2000us, and the target settles on
  * the end. */
 TEST_CASE(travel_holds_the_filtered_target)
 {

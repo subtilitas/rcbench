@@ -999,11 +999,11 @@ Ziffern. Ziffern, die breiter als ihre Spalte von 198 px sind -- ein auf
 bleiben so in ihr. Die Messwerte stehen nur auf LIVE; auf den anderen
 Aufgaben trägt die Zeile über dem Plot den Strom.
 
-Das Horn wird in Bruchteilen eines Pixels gezeichnet: Seine Spitze, 98 px
-von der Welle, bewegt sich 1,7 px pro Grad und steht bei jedem Schritt
-höchstens 0,1 px neben ihrem Winkel. Ein Horn, das sich bewegt, malt die
+Das Horn wird in Bruchteilen eines Pixels gezeichnet: Seine Spitze, 98px
+von der Welle, bewegt sich 1,7px pro Grad und steht bei jedem Schritt
+höchstens 0,1px neben ihrem Winkel. Ein Horn, das sich bewegt, malt die
 Kästen um sich neu, wie jeder Bildpuffer es zuletzt zeichnete und wie es
-jetzt steht, etwa 160 px breit, und die Ziffern des Winkels, von
+jetzt steht, etwa 160px breit, und die Ziffern des Winkels, von
 SOLL-PULSBREITE und von GEMESSEN; die beiden Karten werden dafür nicht neu
 gemalt.
 
@@ -1032,19 +1032,19 @@ Ziel läuft weiter bis zum letzten Winkel, den der Finger gab, und das
 Zifferblatt folgt wieder nach einem neuen Druck darauf.
 
 Der Druck auf das Zifferblatt befiehlt seinen Winkel sofort. Der Drag danach
-läuft durch einen einpoligen Filter mit einer Zeitkonstante von 20 ms
+läuft durch einen einpoligen Filter mit einer Zeitkonstante von 20ms
 (`SV_DRAG_TAU_MS`), gerechnet nach der Länge jedes Frames, und ist damit bei
 30, 60 und 120 Frames pro Sekunde derselbe. Das Horn und der Puls, den das
-Servo bekommt, folgen beide dem gefilterten Winkel, 1,8 Grad hinter einem
-Finger, der sich mit 90 Grad pro Sekunde bewegt. Der Filter gleicht den Takt
-zwischen den Abfragen des Touch-Controllers, alle 10,5 ms, und den Frames,
-alle 16,6 ms, aus: Bei 90 Grad pro Sekunde macht das Horn Schritte von 1,0
-bis 1,8 Grad pro Frame, die Abfragen allein ergeben 0,5 bis 2,1. Hebt sich
-der Finger, läuft das Ziel weiter bis zum letzten Winkel des Fingers, 99 %
-des Wegs in 100 ms. Jeder andere Befehl beendet den Filter sofort: ein
-Schalten auf SAFE, DISARM, STOP, FREIGEBEN, ZENTRIEREN, SWEEP oder der
-Drehknopf. Bei SAFE bewegt er nichts, und ein ARM beginnt in der
-Ruhestellung, ohne etwas von einem Drag davor.
+Servo bekommt, folgen beide dem gefilterten Winkel, 1,8° hinter einem
+Finger, der sich mit 90°/s bewegt. Der Filter gleicht den Takt zwischen den
+Abfragen des Touch-Controllers, alle 10,5ms, und den Frames, alle 16,6ms,
+aus: Bei 90°/s macht das Horn Schritte von 1,0° bis 1,8° pro Frame, die
+Abfragen allein ergeben 0,5° bis 2,1°. Hebt sich der Finger, läuft das Ziel
+weiter bis zum letzten Winkel des Fingers, 99% des Wegs in 100ms. Jeder
+andere Befehl beendet den Filter sofort: ein Schalten auf SAFE, DISARM,
+STOP, FREIGEBEN, ZENTRIEREN, SWEEP oder der Drehknopf. Bei SAFE bewegt er
+nichts, und ein ARM beginnt in der Ruhestellung, ohne etwas von einem Drag
+davor.
 
 Der Bildschirm treibt die Kanäle, die die Bindung als Ruderflächen markiert,
 und weder einen festen Pin noch ein festes Protokoll. Die acht Kanäle von PPM

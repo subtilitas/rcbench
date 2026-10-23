@@ -91,8 +91,8 @@ static void draw_run(run_t run, float hz, bool whole, uint64_t *hash,
  *        every frame when @p every, else at the frames the horn moved in.
  *
  * The grip's breathing repaints at eighths of a radian of its phase; at
- * 25 Hz each frame takes it over the next eighth, so every frame of the
- * screen's way holds; at 60 Hz a frame the horn stands still in may show
+ * 25Hz each frame takes it over the next eighth, so every frame of the
+ * screen's way holds; at 60Hz a frame the horn stands still in may show
  * the breath an eighth behind.
  */
 static bool same_as_whole(run_t run, float hz, bool every)
@@ -174,8 +174,8 @@ static int lum(gfx_color_t c)
 
 /**
  * @brief The centre of the tip's hole in @p px, from the pixels within
- *        6 px of (@p x, @p y): the hole is the card's colour in the arm's,
- *        and the next hole is 12 px further in.
+ *        6px of (@p x, @p y): the hole is the card's colour in the arm's,
+ *        and the next hole is 12px further in.
  */
 static void hole_at(const gfx_color_t *px, double x, double y, double *hx,
                     double *hy)
@@ -201,10 +201,10 @@ static void hole_at(const gfx_color_t *px, double x, double y, double *hx,
 }
 
 /*
- * The horn turned in steps of 0.37 degrees, 0.63 px at its tip: the hole
- * at the tip is drawn within 0.1 px of where the angle puts it, and each
- * step moves it by the step's length to 0.05 px rms.  Rounded to whole
- * pixels the hole was up to 1.3 px off and its steps 0.39 px rms.
+ * The horn turned in steps of 0.37deg, 0.63px at its tip: the hole
+ * at the tip is drawn within 0.1px of where the angle puts it, and each
+ * step moves it by the step's length to 0.05px rms.  Rounded to whole
+ * pixels the hole was up to 1.3px off and its steps 0.39px rms.
  */
 TEST_CASE(the_horn_moves_by_fractions_of_a_pixel)
 {

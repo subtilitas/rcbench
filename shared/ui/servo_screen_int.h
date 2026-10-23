@@ -326,11 +326,11 @@ typedef struct {
  * @brief The drag's time constant, ms: the dial's target follows the finger
  *        through a one-pole filter this slow.
  *
- * The GT911 is read every 10.5 ms and the panel draws every 16.6 ms, so a
- * finger moving at a steady 90 degrees a second reaches the screen as 0.5
- * to 2.1 degrees a frame where 1.5 is right; the servo is sent the same
- * beat.  20 ms is about one touch read and one frame: the steps even out,
- * and the command lags a steady drag by 20 ms, 1.8 degrees at 90 degrees
+ * The GT911 is read every 10.5ms and the panel draws every 16.6ms, so a
+ * finger moving at a steady 90deg a second reaches the screen as 0.5
+ * to 2.1deg a frame where 1.5 is right; the servo is sent the same
+ * beat.  20ms is about one touch read and one frame: the steps even out,
+ * and the command lags a steady drag by 20ms, 1.8deg at 90deg
  * a second.
  */
 #define SV_DRAG_TAU_MS 20.0f

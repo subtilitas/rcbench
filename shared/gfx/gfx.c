@@ -826,9 +826,9 @@ void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
  * @brief How far into the arc from @p a0_deg over @p span degrees the
  *        direction @p ang_deg lies, in degrees: positive inside, from the
  *        nearer end; negative outside, to the nearer end.
- * @param ang_deg the pixel's direction, -180 to 180 degrees
+ * @param ang_deg the pixel's direction, -180 to 180deg
  * @param a0_deg where the arc starts
- * @param span its length, 0 to 360 degrees
+ * @param span its length, 0 to 360deg
  * @return the signed distance in degrees
  */
 static float arc_depth(float ang_deg, float a0_deg, float span)

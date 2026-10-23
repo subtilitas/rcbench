@@ -921,10 +921,10 @@ the label and unit over numerals 44 px tall. Numerals wider than their
 smaller face, so they stay inside it. The readings are on LIVE only; on
 the other tasks the line over the plot carries the current.
 
-The horn is drawn in fractions of a pixel: its tip, 98 px from the shaft,
-moves 1.7 px a degree and is drawn within 0.1 px of its angle at every
+The horn is drawn in fractions of a pixel: its tip, 98px from the shaft,
+moves 1.7px a degree and is drawn within 0.1px of its angle at every
 step. A horn that moves repaints the boxes around it, as each frame buffer
-last drew it and as it is now, about 160 px across, and the numerals of the
+last drew it and as it is now, about 160px across, and the numerals of the
 angle, COMMANDED and MEASURED; the two cards are not repainted for it.
 
 On LIVE, while the bench is ARMED, drag anywhere on the sweep to command a position. The solid arm is the measured
@@ -945,18 +945,17 @@ ends the drag, as it ends a drag on SPEED: the target goes on to the last
 angle the finger gave, and the dial follows again after a new press on it.
 
 The press on the dial commands its angle at once. The drag after it goes
-through a one-pole filter with a time constant of 20 ms
-(`SV_DRAG_TAU_MS`), reckoned from each frame's length, so it is the same
-at 30, 60 or 120 frames a second. The horn and the pulse the servo is sent
-both follow the filtered angle, 1.8 degrees behind a finger moving at 90
-degrees a second. The filter evens out the beat between the touch
-controller's reads, every 10.5 ms, and the frames, every 16.6 ms: at 90
-degrees a second the horn steps 1.0 to 1.8 degrees a frame, where the
-reads alone give 0.5 to 2.1. After the finger lifts, the target goes on to
-the finger's last angle, 99 % of the way in 100 ms. Any other command ends
-the filter at once: a switch to SAFE, DISARM, STOP, RELEASE, CENTRE, SWEEP
-or the knob. It moves nothing while the bench is SAFE, and an ARM starts
-from the rest with nothing of a drag before it.
+through a one-pole filter with a time constant of 20ms (`SV_DRAG_TAU_MS`),
+reckoned from each frame's length, so it is the same at 30, 60 or 120
+frames a second. The horn and the pulse the servo is sent both follow the
+filtered angle, 1.8° behind a finger moving at 90°/s. The filter evens out
+the beat between the touch controller's reads, every 10.5ms, and the
+frames, every 16.6ms: at 90°/s the horn steps 1.0° to 1.8° a frame, where
+the reads alone give 0.5° to 2.1°. After the finger lifts, the target goes
+on to the finger's last angle, 99% of the way in 100ms. Any other command
+ends the filter at once: a switch to SAFE, DISARM, STOP, RELEASE, CENTRE,
+SWEEP or the knob. It moves nothing while the bench is SAFE, and an ARM
+starts from the rest with nothing of a drag before it.
 
 The screen drives the channels the binding marks as surfaces, not a fixed pin
 and not a fixed protocol. PPM's eight channels are surfaces too, so a bound
