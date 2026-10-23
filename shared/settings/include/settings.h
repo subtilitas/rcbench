@@ -26,7 +26,8 @@ extern "C" {
 #endif
 
 typedef enum {
-    SET_CAT_APP = 0,     /**< theme, brightness, language, units, plot  */
+    SET_CAT_APP = 0,     /**< theme, brightness, rotation, language,
+                              units, plot                              */
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
     SET_CAT_CARD,        /**< the SD card: which logs are written     */
     SET_CAT_SENSORS,     /**< the INA3221 parts: fitted, shunts, what
@@ -77,6 +78,7 @@ typedef enum {
     SET_THEME,
     SET_BRIGHTNESS,
     SET_CONTRAST,
+    SET_SCREEN_ROT,
     SET_LANGUAGE,
     SET_UNITS,
     SET_DIM_AFTER,
@@ -264,11 +266,42 @@ typedef bool (*settings_hold_fn)(setting_id_t id);
 /** Who says which settings are held, or NULL for none.  Asked at every
  *  change, so a hold begins and ends with what it names. */
 void settings_set_hold(settings_hold_fn fn);
-/** Whether @p id is held now: settings_set(), settings_adjust(),
- *  settings_reset() and settings_reset_all() leave it, and SETUP draws its
- *  row without keys.  The servo tester's target and the port's pulse while
- *  the servo programmer holds the port (kst_panel.h). */
+/**
+ * @brief Whether @p id is held now: settings_set(), settings_adjust(),
+ *        settings_reset() and settings_reset_all() leave it, and SETUP
+ *        draws its row without keys.
+ *
+ * The servo tester's target and the port's pulse while the servo
+ * programmer holds the port (kst_panel.h); a SAFE-only setting while the
+ * bench is ARMED (settings_safe_only()).
+ *
+ * @param id The setting.
+ * @return True while held; false for an id out of range.
+ */
 bool settings_held(setting_id_t id);
+
+/**
+ * @brief Who says whether the bench is ARMED now.
+ * @return True while ARMED.
+ */
+typedef bool (*settings_armed_fn)(void);
+
+/**
+ * @brief Install who says whether the bench is ARMED, or NULL for a bench
+ *        that is never ARMED.  Asked at every change, as the hold is.
+ * @param fn The source; the panel's reads the router's status.
+ */
+void settings_set_armed(settings_armed_fn fn);
+
+/**
+ * @brief Whether @p id changes on a SAFE bench only: held while the
+ *        source settings_set_armed() installed says ARMED, as the throttle
+ *        endpoints on MOTOR & ESC > SETTINGS are locked while ARMED.
+ *        Screen rotation, which moves every control under the finger.
+ * @param id The setting.
+ * @return True for SET_SCREEN_ROT.
+ */
+bool settings_safe_only(setting_id_t id);
 
 const setting_def_t *settings_def(setting_id_t id);
 

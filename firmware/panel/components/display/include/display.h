@@ -150,6 +150,30 @@ float display_fps(void);
 uint32_t display_vsync_count(void);
 
 /**
+ * @brief Turn the picture by 180 degrees, or back, by the panel's scan
+ *        direction: DCS (Display Command Set) command 0x36 with
+ *        BOARD_LCD_ADDRESS_MODE, or with it ^ BOARD_LCD_ADDRESS_TURN.
+ *
+ * The frame buffers keep their logical pixels, so drawing, the partial
+ * repaint and a copy of the buffer are the same in both settings and the
+ * turn costs no time per frame.  Before display_init() the choice is kept
+ * and sent with the initialisation table; after it, the command goes out
+ * in LP (low-power) mode during video blanking and takes effect at the
+ * next frame.  Call it from the task that calls display_flip().
+ *
+ * @param turned True for turned by 180 degrees.
+ * @return ESP_OK, also before display_init(); otherwise the command
+ *         interface's error, with the picture as it was.
+ */
+esp_err_t display_set_turned(bool turned);
+
+/**
+ * @brief Whether the picture is turned by 180 degrees.
+ * @return True when display_set_turned(true) is in force.
+ */
+bool display_turned(void);
+
+/**
  * @brief Backlight at 100 % or 0 %.
  * @param on true for 100 %, false for 0 % (dark).
  * @return As board_backlight().

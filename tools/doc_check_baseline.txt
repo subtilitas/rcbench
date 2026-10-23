@@ -3003,7 +3003,6 @@ shared/settings/include/settings.h: warning: parameters of member settings_adjus
 shared/settings/include/settings.h: warning: parameters of member settings_cycles are not documented
 shared/settings/include/settings.h: warning: parameters of member settings_derived are not documented
 shared/settings/include/settings.h: warning: parameters of member settings_differs are not documented
-shared/settings/include/settings.h: warning: parameters of member settings_held are not documented
 shared/settings/include/settings.h: warning: parameters of member settings_in_category are not documented
 shared/settings/include/settings.h: warning: parameters of member settings_reset are not documented
 shared/settings/include/settings.h: warning: parameters of member settings_save_tick are not documented
@@ -3024,7 +3023,6 @@ shared/settings/include/settings.h: warning: return type of member settings_deri
 shared/settings/include/settings.h: warning: return type of member settings_differs is not documented
 shared/settings/include/settings.h: warning: return type of member settings_dirty is not documented
 shared/settings/include/settings.h: warning: return type of member settings_discard is not documented
-shared/settings/include/settings.h: warning: return type of member settings_held is not documented
 shared/settings/include/settings.h: warning: return type of member settings_in_category is not documented
 shared/settings/include/settings.h: warning: return type of member settings_nvs_store is not documented
 shared/settings/include/settings.h: warning: return type of member settings_pdmini_same_pin is not documented
@@ -3117,12 +3115,7 @@ shared/settings/settings_text.c: warning: Member UI_OPTION(en, de) (macro defini
 shared/settings/settings_text.c: warning: Member UI_OPTIONS_END(name) (macro definition) of file settings_text.c is not documented.
 shared/settings/settings_text.c: warning: Member UI_SETTING_HELP(id, en, de) (macro definition) of file settings_text.c is not documented.
 shared/settings/settings_text.c: warning: Member UI_SETTING_LABEL(id, en, de) (macro definition) of file settings_text.c is not documented.
-shared/touch/include/touch_map.h: file has no @file block
 shared/touch/include/touch_map.h: warning: Compound touch_map_t is not documented.
-shared/touch/include/touch_map.h: warning: Compound touch_tracker_t is not documented.
-shared/touch/include/touch_map.h: warning: Member prev[TOUCH_MAX_POINTS] (variable) of struct touch_tracker_t is not documented.
-shared/touch/include/touch_map.h: warning: Member prev_count (variable) of struct touch_tracker_t is not documented.
-shared/touch/touch_map.c: file has no @file block
 shared/ui/analyser_screen.c: file has no @file block
 shared/ui/analyser_screen.c: warning: Member dec (variable) of struct [struct].s is not documented.
 shared/ui/analyser_screen.c: warning: Member drawn[2] (variable) of struct [struct].s is not documented.
@@ -5759,7 +5752,6 @@ shared/ui/settings_screen_int.h: warning: Member TK_AREA_H (macro definition) of
 shared/ui/settings_screen_int.h: warning: Member cat (variable) of struct stg_state_t is not documented.
 shared/ui/settings_screen_int.h: warning: Member chrome_valid[MAX_FBS] (variable) of struct stg_state_t is not documented.
 shared/ui/settings_screen_int.h: warning: Member dragging (variable) of struct stg_state_t is not documented.
-shared/ui/settings_screen_int.h: warning: Member drawn_armed (variable) of struct stg_state_t is not documented.
 shared/ui/settings_screen_int.h: warning: Member drawn_asked (variable) of struct stg_state_t is not documented.
 shared/ui/settings_screen_int.h: warning: Member drawn_cat (variable) of struct stg_state_t is not documented.
 shared/ui/settings_screen_int.h: warning: Member drawn_dirty (variable) of struct stg_state_t is not documented.

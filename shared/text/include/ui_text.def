@@ -4938,6 +4938,12 @@ UI_SETTING_LABEL(SET_CONTRAST,
 UI_SETTING_HELP(SET_CONTRAST,
     "Pushes colours away from mid grey",
     "Drückt Farben weg vom Mittelgrau")
+UI_SETTING_LABEL(SET_SCREEN_ROT,
+    "Screen rotation",
+    "Bilddrehung")
+UI_SETTING_HELP(SET_SCREEN_ROT,
+    "Turns picture and touch; locked while ARMED",
+    "Dreht Bild und Touch; gesperrt bei ARMED")
 UI_SETTING_LABEL(SET_LANGUAGE,
     "Language",
     "Sprache")
@@ -5723,6 +5729,11 @@ UI_OPTIONS(theme)
 UI_OPTION("DARK", "DUNKEL")
 UI_OPTION("LIGHT", "HELL")
 UI_OPTIONS_END(theme)
+
+UI_OPTIONS(screen_rot)
+UI_OPTION("NORMAL", NULL)
+UI_OPTION("180", NULL)
+UI_OPTIONS_END(screen_rot)
 
 UI_OPTIONS(language)
 UI_OPTION("ENGLISH", NULL)

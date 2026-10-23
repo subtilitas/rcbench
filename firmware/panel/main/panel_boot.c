@@ -31,6 +31,7 @@
 #include "storage.h"
 #include "touch.h"
 #include "ui_card_text.h"
+#include "ui_screen.h"
 #include "ui_text.h"
 #include "wifi_access.h"
 
@@ -57,6 +58,16 @@ bool                     s_touch_ok = true; /* touch_init() answered    */
 char               s_boot_alert[ALERT_MAX];
 
 /* ------------------------------------------------------------------- boot */
+
+/**
+ * @brief Whether the bench is ARMED, as the router's status says; the
+ *        settings model's ARMED source (settings_set_armed()).
+ * @return True while ARMED.
+ */
+static bool bench_armed(void)
+{
+    return ui_router_status()->armed;
+}
 
 static void pump(void)
 {
@@ -124,6 +135,9 @@ bool bring_up(void)
      * the IOmcu the same way an edit made later is. */
     settings_set_observer(settings_changed);
     settings_set_text_observer(publish_log_folder);
+    /* Screen rotation is held while ARMED, as the router's status says:
+     * the status DISCARD on SETUP waits on. */
+    settings_set_armed(bench_armed);
     settings_init();
     /* And once unconditionally, whatever settings_init() told the observer:
      * a bench left at the defaults still has to tell the far end what it

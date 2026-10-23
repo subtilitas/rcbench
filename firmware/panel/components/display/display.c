@@ -6,6 +6,8 @@
  * Bring-up order: the PHY supply, the bus, the command interface, the DPI
  * panel (frame buffers allocated and black, video not started), the
  * panel's reset, the initialisation commands, then the video stream.
+ * Screen rotation 180 turns the picture by the panel's scan direction
+ * (display_set_turned()), never in the frame buffers.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -72,7 +74,8 @@ typedef struct {
  * valid frame.  The lane count goes first: the chip resets to 4 lanes.
  * 0x80 to 0x86 are the 14 gamma fields, two per register; the values are
  * the ones Espressif's EK79007 driver writes (Apache-2.0), against 0x88 in
- * every register after reset.
+ * every register after reset.  The address mode, 0x36, follows the table
+ * (panel_commands()): it depends on Screen rotation.
  */
 static const ek_reg_t k_init[] = {
     { EK_CMD_PANEL_CTRL2, 0x10 },
@@ -83,7 +86,6 @@ static const ek_reg_t k_init[] = {
     { 0x84, 0xA8 },
     { 0x85, 0xE3 },
     { 0x86, 0x88 },
-    { EK_CMD_ADDRESS_MODE, BOARD_LCD_ADDRESS_MODE },
 };
 
 /** @brief The driver's state; all zero while the display is down. */
@@ -111,6 +113,24 @@ typedef struct {
 
 /** @brief The one display. */
 static display_state_t s_disp;
+
+/**
+ * @brief The picture turned by 180 degrees (display_set_turned()).  Outside
+ *        s_disp: it is set before display_init() and survives
+ *        display_deinit().
+ */
+static bool s_turned;
+
+/**
+ * @brief The address mode for a turn.
+ * @param turned True for turned by 180 degrees.
+ * @return BOARD_LCD_ADDRESS_MODE, or it ^ BOARD_LCD_ADDRESS_TURN.
+ */
+static uint8_t address_mode(bool turned)
+{
+    return (uint8_t)(turned ? (BOARD_LCD_ADDRESS_MODE ^ BOARD_LCD_ADDRESS_TURN)
+                            : BOARD_LCD_ADDRESS_MODE);
+}
 
 /**
  * @brief Frame-done callback: a frame buffer's scan ended.  ISR (interrupt
@@ -182,7 +202,23 @@ static esp_err_t panel_reset(void)
 }
 
 /**
- * @brief Send the register table, then sleep out.
+ * @brief Write one register.
+ * @param cmd The register.
+ * @param value Its parameter byte.
+ * @return ESP_OK, or the command interface's error, logged.
+ */
+static esp_err_t write_reg(uint8_t cmd, uint8_t value)
+{
+    const esp_err_t err = esp_lcd_panel_io_tx_param(s_disp.io, cmd, &value, 1);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "command 0x%02x: %s", cmd, esp_err_to_name(err));
+    }
+    return err;
+}
+
+/**
+ * @brief Send the register table and the address mode s_turned asks for,
+ *        then sleep out.
  *
  * All in LP (low-power) mode on virtual channel 0, before the video stream
  * starts.
@@ -192,14 +228,11 @@ static esp_err_t panel_reset(void)
 static esp_err_t panel_commands(void)
 {
     for (size_t i = 0; i < sizeof(k_init) / sizeof(k_init[0]); ++i) {
-        const ek_reg_t *r = &k_init[i];
-        esp_err_t err = esp_lcd_panel_io_tx_param(s_disp.io, r->cmd,
-                                                  &r->value, 1);
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "command 0x%02x: %s", r->cmd, esp_err_to_name(err));
-            return err;
-        }
+        ESP_RETURN_ON_ERROR(write_reg(k_init[i].cmd, k_init[i].value), TAG,
+                            "table");
     }
+    ESP_RETURN_ON_ERROR(write_reg(EK_CMD_ADDRESS_MODE, address_mode(s_turned)),
+                        TAG, "address mode");
     ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(s_disp.io, EK_CMD_SLEEP_OUT,
                                                   NULL, 0),
                         TAG, "sleep out");
@@ -496,6 +529,28 @@ float display_fps(void)
 uint32_t display_vsync_count(void)
 {
     return atomic_load(&s_disp.vsyncs);
+}
+
+esp_err_t display_set_turned(bool turned)
+{
+    if (s_disp.initialised && turned != s_turned) {
+        /* The DPI panel lets commands out in LP mode during blanking
+         * (lp_command on); the EK79007 takes a register at the next valid
+         * frame.  Whether it takes 0x36 while the video runs is not
+         * measured. */
+        ESP_RETURN_ON_ERROR(write_reg(EK_CMD_ADDRESS_MODE,
+                                      address_mode(turned)),
+                            TAG, "turn");
+        ESP_LOGI(TAG, "picture turned %d (0x36 = 0x%02x)", (int)turned,
+                 address_mode(turned));
+    }
+    s_turned = turned;
+    return ESP_OK;
+}
+
+bool display_turned(void)
+{
+    return s_turned;
 }
 
 esp_err_t display_backlight(bool on)

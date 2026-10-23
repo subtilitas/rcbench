@@ -7,12 +7,15 @@
  * under a spinlock, beside the debt its write to the IOmcu is, and the
  * control task reads it from there.  settings_changed() is the settings
  * model's observer; bring_up() (panel_boot.c) publishes every value once.
+ * Screen rotation is the one value applied on app_main itself: the display
+ * and the touch map take it there (apply_rotation()).
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdatomic.h>
 
 #include "card_tree.h"
+#include "display.h"
 #include "endpoints_link.h"
 #include "freertos/FreeRTOS.h"
 #include "panel.h"
@@ -20,6 +23,7 @@
 #include "settings.h"
 #include "settings_sensors.h"
 #include "tone_link.h"
+#include "touch.h"
 
 /*
  * A setting the far end keeps a copy of has changed.
@@ -158,9 +162,28 @@ void publish_hitec_rx(void)
     atomic_store(&s_hitec_rx_want, (unsigned)settings_get_int(SET_HITEC_RX));
 }
 
+/**
+ * @brief Screen rotation to the panel's scan and the glass's map, on
+ *        app_main, the task that flips the display.
+ *
+ * The picture turns first and touch follows only when the command went
+ * out, so a refused command leaves picture and touch agreeing.  At the
+ * load, before display_init() and touch_init(), both keep the choice for
+ * their start (display.h, touch.h).
+ */
+static void apply_rotation(void)
+{
+    const bool turned = settings_get_int(SET_SCREEN_ROT) != 0;
+    if (display_set_turned(turned) == ESP_OK) {
+        touch_set_turned(turned);
+    }
+}
+
 void settings_changed(setting_id_t id)
 {
-    if (id == SET_LOG_AUTO) {
+    if (id == SET_SCREEN_ROT) {
+        apply_rotation();
+    } else if (id == SET_LOG_AUTO) {
         publish_log_auto();
     } else if (id == SET_MOTOR_POLES) {
         publish_poles();

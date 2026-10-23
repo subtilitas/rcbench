@@ -87,6 +87,14 @@ extern "C" {
  */
 #define BOARD_LCD_ADDRESS_MODE      0x02
 
+/**
+ * @brief The bits of BOARD_LCD_ADDRESS_MODE that turn the picture by 180
+ * degrees when both flip: bit 1 the gate scan, bit 0 the source shift.
+ * Screen rotation 180 sends BOARD_LCD_ADDRESS_MODE ^ this, 0x01, the
+ * reset value (display_set_turned()).
+ */
+#define BOARD_LCD_ADDRESS_TURN      0x03
+
 /* ------------------------------------------------------------- backlight */
 
 /**

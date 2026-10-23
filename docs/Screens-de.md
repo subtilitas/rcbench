@@ -3066,7 +3066,9 @@ Auswahl springt vom letzten Wert auf den ersten.
   nimmt einen Druck an. Ein Schalter, eine Auswahl, INA228 Adresse und
   Sensor-SCL öffnen kein Tastenfeld, und ein Drag, der auf einem Wert
   beginnt, scrollt und öffnet nichts. Der Zustand des Prüfstands sperrt das
-  Tastenfeld nicht, so wie er die Tasten nicht sperrt.
+  Tastenfeld nicht. Er sperrt die Tasten einer Zeile, `Bilddrehung`,
+  solange der Prüfstand ARMED ist
+  ([PANEL: Bilddrehung](#panel-bilddrehung)).
 - Ein Finger zur Zeit. Solange einer drückt oder scrollt, bewirkt ein zweiter
   Finger auf diesem Bildschirm nichts.
 
@@ -3078,6 +3080,38 @@ Zwei Grenzen:
   Abheben und neues Aufsetzen an. Liegt das neue Aufsetzen auf einer Taste
   und hebt dort ab, ohne sich zu bewegen, ist es ein Tippen. Wie oft der
   GT911 einen bewegten Kontakt in einem Report auslässt, ist nicht gemessen.
+
+### PANEL: Bilddrehung
+
+`Bilddrehung` dreht Bild und Touch um 180°, für ein Panel, das kopfüber
+eingebaut ist.
+
+| Einstellung | Werte | Standard |
+| --- | --- | --- |
+| `Bilddrehung` | NORMAL, 180 | NORMAL |
+
+- Der eigene Scan des Panels dreht das Bild. Der Display-Controller EK79007
+  bekommt den Address Mode 0x01 statt 0x02 (DCS-Befehl 0x36, DCS: Display
+  Command Set). Die Frame Buffer behalten das aufrechte Bild. Jeder
+  Bildschirm, das Teil-Neuzeichnen und das Band zeichnen in beiden
+  Einstellungen dieselben Pixel, und ein Frame braucht gleich lang.
+- Die Kontakte des Glases drehen sich mit dem Bild. Ein Kontakt, den das
+  Glas bei NORMAL am logischen Pixel (x, y) meldet, meldet es bei 180 an
+  (1023 - x, 599 - y). Jeder Bildschirm, das Band, STOP und die
+  Sicherheitsregeln sehen in beiden Einstellungen logische Pixel.
+- Kontakte des Touch-Injectors sind in beiden Einstellungen logische Pixel
+  und drehen sich nicht. Station-Skripte und die Koordinaten im README des
+  Injectors gelten in beiden.
+- Ein Schritt wirkt ab dem nächsten Frame, ohne Neustart. SPEICHERN behält
+  ihn, und der nächste Start zeichnet schon sein erstes Bild, den
+  Startbildschirm, gedreht.
+- Gesperrt, solange der Prüfstand ARMED ist: Die Zeile hat keine Tasten,
+  und KATEGORIE ZURÜCKSETZEN und VERWERFEN lassen sie stehen. Eine Drehung
+  bewegt jedes Bedienelement unter dem Finger weg, STOP eingeschlossen. Die
+  Regel ist die von Leerlaufpuls und Vollpuls auf MOTOR & ESC,
+  EINSTELLUNGEN: ein Wert nur für einen Prüfstand in SAFE.
+- Ob der EK79007 den Befehl 0x36 annimmt, während der Videostrom läuft,
+  ist nicht gemessen. Beim Start geht der Befehl vor dem Strom hinaus.
 
 ### PANEL: der Drehknopf
 

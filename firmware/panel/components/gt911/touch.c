@@ -35,6 +35,9 @@ typedef struct {
     gt911_handle_t gt911;
     touch_config_t cfg;
     touch_map_t map;
+    /** @brief The glass's map is the touch injector's (0x14 took the
+     *  glass's place): its contacts are logical pixels and never turn. */
+    bool map_is_injector;
 
     TaskHandle_t task;
     QueueHandle_t events;
@@ -83,6 +86,14 @@ static uint32_t now_ms(void)
 }
 
 static touch_state_t s_touch;
+
+/**
+ * @brief The picture turned by 180 degrees (touch_set_turned()).  Outside
+ *        s_touch: it is set before touch_init() from the stored setting
+ *        and survives touch_deinit().  Written by app_main, read once per
+ *        poll by the touch task; one aligned byte.
+ */
+static atomic_bool s_turned;
 
 /** @brief Run the tracker over @p pts and queue its events, numbered. */
 static void publish(const touch_point_t *pts, int count)
@@ -159,7 +170,12 @@ static void touch_task(void *arg)
         /* The glass's report into panel pixels before any merge: the
          * injector's contacts are panel pixels already (touch_inject.c). */
         if (fresh) {
-            touch_map_points(&s_touch.map, raw, count);
+            /* The turn is read once per report, so one report is mapped
+             * whole one way.  The injector's map never turns. */
+            const touch_map_t glass = touch_map_turned(
+                &s_touch.map,
+                atomic_load(&s_turned) && !s_touch.map_is_injector);
+            touch_map_points(&glass, raw, count);
         }
 #ifdef RCBENCH_TOUCH_INJECTOR
         /* The glass's report goes out before the injector is read, so a
@@ -235,6 +251,7 @@ esp_err_t touch_init(const touch_config_t *cfg)
          * there is taken as the injector and not as the glass: panel
          * pixels of the UI's area, unmirrored. */
         s_touch.map = touch_inject_map();
+        s_touch.map_is_injector = true;
         ESP_LOGW(TAG, "0x14 refused as the glass: it is the touch "
                       "injector's address in this build; touch is the "
                       "injector alone");
@@ -269,10 +286,10 @@ esp_err_t touch_init(const touch_config_t *cfg)
     s_touch.last_ok_ms = now_ms();
     s_touch.initialised = true;
     ESP_LOGI(TAG, "GT911 ready at 0x%02x, %ux%u, mirror x %d y %d, "
-                  "rotation %d, polled every %u ms",
+                  "rotation %d, turned %d, polled every %u ms",
              gt911_address(s_touch.gt911), x_max, y_max,
              (int)s_touch.cfg.mirror_x, (int)s_touch.cfg.mirror_y,
-             (int)s_touch.cfg.rotation * 90,
+             (int)s_touch.cfg.rotation * 90, (int)touch_turned(),
              (unsigned)s_touch.cfg.poll_interval_ms);
     return ESP_OK;
 }
@@ -353,6 +370,16 @@ void touch_flush_events(void)
     if (s_touch.events) {
         xQueueReset(s_touch.events);
     }
+}
+
+void touch_set_turned(bool turned)
+{
+    atomic_store(&s_turned, turned);
+}
+
+bool touch_turned(void)
+{
+    return atomic_load(&s_turned);
 }
 
 uint16_t touch_i2c_address(void)
