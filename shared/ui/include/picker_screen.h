@@ -302,6 +302,17 @@ void picker_screen_set_drawing_source(picker_drawing_fn fn);
  */
 void picker_board_fit(uint16_t ow, uint16_t oh, int *w, int *h);
 
+/**
+ * @brief The cat the last frame drew (picker_cat.c): one pose, picked at
+ *        random on a visit's first frame among the ones with a clear spot,
+ *        bottom left or bottom right.  It takes no touch.
+ * @param box the box it covers, empty for none; may be NULL
+ * @param pose its index into ui_cat_poses[], UI_CAT_NONE for none; may
+ *        be NULL
+ * @return true when a cat is drawn
+ */
+bool picker_screen_cat(gfx_rect_t *box, int *pose);
+
 /** Whether the board is drawn from the IOmcu's drawing. */
 bool picker_screen_has_drawing(void);
 

@@ -5123,6 +5123,10 @@ Platine haben kann, auch bei einem Pad direkt an ihrer Kante. Die
 Protokoll-Liste öffnet wie auf Outputs: die Protokolle in einer Spalte mit
 Zeilen von 48px, die Einträge PROG-PORT in einer zweiten Spalte daneben.
 
+Jeder Besuch zeichnet eine von 8 Katzenzeichnungen, zufällig gewählt, unten
+links oder unten rechts, wo keine Zeile, Taste oder Liste näher als 4px
+kommt; sie nimmt kein Tippen an.
+
 Aktuelle Einschränkung: Der Kopf bleibt, wo er ist, welche Platine es auch
 ist. Auf einer Platine, deren Shape-Page einen Pin in die obere linke Ecke
 ihres Umrisses legt, reichen die Tasten der oberen Reihen bis x 187 nach

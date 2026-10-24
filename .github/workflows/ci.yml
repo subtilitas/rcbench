@@ -130,6 +130,12 @@ jobs:
       - name: The checked-in board drawings match the configurator's
         run: python3 tools/gen_board_drawing.py --check
 
+      # The cat drawings PICK A PIN shows are drawn with Pillow and carried
+      # as generated run-length tables, so the firmware build needs no
+      # Python.
+      - name: The checked-in cat tables match their generator
+        run: python3 tools/gen_cats.py --check
+
       # The ESC programming profiles are JSON; the panel carries them as C
       # tables generated from that JSON and checked in.
       - name: The checked-in ESC profile tables match their JSON

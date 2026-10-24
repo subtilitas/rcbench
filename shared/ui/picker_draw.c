@@ -521,7 +521,7 @@ void pk_render(gfx_canvas_t *c, int buffer_index)
          */
         /* 640 x 180px: the title in the head face, the three lines of
          * prose in 12 x 24, 52 cells inside the panel's 8px margins. */
-        const int pw = 640, ph = 180;
+        const int pw = NOART_W, ph = NOART_H;
         const int px = (SCREEN_W - pw) / 2, py = (FOOT - ph) / 2;
         gfx_fill_chamfer_rect_ex(c, px, py, pw, ph, 12, 0, 12, 0, UI_PANEL);
         gfx_draw_chamfer_rect_ex(c, px, py, pw, ph, 12, 0, 12, 0, UI_EDGE);
@@ -550,6 +550,8 @@ void pk_render(gfx_canvas_t *c, int buffer_index)
             draw_list(c);
         }
     }
+    /* Last, so the fit check sees a string under it as painted over. */
+    pk_cat_render(c);
 
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         s.chrome_valid[buffer_index] = true;

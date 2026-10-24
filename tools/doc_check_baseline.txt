@@ -4009,13 +4009,9 @@ shared/ui/include/overview_screen.h: warning: return type of member overview_scr
 shared/ui/include/picker_screen.h: warning: Compound picker_use_t is not documented.
 shared/ui/include/picker_screen.h: warning: Member gpio (variable) of struct picker_row_t is not documented.
 shared/ui/include/picker_screen.h: warning: Member kind (variable) of struct picker_use_t is not documented.
-shared/ui/include/picker_screen.h: warning: Member picker_screen(void) (function) of file picker_screen.h is not documented.
 shared/ui/include/picker_screen.h: warning: Member picker_screen_area(picker_area_t area) (function) of file picker_screen.h is not documented.
 shared/ui/include/picker_screen.h: warning: Member picker_screen_list_open(void) (function) of file picker_screen.h is not documented.
 shared/ui/include/picker_screen.h: warning: Member picker_screen_list_row(uint8_t proto) (function) of file picker_screen.h is not documented.
-shared/ui/include/picker_screen.h: warning: Member picker_screen_set_apply(picker_apply_fn fn) (function) of file picker_screen.h is not documented.
-shared/ui/include/picker_screen.h: warning: Member picker_screen_set_drawing_source(picker_drawing_fn fn) (function) of file picker_screen.h is not documented.
-shared/ui/include/picker_screen.h: warning: Member picker_screen_set_select(picker_select_fn fn) (function) of file picker_screen.h is not documented.
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_button_rect are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_count are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_follow are not documented
@@ -5315,7 +5311,6 @@ shared/ui/picker_geometry.c: warning: Member pk_pop_rect(void) (function) of fil
 shared/ui/picker_geometry.c: warning: Member pk_pop_rows(void) (function) of file picker_geometry.c is not documented.
 shared/ui/picker_port.c: file has no @file block
 shared/ui/picker_port.h: file has no @file block
-shared/ui/picker_screen.c: file has no @file block
 shared/ui/picker_screen_int.h: warning: Compound pk_state_t is not documented.
 shared/ui/picker_screen_int.h: warning: Member EBONY (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member GND_DROP (macro definition) of file picker_screen_int.h is not documented.
@@ -5337,20 +5332,12 @@ shared/ui/picker_screen_int.h: warning: Member hit_kind (variable) of struct pk_
 shared/ui/picker_screen_int.h: warning: Member iface[OUTPUTS_IFACE_COUNT] (variable) of struct pk_state_t is not documented.
 shared/ui/picker_screen_int.h: warning: Member pk_board_box(int *x, int *y, int *w, int *h) (function) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member pk_button_at(int i, gfx_rect_t *out, int *tier_out) (function) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member pk_channel_of(uint8_t index) (function) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member pk_drawing(void) (function) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member pk_iface_taken(uint8_t index) (function) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member pk_marker_at(uint8_t e, int *mx, int *my, int *r) (function) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member pk_pad_is_top(uint8_t pad) (function) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member pk_pad_xy(uint8_t pad, int *px, int *py) (function) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member pk_pop_rect(void) (function) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member pk_pop_rows(void) (function) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member pk_prog_taken(uint8_t index) (function) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member pk_proto_shown(void) (function) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member pk_render(gfx_canvas_t *c, int buffer_index) (function) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member pk_s (variable) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member pk_shape(void) (function) of file picker_screen_int.h is not documented.
-shared/ui/picker_screen_int.h: warning: Member pk_touched(void) (function) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member port (variable) of struct pk_state_t is not documented.
 shared/ui/picker_screen_int.h: warning: Member refused (variable) of struct pk_state_t is not documented.
 shared/ui/picker_screen_int.h: warning: Member s (macro definition) of file picker_screen_int.h is not documented.

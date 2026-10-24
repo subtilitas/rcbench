@@ -24,6 +24,7 @@
 #include "driver/temperature_sensor.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_random.h"
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -143,6 +144,7 @@ void publish_throttle_ramp(void)
 #include "upd_screen.h"
 #include "wifi_access.h"
 #include "wifi_screen.h"
+#include "ui_cats.h"
 #include "ui_screen.h"
 #include "ui_card_text.h"
 #include "ui_text.h"
@@ -825,6 +827,8 @@ void app_main(void)
     picker_screen_set_apply(outputs_apply);
     picker_screen_set_select(outputs_screen_select);
     picker_screen_set_drawing_source(drawing_for_picker);
+    /* PICK A PIN's cat is picked with the hardware random source. */
+    ui_cats_set_random(esp_random);
     /* A port's PIN or FUNC asked on either screen goes to the control
      * task, which writes it on a bench at rest. */
     prog_ports_init_screens();

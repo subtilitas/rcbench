@@ -33,6 +33,7 @@ import subprocess
 import sys
 import tempfile
 
+import gen_cats
 import ui_sources
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
@@ -606,6 +607,12 @@ FIT_ONLY = {
     "files-rename": (None, "files", "dark"),
     "files-delete-folder": (None, "files", "dark"),
 }
+
+# Every cat pose but the first, on PICK A PIN posed as "picker" is:
+# picker-cat-1 and on, in tools/gen_cats.py's POSES order.  The first is the
+# one every view draws where it fits.
+FIT_ONLY.update({f"picker-cat-{i}": (None, "picker", "dark")
+                 for i in range(1, len(gen_cats.POSES))})
 
 # Views that open a drop-down, a chip's help bubble or the alert band over
 # the screen: the list, the bubble or the band covers the labels under it by
