@@ -42,11 +42,12 @@
  * parentheses around or a full stop behind gives the word itself.
  *
  * Numbers: an optional sign, digits, and a "." with digits, at a place no
- * letter, digit or "." is in front of, and ending at a place no letter,
- * digit or "." with a digit follows.  With a unit of the table behind, after
- * at most one space, number and unit are one span of the unit's class; a
- * number without one is TEXT.  A unit ends at a space, a punctuation mark
- * or the line's end.
+ * letter, digit or "." is in front of, and ending at a place no "." with a
+ * digit follows.  With a unit of the table behind, joined ("6.00V",
+ * "100mΩ") or after one space, number and unit are one span of the unit's
+ * class; a number without one is TEXT.  A unit ends at a space,
+ * a punctuation mark or the line's end.  A joined word that is no unit of
+ * the table ("6.00Volt", "5x") makes the whole no number: TEXT.
  *
  * Pure C: no ui, no gfx, no text table.
  *

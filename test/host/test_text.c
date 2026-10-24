@@ -877,6 +877,38 @@ TEST_CASE(the_card_slot_has_three_words_at_every_place)
                  "unreadable");
 }
 
+/* A unit symbol joins its number, a word keeps its space, and no unit
+ * takes none: at the empty unit, a word, a symbol, a compound and the
+ * two bytes of the ohm sign. */
+TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
+{
+    static const char *const k_symbol[] = {
+        "V", "mV", "A", "mA", "W", "Hz", "kHz", "ms", "us", "s", "%", "deg",
+        "\xC2\xB0", "m\xCE\xA9", "\xCE\xA9", "mAh", "rpm", "rpm/V", "%/s",
+        "kbit/s", "min",
+    };
+    for (size_t i = 0; i < sizeof(k_symbol) / sizeof(k_symbol[0]); ++i) {
+        if (!ui_unit_is_symbol(k_symbol[i])
+            || strcmp(ui_unit_gap(k_symbol[i]), "") != 0) {
+            T_FAIL("\"%s\" is no symbol", k_symbol[i]);
+        }
+    }
+    static const char *const k_word[] = {
+        "GPIO", "S", "Volt", "v", "ms/", "/s", "/", "rpm/Volt", "m\xCE",
+        "\xCE\xA9x", "V ", " V", "cells",
+    };
+    for (size_t i = 0; i < sizeof(k_word) / sizeof(k_word[0]); ++i) {
+        if (ui_unit_is_symbol(k_word[i])
+            || strcmp(ui_unit_gap(k_word[i]), " ") != 0) {
+            T_FAIL("\"%s\" is a symbol", k_word[i]);
+        }
+    }
+    CHECK(!ui_unit_is_symbol(""));
+    CHECK(!ui_unit_is_symbol(NULL));
+    CHECK_STR_EQ(ui_unit_gap(""), "");
+    CHECK_STR_EQ(ui_unit_gap(NULL), "");
+}
+
 int main(void)
 {
     RUN(the_format_check_sees_what_is_read);
@@ -901,5 +933,6 @@ int main(void)
     RUN(a_makers_row_names_the_product);
     RUN(the_refused_frames_label_shows_only_a_count_above_zero);
     RUN(the_card_slot_has_three_words_at_every_place);
+    RUN(a_number_joins_a_unit_symbol_and_spaces_a_word);
     return test_summary("text");
 }

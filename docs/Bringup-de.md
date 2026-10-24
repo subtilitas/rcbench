@@ -52,14 +52,15 @@ Ein anderes Urteil als `Alle Testframes kamen korrekt zurück.` bringt das Panel
 [Bus-Fehler-Bildschirm](#der-bus-fehler-bildschirm) statt ins Menü. Es muss
 nichts aktiviert werden, und es wird keine Konsole gebraucht.
 
-Die Einzelheiten stehen auf der Konsole. Auf die UART-Buchse (Universal
-Asynchronous Receiver-Transmitter) schauen, nicht auf die native USB-Buchse.
-GPIO19 und GPIO20 (General-Purpose Input/Output) führen sowohl das native USB
-als auch den CAN-Transceiver, und der Multiplexer wählt eines aus; die Konsole
-liegt auf UART0 mit USB-Serial-JTAG (der eingebauten USB-Seriell- und
-Debug-Bridge des ESP32-S3) als Zweitkonsole. Ausgegeben wird:
+Die Einzelheiten stehen auf der Konsole. Sie liegt auf UART0 (Universal
+Asynchronous Receiver-Transmitter 0), mit USB-Serial-JTAG (der eingebauten
+USB-Seriell- und Debug-Bridge des ESP32-P4) als Zweitkonsole. Welche der
+zwei USB-C-Buchsen der Platine zu welcher führt, ist nicht verfolgt. Die
+Sendeleitung des CAN-Transceivers liegt an GPIO22 (General-Purpose
+Input/Output 22), seine Empfangsleitung an GPIO21; keiner der beiden trägt
+sonst etwas. Der Takt des Controllers ist der 40-MHz-Quarz. Ausgegeben wird:
 
-    I (…) can: 1000000 bit/s: brp 4, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
+    I (…) can: 1000000 bit/s: brp 2, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
     I (…) rcbench:   round trip min 334 max 1356 us

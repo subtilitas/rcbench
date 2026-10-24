@@ -162,9 +162,10 @@ const fm_tree_t *files_screen_pane(int i);
 int files_screen_scroll(int i);
 
 /**
- * @brief The message line: the last result or refusal, or the write
- *        gate's sentence; "" for none.
- * @return the line
+ * @brief The message line: the last result or refusal, worded in the
+ *        language showing; "" for none.  The write gate's sentence, drawn
+ *        while the line holds nothing, is not part of it.
+ * @return the line, in a buffer the next call overwrites
  */
 const char *files_screen_message(void);
 

@@ -280,7 +280,63 @@ const char *text_hl_class_css(text_hl_class_t cls)
 }
 
 /**
- * @brief A number at byte @p i, with the unit behind it.
+ * @brief The end of a unit's bytes from byte @p k: a "%"; or a "/" and
+ *        letters, or letters; the ohm sign counts as a letter.
+ *
+ * @param line The line.
+ * @param len  Its bytes.
+ * @param k    Where the unit would start.
+ * @return The byte after the unit's last; @p k for none.
+ */
+static size_t unit_end(const unsigned char *line, size_t len, size_t k)
+{
+    size_t u = k;
+    if (u < len && line[u] == '%') {
+        return u + 1u;
+    }
+    if (u < len && line[u] == '/') {
+        u++;
+    }
+    while (u < len) {
+        if ((line[u] >= 'A' && line[u] <= 'Z') ||
+            (line[u] >= 'a' && line[u] <= 'z')) {
+            u++;
+        } else if (u + 1u < len && line[u] == 0xCEu &&
+                   line[u + 1u] == 0xA9u) {
+            u += 2u;    /* the ohm sign, U+03A9 in UTF-8 */
+        } else {
+            break;
+        }
+    }
+    return u;
+}
+
+/**
+ * @brief The class of the unit from byte @p k to @p u, when it ends at no
+ *        word byte.
+ *
+ * @param line The line.
+ * @param len  Its bytes.
+ * @param k    The unit's first byte.
+ * @param u    The byte after its last (unit_end()).
+ * @return The unit's class; TEXT_HL_TEXT for none, a word that is no unit,
+ *         or one a word byte runs on from.
+ */
+static text_hl_class_t unit_class_at(const unsigned char *line, size_t len,
+                                     size_t k, size_t u)
+{
+    if (u == k || (u < len && is_word(line[u]))) {
+        return TEXT_HL_TEXT;
+    }
+    return text_hl_unit_class((const char *)line + k, u - k);
+}
+
+/**
+ * @brief A number at byte @p i, with the unit behind it: joined to it, as
+ *        in "6.00V", or after one space, as the older reports write it.
+ *
+ * A word joined to the number that is no unit of the table ("6.00Volt",
+ * "5x") makes the whole no number.
  *
  * @param line The line.
  * @param len  Its bytes.
@@ -312,40 +368,19 @@ static size_t number_at(const unsigned char *line, size_t len, size_t i,
             j++;
         }
     }
-    if (j < len && (is_word(line[j]) ||
-                    (line[j] == '.' && j + 1u < len &&
-                     is_digit(line[j + 1u])))) {
-        return 0u;
+    if (j + 1u < len && line[j] == '.' && is_digit(line[j + 1u])) {
+        return 0u;              /* a version, "0.0.0" */
     }
-    /* The unit: after at most one space, "%", "/" and letters, or
-     * letters, ending at no word byte; the ohm sign counts as a letter. */
-    size_t k = (j < len && line[j] == ' ') ? j + 1u : j;
-    size_t u = k;
-    if (u < len && line[u] == '%') {
-        u++;
-    } else {
-        if (u < len && line[u] == '/') {
-            u++;
-        }
-        while (u < len) {
-            if ((line[u] >= 'A' && line[u] <= 'Z') ||
-                (line[u] >= 'a' && line[u] <= 'z')) {
-                u++;
-            } else if (u + 1u < len && line[u] == 0xCEu &&
-                       line[u + 1u] == 0xA9u) {
-                u += 2u;    /* the ohm sign, U+03A9 in UTF-8 */
-            } else {
-                break;
-            }
-        }
+    if (j < len && is_word(line[j])) {
+        /* Joined: a unit of the table, or no number at all. */
+        *cls = unit_class_at(line, len, j, unit_end(line, len, j));
+        return (*cls != TEXT_HL_TEXT) ? unit_end(line, len, j) - i : 0u;
     }
-    if (u > k && (u == len || !is_word(line[u]))) {
-        *cls = text_hl_unit_class((const char *)line + k, u - k);
-        if (*cls != TEXT_HL_TEXT) {
-            return u - i;
-        }
-    }
-    return j - i;
+    /* After at most one space, or a "%" or "/" joined. */
+    const size_t k = (j < len && line[j] == ' ') ? j + 1u : j;
+    const size_t u = unit_end(line, len, k);
+    *cls = unit_class_at(line, len, k, u);
+    return (*cls != TEXT_HL_TEXT) ? u - i : j - i;
 }
 
 /* ------------------------------------------------------------ the rules */

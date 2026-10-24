@@ -63,7 +63,9 @@ ROOT = Path(__file__).resolve().parent.parent
 ALLOW = ROOT / "tools" / "check_units_allow.txt"
 
 # The unit symbols, re-derived from the tree.  Longest first, so that kHz is
-# tried before Hz and °C before °.
+# tried before Hz and °C before °.  The panel's ui_unit_gap() decides by the
+# same list, k_unit_symbols in shared/ui/ui_text.c; test_check_units.py
+# holds the two to each other.
 UNITS = sorted("""
     kbit/s Mbit/s bit/s kB/s MB/s KB/s B/s KiB/s MiB/s °/s deg/s
     mAh mWh kWh Wh Ah

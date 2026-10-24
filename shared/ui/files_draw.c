@@ -307,7 +307,8 @@ static void draw_pane(gfx_canvas_t *c, int i)
  */
 static void draw_message(gfx_canvas_t *c)
 {
-    const char *text = s.message;
+    char line[FS_MSG_MAX];
+    const char *text = fs_message(line, sizeof(line));
     gfx_color_t col = s.message_ok ? UI_TEXT_DIM : UI_DANGER;
     if (text[0] == '\0') {
         const fm_err_t gate = fm_gate(FM_OP_COPY, &s.bench);
@@ -507,7 +508,7 @@ static void draw_info(gfx_canvas_t *c)
              (e->place == FM_PLACE_FREE && !e->busy) ? UI_TEXT : UI_WARN);
     y += FS_INFO_LH;
     if (!reading && s.info_err != FM_OK) {
-        char why[sizeof(s.message)];
+        char why[FS_MSG_MAX];
         fs_err_text(s.info_err, e->name, why, sizeof(why));
         (void)ui_text_wrap(c, gfx_rect_make(box.x + 24, y + 4, box.w - 48, 24),
                            26, why, FS_FONT_BODY, UI_DANGER);

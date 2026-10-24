@@ -22,6 +22,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "gfx.h"
@@ -155,6 +156,17 @@ gfx_rect_t ui_keypad_key_rect(const ui_keypad_t *k, ui_key_t key);
  * @return The face; 8 x 16 for NULL.
  */
 const gfx_font_t *ui_keypad_word_font(const ui_keypad_t *k);
+
+/**
+ * @brief The range line of the keypad's header: "3.30 to 21.00V", the
+ *        unit joined to a symbol and after a space to a word
+ *        (ui_unit_gap()), with the keypad's decimals.
+ * @param k The keypad.
+ * @param buf Takes the line.
+ * @param n Bytes at @p buf.
+ * @return @p buf; "" for a NULL @p k, @p buf or a zero @p n.
+ */
+const char *ui_keypad_range(const ui_keypad_t *k, char *buf, size_t n);
 
 /**
  * @brief The whole keypad over its area: the title and the range in

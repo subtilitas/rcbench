@@ -17,7 +17,6 @@
 #include "files_screen.h"
 
 #include <inttypes.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -82,17 +81,64 @@ static bool io_ok(void)
 
 /* -------------------------------------------------------------- message */
 
-void fs_say(bool ok, const char *fmt, ...)
+/**
+ * @brief Copy @p from into the message's argument @p to, "" for NULL.
+ * @param to    the argument, FM_NAME_BUF bytes
+ * @param from  the name, or NULL
+ */
+static void keep_arg(char to[FM_NAME_BUF], const char *from)
 {
-    va_list ap;
-    va_start(ap, fmt);
-    /* The analyser cannot follow va_start through this wrapper and reports the
-     * list as uninitialised; it is initialised on the line above. */
-    /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
-    vsnprintf(s.message, sizeof(s.message), fmt, ap);
-    va_end(ap);
+    snprintf(to, FM_NAME_BUF, "%s", (from != NULL) ? from : "");
+}
+
+void fs_say(bool ok, ui_text_id_t id, const char *a, const char *b)
+{
+    s.msg_kind = FS_MSG_TEXT;
+    s.msg_id = id;
+    s.msg_err = FM_OK;
+    keep_arg(s.msg_a, a);
+    keep_arg(s.msg_b, b);
     s.message_ok = ok;
     files_screen_invalidate();
+}
+
+void fs_say_err(fm_err_t err, const char *name)
+{
+    s.msg_kind = FS_MSG_ERR;
+    s.msg_err = err;
+    keep_arg(s.msg_a, name);
+    s.msg_b[0] = '\0';
+    s.message_ok = false;
+    files_screen_invalidate();
+}
+
+void fs_quiet(void)
+{
+    s.msg_kind = FS_MSG_NONE;
+}
+
+const char *fs_message(char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    if (s.msg_kind == FS_MSG_ERR) {
+        fs_err_text(s.msg_err, s.msg_a, buf, n);
+    } else if (s.msg_kind == FS_MSG_TEXT) {
+        /* Each format by its own ID, so tools/check_formats.py sees it. */
+        switch (s.msg_id) {
+        case TX_FM_COPIED:   snprintf(buf, n, TR(FM_COPIED), s.msg_a); break;
+        case TX_FM_MOVED:    snprintf(buf, n, TR(FM_MOVED), s.msg_a); break;
+        case TX_FM_RENAMED:
+            snprintf(buf, n, TR(FM_RENAMED), s.msg_a, s.msg_b);
+            break;
+        case TX_LOG_DELETED: snprintf(buf, n, TR(LOG_DELETED), s.msg_a); break;
+        case TX_FM_MADE:     snprintf(buf, n, TR(FM_MADE), s.msg_a); break;
+        default:             snprintf(buf, n, "%s", ui_tr(s.msg_id)); break;
+        }
+    }
+    return buf;
 }
 
 void fs_err_text(fm_err_t err, const char *name, char *out, size_t n)
@@ -123,18 +169,6 @@ void fs_err_text(fm_err_t err, const char *name, char *out, size_t n)
     }
 }
 
-/**
- * @brief The message line says why @p err, for @p name.
- * @param err   the answer
- * @param name  the entry's name
- */
-static void say_err(fm_err_t err, const char *name)
-{
-    char line[sizeof(s.message)];
-    fs_err_text(err, name, line, sizeof(line));
-    fs_say(false, "%s", line);
-}
-
 /* ------------------------------------------------------------- requests */
 
 /**
@@ -150,7 +184,7 @@ static bool submit(void)
     snprintf(s.req.auto_logs, sizeof(s.req.auto_logs), "%s", s.auto_dir);
     if (!s.io.submit(&s.req, s.io.ctx)) {
         /* With nothing under way, the task did not start. */
-        fs_say(false, "%s", TR(LOG_ERR_MEMORY));
+        fs_say(false, TX_LOG_ERR_MEMORY, NULL, NULL);
         return false;
     }
     s.busy = true;
@@ -240,7 +274,7 @@ static void take_pane(void)
     if (s.req.kind == FM_REQ_ENTER && err != FM_OK && err != FM_ERR_NO_CARD
         && err != FM_ERR_CARD_GONE) {
         /* The pane stays in its folder, read again (fm_tree_enter()). */
-        say_err(err, s.enter_name);
+        fs_say_err(err, s.enter_name);
     }
     if (s.select_after[i][0] != '\0') {
         select_name(i, s.select_after[i]);
@@ -272,33 +306,33 @@ static void take_job(void)
     if (j->state == FM_JOB_DONE) {
         switch (j->kind) {
         case FM_JOB_COPY:
-            fs_say(true, TR(FM_COPIED), from);
+            fs_say(true, TX_FM_COPIED, from, NULL);
             snprintf(s.select_after[other], FM_NAME_BUF, "%s", from);
             break;
         case FM_JOB_MOVE:
-            fs_say(true, TR(FM_MOVED), from);
+            fs_say(true, TX_FM_MOVED, from, NULL);
             snprintf(s.select_after[other], FM_NAME_BUF, "%s", from);
             break;
         case FM_JOB_RENAME:
-            fs_say(true, TR(FM_RENAMED), from, to);
+            fs_say(true, TX_FM_RENAMED, from, to);
             snprintf(s.select_after[s.active], FM_NAME_BUF, "%s", to);
             break;
         case FM_JOB_DELETE:
-            fs_say(true, TR(LOG_DELETED), from);
+            fs_say(true, TX_LOG_DELETED, from, NULL);
             break;
         case FM_JOB_MKDIR:
         case FM_JOB_CREATE:
         default:
-            fs_say(true, TR(FM_MADE), to);
+            fs_say(true, TX_FM_MADE, to, NULL);
             snprintf(s.select_after[s.active], FM_NAME_BUF, "%s", to);
             break;
         }
     } else if (j->state == FM_JOB_STOPPED && j->err == FM_ERR_ARMED) {
-        fs_say(false, "%s", TR(FM_E_STOP_ARMED));
+        fs_say(false, TX_FM_E_STOP_ARMED, NULL, NULL);
     } else if (j->state == FM_JOB_STOPPED && j->err == FM_ERR_LOGGING) {
-        fs_say(false, "%s", TR(FM_E_STOP_LOGGING));
+        fs_say(false, TX_FM_E_STOP_LOGGING, NULL, NULL);
     } else {
-        say_err(s.req.err, from);
+        fs_say_err(s.req.err, from);
     }
     if (s.view == FILES_VIEW_JOB) {
         s.view = FILES_VIEW_PANES;
@@ -561,12 +595,12 @@ bool fs_foot_live(fs_foot_t b, fm_err_t *why)
 static void start_job(fm_err_t err, const char *name)
 {
     if (err != FM_OK) {
-        say_err(err, name);
+        fs_say_err(err, name);
         return;
     }
     s.req.kind = FM_REQ_JOB;
     s.req_pane = -1;
-    s.message[0] = '\0';
+    fs_quiet();
     if (submit()) {
         s.view = FILES_VIEW_JOB;
     }
@@ -585,11 +619,11 @@ static void open_in_logs(const fm_entry_t *e)
             ? log_viewer_show(tab, e->name, s.pane[s.active].mount)
             : LOG_SHOW_NOT_LISTED;
     if (r == LOG_SHOW_OTHER_CARD) {
-        say_err(FM_ERR_CARD_GONE, e->name);
+        fs_say_err(FM_ERR_CARD_GONE, e->name);
         return;
     }
     if (r != LOG_SHOW_OPEN) {
-        fs_say(false, "%s", TR(FM_OPEN_WHERE));
+        fs_say(false, TX_FM_OPEN_WHERE, NULL, NULL);
         return;
     }
     ui_router_goto(SCREEN_LOGS);
@@ -602,7 +636,7 @@ void fs_foot(fs_foot_t b)
     const fm_entry_t *e = fs_selected();
     const char *name = (e != NULL) ? e->name : "";
     if (b == FS_RESCAN) {
-        s.message[0] = '\0';
+        fs_quiet();
         s.need_look = true;
         want(0, NEED_PAGE, FM_GO_FIRST);
         want(1, NEED_PAGE, FM_GO_FIRST);
@@ -616,11 +650,11 @@ void fs_foot(fs_foot_t b)
     }
     if (!fs_foot_live(b, &why)) {
         if (e == NULL && why == FM_ERR_ARG) {
-            fs_say(false, "%s", TR(FM_SELECT_FIRST));
+            fs_say(false, TX_FM_SELECT_FIRST, NULL, NULL);
         } else if (b == FS_OPEN) {
-            fs_say(false, "%s", TR(FM_OPEN_WHERE));
+            fs_say(false, TX_FM_OPEN_WHERE, NULL, NULL);
         } else {
-            say_err(why, name);
+            fs_say_err(why, name);
         }
         return;
     }
@@ -632,7 +666,7 @@ void fs_foot(fs_foot_t b)
     switch (b) {
     case FS_OPEN:
         if (e->is_dir) {
-            s.message[0] = '\0';
+            fs_quiet();
             want(s.active, NEED_ENTER, FM_GO_FIRST);
             pump();
         } else {
@@ -657,11 +691,11 @@ void fs_foot(fs_foot_t b)
     case FS_DELETE:
         s.doomed = *e;
         s.doomed_pane = s.active;
-        s.message[0] = '\0';
+        fs_quiet();
         s.view = FILES_VIEW_DELETE;
         break;
     case FS_NEW:
-        s.message[0] = '\0';
+        fs_quiet();
         s.view = FILES_VIEW_NEW;
         break;
     case FS_INFO:
@@ -700,7 +734,7 @@ void fs_turn(int i, fm_go_t go, bool up)
         s.scroll[i] = 0;
     }
     s.active = i;
-    s.message[0] = '\0';
+    fs_quiet();
     pump();
     files_screen_invalidate();
 }
@@ -766,7 +800,7 @@ void fs_name_typed(const char *name)
     default: {
         const fm_entry_t *e = fs_selected();
         if (e == NULL) {
-            fs_say(false, "%s", TR(FM_SELECT_FIRST));
+            fs_say(false, TX_FM_SELECT_FIRST, NULL, NULL);
             return;
         }
         err = fm_job_rename(&s.req.job, &s.bench, here->mount, here->dir,
@@ -866,7 +900,8 @@ int files_screen_scroll(int i)
 
 const char *files_screen_message(void)
 {
-    return s.message;
+    static char line[FS_MSG_MAX];
+    return fs_message(line, sizeof(line));
 }
 
 bool files_screen_busy(void)
