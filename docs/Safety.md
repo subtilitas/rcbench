@@ -15,6 +15,7 @@ hardware.
 | Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
 | IOmcu silence watchdog, 200ms | the link is dead in either direction | built and tested |
 | STOP command over the link | a deliberate stop, acknowledged and reported | written |
+| Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED or the supply output is on | built; the decision is host-tested (`test_frame_watch`) |
 
 A pressed STOP stops the heartbeat, switches the panel's own output model to SAFE
 and writes ARM = 0 to the control page. While the link is up the panel
@@ -22,6 +23,70 @@ writes ARM and THROTTLE at every 50ms poll; an explicit switch to ARMED waits un
 IOmcu reports the heartbeat trusted, writes CLEAR (0x5AFE) on its own,
 then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK (negative
 acknowledge) from the IOmcu to either leaves the panel SAFE.
+
+### Render-loop watchdog
+
+The control task reads touch, tests STOP's rectangle and beats the heartbeat
+without the render loop. A render loop that stops leaves STOP working and
+nothing else. DISARM, the throttle slider, the servo dial and OUTPUT OFF are
+the render loop's, and the outputs keep their last command.
+
+The render loop moves a counter once per pass. The control task reads it in
+every 5ms pass and inside every link exchange's wait. While the bench is
+ARMED, or while the supply output is on, a counter that has not moved for
+1000ms (`FRAME_WATCH_MS`, `shared/safety/include/frame_watch.h`) is a stop
+of the bench's own, through the path STOP takes:
+
+- the heartbeat drops in the same pass, and the IOmcu fails safe within
+  150ms;
+- the supply output switches off in the same pass;
+- the alert `Screen stopped updating for 1s. Switched to SAFE, output off.`
+  shows when the render loop draws again. A loop that never draws again
+  shows nothing new.
+
+The stop latches like STOP. A loop that recovers arms nothing and switches
+nothing on; only the next switch to ARMED clears the latch. One stall makes
+one stop, and the next stall starts at the counter's next move.
+
+The clock starts at the counter's last move, not at the arm. A loop that
+froze after it posted ARM or ON stops the bench in the first pass that finds
+it ARMED or the output on. A SAFE bench with the supply off is never
+stopped: the panel's update install, a log loaded on LOGS and a settings
+save stall the loop on a SAFE bench. The install starts only on a SAFE
+bench with the supply off and withholds the heartbeat on purpose while it
+writes. At start-up the bench is SAFE with the supply off.
+
+The timeout is 1000ms because of the longest passes the render loop makes
+on a screen that drives an output:
+
+| Call in the pass | Longest |
+| --- | --- |
+| PPA (Pixel-Processing Accelerator) copy for Screen rotation 180° | 50ms budget (`GFX_TURN_BUDGET_US`), then a copy of the 1,228,800-byte frame on a timeout, not measured |
+| Flip: the wait for the frame-done event | 200ms (`FLIP_WAIT_MS`) |
+| Paint, a full repaint included (a keypad opening, a screen change) | not measured on the ESP32-P4 |
+| A command to the control task into a full queue | 5ms per command |
+| The console line every 300 frames | about 11ms at 115200 baud, not measured |
+| Settings save | never on an ARMED bench, with an arm waiting, or with the supply on or an ON queued (`flash_gate_open()`) |
+| The servo programmer's look at the card (SERVO > PROGRAM) | one card status command or a mount, then the read of its record (`KST.TXT`); each card command is bounded by the driver's 1000ms, not measured |
+| LOGS: the list, a log's open and its plot | counted as progress per directory entry and per read (`panel_card.c`); one read is bounded by the card driver, not measured |
+
+The bounded part, 50ms + 200ms + the copy + the paint, is about 300ms.
+1000ms is about three times that, and twice the 500ms after which a silent
+touch controller switches the bench to SAFE.
+
+Current limitations:
+
+- A display that stops sending frame-done events makes every flip wait
+  200ms. The loop then passes about 4 times a second, and the watchdog does
+  not fire: DISARM and the other controls still act, on a picture that does
+  not change.
+- The servo programmer looks at the card on the render task, with the
+  supply output on during a session. A status command or a mount that takes
+  1000ms or more, for example behind another task's write on the same card,
+  stops the bench and ends the session.
+- Leaving SERVO while a programming port holds the supply keeps the output
+  on. A single card read of 1000ms or more on LOGS then stops the bench and
+  ends the port's session.
 
 ## Required external circuit: the monostable
 
@@ -480,22 +545,19 @@ reads the state and shows the alert, is not in the coverage figure.
   with a 5ms bus timeout on each transaction of a poll: a probe while it
   has no reference, then three reads. A failed transaction also costs the
   driver's recovery, a controller reset and a bus clear that waits up to
-  50ms more while SDA is held low. A sensor that holds SDA low therefore
-  delays the touch read by about 55ms per transaction. That is under the
-  touch read's own 100ms bus timeout (`GT911_I2C_TIMEOUT_MS`), and a touch
-  controller silent for 500ms switches the bench to SAFE
+  50ms more while SDA is held low. The knob sits on an I2C controller of its
+  own (I2C_NUM_1, IO30 and IO31 of header P3) and nothing else is on that
+  bus, so a sensor that holds SDA low delays the knob task only. The touch
+  controller is on the other controller (I2C_NUM_0, GPIO7 and GPIO8), and
+  a touch controller silent for 500ms switches the bench to SAFE
   (`ARMING_TOUCH_DEAD_MS`). The touch read is not on the heartbeat's path: the control task
-  generates the heartbeat and does not use the I2C bus. The board answers at
-  0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D on that bus, and the CH422G I/O
-  expander takes a transaction at its addresses as a command: at 0x30 to 0x3F
-  the written byte becomes its output byte, which holds the backlight, the
-  touch reset and the USB/CAN (Universal Serial Bus / Controller Area
-  Network) select. The panel refuses to put the knob, or any other device of
-  the builder's, at those addresses or at the ones the I2C specification
+  generates the heartbeat and does not use either I2C bus. The touch bus
+  holds the GT911 at 0x5D, and the touch injector of a build with it at
+  0x14. The panel refuses to put the knob, or any other device of the
+  builder's, at those two addresses or at the ones the I2C specification
   reserves, 0x00 to 0x03 and 0x78 to 0x7F (`shared/bench/include/panel_i2c.h`).
-  That nothing on the board answers at the knob's 0x06 rests on the CH422G's
-  and the GT911's documented addressing: the board's one bus scan covered
-  0x08 to 0x77.
+  That nothing answers at the knob's 0x06 on the knob's bus rests on the
+  bus being the knob's alone; what answers on the board is not measured.
 - If the touch controller stops answering for 500ms, the bench switches to SAFE and
   refuses to switch to ARMED. The panel is the only place a STOP button exists.
 - After a link failsafe the IOmcu does not switch back to ARMED when traffic returns.
