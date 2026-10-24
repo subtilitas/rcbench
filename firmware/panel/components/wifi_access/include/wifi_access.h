@@ -77,13 +77,20 @@ void wifi_access_set_german(bool de);
 /** Start in @p mode unless @p gate says why not; see wa_start(). */
 wa_off_t wifi_access_start(wa_mode_t mode, wa_off_t gate);
 
-/** Radio off for @p why. */
+/**
+ * @brief Radio off for @p why; see wa_close().
+ * @param why The reason.
+ */
 void wifi_access_close(wa_off_t why);
 
 /**
- * Once a frame: the gate, STOP pressed since the last call, the time-outs;
- * and a change to what is kept written when @p may_write (flash may be
- * written now).  Returns whether this call switched the radio off.
+ * @brief Once a frame: the gate, STOP pressed since the last call, the
+ *        time-outs; and a change to what is kept written when @p may_write.
+ * @param gate      wa_gate()'s answer.
+ * @param stop      STOP pressed since the last call.
+ * @param may_write Flash may be written now.
+ * @return Whether this call switched the radio off or ended its linger
+ *         (wa_tick()).
  */
 bool wifi_access_tick(wa_off_t gate, bool stop, bool may_write);
 
@@ -95,6 +102,13 @@ void wifi_access_get(wifi_access_state_t *out);
  * call on, a close until the radio is off.
  */
 bool wifi_access_down(void);
+
+/**
+ * @brief The radio goes off without waiting for the clock's NTP answer:
+ *        a session that ended and lingers (wa_lingers()) stops lingering;
+ *        one that runs goes on.  From any task, without the lock.
+ */
+void wifi_access_end_linger(void);
 
 /** Keep a home network; false when wa_conf_set_net() refuses it. */
 bool wifi_access_save_net(const char *ssid, const char *pass);

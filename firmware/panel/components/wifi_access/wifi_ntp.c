@@ -104,7 +104,7 @@ static void ntp_end(void)
     }
 }
 
-void wifi_ntp_poll(bool joined)
+bool wifi_ntp_poll(bool joined, bool lingers)
 {
     portENTER_CRITICAL(&s_mux);
     const bool answered = s_answered;
@@ -112,7 +112,7 @@ void wifi_ntp_poll(bool joined)
     const int64_t old_us = s_old_us;
     portEXIT_CRITICAL(&s_mux);
     const uint32_t now_ms = (uint32_t)(esp_timer_get_time() / 1000);
-    switch (wall_ntp_step(&s_req, joined, answered, now_ms)) {
+    switch (wall_ntp_hold_step(&s_req, joined, lingers, answered, now_ms)) {
     case WALL_NTP_START:
         ntp_start();
         break;
@@ -137,9 +137,10 @@ void wifi_ntp_poll(bool joined)
     default:
         break;
     }
+    return wall_ntp_holds(&s_req, lingers, now_ms);
 }
 
 void wifi_ntp_stop(void)
 {
-    wifi_ntp_poll(false);
+    (void)wifi_ntp_poll(false, false);
 }

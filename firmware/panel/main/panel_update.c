@@ -422,6 +422,11 @@ bool cu_service(bool *link_up, bench_state_t *bench,
         s_cu_starts_taken = atomic_load(&s_cu_starts);
         /* Busy first, then the install's flag: see s_fw_installing. */
         atomic_store(&s_cu_busy, true);
+        /* A radio held for the clock's NTP answer goes off now, so the
+         * offer made again below opens as soon as it is down. */
+        if (s_wifi_ok) {
+            wifi_access_end_linger();
+        }
         if (!cu_may_start()) {
             /* The panel's radio is up or an install of the panel has
              * begun: the START is spent and the offer made again, so the

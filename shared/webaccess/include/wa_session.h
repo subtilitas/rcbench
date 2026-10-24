@@ -17,7 +17,9 @@
  * panel asks GitHub for a release (WA_MODE_FETCH, wa_fetch.h).  It is off
  * at every start of the panel, and it goes off on its own: on ARM, on STOP,
  * on the supply coming on, on a log run opening, after WA_IDLE_MS without
- * a request, and after WA_GUESS_MAX wrong access codes.
+ * a request, and after WA_GUESS_MAX wrong access codes.  A joined session
+ * switched off by the operator or by WA_IDLE_MS may leave the radio up for
+ * the platform's last request on the network (wa_lingers()).
  *
  * The access code: WA_SECRET_LEN characters shown on the panel, made fresh
  * at every start, which the page asks for before it lists a file or takes an
@@ -404,6 +406,9 @@ typedef struct {
     uint32_t      scan_tok;   /**< the scan under way, 0 for none         */
     uint32_t      scan_seq;   /**< the last scan token given; kept by
                                    wa_start(), so no two scans share one  */
+    bool          linger;     /**< switched off while joined, and the
+                                   radio may stay up for the platform's
+                                   last request (wa_lingers())            */
     char          pass[WA_SECRET_LEN + 1u];   /**< the access point's    */
     char          code[WA_SECRET_LEN + 1u];   /**< the page's access code */
 } wa_t;
@@ -442,7 +447,13 @@ wa_off_t wa_start(wa_t *w, wa_mode_t mode, wa_off_t gate, uint32_t now_ms,
                   wa_rand_fn rand, void *ctx);
 
 /**
- * @brief Switch off for @p why.  Nothing when already off.
+ * @brief Switch off for @p why.
+ *
+ * A joined session switched off by the operator (WA_OFF_ASKED, which is
+ * also a release check's own end) or by WA_IDLE_MS lingers (wa_lingers()).
+ * Already off: only a reason that does not linger acts, and it ends the
+ * linger.
+ *
  * @param w   The session.
  * @param why The reason.
  */
@@ -454,6 +465,29 @@ void wa_close(wa_t *w, wa_off_t why);
  * @return true for any state but WA_ST_OFF.
  */
 bool wa_radio(const wa_t *w);
+
+/**
+ * @brief Whether the radio may stay up past the session's end, for a
+ *        request of the platform's own that is under way (the clock's NTP
+ *        request, wall_ntp_holds()).
+ *
+ * Only a joined session switched off for WA_OFF_ASKED or WA_OFF_IDLE
+ * lingers.  The linger ends at once with a gate (ARM, the supply, a log
+ * run), STOP, any other wa_close() reason (an install, a failed radio),
+ * a drop of the station and any wa_start(); a new session's start takes
+ * the radio down first.
+ *
+ * @param w The session.
+ * @return true while the session is off and lingers.
+ */
+bool wa_lingers(const wa_t *w);
+
+/**
+ * @brief The platform needs the radio off now: a linger ends; a session
+ *        that runs goes on.
+ * @param w The session.
+ */
+void wa_unlinger(wa_t *w);
 
 /**
  * @brief Whether the page is being served.
@@ -617,12 +651,13 @@ wa_scan_step_t wa_on_scan_end(wa_t *w, uint32_t tok, bool ok,
                               uint32_t *next);
 
 /**
- * @brief Once a frame: the gate, STOP and the time-outs.
+ * @brief Once a frame: the gate, STOP and the time-outs.  Off, a gate or
+ *        STOP ends a linger (wa_lingers()).
  * @param w      The session.
  * @param now_ms Now.
  * @param gate   wa_gate()'s answer.
  * @param stop   STOP pressed since the last call.
- * @return Whether this call switched the session off.
+ * @return Whether this call switched the session off or ended its linger.
  */
 bool wa_tick(wa_t *w, uint32_t now_ms, wa_off_t gate, bool stop);
 

@@ -3465,6 +3465,11 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   (UTC+2) vom letzten Sonntag im März 01:00 UTC bis zum letzten Sonntag im
   Oktober 01:00 UTC. Die Regeln sind POSIX-TZ-Zeichenketten in
   `shared/clock/wall_clock.c`.
+- FAT speichert die Zeit einer Datei als Ortszeit im Moment des Schreibens,
+  ohne Zone (`get_fattime()` von ESP-IDF liest `localtime_r()`). Ein
+  späterer Wechsel der Zone verschiebt die Zeiten der Dateien auf der Karte
+  nicht: Eine Datei, um 12:00 geschrieben, zeigt nach einem Schritt auf
+  eine Zone 1h dahinter weiter 12:00.
 - Die Zeile ist bei ARMED nicht gesperrt: Sie bewegt kein Bedienelement.
 - Bei jedem Einschalten startet die Uhr ungestellt, bei 1970-01-01 00:00:00
   UTC. Eine Datei, die dann geschrieben wird, trägt 1980-01-01 plus die Zeit
@@ -3479,11 +3484,21 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   (Simple Network Time Protocol): die Release-Prüfung beim Start, NACH
   UPDATES SUCHEN und der Download unter [Updates](#updates) und das
   Heimnetz von WI-FI ([WLAN](#wlan)). Die Anfrage geht hinaus, sobald das
-  Panel seine Adresse hat. Sie endet mit der Antwort, nach 30000ms ohne
-  Antwort oder mit dem Ende der Verbindung, was zuerst kommt. Sie hält das
-  Funkteil nie an: Endet die Release-Prüfung zuerst, bleibt die Uhr bis zur
-  nächsten Verbindung, wie sie war. Wie lange eine Antwort in einem echten
-  Netz braucht, ist nicht gemessen.
+  Panel seine Adresse hat. Sie endet mit der Antwort oder nach 30000ms
+  ohne Antwort, was zuerst kommt.
+- Eine Verbindung, die endet, während die Anfrage unbeantwortet ist, hält
+  das Funkteil für sie an, bis zur Antwort oder höchstens 30000ms: das
+  eigene Ende der Release-Prüfung, AUS auf WI-FI, das Verlassen von WI-FI
+  und die Leerlaufzeit von 10min. Die Konsole sagt `wifi: radio held for
+  the NTP answer, 30000ms at most from the request`. ARM, auch ein
+  gefragtes, die Versorgung, die einschaltet, ein Log-Lauf, der sich öffnet,
+  STOP, eine Installation, START eines IOmcu-Updates, ein ausgefallenes
+  Funkteil, ein verlorenes Netz, 16 falsche Zugangscodes und eine neue
+  WI-FI- oder GitHub-Sitzung nehmen das Funkteil sofort herunter; die
+  Anfrage endet dann unbeantwortet, und die Uhr bleibt bis zur nächsten
+  Verbindung, wie sie war. Wie lange eine Antwort in einem echten Netz
+  braucht, ist nicht gemessen; im Heimnetz des Prüfstands kam eine 7,2s
+  nach der Adresse.
 - Eine Antwort stellt die Uhr und schreibt eine Konsolenzeile: den Server,
   die gesetzte Zeit in UTC und wie weit sie die Uhr bewegt hat, zum Beispiel
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
@@ -4430,8 +4445,9 @@ der Antwort. RELEASES legt die Anfrage fest:
 | `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge; das höchste Release der Release-Linie unter ihnen wird daneben gehalten. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
 
 Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen
-höchstens 30s. Die Verbindung fragt auch einen NTP-Server nach der Zeit,
-innerhalb derselben Verbindung ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)). In beiden Einstellungen wird ein Release nur angeboten, wenn
+höchstens 30s. Die Verbindung fragt auch einen NTP-Server nach der Zeit;
+eine Antwort, die beim Ende der Prüfung noch aussteht, hält den Funk
+höchstens 30s ab der Anfrage an ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)). In beiden Einstellungen wird ein Release nur angeboten, wenn
 es zur Release-Linie des Panels gehört und neuer als der laufende Build ist.
 Die Linie des ESP32-P4-Panels enthält jedes Release
 ([Die Release-Linie](#die-release-linie)).
