@@ -512,14 +512,44 @@ static bool is_word(const ui_textkey_t *k, int key)
                                && k->layer != UI_TK_MARKS)));
 }
 
+/** @brief The key faces, largest first: 20 x 36, 16 x 28, 12 x 24,
+ *         10 x 20 and 8 x 16. */
+static const gfx_font_t *const k_faces[] = {
+    &gfx_font_20x36, &gfx_font_16x28, &gfx_font_12x24, &gfx_font_10x20,
+    &gfx_font_8x16,
+};
+/** @brief The count of k_faces. */
+#define TK_FACES ((int)(sizeof(k_faces) / sizeof(k_faces[0])))
+
+/**
+ * @brief Where the character keys' face is in k_faces: the first whose
+ *        cell fits a character key with TK_KEY_PAD on each of its 4 sides.
+ * @param k The keyboard.
+ * @return The index; the last, 8 x 16, when none fits.
+ */
+static int char_face(const ui_textkey_t *k)
+{
+    const gfx_rect_t r = ui_textkey_key_rect(k, 0);
+    for (int f = 0; f < TK_FACES - 1; ++f) {
+        if (k_faces[f]->width + 2 * TK_KEY_PAD <= r.w
+            && k_faces[f]->height + 2 * TK_KEY_PAD <= r.h) {
+            return f;
+        }
+    }
+    return TK_FACES - 1;
+}
+
+const gfx_font_t *ui_textkey_char_font(const ui_textkey_t *k)
+{
+    return (k != NULL) ? k_faces[char_face(k)] : &gfx_font_8x16;
+}
+
 const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k)
 {
     if (k == NULL) {
         return &gfx_font_8x16;
     }
-    static const gfx_font_t *const faces[] = { &gfx_font_12x24,
-                                               &gfx_font_10x20 };
-    for (size_t f = 0; f < sizeof(faces) / sizeof(faces[0]); ++f) {
+    for (int f = char_face(k); f < TK_FACES - 1; ++f) {
         bool fit = true;
         for (int key = 0; key <= UI_TK_SHOW && fit; ++key) {
             const gfx_rect_t r = ui_textkey_key_rect(k, key);
@@ -535,10 +565,10 @@ const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k)
                                    || key == UI_TK_LAYER)) {
                 label = "#+=";      /* as wide as "ABC" and "abc" */
             }
-            fit = ui_text_fits(faces[f], label, r.w, r.h, TK_KEY_PAD);
+            fit = ui_text_fits(k_faces[f], label, r.w, r.h, TK_KEY_PAD);
         }
         if (fit) {
-            return faces[f];
+            return k_faces[f];
         }
     }
     return &gfx_font_8x16;
@@ -612,7 +642,9 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
                                  (int16_t)(box.w - 20), box.h },
                 shown, ef, ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_LEFT);
 
-    /* Characters in 12 x 24; the words in the face they all fit. */
+    /* Characters in the largest face their key holds; the words in the
+     * largest face, no larger, they all fit. */
+    const gfx_font_t *cf = ui_textkey_char_font(k);
     const gfx_font_t *wf = ui_textkey_word_font(k);
     for (int key = 0; key <= UI_TK_SHOW; ++key) {
         const gfx_rect_t r = ui_textkey_key_rect(k, key);
@@ -627,6 +659,6 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
                                      ? ui_theme_color(UI_C_ACCENT)
                                      : ui_theme_color(UI_C_PANEL_SUNK);
         ui_button_font(c, r, label, fill, k->pressed == key, true,
-                       is_word(k, key) ? wf : &gfx_font_12x24);
+                       is_word(k, key) ? wf : cf);
     }
 }
