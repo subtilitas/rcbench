@@ -6,6 +6,29 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.0 - 2026-10-24
+
+0.23.0 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It is the first
+release for the ESP32-P4 panel, the 7-inch ESP32-P4 display board from
+Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, chip revision 3.2, 1024 x 600
+pixels). 0.22 is the last release line for the ESP32-S3 panel and 0.22.1
+its last release: an ESP32-S3 panel is offered 0.22.x patch releases only,
+and no 0.23.0 or later release. The IO board and the CAN (Controller Area
+Network) link are as in 0.22.1; the IOmcu image adds the reset-cause report
+listed below, and the link protocol stays 4.28.
+
+A new bench loads 0.23.0 over USB (Universal Serial Bus) as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes: the IOmcu
+with `rcbench-iomcu-install.uf2`, the panel with `rcbench-panel-p4-v0.23.0.zip`
+and `esptool.py --chip esp32p4`. A later release reaches an ESP32-P4 panel
+over Wi-Fi: CHECK FOR UPDATES with RELEASES: STABLE reads `releases/latest`,
+which names 0.22.1 until a stable release for the ESP32-P4 panel exists, so
+it reads `Up to date. Panel version: 0.23.0.`; with RELEASES: TESTING it reads the 10 newest
+releases. At link-up the panel offers the IOmcu's update over CAN when the
+IOmcu runs another build. Which of the board's two USB-C sockets takes the
+flash, and how the board enters download mode, is not traced.
+
 ### Added
 
 - The panel sets its clock by NTP (Network Time Protocol). Each join of
@@ -85,13 +108,71 @@ history is in git.
   (12x24). Cap heights are 12, 15, 23 and 40px. The 32x44 numeral face
   cuts `#` (5px), `$` (16px), `(` (12px), `)` (12px), `,` (23px) and
   `/` (6px) at the cell edge; the three text faces cut nothing, which
-  `gen_font.py --check` verifies. No screen draws with the faces yet.
+  `gen_font.py --check` verifies. The screens draw with them (see Changed).
 - The console names each SERVO test file as it opens and closes:
   `logging to .../ATEST004.TXT` when the report opens after the CSV,
   `.../ATEST004.CSV closed, 212 lines` or `... closed short: a write or the
   close failed, 212 lines sent` at its close, and the same for
   `LIMITnnn.TXT`. A test that gets no file logs `no test file in ... (take
   n); this test is not recorded`.
+
+- FILES, the SD card in two panes. SETUP's ninth tile, FOLDERS AND FILES,
+  and a FILES key in LOGS' footer open it. Each pane is 500px wide, shows 6
+  rows at a 48px pitch in pages of 48 entries and has a 56px scroll bar.
+  The footer keys are OPEN, COPY, MOVE, RENAME, DELETE, NEW, INFO and
+  RESCAN. An entry that starts with `.` or is longer than 63 bytes is
+  counted as `+ n NOT LISTED`. A name takes 59 bytes at most.
+  Writes run only while the bench is SAFE and no log file is open; a key
+  the rule refuses is drawn dimmed, and a tap says why. A copy, move or
+  delete runs on its own task (`cardjob`, priority 1, core 0, 6656 bytes of
+  stack) in chunks of 16KiB. It stops before the next chunk on CANCEL, on a
+  switch to ARMED and when a run starts logging, and it removes its `.NEW`
+  part file. The bench's folders are FIXED, the servo programmer's record
+  is LOCKED, a file the logger writes shows WRITING, and the fault log can
+  be copied or deleted only with the IOmcu link up. After each copy the
+  console logs the size, the time and the rate in kB/s. OPEN on a log CSV
+  or a report in the three log folders opens it on LOGS; OPEN on any other
+  file names where LOGS opens files. The text viewer and editor are not in
+  this release. The message line is worded when it is drawn, so a result or
+  refusal on it follows a change of the interface language.
+- SETUP > PANEL has a Screen rotation row, NORMAL or 180°, NORMAL by
+  default, after Contrast. A step applies on the next frame without a
+  restart, and SAVE keeps it. The row is held while the bench is ARMED:
+  it has no keys and the settings calls leave it. NORMAL draws into the
+  frame buffer as before. 180° draws into two logical buffers in PSRAM
+  (2 x 1,228,800 bytes, allocated at start-up in both settings) and
+  copies what a frame changed, in rectangles of 16-row bands, at most 8
+  per flip, into the frame buffer at the turned place with the PPA
+  (pixel-processing accelerator). Touch turns with the picture; the touch
+  injector's contacts stay in logical pixels. A flip has 50ms for its
+  copies. A copy that times out or that the PPA refuses makes the flip
+  copy the logical buffer unturned with the CPU; picture and touch both
+  fall back to NORMAL until the next start, the stored setting stays 180°,
+  and the band says `Screen rotation 180° failed. NORMAL until restart.`.
+  The PPA's copy time on the board is not measured; the console's
+  300-frame line carries `TURN <n> us`, the last flip's copy time. The
+  build copies ESP-IDF's `esp_driver_ppa` with the change that Espressif's
+  `esp_lvgl_adapter` 0.6.4 ships for the PPA hang DIG-734.
+- The touch injector (`testbench/touch-injector`) runs up to 5 contacts
+  at once, as the GT911 reports them: a frame carries every contact that
+  is down, lowest ID first. `tap`, `hold` and `swipe` take `id=N` (0 to
+  15), `release` takes it, `contacts` lists the contacts, and a sixth
+  contact answers `err full`. A command without `id=` drives contact 0 and
+  its reply is word for word as before; `ping` still reports protocol 1.
+  The station can press DISARM or STOP with a second contact while a drag
+  is under way.
+- The console says when the rotary knob's MT6701 first answers a poll and
+  when it stops: `knob: found at 0x06 on I2C1 (GPIO30/31)` and `knob:
+  lost at 0x06 on I2C1 (GPIO30/31)`. One line per change; a panel without a
+  knob prints nothing.
+- The release workflow names the panel's assets `rcbench-panel-p4-<tag>.zip`
+  and `rcbench-panel-p4-<tag>.bin`, and `SHA256SUMS` lists them. The update
+  check of an ESP32-P4 panel looks for `rcbench-panel-p4-vX.Y.Z.bin`
+  (`shared/fwupdate/fw_release.c`), so an ESP32-S3 panel, whose assets carry
+  no `p4`, finds no entry for 0.23.0. The ESP32-P4 panel's release line is
+  not capped: a check on STABLE or TESTING offers any release newer than the
+  running build (`FW_REL_LINE_CAPPED` 0); the ESP32-S3 panel's line stays
+  at 0.22.x.
 
 ### Fixed
 
@@ -147,6 +228,25 @@ history is in git.
   a bench without an ESC or an INA228. The header and a MOTOR run's rows
   stay as they are.
 
+- Taking the radio down no longer waits for a name lookup that has not
+  answered. `radio_down()` gives the GitHub fetch task 1.5s
+  (`FETCH_GRACE_MS`), then stops the station, destroys the interface and
+  sets the radio down; the 20s wait for the task (`FETCH_EXIT_MS`) is gone.
+  While the task lives no fetch job starts (BUSY), and a WI-FI session does
+  not wait for it; its late report is dropped by the job's generation.
+  With the first DNS (Domain Name System) server not answering, an ARM
+  during the release check at start left a WI-FI JOIN tapped then waiting
+  13.9s; the station dropped 1.55s after the ARM on the bench. Not
+  measured on the board with this build. lwIP tries a first DNS server at
+  0s, 1s, 2s and 4s and the next at 7s, so a first server that does not
+  answer delays each name lookup after a join by about 7s;
+  `DNS_MAX_RETRIES` and `DNS_TMR_INTERVAL` are not in ESP-IDF v5.5.5's
+  Kconfig and stay at lwIP's defaults. The console logs one line per join
+  with the servers the interface holds: `wifi: dns <first>, <second>`.
+- UPDATES: a job ended or refused for the WI-FI screen shows no result line
+  once the radio is off and nothing asks for it, so `Stopped: the WI-FI
+  screen is using Wi-Fi.` no longer stays after the WI-FI session ended.
+
 ### Changed
 
 - The ESC profiles' texts the panel shows write a number and its unit
@@ -193,14 +293,81 @@ history is in git.
   32MB flash with two application slots of 7936kB. The EK79007 panel runs
   on 2 MIPI DSI (Display Serial Interface) lanes at 1000Mbit/s each, 1024 x
   600 RGB565 at 60.38Hz (measured on the console's VSYNC figure), two
-  frame buffers in PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
-  black. Touch is polled (the GT911's INT line does not reach the chip),
-  mirrored in x and y, and a touch outside 800 x 480 is dropped. The card
+  frame buffers in PSRAM; the UI draws the whole glass. Touch is polled
+  (the GT911's INT line does not reach the chip) and mirrored in x and y.
+  The card
   mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
   (RX) from the 40MHz crystal; the rotary knob has an I2C controller of its
   own. The heartbeat pin is IO28 and the knob pins are IO30 (SDA) and
   IO31 (SCL), all on the 12-pin header P3. Its Wi-Fi radio is the
   board's ESP32-C6 on SDIO, listed under Added.
+
+- The user interface is laid out for the 1024 x 600 glass; it is not the
+  800 x 480 layout scaled up. `shared/ui/include/ui_layout.h` holds the
+  geometry once: the band is 60px, the body 540px, the alert band 44px
+  (y 556 to 599), the margin 8px, a button 48px (tall 56px) and the
+  smallest tap target 48px. The type roles are 10x20 (`UI_FONT_BAND`,
+  labels, notes), 12x24 (`UI_FONT_BODY`, prose), 20x36 (`UI_FONT_TAG`,
+  heads) and the 32x44 numerals. STOP is 168 x 48px from x 850; the band's
+  chips are 44px tall, the home tag 44px; a help bubble is 640px (60
+  cells) and the FAULT bubble 1008px (97 cells); the alert band holds up to
+  2 rows of 97 cells. The hold flash runs by time, two cycles of 25ms
+  white, black and settled, 150ms in all, at any frame rate. Every stop
+  control ends above the alert band. The screens laid out: OVERVIEW (4 x 2
+  tiles of 243 x 255px), SETUP and its lists (3 x 3 tiles of 328 x 130px;
+  984 x 428px lists of 6 rows at a 70px pitch), the keypad (keys 145 x
+  84px) and the on-screen keyboards (key letters 12x24, were 8x16), LOGS,
+  SERVO (LIVE, TEST, SETTINGS, PROGRAM, the KST programmer and the limit
+  run), MOTOR & ESC (LIVE, TABLE, SETTINGS, PROGRAM and ESC STICK), SUPPLY,
+  OUTPUTS and PICK A PIN, RECEIVER, BATTERY, BALANCE, WI-FI, UPDATES, the
+  update screens, BUS FAULT and SPLASH. A plot holds 1,024 samples, 51.2s
+  at 20Hz. The touch map and the touch injector use 1024 x 600.
+- A clipped repaint draws what lies in its clip: a glyph, a seven-segment
+  digit, a disc, a capsule or a ring outside the clip is not walked, an
+  arc walks only the directions of the clip, and the band is repainted
+  only when what it shows has changed. Every golden image is unchanged. Host
+  model, instructions a frame: SERVO LIVE ARMED with a position held
+  2,376,262 to 943,052, sweeping 4,780,742 to 2,038,879; OVERVIEW SAFE at
+  rest 518,425 to 2,813. The frame rate on the board after the change is
+  not measured; before it, SERVO LIVE ran 60.4fps SAFE at rest and 30.2fps
+  ARMED.
+- The SERVO arm moves in fractions of a pixel. A change of the arm
+  repaints three boxes of LIVE's card: the horns, the angle's numerals and
+  the COMMANDED and MEASURED numerals. The arm, its holes and its rings are
+  placed at float positions: on a sweep the drawn tip's error against its
+  angle is 0.012px rms, 0.026px at most, where it was 0.675px and
+  1.337px (host render). A drag on the dial is filtered by a one-pole
+  filter with a 20ms time constant (`SV_DRAG_TAU_MS`): the press commands
+  at once, a move sets the goal, and each frame commands the filtered
+  angle, so the drawn arm and the posted pulse follow one target. The pulse
+  step per frame of a drag at 90°/s is 5 to 10us (3 to 12us before); the
+  finger leads the drawn arm by 1.65° on average (0.49° before). DISARM,
+  STOP and SAFE end the filter.
+- The configurator describes the 7-inch ESP32-P4 display board as the
+  panel: its part and buy row (chip revision 3.2) and its CAN pins on
+  header H11. It describes release 0.23.0. The ESP32-S3 catalogue stays at
+  the tag v0.22.0.
+- Keypad range lines and the supply trip texts write no space before a unit
+  symbol, through `ui_unit_gap()`; a word unit keeps its space.
+- C and C++ files carry Doxygen comments (`@file`, `@brief`, `@param`,
+  `@return`), and Python files carry Google docstrings. `tools/doc_check.py` fails CI
+  for a new or touched file that lacks them, against the baseline
+  `tools/doc_check_baseline.txt`, and the Doxygen HTML is published on
+  GitHub Pages under `api/`.
+- The screens that `tools/check_sizes.txt` held whole (LOGS, SUPPLY, MOTOR
+  & ESC, the pin picker, SETTINGS and WI-FI) and the SERVO, KST programmer
+  and ESC STICK screens are split by concept into files under 1,000 code
+  lines, and nine host test files of more than 2,000 lines are split into
+  suites of at most 946 lines. Functions and cases move unchanged.
+- CI caches the ARM toolchain's `.deb` files (`tools/install_arm_toolchain.sh`)
+  and bounds the apt download with a 30s timeout; the Configurator smoke
+  and matrix jobs have a 35min limit and the Chromium install a step limit
+  of its own, 15min.
+
+### Removed
+
+- The panel firmware no longer builds for the ESP32-S3-Touch-LCD-7. 0.22.1
+  is the last release for the ESP32-S3 panel.
 
 ## 0.22.1 - 2026-10-22
 
