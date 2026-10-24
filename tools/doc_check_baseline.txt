@@ -4232,7 +4232,6 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_scr
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_unheld is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warn_line is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warning is not documented
-shared/ui/include/supply_screen.h: file has no @file block
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_adopt are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_ask_on are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_claim are not documented
@@ -6057,12 +6056,6 @@ shared/ui/supply_screen.c: warning: Member sup_propose(int from) (function) of f
 shared/ui/supply_screen.c: warning: Member sup_refresh_limits(void) (function) of file supply_screen.c is not documented.
 shared/ui/supply_screen.c: warning: Member sup_s (variable) of file supply_screen.c is not documented.
 shared/ui/supply_screen.c: warning: Member sup_series[S_COUNT] (variable) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_invalidate(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen_model(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen_output_on(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen_port_held(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen_set_i(void) (function) of file supply_screen.c is not documented.
 shared/ui/supply_screen_int.h: warning: Compound limit_row_t is not documented.
 shared/ui/supply_screen_int.h: warning: Compound sup_state_t is not documented.
 shared/ui/supply_screen_int.h: warning: Member ROW_COUNT (macro definition) of file supply_screen_int.h is not documented.
