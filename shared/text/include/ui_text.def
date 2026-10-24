@@ -33,9 +33,9 @@
  * A format string's conversions are part of its contract: a translation
  * converts the same arguments in the same order (test_text checks).
  *
- * The text faces hold printable ASCII (0x20 to 0x7E) and the German
- * letters Ä Ö Ü ä ö ü ß; any other code point draws as '?'.  test_text
- * holds every string the panel draws to that set.  Text is UTF-8.
+ * The text faces hold printable ASCII (0x20 to 0x7E), the degree sign °
+ * and the German letters Ä Ö Ü ä ö ü ß; any other code point draws as
+ * '?'.  test_text holds every string the panel draws to that set.  Text is UTF-8.
  *
  * What stays English in every language is not in the table and is written
  * where it is drawn: ARM, DISARM, STOP, the screen titles, protocol and
@@ -3417,6 +3417,11 @@ UI_TEXT(ALERT_TOUCH_LOST_STOP, 94,
 UI_TEXT(ALERT_TOUCH_LOST_ARMING, 94,
     "Touch signal lost while switching to ARMED. Stopped.",
     "Touch-Signal beim Wechsel zu ARMED verloren. Gestoppt.")
+/* Screen rotation 180° fell back: the copy into the frame buffer timed out
+ * or failed (gfx_turn.h).  Raised by the render loop. */
+UI_TEXT(ALERT_ROTATION_OFF, 94,
+    "Screen rotation 180° failed. NORMAL until restart.",
+    "Bilddrehung 180° fehlgeschlagen. NORMAL bis zum Neustart.")
 UI_TEXT(ALERT_NO_CARD_RUN, 94,
     "No card. This run is not being recorded.",
     "Keine Karte. Dieser Lauf wird nicht aufgezeichnet.")
@@ -5228,6 +5233,12 @@ UI_SETTING_LABEL(SET_CONTRAST,
 UI_SETTING_HELP(SET_CONTRAST,
     "Pushes colours away from mid grey",
     "Drückt Farben weg vom Mittelgrau")
+UI_SETTING_LABEL(SET_SCREEN_ROT,
+    "Screen rotation",
+    "Bilddrehung")
+UI_SETTING_HELP(SET_SCREEN_ROT,
+    "Turns picture and touch; locked while ARMED",
+    "Dreht Bild und Touch; gesperrt bei ARMED")
 UI_SETTING_LABEL(SET_LANGUAGE,
     "Language",
     "Sprache")
@@ -6013,6 +6024,11 @@ UI_OPTIONS(theme)
 UI_OPTION("DARK", "DUNKEL")
 UI_OPTION("LIGHT", "HELL")
 UI_OPTIONS_END(theme)
+
+UI_OPTIONS(screen_rot)
+UI_OPTION("NORMAL", NULL)
+UI_OPTION("180°", NULL)
+UI_OPTIONS_END(screen_rot)
 
 UI_OPTIONS(language)
 UI_OPTION("ENGLISH", NULL)

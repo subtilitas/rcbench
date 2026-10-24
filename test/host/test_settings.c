@@ -965,6 +965,129 @@ TEST_CASE(the_log_folders_are_strings_kept_reset_and_observed)
     settings_set_store(NULL);
 }
 
+/* ------------------------------------------------- Screen rotation */
+
+static bool s_armed_now;
+
+static bool armed_now(void)
+{
+    return s_armed_now;
+}
+
+TEST_CASE(screen_rotation_starts_normal_on_panel_and_offers_two_choices)
+{
+    fresh_model();
+    const setting_def_t *d = settings_def(SET_SCREEN_ROT);
+    CHECK(d != NULL);
+    if (d == NULL) {
+        return;
+    }
+    CHECK_STR_EQ(d->key, "screen_rot");
+    CHECK_EQ(d->cat, SET_CAT_APP);
+    CHECK_EQ(d->type, SET_TYPE_ENUM);
+    CHECK_EQ(d->option_count, 2);
+    CHECK_STR_EQ(d->options[0], "NORMAL");
+    CHECK_STR_EQ(d->options[1], "180\xc2\xb0");
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    CHECK(settings_cycles(SET_SCREEN_ROT));
+    CHECK(settings_safe_only(SET_SCREEN_ROT));
+    CHECK(!settings_safe_only(SET_BRIGHTNESS));
+    char buf[16];
+    CHECK_STR_EQ(settings_value_text(SET_SCREEN_ROT, buf, sizeof(buf)),
+                 "NORMAL");
+    /* PANEL lists it after Contrast, beside the other display rows. */
+    setting_id_t ids[32];
+    const int n = settings_in_category(SET_CAT_APP, ids, 32);
+    int at = -1;
+    for (int i = 0; i < n; ++i) {
+        if (ids[i] == SET_SCREEN_ROT) {
+            at = i;
+        }
+    }
+    CHECK(at > 0);
+    CHECK_EQ(at > 0 ? ids[at - 1] : SETTING_COUNT, SET_CONTRAST);
+}
+
+TEST_CASE(screen_rotation_survives_a_save_and_a_restart)
+{
+    fresh_model();
+    settings_set_store(&s_mem_store);
+    settings_set_observer(observer);
+    s_observed = 0;
+    settings_adjust(SET_SCREEN_ROT, 1);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+    CHECK_EQ(s_observed, 1);
+    CHECK_EQ(s_last_observed, SET_SCREEN_ROT);
+    CHECK(settings_dirty());
+    CHECK(settings_save());
+    CHECK_EQ(s_saved[SET_SCREEN_ROT], 1.0f);
+
+    /* The restart: defaults, then the store, then every id to the
+     * observer, which is where the panel turns display and touch before
+     * either starts. */
+    s_observed = 0;
+    s_seen_ids[SET_SCREEN_ROT] = 0;
+    settings_set_observer(every_id_observer);
+    settings_init();
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+    /* Heard at least once, the last time with the value loaded. */
+    CHECK(s_seen_ids[SET_SCREEN_ROT] >= 1);
+    CHECK(!settings_dirty());
+
+    /* A stored word off the list is coerced onto it, never past 180. */
+    s_saved[SET_SCREEN_ROT] = 7.0f;
+    settings_init();
+    CHECK(settings_get_int(SET_SCREEN_ROT) >= 0);
+    CHECK(settings_get_int(SET_SCREEN_ROT) <= 1);
+
+    /* The step wraps 180 -> NORMAL; RESET CATEGORY gives NORMAL. */
+    settings_set(SET_SCREEN_ROT, 1.0f);
+    settings_adjust(SET_SCREEN_ROT, 1);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    settings_set(SET_SCREEN_ROT, 1.0f);
+    settings_reset(SET_CAT_APP);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    settings_set_observer(NULL);
+    settings_set_store(NULL);
+}
+
+TEST_CASE(screen_rotation_is_held_while_armed_and_free_when_safe)
+{
+    fresh_model();
+    settings_set_armed(armed_now);
+    s_armed_now = true;
+    CHECK(settings_held(SET_SCREEN_ROT));
+    CHECK(!settings_held(SET_BRIGHTNESS));
+
+    /* Every call that changes a value leaves it while ARMED. */
+    settings_set(SET_SCREEN_ROT, 1.0f);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    settings_adjust(SET_SCREEN_ROT, 1);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    /* A PANEL row beside it still changes. */
+    settings_set(SET_BRIGHTNESS, 50.0f);
+    CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 50);
+
+    s_armed_now = false;
+    settings_set(SET_SCREEN_ROT, 1.0f);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+
+    /* RESET CATEGORY and a reset of all leave it while ARMED. */
+    s_armed_now = true;
+    settings_reset(SET_CAT_APP);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+    CHECK_EQ(settings_get_int(SET_BRIGHTNESS),
+             (long)settings_def(SET_BRIGHTNESS)->def);
+    settings_reset_all();
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+
+    /* No source: never ARMED, never held. */
+    settings_set_armed(NULL);
+    CHECK(!settings_held(SET_SCREEN_ROT));
+    settings_reset_all();
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+}
+
 int main(void)
 {
     RUN(defaults_come_from_the_schema);
@@ -988,6 +1111,9 @@ int main(void)
     RUN(reset_restores_one_category_only);
     RUN(bad_ids_are_survivable);
     RUN(every_choice_finds_its_option_list);
+    RUN(screen_rotation_starts_normal_on_panel_and_offers_two_choices);
+    RUN(screen_rotation_survives_a_save_and_a_restart);
+    RUN(screen_rotation_is_held_while_armed_and_free_when_safe);
     RUN(theme_switch_changes_the_palette);
     RUN(brightness_and_contrast_are_clamped_and_monotonic);
     RUN(the_card_switches_are_on_kept_and_on_after_an_update);

@@ -20,6 +20,7 @@ SPDX-License-Identifier: MIT
 
 SOURCES = [
     "shared/gfx/gfx.c",
+    "shared/gfx/gfx_damage.c",
     "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
     "shared/gfx/gfx_font8x16.c",

@@ -14,7 +14,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
-| PANEL | `9 EINSTELLUNGEN` | die Liste von PANEL |
+| PANEL | `10 EINSTELLUNGEN` | die Liste von PANEL |
 | ANSCHLÜSSE | `23 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
 | SD-KARTE | `4 EINSTELLUNGEN` | die Liste von SD-KARTE: welche Logs das Panel schreibt, und wohin |
 | SENSOREN | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
@@ -107,6 +107,7 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Design | DUNKEL, HELL | DUNKEL | das Farbschema, ab dem nächsten Frame |
 | Helligkeit | 20 bis 100 %, Schritte von 5 | 100 | skaliert die Palette |
 | Kontrast | 60 bis 140 %, Schritte von 5 | 100 | drückt Farben weg vom Mittelgrau |
+| Bilddrehung | NORMAL, 180° | NORMAL | dreht Bild und Touch um 180°, ab dem nächsten Frame; gesperrt bei ARMED |
 | Sprache | ENGLISH, DEUTSCH | ENGLISH | die Sprache der Oberfläche, ab dem nächsten Frame, ohne Neustart |
 | Einheiten | METRISCH, IMPERIAL | METRISCH | gespeichert; kein Bildschirm nutzt sie in diesem Release |
 | Dimmen nach | 0 bis 60 min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
@@ -115,6 +116,10 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Knopf-Skala | 90 bis 720 deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
+
+Bilddrehung dreht das Bild, während jeder Frame hinausgeht, über die PPA (Pixel-Processing Accelerator) des ESP32-P4, und den Touch mit ihm, so dass jedes Bedienelement unter dem Finger bleibt. Ein Kontakt bei (x, y) unter NORMAL liegt unter 180° bei (1023 - x, 599 - y). Kontakte des Touch-Injectors drehen sich nicht. Solange der Prüfstand ARMED ist, hat die Zeile keine Tasten. Braucht die Kopie eines Frames länger als 50ms, gehen Bild und Touch gemeinsam auf NORMAL zurück, und das Band sagt es; die Einstellung bleibt 180°, und der nächste Start dreht wieder.
+
+![Bilddrehung auf 180° bei ARMED](view:setup-rotation)
 
 ![SETUP im hellen Design](view:setup-light)
 

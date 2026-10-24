@@ -284,7 +284,9 @@ typedef struct {
     bool     warn;
     ui_screen_id_t warn_to;
     bool     drawn_warn;
-    bool     drawn_armed;
+    bool     drawn_armed;    /**< ARMED at the last full draw: the
+                                  warning's DISCARD and a list's SAFE-only
+                                  rows */
 
     /* The keyboard of string tk_text, and its revision as last drawn. */
     ui_textkey_t tk;

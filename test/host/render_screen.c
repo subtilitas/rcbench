@@ -177,6 +177,14 @@ static bool s_tap_on;
 static bool s_tone_fed;
 /* The output encoder enabled, its centre at count 3000. */
 static bool s_enc_on;
+/* Screen rotation stored at 180. */
+static bool s_rot_on;
+
+/* The settings model's ARMED source, as the panel's (panel_boot.c). */
+static bool router_armed(void)
+{
+    return ui_router_status()->armed;
+}
 
 static bool lang_load(float *values, int count)
 {
@@ -185,6 +193,9 @@ static bool lang_load(float *values, int count)
     }
     if (s_tap_on && (int)SET_TONE_EN < count) {
         values[SET_TONE_EN] = 1.0f;
+    }
+    if (s_rot_on && (int)SET_SCREEN_ROT < count) {
+        values[SET_SCREEN_ROT] = 1.0f;
     }
     if (s_enc_on && (int)SET_ENC_CENTRE < count) {
         values[SET_ENC_EN]     = 1.0f;
@@ -2251,10 +2262,12 @@ int main(int argc, char **argv)
                     || strcmp(view, "setup-unheld") == 0;
     s_tap_on = strcmp(view, "setup-tap") == 0;
     s_enc_on = strcmp(view, "servo-encoder") == 0;
+    s_rot_on = strcmp(view, "setup-rotation") == 0;
     s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
     settings_set_store(&k_lang_store);
+    settings_set_armed(router_armed);
     settings_init();
     /* What settings_apply_ui() does for the language; the theme stays the
      * one the shot asks for. */
@@ -3547,6 +3560,7 @@ int main(int argc, char **argv)
                        && strcmp(view, "servo-limrun-range") != 0)
                    || strcmp(view, "setup-leave-armed") == 0
                    || render_files_armed(view)
+                   || strcmp(view, "setup-rotation") == 0
                    || (mo_prog && s_stick_armed);
     /* An arm covers the role of the screen that asked for it. */
     st.armed_roles = !st.armed ? 0u
@@ -3610,7 +3624,8 @@ int main(int argc, char **argv)
         setup_tile(SET_CAT_IFACE);
     }
     /* SETUP's PANEL category: the language, the theme, the knob. */
-    if (strcmp(view, "setup-application") == 0) {
+    if (strcmp(view, "setup-application") == 0
+        || strcmp(view, "setup-rotation") == 0) {
         setup_tile(SET_CAT_APP);
     }
     /* SETUP's SD CARD: AUTO LOGS and USER LOGS, and the two folders. */
