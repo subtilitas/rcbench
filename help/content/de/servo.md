@@ -66,7 +66,7 @@ ARMED SERVO treibt die Servo-Ausgänge und einen pulsenden PROG PORT. Throttle-A
 | TEMPO | einstellbar | einstellbar; eine gehaltene Position wird mit der neuen Rate erneut gesendet |
 | TEST STARTEN | abgelehnt: `ZUERST ARM` | startet nach seinem Halten den automatischen Test |
 
-Das Schalten auf ARMED setzt den befohlenen Wert auf die Ruhe, die Mitte zwischen den Endpunkten des Kanals, ohne TRIMMUNG. Das erste Ziehen oder Drehen am Knopf beginnt dort. SWEEP ist grau ohne gebundenes Ruder, ohne Link oder an einem IOmcu älter als Protokoll 4.2.
+Das Schalten auf ARMED setzt den befohlenen Wert auf die Ruhe, die Mitte zwischen den Endpunkten des Kanals, ohne TRIMMUNG. Das erste Ziehen oder Drehen am Knopf beginnt dort. SWEEP ist grau ohne gebundenes Ruder, ohne Link oder an einem IOmcu älter als 0.10.0.
 
 ## Das Messgerät der Servoschiene
 
@@ -80,7 +80,7 @@ Die Zeile über der Grafik nennt das Messgerät der Servoschiene:
 ![Der INA3221 als Messgerät der Schiene](view:servo-ina)
 ![Ein übersteuertes Fenster, in der Warnfarbe](view:servo-clipped)
 
-Der INA3221 wird 1000ms, nachdem seine Bedingungen erfüllt sind, zum Messgerät: Ein Kanal eines bestückten Bausteins überwacht in SETUP > SENSORS das Ziel des Testers (an einem IOmcu älter als 4.25 CH1 seines Bausteins), der IOmcu spricht Protokoll 4.11, und Fenster mit Strommesswerten kommen an. Ein Fenster, in dem ein Messwert das Ende des Bereichs erreicht hat, 1,638A an einem Shunt von 0,1Ω, steht in der Warnfarbe: Sein Mittelwert ist dann eine Grenze.
+Der INA3221 wird 1000ms, nachdem seine Bedingungen erfüllt sind, zum Messgerät: Ein Kanal eines bestückten Bausteins überwacht in SETUP > SENSORS das Ziel des Testers (an einem IOmcu älter als 0.22.0 CH1 seines Bausteins), der IOmcu ist 0.16.0 oder neuer, und Fenster mit Strommesswerten kommen an. Ein Fenster, in dem ein Messwert das Ende des Bereichs erreicht hat, 1,638A an einem Shunt von 0,1Ω, steht in der Warnfarbe: Sein Mittelwert ist dann eine Grenze.
 
 ![Das Netzteilmodell des Panels als Messgerät, mit der Marke SIMULIERT](view:servo-model)
 

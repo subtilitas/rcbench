@@ -92,6 +92,22 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
                          ui_band_chip_t chip);
 
 /**
+ * @brief The fill and the text colour ui_band_render() draws @p chip in for
+ *        @p st, in the theme in force.
+ *
+ * The armed badge and the FAULT chip draw the dark text of the buttons on
+ * bright fills; the other chips draw the theme's text on its sunk panel.
+ * @param st The bench status the band shows.
+ * @param chip The chip.
+ * @param fill The chip's fill, or NULL.
+ * @param ink The chip's text colour, or NULL.
+ * @return False, with both untouched, for @p st NULL or a chip that is not
+ *         one of the band's.
+ */
+bool ui_band_chip_colors(const ui_bench_status_t *st, ui_band_chip_t chip,
+                         gfx_color_t *fill, gfx_color_t *ink);
+
+/**
  * @brief A number for what ui_band_render() draws from the same arguments:
  *        the title, the home tag's and STOP's presses, the theme, and every
  *        chip's place, label and colours.  Two calls that return the same

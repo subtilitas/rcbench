@@ -34,7 +34,7 @@ Ist der PD mini eingeschaltet, nennt der Kopf das Modul und die Pins des IOmcu, 
 | Kopf | Bedeutung |
 |---|---|
 | `ONLINE 38400` | das Modul antwortet; die Zahl ist die verwendete Baudrate |
-| `ANTWORTET NICHT` | kein IOmcu mit Protokoll 4.3 antwortet, oder die Messwerte sind älter als 1500ms; ein eingeschalteter Ausgang wird abgeschaltet |
+| `ANTWORTET NICHT` | kein IOmcu ab 0.10.0 antwortet, oder die Messwerte sind älter als 1500ms; ein eingeschalteter Ausgang wird abgeschaltet |
 
 Vor dem ersten Einschalten zeigt die Grafik `Ausgang wurde noch nicht eingeschaltet.`, und die Karten zeigen Striche, bis ein Messwert ankommt.
 

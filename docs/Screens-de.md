@@ -3706,6 +3706,12 @@ GPIO 5 getippt zeigt `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26`.
 
 ![GPIO 5 für Sensor-SDA abgelehnt](img/de/setup-sda-why.png)
 
+Ein Pin steht mit dem Wort voran, `GPIO 1`, im Eintrag des Tastenfelds, in
+der Zeile und in der Frage beim Verlassen von SETUP ohne Speichern. Der Kopf
+des Tastenfelds nennt den Bereich ebenso, `GPIO -1 bis 47`.
+
+![Das Tastenfeld von Sensor-SDA, GPIO 1 getippt](img/de/setup-sda-keypad.png)
+
 Gespeicherte Einstellungen: der Schlüssel `sns_scl` wird nicht gelesen.
 Sensor-SCL wird aus dem gespeicherten Sensor-SDA abgeleitet, und der
 Schlüssel wird mit dem abgeleiteten Wert gespeichert. Ein gespeichertes

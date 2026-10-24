@@ -27,7 +27,7 @@ Each fitted part has a heading, `INA3221 0x40` to `INA3221 0x43`, and three rows
 - `+` on a shunt at OFF gives 5.0mΩ, `-` at 5.0mΩ gives OFF.
 - A tap on a shunt's value opens the keypad: 44.4mΩ from the 100.0 default is `4`, `4`, `.`, `4` and OK, where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused: the keypad stays open and shows `0 or 5.0 to 1000.0mΩ` in place of the range until the next key.
 - The channel read every millisecond, whose current the [SERVO](servo.md#the-servo-rail-s-meter) screen and the servo test use, is the lowest channel with a shunt on a fitted part that watches the servo tester's target: an output while the target is OUTPUTS, PORT n while it is programming port n.
-- The panel writes the set-up 500ms after the last edit, only while the bench is SAFE. The limits go 500ms after their last edit in any state, to an IOmcu of protocol 4.27 or later.
+- The panel writes the set-up 500ms after the last edit, only while the bench is SAFE. The limits go 500ms after their last edit in any state, to an IOmcu of 0.22.0 or later.
 
 ## Limits
 

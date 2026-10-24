@@ -221,6 +221,11 @@ history is in git.
 
 ### Changed
 
+- The ARMED chip in the band draws the dark text of the buttons on bright
+  fills: 5.45:1 in the dark theme (3.51:1 before), 4.94:1 in the light one
+  (4.67:1 before).
+- The help pages name the IOmcu release where they named a link protocol
+  number: `older than 0.18.0`, not `older than protocol 4.18`.
 - Release images are built with `RCBENCH_PERF_LOG=OFF`: the panel prints no
   rate, window, PSRAM probe, stack or heap lines. The CI build, the bench
   builds and a local `idf.py build` keep the option ON. `release.yml` and
@@ -253,8 +258,9 @@ history is in git.
   PWR, RPM, VSET and ISET stay English, as the channel names.
 - Units: MOTOR & ESC's temperatures read `ESC 33°C`; SERVO's dial says
   `deg` after its angle, as the readout under it; the SETUP leave question
-  names a pin's -1 as the row's help does and spaces the word unit GPIO:
-  `PD mini TX: open -> 4 GPIO`.
+  names a pin's -1 as the row's help does and writes a pin as `GPIO 4`,
+  the word first, in the question, on the row, in the keypad's entry and in
+  its range line (`GPIO 0 to 54`): `PD mini TX: open -> GPIO 4`.
 
 - A battery's cell count joins its number as a unit symbol: the pack's
   Cells keypad gives its range as `1 to 14S` (`1 bis 14S`). A unit keeps

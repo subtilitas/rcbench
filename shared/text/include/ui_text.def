@@ -238,6 +238,11 @@ UI_TEXT(BH_F_FLASH, 0,
 UI_TEXT(KEYPAD_RANGE, 0,
     "%.*f to %.*f%s%s",
     "%.*f bis %.*f%s%s")
+/* The range of a pin setting: the pin word first, as in "GPIO 0 to 54"
+ * (ui_unit_is_prefix()). */
+UI_TEXT(KEYPAD_RANGE_PRE, 0,
+    "%s %.*f to %.*f",
+    "%s %.*f bis %.*f")
 /* Why a setting's keypad refused a value inside its range, in place of the
  * range (ui_setting_keypad.c): a value between 0 and the row's off_below
  * (the row's off_below, maximum and unit, with its step's decimals: a

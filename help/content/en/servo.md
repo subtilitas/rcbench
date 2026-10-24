@@ -66,7 +66,7 @@ ARMED SERVO drives the servo outputs and a pulsing PROG PORT. Throttle outputs g
 | SPEED | set | set; a held position is sent again at the new rate |
 | START TEST | refused: `ARM FIRST` | starts the automatic test after its hold |
 
-The switch to ARMED sets the commanded value to the rest, the midpoint of the channel's end points, without TRIM. The first drag or knob turn starts from there. SWEEP is grey without a bound surface, without the link, or with an IOmcu older than protocol 4.2.
+The switch to ARMED sets the commanded value to the rest, the midpoint of the channel's end points, without TRIM. The first drag or knob turn starts from there. SWEEP is grey without a bound surface, without the link, or with an IOmcu older than 0.10.0.
 
 ## The servo rail's meter
 
@@ -80,7 +80,7 @@ The line over the plot names the meter of the servo rail:
 ![The INA3221 as the rail's meter](view:servo-ina)
 ![A clipped window, in the warning colour](view:servo-clipped)
 
-The INA3221 becomes the meter 1000ms after its conditions hold: a channel of a fitted part watches the tester's target in SETUP > SENSORS (on an IOmcu older than 4.25, CH1 of its part), the IOmcu speaks protocol 4.11, and windows with current samples arrive. A window in which a sample hit the end of the range, 1.638A on a 0.1Ω shunt, shows in the warning colour: its mean is then a bound.
+The INA3221 becomes the meter 1000ms after its conditions hold: a channel of a fitted part watches the tester's target in SETUP > SENSORS (on an IOmcu older than 0.22.0, CH1 of its part), the IOmcu is 0.16.0 or later, and windows with current samples arrive. A window in which a sample hit the end of the range, 1.638A on a 0.1Ω shunt, shows in the warning colour: its mean is then a bound.
 
 ![The panel's supply model as the meter, with the SIMULATED pill](view:servo-model)
 

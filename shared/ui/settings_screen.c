@@ -258,9 +258,10 @@ gfx_rect_t stg_discard_rect(void)
 
 /**
  * @brief A value of @p id as the leave question says it: with its unit,
- *        joined to a symbol ("6.00V") and a space before a word ("4 GPIO");
- *        no unit after OFF, a SENSORS shunt's 0; and a pin's -1 in the
- *        words of the row's help, "open".
+ *        joined to a symbol ("6.00V"), a space before a word ("2 cells")
+ *        and the pin word before its number ("GPIO 4"); no unit after OFF,
+ *        a SENSORS shunt's 0; and a pin's -1 in the words of the row's
+ *        help, "open".
  * @param id    the setting
  * @param value its value
  * @param out   takes the text
@@ -270,17 +271,20 @@ static void leave_value(setting_id_t id, float value, char *out, size_t n)
 {
     const setting_def_t *d = settings_def(id);
     const char *unit = (d != NULL && d->unit != NULL) ? d->unit : "";
-    if (d != NULL && strcmp(unit, "GPIO") == 0 && value < 0.0f) {
+    if (d != NULL && ui_unit_is_prefix(unit) && value < 0.0f) {
         snprintf(out, n, "%s", TR(SET_LEAVE_PIN_OPEN));
         return;
     }
     const bool off = d != NULL && d->off_below > 0.0f && value == 0.0f;
-    /* GPIO, the schema's one word unit, keeps its space; every other unit
-     * of the schema joins its number (6S, 6.00V, 250uΩ). */
-    const char *gap = (strcmp(unit, "GPIO") == 0) ? " " : "";
+    /* GPIO leads its number ("GPIO 4", never a count of four GPIOs);
+     * every other unit of the schema joins its number (6S, 6.00V, 250uΩ). */
     char v[32];
     (void)ui_setting_value_of(id, value, v, sizeof(v));
-    snprintf(out, n, "%s%s%s", v, off ? "" : gap, off ? "" : unit);
+    if (!off && ui_unit_is_prefix(unit)) {
+        snprintf(out, n, "%s %s", unit, v);
+        return;
+    }
+    snprintf(out, n, "%s%s", v, off ? "" : unit);
 }
 
 /* Change @p k, in schema order and the strings after the values, into

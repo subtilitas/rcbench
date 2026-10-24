@@ -317,6 +317,9 @@ SCREENS = {
     # and PD mini RX's GPIO 9 for PD mini TX.
     "setup-sensors-why": ("setup-sensors-why.png", "setup", "dark"),
     "setup-sda-why": ("setup-sda-why.png", "setup", "dark"),
+    # The same keypad with 1 typed: the range in its header and the entry
+    # name the pin word first, "GPIO -1 to 47" and "GPIO 1".
+    "setup-sda-keypad": ("setup-sda-keypad.png", "setup", "dark"),
     "setup-pdmini-why": ("setup-pdmini-why.png", "setup", "dark"),
     # INTERFACES drawn on to the bus's pins, which the IOmcu has not taken:
     # the mark on Sensor SDA and Sensor SCL.

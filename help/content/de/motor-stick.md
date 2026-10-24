@@ -82,7 +82,7 @@ Ist der Phasenabgriff unter SETUP, INTERFACES eingeschaltet, fügt die Seite ein
 | `LÄUFT` | die Erfassung läuft |
 | `ÜBERLAUF` | sie läuft, und die Erfassung ist seit dem Einschalten des Abgriffs übergelaufen |
 | `WARTET` | kein Link, oder in den letzten 500ms keine frische Antwort der Tone-Page des IOmcu |
-| `KEINE TONE-PAGE` | der IOmcu spricht ein Protokoll älter als 4.8 |
+| `KEINE TONE-PAGE` | der IOmcu ist älter als 0.14.0 |
 | `PIN BELEGT` | der Pin des Abgriffs ist anderweitig gebunden |
 | `LÄUFT NICHT` | eingeschaltet, und die Einstellung wurde abgelehnt oder ist noch nicht geschrieben |
 
