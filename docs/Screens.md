@@ -2454,7 +2454,7 @@ footer.
 
 | Button | What it does |
 |---|---|
-| OPEN | enters a folder; a CSV file or a report standing alone in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs); a file LOGS does not open, one over 2 GiB less 1 byte, shows LOGS' list with the reason. Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
+| OPEN | enters a folder; a CSV file or a report standing alone in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs); a file LOGS does not open, one over 2 GiB less 1 byte, shows LOGS' list with the reason; a card swapped since FILES listed the file opens nothing and says `The card was taken out or swapped. Tap RESCAN.` Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
 | COPY | copies the selected file into the other pane's folder. Folders are not copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |
@@ -2466,7 +2466,9 @@ footer.
 An existing name is never overwritten: COPY, MOVE, RENAME and NEW refuse
 it with `NOTES.TXT exists there already.` A copy is written under the
 name with `.NEW` added and renamed when it is complete, so a copy that
-stops leaves no part file under the real name. COPY and MOVE into the
+stops leaves no part file under the real name. After each operation the
+logger walks its folders again before its next file, so the next run
+takes a number above a log copied or renamed into a log folder. COPY and MOVE into the
 folder the entry is in, or a folder into itself, are refused:
 `Both panes show this folder, or the target is inside it.`
 

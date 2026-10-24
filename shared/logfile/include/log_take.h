@@ -108,6 +108,8 @@ typedef struct {
 typedef struct {
     log_series_t slot[LOG_SERIES_SLOTS];  /**< one per folder kept        */
     unsigned     evict;      /**< the slot a third folder takes next */
+    unsigned     edits;      /**< log_series_forget_all()'s count as this
+                                  set last took a number               */
 } log_series_set_t;
 
 /**
@@ -116,6 +118,17 @@ typedef struct {
  * @param set  The numbering set.
  */
 void log_series_init(log_series_set_t *set);
+
+/**
+ * @brief Every set forgets every folder's numbering before its next take:
+ *        the card's files were changed by another hand than the logger's
+ *        (FILES' copy, move, rename, new entry or delete), so a folder may
+ *        hold a higher number than a set handed out last.
+ *
+ * A count, safe to call from any task: log_take() compares it with the
+ * set's own and walks the folder when it moved.
+ */
+void log_series_forget_all(void);
 
 /**
  * @brief The numbering of folder @p dir, case folded: its slot, or a free one,

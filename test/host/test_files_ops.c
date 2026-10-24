@@ -487,6 +487,17 @@ static int lv_list(log_viewer_file_t *out, int max_entries,
     return 2;
 }
 
+/** @brief Added to the card's mount number LOGS' mounts() answers: 1
+ *         reads as a card swapped since FILES listed it. */
+static unsigned s_lv_mount_shift;
+
+/** @brief LOGS' mounts(): the card's mount number, plus the shift. */
+static unsigned lv_mounts(void *ctx)
+{
+    (void)ctx;
+    return g_h.card.mount + s_lv_mount_shift;
+}
+
 /** @brief LOGS' open(): the CSV from memory. */
 static bool lv_open(const char *name, log_source_t *src, void *ctx)
 {
@@ -502,7 +513,8 @@ TEST_CASE(open_hands_a_log_folders_csv_to_logs)
 {
     fresh();
     fk_file(&g_h.card, "USER/LOGS/ATEST006.CSV", NULL, 64u);
-    const log_viewer_io_t lv = { .list = lv_list, .open = lv_open };
+    const log_viewer_io_t lv = { .list = lv_list, .open = lv_open,
+                                 .mounts = lv_mounts };
     log_viewer_set_io(&lv);
     ui_router_goto(SCREEN_SETUP);
     ui_router_goto(SCREEN_FILES);
@@ -535,9 +547,20 @@ TEST_CASE(open_hands_a_log_folders_csv_to_logs)
     tap_foot(FS_SPOT_OPEN);
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
     CHECK_STR_EQ(files_screen_message(), TR(FM_OPEN_WHERE));
-    CHECK(!log_viewer_show(LOG_TAB_COUNT, "X"));
-    CHECK(!log_viewer_show(LOG_TAB_USER, ""));
-    CHECK(!log_viewer_show(LOG_TAB_USER, NULL));
+    CHECK_EQ(log_viewer_show(LOG_TAB_COUNT, "X", g_h.card.mount),
+             LOG_SHOW_NOT_LISTED);
+    CHECK_EQ(log_viewer_show(LOG_TAB_USER, "", g_h.card.mount),
+             LOG_SHOW_NOT_LISTED);
+    CHECK_EQ(log_viewer_show(LOG_TAB_USER, NULL, g_h.card.mount),
+             LOG_SHOW_NOT_LISTED);
+    /* A card swapped after FILES listed it, the same name on the new one:
+     * nothing is opened, and FILES says the card changed. */
+    CHECK(pick(1, "ATEST005.CSV"));
+    s_lv_mount_shift = 1u;
+    tap_foot(FS_SPOT_OPEN);
+    CHECK_EQ(ui_router_current(), SCREEN_FILES);
+    CHECK_STR_EQ(files_screen_message(), TR(FM_E_CARD_GONE));
+    s_lv_mount_shift = 0u;
     const log_viewer_io_t none = { 0 };
     log_viewer_set_io(&none);
 }

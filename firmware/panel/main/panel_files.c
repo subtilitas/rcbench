@@ -577,6 +577,11 @@ static void files_task(void *arg)
         const int64_t t0 = esp_timer_get_time();
         (void)fm_req_run(req, &run);
         log_copy(req, esp_timer_get_time() - t0);
+        if (req->kind == FM_REQ_JOB) {
+            /* A job may have put a log at a higher number into a log
+             * folder, done or stopped part way. */
+            log_series_forget_all();
+        }
         atomic_store(&s_done, sent);
     }
 }

@@ -322,6 +322,31 @@ TEST_CASE(each_folder_is_walked_once_until_a_take_fails)
     CHECK_EQ(g.walks, 2u);
 }
 
+/* FILES copies a log in at a higher number after the walk: the next take
+ * walks again and numbers above it, once per change. */
+TEST_CASE(a_change_by_files_walks_the_folder_again)
+{
+    fresh();
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 1);
+    CHECK_EQ(g.walks, 1u);
+    put_file(CARD_AUTO_LOGS, "MOTOR900.CSV");
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 2);
+    CHECK_EQ(g.walks, 1u);
+    log_series_forget_all();
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 901);
+    CHECK_EQ(g.walks, 2u);
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 902);
+    CHECK_EQ(g.walks, 2u);
+    /* A set started after a change walks at its first take, as a fresh
+     * set does, and once only. */
+    log_series_forget_all();
+    log_series_init(&g_set);
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 903);
+    CHECK_EQ(g.walks, 3u);
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 904);
+    CHECK_EQ(g.walks, 3u);
+}
+
 TEST_CASE(both_kinds_in_one_folder_are_one_series)
 {
     fresh();
@@ -624,6 +649,7 @@ int main(void)
     RUN(the_number_is_above_the_highest_and_a_gap_is_not_filled);
     RUN(numbers_998_and_999_are_taken_and_then_the_folder_is_full);
     RUN(each_folder_is_walked_once_until_a_take_fails);
+    RUN(a_change_by_files_walks_the_folder_again);
     RUN(both_kinds_in_one_folder_are_one_series);
     RUN(a_third_folder_gives_up_one_series_and_walks_it_again);
     RUN(a_file_named_bench_stops_the_folder_and_takes_no_number);

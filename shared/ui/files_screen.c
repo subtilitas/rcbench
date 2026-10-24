@@ -577,8 +577,15 @@ static void start_job(fm_err_t err, const char *name)
 static void open_in_logs(const fm_entry_t *e)
 {
     log_viewer_tab_t tab;
-    if (!logs_tab_of(s.pane[s.active].dir, &tab)
-        || !log_viewer_show(tab, e->name)) {
+    const log_viewer_show_t r =
+        logs_tab_of(s.pane[s.active].dir, &tab)
+            ? log_viewer_show(tab, e->name, s.pane[s.active].mount)
+            : LOG_SHOW_NOT_LISTED;
+    if (r == LOG_SHOW_OTHER_CARD) {
+        say_err(FM_ERR_CARD_GONE, e->name);
+        return;
+    }
+    if (r != LOG_SHOW_OPEN) {
         fs_say(false, "%s", TR(FM_OPEN_WHERE));
         return;
     }

@@ -2719,7 +2719,7 @@ der Meldungszeile, zwei Zeilen in der Schrift 12 x 24 über der Fußzeile.
 
 | Taste | Was sie tut |
 |---|---|
-| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein allein stehender Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs); eine Datei, die LOGS nicht öffnet, eine über 2 GiB weniger 1 Byte, zeigt die Liste von LOGS mit dem Grund. Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
+| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein allein stehender Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs); eine Datei, die LOGS nicht öffnet, eine über 2 GiB weniger 1 Byte, zeigt die Liste von LOGS mit dem Grund; nach einem Kartentausch seit dem Listen öffnet sich nichts, und FILES meldet `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.` Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
 | KOPIEREN | kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
@@ -2732,7 +2732,10 @@ Ein vorhandener Name wird nie überschrieben: KOPIEREN, VERSCHIEBEN,
 UMBENENNEN und NEU lehnen ihn ab mit `NOTES.TXT gibt es dort schon.` Eine
 Kopie wird unter dem Namen mit angehängtem `.NEW` geschrieben und erst
 umbenannt, wenn sie vollständig ist; eine abgebrochene Kopie hinterlässt
-also keine halbe Datei unter dem richtigen Namen. KOPIEREN und VERSCHIEBEN
+also keine halbe Datei unter dem richtigen Namen. Nach jeder Operation
+liest der Logger seine Ordner vor der nächsten Datei neu ein; der nächste
+Lauf nimmt also eine Nummer über einer Aufzeichnung, die in einen
+Log-Ordner kopiert oder umbenannt wurde. KOPIEREN und VERSCHIEBEN
 in den Ordner, in dem der Eintrag liegt, oder eines Ordners in sich selbst
 werden abgelehnt:
 `Beide Seiten zeigen diesen Ordner, oder das Ziel liegt darin.`

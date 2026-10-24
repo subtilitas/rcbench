@@ -575,11 +575,12 @@ void log_viewer_set_tab(log_viewer_tab_t tab)
     lv_read_page(LOG_PAGE_FROM, "");
 }
 
-bool log_viewer_show(log_viewer_tab_t tab, const char *name)
+log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
+                                  unsigned mount)
 {
     if ((unsigned)tab >= (unsigned)LOG_TAB_COUNT || name == NULL
         || name[0] == '\0') {
-        return false;
+        return LOG_SHOW_NOT_LISTED;
     }
     s.tab = tab;
     s.tabs.selected = tab_pos(tab);
@@ -590,15 +591,20 @@ bool log_viewer_show(log_viewer_tab_t tab, const char *name)
     /* The page that starts at the name: the file is its first row when
      * the list holds it. */
     lv_read_page(LOG_PAGE_FROM, name);
+    if (s.mounts != mount) {
+        /* The same name on the card put in since FILES listed it is
+         * another file: it is not opened. */
+        return LOG_SHOW_OTHER_CARD;
+    }
     for (int i = 0; i < s.n_files; ++i) {
         if (strcmp(s.files[i].name, name) == 0) {
             s.sel = i;
             s.scroll = (i < BR_ROWS) ? 0 : i - BR_ROWS + 1;
             lv_open_selected();
-            return true;
+            return LOG_SHOW_OPEN;
         }
     }
-    return false;
+    return LOG_SHOW_NOT_LISTED;
 }
 
 /**
