@@ -446,10 +446,12 @@ static void run_line(injector_t *in, char *line, uint32_t now_ms)
     if (ntok > MAX_TOKENS) {
         reply(in, "err syntax %s", cmd);
     } else if (strcmp(cmd, "ping") == 0) {
-        reply(in, "pong rcbench-touch %d addr=0x%02x res=%ux%u state=%s",
+        reply(in, "pong rcbench-touch %d addr=0x%02x res=%ux%u state=%s "
+              "id=%s",
               INJ_PROTOCOL, (unsigned)GT911_EMU_ADDR, (unsigned)INJ_RES_X,
               (unsigned)INJ_RES_Y,
-              in->state == INJ_LISTEN ? "listen" : "active");
+              in->state == INJ_LISTEN ? "listen" : "active",
+              GT911_EMU_PRODUCT_ID);
     } else if (strcmp(cmd, "status") == 0) {
         cmd_status(in, now_ms);
     } else if (strcmp(cmd, "contacts") == 0) {

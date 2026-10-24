@@ -128,6 +128,17 @@ history is in git.
   for ever and needed USB (Universal Serial Bus) to recover
   ([Screens: PANEL UPDATE](docs/Screens.md#installing-panel-update)).
 
+- A glass GT911 that latches I2C (Inter-Integrated Circuit) address 0x14
+  at its reset is read as the glass, with both axes mirrored and the 180°
+  turn, and no longer as the touch injector through its unmirrored map,
+  which landed every touch point-reflected: STOP missed, and a finger on
+  the reflected point of ARM held ARM. The panel tells the injector by its
+  product ID `9INJ`, which no Goodix controller reports, not by its
+  address. Beside a glass at 0x5D, a GT911 at 0x14 without it is not read.
+  The touch injector reports `9INJ` and its `ping` reply ends with
+  `id=9INJ`; an injector image without it has to be flashed again
+  ([touch injector](testbench/touch-injector/README.md)).
+
 - A line on OUTPUTS and PICK A PIN no longer ends with a number alone on
   the next line: `SERVO TESTER DRIVES PROG PORT 1` broke before its `1` at
   30 cells, and now breaks before `PORT 1`. A word of digits alone goes
