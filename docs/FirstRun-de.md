@@ -574,25 +574,25 @@ picotool load -v -x -p 0 firmware/iomcu/build/rcbench-iomcu.uf2
 
 ### Die Anwendungs-Slots des Panels
 
-Der Flash des Panels hat zwei Anwendungs-Slots mit je 4 063 232 Bytes,
-`ota_0` und `ota_1`, damit es sich über WLAN selbst aktualisieren kann
-([Bildschirme: WLAN](Screens-de.md#wlan)). Ein Panel,
-das mit 0.18.0 oder älter geflasht ist, hat einen 3MiB großen
-`factory`-Slot und bekommt das neue Layout mit einem Flash über USB:
+Der Flash des Panels, 32MB, hat zwei Anwendungs-Slots mit je 8 126 464
+Bytes (7936KiB), `ota_0` und `ota_1`, damit sich das Panel über WLAN selbst
+aktualisiert ([Bildschirme: WLAN](Screens-de.md#wlan)). Die Tabelle ist
+`firmware/panel/partitions.csv`:
 
-| Offset | 0.18.0 und älter | 0.19.0 und neuer |
-| --- | --- | --- |
-| 0x9000 | `nvs`, 24KiB | `nvs`, 24KiB |
-| 0xF000 | `phy_init`, 4KiB | `phy_init`, 4KiB |
-| 0x10000 | `factory`, 3MiB | `otadata`, 8KiB |
-| 0x20000 | | `ota_0`, 3968KiB |
-| 0x310000 | `storage`, 1MiB, unbenutzt | |
-| 0x400000 | | `ota_1`, 3968KiB |
-| 0x410000 | `boardart`, 2MiB | |
-| 0x7E0000 | | `boardart`, 128KiB |
+| Offset | Teil |
+| --- | --- |
+| 0x2000 | der Bootloader der zweiten Stufe, höchstens 40 960 Bytes |
+| 0xC000 | die Partitionstabelle |
+| 0xD000 | `nvs`, 24KiB: die Einstellungen |
+| 0x13000 | `phy_init`, 4KiB |
+| 0x14000 | `otadata`, 8KiB: welcher Slot startet |
+| 0x20000 | `ota_0`, 7936KiB |
+| 0x7E0000 | `boardart`, 128KiB: die gespeicherten Platinenzeichnungen |
+| 0x800000 | `ota_1`, 7936KiB |
+| 0xFC0000 | nicht vergeben, bis zum Ende des Flashs |
 
 Die Einzelteile behalten die Einstellungen: Sie schreiben den Bootloader bei
-0x0, die Partitionstabelle bei 0x8000, `otadata` bei 0x10000 und die
+0x2000, die Partitionstabelle bei 0xC000, `otadata` bei 0x14000 und die
 Anwendung bei 0x20000 und lassen `nvs` in Ruhe. Aus einem Quellbaum:
 
 ```bash
@@ -603,15 +603,13 @@ Aus dem Release-Archiv `esptool.py ... write_flash @flash_args` im
 entpackten Ordner, wie in [Schritt 3](#aus-den-release-assets).
 
 Das zusammengeführte Image bei Offset 0 reicht von 0x0 bis zum Ende der
-Anwendung in `ota_0`, etwa 2MB, und füllt die Lücken zwischen den Teilen
-mit 0xFF. `nvs` bei 0x9000 liegt in einer solchen Lücke, also löscht das
-zusammengeführte Image die Einstellungen.
+Anwendung in `ota_0` und füllt die Lücken zwischen den Teilen mit 0xFF.
+`nvs` bei 0xD000 liegt in einer solchen Lücke, also löscht das
+zusammengeführte Image die Einstellungen. `boardart` bei 0x7E0000 liegt
+hinter seinem Ende, also bleiben die gespeicherten Platinenzeichnungen.
 
-In beiden Fällen ist die gespeicherte Platinenzeichnung einmal verloren:
-`boardart` ist von 0x410000 nach 0x7E0000 umgezogen. Das Panel lädt sie beim
-nächsten Link-Aufbau neu ([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)).
-Ab 0.20.0 installiert das Panel spätere Releases über WLAN aus dem
-Release-Asset `rcbench-panel-vX.Y.Z.bin`.
+Das Panel installiert spätere Releases über WLAN aus dem Release-Asset
+`rcbench-panel-p4-vX.Y.Z.bin`.
 
 ---
 
@@ -634,9 +632,10 @@ bedeutet.
 **Vorher nicht weitergehen.** Jeder Schritt darunter setzt voraus, dass Frames
 ankommen.
 
-Die Einzelheiten stehen auf der Konsole, wenn man sie will — auf der
-**UART-Buchse**, nicht auf nativem USB, denn GPIO19 und GPIO20 tragen beides
-und der Multiplexer wählt eines aus:
+Die Einzelheiten stehen auf der Konsole, wenn man sie will. Sie liegt auf
+UART0, mit USB-Serial-JTAG (der eingebauten USB-Seriell- und Debug-Bridge
+des ESP32-P4) als Zweitkonsole; welche der zwei USB-C-Buchsen der Platine
+zu welcher führt, ist nicht verfolgt:
 
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0

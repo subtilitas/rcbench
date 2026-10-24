@@ -539,25 +539,25 @@ picotool load -v -x -p 0 firmware/iomcu/build/rcbench-iomcu.uf2
 
 ### The panel's application slots
 
-The panel's flash holds two application slots of 4,063,232 bytes, `ota_0`
-and `ota_1`, so it can update itself over Wi-Fi ([Screens:
-Wi-Fi](Screens.md#wi-fi)). A panel flashed with 0.18.0 or older
-has one 3MiB `factory` slot and reaches the new layout with one flash over
-USB:
+The panel's flash, 32MB, holds two application slots of 8,126,464 bytes
+(7,936KiB), `ota_0` and `ota_1`, so the panel updates itself over Wi-Fi
+([Screens: Wi-Fi](Screens.md#wi-fi)). The table is
+`firmware/panel/partitions.csv`:
 
-| Offset | 0.18.0 and older | 0.19.0 and later |
-| --- | --- | --- |
-| 0x9000 | `nvs`, 24KiB | `nvs`, 24KiB |
-| 0xF000 | `phy_init`, 4KiB | `phy_init`, 4KiB |
-| 0x10000 | `factory`, 3MiB | `otadata`, 8KiB |
-| 0x20000 | | `ota_0`, 3,968KiB |
-| 0x310000 | `storage`, 1MiB, unused | |
-| 0x400000 | | `ota_1`, 3,968KiB |
-| 0x410000 | `boardart`, 2MiB | |
-| 0x7E0000 | | `boardart`, 128KiB |
+| Offset | Part |
+| --- | --- |
+| 0x2000 | the second-stage bootloader, at most 40,960 bytes |
+| 0xC000 | the partition table |
+| 0xD000 | `nvs`, 24KiB: the settings |
+| 0x13000 | `phy_init`, 4KiB |
+| 0x14000 | `otadata`, 8KiB: which slot starts |
+| 0x20000 | `ota_0`, 7,936KiB |
+| 0x7E0000 | `boardart`, 128KiB: the stored board drawings |
+| 0x800000 | `ota_1`, 7,936KiB |
+| 0xFC0000 | not allocated, to the end of the flash |
 
-The parts keep the settings: they write the bootloader at 0x0, the
-partition table at 0x8000, `otadata` at 0x10000 and the application at
+The parts keep the settings: they write the bootloader at 0x2000, the
+partition table at 0xC000, `otadata` at 0x14000 and the application at
 0x20000, and leave `nvs` alone. From a source tree:
 
 ```bash
@@ -568,15 +568,13 @@ From the release archive, `esptool.py ... write_flash @flash_args` in its
 unpacked folder, as in [step 3](#from-the-release-assets).
 
 The merged image at offset 0 covers the flash from 0x0 to the end of the
-application in `ota_0`, about 2MB, and fills the gaps between the parts
-with 0xFF. `nvs` at 0x9000 lies in such a gap, so the merged image erases
-the settings.
+application in `ota_0` and fills the gaps between the parts with 0xFF.
+`nvs` at 0xD000 lies in such a gap, so the merged image erases the
+settings. `boardart` at 0x7E0000 lies past its end, so the stored board
+drawings stay.
 
-Either way the stored board drawing is lost once: `boardart` moved from
-0x410000 to 0x7E0000. The panel fetches it again at the next link-up
-([§4](#4-first-link-up-the-board-drawing)). From 0.20.0 on, the panel
-installs later releases over Wi-Fi from the release asset
-`rcbench-panel-vX.Y.Z.bin`.
+The panel installs later releases over Wi-Fi from the release asset
+`rcbench-panel-p4-vX.Y.Z.bin`.
 
 ---
 
@@ -597,9 +595,10 @@ what each one means.
 
 **Do not go on until it passes.** Every step below assumes frames cross.
 
-The console carries the detail if you want it — the **UART socket**, not
-native USB, because GPIO19 and GPIO20 carry both and the multiplexer selects
-one:
+The console carries the detail if you want it. It is UART0, with
+USB-Serial-JTAG (the ESP32-P4's built-in USB serial and debug bridge) as
+the secondary console; which of the board's two USB-C sockets reaches which
+is not traced:
 
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0
