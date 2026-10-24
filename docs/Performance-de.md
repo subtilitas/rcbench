@@ -6,7 +6,13 @@ Das Zeichenbudget für alle, die einen Bildschirm hinzufügen oder ändern.
 
 ## Die Randbedingung
 
-Die Frame Rate dieses Panels begrenzt die Bandbreite des PSRAM (Pseudo-Static
+Dieser Abschnitt und die Tabelle unten bilden das ESP32-S3-Panel nach. Das
+ESP32-P4-Panel gibt 1024 x 600px über seinen DSI-Host (Display Serial
+Interface) aus dem PSRAM aus, hinter einem anderen Cache; seine Kosten je
+Frame sind nicht gemessen, und noch kein Profil bildet sie nach
+([Obergrenzen](#obergrenzen)).
+
+Die Frame Rate des ESP32-S3-Panels begrenzt die Bandbreite des PSRAM (Pseudo-Static
 Random-Access Memory), nicht die CPU (Central Processing Unit). Die
 LCD-Einheit (Liquid-Crystal Display) liest ununterbrochen einen Framebuffer
 mit etwa 30 MB/s aus dem PSRAM, und die Framebuffer liegen hinter einem
@@ -147,8 +153,15 @@ Ziffern stehen. `ui_slider_painted_rect()` liefert die Region, statt sie den
 Aufrufer herleiten zu lassen.
 
 **Nur auf Frames zeichnen, die etwas zu zeichnen haben.** Samples kommen mit
-20 Hz, das Panel zeichnet mit 39 Hz, also hat etwa jeder zweite Frame nichts
-Neues. Der Prüfstandsbildschirm führt den Push-Zähler des Plots und eine
+20 Hz, das Panel zeichnet schneller, mit 39Hz auf dem ESP32-S3 und 60,38Hz
+auf dem ESP32-P4 (gemessen, der VSYNC-Wert der Konsole), also hat der größte
+Teil der Frames nichts Neues. Der DPI-Takt (Display Pixel Interface) des P4
+ist 48MHz, nicht die 52MHz, die `board_pins.h` anfordert; bei 48MHz ergäbe
+sein Frame von 1354 x 636 Takten allein 55,74Hz. ESP-IDF hält die
+angeforderte Zeilendauer, indem es die Front Porch der Bridge auf eine Zeile
+von 1250 Takten kürzt, also dauert ein Frame so lange wie 1354 x 636 Takte
+bei 52MHz: 60,38Hz. Dass dies die Rate bestimmt, ist aus dem Quelltext von
+ESP-IDF gelesen, nicht aus den Registern. Der Prüfstandsbildschirm führt den Push-Zähler des Plots und eine
 Revisionsnummer der Bedienelemente, jeweils je Framebuffer, und zeichnet Plot,
 Anzeigen und Bedienelemente nur neu, wenn der zugehörige Zähler sich bewegt
 hat. `each_framebuffer_is_updated_independently` in `test_motor_draw` hält die
@@ -198,8 +211,8 @@ gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das
 Simulations-Watermark auf den tatsächlich neu gezeichneten Bereich zu
 clippen.
 
-Die Logzeile `DRAW … WAIT …` des ESP32-S3, alle 300 Frames ausgegeben, ist
-die Prüfung auf der Hardware: DRAW ist die Zeichenzeit, WAIT die Zeit, die
+Die Logzeile `… fps  DRAW … us  WAIT … us  VSYNC … Hz` des Panels, alle
+300 Frames ausgegeben (`panel_frame.c`), ist die Prüfung auf der Hardware: DRAW ist die Zeichenzeit, WAIT die Zeit, die
 der Buffer-Wechsel blockiert hat. Ein gesunder Frame besteht überwiegend aus
 WAIT.
 
@@ -437,15 +450,20 @@ die 3 551 Bytes .bss von lwIP bleiben im internen RAM.
 Eine Kartendatei oder die ZIP-Datei geht über eine TCP-Verbindung
 (Transmission Control Protocol) vom Panel zum Browser. Der Server der
 Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage, die während
-eines Downloads kommt, wartet auf dessen Ende. Die Rate eines Downloads ist
-nicht gemessen. Was sie begrenzt:
+eines Downloads kommt, wartet auf dessen Ende. In einem Heimnetz lief ein
+Download einer Datei von 16MiB mit 688-757kB/s, Kartenlesen und Funk
+zusammen, nicht getrennt, bei einem Ping von im Mittel 14,6ms, und ein
+Upload eines Image von 2,56MB über `/update` mit 556-599kB/s. Das Panel
+meldete keinen SDIO-Fehler (Secure Digital Input/Output) und zeichnete
+während der Downloads 60fps. Was die Rate begrenzt:
 
 | Glied | Einstellung | Grenze |
 | --- | --- | --- |
 | Power Save | keiner, solange das Panel einem Heimnetz beigetreten ist (`esp_wifi_set_ps(WIFI_PS_NONE)`); ein Access Point schläft nicht | keine |
 | Sendepuffer | 11 520 Bytes, 8 Segmente zu 1 440 Bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11 520 Bytes pro Umlauf: 1 152 000 B/s bei 10 ms Umlaufzeit, 576 000 B/s bei 20 ms |
-| Karte | SPI (Serial Peripheral Interface) mit 20 MHz, 2 500 000 B/s auf der Leitung; jedes Stück von 4 096 Bytes als 8 einzelne Sektoren zu 512 Bytes gelesen | nicht gemessen |
-| Prozessor | die Task des Servers mit Priorität 1 auf Kern 0, neben der UI-Schleife (User Interface) mit Priorität 1; die SPI-Übertragungen der Karte warten durch Abfragen (Polling) | nicht gemessen |
+| Karte | SDMMC (der SD/MMC-Host), 4 Datenleitungen mit 20MHz (`BOARD_SD_FREQ_KHZ`), 10 000 000B/s auf der Leitung | nicht gemessen |
+| Funk | der ESP32-C6 über SDIO, 4 Datenleitungen mit 40MHz (`BOARD_C6_FREQ_KHZ`), 20 000 000B/s auf der Leitung, am SDMMC-Host, den auch die Karte nutzt | nicht gemessen |
+| Prozessor | die Task des Servers mit Priorität 1 auf Kern 0, neben der UI-Schleife (User Interface) mit Priorität 1 | nicht gemessen |
 
 Der Power Save, den ESP-IDF vorgibt, `WIFI_PS_MIN_MODEM`, weckt das Funkteil
 nur zu jedem DTIM-Beacon (Delivery Traffic Indication Message). Bis dahin
@@ -457,13 +475,15 @@ den ESP-IDF vorgibt, sind das 18 750 bis 56 250 B/s. Ohne Power Save
 braucht das Funkteil mehr Strom, solange es läuft; wie viel mehr am Panel,
 ist nicht gemessen.
 
-Der Stückpuffer der Seite liegt im PSRAM, in den der Treiber der SD-Karte
-(Secure Digital) nicht per DMA (Direct Memory Access) liest: ESP-IDF liest
-ein solches Stück Sektor für Sektor über einen eigenen Puffer von
-512 Bytes. Die erwartete Rate, aus den Grenzen oben, ist 300 000 bis
-1 000 000 B/s in einem Heimnetz mit einer Umlaufzeit unter 20 ms. Während
-ein Download läuft, nimmt die Task des Servers der UI-Schleife
-Prozessorzeit; die Bildrate während eines Downloads ist nicht gemessen.
+Der Stückpuffer der Seite, 4 096 Bytes, liegt im PSRAM. ESP-IDF v5.5.5
+liest ein Stück per DMA (Direct Memory Access) hinein, wenn der Puffer auf
+eine Cache-Line ausgerichtet ist, sonst über einen eigenen Puffer; welchen
+der beiden Wege der Puffer der Seite nimmt, ist nicht gemessen. Bei der
+gemessenen Umlaufzeit von 14,6ms begrenzt der Sendepuffer einen Download auf
+789kB/s (11 520 Bytes je Umlauf, hergeleitet), über den gemessenen
+688-757kB/s. Während ein Download läuft, nimmt die Task des Servers der
+UI-Schleife Prozessorzeit; das Panel zeichnete während der gemessenen
+Downloads 60fps.
 
 Ein Download endet vorzeitig, und die Verbindung wird zurückgesetzt (Reset),
 wenn

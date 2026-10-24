@@ -595,6 +595,25 @@ static void event(const touch_event_t *evt)
 
 /* ------------------------------------------------------------------ render */
 
+/**
+ * @brief Whether the word after the spaces at @p brk is digits alone.
+ *
+ * @param brk  A break: a space, and the rest of the text after it.
+ * @return true when one or more digits follow the spaces and end at a
+ *         space or at the end of the text.
+ */
+static bool number_follows(const char *brk)
+{
+    while (*brk == ' ') {
+        ++brk;
+    }
+    const char *d = brk;
+    while (*d >= '0' && *d <= '9') {
+        ++d;
+    }
+    return d > brk && (*d == ' ' || *d == '\0');
+}
+
 int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
                  int max_lines, const gfx_font_t *font, gfx_color_t ink,
                  bool centre)
@@ -615,6 +634,15 @@ int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
             size_t cut = fit;
             while (cut > 0u && at[cut] != ' ') {
                 --cut;
+            }
+            /* A number goes down with the word before it: "PORT" over "1"
+             * would leave the number alone on the next line. */
+            if (cut > 0u && number_follows(at + cut)) {
+                size_t word = cut - 1u;
+                while (word > 0u && at[word] != ' ') {
+                    --word;
+                }
+                cut = (word > 0u) ? word : cut;
             }
             len = (cut > 0u) ? cut : fit;
         }

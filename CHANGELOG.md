@@ -71,8 +71,19 @@ history is in git.
   cuts `#` (5 px), `$` (16 px), `(` (12 px), `)` (12 px), `,` (23 px) and
   `/` (6 px) at the cell edge; the three text faces cut nothing, which
   `gen_font.py --check` verifies. No screen draws with the faces yet.
+- The console names each SERVO test file as it opens and closes:
+  `logging to .../ATEST004.TXT` when the report opens after the CSV,
+  `.../ATEST004.CSV closed, 212 lines` or `... closed short: a write or the
+  close failed, 212 lines sent` at its close, and the same for
+  `LIMITnnn.TXT`. A test that gets no file logs `no test file in ... (take
+  n); this test is not recorded`.
 
 ### Fixed
+
+- A line on OUTPUTS and PICK A PIN no longer ends with a number alone on
+  the next line: `SERVO TESTER DRIVES PROG PORT 1` broke before its `1` at
+  30 cells, and now breaks before `PORT 1`. A word of digits alone goes
+  down with the word before it.
 
 - STOP and DISARM on MOTOR & ESC and on SERVO act on the press, not on the
   release. On the panel a STOP held 600ms stopped the pulses 0.62s after
@@ -143,8 +154,8 @@ history is in git.
   builds for the ESP32-S3-Touch-LCD-7. ESP-IDF v5.5.5, target `esp32p4`,
   32 MB flash with two application slots of 7936 kB. The EK79007 panel runs
   on 2 MIPI DSI (Display Serial Interface) lanes at 1000 Mbit/s each, 1024 x
-  600 RGB565 at 60.38 Hz (derived, not measured), two frame buffers in
-  PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
+  600 RGB565 at 60.38Hz (measured on the console's VSYNC figure), two
+  frame buffers in PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
   black. Touch is polled (the GT911's INT line does not reach the chip),
   mirrored in x and y, and a touch outside 800 x 480 is dropped. The card
   mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21

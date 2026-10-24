@@ -532,15 +532,36 @@ static unsigned s_test_lines;    /* since the last commit                 */
 static bool     s_test_failed;
 static bool     s_test_txt_bad;  /* a write or the close of the report failed */
 static char     s_test_dir[CARD_DIR_MAX];   /* the folder of the run's files */
+/** @brief The open test file's path, for the console lines. */
+static char     s_test_path[64];
+/** @brief The lines written to the open test file. */
+static unsigned s_test_count;
+/** @brief A write to the open test file failed. */
+static bool     s_test_file_bad;
 
-/* ATESTnnn.CSV, or with @p txt ATESTnnn.TXT, as a path on the card. */
-static void test_path(int number, bool txt, char *path, size_t n)
+/**
+ * @brief Run @p number's file in the test folder as a path on the card:
+ *        ATESTnnn.CSV, ATESTnnn.TXT or LIMITnnn.TXT.
+ *
+ * @param prefix  LOG_PREFIX_ATEST or LOG_PREFIX_LIMIT.
+ * @param number  The run's number.
+ * @param txt     true for the .TXT report, false for the CSV.
+ * @param path    Receives the path.
+ * @param n       Size of @p path, bytes.
+ */
+static void test_path(log_prefix_t prefix, int number, bool txt, char *path,
+                      size_t n)
 {
     char name[LOG_RUN_NAME_MAX];
-    log_name_build(name, sizeof(name), LOG_PREFIX_ATEST, number, txt);
+    log_name_build(name, sizeof(name), prefix, number, txt);
     storage_path(s_test_dir, name, path, n);
 }
 
+/**
+ * @brief Close the open test file, if any, and say so on the console with
+ *        the lines it holds: "closed" when every write and the close went
+ *        through, "closed short" otherwise.
+ */
 static void test_close(void)
 {
     if (s_test_fp == NULL) {
@@ -554,6 +575,12 @@ static void test_close(void)
         s_test_failed  = true;
         s_test_txt_bad = s_test_txt_bad || s_test_txt;
     }
+    if (bad || s_test_file_bad) {
+        ESP_LOGW(TAG, "%s closed short: a write or the close failed, "
+                      "%u lines sent", s_test_path, s_test_count);
+    } else {
+        ESP_LOGI(TAG, "%s closed, %u lines", s_test_path, s_test_count);
+    }
     s_test_fp = NULL;
     if (s_test_txt) {
         atomic_store(&s_test_open_txt, 0u);
@@ -562,9 +589,16 @@ static void test_close(void)
     }
 }
 
-/* A run's OPEN: the folder's next number, as log_open() takes one.  With
- * @p txt the run is a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit
- * run): its LIMITnnn.TXT is opened under the number, and no CSV. */
+/**
+ * @brief A run's OPEN: the folder's next number, as log_open() takes one.
+ *
+ * The file's path goes to the console as take_create() opens it,
+ * "logging to ..."; a take that opens no file logs why.
+ *
+ * @param txt  true for a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit
+ *             run): its LIMITnnn.TXT is opened under the number, and no
+ *             CSV.  false for the AUTOMATIC TEST's ATESTnnn.CSV.
+ */
 static void test_open(bool txt)
 {
     test_close();
@@ -583,8 +617,14 @@ static void test_open(bool txt)
                               LOG_TAB_USER, &number);
     if (r == LOG_TAKE_OK) {
         s_test_num = number;
+        test_path(txt ? LOG_PREFIX_LIMIT : LOG_PREFIX_ATEST, number, txt,
+                  s_test_path, sizeof(s_test_path));
+        s_test_count = 0u;
+        s_test_file_bad = false;
     } else {
         s_test_fp = NULL;
+        ESP_LOGW(TAG, "no test file in %s (take %d); this test is not "
+                      "recorded", s_test_dir, (int)r);
         /* "Card missing or full" for every other way to no file. */
         take_alert(r, s_test_dir,
                    (r == LOG_TAKE_NO_CARD)
@@ -595,6 +635,15 @@ static void test_open(bool txt)
     atomic_fetch_add(&s_test_opens_done, 1u);
 }
 
+/**
+ * @brief One line from the render loop: an OPEN, an END, or a line of the
+ *        open run's CSV or report.
+ *
+ * The report's ATESTnnn.TXT opens at its first line, after the CSV
+ * closes, and its path goes to the console as it opens.
+ *
+ * @param l  The line.
+ */
 static void test_write(const test_line_t *l)
 {
     if (l->kind == SERVO_TEST_OUT_OPEN
@@ -623,14 +672,20 @@ static void test_write(const test_line_t *l)
          * is set before the CSV's goes, so the run stays open between. */
         atomic_store(&s_test_open_txt, (unsigned)s_test_num);
         test_close();
-        char path[64];
-        test_path(s_test_num, true, path, sizeof(path));
+        test_path(LOG_PREFIX_ATEST, s_test_num, true, s_test_path,
+                  sizeof(s_test_path));
         s_test_txt = true;
-        s_test_fp = storage_fopen(path, "w");
+        s_test_count = 0u;
+        s_test_file_bad = false;
+        s_test_fp = storage_fopen(s_test_path, "w");
         if (s_test_fp == NULL) {
             s_test_failed  = true;
             s_test_txt_bad = true;
             atomic_store(&s_test_open_txt, 0u);
+            ESP_LOGW(TAG, "cannot open %s: errno %d; the report is not "
+                          "recorded", s_test_path, errno);
+        } else {
+            ESP_LOGI(TAG, "logging to %s", s_test_path);
         }
     }
     if (s_test_fp == NULL) {
@@ -638,6 +693,7 @@ static void test_write(const test_line_t *l)
     }
     bool bad = fputs(l->text, s_test_fp) < 0
                || fputc('\n', s_test_fp) == EOF;
+    ++s_test_count;
     /* Committed as the run log is, every LOG_WRITER_FLUSH_ROWS lines. */
     if (++s_test_lines >= LOG_WRITER_FLUSH_ROWS) {
         s_test_lines = 0u;
@@ -650,6 +706,7 @@ static void test_write(const test_line_t *l)
          * incomplete. */
         const bool first = !s_test_failed;
         s_test_failed  = true;
+        s_test_file_bad = true;
         s_test_txt_bad = s_test_txt_bad || s_test_txt;
         if (first && storage_check() != CARD_STATE_MOUNTED) {
             test_close();

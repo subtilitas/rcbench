@@ -23,6 +23,8 @@ Ein Pad misst unter 40 px, weniger als eine Fingerkuppe. Deshalb hat jeder Pin e
 
 Ein Tipp auf eine Taste schreibt die Bindung sofort, mit denselben Ergebnissen wie ein Haken unter Ausgänge.
 
+Aktuelle Einschränkung: Auf einer Platine mit einem Pin in der oberen linken Ecke ihres Umrisses liegen die Tasten der oberen Reihen unter der Protokoll-Liste, der Anzahl und dem Grund. Ein Tipp auf den Teil einer solchen Taste über der Protokoll-Liste öffnet die Liste, statt den Pin zu nehmen. Der RP2350-CAN hat dort keinen Pin.
+
 Die Platine markiert auch die anderen Adern eines Servokabels:
 
 | Marke | Pad |

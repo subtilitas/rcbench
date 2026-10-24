@@ -1042,10 +1042,6 @@ firmware/panel/main/panel_log.c: warning: Member take_mounted(void *ctx) (functi
 firmware/panel/main/panel_log.c: warning: Member take_path(const char *dir, const char *name, char *path, size_t n) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member take_walk(void *ctx, const char *dir, log_take_visit_fn visit, void *visit_ctx) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member take_walk_entry(const storage_entry_t *entry, void *ctx) (function) of file panel_log.c is not documented.
-firmware/panel/main/panel_log.c: warning: Member test_close(void) (function) of file panel_log.c is not documented.
-firmware/panel/main/panel_log.c: warning: Member test_open(bool txt) (function) of file panel_log.c is not documented.
-firmware/panel/main/panel_log.c: warning: Member test_path(int number, bool txt, char *path, size_t n) (function) of file panel_log.c is not documented.
-firmware/panel/main/panel_log.c: warning: Member test_write(const test_line_t *l) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member visit (variable) of struct take_walk_t is not documented.
 firmware/panel/main/panel_main.h: warning: Member publish_endpoints(void) (function) of file panel_main.h is not documented.
 firmware/panel/main/panel_main.h: warning: Member publish_hitec_rx(void) (function) of file panel_main.h is not documented.
@@ -3774,26 +3770,44 @@ shared/ui/include/motor_screen.h: warning: return type of member motor_settings_
 shared/ui/include/motor_screen.h: warning: return type of member motor_settings_rows is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_target_cells is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_throttle_target is not documented
-shared/ui/include/outputs_screen.h: file has no @file block
+shared/ui/include/outputs_screen.h: warning: Member outputs_screen(void) (function) of file outputs_screen.h is not documented.
+shared/ui/include/outputs_screen.h: warning: Member outputs_screen_open_on_port(uint8_t port) (function) of file outputs_screen.h is not documented.
+shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_apply(outputs_apply_fn fn) (function) of file outputs_screen.h is not documented.
+shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_result(outputs_result_t r) (function) of file outputs_screen.h is not documented.
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_clash_label are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_clash_reason are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_at are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_name are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_pins are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_reason_of are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_cell are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_open_on are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_port_pin are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_port_reason are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_reason are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_select are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_select_port are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_binding are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_iface_held are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_port_watch are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_prog_pin are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_prog_ports are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_reading are not documented
-shared/ui/include/outputs_screen.h: warning: parameters of member outputs_wrap are not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_clash_label is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_clash_reason is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_at is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_name is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_pins is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_reason_of is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_binding is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_cell is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_editable is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_entries is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_pin is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_reason is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_shown is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_read_state is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_reason is not documented
-shared/ui/include/outputs_screen.h: warning: return type of member outputs_wrap is not documented
 shared/ui/include/overview_screen.h: file has no @file block
 shared/ui/include/overview_screen.h: warning: parameters of member overview_screen_set_supply_real are not documented
 shared/ui/include/overview_screen.h: warning: parameters of member overview_screen_tile are not documented

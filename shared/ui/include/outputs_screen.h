@@ -1,5 +1,6 @@
-/*
- * The outputs screen: choose a protocol, then tick the pins it drives.
+/**
+ * @file
+ * @brief The outputs screen: choose a protocol, then tick the pins it drives.
  *
  * A visit from SETUP opens on the overview: OFF selected, every bound pin
  * named by its protocol, and a tap on a pin changes nothing until a
@@ -293,12 +294,24 @@ outputs_iface_t outputs_iface_at(uint8_t gpio);
 const char *outputs_iface_name(outputs_iface_t which);
 
 /**
- * @p text in lines of @p font no wider than @p box, from its top down by
- * @p pitch, broken after the last space that fits or inside a word where
- * none does, left-aligned or with @p centre centred in the box.  At most
- * @p max_lines lines, the last taking the rest.  Returns the lines it
- * takes; a NULL @p c only counts them.  Both screens draw the line under
- * the protocol with it.
+ * @brief Draw @p text in lines of @p font no wider than @p box.
+ *
+ * The lines run from the box's top down by @p pitch, broken after the
+ * last space that fits or inside a word where none does, left-aligned or
+ * with @p centre centred in the box.  A word of digits alone after the
+ * break goes down with the word before it, so "PORT 1" stays together.
+ * At most @p max_lines lines, the last taking the rest.  Both screens
+ * draw the line under the protocol with it.
+ *
+ * @param c          The canvas; NULL only counts the lines.
+ * @param box        The first line's box: its x, y and width.
+ * @param pitch      From one line's top to the next, px.
+ * @param text       The text; NULL draws nothing.
+ * @param max_lines  The most lines drawn.
+ * @param font       The face.
+ * @param ink        The colour.
+ * @param centre     true centres each line in the box.
+ * @return The lines the text takes.
  */
 int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
                  int max_lines, const gfx_font_t *font, gfx_color_t ink,

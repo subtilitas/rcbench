@@ -6,7 +6,12 @@ The rendering budget for anyone adding or changing a screen.
 
 ## The constraint
 
-The frame rate on this panel is limited by PSRAM (pseudo-static random-access
+This section and the table below model the ESP32-S3 panel. The ESP32-P4
+panel scans 1024 x 600px out of PSRAM through its DSI (Display Serial
+Interface) host, behind another cache; its frame cost is not measured and no
+profile models it yet ([Ceilings](#ceilings)).
+
+On the ESP32-S3 panel the frame rate is limited by PSRAM (pseudo-static random-access
 memory) bandwidth, not by the CPU. The LCD (liquid-crystal display) peripheral
 scans one framebuffer out of PSRAM continuously at about 30 MB/s, and the
 framebuffers sit behind a write-back, write-allocate data cache (64 KB, 8-way,
@@ -139,7 +144,14 @@ and the numerals' feet behind. `ui_slider_painted_rect()` reports the region
 rather than leaving a caller to derive it.
 
 **Paint only on frames that have something to paint.** Samples arrive at 20 Hz
-and the panel refreshes at 39 Hz, so about every other frame has nothing new.
+and the panel refreshes faster, 39Hz on the ESP32-S3 and 60.38Hz on the
+ESP32-P4 (measured, the console's VSYNC figure), so most frames have nothing
+new. The P4's DPI (Display Pixel Interface) clock is 48MHz, not the 52MHz
+`board_pins.h` requests; at 48MHz its 1354 x 636 frame alone would give
+55.74Hz. ESP-IDF keeps the requested line time by shortening the bridge's
+front porch to a 1250-clock line, so the frame takes as long as 1354 x 636
+clocks at 52MHz: 60.38Hz. That this sets the rate is read from ESP-IDF's
+source, not from the registers.
 The bench screen keeps the plot's push count and a control revision, each per
 framebuffer, and repaints the plot, the readouts and the controls only when the
 corresponding counter has moved. `each_framebuffer_is_updated_independently` in
@@ -184,8 +196,8 @@ If a future pane needs more room, the remaining levers in order of bluntness
 are the plot's height, its width, and clipping the simulation watermark to the
 region that was repainted.
 
-The ESP32-S3 log line `DRAW … WAIT …`, printed every 300 frames, is the
-on-hardware check: DRAW is the paint time, WAIT is how long the flip blocked. A
+The panel's log line `… fps  DRAW … us  WAIT … us  VSYNC … Hz`, printed
+every 300 frames (`panel_frame.c`), is the on-hardware check: DRAW is the paint time, WAIT is how long the flip blocked. A
 healthy frame is mostly WAIT.
 
 ## Stacks
@@ -407,14 +419,19 @@ stay in internal RAM.
 A card file or the ZIP file goes from the panel to the browser over one TCP
 (transmission control protocol) connection. The page's server answers one
 request at a time: a request that arrives during a download waits for its
-end. The rate of a download is not measured. What bounds it:
+end. On a home network a download of a 16MiB file ran at 688-757kB/s, the
+card read and the radio together, not separated, at a ping average of
+14.6ms, and an upload of a 2.56MB image to `/update` at 556-599kB/s. The
+panel logged no SDIO (Secure Digital input/output) error and drew 60fps
+during the downloads. What bounds the rate:
 
 | Link | Setting | Bound |
 | --- | --- | --- |
 | power save | none while joined to a home network (`esp_wifi_set_ps(WIFI_PS_NONE)`); an access point does not sleep | none |
 | send buffer | 11,520 bytes, 8 segments of 1,440 bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11,520 bytes per round trip: 1,152,000 B/s at a 10 ms round trip, 576,000 B/s at 20 ms |
-| card | SPI (serial peripheral interface) at 20 MHz, 2,500,000 B/s on the wire; each 4,096-byte piece read as 8 single 512-byte sectors | not measured |
-| processor | the server's task at priority 1 on core 0, beside the UI (user interface) loop at priority 1; the card's SPI transfers wait by polling | not measured |
+| card | SDMMC (the SD/MMC host), 4 data lines at 20MHz (`BOARD_SD_FREQ_KHZ`), 10,000,000B/s on the wire | not measured |
+| radio | the ESP32-C6 over SDIO, 4 data lines at 40MHz (`BOARD_C6_FREQ_KHZ`), 20,000,000B/s on the wire, on the SDMMC host the card uses | not measured |
+| processor | the server's task at priority 1 on core 0, beside the UI (user interface) loop at priority 1 | not measured |
 
 ESP-IDF's default power save, `WIFI_PS_MIN_MODEM`, wakes the radio for
 each DTIM (delivery traffic indication message) beacon only. The access
@@ -425,13 +442,14 @@ period of 3. With ESP-IDF's default send buffer of 5,760 bytes, that is
 18,750 to 56,250 B/s. Without power save the radio draws more current
 while it runs; how much more on the panel is not measured.
 
-The page's piece buffer is in PSRAM, which the SD (Secure Digital) card
-driver does not read into by DMA (direct memory access): ESP-IDF reads
-such a piece one sector at a time through a 512-byte buffer of its own.
-The expected rate, from the bounds above, is 300,000 to 1,000,000 B/s on a
-home network with a round trip under 20 ms. While a download runs, the
-server's task takes processor time from the UI loop; the frame rate
-during a download is not measured.
+The page's piece buffer, 4,096 bytes, is in PSRAM. ESP-IDF v5.5.5 reads a
+piece into it by DMA (direct memory access) when the buffer is aligned to a
+cache line, and through a buffer of its own otherwise; which of the two the
+page's buffer takes is not measured. At the measured 14.6ms round trip the
+send buffer bounds a download at 789kB/s (11,520 bytes a round trip,
+derived), above the measured 688-757kB/s. While a download runs, the
+server's task takes processor time from the UI loop; the panel drew 60fps
+during the measured downloads.
 
 A download ends early, and the connection is reset, when
 
