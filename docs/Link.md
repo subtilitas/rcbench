@@ -960,7 +960,7 @@ after each binding, once the edit has rested 300ms, at a poll whose write
 of ARM = 0 was acknowledged: it reads the page and writes it only when the
 throttle channels differ, and checks the stored registers the
 acknowledgement carries. A read or a write nobody answers stays owed. A
-refused read, a refused write, an Idle pulse not below Full pulse or an
+refused read, a refused write, an Idle pulse less than 100us below Full pulse or an
 acknowledgement whose throttle channels hold another pair ends the debt
 with an alert and blocks the switch to ARMED until an edit, a binding or a
 link-up brings the pair into force. While they are owed or blocked with the

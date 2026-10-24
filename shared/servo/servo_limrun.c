@@ -1117,6 +1117,7 @@ void servo_limrun_pulsed(servo_limrun_t *r, bool ok,
         abort_why(r, SERVO_LIMRUN_WHY_OTHER_VALUES, now_ms);
         return;
     }
+    r->pulses_landed = true;
     read_done(r, now_ms);
 }
 

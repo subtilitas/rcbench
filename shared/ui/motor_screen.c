@@ -269,11 +269,25 @@ bool motor_screen_peak_shown(int channel)
     return channel >= 0 && channel < S_COUNT && s.pk_ok[channel];
 }
 
-/* ARM takes no press while the servo programmer holds a port; DISARM
- * does. */
+/**
+ * @brief Whether the throttle's binding is read and names no motor pin: no
+ *        GPIO (general-purpose input/output) pin and no DShot port.  The
+ *        TARGET row then reads NO MOTOR PIN, and nothing can be driven.
+ * @return true when the binding is read and empty
+ */
+bool mo_no_motor_pin(void)
+{
+    return s.thr_pins_known && s.thr_pins == 0u && motor_dshot_ports() == 0u;
+}
+
+/**
+ * @brief Whether ARM takes no press: the servo programmer holds a port, or
+ *        the binding names no motor pin.  DISARM takes a press in both.
+ * @return true when ARM is dimmed and refused
+ */
 bool mo_arm_locked(void)
 {
-    return kst_panel_holds_port() && !s.gate.armed;
+    return (kst_panel_holds_port() || mo_no_motor_pin()) && !s.gate.armed;
 }
 
 void motor_screen_cancel_arm(void)

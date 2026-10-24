@@ -3621,6 +3621,24 @@ static void pose_shown_views(const char *view)
             const gfx_rect_t box = motor_settings_box(1);
             tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
         }
+        if (strncmp(view, "motor-settings-gap-", 19) == 0) {
+            /* A pulse less than 100us from the other one, typed and
+             * refused with its reason in place of the range: Idle 1599us
+             * against Full 1650us, Full 1450us against Idle 1400us. */
+            const bool idle = strcmp(view, "motor-settings-gap-idle") == 0;
+            settings_set(SET_OUT_MIN_US, idle ? 1000.0f : 1400.0f);
+            settings_set(SET_OUT_MAX_US, idle ? 1650.0f : 2000.0f);
+            setting_id_t ids[16];
+            const int rows = motor_settings_rows(ids, 16);
+            for (int r = 0; r < rows; ++r) {
+                if (ids[r] == (idle ? SET_OUT_MIN_US : SET_OUT_MAX_US)) {
+                    const gfx_rect_t box = motor_settings_box(r);
+                    tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
+                }
+            }
+            kp_type(motor_screen_keypad(), idle ? "1599" : "1450");
+            ktap(ui_keypad_key_rect(motor_screen_keypad(), UI_KEY_OK));
+        }
         if (strcmp(view, "motor-settings-armed") == 0) {
             settings_set(SET_PACK_MAH, 2200.0f);
             settings_request_save();
@@ -3686,6 +3704,7 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
     if (strcmp(view, "setup-interfaces") == 0
         || strcmp(view, "setup-unheld") == 0
         || strcmp(view, "setup-tap") == 0
+        || strcmp(view, "setup-tap-why") == 0
         || strcmp(view, "setup-prog") == 0
         || strcmp(view, "setup-prog-noline") == 0
         || strcmp(view, "setup-prog-pre") == 0) {
@@ -3701,6 +3720,12 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
              * list is high leaves the screen. */
             setup_scroll_rows(4);
             setup_scroll_rows(5);
+        } else if (strcmp(view, "setup-tap-why") == 0) {
+            /* GP23, a pin the module does not bring out, typed for Tap
+             * pin: refused with the pins the row takes. */
+            setup_value(SET_CAT_IFACE, SET_TONE_PIN);
+            kp_type(settings_screen_keypad(), "23");
+            ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
         } else if (strncmp(view, "setup-prog", 10) == 0) {
             /* The list's end: PROG PORT and Hitec D receive at PRECHARGE,
              * marked as an IOmcu older than 4.24 (or 4.23) leaves it, or
@@ -3885,7 +3910,8 @@ int main(int argc, char **argv)
     s_monitors_on = strcmp(view, "setup-interfaces") == 0
                     || strncmp(view, "setup-sensors", 13) == 0
                     || strcmp(view, "setup-unheld") == 0;
-    s_tap_on = strcmp(view, "setup-tap") == 0;
+    s_tap_on = strcmp(view, "setup-tap") == 0
+               || strcmp(view, "setup-tap-why") == 0;
     s_enc_on = strcmp(view, "servo-encoder") == 0;
     s_rot_on = strcmp(view, "setup-rotation") == 0;
     s_tz_on = strcmp(view, "setup-time-zone") == 0;

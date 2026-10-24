@@ -51,40 +51,40 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        9,335    1167 KiB
+frame                        9,323    1165 KiB
 frame-idle                       0       0 KiB
-held                         4,875     609 KiB
-sim                         13,003    1625 KiB
-throttle                    11,206    1401 KiB
-chrome                      51,580    6448 KiB
+held                         4,830     604 KiB
+sim                         12,941    1618 KiB
+throttle                    11,119    1390 KiB
+chrome                      51,495    6437 KiB
 overview                         0       0 KiB
-servo                        2,171     271 KiB
-servo-grip                     542      68 KiB
-servo-current                3,140     392 KiB
-supply                       9,546    1193 KiB
-supply-chrome               47,414    5927 KiB
+servo                        2,219     277 KiB
+servo-grip                     555      69 KiB
+servo-current                3,167     396 KiB
+supply                       9,584    1198 KiB
+supply-chrome               47,443    5930 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,551     194 KiB
-balance-sim                  3,007     376 KiB
-settings-sim                 2,983     373 KiB
-battery-sim                  3,015     377 KiB
-analyser-chrome             60,990    7624 KiB
-logs-chrome                 26,180    3272 KiB
-settings-chrome             37,847    4731 KiB
-settings-list-chrome        36,875    4609 KiB
-battery-chrome              58,013    7252 KiB
-balance-chrome              63,347    7918 KiB
-motor-stick-chrome          41,827    5228 KiB
+motor-stick                  1,537     192 KiB
+balance-sim                  3,111     389 KiB
+settings-sim                 3,098     387 KiB
+battery-sim                  3,075     384 KiB
+analyser-chrome             60,986    7623 KiB
+logs-chrome                 26,192    3274 KiB
+settings-chrome             37,844    4730 KiB
+settings-list-chrome        36,933    4617 KiB
+battery-chrome              58,030    7254 KiB
+balance-chrome              63,359    7920 KiB
+motor-stick-chrome          41,802    5225 KiB
 picker                           0       0 KiB
-picker-chrome               40,147    5018 KiB
+picker-chrome               40,100    5012 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,118    2765 KiB
-wifi-keys                   36,435    4554 KiB
+wifi-chrome                 22,129    2766 KiB
+wifi-keys                   36,923    4615 KiB
 clear                       19,206    2401 KiB
 vlines                      10,202    1275 KiB
 hlines                         180      22 KiB
@@ -247,6 +247,13 @@ builds a panel without the start-up probe, the lines and the code behind
 them: the render loop then reads no clock for DRAW and calls nothing for
 them. CI builds that, with the touch injector left out as well, as the
 extra panel build.
+
+Release images are built with `RCBENCH_PERF_LOG=OFF` and print none of
+these lines. The CI build, a local `idf.py build` and a build with
+`-D RCBENCH_PERF_LOG=ON` keep them; to measure on a release's sources,
+build without the flag. `tools/check_perf_log.py` holds the release image
+to the setting: it fails when the image holds the start-up probe's text,
+the stack scan's text or the `scan_stacks` symbol.
 
 The console is UART0 at 115,200 baud with no driver installed, beside the
 USB Serial/JTAG port. A line that does not fit the UART's 128-byte transmit
@@ -414,7 +421,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  225 such
+  226 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its

@@ -6,7 +6,7 @@ order: 61
 
 # Anschlüsse
 
-ANSCHLÜSSE, die zweite Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: den Strommonitor INA228 und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff, das Netzteil PD mini und wie der Programmierport ein Hitec-Servo der D-Serie empfängt. Ihre 23 Einstellungen stehen in fünf Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN, NETZTEIL und PROG-PORT; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
+INTERFACES, die zweite Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: den Strommonitor INA228 und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff, das Netzteil PD mini und wie der Programmierport ein Hitec-Servo der D-Serie empfängt. Ihre 23 Einstellungen stehen in fünf Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE SENSORS, SUPPLY und PROG-PORT; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
 
 ## Die Strommonitore
 
@@ -41,7 +41,7 @@ Ein Pin steht mit dem Wort voran, `GPIO 1`, im Eintrag des Tastenfelds, in der Z
 
 ![Das Tastenfeld von Sensor-SDA, GPIO 1 getippt](view:setup-sda-keypad)
 
-Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SETUP > ANSCHLÜSSE prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SETUP > ANSCHLÜSSE prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung -- Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert -- verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
+Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SETUP > INTERFACES prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung -- Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert -- verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
 
 ## Eine Zeile, die der IOmcu nicht hält
 
@@ -73,7 +73,7 @@ Der Phasenabgriff hört die Pieptöne eines ESC an einer Motorphase. Ein GPIO de
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Phasenabgriff | EIN, AUS | AUS | die Erfassung läuft auf dem IOmcu |
-| Abgriff-Pin | 0 bis 47 | 22 | der GPIO des IOmcu; GP22 ist Pad 29 |
+| Abgriff-Pin | 0, 1, 2, 4 bis 7, 13 bis 22 | 22 | der GPIO des IOmcu; GP22 ist Pad 29. Die Pins, die das RP2350-CAN herausführt und nicht belegt, ohne die ADC-Pins GP26 bis GP29 |
 | Tiefster Ton | 50 bis 2000Hz, Schritte von 10Hz | 400 | ein tieferer Ton ist kein Piepton |
 | Höchster Ton | 100 bis 6900Hz, Schritte von 50Hz | 6500 | über dem tiefsten Ton |
 | Tonsprung | 0 bis 50% | 8 | ein so großer Tonhöhensprung beginnt einen neuen Piepton; 0 trennt nur an Stille |

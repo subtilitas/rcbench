@@ -464,7 +464,7 @@ TEST_CASE(the_language_follows_the_setting)
     CHECK_EQ(ui_text_language(), UI_LANG_DE);
     CHECK_STR_EQ(TR(CANCEL), "ABBRECHEN");
     CHECK_STR_EQ(ui_setting_label(SET_PACK_CELLS), "Zellen");
-    CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "ANSCHLÜSSE");
+    CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "INTERFACES");
     CHECK_STR_EQ(ui_servo_str(SERVO_STR_PASS), "BESTANDEN");
     settings_set(SET_LANGUAGE, 0.0f);
     settings_apply_ui();
@@ -513,6 +513,21 @@ TEST_CASE(the_report_is_translated_and_the_csv_is_not)
     char line[SERVO_TEST_LINE_MAX];
     CHECK(servo_report_line(&t, 0, line, sizeof(line)));
     CHECK_STR_EQ(line, "RCBENCH SERVOTEST-BERICHT");
+    /* The limit report's mode lines for a run that never searched. */
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_SEARCH_NONE),
+                 "nur Suche (keine Suche gelaufen), nichts ins Servo "
+                 "geschrieben") != NULL);
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_PROGRAM_NONE),
+                 "(keine Suche gelaufen)") != NULL);
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_PULSES_NONE),
+                 "(keine Suche gelaufen)") != NULL);
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_PULSES_SET_NONE),
+                 "(keine Suche gelaufen); PULSE LOWER und PULSE UPPER "
+                 "zuerst auf 1000 und 2000us gesetzt") != NULL);
     t.cfg.text = NULL;
     CHECK(servo_report_line(&t, 0, line, sizeof(line)));
     CHECK_STR_EQ(line, "RCBENCH SERVO TEST REPORT");

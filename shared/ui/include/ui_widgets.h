@@ -87,6 +87,21 @@ bool ui_is_light(gfx_color_t c);
 bool ui_text_fits(const gfx_font_t *f, const char *s, int w, int h, int pad);
 
 /**
+ * @brief The face for a button label: @p big when the label keeps @p pad px
+ *        at each side of a @p w x @p h px key in it, else @p small.
+ * @param label The label; NULL is the empty text.
+ * @param w     The key's width, in pixels.
+ * @param h     The key's height, in pixels.
+ * @param pad   The room to keep left and right of the label, in pixels.
+ * @param big   The face used when it fits.
+ * @param small The face used when @p big leaves less than @p pad px.
+ * @return @p big or @p small.
+ */
+const gfx_font_t *ui_button_face(const char *label, int w, int h, int pad,
+                                 const gfx_font_t *big,
+                                 const gfx_font_t *small);
+
+/**
  * @brief Where the key grid of the keypad and of the keyboard ends at the
  *        latest, in body coordinates: 4px above the alert band, y 492.
  *

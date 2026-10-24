@@ -6,6 +6,7 @@
  * Cases:
  * - the_armed_chip_names_the_role
  * - the_band_renders_the_role_of_the_arm
+ * - the_fault_chip_text_reads_on_its_fill_in_both_themes
  * - a_tap_on_each_chip_opens_its_bubble
  * - a_slide_off_a_chip_opens_nothing
  * - a_tap_closes_the_bubble_and_does_nothing_else
@@ -85,6 +86,65 @@ TEST_CASE(the_band_renders_the_role_of_the_arm)
     CHECK(h_motor != h_none);
     CHECK(h_servo != h_none);
     CHECK(h_motor != h_servo);
+}
+
+/* WCAG relative luminance of an RGB565 colour, 0 to 1. */
+static double rel_lum(gfx_color_t c)
+{
+    const double ch[3] = {
+        (double)((c >> 11) & 0x1Fu) / 31.0,
+        (double)((c >> 5) & 0x3Fu) / 63.0,
+        (double)(c & 0x1Fu) / 31.0,
+    };
+    double l[3];
+    for (int i = 0; i < 3; ++i) {
+        l[i] = (ch[i] <= 0.03928) ? ch[i] / 12.92
+                                  : pow((ch[i] + 0.055) / 1.055, 2.4);
+    }
+    return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2];
+}
+
+/* WCAG contrast ratio of two colours, 1 to 21. */
+static double contrast_of(gfx_color_t a, gfx_color_t b)
+{
+    const double la = rel_lum(a);
+    const double lb = rel_lum(b);
+    return (la > lb ? la + 0.05 : lb + 0.05) / (la > lb ? lb + 0.05 : la + 0.05);
+}
+
+/* FAULT's chip is drawn on the warning fill: its text is drawn in a colour
+ * that keeps 4.5:1 against it, in the dark and the light theme. */
+TEST_CASE(the_fault_chip_text_reads_on_its_fill_in_both_themes)
+{
+    const ui_bench_status_t st = {
+        .link_up = true, .armed = false, .faults = 0x10, .run_seconds = 5,
+        .mode = NULL,
+    };
+    for (int th = 0; th < (int)UI_THEME_COUNT; ++th) {
+        fresh();
+        ui_theme_set((ui_theme_id_t)th);
+        to_overview();
+        ui_router_set_status(&st);
+        ui_router_invalidate();
+        ui_router_render(&cv, 0);
+        gfx_rect_t r;
+        CHECK(ui_band_chip_rect(&st, UI_BAND_CHIP_FAULT, &r));
+        const gfx_color_t fill = ui_theme_color(UI_C_WARN);
+        const gfx_color_t ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
+        int ink_px = 0;
+        int text_px = 0;
+        for (int y = r.y; y < r.y + r.h; ++y) {
+            for (int x = r.x + r.h; x < r.x + r.w - r.h; ++x) {
+                const gfx_color_t px = fb[(size_t)y * W + x];
+                ink_px  += (px == ink);
+                text_px += (px == ui_theme_color(UI_C_TEXT));
+            }
+        }
+        CHECK(ink_px > 0);
+        CHECK_EQ(text_px, 0);
+        CHECK(contrast_of(ink, fill) >= 4.5);
+        ui_theme_set(UI_THEME_DARK);
+    }
 }
 
 /* ------------------------------------------------------- help bubbles */
@@ -800,29 +860,6 @@ TEST_CASE(a_screen_without_a_band_opens_no_bubble)
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
 }
 
-/* The WCAG 2.x relative luminance of an RGB565 colour as the panel shows it. */
-static double rel_lum(gfx_color_t c)
-{
-    uint8_t v[3];
-    gfx_unpack(c, &v[0], &v[1], &v[2]);
-    double lin[3];
-    for (int i = 0; i < 3; ++i) {
-        const double s = v[i] / 255.0;
-        lin[i] = (s <= 0.04045) ? s / 12.92 : pow((s + 0.055) / 1.055, 2.4);
-    }
-    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
-}
-
-/* The WCAG contrast ratio of two colours, 1 to 21. */
-static double contrast(gfx_color_t a, gfx_color_t b)
-{
-    const double la = rel_lum(a);
-    const double lb = rel_lum(b);
-    const double hi = (la > lb) ? la : lb;
-    const double lo = (la > lb) ? lb : la;
-    return (hi + 0.05) / (lo + 0.05);
-}
-
 /* Every state of every chip the band draws, text on fill: the clock, SAFE,
  * ARMED with each role, FAULT, BENCH and the link up and down.  WCAG AA asks
  * 4.5:1 for text of this size. */
@@ -855,7 +892,7 @@ TEST_CASE(every_chip_reads_at_4_5_to_1_in_both_themes)
                 REQUIRE(ui_band_chip_colors(&k_states[i],
                                             (ui_band_chip_t)chip, &fill,
                                             &ink));
-                const double r = contrast(ink, fill);
+                const double r = contrast_of(ink, fill);
                 if (r < 4.5) {
                     ui_theme_set(was);
                     T_FAIL("theme %d state %zu chip %d: %.2f:1", t, i, chip,
@@ -874,6 +911,7 @@ int main(void)
 {
     RUN(the_armed_chip_names_the_role);
     RUN(the_band_renders_the_role_of_the_arm);
+    RUN(the_fault_chip_text_reads_on_its_fill_in_both_themes);
     RUN(a_tap_on_each_chip_opens_its_bubble);
     RUN(a_slide_off_a_chip_opens_nothing);
     RUN(a_tap_closes_the_bubble_and_does_nothing_else);

@@ -73,7 +73,7 @@ The phase tap hears an ESC's beeps on one motor phase. One IOmcu GPIO reads the 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Phase tap | ON, OFF | OFF | the capture runs on the IOmcu |
-| Tap pin | 0 to 47 | 22 | the IOmcu GPIO; GP22 is pad 29 |
+| Tap pin | 0, 1, 2, 4 to 7, 13 to 22 | 22 | the IOmcu GPIO; GP22 is pad 29. The pins the RP2350-CAN brings out and does not reserve, less the ADC pins GP26 to GP29 |
 | Tap lowest tone | 50 to 2000Hz, 10Hz steps | 400 | a lower tone is not a beep |
 | Tap highest tone | 100 to 6900Hz, 50Hz steps | 6500 | above the lowest tone |
 | Tap pitch split | 0 to 50% | 8 | a pitch change this large starts a new beep; 0 splits on silence only |

@@ -472,6 +472,56 @@ TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* Tap pin takes the pins the RP2350-CAN brings out, does not reserve and
+ * the TONE page accepts: GP23 (not brought out), GP24, GP25 and GP29 (not
+ * brought out), GP3 (heartbeat), GP8 to GP12 (CAN controller) and the ADC
+ * pins GP26 to GP29 are refused, with the list in place of the range. */
+TEST_CASE(tap_pin_takes_only_the_pins_the_module_brings_out)
+{
+    static const int taken[] = { 0, 1, 2, 4, 5, 6, 7, 13, 14, 15, 16, 17, 18,
+                                 19, 20, 21, 22 };
+    for (int gpio = -2; gpio < 64; ++gpio) {
+        bool want = false;
+        for (size_t i = 0; i < sizeof(taken) / sizeof(taken[0]); ++i) {
+            want = want || taken[i] == gpio;
+        }
+        CHECK_EQ(settings_tap_pin_valid(gpio), want);
+        CHECK_EQ(ui_setting_keypad_takes(SET_TONE_PIN, (float)gpio),
+                 want);
+    }
+    char pins[64];
+    CHECK_STR_EQ(ui_setting_keypad_tap_pins(pins, sizeof(pins)),
+                 "0 1 2 4 5 6 7 13 14 15 16 17 18 19 20 21 22");
+    char why[64];
+    CHECK_STR_EQ(ui_setting_keypad_why(SET_TONE_PIN, 23.0f, why, sizeof(why)),
+                 "Pins the tap takes: 0 1 2 4 5 6 7 13 14 15 16 17 18 19 20 "
+                 "21 22");
+    CHECK(ui_setting_keypad_why(SET_TONE_PIN, 22.0f, why, sizeof(why))
+          == NULL);
+    /* The OK key refuses GP23 and keeps the keypad open; GP21 is set. */
+    CHECK_EQ(settings_get_int(SET_TONE_PIN), 22);
+    ui_keypad_t k;
+    memset(&k, 0, sizeof(k));
+    CHECK_EQ(ui_setting_keypad_ok(&k, SET_TONE_PIN, 23.0f),
+             UI_SETKEY_REFUSED);
+    CHECK_EQ(settings_get_int(SET_TONE_PIN), 22);
+    CHECK_EQ(ui_setting_keypad_ok(&k, SET_TONE_PIN, 21.0f), UI_SETKEY_SET);
+    CHECK_EQ(settings_get_int(SET_TONE_PIN), 21);
+    /* The - and + keys step over the pins left out: 7 to 13, 22 stops. */
+    settings_set(SET_TONE_PIN, 7.0f);
+    settings_adjust(SET_TONE_PIN, 1);
+    CHECK_EQ(settings_get_int(SET_TONE_PIN), 13);
+    settings_adjust(SET_TONE_PIN, 20);
+    CHECK_EQ(settings_get_int(SET_TONE_PIN), 22);
+    settings_adjust(SET_TONE_PIN, -3);
+    CHECK_EQ(settings_get_int(SET_TONE_PIN), 19);
+    /* A stored pin the module does not bring out is the default. */
+    settings_set(SET_TONE_PIN, 23.0f);
+    CHECK_EQ(settings_get_int(SET_TONE_PIN), 22);
+    settings_set(SET_TONE_PIN, 9.0f);
+    CHECK_EQ(settings_get_int(SET_TONE_PIN), 22);
+}
+
 /* The SDA list is built from settings_sense_sda_valid(): every GPIO it
  * takes is listed, and no other. */
 TEST_CASE(the_sda_reason_lists_the_pins_the_bus_takes)
@@ -776,6 +826,7 @@ int main(void)
     RUN(a_pin_the_row_does_not_take_is_refused);
     RUN(a_refusal_inside_the_range_says_why_until_the_next_key);
     RUN(the_sda_reason_lists_the_pins_the_bus_takes);
+    RUN(tap_pin_takes_only_the_pins_the_module_brings_out);
     RUN(a_short_sda_reason_keeps_whole_pins);
     RUN(the_off_gap_reason_is_what_the_schema_holds);
     RUN(armed_steps_and_keypad_alike_and_a_held_row_refuses_both);

@@ -73,6 +73,13 @@ bool ui_text_fits(const gfx_font_t *f, const char *s, int w, int h, int pad)
     return gfx_text_width(f, (s != NULL) ? s : "", 1) + 2 * pad <= w;
 }
 
+const gfx_font_t *ui_button_face(const char *label, int w, int h, int pad,
+                                 const gfx_font_t *big,
+                                 const gfx_font_t *small)
+{
+    return ui_text_fits(big, label, w, h, pad) ? big : small;
+}
+
 void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled)
 {

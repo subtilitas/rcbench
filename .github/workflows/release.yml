@@ -177,9 +177,18 @@ jobs:
           # A single image flashable at 0x0, as well as the three parts.
           # Flashing bootloader, partition table and app at three offsets is
           # three chances to get an offset wrong; the merged one has none.
+          # RCBENCH_PERF_LOG=OFF: a release image carries none of the
+          # console's frame, stack and heap lines.  The merged image, the
+          # application .bin and the ZIP all come from this one build.
           command: >-
-            idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin build
+            idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin
+            -D RCBENCH_PERF_LOG=OFF build
             && idf.py merge-bin -o rcbench-panel-merged.bin
+
+      # The setting is one CMake option; a build that stops passing it still
+      # builds, so the image is read for what the option leaves out.
+      - name: The image carries no frame, stack and heap lines
+        run: python3 tools/check_perf_log.py off firmware/panel/build/rcbench-panel.elf
 
       # The trial start's rollback test build aborts every trial start;
       # it is never a release.

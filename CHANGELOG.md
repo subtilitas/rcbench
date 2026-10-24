@@ -222,10 +222,16 @@ history is in git.
 ### Changed
 
 - The ARMED chip in the band draws the dark text of the buttons on bright
-  fills: 5.45:1 in the dark theme (3.52:1 before), 4.95:1 in the light one
-  (4.68:1 before).
+  fills: 5.45:1 in the dark theme (3.51:1 before), 4.94:1 in the light one
+  (4.67:1 before).
 - The help pages name the IOmcu release where they named a link protocol
   number: `older than 0.18.0`, not `older than protocol 4.18`.
+- Release images are built with `RCBENCH_PERF_LOG=OFF`: the panel prints no
+  rate, window, PSRAM probe, stack or heap lines. The CI build, the bench
+  builds and a local `idf.py build` keep the option ON. `release.yml` and
+  `ci.yml` run `tools/check_perf_log.py`, which fails when a release image
+  holds the start-up probe's text, the stack scan's text or `scan_stacks`
+  ([Performance](docs/Performance.md#on-the-board)).
 - CI keeps cppcheck's build directory between runs, so cppcheck re-reads
   only the files whose content or included files changed. cppcheck runs in
   a job of its own, `cppcheck`, beside `Lint and static analysis`, which

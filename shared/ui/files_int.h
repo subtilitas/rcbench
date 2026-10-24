@@ -116,6 +116,7 @@
 #define FOOT_W      118         /**< A button's width but RESCAN's. */
 #define FOOT_W_LAST 140         /**< RESCAN's width. */
 #define FOOT_GAP    6           /**< Between two buttons. */
+#define FOOT_PAD    6           /**< Room kept at each side of a label. */
 #define FOOT_N      8           /**< The buttons. */
 /** @brief Footer button @p i: 0 OPEN to 7 RESCAN (fs_foot_t). */
 #define FS_FOOT(i)  gfx_rect_make(FS_L + (i) * (FOOT_W + FOOT_GAP), FOOT_Y, \

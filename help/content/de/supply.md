@@ -23,7 +23,7 @@ Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Messwerte und die Karte 
 
 ![SUPPLY mit abgeschaltetem PD mini: SIMULIERTES NETZTEIL](view:supply)
 
-Ist der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `SIMULIERTES NETZTEIL`, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6Ω mit einem Stromstoß von 1,4A für 0,6s alle 3s, hinter einem Quellwiderstand von 0,05Ω. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
+Ist der PD mini unter SETUP, INTERFACES abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `SIMULIERTES NETZTEIL`, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6Ω mit einem Stromstoß von 1,4A für 0,6s alle 3s, hinter einem Quellwiderstand von 0,05Ω. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
 
 ## Der PD mini
 
@@ -116,7 +116,7 @@ Mit dem PD mini als Netzteil bieten die OPTIONEN zusätzlich PD MINI ZURÜCKSETZ
 
 Ein Lauf ist ein Einschalten des Ausgangs. Die Grafik leert sich, wenn der Ausgang einschaltet, und hält den Lauf, wenn er ausgeht. Die mAh und Wh in der Titelzeile von STEUERUNG zählen den Lauf. SPITZENWERTE ZURÜCKSETZEN startet die niedrigsten und höchsten Werte neu ab dem aktuellen Messwert.
 
-Jeder Lauf wird in eine eigene `SUPPLnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital) geschrieben, solange Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE EIN ist, eine Zeile alle 50ms, mit Sollwert, Spannung, Grenze, Strom, Leistung, Modus, Ladung, Energie und Quelle, `measured` oder `model`. [Logs](logs.md) öffnet sie.
+Jeder Lauf wird in eine eigene `SUPPLnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital) geschrieben, solange Auto-Logs unter [SETUP](setup.md#sd-card) > SD CARD EIN ist, eine Zeile alle 50ms, mit Sollwert, Spannung, Grenze, Strom, Leistung, Modus, Ladung, Energie und Quelle, `measured` oder `model`. [Logs](logs.md) öffnet sie.
 
 ## Verwandte Seiten
 

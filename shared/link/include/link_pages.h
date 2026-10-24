@@ -358,6 +358,17 @@ enum {
 #define LINK_CC_FLOOR_US     400u
 #define LINK_CC_CEILING_US  2500u
 
+/**
+ * @brief The least distance, in microseconds, between a throttle's Idle pulse
+ * (CHAN_CFG MIN_US) and its Full pulse (MAX_US).  The panel's keypad for
+ * either pulse, the panel's payment of the pair to the IOmcu
+ * (outputs_chan_cfg_set_throttle_range()) and the order check ARM waits on
+ * hold a pair to it.  The IOmcu's own write check holds each pulse to the
+ * floor and ceiling above and straightens an inverted pair
+ * (outputs_set_endpoints()); it does not read this gap.
+ */
+#define LINK_CC_THROTTLE_GAP_US 100u
+
 /* --- which driver drives what.  Four registers a slot, written whole for the
  *     same reason: a driver claimed on a pin the rest of the write has not
  *     arrived to name yet is a driver on the wrong pin. */

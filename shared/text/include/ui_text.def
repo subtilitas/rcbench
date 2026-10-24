@@ -256,6 +256,17 @@ UI_TEXT(KEYPAD_WHY_OFF, 0,
 UI_TEXT(KEYPAD_WHY_SDA, 0,
     "Pins the bus takes: %s",
     "Pins, die der Bus nimmt: %s")
+/* The first number is the largest Idle pulse (the smallest Full pulse) the
+ * pair takes, the second the gap, LINK_CC_THROTTLE_GAP_US. */
+UI_TEXT(KEYPAD_WHY_IDLE_GAP, 58,
+    "Idle pulse at most %uus (%uus below Full pulse)",
+    "Leerlaufpuls höchstens %uus (%uus unter Vollpuls)")
+UI_TEXT(KEYPAD_WHY_FULL_GAP, 58,
+    "Full pulse at least %uus (%uus above Idle pulse)",
+    "Vollpuls mindestens %uus (%uus über Leerlaufpuls)")
+UI_TEXT(KEYPAD_WHY_TAP, 0,
+    "Pins the tap takes: %s",
+    "Pins, die der Abgriff nimmt: %s")
 UI_TEXT(KEYPAD_WHY_PDMINI, 0,
     "The other PD mini pin holds this GPIO",
     "Diesen GPIO hält der andere PD-mini-Pin")
@@ -1185,10 +1196,10 @@ UI_TEXT(SET_HD_TAP, 40,
     "PHASENABGRIFF")
 UI_TEXT(SET_HD_BALANCE, 40,
     "BALANCE SENSORS",
-    "BALANCE-SENSOREN")
+    "BALANCE SENSORS")
 UI_TEXT(SET_HD_SUPPLY, 40,
     "SUPPLY",
-    "NETZTEIL")
+    "SUPPLY")
 UI_TEXT(SET_HD_PROG, 40,
     "PROG PORT",
     "PROG-PORT")
@@ -1245,7 +1256,7 @@ UI_TEXT(SET_SENS_SAME_ADDR, 65,
     "Der INA228 nutzt diese Adresse. Keiner wird gelesen.")
 UI_TEXT(SET_SENS_NO_BUS, 65,
     "Sensor SDA or SCL unset. Set both on INTERFACES.",
-    "SDA oder SCL der Sensoren fehlt. Beide auf ANSCHLÜSSE festlegen.")
+    "SDA oder SCL der Sensoren fehlt. Beide auf INTERFACES festlegen.")
 UI_TEXT(SET_RESET, 0,
     "RESET CATEGORY",
     "KATEGORIE ZURÜCKSETZEN")
@@ -1649,7 +1660,7 @@ UI_TEXT(LOG_DELETE, 0,
     "LÖSCHEN")
 UI_TEXT(LOG_SD_CARD, 60,
     "SD CARD",
-    "SD-KARTE")
+    "SD CARD")
 UI_TEXT(LOG_NO_LOGS, 64,
     "NO RECORDINGS",
     "KEINE AUFZEICHNUNGEN")
@@ -1685,10 +1696,10 @@ UI_TEXT(LOG_ROOT_HERE, 64,
     "Läufe von Firmware 0.21.0 und älter.")
 UI_TEXT(LOG_AUTO_OFF, 64,
     "AUTO LOGS OFF in SETUP > SD CARD.",
-    "AUTO-LOGS AUS unter SETUP > SD-KARTE.")
+    "AUTO-LOGS AUS unter SETUP > SD CARD.")
 UI_TEXT(LOG_USER_OFF, 64,
     "USER LOGS OFF in SETUP > SD CARD.",
-    "USER-LOGS AUS unter SETUP > SD-KARTE.")
+    "USER-LOGS AUS unter SETUP > SD CARD.")
 /* The folder tabs: the card's folder names, the same in every language
  * but the root's. */
 UI_TEXT(LOG_TAB_USER, 0,
@@ -1858,7 +1869,8 @@ UI_TEXT(LOG_TEXT_EMPTY, 92,
     "Die Datei ist leer.")
 
 /* --------------------------------------------------------------- FILES */
-/* The footer's buttons, 118px of the 10 x 20 face: 11 cells at most.
+/* The footer's buttons, 118px: a label that leaves under 6px at each side
+ * in the 10 x 20 face (10 cells at most) is drawn in the 8 x 16 face.
  * OPEN, DELETE and RESCAN are LOGS' (LOG_OPEN, LOG_DELETE, LOG_RESCAN). */
 UI_TEXT(FM_COPY, 0,
     "COPY",
@@ -2111,7 +2123,7 @@ UI_TEXT(FM_RULE_FREE, 0,
     "keine")
 UI_TEXT(FM_RULE_FIXED, 0,
     "A folder of the bench: no RENAME, MOVE or DELETE.",
-    "Ordner des Prüfstands: kein UMBENENNEN, VERSCHIEBEN, LÖSCHEN.")
+    "Prüfstand-Ordner: kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN.")
 UI_TEXT(FM_RULE_LOCKED, 62,
     "The servo programmer's record: INFO only.",
     "Vermerk der Servoprogrammierung: nur INFO.")
@@ -3392,7 +3404,7 @@ UI_TEXT(SV_DUT_NOTE, 58,
     "Dieser Name steht oben auf jedem Testbericht.")
 UI_TEXT(SV_ENC_NOTE_1, 58,
     "AS5600 on or off: SETUP > INTERFACES.",
-    "AS5600 ein oder aus: SETUP > ANSCHLÜSSE.")
+    "AS5600 ein oder aus: SETUP > INTERFACES.")
 UI_TEXT(SV_ENC_NOTE_2, 58,
     "Centre the servo, then tap ENC CENTRE.",
     "Stelle das Servo auf Mitte und tippe auf SENSOR-MITTE.")
@@ -3534,8 +3546,8 @@ UI_TEXT(ALERT_PULSE_RANGE_UNKNOWN, 94,
     "The IOmcu did not report its pulse range.",
     "Der IOmcu hat seinen Pulsbereich nicht gemeldet.")
 UI_TEXT(ALERT_PULSE_ORDER, 94,
-    "Idle pulse must be shorter than full-throttle pulse. Not sent.",
-    "Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.")
+    "Idle pulse must be 100us or more below Full pulse. Not sent.",
+    "Leerlaufpuls muss mindestens 100us unter Vollpuls liegen. Nicht gesendet.")
 UI_TEXT(ALERT_PULSE_REFUSED, 94,
     "The IOmcu rejected the pulse range.",
     "Der IOmcu hat den Pulsbereich abgelehnt.")
@@ -3581,8 +3593,8 @@ UI_TEXT(ALERT_ARM_RANGE_UNKNOWN, 94,
     "No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.",
     "Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut halten.")
 UI_TEXT(ALERT_ARM_RANGE_ORDER, 94,
-    "Idle pulse is not below Full pulse. Change one, then hold ARM again.",
-    "Leerlaufpuls liegt nicht unter Vollpuls. Einen ändern, dann ARM erneut halten.")
+    "Idle pulse is not 100us or more below Full pulse. Change one, then hold ARM again.",
+    "Leerlaufpuls liegt nicht 100us oder mehr unter Vollpuls. Einen ändern, dann ARM erneut halten.")
 UI_TEXT(ALERT_ARM_RANGE_REFUSED, 94,
     "The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.",
     "Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder OUTPUTS ändern.")
@@ -3595,6 +3607,9 @@ UI_TEXT(ALERT_ARM_REFUSED, 94,
 UI_TEXT(ALERT_ARM_PROG, 94,
     "Cannot switch to ARMED: a port is in use by the servo programmer.",
     "ARMED gesperrt: Die Servoprogrammierung belegt einen Port.")
+UI_TEXT(ALERT_ARM_NO_PIN, 94,
+    "Cannot switch to ARMED: no motor pin. Choose a TARGET on OUTPUTS.",
+    "ARMED gesperrt: kein Motor-Pin. Unter OUTPUTS ein ZIEL wählen.")
 UI_TEXT(ALERT_SWEEP_RESUME_OLD, 94,
     "IOmcu firmware older than 0.13.0. Sweep starts again.",
     "IOmcu-Firmware älter als 0.13.0. Sweep beginnt von vorn.")
@@ -3624,7 +3639,7 @@ UI_TEXT(ALERT_SUPPLY_REFUSED_ON, 94,
     "Netzteil ließ sich nicht einschalten. Ausgang aus.")
 UI_TEXT(ALERT_PDMINI_PINS, 94,
     "PD mini pins rejected. Check SETUP > INTERFACES.",
-    "PD-mini-Pins abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "PD-mini-Pins abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_PDMINI_SWITCH, 94,
     "PD mini output could not be switched.",
     "PD-mini-Ausgang ließ sich nicht schalten.")
@@ -3654,22 +3669,22 @@ UI_TEXT(ALERT_NO_SENSE_PAGE, 94,
     "IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.")
 UI_TEXT(ALERT_SENSE_PINS_UNSET, 94,
     "Sensor SDA or SCL not set. Check SETUP > INTERFACES.",
-    "SDA oder SCL der Sensoren nicht festgelegt. SETUP > ANSCHLÜSSE prüfen.")
+    "SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_SAME_ADDR, 94,
     "INA228 and INA3221 both use 0x%02X. Check SETUP > INTERFACES.",
-    "INA228 und INA3221 nutzen beide 0x%02X. SETUP > ANSCHLÜSSE prüfen.")
+    "INA228 und INA3221 nutzen beide 0x%02X. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_PINS, 94,
     "Sensor pins GP%d/GP%d rejected. Check SETUP > INTERFACES.",
-    "Sensor-Pins GP%d/GP%d abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Sensor-Pins GP%d/GP%d abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_I228_SETUP, 94,
     "INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.",
-    "INA228-Shunt oder Höchststrom abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "INA228-Shunt oder Höchststrom abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_I3221_SETUP, 94,
     "INA3221 settings rejected. Check SETUP > SENSORS.",
-    "INA3221-Einstellungen abgelehnt. SETUP > SENSOREN prüfen.")
+    "INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_DARK, 94,
     "INA3221 0x%02X has every channel off. Check SETUP > SENSORS.",
-    "INA3221 0x%02X hat alle Kanäle aus. SETUP > SENSOREN prüfen.")
+    "INA3221 0x%02X hat alle Kanäle aus. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_SILENT, 94,
     "%s is not responding at 0x%02X.",
     "%s antwortet nicht unter 0x%02X.")
@@ -3696,7 +3711,7 @@ UI_TEXT(ALERT_SENSE_OVER_LOST, 94,
     "Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.")
 UI_TEXT(ALERT_SENSE_LIMITS, 94,
     "INA3221 limits rejected. Check SETUP > SENSORS.",
-    "INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.")
+    "INA3221-Grenzen abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_ENC_OLD, 94,
     "IOmcu firmware older than 0.15.0. AS5600 not read.",
     "IOmcu-Firmware älter als 0.15.0. AS5600 nicht ausgelesen.")
@@ -3726,10 +3741,10 @@ UI_TEXT(ALERT_NO_TONE_PAGE, 94,
     "IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.")
 UI_TEXT(ALERT_TONE_PIN, 94,
     "Phase tap on GP%u, %u to %uHz rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff an GP%u, %u bis %uHz abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Phasenabgriff an GP%u, %u bis %uHz abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_TONE_SETUP, 94,
     "Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_TONE_BUSY, 94,
     "Phase tap pin GP%u is in use. Capture not running.",
     "Pin GP%u für den Phasenabgriff ist belegt. Erfassung läuft nicht.")
@@ -4903,7 +4918,7 @@ UI_TEXT(WF_Q_NEW, 0,
     "Empfangen: %s")
 UI_TEXT(WF_Q_RUN, 0,
     "Running: %s",
-    "Aktuelle Version: %s")
+    "Läuft: %s")
 UI_TEXT(WF_Q_OLDER, 0,
     "Version %s is older than the running version %s.",
     "Version %s ist älter als die laufende Version %s.")
@@ -6061,22 +6076,22 @@ UI_SETTING_CATEGORY(SET_CAT_APP,
     "PANEL")
 UI_SETTING_CATEGORY(SET_CAT_IFACE,
     "INTERFACES",
-    "ANSCHLÜSSE")
+    "INTERFACES")
 UI_SETTING_CATEGORY(SET_CAT_CARD,
     "SD CARD",
-    "SD-KARTE")
+    "SD CARD")
 UI_SETTING_CATEGORY(SET_CAT_SENSORS,
     "SENSORS",
-    "SENSOREN")
+    "SENSORS")
 UI_SETTING_CATEGORY(SET_CAT_ESC,
     "ESC / BENCH",
-    "ESC / PRÜFSTAND")
+    "ESC / BENCH")
 UI_SETTING_CATEGORY(SET_CAT_SUPPLY,
     "SUPPLY",
-    "NETZTEIL")
+    "SUPPLY")
 UI_SETTING_CATEGORY(SET_CAT_SERVO,
     "SERVO TEST",
-    "SERVOTEST")
+    "SERVO TEST")
 UI_SETTING_CATEGORY(SET_CAT_STICK,
     "ESC STICK",
     "ESC STICK")
@@ -6357,6 +6372,12 @@ UI_SERVO_TEXT(SERVO_STR_START_NOT_ARMED,
 UI_SERVO_TEXT(SERVO_STR_START_BUSY,
     "LAST REPORT STILL WRITING",
     "LETZTER BERICHT SCHREIBT NOCH")
+UI_SERVO_TEXT(SERVO_STR_START_TEST_RUNS,
+    "AUTOMATIC TEST IS RUNNING",
+    "AUTOMATISCHER TEST LÄUFT")
+UI_SERVO_TEXT(SERVO_STR_START_LIMIT_RUNS,
+    "LIMIT RUN IS RUNNING",
+    "ENDLAGENLAUF LÄUFT")
 /* The report.  The labels pad to column 17, so the values line up. */
 UI_SERVO_TEXT(SERVO_STR_R_TITLE,
     "RCBENCH SERVO TEST REPORT",
@@ -6995,6 +7016,33 @@ UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES,
     "Modus:           nur Suche; PULSE LOWER "
     "und PULSE UPPER zuerst auf 1000 und "
     "2000us gesetzt")
+/* The same modes for a run that ended before its first search. */
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_SEARCH_NONE,
+    "Mode:           search only (no search "
+    "ran), nothing written to the servo",
+    "Modus:           nur Suche (keine Suche "
+    "gelaufen), nichts ins Servo geschrieben")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PROGRAM_NONE,
+    "Mode:           search, then LEFT ANGLE "
+    "and RIGHT ANGLE to be programmed (no "
+    "search ran)",
+    "Modus:           Suche, dann LEFT ANGLE "
+    "und RIGHT ANGLE zu programmieren (keine "
+    "Suche gelaufen)")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES_NONE,
+    "Mode:           search only; PULSE LOWER "
+    "and PULSE UPPER to be set to 1000 and "
+    "2000us first (no search ran)",
+    "Modus:           nur Suche; PULSE LOWER "
+    "und PULSE UPPER zuerst auf 1000 und "
+    "2000us zu setzen (keine Suche gelaufen)")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES_SET_NONE,
+    "Mode:           search only (no search "
+    "ran); PULSE LOWER and PULSE UPPER set to "
+    "1000 and 2000us first",
+    "Modus:           nur Suche (keine Suche "
+    "gelaufen); PULSE LOWER und PULSE UPPER "
+    "zuerst auf 1000 und 2000us gesetzt")
 UI_SERVO_TEXT(SERVO_STR_L_R_SEARCH,
     "Searched:       from %uus out to %uus "
     "and %uus",
@@ -7016,7 +7064,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_RULE,
     "ms, mean of 80ms; bound above %.1f x "
     "free and +%.2fA",
     "Suchregel:       Schritte zu 10us, 120"
-    "ms warten, Mittel über 80ms; angelaufen "
+    "ms warten, Mittel über 80ms; blockiert "
     "über %.1f x frei und +%.2fA")
 UI_SERVO_TEXT(SERVO_STR_L_R_PROTECT,
     "Protections:    a sample at %.1fA, above "
@@ -7042,8 +7090,8 @@ UI_SERVO_TEXT(SERVO_STR_L_R_HIGH,
 UI_SERVO_TEXT(SERVO_STR_L_R_END_BOUND,
     "%sbound at %uus, endpoint %uus; free "
     "%.3fA, bound %.3fA",
-    "%sangelaufen bei %uus, Endpunkt %uus; "
-    "frei %.3fA, angelaufen %.3fA")
+    "%sblockiert bei %uus, Endpunkt %uus; "
+    "frei %.3fA, blockiert %.3fA")
 UI_SERVO_TEXT(SERVO_STR_L_R_END_FREE,
     "%sfree to %uus; free %.3fA",
     "%sfrei bis %uus; frei %.3fA")
@@ -7109,7 +7157,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_REG_LIN,
     "                share free %s, bound %s; "
     "overset %s, share %s; final %s",
     "                 Anteil frei %s, "
-    "angelaufen %s; Vorhalt %s, Anteil %s; "
+    "blockiert %s; Vorhalt %s, Anteil %s; "
     "Endwert %s")
 UI_SERVO_TEXT(SERVO_STR_L_R_SIDE_LO,
     "limits the low end",
@@ -7127,7 +7175,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_METHOD,
     "found free",
     "Verfahren:       linear im Puls; Vorhalt "
     "+%u%% auf den Anteil am ersten "
-    "angelaufenen Puls, dann der Anteil, den "
+    "blockierten Puls, dann der Anteil, den "
     "seine Suche frei fand")
 UI_SERVO_TEXT(SERVO_STR_L_R_WRITES,
     "Writes:         values written %u, writes "
