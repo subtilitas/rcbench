@@ -8,20 +8,30 @@ refused.
 """
 
 import dataclasses
+import importlib.util
 
 import pytest
 
 import gen_cats as g
+from conftest import skip_or_fail
+
+
+def need_pillow():
+    """Skip locally, fail in CI, when Pillow is not installed."""
+    if importlib.util.find_spec("PIL") is None:
+        skip_or_fail("Pillow is not installed")
 
 
 @pytest.fixture(scope="module")
 def arts():
     """Every pose, drawn, cut and encoded once."""
+    need_pillow()
     return [g.build(p) for p in g.POSES]
 
 
 def test_the_checked_in_files_are_what_the_generator_writes():
     """--check passes on the tree as committed."""
+    need_pillow()
     assert g.main(["--check"]) == 0
 
 
@@ -86,6 +96,7 @@ def test_a_bad_table_is_refused():
 
 def test_a_pose_with_a_spot_that_does_not_exist_is_refused():
     """build() names the pose and the spot."""
+    need_pillow()
     bad = dataclasses.replace(g.POSES[0], spots=("nowhere",))
     with pytest.raises(ValueError, match="nowhere"):
         g.build(bad)
