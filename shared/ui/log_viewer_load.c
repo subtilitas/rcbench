@@ -48,6 +48,7 @@ static const char *err_text(log_err_t err)
     }
 }
 
+/** @brief Keep @p id and @p name as the footer message (log_viewer_int.h). */
 void lv_say(ui_text_id_t id, const char *name)
 {
     s.msg_kind = LV_MSG_TEXT;
@@ -58,6 +59,7 @@ void lv_say(ui_text_id_t id, const char *name)
     s.message_ok = false;
 }
 
+/** @brief Keep @p err as the footer message (log_viewer_int.h). */
 void lv_say_err(log_err_t err)
 {
     s.msg_kind = LV_MSG_ERR;
@@ -66,11 +68,13 @@ void lv_say_err(log_err_t err)
     s.message_ok = false;
 }
 
+/** @brief Clear the footer message (log_viewer_int.h). */
 void lv_quiet(void)
 {
     s.msg_kind = LV_MSG_NONE;
 }
 
+/** @brief Word the footer message into @p buf (log_viewer_int.h). */
 const char *lv_message(char *buf, size_t n)
 {
     buf[0] = '\0';
