@@ -438,6 +438,7 @@ TEST_CASE(a_stamp_from_an_unset_clock_lists_no_date)
                           "</td>") != NULL);
     CHECK(strstr(g_p.buf, "1980-") == NULL);
     CHECK(strstr(g_p.buf, "1970-") == NULL);
+    fake_free(&fs);
 }
 
 TEST_CASE(the_bench_tree_lists_every_file_under_its_folder)
