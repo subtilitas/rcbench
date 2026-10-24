@@ -220,8 +220,8 @@ TEST_CASE(the_mode_line_of_a_run_that_never_searched_says_so)
 
 /* The pulses are set before the first search: a run whose pulse write landed
  * and that ended on the leave before any search says the pulses were set,
- * and that no search ran; one whose write never landed says they are still
- * to be set. */
+ * and that no search ran; one whose write was refused or read back other
+ * than 1000 and 2000us says they are still to be set. */
 TEST_CASE(the_mode_line_says_set_pulses_that_landed_without_a_search)
 {
     rig_init(0u, false);
@@ -244,6 +244,19 @@ TEST_CASE(the_mode_line_says_set_pulses_that_landed_without_a_search)
     CHECK(start());
     run_for(RUN_MS);
     CHECK(!g.run.searched);
+    CHECK(strstr(g.report, "to be set to 1000 and 2000us first (no search "
+                           "ran)") != NULL);
+
+    /* A write that did not land reads back the old values: the pulses are
+     * not said to be set. */
+    rig_init(0u, false);
+    g.cfg.program = false;
+    g.cfg.set_pulses = true;
+    g.lose_write = 1u;
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(!g.run.searched);
+    CHECK(!g.run.pulses_landed);
     CHECK(strstr(g.report, "to be set to 1000 and 2000us first (no search "
                            "ran)") != NULL);
 }
