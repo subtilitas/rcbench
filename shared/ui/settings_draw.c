@@ -354,6 +354,9 @@ void stg_render(gfx_canvas_t *c, int buffer_index)
         return;
     }
 
+    /* A list draws a SAFE-only row without keys while ARMED
+     * (settings_safe_only()), so an arm or a disarm redraws it. */
+    s.drawn_armed = stg_bench_armed();
     gfx_clear(c, UI_BG);
     if (s.kp.open) {
         /* The keypad covers the list and the strip: nothing under it is

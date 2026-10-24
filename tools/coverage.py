@@ -59,6 +59,8 @@ TRACKED = [
     "shared/gfx/gfx.c",
     "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
+    "shared/gfx/gfx_damage.c",
+    "shared/gfx/gfx_turn.c",
     "shared/touch/touch_map.c",
     "shared/touch/touch_merge.c",
     "shared/ui/ui_theme.c",

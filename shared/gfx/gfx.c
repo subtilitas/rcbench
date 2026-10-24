@@ -195,6 +195,7 @@ void gfx_fill_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t colo
         return;
     }
     GFX_VISIT((unsigned long)r.w * (unsigned long)r.h);
+    GFX_DAMAGE(c, r.x, r.y, r.w, r.h);
     /* A full-width fill over a tightly packed canvas is one contiguous run,
      * which is worth a lot more than it looks: it is the difference between
      * one long burst and h separate ones. */
@@ -649,6 +650,7 @@ void gfx_blit(gfx_canvas_t *c, int x, int y, const gfx_color_t *src,
     if (!gfx_rect_intersect(gfx_rect_make(x, y, w, h), c->clip, &r)) {
         return;
     }
+    GFX_DAMAGE(c, r.x, r.y, r.w, r.h);
     int sx = r.x - x;
     int sy = r.y - y;
     for (int row = 0; row < r.h; ++row) {
@@ -671,6 +673,7 @@ void gfx_blit_key(gfx_canvas_t *c, int x, int y, const gfx_color_t *src,
     if (!gfx_rect_intersect(gfx_rect_make(x, y, w, h), c->clip, &r)) {
         return;
     }
+    GFX_DAMAGE(c, r.x, r.y, r.w, r.h);
     int sx = r.x - x;
     int sy = r.y - y;
     for (int row = 0; row < r.h; ++row) {
@@ -716,17 +719,29 @@ void gfx_blit_1bpp(gfx_canvas_t *c, int x, int y, const uint8_t *bits,
  * grip's breathing repaints a 72-pixel box and must not pay for the whole
  * arm's extent to do it.
  */
+/**
+ * @brief One antialiased pixel: @p col over what is there, by @p cov.
+ *
+ * Not reported to the damage record pixel by pixel: each caller reports
+ * the row's span once (GFX_DAMAGE), which in NORMAL saves a test per pixel.
+ *
+ * @param c the canvas
+ * @param x the pixel's column
+ * @param y its row
+ * @param col the colour
+ * @param cov the coverage, 0 to 1; 1 and above writes @p col
+ */
 static void cov_blend(gfx_canvas_t *c, int x, int y, gfx_color_t col, float cov)
 {
     if (cov <= 0.0f) {
         return;
     }
-    if (cov >= 1.0f) {
-        gfx_pixel(c, x, y, col);
+    GFX_VISIT(1u);
+    if (!canvas_ok(c) || !gfx_rect_contains(c->clip, x, y)) {
         return;
     }
-    gfx_pixel(c, x, y,
-              gfx_lerp(gfx_pixel_get(c, x, y), col, (uint8_t)(cov * 255.0f)));
+    gfx_color_t *p = &c->pixels[(ptrdiff_t)y * c->stride + x];
+    *p = (cov >= 1.0f) ? col : gfx_lerp(*p, col, (uint8_t)(cov * 255.0f));
 }
 
 /* The box to walk, already intersected with the clip.  False if nothing of
@@ -827,6 +842,7 @@ void gfx_fill_circle_aaf(gfx_canvas_t *c, float cx, float cy, float r,
         span_t in = sp;
         (void)span_inside(cx, dy, r - 0.5f, &in);
         GFX_VISIT(sp.hi - sp.lo - (in.hi - in.lo));
+        GFX_DAMAGE(c, sp.lo, y, sp.hi - sp.lo, 1);
         for (int x = sp.lo; x < sp.hi; ++x) {
             if (x == in.lo && in.hi > in.lo) {
                 gfx_fill_rect(c, in.lo, y, in.hi - in.lo, 1, col);
@@ -921,6 +937,7 @@ void gfx_capsule_aaf(gfx_canvas_t *c, float ax, float ay, float bx, float by,
             continue;
         }
         GFX_VISIT(sp.hi - sp.lo);
+        GFX_DAMAGE(c, sp.lo, y, sp.hi - sp.lo, 1);
         for (int x = sp.lo; x < sp.hi; ++x) {
             const float px = (float)x - ax, py = (float)y - ay;
             /* How far along the segment the nearest point is, clamped to its
@@ -1071,6 +1088,7 @@ void gfx_ring_aaf(gfx_canvas_t *c, float cx, float cy, float r,
         span_t hole = { sp.lo, sp.hi };
         (void)span_inside(cx, dy, inner, &hole);
         GFX_VISIT(sp.hi - sp.lo - (hole.hi - hole.lo));
+        GFX_DAMAGE(c, sp.lo, y, sp.hi - sp.lo, 1);
         for (int x = sp.lo; x < sp.hi; ++x) {
             if (x == hole.lo && hole.hi > hole.lo) {
                 x = hole.hi - 1;

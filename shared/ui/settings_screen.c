@@ -617,7 +617,7 @@ static void tick(float dt_s)
     if (s.drawn_dirty != settings_dirty()
         || s.drawn_asked != settings_save_asked()
         || s.drawn_failed != settings_save_failed()
-        || (s.warn && s.drawn_armed != stg_bench_armed())) {
+        || ((s.warn || s.list) && s.drawn_armed != stg_bench_armed())) {
         settings_screen_invalidate();
     }
     /* A row held or derived since its keypad opened takes no value: the
