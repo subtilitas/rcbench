@@ -3,13 +3,19 @@ idf_component_register(
          "panel_services.c" "panel_ports.c" "panel_sense.c" "panel_limit.c" "panel_supply.c" "panel_arm.c"
          "panel_render.c" "panel_art.c" "panel_update.c" "selftest.c"
          "knob_task.c" "kst_files.c" "panel_boot.c" "panel_settings.c"
-         "panel_control.c" "panel_frame.c" "panel_files.c"
+         "panel_control.c" "panel_frame.c" "panel_files.c" "panel_trial.c"
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram files
              fwupdate webaccess fw_ota wifi_access clock
              esp_driver_gpio esp_driver_uart esp_timer
     LDFRAGMENTS "psram_bss.lf"
 )
+
+# The trial start's rollback test build; see RCBENCH_TRIAL_CRASH in
+# firmware/panel/CMakeLists.txt.
+if(RCBENCH_TRIAL_CRASH)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_TRIAL_CRASH=1)
+endif()
 
 # The IOmcu image of the same release, carried so the panel can move
 # the IOmcu to it over CAN (Controller Area Network):

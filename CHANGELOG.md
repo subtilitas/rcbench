@@ -115,6 +115,14 @@ history is in git.
 - A host Release build (`-DCMAKE_BUILD_TYPE=Release`) stopped on -Werror
   warnings that the Debug build does not raise: a buffer of 8 bytes for
   `+%u` on MOTOR & ESC's TARGET, and four host tests. It builds and passes.
+- A new panel build's first start is kept once the panel works as a whole:
+  the card tried, the settings loaded, the control and logger tasks one
+  pass each, a whole frame on the display and a screen loop tick after it,
+  or 30s after the start once the screen loop ticks. The IOmcu is not
+  waited for. A panic or reset before that goes back to the build before
+  it. A build kept at display and touch that failed after that restarted
+  for ever and needed USB (Universal Serial Bus) to recover
+  ([Screens: PANEL UPDATE](docs/Screens.md#installing-panel-update)).
 
 - A line on OUTPUTS and PICK A PIN no longer ends with a number alone on
   the next line: `SERVO TESTER DRIVES PROG PORT 1` broke before its `1` at

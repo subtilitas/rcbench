@@ -3217,10 +3217,33 @@ Download von GitHub dorthin, wo der Download begann.
 
 ![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
 
-Der erste Start eines neuen Builds ist ein Versuch. Der Build bleibt, sobald
-Display und Touch laufen. Ein Start, der nicht so weit kommt, durch einen
-Fehler, einen Neustart oder einen fehlenden Touch-Controller, geht zurück
-zum Build davor, der dann
+Der erste Start eines neuen Builds ist ein Versuch. Ohne Touch startet das
+Panel beim Touch-Schritt in den Build davor neu: Ein Prüfstand ohne Touch hat
+kein STOP. Laufen Display und Touch, bleibt der Build, sobald das Panel als
+Ganzes läuft:
+
+- die Karte wurde versucht, eine fehlende oder unlesbare Karte zählt;
+- die Einstellungen sind geladen;
+- der Steuer-Task und der Logger-Task sind je einen Durchlauf gelaufen;
+- ein ganzes Bild hat das Display erreicht, und die Bildschirmschleife ist
+  danach einmal gelaufen.
+
+Auf den IOmcu wird nicht gewartet: Ein Panel ohne IOmcu bleibt genauso.
+30s nach dem Start bleibt der Build, sobald die Bildschirmschleife läuft,
+was auch sonst fehlt. Das Behalten schreibt otadata und wartet darum auf
+einen Moment, der einen Flash-Schreibvorgang verträgt, nach der Regel des
+Speicherns der Einstellungen: nicht, solange der Prüfstand ARMED ist oder ein
+Schalten auf ARMED wartet, nicht bei eingeschaltetem Netzteilausgang und nicht,
+solange eine Platinenzeichnung abgerufen oder gespeichert wird. Die Konsole
+sagt, wie es ausging:
+
+    I (…) rcbench: 0.22.1 on trial: kept once every task runs and a frame is on the display, or at 30s after the start with the screen loop running
+    I (…) rcbench: 0.22.1 kept: every task runs and a frame is on the display, 4210ms after the start
+    W (…) rcbench: 0.22.1 kept at the 30s bound with the screen loop running; not seen: logger task
+
+Die 4210ms sind ein Beispiel; die Zeit ist nicht gemessen. Ein Start, der
+nicht so weit kommt, durch einen Panic, einen Watchdog-Reset, einen Neustart
+oder einen Stromausfall, geht zurück zum Build davor, der dann
 `Panel-Firmware 0.22.1 ist nicht gestartet. Version 0.22.0 läuft wieder.` im Band
 zeigt. Ein gescheiterter Start bleibt nie: Schlägt das Markieren als
 ungültig fehl, startet das Panel mit unbestätigtem Versuch neu, und der
@@ -3233,6 +3256,11 @@ Aktuelle Einschränkungen:
 
 - Ein Stromausfall während des Versuchsstarts verliert diese Zeile; das
   Panel geht trotzdem zum Build davor zurück.
+- Ein Versuchsstart, der vor der Bildschirmschleife stehen bleibt, etwa in
+  einem Einhängen der Karte, das nicht zurückkehrt, bleibt nicht und wird
+  auch nicht zurückgesetzt: Der Task-Watchdog meldet und startet nicht neu
+  (CONFIG_ESP_TASK_WDT_PANIC ist aus). Das Panel bleibt auf dem Splash bis
+  zu einem Neustart oder Stromausfall, der zum Build davor zurückgeht.
 - Wie lange Löschen und Schreiben dauern, ist nicht gemessen. Die dunkle
   Anzeige bei jedem Löschen ist auf 0.20.0 gemeldet und auf 0.21.x nicht
   gemessen.

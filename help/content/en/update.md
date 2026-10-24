@@ -22,7 +22,7 @@ How long the erase and the write take is not measured.
 
 When the write completes, the slot is read back and checked, it becomes the slot that starts, and the panel restarts. The splash shows the new version, and the band says `Panel firmware 0.22.1 installed.`.
 
-The first start of a new build is a trial. The build is kept once the display and touch are up. A start that does not get there goes back to the build before it, and the band says `Panel firmware 0.22.1 failed to start. Version 0.22.0 is running again.`. When keeping a good start fails, the band says `Panel firmware 0.22.1 was not kept. The next restart restores the previous version.`.
+The first start of a new build is a trial. Without touch the panel goes back to the build before it at once: no touch, no STOP. With the display and touch up, the build is kept once the panel works as a whole: the card tried (no card counts), the settings loaded, the control and logger tasks running, and a whole frame on the display. The IOmcu is not waited for. 30s after the start the build is kept once the screen runs, whatever else is missing. Keeping waits while the bench is ARMED or the supply output is on. A start that resets before the build is kept, by a fault, a watchdog, a restart or a power cut, goes back to the build before it, and the band says `Panel firmware 0.22.1 failed to start. Version 0.22.0 is running again.`. When keeping a good start fails, the band says `Panel firmware 0.22.1 was not kept. The next restart restores the previous version.`.
 
 ## The write failed
 
@@ -33,4 +33,5 @@ A write that fails changes nothing that starts: the running firmware stays. CLOS
 ## Current limitations
 
 - A power cut during the trial start loses the band's line; the panel still goes back to the build before.
+- A trial start that stops on the splash, in a card mount that does not return for example, is not kept and does not restart by itself. A restart or a power cut goes back to the build before.
 - Before the first update over Wi-Fi the panel needs one flash over USB (Universal Serial Bus) to reach the layout with two application slots: [First run](https://github.com/subtilitas/rcbench/blob/main/docs/FirstRun.md).

@@ -23,6 +23,7 @@
 #include "log_viewer_screen.h"
 #include "panel.h"
 #include "panel_main.h"
+#include "panel_trial.h"
 #include "rcbench_version.h"
 #include "selftest.h"
 #include "settings.h"
@@ -187,7 +188,7 @@ bool bring_up(void)
         splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_FAIL, TR(SPLASH_NO_PANEL));
         /* A build on its first start after an update goes back to the one
          * before it, here and now; any other start goes on as before. */
-        (void)fw_ota_boot_check(false, NULL, 0u);
+        panel_trial_begin(false);
         return false;   /* nothing can be reported after this */
     }
     pump();
@@ -205,31 +206,13 @@ bool bring_up(void)
     pump();
 
     /*
-     * A build's first start after an update is a trial until here: with
-     * the display and touch up it is kept, and without touch -- no STOP --
-     * the panel restarts into the build before it.  Keeping it writes
-     * otadata, once.
+     * A build's first start after an update is a trial.  Without touch --
+     * no STOP -- the panel restarts into the build before it here.  With
+     * the display and touch up the trial stays open until the panel works
+     * as a whole: the card, the settings, the control and logger tasks and
+     * a frame on the display (panel_trial_frame()).
      */
-    {
-        char other[FW_TEXT_MAX];
-        switch (fw_ota_boot_check(s_touch_ok, other, sizeof(other))) {
-        case FW_BOOT_UPDATED:
-            snprintf(s_boot_alert, sizeof(s_boot_alert), TR(ALERT_FW_UPDATED),
-                     RCBENCH_VERSION_STRING);
-            break;
-        case FW_BOOT_ROLLED_BACK:
-            snprintf(s_boot_alert, sizeof(s_boot_alert),
-                     TR(ALERT_FW_ROLLED_BACK), other, RCBENCH_VERSION_STRING);
-            break;
-        case FW_BOOT_UNCONFIRMED:
-            snprintf(s_boot_alert, sizeof(s_boot_alert),
-                     TR(ALERT_FW_UNCONFIRMED), RCBENCH_VERSION_STRING);
-            break;
-        case FW_BOOT_NORMAL:
-        default:
-            break;
-        }
-    }
+    panel_trial_begin(s_touch_ok);
 
     /* A card is optional: the log viewer wants one, nothing else does, so a
      * missing card is a warning the operator reads on the way past rather
