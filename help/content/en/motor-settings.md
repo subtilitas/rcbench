@@ -18,7 +18,7 @@ A row shows the setting and its value with its unit, 48px tall, and a help line 
 
 | Heading | Setting | Range | Default | What it does |
 |---|---|---|---|---|
-| PACK | Cells | 1 to 14 S | 6 | stored; no screen uses it in this release |
+| PACK | Cells | 1 to 14S | 6 | stored; no screen uses it in this release |
 | PACK | Capacity | 0 to 30000mAh, 100mAh steps | 5000 | stored; no screen uses it in this release |
 | PACK | Internal R | 0 to 200mΩ | 18 | stored; no screen uses it in this release |
 | MOTOR | Motor poles | 2 to 42, steps of 2 | 14 | rpm is eRPM (electrical rpm) divided by poles/2 |

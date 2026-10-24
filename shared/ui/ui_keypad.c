@@ -16,9 +16,8 @@
 
 /*
  * A title row, the entry, then four rows of keys, 8px apart, ending at
- * UI_KEYS_FOOT at the latest.  Over SERVO's left column, 488 x 524px, a
- * key is 112 x 88px (16.8 x 13.2mm at 0.150mm a pixel); over SUPPLY's,
- * 620 x 476px, 145 x 76px.
+ * UI_KEYS_FOOT at the latest.  On SERVO a key is 145 x 88px (21.8 x 13.2mm
+ * at 0.150mm a pixel); over SUPPLY's 620 x 476px, 145 x 76px.
  */
 /** @brief The room around the title, the entry and the keys: 8px. */
 #define KP_PAD     8
@@ -366,6 +365,38 @@ static const gfx_font_t *header_face(gfx_rect_t hdr, const char *title,
     return (need <= hdr.w) ? &gfx_font_10x20 : &gfx_font_8x16;
 }
 
+/** @brief The key faces, largest first: 20 x 36, 16 x 28, 12 x 24,
+ *         10 x 20 and 8 x 16. */
+static const gfx_font_t *const k_faces[] = {
+    &gfx_font_20x36, &gfx_font_16x28, &gfx_font_12x24, &gfx_font_10x20,
+    &gfx_font_8x16,
+};
+/** @brief The count of k_faces. */
+#define KP_FACES ((int)(sizeof(k_faces) / sizeof(k_faces[0])))
+
+/**
+ * @brief Where the digits' face is in k_faces: the first whose cell fits
+ *        a digit key with KP_KEY_PAD on each of its 4 sides.
+ * @param k The keypad.
+ * @return The index; the last, 8 x 16, when none fits.
+ */
+static int digit_face(const ui_keypad_t *k)
+{
+    const gfx_rect_t r = ui_keypad_key_rect(k, UI_KEY_7);
+    for (int f = 0; f < KP_FACES - 1; ++f) {
+        if (k_faces[f]->width + 2 * KP_KEY_PAD <= r.w
+            && k_faces[f]->height + 2 * KP_KEY_PAD <= r.h) {
+            return f;
+        }
+    }
+    return KP_FACES - 1;
+}
+
+const gfx_font_t *ui_keypad_digit_font(const ui_keypad_t *k)
+{
+    return (k != NULL) ? k_faces[digit_face(k)] : &gfx_font_8x16;
+}
+
 const gfx_font_t *ui_keypad_word_font(const ui_keypad_t *k)
 {
     if (k == NULL) {
@@ -373,19 +404,17 @@ const gfx_font_t *ui_keypad_word_font(const ui_keypad_t *k)
     }
     static const ui_key_t words[] = { UI_KEY_DEL, UI_KEY_CLR, UI_KEY_CANCEL,
                                       UI_KEY_OK, UI_KEY_SIGN };
-    static const gfx_font_t *const faces[] = { &gfx_font_12x24,
-                                               &gfx_font_10x20 };
-    for (size_t f = 0; f < sizeof(faces) / sizeof(faces[0]); ++f) {
+    for (int f = digit_face(k); f < KP_FACES - 1; ++f) {
         bool fit = true;
         for (size_t i = 0; i < sizeof(words) / sizeof(words[0]) && fit; ++i) {
             const gfx_rect_t r = ui_keypad_key_rect(k, words[i]);
             const char *label = (words[i] == UI_KEY_CANCEL)
                                     ? TR(CANCEL) : k_labels[words[i]];
-            fit = r.w == 0 || ui_text_fits(faces[f], label, r.w, r.h,
+            fit = r.w == 0 || ui_text_fits(k_faces[f], label, r.w, r.h,
                                            KP_KEY_PAD);
         }
         if (fit) {
-            return faces[f];
+            return k_faces[f];
         }
     }
     return &gfx_font_8x16;
@@ -497,8 +526,9 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
                (k->len > 0) ? ui_theme_color(UI_C_TEXT)
                             : ui_theme_color(UI_C_TEXT_FAINT));
 
-    /* Digits and the point in 12 x 24; the words in the face they all
-     * fit. */
+    /* Digits and the point in the largest face their key holds; the
+     * words in the largest face, no larger, they all fit. */
+    const gfx_font_t *df = ui_keypad_digit_font(k);
     const gfx_font_t *wf = ui_keypad_word_font(k);
     for (int key = 0; key < UI_KEY_COUNT; ++key) {
         if (key == UI_KEY_SIGN && !k->sign) {
@@ -513,6 +543,6 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
         ui_button_font(c, ui_keypad_key_rect(k, (ui_key_t)key),
                        (key == UI_KEY_CANCEL) ? TR(CANCEL) : k_labels[key],
                        fill, k->pressed == key, true,
-                       word ? wf : &gfx_font_12x24);
+                       word ? wf : df);
     }
 }

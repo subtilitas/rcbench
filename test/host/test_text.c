@@ -896,7 +896,7 @@ TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
     static const char *const k_symbol[] = {
         "V", "mV", "A", "mA", "W", "Hz", "kHz", "ms", "us", "s", "%", "deg",
         "\xC2\xB0", "m\xCE\xA9", "\xCE\xA9", "mAh", "rpm", "rpm/V", "%/s",
-        "kbit/s", "min",
+        "kbit/s", "min", "S",
     };
     for (size_t i = 0; i < sizeof(k_symbol) / sizeof(k_symbol[0]); ++i) {
         if (!ui_unit_is_symbol(k_symbol[i])
@@ -905,7 +905,7 @@ TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
         }
     }
     static const char *const k_word[] = {
-        "GPIO", "S", "Volt", "v", "ms/", "/s", "/", "rpm/Volt", "m\xCE",
+        "GPIO", "SV", "Volt", "v", "ms/", "/s", "/", "rpm/Volt", "m\xCE",
         "\xCE\xA9x", "V ", " V", "cells",
     };
     for (size_t i = 0; i < sizeof(k_word) / sizeof(k_word[0]); ++i) {

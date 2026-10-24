@@ -18,7 +18,7 @@ Eine Zeile zeigt die Einstellung und ihren Wert mit Einheit, 48px hoch, und daru
 
 | Überschrift | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|---|
-| AKKU | Zellen | 1 bis 14 S | 6 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
+| AKKU | Zellen | 1 bis 14S | 6 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
 | AKKU | Kapazität | 0 bis 30000mAh, Schritte von 100mAh | 5000 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
 | AKKU | Innenwiderstand | 0 bis 200mΩ | 18 | gespeichert; kein Bildschirm nutzt ihn in diesem Release |
 | MOTOR | Motorpole | 2 bis 42, Schritte von 2 | 14 | die Drehzahl ist eRPM (elektrische Drehzahl) geteilt durch Pole/2 |

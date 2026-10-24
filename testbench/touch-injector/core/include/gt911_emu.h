@@ -16,7 +16,7 @@
  *   0x8047         config version 0x41
  *   0x8048-0x804B  X and Y output maximum, little endian
  *   0x804C         touch number 5
- *   0x8140-0x8143  product ID "911" and 0x00
+ *   0x8140-0x8143  product ID "9INJ" (GT911_EMU_PRODUCT_ID), no NUL
  *   0x8144-0x8145  firmware version 0xE001
  *   0x8146-0x8149  X and Y resolution, little endian
  *   0x814E         status: bit 7 frame ready, bits 3..0 point count
@@ -42,10 +42,23 @@ extern "C" {
 /** @brief The I2C address the emulator answers at. */
 #define GT911_EMU_ADDR        0x14u
 
+/**
+ * @brief The product ID at 0x8140..0x8143, 4 ASCII bytes with no NUL.
+ *
+ * The panel tells the injector from the glass by it, not by the address.
+ * A Goodix controller reports its part number there, digits with at most
+ * one trailing letter ("911" and a NUL on a GT911); this ID has letters
+ * from its second byte on, so no glass reports it.  '9' first keeps the
+ * panel's GT911 probe accepting it.  The panel's copy is
+ * TOUCH_MERGE_INJECT_PRODUCT (shared/touch/include/touch_merge.h); the host
+ * suite checks that the two match.
+ */
+#define GT911_EMU_PRODUCT_ID  "9INJ"
+
 /** @name Registers
  *  @{ */
 #define GT911_EMU_REG_COMMAND 0x8040u  /**< command, then the ESD check  */
-#define GT911_EMU_REG_PRODUCT 0x8140u  /**< product ID "911"             */
+#define GT911_EMU_REG_PRODUCT 0x8140u  /**< product ID "9INJ"            */
 #define GT911_EMU_REG_STATUS  0x814Eu  /**< ready flag and point count   */
 #define GT911_EMU_REG_POINT1  0x814Fu  /**< the first point's track ID   */
 /** @} */

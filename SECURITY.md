@@ -76,10 +76,12 @@ its own 2s hold, at the next link-up.
 Current limitation, touch input: every panel image, releases included,
 carries the touch injector (`RCBENCH_TOUCH_INJECTOR`, default ON). At
 start-up the panel looks once for a device answering at I2C
-(Inter-Integrated Circuit) address 0x14 as a GT911 touch controller, beside
-the glass's controller at 0x5D. The trigger is a device on the panel's
-exposed PH2.0 I2C connector, which carries the touch bus, that answers at
-0x14 while the panel starts. The panel then reads it on every touch poll
+(Inter-Integrated Circuit) address 0x14 as a GT911 touch controller with
+the product ID `9INJ`, beside the glass's controller at 0x5D or alone. The
+trigger is a device on the panel's exposed PH2.0 I2C connector, which
+carries the touch bus, that answers at 0x14 with that product ID while the
+panel starts. A GT911 at 0x14 with any other product ID is the glass when
+nothing answers at 0x5D, and is not read beside it. The panel then reads it on every touch poll
 and merges its contacts with the glass's, so that device can navigate the
 screens, press STOP and hold ARM for its 2s, which drives the configured
 outputs without a touch on the glass. If nothing answers at 0x14 at
