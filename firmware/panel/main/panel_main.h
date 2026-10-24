@@ -68,8 +68,10 @@ void publish_hitec_rx(void);
  */
 void publish_time_zone(void);
 /**
- * @brief One console line at the start-up on the clock: the time kept
- *        across a software restart, or "not set" after a power-on.
+ * @brief Two console lines at the start-up on the clock: the slow clock
+ *        the RTC (real-time clock) timer counts, crystal or RC fallback,
+ *        and the time kept across a software restart, or "not set" after
+ *        a power-on.
  */
 void log_clock_at_start(void);
 

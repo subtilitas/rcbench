@@ -1,14 +1,16 @@
 /**
  * @file
  * @brief The panel's wall clock: whether it holds a real date, whether a
- *        file's stamp says anything, the time zones SETUP offers, and the
- *        one NTP (Network Time Protocol) request a join makes.
+ *        file's stamp says anything, the time zones SETUP offers, the
+ *        one NTP (Network Time Protocol) request a join makes, and the
+ *        slow clock's console line.
  *
  * The panel board (Waveshare ESP32-P4-WIFI6-Touch-LCD-7B) carries no RTC
  * (real-time clock) chip.  The ESP32-P4's own RTC timer keeps the system
- * time across a software restart; a power-on starts it at 1970-01-01
- * 00:00:00 UTC (coordinated universal time).  An NTP answer on the home
- * network sets it.  Until then the clock is uptime since 1970, and FatFs
+ * time across a software restart, counting the 32.768kHz crystal Y3 or,
+ * when that does not start, the internal RC oscillator; a power-on starts
+ * it at 1970-01-01 00:00:00 UTC (coordinated universal time).  An NTP
+ * answer on the home network sets it.  Until then the clock is uptime since 1970, and FatFs
  * clamps such a stamp to 1980 (ESP-IDF's get_fattime()).
  *
  * Nothing here reads a clock, a network or a card: every time is the
@@ -193,6 +195,54 @@ bool wall_ntp_holds(const wall_ntp_t *n, bool lingers, uint32_t now_ms);
  */
 wall_ntp_do_t wall_ntp_hold_step(wall_ntp_t *n, bool joined, bool lingers,
                                  bool answered, uint32_t now_ms);
+
+/** @brief The RTC (real-time clock) slow clock the ESP32-P4's RTC timer
+ *         counts, as ESP-IDF's rtc_clk_slow_src_get() reports it. */
+typedef enum {
+    WALL_SLOW_RC = 0,   /**< the internal RC oscillator, 136kHz nominal  */
+    WALL_SLOW_CRYSTAL,  /**< the 32.768kHz crystal (Y3 on the panel)     */
+    WALL_SLOW_OTHER,    /**< any other source                            */
+} wall_slow_src_t;
+
+/**
+ * @brief A slow clock's frequency from ESP-IDF's calibration value: the
+ *        period in microseconds with 19 fractional bits
+ *        (esp_clk_slowclk_cal_get(), RTC_CLK_CAL_FRACT), measured against
+ *        the 40MHz main crystal at start-up.
+ * @param cal The calibration value; 0 is none.
+ * @return The frequency in millihertz, rounded to the nearest; 0 for a
+ *         @p cal of 0.  A @p cal of 1 gives 524288000000000mHz, the
+ *         largest.
+ */
+uint64_t wall_slow_mhz(uint32_t cal);
+
+/**
+ * @brief The console line of the slow clock at start, after the tag
+ *        "clock": the source, its calibrated frequency, and whether the
+ *        32.768kHz crystal the build asks for failed to start, e.g.
+ *        "rtc slow clock 32k crystal, 32768.012Hz calibrated" or
+ *        "rtc slow clock internal RC, 136000.000Hz calibrated: the 32k
+ *        crystal did not start".
+ * @param out     The buffer.
+ * @param n       Its size in bytes; 96 holds the longest line.
+ * @param src     The source that runs.
+ * @param crystal The build asks for the crystal
+ *                (CONFIG_RTC_CLK_SRC_EXT_CRYS).
+ * @param cal     The calibration value, as wall_slow_mhz() takes it; 0
+ *                writes "frequency not known".
+ * @return @p out, or NULL when @p out is NULL or @p n is 0.
+ */
+char *wall_slow_clock_line(char *out, size_t n, wall_slow_src_t src,
+                           bool crystal, uint32_t cal);
+
+/**
+ * @brief Whether the slow clock fell back from the crystal: the build asks
+ *        for it and another source runs.
+ * @param src     The source that runs.
+ * @param crystal The build asks for the crystal.
+ * @return True on a fallback, which the panel logs as a warning.
+ */
+bool wall_slow_fell_back(wall_slow_src_t src, bool crystal);
 
 #ifdef __cplusplus
 }
