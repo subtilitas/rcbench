@@ -1,7 +1,7 @@
 {
   "id": "spektrum-avian-hv",
   "brand": "Spektrum",
-  "family": "Avian 160 A / 200 A HV Smart ESC",
+  "family": "Avian 160A / 200A HV Smart ESC",
   "models": [
     {
       "name": "Avian 160A HV (SPMXAE1160HV)",
@@ -37,7 +37,7 @@
     }
   ],
   "automatable": "none",
-  "automatable_note": "This manual gives the tone codes and options but no stick procedure for selecting a parameter or option; it describes the programming box and SmartLink only. The calibration tip says more than 5 s at full throttle enters programming mode.",
+  "automatable_note": "This manual gives the tone codes and options but no stick procedure for selecting a parameter or option; it describes the programming box and SmartLink only. The calibration tip says more than 5s at full throttle enters programming mode.",
   "scheme": {
     "type": "short_long",
     "entry": {
@@ -48,8 +48,8 @@
       "steps": [
         "Transmitter on, throttle full.",
         "Connect battery: three ascending tones.",
-        "After 5 s: two short tones (maximum throttle accepted).",
-        "Leave the stick at full for more than 5 s: tones signal programming mode."
+        "After 5s: two short tones (maximum throttle accepted).",
+        "Leave the stick at full for more than 5s: tones signal programming mode."
       ]
     },
     "announce": {
@@ -231,24 +231,24 @@
         },
         {
           "number": 2,
-          "name": "3.0 V"
+          "name": "3.0V"
         },
         {
           "number": 3,
-          "name": "3.2 V"
+          "name": "3.2V"
         },
         {
           "number": 4,
-          "name": "3.4 V",
+          "name": "3.4V",
           "default": true
         },
         {
           "number": 5,
-          "name": "3.6 V"
+          "name": "3.6V"
         },
         {
           "number": 6,
-          "name": "3.8 V"
+          "name": "3.8V"
         }
       ],
       "applies_to": null,
@@ -262,16 +262,16 @@
       "values": [
         {
           "number": 1,
-          "name": "6.0 V",
+          "name": "6.0V",
           "default": true
         },
         {
           "number": 2,
-          "name": "7.4 V"
+          "name": "7.4V"
         },
         {
           "number": 3,
-          "name": "8.4 V"
+          "name": "8.4V"
         }
       ],
       "applies_to": null,
@@ -386,16 +386,16 @@
       "values": [
         {
           "number": 1,
-          "name": "0 s"
+          "name": "0s"
         },
         {
           "number": 2,
-          "name": "45 s",
+          "name": "45s",
           "default": true
         },
         {
           "number": 3,
-          "name": "90 s"
+          "name": "90s"
         }
       ],
       "applies_to": null,
@@ -408,16 +408,16 @@
       "values": [
         {
           "number": 1,
-          "name": "1.0 s"
+          "name": "1.0s"
         },
         {
           "number": 2,
-          "name": "1.5 s",
+          "name": "1.5s",
           "default": true
         },
         {
           "number": 3,
-          "name": "2.0 s"
+          "name": "2.0s"
         }
       ],
       "applies_to": null,

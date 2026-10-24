@@ -108,8 +108,8 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 2000 ms: two short beeps",
-        "Wait about 5000 ms more: special tone, programming mode entered"
+        "Wait about 2000ms: two short beeps",
+        "Wait about 5000ms more: special tone, programming mode entered"
       ]
     },
     "announce": {
@@ -274,28 +274,28 @@
         },
         {
           "number": 2,
-          "name": "2.8 V"
+          "name": "2.8V"
         },
         {
           "number": 3,
-          "name": "3.0 V",
+          "name": "3.0V",
           "default": true
         },
         {
           "number": 4,
-          "name": "3.2 V"
+          "name": "3.2V"
         },
         {
           "number": 5,
-          "name": "3.4 V"
+          "name": "3.4V"
         },
         {
           "number": 6,
-          "name": "3.6 V"
+          "name": "3.6V"
         },
         {
           "number": 7,
-          "name": "3.8 V"
+          "name": "3.8V"
         }
       ],
       "applies_to": null,
@@ -308,16 +308,16 @@
       "values": [
         {
           "number": 1,
-          "name": "5.2 V",
+          "name": "5.2V",
           "default": true
         },
         {
           "number": 2,
-          "name": "6.0 V"
+          "name": "6.0V"
         },
         {
           "number": 3,
-          "name": "7.4 V"
+          "name": "7.4V"
         }
       ],
       "applies_to": [
@@ -356,36 +356,36 @@
       "values": [
         {
           "number": 1,
-          "name": "0 deg"
+          "name": "0deg"
         },
         {
           "number": 2,
-          "name": "5 deg"
+          "name": "5deg"
         },
         {
           "number": 3,
-          "name": "8 deg"
+          "name": "8deg"
         },
         {
           "number": 4,
-          "name": "12 deg"
+          "name": "12deg"
         },
         {
           "number": 5,
-          "name": "15 deg",
+          "name": "15deg",
           "default": true
         },
         {
           "number": 6,
-          "name": "20 deg"
+          "name": "20deg"
         },
         {
           "number": 7,
-          "name": "25 deg"
+          "name": "25deg"
         },
         {
           "number": 8,
-          "name": "30 deg"
+          "name": "30deg"
         }
       ],
       "applies_to": null,

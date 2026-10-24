@@ -206,7 +206,7 @@ The last byte is the low byte of the sum of every byte after the header
 which counts the header, got no answer from a D485HW.
 
 A D series line needs a pull-up on the board. Tested with a D485HW:
-2.2kOhm from the signal wire to the servo supply, and every read is
+2.2kΩ from the signal wire to the servo supply, and every read is
 answered; with the pad's pull-up alone the servo answers none
 (`rx=SILENT`). [The programming port for Hitec servos](LinkHitec.md#the-way-in-and-out)
 has the unknowns.

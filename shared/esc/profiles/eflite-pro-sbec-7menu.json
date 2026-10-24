@@ -88,9 +88,9 @@
       "hold_ms": 5000,
       "confirm_signal": "Two sets of fast ringing tones after 5 s at full throttle.",
       "steps": [
-        "Battery disconnected, transmitter on, throttle full (above 1.7 ms).",
-        "Connect battery, hold full throttle 5 s: two sets of fast ringing tones.",
-        "Throttle to centre for 5 s: 1 beep = menu 1."
+        "Battery disconnected, transmitter on, throttle full (above 1.7ms).",
+        "Connect battery, hold full throttle 5s: two sets of fast ringing tones.",
+        "Throttle to centre for 5s: 1 beep = menu 1."
       ]
     },
     "announce": {
@@ -134,15 +134,15 @@
         },
         {
           "number": 5,
-          "name": "5-cell cutoff (5 beeps), 40 A V1 only"
+          "name": "5-cell cutoff (5 beeps), 40A V1 only"
         },
         {
           "number": 6,
-          "name": "6-cell cutoff (6 beeps), 40 A V1 only"
+          "name": "6-cell cutoff (6 beeps), 40A V1 only"
         },
         {
           "number": 7,
-          "name": "soft cutoff at a share of start voltage (7 beeps): 70% on 40 A Pro, 74% or 9.2 V whichever is higher on 30 A Pro and 40 A Lite Pro V2"
+          "name": "soft cutoff at a share of start voltage (7 beeps): 70% on 40A Pro, 74% or 9.2V whichever is higher on 30A Pro and 40A Lite Pro V2"
         }
       ],
       "applies_to": null,
@@ -212,12 +212,12 @@
       "values": [
         {
           "number": 1,
-          "name": "1.2-1.8 ms",
+          "name": "1.2-1.8ms",
           "default": true
         },
         {
           "number": 2,
-          "name": "1.1-1.9 ms"
+          "name": "1.1-1.9ms"
         }
       ],
       "applies_to": null,
@@ -230,12 +230,12 @@
       "values": [
         {
           "number": 1,
-          "name": "0.25 s",
+          "name": "0.25s",
           "default": true
         },
         {
           "number": 2,
-          "name": "1 s"
+          "name": "1s"
         }
       ],
       "applies_to": null,
@@ -248,16 +248,16 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz",
+          "name": "8kHz",
           "default": true
         },
         {
           "number": 2,
-          "name": "16 kHz"
+          "name": "16kHz"
         },
         {
           "number": 3,
-          "name": "32 kHz"
+          "name": "32kHz"
         }
       ],
       "applies_to": null,
@@ -275,7 +275,7 @@
         },
         {
           "number": 2,
-          "name": "helicopter (5 s soft start after a stop of more than 5 s)"
+          "name": "helicopter (5s soft start after a stop of more than 5s)"
         }
       ],
       "applies_to": null,

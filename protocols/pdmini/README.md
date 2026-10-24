@@ -67,7 +67,7 @@ The module has two parts.
   100ms late, 1.9s at 200ms and up to 4.7s up to 390ms (host model).
 - The 200mV between the cap and the cut line lets the input drop under load
   without a cut: 3000mA through 1m of 20 AWG copper out and back
-  (2 x 33mOhm) drops 200mV. The drop on a real source and cable is not
+  (2 x 33mΩ) drops 200mV. The drop on a real source and cable is not
   measured. A dip of 200mV or more from the reading the cap was taken from
   cuts a set point at the cap.
 - An ON asked while the input reads under 1500mV is not written: there is

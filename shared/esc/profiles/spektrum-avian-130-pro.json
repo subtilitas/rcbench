@@ -36,7 +36,7 @@
       "steps": [
         "Transmitter on with throttle at full.",
         "Connect the battery: three ascending tones, then two short tones (full throttle accepted).",
-        "Keep full throttle for more than 5 s (do not lower the stick): the ESC plays another tone series and enters programming.",
+        "Keep full throttle for more than 5s (do not lower the stick): the ESC plays another tone series and enters programming.",
         "Two short tones, then the tones of parameter 1."
       ]
     },
@@ -215,24 +215,24 @@
         },
         {
           "number": 2,
-          "name": "3.0 V"
+          "name": "3.0V"
         },
         {
           "number": 3,
-          "name": "3.2 V"
+          "name": "3.2V"
         },
         {
           "number": 4,
-          "name": "3.4 V",
+          "name": "3.4V",
           "default": true
         },
         {
           "number": 5,
-          "name": "3.6 V"
+          "name": "3.6V"
         },
         {
           "number": 6,
-          "name": "3.8 V"
+          "name": "3.8V"
         }
       ],
       "applies_to": null,
@@ -246,24 +246,24 @@
       "values": [
         {
           "number": 1,
-          "name": "6.0 V",
+          "name": "6.0V",
           "default": true
         },
         {
           "number": 2,
-          "name": "7.4 V"
+          "name": "7.4V"
         },
         {
           "number": 3,
-          "name": "8.4 V"
+          "name": "8.4V"
         },
         {
           "number": 4,
-          "name": "9.0 V"
+          "name": "9.0V"
         },
         {
           "number": 5,
-          "name": "12 V"
+          "name": "12V"
         }
       ],
       "applies_to": null,
@@ -378,16 +378,16 @@
       "values": [
         {
           "number": 1,
-          "name": "0 s"
+          "name": "0s"
         },
         {
           "number": 2,
-          "name": "45 s",
+          "name": "45s",
           "default": true
         },
         {
           "number": 3,
-          "name": "90 s"
+          "name": "90s"
         }
       ],
       "applies_to": null,
@@ -400,16 +400,16 @@
       "values": [
         {
           "number": 1,
-          "name": "1.0 s"
+          "name": "1.0s"
         },
         {
           "number": 2,
-          "name": "1.5 s",
+          "name": "1.5s",
           "default": true
         },
         {
           "number": 3,
-          "name": "2.0 s"
+          "name": "2.0s"
         }
       ],
       "applies_to": null,

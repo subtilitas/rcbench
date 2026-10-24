@@ -426,9 +426,9 @@
       "steps": [
         "Transmitter on, stick to full throttle.",
         "Connect the main pack, switch on the receiver switch if one is fitted.",
-        "Wait 5 s: four beeps (. . - .).",
+        "Wait 5s: four beeps (. . - .).",
         "Stick to 'close' (motor off) within the window: sets the brake option and gives 1 or 2 beeps.",
-        "Or wait a further 5 s for the timing sequence."
+        "Or wait a further 5s for the timing sequence."
       ]
     },
     "announce": {
@@ -509,16 +509,16 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz (long tone x5)",
+          "name": "8kHz (long tone x5)",
           "default": true
         },
         {
           "number": 2,
-          "name": "16 kHz (tone plus beep x5)"
+          "name": "16kHz (tone plus beep x5)"
         },
         {
           "number": 3,
-          "name": "32 kHz (two beeps x5)"
+          "name": "32kHz (two beeps x5)"
         }
       ],
       "applies_to": null,
@@ -532,15 +532,15 @@
       "values": [
         {
           "number": 1,
-          "name": "minimum 4 V, NiCd/NiMH (long tone x5)"
+          "name": "minimum 4V, NiCd/NiMH (long tone x5)"
         },
         {
           "number": 2,
-          "name": "constant 5.3 V, 2 Li cells (tone plus beep x5)"
+          "name": "constant 5.3V, 2 Li cells (tone plus beep x5)"
         },
         {
           "number": 3,
-          "name": "constant 7.95 V, 3 Li cells (two beeps x5)"
+          "name": "constant 7.95V, 3 Li cells (two beeps x5)"
         }
       ],
       "applies_to": [

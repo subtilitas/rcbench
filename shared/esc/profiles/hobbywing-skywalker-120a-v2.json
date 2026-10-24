@@ -25,7 +25,7 @@
     }
   ],
   "automatable": "full",
-  "automatable_note": "Model has a BEC (5/6/7.4/8.4 V adjustable).",
+  "automatable_note": "Model has a BEC (5/6/7.4/8.4V adjustable).",
   "scheme": {
     "type": "short_long",
     "entry": {
@@ -36,8 +36,8 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 2000 ms: two short beeps",
-        "Wait about 5000 ms more: special tone, programming mode entered"
+        "Wait about 2000ms: two short beeps",
+        "Wait about 5000ms more: special tone, programming mode entered"
       ]
     },
     "announce": {
@@ -104,16 +104,16 @@
       "values": [
         {
           "number": 1,
-          "name": "low (60 %)",
+          "name": "low (60%)",
           "default": true
         },
         {
           "number": 2,
-          "name": "medium (90 %)"
+          "name": "medium (90%)"
         },
         {
           "number": 3,
-          "name": "high (100 %)"
+          "name": "high (100%)"
         }
       ],
       "applies_to": null,
@@ -186,16 +186,16 @@
         },
         {
           "number": 2,
-          "name": "low (about 2.8 V/cell)",
+          "name": "low (about 2.8V/cell)",
           "default": true
         },
         {
           "number": 3,
-          "name": "medium (about 3.0 V/cell)"
+          "name": "medium (about 3.0V/cell)"
         },
         {
           "number": 4,
-          "name": "high (about 3.4 V/cell)"
+          "name": "high (about 3.4V/cell)"
         }
       ],
       "applies_to": null,
@@ -208,16 +208,16 @@
       "values": [
         {
           "number": 1,
-          "name": "normal (about 200 ms)",
+          "name": "normal (about 200ms)",
           "default": true
         },
         {
           "number": 2,
-          "name": "soft (about 500 ms)"
+          "name": "soft (about 500ms)"
         },
         {
           "number": 3,
-          "name": "very soft (about 800 ms)"
+          "name": "very soft (about 800ms)"
         }
       ],
       "applies_to": null,
@@ -230,16 +230,16 @@
       "values": [
         {
           "number": 1,
-          "name": "low (5 deg)"
+          "name": "low (5deg)"
         },
         {
           "number": 2,
-          "name": "medium (15 deg)",
+          "name": "medium (15deg)",
           "default": true
         },
         {
           "number": 3,
-          "name": "high (25 deg)"
+          "name": "high (25deg)"
         }
       ],
       "applies_to": null,
@@ -274,15 +274,15 @@
         },
         {
           "number": 2,
-          "name": "5 min"
+          "name": "5min"
         },
         {
           "number": 3,
-          "name": "10 min"
+          "name": "10min"
         },
         {
           "number": 4,
-          "name": "15 min"
+          "name": "15min"
         }
       ],
       "applies_to": null,
@@ -295,20 +295,20 @@
       "values": [
         {
           "number": 1,
-          "name": "5 V",
+          "name": "5V",
           "default": true
         },
         {
           "number": 2,
-          "name": "6 V"
+          "name": "6V"
         },
         {
           "number": 3,
-          "name": "7.4 V"
+          "name": "7.4V"
         },
         {
           "number": 4,
-          "name": "8.4 V"
+          "name": "8.4V"
         }
       ],
       "applies_to": null,

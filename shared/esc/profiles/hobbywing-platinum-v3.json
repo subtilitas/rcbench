@@ -48,8 +48,8 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 2000 ms: two short beeps",
-        "Wait about 5000 ms more: special tone, programming mode entered"
+        "Wait about 2000ms: two short beeps",
+        "Wait about 5000ms more: special tone, programming mode entered"
       ]
     },
     "announce": {
@@ -156,20 +156,20 @@
         },
         {
           "number": 2,
-          "name": "low (2.85 V/cell; NiMH 50 %)"
+          "name": "low (2.85V/cell; NiMH 50%)"
         },
         {
           "number": 3,
-          "name": "middle (3.15 V/cell; NiMH 62.5 %)",
+          "name": "middle (3.15V/cell; NiMH 62.5%)",
           "default": true
         },
         {
           "number": 4,
-          "name": "high (3.30 V/cell; NiMH 75 %)"
+          "name": "high (3.30V/cell; NiMH 75%)"
         },
         {
           "number": 5,
-          "name": "customized 2.8-25.2 V, 0.1 V steps (PC or LCD program box only)"
+          "name": "customized 2.8-25.2V, 0.1V steps (PC or LCD program box only)"
         }
       ],
       "applies_to": null,
@@ -212,24 +212,24 @@
         },
         {
           "number": 2,
-          "name": "5 s"
+          "name": "5s"
         },
         {
           "number": 3,
-          "name": "10 s",
+          "name": "10s",
           "default": true
         },
         {
           "number": 4,
-          "name": "15 s"
+          "name": "15s"
         },
         {
           "number": 5,
-          "name": "30 s"
+          "name": "30s"
         },
         {
           "number": 6,
-          "name": "90 s"
+          "name": "90s"
         }
       ],
       "applies_to": null,
@@ -242,44 +242,44 @@
       "values": [
         {
           "number": 1,
-          "name": "0 deg"
+          "name": "0deg"
         },
         {
           "number": 2,
-          "name": "4 deg"
+          "name": "4deg"
         },
         {
           "number": 3,
-          "name": "8 deg"
+          "name": "8deg"
         },
         {
           "number": 4,
-          "name": "12 deg"
+          "name": "12deg"
         },
         {
           "number": 5,
-          "name": "15 deg",
+          "name": "15deg",
           "default": true
         },
         {
           "number": 6,
-          "name": "18 deg"
+          "name": "18deg"
         },
         {
           "number": 7,
-          "name": "22 deg"
+          "name": "22deg"
         },
         {
           "number": 8,
-          "name": "26 deg"
+          "name": "26deg"
         },
         {
           "number": 9,
-          "name": "30 deg"
+          "name": "30deg"
         },
         {
           "number": 10,
-          "name": "customized 0-30 deg, 1 deg steps (PC or LCD program box only)"
+          "name": "customized 0-30deg, 1deg steps (PC or LCD program box only)"
         }
       ],
       "applies_to": null,
@@ -292,19 +292,19 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz"
+          "name": "8kHz"
         },
         {
           "number": 2,
-          "name": "16 kHz"
+          "name": "16kHz"
         },
         {
           "number": 3,
-          "name": "24 kHz"
+          "name": "24kHz"
         },
         {
           "number": 4,
-          "name": "32 kHz",
+          "name": "32kHz",
           "default": true
         }
       ],
@@ -318,20 +318,20 @@
       "values": [
         {
           "number": 1,
-          "name": "5.2 V",
+          "name": "5.2V",
           "default": true
         },
         {
           "number": 2,
-          "name": "6.0 V"
+          "name": "6.0V"
         },
         {
           "number": 3,
-          "name": "7.4 V"
+          "name": "7.4V"
         },
         {
           "number": 4,
-          "name": "8.4 V"
+          "name": "8.4V"
         }
       ],
       "applies_to": null,

@@ -35,8 +35,8 @@
       "confirm_signal": "Long beep about 4 s after power-up, melody (5-6-5) about 4 s later.",
       "steps": [
         "Receiver connected, transmitter on, throttle forward (full).",
-        "Connect power: after about 4 s a long beep.",
-        "After 4 s more: melody 5-6-5.",
+        "Connect power: after about 4s a long beep.",
+        "After 4s more: melody 5-6-5.",
         "Parameters then sound in a loop."
       ]
     },

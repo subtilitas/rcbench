@@ -94,9 +94,9 @@
       "hold_ms": 3000,
       "confirm_signal": "Two beeps (English page); Chinese page: wait 3 s, beep-beep",
       "steps": [
-        "Radio on, throttle at 100 %",
+        "Radio on, throttle at 100%",
         "Connect battery",
-        "Wait: two beeps = programming mode (Chinese page: wait 3 s first; its example waits for four 'beep-beep' groups)"
+        "Wait: two beeps = programming mode (Chinese page: wait 3s first; its example waits for four 'beep-beep' groups)"
       ]
     },
     "announce": {
@@ -160,23 +160,23 @@
         },
         {
           "number": 2,
-          "name": "2 deg"
+          "name": "2deg"
         },
         {
           "number": 3,
-          "name": "8 deg"
+          "name": "8deg"
         },
         {
           "number": 4,
-          "name": "15 deg"
+          "name": "15deg"
         },
         {
           "number": 5,
-          "name": "22 deg"
+          "name": "22deg"
         },
         {
           "number": 6,
-          "name": "30 deg"
+          "name": "30deg"
         }
       ],
       "applies_to": null,

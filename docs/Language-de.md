@@ -187,10 +187,17 @@ bis zum TXT-Bericht auf der Karte. `gfx` dekodiert ihn, und ein Codepoint ist
 eine Zelle:
 
 - Die fünf Text-Fonts enthalten druckbares ASCII (American Standard Code
-  for Information Interchange, 0x20 bis 0x7E), das Gradzeichen ° (U+00B0)
-  und die sieben deutschen Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC,
-  U+00DF, U+00E4, U+00F6, U+00FC), je 103 Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
+  for Information Interchange, 0x20 bis 0x7E), das Gradzeichen ° (U+00B0),
+  die sieben deutschen Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC,
+  U+00DF, U+00E4, U+00F6, U+00FC) und das Ohmzeichen Ω (U+03A9), je 104
+  Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
   Satzzeichen.
+- Ein Widerstand wird mit Ω geschrieben, in den Texten der Bildschirme, den
+  Einheiten der Einstellungen und den `.TXT`-Berichten: `120Ω`, `2.2kΩ`,
+  `100.0mΩ`, `uΩ` für den Shunt des INA228. Das O der Fonts sieht einer
+  Null ähnlich, `120Ohm` läse sich als `1200hm`.
+  `every_string_writes_the_ohm_as_its_sign` in `test_text` schlägt bei einem
+  `Ohm` oder `ohm` in einem davon fehl.
 - Die Fonts 10x20, 12x24 und 20x36 haben Versalhöhen von 12, 15 und 23px und
   zeichnen jedes Glyph innerhalb der Zelle; sonst schlägt
   `gen_font.py --check` fehl. Der Ziffern-Font 32x44 (Versalhöhe 40px)
@@ -259,7 +266,7 @@ unter einer Bedingung fehl.
 | `shared/webaccess/wa_page.c` | Englisch und Deutsch der WLAN-Seite |
 
 Die fünf Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E), das
-Gradzeichen ° und die 7 deutschen Buchstaben Ä Ö Ü ä ö ü ß. Jeder andere Codepoint erscheint als
+Gradzeichen °, die 7 deutschen Buchstaben Ä Ö Ü ä ö ü ß und das Ohmzeichen Ω. Jeder andere Codepoint erscheint als
 `?`, ebenso ein Byte, das keine gültige UTF-8-Folge beginnt.
 `every_drawn_string_has_its_glyphs` in `test_text` hält jeden Text der
 Tabelle, den das Panel zeichnet, in jeder Sprache an diese Menge und an

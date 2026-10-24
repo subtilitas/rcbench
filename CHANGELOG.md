@@ -44,12 +44,12 @@ history is in git.
   in, onto the nearer step, and SAVE keeps it as it keeps a step. A value
   outside the range keeps the keypad open and names the range in the
   warning colour. One the keys never reach keeps it open with the reason
-  in place of the range until the next key: `0 or 5.0 to 1000.0mOhm` for
-  a SENSORS shunt between 0 and 5.0mOhm, `0 or 10 to 32767mA` for a
+  in place of the range until the next key: `0 or 5.0 to 1000.0mΩ` for
+  a SENSORS shunt between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a
   LIMIT row between 0 and 10mA, `Pins the bus takes: 0 4 6 14
   16 18 20 26` for a Sensor SDA pin the bus cannot have, listed from the
   check the row's keys use, and `The other PD mini pin holds this GPIO`.
-  A shunt of 44.4mOhm from the 100.0 default is five keys, where `-`
+  A shunt of 44.4mΩ from the 100.0 default is five keys, where `-`
   takes 556 steps.
 - SERVO > SETTINGS > OUTPUT > TRIM opens a signed keypad: a `+/-` key
   between the point and OK, -200 to +200us, onto the 5us steps of `-` and
@@ -57,7 +57,7 @@ history is in git.
   -1, not set, is still set with `-`.
 - A settings value with a step finer than 0.1 shows the step's digits after
   the point, and one with a step of 1 none: ESC STICK's Current limit reads
-  1.25A where it read 1.2A, MOTOR & ESC's Internal R 18mOhm where it
+  1.25A where it read 1.2A, MOTOR & ESC's Internal R 18mΩ where it
   read 18.0.
 - ESP32-P4 panel: Wi-Fi through the board's ESP32-C6 on SDIO (Secure
   Digital input/output) slot 1, CLK GPIO18, CMD GPIO19, D0 to D3 GPIO14 to
@@ -146,8 +146,22 @@ history is in git.
 
 ### Changed
 
+- The ESC profiles' texts the panel shows write a number and its unit
+  together, as the rest of the interface does: `1.2-1.8ms`, `Nach 2s`,
+  `8kHz`, 683 numbers in 624 texts of 67 of the 72 profiles. These are the
+  strings `tools/gen_esc_profiles.py` compiles into the panel, and
+  `tools/check_units.py --check` holds them; a word after a number keeps
+  its space (`3 beeps`), and the profiles' research fields stay as written.
+- A resistance reads with the ohm sign: `120Ω`, `2.2kΩ`, `100.0mΩ`, in the
+  screens' texts, the settings' units (`uΩ` for the INA228's shunt) and the
+  servo test's and the limit run's `.TXT` reports, in English and German.
+  The panel font's O reads close to a zero, so `120Ohm` read as `1200hm`.
+  The five text faces carry U+03A9, 1,784 bytes of glyphs more. The docs
+  and the web help write Ω too; the settings' stored keys (`pack_mohm`,
+  `ina228_uohm`) stay as they are.
+
 - A number and its unit stand together, with no space: `40s`, `6.00V`,
-  `20ms`, `100%`, `180°`, `100.0mOhm`, in English and German. This holds
+  `20ms`, `100%`, `180°`, `100.0mΩ`, in English and German. This holds
   for every screen text, the servo test's and the limit run's `.TXT`
   reports, the Wi-Fi page, the web help, the docs and the code's comments.
   A word after a number keeps its space (`3 servos`), and so do the log

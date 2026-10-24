@@ -87,7 +87,7 @@
         "Disconnect power, pull the jumper, reconnect power.",
         "Phase 2 (optional): throttle at max speed position, apply power; flash, then three flashes. Move to brake position for counter-clockwise or keep max for clockwise; three or four flashes confirm.",
         "Cutoff: jumper still plugged at the final flash = cutoff on; pulled = cutoff off.",
-        "Arming switch (optional): pull the jumper and plug it again within about 5 s after phase 2; two flashes confirm."
+        "Arming switch (optional): pull the jumper and plug it again within about 5s after phase 2; two flashes confirm."
       ]
     },
     "announce": {
@@ -123,15 +123,15 @@
       "values": [
         {
           "number": 1,
-          "name": "brake speed position at max speed: about 0.1 s to 100 % brake"
+          "name": "brake speed position at max speed: about 0.1s to 100% brake"
         },
         {
           "number": 2,
-          "name": "brake speed position at middle: about 0.5 s"
+          "name": "brake speed position at middle: about 0.5s"
         },
         {
           "number": 3,
-          "name": "brake speed position at brake (off): minimum brake speed, about 2 s (English) or 3 s (German)"
+          "name": "brake speed position at brake (off): minimum brake speed, about 2s (English) or 3s (German)"
         },
         {
           "number": 4,
@@ -182,7 +182,7 @@
       "values": [
         {
           "number": 1,
-          "name": "enabled by pulling and re-plugging the jumper within about 5 s"
+          "name": "enabled by pulling and re-plugging the jumper within about 5s"
         }
       ],
       "applies_to": null,

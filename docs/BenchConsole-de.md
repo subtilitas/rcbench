@@ -218,7 +218,7 @@ Das letzte Byte ist das untere Byte der Summe aller Bytes nach dem Header
 das den Header mitzählt, bekam von einem D485HW keine Antwort.
 
 Eine Leitung der D-Serie braucht einen Pull-up auf der Platine. Getestet mit
-einem D485HW: 2,2kOhm von der Signalleitung zur Servoversorgung, und jedes
+einem D485HW: 2,2kΩ von der Signalleitung zur Servoversorgung, und jedes
 Lesen wird beantwortet; mit dem Pull-up des Pads allein beantwortet der
 Servo keines (`rx=SILENT`).
 [Der Programmierport für Servos von Hitec](LinkHitec-de.md#hinein-und-hinaus)

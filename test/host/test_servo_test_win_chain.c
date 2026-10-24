@@ -397,7 +397,7 @@ TEST_CASE(a_full_run_on_the_ina3221_through_the_chain)
         CHECK_NEAR(mod_s, 20.0f, 0.1f);
         CHECK_EQ(every, 50u);
         CHECK(strstr(bench.out.report, "Current:        INA3221 0x41 CH2, shunt "
-                                   "100.0mOhm, range 1.638A\n") != NULL);
+                                   "100.0mΩ, range 1.638A\n") != NULL);
         CHECK(strstr(bench.out.report, "Result:         PASS\n") != NULL);
         CHECK(strstr(bench.out.report, "STALL AT 1.50A cannot be reached")
               == NULL);

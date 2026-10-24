@@ -235,8 +235,8 @@
         "Transmitter on, throttle at max",
         "Connect battery",
         "Wait for two short beeps: programming mode entered",
-        "If the throttle goes to min within 5 s, the throttle calibration is changed (avoid this)",
-        "Keep the throttle at max beyond 5 s: the ESC starts the tone sequence"
+        "If the throttle goes to min within 5s, the throttle calibration is changed (avoid this)",
+        "Keep the throttle at max beyond 5s: the ESC starts the tone sequence"
       ]
     },
     "announce": {
@@ -306,18 +306,18 @@
       "values": [
         {
           "number": 1,
-          "name": "low (2.8 V / 50 %)",
+          "name": "low (2.8V / 50%)",
           "tone": "*_ _* x4"
         },
         {
           "number": 2,
-          "name": "medium (3.0 V; 60 % or 65 %)",
+          "name": "medium (3.0V; 60% or 65%)",
           "tone": "*_ _ _* x4",
           "default": true
         },
         {
           "number": 3,
-          "name": "high (3.2 V / 65 %)",
+          "name": "high (3.2V / 65%)",
           "tone": "*_ _ _ _* x4"
         }
       ],
@@ -345,18 +345,18 @@
       "values": [
         {
           "number": 1,
-          "name": "automatic (7-30 deg)",
+          "name": "automatic (7-30deg)",
           "tone": "- - - -",
           "default": true
         },
         {
           "number": 2,
-          "name": "low (7-22 deg)",
+          "name": "low (7-22deg)",
           "tone": "-- -- -- --"
         },
         {
           "number": 3,
-          "name": "high (22-30 deg)",
+          "name": "high (22-30deg)",
           "tone": "--- --- --- ---"
         }
       ],
@@ -370,12 +370,12 @@
       "values": [
         {
           "number": 1,
-          "name": "very soft (1.5 s ramp)",
+          "name": "very soft (1.5s ramp)",
           "tone": "VV VV VV VV"
         },
         {
           "number": 2,
-          "name": "soft acceleration (1 s ramp)",
+          "name": "soft acceleration (1s ramp)",
           "tone": "V V V V"
         },
         {
@@ -400,12 +400,12 @@
         },
         {
           "number": 2,
-          "name": "heli first range (5 s delay)",
+          "name": "heli first range (5s delay)",
           "tone": "_**_ x4"
         },
         {
           "number": 3,
-          "name": "heli second range (15 s delay)",
+          "name": "heli second range (15s delay)",
           "tone": "_***_ x4"
         }
       ],
@@ -433,13 +433,13 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz",
+          "name": "8kHz",
           "tone": "// // // //",
           "default": true
         },
         {
           "number": 2,
-          "name": "16 kHz",
+          "name": "16kHz",
           "tone": "\\\\ \\\\ \\\\ \\\\"
         }
       ],

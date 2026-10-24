@@ -241,7 +241,7 @@ UI_TEXT(KEYPAD_RANGE, 0,
 /* Why a setting's keypad refused a value inside its range, in place of the
  * range (ui_setting_keypad.c): a value between 0 and the row's off_below
  * (the row's off_below, maximum and unit, with its step's decimals: a
- * SENSORS shunt's "0 or 5.0 to 1000.0mOhm", a SENSORS limit's "0 or 10
+ * SENSORS shunt's "0 or 5.0 to 1000.0mΩ", a SENSORS limit's "0 or 10
  * to 32767mA"), a Sensor SDA pin the bus cannot have (the pins
  * settings_sense_sda_valid() takes, listed where it is drawn), the other
  * PD mini pin's GPIO. */
@@ -455,17 +455,17 @@ UI_TEXT(BF_SILENT_3, 0,
     "Both boards must use firmware from the same release.",
     "Beide Platinen müssen Firmware aus demselben Release nutzen.")
 UI_TEXT(BF_SILENT_4, 0,
-    "With the bench off, measure about 60 ohms",
-    "Bei ausgeschaltetem Prüfstand etwa 60Ohm")
+    "With the bench off, measure about 60Ω",
+    "Bei ausgeschaltetem Prüfstand etwa 60Ω")
 UI_TEXT(BF_SILENT_5, 0,
     "  between CANH and CANL for correct termination.",
     "  zwischen CANH und CANL messen: Busabschluss prüfen.")
 UI_TEXT(BF_CORRUPT_1, 0,
-    "With the bench off, expect about 60 ohms between CANH and CANL.",
-    "Prüfstand ausschalten. Zwischen CANH und CANL sollten etwa 60Ohm liegen.")
+    "With the bench off, expect about 60Ω between CANH and CANL.",
+    "Prüfstand ausschalten. Zwischen CANH und CANL sollten etwa 60Ω liegen.")
 UI_TEXT(BF_CORRUPT_2, 0,
-    "  A reading of 120 ohms means one terminator is missing.",
-    "  Bei 120Ohm fehlt einer der beiden Abschlusswiderstände.")
+    "  A reading of 120Ω means one terminator is missing.",
+    "  Bei 120Ω fehlt einer der beiden Abschlusswiderstände.")
 UI_TEXT(BF_CORRUPT_3, 0,
     "Keep the branch to each board under 30cm.",
     "Stichleitung zu jeder Platine unter 30cm halten.")
@@ -473,8 +473,8 @@ UI_TEXT(BF_TWISTED, 0,
     "Twist CANH and CANL together. Keep them away from motor wires.",
     "CANH und CANL verdrillen. Abstand zu Motorleitungen halten.")
 UI_TEXT(BF_LOSSY_1, 0,
-    "With the bench off, check for about 60 ohms between CANH and CANL.",
-    "Prüfstand ausschalten. Zwischen CANH und CANL sollten etwa 60Ohm liegen.")
+    "With the bench off, check for about 60Ω between CANH and CANL.",
+    "Prüfstand ausschalten. Zwischen CANH und CANL sollten etwa 60Ω liegen.")
 UI_TEXT(BF_LOSSY_2, 0,
     "Keep the total bus below 5m and each branch below 30cm.",
     "Gesamten Bus unter 5m und jede Stichleitung unter 30cm halten.")
@@ -2674,8 +2674,8 @@ UI_TEXT(SP_MANY_CHANGES, 39,
     "MULTIPLE CHANGES PER POWER-UP",
     "MEHRERE ÄNDERUNGEN PRO EINSCHALTEN")
 UI_TEXT(SP_SUPPLY_ENTRY, 0,
-    "SUPPLY %u.%02uV  %u.%02uA   ENTRY %u.%u s%s",
-    "NETZTEIL %u.%02uV  %u.%02uA   EINSTIEG %u.%u s%s")
+    "SUPPLY %u.%02uV  %u.%02uA   ENTRY %u.%us%s",
+    "NETZTEIL %u.%02uV  %u.%02uA   EINSTIEG %u.%us%s")
 UI_TEXT(SP_FROM_PROFILE_MARK, 0,
     "(profile)",
     "(Profil)")
@@ -5443,8 +5443,8 @@ UI_SETTING_LABEL(SET_HITEC_RX,
     "Hitec D receive",
     "Hitec-D-Empfang")
 UI_SETTING_HELP(SET_HITEC_RX,
-    "PULL-UP needs 2.2kOhm on the signal wire",
-    "PULL-UP braucht 2.2kOhm an der Signalleitung")
+    "PULL-UP needs 2.2kΩ on the signal wire",
+    "PULL-UP braucht 2.2kΩ an der Signalleitung")
 /* --- the INA3221 parts, on SETUP > SENSORS (settings_sensors.h) ----- */
 UI_SETTING_LABEL(SET_INA_FIT_0,
     "0x40 fitted",
@@ -6713,9 +6713,9 @@ UI_SERVO_TEXT(SERVO_STR_R_CURRENT,
     "Strom:           %s")
 UI_SERVO_TEXT(SERVO_STR_R_CURRENT_INA,
     "Current:        %s, shunt %.1f"
-    "mOhm, range %.3fA",
+    "mΩ, range %.3fA",
     "Strom:           %s, Shunt %.1f"
-    "mOhm, Bereich %.3fA")
+    "mΩ, Bereich %.3fA")
 UI_SERVO_TEXT(SERVO_STR_R_VOLTAGE,
     "Voltage:        %s",
     "Spannung:        %s")
@@ -6945,9 +6945,9 @@ UI_SERVO_TEXT(SERVO_STR_L_R_PULSE,
     "Pulsbereich:     Mitte %uus, %u-%uus")
 UI_SERVO_TEXT(SERVO_STR_L_R_METER,
     "Current:        %s, 50ms "
-    "windows, shunt %.1fmOhm",
+    "windows, shunt %.1fmΩ",
     "Strom:           %s, Fenster "
-    "zu 50ms, Shunt %.1fmOhm")
+    "zu 50ms, Shunt %.1fmΩ")
 UI_SERVO_TEXT(SERVO_STR_L_R_RULE,
     "Search rule:    10us steps, settle 120"
     "ms, mean of 80ms; bound above %.1f x "

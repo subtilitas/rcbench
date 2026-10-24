@@ -28,7 +28,7 @@ The panel runs a CAN echo self-test at every start, for 1200ms inside the splash
 | `Some test frames were lost.` | `Some frames are lost, and the bus reports errors.` | the terminators, the bus length, CANH and CANL twisted, a connector |
 | `Test frames lost without a bus error.` | `Frames arrived intact, then were discarded unread. Not a wiring fault.` | not the wire; report it with the numbers on the right |
 
-The terminators read about 60 ohms across CANH and CANL with the bench switched off. 120 ohms means one of the two is missing. The total bus stays under 5m, each branch under 30cm.
+The terminators read about 60Ω across CANH and CANL with the bench switched off. 120Ω means one of the two is missing. The total bus stays under 5m, each branch under 30cm.
 
 ## A link that stops
 

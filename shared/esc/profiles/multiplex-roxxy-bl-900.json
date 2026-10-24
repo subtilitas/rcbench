@@ -120,8 +120,8 @@
       "steps": [
         "Receiver connected, transmitter on, throttle stick forward.",
         "Connect battery power: short tone sequence.",
-        "After about 10 s: double tone sequence.",
-        "After about 3 s more: triple tone sequence.",
+        "After about 10s: double tone sequence.",
+        "After about 3s more: triple tone sequence.",
         "Programming mode: parameter 1 shown as one beep and one LED flash, repeating."
       ]
     },
@@ -158,11 +158,11 @@
       "values": [
         {
           "number": 1,
-          "name": "LiPo (LED on, beep every 2 s)"
+          "name": "LiPo (LED on, beep every 2s)"
         },
         {
           "number": 2,
-          "name": "NiCd/NiMH (LED blinks, beep every 0.5 s)"
+          "name": "NiCd/NiMH (LED blinks, beep every 0.5s)"
         }
       ],
       "applies_to": null,
@@ -175,11 +175,11 @@
       "values": [
         {
           "number": 1,
-          "name": "normal (LED on, beep every 2 s)"
+          "name": "normal (LED on, beep every 2s)"
         },
         {
           "number": 2,
-          "name": "reverse (LED blinks, beep every 0.5 s)"
+          "name": "reverse (LED blinks, beep every 0.5s)"
         }
       ],
       "applies_to": null,
@@ -192,11 +192,11 @@
       "values": [
         {
           "number": 1,
-          "name": "off (LED on, beep every 2 s)"
+          "name": "off (LED on, beep every 2s)"
         },
         {
           "number": 2,
-          "name": "on (LED blinks, beep every 0.5 s)"
+          "name": "on (LED blinks, beep every 0.5s)"
         }
       ],
       "applies_to": null,
@@ -210,11 +210,11 @@
       "values": [
         {
           "number": 1,
-          "name": "off (LED on, beep every 2 s)"
+          "name": "off (LED on, beep every 2s)"
         },
         {
           "number": 2,
-          "name": "on (LED blinks, beep every 0.5 s)"
+          "name": "on (LED blinks, beep every 0.5s)"
         }
       ],
       "applies_to": null,
@@ -228,11 +228,11 @@
       "values": [
         {
           "number": 1,
-          "name": "off (LED on, beep every 2 s)"
+          "name": "off (LED on, beep every 2s)"
         },
         {
           "number": 2,
-          "name": "on (LED blinks, beep every 0.5 s)"
+          "name": "on (LED blinks, beep every 0.5s)"
         }
       ],
       "applies_to": null,
@@ -246,11 +246,11 @@
       "values": [
         {
           "number": 1,
-          "name": "AIR (LED on, beep every 2 s)"
+          "name": "AIR (LED on, beep every 2s)"
         },
         {
           "number": 2,
-          "name": "HELI (LED blinks, beep every 0.5 s)"
+          "name": "HELI (LED blinks, beep every 0.5s)"
         }
       ],
       "applies_to": null,
@@ -263,11 +263,11 @@
       "values": [
         {
           "number": 1,
-          "name": "BOAT (LED on, beep every 2 s)"
+          "name": "BOAT (LED on, beep every 2s)"
         },
         {
           "number": 2,
-          "name": "CAR (LED blinks, beep every 0.5 s)"
+          "name": "CAR (LED blinks, beep every 0.5s)"
         }
       ],
       "applies_to": null,

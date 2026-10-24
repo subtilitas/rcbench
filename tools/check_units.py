@@ -16,6 +16,10 @@ Covered, each as the text a reader sees:
   shared/text/include/ui_text.def (screens, settings, the servo test and
   its .TXT reports, the Wi-Fi page) and every string literal of
   STRING_FILES below;
+- the texts the panel carries from the ESC profiles of
+  shared/esc/profiles/: the strings of PROFILE_TEXTS below, the ones
+  tools/gen_esc_profiles.py compiles into the C, which the ESC STICK
+  screen and its lists show;
 - the comments of the code: C, C++, headers, TypeScript, JavaScript and PIO
   (/* */ and //, `;` in PIO), Python (# and docstrings), and shell, YAML,
   CMake and TOML (#).
@@ -24,7 +28,9 @@ Not covered: the released sections of CHANGELOG.md, which are history;
 CHANGELOG-0.9.md; the research records under hardware/research/; string
 literals outside the files above (log lines, console and wire formats,
 CSV headers, test fixtures of external formats); data files (JSON, CSV,
-SVG), the ESC profiles' texts among them; a Markdown heading's section
+SVG) other than the ESC profiles; the profiles' keys and their research
+fields (sources, notes, unknowns, descriptions, a model's spec_source and
+firmware_note), which no screen shows; a Markdown heading's section
 number; and the frame cost table tools/frame_cost.py writes into
 docs/Performance.md.
 
@@ -81,13 +87,16 @@ NUMBER = (r"(?:\d+(?:[.,]\d+)*(?:x\d+(?:[.,]\d+)*)?"
           r"|" + CONVERSION + r"(?:[.,]" + CONVERSION + r")*)")
 # A number starts after no letter, digit or point, or after the ".." of a
 # range such as 2392..14639rpm.  A unit ends where no letter, digit, % or =
-# follows (ms=110 is a key), and a lone % is not the start of the next
+# follows (ms=110 is a key), a %s conversion excepted, which appends a
+# mark to the unit (ESC STICK's ENTRY seconds and "(profile)"), and a lone
+# % is not the start of the next
 # conversion, as in "%6s %-6s" or "%d %.*f"; a "**" after it closes
 # Markdown bold.
 PERCENT = r"%(?![-+#'\d\w]|\.[\d*]|\*[\w.])"
 UNIT = "|".join(re.escape(u) if u != "%" else PERCENT for u in UNITS)
 PATTERN = re.compile(r"(?:(?<![\w.])|(?<=\.\.))(" + NUMBER
-                     + r")([ \u00a0\u202f]+)(" + UNIT + r")(?![\w%=])")
+                     + r")([ \u00a0\u202f]+)(" + UNIT
+                     + r")(?![\w=]|%(?!s\b))")
 
 # The C files outside ui_text.def whose string literals are text a screen
 # shows or a report on the card holds.
@@ -111,6 +120,20 @@ HASH_SUFFIXES = (".sh", ".yml", ".yaml", ".cmake", ".toml")
 HASH_NAMES = ("CMakeLists.txt", "Doxyfile", ".clang-tidy", ".gitattributes",
               ".gitignore")
 MASK = "\0"
+
+# The ESC profiles, and in each the strings the panel carries, by their
+# place in the file: a key per object, "[]" per list element.  These are
+# the strings tools/gen_esc_profiles.py writes into the C;
+# test_check_units.py holds the two to each other.
+PROFILE_DIR = "shared/esc/profiles/"
+PROFILE_TEXTS = frozenset({
+    ("brand",), ("family",), ("automatable_note",),
+    ("scheme", "entry", "steps", "[]"),
+    ("models", "[]", "name"),
+    ("items", "[]", "name"), ("items", "[]", "applies_when"),
+    ("items", "[]", "values", "[]", "name"),
+    ("manual", "[]", "action"), ("manual", "[]", "action_de"),
+})
 
 
 def mask(text: str, keep: list) -> str:
@@ -258,6 +281,75 @@ def hash_parts(text: str) -> list:
     return keep
 
 
+def json_strings(text: str) -> list:
+    """Finds the string values of a JSON text with their place in it.
+
+    A scan, not a parse: a file that does not parse is read as far as it
+    goes, and a string ends at its closing quote or at the line's end.
+
+    Args:
+        text: The JSON text.
+
+    Returns:
+        (place, start, end) per string value, place a tuple of the keys and
+        "[]" from the root down, start and end the offsets of the text
+        between the quotes.  Keys are not values and are not listed.
+    """
+    out = []
+    stack = []      # [is_object, key, wants_key] per open container
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        if ch in "{[":
+            stack.append([ch == "{", None, ch == "{"])
+        elif ch in "}]":
+            if stack:
+                stack.pop()
+        elif ch == "," and stack and stack[-1][0]:
+            stack[-1][2] = True
+        elif ch == '"':
+            j = i + 1
+            while j < n and text[j] not in '"\n':
+                j += 2 if text[j] == "\\" else 1
+            end = min(j, n)
+            if stack and stack[-1][0] and stack[-1][2]:
+                stack[-1][1] = text[i + 1:end]
+                stack[-1][2] = False
+            else:
+                place = tuple(f[1] if f[0] else "[]" for f in stack)
+                out.append((place, i + 1, end))
+            i = j
+        i += 1
+    return out
+
+
+def json_parts(text: str) -> list:
+    """Covers the strings of PROFILE_TEXTS in an ESC profile.
+
+    An escape sequence is left out, as in c_parts().
+
+    Args:
+        text: The profile's text.
+
+    Returns:
+        (start, end) offsets of the covered parts.
+    """
+    keep = []
+    for place, start, end in json_strings(text):
+        if place not in PROFILE_TEXTS:
+            continue
+        run = j = start
+        while j < end:
+            if text[j] == "\\":
+                keep.append((run, j))
+                j += 2
+                run = j
+                continue
+            j += 1
+        keep.append((run, min(j, end)))
+    return keep
+
+
 SECTION = re.compile(r"^(#{1,6}[ \t]+)(\d+(?:\.\d+)*)", re.M)
 
 
@@ -306,6 +398,8 @@ def covered(path: str, text: str, groups: list | None = None) -> str | None:
     if path.endswith(C_SUFFIXES):
         return mask(text, c_parts(text, path.startswith(STRING_FILES),
                                   groups=groups))
+    if path.startswith(PROFILE_DIR) and path.endswith(".json"):
+        return mask(text, json_parts(text))
     if path.endswith(".pio"):
         return mask(text, c_parts(text, False, pio=True))
     if path.endswith(".py"):

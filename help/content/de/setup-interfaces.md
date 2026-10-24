@@ -18,7 +18,7 @@ Der IOmcu liest einen TI INA228 im Strompfad des ESC, hier eingestellt, und bis 
 |---|---|---|---|
 | INA228 | EIN, AUS | AUS | der Monitor im Strompfad des ESC |
 | INA228 Adresse | 0x40 bis 0x4F | 0x45 | das MATEK I2C-INA-BM ab Werk |
-| INA228 Shunt | 50 bis 20000 uOhm | 200 | der Shunt, über dem er misst |
+| INA228 Shunt | 50 bis 20000uΩ | 200 | der Shunt, über dem er misst |
 | INA228 Höchststrom | 1,0 bis 300,0A, Schritte von 0,1A | 204,8 | der Strom, für den der Messbereich gesetzt ist |
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -105,7 +105,7 @@ Die Tasten `-` und `+` von PD mini TX und PD mini RX springen über den GPIO, de
 
 | Einstellung | Bereich | Voreinstellung | Was sie tut |
 |---|---|---|---|
-| Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | wie der IOmcu die Antwort eines Hitec-Servos der D-Serie am Programmierport empfängt. PULL-UP: ein Widerstand von 2,2kOhm von der Signalleitung zur Servoversorgung. PRECHARGE: kein Widerstand; der IOmcu treibt das Pad alle 1,09us für 100ns auf High und tastet es 113ns später ab |
+| Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | wie der IOmcu die Antwort eines Hitec-Servos der D-Serie am Programmierport empfängt. PULL-UP: ein Widerstand von 2,2kΩ von der Signalleitung zur Servoversorgung. PRECHARGE: kein Widerstand; der IOmcu treibt das Pad alle 1,09us für 100ns auf High und tastet es 113ns später ab |
 
 Der IOmcu nimmt den Wert beim nächsten OPEN einer Leitung der D-Serie. classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen ihn. Ein IOmcu mit Protokoll 4.23 empfängt mit PULL-UP; mit PRECHARGE lautet die Zeile dann `IOmcu älter als 4.24: empfängt mit PULL-UP.` Ein IOmcu älter als 4.23 hat keine Hitec-Leitung; mit PRECHARGE lautet die Zeile `IOmcu älter als 4.23: keine Hitec-Leitung.`
 

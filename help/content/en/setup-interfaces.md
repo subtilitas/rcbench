@@ -18,7 +18,7 @@ The IOmcu reads a TI INA228 in the ESC's power path, set up here, and up to four
 |---|---|---|---|
 | INA228 | ON, OFF | OFF | the monitor in the ESC's power path |
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped |
-| INA228 shunt | 50 to 20000 uOhm | 200 | the shunt it measures across |
+| INA228 shunt | 50 to 20000uΩ | 200 | the shunt it measures across |
 | INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for |
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -105,7 +105,7 @@ The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other r
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
-| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | how the IOmcu receives a Hitec D series servo's answer on the programming port. PULL-UP: a 2.2kOhm resistor from the signal wire to the servo supply. PRECHARGE: no resistor; the IOmcu drives the pad high for 100ns every 1.09us and samples it 113ns later |
+| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | how the IOmcu receives a Hitec D series servo's answer on the programming port. PULL-UP: a 2.2kΩ resistor from the signal wire to the servo supply. PRECHARGE: no resistor; the IOmcu drives the pad high for 100ns every 1.09us and samples it 113ns later |
 
 The IOmcu takes the value at its next OPEN of a D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore it. An IOmcu of protocol 4.23 receives with PULL-UP; with PRECHARGE set the row then reads `IOmcu older than 4.24: receives with PULL-UP.` An IOmcu older than 4.23 has no Hitec line; with PRECHARGE set the row reads `IOmcu older than 4.23: no Hitec line.`
 

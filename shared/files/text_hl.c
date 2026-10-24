@@ -31,6 +31,7 @@ const text_hl_unit_t text_hl_units[TEXT_HL_UNIT_COUNT] = {
     {"s", TEXT_HL_UNIT},     {"/s", TEXT_HL_UNIT},  {"deg", TEXT_HL_UNIT},
     {"Grad", TEXT_HL_UNIT},  {"%", TEXT_HL_UNIT},   {"mOhm", TEXT_HL_UNIT},
     {"B", TEXT_HL_UNIT},     {"kB", TEXT_HL_UNIT},  {"MB", TEXT_HL_UNIT},
+    {"mΩ", TEXT_HL_UNIT},    {"Ω", TEXT_HL_UNIT},
 };
 
 /** @brief Expands a row of TEXT_HL_CLASS_ROWS to its style sheet name. */
@@ -317,7 +318,7 @@ static size_t number_at(const unsigned char *line, size_t len, size_t i,
         return 0u;
     }
     /* The unit: after at most one space, "%", "/" and letters, or
-     * letters, ending at no word byte. */
+     * letters, ending at no word byte; the ohm sign counts as a letter. */
     size_t k = (j < len && line[j] == ' ') ? j + 1u : j;
     size_t u = k;
     if (u < len && line[u] == '%') {
@@ -326,9 +327,16 @@ static size_t number_at(const unsigned char *line, size_t len, size_t i,
         if (u < len && line[u] == '/') {
             u++;
         }
-        while (u < len && ((line[u] >= 'A' && line[u] <= 'Z') ||
-                           (line[u] >= 'a' && line[u] <= 'z'))) {
-            u++;
+        while (u < len) {
+            if ((line[u] >= 'A' && line[u] <= 'Z') ||
+                (line[u] >= 'a' && line[u] <= 'z')) {
+                u++;
+            } else if (u + 1u < len && line[u] == 0xCEu &&
+                       line[u + 1u] == 0xA9u) {
+                u += 2u;    /* the ohm sign, U+03A9 in UTF-8 */
+            } else {
+                break;
+            }
         }
     }
     if (u > k && (u == len || !is_word(line[u]))) {

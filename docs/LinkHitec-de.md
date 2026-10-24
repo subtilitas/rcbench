@@ -47,10 +47,10 @@ OPEN nimmt den Port:
 2. Der PWM-Generator gibt den Pin ab. Der Leitungstreiber öffnet die Leitung
    darauf als losgelassenen Eingang: classic mit dem Pull-down des Pads, die
    D-Serie mit seinem Pull-up und invertiertem Eingang. Die internen Pulls
-   haben 50 bis 80kOhm; die D-Serie empfängt mit einem Pull-up auf der
+   haben 50 bis 80kΩ; die D-Serie empfängt mit einem Pull-up auf der
    Platine oder per PRECHARGE ([Empfangsmodus](#empfangsmodus)). Getestet
    mit einem D485HW: mit dem Pull-up des Pads allein bleibt die Leitung
-   unter 1,4V und der Servo beantwortet kein Lesen; mit 2,2kOhm von der
+   unter 1,4V und der Servo beantwortet kein Lesen; mit 2,2kΩ von der
    Signalleitung zur Servoversorgung beantwortet er jedes Lesen. Die
    Spannungen auf der Leitung, und ob der High-Pegel des Servos in der
    Belastbarkeit des Pins bleibt, sind nicht gemessen
@@ -79,13 +79,13 @@ Antwort des Servos empfängt, ab dem nächsten OPEN. Das OPEN nimmt den Wert,
 den das Register hält, wenn das OPEN geschrieben wird; eine Änderung bei
 offener Leitung wartet auf das nächste OPEN. Ein OPEN einer classic-Leitung
 übergeht das Register: ein classic-Servo treibt seinen High-Pegel selbst,
-über etwa 1kOhm, und antwortet an einem Open-Drain-Port ohne Pull-up und
+über etwa 1kΩ, und antwortet an einem Open-Drain-Port ohne Pull-up und
 ohne Precharge (gemessen an einem HS-7955TG, einem HS-5955TG und einem
 HS-5645MG bei 5,0V Versorgung; die Leitungsspannungen sind nicht gemessen).
 
 | Wert | Name | Wie die Antwort empfangen wird |
 | ---: | --- | --- |
-| 0 | `PULL-UP` | die Leitung losgelassen; ein Pull-up von 2,2kOhm von der Signalleitung zur Servoversorgung hebt sie. Die Voreinstellung und der Wert nach einem Neustart des IOmcu |
+| 0 | `PULL-UP` | die Leitung losgelassen; ein Pull-up von 2,2kΩ von der Signalleitung zur Servoversorgung hebt sie. Die Voreinstellung und der Wert nach einem Neustart des IOmcu |
 | 1 | `PRECHARGE` | kein Pull-up. Alle 1086,7ns treibt der IOmcu das Pad 100,0ns auf High, lässt es los und tastet es 113,3ns nach dem Loslassen ab |
 
 Auf einer PRECHARGE-Leitung:

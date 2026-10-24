@@ -128,10 +128,10 @@ TEST_CASE(a_callers_reason_takes_the_range_line_until_the_next_key)
     ui_keypad_refuse(&kp);                          /* no reason: the range */
     CHECK_STR_EQ(kp.reason, "");
     CHECK(draw_header(&kp, range) > 0);
-    ui_keypad_refuse_why(&kp, "0 or 5.0 to 1000.0 mOhm");
+    ui_keypad_refuse_why(&kp, "0 or 5.0 to 1000.0mΩ");
     CHECK(kp.open);
     CHECK(kp.refused);
-    CHECK_STR_EQ(kp.reason, "0 or 5.0 to 1000.0 mOhm");
+    CHECK_STR_EQ(kp.reason, "0 or 5.0 to 1000.0mΩ");
     CHECK_STR_EQ(kp.entry, "12.5");
     CHECK(draw_header(&kp, fb) > 0);                /* warning colour */
     CHECK(memcmp(fb + row0, range + row0, band * sizeof(gfx_color_t)) != 0);

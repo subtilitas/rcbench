@@ -28,7 +28,7 @@ Das Panel führt bei jedem Start einen CAN-Echo-Selbsttest aus, 1200ms lang inne
 | `Einige Testframes gingen verloren.` | `Einige Frames gehen verloren. Der Bus meldet Fehler.` | die Abschlüsse, die Buslänge, verdrillte CANH und CANL, einen Stecker |
 | `Testframes gingen ohne Busfehler verloren.` | `Frames kamen korrekt an, wurden aber ungelesen verworfen. Kein Verkabelungsfehler.` | nicht die Leitung; mit den Zahlen rechts melden |
 
-Die Abschlüsse messen bei ausgeschaltetem Prüfstand etwa 60Ohm zwischen CANH und CANL. 120Ohm heißt, einer der beiden fehlt. Der ganze Bus bleibt unter 5m, jede Stichleitung unter 30cm.
+Die Abschlüsse messen bei ausgeschaltetem Prüfstand etwa 60Ω zwischen CANH und CANL. 120Ω heißt, einer der beiden fehlt. Der ganze Bus bleibt unter 5m, jede Stichleitung unter 30cm.
 
 ## Ein Link, der abbricht
 
