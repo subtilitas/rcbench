@@ -1800,7 +1800,8 @@ UI_TEXT(LOG_TEXT_EMPTY, 92,
     "Die Datei ist leer.")
 
 /* --------------------------------------------------------------- FILES */
-/* The footer's buttons, 118px of the 10 x 20 face: 11 cells at most.
+/* The footer's buttons, 118px: a label that leaves under 6px at each side
+ * in the 10 x 20 face (10 cells at most) is drawn in the 8 x 16 face.
  * OPEN, DELETE and RESCAN are LOGS' (LOG_OPEN, LOG_DELETE, LOG_RESCAN). */
 UI_TEXT(FM_COPY, 0,
     "COPY",
@@ -2053,7 +2054,7 @@ UI_TEXT(FM_RULE_FREE, 0,
     "keine")
 UI_TEXT(FM_RULE_FIXED, 0,
     "A folder of the bench: no RENAME, MOVE or DELETE.",
-    "Ordner des Prüfstands: kein UMBENENNEN, VERSCHIEBEN, LÖSCHEN.")
+    "Ordner des Prüfstands: kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN.")
 UI_TEXT(FM_RULE_LOCKED, 62,
     "The servo programmer's record: INFO only.",
     "Vermerk der Servoprogrammierung: nur INFO.")
@@ -3532,6 +3533,9 @@ UI_TEXT(ALERT_ARM_REFUSED, 94,
 UI_TEXT(ALERT_ARM_PROG, 94,
     "Cannot switch to ARMED: a port is in use by the servo programmer.",
     "ARMED gesperrt: Die Servoprogrammierung belegt einen Port.")
+UI_TEXT(ALERT_ARM_NO_PIN, 94,
+    "Cannot switch to ARMED: no motor pin. Choose a TARGET on OUTPUTS.",
+    "ARMED gesperrt: kein Motor-Pin. Unter OUTPUTS ein ZIEL wählen.")
 UI_TEXT(ALERT_SWEEP_RESUME_OLD, 94,
     "IOmcu firmware older than 4.6. Sweep starts again.",
     "IOmcu-Firmware älter als 4.6. Sweep beginnt von vorn.")
@@ -4840,7 +4844,7 @@ UI_TEXT(WF_Q_NEW, 0,
     "Empfangen: %s")
 UI_TEXT(WF_Q_RUN, 0,
     "Running: %s",
-    "Aktuelle Version: %s")
+    "Läuft: %s")
 UI_TEXT(WF_Q_OLDER, 0,
     "Version %s is older than the running version %s.",
     "Version %s ist älter als die laufende Version %s.")
@@ -6294,6 +6298,12 @@ UI_SERVO_TEXT(SERVO_STR_START_NOT_ARMED,
 UI_SERVO_TEXT(SERVO_STR_START_BUSY,
     "LAST REPORT STILL WRITING",
     "LETZTER BERICHT SCHREIBT NOCH")
+UI_SERVO_TEXT(SERVO_STR_START_TEST_RUNS,
+    "AUTOMATIC TEST IS RUNNING",
+    "AUTOMATISCHER TEST LÄUFT")
+UI_SERVO_TEXT(SERVO_STR_START_LIMIT_RUNS,
+    "LIMIT RUN IS RUNNING",
+    "ENDLAGENLAUF LÄUFT")
 /* The report.  The labels pad to column 17, so the values line up. */
 UI_SERVO_TEXT(SERVO_STR_R_TITLE,
     "RCBENCH SERVO TEST REPORT",
@@ -6953,7 +6963,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_RULE,
     "ms, mean of 80ms; bound above %.1f x "
     "free and +%.2fA",
     "Suchregel:       Schritte zu 10us, 120"
-    "ms warten, Mittel über 80ms; angelaufen "
+    "ms warten, Mittel über 80ms; blockiert "
     "über %.1f x frei und +%.2fA")
 UI_SERVO_TEXT(SERVO_STR_L_R_PROTECT,
     "Protections:    a sample at %.1fA, above "
@@ -6979,8 +6989,8 @@ UI_SERVO_TEXT(SERVO_STR_L_R_HIGH,
 UI_SERVO_TEXT(SERVO_STR_L_R_END_BOUND,
     "%sbound at %uus, endpoint %uus; free "
     "%.3fA, bound %.3fA",
-    "%sangelaufen bei %uus, Endpunkt %uus; "
-    "frei %.3fA, angelaufen %.3fA")
+    "%sblockiert bei %uus, Endpunkt %uus; "
+    "frei %.3fA, blockiert %.3fA")
 UI_SERVO_TEXT(SERVO_STR_L_R_END_FREE,
     "%sfree to %uus; free %.3fA",
     "%sfrei bis %uus; frei %.3fA")
@@ -7046,7 +7056,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_REG_LIN,
     "                share free %s, bound %s; "
     "overset %s, share %s; final %s",
     "                 Anteil frei %s, "
-    "angelaufen %s; Vorhalt %s, Anteil %s; "
+    "blockiert %s; Vorhalt %s, Anteil %s; "
     "Endwert %s")
 UI_SERVO_TEXT(SERVO_STR_L_R_SIDE_LO,
     "limits the low end",
@@ -7064,7 +7074,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_METHOD,
     "found free",
     "Verfahren:       linear im Puls; Vorhalt "
     "+%u%% auf den Anteil am ersten "
-    "angelaufenen Puls, dann der Anteil, den "
+    "blockierten Puls, dann der Anteil, den "
     "seine Suche frei fand")
 UI_SERVO_TEXT(SERVO_STR_L_R_WRITES,
     "Writes:         values written %u, writes "

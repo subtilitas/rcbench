@@ -1499,7 +1499,7 @@ Ein Lauf, der die Fenster des INA3221 las, nennt ihn dort, wie die Zeile
 
 **ENDLAGENLAUF STARTEN führt die Endlagensuche aus**, von der Karte
 ENDLAGENLAUF auf TEST: das Servo wird in Schritten von 10us nach außen gefahren, bis
-sein Strom ein angelaufenes Gestänge zeigt, und mit ENDLAGENLAUF auf
+sein Strom ein blockiertes Gestänge zeigt, und mit ENDLAGENLAUF auf
 SUCHEN + PROGRAMMIEREN werden LEFT ANGLE und RIGHT ANGLE eines KST- oder
 Chaservo-Servos gesenkt, bis kein Ende mehr anläuft. An einem SERVO-PWM-Pin
 läuft die Suche von PULS MITTE bis PULS MIN und PULS MAX; am PROG-PORT

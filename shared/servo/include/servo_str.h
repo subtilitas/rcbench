@@ -65,6 +65,8 @@ typedef enum {
     /* The SERVO screen's, before a run is asked of the engine. */
     SERVO_STR_START_NOT_ARMED,
     SERVO_STR_START_BUSY,
+    SERVO_STR_START_TEST_RUNS,
+    SERVO_STR_START_LIMIT_RUNS,
     /* The TXT report, in the order it is written. */
     SERVO_STR_R_TITLE,
     SERVO_STR_R_RESULT,

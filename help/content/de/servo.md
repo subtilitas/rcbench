@@ -199,10 +199,10 @@ Das erste Schreiben sichert die Werte des Servos in eine Backup-Datei auf der Ka
 
 Jede anlaufende Seite bekommt zwei Schreibvorgänge, v0 der Wert, den ihr Register hielt:
 
-1. Der Vorhalt: v0 x der Anteil am ersten angelaufenen Puls x 1,03, aufgerundet. Der Anschlag bleibt erreichbar, nahe an der Pulsgrenze. Der Lauf sucht diese Seite erneut. Ist sie dort frei, endet der Lauf als NICHT BESTANDEN, `kein Anschlag nach dem Vorhalt`.
+1. Der Vorhalt: v0 x der Anteil am ersten blockierten Puls x 1,03, aufgerundet. Der Anschlag bleibt erreichbar, nahe an der Pulsgrenze. Der Lauf sucht diese Seite erneut. Ist sie dort frei, endet der Lauf als NICHT BESTANDEN, `kein Anschlag nach dem Vorhalt`.
 2. Der Endwert: der Vorhalt x der Anteil am letzten freien Puls dieser Suche, abgerundet.
 
-Beispiel: NEUTRAL 1500,2us, PULSE LOWER 900,0us, v0 150, die erste Suche frei bei 1000us und angelaufen bei 990us. Der Vorhalt ist 150 x 0,850 x 1,03 = 132. Bei 132 ist die Suche frei bis 930us; der Endwert ist 132 x 0,950 = 125.
+Beispiel: NEUTRAL 1500,2us, PULSE LOWER 900,0us, v0 150, die erste Suche frei bei 1000us und blockiert bei 990us. Der Vorhalt ist 150 x 0,850 x 1,03 = 132. Bei 132 ist die Suche frei bis 930us; der Endwert ist 132 x 0,950 = 125.
 
 Nahe der Pulsgrenze, wo der Vorhalt den Anschlag um weniger als 20us verschöbe, schreibt der Lauf den Endwert sofort: v0 x der Anteil am letzten freien Puls der ersten Suche. Das erste Schreiben der ersten anlaufenden Seite findet auch, welches Register diese Seite begrenzt. Zuletzt sucht der Lauf beide Enden erneut: BESTANDEN, wenn beide frei sind, NICHT BESTANDEN, wenn eines anläuft. Ein Lauf schreibt höchstens 8 Werte: die zwei Pulse, zwei auf jeder Seite und zwei, um das Register zu finden. Ein Wert unter 50 ist eine weiche Grenze: Das Halten von 2s beim Start ist die Zustimmung dazu.
 
