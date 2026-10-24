@@ -395,3 +395,31 @@ def test_parse_deps_unescapes_paths():
     rule = ("a.o: /x\\ y/a.c /x\\ y/h\\#1.h \\\n"
             " /p$$q/r.h\n")
     assert tc.parse_deps(rule) == ["/x y/a.c", "/x y/h#1.h", "/p$q/r.h"]
+
+
+@pytest.mark.parametrize("arg", ["@flags.rsp", "-specs=x.specs",
+                                 "--specs=x.specs"])
+def test_a_response_or_specs_file_is_never_recorded(tree, arg):
+    """A response or specs file is read but not listed by cc -M.
+
+    Its content cannot reach the key, so the file is not recorded.
+    """
+    root = tree[0]
+    (root / "build" / "flags.rsp").write_text("-DX=1\n")
+    (root / "build" / "x.specs").write_text("")
+    entries = json.loads((root / "build" / "compile_commands.json")
+                         .read_text())
+    entries[2]["arguments"].insert(1, arg)
+    (root / "build" / "compile_commands.json").write_text(
+        json.dumps(entries))
+    run(tree)
+    _, _, calls = run(tree)
+    assert calls == ["src/c.c"]
+
+
+def test_unlisted_input_names_only_those_arguments():
+    """An include path or a define is listed through cc -M already."""
+    assert tc.unlisted_input("@a.rsp")
+    assert tc.unlisted_input("-specs=a")
+    assert not tc.unlisted_input("-I/x")
+    assert not tc.unlisted_input("-DA=@")

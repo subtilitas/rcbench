@@ -16,7 +16,9 @@ Raw content is hashed, not preprocessed text, so a changed comment such as
 a NOLINT in a header counts as a change too.  A header change reaches every
 file that includes it.  Only a pass is recorded: a failing file runs again
 on every call.  A file the compiler cannot list the dependencies of always
-runs, and so does a file one of whose inputs cannot be read.  clang-tidy
+runs, and so does a file one of whose inputs cannot be read or whose
+compile command names a response file (@FILE) or a specs file, which the
+compiler reads without listing them.  clang-tidy
 gets no arguments beyond the file and the compile database, so the
 compile command alone decides what it reads.
 
@@ -216,6 +218,22 @@ def parse_deps(text: str) -> list[str]:
     return out
 
 
+def unlisted_input(arg: str) -> bool:
+    """Tells whether a compiler argument names a file `cc -M` does not list.
+
+    A response file (@FILE) holds more arguments and a specs file
+    (-specs=FILE) changes the compiler's own; neither is a prerequisite of
+    the make rule, so a change to one would not change the key.
+
+    Args:
+        arg: One argument of a compile command.
+
+    Returns:
+        True for such an argument.
+    """
+    return arg.startswith("@") or arg.startswith(("-specs", "--specs"))
+
+
 def entry_hash(entry: dict, root: Path, memo: dict[str, str]) -> str | None:
     """Hashes one compile command and the files it reads.
 
@@ -228,6 +246,8 @@ def entry_hash(entry: dict, root: Path, memo: dict[str, str]) -> str | None:
         The hex SHA-256, or None when the inputs cannot be listed.
     """
     args = command_args(entry)
+    if any(unlisted_input(a) for a in args):
+        return None
     cwd = entry["directory"]
     try:
         done = subprocess.run(deps_args(args), cwd=cwd, capture_output=True,
