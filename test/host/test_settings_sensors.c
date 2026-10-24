@@ -517,7 +517,7 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
     CHECK(!sensors_rows_unheld(SET_INA_FIT(1)));
     CHECK(!sensors_rows_unheld(SET_HITEC_RX));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(3)),
-                 "IOmcu older than 4.25: one INA3221, CH1 at 1kHz.");
+                 "IOmcu older than 0.22.0: one INA3221, CH1 at 1kHz.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(6)),
                  "Every channel off. The IOmcu takes no such part.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(9)),
@@ -534,7 +534,7 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
 }
 
 /* A LIMIT row the IOmcu does not hold is marked, and only that row; on an
- * IOmcu older than 4.27 the line says no limit is judged.  A part's own
+ * IOmcu older than 0.22.0 (protocol 4.27) the line says no limit is judged.  A part's own
  * reason comes first. */
 TEST_CASE(a_limit_the_iomcu_does_not_hold_marks_its_row)
 {
@@ -552,7 +552,7 @@ TEST_CASE(a_limit_the_iomcu_does_not_hold_marks_its_row)
                                        | (1u << 11)));
     CHECK(sensors_rows_unheld(SET_INA_LIM(11)));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_LIM(11)),
-                 "IOmcu older than 4.27: no limit is judged.");
+                 "IOmcu older than 0.22.0: no limit is judged.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(11)),
                  "Not accepted by the IOmcu.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_FIT(0)),
@@ -619,7 +619,7 @@ TEST_CASE(every_part_state_has_its_words_and_colour)
         { SENS_PART_REFUSED,   "NOT ACCEPTED BY THE IOMCU", UI_C_WARN },
         { SENS_PART_DARK,      "EVERY CHANNEL OFF",         UI_C_WARN },
         { SENS_PART_SAME_ADDR, "INA228 ON THIS ADDRESS",    UI_C_WARN },
-        { SENS_PART_OLD,       "IOMCU OLDER THAN 4.25: NOT READ", UI_C_WARN },
+        { SENS_PART_OLD,       "IOMCU OLDER THAN 0.22.0: NOT READ", UI_C_WARN },
         { SENS_PART_NO_BUS,    "SENSOR SDA OR SCL UNSET",   UI_C_WARN },
     };
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -702,7 +702,7 @@ TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
                  "ber der Grenze von 32.77A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_REFUSED, 0u, 0u, 0),
-                 "INA3221-Grenzen abgelehnt. SETUP > SENSOREN pr"
+                 "INA3221-Grenzen abgelehnt. SETUP > SENSORS pr"
                  "\xc3\xbc" "fen.");
     ui_text_set_language(UI_LANG_EN);
 }

@@ -30,7 +30,7 @@ Das Home-Tag führt zum [Menü](overview.md).
 | SAFE | keine |
 | ARMED MOTOR | die Throttle-Ausgänge, von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | ARMED SERVO | die Servo-Ausgänge und ein pulsender PROG PORT, von SERVO |
-| ARMED | jeder gebundene Ausgang, an einem IOmcu älter als Protokoll 4.18 |
+| ARMED | jeder gebundene Ausgang, an einem IOmcu älter als 0.18.0 |
 
 Ein Kanal ohne Befehl seit 500ms steht bei ARMED in Ruhe: ein Throttle auf 0%, ein Servo in der Mitte seines Wegs.
 

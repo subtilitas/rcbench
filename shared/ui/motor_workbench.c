@@ -272,7 +272,8 @@ static void target_with_ports(char *out, size_t size, const char *name,
     }
     for (unsigned i = 0; i < count; ++i) {
         char item[16];
-        char more[8];
+        /* "+" and an unsigned of up to 10 digits. */
+        char more[12];
         item_text(i, pins, ports, item, sizeof(item));
         const unsigned left = count - i - 1u;
         snprintf(more, sizeof(more), "+%u", left);

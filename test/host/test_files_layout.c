@@ -87,9 +87,19 @@ TEST_CASE(every_label_fits_its_button_in_both_languages)
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         for (size_t i = 0; i < sizeof(foot) / sizeof(foot[0]); ++i) {
-            CHECK(ui_text_fits(&gfx_font_10x20, ui_tr(foot[i]), 118, 52, 4));
+            /* 6px each side in the face the footer picks; English keeps
+             * the 10 x 20 face on every key. */
+            const gfx_font_t *f = ui_button_face(ui_tr(foot[i]), 118, 52,
+                                                 FOOT_PAD, &gfx_font_10x20,
+                                                 &gfx_font_8x16);
+            CHECK(ui_text_fits(f, ui_tr(foot[i]), 118, 52, FOOT_PAD));
+            CHECK(lang != (int)UI_LANG_EN || f == &gfx_font_10x20);
         }
-        CHECK(ui_text_fits(&gfx_font_10x20, TR(LOG_RESCAN), 140, 52, 4));
+        const gfx_font_t *fr = ui_button_face(TR(LOG_RESCAN), 140, 52,
+                                              FOOT_PAD, &gfx_font_10x20,
+                                              &gfx_font_8x16);
+        CHECK(ui_text_fits(fr, TR(LOG_RESCAN), 140, 52, FOOT_PAD));
+        CHECK(lang != (int)UI_LANG_EN || fr == &gfx_font_10x20);
         CHECK(ui_text_fits(&gfx_font_10x20, TR(LOG_PREV), 88, 48, 4));
         CHECK(ui_text_fits(&gfx_font_10x20, TR(LOG_NEXT), 88, 48, 4));
         CHECK(ui_text_fits(&gfx_font_10x20, TR(CANCEL), 300, 56, 4));

@@ -149,6 +149,7 @@ SOURCES = [
     "shared/ui/log_viewer_load.c",
     "shared/ui/log_viewer_draw.c",
     "shared/ui/log_viewer_events.c",
+    "shared/ui/log_select.c",
     "shared/ui/log_text.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_draw.c",
@@ -212,9 +213,6 @@ INCLUDES = [
 
 # The files of shared/ui/CMakeLists.txt that SOURCES leaves out, and why.
 EXCLUDED = {
-    "shared/ui/log_select.c":
-        "the card task calls it, not a screen; render_ui.py adds it for "
-        "the log views",
     "shared/ui/ui_alert_slot.c":
         "the control task posts to it; no screen calls it",
     "shared/ui/port_mail.c":

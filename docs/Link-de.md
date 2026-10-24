@@ -140,7 +140,7 @@ und empfängt mit dem Pull-up. Das Panel sendet keine Hitec-Transaktion
 richtet SENSE_MAP (0x35) bis zu 4 INA3221 mit einem Shunt und einem
 Beobachtungsziel je Kanal ein, und SENSE_WIN_A und SENSE_WIN_B (0x37, 0x38)
 tragen das letzte Fenster jedes Kanals; ein älterer IOmcu weist die drei mit
-BAD_PAGE ab. Das Panel dieses Builds schreibt SENSE_MAP aus SETUP > SENSOREN
+BAD_PAGE ab. Das Panel dieses Builds schreibt SENSE_MAP aus SETUP > SENSORS
 und liest keine der beiden Fenster-Pages ([Die INA3221-Map und ihre Fenster](LinkSensors-de.md)).
 Ab 4.26 hat PROG 28 Register: die Register 24 bis 27 sind die FUNC jedes
 Ports, und der Build hat 4 Ports; das Panel liest 24 Register eines
@@ -180,7 +180,7 @@ Telemetrie des ESC zurückzukehren. Bei einer Messung der Bewegung ist der
 Pegel vor dem Befehl der Mittelwert von CH1 über die 50ms vor der Flanke;
 eine Messung, die scharfgeschaltet wird, während der INA3221 CH1 nicht
 liest, endet sofort als verloren und zählt in CAP_SEQ. Das Panel dieses Builds liest bei jedem Link-Aufbau die Register 0
-bis 11 von SENSE, schreibt die Einstellung aus SETUP ANSCHLÜSSE Frame für
+bis 11 von SENSE, schreibt die Einstellung aus SETUP INTERFACES Frame für
 Frame, wo sie abweicht (`shared/bench/sense_link.c`, `test_sense_link`), und
 liest die Identity-Page erneut, nachdem ein Schreiben angenommen ist. Auf
 SERVO_SENSE schreibt es keine Messung. SERVO_WIN (0x31) liest es an einem
@@ -191,7 +191,7 @@ auch immer ENABLE hält; ein IOmcu von 0.15.0 oder älter nimmt sie mit
 ENABLE 0 an und weist das danach freigegebene Bauteil ab. Das Format auf dem
 Draht und die Protokoll-Minor sind dieselben. Ein Panel von 0.15.0 oder
 älter, dessen zwei Pin-Einstellungen unabhängig sind, sieht die Abweisung bei
-der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GP15/GP17 abgelehnt. SETUP > ANSCHLÜSSE prüfen.`, einmal je Änderung und je Link-Aufbau,
+der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GP15/GP17 abgelehnt. SETUP > INTERFACES prüfen.`, einmal je Änderung und je Link-Aufbau,
 und die Page behält die Pins, die sie hatte. Seine Pins auf −1 werden als
 ENABLE 0 mit 0 für den Pin geschrieben und wie bisher angenommen. Eine
 Konfiguration im Flash des IOmcu, deren Pins kein Paar sind, wird
@@ -228,7 +228,7 @@ bekommt Bit 2, und die Page wächst von 26 auf 32 Register, 26 bis 30 neu und
 | Panel | IOmcu | Der Encoder (SENSE Bit 2, Register 26 bis 31) |
 | --- | --- | --- |
 | 4.9 | 4.9 | bedient |
-| 4.9 | 4.8 oder 4.7 | das Panel schreibt ENABLE Bit 2 nicht und liest von SENSE nur die Register 12 bis 25; mit dem Encoder in SETUP freigegeben meldet es `IOmcu-Firmware älter als 4.9. AS5600 nicht ausgelesen.`, beim Link-up und wenn der Encoder freigegeben wird, während der IOmcu antwortet. Die Page eines 4.8-IOmcu hat 26 Register und weist ein Lesen darüber hinaus ab |
+| 4.9 | 4.8 oder 4.7 | das Panel schreibt ENABLE Bit 2 nicht und liest von SENSE nur die Register 12 bis 25; mit dem Encoder in SETUP freigegeben meldet es `IOmcu-Firmware älter als 0.15.0. AS5600 nicht ausgelesen.`, beim Link-up und wenn der Encoder freigegeben wird, während der IOmcu antwortet. Die Page eines 4.8-IOmcu hat 26 Register und weist ein Lesen darüber hinaus ab |
 | 4.9 | 4.6 oder älter | an SENSE wird nichts gesendet; dieselbe Meldung |
 | 4.8 oder 4.7 | 4.9 | das Panel schreibt Bit 2 nie und liest die Register 26 bis 31 nie. Ein Encoder, den ein 4.9-Panel im Flash des IOmcu hinterlassen hat, bleibt freigegeben und wird gelesen; seine zwei Pins bleiben den Ausgängen entzogen |
 
@@ -321,7 +321,7 @@ Das Panel (`shared/bench/tone_link.c`) meldet einen abgewiesenen ersten
 Frame einmal im Band. Einen mit BUSY abgewiesenen Frame bietet es alle 5s
 erneut an (`TONE_LINK_RETRY_MS`), je ein Write, und einen mit BAD_VALUE
 abgewiesenen schreibt es erst wieder, wenn sich die Konfiguration unter
-SETUP ANSCHLÜSSE ändert oder der Link wieder hochkommt.
+SETUP INTERFACES ändert oder der Link wieder hochkommt.
 
 | Panel | IOmcu | Ein abgewiesener erster Frame |
 | --- | --- | --- |
@@ -556,7 +556,7 @@ Konfigurationsregister ein zweites Mal gelesen wird, hat 742,5µs.
 | Panel | IOmcu | SERVO_WIN (0x31), `RESETS` und `CAP_HOLD_MA` |
 | --- | --- | --- |
 | 4.11 | 4.11 | bedient. Solange SENSE den INA3221 mit CH1 freigibt, liest das Panel dieses Builds SERVO_WIN bei jedem Poll und von SENSE die Register 12 bis 31, darunter `RESETS`. Es schaltet keine Messung scharf |
-| 4.11 | 4.10 oder älter | der IOmcu beantwortet eine Anfrage an 0x31 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Es nimmt die Fenster des INA3221 von SERVO_SENSE, das letzte je Lesen, liest den PD mini als Messgerät der Servo-Schiene und meldet einmal `IOmcu-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.`. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
+| 4.11 | 4.10 oder älter | der IOmcu beantwortet eine Anfrage an 0x31 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Es nimmt die Fenster des INA3221 von SERVO_SENSE, das letzte je Lesen, liest den PD mini als Messgerät der Servo-Schiene und meldet einmal `IOmcu-Firmware älter als 0.16.0. Servostrom wird vom PD mini ausgelesen.`. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
 | 4.10 oder älter | 4.11 | das Panel liest 0x31 nie und liest Register 31 als reserviertes Register, das es übergeht. Ein Haltestrom, den es schreibt, 0 bis 32767mA, bedeutet dasselbe. Ein zurückgesetzt gefundenes Bauteil liest 1000ms lang offline und dann wieder online |
 
 **Die Lesezugriffe des Panels.** `shared/bench/sense_link.c` nimmt jede
@@ -610,7 +610,7 @@ solange alles Folgende gilt:
 
 | # | Bedingung |
 | ---: | --- |
-| 1 | SETUP SENSOREN hat einen bestückten Baustein mit einem Kanal, der das Ziel des Servotesters misst; dieser Kanal ist CH1 des Bausteins |
+| 1 | SETUP SENSORS hat einen bestückten Baustein mit einem Kanal, der das Ziel des Servotesters misst; dieser Kanal ist CH1 des Bausteins |
 | 2 | die Protokoll-Minor des IOmcu ist 11 oder mehr |
 | 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen; mit SENSE_MAP sind sein Enable-Bit des INA3221 und die Register 8 bis 11 die der Zuordnung, und die Register 0 bis 25 von SENSE_MAP sind die verlangte Zuordnung: seit dem Link-Aufbau gelesen, nicht abgelehnt, kein Schreiben offen |
 | 4 | das letzte Lesen von SENSE ist jünger als 200ms, und in seinen `FLAGS` sind die Bits 4 und 5 des INA3221 gesetzt und Bit 9 gelöscht |
@@ -839,7 +839,7 @@ die Page erneut gelesen ist.
 | 4.13 | 4.13 | bedient |
 | 4.13 | 4.12 oder älter | der IOmcu beantwortet eine Anfrage an 0x33 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 13 nichts dorthin |
 | 4.12 oder älter | 4.13 | das Panel liest und schreibt 0x33 nie: kein Port gibt einen Puls aus, und Port 0 hält GP13 |
-| 4.26 | 4.13 bis 4.25 | das Panel liest 24 Register und nimmt jeden Port als SERVO PWM; es erbittet keine `FUNC` und sagt `IOMCU ÄLTER ALS 4.26: NUR SERVO PWM` |
+| 4.26 | 4.13 bis 4.25 | das Panel liest 24 Register und nimmt jeden Port als SERVO PWM; es erbittet keine `FUNC` und sagt `IOMCU ÄLTER ALS 0.22.0: NUR SERVO PWM` |
 | 4.13 bis 4.25 | 4.26 | das Panel liest 24 Register und schreibt `FUNC` nie; ein Port, den es als Ziel setzt, muss SERVO PWM sein, sonst weist der IOmcu das `TARGET` ab |
 | 4.28 | 4.26 oder 4.27 | das Panel bietet nur SERVO PWM und NONE an und erbittet keine DShot-`FUNC` |
 | 4.26 oder 4.27 | 4.28 | das Panel zeigt einen DShot-Port als NONE und setzt ihn nie als Ziel; das Gas von MOTOR & ESC erreicht ihn trotzdem |
@@ -948,7 +948,7 @@ Failsafe ist eine solche Nebenwirkung.
 
 Ein NACK ist eine Antwort, kein Linkfehler. Das Panel zählt sie in seinem
 Link-Bericht (`nack`, [Inbetriebnahme](Bringup-de.md#link-bericht)): eine
-Einstellung aus SETUP ANSCHLÜSSE, die eine Page ablehnt, ist ein NACK je
+Einstellung aus SETUP INTERFACES, die eine Page ablehnt, ist ein NACK je
 abgelehntem Wert, einmal geschrieben, bis sich der Wert ändert, und ein Pin,
 den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 
@@ -1054,7 +1054,7 @@ einem Poll, dessen Schreiben von ARM = 0 quittiert wurde: es liest die Page,
 schreibt sie nur, wenn die Gaskanäle abweichen, und prüft die gespeicherten
 Register, die die Quittung trägt. Ein Lesen oder Schreiben, das niemand
 beantwortet, bleibt offen. Ein abgelehntes Lesen, ein abgelehntes Schreiben,
-ein Leerlaufpuls nicht unter dem Vollpuls oder eine Quittung, deren
+ein Leerlaufpuls, der nicht mindestens 100us unter dem Vollpuls liegt, oder eine Quittung, deren
 Gaskanäle ein anderes Paar halten, beendet die Schuld mit einem Hinweis und
 sperrt das Schalten auf ARMED, bis eine Änderung, eine Zuordnung oder ein
 Link-up das Paar in Kraft bringt. Solange sie bei bestehendem Link offen oder

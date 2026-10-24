@@ -272,7 +272,7 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
 
     if (pin->reserved) {
         if (holder != NULL && cap != 0u && pin->held_by != NULL) {
-            snprintf(holder, cap, "%s", pin->held_by);
+            snprintf(holder, cap, "%s", ui_pin_holder(pin->held_by));
         }
         return PICKER_PIN_RESERVED;
     }

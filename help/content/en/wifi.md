@@ -125,7 +125,7 @@ The page answers one request at a time: a request made during a download waits f
 
 ![A newer image waits](view:wifi-question)
 
-An image the page received waits on the panel as a question with both versions. INSTALL is a 2s hold, `HOLD 2s: INSTALL`; the browser cannot start it. CANCEL drops the image. The install needs the bench SAFE, the supply output off, no log run open, no board drawing being fetched or kept and no IOmcu update running.
+An image the page received waits on the panel as a question with both versions. INSTALL is a 2s hold, `HOLD 2s TO INSTALL`; the browser cannot start it. CANCEL drops the image. The install needs the bench SAFE, the supply output off, no log run open, no board drawing being fetched or kept and no IOmcu update running.
 
 ![An older image, and a drawing being kept](view:wifi-older)
 

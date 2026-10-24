@@ -334,8 +334,7 @@ static const log_fake_t k_user[] = {
     { "ATEST004.TXT", 2187 },
 };
 /* The root of a card of firmware 0.21.0: a servo test's SERVO042.CSV with
- * its report, which the list leaves out, and a limit run's SERVO043.TXT
- * alone, which it lists. */
+ * its report and a limit run's SERVO043.TXT alone, each a row of the list. */
 static const log_fake_t k_card[] = {
     { "SERVO043.TXT", 1702 },
     { "SERVO042.CSV", 16310 },
@@ -354,20 +353,20 @@ static const char k_limit_report[] =
     "Device:         KST X20-830\n"
     "Firmware:       rcbench 0.22.0\n"
     "Mode:           search only, nothing written to the servo\n"
-    "Output:         S1, 333 Hz\n"
-    "Pulse range:    centre 1500 us, 900-2100 us\n"
-    "Searched:       from 1500 us out to 900 us and 2100 us\n"
-    "Current:        INA3221, 50 ms windows, shunt 100.0 mOhm\n"
-    "Search rule:    10 us steps, settle 120 ms, mean of 80 ms; bound above "
-    "2.0 x free and +0.15 A\n"
-    "Protections:    a sample at 4.0 A, above 2.5 A for 300 ms, no window "
-    "for 500 ms, 60 s a search\n"
-    "Duration:       38.4 s\n"
+    "Output:         S1, 333Hz\n"
+    "Pulse range:    centre 1500us, 900-2100us\n"
+    "Searched:       from 1500us out to 900us and 2100us\n"
+    "Current:        INA3221, 50ms windows, shunt 100.0m\xCE\xA9\n"
+    "Search rule:    10us steps, settle 120ms, mean of 80ms; bound above "
+    "2.0 x free and +0.15A\n"
+    "Protections:    a sample at 4.0A, above 2.5A for 300ms, no window "
+    "for 500ms, 60s a search\n"
+    "Duration:       38.4s\n"
     "\n"
     "ENDS (the search before programming)\n"
-    "Low end:        bound at 960 us, endpoint 970 us; free 0.112 A, bound "
-    "0.391 A\n"
-    "High end:       free to 2100 us; free 0.108 A\n"
+    "Low end:        bound at 960us, endpoint 970us; free 0.112A, bound "
+    "0.391A\n"
+    "High end:       free to 2100us; free 0.108A\n"
     "AS5600:         not fitted, no angles\n"
     "\n"
     "PROGRAMMING (LEFT ANGLE and RIGHT ANGLE, unit not known)\n"
@@ -377,34 +376,23 @@ static const char k_limit_report[] =
 static log_mem_ctx_t g_report_ctx;
 
 /*
- * Offer a folder's names to the page as the panel's lister does: through
- * the notes of log_select.h, the CSV files and the LIMIT reports at once
- * and the reports standing alone in a second pass when there are any.
+ * Offer a folder's names to the page as the panel's lister does: the names
+ * log_select_lists() takes, in one walk.
  */
 static int offer_folder(log_select_page_t *sel, const log_fake_t *set,
                         size_t count)
 {
-    static log_lone_t lone;
-    log_lone_begin(&lone);
     log_viewer_file_t f;
     memset(&f, 0, sizeof(f));
     int n = 0;
-    for (int pass = 0; pass < 2; ++pass) {
-        if (pass == 1 && !log_lone_again(&lone)) {
-            break;
+    for (size_t i = 0; i < count; ++i) {
+        if (!log_select_lists(set[i].name)) {
+            continue;
         }
-        for (size_t i = 0; i < count; ++i) {
-            const bool listed = (pass == 0)
-                                    ? log_lone_first(&lone, set[i].name)
-                                    : log_lone_second(&lone, set[i].name);
-            if (!listed) {
-                continue;
-            }
-            snprintf(f.name, sizeof(f.name), "%s", set[i].name);
-            f.size = set[i].size;
-            log_select_page_offer(sel, &f);
-            ++n;
-        }
+        snprintf(f.name, sizeof(f.name), "%s", set[i].name);
+        f.size = set[i].size;
+        log_select_page_offer(sel, &f);
+        ++n;
     }
     return n;
 }
@@ -547,7 +535,8 @@ static const log_viewer_io_t k_io = {
  * zeroes: a band with nothing in it would make the golden image agree with a
  * band that had stopped working.
  */
-/* The capabilities a view's IOmcu reports: SERVO's views only. */
+/* The capabilities a view's IOmcu reports: SERVO's views and the linked
+ * overview's. */
 static uint16_t s_caps;
 
 static const ui_bench_status_t k_status = {
@@ -1025,6 +1014,15 @@ static void kst_view(const char *view)
     (void)rig_link_up(nopage ? (uint16_t)(LINK_MINOR_KST - 1u)
                              : LINK_PROTOCOL_MINOR);
     ui_router_goto(SCREEN_SERVO);
+    /* The tester's drive as the control task reports it: PORT 1 on GP13
+     * when SERVO's target is the programmer's port, as program_view() sets
+     * it; no pin when the generator has none for the port.  With the target
+     * elsewhere (-target) the screen keeps SERVO PWM on its own pin. */
+    if (g_rig.target != 0u) {
+        servo_screen_set_drive(g_rig.target,
+                               g_rig.no_pin ? SERVO_SCREEN_NO_PIN : RIG_PIN,
+                               true);
+    }
     if (strcmp(v, "-hv") == 0) {
         /* HV SERVO in the AUTOMATIC TEST card's settings on TEST, which
          * the programmer's voltage follows. */
@@ -1904,20 +1902,23 @@ static void pose_splash(void)
 {
     /* BOARD_NAME_TEXT and BOARD_DISPLAY_TEXT of the panel's board_pins.h,
      * as panel_boot.c writes them. */
-    splash_screen_set(SPLASH_STEP_BOARD,    SPLASH_OK,
-                      "ESP32-P4 7B, panel fw " RCBENCH_VERSION_STRING);
+    char board[SPLASH_DETAIL_MAX];
+    snprintf(board, sizeof(board), TR(SPLASH_PANEL_FW), "ESP32-P4 7B",
+             RCBENCH_VERSION_STRING);
+    splash_screen_set(SPLASH_STEP_BOARD,    SPLASH_OK,   board);
     splash_screen_set(SPLASH_STEP_DISPLAY,  SPLASH_OK,   "1024x600 DSI");
     splash_screen_set(SPLASH_STEP_TOUCH,    SPLASH_OK,   "GT911 5pt");
     splash_screen_set(SPLASH_STEP_STORAGE,  SPLASH_WARN, TR(SPLASH_NO_CARD));
     splash_screen_set(SPLASH_STEP_SETTINGS, SPLASH_OK,   "NVS");
-    splash_screen_set(SPLASH_STEP_LINK,     SPLASH_OK,   "CAN 1 Mbit/s");
+    splash_screen_set(SPLASH_STEP_LINK,     SPLASH_OK,   "CAN 1Mbit/s");
     /* Built from the constants rather than typed: the IOmcu line went
      * from 1.0 to 3.0 and gained a firmware field with this string untouched,
      * so the screenshot on the wiki showed a protocol two majors old. */
-    char iomcu[48];
-    snprintf(iomcu, sizeof(iomcu), "proto %u.%u fw %s",
+    char iomcu[SPLASH_DETAIL_MAX];
+    snprintf(iomcu, sizeof(iomcu), TR(SPLASH_IOMCU_FW),
              (unsigned)LINK_PROTOCOL_MAJOR, (unsigned)LINK_PROTOCOL_MINOR,
-             RCBENCH_VERSION_STRING);
+             (unsigned)RCBENCH_VERSION_MAJOR, (unsigned)RCBENCH_VERSION_MINOR,
+             (unsigned)RCBENCH_VERSION_PATCH);
     splash_screen_set(SPLASH_STEP_IOMCU,    SPLASH_OK,   iomcu);
 }
 
@@ -2304,76 +2305,21 @@ static void band_view(const char *view, ui_bench_status_t *st)
     }
 }
 
-int main(int argc, char **argv)
+/**
+ * @brief MOTOR's run and SUPPLY's offline views: the samples, the bindings and
+ *        the PD mini.
+ * @param id      The screen of the shot.
+ * @param view    The golden's name.
+ * @param mo_prog The view is one of MOTOR's PROGRAM or ESC STICK views.
+ */
+static void pose_motor_supply(ui_screen_id_t id, const char *view,
+                              bool mo_prog)
 {
-    /* FILES INFO reads a stamp in the C library's zone (wall_local_s()):
-     * UTC for every shot, whatever the shell's zone. */
-    (void)setenv("TZ", "UTC0", 1);
-    tzset();
-    if (argc == 2 && strcmp(argv[1], "--ids") == 0) {
-        /* The table's IDs and their declared cells, for the fit check. */
-        for (int i = 0; i < TX_COUNT; ++i) {
-            printf("I %s %d\n", ui_text_name((ui_text_id_t)i),
-                   ui_text_cells((ui_text_id_t)i));
-        }
-        return 0;
-    }
-    if (argc < 3) {
-        fprintf(stderr, "usage: render_screen OUT.ppm SCREEN [theme] [view] "
-                        "[en|de] [TRACE]\n");
-        return 2;
-    }
-    const ui_screen_id_t id = id_of(argv[2]);
-    const bool light = (argc > 3 && strcmp(argv[3], "light") == 0);
-    /* argv[4] is the golden's name; several share one screen. */
-    const char *view = (argc > 4) ? argv[4] : argv[2];
-    const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
-    s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
-                                                       : UI_LANG_EN;
-    s_monitors_on = strcmp(view, "setup-interfaces") == 0
-                    || strncmp(view, "setup-sensors", 13) == 0
-                    || strcmp(view, "setup-unheld") == 0;
-    s_tap_on = strcmp(view, "setup-tap") == 0;
-    /* A screen with a free spot draws the first cat pose where it fits,
-     * so every shot is repeatable; picker-cat-N draws pose N on PICK A
-     * PIN. */
-    ui_cats_force(strncmp(view, "picker-cat-", 11) == 0
-                      ? (int)strtol(view + 11, NULL, 10) : 0);
-    s_enc_on = strcmp(view, "servo-encoder") == 0;
-    s_rot_on = strcmp(view, "setup-rotation") == 0;
-    s_tz_on = strcmp(view, "setup-time-zone") == 0;
-    s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
-
-    ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
-    settings_set_store(&k_lang_store);
-    settings_set_armed(router_armed);
-    settings_init();
-    /* What settings_apply_ui() does for the language; the theme stays the
-     * one the shot asks for. */
-    ui_text_set_language((ui_lang_t)settings_get_int(SET_LANGUAGE));
-#ifdef GFX_TEXT_TRACE
-    /* From the start: a screen looks its words up when it is set up as
-     * well as when it draws. */
-    if (argc > 6) {
-        s_trace = fopen(argv[6], "w");
-        if (s_trace == NULL) {
-            perror(argv[6]);
-            return 1;
-        }
-    }
-#endif
-    ui_router_init();
-    pose_splash();
     /*
      * A scripted run, so the bench screenshot shows the same moment every
      * time: spin up, hold, a burst, then settle.  One sample per plot column
      * at the panel's poll rate, 20Hz.
      */
-    /* PROGRAM's views: a SAFE bench before a run, DSHOT300 on GP0 as the
-     * output strip names it. */
-    const bool mo_prog = id == SCREEN_MOTOR
-                         && (strncmp(view, "motor-program", 13) == 0
-                             || strncmp(view, "motor-stick", 11) == 0);
     if (id == SCREEN_MOTOR && (strcmp(view, "motor-idle") == 0
                                || strcmp(view, "motor-port") == 0)) {
         /* A linked bench before its first run: no sample, never armed, and
@@ -2550,7 +2496,15 @@ int main(int argc, char **argv)
             supply_screen_set_port_held(true);
         }
     }
+}
 
+/**
+ * @brief MOTOR & ESC > PROGRAM and the ESC STICK views.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_motor_tools(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_MOTOR && strncmp(view, "motor-program", 13) == 0) {
         /* MOTOR & ESC > PROGRAM: the strip's second tab, the registry's
          * list with its STICK MENU row. */
@@ -2613,7 +2567,7 @@ int main(int argc, char **argv)
             ex = *esc_profiles_find("sunrise-pro");
             ex.id = "example-steps";
             ex.brand = "Example";
-            ex.family = "Example ESC, not a real product";
+            ex.family = "ESC, not a real product";
             ex.automatable = ESC_AUTO_ASSISTED;
             ex.automatable_note = "An example.";
             ex.manual = k_before;
@@ -2666,7 +2620,7 @@ int main(int argc, char **argv)
             card = *esc_profiles_find("sunrise-pro");
             card.id = "example-after";
             card.brand = "Example";
-            card.family = "Example ESC, not a real product";
+            card.family = "ESC, not a real product";
             card.automatable = ESC_AUTO_ASSISTED;
             card.automatable_note = "Steps after programming.";
             card.manual = k_after;
@@ -2876,7 +2830,15 @@ int main(int argc, char **argv)
             }
         }
     }
+}
 
+/**
+ * @brief BATTERY, SETUP's leave and dirty views and BUSFAULT.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_bench_views(ui_screen_id_t id, const char *view)
+{
     /* battery-none: no cell monitor, as on a bench, where no firmware feeds
      * the screen. */
     if (id == SCREEN_BATTERY && strcmp(view, "battery-none") != 0) {
@@ -3005,7 +2967,15 @@ int main(int argc, char **argv)
         }
         busfault_screen_set(&r);
     }
+}
 
+/**
+ * @brief BALANCE and the ANALYSER: the cells and the received frames.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_analyser_views(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_BALANCE && strcmp(view, "balance") != 0) {
         ui_router_goto(SCREEN_BALANCE);
         if (strcmp(view, "balance-rig") == 0) {
@@ -3097,7 +3067,15 @@ int main(int argc, char **argv)
             }
         }
     }
+}
 
+/**
+ * @brief OUTPUTS and the INTERFACES views.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_outputs_views(ui_screen_id_t id, const char *view)
+{
     if ((id == SCREEN_OUTPUTS && strcmp(view, "outputs-iface") == 0)
         || (id == SCREEN_PICKER && strcmp(view, "picker-iface") == 0)) {
         /* SETUP > INTERFACES as the bench is wired: the INA228 and the
@@ -3272,8 +3250,20 @@ int main(int argc, char **argv)
             outputs_screen_set_result(OUTPUTS_NO_LINK);
         }
     }
+}
 
+/**
+ * @brief The PICKER's views: the list, the port and the tap on a pin.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_picker_views(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_PICKER) {
+        /* The first cat pose wherever it fits, so every shot is
+         * repeatable; picker-cat-N draws pose N. */
+        ui_cats_force(strncmp(view, "picker-cat-", 11) == 0
+                          ? (int)strtol(view + 11, NULL, 10) : 0);
         /*
          * The same bench the outputs screen is posed with: four servo leads
          * and an ESC, so the picture shows a pin this protocol holds, pins
@@ -3387,7 +3377,16 @@ int main(int argc, char **argv)
             ui_router_event(&u);
         }
     }
+}
 
+/**
+ * @brief SERVO's views: the capabilities, the programmer, the runs and the
+ *        limit search.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_servo_views(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_SERVO) {
         /* What the IOmcu reports (its output drivers'), so PROGRAM's KST row
          * is live; none with no IOmcu answering. */
@@ -3602,76 +3601,15 @@ int main(int argc, char **argv)
             tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y); /* TEST: the cards */
         }
     }
+}
 
-    ui_bench_status_t st = k_status;
-    st.capabilities = s_caps;
-    st.simulated = sim || (id == SCREEN_MOTOR
-                           && strcmp(view, "motor-table") != 0
-                           && strcmp(view, "motor-refused") != 0
-                           && strcmp(view, "motor-idle") != 0
-                           && strncmp(view, "motor-settings", 14) != 0
-                           && !mo_prog);
-    /* An IOmcu that has refused 37 frames: the count in the header
-     * strip after the error count. */
-    if (strcmp(view, "motor-refused") == 0) {
-        st.link_refused = 37u;
-    }
-    /* Modelled numbers are the panel's own, which it runs only while no
-     * IOmcu answers: the band says NO LINK and SIM, as on the bench. */
-    st.link_up   = !st.simulated;
-    st.mode      = ui_band_mode(st.link_up);
-    st.armed     = (id == SCREEN_MOTOR
-                    && strcmp(view, "motor-held") != 0
-                    && strcmp(view, "motor-idle") != 0
-                    && !mo_prog
-                    && (strncmp(view, "motor-settings", 14) != 0
-                        || strcmp(view, "motor-settings-armed") == 0))
-                   || strcmp(view, "servo-armed") == 0
-                   || strcmp(view, "servo-run") == 0
-                   || strcmp(view, "servo-result") == 0
-                   || strcmp(view, "servo-result-ina") == 0
-                   || strcmp(view, "servo-test-done") == 0
-                   || strcmp(view, "servo-sweep") == 0
-                   || strcmp(view, "servo-paused") == 0
-                   || (strncmp(view, "servo-limrun", 12) == 0
-                       && strcmp(view, "servo-limrun-restore") != 0
-                       && strcmp(view, "servo-limrun-stopped") != 0
-                       && strcmp(view, "servo-limrun-range") != 0)
-                   || strcmp(view, "setup-leave-armed") == 0
-                   || render_files_armed(view)
-                   || strcmp(view, "setup-rotation") == 0
-                   || (mo_prog && s_stick_armed);
-    /* An arm covers the role of the screen that asked for it. */
-    st.armed_roles = !st.armed ? 0u
-                     : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
-    ui_router_set_status(&st);
-    if (id == SCREEN_COPROC_UPDATE) {
-        /* The question as a link-up poses it: an IOmcu on 0.21.2 and
-         * a panel carrying 0.22.0, the version of the alert `IOmcu
-         * updated to 0.22.0` in Screens.md; the older one with the two
-         * swapped.  Fixed, as the examples above are.  The progress half
-         * way through the blocks of a 191,592-byte image. */
-        const cu_version_t old_v = { 0, 21, 2 };
-        const cu_version_t new_v = { 0, 22, 0 };
-        if (strcmp(view, "coproc-update-older") == 0) {
-            coproc_update_screen_offer(new_v, old_v);
-        } else {
-            coproc_update_screen_offer(old_v, new_v);
-        }
-        if (strcmp(view, "coproc-update-progress") == 0) {
-            coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
-        }
-    }
-    if (id == SCREEN_FILES) {
-        render_files_prepare(view);
-    }
-    ui_router_goto(id);
-    if (id == SCREEN_FILES) {
-        render_files_pose(view);
-    }
-    if (strncmp(view, "band-", 5) == 0) {
-        band_view(view, &st);
-    }
+/**
+ * @brief The views posed on the screen once it shows: the alert and MOTOR's
+ *        table and settings.
+ * @param view The golden's name.
+ */
+static void pose_shown_views(const char *view)
+{
     /* An alert on the menu: the band across the bottom, with its x. */
     if (strcmp(view, "overview-alert") == 0) {
         ui_router_set_alert(TR(ALERT_COPRO_DISARMED));
@@ -3688,11 +3626,39 @@ int main(int argc, char **argv)
             const gfx_rect_t box = motor_settings_box(1);
             tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
         }
+        if (strncmp(view, "motor-settings-gap-", 19) == 0) {
+            /* A pulse less than 100us from the other one, typed and
+             * refused with its reason in place of the range: Idle 1599us
+             * against Full 1650us, Full 1450us against Idle 1400us. */
+            const bool idle = strcmp(view, "motor-settings-gap-idle") == 0;
+            settings_set(SET_OUT_MIN_US, idle ? 1000.0f : 1400.0f);
+            settings_set(SET_OUT_MAX_US, idle ? 1650.0f : 2000.0f);
+            setting_id_t ids[16];
+            const int rows = motor_settings_rows(ids, 16);
+            for (int r = 0; r < rows; ++r) {
+                if (ids[r] == (idle ? SET_OUT_MIN_US : SET_OUT_MAX_US)) {
+                    const gfx_rect_t box = motor_settings_box(r);
+                    tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
+                }
+            }
+            kp_type(motor_screen_keypad(), idle ? "1599" : "1450");
+            ktap(ui_keypad_key_rect(motor_screen_keypad(), UI_KEY_OK));
+        }
         if (strcmp(view, "motor-settings-armed") == 0) {
             settings_set(SET_PACK_MAH, 2200.0f);
             settings_request_save();
         }
     }
+}
+
+/**
+ * @brief SETUP's views posed once it shows: leave, dirty, the rows, the card,
+ *        the folder and the sensors.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_shown_setup(ui_screen_id_t id, const char *view)
+{
     /* The home tag on SETUP's tiles, held by the warning. */
     if (strncmp(view, "setup-leave", 11) == 0) {
         const gfx_rect_t home = ui_home_tag_rect(ui_router_title(id));
@@ -3743,6 +3709,7 @@ int main(int argc, char **argv)
     if (strcmp(view, "setup-interfaces") == 0
         || strcmp(view, "setup-unheld") == 0
         || strcmp(view, "setup-tap") == 0
+        || strcmp(view, "setup-tap-why") == 0
         || strcmp(view, "setup-prog") == 0
         || strcmp(view, "setup-prog-noline") == 0
         || strcmp(view, "setup-prog-pre") == 0) {
@@ -3758,6 +3725,12 @@ int main(int argc, char **argv)
              * list is high leaves the screen. */
             setup_scroll_rows(4);
             setup_scroll_rows(5);
+        } else if (strcmp(view, "setup-tap-why") == 0) {
+            /* GP23, a pin the module does not bring out, typed for Tap
+             * pin: refused with the pins the row takes. */
+            setup_value(SET_CAT_IFACE, SET_TONE_PIN);
+            kp_type(settings_screen_keypad(), "23");
+            ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
         } else if (strncmp(view, "setup-prog", 10) == 0) {
             /* The list's end: PROG PORT and Hitec D receive at PRECHARGE,
              * marked as an IOmcu older than 4.24 (or 4.23) leaves it, or
@@ -3826,6 +3799,11 @@ int main(int argc, char **argv)
     }
     /* INTERFACES: GPIO 5 typed for Sensor SDA, and PD mini RX's GPIO 9 for
      * PD mini TX, each refused with its reason in place of the range. */
+    if (strcmp(view, "setup-sda-keypad") == 0) {
+        setup_tile(SET_CAT_IFACE);
+        setup_value(SET_CAT_IFACE, SET_SENSE_SDA);
+        kp_type(settings_screen_keypad(), "1");
+    }
     if (strcmp(view, "setup-sda-why") == 0
         || strcmp(view, "setup-pdmini-why") == 0) {
         const bool sda = strcmp(view, "setup-sda-why") == 0;
@@ -3835,7 +3813,15 @@ int main(int argc, char **argv)
         kp_type(settings_screen_keypad(), sda ? "5" : "9");
         ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
     }
+}
 
+/**
+ * @brief Wi-Fi, the update screens and LOGS once they show.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_shown_tools(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_WIFI) {
         pose_wifi(view);
     }
@@ -3898,8 +3884,159 @@ int main(int argc, char **argv)
             tap(LV_IM_BTN_CX(3), UI_BAND_H + LV_FOOT_CY);   /* PLOT */
         }
     }
+}
 
+int main(int argc, char **argv)
+{
+    /* FILES INFO reads a stamp in the C library's zone (wall_local_s()):
+     * UTC for every shot, whatever the shell's zone. */
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
+    if (argc == 2 && strcmp(argv[1], "--ids") == 0) {
+        /* The table's IDs and their declared cells, for the fit check. */
+        for (int i = 0; i < TX_COUNT; ++i) {
+            printf("I %s %d\n", ui_text_name((ui_text_id_t)i),
+                   ui_text_cells((ui_text_id_t)i));
+        }
+        return 0;
+    }
+    if (argc < 3) {
+        fprintf(stderr, "usage: render_screen OUT.ppm SCREEN [theme] [view] "
+                        "[en|de] [TRACE]\n");
+        return 2;
+    }
+    const ui_screen_id_t id = id_of(argv[2]);
+    const bool light = (argc > 3 && strcmp(argv[3], "light") == 0);
+    /* argv[4] is the golden's name; several share one screen. */
+    const char *view = (argc > 4) ? argv[4] : argv[2];
+    const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
+    s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
+                                                       : UI_LANG_EN;
+    s_monitors_on = strcmp(view, "setup-interfaces") == 0
+                    || strncmp(view, "setup-sensors", 13) == 0
+                    || strcmp(view, "setup-unheld") == 0;
+    s_tap_on = strcmp(view, "setup-tap") == 0
+               || strcmp(view, "setup-tap-why") == 0;
+    s_enc_on = strcmp(view, "servo-encoder") == 0;
+    s_rot_on = strcmp(view, "setup-rotation") == 0;
+    s_tz_on = strcmp(view, "setup-time-zone") == 0;
+    s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
+    ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
+    settings_set_store(&k_lang_store);
+    settings_set_armed(router_armed);
+    settings_init();
+    /* What settings_apply_ui() does for the language; the theme stays the
+     * one the shot asks for. */
+    ui_text_set_language((ui_lang_t)settings_get_int(SET_LANGUAGE));
+#ifdef GFX_TEXT_TRACE
+    /* From the start: a screen looks its words up when it is set up as
+     * well as when it draws. */
+    if (argc > 6) {
+        s_trace = fopen(argv[6], "w");
+        if (s_trace == NULL) {
+            perror(argv[6]);
+            return 1;
+        }
+    }
+#endif
+    ui_router_init();
+    pose_splash();
+    /* PROGRAM's views: a SAFE bench before a run, DSHOT300 on GP0 as the
+     * output strip names it. */
+    const bool mo_prog = id == SCREEN_MOTOR
+                         && (strncmp(view, "motor-program", 13) == 0
+                             || strncmp(view, "motor-stick", 11) == 0);
+    pose_motor_supply(id, view, mo_prog);
+    pose_motor_tools(id, view);
+    pose_bench_views(id, view);
+    pose_analyser_views(id, view);
+    pose_outputs_views(id, view);
+    pose_picker_views(id, view);
+    pose_servo_views(id, view);
+
+    ui_bench_status_t st = k_status;
+    if (id == SCREEN_OVERVIEW && !sim) {
+        /* A linked IOmcu reports its output drivers (IOMCU_CAPABILITIES)
+         * and, with the INA228 enabled on SETUP, the pack's volts and amps:
+         * MOTOR & ESC and SERVO without the mark, the rest with it. */
+        s_caps = (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
+                            | LINK_CAP_ESC_TELEM | LINK_CAP_PACK_SENSE);
+    }
+    st.capabilities = s_caps;
+    st.simulated = sim || (id == SCREEN_MOTOR
+                           && strcmp(view, "motor-table") != 0
+                           && strcmp(view, "motor-refused") != 0
+                           && strcmp(view, "motor-idle") != 0
+                           && strcmp(view, "motor-port") != 0
+                           && strncmp(view, "motor-settings", 14) != 0
+                           && !mo_prog);
+    /* An IOmcu that has refused 37 frames: the count in the header
+     * strip after the error count. */
+    if (strcmp(view, "motor-refused") == 0) {
+        st.link_refused = 37u;
+    }
+    /* Modelled numbers are the panel's own, which it runs only while no
+     * IOmcu answers: the band says NO LINK and SIM, as on the bench. */
+    st.link_up   = !st.simulated;
+    st.mode      = ui_band_mode(st.link_up);
+    st.armed     = (id == SCREEN_MOTOR
+                    && strcmp(view, "motor-held") != 0
+                    && strcmp(view, "motor-idle") != 0
+                    && strcmp(view, "motor-port") != 0
+                    && !mo_prog
+                    && (strncmp(view, "motor-settings", 14) != 0
+                        || strcmp(view, "motor-settings-armed") == 0))
+                   || strcmp(view, "servo-armed") == 0
+                   || strcmp(view, "servo-run") == 0
+                   || strcmp(view, "servo-result") == 0
+                   || strcmp(view, "servo-result-ina") == 0
+                   || strcmp(view, "servo-test-done") == 0
+                   || strcmp(view, "servo-sweep") == 0
+                   || strcmp(view, "servo-paused") == 0
+                   || (strncmp(view, "servo-limrun", 12) == 0
+                       && strcmp(view, "servo-limrun-restore") != 0
+                       && strcmp(view, "servo-limrun-stopped") != 0
+                       && strcmp(view, "servo-limrun-range") != 0)
+                   || strcmp(view, "setup-leave-armed") == 0
+                   || render_files_armed(view)
+                   || strcmp(view, "setup-rotation") == 0
+                   || (mo_prog && s_stick_armed);
+    /* An arm covers the role of the screen that asked for it. */
+    st.armed_roles = !st.armed ? 0u
+                     : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
+    ui_router_set_status(&st);
+    if (id == SCREEN_COPROC_UPDATE) {
+        /* The question as a link-up poses it: an IOmcu on 0.21.2 and
+         * a panel carrying 0.22.0, the version of the alert `IOmcu
+         * updated to 0.22.0` in Screens.md; the older one with the two
+         * swapped.  Fixed, as the examples above are.  The progress half
+         * way through the blocks of a 191,592-byte image. */
+        const cu_version_t old_v = { 0, 21, 2 };
+        const cu_version_t new_v = { 0, 22, 0 };
+        if (strcmp(view, "coproc-update-older") == 0) {
+            coproc_update_screen_offer(new_v, old_v);
+        } else {
+            coproc_update_screen_offer(old_v, new_v);
+        }
+        if (strcmp(view, "coproc-update-progress") == 0) {
+            coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
+        }
+    }
+    if (id == SCREEN_FILES) {
+        render_files_prepare(view);
+    }
+    ui_router_goto(id);
+    if (id == SCREEN_FILES) {
+        render_files_pose(view);
+    }
+    if (strncmp(view, "band-", 5) == 0) {
+        band_view(view, &st);
+    }
+    pose_shown_views(view);
+
+    pose_shown_setup(id, view);
+    pose_shown_tools(id, view);
     gfx_canvas_t c;
     gfx_canvas_init(&c, fb, W, H, W);
 
@@ -3920,12 +4057,19 @@ int main(int argc, char **argv)
 #endif
 
     /*
-     * Arming flashes the ARM button for UI_HOLD_FLASH_MS, which runs by
-     * time: ten frames of 50ms end it.  Drawn after the frame above, which
-     * has already painted everything else, so these repaint the button and
-     * nothing more.
+     * A completed hold flashes its button for UI_HOLD_FLASH_MS, which runs
+     * by time: ten frames of 50ms end it, so the image shows the steady
+     * state.  Drawn after the frame above, which has already painted
+     * everything else, so these repaint the button and nothing more.
+     * SERVO's views of a sweep or a run are left out: their dial moves with
+     * time, and their holds ended frames before.
      */
-    if (id == SCREEN_MOTOR) {
+    const bool servo_moving = strcmp(view, "servo-sweep") == 0
+                              || strcmp(view, "servo-run") == 0
+                              || strcmp(view, "servo-paused") == 0
+                              || strncmp(view, "servo-limrun", 12) == 0;
+    if (id == SCREEN_MOTOR || id == SCREEN_SUPPLY
+        || (id == SCREEN_SERVO && !servo_moving)) {
         for (int f = 0; f < 10; ++f) {
             ui_router_tick(0.05f);
             ui_router_render(&c, 0);

@@ -27,7 +27,7 @@ The pictures in this section come from the host renderer, which feeds the screen
 | BUS | `S.BUS` |
 | RATE | frames a second, in Hz |
 | FRAMES, RESYNC, BAD TAIL | frames decoded, re-synchronisations, frames with a footer the decoder refuses |
-| DIGITAL | CH17 and CH18, lit while set |
+| DIGITAL | CH17 and CH18 as lamps: the dot lights while the channel is set; they take no tap |
 
 A glitch is a spike in one lane. A dropout is a notch across all sixteen lanes at the same instant.
 

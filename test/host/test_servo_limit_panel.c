@@ -474,6 +474,39 @@ TEST_CASE(no_run_starts_while_the_logger_holds_the_last_report)
     CHECK(servo_screen_testing());
 }
 
+/* While the automatic test runs, START LIMIT RUN is grey and the page names
+ * the test as the reason; only after the test has ended and the logger still
+ * holds its report is the reason the report that is still writing. */
+TEST_CASE(a_running_automatic_test_is_the_reason_the_limit_run_cannot_start)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        lim_bench();
+        hold_start(2.3f);
+        CHECK(servo_screen_testing());
+        lim_page();
+        CHECK(lim_line_reads(1, ui_servo_str(SERVO_STR_START_TEST_RUNS),
+                             UI_C_WARN));
+        CHECK(strcmp(ui_servo_str(SERVO_STR_START_TEST_RUNS),
+                     ui_servo_str(SERVO_STR_START_BUSY)) != 0);
+        close_settings();
+        /* STOP TEST ends it; the logger still holds its report. */
+        CHECK(scr->safe_at(BOXBTN_X, BOXBTN_Y));
+        tap(BOXBTN_X, BOXBTN_Y);
+        servo_screen_test_logger_busy(true);
+        bench_frames(100u);
+        CHECK(!servo_screen_testing());
+        lim_page();
+        CHECK(lim_line_reads(1, ui_servo_str(SERVO_STR_START_BUSY),
+                             UI_C_WARN));
+        close_settings();
+        servo_screen_test_logger_busy(false);
+        servo_screen_set_armed(false);
+        bench_frames(100u);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* A limit run started with no supply reading at all: a PD mini heard
  * during the run, its output on or off, beside the rail the run started
  * on, ends it as a changed supply, with the output asked off. */
@@ -619,6 +652,7 @@ int main(void)
     RUN(the_limit_runs_stops_are_tap_targets_above_the_alert_band);
     RUN(a_search_only_limit_run_finds_both_ends_and_reports_them);
     RUN(no_run_starts_while_the_logger_holds_the_last_report);
+    RUN(a_running_automatic_test_is_the_reason_the_limit_run_cannot_start);
     RUN(a_pd_mini_heard_first_after_the_start_ends_a_limit_run);
     RUN(every_abort_source_ends_a_limit_run_with_the_output_off);
     RUN(a_limit_run_with_user_logs_off_writes_no_report);

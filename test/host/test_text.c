@@ -464,7 +464,7 @@ TEST_CASE(the_language_follows_the_setting)
     CHECK_EQ(ui_text_language(), UI_LANG_DE);
     CHECK_STR_EQ(TR(CANCEL), "ABBRECHEN");
     CHECK_STR_EQ(ui_setting_label(SET_PACK_CELLS), "Zellen");
-    CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "ANSCHLÜSSE");
+    CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "INTERFACES");
     CHECK_STR_EQ(ui_servo_str(SERVO_STR_PASS), "BESTANDEN");
     settings_set(SET_LANGUAGE, 0.0f);
     settings_apply_ui();
@@ -513,6 +513,21 @@ TEST_CASE(the_report_is_translated_and_the_csv_is_not)
     char line[SERVO_TEST_LINE_MAX];
     CHECK(servo_report_line(&t, 0, line, sizeof(line)));
     CHECK_STR_EQ(line, "RCBENCH SERVOTEST-BERICHT");
+    /* The limit report's mode lines for a run that never searched. */
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_SEARCH_NONE),
+                 "nur Suche (keine Suche gelaufen), nichts ins Servo "
+                 "geschrieben") != NULL);
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_PROGRAM_NONE),
+                 "(keine Suche gelaufen)") != NULL);
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_PULSES_NONE),
+                 "(keine Suche gelaufen)") != NULL);
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_PULSES_SET_NONE),
+                 "(keine Suche gelaufen); PULSE LOWER und PULSE UPPER "
+                 "zuerst auf 1000 und 2000us gesetzt") != NULL);
     t.cfg.text = NULL;
     CHECK(servo_report_line(&t, 0, line, sizeof(line)));
     CHECK_STR_EQ(line, "RCBENCH SERVO TEST REPORT");
@@ -885,7 +900,7 @@ TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
     static const char *const k_symbol[] = {
         "V", "mV", "A", "mA", "W", "Hz", "kHz", "ms", "us", "s", "%", "deg",
         "\xC2\xB0", "m\xCE\xA9", "\xCE\xA9", "mAh", "rpm", "rpm/V", "%/s",
-        "kbit/s", "min",
+        "kbit/s", "min", "S",
     };
     for (size_t i = 0; i < sizeof(k_symbol) / sizeof(k_symbol[0]); ++i) {
         if (!ui_unit_is_symbol(k_symbol[i])
@@ -894,7 +909,7 @@ TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
         }
     }
     static const char *const k_word[] = {
-        "GPIO", "S", "Volt", "v", "ms/", "/s", "/", "rpm/Volt", "m\xCE",
+        "GPIO", "SV", "Volt", "v", "ms/", "/s", "/", "rpm/Volt", "m\xCE",
         "\xCE\xA9x", "V ", " V", "cells",
     };
     for (size_t i = 0; i < sizeof(k_word) / sizeof(k_word[0]); ++i) {
@@ -907,6 +922,46 @@ TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
     CHECK(!ui_unit_is_symbol(NULL));
     CHECK_STR_EQ(ui_unit_gap(""), "");
     CHECK_STR_EQ(ui_unit_gap(NULL), "");
+}
+
+/* A pin word leads its number ("GPIO 4"); no other unit does, and no unit
+ * that is not the exact word. */
+TEST_CASE(only_the_pin_word_leads_its_number)
+{
+    CHECK(ui_unit_is_prefix("GPIO"));
+    CHECK(!ui_unit_is_prefix("gpio"));
+    CHECK(!ui_unit_is_prefix("GPIO "));
+    CHECK(!ui_unit_is_prefix("GPIOs"));
+    CHECK(!ui_unit_is_prefix("V"));
+    CHECK(!ui_unit_is_prefix("cells"));
+    CHECK(!ui_unit_is_prefix(""));
+    CHECK(!ui_unit_is_prefix(NULL));
+}
+
+/* A reserved pin's holder: the catalogue's words from the table, upper
+ * case, in German where German differs; any other name as it is; NULL as
+ * the empty text. */
+TEST_CASE(a_pin_holder_is_named_in_the_language_showing)
+{
+    static const struct { const char *in, *en, *de; } k[] = {
+        { "heartbeat", "HEARTBEAT", "HEARTBEAT" },
+        { "flash",     "FLASH",     "FLASH" },
+        { "debug",     "DEBUG",     "DEBUG" },
+        { "sensor",    "SENSOR",    "SENSOR" },
+        { "in use",    "IN USE",    "BELEGT" },
+        { "CAN INT",   "CAN INT",   "CAN INT" },
+        { "CAN",       "CAN",       "CAN" },
+        { "Heartbeat", "Heartbeat", "Heartbeat" },  /* no case folding */
+        { "",          "",          "" },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        ui_text_set_language(UI_LANG_EN);
+        CHECK_STR_EQ(ui_pin_holder(k[i].in), k[i].en);
+        ui_text_set_language(UI_LANG_DE);
+        CHECK_STR_EQ(ui_pin_holder(k[i].in), k[i].de);
+    }
+    CHECK_STR_EQ(ui_pin_holder(NULL), "");
+    ui_text_set_language(UI_LANG_EN);
 }
 
 int main(void)
@@ -934,5 +989,7 @@ int main(void)
     RUN(the_refused_frames_label_shows_only_a_count_above_zero);
     RUN(the_card_slot_has_three_words_at_every_place);
     RUN(a_number_joins_a_unit_symbol_and_spaces_a_word);
+    RUN(only_the_pin_word_leads_its_number);
+    RUN(a_pin_holder_is_named_in_the_language_showing);
     return test_summary("text");
 }

@@ -164,6 +164,27 @@ TEST_CASE(each_place_allows_what_it_allows)
                         false), FM_OK);
     CHECK_EQ(fm_allowed(NULL, FM_OP_DELETE, CARD_BENCH, "RCBENCH.LOG",
                         false), FM_ERR_BUSY);
+    /* The link up with a line still queued or on its way: the logger may
+     * open the file for its append, so it is neither deleted nor copied. */
+    g_bench.link_up = true;
+    g_bench.fault_busy = true;
+    CHECK_EQ(fm_allowed(&g_bench, FM_OP_DELETE, CARD_BENCH, "RCBENCH.LOG",
+                        false), FM_ERR_BUSY);
+    CHECK_EQ(fm_allowed(&g_bench, FM_OP_DELETE, CARD_BENCH, "RCBENCH.OLD",
+                        false), FM_ERR_BUSY);
+    CHECK_EQ(fm_allowed(&g_bench, FM_OP_COPY, CARD_BENCH, "RCBENCH.LOG",
+                        false), FM_ERR_BUSY);
+    CHECK_EQ(fm_allowed(&g_bench, FM_OP_OPEN, CARD_BENCH, "RCBENCH.LOG",
+                        false), FM_OK);
+    CHECK_EQ(fm_allowed(&g_bench, FM_OP_RENAME, CARD_BENCH, "RCBENCH.LOG",
+                        false), FM_ERR_FIXED);
+    /* Other files do not wait for the fault log. */
+    CHECK_EQ(fm_allowed(&g_bench, FM_OP_DELETE, CARD_BENCH, "OTHER.TXT",
+                        false), FM_OK);
+    g_bench.fault_busy = false;
+    CHECK_EQ(fm_allowed(&g_bench, FM_OP_DELETE, CARD_BENCH, "RCBENCH.LOG",
+                        false), FM_OK);
+    g_bench.link_up = false;
     /* A busy file: INFO only.  Kinds a job cannot take. */
     const log_marks_t marks = { .run_dir = CARD_AUTO_LOGS, .run = 7u,
                                 .test_dir = CARD_USER_LOGS };

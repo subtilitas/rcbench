@@ -157,7 +157,8 @@ bool outputs_chan_cfg_set_throttle_range(uint16_t *regs, uint16_t min_us,
                                          uint16_t max_us)
 {
     if (regs == NULL || min_us < LINK_CC_FLOOR_US
-        || max_us > LINK_CC_CEILING_US || min_us >= max_us) {
+        || max_us > LINK_CC_CEILING_US
+        || (unsigned)max_us < (unsigned)min_us + LINK_CC_THROTTLE_GAP_US) {
         return false;
     }
     for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {

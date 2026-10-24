@@ -120,6 +120,7 @@ _Static_assert(TAB_Y + TAB_H + 3 < LCARD_Y, "the tabs end above the lanes' card"
 #define CHN_Y     (DIG_Y + 28)        /**< CH17's top: y 384. */
 #define CHN_H     44                  /**< CH17 and CH18, px. */
 #define CHN_GAP   8                   /**< Between them, px. */
+#define CHN_INSET 40                  /**< A lamp's label from its left, px. */
 _Static_assert(CHN_Y + 2 * CHN_H + CHN_GAP <= TEXT_FLOOR,
                "CH18 ends above the alert band");
 
@@ -579,30 +580,32 @@ static void draw_right(gfx_canvas_t *c)
     gfx_hline(c, x, RULE1_Y, w, ui_theme_color(UI_C_EDGE));
 
     char buf[24];
-    stat_row(c, 0, "BUS", "S.BUS");
+    stat_row(c, 0, TR(AN_STAT_BUS), "S.BUS");
     snprintf(buf, sizeof(buf), "%uHz", s.rate_hz);
-    stat_row(c, 1, "RATE", s.have ? buf : "---");
+    stat_row(c, 1, TR(AN_STAT_RATE), s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.frames);
-    stat_row(c, 2, "FRAMES", s.have ? buf : "---");
+    stat_row(c, 2, TR(AN_STAT_FRAMES), s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.resyncs);
-    stat_row(c, 3, "RESYNC", s.have ? buf : "---");
+    stat_row(c, 3, TR(AN_STAT_RESYNC), s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.bad_footer);
-    stat_row(c, 4, "BAD TAIL", s.have ? buf : "---");
+    stat_row(c, 4, TR(AN_STAT_BAD_TAIL), s.have ? buf : "---");
 
     gfx_hline(c, x, RULE2_Y, w, ui_theme_color(UI_C_EDGE));
     gfx_text(c, x, DIG_Y, "DIGITAL", AN_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     /* Stacked, so the card stays 260px wide and the width goes to the
-     * traces. */
+     * traces.  Lamps, not keys: a pill whose dot lights while the channel
+     * is set, as the band's chips are drawn, so nothing invites a tap. */
     for (int i = 0; i < 2; ++i) {
         const bool on = s.have && ((i == 0) ? s.frame.ch17 : s.frame.ch18);
         const gfx_rect_t r = { (int16_t)x,
                                (int16_t)(CHN_Y + i * (CHN_H + CHN_GAP)),
                                (int16_t)w, CHN_H };
-        ui_button_font(c, r, (i == 0) ? "CH17" : "CH18",
-                       on ? ui_theme_color(UI_C_ACCENT)
-                          : ui_theme_color(UI_C_PANEL_HI),
-                       false, true, AN_FONT_LABEL);
+        ui_pill_font(c, r, (i == 0) ? "CH17" : "CH18",
+                     on ? ui_theme_color(UI_C_ACCENT)
+                        : ui_theme_color(UI_C_TEXT_FAINT),
+                     ui_theme_color(UI_C_PANEL_SUNK), CHN_INSET,
+                     AN_FONT_LABEL);
     }
 }
 

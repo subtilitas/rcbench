@@ -13,7 +13,8 @@
  * is a value between 0 and off_below (a SENSORS shunt of 0.1 to 4.9mΩ:
  * "0 or 5.0 to 1000.0mΩ"; a SENSORS limit of 1 to 9mA: "0 or 10 to
  * 32767mA"), a Sensor SDA pin settings_sense_sda_valid()
- * refuses (the pins it takes, listed), and the GPIO the other PD mini pin
+ * refuses and a Tap pin settings_tap_pin_valid() refuses (the pins each
+ * takes, listed), and the GPIO the other PD mini pin
  * holds.  The next key brings the range back.
  *
  * SPDX-License-Identifier: MIT
@@ -76,7 +77,8 @@ void ui_setting_keypad_open(ui_keypad_t *k, gfx_rect_t area, setting_id_t id);
  * @param id The setting.
  * @param v The value typed, inside the range the keypad holds it to.
  * @return False for a value between 0 and the setting's off_below, a Sensor
- *         SDA pin the bus cannot have, and a PD mini pin at or above 0 that
+ *         SDA pin the bus cannot have, a Tap pin the module does not bring out,
+ *         and a PD mini pin at or above 0 that
  *         the other PD mini pin holds; true otherwise.
  */
 bool ui_setting_keypad_takes(setting_id_t id, float v);
@@ -92,6 +94,17 @@ bool ui_setting_keypad_takes(setting_id_t id, float v);
 const char *ui_setting_keypad_sda_pins(char *buf, size_t n);
 
 /**
+ * @brief The GPIOs Tap pin can have, from settings_tap_pin_valid().
+ * @param buf Where the list goes.
+ * @param n The size of @p buf in bytes.
+ * @return @p buf, holding the pins in rising order with one space between
+ *         ("0 1 2 4 5 6 7 13 14 15 16 17 18 19 20 21 22" for the Pico
+ *         header), cut at the last pin that fits whole; "" for a NULL or
+ *         empty @p buf.
+ */
+const char *ui_setting_keypad_tap_pins(char *buf, size_t n);
+
+/**
  * @brief The line a setting's keypad shows in place of the range after
  *        refusing @p v inside it.
  * @param id The setting.
@@ -104,8 +117,9 @@ const char *ui_setting_keypad_sda_pins(char *buf, size_t n);
  *         @p buf holding KEYPAD_WHY_OFF with the row's off_below,
  *         maximum and unit for a value between 0 and off_below, @p buf
  *         holding KEYPAD_WHY_SDA with the pins for a Sensor SDA pin the bus
- *         cannot have, and KEYPAD_WHY_PDMINI for the other PD mini pin's
- *         GPIO, in the panel's language.
+ *         cannot have, KEYPAD_WHY_TAP with the pins for a Tap pin the
+ *         module does not bring out, and KEYPAD_WHY_PDMINI for the other
+ *         PD mini pin's GPIO, in the panel's language.
  */
 const char *ui_setting_keypad_why(setting_id_t id, float v, char *buf,
                                   size_t n);

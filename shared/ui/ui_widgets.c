@@ -73,6 +73,13 @@ bool ui_text_fits(const gfx_font_t *f, const char *s, int w, int h, int pad)
     return gfx_text_width(f, (s != NULL) ? s : "", 1) + 2 * pad <= w;
 }
 
+const gfx_font_t *ui_button_face(const char *label, int w, int h, int pad,
+                                 const gfx_font_t *big,
+                                 const gfx_font_t *small)
+{
+    return ui_text_fits(big, label, w, h, pad) ? big : small;
+}
+
 void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled)
 {
@@ -83,9 +90,10 @@ void ui_button_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                     gfx_color_t fill, bool pressed, bool enabled,
                     const gfx_font_t *f)
 {
-    gfx_color_t body = enabled ? fill : GFX_RGB(38, 46, 58);
-    /* The label colour follows the luma of the fill: near-black on an
-     * accent-coloured button, light on a panel-coloured one. */
+    /* The label colour of an enabled button follows the luma of the fill:
+     * near-black on an accent-coloured button, light on a panel-coloured
+     * one.  A button that takes no press is ui_button_off_fill(). */
+    gfx_color_t body = enabled ? fill : ui_button_off_fill();
     gfx_color_t text = enabled ? (ui_is_light(body) ? UI_TEXT_ON_LIGHT
                                                     : UI_TEXT)
                                : UI_TEXT_FAINT;
@@ -101,11 +109,17 @@ void ui_button_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
         gfx_hline(c, r.x + UI_R_CTL, r.y + 1, r.w - 2 * UI_R_CTL,
                   gfx_lerp(body, GFX_WHITE, 38));
     } else {
-        gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, UI_EDGE);
+        gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL,
+                            gfx_lerp(body, UI_EDGE, 160));
     }
     if (label) {
         gfx_text_in(c, r, label, f, text, 1, GFX_ALIGN_CENTER);
     }
+}
+
+gfx_color_t ui_button_off_fill(void)
+{
+    return UI_BG;
 }
 
 /*
@@ -174,9 +188,9 @@ int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
     return n;
 }
 
-void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-                  gfx_color_t dot, gfx_color_t fill, int inset,
-                  const gfx_font_t *f)
+void ui_pill_ink(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                 gfx_color_t dot, gfx_color_t fill, gfx_color_t ink,
+                 int inset, const gfx_font_t *f)
 {
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, r.h / 2, fill);
     const int cy = r.y + r.h / 2;
@@ -186,8 +200,15 @@ void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
     gfx_draw_circle(c, r.x + inset / 2, cy, rd + 2, gfx_lerp(dot, fill, 130));
     if (label) {
         gfx_text(c, r.x + inset, cy - gfx_text_height(f, 1) / 2, label, f,
-                 UI_TEXT, 1);
+                 ink, 1);
     }
+}
+
+void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                  gfx_color_t dot, gfx_color_t fill, int inset,
+                  const gfx_font_t *f)
+{
+    ui_pill_ink(c, r, label, dot, fill, UI_TEXT, inset, f);
 }
 
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
@@ -376,7 +397,8 @@ void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill)
                              UI_CHAMFER, 0, UI_CHAMFER, fill);
     gfx_text(c, UI_TAG_X + TAG_TEXT_X_MARK,
              UI_TAG_Y + (UI_TAG_H - gfx_text_height(UI_FONT_TAG, 1)) / 2,
-             text ? text : "", UI_FONT_TAG, UI_TEXT_ON_LIGHT, 1);
+             text ? text : "", UI_FONT_TAG,
+             ui_is_light(fill) ? UI_TEXT_ON_LIGHT : UI_PANEL, 1);
 }
 
 void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color)

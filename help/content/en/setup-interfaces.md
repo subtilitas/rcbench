@@ -37,6 +37,10 @@ The IOmcu reads a TI INA228 in the ESC's power path, set up here, and up to four
 
 ![GPIO 5 refused for Sensor SDA](view:setup-sda-why)
 
+A pin is written with the word first, `GPIO 1`, in the keypad's entry, on the row and in the question on leaving SETUP unsaved. The keypad's header gives the range the same way, `GPIO -1 to 47`.
+
+![The keypad of Sensor SDA, GPIO 1 typed](view:setup-sda-keypad)
+
 The band names what goes wrong, one message at a time, at most one every 5s. For example: `Sensor SDA or SCL not set. Check SETUP > INTERFACES.`, `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.`, `INA228 is not responding at 0x45.`, `INA3221 0x40 CH1 clipped at 1.64A. Reading shows only the limit.`. A message about the set-up -- pins not set, one address, a value rejected -- leaves the band as soon as the setting is right again and the IOmcu holds it.
 
 ## A row the IOmcu does not hold
@@ -58,7 +62,7 @@ No row is marked while no IOmcu answers. AS5600 centre is the panel's own value 
 | AS5600 | ON, OFF | OFF | an AS5600 magnetic angle sensor on the servo's output shaft, at its fixed address 0x36 on the sensor bus |
 | AS5600 centre | 0 to 4095 | 0 | the count with the servo at neutral; 4096 counts a turn, 0.0879deg a count |
 
-The encoder needs an IOmcu of protocol 4.9 or later. ENC CENTRE on the [servo settings](servo-settings.md#dut) sets the centre from the live reading. The band says when the sensor sees no magnet, `AS5600 detects no magnet. Check the magnet on the servo horn shaft.`, or when the magnet is too weak or too strong. A magnet message is said once while the sensor's magnet status stays the same: an edit of another row does not repeat it. Switched off and on again, the sensor says it again.
+The encoder needs an IOmcu of 0.15.0 or later. ENC CENTRE on the [servo settings](servo-settings.md#dut) sets the centre from the live reading. The band says when the sensor sees no magnet, `AS5600 detects no magnet. Check the magnet on the servo horn shaft.`, or when the magnet is too weak or too strong. A magnet message is said once while the sensor's magnet status stays the same: an edit of another row does not repeat it. Switched off and on again, the sensor says it again.
 
 ## The phase tap
 
@@ -69,7 +73,7 @@ The phase tap hears an ESC's beeps on one motor phase. One IOmcu GPIO reads the 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Phase tap | ON, OFF | OFF | the capture runs on the IOmcu |
-| Tap pin | 0 to 47 | 22 | the IOmcu GPIO; GP22 is pad 29 |
+| Tap pin | 0, 1, 2, 4 to 7, 13 to 22 | 22 | the IOmcu GPIO; GP22 is pad 29. The pins the RP2350-CAN brings out and does not reserve, less the ADC pins GP26 to GP29 |
 | Tap lowest tone | 50 to 2000Hz, 10Hz steps | 400 | a lower tone is not a beep |
 | Tap highest tone | 100 to 6900Hz, 50Hz steps | 6500 | above the lowest tone |
 | Tap pitch split | 0 to 50% | 8 | a pitch change this large starts a new beep; 0 splits on silence only |
@@ -107,7 +111,7 @@ The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other r
 |---|---|---|---|
 | Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | how the IOmcu receives a Hitec D series servo's answer on the programming port. PULL-UP: a 2.2kΩ resistor from the signal wire to the servo supply. PRECHARGE: no resistor; the IOmcu drives the pad high for 100ns every 1.09us and samples it 113ns later |
 
-The IOmcu takes the value at its next OPEN of a D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore it. An IOmcu of protocol 4.23 receives with PULL-UP; with PRECHARGE set the row then reads `IOmcu older than 4.24: receives with PULL-UP.` An IOmcu older than 4.23 has no Hitec line; with PRECHARGE set the row reads `IOmcu older than 4.23: no Hitec line.`
+The IOmcu takes the value at its next OPEN of a D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore it. An IOmcu of 0.21.1 or 0.21.2 (protocol 4.23) receives with PULL-UP; with PRECHARGE set the row then reads `IOmcu older than 0.22.0: receives with PULL-UP.` An IOmcu older than 0.21.1 has no Hitec line; with PRECHARGE set the row reads `IOmcu older than 0.21.1: no Hitec line.`
 
 ## Related pages
 

@@ -278,6 +278,7 @@ TRACKED = [
     "shared/bench/log_writer.c",
     "shared/bench/log_cols.c",
     "shared/bench/log_cadence.c",
+    "shared/bench/perf_watch.c",
     "shared/sense/sense_bus.c",
     "shared/sense/ina228.c",
     "shared/sense/ina3221.c",
@@ -306,6 +307,7 @@ TRACKED = [
     "shared/webaccess/wa_zip.c",
     "shared/webaccess/wa_page.c",
     "shared/webaccess/wa_mdns.c",
+    "shared/webaccess/wa_guard.c",
     "shared/clock/wall_clock.c",
 ]
 

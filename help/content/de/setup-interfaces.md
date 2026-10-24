@@ -6,7 +6,7 @@ order: 61
 
 # Anschlüsse
 
-ANSCHLÜSSE, die zweite Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: den Strommonitor INA228 und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff, das Netzteil PD mini und wie der Programmierport ein Hitec-Servo der D-Serie empfängt. Ihre 23 Einstellungen stehen in fünf Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN, NETZTEIL und PROG-PORT; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
+INTERFACES, die zweite Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: den Strommonitor INA228 und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff, das Netzteil PD mini und wie der Programmierport ein Hitec-Servo der D-Serie empfängt. Ihre 23 Einstellungen stehen in fünf Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE SENSORS, SUPPLY und PROG-PORT; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
 
 ## Die Strommonitore
 
@@ -37,7 +37,11 @@ Der IOmcu liest einen TI INA228 im Strompfad des ESC, hier eingestellt, und bis 
 
 ![GPIO 5 für Sensor-SDA abgelehnt](view:setup-sda-why)
 
-Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SETUP > ANSCHLÜSSE prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SETUP > ANSCHLÜSSE prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung -- Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert -- verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
+Ein Pin steht mit dem Wort voran, `GPIO 1`, im Eintrag des Tastenfelds, in der Zeile und in der Frage beim Verlassen von SETUP ohne Speichern. Der Kopf des Tastenfelds nennt den Bereich ebenso, `GPIO -1 bis 47`.
+
+![Das Tastenfeld von Sensor-SDA, GPIO 1 getippt](view:setup-sda-keypad)
+
+Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SETUP > INTERFACES prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung -- Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert -- verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
 
 ## Eine Zeile, die der IOmcu nicht hält
 
@@ -58,7 +62,7 @@ Solange kein IOmcu antwortet, ist keine Zeile markiert. AS5600-Mitte ist ein eig
 | AS5600 | EIN, AUS | AUS | ein magnetischer Winkelsensor AS5600 an der Abtriebswelle des Servos, auf seiner festen Adresse 0x36 am Sensorbus |
 | AS5600-Mitte | 0 bis 4095 | 0 | der Zählwert mit dem Servo in Neutral; 4096 Zählwerte je Umdrehung, 0,0879deg je Zählwert |
 
-Der Winkelsensor braucht einen IOmcu mit Protokoll 4.9 oder neuer. SENSOR-MITTE in den [Servo-Optionen](servo-settings.md#prüfling) setzt die Mitte aus dem aktuellen Messwert. Das Band meldet, wenn der Sensor keinen Magneten sieht, `AS5600 erkennt keinen Magneten. Magnet an der Servoabtriebswelle prüfen.`, oder wenn der Magnet zu schwach oder zu stark ist. Eine Magnetmeldung kommt einmal, solange der Magnetstatus des Sensors gleich bleibt: eine Änderung einer anderen Zeile wiederholt sie nicht. Nach dem Aus- und Wiedereinschalten des Sensors kommt sie wieder.
+Der Winkelsensor braucht einen IOmcu mit 0.15.0 oder neuer. SENSOR-MITTE in den [Servo-Optionen](servo-settings.md#prüfling) setzt die Mitte aus dem aktuellen Messwert. Das Band meldet, wenn der Sensor keinen Magneten sieht, `AS5600 erkennt keinen Magneten. Magnet an der Servoabtriebswelle prüfen.`, oder wenn der Magnet zu schwach oder zu stark ist. Eine Magnetmeldung kommt einmal, solange der Magnetstatus des Sensors gleich bleibt: eine Änderung einer anderen Zeile wiederholt sie nicht. Nach dem Aus- und Wiedereinschalten des Sensors kommt sie wieder.
 
 ## Der Phasenabgriff
 
@@ -69,7 +73,7 @@ Der Phasenabgriff hört die Pieptöne eines ESC an einer Motorphase. Ein GPIO de
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Phasenabgriff | EIN, AUS | AUS | die Erfassung läuft auf dem IOmcu |
-| Abgriff-Pin | 0 bis 47 | 22 | der GPIO des IOmcu; GP22 ist Pad 29 |
+| Abgriff-Pin | 0, 1, 2, 4 bis 7, 13 bis 22 | 22 | der GPIO des IOmcu; GP22 ist Pad 29. Die Pins, die das RP2350-CAN herausführt und nicht belegt, ohne die ADC-Pins GP26 bis GP29 |
 | Tiefster Ton | 50 bis 2000Hz, Schritte von 10Hz | 400 | ein tieferer Ton ist kein Piepton |
 | Höchster Ton | 100 bis 6900Hz, Schritte von 50Hz | 6500 | über dem tiefsten Ton |
 | Tonsprung | 0 bis 50% | 8 | ein so großer Tonhöhensprung beginnt einen neuen Piepton; 0 trennt nur an Stille |
@@ -107,7 +111,7 @@ Die Tasten `-` und `+` von PD mini TX und PD mini RX springen über den GPIO, de
 |---|---|---|---|
 | Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | wie der IOmcu die Antwort eines Hitec-Servos der D-Serie am Programmierport empfängt. PULL-UP: ein Widerstand von 2,2kΩ von der Signalleitung zur Servoversorgung. PRECHARGE: kein Widerstand; der IOmcu treibt das Pad alle 1,09us für 100ns auf High und tastet es 113ns später ab |
 
-Der IOmcu nimmt den Wert beim nächsten OPEN einer Leitung der D-Serie. classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen ihn. Ein IOmcu mit Protokoll 4.23 empfängt mit PULL-UP; mit PRECHARGE lautet die Zeile dann `IOmcu älter als 4.24: empfängt mit PULL-UP.` Ein IOmcu älter als 4.23 hat keine Hitec-Leitung; mit PRECHARGE lautet die Zeile `IOmcu älter als 4.23: keine Hitec-Leitung.`
+Der IOmcu nimmt den Wert beim nächsten OPEN einer Leitung der D-Serie. classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen ihn. Ein IOmcu mit 0.21.1 oder 0.21.2 (Protokoll 4.23) empfängt mit PULL-UP; mit PRECHARGE lautet die Zeile dann `IOmcu älter als 0.22.0: empfängt mit PULL-UP.` Ein IOmcu älter als 0.21.1 hat keine Hitec-Leitung; mit PRECHARGE lautet die Zeile `IOmcu älter als 0.21.1: keine Hitec-Leitung.`
 
 ## Verwandte Seiten
 

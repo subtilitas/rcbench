@@ -65,7 +65,7 @@ Keine der Zeiten ist gemessen. SCHLIESSEN fordert das Speichern an; das Speicher
 
 ![PROPELLER AB? MOTOR GESICHERT?](view:motor-stick-warning)
 
-START öffnet eine Warnung über den ganzen Bildschirm: PROPELLER AB? MOTOR GESICHERT?. Sie nennt das Profil, die Sollwerte des Netzteils und die Zahl der Änderungen. HALTEN ZUM STARTEN startet den Lauf nach einem Halten von 2s, wie ARM. Ein Finger, der die Taste verlässt, oder ein STOP während des Haltens bricht es ab; ABBRECHEN oder das Home-Tag schließt die Warnung.
+START öffnet eine Warnung über den ganzen Bildschirm: PROPELLER AB? MOTOR GESICHERT?. Sie nennt das Profil, die Sollwerte des Netzteils und die Zahl der Änderungen. 2s HALTEN ZUM STARTEN startet den Lauf nach einem Halten von 2s, wie ARM. Ein Finger, der die Taste verlässt, oder ein STOP während des Haltens bricht es ab; ABBRECHEN oder das Home-Tag schließt die Warnung.
 
 ![Ein Lauf zählt Punktgruppen](view:motor-stick-run)
 
@@ -75,14 +75,14 @@ Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt wird, mindesten
 
 ![Ein Lauf mit laufendem Phasenabgriff](view:motor-stick-tone)
 
-Ist der Phasenabgriff unter SETUP, ANSCHLÜSSE eingeschaltet, fügt die Seite eine Anzeige hinzu, die nur liest: den Zustand des Abgriffs, die Tonhöhe seines letzten 8-ms-Fensters, die Zahl verlorener und nicht gelesener Pieptöne und die letzten 4 Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz. Der Lauf zählt seine Pieptöne weiter aus dem Strom des Netzteils.
+Ist der Phasenabgriff unter SETUP, INTERFACES eingeschaltet, fügt die Seite eine Anzeige hinzu, die nur liest: den Zustand des Abgriffs, die Tonhöhe seines letzten 8-ms-Fensters, die Zahl verlorener und nicht gelesener Pieptöne und die letzten 4 Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz. Der Lauf zählt seine Pieptöne weiter aus dem Strom des Netzteils.
 
 | Zustand des Abgriffs | Bedeutung |
 |---|---|
 | `LÄUFT` | die Erfassung läuft |
 | `ÜBERLAUF` | sie läuft, und die Erfassung ist seit dem Einschalten des Abgriffs übergelaufen |
 | `WARTET` | kein Link, oder in den letzten 500ms keine frische Antwort der Tone-Page des IOmcu |
-| `KEINE TONE-PAGE` | der IOmcu spricht ein Protokoll älter als 4.8 |
+| `KEINE TONE-PAGE` | der IOmcu ist älter als 0.14.0 |
 | `PIN BELEGT` | der Pin des Abgriffs ist anderweitig gebunden |
 | `LÄUFT NICHT` | eingeschaltet, und die Einstellung wurde abgelehnt oder ist noch nicht geschrieben |
 
@@ -107,7 +107,7 @@ Manche ESCs gehen erst in ihren Programmiermodus, wenn eine Person einen Jumper 
 ![Die Warnung mit einem Handgriff vor dem Einschalten](view:motor-stick-hand-warning)
 ![Vier Handgriffe vor dem Einschalten, unter ALLE HANDGRIFFE zu lesen](view:motor-stick-hand-steps)
 
-Die Warnung listet die Handgriffe, die vor dem Einschalten fällig sind. Passen nicht alle, öffnet ALLE HANDGRIFFE sie, und HALTEN ZUM STARTEN zählt erst, nachdem ALLE HANDGRIFFE geöffnet und mit OK geschlossen wurde.
+Die Warnung listet die Handgriffe, die vor dem Einschalten fällig sind. Passen nicht alle, öffnet ALLE HANDGRIFFE sie, und 2s HALTEN ZUM STARTEN zählt erst, nachdem ALLE HANDGRIFFE geöffnet und mit OK geschlossen wurde.
 
 ![Der Lauf wartet auf den Jumper](view:motor-stick-hand-prompt)
 
