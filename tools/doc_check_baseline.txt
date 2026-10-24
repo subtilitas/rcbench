@@ -367,7 +367,6 @@ firmware/panel/components/wifi_access/include/wifi_access.h: warning: return typ
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_start is not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_take is not documented
 firmware/panel/components/wifi_access/wifi_access.c: warning: Compound bufs_t is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Compound card_dir_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Compound http_ctx_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member FETCH_AGENT (macro definition) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member FETCH_SLICE_MS (macro definition) of file wifi_access.c is not documented.
@@ -399,7 +398,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member channel (va
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member chunked (variable) of struct http_ctx_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member closed(httpd_req_t *r) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member conf (variable) of struct [struct].s is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member d (variable) of struct card_dir_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member de (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member disp[WA_NAME_BYTES *3u+64u] (variable) of struct bufs_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member down (variable) of struct [struct].s is not documented.
@@ -437,7 +435,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member last_chunke
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member last_length (variable) of struct http_ctx_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member last_read (variable) of struct http_ctx_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member last_status (variable) of struct http_ctx_t is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member len (variable) of struct card_dir_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member loc (variable) of struct http_ctx_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member loc[FW_REL_URL_MAX+1u] (variable) of struct bufs_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member loc_cap (variable) of struct http_ctx_t is not documented.
@@ -466,7 +463,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member on_http(esp
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member out (variable) of struct bufs_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member page_info(wa_page_info_t *pi) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member path[WA_PATH_MAX+1u] (variable) of struct bufs_t is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member path[sizeof(STORAGE_MOUNT_POINT)+WA_PATH_MAX+WA_NAME_BYTES+2u] (variable) of struct card_dir_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member pend (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member poke(void) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member radio_up (variable) of struct [struct].s is not documented.
@@ -2160,7 +2156,6 @@ shared/fwupdate/fw_release.c: warning: Member scan_tag(fw_rel_scan_t *s) (functi
 shared/fwupdate/fw_release.c: warning: Member scan_value(fw_rel_scan_t *s, uint8_t ch) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_release.c: warning: Member url_bytes(const char *s, size_t n) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_sha256.c: file has no @file block
-shared/fwupdate/fw_upload.c: file has no @file block
 shared/fwupdate/include/fw_boot.h: file has no @file block
 shared/fwupdate/include/fw_boot.h: warning: Compound fw_boot_ops_t is not documented.
 shared/fwupdate/include/fw_boot.h: warning: Member ctx (variable) of struct fw_boot_ops_t is not documented.
@@ -2226,13 +2221,6 @@ shared/fwupdate/include/fw_sha256.h: warning: Member fw_sha256_done(fw_sha256_t 
 shared/fwupdate/include/fw_sha256.h: warning: Member fw_sha256_init(fw_sha256_t *s) (function) of file fw_sha256.h is not documented.
 shared/fwupdate/include/fw_sha256.h: warning: Member h[8] (variable) of struct fw_sha256_t is not documented.
 shared/fwupdate/include/fw_sha256.h: warning: parameters of member fw_sha256 are not documented
-shared/fwupdate/include/fw_upload.h: file has no @file block
-shared/fwupdate/include/fw_upload.h: warning: Compound fw_upload_t is not documented.
-shared/fwupdate/include/fw_upload.h: warning: Member buf (variable) of struct fw_upload_t is not documented.
-shared/fwupdate/include/fw_upload.h: warning: Member cap (variable) of struct fw_upload_t is not documented.
-shared/fwupdate/include/fw_upload.h: warning: Member err (variable) of struct fw_upload_t is not documented.
-shared/fwupdate/include/fw_upload.h: warning: Member slot (variable) of struct fw_upload_t is not documented.
-shared/fwupdate/include/fw_upload.h: warning: Member state (variable) of struct fw_upload_t is not documented.
 shared/gfx/gfx.c: warning: Member GFX_INL_FORCE (macro definition) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member GFX_MAX(a, b) (macro definition) of file gfx.c is not documented.
 shared/gfx/gfx.c: warning: Member GFX_MIN(a, b) (macro definition) of file gfx.c is not documented.
@@ -6468,24 +6456,15 @@ shared/webaccess/include/wa_text.h: warning: Member sec (variable) of struct wa_
 shared/webaccess/include/wa_text.h: warning: Member sink (variable) of struct wa_out_t is not documented.
 shared/webaccess/include/wa_text.h: warning: Member used (variable) of struct wa_out_t is not documented.
 shared/webaccess/include/wa_text.h: warning: Member year (variable) of struct wa_civil_t is not documented.
-shared/webaccess/include/wa_walk.h: file has no @file block
 shared/webaccess/include/wa_walk.h: warning: Compound wa_dirent_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Compound wa_level_t is not documented.
-shared/webaccess/include/wa_walk.h: warning: Compound wa_walk_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member close(void *ctx, void *file) (variable) of struct wa_fs_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member closedir(void *ctx, void *dir) (variable) of struct wa_fs_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member ctx (variable) of struct wa_fs_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member dir (variable) of struct wa_dirent_t is not documented.
-shared/webaccess/include/wa_walk.h: warning: Member ent (variable) of struct wa_walk_t is not documented.
-shared/webaccess/include/wa_walk.h: warning: Member fs (variable) of struct wa_walk_t is not documented.
-shared/webaccess/include/wa_walk.h: warning: Member left_out (variable) of struct wa_walk_t is not documented.
-shared/webaccess/include/wa_walk.h: warning: Member lv[WA_WALK_DEPTH+1u] (variable) of struct wa_walk_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member name[WA_NAME_BYTES] (variable) of struct wa_dirent_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member open(void *ctx, const char *path) (variable) of struct wa_fs_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member opendir(void *ctx, const char *path) (variable) of struct wa_fs_t is not documented.
-shared/webaccess/include/wa_walk.h: warning: Member over (variable) of struct wa_walk_t is not documented.
-shared/webaccess/include/wa_walk.h: warning: Member path[WA_PATH_MAX+1u] (variable) of struct wa_walk_t is not documented.
-shared/webaccess/include/wa_walk.h: warning: Member started (variable) of struct wa_walk_t is not documented.
 shared/webaccess/include/wa_zip.h: warning: Compound wa_zip_plan_t is not documented.
 shared/webaccess/include/wa_zip.h: warning: Member WA_ZIP_MAX16 (macro definition) of file wa_zip.h is not documented.
 shared/webaccess/include/wa_zip.h: warning: Member WA_ZIP_MAX32 (macro definition) of file wa_zip.h is not documented.
@@ -6547,7 +6526,6 @@ shared/webaccess/wa_page.c: warning: Member folder(wa_out_t *o, const wa_page_in
 shared/webaccess/wa_page.c: warning: Member head(wa_out_t *o, const wa_page_info_t *pi) (function) of file wa_page.c is not documented.
 shared/webaccess/wa_send.c: file has no @file block
 shared/webaccess/wa_text.c: file has no @file block
-shared/webaccess/wa_walk.c: file has no @file block
 shared/webaccess/wa_zip.c: warning: Member ATTR_DIR (macro definition) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member FLAGS (macro definition) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member SIG_CENTRAL (macro definition) of file wa_zip.c is not documented.

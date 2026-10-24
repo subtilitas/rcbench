@@ -4,8 +4,10 @@
  * The failures under test: a file the page never lists because a fixed
  * table was full, a listing in another order on the second walk (the ZIP
  * walks three times and needs the same entries each time), a walk that
- * holds a folder handle per level, a name the page could not link listed
- * anyway, and a pulled card that hangs the walk instead of ending it.
+ * holds more than a folder handle a level or reads a folder's entries more
+ * than once a pass, a name the page could not link listed anyway, a pulled
+ * card that hangs the walk instead of ending it, and a walk that goes on
+ * after the server is asked to stop.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -99,7 +101,7 @@ TEST_CASE(each_folder_lists_its_files_then_its_folders)
                  "F logs/2026/deep/x 1\n"
                  "D art\n"
                  "F art/a.bin 5\n");
-    CHECK_EQ(fs.dirs_open_max, 1);
+    CHECK_EQ(fs.dirs_open_max, 4);     /* the root, logs, 2026, deep */
     /* A second walk of the same card is the same walk. */
     char first[sizeof(g_log)];
     strcpy(first, g_log);
@@ -157,7 +159,7 @@ TEST_CASE(paths_over_384_bytes_and_folders_past_16_deep_are_counted)
     /* The 16th folder and its file are listed, nothing below. */
     CHECK(strstr(g_log, "F d/d/d/d/d/d/d/d/d/d/d/d/d/d/d/d/f 1\n") != NULL);
     CHECK(strstr(g_log, "d/d/d/d/d/d/d/d/d/d/d/d/d/d/d/d/d") == NULL);
-    CHECK_EQ(fs.dirs_open_max, 1);
+    CHECK_EQ(fs.dirs_open_max, (int)WA_WALK_DEPTH + 1);
     fake_free(&fs);
 }
 
@@ -195,7 +197,8 @@ TEST_CASE(many_files_are_all_listed_in_the_same_memory)
     CHECK_EQ(dirs, 302u);
     CHECK_EQ(sum, 69999ull * 70000ull / 2ull + 300ull);
     CHECK_EQ(wk.left_out, 0u);
-    CHECK_EQ(fs.dirs_open_max, 1);
+    CHECK_EQ(fs.dirs_open_max, 2);
+    CHECK_EQ(fs.dirs_open, 0);
     fake_free(&fs);
 }
 
@@ -225,16 +228,95 @@ TEST_CASE(a_card_pulled_part_way_ends_the_walk_with_an_error)
         CHECK_EQ(wa_walk_next(&wk), WA_WALK_ERROR);
         CHECK_EQ(fs.dirs_open, 0);
     }
-    /* Given up part way: the handle is closed. */
+    /* Given up part way: the handles are closed. */
     /* cppcheck-suppress redundantAssignment
      * the walk reads through its own pointer to fs */
     fs.pulled = false;
     wa_walk_t wk;
     wa_walk_begin(&wk, &w);
-    (void)wa_walk_next(&wk);
-    (void)wa_walk_next(&wk);
+    CHECK_EQ(wa_walk_next(&wk), WA_WALK_DIR);    /* the root */
     CHECK_EQ(fs.dirs_open, 1);
+    CHECK_EQ(wa_walk_next(&wk), WA_WALK_DIR);    /* a, the root's open */
+    CHECK_EQ(fs.dirs_open, 2);
     wa_walk_end(&wk);
+    CHECK_EQ(fs.dirs_open, 0);
+    fake_free(&fs);
+}
+
+TEST_CASE(each_entry_is_read_once_a_pass)
+{
+    /* 300 folders of one file each in the root: each folder is read twice,
+     * its files' pass and its folders', each pass its entries and the end.
+     * A walk that opened the root again after each folder and skipped what
+     * it had done read about 45,000 entries more. */
+    fake_fs_t fs;
+    fake_init(&fs);
+    char name[16];
+    for (int i = 0; i < 300; ++i) {
+        snprintf(name, sizeof(name), "d%03d", i);
+        const int d = fake_add_in(&fs, 0, name, true, 0u, 0);
+        fake_add_in(&fs, d, "one", false, 1u, 0);
+    }
+    CHECK_EQ(walk_log(&fs, NULL), WA_WALK_END);
+    CHECK_EQ(fs.readdirs, 2L * (300 + 1) + 300L * 2L * (1 + 1));
+    CHECK_EQ(fs.dirs_open_max, 2);
+    fake_free(&fs);
+}
+
+TEST_CASE(a_walk_asked_to_stop_ends_at_the_next_entry)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    fake_bench_tree(&fs);
+    const wa_fs_t w = fake_wa(&fs);
+    /* Stopped after every count of reads the walk makes: it ends at once
+     * with an error, reads nothing more, and holds no handle. */
+    fs.readdirs = 0;
+    CHECK_EQ(walk_log(&fs, NULL), WA_WALK_END);
+    const long total = fs.readdirs;
+    CHECK(total > 20);
+    for (long cut = 1; cut <= total; ++cut) {
+        fs.readdirs = 0;
+        fs.stop_after = cut;
+        wa_walk_t wk;
+        wa_walk_begin(&wk, &w);
+        wa_walk_ev_t ev;
+        do {
+            ev = wa_walk_next(&wk);
+        } while (ev == WA_WALK_DIR || ev == WA_WALK_FILE);
+        CHECK_EQ(ev, (cut < total) ? WA_WALK_ERROR : WA_WALK_END);
+        CHECK_EQ(fs.readdirs, cut);
+        CHECK_EQ(fs.dirs_open, 0);
+        CHECK_EQ(wa_walk_next(&wk), ev);
+        CHECK_EQ(fs.readdirs, cut);
+    }
+    /* Stopped before the first entry: the root's DIR, then the error. */
+    fs.readdirs = 0;
+    /* cppcheck-suppress redundantAssignment
+     * the walk reads through its own pointer to fs */
+    fs.stop_after = 0;
+    wa_walk_t wk;
+    wa_walk_begin(&wk, &w);
+    CHECK_EQ(wa_walk_next(&wk), WA_WALK_DIR);
+    fs.stop_after = 1;
+    fs.readdirs = 1;
+    CHECK_EQ(wa_walk_next(&wk), WA_WALK_ERROR);
+    CHECK_EQ(fs.dirs_open, 0);
+    /* No hook: never stopped. */
+    /* cppcheck-suppress redundantAssignment
+     * the walk reads through its own pointer to fs */
+    fs.stop_after = 0;
+    /* cppcheck-suppress redundantAssignment
+     * the walk reads through its own pointer to fs */
+    fs.readdirs = 0;
+    wa_fs_t plain = w;
+    plain.stopped = NULL;
+    wa_walk_begin(&wk, &plain);
+    wa_walk_ev_t ev;
+    do {
+        ev = wa_walk_next(&wk);
+    } while (ev == WA_WALK_DIR || ev == WA_WALK_FILE);
+    CHECK_EQ(ev, WA_WALK_END);
     CHECK_EQ(fs.dirs_open, 0);
     fake_free(&fs);
 }
@@ -277,7 +359,7 @@ TEST_CASE(the_bench_tree_is_walked_folder_by_folder)
                  "F USER/LOGS/ATEST001.CSV 15104\n"
                  "F USER/LOGS/ATEST001.TXT 2240\n"
                  "F USER/LOGS/LIMIT002.TXT 1940\n");
-    CHECK_EQ(fs.dirs_open_max, 1);
+    CHECK_EQ(fs.dirs_open_max, 4);     /* the root, BENCH, KST, CONF */
     fake_free(&fs);
 }
 
@@ -291,5 +373,7 @@ int main(void)
     RUN(many_files_are_all_listed_in_the_same_memory);
     RUN(a_card_pulled_part_way_ends_the_walk_with_an_error);
     RUN(the_bench_tree_is_walked_folder_by_folder);
+    RUN(each_entry_is_read_once_a_pass);
+    RUN(a_walk_asked_to_stop_ends_at_the_next_entry);
     return test_summary("wa_walk");
 }

@@ -5,8 +5,9 @@
  * folder lists them in, as FAT (file allocation table) folders list theirs.
  * A file's bytes are a pattern of its index, or a buffer given; a read can
  * be made to fail, or to end early, at a chosen byte; and the whole card
- * can be pulled.  Open handles are counted so a test can hold a walk to the
- * one folder handle it promises.
+ * can be pulled.  Open handles and reads are counted so a test can hold a
+ * walk to the handles and the reads it promises, and a walk can be asked
+ * to stop after a chosen read.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -43,6 +44,7 @@ typedef struct {
     int          dirs_open_max;
     int          files_open;
     long         readdirs;
+    long         stop_after;   /* stopped() from this many reads; 0 never */
 } fake_fs_t;
 
 typedef struct {
@@ -263,10 +265,16 @@ static inline void fake_close(void *ctx, void *file)
     free(file);
 }
 
+static inline bool fake_stopped(void *ctx)
+{
+    const fake_fs_t *fs = ctx;
+    return fs->stop_after > 0 && fs->readdirs >= fs->stop_after;
+}
+
 static inline wa_fs_t fake_wa(fake_fs_t *fs)
 {
     wa_fs_t w = { fake_opendir, fake_readdir, fake_closedir, fake_open,
-                  fake_read, fake_close, fs };
+                  fake_read, fake_close, fs, fake_stopped };
     return w;
 }
 

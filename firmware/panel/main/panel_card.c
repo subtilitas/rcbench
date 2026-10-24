@@ -561,7 +561,9 @@ static bool card_remove(const char *name, void *ctx)
         return false;
     }
     /* The viewer closes what it reads before it lists again, so nothing is
-     * open here; closed anyway, because FAT will not delete an open file. */
+     * open here; closed anyway: FatFs runs without its file lock
+     * (CONFIG_FATFS_FS_LOCK 0), removes an open file without a word, and
+     * the handle's next write lands in clusters the removal freed. */
     if (s_card_file != NULL) {
         (void)storage_fclose(s_card_file);
         s_card_file = NULL;

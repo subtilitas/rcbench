@@ -198,6 +198,10 @@ TEST_CASE(without_a_card_the_page_says_so_and_still_takes_an_upload)
     self_contained(g_p.buf);
     CHECK(strstr(g_p.buf, "No card, or the card cannot be read.") != NULL);
     CHECK(strstr(g_p.buf, "POST','/update'") != NULL);
+    /* The upload's own header, which the panel requires (wa_guard.h): a
+     * page of another site cannot send it without a preflight. */
+    CHECK(strstr(g_p.buf, "x.setRequestHeader('X-Rcbench-Upload','1');")
+          != NULL);
     CHECK(strstr(g_p.buf, "/card.zip") == NULL);
     begin(-1);
     wa_page_main(&g_o, &k_de, &w);

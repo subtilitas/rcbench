@@ -855,6 +855,7 @@ void app_main(void)
     s_win_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_win_item_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
+    s_note_mx   = xSemaphoreCreateMutex();
     s_test_q    = xQueueCreate(TEST_Q_LEN, sizeof(test_line_t));
     s_snap_lock = xSemaphoreCreateMutex();
     s_draw_lock = xSemaphoreCreateMutex();
@@ -867,7 +868,8 @@ void app_main(void)
                      && s_sample_q != NULL && s_supply_q != NULL
                      && s_enc_q != NULL && s_win_q != NULL
                      && s_log_q != NULL && s_test_q != NULL
-                     && s_note_q != NULL && s_snap_lock != NULL)
+                     && s_note_q != NULL && s_note_mx != NULL
+                     && s_snap_lock != NULL)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     if (!healthy) {

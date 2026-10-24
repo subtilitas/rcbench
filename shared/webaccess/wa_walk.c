@@ -1,5 +1,6 @@
-/*
- * Walking the card. See wa_walk.h.
+/**
+ * @file
+ * @brief Walking the card. See wa_walk.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,12 +17,21 @@ void wa_walk_begin(wa_walk_t *w, const wa_fs_t *fs)
 
 void wa_walk_end(wa_walk_t *w)
 {
-    if (w->dir != NULL && w->fs != NULL && w->fs->closedir != NULL) {
-        w->fs->closedir(w->fs->ctx, w->dir);
+    for (unsigned k = 0; k <= WA_WALK_DEPTH; ++k) {
+        if (w->lv[k].dir != NULL && w->fs != NULL
+            && w->fs->closedir != NULL) {
+            w->fs->closedir(w->fs->ctx, w->lv[k].dir);
+        }
+        w->lv[k].dir = NULL;
     }
-    w->dir = NULL;
 }
 
+/**
+ * @brief End the walk with @p ev, every handle closed.
+ * @param w   the walk
+ * @param ev  END, NO_CARD or ERROR
+ * @return @p ev
+ */
 static wa_walk_ev_t finish(wa_walk_t *w, wa_walk_ev_t ev)
 {
     wa_walk_end(w);
@@ -30,7 +40,13 @@ static wa_walk_ev_t finish(wa_walk_t *w, wa_walk_ev_t ev)
     return ev;
 }
 
-/* Whether a name read from the card can be served by its path. */
+/**
+ * @brief Whether a name read from the card can be served by its path.
+ * @param s  the name
+ * @param n  its bytes
+ * @return true for UTF-8 of 1 to WA_NAME_UNITS units, no separator, no
+ *         control byte
+ */
 static bool name_ok(const char *s, size_t n)
 {
     if (n == 0u || memchr(s, '/', n) != NULL || memchr(s, '\\', n) != NULL) {
@@ -45,7 +61,15 @@ static bool name_ok(const char *s, size_t n)
     return units > 0 && (unsigned long)units <= WA_NAME_UNITS;
 }
 
-/* The path of @p name in the folder at @p base bytes, or 0 when too long. */
+/**
+ * @brief The path of @p name in the folder whose path is @p base bytes,
+ *        into @c w->path.
+ * @param w     the walk
+ * @param base  bytes of the folder's path
+ * @param name  the name
+ * @param n     its bytes
+ * @return the path's bytes, or 0 when it is over WA_PATH_MAX
+ */
 static uint32_t join(wa_walk_t *w, uint32_t base, const char *name, size_t n)
 {
     const size_t len = base + ((base > 0u) ? 1u : 0u) + n;
@@ -71,46 +95,42 @@ wa_walk_ev_t wa_walk_next(wa_walk_t *w)
     if (!w->started) {
         w->started = true;
         w->path[0] = '\0';
-        w->dir = (fs != NULL) ? fs->opendir(fs->ctx, "") : NULL;
-        if (w->dir == NULL) {
+        w->lv[0].dir = (fs != NULL) ? fs->opendir(fs->ctx, "") : NULL;
+        if (w->lv[0].dir == NULL) {
             return finish(w, WA_WALK_NO_CARD);
         }
         return WA_WALK_DIR;
     }
     for (;;) {
+        if (fs->stopped != NULL && fs->stopped(fs->ctx)) {
+            return finish(w, WA_WALK_ERROR);
+        }
         wa_level_t *lv = &w->lv[w->depth];
-        if (w->dir == NULL) {
-            /* Back from a folder: open this one again where it was left. */
+        if (lv->dir == NULL) {
+            /* The folders' pass: the folder again from its start. */
             w->path[lv->len] = '\0';
-            w->dir = fs->opendir(fs->ctx, w->path);
-            if (w->dir == NULL) {
+            lv->dir = fs->opendir(fs->ctx, w->path);
+            if (lv->dir == NULL) {
                 return finish(w, WA_WALK_ERROR);
             }
-            for (uint32_t k = 0; k < lv->done; ++k) {
-                if (fs->readdir(fs->ctx, w->dir, &w->ent) != 1) {
-                    return finish(w, WA_WALK_ERROR);
-                }
-            }
         }
-        const int r = fs->readdir(fs->ctx, w->dir, &w->ent);
+        const int r = fs->readdir(fs->ctx, lv->dir, &w->ent);
         if (r < 0) {
             return finish(w, WA_WALK_ERROR);
         }
         if (r == 0) {
-            fs->closedir(fs->ctx, w->dir);
-            w->dir = NULL;
+            fs->closedir(fs->ctx, lv->dir);
+            lv->dir = NULL;
             if (!lv->dirs) {
                 lv->dirs = true;     /* the files are done: the folders */
-                lv->done = 0u;
                 continue;
             }
             if (w->depth == 0u) {
                 return finish(w, WA_WALK_END);
             }
-            --w->depth;
+            --w->depth;              /* the parent's handle reads on */
             continue;
         }
-        ++lv->done;
         w->ent.name[WA_NAME_BYTES - 1u] = '\0';
         const size_t n = strlen(w->ent.name);
         if ((n == 1u && w->ent.name[0] == '.')
@@ -140,11 +160,10 @@ wa_walk_ev_t wa_walk_next(wa_walk_t *w)
             ++w->left_out;
             continue;
         }
-        fs->closedir(fs->ctx, w->dir);
         ++w->depth;
-        w->lv[w->depth] = (wa_level_t){ 0u, len, false };
-        w->dir = fs->opendir(fs->ctx, w->path);
-        if (w->dir == NULL) {
+        w->lv[w->depth] = (wa_level_t){ NULL, len, false };
+        w->lv[w->depth].dir = fs->opendir(fs->ctx, w->path);
+        if (w->lv[w->depth].dir == NULL) {
             return finish(w, WA_WALK_ERROR);
         }
         w->ent.size = 0u;

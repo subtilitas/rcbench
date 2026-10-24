@@ -102,6 +102,8 @@ typedef struct {
     bool armed;                /**< the bench is ARMED                    */
     const log_marks_t *marks;  /**< the files the logger has open         */
     bool link_up;              /**< the link to the IOmcu is up           */
+    bool fault_busy;           /**< the logger holds a fault log line, in
+                                    its queue or on its way to the card */
     const char *user_logs;     /**< USER LOG FOLDER in force; NULL is
                                     CARD_USER_LOGS                        */
     const char *auto_logs;     /**< AUTO LOG FOLDER in force; NULL is
