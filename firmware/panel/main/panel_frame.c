@@ -4,16 +4,17 @@
  *
  * What the control task published goes into the screens; touch, into the
  * router; the screens' commands, back to the control task; then one frame
- * is drawn and flipped.  Every 300 frames the console line gives the frame
- * rate, the draw and wait times, the panel's own refresh and the touch
- * losses.  panel_frame_loop() does not return.
+ * is drawn and flipped, and panel_perf.c accounts it for the console: every
+ * 300 frames the frame rate, the panel's own refresh and the touch losses,
+ * then the draw, wait and turn times on the screen shown, and every stack
+ * and the internal heap whose lowest figure fell.  panel_frame_loop() does
+ * not return.
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdatomic.h>
 #include <string.h>
 
-#include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -30,6 +31,7 @@
 #include "overview_screen.h"
 #include "panel.h"
 #include "panel_main.h"
+#include "panel_perf.h"
 #include "panel_trial.h"
 #include "pdmini.h"
 #include "picker_screen.h"
@@ -44,8 +46,6 @@
 #include "ui_band.h"
 #include "ui_screen.h"
 #include "ui_text.h"
-
-static const char *TAG = "rcbench";
 
 /*
  * A link that was up and stopped, said on the panel rather than on a console.
@@ -74,11 +74,7 @@ gfx_canvas_t *panel_canvas(void)
 /** @brief The render loop (panel_main.h).  Does not return. */
 void panel_frame_loop(void)
 {
-    uint32_t frames  = 0;
-    uint32_t flip_timeouts = 0;   /* since start-up */
     uint32_t last_us = (uint32_t)esp_timer_get_time();
-    uint32_t last_vs = display_vsync_count();
-    uint32_t last_vs_us = last_us;
     bool     was_armed = false;
     uint32_t last_stops = 0;
 
@@ -688,23 +684,23 @@ void panel_frame_loop(void)
          * comes, and disarmed -- which is where the settings screen is used
          * -- the next frame is one.
          */
-        (void)settings_save_tick(flash_gate_open(arm_wanted_now,
-                                                 supply_live_or_coming())
-                                 && !s_artbusy && !atomic_load(&s_keeping));
+        const bool quiet =
+            flash_gate_open(arm_wanted_now, supply_live_or_coming());
+        (void)settings_save_tick(quiet && !s_artbusy
+                                 && !atomic_load(&s_keeping));
         /* And the ramp, from the task that owns the values, for the control
          * task to read on its next pump. */
         publish_throttle_ramp();
 
         gfx_canvas_t *c = panel_canvas();
-        const int64_t draw_start = esp_timer_get_time();
+        const ui_screen_id_t shown = ui_router_current();
+        const uint32_t draw_start = perf_now_us();
         ui_router_render(c, display_back_index());
-        const uint32_t draw_us = (uint32_t)(esp_timer_get_time() - draw_start);
+        const uint32_t draw_us = perf_now_us() - draw_start;
         /* Blocks until the swap has taken effect.  A flip that saw no
-         * frame-done event in 200ms is counted for the console line. */
+         * frame-done event in 200ms is counted for the console. */
         const esp_err_t flipped = display_flip();
-        if (flipped == ESP_ERR_TIMEOUT) {
-            ++flip_timeouts;
-        }
+        const bool timed_out = (flipped == ESP_ERR_TIMEOUT);
         /*
          * A new build's first start is kept here, once the panel works as
          * a whole (panel_trial.h): a frame on the display and a tick after
@@ -712,38 +708,17 @@ void panel_frame_loop(void)
          * save's rule above.
          */
         panel_trial_frame(flipped == ESP_OK,
-                          flash_gate_open(arm_wanted_now,
-                                          supply_live_or_coming())
-                              && !s_artbusy && !atomic_load(&s_keeping));
+                          quiet && !s_artbusy && !atomic_load(&s_keeping));
 
         /*
-         * DRAW is the paint time of the frame; WAIT is how long the flip
-         * blocked afterwards, TURN the part of WAIT Screen rotation 180°
-         * spent copying the frame turned (0 in NORMAL).  A healthy frame
-         * is mostly WAIT, the loop paced by the panel.  DRAW climbing
-         * until WAIT reaches zero is the frame budget being spent.  VSYNC is the panel's refresh as
-         * measured here, FLIP TIMEOUTS the flips since start-up that waited
-         * 200ms for a frame-done event in vain.  Printed every 300 frames.
+         * The console's frame, stack and heap lines (panel_perf.h), at
+         * most one a frame: DRAW, the paint time of a frame; WAIT, how
+         * long the flip blocked afterwards; TURN, the part of WAIT Screen
+         * rotation 180° spent copying the frame turned (0 in NORMAL).  A
+         * healthy frame is mostly WAIT, the loop paced by the panel.  DRAW
+         * climbing until WAIT reaches zero is the frame budget being
+         * spent.  Built without RCBENCH_PERF_LOG, nothing.
          */
-        if (++frames % 300u == 0u) {
-            /* And the panel's own refresh, from its VSYNC (vertical sync)
-             * events over the same frames. */
-            const uint32_t vs = display_vsync_count();
-            const uint32_t vs_us = (uint32_t)esp_timer_get_time();
-            const float vsync_hz =
-                (vs_us != last_vs_us)
-                    ? (float)(vs - last_vs) * 1e6f / (float)(vs_us - last_vs_us)
-                    : 0.0f;
-            last_vs = vs;
-            last_vs_us = vs_us;
-            ESP_LOGI(TAG,
-                     "%.1f fps  DRAW %u us  WAIT %u us  TURN %u us  "
-                     "VSYNC %.2f Hz  FLIP TIMEOUTS %u  TOUCHLOST %u/%u",
-                     (double)display_fps(), (unsigned)draw_us,
-                     (unsigned)display_last_wait_us(),
-                     (unsigned)display_last_turn_us(), (double)vsync_hz,
-                     (unsigned)flip_timeouts, s_tq_lost,
-                     atomic_load(&s_drv_gaps));
-        }
+        perf_frame((int)shown, draw_us, timed_out, quiet);
     }
 }

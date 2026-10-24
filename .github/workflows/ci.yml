@@ -182,6 +182,56 @@ jobs:
           python3 tools/wiki_links.py /tmp/wikicheck
           python3 tools/wiki_links.py --verify /tmp/wikicheck
 
+      # The regression guard is cache-line traffic per frame under the
+      # ESP32-P4's two caches, not wall-clock on a runner that shares nothing
+      # with the board; test_frame_work holds the pixel visits beside it.
+      # Each ceiling sits 13 to 29% above its modes in docs/Performance.md,
+      # or at 1,000 for a mode under 600 fills, and catches the model
+      # drawing more.  The bench frame (frame, sim, supply) has no ceiling:
+      # a frame per 20Hz sample needs the effective PSRAM bandwidth, which
+      # is not measured (PROBE_CLEAR_US).
+      #
+      # Every screen caches its chrome and its band, so a steady frame
+      # draws nothing; 1,000 catches one that has started repainting.
+      # ESC STICK's steady frame is 1,551 and is held apart at 2,000.
+      - name: Every screen still idles on a cached frame
+        run: python3 tools/frame_cost.py overview analyser logs settings
+             settings-list battery balance picker wifi --max-lines 1000
+             && python3 tools/frame_cost.py motor-stick --max-lines 2000
+
+      # The servo card draws its arm and grip from coverage; 2,700 catches
+      # that growing.  A breath repaints a clipped box and nothing else, and
+      # 1,000 catches one that repaints more.  A changed current repaints
+      # the CURRENT row's value, the line and the plot beside the grip, each
+      # clipped; 4,000 catches a changed digit that repaints the card.
+      - name: The servo card is drawn, and its grip is only breathed on
+        run: python3 tools/frame_cost.py servo --max-lines 2700
+             && python3 tools/frame_cost.py servo-grip --max-lines 1000
+             && python3 tools/frame_cost.py servo-current --max-lines 4000
+
+      - name: The SIMULATION watermark has not grown
+        run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
+             --max-lines 3600
+
+      # A theme change or a change of the SIMULATED flag invalidates every
+      # screen, which costs one full repaint.  72,000 catches that growing.
+      - name: A full repaint of every screen stays bounded
+        run: python3 tools/frame_cost.py analyser-chrome balance-chrome
+             battery-chrome motor-stick-chrome logs-chrome settings-chrome
+             settings-list-chrome picker-chrome supply-chrome wifi-chrome
+             --max-lines 72000
+
+      # A key typed on the Wi-Fi keyboard repaints the whole WI-FI
+      # screen, about 36,400 fills; 42,000 catches a key that repaints more.
+      - name: A key of the Wi-Fi keyboard costs one repaint
+        run: python3 tools/frame_cost.py wifi-keys --max-lines 42000
+
+      # The fills of every mode against the block in docs/Performance.md,
+      # the profile's line, and the table of the board against
+      # PROBE_CLEAR_US.
+      - name: The frame-cost tables in the docs are current
+        run: python3 tools/frame_cost.py --check-doc
+
       # The screens are rendered by the code the panel runs, so a golden image
       # checks what they look like; the unit tests cover what they decide.
       - name: The committed screenshots match the current render
@@ -568,6 +618,13 @@ jobs:
       - name: The objects psram_bss.lf names are in PSRAM
         run: python3 tools/psram_bss.py firmware/panel/build
 
+      # tools/stack_check.py decodes the ESP32-P4's RISC-V code itself
+      # (tools/stack_riscv.py) and holds every panel task's deepest call
+      # chain, a margin of 1024 bytes on top, to its stack; and the task
+      # table in docs/Performance.md to this build.
+      - name: Every task's stack holds its deepest call chain
+        run: python3 tools/stack_check.py firmware/panel/build --check-doc
+
       # The symbol target_add_binary_data() names the embedded image by.
       - name: The IOmcu image is carried
         run: |
@@ -598,18 +655,23 @@ jobs:
             exit 1
           fi
 
-      # The build without it, so the option keeps building: the image
-      # must hold none of that code.  Not uploaded.
-      - name: The build without the injector compiles
+      # The build without the injector and without the console's frame,
+      # stack and heap lines (RCBENCH_PERF_LOG), so both options keep
+      # building: the image must hold none of that code.  Not uploaded.
+      - name: The build without the injector and the frame lines compiles
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: v5.5.5
           target: esp32p4
           path: 'firmware/panel'
-          command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF build
+          command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF
+                   -D RCBENCH_PERF_LOG=OFF build
 
       - name: The objects psram_bss.lf names are in PSRAM without the injector
         run: python3 tools/psram_bss.py firmware/panel/build-noinject
+
+      - name: Every task's stack holds its deepest call chain without the injector
+        run: python3 tools/stack_check.py firmware/panel/build-noinject
 
       - name: The injector code is not in the build without it
         run: |
@@ -620,6 +682,21 @@ jobs:
             echo "::error::the build without the injector holds its code"
             exit 1
           fi
+
+      # And the default image holds the frame lines' code, the build
+      # without RCBENCH_PERF_LOG none of it.
+      - name: The frame lines are in the default build only
+        run: |
+          for s in scan_stacks "PSRAM probe:" "stack scan:"; do
+            if ! grep -aqF "$s" firmware/panel/build/rcbench-panel.elf; then
+              echo "::error::the default image lacks the frame lines: $s"
+              exit 1
+            fi
+            if grep -aqF "$s" firmware/panel/build-noinject/rcbench-panel.elf; then
+              echo "::error::the build without RCBENCH_PERF_LOG holds: $s"
+              exit 1
+            fi
+          done
 
       - uses: actions/upload-artifact@v7
         with:

@@ -87,9 +87,8 @@ CONFIG_FREERTOS_USE_TRACE_FACILITY=y
 # Main task stack ----------------------------------------------------------
 # app_main runs the UI: every screen's enter, tick, event and render is
 # called on the main task.  ESP-IDF's default stack, 3584 bytes, is below
-# the UI's deepest call chain, 3856 bytes in the ESP32-S3's Xtensa code,
-# through the log viewer's render and snprintf().  8192 bytes hold that with room.  The
-# chain on the ESP32-P4's RISC-V code is not measured.
+# the UI's deepest call chain, the main task's row in the task table of
+# docs/Performance.md, which tools/stack_check.py holds to this build.
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 
 # Console ------------------------------------------------------------------

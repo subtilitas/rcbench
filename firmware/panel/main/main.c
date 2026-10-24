@@ -31,12 +31,11 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 
-/* sdkconfig.defaults sets the main task's stack to 8192 bytes.  The UI's
- * deepest chain on the ESP32-P4's RISC-V code is not measured:
- * tools/stack_check.py reads Xtensa code only.  ESP-IDF reads the defaults
- * only when it creates sdkconfig, so a checkout whose sdkconfig predates
- * that line builds with 3584 bytes, below what the UI needs.  Such a build
- * stops here. */
+/* sdkconfig.defaults sets the main task's stack to 8192 bytes, which
+ * tools/stack_check.py holds to the UI's deepest chain.  ESP-IDF reads the
+ * defaults only when it creates sdkconfig, so a checkout whose sdkconfig
+ * predates that line builds with 3584 bytes, below what the UI needs.  Such
+ * a build stops here. */
 #if CONFIG_ESP_MAIN_TASK_STACK_SIZE < 8192
 #error "CONFIG_ESP_MAIN_TASK_STACK_SIZE is under 8192: delete firmware/panel/sdkconfig so sdkconfig.defaults applies"
 #endif
@@ -610,8 +609,7 @@ atomic_bool s_enc_held;
 /*
  * The SERVO screen's link (shared/outputs/servo_link.c) reaches this task's
  * state through these: the output bank, the arming policy, the alerts and
- * the disarm.  stack_check.py names each (SERVO_CALLS) for its Xtensa
- * decoder, which does not read the ESP32-P4's RISC-V code.
+ * the disarm.  stack_check.py follows each by name (SERVO_CALLS).
  */
 static bool servo_ctx_armed(void *ctx)
 {
@@ -909,10 +907,8 @@ void app_main(void)
      * leaves rather than beside it on the core the renderer uses.  Its
      * stack holds one line of a servo test, SERVO_TEST_LINE_MAX bytes, and
      * the deepest card chain: the card mounted again under a servo file's
-     * walk, as a run's start mounts it (storage_check()).  6656 bytes is
-     * the ESP32-S3's figure; the chain's depth on the ESP32-P4's RISC-V
-     * code is not measured, because tools/stack_check.py reads Xtensa code
-     * only.
+     * walk, as a run's start mounts it (storage_check()).
+     * tools/stack_check.py holds 6656 bytes to that chain.
      */
     ESP_ERROR_CHECK(xTaskCreatePinnedToCore(log_task, "runlog", 6656,
                                             NULL, 3, NULL, 1) == pdPASS

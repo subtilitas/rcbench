@@ -98,6 +98,18 @@ history is in git.
   close failed, 212 lines sent` at its close, and the same for
   `LIMITnnn.TXT`. A test that gets no file logs `no test file in ... (take
   n); this test is not recorded`.
+- ESP32-P4 panel: the frame cost and the stacks are modelled and held in
+  CI. `tools/frame_cost.py` counts L2 cache-line fills under the P4's L1
+  (64KiB, 2-way) and L2 (128KiB, 8-way) caches and holds 27 modes to
+  ceilings; `tools/stack_check.py` decodes the P4's RISC-V code
+  (`tools/stack_riscv.py`) and holds every panel task's deepest chain and
+  1024 bytes to its stack. The console logs, with the build option
+  `RCBENCH_PERF_LOG` (default ON), at most one line a frame: a rate line
+  every 300 frames with fps, DRAW, WAIT, TURN and VSYNC, a window line with
+  DRAW, WAIT and TURN as min/mean/max on the screen shown, the PSRAM probe
+  at start-up, and every stack's high-water mark and the internal heap's
+  lowest figure, the stacks scanned every 6th rate line on a SAFE bench
+  with the supply off ([Performance](docs/Performance.md#on-the-board)).
 
 ### Fixed
 
