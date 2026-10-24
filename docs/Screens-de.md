@@ -870,7 +870,7 @@ aufsetzt und weiterwandert, drückt nichts, ebenso einer, der ein Element
 überquert. Ein Finger zur Zeit drückt ein Element. Drei Bedienelemente wirken
 schon beim Aufsetzen:
 
-- HALTEN ZUM STARTEN: Das Halten über 2s beginnt mit dem Aufsetzen.
+- 2s HALTEN ZUM STARTEN: Das Halten über 2s beginnt mit dem Aufsetzen.
 - ABBRECHEN eines Stick-Laufs, auf der Seite des Laufs und in der Abfrage
   eines manuellen Schritts. Es hält einen Motor an, wartet deshalb nicht auf
   das Abheben und reagiert auch auf einen zweiten Finger.
@@ -929,7 +929,7 @@ Wert; START zählt die gewählten Werte:
 
 START öffnet eine Warnung über den ganzen Bildschirm, PROPELLER AB? MOTOR GESICHERT?: ein Motor am ESC muss fest montiert sein und darf keinen
 Propeller tragen, oder ein Lastwiderstand tritt an seine Stelle. Der Lauf
-beginnt, wenn HALTEN ZUM STARTEN 2s gehalten ist:
+beginnt, wenn 2s HALTEN ZUM STARTEN gehalten ist:
 
 ![Die Warnung](img/de/motor-stick-warning.png)
 
@@ -1303,8 +1303,7 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   öffnet die Warnung NUR HV-SERVOS: Standardservos sind für 4,8 bis 6,0V
   ausgelegt, darüber arbeitet nur ein als HV (high voltage) spezifiziertes
   Servo innerhalb seiner Spezifikation; ein Standardservo kann darüber sofort
-  zerstört werden. Die Spannung gilt erst, nachdem HALTEN
-  ZUM ÜBERNEHMEN 2s gehalten wurde, dieselbe Geste wie bei der Profilwarnung;
+  zerstört werden. Die Spannung gilt erst, nachdem 2s HALTEN ZUM ÜBERNEHMEN gehalten wurde, dieselbe Geste wie bei der Profilwarnung;
   ABBRECHEN verwirft sie. STOP beendet das Halten. Bei eingeschaltetem Ausgang ersetzt sie die Rückfrage
   von SUPPLY und bleibt stehen, wenn der Ausgang ausgeht. Eine Spannung, die
   schon über 6,0V liegt, ändert sich ohne sie. Eine auf SUPPLY eingestellte
@@ -1315,7 +1314,7 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
 - AUSGANG EIN ist ein Halten über zwei Sekunden, AUSGANG AUS ein Tippen, wie auf
   SUPPLY. STOP beendet ein laufendes Halten. Liegt der Spannungssollwert über
   6,0V, gleich wo er eingestellt wurde, öffnet AUSGANG EIN stattdessen NUR
-  HV-SERVOS mit der Spannung, und der Ausgang geht erst an, nachdem HALTEN ZUM
+  HV-SERVOS mit der Spannung, und der Ausgang geht erst an, nachdem 2s HALTEN ZUM
   ÜBERNEHMEN 2s gehalten wurde; das Halten des Schalters selbst und ein Tippen
   auf ÜBERNEHMEN schalten nichts ein. Ein Sollwert, der während des gewöhnlichen
   Haltens über 6,0V steigt -- auf SUPPLY, oder nach einem Lauf
@@ -1382,7 +1381,7 @@ dort. Eine während der Pause auf OPTIONEN > SWEEP geänderte Kurve startet
 stattdessen als neuer Sweep. Ein IOmcu älter als 4.6, oder einer, der
 das Fortsetzen abweist, weil sein Halten geendet hat, startet die Kurve von
 ihrem Anfang -- in der Mitte bei Sinus und Dreieck, am ersten Ende beim
-Rechteck --, und das Alert-Band sagt es: `IOmcu-Firmware älter als 4.6. Sweep beginnt von vorn.` oder `IOmcu hat das Fortsetzen abgelehnt. Sweep beginnt von vorn.`. Ebenso ein Tippen auf PAUSIERT, während der HOLD
+Rechteck --, und das Alert-Band sagt es: `IOmcu-Firmware älter als 0.13.0. Sweep beginnt von vorn.` oder `IOmcu hat das Fortsetzen abgelehnt. Sweep beginnt von vorn.`. Ebenso ein Tippen auf PAUSIERT, während der HOLD
 unbeantwortet ist, denn der IOmcu kann dann halten oder noch laufen:
 `Pause wurde nicht bestätigt. Sweep beginnt von vorn.`. Ein Tippen auf
 PAUSIERT vor einem HOLD, den das Panel dann loslässt (siehe unten),
@@ -1466,7 +1465,7 @@ Es ist ein Halten über zwei Sekunden,
 die Geste von AUSGANG EIN, weil ein Lauf das Netzteil einschaltet und das Servo
 bewegt. Ist HV-SERVO an und eine Stufe über 6,0V gewählt, öffnet ein Tippen
 stattdessen NUR HV-SERVOS mit der höchsten Stufe, und der Lauf startet erst,
-nachdem HALTEN ZUM ÜBERNEHMEN 2s gehalten wurde. HV-SERVO gilt für die Sitzung:
+nachdem 2s HALTEN ZUM ÜBERNEHMEN gehalten wurde. HV-SERVO gilt für die Sitzung:
 jeder Neustart schaltet es aus.
 
 TEST bleibt beim Start zu sehen, und die Zustandszeile der Karte nennt die
@@ -1666,8 +1665,7 @@ Spalte, unter den OPTIONEN der Karte: ein zweites Tippen auf OPTIONEN
 Speicherzeile, der Hinweis zu BLOCKIERT AB und die Zeile der Grenzen unter
 den Karten von TEST enden 4px oder mehr über dem Alert-Band. Die Auswahl einer Liste steht
 in zwei Spalten zu fünf, 48px hoch und 56px Abstand; die Warnungen
-stehen in 12 x 24px großen Buchstaben, 49 Zeichen je Zeile, mit HALTEN
-ZUM ÜBERNEHMEN und ABBRECHEN 56px hoch, die 4px über dem Alert-Band
+stehen in 12 x 24px großen Buchstaben, 49 Zeichen je Zeile, mit 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN 56px hoch, die 4px über dem Alert-Band
 enden.
 
 ![Die Einstellungen des Servos](img/de/servo-settings.png)
@@ -1802,8 +1800,7 @@ ebenfalls abgelehnt.
 **Ein Heli-Typ oder jede Bildwiederholrate über 60Hz kann ein Servo zerstören,
 das nicht dafür gebaut ist.** Die Wahl öffnet eine Warnung in der
 Gefahrenfarbe, die nennt, was gewählt ist und was es mit einem nicht dafür
-gebauten Servo macht; angewendet wird es erst, nachdem HALTEN ZUM ÜBERNEHMEN 2s
-gehalten wurde. ABBRECHEN, ein abrutschender Finger, ein Touch-Verlust und das
+gebauten Servo macht; angewendet wird es erst, nachdem 2s HALTEN ZUM ÜBERNEHMEN gehalten wurde. ABBRECHEN, ein abrutschender Finger, ein Touch-Verlust und das
 Verlassen des Bildschirms wenden nichts an. Typ und Rate bleiben auf der
 rechten Karte rot, und jeder Neustart geht auf STANDARD PWM mit 50Hz zurück:
 ein nach einem Neustart angestecktes Servo bekommt nie eine Rate, die für ein
@@ -2232,8 +2229,8 @@ Glitch ist eine Spitze in einer Spur; ein Dropout ist eine Kerbe durch alle
 sechzehn im selben Moment.
 
 Die Zustandskarte rechts ist 260px breit: das Zustandswort in 20 x 36, seine
-Zeile in bis zu drei Zeilen 12 x 24, BUS, RATE, FRAMES, RESYNC und BAD TAIL in
-Zeilen von 32px, und CH17 und CH18, 44px hoch, hell, solange gesetzt. KANÄLE
+Zeile in bis zu drei Zeilen 12 x 24, BUS, RATE, FRAMES, RESYNC und ENDBYTE FALSCH in
+Zeilen von 32px, und CH17 und CH18 als Leuchten von 44px Höhe, deren Punkt leuchtet, solange der Kanal gesetzt ist; sie nehmen keinen Tipp an. KANÄLE
 und ROHDATEN sind Reiter von 150 x 48px. ROHDATEN zeigt die Bytes des
 letzten Frames, acht je Zeile, und die Zähler des Decoders in 8 x 16.
 
@@ -2920,7 +2917,7 @@ sind 48px hoch oder höher.
 | Funk aus | fünf Tasten von 460 x 60px (69,0 x 9,0mm), 8px Abstand, links; rechts eine Karte von 524px mit Zeilen von 49 Zeichen in 10 x 20, 24px Abstand |
 | Funk an | Zeilen von 56px: die Bezeichnung in 10 x 20 auf 240px, der Wert in 20 x 36 auf 740px, wo ein Netzwerkname von 32 Zeichen 640px braucht; die Zeilen darunter in 12 x 24, 28px Abstand; WLAN AUS 460 x 60px ab Körper-y 424 |
 | Netzwerkliste | zwei Spalten mit je acht Zeilen von 492 x 48px, 52px Abstand: der Name in 12 x 24 (32 Zeichen sind 384px), das Signal in 10 x 20; NEU SUCHEN, VERSTECKTES NETZWERK und ABBRECHEN je 328 x 56px |
-| Frage zu einem Image | eine Karte von 1008 x 484px: Titel und Versionen in 20 x 36, die Sätze in 12 x 24, umbrochen bei 80 Zeichen; ABBRECHEN und 2s HALTEN: INSTALLIEREN 460 x 72px |
+| Frage zu einem Image | eine Karte von 1008 x 484px: Titel und Versionen in 20 x 36, die Sätze in 12 x 24, umbrochen bei 80 Zeichen; ABBRECHEN und 2s HALTEN ZUM INSTALLIEREN 460 x 72px |
 | Tastatur | 1008 x 484px, Tasten von 93 x 71px ([Tastatur](#tastenfeld-tastatur-und-die-gemeinsamen-bedienelemente)) |
 
 Der Funk startet nur, wenn der Prüfstand SAFE ist, der Netzteilausgang aus
@@ -3202,7 +3199,7 @@ angeboten. Der Build, der schon läuft, wird nicht angeboten:
 ![Dieselbe Version, ein anderer Build](img/de/wifi-rebuild.png)
 ![Der Build, der läuft](img/de/wifi-installed.png)
 
-INSTALL ist 2s Halten (`2s HALTEN: INSTALLIEREN`). Der Browser kann es nicht
+INSTALL ist 2s Halten (`2s HALTEN ZUM INSTALLIEREN`). Der Browser kann es nicht
 starten. Es braucht SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf,
 keine Platinenzeichnung, die geladen oder gespeichert wird, und kein
 laufendes Update des IOmcu (`Installation wartet auf das Ende des IOmcu-Updates.`). ABBRECHEN verwirft das Image.
@@ -3764,7 +3761,7 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | `INA228-Strom am Messbereichsende. Anzeige zeigt nur den Grenzwert.` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Schalten auf ARMED das Ende seines Bereichs gelesen |
 | `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.` | ein Kanal des Bausteins, den SERVO_SENSE liest, hat das obere Ende seines Bereichs erreicht; der Strom ist sein Vollausschlag |
 | `IOmcu-Speicher nicht verfügbar. Einstellungen gehen beim Neustart verloren.` | STATUS-Fehlerbit 6: der IOmcu speichert in diesem Boot nichts, die Einstellung, die Bindungen und die Verdrahtung des Netzteils sind bei seinem Neustart verloren; einmal je Link-Aufbau gesagt |
-| `IOmcu-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.` | der INA3221 ist mit CH1 eingeschaltet, und der IOmcu spricht Protokoll 4.7 bis 4.10: er hat keinen Fenster-Ring, und der PD mini ist das Messgerät der Servo-Schiene. Gesagt beim Link-Aufbau und wenn der INA3221 eingeschaltet wird, während er antwortet |
+| `IOmcu-Firmware älter als 0.16.0. Servostrom wird vom PD mini ausgelesen.` | der INA3221 ist mit CH1 eingeschaltet, und der IOmcu spricht Protokoll 4.7 bis 4.10: er hat keinen Fenster-Ring, und der PD mini ist das Messgerät der Servo-Schiene. Gesagt beim Link-Aufbau und wenn der INA3221 eingeschaltet wird, während er antwortet |
 | `INA3221 hat sich zurückgesetzt. Versorgung prüfen.` | der IOmcu fand den INA3221 mit seiner Einschalt-Konfiguration und hat ihn 1000ms später neu eingestellt; einmal je Reset gesagt. Die Fenster dieser 1000ms halten keine Messungen |
 
 Eine abgelehnte Einstellung wird erst wieder geschrieben, wenn sie sich unter
@@ -3864,7 +3861,7 @@ Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 | `VOM IOMCU NICHT ÜBERNOMMEN` | der IOmcu hat die Zuordnung abgelehnt; er behält die, die er hielt |
 | `ALLE KANÄLE AUS` | alle drei Shunts des Bausteins stehen auf AUS: keine Zuordnung wird geschrieben |
 | `INA228 AUF DIESER ADRESSE` | der INA228 ist auf der Adresse des Bausteins eingeschaltet: der Baustein bleibt aus der Zuordnung und der INA228 aus |
-| `IOMCU ÄLTER ALS 4.25: NICHT GELESEN` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
+| `IOMCU ÄLTER ALS 0.22.0: NICHT GELESEN` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
 | `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | ANSCHLÜSSE hat keinen Pin für SDA oder SCL des Sensorbusses: kein Baustein ist eingeschaltet |
 
 Die Zeilen eines abgelehnten Bausteins, eines mit allen Kanälen aus, eines
@@ -3872,7 +3869,7 @@ auf der Adresse des INA228, eines ohne Sensorbus oder eines, den ein
 älterer IOmcu nicht liest,
 sind markiert wie eine Zeile, die der IOmcu nicht hält: Rand und Wert in
 der Warnfarbe und eine Zeile statt der Hilfe. Bei einem IOmcu älter als
-4.25 lautet sie `IOmcu älter als 4.25: ein INA3221, CH1 mit 1kHz.`:
+4.25 lautet sie `IOmcu älter als 0.22.0: ein INA3221, CH1 mit 1kHz.`:
 
 ![SENSOREN bei einem IOmcu älter als 4.25](img/de/setup-sensors-old.png)
 
@@ -3881,7 +3878,7 @@ hält: von der Änderung bis zum angenommenen Schreiben, nach einem
 abgelehnten Schreiben oder einer abgelehnten Page mit
 `Vom IOmcu nicht übernommen.` und bei einem IOmcu
 älter als 4.27 für jede Grenze, die nicht AUS ist, mit
-`IOmcu älter als 4.27: keine Grenze wird geprüft.`:
+`IOmcu älter als 0.22.0: keine Grenze wird geprüft.`:
 
 ![Eine Grenze bei einem IOmcu älter als 4.27](img/de/setup-sensors-limit.png)
 
@@ -3977,7 +3974,7 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 
 | Meldung | Wann |
 | --- | --- |
-| `IOmcu-Firmware älter als 4.9. AS5600 nicht ausgelesen.` | der Encoder ist eingeschaltet, und der IOmcu spricht ein Protokoll älter als 4.9; gesagt beim Link-Aufbau und wenn der Encoder eingeschaltet wird, während er antwortet |
+| `IOmcu-Firmware älter als 0.15.0. AS5600 nicht ausgelesen.` | der Encoder ist eingeschaltet, und der IOmcu spricht ein Protokoll älter als 4.9; gesagt beim Link-Aufbau und wenn der Encoder eingeschaltet wird, während er antwortet |
 | `AS5600 antwortet nicht unter 0x36.` | eingeschaltet, und 2,5s nach seiner Einstellung ohne Antwort, oder nicht mehr antwortend, nachdem er es tat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt, ML und MH zugleich |
 | `AS5600 erkennt keinen Magneten. Magnet an der Servoabtriebswelle prüfen.` | er antwortet, ein Winkel wurde gelesen, und STATUS MD (Magnet erkannt) ist nicht gesetzt. Der Zählerstand ist kein Winkel: GEMESSEN zeigt `---`, SENSOR-MITTE setzt nichts, und ein Lauf protokolliert und beurteilt keinen Winkel |
 | `AS5600: Magnetfeld zu schwach. Magnet näher heranbringen.` | STATUS MD und ML sind gesetzt. Der Winkel wird verwendet; das Datenblatt des Sensors spezifiziert sein Rauschen nur für 30 bis 90 mT |
@@ -4098,8 +4095,8 @@ mit eigener Hilfezeile:
 | Die Hilfezeile lautet | Solange |
 | --- | --- |
 | `Vom IOmcu nicht übernommen.` | der Wert noch nicht bestätigt ist oder der IOmcu ihn abgewiesen hat |
-| `IOmcu älter als 4.24: empfängt mit PULL-UP.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.23 spricht: er hat kein Register für den Modus |
-| `IOmcu älter als 4.23: keine Hitec-Leitung.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.22 oder älter spricht: er hat keine HITEC-Seite |
+| `IOmcu älter als 0.22.0: empfängt mit PULL-UP.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.23 spricht: er hat kein Register für den Modus |
+| `IOmcu älter als 0.21.1: keine Hitec-Leitung.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.22 oder älter spricht: er hat keine HITEC-Seite |
 
 Keine Markierung, solange kein IOmcu antwortet, und keine für PULL-UP an
 einem älteren IOmcu.
@@ -4472,8 +4469,8 @@ Halten ist eine fünfte Taste derselben Größe, ab y 428 im Körper.
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
 | `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
 | `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche liest ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
-| `2s HALTEN: LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
-| `2s HALTEN: IOMCU AKTUALISIEREN` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
+| `2s HALTEN ZUM LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+| `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
@@ -4657,7 +4654,7 @@ Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
 Unter den Tasten zeigt UPDATES das Update des IOmcu: die Version, die
 der IOmcu laufen hat (`Läuft: 0.21.2`), die Version des Images, das
 dieses Panel mitbringt (`Auf diesem Panel: 0.22.0`), eine Zeile Zustand und
-`2s HALTEN: IOMCU AKTUALISIEREN`. Das Halten startet das Update, das
+`2s HALTEN ZUM IOMCU-UPDATE`. Das Halten startet das Update, das
 die Frage beim Link-up startet, mit demselben Fortschritt
 ([IOmcu-Update](#iomcu-update)). Es startet es auch, nachdem
 diese Frage abgelehnt wurde. Endet das Update, oder verfiel der START ohne
@@ -4717,7 +4714,7 @@ Menü zu sehen ist.
 | --- | --- |
 | `JETZT NICHT` | Schließt die Erinnerung bis zum nächsten Start des Panels. Verlassen über den HOME-Tag wirkt genauso. |
 | `NICHT MEHR ERINNERN` | Schaltet ERINNERUNG BEIM START aus und fordert das Speichern an, das im nächsten Moment geschieht, in dem die Einstellungen geschrieben werden dürfen ([Werte behalten](#werte-behalten)). SETUP > UPDATES schaltet sie wieder ein. |
-| `2s HALTEN: LADEN & INSTALLIEREN` | Dasselbe Halten wie auf UPDATES. |
+| `2s HALTEN ZUM LADEN & INSTALLIEREN` | Dasselbe Halten wie auf UPDATES. |
 
 Findet die Suche beim Start kein neueres Release oder scheitert sie, zeigt
 sie nichts. Ihr Ergebnis steht auf UPDATES.
@@ -4975,7 +4972,7 @@ Die gelbe Zeile unter den Zeilen nennt den ersten Grund, der zutrifft:
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | ARMED, oder ein Test oder Sweep läuft |
 | `SERVO-TESTER STEUERT PROG-PORT n` | der Tester steuert einen anderen Port, Port n |
 | `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE oder DShot: der Tester nimmt ihn nicht als Ziel |
-| `IOMCU ÄLTER ALS 4.26: NUR SERVO PWM` | der IOmcu hat keine FUNKTION: jeder Port ist SERVO PWM, und die Zeile nimmt kein Tippen an |
+| `IOMCU ÄLTER ALS 0.22.0: NUR SERVO PWM` | der IOmcu hat keine FUNKTION: jeder Port ist SERVO PWM, und die Zeile nimmt kein Tippen an |
 | `SERVO-TESTER STEUERT PROG-PORT n` | der Tester steuert diesen Port, Port n: FUNKTION nimmt kein Tippen an |
 | `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM auf einem Port, der nicht das Ziel des Testers ist |
 
@@ -5093,7 +5090,7 @@ gedrückte Fläche. PICK A PIN öffnet ebenfalls mit OFF gewählt.
 
 Ein Schreibvorgang ist mit OFF gewählt erreichbar. Bei Pages, die keine
 Bindung beschreiben, lautet die Zeile `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES`,
-und `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN` 2s gehalten schreibt eine Bindung
+und `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` gehalten schreibt eine Bindung
 ohne Pin. Dieses Halten ist der Weg aus diesen Pages
 ([Eine Bindung, die nicht bestätigt ist](#eine-bindung-die-nicht-bestätigt-ist)).
 
@@ -5116,7 +5113,7 @@ Lesen hat eines von vier Ergebnissen:
 | --- | --- |
 | beide Pages gelesen, und sie beschreiben eine Bindung, auch eine ohne gebundenen Pin | zeigt sie und nimmt Änderungen an |
 | eine Page wurde nicht gelesen: keine Antwort in 1000ms, eine Ablehnung, oder der Link ist unten | behält die zuletzt gelesene Bindung, abgedunkelt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.` |
-| beide Pages gelesen, und keine Bindung beschreibt sie: ein Pin in zwei Slots, eine Rate oder ein Treiber, den kein Protokolleintrag hat, ein Pin außerhalb der Platine oder reserviert, Kanäle nicht in Slot-Reihenfolge | behält die zuletzt gelesene Bindung, abgedunkelt, mit `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und der Taste `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN` |
+| beide Pages gelesen, und keine Bindung beschreibt sie: ein Pin in zwei Slots, eine Rate oder ein Treiber, den kein Protokolleintrag hat, ein Pin außerhalb der Platine oder reserviert, Kanäle nicht in Slot-Reihenfolge | behält die zuletzt gelesene Bindung, abgedunkelt, mit `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und der Taste `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` |
 | der IOmcu ist eine Platine, für die dieser Build keine Pin-Tabelle hat | zeigt keine Pins |
 
 Im zweiten und dritten Zustand bewirkt ein Tippen auf einen Pin hier und auf
@@ -5131,7 +5128,7 @@ Lesen, das eine Bindung ergibt, beendet den Zustand.
 ![Die zuletzt gelesene Bindung nach einem fehlgeschlagenen Lesen](img/de/outputs-unread.png)
 
 Pages, die keine Bindung beschreibt, werden durch erneutes Lesen nicht
-lesbar. `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN`, 2s gehalten, schreibt eine Bindung ohne
+lesbar. `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN`, gehalten, schreibt eine Bindung ohne
 Pin; das Zurücklesen zeigt dann nichts gebunden, und Änderungen werden wieder
 angenommen. Es ist der einzige Schreibvorgang, den der Bildschirm in diesem
 Zustand sendet. Ein Finger, der die Taste verlässt, ein Abheben vor 2s und

@@ -98,7 +98,7 @@ The SET line holds the SUPPLY screen's two set points and its output switch. A c
 
 ![HV SERVOS ONLY](view:servo-hv)
 
-Standard servos are rated for 4.8 to 6.0V. A voltage raised from 6.0V or below to above 6.0V opens HV SERVOS ONLY. The voltage is applied after HOLD TO APPLY is held for 2s; CANCEL drops it. OUTPUT ON with a set point above 6.0V opens the same warning.
+Standard servos are rated for 4.8 to 6.0V. A voltage raised from 6.0V or below to above 6.0V opens HV SERVOS ONLY. The voltage is applied after HOLD 2s TO APPLY is held; CANCEL drops it. OUTPUT ON with a set point above 6.0V opens the same warning.
 
 ## SWEEP and PAUSE
 

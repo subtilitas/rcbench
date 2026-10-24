@@ -147,7 +147,7 @@ sich beide Platinen vor und nach dem Update.
 2. Die Frage öffnet sich auf dem Menü, solange die Bench SAFE ist, der
    Ausgang der Versorgung aus und der Funk des Panels aus. Sie nennt die
    Version auf dem IOmcu und die Version im Panel. START 2s halten, oder
-   nach CANCEL `2s HALTEN: IOMCU AKTUALISIEREN` auf SETUP > UPDATES. Der
+   nach CANCEL `2s HALTEN ZUM IOMCU-UPDATE` auf SETUP > UPDATES. Der
    Fortschritt füllt den Bildschirm ([Bildschirme:
    IOmcu-Update](Screens-de.md#iomcu-update)), und zurück auf dem Menü
    meldet das Band `IOmcu auf X.Y.Z aktualisiert.`.

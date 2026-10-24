@@ -382,7 +382,7 @@ static void draw_left(gfx_canvas_t *c)
                  ui_theme_color(UI_C_ACCENT),
                  gfx_lerp(ui_theme_color(UI_C_PANEL),
                           ui_theme_color(UI_C_ACCENT), 30));
-    gfx_text(c, SEG_X + 6 + dw, SEG_Y + 12, "DEG",
+    gfx_text(c, SEG_X + 6 + dw, SEG_Y + 12, "deg",
              SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
     /* Why the dial takes no press, in the words START TEST's line uses. */
     if (!value_live()) {
@@ -845,7 +845,7 @@ static gfx_rect_t horn_box(float deg)
 }
 
 /**
- * @brief The horn's angle @p deg in the bench's numerals and DEG after
+ * @brief The horn's angle @p deg in the bench's numerals and deg after
  *        them, as draw_left() writes it, and never narrower than -888.8.
  * @param deg the angle, degrees
  * @return the box draw_left() draws them in
@@ -858,7 +858,7 @@ static gfx_rect_t angle_box(float deg)
     const int nw = gfx_seg_width(text, &seg);
     const int widest = gfx_seg_width("-888.8", &seg);
     const int w = ((nw > widest) ? nw : widest) + 6
-                  + gfx_text_width(SV_FONT_LABEL, "DEG", 1);
+                  + gfx_text_width(SV_FONT_LABEL, "deg", 1);
     return (gfx_rect_t){ (int16_t)(SEG_X - 2), (int16_t)(SEG_Y - 2),
                          (int16_t)(w + 4), (int16_t)(seg.digit_h + 8) };
 }

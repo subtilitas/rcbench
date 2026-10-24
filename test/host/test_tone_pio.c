@@ -154,8 +154,13 @@ static bool assemble(const char *path)
         if (!in_prog || s[0] == '\0' || s[0] == '\n' || s[0] == '\r') {
             continue;
         }
-        strncpy(text[lines], s, sizeof(text[0]) - 1u);
-        text[lines][sizeof(text[0]) - 1u] = '\0';
+        /* Cut to the row, which no line of the program reaches. */
+        size_t len = strlen(s);
+        if (len > sizeof(text[0]) - 1u) {
+            len = sizeof(text[0]) - 1u;
+        }
+        memcpy(text[lines], s, len);
+        text[lines][len] = '\0';
         ++lines;
     }
     fclose(f);

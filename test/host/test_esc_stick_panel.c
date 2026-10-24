@@ -24,6 +24,7 @@
  */
 
 #include "esc_stick_panel_rig.h"
+#include "ui_widgets.h"
 
 /* The list puts what can run first; a row that cannot run says why and goes
  * no further. */
@@ -125,7 +126,7 @@ TEST_CASE(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply)
              * the tap is the frame before it, with the note set. */
             memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
             scr->render(&cv, 0);
-            CHECK_EQ(fb[run_px], GFX_RGB(38, 46, 58));
+            CHECK_EQ(fb[run_px], ui_button_off_fill());
             memcpy(before, fb, sizeof(before));
             tap(WRITE_X, BTN_CY);
             CHECK_STR_EQ(esc_stick_panel_note(), want);

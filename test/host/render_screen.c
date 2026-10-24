@@ -546,7 +546,8 @@ static const log_viewer_io_t k_io = {
  * zeroes: a band with nothing in it would make the golden image agree with a
  * band that had stopped working.
  */
-/* The capabilities a view's IOmcu reports: SERVO's views only. */
+/* The capabilities a view's IOmcu reports: SERVO's views and the linked
+ * overview's. */
 static uint16_t s_caps;
 
 static const ui_bench_status_t k_status = {
@@ -1024,6 +1025,15 @@ static void kst_view(const char *view)
     (void)rig_link_up(nopage ? (uint16_t)(LINK_MINOR_KST - 1u)
                              : LINK_PROTOCOL_MINOR);
     ui_router_goto(SCREEN_SERVO);
+    /* The tester's drive as the control task reports it: PORT 1 on GP13
+     * when SERVO's target is the programmer's port, as program_view() sets
+     * it; no pin when the generator has none for the port.  With the target
+     * elsewhere (-target) the screen keeps SERVO PWM on its own pin. */
+    if (g_rig.target != 0u) {
+        servo_screen_set_drive(g_rig.target,
+                               g_rig.no_pin ? SERVO_SCREEN_NO_PIN : RIG_PIN,
+                               true);
+    }
     if (strcmp(v, "-hv") == 0) {
         /* HV SERVO in the AUTOMATIC TEST card's settings on TEST, which
          * the programmer's voltage follows. */
@@ -1903,8 +1913,10 @@ static void pose_splash(void)
 {
     /* BOARD_NAME_TEXT and BOARD_DISPLAY_TEXT of the panel's board_pins.h,
      * as panel_boot.c writes them. */
-    splash_screen_set(SPLASH_STEP_BOARD,    SPLASH_OK,
-                      "ESP32-P4 7B, panel fw " RCBENCH_VERSION_STRING);
+    char board[SPLASH_DETAIL_MAX];
+    snprintf(board, sizeof(board), TR(SPLASH_PANEL_FW), "ESP32-P4 7B",
+             RCBENCH_VERSION_STRING);
+    splash_screen_set(SPLASH_STEP_BOARD,    SPLASH_OK,   board);
     splash_screen_set(SPLASH_STEP_DISPLAY,  SPLASH_OK,   "1024x600 DSI");
     splash_screen_set(SPLASH_STEP_TOUCH,    SPLASH_OK,   "GT911 5pt");
     splash_screen_set(SPLASH_STEP_STORAGE,  SPLASH_WARN, TR(SPLASH_NO_CARD));
@@ -1913,10 +1925,11 @@ static void pose_splash(void)
     /* Built from the constants rather than typed: the IOmcu line went
      * from 1.0 to 3.0 and gained a firmware field with this string untouched,
      * so the screenshot on the wiki showed a protocol two majors old. */
-    char iomcu[48];
-    snprintf(iomcu, sizeof(iomcu), "proto %u.%u fw %s",
+    char iomcu[SPLASH_DETAIL_MAX];
+    snprintf(iomcu, sizeof(iomcu), TR(SPLASH_IOMCU_FW),
              (unsigned)LINK_PROTOCOL_MAJOR, (unsigned)LINK_PROTOCOL_MINOR,
-             RCBENCH_VERSION_STRING);
+             (unsigned)RCBENCH_VERSION_MAJOR, (unsigned)RCBENCH_VERSION_MINOR,
+             (unsigned)RCBENCH_VERSION_PATCH);
     splash_screen_set(SPLASH_STEP_IOMCU,    SPLASH_OK,   iomcu);
 }
 
@@ -2607,7 +2620,7 @@ int main(int argc, char **argv)
             ex = *esc_profiles_find("sunrise-pro");
             ex.id = "example-steps";
             ex.brand = "Example";
-            ex.family = "Example ESC, not a real product";
+            ex.family = "ESC, not a real product";
             ex.automatable = ESC_AUTO_ASSISTED;
             ex.automatable_note = "An example.";
             ex.manual = k_before;
@@ -2660,7 +2673,7 @@ int main(int argc, char **argv)
             card = *esc_profiles_find("sunrise-pro");
             card.id = "example-after";
             card.brand = "Example";
-            card.family = "Example ESC, not a real product";
+            card.family = "ESC, not a real product";
             card.automatable = ESC_AUTO_ASSISTED;
             card.automatable_note = "Steps after programming.";
             card.manual = k_after;
@@ -3598,11 +3611,19 @@ int main(int argc, char **argv)
     }
 
     ui_bench_status_t st = k_status;
+    if (id == SCREEN_OVERVIEW && !sim) {
+        /* A linked IOmcu reports its output drivers (IOMCU_CAPABILITIES)
+         * and, with the INA228 enabled on SETUP, the pack's volts and amps:
+         * MOTOR & ESC and SERVO without the mark, the rest with it. */
+        s_caps = (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
+                            | LINK_CAP_ESC_TELEM | LINK_CAP_PACK_SENSE);
+    }
     st.capabilities = s_caps;
     st.simulated = sim || (id == SCREEN_MOTOR
                            && strcmp(view, "motor-table") != 0
                            && strcmp(view, "motor-refused") != 0
                            && strcmp(view, "motor-idle") != 0
+                           && strcmp(view, "motor-port") != 0
                            && strncmp(view, "motor-settings", 14) != 0
                            && !mo_prog);
     /* An IOmcu that has refused 37 frames: the count in the header
@@ -3617,6 +3638,7 @@ int main(int argc, char **argv)
     st.armed     = (id == SCREEN_MOTOR
                     && strcmp(view, "motor-held") != 0
                     && strcmp(view, "motor-idle") != 0
+                    && strcmp(view, "motor-port") != 0
                     && !mo_prog
                     && (strncmp(view, "motor-settings", 14) != 0
                         || strcmp(view, "motor-settings-armed") == 0))
@@ -3914,12 +3936,19 @@ int main(int argc, char **argv)
 #endif
 
     /*
-     * Arming flashes the ARM button for UI_HOLD_FLASH_MS, which runs by
-     * time: ten frames of 50ms end it.  Drawn after the frame above, which
-     * has already painted everything else, so these repaint the button and
-     * nothing more.
+     * A completed hold flashes its button for UI_HOLD_FLASH_MS, which runs
+     * by time: ten frames of 50ms end it, so the image shows the steady
+     * state.  Drawn after the frame above, which has already painted
+     * everything else, so these repaint the button and nothing more.
+     * SERVO's views of a sweep or a run are left out: their dial moves with
+     * time, and their holds ended frames before.
      */
-    if (id == SCREEN_MOTOR) {
+    const bool servo_moving = strcmp(view, "servo-sweep") == 0
+                              || strcmp(view, "servo-run") == 0
+                              || strcmp(view, "servo-paused") == 0
+                              || strncmp(view, "servo-limrun", 12) == 0;
+    if (id == SCREEN_MOTOR || id == SCREEN_SUPPLY
+        || (id == SCREEN_SERVO && !servo_moving)) {
         for (int f = 0; f < 10; ++f) {
             ui_router_tick(0.05f);
             ui_router_render(&c, 0);
