@@ -222,7 +222,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 291 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 292 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_pdmini`,
@@ -234,7 +234,7 @@ The host suite is 291 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`, `test_outputs_hw_ports`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
-`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_report`,
+`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`, `test_frame_watch`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`, `test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_outputs_screen_draw`, `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_layout`, `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`, `test_picker_layout`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_logview_report`, `test_log_text`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_rx`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_mdns`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun`, `test_fm_name` and `test_wall_clock`. The harness is
@@ -382,9 +382,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_map.c` | 128 | 128 | 100.0% |
 | `shared/touch/touch_merge.c` | 146 | 146 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
-| `shared/ui/ui_widgets.c` | 347 | 340 | 98.0% |
+| `shared/ui/ui_widgets.c` | 343 | 336 | 98.0% |
 | `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
-| `shared/ui/ui_band.c` | 272 | 259 | 95.2% |
+| `shared/ui/ui_band.c` | 270 | 257 | 95.2% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
@@ -397,8 +397,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 96 | 94 | 97.9% |
-| `shared/ui/motor_screen.c` | 262 | 255 | 97.3% |
-| `shared/ui/motor_events.c` | 169 | 165 | 97.6% |
+| `shared/ui/motor_screen.c` | 260 | 253 | 97.3% |
+| `shared/ui/motor_events.c` | 165 | 161 | 97.6% |
 | `shared/ui/motor_draw.c` | 359 | 347 | 96.7% |
 | `shared/ui/motor_workbench.c` | 167 | 160 | 95.8% |
 | `shared/ui/motor_settings_page.c` | 184 | 174 | 94.6% |
@@ -407,7 +407,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/supply_events.c` | 309 | 305 | 98.7% |
 | `shared/ui/supply_draw.c` | 392 | 383 | 97.7% |
 | `shared/ui/ui_keypad.c` | 273 | 271 | 99.3% |
-| `shared/ui/ui_setting_keypad.c` | 102 | 100 | 98.0% |
+| `shared/ui/ui_setting_keypad.c` | 85 | 85 | 100.0% |
 | `shared/ui/ui_textkey.c` | 346 | 335 | 96.8% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
 | `shared/ui/servo_screen.c` | 364 | 355 | 97.5% |
@@ -417,8 +417,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_screen_draw.c` | 529 | 516 | 97.5% |
 | `shared/ui/servo_settings_panel.c` | 510 | 495 | 97.1% |
 | `shared/ui/servo_settings_draw.c` | 340 | 333 | 97.9% |
-| `shared/ui/servo_test_panel.c` | 432 | 420 | 97.2% |
-| `shared/ui/servo_limit_panel.c` | 410 | 371 | 90.5% |
+| `shared/ui/servo_test_panel.c` | 430 | 418 | 97.2% |
+| `shared/ui/servo_limit_panel.c` | 408 | 369 | 90.4% |
 | `shared/ui/servo_workbench.c` | 337 | 335 | 99.4% |
 | `shared/ui/kst_panel.c` | 339 | 333 | 98.2% |
 | `shared/ui/kst_panel_text.c` | 160 | 160 | 100.0% |
@@ -444,7 +444,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/log_select.c` | 93 | 93 | 100.0% |
 | `shared/ui/log_text.c` | 138 | 136 | 98.5% |
 | `shared/ui/files_screen.c` | 621 | 594 | 95.7% |
-| `shared/ui/files_draw.c` | 335 | 324 | 96.7% |
+| `shared/ui/files_draw.c` | 332 | 321 | 96.7% |
 | `shared/ui/files_events.c` | 208 | 207 | 99.5% |
 | `shared/ui/settings_screen.c` | 492 | 486 | 98.8% |
 | `shared/ui/settings_draw.c` | 220 | 215 | 97.7% |
@@ -465,7 +465,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 271 | 270 | 99.6% |
 | `shared/ui/upd_screen.c` | 608 | 585 | 96.2% |
-| `shared/settings/settings.c` | 385 | 378 | 98.2% |
+| `shared/settings/settings.c` | 370 | 363 | 98.1% |
 | `shared/settings/settings_sensors.c` | 128 | 127 | 99.2% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
@@ -490,6 +490,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/safety/flash_gate.c` | 4 | 4 | 100.0% |
 | `shared/safety/reset_cause.c` | 61 | 61 | 100.0% |
 | `shared/safety/touch_loss.c` | 52 | 52 | 100.0% |
+| `shared/safety/frame_watch.c` | 21 | 21 | 100.0% |
 | `shared/servo/servo_limit.c` | 142 | 136 | 95.8% |
 | `shared/servo/servo_sync.c` | 183 | 177 | 96.7% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
@@ -498,7 +499,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/servo/servo_str.c` | 43 | 43 | 100.0% |
 | `shared/servo/servo_report.c` | 511 | 511 | 100.0% |
 | `shared/servo/servo_limrun.c` | 625 | 600 | 96.0% |
-| `shared/servo/servo_limrun_report.c` | 266 | 262 | 98.5% |
+| `shared/servo/servo_limrun_report.c` | 263 | 259 | 98.5% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `protocols/openyge/openyge_params.c` | 66 | 66 | 100.0% |
@@ -620,7 +621,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_page.c` | 149 | 144 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
 | `shared/clock/wall_clock.c` | 82 | 81 | 98.8% |
-| **total** | **56865** | **55656** | **97.9%** |
+| **total** | **56832** | **55625** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

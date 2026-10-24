@@ -15,6 +15,7 @@ verifiziert.
 | Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
 | Stille-Watchdog des IOmcu, 200ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
+| Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels läuft nicht mehr, während der Prüfstand ARMED ist oder der Ausgang des Netzteils an ist | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
 
 Ein gedrücktes STOP stoppt den Heartbeat, schaltet das eigene
 Ausgangsmodell des Panels auf SAFE und schreibt ARM = 0 auf die Control-Page. Bei
@@ -23,6 +24,77 @@ ein bewusstes Schalten auf ARMED wartet, bis der IOmcu meldet, dass er dem
 Heartbeat vertraut, schreibt dann CLEAR (0x5AFE) allein, dann ARM, THROTTLE
 und MOTOR_POLES in einem Frame, und ein NACK (negative Quittung) des
 IOmcu auf eines von beiden lässt das Panel SAFE.
+
+### Watchdog der Render-Schleife
+
+Der Control-Task liest den Touch, prüft das Rechteck von STOP und erzeugt
+den Heartbeat ohne die Render-Schleife. Steht die Render-Schleife, wirkt
+STOP weiter und sonst nichts. DISARM, der Gas-Schieberegler, das Zifferblatt
+von SERVO und OUTPUT OFF gehören der Render-Schleife, und die Ausgänge behalten ihr
+letztes Kommando.
+
+Die Render-Schleife zählt einen Zähler pro Durchlauf weiter. Der
+Control-Task liest ihn in jedem Durchlauf alle 5ms und in der Wartezeit
+jedes Link-Austauschs. Ist der Prüfstand ARMED oder der Ausgang des
+Netzteils an und hat sich der Zähler 1000ms lang nicht bewegt
+(`FRAME_WATCH_MS`, `shared/safety/include/frame_watch.h`), ist das ein
+Stopp des Prüfstands selbst, auf dem Weg, den STOP nimmt:
+
+- der Heartbeat fällt im selben Durchlauf weg, und der IOmcu geht
+  innerhalb von 150ms in den sicheren Zustand;
+- der Ausgang des Netzteils schaltet im selben Durchlauf ab;
+- der Hinweis `Bildschirm 1s ohne Aktualisierung. Auf SAFE geschaltet,
+  Ausgang aus.` erscheint, sobald die Render-Schleife wieder zeichnet. Eine
+  Schleife, die nie wieder zeichnet, zeigt nichts Neues.
+
+Der Stopp rastet ein wie STOP. Eine Schleife, die wieder läuft, schaltet
+nichts auf ARMED und nichts ein; erst das nächste Schalten auf ARMED löst
+die Sperre. Ein Stillstand ergibt einen Stopp, und der nächste Stillstand
+beginnt mit der nächsten Bewegung des Zählers.
+
+Die Zeit läuft ab der letzten Bewegung des Zählers, nicht ab dem Schalten
+auf ARMED. Eine Schleife, die stehen blieb, nachdem sie ARM oder ON
+abgeschickt hatte, stoppt den Prüfstand im ersten Durchlauf, der ihn ARMED
+oder den Ausgang an findet. Ein Prüfstand in SAFE mit ausgeschaltetem
+Netzteil wird nie gestoppt: die Installation eines Panel-Updates, ein Log,
+das LOGS lädt, und das Speichern der Einstellungen halten die Schleife auf
+einem Prüfstand in SAFE an. Die Installation beginnt nur in SAFE mit
+ausgeschaltetem Netzteil und hält den Heartbeat beim Schreiben absichtlich
+an. Beim Start ist der Prüfstand SAFE und das Netzteil aus.
+
+Die Zeit ist 1000ms wegen der längsten Durchläufe, die die Render-Schleife
+auf einem Bildschirm macht, der einen Ausgang treibt:
+
+| Aufruf im Durchlauf | Höchstens |
+| --- | --- |
+| Kopie der PPA (Pixel-Processing Accelerator) für `Bilddrehung` 180° | 50ms Budget (`GFX_TURN_BUDGET_US`), nach einer Zeitüberschreitung dann eine Kopie des Bildes mit 1 228 800 Bytes, nicht gemessen |
+| Flip: das Warten auf das Frame-done-Ereignis | 200ms (`FLIP_WAIT_MS`) |
+| Zeichnen, ein ganzes Neuzeichnen eingeschlossen (ein Tastenfeld öffnet, ein Bildschirmwechsel) | auf dem ESP32-P4 nicht gemessen |
+| Ein Kommando an den Control-Task in eine volle Queue | 5ms pro Kommando |
+| Die Konsolenzeile alle 300 Frames | etwa 11ms bei 115200 Baud, nicht gemessen |
+| Speichern der Einstellungen | nie, während der Prüfstand ARMED ist, ein Schalten auf ARMED wartet, das Netzteil an ist oder ein ON wartet (`flash_gate_open()`) |
+| Der Blick des Servo-Programmierers auf die Karte (SERVO > PROGRAMMIEREN) | ein Statuskommando an die Karte oder ein Mount, dann das Lesen seines Datensatzes (`KST.TXT`); jedes Kartenkommando begrenzt der Treiber auf 1000ms, nicht gemessen |
+| LOGS: die Liste, das Öffnen eines Logs und sein Plot | als Fortschritt gezählt, pro Verzeichniseintrag und pro Lesen (`panel_card.c`); ein Lesen begrenzt der Kartentreiber, nicht gemessen |
+
+Der begrenzte Teil, 50ms + 200ms + die Kopie + das Zeichnen, ist etwa
+300ms. 1000ms ist etwa das Dreifache davon und das Doppelte der 500ms, nach
+denen ein schweigender Touch-Controller den Prüfstand auf SAFE schaltet.
+
+Bekannte Einschränkungen:
+
+- Sendet das Display keine Frame-done-Ereignisse mehr, wartet jeder Flip
+  200ms. Die Schleife läuft dann etwa 4-mal pro Sekunde, und der Watchdog
+  löst nicht aus: DISARM und die anderen Bedienelemente wirken weiter, auf
+  einem Bild, das sich nicht ändert.
+- Der Servo-Programmierer sieht auf der Render-Schleife nach der Karte, und
+  während einer Session ist der Ausgang des Netzteils an. Braucht ein
+  Statuskommando oder ein Mount 1000ms oder länger, zum Beispiel hinter dem
+  Schreiben eines anderen Tasks auf dieselbe Karte, stoppt das den
+  Prüfstand und beendet die Session.
+- Wer SERVO verlässt, während ein Programmierport das Netzteil hält, lässt
+  den Ausgang an. Ein einzelnes Lesen von der Karte, das auf LOGS 1000ms oder
+  länger braucht, stoppt dann den Prüfstand und beendet die Session des
+  Ports.
 
 ## Vorausgesetzte externe Schaltung: das Monoflop
 

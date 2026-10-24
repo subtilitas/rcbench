@@ -3509,6 +3509,11 @@ UI_TEXT(ALERT_TOUCH_ARM_AGAIN, 94,
 UI_TEXT(ALERT_TOUCH_STOPPED, 94,
     "Touchscreen stopped responding. Switched to SAFE.",
     "Touchscreen antwortet nicht mehr. Auf SAFE geschaltet.")
+/* The render loop stood still for FRAME_WATCH_MS (frame_watch.h) on an
+ * ARMED bench or under a live supply output; shown once it draws again. */
+UI_TEXT(ALERT_SCREEN_STALLED, 94,
+    "Screen stopped updating for 1s. Switched to SAFE, output off.",
+    "Bildschirm 1s ohne Aktualisierung. Auf SAFE geschaltet, Ausgang aus.")
 UI_TEXT(ALERT_SERVO_NOT_RELEASED, 94,
     "Servo output not released. Hold ARM again.",
     "Servoausgang nicht freigegeben. ARM erneut halten.")
