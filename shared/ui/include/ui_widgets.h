@@ -181,6 +181,22 @@ void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                   gfx_color_t dot, gfx_color_t fill, int inset,
                   const gfx_font_t *f);
 
+/**
+ * @brief ui_pill_font() with the label in colour @p ink, for a fill the
+ *        theme's text colour does not read on.
+ * @param c     Canvas.
+ * @param r     The pill.
+ * @param label Its label, or NULL for none.
+ * @param dot   The dot's colour.
+ * @param fill  The pill's colour.
+ * @param ink   The label's colour.
+ * @param inset The label's start from the pill's left edge, in pixels.
+ * @param f     The label's face.
+ */
+void ui_pill_ink(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                 gfx_color_t dot, gfx_color_t fill, gfx_color_t ink,
+                 int inset, const gfx_font_t *f);
+
 /** Horizontal proportional bar, @p frac in 0..1, with an optional peak tick. */
 void ui_bar(gfx_canvas_t *c, gfx_rect_t r, float frac, float peak_frac,
             gfx_color_t color);

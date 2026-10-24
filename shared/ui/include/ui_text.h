@@ -141,18 +141,28 @@ const char *ui_on_off(int on);
  *        ("rpm/V", "%/s").
  * @param unit  the unit, UTF-8 ("mΩ"); NULL or "" is none
  * @return 1 for a symbol ("V", "S", a battery's cell count), 0 for a word
- *         ("GPIO", "cells"), none or NULL
+ *         ("GPIO"), none or NULL
  */
 int ui_unit_is_symbol(const char *unit);
 
 /**
  * @brief What stands between a number and @p unit: "" before a symbol
  *        ("6.00V", "1000.0mΩ", "40s") and before no unit, " " before a
- *        word ("0 to 54 GPIO").
+ *        word that follows its number.  A word that leads
+ *        (ui_unit_is_prefix(), "GPIO 4") also gets " ".
  * @param unit  the unit, or NULL
  * @return "" or " "
  */
 const char *ui_unit_gap(const char *unit);
+
+/**
+ * @brief Whether @p unit is written before its number: "GPIO", so that
+ *        a pin reads "GPIO 4" and not as a count of four GPIOs.  Every
+ *        other unit follows its number.
+ * @param unit  the unit, or NULL
+ * @return 1 for a pin word, else 0
+ */
+int ui_unit_is_prefix(const char *unit);
 
 /**
  * @brief What holds a reserved pin, in the language showing: the words

@@ -37,6 +37,10 @@ Der IOmcu liest einen TI INA228 im Strompfad des ESC, hier eingestellt, und bis 
 
 ![GPIO 5 für Sensor-SDA abgelehnt](view:setup-sda-why)
 
+Ein Pin steht mit dem Wort voran, `GPIO 1`, im Eintrag des Tastenfelds, in der Zeile und in der Frage beim Verlassen von SETUP ohne Speichern. Der Kopf des Tastenfelds nennt den Bereich ebenso, `GPIO -1 bis 47`.
+
+![Das Tastenfeld von Sensor-SDA, GPIO 1 getippt](view:setup-sda-keypad)
+
 Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SETUP > ANSCHLÜSSE prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SETUP > ANSCHLÜSSE prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung -- Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert -- verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
 
 ## Eine Zeile, die der IOmcu nicht hält
@@ -58,7 +62,7 @@ Solange kein IOmcu antwortet, ist keine Zeile markiert. AS5600-Mitte ist ein eig
 | AS5600 | EIN, AUS | AUS | ein magnetischer Winkelsensor AS5600 an der Abtriebswelle des Servos, auf seiner festen Adresse 0x36 am Sensorbus |
 | AS5600-Mitte | 0 bis 4095 | 0 | der Zählwert mit dem Servo in Neutral; 4096 Zählwerte je Umdrehung, 0,0879deg je Zählwert |
 
-Der Winkelsensor braucht einen IOmcu mit Protokoll 4.9 oder neuer. SENSOR-MITTE in den [Servo-Optionen](servo-settings.md#prüfling) setzt die Mitte aus dem aktuellen Messwert. Das Band meldet, wenn der Sensor keinen Magneten sieht, `AS5600 erkennt keinen Magneten. Magnet an der Servoabtriebswelle prüfen.`, oder wenn der Magnet zu schwach oder zu stark ist. Eine Magnetmeldung kommt einmal, solange der Magnetstatus des Sensors gleich bleibt: eine Änderung einer anderen Zeile wiederholt sie nicht. Nach dem Aus- und Wiedereinschalten des Sensors kommt sie wieder.
+Der Winkelsensor braucht einen IOmcu mit 0.15.0 oder neuer. SENSOR-MITTE in den [Servo-Optionen](servo-settings.md#prüfling) setzt die Mitte aus dem aktuellen Messwert. Das Band meldet, wenn der Sensor keinen Magneten sieht, `AS5600 erkennt keinen Magneten. Magnet an der Servoabtriebswelle prüfen.`, oder wenn der Magnet zu schwach oder zu stark ist. Eine Magnetmeldung kommt einmal, solange der Magnetstatus des Sensors gleich bleibt: eine Änderung einer anderen Zeile wiederholt sie nicht. Nach dem Aus- und Wiedereinschalten des Sensors kommt sie wieder.
 
 ## Der Phasenabgriff
 

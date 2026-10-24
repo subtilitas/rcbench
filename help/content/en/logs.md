@@ -71,7 +71,7 @@ One file is one run, in the folder of its kind. Its name says what started it:
 | root | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | runs of firmware 0.21.0 and older; in the root, `SERVOnnn` is a servo test |
 | root | `SERVOnnn.TXT` alone | a limit run of firmware 0.21.0 and older |
 
-The name follows the screen whose ARM armed the bench, also on an IOmcu older than protocol 4.18, which arms the throttle outputs with every switch to ARMED.
+The name follows the screen whose ARM armed the bench, also on an IOmcu older than 0.18.0, which arms the throttle outputs with every switch to ARMED.
 
 AUTO LOGS off on [SETUP > SD CARD](setup.md) writes no file to `BENCH/LOGS` and takes no number; USER LOGS off writes none to `USER/LOGS`, and the SERVO screen names `USER LOGS OFF` in place of the file. Both are on after a start from a new panel or an update.
 
