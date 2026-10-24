@@ -145,6 +145,24 @@ void servo_screen_cancel_arm(void);
 uint16_t servo_screen_commanded(void);
 
 /**
+ * @brief The commanded pulse for a SERVO run's log row, as COMMANDED shows
+ *        it: none while a programming session holds the port.
+ *
+ * @param us Receives the pulse, us.
+ * @return true when a pulse is commanded; false with @p us NULL.
+ */
+bool servo_screen_log_pulse(uint16_t *us);
+
+/**
+ * @brief The encoder's angle for a SERVO run's log row, as MEASURED shows it:
+ *        AS5600 on in SETUP, a valid reading and the link up.
+ *
+ * @param deg Receives the horn's angle from the centre count, deg.
+ * @return true when an angle is shown; false with @p deg NULL.
+ */
+bool servo_screen_log_angle(float *deg);
+
+/**
  * @brief The keypad over the left column: a set point's, a settings row's
  *        or TRIM's, which is signed; for tests and the renderer.
  * @return The keypad, open or closed.
